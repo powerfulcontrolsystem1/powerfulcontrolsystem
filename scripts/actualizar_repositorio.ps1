@@ -67,13 +67,20 @@ if ($LASTEXITCODE -ne 0) {
 
 function Try-PushOrigin {
     $forceArg = if ($NoForce) { "" } else { "--force" }
-    git push $forceArg -u origin HEAD 2>&1
-    return $LASTEXITCODE
+    $cmd = "git push $forceArg -u origin HEAD"
+    Write-Host "Ejecutando: $cmd"
+    $pushOutput = & git push $forceArg -u origin HEAD 2>&1
+    $pushCode = $LASTEXITCODE
+    # Guardar último output globalmente para análisis posterior
+    Set-Variable -Name LastPushOutput -Value ($pushOutput -join "`n") -Scope Global
+    return $pushCode
 }
 
 Write-Host "Intentando push al remoto 'origin' (forzando por defecto)..."
 $pushCode = Try-PushOrigin
-if ($pushCode -eq 0) {
+$pushOutput = $Global:LastPushOutput
+# Tratar como éxito si el código es 0 o la salida contiene "Everything up-to-date"
+if ($pushCode -eq 0 -or ($pushOutput -match 'Everything up-?to-?date')) {
     $pushMsg = 'OK'
     Write-Host "Éxito: cambios empujados al remoto 'origin'." -ForegroundColor Green
 } else {
@@ -93,7 +100,8 @@ if ($pushCode -eq 0) {
             } else {
                 Write-Host "Remoto 'origin' agregado. Reintentando push forzado..."
                 $pushCode = Try-PushOrigin
-                if ($pushCode -eq 0) {
+                $pushOutput = $Global:LastPushOutput
+                if ($pushCode -eq 0 -or ($pushOutput -match 'Everything up-?to-?date')) {
                     $pushMsg = 'OK'
                     Write-Host "Éxito: cambios empujados al remoto 'origin'." -ForegroundColor Green
                 } else {
@@ -108,7 +116,8 @@ if ($pushCode -eq 0) {
     } else {
         Write-Host "Remoto 'origin' existe ($originUrl) pero el push falló. Intentando push forzado de todos modos..." -ForegroundColor Yellow
         $pushCode = Try-PushOrigin
-        if ($pushCode -eq 0) {
+        $pushOutput = $Global:LastPushOutput
+        if ($pushCode -eq 0 -or ($pushOutput -match 'Everything up-?to-?date')) {
             $pushMsg = 'OK'
             Write-Host "Éxito: push forzado completado." -ForegroundColor Green
         } else {
