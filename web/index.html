@@ -7,27 +7,54 @@
   <link rel="stylesheet" href="/assets/estilos.css">
 </head>
 <body>
-  <div class="container">
-    <div class="header">
+  <div class="portal">
+    <header class="portal-header">
       <div class="brand">POS Multiempresa</div>
-      <div><a class="btn" href="/login.html">Login</a></div>
-    </div>
+      <nav class="nav-actions">
+        <a class="btn" href="/login.html">Iniciar sesión</a>
+      </nav>
+    </header>
 
-    <section id="modulo-1" class="card">
-      <h2>Módulo 1 — Autenticación (Login con Google)</h2>
-      <p>Descripción: Inicio de sesión mediante cuenta de Google (OAuth2). La implementación backend en Go maneja el flujo y crea el usuario en la base de datos con rol por defecto <strong>administrador</strong>.</p>
-      <p>Acción:</p>
-      <a class="btn" href="/auth/google/login">Iniciar sesión con Google</a>
-      <hr/>
-      <p><strong>Notas de implementación:</strong></p>
-      <ul>
-        <li>El backend intercambia el código por token y obtiene userinfo.</li>
-        <li>Usuarios nuevos obtienen el rol <em>administrador</em> automáticamente.</li>
-        <li>Al completar, el usuario es redirigido a <code>seleccionar_empresa.html</code>.</li>
-      </ul>
-    </section>
+    <main class="portal-main container">
+      <section class="portal-intro">
+        <h1>Bienvenido al Portal</h1>
+        <p class="muted">Accede rápidamente a los módulos principales de la plataforma.</p>
+      </section>
 
-    <div class="footer">&copy; 2026 - POS Multiempresa</div>
+      <section class="portal-grid">
+        <article class="portal-card">
+          <h3>Ventas</h3>
+          <p>Panel de ventas, cajas y facturación. Inicie un turno y gestione transacciones por empresa.</p>
+          <a class="btn secondary" href="#">Entrar</a>
+        </article>
+
+        <article class="portal-card">
+          <h3>Inventario</h3>
+          <p>Control de stock, movimientos y ajustes. Soporta múltiples almacenes por empresa.</p>
+          <a class="btn secondary" href="#">Abrir</a>
+        </article>
+
+        <article class="portal-card">
+          <h3>Clientes</h3>
+          <p>Gestión de clientes y tarjetas de fidelidad; búsquedas rápidas y segmentación.</p>
+          <a class="btn secondary" href="#">Ver</a>
+        </article>
+
+        <article class="portal-card">
+          <h3>Reportes</h3>
+          <p>Informes financieros y operativos: ventas por empresa, cierres y métricas.</p>
+          <a class="btn secondary" href="#">Generar</a>
+        </article>
+
+        <article class="portal-card">
+          <h3>Configuración</h3>
+          <p>Administración de empresas, roles y permisos del sistema.</p>
+          <a class="btn secondary" href="#">Configurar</a>
+        </article>
+      </section>
+
+      <footer class="footer">&copy; 2026 - POS Multiempresa</footer>
+    </main>
   </div>
 
 </body>

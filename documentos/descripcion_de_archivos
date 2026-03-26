@@ -19,9 +19,16 @@ Este documento lista los archivos y carpetas principales del proyecto con una br
 - backend/server.log, backend/server.err: Archivos de logs generados al ejecutar el servidor localmente (artefactos de ejecución).
 - backend/server.exe, backend/server.exe~: Binarios generados por compilación local; el `~` indica una copia temporal. No incluir binarios en el control de versiones por defecto.
 
+- backend/handlers/: Carpeta para controladores HTTP y manejo de rutas (por ejemplo `handlers.go` o archivos por dominio). Contiene la lógica que responde a las rutas del servidor.
+- backend/auth/: Carpeta para lógica de autenticación y autorización (intercambio de tokens, validación, utilidades relacionadas con OAuth). Aquí van archivos como `auth.go`.
+- backend/db/: Carpeta para acceso a la base de datos y abstracciones (migraciones ligeras, consultas, upsert de usuarios). Ej.: `db.go`.
+- backend/utils/: Carpeta para utilidades y helpers reutilizables (logging middleware, funciones auxiliares). Ej.: `utils.go`.
+
+Nota: La regla del agente obliga a que cada nuevo archivo creado en el repositorio sea añadido y descrito en este documento. Si se mueven archivos a estas subcarpetas, documentar el cambio en `documentos/historial_de_cambios`.
+
 - scripts/iniciar_servidor.ps1: Script PowerShell para preparar el entorno, compilar y arrancar el backend localmente; detecta/exporta credenciales OAuth desde `documentos/descripcion_del_proyecto`, fuerza `PORT=8080` y abre el navegador.
 - scripts/actualizar_repositorio.ps1: Script PowerShell para preparar commits y push al repositorio remoto; puede actualizar automáticamente `documentos/historial_de_cambios` a menos que el usuario indique lo contrario.
-- scripts/check_http.ps1: (ELIMINADO) Script auxiliar eliminado; su funcionalidad de verificación HTTP fue integrada en `scripts/iniciar_servidor.ps1` para simplificar el flujo y evitar scripts redundantes.
+
 
 - copilot-instructions.md: Instrucciones del agente (local) que refuerzan reglas operativas del proyecto (ej. uso de Go puro, autorización para dependencias, trazabilidad).
 

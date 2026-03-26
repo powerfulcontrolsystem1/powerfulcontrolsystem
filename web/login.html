@@ -7,13 +7,22 @@
   <link rel="stylesheet" href="/assets/estilos.css">
 </head>
 <body>
-  <div class="container">
-    <div class="card">
-      <h2>Iniciar sesión</h2>
-      <p>Usa tu cuenta de Google para iniciar sesión en el sistema.</p>
-      <a class="btn" href="/auth/google/login">Iniciar sesión con Google</a>
-      <hr/>
-      <p class="footer">Si tienes problemas, contacta al administrador.</p>
+  <div class="login-page">
+    <div class="container">
+      <div class="card">
+        <h2>Iniciar sesión</h2>
+        <a class="google-btn" href="/auth/google/login" aria-label="Iniciar sesión con Google">
+          <!-- Google G logo (inline SVG) -->
+          <svg viewBox="0 0 533.5 544.3" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path fill="#4285F4" d="M533.5 278.4c0-17.4-1.6-34.1-4.7-50.4H272v95.4h146.9c-6.3 34.2-25 63.2-53.4 82.7v68.8h86.4c50.6-46.7 81.6-115.4 81.6-196.5z"/>
+            <path fill="#34A853" d="M272 544.3c72.6 0 133.6-24 178.2-65.4l-86.4-68.8c-24.1 16.2-55 25.7-91.8 25.7-70.7 0-130.6-47.7-152.1-111.6H33.2v70.2C77.6 487.7 169.6 544.3 272 544.3z"/>
+            <path fill="#FBBC05" d="M119.9 324.2c-10.9-32.6-10.9-67.6 0-100.2V153.8H33.2c-38.7 76.9-38.7 168.5 0 245.4l86.7-74.9z"/>
+            <path fill="#EA4335" d="M272 107.4c39.5 0 75 13.6 102.9 40.4l77.1-77.1C405.5 24.6 344.5 0 272 0 169.6 0 77.6 56.6 33.2 153.8l86.7 70.2C141.4 155.1 201.3 107.4 272 107.4z"/>
+          </svg>
+          <span>Iniciar sesión con Google</span>
+        </a>
+        <p class="footer">Si tienes problemas, contacta al administrador.</p>
+      </div>
     </div>
   </div>
 </body>

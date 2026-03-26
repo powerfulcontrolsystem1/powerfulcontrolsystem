@@ -1,4 +1,7 @@
-2026/03/25 23:58:36 Warning: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET or GOOGLE_REDIRECT_URL not set
-2026/03/25 23:58:36 Servidor arrancado en :8080
-2026/03/25 23:59:11 -> GET / from [::1]:57082
-2026/03/25 23:59:11 <- 404 GET /
+2026/03/26 10:54:14 index.html encontrado en ..\web\index.html
+2026/03/26 10:54:14 Servidor arrancado en :8080
+2026/03/26 10:54:20 -> GET /login.html from [::1]:49397
+2026/03/26 10:54:20 <- 304 GET /login.html
+2026/03/26 10:54:22 -> GET /auth/google/login from [::1]:49397
+2026/03/26 10:54:22 handleGoogleLogin: client_id set=true, redirect_url="http://localhost:8080/auth/google/callback"
+2026/03/26 10:54:22 <- 302 GET /auth/google/login

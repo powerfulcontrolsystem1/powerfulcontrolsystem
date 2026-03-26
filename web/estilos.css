@@ -20,3 +20,38 @@ p{color:var(--muted);line-height:1.5}
 .input{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:rgba(255,255,255,0.02);color:var(--text)}
 ul{padding-left:18px}
 @media (max-width:600px){.container{margin:12px;padding:12px}.card{padding:12px}}
+
+/* Estilos específicos para la página de login centrada */
+.login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px}
+.login-page .container{max-width:420px;margin:0}
+.login-page .card{text-align:center;padding:28px}
+.login-page h2{font-size:1.4rem;margin-bottom:6px}
+.login-page p{margin-bottom:18px}
+
+.google-btn{display:inline-flex;align-items:center;gap:10px;justify-content:center;background:white;color:#202124;padding:10px 14px;border-radius:8px;border:1px solid rgba(0,0,0,0.08);text-decoration:none;font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,0.06)}
+.google-btn svg{width:20px;height:20px;flex:0 0 20px}
+.google-btn span{display:inline-block}
+.google-btn:hover{box-shadow:0 4px 14px rgba(2,6,23,0.12)}
+
+/* Ajustes responsivos */
+@media (max-width:420px){.login-page .card{padding:18px}.google-btn{width:100%;justify-content:center}}
+
+/* Portal principal - layout empresarial */
+.portal-header{display:flex;align-items:center;justify-content:space-between;padding:18px 28px;background:linear-gradient(90deg,rgba(255,255,255,0.01),rgba(0,0,0,0.04));border-bottom:1px solid rgba(255,255,255,0.03);position:sticky;top:0;z-index:10}
+.portal-header .brand{font-size:1.15rem;font-weight:800}
+.nav-actions .btn{background:transparent;color:var(--text);border:1px solid rgba(255,255,255,0.06);padding:8px 12px;border-radius:8px}
+.nav-actions .btn:hover{background:rgba(255,255,255,0.02)}
+
+.portal-main{padding:32px 28px}
+.portal-intro{max-width:720px;margin:0 auto 22px auto;text-align:center}
+.portal-intro h1{margin:0 0 6px 0;font-size:1.8rem}
+.portal-intro .muted{color:var(--muted)}
+
+.portal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;max-width:1100px;margin:0 auto}
+.portal-card{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.04));border:1px solid rgba(255,255,255,0.03);padding:20px;border-radius:10px;box-shadow:0 8px 24px rgba(2,6,23,0.45);display:flex;flex-direction:column;justify-content:space-between}
+.portal-card h3{margin:0 0 8px 0}
+.portal-card p{color:var(--muted);flex:1;margin-bottom:12px}
+.portal-card .btn.secondary{align-self:flex-start}
+
+@media (max-width:1000px){.portal-grid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:640px){.portal-grid{grid-template-columns:1fr}.portal-main{padding:18px}}

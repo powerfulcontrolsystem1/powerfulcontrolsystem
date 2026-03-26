@@ -9,30 +9,59 @@ Clear-Host
 $backend = Join-Path $PSScriptRoot "..\backend"
 Push-Location $backend
 
-Write-Host "Buscando procesos que usan el puerto 8080..."
-$port = 8080
-$netstatOut = & netstat -ano | findstr ":$port" 2>$null
-if (-not [string]::IsNullOrWhiteSpace($netstatOut)) {
-    $pids = ($netstatOut -split "\r?\n" | ForEach-Object {
-        if ($_ -match '\s+(\d+)$') { $matches[1] }
-    }) | Where-Object { $_ } | Select-Object -Unique
-    $pids = @($pids)
-    if ($pids.Count -gt 0) {
-        $joined = $pids -join ', '
-        Write-Host ("Procesos detectados en puerto {0}: {1}" -f $port, $joined)
-        foreach ($killPid in $pids) {
-            try {
-                Write-Host ("Terminando proceso PID {0}..." -f $killPid)
-                taskkill /PID $killPid /F | Out-Null
-                Write-Host ("PID {0} terminado." -f $killPid) -ForegroundColor Green
-            } catch {
-                $msg = if ($_.Exception) { $_.Exception.Message } else { $_ }
-                Write-Host ("No se pudo terminar PID {0}: {1}" -f $killPid, $msg) -ForegroundColor Yellow
+function Kill-Processes-On-Port {
+    param([int]$port)
+    Write-Host ("Comprobando puerto {0}..." -f $port)
+    $netstatOut = netstat -ano | findstr ":$port" 2>$null
+    if (-not [string]::IsNullOrWhiteSpace($netstatOut)) {
+        $pids = ($netstatOut -split "\r?\n" | ForEach-Object {
+            if ($_ -match '\s+(\d+)$') { $matches[1] }
+        }) | Where-Object { $_ } | Select-Object -Unique
+        $pids = @($pids)
+        if ($pids.Count -gt 0) {
+            $joined = $pids -join ', '
+            Write-Host ("Procesos detectados en puerto {0}: {1}" -f $port, $joined)
+            foreach ($killPid in $pids) {
+                try {
+                    Write-Host (("Terminando proceso PID {0}..." -f $killPid))
+                    taskkill /PID $killPid /F | Out-Null
+                    Write-Host (("PID {0} terminado." -f $killPid)) -ForegroundColor Green
+                } catch {
+                    $msg = if ($_.Exception) { $_.Exception.Message } else { $_ }
+                    Write-Host (("No se pudo terminar PID {0}: {1}" -f $killPid, $msg)) -ForegroundColor Yellow
+                }
             }
+            Start-Sleep -Seconds 1
         }
-        Start-Sleep -Seconds 1
+    } else {
+        Write-Host "No hay procesos detectados en el puerto $port"
+    }
+
+    # Además intentar cerrar procesos por nombre comunes del servidor
+    $names = @('server','server.exe','pos-backend','pos-backend.exe')
+    foreach ($name in $names) {
+        try {
+            $procFilter = $name -replace '\.exe$',''
+            $procs = Get-Process -Name $procFilter -ErrorAction SilentlyContinue
+            if ($procs) {
+                foreach ($p in $procs) {
+                    try {
+                        Write-Host (("Terminando proceso por nombre {0} (PID {1})..." -f $p.ProcessName, $p.Id))
+                        Stop-Process -Id $p.Id -Force -ErrorAction Stop
+                        Write-Host ("Proceso terminado.") -ForegroundColor Green
+                    } catch {
+                        Write-Host (("No se pudo terminar proceso {0}: {1}" -f $p.Id, $_)) -ForegroundColor Yellow
+                    }
+                }
+            }
+        } catch {
+            # ignorar errores de Get-Process
+        }
     }
 }
+
+Write-Host "Buscando procesos que usan el puerto 8080..."
+Kill-Processes-On-Port -port 8080
 
 Write-Host "Ejecutando: go mod tidy"
 go mod tidy
@@ -83,16 +112,16 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
-# Preparar mapa de entorno para Start-Process (no incluimos el secreto en logs)
-$envMap = @{
-    PORT = $env:PORT
-    GOOGLE_CLIENT_ID = $clientId
-    GOOGLE_CLIENT_SECRET = $clientSecret
-    GOOGLE_REDIRECT_URL = $env:GOOGLE_REDIRECT_URL
-}
+Write-Host "Lanzando servidor.exe con entorno controlado (logs en backend/server.log, backend/server.err)..."
+$serverPath = Join-Path $backend "server.exe"
+# Asegurar que las variables de entorno estén en el proceso actual (Start-Process heredará estas en Windows PowerShell)
+if ($env:PORT) { $env:PORT = $env:PORT }
+if ($clientId) { $env:GOOGLE_CLIENT_ID = $clientId }
+if ($clientSecret) { $env:GOOGLE_CLIENT_SECRET = $clientSecret }
+if ($env:GOOGLE_REDIRECT_URL) { $env:GOOGLE_REDIRECT_URL = $env:GOOGLE_REDIRECT_URL }
 
-Write-Host "Lanzando servidor.exe con entorno controlado..."
-Start-Process -FilePath (Join-Path $backend "server.exe") -WorkingDirectory $backend -ArgumentList @() -NoNewWindow -PassThru -Environment $envMap | Out-Null
+# Iniciar sin -Environment para compatibilidad con Windows PowerShell 5.1
+Start-Process -FilePath $serverPath -WorkingDirectory $backend -RedirectStandardOutput (Join-Path $backend "server.log") -RedirectStandardError (Join-Path $backend "server.err") -PassThru | Out-Null
 Write-Host "Proceso del servidor lanzado." -ForegroundColor Green
 
 # Esperar a que el puerto 8080 esté en LISTENING
