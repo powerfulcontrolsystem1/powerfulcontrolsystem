@@ -177,3 +177,12 @@ Archivos modificados:
 - scripts/logs/actualizar_repositorio-20260326-123428.log
 - scripts/logs/actualizar_repositorio-20260326-133955.log
 
+2026-03-26: Añadido menú flotante en frontend
+- Acción: Se añadió un menú flotante en la esquina superior derecha de las páginas web principales con una opción para "Cerrar sesión".
+- Archivos modificados:
+    - web/estilos.css (estilos del menú flotante)
+    - web/index.html (marca y script del menú)
+    - web/login.html (marca y script del menú)
+    - web/seleccionar_empresa.html (marca y script del menú)
+- Motivo: mejorar accesibilidad a la acción de cierre de sesión desde cualquier página.
+- Responsable: cambio realizado localmente por el agente a petición del usuario.

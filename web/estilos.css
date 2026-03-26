@@ -55,3 +55,13 @@ ul{padding-left:18px}
 
 @media (max-width:1000px){.portal-grid{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:640px){.portal-grid{grid-template-columns:1fr}.portal-main{padding:18px}}
+
+/* Menú flotante (esquina superior derecha) */
+.floating-menu{position:fixed;top:12px;right:12px;z-index:9999;font-family:inherit}
+.floating-menu .fm-toggle{width:44px;height:44px;border-radius:999px;background:var(--card);border:1px solid rgba(255,255,255,0.06);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 6px 18px rgba(2,6,23,0.6);font-weight:700}
+.floating-menu .fm-panel{display:none;position:absolute;top:54px;right:0;background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.04));border:1px solid rgba(255,255,255,0.04);padding:8px;border-radius:10px;min-width:180px;box-shadow:0 10px 30px rgba(2,6,23,0.6)}
+.floating-menu .fm-panel.open{display:block}
+.floating-menu .fm-item{display:block;color:var(--text);text-decoration:none;padding:10px 12px;border-radius:8px;font-weight:600}
+.floating-menu .fm-item:hover{background:rgba(255,255,255,0.02)}
+
+@media (max-width:480px){.floating-menu{right:8px;top:8px}.floating-menu .fm-panel{right:0;left:auto;min-width:140px}}

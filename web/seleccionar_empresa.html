@@ -7,6 +7,12 @@
   <link rel="stylesheet" href="/assets/estilos.css">
 </head>
 <body>
+  <div class="floating-menu" aria-hidden="false">
+    <button class="fm-toggle" aria-label="Abrir menú">☰</button>
+    <div class="fm-panel" role="menu">
+      <a class="fm-item" href="/auth/logout">Cerrar sesión</a>
+    </div>
+  </div>
   <div class="container">
     <div class="card">
       <h2>Seleccionar Empresa</h2>
@@ -18,5 +24,17 @@
       </ul>
     </div>
   </div>
-</body>
+  </div>
+
+  <script>
+    (function(){
+      var toggle = document.querySelector('.floating-menu .fm-toggle');
+      var panel = document.querySelector('.floating-menu .fm-panel');
+      if (!toggle || !panel) return;
+      toggle.addEventListener('click', function(e){ e.stopPropagation(); panel.classList.toggle('open'); });
+      document.addEventListener('click', function(){ panel.classList.remove('open'); });
+    })();
+  </script>
+
+  </body>
 </html>

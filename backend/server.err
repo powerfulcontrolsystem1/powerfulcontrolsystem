@@ -1,14 +1,16 @@
-2026/03/26 13:01:47 index.html encontrado en ..\web\index.html
-2026/03/26 13:01:47 Servidor arrancado en :8080
-2026/03/26 13:01:48 -> GET / from [::1]:59566
-2026/03/26 13:01:48 <- 304 GET /
-2026/03/26 13:01:48 -> GET /assets/estilos.css from [::1]:59566
-2026/03/26 13:01:48 <- 304 GET /assets/estilos.css
-2026/03/26 13:01:51 -> GET /login.html from [::1]:59566
-2026/03/26 13:01:51 <- 304 GET /login.html
-2026/03/26 13:01:54 -> GET /auth/google/login from [::1]:59566
-2026/03/26 13:01:54 handleGoogleLogin: client_id set=true, redirect_url="http://localhost:8080/auth/google/callback"
-2026/03/26 13:01:54 Auth URL: https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&client_id=1029204473903-6npuu63uehsrn2jn8fnif4fgpp6kcjsm.apps.googleusercontent.com&include_granted_scopes=true&prompt=select_account+consent&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fauth%2Fgoogle%2Fcallback&response_type=code&scope=openid+email+profile&state=state-token
-2026/03/26 13:01:54 <- 302 GET /auth/google/login
-2026/03/26 13:02:02 -> GET /auth/google/callback from [::1]:59566
-2026/03/26 13:02:03 <- 302 GET /auth/google/callback
+2026/03/26 13:47:37 index.html encontrado en ..\web\index.html
+2026/03/26 13:47:37 Servidor arrancado en :8080
+2026/03/26 13:47:44 -> GET /auth/google/login from [::1]:64118
+2026/03/26 13:47:44 handleGoogleLogin: client_id set=true, redirect_url="http://localhost:8080/auth/google/callback"
+2026/03/26 13:47:44 Auth URL: https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&client_id=1029204473903-6npuu63uehsrn2jn8fnif4fgpp6kcjsm.apps.googleusercontent.com&include_granted_scopes=true&prompt=select_account+consent&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fauth%2Fgoogle%2Fcallback&response_type=code&scope=openid+email+profile&state=state-token
+2026/03/26 13:47:44 <- 302 GET /auth/google/login
+2026/03/26 13:47:49 -> GET /auth/google/callback from [::1]:64118
+2026/03/26 13:47:50 <- 302 GET /auth/google/callback
+2026/03/26 13:47:53 -> GET /seleccionar_empresa.html from [::1]:64118
+2026/03/26 13:47:53 <- 200 GET /seleccionar_empresa.html
+2026/03/26 13:47:53 -> GET /assets/estilos.css from [::1]:64118
+2026/03/26 13:47:53 <- 200 GET /assets/estilos.css
+2026/03/26 13:47:53 -> GET /favicon.ico from [::1]:64118
+2026/03/26 13:47:53 <- 404 GET /favicon.ico
+2026/03/26 13:48:02 -> GET /auth/logout from [::1]:64118
+2026/03/26 13:48:02 <- 404 GET /auth/logout

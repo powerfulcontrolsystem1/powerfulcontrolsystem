@@ -1,0 +1,44 @@
+﻿**********************
+Inicio de la transcripción de Windows PowerShell
+Hora de inicio: 20260326133955
+Nombre de usuario: NITRO\ivanm
+Usuario RunAs: NITRO\ivanm
+Nombre de la configuración: 
+Máquina: NITRO (Microsoft Windows NT 10.0.26200.0)
+Aplicación host: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -ExecutionPolicy Bypass -Command Import-Module 'c:\Users\ivanm\.vscode\extensions\ms-vscode.powershell-2025.4.0\modules\PowerShellEditorServices\PowerShellEditorServices.psd1'; Start-EditorServices -HostName 'Visual Studio Code Host' -HostProfileId 'Microsoft.VSCode' -HostVersion '2025.4.0' -BundledModulesPath 'c:\Users\ivanm\.vscode\extensions\ms-vscode.powershell-2025.4.0\modules' -EnableConsoleRepl -StartupBanner "PowerShell Extension v2025.4.0
+Copyright (c) Microsoft Corporation.
+
+https://aka.ms/vscode-powershell
+Type 'help' to get help.
+" -LogLevel 'Warning' -LogPath 'c:\Users\ivanm\AppData\Roaming\Code\logs\20260326T131745\window1\exthost\ms-vscode.powershell' -SessionDetailsPath 'c:\Users\ivanm\AppData\Roaming\Code\User\globalStorage\ms-vscode.powershell\sessions\PSES-VSCode-30272-114182.json' -FeatureFlags @() 
+Id. de proceso: 17876
+PSVersion: 5.1.26100.7920
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.7920
+BuildVersion: 10.0.26100.7920
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+La transcripción ha comenzado. El archivo de salida es D:\powerfulcontrolsystem\scripts\logs\actualizar_repositorio-20260326-133955.log
+Preparando cambios para commit...
+warning: in the working copy of 'documentos/descripci
+on_de_archivos', LF will be replaced by CRLF the next
+ time Git touches it
+warning: in the working copy of 'documentos/historial
+_de_cambios', LF will be replaced by CRLF the next ti
+me Git touches it
+Creando commit: ActualizaciÃ³n automÃ¡tica desde script: aÃ±adir/actualizar archivos
+ 12 files changed, 264 insertions(+), 43 deletions(-)
+ delete mode 100644 backend/pos.db
+ create mode 100644 scripts/logs/actualizar_repositor
+io-20260326-133955.log
+Intentando push al remoto 'origin' (forzando por defecto)...
+Ejecutando: git push --force -u origin HEAD
+Ã‰xito: cambios empujados al remoto 'origin'.
+OperaciÃ³n completada con Ã©xito.
+**********************
+Fin de la transcripción de Windows PowerShell
+Hora de finalización: 20260326134018
+**********************

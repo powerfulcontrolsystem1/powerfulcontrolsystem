@@ -43,3 +43,5 @@ Fecha de creaciÃ³n: 2026-03-26
 
 
 - backend/db/: Carpeta que contiene archivos de base de datos SQLite utilizados por la aplicación. Los archivos empresas.db y superadministrador.db deben residir aquí. Se eliminaron duplicados fuera de backend/.
+
+- UI/menu flotante: Menú flotante en esquina superior derecha disponible en las páginas principales; contiene la acción 'Cerrar sesión' y se estiliza en web/estilos.css.
