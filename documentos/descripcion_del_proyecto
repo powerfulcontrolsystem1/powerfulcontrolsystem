@@ -1,0 +1,41 @@
+
+## Descripción del proyecto
+Este proyecto es un sistema de punto de venta (POS) multiempresa, desarrollado en lenguaje Go puro sin librerías externas, utilizando SQLite como base de datos. Se adapta a diversas industrias, desde restaurantes y hoteles hasta tiendas  grandes. 
+
+## Módulos y características iniciales:
+1) Autenticación: Login por medio de cuenta de Google (OAuth2).  
+
+- al registrarse por primera vez, se le asigna el rol de "administrador"
+
+- al iniciar sesion si el usiario es de rol "administrador" se redirige a la pagina "seleccionar_empresa.html", si el usuario es de rol "super_administrador" se redirige a la pagina "super_administrador.html"
+
+2) 
+
+## PAGINAS
+1) index.html 
+En esta pagina se realiza el registro o login por medio de cuenta de Google (OAuth2)
+
+- al iniciar sesion si el usiario es de rol "administrador" se redirige a la pagina "seleccionar_empresa.html", si el usuario es de rol "super_administrador" se redirige a la pagina "super_administrador.html"
+
+2) seleccionar_empresa.html
+- Aqui cargaran las empresas que ha creadas por el usuario.
+
+- La pagina tendra un menu o frame izquierdo:
+- este menu tiene como opciones:
+ 1) Agregar empresa
+
+- La pagina tendra un frame derecho:
+- Al cargar la pagina aqui estarn las empresas agregadas por el usuario, vistas en tarjetas, estas tarjetas mostraran el nombre de la empresa, la descripcion y el estado de la licencia.
+
+- Los vinculos del frame izquiedo abriran en el frame derecho
+
+## Script
+1) iniciar_servidor
+- Debe matar procesos antiguos luego debe iniciar el servidor,este scripts debe instalar dependiencias si se necesitan.
+
+2) actualizar_repositorio
+- Este debe subir los ultimos cambios y archivos al repositorio de github
+
+## cliente de OAuth
+1029204473903-6npuu63uehsrn2jn8fnif4fgpp6kcjsm.apps.googleusercontent.com
+- Secreto del cliente: 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

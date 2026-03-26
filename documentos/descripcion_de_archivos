@@ -1,0 +1,36 @@
+Descripcion de archivos del proyecto
+
+Este documento lista los archivos y carpetas principales del proyecto con una breve descripción de su propósito.
+
+- documentos/descripcion_del_proyecto: Descripción general del proyecto, requisitos funcionales y credenciales de prueba (solo en entorno local). Contiene instrucciones y restricciones que el agente debe leer antes de actuar.
+- documentos/historial_de_cambios: Registro cronológico de las acciones y cambios relevantes realizados en el repositorio por el agente o por el usuario.
+- documentos/descripcion_de_archivos: (este archivo) catálogo de archivos y reglas para mantener la documentación actualizada.
+
+- web/index.html: Página principal del frontend; entrada al flujo de autenticación con Google.
+- web/login.html: Página de login estático que inicia el proceso de OAuth hacia `/auth/google/login`.
+- web/seleccionar_empresa.html: Página donde un usuario administrador selecciona la empresa con la que trabajar.
+- web/estilos.css: Hoja de estilos centralizada para las páginas web (tema oscuro y estilos comunes).
+
+
+- backend/main.go: Código fuente principal del backend en Go; sirve archivos estáticos, gestiona endpoints de OAuth2 (`/auth/google/login`, `/auth/google/callback`) y acceso a la base de datos SQLite.
+- backend/go.mod, backend/go.sum: Módulos y dependencias de Go del backend (nota: la política del proyecto prefiere Go stdlib; cualquier dependencia debe ser autorizada).
+- backend/.env.example: Plantilla de variables de entorno para el backend (ej. `DB_PATH`, `PORT`, `GOOGLE_CLIENT_ID`).
+- backend/pos.db: Base de datos SQLite usada en desarrollo local (archivo binario). No subir credenciales ni datos sensibles al repositorio remoto.
+- backend/server.log, backend/server.err: Archivos de logs generados al ejecutar el servidor localmente (artefactos de ejecución).
+- backend/server.exe, backend/server.exe~: Binarios generados por compilación local; el `~` indica una copia temporal. No incluir binarios en el control de versiones por defecto.
+
+- scripts/iniciar_servidor.ps1: Script PowerShell para preparar el entorno, compilar y arrancar el backend localmente; detecta/exporta credenciales OAuth desde `documentos/descripcion_del_proyecto`, fuerza `PORT=8080` y abre el navegador.
+- scripts/actualizar_repositorio.ps1: Script PowerShell para preparar commits y push al repositorio remoto; puede actualizar automáticamente `documentos/historial_de_cambios` a menos que el usuario indique lo contrario.
+- scripts/check_http.ps1: Script auxiliar para verificar que un endpoint HTTP responde correctamente (usado por los scripts de arranque y monitoreo local).
+
+- copilot-instructions.md: Instrucciones del agente (local) que refuerzan reglas operativas del proyecto (ej. uso de Go puro, autorización para dependencias, trazabilidad).
+
+- .github/agents/agente_go.agent.md: Archivo de configuración/metadata para el agente `agente_go` (documentación y instrucciones del agente interno de la repo).
+
+- /memories/Agente Go.md: Memoria del agente que contiene reglas, normas y restricciones operativas (leer antes de actuar). (archivo de memoria gestionado por el agente.)
+
+Notas:
+- Mantener este documento actualizado: la regla del agente exige que cada nuevo archivo creado sea añadido y descrito aquí.
+- No incluir secretos ni credenciales en este documento; referenciar su ubicación segura si aplica.
+
+Fecha de creación: 2026-03-26

@@ -1,0 +1,51 @@
+Historial de cambios
+
+2026-03-25: Creación inicial del proyecto. Elementos añadidos:
+- documento `descripcion_del_proyecto` (plantilla y contenido inicial)
+- carpeta `web/` con páginas `index.html`, `login.html`, `seleccionar_empresa.html`
+- hoja de estilos central `web/estilos.css` (tema oscuro profesional)
+- backend en `backend/main.go` con endpoints `/auth/google/login` y `/auth/google/callback` (OAuth2)
+- persistencia SQLite usando driver Go (`modernc.org/sqlite`) y `backend/go.mod`
+
+(El agente añadirá entradas aquí con cada cambio relevante.)
+
+2026-03-25: Scripts añadidos:
+- `scripts/iniciar_servidor.ps1`: instala dependencias de Go en `backend/` y arranca el servidor (opción background disponible).
+- `scripts/actualizar_repositorio.ps1`: añade, commitea y hace push de cambios al remoto; actualiza `documentos/historial_de_cambios` automáticamente a menos que se use `-SkipChangeLog`.
+
+2026-03-25: Script 'actualizar_repositorio.ps1' ejecutado. Mensaje: Actualización automática desde script: añadir/actualizar archivos
+- Archivos: (ver commit) 
+
+
+2026-03-25: Actualización automática desde script: añadir/actualizar archivos
+PushStatus: NO_ORIGIN
+Archivos modificados:
+- scripts/actualizar_repositorio.ps1
+
+2026-03-26: Reglas y ajustes del agente; scripts actualizados
+- Se añadió regla en `/memories/Agente Go.md`: obligatoria de usar lenguaje Go puro sin librerías externas y requerir autorización/documentación antes de introducir dependencias.
+- Se añadió regla de trazabilidad: cuando el agente marque una tarea como completada con `task_complete`, debe registrar una entrada en `documentos/historial_de_cambios`.
+- Se creó `copilot-instructions.md` reforzando las reglas del agente (Go puro, autorizaciones y trazabilidad).
+- Se actualizó `scripts/iniciar_servidor.ps1` para:
+	1) detectar y exportar `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET` desde `documentos/descripcion_del_proyecto` sin imprimirlos;
+	2) fijar `GOOGLE_REDIRECT_URL` a `http://localhost:8080/auth/google/callback` y forzar `PORT=8080`;
+	3) compilar `server.exe` y lanzarlo con un entorno controlado que incluye las variables anteriores.
+
+Notas: El agente no hará push ni PRs automáticamente; las subidas las gestiona el usuario mediante `scripts/actualizar_repositorio.ps1`.
+
+
+2026-03-26: Actualización automática desde script: añadir/actualizar archivos
+PushStatus: NO_ORIGIN
+Archivos modificados:
+- backend/main.go
+- backend/server.err
+- backend/server.exe
+- backend/server.exe~
+- backend/server.log
+- copilot-instructions.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_del_proyecto
+- documentos/historial_de_cambios
+- scripts/check_http.ps1
+- scripts/iniciar_servidor.ps1
+

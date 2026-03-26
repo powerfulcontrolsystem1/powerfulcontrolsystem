@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Proyecto POS - Módulo 1</title>
+  <link rel="stylesheet" href="/assets/estilos.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="brand">POS Multiempresa</div>
+      <div><a class="btn" href="/login.html">Login</a></div>
+    </div>
+
+    <section id="modulo-1" class="card">
+      <h2>Módulo 1 — Autenticación (Login con Google)</h2>
+      <p>Descripción: Inicio de sesión mediante cuenta de Google (OAuth2). La implementación backend en Go maneja el flujo y crea el usuario en la base de datos con rol por defecto <strong>administrador</strong>.</p>
+      <p>Acción:</p>
+      <a class="btn" href="/auth/google/login">Iniciar sesión con Google</a>
+      <hr/>
+      <p><strong>Notas de implementación:</strong></p>
+      <ul>
+        <li>El backend intercambia el código por token y obtiene userinfo.</li>
+        <li>Usuarios nuevos obtienen el rol <em>administrador</em> automáticamente.</li>
+        <li>Al completar, el usuario es redirigido a <code>seleccionar_empresa.html</code>.</li>
+      </ul>
+    </section>
+
+    <div class="footer">&copy; 2026 - POS Multiempresa</div>
+  </div>
+
+</body>
+</html>
