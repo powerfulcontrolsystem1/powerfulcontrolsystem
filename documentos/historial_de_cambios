@@ -33,6 +33,11 @@ Archivos modificados:
 
 Notas: El agente no hará push ni PRs automáticamente; las subidas las gestiona el usuario mediante `scripts/actualizar_repositorio.ps1`.
 
+2026-03-26: Reinicialización del repositorio local
+- Acción: Se eliminó la configuración Git previa y se inicializó un nuevo repositorio local con commit inicial.
+- Resultado: Commit inicial creado (`Reinicialización del repositorio: inicio limpio`) que contiene los archivos actuales del proyecto.
+- Nota: Esta operación afectó únicamente al repositorio local. Para publicar en remoto, ejecutar `scripts/actualizar_repositorio.ps1 -RepoUrl <url>` o añadir manualmente el remoto y pushear.
+
 
 2026-03-26: Actualización automática desde script: añadir/actualizar archivos
 PushStatus: NO_ORIGIN
