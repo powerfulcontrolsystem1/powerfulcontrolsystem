@@ -21,7 +21,7 @@ Este documento lista los archivos y carpetas principales del proyecto con una br
 
 - scripts/iniciar_servidor.ps1: Script PowerShell para preparar el entorno, compilar y arrancar el backend localmente; detecta/exporta credenciales OAuth desde `documentos/descripcion_del_proyecto`, fuerza `PORT=8080` y abre el navegador.
 - scripts/actualizar_repositorio.ps1: Script PowerShell para preparar commits y push al repositorio remoto; puede actualizar automáticamente `documentos/historial_de_cambios` a menos que el usuario indique lo contrario.
-- scripts/check_http.ps1: Script auxiliar para verificar que un endpoint HTTP responde correctamente (usado por los scripts de arranque y monitoreo local).
+- scripts/check_http.ps1: (ELIMINADO) Script auxiliar eliminado; su funcionalidad de verificación HTTP fue integrada en `scripts/iniciar_servidor.ps1` para simplificar el flujo y evitar scripts redundantes.
 
 - copilot-instructions.md: Instrucciones del agente (local) que refuerzan reglas operativas del proyecto (ej. uso de Go puro, autorización para dependencias, trazabilidad).
 

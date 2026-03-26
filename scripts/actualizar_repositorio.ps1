@@ -13,6 +13,16 @@ if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
 
 $root = Resolve-Path "$PSScriptRoot\.."
 Set-Location $root
+# Preparar logging detallado (transcripción)
+$logsDir = Join-Path $root 'scripts\logs'
+New-Item -ItemType Directory -Force -Path $logsDir | Out-Null
+$timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
+$logFile = Join-Path $logsDir ("actualizar_repositorio-$timestamp.log")
+try {
+    Start-Transcript -Path $logFile -Append -ErrorAction SilentlyContinue
+} catch {
+    Write-Host "Aviso: no fue posible iniciar Start-Transcript: $_" -ForegroundColor Yellow
+}
 
 Write-Host "Preparando cambios para commit..."
 # Ensure a sensible .gitignore exists to avoid committing build artifacts
@@ -43,6 +53,7 @@ git add -A
 $status = git status --porcelain
 if ([string]::IsNullOrEmpty($status)) {
     Write-Host "No hay cambios para commitear." -ForegroundColor Yellow
+    try { Stop-Transcript -ErrorAction SilentlyContinue } catch {}
     exit 0
 }
 
@@ -50,6 +61,7 @@ Write-Host "Creando commit: $Message"
 git commit -m $Message
 if ($LASTEXITCODE -ne 0) {
     Write-Host "ERROR: El commit falló. Revisa 'git status'." -ForegroundColor Red
+    try { Stop-Transcript -ErrorAction SilentlyContinue } catch {}
     exit $LASTEXITCODE
 }
 
@@ -131,6 +143,7 @@ if (-not $SkipChangeLog) {
 
 if ($pushMsg -eq 'OK') {
     Write-Host "Operación completada con éxito." -ForegroundColor Green
+    try { Stop-Transcript -ErrorAction SilentlyContinue } catch {}
     exit 0
 } else {
     switch ($pushMsg) {
@@ -138,5 +151,6 @@ if ($pushMsg -eq 'OK') {
         'FAIL_ADD_REMOTE' { Write-Host "Falló: no se pudo agregar el remoto 'origin'. Revisa la URL o permisos." -ForegroundColor Red }
         default { Write-Host "Falló: no se pudo pushear los cambios al remoto. Revisa la configuración de Git y permisos." -ForegroundColor Red }
     }
+    try { Stop-Transcript -ErrorAction SilentlyContinue } catch {}
     exit 1
 }
