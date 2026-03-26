@@ -1,0 +1,99 @@
+Descripcion de las Bases de Datos
+
+Este documento describe las bases de datos SQLite usadas por la aplicación, las tablas creadas por el backend y los campos de cada tabla.
+El agente debe leer y actualizar este documento cada vez que se realicen cambios en esquemas, migraciones o manipulación de datos.
+
+1) Base de datos: `empresas.db`
+   - Propósito: almacenar información relacionada con empresas, usuarios y tipos de empresas.
+
+   Tablas creadas por `backend/main.go`:
+
+   - `users`
+     - `id` INTEGER PRIMARY KEY AUTOINCREMENT
+     - `email` TEXT UNIQUE
+     - `name` TEXT
+     - `role` TEXT DEFAULT 'administrador'  -- rol del usuario (administrador / super_administrador)
+     - `empresa_id` INTEGER  -- referencia a `empresas.id` (nullable)
+     - `fecha_creacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `fecha_actualizacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `usuario_creador` TEXT
+     - `estado` TEXT DEFAULT 'activo'
+     - `observaciones` TEXT
+
+   - `empresas`
+     - `id` INTEGER PRIMARY KEY AUTOINCREMENT
+     - `nombre` TEXT NOT NULL
+     - `nit` TEXT
+     - `tipo_id` INTEGER  -- referencia conceptual a `tipos_de_empresas.id` que reside en `superadministrador.db`
+     - `fecha_creacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `fecha_actualizacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `usuario_creador` TEXT
+     - `estado` TEXT DEFAULT 'activo'
+     - `observaciones` TEXT
+
+   Notas y recomendaciones:
+   - Todas las tablas siguen el esquema estándar del proyecto: campos `fecha_creacion`, `fecha_actualizacion`, `usuario_creador`, `estado`, `observaciones`.
+   - `empresa_id` en `users` es la FK conceptual hacia `empresas.id`. El proyecto usa SQLite simple, las FK deben manejarse desde la lógica de aplicación.
+
+2) Base de datos: `superadministrador.db`
+   - Propósito: almacenar datos globales del sistema (administradores globales, tipos de licencia, licencias y tablas de configuración/sesiones).
+
+   Tablas creadas por `backend/main.go`:
+
+   - `administradores`
+     - `id` INTEGER PRIMARY KEY AUTOINCREMENT
+     - `email` TEXT UNIQUE
+     - `name` TEXT
+     - `fecha_creacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `fecha_actualizacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `usuario_creador` TEXT
+     - `estado` TEXT DEFAULT 'activo'
+     - `observaciones` TEXT
+
+   - `tipos_de_licencia`
+     - `id` INTEGER PRIMARY KEY AUTOINCREMENT
+     - `nombre` TEXT NOT NULL
+     - `fecha_creacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `fecha_actualizacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `usuario_creador` TEXT
+     - `estado` TEXT DEFAULT 'activo'
+     - `observaciones` TEXT
+
+   - `licencias`
+     - `id` INTEGER PRIMARY KEY AUTOINCREMENT
+     - `empresa_id` INTEGER  -- referencia conceptual a `empresas.id` de `empresas.db`
+     - `tipo_id` INTEGER    -- referencia a `tipos_de_licencia.id`
+     - `fecha_inicio` TEXT
+     - `fecha_fin` TEXT
+     - `activo` INTEGER DEFAULT 1
+     - `fecha_creacion` TEXT DEFAULT (datetime('now','localtime'))
+
+   - `tipos_de_empresas`
+     - `id` INTEGER PRIMARY KEY AUTOINCREMENT
+     - `nombre` TEXT NOT NULL
+     - `fecha_creacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `fecha_actualizacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `usuario_creador` TEXT
+     - `estado` TEXT DEFAULT 'activo'
+     - `observaciones` TEXT
+
+   Notas y recomendaciones:
+   - `licencias.empresa_id` apunta conceptualmente a la base `empresas.db`. La integridad referencial entre archivos SQLite separados debe gestionarse en la capa de aplicación.
+   - Existen referencias en la documentación a tablas `configuracion` y `sesiones` para `superadministrador.db`; si se implementan, deben seguir los campos estándar de la regla de BD.
+
+3) Tablas/archivos adicionales mencionados
+   - `pos.db` aparece en documentación histórica; actualmente no utilizado (fue eliminado según historial). Si se restaura, documentar su esquema aquí.
+
+4) Regla para el agente (obligatoria)
+   - El agente debe leer `documentos/descripcion_de_las_bases_De_datos` antes de realizar cualquier cambio en esquemas, migraciones o manipulación masiva de datos.
+   - Antes de modificar tablas o campos (crear, renombrar, eliminar), el agente debe:
+     1. Actualizar este documento describiendo el cambio propuesto (nueva estructura, campos añadidos/quitados, migración de datos) y los riesgos.
+     2. Añadir una entrada en `documentos/historial_de_cambios` con fecha, archivos afectados y breve descripción de la operación.
+     3. Solicitar confirmación explícita del usuario si el cambio afecta datos en producción o implica pérdida de información.
+
+5) Procedimiento sugerido para cambios de esquema
+   - Crear una copia de seguridad del archivo `.db` antes de aplicar cambios.
+   - Verificar con `PRAGMA table_info(<table>)` y realizar migraciones atómicas (crear tabla nueva, migrar datos, renombrar).
+   - Documentar todos los pasos en `documentos/historial_de_cambios` y actualizar este documento.
+
+Fecha de creación: 2026-03-26

@@ -21,6 +21,8 @@ Comportamiento del agente:
 
 - Regla de documentación de archivos: Cada vez que el agente cree un archivo nuevo en el repositorio, debe añadir y describir el archivo en `documentos/descripcion_de_archivos` con ruta y propósito breve. Esta acción debe ocurrir inmediatamente después de crear el archivo.
 
+- Regla específica para bases de datos: El agente debe leer y, cuando corresponda, actualizar `documentos/descripcion_de_las_bases_De_datos` antes de realizar cualquier cambio en esquemas, migraciones o manipulaciones masivas de datos. Además debe registrar la operación en `documentos/historial_de_cambios` y pedir confirmación del usuario si hay riesgo de pérdida de datos.
+
 Implementación práctica:
 
 - Si el agente detecta una dependencia externa en el código (por ejemplo, import fuera de la stdlib o `require` en `go.mod`), debe detenerse y preguntar: "¿Autorizas añadir la dependencia X?".

@@ -15,7 +15,7 @@ Este documento lista los archivos y carpetas principales del proyecto con una br
 - backend/main.go: CÃ³digo fuente principal del backend en Go; sirve archivos estÃ¡ticos, gestiona endpoints de OAuth2 (`/auth/google/login`, `/auth/google/callback`) y acceso a la base de datos SQLite.
 - backend/go.mod, backend/go.sum: MÃ³dulos y dependencias de Go del backend (nota: la polÃ­tica del proyecto prefiere Go stdlib; cualquier dependencia debe ser autorizada).
 - backend/.env.example: Plantilla de variables de entorno para el backend (ej. `DB_PATH`, `PORT`, `GOOGLE_CLIENT_ID`).
-- backend/db/: Carpeta que contiene archivos de base de datos SQLite utilizados por la aplicación. Los archivos empresas.db y superadministrador.db deben residir aquí. Se eliminaron duplicados fuera de ackend/.\r\n- backend/server.log, backend/server.err: Archivos de logs generados al ejecutar el servidor localmente (artefactos de ejecuciÃ³n).
+- backend/db/: Carpeta que contiene archivos de base de datos SQLite utilizados por la aplicaciï¿½n. Los archivos empresas.db y superadministrador.db deben residir aquï¿½. Se eliminaron duplicados fuera de ackend/.\r\n- backend/server.log, backend/server.err: Archivos de logs generados al ejecutar el servidor localmente (artefactos de ejecuciÃ³n).
 - backend/server.exe, backend/server.exe~: Binarios generados por compilaciÃ³n local; el `~` indica una copia temporal. No incluir binarios en el control de versiones por defecto.
 
 - backend/handlers/: Carpeta para controladores HTTP y manejo de rutas (por ejemplo `handlers.go` o archivos por dominio). Contiene la lÃ³gica que responde a las rutas del servidor.
@@ -42,6 +42,8 @@ Notas:
 Fecha de creaciÃ³n: 2026-03-26
 
 
-- backend/db/: Carpeta que contiene archivos de base de datos SQLite utilizados por la aplicación. Los archivos empresas.db y superadministrador.db deben residir aquí. Se eliminaron duplicados fuera de backend/.
+- backend/db/: Carpeta que contiene archivos de base de datos SQLite utilizados por la aplicaciï¿½n. Los archivos empresas.db y superadministrador.db deben residir aquï¿½. Se eliminaron duplicados fuera de backend/.
 
-- UI/menu flotante: Menú flotante en esquina superior derecha disponible en las páginas principales; contiene la acción 'Cerrar sesión' y se estiliza en web/estilos.css.
+- UI/menu flotante: Menï¿½ flotante en esquina superior derecha disponible en las pï¿½ginas principales; contiene la acciï¿½n 'Cerrar sesiï¿½n' y se estiliza en web/estilos.css.
+
+- UI/login - recordar cuenta: En `web/login.html` se aÃ±adiÃ³ una casilla "Recordar cuenta" que guarda la preferencia en `localStorage`. Estilos en `web/estilos.css`.

@@ -42,8 +42,52 @@ Notas: El agente no harÃ¡ push ni PRs automÃ¡ticamente; las subidas las gestiona
 2026-03-26: ActualizaciÃ³n automÃ¡tica desde script: aÃ±adir/actualizar archivos
 PushStatus: NO_ORIGIN
 Archivos modificados:
-- backend/main.go
-- backend/server.err
+2026-03-26: AÃ±adida opciÃ³n 'Recordar cuenta' en la pÃ¡gina de login
+- AcciÃ³n: Se aÃ±adiÃ³ una casilla "Recordar cuenta" en `web/login.html` y estilos asociados en `web/estilos.css`.
+- Archivos modificados:
+    - web/login.html (marcado y script para guardar preferencia en localStorage)
+    - web/estilos.css (estilos para la casilla de recordar)
+- Motivo: permitir que el navegador recuerde la preferencia del usuario al iniciar sesiÃ³n.
+- Responsable: cambio realizado localmente por el agente a peticiÃ³n del usuario.
+
+2026-03-26: AÃ±adido handler `/auth/logout` en backend
+- AcciÃ³n: Se aÃ±adiÃ³ un endpoint `/auth/logout` en `backend/main.go` que invalida cookies de sesiÃ³n comunes (`session`, `sid`, `auth`) y redirige a `/login.html`.
+- Archivos modificados:
+    - backend/main.go
+    - documentos/historial_de_cambios
+- Motivo: permitir un cierre de sesiÃ³n que tambiÃ©n invalide sesiÃ³n del lado cliente y redirija al formulario de login.
+- Responsable: cambio realizado localmente por el agente a peticiÃ³n del usuario.
+
+2026-03-26: Logout borra preferencia 'rememberAccount'
+- AcciÃ³n: Se aÃ±adiÃ³ en el frontend la eliminaciÃ³n de la clave `rememberAccount` en `localStorage` cuando el usuario pulsa "Cerrar sesiÃ³n" desde el menÃº flotante.
+- Archivos modificados:
+    - web/index.html
+    - web/login.html
+    - web/seleccionar_empresa.html
+- Motivo: asegurar que al cerrar sesiÃ³n no quede activa la opciÃ³n de auto-login hasta que el usuario la vuelva a marcar.
+- Responsable: cambio realizado localmente por el agente a peticiÃ³n del usuario.
+
+2026-03-26: Auto-login en `login.html` cuando se activa "Recordar cuenta"
+- AcciÃ³n: Se aÃ±adiÃ³ comportamiento de auto-login en `web/login.html`: si la preferencia `rememberAccount` estÃ¡ guardada en `localStorage` el navegador redirige automÃ¡ticamente a `/auth/google/login`. Se agregÃ³ la opciÃ³n de evitar el auto-login aÃ±adiendo `?no_auto=1` a la URL.
+- Archivos modificados:
+    - web/login.html
+    - documentos/historial_de_cambios
+- Motivo: experiencia de usuario para reingresos rÃ¡pidos cuando el usuario marcÃ³ "Recordar cuenta".
+- Responsable: cambio realizado localmente por el agente a peticiÃ³n del usuario.
+
+2026-03-26: ReubicaciÃ³n de `tipos_de_empresas` a `superadministrador.db` y aÃ±adido `tipo_id` en `empresas`
+- AcciÃ³n: Se actualizÃ³ el esquema para que `tipos_de_empresas` se cree en `superadministrador.db`. La tabla `empresas` ahora incluye el campo `tipo_id` (referencia conceptual a `tipos_de_empresas.id`).
+- Archivos modificados:
+    - backend/main.go
+    - documentos/descripcion_de_las_bases_De_datos
+    - documentos/historial_de_cambios
+- Motivo: centralizar la gestiÃ³n de tipos de empresa en la base global `superadministrador.db` y permitir que `empresas` referencien tipos preconfigurados.
+- Responsable: cambio realizado localmente por el agente a peticiÃ³n del usuario.
+
+2026-03-26: CreaciÃ³n de `documentos/descripcion_de_las_bases_De_datos`
+- AcciÃ³n: Se aÃ±adiÃ³ el documento detallando las bases de datos (`empresas.db`, `superadministrador.db`), sus tablas y campos, y la regla obligatoria para el agente cuando trabaje con esquemas de BD.
+- Archivo creado: documentos/descripcion_de_las_bases_De_datos
+- Responsable: cambio realizado localmente por el agente a peticiÃ³n del usuario.
 - backend/server.exe
 - backend/server.exe~
 - backend/server.log
@@ -148,18 +192,18 @@ Notas de impacto:
 - `superadministrador.db`: contiene administradores globales, tipos de licencia y licencias.
 - `pos.db`: no se utiliza actualmente y fue eliminado por limpieza; si deseas restaurarlo, puedes volver a crear o restaurar desde una copia de seguridad.
 
-2026-03-26: Eliminación física de archivos .db fuera de la carpeta backend/db
-- Acción: Tras confirmación del usuario, se detuvieron procesos que podían bloquear los archivos y se eliminaron los archivos físicos ubicados en backend/:
+2026-03-26: Eliminaciï¿½n fï¿½sica de archivos .db fuera de la carpeta backend/db
+- Acciï¿½n: Tras confirmaciï¿½n del usuario, se detuvieron procesos que podï¿½an bloquear los archivos y se eliminaron los archivos fï¿½sicos ubicados en backend/:
     - backend/empresas.db (eliminado)
     - backend/superadministrador.db (eliminado)
-- Motivo: evitar ambigüedad y mantener la carpeta backend/db como única fuente para archivos SQLite del proyecto.
-- Responsable: Operación realizada localmente por el agente bajo autorización del usuario.
-2026-03-26: Eliminación física de archivos .db fuera de la carpeta backend/db
-- Acción: Tras confirmación del usuario, se detuvieron procesos que podían bloquear los archivos y se eliminaron los archivos físicos ubicados en backend/:
+- Motivo: evitar ambigï¿½edad y mantener la carpeta backend/db como ï¿½nica fuente para archivos SQLite del proyecto.
+- Responsable: Operaciï¿½n realizada localmente por el agente bajo autorizaciï¿½n del usuario.
+2026-03-26: Eliminaciï¿½n fï¿½sica de archivos .db fuera de la carpeta backend/db
+- Acciï¿½n: Tras confirmaciï¿½n del usuario, se detuvieron procesos que podï¿½an bloquear los archivos y se eliminaron los archivos fï¿½sicos ubicados en backend/:
     - backend/empresas.db (eliminado)
     - backend/superadministrador.db (eliminado)
-- Motivo: evitar ambigüedad y mantener la carpeta backend/db como única fuente para archivos SQLite del proyecto.
-- Responsable: Operación realizada localmente por el agente bajo autorización del usuario.
+- Motivo: evitar ambigï¿½edad y mantener la carpeta backend/db como ï¿½nica fuente para archivos SQLite del proyecto.
+- Responsable: Operaciï¿½n realizada localmente por el agente bajo autorizaciï¿½n del usuario.
 
 2026-03-26: ActualizaciÃ³n automÃ¡tica desde script: aÃ±adir/actualizar archivos
 PushStatus: OK
@@ -177,15 +221,15 @@ Archivos modificados:
 - scripts/logs/actualizar_repositorio-20260326-123428.log
 - scripts/logs/actualizar_repositorio-20260326-133955.log
 
-2026-03-26: Añadido menú flotante en frontend
-- Acción: Se añadió un menú flotante en la esquina superior derecha de las páginas web principales con una opción para "Cerrar sesión".
+2026-03-26: Aï¿½adido menï¿½ flotante en frontend
+- Acciï¿½n: Se aï¿½adiï¿½ un menï¿½ flotante en la esquina superior derecha de las pï¿½ginas web principales con una opciï¿½n para "Cerrar sesiï¿½n".
 - Archivos modificados:
-    - web/estilos.css (estilos del menú flotante)
-    - web/index.html (marca y script del menú)
-    - web/login.html (marca y script del menú)
-    - web/seleccionar_empresa.html (marca y script del menú)
-- Motivo: mejorar accesibilidad a la acción de cierre de sesión desde cualquier página.
-- Responsable: cambio realizado localmente por el agente a petición del usuario.
+    - web/estilos.css (estilos del menï¿½ flotante)
+    - web/index.html (marca y script del menï¿½)
+    - web/login.html (marca y script del menï¿½)
+    - web/seleccionar_empresa.html (marca y script del menï¿½)
+- Motivo: mejorar accesibilidad a la acciï¿½n de cierre de sesiï¿½n desde cualquier pï¿½gina.
+- Responsable: cambio realizado localmente por el agente a peticiï¿½n del usuario.
 
 2026-03-26: ActualizaciÃ³n automÃ¡tica desde script: aÃ±adir/actualizar archivos
 PushStatus: OK

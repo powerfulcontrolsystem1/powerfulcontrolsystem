@@ -27,6 +27,11 @@
           </svg>
           <span>Iniciar sesión con Google</span>
         </a>
+        <div class="remember-row">
+          <label class="remember-label">
+            <input id="rememberAccount" type="checkbox" /> Recordar cuenta
+          </label>
+        </div>
         <p class="footer">Si tienes problemas, contacta al administrador.</p>
       </div>
     </div>
@@ -40,6 +45,36 @@
       if (!toggle || !panel) return;
       toggle.addEventListener('click', function(e){ e.stopPropagation(); panel.classList.toggle('open'); });
       document.addEventListener('click', function(){ panel.classList.remove('open'); });
+    })();
+  </script>
+
+  <script>
+    (function(){
+      var cb = document.getElementById('rememberAccount');
+      try { if (localStorage.getItem('rememberAccount') === '1') cb.checked = true; } catch(e){}
+      // Auto-login if remember flag is set and no explicit opt-out in URL (?no_auto=1)
+      try {
+        var params = new URLSearchParams(window.location.search);
+        var noAuto = params.get('no_auto');
+        if (localStorage.getItem('rememberAccount') === '1' && noAuto !== '1') {
+          // small delay to allow any UI to render
+          setTimeout(function(){ window.location.href = '/auth/google/login'; }, 200);
+          return;
+        }
+      } catch(e){}
+      var googleBtn = document.querySelector('.google-btn');
+      if (googleBtn) {
+        googleBtn.addEventListener('click', function(){
+          try {
+            if (cb && cb.checked) { localStorage.setItem('rememberAccount','1'); } else { localStorage.removeItem('rememberAccount'); }
+          } catch(e){}
+        });
+      }
+      // Clear rememberAccount on logout click
+      var logoutLink = document.querySelector('.fm-item[href="/auth/logout"]');
+      if (logoutLink) {
+        logoutLink.addEventListener('click', function(){ try { localStorage.removeItem('rememberAccount'); } catch(e){} });
+      }
     })();
   </script>
 

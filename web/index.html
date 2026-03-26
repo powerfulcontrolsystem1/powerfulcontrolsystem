@@ -71,6 +71,11 @@
       if (!toggle || !panel) return;
       toggle.addEventListener('click', function(e){ e.stopPropagation(); panel.classList.toggle('open'); });
       document.addEventListener('click', function(){ panel.classList.remove('open'); });
+      // Clear rememberAccount on logout click
+      var logoutLink = document.querySelector('.fm-item[href="/auth/logout"]');
+      if (logoutLink) {
+        logoutLink.addEventListener('click', function(){ try { localStorage.removeItem('rememberAccount'); } catch(e){} });
+      }
     })();
   </script>
 

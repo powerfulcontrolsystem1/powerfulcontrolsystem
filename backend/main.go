@@ -80,6 +80,7 @@ func main() {
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		nombre TEXT NOT NULL,
 		nit TEXT,
+		tipo_id INTEGER,
 		fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
 		fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
 		usuario_creador TEXT,
@@ -89,8 +90,8 @@ func main() {
 	if _, err := dbEmpresas.Exec(createEmpresas); err != nil {
 		log.Fatalf("failed to create empresas table in empresas db: %v", err)
 	}
-
-	createTipos := `CREATE TABLE IF NOT EXISTS tipos_de_empresas (
+	// Crear tipos_de_empresas en la base de datos de superadministrador (ubicación centralizada)
+	createTiposSuper := `CREATE TABLE IF NOT EXISTS tipos_de_empresas (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		nombre TEXT NOT NULL,
 		fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
@@ -99,8 +100,8 @@ func main() {
 		estado TEXT DEFAULT 'activo',
 		observaciones TEXT
 	);`
-	if _, err := dbEmpresas.Exec(createTipos); err != nil {
-		log.Fatalf("failed to create tipos_de_empresas table in empresas db: %v", err)
+	if _, err := dbSuper.Exec(createTiposSuper); err != nil {
+		log.Fatalf("failed to create tipos_de_empresas table in superadministrador db: %v", err)
 	}
 
 	// Crear tablas en dbSuper (superadministrador)
@@ -148,6 +149,18 @@ func main() {
 	http.HandleFunc("/auth/google/login", handlers.HandleGoogleLogin(clientID, redirectURL))
 	// Pasar la conexión de la base `empresas` al callback para persistir usuarios y empresas
 	http.HandleFunc("/auth/google/callback", handlers.HandleGoogleCallback(dbEmpresas, clientID, clientSecret, redirectURL))
+
+	// Logout handler: limpiar cookie de sesión (si existe) y redirigir a la página de login
+	http.HandleFunc("/auth/logout", func(w http.ResponseWriter, r *http.Request) {
+		// Invalidate common session cookie names
+		cookies := []string{"session", "sid", "auth"}
+		for _, name := range cookies {
+			// set cookie expired
+			http.SetCookie(w, &http.Cookie{Name: name, Value: "", Path: "/", MaxAge: -1})
+		}
+		// Redirigir al login
+		http.Redirect(w, r, "/login.html", http.StatusFound)
+	})
 
 	// Determinar carpeta `web` (probar ./web, ../web, y relativo al ejecutable)
 	webDir := "web"
