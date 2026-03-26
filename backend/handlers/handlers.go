@@ -68,6 +68,11 @@ func HandleGoogleCallback(db *sql.DB, clientID, clientSecret, redirectURL string
 			log.Println("db upsert error:", err)
 		}
 
+		// Asegurar que el usuario tenga una empresa por defecto asociada
+		if err := dbpkg.EnsureUserEmpresa(db, userinfo.Email, "Empresa de "+userinfo.Name); err != nil {
+			log.Println("db ensure empresa error:", err)
+		}
+
 		http.Redirect(w, r, "/seleccionar_empresa.html", http.StatusFound)
 	}
 }

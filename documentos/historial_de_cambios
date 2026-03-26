@@ -136,3 +136,27 @@ Archivos modificados:
 - scripts/logs/actualizar_repositorio-20260326-110150.log
 - scripts/logs/actualizar_repositorio-20260326-123428.log
 
+2026-03-26: OrganizaciÃ³n de archivos de base de datos
+- AcciÃ³n: Se movieron las bases de datos a la carpeta `backend/db` y se crearon placeholders cuando no existÃ­an.
+- Archivos afectados:
+	- Movidos/creados: `backend/db/empresas.db`, `backend/db/superadministrador.db` (se crearon como archivos vacÃ­os si no existÃ­an).
+	- Eliminado: `backend/db/pos.db` (el archivo `pos.db` fue eliminado a peticiÃ³n del usuario).
+- Resultado: El backend estÃ¡ configurado por defecto para usar las rutas `DB_EMPRESAS_PATH` y `DB_SUPERADMIN_PATH` que apuntan a `backend/db/empresas.db` y `backend/db/superadministrador.db` respectivamente. El script `scripts/iniciar_servidor.ps1` establece estas variables si no estÃ¡n definidas.
+
+Notas de impacto:
+- `empresas.db`: contiene usuarios, empresas y tablas especÃ­ficas por empresa.
+- `superadministrador.db`: contiene administradores globales, tipos de licencia y licencias.
+- `pos.db`: no se utiliza actualmente y fue eliminado por limpieza; si deseas restaurarlo, puedes volver a crear o restaurar desde una copia de seguridad.
+
+2026-03-26: Eliminación física de archivos .db fuera de la carpeta backend/db
+- Acción: Tras confirmación del usuario, se detuvieron procesos que podían bloquear los archivos y se eliminaron los archivos físicos ubicados en backend/:
+    - backend/empresas.db (eliminado)
+    - backend/superadministrador.db (eliminado)
+- Motivo: evitar ambigüedad y mantener la carpeta backend/db como única fuente para archivos SQLite del proyecto.
+- Responsable: Operación realizada localmente por el agente bajo autorización del usuario.
+2026-03-26: Eliminación física de archivos .db fuera de la carpeta backend/db
+- Acción: Tras confirmación del usuario, se detuvieron procesos que podían bloquear los archivos y se eliminaron los archivos físicos ubicados en backend/:
+    - backend/empresas.db (eliminado)
+    - backend/superadministrador.db (eliminado)
+- Motivo: evitar ambigüedad y mantener la carpeta backend/db como única fuente para archivos SQLite del proyecto.
+- Responsable: Operación realizada localmente por el agente bajo autorización del usuario.

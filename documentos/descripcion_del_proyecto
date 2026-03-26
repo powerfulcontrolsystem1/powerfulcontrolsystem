@@ -42,14 +42,22 @@ En esta pagina se realiza el registro o login por medio de cuenta de Google (OAu
  - Cuenta principal / correo de contacto: powerfulcontrolsystem@gmail.com
 
  ## BASE DE DATOS
- - hay tres base de datos en archivos unicos mysqllite
-  1) superadministrador
+ - hay dos base de datos en archivos unicos mysqllite
+ - Todas las tablas deben tener: fehca y hora de registro, activo o desactivado, un id autonumerico 
+  1) superadministrador : en esta se almacenaran las configuraciones globales del sistema entre otros.
    ## tablas
    - administradores
    - tipos_de_empresa
    - tipos_de_licencia
    - licencias
    - configuracion
+   - sesiones
 
-  2) empresas
+  2) empresas (id_empresa en todas las tablas): registrara todos los datos de cada empresa.
+     ## tablas
+   - usuarios
+   - empresas
+   - configuracion
+   - productos
+   - 
    

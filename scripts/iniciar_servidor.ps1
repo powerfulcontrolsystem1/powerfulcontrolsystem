@@ -9,6 +9,38 @@ Clear-Host
 $backend = Join-Path $PSScriptRoot "..\backend"
 Push-Location $backend
 
+# Asegurar carpeta backend\db y mover .db existentes a esa carpeta
+Write-Host "Asegurando carpeta de bases de datos: $backend\db" -ForegroundColor DarkGray
+New-Item -ItemType Directory -Path (Join-Path $backend 'db') -Force | Out-Null
+
+$dbFolder = Join-Path $backend 'db'
+# Mover archivos .db que estén en backend a backend\db (si existen)
+$dbFiles = Get-ChildItem -Path $backend -Filter '*.db' -File -ErrorAction SilentlyContinue
+if ($dbFiles) {
+    foreach ($f in $dbFiles) {
+        try {
+            $dest = Join-Path $dbFolder $f.Name
+            if (-not (Test-Path $dest)) {
+                Write-Host ("Moviendo {0} -> {1}" -f $f.FullName, $dest)
+                Move-Item -Path $f.FullName -Destination $dest -ErrorAction Stop
+            } else {
+                Write-Host ("Ya existe {0}, omitiendo movimiento." -f $dest) -ForegroundColor Yellow
+            }
+        } catch {
+            Write-Host ("No se pudo mover $($f.Name): $_") -ForegroundColor Yellow
+        }
+    }
+} else {
+    Write-Host "No se encontraron archivos .db en $backend" -ForegroundColor DarkGray
+}
+
+# Establecer variables de entorno para rutas de DB si no están definidas
+if (-not $env:DB_EMPRESAS_PATH) { $env:DB_EMPRESAS_PATH = Join-Path $dbFolder 'empresas.db' }
+if (-not $env:DB_SUPERADMIN_PATH) { $env:DB_SUPERADMIN_PATH = Join-Path $dbFolder 'superadministrador.db' }
+if (-not $env:DB_POS_PATH) { $env:DB_POS_PATH = Join-Path $dbFolder 'pos.db' }
+
+Write-Host "Rutas DB: $env:DB_EMPRESAS_PATH, $env:DB_SUPERADMIN_PATH, $env:DB_POS_PATH" -ForegroundColor Cyan
+
 function Kill-Processes-On-Port {
     param([int]$port)
     Write-Host ("Comprobando puerto {0}..." -f $port)

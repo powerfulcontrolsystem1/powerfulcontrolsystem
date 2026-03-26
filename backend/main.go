@@ -14,11 +14,13 @@ import (
 )
 
 var (
-	clientID     = os.Getenv("GOOGLE_CLIENT_ID")
-	clientSecret = os.Getenv("GOOGLE_CLIENT_SECRET")
-	redirectURL  = os.Getenv("GOOGLE_REDIRECT_URL") // e.g. http://localhost:8080/auth/google/callback
-	dbPath       = os.Getenv("DB_PATH")
-	db           *sql.DB
+	clientID       = os.Getenv("GOOGLE_CLIENT_ID")
+	clientSecret   = os.Getenv("GOOGLE_CLIENT_SECRET")
+	redirectURL    = os.Getenv("GOOGLE_REDIRECT_URL") // e.g. http://localhost:8080/auth/google/callback
+	dbEmpresasPath = os.Getenv("DB_EMPRESAS_PATH")
+	dbSuperPath    = os.Getenv("DB_SUPERADMIN_PATH")
+	dbEmpresas     *sql.DB
+	dbSuper        *sql.DB
 )
 
 func main() {
@@ -34,8 +36,11 @@ func main() {
 			}
 		}
 	}
-	if dbPath == "" {
-		dbPath = "pos.db"
+	if dbEmpresasPath == "" {
+		dbEmpresasPath = "empresas.db"
+	}
+	if dbSuperPath == "" {
+		dbSuperPath = "superadministrador.db"
 	}
 	if redirectURL == "" {
 		redirectURL = "http://localhost:8080/auth/google/callback"
@@ -43,24 +48,106 @@ func main() {
 	}
 
 	var err error
-	db, err = sql.Open("sqlite", dbPath)
+	// Abrir base de datos para empresas
+	dbEmpresas, err = sql.Open("sqlite", dbEmpresasPath)
 	if err != nil {
-		log.Fatalf("failed to open sqlite db: %v", err)
+		log.Fatalf("failed to open empresas sqlite db: %v", err)
 	}
-	// Asegurar tabla users
-	createSQL := `CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        email TEXT UNIQUE,
-        name TEXT,
-        role TEXT DEFAULT 'administrador',
-        created_at TEXT DEFAULT (datetime('now','localtime'))
-    );`
-	if _, err := db.Exec(createSQL); err != nil {
-		log.Fatalf("failed to create users table: %v", err)
+	// Abrir base de datos para superadministrador
+	dbSuper, err = sql.Open("sqlite", dbSuperPath)
+	if err != nil {
+		log.Fatalf("failed to open superadministrador sqlite db: %v", err)
+	}
+
+	// Crear tablas en dbEmpresas
+	createUsers := `CREATE TABLE IF NOT EXISTS users (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		email TEXT UNIQUE,
+		name TEXT,
+		role TEXT DEFAULT 'administrador',
+		empresa_id INTEGER,
+		fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+		fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+		usuario_creador TEXT,
+		estado TEXT DEFAULT 'activo',
+		observaciones TEXT
+	);`
+	if _, err := dbEmpresas.Exec(createUsers); err != nil {
+		log.Fatalf("failed to create users table in empresas db: %v", err)
+	}
+
+	createEmpresas := `CREATE TABLE IF NOT EXISTS empresas (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		nombre TEXT NOT NULL,
+		nit TEXT,
+		fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+		fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+		usuario_creador TEXT,
+		estado TEXT DEFAULT 'activo',
+		observaciones TEXT
+	);`
+	if _, err := dbEmpresas.Exec(createEmpresas); err != nil {
+		log.Fatalf("failed to create empresas table in empresas db: %v", err)
+	}
+
+	createTipos := `CREATE TABLE IF NOT EXISTS tipos_de_empresas (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		nombre TEXT NOT NULL,
+		fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+		fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+		usuario_creador TEXT,
+		estado TEXT DEFAULT 'activo',
+		observaciones TEXT
+	);`
+	if _, err := dbEmpresas.Exec(createTipos); err != nil {
+		log.Fatalf("failed to create tipos_de_empresas table in empresas db: %v", err)
+	}
+
+	// Crear tablas en dbSuper (superadministrador)
+	createAdmins := `CREATE TABLE IF NOT EXISTS administradores (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		email TEXT UNIQUE,
+		name TEXT,
+		fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+		fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+		usuario_creador TEXT,
+		estado TEXT DEFAULT 'activo',
+		observaciones TEXT
+	);`
+	if _, err := dbSuper.Exec(createAdmins); err != nil {
+		log.Fatalf("failed to create administradores table in super db: %v", err)
+	}
+
+	createTiposLic := `CREATE TABLE IF NOT EXISTS tipos_de_licencia (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		nombre TEXT NOT NULL,
+		fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+		fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+		usuario_creador TEXT,
+		estado TEXT DEFAULT 'activo',
+		observaciones TEXT
+	);`
+	if _, err := dbSuper.Exec(createTiposLic); err != nil {
+		log.Fatalf("failed to create tipos_de_licencia table in super db: %v", err)
+	}
+
+	// licencias, configuracion, sesiones (super)
+	createLic := `CREATE TABLE IF NOT EXISTS licencias (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		empresa_id INTEGER,
+		tipo_id INTEGER,
+		fecha_inicio TEXT,
+		fecha_fin TEXT,
+		activo INTEGER DEFAULT 1,
+		fecha_creacion TEXT DEFAULT (datetime('now','localtime'))
+	);`
+	if _, err := dbSuper.Exec(createLic); err != nil {
+		log.Fatalf("failed to create licencias table in super db: %v", err)
 	}
 
 	http.HandleFunc("/auth/google/login", handlers.HandleGoogleLogin(clientID, redirectURL))
-	http.HandleFunc("/auth/google/callback", handlers.HandleGoogleCallback(db, clientID, clientSecret, redirectURL))
+	// Pasar la conexión de la base `empresas` al callback para persistir usuarios y empresas
+	http.HandleFunc("/auth/google/callback", handlers.HandleGoogleCallback(dbEmpresas, clientID, clientSecret, redirectURL))
 
 	// Determinar carpeta `web` (probar ./web, ../web, y relativo al ejecutable)
 	webDir := "web"
