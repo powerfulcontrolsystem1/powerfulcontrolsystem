@@ -39,3 +39,17 @@ En esta pagina se realiza el registro o login por medio de cuenta de Google (OAu
 ## cliente de OAuth
 1029204473903-6npuu63uehsrn2jn8fnif4fgpp6kcjsm.apps.googleusercontent.com
 - Secreto del cliente: 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
+ - Cuenta principal / correo de contacto: powerfulcontrolsystem@gmail.com
+
+ ## BASE DE DATOS
+ - hay tres base de datos en archivos unicos mysqllite
+  1) superadministrador
+   ## tablas
+   - administradores
+   - tipos_de_empresa
+   - tipos_de_licencia
+   - licencias
+   - configuracion
+
+  2) empresas
+   

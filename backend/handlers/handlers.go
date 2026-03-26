@@ -20,13 +20,18 @@ func HandleGoogleLogin(clientID, redirectURL string) http.HandlerFunc {
 		}
 		log.Printf("handleGoogleLogin: client_id set=%t, redirect_url=%q", clientID != "", redirectURL)
 		authURL := "https://accounts.google.com/o/oauth2/v2/auth?" + url.Values{
-			"client_id":     {clientID},
-			"redirect_uri":  {redirectURL},
-			"response_type": {"code"},
-			"scope":         {"openid email profile"},
-			"access_type":   {"offline"},
-			"state":         {state},
+			"client_id":              {clientID},
+			"redirect_uri":           {redirectURL},
+			"response_type":          {"code"},
+			"scope":                  {"openid email profile"},
+			"prompt":                 {"select_account consent"},
+			"include_granted_scopes": {"true"},
+			"access_type":            {"offline"},
+			"state":                  {state},
 		}.Encode()
+
+		// Loguear la URL de autorización (sin exponer secretos) para depuración
+		log.Printf("Auth URL: %s", authURL)
 		http.Redirect(w, r, authURL, http.StatusFound)
 	}
 }

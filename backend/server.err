@@ -1,7 +1,18 @@
-2026/03/26 10:54:14 index.html encontrado en ..\web\index.html
-2026/03/26 10:54:14 Servidor arrancado en :8080
-2026/03/26 10:54:20 -> GET /login.html from [::1]:49397
-2026/03/26 10:54:20 <- 304 GET /login.html
-2026/03/26 10:54:22 -> GET /auth/google/login from [::1]:49397
-2026/03/26 10:54:22 handleGoogleLogin: client_id set=true, redirect_url="http://localhost:8080/auth/google/callback"
-2026/03/26 10:54:22 <- 302 GET /auth/google/login
+2026/03/26 12:08:09 index.html encontrado en ..\web\index.html
+2026/03/26 12:08:10 Servidor arrancado en :8080
+2026/03/26 12:08:11 -> GET / from [::1]:52162
+2026/03/26 12:08:11 <- 304 GET /
+2026/03/26 12:08:12 -> GET /assets/estilos.css from [::1]:52162
+2026/03/26 12:08:12 <- 304 GET /assets/estilos.css
+2026/03/26 12:08:12 -> GET /favicon.ico from [::1]:52162
+2026/03/26 12:08:12 <- 404 GET /favicon.ico
+2026/03/26 12:09:03 -> GET /login.html from [::1]:52162
+2026/03/26 12:09:03 <- 304 GET /login.html
+2026/03/26 12:09:05 -> GET /auth/google/login from [::1]:52162
+2026/03/26 12:09:05 handleGoogleLogin: client_id set=true, redirect_url="http://localhost:8080/auth/google/callback"
+2026/03/26 12:09:05 Auth URL: https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&client_id=1029204473903-6npuu63uehsrn2jn8fnif4fgpp6kcjsm.apps.googleusercontent.com&include_granted_scopes=true&prompt=select_account+consent&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fauth%2Fgoogle%2Fcallback&response_type=code&scope=openid+email+profile&state=state-token
+2026/03/26 12:09:05 <- 302 GET /auth/google/login
+2026/03/26 12:09:34 -> GET /auth/google/callback from [::1]:52162
+2026/03/26 12:09:35 <- 302 GET /auth/google/callback
+2026/03/26 12:09:35 -> GET /seleccionar_empresa.html from [::1]:52162
+2026/03/26 12:09:36 <- 200 GET /seleccionar_empresa.html
