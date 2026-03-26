@@ -1,0 +1,13 @@
+﻿# Binarios y logs de backend
+backend/server.exe
+backend/*.log
+backend/*.err
+backend/*.exe~
+backend/pos.db
+*.sqlite
+*.db
+# VSCode
+.vscode/
+# Archivos compilados
+bin/
+obj/
