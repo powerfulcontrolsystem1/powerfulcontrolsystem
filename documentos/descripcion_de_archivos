@@ -47,3 +47,24 @@ Fecha de creación: 2026-03-26
 - UI/menu flotante: Men� flotante en esquina superior derecha disponible en las p�ginas principales; contiene la acci�n 'Cerrar sesi�n' y se estiliza en web/estilos.css.
 
 - UI/login - recordar cuenta: En `web/login.html` se añadió una casilla "Recordar cuenta" que guarda la preferencia en `localStorage`. Estilos en `web/estilos.css`.
+
+Adicional:
+- Tabla `administradores` (superadministrador.db): almacena todos los usuarios que se registran o inician sesión en el sistema a nivel global. Contiene el campo `role` (ej. 'administrador', 'super_administrador').
+ - Tabla `administradores` (superadministrador.db): almacena todos los usuarios que se registran o inician sesión en el sistema a nivel global. Contiene el campo `role` (ej. 'administrador', 'super_administrador'). Nota: si un deployment previo no tenía la columna, se agregó y rellenó con `administrador`.
+ - Tabla `administradores` (superadministrador.db): almacena todos los usuarios que se registran o inician sesión en el sistema a nivel global. Contiene el campo `role` (ej. 'administrador', 'super_administrador'). Nota: si un deployment previo no tenía la columna, se agregó y rellenó con `administrador`.
+ - Migración de usuarios: los usuarios ahora deben residir únicamente en `superadministrador.db` (tabla `administradores`). Se creó la herramienta `backend/tools/sync_users_to_super.go` para migrar registros desde `empresas.db` y vaciar la tabla `users` en `empresas.db`.
+ - Migración de usuarios: los usuarios globales se centralizan en `superadministrador.db` (tabla `administradores`). Se creó la herramienta `backend/tools/sync_users_to_super.go` para migrar registros desde `empresas.db`.
+	 - **Decisión operativa:** La tabla `users` en `backend/db/empresas.db` se mantiene en el repositorio y **no** se usará para la autenticación global ni para registrar sesiones. Quedará reservada para almacenar usuarios específicos de cada empresa que sean creados por el administrador de esa empresa.
+- Tabla `sesiones` (superadministrador.db): registra eventos de sesión (admin_email, token, ip, user_agent, fecha_inicio, fecha_fin, activo).
+ - Tabla `administradores` (superadministrador.db): almacena todos los usuarios que se registran o inician sesión en el sistema a nivel global. Contiene el campo `role` (ej. 'administrador', 'super_administrador').
+ - Tabla `sesiones` (superadministrador.db): registra eventos de sesión (admin_email, token, ip, user_agent, fecha_inicio, fecha_fin, activo).
+ - Endpoints de auditoría:
+	 - `/super/administradores`: devuelve JSON con la lista de administradores (desde `superadministrador.db`).
+	 - `/super/sesiones`: devuelve JSON con la lista de sesiones (desde `superadministrador.db`).
+
+ - Páginas adicionales:
+    - `web/super_administrador.html`: Panel de destino para usuarios con rol `super_administrador`.
+ - Generador de tokens: `backend/utils/utils.go` incluye `GenerateSecureToken(n int)` que produce tokens seguros usando `crypto/rand`.
+ - Middleware de autenticación: `backend/utils/utils.go` incluye `AuthMiddleware` que valida `session_token` contra `superadministrador.db` y obliga rol `super_administrador` para rutas `/super/`. Rutas públicas: `/`, `/index.html`, `/login.html`, `/auth/google/login`, `/auth/google/callback`, `/assets/`.
+ - Middleware de autenticación: `backend/utils/utils.go` incluye `AuthMiddleware` que valida `session_token` contra `superadministrador.db` y obliga rol `super_administrador` para rutas `/super/`. Rutas públicas: `/`, `/index.html`, `/login.html`, `/auth/google/login`, `/auth/google/callback`, `/assets/`.
+ - Cookies de sesión: `session_token` se establece con `HttpOnly`, `SameSite=Lax` y ahora `Secure=true` (forzado) para transmisión exclusiva por HTTPS en producción. El logout limpia `session_token` con los mismos atributos.

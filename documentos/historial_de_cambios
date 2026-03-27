@@ -270,3 +270,101 @@ Archivos modificados:
 - web/login.html
 - web/seleccionar_empresa.html
 
+2026-03-26: Centralización de usuarios y sesiones en `superadministrador.db`
+- Acción: Se añadió registro de todos los usuarios que inician sesión o se registran en la tabla `administradores` dentro de `superadministrador.db`. Además se creó la tabla `sesiones` en `superadministrador.db` para almacenar eventos de sesión (inicio, token, IP, user-agent).
+- Archivos modificados:
+    - backend/db/db.go (nuevas funciones `UpsertAdministrador` y `CreateSession`)
+    - backend/handlers/handlers.go (callback de Google ahora registra en `administradores` y crea sesión en `sesiones`)
+    - backend/main.go (esquema actualizado: `administradores.role` y nueva tabla `sesiones`)
+    - documentos/descripcion_de_archivos (descripción actualizada)
+    - documentos/historial_de_cambios (esta entrada)
+- Motivo: asegurar que la lista global de administradores y los registros de sesión estén centralizados en la base global `superadministrador.db` para gestión y auditoría.
+- Nota: Los usuarios siguen siendo creados también en `empresas.db` (tabla `users`) por compatibilidad con el modelo multiempresa; el rol primario y sesiones quedan centralizadas en `superadministrador.db`.
+
+    2026-03-26: Tokens seguros y endpoints de auditoría
+    - Acción: Se añadió generación de token seguro para sesiones usando `crypto/rand` (token hex de 32 bytes) y se implementaron endpoints JSON para listar administradores y sesiones.
+    - Archivos modificados:
+        - backend/utils/utils.go (función `GenerateSecureToken`)
+        - backend/db/db.go (funciones `GetAdministradores` y `GetSesiones` y estructuras `Admin`, `Session`)
+        - backend/handlers/handlers.go (uso de token seguro en callback y nuevos handlers `ListAdministradoresHandler`, `ListSesionesHandler`)
+        - backend/main.go (rutas `/super/administradores` y `/super/sesiones` registradas)
+    - Motivo: mejorar seguridad de tokens de sesión y ofrecer endpoints simples para auditoría y gestión desde la BD `superadministrador.db`.
+
+    2026-03-26: Protección de rutas y middleware de autenticación
+    - Acción: Se añadió middleware de autenticación que protege las rutas del backend, validando `session_token` contra la tabla `sesiones` de `superadministrador.db`. Las rutas públicas permitidas son: `/`, `/index.html`, `/login.html`, `/auth/google/login`, `/auth/google/callback` y `/assets/`.
+    - Archivos modificados:
+        - backend/utils/utils.go (nuevo `AuthMiddleware`)
+        - backend/db/db.go (funciones `GetSessionByToken`, `GetAdminByEmail`)
+        - backend/handlers/handlers.go (establecer cookie de sesión tras login)
+        - backend/main.go (envuelve el servidor con el middleware de autenticación)
+    - Efecto: todas las rutas protegidas requieren sesión válida; las rutas bajo `/super/` requieren además rol `super_administrador`.
+
+    2026-03-26: Cookies seguras en sesión
+    - Acción: Se añadieron atributos `Secure` y `SameSite=Lax` a la cookie `session_token` establecida tras login. El `Secure` se habilita cuando la conexión es TLS (`r.TLS != nil`). También se actualizó el handler `/auth/logout` para limpiar correctamente `session_token` con los mismos atributos.
+    - Archivos modificados:
+        - backend/handlers/handlers.go (atributos `Secure` y `SameSite` en cookie de sesión)
+        - backend/main.go (logout limpia `session_token`)
+    - Motivo: mejorar seguridad de la cookie de sesión en producción y respetar buenas prácticas de gestión de cookies.
+
+    2026-03-26: Forzar `Secure=true` en cookie de sesión
+    - Acción: Se forzó el atributo `Secure=true` en la cookie `session_token` para sesiones (establecida tras login) y en su limpieza durante `/auth/logout`.
+    - Archivos modificados:
+        - backend/handlers/handlers.go (cookie `session_token`: `Secure=true`)
+        - backend/main.go (logout: limpieza de `session_token` con `Secure=true`)
+    - Motivo: garantizar que la cookie solo se transmita por canales seguros (HTTPS) en entornos de producción.
+
+    2026-03-26: Añadida columna `role` en `administradores` (BD existente)
+    - Acción: Se añadió la columna `role` a la tabla `administradores` en `superadministrador.db` y se rellenaron los registros existentes con el valor por defecto `administrador` cuando estaban vacíos.
+    - Herramienta: `backend/tools/add_role_super.go` — script usado para detectar la columna, crearla si faltaba y actualizar filas.
+    - Resultado: columna creada y filas actualizadas. (En este entorno local no había registros previos en `administradores`, por eso el conteo resultó en 0.)
+
+    2026-03-26: Sincronización de usuarios desde `empresas.db` hacia `superadministrador.db`
+    - Acción: Los registros de la tabla `users` en `empresas.db` fueron migrados a `administradores` en `superadministrador.db` y luego eliminados de `empresas.db` (objetivo: mantener usuarios únicamente en `superadministrador.db`).
+    - Herramienta: `backend/tools/sync_users_to_super.go` — copia los campos `email`, `name`, `role` (si existe) a `administradores`, establece `role='administrador'` por defecto, realiza backups previos y vacía la tabla `users` en `empresas.db`.
+    - Resultado local: 2 usuarios migrados (ivanmundo.com@gmail.com, powerfulcontrolsystem@gmail.com); `users` en `empresas.db` ahora está vacío. Backups creados en `backend/db/`.
+
+    2026-03-26: Decisión: conservar la tabla `users` en `empresas.db` pero no usarla para autenticación global
+    - Acción: A petición del usuario, la tabla `users` en `backend/db/empresas.db` se dejó en el repositorio y vacía (o con sus datos históricos), pero **no** se usará para la autenticación/global login ni para registrar sesiones. La fuente única de verdad para administradores y sesiones es `superadministrador.db` (`administradores`, `sesiones`).
+    - Motivo: permitir que los administradores de empresa sigan creando usuarios específicos para su propia empresa sin afectar la autenticación global centralizada.
+    - Archivos afectados:
+        - documentos/descripcion_de_archivos (nota añadida sobre el uso de `users`)
+        - backend/tools/sync_users_to_super.go (herramienta usada para la migración y que puede volver a ejecutarse si se requiere)
+        - backend/db/empresas.db (tabla `users` preservada)
+
+    2026-03-26: Cambio de rol de administrador
+    - Acción: Se actualizó el rol del administrador `powerfulcontrolsystem@gmail.com` a `super_administrador` en `superadministrador.db`.
+    - Archivos/elementos afectados:
+        - backend/db/superadministrador.db (tabla `administradores` modificada)
+        - backend/tools/set_admin_role.go (herramienta añadida para cambiar roles de administradores)
+    - Motivo: petición directa del usuario para otorgar permisos de superadministrador.
+
+2026-03-26: Redirección post-login según rol
+- Acción: Se actualizó el callback de OAuth para redirigir a `web/super_administrador.html` cuando el usuario tiene rol `super_administrador`, y a `web/seleccionar_empresa.html` cuando tiene rol `administrador`.
+- Archivos modificados:
+    - backend/handlers/handlers.go (redirección basada en rol)
+    - web/super_administrador.html (nueva página creada)
+    - documentos/descripcion_de_archivos (documentación añadida)
+- Motivo: separar la experiencia de superadministrador de la de administradores regulares.
+
+2026-03-26: Corrección — preservar `role` al upsert durante OAuth callback
+- Acción: Se corrigió el callback de OAuth para no sobrescribir el campo `role` de un `administrador` existente (evitando que un `super_administrador` sea degradado a `administrador` al iniciar sesión). Ahora se conserva el `role` existente si ya está definido.
+- Archivos modificados:
+    - backend/handlers/handlers.go (lógica de Upsert modificada para preservar role existente)
+- Motivo: corregir error que impedía que usuarios con rol `super_administrador` mantuvieran su redirección apropiada.
+
+2026-03-27: Ajuste de cookie Secure para pruebas locales
+- Acción: Se modificó la creación de la cookie de sesión para establecer `Secure` solo cuando la petición llega por TLS (`r.TLS != nil`). Esto permite pruebas en HTTP local sin que el navegador omita la cookie `session_token`.
+- Archivos modificados:
+    - backend/handlers/handlers.go (cookie `Secure` condicional)
+- Motivo: resolver problemas de autenticación en entornos de desarrollo donde no hay HTTPS.
+
+2026-03-27: Cambio de rol solicitado por el usuario
+- Acción: Se actualizó el rol del administrador `powerfulcontrolsystem@gmail.com` a `super_administrador` en `superadministrador.db` conforme a la petición del usuario.
+- Archivos/elementos afectados:
+    - backend/db/superadministrador.db (tabla `administradores` modificada)
+    - backend/tools/set_admin_role.go (herramienta usada para aplicar el cambio)
+- Motivo: proporcionar acceso de superadministrador al usuario indicado.
+
+
+
+

@@ -109,6 +109,7 @@ func main() {
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		email TEXT UNIQUE,
 		name TEXT,
+		role TEXT DEFAULT 'administrador',
 		fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
 		fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
 		usuario_creador TEXT,
@@ -146,9 +147,30 @@ func main() {
 		log.Fatalf("failed to create licencias table in super db: %v", err)
 	}
 
+	// Crear tabla de sesiones en la base superadministrador
+	createSesiones := `CREATE TABLE IF NOT EXISTS sesiones (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		admin_email TEXT,
+		token TEXT,
+		ip TEXT,
+		user_agent TEXT,
+		fecha_inicio TEXT DEFAULT (datetime('now','localtime')),
+		fecha_fin TEXT,
+		activo INTEGER DEFAULT 1,
+		fecha_creacion TEXT DEFAULT (datetime('now','localtime'))
+	);`
+	if _, err := dbSuper.Exec(createSesiones); err != nil {
+		log.Fatalf("failed to create sesiones table in super db: %v", err)
+	}
+
 	http.HandleFunc("/auth/google/login", handlers.HandleGoogleLogin(clientID, redirectURL))
 	// Pasar la conexión de la base `empresas` al callback para persistir usuarios y empresas
-	http.HandleFunc("/auth/google/callback", handlers.HandleGoogleCallback(dbEmpresas, clientID, clientSecret, redirectURL))
+	// Pasar tanto la conexión de empresas como la de superadministrador al callback
+	http.HandleFunc("/auth/google/callback", handlers.HandleGoogleCallback(dbEmpresas, dbSuper, clientID, clientSecret, redirectURL))
+
+	// Endpoints para administración y auditoría (listar administradores y sesiones)
+	http.HandleFunc("/super/administradores", handlers.ListAdministradoresHandler(dbSuper))
+	http.HandleFunc("/super/sesiones", handlers.ListSesionesHandler(dbSuper))
 
 	// Logout handler: limpiar cookie de sesión (si existe) y redirigir a la página de login
 	http.HandleFunc("/auth/logout", func(w http.ResponseWriter, r *http.Request) {
@@ -158,6 +180,8 @@ func main() {
 			// set cookie expired
 			http.SetCookie(w, &http.Cookie{Name: name, Value: "", Path: "/", MaxAge: -1})
 		}
+		// also clear our session_token cookie with same attributes
+		http.SetCookie(w, &http.Cookie{Name: "session_token", Value: "", Path: "/", MaxAge: -1, HttpOnly: true, Secure: true, SameSite: http.SameSiteLaxMode})
 		// Redirigir al login
 		http.Redirect(w, r, "/login.html", http.StatusFound)
 	})
@@ -191,8 +215,8 @@ func main() {
 	}
 	http.Handle("/", http.FileServer(http.Dir(webDir)))
 
-	// Wrap DefaultServeMux with a logging middleware
-	handler := utils.LoggingMiddleware(http.DefaultServeMux)
+	// Wrap DefaultServeMux with authentication and logging middleware
+	handler := utils.LoggingMiddleware(utils.AuthMiddleware(dbSuper, http.DefaultServeMux))
 
 	// Respetar la variable de entorno PORT si está definida; por defecto usar 8080
 	port := os.Getenv("PORT")

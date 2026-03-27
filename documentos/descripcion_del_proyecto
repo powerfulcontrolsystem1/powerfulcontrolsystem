@@ -12,7 +12,7 @@ Este proyecto es un sistema de punto de venta (POS) multiempresa, desarrollado e
 2) 
 
 ## PAGINAS
-1) index.html 
+1) login.html 
 En esta pagina se realiza el registro o login por medio de cuenta de Google (OAuth2)
 
 - al iniciar sesion si el usiario es de rol "administrador" se redirige a la pagina "seleccionar_empresa.html", si el usuario es de rol "super_administrador" se redirige a la pagina "super_administrador.html"
