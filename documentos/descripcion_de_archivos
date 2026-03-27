@@ -69,8 +69,21 @@ Adicional:
 			- `web/super/tipos_empresas.html` — gestión de tipos de empresas (placeholder).
 			- `web/super/tipos_licencias.html` — gestión de tipos de licencias (eliminada por decisión del proyecto; reemplazada por `licencias`).
 			- `web/super/licencias.html` — gestión de licencias (CRUD): formulario con campos `tipo de empresa` (select), `nombre`, `descripcion`, `valor`, `duracion_dias` y listado/acciones (crear/editar/eliminar).
+
+	 - UI/Comportamiento adicional (2026-03-27):
+			- En `web/super/licencias.html` y `web/super/tipos_empresas.html` se añadieron botones "Activar/Desactivar" por fila. Estos llaman a la API backend usando `PUT ?action=activar&activo=0|1`.
+			- El frontend oculta los formularios hasta pulsar "Agregar" y al editar carga los valores en el formulario.
+
+	 - Backend soporte de activación (2026-03-27):
+			- `backend/handlers/handlers.go` ahora soporta `PUT?action=activar` para `/super/api/licencias` y `/super/api/tipos_empresas` y delega en los helpers DB:
+				- `dbpkg.SetLicenciaActivo(db, id, activo)`
+				- `dbpkg.SetTipoEmpresaActivo(db, id, estado)`
+			- Estos helpers están implementados en `backend/db/db.go`.
+
+		 - Referencia: ver la sección `index.html` en `documentos/descripcion_del_proyecto` para la descripción detallada de las tarjetas del portal (Punto de venta, Sistema para Motel, Restaurante, Control por sensor) y las rutas de los logos en `web/img/`.
 			- `web/super/configuracion.html` — configuraciones globales (placeholder).
 			- `web/super/administradores.html` — lista de administradores que consulta el endpoint `/super/administradores`.
+			- API `/super/api/administradores` — endpoint CRUD para administradores (GET, POST, PUT, DELETE). Soporta activar/desactivar mediante `PUT ?action=activar&activo=0|1` o `?action=activar&estado=activo`.
  - Generador de tokens: `backend/utils/utils.go` incluye `GenerateSecureToken(n int)` que produce tokens seguros usando `crypto/rand`.
  - Middleware de autenticación: `backend/utils/utils.go` incluye `AuthMiddleware` que valida `session_token` contra `superadministrador.db` y obliga rol `super_administrador` para rutas `/super/`. Rutas públicas: `/`, `/index.html`, `/login.html`, `/auth/google/login`, `/auth/google/callback`, `/assets/`.
  - Middleware de autenticación: `backend/utils/utils.go` incluye `AuthMiddleware` que valida `session_token` contra `superadministrador.db` y obliga rol `super_administrador` para rutas `/super/`. Rutas públicas: `/`, `/index.html`, `/login.html`, `/auth/google/login`, `/auth/google/callback`, `/assets/`.

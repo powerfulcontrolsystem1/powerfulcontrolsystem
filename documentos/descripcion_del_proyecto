@@ -29,6 +29,48 @@ En esta pagina se realiza el registro o login por medio de cuenta de Google (OAu
 
 - Los vinculos del frame izquiedo abriran en el frame derecho
 
+3) index.html
+Esta página actúa como el portal principal de la aplicación y ofrece accesos rápidos a los módulos y sub-sistemas adaptables por tipo de negocio. Cada opción se presenta como una tarjeta con título, descripción, logo y acción.
+
+- Estructura general:
+  - Encabezado con la marca `POS Multiempresa` y un botón para `Iniciar sesión` que apunta a `/auth/google/login`.
+  - Área central con una grid de tarjetas (`portal-grid`), 3 columnas en pantallas grandes y responsive en dispositivos pequeños.
+  - Menú flotante en la esquina superior derecha con la opción `Cerrar sesión`.
+
+- Tarjetas (cada tarjeta incluye `titulo`, `descripcion`, `logo` y un botón de acción):
+  1) Título: `Punto de venta`
+    - Descripción: "Sistema de facturación electrónica para pymes." 
+    - Logo: `web/img/logo_punto_venta.svg` (mostrado en la parte superior de la tarjeta).
+    - Acción: botón `Entrar` (clase `.btn secondary`).
+
+  2) Título: `Sistema para Motel`
+    - Descripción: "Sistema de facturación electrónica tarifada por tiempo de servicio." 
+    - Logo: `web/img/logo_motel.svg`.
+    - Acción: botón `Abrir` (clase `.btn secondary`).
+
+  3) Título: `Restaurante`
+    - Descripción: "Sistema de facturación electrónica adaptado a restaurante, manejo por mesas." 
+    - Logo: `web/img/logo_restaurante.svg`.
+    - Acción: botón `Ver` (clase `.btn secondary`).
+
+  4) Título: `Control por sensor`
+    - Descripción: "Sistema de control para moteles, sensores en las puertas." 
+    - Logo: `web/img/logo_alarma.svg`.
+    - Acción: botón `Generar` (clase `.btn secondary`).
+
+  5) Título: `Configuración` (tarjeta adicional conservada)
+    - Descripción: "Administración de empresas, roles y permisos del sistema." 
+    - Logo: (se usa iconografía genérica en `web/estilos.css` si aplica).
+    - Acción: botón `Configurar` (clase `.btn secondary`).
+
+- Notas de implementación y estilo:
+  - Los logos se almacenan en `web/img/` y se referencian en el HTML mediante rutas relativas `/img/<archivo>.svg`.
+  - Las tarjetas utilizan la clase `.portal-card` y se les aplicó un ligero aclarado del color de fondo para mejorar contraste y legibilidad (`web/estilos.css`).
+  - Los botones de acción son de clase `.btn secondary` para mantener coherencia visual con el resto de la interfaz.
+  - La página es responsiva y las tarjetas colapsan a 2 o 1 columna según el ancho de pantalla.
+
+Agregar esta descripción en el documento garantiza que la referencia al portal principal quede documentada y que los nombres, descripciones y rutas de los logos queden registrados para futuras modificaciones o para el equipo de diseño.
+
 ## Script
 1) iniciar_servidor
 - Debe matar procesos antiguos luego debe iniciar el servidor,este scripts debe instalar dependiencias si se necesitan.

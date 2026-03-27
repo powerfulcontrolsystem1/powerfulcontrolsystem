@@ -76,6 +76,24 @@ func UpsertAdministrador(dbConn *sql.DB, email, name, role string) error {
 	return tx.Commit()
 }
 
+// UpdateAdministrador actualiza el nombre y rol de un administrador por id
+func UpdateAdministrador(dbConn *sql.DB, id int64, name, role string) error {
+	_, err := dbConn.Exec("UPDATE administradores SET name = ?, role = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ?", name, role, id)
+	return err
+}
+
+// DeleteAdministrador elimina un administrador por id
+func DeleteAdministrador(dbConn *sql.DB, id int64) error {
+	_, err := dbConn.Exec("DELETE FROM administradores WHERE id = ?", id)
+	return err
+}
+
+// SetAdministradorEstado activa/desactiva un administrador (estado: 'activo'/'inactivo')
+func SetAdministradorEstado(dbConn *sql.DB, id int64, estado string) error {
+	_, err := dbConn.Exec("UPDATE administradores SET estado = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ?", estado, id)
+	return err
+}
+
 // CreateSession registra una sesión en la tabla sesiones de superadministrador
 func CreateSession(dbConn *sql.DB, adminEmail, ip, userAgent, token string) error {
 	_, err := dbConn.Exec("INSERT INTO sesiones (admin_email, token, ip, user_agent, fecha_inicio, activo, fecha_creacion) VALUES (?, ?, ?, ?, datetime('now','localtime'), 1, datetime('now','localtime'))", adminEmail, token, ip, userAgent)
@@ -187,6 +205,12 @@ func UpdateLicencia(dbConn *sql.DB, id, tipoID int64, nombre, descripcion string
 // DeleteLicencia elimina una licencia por id
 func DeleteLicencia(dbConn *sql.DB, id int64) error {
 	_, err := dbConn.Exec("DELETE FROM licencias WHERE id = ?", id)
+	return err
+}
+
+// SetLicenciaActivo activa/desactiva una licencia (activo: 1 o 0)
+func SetLicenciaActivo(dbConn *sql.DB, id int64, activo int) error {
+	_, err := dbConn.Exec("UPDATE licencias SET activo = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ?", activo, id)
 	return err
 }
 
@@ -319,5 +343,11 @@ func UpdateTipoEmpresa(dbConn *sql.DB, id int64, nombre, observaciones string) e
 // DeleteTipoEmpresa elimina un tipo de empresa por id
 func DeleteTipoEmpresa(dbConn *sql.DB, id int64) error {
 	_, err := dbConn.Exec("DELETE FROM tipos_de_empresas WHERE id = ?", id)
+	return err
+}
+
+// SetTipoEmpresaActivo activa/desactiva un tipo de empresa (activo: 'activo'/'inactivo' o 1/0)
+func SetTipoEmpresaActivo(dbConn *sql.DB, id int64, estado string) error {
+	_, err := dbConn.Exec("UPDATE tipos_de_empresas SET estado = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ?", estado, id)
 	return err
 }

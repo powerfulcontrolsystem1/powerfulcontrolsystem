@@ -102,11 +102,22 @@ ul{padding-left:18px}
 .portal-intro h1{margin:0 0 6px 0;font-size:1.8rem}
 .portal-intro .muted{color:var(--muted)}
 
+/* Centro del CTA de login en la página principal */
+.portal-intro .intro-cta{margin-top:18px;text-align:center}
+.portal-intro .intro-cta .btn{min-width:220px;padding:12px 18px}
+
+/* Dark mode button style for header login */
+.btn.dark{background:var(--card);color:var(--text);border:1px solid rgba(255,255,255,0.06);padding:10px 14px;border-radius:8px;font-weight:700}
+.btn.dark:hover{background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(0,0,0,0.04));}
+
 .portal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;max-width:1100px;margin:0 auto}
-.portal-card{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.04));border:1px solid rgba(255,255,255,0.03);padding:20px;border-radius:10px;box-shadow:0 8px 24px rgba(2,6,23,0.45);display:flex;flex-direction:column;justify-content:space-between}
+.portal-card{background:linear-gradient(180deg,rgba(255,255,255,0.04),rgba(0,0,0,0.02));border:1px solid rgba(255,255,255,0.06);padding:20px;border-radius:10px;box-shadow:0 8px 24px rgba(2,6,23,0.38);display:flex;flex-direction:column;justify-content:space-between}
 .portal-card h3{margin:0 0 8px 0}
 .portal-card p{color:var(--muted);flex:1;margin-bottom:12px}
 .portal-card .btn.secondary{align-self:flex-start}
+
+/* Logo dentro de tarjetas */
+.portal-card .card-logo{width:64px;height:auto;margin-bottom:10px;opacity:0.95}
 
 @media (max-width:1000px){.portal-grid{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:640px){.portal-grid{grid-template-columns:1fr}.portal-main{padding:18px}}

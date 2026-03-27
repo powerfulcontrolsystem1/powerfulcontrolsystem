@@ -47,7 +47,9 @@
       const tbody = document.createElement('tbody');
       data.forEach(i=>{
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${i.id}</td><td>${i.nombre}</td><td>${i.observaciones||''}</td><td class="actions"><button data-id="${i.id}" class="edit btn secondary">Editar</button> <button data-id="${i.id}" class="del btn danger">Eliminar</button></td>`;
+        const activo = i.estado == 'activo' || i.activo==1 ? 1 : 0;
+        const toggleLabel = (activo==1) ? 'Desactivar' : 'Activar';
+        tr.innerHTML = `<td>${i.id}</td><td>${i.nombre}</td><td>${i.observaciones||''}</td><td class="actions"><button data-id="${i.id}" class="edit btn secondary">Editar</button> <button data-id="${i.id}" class="del btn danger">Eliminar</button> <button data-id="${i.id}" data-activo="${activo}" class="toggle btn">${toggleLabel}</button></td>`;
         tbody.appendChild(tr);
       });
       table.appendChild(tbody);
@@ -69,6 +71,13 @@
         if(!confirm('Eliminar?')) return;
         const id = b.getAttribute('data-id');
         await fetch('/super/api/tipos_empresas?id='+id, { method: 'DELETE' });
+        load();
+      });
+      document.querySelectorAll('.toggle').forEach(b=>b.onclick = async ()=>{
+        const id = b.getAttribute('data-id');
+        const activo = b.getAttribute('data-activo') === '1' ? '0' : '1';
+        if(!confirm((activo==='1' ? 'Activar' : 'Desactivar')+'?')) return;
+        await fetch('/super/api/tipos_empresas?id='+id+'&action=activar&activo='+activo, { method: 'PUT' });
         load();
       });
     }

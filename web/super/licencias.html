@@ -69,7 +69,9 @@
       const tbody = document.createElement('tbody');
       data.forEach(i=>{
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${i.id}</td><td>${i.tipo_nombre||''}</td><td>${i.nombre}</td><td>${i.valor||''}</td><td>${i.duracion_dias||''}</td><td class="actions"><button data-id="${i.id}" class="edit btn secondary">Editar</button> <button data-id="${i.id}" class="del btn danger">Eliminar</button></td>`;
+        const activo = i.activo || 0;
+        const toggleLabel = (activo==1) ? 'Desactivar' : 'Activar';
+        tr.innerHTML = `<td>${i.id}</td><td>${i.tipo_nombre||''}</td><td>${i.nombre}</td><td>${i.valor||''}</td><td>${i.duracion_dias||''}</td><td class="actions"><button data-id="${i.id}" class="edit btn secondary">Editar</button> <button data-id="${i.id}" class="del btn danger">Eliminar</button> <button data-id="${i.id}" data-activo="${activo}" class="toggle btn">${toggleLabel}</button></td>`;
         tbody.appendChild(tr);
       });
       table.appendChild(tbody);
@@ -96,6 +98,13 @@
         if(!confirm('Eliminar licencia?')) return;
         const id = b.getAttribute('data-id');
         await fetch('/super/api/licencias?id='+id, { method: 'DELETE' });
+        load();
+      });
+      document.querySelectorAll('.toggle').forEach(b=>b.onclick = async ()=>{
+        const id = b.getAttribute('data-id');
+        const activo = b.getAttribute('data-activo') === '1' ? '0' : '1';
+        if(!confirm((activo==='1' ? 'Activar' : 'Desactivar')+' licencia?')) return;
+        await fetch('/super/api/licencias?id='+id+'&action=activar&activo='+activo, { method: 'PUT' });
         load();
       });
     }
@@ -140,18 +149,4 @@
   </script>
 </body>
 </html>
-<!doctype html>
-<html lang="es">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Licencias</title>
-  <link rel="stylesheet" href="/estilos.css">
-</head>
-<body>
-  <div class="container">
-    <h1>Licencias</h1>
-    <p class="form-help">Página de gestión de licencias (placeholder).</p>
-  </div>
-</body>
-</html>
+ 

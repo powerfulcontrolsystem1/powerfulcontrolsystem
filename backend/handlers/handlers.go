@@ -145,6 +145,103 @@ func ListSesionesHandler(dbSuper *sql.DB) http.HandlerFunc {
 	}
 }
 
+// AdministradoresHandler maneja CRUD de administradores y activar/desactivar
+func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			admins, err := dbpkg.GetAdministradores(dbSuper)
+			if err != nil {
+				http.Error(w, "failed to query administradores", http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(admins)
+			return
+		case http.MethodPost:
+			var payload struct{ Email, Name, Role string }
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "invalid payload", http.StatusBadRequest)
+				return
+			}
+			if payload.Email == "" {
+				http.Error(w, "email required", http.StatusBadRequest)
+				return
+			}
+			if payload.Role == "" {
+				payload.Role = "administrador"
+			}
+			if err := dbpkg.UpsertAdministrador(dbSuper, payload.Email, payload.Name, payload.Role); err != nil {
+				http.Error(w, "failed to upsert administrador: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+			return
+		case http.MethodPut:
+			q := r.URL.Query()
+			idStr := q.Get("id")
+			if idStr == "" {
+				http.Error(w, "id required", http.StatusBadRequest)
+				return
+			}
+			id, err := strconv.ParseInt(idStr, 10, 64)
+			if err != nil {
+				http.Error(w, "invalid id", http.StatusBadRequest)
+				return
+			}
+			if q.Get("action") == "activar" {
+				estado := q.Get("estado")
+				if estado == "" {
+					activoStr := q.Get("activo")
+					if activoStr == "1" {
+						estado = "activo"
+					} else {
+						estado = "inactivo"
+					}
+				}
+				if err := dbpkg.SetAdministradorEstado(dbSuper, id, estado); err != nil {
+					http.Error(w, "failed to set estado: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
+			var payload struct{ Name, Role string }
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "invalid payload", http.StatusBadRequest)
+				return
+			}
+			if err := dbpkg.UpdateAdministrador(dbSuper, id, payload.Name, payload.Role); err != nil {
+				http.Error(w, "failed to update administrador: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+			return
+		case http.MethodDelete:
+			q := r.URL.Query()
+			idStr := q.Get("id")
+			if idStr == "" {
+				http.Error(w, "id required", http.StatusBadRequest)
+				return
+			}
+			id, err := strconv.ParseInt(idStr, 10, 64)
+			if err != nil {
+				http.Error(w, "invalid id", http.StatusBadRequest)
+				return
+			}
+			if err := dbpkg.DeleteAdministrador(dbSuper, id); err != nil {
+				http.Error(w, "failed to delete administrador: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+			return
+		default:
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+	}
+}
+
 // TiposEmpresasHandler maneja GET/POST/PUT/DELETE para tipos_de_empresas
 func TiposEmpresasHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -183,14 +280,37 @@ func TiposEmpresasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "id required", http.StatusBadRequest)
 				return
 			}
-			var payload struct{ Nombre, Observaciones string }
-			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-				http.Error(w, "invalid payload", http.StatusBadRequest)
-				return
-			}
 			id, err := strconv.ParseInt(idStr, 10, 64)
 			if err != nil {
 				http.Error(w, "invalid id", http.StatusBadRequest)
+				return
+			}
+			// permitir activar/desactivar vía query param
+			if q.Get("action") == "activar" {
+				estado := q.Get("estado")
+				if estado == "" {
+					// soportar parámetro activo=1/0
+					activoStr := q.Get("activo")
+					if activoStr == "" {
+						http.Error(w, "estado or activo required", http.StatusBadRequest)
+						return
+					}
+					if activoStr == "1" {
+						estado = "activo"
+					} else {
+						estado = "inactivo"
+					}
+				}
+				if err := dbpkg.SetTipoEmpresaActivo(dbSuper, id, estado); err != nil {
+					http.Error(w, "failed to set estado: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
+			var payload struct{ Nombre, Observaciones string }
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "invalid payload", http.StatusBadRequest)
 				return
 			}
 			if err := dbpkg.UpdateTipoEmpresa(dbSuper, id, payload.Nombre, payload.Observaciones); err != nil {
@@ -282,6 +402,27 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "invalid id", http.StatusBadRequest)
 				return
 			}
+			// soporte para acción de activar/desactivar vía query param
+			if q.Get("action") == "activar" {
+				activoStr := q.Get("activo")
+				if activoStr == "" {
+					http.Error(w, "activo required (0 or 1)", http.StatusBadRequest)
+					return
+				}
+				act, err := strconv.Atoi(activoStr)
+				if err != nil || (act != 0 && act != 1) {
+					http.Error(w, "invalid activo value", http.StatusBadRequest)
+					return
+				}
+				if err := dbpkg.SetLicenciaActivo(dbSuper, id, act); err != nil {
+					log.Println("ACTIVAR /super/api/licencias error:", err)
+					http.Error(w, "failed to set activo: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
+			// actualización normal (payload JSON)
 			var payload struct {
 				TipoID       int64   `json:"tipo_id"`
 				Nombre       string  `json:"nombre"`

@@ -380,6 +380,9 @@ Archivos modificados:
 2026-03-27: CRUD para Tipos de empresas y Tipos de licencias
 - Acción: Se implementaron endpoints CRUD en el backend para gestionar `tipos_de_empresas` y `tipos_de_licencia`, y se añadieron las páginas frontend con formularios y listados.
 - Endpoints: `/super/api/tipos_empresas` y `/super/api/tipos_licencias` (GET, POST, PUT, DELETE).
+- 2026-03-27: CRUD y API para administradores
+- Acción: Se añadió el endpoint `/super/api/administradores` con soporte CRUD completo (GET, POST, PUT, DELETE) y la capacidad de activar/desactivar administradores vía `PUT?action=activar&activo=0|1`.
+- Archivos: `backend/handlers/handlers.go` (nuevo handler `AdministradoresHandler`), `backend/db/db.go` (helpers `UpdateAdministrador`, `DeleteAdministrador`, `SetAdministradorEstado`), `backend/main.go` (registro ruta `/super/api/administradores`).
 - Archivos modificados/creados:
     - backend/db/db.go (funciones CRUD y modelos `TipoEmpresa`, `TipoLicencia`)
     - backend/handlers/handlers.go (handlers CRUD añadidos)
@@ -398,6 +401,28 @@ PushStatus: OK
 Archivos modificados:
 - backend/db/db.go
 - backend/db/empresas.db.20260326-174525.bak
+
+2026-03-27: Soporte activar/desactivar en CRUD de Licencias y Tipos de Empresas
+- Acción: Se añadió soporte en backend y frontend para activar/desactivar registros de `licencias` y `tipos_de_empresas`.
+- Backend:
+    - `backend/handlers/handlers.go`: soporte para `PUT` con query `action=activar&activo=0|1` en los endpoints `/super/api/licencias` y `/super/api/tipos_empresas`.
+    - Estos endpoints usan los helpers en `backend/db/db.go`: `SetLicenciaActivo(db, id, activo)` y `SetTipoEmpresaActivo(db, id, estado)`.
+- Frontend:
+    - `web/super/licencias.html` y `web/super/tipos_empresas.html`: añadido botón "Activar/Desactivar" por fila; el JS llama a `PUT ?action=activar&activo=...` y recarga la lista.
+- Archivos modificados:
+    - backend/handlers/handlers.go
+    - web/super/licencias.html
+    - web/super/tipos_empresas.html
+    - documentos/descripcion_de_archivos (documentación actualizada)
+- Motivo: permitir toggling de estado (`activo` / `inactivo`) desde la UI del panel de superadministrador sin eliminar registros.
+- Responsable: cambio realizado localmente por el agente a petición del usuario.
+
+2026-03-27: Actualización: ajuste y limpieza de front-end
+- Acción: Se removieron fragmentos HTML duplicados en `web/super/licencias.html` y se centralizaron estilos en `web/estilos.css`.
+- Archivos modificados:
+    - web/super/licencias.html
+    - web/estilos.css
+- Motivo: corregir duplicados y estandarizar apariencia.
 
 2026-03-27: Creación CRUD `licencias` y eliminación de `tipos_licencias` UI
 - Descripción: Se añadió la entidad `licencias` en `superadministrador.db` con campos estándar y específicos: `id`, `empresa_id`, `tipo_id`, `nombre`, `descripcion`, `valor`, `duracion_dias`, `fecha_creacion`, `activo`. Se implementó el CRUD backend y la página administrativa.

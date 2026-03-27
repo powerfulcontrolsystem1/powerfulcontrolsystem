@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Proyecto POS - Módulo 1</title>
-  <link rel="stylesheet" href="/assets/estilos.css">
+  <link rel="stylesheet" href="/estilos.css">
 </head>
 <body>
   <div class="floating-menu" aria-hidden="false">
@@ -15,40 +15,43 @@
   </div>
   <div class="portal">
     <header class="portal-header">
-      <div class="brand">POS Multiempresa</div>
+      <div class="brand"><a class="btn dark" href="/login.html">Iniciar sesión</a></div>
       <nav class="nav-actions">
-        <a class="btn" href="/login.html">Iniciar sesión</a>
       </nav>
     </header>
 
     <main class="portal-main container">
       <section class="portal-intro">
-        <h1>Bienvenido al Portal</h1>
-        <p class="muted">Accede rápidamente a los módulos principales de la plataforma.</p>
+        <h1>Powerful Control System</h1>
+        <p class="muted">Sistema de facturación electrónica adaptado a tu empresa</p>
       </section>
 
       <section class="portal-grid">
         <article class="portal-card">
-          <h3>Ventas</h3>
-          <p>Panel de ventas, cajas y facturación. Inicie un turno y gestione transacciones por empresa.</p>
+          <img src="/img/logo_punto_venta.svg" alt="logo Punto de venta" class="card-logo">
+          <h3>Punto de venta</h3>
+          <p>Sistema de facturación electrónica para pymes.</p>
           <a class="btn secondary" href="#">Entrar</a>
         </article>
 
         <article class="portal-card">
-          <h3>Inventario</h3>
-          <p>Control de stock, movimientos y ajustes. Soporta múltiples almacenes por empresa.</p>
+          <img src="/img/logo_motel.svg" alt="logo Motel" class="card-logo">
+          <h3>Sistema para Motel</h3>
+          <p>Sistema de facturación electrónica tarifada por tiempo de servicio.</p>
           <a class="btn secondary" href="#">Abrir</a>
         </article>
 
         <article class="portal-card">
-          <h3>Clientes</h3>
-          <p>Gestión de clientes y tarjetas de fidelidad; búsquedas rápidas y segmentación.</p>
+          <img src="/img/logo_restaurante.svg" alt="logo Restaurante" class="card-logo">
+          <h3>Restaurante</h3>
+          <p>Sistema de facturación electrónica adaptado a restaurante, manejo por mesas.</p>
           <a class="btn secondary" href="#">Ver</a>
         </article>
 
         <article class="portal-card">
-          <h3>Reportes</h3>
-          <p>Informes financieros y operativos: ventas por empresa, cierres y métricas.</p>
+          <img src="/img/logo_alarma.svg" alt="logo Alarma" class="card-logo">
+          <h3>Control por sensor</h3>
+          <p>Sistema de control para moteles, sensores en las puertas.</p>
           <a class="btn secondary" href="#">Generar</a>
         </article>
 
