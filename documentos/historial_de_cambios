@@ -523,3 +523,22 @@ Archivos modificados:
 - web/super/licencias.html
 - web/super/tipos_empresas.html
 
+
+2026-03-27: Actualización automática desde script: añadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- backend/server.err
+- backend/server.exe
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
+- scripts/logs/actualizar_repositorio-20260327-125505.log
+- scripts/logs/actualizar_repositorio-20260327-131541.log
+- web/ayuda.html
+- web/index.html
+- web/login.html
+- web/seleccionar_empresa.html
+- web/super/administradores.html
+- web/super/licencias.html
+- web/super/tipos_empresas.html
+- web/super_administrador.html
+
