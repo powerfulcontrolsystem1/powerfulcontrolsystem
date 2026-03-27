@@ -8,14 +8,6 @@
   
 </head>
 <body>
-  <div class="floating-menu" aria-hidden="false">
-    <button class="fm-toggle" aria-label="Abrir menú">☰</button>
-    <div class="fm-panel" role="menu">
-      <a class="fm-item" href="/index.html">Portal</a>
-      <a class="fm-item" href="/ayuda.html">Ayuda</a>
-      <a id="sessionLink" class="fm-item" href="/login.html">Iniciar sesión</a>
-    </div>
-  </div>
   <div class="container">
     <h1>Licencias</h1>
     <button id="addBtn" class="btn add">Agregar</button>
@@ -53,31 +45,33 @@
       </div>
       <div class="form-help" id="msg"></div>
     </form>
-
     <div id="list">Cargando...</div>
-  </div>
+
+  <!-- Menú flotante eliminado en páginas del panel /super -->
 
   <script>
-    async function loadTipos(){
-      const res = await fetch('/super/api/tipos_empresas');
-      const tipos = await res.json();
-      const sel = document.getElementById('tipo_id');
-      sel.innerHTML = '<option value="">-- seleccionar --</option>';
-      tipos.forEach(t => {
-        const opt = document.createElement('option'); opt.value = t.id; opt.textContent = t.nombre; sel.appendChild(opt);
-      });
-    }
-
     async function load(){
-      await loadTipos();
+      // cargar tipos para el select
+      try{
+        const tiposRes = await fetch('/super/api/tipos_empresas');
+        const tipos = await tiposRes.json();
+        const tipoSelect = document.getElementById('tipo_id');
+        tipoSelect.innerHTML = '<option value="">-- Seleccionar --</option>';
+        tipos.forEach(t=>{
+          const opt = document.createElement('option'); opt.value = t.id; opt.text = t.nombre; tipoSelect.appendChild(opt);
+        });
+      }catch(e){ console.warn('No se pudieron cargar tipos:', e); }
+
+      // cargar licencias
       const res = await fetch('/super/api/licencias');
       const data = await res.json();
-      const table = document.createElement('table'); table.className='table';
-      table.innerHTML = '<thead><tr><th>ID</th><th>Tipo</th><th>Nombre</th><th>Valor</th><th>Duración</th><th>Acciones</th></tr></thead>';
+      const table = document.createElement('table');
+      table.className = 'table';
+      table.innerHTML = '<thead><tr><th>ID</th><th>Tipo</th><th>Nombre</th><th>Valor</th><th>Duración (días)</th><th>Acciones</th></thead>';
       const tbody = document.createElement('tbody');
       data.forEach(i=>{
         const tr = document.createElement('tr');
-        const activo = i.activo || 0;
+        const activo = (i.activo === 'activo' || i.activo==1) ? 1 : (i.activo||0);
         const toggleLabel = (activo==1) ? 'Desactivar' : 'Activar';
         tr.innerHTML = `<td>${i.id}</td><td>${i.tipo_nombre||''}</td><td>${i.nombre}</td><td>${i.valor||''}</td><td>${i.duracion_dias||''}</td><td class="actions"><button data-id="${i.id}" class="edit btn secondary">Editar</button> <button data-id="${i.id}" class="del btn danger">Eliminar</button> <button data-id="${i.id}" data-activo="${activo}" class="toggle btn">${toggleLabel}</button></td>`;
         tbody.appendChild(tr);
@@ -163,7 +157,7 @@
       toggle.addEventListener('click', function(e){ e.stopPropagation(); panel.classList.toggle('open'); });
       document.addEventListener('click', function(){ panel.classList.remove('open'); });
       function getCookie(name){
-        const v = document.cookie.match('(^|;)\\s*'+name+'\\s*=\\s*([^;]+)');
+        const v = document.cookie.match('(^|;)\s*'+name+'\s*=\s*([^;]+)');
         return v ? v.pop() : '';
       }
       var sessionLink = document.getElementById('sessionLink');

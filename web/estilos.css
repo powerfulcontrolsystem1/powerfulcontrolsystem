@@ -1,26 +1,28 @@
 :root{
-  /* Tema oscuro centralizado */
-  --bg:#0f1720;
-  --surface:#0b1220;
-  --card:#111827;
-  --muted:#9ca3af;
-  --text:#e6eef6;
-  --accent:#2563eb;
-  --accent-2:#06b6d4;
-  --danger:#ef4444;
-  --success:#10b981;
+  /* Tema oscuro estilo Windows / Fluent UI */
+  --bg: #111214; /* fondo oscuro neutro */
+  --surface: #1a1a1b; /* superficies principales */
+  --card: #242526; /* tarjetas ligeramente más claras */
+  --muted: #c8c6c4; /* textos secundarios neutros */
+  --text: #f3f2f1; /* texto principal neutro claro */
+  --accent: #0078d4; /* Microsoft blue */
+  --accent-2: #2b88d8; /* acento secundario */
+  --danger: #e81123; /* rojo Microsoft */
+  --success: #107c10; /* verde Microsoft */
   --border: rgba(255,255,255,0.04);
+  --focus: rgba(0,120,212,0.18);
 }
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;padding:0;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
 .container{max-width:1100px;margin:28px auto;padding:16px}
-.card{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.06));border:1px solid rgba(255,255,255,0.04);padding:20px;border-radius:10px;box-shadow:0 6px 18px rgba(2,6,23,0.6)}
+.card{background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.04));border:1px solid rgba(255,255,255,0.03);padding:20px;border-radius:8px;box-shadow:0 10px 30px rgba(2,6,23,0.55);backdrop-filter: blur(6px)}
 h1,h2,h3{margin:0 0 12px 0}
 p{color:var(--muted);line-height:1.5}
-.btn{display:inline-block;padding:10px 14px;background:var(--accent);color:white;border-radius:8px;text-decoration:none;font-weight:600}
+.btn{display:inline-block;padding:10px 14px;background:var(--accent);color:white;border-radius:6px;text-decoration:none;font-weight:600;border:1px solid rgba(0,0,0,0.12);box-shadow:0 2px 6px rgba(0,0,0,0.25)}
 .btn.secondary{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--text)}
 /* Botón 'Agregar' usado en formularios CRUD */
-.btn.add{background:var(--accent-2);color:#fff;margin-bottom:12px}
+.btn.add{background:var(--accent-2);color:var(--text);margin-bottom:12px}
+.btn:focus, .input:focus, .form-input:focus {outline: none; box-shadow: 0 0 0 4px var(--focus); border-color: var(--accent)}
 .btn.add:hover{filter:brightness(0.98)}
 
 /* Danger button */
@@ -29,9 +31,9 @@ p{color:var(--muted);line-height:1.5}
 .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
 .brand{font-weight:700;letter-spacing:0.4px}
 .footer{color:var(--muted);font-size:13px;margin-top:18px}
-.input{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:rgba(255,255,255,0.02);color:var(--text)}
+.input{width:100%;padding:10px;border-radius:6px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:var(--text)}
 /* Formularios profesionales y responsive */
-.form{max-width:900px;margin:0 auto 18px auto;padding:16px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(0,0,0,0.03));border:1px solid var(--border)}
+.form{max-width:900px;margin:0 auto 18px auto;padding:16px;border-radius:8px;background:linear-gradient(180deg, rgba(255,255,255,0.002), rgba(0,0,0,0.03));border:1px solid rgba(255,255,255,0.02)}
 .form-row{display:flex;gap:12px;margin-bottom:12px}
 .form-col{flex:1;min-width:0}
 .form-label{display:block;font-weight:700;margin-bottom:6px;color:var(--muted);font-size:0.95rem}
@@ -46,16 +48,16 @@ p{color:var(--muted);line-height:1.5}
 .table{width:100%;border-collapse:collapse;margin-top:12px}
 .table th,.table td{padding:12px;border-bottom:1px solid rgba(255,255,255,0.03);text-align:left}
 .table thead th{color:var(--muted);font-weight:700;font-size:0.95rem}
-.table tbody tr:hover{background:linear-gradient(90deg,rgba(255,255,255,0.01),rgba(0,0,0,0.02))}
+.table tbody tr:hover{background:linear-gradient(90deg, rgba(255,255,255,0.01), rgba(0,0,0,0.02))}
 .actions button{margin-right:6px}
 
 /* Layout del panel de administración (sidebar + contenido) */
 .admin-layout{display:flex;min-height:100vh;background:var(--bg);color:var(--text)}
-.admin-sidebar{width:260px;padding:18px;background:var(--card);box-shadow:2px 0 8px rgba(2,6,23,0.6)}
+.admin-sidebar{width:260px;padding:18px;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.02));box-shadow:2px 0 20px rgba(2,6,23,0.6);border-right:1px solid rgba(255,255,255,0.02)}
 .admin-sidebar h2{margin:0 0 12px 0}
 .admin-sidebar .nav{list-style:none;padding:0;margin:0}
-.admin-sidebar .nav a{display:block;color:var(--text);text-decoration:none;padding:10px;border-radius:8px}
-.admin-sidebar .nav a:hover{background:rgba(255,255,255,0.02)}
+.admin-sidebar .nav a{display:block;color:var(--text);text-decoration:none;padding:10px;border-radius:6px}
+.admin-sidebar .nav a:hover{background:linear-gradient(90deg, rgba(255,255,255,0.02), rgba(0,0,0,0.02));color:var(--accent-2)}
 .admin-content{flex:1;padding:18px;overflow:auto;background:linear-gradient(180deg,transparent,rgba(255,255,255,0.01))}
 .admin-toolbar{padding:12px 18px;border-bottom:1px solid rgba(255,255,255,0.03);background:transparent}
 
@@ -92,7 +94,7 @@ ul{padding-left:18px}
 .remember-label input[type="checkbox"]{width:16px;height:16px}
 
 /* Portal principal - layout empresarial */
-.portal-header{display:flex;align-items:center;justify-content:space-between;padding:18px 28px;background:linear-gradient(90deg,rgba(255,255,255,0.01),rgba(0,0,0,0.04));border-bottom:1px solid rgba(255,255,255,0.03);position:sticky;top:0;z-index:10}
+.portal-header{display:flex;align-items:center;justify-content:space-between;padding:18px 28px;background:linear-gradient(90deg, rgba(255,255,255,0.002), rgba(0,0,0,0.02));border-bottom:1px solid rgba(255,255,255,0.02);position:sticky;top:0;z-index:10}
 .portal-header .brand{font-size:1.15rem;font-weight:800}
 .nav-actions .btn{background:transparent;color:var(--text);border:1px solid rgba(255,255,255,0.06);padding:8px 12px;border-radius:8px}
 .nav-actions .btn:hover{background:rgba(255,255,255,0.02)}
@@ -111,13 +113,13 @@ ul{padding-left:18px}
 .btn.dark:hover{background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(0,0,0,0.04));}
 
 .portal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;max-width:1100px;margin:0 auto}
-.portal-card{background:linear-gradient(180deg,rgba(255,255,255,0.04),rgba(0,0,0,0.02));border:1px solid rgba(255,255,255,0.06);padding:20px;border-radius:10px;box-shadow:0 8px 24px rgba(2,6,23,0.38);display:flex;flex-direction:column;justify-content:space-between}
+.portal-card{background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.02));border:1px solid rgba(255,255,255,0.03);padding:18px;border-radius:8px;box-shadow:0 10px 28px rgba(2,6,23,0.5);display:flex;flex-direction:column;justify-content:space-between}
 .portal-card h3{margin:0 0 8px 0}
 .portal-card p{color:var(--muted);flex:1;margin-bottom:12px}
 .portal-card .btn.secondary{align-self:flex-start}
 
 /* Logo dentro de tarjetas */
-.portal-card .card-logo{width:64px;height:auto;margin-bottom:10px;opacity:0.95}
+.portal-card .card-logo{width:72px;height:auto;margin-bottom:12px;opacity:0.95;filter:drop-shadow(0 6px 18px rgba(0,0,0,0.5))}
 
 @media (max-width:1000px){.portal-grid{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:640px){.portal-grid{grid-template-columns:1fr}.portal-main{padding:18px}}

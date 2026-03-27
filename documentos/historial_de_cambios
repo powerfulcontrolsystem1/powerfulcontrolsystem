@@ -398,6 +398,18 @@ Archivos modificados:
 
 2026-03-27: Actualización automática desde script: añadir/actualizar archivos
 PushStatus: OK
+
+2026-03-27: Creación de placeholders SVG para el portal
+- Acción: Se generaron seis imágenes SVG placeholder usadas en las tarjetas del portal y en el panel de administración.
+- Archivos creados:
+    - web/img/portal-abstract.svg
+    - web/img/company-briefcase.svg
+    - web/img/shield-license.svg
+    - web/img/user-avatar.svg
+    - web/img/analytics.svg
+    - web/img/network.svg
+- Motivo: disponer de imágenes locales coherentes visualmente para entornos offline y desarrollo; reemplazar por logos reales cuando estén disponibles.
+- Responsable: cambio realizado por el agente a petición del usuario (Generar placeholders locales).
 Archivos modificados:
 - backend/db/db.go
 - backend/db/empresas.db.20260326-174525.bak

@@ -90,3 +90,13 @@ Adicional:
  - Middleware de autenticación: `backend/utils/utils.go` incluye `AuthMiddleware` que valida `session_token` contra `superadministrador.db` y obliga rol `super_administrador` para rutas `/super/`. Rutas públicas: `/`, `/index.html`, `/login.html`, `/auth/google/login`, `/auth/google/callback`, `/assets/`.
  - Middleware de autenticación: `backend/utils/utils.go` incluye `AuthMiddleware` que valida `session_token` contra `superadministrador.db` y obliga rol `super_administrador` para rutas `/super/`. Rutas públicas: `/`, `/index.html`, `/login.html`, `/auth/google/login`, `/auth/google/callback`, `/assets/`.
  - Cookies de sesión: `session_token` se establece con `HttpOnly`, `SameSite=Lax` y ahora `Secure=true` (forzado) para transmisión exclusiva por HTTPS en producción. El logout limpia `session_token` con los mismos atributos.
+
+- Carpeta `web/img/`: Contiene recursos gráficos (logos y placeholders) usados en las tarjetas del portal y en el panel de administración.
+	- web/img/portal-abstract.svg: Imagen ilustrativa para la tarjeta "Portal" en la página principal; placeholder SVG estilizado.
+	- web/img/company-briefcase.svg: Placeholder SVG representando una empresa / briefcase usado en la tarjeta de empresa.
+	- web/img/shield-license.svg: Placeholder SVG representando licencias y permisos.
+	- web/img/user-avatar.svg: Placeholder SVG para avatar de usuario en listados y paneles.
+	- web/img/analytics.svg: Placeholder SVG para la tarjeta de métricas/analytics.
+	- web/img/network.svg: Placeholder SVG representando conectividad/red.
+
+Nota: Estos archivos fueron generados localmente como placeholders SVG para entornos offline o cuando no se dispone de logos oficiales. Reemplazarlos por logos reales es recomendado en producción.

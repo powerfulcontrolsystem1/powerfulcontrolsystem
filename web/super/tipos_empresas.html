@@ -8,30 +8,21 @@
   
 </head>
 <body>
-  <div class="floating-menu" aria-hidden="false">
-    <button class="fm-toggle" aria-label="Abrir menú">☰</button>
-    <div class="fm-panel" role="menu">
-      <a class="fm-item" href="/index.html">Portal</a>
-      <a class="fm-item" href="/ayuda.html">Ayuda</a>
-      <a id="sessionLink" class="fm-item" href="/login.html">Iniciar sesión</a>
-    </div>
-  </div>
   <div class="container">
     <h1>Tipos de empresas</h1>
-
+  <!-- Menú flotante eliminado en páginas del panel /super -->
     <button id="addBtn" class="btn add">Agregar</button>
-
     <form id="form" class="form">
       <input type="hidden" id="itemId">
       <div class="form-row">
         <div class="form-col">
-          <label class="form-label">Nombre (único)</label>
+          <label class="form-label">Nombre</label>
           <input id="nombre" class="form-input" required />
         </div>
       </div>
       <div class="form-row">
         <div class="form-col">
-          <label class="form-label">Descripción</label>
+          <label class="form-label">Descripción / Observaciones</label>
           <textarea id="observaciones" class="form-textarea"></textarea>
         </div>
       </div>
@@ -41,7 +32,6 @@
       </div>
       <div class="form-help" id="msg"></div>
     </form>
-
     <div id="list">Cargando...</div>
   </div>
 
@@ -125,7 +115,7 @@
       toggle.addEventListener('click', function(e){ e.stopPropagation(); panel.classList.toggle('open'); });
       document.addEventListener('click', function(){ panel.classList.remove('open'); });
       function getCookie(name){
-        const v = document.cookie.match('(^|;)\\s*'+name+'\\s*=\\s*([^;]+)');
+        const v = document.cookie.match('(^|;)\s*'+name+'\s*=\s*([^;]+)');
         return v ? v.pop() : '';
       }
       var sessionLink = document.getElementById('sessionLink');
