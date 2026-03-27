@@ -1,19 +1,46 @@
-2026/03/27 01:24:56 index.html encontrado en ..\web\index.html
-2026/03/27 01:24:56 Servidor arrancado en :8080
-2026/03/27 01:25:01 -> GET / from [::1]:52235
-2026/03/27 01:25:01 <- 200 GET /
-2026/03/27 01:25:01 -> GET /assets/estilos.css from [::1]:52235
-2026/03/27 01:25:01 <- 200 GET /assets/estilos.css
-2026/03/27 01:25:01 -> GET /favicon.ico from [::1]:52235
-2026/03/27 01:25:01 <- 404 GET /favicon.ico
-2026/03/27 01:25:07 -> GET /auth/google/login from [::1]:52235
-2026/03/27 01:25:07 handleGoogleLogin: client_id set=true, redirect_url="http://localhost:8080/auth/google/callback"
-2026/03/27 01:25:07 Auth URL: https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&client_id=1029204473903-6npuu63uehsrn2jn8fnif4fgpp6kcjsm.apps.googleusercontent.com&include_granted_scopes=true&prompt=select_account+consent&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fauth%2Fgoogle%2Fcallback&response_type=code&scope=openid+email+profile&state=state-token
-2026/03/27 01:25:07 <- 302 GET /auth/google/login
-2026/03/27 01:25:12 -> GET /auth/google/callback from [::1]:52235
-2026/03/27 01:25:13 post-login: admin=powerfulcontrolsystem@gmail.com role="super_administrador" token=936f92bb82ad440fb1db6f260df442219f79fb6459075c6efeea9ed3023c0b60
-2026/03/27 01:25:13 <- 302 GET /auth/google/callback
-2026/03/27 01:25:13 -> GET /super_administrador.html from [::1]:52235
-2026/03/27 01:25:13 <- 200 GET /super_administrador.html
-2026/03/27 01:25:13 -> GET /estilos.css from [::1]:52235
-2026/03/27 01:25:13 <- 200 GET /estilos.css
+2026/03/27 04:05:39 index.html encontrado en ..\web\index.html
+2026/03/27 04:05:39 Servidor arrancado en :8080
+2026/03/27 04:05:40 -> GET /assets/estilos.css from [::1]:50207
+2026/03/27 04:05:40 <- 200 GET /assets/estilos.css
+2026/03/27 04:05:48 -> GET /assets/estilos.css from [::1]:50207
+2026/03/27 04:05:48 <- 304 GET /assets/estilos.css
+2026/03/27 04:05:49 -> GET /auth/google/login from [::1]:50207
+2026/03/27 04:05:49 handleGoogleLogin: client_id set=true, redirect_url="http://localhost:8080/auth/google/callback"
+2026/03/27 04:05:49 Auth URL: https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&client_id=1029204473903-6npuu63uehsrn2jn8fnif4fgpp6kcjsm.apps.googleusercontent.com&include_granted_scopes=true&prompt=select_account+consent&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fauth%2Fgoogle%2Fcallback&response_type=code&scope=openid+email+profile&state=state-token
+2026/03/27 04:05:49 <- 302 GET /auth/google/login
+2026/03/27 04:05:56 -> GET /auth/google/callback from [::1]:50207
+2026/03/27 04:05:57 <- 302 GET /auth/google/callback
+2026/03/27 04:05:57 -> GET /estilos.css from [::1]:50207
+2026/03/27 04:05:57 <- 200 GET /estilos.css
+2026/03/27 04:05:57 -> GET /super/administradores from [::1]:50207
+2026/03/27 04:05:57 <- 200 GET /super/administradores
+2026/03/27 04:05:59 -> GET /super_administrador.html from [::1]:50207
+2026/03/27 04:05:59 <- 200 GET /super_administrador.html
+2026/03/27 04:05:59 -> GET /super/administradores.html from [::1]:50207
+2026/03/27 04:05:59 -> GET /estilos.css from [::1]:52411
+2026/03/27 04:05:59 <- 200 GET /super/administradores.html
+2026/03/27 04:06:00 <- 200 GET /estilos.css
+2026/03/27 04:06:00 -> GET /estilos.css from [::1]:50207
+2026/03/27 04:06:00 <- 200 GET /estilos.css
+2026/03/27 04:06:00 -> GET /super/administradores from [::1]:50207
+2026/03/27 04:06:00 <- 200 GET /super/administradores
+2026/03/27 04:06:00 -> GET /favicon.ico from [::1]:50207
+2026/03/27 04:06:00 <- 404 GET /favicon.ico
+2026/03/27 04:06:02 -> GET /super/licencias.html from [::1]:50207
+2026/03/27 04:06:02 <- 200 GET /super/licencias.html
+2026/03/27 04:06:02 -> GET /super/api/tipos_empresas from [::1]:50207
+2026/03/27 04:06:02 <- 200 GET /super/api/tipos_empresas
+2026/03/27 04:06:02 -> GET /super/api/licencias from [::1]:50207
+2026/03/27 04:06:02 <- 200 GET /super/api/licencias
+2026/03/27 04:06:29 -> GET /super/configuracion.html from [::1]:50207
+2026/03/27 04:06:29 <- 200 GET /super/configuracion.html
+2026/03/27 04:06:29 -> GET /estilos.css from [::1]:50207
+2026/03/27 04:06:29 <- 200 GET /estilos.css
+2026/03/27 04:06:30 -> GET /super/administradores from [::1]:50207
+2026/03/27 04:06:30 <- 200 GET /super/administradores
+2026/03/27 04:06:33 -> GET /super/tipos_empresas.html from [::1]:50207
+2026/03/27 04:06:33 <- 200 GET /super/tipos_empresas.html
+2026/03/27 04:06:33 -> GET /estilos.css from [::1]:50207
+2026/03/27 04:06:33 <- 304 GET /estilos.css
+2026/03/27 04:06:33 -> GET /super/api/tipos_empresas from [::1]:50207
+2026/03/27 04:06:33 <- 200 GET /super/api/tipos_empresas

@@ -5,15 +5,23 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Panel Super Administrador</title>
   <link rel="stylesheet" href="/estilos.css">
-  <style>
-    .container { max-width: 900px; margin: 3rem auto; padding: 1rem; }
-  </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Super Administrador</h1>
-    <p>Bienvenido al panel de super administración. Aquí podrás gestionar configuraciones globales.</p>
-    <p><a href="/index.html">Volver al inicio</a> · <a href="/seleccionar_empresa.html">Seleccionar empresa</a></p>
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <h2>Super Administrador</h2>
+      <ul class="nav">
+        <li><a href="/super/tipos_empresas.html" target="contentFrame">Tipos de empresas</a></li>
+        <li><a href="/super/licencias.html" target="contentFrame">Licencias</a></li>
+        <li><a href="/super/configuracion.html" target="contentFrame">Configuración</a></li>
+        <li><a href="/super/administradores.html" target="contentFrame">Administradores</a></li>
+      </ul>
+    </aside>
+
+    <main class="admin-content">
+      <div class="admin-toolbar">Panel global — contenido cargado a la derecha</div>
+      <iframe name="contentFrame" id="contentFrame" src="/super/administradores.html" title="Contenido" style="width:100%;height:calc(100vh - 64px);border:0;background:transparent"></iframe>
+    </main>
   </div>
 </body>
 </html>

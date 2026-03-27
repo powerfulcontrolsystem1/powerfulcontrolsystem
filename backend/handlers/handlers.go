@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strconv"
 
 	"github.com/you/pos-backend/auth"
 	dbpkg "github.com/you/pos-backend/db"
@@ -32,13 +33,12 @@ func HandleGoogleLogin(clientID, redirectURL string) http.HandlerFunc {
 			"state":                  {state},
 		}.Encode()
 
-		// Loguear la URL de autorización (sin exponer secretos) para depuración
 		log.Printf("Auth URL: %s", authURL)
 		http.Redirect(w, r, authURL, http.StatusFound)
 	}
 }
 
-// HandleGoogleCallback devuelve un http.HandlerFunc que procesa el callback y persiste el usuario
+// HandleGoogleCallback procesa el callback OAuth y crea sesión/administrador
 func HandleGoogleCallback(dbEmpresas *sql.DB, dbSuper *sql.DB, clientID, clientSecret, redirectURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query()
@@ -66,8 +66,6 @@ func HandleGoogleCallback(dbEmpresas *sql.DB, dbSuper *sql.DB, clientID, clientS
 			return
 		}
 
-		// Registrar/actualizar en la base de datos de superadministrador (tabla administradores)
-		// Mantener el role existente si ya está presente (no sobrescribir super_administrador)
 		roleToSet := "administrador"
 		if existingAdmin, err := dbpkg.GetAdminByEmail(dbSuper, userinfo.Email); err == nil && existingAdmin != nil {
 			if existingAdmin.Role != "" {
@@ -78,48 +76,41 @@ func HandleGoogleCallback(dbEmpresas *sql.DB, dbSuper *sql.DB, clientID, clientS
 			log.Println("db upsert administradores error:", err)
 		}
 
-		// Registrar/actualizar también en la base de empresas (tabla users) por compatibilidad
 		if err := dbpkg.UpsertUser(dbEmpresas, userinfo.Email, userinfo.Name); err != nil {
 			log.Println("db upsert users error:", err)
 		}
 
-		// Asegurar que el usuario tenga una empresa por defecto asociada en la DB de empresas
 		if err := dbpkg.EnsureUserEmpresa(dbEmpresas, userinfo.Email, "Empresa de "+userinfo.Name); err != nil {
 			log.Println("db ensure empresa error:", err)
 		}
 
-		// Registrar sesión en la base superadministrador (usar token seguro)
 		token, err := utils.GenerateSecureToken(32)
 		if err != nil {
 			log.Println("failed to generate session token:", err)
-			token = userinfo.Sub // fallback
+			token = userinfo.Sub
 		}
 		ip := r.RemoteAddr
 		ua := r.UserAgent()
 		if err := dbpkg.CreateSession(dbSuper, userinfo.Email, ip, ua, token); err != nil {
 			log.Println("create session error:", err)
 		}
-		// Establecer cookie de sesión segura (httpOnly)
 		cookie := &http.Cookie{
 			Name:     "session_token",
 			Value:    token,
 			Path:     "/",
 			HttpOnly: true,
 			MaxAge:   86400,
-			Secure:   (r.TLS != nil), // habilitar Secure solo si la conexión es TLS
+			Secure:   (r.TLS != nil),
 			SameSite: http.SameSiteLaxMode,
 		}
 		http.SetCookie(w, cookie)
 
-		// Obtener rol del administrador y redirigir según rol
 		admin, err := dbpkg.GetAdminByEmail(dbSuper, userinfo.Email)
-		if err != nil {
-			// Si no se encuentra o hay error, redirigir a seleccionar_empresa por defecto
-			log.Println("warning: no se pudo obtener admin para redireccion, usando seleccionar_empresa:", err)
+		if err != nil || admin == nil {
+			log.Println("warning: no admin found, redirecting to seleccionar_empresa:", err)
 			http.Redirect(w, r, "/seleccionar_empresa.html", http.StatusFound)
 			return
 		}
-		log.Printf("post-login: admin=%s role=%q token=%s", admin.Email, admin.Role, token)
 		if admin.Role == "super_administrador" {
 			http.Redirect(w, r, "/super_administrador.html", http.StatusFound)
 			return
@@ -151,5 +142,186 @@ func ListSesionesHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(sesiones)
+	}
+}
+
+// TiposEmpresasHandler maneja GET/POST/PUT/DELETE para tipos_de_empresas
+func TiposEmpresasHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			tipos, err := dbpkg.GetTiposEmpresas(dbSuper)
+			if err != nil {
+				http.Error(w, "failed to query tipos_de_empresas", http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(tipos)
+			return
+		case http.MethodPost:
+			var payload struct{ Nombre, Observaciones string }
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "invalid payload", http.StatusBadRequest)
+				return
+			}
+			if payload.Nombre == "" {
+				http.Error(w, "nombre required", http.StatusBadRequest)
+				return
+			}
+			id, err := dbpkg.CreateTipoEmpresa(dbSuper, payload.Nombre, payload.Observaciones)
+			if err != nil {
+				http.Error(w, "failed to create tipo_empresa: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]interface{}{"id": id})
+			return
+		case http.MethodPut:
+			q := r.URL.Query()
+			idStr := q.Get("id")
+			if idStr == "" {
+				http.Error(w, "id required", http.StatusBadRequest)
+				return
+			}
+			var payload struct{ Nombre, Observaciones string }
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "invalid payload", http.StatusBadRequest)
+				return
+			}
+			id, err := strconv.ParseInt(idStr, 10, 64)
+			if err != nil {
+				http.Error(w, "invalid id", http.StatusBadRequest)
+				return
+			}
+			if err := dbpkg.UpdateTipoEmpresa(dbSuper, id, payload.Nombre, payload.Observaciones); err != nil {
+				http.Error(w, "failed to update: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+			return
+		case http.MethodDelete:
+			q := r.URL.Query()
+			idStr := q.Get("id")
+			if idStr == "" {
+				http.Error(w, "id required", http.StatusBadRequest)
+				return
+			}
+			id, err := strconv.ParseInt(idStr, 10, 64)
+			if err != nil {
+				http.Error(w, "invalid id", http.StatusBadRequest)
+				return
+			}
+			if err := dbpkg.DeleteTipoEmpresa(dbSuper, id); err != nil {
+				http.Error(w, "failed to delete: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+			return
+		default:
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+	}
+}
+
+// TiposLicenciasHandler placeholder (removed from UI)
+func TiposLicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "tipos_de_licencia API removed", http.StatusNotFound)
+	}
+}
+
+// LicenciasHandler maneja CRUD de licencias
+func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			licencias, err := dbpkg.GetLicencias(dbSuper)
+			if err != nil {
+				log.Println("GET /super/api/licencias error:", err)
+				http.Error(w, "failed to query licencias: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(licencias)
+			return
+		case http.MethodPost:
+			var payload struct {
+				TipoID       int64   `json:"tipo_id"`
+				Nombre       string  `json:"nombre"`
+				Descripcion  string  `json:"descripcion"`
+				Valor        float64 `json:"valor"`
+				DuracionDias int     `json:"duracion_dias"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "invalid payload", http.StatusBadRequest)
+				return
+			}
+			if payload.Nombre == "" {
+				http.Error(w, "nombre required", http.StatusBadRequest)
+				return
+			}
+			id, err := dbpkg.CreateLicencia(dbSuper, payload.TipoID, payload.Nombre, payload.Descripcion, payload.Valor, payload.DuracionDias)
+			if err != nil {
+				log.Println("POST /super/api/licencias error:", err)
+				http.Error(w, "failed to create licencia: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]interface{}{"id": id})
+			return
+		case http.MethodPut:
+			q := r.URL.Query()
+			idStr := q.Get("id")
+			if idStr == "" {
+				http.Error(w, "id required", http.StatusBadRequest)
+				return
+			}
+			id, err := strconv.ParseInt(idStr, 10, 64)
+			if err != nil {
+				http.Error(w, "invalid id", http.StatusBadRequest)
+				return
+			}
+			var payload struct {
+				TipoID       int64   `json:"tipo_id"`
+				Nombre       string  `json:"nombre"`
+				Descripcion  string  `json:"descripcion"`
+				Valor        float64 `json:"valor"`
+				DuracionDias int     `json:"duracion_dias"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "invalid payload", http.StatusBadRequest)
+				return
+			}
+			if err := dbpkg.UpdateLicencia(dbSuper, id, payload.TipoID, payload.Nombre, payload.Descripcion, payload.Valor, payload.DuracionDias); err != nil {
+				log.Println("PUT /super/api/licencias error:", err)
+				http.Error(w, "failed to update licencia: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+			return
+		case http.MethodDelete:
+			q := r.URL.Query()
+			idStr := q.Get("id")
+			if idStr == "" {
+				http.Error(w, "id required", http.StatusBadRequest)
+				return
+			}
+			id, err := strconv.ParseInt(idStr, 10, 64)
+			if err != nil {
+				http.Error(w, "invalid id", http.StatusBadRequest)
+				return
+			}
+			if err := dbpkg.DeleteLicencia(dbSuper, id); err != nil {
+				log.Println("DELETE /super/api/licencias error:", err)
+				http.Error(w, "failed to delete licencia: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+			return
+		default:
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
 	}
 }

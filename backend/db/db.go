@@ -93,7 +93,104 @@ type Admin struct {
 	Estado             string `json:"estado"`
 }
 
-// Session representa un registro en la tabla sesiones
+// NOTE: tipos_de_licencia CRUD removed per project decision (frontend/page/link removed).
+
+// Licencia representa una licencia asignada (nuevo CRUD)
+type Licencia struct {
+	ID            int64   `json:"id"`
+	EmpresaID     int64   `json:"empresa_id"`
+	TipoID        int64   `json:"tipo_id"`
+	TipoNombre    string  `json:"tipo_nombre,omitempty"`
+	Nombre        string  `json:"nombre"`
+	Descripcion   string  `json:"descripcion"`
+	Valor         float64 `json:"valor"`
+	DuracionDias  int     `json:"duracion_dias"`
+	FechaCreacion string  `json:"fecha_creacion"`
+	Activo        int     `json:"activo"`
+}
+
+// CreateLicencia inserta una nueva licencia en dbSuper
+func CreateLicencia(dbConn *sql.DB, tipoID int64, nombre, descripcion string, valor float64, duracionDias int) (int64, error) {
+	res, err := dbConn.Exec("INSERT INTO licencias (tipo_id, nombre, descripcion, valor, duracion_dias, fecha_creacion, activo) VALUES (?, ?, ?, ?, ?, datetime('now','localtime'), 1)", tipoID, nombre, descripcion, valor, duracionDias)
+	if err != nil {
+		return 0, err
+	}
+	return res.LastInsertId()
+}
+
+// GetLicencias obtiene todas las licencias (con nombre de tipo si existe)
+func GetLicencias(dbConn *sql.DB) ([]Licencia, error) {
+	q := `SELECT l.id, l.empresa_id, l.tipo_id, t.nombre, l.nombre, l.descripcion, l.valor, l.duracion_dias, l.fecha_creacion, l.activo
+		FROM licencias l LEFT JOIN tipos_de_empresas t ON l.tipo_id = t.id
+		ORDER BY l.id DESC`
+	rows, err := dbConn.Query(q)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Licencia
+	for rows.Next() {
+		var lic Licencia
+		var empresaID sql.NullInt64
+		var tipoNombre sql.NullString
+		var descripcion sql.NullString
+		var fechaCreacion sql.NullString
+		if err := rows.Scan(&lic.ID, &empresaID, &lic.TipoID, &tipoNombre, &lic.Nombre, &descripcion, &lic.Valor, &lic.DuracionDias, &fechaCreacion, &lic.Activo); err != nil {
+			return nil, err
+		}
+		if empresaID.Valid {
+			lic.EmpresaID = empresaID.Int64
+		}
+		if tipoNombre.Valid {
+			lic.TipoNombre = tipoNombre.String
+		}
+		if descripcion.Valid {
+			lic.Descripcion = descripcion.String
+		}
+		if fechaCreacion.Valid {
+			lic.FechaCreacion = fechaCreacion.String
+		}
+		out = append(out, lic)
+	}
+	return out, nil
+}
+
+// GetLicenciaByID devuelve una licencia por id
+func GetLicenciaByID(dbConn *sql.DB, id int64) (*Licencia, error) {
+	q := `SELECT id, empresa_id, tipo_id, nombre, descripcion, valor, duracion_dias, fecha_creacion, activo FROM licencias WHERE id = ? LIMIT 1`
+	row := dbConn.QueryRow(q, id)
+	var lic Licencia
+	var empresaID sql.NullInt64
+	var descripcion sql.NullString
+	var fechaCreacion sql.NullString
+	if err := row.Scan(&lic.ID, &empresaID, &lic.TipoID, &lic.Nombre, &descripcion, &lic.Valor, &lic.DuracionDias, &fechaCreacion, &lic.Activo); err != nil {
+		return nil, err
+	}
+	if empresaID.Valid {
+		lic.EmpresaID = empresaID.Int64
+	}
+	if descripcion.Valid {
+		lic.Descripcion = descripcion.String
+	}
+	if fechaCreacion.Valid {
+		lic.FechaCreacion = fechaCreacion.String
+	}
+	return &lic, nil
+}
+
+// UpdateLicencia actualiza campos editables de una licencia
+func UpdateLicencia(dbConn *sql.DB, id, tipoID int64, nombre, descripcion string, valor float64, duracionDias int) error {
+	_, err := dbConn.Exec("UPDATE licencias SET tipo_id = ?, nombre = ?, descripcion = ?, valor = ?, duracion_dias = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ?", tipoID, nombre, descripcion, valor, duracionDias, id)
+	return err
+}
+
+// DeleteLicencia elimina una licencia por id
+func DeleteLicencia(dbConn *sql.DB, id int64) error {
+	_, err := dbConn.Exec("DELETE FROM licencias WHERE id = ?", id)
+	return err
+}
+
+// Session representa una sesión del administrador registrada en la tabla sesiones
 type Session struct {
 	ID            int64  `json:"id"`
 	AdminEmail    string `json:"admin_email"`
@@ -103,52 +200,6 @@ type Session struct {
 	FechaInicio   string `json:"fecha_inicio"`
 	FechaCreacion string `json:"fecha_creacion"`
 	Activo        int    `json:"activo"`
-}
-
-// GetAdministradores devuelve la lista de administradores desde la BD superadministrador
-func GetAdministradores(dbConn *sql.DB) ([]Admin, error) {
-	rows, err := dbConn.Query("SELECT id, email, name, role, fecha_creacion, fecha_actualizacion, estado FROM administradores ORDER BY id DESC")
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var out []Admin
-	for rows.Next() {
-		var a Admin
-		if err := rows.Scan(&a.ID, &a.Email, &a.Name, &a.Role, &a.FechaCreacion, &a.FechaActualizacion, &a.Estado); err != nil {
-			return nil, err
-		}
-		out = append(out, a)
-	}
-	return out, nil
-}
-
-// GetSesiones devuelve la lista de sesiones desde la BD superadministrador
-func GetSesiones(dbConn *sql.DB) ([]Session, error) {
-	rows, err := dbConn.Query("SELECT id, admin_email, token, ip, user_agent, fecha_inicio, fecha_creacion, activo FROM sesiones ORDER BY id DESC")
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var out []Session
-	for rows.Next() {
-		var s Session
-		var fechaInicio sql.NullString
-		var fechaCreacion sql.NullString
-		if err := rows.Scan(&s.ID, &s.AdminEmail, &s.Token, &s.IP, &s.UserAgent, &fechaInicio, &fechaCreacion, &s.Activo); err != nil {
-			return nil, err
-		}
-		if fechaInicio.Valid {
-			s.FechaInicio = fechaInicio.String
-		}
-		if fechaCreacion.Valid {
-			s.FechaCreacion = fechaCreacion.String
-		}
-		out = append(out, s)
-	}
-	return out, nil
 }
 
 // GetSessionByToken devuelve una sesión activa por token
@@ -177,4 +228,96 @@ func GetAdminByEmail(dbConn *sql.DB, email string) (*Admin, error) {
 		return nil, err
 	}
 	return &a, nil
+}
+
+// GetAdministradores lista todos los administradores
+func GetAdministradores(dbConn *sql.DB) ([]Admin, error) {
+	rows, err := dbConn.Query("SELECT id, email, name, role, fecha_creacion, fecha_actualizacion, estado FROM administradores ORDER BY id DESC")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Admin
+	for rows.Next() {
+		var a Admin
+		if err := rows.Scan(&a.ID, &a.Email, &a.Name, &a.Role, &a.FechaCreacion, &a.FechaActualizacion, &a.Estado); err != nil {
+			return nil, err
+		}
+		out = append(out, a)
+	}
+	return out, nil
+}
+
+// GetSesiones lista las sesiones registradas
+func GetSesiones(dbConn *sql.DB) ([]Session, error) {
+	rows, err := dbConn.Query("SELECT id, admin_email, token, ip, user_agent, fecha_inicio, fecha_creacion, activo FROM sesiones ORDER BY id DESC")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Session
+	for rows.Next() {
+		var s Session
+		var fechaInicio sql.NullString
+		var fechaCreacion sql.NullString
+		if err := rows.Scan(&s.ID, &s.AdminEmail, &s.Token, &s.IP, &s.UserAgent, &fechaInicio, &fechaCreacion, &s.Activo); err != nil {
+			return nil, err
+		}
+		if fechaInicio.Valid {
+			s.FechaInicio = fechaInicio.String
+		}
+		if fechaCreacion.Valid {
+			s.FechaCreacion = fechaCreacion.String
+		}
+		out = append(out, s)
+	}
+	return out, nil
+}
+
+// TipoEmpresa representa un tipo de empresa
+type TipoEmpresa struct {
+	ID            int64  `json:"id"`
+	Nombre        string `json:"nombre"`
+	Observaciones string `json:"observaciones"`
+	FechaCreacion string `json:"fecha_creacion"`
+	Estado        string `json:"estado"`
+}
+
+// CreateTipoEmpresa inserta un nuevo tipo de empresa
+func CreateTipoEmpresa(dbConn *sql.DB, nombre, observaciones string) (int64, error) {
+	res, err := dbConn.Exec("INSERT INTO tipos_de_empresas (nombre, observaciones, fecha_creacion) VALUES (?, ?, datetime('now','localtime'))", nombre, observaciones)
+	if err != nil {
+		return 0, err
+	}
+	return res.LastInsertId()
+}
+
+// GetTiposEmpresas obtiene todos los tipos de empresa
+func GetTiposEmpresas(dbConn *sql.DB) ([]TipoEmpresa, error) {
+	rows, err := dbConn.Query("SELECT id, nombre, observaciones, fecha_creacion, estado FROM tipos_de_empresas ORDER BY id DESC")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []TipoEmpresa
+	for rows.Next() {
+		var t TipoEmpresa
+		if err := rows.Scan(&t.ID, &t.Nombre, &t.Observaciones, &t.FechaCreacion, &t.Estado); err != nil {
+			return nil, err
+		}
+		out = append(out, t)
+	}
+	return out, nil
+}
+
+// UpdateTipoEmpresa actualiza un tipo de empresa por id
+func UpdateTipoEmpresa(dbConn *sql.DB, id int64, nombre, observaciones string) error {
+	_, err := dbConn.Exec("UPDATE tipos_de_empresas SET nombre = ?, observaciones = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ?", nombre, observaciones, id)
+	return err
+}
+
+// DeleteTipoEmpresa elimina un tipo de empresa por id
+func DeleteTipoEmpresa(dbConn *sql.DB, id int64) error {
+	_, err := dbConn.Exec("DELETE FROM tipos_de_empresas WHERE id = ?", id)
+	return err
 }

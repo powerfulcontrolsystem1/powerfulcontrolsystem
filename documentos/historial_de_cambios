@@ -365,6 +365,30 @@ Archivos modificados:
     - backend/tools/set_admin_role.go (herramienta usada para aplicar el cambio)
 - Motivo: proporcionar acceso de superadministrador al usuario indicado.
 
+2026-03-27: Panel Super Administrador — menú y páginas
+- Acción: Se añadió un menú vertical izquierdo en `web/super_administrador.html` y se crearon páginas en `web/super/` para: `tipos_empresas`, `tipos_licencias`, `licencias`, `configuracion` y `administradores`.
+- Archivos creados/modificados:
+    - web/super_administradores.html (modificado)
+    - web/super/tipos_empresas.html (nuevo)
+    - web/super/tipos_licencias.html (nuevo)
+    - web/super/licencias.html (nuevo)
+    - web/super/configuracion.html (nuevo)
+    - web/super/administradores.html (nuevo)
+    - documentos/descripcion_de_archivos (documentación actualizada)
+- Motivo: proveer navegación y espacio de trabajo para tareas de superadministración.
+
+2026-03-27: CRUD para Tipos de empresas y Tipos de licencias
+- Acción: Se implementaron endpoints CRUD en el backend para gestionar `tipos_de_empresas` y `tipos_de_licencia`, y se añadieron las páginas frontend con formularios y listados.
+- Endpoints: `/super/api/tipos_empresas` y `/super/api/tipos_licencias` (GET, POST, PUT, DELETE).
+- Archivos modificados/creados:
+    - backend/db/db.go (funciones CRUD y modelos `TipoEmpresa`, `TipoLicencia`)
+    - backend/handlers/handlers.go (handlers CRUD añadidos)
+    - backend/main.go (rutas registradas; `nombre` marcado como UNIQUE en esquemas)
+    - web/super/tipos_empresas.html (frontend CRUD)
+    - web/super/tipos_licencias.html (frontend CRUD)
+    - documentos/descripcion_de_archivos (documentación actualizada)
+- Nota: El campo `nombre` es único para ambos tipos; el backend retornará error en intentos de duplicado.
+
 
 
 
@@ -374,6 +398,30 @@ PushStatus: OK
 Archivos modificados:
 - backend/db/db.go
 - backend/db/empresas.db.20260326-174525.bak
+
+2026-03-27: Creación CRUD `licencias` y eliminación de `tipos_licencias` UI
+- Descripción: Se añadió la entidad `licencias` en `superadministrador.db` con campos estándar y específicos: `id`, `empresa_id`, `tipo_id`, `nombre`, `descripcion`, `valor`, `duracion_dias`, `fecha_creacion`, `activo`. Se implementó el CRUD backend y la página administrativa.
+- Archivos modificados/creados:
+    - backend/db/db.go (modelo `Licencia`, funciones `CreateLicencia`, `GetLicencias`, `GetLicenciaByID`, `UpdateLicencia`, `DeleteLicencia`, y listado de sesiones/administradores consolidado)
+    - backend/handlers/handlers.go (handler `/super/api/licencias` y ajustes en handlers relacionados)
+    - backend/main.go (registro de ruta `/super/api/licencias`, esquema actualizado)
+    - web/super/licencias.html (frontend CRUD: formulario con select `tipo de empresa`, `nombre`, `descripcion`, `valor`, `duracion_dias` y listado)
+    - web/super/tipos_licencias.html (eliminada del UI; enlace retirado del sidebar)
+    - documentos/descripcion_de_archivos (entrada añadida describiendo `licencias` y la eliminación de `tipos_licencias`)
+
+- Motivo: Reemplazar la gestión de tipos de licencias por un CRUD de `licencias` más completo que asocia licencias a tipos de empresa existentes y permite definir valor y duración.
+
+- Responsable: cambios realizados localmente por el agente a petición del usuario.
+2026-03-27: Reemplazo de CRUD de 'tipos_de_licencia' por 'licencias'
+- Acción: Se eliminó el CRUD de `tipos_de_licencia` del frontend y su enlace en el panel de superadministrador. En su lugar se creó un CRUD completo para `licencias` que incluye selección de `tipo de empresa`, `nombre`, `descripcion`, `valor` y `duracion_dias`.
+- Cambios realizados:
+    - Eliminado: `web/super/tipos_licencias.html` (archivo eliminado)
+    - Actualizado: `web/super_administrador.html` (se quitó el enlace a `tipos_licencias`)
+    - Añadido: `web/super/licencias.html` (nuevo frontend CRUD con select de `tipo de empresa`)
+    - Backend: `backend/db/db.go` (añadido modelo `Licencia` y funciones CRUD `CreateLicencia`, `GetLicencias`, `GetLicenciaByID`, `UpdateLicencia`, `DeleteLicencia`)
+    - Backend: `backend/handlers/handlers.go` (añadido `LicenciasHandler` para gestionar la API `/super/api/licencias`)
+    - Backend: `backend/main.go` (esquema de `licencias` actualizado para incluir `nombre`, `descripcion`, `valor`, `duracion_dias` y ruta registrada `/super/api/licencias`)
+- Motivo: simplificar el modelo de tipos de licencia y centralizar la gestión de licencias con la relación a `tipos_de_empresas`.
 - backend/db/superadministrador.db.20260326-174324.bak
 - backend/db/superadministrador.db.20260326-174525.bak
 - backend/handlers/handlers.go

@@ -1,10 +1,15 @@
 :root{
+  /* Tema oscuro centralizado */
   --bg:#0f1720;
+  --surface:#0b1220;
   --card:#111827;
   --muted:#9ca3af;
   --text:#e6eef6;
   --accent:#2563eb;
   --accent-2:#06b6d4;
+  --danger:#ef4444;
+  --success:#10b981;
+  --border: rgba(255,255,255,0.04);
 }
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;padding:0;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
@@ -14,10 +19,55 @@ h1,h2,h3{margin:0 0 12px 0}
 p{color:var(--muted);line-height:1.5}
 .btn{display:inline-block;padding:10px 14px;background:var(--accent);color:white;border-radius:8px;text-decoration:none;font-weight:600}
 .btn.secondary{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--text)}
+/* Botón 'Agregar' usado en formularios CRUD */
+.btn.add{background:var(--accent-2);color:#fff;margin-bottom:12px}
+.btn.add:hover{filter:brightness(0.98)}
+
+/* Danger button */
+.btn.danger{background:var(--danger);color:#fff}
+.btn.danger:hover{filter:brightness(0.95)}
 .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
 .brand{font-weight:700;letter-spacing:0.4px}
 .footer{color:var(--muted);font-size:13px;margin-top:18px}
 .input{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:rgba(255,255,255,0.02);color:var(--text)}
+/* Formularios profesionales y responsive */
+.form{max-width:900px;margin:0 auto 18px auto;padding:16px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(0,0,0,0.03));border:1px solid var(--border)}
+.form-row{display:flex;gap:12px;margin-bottom:12px}
+.form-col{flex:1;min-width:0}
+.form-label{display:block;font-weight:700;margin-bottom:6px;color:var(--muted);font-size:0.95rem}
+.form-input{width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text)}
+.form-textarea{min-height:110px;padding:10px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text);resize:vertical}
+.form-actions{display:flex;gap:8px;justify-content:flex-end}
+.form-help{color:var(--muted);font-size:13px;margin-top:6px}
+.error{color:var(--danger);font-weight:700}
+.success{color:var(--success);font-weight:700}
+
+/* Tablas estilizadas */
+.table{width:100%;border-collapse:collapse;margin-top:12px}
+.table th,.table td{padding:12px;border-bottom:1px solid rgba(255,255,255,0.03);text-align:left}
+.table thead th{color:var(--muted);font-weight:700;font-size:0.95rem}
+.table tbody tr:hover{background:linear-gradient(90deg,rgba(255,255,255,0.01),rgba(0,0,0,0.02))}
+.actions button{margin-right:6px}
+
+/* Layout del panel de administración (sidebar + contenido) */
+.admin-layout{display:flex;min-height:100vh;background:var(--bg);color:var(--text)}
+.admin-sidebar{width:260px;padding:18px;background:var(--card);box-shadow:2px 0 8px rgba(2,6,23,0.6)}
+.admin-sidebar h2{margin:0 0 12px 0}
+.admin-sidebar .nav{list-style:none;padding:0;margin:0}
+.admin-sidebar .nav a{display:block;color:var(--text);text-decoration:none;padding:10px;border-radius:8px}
+.admin-sidebar .nav a:hover{background:rgba(255,255,255,0.02)}
+.admin-content{flex:1;padding:18px;overflow:auto;background:linear-gradient(180deg,transparent,rgba(255,255,255,0.01))}
+.admin-toolbar{padding:12px 18px;border-bottom:1px solid rgba(255,255,255,0.03);background:transparent}
+
+/* Responsive: colapsar sidebar */
+@media (max-width:900px){
+  .admin-layout{flex-direction:column}
+  .admin-sidebar{width:100%;display:flex;align-items:center;justify-content:space-between}
+  .admin-sidebar .nav{display:flex;gap:8px;overflow:auto}
+  .admin-sidebar .nav a{white-space:nowrap}
+  .admin-content{padding:12px}
+}
+
 ul{padding-left:18px}
 @media (max-width:600px){.container{margin:12px;padding:12px}.card{padding:12px}}
 
@@ -70,3 +120,9 @@ ul{padding-left:18px}
 .floating-menu .fm-item:hover{background:rgba(255,255,255,0.02)}
 
 @media (max-width:480px){.floating-menu{right:8px;top:8px}.floating-menu .fm-panel{right:0;left:auto;min-width:140px}}
+
+/* Reglas generales responsivas para formularios */
+@media (max-width:700px){
+  .form-row{flex-direction:column}
+  .form-actions{justify-content:stretch}
+}

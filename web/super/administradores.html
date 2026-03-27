@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Administradores</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Administradores</h1>
+    <p class="form-help">Lista de administradores (desde `superadministrador.db`).</p>
+    <div id="content">Cargando...</div>
+  </div>
+
+  <script>
+    async function loadAdmins(){
+      try{
+        const res = await fetch('/super/administradores');
+        if(!res.ok) throw new Error('error al obtener administradores');
+        const admins = await res.json();
+        if(!Array.isArray(admins)) { document.getElementById('content').innerText = 'Respuesta inesperada'; return }
+        const tbl = document.createElement('table'); tbl.className = 'table';
+        const thead = document.createElement('thead');
+        thead.innerHTML = '<tr><th>ID</th><th>Email</th><th>Nombre</th><th>Rol</th><th>Estado</th></tr>';
+        tbl.appendChild(thead);
+        const tbody = document.createElement('tbody');
+        admins.forEach(a=>{
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${a.id}</td><td>${a.email}</td><td>${a.name}</td><td>${a.role}</td><td>${a.estado}</td>`;
+          tbody.appendChild(tr);
+        });
+        tbl.appendChild(tbody);
+        const c = document.getElementById('content');
+        c.innerHTML=''; c.appendChild(tbl);
+      }catch(e){
+        document.getElementById('content').innerText = 'No se pudo cargar administradores: '+e.message;
+      }
+    }
+    loadAdmins();
+  </script>
+</body>
+</html>

@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -93,7 +94,7 @@ func main() {
 	// Crear tipos_de_empresas en la base de datos de superadministrador (ubicación centralizada)
 	createTiposSuper := `CREATE TABLE IF NOT EXISTS tipos_de_empresas (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		nombre TEXT NOT NULL,
+		nombre TEXT NOT NULL UNIQUE,
 		fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
 		fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
 		usuario_creador TEXT,
@@ -122,7 +123,7 @@ func main() {
 
 	createTiposLic := `CREATE TABLE IF NOT EXISTS tipos_de_licencia (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		nombre TEXT NOT NULL,
+		nombre TEXT NOT NULL UNIQUE,
 		fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
 		fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
 		usuario_creador TEXT,
@@ -138,6 +139,10 @@ func main() {
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		empresa_id INTEGER,
 		tipo_id INTEGER,
+		nombre TEXT,
+		descripcion TEXT,
+		valor REAL DEFAULT 0,
+		duracion_dias INTEGER DEFAULT 0,
 		fecha_inicio TEXT,
 		fecha_fin TEXT,
 		activo INTEGER DEFAULT 1,
@@ -146,6 +151,54 @@ func main() {
 	if _, err := dbSuper.Exec(createLic); err != nil {
 		log.Fatalf("failed to create licencias table in super db: %v", err)
 	}
+
+	// Asegurar esquema mínimo de la tabla licencias (migraciones simples)
+	ensureLicenciasSchema := func(db *sql.DB) {
+		// Obtener columnas actuales
+		rows, err := db.Query("PRAGMA table_info(licencias);")
+		if err != nil {
+			log.Printf("warning: unable to inspect licencias schema: %v", err)
+			return
+		}
+		defer rows.Close()
+		existing := map[string]bool{}
+		for rows.Next() {
+			var cid int
+			var name string
+			var ctype string
+			var notnull int
+			var dflt sql.NullString
+			var pk int
+			if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
+				log.Printf("warning: scan pragma table_info error: %v", err)
+				return
+			}
+			existing[name] = true
+		}
+
+		addIfMissing := func(colDef string, name string) {
+			if !existing[name] {
+				q := fmt.Sprintf("ALTER TABLE licencias ADD COLUMN %s;", colDef)
+				if _, err := db.Exec(q); err != nil {
+					log.Printf("failed to add column %s to licencias: %v", name, err)
+				} else {
+					log.Printf("added missing column %s to licencias", name)
+				}
+			}
+		}
+
+		addIfMissing("empresa_id INTEGER", "empresa_id")
+		addIfMissing("tipo_id INTEGER", "tipo_id")
+		addIfMissing("nombre TEXT", "nombre")
+		addIfMissing("descripcion TEXT", "descripcion")
+		addIfMissing("valor REAL DEFAULT 0", "valor")
+		addIfMissing("duracion_dias INTEGER DEFAULT 0", "duracion_dias")
+		addIfMissing("fecha_inicio TEXT", "fecha_inicio")
+		addIfMissing("fecha_fin TEXT", "fecha_fin")
+		addIfMissing("activo INTEGER DEFAULT 1", "activo")
+		addIfMissing("fecha_creacion TEXT DEFAULT (datetime('now','localtime'))", "fecha_creacion")
+	}
+	ensureLicenciasSchema(dbSuper)
 
 	// Crear tabla de sesiones en la base superadministrador
 	createSesiones := `CREATE TABLE IF NOT EXISTS sesiones (
@@ -171,6 +224,11 @@ func main() {
 	// Endpoints para administración y auditoría (listar administradores y sesiones)
 	http.HandleFunc("/super/administradores", handlers.ListAdministradoresHandler(dbSuper))
 	http.HandleFunc("/super/sesiones", handlers.ListSesionesHandler(dbSuper))
+
+	// Endpoints CRUD para tipos de empresas
+	http.HandleFunc("/super/api/tipos_empresas", handlers.TiposEmpresasHandler(dbSuper))
+	// Endpoint CRUD para licencias (nuevo)
+	http.HandleFunc("/super/api/licencias", handlers.LicenciasHandler(dbSuper))
 
 	// Logout handler: limpiar cookie de sesión (si existe) y redirigir a la página de login
 	http.HandleFunc("/auth/logout", func(w http.ResponseWriter, r *http.Request) {

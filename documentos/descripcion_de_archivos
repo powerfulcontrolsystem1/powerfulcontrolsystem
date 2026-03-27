@@ -64,6 +64,13 @@ Adicional:
 
  - Páginas adicionales:
     - `web/super_administrador.html`: Panel de destino para usuarios con rol `super_administrador`.
+		- `web/super_administrador.html`: Panel de destino para usuarios con rol `super_administrador`.
+		- `web/super/`: Carpeta con páginas del panel de super administrador:
+			- `web/super/tipos_empresas.html` — gestión de tipos de empresas (placeholder).
+			- `web/super/tipos_licencias.html` — gestión de tipos de licencias (eliminada por decisión del proyecto; reemplazada por `licencias`).
+			- `web/super/licencias.html` — gestión de licencias (CRUD): formulario con campos `tipo de empresa` (select), `nombre`, `descripcion`, `valor`, `duracion_dias` y listado/acciones (crear/editar/eliminar).
+			- `web/super/configuracion.html` — configuraciones globales (placeholder).
+			- `web/super/administradores.html` — lista de administradores que consulta el endpoint `/super/administradores`.
  - Generador de tokens: `backend/utils/utils.go` incluye `GenerateSecureToken(n int)` que produce tokens seguros usando `crypto/rand`.
  - Middleware de autenticación: `backend/utils/utils.go` incluye `AuthMiddleware` que valida `session_token` contra `superadministrador.db` y obliga rol `super_administrador` para rutas `/super/`. Rutas públicas: `/`, `/index.html`, `/login.html`, `/auth/google/login`, `/auth/google/callback`, `/assets/`.
  - Middleware de autenticación: `backend/utils/utils.go` incluye `AuthMiddleware` que valida `session_token` contra `superadministrador.db` y obliga rol `super_administrador` para rutas `/super/`. Rutas públicas: `/`, `/index.html`, `/login.html`, `/auth/google/login`, `/auth/google/callback`, `/assets/`.
