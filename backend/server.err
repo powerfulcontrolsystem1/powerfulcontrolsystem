@@ -1,14 +1,32 @@
-2026/03/27 12:52:34 index.html encontrado en ..\web\index.html
-2026/03/27 12:52:34 Servidor arrancado en :8080
-2026/03/27 12:52:35 -> GET / from [::1]:51846
-2026/03/27 12:52:35 <- 304 GET /
-2026/03/27 12:52:35 -> GET /estilos.css from [::1]:51846
-2026/03/27 12:52:35 -> GET /img/logo_punto_venta.svg from [::1]:61561
-2026/03/27 12:52:35 <- 304 GET /estilos.css
-2026/03/27 12:52:35 <- 304 GET /img/logo_punto_venta.svg
-2026/03/27 12:52:35 -> GET /img/logo_motel.svg from [::1]:57302
-2026/03/27 12:52:35 -> GET /img/logo_restaurante.svg from [::1]:61561
-2026/03/27 12:52:35 -> GET /img/logo_alarma.svg from [::1]:51846
-2026/03/27 12:52:35 <- 304 GET /img/logo_motel.svg
-2026/03/27 12:52:35 <- 304 GET /img/logo_restaurante.svg
-2026/03/27 12:52:35 <- 304 GET /img/logo_alarma.svg
+2026/03/27 13:08:47 index.html encontrado en ..\web\index.html
+2026/03/27 13:08:47 Servidor arrancado en :8080
+2026/03/27 13:08:47 -> GET / from [::1]:58085
+2026/03/27 13:08:48 <- 200 GET /
+2026/03/27 13:08:48 -> GET /estilos.css from [::1]:58085
+2026/03/27 13:08:48 -> GET /img/logo_punto_venta.svg from [::1]:60038
+2026/03/27 13:08:48 <- 304 GET /estilos.css
+2026/03/27 13:08:48 <- 304 GET /img/logo_punto_venta.svg
+2026/03/27 13:08:48 -> GET /img/logo_motel.svg from [::1]:57147
+2026/03/27 13:08:48 <- 304 GET /img/logo_motel.svg
+2026/03/27 13:08:48 -> GET /img/logo_restaurante.svg from [::1]:57147
+2026/03/27 13:08:48 -> GET /img/logo_alarma.svg from [::1]:60038
+2026/03/27 13:08:48 <- 304 GET /img/logo_restaurante.svg
+2026/03/27 13:08:48 <- 304 GET /img/logo_alarma.svg
+2026/03/27 13:08:53 -> GET / from [::1]:60038
+2026/03/27 13:08:53 <- 200 GET /
+2026/03/27 13:08:54 -> GET /estilos.css from [::1]:60038
+2026/03/27 13:08:54 -> GET /img/logo_punto_venta.svg from [::1]:57147
+2026/03/27 13:08:54 <- 200 GET /estilos.css
+2026/03/27 13:08:54 <- 200 GET /img/logo_punto_venta.svg
+2026/03/27 13:08:54 -> GET /img/logo_motel.svg from [::1]:58085
+2026/03/27 13:08:54 -> GET /img/logo_restaurante.svg from [::1]:61329
+2026/03/27 13:08:54 -> GET /img/logo_alarma.svg from [::1]:51495
+2026/03/27 13:08:54 <- 200 GET /img/logo_motel.svg
+2026/03/27 13:08:54 <- 200 GET /img/logo_restaurante.svg
+2026/03/27 13:08:54 <- 200 GET /img/logo_alarma.svg
+2026/03/27 13:08:54 -> GET /favicon.ico from [::1]:51495
+2026/03/27 13:08:54 <- 404 GET /favicon.ico
+2026/03/27 13:09:06 -> GET /ayuda.html from [::1]:51495
+2026/03/27 13:09:06 <- 200 GET /ayuda.html
+2026/03/27 13:09:45 -> GET /index.html from [::1]:51495
+2026/03/27 13:09:47 <- 301 GET /index.html

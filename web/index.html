@@ -10,7 +10,9 @@
   <div class="floating-menu" aria-hidden="false">
     <button class="fm-toggle" aria-label="Abrir menú">☰</button>
     <div class="fm-panel" role="menu">
-      <a class="fm-item" href="/auth/logout">Cerrar sesión</a>
+      <a class="fm-item" href="/index.html">Portal</a>
+      <a class="fm-item" href="/ayuda.html">Ayuda</a>
+      <a id="sessionLink" class="fm-item" href="/login.html">Iniciar sesión</a>
     </div>
   </div>
   <div class="portal">
@@ -75,9 +77,20 @@
       toggle.addEventListener('click', function(e){ e.stopPropagation(); panel.classList.toggle('open'); });
       document.addEventListener('click', function(){ panel.classList.remove('open'); });
       // Clear rememberAccount on logout click
-      var logoutLink = document.querySelector('.fm-item[href="/auth/logout"]');
-      if (logoutLink) {
-        logoutLink.addEventListener('click', function(){ try { localStorage.removeItem('rememberAccount'); } catch(e){} });
+      function getCookie(name){
+        const v = document.cookie.match('(^|;)\\s*'+name+'\\s*=\\s*([^;]+)');
+        return v ? v.pop() : '';
+      }
+      var sessionLink = document.getElementById('sessionLink');
+      if (sessionLink){
+        if (getCookie('session_token')){
+          sessionLink.textContent = 'Cerrar sesión';
+          sessionLink.href = '/auth/logout';
+          sessionLink.addEventListener('click', function(){ try { localStorage.removeItem('rememberAccount'); } catch(e){} });
+        } else {
+          sessionLink.textContent = 'Iniciar sesión';
+          sessionLink.href = '/login.html';
+        }
       }
     })();
   </script>

@@ -458,6 +458,19 @@ Archivos modificados:
 - backend/tools/query_users.go
 - backend/tools/set_admin_role.go
 - backend/tools/sync_users_to_super.go
+ 
+2026-03-27: Menú flotante unificado en frontend
+- Acción: Se unificó el menú flotante en páginas principales. El menú contiene enlaces a `Portal` (/index.html), `Ayuda` (/ayuda.html) y un enlace de sesión que muestra dinámicamente "Iniciar sesión" o "Cerrar sesión" según exista la cookie `session_token`.
+- Archivos modificados:
+    - web/index.html
+    - web/login.html
+    - web/seleccionar_empresa.html
+    - web/ayuda.html (nuevo)
+    - web/super_administrador.html
+    - web/super/licencias.html
+    - web/super/tipos_empresas.html
+    - web/super/administradores.html
+
 - backend/utils/utils.go
 - documentos/descripcion_de_archivos
 - documentos/descripcion_del_proyecto

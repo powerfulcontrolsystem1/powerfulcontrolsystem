@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Seleccionar Empresa</title>
-  <link rel="stylesheet" href="/assets/estilos.css">
+  <title>Ayuda - POS Multiempresa</title>
+  <link rel="stylesheet" href="/estilos.css">
 </head>
 <body>
   <div class="floating-menu" aria-hidden="false">
@@ -15,17 +15,23 @@
       <a id="sessionLink" class="fm-item" href="/login.html">Iniciar sesión</a>
     </div>
   </div>
+
   <div class="container">
-    <div class="card">
-      <h2>Seleccionar Empresa</h2>
-      <p>Bienvenido. Selecciona la empresa con la que deseas trabajar.</p>
-      <!-- Lista placeholder -->
+    <h1>Ayuda</h1>
+    <p>Bienvenido al centro de ayuda. Aquí encontrarás documentación básica y enlaces de soporte.</p>
+    <section>
+      <h2>Guía rápida</h2>
       <ul>
-        <li><a class="btn" href="#">Empresa A</a></li>
-        <li><a class="btn" href="#">Empresa B</a></li>
+        <li>Para iniciar sesión: ve a <a href="/login.html">Login</a>.</li>
+        <li>Panel de administración: <a href="/super_administrador.html">Super Administrador</a> (requiere rol).</li>
+        <li>Documentación y cambios: revisa la carpeta <code>documentos/</code> en el repositorio.</li>
       </ul>
-    </div>
-  </div>
+    </section>
+
+    <section>
+      <h2>Contacto</h2>
+      <p>Si necesitas soporte, contacta al administrador del sistema.</p>
+    </section>
   </div>
 
   <script>
@@ -35,7 +41,6 @@
       if (!toggle || !panel) return;
       toggle.addEventListener('click', function(e){ e.stopPropagation(); panel.classList.toggle('open'); });
       document.addEventListener('click', function(){ panel.classList.remove('open'); });
-      // Clear rememberAccount on logout click
       function getCookie(name){
         const v = document.cookie.match('(^|;)\\s*'+name+'\\s*=\\s*([^;]+)');
         return v ? v.pop() : '';
@@ -53,6 +58,5 @@
       }
     })();
   </script>
-
-  </body>
+</body>
 </html>

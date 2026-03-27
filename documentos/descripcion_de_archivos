@@ -44,9 +44,11 @@ Fecha de creación: 2026-03-26
 
 - backend/db/: Carpeta que contiene archivos de base de datos SQLite utilizados por la aplicaci�n. Los archivos empresas.db y superadministrador.db deben residir aqu�. Se eliminaron duplicados fuera de backend/.
 
-- UI/menu flotante: Men� flotante en esquina superior derecha disponible en las p�ginas principales; contiene la acci�n 'Cerrar sesi�n' y se estiliza en web/estilos.css.
+ - UI/menu flotante: Menú flotante en esquina superior derecha disponible en las páginas principales; contiene enlaces a `Portal`, `Ayuda` y un enlace de sesión que muestra dinámicamente "Iniciar sesión" o "Cerrar sesión" según el estado de la cookie `session_token`. Estilos en `web/estilos.css`.
 
 - UI/login - recordar cuenta: En `web/login.html` se añadió una casilla "Recordar cuenta" que guarda la preferencia en `localStorage`. Estilos en `web/estilos.css`.
+
+- web/ayuda.html: Nueva página estática de ayuda / documentación básica y contacto.
 
 Adicional:
 - Tabla `administradores` (superadministrador.db): almacena todos los usuarios que se registran o inician sesión en el sistema a nivel global. Contiene el campo `role` (ej. 'administrador', 'super_administrador').
