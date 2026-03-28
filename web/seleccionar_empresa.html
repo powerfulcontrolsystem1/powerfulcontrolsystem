@@ -99,7 +99,10 @@
           const me = await meRes.json();
 
           const [empRes, licRes, tiposRes] = await Promise.all([fetch('/super/api/empresas'), fetch('/super/api/licencias'), fetch('/super/api/tipos_empresas')]);
-          if (!empRes.ok) { throw new Error('failed to query empresas') }
+          if (!empRes.ok) {
+            const txt = await empRes.text().catch(()=>'');
+            throw new Error('failed to query empresas: ' + (txt || empRes.status + ''))
+          }
           let empresas = await empRes.json();
           if (!Array.isArray(empresas)) { empresas = empresas ? [empresas] : []; }
           let licencias = licRes.ok ? await licRes.json() : [];
@@ -141,7 +144,8 @@
           document.getElementById('addBtn').onclick = function(){ showForm(); };
         } catch (err) {
           console.error(err);
-          document.getElementById('cards').innerText = 'Error cargando empresas.';
+          const target = document.getElementById('cards');
+          target.innerText = 'Error cargando empresas: ' + (err && err.message ? err.message : String(err));
         }
       }
 

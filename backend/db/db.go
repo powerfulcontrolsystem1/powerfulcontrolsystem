@@ -393,7 +393,7 @@ func GetEmpresas(dbConn *sql.DB) ([]Empresa, error) {
 		var usuario sql.NullString
 		var estado sql.NullString
 		var obs sql.NullString
-		if err := rows.Scan(&e.ID, &e.Nombre, &nit, &tipoID, &fechaCre, &fechaAct, &usuario, &estado, &obs); err != nil {
+		if err := rows.Scan(&e.ID, &e.Nombre, &nit, &tipoID, &tipoNombre, &fechaCre, &fechaAct, &usuario, &estado, &obs); err != nil {
 			return nil, err
 		}
 		if nit.Valid {
@@ -437,7 +437,7 @@ func GetEmpresaByID(dbConn *sql.DB, id int64) (*Empresa, error) {
 	var usuario sql.NullString
 	var estado sql.NullString
 	var obs sql.NullString
-	if err := row.Scan(&e.ID, &e.Nombre, &nit, &tipoID, &fechaCre, &fechaAct, &usuario, &estado, &obs); err != nil {
+	if err := row.Scan(&e.ID, &e.Nombre, &nit, &tipoID, &tipoNombre, &fechaCre, &fechaAct, &usuario, &estado, &obs); err != nil {
 		return nil, err
 	}
 	if nit.Valid {
