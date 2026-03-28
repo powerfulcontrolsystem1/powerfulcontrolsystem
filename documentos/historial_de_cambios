@@ -723,3 +723,21 @@ Archivos modificados:
 - scripts/logs/actualizar_repositorio-20260328-131543.log
 - scripts/logs/actualizar_repositorio-20260328-131556.log
 
+
+2026-03-28: Actualización automática desde script: añadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- backend/server.err
+- backend/server.exe
+- documentos/historial_de_cambios
+- scripts/logs/actualizar_repositorio-20260328-131556.log
+- scripts/logs/actualizar_repositorio-20260328-143643.log
+- web/administrar_empresa.html
+- web/ayuda/ayuda.html
+- web/estilos.css
+- web/index.html
+- web/login.html
+- web/menu.js
+- web/seleccionar_empresa.html
+- web/super_administrador.html
+
