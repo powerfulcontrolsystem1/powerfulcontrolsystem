@@ -127,6 +127,7 @@ func main() {
 		}
 
 		addIfMissing("tipo_id INTEGER", "tipo_id")
+		addIfMissing("tipo_nombre TEXT", "tipo_nombre")
 		addIfMissing("fecha_actualizacion TEXT", "fecha_actualizacion")
 		addIfMissing("usuario_creador TEXT", "usuario_creador")
 		addIfMissing("estado TEXT DEFAULT 'activo'", "estado")
@@ -271,6 +272,8 @@ func main() {
 	http.HandleFunc("/super/api/tipos_empresas", handlers.TiposEmpresasHandler(dbSuper))
 	// Endpoint CRUD para empresas (guardadas en empresas.db)
 	http.HandleFunc("/super/api/empresas", handlers.EmpresasHandler(dbEmpresas))
+	// Endpoint para obtener admin actual desde la cookie de sesión
+	http.HandleFunc("/me", handlers.MeHandler(dbSuper))
 	// Endpoint CRUD para administradores (API)
 	http.HandleFunc("/super/api/administradores", handlers.AdministradoresHandler(dbSuper))
 	// Endpoint CRUD para licencias (nuevo)

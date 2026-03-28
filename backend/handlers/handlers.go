@@ -377,6 +377,8 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "invalid payload", http.StatusBadRequest)
 				return
 			}
+
+			log.Printf("POST /super/api/licencias payload: TipoID=%d Nombre=%q", payload.TipoID, payload.Nombre)
 			if payload.Nombre == "" {
 				http.Error(w, "nombre required", http.StatusBadRequest)
 				return
@@ -467,6 +469,29 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 	}
 }
 
+// MeHandler devuelve información del administrador autenticado usando la cookie session_token
+func MeHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		c, err := r.Cookie("session_token")
+		if err != nil || c == nil || c.Value == "" {
+			http.Error(w, "unauthenticated", http.StatusUnauthorized)
+			return
+		}
+		s, err := dbpkg.GetSessionByToken(dbSuper, c.Value)
+		if err != nil || s == nil {
+			http.Error(w, "unauthenticated", http.StatusUnauthorized)
+			return
+		}
+		admin, err := dbpkg.GetAdminByEmail(dbSuper, s.AdminEmail)
+		if err != nil || admin == nil {
+			http.Error(w, "no admin found", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(admin)
+	}
+}
+
 // EmpresasHandler maneja CRUD de empresas en la base empresas.db
 func EmpresasHandler(dbEmp *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -484,6 +509,7 @@ func EmpresasHandler(dbEmp *sql.DB) http.HandlerFunc {
 		case http.MethodPost:
 			var payload struct {
 				TipoID         int64  `json:"tipo_id"`
+				TipoNombre     string `json:"tipo_nombre"`
 				Nombre         string `json:"nombre"`
 				Nit            string `json:"nit"`
 				Observaciones  string `json:"observaciones"`
@@ -497,7 +523,7 @@ func EmpresasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, "nombre required", http.StatusBadRequest)
 				return
 			}
-			id, err := dbpkg.CreateEmpresa(dbEmp, payload.TipoID, payload.Nombre, payload.Nit, payload.Observaciones, payload.UsuarioCreador)
+			id, err := dbpkg.CreateEmpresa(dbEmp, payload.TipoID, payload.TipoNombre, payload.Nombre, payload.Nit, payload.Observaciones, payload.UsuarioCreador)
 			if err != nil {
 				log.Println("POST /super/api/empresas error:", err)
 				http.Error(w, "failed to create empresa: "+err.Error(), http.StatusInternalServerError)
@@ -543,6 +569,7 @@ func EmpresasHandler(dbEmp *sql.DB) http.HandlerFunc {
 			}
 			var payload struct {
 				TipoID        int64  `json:"tipo_id"`
+				TipoNombre    string `json:"tipo_nombre"`
 				Nombre        string `json:"nombre"`
 				Nit           string `json:"nit"`
 				Observaciones string `json:"observaciones"`
@@ -551,7 +578,7 @@ func EmpresasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, "invalid payload", http.StatusBadRequest)
 				return
 			}
-			if err := dbpkg.UpdateEmpresa(dbEmp, id, payload.TipoID, payload.Nombre, payload.Nit, payload.Observaciones); err != nil {
+			if err := dbpkg.UpdateEmpresa(dbEmp, id, payload.TipoID, payload.TipoNombre, payload.Nombre, payload.Nit, payload.Observaciones); err != nil {
 				log.Println("PUT /super/api/empresas error:", err)
 				http.Error(w, "failed to update empresa: "+err.Error(), http.StatusInternalServerError)
 				return

@@ -10,8 +10,7 @@
   <div class="floating-menu" aria-hidden="false">
     <button class="fm-toggle" aria-label="Abrir menú">☰</button>
     <div class="fm-panel" role="menu">
-      <a class="fm-item" href="/index.html">Portal</a>
-      <a class="fm-item" href="/ayuda.html">Ayuda</a>
+      
       <a id="sessionLink" class="fm-item" href="/login.html">Iniciar sesión</a>
     </div>
   </div>
@@ -19,23 +18,50 @@
     <aside class="admin-sidebar">
       <h2>Seleccionar Empresa</h2>
       <ul class="nav">
-        <li><a href="/super/empresas.html">Agregar empresa</a></li>
-        <li><a href="/index.html">Portal</a></li>
-        <li><a href="/ayuda.html">Ayuda</a></li>
+        <li><a href="/seleccionar%20empresa/empresas.html">Agregar empresa</a></li>
+        <li><a href="/super/licencias.html">Licencias</a></li>
+        <li><a href="/super/administradores.html">Administradores</a></li>
+        <li><a href="/super/reportes_globales.html">Reportes globales</a></li>
       </ul>
     </aside>
 
     <main class="admin-content">
       <div class="container">
-        <div class="card">
-          <h2>Seleccionar Empresa</h2>
-          <p>Bienvenido. Selecciona la empresa con la que deseas trabajar.</p>
-          <!-- Lista placeholder -->
-          <ul>
-            <li><a class="btn" href="#">Empresa A</a></li>
-            <li><a class="btn" href="#">Empresa B</a></li>
-          </ul>
+        <div class="page-header">
+          <h1 style="display:inline-block;margin-right:12px">Seleccionar Empresa</h1>
+          <button id="addBtn" class="btn add" style="vertical-align:middle">Agregar</button>
         </div>
+
+        <form id="form" class="form" style="margin-bottom:18px;display:none">
+          <input type="hidden" id="itemId">
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label">Tipo de empresa</label>
+              <select id="tipo_id" class="form-input"></select>
+            </div>
+            <div class="form-col">
+              <label class="form-label">Nombre</label>
+              <input id="nombre" class="form-input" required />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label">NIT</label>
+              <input id="nit" class="form-input" />
+            </div>
+            <div class="form-col">
+              <label class="form-label">Observaciones</label>
+              <input id="observaciones" class="form-input" />
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" id="saveBtn" class="btn">Guardar</button>
+            <button type="button" id="cancelBtn" class="btn secondary">Cancelar</button>
+          </div>
+          <div class="form-help" id="msg"></div>
+        </form>
+
+        <div id="cards" class="portal-grid">Cargando empresas...</div>
       </div>
     </main>
   </div>
@@ -47,11 +73,12 @@
       if (!toggle || !panel) return;
       toggle.addEventListener('click', function(e){ e.stopPropagation(); panel.classList.toggle('open'); });
       document.addEventListener('click', function(){ panel.classList.remove('open'); });
-      // Clear rememberAccount on logout click
+
       function getCookie(name){
         const v = document.cookie.match('(^|;)\\s*'+name+'\\s*=\\s*([^;]+)');
         return v ? v.pop() : '';
       }
+
       var sessionLink = document.getElementById('sessionLink');
       if (sessionLink){
         if (getCookie('session_token')){
@@ -63,6 +90,88 @@
           sessionLink.href = '/login.html';
         }
       }
+
+      // Load current admin, empresas and licencias, then render cards for empresas created by the admin
+      async function render() {
+        try {
+          const meRes = await fetch('/me');
+          if (!meRes.ok) { window.location.href = '/login.html'; return }
+          const me = await meRes.json();
+
+          const [empRes, licRes, tiposRes] = await Promise.all([fetch('/super/api/empresas'), fetch('/super/api/licencias'), fetch('/super/api/tipos_empresas')]);
+          if (!empRes.ok) { throw new Error('failed to query empresas') }
+          let empresas = await empRes.json();
+          if (!Array.isArray(empresas)) { empresas = empresas ? [empresas] : []; }
+          let licencias = licRes.ok ? await licRes.json() : [];
+          if (!Array.isArray(licencias)) { licencias = licencias ? [licencias] : []; }
+          let tipos = tiposRes.ok ? await tiposRes.json() : [];
+          if (!Array.isArray(tipos)) { tipos = tipos ? [tipos] : []; }
+
+          // map empresa_id -> hasActiveLicense
+          const activeByEmpresa = {};
+          licencias.forEach(l => { if (l.empresa_id && (l.activo === 1 || l.activo === '1' || l.activo === 'activo')) { activeByEmpresa[l.empresa_id] = true } });
+
+          // filter empresas creadas por el admin
+          const myEmpresas = empresas.filter(e => {
+            if (!e.usuario_creador) return false
+            return e.usuario_creador.toLowerCase() === (me.email||'').toLowerCase()
+          });
+
+          const container = document.getElementById('cards'); container.innerHTML = '';
+          // preparar select de tipos para el formulario
+          const tipoSelect = document.getElementById('tipo_id');
+          if (tipoSelect) {
+            tipoSelect.innerHTML = '<option value="">-- Seleccionar --</option>';
+            tipos.forEach(t=>{ const opt = document.createElement('option'); opt.value = t.nombre; opt.text = t.nombre; opt.dataset.id = t.id; tipoSelect.appendChild(opt); });
+          }
+          const list = (myEmpresas.length>0) ? myEmpresas : empresas; // fallback: show all if none created by user
+
+          // Si no hay empresas creadas por el usuario y la lista final está vacía, mostrar formulario
+          if (list.length === 0) {
+            showForm();
+          }
+
+          list.forEach(e => {
+            const div = document.createElement('div'); div.className = 'portal-card';
+            const hasLicense = !!activeByEmpresa[e.id];
+            div.innerHTML = `<div><h3>${escapeHtml(e.nombre||'--')}</h3><p class="muted">${escapeHtml(e.observaciones||'')}</p></div><div><p style="font-weight:700;color:${hasLicense? 'var(--success)':'var(--muted)'}">${hasLicense? 'Licencia activa':'Sin licencia activa'}</p><a class="btn" href="/seleccionar%20empresa/empresas.html">Administrar</a></div>`;
+            container.appendChild(div);
+          });
+          // ensure add button shows and wires
+          document.getElementById('addBtn').onclick = function(){ showForm(); };
+        } catch (err) {
+          console.error(err);
+          document.getElementById('cards').innerText = 'Error cargando empresas.';
+        }
+      }
+
+      function showForm(){ document.getElementById('form').style.display=''; document.getElementById('addBtn').style.display='none'; window.scrollTo({ top: 0, behavior: 'smooth' }); }
+      function hideForm(){ document.getElementById('form').style.display='none'; document.getElementById('addBtn').style.display=''; document.getElementById('itemId').value=''; document.getElementById('nombre').value=''; document.getElementById('nit').value=''; document.getElementById('observaciones').value=''; }
+
+      // manejar envío del formulario
+      document.addEventListener('DOMContentLoaded', function(){
+        const form = document.getElementById('form');
+        if (form) {
+          form.onsubmit = async function(e){
+            e.preventDefault();
+            const payload = { tipo_id: 0, tipo_nombre: document.getElementById('tipo_id').value||'', nombre: document.getElementById('nombre').value.trim(), nit: document.getElementById('nit').value.trim(), observaciones: document.getElementById('observaciones').value.trim(), usuario_creador: '' };
+            try{
+              // obtener current admin
+              const meRes = await fetch('/me');
+              if (meRes.ok){ const me = await meRes.json(); payload.usuario_creador = me.email || ''; }
+              if(!payload.nombre){ document.getElementById('msg').innerText='Nombre requerido'; return }
+              await fetch('/super/api/empresas', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+              hideForm();
+              render();
+            }catch(err){ document.getElementById('msg').innerText = err.message }
+          };
+          document.getElementById('cancelBtn').onclick = hideForm;
+        }
+      });
+
+      function escapeHtml(s){ return String(s).replace(/[&<>\"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":"&#39;"}[m] }) }
+
+      render();
     })();
   </script>
 

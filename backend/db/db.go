@@ -358,6 +358,7 @@ type Empresa struct {
 	Nombre             string `json:"nombre"`
 	Nit                string `json:"nit,omitempty"`
 	TipoID             int64  `json:"tipo_id,omitempty"`
+	TipoNombre         string `json:"tipo_nombre,omitempty"`
 	FechaCreacion      string `json:"fecha_creacion,omitempty"`
 	FechaActualizacion string `json:"fecha_actualizacion,omitempty"`
 	UsuarioCreador     string `json:"usuario_creador,omitempty"`
@@ -366,8 +367,8 @@ type Empresa struct {
 }
 
 // CreateEmpresa inserta una nueva empresa en la base empresas.db
-func CreateEmpresa(dbConn *sql.DB, tipoID int64, nombre, nit, observaciones, usuarioCreador string) (int64, error) {
-	res, err := dbConn.Exec("INSERT INTO empresas (tipo_id, nombre, nit, observaciones, usuario_creador, fecha_creacion, estado) VALUES (?, ?, ?, ?, ?, datetime('now','localtime'), 'activo')", tipoID, nombre, nit, observaciones, usuarioCreador)
+func CreateEmpresa(dbConn *sql.DB, tipoID int64, tipoNombre, nombre, nit, observaciones, usuarioCreador string) (int64, error) {
+	res, err := dbConn.Exec("INSERT INTO empresas (tipo_id, tipo_nombre, nombre, nit, observaciones, usuario_creador, fecha_creacion, estado) VALUES (?, ?, ?, ?, ?, ?, datetime('now','localtime'), 'activo')", tipoID, tipoNombre, nombre, nit, observaciones, usuarioCreador)
 	if err != nil {
 		return 0, err
 	}
@@ -376,7 +377,7 @@ func CreateEmpresa(dbConn *sql.DB, tipoID int64, nombre, nit, observaciones, usu
 
 // GetEmpresas obtiene todas las empresas
 func GetEmpresas(dbConn *sql.DB) ([]Empresa, error) {
-	rows, err := dbConn.Query("SELECT id, nombre, nit, tipo_id, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones FROM empresas ORDER BY id DESC")
+	rows, err := dbConn.Query("SELECT id, nombre, nit, tipo_id, tipo_nombre, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones FROM empresas ORDER BY id DESC")
 	if err != nil {
 		return nil, err
 	}
@@ -386,6 +387,7 @@ func GetEmpresas(dbConn *sql.DB) ([]Empresa, error) {
 		var e Empresa
 		var nit sql.NullString
 		var tipoID sql.NullInt64
+		var tipoNombre sql.NullString
 		var fechaCre sql.NullString
 		var fechaAct sql.NullString
 		var usuario sql.NullString
@@ -399,6 +401,9 @@ func GetEmpresas(dbConn *sql.DB) ([]Empresa, error) {
 		}
 		if tipoID.Valid {
 			e.TipoID = tipoID.Int64
+		}
+		if tipoNombre.Valid {
+			e.TipoNombre = tipoNombre.String
 		}
 		if fechaCre.Valid {
 			e.FechaCreacion = fechaCre.String
@@ -422,10 +427,11 @@ func GetEmpresas(dbConn *sql.DB) ([]Empresa, error) {
 
 // GetEmpresaByID devuelve una empresa por id
 func GetEmpresaByID(dbConn *sql.DB, id int64) (*Empresa, error) {
-	row := dbConn.QueryRow("SELECT id, nombre, nit, tipo_id, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones FROM empresas WHERE id = ? LIMIT 1", id)
+	row := dbConn.QueryRow("SELECT id, nombre, nit, tipo_id, tipo_nombre, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones FROM empresas WHERE id = ? LIMIT 1", id)
 	var e Empresa
 	var nit sql.NullString
 	var tipoID sql.NullInt64
+	var tipoNombre sql.NullString
 	var fechaCre sql.NullString
 	var fechaAct sql.NullString
 	var usuario sql.NullString
@@ -439,6 +445,9 @@ func GetEmpresaByID(dbConn *sql.DB, id int64) (*Empresa, error) {
 	}
 	if tipoID.Valid {
 		e.TipoID = tipoID.Int64
+	}
+	if tipoNombre.Valid {
+		e.TipoNombre = tipoNombre.String
 	}
 	if fechaCre.Valid {
 		e.FechaCreacion = fechaCre.String
@@ -459,8 +468,8 @@ func GetEmpresaByID(dbConn *sql.DB, id int64) (*Empresa, error) {
 }
 
 // UpdateEmpresa actualiza campos editables de una empresa
-func UpdateEmpresa(dbConn *sql.DB, id, tipoID int64, nombre, nit, observaciones string) error {
-	_, err := dbConn.Exec("UPDATE empresas SET tipo_id = ?, nombre = ?, nit = ?, observaciones = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ?", tipoID, nombre, nit, observaciones, id)
+func UpdateEmpresa(dbConn *sql.DB, id, tipoID int64, tipoNombre, nombre, nit, observaciones string) error {
+	_, err := dbConn.Exec("UPDATE empresas SET tipo_id = ?, tipo_nombre = ?, nombre = ?, nit = ?, observaciones = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ?", tipoID, tipoNombre, nombre, nit, observaciones, id)
 	return err
 }
 

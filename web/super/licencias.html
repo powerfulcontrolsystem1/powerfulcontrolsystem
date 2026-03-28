@@ -83,11 +83,11 @@
 
       document.querySelectorAll('.edit').forEach(b=>b.onclick = async ()=>{
         const id = b.getAttribute('data-id');
-        // mostrar formulario y cargar valores
+        // mostrar formulario y cargar valores desde la lista ya cargada
+        const item = data.find(x => String(x.id) === String(id));
+        if(!item) return alert('Registro no encontrado');
         document.getElementById('form').style.display = '';
         document.getElementById('addBtn').style.display = 'none';
-        const itemRes = await fetch('/super/api/licencias?id='+id);
-        const item = await itemRes.json();
         document.getElementById('itemId').value = item.id;
         document.getElementById('tipo_id').value = item.tipo_id || '';
         document.getElementById('nombre').value = item.nombre || '';

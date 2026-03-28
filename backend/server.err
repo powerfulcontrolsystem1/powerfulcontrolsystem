@@ -1,31 +1,47 @@
-2026/03/27 22:29:12 added missing column tipo_id to empresas
-2026/03/27 22:29:12 index.html encontrado en ..\web\index.html
-2026/03/27 22:29:12 Servidor arrancado en :8080
-2026/03/27 22:29:12 -> GET /estilos.css from [::1]:55135
-2026/03/27 22:29:12 <- 304 GET /estilos.css
-2026/03/27 22:29:13 -> GET /assets/estilos.css from [::1]:55135
-2026/03/27 22:29:13 <- 304 GET /assets/estilos.css
-2026/03/27 22:29:14 -> GET /auth/google/login from [::1]:55135
-2026/03/27 22:29:14 handleGoogleLogin: client_id set=true, redirect_url="http://localhost:8080/auth/google/callback"
-2026/03/27 22:29:14 Auth URL: https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&client_id=1029204473903-6npuu63uehsrn2jn8fnif4fgpp6kcjsm.apps.googleusercontent.com&include_granted_scopes=true&prompt=select_account+consent&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fauth%2Fgoogle%2Fcallback&response_type=code&scope=openid+email+profile&state=state-token
-2026/03/27 22:29:14 <- 302 GET /auth/google/login
-2026/03/27 22:29:19 -> GET /auth/google/callback from [::1]:55135
-2026/03/27 22:29:20 <- 302 GET /auth/google/callback
-2026/03/27 22:29:20 -> GET /super_administrador.html from [::1]:55135
-2026/03/27 22:29:20 <- 304 GET /super_administrador.html
-2026/03/27 22:29:20 -> GET /super/administradores from [::1]:55135
-2026/03/27 22:29:20 <- 200 GET /super/administradores
-2026/03/27 22:29:22 -> GET /seleccionar_empresa.html from [::1]:55135
-2026/03/27 22:29:22 <- 304 GET /seleccionar_empresa.html
-2026/03/27 22:29:23 -> GET /super/empresas.html from [::1]:55135
-2026/03/27 22:29:23 <- 304 GET /super/empresas.html
-2026/03/27 22:29:23 -> GET /super/api/tipos_empresas from [::1]:55135
-2026/03/27 22:29:23 <- 200 GET /super/api/tipos_empresas
-2026/03/27 22:29:23 -> GET /super/api/empresas from [::1]:55135
-2026/03/27 22:29:23 <- 200 GET /super/api/empresas
-2026/03/27 22:29:42 -> POST /super/api/empresas from [::1]:55135
-2026/03/27 22:29:42 <- 200 POST /super/api/empresas
-2026/03/27 22:29:42 -> GET /super/api/tipos_empresas from [::1]:55135
-2026/03/27 22:29:42 <- 200 GET /super/api/tipos_empresas
-2026/03/27 22:29:42 -> GET /super/api/empresas from [::1]:55135
-2026/03/27 22:29:42 <- 200 GET /super/api/empresas
+2026/03/27 23:24:31 index.html encontrado en ..\web\index.html
+2026/03/27 23:24:31 Servidor arrancado en :8080
+2026/03/27 23:24:33 -> GET / from [::1]:63768
+2026/03/27 23:24:33 <- 304 GET /
+2026/03/27 23:24:33 -> GET /img/logo_punto_venta.svg from [::1]:63768
+2026/03/27 23:24:33 <- 304 GET /img/logo_punto_venta.svg
+2026/03/27 23:24:33 -> GET /img/logo_motel.svg from [::1]:63768
+2026/03/27 23:24:33 <- 304 GET /img/logo_motel.svg
+2026/03/27 23:24:33 -> GET /img/logo_restaurante.svg from [::1]:63768
+2026/03/27 23:24:33 <- 304 GET /img/logo_restaurante.svg
+2026/03/27 23:24:33 -> GET /img/logo_alarma.svg from [::1]:63768
+2026/03/27 23:24:33 <- 304 GET /img/logo_alarma.svg
+2026/03/27 23:24:35 -> GET /login.html from [::1]:63768
+2026/03/27 23:24:35 <- 304 GET /login.html
+2026/03/27 23:24:35 -> GET /auth/google/login from [::1]:63768
+2026/03/27 23:24:35 handleGoogleLogin: client_id set=true, redirect_url="http://localhost:8080/auth/google/callback"
+2026/03/27 23:24:35 Auth URL: https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&client_id=1029204473903-6npuu63uehsrn2jn8fnif4fgpp6kcjsm.apps.googleusercontent.com&include_granted_scopes=true&prompt=select_account+consent&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fauth%2Fgoogle%2Fcallback&response_type=code&scope=openid+email+profile&state=state-token
+2026/03/27 23:24:35 <- 302 GET /auth/google/login
+2026/03/27 23:24:40 -> GET /auth/google/callback from [::1]:63768
+2026/03/27 23:24:40 <- 302 GET /auth/google/callback
+2026/03/27 23:24:40 -> GET /super_administrador.html from [::1]:63768
+2026/03/27 23:24:40 <- 304 GET /super_administrador.html
+2026/03/27 23:24:41 -> GET /super/administradores from [::1]:63768
+2026/03/27 23:24:41 <- 200 GET /super/administradores
+2026/03/27 23:24:43 -> GET /seleccionar_empresa.html from [::1]:63768
+2026/03/27 23:24:43 <- 200 GET /seleccionar_empresa.html
+2026/03/27 23:24:43 -> GET /me from [::1]:63768
+2026/03/27 23:24:43 <- 200 GET /me
+2026/03/27 23:24:43 -> GET /super/api/empresas from [::1]:63768
+2026/03/27 23:24:43 <- 200 GET /super/api/empresas
+2026/03/27 23:24:43 -> GET /super/api/licencias from [::1]:63078
+2026/03/27 23:24:43 <- 200 GET /super/api/licencias
+2026/03/27 23:24:43 -> GET /super/api/tipos_empresas from [::1]:63768
+2026/03/27 23:24:43 <- 200 GET /super/api/tipos_empresas
+2026/03/27 23:24:56 -> GET /me from [::1]:63768
+2026/03/27 23:24:56 <- 200 GET /me
+2026/03/27 23:24:56 -> POST /super/api/empresas from [::1]:63768
+2026/03/27 23:24:56 <- 200 POST /super/api/empresas
+2026/03/27 23:24:56 -> GET /me from [::1]:63768
+2026/03/27 23:24:56 <- 200 GET /me
+2026/03/27 23:24:56 -> GET /super/api/empresas from [::1]:63768
+2026/03/27 23:24:56 -> GET /super/api/licencias from [::1]:63078
+2026/03/27 23:24:56 -> GET /super/api/tipos_empresas from [::1]:65383
+2026/03/27 23:24:56 GET /super/api/empresas error: sql: expected 10 destination arguments in Scan, not 9
+2026/03/27 23:24:56 <- 500 GET /super/api/empresas
+2026/03/27 23:24:56 <- 200 GET /super/api/licencias
+2026/03/27 23:24:56 <- 200 GET /super/api/tipos_empresas
