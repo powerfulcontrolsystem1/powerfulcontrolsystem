@@ -7,11 +7,13 @@
   <link rel="stylesheet" href="/estilos.css">
   
 </head>
-<body>
+<body class="super-page">
   <div class="container">
-    <h1>Tipos de empresas</h1>
+    <div class="page-header">
+      <h1>Tipos de empresas</h1>
+      <button id="addBtn" class="btn add">Agregar</button>
+    </div>
   <!-- Menú flotante eliminado en páginas del panel /super -->
-    <button id="addBtn" class="btn add">Agregar</button>
     <form id="form" class="form">
       <input type="hidden" id="itemId">
       <div class="form-row">
@@ -34,6 +36,7 @@
     </form>
     <div id="list">Cargando...</div>
   </div>
+
 
   <script>
     async function load(){

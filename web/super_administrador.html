@@ -54,6 +54,36 @@
         }
       }
     })();
+    // Resaltar link activo en sidebar y sincronizar con el iframe
+    (function(){
+      var sidebar = document.querySelector('.admin-sidebar .nav');
+      var links = sidebar ? Array.from(sidebar.querySelectorAll('a')) : [];
+      var iframe = document.getElementById('contentFrame');
+      function clearActive(){ links.forEach(function(a){ a.classList.remove('active'); }); }
+      function setActiveByHref(href){ clearActive(); var found = links.find(function(a){ return a.getAttribute('href') === href; }); if(found) found.classList.add('active'); }
+      links.forEach(function(a){
+        a.addEventListener('click', function(){
+          // marcar activo inmediatamente al hacer click
+          clearActive(); this.classList.add('active');
+        });
+      });
+      // cuando el iframe carga, sincronizar el active
+      if (iframe){
+        iframe.addEventListener('load', function(){
+          try{
+            var src = iframe.contentWindow.location.pathname;
+            // convertir path a href relativo si es necesario
+            setActiveByHref(src);
+          } catch(e){
+            // si no se puede leer (crossover), intentar usar iframe.src
+            var src2 = iframe.getAttribute('src');
+            setActiveByHref(src2);
+          }
+        });
+        // inicializar
+        setActiveByHref(iframe.getAttribute('src'));
+      }
+    })();
   </script>
 </body>
 </html>

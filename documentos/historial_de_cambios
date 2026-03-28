@@ -1,5 +1,11 @@
 Historial de cambios
 
+2026-03-27: Restauración del workspace al último commit remoto
+- Acción: Se restauró el repositorio local con `git reset --hard origin/main` y se limpiaron archivos no rastreados (`git clean -fd`).
+- Commit remoto usado: d0ea76c — "Actualizar historial_de_cambios: registro automático".
+- Motivo: volver al estado publicado en remoto por petición del usuario.
+- Responsable: operación realizada por el agente en el entorno local.
+
 2026-03-25: Creación inicial del proyecto. Elementos añadidos:
 - documento `descripcion_del_proyecto` (plantilla y contenido inicial)
 - carpeta `web/` con páginas `index.html`, `login.html`, `seleccionar_empresa.html`

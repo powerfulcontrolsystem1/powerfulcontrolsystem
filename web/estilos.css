@@ -11,6 +11,7 @@
   --success: #107c10; /* verde Microsoft */
   --border: rgba(255,255,255,0.04);
   --focus: rgba(0,120,212,0.18);
+  --accent-yellow: #FFCC00;
 }
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;padding:0;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
@@ -33,7 +34,8 @@ p{color:var(--muted);line-height:1.5}
 .footer{color:var(--muted);font-size:13px;margin-top:18px}
 .input{width:100%;padding:10px;border-radius:6px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:var(--text)}
 /* Formularios profesionales y responsive */
-.form{max-width:900px;margin:0 auto 18px auto;padding:16px;border-radius:8px;background:linear-gradient(180deg, rgba(255,255,255,0.002), rgba(0,0,0,0.03));border:1px solid rgba(255,255,255,0.02)}
+.form{max-width:900px;margin:0 auto 18px auto;padding:16px;border-radius:8px;background:#2f3132;border:1px solid rgba(255,255,255,0.04)}
+.form, .form .form-input, .form .form-textarea { color: var(--text); }
 .form-row{display:flex;gap:12px;margin-bottom:12px}
 .form-col{flex:1;min-width:0}
 .form-label{display:block;font-weight:700;margin-bottom:6px;color:var(--muted);font-size:0.95rem}
@@ -55,9 +57,11 @@ p{color:var(--muted);line-height:1.5}
 .admin-layout{display:flex;min-height:100vh;background:var(--bg);color:var(--text)}
 .admin-sidebar{width:260px;padding:18px;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.02));box-shadow:2px 0 20px rgba(2,6,23,0.6);border-right:1px solid rgba(255,255,255,0.02)}
 .admin-sidebar h2{margin:0 0 12px 0}
-.admin-sidebar .nav{list-style:none;padding:0;margin:0}
-.admin-sidebar .nav a{display:block;color:var(--text);text-decoration:none;padding:10px;border-radius:6px}
-.admin-sidebar .nav a:hover{background:linear-gradient(90deg, rgba(255,255,255,0.02), rgba(0,0,0,0.02));color:var(--accent-2)}
+.admin-sidebar h2{color:var(--accent-yellow);font-weight:800}
+.admin-sidebar .nav{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
+.admin-sidebar .nav a{display:block;color:var(--text);text-decoration:none;padding:10px 14px;border-radius:8px;background:var(--card);border:1px solid rgba(255,255,255,0.03);font-weight:700;font-size:0.95rem}
+.admin-sidebar .nav a:hover{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.02));color:var(--accent-2)}
+.admin-sidebar .nav a.active{background:var(--accent-2);color:#fff;border-color:rgba(0,0,0,0.12);box-shadow:0 6px 14px rgba(0,0,0,0.35)}
 .admin-content{flex:1;padding:18px;overflow:auto;background:linear-gradient(180deg,transparent,rgba(255,255,255,0.01))}
 .admin-toolbar{padding:12px 18px;border-bottom:1px solid rgba(255,255,255,0.03);background:transparent}
 
@@ -120,6 +124,22 @@ ul{padding-left:18px}
 
 /* Logo dentro de tarjetas */
 .portal-card .card-logo{width:72px;height:auto;margin-bottom:12px;opacity:0.95;filter:drop-shadow(0 6px 18px rgba(0,0,0,0.5))}
+
+/* Ajustes específicos para páginas dentro de /web/super */
+.super-page .container{max-width:980px;margin:8px auto;padding:8px}
+.super-page .container h1{font-size:1.1rem;margin:6px 0}
+.page-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.page-header h1{margin:0;font-size:1.1rem}
+.page-header .btn.add{margin-bottom:0}
+
+/* Tablas CRUD: cuadricula y zebra */
+.table th, .table td{padding:12px;border:1px solid rgba(255,255,255,0.03);text-align:left}
+.table thead th{background:rgba(255,255,255,0.01)}
+.table tbody tr:nth-child(odd){background:rgba(255,255,255,0.01)}
+.table tbody tr:nth-child(even){background:rgba(0,0,0,0.02)}
+
+/* Asegurar que botones en sidebar y en encabezados tengan tamaño de texto consistente */
+.admin-sidebar .nav a, .page-header .btn.add{font-size:0.95rem}
 
 @media (max-width:1000px){.portal-grid{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:640px){.portal-grid{grid-template-columns:1fr}.portal-main{padding:18px}}
