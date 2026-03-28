@@ -19,12 +19,20 @@
       return params.get(name);
     }
     (function(){
-      const id = getQueryParam('id');
       const info = document.getElementById('info');
-      if(!id){ info.innerText = 'No se indicó empresa (query param id).'; return }
-      info.innerText = 'Administrando empresa ID: ' + id;
-      // Placeholder: aquí se pueden cargar datos desde /super/api/empresas o un endpoint específico
-      document.getElementById('content').innerHTML = '<p>Interfaz de administración para la empresa con id <strong>'+id+'</strong>. Implementar controles específicos según requerimiento.</p>';
+      const id = getQueryParam('id');
+      const module = getQueryParam('module');
+      if (id) {
+        info.innerText = 'Administrando empresa ID: ' + id;
+        document.getElementById('content').innerHTML = '<p>Interfaz de administración para la empresa con id <strong>'+id+'</strong>. Implementar controles específicos según requerimiento.</p>';
+        return;
+      }
+      if (module) {
+        info.innerText = 'Detalle del módulo: ' + module;
+        document.getElementById('content').innerHTML = '<p>Vista detallada del módulo <strong>'+module+'</strong>. Aquí puede implementarse la documentación o controles del módulo.</p>';
+        return;
+      }
+      info.innerText = 'No se indicó empresa ni módulo (use query param `id` o `module`).';
     })();
   </script>
 </body>

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Proyecto POS - Módulo 1</title>
   <link rel="stylesheet" href="/estilos.css">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
   <script src="/menu.js"></script>
 </head>
 <body>
@@ -18,43 +19,42 @@
 
     <main class="portal-main container">
       <section class="portal-intro">
-        <h1>Powerful Control System</h1>
-        <p class="muted">Sistema de facturación electrónica adaptado a tu empresa</p>
+        <h1 class="brand-title">Powerful Control System</h1>
       </section>
 
       <section class="portal-grid">
-        <article class="portal-card warm">
-          <img src="/img/logo_punto_venta.svg" alt="logo Punto de venta" class="card-logo">
+        <article class="portal-card dark-mode">
+          <img src="/img/punto_venta.png" alt="icono Punto de venta" class="card-logo">
           <h3>Punto de venta</h3>
           <p>Sistema de facturación electrónica para pymes.</p>
-          <a class="btn secondary" href="#">Entrar</a>
+          <div class="card-actions"><a class="btn secondary" href="#">Entrar</a><a class="more-btn" href="/administrar_empresa.html?module=punto_venta" target="_blank">Ver más</a></div>
         </article>
         
-        <article class="portal-card warm">
-          <img src="/img/logo_motel.svg" alt="logo Motel" class="card-logo">
+        <article class="portal-card dark-mode">
+          <img src="/img/motel.png" alt="icono Motel" class="card-logo">
           <h3>Sistema para Motel</h3>
           <p>Sistema de facturación electrónica tarifada por tiempo de servicio.</p>
-          <a class="btn secondary" href="#">Abrir</a>
+          <div class="card-actions"><a class="btn secondary" href="#">Abrir</a><a class="more-btn" href="/administrar_empresa.html?module=motel" target="_blank">Ver más</a></div>
         </article>
         
-        <article class="portal-card warm">
-          <img src="/img/logo_restaurante.svg" alt="logo Restaurante" class="card-logo">
+        <article class="portal-card dark-mode">
+          <img src="/img/restaurante.png" alt="icono Restaurante" class="card-logo">
           <h3>Restaurante</h3>
           <p>Sistema de facturación electrónica adaptado a restaurante, manejo por mesas.</p>
-          <a class="btn secondary" href="#">Ver</a>
+          <div class="card-actions"><a class="btn secondary" href="#">Ver</a><a class="more-btn" href="/administrar_empresa.html?module=restaurante" target="_blank">Ver más</a></div>
         </article>
         
-        <article class="portal-card warm">
-          <img src="/img/logo_alarma.svg" alt="logo Alarma" class="card-logo">
+        <article class="portal-card dark-mode">
+          <img src="/img/sensor.png" alt="icono Sensor/Alarma" class="card-logo">
           <h3>Control por sensor</h3>
           <p>Sistema de control para moteles, sensores en las puertas.</p>
-          <a class="btn secondary" href="#">Generar</a>
+          <div class="card-actions"><a class="btn secondary" href="#">Generar</a><a class="more-btn" href="/administrar_empresa.html?module=sensor" target="_blank">Ver más</a></div>
         </article>
         
-        <article class="portal-card warm">
+        <article class="portal-card dark-mode">
           <h3>Configuración</h3>
           <p>Administración de empresas, roles y permisos del sistema.</p>
-          <a class="btn secondary" href="#">Configurar</a>
+          <div class="card-actions"><a class="btn secondary" href="#">Configurar</a><a class="more-btn" href="/administrar_empresa.html?module=configuracion" target="_blank">Ver más</a></div>
         </article>
       </section>
 

@@ -1,56 +1,16 @@
-2026/03/28 14:30:49 index.html encontrado en ..\web\index.html
-2026/03/28 14:30:49 Servidor arrancado en :8080
-2026/03/28 14:30:51 -> GET /img/logo_punto_venta.svg from [::1]:64042
-2026/03/28 14:30:51 -> GET /estilos.css from [::1]:58697
-2026/03/28 14:30:51 <- 304 GET /estilos.css
-2026/03/28 14:30:51 <- 404 GET /img/logo_punto_venta.svg
-2026/03/28 14:30:51 -> GET /img/logo_motel.svg from [::1]:52569
-2026/03/28 14:30:51 -> GET /img/logo_restaurante.svg from [::1]:50244
-2026/03/28 14:30:51 -> GET /img/logo_alarma.svg from [::1]:60964
-2026/03/28 14:30:51 <- 404 GET /img/logo_alarma.svg
-2026/03/28 14:30:51 <- 404 GET /img/logo_motel.svg
-2026/03/28 14:30:51 <- 404 GET /img/logo_restaurante.svg
-2026/03/28 14:34:11 -> GET / from [::1]:50244
-2026/03/28 14:34:11 <- 200 GET /
-2026/03/28 14:34:11 -> GET /estilos.css from [::1]:50244
-2026/03/28 14:34:11 -> GET /menu.js from [::1]:52569
-2026/03/28 14:34:11 -> GET /img/logo_punto_venta.svg from [::1]:60964
-2026/03/28 14:34:11 -> GET /img/logo_motel.svg from [::1]:64042
-2026/03/28 14:34:11 <- 200 GET /estilos.css
-2026/03/28 14:34:11 <- 200 GET /menu.js
-2026/03/28 14:34:11 <- 404 GET /img/logo_punto_venta.svg
-2026/03/28 14:34:11 <- 404 GET /img/logo_motel.svg
-2026/03/28 14:34:11 -> GET /img/logo_restaurante.svg from [::1]:64042
-2026/03/28 14:34:11 -> GET /img/logo_alarma.svg from [::1]:60964
-2026/03/28 14:34:11 <- 404 GET /img/logo_alarma.svg
-2026/03/28 14:34:11 <- 404 GET /img/logo_restaurante.svg
-2026/03/28 14:34:13 -> GET / from [::1]:64042
-2026/03/28 14:34:13 <- 200 GET /
-2026/03/28 14:34:13 -> GET /estilos.css from [::1]:64042
-2026/03/28 14:34:13 -> GET /menu.js from [::1]:60964
-2026/03/28 14:34:13 <- 200 GET /estilos.css
-2026/03/28 14:34:13 -> GET /img/logo_punto_venta.svg from [::1]:52569
-2026/03/28 14:34:13 -> GET /img/logo_motel.svg from [::1]:50244
-2026/03/28 14:34:13 <- 200 GET /menu.js
-2026/03/28 14:34:13 <- 404 GET /img/logo_punto_venta.svg
-2026/03/28 14:34:13 <- 404 GET /img/logo_motel.svg
-2026/03/28 14:34:13 -> GET /img/logo_restaurante.svg from [::1]:50244
-2026/03/28 14:34:13 -> GET /img/logo_alarma.svg from [::1]:52569
-2026/03/28 14:34:13 <- 404 GET /img/logo_restaurante.svg
-2026/03/28 14:34:13 <- 404 GET /img/logo_alarma.svg
-2026/03/28 14:34:13 -> GET /favicon.ico from [::1]:52569
-2026/03/28 14:34:13 <- 404 GET /favicon.ico
-2026/03/28 14:34:38 -> GET / from [::1]:52569
-2026/03/28 14:34:38 <- 200 GET /
-2026/03/28 14:34:38 -> GET /estilos.css from [::1]:52569
-2026/03/28 14:34:38 -> GET /menu.js from [::1]:50244
-2026/03/28 14:34:38 -> GET /img/logo_punto_venta.svg from [::1]:60964
-2026/03/28 14:34:38 -> GET /img/logo_motel.svg from [::1]:64042
-2026/03/28 14:34:38 <- 304 GET /estilos.css
-2026/03/28 14:34:38 <- 304 GET /menu.js
-2026/03/28 14:34:38 <- 404 GET /img/logo_punto_venta.svg
-2026/03/28 14:34:38 <- 404 GET /img/logo_motel.svg
-2026/03/28 14:34:38 -> GET /img/logo_restaurante.svg from [::1]:64042
-2026/03/28 14:34:38 -> GET /img/logo_alarma.svg from [::1]:60964
-2026/03/28 14:34:38 <- 404 GET /img/logo_restaurante.svg
-2026/03/28 14:34:38 <- 404 GET /img/logo_alarma.svg
+2026/03/28 15:12:49 index.html encontrado en ..\web\index.html
+2026/03/28 15:12:50 Servidor arrancado en :8080
+2026/03/28 15:12:50 -> GET / from [::1]:57148
+2026/03/28 15:12:51 <- 200 GET /
+2026/03/28 15:12:51 -> GET /estilos.css from [::1]:57148
+2026/03/28 15:12:51 <- 200 GET /estilos.css
+2026/03/28 15:12:51 -> GET /menu.js from [::1]:62341
+2026/03/28 15:12:51 -> GET /img/punto_venta.png from [::1]:54183
+2026/03/28 15:12:51 <- 200 GET /img/punto_venta.png
+2026/03/28 15:12:51 <- 304 GET /menu.js
+2026/03/28 15:12:51 -> GET /img/motel.png from [::1]:60579
+2026/03/28 15:12:51 <- 200 GET /img/motel.png
+2026/03/28 15:12:51 -> GET /img/restaurante.png from [::1]:60579
+2026/03/28 15:12:51 -> GET /img/sensor.png from [::1]:54183
+2026/03/28 15:12:51 <- 200 GET /img/restaurante.png
+2026/03/28 15:12:51 <- 200 GET /img/sensor.png

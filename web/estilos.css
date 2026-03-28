@@ -124,10 +124,10 @@ ul{padding-left:18px}
 .portal-main{padding:24px 20px}
 /* Reducir margen superior solo en la página del portal para subir el título */
 .portal-main.container{margin-top:12px}
-.portal-intro{max-width:1100px;margin:0 auto 18px auto;display:flex;align-items:center;justify-content:space-between;gap:18px;text-align:left}
-.portal-intro h1{margin:0;font-size:1.6rem}
-.portal-intro .muted{color:var(--muted);margin:0;flex:0 0 auto}
-@media (max-width:720px){.portal-intro{flex-direction:column;align-items:flex-start;text-align:left}.portal-intro .muted{margin-top:8px}}
+.portal-intro{max-width:1100px;margin:0 auto 18px auto;display:flex;align-items:center;justify-content:center;gap:18px;text-align:center}
+.portal-intro h1{margin:0;font-size:2rem;color:var(--accent);font-family:'Playfair Display', Georgia,'Segoe UI',Roboto,Arial,sans-serif;font-weight:800;letter-spacing:0.6px}
+.portal-intro .muted{display:none}
+@media (max-width:720px){.portal-intro{flex-direction:column;align-items:center;text-align:center}.portal-intro .muted{margin-top:8px;display:none}}
 
 /* Centro del CTA de login en la página principal */
 .portal-intro .intro-cta{margin-top:18px;text-align:center}
@@ -143,8 +143,29 @@ ul{padding-left:18px}
 .portal-card p{color:var(--muted);flex:1;margin-bottom:12px}
 .portal-card .btn.secondary{align-self:flex-start}
 
+/* Modo oscuro específico para tarjetas: tonos más oscuros y texto más grande y más grueso */
+.portal-card.dark-mode{
+  background: linear-gradient(180deg, #1f2123, #161718);
+  border:1px solid rgba(255,255,255,0.03);
+  color:var(--text);
+  box-shadow:0 12px 36px rgba(0,0,0,0.6);
+  align-items:center;
+  text-align:center;
+  padding:22px;
+}
+.portal-card.dark-mode .card-logo{margin:0 auto;display:block}
+.portal-card.dark-mode .card-actions{display:flex;justify-content:center;gap:8px;margin-top:12px}
+.portal-card.dark-mode .btn.secondary{align-self:center}
+.portal-card .card-title, .portal-card h3{font-family: 'Segoe UI', Roboto, Arial, sans-serif; font-weight:800; font-size:1.05rem}
+.portal-card p{font-size:0.99rem}
+.portal-card .card-actions{margin-top:12px}
+.portal-card .more-btn{display:inline-block;padding:8px 12px;border-radius:8px;background:rgba(255,255,255,0.03);color:var(--text);font-weight:700;border:1px solid rgba(255,255,255,0.04);text-decoration:none;margin-left:8px}
+
 /* Logo dentro de tarjetas */
 .portal-card .card-logo{width:72px;height:auto;margin-bottom:12px;opacity:0.95;filter:drop-shadow(0 6px 18px rgba(0,0,0,0.5))}
+/* Ajuste de fuente para tarjetas: más grande y más gruesa */
+.portal-card, .portal-card.warm, .portal-card.dark-mode { font-family: 'Segoe UI', Roboto, Arial, sans-serif; font-size: 1rem }
+.portal-card h3 { font-weight:800; font-size:1.12rem }
 
 /* Ajustes específicos para páginas dentro de /web/super */
 .super-page .container{max-width:980px;margin:4px auto;padding:8px}
