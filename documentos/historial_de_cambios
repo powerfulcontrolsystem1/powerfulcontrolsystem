@@ -619,3 +619,17 @@ Archivos modificados:
 - web/super/tipos_empresas.html
 - web/super_administrador.html
 
+
+2026-03-27: Actualización automática desde script: añadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- backend/db/db.go
+- backend/handlers/handlers.go
+- backend/main.go
+- backend/server.err
+- backend/server.exe
+- scripts/logs/actualizar_repositorio-20260327-221322.log
+- scripts/logs/actualizar_repositorio-20260327-222954.log
+- web/seleccionar_empresa.html
+- web/super/empresas.html
+
