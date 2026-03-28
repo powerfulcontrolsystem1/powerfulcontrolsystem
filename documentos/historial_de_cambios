@@ -741,3 +741,19 @@ Archivos modificados:
 - web/seleccionar_empresa.html
 - web/super_administrador.html
 
+
+2026-03-28: Actualización automática desde script: añadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- backend/server.err
+- backend/server.exe
+- scripts/logs/actualizar_repositorio-20260328-143643.log
+- scripts/logs/actualizar_repositorio-20260328-151358.log
+- web/administrar_empresa.html
+- web/estilos.css
+- web/img/motel.png
+- web/img/punto_venta.png
+- web/img/restaurante.png
+- web/img/sensor.png
+- web/index.html
+
