@@ -1,5 +1,28 @@
 Historial de cambios
 
+2026-03-28: Menú flotante — Portal, toggle de tema y "Abrir como ventana"
+- Acción: Se añadió un enlace `Portal` y botones en el menú flotante para alternar entre modo oscuro/ claro y para abrir la página actual en una ventana con chrome reducido (modo app-like).
+- Archivos modificados:
+    - web/estilos.css
+    - web/seleccionar_empresa.html
+    - web/super_administrador.html
+    - web/login.html
+    - web/ayuda/ayuda.html
+- Descripción: El toggle de tema persiste la preferencia en `localStorage` (`theme='dark'|'light'`) y aplica la clase `theme-light` al elemento `html`. El botón "Abrir como ventana" usa `window.open()` con opciones reducidas (`toolbar=no,location=no,...`) — algunos navegadores pueden bloquear o impedir ocultar la barra de direcciones.
+- Responsable: cambios realizados por el agente localmente. Verificar en navegador y reportar errores de consola o bloqueos de ventanas emergentes.
+
+2026-03-28: Centralización del menú flotante en `web/menu.js`
+- Acción: Se centralizó la implementación del menú flotante en un único archivo JavaScript `web/menu.js`. Se eliminaron las inserciones y la inicialización duplicada del menú en las páginas y se incluyó la referencia al script desde el head de las páginas principales.
+- Archivos modificados/creados:
+    - web/menu.js (nuevo)
+    - web/index.html (incluir script, remover bloque duplicado)
+    - web/login.html (incluir script, remover bloque duplicado)
+    - web/seleccionar_empresa.html (incluir script, remover bloque duplicado)
+    - web/super_administrador.html (incluir script, remover bloque duplicado)
+    - web/ayuda/ayuda.html (incluir script, remover bloque duplicado)
+- Descripción: `web/menu.js` inyecta el HTML del menú, maneja la apertura/cierre del panel, persiste el tema (`localStorage`), y añade una delegación para limpiar `rememberAccount` al cerrar sesión. Esta estrategia facilita mantener un único punto de edición del menú para todas las páginas.
+- Responsable: agente local. Verificar en navegador y reportar cualquier incompatibilidad o bloqueo de ventanas emergentes.
+
 2026-03-27: Restauración del workspace al último commit remoto
 - Acción: Se restauró el repositorio local con `git reset --hard origin/main` y se limpiaron archivos no rastreados (`git clean -fd`).
 - Commit remoto usado: d0ea76c — "Actualizar historial_de_cambios: registro automático".

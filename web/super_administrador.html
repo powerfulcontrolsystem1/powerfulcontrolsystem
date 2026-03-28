@@ -7,13 +7,7 @@
   <link rel="stylesheet" href="/estilos.css">
 </head>
 <body>
-  <div class="floating-menu" aria-hidden="false">
-    <button class="fm-toggle" aria-label="Abrir menú">☰</button>
-    <div class="fm-panel" role="menu">
-      
-      <a id="sessionLink" class="fm-item" href="/login.html">Iniciar sesión</a>
-    </div>
-  </div>
+  
   <div class="admin-layout">
     <aside class="admin-sidebar">
       <h2>Super Administrador</h2>
@@ -22,7 +16,7 @@
         <li><a href="/super/licencias.html" target="contentFrame">Licencias</a></li>
         <li><a href="/super/configuracion.html" target="contentFrame">Configuración</a></li>
         <li><a href="/super/administradores.html" target="contentFrame">Administradores</a></li>
-        <li><a href="/seleccionar_empresa.html" target="_blank" rel="noopener noreferrer" style="background:#fff3b0;color:#000;border-radius:6px;padding:6px 10px;display:inline-block">Seleccionar empresa</a></li>
+        <li><a href="/seleccionar_empresa.html" target="_blank" rel="noopener noreferrer" class="select-company">Seleccionar empresa</a></li>
       </ul>
     </aside>
 
@@ -31,29 +25,8 @@
       <iframe name="contentFrame" id="contentFrame" src="/super/administradores.html" title="Contenido" style="width:100%;height:calc(100vh - 64px);border:0;background:transparent"></iframe>
     </main>
   </div>
+  
   <script>
-    (function(){
-      var toggle = document.querySelector('.floating-menu .fm-toggle');
-      var panel = document.querySelector('.floating-menu .fm-panel');
-      if (!toggle || !panel) return;
-      toggle.addEventListener('click', function(e){ e.stopPropagation(); panel.classList.toggle('open'); });
-      document.addEventListener('click', function(){ panel.classList.remove('open'); });
-      function getCookie(name){
-        const v = document.cookie.match('(^|;)\\s*'+name+'\\s*=\\s*([^;]+)');
-        return v ? v.pop() : '';
-      }
-      var sessionLink = document.getElementById('sessionLink');
-      if (sessionLink){
-        if (getCookie('session_token')){
-          sessionLink.textContent = 'Cerrar sesión';
-          sessionLink.href = '/auth/logout';
-          sessionLink.addEventListener('click', function(){ try { localStorage.removeItem('rememberAccount'); } catch(e){} });
-        } else {
-          sessionLink.textContent = 'Iniciar sesión';
-          sessionLink.href = '/login.html';
-        }
-      }
-    })();
     // Resaltar link activo en sidebar y sincronizar con el iframe
     (function(){
       var sidebar = document.querySelector('.admin-sidebar .nav');

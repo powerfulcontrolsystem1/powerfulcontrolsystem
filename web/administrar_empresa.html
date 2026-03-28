@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Administrar Empresa</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Administrar Empresa</h1>
+    <p id="info" class="form-help">Cargando detalles...</p>
+    <div id="content"></div>
+  </div>
+
+  <script>
+    function getQueryParam(name){
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name);
+    }
+    (function(){
+      const id = getQueryParam('id');
+      const info = document.getElementById('info');
+      if(!id){ info.innerText = 'No se indicó empresa (query param id).'; return }
+      info.innerText = 'Administrando empresa ID: ' + id;
+      // Placeholder: aquí se pueden cargar datos desde /super/api/empresas o un endpoint específico
+      document.getElementById('content').innerHTML = '<p>Interfaz de administración para la empresa con id <strong>'+id+'</strong>. Implementar controles específicos según requerimiento.</p>';
+    })();
+  </script>
+</body>
+</html>

@@ -5,15 +5,10 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Proyecto POS - Módulo 1</title>
   <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
 </head>
 <body>
-  <div class="floating-menu" aria-hidden="false">
-    <button class="fm-toggle" aria-label="Abrir menú">☰</button>
-    <div class="fm-panel" role="menu">
-      
-      <a id="sessionLink" class="fm-item" href="/login.html">Iniciar sesión</a>
-    </div>
-  </div>
+  
   <div class="portal">
     <header class="portal-header">
       <div class="brand"><a class="btn dark" href="/login.html">Iniciar sesión</a></div>
@@ -28,35 +23,35 @@
       </section>
 
       <section class="portal-grid">
-        <article class="portal-card">
+        <article class="portal-card warm">
           <img src="/img/logo_punto_venta.svg" alt="logo Punto de venta" class="card-logo">
           <h3>Punto de venta</h3>
           <p>Sistema de facturación electrónica para pymes.</p>
           <a class="btn secondary" href="#">Entrar</a>
         </article>
-
-        <article class="portal-card">
+        
+        <article class="portal-card warm">
           <img src="/img/logo_motel.svg" alt="logo Motel" class="card-logo">
           <h3>Sistema para Motel</h3>
           <p>Sistema de facturación electrónica tarifada por tiempo de servicio.</p>
           <a class="btn secondary" href="#">Abrir</a>
         </article>
-
-        <article class="portal-card">
+        
+        <article class="portal-card warm">
           <img src="/img/logo_restaurante.svg" alt="logo Restaurante" class="card-logo">
           <h3>Restaurante</h3>
           <p>Sistema de facturación electrónica adaptado a restaurante, manejo por mesas.</p>
           <a class="btn secondary" href="#">Ver</a>
         </article>
-
-        <article class="portal-card">
+        
+        <article class="portal-card warm">
           <img src="/img/logo_alarma.svg" alt="logo Alarma" class="card-logo">
           <h3>Control por sensor</h3>
           <p>Sistema de control para moteles, sensores en las puertas.</p>
           <a class="btn secondary" href="#">Generar</a>
         </article>
-
-        <article class="portal-card">
+        
+        <article class="portal-card warm">
           <h3>Configuración</h3>
           <p>Administración de empresas, roles y permisos del sistema.</p>
           <a class="btn secondary" href="#">Configurar</a>
@@ -68,31 +63,7 @@
   </div>
 </div>
 
-  <script>
-    (function(){
-      var toggle = document.querySelector('.floating-menu .fm-toggle');
-      var panel = document.querySelector('.floating-menu .fm-panel');
-      if (!toggle || !panel) return;
-      toggle.addEventListener('click', function(e){ e.stopPropagation(); panel.classList.toggle('open'); });
-      document.addEventListener('click', function(){ panel.classList.remove('open'); });
-      // Clear rememberAccount on logout click
-      function getCookie(name){
-        const v = document.cookie.match('(^|;)\\s*'+name+'\\s*=\\s*([^;]+)');
-        return v ? v.pop() : '';
-      }
-      var sessionLink = document.getElementById('sessionLink');
-      if (sessionLink){
-        if (getCookie('session_token')){
-          sessionLink.textContent = 'Cerrar sesión';
-          sessionLink.href = '/auth/logout';
-          sessionLink.addEventListener('click', function(){ try { localStorage.removeItem('rememberAccount'); } catch(e){} });
-        } else {
-          sessionLink.textContent = 'Iniciar sesión';
-          sessionLink.href = '/login.html';
-        }
-      }
-    })();
-  </script>
+  
 
 </body>
 </html>

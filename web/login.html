@@ -5,15 +5,10 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Login - POS Multiempresa</title>
   <link rel="stylesheet" href="/assets/estilos.css">
+    <script src="/menu.js"></script>
 </head>
 <body>
-  <div class="floating-menu" aria-hidden="false">
-    <button class="fm-toggle" aria-label="Abrir menú">☰</button>
-    <div class="fm-panel" role="menu">
-      
-      <a id="sessionLink" class="fm-item" href="/login.html">Iniciar sesión</a>
-    </div>
-  </div>
+  
   <div class="login-page">
     <div class="container">
       <div class="card">
@@ -39,30 +34,7 @@
   </div>
   </div>
 
-  <script>
-    (function(){
-      var toggle = document.querySelector('.floating-menu .fm-toggle');
-      var panel = document.querySelector('.floating-menu .fm-panel');
-      if (!toggle || !panel) return;
-      toggle.addEventListener('click', function(e){ e.stopPropagation(); panel.classList.toggle('open'); });
-      document.addEventListener('click', function(){ panel.classList.remove('open'); });
-      function getCookie(name){
-        const v = document.cookie.match('(^|;)\\s*'+name+'\\s*=\\s*([^;]+)');
-        return v ? v.pop() : '';
-      }
-      var sessionLink = document.getElementById('sessionLink');
-      if (sessionLink){
-        if (getCookie('session_token')){
-          sessionLink.textContent = 'Cerrar sesión';
-          sessionLink.href = '/auth/logout';
-          sessionLink.addEventListener('click', function(){ try { localStorage.removeItem('rememberAccount'); } catch(e){} });
-        } else {
-          sessionLink.textContent = 'Iniciar sesión';
-          sessionLink.href = '/login.html';
-        }
-      }
-    })();
-  </script>
+  
 
   <script>
     (function(){

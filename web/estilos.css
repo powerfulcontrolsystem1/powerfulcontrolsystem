@@ -14,6 +14,23 @@
   --accent-yellow: #FFEB99;
   --accent-yellow-light: #FFF3C4;
 }
+/* Modo claro (override de variables) */
+html.theme-light{
+  --bg: #ffffff;
+  --surface: #f7f7f7;
+  --card: #ffffff;
+  --muted: #5b6166;
+  --text: #111827;
+  --accent: #0063b1;
+  --accent-2: #2b88d8;
+  --danger: #b91c1c;
+  --success: #0b6a0b;
+  --border: rgba(0,0,0,0.08);
+  --focus: rgba(0,120,212,0.12);
+  --accent-yellow: #FFEB99;
+  --accent-yellow-light: #FFF3C4;
+}
+
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;padding:0;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
 .container{max-width:1100px;margin:28px auto;padding:16px}
@@ -104,10 +121,13 @@ ul{padding-left:18px}
 .nav-actions .btn{background:transparent;color:var(--text);border:1px solid rgba(255,255,255,0.06);padding:8px 12px;border-radius:8px}
 .nav-actions .btn:hover{background:rgba(255,255,255,0.02)}
 
-.portal-main{padding:32px 28px}
-.portal-intro{max-width:720px;margin:0 auto 22px auto;text-align:center}
-.portal-intro h1{margin:0 0 6px 0;font-size:1.8rem}
-.portal-intro .muted{color:var(--muted)}
+.portal-main{padding:24px 20px}
+/* Reducir margen superior solo en la página del portal para subir el título */
+.portal-main.container{margin-top:12px}
+.portal-intro{max-width:1100px;margin:0 auto 18px auto;display:flex;align-items:center;justify-content:space-between;gap:18px;text-align:left}
+.portal-intro h1{margin:0;font-size:1.6rem}
+.portal-intro .muted{color:var(--muted);margin:0;flex:0 0 auto}
+@media (max-width:720px){.portal-intro{flex-direction:column;align-items:flex-start;text-align:left}.portal-intro .muted{margin-top:8px}}
 
 /* Centro del CTA de login en la página principal */
 .portal-intro .intro-cta{margin-top:18px;text-align:center}
@@ -164,3 +184,48 @@ ul{padding-left:18px}
   .form-row{flex-direction:column}
   .form-actions{justify-content:stretch}
 }
+
+/* ===== Centralized admin/page-specific overrides moved from inline styles ===== */
+/* Botón 'Seleccionar empresa' específico del sidebar (antes inline en HTML) */
+.admin-sidebar .nav a.select-company{
+  background:#ffffff;
+  color:#000;
+  border-radius:6px;
+  padding:6px 10px;
+  display:inline-block;
+  font-weight:700;
+}
+.admin-sidebar .nav a.select-company:hover{
+  background:#ffffff;
+  color:#000;
+  box-shadow:0 6px 18px rgba(0,0,0,0.06);
+}
+
+/* Tabla de administradores: una fila por admin, evitar saltos y truncar texto largo */
+#list .table th, #list .table td { white-space: nowrap; }
+#list .table { table-layout: fixed; width: 100%; }
+#list .table td { overflow: hidden; text-overflow: ellipsis; }
+#list .table .actions { min-width: 180px; }
+
+/* Asegurar botones de acción visibles y consistentes */
+.actions button { margin-right:6px; display:inline-block; }
+
+/* fin de centralizados */
+/* Tarjetas de empresa - estilo cálido y centrado (para seleccionar_empresa.html) */
+.portal-card.warm{
+  background: linear-gradient(180deg, #fffaf0, #fff6e6);
+  border:1px solid rgba(0,0,0,0.04);
+  color:#1f1f1f;
+  align-items:center;
+  text-align:center;
+  padding:18px 20px;
+  box-shadow:0 8px 20px rgba(0,0,0,0.06);
+}
+.portal-card.warm .card-title{margin-bottom:8px;color:#2b2b2b}
+.portal-card.warm .card-desc{color:#6b5b3b;margin-bottom:12px}
+.card-link{display:block;text-decoration:none}
+.license-indicator{border:none;color:#fff;padding:8px 12px;border-radius:8px;font-weight:700;cursor:default}
+.license-indicator.active{background:var(--success)}
+.license-indicator.inactive{background:var(--danger)}
+
+/* fin: tarjetas cálidas */

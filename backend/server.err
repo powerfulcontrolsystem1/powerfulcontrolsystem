@@ -1,92 +1,56 @@
-2026/03/28 12:08:01 index.html encontrado en ..\web\index.html
-2026/03/28 12:08:01 Servidor arrancado en :8080
-2026/03/28 12:08:03 -> GET /favicon.ico from [::1]:62366
-2026/03/28 12:08:03 <- 404 GET /favicon.ico
-2026/03/28 12:14:37 -> GET /auth/google/login from [::1]:52490
-2026/03/28 12:14:37 handleGoogleLogin: client_id set=true, redirect_url="http://localhost:8080/auth/google/callback"
-2026/03/28 12:14:37 Auth URL: https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&client_id=1029204473903-6npuu63uehsrn2jn8fnif4fgpp6kcjsm.apps.googleusercontent.com&include_granted_scopes=true&prompt=select_account+consent&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fauth%2Fgoogle%2Fcallback&response_type=code&scope=openid+email+profile&state=state-token
-2026/03/28 12:14:37 <- 302 GET /auth/google/login
-2026/03/28 12:14:47 -> GET /auth/google/callback from [::1]:52490
-2026/03/28 12:14:48 <- 302 GET /auth/google/callback
-2026/03/28 12:14:48 -> GET /super/administradores from [::1]:52490
-2026/03/28 12:14:48 <- 200 GET /super/administradores
-2026/03/28 12:14:55 -> GET /seleccionar empresa/empresas.html from [::1]:52490
-2026/03/28 12:14:55 <- 404 GET /seleccionar empresa/empresas.html
-2026/03/28 12:21:02 -> GET /super_administrador.html from [::1]:54294
-2026/03/28 12:21:02 <- 200 GET /super_administrador.html
-2026/03/28 12:21:02 -> GET /super/administradores from [::1]:54294
-2026/03/28 12:21:02 <- 200 GET /super/administradores
-2026/03/28 12:21:05 -> GET /super/tipos_empresas.html from [::1]:54294
-2026/03/28 12:21:06 <- 304 GET /super/tipos_empresas.html
-2026/03/28 12:21:06 -> GET /super/api/tipos_empresas from [::1]:54294
-2026/03/28 12:21:06 <- 200 GET /super/api/tipos_empresas
-2026/03/28 12:21:09 -> GET /seleccionar_empresa.html from [::1]:54294
-2026/03/28 12:21:09 <- 304 GET /seleccionar_empresa.html
-2026/03/28 12:21:09 -> GET /me from [::1]:54294
-2026/03/28 12:21:09 <- 200 GET /me
-2026/03/28 12:21:09 -> GET /super/api/empresas from [::1]:54294
-2026/03/28 12:21:09 -> GET /super/api/licencias from [::1]:60543
-2026/03/28 12:21:09 <- 200 GET /super/api/empresas
-2026/03/28 12:21:09 <- 200 GET /super/api/licencias
-2026/03/28 12:21:09 -> GET /super/api/tipos_empresas from [::1]:59957
-2026/03/28 12:21:09 <- 200 GET /super/api/tipos_empresas
-2026/03/28 12:25:46 -> GET /super_administrador.html from [::1]:59957
-2026/03/28 12:25:46 <- 200 GET /super_administrador.html
-2026/03/28 12:25:47 -> GET /super/administradores from [::1]:59957
-2026/03/28 12:25:47 <- 200 GET /super/administradores
-2026/03/28 12:26:32 -> GET /super/configuracion.html from [::1]:59957
-2026/03/28 12:26:33 -> GET /super/licencias.html from [::1]:63716
-2026/03/28 12:26:34 <- 304 GET /super/configuracion.html
-2026/03/28 12:26:34 <- 304 GET /super/licencias.html
-2026/03/28 12:26:34 -> GET /super/api/tipos_empresas from [::1]:63716
-2026/03/28 12:26:34 <- 200 GET /super/api/tipos_empresas
-2026/03/28 12:26:34 -> GET /super/api/licencias from [::1]:63716
-2026/03/28 12:26:34 <- 200 GET /super/api/licencias
-2026/03/28 12:26:35 -> GET /super/api/tipos_empresas from [::1]:63716
-2026/03/28 12:26:35 <- 200 GET /super/api/tipos_empresas
-2026/03/28 12:26:36 -> GET /super/api/tipos_empresas from [::1]:63716
-2026/03/28 12:26:36 <- 200 GET /super/api/tipos_empresas
-2026/03/28 12:26:36 -> GET /super/api/licencias from [::1]:63716
-2026/03/28 12:26:36 <- 200 GET /super/api/licencias
-2026/03/28 12:26:37 -> GET /super/api/tipos_empresas from [::1]:63716
-2026/03/28 12:26:37 <- 200 GET /super/api/tipos_empresas
-2026/03/28 12:26:37 -> GET /super/api/tipos_empresas from [::1]:63716
-2026/03/28 12:26:37 <- 200 GET /super/api/tipos_empresas
-2026/03/28 12:26:37 -> GET /super/api/licencias from [::1]:63716
-2026/03/28 12:26:37 <- 200 GET /super/api/licencias
-2026/03/28 12:26:39 -> GET /super/api/tipos_empresas from [::1]:63716
-2026/03/28 12:26:39 <- 200 GET /super/api/tipos_empresas
-2026/03/28 12:26:40 -> GET /super/api/tipos_empresas from [::1]:63716
-2026/03/28 12:26:40 <- 200 GET /super/api/tipos_empresas
-2026/03/28 12:26:40 -> GET /super/api/licencias from [::1]:63716
-2026/03/28 12:26:40 <- 200 GET /super/api/licencias
-2026/03/28 12:26:41 -> GET /super/configuracion.html from [::1]:63716
-2026/03/28 12:26:41 <- 200 GET /super/configuracion.html
-2026/03/28 12:26:42 -> GET /super/administradores from [::1]:63716
-2026/03/28 12:26:42 <- 200 GET /super/administradores
-2026/03/28 13:15:26 -> GET /super_administrador.html from [::1]:52597
-2026/03/28 13:15:26 <- 304 GET /super_administrador.html
-2026/03/28 13:15:26 -> GET /estilos.css from [::1]:52597
-2026/03/28 13:15:26 <- 304 GET /estilos.css
-2026/03/28 13:15:26 -> GET /super/administradores.html from [::1]:52597
-2026/03/28 13:15:26 <- 200 GET /super/administradores.html
-2026/03/28 13:15:26 -> GET /super/api/administradores from [::1]:52597
-2026/03/28 13:15:26 <- 200 GET /super/api/administradores
-2026/03/28 13:15:28 -> GET /super_administrador.html from [::1]:52597
-2026/03/28 13:15:28 <- 200 GET /super_administrador.html
-2026/03/28 13:15:28 -> GET /super/administradores.html from [::1]:52597
-2026/03/28 13:15:28 -> GET /estilos.css from [::1]:65086
-2026/03/28 13:15:28 <- 200 GET /super/administradores.html
-2026/03/28 13:15:28 -> GET /estilos.css from [::1]:52597
-2026/03/28 13:15:28 <- 200 GET /estilos.css
-2026/03/28 13:15:28 <- 200 GET /estilos.css
-2026/03/28 13:15:28 -> GET /super/api/administradores from [::1]:52597
-2026/03/28 13:15:28 <- 200 GET /super/api/administradores
-2026/03/28 13:15:28 -> GET /favicon.ico from [::1]:52597
-2026/03/28 13:15:28 <- 404 GET /favicon.ico
-2026/03/28 13:15:31 -> GET /super/api/tipos_empresas from [::1]:52597
-2026/03/28 13:15:31 <- 200 GET /super/api/tipos_empresas
-2026/03/28 13:15:31 -> GET /super/api/licencias from [::1]:52597
-2026/03/28 13:15:31 <- 200 GET /super/api/licencias
-2026/03/28 13:15:33 -> GET /super/api/tipos_empresas from [::1]:52597
-2026/03/28 13:15:33 <- 200 GET /super/api/tipos_empresas
+2026/03/28 14:30:49 index.html encontrado en ..\web\index.html
+2026/03/28 14:30:49 Servidor arrancado en :8080
+2026/03/28 14:30:51 -> GET /img/logo_punto_venta.svg from [::1]:64042
+2026/03/28 14:30:51 -> GET /estilos.css from [::1]:58697
+2026/03/28 14:30:51 <- 304 GET /estilos.css
+2026/03/28 14:30:51 <- 404 GET /img/logo_punto_venta.svg
+2026/03/28 14:30:51 -> GET /img/logo_motel.svg from [::1]:52569
+2026/03/28 14:30:51 -> GET /img/logo_restaurante.svg from [::1]:50244
+2026/03/28 14:30:51 -> GET /img/logo_alarma.svg from [::1]:60964
+2026/03/28 14:30:51 <- 404 GET /img/logo_alarma.svg
+2026/03/28 14:30:51 <- 404 GET /img/logo_motel.svg
+2026/03/28 14:30:51 <- 404 GET /img/logo_restaurante.svg
+2026/03/28 14:34:11 -> GET / from [::1]:50244
+2026/03/28 14:34:11 <- 200 GET /
+2026/03/28 14:34:11 -> GET /estilos.css from [::1]:50244
+2026/03/28 14:34:11 -> GET /menu.js from [::1]:52569
+2026/03/28 14:34:11 -> GET /img/logo_punto_venta.svg from [::1]:60964
+2026/03/28 14:34:11 -> GET /img/logo_motel.svg from [::1]:64042
+2026/03/28 14:34:11 <- 200 GET /estilos.css
+2026/03/28 14:34:11 <- 200 GET /menu.js
+2026/03/28 14:34:11 <- 404 GET /img/logo_punto_venta.svg
+2026/03/28 14:34:11 <- 404 GET /img/logo_motel.svg
+2026/03/28 14:34:11 -> GET /img/logo_restaurante.svg from [::1]:64042
+2026/03/28 14:34:11 -> GET /img/logo_alarma.svg from [::1]:60964
+2026/03/28 14:34:11 <- 404 GET /img/logo_alarma.svg
+2026/03/28 14:34:11 <- 404 GET /img/logo_restaurante.svg
+2026/03/28 14:34:13 -> GET / from [::1]:64042
+2026/03/28 14:34:13 <- 200 GET /
+2026/03/28 14:34:13 -> GET /estilos.css from [::1]:64042
+2026/03/28 14:34:13 -> GET /menu.js from [::1]:60964
+2026/03/28 14:34:13 <- 200 GET /estilos.css
+2026/03/28 14:34:13 -> GET /img/logo_punto_venta.svg from [::1]:52569
+2026/03/28 14:34:13 -> GET /img/logo_motel.svg from [::1]:50244
+2026/03/28 14:34:13 <- 200 GET /menu.js
+2026/03/28 14:34:13 <- 404 GET /img/logo_punto_venta.svg
+2026/03/28 14:34:13 <- 404 GET /img/logo_motel.svg
+2026/03/28 14:34:13 -> GET /img/logo_restaurante.svg from [::1]:50244
+2026/03/28 14:34:13 -> GET /img/logo_alarma.svg from [::1]:52569
+2026/03/28 14:34:13 <- 404 GET /img/logo_restaurante.svg
+2026/03/28 14:34:13 <- 404 GET /img/logo_alarma.svg
+2026/03/28 14:34:13 -> GET /favicon.ico from [::1]:52569
+2026/03/28 14:34:13 <- 404 GET /favicon.ico
+2026/03/28 14:34:38 -> GET / from [::1]:52569
+2026/03/28 14:34:38 <- 200 GET /
+2026/03/28 14:34:38 -> GET /estilos.css from [::1]:52569
+2026/03/28 14:34:38 -> GET /menu.js from [::1]:50244
+2026/03/28 14:34:38 -> GET /img/logo_punto_venta.svg from [::1]:60964
+2026/03/28 14:34:38 -> GET /img/logo_motel.svg from [::1]:64042
+2026/03/28 14:34:38 <- 304 GET /estilos.css
+2026/03/28 14:34:38 <- 304 GET /menu.js
+2026/03/28 14:34:38 <- 404 GET /img/logo_punto_venta.svg
+2026/03/28 14:34:38 <- 404 GET /img/logo_motel.svg
+2026/03/28 14:34:38 -> GET /img/logo_restaurante.svg from [::1]:64042
+2026/03/28 14:34:38 -> GET /img/logo_alarma.svg from [::1]:60964
+2026/03/28 14:34:38 <- 404 GET /img/logo_restaurante.svg
+2026/03/28 14:34:38 <- 404 GET /img/logo_alarma.svg
