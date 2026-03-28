@@ -633,3 +633,22 @@ Archivos modificados:
 - web/seleccionar_empresa.html
 - web/super/empresas.html
 
+
+2026-03-27: Actualización automática desde script: añadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- backend/db/db.go
+- backend/handlers/handlers.go
+- backend/main.go
+- backend/server.err
+- backend/server.exe
+- scripts/logs/actualizar_repositorio-20260327-222954.log
+- scripts/logs/actualizar_repositorio-20260327-232508.log
+- web/ayuda/ayuda.html
+- web/index.html
+- web/login.html
+- web/seleccionar_empresa.html
+- web/super/empresas.html
+- web/super/licencias.html
+- web/super_administrador.html
+
