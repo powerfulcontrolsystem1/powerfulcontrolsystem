@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Seleccionar Empresa</title>
-  <link rel="stylesheet" href="/assets/estilos.css">
+  <link rel="stylesheet" href="/estilos.css">
 </head>
 <body>
   <div class="floating-menu" aria-hidden="false">
@@ -15,17 +15,29 @@
       <a id="sessionLink" class="fm-item" href="/login.html">Iniciar sesión</a>
     </div>
   </div>
-  <div class="container">
-    <div class="card">
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
       <h2>Seleccionar Empresa</h2>
-      <p>Bienvenido. Selecciona la empresa con la que deseas trabajar.</p>
-      <!-- Lista placeholder -->
-      <ul>
-        <li><a class="btn" href="#">Empresa A</a></li>
-        <li><a class="btn" href="#">Empresa B</a></li>
+      <ul class="nav">
+        <li><a href="/super/empresas.html">Agregar empresa</a></li>
+        <li><a href="/index.html">Portal</a></li>
+        <li><a href="/ayuda.html">Ayuda</a></li>
       </ul>
-    </div>
-  </div>
+    </aside>
+
+    <main class="admin-content">
+      <div class="container">
+        <div class="card">
+          <h2>Seleccionar Empresa</h2>
+          <p>Bienvenido. Selecciona la empresa con la que deseas trabajar.</p>
+          <!-- Lista placeholder -->
+          <ul>
+            <li><a class="btn" href="#">Empresa A</a></li>
+            <li><a class="btn" href="#">Empresa B</a></li>
+          </ul>
+        </div>
+      </div>
+    </main>
   </div>
 
   <script>

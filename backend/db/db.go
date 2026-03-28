@@ -351,3 +351,127 @@ func SetTipoEmpresaActivo(dbConn *sql.DB, id int64, estado string) error {
 	_, err := dbConn.Exec("UPDATE tipos_de_empresas SET estado = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ?", estado, id)
 	return err
 }
+
+// Empresa representa una empresa registrada en empresas.db
+type Empresa struct {
+	ID                 int64  `json:"id"`
+	Nombre             string `json:"nombre"`
+	Nit                string `json:"nit,omitempty"`
+	TipoID             int64  `json:"tipo_id,omitempty"`
+	FechaCreacion      string `json:"fecha_creacion,omitempty"`
+	FechaActualizacion string `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador     string `json:"usuario_creador,omitempty"`
+	Estado             string `json:"estado,omitempty"`
+	Observaciones      string `json:"observaciones,omitempty"`
+}
+
+// CreateEmpresa inserta una nueva empresa en la base empresas.db
+func CreateEmpresa(dbConn *sql.DB, tipoID int64, nombre, nit, observaciones, usuarioCreador string) (int64, error) {
+	res, err := dbConn.Exec("INSERT INTO empresas (tipo_id, nombre, nit, observaciones, usuario_creador, fecha_creacion, estado) VALUES (?, ?, ?, ?, ?, datetime('now','localtime'), 'activo')", tipoID, nombre, nit, observaciones, usuarioCreador)
+	if err != nil {
+		return 0, err
+	}
+	return res.LastInsertId()
+}
+
+// GetEmpresas obtiene todas las empresas
+func GetEmpresas(dbConn *sql.DB) ([]Empresa, error) {
+	rows, err := dbConn.Query("SELECT id, nombre, nit, tipo_id, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones FROM empresas ORDER BY id DESC")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Empresa
+	for rows.Next() {
+		var e Empresa
+		var nit sql.NullString
+		var tipoID sql.NullInt64
+		var fechaCre sql.NullString
+		var fechaAct sql.NullString
+		var usuario sql.NullString
+		var estado sql.NullString
+		var obs sql.NullString
+		if err := rows.Scan(&e.ID, &e.Nombre, &nit, &tipoID, &fechaCre, &fechaAct, &usuario, &estado, &obs); err != nil {
+			return nil, err
+		}
+		if nit.Valid {
+			e.Nit = nit.String
+		}
+		if tipoID.Valid {
+			e.TipoID = tipoID.Int64
+		}
+		if fechaCre.Valid {
+			e.FechaCreacion = fechaCre.String
+		}
+		if fechaAct.Valid {
+			e.FechaActualizacion = fechaAct.String
+		}
+		if usuario.Valid {
+			e.UsuarioCreador = usuario.String
+		}
+		if estado.Valid {
+			e.Estado = estado.String
+		}
+		if obs.Valid {
+			e.Observaciones = obs.String
+		}
+		out = append(out, e)
+	}
+	return out, nil
+}
+
+// GetEmpresaByID devuelve una empresa por id
+func GetEmpresaByID(dbConn *sql.DB, id int64) (*Empresa, error) {
+	row := dbConn.QueryRow("SELECT id, nombre, nit, tipo_id, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones FROM empresas WHERE id = ? LIMIT 1", id)
+	var e Empresa
+	var nit sql.NullString
+	var tipoID sql.NullInt64
+	var fechaCre sql.NullString
+	var fechaAct sql.NullString
+	var usuario sql.NullString
+	var estado sql.NullString
+	var obs sql.NullString
+	if err := row.Scan(&e.ID, &e.Nombre, &nit, &tipoID, &fechaCre, &fechaAct, &usuario, &estado, &obs); err != nil {
+		return nil, err
+	}
+	if nit.Valid {
+		e.Nit = nit.String
+	}
+	if tipoID.Valid {
+		e.TipoID = tipoID.Int64
+	}
+	if fechaCre.Valid {
+		e.FechaCreacion = fechaCre.String
+	}
+	if fechaAct.Valid {
+		e.FechaActualizacion = fechaAct.String
+	}
+	if usuario.Valid {
+		e.UsuarioCreador = usuario.String
+	}
+	if estado.Valid {
+		e.Estado = estado.String
+	}
+	if obs.Valid {
+		e.Observaciones = obs.String
+	}
+	return &e, nil
+}
+
+// UpdateEmpresa actualiza campos editables de una empresa
+func UpdateEmpresa(dbConn *sql.DB, id, tipoID int64, nombre, nit, observaciones string) error {
+	_, err := dbConn.Exec("UPDATE empresas SET tipo_id = ?, nombre = ?, nit = ?, observaciones = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ?", tipoID, nombre, nit, observaciones, id)
+	return err
+}
+
+// DeleteEmpresa elimina una empresa por id
+func DeleteEmpresa(dbConn *sql.DB, id int64) error {
+	_, err := dbConn.Exec("DELETE FROM empresas WHERE id = ?", id)
+	return err
+}
+
+// SetEmpresaEstado activa/desactiva una empresa (estado: 'activo'/'inactivo')
+func SetEmpresaEstado(dbConn *sql.DB, id int64, estado string) error {
+	_, err := dbConn.Exec("UPDATE empresas SET estado = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ?", estado, id)
+	return err
+}

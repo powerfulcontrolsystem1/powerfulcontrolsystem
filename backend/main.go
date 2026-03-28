@@ -91,6 +91,48 @@ func main() {
 	if _, err := dbEmpresas.Exec(createEmpresas); err != nil {
 		log.Fatalf("failed to create empresas table in empresas db: %v", err)
 	}
+
+	// Asegurar esquema mínimo de la tabla empresas (migraciones simples)
+	ensureEmpresasSchema := func(db *sql.DB) {
+		rows, err := db.Query("PRAGMA table_info(empresas);")
+		if err != nil {
+			log.Printf("warning: unable to inspect empresas schema: %v", err)
+			return
+		}
+		defer rows.Close()
+		existing := map[string]bool{}
+		for rows.Next() {
+			var cid int
+			var name string
+			var ctype string
+			var notnull int
+			var dflt sql.NullString
+			var pk int
+			if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
+				log.Printf("warning: scan pragma table_info error: %v", err)
+				return
+			}
+			existing[name] = true
+		}
+
+		addIfMissing := func(colDef string, name string) {
+			if !existing[name] {
+				q := fmt.Sprintf("ALTER TABLE empresas ADD COLUMN %s;", colDef)
+				if _, err := db.Exec(q); err != nil {
+					log.Printf("failed to add column %s to empresas: %v", name, err)
+				} else {
+					log.Printf("added missing column %s to empresas", name)
+				}
+			}
+		}
+
+		addIfMissing("tipo_id INTEGER", "tipo_id")
+		addIfMissing("fecha_actualizacion TEXT", "fecha_actualizacion")
+		addIfMissing("usuario_creador TEXT", "usuario_creador")
+		addIfMissing("estado TEXT DEFAULT 'activo'", "estado")
+		addIfMissing("observaciones TEXT", "observaciones")
+	}
+	ensureEmpresasSchema(dbEmpresas)
 	// Crear tipos_de_empresas en la base de datos de superadministrador (ubicación centralizada)
 	createTiposSuper := `CREATE TABLE IF NOT EXISTS tipos_de_empresas (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -227,6 +269,8 @@ func main() {
 
 	// Endpoints CRUD para tipos de empresas
 	http.HandleFunc("/super/api/tipos_empresas", handlers.TiposEmpresasHandler(dbSuper))
+	// Endpoint CRUD para empresas (guardadas en empresas.db)
+	http.HandleFunc("/super/api/empresas", handlers.EmpresasHandler(dbEmpresas))
 	// Endpoint CRUD para administradores (API)
 	http.HandleFunc("/super/api/administradores", handlers.AdministradoresHandler(dbSuper))
 	// Endpoint CRUD para licencias (nuevo)

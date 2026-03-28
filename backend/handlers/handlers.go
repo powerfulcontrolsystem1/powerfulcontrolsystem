@@ -466,3 +466,120 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 	}
 }
+
+// EmpresasHandler maneja CRUD de empresas en la base empresas.db
+func EmpresasHandler(dbEmp *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			empresas, err := dbpkg.GetEmpresas(dbEmp)
+			if err != nil {
+				log.Println("GET /super/api/empresas error:", err)
+				http.Error(w, "failed to query empresas: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(empresas)
+			return
+		case http.MethodPost:
+			var payload struct {
+				TipoID         int64  `json:"tipo_id"`
+				Nombre         string `json:"nombre"`
+				Nit            string `json:"nit"`
+				Observaciones  string `json:"observaciones"`
+				UsuarioCreador string `json:"usuario_creador"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "invalid payload", http.StatusBadRequest)
+				return
+			}
+			if payload.Nombre == "" {
+				http.Error(w, "nombre required", http.StatusBadRequest)
+				return
+			}
+			id, err := dbpkg.CreateEmpresa(dbEmp, payload.TipoID, payload.Nombre, payload.Nit, payload.Observaciones, payload.UsuarioCreador)
+			if err != nil {
+				log.Println("POST /super/api/empresas error:", err)
+				http.Error(w, "failed to create empresa: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]interface{}{"id": id})
+			return
+		case http.MethodPut:
+			q := r.URL.Query()
+			idStr := q.Get("id")
+			if idStr == "" {
+				http.Error(w, "id required", http.StatusBadRequest)
+				return
+			}
+			id, err := strconv.ParseInt(idStr, 10, 64)
+			if err != nil {
+				http.Error(w, "invalid id", http.StatusBadRequest)
+				return
+			}
+			if q.Get("action") == "activar" {
+				activoStr := q.Get("activo")
+				if activoStr == "" {
+					http.Error(w, "activo required (0 or 1)", http.StatusBadRequest)
+					return
+				}
+				act, err := strconv.Atoi(activoStr)
+				if err != nil || (act != 0 && act != 1) {
+					http.Error(w, "invalid activo value", http.StatusBadRequest)
+					return
+				}
+				estado := "inactivo"
+				if act == 1 {
+					estado = "activo"
+				}
+				if err := dbpkg.SetEmpresaEstado(dbEmp, id, estado); err != nil {
+					log.Println("ACTIVAR /super/api/empresas error:", err)
+					http.Error(w, "failed to set estado: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
+			var payload struct {
+				TipoID        int64  `json:"tipo_id"`
+				Nombre        string `json:"nombre"`
+				Nit           string `json:"nit"`
+				Observaciones string `json:"observaciones"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "invalid payload", http.StatusBadRequest)
+				return
+			}
+			if err := dbpkg.UpdateEmpresa(dbEmp, id, payload.TipoID, payload.Nombre, payload.Nit, payload.Observaciones); err != nil {
+				log.Println("PUT /super/api/empresas error:", err)
+				http.Error(w, "failed to update empresa: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+			return
+		case http.MethodDelete:
+			q := r.URL.Query()
+			idStr := q.Get("id")
+			if idStr == "" {
+				http.Error(w, "id required", http.StatusBadRequest)
+				return
+			}
+			id, err := strconv.ParseInt(idStr, 10, 64)
+			if err != nil {
+				http.Error(w, "invalid id", http.StatusBadRequest)
+				return
+			}
+			if err := dbpkg.DeleteEmpresa(dbEmp, id); err != nil {
+				log.Println("DELETE /super/api/empresas error:", err)
+				http.Error(w, "failed to delete empresa: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+			return
+		default:
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+	}
+}
