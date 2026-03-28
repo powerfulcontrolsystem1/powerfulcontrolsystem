@@ -11,7 +11,8 @@
   --success: #107c10; /* verde Microsoft */
   --border: rgba(255,255,255,0.04);
   --focus: rgba(0,120,212,0.18);
-  --accent-yellow: #FFCC00;
+  --accent-yellow: #FFEB99;
+  --accent-yellow-light: #FFF3C4;
 }
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;padding:0;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
@@ -57,7 +58,7 @@ p{color:var(--muted);line-height:1.5}
 .admin-layout{display:flex;min-height:100vh;background:var(--bg);color:var(--text)}
 .admin-sidebar{width:260px;padding:18px;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.02));box-shadow:2px 0 20px rgba(2,6,23,0.6);border-right:1px solid rgba(255,255,255,0.02)}
 .admin-sidebar h2{margin:0 0 12px 0}
-.admin-sidebar h2{color:var(--accent-yellow);font-weight:800}
+.admin-sidebar h2{color:var(--accent-yellow);font-weight:800;font-size:0.95rem;white-space:nowrap;display:flex;align-items:center;gap:8px}
 .admin-sidebar .nav{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
 .admin-sidebar .nav a{display:block;color:var(--text);text-decoration:none;padding:10px 14px;border-radius:8px;background:var(--card);border:1px solid rgba(255,255,255,0.03);font-weight:700;font-size:0.95rem}
 .admin-sidebar .nav a:hover{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.02));color:var(--accent-2)}
@@ -126,10 +127,10 @@ ul{padding-left:18px}
 .portal-card .card-logo{width:72px;height:auto;margin-bottom:12px;opacity:0.95;filter:drop-shadow(0 6px 18px rgba(0,0,0,0.5))}
 
 /* Ajustes específicos para páginas dentro de /web/super */
-.super-page .container{max-width:980px;margin:8px auto;padding:8px}
-.super-page .container h1{font-size:1.1rem;margin:6px 0}
-.page-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
-.page-header h1{margin:0;font-size:1.1rem}
+.super-page .container{max-width:980px;margin:4px auto;padding:8px}
+.super-page .container h1{font-size:0.95rem;margin:4px 0;color:var(--accent-yellow-light)}
+.page-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
+.page-header h1{margin:0;font-size:0.95rem;color:var(--accent-yellow-light)}
 .page-header .btn.add{margin-bottom:0}
 
 /* Tablas CRUD: cuadricula y zebra */
