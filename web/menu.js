@@ -7,13 +7,8 @@
     wrapper.setAttribute('aria-hidden','false');
     wrapper.innerHTML = '<button class="fm-toggle" aria-label="Abrir menú">☰</button>' +
       '<div class="fm-panel" role="menu">' +
-        '<div class="fm-account" id="fmAccount">' +
-          '<div class="fm-avatar" id="fmAvatar" aria-hidden="true"></div>' +
-          '<div class="fm-username" id="fmUsername">Invitado</div>' +
-        '</div>' +
         '<a class="fm-item" href="/index.html">Portal</a>' +
         '<button id="themeToggle" class="fm-item" type="button" aria-label="Cambiar tema"></button>' +
-        '<button id="openWindowBtn" class="fm-item" type="button">Abrir como ventana</button>' +
         '<a id="sessionLink" class="fm-item" href="/login.html">Iniciar sesión</a>' +
       '</div>';
     // insertar al inicio del body
@@ -51,7 +46,6 @@
 
     // Theme toggle (iconos sol / luna)
     const themeToggle = wrapper.querySelector('#themeToggle');
-    const openWindowBtn = wrapper.querySelector('#openWindowBtn');
     var currentTheme = (function(){ try{ return localStorage.getItem('theme') || 'dark' }catch(e){ return 'dark' } })();
     function applyTheme(t){ if (t === 'light') document.documentElement.classList.add('theme-light'); else document.documentElement.classList.remove('theme-light'); }
     function updateThemeBtn(){
@@ -75,47 +69,9 @@
       updateThemeBtn();
     });
 
-    if (openWindowBtn) openWindowBtn.addEventListener('click', function(){
-      var url = window.location.href;
-      var w = Math.min(screen.width - 40, 1200); var h = Math.min(screen.height - 60, 900);
-      var feats = 'toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,top=10,left=10,width='+w+',height='+h;
-      var nw = window.open(url, '_blank', feats);
-      if (!nw) alert('El navegador bloqueó la apertura de la ventana sin barra de direcciones. Permite ventanas emergentes o instala como aplicación (PWA).');
-    });
+    // (Modo ventana eliminado por petición)
 
-      // Cargar datos de la cuenta actual (foto + nombre) usando /me
-      function loadAccount(){
-        try{
-          fetch('/me', { credentials: 'same-origin' }).then(function(res){
-            if (!res.ok) throw new Error('not-auth');
-            return res.json();
-          }).then(function(data){
-            var avatarEl = wrapper.querySelector('#fmAvatar');
-            var usernameEl = wrapper.querySelector('#fmUsername');
-            if (!avatarEl || !usernameEl) return;
-            try{
-              if (data.Photo){
-                avatarEl.style.backgroundImage = 'url("'+data.Photo+'")';
-                avatarEl.style.backgroundSize = 'cover';
-                avatarEl.style.backgroundPosition = 'center';
-                avatarEl.textContent = '';
-              } else {
-                var name = data.Name || data.Email || 'U';
-                var initials = name.split(' ').map(function(s){ return s.charAt(0) }).slice(0,2).join('').toUpperCase();
-                avatarEl.style.backgroundImage = 'none';
-                avatarEl.textContent = initials;
-              }
-              usernameEl.textContent = data.Name || data.Email || 'Usuario';
-              // ajustar el enlace de sesión si hay cookie
-              if (getCookie('session_token')){
-                sessionLink.textContent = 'Cerrar sesión';
-                sessionLink.href = '/auth/logout';
-              }
-            }catch(e){}
-          }).catch(function(){ /* ignorar si no autenticado */ });
-        }catch(e){}
-      }
-      loadAccount();
+      // Nota: no mostramos avatar/usuario en el menú flotante por simplicidad.
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', injectMenu); else injectMenu();
