@@ -527,9 +527,9 @@ func SecurityPortsHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		type Entry struct {
-			Puerto  int    `json:"puerto"`
-			Estado  string `json:"estado"`
-			IP      string `json:"ip"`
+			Puerto   int    `json:"puerto"`
+			Estado   string `json:"estado"`
+			IP       string `json:"ip"`
 			Firewall string `json:"firewall"`
 		}
 		var resp []Entry
