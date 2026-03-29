@@ -264,3 +264,35 @@
 2026/03/29 17:32:14 -> GET /super/api/metrics/current from [::1]:54343
 2026/03/29 17:32:14 <- 200 GET /super/api/metrics/current
 2026/03/29 17:32:23 metrics: stored cpu=7.02 mem=83.00% recv=4435141049 sent=1749943489
+2026/03/29 17:32:33 metrics: stored cpu=4.51 mem=83.00% recv=4435147864 sent=1749943707
+2026/03/29 17:32:43 metrics: stored cpu=4.65 mem=83.00% recv=4435158770 sent=1749948746
+2026/03/29 17:32:53 metrics: stored cpu=3.73 mem=83.00% recv=4435165256 sent=1749948855
+2026/03/29 17:33:03 metrics: stored cpu=4.14 mem=83.00% recv=4435173008 sent=1749948964
+2026/03/29 17:33:13 metrics: stored cpu=8.46 mem=81.00% recv=4435183564 sent=1749951827
+2026/03/29 17:33:14 -> GET /super/api/metrics/current from [::1]:54343
+2026/03/29 17:33:14 <- 200 GET /super/api/metrics/current
+2026/03/29 17:33:23 metrics: stored cpu=6.98 mem=81.00% recv=4435196037 sent=1749973049
+2026/03/29 17:33:33 metrics: stored cpu=5.60 mem=83.00% recv=4435210913 sent=1749981450
+2026/03/29 17:33:43 metrics: stored cpu=4.04 mem=83.00% recv=4435222611 sent=1749986869
+2026/03/29 17:33:53 metrics: stored cpu=3.40 mem=83.00% recv=4435228959 sent=1749986924
+2026/03/29 17:34:03 metrics: stored cpu=5.80 mem=83.00% recv=4435242374 sent=1749991735
+2026/03/29 17:34:13 metrics: stored cpu=16.96 mem=84.00% recv=4435283666 sent=1750035504
+2026/03/29 17:34:14 -> GET /super/api/metrics/current from [::1]:54343
+2026/03/29 17:34:14 <- 200 GET /super/api/metrics/current
+2026/03/29 17:34:23 metrics: stored cpu=17.27 mem=84.00% recv=4435360936 sent=1750093919
+2026/03/29 17:34:33 metrics: stored cpu=6.05 mem=84.00% recv=4435368802 sent=1750094082
+2026/03/29 17:34:43 metrics: stored cpu=5.41 mem=84.00% recv=4435376181 sent=1750097387
+2026/03/29 17:34:53 metrics: stored cpu=3.69 mem=84.00% recv=4435381917 sent=1750097497
+2026/03/29 17:35:03 metrics: stored cpu=8.03 mem=84.00% recv=4435396099 sent=1750101864
+2026/03/29 17:35:13 metrics: stored cpu=4.49 mem=84.00% recv=4435402778 sent=1750102003
+2026/03/29 17:35:14 -> GET /super/api/metrics/current from [::1]:54343
+2026/03/29 17:35:14 <- 200 GET /super/api/metrics/current
+2026/03/29 17:35:23 metrics: stored cpu=8.29 mem=84.00% recv=4435416654 sent=1750110819
+2026/03/29 17:35:33 metrics: stored cpu=4.39 mem=84.00% recv=4435424290 sent=1750111025
+2026/03/29 17:35:43 metrics: stored cpu=7.07 mem=84.00% recv=4435437604 sent=1750116574
+2026/03/29 17:35:53 metrics: stored cpu=4.53 mem=84.00% recv=4435448628 sent=1750118814
+2026/03/29 17:36:03 metrics: stored cpu=4.41 mem=84.00% recv=4435458767 sent=1750120577
+2026/03/29 17:36:13 metrics: stored cpu=3.51 mem=84.00% recv=4435467258 sent=1750120796
+2026/03/29 17:36:14 -> GET /super/api/metrics/current from [::1]:54343
+2026/03/29 17:36:14 <- 200 GET /super/api/metrics/current
+2026/03/29 17:36:23 metrics: stored cpu=6.25 mem=84.00% recv=4435473294 sent=1750139172
