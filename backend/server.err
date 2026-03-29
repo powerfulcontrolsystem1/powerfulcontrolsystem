@@ -1,44 +1,20 @@
-2026/03/29 15:40:05 index.html encontrado en ..\web\index.html
-2026/03/29 15:40:05 Servidor arrancado en :8080
-2026/03/29 15:40:05 metrics: stored cpu=36.96 mem=84.00% recv=3955793855 sent=1587878334
-2026/03/29 15:40:15 metrics: stored cpu=18.25 mem=85.00% recv=3955950359 sent=1587991967
-2026/03/29 15:40:25 metrics: stored cpu=9.87 mem=85.00% recv=3956035985 sent=1588075637
-2026/03/29 15:40:35 metrics: stored cpu=8.20 mem=85.00% recv=3956120523 sent=1588196210
-2026/03/29 15:40:45 metrics: stored cpu=12.92 mem=84.00% recv=3956218057 sent=1588289556
-2026/03/29 15:40:53 -> GET /login.html from [::1]:65240
-2026/03/29 15:40:53 <- 200 GET /login.html
-2026/03/29 15:40:53 -> GET /assets/estilos.css from [::1]:65240
-2026/03/29 15:40:53 <- 200 GET /assets/estilos.css
-2026/03/29 15:40:53 -> GET /auth/google/login from [::1]:65240
-2026/03/29 15:40:53 handleGoogleLogin: client_id set=true, redirect_url="http://localhost:8080/auth/google/callback"
-2026/03/29 15:40:53 Auth URL: https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&client_id=1029204473903-6npuu63uehsrn2jn8fnif4fgpp6kcjsm.apps.googleusercontent.com&include_granted_scopes=true&prompt=select_account+consent&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fauth%2Fgoogle%2Fcallback&response_type=code&scope=openid+email+profile&state=state-token
-2026/03/29 15:40:53 <- 302 GET /auth/google/login
-2026/03/29 15:40:55 metrics: stored cpu=17.81 mem=86.00% recv=3957191041 sent=1588456880
-2026/03/29 15:41:02 -> GET /auth/google/callback from [::1]:65240
-2026/03/29 15:41:03 <- 302 GET /auth/google/callback
-2026/03/29 15:41:03 -> GET /super_administrador.html from [::1]:65240
-2026/03/29 15:41:03 <- 200 GET /super_administrador.html
-2026/03/29 15:41:03 -> GET /super/administradores.html from [::1]:65240
-2026/03/29 15:41:03 <- 200 GET /super/administradores.html
-2026/03/29 15:41:03 -> GET /super/api/administradores from [::1]:65240
-2026/03/29 15:41:03 <- 200 GET /super/api/administradores
-2026/03/29 15:41:05 metrics: stored cpu=16.32 mem=84.00% recv=3958020422 sent=1588706419
-2026/03/29 15:41:09 -> GET /metricas_de_trafico_general.html from [::1]:65240
-2026/03/29 15:41:09 <- 200 GET /metricas_de_trafico_general.html
-2026/03/29 15:41:10 -> GET /super/api/metrics/history from [::1]:65240
-2026/03/29 15:41:10 <- 200 GET /super/api/metrics/history
-2026/03/29 15:41:10 -> GET /super/api/metrics/current from [::1]:65240
-2026/03/29 15:41:10 <- 200 GET /super/api/metrics/current
-2026/03/29 15:41:15 -> GET /super/api/metrics/current from [::1]:65240
-2026/03/29 15:41:15 <- 200 GET /super/api/metrics/current
-2026/03/29 15:41:15 metrics: stored cpu=10.78 mem=84.00% recv=3958203623 sent=1588803799
-2026/03/29 15:41:20 -> GET /super/api/metrics/current from [::1]:65240
-2026/03/29 15:41:20 <- 200 GET /super/api/metrics/current
-2026/03/29 15:41:25 -> GET /super/api/metrics/current from [::1]:65240
-2026/03/29 15:41:25 <- 200 GET /super/api/metrics/current
-2026/03/29 15:41:25 metrics: stored cpu=8.54 mem=83.00% recv=3958346381 sent=1588879323
-2026/03/29 15:41:30 -> GET /super/api/metrics/current from [::1]:65240
-2026/03/29 15:41:30 <- 200 GET /super/api/metrics/current
-2026/03/29 15:41:35 -> GET /super/api/metrics/current from [::1]:65240
-2026/03/29 15:41:35 <- 200 GET /super/api/metrics/current
-2026/03/29 15:41:35 metrics: stored cpu=9.84 mem=83.00% recv=3958443729 sent=1588959583
+2026/03/29 16:09:57 index.html encontrado en ..\web\index.html
+2026/03/29 16:09:57 Servidor arrancado en :8080
+2026/03/29 16:09:57 metrics: stored cpu=62.50 mem=86.00% recv=4011343392 sent=1622874706
+2026/03/29 16:10:07 metrics: stored cpu=21.66 mem=87.00% recv=4011467188 sent=1622996554
+2026/03/29 16:10:17 metrics: stored cpu=9.12 mem=87.00% recv=4011566391 sent=1623092519
+2026/03/29 16:10:27 metrics: stored cpu=10.29 mem=88.00% recv=4011649925 sent=1623192927
+2026/03/29 16:10:37 metrics: stored cpu=14.55 mem=87.00% recv=4011739540 sent=1623304328
+2026/03/29 16:10:47 metrics: stored cpu=9.53 mem=86.00% recv=4011841802 sent=1623390943
+2026/03/29 16:10:57 metrics: stored cpu=9.98 mem=86.00% recv=4011925434 sent=1623467718
+2026/03/29 16:11:07 metrics: stored cpu=11.72 mem=86.00% recv=4012022833 sent=1623562508
+2026/03/29 16:11:17 metrics: stored cpu=8.89 mem=86.00% recv=4012107083 sent=1623650568
+2026/03/29 16:11:27 metrics: stored cpu=8.17 mem=86.00% recv=4012190677 sent=1623727345
+2026/03/29 16:11:37 metrics: stored cpu=8.83 mem=86.00% recv=4012278523 sent=1623802781
+2026/03/29 16:11:47 metrics: stored cpu=8.22 mem=86.00% recv=4012452801 sent=1623891185
+2026/03/29 16:11:57 metrics: stored cpu=8.21 mem=86.00% recv=4012544274 sent=1623976588
+2026/03/29 16:12:07 metrics: stored cpu=14.29 mem=86.00% recv=4012655953 sent=1624088341
+2026/03/29 16:12:17 metrics: stored cpu=11.03 mem=86.00% recv=4012738834 sent=1624168905
+2026/03/29 16:12:27 metrics: stored cpu=11.11 mem=86.00% recv=4012828278 sent=1624254340
+2026/03/29 16:12:37 metrics: stored cpu=11.20 mem=85.00% recv=4012912639 sent=1624337811
+2026/03/29 16:12:47 metrics: stored cpu=10.94 mem=86.00% recv=4013070835 sent=1624420594
