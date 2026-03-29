@@ -227,10 +227,12 @@ ul{padding-left:18px}
 #list .table th, #list .table td { white-space: nowrap; }
 #list .table { table-layout: fixed; width: 100%; }
 #list .table td { overflow: hidden; text-overflow: ellipsis; }
+#list .table td.actions { overflow: visible; white-space: nowrap; min-width: 220px; }
 #list .table .actions { min-width: 180px; }
 
 /* Asegurar botones de acción visibles y consistentes */
-.actions button { margin-right:6px; display:inline-block; }
+.actions { display:inline-flex; gap:6px; align-items:center; }
+.actions button { margin-right:6px; display:inline-block; white-space:nowrap; }
 
 /* fin de centralizados */
 /* Tarjetas de empresa - estilo cálido y centrado (para seleccionar_empresa.html) */
