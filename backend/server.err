@@ -1,73 +1,96 @@
-2026/03/29 17:55:48 index.html encontrado en ..\web\index.html
-2026/03/29 17:55:48 Servidor arrancado en :8080
-2026/03/29 17:55:48 metrics: stored cpu=37.50 mem=85.00% recv=4495121143 sent=1770536251
-2026/03/29 17:55:49 -> GET /estilos.css from [::1]:63822
-2026/03/29 17:55:49 <- 304 GET /estilos.css
-2026/03/29 17:55:58 metrics: stored cpu=20.23 mem=86.00% recv=4495489926 sent=1771061473
-2026/03/29 17:56:08 metrics: stored cpu=19.36 mem=86.00% recv=4496209851 sent=1772153256
-2026/03/29 17:56:18 metrics: stored cpu=13.48 mem=86.00% recv=4496665028 sent=1772524714
-2026/03/29 17:56:23 -> GET /auth/google/login from [::1]:63822
-2026/03/29 17:56:23 handleGoogleLogin: client_id set=true, redirect_url="http://localhost:8080/auth/google/callback"
-2026/03/29 17:56:23 Auth URL: https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&client_id=1029204473903-6npuu63uehsrn2jn8fnif4fgpp6kcjsm.apps.googleusercontent.com&include_granted_scopes=true&prompt=select_account+consent&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fauth%2Fgoogle%2Fcallback&response_type=code&scope=openid+email+profile&state=state-token
-2026/03/29 17:56:23 <- 302 GET /auth/google/login
-2026/03/29 17:56:28 metrics: stored cpu=28.09 mem=87.00% recv=4497344461 sent=1772629105
-2026/03/29 17:56:29 -> GET /auth/google/callback from [::1]:63822
-2026/03/29 17:56:30 <- 302 GET /auth/google/callback
-2026/03/29 17:56:30 -> GET /super_administrador.html from [::1]:63822
-2026/03/29 17:56:30 <- 200 GET /super_administrador.html
-2026/03/29 17:56:30 -> GET /img/shield-license.svg from [::1]:56069
-2026/03/29 17:56:30 -> GET /img/company-briefcase.svg from [::1]:63822
-2026/03/29 17:56:30 <- 304 GET /img/company-briefcase.svg
-2026/03/29 17:56:30 <- 304 GET /img/shield-license.svg
-2026/03/29 17:56:30 -> GET /img/analytics.svg from [::1]:56069
-2026/03/29 17:56:30 -> GET /super/licencias_resumen.html from [::1]:63822
-2026/03/29 17:56:30 <- 304 GET /img/analytics.svg
-2026/03/29 17:56:30 <- 304 GET /super/licencias_resumen.html
-2026/03/29 17:56:30 -> GET /img/network.svg from [::1]:58767
-2026/03/29 17:56:30 -> GET /img/shield-security.svg from [::1]:63822
-2026/03/29 17:56:30 -> GET /me from [::1]:55766
-2026/03/29 17:56:30 <- 304 GET /img/network.svg
-2026/03/29 17:56:30 -> GET /img/user-avatar.svg from [::1]:56069
-2026/03/29 17:56:30 <- 304 GET /img/shield-security.svg
-2026/03/29 17:56:30 <- 200 GET /me
-2026/03/29 17:56:30 <- 304 GET /img/user-avatar.svg
-2026/03/29 17:56:30 -> GET /super/api/licencias from [::1]:55766
-2026/03/29 17:56:30 <- 200 GET /super/api/licencias
-2026/03/29 17:56:38 metrics: stored cpu=22.88 mem=87.00% recv=4498165133 sent=1772715758
-2026/03/29 17:56:48 metrics: stored cpu=29.45 mem=87.00% recv=4499064481 sent=1774476735
-2026/03/29 17:56:48 -> GET /auth/google/login from [::1]:55766
-2026/03/29 17:56:48 handleGoogleLogin: client_id set=true, redirect_url="http://localhost:8080/auth/google/callback"
-2026/03/29 17:56:48 Auth URL: https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&client_id=1029204473903-6npuu63uehsrn2jn8fnif4fgpp6kcjsm.apps.googleusercontent.com&include_granted_scopes=true&prompt=select_account+consent&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fauth%2Fgoogle%2Fcallback&response_type=code&scope=openid+email+profile&state=state-token
-2026/03/29 17:56:48 <- 302 GET /auth/google/login
-2026/03/29 17:56:54 -> GET /login.html from [::1]:55766
-2026/03/29 17:56:54 <- 200 GET /login.html
-2026/03/29 17:56:54 -> GET /assets/estilos.css from [::1]:55766
-2026/03/29 17:56:54 -> GET /menu.js from [::1]:56069
-2026/03/29 17:56:54 <- 200 GET /assets/estilos.css
-2026/03/29 17:56:54 <- 200 GET /menu.js
-2026/03/29 17:56:54 -> GET /favicon.ico from [::1]:56069
-2026/03/29 17:56:54 <- 404 GET /favicon.ico
-2026/03/29 17:56:54 -> GET /auth/google/login from [::1]:56069
-2026/03/29 17:56:54 handleGoogleLogin: client_id set=true, redirect_url="http://localhost:8080/auth/google/callback"
-2026/03/29 17:56:54 Auth URL: https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&client_id=1029204473903-6npuu63uehsrn2jn8fnif4fgpp6kcjsm.apps.googleusercontent.com&include_granted_scopes=true&login_hint=powerfulcontrolsystem%40gmail.com&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fauth%2Fgoogle%2Fcallback&response_type=code&scope=openid+email+profile&state=state-token
-2026/03/29 17:56:54 <- 302 GET /auth/google/login
-2026/03/29 17:56:54 -> GET /auth/google/callback from [::1]:56069
-2026/03/29 17:56:55 <- 302 GET /auth/google/callback
-2026/03/29 17:56:55 -> GET /super_administrador.html from [::1]:56069
-2026/03/29 17:56:55 <- 200 GET /super_administrador.html
-2026/03/29 17:56:55 -> GET /me from [::1]:56069
-2026/03/29 17:56:55 <- 200 GET /me
-2026/03/29 17:56:55 -> GET /super/api/licencias from [::1]:56069
-2026/03/29 17:56:55 <- 200 GET /super/api/licencias
-2026/03/29 17:56:58 metrics: stored cpu=31.70 mem=88.00% recv=4500472473 sent=1775655503
-2026/03/29 17:57:05 -> GET /auth/google/login from [::1]:56069
-2026/03/29 17:57:05 handleGoogleLogin: client_id set=true, redirect_url="http://localhost:8080/auth/google/callback"
-2026/03/29 17:57:05 Auth URL: https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&client_id=1029204473903-6npuu63uehsrn2jn8fnif4fgpp6kcjsm.apps.googleusercontent.com&include_granted_scopes=true&login_hint=powerfulcontrolsystem%40gmail.com&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fauth%2Fgoogle%2Fcallback&response_type=code&scope=openid+email+profile&state=state-token
-2026/03/29 17:57:05 <- 302 GET /auth/google/login
-2026/03/29 17:57:05 -> GET /auth/google/callback from [::1]:56069
-2026/03/29 17:57:06 <- 302 GET /auth/google/callback
-2026/03/29 17:57:06 -> GET /me from [::1]:56069
-2026/03/29 17:57:06 <- 200 GET /me
-2026/03/29 17:57:06 -> GET /super/api/licencias from [::1]:56069
-2026/03/29 17:57:06 <- 200 GET /super/api/licencias
-2026/03/29 17:57:08 metrics: stored cpu=66.66 mem=89.00% recv=4501878718 sent=1777361584
+2026/03/29 18:00:15 added missing column photo to administradores
+2026/03/29 18:00:15 index.html encontrado en ..\web\index.html
+2026/03/29 18:00:15 Servidor arrancado en :8080
+2026/03/29 18:00:15 metrics: stored cpu=21.15 mem=86.00% recv=4514324102 sent=1789903541
+2026/03/29 18:00:16 -> GET /menu.js from [::1]:65370
+2026/03/29 18:00:17 <- 200 GET /menu.js
+2026/03/29 18:00:17 -> GET /me from [::1]:65370
+2026/03/29 18:00:17 <- 200 GET /me
+2026/03/29 18:00:21 -> GET /login.html from [::1]:65370
+2026/03/29 18:00:21 <- 304 GET /login.html
+2026/03/29 18:00:21 -> GET /menu.js from [::1]:65370
+2026/03/29 18:00:21 <- 304 GET /menu.js
+2026/03/29 18:00:21 -> GET /me from [::1]:65370
+2026/03/29 18:00:21 <- 200 GET /me
+2026/03/29 18:00:21 -> GET /auth/google/login from [::1]:65370
+2026/03/29 18:00:21 handleGoogleLogin: client_id set=true, redirect_url="http://localhost:8080/auth/google/callback"
+2026/03/29 18:00:21 Auth URL: https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&client_id=1029204473903-6npuu63uehsrn2jn8fnif4fgpp6kcjsm.apps.googleusercontent.com&include_granted_scopes=true&login_hint=powerfulcontrolsystem%40gmail.com&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fauth%2Fgoogle%2Fcallback&response_type=code&scope=openid+email+profile&state=state-token
+2026/03/29 18:00:21 <- 302 GET /auth/google/login
+2026/03/29 18:00:21 -> GET /auth/google/callback from [::1]:65370
+2026/03/29 18:00:22 <- 302 GET /auth/google/callback
+2026/03/29 18:00:22 -> GET /super_administrador.html from [::1]:65370
+2026/03/29 18:00:22 <- 304 GET /super_administrador.html
+2026/03/29 18:00:22 -> GET /me from [::1]:65370
+2026/03/29 18:00:22 <- 200 GET /me
+2026/03/29 18:00:22 -> GET /me from [::1]:53168
+2026/03/29 18:00:22 <- 200 GET /me
+2026/03/29 18:00:22 -> GET /super/api/licencias from [::1]:53168
+2026/03/29 18:00:22 <- 200 GET /super/api/licencias
+2026/03/29 18:00:25 metrics: stored cpu=12.01 mem=87.00% recv=4514392205 sent=1789965996
+2026/03/29 18:00:35 metrics: stored cpu=5.53 mem=87.00% recv=4514406875 sent=1789975227
+2026/03/29 18:00:38 -> GET /menu.js from [::1]:53168
+2026/03/29 18:00:38 <- 304 GET /menu.js
+2026/03/29 18:00:38 -> GET /me from [::1]:53168
+2026/03/29 18:00:38 <- 200 GET /me
+2026/03/29 18:00:38 -> GET /me from [::1]:65370
+2026/03/29 18:00:38 <- 200 GET /me
+2026/03/29 18:00:38 -> GET /super/api/licencias from [::1]:65370
+2026/03/29 18:00:38 <- 200 GET /super/api/licencias
+2026/03/29 18:00:45 metrics: stored cpu=8.42 mem=87.00% recv=4514421037 sent=1789985449
+2026/03/29 18:00:55 metrics: stored cpu=11.68 mem=87.00% recv=4514445681 sent=1790005957
+2026/03/29 18:01:05 metrics: stored cpu=7.83 mem=86.00% recv=4514460468 sent=1790022320
+2026/03/29 18:01:15 metrics: stored cpu=5.94 mem=86.00% recv=4514466696 sent=1790022555
+2026/03/29 18:01:25 metrics: stored cpu=5.53 mem=86.00% recv=4514483958 sent=1790030651
+2026/03/29 18:01:35 metrics: stored cpu=6.56 mem=86.00% recv=4514516181 sent=1790041958
+2026/03/29 18:01:45 metrics: stored cpu=14.16 mem=87.00% recv=4514606281 sent=1790363346
+2026/03/29 18:01:55 metrics: stored cpu=17.85 mem=87.00% recv=4515108484 sent=1790391806
+2026/03/29 18:02:05 metrics: stored cpu=15.88 mem=87.00% recv=4515427238 sent=1790505630
+2026/03/29 18:02:15 metrics: stored cpu=17.15 mem=86.00% recv=4515534638 sent=1790522461
+2026/03/29 18:02:25 metrics: stored cpu=15.96 mem=85.00% recv=4515625098 sent=1790531922
+2026/03/29 18:02:35 metrics: stored cpu=16.88 mem=85.00% recv=4515725606 sent=1790541655
+2026/03/29 18:02:45 metrics: stored cpu=22.60 mem=87.00% recv=4516846117 sent=1790942621
+2026/03/29 18:02:55 metrics: stored cpu=31.76 mem=87.00% recv=4517994059 sent=1791537400
+2026/03/29 18:03:05 metrics: stored cpu=33.30 mem=87.00% recv=4519062093 sent=1792666867
+2026/03/29 18:03:15 metrics: stored cpu=10.59 mem=86.00% recv=4519231865 sent=1792982592
+2026/03/29 18:03:25 metrics: stored cpu=13.26 mem=86.00% recv=4519249957 sent=1793018127
+2026/03/29 18:03:26 -> GET /super_administrador.html from [::1]:65370
+2026/03/29 18:03:26 <- 200 GET /super_administrador.html
+2026/03/29 18:03:26 -> GET /estilos.css from [::1]:65370
+2026/03/29 18:03:26 <- 200 GET /estilos.css
+2026/03/29 18:03:26 -> GET /menu.js from [::1]:53168
+2026/03/29 18:03:26 <- 200 GET /menu.js
+2026/03/29 18:03:26 -> GET /img/company-briefcase.svg from [::1]:63411
+2026/03/29 18:03:26 -> GET /img/shield-license.svg from [::1]:52735
+2026/03/29 18:03:26 <- 200 GET /img/company-briefcase.svg
+2026/03/29 18:03:26 <- 200 GET /img/shield-license.svg
+2026/03/29 18:03:26 -> GET /img/analytics.svg from [::1]:52735
+2026/03/29 18:03:26 -> GET /img/network.svg from [::1]:53168
+2026/03/29 18:03:26 -> GET /super/licencias_resumen.html from [::1]:63411
+2026/03/29 18:03:26 <- 200 GET /img/analytics.svg
+2026/03/29 18:03:26 <- 200 GET /img/network.svg
+2026/03/29 18:03:26 -> GET /img/shield-security.svg from [::1]:65370
+2026/03/29 18:03:26 <- 200 GET /super/licencias_resumen.html
+2026/03/29 18:03:26 <- 200 GET /img/shield-security.svg
+2026/03/29 18:03:26 -> GET /me from [::1]:56545
+2026/03/29 18:03:26 -> GET /img/user-avatar.svg from [::1]:52888
+2026/03/29 18:03:26 <- 200 GET /me
+2026/03/29 18:03:26 <- 200 GET /img/user-avatar.svg
+2026/03/29 18:03:26 -> GET /me from [::1]:52735
+2026/03/29 18:03:26 <- 200 GET /me
+2026/03/29 18:03:26 -> GET /estilos.css from [::1]:52735
+2026/03/29 18:03:26 <- 200 GET /estilos.css
+2026/03/29 18:03:26 -> GET /super/api/licencias from [::1]:52735
+2026/03/29 18:03:26 <- 200 GET /super/api/licencias
+2026/03/29 18:03:26 -> GET /favicon.ico from [::1]:52735
+2026/03/29 18:03:26 <- 404 GET /favicon.ico
+2026/03/29 18:03:35 metrics: stored cpu=8.07 mem=85.00% recv=4519278454 sent=1793034648
+2026/03/29 18:03:45 metrics: stored cpu=7.30 mem=85.00% recv=4519292780 sent=1793043180
+2026/03/29 18:03:55 metrics: stored cpu=4.38 mem=85.00% recv=4519302791 sent=1793047504
+2026/03/29 18:04:05 metrics: stored cpu=6.48 mem=85.00% recv=4519315127 sent=1793058358
+2026/03/29 18:04:15 metrics: stored cpu=4.53 mem=85.00% recv=4519328247 sent=1793063897
+2026/03/29 18:04:25 metrics: stored cpu=5.16 mem=85.00% recv=4519339313 sent=1793067936
+2026/03/29 18:04:35 metrics: stored cpu=8.65 mem=85.00% recv=4519352088 sent=1793075897
+2026/03/29 18:04:45 metrics: stored cpu=6.01 mem=85.00% recv=4519357776 sent=1793080205
+2026/03/29 18:04:55 metrics: stored cpu=4.14 mem=85.00% recv=4519365825 sent=1793087067
+2026/03/29 18:05:05 metrics: stored cpu=5.57 mem=85.00% recv=4519380520 sent=1793091622
+2026/03/29 18:05:15 metrics: stored cpu=7.85 mem=86.00% recv=4519407616 sent=1793393815

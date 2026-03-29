@@ -7,8 +7,12 @@
     wrapper.setAttribute('aria-hidden','false');
     wrapper.innerHTML = '<button class="fm-toggle" aria-label="Abrir menú">☰</button>' +
       '<div class="fm-panel" role="menu">' +
+        '<div class="fm-account" id="fmAccount">' +
+          '<div class="fm-avatar" id="fmAvatar" aria-hidden="true"></div>' +
+          '<div class="fm-username" id="fmUsername">Invitado</div>' +
+        '</div>' +
         '<a class="fm-item" href="/index.html">Portal</a>' +
-        '<button id="themeToggle" class="fm-item" type="button">Modo claro</button>' +
+        '<button id="themeToggle" class="fm-item" type="button" aria-label="Cambiar tema"></button>' +
         '<button id="openWindowBtn" class="fm-item" type="button">Abrir como ventana</button>' +
         '<a id="sessionLink" class="fm-item" href="/login.html">Iniciar sesión</a>' +
       '</div>';
@@ -45,14 +49,31 @@
       }catch(ee){}
     });
 
-    // Theme toggle
+    // Theme toggle (iconos sol / luna)
     const themeToggle = wrapper.querySelector('#themeToggle');
     const openWindowBtn = wrapper.querySelector('#openWindowBtn');
     var currentTheme = (function(){ try{ return localStorage.getItem('theme') || 'dark' }catch(e){ return 'dark' } })();
     function applyTheme(t){ if (t === 'light') document.documentElement.classList.add('theme-light'); else document.documentElement.classList.remove('theme-light'); }
-    function updateThemeBtn(){ if (!themeToggle) return; themeToggle.textContent = document.documentElement.classList.contains('theme-light') ? 'Modo oscuro' : 'Modo claro'; }
+    function updateThemeBtn(){
+      if (!themeToggle) return;
+      var isLight = document.documentElement.classList.contains('theme-light');
+      if (isLight) {
+        // si estamos en tema claro, mostrar ícono luna (acción: activar modo oscuro)
+        themeToggle.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill="currentColor"/></svg>';
+        themeToggle.setAttribute('aria-label','Activar modo oscuro');
+      } else {
+        // si estamos en tema oscuro, mostrar ícono sol (acción: activar modo claro)
+        themeToggle.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6.76 4.84l-1.8-1.79L3.17 4.84l1.79 1.79L6.76 4.84zM1 13h3v-2H1v2zm10 9h2v-3h-2v3zm7-1.76l1.79 1.79 1.79-1.79-1.79-1.79-1.79 1.79zM17.24 4.84l1.79-1.79L17.24 1.26 15.45 3.05 17.24 4.84zM12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10z" fill="currentColor"/></svg>';
+        themeToggle.setAttribute('aria-label','Activar modo claro');
+      }
+    }
     applyTheme(currentTheme); updateThemeBtn();
-    if (themeToggle) themeToggle.addEventListener('click', function(){ currentTheme = document.documentElement.classList.contains('theme-light') ? 'dark' : 'light'; try{ localStorage.setItem('theme', currentTheme) }catch(e){} applyTheme(currentTheme); updateThemeBtn(); });
+    if (themeToggle) themeToggle.addEventListener('click', function(){
+      currentTheme = document.documentElement.classList.contains('theme-light') ? 'dark' : 'light';
+      try{ localStorage.setItem('theme', currentTheme) }catch(e){}
+      applyTheme(currentTheme);
+      updateThemeBtn();
+    });
 
     if (openWindowBtn) openWindowBtn.addEventListener('click', function(){
       var url = window.location.href;
@@ -61,6 +82,40 @@
       var nw = window.open(url, '_blank', feats);
       if (!nw) alert('El navegador bloqueó la apertura de la ventana sin barra de direcciones. Permite ventanas emergentes o instala como aplicación (PWA).');
     });
+
+      // Cargar datos de la cuenta actual (foto + nombre) usando /me
+      function loadAccount(){
+        try{
+          fetch('/me', { credentials: 'same-origin' }).then(function(res){
+            if (!res.ok) throw new Error('not-auth');
+            return res.json();
+          }).then(function(data){
+            var avatarEl = wrapper.querySelector('#fmAvatar');
+            var usernameEl = wrapper.querySelector('#fmUsername');
+            if (!avatarEl || !usernameEl) return;
+            try{
+              if (data.Photo){
+                avatarEl.style.backgroundImage = 'url("'+data.Photo+'")';
+                avatarEl.style.backgroundSize = 'cover';
+                avatarEl.style.backgroundPosition = 'center';
+                avatarEl.textContent = '';
+              } else {
+                var name = data.Name || data.Email || 'U';
+                var initials = name.split(' ').map(function(s){ return s.charAt(0) }).slice(0,2).join('').toUpperCase();
+                avatarEl.style.backgroundImage = 'none';
+                avatarEl.textContent = initials;
+              }
+              usernameEl.textContent = data.Name || data.Email || 'Usuario';
+              // ajustar el enlace de sesión si hay cookie
+              if (getCookie('session_token')){
+                sessionLink.textContent = 'Cerrar sesión';
+                sessionLink.href = '/auth/logout';
+              }
+            }catch(e){}
+          }).catch(function(){ /* ignorar si no autenticado */ });
+        }catch(e){}
+      }
+      loadAccount();
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', injectMenu); else injectMenu();

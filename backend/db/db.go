@@ -254,7 +254,9 @@ func GetAdminByEmail(dbConn *sql.DB, email string) (*Admin, error) {
 	if err := row.Scan(&a.ID, &a.Email, &a.Name, &a.Role, &photo, &a.FechaCreacion, &a.FechaActualizacion, &a.Estado); err != nil {
 		return nil, err
 	}
-	if photo.Valid { a.Photo = photo.String }
+	if photo.Valid {
+		a.Photo = photo.String
+	}
 	return &a, nil
 }
 
@@ -272,7 +274,9 @@ func GetAdministradores(dbConn *sql.DB) ([]Admin, error) {
 		if err := rows.Scan(&a.ID, &a.Email, &a.Name, &a.Role, &photo, &a.FechaCreacion, &a.FechaActualizacion, &a.Estado); err != nil {
 			return nil, err
 		}
-		if photo.Valid { a.Photo = photo.String }
+		if photo.Valid {
+			a.Photo = photo.String
+		}
 		out = append(out, a)
 	}
 	return out, nil
