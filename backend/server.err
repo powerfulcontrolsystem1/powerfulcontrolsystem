@@ -1,155 +1,112 @@
-2026/03/29 16:28:24 index.html encontrado en ..\web\index.html
-2026/03/29 16:28:24 Servidor arrancado en :8080
-2026/03/29 16:28:24 metrics: stored cpu=28.57 mem=85.00% recv=4141809817 sent=1645265924
-2026/03/29 16:28:25 -> GET /estilos.css from [::1]:58961
-2026/03/29 16:28:25 <- 304 GET /estilos.css
-2026/03/29 16:28:34 metrics: stored cpu=21.15 mem=85.00% recv=4142899236 sent=1645519080
-2026/03/29 16:28:44 metrics: stored cpu=12.77 mem=85.00% recv=4143151821 sent=1645695131
-2026/03/29 16:28:54 metrics: stored cpu=11.91 mem=84.00% recv=4144617841 sent=1646711751
-2026/03/29 16:29:04 metrics: stored cpu=11.55 mem=85.00% recv=4145010616 sent=1646942866
-2026/03/29 16:29:14 metrics: stored cpu=12.45 mem=84.00% recv=4145241634 sent=1646948747
-2026/03/29 16:29:24 metrics: stored cpu=14.28 mem=83.00% recv=4145250340 sent=1646949051
-2026/03/29 16:29:34 metrics: stored cpu=14.17 mem=87.00% recv=4146512165 sent=1647367618
-2026/03/29 16:29:44 metrics: stored cpu=14.24 mem=86.00% recv=4147254506 sent=1647815366
-2026/03/29 16:29:54 metrics: stored cpu=12.63 mem=86.00% recv=4147620093 sent=1647948170
-2026/03/29 16:30:04 metrics: stored cpu=13.84 mem=86.00% recv=4147846389 sent=1647956367
-2026/03/29 16:30:14 metrics: stored cpu=16.27 mem=86.00% recv=4147872436 sent=1648086993
-2026/03/29 16:30:24 metrics: stored cpu=16.88 mem=86.00% recv=4147879085 sent=1648094262
-2026/03/29 16:30:34 metrics: stored cpu=17.91 mem=87.00% recv=4148271481 sent=1648131649
-2026/03/29 16:30:44 metrics: stored cpu=16.08 mem=87.00% recv=4149822014 sent=1648616740
-2026/03/29 16:30:54 metrics: stored cpu=20.95 mem=87.00% recv=4150891164 sent=1649160409
-2026/03/29 16:31:04 metrics: stored cpu=16.17 mem=85.00% recv=4151966065 sent=1649678150
-2026/03/29 16:31:14 metrics: stored cpu=16.16 mem=85.00% recv=4152869712 sent=1650382015
-2026/03/29 16:31:24 metrics: stored cpu=8.62 mem=86.00% recv=4153815986 sent=1650441855
-2026/03/29 16:31:34 metrics: stored cpu=4.49 mem=86.00% recv=4153838105 sent=1650569270
-2026/03/29 16:31:44 metrics: stored cpu=3.46 mem=85.00% recv=4153843894 sent=1650572475
-2026/03/29 16:31:54 metrics: stored cpu=4.36 mem=84.00% recv=4153938060 sent=1650579894
-2026/03/29 16:32:04 metrics: stored cpu=3.20 mem=85.00% recv=4153943631 sent=1650580033
-2026/03/29 16:32:14 metrics: stored cpu=2.56 mem=85.00% recv=4153961092 sent=1650583264
-2026/03/29 16:32:24 metrics: stored cpu=2.68 mem=85.00% recv=4153979706 sent=1650586684
-2026/03/29 16:32:34 metrics: stored cpu=2.63 mem=85.00% recv=4153985807 sent=1650586902
-2026/03/29 16:32:44 metrics: stored cpu=3.24 mem=85.00% recv=4153997649 sent=1650593212
-2026/03/29 16:32:54 metrics: stored cpu=56.68 mem=88.00% recv=4154035275 sent=1650607292
-2026/03/29 16:33:04 metrics: stored cpu=40.02 mem=86.00% recv=4159116359 sent=1650699372
-2026/03/29 16:33:14 metrics: stored cpu=41.74 mem=87.00% recv=4166754100 sent=1650801075
-2026/03/29 16:33:24 metrics: stored cpu=48.60 mem=82.00% recv=4174590002 sent=1650924996
-2026/03/29 16:33:34 metrics: stored cpu=35.33 mem=82.00% recv=4183351861 sent=1651028913
-2026/03/29 16:33:44 metrics: stored cpu=21.94 mem=80.00% recv=4194284104 sent=1651167290
-2026/03/29 16:33:54 metrics: stored cpu=30.12 mem=81.00% recv=4206303038 sent=1651316208
-2026/03/29 16:34:04 metrics: stored cpu=36.97 mem=82.00% recv=4217774043 sent=1651470569
-2026/03/29 16:34:14 metrics: stored cpu=15.91 mem=82.00% recv=4222751893 sent=1651544033
-2026/03/29 16:34:24 metrics: stored cpu=2.91 mem=82.00% recv=4222757485 sent=1651544197
-2026/03/29 16:34:34 metrics: stored cpu=4.14 mem=81.00% recv=4222765533 sent=1651547653
-2026/03/29 16:34:44 metrics: stored cpu=5.51 mem=82.00% recv=4222771604 sent=1651551149
-2026/03/29 16:34:50 -> GET /auth/google/login from [::1]:57763
-2026/03/29 16:34:50 handleGoogleLogin: client_id set=true, redirect_url="http://localhost:8080/auth/google/callback"
-2026/03/29 16:34:50 Auth URL: https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&client_id=1029204473903-6npuu63uehsrn2jn8fnif4fgpp6kcjsm.apps.googleusercontent.com&include_granted_scopes=true&prompt=select_account+consent&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fauth%2Fgoogle%2Fcallback&response_type=code&scope=openid+email+profile&state=state-token
-2026/03/29 16:34:50 <- 302 GET /auth/google/login
-2026/03/29 16:34:54 metrics: stored cpu=23.45 mem=85.00% recv=4223170496 sent=1651650726
-2026/03/29 16:34:56 -> GET /auth/google/callback from [::1]:57763
-2026/03/29 16:34:57 <- 302 GET /auth/google/callback
-2026/03/29 16:34:57 -> GET /super_administrador.html from [::1]:57763
-2026/03/29 16:34:57 <- 200 GET /super_administrador.html
-2026/03/29 16:34:57 -> GET /estilos.css from [::1]:57763
-2026/03/29 16:34:57 -> GET /img/company-briefcase.svg from [::1]:63973
-2026/03/29 16:34:57 <- 200 GET /estilos.css
-2026/03/29 16:34:57 <- 200 GET /img/company-briefcase.svg
-2026/03/29 16:34:57 -> GET /img/shield-license.svg from [::1]:61652
-2026/03/29 16:34:57 <- 200 GET /img/shield-license.svg
-2026/03/29 16:34:57 -> GET /img/shield-security.svg from [::1]:50764
-2026/03/29 16:34:57 -> GET /img/analytics.svg from [::1]:60116
-2026/03/29 16:34:57 -> GET /super/licencias_resumen.html from [::1]:63973
-2026/03/29 16:34:57 -> GET /img/network.svg from [::1]:60233
-2026/03/29 16:34:57 <- 200 GET /img/shield-security.svg
-2026/03/29 16:34:57 <- 200 GET /img/analytics.svg
-2026/03/29 16:34:57 <- 304 GET /super/licencias_resumen.html
-2026/03/29 16:34:57 <- 200 GET /img/network.svg
-2026/03/29 16:34:57 -> GET /img/user-avatar.svg from [::1]:63973
-2026/03/29 16:34:57 <- 200 GET /img/user-avatar.svg
-2026/03/29 16:34:57 -> GET /super/api/licencias from [::1]:63973
-2026/03/29 16:34:57 <- 200 GET /super/api/licencias
-2026/03/29 16:35:04 metrics: stored cpu=14.15 mem=85.00% recv=4223289627 sent=1651682170
-2026/03/29 16:35:14 metrics: stored cpu=3.38 mem=85.00% recv=4223303670 sent=1651693543
-2026/03/29 16:35:24 metrics: stored cpu=3.85 mem=84.00% recv=4223308516 sent=1651693707
-2026/03/29 16:35:34 metrics: stored cpu=4.65 mem=84.00% recv=4223315902 sent=1651696983
-2026/03/29 16:35:44 metrics: stored cpu=3.34 mem=84.00% recv=4223337215 sent=1651714006
-2026/03/29 16:35:54 metrics: stored cpu=3.52 mem=84.00% recv=4223344794 sent=1651725449
-2026/03/29 16:36:04 metrics: stored cpu=4.63 mem=83.00% recv=4223352362 sent=1651728960
-2026/03/29 16:36:14 metrics: stored cpu=2.83 mem=83.00% recv=4223366049 sent=1651734061
-2026/03/29 16:36:24 metrics: stored cpu=3.12 mem=83.00% recv=4223377070 sent=1651736762
-2026/03/29 16:36:31 -> GET /super/api/licencias from [::1]:63973
-2026/03/29 16:36:31 <- 200 GET /super/api/licencias
-2026/03/29 16:36:34 metrics: stored cpu=5.64 mem=83.00% recv=4223385486 sent=1651743544
-2026/03/29 16:36:38 -> GET /estilos.css from [::1]:63973
-2026/03/29 16:36:38 <- 304 GET /estilos.css
-2026/03/29 16:36:38 -> GET /super/api/tipos_empresas from [::1]:63973
-2026/03/29 16:36:38 <- 200 GET /super/api/tipos_empresas
-2026/03/29 16:36:40 -> GET /super/api/tipos_empresas from [::1]:63973
-2026/03/29 16:36:40 <- 200 GET /super/api/tipos_empresas
-2026/03/29 16:36:40 -> GET /super/api/licencias from [::1]:63973
-2026/03/29 16:36:40 <- 200 GET /super/api/licencias
-2026/03/29 16:36:44 metrics: stored cpu=11.71 mem=86.00% recv=4223395581 sent=1651751173
-2026/03/29 16:36:48 -> GET /metricas_de_trafico_general.html from [::1]:63973
-2026/03/29 16:36:48 <- 304 GET /metricas_de_trafico_general.html
-2026/03/29 16:36:48 -> GET /super/api/metrics/history from [::1]:63973
-2026/03/29 16:36:48 <- 200 GET /super/api/metrics/history
-2026/03/29 16:36:48 -> GET /super/api/metrics/current from [::1]:63973
-2026/03/29 16:36:48 <- 200 GET /super/api/metrics/current
-2026/03/29 16:36:50 -> GET /super/seguridad.html from [::1]:63973
-2026/03/29 16:36:50 <- 200 GET /super/seguridad.html
-2026/03/29 16:36:50 -> GET /super/api/security/ports from [::1]:63973
-2026/03/29 16:36:50 <- 200 GET /super/api/security/ports
-2026/03/29 16:36:54 metrics: stored cpu=8.82 mem=85.00% recv=4223475656 sent=1651765170
-2026/03/29 16:37:01 -> GET /super/api/security/ports from [::1]:63973
-2026/03/29 16:37:01 <- 200 GET /super/api/security/ports
-2026/03/29 16:37:04 metrics: stored cpu=4.71 mem=85.00% recv=4223482357 sent=1651783889
-2026/03/29 16:37:06 -> GET /super/api/tipos_empresas from [::1]:63973
-2026/03/29 16:37:06 <- 200 GET /super/api/tipos_empresas
-2026/03/29 16:37:08 -> GET /super/api/tipos_empresas from [::1]:63973
-2026/03/29 16:37:08 <- 200 GET /super/api/tipos_empresas
-2026/03/29 16:37:08 -> GET /super/api/licencias from [::1]:63973
-2026/03/29 16:37:08 <- 200 GET /super/api/licencias
-2026/03/29 16:37:10 -> GET /super/api/tipos_empresas from [::1]:63973
-2026/03/29 16:37:10 <- 200 GET /super/api/tipos_empresas
-2026/03/29 16:37:11 -> GET /super/api/tipos_empresas from [::1]:63973
-2026/03/29 16:37:11 <- 200 GET /super/api/tipos_empresas
-2026/03/29 16:37:11 -> GET /super/api/licencias from [::1]:63973
-2026/03/29 16:37:11 <- 200 GET /super/api/licencias
-2026/03/29 16:37:11 -> GET /super/api/tipos_empresas from [::1]:63973
-2026/03/29 16:37:11 <- 200 GET /super/api/tipos_empresas
-2026/03/29 16:37:12 -> GET /estilos.css from [::1]:63973
-2026/03/29 16:37:12 <- 304 GET /estilos.css
-2026/03/29 16:37:12 -> GET /super/api/tipos_empresas from [::1]:63973
-2026/03/29 16:37:12 <- 200 GET /super/api/tipos_empresas
-2026/03/29 16:37:12 -> GET /super/api/licencias from [::1]:63973
-2026/03/29 16:37:12 <- 200 GET /super/api/licencias
-2026/03/29 16:37:14 -> GET /super/api/tipos_empresas from [::1]:63973
-2026/03/29 16:37:14 <- 200 GET /super/api/tipos_empresas
-2026/03/29 16:37:14 metrics: stored cpu=8.11 mem=85.00% recv=4223492216 sent=1651810912
-2026/03/29 16:37:14 -> GET /super/api/tipos_empresas from [::1]:63973
-2026/03/29 16:37:14 <- 200 GET /super/api/tipos_empresas
-2026/03/29 16:37:14 -> GET /super/api/licencias from [::1]:63973
-2026/03/29 16:37:14 <- 200 GET /super/api/licencias
-2026/03/29 16:37:15 -> GET /super/api/tipos_empresas from [::1]:63973
-2026/03/29 16:37:15 <- 200 GET /super/api/tipos_empresas
-2026/03/29 16:37:17 -> GET /super/api/tipos_empresas from [::1]:63973
-2026/03/29 16:37:17 <- 200 GET /super/api/tipos_empresas
-2026/03/29 16:37:17 -> GET /super/api/licencias from [::1]:63973
-2026/03/29 16:37:17 <- 200 GET /super/api/licencias
-2026/03/29 16:37:18 -> GET /super/api/metrics/history from [::1]:63973
-2026/03/29 16:37:18 <- 200 GET /super/api/metrics/history
-2026/03/29 16:37:18 -> GET /super/api/metrics/current from [::1]:63973
-2026/03/29 16:37:18 <- 200 GET /super/api/metrics/current
-2026/03/29 16:37:19 -> GET /super/api/security/ports from [::1]:63973
-2026/03/29 16:37:19 <- 200 GET /super/api/security/ports
-2026/03/29 16:37:20 -> GET /super/api/administradores from [::1]:63973
-2026/03/29 16:37:20 <- 200 GET /super/api/administradores
-2026/03/29 16:37:24 metrics: stored cpu=7.24 mem=86.00% recv=4223500523 sent=1651822033
-2026/03/29 16:37:34 metrics: stored cpu=17.11 mem=85.00% recv=4223523264 sent=1651849535
-2026/03/29 16:37:44 metrics: stored cpu=7.19 mem=85.00% recv=4223532912 sent=1651858670
-2026/03/29 16:37:54 metrics: stored cpu=3.61 mem=85.00% recv=4223537372 sent=1651858863
-2026/03/29 16:38:04 metrics: stored cpu=4.45 mem=83.00% recv=4223545396 sent=1651860542
-2026/03/29 16:38:14 metrics: stored cpu=16.82 mem=84.00% recv=4223564059 sent=1652291874
-2026/03/29 16:38:24 metrics: stored cpu=16.46 mem=83.00% recv=4223879349 sent=1652411979
-2026/03/29 16:38:34 metrics: stored cpu=16.28 mem=83.00% recv=4224046779 sent=1652432054
-2026/03/29 16:38:44 metrics: stored cpu=19.59 mem=83.00% recv=4224130140 sent=1652433687
+2026/03/29 17:04:14 index.html encontrado en ..\web\index.html
+2026/03/29 17:04:14 Servidor arrancado en :8080
+2026/03/29 17:04:14 metrics: stored cpu=57.14 mem=83.00% recv=4267790699 sent=1674970611
+2026/03/29 17:04:15 -> GET /estilos.css from [::1]:51968
+2026/03/29 17:04:15 <- 200 GET /estilos.css
+2026/03/29 17:04:24 metrics: stored cpu=9.00 mem=84.00% recv=4267809697 sent=1674987186
+2026/03/29 17:04:34 metrics: stored cpu=3.32 mem=84.00% recv=4267823468 sent=1674996311
+2026/03/29 17:04:44 metrics: stored cpu=2.69 mem=84.00% recv=4267830317 sent=1675000608
+2026/03/29 17:04:54 metrics: stored cpu=3.58 mem=84.00% recv=4267839182 sent=1675000828
+2026/03/29 17:05:04 metrics: stored cpu=2.95 mem=84.00% recv=4267845154 sent=1675001047
+2026/03/29 17:05:14 metrics: stored cpu=2.60 mem=84.00% recv=4267852649 sent=1675010844
+2026/03/29 17:05:24 metrics: stored cpu=2.83 mem=84.00% recv=4267861069 sent=1675011062
+2026/03/29 17:05:34 metrics: stored cpu=6.86 mem=85.00% recv=4267985109 sent=1675025730
+2026/03/29 17:05:44 metrics: stored cpu=2.71 mem=85.00% recv=4268010108 sent=1675039653
+2026/03/29 17:05:54 metrics: stored cpu=2.99 mem=84.00% recv=4268018682 sent=1675039817
+2026/03/29 17:06:04 metrics: stored cpu=3.75 mem=84.00% recv=4268026114 sent=1675040818
+2026/03/29 17:06:14 metrics: stored cpu=2.99 mem=84.00% recv=4268032334 sent=1675040928
+2026/03/29 17:06:24 metrics: stored cpu=3.30 mem=84.00% recv=4268038810 sent=1675044333
+2026/03/29 17:06:30 -> GET /auth/google/login from [::1]:51968
+2026/03/29 17:06:30 handleGoogleLogin: client_id set=true, redirect_url="http://localhost:8080/auth/google/callback"
+2026/03/29 17:06:30 Auth URL: https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&client_id=1029204473903-6npuu63uehsrn2jn8fnif4fgpp6kcjsm.apps.googleusercontent.com&include_granted_scopes=true&prompt=select_account+consent&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fauth%2Fgoogle%2Fcallback&response_type=code&scope=openid+email+profile&state=state-token
+2026/03/29 17:06:30 <- 302 GET /auth/google/login
+2026/03/29 17:06:34 metrics: stored cpu=12.71 mem=86.00% recv=4268413817 sent=1675138104
+2026/03/29 17:06:38 -> GET /auth/google/callback from [::1]:51968
+2026/03/29 17:06:39 <- 302 GET /auth/google/callback
+2026/03/29 17:06:39 -> GET /super_administrador.html from [::1]:51968
+2026/03/29 17:06:39 <- 304 GET /super_administrador.html
+2026/03/29 17:06:39 -> GET /estilos.css from [::1]:51968
+2026/03/29 17:06:39 -> GET /img/company-briefcase.svg from [::1]:60120
+2026/03/29 17:06:39 -> GET /img/shield-license.svg from [::1]:58323
+2026/03/29 17:06:39 -> GET /img/analytics.svg from [::1]:49820
+2026/03/29 17:06:39 -> GET /img/network.svg from [::1]:53132
+2026/03/29 17:06:39 -> GET /super/licencias_resumen.html from [::1]:56206
+2026/03/29 17:06:39 <- 304 GET /estilos.css
+2026/03/29 17:06:39 <- 304 GET /img/company-briefcase.svg
+2026/03/29 17:06:39 <- 304 GET /img/shield-license.svg
+2026/03/29 17:06:39 <- 304 GET /img/analytics.svg
+2026/03/29 17:06:39 <- 304 GET /img/network.svg
+2026/03/29 17:06:39 <- 304 GET /super/licencias_resumen.html
+2026/03/29 17:06:39 -> GET /img/shield-security.svg from [::1]:51968
+2026/03/29 17:06:39 <- 304 GET /img/shield-security.svg
+2026/03/29 17:06:39 -> GET /img/user-avatar.svg from [::1]:51968
+2026/03/29 17:06:39 <- 304 GET /img/user-avatar.svg
+2026/03/29 17:06:39 -> GET /super/api/licencias from [::1]:51968
+2026/03/29 17:06:39 <- 200 GET /super/api/licencias
+2026/03/29 17:06:43 -> GET /seleccionar_empresa.html from [::1]:51968
+2026/03/29 17:06:43 <- 304 GET /seleccionar_empresa.html
+2026/03/29 17:06:43 -> GET /me from [::1]:51968
+2026/03/29 17:06:43 <- 200 GET /me
+2026/03/29 17:06:43 -> GET /super/api/empresas from [::1]:51968
+2026/03/29 17:06:43 <- 200 GET /super/api/empresas
+2026/03/29 17:06:43 -> GET /super/api/licencias from [::1]:56206
+2026/03/29 17:06:43 <- 200 GET /super/api/licencias
+2026/03/29 17:06:43 -> GET /super/api/tipos_empresas from [::1]:53132
+2026/03/29 17:06:43 <- 200 GET /super/api/tipos_empresas
+2026/03/29 17:06:44 metrics: stored cpu=12.92 mem=85.00% recv=4268447787 sent=1675166566
+2026/03/29 17:06:47 -> GET /seleccionar_empresa.html from [::1]:53132
+2026/03/29 17:06:47 <- 200 GET /seleccionar_empresa.html
+2026/03/29 17:06:47 -> GET /estilos.css from [::1]:53132
+2026/03/29 17:06:47 <- 200 GET /estilos.css
+2026/03/29 17:06:47 -> GET /menu.js from [::1]:56206
+2026/03/29 17:06:47 -> GET /img/company-briefcase.svg from [::1]:51968
+2026/03/29 17:06:47 -> GET /img/shield-license.svg from [::1]:49820
+2026/03/29 17:06:47 <- 200 GET /menu.js
+2026/03/29 17:06:47 <- 200 GET /img/company-briefcase.svg
+2026/03/29 17:06:47 <- 200 GET /img/shield-license.svg
+2026/03/29 17:06:47 -> GET /img/user-avatar.svg from [::1]:49820
+2026/03/29 17:06:47 <- 200 GET /img/user-avatar.svg
+2026/03/29 17:06:47 -> GET /img/analytics.svg from [::1]:51968
+2026/03/29 17:06:47 <- 200 GET /img/analytics.svg
+2026/03/29 17:06:47 -> GET /me from [::1]:56206
+2026/03/29 17:06:47 <- 200 GET /me
+2026/03/29 17:06:47 -> GET /super/api/empresas from [::1]:56206
+2026/03/29 17:06:47 <- 200 GET /super/api/empresas
+2026/03/29 17:06:47 -> GET /super/api/licencias from [::1]:56206
+2026/03/29 17:06:47 <- 200 GET /super/api/licencias
+2026/03/29 17:06:47 -> GET /super/api/tipos_empresas from [::1]:51968
+2026/03/29 17:06:47 -> GET /favicon.ico from [::1]:49820
+2026/03/29 17:06:47 <- 200 GET /super/api/tipos_empresas
+2026/03/29 17:06:47 <- 404 GET /favicon.ico
+2026/03/29 17:06:54 metrics: stored cpu=8.36 mem=85.00% recv=4268535457 sent=1675181598
+2026/03/29 17:06:59 -> GET /me from [::1]:49820
+2026/03/29 17:06:59 <- 200 GET /me
+2026/03/29 17:06:59 -> GET /super/api/empresas from [::1]:49820
+2026/03/29 17:06:59 <- 200 GET /super/api/empresas
+2026/03/29 17:06:59 -> GET /super/api/licencias from [::1]:51968
+2026/03/29 17:06:59 -> GET /super/api/tipos_empresas from [::1]:56206
+2026/03/29 17:06:59 <- 200 GET /super/api/licencias
+2026/03/29 17:06:59 <- 200 GET /super/api/tipos_empresas
+2026/03/29 17:07:04 metrics: stored cpu=12.48 mem=86.00% recv=4268552861 sent=1675204993
+2026/03/29 17:07:14 metrics: stored cpu=15.77 mem=85.00% recv=4268568735 sent=1675246921
+2026/03/29 17:07:24 metrics: stored cpu=7.28 mem=85.00% recv=4268573550 sent=1675247544
+2026/03/29 17:07:34 metrics: stored cpu=5.63 mem=85.00% recv=4268584705 sent=1675259618
+2026/03/29 17:07:44 metrics: stored cpu=5.94 mem=85.00% recv=4268591175 sent=1675263206
+2026/03/29 17:07:54 metrics: stored cpu=5.88 mem=85.00% recv=4268597588 sent=1675263316
+2026/03/29 17:08:04 metrics: stored cpu=12.70 mem=86.00% recv=4268663795 sent=1675559302
+2026/03/29 17:08:14 metrics: stored cpu=18.14 mem=85.00% recv=4268936334 sent=1675592704
+2026/03/29 17:08:24 metrics: stored cpu=16.10 mem=85.00% recv=4269208370 sent=1675696561
+2026/03/29 17:08:34 metrics: stored cpu=15.06 mem=85.00% recv=4270129311 sent=1675997782
+2026/03/29 17:08:44 metrics: stored cpu=17.03 mem=85.00% recv=4271075237 sent=1676411618
+2026/03/29 17:08:54 metrics: stored cpu=19.74 mem=85.00% recv=4271252345 sent=1676433352
+2026/03/29 17:09:04 metrics: stored cpu=16.47 mem=85.00% recv=4271361203 sent=1676528114
+2026/03/29 17:09:14 metrics: stored cpu=25.00 mem=86.00% recv=4272493563 sent=1676618966
+2026/03/29 17:09:24 metrics: stored cpu=27.19 mem=87.00% recv=4274254101 sent=1676781804
+2026/03/29 17:09:34 metrics: stored cpu=44.52 mem=90.00% recv=4278952324 sent=1676937020
+2026/03/29 17:09:44 metrics: stored cpu=66.76 mem=92.00% recv=4285967505 sent=1677645146
+2026/03/29 17:09:54 metrics: stored cpu=65.55 mem=92.00% recv=4288134494 sent=1677737365
+2026/03/29 17:10:04 metrics: stored cpu=43.06 mem=91.00% recv=4293120580 sent=1678313622
+2026/03/29 17:10:14 metrics: stored cpu=54.79 mem=92.00% recv=4298753963 sent=1678728954
+2026/03/29 17:10:24 metrics: stored cpu=49.53 mem=92.00% recv=4299020176 sent=1678933168
+2026/03/29 17:10:34 metrics: stored cpu=56.00 mem=91.00% recv=4303939101 sent=1679004021
+2026/03/29 17:10:44 metrics: stored cpu=33.18 mem=91.00% recv=4304343985 sent=1679029374
