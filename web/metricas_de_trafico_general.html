@@ -7,8 +7,9 @@
   <link rel="stylesheet" href="/estilos.css">
   <style>
     .metrics-grid{display:flex;gap:1rem;flex-wrap:wrap;margin:1rem 0}
-    .metric-card{flex:1 1 200px;background:#fff;padding:1rem;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
-    .metric-value{font-size:1.6rem;font-weight:700}
+    /* usar variables CSS del tema para modo oscuro/claro */
+    .metric-card{flex:1 1 200px;background:var(--card);padding:1rem;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,.06);color:var(--text)}
+    .metric-value{font-size:1.6rem;font-weight:700;color:var(--text)}
     .charts{display:grid;grid-template-columns:1fr;gap:1rem}
     @media(min-width:900px){.charts{grid-template-columns:1fr 1fr}}
   </style>
@@ -61,14 +62,45 @@
     }
 
     function createCharts(labels, cpuData, memData, netData){
+      const rootStyles = getComputedStyle(document.documentElement)
+      const labelColor = (rootStyles.getPropertyValue('--text') || '#000').trim() || '#000'
+      const gridColor = (rootStyles.getPropertyValue('--border') || 'rgba(0,0,0,0.06)').trim() || 'rgba(0,0,0,0.06)'
+
       const ctxCpu = document.getElementById('cpuChart').getContext('2d')
-      cpuChart = new Chart(ctxCpu, {type:'line', data:{labels, datasets:[{label:'CPU %',data:cpuData,borderColor:'#ff6384',fill:false}]}, options:{animation:false,responsive:true}})
+      cpuChart = new Chart(ctxCpu, {
+        type:'line',
+        data:{labels, datasets:[{label:'CPU %',data:cpuData,borderColor:'#ff6384',backgroundColor:'transparent',fill:false}]},
+        options:{
+          animation:false,
+          responsive:true,
+          plugins:{legend:{labels:{color:labelColor}}},
+          scales:{x:{ticks:{color:labelColor},grid:{color:gridColor}},y:{ticks:{color:labelColor},grid:{color:gridColor}}}
+        }
+      })
 
       const ctxMem = document.getElementById('memChart').getContext('2d')
-      memChart = new Chart(ctxMem, {type:'line', data:{labels, datasets:[{label:'Mem %',data:memData,borderColor:'#36a2eb',fill:false}]}, options:{animation:false,responsive:true}})
+      memChart = new Chart(ctxMem, {
+        type:'line',
+        data:{labels, datasets:[{label:'Mem %',data:memData,borderColor:'#36a2eb',backgroundColor:'transparent',fill:false}]},
+        options:{
+          animation:false,
+          responsive:true,
+          plugins:{legend:{labels:{color:labelColor}}},
+          scales:{x:{ticks:{color:labelColor},grid:{color:gridColor}},y:{ticks:{color:labelColor},grid:{color:gridColor}}}
+        }
+      })
 
       const ctxNet = document.getElementById('netChart').getContext('2d')
-      netChart = new Chart(ctxNet, {type:'line', data:{labels, datasets:[{label:'Tráfico (bytes)',data:netData,borderColor:'#9ad36b',fill:false}]}, options:{animation:false,responsive:true}})
+      netChart = new Chart(ctxNet, {
+        type:'line',
+        data:{labels, datasets:[{label:'Tráfico (bytes)',data:netData,borderColor:'#9ad36b',backgroundColor:'transparent',fill:false}]},
+        options:{
+          animation:false,
+          responsive:true,
+          plugins:{legend:{labels:{color:labelColor}}},
+          scales:{x:{ticks:{color:labelColor},grid:{color:gridColor}},y:{ticks:{color:labelColor},grid:{color:gridColor}}}
+        }
+      })
     }
 
     async function loadHistory(){
