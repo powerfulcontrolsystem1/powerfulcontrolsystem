@@ -1,13 +1,18 @@
 -Historial de cambios
 
+2026-03-29: Ajuste de ancho del sidebar en `seleccionar_empresa.html` para igualar `super_administrador.html`
+- Acción: Se eliminó la clase `super-page` del `body` en `web/seleccionar_empresa.html` para que el ancho del menú izquierdo sea el mismo que en `web/super_administrador.html` (ancho por defecto del sidebar: 260px). Esto hace que los botones del menú en `seleccionar_empresa.html` tengan el mismo tamaño visual que en el panel de super administrador.
+- Archivos modificados:
+    - web/seleccionar_empresa.html
+- Descripción: Se revierte la regla aplicada previamente que reducía el ancho del sidebar en las páginas con la clase `super-page`. La eliminación de la clase restaura el comportamiento por defecto y mantiene el resto de estilos específicos de la página.
+- Responsable: agente local.
+
 2026-03-29: Estandarización de estilos de botones en contenido (admin-content)
 - Acción: Se actualizó `web/estilos.css` para estandarizar la apariencia y tamaño de los botones dentro del área de contenido administrativo (`.admin-content .btn`) y hacerlos coherentes visualmente con los botones del `admin-sidebar` (padding, min-height, alineación y border-radius).
 - Archivos modificados:
     - web/estilos.css
 - Descripción: Ajuste visual para mejorar consistencia entre el sidebar y los botones de contenido en páginas del panel administrativo (`/web/super` y similares). No se cambiaron colores por defecto; la regla afecta sólo a botones dentro de `.admin-content`.
 - Responsable: agente local.
-
-2026-03-29: Añadidos iconos SVG y página 'Seguridad' con endpoint de monitoreo de puertos
 - Acción: Se añadieron iconos SVG en `web/img` (company-briefcase.svg, shield-license.svg, analytics.svg, network.svg, user-avatar.svg, shield-security.svg) y la página `web/super/seguridad.html`.
 - Archivos modificados/creados:
     - web/img/company-briefcase.svg
