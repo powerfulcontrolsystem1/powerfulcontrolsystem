@@ -80,6 +80,7 @@ p{color:var(--muted);line-height:1.5}
 .admin-sidebar .nav a{display:block;color:var(--text);text-decoration:none;padding:10px 14px;border-radius:8px;background:var(--card);border:1px solid rgba(255,255,255,0.03);font-weight:700;font-size:0.95rem}
 .admin-sidebar .nav a:hover{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.02));color:var(--accent-2)}
 .admin-sidebar .nav a.active{background:var(--accent-2);color:#fff;border-color:rgba(0,0,0,0.12);box-shadow:0 6px 14px rgba(0,0,0,0.35)}
+.admin-sidebar .nav a img.icon{width:18px;height:18px;vertical-align:middle;margin-right:8px;filter:none}
 .admin-content{flex:1;padding:18px;overflow:auto;background:linear-gradient(180deg,transparent,rgba(255,255,255,0.01))}
 .admin-toolbar{padding:12px 18px;border-bottom:1px solid rgba(255,255,255,0.03);background:transparent}
 

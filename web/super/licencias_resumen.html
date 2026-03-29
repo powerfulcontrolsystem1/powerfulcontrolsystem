@@ -15,7 +15,10 @@
   <div class="container">
     <div class="page-header">
       <h1>Resumen de Licencias</h1>
-      <div><a href="/super/licencias.html" target="contentFrame" class="btn secondary">Administrar licencias</a></div>
+      <div>
+        <button id="refreshBtn" class="btn" aria-label="Actualizar recuento">Actualizar</button>
+        <a href="/super/licencias.html" target="contentFrame" class="btn secondary">Administrar licencias</a>
+      </div>
     </div>
     <div class="card summary-card">
       <div class="muted">Licencias activas</div>
@@ -26,22 +29,30 @@
 
   <script>
     async function loadActiveCount(){
+      const btn = document.getElementById('refreshBtn');
       try{
+        if (btn) { btn.disabled = true; btn.textContent = 'Actualizando...'; }
         const res = await fetch('/super/api/licencias');
         if(!res.ok){ document.getElementById('activeCount').textContent = 'Error'; return }
         const arr = await res.json();
         const active = arr.filter(x=> {
           if (x.activo === undefined) return false;
-          return x.activo == 1 || x.activo === true || x.activo === '1';
+          return x.activo == 1 || x.activo === true || x.activo === '1' || x.activo === 'activo';
         }).length;
         document.getElementById('activeCount').textContent = active;
         document.getElementById('lastUpdate').textContent = 'Última actualización: ' + new Date().toLocaleString();
       }catch(e){
         console.error(e);
         document.getElementById('activeCount').textContent = 'Error';
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = 'Actualizar'; }
       }
     }
-    loadActiveCount();
+    document.addEventListener('DOMContentLoaded', function(){
+      const btn = document.getElementById('refreshBtn');
+      if (btn) btn.addEventListener('click', loadActiveCount);
+      loadActiveCount();
+    });
   </script>
 </body>
 </html>

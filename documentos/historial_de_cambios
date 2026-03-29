@@ -426,6 +426,16 @@ Archivos modificados:
     - documentos/descripcion_de_archivos (modificado)
 - Motivo: la UX requiere que no haya selección previa en el menú lateral y que la vista inicial muestre un resumen útil (licencias activas).
 - Responsable: agente (implementación local).
+2026-03-29: Iconos en sidebar y botón 'Actualizar' en resumen de licencias
+- Acción: Se añadieron pequeños iconos SVG a los enlaces del sidebar en `web/super_administrador.html` y `web/seleccionar_empresa.html` para mejorar la identificación visual de las secciones. Además se añadió un botón `Actualizar` (click-to-refresh) en `web/super/licencias_resumen.html` para refrescar manualmente el recuento de licencias activas.
+- Archivos modificados/creados:
+    - web/super_administrador.html (modificado)
+    - web/seleccionar_empresa.html (modificado)
+    - web/super/licencias_resumen.html (modificado)
+    - web/estilos.css (modificado: estilos para iconos)
+    - documentos/descripcion_de_archivos (modificado)
+- Motivo: petición del usuario — evitar botones preseleccionados y facilitar refresco manual del resumen.
+- Responsable: agente (implementación local).
 
 2026-03-29: Añadido botón de acceso rápido a métricas en `web/super_administrador.html`
 - Acción: Se añadió un botón prominente en la barra de herramientas del panel `super_administrador` que abre la página `/metricas_de_trafico_general.html` dentro del iframe principal.
