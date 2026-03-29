@@ -484,3 +484,93 @@ func SetEmpresaEstado(dbConn *sql.DB, id int64, estado string) error {
 	_, err := dbConn.Exec("UPDATE empresas SET estado = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ?", estado, id)
 	return err
 }
+
+// Metric representa una muestra de métricas del sistema
+type Metric struct {
+	ID            int64   `json:"id"`
+	Timestamp     string  `json:"timestamp"`
+	CPUPercent    float64 `json:"cpu_percent"`
+	MemTotal      uint64  `json:"mem_total"`
+	MemUsed       uint64  `json:"mem_used"`
+	MemPercent    float64 `json:"mem_percent"`
+	NetRecv       uint64  `json:"net_recv"`
+	NetSent       uint64  `json:"net_sent"`
+	FechaCreacion string  `json:"fecha_creacion"`
+}
+
+// InitMetricsTable crea la tabla metrics en la base de datos si no existe
+func InitMetricsTable(dbConn *sql.DB) error {
+	create := `CREATE TABLE IF NOT EXISTS metrics (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		timestamp TEXT DEFAULT (datetime('now','localtime')),
+		cpu_percent REAL,
+		mem_total INTEGER,
+		mem_used INTEGER,
+		mem_percent REAL,
+		net_recv INTEGER,
+		net_sent INTEGER,
+		fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+		fecha_actualizacion TEXT,
+		usuario_creador TEXT,
+		estado TEXT DEFAULT 'activo',
+		observaciones TEXT
+	);`
+	_, err := dbConn.Exec(create)
+	return err
+}
+
+// InsertMetric inserta una muestra de métricas en la tabla metrics
+func InsertMetric(dbConn *sql.DB, cpuPercent float64, memTotal, memUsed uint64, memPercent float64, netRecv, netSent uint64) error {
+	_, err := dbConn.Exec("INSERT INTO metrics (cpu_percent, mem_total, mem_used, mem_percent, net_recv, net_sent) VALUES (?, ?, ?, ?, ?, ?)",
+		cpuPercent, memTotal, memUsed, memPercent, netRecv, netSent)
+	return err
+}
+
+// GetLatestMetric obtiene la última muestra registrada
+func GetLatestMetric(dbConn *sql.DB) (*Metric, error) {
+	row := dbConn.QueryRow("SELECT id, timestamp, cpu_percent, mem_total, mem_used, mem_percent, net_recv, net_sent, fecha_creacion FROM metrics ORDER BY id DESC LIMIT 1")
+	var m Metric
+	var timestamp sql.NullString
+	var fechaCre sql.NullString
+	if err := row.Scan(&m.ID, &timestamp, &m.CPUPercent, &m.MemTotal, &m.MemUsed, &m.MemPercent, &m.NetRecv, &m.NetSent, &fechaCre); err != nil {
+		return nil, err
+	}
+	if timestamp.Valid {
+		m.Timestamp = timestamp.String
+	}
+	if fechaCre.Valid {
+		m.FechaCreacion = fechaCre.String
+	}
+	return &m, nil
+}
+
+// GetMetricsHistory devuelve las últimas 'limit' muestras (ordenadas de más antiguo a más reciente)
+func GetMetricsHistory(dbConn *sql.DB, limit int) ([]Metric, error) {
+	q := "SELECT id, timestamp, cpu_percent, mem_total, mem_used, mem_percent, net_recv, net_sent, fecha_creacion FROM metrics ORDER BY id DESC LIMIT ?"
+	rows, err := dbConn.Query(q, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Metric
+	for rows.Next() {
+		var m Metric
+		var timestamp sql.NullString
+		var fechaCre sql.NullString
+		if err := rows.Scan(&m.ID, &timestamp, &m.CPUPercent, &m.MemTotal, &m.MemUsed, &m.MemPercent, &m.NetRecv, &m.NetSent, &fechaCre); err != nil {
+			return nil, err
+		}
+		if timestamp.Valid {
+			m.Timestamp = timestamp.String
+		}
+		if fechaCre.Valid {
+			m.FechaCreacion = fechaCre.String
+		}
+		out = append(out, m)
+	}
+	// invertir slice para devolver de más antiguo a más reciente
+	for i, j := 0, len(out)-1; i < j; i, j = i+1, j-1 {
+		out[i], out[j] = out[j], out[i]
+	}
+	return out, nil
+}

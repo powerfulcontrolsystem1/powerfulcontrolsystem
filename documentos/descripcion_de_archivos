@@ -11,6 +11,13 @@ Este documento lista los archivos y carpetas principales del proyecto con una br
 - web/seleccionar_empresa.html: Página donde un usuario administrador selecciona la empresa con la que trabajar.
 - web/estilos.css: Hoja de estilos centralizada para las páginas web (tema oscuro y estilos comunes).
 
+- web/metricas_de_trafico_general.html: Página del dashboard de métricas en tiempo real y gráficas históricas (consulta `/super/api/metrics/current` y `/super/api/metrics/history`). Usa Chart.js vía CDN para representación gráfica.
+
+- backend/metrics/collector.go: Paquete encargado de recolectar métricas del sistema (CPU, memoria, tráfico de red) usando `gopsutil` y de persistir muestras en la tabla `metrics` de `superadministrador.db`.
+
+- backend/handlers/metrics.go: Handlers HTTP que exponen las APIs `/super/api/metrics/current` y `/super/api/metrics/history` para el frontend y para integraciones externas.
+
+
 
 - backend/main.go: Código fuente principal del backend en Go; sirve archivos estáticos, gestiona endpoints de OAuth2 (`/auth/google/login`, `/auth/google/callback`) y acceso a la base de datos SQLite.
 - backend/go.mod, backend/go.sum: Módulos y dependencias de Go del backend (nota: la política del proyecto prefiere Go stdlib; cualquier dependencia debe ser autorizada).

@@ -10,7 +10,9 @@ import (
 
 	_ "modernc.org/sqlite"
 
+	dbpkg "github.com/you/pos-backend/db"
 	"github.com/you/pos-backend/handlers"
+	"github.com/you/pos-backend/metrics"
 	"github.com/you/pos-backend/utils"
 )
 
@@ -259,6 +261,14 @@ func main() {
 		log.Fatalf("failed to create sesiones table in super db: %v", err)
 	}
 
+	// Inicializar tabla de métricas y arrancar collector periódico
+	if err := dbpkg.InitMetricsTable(dbSuper); err != nil {
+		log.Printf("warning: failed to init metrics table: %v", err)
+	}
+	metricsInterval := metrics.DefaultIntervalSeconds()
+	stopMetrics := make(chan struct{})
+	go metrics.StartCollector(dbSuper, metricsInterval, stopMetrics)
+
 	http.HandleFunc("/auth/google/login", handlers.HandleGoogleLogin(clientID, redirectURL))
 	// Pasar la conexión de la base `empresas` al callback para persistir usuarios y empresas
 	// Pasar tanto la conexión de empresas como la de superadministrador al callback
@@ -278,6 +288,10 @@ func main() {
 	http.HandleFunc("/super/api/administradores", handlers.AdministradoresHandler(dbSuper))
 	// Endpoint CRUD para licencias (nuevo)
 	http.HandleFunc("/super/api/licencias", handlers.LicenciasHandler(dbSuper))
+
+	// Endpoints de métricas (actual y histórico)
+	http.HandleFunc("/super/api/metrics/current", handlers.MetricsCurrentHandler(dbSuper))
+	http.HandleFunc("/super/api/metrics/history", handlers.MetricsHistoryHandler(dbSuper))
 
 	// Logout handler: limpiar cookie de sesión (si existe) y redirigir a la página de login
 	http.HandleFunc("/auth/logout", func(w http.ResponseWriter, r *http.Request) {

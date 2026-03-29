@@ -398,6 +398,32 @@ Archivos modificados:
 - Acción: Se añadió un menú vertical izquierdo en `web/super_administrador.html` y se crearon páginas en `web/super/` para: `tipos_empresas`, `tipos_licencias`, `licencias`, `configuracion` y `administradores`.
 - Archivos creados/modificados:
     - web/super_administradores.html (modificado)
+
+2026-03-29: Métricas de tráfico en tiempo real (collector, API y dashboard)
+- Acción: Se implementó un colector de métricas del sistema que registra CPU, memoria y tráfico de red periódicamente en la base `superadministrador.db`. Se añadieron endpoints para consulta en tiempo real y para el histórico, y una página frontend que muestra valores y gráficas.
+- Archivos creados/modificados:
+    - backend/metrics/collector.go (nuevo)
+    - backend/handlers/metrics.go (nuevo)
+    - backend/db/db.go (modificadas: InitMetricsTable, InsertMetric, GetLatestMetric, GetMetricsHistory, struct Metric)
+    - backend/main.go (modificado: inicializa tabla metrics, arranca collector y registra endpoints `/super/api/metrics/current` y `/super/api/metrics/history`)
+    - backend/go.mod (modificado: añadida dependencia `github.com/shirou/gopsutil/v3`)
+    - web/metricas_de_trafico_general.html (nuevo)
+    - web/super_administrador.html (modificado: añadido enlace en el menú lateral)
+    - documentos/descripcion_de_archivos (modificado: entradas sobre los nuevos ficheros)
+
+- Descripción: El collector usa `gopsutil` para muestrear métricas y almacena las muestras en la tabla `metrics` (campos estándar incluidos). La periodicidad se configura con la variable de entorno `METRICS_INTERVAL_SECONDS` (por defecto 10s). Endpoints disponibles:
+    - `GET /super/api/metrics/current` → última muestra (JSON)
+    - `GET /super/api/metrics/history?limit=N` → histórico con límite (JSON)
+
+- Notas operativas: Se añadió la dependencia `github.com/shirou/gopsutil/v3` en `backend/go.mod`. Según la norma del proyecto sobre dependencias externas, confirme autorización para esta dependencia si desea mantener la política de Go puro.
+- Responsable: agente (implementación local). Verificar y ejecutar `go mod tidy` en `backend/` antes de compilar.
+
+2026-03-29: Añadido botón de acceso rápido a métricas en `web/super_administrador.html`
+- Acción: Se añadió un botón prominente en la barra de herramientas del panel `super_administrador` que abre la página `/metricas_de_trafico_general.html` dentro del iframe principal.
+- Archivos modificados:
+    - web/super_administrador.html (modificado)
+- Motivo: facilitar acceso rápido al dashboard de métricas desde el panel de superadministrador.
+- Responsable: agente (implementación local).
     - web/super/tipos_empresas.html (nuevo)
     - web/super/tipos_licencias.html (nuevo)
     - web/super/licencias.html (nuevo)

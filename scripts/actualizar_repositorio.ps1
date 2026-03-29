@@ -145,6 +145,39 @@ if (-not $SkipChangeLog) {
                 Write-Host "Aviso: historial actualizado localmente pero no fue posible pushearlo al remoto." -ForegroundColor Yellow
             }
         }
+
+        # También actualizar el documento `documentos/actualizaciones_del_repositorio.md`
+        $actual = Join-Path $root "documentos\actualizaciones_del_repositorio.md"
+        if (-not (Test-Path $actual)) {
+            # Crear plantilla si no existe
+            @(
+                "# Actualizaciones del repositorio",
+                "",
+                "Este documento registra las actualizaciones automáticas realizadas por el script scripts/actualizar_repositorio.ps1.",
+                ""
+            ) | Out-File -FilePath $actual -Encoding UTF8
+            git add $actual | Out-Null
+            git commit -m "Crear actualizaciones_del_repositorio: registro automático" | Out-Null
+        }
+
+        # Obtener hash corto del commit actual
+        $commitHash = (& git rev-parse --short HEAD 2>$null) | Out-String
+        $commitHash = $commitHash.Trim()
+
+        $entry2 = "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') - Mensaje: $Message; Commit: $commitHash; PushStatus: $pushMsg`nArchivos modificados:`n$files"
+        Add-Content -Path $actual -Value "`n$entry2"
+        git add $actual | Out-Null
+        git commit -m "Actualizar actualizaciones_del_repositorio: registro automático" | Out-Null
+        # Intentar pushear el registro de actualizaciones
+        if ($pushMsg -eq 'OK') {
+            git push origin HEAD | Out-Null
+        } else {
+            $forceArg = if ($NoForce) { "" } else { "--force" }
+            git push $forceArg origin HEAD | Out-Null
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "Aviso: actualizaciones_del_repositorio actualizado localmente pero no fue posible pushearlo al remoto." -ForegroundColor Yellow
+            }
+        }
     } else {
         Write-Host "Aviso: no se encontró 'documentos/historial_de_cambios' para actualizar." -ForegroundColor Yellow
     }

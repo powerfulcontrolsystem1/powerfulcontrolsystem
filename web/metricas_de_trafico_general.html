@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Métricas de tráfico general</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .metrics-grid{display:flex;gap:1rem;flex-wrap:wrap;margin:1rem 0}
+    .metric-card{flex:1 1 200px;background:#fff;padding:1rem;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+    .metric-value{font-size:1.6rem;font-weight:700}
+    .charts{display:grid;grid-template-columns:1fr;gap:1rem}
+    @media(min-width:900px){.charts{grid-template-columns:1fr 1fr}}
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <header style="padding:1rem 1.5rem;border-bottom:1px solid #eee">
+    <h1>Métricas de tráfico general (tiempo real)</h1>
+  </header>
+  <main style="padding:1rem 1.5rem">
+    <section class="metrics-grid">
+      <div class="metric-card">
+        <div>CPU</div>
+        <div id="cpuValue" class="metric-value">- %</div>
+      </div>
+      <div class="metric-card">
+        <div>Memoria usada</div>
+        <div id="memValue" class="metric-value">- MB (- %)</div>
+      </div>
+      <div class="metric-card">
+        <div>Tráfico total (recv+sent)</div>
+        <div id="netValue" class="metric-value">- B</div>
+      </div>
+    </section>
+
+    <section class="charts">
+      <div class="metric-card">
+        <canvas id="cpuChart" height="120"></canvas>
+      </div>
+      <div class="metric-card">
+        <canvas id="memChart" height="120"></canvas>
+      </div>
+      <div class="metric-card">
+        <canvas id="netChart" height="120"></canvas>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const apiCurrent = '/super/api/metrics/current'
+    const apiHistory = '/super/api/metrics/history?limit=500'
+    let cpuChart, memChart, netChart
+
+    function fmtBytes(n){
+      if(n<1024) return n+' B'
+      const u=['KB','MB','GB','TB']
+      let i= -1
+      do{ n = n/1024; i++ }while(n>=1024 && i<u.length-1)
+      return n.toFixed(2)+' '+u[i]
+    }
+
+    function createCharts(labels, cpuData, memData, netData){
+      const ctxCpu = document.getElementById('cpuChart').getContext('2d')
+      cpuChart = new Chart(ctxCpu, {type:'line', data:{labels, datasets:[{label:'CPU %',data:cpuData,borderColor:'#ff6384',fill:false}]}, options:{animation:false,responsive:true}})
+
+      const ctxMem = document.getElementById('memChart').getContext('2d')
+      memChart = new Chart(ctxMem, {type:'line', data:{labels, datasets:[{label:'Mem %',data:memData,borderColor:'#36a2eb',fill:false}]}, options:{animation:false,responsive:true}})
+
+      const ctxNet = document.getElementById('netChart').getContext('2d')
+      netChart = new Chart(ctxNet, {type:'line', data:{labels, datasets:[{label:'Tráfico (bytes)',data:netData,borderColor:'#9ad36b',fill:false}]}, options:{animation:false,responsive:true}})
+    }
+
+    async function loadHistory(){
+      try{
+        const res = await fetch(apiHistory)
+        if(!res.ok) throw new Error('history fetch failed')
+        const arr = await res.json()
+        const labels = arr.map(x=>x.timestamp||'')
+        const cpuData = arr.map(x=>x.cpu_percent||0)
+        const memData = arr.map(x=>x.mem_percent||0)
+        const netData = arr.map(x=>((x.net_recv||0)+(x.net_sent||0)) || 0)
+        createCharts(labels, cpuData, memData, netData)
+      }catch(e){console.error(e)}
+    }
+
+    async function updateCurrent(){
+      try{
+        const res = await fetch(apiCurrent)
+        if(!res.ok) throw new Error('current fetch failed')
+        const m = await res.json()
+        document.getElementById('cpuValue').textContent = (m.cpu_percent||0).toFixed(2)+' %'
+        const usedMB = ((m.mem_used||0)/1024/1024).toFixed(1)
+        const memPct = (m.mem_percent||0).toFixed(1)
+        document.getElementById('memValue').textContent = usedMB+' MB ('+memPct+'%)'
+        const netTotal = ( (m.net_recv||0) + (m.net_sent||0) )
+        document.getElementById('netValue').textContent = fmtBytes(netTotal)
+
+        // push to charts
+        const ts = m.timestamp || new Date().toISOString()
+        if(cpuChart){ cpuChart.data.labels.push(ts); cpuChart.data.datasets[0].data.push(m.cpu_percent||0); if(cpuChart.data.labels.length>500){cpuChart.data.labels.shift(); cpuChart.data.datasets[0].data.shift()} cpuChart.update('none') }
+        if(memChart){ memChart.data.labels.push(ts); memChart.data.datasets[0].data.push(m.mem_percent||0); if(memChart.data.labels.length>500){memChart.data.labels.shift(); memChart.data.datasets[0].data.shift()} memChart.update('none') }
+        if(netChart){ netChart.data.labels.push(ts); netChart.data.datasets[0].data.push(((m.net_recv||0)+(m.net_sent||0))||0); if(netChart.data.labels.length>500){netChart.data.labels.shift(); netChart.data.datasets[0].data.shift()} netChart.update('none') }
+      }catch(e){console.error(e)}
+    }
+
+    // inicializar
+    (async function(){
+      await loadHistory()
+      // polling de valores actuales cada 5s
+      updateCurrent()
+      setInterval(updateCurrent, 5000)
+    })()
+  </script>
+</body>
+</html>
