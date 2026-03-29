@@ -58,18 +58,19 @@ func EnsureUserEmpresa(dbConn *sql.DB, email, empresaNombre string) error {
 }
 
 // UpsertAdministrador inserta o actualiza un registro en la tabla administradores de la base superadministrador
-// Si se inserta por primera vez, asigna el rol provisto (usualmente 'administrador')
-func UpsertAdministrador(dbConn *sql.DB, email, name, role string) error {
+// Si se inserta por primera vez, asigna el rol provisto (usualmente 'administrador').
+// Ahora acepta un campo `photo` con la URL de la foto del perfil.
+func UpsertAdministrador(dbConn *sql.DB, email, name, role, photo string) error {
 	tx, err := dbConn.Begin()
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.Exec("INSERT OR IGNORE INTO administradores (email, name, role, fecha_creacion, fecha_actualizacion, estado) VALUES (?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), 'activo')", email, name, role); err != nil {
+	if _, err := tx.Exec("INSERT OR IGNORE INTO administradores (email, name, role, photo, fecha_creacion, fecha_actualizacion, estado) VALUES (?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), 'activo')", email, name, role, photo); err != nil {
 		return err
 	}
-	if _, err := tx.Exec("UPDATE administradores SET name = ?, role = ?, fecha_actualizacion = datetime('now','localtime') WHERE email = ?", name, role, email); err != nil {
+	if _, err := tx.Exec("UPDATE administradores SET name = ?, role = ?, photo = ?, fecha_actualizacion = datetime('now','localtime') WHERE email = ?", name, role, photo, email); err != nil {
 		return err
 	}
 
@@ -106,6 +107,7 @@ type Admin struct {
 	Email              string `json:"email"`
 	Name               string `json:"name"`
 	Role               string `json:"role"`
+	Photo              string `json:"photo,omitempty"`
 	FechaCreacion      string `json:"fecha_creacion"`
 	FechaActualizacion string `json:"fecha_actualizacion"`
 	Estado             string `json:"estado"`
@@ -246,17 +248,19 @@ func GetSessionByToken(dbConn *sql.DB, token string) (*Session, error) {
 
 // GetAdminByEmail devuelve el administrador por email
 func GetAdminByEmail(dbConn *sql.DB, email string) (*Admin, error) {
-	row := dbConn.QueryRow("SELECT id, email, name, role, fecha_creacion, fecha_actualizacion, estado FROM administradores WHERE email = ? LIMIT 1", email)
+	row := dbConn.QueryRow("SELECT id, email, name, role, photo, fecha_creacion, fecha_actualizacion, estado FROM administradores WHERE email = ? LIMIT 1", email)
 	var a Admin
-	if err := row.Scan(&a.ID, &a.Email, &a.Name, &a.Role, &a.FechaCreacion, &a.FechaActualizacion, &a.Estado); err != nil {
+	var photo sql.NullString
+	if err := row.Scan(&a.ID, &a.Email, &a.Name, &a.Role, &photo, &a.FechaCreacion, &a.FechaActualizacion, &a.Estado); err != nil {
 		return nil, err
 	}
+	if photo.Valid { a.Photo = photo.String }
 	return &a, nil
 }
 
 // GetAdministradores lista todos los administradores
 func GetAdministradores(dbConn *sql.DB) ([]Admin, error) {
-	rows, err := dbConn.Query("SELECT id, email, name, role, fecha_creacion, fecha_actualizacion, estado FROM administradores ORDER BY id DESC")
+	rows, err := dbConn.Query("SELECT id, email, name, role, photo, fecha_creacion, fecha_actualizacion, estado FROM administradores ORDER BY id DESC")
 	if err != nil {
 		return nil, err
 	}
@@ -264,9 +268,11 @@ func GetAdministradores(dbConn *sql.DB) ([]Admin, error) {
 	var out []Admin
 	for rows.Next() {
 		var a Admin
-		if err := rows.Scan(&a.ID, &a.Email, &a.Name, &a.Role, &a.FechaCreacion, &a.FechaActualizacion, &a.Estado); err != nil {
+		var photo sql.NullString
+		if err := rows.Scan(&a.ID, &a.Email, &a.Name, &a.Role, &photo, &a.FechaCreacion, &a.FechaActualizacion, &a.Estado); err != nil {
 			return nil, err
 		}
+		if photo.Valid { a.Photo = photo.String }
 		out = append(out, a)
 	}
 	return out, nil

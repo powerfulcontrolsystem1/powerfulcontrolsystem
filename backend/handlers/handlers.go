@@ -84,7 +84,7 @@ func HandleGoogleCallback(dbEmpresas *sql.DB, dbSuper *sql.DB, clientID, clientS
 				roleToSet = existingAdmin.Role
 			}
 		}
-		if err := dbpkg.UpsertAdministrador(dbSuper, userinfo.Email, userinfo.Name, roleToSet); err != nil {
+		if err := dbpkg.UpsertAdministrador(dbSuper, userinfo.Email, userinfo.Name, roleToSet, userinfo.Picture); err != nil {
 			log.Println("db upsert administradores error:", err)
 		}
 
@@ -171,7 +171,7 @@ func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 			json.NewEncoder(w).Encode(admins)
 			return
 		case http.MethodPost:
-			var payload struct{ Email, Name, Role string }
+			var payload struct{ Email, Name, Role, Photo string }
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "invalid payload", http.StatusBadRequest)
 				return
@@ -183,7 +183,7 @@ func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 			if payload.Role == "" {
 				payload.Role = "administrador"
 			}
-			if err := dbpkg.UpsertAdministrador(dbSuper, payload.Email, payload.Name, payload.Role); err != nil {
+			if err := dbpkg.UpsertAdministrador(dbSuper, payload.Email, payload.Name, payload.Role, payload.Photo); err != nil {
 				http.Error(w, "failed to upsert administrador: "+err.Error(), http.StatusInternalServerError)
 				return
 			}

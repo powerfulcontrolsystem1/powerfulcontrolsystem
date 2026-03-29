@@ -156,6 +156,7 @@ func main() {
 		email TEXT UNIQUE,
 		name TEXT,
 		role TEXT DEFAULT 'administrador',
+		photo TEXT,
 		fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
 		fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
 		usuario_creador TEXT,
@@ -165,6 +166,44 @@ func main() {
 	if _, err := dbSuper.Exec(createAdmins); err != nil {
 		log.Fatalf("failed to create administradores table in super db: %v", err)
 	}
+
+	// Asegurar columna 'photo' en administradores para almacenar URL de avatar
+	ensureAdminsSchema := func(db *sql.DB) {
+		rows, err := db.Query("PRAGMA table_info(administradores);")
+		if err != nil {
+			log.Printf("warning: unable to inspect administradores schema: %v", err)
+			return
+		}
+		defer rows.Close()
+		existing := map[string]bool{}
+		for rows.Next() {
+			var cid int
+			var name string
+			var ctype string
+			var notnull int
+			var dflt sql.NullString
+			var pk int
+			if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
+				log.Printf("warning: scan pragma table_info error: %v", err)
+				return
+			}
+			existing[name] = true
+		}
+
+		addIfMissing := func(colDef string, name string) {
+			if !existing[name] {
+				q := fmt.Sprintf("ALTER TABLE administradores ADD COLUMN %s;", colDef)
+				if _, err := db.Exec(q); err != nil {
+					log.Printf("failed to add column %s to administradores: %v", name, err)
+				} else {
+					log.Printf("added missing column %s to administradores", name)
+				}
+			}
+		}
+
+		addIfMissing("photo TEXT", "photo")
+	}
+	ensureAdminsSchema(dbSuper)
 
 	createTiposLic := `CREATE TABLE IF NOT EXISTS tipos_de_licencia (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
