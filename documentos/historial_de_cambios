@@ -17,6 +17,14 @@ Historial de cambios
 - Responsable: cambios realizados por el agente local.
 
 
+
+2026-03-29: Aplicado sidebar reducido también a `seleccionar_empresa.html`
+- Acción: Se añadió la clase `super-page` al `body` de `web/seleccionar_empresa.html` para que los estilos que reducen el ancho del sidebar izquierdo se apliquen también en la página de selección de empresa.
+- Archivos modificados:
+    - web/seleccionar_empresa.html
+- Descripción: Ajuste visual para mejorar el espacio de contenido en pantallas de escritorio dentro de las páginas del panel administrativo.
+- Responsable: agente local.
+
 2026-03-28: Menú flotante — Portal, toggle de tema y "Abrir como ventana"
 - Acción: Se añadió un enlace `Portal` y botones en el menú flotante para alternar entre modo oscuro/ claro y para abrir la página actual en una ventana con chrome reducido (modo app-like).
 - Archivos modificados:
