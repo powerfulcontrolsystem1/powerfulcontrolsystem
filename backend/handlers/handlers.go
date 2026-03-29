@@ -3,10 +3,14 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/you/pos-backend/auth"
 	dbpkg "github.com/you/pos-backend/db"
@@ -489,6 +493,58 @@ func MeHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(admin)
+	}
+}
+
+// SecurityPortsHandler intenta conexiones TCP a una lista de puertos y devuelve su estado.
+func SecurityPortsHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query()
+		ip := q.Get("ip")
+		if ip == "" {
+			ip = "127.0.0.1"
+		}
+		portsParam := q.Get("ports")
+		var ports []int
+		if portsParam == "" {
+			ports = []int{22, 23, 80, 443, 3306, 5432, 8080, 8443}
+		} else {
+			for _, s := range strings.Split(portsParam, ",") {
+				s = strings.TrimSpace(s)
+				if s == "" {
+					continue
+				}
+				if n, err := strconv.Atoi(s); err == nil {
+					ports = append(ports, n)
+				}
+			}
+		}
+		timeout := 500 * time.Millisecond
+		if tms := q.Get("timeout_ms"); tms != "" {
+			if ms, err := strconv.Atoi(tms); err == nil && ms > 0 {
+				timeout = time.Duration(ms) * time.Millisecond
+			}
+		}
+
+		type Entry struct {
+			Puerto  int    `json:"puerto"`
+			Estado  string `json:"estado"`
+			IP      string `json:"ip"`
+			Firewall string `json:"firewall"`
+		}
+		var resp []Entry
+		for _, p := range ports {
+			addr := fmt.Sprintf("%s:%d", ip, p)
+			conn, err := net.DialTimeout("tcp", addr, timeout)
+			estado := "cerrado"
+			if err == nil {
+				estado = "abierto"
+				conn.Close()
+			}
+			resp = append(resp, Entry{Puerto: p, Estado: estado, IP: ip, Firewall: "Desconocido"})
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
 	}
 }
 

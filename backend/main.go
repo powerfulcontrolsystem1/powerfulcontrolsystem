@@ -292,6 +292,8 @@ func main() {
 	// Endpoints de métricas (actual y histórico)
 	http.HandleFunc("/super/api/metrics/current", handlers.MetricsCurrentHandler(dbSuper))
 	http.HandleFunc("/super/api/metrics/history", handlers.MetricsHistoryHandler(dbSuper))
+	// Endpoint de seguridad: escaneo de puertos
+	http.HandleFunc("/super/api/security/ports", handlers.SecurityPortsHandler(dbSuper))
 
 	// Logout handler: limpiar cookie de sesión (si existe) y redirigir a la página de login
 	http.HandleFunc("/auth/logout", func(w http.ResponseWriter, r *http.Request) {

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Seguridad — Monitoreo de puertos</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .controls{display:flex;gap:8px;align-items:center;margin-bottom:12px}
+    .controls input{padding:8px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text)}
+    .badge-open{background:var(--success);color:#fff;padding:6px 8px;border-radius:6px;font-weight:700}
+    .badge-closed{background:var(--danger);color:#fff;padding:6px 8px;border-radius:6px;font-weight:700}
+  </style>
+</head>
+<body class="super-page">
+  <div class="container">
+    <div class="page-header">
+      <h1>Seguridad — Monitoreo de puertos</h1>
+      <div>
+        <button id="scanBtn" class="btn">Escanear</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="controls">
+        <label style="color:var(--muted);font-weight:700">IP</label>
+        <input id="ipInput" placeholder="Dirección IP" value="127.0.0.1">
+        <label style="color:var(--muted);font-weight:700">Puertos</label>
+        <input id="portsInput" placeholder="22,80,443" value="22,80,443,3306,5432,8080,8443" style="min-width:260px">
+      </div>
+
+      <table class="table" id="portsTable">
+        <thead>
+          <tr><th>Puerto</th><th>Estado</th><th>Dirección IP</th><th>Firewall</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    async function scan(){
+      const ip = document.getElementById('ipInput').value || '127.0.0.1';
+      const ports = document.getElementById('portsInput').value || '22,80,443';
+      const btn = document.getElementById('scanBtn');
+      btn.disabled = true; btn.textContent = 'Escaneando...';
+      try{
+        const res = await fetch('/super/api/security/ports?ip='+encodeURIComponent(ip)+'&ports='+encodeURIComponent(ports));
+        if(!res.ok) throw new Error('Error en la consulta: '+res.status);
+        const data = await res.json();
+        const tbody = document.querySelector('#portsTable tbody'); tbody.innerHTML = '';
+        data.forEach(item => {
+          const tr = document.createElement('tr');
+          const estadoHtml = (item.estado === 'abierto') ? '<span class="badge-open">Abierto</span>' : '<span class="badge-closed">Cerrado</span>';
+          tr.innerHTML = '<td>'+item.puerto+'</td><td>'+estadoHtml+'</td><td>'+item.ip+'</td><td>'+(item.firewall||'Desconocido')+'</td>';
+          tbody.appendChild(tr);
+        });
+      }catch(e){
+        console.error(e); alert('Error escaneando puertos: '+(e && e.message? e.message : e));
+      } finally { btn.disabled = false; btn.textContent = 'Escanear'; }
+    }
+    document.addEventListener('DOMContentLoaded', function(){ document.getElementById('scanBtn').addEventListener('click', scan); scan(); });
+  </script>
+</body>
+</html>

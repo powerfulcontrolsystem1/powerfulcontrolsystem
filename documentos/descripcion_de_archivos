@@ -109,5 +109,14 @@ Adicional:
 	- web/img/user-avatar.svg: Placeholder SVG para avatar de usuario en listados y paneles.
 	- web/img/analytics.svg: Placeholder SVG para la tarjeta de métricas/analytics.
 	- web/img/network.svg: Placeholder SVG representando conectividad/red.
+		- web/img/shield-security.svg: Placeholder SVG para la página de seguridad/monitoreo de puertos.
+
+Nota: Estos archivos fueron generados localmente como placeholders SVG para entornos offline o cuando no se dispone de logos oficiales. Reemplazarlos por logos reales es recomendado en producción.
+
+Páginas añadidas:
+- `web/super/seguridad.html`: Página de dashboard de seguridad que permite escanear puertos TCP contra una IP objetivo y muestra una tabla con columnas `Puerto`, `Estado`, `Dirección IP`, `Firewall`. Consulta el endpoint backend `/super/api/security/ports`.
+
+API añadida:
+- `/super/api/security/ports`: Endpoint que intenta conexiones TCP a los puertos solicitados y devuelve JSON con `puerto`, `estado` ("abierto"/"cerrado"), `ip` y `firewall` (campo informativo, no inspección de reglas de firewall en este entorno).
 
 Nota: Estos archivos fueron generados localmente como placeholders SVG para entornos offline o cuando no se dispone de logos oficiales. Reemplazarlos por logos reales es recomendado en producción.
