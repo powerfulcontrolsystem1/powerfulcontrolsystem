@@ -175,6 +175,14 @@ ul{padding-left:18px}
 .page-header h1{margin:0;font-size:0.95rem;color:var(--accent-yellow-light)}
 .page-header .btn.add{margin-bottom:0}
 
+/* Reducir ancho del sidebar izquierdo solo para páginas bajo /web/super */
+.super-page .admin-layout{display:flex}
+.super-page .admin-sidebar{width:180px;padding:12px}
+.super-page .admin-content{padding:12px}
+@media (max-width:900px){
+  .super-page .admin-sidebar{width:100%}
+}
+
 /* Formularios con fondo más oscuro sólo en páginas específicas (tipos_empresas, licencias) */
 .form-bg-dark .form{background:#101113;border-color:rgba(255,255,255,0.02)}
 .form-bg-dark .form .form-input, .form-bg-dark .form .form-textarea{background:transparent}
