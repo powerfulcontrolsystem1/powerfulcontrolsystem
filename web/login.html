@@ -45,8 +45,15 @@
         var params = new URLSearchParams(window.location.search);
         var noAuto = params.get('no_auto');
         if (localStorage.getItem('rememberAccount') === '1' && noAuto !== '1') {
+          // si tenemos un email guardado, pasar login_hint para que Google lo seleccione automáticamente
+          var remembered = null;
+          try { remembered = localStorage.getItem('rememberedEmail'); } catch(e){}
+          var target = '/auth/google/login';
+          if (remembered) {
+            target += '?login_hint=' + encodeURIComponent(remembered);
+          }
           // small delay to allow any UI to render
-          setTimeout(function(){ window.location.href = '/auth/google/login'; }, 200);
+          setTimeout(function(){ window.location.href = target; }, 200);
           return;
         }
       } catch(e){}
@@ -54,14 +61,14 @@
       if (googleBtn) {
         googleBtn.addEventListener('click', function(){
           try {
-            if (cb && cb.checked) { localStorage.setItem('rememberAccount','1'); } else { localStorage.removeItem('rememberAccount'); }
+            if (cb && cb.checked) { localStorage.setItem('rememberAccount','1'); } else { localStorage.removeItem('rememberAccount'); localStorage.removeItem('rememberedEmail'); }
           } catch(e){}
         });
       }
       // Clear rememberAccount on logout click
       var logoutLink = document.querySelector('.fm-item[href="/auth/logout"]');
       if (logoutLink) {
-        logoutLink.addEventListener('click', function(){ try { localStorage.removeItem('rememberAccount'); } catch(e){} });
+        logoutLink.addEventListener('click', function(){ try { localStorage.removeItem('rememberAccount'); localStorage.removeItem('rememberedEmail'); } catch(e){} });
       }
     })();
   </script>

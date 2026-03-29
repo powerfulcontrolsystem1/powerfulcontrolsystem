@@ -30,7 +30,7 @@
       if (getCookie('session_token')){
         sessionLink.textContent = 'Cerrar sesión';
         sessionLink.href = '/auth/logout';
-        sessionLink.addEventListener('click', function(){ try { localStorage.removeItem('rememberAccount'); } catch(e){} });
+        sessionLink.addEventListener('click', function(){ try { localStorage.removeItem('rememberAccount'); localStorage.removeItem('rememberedEmail'); } catch(e){} });
       } else {
         sessionLink.textContent = 'Iniciar sesión';
         sessionLink.href = '/login.html';
@@ -41,7 +41,7 @@
     document.addEventListener('click', function(e){
       try{
         var a = e.target.closest && e.target.closest('.fm-item[href="/auth/logout"]');
-        if (a) { try { localStorage.removeItem('rememberAccount'); } catch(e){} }
+        if (a) { try { localStorage.removeItem('rememberAccount'); localStorage.removeItem('rememberedEmail'); } catch(e){} }
       }catch(ee){}
     });
 

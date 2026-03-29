@@ -69,6 +69,8 @@
           const meRes = await fetch('/me');
           if (!meRes.ok) { window.location.href = '/login.html'; return }
           const me = await meRes.json();
+          // Si el usuario activó 'recordar cuenta', guardar el email para futuros auto-logins
+          try{ if (localStorage.getItem('rememberAccount') === '1' && me && me.email) { localStorage.setItem('rememberedEmail', me.email); } }catch(e){}
 
           const [empRes, licRes, tiposRes] = await Promise.all([fetch('/super/api/empresas'), fetch('/super/api/licencias'), fetch('/super/api/tipos_empresas')]);
           if (!empRes.ok) {

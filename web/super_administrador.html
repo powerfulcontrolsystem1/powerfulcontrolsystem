@@ -64,5 +64,15 @@
       }
     })();
   </script>
+  <script>
+    // Si el usuario activó 'recordar cuenta', persistir el email actual (obtenido desde /me) para futuros auto-logins
+    (function(){
+      try{
+        if (localStorage.getItem('rememberAccount') === '1'){
+          fetch('/me').then(function(res){ if (!res.ok) throw new Error('unauth'); return res.json(); }).then(function(admin){ if (admin && admin.email) { try{ localStorage.setItem('rememberedEmail', admin.email); }catch(e){} } }).catch(function(){});
+        }
+      }catch(e){}
+    })();
+  </script>
 </body>
 </html>

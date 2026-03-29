@@ -26,17 +26,25 @@ func HandleGoogleLogin(clientID, redirectURL string) http.HandlerFunc {
 			return
 		}
 		log.Printf("handleGoogleLogin: client_id set=%t, redirect_url=%q", clientID != "", redirectURL)
-		authURL := "https://accounts.google.com/o/oauth2/v2/auth?" + url.Values{
+		q := r.URL.Query()
+		loginHint := q.Get("login_hint")
+		vals := url.Values{
 			"client_id":              {clientID},
 			"redirect_uri":           {redirectURL},
 			"response_type":          {"code"},
 			"scope":                  {"openid email profile"},
-			"prompt":                 {"select_account consent"},
 			"include_granted_scopes": {"true"},
 			"access_type":            {"offline"},
 			"state":                  {state},
-		}.Encode()
-
+		}
+		if loginHint != "" {
+			vals.Set("login_hint", loginHint)
+			// Do not force account chooser when we have a login_hint; allow Google to select the hinted account if possible.
+		} else {
+			// Default: show account selector and consent to allow choosing among accounts.
+			vals.Set("prompt", "select_account consent")
+		}
+		authURL := "https://accounts.google.com/o/oauth2/v2/auth?" + vals.Encode()
 		log.Printf("Auth URL: %s", authURL)
 		http.Redirect(w, r, authURL, http.StatusFound)
 	}

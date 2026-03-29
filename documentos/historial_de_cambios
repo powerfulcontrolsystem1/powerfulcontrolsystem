@@ -13,6 +13,23 @@
     - web/estilos.css
 - Descripción: Ajuste visual para mejorar consistencia entre el sidebar y los botones de contenido en páginas del panel administrativo (`/web/super` y similares). No se cambiaron colores por defecto; la regla afecta sólo a botones dentro de `.admin-content`.
 - Responsable: agente local.
+
+2026-03-29: Auto-login con 'Recordar cuenta' (mejoras de UX)
+- Acción: Implementado auto-login cuando el usuario activa "Recordar cuenta". Cambios realizados:
+    - Frontend: `web/login.html` ahora redirige a `/auth/google/login?login_hint=<email>` si existe `localStorage.rememberedEmail`.
+    - Frontend: `web/super_administrador.html` y `web/seleccionar_empresa.html` guardan el email del admin autenticado en `localStorage.rememberedEmail` si `rememberAccount` está activo.
+    - Frontend: `web/menu.js`, `web/super/licencias.html`, `web/super/tipos_empresas.html` y `web/login.html` Limpian `rememberedEmail` al cerrar sesión o desactivar la opción.
+    - Backend: `backend/handlers/handlers.go` (HandleGoogleLogin) acepta el parámetro opcional `login_hint` y evita forzar el selector de cuenta cuando se proporciona.
+- Archivos modificados:
+    - web/login.html
+    - web/super_administrador.html
+    - web/seleccionar_empresa.html
+    - web/menu.js
+    - web/super/licencias.html
+    - web/super/tipos_empresas.html
+    - backend/handlers/handlers.go
+- Descripción: Mejora la experiencia de inicio de sesión para usuarios que desean no tener que elegir su correo cada vez. El comportamiento por defecto (selector de cuenta) se mantiene si no existe un `login_hint`.
+- Responsable: agente local.
 - Acción: Se añadieron iconos SVG en `web/img` (company-briefcase.svg, shield-license.svg, analytics.svg, network.svg, user-avatar.svg, shield-security.svg) y la página `web/super/seguridad.html`.
 - Archivos modificados/creados:
     - web/img/company-briefcase.svg
