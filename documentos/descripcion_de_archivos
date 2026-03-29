@@ -93,6 +93,7 @@ Adicional:
 			- `web/super/configuracion.html` — configuraciones globales (placeholder).
 			- `web/super/administradores.html` — lista de administradores que consulta el endpoint `/super/administradores`.
 			- API `/super/api/administradores` — endpoint CRUD para administradores (GET, POST, PUT, DELETE). Soporta activar/desactivar mediante `PUT ?action=activar&activo=0|1` o `?action=activar&estado=activo`.
+			- `web/super/licencias_resumen.html` — página ligera que muestra el número total de licencias activas (consulta `/super/api/licencias`) y enlace rápido a la gestión de licencias.
  - Generador de tokens: `backend/utils/utils.go` incluye `GenerateSecureToken(n int)` que produce tokens seguros usando `crypto/rand`.
  - Middleware de autenticación: `backend/utils/utils.go` incluye `AuthMiddleware` que valida `session_token` contra `superadministrador.db` y obliga rol `super_administrador` para rutas `/super/`. Rutas públicas: `/`, `/index.html`, `/login.html`, `/auth/google/login`, `/auth/google/callback`, `/assets/`.
  - Middleware de autenticación: `backend/utils/utils.go` incluye `AuthMiddleware` que valida `session_token` contra `superadministrador.db` y obliga rol `super_administrador` para rutas `/super/`. Rutas públicas: `/`, `/index.html`, `/login.html`, `/auth/google/login`, `/auth/google/callback`, `/assets/`.

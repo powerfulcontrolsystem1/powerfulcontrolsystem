@@ -28,7 +28,7 @@
           <a href="/metricas_de_trafico_general.html" target="contentFrame" class="btn add" id="openMetricsBtn">Métricas de tráfico</a>
         </div>
       </div>
-      <iframe name="contentFrame" id="contentFrame" src="/super/administradores.html" title="Contenido" style="width:100%;height:calc(100vh - 120px);border:0;background:transparent"></iframe>
+      <iframe name="contentFrame" id="contentFrame" src="/super/licencias_resumen.html" title="Contenido" style="width:100%;height:calc(100vh - 120px);border:0;background:transparent"></iframe>
     </main>
   </div>
   
@@ -59,8 +59,7 @@
             setActiveByHref(src2);
           }
         });
-        // inicializar
-        setActiveByHref(iframe.getAttribute('src'));
+        // inicializar: no preseleccionar ningún link al cargar la página
       }
     })();
   </script>

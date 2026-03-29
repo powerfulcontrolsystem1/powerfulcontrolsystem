@@ -418,6 +418,15 @@ Archivos modificados:
 - Notas operativas: Se añadió la dependencia `github.com/shirou/gopsutil/v3` en `backend/go.mod`. Según la norma del proyecto sobre dependencias externas, confirme autorización para esta dependencia si desea mantener la política de Go puro.
 - Responsable: agente (implementación local). Verificar y ejecutar `go mod tidy` en `backend/` antes de compilar.
 
+2026-03-29: Página de resumen de licencias y no preselección en panel Super Administrador
+- Acción: Se añadió la página ligera `web/super/licencias_resumen.html` que muestra el número de licencias activas y un enlace para gestionarlas. Además, se ajustó `web/super_administrador.html` para que al cargar la página ningún botón del sidebar esté preseleccionado por defecto.
+- Archivos modificados/creados:
+    - web/super/licencias_resumen.html (nuevo)
+    - web/super_administrador.html (modificado)
+    - documentos/descripcion_de_archivos (modificado)
+- Motivo: la UX requiere que no haya selección previa en el menú lateral y que la vista inicial muestre un resumen útil (licencias activas).
+- Responsable: agente (implementación local).
+
 2026-03-29: Añadido botón de acceso rápido a métricas en `web/super_administrador.html`
 - Acción: Se añadió un botón prominente en la barra de herramientas del panel `super_administrador` que abre la página `/metricas_de_trafico_general.html` dentro del iframe principal.
 - Archivos modificados:

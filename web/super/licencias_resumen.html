@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Resumen de Licencias</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .summary-card{padding:28px;text-align:center}
+    .big-number{font-size:3.2rem;font-weight:800;color:var(--text)}
+    .muted{color:var(--muted)}
+  </style>
+</head>
+<body class="super-page">
+  <div class="container">
+    <div class="page-header">
+      <h1>Resumen de Licencias</h1>
+      <div><a href="/super/licencias.html" target="contentFrame" class="btn secondary">Administrar licencias</a></div>
+    </div>
+    <div class="card summary-card">
+      <div class="muted">Licencias activas</div>
+      <div id="activeCount" class="big-number">Cargando...</div>
+      <div id="lastUpdate" class="form-help muted"></div>
+    </div>
+  </div>
+
+  <script>
+    async function loadActiveCount(){
+      try{
+        const res = await fetch('/super/api/licencias');
+        if(!res.ok){ document.getElementById('activeCount').textContent = 'Error'; return }
+        const arr = await res.json();
+        const active = arr.filter(x=> {
+          if (x.activo === undefined) return false;
+          return x.activo == 1 || x.activo === true || x.activo === '1';
+        }).length;
+        document.getElementById('activeCount').textContent = active;
+        document.getElementById('lastUpdate').textContent = 'Última actualización: ' + new Date().toLocaleString();
+      }catch(e){
+        console.error(e);
+        document.getElementById('activeCount').textContent = 'Error';
+      }
+    }
+    loadActiveCount();
+  </script>
+</body>
+</html>
