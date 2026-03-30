@@ -48,3 +48,74 @@ PS>CommandInvocation(Remove-Variable): "Remove-Variable"
 >> EnlaceDeParámetros(Remove-Variable): nombre="Name"; valor="__psEditorServices_DebugServer"
 >> EnlaceDeParámetros(Remove-Variable): nombre="Force"; valor="True"
 ]633;D;0]633;A]633;P;Cwd=D:\x5cpowerfulcontrolsystemPS D:\powerfulcontrolsystem> ]633;B
+PS>CommandInvocation(Get-PSBreakpoint): "Get-PSBreakpoint"
+>> CommandInvocation(Remove-PSBreakpoint): "Remove-PSBreakpoint"
+PS>CommandInvocation(Set-Variable): "Set-Variable"
+>> EnlaceDeParámetros(Set-Variable): nombre="Name"; valor="__psEditorServices_DebugServer"
+>> EnlaceDeParámetros(Set-Variable): nombre="Value"; valor="OmniSharp.Extensions.DebugAdapter.Server.DefaultDebugAdapterServerFacade"
+>> EnlaceDeParámetros(Set-Variable): nombre="Description"; valor="DO NOT USE: for internal use only."
+>> EnlaceDeParámetros(Set-Variable): nombre="Scope"; valor="Global"
+>> EnlaceDeParámetros(Set-Variable): nombre="Option"; valor="ReadOnly"
+PS>CommandInvocation(Get-PSBreakpoint): "Get-PSBreakpoint"
+]633;A]633;P;Cwd=D:\x5cpowerfulcontrolsystemPS D:\powerfulcontrolsystem> ]633;B
+PS>. 'D:\powerfulcontrolsystem\scripts\actualizar_repositorio.ps1'
+Verificando estado de git...
+La transcripción ha comenzado. El archivo de salida es D:\powerfulcontrolsystem\scripts\logs\actualizar_repositorio-20260330-010714.log
+Preparando cambios para commit...
+warning: in the working copy of 'backend/server.err', LF
+ will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'scripts/logs/actualizar
+_repositorio-20260330-010648.log', LF will be replaced b
+y CRLF the next time Git touches it
+Creando commit: ActualizaciÃ³n automÃ¡tica desde script: aÃ±adir/actualizar archivos
+[main 6136622] ActualizaciÃ³n automÃ¡tica desde script:
+aÃ±adir/actualizar archivos
+ 3 files changed, 54 insertions(+)
+ create mode 100644 scripts/logs/actualizar_repositorio-
+20260330-010714.log
+Intentando push al remoto 'origin' (forzando por defecto)...
+Ejecutando: git push --force -u origin HEAD
+Ã‰xito: cambios empujados al remoto 'origin'.
+OperaciÃ³n completada con Ã©xito.
+La transcripción se ha detenido. El archivo de salida es D:\powerfulcontrolsystem\scripts\logs\actualizar_repositorio-20260330-010714.log
+]633;A]633;P;Cwd=D:\x5cpowerfulcontrolsystemPS D:\powerfulcontrolsystem> ]633;B
+PS>CommandInvocation(Remove-Variable): "Remove-Variable"
+>> EnlaceDeParámetros(Remove-Variable): nombre="Name"; valor="__psEditorServices_DebugServer"
+>> EnlaceDeParámetros(Remove-Variable): nombre="Force"; valor="True"
+PS>CommandInvocation(Get-PSBreakpoint): "Get-PSBreakpoint"
+>> CommandInvocation(Remove-PSBreakpoint): "Remove-PSBreakpoint"
+PS>CommandInvocation(Set-Variable): "Set-Variable"
+>> EnlaceDeParámetros(Set-Variable): nombre="Name"; valor="__psEditorServices_DebugServer"
+>> EnlaceDeParámetros(Set-Variable): nombre="Value"; valor="OmniSharp.Extensions.DebugAdapter.Server.DefaultDebugAdapterServerFacade"
+>> EnlaceDeParámetros(Set-Variable): nombre="Description"; valor="DO NOT USE: for internal use only."
+>> EnlaceDeParámetros(Set-Variable): nombre="Scope"; valor="Global"
+>> EnlaceDeParámetros(Set-Variable): nombre="Option"; valor="ReadOnly"
+PS>CommandInvocation(Get-PSBreakpoint): "Get-PSBreakpoint"
+]633;A]633;P;Cwd=D:\x5cpowerfulcontrolsystemPS D:\powerfulcontrolsystem> ]633;B
+PS>. 'D:\powerfulcontrolsystem\scripts\iniciar_servidor.ps1'
+Limpiando la terminal...
+Asegurando carpeta de bases de datos: D:\powerfulcontrolsystem\scripts\..\backend\db
+No se encontraron archivos .db en D:\powerfulcontrolsystem\scripts\..\backend
+Rutas DB: D:\powerfulcontrolsystem\scripts\..\backend\db\empresas.db, D:\powerfulcontrolsystem\scripts\..\backend\db\superadministrador.db, D:\powerfulcontrolsystem\scripts\..\backend\db\pos.db
+Buscando procesos que usan el puerto 8080...
+Comprobando puerto 8080...
+Procesos detectados en puerto 8080: 13232
+Terminando proceso PID 13232...
+PID 13232 terminado.
+Ejecutando: go mod tidy
+
+Iniciando servidor (carpeta: D:\powerfulcontrolsystem\scripts\..\backend)
+Arrancando proceso: go run .
+Encontrado GOOGLE_CLIENT_ID
+Encontrado GOOGLE_CLIENT_SECRET
+Compilando el servidor (go build -o server.exe .)
+
+Lanzando servidor.exe con entorno controlado (logs en backend/server.log, backend/server.err)...
+Proceso del servidor lanzado.
+Esperando a que http://localhost:8080 responda (timeout 30s)...
+Servidor escuchando en puerto 8080.
+DirecciÃ³n: http://localhost:8080
+]633;A]633;P;Cwd=D:\x5cpowerfulcontrolsystemPS D:\powerfulcontrolsystem> ]633;B
+PS>CommandInvocation(Remove-Variable): "Remove-Variable"
+>> EnlaceDeParámetros(Remove-Variable): nombre="Name"; valor="__psEditorServices_DebugServer"
+>> EnlaceDeParámetros(Remove-Variable): nombre="Force"; valor="True"

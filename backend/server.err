@@ -1,96 +1,107 @@
-2026/03/30 01:00:27 index.html encontrado en ..\web\index.html
-2026/03/30 01:00:27 Servidor arrancado en :8080
-2026/03/30 01:00:27 metrics: stored cpu=100.00 mem=85.00% recv=6282937604 sent=2175340567
-2026/03/30 01:00:30 -> GET / from [::1]:51475
-2026/03/30 01:00:30 <- 304 GET /
-2026/03/30 01:00:30 -> GET /estilos.css from [::1]:51475
-2026/03/30 01:00:30 -> GET /menu.js from [::1]:52887
-2026/03/30 01:00:30 <- 304 GET /estilos.css
-2026/03/30 01:00:30 -> GET /img/punto_venta.png from [::1]:55795
-2026/03/30 01:00:30 <- 304 GET /menu.js
-2026/03/30 01:00:30 -> GET /img/motel.png from [::1]:60498
-2026/03/30 01:00:30 <- 304 GET /img/punto_venta.png
-2026/03/30 01:00:30 <- 304 GET /img/motel.png
-2026/03/30 01:00:31 -> GET /img/restaurante.png from [::1]:60498
-2026/03/30 01:00:31 -> GET /img/sensor.png from [::1]:55795
-2026/03/30 01:00:31 <- 304 GET /img/restaurante.png
-2026/03/30 01:00:31 <- 304 GET /img/sensor.png
-2026/03/30 01:00:33 -> GET /login.html from [::1]:55795
-2026/03/30 01:00:33 <- 304 GET /login.html
-2026/03/30 01:00:33 -> GET /assets/estilos.css from [::1]:55795
-2026/03/30 01:00:33 <- 304 GET /assets/estilos.css
-2026/03/30 01:00:33 -> GET /auth/google/login from [::1]:55795
-2026/03/30 01:00:33 handleGoogleLogin: client_id set=true, redirect_url="http://localhost:8080/auth/google/callback"
-2026/03/30 01:00:33 Auth URL: https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&client_id=1029204473903-6npuu63uehsrn2jn8fnif4fgpp6kcjsm.apps.googleusercontent.com&include_granted_scopes=true&login_hint=powerfulcontrolsystem%40gmail.com&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fauth%2Fgoogle%2Fcallback&response_type=code&scope=openid+email+profile&state=state-token
-2026/03/30 01:00:33 <- 302 GET /auth/google/login
-2026/03/30 01:00:34 -> GET /auth/google/callback from [::1]:55795
-2026/03/30 01:00:35 <- 302 GET /auth/google/callback
-2026/03/30 01:00:35 -> GET /super_administrador.html from [::1]:55795
-2026/03/30 01:00:35 <- 304 GET /super_administrador.html
-2026/03/30 01:00:35 -> GET /super/licencias_resumen.html from [::1]:55795
-2026/03/30 01:00:35 <- 304 GET /super/licencias_resumen.html
-2026/03/30 01:00:35 -> GET /img/company-briefcase.svg from [::1]:55795
-2026/03/30 01:00:35 <- 304 GET /img/company-briefcase.svg
-2026/03/30 01:00:35 -> GET /img/shield-license.svg from [::1]:55795
-2026/03/30 01:00:35 <- 304 GET /img/shield-license.svg
-2026/03/30 01:00:35 -> GET /img/network.svg from [::1]:52887
-2026/03/30 01:00:35 -> GET /img/analytics.svg from [::1]:60498
-2026/03/30 01:00:35 <- 304 GET /img/network.svg
-2026/03/30 01:00:35 <- 304 GET /img/analytics.svg
-2026/03/30 01:00:35 -> GET /img/shield-security.svg from [::1]:51475
-2026/03/30 01:00:35 <- 304 GET /img/shield-security.svg
-2026/03/30 01:00:35 -> GET /me from [::1]:61085
-2026/03/30 01:00:35 -> GET /img/user-avatar.svg from [::1]:57039
-2026/03/30 01:00:35 <- 200 GET /me
-2026/03/30 01:00:35 <- 304 GET /img/user-avatar.svg
-2026/03/30 01:00:35 -> GET /super/api/licencias from [::1]:61085
-2026/03/30 01:00:35 <- 200 GET /super/api/licencias
-2026/03/30 01:00:37 metrics: stored cpu=64.26 mem=87.00% recv=6284687552 sent=2176097639
-2026/03/30 01:00:37 -> GET /super/configuracion_avanzada.html from [::1]:61085
-2026/03/30 01:00:38 <- 200 GET /super/configuracion_avanzada.html
-2026/03/30 01:00:38 -> GET /super/api/config/mercadopago from [::1]:61085
-2026/03/30 01:00:38 <- 200 GET /super/api/config/mercadopago
-2026/03/30 01:00:41 -> GET /super/api/config/mercadopago from [::1]:52723
-2026/03/30 01:00:41 <- 200 GET /super/api/config/mercadopago
-2026/03/30 01:00:47 metrics: stored cpu=42.13 mem=87.00% recv=6284961333 sent=2176915285
-2026/03/30 01:00:57 metrics: stored cpu=35.31 mem=88.00% recv=6292946236 sent=2177043276
-2026/03/30 01:01:07 metrics: stored cpu=31.95 mem=89.00% recv=6293308769 sent=2177158628
-2026/03/30 01:01:17 metrics: stored cpu=22.56 mem=89.00% recv=6299269370 sent=2177416069
-2026/03/30 01:01:27 metrics: stored cpu=47.07 mem=88.00% recv=6299775594 sent=2177454724
-2026/03/30 01:01:37 metrics: stored cpu=51.09 mem=88.00% recv=6299799085 sent=2177469999
-2026/03/30 01:01:47 metrics: stored cpu=43.24 mem=87.00% recv=6299821783 sent=2177479265
-2026/03/30 01:01:57 metrics: stored cpu=52.81 mem=88.00% recv=6303485061 sent=2177534073
-2026/03/30 01:02:07 metrics: stored cpu=49.61 mem=88.00% recv=6309457489 sent=2177647794
-2026/03/30 01:02:17 metrics: stored cpu=48.79 mem=87.00% recv=6314298148 sent=2177713730
-2026/03/30 01:02:27 metrics: stored cpu=46.20 mem=87.00% recv=6320747742 sent=2177874619
-2026/03/30 01:02:37 metrics: stored cpu=43.32 mem=87.00% recv=6320757137 sent=2177881781
-2026/03/30 01:02:47 metrics: stored cpu=49.92 mem=87.00% recv=6328832997 sent=2178043480
-2026/03/30 01:02:57 metrics: stored cpu=52.85 mem=88.00% recv=6328854170 sent=2178058144
-2026/03/30 01:03:07 metrics: stored cpu=50.86 mem=88.00% recv=6337639319 sent=2178231916
-2026/03/30 01:03:17 metrics: stored cpu=48.71 mem=88.00% recv=6337662161 sent=2178254261
-2026/03/30 01:03:27 metrics: stored cpu=46.48 mem=88.00% recv=6337683328 sent=2178269650
-2026/03/30 01:03:37 metrics: stored cpu=46.84 mem=90.00% recv=6343177572 sent=2178415477
-2026/03/30 01:03:47 metrics: stored cpu=26.41 mem=89.00% recv=6343202822 sent=2178440703
-2026/03/30 01:03:50 -> PUT /super/api/config/mercadopago from [::1]:61085
-2026/03/30 01:03:50 <- 200 PUT /super/api/config/mercadopago
-2026/03/30 01:03:50 -> GET /super/api/config/mercadopago from [::1]:61085
-2026/03/30 01:03:50 <- 200 GET /super/api/config/mercadopago
-2026/03/30 01:03:57 metrics: stored cpu=17.43 mem=88.00% recv=6343222280 sent=2178462775
-2026/03/30 01:04:07 metrics: stored cpu=20.90 mem=88.00% recv=6343266968 sent=2178523362
-2026/03/30 01:04:17 metrics: stored cpu=16.17 mem=88.00% recv=6343296572 sent=2178544821
-2026/03/30 01:04:27 metrics: stored cpu=20.31 mem=89.00% recv=6343310700 sent=2178556275
-2026/03/30 01:04:37 metrics: stored cpu=18.22 mem=88.00% recv=6343324272 sent=2178563205
-2026/03/30 01:04:47 metrics: stored cpu=16.64 mem=87.00% recv=6343338514 sent=2178568109
-2026/03/30 01:04:57 metrics: stored cpu=26.21 mem=88.00% recv=6343352839 sent=2178581653
-2026/03/30 01:05:07 metrics: stored cpu=16.04 mem=88.00% recv=6343357266 sent=2178583494
-2026/03/30 01:05:17 metrics: stored cpu=19.13 mem=85.00% recv=6343461268 sent=2178603596
-2026/03/30 01:05:27 metrics: stored cpu=23.77 mem=87.00% recv=6343565971 sent=2178609757
-2026/03/30 01:05:37 metrics: stored cpu=19.90 mem=87.00% recv=6343586979 sent=2178618114
-2026/03/30 01:05:47 metrics: stored cpu=18.95 mem=88.00% recv=6343602364 sent=2178625614
-2026/03/30 01:05:57 metrics: stored cpu=20.64 mem=86.00% recv=6343615778 sent=2178633700
-2026/03/30 01:06:07 metrics: stored cpu=17.52 mem=86.00% recv=6343628053 sent=2178641301
-2026/03/30 01:06:17 metrics: stored cpu=28.61 mem=87.00% recv=6343655839 sent=2178671069
-2026/03/30 01:06:27 metrics: stored cpu=34.61 mem=88.00% recv=6343699350 sent=2179207545
-2026/03/30 01:06:37 metrics: stored cpu=35.06 mem=87.00% recv=6343706657 sent=2179212027
-2026/03/30 01:06:47 metrics: stored cpu=38.89 mem=85.00% recv=6343744299 sent=2179239381
-2026/03/30 01:06:57 metrics: stored cpu=38.89 mem=86.00% recv=6343756259 sent=2179258643
+2026/03/30 01:12:06 index.html encontrado en ..\web\index.html
+2026/03/30 01:12:06 Servidor arrancado en :8080
+2026/03/30 01:12:06 metrics: stored cpu=93.75 mem=89.00% recv=6349310773 sent=2205133291
+2026/03/30 01:12:11 -> GET /auth/google/login from [::1]:55815
+2026/03/30 01:12:11 handleGoogleLogin: client_id set=true, redirect_url="http://localhost:8080/auth/google/callback"
+2026/03/30 01:12:11 Auth URL: https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&client_id=1029204473903-6npuu63uehsrn2jn8fnif4fgpp6kcjsm.apps.googleusercontent.com&include_granted_scopes=true&login_hint=powerfulcontrolsystem%40gmail.com&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fauth%2Fgoogle%2Fcallback&response_type=code&scope=openid+email+profile&state=state-token
+2026/03/30 01:12:11 <- 302 GET /auth/google/login
+2026/03/30 01:12:11 -> GET /auth/google/callback from [::1]:55815
+2026/03/30 01:12:12 <- 302 GET /auth/google/callback
+2026/03/30 01:12:12 -> GET /super_administrador.html from [::1]:55815
+2026/03/30 01:12:12 <- 304 GET /super_administrador.html
+2026/03/30 01:12:12 -> GET /me from [::1]:55815
+2026/03/30 01:12:12 <- 200 GET /me
+2026/03/30 01:12:13 -> GET /super/api/licencias from [::1]:55815
+2026/03/30 01:12:13 <- 200 GET /super/api/licencias
+2026/03/30 01:12:16 metrics: stored cpu=57.45 mem=91.00% recv=6354730625 sent=2205226487
+2026/03/30 01:12:26 metrics: stored cpu=44.97 mem=90.00% recv=6354740084 sent=2205243152
+2026/03/30 01:12:36 metrics: stored cpu=43.98 mem=90.00% recv=6359612503 sent=2205280668
+2026/03/30 01:12:46 metrics: stored cpu=49.16 mem=90.00% recv=6359639965 sent=2205295200
+2026/03/30 01:12:56 metrics: stored cpu=54.21 mem=89.00% recv=6365458263 sent=2205350387
+2026/03/30 01:13:06 metrics: stored cpu=55.16 mem=89.00% recv=6365478661 sent=2205381403
+2026/03/30 01:13:16 metrics: stored cpu=45.05 mem=89.00% recv=6365514446 sent=2205416550
+2026/03/30 01:13:26 -> GET /auth/google/login from [::1]:55815
+2026/03/30 01:13:26 handleGoogleLogin: client_id set=true, redirect_url="http://localhost:8080/auth/google/callback"
+2026/03/30 01:13:26 Auth URL: https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&client_id=1029204473903-6npuu63uehsrn2jn8fnif4fgpp6kcjsm.apps.googleusercontent.com&include_granted_scopes=true&login_hint=powerfulcontrolsystem%40gmail.com&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fauth%2Fgoogle%2Fcallback&response_type=code&scope=openid+email+profile&state=state-token
+2026/03/30 01:13:26 <- 302 GET /auth/google/login
+2026/03/30 01:13:26 metrics: stored cpu=33.26 mem=90.00% recv=6365544068 sent=2205463854
+2026/03/30 01:13:26 -> GET /auth/google/callback from [::1]:55815
+2026/03/30 01:13:27 <- 302 GET /auth/google/callback
+2026/03/30 01:13:27 -> GET /me from [::1]:55815
+2026/03/30 01:13:27 <- 200 GET /me
+2026/03/30 01:13:27 -> GET /super/api/licencias from [::1]:55815
+2026/03/30 01:13:27 <- 200 GET /super/api/licencias
+2026/03/30 01:13:29 -> GET /super/configuracion_avanzada.html from [::1]:55815
+2026/03/30 01:13:29 <- 200 GET /super/configuracion_avanzada.html
+2026/03/30 01:13:29 -> GET /super/api/config/mercadopago from [::1]:55815
+2026/03/30 01:13:29 <- 200 GET /super/api/config/mercadopago
+2026/03/30 01:13:32 -> GET /super_administrador.html from [::1]:55815
+2026/03/30 01:13:32 <- 200 GET /super_administrador.html
+2026/03/30 01:13:32 -> GET /estilos.css from [::1]:55815
+2026/03/30 01:13:32 -> GET /menu.js from [::1]:56246
+2026/03/30 01:13:32 -> GET /img/company-briefcase.svg from [::1]:54555
+2026/03/30 01:13:32 <- 200 GET /img/company-briefcase.svg
+2026/03/30 01:13:32 -> GET /img/shield-license.svg from [::1]:62626
+2026/03/30 01:13:32 <- 200 GET /img/shield-license.svg
+2026/03/30 01:13:32 -> GET /img/analytics.svg from [::1]:62626
+2026/03/30 01:13:32 -> GET /img/network.svg from [::1]:54555
+2026/03/30 01:13:32 <- 200 GET /img/analytics.svg
+2026/03/30 01:13:32 <- 200 GET /img/network.svg
+2026/03/30 01:13:32 -> GET /img/shield-security.svg from [::1]:54555
+2026/03/30 01:13:32 <- 200 GET /img/shield-security.svg
+2026/03/30 01:13:32 <- 200 GET /estilos.css
+2026/03/30 01:13:32 -> GET /img/user-avatar.svg from [::1]:55815
+2026/03/30 01:13:32 <- 200 GET /img/user-avatar.svg
+2026/03/30 01:13:32 <- 200 GET /menu.js
+2026/03/30 01:13:32 -> GET /super/licencias_resumen.html from [::1]:56246
+2026/03/30 01:13:32 -> GET /me from [::1]:55815
+2026/03/30 01:13:32 <- 200 GET /me
+2026/03/30 01:13:33 <- 200 GET /super/licencias_resumen.html
+2026/03/30 01:13:33 -> GET /estilos.css from [::1]:56246
+2026/03/30 01:13:33 <- 200 GET /estilos.css
+2026/03/30 01:13:33 -> GET /super/api/licencias from [::1]:56246
+2026/03/30 01:13:33 <- 200 GET /super/api/licencias
+2026/03/30 01:13:33 -> GET /favicon.ico from [::1]:56246
+2026/03/30 01:13:33 <- 404 GET /favicon.ico
+2026/03/30 01:13:36 metrics: stored cpu=19.38 mem=89.00% recv=6365582803 sent=2205491594
+2026/03/30 01:13:37 -> GET /super/api/config/mercadopago from [::1]:56246
+2026/03/30 01:13:37 <- 200 GET /super/api/config/mercadopago
+2026/03/30 01:13:46 metrics: stored cpu=16.15 mem=89.00% recv=6365602804 sent=2205502642
+2026/03/30 01:13:56 metrics: stored cpu=15.14 mem=89.00% recv=6365630710 sent=2205525503
+2026/03/30 01:14:06 metrics: stored cpu=22.37 mem=89.00% recv=6365649325 sent=2205542815
+2026/03/30 01:14:16 metrics: stored cpu=16.56 mem=89.00% recv=6365665278 sent=2205551501
+2026/03/30 01:14:26 metrics: stored cpu=17.32 mem=89.00% recv=6365672274 sent=2205559448
+2026/03/30 01:14:36 metrics: stored cpu=35.35 mem=91.00% recv=6365715923 sent=2206062222
+2026/03/30 01:14:46 metrics: stored cpu=19.55 mem=90.00% recv=6366607560 sent=2206089980
+2026/03/30 01:14:56 metrics: stored cpu=22.38 mem=89.00% recv=6367728661 sent=2206255519
+2026/03/30 01:15:06 metrics: stored cpu=62.11 mem=90.00% recv=6368873575 sent=2206316668
+2026/03/30 01:15:16 metrics: stored cpu=83.87 mem=91.00% recv=6369681863 sent=2206536677
+2026/03/30 01:15:26 metrics: stored cpu=72.05 mem=86.00% recv=6370021900 sent=2206625113
+2026/03/30 01:15:36 metrics: stored cpu=54.82 mem=85.00% recv=6370081439 sent=2206635083
+2026/03/30 01:15:46 metrics: stored cpu=57.64 mem=87.00% recv=6370480271 sent=2206659148
+2026/03/30 01:15:56 metrics: stored cpu=63.83 mem=88.00% recv=6392445631 sent=2207865625
+2026/03/30 01:16:04 -> GET /super/api/config/mercadopago from [::1]:54700
+2026/03/30 01:16:04 <- 200 GET /super/api/config/mercadopago
+2026/03/30 01:16:06 metrics: stored cpu=75.49 mem=88.00% recv=6402675183 sent=2208570858
+2026/03/30 01:16:16 metrics: stored cpu=62.97 mem=88.00% recv=6403399743 sent=2209040986
+2026/03/30 01:16:26 metrics: stored cpu=73.52 mem=89.00% recv=6413935400 sent=2209756880
+2026/03/30 01:16:36 metrics: stored cpu=67.29 mem=88.00% recv=6414917085 sent=2209936821
+2026/03/30 01:16:47 metrics: stored cpu=67.42 mem=89.00% recv=6426455297 sent=2210327294
+2026/03/30 01:16:56 metrics: stored cpu=64.76 mem=89.00% recv=6426748552 sent=2210431620
+2026/03/30 01:17:06 metrics: stored cpu=67.30 mem=89.00% recv=6427408406 sent=2210772835
+2026/03/30 01:17:16 metrics: stored cpu=83.71 mem=91.00% recv=6438741609 sent=2210998061
+2026/03/30 01:17:26 metrics: stored cpu=58.09 mem=90.00% recv=6439616420 sent=2211667593
+2026/03/30 01:17:36 metrics: stored cpu=64.38 mem=90.00% recv=6447033096 sent=2211891777
+2026/03/30 01:17:46 metrics: stored cpu=63.34 mem=90.00% recv=6447725059 sent=2212287240
+2026/03/30 01:17:56 metrics: stored cpu=58.87 mem=91.00% recv=6450846326 sent=2212351952
+2026/03/30 01:18:06 metrics: stored cpu=47.81 mem=91.00% recv=6454406748 sent=2212474614
+2026/03/30 01:18:16 metrics: stored cpu=61.56 mem=88.00% recv=6454419530 sent=2212486104
+2026/03/30 01:18:26 metrics: stored cpu=35.94 mem=87.00% recv=6461173325 sent=2212567110
+2026/03/30 01:18:36 metrics: stored cpu=18.44 mem=87.00% recv=6461183399 sent=2212570353
+2026/03/30 01:18:46 metrics: stored cpu=15.41 mem=86.00% recv=6461193347 sent=2212574581
+2026/03/30 01:18:56 metrics: stored cpu=17.07 mem=87.00% recv=6461199491 sent=2212580755
+2026/03/30 01:19:06 metrics: stored cpu=19.69 mem=87.00% recv=6461218775 sent=2212615434
+2026/03/30 01:19:16 metrics: stored cpu=16.56 mem=86.00% recv=6461229383 sent=2212619533
+2026/03/30 01:19:26 metrics: stored cpu=19.38 mem=86.00% recv=6461243206 sent=2212624149
+2026/03/30 01:19:36 metrics: stored cpu=17.70 mem=86.00% recv=6461249597 sent=2212625375
+2026/03/30 01:19:46 metrics: stored cpu=17.34 mem=86.00% recv=6461262960 sent=2212633699
