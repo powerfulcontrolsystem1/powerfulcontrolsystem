@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Pagar Licencia</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+</head>
+<body>
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <h2>Pagar Licencia</h2>
+      <ul class="nav">
+        <li><a href="/seleccionar_empresa.html"><img class="icon" src="/img/company-briefcase.svg" alt="">Volver a empresas</a></li>
+        <li><a href="/elegir_licencia.html"><img class="icon" src="/img/tag.svg" alt="">Elegir otra licencia</a></li>
+      </ul>
+    </aside>
+
+    <main class="admin-content">
+      <div class="container">
+        <div class="page-header">
+          <h1 id="pageTitle">Pagar Licencia</h1>
+        </div>
+
+        <div id="payment" class="card">Cargando...</div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    (function(){
+      function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m] }) }
+      async function run(){
+        const params = new URLSearchParams(window.location.search);
+        const licenciaId = params.get('licencia_id');
+        const empresaId = params.get('empresa_id');
+        const status = params.get('status');
+
+        const container = document.getElementById('payment');
+        if (status){
+          if (status === 'success') container.innerHTML = '<div class="success">Pago completado correctamente. Gracias.</div>';
+          else if (status === 'failure') container.innerHTML = '<div class="error">El pago fue rechazado o cancelado.</div>';
+          else container.innerHTML = '<div class="muted">Estado de pago: '+escapeHtml(status)+'</div>';
+          return;
+        }
+
+        if (!licenciaId){ container.innerText = 'ID de licencia no proporcionado.'; return }
+
+        try{
+          const res = await fetch('/super/api/licencias');
+          if (!res.ok) { container.innerText = 'Error al obtener licencias'; return }
+          const licencias = await res.json();
+          const lic = (licencias||[]).find(function(x){ return String(x.id) === String(licenciaId) });
+          if (!lic){ container.innerText = 'Licencia no encontrada.'; return }
+
+          container.innerHTML = ''+
+            '<div style="display:flex;gap:18px;align-items:center;justify-content:space-between;flex-wrap:wrap">'+
+            '<div style="flex:1;min-width:240px">'+
+              '<h2>'+escapeHtml(lic.nombre||lic.Nombre||'')+'</h2>'+
+              '<p class="card-desc">'+escapeHtml(lic.descripcion||lic.Descripcion||'')+'</p>'+
+              '<p><strong>Duración:</strong> '+escapeHtml(String(lic.duracion_dias||lic.DuracionDias||''))+' días</p>'+
+            '</div>'+
+            '<div style="min-width:180px;text-align:right">'+
+              '<div style="font-size:1.5rem;font-weight:900">$ '+escapeHtml(String(lic.valor||lic.Valor||0))+'</div>'+
+              '<div style="margin-top:12px">'+
+                '<button id="payBtn" class="btn buy">Pagar con Mercado Pago</button>'+
+              '</div>'+
+            '</div>'+
+            '</div>';
+
+          const payBtn = document.getElementById('payBtn');
+          payBtn.addEventListener('click', async function(){
+            payBtn.disabled = true; payBtn.textContent = 'Redirigiendo...';
+            try{
+              const payload = { licencia_id: Number(licenciaId) };
+              if (empresaId) payload.empresa_id = Number(empresaId);
+              const mpRes = await fetch('/mercadopago/create_preference', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+              if (!mpRes.ok){
+                const txt = await mpRes.text();
+                alert('Error creando preferencia: ' + txt);
+                payBtn.disabled = false; payBtn.textContent = 'Pagar con Mercado Pago';
+                return;
+              }
+              const data = await mpRes.json();
+              // try common fields
+              const init = data.init_point || data.sandbox_init_point || (data.preference && data.preference.init_point) || data.url || (data.checkout && data.checkout.url);
+              if (!init){ alert('Respuesta inválida de Mercado Pago'); payBtn.disabled=false; payBtn.textContent='Pagar con Mercado Pago'; return }
+              window.location.href = init;
+            }catch(err){ console.error(err); alert('Error iniciando pago: '+(err.message||err)); payBtn.disabled=false; payBtn.textContent='Pagar con Mercado Pago'; }
+          });
+
+        }catch(err){ console.error(err); container.innerText = 'Error: ' + (err && err.message ? err.message : String(err)); }
+      }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run); else run();
+    })();
+  </script>
+</body>
+</html>

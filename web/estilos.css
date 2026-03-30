@@ -288,3 +288,29 @@ html.theme-light .floating-menu #themeToggle{color:var(--accent-2)}
 .license-indicator.inactive{background:var(--danger)}
 
 /* fin: tarjetas cálidas */
+
+/* ===== Offer / License cards (vibrant, CTA-focused) ===== */
+.offer-card{color:#fff;border:none;padding:20px;border-radius:12px;position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between}
+.offer-card .offer-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.offer-card .offer-price{font-weight:900;font-size:1.45rem;display:flex;align-items:baseline;gap:6px}
+.offer-card .offer-price .currency{font-size:0.9rem;opacity:0.9}
+.offer-card .card-desc{color:rgba(255,255,255,0.95);margin-bottom:8px}
+.offer-card .card-actions{margin-top:12px;display:flex;gap:12px;align-items:center}
+.btn.buy{background:linear-gradient(90deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06));color:#fff;padding:10px 16px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);font-weight:900;box-shadow:0 6px 18px rgba(0,0,0,0.25)}
+.btn.buy:hover{filter:brightness(1.03)}
+.offer-card .small{font-size:0.9rem;color:rgba(255,255,255,0.9)}
+.offer-card .license-indicator{background:rgba(0,0,0,0.14);padding:6px 8px;border-radius:8px;font-weight:700}
+
+/* Color variants for offers */
+.offer-card.variant-1{background:linear-gradient(135deg,#ff7a18,#af4261);box-shadow:0 12px 30px rgba(175,66,97,0.18)}
+.offer-card.variant-2{background:linear-gradient(135deg,#6a11cb,#2575fc);box-shadow:0 12px 30px rgba(37,117,252,0.16)}
+.offer-card.variant-3{background:linear-gradient(135deg,#00b09b,#96c93d);box-shadow:0 12px 30px rgba(29,161,134,0.12)}
+.offer-card.variant-4{background:linear-gradient(135deg,#ff6b6b,#f94d6a);box-shadow:0 12px 30px rgba(249,77,106,0.16)}
+
+/* Ensure readable small text on offer cards */
+.offer-card .muted{opacity:0.92;color:rgba(255,255,255,0.9)}
+
+@media (max-width:1000px){.portal-grid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:640px){.portal-grid{grid-template-columns:1fr}}
+
+/* End offer styles */

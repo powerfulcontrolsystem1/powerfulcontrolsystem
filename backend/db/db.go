@@ -529,6 +529,57 @@ func InitMetricsTable(dbConn *sql.DB) error {
 	return err
 }
 
+// CreateMPPaymentRecord registra una preferencia/pago inicial de Mercado Pago en la tabla pagos_mercadopago
+func CreateMPPaymentRecord(dbConn *sql.DB, licenciaID, empresaID int64, preferenceID, paymentID, status, rawPayload string) (int64, error) {
+	res, err := dbConn.Exec("INSERT INTO pagos_mercadopago (licencia_id, empresa_id, preference_id, payment_id, status, raw_payload, fecha_creacion) VALUES (?, ?, ?, ?, ?, ?, datetime('now','localtime'))", licenciaID, empresaID, preferenceID, paymentID, status, rawPayload)
+	if err != nil {
+		return 0, err
+	}
+	return res.LastInsertId()
+}
+
+// UpdateMPPaymentRecordByPreference actualiza el registro de pago creado inicialmente por preferencia
+func UpdateMPPaymentRecordByPreference(dbConn *sql.DB, preferenceID, paymentID, status, rawPayload string) error {
+	_, err := dbConn.Exec("UPDATE pagos_mercadopago SET payment_id = ?, status = ?, raw_payload = ?, fecha_actualizacion = datetime('now','localtime') WHERE preference_id = ?", paymentID, status, rawPayload, preferenceID)
+	return err
+}
+
+// ActivateLicenciaForEmpresa asigna y activa una licencia para una empresa, estableciendo fechas de inicio y fin
+func ActivateLicenciaForEmpresa(dbConn *sql.DB, licenciaID, empresaID int64, fechaInicio, fechaFin string) error {
+	_, err := dbConn.Exec("UPDATE licencias SET empresa_id = ?, activo = 1, fecha_inicio = ?, fecha_fin = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ?", empresaID, fechaInicio, fechaFin, licenciaID)
+	return err
+}
+
+// SetConfigValue inserta o actualiza una configuración en la tabla configuraciones
+func SetConfigValue(dbConn *sql.DB, key, value string, encrypted bool) error {
+	enc := 0
+	if encrypted {
+		enc = 1
+	}
+	// Usamos INSERT OR REPLACE para simplificar upsert
+	_, err := dbConn.Exec("INSERT OR REPLACE INTO configuraciones (config_key, value, encrypted, fecha_creacion) VALUES (?, ?, ?, datetime('now','localtime'))", key, value, enc)
+	return err
+}
+
+// GetConfigValue devuelve el valor almacenado y si estaba cifrado
+func GetConfigValue(dbConn *sql.DB, key string) (string, bool, error) {
+	row := dbConn.QueryRow("SELECT value, encrypted FROM configuraciones WHERE config_key = ? LIMIT 1", key)
+	var val sql.NullString
+	var enc sql.NullInt64
+	if err := row.Scan(&val, &enc); err != nil {
+		return "", false, err
+	}
+	v := ""
+	if val.Valid {
+		v = val.String
+	}
+	isEnc := false
+	if enc.Valid && enc.Int64 == 1 {
+		isEnc = true
+	}
+	return v, isEnc, nil
+}
+
 // InsertMetric inserta una muestra de métricas en la tabla metrics
 func InsertMetric(dbConn *sql.DB, cpuPercent float64, memTotal, memUsed uint64, memPercent float64, netRecv, netSent uint64) error {
 	_, err := dbConn.Exec("INSERT INTO metrics (cpu_percent, mem_total, mem_used, mem_percent, net_recv, net_sent) VALUES (?, ?, ?, ?, ?, ?)",

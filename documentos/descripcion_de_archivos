@@ -55,6 +55,9 @@ Fecha de creación: 2026-03-26
 
 - UI/login - recordar cuenta: En `web/login.html` se añadió una casilla "Recordar cuenta" que guarda la preferencia en `localStorage`. Estilos en `web/estilos.css`.
 
+- UI/licencias - flujo de compra: Se añadió una nueva página de pago `web/pagar_licencia.html` y se actualizó `web/elegir_licencia.html` para mostrar las licencias como tarjetas de oferta (`offer-card`) con botón "Comprar". La página de pago solicita la creación de una preferencia a Mercado Pago mediante el endpoint backend `/mercadopago/create_preference` y redirige al checkout (`init_point`). También se expone un webhook en `/mercadopago/webhook` para recibir notificaciones de pago. Para habilitar pagos reales, configurar la variable de entorno `MERCADOPAGO_ACCESS_TOKEN`.
+
+
 - web/ayuda.html: Nueva página estática de ayuda / documentación básica y contacto.
 
 Adicional:

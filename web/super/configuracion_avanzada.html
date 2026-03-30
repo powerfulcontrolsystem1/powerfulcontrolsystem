@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Configuración avanzada</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container">
+    <div class="page-header">
+      <h1>Configuración avanzada</h1>
+      <p class="form-help">Ajustes avanzados del sistema. Edita con precaución.</p>
+    </div>
+
+    <section class="card form">
+      <h2>Parámetros avanzados</h2>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Clave personalizada</label>
+          <input id="advKey" class="form-input" type="text" placeholder="Valor">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Modo mantenimiento</label>
+          <select id="maintenance" class="form-input">
+            <option value="0">Desactivado</option>
+            <option value="1">Activado</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button id="saveAdvBtn" class="btn">Guardar</button>
+      </div>
+      <div id="msg" class="form-help"></div>
+    </section>
+
+    <section class="card form" id="mpAdvancedConfig">
+      <h2>Mercado Pago — Credenciales secretas</h2>
+      <p class="form-help">Guarde el Access Token de Mercado Pago. Active cifrado si el servidor soporta `CONFIG_ENC_KEY`.</p>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Access Token (secreto)</label>
+          <input id="mpAccessTokenAdv" class="form-input" type="password" placeholder="Ingrese Access Token de Mercado Pago">
+          <div id="mpAccessSetAdv" class="form-help">Cargando estado...</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Public Key</label>
+          <input id="mpPublicKeyAdv" class="form-input" type="text" placeholder="Clave pública (si aplica)">
+          <div id="mpPublicSetAdv" class="form-help">Cargando estado...</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Opciones</label>
+          <div class="form-help"><label><input id="mpEncryptToggleAdv" type="checkbox" checked> Cifrar al guardar (si el servidor lo permite)</label></div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button id="saveMpAdvBtn" class="btn">Guardar credenciales MP</button>
+      </div>
+      <div id="mpMsgAdv" class="form-help"></div>
+    </section>
+  </div>
+
+  <script>
+    (function(){
+      async function load(){
+        // cargar advanced
+        try{
+          const res = await fetch('/super/api/config/advanced');
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.key) document.getElementById('advKey').value = data.key;
+            if (data && typeof data.maintenance !== 'undefined') document.getElementById('maintenance').value = String(data.maintenance?1:0);
+          }
+        }catch(e){ /* no hay API, mostrar formulario vacío */ }
+
+        // cargar estado Mercado Pago
+        try{
+          const res2 = await fetch('/super/api/config/mercadopago');
+          if (res2.ok){
+            const mp = await res2.json();
+            document.getElementById('mpAccessSetAdv').innerText = mp.access_token_set ? 'Access token guardado (' + (mp.access_token_masked||'') + ')' : 'No configurado';
+            document.getElementById('mpPublicSetAdv').innerText = mp.public_key_set ? 'Public key: ' + (mp.public_key_masked||'') : 'No configurada';
+          } else {
+            document.getElementById('mpAccessSetAdv').innerText = 'Error al leer configuración';
+            document.getElementById('mpPublicSetAdv').innerText = 'Error al leer configuración';
+          }
+        }catch(e){ document.getElementById('mpAccessSetAdv').innerText = 'Error cargando'; document.getElementById('mpPublicSetAdv').innerText = 'Error cargando' }
+      }
+
+      async function save(e){
+        if (e && e.preventDefault) e.preventDefault();
+        const payload = {
+          key: document.getElementById('advKey').value.trim(),
+          maintenance: document.getElementById('maintenance').value === '1' ? 1 : 0
+        };
+        try{
+          const res = await fetch('/super/api/config/advanced',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+          if (res.ok) {
+            document.getElementById('msg').innerText = 'Guardado';
+          } else {
+            const t = await res.text().catch(()=>null);
+            document.getElementById('msg').innerText = 'Error al guardar: ' + (t||res.status);
+          }
+        }catch(e){ document.getElementById('msg').innerText = 'Error: '+(e.message||e) }
+      }
+
+      async function saveMP(e){
+        if (e && e.preventDefault) e.preventDefault();
+        const access = document.getElementById('mpAccessTokenAdv').value.trim();
+        const pub = document.getElementById('mpPublicKeyAdv').value.trim();
+        const encrypt = !!document.getElementById('mpEncryptToggleAdv').checked;
+        if (!access && !pub){ alert('Ingrese al menos un valor para guardar'); return }
+        const payload = { encrypt };
+        if (access) payload.access_token = access;
+        if (pub) payload.public_key = pub;
+        const btn = document.getElementById('saveMpAdvBtn'); btn.disabled = true; btn.innerText = 'Guardando...';
+        try{
+          const res = await fetch('/super/api/config/mercadopago', { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+          const body = await res.json().catch(()=>null);
+          if (res.ok) {
+            document.getElementById('mpMsgAdv').innerText = 'Credenciales guardadas';
+            if (body && body.validated) document.getElementById('mpMsgAdv').innerText += ' — validadas: '+(body.account && (body.account.nickname || body.account.email || body.account.id) || '');
+            document.getElementById('mpAccessTokenAdv').value = '';
+            load();
+          } else {
+            const txt = body ? JSON.stringify(body) : await res.text();
+            document.getElementById('mpMsgAdv').innerText = 'Error guardando: ' + txt;
+          }
+        }catch(err){ console.error(err); document.getElementById('mpMsgAdv').innerText = 'Error: '+(err.message||err) }
+        btn.disabled = false; btn.innerText = 'Guardar credenciales MP';
+      }
+
+      document.getElementById('saveAdvBtn').addEventListener('click', save);
+      document.getElementById('saveMpAdvBtn').addEventListener('click', saveMP);
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', load); else load();
+    })();
+  </script>
+</body>
+</html>

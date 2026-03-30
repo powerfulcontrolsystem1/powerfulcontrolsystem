@@ -110,11 +110,24 @@
 
           list.forEach(e => {
             const hasLicense = !!activeByEmpresa[e.id];
-            // crear enlace que abra administrar_empresa.html en nueva pestaña
+            // crear tarjeta clicable: si tiene licencia abrir administrar (nueva pestaña), si no redirigir a elegir_licencia.html
             const a = document.createElement('a');
-            a.href = '/administrar_empresa.html?id=' + encodeURIComponent(e.id);
-            a.target = '_blank';
+            a.href = '#';
             a.className = 'card-link';
+            a.addEventListener('click', function(evt){
+              evt.preventDefault();
+              try{
+                if (hasLicense){
+                  window.open('/administrar_empresa.html?id=' + encodeURIComponent(e.id), '_blank');
+                } else {
+                  const params = new URLSearchParams();
+                  params.set('empresa_id', e.id);
+                  if (e.tipo_id) params.set('tipo_id', e.tipo_id);
+                  if (e.tipo_nombre) params.set('tipo_nombre', e.tipo_nombre);
+                  window.location.href = '/elegir_licencia.html?' + params.toString();
+                }
+              }catch(err){ console.error(err); }
+            });
             const div = document.createElement('div');
             div.className = 'portal-card warm';
             div.innerHTML = `<div class="card-body"><h3 class="card-title">${escapeHtml(e.nombre||'--')}</h3><p class="card-desc muted">${escapeHtml(e.observaciones||'')}</p><div class="card-actions"><button class="license-indicator ${hasLicense? 'active':'inactive'}" type="button" aria-hidden="true">${hasLicense? 'Licencia activa' : 'Sin licencia'}</button></div></div>`;

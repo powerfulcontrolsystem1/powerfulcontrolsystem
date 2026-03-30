@@ -1,4 +1,48 @@
--Historial de cambios
+Historial de cambios
+
+2026-03-30: Sección de configuración de Mercado Pago (UI + almacenamiento seguro)
+- Acción: Se añadió una sección en la página de configuración global para gestionar las credenciales de Mercado Pago. La sección permite guardar el `Access Token` (secreto) y la `Public Key`. El `Access Token` puede almacenarse cifrado en la base de datos (`configuraciones`) usando la clave de cifrado del servidor (`CONFIG_ENC_KEY`).
+- Archivos modificados/creados:
+    - web/super/configuracion.html (nuevo formulario y lógica JS para GET/PUT hacia el backend)
+    - backend/main.go (migración: creación de tabla `configuraciones`; registro del endpoint `/super/api/config/mercadopago`)
+    - backend/db/db.go (helpers `SetConfigValue`, `GetConfigValue`)
+    - backend/utils/utils.go (helpers `EncryptString` / `DecryptString` y loader `getEncKeyFromEnv` usando `CONFIG_ENC_KEY`)
+    - backend/handlers/handlers.go (handler `MercadoPagoConfigHandler` para GET/PUT, y adaptación de create_preference/webhook para usar credenciales desde DB)
+- Descripción: El `Access Token` se cifra con AES-GCM a partir de la clave `CONFIG_ENC_KEY` y se guarda en la tabla `configuraciones` con la clave `mercadopago.access_token`. La API de creación de preferencia y el webhook intentan primero leer el token desde la base de datos (y lo desencriptan si corresponde), y si no existe, usan la variable de entorno `MERCADOPAGO_ACCESS_TOKEN` como fallback.
+- Requisitos operativos: Definir la variable de entorno `CONFIG_ENC_KEY` (base64 o cadena >=32 bytes) para habilitar el cifrado. También puede seguir usándose `MERCADOPAGO_ACCESS_TOKEN` en entorno para compatibilidad.
+- Responsable: agente local
+
+2026-03-29: Redirección a elegir_licencia para empresas sin licencia
+- Acción: Se rediseñaron las tarjetas en `web/elegir_licencia.html` para mostrarse como ofertas coloridas y se cambió el texto del botón principal a "Comprar". El botón ahora redirige a una nueva página de pago `web/pagar_licencia.html` que inicia el flujo con Mercado Pago.
+- Archivos modificados/creados:
+    - web/elegir_licencia.html (actualizada: tarjetas tipo oferta, botón "Comprar")
+    - web/pagar_licencia.html (nuevo: página de pago que solicita preferencia a Mercado Pago y redirige al checkout)
+    - web/estilos.css (nuevos estilos `.offer-card` y `.btn.buy` para tarjetas de oferta)
+    - backend/handlers/handlers.go (nuevos handlers: `/mercadopago/create_preference` y `/mercadopago/webhook`)
+    - backend/main.go (migración: tabla `pagos_mercadopago`; registro de endpoints de Mercado Pago)
+    - backend/db/db.go (helper `CreateMPPaymentRecord` para registrar preferencias/pagos en DB)
+- Descripción: Se añadió la experiencia de compra de licencias en la interfaz: las licencias se presentan como tarjetas llamativas con precio destacado y CTA "Comprar". La página de pago (`pagar_licencia.html`) obtiene los detalles de la licencia, solicita la creación de una preferencia en Mercado Pago mediante el endpoint `/mercadopago/create_preference` y redirige al `init_point` proporcionado por Mercado Pago. Las notificaciones de Mercado Pago se reciben en `/mercadopago/webhook` y se persisten en la tabla `pagos_mercadopago`.
+- Nota operativa: Para procesar pagos reales es necesario establecer la variable de entorno `MERCADOPAGO_ACCESS_TOKEN` con el Access Token de Mercado Pago. El handler usa la API REST de Mercado Pago (sin SDK) y persiste la respuesta cruda para trazabilidad.
+- Responsable: agente local
+
+2026-03-30: Activación automática de licencias tras pago aprobado
+- Acción: Se añadió lógica en el webhook `/mercadopago/webhook` para procesar notificaciones de pago, comprobar el estado del pago con la API de Mercado Pago y, cuando el pago se encuentra en estado `approved`, asignar y activar la licencia correspondiente para la empresa asociada. Esto incluye calcular `fecha_inicio` y `fecha_fin` en base a `duracion_dias` de la licencia.
+- Archivos modificados:
+    - backend/handlers/handlers.go (actualizado `MercadoPagoWebhookHandler` para validar pago y activar licencia automáticamente)
+    - backend/db/db.go (nuevos helpers `UpdateMPPaymentRecordByPreference`, `ActivateLicenciaForEmpresa`)
+    - backend/main.go (tabla `pagos_mercadopago` creada previamente)
+- Descripción: Cuando se recibe una notificación de Mercado Pago, el servidor consulta la API de Mercado Pago para obtener el estado del pago y la referencia a la preferencia. Si el pago está aprobado y la preferencia contiene la relación `licencia_<id>_empresa_<id>` o existe un registro en `pagos_mercadopago` con `preference_id`, la API activa la licencia (setea `empresa_id`, `activo=1`, `fecha_inicio`, `fecha_fin`). Se persiste la información del webhook en `pagos_mercadopago` para trazabilidad.
+- Requisitos: Variable de entorno `MERCADOPAGO_ACCESS_TOKEN` definida en el entorno de ejecución.
+- Responsable: agente local
+
+
+2026-03-29: Redirección a elegir_licencia para empresas sin licencia
+- Acción: Al seleccionar una tarjeta de empresa en `web/seleccionar_empresa.html`, si la empresa no tiene una licencia activa el usuario es redirigido a `web/elegir_licencia.html` para ver las licencias disponibles para el tipo de empresa seleccionado. Si la empresa ya tiene licencia activa, se abre `administrar_empresa.html?id=...` en una nueva pestaña (comportamiento previo).
+- Archivos modificados/creados:
+    - web/seleccionar_empresa.html
+    - web/elegir_licencia.html (nuevo)
+- Descripción: `web/seleccionar_empresa.html` ahora envia al navegador a `elegir_licencia.html?empresa_id=<id>&tipo_id=<tipo_id>&tipo_nombre=<tipo_nombre>` cuando la empresa no tiene licencia activa. La nueva página `web/elegir_licencia.html` lista las licencias que coinciden con el `tipo_id` o `tipo_nombre` y muestra información básica (nombre, descripción, valor, duración). No se implementa asignación automática de licencias; el botón de "Solicitar licencia" muestra instrucciones para contactar al administrador.
+- Responsable: agente local.
 
 2026-03-29: Ajuste de ancho del sidebar en `seleccionar_empresa.html` para igualar `super_administrador.html`
 - Acción: Se eliminó la clase `super-page` del `body` en `web/seleccionar_empresa.html` para que el ancho del menú izquierdo sea el mismo que en `web/super_administrador.html` (ancho por defecto del sidebar: 260px). Esto hace que los botones del menú en `seleccionar_empresa.html` tengan el mismo tamaño visual que en el panel de super administrador.

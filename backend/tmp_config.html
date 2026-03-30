@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Configuración</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Configuración</h1>
+    <p class="form-help">Configuraciones globales del sistema.</p>
+
+    <section class="card form" id="mpConfig">
+      <h2>Mercado Pago</h2>
+      <p class="form-help">Configure las credenciales de Mercado Pago. El token de acceso se almacenará cifrado si el servidor tiene configurada la clave `CONFIG_ENC_KEY`.</p>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Access Token (secreto)</label>
+          <input id="mpAccessToken" class="form-input" type="password" placeholder="Ingrese Access Token de Mercado Pago">
+          <div id="mpAccessSet" class="form-help">Cargando estado...</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Public Key</label>
+          <input id="mpPublicKey" class="form-input" type="text" placeholder="Clave pública (si aplica)">
+          <div id="mpPublicSet" class="form-help">Cargando estado...</div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button id="saveMpBtn" class="btn add">Guardar Mercado Pago (cifrar)</button>
+        <button id="testMpBtn" class="btn">Probar Pago</button>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    (function(){
+      async function load(){
+        try{
+          const res = await fetch('/super/api/config/mercadopago');
+          if (!res.ok) { document.getElementById('mpAccessSet').innerText = 'Error al leer configuración'; return }
+          const data = await res.json();
+          document.getElementById('mpAccessSet').innerText = data.access_token_set ? 'Access token guardado ('+ (data.access_token_masked||'') +')' : 'No configurado';
+          document.getElementById('mpPublicSet').innerText = data.public_key_set ? 'Public key: '+(data.public_key_masked||'') : 'No configurada';
+        }catch(err){ console.error(err); document.getElementById('mpAccessSet').innerText = 'Error cargando'; document.getElementById('mpPublicSet').innerText = 'Error cargando' }
+      }
+      async function save(){
+        const access = document.getElementById('mpAccessToken').value.trim();
+        const pub = document.getElementById('mpPublicKey').value.trim();
+        if (!access && !pub){ alert('Ingrese al menos un valor para guardar'); return }
+        const payload = { encrypt: true };
+        if (access) payload.access_token = access;
+        if (pub) payload.public_key = pub;
+        const btn = document.getElementById('saveMpBtn'); btn.disabled = true; btn.innerText = 'Guardando...';
+        try{
+          const res = await fetch('/super/api/config/mercadopago', { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+          const body = await res.json().catch(()=>null);
+          if (res.ok) {
+            if (body && body.validated) {
+              alert('Credenciales guardadas y validadas. Cuenta: '+(body.account && (body.account.nickname || body.account.email || body.account.id) || 'n/a'));
+            } else {
+              alert('Credenciales guardadas (no se devolvió validación)');
+            }
+            document.getElementById('mpAccessToken').value = '';
+            load();
+          } else {
+            const txt = body ? JSON.stringify(body) : await res.text();
+            alert('Error guardando: '+txt)
+          }
+        }catch(err){ console.error(err); alert('Error: '+(err.message||err)) }
+        btn.disabled = false; btn.innerText = 'Guardar Mercado Pago (cifrar)';
+      }
+      async function testPayment(){
+        const btn = document.getElementById('testMpBtn'); btn.disabled = true; btn.innerText = 'Generando preferencia...';
+        try{
+          const res = await fetch('/mercadopago/test_preference', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ amount: 1, title: 'Prueba desde configuración' }) });
+          if (!res.ok) { const txt = await res.text(); alert('Error al crear preferencia: '+txt); btn.disabled = false; btn.innerText = 'Probar Pago'; return }
+          const data = await res.json();
+          // redirect to init_point if present
+          const init = data.init_point || data.sandbox_init_point || data.payment_url;
+          if (init) { window.location.href = init; return }
+          alert('Preferencia creada, revisar respuesta en consola.'); console.log(data);
+        }catch(err){ console.error(err); alert('Error: '+(err.message||err)) }
+        btn.disabled = false; btn.innerText = 'Probar Pago';
+      }
+      document.getElementById('saveMpBtn').addEventListener('click', save);
+      document.getElementById('testMpBtn').addEventListener('click', testPayment);
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', load); else load();
+    })();
+  </script>
+</body>
+</html>

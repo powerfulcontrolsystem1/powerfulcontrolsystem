@@ -284,6 +284,36 @@ func main() {
 	}
 	ensureLicenciasSchema(dbSuper)
 
+	// Tabla para registrar preferencias/pagos de Mercado Pago
+	createPagos := `CREATE TABLE IF NOT EXISTS pagos_mercadopago (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		licencia_id INTEGER,
+		empresa_id INTEGER,
+		preference_id TEXT,
+		payment_id TEXT,
+		status TEXT,
+		raw_payload TEXT,
+		fecha_creacion TEXT DEFAULT (datetime('now','localtime'))
+	);`
+	if _, err := dbSuper.Exec(createPagos); err != nil {
+		log.Fatalf("failed to create pagos_mercadopago table in super db: %v", err)
+	}
+
+	// Tabla para almacenar configuraciones/k-v (ej. credenciales cifradas)
+	createConfiguraciones := `CREATE TABLE IF NOT EXISTS configuraciones (
+		config_key TEXT PRIMARY KEY,
+		value TEXT,
+		encrypted INTEGER DEFAULT 0,
+		fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+		fecha_actualizacion TEXT,
+		usuario_creador TEXT,
+		estado TEXT DEFAULT 'activo',
+		observaciones TEXT
+	);`
+	if _, err := dbSuper.Exec(createConfiguraciones); err != nil {
+		log.Fatalf("failed to create configuraciones table in super db: %v", err)
+	}
+
 	// Crear tabla de sesiones en la base superadministrador
 	createSesiones := `CREATE TABLE IF NOT EXISTS sesiones (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -327,6 +357,12 @@ func main() {
 	http.HandleFunc("/super/api/administradores", handlers.AdministradoresHandler(dbSuper))
 	// Endpoint CRUD para licencias (nuevo)
 	http.HandleFunc("/super/api/licencias", handlers.LicenciasHandler(dbSuper))
+	// Endpoint para gestionar credenciales de Mercado Pago (GET/PUT)
+	http.HandleFunc("/super/api/config/mercadopago", handlers.MercadoPagoConfigHandler(dbSuper))
+	// Endpoints for Mercado Pago integration (crear preferencia y webhook)
+	http.HandleFunc("/mercadopago/create_preference", handlers.MercadoPagoCreatePreferenceHandler(dbSuper))
+	http.HandleFunc("/mercadopago/webhook", handlers.MercadoPagoWebhookHandler(dbSuper))
+	http.HandleFunc("/mercadopago/test_preference", handlers.MercadoPagoTestPreferenceHandler(dbSuper))
 
 	// Endpoints de métricas (actual y histórico)
 	http.HandleFunc("/super/api/metrics/current", handlers.MetricsCurrentHandler(dbSuper))

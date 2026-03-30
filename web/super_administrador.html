@@ -16,6 +16,7 @@
         <li><a href="/super/tipos_empresas.html" target="contentFrame"><img class="icon" src="/img/company-briefcase.svg" alt="">Tipos de empresas</a></li>
         <li><a href="/super/licencias.html" target="contentFrame"><img class="icon" src="/img/shield-license.svg" alt="">Licencias</a></li>
         <li><a href="/super/configuracion.html" target="contentFrame"><img class="icon" src="/img/analytics.svg" alt="">Configuración</a></li>
+        <li><a href="/super/configuracion_avanzada.html" target="contentFrame"><img class="icon" src="/img/analytics.svg" alt="">Configuración avanzada</a></li>
         <li><a href="/metricas_de_trafico_general.html" target="contentFrame"><img class="icon" src="/img/network.svg" alt="">Métricas de tráfico</a></li>
         <li><a href="/super/seguridad.html" target="contentFrame"><img class="icon" src="/img/shield-security.svg" alt="">Seguridad</a></li>
         <li><a href="/super/administradores.html" target="contentFrame"><img class="icon" src="/img/user-avatar.svg" alt="">Administradores</a></li>
@@ -43,9 +44,23 @@
       function clearActive(){ links.forEach(function(a){ a.classList.remove('active'); }); }
       function setActiveByHref(href){ clearActive(); var found = links.find(function(a){ return a.getAttribute('href') === href; }); if(found) found.classList.add('active'); }
       links.forEach(function(a){
-        a.addEventListener('click', function(){
+        a.addEventListener('click', function(e){
+          // Si el enlace abre en nueva pestaña o es selector especial, dejar comportamiento por defecto
+          var targetAttr = a.getAttribute('target');
+          if (targetAttr === '_blank' || a.classList.contains('select-company')) {
+            return;
+          }
+          e.preventDefault();
           // marcar activo inmediatamente al hacer click
           clearActive(); this.classList.add('active');
+          var href = a.getAttribute('href');
+          if (!href) return;
+          // Cargar la ruta en el iframe derecho si existe
+          if (iframe) {
+            iframe.setAttribute('src', href);
+          } else {
+            window.location.href = href;
+          }
         });
       });
       // cuando el iframe carga, sincronizar el active

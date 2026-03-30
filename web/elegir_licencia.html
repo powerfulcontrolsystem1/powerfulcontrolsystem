@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Elegir Licencia</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+</head>
+<body>
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <h2>Elegir Licencia</h2>
+      <ul class="nav">
+        <li><a href="/seleccionar_empresa.html"><img class="icon" src="/img/company-briefcase.svg" alt="">Volver a empresas</a></li>
+      </ul>
+    </aside>
+
+    <main class="admin-content">
+      <div class="container">
+        <div class="page-header">
+          <h1 id="pageTitle">Elegir Licencia</h1>
+        </div>
+        <div id="licencias" class="portal-grid">Cargando licencias...</div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    (function(){
+      function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m] }) }
+      async function run(){
+        try{
+          const params = new URLSearchParams(window.location.search);
+          const empresaId = params.get('empresa_id');
+          const tipoId = params.get('tipo_id');
+          const tipoNombre = params.get('tipo_nombre');
+
+          // auth check
+          const meRes = await fetch('/me');
+          if (!meRes.ok) { window.location.href = '/login.html'; return }
+
+          // fetch licencias and empresas (to show company name)
+          const [licRes, empRes] = await Promise.all([fetch('/super/api/licencias'), fetch('/super/api/empresas')]);
+          const licencias = licRes.ok ? await licRes.json() : [];
+          const empresas = empRes.ok ? await empRes.json() : [];
+
+          let empresaName = '';
+          if (empresaId && Array.isArray(empresas)){
+            const found = empresas.find(function(x){ return String(x.id) === String(empresaId) });
+            if (found) empresaName = found.nombre || '';
+          }
+
+          const titleEl = document.getElementById('pageTitle');
+          if (empresaName) titleEl.textContent = 'Elegir licencia para: ' + empresaName;
+          else if (tipoNombre) titleEl.textContent = 'Licencias para tipo: ' + decodeURIComponent(tipoNombre);
+
+          // filter by tipo_id or tipo_nombre
+          const filtered = (licencias||[]).filter(function(l){
+            try{
+              if (tipoId && l.tipo_id != null) return String(l.tipo_id) === String(tipoId);
+              if (tipoNombre && (l.tipo_nombre || l.tipoNombre)) return String((l.tipo_nombre||l.tipoNombre)).toLowerCase() === String(tipoNombre).toLowerCase();
+              return false;
+            }catch(e){ return false }
+          });
+
+          const container = document.getElementById('licencias'); container.innerHTML = '';
+          if (!filtered || filtered.length === 0){
+            container.innerHTML = '<div class="card"><p>No se encontraron licencias disponibles para este tipo.</p><p>Contacta al administrador para más información.</p></div>';
+            return;
+          }
+
+          filtered.forEach(function(l, idx){
+            const div = document.createElement('div');
+            // apply an offer-like style with rotating variants
+            const variant = (idx % 4) + 1;
+            div.className = 'portal-card offer-card variant-' + variant;
+            const activo = (l.activo === 1 || l.activo === '1' || l.activo === 'activo');
+            const empresaAsignada = l.empresa_id ? String(l.empresa_id) : '';
+            const valor = (typeof l.valor !== 'undefined' ? l.valor : (l.Valor || 0));
+            const dur = (l.duracion_dias || l.DuracionDias || '');
+            div.innerHTML = '<div class="offer-header">'+
+                            '<h3 class="card-title">'+escapeHtml(l.nombre||l.Nombre||'--')+'</h3>'+
+                            '<div class="offer-price">'+
+                              '<span class="currency">$</span><span class="amount">'+escapeHtml(String(valor))+'</span>'+
+                            '</div>'+
+                            '</div>'+
+                            '<p class="card-desc">'+escapeHtml(l.descripcion||l.Descripcion||'')+'</p>'+
+                            '<p class="muted small"><strong>Duración:</strong> '+escapeHtml(String(dur))+' días &nbsp; '+(activo? '<span class="license-indicator active">Activo</span>':'<span class="license-indicator inactive">Inactivo</span>')+' '+(empresaAsignada? (' - Asignada a empresa ID '+empresaAsignada):'')+'</p>'+
+                            '<div class="card-actions"><button class="btn buy" type="button" data-licencia="'+escapeHtml(String(l.id))+'" data-valor="'+escapeHtml(String(valor))+'">Comprar</button></div>';
+            const btn = div.querySelector('.btn.buy');
+            if (btn) btn.addEventListener('click', function(){
+              const q = new URLSearchParams();
+              q.set('licencia_id', String(l.id));
+              if (empresaId) q.set('empresa_id', String(empresaId));
+              if (tipoId) q.set('tipo_id', String(tipoId));
+              if (tipoNombre) q.set('tipo_nombre', String(tipoNombre));
+              // redirect to payment page
+              window.location.href = '/pagar_licencia.html?' + q.toString();
+            });
+            container.appendChild(div);
+          });
+
+        }catch(err){ console.error(err); document.getElementById('licencias').innerText = 'Error cargando licencias: ' + (err && err.message ? err.message : String(err)); }
+      }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run); else run();
+    })();
+  </script>
+
+</body>
+</html>
