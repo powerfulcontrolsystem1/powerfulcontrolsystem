@@ -108,5 +108,52 @@ func main() {
 			}
 			fmt.Printf(" - %s | encrypted=%d | fecha_actualizacion=%s | value=%s\n", key, enc, ts, val)
 		}
+
+		// Query pagos_mercadopago to verify preferences created
+		rows4, err := dbSuper.Query("SELECT id, licencia_id, empresa_id, preference_id, payment_id, status, fecha_creacion FROM pagos_mercadopago ORDER BY id DESC")
+		if err != nil {
+			fmt.Println("No se pudo leer pagos_mercadopago:", err)
+		} else {
+			defer rows4.Close()
+			fmt.Println("\nPagos Mercado Pago (pagos_mercadopago):")
+			for rows4.Next() {
+				var id int64
+				var licenciaID sql.NullInt64
+				var empresaID sql.NullInt64
+				var prefID sql.NullString
+				var paymentID sql.NullString
+				var status sql.NullString
+				var fecha sql.NullString
+				if err := rows4.Scan(&id, &licenciaID, &empresaID, &prefID, &paymentID, &status, &fecha); err != nil {
+					log.Println("scan error:", err)
+					continue
+				}
+				lid := ""
+				if licenciaID.Valid {
+					lid = fmt.Sprint(licenciaID.Int64)
+				}
+				eid := ""
+				if empresaID.Valid {
+					eid = fmt.Sprint(empresaID.Int64)
+				}
+				p := "(null)"
+				if prefID.Valid {
+					p = prefID.String
+				}
+				pay := "(null)"
+				if paymentID.Valid {
+					pay = paymentID.String
+				}
+				st := "(null)"
+				if status.Valid {
+					st = status.String
+				}
+				ts := ""
+				if fecha.Valid {
+					ts = fecha.String
+				}
+				fmt.Printf(" - id=%d | licencia=%s | empresa=%s | pref=%s | payment=%s | status=%s | fecha=%s\n", id, lid, eid, p, pay, st, ts)
+			}
+		}
 	}
 }

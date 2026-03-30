@@ -1,5 +1,10 @@
 Descripcion de archivos del proyecto
 
+Nota: Se añadió la carpeta `herramientas` con utilitarios para pruebas locales. Ver `documentos/descripcion_de_herramientas.md` para detalles sobre su contenido y uso, y la entrada correspondiente en `documentos/historial_de_cambios` (2026-03-29).
+
+- herramientas/create_tunnel.ps1: Script PowerShell temporal para crear un túnel ngrok hacia `localhost:8080` usando la API local de ngrok (`http://127.0.0.1:4040/api/tunnels`). Útil para exponer el webhook `/mercadopago/webhook` en entornos de desarrollo.
+- herramientas/create_preference.ps1: Script PowerShell temporal para solicitar al backend local la creación de una preferencia sandbox (endpoint `/mercadopago/create_preference`). Devuelve el `init_point` y `sandbox_init_point` para abrir el checkout de prueba.
+
 Este documento lista los archivos y carpetas principales del proyecto con una breve descripción de su propósito.
 
 - documentos/descripcion_del_proyecto: Descripción general del proyecto, requisitos funcionales y credenciales de prueba (solo en entorno local). Contiene instrucciones y restricciones que el agente debe leer antes de actuar.

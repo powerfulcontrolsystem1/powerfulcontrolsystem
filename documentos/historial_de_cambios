@@ -1,4 +1,55 @@
-Historial de cambios
+- Historial de cambios
+
+2026-03-30: Scripts temporales para pruebas E2E (ngrok / preferencia)
+- Acción: Creados scripts temporales en `herramientas` para automatizar la creación de un túnel ngrok hacia el puerto 8080 y para crear una preferencia sandbox en el backend local.
+- Archivos añadidos:
+    - herramientas/create_tunnel.ps1
+    - herramientas/create_preference.ps1
+- Responsable: agente local
+
+2026-03-30: Configuración de Webhooks en Configuración avanzada
+- Acción: Se añadió una tarjeta en `Configuración avanzada` para registrar la `Webhook URL` y la `Webhook Secret` (clave secreta) de Mercado Pago. También se extendió el backend para guardar ambos valores en la tabla `configuraciones` (`mercadopago.webhook_url`, `mercadopago.webhook_secret`) y permitir cifrar la clave secreta si `CONFIG_ENC_KEY` está definida.
+- Cambios realizados:
+    - web/super/configuracion_avanzada.html (nueva sección Webhooks + JS para guardar/editar)
+    - backend/handlers/handlers.go (actualizado `/super/api/config/mercadopago` para exponer/guardar webhook URL y secret; preferir webhook configurado al crear preferencias; verificación HMAC opcional en `/mercadopago/webhook` si secret está configurado)
+    - documentos/descripcion_de_archivos (documentación de la nueva UI/feature)
+- Observaciones: La verificación de firma usa HMAC-SHA256 del body y compara con cabeceras comunes (`X-Hub-Signature`, `X-Mercadopago-Signature`, etc.) si el secret está configurado. Si no está configurado, el webhook sigue comportándose como antes.
+- Responsable: agente local
+
+2026-03-29: Descargado ngrok en carpeta `herramientas`
+- Acción: A petición del usuario, se descargó el ejecutable `ngrok.exe` y se colocó en la carpeta `herramientas` en la raíz del repositorio para facilitar pruebas locales de webhooks y pruebas sandbox.
+- Archivos añadidos/modificados:
+    - herramientas/ngrok.exe (binario descargado)
+    - documentos/descripcion_de_herramientas.md (documentación añadida)
+- Responsable: agente local
+
+2026-03-30: ngrok túnel creado — URL pública generada
+- Acción: Se inició un túnel ngrok y se generó la URL pública para pruebas de webhooks. Esta URL puede usarse en Mercado Pago como `notification_url` o configurarse en el panel de Webhooks.
+- URL pública: https://betsey-sinistrous-bluffly.ngrok-free.dev
+- Observaciones: el túnel público está encaminado actualmente a `http://localhost:80`. Si el backend corre en otro puerto, crea un túnel dedicado (por ejemplo `ngrok http 8080`).
+- Archivos modificados/creados:
+    - documentos/manual_de_instalacion.md (ejemplo de `notification_url` actualizado)
+    - documentos/descripcion_de_herramientas.md (URL pública y estado del túnel)
+    - documentos/last_ngrok_url.md (archivo creado con la URL pública y timestamp)
+    - documentos/historial_de_cambios (esta entrada)
+- Responsable: agente local
+
+2026-03-30: Intento de iniciar ngrok para generar URL pública (fallido: falta authtoken)
+- Acción: Se intentó iniciar `herramientas/ngrok.exe http 8080` para generar una URL pública y configurar webhooks de Mercado Pago. La ejecución falló con el error `ERR_NGROK_4018` indicando que es necesario un `authtoken` y cuenta verificada en ngrok.
+- Resultado: ngrok descargado correctamente, pero no se pudo generar la URL pública porque no se registró el `authtoken` en la máquina.
+- Siguiente paso recomendado: registrar una cuenta en https://dashboard.ngrok.com/signup y ejecutar `herramientas/ngrok.exe authtoken <TU_NGROK_AUTHTOKEN>` antes de iniciar el túnel. También se añadió documentación en `documentos/manual_de_instalacion.md` y `documentos/descripcion_de_herramientas.md` con instrucciones y comandos.
+- Archivos modificados:
+    - documentos/manual_de_instalacion.md (sección: Webhooks y pruebas de pago)
+    - documentos/descripcion_de_herramientas.md (instrucciones authtoken)
+    - documentos/historial_de_cambios (esta entrada)
+- Responsable: agente local
+
+2026-03-29: Eliminado título "Panel Super Administrador" y prueba sandbox
+- Acción: Se eliminó la palabra "Panel" del `title` y del encabezado `h1` en la página del panel de super administrador. Además se creó una preferencia sandbox de Mercado Pago y se abrió el checkout sandbox en el navegador para pruebas.
+- Archivos modificados:
+    - web/super_administrador.html
+    - (registro de acción en historial)
+- Responsable: agente local
 
 2026-03-29: Regla de seguridad — almacenar datos de alto riesgo cifrados
 - Acción: Se añadió una regla en `/memories/Agente Go.md` que obliga a que los datos de alto riesgo (tokens de pago, claves privadas, secretos OAuth, contraseñas y credenciales sensibles) se almacenen siempre cifrados o tokenizados; no se deben guardar en texto plano. Se recomienda AES‑GCM con `CONFIG_ENC_KEY` o el uso de un gestor de secretos/tokenización profesional. Si no hay soporte de cifrado, se debe solicitar autorización explícita y registrar la excepción en `documentos/historial_de_cambios`.
@@ -49,16 +100,18 @@ Historial de cambios
 - Responsable: agente local
 
 2026-03-29: Redirección a elegir_licencia para empresas sin licencia
-- Acción: Se rediseñaron las tarjetas en `web/elegir_licencia.html` para mostrarse como ofertas coloridas y se cambió el texto del botón principal a "Comprar". El botón ahora redirige a una nueva página de pago `web/pagar_licencia.html` que inicia el flujo con Mercado Pago.
-- Archivos modificados/creados:
     - web/elegir_licencia.html (actualizada: tarjetas tipo oferta, botón "Comprar")
     - web/pagar_licencia.html (nuevo: página de pago que solicita preferencia a Mercado Pago y redirige al checkout)
     - web/estilos.css (nuevos estilos `.offer-card` y `.btn.buy` para tarjetas de oferta)
     - backend/handlers/handlers.go (nuevos handlers: `/mercadopago/create_preference` y `/mercadopago/webhook`)
     - backend/main.go (migración: tabla `pagos_mercadopago`; registro de endpoints de Mercado Pago)
     - backend/db/db.go (helper `CreateMPPaymentRecord` para registrar preferencias/pagos en DB)
-- Descripción: Se añadió la experiencia de compra de licencias en la interfaz: las licencias se presentan como tarjetas llamativas con precio destacado y CTA "Comprar". La página de pago (`pagar_licencia.html`) obtiene los detalles de la licencia, solicita la creación de una preferencia en Mercado Pago mediante el endpoint `/mercadopago/create_preference` y redirige al `init_point` proporcionado por Mercado Pago. Las notificaciones de Mercado Pago se reciben en `/mercadopago/webhook` y se persisten en la tabla `pagos_mercadopago`.
-- Nota operativa: Para procesar pagos reales es necesario establecer la variable de entorno `MERCADOPAGO_ACCESS_TOKEN` con el Access Token de Mercado Pago. El handler usa la API REST de Mercado Pago (sin SDK) y persiste la respuesta cruda para trazabilidad.
+
+2026-03-30: Finalización UI — `web/pagar_licencia.html`
+- Acción: Se completó la implementación de `web/pagar_licencia.html`: ahora la página obtiene detalles de la licencia, muestra el nombre de la empresa (si se pasa `empresa_id`), prefill del `payer` usando el email del admin (`/me`) y envía `payer_email`/`payer_name` al endpoint `/mercadopago/create_preference`. El backend ahora incluye el campo `payer` en la preferencia enviada a Mercado Pago si se recibe.
+- Archivos modificados:
+        - web/pagar_licencia.html (mostrar empresa, prefill payer, enviar payer info)
+        - backend/handlers/handlers.go (MercadoPagoCreatePreferenceHandler admite `payer_email`/`payer_name` y los incluye en el body enviado a Mercado Pago)
 - Responsable: agente local
 
 2026-03-30: Activación automática de licencias tras pago aprobado

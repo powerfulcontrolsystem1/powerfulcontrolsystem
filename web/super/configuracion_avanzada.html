@@ -47,6 +47,32 @@
       </div>
       <div id="mpMsgAdv" class="form-help"></div>
     </section>
+
+    <section class="card form mp-card" id="mpWebhookConfig">
+      <h2>Webhooks — Notificaciones</h2>
+      <p class="form-help">Registre la URL pública que recibirá las notificaciones de Mercado Pago y la clave secreta para validar la firma.</p>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Webhook URL</label>
+          <input id="mpWebhookUrl" class="form-input" type="text" placeholder="https://mi-dominio.com/mercadopago/webhook">
+          <div id="mpWebhookSetAdv" class="form-help">Cargando estado...</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Webhook Secret (secreto)</label>
+          <input id="mpWebhookSecret" class="form-input" type="password" placeholder="Clave secreta para validar webhooks">
+          <div id="mpWebhookSecretSetAdv" class="form-help">Cargando estado...</div>
+          <div class="form-help"><label><input id="mpWebhookEncryptToggle" type="checkbox"> Cifrar al guardar (si el servidor lo permite)</label></div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button id="saveMpWebhookBtn" class="btn">Guardar Webhook</button>
+        <button id="editMpWebhookBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Editar</button>
+        <button id="cancelMpWebhookBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Cancelar</button>
+      </div>
+      <div id="mpWebhookMsg" class="form-help"></div>
+    </section>
   </div>
 
   <script>
@@ -61,6 +87,7 @@
             if (typeof mp.encryption_available !== 'undefined' && !mp.encryption_available) {
               document.getElementById('mpEncryptToggleAdv').disabled = true;
               document.getElementById('mpEncryptToggleAdv').checked = false;
+              if (document.getElementById('mpWebhookEncryptToggle')) document.getElementById('mpWebhookEncryptToggle').disabled = true;
               // informar al usuario
               document.getElementById('mpMsgAdv').innerText = 'Nota: cifrado no disponible en este servidor (CONFIG_ENC_KEY no definido).';
             }
@@ -85,6 +112,25 @@
               document.getElementById('mpPublicSetAdv').innerText = 'No configurada';
               document.getElementById('mpPublicKeyAdv').disabled = false;
             }
+            // Webhook UI
+            if (mp.webhook_url_set) {
+              const wts = mp.webhook_url_updated ? (' — Última actualización: ' + mp.webhook_url_updated) : '';
+              document.getElementById('mpWebhookSetAdv').innerText = 'Webhook guardado: ' + (mp.webhook_url || '') + wts;
+              document.getElementById('mpWebhookUrl').disabled = true;
+              document.getElementById('editMpWebhookBtn').style.display = '';
+              document.getElementById('saveMpWebhookBtn').disabled = true;
+            } else {
+              document.getElementById('mpWebhookSetAdv').innerText = 'No configurado';
+              document.getElementById('mpWebhookUrl').disabled = false;
+            }
+            if (mp.webhook_secret_set) {
+              const sTs = mp.webhook_secret_updated ? (' — Última actualización: ' + mp.webhook_secret_updated) : '';
+              document.getElementById('mpWebhookSecretSetAdv').innerText = 'Secreto guardado (' + (mp.webhook_secret_masked || '****') + ')' + sTs;
+              document.getElementById('mpWebhookSecret').disabled = true;
+            } else {
+              document.getElementById('mpWebhookSecretSetAdv').innerText = 'No configurado';
+              document.getElementById('mpWebhookSecret').disabled = false;
+            }
           } else {
             document.getElementById('mpAccessSetAdv').innerText = 'Error al leer configuración';
             document.getElementById('mpPublicSetAdv').innerText = 'Error al leer configuración';
@@ -99,13 +145,22 @@
         const access = document.getElementById('mpAccessTokenAdv').value.trim();
         const pub = document.getElementById('mpPublicKeyAdv').value.trim();
         const encrypt = !!document.getElementById('mpEncryptToggleAdv').checked;
-        if (!access && !pub){ alert('Ingrese al menos un valor para guardar'); return }
+        const webhookUrl = document.getElementById('mpWebhookUrl').value.trim();
+        const webhookSecret = document.getElementById('mpWebhookSecret').value.trim();
+        const webhookEncrypt = !!(document.getElementById('mpWebhookEncryptToggle') && document.getElementById('mpWebhookEncryptToggle').checked);
+        if (!access && !pub && !webhookUrl && !webhookSecret){ alert('Ingrese al menos un valor para guardar'); return }
         const payload = { encrypt };
         const skipValidation = !!document.getElementById('mpSkipValidateAdv').checked;
         if (skipValidation) payload.skip_validation = true;
         if (access) payload.access_token = access;
         if (pub) payload.public_key = pub;
-        const btn = document.getElementById('saveMpAdvBtn'); btn.disabled = true; btn.innerText = 'Guardando...';
+        if (webhookUrl) payload.webhook_url = webhookUrl;
+        if (webhookSecret) { payload.webhook_secret = webhookSecret; payload.webhook_encrypt = webhookEncrypt; }
+
+        // elegir el botón apropiado para feedback (si vino del boton webhook usar ese)
+        let btn = document.getElementById('saveMpAdvBtn');
+        if (e && e.target && e.target.id === 'saveMpWebhookBtn') btn = document.getElementById('saveMpWebhookBtn');
+        btn.disabled = true; btn.innerText = 'Guardando...';
         try{
           const res = await fetch('/super/api/config/mercadopago', { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
           // Leer el body una vez como texto y luego intentar parsear JSON
@@ -115,15 +170,26 @@
           if (res.ok) {
             document.getElementById('mpMsgAdv').innerText = 'Credenciales guardadas';
             if (body && body.validated) document.getElementById('mpMsgAdv').innerText += ' — validadas: '+(body.account && (body.account.nickname || body.account.email || body.account.id) || '');
-            // deshabilitar inputs para no mostrar secretos
-            document.getElementById('mpAccessTokenAdv').value = '';
-            document.getElementById('mpAccessTokenAdv').disabled = true;
-            document.getElementById('mpPublicKeyAdv').value = '';
-            document.getElementById('mpPublicKeyAdv').disabled = true;
-            // mostrar botón editar
-            document.getElementById('editMpAdvBtn').style.display = '';
-            document.getElementById('cancelMpAdvBtn').style.display = 'none';
-            btn.disabled = true;
+            // limpiar y bloquear inputs sensibles
+            if (access) {
+              document.getElementById('mpAccessTokenAdv').value = '';
+              document.getElementById('mpAccessTokenAdv').disabled = true;
+              document.getElementById('editMpAdvBtn').style.display = '';
+              document.getElementById('cancelMpAdvBtn').style.display = 'none';
+            }
+            if (pub) {
+              document.getElementById('mpPublicKeyAdv').value = '';
+              document.getElementById('mpPublicKeyAdv').disabled = true;
+            }
+            if (webhookUrl) {
+              document.getElementById('mpWebhookUrl').disabled = true;
+              document.getElementById('editMpWebhookBtn').style.display = '';
+              document.getElementById('cancelMpWebhookBtn').style.display = 'none';
+            }
+            if (webhookSecret) {
+              document.getElementById('mpWebhookSecret').value = '';
+              document.getElementById('mpWebhookSecret').disabled = true;
+            }
             // refrescar estado desde servidor (mostrará masked)
             await load();
           } else {
@@ -131,7 +197,7 @@
             document.getElementById('mpMsgAdv').innerText = 'Error guardando: ' + txt;
           }
         }catch(err){ console.error(err); document.getElementById('mpMsgAdv').innerText = 'Error: '+(err.message||err) }
-        btn.disabled = false; btn.innerText = 'Guardar credenciales MP';
+        btn.disabled = false; btn.innerText = (btn.id === 'saveMpWebhookBtn') ? 'Guardar Webhook' : 'Guardar credenciales MP';
       }
 
       // editar / cancelar
@@ -150,9 +216,27 @@
         document.getElementById('mpMsgAdv').innerText = 'Edición cancelada.';
       }
 
+      // editar/cancelar Webhook
+      function enableEditWebhook(){
+        document.getElementById('mpWebhookUrl').disabled = false;
+        document.getElementById('mpWebhookSecret').disabled = false;
+        document.getElementById('mpWebhookUrl').focus();
+        document.getElementById('saveMpWebhookBtn').disabled = false;
+        document.getElementById('editMpWebhookBtn').style.display = 'none';
+        document.getElementById('cancelMpWebhookBtn').style.display = '';
+        document.getElementById('mpWebhookMsg').innerText = 'Modo edición: ingrese nuevos valores y presione Guardar.';
+      }
+      function cancelEditWebhook(){
+        load();
+        document.getElementById('mpWebhookMsg').innerText = 'Edición cancelada.';
+      }
+
       document.getElementById('saveMpAdvBtn').addEventListener('click', saveMP);
+      document.getElementById('saveMpWebhookBtn').addEventListener('click', saveMP);
       document.getElementById('editMpAdvBtn').addEventListener('click', enableEditMP);
       document.getElementById('cancelMpAdvBtn').addEventListener('click', cancelEditMP);
+      document.getElementById('editMpWebhookBtn').addEventListener('click', enableEditWebhook);
+      document.getElementById('cancelMpWebhookBtn').addEventListener('click', cancelEditWebhook);
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', load); else load();
     })();
   </script>

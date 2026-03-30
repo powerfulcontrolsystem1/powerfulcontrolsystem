@@ -2,7 +2,12 @@ package handlers
 
 import (
 	"bytes"
+	"crypto/hmac"
+	"crypto/sha256"
+	"crypto/subtle"
 	"database/sql"
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -222,12 +227,12 @@ func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 				w.WriteHeader(http.StatusNoContent)
 				return
 			}
-			var payload struct{ Name, Role string }
-			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			var payloadUpdate struct{ Name, Role string }
+			if err := json.NewDecoder(r.Body).Decode(&payloadUpdate); err != nil {
 				http.Error(w, "invalid payload", http.StatusBadRequest)
 				return
 			}
-			if err := dbpkg.UpdateAdministrador(dbSuper, id, payload.Name, payload.Role); err != nil {
+			if err := dbpkg.UpdateAdministrador(dbSuper, id, payloadUpdate.Name, payloadUpdate.Role); err != nil {
 				http.Error(w, "failed to update administrador: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -324,12 +329,12 @@ func TiposEmpresasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				w.WriteHeader(http.StatusNoContent)
 				return
 			}
-			var payload struct{ Nombre, Observaciones string }
-			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			var payloadUpdate struct{ Nombre, Observaciones string }
+			if err := json.NewDecoder(r.Body).Decode(&payloadUpdate); err != nil {
 				http.Error(w, "invalid payload", http.StatusBadRequest)
 				return
 			}
-			if err := dbpkg.UpdateTipoEmpresa(dbSuper, id, payload.Nombre, payload.Observaciones); err != nil {
+			if err := dbpkg.UpdateTipoEmpresa(dbSuper, id, payloadUpdate.Nombre, payloadUpdate.Observaciones); err != nil {
 				http.Error(w, "failed to update: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -441,18 +446,18 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 			// actualización normal (payload JSON)
-			var payload struct {
+			var payloadUpdate struct {
 				TipoID       int64   `json:"tipo_id"`
 				Nombre       string  `json:"nombre"`
 				Descripcion  string  `json:"descripcion"`
 				Valor        float64 `json:"valor"`
 				DuracionDias int     `json:"duracion_dias"`
 			}
-			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			if err := json.NewDecoder(r.Body).Decode(&payloadUpdate); err != nil {
 				http.Error(w, "invalid payload", http.StatusBadRequest)
 				return
 			}
-			if err := dbpkg.UpdateLicencia(dbSuper, id, payload.TipoID, payload.Nombre, payload.Descripcion, payload.Valor, payload.DuracionDias); err != nil {
+			if err := dbpkg.UpdateLicencia(dbSuper, id, payloadUpdate.TipoID, payloadUpdate.Nombre, payloadUpdate.Descripcion, payloadUpdate.Valor, payloadUpdate.DuracionDias); err != nil {
 				log.Println("PUT /super/api/licencias error:", err)
 				http.Error(w, "failed to update licencia: "+err.Error(), http.StatusInternalServerError)
 				return
@@ -493,8 +498,10 @@ func MercadoPagoCreatePreferenceHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 		var payload struct {
-			LicenciaID int64 `json:"licencia_id"`
-			EmpresaID  int64 `json:"empresa_id,omitempty"`
+			LicenciaID int64  `json:"licencia_id"`
+			EmpresaID  int64  `json:"empresa_id,omitempty"`
+			PayerEmail string `json:"payer_email,omitempty"`
+			PayerName  string `json:"payer_name,omitempty"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			http.Error(w, "invalid payload: "+err.Error(), http.StatusBadRequest)
@@ -535,20 +542,39 @@ func MercadoPagoCreatePreferenceHandler(dbSuper *sql.DB) http.HandlerFunc {
 		failureURL := baseURL + "/pagar_licencia.html?status=failure"
 		pendingURL := baseURL + "/pagar_licencia.html?status=pending"
 		notificationURL := baseURL + "/mercadopago/webhook"
+		// Si el administrador configuró una URL de webhook externa (ej. ngrok o dominio público), usarla
+		if wurl, _, _, _, _ := dbpkg.GetConfigEntry(dbSuper, "mercadopago.webhook_url"); wurl != "" {
+			notificationURL = wurl
+		}
+		// Si el administrador configuró una URL de webhook externa (ej. ngrok o dominio público), usarla
+		if wurl, _, _, _, _ := dbpkg.GetConfigEntry(dbSuper, "mercadopago.webhook_url"); wurl != "" {
+			notificationURL = wurl
+		}
 
 		reqBody := map[string]interface{}{
-			"items": []map[string]interface{}{{
+			"items": []map[string]interface{}{map[string]interface{}{
 				"title":       lic.Nombre,
 				"quantity":    1,
 				"currency_id": "ARS",
 				"unit_price":  lic.Valor,
 			}},
 			"back_urls":          map[string]string{"success": successURL, "failure": failureURL, "pending": pendingURL},
-			"auto_return":        "approved",
 			"notification_url":   notificationURL,
 			"external_reference": fmt.Sprintf("licencia_%d_empresa_%d", payload.LicenciaID, payload.EmpresaID),
 		}
+		// include payer prefill if provided
+		if payload.PayerEmail != "" || payload.PayerName != "" {
+			payer := map[string]string{}
+			if payload.PayerEmail != "" {
+				payer["email"] = payload.PayerEmail
+			}
+			if payload.PayerName != "" {
+				payer["first_name"] = payload.PayerName
+			}
+			reqBody["payer"] = payer
+		}
 		bodyBytes, _ := json.Marshal(reqBody)
+		log.Printf("MercadoPago request body (test_pref): %s", string(bodyBytes))
 		apiURL := "https://api.mercadopago.com/checkout/preferences"
 		req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(bodyBytes))
 		if err != nil {
@@ -597,6 +623,8 @@ func MercadoPagoConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 		case http.MethodGet:
 			access, enc, _, accessAct, _ := dbpkg.GetConfigEntry(dbSuper, "mercadopago.access_token")
 			publicKey, _, _, publicAct, _ := dbpkg.GetConfigEntry(dbSuper, "mercadopago.public_key")
+			webhookURL, _, _, webhookURLUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "mercadopago.webhook_url")
+			webhookSecret, secretEnc, _, webhookSecretUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "mercadopago.webhook_secret")
 			accessSet := false
 			accessMasked := ""
 			if access != "" {
@@ -627,15 +655,44 @@ func MercadoPagoConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 					pubMasked = publicKey
 				}
 			}
+			// webhook masked info
+			webhookSet := false
+			webhookSecretSet := false
+			webhookSecretMasked := ""
+			if webhookURL != "" {
+				webhookSet = true
+			}
+			if webhookSecret != "" {
+				webhookSecretSet = true
+				if secretEnc {
+					if len(webhookSecret) > 8 {
+						webhookSecretMasked = "****" + webhookSecret[len(webhookSecret)-4:]
+					} else {
+						webhookSecretMasked = "****"
+					}
+				} else {
+					if len(webhookSecret) > 8 {
+						webhookSecretMasked = webhookSecret[:4] + "****" + webhookSecret[len(webhookSecret)-4:]
+					} else {
+						webhookSecretMasked = "****"
+					}
+				}
+			}
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(map[string]interface{}{
-				"access_token_set":     accessSet,
-				"access_token_masked":  accessMasked,
-				"access_token_updated": accessAct,
-				"public_key_set":       pubSet,
-				"public_key_masked":    pubMasked,
-				"public_key_updated":   publicAct,
-				"encryption_available": utils.EncryptionAvailable(),
+				"access_token_set":       accessSet,
+				"access_token_masked":    accessMasked,
+				"access_token_updated":   accessAct,
+				"public_key_set":         pubSet,
+				"public_key_masked":      pubMasked,
+				"public_key_updated":     publicAct,
+				"webhook_url_set":        webhookSet,
+				"webhook_url":            webhookURL,
+				"webhook_url_updated":    webhookURLUpdated,
+				"webhook_secret_set":     webhookSecretSet,
+				"webhook_secret_masked":  webhookSecretMasked,
+				"webhook_secret_updated": webhookSecretUpdated,
+				"encryption_available":   utils.EncryptionAvailable(),
 			})
 			return
 		case http.MethodPost, http.MethodPut:
@@ -644,7 +701,12 @@ func MercadoPagoConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				PublicKey      string `json:"public_key"`
 				Encrypt        bool   `json:"encrypt"`
 				SkipValidation bool   `json:"skip_validation"`
+				WebhookURL     string `json:"webhook_url"`
+				WebhookSecret  string `json:"webhook_secret"`
+				WebhookEncrypt bool   `json:"webhook_encrypt"`
 			}
+			// payload for config save
+			// decode request body into payload
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "invalid payload: "+err.Error(), http.StatusBadRequest)
 				return
@@ -701,6 +763,7 @@ func MercadoPagoConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 						http.Error(w, "failed to save access token: "+err.Error(), http.StatusInternalServerError)
 						return
 					}
+					// no payer prefill handled here (belongs to create_preference)
 				}
 			}
 
@@ -708,6 +771,43 @@ func MercadoPagoConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				if err := dbpkg.SetConfigValue(dbSuper, "mercadopago.public_key", payload.PublicKey, false); err != nil {
 					http.Error(w, "failed to save public key: "+err.Error(), http.StatusInternalServerError)
 					return
+				}
+			}
+
+			// Webhook URL
+			if payload.WebhookURL != "" {
+				// validar formato básico de URL
+				if u, err := url.ParseRequestURI(payload.WebhookURL); err != nil || u.Scheme == "" || u.Host == "" {
+					http.Error(w, "invalid webhook_url: must be a valid absolute URL", http.StatusBadRequest)
+					return
+				}
+				if err := dbpkg.SetConfigValue(dbSuper, "mercadopago.webhook_url", payload.WebhookURL, false); err != nil {
+					http.Error(w, "failed to save webhook URL: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
+
+			// Webhook secret
+			if payload.WebhookSecret != "" {
+				if payload.WebhookEncrypt {
+					if !utils.EncryptionAvailable() {
+						http.Error(w, "encryption failed: CONFIG_ENC_KEY not set", http.StatusBadRequest)
+						return
+					}
+					encVal, err := utils.EncryptString(payload.WebhookSecret)
+					if err != nil {
+						http.Error(w, "encryption failed: "+err.Error(), http.StatusInternalServerError)
+						return
+					}
+					if err := dbpkg.SetConfigValue(dbSuper, "mercadopago.webhook_secret", encVal, true); err != nil {
+						http.Error(w, "failed to save webhook secret: "+err.Error(), http.StatusInternalServerError)
+						return
+					}
+				} else {
+					if err := dbpkg.SetConfigValue(dbSuper, "mercadopago.webhook_secret", payload.WebhookSecret, false); err != nil {
+						http.Error(w, "failed to save webhook secret: "+err.Error(), http.StatusInternalServerError)
+						return
+					}
 				}
 			}
 
@@ -794,11 +894,11 @@ func MercadoPagoTestPreferenceHandler(dbSuper *sql.DB) http.HandlerFunc {
 		reqBody := map[string]interface{}{
 			"items":              []map[string]interface{}{{"title": payload.Title, "quantity": 1, "currency_id": "ARS", "unit_price": payload.Amount}},
 			"back_urls":          map[string]string{"success": successURL, "failure": failureURL, "pending": pendingURL},
-			"auto_return":        "approved",
 			"notification_url":   notificationURL,
 			"external_reference": fmt.Sprintf("test_config_%d", time.Now().Unix()),
 		}
 		bodyBytes, _ := json.Marshal(reqBody)
+		log.Printf("MercadoPago request body (test_pref): %s", string(bodyBytes))
 		apiURL := "https://api.mercadopago.com/checkout/preferences"
 		req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(bodyBytes))
 		if err != nil {
@@ -848,6 +948,53 @@ func MercadoPagoWebhookHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 		var obj map[string]interface{}
 		_ = json.Unmarshal(body, &obj)
+
+		// Verificación opcional de firma del webhook si el administrador configuró un secret
+		if sVal, enc, err := dbpkg.GetConfigValue(dbSuper, "mercadopago.webhook_secret"); err == nil && sVal != "" {
+			secret := sVal
+			if enc {
+				if dec, derr := utils.DecryptString(sVal); derr == nil {
+					secret = dec
+				} else {
+					log.Println("warning: failed to decrypt webhook_secret:", derr)
+				}
+			}
+			if secret != "" {
+				// buscar encabezado de firma en varios nombres posibles
+				sigHeaderKeys := []string{"X-Hub-Signature", "X-Mercadopago-Signature", "X-Meli-Signature", "X-Hub-Signature-256", "X-Hub-Signature-sha256"}
+				var sigHeader string
+				for _, hk := range sigHeaderKeys {
+					if v := r.Header.Get(hk); v != "" {
+						sigHeader = v
+						break
+					}
+				}
+				if sigHeader != "" {
+					sig := sigHeader
+					if strings.HasPrefix(strings.ToLower(sig), "sha256=") {
+						sig = strings.SplitN(sig, "=", 2)[1]
+					}
+					mac := hmac.New(sha256.New, []byte(secret))
+					mac.Write(body)
+					expectedHex := hex.EncodeToString(mac.Sum(nil))
+					// comparar hex (insensible a mayúsculas)
+					if subtle.ConstantTimeCompare([]byte(strings.ToLower(sig)), []byte(strings.ToLower(expectedHex))) != 1 {
+						// intentar también comparar con base64
+						expectedB64 := base64.StdEncoding.EncodeToString(mac.Sum(nil))
+						if subtle.ConstantTimeCompare([]byte(sig), []byte(expectedB64)) != 1 {
+							log.Printf("mercadopago webhook signature mismatch header=%s expectedHex=%s expectedB64=%s", sigHeader, expectedHex, expectedB64)
+							http.Error(w, "invalid webhook signature", http.StatusUnauthorized)
+							return
+						}
+						// else ok
+					}
+				} else {
+					log.Println("webhook secret configured but no signature header present; rejecting webhook")
+					http.Error(w, "missing signature header", http.StatusUnauthorized)
+					return
+				}
+			}
+		}
 
 		// Determine payment id and preference id from payload
 		var paymentID, prefID, status string
@@ -1138,18 +1285,18 @@ func EmpresasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				w.WriteHeader(http.StatusNoContent)
 				return
 			}
-			var payload struct {
+			var payloadUpdate struct {
 				TipoID        int64  `json:"tipo_id"`
 				TipoNombre    string `json:"tipo_nombre"`
 				Nombre        string `json:"nombre"`
 				Nit           string `json:"nit"`
 				Observaciones string `json:"observaciones"`
 			}
-			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			if err := json.NewDecoder(r.Body).Decode(&payloadUpdate); err != nil {
 				http.Error(w, "invalid payload", http.StatusBadRequest)
 				return
 			}
-			if err := dbpkg.UpdateEmpresa(dbEmp, id, payload.TipoID, payload.TipoNombre, payload.Nombre, payload.Nit, payload.Observaciones); err != nil {
+			if err := dbpkg.UpdateEmpresa(dbEmp, id, payloadUpdate.TipoID, payloadUpdate.TipoNombre, payloadUpdate.Nombre, payloadUpdate.Nit, payloadUpdate.Observaciones); err != nil {
 				log.Println("PUT /super/api/empresas error:", err)
 				http.Error(w, "failed to update empresa: "+err.Error(), http.StatusInternalServerError)
 				return

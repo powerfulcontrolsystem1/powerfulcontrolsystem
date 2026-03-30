@@ -48,3 +48,89 @@ Este documento explica los pasos mínimos para configurar las credenciales de OA
 ---
 
 Correo principal registrado en la documentación: powerfulcontrolsystem@gmail.com
+
+## 6) Webhooks y pruebas de pago (ngrok)
+
+Para pruebas end-to-end con Mercado Pago desde un entorno local es necesario exponer `http://localhost:8080` mediante un túnel HTTPS. Recomendamos usar `ngrok` (binario incluido en `herramientas/ngrok.exe`). Pasos mínimos:
+
+1. Regístrate en https://dashboard.ngrok.com/signup y copia tu `authtoken` (necesario para sesiones estables).
+2. Desde la raíz del repositorio ejecuta (PowerShell):
+
+```powershell
+# registrar authtoken (solo la primera vez)
+.\herramientas\ngrok.exe authtoken <TU_NGROK_AUTHTOKEN>
+
+# iniciar túnel HTTPS que expone el servidor local en el puerto 8080
+.\herramientas\ngrok.exe http 8080 --log=stdout
+```
+
+3. Obtén la URL pública desde el dashboard local de ngrok `http://127.0.0.1:4040` o consultando la API local:
+
+```powershell
+Invoke-RestMethod -Uri 'http://127.0.0.1:4040/api/tunnels' | ConvertTo-Json -Depth 4
+# busca el campo `public_url` (ej. https://abcd-1234.ngrok.io)
+```
+
+4. En Mercado Pago (Dashboard → Desarrolladores → Webhooks / Notificaciones) añade una nueva URL de notificación con método `POST` y apunta a:
+
+```
+<TU_NGROK_URL>/mercadopago/webhook
+```
+
+5. Selecciona los eventos relacionados a pagos. Recomendado mínimo:
+- `payment` (notificaciones de pago)
+- `payment.updated` (actualizaciones de estado de pago)
+
+6. Alternativamente, al crear una preferencia en el servidor, incluye en el body el campo `notification_url` apuntando a la URL pública de ngrok para asegurar que Mercado Pago notifique ese pago en particular.
+
+Ejemplo (servidor):
+
+```json
+{
+  "items":[{"title":"Licencia","quantity":1,"unit_price":1.00}],
+  "payer":{"email":"cliente@example.com"},
+  "back_urls":{"success":"https://tu-dominio/pagos/success","failure":"https://tu-dominio/pagos/failure"},
+  "notification_url":"https://abcd-1234.ngrok.io/mercadopago/webhook"
+}
+```
+
+Notas de seguridad y limpieza:
+- El túnel de ngrok es temporario; la URL cambia cada vez que se inicia ngrok salvo que uses un subdominio reservado en tu cuenta. No uses la URL pública en producción.
+- Revoca o deja de exponer el túnel una vez finalizadas las pruebas.
+
+### URL pública generada (ejemplo)
+
+En la sesión actual se generó la siguiente URL pública mediante ngrok:
+
+- https://betsey-sinistrous-bluffly.ngrok-free.dev
+
+Para que Mercado Pago envíe notificaciones (webhooks) a tu servidor, añade la siguiente URL en el dashboard de Mercado Pago (Desarrolladores → Webhooks / Notificaciones) o úsala como `notification_url` al crear la preferencia:
+
+```
+https://betsey-sinistrous-bluffly.ngrok-free.dev/mercadopago/webhook
+```
+
+Eventos recomendados para suscribir en Mercado Pago (mínimo):
+- `payment`
+- `payment.updated`
+
+Importante: la API local de ngrok indica que el túnel público está actualmente dirigido a `http://localhost:80`. Asegúrate de que el backend esté escuchando en ese puerto; si tu servidor corre en `:8080`, crea un túnel directo a `8080` como se muestra a continuación.
+
+Comandos rápidos para crear/ajustar el túnel (PowerShell, desde la raíz del repo):
+
+```powershell
+# registrar authtoken (si no está registrado)
+.\herramientas\ngrok.exe authtoken <TU_NGROK_AUTHTOKEN>
+
+# iniciar túnel apuntando a 8080 (si tu servidor escucha en 8080)
+.\herramientas\ngrok.exe http 8080 --log=stdout
+
+# o, usando el ngrok del sistema (si está en PATH)
+ngrok http 8080 --log=stdout
+
+# obtener la URL pública desde la API local de ngrok
+Invoke-RestMethod -Uri 'http://127.0.0.1:4040/api/tunnels' | ConvertTo-Json -Depth 4
+```
+
+Verifica que la `public_url` apunte al puerto correcto antes de configurar Mercado Pago. Si la URL pública cambia (ngrok free), actualiza la URL de notificación en el dashboard de Mercado Pago.
+

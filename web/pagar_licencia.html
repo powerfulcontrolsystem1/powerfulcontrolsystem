@@ -48,9 +48,22 @@
         if (!licenciaId){ container.innerText = 'ID de licencia no proporcionado.'; return }
 
         try{
-          const res = await fetch('/super/api/licencias');
+          // obtener info del usuario (para prefill payer)
+          let adminEmail = '';
+          let adminName = '';
+          try{
+            const meRes = await fetch('/me');
+            if (meRes.ok) {
+              const me = await meRes.json();
+              adminEmail = me.email || me.Email || '';
+              adminName = me.name || me.Name || '';
+            }
+          }catch(e){ /* no auth info */ }
+
+          const [res, empRes] = await Promise.all([fetch('/super/api/licencias'), fetch('/super/api/empresas')]);
           if (!res.ok) { container.innerText = 'Error al obtener licencias'; return }
           const licencias = await res.json();
+          const empresas = empRes.ok ? await empRes.json() : [];
           const lic = (licencias||[]).find(function(x){ return String(x.id) === String(licenciaId) });
           if (!lic){ container.innerText = 'Licencia no encontrada.'; return }
 
@@ -58,6 +71,7 @@
             '<div style="display:flex;gap:18px;align-items:center;justify-content:space-between;flex-wrap:wrap">'+
             '<div style="flex:1;min-width:240px">'+
               '<h2>'+escapeHtml(lic.nombre||lic.Nombre||'')+'</h2>'+
+              '<p class="muted small">' + (empresaId? ('Empresa: ' + escapeHtml((empresas.find(function(x){ return String(x.id) === String(empresaId) })||{}).nombre || '')) : '') + '</p>'+
               '<p class="card-desc">'+escapeHtml(lic.descripcion||lic.Descripcion||'')+'</p>'+
               '<p><strong>Duración:</strong> '+escapeHtml(String(lic.duracion_dias||lic.DuracionDias||''))+' días</p>'+
             '</div>'+
@@ -75,6 +89,9 @@
             try{
               const payload = { licencia_id: Number(licenciaId) };
               if (empresaId) payload.empresa_id = Number(empresaId);
+              // incluir email del administrador como prefill para el payer cuando esté disponible
+              if (typeof adminEmail !== 'undefined' && adminEmail) payload.payer_email = adminEmail;
+              if (typeof adminName !== 'undefined' && adminName) payload.payer_name = adminName;
               const mpRes = await fetch('/mercadopago/create_preference', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
               if (!mpRes.ok){
                 const txt = await mpRes.text();
