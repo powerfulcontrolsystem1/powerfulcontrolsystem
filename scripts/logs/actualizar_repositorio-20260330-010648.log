@@ -1,0 +1,50 @@
+﻿**********************
+Inicio de la transcripción de Windows PowerShell
+Hora de inicio: 20260330010648
+Nombre de usuario: NITRO\ivanm
+Usuario RunAs: NITRO\ivanm
+Nombre de la configuración: 
+Máquina: NITRO (Microsoft Windows NT 10.0.26200.0)
+Aplicación host: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -ExecutionPolicy Bypass -Command Import-Module 'c:\Users\ivanm\.vscode\extensions\ms-vscode.powershell-2025.4.0\modules\PowerShellEditorServices\PowerShellEditorServices.psd1'; Start-EditorServices -HostName 'Visual Studio Code Host' -HostProfileId 'Microsoft.VSCode' -HostVersion '2025.4.0' -BundledModulesPath 'c:\Users\ivanm\.vscode\extensions\ms-vscode.powershell-2025.4.0\modules' -EnableConsoleRepl -StartupBanner "PowerShell Extension v2025.4.0
+Copyright (c) Microsoft Corporation.
+
+https://aka.ms/vscode-powershell
+Type 'help' to get help.
+" -LogLevel 'Warning' -LogPath 'c:\Users\ivanm\AppData\Roaming\Code\logs\20260329T150128\window1\exthost\ms-vscode.powershell' -SessionDetailsPath 'c:\Users\ivanm\AppData\Roaming\Code\User\globalStorage\ms-vscode.powershell\sessions\PSES-VSCode-33228-752500.json' -FeatureFlags @() 
+Id. de proceso: 27536
+PSVersion: 5.1.26100.7920
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.7920
+BuildVersion: 10.0.26100.7920
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+La transcripción ha comenzado. El archivo de salida es D:\powerfulcontrolsystem\scripts\logs\actualizar_repositorio-20260330-010648.log
+Preparando cambios para commit...
+warning: in the working copy of 'backend/server.err', LF
+ will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'scripts/logs/actualizar
+_repositorio-20260329-225845.log', LF will be replaced b
+y CRLF the next time Git touches it
+Creando commit: ActualizaciÃ³n automÃ¡tica desde script: aÃ±adir/actualizar archivos
+ create mode 100644 herramientas/create_preference.ps1
+ create mode 100644 herramientas/create_tunnel.ps1
+ create mode 100644 herramientas/ngrok.exe
+ create mode 100644 scripts/logs/actualizar_repositorio-
+20260330-010648.log
+Intentando push al remoto 'origin' (forzando por defecto)...
+Ejecutando: git push --force -u origin HEAD
+PS>ErrorTerminación(): "Se ha detenido la canalización."
+>> ErrorTerminación(): "Se ha detenido la canalización."
+>> ErrorTerminación(): "Se ha detenido la canalización."
+>> ErrorTerminación(): "Se ha detenido la canalización."
+]633;A]633;P;Cwd=D:\x5cpowerfulcontrolsystemPS D:\powerfulcontrolsystem> ]633;B
+PS>$global:__psEditorServices_userInput = $args[0]
+PS>$global:__psEditorServices_userInput = ""
+PS>cls
+PS>CommandInvocation(Remove-Variable): "Remove-Variable"
+>> EnlaceDeParámetros(Remove-Variable): nombre="Name"; valor="__psEditorServices_DebugServer"
+>> EnlaceDeParámetros(Remove-Variable): nombre="Force"; valor="True"
+]633;D;0]633;A]633;P;Cwd=D:\x5cpowerfulcontrolsystemPS D:\powerfulcontrolsystem> ]633;B
