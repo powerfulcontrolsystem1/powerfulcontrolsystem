@@ -222,3 +222,9 @@ func DecryptString(payload string) (string, error) {
 	}
 	return string(pt), nil
 }
+
+// EncryptionAvailable devuelve true si la variable de entorno CONFIG_ENC_KEY está disponible y válida.
+func EncryptionAvailable() bool {
+	_, err := getEncKeyFromEnv()
+	return err == nil
+}

@@ -77,4 +77,36 @@ func main() {
 		}
 		fmt.Printf("Total usuarios tabla users: %d\n", count2)
 	}
+
+	// Query configuraciones for Mercado Pago keys
+	rows3, err := dbSuper.Query("SELECT config_key, value, encrypted, fecha_actualizacion FROM configuraciones WHERE config_key LIKE 'mercadopago.%'")
+	if err != nil {
+		fmt.Println("No se pudo leer configuraciones:", err)
+	} else {
+		defer rows3.Close()
+		fmt.Println("\nConfiguraciones (mercadopago.*) en superadministrador.db:")
+		for rows3.Next() {
+			var key string
+			var value sql.NullString
+			var encrypted sql.NullInt64
+			var fecha sql.NullString
+			if err := rows3.Scan(&key, &value, &encrypted, &fecha); err != nil {
+				log.Println("scan error:", err)
+				continue
+			}
+			enc := 0
+			if encrypted.Valid {
+				enc = int(encrypted.Int64)
+			}
+			val := "(null)"
+			if value.Valid {
+				val = value.String
+			}
+			ts := ""
+			if fecha.Valid {
+				ts = fecha.String
+			}
+			fmt.Printf(" - %s | encrypted=%d | fecha_actualizacion=%s | value=%s\n", key, enc, ts, val)
+		}
+	}
 }

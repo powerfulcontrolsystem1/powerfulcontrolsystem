@@ -93,7 +93,7 @@ Adicional:
 			- Estos helpers están implementados en `backend/db/db.go`.
 
 		 - Referencia: ver la sección `index.html` en `documentos/descripcion_del_proyecto` para la descripción detallada de las tarjetas del portal (Punto de venta, Sistema para Motel, Restaurante, Control por sensor) y las rutas de los logos en `web/img/`.
-			- `web/super/configuracion.html` — configuraciones globales (placeholder).
+			- `web/super/configuracion_avanzada.html` — configuraciones avanzadas (incluye sección para credenciales de Mercado Pago).
 			- `web/super/administradores.html` — lista de administradores que consulta el endpoint `/super/administradores`.
 			- `web/super/licencias_resumen.html` — página ligera que muestra el número total de licencias activas (consulta `/super/api/licencias`) y enlace rápido a la gestión de licencias.
 

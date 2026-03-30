@@ -314,3 +314,16 @@ html.theme-light .floating-menu #themeToggle{color:var(--accent-2)}
 @media (max-width:640px){.portal-grid{grid-template-columns:1fr}}
 
 /* End offer styles */
+
+/* Mercado Pago config cards - match sidebar active color */
+.mp-card{
+  background: linear-gradient(180deg, var(--accent-2), var(--accent));
+  color: #fff;
+  border: 1px solid rgba(0,0,0,0.12);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.35);
+}
+.mp-card .form-label, .mp-card .form-help{ color: rgba(255,255,255,0.92); }
+.mp-card .form-input{ background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.12); color: #fff }
+.mp-card .form-input::placeholder{ color: rgba(255,255,255,0.8) }
+.mp-card .form-actions .btn{ color: #fff; border-color: rgba(0,0,0,0.12) }
+.mp-card .form{ background: transparent }

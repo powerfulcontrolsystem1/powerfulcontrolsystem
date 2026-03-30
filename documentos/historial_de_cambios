@@ -1,5 +1,41 @@
 Historial de cambios
 
+2026-03-29: Regla de seguridad — almacenar datos de alto riesgo cifrados
+- Acción: Se añadió una regla en `/memories/Agente Go.md` que obliga a que los datos de alto riesgo (tokens de pago, claves privadas, secretos OAuth, contraseñas y credenciales sensibles) se almacenen siempre cifrados o tokenizados; no se deben guardar en texto plano. Se recomienda AES‑GCM con `CONFIG_ENC_KEY` o el uso de un gestor de secretos/tokenización profesional. Si no hay soporte de cifrado, se debe solicitar autorización explícita y registrar la excepción en `documentos/historial_de_cambios`.
+- Archivos afectados:
+    - /memories/Agente Go.md (regla añadida)
+- Responsable: agente local
+
+2026-03-30: Añadida fecha de última actualización y máscara fija en configuración MP
+- Acción: Se añadió la persistencia y exposición de la fecha de última actualización para las claves guardadas de Mercado Pago. También se ajustó la UI para mostrar asteriscos fijos en lugar de fragmentos del secreto y deshabilitar inputs cuando ya existe una credencial almacenada.
+- Archivos modificados:
+    - backend/db/db.go (SetConfigValue ahora preserva fecha_creacion y setea fecha_actualizacion; añadido GetConfigEntry)
+    - backend/handlers/handlers.go (MercadoPagoConfigHandler ahora incluye `access_token_updated` y `public_key_updated` en la respuesta JSON)
+    - web/super/configuracion_avanzada.html (mostrar asteriscos fijos y "Última actualización"; ajustar estado inicial de inputs y botones Editar/Guardar)
+- Responsable: agente local
+
+2026-03-30: Mejoras de diagnóstico — logging en validación de Mercado Pago
+- Acción: Se añadió logging en el handler `MercadoPagoConfigHandler` para registrar el `status` y el `body` devuelto por la API de Mercado Pago cuando la validación del `Access Token` falla. Esto facilita identificar por qué la verificación devuelve HTTP 400.
+- Archivos modificados:
+    - backend/handlers/handlers.go (log de error añadido en la llamada de validación a `https://api.mercadopago.com/v1/users/me` cuando falla o retorna error)
+- Responsable: agente local
+
+2026-03-30: Opción para guardar token sin validación
+- Acción: Se añadió la opción `skip_validation` al endpoint `/super/api/config/mercadopago` y un checkbox en la UI `configuracion_avanzada.html` para permitir guardar credenciales aunque la validación externa falle (útil para tokens de prueba o entornos sin acceso a la API de Mercado Pago). Se registró logging cuando se usa esta opción.
+- Archivos modificados:
+    - backend/handlers/handlers.go (payload `SkipValidation` y lógica para omitir la validación externa cuando se solicita)
+    - web/super/configuracion_avanzada.html (checkbox `Guardar sin validar` y envío de `skip_validation` en el payload)
+- Responsable: agente local
+
+2026-03-29: Eliminada página `web/super/configuracion.html` y enlace del menú
+- Acción: Se eliminó el botón "Configuración" del menú izquierdo del panel `web/super_administrador.html` y se borró la página `web/super/configuracion.html`.
+- Archivos modificados/eliminados:
+    - web/super_administrador.html (el enlace a /super/configuracion.html fue eliminado)
+    - web/super/configuracion.html (archivo eliminado)
+    - web/estilos.css (se añadió el estilo `.mp-card` para las tarjetas de configuración de Mercado Pago)
+    - web/super/configuracion_avanzada.html (se mantiene/usa la sección de credenciales MP)
+- Responsable: agente local
+
 2026-03-30: Sección de configuración de Mercado Pago (UI + almacenamiento seguro)
 - Acción: Se añadió una sección en la página de configuración global para gestionar las credenciales de Mercado Pago. La sección permite guardar el `Access Token` (secreto) y la `Public Key`. El `Access Token` puede almacenarse cifrado en la base de datos (`configuraciones`) usando la clave de cifrado del servidor (`CONFIG_ENC_KEY`).
 - Archivos modificados/creados:

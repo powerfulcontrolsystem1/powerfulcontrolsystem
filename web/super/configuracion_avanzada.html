@@ -13,29 +13,9 @@
       <p class="form-help">Ajustes avanzados del sistema. Edita con precaución.</p>
     </div>
 
-    <section class="card form">
-      <h2>Parámetros avanzados</h2>
-      <div class="form-row">
-        <div class="form-col">
-          <label class="form-label">Clave personalizada</label>
-          <input id="advKey" class="form-input" type="text" placeholder="Valor">
-        </div>
-        <div class="form-col">
-          <label class="form-label">Modo mantenimiento</label>
-          <select id="maintenance" class="form-input">
-            <option value="0">Desactivado</option>
-            <option value="1">Activado</option>
-          </select>
-        </div>
-      </div>
+    <!-- Sección de parámetros avanzados eliminada por ahora -->
 
-      <div class="form-actions">
-        <button id="saveAdvBtn" class="btn">Guardar</button>
-      </div>
-      <div id="msg" class="form-help"></div>
-    </section>
-
-    <section class="card form" id="mpAdvancedConfig">
+    <section class="card form mp-card" id="mpAdvancedConfig">
       <h2>Mercado Pago — Credenciales secretas</h2>
       <p class="form-help">Guarde el Access Token de Mercado Pago. Active cifrado si el servidor soporta `CONFIG_ENC_KEY`.</p>
 
@@ -55,12 +35,15 @@
       <div class="form-row">
         <div class="form-col">
           <label class="form-label">Opciones</label>
-          <div class="form-help"><label><input id="mpEncryptToggleAdv" type="checkbox" checked> Cifrar al guardar (si el servidor lo permite)</label></div>
+          <div class="form-help"><label><input id="mpEncryptToggleAdv" type="checkbox"> Cifrar al guardar (si el servidor lo permite)</label></div>
+          <div class="form-help"><label><input id="mpSkipValidateAdv" type="checkbox"> Guardar sin validar (aceptar token aunque la validación externa falle)</label></div>
         </div>
       </div>
 
       <div class="form-actions">
         <button id="saveMpAdvBtn" class="btn">Guardar credenciales MP</button>
+        <button id="editMpAdvBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Editar</button>
+        <button id="cancelMpAdvBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Cancelar</button>
       </div>
       <div id="mpMsgAdv" class="form-help"></div>
     </section>
@@ -69,23 +52,39 @@
   <script>
     (function(){
       async function load(){
-        // cargar advanced
-        try{
-          const res = await fetch('/super/api/config/advanced');
-          if (res.ok) {
-            const data = await res.json();
-            if (data && data.key) document.getElementById('advKey').value = data.key;
-            if (data && typeof data.maintenance !== 'undefined') document.getElementById('maintenance').value = String(data.maintenance?1:0);
-          }
-        }catch(e){ /* no hay API, mostrar formulario vacío */ }
-
         // cargar estado Mercado Pago
         try{
           const res2 = await fetch('/super/api/config/mercadopago');
           if (res2.ok){
             const mp = await res2.json();
-            document.getElementById('mpAccessSetAdv').innerText = mp.access_token_set ? 'Access token guardado (' + (mp.access_token_masked||'') + ')' : 'No configurado';
-            document.getElementById('mpPublicSetAdv').innerText = mp.public_key_set ? 'Public key: ' + (mp.public_key_masked||'') : 'No configurada';
+            // habilitar/deshabilitar opción de cifrado según soporte del servidor
+            if (typeof mp.encryption_available !== 'undefined' && !mp.encryption_available) {
+              document.getElementById('mpEncryptToggleAdv').disabled = true;
+              document.getElementById('mpEncryptToggleAdv').checked = false;
+              // informar al usuario
+              document.getElementById('mpMsgAdv').innerText = 'Nota: cifrado no disponible en este servidor (CONFIG_ENC_KEY no definido).';
+            }
+            // Mostrar asteriscos fijos para no exponer fragmentos, y mostrar fecha de última actualización si existe
+            if (mp.access_token_set) {
+              const ts = mp.access_token_updated ? (' — Última actualización: ' + mp.access_token_updated) : '';
+              document.getElementById('mpAccessSetAdv').innerText = 'Access token guardado (********)' + ts;
+              document.getElementById('mpAccessTokenAdv').disabled = true;
+              document.getElementById('editMpAdvBtn').style.display = '';
+              document.getElementById('saveMpAdvBtn').disabled = true;
+            } else {
+              document.getElementById('mpAccessSetAdv').innerText = 'No configurado';
+              document.getElementById('mpAccessTokenAdv').disabled = false;
+              document.getElementById('editMpAdvBtn').style.display = 'none';
+              document.getElementById('saveMpAdvBtn').disabled = false;
+            }
+            if (mp.public_key_set) {
+              const pts = mp.public_key_updated ? (' — Última actualización: ' + mp.public_key_updated) : '';
+              document.getElementById('mpPublicSetAdv').innerText = 'Public key guardada' + pts;
+              document.getElementById('mpPublicKeyAdv').disabled = true;
+            } else {
+              document.getElementById('mpPublicSetAdv').innerText = 'No configurada';
+              document.getElementById('mpPublicKeyAdv').disabled = false;
+            }
           } else {
             document.getElementById('mpAccessSetAdv').innerText = 'Error al leer configuración';
             document.getElementById('mpPublicSetAdv').innerText = 'Error al leer configuración';
@@ -93,22 +92,7 @@
         }catch(e){ document.getElementById('mpAccessSetAdv').innerText = 'Error cargando'; document.getElementById('mpPublicSetAdv').innerText = 'Error cargando' }
       }
 
-      async function save(e){
-        if (e && e.preventDefault) e.preventDefault();
-        const payload = {
-          key: document.getElementById('advKey').value.trim(),
-          maintenance: document.getElementById('maintenance').value === '1' ? 1 : 0
-        };
-        try{
-          const res = await fetch('/super/api/config/advanced',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-          if (res.ok) {
-            document.getElementById('msg').innerText = 'Guardado';
-          } else {
-            const t = await res.text().catch(()=>null);
-            document.getElementById('msg').innerText = 'Error al guardar: ' + (t||res.status);
-          }
-        }catch(e){ document.getElementById('msg').innerText = 'Error: '+(e.message||e) }
-      }
+      // advanced config removed
 
       async function saveMP(e){
         if (e && e.preventDefault) e.preventDefault();
@@ -117,27 +101,58 @@
         const encrypt = !!document.getElementById('mpEncryptToggleAdv').checked;
         if (!access && !pub){ alert('Ingrese al menos un valor para guardar'); return }
         const payload = { encrypt };
+        const skipValidation = !!document.getElementById('mpSkipValidateAdv').checked;
+        if (skipValidation) payload.skip_validation = true;
         if (access) payload.access_token = access;
         if (pub) payload.public_key = pub;
         const btn = document.getElementById('saveMpAdvBtn'); btn.disabled = true; btn.innerText = 'Guardando...';
         try{
           const res = await fetch('/super/api/config/mercadopago', { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-          const body = await res.json().catch(()=>null);
+          // Leer el body una vez como texto y luego intentar parsear JSON
+          const rawText = await res.text();
+          let body = null;
+          try { body = JSON.parse(rawText); } catch(e) { body = null; }
           if (res.ok) {
             document.getElementById('mpMsgAdv').innerText = 'Credenciales guardadas';
             if (body && body.validated) document.getElementById('mpMsgAdv').innerText += ' — validadas: '+(body.account && (body.account.nickname || body.account.email || body.account.id) || '');
+            // deshabilitar inputs para no mostrar secretos
             document.getElementById('mpAccessTokenAdv').value = '';
-            load();
+            document.getElementById('mpAccessTokenAdv').disabled = true;
+            document.getElementById('mpPublicKeyAdv').value = '';
+            document.getElementById('mpPublicKeyAdv').disabled = true;
+            // mostrar botón editar
+            document.getElementById('editMpAdvBtn').style.display = '';
+            document.getElementById('cancelMpAdvBtn').style.display = 'none';
+            btn.disabled = true;
+            // refrescar estado desde servidor (mostrará masked)
+            await load();
           } else {
-            const txt = body ? JSON.stringify(body) : await res.text();
+            const txt = body ? JSON.stringify(body) : rawText;
             document.getElementById('mpMsgAdv').innerText = 'Error guardando: ' + txt;
           }
         }catch(err){ console.error(err); document.getElementById('mpMsgAdv').innerText = 'Error: '+(err.message||err) }
         btn.disabled = false; btn.innerText = 'Guardar credenciales MP';
       }
 
-      document.getElementById('saveAdvBtn').addEventListener('click', save);
+      // editar / cancelar
+      function enableEditMP(){
+        document.getElementById('mpAccessTokenAdv').disabled = false;
+        document.getElementById('mpPublicKeyAdv').disabled = false;
+        document.getElementById('mpAccessTokenAdv').focus();
+        document.getElementById('saveMpAdvBtn').disabled = false;
+        document.getElementById('editMpAdvBtn').style.display = 'none';
+        document.getElementById('cancelMpAdvBtn').style.display = '';
+        document.getElementById('mpMsgAdv').innerText = 'Modo edición: ingrese nuevos valores y presione Guardar.';
+      }
+      function cancelEditMP(){
+        // recargar estado guardado y bloquear inputs
+        load();
+        document.getElementById('mpMsgAdv').innerText = 'Edición cancelada.';
+      }
+
       document.getElementById('saveMpAdvBtn').addEventListener('click', saveMP);
+      document.getElementById('editMpAdvBtn').addEventListener('click', enableEditMP);
+      document.getElementById('cancelMpAdvBtn').addEventListener('click', cancelEditMP);
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', load); else load();
     })();
   </script>

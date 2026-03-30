@@ -595,8 +595,8 @@ func MercadoPagoConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
-			access, enc, _ := dbpkg.GetConfigValue(dbSuper, "mercadopago.access_token")
-			publicKey, _, _ := dbpkg.GetConfigValue(dbSuper, "mercadopago.public_key")
+			access, enc, _, accessAct, _ := dbpkg.GetConfigEntry(dbSuper, "mercadopago.access_token")
+			publicKey, _, _, publicAct, _ := dbpkg.GetConfigEntry(dbSuper, "mercadopago.public_key")
 			accessSet := false
 			accessMasked := ""
 			if access != "" {
@@ -628,13 +628,22 @@ func MercadoPagoConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				}
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{"access_token_set": accessSet, "access_token_masked": accessMasked, "public_key_set": pubSet, "public_key_masked": pubMasked})
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"access_token_set":     accessSet,
+				"access_token_masked":  accessMasked,
+				"access_token_updated": accessAct,
+				"public_key_set":       pubSet,
+				"public_key_masked":    pubMasked,
+				"public_key_updated":   publicAct,
+				"encryption_available": utils.EncryptionAvailable(),
+			})
 			return
 		case http.MethodPost, http.MethodPut:
 			var payload struct {
-				AccessToken string `json:"access_token"`
-				PublicKey   string `json:"public_key"`
-				Encrypt     bool   `json:"encrypt"`
+				AccessToken    string `json:"access_token"`
+				PublicKey      string `json:"public_key"`
+				Encrypt        bool   `json:"encrypt"`
+				SkipValidation bool   `json:"skip_validation"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "invalid payload: "+err.Error(), http.StatusBadRequest)
@@ -643,29 +652,41 @@ func MercadoPagoConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			// If an access token is provided, validate it against Mercado Pago before saving
 			var validatedInfo map[string]interface{}
 			if payload.AccessToken != "" {
-				// validate token by calling /v1/users/me
-				client := &http.Client{Timeout: 10 * time.Second}
-				req, _ := http.NewRequest("GET", "https://api.mercadopago.com/v1/users/me", nil)
-				req.Header.Set("Authorization", "Bearer "+payload.AccessToken)
-				resp, err := client.Do(req)
-				if err != nil {
-					http.Error(w, "validation request failed: "+err.Error(), http.StatusBadGateway)
-					return
-				}
-				defer resp.Body.Close()
-				rb, _ := io.ReadAll(resp.Body)
-				if resp.StatusCode >= 400 {
-					http.Error(w, "validation failed: "+string(rb), http.StatusBadRequest)
-					return
-				}
-				// parse minimal info
-				var info map[string]interface{}
-				if err := json.Unmarshal(rb, &info); err == nil {
-					validatedInfo = info
+				if payload.SkipValidation {
+					log.Println("MercadoPagoConfigHandler: skipping validation for access token save (admin requested)")
+					// mark as skipped so frontend can know
+					validatedInfo = map[string]interface{}{"skipped": true}
+				} else {
+					// validate token by calling /v1/users/me
+					client := &http.Client{Timeout: 10 * time.Second}
+					req, _ := http.NewRequest("GET", "https://api.mercadopago.com/v1/users/me", nil)
+					req.Header.Set("Authorization", "Bearer "+payload.AccessToken)
+					resp, err := client.Do(req)
+					if err != nil {
+						log.Printf("MercadoPago validation request error: %v", err)
+						http.Error(w, "validation request failed: "+err.Error(), http.StatusBadGateway)
+						return
+					}
+					defer resp.Body.Close()
+					rb, _ := io.ReadAll(resp.Body)
+					if resp.StatusCode >= 400 {
+						log.Printf("MercadoPago validation failed: status=%s body=%s", resp.Status, string(rb))
+						http.Error(w, "validation failed: "+string(rb), http.StatusBadRequest)
+						return
+					}
+					// parse minimal info
+					var info map[string]interface{}
+					if err := json.Unmarshal(rb, &info); err == nil {
+						validatedInfo = info
+					}
 				}
 
-				// save token after successful validation
+				// save token after successful validation or when skipping validation
 				if payload.Encrypt {
+					if !utils.EncryptionAvailable() {
+						http.Error(w, "encryption failed: CONFIG_ENC_KEY not set", http.StatusBadRequest)
+						return
+					}
 					encVal, err := utils.EncryptString(payload.AccessToken)
 					if err != nil {
 						http.Error(w, "encryption failed: "+err.Error(), http.StatusInternalServerError)

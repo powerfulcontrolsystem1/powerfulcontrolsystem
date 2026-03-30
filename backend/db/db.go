@@ -556,9 +556,66 @@ func SetConfigValue(dbConn *sql.DB, key, value string, encrypted bool) error {
 	if encrypted {
 		enc = 1
 	}
-	// Usamos INSERT OR REPLACE para simplificar upsert
-	_, err := dbConn.Exec("INSERT OR REPLACE INTO configuraciones (config_key, value, encrypted, fecha_creacion) VALUES (?, ?, ?, datetime('now','localtime'))", key, value, enc)
-	return err
+	// Preferimos mantener fecha_creacion en la fila original.
+	// Si existe la clave hacemos UPDATE y seteamos fecha_actualizacion,
+	// si no existe hacemos INSERT con fecha_creacion y fecha_actualizacion.
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	var existing string
+	err = tx.QueryRow("SELECT config_key FROM configuraciones WHERE config_key = ? LIMIT 1", key).Scan(&existing)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			_, err = tx.Exec("INSERT INTO configuraciones (config_key, value, encrypted, fecha_creacion, fecha_actualizacion) VALUES (?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))", key, value, enc)
+			if err != nil {
+				return err
+			}
+			return tx.Commit()
+		}
+		return err
+	}
+
+	_, err = tx.Exec("UPDATE configuraciones SET value = ?, encrypted = ?, fecha_actualizacion = datetime('now','localtime') WHERE config_key = ?", value, enc, key)
+	if err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+// GetConfigEntry devuelve el valor almacenado, si está cifrado, la fecha de creación y la fecha de última actualización.
+// Si la clave no existe devuelve valores vacíos y nil error.
+func GetConfigEntry(dbConn *sql.DB, key string) (string, bool, string, string, error) {
+	row := dbConn.QueryRow("SELECT value, encrypted, fecha_creacion, fecha_actualizacion FROM configuraciones WHERE config_key = ? LIMIT 1", key)
+	var val sql.NullString
+	var enc sql.NullInt64
+	var fechaCre sql.NullString
+	var fechaAct sql.NullString
+	if err := row.Scan(&val, &enc, &fechaCre, &fechaAct); err != nil {
+		if err == sql.ErrNoRows {
+			return "", false, "", "", nil
+		}
+		return "", false, "", "", err
+	}
+	v := ""
+	if val.Valid {
+		v = val.String
+	}
+	isEnc := false
+	if enc.Valid && enc.Int64 == 1 {
+		isEnc = true
+	}
+	fc := ""
+	if fechaCre.Valid {
+		fc = fechaCre.String
+	}
+	fa := ""
+	if fechaAct.Valid {
+		fa = fechaAct.String
+	}
+	return v, isEnc, fc, fa, nil
 }
 
 // GetConfigValue devuelve el valor almacenado y si estaba cifrado
