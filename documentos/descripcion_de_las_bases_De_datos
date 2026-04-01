@@ -57,6 +57,91 @@ El agente debe leer y actualizar este documento cada vez que se realicen cambios
      - Restricción única: `(empresa_id, tipo_documento, numero_documento)`
      - Índices: `ix_clientes_empresa_nombre`, `ix_clientes_empresa_documento`
 
+   - `carritos_compras` (nuevo módulo de venta pre-facturación por empresa)
+     - `id` INTEGER PRIMARY KEY AUTOINCREMENT
+     - `empresa_id` INTEGER NOT NULL
+     - `codigo` TEXT
+     - `nombre` TEXT NOT NULL
+     - `canal_venta` TEXT DEFAULT 'mostrador'
+     - `cliente_id` INTEGER  -- referencia conceptual a `clientes.id` en la misma empresa
+     - `estado_carrito` TEXT DEFAULT 'abierto'  -- abierto/cerrado
+     - `moneda` TEXT DEFAULT 'COP'
+     - `referencia_externa` TEXT  -- útil para pre-factura o correlación externa
+     - `subtotal` REAL DEFAULT 0
+     - `descuento_total` REAL DEFAULT 0
+     - `impuesto_total` REAL DEFAULT 0
+     - `total` REAL DEFAULT 0
+     - `fecha_creacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `fecha_actualizacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `usuario_creador` TEXT
+     - `estado` TEXT DEFAULT 'activo'
+     - `observaciones` TEXT
+     - Índices: `ux_carritos_empresa_codigo`, `ux_carritos_empresa_nombre`, `ix_carritos_empresa_estado`
+
+   - `carrito_compra_items`
+     - `id` INTEGER PRIMARY KEY AUTOINCREMENT
+     - `empresa_id` INTEGER NOT NULL
+     - `carrito_id` INTEGER NOT NULL  -- referencia conceptual a `carritos_compras.id`
+     - `tipo_item` TEXT DEFAULT 'producto'  -- producto/servicio/otro
+     - `referencia_id` INTEGER  -- id de producto o servicio cuando aplique
+     - `codigo_item` TEXT
+     - `descripcion` TEXT NOT NULL
+     - `unidad_medida` TEXT DEFAULT 'unidad'
+     - `cantidad` REAL NOT NULL DEFAULT 1
+     - `precio_unitario` REAL NOT NULL DEFAULT 0
+     - `descuento_porcentaje` REAL DEFAULT 0
+     - `impuesto_porcentaje` REAL DEFAULT 0
+     - `impuesto_codigo` TEXT DEFAULT 'IVA'
+     - `base_gravable` REAL DEFAULT 0
+     - `valor_descuento` REAL DEFAULT 0
+     - `valor_impuesto` REAL DEFAULT 0
+     - `subtotal_linea` REAL DEFAULT 0
+     - `total_linea` REAL DEFAULT 0
+     - `fecha_creacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `fecha_actualizacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `usuario_creador` TEXT
+     - `estado` TEXT DEFAULT 'activo'
+     - `observaciones` TEXT
+     - Índices: `ix_carrito_items_empresa_carrito`, `ix_carrito_items_empresa_referencia`
+
+   - `empresa_configuracion_avanzada` (preparación de facturación electrónica por empresa)
+     - `id` INTEGER PRIMARY KEY AUTOINCREMENT
+     - `empresa_id` INTEGER NOT NULL UNIQUE
+     - `tipo_documento_emisor` TEXT DEFAULT 'NIT'
+     - `nit` TEXT
+     - `digito_verificacion` TEXT
+     - `razon_social` TEXT
+     - `nombre_comercial` TEXT
+     - `regimen_fiscal` TEXT
+     - `responsabilidad_tributaria` TEXT
+     - `email_facturacion` TEXT
+     - `telefono_facturacion` TEXT
+     - `direccion_fiscal` TEXT
+     - `departamento` TEXT
+     - `municipio` TEXT
+     - `pais_codigo` TEXT DEFAULT 'CO'
+     - `codigo_postal` TEXT
+     - `ambiente_fe` TEXT DEFAULT 'habilitacion' -- habilitacion/produccion
+     - `tipo_operacion` TEXT DEFAULT '10'
+     - `prefijo_factura` TEXT
+     - `resolucion_numero` TEXT
+     - `resolucion_fecha_desde` TEXT
+     - `resolucion_fecha_hasta` TEXT
+     - `consecutivo_desde` INTEGER DEFAULT 1
+     - `consecutivo_hasta` INTEGER DEFAULT 999999
+     - `proximo_consecutivo` INTEGER DEFAULT 1
+     - `formato_impresion` TEXT DEFAULT 'carta' -- carta/pos
+     - `mostrar_logo` INTEGER DEFAULT 1
+     - `logo_url` TEXT
+     - `pie_factura` TEXT
+     - `notas_legales` TEXT
+     - `fecha_creacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `fecha_actualizacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `usuario_creador` TEXT
+     - `estado` TEXT DEFAULT 'activo'
+     - `observaciones` TEXT
+     - Índices: `ux_empresa_config_avanzada_empresa`, `ix_empresa_config_avanzada_estado`
+
    - `bodegas` (nuevo módulo de inventario por empresa)
      - `id` INTEGER PRIMARY KEY AUTOINCREMENT
      - `empresa_id` INTEGER NOT NULL  -- aislamiento de datos por empresa

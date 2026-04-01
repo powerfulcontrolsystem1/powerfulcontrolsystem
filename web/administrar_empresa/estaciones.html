@@ -9,31 +9,12 @@
 <body class="empresa-subpage">
   <div class="container empresa-module">
     <section class="card empresa-section">
-      <h1>Estaciones</h1>
-      <p id="empresaInfo">Empresa: cargando...</p>
-      <div class="form-actions">
-        <a id="linkConfig" class="btn secondary" href="/administrar_empresa/configuracion_de_estaciones.html">Configurar estaciones</a>
-      </div>
-    </section>
-
-    <div id="messageBox" class="form-help"></div>
-
-    <section class="card empresa-section">
-      <div class="empresa-section-header">
-        <h2>Tarjetas de estaciones</h2>
-      </div>
       <div id="estacionesGrid" class="portal-grid"></div>
     </section>
   </div>
 
   <script>
     const empresaId = Number(new URLSearchParams(window.location.search).get('empresa_id') || 0);
-    const messageBox = document.getElementById('messageBox');
-
-    function showMessage(text, type) {
-      messageBox.textContent = text || '';
-      messageBox.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'form-help');
-    }
 
     function sanitize(v) {
       return String(v == null ? '' : v)
@@ -84,35 +65,8 @@
       }).join('');
     }
 
-    async function cargarEmpresa() {
-      const label = document.getElementById('empresaInfo');
-      if (!empresaId) {
-        label.textContent = 'Empresa no definida';
-        return;
-      }
-      try {
-        const resp = await fetch('/super/api/empresas?id=' + encodeURIComponent(empresaId), { credentials: 'same-origin' });
-        if (!resp.ok) throw new Error('No encontrada');
-        const data = await resp.json();
-        label.textContent = 'Empresa: ' + (data.nombre || 'Sin nombre');
-      } catch (_) {
-        label.textContent = 'Empresa no disponible';
-      }
-    }
-
     function bootstrap() {
-      if (!empresaId) {
-        showMessage('No se encontró empresa_id en la URL.', 'error');
-      }
-      const configLink = document.getElementById('linkConfig');
-      if (empresaId) {
-        configLink.href = '/administrar_empresa/configuracion_de_estaciones.html?empresa_id=' + encodeURIComponent(empresaId);
-      }
-      cargarEmpresa();
       const cfg = readConfig();
-      if (!cfg) {
-        showMessage('Primero configura la cantidad y nombres en Configuración de estaciones.', 'error');
-      }
       renderEstaciones(cfg);
     }
 

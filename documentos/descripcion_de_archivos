@@ -1,5 +1,55 @@
 Descripcion de archivos del proyecto
 
+Actualización 2026-04-01: Integración inteligente carrito + nueva configuración avanzada por empresa
+
+- web/administrar_empresa/carrito_de_compras.html: se amplió el formulario de items con selector inteligente de catálogo.
+	- Búsqueda en vivo por `q` contra `productos` y `servicios` por empresa.
+	- Lista de resultados y acción `Aplicar selección` para autocompletar tipo, referencia, código, descripción, unidad, precio e impuesto.
+
+- backend/db/empresa_configuracion_avanzada.go: nuevo archivo para persistir configuración avanzada de facturación por empresa en `empresas.db`.
+	- Modelo `EmpresaConfiguracionAvanzada`.
+	- Creación/migración de tabla `empresa_configuracion_avanzada` con campos fiscales, resolución/consecutivos, formato de impresión y logo.
+	- Funciones `EnsureEmpresaConfiguracionAvanzadaSchema`, `GetEmpresaConfiguracionAvanzada` y `UpsertEmpresaConfiguracionAvanzada`.
+
+- backend/handlers/empresa_configuracion_avanzada.go: nuevo handler HTTP para configuración avanzada.
+	- Endpoint: `GET/POST/PUT /api/empresa/configuracion_avanzada`.
+	- Devuelve defaults cuando no hay registro y permite guardar por `empresa_id`.
+
+- backend/main.go: actualizado para:
+	- ejecutar `EnsureEmpresaConfiguracionAvanzadaSchema(dbEmpresas)` al iniciar.
+	- registrar ruta `/api/empresa/configuracion_avanzada`.
+
+- web/administrar_empresa/configuracion_avanzada.html: nueva subpágina en el módulo de empresa.
+	- Captura datos fiscales del emisor (NIT/razón social/régimen/contacto/ubicación).
+	- Captura configuración de resolución y consecutivos.
+	- Configura formato de impresión (POS o grande), logo, pie y notas legales de factura.
+
+- web/administrar_empresa.html: menú lateral actualizado con acceso a `Configuración avanzada` propagando `empresa_id`.
+
+Actualización 2026-04-01: Submódulo de carrito de compras por empresa (multi-carrito)
+
+- backend/db/carritos_compras.go: nuevo archivo para gestión de carritos de compra en `empresas.db`.
+	- Modelos `CarritoCompra` y `CarritoCompraItem`.
+	- Creación/migración de tablas `carritos_compras` y `carrito_compra_items`.
+	- Funciones CRUD de carritos e items con activación/desactivación y recálculo automático de totales.
+
+- backend/handlers/carritos_compras.go: nuevo archivo de handlers HTTP.
+	- Endpoints nuevos:
+		- `GET/POST/PUT/DELETE /api/empresa/carritos_compra`
+		- `GET/POST/PUT/DELETE /api/empresa/carritos_compra/items`
+	- Soporta acciones operativas de carrito (`cerrar/reabrir`) y activación/desactivación de carritos e items.
+
+- backend/main.go: actualizado para:
+	- ejecutar `EnsureEmpresaCarritosSchema(dbEmpresas)` al iniciar.
+	- registrar rutas del módulo de carritos e items por empresa.
+
+- web/administrar_empresa/carrito_de_compras.html: nueva subpágina para administrar múltiples carritos de compra por empresa.
+	- Permite crear más de un carrito (nombre/código/canal/cliente/moneda/referencia).
+	- Permite seleccionar carrito activo, agregar items, editar/eliminar y activar/desactivar.
+	- Muestra resumen de subtotal, descuento, impuesto y total del carrito seleccionado.
+
+- web/administrar_empresa.html: menú lateral actualizado con acceso a `Carrito de compras`.
+
 Actualización 2026-04-01: Submódulo de clientes por empresa (preparado para facturación electrónica Colombia)
 
 - backend/db/clientes.go: nuevo archivo para CRUD de clientes en `empresas.db`.

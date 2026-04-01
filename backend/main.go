@@ -189,6 +189,12 @@ func main() {
 	if err := dbpkg.EnsureEmpresaClientesSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure clientes schema in empresas db: %v", err)
 	}
+	if err := dbpkg.EnsureEmpresaCarritosSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure carritos schema in empresas db: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaConfiguracionAvanzadaSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure empresa_configuracion_avanzada schema in empresas db: %v", err)
+	}
 	// Crear tipos_de_empresas en la base de datos de superadministrador (ubicación centralizada)
 	createTiposSuper := `CREATE TABLE IF NOT EXISTS tipos_de_empresas (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -555,6 +561,9 @@ func main() {
 	http.HandleFunc("/api/empresa/servicios", handlers.EmpresaServiciosHandler(dbEmpresas))
 	http.HandleFunc("/api/empresa/usuarios", handlers.EmpresaUsuariosHandler(dbEmpresas, dbSuper))
 	http.HandleFunc("/api/empresa/clientes", handlers.EmpresaClientesHandler(dbEmpresas))
+	http.HandleFunc("/api/empresa/carritos_compra", handlers.EmpresaCarritosCompraHandler(dbEmpresas))
+	http.HandleFunc("/api/empresa/carritos_compra/items", handlers.EmpresaCarritoItemsHandler(dbEmpresas))
+	http.HandleFunc("/api/empresa/configuracion_avanzada", handlers.EmpresaConfiguracionAvanzadaHandler(dbEmpresas))
 	http.HandleFunc("/api/empresa/roles_de_usuario", handlers.EmpresaRolesDeUsuarioHandler(dbEmpresas, dbSuper))
 	// Endpoint para obtener admin actual desde la cookie de sesión
 	http.HandleFunc("/me", handlers.MeHandler(dbSuper))

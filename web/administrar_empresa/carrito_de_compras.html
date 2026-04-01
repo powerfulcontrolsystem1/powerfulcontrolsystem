@@ -1,0 +1,990 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Carrito de compras</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container">
+    <div class="page-header">
+      <h1 id="pageTitle">Carrito de compras</h1>
+      <button id="addCarritoBtn" class="btn add">Agregar carrito</button>
+    </div>
+
+    <p class="form-help" style="margin:0 0 12px 0;">
+      Este módulo permite manejar múltiples carritos por empresa y deja preparada la base operativa para facturación electrónica.
+    </p>
+
+    <form id="carritoForm" class="form">
+      <input type="hidden" id="carritoId">
+      <input type="hidden" id="empresa_id">
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Nombre del carrito</label>
+          <input id="carritoNombre" class="form-input" required placeholder="Ej: Mostrador principal">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Código interno</label>
+          <input id="carritoCodigo" class="form-input" placeholder="Opcional (si se deja vacío se genera)">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Canal de venta</label>
+          <select id="carritoCanal" class="form-input">
+            <option value="mostrador">Mostrador</option>
+            <option value="domicilio">Domicilio</option>
+            <option value="ecommerce">Ecommerce</option>
+            <option value="telefono">Teléfono</option>
+            <option value="otro">Otro</option>
+          </select>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Cliente</label>
+          <select id="carritoClienteID" class="form-input"></select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Moneda</label>
+          <select id="carritoMoneda" class="form-input">
+            <option value="COP">COP</option>
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+          </select>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Referencia externa (pre-factura)</label>
+          <input id="carritoReferencia" class="form-input" placeholder="Ej: PRE-2026-0001">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Observaciones</label>
+          <textarea id="carritoObservaciones" class="form-textarea" placeholder="Opcional"></textarea>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" id="saveCarritoBtn" class="btn">Guardar carrito</button>
+        <button type="button" id="cancelCarritoBtn" class="btn secondary">Cancelar</button>
+      </div>
+      <div id="carritoMsg" class="form-help"></div>
+    </form>
+
+    <div class="form" style="margin-top:14px;">
+      <div class="form-row" style="margin-bottom:0;">
+        <div class="form-col">
+          <label class="form-label">Buscar carrito</label>
+          <input id="buscarCarrito" class="form-input" placeholder="Buscar por nombre, código o cliente">
+        </div>
+        <div class="form-col" style="max-width:180px;display:flex;align-items:flex-end;">
+          <button id="buscarCarritoBtn" class="btn secondary" type="button" style="width:100%;">Buscar</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="carritosList" style="margin-top:14px;">Cargando carritos...</div>
+
+    <div class="form" style="margin-top:16px;">
+      <div class="page-header" style="margin-bottom:10px;">
+        <h2 id="itemsTitle" style="margin:0;font-size:1rem;">Items del carrito</h2>
+      </div>
+      <div id="carritoResumen" class="form-help"></div>
+
+      <form id="itemForm" style="margin-top:12px;">
+        <input type="hidden" id="itemId">
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Buscar en catálogo inteligente</label>
+            <input id="itemBuscarCatalogo" class="form-input" placeholder="Busca por nombre, SKU, código de barras o código del servicio">
+            <div id="itemBusquedaHint" class="form-help">Selecciona tipo de item (producto/servicio) y escribe al menos 2 caracteres.</div>
+          </div>
+          <div class="form-col" style="max-width:220px;display:flex;align-items:flex-end;">
+            <button id="buscarCatalogoBtn" type="button" class="btn secondary" style="width:100%;">Buscar catálogo</button>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Resultados</label>
+            <select id="itemBusquedaResultados" class="form-input" size="5" disabled></select>
+          </div>
+          <div class="form-col" style="max-width:220px;display:flex;flex-direction:column;justify-content:flex-end;gap:8px;">
+            <button id="aplicarCatalogoBtn" type="button" class="btn">Aplicar selección</button>
+            <button id="limpiarCatalogoBtn" type="button" class="btn secondary">Quitar referencia</button>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Tipo de item</label>
+            <select id="itemTipo" class="form-input">
+              <option value="producto">Producto</option>
+              <option value="servicio">Servicio</option>
+              <option value="otro">Otro</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label">Referencia ID</label>
+            <input id="itemReferenciaID" type="number" min="0" class="form-input" placeholder="Opcional">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Código item</label>
+            <input id="itemCodigo" class="form-input" placeholder="Opcional">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Descripción</label>
+            <input id="itemDescripcion" class="form-input" required placeholder="Nombre del producto o servicio">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Unidad</label>
+            <input id="itemUnidad" class="form-input" value="unidad" placeholder="unidad, caja, hora...">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Cantidad</label>
+            <input id="itemCantidad" type="number" min="0.01" step="0.01" class="form-input" value="1" required>
+          </div>
+          <div class="form-col">
+            <label class="form-label">Precio unitario</label>
+            <input id="itemPrecio" type="number" min="0" step="0.01" class="form-input" value="0" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Descuento %</label>
+            <input id="itemDescuentoPct" type="number" min="0" max="100" step="0.01" class="form-input" value="0">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Impuesto %</label>
+            <input id="itemImpuestoPct" type="number" min="0" step="0.01" class="form-input" value="0">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Código impuesto</label>
+            <input id="itemImpuestoCodigo" class="form-input" value="IVA" placeholder="IVA, INC, ICO...">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Observaciones</label>
+            <textarea id="itemObservaciones" class="form-textarea" placeholder="Opcional"></textarea>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" id="saveItemBtn" class="btn">Guardar item</button>
+          <button type="button" id="cancelItemBtn" class="btn secondary">Cancelar</button>
+        </div>
+      </form>
+      <div id="itemMsg" class="form-help"></div>
+
+      <div id="itemsList" style="margin-top:14px;">Selecciona un carrito para gestionar sus items.</div>
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      empresaID: 0,
+      qCarrito: '',
+      carritos: [],
+      clientes: [],
+      selectedCarritoID: 0,
+      items: [],
+      itemCatalogResults: [],
+      itemCatalogQueryToken: 0
+    };
+
+    let itemSearchDebounceTimer = null;
+
+    function getQueryParam(name) {
+      const p = new URLSearchParams(window.location.search);
+      return p.get(name);
+    }
+
+    function setMessage(id, text, isError) {
+      const el = document.getElementById(id);
+      el.textContent = text || '';
+      el.style.color = isError ? '#ef5350' : '';
+    }
+
+    function toNumber(val, fallback) {
+      const n = Number(val);
+      if (!Number.isFinite(n)) return fallback;
+      return n;
+    }
+
+    function normalize(v) {
+      return (v || '').toString().trim();
+    }
+
+    function formatAmount(value, moneda) {
+      const amount = Number(value || 0);
+      const m = normalize(moneda || 'COP') || 'COP';
+      return m + ' ' + amount.toFixed(2);
+    }
+
+    async function ensureOk(res) {
+      if (res.ok) return;
+      const t = await res.text();
+      throw new Error(t || ('HTTP ' + res.status));
+    }
+
+    function getSelectedCarrito() {
+      return state.carritos.find(function(x) { return Number(x.id) === Number(state.selectedCarritoID); }) || null;
+    }
+
+    function fillClientesSelect(selected) {
+      const sel = document.getElementById('carritoClienteID');
+      sel.innerHTML = '<option value="">-- Consumidor final / sin cliente --</option>';
+      state.clientes.forEach(function(c) {
+        if (normalize(c.estado) && normalize(c.estado) !== 'activo') return;
+        const opt = document.createElement('option');
+        opt.value = String(c.id);
+        const doc = [normalize(c.tipo_documento), normalize(c.numero_documento)].filter(Boolean).join(' ');
+        opt.textContent = (normalize(c.nombre_razon_social) || 'Cliente') + (doc ? (' - ' + doc) : '');
+        sel.appendChild(opt);
+      });
+      if (selected) sel.value = String(selected);
+    }
+
+    function resetCarritoForm(hide) {
+      document.getElementById('carritoId').value = '';
+      document.getElementById('carritoNombre').value = '';
+      document.getElementById('carritoCodigo').value = '';
+      document.getElementById('carritoCanal').value = 'mostrador';
+      document.getElementById('carritoClienteID').value = '';
+      document.getElementById('carritoMoneda').value = 'COP';
+      document.getElementById('carritoReferencia').value = '';
+      document.getElementById('carritoObservaciones').value = '';
+      document.getElementById('saveCarritoBtn').textContent = 'Guardar carrito';
+      document.getElementById('cancelCarritoBtn').style.display = 'none';
+      setMessage('carritoMsg', '', false);
+
+      if (hide) {
+        document.getElementById('carritoForm').style.display = 'none';
+        document.getElementById('addCarritoBtn').style.display = '';
+      }
+    }
+
+    function resetItemForm() {
+      document.getElementById('itemId').value = '';
+      document.getElementById('itemTipo').value = 'producto';
+      document.getElementById('itemReferenciaID').value = '';
+      document.getElementById('itemCodigo').value = '';
+      document.getElementById('itemDescripcion').value = '';
+      document.getElementById('itemUnidad').value = 'unidad';
+      document.getElementById('itemCantidad').value = '1';
+      document.getElementById('itemPrecio').value = '0';
+      document.getElementById('itemDescuentoPct').value = '0';
+      document.getElementById('itemImpuestoPct').value = '0';
+      document.getElementById('itemImpuestoCodigo').value = 'IVA';
+      document.getElementById('itemObservaciones').value = '';
+      document.getElementById('saveItemBtn').textContent = 'Guardar item';
+      document.getElementById('cancelItemBtn').style.display = 'none';
+      setMessage('itemMsg', '', false);
+      document.getElementById('itemBuscarCatalogo').value = '';
+      clearCatalogResults('Selecciona tipo de item (producto/servicio) y escribe al menos 2 caracteres.');
+    }
+
+    function isCatalogSearchType(tipo) {
+      return tipo === 'producto' || tipo === 'servicio';
+    }
+
+    function renderCatalogHint(text, isError) {
+      const hint = document.getElementById('itemBusquedaHint');
+      hint.textContent = text || '';
+      hint.style.color = isError ? '#ef5350' : '';
+    }
+
+    function renderCatalogResults() {
+      const sel = document.getElementById('itemBusquedaResultados');
+      sel.innerHTML = '';
+
+      if (!state.itemCatalogResults.length) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = 'Sin resultados';
+        sel.appendChild(opt);
+        sel.disabled = true;
+        return;
+      }
+
+      sel.disabled = false;
+      state.itemCatalogResults.forEach(function(item, idx) {
+        const opt = document.createElement('option');
+        opt.value = String(idx);
+        const codigo = normalize(item.codigo) || 'sin-codigo';
+        const precio = Number(item.precio || 0).toFixed(2);
+        opt.textContent = (item.nombre || item.descripcion || 'Item') + ' | ' + codigo + ' | ' + precio;
+        sel.appendChild(opt);
+      });
+
+      sel.selectedIndex = 0;
+    }
+
+    function clearCatalogResults(hintText) {
+      state.itemCatalogResults = [];
+      state.itemCatalogQueryToken = 0;
+      renderCatalogResults();
+      renderCatalogHint(hintText || '', false);
+    }
+
+    function mapCatalogRow(raw, tipo) {
+      const codigo = tipo === 'producto'
+        ? (normalize(raw.codigo_barras) || normalize(raw.sku))
+        : normalize(raw.codigo);
+
+      const nombre = normalize(raw.nombre);
+      const descripcionBase = normalize(raw.descripcion);
+      const descripcion = descripcionBase || nombre || (tipo === 'servicio' ? 'Servicio' : 'Producto');
+      const unidad = tipo === 'producto'
+        ? (normalize(raw.unidad_medida) || 'unidad')
+        : (normalize(raw.unidad_medida) || 'servicio');
+
+      return {
+        id: toNumber(raw.id, 0),
+        tipo: tipo,
+        nombre: nombre,
+        descripcion: descripcion,
+        codigo: codigo,
+        unidad: unidad,
+        precio: toNumber(raw.precio, 0),
+        impuesto: toNumber(raw.impuesto_porcentaje, 0)
+      };
+    }
+
+    async function searchCatalogByInput() {
+      const tipo = normalize(document.getElementById('itemTipo').value) || 'producto';
+      const q = normalize(document.getElementById('itemBuscarCatalogo').value);
+
+      if (!isCatalogSearchType(tipo)) {
+        clearCatalogResults('Para búsqueda inteligente selecciona tipo Producto o Servicio.');
+        return;
+      }
+
+      if (q.length < 2) {
+        clearCatalogResults('Escribe al menos 2 caracteres para buscar.');
+        return;
+      }
+
+      const endpoint = tipo === 'servicio' ? '/api/empresa/servicios' : '/api/empresa/productos';
+      const url = new URL(endpoint, window.location.origin);
+      url.searchParams.set('empresa_id', String(state.empresaID));
+      url.searchParams.set('estado', 'activo');
+      url.searchParams.set('q', q);
+      url.searchParams.set('limit', '20');
+
+      const token = Date.now();
+      state.itemCatalogQueryToken = token;
+      renderCatalogHint('Buscando coincidencias en catálogo...', false);
+
+      try {
+        const res = await fetch(url.pathname + url.search);
+        await ensureOk(res);
+        const rows = await res.json();
+        if (state.itemCatalogQueryToken !== token) return;
+
+        const mapped = Array.isArray(rows) ? rows.map(function(row) { return mapCatalogRow(row, tipo); }) : [];
+        state.itemCatalogResults = mapped.filter(function(item) { return item.id > 0; });
+        renderCatalogResults();
+
+        if (!state.itemCatalogResults.length) {
+          renderCatalogHint('No se encontraron coincidencias para "' + q + '".', false);
+        } else {
+          renderCatalogHint('Selecciona un registro para autocompletar el item.', false);
+        }
+      } catch (err) {
+        if (state.itemCatalogQueryToken !== token) return;
+        clearCatalogResults('Error consultando catálogo. Intenta de nuevo.');
+        setMessage('itemMsg', err.message || 'Error consultando catálogo', true);
+      }
+    }
+
+    function applySelectedCatalogResult() {
+      const sel = document.getElementById('itemBusquedaResultados');
+      const idx = Number(sel.value);
+      if (!Number.isInteger(idx) || idx < 0 || idx >= state.itemCatalogResults.length) {
+        setMessage('itemMsg', 'Selecciona un producto o servicio de la lista', true);
+        return false;
+      }
+
+      const selected = state.itemCatalogResults[idx];
+      document.getElementById('itemTipo').value = selected.tipo;
+      document.getElementById('itemReferenciaID').value = selected.id > 0 ? String(selected.id) : '';
+      document.getElementById('itemCodigo').value = selected.codigo || '';
+      document.getElementById('itemDescripcion').value = selected.descripcion || '';
+      document.getElementById('itemUnidad').value = selected.unidad || 'unidad';
+      document.getElementById('itemPrecio').value = Number(selected.precio || 0);
+      document.getElementById('itemImpuestoPct').value = Number(selected.impuesto || 0);
+      if (!normalize(document.getElementById('itemImpuestoCodigo').value)) {
+        document.getElementById('itemImpuestoCodigo').value = 'IVA';
+      }
+
+      setMessage('itemMsg', 'Datos del item autocompletados desde catálogo', false);
+      return true;
+    }
+
+    function renderCarritos() {
+      const box = document.getElementById('carritosList');
+      if (!state.carritos.length) {
+        box.textContent = 'No hay carritos registrados para esta empresa.';
+        if (!state.selectedCarritoID) {
+          renderResumen();
+          renderItems();
+        }
+        return;
+      }
+
+      const table = document.createElement('table');
+      table.className = 'table';
+      table.innerHTML = '<thead><tr>' +
+        '<th>ID</th>' +
+        '<th>Código</th>' +
+        '<th>Nombre</th>' +
+        '<th>Cliente</th>' +
+        '<th>Estado op.</th>' +
+        '<th>Items</th>' +
+        '<th>Total</th>' +
+        '<th>Estado</th>' +
+        '<th>Acciones</th>' +
+        '</tr></thead>';
+
+      const tbody = document.createElement('tbody');
+      state.carritos.forEach(function(item) {
+        const tr = document.createElement('tr');
+        if (Number(item.id) === Number(state.selectedCarritoID)) {
+          tr.style.outline = '2px solid rgba(0,120,212,0.45)';
+        }
+
+        const estado = normalize(item.estado) || 'activo';
+        const estadoCarrito = normalize(item.estado_carrito) || 'abierto';
+        const cliente = normalize(item.cliente_nombre) || 'Consumidor final';
+        const toggleEstadoLabel = estado === 'activo' ? 'Desactivar' : 'Activar';
+        const toggleOperacionLabel = estadoCarrito === 'cerrado' ? 'Reabrir' : 'Cerrar';
+
+        tr.innerHTML = '<td>' + item.id + '</td>' +
+          '<td>' + (normalize(item.codigo) || '') + '</td>' +
+          '<td>' + (normalize(item.nombre) || '') + '</td>' +
+          '<td>' + cliente + '</td>' +
+          '<td>' + estadoCarrito + '</td>' +
+          '<td>' + Number(item.item_count || 0) + '</td>' +
+          '<td>' + formatAmount(item.total, item.moneda) + '</td>' +
+          '<td>' + estado + '</td>' +
+          '<td class="actions">' +
+            '<button data-id="' + item.id + '" class="open btn">Abrir</button> ' +
+            '<button data-id="' + item.id + '" class="edit btn secondary">Editar</button> ' +
+            '<button data-id="' + item.id + '" class="del btn danger">Eliminar</button> ' +
+            '<button data-id="' + item.id + '" data-estado="' + estado + '" class="toggleEstado btn">' + toggleEstadoLabel + '</button> ' +
+            '<button data-id="' + item.id + '" data-op="' + estadoCarrito + '" class="toggleOperacion btn secondary">' + toggleOperacionLabel + '</button>' +
+          '</td>';
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+
+      box.innerHTML = '';
+      box.appendChild(table);
+
+      document.querySelectorAll('.open').forEach(function(btn) {
+        btn.onclick = async function() {
+          state.selectedCarritoID = Number(btn.getAttribute('data-id'));
+          renderCarritos();
+          await loadItems();
+        };
+      });
+
+      document.querySelectorAll('.edit').forEach(function(btn) {
+        btn.onclick = function() {
+          const id = Number(btn.getAttribute('data-id'));
+          const item = state.carritos.find(function(x) { return Number(x.id) === id; });
+          if (!item) return;
+
+          document.getElementById('carritoForm').style.display = '';
+          document.getElementById('addCarritoBtn').style.display = 'none';
+
+          document.getElementById('carritoId').value = String(item.id);
+          document.getElementById('carritoNombre').value = normalize(item.nombre);
+          document.getElementById('carritoCodigo').value = normalize(item.codigo);
+          document.getElementById('carritoCanal').value = normalize(item.canal_venta) || 'mostrador';
+          fillClientesSelect(item.cliente_id);
+          document.getElementById('carritoMoneda').value = normalize(item.moneda) || 'COP';
+          document.getElementById('carritoReferencia').value = normalize(item.referencia_externa);
+          document.getElementById('carritoObservaciones').value = normalize(item.observaciones);
+
+          document.getElementById('saveCarritoBtn').textContent = 'Actualizar carrito';
+          document.getElementById('cancelCarritoBtn').style.display = '';
+          setMessage('carritoMsg', '', false);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+      });
+
+      document.querySelectorAll('.del').forEach(function(btn) {
+        btn.onclick = async function() {
+          const id = Number(btn.getAttribute('data-id'));
+          if (!confirm('Eliminar carrito y todos sus items?')) return;
+          try {
+            const res = await fetch('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(id), { method: 'DELETE' });
+            await ensureOk(res);
+            if (Number(state.selectedCarritoID) === id) {
+              state.selectedCarritoID = 0;
+              state.items = [];
+            }
+            setMessage('carritoMsg', 'Carrito eliminado', false);
+            await loadCarritos();
+            renderResumen();
+            renderItems();
+          } catch (err) {
+            setMessage('carritoMsg', err.message || 'Error eliminando carrito', true);
+          }
+        };
+      });
+
+      document.querySelectorAll('.toggleEstado').forEach(function(btn) {
+        btn.onclick = async function() {
+          const id = Number(btn.getAttribute('data-id'));
+          const estadoActual = normalize(btn.getAttribute('data-estado'));
+          const action = estadoActual === 'activo' ? 'desactivar' : 'activar';
+          try {
+            const res = await fetch('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(id) + '&action=' + encodeURIComponent(action), { method: 'PUT' });
+            await ensureOk(res);
+            await loadCarritos();
+          } catch (err) {
+            setMessage('carritoMsg', err.message || 'Error cambiando estado', true);
+          }
+        };
+      });
+
+      document.querySelectorAll('.toggleOperacion').forEach(function(btn) {
+        btn.onclick = async function() {
+          const id = Number(btn.getAttribute('data-id'));
+          const opActual = normalize(btn.getAttribute('data-op'));
+          const action = opActual === 'cerrado' ? 'reabrir' : 'cerrar';
+          try {
+            const res = await fetch('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(id) + '&action=' + encodeURIComponent(action), { method: 'PUT' });
+            await ensureOk(res);
+            await loadCarritos();
+          } catch (err) {
+            setMessage('carritoMsg', err.message || 'Error cambiando estado operativo', true);
+          }
+        };
+      });
+    }
+
+    function renderResumen() {
+      const target = document.getElementById('carritoResumen');
+      const title = document.getElementById('itemsTitle');
+      const selected = getSelectedCarrito();
+      if (!selected) {
+        title.textContent = 'Items del carrito';
+        target.textContent = 'Selecciona un carrito para agregar items.';
+        return;
+      }
+
+      title.textContent = 'Items del carrito: ' + (normalize(selected.nombre) || 'sin nombre');
+      target.textContent = 'Código: ' + (normalize(selected.codigo) || '-') +
+        ' | Estado: ' + (normalize(selected.estado_carrito) || 'abierto') +
+        ' | Subtotal: ' + formatAmount(selected.subtotal, selected.moneda) +
+        ' | Descuento: ' + formatAmount(selected.descuento_total, selected.moneda) +
+        ' | Impuesto: ' + formatAmount(selected.impuesto_total, selected.moneda) +
+        ' | Total: ' + formatAmount(selected.total, selected.moneda);
+    }
+
+    function renderItems() {
+      const box = document.getElementById('itemsList');
+      const selected = getSelectedCarrito();
+      if (!selected) {
+        box.textContent = 'Selecciona un carrito para gestionar sus items.';
+        return;
+      }
+
+      if (!state.items.length) {
+        box.textContent = 'Este carrito aún no tiene items.';
+        return;
+      }
+
+      const table = document.createElement('table');
+      table.className = 'table';
+      table.innerHTML = '<thead><tr>' +
+        '<th>ID</th>' +
+        '<th>Tipo</th>' +
+        '<th>Descripción</th>' +
+        '<th>Cant.</th>' +
+        '<th>Precio</th>' +
+        '<th>Desc %</th>' +
+        '<th>Imp %</th>' +
+        '<th>Total línea</th>' +
+        '<th>Estado</th>' +
+        '<th>Acciones</th>' +
+        '</tr></thead>';
+
+      const tbody = document.createElement('tbody');
+      state.items.forEach(function(item) {
+        const estado = normalize(item.estado) || 'activo';
+        const toggleLabel = estado === 'activo' ? 'Desactivar' : 'Activar';
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td>' + item.id + '</td>' +
+          '<td>' + (normalize(item.tipo_item) || '') + '</td>' +
+          '<td>' + (normalize(item.descripcion) || '') + '</td>' +
+          '<td>' + Number(item.cantidad || 0).toFixed(2) + '</td>' +
+          '<td>' + Number(item.precio_unitario || 0).toFixed(2) + '</td>' +
+          '<td>' + Number(item.descuento_porcentaje || 0).toFixed(2) + '</td>' +
+          '<td>' + Number(item.impuesto_porcentaje || 0).toFixed(2) + '</td>' +
+          '<td>' + Number(item.total_linea || 0).toFixed(2) + '</td>' +
+          '<td>' + estado + '</td>' +
+          '<td class="actions">' +
+            '<button data-id="' + item.id + '" class="editItem btn secondary">Editar</button> ' +
+            '<button data-id="' + item.id + '" class="delItem btn danger">Eliminar</button> ' +
+            '<button data-id="' + item.id + '" data-estado="' + estado + '" class="toggleItem btn">' + toggleLabel + '</button>' +
+          '</td>';
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+
+      box.innerHTML = '';
+      box.appendChild(table);
+
+      document.querySelectorAll('.editItem').forEach(function(btn) {
+        btn.onclick = function() {
+          const id = Number(btn.getAttribute('data-id'));
+          const item = state.items.find(function(x) { return Number(x.id) === id; });
+          if (!item) return;
+
+          document.getElementById('itemId').value = String(item.id);
+          document.getElementById('itemTipo').value = normalize(item.tipo_item) || 'producto';
+          document.getElementById('itemReferenciaID').value = item.referencia_id ? String(item.referencia_id) : '';
+          document.getElementById('itemCodigo').value = normalize(item.codigo_item);
+          document.getElementById('itemDescripcion').value = normalize(item.descripcion);
+          document.getElementById('itemUnidad').value = normalize(item.unidad_medida) || 'unidad';
+          document.getElementById('itemCantidad').value = Number(item.cantidad || 1);
+          document.getElementById('itemPrecio').value = Number(item.precio_unitario || 0);
+          document.getElementById('itemDescuentoPct').value = Number(item.descuento_porcentaje || 0);
+          document.getElementById('itemImpuestoPct').value = Number(item.impuesto_porcentaje || 0);
+          document.getElementById('itemImpuestoCodigo').value = normalize(item.impuesto_codigo) || 'IVA';
+          document.getElementById('itemObservaciones').value = normalize(item.observaciones);
+          document.getElementById('itemBuscarCatalogo').value = '';
+          clearCatalogResults('Modo edición: puedes buscar y volver a aplicar catálogo si lo necesitas.');
+
+          document.getElementById('saveItemBtn').textContent = 'Actualizar item';
+          document.getElementById('cancelItemBtn').style.display = '';
+          setMessage('itemMsg', '', false);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+      });
+
+      document.querySelectorAll('.delItem').forEach(function(btn) {
+        btn.onclick = async function() {
+          const id = Number(btn.getAttribute('data-id'));
+          if (!confirm('Eliminar item del carrito?')) return;
+          try {
+            const res = await fetch('/api/empresa/carritos_compra/items?empresa_id=' + encodeURIComponent(state.empresaID) + '&carrito_id=' + encodeURIComponent(state.selectedCarritoID) + '&id=' + encodeURIComponent(id), {
+              method: 'DELETE'
+            });
+            await ensureOk(res);
+            await Promise.all([loadItems(), loadCarritos()]);
+            setMessage('itemMsg', 'Item eliminado', false);
+          } catch (err) {
+            setMessage('itemMsg', err.message || 'Error eliminando item', true);
+          }
+        };
+      });
+
+      document.querySelectorAll('.toggleItem').forEach(function(btn) {
+        btn.onclick = async function() {
+          const id = Number(btn.getAttribute('data-id'));
+          const estadoActual = normalize(btn.getAttribute('data-estado'));
+          const action = estadoActual === 'activo' ? 'desactivar' : 'activar';
+          try {
+            const res = await fetch('/api/empresa/carritos_compra/items?empresa_id=' + encodeURIComponent(state.empresaID) + '&carrito_id=' + encodeURIComponent(state.selectedCarritoID) + '&id=' + encodeURIComponent(id) + '&action=' + encodeURIComponent(action), {
+              method: 'PUT'
+            });
+            await ensureOk(res);
+            await Promise.all([loadItems(), loadCarritos()]);
+          } catch (err) {
+            setMessage('itemMsg', err.message || 'Error cambiando estado de item', true);
+          }
+        };
+      });
+    }
+
+    async function loadEmpresaTitle() {
+      try {
+        const res = await fetch('/super/api/empresas?id=' + encodeURIComponent(state.empresaID));
+        if (!res.ok) return;
+        const empresa = await res.json();
+        if (empresa && empresa.nombre) {
+          document.getElementById('pageTitle').textContent = 'Carrito de compras - ' + empresa.nombre;
+        }
+      } catch (_) {}
+    }
+
+    async function loadClientes() {
+      try {
+        const res = await fetch('/api/empresa/clientes?empresa_id=' + encodeURIComponent(state.empresaID));
+        if (!res.ok) {
+          state.clientes = [];
+          fillClientesSelect('');
+          return;
+        }
+        state.clientes = await res.json();
+        fillClientesSelect('');
+      } catch (_) {
+        state.clientes = [];
+        fillClientesSelect('');
+      }
+    }
+
+    async function loadCarritos() {
+      const url = new URL('/api/empresa/carritos_compra', window.location.origin);
+      url.searchParams.set('empresa_id', String(state.empresaID));
+      url.searchParams.set('include_inactive', '1');
+      if (state.qCarrito) url.searchParams.set('q', state.qCarrito);
+
+      const res = await fetch(url.pathname + url.search);
+      await ensureOk(res);
+      state.carritos = await res.json();
+
+      if (state.selectedCarritoID) {
+        const found = state.carritos.some(function(c) { return Number(c.id) === Number(state.selectedCarritoID); });
+        if (!found) {
+          state.selectedCarritoID = 0;
+          state.items = [];
+        }
+      }
+
+      renderCarritos();
+      renderResumen();
+      renderItems();
+    }
+
+    async function loadItems() {
+      const selected = getSelectedCarrito();
+      if (!selected) {
+        state.items = [];
+        renderResumen();
+        renderItems();
+        return;
+      }
+
+      const url = new URL('/api/empresa/carritos_compra/items', window.location.origin);
+      url.searchParams.set('empresa_id', String(state.empresaID));
+      url.searchParams.set('carrito_id', String(state.selectedCarritoID));
+      url.searchParams.set('include_inactive', '1');
+      const res = await fetch(url.pathname + url.search);
+      await ensureOk(res);
+      state.items = await res.json();
+      renderResumen();
+      renderItems();
+    }
+
+    document.getElementById('carritoForm').onsubmit = async function(e) {
+      e.preventDefault();
+
+      const id = Number(document.getElementById('carritoId').value || 0);
+      const payload = {
+        id: id,
+        empresa_id: Number(state.empresaID),
+        nombre: normalize(document.getElementById('carritoNombre').value),
+        codigo: normalize(document.getElementById('carritoCodigo').value),
+        canal_venta: normalize(document.getElementById('carritoCanal').value) || 'mostrador',
+        cliente_id: toNumber(document.getElementById('carritoClienteID').value || 0, 0),
+        moneda: normalize(document.getElementById('carritoMoneda').value) || 'COP',
+        referencia_externa: normalize(document.getElementById('carritoReferencia').value),
+        observaciones: normalize(document.getElementById('carritoObservaciones').value)
+      };
+
+      if (!payload.empresa_id || !payload.nombre) {
+        setMessage('carritoMsg', 'Empresa y nombre del carrito son obligatorios', true);
+        return;
+      }
+
+      try {
+        const method = id > 0 ? 'PUT' : 'POST';
+        const res = await fetch('/api/empresa/carritos_compra', {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        await ensureOk(res);
+
+        if (id > 0) {
+          state.selectedCarritoID = id;
+        } else {
+          const body = await res.json();
+          if (body && body.id) state.selectedCarritoID = Number(body.id);
+        }
+
+        resetCarritoForm(true);
+        await loadCarritos();
+        if (state.selectedCarritoID) {
+          await loadItems();
+        }
+        setMessage('carritoMsg', id > 0 ? 'Carrito actualizado' : 'Carrito creado', false);
+      } catch (err) {
+        setMessage('carritoMsg', err.message || 'Error guardando carrito', true);
+      }
+    };
+
+    document.getElementById('itemForm').onsubmit = async function(e) {
+      e.preventDefault();
+
+      if (!state.selectedCarritoID) {
+        setMessage('itemMsg', 'Selecciona primero un carrito', true);
+        return;
+      }
+
+      const id = Number(document.getElementById('itemId').value || 0);
+      const payload = {
+        id: id,
+        empresa_id: Number(state.empresaID),
+        carrito_id: Number(state.selectedCarritoID),
+        tipo_item: normalize(document.getElementById('itemTipo').value) || 'producto',
+        referencia_id: toNumber(document.getElementById('itemReferenciaID').value || 0, 0),
+        codigo_item: normalize(document.getElementById('itemCodigo').value),
+        descripcion: normalize(document.getElementById('itemDescripcion').value),
+        unidad_medida: normalize(document.getElementById('itemUnidad').value) || 'unidad',
+        cantidad: toNumber(document.getElementById('itemCantidad').value, 1),
+        precio_unitario: toNumber(document.getElementById('itemPrecio').value, 0),
+        descuento_porcentaje: toNumber(document.getElementById('itemDescuentoPct').value, 0),
+        impuesto_porcentaje: toNumber(document.getElementById('itemImpuestoPct').value, 0),
+        impuesto_codigo: normalize(document.getElementById('itemImpuestoCodigo').value) || 'IVA',
+        observaciones: normalize(document.getElementById('itemObservaciones').value)
+      };
+
+      if (!payload.descripcion || payload.cantidad <= 0 || payload.precio_unitario < 0) {
+        setMessage('itemMsg', 'Descripción, cantidad y precio deben ser válidos', true);
+        return;
+      }
+
+      try {
+        const method = id > 0 ? 'PUT' : 'POST';
+        const res = await fetch('/api/empresa/carritos_compra/items', {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        await ensureOk(res);
+
+        resetItemForm();
+        await Promise.all([loadItems(), loadCarritos()]);
+        setMessage('itemMsg', id > 0 ? 'Item actualizado' : 'Item agregado', false);
+      } catch (err) {
+        setMessage('itemMsg', err.message || 'Error guardando item', true);
+      }
+    };
+
+    document.getElementById('addCarritoBtn').onclick = function() {
+      document.getElementById('carritoForm').style.display = '';
+      document.getElementById('addCarritoBtn').style.display = 'none';
+      resetCarritoForm(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    document.getElementById('cancelCarritoBtn').onclick = function() {
+      resetCarritoForm(true);
+    };
+
+    document.getElementById('cancelItemBtn').onclick = function() {
+      resetItemForm();
+    };
+
+    document.getElementById('buscarCatalogoBtn').onclick = async function() {
+      await searchCatalogByInput();
+    };
+
+    document.getElementById('itemBuscarCatalogo').addEventListener('input', function() {
+      if (itemSearchDebounceTimer) clearTimeout(itemSearchDebounceTimer);
+      itemSearchDebounceTimer = setTimeout(function() {
+        searchCatalogByInput();
+      }, 240);
+    });
+
+    document.getElementById('itemBuscarCatalogo').addEventListener('keydown', function(e) {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      searchCatalogByInput();
+    });
+
+    document.getElementById('itemTipo').addEventListener('change', function() {
+      const tipo = normalize(document.getElementById('itemTipo').value);
+      if (!isCatalogSearchType(tipo)) {
+        clearCatalogResults('Para búsqueda inteligente selecciona tipo Producto o Servicio.');
+        return;
+      }
+
+      const q = normalize(document.getElementById('itemBuscarCatalogo').value);
+      if (q.length >= 2) {
+        searchCatalogByInput();
+      } else {
+        clearCatalogResults('Escribe al menos 2 caracteres para buscar.');
+      }
+    });
+
+    document.getElementById('aplicarCatalogoBtn').onclick = function() {
+      applySelectedCatalogResult();
+    };
+
+    document.getElementById('itemBusquedaResultados').addEventListener('dblclick', function() {
+      applySelectedCatalogResult();
+    });
+
+    document.getElementById('limpiarCatalogoBtn').onclick = function() {
+      document.getElementById('itemReferenciaID').value = '';
+      document.getElementById('itemCodigo').value = '';
+      setMessage('itemMsg', 'Referencia eliminada. Puedes conservar o editar la descripción manualmente.', false);
+    };
+
+    document.getElementById('buscarCarritoBtn').onclick = async function() {
+      state.qCarrito = normalize(document.getElementById('buscarCarrito').value);
+      try {
+        await loadCarritos();
+      } catch (err) {
+        setMessage('carritoMsg', err.message || 'Error buscando carritos', true);
+      }
+    };
+
+    document.getElementById('buscarCarrito').addEventListener('keydown', function(e) {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      document.getElementById('buscarCarritoBtn').click();
+    });
+
+    (async function init() {
+      const empresaID = Number(getQueryParam('empresa_id') || 0);
+      if (!empresaID) {
+        document.getElementById('carritosList').textContent = 'empresa_id requerido en la URL';
+        document.getElementById('addCarritoBtn').disabled = true;
+        return;
+      }
+
+      state.empresaID = empresaID;
+      document.getElementById('empresa_id').value = String(empresaID);
+      document.getElementById('carritoForm').style.display = 'none';
+      document.getElementById('cancelCarritoBtn').style.display = 'none';
+      document.getElementById('cancelItemBtn').style.display = 'none';
+
+      await loadEmpresaTitle();
+      await loadClientes();
+      try {
+        await loadCarritos();
+      } catch (err) {
+        document.getElementById('carritosList').textContent = 'Error cargando carritos';
+        setMessage('carritoMsg', err.message || 'Error cargando carritos', true);
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -1,5 +1,85 @@
 - Historial de cambios
 
+2026-04-01: Rediseño global del modo oscuro a estilo empresarial POS multiempresa
+- Acción:
+    - Se reemplazó el tema oscuro central por una identidad visual empresarial con mejor contraste general.
+    - Se corrigió el problema de formularios oscuros que se confundían con el fondo en páginas del módulo empresa y panel super.
+- Frontend:
+    - `web/estilos.css`:
+        - Nuevas variables base de color para tema oscuro y claro.
+        - Fondo global con mayor profundidad visual y superficies diferenciadas.
+        - Rediseño central de tarjetas, botones, inputs y formularios (`.form`, `.form-input`, `.form-textarea`, `.form-bg-dark .form`).
+        - Ajuste de contraste en tablas, sidebar/admin layout, portal cards y menú flotante.
+        - Estilo de botón `Seleccionar empresa` alineado con la nueva identidad.
+- Resultado esperado:
+    - Formularios claramente visibles sobre el fondo.
+    - Apariencia más profesional y consistente para un sistema POS multiempresa.
+- Documentación:
+    - `documentos/historial_de_cambios`
+- Responsable: agente local
+
+2026-04-01: Integración inteligente de carrito con catálogo + configuración avanzada FE por empresa
+- Acción:
+    - Se integró búsqueda inteligente en el carrito para traer productos/servicios existentes y autocompletar datos del ítem.
+    - Se creó configuración avanzada por empresa para preparar facturación electrónica Colombia (datos fiscales, resolución, consecutivos, impresión POS/grande y logo).
+- Backend:
+    - `backend/db/empresa_configuracion_avanzada.go` (nuevo):
+        - Tabla `empresa_configuracion_avanzada` en `empresas.db`.
+        - Migraciones seguras y funciones de lectura/guardado por empresa.
+    - `backend/handlers/empresa_configuracion_avanzada.go` (nuevo):
+        - Endpoint `GET/POST/PUT /api/empresa/configuracion_avanzada`.
+    - `backend/main.go`:
+        - Registro de `EnsureEmpresaConfiguracionAvanzadaSchema(dbEmpresas)`.
+        - Registro de ruta `/api/empresa/configuracion_avanzada`.
+- Frontend:
+    - `web/administrar_empresa/carrito_de_compras.html`:
+        - Nuevo buscador de catálogo con resultados aplicables al formulario de ítems.
+    - `web/administrar_empresa/configuracion_avanzada.html` (nuevo):
+        - Formulario completo para configuración avanzada de FE por empresa.
+    - `web/administrar_empresa.html`:
+        - Menú actualizado con enlace a `Configuración avanzada`.
+- Documentación:
+    - `documentos/descripcion_de_archivos`
+    - `documentos/descripcion_de_las_bases_De_datos`
+    - `documentos/historial_de_cambios`
+- Responsable: agente local
+
+2026-04-01: Ajuste visual en página de estaciones (solo tarjetas)
+- Acción:
+    - Se eliminó del frontend de estaciones el encabezado textual con título, nombre de empresa y botón de configuración.
+    - La vista ahora muestra únicamente las tarjetas de estaciones, según configuración existente.
+- Frontend:
+    - `web/administrar_empresa/estaciones.html`
+- Documentación:
+    - `documentos/historial_de_cambios`
+- Responsable: agente local
+
+2026-04-01: Submódulo de carrito_de_compras por empresa (multi-carrito) con items y totales
+- Acción:
+    - Se creó la subpágina `carrito_de_compras.html` dentro de `administrar_empresa`.
+    - Se habilitó la gestión de múltiples carritos por empresa (crear, editar, eliminar, activar/desactivar, cerrar/reabrir).
+    - Se implementó gestión de items por carrito con recálculo automático de subtotal, descuento, impuesto y total.
+    - Se añadió base de preparación pre-facturación para futura facturación electrónica (moneda, referencia externa, estado operativo, cliente asociado).
+- Backend:
+    - `backend/db/carritos_compras.go` (nuevo):
+        - Modelos `CarritoCompra` y `CarritoCompraItem`.
+        - Migración/creación de tablas `carritos_compras` y `carrito_compra_items` en `empresas.db`.
+        - CRUD completo de carritos e items, acciones de estado y recálculo de totales.
+    - `backend/handlers/carritos_compras.go` (nuevo):
+        - `GET/POST/PUT/DELETE /api/empresa/carritos_compra`
+        - `GET/POST/PUT/DELETE /api/empresa/carritos_compra/items`
+    - `backend/main.go`:
+        - Registro de `EnsureEmpresaCarritosSchema(dbEmpresas)`.
+        - Registro de rutas del nuevo módulo de carritos.
+- Frontend:
+    - `web/administrar_empresa/carrito_de_compras.html` (nuevo): formulario de carritos, búsqueda, selección de carrito activo y gestión de items.
+    - `web/administrar_empresa.html`: menú actualizado con acceso a `Carrito de compras`.
+- Documentación:
+    - `documentos/descripcion_de_archivos`
+    - `documentos/descripcion_de_las_bases_De_datos`
+    - `documentos/historial_de_cambios`
+- Responsable: agente local
+
 2026-04-01: Submódulo de clientes por empresa (CRUD) orientado a facturación electrónica Colombia
 - Acción:
     - Se creó la subpágina `administrar_clientes.html` dentro de `administrar_empresa` para gestionar clientes por empresa.
