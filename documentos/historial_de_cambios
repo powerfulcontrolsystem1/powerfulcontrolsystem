@@ -1,5 +1,171 @@
 - Historial de cambios
 
+2026-04-01: Nequi en configuración avanzada con switch sandbox/real + modo explícito en backend
+- Acción: Se añadió en `web/super/configuracion_avanzada.html` una tarjeta específica de Nequi/Wompi con selector (switch) para elegir modo `sandbox` o `real`, manteniendo los campos de credenciales (`public_key`, `private_key`, `integrity_key`) para cuando sea necesario configurarlas.
+- Backend:
+    - `backend/handlers/handlers.go` ahora soporta `wompi.mode` (manual) y lo prioriza para decidir la base URL de Wompi en:
+        - `GET /wompi/terms`
+        - `POST /wompi/create_transaction_nequi`
+        - `GET /wompi/transaction_status`
+    - Se corrigió la lectura de configuración para tolerar claves no existentes (`sql.ErrNoRows`) y devolver mensajes controlados (ejemplo: `wompi.public_key not configured`).
+    - Se conserva compatibilidad hacia atrás: si `wompi.mode` no está definido, el modo se infiere por prefijo de llaves (`*_test_*` -> sandbox).
+- UI/estilos:
+    - `web/estilos.css`: nueva clase `nequi-card` y estilos del switch (`mode-switch-row`).
+    - `web/super/configuracion_avanzada.html`: estado visual de modo activo/origen y flujo de edición/guardado del modo.
+- Resultado esperado:
+    - Con modo `sandbox` + credenciales test válidas de Wompi, el número `3991111111` debe retornar `APPROVED` y activar licencia mediante el flujo existente.
+- Validación ejecutada:
+    - `go test ./auth ./db ./handlers ./metrics ./utils` -> OK (compila, sin tests).
+- Archivos modificados:
+    - `backend/handlers/handlers.go`
+    - `web/super/configuracion_avanzada.html`
+    - `web/estilos.css`
+    - `documentos/manual_de_instalacion.md`
+    - `documentos/descripcion_de_archivos`
+    - `documentos/historial_de_cambios`
+- Responsable: agente local
+
+2026-04-01: Selector de método de pago en tarjetas coloridas + guía visual Nequi sandbox
+- Acción UI: En `web/pagar_licencia.html` se implementó selección explícita del método de pago usando tarjetas coloridas diferentes (Mercado Pago azul, Nequi verde).
+- Comportamiento:
+    - Al seleccionar método, se activa solo su panel de pago.
+    - Nequi muestra indicación de sandbox cuando el endpoint `/wompi/terms` reporta modo sandbox.
+    - Se mantiene compatibilidad responsive en móvil/escritorio.
+- Estilos centralizados:
+    - Se añadieron clases en `web/estilos.css` para evitar estilos en línea nuevos y mantener consistencia visual.
+- Archivos modificados:
+    - `web/pagar_licencia.html`
+    - `web/estilos.css`
+    - `documentos/descripcion_de_archivos`
+    - `documentos/historial_de_cambios`
+- Responsable: agente local
+
+2026-04-01: Fix definitivo de mezcla test/productivo en checkout Mercado Pago (prefill payer)
+- Acción: Se corrigió la causa principal del error "Una de las partes ... es de prueba" detectada en logs: el backend recibía `payer.email` real en preferencias creadas con credenciales `TEST-...`.
+- Corrección aplicada:
+    - En `backend/handlers/handlers.go`, cuando la credencial es TEST, el backend ignora `payer_email` y `payer_name` para no mezclar datos reales con comprador de prueba.
+    - Se expone `payer_prefill_applied` en la respuesta de creación de preferencia para diagnóstico.
+    - En `web/pagar_licencia.html`, el prefill solo se envía si el modo está forzado a `prod`.
+- Archivos modificados:
+    - `backend/handlers/handlers.go`
+    - `web/pagar_licencia.html`
+    - `documentos/manual_de_instalacion.md`
+    - `documentos/descripcion_de_archivos`
+    - `documentos/historial_de_cambios`
+- Validación:
+    - `go test ./auth ./db ./handlers ./metrics ./utils` -> OK
+    - `POST /mercadopago/create_preference` con `payer_email` en credencial TEST -> `payer_prefill_applied=false`
+    - Log backend: `ignoring payer prefill because credential is TEST`
+- Responsable: agente local
+
+2026-04-01: Corrección integral Mercado Pago (error de cuentas test/prod) + tarjetas de métodos por color
+- Acción: Se ajustó el flujo de Mercado Pago para evitar mezclar ambientes de prueba y productivo.
+    - El backend detecta la credencial del vendedor y selecciona modo automáticamente:
+        - `TEST-...` -> checkout sandbox.
+        - credencial productiva -> checkout estándar.
+    - Se mantiene override manual por parámetro `mode` (`sandbox`/`prod`).
+    - Se agregó protección adicional: cuando una credencial TEST intenta usar checkout estándar, se devuelve advertencia y el frontend fuerza redirección a sandbox.
+    - Se normalizó `currency_id` a `COP` para el flujo local actual.
+- Acción UI: En `pagar_licencia.html` se separaron visualmente los métodos de pago en tarjetas de colores distintos:
+    - Mercado Pago: tarjeta azul.
+    - Nequi/Wompi: tarjeta verde.
+- Archivos modificados:
+    - `backend/handlers/handlers.go`
+    - `web/pagar_licencia.html`
+    - `documentos/manual_de_instalacion.md`
+    - `documentos/descripcion_de_archivos`
+    - `documentos/historial_de_cambios`
+- Validaciones ejecutadas:
+    - `go test ./auth ./db ./handlers ./metrics ./utils` -> OK (compila, sin tests)
+    - `GET /super/api/config/mercadopago` -> confirma `access_token_masked` tipo `TEST...`
+    - `POST /mercadopago/create_preference` sin `mode` -> `checkout_mode=sandbox`, `credential_env=test`
+    - `POST /mercadopago/create_preference` con `mode=prod` -> checkout estándar disponible
+    - `POST /mercadopago/create_preference` con `mode=sandbox` -> checkout sandbox disponible
+- Responsable: agente local
+
+2026-04-01: Ajuste de checkout Mercado Pago para evitar bloqueo de pago en sandbox
+- Acción: Se ajustó la selección de URL de checkout para usar por defecto `init_point` (modo estándar) y dejar `sandbox_init_point` solo bajo solicitud explícita (`mode=sandbox` / `?mp_mode=sandbox`).
+- Motivo: En pruebas reales de usuario se observó fallo de tokenización/card association en el dominio sandbox (`/checkout/v1/api/bricks/card-form/association` 404), con botón de pago deshabilitado.
+- Archivos modificados:
+    - `backend/handlers/handlers.go`
+    - `web/pagar_licencia.html`
+    - `documentos/descripcion_de_archivos`
+    - `documentos/manual_de_instalacion.md`
+    - `documentos/historial_de_cambios`
+- Validaciones ejecutadas:
+    - `go test ./auth ./db ./handlers ./metrics ./utils` -> OK (compila, sin tests)
+    - `POST /mercadopago/create_preference` con `mode=prod` -> `checkout_mode=prod`, `checkout_url=https://www.mercadopago.com.co/...`
+    - `POST /mercadopago/create_preference` con `mode=sandbox` -> `checkout_mode=sandbox`, `checkout_url=https://sandbox.mercadopago.com.co/...`
+    - Prueba API directa de tokenización/pago (`temp_create_payment.py`) -> `approved` en sandbox (credenciales válidas)
+- Responsable: agente local
+
+2026-04-01: Corrección crítica de autenticación en middleware + validación de endpoints Wompi
+- Acción: Se corrigió un bypass de autenticación en `AuthMiddleware`. La verificación de rutas públicas usaba `HasPrefix("/")`, lo que dejaba todas las rutas expuestas. Ahora se usan rutas públicas exactas y prefijos estáticos acotados.
+- Archivo modificado:
+    - `backend/utils/utils.go`
+    - `documentos/descripcion_de_archivos`
+- Validaciones ejecutadas:
+    - `go test ./auth ./db ./handlers ./metrics ./utils` -> OK (compila, sin tests)
+    - `GET /wompi/terms` sin token -> `401 unauthorized`
+    - `GET /super/api/config/wompi` sin token -> `401 unauthorized`
+    - `PUT /super/api/config/wompi` sin token -> `401 unauthorized`
+    - `GET /super/api/config/wompi` con bearer token válido -> `200 OK`
+    - `GET /wompi/terms` con token y sin llaves configuradas -> `500` esperado por configuración faltante (`wompi.public_key`)
+    - `POST /wompi/create_transaction_nequi` con token y teléfono inválido -> `400` esperado (validación)
+- Responsable: agente local
+
+2026-04-01: Integración alternativa de pago con Nequi (Wompi) + investigación técnica
+- Acción: Se investigó la viabilidad técnica de Nequi en Colombia y se implementó una alternativa de pago vía Wompi (API) además de Mercado Pago.
+- Evidencia técnica investigada:
+    - Wompi incluye método de pago `NEQUI` en su API de transacciones.
+    - Wompi dispone de ambiente `Sandbox` y llaves `pub_test_` / `prv_test_` / `test_integrity_`.
+    - Datos de prueba sandbox para Nequi: `3991111111` (APPROVED) y `3992222222` (DECLINED).
+- Cambios de backend:
+    - Nuevos endpoints:
+        - `GET/PUT /super/api/config/wompi` (guardar/consultar llaves Wompi)
+        - `GET /wompi/terms` (links de términos y datos personales)
+        - `POST /wompi/create_transaction_nequi` (crear transacción Nequi)
+        - `GET /wompi/transaction_status` (consultar estado y activar licencia si `APPROVED`)
+    - Nuevas utilidades de persistencia en DB para `pagos_wompi`.
+    - Nueva tabla `pagos_wompi` + migración de columnas estándar para compatibilidad.
+- Cambios de frontend:
+    - `web/pagar_licencia.html`: se añadió flujo alternativo de pago con Nequi (input celular, checkbox de aceptación, polling de estado).
+    - `web/super/configuracion_avanzada.html`: nueva sección para credenciales Wompi (public/private/integrity, opción de cifrado).
+- Archivos modificados:
+    - `backend/handlers/handlers.go`
+    - `backend/main.go`
+    - `backend/db/db.go`
+    - `web/pagar_licencia.html`
+    - `web/super/configuracion_avanzada.html`
+    - `documentos/manual_de_instalacion.md`
+    - `documentos/descripcion_de_archivos`
+    - `documentos/historial_de_cambios`
+- Pruebas ejecutadas:
+    - `go test ./auth ./db ./handlers ./metrics ./utils` -> OK (compila, sin tests)
+    - Verificación runtime `http://localhost:8080/` -> 200
+    - Nota: `go test ./...` continúa fallando en `backend/tools` por múltiples `main` (situación preexistente).
+- Responsable: agente local
+
+2026-04-01: Corrección de checkout sandbox y persistencia de webhook de Mercado Pago
+- Acción: Se corrigió el flujo de compra para entorno local/sandbox priorizando `sandbox_init_point` y evitando el prefill automático del correo del administrador (esto podía bloquear el botón de pagar en checkout sandbox). También se añadió soporte de `mode` (`sandbox`/`prod`) al crear preferencias y se expone `checkout_url`/`checkout_mode` en la respuesta del backend.
+- Acción adicional: Se corrigió la actualización de `pagos_mercadopago` cuando llega webhook. Había error por columna faltante (`fecha_actualizacion`) en instalaciones previas; ahora hay migración automática de columnas y fallback compatible.
+- Archivos modificados:
+    - web/pagar_licencia.html
+    - backend/handlers/handlers.go
+    - backend/db/db.go
+    - backend/main.go
+    - documentos/manual_de_instalacion.md
+    - documentos/descripcion_de_archivos
+    - documentos/historial_de_cambios
+- Pruebas ejecutadas:
+    - `go build -o server.exe .` (backend): OK
+    - `go test ./auth ./db ./handlers ./metrics ./utils`: OK (sin tests, compila)
+    - `go test ./...`: falla en `backend/tools` por múltiples `main` (preexistente, fuera del flujo principal)
+    - `POST /mercadopago/create_preference` con `mode=sandbox`: devuelve `checkout_url` sandbox correctamente
+    - `POST /mercadopago/webhook` firmado: 200 y actualización en `pagos_mercadopago` (`payment_id` persistido)
+    - `POST /mercadopago/webhook` sin firma (con secret configurado): 401 esperado
+- Responsable: agente local
+
 2026-03-30: Scripts temporales para pruebas E2E (ngrok / preferencia)
 - Acción: Creados scripts temporales en `herramientas` para automatizar la creación de un túnel ngrok hacia el puerto 8080 y para crear una preferencia sandbox en el backend local.
 - Archivos añadidos:

@@ -94,9 +94,26 @@ func GenerateSecureToken(n int) (string, error) {
 func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Path
-		// Rutas públicas
-		public := []string{"/", "/index.html", "/login.html", "/auth/google/login", "/auth/google/callback", "/assets/"}
-		for _, p := range public {
+		// Rutas públicas exactas (no usar prefijo "/" porque abriría todo el sistema).
+		publicExact := map[string]struct{}{
+			"/":                     {},
+			"/index.html":           {},
+			"/login.html":           {},
+			"/auth/google/login":    {},
+			"/auth/google/callback": {},
+			"/auth/logout":          {},
+			"/estilos.css":          {},
+			"/menu.js":              {},
+			"/favicon.ico":          {},
+		}
+		if _, ok := publicExact[path]; ok {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// Recursos estáticos públicos
+		publicPrefixes := []string{"/assets/", "/img/", "/ayuda/"}
+		for _, p := range publicPrefixes {
 			if strings.HasPrefix(path, p) {
 				next.ServeHTTP(w, r)
 				return

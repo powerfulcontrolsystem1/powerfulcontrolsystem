@@ -60,7 +60,19 @@ Fecha de creación: 2026-03-26
 
 - UI/login - recordar cuenta: En `web/login.html` se añadió una casilla "Recordar cuenta" que guarda la preferencia en `localStorage`. Estilos en `web/estilos.css`.
 
-- UI/licencias - flujo de compra: Se añadió una nueva página de pago `web/pagar_licencia.html` y se actualizó `web/elegir_licencia.html` para mostrar las licencias como tarjetas de oferta (`offer-card`) con botón "Comprar". La página de pago solicita la creación de una preferencia a Mercado Pago mediante el endpoint backend `/mercadopago/create_preference` y redirige al checkout (`init_point`). También se expone un webhook en `/mercadopago/webhook` para recibir notificaciones de pago. Para habilitar pagos reales, configurar la variable de entorno `MERCADOPAGO_ACCESS_TOKEN`.
+- UI/licencias - flujo de compra: Se añadió una nueva página de pago `web/pagar_licencia.html` y se actualizó `web/elegir_licencia.html` para mostrar las licencias como tarjetas de oferta (`offer-card`) con botón "Comprar". La página de pago solicita la creación de una preferencia a Mercado Pago mediante el endpoint backend `/mercadopago/create_preference` y redirige al checkout usando `checkout_url`. El modo se decide automáticamente por tipo de credencial (`TEST-...` usa sandbox; productiva usa estándar), con override opcional por URL (`?mp_mode=sandbox` o `?mp_mode=prod`). También se expone un webhook en `/mercadopago/webhook` para recibir notificaciones de pago. El prefill de pagador se deja opcional (`?prefill_payer=1`), pero con credenciales TEST se ignora en backend para evitar mezclar comprador de prueba con datos reales. Para habilitar pagos reales, configurar la variable de entorno `MERCADOPAGO_ACCESS_TOKEN` o el valor en DB (`mercadopago.access_token`).
+
+- UI/pagar licencia - métodos por color y selección: En `web/pagar_licencia.html` se añadió un selector de método de pago con tarjetas coloridas y seleccionables: Mercado Pago (azules) y Nequi/Wompi (verdes). Al elegir método, se muestra su panel correspondiente; para Nequi se muestran indicaciones de sandbox cuando aplica.
+
+- UI/licencias - alternativa Nequi (Wompi): `web/pagar_licencia.html` incluye flujo alterno con Nequi vía Wompi. Solicita número celular, aceptación de términos y consulta estado de transacción en polling. Endpoints usados: `/wompi/terms`, `/wompi/create_transaction_nequi`, `/wompi/transaction_status`.
+
+- Configuración avanzada de pagos:
+	- `web/super/configuracion_avanzada.html`: sección Mercado Pago + tarjeta Nequi/Wompi con switch de modo (`sandbox` / `real`) y campos para `public_key`, `private_key`, `integrity_key` (con opción de cifrado).
+	- `/super/api/config/wompi` (GET/PUT): API para gestionar llaves Wompi desde UI y guardar el modo explícito en `wompi.mode`.
+
+- Persistencia de pagos alternativos:
+	- Tabla `pagos_wompi` en `superadministrador.db` para registrar `transaction_id`, `reference`, `status` y payload crudo de Wompi.
+	- Helpers en `backend/db/db.go`: `CreateWompiPaymentRecord` y `UpdateWompiPaymentRecordByTransaction`.
 
 
 - web/ayuda.html: Nueva página estática de ayuda / documentación básica y contacto.
@@ -98,7 +110,7 @@ Adicional:
 			- Estos helpers están implementados en `backend/db/db.go`.
 
 		 - Referencia: ver la sección `index.html` en `documentos/descripcion_del_proyecto` para la descripción detallada de las tarjetas del portal (Punto de venta, Sistema para Motel, Restaurante, Control por sensor) y las rutas de los logos en `web/img/`.
-			- `web/super/configuracion_avanzada.html` — configuraciones avanzadas (incluye sección para credenciales de Mercado Pago).
+			- `web/super/configuracion_avanzada.html` — configuraciones avanzadas (incluye secciones de Mercado Pago y Nequi/Wompi con selector sandbox/real).
 			- `web/super/administradores.html` — lista de administradores que consulta el endpoint `/super/administradores`.
 			- `web/super/licencias_resumen.html` — página ligera que muestra el número total de licencias activas (consulta `/super/api/licencias`) y enlace rápido a la gestión de licencias.
 
@@ -106,8 +118,8 @@ Adicional:
 			- API `/super/api/administradores` — endpoint CRUD para administradores (GET, POST, PUT, DELETE). Soporta activar/desactivar mediante `PUT ?action=activar&activo=0|1` o `?action=activar&estado=activo`.
 			- `web/super/licencias_resumen.html` — página ligera que muestra el número total de licencias activas (consulta `/super/api/licencias`) y enlace rápido a la gestión de licencias.
  - Generador de tokens: `backend/utils/utils.go` incluye `GenerateSecureToken(n int)` que produce tokens seguros usando `crypto/rand`.
- - Middleware de autenticación: `backend/utils/utils.go` incluye `AuthMiddleware` que valida `session_token` contra `superadministrador.db` y obliga rol `super_administrador` para rutas `/super/`. Rutas públicas: `/`, `/index.html`, `/login.html`, `/auth/google/login`, `/auth/google/callback`, `/assets/`.
- - Middleware de autenticación: `backend/utils/utils.go` incluye `AuthMiddleware` que valida `session_token` contra `superadministrador.db` y obliga rol `super_administrador` para rutas `/super/`. Rutas públicas: `/`, `/index.html`, `/login.html`, `/auth/google/login`, `/auth/google/callback`, `/assets/`.
+ - Middleware de autenticación: `backend/utils/utils.go` incluye `AuthMiddleware` que valida `session_token` contra `superadministrador.db` y obliga rol `super_administrador` para rutas `/super/`. Rutas públicas exactas: `/`, `/index.html`, `/login.html`, `/auth/google/login`, `/auth/google/callback`, `/auth/logout`, `/estilos.css`, `/menu.js`, `/favicon.ico`; y prefijos estáticos públicos: `/assets/`, `/img/`, `/ayuda/`.
+ - Middleware de autenticación: `backend/utils/utils.go` incluye `AuthMiddleware` que valida `session_token` contra `superadministrador.db` y obliga rol `super_administrador` para rutas `/super/`. Rutas públicas exactas: `/`, `/index.html`, `/login.html`, `/auth/google/login`, `/auth/google/callback`, `/auth/logout`, `/estilos.css`, `/menu.js`, `/favicon.ico`; y prefijos estáticos públicos: `/assets/`, `/img/`, `/ayuda/`.
  - Cookies de sesión: `session_token` se establece con `HttpOnly`, `SameSite=Lax` y ahora `Secure=true` (forzado) para transmisión exclusiva por HTTPS en producción. El logout limpia `session_token` con los mismos atributos.
 
 - Carpeta `web/img/`: Contiene recursos gráficos (logos y placeholders) usados en las tarjetas del portal y en el panel de administración.

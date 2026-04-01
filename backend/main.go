@@ -293,11 +293,115 @@ func main() {
 		payment_id TEXT,
 		status TEXT,
 		raw_payload TEXT,
-		fecha_creacion TEXT DEFAULT (datetime('now','localtime'))
+		fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+		fecha_actualizacion TEXT,
+		usuario_creador TEXT,
+		estado TEXT DEFAULT 'activo',
+		observaciones TEXT
 	);`
 	if _, err := dbSuper.Exec(createPagos); err != nil {
 		log.Fatalf("failed to create pagos_mercadopago table in super db: %v", err)
 	}
+
+	// Asegurar columnas nuevas en pagos_mercadopago para compatibilidad con instalaciones previas.
+	ensurePagosSchema := func(db *sql.DB) {
+		rows, err := db.Query("PRAGMA table_info(pagos_mercadopago);")
+		if err != nil {
+			log.Printf("warning: unable to inspect pagos_mercadopago schema: %v", err)
+			return
+		}
+		defer rows.Close()
+		existing := map[string]bool{}
+		for rows.Next() {
+			var cid int
+			var name string
+			var ctype string
+			var notnull int
+			var dflt sql.NullString
+			var pk int
+			if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
+				log.Printf("warning: scan pragma table_info pagos_mercadopago error: %v", err)
+				return
+			}
+			existing[name] = true
+		}
+
+		addIfMissing := func(colDef string, name string) {
+			if !existing[name] {
+				q := fmt.Sprintf("ALTER TABLE pagos_mercadopago ADD COLUMN %s;", colDef)
+				if _, err := db.Exec(q); err != nil {
+					log.Printf("failed to add column %s to pagos_mercadopago: %v", name, err)
+				} else {
+					log.Printf("added missing column %s to pagos_mercadopago", name)
+				}
+			}
+		}
+
+		addIfMissing("fecha_actualizacion TEXT", "fecha_actualizacion")
+		addIfMissing("usuario_creador TEXT", "usuario_creador")
+		addIfMissing("estado TEXT DEFAULT 'activo'", "estado")
+		addIfMissing("observaciones TEXT", "observaciones")
+	}
+	ensurePagosSchema(dbSuper)
+
+	// Tabla para registrar transacciones/pagos de Wompi (Nequi)
+	createPagosWompi := `CREATE TABLE IF NOT EXISTS pagos_wompi (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		licencia_id INTEGER,
+		empresa_id INTEGER,
+		transaction_id TEXT,
+		reference TEXT,
+		status TEXT,
+		raw_payload TEXT,
+		fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+		fecha_actualizacion TEXT,
+		usuario_creador TEXT,
+		estado TEXT DEFAULT 'activo',
+		observaciones TEXT
+	);`
+	if _, err := dbSuper.Exec(createPagosWompi); err != nil {
+		log.Fatalf("failed to create pagos_wompi table in super db: %v", err)
+	}
+
+	ensurePagosWompiSchema := func(db *sql.DB) {
+		rows, err := db.Query("PRAGMA table_info(pagos_wompi);")
+		if err != nil {
+			log.Printf("warning: unable to inspect pagos_wompi schema: %v", err)
+			return
+		}
+		defer rows.Close()
+		existing := map[string]bool{}
+		for rows.Next() {
+			var cid int
+			var name string
+			var ctype string
+			var notnull int
+			var dflt sql.NullString
+			var pk int
+			if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
+				log.Printf("warning: scan pragma table_info pagos_wompi error: %v", err)
+				return
+			}
+			existing[name] = true
+		}
+
+		addIfMissing := func(colDef string, name string) {
+			if !existing[name] {
+				q := fmt.Sprintf("ALTER TABLE pagos_wompi ADD COLUMN %s;", colDef)
+				if _, err := db.Exec(q); err != nil {
+					log.Printf("failed to add column %s to pagos_wompi: %v", name, err)
+				} else {
+					log.Printf("added missing column %s to pagos_wompi", name)
+				}
+			}
+		}
+
+		addIfMissing("fecha_actualizacion TEXT", "fecha_actualizacion")
+		addIfMissing("usuario_creador TEXT", "usuario_creador")
+		addIfMissing("estado TEXT DEFAULT 'activo'", "estado")
+		addIfMissing("observaciones TEXT", "observaciones")
+	}
+	ensurePagosWompiSchema(dbSuper)
 
 	// Tabla para almacenar configuraciones/k-v (ej. credenciales cifradas)
 	createConfiguraciones := `CREATE TABLE IF NOT EXISTS configuraciones (
@@ -359,10 +463,16 @@ func main() {
 	http.HandleFunc("/super/api/licencias", handlers.LicenciasHandler(dbSuper))
 	// Endpoint para gestionar credenciales de Mercado Pago (GET/PUT)
 	http.HandleFunc("/super/api/config/mercadopago", handlers.MercadoPagoConfigHandler(dbSuper))
+	// Endpoint para gestionar credenciales de Wompi (GET/PUT)
+	http.HandleFunc("/super/api/config/wompi", handlers.WompiConfigHandler(dbSuper))
 	// Endpoints for Mercado Pago integration (crear preferencia y webhook)
 	http.HandleFunc("/mercadopago/create_preference", handlers.MercadoPagoCreatePreferenceHandler(dbSuper))
 	http.HandleFunc("/mercadopago/webhook", handlers.MercadoPagoWebhookHandler(dbSuper))
 	http.HandleFunc("/mercadopago/test_preference", handlers.MercadoPagoTestPreferenceHandler(dbSuper))
+	// Endpoints Wompi (Nequi): crear transacción y consultar estado
+	http.HandleFunc("/wompi/terms", handlers.WompiTermsHandler(dbSuper))
+	http.HandleFunc("/wompi/create_transaction_nequi", handlers.WompiCreateNequiTransactionHandler(dbSuper))
+	http.HandleFunc("/wompi/transaction_status", handlers.WompiTransactionStatusHandler(dbSuper))
 
 	// Endpoints de métricas (actual y histórico)
 	http.HandleFunc("/super/api/metrics/current", handlers.MetricsCurrentHandler(dbSuper))

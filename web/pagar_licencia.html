@@ -36,6 +36,11 @@
         const licenciaId = params.get('licencia_id');
         const empresaId = params.get('empresa_id');
         const status = params.get('status');
+        const modeParam = (params.get('mp_mode') || '').toLowerCase();
+        const shouldPrefillPayer = params.get('prefill_payer') === '1';
+        const forceSandbox = modeParam === 'sandbox' || modeParam === 'test';
+        const forceProd = modeParam === 'prod' || modeParam === 'production' || modeParam === 'live';
+        const selectedMode = forceSandbox ? 'sandbox' : (forceProd ? 'prod' : '');
 
         const container = document.getElementById('payment');
         if (status){
@@ -48,7 +53,7 @@
         if (!licenciaId){ container.innerText = 'ID de licencia no proporcionado.'; return }
 
         try{
-          // obtener info del usuario (para prefill payer)
+          // obtener info del usuario para email de Wompi y prefill opcional en Mercado Pago
           let adminEmail = '';
           let adminName = '';
           try{
@@ -67,31 +72,81 @@
           const lic = (licencias||[]).find(function(x){ return String(x.id) === String(licenciaId) });
           if (!lic){ container.innerText = 'Licencia no encontrada.'; return }
 
+          const modeHint = selectedMode === 'sandbox'
+            ? 'Modo sandbox forzado por URL. Usa comprador test distinto al vendedor.'
+            : (selectedMode === 'prod'
+              ? 'Modo estándar forzado por URL.'
+              : 'Modo automático: credenciales TEST usan sandbox; credenciales productivas usan modo estándar.');
+
           container.innerHTML = ''+
-            '<div style="display:flex;gap:18px;align-items:center;justify-content:space-between;flex-wrap:wrap">'+
-            '<div style="flex:1;min-width:240px">'+
-              '<h2>'+escapeHtml(lic.nombre||lic.Nombre||'')+'</h2>'+
-              '<p class="muted small">' + (empresaId? ('Empresa: ' + escapeHtml((empresas.find(function(x){ return String(x.id) === String(empresaId) })||{}).nombre || '')) : '') + '</p>'+
-              '<p class="card-desc">'+escapeHtml(lic.descripcion||lic.Descripcion||'')+'</p>'+
-              '<p><strong>Duración:</strong> '+escapeHtml(String(lic.duracion_dias||lic.DuracionDias||''))+' días</p>'+
-            '</div>'+
-            '<div style="min-width:180px;text-align:right">'+
-              '<div style="font-size:1.5rem;font-weight:900">$ '+escapeHtml(String(lic.valor||lic.Valor||0))+'</div>'+
-              '<div style="margin-top:12px">'+
-                '<button id="payBtn" class="btn buy">Pagar con Mercado Pago</button>'+
+            '<div class="payment-licencia-summary">'+
+              '<div class="payment-licencia-info">'+
+                '<h2>'+escapeHtml(lic.nombre||lic.Nombre||'')+'</h2>'+
+                '<p class="muted small">' + (empresaId ? ('Empresa: ' + escapeHtml((empresas.find(function(x){ return String(x.id) === String(empresaId) })||{}).nombre || '')) : '') + '</p>'+
+                '<p class="card-desc">'+escapeHtml(lic.descripcion||lic.Descripcion||'')+'</p>'+
+                '<p><strong>Duración:</strong> '+escapeHtml(String(lic.duracion_dias||lic.DuracionDias||''))+' días</p>'+
               '</div>'+
+              '<div class="payment-licencia-price">$ '+escapeHtml(String(lic.valor||lic.Valor||0))+'</div>'+
             '</div>'+
+            '<h3 class="payment-method-title">Selecciona el método de pago</h3>'+
+            '<div class="payment-method-selector">'+
+              '<button id="selectMpCard" type="button" class="payment-method-card payment-method-mp">'+
+                '<span class="method-name">Mercado Pago</span>'+
+                '<span class="method-desc">Tarjetas y checkout de Mercado Pago</span>'+
+              '</button>'+
+              '<button id="selectNequiCard" type="button" class="payment-method-card payment-method-nequi">'+
+                '<span class="method-name">Nequi (Wompi)</span>'+
+                '<span class="method-desc">Pago Nequi para Colombia (sandbox/producción)</span>'+
+              '</button>'+
+            '</div>'+
+            '<div id="mpPanel" class="payment-method-panel payment-method-panel-mp">'+
+              '<div class="method-panel-heading">Mercado Pago</div>'+
+              '<div class="small payment-method-hint">'+escapeHtml(modeHint)+'</div>'+
+              '<button id="payBtn" class="btn buy payment-btn-mp">Pagar con Mercado Pago</button>'+
+              '<div id="mpStatus" class="small payment-method-status"></div>'+
+            '</div>'+
+            '<div id="nequiPanel" class="payment-method-panel payment-method-panel-nequi">'+
+              '<div class="method-panel-heading">Nequi (Wompi)</div>'+
+              '<label for="nequiPhone" class="muted small">Celular Nequi (10 dígitos):</label>'+
+              '<input id="nequiPhone" class="payment-method-input" type="text" inputmode="numeric" maxlength="10" placeholder="3991111111">'+
+              '<div id="nequiSandboxHint" class="small payment-method-hint">En sandbox: 3991111111 aprueba, 3992222222 declina.</div>'+
+              '<label class="small payment-method-check"><input id="nequiTermsChk" type="checkbox"> Acepto términos y tratamiento de datos</label>'+
+              '<div id="nequiTermsLinks" class="small payment-method-links"></div>'+
+              '<button id="payNequiBtn" class="btn secondary payment-btn-nequi" type="button">Pagar con Nequi</button>'+
+              '<div id="nequiStatus" class="small payment-method-status"></div>'+
             '</div>';
 
           const payBtn = document.getElementById('payBtn');
+          const mpStatus = document.getElementById('mpStatus');
+          const selectMpCard = document.getElementById('selectMpCard');
+          const selectNequiCard = document.getElementById('selectNequiCard');
+          const mpPanel = document.getElementById('mpPanel');
+          const nequiPanel = document.getElementById('nequiPanel');
+
+          function setPaymentMethod(method){
+            const isMp = method !== 'nequi';
+            if (selectMpCard) selectMpCard.classList.toggle('active', isMp);
+            if (selectNequiCard) selectNequiCard.classList.toggle('active', !isMp);
+            if (mpPanel) mpPanel.classList.toggle('active', isMp);
+            if (nequiPanel) nequiPanel.classList.toggle('active', !isMp);
+          }
+
+          if (selectMpCard) selectMpCard.addEventListener('click', function(){ setPaymentMethod('mp'); });
+          if (selectNequiCard) selectNequiCard.addEventListener('click', function(){ setPaymentMethod('nequi'); });
+
+          const preferredProvider = String(params.get('provider') || params.get('metodo') || params.get('method') || '').toLowerCase();
+          setPaymentMethod(preferredProvider === 'nequi' ? 'nequi' : 'mp');
+
           payBtn.addEventListener('click', async function(){
-            payBtn.disabled = true; payBtn.textContent = 'Redirigiendo...';
+            payBtn.disabled = true; payBtn.textContent = selectedMode === 'sandbox' ? 'Abriendo sandbox...' : 'Redirigiendo...';
+            if (mpStatus) mpStatus.textContent = '';
             try{
               const payload = { licencia_id: Number(licenciaId) };
+              if (selectedMode) payload.mode = selectedMode;
               if (empresaId) payload.empresa_id = Number(empresaId);
-              // incluir email del administrador como prefill para el payer cuando esté disponible
-              if (typeof adminEmail !== 'undefined' && adminEmail) payload.payer_email = adminEmail;
-              if (typeof adminName !== 'undefined' && adminName) payload.payer_name = adminName;
+              // incluir prefill solo cuando se solicita explícitamente y en modo prod forzado
+              if (shouldPrefillPayer && selectedMode === 'prod' && typeof adminEmail !== 'undefined' && adminEmail) payload.payer_email = adminEmail;
+              if (shouldPrefillPayer && selectedMode === 'prod' && typeof adminName !== 'undefined' && adminName) payload.payer_name = adminName;
               const mpRes = await fetch('/mercadopago/create_preference', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
               if (!mpRes.ok){
                 const txt = await mpRes.text();
@@ -100,11 +155,150 @@
                 return;
               }
               const data = await mpRes.json();
-              // try common fields
-              const init = data.init_point || data.sandbox_init_point || (data.preference && data.preference.init_point) || data.url || (data.checkout && data.checkout.url);
+              if (mpStatus && data && data.checkout_mode) {
+                const env = data.credential_env ? (' | credencial: ' + data.credential_env) : '';
+                mpStatus.textContent = 'Redirigiendo en modo: ' + data.checkout_mode + env;
+              }
+              if (data && data.credential_env === 'test' && data.checkout_mode === 'prod') {
+                const fallbackSandbox = data.sandbox_checkout_url || data.sandbox_init_point;
+                if (fallbackSandbox) {
+                  if (mpStatus) mpStatus.textContent = 'Se detectó credencial TEST; cambiando automáticamente a sandbox.';
+                  window.location.href = fallbackSandbox;
+                  return;
+                }
+              }
+              // priorizar URL según modo y permitir fallback a variantes comunes
+              const init = data.checkout_url ||
+                (selectedMode === 'sandbox'
+                  ? (data.sandbox_init_point || data.init_point)
+                  : (data.init_point || data.sandbox_init_point)) ||
+                (data.preference && (selectedMode === 'sandbox' ? (data.preference.sandbox_init_point || data.preference.init_point) : (data.preference.init_point || data.preference.sandbox_init_point))) ||
+                data.url || (data.checkout && data.checkout.url);
               if (!init){ alert('Respuesta inválida de Mercado Pago'); payBtn.disabled=false; payBtn.textContent='Pagar con Mercado Pago'; return }
               window.location.href = init;
             }catch(err){ console.error(err); alert('Error iniciando pago: '+(err.message||err)); payBtn.disabled=false; payBtn.textContent='Pagar con Mercado Pago'; }
+          });
+
+          const nequiBtn = document.getElementById('payNequiBtn');
+          const nequiPhoneInput = document.getElementById('nequiPhone');
+          const nequiTermsChk = document.getElementById('nequiTermsChk');
+          const nequiStatus = document.getElementById('nequiStatus');
+          const nequiTermsLinks = document.getElementById('nequiTermsLinks');
+          const nequiSandboxHint = document.getElementById('nequiSandboxHint');
+
+          try{
+            const termsRes = await fetch('/wompi/terms');
+            if (termsRes.ok) {
+              const terms = await termsRes.json();
+              const linkA = terms.acceptance_permalink ? ('<a href="'+escapeHtml(terms.acceptance_permalink)+'" target="_blank" rel="noopener">Términos</a>') : 'Términos';
+              const linkB = terms.personal_data_permalink ? ('<a href="'+escapeHtml(terms.personal_data_permalink)+'" target="_blank" rel="noopener">Datos personales</a>') : 'Datos personales';
+              nequiTermsLinks.innerHTML = linkA + ' · ' + linkB;
+              const wompiMode = String(terms.mode || '').toLowerCase();
+              if (wompiMode.includes('sandbox')) {
+                if (terms.sandbox_phone_approved && terms.sandbox_phone_declined) {
+                  nequiSandboxHint.textContent = 'Sandbox activo: ' + terms.sandbox_phone_approved + ' aprueba, ' + terms.sandbox_phone_declined + ' declina.';
+                }
+              } else {
+                nequiSandboxHint.textContent = 'Modo producción activo para Nequi.';
+              }
+            } else {
+              nequiTermsLinks.textContent = 'No se pudieron cargar los términos de Wompi.';
+            }
+          }catch(e){
+            nequiTermsLinks.textContent = 'No se pudieron cargar los términos de Wompi.';
+          }
+
+          nequiBtn.addEventListener('click', async function(){
+            const phone = String((nequiPhoneInput && nequiPhoneInput.value) || '').trim();
+            if (!/^3\d{9}$/.test(phone)) {
+              nequiStatus.textContent = 'Ingresa un celular válido de Nequi (10 dígitos, inicia por 3).';
+              return;
+            }
+            if (!nequiTermsChk.checked) {
+              nequiStatus.textContent = 'Debes aceptar términos y autorización de datos para pagar con Nequi.';
+              return;
+            }
+
+            nequiBtn.disabled = true;
+            nequiBtn.textContent = 'Enviando a Nequi...';
+            nequiStatus.textContent = '';
+            try {
+              const payload = {
+                licencia_id: Number(licenciaId),
+                phone_number: phone,
+                accept_terms: true
+              };
+              if (empresaId) payload.empresa_id = Number(empresaId);
+              if (adminEmail) payload.customer_email = adminEmail;
+
+              const wompiRes = await fetch('/wompi/create_transaction_nequi', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify(payload)
+              });
+
+              const raw = await wompiRes.text();
+              let data = null;
+              try { data = JSON.parse(raw); } catch(e) { data = null; }
+              if (!wompiRes.ok) {
+                const msg = data && data.error ? data.error : raw;
+                nequiStatus.textContent = 'Error Nequi: ' + msg;
+                if (data && data.acceptance_permalink && data.personal_data_permalink) {
+                  nequiTermsLinks.innerHTML = '<a href="'+escapeHtml(data.acceptance_permalink)+'" target="_blank" rel="noopener">Términos</a> · <a href="'+escapeHtml(data.personal_data_permalink)+'" target="_blank" rel="noopener">Datos personales</a>';
+                }
+                nequiBtn.disabled = false;
+                nequiBtn.textContent = 'Pagar con Nequi';
+                return;
+              }
+
+              const txId = data && (data.transaction_id || (data.data && data.data.id));
+              if (!txId) {
+                nequiStatus.textContent = 'No se recibió transaction_id de Wompi.';
+                nequiBtn.disabled = false;
+                nequiBtn.textContent = 'Pagar con Nequi';
+                return;
+              }
+
+              nequiStatus.textContent = 'Solicitud enviada. Revisa y acepta en tu app Nequi. Estado: ' + (data.status || 'PENDING');
+
+              let tries = 0;
+              const maxTries = 30;
+              const finalStates = ['APPROVED','DECLINED','ERROR','VOIDED','CANCELED'];
+              const poll = async function(){
+                tries++;
+                try {
+                  const stRes = await fetch('/wompi/transaction_status?id=' + encodeURIComponent(txId));
+                  if (stRes.ok) {
+                    const stData = await stRes.json();
+                    const st = String(stData.status || '').toUpperCase();
+                    nequiStatus.textContent = 'Estado Nequi: ' + (st || 'PENDING');
+                    if (st === 'APPROVED') {
+                      window.location.href = '/pagar_licencia.html?status=success&provider=nequi';
+                      return;
+                    }
+                    if (finalStates.indexOf(st) >= 0) {
+                      nequiBtn.disabled = false;
+                      nequiBtn.textContent = 'Pagar con Nequi';
+                      return;
+                    }
+                  }
+                } catch (errPoll) {
+                  // continuar polling temporalmente
+                }
+                if (tries < maxTries) {
+                  setTimeout(poll, 3000);
+                } else {
+                  nequiStatus.textContent = 'Tiempo de espera agotado. Verifica el estado en unos segundos.';
+                  nequiBtn.disabled = false;
+                  nequiBtn.textContent = 'Pagar con Nequi';
+                }
+              };
+              setTimeout(poll, 2500);
+            } catch (err) {
+              nequiStatus.textContent = 'Error enviando pago Nequi: ' + (err && err.message ? err.message : String(err));
+              nequiBtn.disabled = false;
+              nequiBtn.textContent = 'Pagar con Nequi';
+            }
           });
 
         }catch(err){ console.error(err); container.innerText = 'Error: ' + (err && err.message ? err.message : String(err)); }

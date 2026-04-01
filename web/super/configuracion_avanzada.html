@@ -73,6 +73,61 @@
       </div>
       <div id="mpWebhookMsg" class="form-help"></div>
     </section>
+
+    <section class="card form nequi-card" id="wompiConfig">
+      <h2>Nequi (Wompi) — Modo y credenciales</h2>
+      <p class="form-help">Activa primero el modo <strong>sandbox</strong> para pruebas (ejemplo: <strong>3991111111</strong>) y usa modo <strong>real</strong> solo en producción.</p>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Modo de Nequi</label>
+          <label class="mode-switch-row" for="wompiModeToggle">
+            <span class="mode-label">Sandbox</span>
+            <input id="wompiModeToggle" type="checkbox" role="switch" aria-label="Cambiar entre sandbox y real">
+            <span class="mode-label">Real</span>
+          </label>
+          <div id="wompiModeHint" class="form-help">Modo sandbox: usa 3991111111 para aprobación de prueba.</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Estado actual</label>
+          <div id="wompiModeInfo" class="form-help">Modo: --</div>
+          <div id="wompiModeSource" class="form-help">Origen: --</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Public Key</label>
+          <input id="wompiPublicKey" class="form-input" type="text" placeholder="pub_test_... o pub_prod_...">
+          <div id="wompiPublicSet" class="form-help">Cargando estado...</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Private Key (secreta)</label>
+          <input id="wompiPrivateKey" class="form-input" type="password" placeholder="prv_test_... o prv_prod_...">
+          <div id="wompiPrivateSet" class="form-help">Cargando estado...</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Integrity Key (secreta)</label>
+          <input id="wompiIntegrityKey" class="form-input" type="password" placeholder="test_integrity_... o prod_integrity_...">
+          <div id="wompiIntegritySet" class="form-help">Cargando estado...</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Opciones</label>
+          <div class="form-help"><label><input id="wompiEncryptToggle" type="checkbox"> Cifrar llaves secretas al guardar</label></div>
+          <div class="form-help">Si no conoces las credenciales, deja este formulario listo y luego pégalas cuando te las entregue Wompi.</div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button id="saveWompiBtn" class="btn">Guardar Wompi</button>
+        <button id="editWompiBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Editar</button>
+        <button id="cancelWompiBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Cancelar</button>
+      </div>
+      <div id="wompiMsg" class="form-help"></div>
+    </section>
   </div>
 
   <script>
@@ -136,6 +191,94 @@
             document.getElementById('mpPublicSetAdv').innerText = 'Error al leer configuración';
           }
         }catch(e){ document.getElementById('mpAccessSetAdv').innerText = 'Error cargando'; document.getElementById('mpPublicSetAdv').innerText = 'Error cargando' }
+
+        // cargar estado Wompi
+        try {
+          const rw = await fetch('/super/api/config/wompi');
+          if (rw.ok) {
+            const wompi = await rw.json();
+            if (typeof wompi.encryption_available !== 'undefined' && !wompi.encryption_available) {
+              document.getElementById('wompiEncryptToggle').disabled = true;
+              document.getElementById('wompiEncryptToggle').checked = false;
+            }
+
+            const modeToggle = document.getElementById('wompiModeToggle');
+            const modeInfo = document.getElementById('wompiModeInfo');
+            const modeSource = document.getElementById('wompiModeSource');
+            const effectiveMode = String(wompi.mode || '').toLowerCase() === 'production' ? 'production' : 'sandbox';
+            if (modeToggle) modeToggle.checked = effectiveMode === 'production';
+            if (modeInfo) modeInfo.innerText = 'Modo: ' + (effectiveMode === 'production' ? 'real' : 'sandbox');
+            const modeSourceMap = { manual: 'manual', keys: 'inferido por llaves', default: 'default' };
+            if (modeSource) modeSource.innerText = 'Origen: ' + (modeSourceMap[wompi.mode_source] || wompi.mode_source || '--');
+            refreshWompiModeHint();
+
+            if (wompi.public_key_set) {
+              const ts = wompi.public_key_updated ? (' — Última actualización: ' + wompi.public_key_updated) : '';
+              document.getElementById('wompiPublicSet').innerText = 'Public key guardada (' + (wompi.public_key_masked || '') + ')' + ts;
+              document.getElementById('wompiPublicKey').disabled = true;
+            } else {
+              document.getElementById('wompiPublicSet').innerText = 'No configurada';
+              document.getElementById('wompiPublicKey').disabled = false;
+            }
+
+            if (wompi.private_key_set) {
+              const ts2 = wompi.private_key_updated ? (' — Última actualización: ' + wompi.private_key_updated) : '';
+              document.getElementById('wompiPrivateSet').innerText = 'Private key guardada (' + (wompi.private_key_masked || '****') + ')' + ts2;
+              document.getElementById('wompiPrivateKey').disabled = true;
+            } else {
+              document.getElementById('wompiPrivateSet').innerText = 'No configurada';
+              document.getElementById('wompiPrivateKey').disabled = false;
+            }
+
+            if (wompi.integrity_key_set) {
+              const ts3 = wompi.integrity_key_updated ? (' — Última actualización: ' + wompi.integrity_key_updated) : '';
+              document.getElementById('wompiIntegritySet').innerText = 'Integrity key guardada (' + (wompi.integrity_key_masked || '****') + ')' + ts3;
+              document.getElementById('wompiIntegrityKey').disabled = true;
+            } else {
+              document.getElementById('wompiIntegritySet').innerText = 'No configurada';
+              document.getElementById('wompiIntegrityKey').disabled = false;
+            }
+
+            const hasWompiConfig = !!(wompi.public_key_set || wompi.private_key_set || wompi.integrity_key_set || wompi.mode_set);
+            if (hasWompiConfig) {
+              document.getElementById('wompiPublicKey').disabled = true;
+              document.getElementById('wompiPrivateKey').disabled = true;
+              document.getElementById('wompiIntegrityKey').disabled = true;
+              if (modeToggle) modeToggle.disabled = true;
+              document.getElementById('editWompiBtn').style.display = '';
+              document.getElementById('saveWompiBtn').disabled = true;
+            } else {
+              document.getElementById('wompiPublicKey').disabled = false;
+              document.getElementById('wompiPrivateKey').disabled = false;
+              document.getElementById('wompiIntegrityKey').disabled = false;
+              if (modeToggle) modeToggle.disabled = false;
+              document.getElementById('editWompiBtn').style.display = 'none';
+              document.getElementById('saveWompiBtn').disabled = false;
+            }
+          } else {
+            document.getElementById('wompiPublicSet').innerText = 'Error al leer configuración';
+            document.getElementById('wompiPrivateSet').innerText = 'Error al leer configuración';
+            document.getElementById('wompiIntegritySet').innerText = 'Error al leer configuración';
+            document.getElementById('wompiModeInfo').innerText = 'Modo: --';
+            document.getElementById('wompiModeSource').innerText = 'Origen: --';
+          }
+        } catch (e) {
+          document.getElementById('wompiPublicSet').innerText = 'Error cargando';
+          document.getElementById('wompiPrivateSet').innerText = 'Error cargando';
+          document.getElementById('wompiIntegritySet').innerText = 'Error cargando';
+          document.getElementById('wompiModeInfo').innerText = 'Modo: --';
+          document.getElementById('wompiModeSource').innerText = 'Origen: --';
+        }
+      }
+
+      function refreshWompiModeHint(){
+        const modeToggle = document.getElementById('wompiModeToggle');
+        const modeHint = document.getElementById('wompiModeHint');
+        if (!modeToggle || !modeHint) return;
+        const isRealMode = !!modeToggle.checked;
+        modeHint.innerText = isRealMode
+          ? 'Modo real activo: se usarán cobros reales con credenciales productivas.'
+          : 'Modo sandbox activo: usa 3991111111 para aprobar y 3992222222 para rechazar.';
       }
 
       // advanced config removed
@@ -231,12 +374,68 @@
         document.getElementById('mpWebhookMsg').innerText = 'Edición cancelada.';
       }
 
+      async function saveWompi(e){
+        if (e && e.preventDefault) e.preventDefault();
+        const pub = document.getElementById('wompiPublicKey').value.trim();
+        const prv = document.getElementById('wompiPrivateKey').value.trim();
+        const integrity = document.getElementById('wompiIntegrityKey').value.trim();
+        const encrypt = !!document.getElementById('wompiEncryptToggle').checked;
+        const mode = document.getElementById('wompiModeToggle').checked ? 'production' : 'sandbox';
+
+        const payload = { encrypt, mode };
+        if (pub) payload.public_key = pub;
+        if (prv) payload.private_key = prv;
+        if (integrity) payload.integrity_key = integrity;
+
+        const btn = document.getElementById('saveWompiBtn');
+        btn.disabled = true; btn.innerText = 'Guardando...';
+        try {
+          const res = await fetch('/super/api/config/wompi', { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+          const raw = await res.text();
+          let body = null;
+          try { body = JSON.parse(raw); } catch(err) { body = null; }
+          if (res.ok) {
+            const modeTxt = mode === 'production' ? 'real' : 'sandbox';
+            document.getElementById('wompiMsg').innerText = 'Configuración Wompi guardada correctamente. Modo activo: ' + modeTxt + '.';
+            document.getElementById('wompiPublicKey').value = '';
+            document.getElementById('wompiPrivateKey').value = '';
+            document.getElementById('wompiIntegrityKey').value = '';
+            await load();
+          } else {
+            document.getElementById('wompiMsg').innerText = 'Error guardando Wompi: ' + (body ? JSON.stringify(body) : raw);
+          }
+        } catch (err) {
+          document.getElementById('wompiMsg').innerText = 'Error: ' + (err.message || err);
+        }
+        btn.disabled = false; btn.innerText = 'Guardar Wompi';
+      }
+
+      function enableEditWompi(){
+        document.getElementById('wompiPublicKey').disabled = false;
+        document.getElementById('wompiPrivateKey').disabled = false;
+        document.getElementById('wompiIntegrityKey').disabled = false;
+        document.getElementById('wompiModeToggle').disabled = false;
+        document.getElementById('saveWompiBtn').disabled = false;
+        document.getElementById('editWompiBtn').style.display = 'none';
+        document.getElementById('cancelWompiBtn').style.display = '';
+        document.getElementById('wompiMsg').innerText = 'Modo edición: ajusta sandbox/real y actualiza credenciales si aplica.';
+      }
+
+      function cancelEditWompi(){
+        load();
+        document.getElementById('wompiMsg').innerText = 'Edición cancelada.';
+      }
+
       document.getElementById('saveMpAdvBtn').addEventListener('click', saveMP);
       document.getElementById('saveMpWebhookBtn').addEventListener('click', saveMP);
       document.getElementById('editMpAdvBtn').addEventListener('click', enableEditMP);
       document.getElementById('cancelMpAdvBtn').addEventListener('click', cancelEditMP);
       document.getElementById('editMpWebhookBtn').addEventListener('click', enableEditWebhook);
       document.getElementById('cancelMpWebhookBtn').addEventListener('click', cancelEditWebhook);
+      document.getElementById('saveWompiBtn').addEventListener('click', saveWompi);
+      document.getElementById('editWompiBtn').addEventListener('click', enableEditWompi);
+      document.getElementById('cancelWompiBtn').addEventListener('click', cancelEditWompi);
+      document.getElementById('wompiModeToggle').addEventListener('change', refreshWompiModeHint);
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', load); else load();
     })();
   </script>

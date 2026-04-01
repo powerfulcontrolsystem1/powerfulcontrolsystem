@@ -541,7 +541,38 @@ func CreateMPPaymentRecord(dbConn *sql.DB, licenciaID, empresaID int64, preferen
 // UpdateMPPaymentRecordByPreference actualiza el registro de pago creado inicialmente por preferencia
 func UpdateMPPaymentRecordByPreference(dbConn *sql.DB, preferenceID, paymentID, status, rawPayload string) error {
 	_, err := dbConn.Exec("UPDATE pagos_mercadopago SET payment_id = ?, status = ?, raw_payload = ?, fecha_actualizacion = datetime('now','localtime') WHERE preference_id = ?", paymentID, status, rawPayload, preferenceID)
-	return err
+	if err == nil {
+		return nil
+	}
+	// Compatibilidad con bases antiguas que aún no tienen la columna fecha_actualizacion.
+	_, fallbackErr := dbConn.Exec("UPDATE pagos_mercadopago SET payment_id = ?, status = ?, raw_payload = ? WHERE preference_id = ?", paymentID, status, rawPayload, preferenceID)
+	if fallbackErr == nil {
+		return nil
+	}
+	return fallbackErr
+}
+
+// CreateWompiPaymentRecord registra una transacción inicial de Wompi en la tabla pagos_wompi.
+func CreateWompiPaymentRecord(dbConn *sql.DB, licenciaID, empresaID int64, transactionID, reference, status, rawPayload string) (int64, error) {
+	res, err := dbConn.Exec("INSERT INTO pagos_wompi (licencia_id, empresa_id, transaction_id, reference, status, raw_payload, fecha_creacion) VALUES (?, ?, ?, ?, ?, ?, datetime('now','localtime'))", licenciaID, empresaID, transactionID, reference, status, rawPayload)
+	if err != nil {
+		return 0, err
+	}
+	return res.LastInsertId()
+}
+
+// UpdateWompiPaymentRecordByTransaction actualiza una transacción de Wompi usando su transaction_id.
+func UpdateWompiPaymentRecordByTransaction(dbConn *sql.DB, transactionID, status, rawPayload string) error {
+	_, err := dbConn.Exec("UPDATE pagos_wompi SET status = ?, raw_payload = ?, fecha_actualizacion = datetime('now','localtime') WHERE transaction_id = ?", status, rawPayload, transactionID)
+	if err == nil {
+		return nil
+	}
+	// Compatibilidad con bases antiguas que aún no tienen la columna fecha_actualizacion.
+	_, fallbackErr := dbConn.Exec("UPDATE pagos_wompi SET status = ?, raw_payload = ? WHERE transaction_id = ?", status, rawPayload, transactionID)
+	if fallbackErr == nil {
+		return nil
+	}
+	return fallbackErr
 }
 
 // ActivateLicenciaForEmpresa asigna y activa una licencia para una empresa, estableciendo fechas de inicio y fin
