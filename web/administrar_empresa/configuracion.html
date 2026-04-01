@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Configuración de empresa</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="empresa-subpage">
+  <div class="container empresa-module">
+    <section class="card empresa-section">
+      <h1>Configuración</h1>
+      <p id="empresaInfo">Empresa: cargando...</p>
+      <p class="form-help">Configura reglas de productos/pedidos y administra respaldos de esta configuración.</p>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Productos y pedidos</h2>
+        <button id="btnGuardarConfig" type="button" class="btn">Guardar configuración</button>
+      </div>
+
+      <div class="empresa-config-grid">
+        <div class="form">
+          <label class="empresa-config-check" for="imprimirOrdenServicio">
+            <input id="imprimirOrdenServicio" type="checkbox">
+            <span>Imprimir orden de servicio al agregar un producto o pedido al carrito</span>
+          </label>
+          <p class="form-help">Esta orden está pensada para el personal operativo: toma el papel, lee el detalle y lleva el pedido al destino indicado.</p>
+        </div>
+
+        <div class="form">
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="areaDespacho">Destino o área por defecto</label>
+              <input id="areaDespacho" class="form-input" placeholder="Ej: Cocina, Barra, Habitación">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="copiasOrden">Copias de orden de servicio</label>
+              <input id="copiasOrden" type="number" min="1" max="5" class="form-input" value="1">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="notaOrden">Instrucción para el personal</label>
+              <textarea id="notaOrden" class="form-textarea" placeholder="Ej: Entregar en recepción y confirmar con el número de habitación."></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="configMsg" class="form-help"></div>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Backup</h2>
+      </div>
+      <p class="form-help">Exporta o restaura un respaldo JSON de esta configuración para reutilizarla rápidamente.</p>
+
+      <div class="form-row">
+        <div class="form-col">
+          <button id="btnDescargarBackup" type="button" class="btn secondary">Descargar backup</button>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="backupFile">Archivo de backup</label>
+          <input id="backupFile" type="file" accept="application/json,.json" class="form-input">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Acción</label>
+          <button id="btnRestaurarBackup" type="button" class="btn">Restaurar backup</button>
+        </div>
+      </div>
+
+      <div id="backupMsg" class="form-help"></div>
+    </section>
+  </div>
+
+  <script>
+    const empresaId = Number(new URLSearchParams(window.location.search).get('empresa_id') || 0);
+
+    function configStorageKey() {
+      return 'empresa_configuracion_general_' + empresaId;
+    }
+
+    function normalizeConfig(raw) {
+      const src = raw && typeof raw === 'object' ? raw : {};
+      const productos = src.productos && typeof src.productos === 'object' ? src.productos : src;
+      const copias = Number(productos.copias_orden_servicio || 1);
+      return {
+        productos: {
+          imprimir_orden_servicio: Boolean(productos.imprimir_orden_servicio),
+          area_despacho: String(productos.area_despacho || '').trim(),
+          copias_orden_servicio: Math.max(1, Math.min(5, Number.isFinite(copias) ? Math.trunc(copias) : 1)),
+          nota_orden_servicio: String(productos.nota_orden_servicio || '').trim().slice(0, 800)
+        }
+      };
+    }
+
+    function loadConfig() {
+      if (!empresaId) return normalizeConfig({});
+      try {
+        const raw = localStorage.getItem(configStorageKey());
+        if (!raw) return normalizeConfig({});
+        return normalizeConfig(JSON.parse(raw));
+      } catch (_) {
+        return normalizeConfig({});
+      }
+    }
+
+    function saveConfig(cfg) {
+      if (!empresaId) return;
+      localStorage.setItem(configStorageKey(), JSON.stringify(normalizeConfig(cfg)));
+    }
+
+    function setConfigMessage(text, type) {
+      const box = document.getElementById('configMsg');
+      box.textContent = text || '';
+      box.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'form-help');
+    }
+
+    function setBackupMessage(text, type) {
+      const box = document.getElementById('backupMsg');
+      box.textContent = text || '';
+      box.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'form-help');
+    }
+
+    function setFormData(cfg) {
+      const productos = normalizeConfig(cfg).productos;
+      document.getElementById('imprimirOrdenServicio').checked = Boolean(productos.imprimir_orden_servicio);
+      document.getElementById('areaDespacho').value = productos.area_despacho || '';
+      document.getElementById('copiasOrden').value = String(productos.copias_orden_servicio || 1);
+      document.getElementById('notaOrden').value = productos.nota_orden_servicio || '';
+    }
+
+    function getFormData() {
+      return normalizeConfig({
+        productos: {
+          imprimir_orden_servicio: document.getElementById('imprimirOrdenServicio').checked,
+          area_despacho: document.getElementById('areaDespacho').value,
+          copias_orden_servicio: document.getElementById('copiasOrden').value,
+          nota_orden_servicio: document.getElementById('notaOrden').value
+        }
+      });
+    }
+
+    function formatStamp() {
+      const now = new Date();
+      const pad = n => String(n).padStart(2, '0');
+      return now.getFullYear() + pad(now.getMonth() + 1) + pad(now.getDate()) + '_' + pad(now.getHours()) + pad(now.getMinutes()) + pad(now.getSeconds());
+    }
+
+    async function loadEmpresaInfo() {
+      const label = document.getElementById('empresaInfo');
+      if (!empresaId) {
+        label.textContent = 'Empresa no definida';
+        return;
+      }
+      try {
+        const resp = await fetch('/super/api/empresas?id=' + encodeURIComponent(empresaId), { credentials: 'same-origin' });
+        if (!resp.ok) throw new Error('No encontrada');
+        const data = await resp.json();
+        label.textContent = 'Empresa: ' + (data.nombre || 'Sin nombre');
+      } catch (_) {
+        label.textContent = 'Empresa no disponible';
+      }
+    }
+
+    function guardarConfiguracion() {
+      if (!empresaId) {
+        setConfigMessage('No se puede guardar sin empresa seleccionada.', 'error');
+        return;
+      }
+      const cfg = getFormData();
+      saveConfig(cfg);
+      setConfigMessage('Configuración guardada correctamente.', 'success');
+    }
+
+    function descargarBackup() {
+      if (!empresaId) {
+        setBackupMessage('No se puede generar backup sin empresa seleccionada.', 'error');
+        return;
+      }
+      const payload = {
+        version: 1,
+        empresa_id: empresaId,
+        generado_en: new Date().toISOString(),
+        configuracion: getFormData()
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'backup_configuracion_empresa_' + empresaId + '_' + formatStamp() + '.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setBackupMessage('Backup descargado.', 'success');
+    }
+
+    async function restaurarBackup() {
+      const fileInput = document.getElementById('backupFile');
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) {
+        setBackupMessage('Selecciona un archivo .json para restaurar.', 'error');
+        return;
+      }
+      try {
+        const text = await file.text();
+        const parsed = JSON.parse(text);
+        const cfg = normalizeConfig(parsed && parsed.configuracion ? parsed.configuracion : parsed);
+        saveConfig(cfg);
+        setFormData(cfg);
+        setBackupMessage('Backup restaurado correctamente.', 'success');
+      } catch (err) {
+        setBackupMessage('No se pudo restaurar el backup: ' + (err && err.message ? err.message : err), 'error');
+      }
+    }
+
+    function bootstrap() {
+      loadEmpresaInfo();
+      setFormData(loadConfig());
+      document.getElementById('btnGuardarConfig').addEventListener('click', guardarConfiguracion);
+      document.getElementById('btnDescargarBackup').addEventListener('click', descargarBackup);
+      document.getElementById('btnRestaurarBackup').addEventListener('click', restaurarBackup);
+    }
+
+    bootstrap();
+  </script>
+</body>
+</html>

@@ -204,6 +204,7 @@
       carritos: [],
       clientes: [],
       selectedCarritoID: 0,
+      selectedCarritoCode: '',
       items: [],
       itemCatalogResults: [],
       itemCatalogQueryToken: 0
@@ -230,6 +231,77 @@
 
     function normalize(v) {
       return (v || '').toString().trim();
+    }
+
+    function normalizedCode(v) {
+      return normalize(v).toUpperCase();
+    }
+
+    function escapeHtml(v) {
+      return String(v == null ? '' : v)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function loadEmpresaGeneralConfig() {
+      try {
+        const raw = localStorage.getItem('empresa_configuracion_general_' + state.empresaID);
+        if (!raw) return {};
+        const parsed = JSON.parse(raw);
+        return parsed && typeof parsed === 'object' ? parsed : {};
+      } catch (_) {
+        return {};
+      }
+    }
+
+    function printServiceOrderIfEnabled(itemPayload) {
+      const cfg = loadEmpresaGeneralConfig();
+      const productos = cfg && cfg.productos && typeof cfg.productos === 'object' ? cfg.productos : {};
+      if (!Boolean(productos.imprimir_orden_servicio)) return;
+
+      const carrito = getSelectedCarrito();
+      const area = normalize(productos.area_despacho) || 'Sin definir';
+      const nota = normalize(productos.nota_orden_servicio);
+      const copias = Math.max(1, Math.min(5, Number(productos.copias_orden_servicio || 1) || 1));
+      const cantidad = Number(itemPayload.cantidad || 0);
+      const precio = Number(itemPayload.precio_unitario || 0);
+      const totalLinea = cantidad * precio;
+      const now = new Date();
+
+      const html = '<!doctype html><html><head><meta charset="utf-8"><title>Orden de servicio</title>' +
+        '<style>body{font-family:Arial,sans-serif;padding:14px;color:#111}h1{font-size:18px;margin:0 0 8px}p{margin:4px 0}hr{margin:10px 0}.muted{color:#666;font-size:12px}</style>' +
+        '</head><body>' +
+        '<h1>Orden de servicio</h1>' +
+        '<p><strong>Empresa ID:</strong> ' + escapeHtml(state.empresaID) + '</p>' +
+        '<p><strong>Carrito:</strong> ' + escapeHtml((carrito && carrito.nombre) || 'Sin nombre') + '</p>' +
+        '<p><strong>Código:</strong> ' + escapeHtml((carrito && carrito.codigo) || '') + '</p>' +
+        '<p><strong>Destino:</strong> ' + escapeHtml(area) + '</p>' +
+        '<hr>' +
+        '<p><strong>Item:</strong> ' + escapeHtml(itemPayload.descripcion) + '</p>' +
+        '<p><strong>Cantidad:</strong> ' + escapeHtml(cantidad) + ' ' + escapeHtml(itemPayload.unidad_medida || 'unidad') + '</p>' +
+        '<p><strong>Precio unitario:</strong> ' + escapeHtml(formatAmount(precio, (carrito && carrito.moneda) || 'COP')) + '</p>' +
+        '<p><strong>Total línea:</strong> ' + escapeHtml(formatAmount(totalLinea, (carrito && carrito.moneda) || 'COP')) + '</p>' +
+        (nota ? ('<hr><p><strong>Instrucción:</strong> ' + escapeHtml(nota) + '</p>') : '') +
+        '<hr><p class="muted">Fecha: ' + escapeHtml(now.toLocaleString()) + ' | Copias configuradas: ' + escapeHtml(copias) + '</p>' +
+        '</body></html>';
+
+      const printWindow = window.open('', '_blank', 'width=420,height=720');
+      if (!printWindow) {
+        setMessage('itemMsg', 'El navegador bloqueó la impresión automática de la orden de servicio.', true);
+        return;
+      }
+
+      printWindow.document.open();
+      printWindow.document.write(html);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(function() {
+        printWindow.print();
+        printWindow.close();
+      }, 250);
     }
 
     function formatAmount(value, moneda) {
@@ -757,6 +829,16 @@
       await ensureOk(res);
       state.carritos = await res.json();
 
+      if (!state.selectedCarritoID && state.selectedCarritoCode) {
+        const byCode = state.carritos.find(function(c) {
+          return normalizedCode(c.codigo) === state.selectedCarritoCode;
+        });
+        if (byCode) {
+          state.selectedCarritoID = Number(byCode.id || 0);
+          state.selectedCarritoCode = '';
+        }
+      }
+
       if (state.selectedCarritoID) {
         const found = state.carritos.some(function(c) { return Number(c.id) === Number(state.selectedCarritoID); });
         if (!found) {
@@ -870,6 +952,7 @@
       }
 
       try {
+        const isNewItem = id <= 0;
         const method = id > 0 ? 'PUT' : 'POST';
         const res = await fetch('/api/empresa/carritos_compra/items', {
           method: method,
@@ -881,6 +964,9 @@
         resetItemForm();
         await Promise.all([loadItems(), loadCarritos()]);
         setMessage('itemMsg', id > 0 ? 'Item actualizado' : 'Item agregado', false);
+        if (isNewItem) {
+          printServiceOrderIfEnabled(payload);
+        }
       } catch (err) {
         setMessage('itemMsg', err.message || 'Error guardando item', true);
       }
@@ -964,6 +1050,8 @@
 
     (async function init() {
       const empresaID = Number(getQueryParam('empresa_id') || 0);
+      const carritoID = Number(getQueryParam('carrito_id') || 0);
+      const carritoCode = normalizedCode(getQueryParam('carrito_codigo') || '');
       if (!empresaID) {
         document.getElementById('carritosList').textContent = 'empresa_id requerido en la URL';
         document.getElementById('addCarritoBtn').disabled = true;
@@ -971,6 +1059,11 @@
       }
 
       state.empresaID = empresaID;
+      if (carritoID > 0) {
+        state.selectedCarritoID = carritoID;
+      } else if (carritoCode) {
+        state.selectedCarritoCode = carritoCode;
+      }
       document.getElementById('empresa_id').value = String(empresaID);
       document.getElementById('carritoForm').style.display = 'none';
       document.getElementById('cancelCarritoBtn').style.display = 'none';
@@ -980,6 +1073,9 @@
       await loadClientes();
       try {
         await loadCarritos();
+        if (state.selectedCarritoID) {
+          await loadItems();
+        }
       } catch (err) {
         document.getElementById('carritosList').textContent = 'Error cargando carritos';
         setMessage('carritoMsg', err.message || 'Error cargando carritos', true);

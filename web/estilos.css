@@ -17,6 +17,7 @@
   --focus: rgba(31,142,241,0.34);
   --accent-yellow: #ffd58a;
   --accent-yellow-light: #ffeac1;
+  --page-gutter: 10px;
 }
 /* Modo claro (override de variables) */
 html.theme-light{
@@ -50,11 +51,11 @@ html,body{
   color:var(--text);
   font-family:"Segoe UI Variable","Segoe UI",Tahoma,sans-serif;
 }
-.container{max-width:1100px;margin:28px auto;padding:16px}
+.container{max-width:none;width:calc(100% - (var(--page-gutter) * 2));margin:var(--page-gutter);padding:10px}
 .card{
   background:linear-gradient(180deg, var(--surface-soft), var(--surface));
   border:1px solid var(--border);
-  padding:20px;
+  padding:14px;
   border-radius:12px;
   box-shadow:0 16px 34px rgba(5,10,20,0.42);
 }
@@ -106,7 +107,7 @@ p{color:var(--muted);line-height:1.5}
 .admin-sidebar .nav a:hover{background:linear-gradient(180deg, rgba(54,95,146,0.42), rgba(30,55,85,0.9));color:#f2f8ff}
 .admin-sidebar .nav a.active{background:linear-gradient(180deg,var(--accent),#1475cc);color:#fff;border-color:rgba(20,95,162,0.6);box-shadow:0 10px 18px rgba(7,31,58,0.42)}
 .admin-sidebar .nav a img.icon{width:18px;height:18px;vertical-align:middle;margin-right:8px;transition:filter .15s ease}
-.admin-content{flex:1;padding:18px;overflow:auto;background:linear-gradient(180deg,rgba(17,31,49,0.34),rgba(11,22,37,0.28))}
+.admin-content{flex:1;padding:10px;overflow:auto;background:linear-gradient(180deg,rgba(17,31,49,0.34),rgba(11,22,37,0.28))}
 /* Hacer que los botones dentro del contenido administrativo concuerden visualmente con el sidebar */
 .admin-content .btn{
   padding:10px 14px;
@@ -121,7 +122,7 @@ p{color:var(--muted);line-height:1.5}
 /* Icon visibility: make icons light in dark theme so they contrast with dark buttons */
 html:not(.theme-light) .admin-sidebar .nav a img.icon{filter:invert(1) brightness(1.8) saturate(1.15)}
 html.theme-light .admin-sidebar .nav a img.icon{filter:none}
-.admin-toolbar{padding:12px 18px;border-bottom:1px solid var(--border);background:rgba(17,33,52,0.35)}
+.admin-toolbar{padding:8px 10px;border-bottom:1px solid var(--border);background:rgba(17,33,52,0.35)}
 
 /* Responsive: colapsar sidebar */
 @media (max-width:900px){
@@ -129,14 +130,14 @@ html.theme-light .admin-sidebar .nav a img.icon{filter:none}
   .admin-sidebar{width:100%;display:flex;align-items:center;justify-content:space-between}
   .admin-sidebar .nav{display:flex;gap:8px;overflow:auto}
   .admin-sidebar .nav a{white-space:nowrap}
-  .admin-content{padding:12px}
+  .admin-content{padding:8px}
 }
 
 ul{padding-left:18px}
-@media (max-width:600px){.container{margin:12px;padding:12px}.card{padding:12px}}
+@media (max-width:600px){.container{width:calc(100% - 16px);margin:8px;padding:8px}.card{padding:10px}}
 
 /* Estilos específicos para la página de login centrada */
-.login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px}
+.login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:10px}
 .login-page .container{max-width:420px;margin:0}
 .login-page .card{text-align:center;padding:28px}
 .login-page h2{font-size:1.4rem;margin-bottom:6px}
@@ -156,12 +157,12 @@ ul{padding-left:18px}
 .remember-label input[type="checkbox"]{width:16px;height:16px}
 
 /* Portal principal - layout empresarial */
-.portal-header{display:flex;align-items:center;justify-content:space-between;padding:18px 28px;background:linear-gradient(90deg, rgba(13,26,44,0.85), rgba(12,20,32,0.9));border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
+.portal-header{display:flex;align-items:center;justify-content:space-between;padding:10px;background:linear-gradient(90deg, rgba(13,26,44,0.85), rgba(12,20,32,0.9));border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
 .portal-header .brand{font-size:1.15rem;font-weight:800}
 .nav-actions .btn{background:var(--surface-soft);color:var(--text);border:1px solid var(--border);padding:8px 12px;border-radius:8px}
 .nav-actions .btn:hover{background:rgba(53,88,128,0.4)}
 
-.portal-main{padding:24px 20px}
+.portal-main{padding:10px}
 /* Reducir margen superior solo en la página del portal para subir el título */
 .portal-main.container{margin-top:12px}
 .portal-intro{max-width:1100px;margin:0 auto 18px auto;display:flex;align-items:center;justify-content:center;gap:18px;text-align:center}
@@ -208,11 +209,15 @@ ul{padding-left:18px}
 .portal-card h3 { font-weight:800; font-size:1.12rem }
 
 /* Ajustes específicos para páginas dentro de /web/super */
-.super-page .container{max-width:980px;margin:4px auto;padding:8px}
+.super-page .container{max-width:none;width:100%;margin:0;padding:0.6rem 0.8rem}
 .super-page .container h1{font-size:0.95rem;margin:4px 0;color:var(--text)}
 .page-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
 .page-header h1{margin:0;font-size:0.95rem;color:var(--text)}
 .page-header .btn.add{margin-bottom:0}
+
+@media (max-width:700px){
+  .super-page .container{padding:0.45rem 0.6rem}
+}
 
 /* Administrar empresa: título (nombre de la empresa) en blanco */
 #empresaTitle{ color: var(--text); }
@@ -314,6 +319,32 @@ html.theme-light .floating-menu #themeToggle{color:var(--accent-2)}
 .card-link{display:block;text-decoration:none}
 .license-indicator{border:none;color:#fff;padding:8px 12px;border-radius:8px;font-weight:700;cursor:default}
 .license-indicator.active{background:var(--success)}
+
+/* Tarjetas de estaciones (administrar empresa): cálidas, claras y centradas */
+#estacionesGrid .portal-card{
+  background: linear-gradient(180deg, #fff9ef, #ffeeda);
+  border: 1px solid rgba(222, 170, 122, 0.35);
+  box-shadow: 0 10px 24px rgba(163, 111, 64, 0.16);
+  align-items: center;
+  text-align: center;
+}
+
+#estacionesGrid .portal-card h3{
+  color: #5d3f28;
+  margin-bottom: 6px;
+}
+
+#estacionesGrid .portal-card p{
+  color: #7a5a3f;
+  margin-bottom: 0;
+}
+
+#estacionesGrid .portal-card:hover,
+#estacionesGrid .portal-card:focus-visible{
+  transform: translateY(-1px);
+  border-color: rgba(206, 146, 94, 0.5);
+  box-shadow: 0 14px 30px rgba(163, 111, 64, 0.2);
+}
 .license-indicator.inactive{background:var(--danger)}
 
 /* fin: tarjetas cálidas */
@@ -485,7 +516,7 @@ html.theme-light .floating-menu #themeToggle{color:var(--accent-2)}
   color:var(--text);
 }
 .empresa-module{
-  max-width:1400px;
+  max-width:none;
 }
 .empresa-module-header{
   display:flex;
@@ -530,8 +561,33 @@ html.theme-light .floating-menu #themeToggle{color:var(--accent-2)}
 .empresa-grid-2{
   display:grid;
   grid-template-columns:1fr 1fr;
-  gap:16px;
-  margin-top:16px;
+  gap:10px;
+  margin-top:10px;
+}
+
+/* Configuracion de empresa: tarjetas de opciones */
+.empresa-config-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+
+.empresa-config-check{
+  display:flex;
+  align-items:flex-start;
+  gap:8px;
+  color:var(--text);
+  font-weight:600;
+}
+
+.empresa-config-check input[type="checkbox"]{
+  width:16px;
+  height:16px;
+  margin-top:2px;
+}
+
+@media (max-width:900px){
+  .empresa-config-grid{grid-template-columns:1fr}
 }
 
 .table-wrap{overflow:auto}

@@ -67,6 +67,30 @@
         .replace(/'/g, '&#39;');
     }
 
+    async function requestJSON(url, options) {
+      const resp = await fetch(url, Object.assign({ credentials: 'same-origin' }, options || {}));
+      const contentType = resp.headers.get('content-type') || '';
+      let data = null;
+      if (contentType.includes('application/json')) {
+        data = await resp.json();
+      } else {
+        data = await resp.text();
+      }
+      if (!resp.ok) {
+        const msg = typeof data === 'string' ? data : (data && data.error ? data.error : 'error de servidor');
+        throw new Error(msg || ('HTTP ' + resp.status));
+      }
+      return data;
+    }
+
+    function getCarritoCodeForStation(stationID) {
+      return 'EST-' + empresaId + '-' + stationID;
+    }
+
+    function normalizedCode(value) {
+      return String(value || '').trim().toUpperCase();
+    }
+
     function storageKey() {
       return 'estaciones_config_empresa_' + empresaId;
     }
@@ -125,7 +149,90 @@
       saveConfig(cfg);
       document.getElementById('cantidadEstaciones').value = String(cfg.cantidad);
       renderRows(cfg);
-      showMessage('Cantidad de estaciones actualizada. Ajusta nombres y guarda.', 'success');
+      return cfg;
+    }
+
+    async function syncCarritosFromStations(cfg) {
+      if (!empresaId || !cfg || !Array.isArray(cfg.estaciones) || !cfg.estaciones.length) {
+        return { created: 0, updated: 0 };
+      }
+
+      const rows = await requestJSON('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(empresaId) + '&include_inactive=1');
+      const existing = Array.isArray(rows) ? rows : [];
+      const byCode = new Map();
+      existing.forEach(item => {
+        byCode.set(normalizedCode(item.codigo), item);
+      });
+
+      let created = 0;
+      let updated = 0;
+
+      for (const station of cfg.estaciones) {
+        const stationID = Number(station.id || 0);
+        if (!stationID) continue;
+        const stationName = String(station.nombre || '').trim() || ('Estación ' + stationID);
+        const code = getCarritoCodeForStation(stationID);
+        const ref = 'ESTACION_' + stationID;
+        const current = byCode.get(normalizedCode(code));
+
+        if (!current) {
+          await requestJSON('/api/empresa/carritos_compra', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              empresa_id: empresaId,
+              codigo: code,
+              nombre: stationName,
+              canal_venta: 'mostrador',
+              moneda: 'COP',
+              referencia_externa: ref,
+              observaciones: 'Carrito generado automáticamente para estación #' + stationID
+            })
+          });
+          created += 1;
+          continue;
+        }
+
+        const requiresNameUpdate = String(current.nombre || '').trim() !== stationName;
+        const requiresCodeUpdate = normalizedCode(current.codigo) !== normalizedCode(code);
+        const requiresRefUpdate = !String(current.referencia_externa || '').trim();
+
+        if (requiresNameUpdate || requiresCodeUpdate || requiresRefUpdate) {
+          await requestJSON('/api/empresa/carritos_compra', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: Number(current.id || 0),
+              empresa_id: empresaId,
+              codigo: code,
+              nombre: stationName,
+              canal_venta: String(current.canal_venta || 'mostrador'),
+              cliente_id: Number(current.cliente_id || 0),
+              estado_carrito: String(current.estado_carrito || 'abierto'),
+              moneda: String(current.moneda || 'COP'),
+              referencia_externa: String(current.referencia_externa || ref),
+              observaciones: String(current.observaciones || '')
+            })
+          });
+          updated += 1;
+        }
+
+        if (String(current.estado || 'activo').toLowerCase() !== 'activo') {
+          await requestJSON('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(empresaId) + '&id=' + encodeURIComponent(current.id) + '&action=activar', {
+            method: 'PUT'
+          });
+          updated += 1;
+        }
+
+        if (String(current.estado_carrito || 'abierto').toLowerCase() === 'cerrado') {
+          await requestJSON('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(empresaId) + '&id=' + encodeURIComponent(current.id) + '&action=reabrir', {
+            method: 'PUT'
+          });
+          updated += 1;
+        }
+      }
+
+      return { created, updated };
     }
 
     function guardarNombres() {
@@ -161,14 +268,20 @@
     }
 
     function wireEvents() {
-      document.getElementById('cantidadForm').addEventListener('submit', ev => {
+      document.getElementById('cantidadForm').addEventListener('submit', async ev => {
         ev.preventDefault();
         const cantidad = Number(document.getElementById('cantidadEstaciones').value || 0);
         if (!cantidad || cantidad < 1) {
           showMessage('La cantidad debe ser mayor a 0.', 'error');
           return;
         }
-        applyCantidad(cantidad);
+        try {
+          const cfg = applyCantidad(cantidad);
+          const sync = await syncCarritosFromStations(cfg);
+          showMessage('Estaciones generadas y carritos sincronizados. Creados: ' + sync.created + ' | Actualizados: ' + sync.updated + '.', 'success');
+        } catch (err) {
+          showMessage(err.message || 'No se pudieron sincronizar los carritos de estaciones.', 'error');
+        }
       });
       document.getElementById('btnGuardarNombres').addEventListener('click', guardarNombres);
     }

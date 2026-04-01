@@ -1,5 +1,22 @@
 Descripcion de archivos del proyecto
 
+Actualización 2026-04-01: Nueva subpágina de configuración operativa por empresa
+
+- web/administrar_empresa/configuracion.html: nueva subpágina del módulo administrar empresa para configuración operativa.
+	- Tarjeta de configuración de productos/pedidos:
+		- Opción para imprimir orden de servicio al agregar productos o pedidos al carrito.
+		- Configuración de destino/área por defecto, cantidad de copias e instrucción para el personal.
+	- Tarjeta de backup:
+		- Descarga de backup JSON de la configuración.
+		- Restauración de backup JSON desde archivo local.
+
+- web/administrar_empresa.html: menú lateral actualizado con acceso a `Configuración` dentro de administrar empresa.
+
+- web/administrar_empresa/carrito_de_compras.html: se integró la lectura de configuración operativa para impresión de orden de servicio.
+	- Al agregar un item nuevo al carrito, si está activa la opción de impresión, se genera una orden de servicio imprimible automáticamente.
+
+- web/estilos.css: ajuste global de márgenes/paddings para hacer más estrechos los márgenes de las páginas y estilos de soporte para la nueva subpágina de configuración.
+
 Actualización 2026-04-01: Integración inteligente carrito + nueva configuración avanzada por empresa
 
 - web/administrar_empresa/carrito_de_compras.html: se amplió el formulario de items con selector inteligente de catálogo.
@@ -218,7 +235,7 @@ Este documento lista los archivos y carpetas principales del proyecto con una br
 - web/seleccionar_empresa.html: Página donde un usuario administrador selecciona la empresa con la que trabajar.
 - web/estilos.css: Hoja de estilos centralizada para las páginas web (tema oscuro y estilos comunes).
 
-- web/metricas_de_trafico_general.html: Página del dashboard de métricas en tiempo real y gráficas históricas (consulta `/super/api/metrics/current` y `/super/api/metrics/history`). Usa Chart.js vía CDN para representación gráfica.
+- web/super/metricas_de_trafico_general.html: Página del dashboard de métricas en tiempo real y gráficas históricas (consulta `/super/api/metrics/current` y `/super/api/metrics/history`). Usa Chart.js vía CDN para representación gráfica. Reubicada desde la raíz de `web/` para mantener consistencia del módulo `super/`.
 
 - backend/metrics/collector.go: Paquete encargado de recolectar métricas del sistema (CPU, memoria, tráfico de red) usando `gopsutil` y de persistir muestras en la tabla `metrics` de `superadministrador.db`.
 

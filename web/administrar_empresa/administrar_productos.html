@@ -37,7 +37,7 @@
         <button id="btnNuevaBodega" type="button" class="btn secondary">Nueva</button>
       </div>
 
-      <form id="bodegaForm" class="form">
+      <form id="bodegaForm" class="form" style="display:none;">
         <input type="hidden" id="bodegaId">
         <div class="form-row">
           <div class="form-col">
@@ -93,7 +93,7 @@
         <button id="btnNuevoProveedor" type="button" class="btn secondary">Nuevo</button>
       </div>
 
-      <form id="proveedorForm" class="form">
+      <form id="proveedorForm" class="form" style="display:none;">
         <input type="hidden" id="proveedorId">
         <div class="form-row">
           <div class="form-col">
@@ -152,7 +152,7 @@
         </div>
       </div>
 
-      <form id="productoForm" class="form">
+      <form id="productoForm" class="form" style="display:none;">
         <input type="hidden" id="productoId">
         <div class="form-row">
           <div class="form-col">
@@ -285,7 +285,7 @@
         <button id="btnNuevoServicio" class="btn secondary" type="button">Nuevo</button>
       </div>
 
-      <form id="servicioForm" class="form">
+      <form id="servicioForm" class="form" style="display:none;">
         <input type="hidden" id="servicioId">
         <div class="form-row">
           <div class="form-col">
@@ -596,6 +596,19 @@
       return rows.filter(r => (r.estado || 'activo') === 'activo');
     }
 
+    function setCRUDFormVisible(formId, visible) {
+      const form = document.getElementById(formId);
+      if (!form) return;
+      form.style.display = visible ? '' : 'none';
+    }
+
+    function hideCRUDForms() {
+      setCRUDFormVisible('bodegaForm', false);
+      setCRUDFormVisible('proveedorForm', false);
+      setCRUDFormVisible('productoForm', false);
+      setCRUDFormVisible('servicioForm', false);
+    }
+
     async function loadEmpresaInfo() {
       if (!empresaId) {
         showMessage('empresa_id no definido en la URL.', 'error');
@@ -693,6 +706,7 @@
         showMessage('Bodega creada correctamente.', 'success');
       }
       fillBodegaForm(null);
+      setCRUDFormVisible('bodegaForm', false);
       await loadBodegas();
       await loadExistencias();
     }
@@ -701,6 +715,7 @@
       if (action === 'edit-bodega') {
         const b = state.bodegas.find(x => Number(x.id) === Number(id));
         fillBodegaForm(b || null);
+        setCRUDFormVisible('bodegaForm', true);
         return;
       }
       if (action === 'delete-bodega') {
@@ -794,6 +809,7 @@
         showMessage('Proveedor creado correctamente.', 'success');
       }
       fillProveedorForm(null);
+      setCRUDFormVisible('proveedorForm', false);
       await loadProveedores();
     }
 
@@ -801,6 +817,7 @@
       if (action === 'edit-proveedor') {
         const p = state.proveedores.find(x => Number(x.id) === Number(id));
         fillProveedorForm(p || null);
+        setCRUDFormVisible('proveedorForm', true);
         return;
       }
       if (action === 'delete-proveedor') {
@@ -957,6 +974,7 @@
       }
 
       fillProductoForm(null);
+      setCRUDFormVisible('productoForm', false);
       await loadProductos();
       await loadExistencias();
       await loadMovimientos();
@@ -967,6 +985,7 @@
       if (action === 'edit-producto') {
         const p = state.productos.find(x => Number(x.id) === Number(id));
         fillProductoForm(p || null);
+        setCRUDFormVisible('productoForm', true);
         return;
       }
       if (action === 'delete-producto') {
@@ -1063,6 +1082,7 @@
         showMessage('Servicio creado correctamente.', 'success');
       }
       fillServicioForm(null);
+      setCRUDFormVisible('servicioForm', false);
       await loadServicios();
     }
 
@@ -1070,6 +1090,7 @@
       if (action === 'edit-servicio') {
         const s = state.servicios.find(x => Number(x.id) === Number(id));
         fillServicioForm(s || null);
+        setCRUDFormVisible('servicioForm', true);
         return;
       }
       if (action === 'delete-servicio') {
@@ -1225,7 +1246,10 @@
     }
 
     function wireEvents() {
-      document.getElementById('btnNuevaBodega').addEventListener('click', () => fillBodegaForm(null));
+      document.getElementById('btnNuevaBodega').addEventListener('click', () => {
+        fillBodegaForm(null);
+        setCRUDFormVisible('bodegaForm', true);
+      });
       document.getElementById('bodegaForm').addEventListener('submit', async ev => {
         try {
           await saveBodega(ev);
@@ -1244,7 +1268,10 @@
         }
       });
 
-      document.getElementById('btnNuevoProveedor').addEventListener('click', () => fillProveedorForm(null));
+      document.getElementById('btnNuevoProveedor').addEventListener('click', () => {
+        fillProveedorForm(null);
+        setCRUDFormVisible('proveedorForm', true);
+      });
       document.getElementById('proveedorForm').addEventListener('submit', async ev => {
         try {
           await saveProveedor(ev);
@@ -1263,7 +1290,10 @@
         }
       });
 
-      document.getElementById('btnNuevoProducto').addEventListener('click', () => fillProductoForm(null));
+      document.getElementById('btnNuevoProducto').addEventListener('click', () => {
+        fillProductoForm(null);
+        setCRUDFormVisible('productoForm', true);
+      });
       document.getElementById('btnBuscarProductos').addEventListener('click', async () => {
         try {
           await loadProductos();
@@ -1290,7 +1320,10 @@
         }
       });
 
-      document.getElementById('btnNuevoServicio').addEventListener('click', () => fillServicioForm(null));
+      document.getElementById('btnNuevoServicio').addEventListener('click', () => {
+        fillServicioForm(null);
+        setCRUDFormVisible('servicioForm', true);
+      });
       document.getElementById('servicioForm').addEventListener('submit', async ev => {
         try {
           await saveServicio(ev);
@@ -1347,6 +1380,7 @@
         showMessage('No se encontró empresa_id en la URL.', 'error');
         return;
       }
+      hideCRUDForms();
       wireEvents();
       await loadEmpresaInfo();
       await loadProveedores();

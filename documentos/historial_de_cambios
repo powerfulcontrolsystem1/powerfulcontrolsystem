@@ -1,5 +1,62 @@
 - Historial de cambios
 
+- 2026-04-01: Márgenes globales estrechos + nueva subpágina de configuración en administrar empresa
+    - Se ajustó el CSS global para dejar márgenes y paddings más estrechos en las páginas del proyecto, incluyendo contenedores y áreas de contenido administrativo.
+    - Se creó la subpágina `web/administrar_empresa/configuracion.html`.
+    - En la nueva subpágina se añadió una tarjeta de configuración de productos/pedidos con opción para imprimir orden de servicio al agregar al carrito.
+    - Se integró `web/administrar_empresa/carrito_de_compras.html` para que, al agregar un item nuevo, imprima automáticamente la orden de servicio si esa opción está activa.
+    - También se añadió una tarjeta de backup para descargar y restaurar la configuración en formato JSON.
+    - Se actualizó el menú de `web/administrar_empresa.html` para incluir el acceso a `Configuración`.
+    - Archivos afectados: web/estilos.css, web/administrar_empresa.html, web/administrar_empresa/configuracion.html, web/administrar_empresa/carrito_de_compras.html, documentos/descripcion_de_archivos, documentos/historial_de_cambios
+
+- 2026-04-01: Ajuste final visual y de interacción en estaciones
+    - Se dejó la vista de estaciones sin tarjetas superiores adicionales y se mantuvo solo el bloque de 'Tarjetas de estaciones'.
+    - Se eliminó el botón 'Abrir carrito' de cada estación; ahora la apertura del carrito ocurre al hacer clic en toda la tarjeta (incluye teclado con Enter/Espacio).
+    - Se centró el texto de cada estación y se aplicó estilo de color pastel cálido a las tarjetas.
+    - Archivos afectados: web/administrar_empresa/estaciones.html, web/estilos.css
+
+- 2026-04-01: Limpieza visual en estaciones.html
+    - Se eliminó la tarjeta superior que mostraba 'Estaciones', 'Empresa: Motel malibu' y 'Configurar estaciones' en la página de estaciones de administrar empresa. Ahora solo queda la tarjeta de 'Tarjetas de estaciones'.
+    - Archivo afectado: web/administrar_empresa/estaciones.html
+
+2026-04-01: Flujo estaciones -> carritos por estación (generación y apertura)
+- Acción:
+    - En `estaciones`, se dejó únicamente la tarjeta de `Tarjetas de estaciones` y se eliminó cualquier tarjeta superior redundante de título `Estaciones`.
+    - Al pulsar `Generar estaciones` en `configuracion_de_estaciones`, ahora se crea/sincroniza un carrito de compra por cada estación de la empresa.
+    - Al hacer clic en una tarjeta de estación (o en su botón `Abrir carrito`), se abre la página de carrito seleccionando automáticamente el carrito de esa estación.
+- Frontend:
+    - `web/administrar_empresa/estaciones.html`
+    - `web/administrar_empresa/configuracion_de_estaciones.html`
+    - `web/administrar_empresa/carrito_de_compras.html`
+- Documentación:
+    - `documentos/historial_de_cambios`
+- Responsable: agente local
+
+2026-04-01: Subpágina de productos con formularios ocultos hasta pulsar Nuevo
+- Acción:
+    - Se ajustó la UX de `administrar_productos` para ocultar por defecto los formularios de Bodegas, Proveedores, Productos y Servicios.
+    - Los formularios ahora se muestran al pulsar el botón `Nuevo` de cada sección o al usar `Editar` en una fila existente.
+    - Tras guardar, cada formulario vuelve a ocultarse para mantener la vista enfocada en los listados.
+- Frontend:
+    - `web/administrar_empresa/administrar_productos.html`
+- Documentación:
+    - `documentos/historial_de_cambios`
+- Responsable: agente local
+
+2026-04-01: Reubicación de métricas a `super/` + ajuste global de márgenes en vistas de super
+- Acción:
+    - Se movió la página de métricas desde `web/metricas_de_trafico_general.html` hacia `web/super/metricas_de_trafico_general.html`.
+    - Se actualizaron los enlaces del panel `super_administrador` para abrir la nueva ruta `/super/metricas_de_trafico_general.html`.
+    - Se ajustó el estilo global de `.super-page .container` para quitar el centrado con ancho fijo y alinear el contenido más cerca del menú izquierdo.
+- Frontend:
+    - `web/super/metricas_de_trafico_general.html` (nuevo en `super/`): dashboard de métricas en tiempo real e histórico.
+    - `web/super_administrador.html`: enlaces de menú y botón de métricas apuntando a la nueva ruta.
+    - `web/estilos.css`: márgenes/padding de páginas `super` unificados para reducir separación izquierda respecto al frame.
+- Documentación:
+    - `documentos/descripcion_de_archivos`
+    - `documentos/historial_de_cambios`
+- Responsable: agente local
+
 2026-04-01: Rediseño global del modo oscuro a estilo empresarial POS multiempresa
 - Acción:
     - Se reemplazó el tema oscuro central por una identidad visual empresarial con mejor contraste general.

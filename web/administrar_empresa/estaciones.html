@@ -9,6 +9,9 @@
 <body class="empresa-subpage">
   <div class="container empresa-module">
     <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Tarjetas de estaciones</h2>
+      </div>
       <div id="estacionesGrid" class="portal-grid"></div>
     </section>
   </div>
@@ -27,6 +30,19 @@
 
     function storageKey() {
       return 'estaciones_config_empresa_' + empresaId;
+    }
+
+    function getCarritoCodeForStation(stationID) {
+      return 'EST-' + empresaId + '-' + stationID;
+    }
+
+    function openStationCarrito(stationID) {
+      if (!empresaId || !stationID) return;
+      const carritoCode = getCarritoCodeForStation(stationID);
+      const url = '/administrar_empresa/carrito_de_compras.html?empresa_id=' + encodeURIComponent(empresaId) +
+        '&estacion_id=' + encodeURIComponent(stationID) +
+        '&carrito_codigo=' + encodeURIComponent(carritoCode);
+      window.location.href = url;
     }
 
     function readConfig() {
@@ -53,16 +69,30 @@
     function renderEstaciones(cfg) {
       const grid = document.getElementById('estacionesGrid');
       if (!cfg || !cfg.estaciones || !cfg.estaciones.length) {
-        grid.innerHTML = '<div class="card"><p>No hay estaciones configuradas. Ve a Configuración de estaciones para crearlas.</p></div>';
+        grid.innerHTML = '<p class="form-help">No hay estaciones configuradas. Ve a Configuración de estaciones para crearlas.</p>';
         return;
       }
       grid.innerHTML = cfg.estaciones.map(est => {
-        return '<article class="portal-card">' +
+        const stationID = Number(est.id || 0);
+        return '<article class="portal-card" data-estacion-id="' + stationID + '" tabindex="0" role="button" aria-label="Abrir carrito de ' + sanitize(est.nombre) + '">' +
           '<h3>' + sanitize(est.nombre) + '</h3>' +
-          '<p>Estación #' + est.id + '</p>' +
-          '<button class="btn secondary" type="button">Abrir</button>' +
+          '<p>Estación #' + stationID + '</p>' +
           '</article>';
       }).join('');
+
+      grid.querySelectorAll('.portal-card').forEach(card => {
+        card.style.cursor = 'pointer';
+        card.addEventListener('click', ev => {
+          const stationID = Number(card.getAttribute('data-estacion-id') || 0);
+          openStationCarrito(stationID);
+        });
+        card.addEventListener('keydown', ev => {
+          if (ev.key !== 'Enter' && ev.key !== ' ') return;
+          ev.preventDefault();
+          const stationID = Number(card.getAttribute('data-estacion-id') || 0);
+          openStationCarrito(stationID);
+        });
+      });
     }
 
     function bootstrap() {
