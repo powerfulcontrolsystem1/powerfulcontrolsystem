@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Estaciones</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="empresa-subpage">
+  <div class="container empresa-module">
+    <section class="card empresa-section">
+      <h1>Estaciones</h1>
+      <p id="empresaInfo">Empresa: cargando...</p>
+      <div class="form-actions">
+        <a id="linkConfig" class="btn secondary" href="/administrar_empresa/configuracion_de_estaciones.html">Configurar estaciones</a>
+      </div>
+    </section>
+
+    <div id="messageBox" class="form-help"></div>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Tarjetas de estaciones</h2>
+      </div>
+      <div id="estacionesGrid" class="portal-grid"></div>
+    </section>
+  </div>
+
+  <script>
+    const empresaId = Number(new URLSearchParams(window.location.search).get('empresa_id') || 0);
+    const messageBox = document.getElementById('messageBox');
+
+    function showMessage(text, type) {
+      messageBox.textContent = text || '';
+      messageBox.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'form-help');
+    }
+
+    function sanitize(v) {
+      return String(v == null ? '' : v)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function storageKey() {
+      return 'estaciones_config_empresa_' + empresaId;
+    }
+
+    function readConfig() {
+      if (!empresaId) return null;
+      try {
+        const raw = localStorage.getItem(storageKey());
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object') return null;
+        const cantidad = Math.max(1, Math.min(500, Number(parsed.cantidad || 1)));
+        const estacionesRaw = Array.isArray(parsed.estaciones) ? parsed.estaciones : [];
+        const estaciones = [];
+        for (let i = 0; i < cantidad; i++) {
+          const est = estacionesRaw[i] || {};
+          const nombre = String(est.nombre || '').trim();
+          estaciones.push({ id: i + 1, nombre: nombre || ('Estación ' + (i + 1)) });
+        }
+        return { cantidad, estaciones };
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function renderEstaciones(cfg) {
+      const grid = document.getElementById('estacionesGrid');
+      if (!cfg || !cfg.estaciones || !cfg.estaciones.length) {
+        grid.innerHTML = '<div class="card"><p>No hay estaciones configuradas. Ve a Configuración de estaciones para crearlas.</p></div>';
+        return;
+      }
+      grid.innerHTML = cfg.estaciones.map(est => {
+        return '<article class="portal-card">' +
+          '<h3>' + sanitize(est.nombre) + '</h3>' +
+          '<p>Estación #' + est.id + '</p>' +
+          '<button class="btn secondary" type="button">Abrir</button>' +
+          '</article>';
+      }).join('');
+    }
+
+    async function cargarEmpresa() {
+      const label = document.getElementById('empresaInfo');
+      if (!empresaId) {
+        label.textContent = 'Empresa no definida';
+        return;
+      }
+      try {
+        const resp = await fetch('/super/api/empresas?id=' + encodeURIComponent(empresaId), { credentials: 'same-origin' });
+        if (!resp.ok) throw new Error('No encontrada');
+        const data = await resp.json();
+        label.textContent = 'Empresa: ' + (data.nombre || 'Sin nombre');
+      } catch (_) {
+        label.textContent = 'Empresa no disponible';
+      }
+    }
+
+    function bootstrap() {
+      if (!empresaId) {
+        showMessage('No se encontró empresa_id en la URL.', 'error');
+      }
+      const configLink = document.getElementById('linkConfig');
+      if (empresaId) {
+        configLink.href = '/administrar_empresa/configuracion_de_estaciones.html?empresa_id=' + encodeURIComponent(empresaId);
+      }
+      cargarEmpresa();
+      const cfg = readConfig();
+      if (!cfg) {
+        showMessage('Primero configura la cantidad y nombres en Configuración de estaciones.', 'error');
+      }
+      renderEstaciones(cfg);
+    }
+
+    bootstrap();
+  </script>
+</body>
+</html>

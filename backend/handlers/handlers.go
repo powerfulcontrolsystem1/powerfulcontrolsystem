@@ -1940,6 +1940,30 @@ func EmpresasHandler(dbEmp *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
+			// Si se pasa ?id=<id> devolver una sola empresa
+			q := r.URL.Query()
+			idStr := q.Get("id")
+			if idStr != "" {
+				id, err := strconv.ParseInt(idStr, 10, 64)
+				if err != nil {
+					http.Error(w, "invalid id", http.StatusBadRequest)
+					return
+				}
+				empresa, err := dbpkg.GetEmpresaByID(dbEmp, id)
+				if err != nil {
+					if err == sql.ErrNoRows {
+						http.Error(w, "empresa not found", http.StatusNotFound)
+					} else {
+						log.Println("GET /super/api/empresas?id= error:", err)
+						http.Error(w, "failed to query empresa: "+err.Error(), http.StatusInternalServerError)
+					}
+					return
+				}
+				w.Header().Set("Content-Type", "application/json")
+				json.NewEncoder(w).Encode(empresa)
+				return
+			}
+			// Sin id: devolver lista completa
 			empresas, err := dbpkg.GetEmpresas(dbEmp)
 			if err != nil {
 				log.Println("GET /super/api/empresas error:", err)

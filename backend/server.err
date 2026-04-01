@@ -1,116 +1,151 @@
-2026/04/01 01:59:29 index.html encontrado en ..\web\index.html
-2026/04/01 01:59:29 Servidor arrancado en :8080
-2026/04/01 01:59:29 metrics: stored cpu=0.00 mem=85.00% recv=5807592506 sent=1293917653
-2026/04/01 01:59:31 -> GET /estilos.css from [::1]:58523
-2026/04/01 01:59:31 <- 200 GET /estilos.css
-2026/04/01 01:59:34 -> GET /auth/google/login from [::1]:58523
-2026/04/01 01:59:34 handleGoogleLogin: client_id set=true, redirect_url="http://localhost:8080/auth/google/callback"
-2026/04/01 01:59:34 Auth URL: https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&client_id=1029204473903-6npuu63uehsrn2jn8fnif4fgpp6kcjsm.apps.googleusercontent.com&include_granted_scopes=true&login_hint=powerfulcontrolsystem%40gmail.com&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fauth%2Fgoogle%2Fcallback&response_type=code&scope=openid+email+profile&state=state-token
-2026/04/01 01:59:34 <- 302 GET /auth/google/login
-2026/04/01 01:59:34 -> GET /auth/google/callback from [::1]:58523
-2026/04/01 01:59:35 <- 302 GET /auth/google/callback
-2026/04/01 01:59:35 -> GET /me from [::1]:58523
-2026/04/01 01:59:35 <- 200 GET /me
-2026/04/01 01:59:35 -> GET /super/api/licencias from [::1]:58523
-2026/04/01 01:59:35 <- 200 GET /super/api/licencias
-2026/04/01 01:59:39 metrics: stored cpu=14.69 mem=86.00% recv=5807652842 sent=1294006093
-2026/04/01 01:59:39 -> GET /super/configuracion_avanzada.html from [::1]:58523
-2026/04/01 01:59:39 <- 304 GET /super/configuracion_avanzada.html
-2026/04/01 01:59:39 -> GET /estilos.css from [::1]:58523
-2026/04/01 01:59:39 <- 304 GET /estilos.css
-2026/04/01 01:59:39 -> GET /super/api/config/mercadopago from [::1]:58523
-2026/04/01 01:59:39 <- 200 GET /super/api/config/mercadopago
-2026/04/01 01:59:39 -> GET /super/api/config/wompi from [::1]:58523
-2026/04/01 01:59:39 <- 200 GET /super/api/config/wompi
-2026/04/01 01:59:49 metrics: stored cpu=5.80 mem=86.00% recv=5807696857 sent=1294018140
-2026/04/01 01:59:59 metrics: stored cpu=5.70 mem=86.00% recv=5807705401 sent=1294027110
-2026/04/01 01:59:59 -> GET /estilos.css from [::1]:58523
-2026/04/01 01:59:59 <- 304 GET /estilos.css
-2026/04/01 01:59:59 -> GET /me from [::1]:58523
-2026/04/01 01:59:59 <- 200 GET /me
-2026/04/01 01:59:59 -> GET /super/api/empresas from [::1]:58523
-2026/04/01 01:59:59 -> GET /super/api/licencias from [::1]:63101
-2026/04/01 01:59:59 <- 200 GET /super/api/licencias
-2026/04/01 01:59:59 -> GET /super/api/tipos_empresas from [::1]:59659
-2026/04/01 01:59:59 <- 200 GET /super/api/tipos_empresas
-2026/04/01 01:59:59 <- 200 GET /super/api/empresas
-2026/04/01 02:00:00 -> GET /me from [::1]:58523
-2026/04/01 02:00:00 <- 200 GET /me
-2026/04/01 02:00:00 -> GET /super/api/licencias from [::1]:58523
-2026/04/01 02:00:00 -> GET /super/api/empresas from [::1]:59659
-2026/04/01 02:00:00 <- 200 GET /super/api/licencias
-2026/04/01 02:00:00 <- 200 GET /super/api/empresas
-2026/04/01 02:00:02 -> GET /pagar_licencia.html from [::1]:59659
-2026/04/01 02:00:02 <- 200 GET /pagar_licencia.html
-2026/04/01 02:00:02 -> GET /img/tag.svg from [::1]:59659
-2026/04/01 02:00:02 <- 404 GET /img/tag.svg
-2026/04/01 02:00:02 -> GET /me from [::1]:58523
-2026/04/01 02:00:02 <- 200 GET /me
-2026/04/01 02:00:02 -> GET /super/api/licencias from [::1]:58523
-2026/04/01 02:00:02 -> GET /super/api/empresas from [::1]:59659
-2026/04/01 02:00:02 <- 200 GET /super/api/licencias
-2026/04/01 02:00:02 <- 200 GET /super/api/empresas
-2026/04/01 02:00:02 -> GET /wompi/terms from [::1]:59659
-2026/04/01 02:00:02 <- 500 GET /wompi/terms
-2026/04/01 02:00:06 -> GET /pagar_licencia.html from [::1]:59659
-2026/04/01 02:00:06 <- 200 GET /pagar_licencia.html
-2026/04/01 02:00:06 -> GET /estilos.css from [::1]:59659
-2026/04/01 02:00:06 -> GET /menu.js from [::1]:58523
-2026/04/01 02:00:06 <- 200 GET /estilos.css
-2026/04/01 02:00:06 -> GET /img/company-briefcase.svg from [::1]:63101
-2026/04/01 02:00:06 -> GET /img/tag.svg from [::1]:58596
-2026/04/01 02:00:06 <- 200 GET /img/company-briefcase.svg
-2026/04/01 02:00:06 <- 404 GET /img/tag.svg
-2026/04/01 02:00:06 <- 200 GET /menu.js
-2026/04/01 02:00:06 -> GET /me from [::1]:58523
-2026/04/01 02:00:06 <- 200 GET /me
-2026/04/01 02:00:06 -> GET /favicon.ico from [::1]:58596
-2026/04/01 02:00:06 <- 404 GET /favicon.ico
-2026/04/01 02:00:06 -> GET /super/api/licencias from [::1]:58596
-2026/04/01 02:00:06 -> GET /super/api/empresas from [::1]:58523
-2026/04/01 02:00:06 <- 200 GET /super/api/licencias
-2026/04/01 02:00:06 <- 200 GET /super/api/empresas
-2026/04/01 02:00:06 -> GET /wompi/terms from [::1]:58523
-2026/04/01 02:00:06 <- 500 GET /wompi/terms
-2026/04/01 02:00:09 metrics: stored cpu=9.69 mem=87.00% recv=5807717789 sent=1294039568
-2026/04/01 02:00:13 -> POST /licencias/activar_sin_pago from [::1]:58523
-2026/04/01 02:00:14 Licencia activada sin pago: licencia=1 empresa=6 motivo="avance_proyecto"
-2026/04/01 02:00:14 <- 200 POST /licencias/activar_sin_pago
-2026/04/01 02:00:14 -> GET /administrar_empresa.html from [::1]:58523
-2026/04/01 02:00:14 <- 200 GET /administrar_empresa.html
-2026/04/01 02:00:14 -> GET /img/tag.svg from [::1]:58523
-2026/04/01 02:00:14 <- 404 GET /img/tag.svg
-2026/04/01 02:00:19 metrics: stored cpu=13.71 mem=84.00% recv=5808899193 sent=1294212001
-2026/04/01 02:00:28 -> GET /estilos.css from [::1]:58523
-2026/04/01 02:00:28 <- 304 GET /estilos.css
-2026/04/01 02:00:28 -> GET /me from [::1]:58523
-2026/04/01 02:00:28 <- 200 GET /me
-2026/04/01 02:00:28 -> GET /super/api/empresas from [::1]:58523
-2026/04/01 02:00:28 -> GET /super/api/licencias from [::1]:58596
-2026/04/01 02:00:28 -> GET /super/api/tipos_empresas from [::1]:63101
-2026/04/01 02:00:28 <- 200 GET /super/api/empresas
-2026/04/01 02:00:28 <- 200 GET /super/api/licencias
-2026/04/01 02:00:28 <- 200 GET /super/api/tipos_empresas
-2026/04/01 02:00:29 metrics: stored cpu=3.67 mem=84.00% recv=5808981565 sent=1294224475
-2026/04/01 02:00:29 -> GET /administrar_empresa.html from [::1]:63101
-2026/04/01 02:00:29 <- 304 GET /administrar_empresa.html
-2026/04/01 02:00:30 -> GET /img/tag.svg from [::1]:63101
-2026/04/01 02:00:30 <- 404 GET /img/tag.svg
-2026/04/01 02:00:31 -> GET /me from [::1]:63101
-2026/04/01 02:00:31 <- 200 GET /me
-2026/04/01 02:00:31 -> GET /super/api/empresas from [::1]:63101
-2026/04/01 02:00:31 -> GET /super/api/licencias from [::1]:58596
-2026/04/01 02:00:31 -> GET /super/api/tipos_empresas from [::1]:58523
-2026/04/01 02:00:31 <- 200 GET /super/api/empresas
-2026/04/01 02:00:31 <- 200 GET /super/api/licencias
-2026/04/01 02:00:31 <- 200 GET /super/api/tipos_empresas
-2026/04/01 02:00:32 -> GET /img/tag.svg from [::1]:58523
-2026/04/01 02:00:32 <- 404 GET /img/tag.svg
-2026/04/01 02:00:39 metrics: stored cpu=6.63 mem=84.00% recv=5808987861 sent=1294231701
-2026/04/01 02:00:49 metrics: stored cpu=5.05 mem=83.00% recv=5808995015 sent=1294236002
-2026/04/01 02:00:59 metrics: stored cpu=1.86 mem=83.00% recv=5809002115 sent=1294237171
-2026/04/01 02:01:09 metrics: stored cpu=3.22 mem=83.00% recv=5809015339 sent=1294243421
-2026/04/01 02:01:19 metrics: stored cpu=5.17 mem=85.00% recv=5809023096 sent=1294245106
-2026/04/01 02:01:29 metrics: stored cpu=11.60 mem=85.00% recv=5809051671 sent=1294283404
-2026/04/01 02:01:39 metrics: stored cpu=6.49 mem=85.00% recv=5809057086 sent=1294284800
-2026/04/01 02:01:49 metrics: stored cpu=5.53 mem=84.00% recv=5809071505 sent=1294292843
+2026/04/01 03:22:28 index.html encontrado en ..\web\index.html
+2026/04/01 03:22:28 Servidor arrancado en :8080
+2026/04/01 03:22:28 metrics: stored cpu=100.00 mem=81.00% recv=6358340471 sent=1447259993
+2026/04/01 03:22:29 -> GET /estilos.css from [::1]:56574
+2026/04/01 03:22:29 <- 304 GET /estilos.css
+2026/04/01 03:22:31 -> GET /auth/google/login from [::1]:56574
+2026/04/01 03:22:31 handleGoogleLogin: client_id set=true, redirect_url="http://localhost:8080/auth/google/callback"
+2026/04/01 03:22:31 Auth URL: https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&client_id=1029204473903-6npuu63uehsrn2jn8fnif4fgpp6kcjsm.apps.googleusercontent.com&include_granted_scopes=true&login_hint=powerfulcontrolsystem%40gmail.com&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fauth%2Fgoogle%2Fcallback&response_type=code&scope=openid+email+profile&state=state-token
+2026/04/01 03:22:31 <- 302 GET /auth/google/login
+2026/04/01 03:22:31 -> GET /auth/google/callback from [::1]:56574
+2026/04/01 03:22:32 <- 302 GET /auth/google/callback
+2026/04/01 03:22:32 -> GET /super_administrador.html from [::1]:56574
+2026/04/01 03:22:32 <- 304 GET /super_administrador.html
+2026/04/01 03:22:32 -> GET /me from [::1]:56574
+2026/04/01 03:22:32 <- 200 GET /me
+2026/04/01 03:22:32 -> GET /super/api/licencias from [::1]:56574
+2026/04/01 03:22:32 <- 200 GET /super/api/licencias
+2026/04/01 03:22:36 -> GET /super/roles_de_usuario.html from [::1]:56574
+2026/04/01 03:22:36 <- 304 GET /super/roles_de_usuario.html
+2026/04/01 03:22:36 -> GET /super/api/tipos_empresas from [::1]:56574
+2026/04/01 03:22:36 <- 200 GET /super/api/tipos_empresas
+2026/04/01 03:22:36 -> GET /super/api/roles_de_usuario from [::1]:56574
+2026/04/01 03:22:36 <- 200 GET /super/api/roles_de_usuario
+2026/04/01 03:22:38 metrics: stored cpu=17.35 mem=82.00% recv=6358386776 sent=1447305902
+2026/04/01 03:22:38 -> GET /super/tipos_de_usuario.htm from [::1]:56574
+2026/04/01 03:22:38 <- 200 GET /super/tipos_de_usuario.htm
+2026/04/01 03:22:38 -> GET /super/api/tipos_empresas from [::1]:56574
+2026/04/01 03:22:38 -> GET /super/api/roles_de_usuario from [::1]:55814
+2026/04/01 03:22:38 <- 200 GET /super/api/tipos_empresas
+2026/04/01 03:22:38 <- 200 GET /super/api/roles_de_usuario
+2026/04/01 03:22:38 -> GET /super/api/tipos_de_usuario from [::1]:62187
+2026/04/01 03:22:38 <- 200 GET /super/api/tipos_de_usuario
+2026/04/01 03:22:48 metrics: stored cpu=6.66 mem=81.00% recv=6358405576 sent=1447321562
+2026/04/01 03:22:58 metrics: stored cpu=3.34 mem=81.00% recv=6358412960 sent=1447321742
+2026/04/01 03:23:08 metrics: stored cpu=3.94 mem=81.00% recv=6358418953 sent=1447330955
+2026/04/01 03:23:18 metrics: stored cpu=5.02 mem=81.00% recv=6358430772 sent=1447334927
+2026/04/01 03:23:28 metrics: stored cpu=7.32 mem=81.00% recv=6358445742 sent=1447345609
+2026/04/01 03:23:38 metrics: stored cpu=15.84 mem=83.00% recv=6358460193 sent=1447397207
+2026/04/01 03:23:48 metrics: stored cpu=9.06 mem=82.00% recv=6358480953 sent=1447456561
+2026/04/01 03:23:58 metrics: stored cpu=8.07 mem=81.00% recv=6358495492 sent=1447475662
+2026/04/01 03:24:08 metrics: stored cpu=11.15 mem=81.00% recv=6358509590 sent=1447491138
+2026/04/01 03:24:18 metrics: stored cpu=6.76 mem=81.00% recv=6358524258 sent=1447503339
+2026/04/01 03:24:28 metrics: stored cpu=4.86 mem=81.00% recv=6358528845 sent=1447507632
+2026/04/01 03:24:38 metrics: stored cpu=7.24 mem=82.00% recv=6358549419 sent=1447521914
+2026/04/01 03:24:48 metrics: stored cpu=7.07 mem=82.00% recv=6358557553 sent=1447525169
+2026/04/01 03:24:58 metrics: stored cpu=10.18 mem=83.00% recv=6358584872 sent=1447548416
+2026/04/01 03:25:08 metrics: stored cpu=6.60 mem=82.00% recv=6358590357 sent=1447548875
+2026/04/01 03:25:18 metrics: stored cpu=7.58 mem=82.00% recv=6358604130 sent=1447561783
+2026/04/01 03:25:28 metrics: stored cpu=6.74 mem=82.00% recv=6358609260 sent=1447562244
+2026/04/01 03:25:38 metrics: stored cpu=7.07 mem=81.00% recv=6358689698 sent=1447571372
+2026/04/01 03:25:48 metrics: stored cpu=4.86 mem=81.00% recv=6358701405 sent=1447573916
+2026/04/01 03:25:58 metrics: stored cpu=4.37 mem=81.00% recv=6358710078 sent=1447577252
+2026/04/01 03:26:08 metrics: stored cpu=3.81 mem=81.00% recv=6358718992 sent=1447578214
+2026/04/01 03:26:18 metrics: stored cpu=3.58 mem=81.00% recv=6358723571 sent=1447578595
+2026/04/01 03:26:28 metrics: stored cpu=7.92 mem=82.00% recv=6358735683 sent=1447588395
+2026/04/01 03:26:38 metrics: stored cpu=15.27 mem=81.00% recv=6358749496 sent=1447599610
+2026/04/01 03:26:48 metrics: stored cpu=4.22 mem=80.00% recv=6358763340 sent=1447639373
+2026/04/01 03:26:58 metrics: stored cpu=3.42 mem=80.00% recv=6358781253 sent=1447655652
+2026/04/01 03:27:08 metrics: stored cpu=3.18 mem=80.00% recv=6358790155 sent=1447656789
+2026/04/01 03:27:18 metrics: stored cpu=3.71 mem=80.00% recv=6358794826 sent=1447658344
+2026/04/01 03:27:23 -> GET /super/roles_de_usuario.html from [::1]:62187
+2026/04/01 03:27:23 <- 304 GET /super/roles_de_usuario.html
+2026/04/01 03:27:23 -> GET /super/api/tipos_empresas from [::1]:62187
+2026/04/01 03:27:23 <- 200 GET /super/api/tipos_empresas
+2026/04/01 03:27:23 -> GET /super/api/roles_de_usuario from [::1]:62187
+2026/04/01 03:27:23 <- 200 GET /super/api/roles_de_usuario
+2026/04/01 03:27:28 metrics: stored cpu=4.12 mem=80.00% recv=6358806828 sent=1447667265
+2026/04/01 03:27:38 metrics: stored cpu=3.38 mem=81.00% recv=6358822598 sent=1447675990
+2026/04/01 03:27:48 metrics: stored cpu=2.28 mem=81.00% recv=6358835053 sent=1447679617
+2026/04/01 03:27:58 metrics: stored cpu=1.74 mem=80.00% recv=6358853152 sent=1447685169
+2026/04/01 03:28:08 metrics: stored cpu=2.46 mem=80.00% recv=6358858588 sent=1447688499
+2026/04/01 03:28:11 -> GET /super/tipos_de_usuario.htm from [::1]:62187
+2026/04/01 03:28:11 <- 304 GET /super/tipos_de_usuario.htm
+2026/04/01 03:28:11 -> GET /super/api/tipos_empresas from [::1]:62187
+2026/04/01 03:28:11 -> GET /super/api/roles_de_usuario from [::1]:58148
+2026/04/01 03:28:11 -> GET /super/api/tipos_de_usuario from [::1]:51588
+2026/04/01 03:28:11 <- 200 GET /super/api/tipos_empresas
+2026/04/01 03:28:11 <- 200 GET /super/api/roles_de_usuario
+2026/04/01 03:28:11 <- 200 GET /super/api/tipos_de_usuario
+2026/04/01 03:28:18 metrics: stored cpu=4.63 mem=81.00% recv=6358869994 sent=1447694888
+2026/04/01 03:28:28 metrics: stored cpu=2.50 mem=81.00% recv=6358888074 sent=1447707345
+2026/04/01 03:28:38 metrics: stored cpu=6.44 mem=81.00% recv=6358904525 sent=1447715401
+2026/04/01 03:28:48 metrics: stored cpu=3.50 mem=81.00% recv=6358914588 sent=1447719250
+2026/04/01 03:28:58 metrics: stored cpu=3.77 mem=81.00% recv=6358980756 sent=1447719966
+2026/04/01 03:29:08 metrics: stored cpu=8.41 mem=82.00% recv=6358999266 sent=1447730154
+2026/04/01 03:29:18 metrics: stored cpu=7.15 mem=81.00% recv=6359006469 sent=1447739419
+2026/04/01 03:29:26 -> GET /estilos.css from [::1]:51588
+2026/04/01 03:29:26 <- 304 GET /estilos.css
+2026/04/01 03:29:26 -> GET /super/api/tipos_empresas from [::1]:51588
+2026/04/01 03:29:26 <- 200 GET /super/api/tipos_empresas
+2026/04/01 03:29:26 -> GET /super/api/roles_de_usuario from [::1]:51588
+2026/04/01 03:29:26 <- 200 GET /super/api/roles_de_usuario
+2026/04/01 03:29:28 metrics: stored cpu=7.48 mem=82.00% recv=6359018158 sent=1447751725
+2026/04/01 03:29:34 -> GET /super/tipos_de_usuario.htm from [::1]:51588
+2026/04/01 03:29:34 <- 304 GET /super/tipos_de_usuario.htm
+2026/04/01 03:29:34 -> GET /super/api/tipos_empresas from [::1]:51588
+2026/04/01 03:29:34 -> GET /super/api/roles_de_usuario from [::1]:58148
+2026/04/01 03:29:34 -> GET /super/api/tipos_de_usuario from [::1]:62187
+2026/04/01 03:29:34 <- 200 GET /super/api/tipos_empresas
+2026/04/01 03:29:34 <- 200 GET /super/api/roles_de_usuario
+2026/04/01 03:29:34 <- 200 GET /super/api/tipos_de_usuario
+2026/04/01 03:29:38 metrics: stored cpu=6.95 mem=82.00% recv=6359034147 sent=1447766269
+2026/04/01 03:29:48 metrics: stored cpu=3.89 mem=81.00% recv=6359042798 sent=1447806845
+2026/04/01 03:29:57 -> GET /super/roles_de_usuario.html from [::1]:62187
+2026/04/01 03:29:57 <- 304 GET /super/roles_de_usuario.html
+2026/04/01 03:29:57 -> GET /super/api/tipos_empresas from [::1]:62187
+2026/04/01 03:29:57 <- 200 GET /super/api/tipos_empresas
+2026/04/01 03:29:57 -> GET /super/api/roles_de_usuario from [::1]:62187
+2026/04/01 03:29:57 <- 200 GET /super/api/roles_de_usuario
+2026/04/01 03:29:58 metrics: stored cpu=4.35 mem=81.00% recv=6359052841 sent=1447818691
+2026/04/01 03:30:08 metrics: stored cpu=4.71 mem=81.00% recv=6359059426 sent=1447820803
+2026/04/01 03:30:18 metrics: stored cpu=2.36 mem=81.00% recv=6359066339 sent=1447822298
+2026/04/01 03:30:28 metrics: stored cpu=4.20 mem=81.00% recv=6359079118 sent=1447830423
+2026/04/01 03:30:30 -> POST /super/api/roles_de_usuario from [::1]:62187
+2026/04/01 03:30:30 <- 200 POST /super/api/roles_de_usuario
+2026/04/01 03:30:30 -> GET /super/api/tipos_empresas from [::1]:62187
+2026/04/01 03:30:30 <- 200 GET /super/api/tipos_empresas
+2026/04/01 03:30:30 -> GET /super/api/roles_de_usuario from [::1]:62187
+2026/04/01 03:30:30 <- 200 GET /super/api/roles_de_usuario
+2026/04/01 03:30:38 metrics: stored cpu=7.30 mem=80.00% recv=6359168611 sent=1447847650
+2026/04/01 03:30:48 metrics: stored cpu=4.02 mem=80.00% recv=6359178350 sent=1447851483
+2026/04/01 03:30:55 -> PUT /super/api/roles_de_usuario from [::1]:62187
+2026/04/01 03:30:55 <- 204 PUT /super/api/roles_de_usuario
+2026/04/01 03:30:55 -> GET /super/api/tipos_empresas from [::1]:62187
+2026/04/01 03:30:55 <- 200 GET /super/api/tipos_empresas
+2026/04/01 03:30:55 -> GET /super/api/roles_de_usuario from [::1]:62187
+2026/04/01 03:30:55 <- 200 GET /super/api/roles_de_usuario
+2026/04/01 03:30:58 metrics: stored cpu=3.93 mem=80.00% recv=6359196230 sent=1447865858
+2026/04/01 03:31:08 metrics: stored cpu=4.30 mem=80.00% recv=6359212041 sent=1447869007
+2026/04/01 03:31:18 metrics: stored cpu=4.65 mem=80.00% recv=6359216862 sent=1447869497
+2026/04/01 03:31:28 metrics: stored cpu=3.20 mem=80.00% recv=6359234247 sent=1447887775
+2026/04/01 03:31:34 -> GET /super/tipos_de_usuario.htm from [::1]:62187
+2026/04/01 03:31:34 <- 304 GET /super/tipos_de_usuario.htm
+2026/04/01 03:31:34 -> GET /super/api/tipos_empresas from [::1]:62187
+2026/04/01 03:31:34 -> GET /super/api/roles_de_usuario from [::1]:58148
+2026/04/01 03:31:34 <- 200 GET /super/api/tipos_empresas
+2026/04/01 03:31:34 -> GET /super/api/tipos_de_usuario from [::1]:51588
+2026/04/01 03:31:34 <- 200 GET /super/api/roles_de_usuario
+2026/04/01 03:31:34 <- 200 GET /super/api/tipos_de_usuario
+2026/04/01 03:31:38 metrics: stored cpu=4.41 mem=80.00% recv=6359245279 sent=1447897022
+2026/04/01 03:31:41 -> GET /super/api/tipos_empresas from [::1]:51588
+2026/04/01 03:31:41 <- 200 GET /super/api/tipos_empresas
+2026/04/01 03:31:41 -> GET /super/api/roles_de_usuario from [::1]:51588
+2026/04/01 03:31:41 <- 200 GET /super/api/roles_de_usuario
+2026/04/01 03:31:43 -> GET /super/api/tipos_empresas from [::1]:51588
+2026/04/01 03:31:43 -> GET /super/api/roles_de_usuario from [::1]:58148
+2026/04/01 03:31:43 <- 200 GET /super/api/tipos_empresas
+2026/04/01 03:31:43 <- 200 GET /super/api/roles_de_usuario
+2026/04/01 03:31:43 -> GET /super/api/tipos_de_usuario from [::1]:62187
+2026/04/01 03:31:43 <- 200 GET /super/api/tipos_de_usuario
+2026/04/01 03:31:48 metrics: stored cpu=3.91 mem=80.00% recv=6359258777 sent=1447903854

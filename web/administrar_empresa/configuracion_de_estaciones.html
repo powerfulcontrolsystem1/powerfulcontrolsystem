@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Configuración de estaciones</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="empresa-subpage">
+  <div class="container empresa-module">
+    <section class="card empresa-section">
+      <h1>Configuración de estaciones</h1>
+      <p id="empresaInfo">Empresa: cargando...</p>
+      <p class="form-help">Define cuántas estaciones quieres y el nombre de cada una. Ejemplo: Mesa 1, Habitación 1.</p>
+    </section>
+
+    <div id="messageBox" class="form-help"></div>
+
+    <section class="card empresa-section">
+      <form id="cantidadForm" class="form">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="cantidadEstaciones">Cantidad de estaciones</label>
+            <input id="cantidadEstaciones" class="form-input" type="number" min="1" max="500" value="1" required>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn" type="submit">Generar estaciones</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Nombres de estaciones</h2>
+        <button id="btnGuardarNombres" class="btn secondary" type="button">Guardar nombres</button>
+      </div>
+      <div class="table-wrap">
+        <table class="table" id="estacionesTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Nombre de estación</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const empresaId = Number(new URLSearchParams(window.location.search).get('empresa_id') || 0);
+    const messageBox = document.getElementById('messageBox');
+
+    function showMessage(text, type) {
+      messageBox.textContent = text || '';
+      messageBox.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'form-help');
+    }
+
+    function sanitize(v) {
+      return String(v == null ? '' : v)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function storageKey() {
+      return 'estaciones_config_empresa_' + empresaId;
+    }
+
+    function readConfig() {
+      if (!empresaId) return null;
+      try {
+        const raw = localStorage.getItem(storageKey());
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object') return null;
+        return normalizeConfig(parsed);
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function normalizeConfig(cfg) {
+      const cantidad = Math.max(1, Math.min(500, Number(cfg.cantidad || 1)));
+      const estaciones = Array.isArray(cfg.estaciones) ? cfg.estaciones : [];
+      const out = [];
+      for (let i = 0; i < cantidad; i++) {
+        const current = estaciones[i] || {};
+        const nombre = String(current.nombre || '').trim();
+        out.push({
+          id: i + 1,
+          nombre: nombre || ('Estación ' + (i + 1))
+        });
+      }
+      return { cantidad, estaciones: out };
+    }
+
+    function saveConfig(cfg) {
+      if (!empresaId) return;
+      const normalized = normalizeConfig(cfg);
+      localStorage.setItem(storageKey(), JSON.stringify(normalized));
+    }
+
+    function renderRows(cfg) {
+      const tbody = document.querySelector('#estacionesTable tbody');
+      if (!cfg.estaciones.length) {
+        tbody.innerHTML = '<tr><td colspan="2">No hay estaciones configuradas.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = cfg.estaciones.map((est, idx) => {
+        return '<tr>' +
+          '<td>' + (idx + 1) + '</td>' +
+          '<td><input class="form-input" data-idx="' + idx + '" value="' + sanitize(est.nombre) + '"></td>' +
+          '</tr>';
+      }).join('');
+    }
+
+    function applyCantidad(cantidad) {
+      const current = readConfig() || { cantidad: 1, estaciones: [{ id: 1, nombre: 'Estación 1' }] };
+      const cfg = normalizeConfig({ cantidad, estaciones: current.estaciones });
+      saveConfig(cfg);
+      document.getElementById('cantidadEstaciones').value = String(cfg.cantidad);
+      renderRows(cfg);
+      showMessage('Cantidad de estaciones actualizada. Ajusta nombres y guarda.', 'success');
+    }
+
+    function guardarNombres() {
+      const current = readConfig() || { cantidad: 1, estaciones: [{ id: 1, nombre: 'Estación 1' }] };
+      const inputs = document.querySelectorAll('#estacionesTable tbody input[data-idx]');
+      const estaciones = current.estaciones.map((est, idx) => {
+        const input = Array.from(inputs).find(x => Number(x.dataset.idx) === idx);
+        const nombre = input ? String(input.value || '').trim() : '';
+        return {
+          id: est.id,
+          nombre: nombre || ('Estación ' + est.id)
+        };
+      });
+      saveConfig({ cantidad: current.cantidad, estaciones });
+      renderRows(readConfig());
+      showMessage('Nombres de estaciones guardados.', 'success');
+    }
+
+    async function cargarEmpresa() {
+      const label = document.getElementById('empresaInfo');
+      if (!empresaId) {
+        label.textContent = 'Empresa no definida';
+        return;
+      }
+      try {
+        const resp = await fetch('/super/api/empresas?id=' + encodeURIComponent(empresaId), { credentials: 'same-origin' });
+        if (!resp.ok) throw new Error('No encontrada');
+        const data = await resp.json();
+        label.textContent = 'Empresa: ' + (data.nombre || 'Sin nombre');
+      } catch (_) {
+        label.textContent = 'Empresa no disponible';
+      }
+    }
+
+    function wireEvents() {
+      document.getElementById('cantidadForm').addEventListener('submit', ev => {
+        ev.preventDefault();
+        const cantidad = Number(document.getElementById('cantidadEstaciones').value || 0);
+        if (!cantidad || cantidad < 1) {
+          showMessage('La cantidad debe ser mayor a 0.', 'error');
+          return;
+        }
+        applyCantidad(cantidad);
+      });
+      document.getElementById('btnGuardarNombres').addEventListener('click', guardarNombres);
+    }
+
+    function bootstrap() {
+      if (!empresaId) {
+        showMessage('No se encontró empresa_id en la URL.', 'error');
+      }
+      wireEvents();
+      cargarEmpresa();
+      const cfg = readConfig() || normalizeConfig({ cantidad: 1, estaciones: [] });
+      saveConfig(cfg);
+      document.getElementById('cantidadEstaciones').value = String(cfg.cantidad);
+      renderRows(cfg);
+    }
+
+    bootstrap();
+  </script>
+</body>
+</html>

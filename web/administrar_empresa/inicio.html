@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Inicio Empresa</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="empresa-subpage">
+  <div class="container">
+    <section class="card empresa-section">
+      <h1>Panel de la Empresa</h1>
+      <p id="empresaLabel">Cargando empresa...</p>
+      <p>Desde este panel puedes gestionar productos, inventario y próximos módulos operativos por empresa.</p>
+    </section>
+  </div>
+  <script>
+    (function(){
+      const empresaId = Number(new URLSearchParams(window.location.search).get('empresa_id') || 0);
+      const label = document.getElementById('empresaLabel');
+      if (!empresaId) {
+        label.textContent = 'Empresa no definida.';
+        return;
+      }
+      fetch('/super/api/empresas?id=' + empresaId, { credentials: 'same-origin' })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data && data.nombre) {
+            label.textContent = 'Empresa: ' + data.nombre;
+            document.title = 'Inicio - ' + data.nombre;
+          } else {
+            label.textContent = 'Empresa ID: ' + empresaId;
+          }
+        })
+        .catch(() => {
+          label.textContent = 'Empresa ID: ' + empresaId;
+        });
+    })();
+  </script>
+</body>
+</html>

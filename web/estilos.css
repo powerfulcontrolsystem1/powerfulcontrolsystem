@@ -189,6 +189,9 @@ ul{padding-left:18px}
 .page-header h1{margin:0;font-size:0.95rem;color:var(--accent-yellow-light)}
 .page-header .btn.add{margin-bottom:0}
 
+/* Administrar empresa: título (nombre de la empresa) en blanco */
+#empresaTitle{ color: #fff; }
+
 /* Reducir ancho del sidebar izquierdo solo para páginas bajo /web/super */
 .super-page .admin-layout{display:flex}
 .super-page .admin-sidebar{width:180px;padding:12px}
@@ -441,3 +444,87 @@ html.theme-light .floating-menu #themeToggle{color:var(--accent-2)}
 .payment-btn-mp{width:100%;background:#ffd166;color:#1f2a38;border:none}
 .payment-btn-nequi{width:100%;background:#7ce0a6;color:#0f3521;border:none}
 .payment-btn-manual{width:100%;background:#ffcc80;color:#4a2506;border:none}
+
+/* Frame principal de administrar_empresa */
+.admin-empresa-frame{
+  width:100%;
+  height:calc(100vh - 120px);
+  border:0;
+  background:transparent;
+}
+
+/* Subpáginas internas del módulo administrar_empresa */
+.empresa-subpage{
+  background:var(--bg);
+  color:var(--text);
+}
+.empresa-module{
+  max-width:1400px;
+}
+.empresa-module-header{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+}
+.empresa-module-header h1{margin-bottom:6px}
+.empresa-module-kpis{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.kpi-box{
+  min-width:110px;
+  padding:10px 12px;
+  border-radius:10px;
+  background:rgba(255,255,255,0.03);
+  border:1px solid rgba(255,255,255,0.06);
+  text-align:right;
+}
+.kpi-label{display:block;color:var(--muted);font-size:.86rem}
+.kpi-box strong{font-size:1.2rem;color:#fff}
+
+.empresa-section{margin-top:16px}
+.empresa-section-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-bottom:10px;
+}
+.empresa-inline-actions{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-width:320px;
+}
+.empresa-inline-actions .form-input{min-width:260px}
+
+.empresa-grid-2{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+  margin-top:16px;
+}
+
+.table-wrap{overflow:auto}
+
+.producto-thumb{
+  width:44px;
+  height:44px;
+  object-fit:cover;
+  border-radius:8px;
+  border:1px solid rgba(255,255,255,0.14);
+}
+.thumb-placeholder{
+  display:inline-block;
+  font-size:.78rem;
+  color:var(--muted);
+}
+
+@media (max-width:1100px){
+  .empresa-grid-2{grid-template-columns:1fr}
+  .empresa-inline-actions{width:100%;min-width:unset}
+  .empresa-inline-actions .form-input{min-width:0;flex:1}
+}

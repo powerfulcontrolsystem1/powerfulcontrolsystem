@@ -1,5 +1,177 @@
 - Historial de cambios
 
+2026-04-01: Fix UI — mostrar nombre del rol en tipos_de_usuario (fallback a `rol_nombre`)
+- Acción: Al listar `tipos_de_usuario`, la columna 'Rol' ahora usa el nombre encontrado en la lista de roles; si no se encuentra, usa el campo retornado por la API `rol_nombre`.
+- Archivos modificados: web/super/tipos_de_usuario.htm
+- Responsable: agente local
+
+2026-04-01: Nuevo módulo super para roles de usuario y tipos de usuario (persistencia en superadministrador)
+- Acción:
+    - Se implementó la gestión completa de `roles_de_usuario` y `tipos_de_usuario` en el panel de super administrador.
+    - `tipos_de_usuario` valida que el rol seleccionado pertenezca al mismo tipo de empresa.
+- Backend:
+    - `backend/db/roles_tipos_usuario.go` (nuevo): modelos, CRUD y activación/desactivación para `roles_de_usuario` y `tipos_de_usuario`.
+    - `backend/handlers/roles_tipos_usuario.go` (nuevo): endpoints HTTP:
+        - `GET/POST/PUT/DELETE /super/api/roles_de_usuario`
+        - `GET/POST/PUT/DELETE /super/api/tipos_de_usuario`
+    - `backend/main.go`:
+        - creación de tablas `roles_de_usuario` y `tipos_de_usuario` en `superadministrador.db`.
+        - registro de rutas API nuevas en `/super/api/...`.
+- Frontend:
+    - `web/super/roles_de_usuario.html` (nuevo): CRUD con campos `tipo de empresa`, `nombre`, `descripcion` y acciones editar/eliminar/activar.
+    - `web/super/tipos_de_usuario.htm` (nuevo): CRUD con campos `tipo de empresa`, `rol`, `nombre`, `descripcion`; selector de rol filtrado por tipo de empresa.
+    - `web/super_administrador.html`: menú lateral actualizado con accesos a las dos páginas nuevas.
+- Persistencia:
+    - Todos los datos del módulo se almacenan en `superadministrador.db`, cumpliendo el requerimiento.
+- Validación ejecutada:
+    - `go build .` en `backend` -> OK.
+- Documentación actualizada:
+    - `documentos/descripcion_de_archivos`
+    - `documentos/descripcion_de_las_bases_De_datos`
+    - `documentos/historial_de_cambios`
+- Responsable: agente local
+
+2026-04-01: Nuevo submódulo de estaciones por empresa (configuración + tarjetas)
+- Acción:
+    - Se crearon dos subpáginas nuevas para administrar estaciones dentro de `administrar_empresa`.
+    - Ahora se puede configurar cuántas estaciones mostrar y el nombre de cada una desde una página de configuración.
+    - La vista de estaciones muestra tarjetas usando esos nombres configurados.
+- Frontend:
+    - `web/administrar_empresa/configuracion_de_estaciones.html` (nuevo):
+        - Configura cantidad de estaciones.
+        - Configura nombre de cada estación (Mesa 1, Habitación 1, etc.).
+        - Guarda la configuración por empresa (`empresa_id`) en almacenamiento local del navegador.
+    - `web/administrar_empresa/estaciones.html` (nuevo):
+        - Renderiza tarjetas de estaciones según configuración previa.
+        - Muestra el nombre configurado en cada tarjeta.
+    - `web/administrar_empresa.html`:
+        - Se añadieron enlaces de menú para `Configuración de estaciones` y `Estaciones`.
+        - Se propaga `empresa_id` en ambos enlaces igual que en el resto del módulo.
+- Documentación actualizada:
+    - `documentos/descripcion_de_archivos`
+    - `documentos/historial_de_cambios`
+- Validación ejecutada:
+    - Revisión estática sin errores en los archivos editados/creados.
+- Archivos modificados/creados:
+    - `web/administrar_empresa.html`
+    - `web/administrar_empresa/configuracion_de_estaciones.html` (nuevo)
+    - `web/administrar_empresa/estaciones.html` (nuevo)
+    - `documentos/descripcion_de_archivos`
+    - `documentos/historial_de_cambios`
+- Responsable: agente local
+
+2026-04-01: Ampliación robusta de productos/stock (historial de precios, proveedores, servicios, devoluciones/pérdidas/cambios)
+- Acción:
+    - Se extendió el módulo de inventario por empresa para cubrir procesos más empresariales: proveedores, servicios vendibles, historial de cambios de precio y operaciones de inventario avanzadas.
+- Backend:
+    - `backend/db/productos.go`:
+        - Se añadió `proveedor_principal_id` al modelo/productos.
+        - Se agregaron tablas y lógica para `proveedores`, `servicios`, `producto_precios_historial`.
+        - Se implementaron operaciones de inventario para `entrada`, `salida`, `devolucion`, `perdida`, `ajuste_positivo`, `ajuste_negativo` y cambio entre productos.
+        - Se añadió registro automático de historial al cambiar precio/costo/impuesto en actualización de producto.
+    - `backend/handlers/productos.go`:
+        - Nuevos handlers/endpoints:
+            - `POST /api/empresa/inventario/ajustar`
+            - `POST /api/empresa/inventario/cambiar_producto`
+            - `GET /api/empresa/productos/precios_historial`
+            - `GET/POST/PUT/DELETE /api/empresa/proveedores`
+            - `GET/POST/PUT/DELETE /api/empresa/servicios`
+        - `PUT /api/empresa/productos` ahora acepta `motivo_precio` y `referencia_precio`.
+    - `backend/main.go`:
+        - Se registraron todas las rutas nuevas del módulo robusto.
+- Frontend:
+    - `web/administrar_empresa/administrar_productos.html`:
+        - Nueva sección CRUD de proveedores.
+        - Nueva sección CRUD de servicios vendibles.
+        - Formulario de ajustes de inventario (incluye devoluciones/pérdidas).
+        - Formulario para cambio entre productos.
+        - Tabla de historial de cambios de precio con filtro por producto.
+        - Formulario de producto ampliado con proveedor principal y campos de motivo/referencia de cambio de precio.
+- Documentación actualizada:
+    - `documentos/descripcion_de_archivos`
+    - `documentos/descripcion_de_las_bases_De_datos`
+    - `documentos/historial_de_cambios`
+- Validación ejecutada:
+    - `go build .` sobre el módulo principal del backend -> OK.
+    - `go build ./...` reporta conflicto preexistente en `backend/tools` por múltiples `main` (fuera del servidor principal).
+- Archivos modificados:
+    - `backend/db/productos.go`
+    - `backend/handlers/productos.go`
+    - `backend/main.go`
+    - `web/administrar_empresa/administrar_productos.html`
+    - `documentos/descripcion_de_archivos`
+    - `documentos/descripcion_de_las_bases_De_datos`
+    - `documentos/historial_de_cambios`
+- Responsable: agente local
+
+2026-04-01: Módulo profesional de productos por empresa (CRUD + bodegas + traslados + imagen)
+- Acción:
+    - Se creó la carpeta `web/administrar_empresa/` y se movieron/crearon allí las subpáginas del módulo de administración de empresa (`inicio`, `ventas`, `reportes`, `administrar_productos`).
+    - Se implementó el módulo completo de productos para la empresa administrada con aislamiento por `empresa_id`.
+- Backend:
+    - Nuevo archivo `backend/db/productos.go` con esquema/migraciones y lógica de negocio:
+        - Tablas en `empresas.db`: `bodegas`, `productos`, `inventario_existencias`, `inventario_movimientos`.
+        - CRUD de bodegas y productos.
+        - Gestión de existencias por bodega y movimientos de inventario.
+        - Traslado de inventario entre bodegas con validación de stock.
+        - Soporte de imagen/logo por producto (`imagen_url`).
+    - Nuevo archivo `backend/handlers/productos.go` con APIs JSON:
+        - `GET/POST/PUT/DELETE /api/empresa/bodegas`
+        - `GET/POST/PUT/DELETE /api/empresa/productos`
+        - `POST /api/empresa/productos/imagen`
+        - `GET /api/empresa/inventario/existencias`
+        - `GET /api/empresa/inventario/movimientos`
+        - `POST /api/empresa/inventario/transferir`
+    - `backend/main.go`:
+        - Inicializa esquema con `EnsureEmpresaProductosSchema(dbEmpresas)`.
+        - Registra las rutas nuevas del módulo de productos.
+- Frontend:
+    - `web/administrar_empresa.html` ahora enlaza sus secciones al nuevo directorio `web/administrar_empresa/` y propaga `empresa_id` al iframe.
+    - `web/administrar_empresa/administrar_productos.html` implementa UI completa:
+        - CRUD de bodegas.
+        - CRUD de productos con campos profesionales (SKU, código de barras, categoría, marca, unidad, costo, precio, impuesto, stock min/max, observaciones).
+        - Carga de imagen/logo del producto.
+        - Traslado de inventario entre bodegas.
+        - Visualización de existencias y movimientos recientes.
+    - `web/estilos.css` incluye estilos centralizados para el módulo interno de empresa y para la nueva vista de productos.
+    - Se reemplazó el icono inexistente `/img/tag.svg` por `/img/shield-license.svg` en `web/administrar_empresa.html` y `web/pagar_licencia.html` para evitar errores 404 en assets.
+- Validación ejecutada:
+    - `go test ./auth ./db ./handlers ./metrics ./utils` -> OK (compila, sin tests).
+    - `go build -o server.exe .` -> OK.
+    - Prueba API end-to-end (empresa_id=6):
+        - creación de 2 bodegas,
+        - creación de producto con stock inicial,
+        - traslado entre bodegas,
+        - consultas de productos/existencias/movimientos -> respuestas 200.
+- Archivos modificados/creados:
+    - `backend/db/productos.go` (nuevo)
+    - `backend/handlers/productos.go` (nuevo)
+    - `backend/main.go`
+    - `web/administrar_empresa.html`
+    - `web/administrar_empresa/administrar_productos.html` (nuevo)
+    - `web/administrar_empresa/inicio.html` (nuevo)
+    - `web/administrar_empresa/ventas.html` (nuevo)
+    - `web/administrar_empresa/reportes.html` (nuevo)
+    - `web/estilos.css`
+    - `web/pagar_licencia.html`
+    - `documentos/descripcion_de_archivos`
+    - `documentos/descripcion_de_las_bases_De_datos`
+    - `documentos/historial_de_cambios`
+- Responsable: agente local
+
+2026-04-01: Mostrar nombre de la empresa en `administrar_empresa.html` al cargar por id
+- Acción: Al abrir `web/administrar_empresa.html?id=<id>` ahora se muestra el nombre real de la empresa en el encabezado en lugar de solo el ID.
+- Backend:
+    - `backend/handlers/handlers.go`: `EmpresasHandler` ahora soporta `GET /super/api/empresas?id=<id>` devolviendo la empresa solicitada usando `dbpkg.GetEmpresaByID`.
+- Frontend:
+    - `web/administrar_empresa.html`: se añadió un fetch a `/super/api/empresas?id=<id>` que reemplaza el título por `Administrar Empresa — <nombre>` y actualiza `document.title`.
+- Validación ejecutada:
+    - `go build` en `backend` pasó correctamente tras los cambios.
+- Archivos modificados:
+    - `backend/handlers/handlers.go`
+    - `web/administrar_empresa.html`
+- Responsable: agente local
+
 2026-04-01: Nuevo método de pago "Activar licencia sin pagar" + redirección a administrar_empresa
 - Acción: Se añadió un tercer método en `web/pagar_licencia.html` llamado "Activar licencia sin pagar" para avance interno del proyecto.
 - Backend:

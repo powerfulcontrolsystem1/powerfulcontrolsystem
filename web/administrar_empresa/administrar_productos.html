@@ -1,0 +1,1366 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Administrar Productos</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="empresa-subpage">
+  <div class="container empresa-module">
+    <section class="card empresa-module-header">
+      <div>
+        <h1>Administrar Productos</h1>
+        <p id="empresaInfo">Empresa: cargando...</p>
+      </div>
+      <div class="empresa-module-kpis">
+        <div class="kpi-box">
+          <span class="kpi-label">Productos</span>
+          <strong id="kpiProductos">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Bodegas</span>
+          <strong id="kpiBodegas">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Servicios</span>
+          <strong id="kpiServicios">0</strong>
+        </div>
+      </div>
+    </section>
+
+    <div id="messageBox" class="form-help"></div>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Bodegas</h2>
+        <button id="btnNuevaBodega" type="button" class="btn secondary">Nueva</button>
+      </div>
+
+      <form id="bodegaForm" class="form">
+        <input type="hidden" id="bodegaId">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="bodegaCodigo">Código</label>
+            <input id="bodegaCodigo" class="form-input" placeholder="BOD-001">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="bodegaNombre">Nombre</label>
+            <input id="bodegaNombre" class="form-input" required placeholder="Bodega principal">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="bodegaUbicacion">Ubicación</label>
+            <input id="bodegaUbicacion" class="form-input" placeholder="Piso 1 - pasillo A">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="bodegaResponsable">Responsable</label>
+            <input id="bodegaResponsable" class="form-input" placeholder="Nombre del responsable">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="bodegaObservaciones">Observaciones</label>
+            <textarea id="bodegaObservaciones" class="form-textarea"></textarea>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn" type="submit">Guardar bodega</button>
+        </div>
+      </form>
+
+      <div class="table-wrap">
+        <table class="table" id="bodegasTable">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Código</th>
+              <th>Nombre</th>
+              <th>Ubicación</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Proveedores</h2>
+        <button id="btnNuevoProveedor" type="button" class="btn secondary">Nuevo</button>
+      </div>
+
+      <form id="proveedorForm" class="form">
+        <input type="hidden" id="proveedorId">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="proveedorNombre">Nombre</label>
+            <input id="proveedorNombre" class="form-input" required placeholder="Proveedor principal S.A.S.">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="proveedorContacto">Contacto</label>
+            <input id="proveedorContacto" class="form-input" placeholder="Nombre contacto">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="proveedorTelefono">Teléfono</label>
+            <input id="proveedorTelefono" class="form-input" placeholder="3001234567">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="proveedorEmail">Email</label>
+            <input id="proveedorEmail" class="form-input" type="email" placeholder="compras@proveedor.com">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="proveedorObservaciones">Observaciones</label>
+            <input id="proveedorObservaciones" class="form-input" placeholder="Horario de entregas y condiciones">
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn" type="submit">Guardar proveedor</button>
+        </div>
+      </form>
+
+      <div class="table-wrap">
+        <table class="table" id="proveedoresTable">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nombre</th>
+              <th>Contacto</th>
+              <th>Teléfono</th>
+              <th>Email</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Productos</h2>
+        <div class="empresa-inline-actions">
+          <input id="filtroProductos" class="form-input" placeholder="Buscar por nombre/SKU/código de barras">
+          <button id="btnBuscarProductos" class="btn secondary" type="button">Buscar</button>
+          <button id="btnNuevoProducto" class="btn secondary" type="button">Nuevo</button>
+        </div>
+      </div>
+
+      <form id="productoForm" class="form">
+        <input type="hidden" id="productoId">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="productoNombre">Nombre</label>
+            <input id="productoNombre" class="form-input" required placeholder="Producto premium">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="productoSKU">SKU</label>
+            <input id="productoSKU" class="form-input" placeholder="SKU-0001">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="productoCodigoBarras">Código de barras</label>
+            <input id="productoCodigoBarras" class="form-input" placeholder="7701234567890">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="productoCategoria">Categoría</label>
+            <input id="productoCategoria" class="form-input" placeholder="Lácteos">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="productoMarca">Marca</label>
+            <input id="productoMarca" class="form-input" placeholder="Marca X">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="productoUnidad">Unidad de medida</label>
+            <input id="productoUnidad" class="form-input" placeholder="unidad / caja / kg">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="productoCosto">Costo</label>
+            <input id="productoCosto" class="form-input" type="number" step="0.01" min="0" value="0">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="productoPrecio">Precio</label>
+            <input id="productoPrecio" class="form-input" type="number" step="0.01" min="0" value="0">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="productoImpuesto">Impuesto %</label>
+            <input id="productoImpuesto" class="form-input" type="number" step="0.01" min="0" value="0">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="productoStockMin">Stock mínimo</label>
+            <input id="productoStockMin" class="form-input" type="number" step="0.01" min="0" value="0">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="productoStockMax">Stock máximo</label>
+            <input id="productoStockMax" class="form-input" type="number" step="0.01" min="0" value="0">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="productoStockInicial">Stock inicial (solo creación)</label>
+            <input id="productoStockInicial" class="form-input" type="number" step="0.01" min="0" value="0">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="productoBodegaPrincipal">Bodega principal</label>
+            <select id="productoBodegaPrincipal" class="form-input"></select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="productoProveedorPrincipal">Proveedor principal</label>
+            <select id="productoProveedorPrincipal" class="form-input"></select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="productoImagen">Imagen / logo</label>
+            <input id="productoImagen" class="form-input" type="file" accept=".png,.jpg,.jpeg,.gif,.webp,.svg">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="productoImagenURL">URL imagen (opcional)</label>
+            <input id="productoImagenURL" class="form-input" placeholder="/uploads/productos/...">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="productoMotivoPrecio">Motivo de cambio de precio (edición)</label>
+            <input id="productoMotivoPrecio" class="form-input" placeholder="Actualización por proveedor / inflación / promoción">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="productoReferenciaPrecio">Referencia de cambio (edición)</label>
+            <input id="productoReferenciaPrecio" class="form-input" placeholder="ACTA-PRC-2026-04">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="productoDescripcion">Descripción</label>
+            <textarea id="productoDescripcion" class="form-textarea"></textarea>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="productoObservaciones">Observaciones</label>
+            <textarea id="productoObservaciones" class="form-textarea"></textarea>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn" type="submit">Guardar producto</button>
+        </div>
+      </form>
+
+      <div class="table-wrap">
+        <table class="table" id="productosTable">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Imagen</th>
+              <th>SKU</th>
+              <th>Nombre</th>
+              <th>Precio</th>
+              <th>Stock total</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Servicios Vendibles</h2>
+        <button id="btnNuevoServicio" class="btn secondary" type="button">Nuevo</button>
+      </div>
+
+      <form id="servicioForm" class="form">
+        <input type="hidden" id="servicioId">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="servicioNombre">Nombre</label>
+            <input id="servicioNombre" class="form-input" required placeholder="Instalación técnica">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="servicioCodigo">Código</label>
+            <input id="servicioCodigo" class="form-input" placeholder="SER-0001">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="servicioCategoria">Categoría</label>
+            <input id="servicioCategoria" class="form-input" placeholder="Soporte / instalación / mantenimiento">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="servicioPrecio">Precio</label>
+            <input id="servicioPrecio" class="form-input" type="number" step="0.01" min="0" value="0">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="servicioCostoReferencial">Costo referencial</label>
+            <input id="servicioCostoReferencial" class="form-input" type="number" step="0.01" min="0" value="0">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="servicioImpuesto">Impuesto %</label>
+            <input id="servicioImpuesto" class="form-input" type="number" step="0.01" min="0" value="0">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="servicioDuracion">Duración (minutos)</label>
+            <input id="servicioDuracion" class="form-input" type="number" step="1" min="0" value="0">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="servicioDescripcion">Descripción</label>
+            <textarea id="servicioDescripcion" class="form-textarea"></textarea>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="servicioObservaciones">Observaciones</label>
+            <textarea id="servicioObservaciones" class="form-textarea"></textarea>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn" type="submit">Guardar servicio</button>
+        </div>
+      </form>
+
+      <div class="table-wrap">
+        <table class="table" id="serviciosTable">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Código</th>
+              <th>Nombre</th>
+              <th>Categoría</th>
+              <th>Precio</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="empresa-grid-2">
+      <section class="card empresa-section">
+        <h2>Ajustes de inventario (devoluciones/pérdidas)</h2>
+        <form id="ajusteForm" class="form">
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="ajusteProducto">Producto</label>
+              <select id="ajusteProducto" class="form-input" required></select>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="ajusteBodega">Bodega</label>
+              <select id="ajusteBodega" class="form-input" required></select>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="ajusteTipo">Tipo</label>
+              <select id="ajusteTipo" class="form-input" required>
+                <option value="entrada">Entrada</option>
+                <option value="salida">Salida</option>
+                <option value="devolucion">Devolución</option>
+                <option value="perdida">Pérdida</option>
+                <option value="ajuste_positivo">Ajuste positivo</option>
+                <option value="ajuste_negativo">Ajuste negativo</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="ajusteCantidad">Cantidad</label>
+              <input id="ajusteCantidad" class="form-input" type="number" step="0.01" min="0.01" required>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="ajusteReferencia">Referencia</label>
+              <input id="ajusteReferencia" class="form-input" placeholder="AJ-20260401-01">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="ajusteObservaciones">Observaciones</label>
+              <input id="ajusteObservaciones" class="form-input" placeholder="Motivo del ajuste o novedad">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn" type="submit">Registrar ajuste</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card empresa-section">
+        <h2>Cambio entre productos</h2>
+        <form id="cambioProductoForm" class="form">
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="cambioProductoOrigen">Producto origen</label>
+              <select id="cambioProductoOrigen" class="form-input" required></select>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="cambioProductoDestino">Producto destino</label>
+              <select id="cambioProductoDestino" class="form-input" required></select>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="cambioBodega">Bodega</label>
+              <select id="cambioBodega" class="form-input" required></select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="cambioCantidad">Cantidad</label>
+              <input id="cambioCantidad" class="form-input" type="number" step="0.01" min="0.01" required>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="cambioReferencia">Referencia</label>
+              <input id="cambioReferencia" class="form-input" placeholder="CAM-20260401-01">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="cambioObservaciones">Observaciones</label>
+              <input id="cambioObservaciones" class="form-input" placeholder="Cambio por daño, lote o calidad">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn" type="submit">Registrar cambio</button>
+          </div>
+        </form>
+      </section>
+    </section>
+
+    <section class="empresa-grid-2">
+      <section class="card empresa-section">
+        <h2>Traslado entre bodegas</h2>
+        <form id="transferForm" class="form">
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="transferProducto">Producto</label>
+              <select id="transferProducto" class="form-input" required></select>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="transferOrigen">Bodega origen</label>
+              <select id="transferOrigen" class="form-input" required></select>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="transferDestino">Bodega destino</label>
+              <select id="transferDestino" class="form-input" required></select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="transferCantidad">Cantidad</label>
+              <input id="transferCantidad" class="form-input" type="number" step="0.01" min="0.01" required>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="transferReferencia">Referencia</label>
+              <input id="transferReferencia" class="form-input" placeholder="TR-20260401-01">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="transferObs">Observaciones</label>
+              <input id="transferObs" class="form-input" placeholder="Traslado interno por reposición">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn" type="submit">Mover inventario</button>
+          </div>
+        </form>
+
+        <h3>Existencias por bodega</h3>
+        <div class="table-wrap">
+          <table class="table" id="existenciasTable">
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Bodega</th>
+                <th>Cantidad</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card empresa-section">
+        <h2>Movimientos recientes</h2>
+        <div class="table-wrap">
+          <table class="table" id="movimientosTable">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Producto</th>
+                <th>Tipo</th>
+                <th>Origen</th>
+                <th>Destino</th>
+                <th>Cantidad</th>
+                <th>Referencia</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Historial de cambios de precio</h2>
+        <div class="empresa-inline-actions">
+          <select id="historialProducto" class="form-input"></select>
+          <button id="btnCargarHistorialPrecios" class="btn secondary" type="button">Actualizar</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="table" id="preciosHistorialTable">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Producto</th>
+              <th>Precio anterior</th>
+              <th>Precio nuevo</th>
+              <th>Motivo</th>
+              <th>Referencia</th>
+              <th>Usuario</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const empresaId = Number(new URLSearchParams(window.location.search).get('empresa_id') || 0);
+    const state = {
+      bodegas: [],
+      productos: [],
+      proveedores: [],
+      servicios: []
+    };
+
+    const messageBox = document.getElementById('messageBox');
+
+    function showMessage(text, type) {
+      messageBox.textContent = text || '';
+      messageBox.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'form-help');
+    }
+
+    async function requestJSON(url, options) {
+      const resp = await fetch(url, Object.assign({ credentials: 'same-origin' }, options || {}));
+      const contentType = resp.headers.get('content-type') || '';
+      let data = null;
+      if (contentType.includes('application/json')) {
+        data = await resp.json();
+      } else {
+        data = await resp.text();
+      }
+      if (!resp.ok) {
+        const msg = typeof data === 'string' ? data : (data && data.error ? data.error : 'error de servidor');
+        throw new Error(msg || ('HTTP ' + resp.status));
+      }
+      return data;
+    }
+
+    function sanitize(v) {
+      return String(v == null ? '' : v)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function num(v) {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    function buildOptions(select, items, selected, emptyText) {
+      let html = '<option value="">' + sanitize(emptyText || 'Seleccionar') + '</option>';
+      items.forEach(item => {
+        const selectedAttr = Number(selected) === Number(item.id) ? ' selected' : '';
+        html += '<option value="' + Number(item.id) + '"' + selectedAttr + '>' + sanitize(item.nombre || ('ID ' + item.id)) + '</option>';
+      });
+      select.innerHTML = html;
+    }
+
+    function getActivos(rows) {
+      return rows.filter(r => (r.estado || 'activo') === 'activo');
+    }
+
+    async function loadEmpresaInfo() {
+      if (!empresaId) {
+        showMessage('empresa_id no definido en la URL.', 'error');
+        document.getElementById('empresaInfo').textContent = 'Empresa no definida';
+        return;
+      }
+      try {
+        const empresa = await requestJSON('/super/api/empresas?id=' + empresaId);
+        document.getElementById('empresaInfo').textContent = 'Empresa: ' + (empresa.nombre || 'Sin nombre');
+      } catch (e) {
+        document.getElementById('empresaInfo').textContent = 'Empresa no disponible';
+      }
+    }
+
+    async function loadBodegas() {
+      state.bodegas = await requestJSON('/api/empresa/bodegas?empresa_id=' + empresaId + '&include_inactive=1');
+      document.getElementById('kpiBodegas').textContent = String(state.bodegas.length);
+      renderBodegas();
+      refreshBodegaSelectors();
+    }
+
+    function renderBodegas() {
+      const tbody = document.querySelector('#bodegasTable tbody');
+      if (!state.bodegas.length) {
+        tbody.innerHTML = '<tr><td colspan="6">No hay bodegas registradas.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = state.bodegas.map(b => {
+        const estado = sanitize(b.estado || 'activo');
+        const activar = estado === 'activo' ? 'Desactivar' : 'Activar';
+        const activo = estado === 'activo' ? '0' : '1';
+        return '<tr>' +
+          '<td>' + Number(b.id) + '</td>' +
+          '<td>' + sanitize(b.codigo || '') + '</td>' +
+          '<td>' + sanitize(b.nombre || '') + '</td>' +
+          '<td>' + sanitize(b.ubicacion || '') + '</td>' +
+          '<td>' + estado + '</td>' +
+          '<td class="actions">' +
+            '<button type="button" class="btn secondary" data-action="edit-bodega" data-id="' + Number(b.id) + '">Editar</button>' +
+            '<button type="button" class="btn secondary" data-action="toggle-bodega" data-id="' + Number(b.id) + '" data-activo="' + activo + '">' + activar + '</button>' +
+            '<button type="button" class="btn danger" data-action="delete-bodega" data-id="' + Number(b.id) + '">Eliminar</button>' +
+          '</td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    function refreshBodegaSelectors() {
+      const activas = getActivos(state.bodegas);
+      buildOptions(document.getElementById('productoBodegaPrincipal'), activas, document.getElementById('productoBodegaPrincipal').value, 'Sin bodega principal');
+      buildOptions(document.getElementById('transferOrigen'), activas, '', 'Seleccione origen');
+      buildOptions(document.getElementById('transferDestino'), activas, '', 'Seleccione destino');
+      buildOptions(document.getElementById('ajusteBodega'), activas, '', 'Seleccione bodega');
+      buildOptions(document.getElementById('cambioBodega'), activas, '', 'Seleccione bodega');
+    }
+
+    function fillBodegaForm(b) {
+      document.getElementById('bodegaId').value = b ? Number(b.id) : '';
+      document.getElementById('bodegaCodigo').value = b ? (b.codigo || '') : '';
+      document.getElementById('bodegaNombre').value = b ? (b.nombre || '') : '';
+      document.getElementById('bodegaUbicacion').value = b ? (b.ubicacion || '') : '';
+      document.getElementById('bodegaResponsable').value = b ? (b.responsable || '') : '';
+      document.getElementById('bodegaObservaciones').value = b ? (b.observaciones || '') : '';
+    }
+
+    async function saveBodega(ev) {
+      ev.preventDefault();
+      const id = Number(document.getElementById('bodegaId').value || 0);
+      const payload = {
+        id,
+        empresa_id: empresaId,
+        codigo: document.getElementById('bodegaCodigo').value.trim(),
+        nombre: document.getElementById('bodegaNombre').value.trim(),
+        ubicacion: document.getElementById('bodegaUbicacion').value.trim(),
+        responsable: document.getElementById('bodegaResponsable').value.trim(),
+        observaciones: document.getElementById('bodegaObservaciones').value.trim()
+      };
+      if (!payload.nombre) {
+        showMessage('El nombre de bodega es obligatorio.', 'error');
+        return;
+      }
+
+      if (id > 0) {
+        await requestJSON('/api/empresa/bodegas', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        showMessage('Bodega actualizada correctamente.', 'success');
+      } else {
+        await requestJSON('/api/empresa/bodegas', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        showMessage('Bodega creada correctamente.', 'success');
+      }
+      fillBodegaForm(null);
+      await loadBodegas();
+      await loadExistencias();
+    }
+
+    async function accionBodega(action, id, activo) {
+      if (action === 'edit-bodega') {
+        const b = state.bodegas.find(x => Number(x.id) === Number(id));
+        fillBodegaForm(b || null);
+        return;
+      }
+      if (action === 'delete-bodega') {
+        if (!confirm('¿Eliminar esta bodega?')) return;
+        await requestJSON('/api/empresa/bodegas?empresa_id=' + empresaId + '&id=' + id, { method: 'DELETE' });
+        showMessage('Bodega eliminada.', 'success');
+      }
+      if (action === 'toggle-bodega') {
+        await requestJSON('/api/empresa/bodegas?empresa_id=' + empresaId + '&id=' + id + '&action=activar&activo=' + activo, { method: 'PUT' });
+        showMessage('Estado de bodega actualizado.', 'success');
+      }
+      await loadBodegas();
+      await loadExistencias();
+    }
+
+    async function loadProveedores() {
+      state.proveedores = await requestJSON('/api/empresa/proveedores?empresa_id=' + empresaId + '&include_inactive=1');
+      renderProveedores();
+      refreshProveedorSelector();
+    }
+
+    function renderProveedores() {
+      const tbody = document.querySelector('#proveedoresTable tbody');
+      if (!state.proveedores.length) {
+        tbody.innerHTML = '<tr><td colspan="7">No hay proveedores registrados.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = state.proveedores.map(p => {
+        const estado = sanitize(p.estado || 'activo');
+        const activar = estado === 'activo' ? 'Desactivar' : 'Activar';
+        const activo = estado === 'activo' ? '0' : '1';
+        return '<tr>' +
+          '<td>' + Number(p.id) + '</td>' +
+          '<td>' + sanitize(p.nombre || '') + '</td>' +
+          '<td>' + sanitize(p.contacto || '') + '</td>' +
+          '<td>' + sanitize(p.telefono || '') + '</td>' +
+          '<td>' + sanitize(p.email || '') + '</td>' +
+          '<td>' + estado + '</td>' +
+          '<td class="actions">' +
+            '<button type="button" class="btn secondary" data-action="edit-proveedor" data-id="' + Number(p.id) + '">Editar</button>' +
+            '<button type="button" class="btn secondary" data-action="toggle-proveedor" data-id="' + Number(p.id) + '" data-activo="' + activo + '">' + activar + '</button>' +
+            '<button type="button" class="btn danger" data-action="delete-proveedor" data-id="' + Number(p.id) + '">Eliminar</button>' +
+          '</td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    function refreshProveedorSelector() {
+      const activas = getActivos(state.proveedores);
+      buildOptions(document.getElementById('productoProveedorPrincipal'), activas, document.getElementById('productoProveedorPrincipal').value, 'Sin proveedor principal');
+    }
+
+    function fillProveedorForm(p) {
+      document.getElementById('proveedorId').value = p ? Number(p.id) : '';
+      document.getElementById('proveedorNombre').value = p ? (p.nombre || '') : '';
+      document.getElementById('proveedorContacto').value = p ? (p.contacto || '') : '';
+      document.getElementById('proveedorTelefono').value = p ? (p.telefono || '') : '';
+      document.getElementById('proveedorEmail').value = p ? (p.email || '') : '';
+      document.getElementById('proveedorObservaciones').value = p ? (p.observaciones || '') : '';
+    }
+
+    async function saveProveedor(ev) {
+      ev.preventDefault();
+      const id = Number(document.getElementById('proveedorId').value || 0);
+      const payload = {
+        id,
+        empresa_id: empresaId,
+        nombre: document.getElementById('proveedorNombre').value.trim(),
+        contacto: document.getElementById('proveedorContacto').value.trim(),
+        telefono: document.getElementById('proveedorTelefono').value.trim(),
+        email: document.getElementById('proveedorEmail').value.trim(),
+        observaciones: document.getElementById('proveedorObservaciones').value.trim()
+      };
+      if (!payload.nombre) {
+        showMessage('El nombre del proveedor es obligatorio.', 'error');
+        return;
+      }
+      if (id > 0) {
+        await requestJSON('/api/empresa/proveedores', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        showMessage('Proveedor actualizado correctamente.', 'success');
+      } else {
+        await requestJSON('/api/empresa/proveedores', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        showMessage('Proveedor creado correctamente.', 'success');
+      }
+      fillProveedorForm(null);
+      await loadProveedores();
+    }
+
+    async function accionProveedor(action, id, activo) {
+      if (action === 'edit-proveedor') {
+        const p = state.proveedores.find(x => Number(x.id) === Number(id));
+        fillProveedorForm(p || null);
+        return;
+      }
+      if (action === 'delete-proveedor') {
+        if (!confirm('¿Eliminar este proveedor?')) return;
+        await requestJSON('/api/empresa/proveedores?empresa_id=' + empresaId + '&id=' + id, { method: 'DELETE' });
+        showMessage('Proveedor eliminado.', 'success');
+      }
+      if (action === 'toggle-proveedor') {
+        await requestJSON('/api/empresa/proveedores?empresa_id=' + empresaId + '&id=' + id + '&action=activar&activo=' + activo, { method: 'PUT' });
+        showMessage('Estado del proveedor actualizado.', 'success');
+      }
+      await loadProveedores();
+    }
+
+    async function loadProductos() {
+      const q = document.getElementById('filtroProductos').value.trim();
+      const url = '/api/empresa/productos?empresa_id=' + empresaId + (q ? '&q=' + encodeURIComponent(q) : '');
+      state.productos = await requestJSON(url);
+      document.getElementById('kpiProductos').textContent = String(state.productos.length);
+      renderProductos();
+      refreshProductoSelectors();
+    }
+
+    function refreshProductoSelectors() {
+      const activos = getActivos(state.productos);
+      buildOptions(document.getElementById('transferProducto'), activos, '', 'Seleccione producto');
+      buildOptions(document.getElementById('ajusteProducto'), activos, '', 'Seleccione producto');
+      buildOptions(document.getElementById('cambioProductoOrigen'), activos, '', 'Seleccione producto origen');
+      buildOptions(document.getElementById('cambioProductoDestino'), activos, '', 'Seleccione producto destino');
+
+      const historialSelect = document.getElementById('historialProducto');
+      let html = '<option value="">Todos los productos</option>';
+      activos.forEach(p => {
+        html += '<option value="' + Number(p.id) + '">' + sanitize(p.nombre || ('ID ' + p.id)) + '</option>';
+      });
+      historialSelect.innerHTML = html;
+    }
+
+    function renderProductos() {
+      const tbody = document.querySelector('#productosTable tbody');
+      if (!state.productos.length) {
+        tbody.innerHTML = '<tr><td colspan="8">No hay productos registrados.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = state.productos.map(p => {
+        const estado = sanitize(p.estado || 'activo');
+        const activar = estado === 'activo' ? 'Desactivar' : 'Activar';
+        const activo = estado === 'activo' ? '0' : '1';
+        const img = p.imagen_url ? '<img class="producto-thumb" src="' + sanitize(p.imagen_url) + '" alt="logo producto">' : '<span class="thumb-placeholder">Sin imagen</span>';
+        return '<tr>' +
+          '<td>' + Number(p.id) + '</td>' +
+          '<td>' + img + '</td>' +
+          '<td>' + sanitize(p.sku || '') + '</td>' +
+          '<td>' + sanitize(p.nombre || '') + '</td>' +
+          '<td>' + Number(p.precio || 0).toFixed(2) + '</td>' +
+          '<td>' + Number(p.stock_total || 0).toFixed(2) + '</td>' +
+          '<td>' + estado + '</td>' +
+          '<td class="actions">' +
+            '<button type="button" class="btn secondary" data-action="edit-producto" data-id="' + Number(p.id) + '">Editar</button>' +
+            '<button type="button" class="btn secondary" data-action="toggle-producto" data-id="' + Number(p.id) + '" data-activo="' + activo + '">' + activar + '</button>' +
+            '<button type="button" class="btn danger" data-action="delete-producto" data-id="' + Number(p.id) + '">Eliminar</button>' +
+          '</td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    function fillProductoForm(p) {
+      document.getElementById('productoId').value = p ? Number(p.id) : '';
+      document.getElementById('productoNombre').value = p ? (p.nombre || '') : '';
+      document.getElementById('productoSKU').value = p ? (p.sku || '') : '';
+      document.getElementById('productoCodigoBarras').value = p ? (p.codigo_barras || '') : '';
+      document.getElementById('productoCategoria').value = p ? (p.categoria || '') : '';
+      document.getElementById('productoMarca').value = p ? (p.marca || '') : '';
+      document.getElementById('productoUnidad').value = p ? (p.unidad_medida || '') : '';
+      document.getElementById('productoCosto').value = p ? num(p.costo) : 0;
+      document.getElementById('productoPrecio').value = p ? num(p.precio) : 0;
+      document.getElementById('productoImpuesto').value = p ? num(p.impuesto_porcentaje) : 0;
+      document.getElementById('productoStockMin').value = p ? num(p.stock_minimo) : 0;
+      document.getElementById('productoStockMax').value = p ? num(p.stock_maximo) : 0;
+      document.getElementById('productoStockInicial').value = 0;
+      document.getElementById('productoBodegaPrincipal').value = p ? String(p.bodega_principal_id || '') : '';
+      document.getElementById('productoProveedorPrincipal').value = p ? String(p.proveedor_principal_id || '') : '';
+      document.getElementById('productoImagenURL').value = p ? (p.imagen_url || '') : '';
+      document.getElementById('productoDescripcion').value = p ? (p.descripcion || '') : '';
+      document.getElementById('productoObservaciones').value = p ? (p.observaciones || '') : '';
+      document.getElementById('productoMotivoPrecio').value = '';
+      document.getElementById('productoReferenciaPrecio').value = '';
+      document.getElementById('productoImagen').value = '';
+    }
+
+    async function saveProducto(ev) {
+      ev.preventDefault();
+      const id = Number(document.getElementById('productoId').value || 0);
+      const payload = {
+        id,
+        empresa_id: empresaId,
+        bodega_principal_id: Number(document.getElementById('productoBodegaPrincipal').value || 0),
+        proveedor_principal_id: Number(document.getElementById('productoProveedorPrincipal').value || 0),
+        sku: document.getElementById('productoSKU').value.trim(),
+        codigo_barras: document.getElementById('productoCodigoBarras').value.trim(),
+        nombre: document.getElementById('productoNombre').value.trim(),
+        descripcion: document.getElementById('productoDescripcion').value.trim(),
+        categoria: document.getElementById('productoCategoria').value.trim(),
+        marca: document.getElementById('productoMarca').value.trim(),
+        unidad_medida: document.getElementById('productoUnidad').value.trim(),
+        costo: num(document.getElementById('productoCosto').value),
+        precio: num(document.getElementById('productoPrecio').value),
+        impuesto_porcentaje: num(document.getElementById('productoImpuesto').value),
+        stock_minimo: num(document.getElementById('productoStockMin').value),
+        stock_maximo: num(document.getElementById('productoStockMax').value),
+        stock_inicial: num(document.getElementById('productoStockInicial').value),
+        imagen_url: document.getElementById('productoImagenURL').value.trim(),
+        observaciones: document.getElementById('productoObservaciones').value.trim(),
+        referencia_inicial: 'CREACION_PRODUCTO_UI'
+      };
+      if (!payload.nombre) {
+        showMessage('El nombre del producto es obligatorio.', 'error');
+        return;
+      }
+
+      const motivoPrecio = document.getElementById('productoMotivoPrecio').value.trim();
+      const referenciaPrecio = document.getElementById('productoReferenciaPrecio').value.trim();
+      if (id > 0) {
+        payload.motivo_precio = motivoPrecio;
+        payload.referencia_precio = referenciaPrecio;
+      }
+
+      let productoID = id;
+      if (id > 0) {
+        await requestJSON('/api/empresa/productos', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        showMessage('Producto actualizado correctamente.', 'success');
+      } else {
+        const created = await requestJSON('/api/empresa/productos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        productoID = Number(created.id || 0);
+        showMessage('Producto creado correctamente.', 'success');
+      }
+
+      const fileInput = document.getElementById('productoImagen');
+      if (productoID > 0 && fileInput.files && fileInput.files.length > 0) {
+        const fd = new FormData();
+        fd.append('empresa_id', String(empresaId));
+        fd.append('producto_id', String(productoID));
+        fd.append('imagen', fileInput.files[0]);
+        const savedImage = await requestJSON('/api/empresa/productos/imagen', { method: 'POST', body: fd });
+        document.getElementById('productoImagenURL').value = savedImage.image_url || '';
+      }
+
+      fillProductoForm(null);
+      await loadProductos();
+      await loadExistencias();
+      await loadMovimientos();
+      await loadPreciosHistorial();
+    }
+
+    async function accionProducto(action, id, activo) {
+      if (action === 'edit-producto') {
+        const p = state.productos.find(x => Number(x.id) === Number(id));
+        fillProductoForm(p || null);
+        return;
+      }
+      if (action === 'delete-producto') {
+        if (!confirm('¿Eliminar este producto? Esta acción borra movimientos y existencias asociadas.')) return;
+        await requestJSON('/api/empresa/productos?empresa_id=' + empresaId + '&id=' + id, { method: 'DELETE' });
+        showMessage('Producto eliminado.', 'success');
+      }
+      if (action === 'toggle-producto') {
+        await requestJSON('/api/empresa/productos?empresa_id=' + empresaId + '&id=' + id + '&action=activar&activo=' + activo, { method: 'PUT' });
+        showMessage('Estado del producto actualizado.', 'success');
+      }
+      await loadProductos();
+      await loadExistencias();
+    }
+
+    async function loadServicios() {
+      state.servicios = await requestJSON('/api/empresa/servicios?empresa_id=' + empresaId);
+      document.getElementById('kpiServicios').textContent = String(state.servicios.length);
+      renderServicios();
+    }
+
+    function renderServicios() {
+      const tbody = document.querySelector('#serviciosTable tbody');
+      if (!state.servicios.length) {
+        tbody.innerHTML = '<tr><td colspan="7">No hay servicios registrados.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = state.servicios.map(s => {
+        const estado = sanitize(s.estado || 'activo');
+        const activar = estado === 'activo' ? 'Desactivar' : 'Activar';
+        const activo = estado === 'activo' ? '0' : '1';
+        return '<tr>' +
+          '<td>' + Number(s.id) + '</td>' +
+          '<td>' + sanitize(s.codigo || '') + '</td>' +
+          '<td>' + sanitize(s.nombre || '') + '</td>' +
+          '<td>' + sanitize(s.categoria || '') + '</td>' +
+          '<td>' + Number(s.precio || 0).toFixed(2) + '</td>' +
+          '<td>' + estado + '</td>' +
+          '<td class="actions">' +
+            '<button type="button" class="btn secondary" data-action="edit-servicio" data-id="' + Number(s.id) + '">Editar</button>' +
+            '<button type="button" class="btn secondary" data-action="toggle-servicio" data-id="' + Number(s.id) + '" data-activo="' + activo + '">' + activar + '</button>' +
+            '<button type="button" class="btn danger" data-action="delete-servicio" data-id="' + Number(s.id) + '">Eliminar</button>' +
+          '</td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    function fillServicioForm(s) {
+      document.getElementById('servicioId').value = s ? Number(s.id) : '';
+      document.getElementById('servicioNombre').value = s ? (s.nombre || '') : '';
+      document.getElementById('servicioCodigo').value = s ? (s.codigo || '') : '';
+      document.getElementById('servicioCategoria').value = s ? (s.categoria || '') : '';
+      document.getElementById('servicioPrecio').value = s ? num(s.precio) : 0;
+      document.getElementById('servicioCostoReferencial').value = s ? num(s.costo_referencial) : 0;
+      document.getElementById('servicioImpuesto').value = s ? num(s.impuesto_porcentaje) : 0;
+      document.getElementById('servicioDuracion').value = s ? num(s.duracion_minutos) : 0;
+      document.getElementById('servicioDescripcion').value = s ? (s.descripcion || '') : '';
+      document.getElementById('servicioObservaciones').value = s ? (s.observaciones || '') : '';
+    }
+
+    async function saveServicio(ev) {
+      ev.preventDefault();
+      const id = Number(document.getElementById('servicioId').value || 0);
+      const payload = {
+        id,
+        empresa_id: empresaId,
+        nombre: document.getElementById('servicioNombre').value.trim(),
+        codigo: document.getElementById('servicioCodigo').value.trim(),
+        categoria: document.getElementById('servicioCategoria').value.trim(),
+        duracion_minutos: Math.max(0, Math.round(num(document.getElementById('servicioDuracion').value))),
+        costo_referencial: num(document.getElementById('servicioCostoReferencial').value),
+        precio: num(document.getElementById('servicioPrecio').value),
+        impuesto_porcentaje: num(document.getElementById('servicioImpuesto').value),
+        descripcion: document.getElementById('servicioDescripcion').value.trim(),
+        observaciones: document.getElementById('servicioObservaciones').value.trim()
+      };
+      if (!payload.nombre) {
+        showMessage('El nombre del servicio es obligatorio.', 'error');
+        return;
+      }
+      if (id > 0) {
+        await requestJSON('/api/empresa/servicios', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        showMessage('Servicio actualizado correctamente.', 'success');
+      } else {
+        await requestJSON('/api/empresa/servicios', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        showMessage('Servicio creado correctamente.', 'success');
+      }
+      fillServicioForm(null);
+      await loadServicios();
+    }
+
+    async function accionServicio(action, id, activo) {
+      if (action === 'edit-servicio') {
+        const s = state.servicios.find(x => Number(x.id) === Number(id));
+        fillServicioForm(s || null);
+        return;
+      }
+      if (action === 'delete-servicio') {
+        if (!confirm('¿Eliminar este servicio?')) return;
+        await requestJSON('/api/empresa/servicios?empresa_id=' + empresaId + '&id=' + id, { method: 'DELETE' });
+        showMessage('Servicio eliminado.', 'success');
+      }
+      if (action === 'toggle-servicio') {
+        await requestJSON('/api/empresa/servicios?empresa_id=' + empresaId + '&id=' + id + '&action=activar&activo=' + activo, { method: 'PUT' });
+        showMessage('Estado del servicio actualizado.', 'success');
+      }
+      await loadServicios();
+    }
+
+    async function loadExistencias() {
+      const rows = await requestJSON('/api/empresa/inventario/existencias?empresa_id=' + empresaId + '&limit=300');
+      const tbody = document.querySelector('#existenciasTable tbody');
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="3">Sin existencias registradas.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = rows.map(r => '<tr>' +
+        '<td>' + sanitize(r.producto_nombre || '') + '</td>' +
+        '<td>' + sanitize(r.bodega_nombre || '') + '</td>' +
+        '<td>' + Number(r.cantidad || 0).toFixed(2) + '</td>' +
+      '</tr>').join('');
+    }
+
+    async function loadMovimientos() {
+      const rows = await requestJSON('/api/empresa/inventario/movimientos?empresa_id=' + empresaId + '&limit=100');
+      const tbody = document.querySelector('#movimientosTable tbody');
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="7">Sin movimientos de inventario.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = rows.map(m => '<tr>' +
+        '<td>' + sanitize(m.fecha_movimiento || '') + '</td>' +
+        '<td>' + sanitize(m.producto_nombre || '') + '</td>' +
+        '<td>' + sanitize(m.tipo || '') + '</td>' +
+        '<td>' + sanitize(m.bodega_origen_nombre || '-') + '</td>' +
+        '<td>' + sanitize(m.bodega_destino_nombre || '-') + '</td>' +
+        '<td>' + Number(m.cantidad || 0).toFixed(2) + '</td>' +
+        '<td>' + sanitize(m.referencia || '') + '</td>' +
+      '</tr>').join('');
+    }
+
+    async function loadPreciosHistorial() {
+      const productoID = Number(document.getElementById('historialProducto').value || 0);
+      let url = '/api/empresa/productos/precios_historial?empresa_id=' + empresaId + '&limit=200';
+      if (productoID > 0) {
+        url += '&producto_id=' + productoID;
+      }
+      const rows = await requestJSON(url);
+      const tbody = document.querySelector('#preciosHistorialTable tbody');
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="7">Sin historial de cambios de precio.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = rows.map(h => '<tr>' +
+        '<td>' + sanitize(h.fecha_cambio || h.fecha_creacion || '') + '</td>' +
+        '<td>' + sanitize(h.producto_nombre || '') + '</td>' +
+        '<td>' + Number(h.precio_anterior || 0).toFixed(2) + '</td>' +
+        '<td>' + Number(h.precio_nuevo || 0).toFixed(2) + '</td>' +
+        '<td>' + sanitize(h.motivo || '') + '</td>' +
+        '<td>' + sanitize(h.referencia || '') + '</td>' +
+        '<td>' + sanitize(h.usuario_creador || '') + '</td>' +
+      '</tr>').join('');
+    }
+
+    async function moverInventario(ev) {
+      ev.preventDefault();
+      const payload = {
+        empresa_id: empresaId,
+        producto_id: Number(document.getElementById('transferProducto').value || 0),
+        bodega_origen_id: Number(document.getElementById('transferOrigen').value || 0),
+        bodega_destino_id: Number(document.getElementById('transferDestino').value || 0),
+        cantidad: num(document.getElementById('transferCantidad').value),
+        referencia: document.getElementById('transferReferencia').value.trim(),
+        observaciones: document.getElementById('transferObs').value.trim()
+      };
+      if (!payload.producto_id || !payload.bodega_origen_id || !payload.bodega_destino_id || payload.cantidad <= 0) {
+        showMessage('Complete producto, origen, destino y cantidad válida.', 'error');
+        return;
+      }
+      await requestJSON('/api/empresa/inventario/transferir', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      showMessage('Inventario trasladado correctamente.', 'success');
+      document.getElementById('transferForm').reset();
+      await loadProductos();
+      await loadExistencias();
+      await loadMovimientos();
+    }
+
+    async function registrarAjusteInventario(ev) {
+      ev.preventDefault();
+      const payload = {
+        empresa_id: empresaId,
+        producto_id: Number(document.getElementById('ajusteProducto').value || 0),
+        bodega_id: Number(document.getElementById('ajusteBodega').value || 0),
+        tipo: document.getElementById('ajusteTipo').value,
+        cantidad: num(document.getElementById('ajusteCantidad').value),
+        referencia: document.getElementById('ajusteReferencia').value.trim(),
+        observaciones: document.getElementById('ajusteObservaciones').value.trim()
+      };
+      if (!payload.producto_id || !payload.bodega_id || !payload.tipo || payload.cantidad <= 0) {
+        showMessage('Complete producto, bodega, tipo y cantidad válida para el ajuste.', 'error');
+        return;
+      }
+      await requestJSON('/api/empresa/inventario/ajustar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      showMessage('Ajuste de inventario registrado.', 'success');
+      document.getElementById('ajusteForm').reset();
+      await loadProductos();
+      await loadExistencias();
+      await loadMovimientos();
+    }
+
+    async function registrarCambioProducto(ev) {
+      ev.preventDefault();
+      const payload = {
+        empresa_id: empresaId,
+        producto_origen_id: Number(document.getElementById('cambioProductoOrigen').value || 0),
+        producto_destino_id: Number(document.getElementById('cambioProductoDestino').value || 0),
+        bodega_id: Number(document.getElementById('cambioBodega').value || 0),
+        cantidad: num(document.getElementById('cambioCantidad').value),
+        referencia: document.getElementById('cambioReferencia').value.trim(),
+        observaciones: document.getElementById('cambioObservaciones').value.trim()
+      };
+      if (!payload.producto_origen_id || !payload.producto_destino_id || !payload.bodega_id || payload.cantidad <= 0) {
+        showMessage('Complete origen, destino, bodega y cantidad válida para el cambio.', 'error');
+        return;
+      }
+      if (payload.producto_origen_id === payload.producto_destino_id) {
+        showMessage('El producto origen y destino deben ser diferentes.', 'error');
+        return;
+      }
+      await requestJSON('/api/empresa/inventario/cambiar_producto', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      showMessage('Cambio entre productos registrado.', 'success');
+      document.getElementById('cambioProductoForm').reset();
+      await loadProductos();
+      await loadExistencias();
+      await loadMovimientos();
+    }
+
+    function wireEvents() {
+      document.getElementById('btnNuevaBodega').addEventListener('click', () => fillBodegaForm(null));
+      document.getElementById('bodegaForm').addEventListener('submit', async ev => {
+        try {
+          await saveBodega(ev);
+        } catch (e) {
+          showMessage(e.message || 'No se pudo guardar la bodega.', 'error');
+        }
+      });
+
+      document.getElementById('bodegasTable').addEventListener('click', async ev => {
+        const btn = ev.target.closest('button[data-action]');
+        if (!btn) return;
+        try {
+          await accionBodega(btn.dataset.action, btn.dataset.id, btn.dataset.activo);
+        } catch (e) {
+          showMessage(e.message || 'No se pudo ejecutar la acción en bodega.', 'error');
+        }
+      });
+
+      document.getElementById('btnNuevoProveedor').addEventListener('click', () => fillProveedorForm(null));
+      document.getElementById('proveedorForm').addEventListener('submit', async ev => {
+        try {
+          await saveProveedor(ev);
+        } catch (e) {
+          showMessage(e.message || 'No se pudo guardar el proveedor.', 'error');
+        }
+      });
+
+      document.getElementById('proveedoresTable').addEventListener('click', async ev => {
+        const btn = ev.target.closest('button[data-action]');
+        if (!btn) return;
+        try {
+          await accionProveedor(btn.dataset.action, btn.dataset.id, btn.dataset.activo);
+        } catch (e) {
+          showMessage(e.message || 'No se pudo ejecutar la acción en proveedor.', 'error');
+        }
+      });
+
+      document.getElementById('btnNuevoProducto').addEventListener('click', () => fillProductoForm(null));
+      document.getElementById('btnBuscarProductos').addEventListener('click', async () => {
+        try {
+          await loadProductos();
+        } catch (e) {
+          showMessage(e.message || 'No se pudieron cargar productos.', 'error');
+        }
+      });
+
+      document.getElementById('productoForm').addEventListener('submit', async ev => {
+        try {
+          await saveProducto(ev);
+        } catch (e) {
+          showMessage(e.message || 'No se pudo guardar el producto.', 'error');
+        }
+      });
+
+      document.getElementById('productosTable').addEventListener('click', async ev => {
+        const btn = ev.target.closest('button[data-action]');
+        if (!btn) return;
+        try {
+          await accionProducto(btn.dataset.action, btn.dataset.id, btn.dataset.activo);
+        } catch (e) {
+          showMessage(e.message || 'No se pudo ejecutar la acción en producto.', 'error');
+        }
+      });
+
+      document.getElementById('btnNuevoServicio').addEventListener('click', () => fillServicioForm(null));
+      document.getElementById('servicioForm').addEventListener('submit', async ev => {
+        try {
+          await saveServicio(ev);
+        } catch (e) {
+          showMessage(e.message || 'No se pudo guardar el servicio.', 'error');
+        }
+      });
+
+      document.getElementById('serviciosTable').addEventListener('click', async ev => {
+        const btn = ev.target.closest('button[data-action]');
+        if (!btn) return;
+        try {
+          await accionServicio(btn.dataset.action, btn.dataset.id, btn.dataset.activo);
+        } catch (e) {
+          showMessage(e.message || 'No se pudo ejecutar la acción en servicio.', 'error');
+        }
+      });
+
+      document.getElementById('transferForm').addEventListener('submit', async ev => {
+        try {
+          await moverInventario(ev);
+        } catch (e) {
+          showMessage(e.message || 'No se pudo trasladar inventario.', 'error');
+        }
+      });
+
+      document.getElementById('ajusteForm').addEventListener('submit', async ev => {
+        try {
+          await registrarAjusteInventario(ev);
+        } catch (e) {
+          showMessage(e.message || 'No se pudo registrar el ajuste.', 'error');
+        }
+      });
+
+      document.getElementById('cambioProductoForm').addEventListener('submit', async ev => {
+        try {
+          await registrarCambioProducto(ev);
+        } catch (e) {
+          showMessage(e.message || 'No se pudo registrar el cambio entre productos.', 'error');
+        }
+      });
+
+      document.getElementById('btnCargarHistorialPrecios').addEventListener('click', async () => {
+        try {
+          await loadPreciosHistorial();
+        } catch (e) {
+          showMessage(e.message || 'No se pudo cargar el historial de precios.', 'error');
+        }
+      });
+    }
+
+    async function bootstrap() {
+      if (!empresaId) {
+        showMessage('No se encontró empresa_id en la URL.', 'error');
+        return;
+      }
+      wireEvents();
+      await loadEmpresaInfo();
+      await loadProveedores();
+      await loadBodegas();
+      await loadProductos();
+      await loadServicios();
+      await loadExistencias();
+      await loadMovimientos();
+      await loadPreciosHistorial();
+    }
+
+    bootstrap().catch(err => {
+      showMessage(err.message || 'No se pudo iniciar el módulo de productos.', 'error');
+    });
+  </script>
+</body>
+</html>

@@ -1,5 +1,102 @@
 Descripcion de archivos del proyecto
 
+Actualización 2026-04-01: Módulo de roles y tipos de usuario en panel super
+
+- backend/db/roles_tipos_usuario.go: nuevo archivo de acceso a datos para `superadministrador.db`.
+	- Modelos: `RolDeUsuario`, `TipoDeUsuario`.
+	- CRUD completo para `roles_de_usuario` y `tipos_de_usuario`.
+	- Validación de integridad para que `rol_id` pertenezca al mismo `tipo_empresa_id`.
+
+- backend/handlers/roles_tipos_usuario.go: nuevo archivo de handlers HTTP.
+	- Endpoints:
+		- `GET/POST/PUT/DELETE /super/api/roles_de_usuario`
+		- `GET/POST/PUT/DELETE /super/api/tipos_de_usuario`
+	- Soporta activar/desactivar por `PUT?action=activar&activo=0|1`.
+
+- backend/main.go: se añadieron tablas y rutas nuevas del módulo en `superadministrador.db`.
+	- Tablas nuevas:
+		- `roles_de_usuario`
+		- `tipos_de_usuario`
+	- Rutas nuevas:
+		- `/super/api/roles_de_usuario`
+		- `/super/api/tipos_de_usuario`
+
+- web/super/roles_de_usuario.html: nueva subpágina del panel super para gestionar roles por tipo de empresa.
+	- Formulario con: tipo de empresa, nombre y descripción.
+	- Listado con acciones: editar, eliminar, activar/desactivar.
+
+- web/super/tipos_de_usuario.htm: nueva subpágina del panel super para gestionar tipos de usuario.
+	- Formulario con: tipo de empresa, rol previamente configurado, nombre y descripción.
+	- El selector de rol se filtra por tipo de empresa.
+	- Listado con acciones: editar, eliminar, activar/desactivar.
+
+- web/super_administrador.html: menú lateral actualizado con enlaces a:
+	- `Roles de usuario`.
+	- `Tipos de usuario`.
+
+Actualización 2026-04-01: Submódulo de estaciones (configuración + vista en tarjetas)
+
+- web/administrar_empresa/configuracion_de_estaciones.html: nueva subpágina para definir cantidad de estaciones y nombre individual de cada estación por empresa.
+	- Permite configurar el total de estaciones.
+	- Permite editar y guardar nombres (ejemplo: Mesa 1, Habitación 1).
+	- Guarda la configuración por empresa en almacenamiento local del navegador (clave con empresa_id).
+
+- web/administrar_empresa/estaciones.html: nueva subpágina que muestra tarjetas de estaciones según la configuración previa.
+	- Cada tarjeta refleja el nombre configurado en configuración_de_estaciones.
+	- Incluye acceso rápido para volver a la configuración.
+
+- web/administrar_empresa.html: se añadieron enlaces en el menú lateral para:
+	- Configuración de estaciones.
+	- Estaciones.
+
+Actualización 2026-04-01: Ampliación robusta del módulo de inventario/productos por empresa
+
+- backend/db/productos.go: se amplió con capacidades empresariales adicionales:
+	- Nuevas tablas lógicas del módulo: `proveedores`, `servicios`, `producto_precios_historial`.
+	- Nuevas operaciones para ajustes de inventario (`entrada`, `salida`, `devolución`, `pérdida`, ajustes +/-) y cambio de producto.
+	- Historial automático de cambios de precio al editar productos.
+	- Soporte de `proveedor_principal_id` en productos.
+
+- backend/handlers/productos.go: se añadieron endpoints para operación avanzada:
+	- `POST /api/empresa/inventario/ajustar`
+	- `POST /api/empresa/inventario/cambiar_producto`
+	- `GET /api/empresa/productos/precios_historial`
+	- `GET/POST/PUT/DELETE /api/empresa/proveedores`
+	- `GET/POST/PUT/DELETE /api/empresa/servicios`
+
+- backend/main.go: se registraron las nuevas rutas del módulo robusto.
+
+- web/administrar_empresa/administrar_productos.html:
+	- Secciones nuevas para `Proveedores` y `Servicios Vendibles` (CRUD).
+	- Formularios para ajustes/devoluciones/pérdidas y cambios entre productos.
+	- Historial de cambios de precio con filtro por producto.
+	- Formulario de producto ampliado con proveedor principal y motivo/referencia de cambio de precio.
+
+Actualización 2026-04-01: Módulo profesional de productos por empresa (`administrar_empresa`)
+
+- web/administrar_empresa/: Nuevo directorio que centraliza las subpáginas del módulo `administrar_empresa`.
+	- web/administrar_empresa/inicio.html: Página de inicio del contexto de empresa administrada.
+	- web/administrar_empresa/administrar_productos.html: CRUD completo de productos y bodegas, gestión de existencias, historial de movimientos y traslado entre bodegas.
+	- web/administrar_empresa/ventas.html: Sección base de ventas dentro del nuevo directorio modular.
+	- web/administrar_empresa/reportes.html: Sección base de reportes dentro del nuevo directorio modular.
+- web/administrar_empresa.html: Página contenedora actualizada para que todas las secciones carguen desde `web/administrar_empresa/` vía iframe y propagando `empresa_id`.
+- web/estilos.css: Nuevos estilos centralizados para el módulo interno de empresa (`admin-empresa-frame`, layout de productos, tablas, KPIs, formularios y grid responsivo).
+
+- backend/db/productos.go: Nuevo archivo de acceso a datos para el módulo de productos en `empresas.db`.
+	- Incluye creación/migración de tablas: `bodegas`, `productos`, `inventario_existencias`, `inventario_movimientos`.
+	- Incluye helpers CRUD, actualización de imagen, consulta de existencias y registro de traslados entre bodegas.
+
+- backend/handlers/productos.go: Nuevo archivo de handlers HTTP para el módulo de productos por empresa.
+	- Endpoints:
+		- `GET/POST/PUT/DELETE /api/empresa/bodegas`
+		- `GET/POST/PUT/DELETE /api/empresa/productos`
+		- `POST /api/empresa/productos/imagen`
+		- `GET /api/empresa/inventario/existencias`
+		- `GET /api/empresa/inventario/movimientos`
+		- `POST /api/empresa/inventario/transferir`
+
+- backend/main.go: Registro de rutas del módulo y ejecución de `EnsureEmpresaProductosSchema(dbEmpresas)` al arrancar el backend.
+
 Nota: Se añadió la carpeta `herramientas` con utilitarios para pruebas locales. Ver `documentos/descripcion_de_herramientas.md` para detalles sobre su contenido y uso, y la entrada correspondiente en `documentos/historial_de_cambios` (2026-03-29).
 
 - herramientas/create_tunnel.ps1: Script PowerShell temporal para crear un túnel ngrok hacia `localhost:8080` usando la API local de ngrok (`http://127.0.0.1:4040/api/tunnels`). Útil para exponer el webhook `/mercadopago/webhook` en entornos de desarrollo.

@@ -12,10 +12,12 @@
     <aside class="admin-sidebar">
       <h2>Administrar Empresa</h2>
       <ul class="nav">
-        <li><a href="about:blank" target="contentFrame"><img class="icon" src="/img/company-briefcase.svg" alt="">Inicio</a></li>
-        <li><a href="about:blank" target="contentFrame"><img class="icon" src="/img/analytics.svg" alt="">Ventas</a></li>
-        <li><a href="about:blank" target="contentFrame"><img class="icon" src="/img/tag.svg" alt="">Productos</a></li>
-        <li><a href="about:blank" target="contentFrame"><img class="icon" src="/img/network.svg" alt="">Reportes</a></li>
+        <li><a id="linkInicio" href="/administrar_empresa/inicio.html" target="contentFrame"><img class="icon" src="/img/company-briefcase.svg" alt="">Inicio</a></li>
+        <li><a id="linkVentas" href="/administrar_empresa/ventas.html" target="contentFrame"><img class="icon" src="/img/analytics.svg" alt="">Ventas</a></li>
+        <li><a id="linkProductos" href="/administrar_empresa/administrar_productos.html" target="contentFrame"><img class="icon" src="/img/shield-license.svg" alt="">Productos</a></li>
+        <li><a id="linkConfigEstaciones" href="/administrar_empresa/configuracion_de_estaciones.html" target="contentFrame"><img class="icon" src="/img/network.svg" alt="">Configuración de estaciones</a></li>
+        <li><a id="linkEstaciones" href="/administrar_empresa/estaciones.html" target="contentFrame"><img class="icon" src="/img/analytics.svg" alt="">Estaciones</a></li>
+        <li><a id="linkReportes" href="/administrar_empresa/reportes.html" target="contentFrame"><img class="icon" src="/img/network.svg" alt="">Reportes</a></li>
         <li><a href="/seleccionar_empresa.html" class="select-company"><img class="icon" src="/img/company-briefcase.svg" alt="">Volver a empresas</a></li>
       </ul>
     </aside>
@@ -24,7 +26,7 @@
       <div class="admin-toolbar page-header">
         <h1 id="empresaTitle">Administrar Empresa</h1>
       </div>
-      <iframe name="contentFrame" id="contentFrame" src="about:blank" title="Contenido de empresa" style="width:100%;height:calc(100vh - 120px);border:0;background:transparent"></iframe>
+      <iframe name="contentFrame" id="contentFrame" src="about:blank" title="Contenido de empresa" class="admin-empresa-frame"></iframe>
     </main>
   </div>
 
@@ -36,9 +38,61 @@
     (function(){
       const id = getQueryParam('id');
       const title = document.getElementById('empresaTitle');
+      const frame = document.getElementById('contentFrame');
+      const links = [
+        document.getElementById('linkInicio'),
+        document.getElementById('linkVentas'),
+        document.getElementById('linkProductos'),
+        document.getElementById('linkConfigEstaciones'),
+        document.getElementById('linkEstaciones'),
+        document.getElementById('linkReportes')
+      ];
+
+      function setLinksWithEmpresa(empresaId) {
+        links.forEach(link => {
+          if (!link) return;
+          const url = new URL(link.getAttribute('href'), window.location.origin);
+          if (empresaId) {
+            url.searchParams.set('empresa_id', empresaId);
+          }
+          link.setAttribute('href', url.pathname + url.search);
+        });
+      }
+
       if (id) {
-        title.textContent = 'Administrar Empresa ID: ' + id;
+        setLinksWithEmpresa(id);
+        if (frame) {
+          frame.src = '/administrar_empresa/administrar_productos.html?empresa_id=' + encodeURIComponent(id);
+        }
+        // Pedir al backend el detalle de la empresa
+        fetch('/super/api/empresas?id=' + encodeURIComponent(id), { credentials: 'same-origin' })
+          .then(resp => {
+            if (!resp.ok) {
+              // No mostrar el ID; mantener título genérico
+              title.textContent = 'Administrar Empresa';
+              throw new Error('empresa no encontrada');
+            }
+            return resp.json();
+          })
+          .then(data => {
+            const nombre = data && (data.nombre || data.Nombre);
+            if (nombre) {
+              title.textContent = 'Administrar Empresa — ' + nombre;
+              document.title = title.textContent;
+            } else {
+              title.textContent = 'Administrar Empresa';
+            }
+          })
+          .catch(err => {
+            console.warn('No se pudo cargar empresa:', err);
+            title.textContent = 'Administrar Empresa';
+          });
         return;
+      }
+
+      setLinksWithEmpresa('');
+      if (frame) {
+        frame.src = '/administrar_empresa/inicio.html';
       }
       title.textContent = 'Administrar Empresa';
     })();

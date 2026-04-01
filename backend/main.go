@@ -136,6 +136,9 @@ func main() {
 		addIfMissing("observaciones TEXT", "observaciones")
 	}
 	ensureEmpresasSchema(dbEmpresas)
+	if err := dbpkg.EnsureEmpresaProductosSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure productos schema in empresas db: %v", err)
+	}
 	// Crear tipos_de_empresas en la base de datos de superadministrador (ubicación centralizada)
 	createTiposSuper := `CREATE TABLE IF NOT EXISTS tipos_de_empresas (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -148,6 +151,37 @@ func main() {
 	);`
 	if _, err := dbSuper.Exec(createTiposSuper); err != nil {
 		log.Fatalf("failed to create tipos_de_empresas table in superadministrador db: %v", err)
+	}
+
+	createRolesDeUsuario := `CREATE TABLE IF NOT EXISTS roles_de_usuario (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		tipo_empresa_id INTEGER NOT NULL,
+		nombre TEXT NOT NULL,
+		descripcion TEXT,
+		fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+		fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+		usuario_creador TEXT,
+		estado TEXT DEFAULT 'activo',
+		observaciones TEXT
+	);`
+	if _, err := dbSuper.Exec(createRolesDeUsuario); err != nil {
+		log.Fatalf("failed to create roles_de_usuario table in super db: %v", err)
+	}
+
+	createTiposDeUsuario := `CREATE TABLE IF NOT EXISTS tipos_de_usuario (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		tipo_empresa_id INTEGER NOT NULL,
+		rol_id INTEGER NOT NULL,
+		nombre TEXT NOT NULL,
+		descripcion TEXT,
+		fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+		fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+		usuario_creador TEXT,
+		estado TEXT DEFAULT 'activo',
+		observaciones TEXT
+	);`
+	if _, err := dbSuper.Exec(createTiposDeUsuario); err != nil {
+		log.Fatalf("failed to create tipos_de_usuario table in super db: %v", err)
 	}
 
 	// Crear tablas en dbSuper (superadministrador)
@@ -453,8 +487,22 @@ func main() {
 
 	// Endpoints CRUD para tipos de empresas
 	http.HandleFunc("/super/api/tipos_empresas", handlers.TiposEmpresasHandler(dbSuper))
+	http.HandleFunc("/super/api/roles_de_usuario", handlers.RolesDeUsuarioHandler(dbSuper))
+	http.HandleFunc("/super/api/tipos_de_usuario", handlers.TiposDeUsuarioHandler(dbSuper))
 	// Endpoint CRUD para empresas (guardadas en empresas.db)
 	http.HandleFunc("/super/api/empresas", handlers.EmpresasHandler(dbEmpresas))
+	// Módulo de productos por empresa (empresas.db)
+	http.HandleFunc("/api/empresa/bodegas", handlers.EmpresaBodegasHandler(dbEmpresas))
+	http.HandleFunc("/api/empresa/productos", handlers.EmpresaProductosHandler(dbEmpresas))
+	http.HandleFunc("/api/empresa/productos/imagen", handlers.EmpresaProductoImagenUploadHandler(dbEmpresas))
+	http.HandleFunc("/api/empresa/inventario/existencias", handlers.EmpresaInventarioExistenciasHandler(dbEmpresas))
+	http.HandleFunc("/api/empresa/inventario/movimientos", handlers.EmpresaInventarioMovimientosHandler(dbEmpresas))
+	http.HandleFunc("/api/empresa/inventario/transferir", handlers.EmpresaInventarioTransferHandler(dbEmpresas))
+	http.HandleFunc("/api/empresa/inventario/ajustar", handlers.EmpresaInventarioAjusteHandler(dbEmpresas))
+	http.HandleFunc("/api/empresa/inventario/cambiar_producto", handlers.EmpresaInventarioCambioProductoHandler(dbEmpresas))
+	http.HandleFunc("/api/empresa/productos/precios_historial", handlers.EmpresaProductoPrecioHistorialHandler(dbEmpresas))
+	http.HandleFunc("/api/empresa/proveedores", handlers.EmpresaProveedoresHandler(dbEmpresas))
+	http.HandleFunc("/api/empresa/servicios", handlers.EmpresaServiciosHandler(dbEmpresas))
 	// Endpoint para obtener admin actual desde la cookie de sesión
 	http.HandleFunc("/me", handlers.MeHandler(dbSuper))
 	// Endpoint CRUD para administradores (API)
