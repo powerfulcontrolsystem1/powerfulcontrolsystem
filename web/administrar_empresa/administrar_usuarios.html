@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Administrar usuarios</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container">
+    <div class="page-header">
+      <h1 id="pageTitle">Administrar usuarios</h1>
+      <button id="addBtn" class="btn add">Agregar</button>
+    </div>
+
+    <form id="form" class="form">
+      <input type="hidden" id="itemId">
+      <input type="hidden" id="empresa_id">
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Correo</label>
+          <input id="email" type="email" class="form-input" required placeholder="usuario@dominio.com">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Nombre</label>
+          <input id="nombre" class="form-input" required placeholder="Nombre completo">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Documento de identidad</label>
+          <input id="documento_identidad" class="form-input" placeholder="CC / NIT / Pasaporte">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Rol</label>
+          <select id="rol_usuario_id" class="form-input" required></select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Observaciones</label>
+          <textarea id="observaciones" class="form-textarea" placeholder="Opcional"></textarea>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" id="saveBtn" class="btn">Guardar</button>
+        <button type="button" id="cancelBtn" class="btn secondary">Cancelar</button>
+      </div>
+      <div id="msg" class="form-help"></div>
+    </form>
+
+    <div id="list">Cargando...</div>
+  </div>
+
+  <script>
+    const state = {
+      empresaID: 0,
+      roles: [],
+      users: []
+    };
+
+    function getQueryParam(name) {
+      const p = new URLSearchParams(window.location.search);
+      return p.get(name);
+    }
+
+    function setMessage(text, isError) {
+      const el = document.getElementById('msg');
+      el.textContent = text || '';
+      el.style.color = isError ? '#ef5350' : '';
+    }
+
+    async function ensureOk(res) {
+      if (res.ok) return;
+      const t = await res.text();
+      throw new Error(t || ('HTTP ' + res.status));
+    }
+
+    function fillRolesSelect(selected) {
+      const select = document.getElementById('rol_usuario_id');
+      select.innerHTML = '<option value="">-- Seleccionar --</option>';
+      state.roles.forEach(function(role) {
+        if (role.estado && role.estado !== 'activo') return;
+        const opt = document.createElement('option');
+        opt.value = role.id;
+        opt.textContent = role.nombre;
+        select.appendChild(opt);
+      });
+      if (selected) select.value = String(selected);
+    }
+
+    function rolNombreById(id, fallback) {
+      const role = state.roles.find(function(r) { return Number(r.id) === Number(id); });
+      if (role && role.nombre) return role.nombre;
+      return fallback || 'N/A';
+    }
+
+    function resetForm(hide) {
+      document.getElementById('itemId').value = '';
+      document.getElementById('email').value = '';
+      document.getElementById('nombre').value = '';
+      document.getElementById('documento_identidad').value = '';
+      document.getElementById('observaciones').value = '';
+      fillRolesSelect('');
+      document.getElementById('saveBtn').textContent = 'Guardar';
+      document.getElementById('cancelBtn').style.display = 'none';
+      setMessage('', false);
+
+      if (hide) {
+        document.getElementById('form').style.display = 'none';
+        document.getElementById('addBtn').style.display = '';
+      }
+    }
+
+    function renderList() {
+      const table = document.createElement('table');
+      table.className = 'table';
+      table.innerHTML = '<thead><tr>' +
+        '<th>ID</th>' +
+        '<th>Correo</th>' +
+        '<th>Nombre</th>' +
+        '<th>Documento</th>' +
+        '<th>Rol</th>' +
+        '<th>Confirmación</th>' +
+        '<th>Estado</th>' +
+        '<th>Acciones</th>' +
+        '</tr></thead>';
+
+      const tbody = document.createElement('tbody');
+      state.users.forEach(function(item) {
+        const tr = document.createElement('tr');
+        const activo = item.estado === 'activo' ? 1 : 0;
+        const toggleLabel = activo === 1 ? 'Desactivar' : 'Activar';
+        const confirmado = Number(item.email_confirmado || 0) === 1;
+
+        tr.innerHTML = '<td>' + item.id + '</td>' +
+          '<td>' + (item.email || '') + '</td>' +
+          '<td>' + (item.nombre || '') + '</td>' +
+          '<td>' + (item.documento_identidad || '') + '</td>' +
+          '<td>' + rolNombreById(item.rol_usuario_id, item.rol_nombre) + '</td>' +
+          '<td>' + (confirmado ? 'Confirmado' : 'Pendiente') + '</td>' +
+          '<td>' + (item.estado || '') + '</td>' +
+          '<td class="actions">' +
+            '<button data-id="' + item.id + '" class="edit btn secondary">Editar</button> ' +
+            '<button data-id="' + item.id + '" class="del btn danger">Eliminar</button> ' +
+            '<button data-id="' + item.id + '" data-activo="' + activo + '" class="toggle btn">' + toggleLabel + '</button> ' +
+            (confirmado ? '' : '<button data-id="' + item.id + '" class="resend btn">Reenviar confirmación</button>') +
+          '</td>';
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+
+      const list = document.getElementById('list');
+      list.innerHTML = '';
+      list.appendChild(table);
+
+      document.querySelectorAll('.edit').forEach(function(btn) {
+        btn.onclick = function() {
+          const id = Number(btn.getAttribute('data-id'));
+          const item = state.users.find(function(x) { return Number(x.id) === id; });
+          if (!item) return;
+
+          document.getElementById('form').style.display = '';
+          document.getElementById('addBtn').style.display = 'none';
+
+          document.getElementById('itemId').value = String(item.id);
+          document.getElementById('email').value = item.email || '';
+          document.getElementById('nombre').value = item.nombre || '';
+          document.getElementById('documento_identidad').value = item.documento_identidad || '';
+          document.getElementById('observaciones').value = item.observaciones || '';
+          fillRolesSelect(item.rol_usuario_id);
+
+          document.getElementById('saveBtn').textContent = 'Actualizar';
+          document.getElementById('cancelBtn').style.display = '';
+          setMessage('', false);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+      });
+
+      document.querySelectorAll('.del').forEach(function(btn) {
+        btn.onclick = async function() {
+          if (!confirm('Eliminar usuario?')) return;
+          const id = Number(btn.getAttribute('data-id'));
+          try {
+            const res = await fetch('/api/empresa/usuarios?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(id), { method: 'DELETE' });
+            await ensureOk(res);
+            await loadData();
+          } catch (err) {
+            setMessage(err.message || 'Error eliminando usuario', true);
+          }
+        };
+      });
+
+      document.querySelectorAll('.toggle').forEach(function(btn) {
+        btn.onclick = async function() {
+          const id = Number(btn.getAttribute('data-id'));
+          const activo = btn.getAttribute('data-activo') === '1' ? '0' : '1';
+          const texto = activo === '1' ? 'Activar' : 'Desactivar';
+          if (!confirm(texto + ' usuario?')) return;
+          try {
+            const res = await fetch('/api/empresa/usuarios?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(id) + '&action=activar&activo=' + activo, { method: 'PUT' });
+            await ensureOk(res);
+            await loadData();
+          } catch (err) {
+            setMessage(err.message || 'Error cambiando estado', true);
+          }
+        };
+      });
+
+      document.querySelectorAll('.resend').forEach(function(btn) {
+        btn.onclick = async function() {
+          const id = Number(btn.getAttribute('data-id'));
+          try {
+            const res = await fetch('/api/empresa/usuarios?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(id) + '&action=reenviar_confirmacion', { method: 'PUT' });
+            await ensureOk(res);
+            const body = await res.json();
+            if (body && body.email_sent) {
+              setMessage('Correo de confirmación reenviado', false);
+            } else {
+              setMessage((body && body.email_error) ? ('No se pudo enviar correo: ' + body.email_error) : 'No se pudo enviar correo de confirmación', true);
+            }
+          } catch (err) {
+            setMessage(err.message || 'Error reenviando confirmación', true);
+          }
+        };
+      });
+    }
+
+    async function loadRoles() {
+      const res = await fetch('/api/empresa/roles_de_usuario?empresa_id=' + encodeURIComponent(state.empresaID));
+      await ensureOk(res);
+      state.roles = await res.json();
+      fillRolesSelect('');
+    }
+
+    async function loadEmpresaTitle() {
+      try {
+        const res = await fetch('/super/api/empresas?id=' + encodeURIComponent(state.empresaID));
+        if (!res.ok) return;
+        const empresa = await res.json();
+        if (empresa && empresa.nombre) {
+          document.getElementById('pageTitle').textContent = 'Administrar usuarios — ' + empresa.nombre;
+        }
+      } catch (_) {}
+    }
+
+    async function loadUsers() {
+      const res = await fetch('/api/empresa/usuarios?empresa_id=' + encodeURIComponent(state.empresaID) + '&include_inactive=1');
+      await ensureOk(res);
+      state.users = await res.json();
+      renderList();
+    }
+
+    async function loadData() {
+      await Promise.all([loadRoles(), loadUsers()]);
+    }
+
+    document.getElementById('form').onsubmit = async function(e) {
+      e.preventDefault();
+
+      const id = document.getElementById('itemId').value;
+      const payload = {
+        empresa_id: Number(state.empresaID),
+        email: document.getElementById('email').value.trim(),
+        nombre: document.getElementById('nombre').value.trim(),
+        documento_identidad: document.getElementById('documento_identidad').value.trim(),
+        rol_usuario_id: Number(document.getElementById('rol_usuario_id').value || 0),
+        observaciones: document.getElementById('observaciones').value.trim()
+      };
+
+      if (!payload.empresa_id || !payload.email || !payload.nombre || !payload.rol_usuario_id) {
+        setMessage('Correo, nombre y rol son obligatorios', true);
+        return;
+      }
+
+      try {
+        const isEdit = !!id;
+        const method = isEdit ? 'PUT' : 'POST';
+        const url = '/api/empresa/usuarios' + (isEdit ? ('?id=' + encodeURIComponent(id)) : '');
+        const res = await fetch(url, {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        await ensureOk(res);
+
+        let body = null;
+        try { body = await res.json(); } catch (_) {}
+
+        if (body && body.email_confirmation_required && body.email_sent === false) {
+          setMessage('Usuario creado, pero no se pudo enviar correo: ' + (body.email_error || 'error desconocido'), true);
+        } else if (body && body.email_reconfirmation_needed && body.email_sent === false) {
+          setMessage('Usuario actualizado, pero no se pudo reenviar correo: ' + (body.email_error || 'error desconocido'), true);
+        } else if (body && body.email_confirmation_required) {
+          setMessage('Usuario creado y correo de confirmación enviado', false);
+        } else if (body && body.email_reconfirmation_needed) {
+          setMessage('Usuario actualizado y se envió nueva confirmación', false);
+        } else {
+          setMessage(isEdit ? 'Usuario actualizado' : 'Usuario creado', false);
+        }
+
+        resetForm(true);
+        await loadData();
+      } catch (err) {
+        setMessage(err.message || 'Error guardando usuario', true);
+      }
+    };
+
+    document.getElementById('addBtn').onclick = function() {
+      document.getElementById('form').style.display = '';
+      document.getElementById('addBtn').style.display = 'none';
+      resetForm(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    document.getElementById('cancelBtn').onclick = function() {
+      resetForm(true);
+    };
+
+    (async function init() {
+      const empresaID = Number(getQueryParam('empresa_id') || 0);
+      if (!empresaID) {
+        document.getElementById('list').textContent = 'empresa_id requerido en la URL';
+        document.getElementById('addBtn').disabled = true;
+        return;
+      }
+      state.empresaID = empresaID;
+      document.getElementById('empresa_id').value = String(empresaID);
+      document.getElementById('form').style.display = 'none';
+      document.getElementById('cancelBtn').style.display = 'none';
+
+      await loadEmpresaTitle();
+      try {
+        await loadData();
+      } catch (err) {
+        document.getElementById('list').textContent = 'Error cargando usuarios';
+        setMessage(err.message || 'Error cargando datos', true);
+      }
+    })();
+  </script>
+</body>
+</html>

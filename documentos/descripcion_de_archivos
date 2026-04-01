@@ -1,5 +1,60 @@
 Descripcion de archivos del proyecto
 
+Actualización 2026-04-01: Submódulo de clientes por empresa (preparado para facturación electrónica Colombia)
+
+- backend/db/clientes.go: nuevo archivo para CRUD de clientes en `empresas.db`.
+	- Modelo `Cliente` con campos fiscales/comerciales: tipo y número de documento, razón social, régimen, responsabilidad tributaria, ubicación y contacto.
+	- Funciones para crear/listar/editar/eliminar clientes y activar/desactivar estado.
+	- Incluye `EnsureEmpresaClientesSchema` para crear/migrar la tabla `clientes` e índices por empresa.
+
+- backend/handlers/clientes.go: nuevo archivo de handlers HTTP.
+	- Endpoint nuevo: `GET/POST/PUT/DELETE /api/empresa/clientes`.
+	- Soporta activación/desactivación por `PUT?action=activar|desactivar`.
+	- Validaciones mínimas: `empresa_id`, `numero_documento`, `nombre_razon_social` y formato de correo.
+
+- backend/main.go: actualizado para:
+	- ejecutar `EnsureEmpresaClientesSchema(dbEmpresas)` al iniciar.
+	- registrar ruta `GET/POST/PUT/DELETE /api/empresa/clientes`.
+
+- web/administrar_empresa/administrar_clientes.html: nueva subpágina para administrar clientes de la empresa seleccionada.
+	- Formulario con datos orientados a DIAN/facturación electrónica (identificación, razón social, régimen, ubicación y contacto).
+	- Listado con acciones: editar, eliminar y activar/desactivar.
+	- Búsqueda por documento, razón social o nombre comercial.
+
+- web/administrar_empresa.html: menú lateral actualizado con acceso a `Clientes`.
+
+Actualización 2026-04-01: Submódulo de usuarios por empresa con confirmación de correo
+
+- backend/db/usuarios_empresa.go: nuevo archivo para CRUD de usuarios por empresa en `empresas.db`.
+	- Modelo `EmpresaUsuario` con campos: correo, nombre, documento de identidad, rol, estado y confirmación de correo.
+	- Funciones para crear/listar/editar/eliminar usuarios, activar/desactivar y confirmar por token.
+
+- backend/handlers/usuarios_empresa.go: nuevo archivo de handlers HTTP.
+	- Endpoints nuevos:
+		- `GET /api/empresa/roles_de_usuario?empresa_id=...` (roles por tipo de empresa seleccionado).
+		- `GET/POST/PUT/DELETE /api/empresa/usuarios` (CRUD usuarios de empresa).
+		- `PUT /api/empresa/usuarios?action=reenviar_confirmacion` (reenvío de correo de confirmación).
+		- `GET /auth/confirmar_correo?token=...` (confirmación pública del correo).
+	- Incluye envío SMTP con configuración Gmail almacenada en `superadministrador.db`.
+
+- backend/main.go: actualizado para:
+	- agregar migraciones de columnas nuevas en `users` (`documento_identidad`, `rol_usuario_id`, `email_confirmado`, `email_confirm_token`, `email_confirm_expira`, `email_confirmado_en`).
+	- registrar rutas nuevas de usuarios por empresa y confirmación de correo.
+	- registrar endpoint de configuración Gmail: `GET/PUT /super/api/config/gmail`.
+
+- backend/utils/utils.go: `AuthMiddleware` ahora permite acceso público a `/auth/confirmar_correo`.
+
+- web/administrar_empresa/administrar_usuarios.html: nueva subpágina para crear y administrar usuarios de empresa.
+	- Formulario: correo, nombre, documento de identidad y rol.
+	- Carga dinámica de roles según empresa seleccionada.
+	- Acciones: editar, eliminar, activar/desactivar y reenviar confirmación.
+
+- web/administrar_empresa.html: menú lateral actualizado con acceso a `Usuarios`.
+
+- web/super/configuracion_avanzada.html: nueva tarjeta para configurar Gmail SMTP.
+	- Campos: correo remitente, contraseña de aplicación, nombre remitente, host, puerto y URL base de confirmación.
+	- Soporte de cifrado opcional para contraseña cuando existe `CONFIG_ENC_KEY`.
+
 Actualización 2026-04-01: Módulo de roles y tipos de usuario en panel super
 
 - backend/db/roles_tipos_usuario.go: nuevo archivo de acceso a datos para `superadministrador.db`.

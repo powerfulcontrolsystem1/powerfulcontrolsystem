@@ -79,6 +79,53 @@ func main() {
 		log.Fatalf("failed to create users table in empresas db: %v", err)
 	}
 
+	// Asegurar esquema mínimo de users para gestión de usuarios por empresa y confirmación por correo.
+	ensureUsersSchema := func(db *sql.DB) {
+		rows, err := db.Query("PRAGMA table_info(users);")
+		if err != nil {
+			log.Printf("warning: unable to inspect users schema: %v", err)
+			return
+		}
+		defer rows.Close()
+		existing := map[string]bool{}
+		for rows.Next() {
+			var cid int
+			var name string
+			var ctype string
+			var notnull int
+			var dflt sql.NullString
+			var pk int
+			if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
+				log.Printf("warning: scan pragma table_info users error: %v", err)
+				return
+			}
+			existing[name] = true
+		}
+
+		addIfMissing := func(colDef string, name string) {
+			if !existing[name] {
+				q := fmt.Sprintf("ALTER TABLE users ADD COLUMN %s;", colDef)
+				if _, err := db.Exec(q); err != nil {
+					log.Printf("failed to add column %s to users: %v", name, err)
+				} else {
+					log.Printf("added missing column %s to users", name)
+				}
+			}
+		}
+
+		addIfMissing("documento_identidad TEXT", "documento_identidad")
+		addIfMissing("rol_usuario_id INTEGER", "rol_usuario_id")
+		addIfMissing("email_confirmado INTEGER DEFAULT 0", "email_confirmado")
+		addIfMissing("email_confirm_token TEXT", "email_confirm_token")
+		addIfMissing("email_confirm_expira TEXT", "email_confirm_expira")
+		addIfMissing("email_confirmado_en TEXT", "email_confirmado_en")
+		addIfMissing("fecha_actualizacion TEXT", "fecha_actualizacion")
+		addIfMissing("usuario_creador TEXT", "usuario_creador")
+		addIfMissing("estado TEXT DEFAULT 'activo'", "estado")
+		addIfMissing("observaciones TEXT", "observaciones")
+	}
+	ensureUsersSchema(dbEmpresas)
+
 	createEmpresas := `CREATE TABLE IF NOT EXISTS empresas (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		nombre TEXT NOT NULL,
@@ -138,6 +185,9 @@ func main() {
 	ensureEmpresasSchema(dbEmpresas)
 	if err := dbpkg.EnsureEmpresaProductosSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure productos schema in empresas db: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaClientesSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure clientes schema in empresas db: %v", err)
 	}
 	// Crear tipos_de_empresas en la base de datos de superadministrador (ubicación centralizada)
 	createTiposSuper := `CREATE TABLE IF NOT EXISTS tipos_de_empresas (
@@ -503,6 +553,9 @@ func main() {
 	http.HandleFunc("/api/empresa/productos/precios_historial", handlers.EmpresaProductoPrecioHistorialHandler(dbEmpresas))
 	http.HandleFunc("/api/empresa/proveedores", handlers.EmpresaProveedoresHandler(dbEmpresas))
 	http.HandleFunc("/api/empresa/servicios", handlers.EmpresaServiciosHandler(dbEmpresas))
+	http.HandleFunc("/api/empresa/usuarios", handlers.EmpresaUsuariosHandler(dbEmpresas, dbSuper))
+	http.HandleFunc("/api/empresa/clientes", handlers.EmpresaClientesHandler(dbEmpresas))
+	http.HandleFunc("/api/empresa/roles_de_usuario", handlers.EmpresaRolesDeUsuarioHandler(dbEmpresas, dbSuper))
 	// Endpoint para obtener admin actual desde la cookie de sesión
 	http.HandleFunc("/me", handlers.MeHandler(dbSuper))
 	// Endpoint CRUD para administradores (API)
@@ -513,6 +566,8 @@ func main() {
 	http.HandleFunc("/super/api/config/mercadopago", handlers.MercadoPagoConfigHandler(dbSuper))
 	// Endpoint para gestionar credenciales de Wompi (GET/PUT)
 	http.HandleFunc("/super/api/config/wompi", handlers.WompiConfigHandler(dbSuper))
+	// Endpoint para gestionar SMTP Gmail (GET/PUT)
+	http.HandleFunc("/super/api/config/gmail", handlers.GmailConfigHandler(dbSuper))
 	// Endpoints for Mercado Pago integration (crear preferencia y webhook)
 	http.HandleFunc("/mercadopago/create_preference", handlers.MercadoPagoCreatePreferenceHandler(dbSuper))
 	http.HandleFunc("/mercadopago/webhook", handlers.MercadoPagoWebhookHandler(dbSuper))
@@ -523,6 +578,8 @@ func main() {
 	http.HandleFunc("/wompi/transaction_status", handlers.WompiTransactionStatusHandler(dbSuper))
 	// Activación manual de licencia sin pago (uso interno de avance/prototipo)
 	http.HandleFunc("/licencias/activar_sin_pago", handlers.ActivateLicenciaSinPagoHandler(dbSuper))
+	// Confirmación de correo para usuarios de empresa.
+	http.HandleFunc("/auth/confirmar_correo", handlers.ConfirmarCorreoUsuarioHandler(dbEmpresas))
 
 	// Endpoints de métricas (actual y histórico)
 	http.HandleFunc("/super/api/metrics/current", handlers.MetricsCurrentHandler(dbSuper))

@@ -128,6 +128,60 @@
       </div>
       <div id="wompiMsg" class="form-help"></div>
     </section>
+
+    <section class="card form mp-card" id="gmailConfig">
+      <h2>Correo Gmail — Confirmación de usuarios</h2>
+      <p class="form-help">Configura SMTP de Gmail para enviar el correo de confirmación a los usuarios creados desde cada empresa.</p>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Correo remitente (Gmail)</label>
+          <input id="gmailSMTPEmail" class="form-input" type="email" placeholder="tu-cuenta@gmail.com">
+          <div id="gmailStatusEmail" class="form-help">Cargando estado...</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Contraseña de aplicación (secreta)</label>
+          <input id="gmailSMTPAppPass" class="form-input" type="password" placeholder="16 caracteres de App Password">
+          <div id="gmailStatusPass" class="form-help">Cargando estado...</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Nombre remitente</label>
+          <input id="gmailFromName" class="form-input" type="text" placeholder="Powerful Control System">
+        </div>
+        <div class="form-col">
+          <label class="form-label">SMTP Host</label>
+          <input id="gmailHost" class="form-input" type="text" placeholder="smtp.gmail.com">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">SMTP Port</label>
+          <input id="gmailPort" class="form-input" type="text" placeholder="587">
+        </div>
+        <div class="form-col">
+          <label class="form-label">URL base para confirmación (opcional)</label>
+          <input id="gmailBaseURL" class="form-input" type="text" placeholder="https://tu-dominio.com">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Opciones</label>
+          <div class="form-help"><label><input id="gmailEncryptToggle" type="checkbox"> Cifrar contraseña al guardar (si el servidor lo permite)</label></div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button id="saveGmailBtn" class="btn">Guardar Gmail SMTP</button>
+        <button id="editGmailBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Editar</button>
+        <button id="cancelGmailBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Cancelar</button>
+      </div>
+      <div id="gmailMsg" class="form-help"></div>
+    </section>
   </div>
 
   <script>
@@ -269,6 +323,9 @@
           document.getElementById('wompiModeInfo').innerText = 'Modo: --';
           document.getElementById('wompiModeSource').innerText = 'Origen: --';
         }
+
+		// cargar estado Gmail SMTP
+		await loadGmailConfig();
       }
 
       function refreshWompiModeHint(){
@@ -279,6 +336,133 @@
         modeHint.innerText = isRealMode
           ? 'Modo real activo: se usarán cobros reales con credenciales productivas.'
           : 'Modo sandbox activo: usa 3991111111 para aprobar y 3992222222 para rechazar.';
+      }
+
+      async function loadGmailConfig(){
+        const statusEmail = document.getElementById('gmailStatusEmail');
+        const statusPass = document.getElementById('gmailStatusPass');
+        const msg = document.getElementById('gmailMsg');
+        try {
+          const rg = await fetch('/super/api/config/gmail');
+          if (!rg.ok) {
+            statusEmail.innerText = 'Error al leer configuración Gmail';
+            statusPass.innerText = 'Error al leer configuración Gmail';
+            return;
+          }
+          const cfg = await rg.json();
+
+          if (typeof cfg.encryption_available !== 'undefined' && !cfg.encryption_available) {
+            document.getElementById('gmailEncryptToggle').disabled = true;
+            document.getElementById('gmailEncryptToggle').checked = false;
+            msg.innerText = 'Nota: cifrado no disponible en este servidor (CONFIG_ENC_KEY no definido).';
+          }
+
+          document.getElementById('gmailSMTPEmail').value = cfg.smtp_email || '';
+          document.getElementById('gmailFromName').value = cfg.smtp_from_name || 'Powerful Control System';
+          document.getElementById('gmailHost').value = cfg.smtp_host || 'smtp.gmail.com';
+          document.getElementById('gmailPort').value = cfg.smtp_port || '587';
+          document.getElementById('gmailBaseURL').value = cfg.confirm_base_url || '';
+
+          if (cfg.smtp_email_set) {
+            const ts = cfg.smtp_email_updated ? (' — Última actualización: ' + cfg.smtp_email_updated) : '';
+            statusEmail.innerText = 'Correo remitente configurado' + ts;
+          } else {
+            statusEmail.innerText = 'No configurado';
+          }
+
+          if (cfg.smtp_app_password_set) {
+            const ts2 = cfg.smtp_app_password_updated ? (' — Última actualización: ' + cfg.smtp_app_password_updated) : '';
+            statusPass.innerText = 'Contraseña de aplicación guardada (' + (cfg.smtp_app_password_masked || '****') + ')' + ts2;
+          } else {
+            statusPass.innerText = 'No configurada';
+          }
+
+          const hasGmailConfig = !!(
+            cfg.smtp_email_set ||
+            cfg.smtp_app_password_set ||
+            (cfg.smtp_from_name && cfg.smtp_from_name.trim() !== '') ||
+            (cfg.smtp_host && cfg.smtp_host.trim() !== '') ||
+            (cfg.smtp_port && cfg.smtp_port.trim() !== '') ||
+            (cfg.confirm_base_url && cfg.confirm_base_url.trim() !== '')
+          );
+
+          const readOnly = hasGmailConfig;
+          document.getElementById('gmailSMTPEmail').disabled = readOnly;
+          document.getElementById('gmailSMTPAppPass').disabled = readOnly;
+          document.getElementById('gmailFromName').disabled = readOnly;
+          document.getElementById('gmailHost').disabled = readOnly;
+          document.getElementById('gmailPort').disabled = readOnly;
+          document.getElementById('gmailBaseURL').disabled = readOnly;
+
+          document.getElementById('saveGmailBtn').disabled = readOnly;
+          document.getElementById('editGmailBtn').style.display = hasGmailConfig ? '' : 'none';
+          document.getElementById('cancelGmailBtn').style.display = 'none';
+        } catch (err) {
+          statusEmail.innerText = 'Error cargando configuración Gmail';
+          statusPass.innerText = 'Error cargando configuración Gmail';
+        }
+      }
+
+      async function saveGmail(e){
+        if (e && e.preventDefault) e.preventDefault();
+
+        const payload = {
+          smtp_email: document.getElementById('gmailSMTPEmail').value.trim(),
+          smtp_app_password: document.getElementById('gmailSMTPAppPass').value.trim(),
+          smtp_from_name: document.getElementById('gmailFromName').value.trim(),
+          smtp_host: document.getElementById('gmailHost').value.trim(),
+          smtp_port: document.getElementById('gmailPort').value.trim(),
+          confirm_base_url: document.getElementById('gmailBaseURL').value.trim(),
+          encrypt: !!document.getElementById('gmailEncryptToggle').checked
+        };
+
+        if (!payload.smtp_email && !payload.smtp_app_password && !payload.smtp_from_name && !payload.smtp_host && !payload.smtp_port && !payload.confirm_base_url) {
+          alert('Ingrese al menos un valor para guardar en Gmail SMTP');
+          return;
+        }
+
+        const btn = document.getElementById('saveGmailBtn');
+        const msg = document.getElementById('gmailMsg');
+        btn.disabled = true;
+        btn.innerText = 'Guardando...';
+        try {
+          const res = await fetch('/super/api/config/gmail', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const raw = await res.text();
+          if (!res.ok) {
+            msg.innerText = 'Error guardando Gmail SMTP: ' + raw;
+            return;
+          }
+
+          document.getElementById('gmailSMTPAppPass').value = '';
+          msg.innerText = 'Configuración Gmail SMTP guardada correctamente.';
+          await loadGmailConfig();
+        } catch (err) {
+          msg.innerText = 'Error: ' + (err.message || err);
+        }
+        btn.disabled = false;
+        btn.innerText = 'Guardar Gmail SMTP';
+      }
+
+      function enableEditGmail(){
+        document.getElementById('gmailSMTPEmail').disabled = false;
+        document.getElementById('gmailSMTPAppPass').disabled = false;
+        document.getElementById('gmailFromName').disabled = false;
+        document.getElementById('gmailHost').disabled = false;
+        document.getElementById('gmailPort').disabled = false;
+        document.getElementById('gmailBaseURL').disabled = false;
+        document.getElementById('saveGmailBtn').disabled = false;
+        document.getElementById('editGmailBtn').style.display = 'none';
+        document.getElementById('cancelGmailBtn').style.display = '';
+        document.getElementById('gmailMsg').innerText = 'Modo edición activo para Gmail SMTP.';
+      }
+
+      function cancelEditGmail(){
+        loadGmailConfig();
+        document.getElementById('gmailMsg').innerText = 'Edición cancelada.';
       }
 
       // advanced config removed
@@ -436,6 +620,9 @@
       document.getElementById('editWompiBtn').addEventListener('click', enableEditWompi);
       document.getElementById('cancelWompiBtn').addEventListener('click', cancelEditWompi);
       document.getElementById('wompiModeToggle').addEventListener('change', refreshWompiModeHint);
+      document.getElementById('saveGmailBtn').addEventListener('click', saveGmail);
+      document.getElementById('editGmailBtn').addEventListener('click', enableEditGmail);
+      document.getElementById('cancelGmailBtn').addEventListener('click', cancelEditGmail);
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', load); else load();
     })();
   </script>

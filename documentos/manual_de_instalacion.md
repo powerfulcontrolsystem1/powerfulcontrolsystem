@@ -212,3 +212,52 @@ Importante:
 
 - Este método es para avance/prototipo interno y no reemplaza los cobros reales de Mercado Pago o Nequi.
 
+## 8) Confirmación de correo para usuarios de empresa (Gmail SMTP)
+
+Se añadió el submódulo de usuarios por empresa con confirmación de correo. Cuando un administrador crea un usuario, el sistema envía un enlace de confirmación al correo indicado.
+
+### 8.1 Configuración en Gmail (cuenta remitente)
+
+1. Usa una cuenta Gmail que será el remitente (ejemplo: `tu-cuenta@gmail.com`).
+2. Activa verificación en dos pasos en esa cuenta.
+3. Genera una contraseña de aplicación (App Password) para "Correo".
+4. Guarda esa contraseña en el panel:
+  - `Super administrador -> Configuración avanzada -> Correo Gmail — Confirmación de usuarios`.
+
+Campos recomendados:
+
+- Correo remitente: `tu-cuenta@gmail.com`
+- Contraseña de aplicación: (16 caracteres generados por Google)
+- SMTP Host: `smtp.gmail.com`
+- SMTP Port: `587`
+- URL base de confirmación: `http://localhost:8080` (o tu dominio HTTPS en producción)
+
+Opcional de seguridad:
+
+- Activar `Cifrar contraseña al guardar` si el backend tiene `CONFIG_ENC_KEY` configurada.
+
+### 8.2 Flujo de confirmación
+
+1. Crear usuario desde `Administrar empresa -> Usuarios`.
+2. El backend envía un correo con enlace:
+
+  `/auth/confirmar_correo?token=<token>`
+
+3. El usuario abre el enlace y el sistema marca el correo como confirmado.
+
+### 8.3 Endpoints relacionados
+
+- `GET/PUT /super/api/config/gmail` -> configuración SMTP Gmail.
+- `GET /api/empresa/roles_de_usuario?empresa_id=...` -> roles válidos para la empresa.
+- `GET/POST/PUT/DELETE /api/empresa/usuarios` -> CRUD de usuarios por empresa.
+- `PUT /api/empresa/usuarios?action=reenviar_confirmacion` -> reenvío del correo.
+- `GET /auth/confirmar_correo?token=...` -> confirma correo (endpoint público).
+
+### 8.4 Nota operativa
+
+Si Gmail rechaza el envío, valida:
+
+- que la contraseña sea de aplicación (no la contraseña normal de la cuenta),
+- que host/puerto sean correctos,
+- que no exista bloqueo temporal de seguridad en la cuenta de Gmail.
+

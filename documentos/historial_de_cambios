@@ -1,5 +1,52 @@
 - Historial de cambios
 
+2026-04-01: Submódulo de clientes por empresa (CRUD) orientado a facturación electrónica Colombia
+- Acción:
+    - Se creó la subpágina `administrar_clientes.html` dentro de `administrar_empresa` para gestionar clientes por empresa.
+    - Se implementó CRUD completo de clientes con acciones de editar, eliminar y activar/desactivar.
+    - Se incluyeron campos base para futura facturación electrónica DIAN: identificación tributaria, razón social, régimen, responsabilidad tributaria, ubicación y contacto.
+- Backend:
+    - `backend/db/clientes.go` (nuevo):
+        - Modelo `Cliente` y funciones CRUD por `empresa_id`.
+        - Migración/creación de tabla `clientes` en `empresas.db` con índices y restricción de documento único por empresa.
+    - `backend/handlers/clientes.go` (nuevo): endpoint `GET/POST/PUT/DELETE /api/empresa/clientes` con soporte de `action=activar|desactivar`.
+    - `backend/main.go`: registro de `EnsureEmpresaClientesSchema(dbEmpresas)` y ruta `/api/empresa/clientes`.
+- Frontend:
+    - `web/administrar_empresa/administrar_clientes.html` (nuevo): formulario + listado + búsqueda + acciones CRUD.
+    - `web/administrar_empresa.html`: menú actualizado con acceso a `Clientes` y propagación de `empresa_id`.
+- Documentación:
+    - `documentos/descripcion_de_archivos`
+    - `documentos/descripcion_de_las_bases_De_datos`
+    - `documentos/historial_de_cambios`
+- Responsable: agente local
+
+2026-04-01: Submódulo de administrar usuarios por empresa + confirmación de correo + configuración Gmail
+- Acción:
+    - Se creó la subpágina `administrar_usuarios.html` dentro de `administrar_empresa` para gestionar usuarios por empresa.
+    - Cada usuario ahora se crea con: correo, nombre, documento de identidad y rol de usuario.
+    - Los roles se cargan según el tipo de empresa asociado a la empresa seleccionada.
+    - Se implementó confirmación de correo por enlace con token y opción de reenvío.
+    - Se añadió configuración SMTP Gmail en `Configuración avanzada` para envío de correos de confirmación.
+- Backend:
+    - `backend/db/usuarios_empresa.go` (nuevo): CRUD de usuarios por empresa, estado, token de confirmación y confirmación de correo.
+    - `backend/handlers/usuarios_empresa.go` (nuevo):
+        - `GET /api/empresa/roles_de_usuario`
+        - `GET/POST/PUT/DELETE /api/empresa/usuarios`
+        - `PUT /api/empresa/usuarios?action=reenviar_confirmacion`
+        - `GET /auth/confirmar_correo?token=...`
+        - `GET/PUT /super/api/config/gmail`
+    - `backend/main.go`: migraciones de columnas en `users` y registro de rutas nuevas.
+    - `backend/utils/utils.go`: `/auth/confirmar_correo` habilitado como ruta pública en middleware.
+- Frontend:
+    - `web/administrar_empresa/administrar_usuarios.html` (nuevo): CRUD de usuarios con roles por empresa y estado de confirmación.
+    - `web/administrar_empresa.html`: menú actualizado con acceso a `Usuarios`.
+    - `web/super/configuracion_avanzada.html`: nueva sección de configuración Gmail SMTP.
+- Documentación:
+    - `documentos/descripcion_de_archivos`
+    - `documentos/manual_de_instalacion.md`
+    - `documentos/historial_de_cambios`
+- Responsable: agente local
+
 2026-04-01: Fix UI — mostrar nombre del rol en tipos_de_usuario (fallback a `rol_nombre`)
 - Acción: Al listar `tipos_de_usuario`, la columna 'Rol' ahora usa el nombre encontrado en la lista de roles; si no se encuentra, usa el campo retornado por la API `rol_nombre`.
 - Archivos modificados: web/super/tipos_de_usuario.htm

@@ -31,6 +31,32 @@ El agente debe leer y actualizar este documento cada vez que se realicen cambios
      - `estado` TEXT DEFAULT 'activo'
      - `observaciones` TEXT
 
+   - `clientes` (nuevo módulo comercial por empresa)
+     - `id` INTEGER PRIMARY KEY AUTOINCREMENT
+     - `empresa_id` INTEGER NOT NULL  -- aislamiento por empresa
+     - `tipo_documento` TEXT NOT NULL DEFAULT 'NIT'  -- NIT, CC, CE, etc.
+     - `numero_documento` TEXT NOT NULL
+     - `digito_verificacion` TEXT
+     - `tipo_persona` TEXT DEFAULT 'juridica'  -- juridica / natural
+     - `nombre_razon_social` TEXT NOT NULL
+     - `nombre_comercial` TEXT
+     - `regimen_fiscal` TEXT
+     - `responsabilidad_tributaria` TEXT
+     - `email` TEXT
+     - `telefono` TEXT
+     - `direccion` TEXT
+     - `pais` TEXT DEFAULT 'CO'
+     - `departamento` TEXT
+     - `municipio` TEXT
+     - `codigo_postal` TEXT
+     - `fecha_creacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `fecha_actualizacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `usuario_creador` TEXT
+     - `estado` TEXT DEFAULT 'activo'
+     - `observaciones` TEXT
+     - Restricción única: `(empresa_id, tipo_documento, numero_documento)`
+     - Índices: `ix_clientes_empresa_nombre`, `ix_clientes_empresa_documento`
+
    - `bodegas` (nuevo módulo de inventario por empresa)
      - `id` INTEGER PRIMARY KEY AUTOINCREMENT
      - `empresa_id` INTEGER NOT NULL  -- aislamiento de datos por empresa

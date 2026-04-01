@@ -96,15 +96,16 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 		path := r.URL.Path
 		// Rutas públicas exactas (no usar prefijo "/" porque abriría todo el sistema).
 		publicExact := map[string]struct{}{
-			"/":                     {},
-			"/index.html":           {},
-			"/login.html":           {},
-			"/auth/google/login":    {},
-			"/auth/google/callback": {},
-			"/auth/logout":          {},
-			"/estilos.css":          {},
-			"/menu.js":              {},
-			"/favicon.ico":          {},
+			"/":                      {},
+			"/index.html":            {},
+			"/login.html":            {},
+			"/auth/google/login":     {},
+			"/auth/google/callback":  {},
+			"/auth/confirmar_correo": {},
+			"/auth/logout":           {},
+			"/estilos.css":           {},
+			"/menu.js":               {},
+			"/favicon.ico":           {},
 		}
 		if _, ok := publicExact[path]; ok {
 			next.ServeHTTP(w, r)
