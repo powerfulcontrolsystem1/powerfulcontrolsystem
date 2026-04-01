@@ -1637,3 +1637,27 @@ Archivos modificados:
 - web/super/tipos_de_usuario.htm
 - web/super_administrador.html
 
+
+2026-04-01: Actualización automática desde script: añadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- backend/db/clientes.go
+- backend/db/usuarios_empresa.go
+- backend/handlers/clientes.go
+- backend/handlers/usuarios_empresa.go
+- backend/main.go
+- backend/pos-backend.exe
+- backend/server.err
+- backend/server.exe
+- backend/utils/utils.go
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_las_bases_De_datos
+- documentos/historial_de_cambios
+- documentos/manual_de_instalacion.md
+- scripts/logs/actualizar_repositorio-20260401-033212.log
+- scripts/logs/actualizar_repositorio-20260401-142852.log
+- web/administrar_empresa.html
+- web/administrar_empresa/administrar_clientes.html
+- web/administrar_empresa/administrar_usuarios.html
+- web/super/configuracion_avanzada.html
+
