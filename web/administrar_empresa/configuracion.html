@@ -27,6 +27,33 @@
             <span>Imprimir orden de servicio al agregar un producto o pedido al carrito</span>
           </label>
           <p class="form-help">Esta orden está pensada para el personal operativo: toma el papel, lee el detalle y lleva el pedido al destino indicado.</p>
+
+          <label class="empresa-config-check" for="habilitarDescuentos" style="margin-top:12px;">
+            <input id="habilitarDescuentos" type="checkbox">
+            <span>Habilitar descuentos en carrito para estaciones</span>
+          </label>
+          <p class="form-help">Si está activo, permite descuentos por porcentaje, código promocional o valor fijo antes del pago.</p>
+
+          <div class="form-row" style="margin-top:8px;">
+            <div class="form-col">
+              <label class="empresa-config-check" for="permitirDescuentoPorcentaje">
+                <input id="permitirDescuentoPorcentaje" type="checkbox">
+                <span>Permitir descuento por porcentaje</span>
+              </label>
+            </div>
+            <div class="form-col">
+              <label class="empresa-config-check" for="permitirDescuentoCodigo">
+                <input id="permitirDescuentoCodigo" type="checkbox">
+                <span>Permitir descuento por código</span>
+              </label>
+            </div>
+            <div class="form-col">
+              <label class="empresa-config-check" for="permitirDescuentoValor">
+                <input id="permitirDescuentoValor" type="checkbox">
+                <span>Permitir descuento por valor fijo</span>
+              </label>
+            </div>
+          </div>
         </div>
 
         <div class="form">
@@ -44,6 +71,14 @@
             <div class="form-col">
               <label class="form-label" for="notaOrden">Instrucción para el personal</label>
               <textarea id="notaOrden" class="form-textarea" placeholder="Ej: Entregar en recepción y confirmar con el número de habitación."></textarea>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="codigosDescuento">Códigos de descuento (uno por línea)</label>
+              <textarea id="codigosDescuento" class="form-textarea" placeholder="Ejemplo:\nVIP10=10%\nFELIZ5000=5000"></textarea>
+              <p class="form-help">Formato: CODIGO=10% para porcentaje o CODIGO=5000 para valor fijo en moneda local.</p>
             </div>
           </div>
         </div>
@@ -95,7 +130,12 @@
           imprimir_orden_servicio: Boolean(productos.imprimir_orden_servicio),
           area_despacho: String(productos.area_despacho || '').trim(),
           copias_orden_servicio: Math.max(1, Math.min(5, Number.isFinite(copias) ? Math.trunc(copias) : 1)),
-          nota_orden_servicio: String(productos.nota_orden_servicio || '').trim().slice(0, 800)
+          nota_orden_servicio: String(productos.nota_orden_servicio || '').trim().slice(0, 800),
+          descuentos_habilitados: productos.descuentos_habilitados === undefined ? true : Boolean(productos.descuentos_habilitados),
+          permitir_descuento_porcentaje: productos.permitir_descuento_porcentaje === undefined ? true : Boolean(productos.permitir_descuento_porcentaje),
+          permitir_descuento_codigo: productos.permitir_descuento_codigo === undefined ? true : Boolean(productos.permitir_descuento_codigo),
+          permitir_descuento_valor: productos.permitir_descuento_valor === undefined ? true : Boolean(productos.permitir_descuento_valor),
+          codigos_descuento: String(productos.codigos_descuento || '').trim().slice(0, 2000)
         }
       };
     }
@@ -134,6 +174,11 @@
       document.getElementById('areaDespacho').value = productos.area_despacho || '';
       document.getElementById('copiasOrden').value = String(productos.copias_orden_servicio || 1);
       document.getElementById('notaOrden').value = productos.nota_orden_servicio || '';
+      document.getElementById('habilitarDescuentos').checked = Boolean(productos.descuentos_habilitados);
+      document.getElementById('permitirDescuentoPorcentaje').checked = Boolean(productos.permitir_descuento_porcentaje);
+      document.getElementById('permitirDescuentoCodigo').checked = Boolean(productos.permitir_descuento_codigo);
+      document.getElementById('permitirDescuentoValor').checked = Boolean(productos.permitir_descuento_valor);
+      document.getElementById('codigosDescuento').value = productos.codigos_descuento || '';
     }
 
     function getFormData() {
@@ -142,7 +187,12 @@
           imprimir_orden_servicio: document.getElementById('imprimirOrdenServicio').checked,
           area_despacho: document.getElementById('areaDespacho').value,
           copias_orden_servicio: document.getElementById('copiasOrden').value,
-          nota_orden_servicio: document.getElementById('notaOrden').value
+          nota_orden_servicio: document.getElementById('notaOrden').value,
+          descuentos_habilitados: document.getElementById('habilitarDescuentos').checked,
+          permitir_descuento_porcentaje: document.getElementById('permitirDescuentoPorcentaje').checked,
+          permitir_descuento_codigo: document.getElementById('permitirDescuentoCodigo').checked,
+          permitir_descuento_valor: document.getElementById('permitirDescuentoValor').checked,
+          codigos_descuento: document.getElementById('codigosDescuento').value
         }
       });
     }

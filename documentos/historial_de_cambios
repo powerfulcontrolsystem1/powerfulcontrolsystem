@@ -1,5 +1,28 @@
 - Historial de cambios
 
+- 2026-04-01: Estaciones con carrito exclusivo, estados de sesión y cobro profesional
+    - Se implementó en `carrito_de_compras` el modo estación para mostrar únicamente el carrito asociado a la estación seleccionada.
+    - Se añadieron estados de sesión de carrito por estación: activación al primer acceso, cierre por pago e inactivación posterior.
+    - Se añadieron tiempos operativos visibles: hora de activación, hora de pago y duración activa transcurrida.
+    - Se incorporó panel de cobro con totalización empresarial (subtotal, descuento, devolución y total final a pagar).
+    - Se habilitó soporte de descuentos condicionados por configuración (porcentaje, código y valor fijo).
+    - Se añadieron acciones backend dedicadas: `activar_estacion` y `pagar_estacion`.
+    - Se amplió la configuración de empresa para activar/desactivar descuentos y definir códigos promocionales.
+    - Validación técnica: `go test ./auth ./db ./handlers ./metrics ./utils` ejecutado sin errores (paquetes productivos).
+    - Archivos afectados: web/administrar_empresa/estaciones.html, web/administrar_empresa/carrito_de_compras.html, web/administrar_empresa/configuracion.html, backend/db/carritos_compras.go, backend/handlers/carritos_compras.go, documentos/descripcion_de_archivos, documentos/historial_de_cambios
+
+- 2026-04-01: Seleccionar empresa agrupado por estado de licencia
+    - En `web/seleccionar_empresa.html` se organizó la visualización de tarjetas en dos grupos: `Empresas con licencia activa` y `Empresas sin licencia activa`.
+    - Se priorizó el bloque de empresas con licencia activa en la parte superior, como vista principal.
+    - Se añadieron estilos de agrupación en `web/estilos.css` para mantener la estructura y el tamaño uniforme de las tarjetas.
+    - Archivos afectados: web/seleccionar_empresa.html, web/estilos.css, documentos/historial_de_cambios
+
+- 2026-04-01: Seleccionar empresa con tarjetas uniformes y carga en frame derecho
+    - Se ajustó `web/seleccionar_empresa.html` para que los accesos a `Licencias`, `Administradores` y `Reportes globales` carguen en el frame derecho del layout (a la derecha del menú izquierdo).
+    - Se unificó el tamaño visual de las tarjetas de empresas para que todas mantengan la misma altura.
+    - Se creó `web/super/reportes_globales.html` para soportar la apertura de reportes globales dentro del frame.
+    - Archivos afectados: web/seleccionar_empresa.html, web/estilos.css, web/super/reportes_globales.html, documentos/descripcion_de_archivos, documentos/historial_de_cambios
+
 - 2026-04-01: Márgenes globales estrechos + nueva subpágina de configuración en administrar empresa
     - Se ajustó el CSS global para dejar márgenes y paddings más estrechos en las páginas del proyecto, incluyendo contenedores y áreas de contenido administrativo.
     - Se creó la subpágina `web/administrar_empresa/configuracion.html`.

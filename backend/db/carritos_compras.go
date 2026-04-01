@@ -24,6 +24,13 @@ type CarritoCompra struct {
 	DescuentoTotal     float64 `json:"descuento_total"`
 	ImpuestoTotal      float64 `json:"impuesto_total"`
 	Total              float64 `json:"total"`
+	ActivadoEn         string  `json:"activado_en,omitempty"`
+	PagadoEn           string  `json:"pagado_en,omitempty"`
+	DescuentoTipo      string  `json:"descuento_tipo,omitempty"`
+	DescuentoCodigo    string  `json:"descuento_codigo,omitempty"`
+	DescuentoValor     float64 `json:"descuento_valor"`
+	DevolucionTotal    float64 `json:"devolucion_total"`
+	TotalPagado        float64 `json:"total_pagado"`
 	ItemCount          int64   `json:"item_count"`
 	FechaCreacion      string  `json:"fecha_creacion,omitempty"`
 	FechaActualizacion string  `json:"fecha_actualizacion,omitempty"`
@@ -76,6 +83,13 @@ func EnsureEmpresaCarritosSchema(dbConn *sql.DB) error {
 			descuento_total REAL DEFAULT 0,
 			impuesto_total REAL DEFAULT 0,
 			total REAL DEFAULT 0,
+			activado_en TEXT,
+			pagado_en TEXT,
+			descuento_tipo TEXT,
+			descuento_codigo TEXT,
+			descuento_valor REAL DEFAULT 0,
+			devolucion_total REAL DEFAULT 0,
+			total_pagado REAL DEFAULT 0,
 			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
 			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
 			usuario_creador TEXT,
@@ -147,6 +161,27 @@ func EnsureEmpresaCarritosSchema(dbConn *sql.DB) error {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "carritos_compras", "total", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carritos_compras", "activado_en", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carritos_compras", "pagado_en", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carritos_compras", "descuento_tipo", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carritos_compras", "descuento_codigo", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carritos_compras", "descuento_valor", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carritos_compras", "devolucion_total", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carritos_compras", "total_pagado", "REAL DEFAULT 0"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "carritos_compras", "fecha_actualizacion", "TEXT"); err != nil {
@@ -320,13 +355,20 @@ func CreateCarritoCompra(dbConn *sql.DB, payload CarritoCompra) (int64, error) {
 		usuario_creador,
 		estado,
 		observaciones,
+		activado_en,
+		pagado_en,
+		descuento_tipo,
+		descuento_codigo,
+		descuento_valor,
+		devolucion_total,
+		total_pagado,
 		fecha_creacion,
 		fecha_actualizacion,
 		subtotal,
 		descuento_total,
 		impuesto_total,
 		total
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'activo', ?, datetime('now','localtime'), datetime('now','localtime'), 0, 0, 0, 0)`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'activo', ?, NULL, NULL, '', '', 0, 0, 0, datetime('now','localtime'), datetime('now','localtime'), 0, 0, 0, 0)`,
 		payload.EmpresaID,
 		strings.TrimSpace(payload.Codigo),
 		strings.TrimSpace(payload.Nombre),
@@ -361,6 +403,13 @@ func GetCarritosCompraByEmpresa(dbConn *sql.DB, empresaID int64, includeInactive
 		COALESCE(c.descuento_total, 0),
 		COALESCE(c.impuesto_total, 0),
 		COALESCE(c.total, 0),
+		COALESCE(c.activado_en, ''),
+		COALESCE(c.pagado_en, ''),
+		COALESCE(c.descuento_tipo, ''),
+		COALESCE(c.descuento_codigo, ''),
+		COALESCE(c.descuento_valor, 0),
+		COALESCE(c.devolucion_total, 0),
+		COALESCE(c.total_pagado, 0),
 		COALESCE(COUNT(i.id), 0),
 		COALESCE(c.fecha_creacion, ''),
 		COALESCE(c.fecha_actualizacion, ''),
@@ -412,6 +461,13 @@ func GetCarritosCompraByEmpresa(dbConn *sql.DB, empresaID int64, includeInactive
 			&item.DescuentoTotal,
 			&item.ImpuestoTotal,
 			&item.Total,
+			&item.ActivadoEn,
+			&item.PagadoEn,
+			&item.DescuentoTipo,
+			&item.DescuentoCodigo,
+			&item.DescuentoValor,
+			&item.DevolucionTotal,
+			&item.TotalPagado,
 			&item.ItemCount,
 			&item.FechaCreacion,
 			&item.FechaActualizacion,
@@ -442,6 +498,13 @@ func GetCarritoCompraByID(dbConn *sql.DB, empresaID, carritoID int64) (*CarritoC
 		COALESCE(descuento_total, 0),
 		COALESCE(impuesto_total, 0),
 		COALESCE(total, 0),
+		COALESCE(activado_en, ''),
+		COALESCE(pagado_en, ''),
+		COALESCE(descuento_tipo, ''),
+		COALESCE(descuento_codigo, ''),
+		COALESCE(descuento_valor, 0),
+		COALESCE(devolucion_total, 0),
+		COALESCE(total_pagado, 0),
 		COALESCE(fecha_creacion, ''),
 		COALESCE(fecha_actualizacion, ''),
 		COALESCE(usuario_creador, ''),
@@ -467,6 +530,13 @@ func GetCarritoCompraByID(dbConn *sql.DB, empresaID, carritoID int64) (*CarritoC
 		&item.DescuentoTotal,
 		&item.ImpuestoTotal,
 		&item.Total,
+		&item.ActivadoEn,
+		&item.PagadoEn,
+		&item.DescuentoTipo,
+		&item.DescuentoCodigo,
+		&item.DescuentoValor,
+		&item.DevolucionTotal,
+		&item.TotalPagado,
 		&item.FechaCreacion,
 		&item.FechaActualizacion,
 		&item.UsuarioCreador,
@@ -532,6 +602,76 @@ func SetCarritoCompraEstado(dbConn *sql.DB, empresaID, carritoID int64, estado s
 // SetCarritoOperacionEstado cambia estado operativo del carrito (abierto/cerrado).
 func SetCarritoOperacionEstado(dbConn *sql.DB, empresaID, carritoID int64, estadoCarrito string) error {
 	_, err := dbConn.Exec(`UPDATE carritos_compras SET estado_carrito = ?, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND id = ?`, strings.TrimSpace(estadoCarrito), empresaID, carritoID)
+	return err
+}
+
+// ActivateCarritoStationSession activa un carrito de estación y opcionalmente reinicia sus items.
+func ActivateCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, resetItems bool) error {
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if resetItems {
+		if _, err := tx.Exec(`DELETE FROM carrito_compra_items WHERE empresa_id = ? AND carrito_id = ?`, empresaID, carritoID); err != nil {
+			return err
+		}
+	}
+
+	if _, err := tx.Exec(`UPDATE carritos_compras SET
+		estado = 'activo',
+		estado_carrito = 'abierto',
+		activado_en = datetime('now','localtime'),
+		pagado_en = NULL,
+		descuento_tipo = '',
+		descuento_codigo = '',
+		descuento_valor = 0,
+		devolucion_total = 0,
+		total_pagado = 0,
+		fecha_actualizacion = datetime('now','localtime')
+	WHERE empresa_id = ? AND id = ?`, empresaID, carritoID); err != nil {
+		return err
+	}
+
+	if err := recalculateCarritoTotalsTx(tx, empresaID, carritoID); err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+// PayCarritoStationSession marca un carrito como pagado/inactivo y guarda resumen de cobro.
+func PayCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, descuentoTipo, descuentoCodigo string, descuentoValor, devolucionTotal, totalPagado float64) error {
+	if descuentoValor < 0 {
+		descuentoValor = 0
+	}
+	if devolucionTotal < 0 {
+		devolucionTotal = 0
+	}
+	if totalPagado < 0 {
+		totalPagado = 0
+	}
+
+	_, err := dbConn.Exec(`UPDATE carritos_compras SET
+		estado = 'inactivo',
+		estado_carrito = 'cerrado',
+		pagado_en = datetime('now','localtime'),
+		descuento_tipo = ?,
+		descuento_codigo = ?,
+		descuento_valor = ?,
+		devolucion_total = ?,
+		total_pagado = ?,
+		fecha_actualizacion = datetime('now','localtime')
+	WHERE empresa_id = ? AND id = ?`,
+		strings.TrimSpace(descuentoTipo),
+		strings.TrimSpace(descuentoCodigo),
+		round2(descuentoValor),
+		round2(devolucionTotal),
+		round2(totalPagado),
+		empresaID,
+		carritoID,
+	)
 	return err
 }
 

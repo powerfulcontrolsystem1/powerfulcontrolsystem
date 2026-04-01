@@ -13,15 +13,16 @@
     <aside class="admin-sidebar">
       <h2>Seleccionar Empresa</h2>
       <ul class="nav">
-        <li><a href="/seleccionar%20empresa/empresas.html"><img class="icon" src="/img/company-briefcase.svg" alt="">Agregar empresa</a></li>
-        <li><a href="/super/licencias.html"><img class="icon" src="/img/shield-license.svg" alt="">Licencias</a></li>
-        <li><a href="/super/administradores.html"><img class="icon" src="/img/user-avatar.svg" alt="">Administradores</a></li>
-        <li><a href="/super/reportes_globales.html"><img class="icon" src="/img/analytics.svg" alt="">Reportes globales</a></li>
+        <li><a id="linkAgregarEmpresa" href="#"><img class="icon" src="/img/company-briefcase.svg" alt="">Agregar empresa</a></li>
+        <li><a id="linkLicencias" href="/super/licencias.html" target="contentFrame"><img class="icon" src="/img/shield-license.svg" alt="">Licencias</a></li>
+        <li><a id="linkAdministradores" href="/super/administradores.html" target="contentFrame"><img class="icon" src="/img/user-avatar.svg" alt="">Administradores</a></li>
+        <li><a id="linkReportesGlobales" href="/super/reportes_globales.html" target="contentFrame"><img class="icon" src="/img/analytics.svg" alt="">Reportes globales</a></li>
       </ul>
     </aside>
 
     <main class="admin-content">
-      <div class="container">
+      <section id="empresasPanel">
+        <div class="container">
         <div class="page-header">
           <h1 style="display:inline-block;margin-right:12px">Seleccionar Empresa</h1>
           <button id="addBtn" class="btn add" style="vertical-align:middle">Agregar</button>
@@ -56,13 +57,94 @@
           <div class="form-help" id="msg"></div>
         </form>
 
-        <div id="cards" class="portal-grid">Cargando empresas...</div>
-      </div>
+        <div id="cards" class="empresa-groups">Cargando empresas...</div>
+        </div>
+      </section>
+
+      <iframe name="contentFrame" id="contentFrame" src="about:blank" title="Contenido" class="admin-empresa-frame" style="display:none"></iframe>
     </main>
   </div>
 
   <script>
     (function(){
+      const empresasPanel = document.getElementById('empresasPanel');
+      const contentFrame = document.getElementById('contentFrame');
+      const navLinks = Array.from(document.querySelectorAll('.admin-sidebar .nav a'));
+
+      function setActiveNav(activeLink) {
+        navLinks.forEach(function(link) { link.classList.remove('active'); });
+        if (activeLink) activeLink.classList.add('active');
+      }
+
+      function openInRightFrame(href, link) {
+        if (!href) return;
+        if (!contentFrame || !empresasPanel) {
+          window.location.href = href;
+          return;
+        }
+        empresasPanel.style.display = 'none';
+        contentFrame.style.display = '';
+        contentFrame.setAttribute('src', href);
+        setActiveNav(link);
+      }
+
+      function buildEmpresaCard(empresa, hasLicense) {
+        const a = document.createElement('a');
+        a.href = '#';
+        a.className = 'card-link';
+        a.addEventListener('click', function(evt){
+          evt.preventDefault();
+          try {
+            if (hasLicense) {
+              window.open('/administrar_empresa.html?id=' + encodeURIComponent(empresa.id), '_blank');
+            } else {
+              const params = new URLSearchParams();
+              params.set('empresa_id', empresa.id);
+              if (empresa.tipo_id) params.set('tipo_id', empresa.tipo_id);
+              if (empresa.tipo_nombre) params.set('tipo_nombre', empresa.tipo_nombre);
+              window.location.href = '/elegir_licencia.html?' + params.toString();
+            }
+          } catch (err) {
+            console.error(err);
+          }
+        });
+
+        const div = document.createElement('div');
+        div.className = 'portal-card warm';
+        div.innerHTML = '<div class="card-body">' +
+          '<h3 class="card-title">' + escapeHtml(empresa.nombre || '--') + '</h3>' +
+          '<p class="card-desc muted">' + escapeHtml(empresa.observaciones || '') + '</p>' +
+          '<div class="card-actions">' +
+            '<button class="license-indicator ' + (hasLicense ? 'active' : 'inactive') + '" type="button" aria-hidden="true">' +
+              (hasLicense ? 'Licencia activa' : 'Sin licencia') +
+            '</button>' +
+          '</div>' +
+        '</div>';
+        a.appendChild(div);
+        return a;
+      }
+
+      function appendEmpresasGroup(container, title, empresas, activeByEmpresa) {
+        if (!empresas.length) return;
+        const section = document.createElement('section');
+        section.className = 'card empresa-section';
+
+        const header = document.createElement('div');
+        header.className = 'empresa-section-header';
+        header.innerHTML = '<h2>' + title + '</h2><span class="form-help">Total: ' + empresas.length + '</span>';
+
+        const grid = document.createElement('div');
+        grid.className = 'portal-grid empresas-grid';
+        empresas.forEach(function(empresa) {
+          const hasLicense = !!activeByEmpresa[empresa.id];
+          grid.appendChild(buildEmpresaCard(empresa, hasLicense));
+        });
+
+        section.appendChild(header);
+        section.appendChild(grid);
+        container.appendChild(section);
+      }
+
       // Load current admin, empresas and licencias, then render cards for empresas created by the admin
       async function render() {
         try {
@@ -108,34 +190,16 @@
             showForm();
           }
 
-          list.forEach(e => {
-            const hasLicense = !!activeByEmpresa[e.id];
-            // crear tarjeta clicable: si tiene licencia abrir administrar (nueva pestaña), si no redirigir a elegir_licencia.html
-            const a = document.createElement('a');
-            a.href = '#';
-            a.className = 'card-link';
-            a.addEventListener('click', function(evt){
-              evt.preventDefault();
-              try{
-                if (hasLicense){
-                  window.open('/administrar_empresa.html?id=' + encodeURIComponent(e.id), '_blank');
-                } else {
-                  const params = new URLSearchParams();
-                  params.set('empresa_id', e.id);
-                  if (e.tipo_id) params.set('tipo_id', e.tipo_id);
-                  if (e.tipo_nombre) params.set('tipo_nombre', e.tipo_nombre);
-                  window.location.href = '/elegir_licencia.html?' + params.toString();
-                }
-              }catch(err){ console.error(err); }
-            });
-            const div = document.createElement('div');
-            div.className = 'portal-card warm';
-            div.innerHTML = `<div class="card-body"><h3 class="card-title">${escapeHtml(e.nombre||'--')}</h3><p class="card-desc muted">${escapeHtml(e.observaciones||'')}</p><div class="card-actions"><button class="license-indicator ${hasLicense? 'active':'inactive'}" type="button" aria-hidden="true">${hasLicense? 'Licencia activa' : 'Sin licencia'}</button></div></div>`;
-            a.appendChild(div);
-            container.appendChild(a);
-          });
+          const conLicenciaActiva = list.filter(function(e) { return !!activeByEmpresa[e.id]; });
+          const sinLicenciaActiva = list.filter(function(e) { return !activeByEmpresa[e.id]; });
+
+          appendEmpresasGroup(container, 'Empresas con licencia activa', conLicenciaActiva, activeByEmpresa);
+          appendEmpresasGroup(container, 'Empresas sin licencia activa', sinLicenciaActiva, activeByEmpresa);
           // ensure add button shows and wires
-          document.getElementById('addBtn').onclick = function(){ showForm(); };
+          document.getElementById('addBtn').onclick = function(){
+            showForm();
+            setActiveNav(document.getElementById('linkAgregarEmpresa'));
+          };
         } catch (err) {
           console.error(err);
           const target = document.getElementById('cards');
@@ -143,11 +207,58 @@
         }
       }
 
-      function showForm(){ document.getElementById('form').style.display=''; document.getElementById('addBtn').style.display='none'; window.scrollTo({ top: 0, behavior: 'smooth' }); }
-      function hideForm(){ document.getElementById('form').style.display='none'; document.getElementById('addBtn').style.display=''; document.getElementById('itemId').value=''; document.getElementById('nombre').value=''; document.getElementById('nit').value=''; document.getElementById('observaciones').value=''; }
+      function showForm(){
+        if (empresasPanel) empresasPanel.style.display = '';
+        if (contentFrame) {
+          contentFrame.style.display = 'none';
+          contentFrame.setAttribute('src', 'about:blank');
+        }
+        document.getElementById('form').style.display='';
+        document.getElementById('addBtn').style.display='none';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      function hideForm(){
+        document.getElementById('form').style.display='none';
+        document.getElementById('addBtn').style.display='';
+        document.getElementById('itemId').value='';
+        document.getElementById('nombre').value='';
+        document.getElementById('nit').value='';
+        document.getElementById('observaciones').value='';
+      }
+
+      function wireSidebarFrameLinks() {
+        const linkAgregar = document.getElementById('linkAgregarEmpresa');
+        const linkLicencias = document.getElementById('linkLicencias');
+        const linkAdministradores = document.getElementById('linkAdministradores');
+        const linkReportes = document.getElementById('linkReportesGlobales');
+
+        if (linkAgregar) {
+          linkAgregar.addEventListener('click', function(ev) {
+            ev.preventDefault();
+            if (empresasPanel) empresasPanel.style.display = '';
+            if (contentFrame) {
+              contentFrame.style.display = 'none';
+              contentFrame.setAttribute('src', 'about:blank');
+            }
+            showForm();
+            setActiveNav(linkAgregar);
+          });
+        }
+
+        [linkLicencias, linkAdministradores, linkReportes].forEach(function(link) {
+          if (!link) return;
+          link.addEventListener('click', function(ev) {
+            ev.preventDefault();
+            openInRightFrame(link.getAttribute('href'), link);
+          });
+        });
+      }
 
       // manejar envío del formulario
       document.addEventListener('DOMContentLoaded', function(){
+        wireSidebarFrameLinks();
+        setActiveNav(document.getElementById('linkAgregarEmpresa'));
         const form = document.getElementById('form');
         if (form) {
           form.onsubmit = async function(e){

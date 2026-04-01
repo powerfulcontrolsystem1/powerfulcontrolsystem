@@ -13,7 +13,14 @@
       <button id="addCarritoBtn" class="btn add">Agregar carrito</button>
     </div>
 
-    <p class="form-help" style="margin:0 0 12px 0;">
+    <div id="stationContextPanel" class="card empresa-section" style="display:none;margin-top:0;margin-bottom:12px;">
+      <div class="empresa-section-header">
+        <h2 id="stationContextTitle">Estación</h2>
+      </div>
+      <div id="stationStateSummary" class="form-help"></div>
+    </div>
+
+    <p id="moduleHelp" class="form-help" style="margin:0 0 12px 0;">
       Este módulo permite manejar múltiples carritos por empresa y deja preparada la base operativa para facturación electrónica.
     </p>
 
@@ -78,7 +85,7 @@
       <div id="carritoMsg" class="form-help"></div>
     </form>
 
-    <div class="form" style="margin-top:14px;">
+    <div id="carritoSearchBlock" class="form" style="margin-top:14px;">
       <div class="form-row" style="margin-bottom:0;">
         <div class="form-col">
           <label class="form-label">Buscar carrito</label>
@@ -97,6 +104,45 @@
         <h2 id="itemsTitle" style="margin:0;font-size:1rem;">Items del carrito</h2>
       </div>
       <div id="carritoResumen" class="form-help"></div>
+
+      <div id="stationCheckoutPanel" class="card empresa-section" style="display:none;margin-top:12px;">
+        <div class="empresa-section-header">
+          <h3 style="margin:0;">Cobro y estados del carrito</h3>
+        </div>
+
+        <div id="stationDiscountSettings" class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="discountType">Tipo de descuento</label>
+            <select id="discountType" class="form-input">
+              <option value="none">Sin descuento</option>
+              <option value="percent">Porcentaje</option>
+              <option value="code">Código</option>
+              <option value="value">Valor fijo</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="discountValue">Valor de descuento</label>
+            <input id="discountValue" type="number" step="0.01" min="0" class="form-input" value="0">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="discountCode">Código de descuento</label>
+            <input id="discountCode" class="form-input" placeholder="Ej: VIP10">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="devolucionMonto">Devolución (valor)</label>
+            <input id="devolucionMonto" type="number" step="0.01" min="0" class="form-input" value="0">
+          </div>
+        </div>
+
+        <div id="stationPaymentBreakdown" class="form-help" style="margin-top:8px;"></div>
+
+        <div class="form-actions" style="margin-top:10px;">
+          <button type="button" id="btnRecalcularCobro" class="btn secondary">Recalcular</button>
+          <button type="button" id="btnActivarSesionCarrito" class="btn secondary" style="display:none;">Activar carrito</button>
+          <button type="button" id="btnPagarCarrito" class="btn">Pagar y cerrar carrito</button>
+        </div>
+        <div id="stationPaymentMsg" class="form-help"></div>
+      </div>
 
       <form id="itemForm" style="margin-top:12px;">
         <input type="hidden" id="itemId">
@@ -200,6 +246,9 @@
   <script>
     const state = {
       empresaID: 0,
+      stationMode: false,
+      stationID: 0,
+      stationName: '',
       qCarrito: '',
       carritos: [],
       clientes: [],
@@ -207,7 +256,13 @@
       selectedCarritoCode: '',
       items: [],
       itemCatalogResults: [],
-      itemCatalogQueryToken: 0
+      itemCatalogQueryToken: 0,
+      stationDiscount: {
+        type: 'none',
+        code: '',
+        value: 0,
+        devolucion: 0
+      }
     };
 
     let itemSearchDebounceTimer = null;
@@ -257,6 +312,143 @@
       }
     }
 
+    function getDiscountCapabilities() {
+      const cfg = loadEmpresaGeneralConfig();
+      const productos = cfg && cfg.productos && typeof cfg.productos === 'object' ? cfg.productos : {};
+      return {
+        enabled: productos.descuentos_habilitados === undefined ? true : Boolean(productos.descuentos_habilitados),
+        allowPercent: productos.permitir_descuento_porcentaje === undefined ? true : Boolean(productos.permitir_descuento_porcentaje),
+        allowCode: productos.permitir_descuento_codigo === undefined ? true : Boolean(productos.permitir_descuento_codigo),
+        allowValue: productos.permitir_descuento_valor === undefined ? true : Boolean(productos.permitir_descuento_valor),
+        rawCodes: String(productos.codigos_descuento || '').trim()
+      };
+    }
+
+    function parseDiscountCodesMap(rawCodes) {
+      const map = new Map();
+      const lines = String(rawCodes || '').split(/\r?\n/);
+      lines.forEach(function(line) {
+        const ln = normalize(line);
+        if (!ln || ln.indexOf('=') === -1) return;
+        const parts = ln.split('=');
+        const code = normalize(parts[0]).toUpperCase();
+        const valueRaw = normalize(parts.slice(1).join('='));
+        if (!code || !valueRaw) return;
+        if (valueRaw.endsWith('%')) {
+          const pct = toNumber(valueRaw.slice(0, -1), 0);
+          if (pct > 0) map.set(code, { type: 'percent', value: pct });
+          return;
+        }
+        const amount = toNumber(valueRaw, 0);
+        if (amount > 0) map.set(code, { type: 'value', value: amount });
+      });
+      return map;
+    }
+
+    function parseSQLiteDate(dateText) {
+      const raw = normalize(dateText);
+      if (!raw) return null;
+      const iso = raw.replace(' ', 'T');
+      const dt = new Date(iso);
+      if (Number.isNaN(dt.getTime())) return null;
+      return dt;
+    }
+
+    function formatDateTime(dateText) {
+      const dt = parseSQLiteDate(dateText);
+      if (!dt) return '-';
+      return dt.toLocaleString();
+    }
+
+    function formatDurationSince(startText, endText) {
+      const start = parseSQLiteDate(startText);
+      if (!start) return '-';
+      const end = parseSQLiteDate(endText) || new Date();
+      let diff = Math.max(0, Math.floor((end.getTime() - start.getTime()) / 1000));
+      const days = Math.floor(diff / 86400);
+      diff -= days * 86400;
+      const hours = Math.floor(diff / 3600);
+      diff -= hours * 3600;
+      const minutes = Math.floor(diff / 60);
+      const seconds = diff - minutes * 60;
+      const parts = [];
+      if (days > 0) parts.push(days + 'd');
+      parts.push(String(hours).padStart(2, '0') + 'h');
+      parts.push(String(minutes).padStart(2, '0') + 'm');
+      parts.push(String(seconds).padStart(2, '0') + 's');
+      return parts.join(' ');
+    }
+
+    function isCarritoOperativoActivo(carrito) {
+      if (!carrito) return false;
+      const estado = normalize(carrito.estado) || 'activo';
+      const estadoCarrito = normalize(carrito.estado_carrito) || 'abierto';
+      return estado === 'activo' && estadoCarrito !== 'cerrado';
+    }
+
+    function getStationPaymentBreakdown(carrito) {
+      const totalBase = Number((carrito && carrito.total) || 0);
+      const caps = getDiscountCapabilities();
+      let discountLabel = 'Sin descuento';
+      let discountValue = 0;
+      let discountType = 'none';
+      let discountCodeApplied = '';
+
+      const currentType = normalize(state.stationDiscount.type) || 'none';
+      const currentValue = Math.max(0, toNumber(state.stationDiscount.value, 0));
+      const currentCode = normalize(state.stationDiscount.code).toUpperCase();
+
+      if (caps.enabled) {
+        if (currentType === 'percent' && caps.allowPercent) {
+          const pct = Math.max(0, Math.min(100, currentValue));
+          discountValue = roundMoney(totalBase * (pct / 100));
+          discountType = 'percent';
+          discountLabel = 'Descuento por porcentaje (' + pct.toFixed(2) + '%)';
+        } else if (currentType === 'value' && caps.allowValue) {
+          discountValue = Math.max(0, Math.min(totalBase, roundMoney(currentValue)));
+          discountType = 'value';
+          discountLabel = 'Descuento en valor fijo';
+        } else if (currentType === 'code' && caps.allowCode) {
+          const map = parseDiscountCodesMap(caps.rawCodes);
+          const match = map.get(currentCode);
+          if (match) {
+            if (match.type === 'percent') {
+              const pctCode = Math.max(0, Math.min(100, Number(match.value || 0)));
+              discountValue = roundMoney(totalBase * (pctCode / 100));
+              discountLabel = 'Código ' + currentCode + ' (' + pctCode.toFixed(2) + '%)';
+              discountType = 'code';
+              discountCodeApplied = currentCode;
+            } else {
+              discountValue = Math.max(0, Math.min(totalBase, roundMoney(Number(match.value || 0))));
+              discountLabel = 'Código ' + currentCode + ' (valor fijo)';
+              discountType = 'code';
+              discountCodeApplied = currentCode;
+            }
+          } else if (currentCode) {
+            discountLabel = 'Código no válido';
+          }
+        }
+      }
+
+      const maxReturn = Math.max(0, totalBase - discountValue);
+      const devolucion = Math.max(0, Math.min(maxReturn, roundMoney(toNumber(state.stationDiscount.devolucion, 0))));
+      const totalPagar = Math.max(0, roundMoney(totalBase - discountValue - devolucion));
+
+      return {
+        totalBase: roundMoney(totalBase),
+        discountLabel: discountLabel,
+        discountValue: roundMoney(discountValue),
+        devolucion: roundMoney(devolucion),
+        totalPagar: totalPagar,
+        discountType: discountType,
+        discountCodeApplied: discountCodeApplied
+      };
+    }
+
+    function roundMoney(value) {
+      return Math.round(Number(value || 0) * 100) / 100;
+    }
+
     function printServiceOrderIfEnabled(itemPayload) {
       const cfg = loadEmpresaGeneralConfig();
       const productos = cfg && cfg.productos && typeof cfg.productos === 'object' ? cfg.productos : {};
@@ -302,6 +494,141 @@
         printWindow.print();
         printWindow.close();
       }, 250);
+    }
+
+    function setStationPaymentMessage(text, isError) {
+      setMessage('stationPaymentMsg', text, isError);
+    }
+
+    function syncStationDiscountFromInputs() {
+      state.stationDiscount.type = normalize(document.getElementById('discountType').value) || 'none';
+      state.stationDiscount.value = Math.max(0, toNumber(document.getElementById('discountValue').value, 0));
+      state.stationDiscount.code = normalize(document.getElementById('discountCode').value).toUpperCase();
+      state.stationDiscount.devolucion = Math.max(0, toNumber(document.getElementById('devolucionMonto').value, 0));
+    }
+
+    function renderStationPaymentPanel(carrito) {
+      const panel = document.getElementById('stationCheckoutPanel');
+      const stationPanel = document.getElementById('stationContextPanel');
+      if (!state.stationMode || !carrito) {
+        panel.style.display = 'none';
+        stationPanel.style.display = 'none';
+        return;
+      }
+
+      panel.style.display = '';
+      stationPanel.style.display = '';
+
+      const caps = getDiscountCapabilities();
+      const selectedActive = isCarritoOperativoActivo(carrito);
+      const activado = formatDateTime(carrito.activado_en);
+      const pagado = formatDateTime(carrito.pagado_en);
+      const duration = formatDurationSince(carrito.activado_en, selectedActive ? '' : carrito.pagado_en);
+
+      document.getElementById('stationContextTitle').textContent = 'Estación #' + state.stationID + (state.stationName ? (' - ' + state.stationName) : '');
+      document.getElementById('stationStateSummary').textContent =
+        'Carrito: ' + (normalize(carrito.nombre) || '-') +
+        ' | Código: ' + (normalize(carrito.codigo) || '-') +
+        ' | Estado: ' + (normalize(carrito.estado) || 'activo') +
+        ' | Operación: ' + (normalize(carrito.estado_carrito) || 'abierto') +
+        ' | Activado: ' + activado +
+        ' | Tiempo activo: ' + duration +
+        (normalize(carrito.pagado_en) ? (' | Último pago: ' + pagado) : '');
+
+      const block = document.getElementById('stationDiscountSettings');
+      const breakdownEl = document.getElementById('stationPaymentBreakdown');
+      const btnPay = document.getElementById('btnPagarCarrito');
+      const btnActivate = document.getElementById('btnActivarSesionCarrito');
+
+      block.style.display = caps.enabled ? '' : 'none';
+      btnPay.style.display = selectedActive ? '' : 'none';
+      btnActivate.style.display = selectedActive ? 'none' : '';
+
+      const discountTypeEl = document.getElementById('discountType');
+      const discountValueEl = document.getElementById('discountValue');
+      const discountCodeEl = document.getElementById('discountCode');
+      const devolucionEl = document.getElementById('devolucionMonto');
+
+      discountTypeEl.disabled = !selectedActive || !caps.enabled;
+      discountValueEl.disabled = !selectedActive || !caps.enabled;
+      discountCodeEl.disabled = !selectedActive || !caps.enabled;
+      devolucionEl.disabled = !selectedActive;
+
+      Array.from(discountTypeEl.options).forEach(function(opt) {
+        if (opt.value === 'percent') opt.disabled = !caps.allowPercent;
+        if (opt.value === 'code') opt.disabled = !caps.allowCode;
+        if (opt.value === 'value') opt.disabled = !caps.allowValue;
+      });
+
+      syncStationDiscountFromInputs();
+      const pay = getStationPaymentBreakdown(carrito);
+
+      breakdownEl.textContent =
+        'Subtotal carrito: ' + formatAmount(pay.totalBase, carrito.moneda) +
+        ' | ' + pay.discountLabel + ': -' + formatAmount(pay.discountValue, carrito.moneda) +
+        ' | Devolución: -' + formatAmount(pay.devolucion, carrito.moneda) +
+        ' | Total a pagar: ' + formatAmount(pay.totalPagar, carrito.moneda);
+
+      if (!caps.enabled) {
+        setStationPaymentMessage('Los descuentos están desactivados en Configuración de empresa para esta empresa.', false);
+      } else if (!selectedActive) {
+        setStationPaymentMessage('Carrito inactivo. Actívalo para iniciar una nueva sesión de estación.', false);
+      } else {
+        setStationPaymentMessage('', false);
+      }
+
+      document.getElementById('itemForm').style.display = selectedActive ? '' : 'none';
+      if (!selectedActive) {
+        setMessage('itemMsg', 'El carrito está inactivo. Debes activarlo para agregar productos o servicios.', true);
+      }
+    }
+
+    async function activateStationSession(resetItems) {
+      const selected = getSelectedCarrito();
+      if (!selected) return;
+      try {
+        const res = await fetch('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(selected.id) + '&action=activar_estacion&reset_items=' + (resetItems ? '1' : '0'), {
+          method: 'PUT'
+        });
+        await ensureOk(res);
+        setStationPaymentMessage('Carrito de estación activado.', false);
+        await loadCarritos();
+        await loadItems();
+      } catch (err) {
+        setStationPaymentMessage(err.message || 'No se pudo activar el carrito de estación.', true);
+      }
+    }
+
+    async function payStationSession() {
+      const selected = getSelectedCarrito();
+      if (!selected) return;
+      if (!isCarritoOperativoActivo(selected)) {
+        setStationPaymentMessage('El carrito ya está inactivo.', true);
+        return;
+      }
+
+      const pay = getStationPaymentBreakdown(selected);
+      if (!confirm('Confirmar pago y cierre del carrito por ' + formatAmount(pay.totalPagar, selected.moneda) + '?')) return;
+
+      try {
+        const res = await fetch('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(selected.id) + '&action=pagar_estacion', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            descuento_tipo: pay.discountType,
+            descuento_codigo: pay.discountCodeApplied,
+            descuento_valor: pay.discountValue,
+            devolucion_total: pay.devolucion,
+            total_pagado: pay.totalPagar
+          })
+        });
+        await ensureOk(res);
+        setStationPaymentMessage('Pago registrado. El carrito quedó inactivo.', false);
+        await loadCarritos();
+        await loadItems();
+      } catch (err) {
+        setStationPaymentMessage(err.message || 'No se pudo cerrar el carrito por pago.', true);
+      }
     }
 
     function formatAmount(value, moneda) {
@@ -513,6 +840,34 @@
 
     function renderCarritos() {
       const box = document.getElementById('carritosList');
+
+      if (state.stationMode) {
+        const selected = getSelectedCarrito();
+        if (!selected) {
+          box.textContent = 'No se encontró el carrito asociado a esta estación.';
+          renderStationPaymentPanel(null);
+          return;
+        }
+
+        const estado = normalize(selected.estado) || 'activo';
+        const estadoCarrito = normalize(selected.estado_carrito) || 'abierto';
+        const cliente = normalize(selected.cliente_nombre) || 'Consumidor final';
+        const activeDuration = formatDurationSince(selected.activado_en, estado === 'activo' ? '' : selected.pagado_en);
+
+        box.innerHTML = '<section class="card empresa-section">' +
+          '<div class="empresa-section-header"><h3 style="margin:0;">Carrito asociado a la estación</h3></div>' +
+          '<p class="form-help" style="margin:0;">Cliente: ' + escapeHtml(cliente) +
+          ' | Estado: ' + escapeHtml(estado) +
+          ' | Operación: ' + escapeHtml(estadoCarrito) +
+          ' | Activado: ' + escapeHtml(formatDateTime(selected.activado_en)) +
+          ' | Tiempo activo: ' + escapeHtml(activeDuration) +
+          '</p>' +
+          '</section>';
+
+        renderStationPaymentPanel(selected);
+        return;
+      }
+
       if (!state.carritos.length) {
         box.textContent = 'No hay carritos registrados para esta empresa.';
         if (!state.selectedCarritoID) {
@@ -654,6 +1009,8 @@
           }
         };
       });
+
+      renderStationPaymentPanel(null);
     }
 
     function renderResumen() {
@@ -661,30 +1018,33 @@
       const title = document.getElementById('itemsTitle');
       const selected = getSelectedCarrito();
       if (!selected) {
-        title.textContent = 'Items del carrito';
-        target.textContent = 'Selecciona un carrito para agregar items.';
+        title.textContent = state.stationMode ? 'Items de la estación' : 'Items del carrito';
+        target.textContent = state.stationMode ? 'Se está preparando el carrito asociado a la estación.' : 'Selecciona un carrito para agregar items.';
         return;
       }
 
-      title.textContent = 'Items del carrito: ' + (normalize(selected.nombre) || 'sin nombre');
+      title.textContent = (state.stationMode ? 'Items de estación: ' : 'Items del carrito: ') + (normalize(selected.nombre) || 'sin nombre');
       target.textContent = 'Código: ' + (normalize(selected.codigo) || '-') +
         ' | Estado: ' + (normalize(selected.estado_carrito) || 'abierto') +
         ' | Subtotal: ' + formatAmount(selected.subtotal, selected.moneda) +
         ' | Descuento: ' + formatAmount(selected.descuento_total, selected.moneda) +
         ' | Impuesto: ' + formatAmount(selected.impuesto_total, selected.moneda) +
-        ' | Total: ' + formatAmount(selected.total, selected.moneda);
+        ' | Total: ' + formatAmount(selected.total, selected.moneda) +
+        (normalize(selected.pagado_en) ? (' | Pagado: ' + formatAmount(selected.total_pagado, selected.moneda)) : '');
     }
 
     function renderItems() {
       const box = document.getElementById('itemsList');
       const selected = getSelectedCarrito();
       if (!selected) {
-        box.textContent = 'Selecciona un carrito para gestionar sus items.';
+        box.textContent = state.stationMode ? 'Se está preparando el carrito de la estación.' : 'Selecciona un carrito para gestionar sus items.';
         return;
       }
 
+      const readOnlyMode = state.stationMode && !isCarritoOperativoActivo(selected);
+
       if (!state.items.length) {
-        box.textContent = 'Este carrito aún no tiene items.';
+        box.textContent = readOnlyMode ? 'Este carrito no tiene items activos para mostrar.' : 'Este carrito aún no tiene items.';
         return;
       }
 
@@ -718,9 +1078,11 @@
           '<td>' + Number(item.total_linea || 0).toFixed(2) + '</td>' +
           '<td>' + estado + '</td>' +
           '<td class="actions">' +
-            '<button data-id="' + item.id + '" class="editItem btn secondary">Editar</button> ' +
-            '<button data-id="' + item.id + '" class="delItem btn danger">Eliminar</button> ' +
-            '<button data-id="' + item.id + '" data-estado="' + estado + '" class="toggleItem btn">' + toggleLabel + '</button>' +
+            (readOnlyMode
+              ? '<span class="form-help">Solo lectura</span>'
+              : ('<button data-id="' + item.id + '" class="editItem btn secondary">Editar</button> ' +
+                '<button data-id="' + item.id + '" class="delItem btn danger">Eliminar</button> ' +
+                '<button data-id="' + item.id + '" data-estado="' + estado + '" class="toggleItem btn">' + toggleLabel + '</button>')) +
           '</td>';
         tbody.appendChild(tr);
       });
@@ -728,6 +1090,10 @@
 
       box.innerHTML = '';
       box.appendChild(table);
+
+      if (readOnlyMode) {
+        return;
+      }
 
       document.querySelectorAll('.editItem').forEach(function(btn) {
         btn.onclick = function() {
@@ -798,7 +1164,11 @@
         if (!res.ok) return;
         const empresa = await res.json();
         if (empresa && empresa.nombre) {
-          document.getElementById('pageTitle').textContent = 'Carrito de compras - ' + empresa.nombre;
+          if (state.stationMode) {
+            document.getElementById('pageTitle').textContent = 'Carrito de estación - ' + empresa.nombre;
+          } else {
+            document.getElementById('pageTitle').textContent = 'Carrito de compras - ' + empresa.nombre;
+          }
         }
       } catch (_) {}
     }
@@ -850,6 +1220,57 @@
       renderCarritos();
       renderResumen();
       renderItems();
+    }
+
+    function applyStationModeUI() {
+      const stationMode = state.stationMode;
+      document.getElementById('addCarritoBtn').style.display = stationMode ? 'none' : '';
+      document.getElementById('carritoForm').style.display = stationMode ? 'none' : document.getElementById('carritoForm').style.display;
+      document.getElementById('carritoSearchBlock').style.display = stationMode ? 'none' : '';
+      document.getElementById('moduleHelp').textContent = stationMode
+        ? 'Modo estación: esta vista trabaja únicamente con el carrito asociado a la estación seleccionada.'
+        : 'Este módulo permite manejar múltiples carritos por empresa y deja preparada la base operativa para facturación electrónica.';
+    }
+
+    async function ensureStationCarritoLifecycle() {
+      if (!state.stationMode) return;
+
+      let selected = getSelectedCarrito();
+      if (!selected && state.selectedCarritoCode) {
+        const createPayload = {
+          empresa_id: Number(state.empresaID),
+          codigo: state.selectedCarritoCode,
+          nombre: state.stationName || ('Estación ' + state.stationID),
+          canal_venta: 'mostrador',
+          moneda: 'COP',
+          referencia_externa: state.stationID > 0 ? ('ESTACION_' + state.stationID) : '',
+          observaciones: 'Carrito automático de estación'
+        };
+        const createRes = await fetch('/api/empresa/carritos_compra', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(createPayload)
+        });
+        await ensureOk(createRes);
+        const body = await createRes.json();
+        state.selectedCarritoID = Number((body && body.id) || 0);
+        await loadCarritos();
+        selected = getSelectedCarrito();
+      }
+
+      if (!selected) return;
+
+      const isActive = isCarritoOperativoActivo(selected);
+      const hasActivationStamp = !!normalize(selected.activado_en);
+
+      if (!isActive) {
+        await activateStationSession(true);
+        return;
+      }
+
+      if (!hasActivationStamp) {
+        await activateStationSession(false);
+      }
     }
 
     async function loadItems() {
@@ -925,6 +1346,12 @@
 
       if (!state.selectedCarritoID) {
         setMessage('itemMsg', 'Selecciona primero un carrito', true);
+        return;
+      }
+
+      const currentCarrito = getSelectedCarrito();
+      if (state.stationMode && !isCarritoOperativoActivo(currentCarrito)) {
+        setMessage('itemMsg', 'El carrito de esta estación está inactivo. Actívalo para continuar.', true);
         return;
       }
 
@@ -1048,10 +1475,41 @@
       document.getElementById('buscarCarritoBtn').click();
     });
 
+    ['discountType', 'discountValue', 'discountCode', 'devolucionMonto'].forEach(function(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('input', function() {
+        const selected = getSelectedCarrito();
+        if (!selected) return;
+        renderStationPaymentPanel(selected);
+      });
+      el.addEventListener('change', function() {
+        const selected = getSelectedCarrito();
+        if (!selected) return;
+        renderStationPaymentPanel(selected);
+      });
+    });
+
+    document.getElementById('btnRecalcularCobro').addEventListener('click', function() {
+      const selected = getSelectedCarrito();
+      if (!selected) return;
+      renderStationPaymentPanel(selected);
+    });
+
+    document.getElementById('btnPagarCarrito').addEventListener('click', async function() {
+      await payStationSession();
+    });
+
+    document.getElementById('btnActivarSesionCarrito').addEventListener('click', async function() {
+      await activateStationSession(true);
+    });
+
     (async function init() {
       const empresaID = Number(getQueryParam('empresa_id') || 0);
       const carritoID = Number(getQueryParam('carrito_id') || 0);
       const carritoCode = normalizedCode(getQueryParam('carrito_codigo') || '');
+      const stationID = Number(getQueryParam('estacion_id') || 0);
+      const stationName = normalize(getQueryParam('estacion_nombre') || '');
       if (!empresaID) {
         document.getElementById('carritosList').textContent = 'empresa_id requerido en la URL';
         document.getElementById('addCarritoBtn').disabled = true;
@@ -1059,11 +1517,23 @@
       }
 
       state.empresaID = empresaID;
+      state.stationMode = stationID > 0 || !!carritoCode;
+      state.stationID = stationID;
+      state.stationName = stationName;
       if (carritoID > 0) {
         state.selectedCarritoID = carritoID;
       } else if (carritoCode) {
         state.selectedCarritoCode = carritoCode;
       }
+
+      if (state.stationMode) {
+        if (!state.stationName && state.stationID > 0) {
+          state.stationName = 'Estación ' + state.stationID;
+        }
+      }
+
+      applyStationModeUI();
+
       document.getElementById('empresa_id').value = String(empresaID);
       document.getElementById('carritoForm').style.display = 'none';
       document.getElementById('cancelCarritoBtn').style.display = 'none';
@@ -1073,6 +1543,10 @@
       await loadClientes();
       try {
         await loadCarritos();
+        if (state.stationMode) {
+          await ensureStationCarritoLifecycle();
+          await loadCarritos();
+        }
         if (state.selectedCarritoID) {
           await loadItems();
         }

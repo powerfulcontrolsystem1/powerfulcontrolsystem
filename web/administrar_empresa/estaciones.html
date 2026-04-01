@@ -36,11 +36,12 @@
       return 'EST-' + empresaId + '-' + stationID;
     }
 
-    function openStationCarrito(stationID) {
+    function openStationCarrito(stationID, stationName) {
       if (!empresaId || !stationID) return;
       const carritoCode = getCarritoCodeForStation(stationID);
       const url = '/administrar_empresa/carrito_de_compras.html?empresa_id=' + encodeURIComponent(empresaId) +
         '&estacion_id=' + encodeURIComponent(stationID) +
+        '&estacion_nombre=' + encodeURIComponent(stationName || ('Estación ' + stationID)) +
         '&carrito_codigo=' + encodeURIComponent(carritoCode);
       window.location.href = url;
     }
@@ -74,7 +75,7 @@
       }
       grid.innerHTML = cfg.estaciones.map(est => {
         const stationID = Number(est.id || 0);
-        return '<article class="portal-card" data-estacion-id="' + stationID + '" tabindex="0" role="button" aria-label="Abrir carrito de ' + sanitize(est.nombre) + '">' +
+        return '<article class="portal-card" data-estacion-id="' + stationID + '" data-estacion-nombre="' + sanitize(est.nombre) + '" tabindex="0" role="button" aria-label="Abrir carrito de ' + sanitize(est.nombre) + '">' +
           '<h3>' + sanitize(est.nombre) + '</h3>' +
           '<p>Estación #' + stationID + '</p>' +
           '</article>';
@@ -84,13 +85,15 @@
         card.style.cursor = 'pointer';
         card.addEventListener('click', ev => {
           const stationID = Number(card.getAttribute('data-estacion-id') || 0);
-          openStationCarrito(stationID);
+          const stationName = String(card.getAttribute('data-estacion-nombre') || '').trim();
+          openStationCarrito(stationID, stationName);
         });
         card.addEventListener('keydown', ev => {
           if (ev.key !== 'Enter' && ev.key !== ' ') return;
           ev.preventDefault();
           const stationID = Number(card.getAttribute('data-estacion-id') || 0);
-          openStationCarrito(stationID);
+          const stationName = String(card.getAttribute('data-estacion-nombre') || '').trim();
+          openStationCarrito(stationID, stationName);
         });
       });
     }

@@ -1,5 +1,42 @@
 Descripcion de archivos del proyecto
 
+Actualización 2026-04-01: Flujo profesional de carrito por estación (activación, cobro y estados)
+
+- web/administrar_empresa/estaciones.html:
+	- Al abrir una estación ahora se envía también `estacion_nombre` al módulo de carrito para mostrar contexto completo de la estación.
+
+- web/administrar_empresa/carrito_de_compras.html:
+	- Se incorporó `modo estación`: al entrar desde estaciones muestra únicamente el carrito asociado a esa estación.
+	- Incluye panel de estado del carrito con hora de activación, último pago y tiempo activo transcurrido.
+	- Incluye panel de cobro con totalización profesional: subtotal, descuento, devolución y total a pagar.
+	- Soporta descuentos por porcentaje, código o valor fijo (según configuración de empresa).
+	- Permite activar sesión de carrito de estación y cerrar por pago (`Pagar y cerrar carrito`).
+	- Mantiene operación por empresa (`empresa_id`) y por estación (`carrito_codigo`).
+
+- web/administrar_empresa/configuracion.html:
+	- Se amplió la tarjeta de configuración para activar/desactivar descuentos en carrito y definir modalidades permitidas.
+	- Se añadió configuración de códigos de descuento (`CODIGO=10%` o `CODIGO=5000`).
+
+- backend/db/carritos_compras.go:
+	- Se añadieron campos de sesión/estado de estación en `carritos_compras`: `activado_en`, `pagado_en`, `descuento_tipo`, `descuento_codigo`, `descuento_valor`, `devolucion_total`, `total_pagado`.
+	- Se añadieron funciones de negocio:
+		- `ActivateCarritoStationSession` (activa sesión de estación y opcionalmente reinicia items).
+		- `PayCarritoStationSession` (cierra por pago y marca carrito inactivo con resumen de cobro).
+
+- backend/handlers/carritos_compras.go:
+	- Se añadieron acciones HTTP para el flujo por estación:
+		- `PUT /api/empresa/carritos_compra?action=activar_estacion`
+		- `PUT /api/empresa/carritos_compra?action=pagar_estacion`
+
+Actualización 2026-04-01: Ajustes en seleccionar empresa (tarjetas uniformes + navegación en frame)
+
+- web/seleccionar_empresa.html: se ajustó la navegación lateral para que `Licencias`, `Administradores` y `Reportes globales` se abran en el frame derecho del layout, sin reemplazar la vista completa.
+	- También se mejoró la experiencia del panel derecho alternando entre vista de empresas y contenido en iframe.
+
+- web/estilos.css: se añadieron reglas específicas para que las tarjetas de empresas en seleccionar empresa mantengan tamaño uniforme, evitando diferencias de altura entre tarjetas.
+
+- web/super/reportes_globales.html: nuevo archivo para la vista de reportes globales en el módulo `super`, preparado para cargarse dentro del frame derecho.
+
 Actualización 2026-04-01: Nueva subpágina de configuración operativa por empresa
 
 - web/administrar_empresa/configuracion.html: nueva subpágina del módulo administrar empresa para configuración operativa.

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"strings"
@@ -57,6 +58,72 @@ func EmpresaCarritosCompraHandler(dbEmp *sql.DB) http.HandlerFunc {
 
 		case http.MethodPut:
 			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+			if action == "activar_estacion" {
+				empresaID, errEmp := parseEmpresaIDQuery(r)
+				if errEmp != nil {
+					http.Error(w, errEmp.Error(), http.StatusBadRequest)
+					return
+				}
+				id, errID := parseInt64Query(r, "id")
+				if errID != nil {
+					http.Error(w, errID.Error(), http.StatusBadRequest)
+					return
+				}
+				resetItems := strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("reset_items")), "1") ||
+					strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("reset_items")), "true")
+				if err := dbpkg.ActivateCarritoStationSession(dbEmp, empresaID, id, resetItems); err != nil {
+					log.Printf("[carritos] activar_estacion empresa_id=%d id=%d reset_items=%v error: %v", empresaID, id, resetItems, err)
+					http.Error(w, "No se pudo activar el carrito de estación", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "estado": "activo", "estado_carrito": "abierto"})
+				return
+			}
+
+			if action == "pagar_estacion" {
+				empresaID, errEmp := parseEmpresaIDQuery(r)
+				if errEmp != nil {
+					http.Error(w, errEmp.Error(), http.StatusBadRequest)
+					return
+				}
+				id, errID := parseInt64Query(r, "id")
+				if errID != nil {
+					http.Error(w, errID.Error(), http.StatusBadRequest)
+					return
+				}
+
+				var payload struct {
+					DescuentoTipo   string  `json:"descuento_tipo"`
+					DescuentoCodigo string  `json:"descuento_codigo"`
+					DescuentoValor  float64 `json:"descuento_valor"`
+					DevolucionTotal float64 `json:"devolucion_total"`
+					TotalPagado     float64 `json:"total_pagado"`
+				}
+				if r.Body != nil {
+					if err := json.NewDecoder(r.Body).Decode(&payload); err != nil && err != io.EOF {
+						http.Error(w, "JSON invalido", http.StatusBadRequest)
+						return
+					}
+				}
+
+				if err := dbpkg.PayCarritoStationSession(
+					dbEmp,
+					empresaID,
+					id,
+					payload.DescuentoTipo,
+					payload.DescuentoCodigo,
+					payload.DescuentoValor,
+					payload.DevolucionTotal,
+					payload.TotalPagado,
+				); err != nil {
+					log.Printf("[carritos] pagar_estacion empresa_id=%d id=%d error: %v", empresaID, id, err)
+					http.Error(w, "No se pudo cerrar el carrito por pago", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "estado": "inactivo", "estado_carrito": "cerrado"})
+				return
+			}
+
 			if action == "activar" || action == "desactivar" {
 				empresaID, errEmp := parseEmpresaIDQuery(r)
 				if errEmp != nil {
