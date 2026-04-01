@@ -35,6 +35,7 @@ type EmpresaConfiguracionAvanzada struct {
 	ConsecutivoHasta          int64  `json:"consecutivo_hasta,omitempty"`
 	ProximoConsecutivo        int64  `json:"proximo_consecutivo,omitempty"`
 	FormatoImpresion          string `json:"formato_impresion,omitempty"`
+	ImprimirCopiaFactura      bool   `json:"imprimir_copia_factura"`
 	MostrarLogo               bool   `json:"mostrar_logo"`
 	LogoURL                   string `json:"logo_url,omitempty"`
 	PieFactura                string `json:"pie_factura,omitempty"`
@@ -77,6 +78,7 @@ func EnsureEmpresaConfiguracionAvanzadaSchema(dbConn *sql.DB) error {
 			consecutivo_hasta INTEGER DEFAULT 999999,
 			proximo_consecutivo INTEGER DEFAULT 1,
 			formato_impresion TEXT DEFAULT 'carta',
+			imprimir_copia_factura INTEGER DEFAULT 0,
 			mostrar_logo INTEGER DEFAULT 1,
 			logo_url TEXT,
 			pie_factura TEXT,
@@ -166,6 +168,9 @@ func EnsureEmpresaConfiguracionAvanzadaSchema(dbConn *sql.DB) error {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "formato_impresion", "TEXT DEFAULT 'carta'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "imprimir_copia_factura", "INTEGER DEFAULT 0"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "mostrar_logo", "INTEGER DEFAULT 1"); err != nil {
@@ -265,6 +270,7 @@ func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaC
 		COALESCE(consecutivo_hasta, 999999),
 		COALESCE(proximo_consecutivo, 1),
 		COALESCE(formato_impresion, 'carta'),
+		COALESCE(imprimir_copia_factura, 0),
 		COALESCE(mostrar_logo, 1),
 		COALESCE(logo_url, ''),
 		COALESCE(pie_factura, ''),
@@ -279,6 +285,7 @@ func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaC
 	LIMIT 1`, empresaID)
 
 	cfg := defaultConfigAvanzada(empresaID)
+	var imprimirCopiaFacturaInt int
 	var mostrarLogoInt int
 	if err := row.Scan(
 		&cfg.ID,
@@ -307,6 +314,7 @@ func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaC
 		&cfg.ConsecutivoHasta,
 		&cfg.ProximoConsecutivo,
 		&cfg.FormatoImpresion,
+		&imprimirCopiaFacturaInt,
 		&mostrarLogoInt,
 		&cfg.LogoURL,
 		&cfg.PieFactura,
@@ -322,6 +330,7 @@ func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaC
 		}
 		return nil, err
 	}
+	cfg.ImprimirCopiaFactura = imprimirCopiaFacturaInt == 1
 	cfg.MostrarLogo = mostrarLogoInt == 1
 	return &cfg, nil
 }
@@ -361,6 +370,11 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 		mostrarLogoInt = 1
 	}
 
+	imprimirCopiaFacturaInt := 0
+	if payload.ImprimirCopiaFactura {
+		imprimirCopiaFacturaInt = 1
+	}
+
 	_, err := dbConn.Exec(`INSERT INTO empresa_configuracion_avanzada (
 		empresa_id,
 		tipo_documento_emisor,
@@ -387,6 +401,7 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 		consecutivo_hasta,
 		proximo_consecutivo,
 		formato_impresion,
+		imprimir_copia_factura,
 		mostrar_logo,
 		logo_url,
 		pie_factura,
@@ -396,7 +411,7 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)
 	ON CONFLICT(empresa_id) DO UPDATE SET
 		tipo_documento_emisor = excluded.tipo_documento_emisor,
 		nit = excluded.nit,
@@ -422,6 +437,7 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 		consecutivo_hasta = excluded.consecutivo_hasta,
 		proximo_consecutivo = excluded.proximo_consecutivo,
 		formato_impresion = excluded.formato_impresion,
+		imprimir_copia_factura = excluded.imprimir_copia_factura,
 		mostrar_logo = excluded.mostrar_logo,
 		logo_url = excluded.logo_url,
 		pie_factura = excluded.pie_factura,
@@ -458,6 +474,7 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 		payload.ConsecutivoHasta,
 		payload.ProximoConsecutivo,
 		payload.FormatoImpresion,
+		imprimirCopiaFacturaInt,
 		mostrarLogoInt,
 		strings.TrimSpace(payload.LogoURL),
 		strings.TrimSpace(payload.PieFactura),

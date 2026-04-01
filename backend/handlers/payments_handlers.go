@@ -1,0 +1,1522 @@
+package handlers
+
+import (
+	"bytes"
+	"crypto/hmac"
+	"crypto/sha256"
+	"crypto/subtle"
+	"database/sql"
+	"encoding/base64"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"log"
+	"math"
+	"net/http"
+	"net/url"
+	"os"
+	"regexp"
+	"strconv"
+	"strings"
+	"time"
+
+	dbpkg "github.com/you/pos-backend/db"
+	"github.com/you/pos-backend/utils"
+)
+
+// TiposLicenciasHandler placeholder (removed from UI)
+func TiposLicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "tipos_de_licencia API removed", http.StatusNotFound)
+	}
+}
+
+// LicenciasHandler maneja CRUD de licencias
+func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			licencias, err := dbpkg.GetLicencias(dbSuper)
+			if err != nil {
+				log.Println("GET /super/api/licencias error:", err)
+				http.Error(w, "failed to query licencias: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(licencias)
+			return
+		case http.MethodPost:
+			var payload struct {
+				TipoID       int64   `json:"tipo_id"`
+				Nombre       string  `json:"nombre"`
+				Descripcion  string  `json:"descripcion"`
+				Valor        float64 `json:"valor"`
+				DuracionDias int     `json:"duracion_dias"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "invalid payload", http.StatusBadRequest)
+				return
+			}
+
+			log.Printf("POST /super/api/licencias payload: TipoID=%d Nombre=%q", payload.TipoID, payload.Nombre)
+			if payload.Nombre == "" {
+				http.Error(w, "nombre required", http.StatusBadRequest)
+				return
+			}
+			id, err := dbpkg.CreateLicencia(dbSuper, payload.TipoID, payload.Nombre, payload.Descripcion, payload.Valor, payload.DuracionDias)
+			if err != nil {
+				log.Println("POST /super/api/licencias error:", err)
+				http.Error(w, "failed to create licencia: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]interface{}{"id": id})
+			return
+		case http.MethodPut:
+			q := r.URL.Query()
+			idStr := q.Get("id")
+			if idStr == "" {
+				http.Error(w, "id required", http.StatusBadRequest)
+				return
+			}
+			id, err := strconv.ParseInt(idStr, 10, 64)
+			if err != nil {
+				http.Error(w, "invalid id", http.StatusBadRequest)
+				return
+			}
+			// soporte para acción de activar/desactivar vía query param
+			if q.Get("action") == "activar" {
+				activoStr := q.Get("activo")
+				if activoStr == "" {
+					http.Error(w, "activo required (0 or 1)", http.StatusBadRequest)
+					return
+				}
+				act, err := strconv.Atoi(activoStr)
+				if err != nil || (act != 0 && act != 1) {
+					http.Error(w, "invalid activo value", http.StatusBadRequest)
+					return
+				}
+				if err := dbpkg.SetLicenciaActivo(dbSuper, id, act); err != nil {
+					log.Println("ACTIVAR /super/api/licencias error:", err)
+					http.Error(w, "failed to set activo: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
+			// actualización normal (payload JSON)
+			var payloadUpdate struct {
+				TipoID       int64   `json:"tipo_id"`
+				Nombre       string  `json:"nombre"`
+				Descripcion  string  `json:"descripcion"`
+				Valor        float64 `json:"valor"`
+				DuracionDias int     `json:"duracion_dias"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&payloadUpdate); err != nil {
+				http.Error(w, "invalid payload", http.StatusBadRequest)
+				return
+			}
+			if err := dbpkg.UpdateLicencia(dbSuper, id, payloadUpdate.TipoID, payloadUpdate.Nombre, payloadUpdate.Descripcion, payloadUpdate.Valor, payloadUpdate.DuracionDias); err != nil {
+				log.Println("PUT /super/api/licencias error:", err)
+				http.Error(w, "failed to update licencia: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+			return
+		case http.MethodDelete:
+			q := r.URL.Query()
+			idStr := q.Get("id")
+			if idStr == "" {
+				http.Error(w, "id required", http.StatusBadRequest)
+				return
+			}
+			id, err := strconv.ParseInt(idStr, 10, 64)
+			if err != nil {
+				http.Error(w, "invalid id", http.StatusBadRequest)
+				return
+			}
+			if err := dbpkg.DeleteLicencia(dbSuper, id); err != nil {
+				log.Println("DELETE /super/api/licencias error:", err)
+				http.Error(w, "failed to delete licencia: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+			return
+		default:
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+	}
+}
+
+// MercadoPagoCreatePreferenceHandler crea una preferencia en Mercado Pago y devuelve la respuesta API
+func MercadoPagoCreatePreferenceHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		var payload struct {
+			LicenciaID int64  `json:"licencia_id"`
+			EmpresaID  int64  `json:"empresa_id,omitempty"`
+			PayerEmail string `json:"payer_email,omitempty"`
+			PayerName  string `json:"payer_name,omitempty"`
+			Mode       string `json:"mode,omitempty"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			http.Error(w, "invalid payload: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		lic, err := dbpkg.GetLicenciaByID(dbSuper, payload.LicenciaID)
+		if err != nil || lic == nil {
+			http.Error(w, "licencia not found", http.StatusBadRequest)
+			return
+		}
+		// Preferir token almacenado en DB (configuraciones), fallback a variable de entorno
+		token := ""
+		if v, enc, err := dbpkg.GetConfigValue(dbSuper, "mercadopago.access_token"); err == nil && v != "" {
+			if enc {
+				if dec, derr := utils.DecryptString(v); derr == nil {
+					token = dec
+				} else {
+					log.Println("warning: failed to decrypt stored mercadopago.access_token:", derr)
+				}
+			} else {
+				token = v
+			}
+		}
+		if token == "" {
+			token = os.Getenv("MERCADOPAGO_ACCESS_TOKEN")
+		}
+		if token == "" {
+			http.Error(w, "MERCADOPAGO_ACCESS_TOKEN not configured", http.StatusInternalServerError)
+			return
+		}
+		tokenUpper := strings.ToUpper(strings.TrimSpace(token))
+		tokenIsTest := strings.HasPrefix(tokenUpper, "TEST-")
+		payerPrefillApplied := false
+
+		scheme := "http"
+		if r.TLS != nil {
+			scheme = "https"
+		}
+		baseURL := scheme + "://" + r.Host
+		successURL := baseURL + "/pagar_licencia.html?status=success"
+		failureURL := baseURL + "/pagar_licencia.html?status=failure"
+		pendingURL := baseURL + "/pagar_licencia.html?status=pending"
+		notificationURL := baseURL + "/mercadopago/webhook"
+		// Si el administrador configuró una URL de webhook externa (ej. ngrok o dominio público), usarla
+		if wurl, _, _, _, _ := dbpkg.GetConfigEntry(dbSuper, "mercadopago.webhook_url"); wurl != "" {
+			notificationURL = wurl
+		}
+
+		reqBody := map[string]interface{}{
+			"items": []map[string]interface{}{map[string]interface{}{
+				"title":       lic.Nombre,
+				"quantity":    1,
+				"currency_id": "COP",
+				"unit_price":  lic.Valor,
+			}},
+			"back_urls":          map[string]string{"success": successURL, "failure": failureURL, "pending": pendingURL},
+			"notification_url":   notificationURL,
+			"external_reference": fmt.Sprintf("licencia_%d_empresa_%d", payload.LicenciaID, payload.EmpresaID),
+		}
+		// En credenciales TEST no enviar prefill de payer para evitar mezcla test/productivo.
+		if !tokenIsTest && (payload.PayerEmail != "" || payload.PayerName != "") {
+			payer := map[string]string{}
+			if payload.PayerEmail != "" {
+				payer["email"] = payload.PayerEmail
+			}
+			if payload.PayerName != "" {
+				payer["first_name"] = payload.PayerName
+			}
+			reqBody["payer"] = payer
+			payerPrefillApplied = true
+		} else if tokenIsTest && (payload.PayerEmail != "" || payload.PayerName != "") {
+			log.Println("MercadoPagoCreatePreference: ignoring payer prefill because credential is TEST")
+		}
+		bodyBytes, _ := json.Marshal(reqBody)
+		log.Printf("MercadoPago request body (test_pref): %s", string(bodyBytes))
+		apiURL := "https://api.mercadopago.com/checkout/preferences"
+		req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(bodyBytes))
+		if err != nil {
+			http.Error(w, "failed to create request: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+token)
+		client := &http.Client{Timeout: 15 * time.Second}
+		resp, err := client.Do(req)
+		if err != nil {
+			http.Error(w, "request error: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer resp.Body.Close()
+		respBody, _ := io.ReadAll(resp.Body)
+		if resp.StatusCode >= 400 {
+			log.Println("MercadoPago API error:", resp.Status, string(respBody))
+			http.Error(w, "mercadopago API error: "+string(respBody), http.StatusInternalServerError)
+			return
+		}
+		var mpResp map[string]interface{}
+		if err := json.Unmarshal(respBody, &mpResp); err != nil {
+			http.Error(w, "invalid response from mercadopago: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Resolver URL de checkout según modo solicitado (sandbox/prod).
+		mode := strings.ToLower(strings.TrimSpace(payload.Mode))
+		preferSandbox := false
+		switch mode {
+		case "sandbox", "test":
+			preferSandbox = true
+		case "prod", "production", "live":
+			preferSandbox = false
+		case "":
+			// Modo automático: TEST -> sandbox, PRODUCCIÓN -> estándar.
+			preferSandbox = tokenIsTest
+		default:
+			preferSandbox = tokenIsTest
+		}
+
+		pickURL := func(keys ...string) string {
+			for _, k := range keys {
+				if v, ok := mpResp[k]; ok {
+					s := strings.TrimSpace(fmt.Sprint(v))
+					if s != "" && s != "<nil>" {
+						return s
+					}
+				}
+			}
+			return ""
+		}
+		checkoutURL := ""
+		checkoutMode := "prod"
+		if preferSandbox {
+			checkoutURL = pickURL("sandbox_init_point", "init_point")
+			checkoutMode = "sandbox"
+		} else {
+			checkoutURL = pickURL("init_point", "sandbox_init_point")
+		}
+		if checkoutURL != "" {
+			mpResp["checkout_url"] = checkoutURL
+			mpResp["checkout_mode"] = checkoutMode
+		}
+		if tokenIsTest {
+			mpResp["credential_env"] = "test"
+		} else {
+			mpResp["credential_env"] = "live"
+		}
+		mpResp["payer_prefill_applied"] = payerPrefillApplied
+		if tokenIsTest && checkoutMode == "prod" {
+			mpResp["warning"] = "Credencial TEST detectada: usa sandbox para evitar errores de mezcla test/productivo."
+		}
+		// Exponer ambas URLs para depuración/control desde frontend.
+		if v := pickURL("init_point"); v != "" {
+			mpResp["prod_checkout_url"] = v
+		}
+		if v := pickURL("sandbox_init_point"); v != "" {
+			mpResp["sandbox_checkout_url"] = v
+		}
+
+		// record preference in DB if possible
+		prefID := ""
+		if idv, ok := mpResp["id"]; ok {
+			prefID = fmt.Sprint(idv)
+		}
+		raw := string(respBody)
+		if _, err := dbpkg.CreateMPPaymentRecord(dbSuper, payload.LicenciaID, payload.EmpresaID, prefID, "", "preference_created", raw); err != nil {
+			log.Println("warning: failed to record MP preference in DB:", err)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(mpResp)
+	}
+}
+
+// MercadoPagoConfigHandler maneja la obtención y guardado de credenciales de Mercado Pago
+func MercadoPagoConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			access, enc, _, accessAct, _ := dbpkg.GetConfigEntry(dbSuper, "mercadopago.access_token")
+			publicKey, _, _, publicAct, _ := dbpkg.GetConfigEntry(dbSuper, "mercadopago.public_key")
+			webhookURL, _, _, webhookURLUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "mercadopago.webhook_url")
+			webhookSecret, secretEnc, _, webhookSecretUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "mercadopago.webhook_secret")
+			accessSet := false
+			accessMasked := ""
+			if access != "" {
+				accessSet = true
+				if enc {
+					// mostrar solo sufijo si está cifrado
+					if len(access) > 8 {
+						accessMasked = "****" + access[len(access)-4:]
+					} else {
+						accessMasked = "****"
+					}
+				} else {
+					if len(access) > 8 {
+						accessMasked = access[:4] + "****" + access[len(access)-4:]
+					} else {
+						accessMasked = "****"
+					}
+				}
+			}
+			pubMasked := ""
+			pubSet := false
+			if publicKey != "" {
+				pubSet = true
+				// mostrar fragmento de la clave pública (no sensible)
+				if len(publicKey) > 24 {
+					pubMasked = publicKey[:8] + "..." + publicKey[len(publicKey)-8:]
+				} else {
+					pubMasked = publicKey
+				}
+			}
+			// webhook masked info
+			webhookSet := false
+			webhookSecretSet := false
+			webhookSecretMasked := ""
+			if webhookURL != "" {
+				webhookSet = true
+			}
+			if webhookSecret != "" {
+				webhookSecretSet = true
+				if secretEnc {
+					if len(webhookSecret) > 8 {
+						webhookSecretMasked = "****" + webhookSecret[len(webhookSecret)-4:]
+					} else {
+						webhookSecretMasked = "****"
+					}
+				} else {
+					if len(webhookSecret) > 8 {
+						webhookSecretMasked = webhookSecret[:4] + "****" + webhookSecret[len(webhookSecret)-4:]
+					} else {
+						webhookSecretMasked = "****"
+					}
+				}
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"access_token_set":       accessSet,
+				"access_token_masked":    accessMasked,
+				"access_token_updated":   accessAct,
+				"public_key_set":         pubSet,
+				"public_key_masked":      pubMasked,
+				"public_key_updated":     publicAct,
+				"webhook_url_set":        webhookSet,
+				"webhook_url":            webhookURL,
+				"webhook_url_updated":    webhookURLUpdated,
+				"webhook_secret_set":     webhookSecretSet,
+				"webhook_secret_masked":  webhookSecretMasked,
+				"webhook_secret_updated": webhookSecretUpdated,
+				"encryption_available":   utils.EncryptionAvailable(),
+			})
+			return
+		case http.MethodPost, http.MethodPut:
+			var payload struct {
+				AccessToken    string `json:"access_token"`
+				PublicKey      string `json:"public_key"`
+				Encrypt        bool   `json:"encrypt"`
+				SkipValidation bool   `json:"skip_validation"`
+				WebhookURL     string `json:"webhook_url"`
+				WebhookSecret  string `json:"webhook_secret"`
+				WebhookEncrypt bool   `json:"webhook_encrypt"`
+			}
+			// payload for config save
+			// decode request body into payload
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "invalid payload: "+err.Error(), http.StatusBadRequest)
+				return
+			}
+			// If an access token is provided, validate it against Mercado Pago before saving
+			var validatedInfo map[string]interface{}
+			if payload.AccessToken != "" {
+				if payload.SkipValidation {
+					log.Println("MercadoPagoConfigHandler: skipping validation for access token save (admin requested)")
+					// mark as skipped so frontend can know
+					validatedInfo = map[string]interface{}{"skipped": true}
+				} else {
+					// validate token by calling /v1/users/me
+					client := &http.Client{Timeout: 10 * time.Second}
+					req, _ := http.NewRequest("GET", "https://api.mercadopago.com/v1/users/me", nil)
+					req.Header.Set("Authorization", "Bearer "+payload.AccessToken)
+					resp, err := client.Do(req)
+					if err != nil {
+						log.Printf("MercadoPago validation request error: %v", err)
+						http.Error(w, "validation request failed: "+err.Error(), http.StatusBadGateway)
+						return
+					}
+					defer resp.Body.Close()
+					rb, _ := io.ReadAll(resp.Body)
+					if resp.StatusCode >= 400 {
+						log.Printf("MercadoPago validation failed: status=%s body=%s", resp.Status, string(rb))
+						http.Error(w, "validation failed: "+string(rb), http.StatusBadRequest)
+						return
+					}
+					// parse minimal info
+					var info map[string]interface{}
+					if err := json.Unmarshal(rb, &info); err == nil {
+						validatedInfo = info
+					}
+				}
+
+				// save token after successful validation or when skipping validation
+				if payload.Encrypt {
+					if !utils.EncryptionAvailable() {
+						http.Error(w, "encryption failed: CONFIG_ENC_KEY not set", http.StatusBadRequest)
+						return
+					}
+					encVal, err := utils.EncryptString(payload.AccessToken)
+					if err != nil {
+						http.Error(w, "encryption failed: "+err.Error(), http.StatusInternalServerError)
+						return
+					}
+					if err := dbpkg.SetConfigValue(dbSuper, "mercadopago.access_token", encVal, true); err != nil {
+						http.Error(w, "failed to save access token: "+err.Error(), http.StatusInternalServerError)
+						return
+					}
+				} else {
+					if err := dbpkg.SetConfigValue(dbSuper, "mercadopago.access_token", payload.AccessToken, false); err != nil {
+						http.Error(w, "failed to save access token: "+err.Error(), http.StatusInternalServerError)
+						return
+					}
+					// no payer prefill handled here (belongs to create_preference)
+				}
+			}
+
+			if payload.PublicKey != "" {
+				if err := dbpkg.SetConfigValue(dbSuper, "mercadopago.public_key", payload.PublicKey, false); err != nil {
+					http.Error(w, "failed to save public key: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
+
+			// Webhook URL
+			if payload.WebhookURL != "" {
+				// validar formato básico de URL
+				if u, err := url.ParseRequestURI(payload.WebhookURL); err != nil || u.Scheme == "" || u.Host == "" {
+					http.Error(w, "invalid webhook_url: must be a valid absolute URL", http.StatusBadRequest)
+					return
+				}
+				if err := dbpkg.SetConfigValue(dbSuper, "mercadopago.webhook_url", payload.WebhookURL, false); err != nil {
+					http.Error(w, "failed to save webhook URL: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
+
+			// Webhook secret
+			if payload.WebhookSecret != "" {
+				if payload.WebhookEncrypt {
+					if !utils.EncryptionAvailable() {
+						http.Error(w, "encryption failed: CONFIG_ENC_KEY not set", http.StatusBadRequest)
+						return
+					}
+					encVal, err := utils.EncryptString(payload.WebhookSecret)
+					if err != nil {
+						http.Error(w, "encryption failed: "+err.Error(), http.StatusInternalServerError)
+						return
+					}
+					if err := dbpkg.SetConfigValue(dbSuper, "mercadopago.webhook_secret", encVal, true); err != nil {
+						http.Error(w, "failed to save webhook secret: "+err.Error(), http.StatusInternalServerError)
+						return
+					}
+				} else {
+					if err := dbpkg.SetConfigValue(dbSuper, "mercadopago.webhook_secret", payload.WebhookSecret, false); err != nil {
+						http.Error(w, "failed to save webhook secret: "+err.Error(), http.StatusInternalServerError)
+						return
+					}
+				}
+			}
+
+			// Return validation result (if any) but do not expose tokens
+			w.Header().Set("Content-Type", "application/json")
+			if validatedInfo != nil {
+				// include only safe fields
+				safe := map[string]interface{}{}
+				if id, ok := validatedInfo["id"]; ok {
+					safe["id"] = id
+				}
+				if nick, ok := validatedInfo["nickname"]; ok {
+					safe["nickname"] = nick
+				}
+				if email, ok := validatedInfo["email"]; ok {
+					safe["email"] = email
+				}
+				json.NewEncoder(w).Encode(map[string]interface{}{"validated": true, "account": safe})
+				return
+			}
+			json.NewEncoder(w).Encode(map[string]interface{}{"validated": false})
+			return
+		default:
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+	}
+}
+
+func getDecryptedConfigValue(dbSuper *sql.DB, key string) (string, error) {
+	v, enc, err := dbpkg.GetConfigValue(dbSuper, key)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", nil
+		}
+		return "", err
+	}
+	if v == "" {
+		return "", nil
+	}
+	if !enc {
+		return v, nil
+	}
+	dec, derr := utils.DecryptString(v)
+	if derr != nil {
+		return "", derr
+	}
+	return dec, nil
+}
+
+func normalizeWompiMode(raw string) string {
+	v := strings.ToLower(strings.TrimSpace(raw))
+	switch v {
+	case "sandbox", "test", "testing", "sambox", "pruebas":
+		return "sandbox"
+	case "production", "prod", "live", "real", "reales":
+		return "production"
+	default:
+		return ""
+	}
+}
+
+func wompiModeFromKeys(publicKey, privateKey string) string {
+	if strings.HasPrefix(privateKey, "prv_test_") || strings.HasPrefix(publicKey, "pub_test_") {
+		return "sandbox"
+	}
+	if strings.TrimSpace(publicKey) != "" || strings.TrimSpace(privateKey) != "" {
+		return "production"
+	}
+	return ""
+}
+
+func resolveWompiMode(dbSuper *sql.DB, publicKey, privateKey string) (string, string) {
+	if configuredMode, _, err := dbpkg.GetConfigValue(dbSuper, "wompi.mode"); err == nil {
+		if normalized := normalizeWompiMode(configuredMode); normalized != "" {
+			return normalized, "manual"
+		}
+	}
+	if inferred := wompiModeFromKeys(publicKey, privateKey); inferred != "" {
+		return inferred, "keys"
+	}
+	return "sandbox", "default"
+}
+
+func wompiBaseURLFromMode(mode string) string {
+	if normalizeWompiMode(mode) == "sandbox" {
+		return "https://sandbox.wompi.co/v1"
+	}
+	return "https://production.wompi.co/v1"
+}
+
+func fetchWompiAcceptanceInfo(baseURL, publicKey string) (string, string, string, string, error) {
+	if strings.TrimSpace(publicKey) == "" {
+		return "", "", "", "", fmt.Errorf("wompi.public_key no configurada")
+	}
+	merchantURL := strings.TrimRight(baseURL, "/") + "/merchants/" + url.PathEscape(publicKey)
+	req, err := http.NewRequest("GET", merchantURL, nil)
+	if err != nil {
+		return "", "", "", "", err
+	}
+	req.Header.Set("Authorization", "Bearer "+publicKey)
+	client := &http.Client{Timeout: 15 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", "", "", "", err
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode >= 400 {
+		return "", "", "", "", fmt.Errorf("wompi merchants error %s: %s", resp.Status, string(body))
+	}
+	var obj map[string]interface{}
+	if err := json.Unmarshal(body, &obj); err != nil {
+		return "", "", "", "", err
+	}
+	data, _ := obj["data"].(map[string]interface{})
+	presignedAcceptance, _ := data["presigned_acceptance"].(map[string]interface{})
+	presignedPersonal, _ := data["presigned_personal_data_auth"].(map[string]interface{})
+	acceptanceToken := strings.TrimSpace(fmt.Sprint(presignedAcceptance["acceptance_token"]))
+	personalToken := strings.TrimSpace(fmt.Sprint(presignedPersonal["acceptance_token"]))
+	acceptancePermalink := strings.TrimSpace(fmt.Sprint(presignedAcceptance["permalink"]))
+	personalPermalink := strings.TrimSpace(fmt.Sprint(presignedPersonal["permalink"]))
+	if acceptanceToken == "" || acceptanceToken == "<nil>" {
+		acceptanceToken = ""
+	}
+	if personalToken == "" || personalToken == "<nil>" {
+		personalToken = ""
+	}
+	if acceptancePermalink == "<nil>" {
+		acceptancePermalink = ""
+	}
+	if personalPermalink == "<nil>" {
+		personalPermalink = ""
+	}
+	return acceptanceToken, personalToken, acceptancePermalink, personalPermalink, nil
+}
+
+// WompiConfigHandler gestiona credenciales de Wompi para pagos alternativos con Nequi.
+func WompiConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			pub, _, _, pubUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "wompi.public_key")
+			prv, prvEnc, _, prvUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "wompi.private_key")
+			integrity, intEnc, _, intUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "wompi.integrity_key")
+			modeRaw, _, _, modeUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "wompi.mode")
+
+			pubSet := pub != ""
+			prvSet := prv != ""
+			intSet := integrity != ""
+
+			pubMasked := ""
+			if pubSet {
+				if len(pub) > 16 {
+					pubMasked = pub[:8] + "..." + pub[len(pub)-6:]
+				} else {
+					pubMasked = pub
+				}
+			}
+
+			prvMasked := ""
+			if prvSet {
+				if prvEnc {
+					prvMasked = "********"
+				} else if len(prv) > 10 {
+					prvMasked = prv[:4] + "****" + prv[len(prv)-4:]
+				} else {
+					prvMasked = "****"
+				}
+			}
+
+			integrityMasked := ""
+			if intSet {
+				if intEnc {
+					integrityMasked = "********"
+				} else if len(integrity) > 10 {
+					integrityMasked = integrity[:4] + "****" + integrity[len(integrity)-4:]
+				} else {
+					integrityMasked = "****"
+				}
+			}
+
+			configuredMode := normalizeWompiMode(modeRaw)
+			mode := configuredMode
+			modeSource := "manual"
+			if mode == "" {
+				mode = wompiModeFromKeys(pub, prv)
+				if mode != "" {
+					modeSource = "keys"
+				} else {
+					mode = "sandbox"
+					modeSource = "default"
+				}
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"public_key_set":        pubSet,
+				"public_key_masked":     pubMasked,
+				"public_key_updated":    pubUpdated,
+				"private_key_set":       prvSet,
+				"private_key_masked":    prvMasked,
+				"private_key_updated":   prvUpdated,
+				"integrity_key_set":     intSet,
+				"integrity_key_masked":  integrityMasked,
+				"integrity_key_updated": intUpdated,
+				"encryption_available":  utils.EncryptionAvailable(),
+				"mode":                  mode,
+				"mode_set":              configuredMode != "",
+				"mode_source":           modeSource,
+				"mode_updated":          modeUpdated,
+			})
+			return
+
+		case http.MethodPost, http.MethodPut:
+			var payload struct {
+				PublicKey    string `json:"public_key"`
+				PrivateKey   string `json:"private_key"`
+				IntegrityKey string `json:"integrity_key"`
+				Mode         string `json:"mode"`
+				Encrypt      bool   `json:"encrypt"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "invalid payload: "+err.Error(), http.StatusBadRequest)
+				return
+			}
+			modeInput := strings.TrimSpace(payload.Mode)
+			normalizedMode := normalizeWompiMode(modeInput)
+			if modeInput != "" && normalizedMode == "" {
+				http.Error(w, "mode inválido: usa sandbox o real", http.StatusBadRequest)
+				return
+			}
+			if strings.TrimSpace(payload.PublicKey) == "" && strings.TrimSpace(payload.PrivateKey) == "" && strings.TrimSpace(payload.IntegrityKey) == "" && normalizedMode == "" {
+				http.Error(w, "at least one value is required (mode o llaves)", http.StatusBadRequest)
+				return
+			}
+
+			if payload.PublicKey != "" && !strings.HasPrefix(payload.PublicKey, "pub_") {
+				http.Error(w, "public_key inválida: debe iniciar con pub_", http.StatusBadRequest)
+				return
+			}
+			if payload.PrivateKey != "" && !strings.HasPrefix(payload.PrivateKey, "prv_") {
+				http.Error(w, "private_key inválida: debe iniciar con prv_", http.StatusBadRequest)
+				return
+			}
+			if payload.IntegrityKey != "" && !strings.Contains(payload.IntegrityKey, "integrity") {
+				http.Error(w, "integrity_key inválida: prefijo esperado *_integrity_*", http.StatusBadRequest)
+				return
+			}
+
+			if payload.Encrypt && !utils.EncryptionAvailable() {
+				http.Error(w, "encryption failed: CONFIG_ENC_KEY not set", http.StatusBadRequest)
+				return
+			}
+
+			if payload.PublicKey != "" {
+				if err := dbpkg.SetConfigValue(dbSuper, "wompi.public_key", payload.PublicKey, false); err != nil {
+					http.Error(w, "failed to save wompi.public_key: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
+
+			saveSensitive := func(key, value string) error {
+				if value == "" {
+					return nil
+				}
+				if payload.Encrypt {
+					encVal, err := utils.EncryptString(value)
+					if err != nil {
+						return err
+					}
+					return dbpkg.SetConfigValue(dbSuper, key, encVal, true)
+				}
+				return dbpkg.SetConfigValue(dbSuper, key, value, false)
+			}
+
+			if err := saveSensitive("wompi.private_key", payload.PrivateKey); err != nil {
+				http.Error(w, "failed to save wompi.private_key: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			if err := saveSensitive("wompi.integrity_key", payload.IntegrityKey); err != nil {
+				http.Error(w, "failed to save wompi.integrity_key: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			if normalizedMode != "" {
+				if err := dbpkg.SetConfigValue(dbSuper, "wompi.mode", normalizedMode, false); err != nil {
+					http.Error(w, "failed to save wompi.mode: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]interface{}{"saved": true, "mode": normalizedMode})
+			return
+
+		default:
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+	}
+}
+
+// WompiTermsHandler devuelve links de términos y autorizaciones para cumplimiento de aceptación.
+func WompiTermsHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		publicKey, err := getDecryptedConfigValue(dbSuper, "wompi.public_key")
+		if err != nil {
+			http.Error(w, "failed to read wompi.public_key: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		privateKey, _ := getDecryptedConfigValue(dbSuper, "wompi.private_key")
+		if strings.TrimSpace(publicKey) == "" {
+			http.Error(w, "wompi.public_key not configured", http.StatusInternalServerError)
+			return
+		}
+		mode, modeSource := resolveWompiMode(dbSuper, publicKey, privateKey)
+		baseURL := wompiBaseURLFromMode(mode)
+		_, _, acceptancePermalink, personalPermalink, ferr := fetchWompiAcceptanceInfo(baseURL, publicKey)
+		if ferr != nil {
+			http.Error(w, "failed to fetch acceptance tokens: "+ferr.Error(), http.StatusBadGateway)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"provider":                    "wompi",
+			"payment_method":              "NEQUI",
+			"mode":                        mode,
+			"mode_source":                 modeSource,
+			"api_base_url":                baseURL,
+			"acceptance_permalink":        acceptancePermalink,
+			"personal_data_permalink":     personalPermalink,
+			"sandbox_phone_approved":      "3991111111",
+			"sandbox_phone_declined":      "3992222222",
+			"sandbox_phone_error_example": "3993333333",
+		})
+	}
+}
+
+// WompiCreateNequiTransactionHandler crea una transacción Wompi usando método de pago NEQUI.
+func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		var payload struct {
+			LicenciaID    int64  `json:"licencia_id"`
+			EmpresaID     int64  `json:"empresa_id,omitempty"`
+			PhoneNumber   string `json:"phone_number"`
+			CustomerEmail string `json:"customer_email,omitempty"`
+			AcceptTerms   bool   `json:"accept_terms"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			http.Error(w, "invalid payload: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		if payload.LicenciaID <= 0 {
+			http.Error(w, "licencia_id inválido", http.StatusBadRequest)
+			return
+		}
+		phone := strings.TrimSpace(payload.PhoneNumber)
+		if ok, _ := regexp.MatchString(`^3\d{9}$`, phone); !ok {
+			http.Error(w, "phone_number inválido: usa 10 dígitos colombianos (ej. 3991111111 en sandbox)", http.StatusBadRequest)
+			return
+		}
+
+		publicKey, err := getDecryptedConfigValue(dbSuper, "wompi.public_key")
+		if err != nil {
+			http.Error(w, "failed to read wompi.public_key: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		privateKey, err := getDecryptedConfigValue(dbSuper, "wompi.private_key")
+		if err != nil {
+			http.Error(w, "failed to read wompi.private_key: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		integrityKey, err := getDecryptedConfigValue(dbSuper, "wompi.integrity_key")
+		if err != nil {
+			http.Error(w, "failed to read wompi.integrity_key: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if strings.TrimSpace(publicKey) == "" || strings.TrimSpace(privateKey) == "" || strings.TrimSpace(integrityKey) == "" {
+			http.Error(w, "Wompi no configurado: faltan llaves (public/private/integrity)", http.StatusInternalServerError)
+			return
+		}
+
+		lic, err := dbpkg.GetLicenciaByID(dbSuper, payload.LicenciaID)
+		if err != nil || lic == nil {
+			http.Error(w, "licencia not found", http.StatusBadRequest)
+			return
+		}
+
+		amountInCents := int64(math.Round(lic.Valor * 100))
+		if amountInCents <= 0 {
+			http.Error(w, "valor de licencia inválido para Wompi", http.StatusBadRequest)
+			return
+		}
+
+		mode, _ := resolveWompiMode(dbSuper, publicKey, privateKey)
+		baseURL := wompiBaseURLFromMode(mode)
+		acceptanceToken, personalToken, acceptancePermalink, personalPermalink, ferr := fetchWompiAcceptanceInfo(baseURL, publicKey)
+		if ferr != nil {
+			http.Error(w, "failed to fetch Wompi acceptance data: "+ferr.Error(), http.StatusBadGateway)
+			return
+		}
+
+		if !payload.AcceptTerms {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"error":                   "Debes aceptar términos y autorización de datos para continuar con Nequi",
+				"acceptance_permalink":    acceptancePermalink,
+				"personal_data_permalink": personalPermalink,
+			})
+			return
+		}
+
+		if acceptanceToken == "" || personalToken == "" {
+			http.Error(w, "Wompi no devolvió tokens de aceptación válidos", http.StatusBadGateway)
+			return
+		}
+
+		email := strings.TrimSpace(payload.CustomerEmail)
+		if email == "" {
+			email = strings.TrimSpace(r.Header.Get("X-Admin-Email"))
+		}
+		if email == "" {
+			http.Error(w, "customer_email requerido para crear la transacción", http.StatusBadRequest)
+			return
+		}
+
+		reference := fmt.Sprintf("WOMPI-LIC-%d-EMP-%d-%d", payload.LicenciaID, payload.EmpresaID, time.Now().UnixNano())
+		signatureSource := fmt.Sprintf("%s%dCOP%s", reference, amountInCents, integrityKey)
+		signatureHash := sha256.Sum256([]byte(signatureSource))
+		signature := hex.EncodeToString(signatureHash[:])
+
+		scheme := "http"
+		if r.TLS != nil {
+			scheme = "https"
+		}
+		redirectURL := fmt.Sprintf("%s://%s/pagar_licencia.html?status=pending&provider=nequi", scheme, r.Host)
+
+		reqBody := map[string]interface{}{
+			"acceptance_token":     acceptanceToken,
+			"accept_personal_auth": personalToken,
+			"amount_in_cents":      amountInCents,
+			"currency":             "COP",
+			"customer_email":       email,
+			"reference":            reference,
+			"signature":            signature,
+			"redirect_url":         redirectURL,
+			"payment_method": map[string]interface{}{
+				"type":         "NEQUI",
+				"phone_number": phone,
+			},
+		}
+
+		bodyBytes, _ := json.Marshal(reqBody)
+		apiURL := strings.TrimRight(baseURL, "/") + "/transactions"
+		req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(bodyBytes))
+		if err != nil {
+			http.Error(w, "failed to create request: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+privateKey)
+
+		client := &http.Client{Timeout: 20 * time.Second}
+		resp, err := client.Do(req)
+		if err != nil {
+			http.Error(w, "request error: "+err.Error(), http.StatusBadGateway)
+			return
+		}
+		defer resp.Body.Close()
+		respBody, _ := io.ReadAll(resp.Body)
+		if resp.StatusCode >= 400 {
+			log.Println("Wompi API error:", resp.Status, string(respBody))
+			http.Error(w, "wompi API error: "+string(respBody), http.StatusBadGateway)
+			return
+		}
+
+		var wompiResp map[string]interface{}
+		if err := json.Unmarshal(respBody, &wompiResp); err != nil {
+			http.Error(w, "invalid response from wompi: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		data, _ := wompiResp["data"].(map[string]interface{})
+		transactionID := strings.TrimSpace(fmt.Sprint(data["id"]))
+		status := strings.ToUpper(strings.TrimSpace(fmt.Sprint(data["status"])))
+		respReference := strings.TrimSpace(fmt.Sprint(data["reference"]))
+		if transactionID == "" || transactionID == "<nil>" {
+			http.Error(w, "wompi response sin transaction id", http.StatusBadGateway)
+			return
+		}
+		if status == "" || status == "<nil>" {
+			status = "PENDING"
+		}
+		if respReference == "" || respReference == "<nil>" {
+			respReference = reference
+		}
+
+		if _, err := dbpkg.CreateWompiPaymentRecord(dbSuper, payload.LicenciaID, payload.EmpresaID, transactionID, respReference, status, string(respBody)); err != nil {
+			log.Println("warning: failed to record Wompi transaction in DB:", err)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"provider":                "wompi",
+			"payment_method":          "NEQUI",
+			"mode":                    mode,
+			"transaction_id":          transactionID,
+			"reference":               respReference,
+			"status":                  status,
+			"acceptance_permalink":    acceptancePermalink,
+			"personal_data_permalink": personalPermalink,
+			"data":                    data,
+		})
+	}
+}
+
+// WompiTransactionStatusHandler consulta estado de la transacción y activa licencia si quedó APPROVED.
+func WompiTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		transactionID := strings.TrimSpace(r.URL.Query().Get("id"))
+		if transactionID == "" {
+			transactionID = strings.TrimSpace(r.URL.Query().Get("transaction_id"))
+		}
+		if transactionID == "" {
+			http.Error(w, "id required", http.StatusBadRequest)
+			return
+		}
+
+		publicKey, err := getDecryptedConfigValue(dbSuper, "wompi.public_key")
+		if err != nil {
+			http.Error(w, "failed to read wompi.public_key: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		privateKey, err := getDecryptedConfigValue(dbSuper, "wompi.private_key")
+		if err != nil {
+			http.Error(w, "failed to read wompi.private_key: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if strings.TrimSpace(publicKey) == "" {
+			http.Error(w, "wompi.public_key not configured", http.StatusInternalServerError)
+			return
+		}
+
+		mode, _ := resolveWompiMode(dbSuper, publicKey, privateKey)
+		baseURL := wompiBaseURLFromMode(mode)
+		statusURL := strings.TrimRight(baseURL, "/") + "/transactions/" + url.PathEscape(transactionID)
+
+		fetchStatus := func(authKey string) ([]byte, int, error) {
+			req, err := http.NewRequest("GET", statusURL, nil)
+			if err != nil {
+				return nil, 0, err
+			}
+			req.Header.Set("Authorization", "Bearer "+authKey)
+			client := &http.Client{Timeout: 15 * time.Second}
+			resp, err := client.Do(req)
+			if err != nil {
+				return nil, 0, err
+			}
+			defer resp.Body.Close()
+			body, _ := io.ReadAll(resp.Body)
+			return body, resp.StatusCode, nil
+		}
+
+		respBody, statusCode, err := fetchStatus(publicKey)
+		if err != nil {
+			http.Error(w, "request error: "+err.Error(), http.StatusBadGateway)
+			return
+		}
+		if statusCode >= 400 && strings.TrimSpace(privateKey) != "" {
+			if body2, code2, err2 := fetchStatus(privateKey); err2 == nil {
+				respBody = body2
+				statusCode = code2
+			}
+		}
+		if statusCode >= 400 {
+			http.Error(w, "wompi API error: "+string(respBody), http.StatusBadGateway)
+			return
+		}
+
+		var wompiResp map[string]interface{}
+		if err := json.Unmarshal(respBody, &wompiResp); err != nil {
+			http.Error(w, "invalid response from wompi: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		data, _ := wompiResp["data"].(map[string]interface{})
+		status := strings.ToUpper(strings.TrimSpace(fmt.Sprint(data["status"])))
+		reference := strings.TrimSpace(fmt.Sprint(data["reference"]))
+
+		if err := dbpkg.UpdateWompiPaymentRecordByTransaction(dbSuper, transactionID, status, string(respBody)); err != nil {
+			log.Println("warning: failed to update Wompi payment record:", err)
+		}
+
+		var licenciaID sql.NullInt64
+		var empresaID sql.NullInt64
+		row := dbSuper.QueryRow("SELECT licencia_id, empresa_id FROM pagos_wompi WHERE transaction_id = ? LIMIT 1", transactionID)
+		if err := row.Scan(&licenciaID, &empresaID); err != nil {
+			log.Println("warning: pagos_wompi record not found for tx:", transactionID, "err:", err)
+		}
+
+		if strings.EqualFold(status, "APPROVED") && licenciaID.Valid && empresaID.Valid {
+			lic, err := dbpkg.GetLicenciaByID(dbSuper, licenciaID.Int64)
+			if err == nil && lic != nil {
+				now := time.Now()
+				fechaInicio := now.Format("2006-01-02 15:04:05")
+				fechaFin := now.AddDate(0, 0, lic.DuracionDias).Format("2006-01-02 15:04:05")
+				if err := dbpkg.ActivateLicenciaForEmpresa(dbSuper, licenciaID.Int64, empresaID.Int64, fechaInicio, fechaFin); err != nil {
+					log.Println("failed to activate licencia from Wompi:", err)
+				}
+			}
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"provider":       "wompi",
+			"mode":           mode,
+			"transaction_id": transactionID,
+			"reference":      reference,
+			"status":         status,
+			"data":           data,
+		})
+	}
+}
+
+// ActivateLicenciaSinPagoHandler activa una licencia manualmente para avanzar en pruebas internas.
+func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		var payload struct {
+			LicenciaID int64  `json:"licencia_id"`
+			EmpresaID  int64  `json:"empresa_id"`
+			Motivo     string `json:"motivo,omitempty"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			http.Error(w, "invalid payload: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		if payload.LicenciaID <= 0 {
+			http.Error(w, "licencia_id inválido", http.StatusBadRequest)
+			return
+		}
+		if payload.EmpresaID <= 0 {
+			http.Error(w, "empresa_id inválido", http.StatusBadRequest)
+			return
+		}
+
+		lic, err := dbpkg.GetLicenciaByID(dbSuper, payload.LicenciaID)
+		if err != nil || lic == nil {
+			http.Error(w, "licencia not found", http.StatusBadRequest)
+			return
+		}
+
+		now := time.Now()
+		fechaInicio := now.Format("2006-01-02 15:04:05")
+		fechaFin := now.AddDate(0, 0, lic.DuracionDias).Format("2006-01-02 15:04:05")
+		if err := dbpkg.ActivateLicenciaForEmpresa(dbSuper, payload.LicenciaID, payload.EmpresaID, fechaInicio, fechaFin); err != nil {
+			http.Error(w, "failed to activate licencia: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		log.Printf("Licencia activada sin pago: licencia=%d empresa=%d motivo=%q", payload.LicenciaID, payload.EmpresaID, payload.Motivo)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"activated":      true,
+			"provider":       "manual",
+			"payment_method": "ACTIVAR_SIN_PAGO",
+			"licencia_id":    payload.LicenciaID,
+			"empresa_id":     payload.EmpresaID,
+			"fecha_inicio":   fechaInicio,
+			"fecha_fin":      fechaFin,
+			"redirect_url":   fmt.Sprintf("/administrar_empresa.html?id=%d", payload.EmpresaID),
+		})
+	}
+}
+
+// MercadoPagoTestPreferenceHandler crea una preferencia de prueba para verificar que el checkout funciona
+func MercadoPagoTestPreferenceHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		var payload struct {
+			Amount float64 `json:"amount"`
+			Title  string  `json:"title"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			// allow empty body
+			payload.Amount = 1
+			payload.Title = "Prueba de pago"
+		}
+		if payload.Amount <= 0 {
+			payload.Amount = 1
+		}
+		if payload.Title == "" {
+			payload.Title = "Prueba de pago"
+		}
+
+		// obtener token de DB o env
+		token := ""
+		if v, enc, err := dbpkg.GetConfigValue(dbSuper, "mercadopago.access_token"); err == nil && v != "" {
+			if enc {
+				if dec, derr := utils.DecryptString(v); derr == nil {
+					token = dec
+				} else {
+					log.Println("warning: failed to decrypt stored mercadopago.access_token:", derr)
+				}
+			} else {
+				token = v
+			}
+		}
+		if token == "" {
+			token = os.Getenv("MERCADOPAGO_ACCESS_TOKEN")
+		}
+		if token == "" {
+			http.Error(w, "MERCADOPAGO_ACCESS_TOKEN not configured", http.StatusInternalServerError)
+			return
+		}
+
+		scheme := "http"
+		if r.TLS != nil {
+			scheme = "https"
+		}
+		baseURL := scheme + "://" + r.Host
+		successURL := baseURL + "/pagar_licencia.html?status=success"
+		failureURL := baseURL + "/pagar_licencia.html?status=failure"
+		pendingURL := baseURL + "/pagar_licencia.html?status=pending"
+		notificationURL := baseURL + "/mercadopago/webhook"
+
+		reqBody := map[string]interface{}{
+			"items":              []map[string]interface{}{{"title": payload.Title, "quantity": 1, "currency_id": "ARS", "unit_price": payload.Amount}},
+			"back_urls":          map[string]string{"success": successURL, "failure": failureURL, "pending": pendingURL},
+			"notification_url":   notificationURL,
+			"external_reference": fmt.Sprintf("test_config_%d", time.Now().Unix()),
+		}
+		bodyBytes, _ := json.Marshal(reqBody)
+		log.Printf("MercadoPago request body (test_pref): %s", string(bodyBytes))
+		apiURL := "https://api.mercadopago.com/checkout/preferences"
+		req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(bodyBytes))
+		if err != nil {
+			http.Error(w, "failed to create request: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+token)
+		client := &http.Client{Timeout: 15 * time.Second}
+		resp, err := client.Do(req)
+		if err != nil {
+			http.Error(w, "request error: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer resp.Body.Close()
+		respBody, _ := io.ReadAll(resp.Body)
+		if resp.StatusCode >= 400 {
+			log.Println("MercadoPago API error test_pref:", resp.Status, string(respBody))
+			http.Error(w, "mercadopago API error: "+string(respBody), http.StatusInternalServerError)
+			return
+		}
+		var mpResp map[string]interface{}
+		if err := json.Unmarshal(respBody, &mpResp); err != nil {
+			http.Error(w, "invalid response from mercadopago: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		// record preference
+		prefID := ""
+		if idv, ok := mpResp["id"]; ok {
+			prefID = fmt.Sprint(idv)
+		}
+		if _, err := dbpkg.CreateMPPaymentRecord(dbSuper, 0, 0, prefID, "", "test_preference", string(respBody)); err != nil {
+			log.Println("warning: failed to record test pref in DB:", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(mpResp)
+	}
+}
+
+// MercadoPagoWebhookHandler recibe notificaciones de Mercado Pago
+func MercadoPagoWebhookHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, "failed to read body", http.StatusBadRequest)
+			return
+		}
+		var obj map[string]interface{}
+		_ = json.Unmarshal(body, &obj)
+
+		// Verificación opcional de firma del webhook si el administrador configuró un secret
+		if sVal, enc, err := dbpkg.GetConfigValue(dbSuper, "mercadopago.webhook_secret"); err == nil && sVal != "" {
+			secret := sVal
+			if enc {
+				if dec, derr := utils.DecryptString(sVal); derr == nil {
+					secret = dec
+				} else {
+					log.Println("warning: failed to decrypt webhook_secret:", derr)
+				}
+			}
+			if secret != "" {
+				// buscar encabezado de firma en varios nombres posibles
+				sigHeaderKeys := []string{"X-Hub-Signature", "X-Mercadopago-Signature", "X-Meli-Signature", "X-Hub-Signature-256", "X-Hub-Signature-sha256"}
+				var sigHeader string
+				for _, hk := range sigHeaderKeys {
+					if v := r.Header.Get(hk); v != "" {
+						sigHeader = v
+						break
+					}
+				}
+				if sigHeader != "" {
+					sig := sigHeader
+					if strings.HasPrefix(strings.ToLower(sig), "sha256=") {
+						sig = strings.SplitN(sig, "=", 2)[1]
+					}
+					mac := hmac.New(sha256.New, []byte(secret))
+					mac.Write(body)
+					expectedHex := hex.EncodeToString(mac.Sum(nil))
+					// comparar hex (insensible a mayúsculas)
+					if subtle.ConstantTimeCompare([]byte(strings.ToLower(sig)), []byte(strings.ToLower(expectedHex))) != 1 {
+						// intentar también comparar con base64
+						expectedB64 := base64.StdEncoding.EncodeToString(mac.Sum(nil))
+						if subtle.ConstantTimeCompare([]byte(sig), []byte(expectedB64)) != 1 {
+							log.Printf("mercadopago webhook signature mismatch header=%s expectedHex=%s expectedB64=%s", sigHeader, expectedHex, expectedB64)
+							http.Error(w, "invalid webhook signature", http.StatusUnauthorized)
+							return
+						}
+						// else ok
+					}
+				} else {
+					log.Println("webhook secret configured but no signature header present; rejecting webhook")
+					http.Error(w, "missing signature header", http.StatusUnauthorized)
+					return
+				}
+			}
+		}
+
+		// Determine payment id and preference id from payload
+		var paymentID, prefID, status string
+		if d, ok := obj["data"]; ok {
+			if m, ok2 := d.(map[string]interface{}); ok2 {
+				if idv, ok3 := m["id"]; ok3 {
+					paymentID = fmt.Sprint(idv)
+				} else if resource, ok4 := m["resource"]; ok4 {
+					if rmap, ok5 := resource.(map[string]interface{}); ok5 {
+						if idv2, ok6 := rmap["id"]; ok6 {
+							paymentID = fmt.Sprint(idv2)
+						}
+						if p, ok7 := rmap["preference_id"]; ok7 {
+							prefID = fmt.Sprint(p)
+						}
+						if ext, ok8 := rmap["external_reference"]; ok8 {
+							if s, ok9 := ext.(string); ok9 && prefID == "" {
+								// external_reference may contain licencia/empresa
+								prefID = ""
+								_ = s
+							}
+						}
+					}
+				}
+			}
+		}
+		// top-level id sometimes references the preference
+		if idv, ok := obj["id"]; ok && prefID == "" {
+			prefID = fmt.Sprint(idv)
+		}
+
+		// If we found a payment id, fetch payment details from Mercado Pago to obtain status/preference
+		// Preferir token almacenado en DB (configuraciones), fallback a variable de entorno
+		token := ""
+		if v, enc, err := dbpkg.GetConfigValue(dbSuper, "mercadopago.access_token"); err == nil && v != "" {
+			if enc {
+				if dec, derr := utils.DecryptString(v); derr == nil {
+					token = dec
+				} else {
+					log.Println("warning: failed to decrypt stored mercadopago.access_token:", derr)
+				}
+			} else {
+				token = v
+			}
+		}
+		if token == "" {
+			token = os.Getenv("MERCADOPAGO_ACCESS_TOKEN")
+		}
+		var payResp map[string]interface{}
+		if paymentID != "" && token != "" {
+			client := &http.Client{Timeout: 15 * time.Second}
+			req, _ := http.NewRequest("GET", "https://api.mercadopago.com/v1/payments/"+paymentID, nil)
+			req.Header.Set("Authorization", "Bearer "+token)
+			resp, err := client.Do(req)
+			if err == nil {
+				defer resp.Body.Close()
+				rb, _ := io.ReadAll(resp.Body)
+				if resp.StatusCode < 400 {
+					json.Unmarshal(rb, &payResp)
+					if s, ok := payResp["status"]; ok {
+						status = fmt.Sprint(s)
+					}
+					if p, ok := payResp["preference_id"]; ok {
+						prefID = fmt.Sprint(p)
+					}
+					if ext, ok := payResp["external_reference"]; ok && prefID == "" {
+						if s, ok2 := ext.(string); ok2 {
+							// try to extract licencia/empresa from external_reference later
+							_ = s
+						}
+					}
+				} else {
+					log.Println("MercadoPago returned error fetching payment:", resp.Status)
+				}
+			} else {
+				log.Println("error fetching mercadopago payment:", err)
+			}
+		}
+
+		// Try to resolve licencia_id and empresa_id: first by matching preference_id in our pagos table
+		var licenciaID sql.NullInt64
+		var empresaID sql.NullInt64
+		if prefID != "" {
+			row := dbSuper.QueryRow("SELECT licencia_id, empresa_id FROM pagos_mercadopago WHERE preference_id = ? LIMIT 1", prefID)
+			if err := row.Scan(&licenciaID, &empresaID); err != nil {
+				log.Println("no pagos_mercadopago record for preference:", prefID, "err:", err)
+			}
+		}
+
+		// If not found, try to parse external_reference from payment response (format: licencia_<id>_empresa_<id>)
+		if !licenciaID.Valid && payResp != nil {
+			if ext, ok := payResp["external_reference"]; ok {
+				if s, ok2 := ext.(string); ok2 {
+					re := regexp.MustCompile(`licencia_(\d+)_empresa_(\d+)`)
+					if m := re.FindStringSubmatch(s); len(m) == 3 {
+						if lid, err := strconv.ParseInt(m[1], 10, 64); err == nil {
+							licenciaID = sql.NullInt64{Int64: lid, Valid: true}
+						}
+						if eid, err := strconv.ParseInt(m[2], 10, 64); err == nil {
+							empresaID = sql.NullInt64{Int64: eid, Valid: true}
+						}
+					}
+				}
+			}
+		}
+
+		// Update existing payment record (if we have prefID) or insert fallback
+		if prefID != "" {
+			if err := dbpkg.UpdateMPPaymentRecordByPreference(dbSuper, prefID, paymentID, status, string(body)); err != nil {
+				log.Println("warning: failed to update MP payment record:", err)
+			}
+		} else {
+			if _, err := dbSuper.Exec("INSERT INTO pagos_mercadopago (preference_id, payment_id, status, raw_payload, fecha_creacion) VALUES (?, ?, ?, ?, datetime('now','localtime'))", prefID, paymentID, status, string(body)); err != nil {
+				log.Println("failed to persist mercadopago webhook:", err)
+			}
+		}
+
+		// If payment approved and we have licencia & empresa, activate license
+		if strings.ToLower(status) == "approved" && licenciaID.Valid && empresaID.Valid {
+			lic, err := dbpkg.GetLicenciaByID(dbSuper, licenciaID.Int64)
+			if err == nil && lic != nil {
+				now := time.Now()
+				fechaInicio := now.Format("2006-01-02 15:04:05")
+				fechaFin := now.AddDate(0, 0, lic.DuracionDias).Format("2006-01-02 15:04:05")
+				if err := dbpkg.ActivateLicenciaForEmpresa(dbSuper, licenciaID.Int64, empresaID.Int64, fechaInicio, fechaFin); err != nil {
+					log.Println("failed to activate licencia:", err)
+				} else {
+					log.Println("Licencia activated:", licenciaID.Int64, "empresa:", empresaID.Int64)
+				}
+			} else {
+				log.Println("failed to fetch licencia for activation:", err)
+			}
+		} else {
+			log.Println("Payment status:", status, "— no activation (licenciaValid:", licenciaID.Valid, " empresaValid:", empresaID.Valid, ")")
+		}
+
+		w.WriteHeader(http.StatusOK)
+	}
+}
+
+// MeHandler devuelve información del administrador autenticado usando la cookie session_token

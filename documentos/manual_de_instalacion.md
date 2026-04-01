@@ -25,12 +25,12 @@ Este documento explica los pasos mínimos para configurar las credenciales de OA
 - Cuenta principal añadida en este proyecto (actual): powerfulcontrolsystem@gmail.com
 
 ## 3) Variables de entorno locales
-- El script de arranque `scripts\iniciar_servidor.ps1` intenta leer `documentos/descripcion_del_proyecto` para extraer `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET`.
-- Alternativamente exporta manualmente antes de ejecutar el script:
+- El script de arranque `scripts\iniciar_servidor.ps1` carga credenciales solo desde variables de entorno del proceso o desde `backend/.env.local` y `backend/.env`.
+- Exporta manualmente antes de ejecutar el script (no guardes valores reales en documentos):
 
   ```powershell
   $env:GOOGLE_CLIENT_ID = "tu-client-id.apps.googleusercontent.com"
-  $env:GOOGLE_CLIENT_SECRET = "tu-secret"
+  $env:GOOGLE_CLIENT_SECRET = "<definir-en-entorno-seguro>"
   $env:GOOGLE_REDIRECT_URL = "http://localhost:8080/auth/google/callback"
   $env:PORT = "8080"
   .\scripts\iniciar_servidor.ps1
@@ -119,17 +119,11 @@ Notas de seguridad y limpieza:
 - El túnel de ngrok es temporario; la URL cambia cada vez que se inicia ngrok salvo que uses un subdominio reservado en tu cuenta. No uses la URL pública en producción.
 - Revoca o deja de exponer el túnel una vez finalizadas las pruebas.
 
-### URL pública generada (ejemplo)
+### URL pública generada (plantilla)
 
-En la sesión actual se generó la siguiente URL pública mediante ngrok:
+No almacenes URLs públicas reales de túneles en documentación versionada. Usa siempre una plantilla:
 
-- https://betsey-sinistrous-bluffly.ngrok-free.dev
-
-Para que Mercado Pago envíe notificaciones (webhooks) a tu servidor, añade la siguiente URL en el dashboard de Mercado Pago (Desarrolladores → Webhooks / Notificaciones) o úsala como `notification_url` al crear la preferencia:
-
-```
-https://betsey-sinistrous-bluffly.ngrok-free.dev/mercadopago/webhook
-```
+- `https://<tu-subdominio-ngrok>/mercadopago/webhook`
 
 Eventos recomendados para suscribir en Mercado Pago (mínimo):
 - `payment`

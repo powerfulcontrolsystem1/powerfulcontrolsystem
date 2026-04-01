@@ -105,6 +105,10 @@
       </div>
       <div id="carritoResumen" class="form-help"></div>
 
+      <div class="form-actions" style="margin-top:10px;">
+        <button type="button" id="buscarProductosBtn" class="btn secondary" disabled>Buscar productos</button>
+      </div>
+
       <div id="stationCheckoutPanel" class="card empresa-section" style="display:none;margin-top:12px;">
         <div class="empresa-section-header">
           <h3 style="margin:0;">Cobro y estados del carrito</h3>
@@ -240,6 +244,13 @@
       <div id="itemMsg" class="form-help"></div>
 
       <div id="itemsList" style="margin-top:14px;">Selecciona un carrito para gestionar sus items.</div>
+
+      <div class="card empresa-section" style="margin-top:12px;">
+        <div class="empresa-section-header">
+          <h3 style="margin:0;">Tabla de productos del carrito</h3>
+        </div>
+        <div id="productosCarritoList" class="table-wrap">Selecciona un carrito para visualizar sus productos.</div>
+      </div>
     </div>
   </div>
 
@@ -647,6 +658,59 @@
       return state.carritos.find(function(x) { return Number(x.id) === Number(state.selectedCarritoID); }) || null;
     }
 
+    function getCarritoCodeFromItem(item) {
+      if (!item) return '';
+      return normalizedCode(item.codigo || '');
+    }
+
+    function buildBuscarProductosURL(carritoID, carritoCode) {
+      const params = new URLSearchParams();
+      params.set('empresa_id', String(state.empresaID));
+      const targetCarritoID = Number(carritoID) || 0;
+      params.set('carrito_id', String(targetCarritoID));
+
+      const code = normalizedCode(carritoCode || '');
+      if (code) params.set('carrito_codigo', code);
+
+      if (state.stationID > 0) {
+        params.set('estacion_id', String(state.stationID));
+      }
+      if (state.stationName) {
+        params.set('estacion_nombre', state.stationName);
+      }
+
+      const returnParams = new URLSearchParams();
+      returnParams.set('empresa_id', String(state.empresaID));
+      if (targetCarritoID > 0) returnParams.set('carrito_id', String(targetCarritoID));
+      if (code) returnParams.set('carrito_codigo', code);
+      if (state.stationID > 0) returnParams.set('estacion_id', String(state.stationID));
+      if (state.stationName) returnParams.set('estacion_nombre', state.stationName);
+      const returnRoute = '/administrar_empresa/carrito_de_compras.html?' + returnParams.toString();
+      params.set('return_url', returnRoute);
+      return '/administrar_empresa/buscar_producto_botones.html?' + params.toString();
+    }
+
+    function openBuscarProductosForCarrito(carrito) {
+      if (!carrito || !Number(carrito.id)) {
+        setMessage('itemMsg', 'Selecciona un carrito para buscar productos.', true);
+        return;
+      }
+      const url = buildBuscarProductosURL(Number(carrito.id), getCarritoCodeFromItem(carrito));
+      window.location.href = url;
+    }
+
+    function syncBuscarProductosButton() {
+      const btn = document.getElementById('buscarProductosBtn');
+      if (!btn) return;
+      const selected = getSelectedCarrito();
+      btn.disabled = !selected;
+      if (!selected) {
+        btn.textContent = 'Buscar productos';
+        return;
+      }
+      btn.textContent = 'Buscar productos en ' + (normalize(selected.nombre) || ('carrito #' + selected.id));
+    }
+
     function fillClientesSelect(selected) {
       const sel = document.getElementById('carritoClienteID');
       sel.innerHTML = '<option value="">-- Consumidor final / sin cliente --</option>';
@@ -862,9 +926,20 @@
           ' | Activado: ' + escapeHtml(formatDateTime(selected.activado_en)) +
           ' | Tiempo activo: ' + escapeHtml(activeDuration) +
           '</p>' +
+          '<div class="form-actions" style="margin-top:10px;">' +
+          '<button type="button" id="stationBuscarProductosBtn" class="btn secondary">Buscar productos</button>' +
+          '</div>' +
           '</section>';
 
+        const stationBuscarBtn = document.getElementById('stationBuscarProductosBtn');
+        if (stationBuscarBtn) {
+          stationBuscarBtn.onclick = function() {
+            openBuscarProductosForCarrito(selected);
+          };
+        }
+
         renderStationPaymentPanel(selected);
+        syncBuscarProductosButton();
         return;
       }
 
@@ -914,6 +989,7 @@
           '<td>' + estado + '</td>' +
           '<td class="actions">' +
             '<button data-id="' + item.id + '" class="open btn">Abrir</button> ' +
+            '<button data-id="' + item.id + '" data-codigo="' + escapeHtml(normalize(item.codigo)) + '" class="buscarProductos btn secondary">Buscar productos</button> ' +
             '<button data-id="' + item.id + '" class="edit btn secondary">Editar</button> ' +
             '<button data-id="' + item.id + '" class="del btn danger">Eliminar</button> ' +
             '<button data-id="' + item.id + '" data-estado="' + estado + '" class="toggleEstado btn">' + toggleEstadoLabel + '</button> ' +
@@ -931,6 +1007,19 @@
           state.selectedCarritoID = Number(btn.getAttribute('data-id'));
           renderCarritos();
           await loadItems();
+        };
+      });
+
+      document.querySelectorAll('.buscarProductos').forEach(function(btn) {
+        btn.onclick = function() {
+          const id = Number(btn.getAttribute('data-id'));
+          const code = normalizedCode(btn.getAttribute('data-codigo') || '');
+          const carrito = state.carritos.find(function(x) { return Number(x.id) === id; });
+          if (carrito) {
+            openBuscarProductosForCarrito(carrito);
+            return;
+          }
+          openBuscarProductosForCarrito({ id: id, codigo: code });
         };
       });
 
@@ -1011,6 +1100,7 @@
       });
 
       renderStationPaymentPanel(null);
+      syncBuscarProductosButton();
     }
 
     function renderResumen() {
@@ -1031,6 +1121,55 @@
         ' | Impuesto: ' + formatAmount(selected.impuesto_total, selected.moneda) +
         ' | Total: ' + formatAmount(selected.total, selected.moneda) +
         (normalize(selected.pagado_en) ? (' | Pagado: ' + formatAmount(selected.total_pagado, selected.moneda)) : '');
+
+      syncBuscarProductosButton();
+    }
+
+    function renderProductosCarritoTable() {
+      const box = document.getElementById('productosCarritoList');
+      const selected = getSelectedCarrito();
+      if (!selected) {
+        box.textContent = 'Selecciona un carrito para visualizar sus productos.';
+        return;
+      }
+
+      const productos = state.items.filter(function(item) {
+        return normalize(item.tipo_item) === 'producto';
+      });
+
+      if (!productos.length) {
+        box.textContent = 'Este carrito no tiene productos agregados.';
+        return;
+      }
+
+      const table = document.createElement('table');
+      table.className = 'table';
+      table.innerHTML = '<thead><tr>' +
+        '<th>ID item</th>' +
+        '<th>Código</th>' +
+        '<th>Producto</th>' +
+        '<th>Cantidad</th>' +
+        '<th>Precio</th>' +
+        '<th>Total línea</th>' +
+        '<th>Estado</th>' +
+        '</tr></thead>';
+
+      const tbody = document.createElement('tbody');
+      productos.forEach(function(item) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td>' + Number(item.id || 0) + '</td>' +
+          '<td>' + escapeHtml(normalize(item.codigo_item) || '-') + '</td>' +
+          '<td>' + escapeHtml(normalize(item.descripcion) || '-') + '</td>' +
+          '<td>' + Number(item.cantidad || 0).toFixed(2) + '</td>' +
+          '<td>' + Number(item.precio_unitario || 0).toFixed(2) + '</td>' +
+          '<td>' + Number(item.total_linea || 0).toFixed(2) + '</td>' +
+          '<td>' + escapeHtml(normalize(item.estado) || 'activo') + '</td>';
+        tbody.appendChild(tr);
+      });
+
+      table.appendChild(tbody);
+      box.innerHTML = '';
+      box.appendChild(table);
     }
 
     function renderItems() {
@@ -1038,6 +1177,7 @@
       const selected = getSelectedCarrito();
       if (!selected) {
         box.textContent = state.stationMode ? 'Se está preparando el carrito de la estación.' : 'Selecciona un carrito para gestionar sus items.';
+        renderProductosCarritoTable();
         return;
       }
 
@@ -1045,6 +1185,7 @@
 
       if (!state.items.length) {
         box.textContent = readOnlyMode ? 'Este carrito no tiene items activos para mostrar.' : 'Este carrito aún no tiene items.';
+        renderProductosCarritoTable();
         return;
       }
 
@@ -1090,6 +1231,7 @@
 
       box.innerHTML = '';
       box.appendChild(table);
+      renderProductosCarritoTable();
 
       if (readOnlyMode) {
         return;
@@ -1473,6 +1615,15 @@
       if (e.key !== 'Enter') return;
       e.preventDefault();
       document.getElementById('buscarCarritoBtn').click();
+    });
+
+    document.getElementById('buscarProductosBtn').addEventListener('click', function() {
+      const selected = getSelectedCarrito();
+      if (!selected) {
+        setMessage('itemMsg', 'Selecciona un carrito para buscar productos.', true);
+        return;
+      }
+      openBuscarProductosForCarrito(selected);
     });
 
     ['discountType', 'discountValue', 'discountCode', 'devolucionMonto'].forEach(function(id) {

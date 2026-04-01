@@ -2,7 +2,7 @@ param(
     [string]$Message = "Actualización automática desde script: añadir/actualizar archivos",
     [string]$RepoUrl = "",
     [switch]$SkipChangeLog,
-    [switch]$NoForce
+    [switch]$ForcePush
 )
 
 Write-Host "Verificando estado de git..."
@@ -65,8 +65,15 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
-function Try-PushOrigin {
-    $forceArg = if ($NoForce) { "" } else { "--force" }
+function Request-ForcePushConfirmation {
+    $answer = Read-Host "Confirmación requerida: escribe SI para ejecutar push forzado"
+    return ($answer -ceq 'SI')
+}
+
+function Invoke-PushOrigin {
+    param([switch]$UseForce)
+
+    $forceArg = if ($UseForce) { "--force" } else { "" }
     $cmd = "git push $forceArg -u origin HEAD"
     Write-Host "Ejecutando: $cmd"
     $pushOutput = & git push $forceArg -u origin HEAD 2>&1
@@ -76,8 +83,8 @@ function Try-PushOrigin {
     return $pushCode
 }
 
-Write-Host "Intentando push al remoto 'origin' (forzando por defecto)..."
-$pushCode = Try-PushOrigin
+Write-Host "Intentando push al remoto 'origin' (modo normal)..."
+$pushCode = Invoke-PushOrigin
 $pushOutput = $Global:LastPushOutput
 # Tratar como éxito si el código es 0 o la salida contiene "Everything up-to-date"
 if ($pushCode -eq 0 -or ($pushOutput -match 'Everything up-?to-?date')) {
@@ -98,15 +105,33 @@ if ($pushCode -eq 0 -or ($pushOutput -match 'Everything up-?to-?date')) {
                 Write-Host "ERROR: No se pudo agregar remoto 'origin'." -ForegroundColor Red
                 $pushMsg = 'FAIL_ADD_REMOTE'
             } else {
-                Write-Host "Remoto 'origin' agregado. Reintentando push forzado..."
-                $pushCode = Try-PushOrigin
+                Write-Host "Remoto 'origin' agregado. Reintentando push normal..."
+                $pushCode = Invoke-PushOrigin
                 $pushOutput = $Global:LastPushOutput
                 if ($pushCode -eq 0 -or ($pushOutput -match 'Everything up-?to-?date')) {
                     $pushMsg = 'OK'
                     Write-Host "Éxito: cambios empujados al remoto 'origin'." -ForegroundColor Green
                 } else {
-                    $pushMsg = 'FAIL_PUSH'
-                    Write-Host "ERROR: El push falló incluso después de añadir remoto. Código: $pushCode" -ForegroundColor Red
+                    if ($ForcePush) {
+                        if (Request-ForcePushConfirmation) {
+                            Write-Host "Reintentando push forzado por confirmación explícita..." -ForegroundColor Yellow
+                            $pushCode = Invoke-PushOrigin -UseForce
+                            $pushOutput = $Global:LastPushOutput
+                            if ($pushCode -eq 0 -or ($pushOutput -match 'Everything up-?to-?date')) {
+                                $pushMsg = 'OK'
+                                Write-Host "Éxito: push forzado completado." -ForegroundColor Green
+                            } else {
+                                $pushMsg = 'FAIL_PUSH'
+                                Write-Host "ERROR: El push forzado también falló. Código: $pushCode" -ForegroundColor Red
+                            }
+                        } else {
+                            $pushMsg = 'FAIL_PUSH'
+                            Write-Host "Push forzado cancelado por el usuario." -ForegroundColor Yellow
+                        }
+                    } else {
+                        $pushMsg = 'FAIL_PUSH'
+                        Write-Host "ERROR: El push falló incluso después de añadir remoto. Usa -ForcePush para habilitar reintento forzado con confirmación." -ForegroundColor Red
+                    }
                 }
             }
         } else {
@@ -114,15 +139,25 @@ if ($pushCode -eq 0 -or ($pushOutput -match 'Everything up-?to-?date')) {
             $pushMsg = 'NO_ORIGIN'
         }
     } else {
-        Write-Host "Remoto 'origin' existe ($originUrl) pero el push falló. Intentando push forzado de todos modos..." -ForegroundColor Yellow
-        $pushCode = Try-PushOrigin
-        $pushOutput = $Global:LastPushOutput
-        if ($pushCode -eq 0 -or ($pushOutput -match 'Everything up-?to-?date')) {
-            $pushMsg = 'OK'
-            Write-Host "Éxito: push forzado completado." -ForegroundColor Green
+        if ($ForcePush) {
+            if (Request-ForcePushConfirmation) {
+                Write-Host "Remoto 'origin' existe ($originUrl). Reintentando push forzado por confirmación explícita..." -ForegroundColor Yellow
+                $pushCode = Invoke-PushOrigin -UseForce
+                $pushOutput = $Global:LastPushOutput
+                if ($pushCode -eq 0 -or ($pushOutput -match 'Everything up-?to-?date')) {
+                    $pushMsg = 'OK'
+                    Write-Host "Éxito: push forzado completado." -ForegroundColor Green
+                } else {
+                    $pushMsg = 'FAIL_PUSH'
+                    Write-Host "ERROR: No fue posible pushear los cambios aun con force. Código: $pushCode" -ForegroundColor Red
+                }
+            } else {
+                $pushMsg = 'FAIL_PUSH'
+                Write-Host "Push forzado cancelado por el usuario." -ForegroundColor Yellow
+            }
         } else {
             $pushMsg = 'FAIL_PUSH'
-            Write-Host "ERROR: No fue posible pushear los cambios. Código: $pushCode" -ForegroundColor Red
+            Write-Host "ERROR: El push normal falló. Reintenta con -ForcePush para habilitar force con confirmación explícita." -ForegroundColor Red
         }
     }
 }
@@ -139,8 +174,11 @@ if (-not $SkipChangeLog) {
         if ($pushMsg -eq 'OK') {
             git push origin HEAD | Out-Null
         } else {
-            $forceArg = if ($NoForce) { "" } else { "--force" }
-            git push $forceArg origin HEAD | Out-Null
+            if ($ForcePush -and (Request-ForcePushConfirmation)) {
+                git push --force origin HEAD | Out-Null
+            } else {
+                git push origin HEAD | Out-Null
+            }
             if ($LASTEXITCODE -ne 0) {
                 Write-Host "Aviso: historial actualizado localmente pero no fue posible pushearlo al remoto." -ForegroundColor Yellow
             }
@@ -172,8 +210,11 @@ if (-not $SkipChangeLog) {
         if ($pushMsg -eq 'OK') {
             git push origin HEAD | Out-Null
         } else {
-            $forceArg = if ($NoForce) { "" } else { "--force" }
-            git push $forceArg origin HEAD | Out-Null
+            if ($ForcePush -and (Request-ForcePushConfirmation)) {
+                git push --force origin HEAD | Out-Null
+            } else {
+                git push origin HEAD | Out-Null
+            }
             if ($LASTEXITCODE -ne 0) {
                 Write-Host "Aviso: actualizaciones_del_repositorio actualizado localmente pero no fue posible pushearlo al remoto." -ForegroundColor Yellow
             }

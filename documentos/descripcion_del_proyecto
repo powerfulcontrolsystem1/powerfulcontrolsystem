@@ -1,105 +1,90 @@
 
-## Descripción del proyecto
-Este proyecto es un sistema de punto de venta (POS) multiempresa, desarrollado en lenguaje Go puro sin librerías externas, utilizando SQLite como base de datos. Se adapta a diversas industrias, desde restaurantes y hoteles hasta tiendas  grandes. 
+## Descripcion del proyecto (version compacta)
 
-## Módulos y características iniciales:
-1) Autenticación: Login por medio de cuenta de Google (OAuth2).  
+Sistema POS multiempresa con backend en Go y persistencia SQLite, orientado a operacion comercial por empresa (usuarios, clientes, inventario, carritos, pagos y configuracion de facturacion).
 
-- al registrarse por primera vez, se le asigna el rol de "administrador"
+## Objetivo funcional
 
-- al iniciar sesion si el usiario es de rol "administrador" se redirige a la pagina "seleccionar_empresa.html", si el usuario es de rol "super_administrador" se redirige a la pagina "super_administrador.html"
+- Administrar multiples empresas desde un panel central.
+- Operar ventas por empresa con flujo de carrito de compras.
+- Gestionar usuarios de empresa con confirmacion por correo y primer ingreso con creacion de contrasena.
+- Preparar configuracion fiscal y de impresion para facturacion.
 
-2) 
+## Stack y tecnologia
 
-## PAGINAS
-1) login.html 
-En esta pagina se realiza el registro o login por medio de cuenta de Google (OAuth2)
+- Backend: Go.
+- Frontend: HTML + JavaScript + CSS.
+- Base de datos: SQLite (dos archivos separados por contexto).
+- Integraciones: Google OAuth, SMTP (correo), Mercado Pago y Wompi.
 
-- al iniciar sesion si el usiario es de rol "administrador" se redirige a la pagina "seleccionar_empresa.html", si el usuario es de rol "super_administrador" se redirige a la pagina "super_administrador.html"
+## Arquitectura por capas
 
-2) seleccionar_empresa.html
-- Aqui cargaran las empresas que ha creadas por el usuario.
+- `backend/main.go`: arranque, conexion a DB, migraciones simples y registro de rutas.
+- `backend/handlers/`: capa HTTP (validacion de entrada, reglas de negocio de API, respuestas JSON).
+- `backend/db/`: capa de acceso a datos y operaciones CRUD.
+- `backend/utils/`: middleware, seguridad y utilidades generales.
+- `backend/auth/`: intercambio OAuth y lectura de perfil Google.
+- `backend/metrics/`: recoleccion y consulta de metricas.
+- `web/`: interfaz de usuario por modulos (`super` y `administrar_empresa`).
 
-- La pagina tendra un menu o frame izquierdo:
-- este menu tiene como opciones:
- 1) Agregar empresa
+## Modulos principales
 
-- La pagina tendra un frame derecho:
-- Al cargar la pagina aqui estarn las empresas agregadas por el usuario, vistas en tarjetas, estas tarjetas mostraran el nombre de la empresa, la descripcion y el estado de la licencia.
+1) Autenticacion y sesiones
+- Login Google para administradores.
+- Cookies de sesion con middleware de proteccion.
 
-- Los vinculos del frame izquiedo abriran en el frame derecho
+2) Administracion global (super)
+- Empresas, tipos de empresa, licencias, administradores.
+- Configuracion de pasarelas de pago y correo.
 
-3) index.html
-Esta página actúa como el portal principal de la aplicación y ofrece accesos rápidos a los módulos y sub-sistemas adaptables por tipo de negocio. Cada opción se presenta como una tarjeta con título, descripción, logo y acción.
+3) Operacion por empresa
+- Usuarios de empresa (alta, confirmacion, estado, primer ingreso).
+- Clientes.
+- Inventario: bodegas, productos, proveedores, servicios.
+- Carritos de compra e items (incluye modo estaciones).
+- Configuracion operativa y configuracion avanzada de impresion/factura.
 
-- Estructura general:
-  - Encabezado con la marca `POS Multiempresa` y un botón para `Iniciar sesión` que apunta a `/auth/google/login`.
-  - Área central con una grid de tarjetas (`portal-grid`), 3 columnas en pantallas grandes y responsive en dispositivos pequeños.
-  - Menú flotante en la esquina superior derecha con la opción `Cerrar sesión`.
+## Flujo critico de usuario de empresa
 
-- Tarjetas (cada tarjeta incluye `titulo`, `descripcion`, `logo` y un botón de acción):
-  1) Título: `Punto de venta`
-    - Descripción: "Sistema de facturación electrónica para pymes." 
-    - Logo: `web/img/logo_punto_venta.svg` (mostrado en la parte superior de la tarjeta).
-    - Acción: botón `Entrar` (clase `.btn secondary`).
+1. Administrador crea usuario de empresa.
+2. Sistema genera token y envia correo de confirmacion.
+3. Usuario confirma correo y queda habilitado.
+4. En primer ingreso crea contrasena.
+5. Inicia sesion con `email + contrasena`.
 
-  2) Título: `Sistema para Motel`
-    - Descripción: "Sistema de facturación electrónica tarifada por tiempo de servicio." 
-    - Logo: `web/img/logo_motel.svg`.
-    - Acción: botón `Abrir` (clase `.btn secondary`).
+## Base de datos
 
-  3) Título: `Restaurante`
-    - Descripción: "Sistema de facturación electrónica adaptado a restaurante, manejo por mesas." 
-    - Logo: `web/img/logo_restaurante.svg`.
-    - Acción: botón `Ver` (clase `.btn secondary`).
+1) `superadministrador.db`
+- Configuracion global, administradores, sesiones, licencias, tipos.
 
-  4) Título: `Control por sensor`
-    - Descripción: "Sistema de control para moteles, sensores en las puertas." 
-    - Logo: `web/img/logo_alarma.svg`.
-    - Acción: botón `Generar` (clase `.btn secondary`).
+2) `empresas.db`
+- Datos operativos por empresa: usuarios, clientes, inventario, carritos, configuraciones.
 
-  5) Título: `Configuración` (tarjeta adicional conservada)
-    - Descripción: "Administración de empresas, roles y permisos del sistema." 
-    - Logo: (se usa iconografía genérica en `web/estilos.css` si aplica).
-    - Acción: botón `Configurar` (clase `.btn secondary`).
+Regla general de tablas:
+- id autonumerico.
+- fecha_creacion / fecha_actualizacion.
+- estado.
+- observaciones.
 
-- Notas de implementación y estilo:
-  - Los logos se almacenan en `web/img/` y se referencian en el HTML mediante rutas relativas `/img/<archivo>.svg`.
-  - Las tarjetas utilizan la clase `.portal-card` y se les aplicó un ligero aclarado del color de fondo para mejorar contraste y legibilidad (`web/estilos.css`).
-  - Los botones de acción son de clase `.btn secondary` para mantener coherencia visual con el resto de la interfaz.
-  - La página es responsiva y las tarjetas colapsan a 2 o 1 columna según el ancho de pantalla.
+## Rutas y paginas clave
 
-Agregar esta descripción en el documento garantiza que la referencia al portal principal quede documentada y que los nombres, descripciones y rutas de los logos queden registrados para futuras modificaciones o para el equipo de diseño.
+- Portal: `/`, `/index.html`.
+- Login admin: `/login.html`.
+- Login usuario empresa: `/login_usuario.html`.
+- Panel super: `/super_administrador.html`.
+- Panel empresa: `/administrar_empresa.html` y subpaginas de modulo.
 
-## Script
-1) iniciar_servidor
-- Debe matar procesos antiguos luego debe iniciar el servidor,este scripts debe instalar dependiencias si se necesitan.
+## Scripts operativos
 
-2) actualizar_repositorio
-- Este debe subir los ultimos cambios y archivos al repositorio de github
+- `scripts/iniciar_servidor.ps1`: arranque local del servidor.
+- `scripts/actualizar_repositorio.ps1`: commit/push automatizado y registro en documentos.
 
-## cliente de OAuth
-1029204473903-6npuu63uehsrn2jn8fnif4fgpp6kcjsm.apps.googleusercontent.com
-- Secreto del cliente: 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
- - Cuenta principal / correo de contacto: powerfulcontrolsystem@gmail.com
+## Seguridad y configuracion sensible
 
- ## BASE DE DATOS
- - hay dos base de datos en archivos unicos mysqllite
- - Todas las tablas deben tener: fehca y hora de registro, activo o desactivado, un id autonumerico 
-  1) superadministrador : en esta se almacenaran las configuraciones globales del sistema entre otros.
-   ## tablas
-   - administradores
-   - tipos_de_empresa
-   - tipos_de_licencia
-   - licencias
-   - configuracion
-   - sesiones
+- No documentar secretos en texto plano.
+- Variables sensibles (OAuth, SMTP, llaves de pago, cifrado) deben venir de entorno o configuracion segura.
 
-  2) empresas (id_empresa en todas las tablas): registrara todos los datos de cada empresa.
-     ## tablas
-   - usuarios
-   - empresas
-   - configuracion
-   - productos
-   - 
+## Estado de documentacion
+
+- El detalle tecnico de arquitectura y mapa de funciones esta en `documentos/estructura_del_codigo`.
    

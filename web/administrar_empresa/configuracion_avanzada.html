@@ -158,6 +158,7 @@
             <option value="carta">Tamano grande / carta</option>
             <option value="pos">Impresora POS (tirilla)</option>
           </select>
+          <div class="form-help"><label><input id="imprimir_copia_factura" type="checkbox"> Imprimir copia de la factura</label></div>
         </div>
         <div class="form-col">
           <label class="form-label">Logo</label>
@@ -260,6 +261,7 @@
       document.getElementById('proximo_consecutivo').value = toInt(cfg.proximo_consecutivo, 1);
 
       document.getElementById('formato_impresion').value = normalize(cfg.formato_impresion) || 'carta';
+  document.getElementById('imprimir_copia_factura').checked = cfg.imprimir_copia_factura === true;
       document.getElementById('logo_url').value = normalize(cfg.logo_url);
       document.getElementById('mostrar_logo').checked = cfg.mostrar_logo !== false;
       document.getElementById('pie_factura').value = normalize(cfg.pie_factura);
@@ -294,6 +296,7 @@
         consecutivo_hasta: toInt(document.getElementById('consecutivo_hasta').value, 999999),
         proximo_consecutivo: toInt(document.getElementById('proximo_consecutivo').value, 1),
         formato_impresion: normalize(document.getElementById('formato_impresion').value) || 'carta',
+        imprimir_copia_factura: !!document.getElementById('imprimir_copia_factura').checked,
         mostrar_logo: !!document.getElementById('mostrar_logo').checked,
         logo_url: normalize(document.getElementById('logo_url').value),
         pie_factura: normalize(document.getElementById('pie_factura').value),

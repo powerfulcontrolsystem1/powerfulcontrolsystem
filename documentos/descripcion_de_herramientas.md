@@ -36,14 +36,14 @@ Política de trazabilidad:
 Fecha: 2026-03-29
 Responsable: agente local (descarga a petición del usuario)
 
-URL pública activa (30-03-2026): https://betsey-sinistrous-bluffly.ngrok-free.dev
+No almacenar URL pública activa de túneles en este documento.
 
-Estado del túnel: actualmente el túnel público está encaminado a `http://localhost:80` (confirma el puerto de tu servidor antes de usar la URL en producción o pruebas con Mercado Pago).
+Estado del túnel: verificar siempre en tiempo real con `http://127.0.0.1:4040/api/tunnels` y confirmar el puerto local de destino antes de pruebas.
 
-Usa la ruta `/mercadopago/webhook` sobre la `public_url` para configurar notificaciones en Mercado Pago:
+Plantilla para notificaciones de Mercado Pago:
 
 ```
-https://betsey-sinistrous-bluffly.ngrok-free.dev/mercadopago/webhook
+https://<tu-subdominio-ngrok>/mercadopago/webhook
 ```
 
 Si necesitas que el túnel apunte a `:8080` (si tu backend escucha allí), crea el túnel con `ngrok http 8080`.

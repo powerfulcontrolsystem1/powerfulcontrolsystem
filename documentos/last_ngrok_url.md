@@ -1,14 +1,12 @@
-Última URL ngrok generada
+Registro de URL ngrok
 
-Fecha: 2026-03-30
+Por seguridad, este archivo no debe almacenar URL pública real.
 
-Public URL: https://betsey-sinistrous-bluffly.ngrok-free.dev
-Forwarding (destino local): http://localhost:80
-
-Uso recomendado para webhooks Mercado Pago:
-
-https://betsey-sinistrous-bluffly.ngrok-free.dev/mercadopago/webhook
+Plantilla:
+- Public URL: `https://<tu-subdominio-ngrok>`
+- Forwarding (destino local): `http://localhost:<puerto>`
+- Webhook Mercado Pago: `https://<tu-subdominio-ngrok>/mercadopago/webhook`
 
 Notas:
-- Verifica que tu backend responda en el puerto indicado (en este caso `:80`). Si tu servidor corre en `:8080`, crea un túnel directo con `ngrok http 8080` y actualiza esta URL.
-- Esta URL puede cambiar si reinicias ngrok (a menos que uses un subdominio reservado en tu cuenta).
+- Verifica el túnel activo en `http://127.0.0.1:4040/api/tunnels` antes de cada prueba.
+- Si la URL cambia al reiniciar ngrok, actualiza la configuración de webhook en el proveedor de pagos.

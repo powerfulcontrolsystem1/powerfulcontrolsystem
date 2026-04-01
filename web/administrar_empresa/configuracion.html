@@ -89,6 +89,49 @@
 
     <section class="card empresa-section">
       <div class="empresa-section-header">
+        <h2>Impresion de facturas</h2>
+        <button id="btnGuardarFacturaConfig" type="button" class="btn">Guardar impresión</button>
+      </div>
+      <p class="form-help">Define tamaño de hoja, si requiere copia y manejo de logo para la factura.</p>
+
+      <div class="empresa-config-grid">
+        <div class="form">
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="facturaFormatoImpresion">Tamaño de hoja</label>
+              <select id="facturaFormatoImpresion" class="form-input">
+                <option value="carta">Grande / carta</option>
+                <option value="pos">Pequeña POS (tirilla)</option>
+              </select>
+            </div>
+            <div class="form-col">
+              <label class="empresa-config-check" for="facturaImprimirCopia" style="margin-top:30px;display:block;">
+                <input id="facturaImprimirCopia" type="checkbox">
+                <span>Requiere imprimir copia</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="form">
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="facturaLogoURL">Logo de la empresa</label>
+              <input id="facturaLogoURL" class="form-input" placeholder="/img/logo_empresa.png o URL pública">
+              <label class="empresa-config-check" for="facturaMostrarLogo" style="margin-top:8px;display:block;">
+                <input id="facturaMostrarLogo" type="checkbox" checked>
+                <span>Mostrar logo en factura</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="facturaMsg" class="form-help"></div>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
         <h2>Backup</h2>
       </div>
       <p class="form-help">Exporta o restaura un respaldo JSON de esta configuración para reutilizarla rápidamente.</p>
@@ -166,6 +209,71 @@
       const box = document.getElementById('backupMsg');
       box.textContent = text || '';
       box.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'form-help');
+    }
+
+    function setFacturaMessage(text, type) {
+      const box = document.getElementById('facturaMsg');
+      box.textContent = text || '';
+      box.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'form-help');
+    }
+
+    function normalizeFormatoImpresion(v) {
+      const raw = String(v || '').trim().toLowerCase();
+      return raw === 'pos' ? 'pos' : 'carta';
+    }
+
+    function setFacturaFormData(cfg) {
+      const src = cfg && typeof cfg === 'object' ? cfg : {};
+      document.getElementById('facturaFormatoImpresion').value = normalizeFormatoImpresion(src.formato_impresion);
+      document.getElementById('facturaImprimirCopia').checked = src.imprimir_copia_factura === true;
+      document.getElementById('facturaMostrarLogo').checked = src.mostrar_logo !== false;
+      document.getElementById('facturaLogoURL').value = String(src.logo_url || '').trim();
+    }
+
+    function getFacturaFormData() {
+      return {
+        empresa_id: Number(empresaId),
+        formato_impresion: normalizeFormatoImpresion(document.getElementById('facturaFormatoImpresion').value),
+        imprimir_copia_factura: document.getElementById('facturaImprimirCopia').checked,
+        mostrar_logo: document.getElementById('facturaMostrarLogo').checked,
+        logo_url: String(document.getElementById('facturaLogoURL').value || '').trim()
+      };
+    }
+
+    async function loadFacturaConfig() {
+      if (!empresaId) return;
+      try {
+        const res = await fetch('/api/empresa/configuracion_avanzada?empresa_id=' + encodeURIComponent(empresaId), { credentials: 'same-origin' });
+        if (!res.ok) throw new Error(await res.text());
+        const cfg = await res.json();
+        setFacturaFormData(cfg || {});
+      } catch (err) {
+        setFacturaMessage('No se pudo cargar configuración de facturas: ' + (err && err.message ? err.message : err), 'error');
+      }
+    }
+
+    async function guardarFacturaConfig() {
+      if (!empresaId) {
+        setFacturaMessage('No se puede guardar sin empresa seleccionada.', 'error');
+        return;
+      }
+      try {
+        const payload = getFacturaFormData();
+        const res = await fetch('/api/empresa/configuracion_avanzada?empresa_id=' + encodeURIComponent(empresaId), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(await res.text());
+        const out = await res.json();
+        if (out && out.configuracion) {
+          setFacturaFormData(out.configuracion);
+        }
+        setFacturaMessage('Configuración de facturas guardada correctamente.', 'success');
+      } catch (err) {
+        setFacturaMessage('No se pudo guardar configuración de facturas: ' + (err && err.message ? err.message : err), 'error');
+      }
     }
 
     function setFormData(cfg) {
@@ -274,7 +382,9 @@
     function bootstrap() {
       loadEmpresaInfo();
       setFormData(loadConfig());
+      loadFacturaConfig();
       document.getElementById('btnGuardarConfig').addEventListener('click', guardarConfiguracion);
+      document.getElementById('btnGuardarFacturaConfig').addEventListener('click', guardarFacturaConfig);
       document.getElementById('btnDescargarBackup').addEventListener('click', descargarBackup);
       document.getElementById('btnRestaurarBackup').addEventListener('click', restaurarBackup);
     }

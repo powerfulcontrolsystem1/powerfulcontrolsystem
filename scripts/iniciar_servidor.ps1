@@ -9,6 +9,108 @@ Clear-Host
 $backend = Join-Path $PSScriptRoot "..\backend"
 Push-Location $backend
 
+function Load-DotEnvValues {
+    param([string]$Path)
+    $map = @{}
+    if (-not (Test-Path $Path)) { return $map }
+
+    $lines = Get-Content -Path $Path -ErrorAction SilentlyContinue
+    foreach ($line in $lines) {
+        $raw = [string]$line
+        if ([string]::IsNullOrWhiteSpace($raw)) { continue }
+        $trimmed = $raw.Trim()
+        if ($trimmed.StartsWith('#')) { continue }
+        $idx = $trimmed.IndexOf('=')
+        if ($idx -lt 1) { continue }
+
+        $key = $trimmed.Substring(0, $idx).Trim()
+        $value = $trimmed.Substring($idx + 1).Trim()
+        if ($value.StartsWith('"') -and $value.EndsWith('"') -and $value.Length -ge 2) {
+            $value = $value.Substring(1, $value.Length - 2)
+        }
+        if ($value.StartsWith("'") -and $value.EndsWith("'") -and $value.Length -ge 2) {
+            $value = $value.Substring(1, $value.Length - 2)
+        }
+        $map[$key] = $value
+    }
+    return $map
+}
+
+function Resolve-GoogleOAuthCredentials {
+    param([string]$BackendDir)
+
+    $result = @{
+        ClientId = [Environment]::GetEnvironmentVariable('GOOGLE_CLIENT_ID', 'Process')
+        ClientSecret = [Environment]::GetEnvironmentVariable('GOOGLE_CLIENT_SECRET', 'Process')
+        Source = 'variables de entorno del proceso'
+    }
+
+    $envCandidates = @(
+        Join-Path $BackendDir '.env.local',
+        Join-Path $BackendDir '.env'
+    )
+
+    foreach ($envPath in $envCandidates) {
+        if (-not (Test-Path $envPath)) { continue }
+        $vals = Load-DotEnvValues -Path $envPath
+        if ($vals.ContainsKey('GOOGLE_CLIENT_ID') -and -not [string]::IsNullOrWhiteSpace($vals['GOOGLE_CLIENT_ID'])) {
+            $result.ClientId = $vals['GOOGLE_CLIENT_ID']
+            $result.Source = $envPath
+        }
+        if ($vals.ContainsKey('GOOGLE_CLIENT_SECRET') -and -not [string]::IsNullOrWhiteSpace($vals['GOOGLE_CLIENT_SECRET'])) {
+            $result.ClientSecret = $vals['GOOGLE_CLIENT_SECRET']
+            $result.Source = $envPath
+        }
+    }
+
+    return $result
+}
+
+function Test-GoogleOAuthCredentials {
+    param(
+        [string]$ClientId,
+        [string]$ClientSecret,
+        [string]$RedirectURL
+    )
+
+    if ([string]::IsNullOrWhiteSpace($ClientId) -or [string]::IsNullOrWhiteSpace($ClientSecret)) {
+        return $false
+    }
+
+    $body = @{
+        client_id = $ClientId
+        client_secret = $ClientSecret
+        code = 'dummy-verification-code'
+        grant_type = 'authorization_code'
+        redirect_uri = $RedirectURL
+    }
+
+    try {
+        Invoke-WebRequest -Method Post -Uri 'https://oauth2.googleapis.com/token' -Body $body -ContentType 'application/x-www-form-urlencoded' -UseBasicParsing -ErrorAction Stop | Out-Null
+        return $true
+    } catch {
+        $errorText = ''
+        if ($_.ErrorDetails -and $_.ErrorDetails.Message) {
+            $errorText = [string]$_.ErrorDetails.Message
+        } else {
+            $errorText = [string]$_.Exception.Message
+        }
+
+        if ($errorText -match 'invalid_client') {
+            Write-Host 'Las credenciales OAuth son invalidas (invalid_client).' -ForegroundColor Red
+            return $false
+        }
+
+        if ($errorText -match 'invalid_grant') {
+            # invalid_grant con codigo dummy implica que client_id/client_secret son validos.
+            return $true
+        }
+
+        Write-Host ("No se pudo validar OAuth de forma concluyente: {0}" -f $errorText) -ForegroundColor Yellow
+        return $true
+    }
+}
+
 # Asegurar carpeta backend\db y mover .db existentes a esa carpeta
 Write-Host "Asegurando carpeta de bases de datos: $backend\db" -ForegroundColor DarkGray
 New-Item -ItemType Directory -Path (Join-Path $backend 'db') -Force | Out-Null
@@ -41,7 +143,7 @@ if (-not $env:DB_POS_PATH) { $env:DB_POS_PATH = Join-Path $dbFolder 'pos.db' }
 
 Write-Host "Rutas DB: $env:DB_EMPRESAS_PATH, $env:DB_SUPERADMIN_PATH, $env:DB_POS_PATH" -ForegroundColor Cyan
 
-function Kill-Processes-On-Port {
+function Stop-ProcessesOnPort {
     param([int]$port)
     Write-Host ("Comprobando puerto {0}..." -f $port)
     $netstatOut = netstat -ano | findstr ":$port" 2>$null
@@ -93,7 +195,7 @@ function Kill-Processes-On-Port {
 }
 
 Write-Host "Buscando procesos que usan el puerto 8080..."
-Kill-Processes-On-Port -port 8080
+Stop-ProcessesOnPort -port 8080
 
 Write-Host "Ejecutando: go mod tidy"
 go mod tidy
@@ -108,32 +210,39 @@ Write-Host "Iniciando servidor (carpeta: $backend)"
 # Start server in a separate process so the script can continue and open the browser
 $goArgs = @('run', '.')
 Write-Host "Arrancando proceso: go $($goArgs -join ' ')"
-# Intentar extraer credenciales de OAuth desde documentos/descripcion_del_proyecto
-$descPath = Join-Path (Resolve-Path "$PSScriptRoot\..") "documentos\descripcion_del_proyecto"
-$clientId = $null
-$clientSecret = $null
-if (Test-Path $descPath) {
-    $content = Get-Content $descPath -Raw -ErrorAction SilentlyContinue
-    if ($content) {
-        # Buscar client id (contiene apps.googleusercontent.com)
-        $m = [regex]::Match($content, "([0-9]+[-][A-Za-z0-9._-]+apps\.googleusercontent\.com)")
-        if ($m.Success) { $clientId = $m.Groups[1].Value }
-        # Buscar secreto: línea que contenga 'Secreto' y luego token
-        $m2 = [regex]::Match($content, "Secreto[^:\n\r]*[:\-\s]*([A-Za-z0-9_\-]+)", 'IgnoreCase')
-        if ($m2.Success) { $clientSecret = $m2.Groups[1].Value }
-    }
+# Resolver credenciales desde entorno o backend/.env(.local)
+$oauthCreds = Resolve-GoogleOAuthCredentials -BackendDir $backend
+$clientId = $oauthCreds.ClientId
+$clientSecret = $oauthCreds.ClientSecret
+
+if ([string]::IsNullOrWhiteSpace($clientId) -or [string]::IsNullOrWhiteSpace($clientSecret)) {
+    Write-Host "No se encontraron GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET en entorno o .env; el backend intentará resolverlos desde la DB." -ForegroundColor Yellow
 }
 
-# Exportar variables de entorno si se encontraron (no las logueamos)
-if ($clientId) { $env:GOOGLE_CLIENT_ID = $clientId }
-if ($clientSecret) { $env:GOOGLE_CLIENT_SECRET = $clientSecret }
 $env:GOOGLE_REDIRECT_URL = "http://localhost:8080/auth/google/callback"
+
+if (-not [string]::IsNullOrWhiteSpace($clientId)) {
+    $env:GOOGLE_CLIENT_ID = $clientId
+}
+if (-not [string]::IsNullOrWhiteSpace($clientSecret)) {
+    $env:GOOGLE_CLIENT_SECRET = $clientSecret
+}
 
 # Forzar puerto 8080 (usuario solicitó usar solo 8080)
 $env:PORT = "8080"
 
-if ($clientId) { Write-Host "Encontrado GOOGLE_CLIENT_ID" -ForegroundColor Green } else { Write-Host "GOOGLE_CLIENT_ID no encontrado en documentos/descripcion_del_proyecto" -ForegroundColor Yellow }
-if ($clientSecret) { Write-Host "Encontrado GOOGLE_CLIENT_SECRET" -ForegroundColor Green } else { Write-Host "GOOGLE_CLIENT_SECRET no encontrado en documentos/descripcion_del_proyecto" -ForegroundColor Yellow }
+if (-not [string]::IsNullOrWhiteSpace($clientId) -and -not [string]::IsNullOrWhiteSpace($clientSecret)) {
+    Write-Host ("Credenciales OAuth cargadas desde: {0}" -f $oauthCreds.Source) -ForegroundColor Cyan
+    if (-not (Test-GoogleOAuthCredentials -ClientId $clientId -ClientSecret $clientSecret -RedirectURL $env:GOOGLE_REDIRECT_URL)) {
+        Write-Host "OAuth de entorno/.env no valido; se omitirá para que el backend intente resolver credenciales desde DB." -ForegroundColor Yellow
+        $clientId = ""
+        $clientSecret = ""
+        Remove-Item Env:GOOGLE_CLIENT_ID -ErrorAction SilentlyContinue
+        Remove-Item Env:GOOGLE_CLIENT_SECRET -ErrorAction SilentlyContinue
+    }
+} else {
+    Write-Host "Se continúa sin credenciales OAuth de entorno; backend resolverá desde DB si existen." -ForegroundColor Yellow
+}
 
 # Compilar el binario para ejecutar con un entorno controlado
 Write-Host "Compilando el servidor (go build -o server.exe .)" -ForegroundColor DarkGray

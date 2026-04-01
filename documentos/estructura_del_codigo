@@ -1,0 +1,742 @@
+# Estructura del codigo
+
+Fecha: 2026-04-01
+Version: 1.0
+
+## 1) Objetivo de este documento
+
+Este documento explica como esta organizada la arquitectura del proyecto, como se separa la logica, y que hace cada funcion declarada en backend y frontend.
+
+Objetivo practico:
+- Facilitar mantenimiento.
+- Acelerar nuevos desarrollos.
+- Reducir errores por cambios en zonas no entendidas.
+
+## 2) Arquitectura general
+
+Patron aplicado: separacion por capas + separacion por modulo funcional.
+
+Capas:
+1. Capa de entrada HTTP
+- Archivos: `backend/handlers/*.go`
+- Responsabilidad: recibir request, validar payload, invocar capa DB, responder JSON/HTML.
+
+2. Capa de datos
+- Archivos: `backend/db/*.go`
+- Responsabilidad: CRUD, migraciones simples, reglas de persistencia, transacciones.
+
+3. Capa de infraestructura y seguridad
+- Archivos: `backend/utils/*.go`, `backend/auth/*.go`, `backend/metrics/*.go`
+- Responsabilidad: middleware, cifrado, OAuth, recoleccion de metricas.
+
+4. Capa de composicion de app
+- Archivo: `backend/main.go`
+- Responsabilidad: inicializacion, apertura de DB, ensure schema, registro de rutas, arranque.
+
+5. Capa de interfaz de usuario
+- Archivos: `web/*.html`, `web/**/*.html`, `web/menu.js`, `web/estilos.css`
+- Responsabilidad: UX por modulo (super, empresa, portal).
+
+## 3) Estructura de carpetas (resumen)
+
+- `backend/main.go`: entrypoint del servidor.
+- `backend/auth/`: OAuth Google.
+- `backend/db/`: modelos de acceso a datos.
+- `backend/handlers/`: endpoints y controladores.
+- `backend/metrics/`: captura de metricas.
+- `backend/utils/`: middlewares, token, cifrado.
+- `backend/tools/`: utilitarios de mantenimiento local.
+- `web/`: frontend.
+- `scripts/`: scripts de automatizacion local.
+- `documentos/`: documentacion funcional y tecnica.
+
+## 4) Flujo tecnico de una peticion
+
+1. Cliente web llama endpoint.
+2. `LoggingMiddleware` registra request.
+3. `AuthMiddleware` valida sesion (si ruta no es publica).
+4. Handler valida parametros y llama DB.
+5. DB ejecuta consulta/actualizacion en SQLite.
+6. Handler responde JSON.
+7. Frontend actualiza UI.
+
+## 5) Mapa de funciones backend (completo)
+
+### 5.1 `backend/main.go`
+- `main`: inicia variables de entorno, abre DB, crea/actualiza esquema, registra rutas y arranca servidor HTTP.
+
+### 5.2 `backend/auth/auth.go`
+- `ExchangeCodeForToken`: intercambia codigo OAuth por access token.
+- `FetchUserInfo`: consulta perfil del usuario en Google usando access token.
+
+### 5.3 `backend/db/carritos_compras.go`
+- `EnsureEmpresaCarritosSchema`: crea y migra tablas de carritos e items.
+- `nextCarritoCodigo`: genera codigo interno de carrito.
+- `defaultCanalVenta`: normaliza canal de venta por defecto.
+- `defaultMoneda`: define moneda por defecto.
+- `defaultEstadoCarrito`: normaliza estado operativo del carrito.
+- `defaultTipoItem`: normaliza tipo de item (producto/servicio).
+- `defaultUnidadCarrito`: normaliza unidad de medida del item.
+- `defaultImpuestoCodigo`: normaliza codigo de impuesto.
+- `round2`: redondea valores monetarios a 2 decimales.
+- `calcItemTotals`: calcula subtotal, impuesto y total de una linea.
+- `CreateCarritoCompra`: crea carrito.
+- `GetCarritosCompraByEmpresa`: lista carritos por empresa con filtros.
+- `GetCarritoCompraByID`: obtiene un carrito por ID.
+- `UpdateCarritoCompra`: actualiza datos del carrito.
+- `DeleteCarritoCompra`: elimina carrito.
+- `SetCarritoCompraEstado`: activa/inactiva carrito.
+- `SetCarritoOperacionEstado`: cambia estado operativo (abierto/cerrado/etc).
+- `ActivateCarritoStationSession`: activa sesion de carrito por estacion.
+- `PayCarritoStationSession`: cierra pago de estacion y registra resumen.
+- `CreateCarritoCompraItem`: crea item en carrito.
+- `GetCarritoCompraItems`: lista items de carrito.
+- `UpdateCarritoCompraItem`: actualiza item.
+- `DeleteCarritoCompraItem`: elimina item.
+- `SetCarritoCompraItemEstado`: activa/inactiva item.
+- `RecalculateCarritoCompraTotals`: recalcula totales del carrito.
+- `recalculateCarritoTotalsTx`: recalculo interno en transaccion.
+- `validateCarritoEnEmpresaTx`: valida pertenencia carrito-empresa en TX.
+
+### 5.4 `backend/db/clientes.go`
+- `EnsureEmpresaClientesSchema`: crea y migra tabla de clientes.
+- `ensureClientesColumns`: asegura columnas faltantes por migracion incremental.
+- `CreateCliente`: crea cliente.
+- `GetClientesByEmpresa`: lista clientes por empresa con busqueda.
+- `UpdateCliente`: actualiza cliente.
+- `DeleteCliente`: elimina cliente.
+- `SetClienteEstado`: activa/inactiva cliente.
+
+### 5.5 `backend/db/db.go`
+- `UpsertUser`: crea o actualiza usuario general.
+- `EnsureUserEmpresa`: asegura relacion usuario-empresa.
+- `UpsertAdministrador`: crea/actualiza administrador global.
+- `UpdateAdministrador`: actualiza administrador.
+- `DeleteAdministrador`: elimina administrador.
+- `SetAdministradorEstado`: activa/inactiva administrador.
+- `CreateSession`: crea sesion con token.
+- `CreateLicencia`: crea licencia.
+- `GetLicencias`: lista licencias.
+- `GetLicenciaByID`: consulta licencia por ID.
+- `UpdateLicencia`: actualiza licencia.
+- `DeleteLicencia`: elimina licencia.
+- `SetLicenciaActivo`: activa/inactiva licencia.
+- `GetSessionByToken`: obtiene sesion por token.
+- `GetAdminByEmail`: busca administrador por email.
+- `GetAdministradores`: lista administradores.
+- `GetSesiones`: lista sesiones.
+- `CreateTipoEmpresa`: crea tipo de empresa.
+- `GetTiposEmpresas`: lista tipos de empresa.
+- `UpdateTipoEmpresa`: actualiza tipo de empresa.
+- `DeleteTipoEmpresa`: elimina tipo de empresa.
+- `SetTipoEmpresaActivo`: activa/inactiva tipo de empresa.
+- `CreateEmpresa`: crea empresa.
+- `GetEmpresas`: lista empresas.
+- `GetEmpresaByID`: busca empresa por ID.
+- `UpdateEmpresa`: actualiza empresa.
+- `DeleteEmpresa`: elimina empresa.
+- `SetEmpresaEstado`: activa/inactiva empresa.
+- `InitMetricsTable`: crea tabla de metricas.
+- `CreateMPPaymentRecord`: registra intento de pago Mercado Pago.
+- `UpdateMPPaymentRecordByPreference`: actualiza pago MP por preference_id.
+- `CreateWompiPaymentRecord`: registra intento de pago Wompi.
+- `UpdateWompiPaymentRecordByTransaction`: actualiza pago Wompi por transaccion.
+- `ActivateLicenciaForEmpresa`: activa licencia para empresa.
+- `SetConfigValue`: guarda valor de configuracion.
+- `GetConfigEntry`: obtiene entrada de configuracion con metadata.
+- `GetConfigValue`: obtiene solo el valor de configuracion.
+- `InsertMetric`: inserta muestra de metrica.
+- `GetLatestMetric`: obtiene ultima metrica.
+- `GetMetricsHistory`: obtiene historial de metricas.
+
+### 5.6 `backend/db/empresa_configuracion_avanzada.go`
+- `EnsureEmpresaConfiguracionAvanzadaSchema`: crea/migra tabla de configuracion avanzada de factura.
+- `defaultConfigAvanzada`: construye defaults de configuracion.
+- `defaultFormatoImpresion`: normaliza formato de impresion.
+- `defaultAmbienteFE`: normaliza ambiente FE.
+- `defaultTipoOperacion`: normaliza tipo de operacion FE.
+- `GetEmpresaConfiguracionAvanzada`: obtiene configuracion avanzada por empresa.
+- `UpsertEmpresaConfiguracionAvanzada`: crea/actualiza configuracion avanzada.
+
+### 5.7 `backend/db/productos.go`
+- `EnsureEmpresaProductosSchema`: crea/migra tablas de inventario y catalogo.
+- `ensureColumnIfMissing`: helper de migracion incremental por columna.
+- `CreateBodega`: crea bodega.
+- `GetBodegasByEmpresa`: lista bodegas.
+- `UpdateBodega`: actualiza bodega.
+- `DeleteBodega`: elimina bodega.
+- `SetBodegaEstado`: activa/inactiva bodega.
+- `CreateProducto`: crea producto e inventario inicial.
+- `GetProductosByEmpresa`: lista productos con filtros/paginacion.
+- `GetProductoByID`: obtiene producto por ID.
+- `UpdateProducto`: actualiza producto.
+- `DeleteProducto`: elimina producto.
+- `SetProductoEstado`: activa/inactiva producto.
+- `UpdateProductoImagen`: actualiza URL de imagen del producto.
+- `GetExistenciasByEmpresa`: consulta existencias.
+- `TransferirProductoEntreBodegas`: mueve inventario entre bodegas.
+- `GetMovimientosByEmpresa`: lista movimientos de inventario.
+- `CreateProveedor`: crea proveedor.
+- `GetProveedoresByEmpresa`: lista proveedores.
+- `UpdateProveedor`: actualiza proveedor.
+- `DeleteProveedor`: elimina proveedor.
+- `SetProveedorEstado`: activa/inactiva proveedor.
+- `CreateServicio`: crea servicio.
+- `GetServiciosByEmpresa`: lista servicios.
+- `UpdateServicio`: actualiza servicio.
+- `DeleteServicio`: elimina servicio.
+- `SetServicioEstado`: activa/inactiva servicio.
+- `GetProductoPrecioHistorialByEmpresa`: consulta historial de precios.
+- `RegistrarMovimientoInventario`: registra entrada/salida/ajuste.
+- `RegistrarCambioProducto`: registra cambio producto origen-destino.
+- `insertProductoPrecioHistorialTx`: inserta historial de precio en TX.
+- `validateBodegaEmpresaTx`: valida relacion bodega-empresa en TX.
+- `validateProveedorEmpresaTx`: valida relacion proveedor-empresa en TX.
+- `upsertExistenciaTx`: actualiza o crea existencia en TX.
+- `insertMovimientoTx`: inserta movimiento en TX.
+- `nullableInt64`: convierte int64 a nullable para SQL.
+- `defaultUnidad`: normaliza unidad por defecto.
+
+### 5.8 `backend/db/roles_tipos_usuario.go`
+- `CreateRolDeUsuario`: crea rol por tipo de empresa.
+- `GetRolesDeUsuario`: lista roles por tipo de empresa.
+- `UpdateRolDeUsuario`: actualiza rol.
+- `DeleteRolDeUsuario`: elimina rol.
+- `SetRolDeUsuarioEstado`: activa/inactiva rol.
+- `CreateTipoDeUsuario`: crea tipo de usuario asociado a rol.
+- `GetTiposDeUsuario`: lista tipos de usuario.
+- `UpdateTipoDeUsuario`: actualiza tipo de usuario.
+- `DeleteTipoDeUsuario`: elimina tipo de usuario.
+- `SetTipoDeUsuarioEstado`: activa/inactiva tipo de usuario.
+- `validateRolPorTipoEmpresa`: valida consistencia rol-tipo de empresa.
+
+### 5.9 `backend/db/usuarios_empresa.go`
+- `CreateEmpresaUsuario`: crea usuario operativo de empresa.
+- `GetEmpresaUsuarios`: lista usuarios de empresa.
+- `GetEmpresaUsuarioByID`: obtiene usuario por ID.
+- `GetEmpresaUsuarioByEmail`: obtiene usuario por email.
+- `SetEmpresaUsuarioPassword`: guarda hash/salt de contrasena inicial.
+- `UpdateEmpresaUsuario`: actualiza usuario y estado de confirmacion.
+- `DeleteEmpresaUsuario`: elimina usuario.
+- `SetEmpresaUsuarioEstado`: activa/inactiva usuario.
+- `SetEmpresaUsuarioConfirmToken`: guarda token de confirmacion por correo.
+- `ConfirmEmpresaUsuarioByToken`: confirma correo y activa usuario.
+
+### 5.10 `backend/handlers/carritos_compras.go`
+- `EmpresaCarritosCompraHandler`: endpoint CRUD de carritos + acciones operativas.
+- `EmpresaCarritoItemsHandler`: endpoint CRUD de items de carrito.
+- `validateCarritoPayload`: valida payload de carrito.
+- `validateCarritoItemPayload`: valida payload de item.
+
+### 5.11 `backend/handlers/clientes.go`
+- `EmpresaClientesHandler`: endpoint CRUD de clientes.
+- `validateClientePayload`: valida estructura y reglas de cliente.
+- `errBadRequest`: helper de error de validacion.
+- `writeJSON`: helper para respuesta JSON.
+
+### 5.12 `backend/handlers/empresa_configuracion_avanzada.go`
+- `EmpresaConfiguracionAvanzadaHandler`: endpoint GET/POST/PUT de configuracion avanzada.
+- `hydrateEmpresaDefaults`: completa defaults desde empresa cuando faltan datos.
+
+### 5.13 `backend/handlers/handlers.go`
+- `HandleGoogleLogin`: inicia flujo OAuth Google.
+- `HandleGoogleCallback`: procesa callback OAuth, crea/actualiza sesion.
+- `ListAdministradoresHandler`: lista administradores.
+- `ListSesionesHandler`: lista sesiones activas.
+- `AdministradoresHandler`: CRUD de administradores.
+- `TiposEmpresasHandler`: CRUD de tipos de empresa.
+- `TiposLicenciasHandler`: CRUD de tipos de licencia.
+- `LicenciasHandler`: CRUD de licencias.
+- `MercadoPagoCreatePreferenceHandler`: crea preferencia de pago MP.
+- `MercadoPagoConfigHandler`: consulta/guarda configuracion Mercado Pago.
+- `getDecryptedConfigValue`: obtiene configuracion sensible descifrada.
+- `normalizeWompiMode`: normaliza modo de Wompi.
+- `wompiModeFromKeys`: deduce modo segun formato de llaves.
+- `resolveWompiMode`: determina modo final Wompi.
+- `wompiBaseURLFromMode`: retorna base URL de API Wompi.
+- `fetchWompiAcceptanceInfo`: consulta terminos/aceptacion Wompi.
+- `WompiConfigHandler`: consulta/guarda configuracion Wompi.
+- `WompiTermsHandler`: expone info de terminos Wompi para frontend.
+- `WompiCreateNequiTransactionHandler`: crea transaccion Nequi en Wompi.
+- `WompiTransactionStatusHandler`: consulta estado de transaccion Wompi.
+- `ActivateLicenciaSinPagoHandler`: activa licencia administrativa sin pasarela.
+- `MercadoPagoTestPreferenceHandler`: crea preferencia de prueba MP.
+- `MercadoPagoWebhookHandler`: procesa webhook MP y actualiza pagos/licencias.
+- `MeHandler`: devuelve contexto del usuario autenticado.
+- `SecurityPortsHandler`: consulta estado de puertos/seguridad.
+- `EmpresasHandler`: CRUD de empresas.
+
+### 5.14 `backend/handlers/metrics.go`
+- `MetricsCurrentHandler`: retorna metrica actual.
+- `MetricsHistoryHandler`: retorna historial de metricas.
+
+### 5.15 `backend/handlers/productos.go`
+- `EmpresaBodegasHandler`: endpoint CRUD de bodegas.
+- `EmpresaProductosHandler`: endpoint CRUD de productos.
+- `EmpresaInventarioExistenciasHandler`: endpoint de consulta de existencias.
+- `EmpresaInventarioMovimientosHandler`: endpoint de movimientos de inventario.
+- `EmpresaInventarioTransferHandler`: endpoint de transferencias entre bodegas.
+- `EmpresaInventarioAjusteHandler`: endpoint de ajustes de inventario.
+- `EmpresaInventarioCambioProductoHandler`: endpoint de cambio de producto por reemplazo.
+- `EmpresaProductoPrecioHistorialHandler`: endpoint historial de precios.
+- `EmpresaProveedoresHandler`: endpoint CRUD de proveedores.
+- `EmpresaServiciosHandler`: endpoint CRUD de servicios.
+- `EmpresaProductoImagenUploadHandler`: endpoint de carga de imagen de producto.
+- `resolveWebRootDir`: resuelve ruta de carpeta web en runtime.
+- `parseEmpresaIDQuery`: parsea empresa_id obligatorio.
+- `parseInt64Query`: parsea query int64 obligatorio.
+- `parseInt64QueryOptional`: parsea query int64 opcional.
+- `parseIntQueryOptional`: parsea query int opcional.
+- `parseInt64Form`: parsea campo int64 en formulario.
+- `adminEmailFromRequest`: extrae email admin desde cabeceras/contexto.
+
+### 5.16 `backend/handlers/roles_tipos_usuario.go`
+- `RolesDeUsuarioHandler`: endpoint CRUD de roles de usuario.
+- `TiposDeUsuarioHandler`: endpoint CRUD de tipos de usuario.
+- `parseRequiredInt64Query`: parseo obligatorio int64 en query.
+- `parseOptionalInt64Query`: parseo opcional int64 en query.
+- `parseEstadoFromQuery`: normaliza parametro de estado.
+
+### 5.17 `backend/handlers/usuarios_empresa.go`
+- `EmpresaRolesDeUsuarioHandler`: lista roles aplicables para empresa.
+- `EmpresaUsuariosHandler`: endpoint CRUD de usuarios de empresa.
+- `EmpresaUsuarioLoginHandler`: login de usuario empresa con password.
+- `EmpresaUsuarioSetPasswordHandler`: primer ingreso para crear password.
+- `ConfirmarCorreoUsuarioHandler`: confirma email por token.
+- `GmailConfigHandler`: consulta/actualiza configuracion SMTP Gmail.
+- `validateEmpresaUsuarioPayload`: valida payload de usuario empresa.
+- `resolveTipoEmpresaIDForEmpresa`: resuelve tipo de empresa para validaciones.
+- `resolveRolNombreValidoParaEmpresa`: valida rol elegido para esa empresa.
+- `newEmailConfirmationTokenAndExpiration`: genera token y expiracion de confirmacion.
+- `resolveBaseURLForConfirmation`: calcula URL base para enlaces de correo.
+- `sendEmpresaUsuarioConfirmationEmail`: envia correo de confirmacion.
+- `createEmpresaUsuarioSessionAndRespond`: crea sesion y responde redirect.
+- `hashEmpresaUsuarioPassword`: calcula hash de password con sal.
+- `generateEmpresaUsuarioPasswordHash`: genera hash + sal inicial.
+- `verifyEmpresaUsuarioPassword`: valida password contra hash almacenado.
+
+### 5.18 `backend/metrics/collector.go`
+- `StartCollector`: inicia ciclo periodico de metricas.
+- `collectAndStore`: captura metricas de sistema y guarda en DB.
+- `DefaultIntervalSeconds`: retorna intervalo por defecto.
+
+### 5.19 `backend/utils/utils.go`
+- `LoggingMiddleware`: middleware de logging HTTP.
+- `TryLoadCredsFromDocs`: intenta leer credenciales desde documento local.
+- `GenerateSecureToken`: genera token aleatorio seguro.
+- `AuthMiddleware`: valida cookie de sesion y permite/bloquea acceso.
+- `getEncKeyFromEnv`: lee y valida llave de cifrado desde entorno.
+- `EncryptString`: cifra texto con AES-GCM.
+- `DecryptString`: descifra texto cifrado.
+- `EncryptionAvailable`: reporta si existe llave de cifrado utilizable.
+
+### 5.20 `backend/tools/*.go`
+
+`add_role_super.go`
+- `main`: utilidad local para crear/ajustar rol super.
+
+`inspect_tipos.go`
+- `main`: inspecciona tipos cargados en DB.
+
+`migrate_and_list.go`
+- `backupFile`: crea backup antes de migracion.
+- `ensureIndices`: crea indices de apoyo.
+- `listAdmins`: lista administradores.
+- `listUsers`: lista usuarios.
+- `main`: ejecuta flujo de migracion e inspeccion.
+
+`query_users.go`
+- `main`: consulta usuarios para diagnostico local.
+
+`set_admin_role.go`
+- `main`: ajusta rol de administrador localmente.
+
+`sync_users_to_super.go`
+- `backup`: crea backup previo de DB.
+- `main`: sincroniza usuarios hacia contexto super.
+
+## 6) Mapa de funciones frontend (declaradas)
+
+Nota: en frontend hay funciones utilitarias repetidas por pagina (`getQueryParam`, `setMessage`, `ensureOk`, `normalize`, etc.). Todas cumplen parseo de URL, manejo de mensajes, validacion HTTP y normalizacion de datos.
+
+### 6.1 Portal y navegacion base
+
+`web/menu.js`
+- `injectMenu`: inserta menu flotante comun.
+- `getCookie`: obtiene cookie por nombre.
+- `applyTheme`: aplica tema visual.
+- `updateThemeBtn`: actualiza estado del boton de tema.
+
+`web/administrar_empresa.html`
+- `getQueryParam`: lee empresa_id de la URL.
+- `setLinksWithEmpresa`: propaga empresa_id en enlaces internos.
+
+`web/seleccionar_empresa.html`
+- `setActiveNav`: marca opcion activa del menu.
+- `openInRightFrame`: abre modulo en frame derecho.
+- `buildEmpresaCard`: construye tarjeta HTML de empresa.
+- `appendEmpresasGroup`: renderiza grupo de empresas por estado.
+- `render`: render general de pantalla.
+- `showForm`: muestra formulario lateral.
+- `hideForm`: oculta formulario lateral.
+- `wireSidebarFrameLinks`: conecta eventos de menu lateral.
+- `escapeHtml`: escapa texto para HTML.
+
+`web/super_administrador.html`
+- `clearActive`: limpia seleccion activa del menu.
+- `setActiveByHref`: marca seleccion por href actual.
+
+`web/elegir_licencia.html`
+- `escapeHtml`: escapa texto para render seguro.
+- `run`: inicializa flujo de seleccion de licencia.
+
+`web/pagar_licencia.html`
+- `escapeHtml`: escapa texto para render seguro.
+- `run`: inicializa flujo de pago.
+- `setPaymentMethod`: cambia metodo de pago en UI.
+
+### 6.2 Modulo empresa: clientes
+
+`web/administrar_empresa/administrar_clientes.html`
+- `getQueryParam`: lee empresa_id.
+- `setMessage`: muestra mensajes de estado/error.
+- `ensureOk`: valida respuestas HTTP.
+- `normalize`: limpia strings de entrada/salida.
+- `resetForm`: reinicia formulario de cliente.
+- `renderList`: dibuja tabla/listado de clientes.
+- `loadEmpresaTitle`: carga nombre de empresa.
+- `loadClients`: consulta clientes API.
+- `loadData`: carga inicial de datos de pantalla.
+- `init`: bootstrap principal de pagina.
+
+### 6.3 Modulo empresa: productos/inventario
+
+`web/administrar_empresa/administrar_productos.html`
+- `showMessage`: mensaje global de modulo.
+- `requestJSON`: helper de fetch JSON.
+- `sanitize`: sanea texto para UI.
+- `num`: convierte valores numericos.
+- `buildOptions`: llena selectores.
+- `getActivos`: filtra registros activos.
+- `setCRUDFormVisible`: muestra/oculta formulario CRUD.
+- `hideCRUDForms`: oculta todos los formularios.
+- `loadEmpresaInfo`: carga datos de empresa.
+- `loadBodegas`: consulta bodegas.
+- `renderBodegas`: pinta tabla de bodegas.
+- `refreshBodegaSelectors`: refresca selectores dependientes.
+- `fillBodegaForm`: llena formulario de bodega.
+- `saveBodega`: crea/edita bodega.
+- `accionBodega`: eliminar/activar/desactivar bodega.
+- `loadProveedores`: consulta proveedores.
+- `renderProveedores`: pinta tabla de proveedores.
+- `refreshProveedorSelector`: refresca selector proveedor.
+- `fillProveedorForm`: llena formulario proveedor.
+- `saveProveedor`: crea/edita proveedor.
+- `accionProveedor`: eliminar/activar/desactivar proveedor.
+- `loadProductos`: consulta productos.
+- `refreshProductoSelectors`: refresca selectores de producto.
+- `renderProductos`: pinta tabla de productos.
+- `fillProductoForm`: llena formulario de producto.
+- `saveProducto`: crea/edita producto.
+- `accionProducto`: eliminar/activar/desactivar producto.
+- `loadServicios`: consulta servicios.
+- `renderServicios`: pinta tabla de servicios.
+- `fillServicioForm`: llena formulario de servicio.
+- `saveServicio`: crea/edita servicio.
+- `accionServicio`: eliminar/activar/desactivar servicio.
+- `loadExistencias`: consulta existencias.
+- `loadMovimientos`: consulta movimientos.
+- `loadPreciosHistorial`: consulta historial de precios.
+- `moverInventario`: ejecuta transferencia entre bodegas.
+- `registrarAjusteInventario`: registra ajuste manual.
+- `registrarCambioProducto`: ejecuta cambio de producto.
+- `wireEvents`: conecta eventos de botones/forms.
+- `bootstrap`: inicializa toda la pantalla.
+
+### 6.4 Modulo empresa: usuarios
+
+`web/administrar_empresa/administrar_usuarios.html`
+- `getQueryParam`: lee empresa_id.
+- `setMessage`: muestra mensajes.
+- `ensureOk`: valida fetch.
+- `fillRolesSelect`: llena selector de roles.
+- `rolNombreById`: resuelve nombre de rol por ID.
+- `resetForm`: reinicia formulario.
+- `renderList`: dibuja lista de usuarios.
+- `loadRoles`: consulta roles disponibles.
+- `loadEmpresaTitle`: carga nombre empresa.
+- `loadUsers`: consulta usuarios.
+- `loadData`: carga inicial.
+- `init`: bootstrap.
+
+### 6.5 Modulo empresa: carritos
+
+`web/administrar_empresa/carrito_de_compras.html`
+- `getQueryParam`: lee parametros URL.
+- `setMessage`: mensajes por bloque.
+- `toNumber`: conversion segura a numero.
+- `normalize`: normaliza texto.
+- `normalizedCode`: normaliza codigos operativos.
+- `escapeHtml`: escapa texto para HTML.
+- `loadEmpresaGeneralConfig`: carga config general de empresa.
+- `getDiscountCapabilities`: determina descuentos habilitados.
+- `parseDiscountCodesMap`: parsea mapa de codigos de descuento.
+- `parseSQLiteDate`: convierte fecha SQLite a Date.
+- `formatDateTime`: formatea fecha/hora para UI.
+- `formatDurationSince`: calcula duracion transcurrida.
+- `isCarritoOperativoActivo`: valida si sesion operativa esta activa.
+- `getStationPaymentBreakdown`: calcula desglose de cobro estacion.
+- `roundMoney`: redondeo monetario.
+- `printServiceOrderIfEnabled`: lanza impresion de orden de servicio segun config.
+- `setStationPaymentMessage`: mensajes en panel de pago estacion.
+- `syncStationDiscountFromInputs`: sincroniza campos de descuento.
+- `renderStationPaymentPanel`: pinta panel de cobro de estacion.
+- `activateStationSession`: activa sesion de carrito para estacion.
+- `payStationSession`: cierra y paga sesion de estacion.
+- `formatAmount`: formatea montos con moneda.
+- `ensureOk`: valida respuesta HTTP.
+- `getSelectedCarrito`: obtiene carrito seleccionado en estado UI.
+- `getCarritoCodeFromItem`: extrae codigo de carrito desde objeto.
+- `buildBuscarProductosURL`: genera URL de submodulo buscar productos.
+- `openBuscarProductosForCarrito`: navega al buscador por carrito.
+- `syncBuscarProductosButton`: habilita/etiqueta boton buscar productos.
+- `fillClientesSelect`: llena selector de cliente.
+- `resetCarritoForm`: reinicia formulario carrito.
+- `resetItemForm`: reinicia formulario item.
+- `isCatalogSearchType`: valida tipo de busqueda de catalogo.
+- `renderCatalogHint`: pinta ayuda de busqueda.
+- `renderCatalogResults`: pinta resultados de catalogo.
+- `clearCatalogResults`: limpia resultados de catalogo.
+- `mapCatalogRow`: transforma fila API a objeto catalogo.
+- `searchCatalogByInput`: busca por texto en productos/servicios.
+- `applySelectedCatalogResult`: aplica resultado al formulario de item.
+- `renderCarritos`: render tabla/lista de carritos.
+- `renderResumen`: render resumen monetario del carrito.
+- `renderProductosCarritoTable`: tabla especifica de productos del carrito.
+- `renderItems`: render tabla de items.
+- `loadEmpresaTitle`: carga nombre de empresa.
+- `loadClientes`: carga clientes.
+- `loadCarritos`: carga carritos.
+- `applyStationModeUI`: adapta UI a modo estacion.
+- `ensureStationCarritoLifecycle`: asegura ciclo activo/pago en modo estacion.
+- `loadItems`: carga items del carrito actual.
+- `init`: bootstrap.
+
+### 6.6 Modulo empresa: busqueda por botones
+
+`web/administrar_empresa/buscar_producto_botones.html`
+- `getQueryParam`: lee parametros URL.
+- `normalize`: limpia strings.
+- `toNumber`: conversion numerica segura.
+- `escapeHtml`: escapa texto para UI.
+- `setMessage`: muestra mensajes.
+- `formatAmount`: formatea monto.
+- `ensureOk`: valida respuestas HTTP.
+- `safeReturnURL`: valida return_url segura.
+- `buildDefaultReturnURL`: construye retorno por defecto.
+- `getSelectedRows`: arma lista de seleccion.
+- `updateSelectionCount`: actualiza contador de unidades.
+- `renderSelectionTable`: pinta tabla de seleccion.
+- `filterProducts`: aplica filtro de texto.
+- `renderProductsButtons`: pinta grilla de botones de productos.
+- `resolveCarrito`: resuelve carrito por ID/codigo.
+- `loadProducts`: carga catalogo de productos.
+- `getCurrentCarritoItems`: carga items actuales para merge.
+- `buildProductoPayload`: construye payload POST/PUT item.
+- `applySelectionToCarrito`: agrega seleccion al carrito.
+- `exitToCarrito`: retorna a carrito con confirmacion.
+- `renderContext`: pinta encabezado contextual.
+- `init`: bootstrap.
+
+### 6.7 Modulo empresa: configuracion
+
+`web/administrar_empresa/configuracion.html`
+- `configStorageKey`: genera clave localStorage por empresa.
+- `normalizeConfig`: normaliza estructura de config general.
+- `loadConfig`: carga config local.
+- `saveConfig`: guarda config local.
+- `setConfigMessage`: mensajes de seccion config.
+- `setBackupMessage`: mensajes de backup.
+- `setFacturaMessage`: mensajes de impresion/factura.
+- `normalizeFormatoImpresion`: normaliza carta/pos.
+- `setFacturaFormData`: carga datos de impresion en form.
+- `getFacturaFormData`: extrae payload impresion del form.
+- `loadFacturaConfig`: consulta configuracion avanzada de impresion.
+- `guardarFacturaConfig`: guarda configuracion de impresion.
+- `setFormData`: carga configuracion general en form.
+- `getFormData`: extrae configuracion general del form.
+- `formatStamp`: genera sello de fecha para backup.
+- `loadEmpresaInfo`: carga datos empresa.
+- `guardarConfiguracion`: guarda config general local.
+- `descargarBackup`: exporta backup JSON.
+- `restaurarBackup`: importa backup JSON.
+- `bootstrap`: inicializa pantalla.
+
+`web/administrar_empresa/configuracion_avanzada.html`
+- `getQueryParam`: lee empresa_id.
+- `normalize`: normaliza strings.
+- `toInt`: parseo int con fallback.
+- `asDateValue`: formatea fecha para input date.
+- `setMessage`: mensajes de estado/error.
+- `ensureOk`: valida HTTP.
+- `setFormData`: carga config avanzada en UI.
+- `collectPayload`: construye payload de guardado.
+- `loadEmpresaTitle`: carga nombre empresa.
+- `loadConfig`: consulta config avanzada API.
+- `init`: bootstrap.
+
+`web/administrar_empresa/configuracion_de_estaciones.html`
+- `showMessage`: mensajes UI.
+- `sanitize`: sanea salida.
+- `requestJSON`: helper fetch JSON.
+- `getCarritoCodeForStation`: deriva codigo carrito por estacion.
+- `normalizedCode`: normaliza codigos.
+- `storageKey`: clave localStorage.
+- `readConfig`: lee config estaciones.
+- `normalizeConfig`: normaliza config.
+- `saveConfig`: guarda config.
+- `renderRows`: pinta filas de estaciones.
+- `applyCantidad`: aplica cantidad de estaciones.
+- `syncCarritosFromStations`: sincroniza estaciones con carritos backend.
+- `guardarNombres`: persiste nombres de estaciones.
+- `cargarEmpresa`: carga metadatos empresa.
+- `wireEvents`: conecta eventos.
+- `bootstrap`: inicializa pantalla.
+
+`web/administrar_empresa/estaciones.html`
+- `sanitize`: sanea salida.
+- `storageKey`: clave de configuracion.
+- `getCarritoCodeForStation`: calcula codigo de carrito por estacion.
+- `openStationCarrito`: abre carrito en modo estacion.
+- `readConfig`: lee configuracion de estaciones.
+- `renderEstaciones`: renderiza tarjetas.
+- `bootstrap`: inicializa vista.
+
+### 6.8 Modulo super
+
+`web/super/administradores.html`
+- `load`: carga listado de administradores.
+
+`web/super/configuracion_avanzada.html`
+- `load`: carga configuraciones globales.
+- `refreshWompiModeHint`: actualiza pista visual de modo Wompi.
+- `loadGmailConfig`: consulta config SMTP.
+- `saveGmail`: guarda config SMTP.
+- `enableEditGmail`: habilita edicion SMTP.
+- `cancelEditGmail`: cancela edicion SMTP.
+- `saveMP`: guarda config Mercado Pago.
+- `enableEditMP`: habilita edicion MP.
+- `cancelEditMP`: cancela edicion MP.
+- `enableEditWebhook`: habilita edicion webhook.
+- `cancelEditWebhook`: cancela edicion webhook.
+- `saveWompi`: guarda config Wompi.
+- `enableEditWompi`: habilita edicion Wompi.
+- `cancelEditWompi`: cancela edicion Wompi.
+
+`web/super/licencias.html`
+- `load`: carga listado de licencias.
+- `getCookie`: obtiene cookie para requests protegidos.
+
+`web/super/licencias_resumen.html`
+- `loadActiveCount`: carga conteo de licencias activas.
+
+`web/super/metricas_de_trafico_general.html`
+- `fmtBytes`: formatea bytes a unidades legibles.
+- `createCharts`: crea graficos.
+- `loadHistory`: carga historico de metricas.
+- `updateCurrent`: actualiza metrica actual.
+
+`web/super/roles_de_usuario.html`
+- `tipoNombre`: resuelve nombre de tipo empresa.
+- `setMessage`: muestra mensajes.
+- `ensureOk`: valida HTTP.
+- `loadTipos`: carga tipos empresa para filtro.
+- `renderList`: pinta roles/tipos.
+- `load`: carga inicial de datos.
+- `resetForm`: limpia formulario.
+
+`web/super/seguridad.html`
+- `scan`: ejecuta escaneo de estado de seguridad/puertos.
+
+`web/super/tipos_empresas.html`
+- `load`: carga tipos de empresa.
+- `getCookie`: helper cookie.
+
+### 6.9 Login usuario empresa
+
+`web/login_usuario.html`
+- `setMessage`: muestra mensajes por formulario.
+- `getErrorMessage`: obtiene texto de error HTTP.
+- `showSetupForm`: cambia a flujo de primer ingreso.
+- `showLoginForm`: vuelve a flujo de login normal.
+
+## 7) Analisis tecnico: riesgos y mejoras recomendadas
+
+### 7.1 Riesgos observados
+
+1. Archivo `backend/handlers/handlers.go` concentra demasiada logica (muy grande).
+2. Hay logica critica de negocio embebida en HTML con JS inline grande.
+3. Existen scripts de push forzado por defecto (`scripts/actualizar_repositorio.ps1`).
+4. Hay secretos historicamente documentados en texto plano en documentacion antigua.
+5. Existen artefactos y logs en repo (`*.err`, `*.log`, binarios) que pueden crecer o filtrar datos.
+6. Falta cobertura de tests unitarios reales (muchos paquetes sin `*_test.go`).
+7. Migraciones de esquema son manuales por columna y pueden desalinearse entre ambientes.
+
+### 7.2 Mejoras para prevenir errores futuros
+
+1. Dividir `backend/handlers/handlers.go` en modulos por dominio:
+- `handlers/auth_handlers.go`
+- `handlers/licencias_handlers.go`
+- `handlers/payments_handlers.go`
+- `handlers/empresa_handlers.go`
+
+2. Estandarizar validacion y respuestas de error:
+- Crear helpers comunes para 400/401/403/500.
+- Unificar formato JSON de error (`code`, `message`, `details`).
+
+3. Introducir pruebas automatizadas minimas por dominio:
+- DB: tests para CRUD basico y casos de borde.
+- Handlers: tests HTTP con `httptest` para rutas criticas.
+- Flujo critico: login usuario empresa + carrito pago estacion.
+
+4. Crear un esquema de migraciones versionadas:
+- Tabla `schema_migrations`.
+- Ejecutar scripts de migracion con version incremental.
+
+5. Reducir JS inline y modularizar frontend:
+- Mover scripts de paginas grandes a `web/js/<modulo>.js`.
+- Separar utilitarios comunes (`http.js`, `format.js`, `ui.js`).
+
+6. Endurecer seguridad operativa:
+- Eliminar secretos del historial documental.
+- Validar que todas las llaves sensibles usen entorno y cifrado.
+- Revisar cookies con `Secure` en entornos TLS y expiracion controlada.
+
+7. Endurecer script de repositorio:
+- Desactivar `--force` por defecto.
+- Requerir confirmacion interactiva para push forzado.
+
+8. Fortalecer observabilidad:
+- Estandarizar log estructurado con nivel (`INFO/WARN/ERROR`).
+- Correlacionar request por `request_id`.
+
+9. Introducir validacion de contrato API:
+- Generar documento OpenAPI minimo para endpoints mas usados.
+- Agregar checks de regresion de payload.
+
+10. Añadir checklist de release:
+- tests
+- backup DB
+- migraciones
+- smoke test endpoints
+- verificacion de rutas publicas/protegidas
+
+## 8) Regla de mantenimiento de este documento
+
+Cada cambio en:
+- arquitectura,
+- rutas,
+- funciones backend,
+- funciones frontend criticas,
+
+debe actualizar este archivo en el mismo ciclo de trabajo para mantener trazabilidad y acelerar futuras iteraciones.

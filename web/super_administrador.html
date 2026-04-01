@@ -36,60 +36,6 @@
     </main>
   </div>
   
-  <script>
-    // Resaltar link activo en sidebar y sincronizar con el iframe
-    (function(){
-      var sidebar = document.querySelector('.admin-sidebar .nav');
-      var links = sidebar ? Array.from(sidebar.querySelectorAll('a')) : [];
-      var iframe = document.getElementById('contentFrame');
-      function clearActive(){ links.forEach(function(a){ a.classList.remove('active'); }); }
-      function setActiveByHref(href){ clearActive(); var found = links.find(function(a){ return a.getAttribute('href') === href; }); if(found) found.classList.add('active'); }
-      links.forEach(function(a){
-        a.addEventListener('click', function(e){
-          // Si el enlace abre en nueva pestaña o es selector especial, dejar comportamiento por defecto
-          var targetAttr = a.getAttribute('target');
-          if (targetAttr === '_blank' || a.classList.contains('select-company')) {
-            return;
-          }
-          e.preventDefault();
-          // marcar activo inmediatamente al hacer click
-          clearActive(); this.classList.add('active');
-          var href = a.getAttribute('href');
-          if (!href) return;
-          // Cargar la ruta en el iframe derecho si existe
-          if (iframe) {
-            iframe.setAttribute('src', href);
-          } else {
-            window.location.href = href;
-          }
-        });
-      });
-      // cuando el iframe carga, sincronizar el active
-      if (iframe){
-        iframe.addEventListener('load', function(){
-          try{
-            var src = iframe.contentWindow.location.pathname;
-            // convertir path a href relativo si es necesario
-            setActiveByHref(src);
-          } catch(e){
-            // si no se puede leer (crossover), intentar usar iframe.src
-            var src2 = iframe.getAttribute('src');
-            setActiveByHref(src2);
-          }
-        });
-        // inicializar: no preseleccionar ningún link al cargar la página
-      }
-    })();
-  </script>
-  <script>
-    // Si el usuario activó 'recordar cuenta', persistir el email actual (obtenido desde /me) para futuros auto-logins
-    (function(){
-      try{
-        if (localStorage.getItem('rememberAccount') === '1'){
-          fetch('/me').then(function(res){ if (!res.ok) throw new Error('unauth'); return res.json(); }).then(function(admin){ if (admin && admin.email) { try{ localStorage.setItem('rememberedEmail', admin.email); }catch(e){} } }).catch(function(){});
-        }
-      }catch(e){}
-    })();
-  </script>
+  <script src="/js/super_administrador.js"></script>
 </body>
 </html>

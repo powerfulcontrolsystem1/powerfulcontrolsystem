@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -125,15 +127,22 @@ func EmpresaUsuariosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			}
 
 			confirmURL, mailErr := sendEmpresaUsuarioConfirmationEmail(r, dbSuper, strings.TrimSpace(payload.Email), strings.TrimSpace(payload.Nombre), token)
+			if mailErr != nil {
+				// Regla de negocio: si no se envía correo, no se registra usuario.
+				rollbackErr := dbpkg.DeleteEmpresaUsuario(dbEmp, payload.EmpresaID, id)
+				if rollbackErr != nil {
+					http.Error(w, "no se pudo enviar el correo de validación y tampoco revertir el usuario: "+rollbackErr.Error(), http.StatusInternalServerError)
+					return
+				}
+				http.Error(w, "no se pudo enviar el correo de validación; el usuario no fue registrado: "+mailErr.Error()+" | enlace: "+confirmURL, http.StatusBadGateway)
+				return
+			}
+
 			w.Header().Set("Content-Type", "application/json")
 			resp := map[string]interface{}{
 				"id":                          id,
 				"email_confirmation_required": true,
-				"email_sent":                  mailErr == nil,
-			}
-			if mailErr != nil {
-				resp["email_error"] = mailErr.Error()
-				resp["confirm_url_preview"] = confirmURL
+				"email_sent":                  true,
 			}
 			json.NewEncoder(w).Encode(resp)
 			return
@@ -151,9 +160,22 @@ func EmpresaUsuariosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					http.Error(w, "id required", http.StatusBadRequest)
 					return
 				}
+				item, err := dbpkg.GetEmpresaUsuarioByID(dbEmp, empresaID, id)
+				if err != nil {
+					if errors.Is(err, sql.ErrNoRows) {
+						http.Error(w, "user not found", http.StatusNotFound)
+						return
+					}
+					http.Error(w, "failed to query user: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
 				estado := "inactivo"
 				if r.URL.Query().Get("activo") == "1" || strings.EqualFold(r.URL.Query().Get("estado"), "activo") {
 					estado = "activo"
+				}
+				if estado == "activo" && item.EmailConfirmado != 1 {
+					http.Error(w, "no se puede activar el usuario hasta que confirme su correo", http.StatusConflict)
+					return
 				}
 				if err := dbpkg.SetEmpresaUsuarioEstado(dbEmp, empresaID, id, estado); err != nil {
 					http.Error(w, "failed to set estado: "+err.Error(), http.StatusInternalServerError)
@@ -324,6 +346,168 @@ func EmpresaUsuariosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	}
 }
 
+// EmpresaUsuarioLoginHandler valida credenciales de usuario de empresa y crea sesión de acceso.
+func EmpresaUsuarioLoginHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		var payload struct {
+			Email    string `json:"email"`
+			Password string `json:"password"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			http.Error(w, "invalid payload", http.StatusBadRequest)
+			return
+		}
+
+		email := strings.TrimSpace(payload.Email)
+		if email == "" {
+			http.Error(w, "email es obligatorio", http.StatusBadRequest)
+			return
+		}
+		if _, err := mail.ParseAddress(email); err != nil {
+			http.Error(w, "email inválido", http.StatusBadRequest)
+			return
+		}
+
+		item, err := dbpkg.GetEmpresaUsuarioByEmail(dbEmp, email)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				http.Error(w, "credenciales inválidas", http.StatusUnauthorized)
+				return
+			}
+			http.Error(w, "failed to query user: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if item.EmailConfirmado != 1 {
+			http.Error(w, "debes confirmar tu correo antes de iniciar sesión", http.StatusForbidden)
+			return
+		}
+		if strings.EqualFold(strings.TrimSpace(item.Estado), "inactivo") {
+			http.Error(w, "tu usuario está inactivo", http.StatusForbidden)
+			return
+		}
+
+		if item.PasswordSet != 1 || strings.TrimSpace(item.PasswordHash) == "" || strings.TrimSpace(item.PasswordSalt) == "" {
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"ok":                      false,
+				"password_setup_required": true,
+				"email":                   item.Email,
+				"message":                 "Primer ingreso: debes crear tu contraseña para continuar.",
+			})
+			return
+		}
+
+		if strings.TrimSpace(payload.Password) == "" {
+			http.Error(w, "password es obligatorio", http.StatusBadRequest)
+			return
+		}
+		if !verifyEmpresaUsuarioPassword(payload.Password, item) {
+			http.Error(w, "credenciales inválidas", http.StatusUnauthorized)
+			return
+		}
+
+		if err := createEmpresaUsuarioSessionAndRespond(w, r, dbSuper, item); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+}
+
+// EmpresaUsuarioSetPasswordHandler define la contraseña en el primer ingreso y abre sesión.
+func EmpresaUsuarioSetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		var payload struct {
+			Email              string `json:"email"`
+			DocumentoIdentidad string `json:"documento_identidad"`
+			Password           string `json:"password"`
+			PasswordConfirm    string `json:"password_confirm"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			http.Error(w, "invalid payload", http.StatusBadRequest)
+			return
+		}
+
+		email := strings.TrimSpace(payload.Email)
+		documento := strings.TrimSpace(payload.DocumentoIdentidad)
+		if email == "" || documento == "" {
+			http.Error(w, "email y documento_identidad son obligatorios", http.StatusBadRequest)
+			return
+		}
+		if _, err := mail.ParseAddress(email); err != nil {
+			http.Error(w, "email inválido", http.StatusBadRequest)
+			return
+		}
+		if strings.TrimSpace(payload.Password) == "" {
+			http.Error(w, "debes ingresar una contraseña", http.StatusBadRequest)
+			return
+		}
+		if len(payload.Password) < 8 {
+			http.Error(w, "la contraseña debe tener al menos 8 caracteres", http.StatusBadRequest)
+			return
+		}
+		if payload.PasswordConfirm != "" && payload.Password != payload.PasswordConfirm {
+			http.Error(w, "la confirmación de contraseña no coincide", http.StatusBadRequest)
+			return
+		}
+
+		item, err := dbpkg.GetEmpresaUsuarioByEmail(dbEmp, email)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				http.Error(w, "usuario no encontrado", http.StatusNotFound)
+				return
+			}
+			http.Error(w, "failed to query user: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if !strings.EqualFold(strings.TrimSpace(item.DocumentoIdentidad), documento) {
+			http.Error(w, "documento inválido", http.StatusUnauthorized)
+			return
+		}
+		if item.EmailConfirmado != 1 {
+			http.Error(w, "debes confirmar tu correo antes de crear contraseña", http.StatusForbidden)
+			return
+		}
+		if strings.EqualFold(strings.TrimSpace(item.Estado), "inactivo") {
+			http.Error(w, "tu usuario está inactivo", http.StatusForbidden)
+			return
+		}
+		if item.PasswordSet == 1 && strings.TrimSpace(item.PasswordHash) != "" {
+			http.Error(w, "el usuario ya tiene contraseña configurada", http.StatusConflict)
+			return
+		}
+
+		hash, salt, err := generateEmpresaUsuarioPasswordHash(payload.Password)
+		if err != nil {
+			http.Error(w, "no se pudo generar password hash", http.StatusInternalServerError)
+			return
+		}
+		if err := dbpkg.SetEmpresaUsuarioPassword(dbEmp, item.EmpresaID, item.ID, hash, salt); err != nil {
+			http.Error(w, "failed to set password: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		item.PasswordHash = hash
+		item.PasswordSalt = salt
+		item.PasswordSet = 1
+
+		if err := createEmpresaUsuarioSessionAndRespond(w, r, dbSuper, item); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+}
+
 // ConfirmarCorreoUsuarioHandler confirma el correo desde un enlace enviado al usuario.
 func ConfirmarCorreoUsuarioHandler(dbEmp *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -340,11 +524,11 @@ func ConfirmarCorreoUsuarioHandler(dbEmp *sql.DB) http.HandlerFunc {
 			msg := html.EscapeString(err.Error())
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			w.WriteHeader(http.StatusBadRequest)
-			fmt.Fprintf(w, "<html><body style='font-family:sans-serif;background:#10141f;color:#e9eefb;padding:24px'><h2>No se pudo confirmar el correo</h2><p>%s</p><p><a href='/login.html' style='color:#7fb2ff'>Volver al login</a></p></body></html>", msg)
+			fmt.Fprintf(w, "<html><body style='font-family:sans-serif;background:#10141f;color:#e9eefb;padding:24px'><h2>No se pudo confirmar el correo</h2><p>%s</p><p><a href='/login_usuario.html' style='color:#7fb2ff'>Volver al login de usuario</a></p></body></html>", msg)
 			return
 		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		fmt.Fprint(w, "<html><body style='font-family:sans-serif;background:#10141f;color:#e9eefb;padding:24px'><h2>Correo confirmado correctamente</h2><p>Tu cuenta ya está confirmada.</p><p><a href='/login.html' style='color:#7fb2ff'>Ir al login</a></p></body></html>")
+		fmt.Fprint(w, "<html><body style='font-family:sans-serif;background:#10141f;color:#e9eefb;padding:24px'><h2>Correo confirmado correctamente</h2><p>Tu cuenta ya está confirmada.</p><p><a href='/login_usuario.html' style='color:#7fb2ff'>Ir al login de usuario</a></p></body></html>")
 	}
 }
 
@@ -639,6 +823,7 @@ func sendEmpresaUsuarioConfirmationEmail(r *http.Request, dbSuper *sql.DB, toEma
 
 	baseURL := resolveBaseURLForConfirmation(r, dbSuper)
 	confirmURL := strings.TrimRight(baseURL, "/") + "/auth/confirmar_correo?token=" + url.QueryEscape(token)
+	loginURL := strings.TrimRight(baseURL, "/") + "/login_usuario.html"
 
 	mailHostForAuth := smtpHost
 	if strings.Contains(smtpHost, ":") {
@@ -662,6 +847,8 @@ func sendEmpresaUsuarioConfirmationEmail(r *http.Request, dbSuper *sql.DB, toEma
 		"Tu cuenta fue creada y necesita confirmar el correo para quedar habilitada.\r\n" +
 		"Haz clic en este enlace:\r\n" +
 		confirmURL + "\r\n\r\n" +
+		"Después de confirmar, inicia sesión aquí:\r\n" +
+		loginURL + "\r\n\r\n" +
 		"Si no solicitaste esta cuenta, ignora este mensaje.\r\n"
 
 	msg := "From: " + fromName + " <" + smtpEmail + ">\r\n" +
@@ -675,4 +862,62 @@ func sendEmpresaUsuarioConfirmationEmail(r *http.Request, dbSuper *sql.DB, toEma
 		return confirmURL, err
 	}
 	return confirmURL, nil
+}
+
+func createEmpresaUsuarioSessionAndRespond(w http.ResponseWriter, r *http.Request, dbSuper *sql.DB, item *dbpkg.EmpresaUsuario) error {
+	if err := dbpkg.UpsertAdministrador(dbSuper, item.Email, item.Nombre, "administrador", ""); err != nil {
+		return fmt.Errorf("failed to upsert admin: %w", err)
+	}
+
+	token, err := utils.GenerateSecureToken(32)
+	if err != nil {
+		return fmt.Errorf("failed to generate session token: %w", err)
+	}
+	if err := dbpkg.CreateSession(dbSuper, item.Email, r.RemoteAddr, r.UserAgent(), token); err != nil {
+		return fmt.Errorf("failed to create session: %w", err)
+	}
+
+	cookie := &http.Cookie{
+		Name:     "session_token",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		MaxAge:   86400,
+		Secure:   (r.TLS != nil),
+		SameSite: http.SameSiteLaxMode,
+	}
+	http.SetCookie(w, cookie)
+
+	redirectURL := "/administrar_empresa.html?id=" + strconv.FormatInt(item.EmpresaID, 10)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"ok":           true,
+		"empresa_id":   item.EmpresaID,
+		"usuario_id":   item.ID,
+		"redirect_url": redirectURL,
+	})
+	return nil
+}
+
+func hashEmpresaUsuarioPassword(password, salt string) string {
+	sum := sha256.Sum256([]byte(salt + ":" + password))
+	return hex.EncodeToString(sum[:])
+}
+
+func generateEmpresaUsuarioPasswordHash(password string) (string, string, error) {
+	salt, err := utils.GenerateSecureToken(16)
+	if err != nil {
+		return "", "", err
+	}
+	return hashEmpresaUsuarioPassword(password, salt), salt, nil
+}
+
+func verifyEmpresaUsuarioPassword(password string, item *dbpkg.EmpresaUsuario) bool {
+	if item == nil {
+		return false
+	}
+	if strings.TrimSpace(item.PasswordHash) == "" || strings.TrimSpace(item.PasswordSalt) == "" {
+		return false
+	}
+	return hashEmpresaUsuarioPassword(password, item.PasswordSalt) == strings.TrimSpace(item.PasswordHash)
 }

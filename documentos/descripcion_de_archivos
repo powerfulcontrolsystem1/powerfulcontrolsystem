@@ -1,5 +1,236 @@
 Descripcion de archivos del proyecto
 
+Actualizacion 2026-04-01: Recuperacion operativa de login admin/super por OAuth Google
+
+- backend/db/superadministrador.db:
+	- Se restauraron claves de configuracion OAuth Google en tabla `configuraciones`:
+		- `google.client_id`
+		- `google.client_secret`
+		- `google.redirect_url`
+	- Objetivo: restablecer el login de `login.html` para administradores y super administradores sin afectar `login_usuario.html`.
+	- Nota de seguridad: se guardo `google.client_secret` en texto plano por ausencia de `CONFIG_ENC_KEY` en el entorno local durante la recuperacion urgente.
+
+Actualizacion 2026-04-01: Recuperacion de login admin/super con fallback OAuth desde DB
+
+- backend/main.go:
+	- Se agrego resolucion de credenciales OAuth Google desde tabla `configuraciones` en `superadministrador.db`.
+	- Si la DB contiene `client_id` y `client_secret`, el backend las toma como fuente prioritaria para `/auth/google/login` y `/auth/google/callback`.
+	- Soporta claves alternativas comunes (`google.client_id`, `oauth.google.client_id`, `auth.google.client_id`, `GOOGLE_CLIENT_ID`, y equivalentes para secret/redirect).
+
+- scripts/iniciar_servidor.ps1:
+	- El script ya no aborta cuando faltan credenciales en entorno/.env.
+	- Si las credenciales de entorno no son validas, las descarta y permite que el backend las resuelva desde DB.
+	- Mantiene `GOOGLE_REDIRECT_URL` y arranque en puerto `8080`.
+
+Actualizacion 2026-04-01: Modularizacion de handlers + pruebas reales + JS externo + hardening de secretos + checklist de release
+
+- backend/handlers/auth_admin_handlers.go:
+	- Nuevo modulo para autenticacion OAuth Google y administracion global (administradores/sesiones/tipos de empresa).
+	- Se redujo exposicion de datos sensibles en logs del flujo OAuth.
+
+- backend/handlers/payments_handlers.go:
+	- Nuevo modulo para handlers de licencias, Mercado Pago y Wompi.
+	- Se separa la logica de pagos del archivo monolitico para facilitar mantenimiento.
+
+- backend/handlers/system_empresas_handlers.go:
+	- Nuevo modulo para handlers de contexto de sesion (`/me`), seguridad de puertos y CRUD de empresas.
+
+- backend/handlers/handlers.go:
+	- Archivo dejado como punto minimo (`package handlers`) tras extraer handlers por dominio.
+
+- backend/handlers/auth_users_carritos_test.go:
+	- Nuevo set de pruebas reales con `httptest` para:
+		- redireccion OAuth con `login_hint`,
+		- login de usuario de empresa,
+		- primer ingreso y creacion de contrasena,
+		- flujo base de carritos e items.
+
+- web/js/login.js:
+	- Script externo para login admin (remember account y auto-login controlado).
+
+- web/js/login_usuario.js:
+	- Script externo para login de usuario de empresa y flujo de primer ingreso.
+
+- web/js/seleccionar_empresa.js:
+	- Script externo para menu lateral y carga de modulos en frame derecho.
+
+- web/js/super_administrador.js:
+	- Script externo para navegacion y estado activo del panel super administrador.
+
+- web/js/administrar_empresa.js:
+	- Script externo para navegacion interna del modulo administrar empresa.
+
+- web/login.html:
+	- Se retiro JavaScript inline y ahora consume `/js/login.js`.
+
+- web/login_usuario.html:
+	- Se retiro JavaScript inline y ahora consume `/js/login_usuario.js`.
+
+- web/seleccionar_empresa.html:
+	- Se retiro JavaScript inline y ahora consume `/js/seleccionar_empresa.js`.
+
+- web/super_administrador.html:
+	- Se retiro JavaScript inline y ahora consume `/js/super_administrador.js`.
+
+- web/administrar_empresa.html:
+	- Se retiro JavaScript inline y ahora consume `/js/administrar_empresa.js`.
+
+- backend/main.go:
+	- Se elimina fallback inseguro de credenciales OAuth desde documentacion.
+	- Se mantiene carga de credenciales solo por variables de entorno.
+
+- backend/utils/utils.go:
+	- Se elimina `TryLoadCredsFromDocs` para evitar lectura de secretos desde documentos.
+
+- documentos/manual_de_instalacion.md:
+	- Se reforzo la guia para uso de secretos via entorno.
+	- Se reemplazaron URLs de tunel reales por plantillas seguras.
+
+- documentos/descripcion_de_herramientas.md:
+	- Se elimino referencia a URL publica activa de tunel.
+
+- documentos/last_ngrok_url.md:
+	- Archivo convertido a plantilla sin datos reales.
+
+- documentos/diagramas/diagrama_arquitectura_sistema.md:
+	- Actualizado para reflejar handlers por dominio y carga de JS externo en frontend.
+
+- documentos/diagramas/estructura_del_codigo.md:
+	- Actualizado con nota de modularizacion de handlers y frontend JS externo.
+
+- documentos/release_checklist.md:
+	- Nuevo checklist operativo para pre-release: backup DB, smoke tests, seguridad de rutas, validacion de pagos y rollback.
+
+Actualizacion 2026-04-01: Correccion de arranque para login Google (admin/super)
+
+- scripts/iniciar_servidor.ps1:
+	- Se elimino la dependencia de lectura de credenciales OAuth desde documentacion.
+	- Ahora carga `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET` desde variables de entorno o `backend/.env.local` y `backend/.env`.
+	- Se agrego validacion previa contra endpoint OAuth para detectar `invalid_client` antes de arrancar el servidor.
+	- Si faltan credenciales o son invalidas, el script detiene el arranque con mensaje claro.
+
+Actualizacion 2026-04-01: Documentacion compacta + nuevo mapa tecnico de codigo
+
+- documentos/descripcion_del_proyecto:
+	- Se compacto y normalizo la descripcion general del sistema.
+	- Se reorganizo por objetivo, stack, arquitectura por capas, modulos, flujos criticos, DB y seguridad.
+	- Se elimino documentacion de secretos en texto plano.
+
+- documentos/estructura_del_codigo:
+	- Nuevo documento tecnico central para arquitectura y separacion de logica.
+	- Incluye inventario completo de funciones backend por archivo con descripcion puntual.
+	- Incluye mapa de funciones frontend declaradas por pagina/modulo.
+	- Incluye analisis de riesgos tecnicos y mejoras preventivas para escalar con menor deuda tecnica.
+
+Actualización 2026-04-01: Diagramas base del proyecto + impresión de factura en configuración
+
+- documentos/diagramas/diagrama_entidad_relacion.md:
+	- Diagrama ER con tablas principales y relaciones entre superadministrador y empresas.
+
+- documentos/diagramas/diagrama_casos_de_uso.md:
+	- Diagrama de casos de uso con actores `super_administrador`, `administrador` y `usuario_empresa`.
+
+- documentos/diagramas/diagrama_roles_permisos.md:
+	- Diagrama de roles/permisos y matriz resumida de accesos.
+
+- documentos/diagramas/diagrama_flujo_procesos.md:
+	- Flujo completo desde creación de usuario por correo hasta pago/cierre de carrito.
+
+- documentos/diagramas/diagrama_arquitectura_sistema.md:
+	- Arquitectura técnica de frontend, backend, middleware, bases de datos e integraciones externas.
+
+- documentos/diagramas/estructura_del_codigo.md:
+	- Se añadió índice de diagramas de referencia para mantenimiento técnico.
+
+- backend/db/empresa_configuracion_avanzada.go:
+	- Se agregó el campo `imprimir_copia_factura` en modelo, esquema y upsert.
+	- La configuración avanzada ahora guarda también si la factura requiere copia.
+
+- web/administrar_empresa/configuracion_avanzada.html:
+	- Se agregó opción visual para `Imprimir copia de la factura` dentro de la sección de impresión.
+
+- web/administrar_empresa/configuracion.html:
+	- Se agregó nueva tarjeta `Impresion de facturas` en la configuración general de empresa.
+	- Incluye tamaño de hoja (`grande/carta` o `pos`), opción de copia, mostrar logo y URL de logo.
+	- La tarjeta guarda en backend vía `/api/empresa/configuracion_avanzada`.
+
+Actualización 2026-04-01: Primer ingreso con contraseña + regla de diagramas para agente_go
+
+- web/login_usuario.html:
+	- Se cambió el acceso para usuarios de empresa a login con contraseña.
+	- En primer ingreso, detecta que no existe contraseña y muestra formulario para crearla.
+	- La creación inicial de contraseña solicita validación por documento de identidad.
+
+- backend/handlers/usuarios_empresa.go:
+	- `POST /api/empresa/usuarios/login` ahora valida con `email + password`.
+	- Si el usuario no tiene contraseña configurada, responde `password_setup_required=true`.
+	- Se agregó endpoint `POST /api/empresa/usuarios/establecer_password` para definir contraseña en primer ingreso y abrir sesión.
+	- El correo de validación ahora incluye también enlace directo a `login_usuario.html` tras confirmar.
+
+- backend/db/usuarios_empresa.go:
+	- Se agregaron campos de soporte de contraseña para usuarios de empresa (`password_hash`, `password_salt`, `password_set`).
+	- Se añadió la función `SetEmpresaUsuarioPassword` para guardar contraseña inicial con hash y salt.
+
+- backend/main.go:
+	- Se añadieron migraciones de esquema para columnas de contraseña en `users`.
+	- Se registró la nueva ruta `POST /api/empresa/usuarios/establecer_password`.
+
+- backend/utils/utils.go:
+	- Se declaró pública la ruta `/api/empresa/usuarios/establecer_password` para permitir el flujo de primer ingreso sin sesión previa.
+
+- documentos/diagramas/estructura_del_codigo.md:
+	- Nuevo documento base de estructura técnica del sistema y flujo de usuarios de empresa.
+
+- documentos/diagramas/regla_agente_go_diagramas.md:
+	- Nueva regla obligatoria para que `agente_go` revise y mantenga la carpeta `documentos/diagramas/`.
+
+- .github/agents/agente_go.agent.md:
+	- Se añadieron reglas para considerar `documentos/diagramas/` y `documentos/diagramas/estructura_del_codigo.md` antes de cambios estructurales.
+
+- copilot-instructions.md:
+	- Se agregó regla de diagramas y estructura del código para reforzar trazabilidad técnica.
+
+Actualización 2026-04-01: Alta obligatoria con validación de correo + login de usuario de empresa
+
+- web/login_usuario.html:
+	- Nueva página de inicio de sesión para usuarios de empresa.
+	- Login por `email` + `documento_identidad`.
+	- Si el usuario valida correctamente, redirige directamente a `administrar_empresa.html?id=<empresa_id>`.
+
+- backend/handlers/usuarios_empresa.go:
+	- Se agregó endpoint público `POST /api/empresa/usuarios/login` para autenticación de usuarios de empresa.
+	- En creación de usuario por empresa, si falla el envío del correo de confirmación se revierte el registro y no se crea el usuario.
+	- Se bloquea activación manual (`action=activar`) cuando el correo no está confirmado.
+	- Se actualizaron enlaces HTML de confirmación para dirigir a `login_usuario.html`.
+
+- backend/db/usuarios_empresa.go:
+	- Los usuarios creados por `CreateEmpresaUsuario` inician en estado `inactivo`.
+	- `ConfirmEmpresaUsuarioByToken` ahora marca el usuario en estado `activo` al confirmar correo.
+	- `UpdateEmpresaUsuario` con reconfirmación deja el estado en `inactivo` hasta validar de nuevo.
+	- Se añadió `GetEmpresaUsuarioByEmail` para soporte de login de usuario de empresa.
+
+- backend/main.go:
+	- Se registró la ruta `POST /api/empresa/usuarios/login`.
+
+- backend/utils/utils.go:
+	- Se declaró pública la página `login_usuario.html` y el endpoint `/api/empresa/usuarios/login` para permitir autenticación sin sesión previa.
+
+Actualización 2026-04-01: Búsqueda de productos por botones para carritos
+
+- web/administrar_empresa/buscar_producto_botones.html:
+	- Nueva subpágina para cargar todos los productos registrados de la empresa como botones.
+	- Cada clic en un botón suma una unidad del producto (dos clics = cantidad 2).
+	- Incluye tabla de selección previa, acción para agregar la selección al carrito y botón `Salir al carrito`.
+
+- web/administrar_empresa/carrito_de_compras.html:
+	- Se agregó botón `Buscar productos` por cada carrito en la tabla de carritos y en modo estación.
+	- Se agregó botón principal `Buscar productos` para el carrito seleccionado.
+	- Se añadió la sección `Tabla de productos del carrito`, mostrando únicamente items de tipo producto.
+	- Se conectó navegación a `buscar_producto_botones.html` conservando contexto de empresa, carrito y retorno.
+
+- web/estilos.css:
+	- Se añadieron estilos para la grilla de botones de productos y la visualización de cantidades seleccionadas.
+
 Actualización 2026-04-01: Flujo profesional de carrito por estación (activación, cobro y estados)
 
 - web/administrar_empresa/estaciones.html:

@@ -1,5 +1,137 @@
 - Historial de cambios
 
+- 2026-04-01: Reparacion login admin/super (login.html) por OAuth Google
+    - Se diagnostico fallo `token exchange failed` con causa `invalid_client` en callback OAuth.
+    - Se restauraron en `backend/db/superadministrador.db` (tabla `configuraciones`) las claves:
+        - `google.client_id`
+        - `google.client_secret`
+        - `google.redirect_url`
+    - Verificacion funcional posterior:
+        - `/auth/google/login` retorna `302` con URL OAuth correcta.
+        - `/auth/google/callback?code=dummy-verification-code` pasa a error esperado `invalid_grant` (ya no `invalid_client`), confirmando credenciales validas.
+    - Se mantuvo separado el flujo de usuarios de empresa (`login_usuario.html`) del flujo admin/super (`login.html`).
+    - Excepcion de seguridad registrada: `google.client_secret` persistido sin cifrado por no existir `CONFIG_ENC_KEY` en entorno local durante la recuperacion urgente.
+    - Archivos/artefactos afectados: backend/db/superadministrador.db, documentos/descripcion_de_archivos, documentos/historial_de_cambios
+
+- 2026-04-01: Fix login admin/super con OAuth desde DB + arranque tolerante en script
+    - Se implementó en `backend/main.go` la carga de credenciales OAuth Google desde `superadministrador.db` (`configuraciones`) con soporte de aliases de clave.
+    - Se definió prioridad de DB cuando existen `client_id` y `client_secret` en configuraciones.
+    - Se actualizó `scripts/iniciar_servidor.ps1` para no abortar si no hay credenciales en entorno/.env y permitir fallback del backend hacia DB.
+    - Validación ejecutada: `go test ./auth ./db ./handlers ./metrics ./utils`.
+    - Verificación adicional: sintaxis de `scripts/iniciar_servidor.ps1` (`SCRIPT_PARSE_OK`).
+    - Archivos afectados: backend/main.go, scripts/iniciar_servidor.ps1, documentos/descripcion_de_archivos, documentos/diagramas/estructura_del_codigo.md, documentos/historial_de_cambios
+
+- 2026-04-01: Saneamiento final de log runtime bloqueado + validacion backend
+    - Se detuvo temporalmente el proceso `backend/server.exe` para liberar el archivo de log en uso.
+    - Se saneo `backend/server.err` para eliminar trazas operativas con posibles datos sensibles.
+    - Se ejecuto validacion tecnica posterior: `go test ./auth ./db ./handlers ./metrics ./utils` desde `backend/`.
+    - Archivos afectados: backend/server.err, documentos/historial_de_cambios
+
+- 2026-04-01: Cierre de modularizacion backend/frontend + hardening de secretos + checklist de release
+    - Se modularizaron handlers del backend por dominio:
+        - `backend/handlers/auth_admin_handlers.go`
+        - `backend/handlers/payments_handlers.go`
+        - `backend/handlers/system_empresas_handlers.go`
+      y `backend/handlers/handlers.go` quedo minimizado para eliminar el bloque monolitico previo.
+    - Se agregaron pruebas reales en `backend/handlers/auth_users_carritos_test.go` para OAuth redirect, login/primer ingreso de usuario empresa y flujo base de carritos/items.
+    - Se externalizo JavaScript inline a modulos en `web/js/` y se conectaron en:
+        - `web/login.html`
+        - `web/login_usuario.html`
+        - `web/seleccionar_empresa.html`
+        - `web/super_administrador.html`
+        - `web/administrar_empresa.html`
+    - Se reforzo seguridad de credenciales:
+        - `backend/main.go` ya no intenta leer secretos OAuth desde documentacion.
+        - `backend/utils/utils.go` elimina `TryLoadCredsFromDocs`.
+        - Se redujo logging sensible en `auth_admin_handlers.go`.
+    - Se sanitizo documentacion operacional de tuneles/secretos:
+        - `documentos/manual_de_instalacion.md`
+        - `documentos/descripcion_de_herramientas.md`
+        - `documentos/last_ngrok_url.md`.
+    - Se actualizo trazabilidad tecnica en diagramas:
+        - `documentos/diagramas/diagrama_arquitectura_sistema.md`
+        - `documentos/diagramas/estructura_del_codigo.md`.
+    - Se creo `documentos/release_checklist.md` como lista de validacion previa a despliegue.
+    - Validacion tecnica final ejecutada: `go test ./auth ./db ./handlers ./metrics ./utils`.
+    - Archivos afectados: backend/handlers/auth_admin_handlers.go, backend/handlers/payments_handlers.go, backend/handlers/system_empresas_handlers.go, backend/handlers/handlers.go, backend/handlers/auth_users_carritos_test.go, backend/main.go, backend/utils/utils.go, web/js/login.js, web/js/login_usuario.js, web/js/seleccionar_empresa.js, web/js/super_administrador.js, web/js/administrar_empresa.js, web/login.html, web/login_usuario.html, web/seleccionar_empresa.html, web/super_administrador.html, web/administrar_empresa.html, documentos/manual_de_instalacion.md, documentos/descripcion_de_herramientas.md, documentos/last_ngrok_url.md, documentos/diagramas/diagrama_arquitectura_sistema.md, documentos/diagramas/estructura_del_codigo.md, documentos/release_checklist.md, documentos/descripcion_de_archivos, documentos/historial_de_cambios
+
+- 2026-04-01: Fix login Google en script de inicio (sin afectar login_usuario)
+    - Se ajusto `scripts/iniciar_servidor.ps1` para no leer credenciales OAuth desde `documentos/descripcion_del_proyecto`.
+    - Se agrego carga de credenciales desde variables de entorno o `backend/.env.local` / `backend/.env`.
+    - Se agrego validacion previa de credenciales contra Google OAuth para cortar temprano cuando exista `invalid_client`.
+    - Se mantuvo intacto el flujo de `login_usuario.html` (usuarios creados por administrador de empresa).
+    - Archivos afectados: scripts/iniciar_servidor.ps1, documentos/descripcion_de_archivos, documentos/historial_de_cambios
+
+- 2026-04-01: Compactacion documental + nuevo documento tecnico de arquitectura y funciones
+    - Se reescribio `documentos/descripcion_del_proyecto` en formato compacto, directo y especifico.
+    - Se creo `documentos/estructura_del_codigo` como documento tecnico principal para:
+        - arquitectura por capas,
+        - separacion de logica,
+        - inventario completo de funciones backend,
+        - inventario de funciones frontend declaradas,
+        - analisis de riesgos y mejoras preventivas.
+    - Se actualizo `documentos/descripcion_de_archivos` para registrar la creacion y objetivo del nuevo documento.
+    - Archivos afectados: documentos/descripcion_del_proyecto, documentos/estructura_del_codigo, documentos/descripcion_de_archivos, documentos/historial_de_cambios
+
+- 2026-04-01: Diagramas obligatorios + impresión de factura en configuración + pruebas completas
+        - Se crearon los diagramas técnicos base en `documentos/diagramas/`:
+            - `diagrama_entidad_relacion.md`
+            - `diagrama_casos_de_uso.md`
+            - `diagrama_roles_permisos.md`
+            - `diagrama_flujo_procesos.md`
+            - `diagrama_arquitectura_sistema.md`
+        - Se actualizó `documentos/diagramas/estructura_del_codigo.md` con índice de diagramas de referencia.
+        - Se añadió en backend (`empresa_configuracion_avanzada`) el campo `imprimir_copia_factura` para controlar si la factura requiere copia.
+        - Se actualizó `web/administrar_empresa/configuracion_avanzada.html` para incluir la opción `Imprimir copia de la factura`.
+        - Se agregó en `web/administrar_empresa/configuracion.html` una nueva tarjeta de `Impresion de facturas` con:
+            - tamaño de hoja (grande/carta o POS),
+            - opción de copia,
+            - logo de empresa (mostrar/logo_url).
+        - Pruebas ejecutadas paso a paso:
+            - creación de usuario de empresa de prueba,
+            - primer ingreso con creación de contraseña,
+            - creación de cliente, bodega y proveedor,
+            - creación de carrito e item,
+            - pago y cierre de carrito,
+            - guardado y verificación de configuración de impresión (tamano/copia/logo).
+        - Incidencia detectada y corregida: desajuste de placeholders SQL en `UpsertEmpresaConfiguracionAvanzada` ("34 values for 35 columns").
+        - Validación técnica final: `go test ./auth ./db ./handlers ./metrics ./utils` sin errores.
+        - Archivos afectados: backend/db/empresa_configuracion_avanzada.go, web/administrar_empresa/configuracion_avanzada.html, web/administrar_empresa/configuracion.html, documentos/diagramas/estructura_del_codigo.md, documentos/diagramas/diagrama_entidad_relacion.md, documentos/diagramas/diagrama_casos_de_uso.md, documentos/diagramas/diagrama_roles_permisos.md, documentos/diagramas/diagrama_flujo_procesos.md, documentos/diagramas/diagrama_arquitectura_sistema.md, documentos/descripcion_de_archivos, documentos/historial_de_cambios
+
+- 2026-04-01: Primer ingreso con creación de contraseña + regla de diagramas para agente_go
+    - Se actualizó `web/login_usuario.html` para login por contraseña y detección de primer ingreso.
+    - Se implementó el endpoint `POST /api/empresa/usuarios/establecer_password` para que el usuario de empresa defina contraseña al entrar por primera vez.
+    - Se cambió `POST /api/empresa/usuarios/login` para autenticar con `email + password` y devolver `password_setup_required` cuando aún no hay contraseña.
+    - Se añadieron columnas y soporte backend para contraseña de usuario de empresa (`password_hash`, `password_salt`, `password_set`, `password_actualizada_en`).
+    - Se añadió en middleware la ruta pública `/api/empresa/usuarios/establecer_password`.
+    - Se actualizó el correo de validación para incluir también acceso a `login_usuario.html` después de confirmar.
+    - Se creó la carpeta `documentos/diagramas/`.
+    - Se crearon los documentos `documentos/diagramas/estructura_del_codigo.md` y `documentos/diagramas/regla_agente_go_diagramas.md`.
+    - Se actualizó `.github/agents/agente_go.agent.md` con reglas de uso y mantenimiento de diagramas.
+    - Se actualizó `copilot-instructions.md` con la regla de diagramas y estructura de código.
+    - Archivos afectados: web/login_usuario.html, backend/handlers/usuarios_empresa.go, backend/db/usuarios_empresa.go, backend/main.go, backend/utils/utils.go, documentos/diagramas/estructura_del_codigo.md, documentos/diagramas/regla_agente_go_diagramas.md, .github/agents/agente_go.agent.md, copilot-instructions.md, documentos/descripcion_de_archivos, documentos/historial_de_cambios
+
+- 2026-04-01: Registro de usuarios con correo obligatorio + nuevo login_usuario
+    - Se creó `web/login_usuario.html` para el ingreso de usuarios de empresa con `email` + `documento_identidad`.
+    - Se creó endpoint `POST /api/empresa/usuarios/login` para autenticar usuarios de empresa y abrir sesión.
+    - Se forzó regla de negocio en creación de usuario: si falla el envío del correo de validación, el usuario no se registra (rollback del alta).
+    - Se cambió el alta inicial de usuarios de empresa a estado `inactivo`.
+    - Se cambió la confirmación de correo para que active automáticamente el usuario (`estado=activo`).
+    - Se bloqueó activación manual por API cuando el correo aún no está confirmado.
+    - Se actualizaron enlaces de confirmación para dirigir al nuevo `login_usuario.html`.
+    - Se declaró pública la ruta `/login_usuario.html` y `/api/empresa/usuarios/login` en el middleware.
+    - Validación técnica: `go test ./auth ./db ./handlers ./metrics ./utils` ejecutado sin errores.
+    - Archivos afectados: web/login_usuario.html, backend/handlers/usuarios_empresa.go, backend/db/usuarios_empresa.go, backend/main.go, backend/utils/utils.go, documentos/descripcion_de_archivos, documentos/historial_de_cambios
+
+- 2026-04-01: Búsqueda de productos por botones integrada en carritos
+    - Se creó la página `web/administrar_empresa/buscar_producto_botones.html` para mostrar todos los productos registrados como botones por empresa.
+    - Cada clic sobre producto incrementa cantidad (doble clic operativo = 2 unidades) y se puede consolidar la selección antes de enviarla al carrito.
+    - Se añadió botón `Salir al carrito` para volver al carrito con el mismo contexto.
+    - En `web/administrar_empresa/carrito_de_compras.html` se agregó botón `Buscar productos` por carrito y en la vista principal del carrito seleccionado.
+    - Se añadió tabla específica de productos del carrito para visualizar rápidamente los productos agregados.
+    - Se agregaron estilos de interfaz para la grilla de botones y el contador de selección en `web/estilos.css`.
+    - Archivos afectados: web/administrar_empresa/buscar_producto_botones.html, web/administrar_empresa/carrito_de_compras.html, web/estilos.css, documentos/descripcion_de_archivos, documentos/historial_de_cambios
+
 - 2026-04-01: Estaciones con carrito exclusivo, estados de sesión y cobro profesional
     - Se implementó en `carrito_de_compras` el modo estación para mostrar únicamente el carrito asociado a la estación seleccionada.
     - Se añadieron estados de sesión de carrito por estación: activación al primer acceso, cierre por pago e inactivación posterior.

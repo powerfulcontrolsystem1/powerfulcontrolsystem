@@ -23,6 +23,8 @@ Comportamiento del agente:
 
 - Regla específica para bases de datos: El agente debe leer y, cuando corresponda, actualizar `documentos/descripcion_de_las_bases_De_datos` antes de realizar cualquier cambio en esquemas, migraciones o manipulaciones masivas de datos. Además debe registrar la operación en `documentos/historial_de_cambios` y pedir confirmación del usuario si hay riesgo de pérdida de datos.
 
+- Regla de diagramas y estructura del código: Antes de cambios estructurales, el agente debe revisar `documentos/diagramas/estructura_del_codigo.md` y usar `documentos/diagramas/` como carpeta oficial para diagramas técnicos. Si cambia arquitectura, flujos o integraciones, debe actualizar esos diagramas y registrar la trazabilidad en `documentos/descripcion_de_archivos` y `documentos/historial_de_cambios`.
+
 Implementación práctica:
 
 - Si el agente detecta una dependencia externa en el código (por ejemplo, import fuera de la stdlib o `require` en `go.mod`), debe detenerse y preguntar: "¿Autorizas añadir la dependencia X?".

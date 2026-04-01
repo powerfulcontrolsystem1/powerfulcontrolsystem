@@ -1,0 +1,312 @@
+package handlers
+
+import (
+	"database/sql"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+	"testing"
+
+	dbpkg "github.com/you/pos-backend/db"
+	_ "modernc.org/sqlite"
+)
+
+func openTestSQLite(t *testing.T, name string) *sql.DB {
+	t.Helper()
+
+	dbPath := filepath.Join(t.TempDir(), name)
+	dbConn, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		t.Fatalf("open sqlite: %v", err)
+	}
+	dbConn.SetMaxOpenConns(1)
+	t.Cleanup(func() {
+		_ = dbConn.Close()
+		_ = os.Remove(dbPath)
+	})
+	return dbConn
+}
+
+func ensureEmpresaUsersSchema(t *testing.T, dbEmp *sql.DB) {
+	t.Helper()
+
+	_, err := dbEmp.Exec(`CREATE TABLE IF NOT EXISTS users (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		email TEXT UNIQUE,
+		name TEXT,
+		role TEXT,
+		empresa_id INTEGER,
+		documento_identidad TEXT,
+		password_hash TEXT,
+		password_salt TEXT,
+		password_set INTEGER DEFAULT 0,
+		password_actualizada_en TEXT,
+		rol_usuario_id INTEGER,
+		email_confirmado INTEGER DEFAULT 0,
+		email_confirmado_en TEXT,
+		fecha_creacion TEXT,
+		fecha_actualizacion TEXT,
+		usuario_creador TEXT,
+		estado TEXT DEFAULT 'activo',
+		observaciones TEXT
+	);`)
+	if err != nil {
+		t.Fatalf("create users schema: %v", err)
+	}
+}
+
+func ensureSuperSchema(t *testing.T, dbSuper *sql.DB) {
+	t.Helper()
+
+	_, err := dbSuper.Exec(`CREATE TABLE IF NOT EXISTS administradores (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		email TEXT UNIQUE,
+		name TEXT,
+		role TEXT,
+		photo TEXT,
+		fecha_creacion TEXT,
+		fecha_actualizacion TEXT,
+		estado TEXT DEFAULT 'activo'
+	);`)
+	if err != nil {
+		t.Fatalf("create administradores schema: %v", err)
+	}
+
+	_, err = dbSuper.Exec(`CREATE TABLE IF NOT EXISTS sesiones (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		admin_email TEXT,
+		token TEXT,
+		ip TEXT,
+		user_agent TEXT,
+		fecha_inicio TEXT,
+		fecha_creacion TEXT,
+		activo INTEGER DEFAULT 1
+	);`)
+	if err != nil {
+		t.Fatalf("create sesiones schema: %v", err)
+	}
+}
+
+func ensureClientesSchema(t *testing.T, dbEmp *sql.DB) {
+	t.Helper()
+	_, err := dbEmp.Exec(`CREATE TABLE IF NOT EXISTS clientes (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		empresa_id INTEGER,
+		nombre_razon_social TEXT
+	);`)
+	if err != nil {
+		t.Fatalf("create clientes schema: %v", err)
+	}
+}
+
+func TestHandleGoogleLoginRedirectIncludesLoginHint(t *testing.T) {
+	h := HandleGoogleLogin("client-123", "http://localhost:8080/auth/google/callback")
+	req := httptest.NewRequest(http.MethodGet, "/auth/google/login?login_hint=usuario@example.com", nil)
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusFound {
+		t.Fatalf("expected status %d, got %d", http.StatusFound, rr.Code)
+	}
+	loc := rr.Header().Get("Location")
+	if loc == "" {
+		t.Fatal("expected redirect location")
+	}
+	parsed, err := url.Parse(loc)
+	if err != nil {
+		t.Fatalf("parse redirect url: %v", err)
+	}
+	q := parsed.Query()
+	if q.Get("client_id") != "client-123" {
+		t.Fatalf("unexpected client_id: %q", q.Get("client_id"))
+	}
+	if q.Get("redirect_uri") != "http://localhost:8080/auth/google/callback" {
+		t.Fatalf("unexpected redirect_uri: %q", q.Get("redirect_uri"))
+	}
+	if q.Get("login_hint") != "usuario@example.com" {
+		t.Fatalf("unexpected login_hint: %q", q.Get("login_hint"))
+	}
+	if q.Get("prompt") != "" {
+		t.Fatalf("prompt must be empty when login_hint is set, got %q", q.Get("prompt"))
+	}
+}
+
+func TestEmpresaUsuarioLoginHandlerSuccess(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_login.db")
+	dbSuper := openTestSQLite(t, "super_login.db")
+	ensureEmpresaUsersSchema(t, dbEmp)
+	ensureSuperSchema(t, dbSuper)
+
+	salt := "salt-login"
+	hash := hashEmpresaUsuarioPassword("PasswordSegura1", salt)
+	_, err := dbEmp.Exec(`INSERT INTO users (
+		email, name, role, empresa_id, documento_identidad,
+		password_hash, password_salt, password_set,
+		rol_usuario_id, email_confirmado, estado
+	) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, 1, 'activo')`,
+		"user@login.com", "Usuario Login", "vendedor", int64(10), "DOC-10", hash, salt, int64(2),
+	)
+	if err != nil {
+		t.Fatalf("seed user login: %v", err)
+	}
+
+	h := EmpresaUsuarioLoginHandler(dbEmp, dbSuper)
+	body := `{"email":"user@login.com","password":"PasswordSegura1"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/empresa/usuarios/login", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, rr.Code, rr.Body.String())
+	}
+
+	var resp map[string]interface{}
+	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if ok, _ := resp["ok"].(bool); !ok {
+		t.Fatalf("expected ok=true, got response=%v", resp)
+	}
+
+	hasSessionCookie := false
+	for _, c := range rr.Result().Cookies() {
+		if c.Name == "session_token" && strings.TrimSpace(c.Value) != "" {
+			hasSessionCookie = true
+			break
+		}
+	}
+	if !hasSessionCookie {
+		t.Fatal("expected session_token cookie")
+	}
+
+	var sesionesCount int
+	if err := dbSuper.QueryRow("SELECT COUNT(1) FROM sesiones").Scan(&sesionesCount); err != nil {
+		t.Fatalf("count sesiones: %v", err)
+	}
+	if sesionesCount != 1 {
+		t.Fatalf("expected 1 session, got %d", sesionesCount)
+	}
+}
+
+func TestEmpresaUsuarioSetPasswordHandlerSuccess(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_set_password.db")
+	dbSuper := openTestSQLite(t, "super_set_password.db")
+	ensureEmpresaUsersSchema(t, dbEmp)
+	ensureSuperSchema(t, dbSuper)
+
+	_, err := dbEmp.Exec(`INSERT INTO users (
+		email, name, role, empresa_id, documento_identidad,
+		password_hash, password_salt, password_set,
+		rol_usuario_id, email_confirmado, estado
+	) VALUES (?, ?, ?, ?, ?, '', '', 0, ?, 1, 'activo')`,
+		"nuevo@empresa.com", "Nuevo Usuario", "auxiliar", int64(12), "DOC-22", int64(3),
+	)
+	if err != nil {
+		t.Fatalf("seed user set password: %v", err)
+	}
+
+	h := EmpresaUsuarioSetPasswordHandler(dbEmp, dbSuper)
+	body := `{"email":"nuevo@empresa.com","documento_identidad":"DOC-22","password":"ClaveNueva88","password_confirm":"ClaveNueva88"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/empresa/usuarios/establecer_password", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, rr.Code, rr.Body.String())
+	}
+
+	var passwordSet int
+	var hash string
+	var salt string
+	err = dbEmp.QueryRow("SELECT COALESCE(password_set,0), COALESCE(password_hash,''), COALESCE(password_salt,'') FROM users WHERE email = ?", "nuevo@empresa.com").Scan(&passwordSet, &hash, &salt)
+	if err != nil {
+		t.Fatalf("query password fields: %v", err)
+	}
+	if passwordSet != 1 {
+		t.Fatalf("expected password_set=1, got %d", passwordSet)
+	}
+	if strings.TrimSpace(hash) == "" || strings.TrimSpace(salt) == "" {
+		t.Fatalf("expected non-empty password hash and salt, got hash=%q salt=%q", hash, salt)
+	}
+
+	hasSessionCookie := false
+	for _, c := range rr.Result().Cookies() {
+		if c.Name == "session_token" && strings.TrimSpace(c.Value) != "" {
+			hasSessionCookie = true
+			break
+		}
+	}
+	if !hasSessionCookie {
+		t.Fatal("expected session_token cookie")
+	}
+}
+
+func TestEmpresaCarritosCompraAndItemsFlow(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_carritos.db")
+	ensureClientesSchema(t, dbEmp)
+	if err := dbpkg.EnsureEmpresaCarritosSchema(dbEmp); err != nil {
+		t.Fatalf("ensure carritos schema: %v", err)
+	}
+
+	carritosHandler := EmpresaCarritosCompraHandler(dbEmp)
+	createCarritoBody := `{"empresa_id":1,"nombre":"Caja Principal","canal_venta":"mostrador","moneda":"COP"}`
+	createReq := httptest.NewRequest(http.MethodPost, "/api/empresa/carritos_compra", strings.NewReader(createCarritoBody))
+	createReq.Header.Set("Content-Type", "application/json")
+	createRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(createRR, createReq)
+
+	if createRR.Code != http.StatusCreated {
+		t.Fatalf("expected create status %d, got %d body=%s", http.StatusCreated, createRR.Code, createRR.Body.String())
+	}
+
+	var createResp map[string]interface{}
+	if err := json.Unmarshal(createRR.Body.Bytes(), &createResp); err != nil {
+		t.Fatalf("decode create carrito: %v", err)
+	}
+	carritoIDFloat, ok := createResp["id"].(float64)
+	if !ok || carritoIDFloat <= 0 {
+		t.Fatalf("invalid carrito id in response: %v", createResp)
+	}
+	carritoID := int64(carritoIDFloat)
+
+	itemsHandler := EmpresaCarritoItemsHandler(dbEmp)
+	createItemBody := `{"empresa_id":1,"carrito_id":` + strconv.FormatInt(carritoID, 10) + `,"descripcion":"Producto A","cantidad":2,"precio_unitario":1500}`
+	createItemReq := httptest.NewRequest(http.MethodPost, "/api/empresa/carritos_compra/items", strings.NewReader(createItemBody))
+	createItemReq.Header.Set("Content-Type", "application/json")
+	createItemRR := httptest.NewRecorder()
+	itemsHandler.ServeHTTP(createItemRR, createItemReq)
+	if createItemRR.Code != http.StatusCreated {
+		t.Fatalf("expected item create status %d, got %d body=%s", http.StatusCreated, createItemRR.Code, createItemRR.Body.String())
+	}
+
+	listReq := httptest.NewRequest(http.MethodGet, "/api/empresa/carritos_compra?empresa_id=1", nil)
+	listRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(listRR, listReq)
+	if listRR.Code != http.StatusOK {
+		t.Fatalf("expected list status %d, got %d body=%s", http.StatusOK, listRR.Code, listRR.Body.String())
+	}
+
+	var rows []dbpkg.CarritoCompra
+	if err := json.Unmarshal(listRR.Body.Bytes(), &rows); err != nil {
+		t.Fatalf("decode list carritos: %v", err)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("expected 1 carrito, got %d", len(rows))
+	}
+	if rows[0].ItemCount != 1 {
+		t.Fatalf("expected item_count=1, got %d", rows[0].ItemCount)
+	}
+	if rows[0].Total <= 0 {
+		t.Fatalf("expected total > 0 after item creation, got %v", rows[0].Total)
+	}
+}

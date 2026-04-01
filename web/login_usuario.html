@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Login usuario - POS Multiempresa</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="super-page form-bg-dark empresa-subpage">
+  <div class="container empresa-module" style="max-width:560px;">
+    <section class="card empresa-section" style="margin-top:30px;">
+      <div class="page-header" style="margin-bottom:8px;">
+        <h1 style="margin:0;">Ingreso de usuario de empresa</h1>
+      </div>
+      <p class="form-help" style="margin-top:0;">Si es tu primer ingreso, primero confirma tu correo y luego crea tu contraseña.</p>
+
+      <form id="loginUsuarioForm" class="form" style="margin-top:10px;">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="email">Correo electrónico</label>
+            <input id="email" type="email" class="form-input" autocomplete="username" required placeholder="usuario@empresa.com">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="password">Contraseña</label>
+            <input id="password" type="password" class="form-input" autocomplete="current-password" placeholder="Ingresa tu contraseña">
+          </div>
+        </div>
+
+        <div class="form-actions" style="margin-top:12px;">
+          <button id="btnIngresar" type="submit" class="btn">Ingresar</button>
+          <a href="/login.html" class="btn secondary" style="text-decoration:none;display:inline-flex;align-items:center;">Login Google</a>
+        </div>
+        <div id="msg" class="form-help"></div>
+      </form>
+
+      <form id="setupPasswordForm" class="form" style="margin-top:14px;display:none;">
+        <h3 style="margin:0 0 8px 0;">Primer ingreso: crea tu contraseña</h3>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="setupEmail">Correo electrónico</label>
+            <input id="setupEmail" type="email" class="form-input" readonly>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="setupDocumento">Documento de identidad</label>
+            <input id="setupDocumento" type="password" class="form-input" required placeholder="Ingresa tu documento de identidad">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="setupPassword">Nueva contraseña</label>
+            <input id="setupPassword" type="password" class="form-input" required placeholder="Mínimo 8 caracteres">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="setupPasswordConfirm">Confirmar contraseña</label>
+            <input id="setupPasswordConfirm" type="password" class="form-input" required placeholder="Repite tu nueva contraseña">
+          </div>
+        </div>
+
+        <div class="form-actions" style="margin-top:12px;">
+          <button id="btnCrearPassword" type="submit" class="btn">Crear contraseña y entrar</button>
+          <button id="btnVolverLogin" type="button" class="btn secondary">Volver</button>
+        </div>
+        <div id="setupMsg" class="form-help"></div>
+      </form>
+    </section>
+  </div>
+
+  <script src="/js/login_usuario.js"></script>
+</body>
+</html>

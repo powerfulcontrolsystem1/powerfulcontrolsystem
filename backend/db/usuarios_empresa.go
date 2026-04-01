@@ -13,6 +13,9 @@ type EmpresaUsuario struct {
 	Email              string `json:"email"`
 	Nombre             string `json:"nombre"`
 	DocumentoIdentidad string `json:"documento_identidad,omitempty"`
+	PasswordHash       string `json:"-"`
+	PasswordSalt       string `json:"-"`
+	PasswordSet        int    `json:"password_set,omitempty"`
 	RolUsuarioID       int64  `json:"rol_usuario_id"`
 	RolNombre          string `json:"rol_nombre,omitempty"`
 	EmailConfirmado    int    `json:"email_confirmado"`
@@ -47,7 +50,7 @@ func CreateEmpresaUsuario(
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, 'activo', ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, 'inactivo', ?, datetime('now','localtime'), datetime('now','localtime'))`,
 		email,
 		nombre,
 		rolNombre,
@@ -166,6 +169,67 @@ func GetEmpresaUsuarioByID(dbConn *sql.DB, empresaID, id int64) (*EmpresaUsuario
 	return &item, nil
 }
 
+// GetEmpresaUsuarioByEmail obtiene un usuario por correo (case-insensitive).
+func GetEmpresaUsuarioByEmail(dbConn *sql.DB, email string) (*EmpresaUsuario, error) {
+	row := dbConn.QueryRow(`SELECT
+		id,
+		empresa_id,
+		email,
+		COALESCE(name, ''),
+		COALESCE(documento_identidad, ''),
+		COALESCE(password_hash, ''),
+		COALESCE(password_salt, ''),
+		COALESCE(password_set, 0),
+		COALESCE(rol_usuario_id, 0),
+		COALESCE(role, ''),
+		COALESCE(email_confirmado, 0),
+		COALESCE(email_confirmado_en, ''),
+		COALESCE(fecha_creacion, ''),
+		COALESCE(fecha_actualizacion, ''),
+		COALESCE(usuario_creador, ''),
+		COALESCE(estado, 'activo'),
+		COALESCE(observaciones, '')
+	FROM users
+	WHERE lower(email) = lower(?)
+	LIMIT 1`, email)
+
+	var item EmpresaUsuario
+	if err := row.Scan(
+		&item.ID,
+		&item.EmpresaID,
+		&item.Email,
+		&item.Nombre,
+		&item.DocumentoIdentidad,
+		&item.PasswordHash,
+		&item.PasswordSalt,
+		&item.PasswordSet,
+		&item.RolUsuarioID,
+		&item.RolNombre,
+		&item.EmailConfirmado,
+		&item.EmailConfirmadoEn,
+		&item.FechaCreacion,
+		&item.FechaActualizacion,
+		&item.UsuarioCreador,
+		&item.Estado,
+		&item.Observaciones,
+	); err != nil {
+		return nil, err
+	}
+	return &item, nil
+}
+
+// SetEmpresaUsuarioPassword define la contraseña de acceso para un usuario de empresa.
+func SetEmpresaUsuarioPassword(dbConn *sql.DB, empresaID, id int64, passwordHash, passwordSalt string) error {
+	_, err := dbConn.Exec(`UPDATE users
+		SET password_hash = ?,
+			password_salt = ?,
+			password_set = 1,
+			password_actualizada_en = datetime('now','localtime'),
+			fecha_actualizacion = datetime('now','localtime')
+		WHERE id = ? AND empresa_id = ?`, passwordHash, passwordSalt, id, empresaID)
+	return err
+}
+
 // UpdateEmpresaUsuario actualiza los datos de un usuario de empresa.
 func UpdateEmpresaUsuario(
 	dbConn *sql.DB,
@@ -186,6 +250,7 @@ func UpdateEmpresaUsuario(
 				observaciones = ?,
 				email_confirmado = 0,
 				email_confirmado_en = '',
+				estado = 'inactivo',
 				email_confirm_token = ?,
 				email_confirm_expira = ?,
 				fecha_actualizacion = datetime('now','localtime')
@@ -267,6 +332,7 @@ func ConfirmEmpresaUsuarioByToken(dbConn *sql.DB, token string) (int64, error) {
 	_, err := dbConn.Exec(`UPDATE users
 		SET email_confirmado = 1,
 			email_confirmado_en = datetime('now','localtime'),
+			estado = 'activo',
 			email_confirm_token = '',
 			email_confirm_expira = '',
 			fecha_actualizacion = datetime('now','localtime')

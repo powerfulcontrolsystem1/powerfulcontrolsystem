@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Buscar productos por botones</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="super-page form-bg-dark empresa-subpage">
+  <div class="container empresa-module">
+    <div class="empresa-module-header">
+      <div>
+        <h1 id="pageTitle">Buscar productos por botones</h1>
+        <p id="carritoContext" class="form-help" style="margin:0;">Cargando contexto del carrito...</p>
+      </div>
+      <div class="form-actions" style="margin:0;">
+        <button type="button" id="btnAplicarSeleccion" class="btn">Agregar selección al carrito</button>
+        <button type="button" id="btnSalir" class="btn secondary">Salir al carrito</button>
+      </div>
+    </div>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2 style="margin:0;">Catálogo de productos por botones</h2>
+        <span id="catalogoTotal" class="form-help">Productos: 0</span>
+      </div>
+
+      <div class="form-row" style="margin-bottom:10px;">
+        <div class="form-col">
+          <label class="form-label" for="filtroProductoInput">Buscar en botones</label>
+          <input id="filtroProductoInput" class="form-input" placeholder="Filtra por nombre, SKU o código de barras">
+        </div>
+      </div>
+
+      <p class="form-help" style="margin:0 0 10px 0;">Cada clic suma 1 unidad. Si necesitas cantidad 2, presiona el botón dos veces.</p>
+      <div id="productosButtonsGrid" class="product-buttons-grid">Cargando productos...</div>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2 style="margin:0;">Productos seleccionados</h2>
+        <span id="seleccionCount" class="form-help">Items seleccionados: 0</span>
+      </div>
+      <div id="seleccionResumen" class="table-wrap">No hay productos seleccionados.</div>
+      <div id="pageMsg" class="form-help" style="margin-top:10px;"></div>
+    </section>
+  </div>
+
+  <script>
+    const state = {
+      empresaID: 0,
+      carritoID: 0,
+      carritoCodigo: '',
+      returnURL: '',
+      carrito: null,
+      productos: [],
+      filtro: '',
+      seleccion: new Map()
+    };
+
+    function getQueryParam(name) {
+      const p = new URLSearchParams(window.location.search);
+      return p.get(name);
+    }
+
+    function normalize(v) {
+      return (v || '').toString().trim();
+    }
+
+    function toNumber(v, fallback) {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : fallback;
+    }
+
+    function escapeHtml(v) {
+      return String(v == null ? '' : v)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function setMessage(text, isError) {
+      const el = document.getElementById('pageMsg');
+      el.textContent = text || '';
+      el.style.color = isError ? '#ef5350' : '';
+    }
+
+    function formatAmount(value, moneda) {
+      const amount = Number(value || 0);
+      const m = normalize(moneda || 'COP') || 'COP';
+      return m + ' ' + amount.toFixed(2);
+    }
+
+    async function ensureOk(res) {
+      if (res.ok) return;
+      const t = await res.text();
+      throw new Error(t || ('HTTP ' + res.status));
+    }
+
+    function safeReturnURL(raw) {
+      const input = normalize(raw);
+      if (!input) return '';
+      if (input.startsWith('/administrar_empresa/carrito_de_compras.html')) return input;
+      const originPrefix = window.location.origin + '/administrar_empresa/carrito_de_compras.html';
+      if (input.startsWith(originPrefix)) {
+        return input.slice(window.location.origin.length);
+      }
+      return '';
+    }
+
+    function buildDefaultReturnURL() {
+      const params = new URLSearchParams();
+      params.set('empresa_id', String(state.empresaID));
+      if (state.carritoID > 0) params.set('carrito_id', String(state.carritoID));
+      if (state.carritoCodigo) params.set('carrito_codigo', state.carritoCodigo);
+
+      const estacionID = Number(getQueryParam('estacion_id') || 0);
+      const estacionNombre = normalize(getQueryParam('estacion_nombre') || '');
+      if (estacionID > 0) params.set('estacion_id', String(estacionID));
+      if (estacionNombre) params.set('estacion_nombre', estacionNombre);
+
+      return '/administrar_empresa/carrito_de_compras.html?' + params.toString();
+    }
+
+    function getSelectedRows() {
+      const rows = [];
+      state.seleccion.forEach(function(qty, id) {
+        const cantidad = Number(qty || 0);
+        if (cantidad <= 0) return;
+        const producto = state.productos.find(function(p) { return Number(p.id) === Number(id); });
+        if (!producto) return;
+        rows.push({ producto: producto, cantidad: cantidad });
+      });
+      return rows;
+    }
+
+    function updateSelectionCount() {
+      const rows = getSelectedRows();
+      const totalUnidades = rows.reduce(function(acc, row) { return acc + row.cantidad; }, 0);
+      document.getElementById('seleccionCount').textContent = 'Items seleccionados: ' + totalUnidades;
+    }
+
+    function renderSelectionTable() {
+      const box = document.getElementById('seleccionResumen');
+      const rows = getSelectedRows();
+      if (!rows.length) {
+        box.textContent = 'No hay productos seleccionados.';
+        updateSelectionCount();
+        return;
+      }
+
+      const moneda = (state.carrito && state.carrito.moneda) || 'COP';
+      const total = rows.reduce(function(acc, row) {
+        return acc + (Number(row.producto.precio || 0) * Number(row.cantidad || 0));
+      }, 0);
+
+      const table = document.createElement('table');
+      table.className = 'table';
+      table.innerHTML = '<thead><tr>' +
+        '<th>Producto</th>' +
+        '<th>Precio</th>' +
+        '<th>Cantidad</th>' +
+        '<th>Subtotal</th>' +
+        '<th>Acción</th>' +
+        '</tr></thead>';
+
+      const tbody = document.createElement('tbody');
+      rows.forEach(function(row) {
+        const tr = document.createElement('tr');
+        const subtotal = Number(row.producto.precio || 0) * Number(row.cantidad || 0);
+        tr.innerHTML = '<td>' + escapeHtml(normalize(row.producto.nombre) || 'Producto') + '</td>' +
+          '<td>' + formatAmount(row.producto.precio, moneda) + '</td>' +
+          '<td>' + Number(row.cantidad).toFixed(2) + '</td>' +
+          '<td>' + formatAmount(subtotal, moneda) + '</td>' +
+          '<td class="actions"><button type="button" class="btn secondary reduceProductoBtn" data-id="' + Number(row.producto.id) + '">Quitar 1</button></td>';
+        tbody.appendChild(tr);
+      });
+
+      const trTotal = document.createElement('tr');
+      trTotal.innerHTML = '<td colspan="3"><strong>Total selección</strong></td><td><strong>' + formatAmount(total, moneda) + '</strong></td><td></td>';
+      tbody.appendChild(trTotal);
+
+      table.appendChild(tbody);
+      box.innerHTML = '';
+      box.appendChild(table);
+
+      document.querySelectorAll('.reduceProductoBtn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          const id = Number(btn.getAttribute('data-id'));
+          const actual = Number(state.seleccion.get(id) || 0);
+          const next = Math.max(0, actual - 1);
+          if (next <= 0) {
+            state.seleccion.delete(id);
+          } else {
+            state.seleccion.set(id, next);
+          }
+          renderProductsButtons();
+          renderSelectionTable();
+          setMessage('', false);
+        });
+      });
+
+      updateSelectionCount();
+    }
+
+    function filterProducts() {
+      const q = normalize(state.filtro).toLowerCase();
+      if (!q) return state.productos;
+      return state.productos.filter(function(p) {
+        const name = normalize(p.nombre).toLowerCase();
+        const sku = normalize(p.sku).toLowerCase();
+        const cb = normalize(p.codigo_barras).toLowerCase();
+        return name.indexOf(q) >= 0 || sku.indexOf(q) >= 0 || cb.indexOf(q) >= 0;
+      });
+    }
+
+    function renderProductsButtons() {
+      const box = document.getElementById('productosButtonsGrid');
+      const rows = filterProducts();
+
+      document.getElementById('catalogoTotal').textContent = 'Productos: ' + rows.length;
+
+      if (!rows.length) {
+        box.textContent = 'No hay productos activos para mostrar con ese filtro.';
+        return;
+      }
+
+      box.innerHTML = rows.map(function(p) {
+        const qty = Number(state.seleccion.get(Number(p.id)) || 0);
+        const badge = qty > 0 ? '<span class="product-pick-qty">x' + qty + '</span>' : '';
+        return '<button type="button" class="product-pick-btn' + (qty > 0 ? ' is-selected' : '') + '" data-id="' + Number(p.id) + '">' +
+          '<span class="product-pick-name">' + escapeHtml(normalize(p.nombre) || 'Producto') + '</span>' +
+          '<span class="product-pick-meta">' +
+            'SKU: ' + escapeHtml(normalize(p.sku) || '-') +
+            ' | Precio: ' + escapeHtml(formatAmount(p.precio, (state.carrito && state.carrito.moneda) || 'COP')) +
+          '</span>' +
+          badge +
+        '</button>';
+      }).join('');
+
+      document.querySelectorAll('.product-pick-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          const id = Number(btn.getAttribute('data-id'));
+          const current = Number(state.seleccion.get(id) || 0);
+          state.seleccion.set(id, current + 1);
+          renderProductsButtons();
+          renderSelectionTable();
+          setMessage('Producto agregado a selección. Puedes seguir presionando para aumentar cantidad.', false);
+        });
+      });
+    }
+
+    async function resolveCarrito() {
+      if (state.carritoID > 0) {
+        const res = await fetch('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(state.carritoID));
+        await ensureOk(res);
+        state.carrito = await res.json();
+        if (state.carrito && state.carrito.codigo) {
+          state.carritoCodigo = normalize(state.carrito.codigo).toUpperCase();
+        }
+        return;
+      }
+
+      if (!state.carritoCodigo) {
+        throw new Error('carrito_id o carrito_codigo es obligatorio para buscar productos.');
+      }
+
+      const res = await fetch('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(state.empresaID) + '&include_inactive=1');
+      await ensureOk(res);
+      const rows = await res.json();
+      const match = Array.isArray(rows) ? rows.find(function(c) {
+        return normalize(c.codigo).toUpperCase() === state.carritoCodigo;
+      }) : null;
+
+      if (!match) {
+        throw new Error('No se encontró el carrito solicitado.');
+      }
+
+      state.carrito = match;
+      state.carritoID = Number(match.id || 0);
+      state.carritoCodigo = normalize(match.codigo).toUpperCase();
+    }
+
+    async function loadProducts() {
+      const res = await fetch('/api/empresa/productos?empresa_id=' + encodeURIComponent(state.empresaID));
+      await ensureOk(res);
+      const rows = await res.json();
+      state.productos = Array.isArray(rows) ? rows : [];
+      state.productos.sort(function(a, b) {
+        return normalize(a.nombre).localeCompare(normalize(b.nombre), 'es', { sensitivity: 'base' });
+      });
+    }
+
+    async function getCurrentCarritoItems() {
+      const res = await fetch('/api/empresa/carritos_compra/items?empresa_id=' + encodeURIComponent(state.empresaID) + '&carrito_id=' + encodeURIComponent(state.carritoID) + '&include_inactive=1');
+      await ensureOk(res);
+      const rows = await res.json();
+      return Array.isArray(rows) ? rows : [];
+    }
+
+    function buildProductoPayload(producto, cantidad, currentItem) {
+      const productCode = normalize(producto.codigo_barras) || normalize(producto.sku);
+      const existingQty = currentItem ? Number(currentItem.cantidad || 0) : 0;
+
+      return {
+        id: currentItem ? Number(currentItem.id || 0) : 0,
+        empresa_id: Number(state.empresaID),
+        carrito_id: Number(state.carritoID),
+        tipo_item: 'producto',
+        referencia_id: Number(producto.id || 0),
+        codigo_item: normalize((currentItem && currentItem.codigo_item) || productCode),
+        descripcion: normalize((currentItem && currentItem.descripcion) || producto.nombre || 'Producto'),
+        unidad_medida: normalize((currentItem && currentItem.unidad_medida) || producto.unidad_medida || 'unidad'),
+        cantidad: Number(existingQty + cantidad),
+        precio_unitario: Number((currentItem && currentItem.precio_unitario) || producto.precio || 0),
+        descuento_porcentaje: Number((currentItem && currentItem.descuento_porcentaje) || 0),
+        impuesto_porcentaje: Number((currentItem && currentItem.impuesto_porcentaje) || producto.impuesto_porcentaje || 0),
+        impuesto_codigo: normalize((currentItem && currentItem.impuesto_codigo) || 'IVA'),
+        observaciones: normalize((currentItem && currentItem.observaciones) || '')
+      };
+    }
+
+    async function applySelectionToCarrito() {
+      const rows = getSelectedRows();
+      if (!rows.length) {
+        setMessage('No hay productos seleccionados para agregar.', true);
+        return;
+      }
+
+      const btn = document.getElementById('btnAplicarSeleccion');
+      btn.disabled = true;
+      const prevText = btn.textContent;
+      btn.textContent = 'Agregando...';
+
+      try {
+        const existingItems = await getCurrentCarritoItems();
+
+        for (const row of rows) {
+          const currentItem = existingItems.find(function(item) {
+            return normalize(item.tipo_item) === 'producto' &&
+              normalize(item.estado || 'activo') !== 'inactivo' &&
+              Number(item.referencia_id || 0) === Number(row.producto.id || 0);
+          });
+
+          const payload = buildProductoPayload(row.producto, row.cantidad, currentItem);
+          const method = currentItem ? 'PUT' : 'POST';
+          const res = await fetch('/api/empresa/carritos_compra/items', {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          await ensureOk(res);
+
+          if (currentItem) {
+            currentItem.cantidad = Number(payload.cantidad || 0);
+          } else {
+            existingItems.push({
+              id: 0,
+              tipo_item: 'producto',
+              referencia_id: Number(row.producto.id || 0),
+              cantidad: Number(payload.cantidad || 0),
+              precio_unitario: Number(payload.precio_unitario || 0),
+              codigo_item: payload.codigo_item,
+              descripcion: payload.descripcion,
+              unidad_medida: payload.unidad_medida,
+              descuento_porcentaje: payload.descuento_porcentaje,
+              impuesto_porcentaje: payload.impuesto_porcentaje,
+              impuesto_codigo: payload.impuesto_codigo,
+              observaciones: payload.observaciones
+            });
+          }
+        }
+
+        const totalUnidades = rows.reduce(function(acc, row) { return acc + row.cantidad; }, 0);
+        state.seleccion.clear();
+        renderProductsButtons();
+        renderSelectionTable();
+        setMessage('Se agregaron ' + totalUnidades + ' unidades al carrito correctamente.', false);
+      } catch (err) {
+        setMessage(err.message || 'No se pudo agregar la selección al carrito.', true);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = prevText;
+      }
+    }
+
+    function exitToCarrito() {
+      if (getSelectedRows().length > 0) {
+        const ok = confirm('Tienes productos seleccionados sin agregar al carrito. ¿Deseas salir de todos modos?');
+        if (!ok) return;
+      }
+      window.location.href = state.returnURL || buildDefaultReturnURL();
+    }
+
+    function renderContext() {
+      const carritoName = state.carrito ? normalize(state.carrito.nombre) : '';
+      const carritoCode = state.carrito ? normalize(state.carrito.codigo) : '';
+      const moneda = state.carrito ? normalize(state.carrito.moneda || 'COP') : 'COP';
+
+      document.getElementById('pageTitle').textContent = 'Buscar productos por botones';
+      document.getElementById('carritoContext').textContent =
+        'Empresa ID: ' + state.empresaID +
+        ' | Carrito: ' + (carritoName || ('#' + state.carritoID)) +
+        ' | Código: ' + (carritoCode || '-') +
+        ' | Moneda: ' + (moneda || 'COP');
+    }
+
+    document.getElementById('filtroProductoInput').addEventListener('input', function() {
+      state.filtro = normalize(document.getElementById('filtroProductoInput').value);
+      renderProductsButtons();
+    });
+
+    document.getElementById('btnAplicarSeleccion').addEventListener('click', async function() {
+      await applySelectionToCarrito();
+    });
+
+    document.getElementById('btnSalir').addEventListener('click', function() {
+      exitToCarrito();
+    });
+
+    (async function init() {
+      const empresaID = Number(getQueryParam('empresa_id') || 0);
+      const carritoID = Number(getQueryParam('carrito_id') || 0);
+      const carritoCode = normalize(getQueryParam('carrito_codigo') || '').toUpperCase();
+      const returnURL = safeReturnURL(getQueryParam('return_url') || '');
+
+      if (!empresaID) {
+        setMessage('empresa_id es obligatorio en la URL.', true);
+        document.getElementById('productosButtonsGrid').textContent = 'Falta empresa_id en la URL.';
+        document.getElementById('btnAplicarSeleccion').disabled = true;
+        return;
+      }
+
+      state.empresaID = empresaID;
+      state.carritoID = carritoID;
+      state.carritoCodigo = carritoCode;
+      state.returnURL = returnURL || buildDefaultReturnURL();
+
+      try {
+        await resolveCarrito();
+        renderContext();
+        await loadProducts();
+        renderProductsButtons();
+        renderSelectionTable();
+      } catch (err) {
+        document.getElementById('productosButtonsGrid').textContent = 'No se pudo cargar el catálogo de productos.';
+        setMessage(err.message || 'Error cargando contexto de carrito/productos.', true);
+        document.getElementById('btnAplicarSeleccion').disabled = true;
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -599,6 +599,57 @@ html.theme-light .floating-menu #themeToggle{color:var(--accent-2)}
 
 .table-wrap{overflow:auto}
 
+.product-buttons-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+  gap:10px;
+}
+
+.product-pick-btn{
+  position:relative;
+  text-align:left;
+  border:1px solid var(--border);
+  background:rgba(255,255,255,0.03);
+  border-radius:10px;
+  color:var(--text);
+  padding:10px;
+  cursor:pointer;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.product-pick-btn:hover{
+  border-color:var(--accent);
+  transform:translateY(-1px);
+}
+
+.product-pick-btn.is-selected{
+  border-color:rgba(92,245,144,0.8);
+  background:rgba(92,245,144,0.08);
+}
+
+.product-pick-name{
+  font-weight:700;
+}
+
+.product-pick-meta{
+  color:var(--muted);
+  font-size:.86rem;
+}
+
+.product-pick-qty{
+  position:absolute;
+  top:8px;
+  right:8px;
+  padding:2px 7px;
+  border-radius:999px;
+  background:var(--accent);
+  color:#fff;
+  font-weight:700;
+  font-size:.78rem;
+}
+
 .producto-thumb{
   width:44px;
   height:44px;

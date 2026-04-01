@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"bytes"
 	"context"
 	"crypto/aes"
 	"crypto/cipher"
@@ -8,12 +9,11 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
-	"regexp"
 	"strings"
 
 	dbpkg "github.com/you/pos-backend/db"
@@ -22,6 +22,31 @@ import (
 type loggingResponseWriter struct {
 	http.ResponseWriter
 	status int
+}
+
+type apiCaptureResponseWriter struct {
+	headers http.Header
+	body    bytes.Buffer
+	status  int
+}
+
+func newAPICaptureResponseWriter() *apiCaptureResponseWriter {
+	return &apiCaptureResponseWriter{headers: make(http.Header), status: http.StatusOK}
+}
+
+func (rw *apiCaptureResponseWriter) Header() http.Header {
+	return rw.headers
+}
+
+func (rw *apiCaptureResponseWriter) WriteHeader(code int) {
+	rw.status = code
+}
+
+func (rw *apiCaptureResponseWriter) Write(p []byte) (int, error) {
+	if rw.status == 0 {
+		rw.status = http.StatusOK
+	}
+	return rw.body.Write(p)
 }
 
 func (lrw *loggingResponseWriter) WriteHeader(code int) {
@@ -39,44 +64,53 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// TryLoadCredsFromDocs busca credenciales en documentos/descripcion_del_proyecto
-// Devuelve clientID y clientSecret (vacíos si no se encontraron)
-func TryLoadCredsFromDocs() (string, string) {
-	candidates := []string{
-		"../documentos/descripcion_del_proyecto",
-		"./../documentos/descripcion_del_proyecto",
-		"../../documentos/descripcion_del_proyecto",
-	}
-	if exe, err := os.Executable(); err == nil {
-		exeDir := filepath.Dir(exe)
-		candidates = append(candidates, filepath.Join(exeDir, "..", "documentos", "descripcion_del_proyecto"))
-	}
+// JSONErrorMiddleware unifica errores no-JSON para endpoints de API.
+func JSONErrorMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		path := r.URL.Path
+		isAPIPath := strings.HasPrefix(path, "/api/") ||
+			strings.HasPrefix(path, "/super/api/") ||
+			strings.HasPrefix(path, "/mercadopago/") ||
+			strings.HasPrefix(path, "/wompi/") ||
+			strings.HasPrefix(path, "/licencias/")
 
-	reClient := regexp.MustCompile(`([0-9]+[-][A-Za-z0-9._-]+apps\.googleusercontent\.com)`) // Google client id pattern
-	reSecret := regexp.MustCompile(`(?i)Secreto[^:\n\r]*[:\-\s]*([A-Za-z0-9_\-]+)`)          // busca 'Secreto' y captura token
+		if !isAPIPath {
+			next.ServeHTTP(w, r)
+			return
+		}
 
-	var clientID, clientSecret string
-	for _, p := range candidates {
-		if b, err := os.ReadFile(p); err == nil {
-			s := string(b)
-			if clientID == "" {
-				if m := reClient.FindStringSubmatch(s); len(m) > 1 {
-					clientID = m[1]
-					log.Println("Cargado GOOGLE_CLIENT_ID desde", p)
-				}
-			}
-			if clientSecret == "" {
-				if m2 := reSecret.FindStringSubmatch(s); len(m2) > 1 {
-					clientSecret = m2[1]
-					log.Println("Cargado GOOGLE_CLIENT_SECRET desde", p)
-				}
-			}
-			if clientID != "" && clientSecret != "" {
-				return clientID, clientSecret
+		capture := newAPICaptureResponseWriter()
+		next.ServeHTTP(capture, r)
+
+		for k, vals := range capture.Header() {
+			for _, v := range vals {
+				w.Header().Add(k, v)
 			}
 		}
-	}
-	return clientID, clientSecret
+
+		contentType := strings.ToLower(capture.Header().Get("Content-Type"))
+		isJSON := strings.Contains(contentType, "application/json")
+
+		if capture.status >= 400 && !isJSON {
+			msg := strings.TrimSpace(capture.body.String())
+			if msg == "" {
+				msg = http.StatusText(capture.status)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(capture.status)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"ok":     false,
+				"status": capture.status,
+				"error":  msg,
+				"path":   path,
+				"method": r.Method,
+			})
+			return
+		}
+
+		w.WriteHeader(capture.status)
+		_, _ = w.Write(capture.body.Bytes())
+	})
 }
 
 // GenerateSecureToken devuelve un token seguro en hex de `n` bytes.
@@ -96,16 +130,19 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 		path := r.URL.Path
 		// Rutas públicas exactas (no usar prefijo "/" porque abriría todo el sistema).
 		publicExact := map[string]struct{}{
-			"/":                      {},
-			"/index.html":            {},
-			"/login.html":            {},
-			"/auth/google/login":     {},
-			"/auth/google/callback":  {},
-			"/auth/confirmar_correo": {},
-			"/auth/logout":           {},
-			"/estilos.css":           {},
-			"/menu.js":               {},
-			"/favicon.ico":           {},
+			"/":                           {},
+			"/index.html":                 {},
+			"/login.html":                 {},
+			"/login_usuario.html":         {},
+			"/auth/google/login":          {},
+			"/auth/google/callback":       {},
+			"/auth/confirmar_correo":      {},
+			"/auth/logout":                {},
+			"/api/empresa/usuarios/login": {},
+			"/api/empresa/usuarios/establecer_password": {},
+			"/estilos.css": {},
+			"/menu.js":     {},
+			"/favicon.ico": {},
 		}
 		if _, ok := publicExact[path]; ok {
 			next.ServeHTTP(w, r)

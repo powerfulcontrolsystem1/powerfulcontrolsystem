@@ -2,11 +2,13 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	_ "modernc.org/sqlite"
 
@@ -26,19 +28,104 @@ var (
 	dbSuper        *sql.DB
 )
 
-func main() {
-	if clientID == "" || clientSecret == "" || redirectURL == "" {
-		log.Println("Warning: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET or GOOGLE_REDIRECT_URL not set")
-		// Intentar cargar credenciales desde documentos/descripcion_del_proyecto si existen
-		if cid, csec := utils.TryLoadCredsFromDocs(); cid != "" || csec != "" {
-			if clientID == "" {
-				clientID = cid
+func readConfigValueFromDB(dbConn *sql.DB, keys []string) (string, string, error) {
+	for _, key := range keys {
+		val, enc, err := dbpkg.GetConfigValue(dbConn, key)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				continue
 			}
-			if clientSecret == "" {
-				clientSecret = csec
+			return "", "", err
+		}
+
+		clean := strings.TrimSpace(val)
+		if clean == "" {
+			continue
+		}
+
+		if enc {
+			dec, derr := utils.DecryptString(clean)
+			if derr != nil {
+				log.Printf("warning: no se pudo descifrar la configuración %s: %v", key, derr)
+				continue
+			}
+			clean = strings.TrimSpace(dec)
+			if clean == "" {
+				continue
 			}
 		}
+
+		return clean, key, nil
 	}
+
+	return "", "", nil
+}
+
+func loadGoogleOAuthFromDB(dbConn *sql.DB) {
+	clientIDKeys := []string{
+		"google.client_id",
+		"oauth.google.client_id",
+		"auth.google.client_id",
+		"google_oauth.client_id",
+		"GOOGLE_CLIENT_ID",
+	}
+	clientSecretKeys := []string{
+		"google.client_secret",
+		"oauth.google.client_secret",
+		"auth.google.client_secret",
+		"google_oauth.client_secret",
+		"GOOGLE_CLIENT_SECRET",
+	}
+	redirectURLKeys := []string{
+		"google.redirect_url",
+		"oauth.google.redirect_url",
+		"auth.google.redirect_url",
+		"google_oauth.redirect_url",
+		"GOOGLE_REDIRECT_URL",
+	}
+
+	dbClientID, clientIDKey, err := readConfigValueFromDB(dbConn, clientIDKeys)
+	if err != nil {
+		log.Printf("warning: no se pudo leer GOOGLE_CLIENT_ID desde DB: %v", err)
+	}
+	dbClientSecret, clientSecretKey, err := readConfigValueFromDB(dbConn, clientSecretKeys)
+	if err != nil {
+		log.Printf("warning: no se pudo leer GOOGLE_CLIENT_SECRET desde DB: %v", err)
+	}
+	dbRedirectURL, redirectURLKey, err := readConfigValueFromDB(dbConn, redirectURLKeys)
+	if err != nil {
+		log.Printf("warning: no se pudo leer GOOGLE_REDIRECT_URL desde DB: %v", err)
+	}
+
+	// Si la DB tiene client_id + client_secret, tomarlos como fuente de verdad.
+	if dbClientID != "" && dbClientSecret != "" {
+		clientID = dbClientID
+		clientSecret = dbClientSecret
+		if dbRedirectURL != "" {
+			redirectURL = dbRedirectURL
+		}
+		log.Printf("INFO: OAuth Google cargado desde DB (%s, %s)", clientIDKey, clientSecretKey)
+		if dbRedirectURL != "" {
+			log.Printf("INFO: redirect OAuth cargado desde DB (%s)", redirectURLKey)
+		}
+		return
+	}
+
+	if clientID == "" && dbClientID != "" {
+		clientID = dbClientID
+		log.Printf("INFO: GOOGLE_CLIENT_ID completado desde DB (%s)", clientIDKey)
+	}
+	if clientSecret == "" && dbClientSecret != "" {
+		clientSecret = dbClientSecret
+		log.Printf("INFO: GOOGLE_CLIENT_SECRET completado desde DB (%s)", clientSecretKey)
+	}
+	if redirectURL == "" && dbRedirectURL != "" {
+		redirectURL = dbRedirectURL
+		log.Printf("INFO: GOOGLE_REDIRECT_URL completado desde DB (%s)", redirectURLKey)
+	}
+}
+
+func main() {
 	if dbEmpresasPath == "" {
 		dbEmpresasPath = "empresas.db"
 	}
@@ -60,6 +147,13 @@ func main() {
 	dbSuper, err = sql.Open("sqlite", dbSuperPath)
 	if err != nil {
 		log.Fatalf("failed to open superadministrador sqlite db: %v", err)
+	}
+
+	if err := dbpkg.EnsureSchemaMigrationsTable(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure schema_migrations in empresas db: %v", err)
+	}
+	if err := dbpkg.EnsureSchemaMigrationsTable(dbSuper); err != nil {
+		log.Fatalf("failed to ensure schema_migrations in super db: %v", err)
 	}
 
 	// Crear tablas en dbEmpresas
@@ -119,6 +213,10 @@ func main() {
 		addIfMissing("email_confirm_token TEXT", "email_confirm_token")
 		addIfMissing("email_confirm_expira TEXT", "email_confirm_expira")
 		addIfMissing("email_confirmado_en TEXT", "email_confirmado_en")
+		addIfMissing("password_hash TEXT", "password_hash")
+		addIfMissing("password_salt TEXT", "password_salt")
+		addIfMissing("password_set INTEGER DEFAULT 0", "password_set")
+		addIfMissing("password_actualizada_en TEXT", "password_actualizada_en")
 		addIfMissing("fecha_actualizacion TEXT", "fecha_actualizacion")
 		addIfMissing("usuario_creador TEXT", "usuario_creador")
 		addIfMissing("estado TEXT DEFAULT 'activo'", "estado")
@@ -194,6 +292,9 @@ func main() {
 	}
 	if err := dbpkg.EnsureEmpresaConfiguracionAvanzadaSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure empresa_configuracion_avanzada schema in empresas db: %v", err)
+	}
+	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-01-001-baseline", "baseline schema snapshot: users, empresas, productos, clientes, carritos, configuracion_avanzada"); err != nil {
+		log.Fatalf("failed to register schema migration in empresas db: %v", err)
 	}
 	// Crear tipos_de_empresas en la base de datos de superadministrador (ubicación centralizada)
 	createTiposSuper := `CREATE TABLE IF NOT EXISTS tipos_de_empresas (
@@ -507,6 +608,10 @@ func main() {
 	if _, err := dbSuper.Exec(createConfiguraciones); err != nil {
 		log.Fatalf("failed to create configuraciones table in super db: %v", err)
 	}
+	loadGoogleOAuthFromDB(dbSuper)
+	if clientID == "" || clientSecret == "" {
+		log.Println("Warning: GOOGLE_CLIENT_ID o GOOGLE_CLIENT_SECRET no configurados (entorno/DB)")
+	}
 
 	// Crear tabla de sesiones en la base superadministrador
 	createSesiones := `CREATE TABLE IF NOT EXISTS sesiones (
@@ -522,6 +627,10 @@ func main() {
 	);`
 	if _, err := dbSuper.Exec(createSesiones); err != nil {
 		log.Fatalf("failed to create sesiones table in super db: %v", err)
+	}
+
+	if err := dbpkg.RegisterSchemaMigration(dbSuper, "superadministrador", "2026-04-01-001-baseline", "baseline schema snapshot: administradores, licencias, configuraciones, sesiones, pagos"); err != nil {
+		log.Fatalf("failed to register schema migration in super db: %v", err)
 	}
 
 	// Inicializar tabla de métricas y arrancar collector periódico
@@ -559,6 +668,8 @@ func main() {
 	http.HandleFunc("/api/empresa/productos/precios_historial", handlers.EmpresaProductoPrecioHistorialHandler(dbEmpresas))
 	http.HandleFunc("/api/empresa/proveedores", handlers.EmpresaProveedoresHandler(dbEmpresas))
 	http.HandleFunc("/api/empresa/servicios", handlers.EmpresaServiciosHandler(dbEmpresas))
+	http.HandleFunc("/api/empresa/usuarios/login", handlers.EmpresaUsuarioLoginHandler(dbEmpresas, dbSuper))
+	http.HandleFunc("/api/empresa/usuarios/establecer_password", handlers.EmpresaUsuarioSetPasswordHandler(dbEmpresas, dbSuper))
 	http.HandleFunc("/api/empresa/usuarios", handlers.EmpresaUsuariosHandler(dbEmpresas, dbSuper))
 	http.HandleFunc("/api/empresa/clientes", handlers.EmpresaClientesHandler(dbEmpresas))
 	http.HandleFunc("/api/empresa/carritos_compra", handlers.EmpresaCarritosCompraHandler(dbEmpresas))
@@ -639,8 +750,8 @@ func main() {
 	}
 	http.Handle("/", http.FileServer(http.Dir(webDir)))
 
-	// Wrap DefaultServeMux with authentication and logging middleware
-	handler := utils.LoggingMiddleware(utils.AuthMiddleware(dbSuper, http.DefaultServeMux))
+	// Wrap DefaultServeMux with authentication, JSON error normalization and logging middleware
+	handler := utils.LoggingMiddleware(utils.JSONErrorMiddleware(utils.AuthMiddleware(dbSuper, http.DefaultServeMux)))
 
 	// Respetar la variable de entorno PORT si está definida; por defecto usar 8080
 	port := os.Getenv("PORT")
