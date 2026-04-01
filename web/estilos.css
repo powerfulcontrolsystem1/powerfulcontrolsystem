@@ -392,6 +392,10 @@ html.theme-light .floating-menu #themeToggle{color:var(--accent-2)}
   border-color:#30a46c;
   background:linear-gradient(135deg, rgba(12,65,39,.95), rgba(26,130,83,.88));
 }
+.payment-method-card.payment-method-manual{
+  border-color:#b86b1a;
+  background:linear-gradient(135deg, rgba(92,47,9,.95), rgba(165,94,18,.90));
+}
 .payment-method-card.active{
   box-shadow:0 0 0 2px rgba(255,255,255,.16), 0 10px 24px rgba(0,0,0,.35);
 }
@@ -414,6 +418,11 @@ html.theme-light .floating-menu #themeToggle{color:var(--accent-2)}
   background:linear-gradient(135deg, rgba(12,65,39,.95), rgba(26,130,83,.88));
   color:#ecfff4;
 }
+.payment-method-panel-manual{
+  border-color:#b86b1a;
+  background:linear-gradient(135deg, rgba(92,47,9,.95), rgba(165,94,18,.90));
+  color:#fff5eb;
+}
 .method-panel-heading{font-weight:800;margin-bottom:8px}
 .payment-method-hint{margin-bottom:10px}
 .payment-method-check{display:block;margin-bottom:8px}
@@ -431,3 +440,4 @@ html.theme-light .floating-menu #themeToggle{color:var(--accent-2)}
 }
 .payment-btn-mp{width:100%;background:#ffd166;color:#1f2a38;border:none}
 .payment-btn-nequi{width:100%;background:#7ce0a6;color:#0f3521;border:none}
+.payment-btn-manual{width:100%;background:#ffcc80;color:#4a2506;border:none}

@@ -1507,6 +1507,61 @@ func WompiTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 	}
 }
 
+// ActivateLicenciaSinPagoHandler activa una licencia manualmente para avanzar en pruebas internas.
+func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		var payload struct {
+			LicenciaID int64  `json:"licencia_id"`
+			EmpresaID  int64  `json:"empresa_id"`
+			Motivo     string `json:"motivo,omitempty"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			http.Error(w, "invalid payload: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		if payload.LicenciaID <= 0 {
+			http.Error(w, "licencia_id inválido", http.StatusBadRequest)
+			return
+		}
+		if payload.EmpresaID <= 0 {
+			http.Error(w, "empresa_id inválido", http.StatusBadRequest)
+			return
+		}
+
+		lic, err := dbpkg.GetLicenciaByID(dbSuper, payload.LicenciaID)
+		if err != nil || lic == nil {
+			http.Error(w, "licencia not found", http.StatusBadRequest)
+			return
+		}
+
+		now := time.Now()
+		fechaInicio := now.Format("2006-01-02 15:04:05")
+		fechaFin := now.AddDate(0, 0, lic.DuracionDias).Format("2006-01-02 15:04:05")
+		if err := dbpkg.ActivateLicenciaForEmpresa(dbSuper, payload.LicenciaID, payload.EmpresaID, fechaInicio, fechaFin); err != nil {
+			http.Error(w, "failed to activate licencia: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		log.Printf("Licencia activada sin pago: licencia=%d empresa=%d motivo=%q", payload.LicenciaID, payload.EmpresaID, payload.Motivo)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"activated":      true,
+			"provider":       "manual",
+			"payment_method": "ACTIVAR_SIN_PAGO",
+			"licencia_id":    payload.LicenciaID,
+			"empresa_id":     payload.EmpresaID,
+			"fecha_inicio":   fechaInicio,
+			"fecha_fin":      fechaFin,
+			"redirect_url":   fmt.Sprintf("/administrar_empresa.html?id=%d", payload.EmpresaID),
+		})
+	}
+}
+
 // MercadoPagoTestPreferenceHandler crea una preferencia de prueba para verificar que el checkout funciona
 func MercadoPagoTestPreferenceHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

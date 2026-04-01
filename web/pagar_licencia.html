@@ -98,6 +98,10 @@
                 '<span class="method-name">Nequi (Wompi)</span>'+
                 '<span class="method-desc">Pago Nequi para Colombia (sandbox/producción)</span>'+
               '</button>'+
+              '<button id="selectManualCard" type="button" class="payment-method-card payment-method-manual">'+
+                '<span class="method-name">Activar licencia sin pagar</span>'+
+                '<span class="method-desc">Activación directa para continuar desarrollo interno</span>'+
+              '</button>'+
             '</div>'+
             '<div id="mpPanel" class="payment-method-panel payment-method-panel-mp">'+
               '<div class="method-panel-heading">Mercado Pago</div>'+
@@ -114,28 +118,44 @@
               '<div id="nequiTermsLinks" class="small payment-method-links"></div>'+
               '<button id="payNequiBtn" class="btn secondary payment-btn-nequi" type="button">Pagar con Nequi</button>'+
               '<div id="nequiStatus" class="small payment-method-status"></div>'+
+            '</div>'+
+            '<div id="manualPanel" class="payment-method-panel payment-method-panel-manual">'+
+              '<div class="method-panel-heading">Activar licencia sin pagar</div>'+
+              '<div class="small payment-method-hint">Usa esta opción solo para avanzar en el proyecto mientras se completan integraciones de pago.</div>'+
+              '<button id="activateWithoutPayBtn" class="btn secondary payment-btn-manual" type="button">Activar licencia sin pagar</button>'+
+              '<div id="manualStatus" class="small payment-method-status"></div>'+
             '</div>';
 
           const payBtn = document.getElementById('payBtn');
           const mpStatus = document.getElementById('mpStatus');
           const selectMpCard = document.getElementById('selectMpCard');
           const selectNequiCard = document.getElementById('selectNequiCard');
+          const selectManualCard = document.getElementById('selectManualCard');
           const mpPanel = document.getElementById('mpPanel');
           const nequiPanel = document.getElementById('nequiPanel');
+          const manualPanel = document.getElementById('manualPanel');
 
           function setPaymentMethod(method){
-            const isMp = method !== 'nequi';
+            const normalized = String(method || 'mp').toLowerCase();
+            const isMp = normalized === 'mp';
+            const isNequi = normalized === 'nequi';
+            const isManual = normalized === 'manual';
             if (selectMpCard) selectMpCard.classList.toggle('active', isMp);
-            if (selectNequiCard) selectNequiCard.classList.toggle('active', !isMp);
+            if (selectNequiCard) selectNequiCard.classList.toggle('active', isNequi);
+            if (selectManualCard) selectManualCard.classList.toggle('active', isManual);
             if (mpPanel) mpPanel.classList.toggle('active', isMp);
-            if (nequiPanel) nequiPanel.classList.toggle('active', !isMp);
+            if (nequiPanel) nequiPanel.classList.toggle('active', isNequi);
+            if (manualPanel) manualPanel.classList.toggle('active', isManual);
           }
 
           if (selectMpCard) selectMpCard.addEventListener('click', function(){ setPaymentMethod('mp'); });
           if (selectNequiCard) selectNequiCard.addEventListener('click', function(){ setPaymentMethod('nequi'); });
+          if (selectManualCard) selectManualCard.addEventListener('click', function(){ setPaymentMethod('manual'); });
 
           const preferredProvider = String(params.get('provider') || params.get('metodo') || params.get('method') || '').toLowerCase();
-          setPaymentMethod(preferredProvider === 'nequi' ? 'nequi' : 'mp');
+          if (preferredProvider === 'nequi') setPaymentMethod('nequi');
+          else if (preferredProvider === 'manual' || preferredProvider === 'sin_pago' || preferredProvider === 'gratis' || preferredProvider === 'free') setPaymentMethod('manual');
+          else setPaymentMethod('mp');
 
           payBtn.addEventListener('click', async function(){
             payBtn.disabled = true; payBtn.textContent = selectedMode === 'sandbox' ? 'Abriendo sandbox...' : 'Redirigiendo...';
@@ -185,6 +205,47 @@
           const nequiStatus = document.getElementById('nequiStatus');
           const nequiTermsLinks = document.getElementById('nequiTermsLinks');
           const nequiSandboxHint = document.getElementById('nequiSandboxHint');
+          const manualBtn = document.getElementById('activateWithoutPayBtn');
+          const manualStatus = document.getElementById('manualStatus');
+
+          manualBtn.addEventListener('click', async function(){
+            if (!empresaId) {
+              manualStatus.textContent = 'No se encontró empresa_id para activar la licencia.';
+              return;
+            }
+            manualBtn.disabled = true;
+            manualBtn.textContent = 'Activando...';
+            manualStatus.textContent = '';
+            try {
+              const payload = {
+                licencia_id: Number(licenciaId),
+                empresa_id: Number(empresaId),
+                motivo: 'avance_proyecto'
+              };
+              const activateRes = await fetch('/licencias/activar_sin_pago', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify(payload)
+              });
+              const raw = await activateRes.text();
+              let data = null;
+              try { data = JSON.parse(raw); } catch(e) { data = null; }
+              if (!activateRes.ok) {
+                manualStatus.textContent = 'Error activando licencia: ' + (data && data.error ? data.error : raw);
+                manualBtn.disabled = false;
+                manualBtn.textContent = 'Activar licencia sin pagar';
+                return;
+              }
+              const redirectURL = (data && data.redirect_url)
+                ? String(data.redirect_url)
+                : ('/administrar_empresa.html?id=' + encodeURIComponent(String(empresaId)));
+              window.location.href = redirectURL;
+            } catch (err) {
+              manualStatus.textContent = 'Error activando licencia: ' + (err && err.message ? err.message : String(err));
+              manualBtn.disabled = false;
+              manualBtn.textContent = 'Activar licencia sin pagar';
+            }
+          });
 
           try{
             const termsRes = await fetch('/wompi/terms');

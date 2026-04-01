@@ -62,7 +62,12 @@ Fecha de creación: 2026-03-26
 
 - UI/licencias - flujo de compra: Se añadió una nueva página de pago `web/pagar_licencia.html` y se actualizó `web/elegir_licencia.html` para mostrar las licencias como tarjetas de oferta (`offer-card`) con botón "Comprar". La página de pago solicita la creación de una preferencia a Mercado Pago mediante el endpoint backend `/mercadopago/create_preference` y redirige al checkout usando `checkout_url`. El modo se decide automáticamente por tipo de credencial (`TEST-...` usa sandbox; productiva usa estándar), con override opcional por URL (`?mp_mode=sandbox` o `?mp_mode=prod`). También se expone un webhook en `/mercadopago/webhook` para recibir notificaciones de pago. El prefill de pagador se deja opcional (`?prefill_payer=1`), pero con credenciales TEST se ignora en backend para evitar mezclar comprador de prueba con datos reales. Para habilitar pagos reales, configurar la variable de entorno `MERCADOPAGO_ACCESS_TOKEN` o el valor en DB (`mercadopago.access_token`).
 
-- UI/pagar licencia - métodos por color y selección: En `web/pagar_licencia.html` se añadió un selector de método de pago con tarjetas coloridas y seleccionables: Mercado Pago (azules) y Nequi/Wompi (verdes). Al elegir método, se muestra su panel correspondiente; para Nequi se muestran indicaciones de sandbox cuando aplica.
+- UI/pagar licencia - métodos por color y selección: En `web/pagar_licencia.html` se añadió un selector de método de pago con tarjetas coloridas y seleccionables: Mercado Pago (azules), Nequi/Wompi (verdes) y Activar licencia sin pagar (naranja). Al elegir método, se muestra su panel correspondiente; para Nequi se muestran indicaciones de sandbox cuando aplica.
+
+- Activación de licencia sin pago (avance de proyecto):
+	- Endpoint `POST /licencias/activar_sin_pago` para activar una licencia de forma directa y devolver `redirect_url` hacia `web/administrar_empresa.html`.
+	- `web/pagar_licencia.html` incluye botón de activación sin pago que consume el endpoint y redirige automáticamente.
+	- `web/administrar_empresa.html` fue ajustada a formato de layout administrativo (sidebar izquierdo + frame de contenido), dejando el frame inicial vacío.
 
 - UI/licencias - alternativa Nequi (Wompi): `web/pagar_licencia.html` incluye flujo alterno con Nequi vía Wompi. Solicita número celular, aceptación de términos y consulta estado de transacción en polling. Endpoints usados: `/wompi/terms`, `/wompi/create_transaction_nequi`, `/wompi/transaction_status`.
 

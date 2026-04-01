@@ -200,3 +200,15 @@ Según documentación de Wompi para Colombia, en sandbox puedes usar:
 - En sandbox usa llaves `*_test_*`; en producción usa `*_prod_*`.
 - No mezclar llaves de un ambiente con URL/base del otro.
 
+### 7.5 Método temporal: Activar licencia sin pagar
+
+Para avanzar en desarrollo sin bloquearse por pasarelas:
+
+- En `pagar_licencia.html` existe el método `Activar licencia sin pagar`.
+- Ese flujo llama `POST /licencias/activar_sin_pago` con `licencia_id` y `empresa_id`.
+- Si todo sale bien, activa la licencia y redirige a `administrar_empresa.html`.
+
+Importante:
+
+- Este método es para avance/prototipo interno y no reemplaza los cobros reales de Mercado Pago o Nequi.
+

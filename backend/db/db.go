@@ -578,7 +578,15 @@ func UpdateWompiPaymentRecordByTransaction(dbConn *sql.DB, transactionID, status
 // ActivateLicenciaForEmpresa asigna y activa una licencia para una empresa, estableciendo fechas de inicio y fin
 func ActivateLicenciaForEmpresa(dbConn *sql.DB, licenciaID, empresaID int64, fechaInicio, fechaFin string) error {
 	_, err := dbConn.Exec("UPDATE licencias SET empresa_id = ?, activo = 1, fecha_inicio = ?, fecha_fin = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ?", empresaID, fechaInicio, fechaFin, licenciaID)
-	return err
+	if err == nil {
+		return nil
+	}
+	// Compatibilidad con bases antiguas que no tienen fecha_actualizacion.
+	_, fallbackErr := dbConn.Exec("UPDATE licencias SET empresa_id = ?, activo = 1, fecha_inicio = ?, fecha_fin = ? WHERE id = ?", empresaID, fechaInicio, fechaFin, licenciaID)
+	if fallbackErr == nil {
+		return nil
+	}
+	return fallbackErr
 }
 
 // SetConfigValue inserta o actualiza una configuración en la tabla configuraciones

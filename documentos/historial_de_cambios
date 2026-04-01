@@ -1,5 +1,31 @@
 - Historial de cambios
 
+2026-04-01: Nuevo método de pago "Activar licencia sin pagar" + redirección a administrar_empresa
+- Acción: Se añadió un tercer método en `web/pagar_licencia.html` llamado "Activar licencia sin pagar" para avance interno del proyecto.
+- Backend:
+    - Nuevo endpoint `POST /licencias/activar_sin_pago` en `backend/handlers/handlers.go`.
+    - El endpoint activa la licencia (`ActivateLicenciaForEmpresa`) y responde con `redirect_url` a `administrar_empresa.html`.
+    - Ruta registrada en `backend/main.go`.
+    - `backend/db/db.go`: `ActivateLicenciaForEmpresa` ahora incluye fallback para bases antiguas sin columna `fecha_actualizacion`.
+- Frontend:
+    - `web/pagar_licencia.html` ahora muestra tres tarjetas (Mercado Pago, Nequi, Activar sin pagar) y al elegir "sin pagar" activa licencia y redirige.
+    - `web/estilos.css` se extendió con estilos para tarjeta/panel naranjas del método manual.
+    - `web/administrar_empresa.html` se reestructuró al mismo formato de layout administrativo (menú lateral izquierdo + frame), dejando el frame vacío como base.
+- Validación ejecutada:
+    - `go test ./auth ./db ./handlers ./metrics ./utils` -> OK (compila, sin tests).
+    - `POST /licencias/activar_sin_pago` -> 200 OK, retorna `redirect_url` y activa licencia.
+- Archivos modificados:
+    - `backend/handlers/handlers.go`
+    - `backend/main.go`
+    - `backend/db/db.go`
+    - `web/pagar_licencia.html`
+    - `web/estilos.css`
+    - `web/administrar_empresa.html`
+    - `documentos/manual_de_instalacion.md`
+    - `documentos/descripcion_de_archivos`
+    - `documentos/historial_de_cambios`
+- Responsable: agente local
+
 2026-04-01: Nequi en configuración avanzada con switch sandbox/real + modo explícito en backend
 - Acción: Se añadió en `web/super/configuracion_avanzada.html` una tarjeta específica de Nequi/Wompi con selector (switch) para elegir modo `sandbox` o `real`, manteniendo los campos de credenciales (`public_key`, `private_key`, `integrity_key`) para cuando sea necesario configurarlas.
 - Backend:

@@ -1,8 +1,116 @@
-2026/04/01 01:43:32 index.html encontrado en ..\web\index.html
-2026/04/01 01:43:32 Servidor arrancado en :8080
-2026/04/01 01:43:32 metrics: stored cpu=0.00 mem=86.00% recv=5756174278 sent=1239996988
-2026/04/01 01:43:32 -> GET /wompi/terms from [::1]:62776
-2026/04/01 01:43:32 <- 500 GET /wompi/terms
-2026/04/01 01:43:33 -> GET /estilos.css from [::1]:63871
-2026/04/01 01:43:33 <- 304 GET /estilos.css
-2026/04/01 01:43:42 metrics: stored cpu=34.23 mem=87.00% recv=5756911675 sent=1241018394
+2026/04/01 01:59:29 index.html encontrado en ..\web\index.html
+2026/04/01 01:59:29 Servidor arrancado en :8080
+2026/04/01 01:59:29 metrics: stored cpu=0.00 mem=85.00% recv=5807592506 sent=1293917653
+2026/04/01 01:59:31 -> GET /estilos.css from [::1]:58523
+2026/04/01 01:59:31 <- 200 GET /estilos.css
+2026/04/01 01:59:34 -> GET /auth/google/login from [::1]:58523
+2026/04/01 01:59:34 handleGoogleLogin: client_id set=true, redirect_url="http://localhost:8080/auth/google/callback"
+2026/04/01 01:59:34 Auth URL: https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&client_id=1029204473903-6npuu63uehsrn2jn8fnif4fgpp6kcjsm.apps.googleusercontent.com&include_granted_scopes=true&login_hint=powerfulcontrolsystem%40gmail.com&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fauth%2Fgoogle%2Fcallback&response_type=code&scope=openid+email+profile&state=state-token
+2026/04/01 01:59:34 <- 302 GET /auth/google/login
+2026/04/01 01:59:34 -> GET /auth/google/callback from [::1]:58523
+2026/04/01 01:59:35 <- 302 GET /auth/google/callback
+2026/04/01 01:59:35 -> GET /me from [::1]:58523
+2026/04/01 01:59:35 <- 200 GET /me
+2026/04/01 01:59:35 -> GET /super/api/licencias from [::1]:58523
+2026/04/01 01:59:35 <- 200 GET /super/api/licencias
+2026/04/01 01:59:39 metrics: stored cpu=14.69 mem=86.00% recv=5807652842 sent=1294006093
+2026/04/01 01:59:39 -> GET /super/configuracion_avanzada.html from [::1]:58523
+2026/04/01 01:59:39 <- 304 GET /super/configuracion_avanzada.html
+2026/04/01 01:59:39 -> GET /estilos.css from [::1]:58523
+2026/04/01 01:59:39 <- 304 GET /estilos.css
+2026/04/01 01:59:39 -> GET /super/api/config/mercadopago from [::1]:58523
+2026/04/01 01:59:39 <- 200 GET /super/api/config/mercadopago
+2026/04/01 01:59:39 -> GET /super/api/config/wompi from [::1]:58523
+2026/04/01 01:59:39 <- 200 GET /super/api/config/wompi
+2026/04/01 01:59:49 metrics: stored cpu=5.80 mem=86.00% recv=5807696857 sent=1294018140
+2026/04/01 01:59:59 metrics: stored cpu=5.70 mem=86.00% recv=5807705401 sent=1294027110
+2026/04/01 01:59:59 -> GET /estilos.css from [::1]:58523
+2026/04/01 01:59:59 <- 304 GET /estilos.css
+2026/04/01 01:59:59 -> GET /me from [::1]:58523
+2026/04/01 01:59:59 <- 200 GET /me
+2026/04/01 01:59:59 -> GET /super/api/empresas from [::1]:58523
+2026/04/01 01:59:59 -> GET /super/api/licencias from [::1]:63101
+2026/04/01 01:59:59 <- 200 GET /super/api/licencias
+2026/04/01 01:59:59 -> GET /super/api/tipos_empresas from [::1]:59659
+2026/04/01 01:59:59 <- 200 GET /super/api/tipos_empresas
+2026/04/01 01:59:59 <- 200 GET /super/api/empresas
+2026/04/01 02:00:00 -> GET /me from [::1]:58523
+2026/04/01 02:00:00 <- 200 GET /me
+2026/04/01 02:00:00 -> GET /super/api/licencias from [::1]:58523
+2026/04/01 02:00:00 -> GET /super/api/empresas from [::1]:59659
+2026/04/01 02:00:00 <- 200 GET /super/api/licencias
+2026/04/01 02:00:00 <- 200 GET /super/api/empresas
+2026/04/01 02:00:02 -> GET /pagar_licencia.html from [::1]:59659
+2026/04/01 02:00:02 <- 200 GET /pagar_licencia.html
+2026/04/01 02:00:02 -> GET /img/tag.svg from [::1]:59659
+2026/04/01 02:00:02 <- 404 GET /img/tag.svg
+2026/04/01 02:00:02 -> GET /me from [::1]:58523
+2026/04/01 02:00:02 <- 200 GET /me
+2026/04/01 02:00:02 -> GET /super/api/licencias from [::1]:58523
+2026/04/01 02:00:02 -> GET /super/api/empresas from [::1]:59659
+2026/04/01 02:00:02 <- 200 GET /super/api/licencias
+2026/04/01 02:00:02 <- 200 GET /super/api/empresas
+2026/04/01 02:00:02 -> GET /wompi/terms from [::1]:59659
+2026/04/01 02:00:02 <- 500 GET /wompi/terms
+2026/04/01 02:00:06 -> GET /pagar_licencia.html from [::1]:59659
+2026/04/01 02:00:06 <- 200 GET /pagar_licencia.html
+2026/04/01 02:00:06 -> GET /estilos.css from [::1]:59659
+2026/04/01 02:00:06 -> GET /menu.js from [::1]:58523
+2026/04/01 02:00:06 <- 200 GET /estilos.css
+2026/04/01 02:00:06 -> GET /img/company-briefcase.svg from [::1]:63101
+2026/04/01 02:00:06 -> GET /img/tag.svg from [::1]:58596
+2026/04/01 02:00:06 <- 200 GET /img/company-briefcase.svg
+2026/04/01 02:00:06 <- 404 GET /img/tag.svg
+2026/04/01 02:00:06 <- 200 GET /menu.js
+2026/04/01 02:00:06 -> GET /me from [::1]:58523
+2026/04/01 02:00:06 <- 200 GET /me
+2026/04/01 02:00:06 -> GET /favicon.ico from [::1]:58596
+2026/04/01 02:00:06 <- 404 GET /favicon.ico
+2026/04/01 02:00:06 -> GET /super/api/licencias from [::1]:58596
+2026/04/01 02:00:06 -> GET /super/api/empresas from [::1]:58523
+2026/04/01 02:00:06 <- 200 GET /super/api/licencias
+2026/04/01 02:00:06 <- 200 GET /super/api/empresas
+2026/04/01 02:00:06 -> GET /wompi/terms from [::1]:58523
+2026/04/01 02:00:06 <- 500 GET /wompi/terms
+2026/04/01 02:00:09 metrics: stored cpu=9.69 mem=87.00% recv=5807717789 sent=1294039568
+2026/04/01 02:00:13 -> POST /licencias/activar_sin_pago from [::1]:58523
+2026/04/01 02:00:14 Licencia activada sin pago: licencia=1 empresa=6 motivo="avance_proyecto"
+2026/04/01 02:00:14 <- 200 POST /licencias/activar_sin_pago
+2026/04/01 02:00:14 -> GET /administrar_empresa.html from [::1]:58523
+2026/04/01 02:00:14 <- 200 GET /administrar_empresa.html
+2026/04/01 02:00:14 -> GET /img/tag.svg from [::1]:58523
+2026/04/01 02:00:14 <- 404 GET /img/tag.svg
+2026/04/01 02:00:19 metrics: stored cpu=13.71 mem=84.00% recv=5808899193 sent=1294212001
+2026/04/01 02:00:28 -> GET /estilos.css from [::1]:58523
+2026/04/01 02:00:28 <- 304 GET /estilos.css
+2026/04/01 02:00:28 -> GET /me from [::1]:58523
+2026/04/01 02:00:28 <- 200 GET /me
+2026/04/01 02:00:28 -> GET /super/api/empresas from [::1]:58523
+2026/04/01 02:00:28 -> GET /super/api/licencias from [::1]:58596
+2026/04/01 02:00:28 -> GET /super/api/tipos_empresas from [::1]:63101
+2026/04/01 02:00:28 <- 200 GET /super/api/empresas
+2026/04/01 02:00:28 <- 200 GET /super/api/licencias
+2026/04/01 02:00:28 <- 200 GET /super/api/tipos_empresas
+2026/04/01 02:00:29 metrics: stored cpu=3.67 mem=84.00% recv=5808981565 sent=1294224475
+2026/04/01 02:00:29 -> GET /administrar_empresa.html from [::1]:63101
+2026/04/01 02:00:29 <- 304 GET /administrar_empresa.html
+2026/04/01 02:00:30 -> GET /img/tag.svg from [::1]:63101
+2026/04/01 02:00:30 <- 404 GET /img/tag.svg
+2026/04/01 02:00:31 -> GET /me from [::1]:63101
+2026/04/01 02:00:31 <- 200 GET /me
+2026/04/01 02:00:31 -> GET /super/api/empresas from [::1]:63101
+2026/04/01 02:00:31 -> GET /super/api/licencias from [::1]:58596
+2026/04/01 02:00:31 -> GET /super/api/tipos_empresas from [::1]:58523
+2026/04/01 02:00:31 <- 200 GET /super/api/empresas
+2026/04/01 02:00:31 <- 200 GET /super/api/licencias
+2026/04/01 02:00:31 <- 200 GET /super/api/tipos_empresas
+2026/04/01 02:00:32 -> GET /img/tag.svg from [::1]:58523
+2026/04/01 02:00:32 <- 404 GET /img/tag.svg
+2026/04/01 02:00:39 metrics: stored cpu=6.63 mem=84.00% recv=5808987861 sent=1294231701
+2026/04/01 02:00:49 metrics: stored cpu=5.05 mem=83.00% recv=5808995015 sent=1294236002
+2026/04/01 02:00:59 metrics: stored cpu=1.86 mem=83.00% recv=5809002115 sent=1294237171
+2026/04/01 02:01:09 metrics: stored cpu=3.22 mem=83.00% recv=5809015339 sent=1294243421
+2026/04/01 02:01:19 metrics: stored cpu=5.17 mem=85.00% recv=5809023096 sent=1294245106
+2026/04/01 02:01:29 metrics: stored cpu=11.60 mem=85.00% recv=5809051671 sent=1294283404
+2026/04/01 02:01:39 metrics: stored cpu=6.49 mem=85.00% recv=5809057086 sent=1294284800
+2026/04/01 02:01:49 metrics: stored cpu=5.53 mem=84.00% recv=5809071505 sent=1294292843

@@ -5,12 +5,27 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Administrar Empresa</title>
   <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
 </head>
 <body>
-  <div class="container">
-    <h1>Administrar Empresa</h1>
-    <p id="info" class="form-help">Cargando detalles...</p>
-    <div id="content"></div>
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <h2>Administrar Empresa</h2>
+      <ul class="nav">
+        <li><a href="about:blank" target="contentFrame"><img class="icon" src="/img/company-briefcase.svg" alt="">Inicio</a></li>
+        <li><a href="about:blank" target="contentFrame"><img class="icon" src="/img/analytics.svg" alt="">Ventas</a></li>
+        <li><a href="about:blank" target="contentFrame"><img class="icon" src="/img/tag.svg" alt="">Productos</a></li>
+        <li><a href="about:blank" target="contentFrame"><img class="icon" src="/img/network.svg" alt="">Reportes</a></li>
+        <li><a href="/seleccionar_empresa.html" class="select-company"><img class="icon" src="/img/company-briefcase.svg" alt="">Volver a empresas</a></li>
+      </ul>
+    </aside>
+
+    <main class="admin-content">
+      <div class="admin-toolbar page-header">
+        <h1 id="empresaTitle">Administrar Empresa</h1>
+      </div>
+      <iframe name="contentFrame" id="contentFrame" src="about:blank" title="Contenido de empresa" style="width:100%;height:calc(100vh - 120px);border:0;background:transparent"></iframe>
+    </main>
   </div>
 
   <script>
@@ -19,20 +34,13 @@
       return params.get(name);
     }
     (function(){
-      const info = document.getElementById('info');
       const id = getQueryParam('id');
-      const module = getQueryParam('module');
+      const title = document.getElementById('empresaTitle');
       if (id) {
-        info.innerText = 'Administrando empresa ID: ' + id;
-        document.getElementById('content').innerHTML = '<p>Interfaz de administración para la empresa con id <strong>'+id+'</strong>. Implementar controles específicos según requerimiento.</p>';
+        title.textContent = 'Administrar Empresa ID: ' + id;
         return;
       }
-      if (module) {
-        info.innerText = 'Detalle del módulo: ' + module;
-        document.getElementById('content').innerHTML = '<p>Vista detallada del módulo <strong>'+module+'</strong>. Aquí puede implementarse la documentación o controles del módulo.</p>';
-        return;
-      }
-      info.innerText = 'No se indicó empresa ni módulo (use query param `id` o `module`).';
+      title.textContent = 'Administrar Empresa';
     })();
   </script>
 </body>
