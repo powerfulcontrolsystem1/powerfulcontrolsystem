@@ -1,5 +1,88 @@
 Descripcion de archivos del proyecto
 
+Actualizacion 2026-04-01: Persistencia de subpagina al recargar (F5) en paneles administrativos
+
+- web/js/administrar_empresa.js:
+	- Se agrega persistencia de la última subpagina abierta por `empresa_id` en `sessionStorage`.
+	- Al recargar `administrar_empresa.html?id=...`, el iframe restaura la misma subpagina que estaba activa.
+
+- web/js/super_administrador.js:
+	- Se agrega persistencia de la última subpagina de super administrador en `sessionStorage`.
+	- Al recargar `super_administrador.html`, el iframe vuelve a la misma vista previa.
+
+- web/js/seleccionar_empresa.js:
+	- Se agrega persistencia del estado de vista (`empresas`, `form` o `frame`) en `sessionStorage`.
+	- Al recargar `seleccionar_empresa.html`, se restaura la misma vista o subpagina que estaba abierta.
+
+- documentos/diagramas/diagrama_flujo_procesos.md:
+	- Se actualiza flujo con persistencia de subpagina para recarga en paneles.
+
+- documentos/diagramas/estructura_del_codigo.md:
+	- Se documenta el ajuste de navegación con restauración de estado por recarga.
+
+- documentos/historial_de_cambios:
+	- Se registra la implementación, operación de inactivación de carritos de prueba y validación técnica.
+
+Actualizacion 2026-04-01: Ciclo operativo de estaciones (inactivo -> activo -> inactivo) + marca de entrada
+
+- web/administrar_empresa/configuracion_de_estaciones.html:
+	- La sincronización de carritos por estación ahora crea y deja los carritos en estado base inactivo/cerrado.
+	- Se elimina la reactivación automática durante la sincronización para respetar el ciclo operativo por clic en estación.
+
+- web/administrar_empresa/estaciones.html:
+	- La tarjeta de estación activa muestra la fecha y hora de entrada (`activado_en`).
+	- Las estaciones inactivas no muestran marca temporal de entrada.
+
+- web/estilos.css:
+	- Se añade estilo para la marca temporal de entrada de estaciones activas.
+
+- documentos/diagramas/diagrama_flujo_procesos.md:
+	- Se actualiza el flujo de estaciones para reflejar estado inicial inactivo, activación por selección de estación y retorno a inactivo tras pago.
+
+- documentos/diagramas/estructura_del_codigo.md:
+	- Se documenta el ajuste funcional del ciclo de estaciones y su impacto en frontend/estilos.
+
+Actualizacion 2026-04-01: Colores de estado de carrito en estaciones + completitud FE
+
+- backend/db/empresa_configuracion_avanzada.go:
+	- Se agregan campos `color_carrito_activo` y `color_carrito_inactivo` en la configuración avanzada por empresa.
+	- Se incorpora normalización/validación de color HEX en lectura y guardado.
+
+- backend/db/facturacion_electronica.go:
+	- Se agrega hidratación de defaults FE desde `empresa_configuracion_avanzada` cuando aún no existe configuración FE por país.
+
+- web/administrar_empresa/estaciones.html:
+	- Las tarjetas de estaciones ahora consultan estado operativo de carrito y cambian color dinámicamente según activo/inactivo.
+	- Se añade badge visual de estado del carrito por estación.
+
+- web/administrar_empresa/configuracion.html:
+	- Nueva tarjeta para configurar colores de estado del carrito (activo/inactivo).
+	- Guardado robusto de configuración avanzada vía merge para no sobrescribir campos FE/fiscales no visibles.
+
+- web/administrar_empresa/configuracion_avanzada.html:
+	- Se incorporan campos de color de estado de carrito para mantener consistencia de edición avanzada.
+
+- web/estilos.css:
+	- Se agregan estilos `station-card-active` / `station-card-inactive` y badge de estado en tarjetas de estaciones.
+
+- documentos/descripcion_de_las_bases_De_datos:
+	- Se documentan nuevas columnas de color en `empresa_configuracion_avanzada`.
+
+- estructura_bd.md:
+	- Se actualiza resumen de estructura incluyendo colores de estado y módulo FE por país.
+
+- documentos/diagramas/diagrama_flujo_procesos.md:
+	- Se documenta flujo de configuración de colores de estado y aplicación visual en estaciones.
+
+- documentos/diagramas/diagrama_entidad_relacion.md:
+	- Se agregan atributos de color en `EMPRESA_CONFIG_AVANZADA`.
+
+- documentos/diagramas/estructura_del_codigo.md:
+	- Se registra actualización técnica de backend/frontend asociada a colores de carrito y completitud FE.
+
+- documentos/historial_de_cambios:
+	- Se registra implementación, validación y archivos impactados.
+
 Actualizacion 2026-04-01: Modulo de facturacion electronica por pais + auditoria de empresa_id
 
 - backend/db/empresa_scope.go:

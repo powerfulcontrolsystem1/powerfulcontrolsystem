@@ -132,6 +132,31 @@
 
     <section class="card empresa-section">
       <div class="empresa-section-header">
+        <h2>Estados del carrito de compra</h2>
+        <button id="btnGuardarEstadoCarrito" type="button" class="btn">Guardar colores</button>
+      </div>
+      <p class="form-help">Personaliza el color de las tarjetas de estaciones según el estado operativo del carrito.</p>
+
+      <div class="empresa-config-grid">
+        <div class="form">
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="carritoColorActivo">Color cuando el carrito está activo</label>
+              <input id="carritoColorActivo" type="color" class="form-input" value="#d9fbe8">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="carritoColorInactivo">Color cuando el carrito está inactivo</label>
+              <input id="carritoColorInactivo" type="color" class="form-input" value="#fff9ef">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="estadoCarritoMsg" class="form-help"></div>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
         <h2>Backup</h2>
       </div>
       <p class="form-help">Exporta o restaura un respaldo JSON de esta configuración para reutilizarla rápidamente.</p>
@@ -217,6 +242,30 @@
       box.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'form-help');
     }
 
+    function setEstadoCarritoMessage(text, type) {
+      const box = document.getElementById('estadoCarritoMsg');
+      box.textContent = text || '';
+      box.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'form-help');
+    }
+
+    function normalizeColorHex(value, fallback) {
+      const raw = String(value || '').trim().toLowerCase();
+      const base = String(fallback || '').trim().toLowerCase();
+      const hex = raw || base;
+      if (!hex || hex.length !== 7 || hex.charAt(0) !== '#') {
+        return base || '#fff9ef';
+      }
+      for (let i = 1; i < hex.length; i++) {
+        const c = hex.charCodeAt(i);
+        const isDigit = c >= 48 && c <= 57;
+        const isHex = c >= 97 && c <= 102;
+        if (!isDigit && !isHex) {
+          return base || '#fff9ef';
+        }
+      }
+      return hex;
+    }
+
     function normalizeFormatoImpresion(v) {
       const raw = String(v || '').trim().toLowerCase();
       return raw === 'pos' ? 'pos' : 'carta';
@@ -230,6 +279,12 @@
       document.getElementById('facturaLogoURL').value = String(src.logo_url || '').trim();
     }
 
+    function setEstadoCarritoFormData(cfg) {
+      const src = cfg && typeof cfg === 'object' ? cfg : {};
+      document.getElementById('carritoColorActivo').value = normalizeColorHex(src.color_carrito_activo, '#d9fbe8');
+      document.getElementById('carritoColorInactivo').value = normalizeColorHex(src.color_carrito_inactivo, '#fff9ef');
+    }
+
     function getFacturaFormData() {
       return {
         empresa_id: Number(empresaId),
@@ -240,15 +295,47 @@
       };
     }
 
+    function getEstadoCarritoFormData() {
+      return {
+        empresa_id: Number(empresaId),
+        color_carrito_activo: normalizeColorHex(document.getElementById('carritoColorActivo').value, '#d9fbe8'),
+        color_carrito_inactivo: normalizeColorHex(document.getElementById('carritoColorInactivo').value, '#fff9ef')
+      };
+    }
+
+    async function fetchEmpresaConfigAvanzada() {
+      const res = await fetch('/api/empresa/configuracion_avanzada?empresa_id=' + encodeURIComponent(empresaId), { credentials: 'same-origin' });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    }
+
+    async function upsertEmpresaConfigAvanzada(patch) {
+      const current = await fetchEmpresaConfigAvanzada();
+      const payload = Object.assign({}, current || {}, patch || {});
+      payload.empresa_id = Number(empresaId);
+
+      const res = await fetch('/api/empresa/configuracion_avanzada?empresa_id=' + encodeURIComponent(empresaId), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error(await res.text());
+
+      const out = await res.json();
+      if (out && out.configuracion) return out.configuracion;
+      return payload;
+    }
+
     async function loadFacturaConfig() {
       if (!empresaId) return;
       try {
-        const res = await fetch('/api/empresa/configuracion_avanzada?empresa_id=' + encodeURIComponent(empresaId), { credentials: 'same-origin' });
-        if (!res.ok) throw new Error(await res.text());
-        const cfg = await res.json();
+        const cfg = await fetchEmpresaConfigAvanzada();
         setFacturaFormData(cfg || {});
+        setEstadoCarritoFormData(cfg || {});
       } catch (err) {
         setFacturaMessage('No se pudo cargar configuración de facturas: ' + (err && err.message ? err.message : err), 'error');
+        setEstadoCarritoMessage('No se pudo cargar configuración de estados del carrito: ' + (err && err.message ? err.message : err), 'error');
       }
     }
 
@@ -259,20 +346,27 @@
       }
       try {
         const payload = getFacturaFormData();
-        const res = await fetch('/api/empresa/configuracion_avanzada?empresa_id=' + encodeURIComponent(empresaId), {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'same-origin',
-          body: JSON.stringify(payload)
-        });
-        if (!res.ok) throw new Error(await res.text());
-        const out = await res.json();
-        if (out && out.configuracion) {
-          setFacturaFormData(out.configuracion);
-        }
+        const cfg = await upsertEmpresaConfigAvanzada(payload);
+        setFacturaFormData(cfg || {});
+        setEstadoCarritoFormData(cfg || {});
         setFacturaMessage('Configuración de facturas guardada correctamente.', 'success');
       } catch (err) {
         setFacturaMessage('No se pudo guardar configuración de facturas: ' + (err && err.message ? err.message : err), 'error');
+      }
+    }
+
+    async function guardarEstadoCarritoConfig() {
+      if (!empresaId) {
+        setEstadoCarritoMessage('No se puede guardar sin empresa seleccionada.', 'error');
+        return;
+      }
+      try {
+        const payload = getEstadoCarritoFormData();
+        const cfg = await upsertEmpresaConfigAvanzada(payload);
+        setEstadoCarritoFormData(cfg || {});
+        setEstadoCarritoMessage('Colores de estado del carrito guardados correctamente.', 'success');
+      } catch (err) {
+        setEstadoCarritoMessage('No se pudo guardar colores de estado: ' + (err && err.message ? err.message : err), 'error');
       }
     }
 
@@ -385,6 +479,7 @@
       loadFacturaConfig();
       document.getElementById('btnGuardarConfig').addEventListener('click', guardarConfiguracion);
       document.getElementById('btnGuardarFacturaConfig').addEventListener('click', guardarFacturaConfig);
+      document.getElementById('btnGuardarEstadoCarrito').addEventListener('click', guardarEstadoCarritoConfig);
       document.getElementById('btnDescargarBackup').addEventListener('click', descargarBackup);
       document.getElementById('btnRestaurarBackup').addEventListener('click', restaurarBackup);
     }

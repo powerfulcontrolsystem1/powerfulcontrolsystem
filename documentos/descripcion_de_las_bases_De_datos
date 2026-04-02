@@ -136,6 +136,8 @@ El agente debe leer y actualizar este documento cada vez que se realicen cambios
      - `logo_url` TEXT
      - `pie_factura` TEXT
      - `notas_legales` TEXT
+    - `color_carrito_activo` TEXT DEFAULT '#d9fbe8' -- color de tarjeta de estación cuando el carrito está activo
+    - `color_carrito_inactivo` TEXT DEFAULT '#fff9ef' -- color de tarjeta de estación cuando el carrito está inactivo
      - `fecha_creacion` TEXT DEFAULT (datetime('now','localtime'))
      - `fecha_actualizacion` TEXT DEFAULT (datetime('now','localtime'))
      - `usuario_creador` TEXT

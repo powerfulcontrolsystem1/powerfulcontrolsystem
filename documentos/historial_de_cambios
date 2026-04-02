@@ -1,5 +1,36 @@
 - Historial de cambios
 
+- 2026-04-01: Persistencia de subpagina al recargar (F5) + inactivación de carritos para prueba de estaciones
+    - Se inactivaron manualmente los carritos de `empresa_id=6` en `empresas.db` para pruebas del flujo visual de estaciones.
+    - Se ajustó `web/js/administrar_empresa.js` para restaurar la última subpagina del iframe por empresa tras recargar con F5.
+    - Se ajustó `web/js/super_administrador.js` para restaurar la última subpagina del iframe de super administrador tras F5.
+    - Se ajustó `web/js/seleccionar_empresa.js` para restaurar la última vista activa (`empresas`, `form` o `frame`) tras F5.
+    - Se actualizaron diagramas y descripción de archivos con el nuevo flujo de recarga.
+    - Verificación ejecutada:
+        - `go test ./db ./handlers` (ok)
+    - Archivos afectados: web/js/administrar_empresa.js, web/js/super_administrador.js, web/js/seleccionar_empresa.js, documentos/diagramas/diagrama_flujo_procesos.md, documentos/diagramas/estructura_del_codigo.md, documentos/descripcion_de_archivos, documentos/historial_de_cambios.
+
+- 2026-04-01: Ajuste de ciclo operativo en estaciones (inactivo -> activo -> inactivo) y marca de entrada
+    - Se ajustó la sincronización de estaciones para que los carritos asociados inicien en estado inactivo/cerrado.
+    - Se eliminó la reactivación automática de carritos durante la sincronización de estaciones.
+    - Se agregó en tarjetas de estaciones la visualización de fecha/hora de entrada (`activado_en`) únicamente cuando el carrito está activo.
+    - Se actualizaron estilos y diagramas técnicos para reflejar el flujo operativo actualizado.
+    - Verificación ejecutada:
+        - `go test ./db ./handlers` (ok)
+    - Archivos afectados: web/administrar_empresa/configuracion_de_estaciones.html, web/administrar_empresa/estaciones.html, web/estilos.css, documentos/diagramas/diagrama_flujo_procesos.md, documentos/diagramas/estructura_del_codigo.md, documentos/descripcion_de_archivos, documentos/historial_de_cambios.
+
+- 2026-04-01: Estaciones con color dinámico por estado de carrito + mejora de completitud FE
+    - Se agregó persistencia de colores de estado de carrito por empresa en `empresa_configuracion_avanzada`:
+        - `color_carrito_activo`
+        - `color_carrito_inactivo`
+    - En `estaciones`, cada tarjeta ahora consulta el estado operativo real del carrito asociado y aplica color dinámico según activo/inactivo.
+    - Se añadió una tarjeta en `configuracion.html` para editar los colores de estados del carrito de compra.
+    - Se fortaleció el guardado de configuración avanzada desde `configuracion.html` usando merge de configuración actual para evitar pérdida de datos de facturación electrónica.
+    - Se completó el módulo FE para que, cuando no exista configuración por país, se prellenen datos desde `empresa_configuracion_avanzada` (NIT, razón social, contacto, resolución, ambiente).
+    - Verificación ejecutada:
+        - `go test ./db ./handlers` (ok)
+    - Archivos afectados: backend/db/empresa_configuracion_avanzada.go, backend/db/facturacion_electronica.go, web/administrar_empresa/estaciones.html, web/administrar_empresa/configuracion.html, web/administrar_empresa/configuracion_avanzada.html, web/estilos.css, documentos/descripcion_de_las_bases_De_datos, estructura_bd.md, documentos/diagramas/diagrama_flujo_procesos.md, documentos/diagramas/diagrama_entidad_relacion.md, documentos/diagramas/estructura_del_codigo.md, documentos/descripcion_de_archivos, documentos/historial_de_cambios.
+
 - 2026-04-01: Corrección de estado de licencia activa en tarjetas de seleccionar_empresa
     - Se corrigió `backend/db/db.go` para que `GetLicenciasFiltered` no falle cuando se usa `scope=mine` y no existe tabla `empresas` en `superadministrador.db`.
     - Se ajustó `web/js/seleccionar_empresa.js` para aplicar fallback automático a `/super/api/licencias?con_empresa=1&activo=1` si la consulta con `scope=mine` falla.

@@ -176,7 +176,7 @@
         const current = byCode.get(normalizedCode(code));
 
         if (!current) {
-          await requestJSON('/api/empresa/carritos_compra', {
+          const createdBody = await requestJSON('/api/empresa/carritos_compra', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -184,11 +184,21 @@
               codigo: code,
               nombre: stationName,
               canal_venta: 'mostrador',
+              estado_carrito: 'cerrado',
               moneda: 'COP',
               referencia_externa: ref,
               observaciones: 'Carrito generado automáticamente para estación #' + stationID
             })
           });
+
+          const createdID = Number((createdBody && createdBody.id) || 0);
+          if (createdID > 0) {
+            await requestJSON('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(empresaId) + '&id=' + encodeURIComponent(createdID) + '&action=desactivar', {
+              method: 'PUT'
+            });
+            updated += 1;
+          }
+
           created += 1;
           continue;
         }
@@ -217,15 +227,15 @@
           updated += 1;
         }
 
-        if (String(current.estado || 'activo').toLowerCase() !== 'activo') {
-          await requestJSON('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(empresaId) + '&id=' + encodeURIComponent(current.id) + '&action=activar', {
+        if (String(current.estado || 'inactivo').toLowerCase() !== 'inactivo') {
+          await requestJSON('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(empresaId) + '&id=' + encodeURIComponent(current.id) + '&action=desactivar', {
             method: 'PUT'
           });
           updated += 1;
         }
 
-        if (String(current.estado_carrito || 'abierto').toLowerCase() === 'cerrado') {
-          await requestJSON('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(empresaId) + '&id=' + encodeURIComponent(current.id) + '&action=reabrir', {
+        if (String(current.estado_carrito || 'cerrado').toLowerCase() !== 'cerrado') {
+          await requestJSON('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(empresaId) + '&id=' + encodeURIComponent(current.id) + '&action=cerrar', {
             method: 'PUT'
           });
           updated += 1;

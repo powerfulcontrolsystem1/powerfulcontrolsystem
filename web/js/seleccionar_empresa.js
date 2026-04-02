@@ -2,6 +2,43 @@
   var empresasPanel = document.getElementById("empresasPanel");
   var contentFrame = document.getElementById("contentFrame");
   var navLinks = Array.from(document.querySelectorAll(".admin-sidebar .nav a"));
+  var storage = null;
+  var viewKey = "seleccionar_empresa:view";
+
+  try {
+    storage = window.sessionStorage;
+  } catch (e) {
+    storage = null;
+  }
+
+  function normalizeHref(href) {
+    var raw = String(href || "").trim();
+    if (!raw) return "";
+    try {
+      var u = new URL(raw, window.location.origin);
+      return u.pathname + u.search;
+    } catch (e) {
+      return "";
+    }
+  }
+
+  function persistView(view) {
+    if (!storage) return;
+    try {
+      storage.setItem(viewKey, JSON.stringify(view || {}));
+    } catch (e) {}
+  }
+
+  function readView() {
+    if (!storage) return null;
+    try {
+      var raw = storage.getItem(viewKey);
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch (e) {
+      return null;
+    }
+  }
 
   function setActiveNav(activeLink) {
     navLinks.forEach(function (link) {
@@ -12,13 +49,16 @@
 
   function openInRightFrame(href, link) {
     if (!href) return;
+    var normalized = normalizeHref(href);
+    if (!normalized) return;
     if (!contentFrame || !empresasPanel) {
-      window.location.href = href;
+      window.location.href = normalized;
       return;
     }
     empresasPanel.style.display = "none";
     contentFrame.style.display = "";
-    contentFrame.setAttribute("src", href);
+    contentFrame.setAttribute("src", normalized);
+    persistView({ mode: "frame", href: normalized });
     setActiveNav(link);
   }
 
@@ -190,6 +230,7 @@
     }
     document.getElementById("form").style.display = "";
     document.getElementById("addBtn").style.display = "none";
+    persistView({ mode: "form" });
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -200,6 +241,58 @@
     document.getElementById("nombre").value = "";
     document.getElementById("nit").value = "";
     document.getElementById("observaciones").value = "";
+    persistView({ mode: "empresas" });
+  }
+
+  function showEmpresasPanel() {
+    if (empresasPanel) empresasPanel.style.display = "";
+    if (contentFrame) {
+      contentFrame.style.display = "none";
+      contentFrame.setAttribute("src", "about:blank");
+    }
+    hideForm();
+    persistView({ mode: "empresas" });
+  }
+
+  function findLinkByHref(href) {
+    var normalized = normalizeHref(href);
+    if (!normalized) return null;
+    var normalizedPath = normalized.split("?")[0];
+    for (var i = 0; i < navLinks.length; i++) {
+      var link = navLinks[i];
+      var linkHref = normalizeHref(link.getAttribute("href"));
+      if (!linkHref) continue;
+      if (linkHref === normalized) return link;
+      if (linkHref.split("?")[0] === normalizedPath) return link;
+    }
+    return null;
+  }
+
+  function restoreLastView() {
+    var view = readView();
+    var linkAgregar = document.getElementById("linkAgregarEmpresa");
+
+    if (!view || !view.mode) {
+      showEmpresasPanel();
+      setActiveNav(linkAgregar);
+      return;
+    }
+
+    if (view.mode === "frame" && view.href) {
+      var targetLink = findLinkByHref(view.href);
+      openInRightFrame(view.href, targetLink);
+      if (targetLink) setActiveNav(targetLink);
+      return;
+    }
+
+    if (view.mode === "form") {
+      showForm();
+      setActiveNav(linkAgregar);
+      return;
+    }
+
+    showEmpresasPanel();
+    setActiveNav(linkAgregar);
   }
 
   function wireSidebarFrameLinks() {
@@ -211,11 +304,6 @@
     if (linkAgregar) {
       linkAgregar.addEventListener("click", function (ev) {
         ev.preventDefault();
-        if (empresasPanel) empresasPanel.style.display = "";
-        if (contentFrame) {
-          contentFrame.style.display = "none";
-          contentFrame.setAttribute("src", "about:blank");
-        }
         showForm();
         setActiveNav(linkAgregar);
       });
@@ -232,7 +320,7 @@
 
   document.addEventListener("DOMContentLoaded", function () {
     wireSidebarFrameLinks();
-    setActiveNav(document.getElementById("linkAgregarEmpresa"));
+    restoreLastView();
 
     var form = document.getElementById("form");
     if (!form) return;

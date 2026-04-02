@@ -40,12 +40,19 @@ type EmpresaConfiguracionAvanzada struct {
 	LogoURL                   string `json:"logo_url,omitempty"`
 	PieFactura                string `json:"pie_factura,omitempty"`
 	NotasLegales              string `json:"notas_legales,omitempty"`
+	ColorCarritoActivo        string `json:"color_carrito_activo,omitempty"`
+	ColorCarritoInactivo      string `json:"color_carrito_inactivo,omitempty"`
 	FechaCreacion             string `json:"fecha_creacion,omitempty"`
 	FechaActualizacion        string `json:"fecha_actualizacion,omitempty"`
 	UsuarioCreador            string `json:"usuario_creador,omitempty"`
 	Estado                    string `json:"estado,omitempty"`
 	Observaciones             string `json:"observaciones,omitempty"`
 }
+
+const (
+	defaultColorCarritoActivo   = "#d9fbe8"
+	defaultColorCarritoInactivo = "#fff9ef"
+)
 
 // EnsureEmpresaConfiguracionAvanzadaSchema crea/migra el esquema de configuración avanzada
 // por empresa para preparación de facturación electrónica en Colombia.
@@ -83,6 +90,8 @@ func EnsureEmpresaConfiguracionAvanzadaSchema(dbConn *sql.DB) error {
 			logo_url TEXT,
 			pie_factura TEXT,
 			notas_legales TEXT,
+			color_carrito_activo TEXT DEFAULT '#d9fbe8',
+			color_carrito_inactivo TEXT DEFAULT '#fff9ef',
 			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
 			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
 			usuario_creador TEXT,
@@ -185,6 +194,12 @@ func EnsureEmpresaConfiguracionAvanzadaSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "notas_legales", "TEXT"); err != nil {
 		return err
 	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "color_carrito_activo", "TEXT DEFAULT '#d9fbe8'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "color_carrito_inactivo", "TEXT DEFAULT '#fff9ef'"); err != nil {
+		return err
+	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "fecha_actualizacion", "TEXT"); err != nil {
 		return err
 	}
@@ -202,18 +217,46 @@ func EnsureEmpresaConfiguracionAvanzadaSchema(dbConn *sql.DB) error {
 
 func defaultConfigAvanzada(empresaID int64) EmpresaConfiguracionAvanzada {
 	return EmpresaConfiguracionAvanzada{
-		EmpresaID:           empresaID,
-		TipoDocumentoEmisor: "NIT",
-		PaisCodigo:          "CO",
-		AmbienteFE:          "habilitacion",
-		TipoOperacion:       "10",
-		ConsecutivoDesde:    1,
-		ConsecutivoHasta:    999999,
-		ProximoConsecutivo:  1,
-		FormatoImpresion:    "carta",
-		MostrarLogo:         true,
-		Estado:              "activo",
+		EmpresaID:            empresaID,
+		TipoDocumentoEmisor:  "NIT",
+		PaisCodigo:           "CO",
+		AmbienteFE:           "habilitacion",
+		TipoOperacion:        "10",
+		ConsecutivoDesde:     1,
+		ConsecutivoHasta:     999999,
+		ProximoConsecutivo:   1,
+		FormatoImpresion:     "carta",
+		MostrarLogo:          true,
+		ColorCarritoActivo:   defaultColorCarritoActivo,
+		ColorCarritoInactivo: defaultColorCarritoInactivo,
+		Estado:               "activo",
 	}
+}
+
+func normalizeHexColor(v string, fallback string) string {
+	normalize := func(raw string) string {
+		raw = strings.TrimSpace(strings.ToLower(raw))
+		if len(raw) != 7 || raw[0] != '#' {
+			return ""
+		}
+		for i := 1; i < len(raw); i++ {
+			c := raw[i]
+			isDigit := c >= '0' && c <= '9'
+			isHexChar := c >= 'a' && c <= 'f'
+			if !isDigit && !isHexChar {
+				return ""
+			}
+		}
+		return raw
+	}
+
+	if out := normalize(v); out != "" {
+		return out
+	}
+	if out := normalize(fallback); out != "" {
+		return out
+	}
+	return defaultColorCarritoActivo
 }
 
 func defaultFormatoImpresion(v string) string {
@@ -275,6 +318,8 @@ func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaC
 		COALESCE(logo_url, ''),
 		COALESCE(pie_factura, ''),
 		COALESCE(notas_legales, ''),
+		COALESCE(color_carrito_activo, '#d9fbe8'),
+		COALESCE(color_carrito_inactivo, '#fff9ef'),
 		COALESCE(fecha_creacion, ''),
 		COALESCE(fecha_actualizacion, ''),
 		COALESCE(usuario_creador, ''),
@@ -319,6 +364,8 @@ func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaC
 		&cfg.LogoURL,
 		&cfg.PieFactura,
 		&cfg.NotasLegales,
+		&cfg.ColorCarritoActivo,
+		&cfg.ColorCarritoInactivo,
 		&cfg.FechaCreacion,
 		&cfg.FechaActualizacion,
 		&cfg.UsuarioCreador,
@@ -332,6 +379,8 @@ func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaC
 	}
 	cfg.ImprimirCopiaFactura = imprimirCopiaFacturaInt == 1
 	cfg.MostrarLogo = mostrarLogoInt == 1
+	cfg.ColorCarritoActivo = normalizeHexColor(cfg.ColorCarritoActivo, defaultColorCarritoActivo)
+	cfg.ColorCarritoInactivo = normalizeHexColor(cfg.ColorCarritoInactivo, defaultColorCarritoInactivo)
 	return &cfg, nil
 }
 
@@ -352,6 +401,8 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 	payload.AmbienteFE = defaultAmbienteFE(payload.AmbienteFE)
 	payload.TipoOperacion = defaultTipoOperacion(payload.TipoOperacion)
 	payload.FormatoImpresion = defaultFormatoImpresion(payload.FormatoImpresion)
+	payload.ColorCarritoActivo = normalizeHexColor(payload.ColorCarritoActivo, defaultColorCarritoActivo)
+	payload.ColorCarritoInactivo = normalizeHexColor(payload.ColorCarritoInactivo, defaultColorCarritoInactivo)
 	if payload.ConsecutivoDesde <= 0 {
 		payload.ConsecutivoDesde = 1
 	}
@@ -406,12 +457,14 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 		logo_url,
 		pie_factura,
 		notas_legales,
+		color_carrito_activo,
+		color_carrito_inactivo,
 		fecha_creacion,
 		fecha_actualizacion,
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)
 	ON CONFLICT(empresa_id) DO UPDATE SET
 		tipo_documento_emisor = excluded.tipo_documento_emisor,
 		nit = excluded.nit,
@@ -442,6 +495,8 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 		logo_url = excluded.logo_url,
 		pie_factura = excluded.pie_factura,
 		notas_legales = excluded.notas_legales,
+		color_carrito_activo = excluded.color_carrito_activo,
+		color_carrito_inactivo = excluded.color_carrito_inactivo,
 		fecha_actualizacion = datetime('now','localtime'),
 		usuario_creador = CASE
 			WHEN trim(excluded.usuario_creador) <> '' THEN excluded.usuario_creador
@@ -479,6 +534,8 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 		strings.TrimSpace(payload.LogoURL),
 		strings.TrimSpace(payload.PieFactura),
 		strings.TrimSpace(payload.NotasLegales),
+		payload.ColorCarritoActivo,
+		payload.ColorCarritoInactivo,
 		strings.TrimSpace(payload.UsuarioCreador),
 		strings.TrimSpace(payload.Estado),
 		strings.TrimSpace(payload.Observaciones),

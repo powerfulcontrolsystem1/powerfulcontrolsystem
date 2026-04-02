@@ -181,6 +181,18 @@
         </div>
       </div>
 
+      <h2>Colores de estado del carrito en estaciones</h2>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Color cuando carrito está activo</label>
+          <input id="color_carrito_activo" type="color" class="form-input" value="#d9fbe8">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Color cuando carrito está inactivo</label>
+          <input id="color_carrito_inactivo" type="color" class="form-input" value="#fff9ef">
+        </div>
+      </div>
+
       <div class="form-row">
         <div class="form-col">
           <label class="form-label">Observaciones</label>
@@ -220,6 +232,24 @@
       const t = normalize(v);
       if (!t) return '';
       return t.length >= 10 ? t.slice(0, 10) : t;
+    }
+
+    function normalizeColorHex(v, fallback) {
+      const raw = normalize(v).toLowerCase();
+      const base = normalize(fallback).toLowerCase();
+      const color = raw || base;
+      if (!color || color.length !== 7 || color.charAt(0) !== '#') {
+        return base || '#fff9ef';
+      }
+      for (let i = 1; i < color.length; i++) {
+        const c = color.charCodeAt(i);
+        const isDigit = c >= 48 && c <= 57;
+        const isHex = c >= 97 && c <= 102;
+        if (!isDigit && !isHex) {
+          return base || '#fff9ef';
+        }
+      }
+      return color;
     }
 
     function setMessage(text, isError) {
@@ -266,6 +296,8 @@
       document.getElementById('mostrar_logo').checked = cfg.mostrar_logo !== false;
       document.getElementById('pie_factura').value = normalize(cfg.pie_factura);
       document.getElementById('notas_legales').value = normalize(cfg.notas_legales);
+      document.getElementById('color_carrito_activo').value = normalizeColorHex(cfg.color_carrito_activo, '#d9fbe8');
+      document.getElementById('color_carrito_inactivo').value = normalizeColorHex(cfg.color_carrito_inactivo, '#fff9ef');
       document.getElementById('observaciones').value = normalize(cfg.observaciones);
     }
 
@@ -301,6 +333,8 @@
         logo_url: normalize(document.getElementById('logo_url').value),
         pie_factura: normalize(document.getElementById('pie_factura').value),
         notas_legales: normalize(document.getElementById('notas_legales').value),
+        color_carrito_activo: normalizeColorHex(document.getElementById('color_carrito_activo').value, '#d9fbe8'),
+        color_carrito_inactivo: normalizeColorHex(document.getElementById('color_carrito_inactivo').value, '#fff9ef'),
         observaciones: normalize(document.getElementById('observaciones').value)
       };
     }

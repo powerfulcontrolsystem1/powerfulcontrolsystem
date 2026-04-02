@@ -338,30 +338,65 @@ html.theme-light .floating-menu #themeToggle{color:var(--accent-2)}
 .license-indicator{border:none;color:#fff;padding:8px 12px;border-radius:8px;font-weight:700;cursor:default}
 .license-indicator.active{background:var(--success)}
 
-/* Tarjetas de estaciones (administrar empresa): cálidas, claras y centradas */
+/* Tarjetas de estaciones (administrar empresa): color dinámico por estado de carrito */
 #estacionesGrid .portal-card{
-  background: linear-gradient(180deg, #fff9ef, #ffeeda);
-  border: 1px solid rgba(222, 170, 122, 0.35);
-  box-shadow: 0 10px 24px rgba(163, 111, 64, 0.16);
+  background: var(--station-state-bg, #fff9ef);
+  border: 1px solid rgba(188, 156, 120, 0.35);
+  box-shadow: 0 10px 24px rgba(83, 94, 120, 0.14);
   align-items: center;
   text-align: center;
 }
 
+#estacionesGrid .portal-card.station-card-active{
+  border-color: rgba(70, 153, 115, 0.45);
+  box-shadow: 0 12px 28px rgba(61, 142, 105, 0.2);
+}
+
+#estacionesGrid .portal-card.station-card-inactive{
+  border-color: rgba(188, 156, 120, 0.35);
+}
+
 #estacionesGrid .portal-card h3{
-  color: #5d3f28;
+  color: #1f3550;
   margin-bottom: 6px;
 }
 
 #estacionesGrid .portal-card p{
-  color: #7a5a3f;
-  margin-bottom: 0;
+  color: #35506f;
+  margin-bottom: 10px;
+}
+
+#estacionesGrid .station-entry-time{
+  margin: -2px 0 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #1e5f57;
+}
+
+#estacionesGrid .station-status-badge{
+  display: inline-block;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+#estacionesGrid .station-status-badge.station-status-active{
+  background: rgba(36, 136, 91, 0.18);
+  color: #0f6f47;
+  border: 1px solid rgba(20, 122, 77, 0.35);
+}
+
+#estacionesGrid .station-status-badge.station-status-inactive{
+  background: rgba(168, 101, 53, 0.15);
+  color: #8a4f22;
+  border: 1px solid rgba(168, 101, 53, 0.3);
 }
 
 #estacionesGrid .portal-card:hover,
 #estacionesGrid .portal-card:focus-visible{
   transform: translateY(-1px);
-  border-color: rgba(206, 146, 94, 0.5);
-  box-shadow: 0 14px 30px rgba(163, 111, 64, 0.2);
+  box-shadow: 0 14px 30px rgba(66, 85, 114, 0.2);
 }
 .license-indicator.inactive{background:var(--danger)}
 

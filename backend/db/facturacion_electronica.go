@@ -189,6 +189,84 @@ func defaultFacturacionConfig(empresaID int64, paisCodigo string) FacturacionEle
 	}
 }
 
+func hydrateFacturacionFromEmpresaConfig(dbConn *sql.DB, cfg *FacturacionElectronicaPaisConfig) error {
+	if cfg == nil || cfg.EmpresaID <= 0 {
+		return nil
+	}
+
+	var tipoDocumentoEmisor string
+	var nit string
+	var razonSocial string
+	var emailFacturacion string
+	var telefonoFacturacion string
+	var direccionFiscal string
+	var prefijoFactura string
+	var resolucionNumero string
+	var ambienteFE string
+
+	err := dbConn.QueryRow(`SELECT
+		COALESCE(tipo_documento_emisor, ''),
+		COALESCE(nit, ''),
+		COALESCE(razon_social, ''),
+		COALESCE(email_facturacion, ''),
+		COALESCE(telefono_facturacion, ''),
+		COALESCE(direccion_fiscal, ''),
+		COALESCE(prefijo_factura, ''),
+		COALESCE(resolucion_numero, ''),
+		COALESCE(ambiente_fe, 'habilitacion')
+	FROM empresa_configuracion_avanzada
+	WHERE empresa_id = ?
+	LIMIT 1`, cfg.EmpresaID).Scan(
+		&tipoDocumentoEmisor,
+		&nit,
+		&razonSocial,
+		&emailFacturacion,
+		&telefonoFacturacion,
+		&direccionFiscal,
+		&prefijoFactura,
+		&resolucionNumero,
+		&ambienteFE,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil
+		}
+		return err
+	}
+
+	if strings.TrimSpace(cfg.TipoDocumentoEmisor) == "" {
+		cfg.TipoDocumentoEmisor = strings.TrimSpace(tipoDocumentoEmisor)
+	}
+	if strings.TrimSpace(cfg.IdentificadorFiscal) == "" {
+		cfg.IdentificadorFiscal = strings.TrimSpace(nit)
+	}
+	if strings.TrimSpace(cfg.RazonSocial) == "" {
+		cfg.RazonSocial = strings.TrimSpace(razonSocial)
+	}
+	if strings.TrimSpace(cfg.EmailFacturacion) == "" {
+		cfg.EmailFacturacion = strings.TrimSpace(emailFacturacion)
+	}
+	if strings.TrimSpace(cfg.TelefonoFacturacion) == "" {
+		cfg.TelefonoFacturacion = strings.TrimSpace(telefonoFacturacion)
+	}
+	if strings.TrimSpace(cfg.DireccionFiscal) == "" {
+		cfg.DireccionFiscal = strings.TrimSpace(direccionFiscal)
+	}
+	if strings.TrimSpace(cfg.PrefijoFactura) == "" {
+		cfg.PrefijoFactura = strings.TrimSpace(prefijoFactura)
+	}
+	if strings.TrimSpace(cfg.ResolucionNumero) == "" {
+		cfg.ResolucionNumero = strings.TrimSpace(resolucionNumero)
+	}
+
+	ambienteFE = strings.ToLower(strings.TrimSpace(ambienteFE))
+	if ambienteFE == "produccion" {
+		cfg.Ambiente = "produccion"
+	}
+
+	return nil
+}
+
 func normalizeFacturacionConfig(payload *FacturacionElectronicaPaisConfig) {
 	if payload == nil {
 		return
@@ -386,6 +464,10 @@ func GetFacturacionElectronicaPaisConfig(dbConn *sql.DB, empresaID int64, paisCo
 		&cfg.Observaciones,
 	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
+			if hErr := hydrateFacturacionFromEmpresaConfig(dbConn, &cfg); hErr != nil {
+				return nil, hErr
+			}
+			normalizeFacturacionConfig(&cfg)
 			return &cfg, sql.ErrNoRows
 		}
 		return nil, err

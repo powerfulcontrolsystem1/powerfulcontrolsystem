@@ -144,3 +144,44 @@ Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe re
 
 - Validacion de alcance multiempresa:
   - Auditoría post-migración en `empresas.db`: todas las tablas no sistema quedaron con columna `empresa_id`.
+
+## Actualizacion 2026-04-01 (colores de estado de carrito por empresa + ajustes FE)
+
+- Backend DB:
+  - `backend/db/empresa_configuracion_avanzada.go` agrega campos persistentes:
+    - `color_carrito_activo`
+    - `color_carrito_inactivo`
+  - Se incluyen defaults y normalización HEX para evitar valores inválidos.
+  - `backend/db/facturacion_electronica.go` ahora prellena configuración FE por país con datos de `empresa_configuracion_avanzada` cuando no existe registro FE por país.
+
+- Frontend:
+  - `web/administrar_empresa/estaciones.html` consulta estado operativo real de carritos por estación y aplica color dinámico de tarjeta (activo/inactivo).
+  - `web/administrar_empresa/configuracion.html` incorpora tarjeta para configurar colores de estado del carrito.
+  - Se robustece guardado de configuración avanzada desde `configuracion.html` con estrategia de merge para no sobrescribir campos fiscales/FE no visibles en ese formulario.
+  - `web/administrar_empresa/configuracion_avanzada.html` incorpora edición de colores para mantener consistencia en guardados completos.
+
+- Estilos:
+  - `web/estilos.css` agrega estilos de estados (`station-card-active`/`station-card-inactive`) y badge visual por estado de carrito.
+
+## Actualizacion 2026-04-01 (ciclo operativo de estaciones: inactivo -> activo -> inactivo)
+
+- Frontend:
+  - `web/administrar_empresa/configuracion_de_estaciones.html` sincroniza carritos de estación en estado base inactivo/cerrado para que el módulo inicie sin estaciones activas.
+  - `web/administrar_empresa/estaciones.html` muestra fecha/hora de entrada (`activado_en`) solo cuando la estación está activa.
+
+- Flujo funcional:
+  - Al seleccionar una estación, el carrito se activa.
+  - Al finalizar la compra, el carrito vuelve a inactivo/cerrado.
+
+- Estilos:
+  - `web/estilos.css` agrega estilo de marca temporal de entrada en tarjetas activas.
+
+## Actualizacion 2026-04-01 (persistencia de subpagina al recargar F5)
+
+- Frontend:
+  - `web/js/administrar_empresa.js` conserva y restaura la última subpagina por `empresa_id` en el iframe principal.
+  - `web/js/super_administrador.js` conserva y restaura la última subpagina abierta en el iframe de super administrador.
+  - `web/js/seleccionar_empresa.js` conserva y restaura la última vista activa (`empresas`, `form` o `frame`).
+
+- Impacto funcional:
+  - Al recargar con F5, los paneles administrativos mantienen la misma página/vista abierta y evitan volver al estado inicial por defecto.

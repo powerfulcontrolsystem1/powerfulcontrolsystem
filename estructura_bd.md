@@ -1,7 +1,7 @@
 # Estructura de Base de Datos
 
-Version: 2026-04-02
-Ultima actualizacion: 2026-04-02
+Version: 2026-04-01
+Ultima actualizacion: 2026-04-01
 
 Este documento consolida la estructura activa de SQLite para el proyecto.
 Todas las tablas operativas usan como base los campos estandar:
@@ -76,6 +76,15 @@ Todas las tablas operativas usan como base los campos estandar:
   - consecutivo_desde, consecutivo_hasta, proximo_consecutivo
   - formato_impresion, imprimir_copia_factura, mostrar_logo, logo_url
   - pie_factura, notas_legales
+  - color_carrito_activo, color_carrito_inactivo
+
+### Tabla de facturacion electronica por pais
+- facturacion_electronica_pais:
+  - empresa_id, pais_codigo, pais_nombre, moneda_codigo
+  - proveedor, ambiente, tipo_documento_emisor, identificador_fiscal
+  - razon_social, email_facturacion, telefono_facturacion, direccion_fiscal
+  - prefijo_factura, resolucion_numero, api_base_url, campos_pais_json
+  - UNIQUE(empresa_id, pais_codigo)
 
 ### Tablas de chat y tareas (nuevo modulo)
 - chat_tareas_conversaciones:

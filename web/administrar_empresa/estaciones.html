@@ -18,6 +18,13 @@
 
   <script>
     const empresaId = Number(new URLSearchParams(window.location.search).get('empresa_id') || 0);
+    const state = {
+      colores: {
+        activo: '#d9fbe8',
+        inactivo: '#fff9ef'
+      },
+      carritosPorCodigo: {}
+    };
 
     function sanitize(v) {
       return String(v == null ? '' : v)
@@ -32,6 +39,51 @@
       return 'estaciones_config_empresa_' + empresaId;
     }
 
+    function normalizeText(v) {
+      return String(v == null ? '' : v).trim().toLowerCase();
+    }
+
+    function normalizeCode(v) {
+      return String(v == null ? '' : v).trim().toLowerCase();
+    }
+
+    function normalizeColor(v, fallback) {
+      const raw = String(v == null ? '' : v).trim().toLowerCase();
+      const base = String(fallback == null ? '' : fallback).trim().toLowerCase();
+      const hex = raw || base;
+      if (!hex || hex.length !== 7 || hex.charAt(0) !== '#') {
+        return base || '#fff9ef';
+      }
+      for (let i = 1; i < hex.length; i++) {
+        const c = hex.charCodeAt(i);
+        const isDigit = c >= 48 && c <= 57;
+        const isHex = c >= 97 && c <= 102;
+        if (!isDigit && !isHex) {
+          return base || '#fff9ef';
+        }
+      }
+      return hex;
+    }
+
+    function formatStationEntryDateTime(rawValue) {
+      const raw = String(rawValue == null ? '' : rawValue).trim();
+      if (!raw) return '';
+
+      const isoLike = raw.includes('T') ? raw : raw.replace(' ', 'T');
+      const parsed = new Date(isoLike);
+      if (Number.isNaN(parsed.getTime())) {
+        return raw;
+      }
+
+      return parsed.toLocaleString('es-CO', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
     function getCarritoCodeForStation(stationID) {
       return 'EST-' + empresaId + '-' + stationID;
     }
@@ -44,6 +96,48 @@
         '&estacion_nombre=' + encodeURIComponent(stationName || ('Estación ' + stationID)) +
         '&carrito_codigo=' + encodeURIComponent(carritoCode);
       window.location.href = url;
+    }
+
+    function isCarritoOperativoActivo(carrito) {
+      if (!carrito) return false;
+      const estado = normalizeText(carrito.estado) || 'activo';
+      const estadoCarrito = normalizeText(carrito.estado_carrito) || 'abierto';
+      return estado === 'activo' && estadoCarrito !== 'cerrado';
+    }
+
+    async function loadColoresEstadoCarrito() {
+      if (!empresaId) return;
+      try {
+        const res = await fetch('/api/empresa/configuracion_avanzada?empresa_id=' + encodeURIComponent(empresaId), { credentials: 'same-origin' });
+        if (!res.ok) return;
+        const cfg = await res.json();
+        state.colores.activo = normalizeColor(cfg && cfg.color_carrito_activo, '#d9fbe8');
+        state.colores.inactivo = normalizeColor(cfg && cfg.color_carrito_inactivo, '#fff9ef');
+      } catch (err) {
+        console.warn('No se pudieron cargar colores de estado de carrito:', err);
+      }
+    }
+
+    async function loadEstadoCarritosEstacion() {
+      state.carritosPorCodigo = {};
+      if (!empresaId) return;
+      try {
+        const res = await fetch('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(empresaId) + '&include_inactive=1', { credentials: 'same-origin' });
+        if (!res.ok) return;
+        const carritos = await res.json();
+        if (!Array.isArray(carritos)) return;
+
+        carritos.forEach(item => {
+          const code = normalizeCode(item && item.codigo);
+          if (!code) return;
+          state.carritosPorCodigo[code] = {
+            activo: isCarritoOperativoActivo(item),
+            activadoEn: String((item && item.activado_en) || '')
+          };
+        });
+      } catch (err) {
+        console.warn('No se pudo cargar estado de carritos por estación:', err);
+      }
     }
 
     function readConfig() {
@@ -75,9 +169,23 @@
       }
       grid.innerHTML = cfg.estaciones.map(est => {
         const stationID = Number(est.id || 0);
-        return '<article class="portal-card" data-estacion-id="' + stationID + '" data-estacion-nombre="' + sanitize(est.nombre) + '" tabindex="0" role="button" aria-label="Abrir carrito de ' + sanitize(est.nombre) + '">' +
+        const carritoCode = getCarritoCodeForStation(stationID);
+        const info = state.carritosPorCodigo[normalizeCode(carritoCode)] || null;
+        const carritoActivo = !!(info && info.activo);
+        const entradaLabel = carritoActivo ? formatStationEntryDateTime(info && info.activadoEn) : '';
+        const entradaHtml = carritoActivo && entradaLabel
+          ? '<p class="station-entry-time">Entrada: ' + sanitize(entradaLabel) + '</p>'
+          : '';
+        const badgeText = carritoActivo ? 'Carrito activo' : 'Carrito inactivo';
+        const badgeClass = carritoActivo ? 'station-status-active' : 'station-status-inactive';
+        const stationClass = carritoActivo ? 'station-card-active' : 'station-card-inactive';
+        const stationColor = carritoActivo ? state.colores.activo : state.colores.inactivo;
+
+        return '<article class="portal-card ' + stationClass + '" style="--station-state-bg:' + sanitize(stationColor) + ';" data-estacion-id="' + stationID + '" data-estacion-nombre="' + sanitize(est.nombre) + '" tabindex="0" role="button" aria-label="Abrir carrito de ' + sanitize(est.nombre) + '">' +
           '<h3>' + sanitize(est.nombre) + '</h3>' +
           '<p>Estación #' + stationID + '</p>' +
+          entradaHtml +
+          '<span class="station-status-badge ' + badgeClass + '">' + badgeText + '</span>' +
           '</article>';
       }).join('');
 
@@ -98,8 +206,12 @@
       });
     }
 
-    function bootstrap() {
+    async function bootstrap() {
       const cfg = readConfig();
+      await Promise.all([
+        loadColoresEstadoCarrito(),
+        loadEstadoCarritosEstacion()
+      ]);
       renderEstaciones(cfg);
     }
 

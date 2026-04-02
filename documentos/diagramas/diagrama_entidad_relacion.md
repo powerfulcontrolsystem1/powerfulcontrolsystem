@@ -103,6 +103,8 @@ erDiagram
       int imprimir_copia_factura
       int mostrar_logo
       string logo_url
+      string color_carrito_activo
+      string color_carrito_inactivo
     }
     FACTURACION_ELECTRONICA_PAIS {
       int id PK
