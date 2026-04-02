@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Facturación electrónica por país</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container">
+    <div class="page-header">
+      <h1 id="pageTitle">Facturación electrónica por país</h1>
+    </div>
+
+    <div class="card" style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+        <div>
+          <div class="form-help">País detectado automáticamente</div>
+          <div id="detectedCountry" style="font-size:1.05rem;font-weight:700;">Detectando...</div>
+          <div id="detectedSource" class="form-help"></div>
+        </div>
+        <button id="detectBtn" class="btn secondary" type="button">Detectar de nuevo</button>
+      </div>
+    </div>
+
+    <form id="feForm" class="form">
+      <input type="hidden" id="empresa_id">
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">País de facturación</label>
+          <select id="pais_codigo" class="form-input"></select>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Proveedor FE</label>
+          <input id="proveedor" class="form-input" placeholder="manual / proveedor externo">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Ambiente</label>
+          <select id="ambiente" class="form-input">
+            <option value="sandbox">Sandbox / pruebas</option>
+            <option value="produccion">Producción</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Moneda</label>
+          <input id="moneda_codigo" class="form-input" placeholder="COP / PAB / USD">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Tipo documento emisor</label>
+          <input id="tipo_documento_emisor" class="form-input" placeholder="NIT / RUC / Cédula jurídica">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Identificador fiscal</label>
+          <input id="identificador_fiscal" class="form-input" placeholder="NIT / RUC por país">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Razón social</label>
+          <input id="razon_social" class="form-input" placeholder="Nombre legal del emisor">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Correo de facturación</label>
+          <input id="email_facturacion" type="email" class="form-input" placeholder="facturacion@empresa.com">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Teléfono de facturación</label>
+          <input id="telefono_facturacion" class="form-input" placeholder="Contacto de facturación">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Dirección fiscal</label>
+          <input id="direccion_fiscal" class="form-input" placeholder="Dirección del emisor">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Prefijo de factura</label>
+          <input id="prefijo_factura" class="form-input" placeholder="FE / INV / F">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Número de resolución</label>
+          <input id="resolucion_numero" class="form-input" placeholder="Resolución/autorización local">
+        </div>
+        <div class="form-col">
+          <label class="form-label">API base URL</label>
+          <input id="api_base_url" class="form-input" placeholder="https://api.proveedor.com">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Campos específicos del país (JSON)</label>
+          <textarea id="campos_pais_json" class="form-textarea" placeholder='{"sucursal":"001","punto_emision":"01"}'></textarea>
+          <div id="countryHint" class="form-help"></div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Observaciones</label>
+          <textarea id="observaciones" class="form-textarea" placeholder="Notas internas de facturación"></textarea>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn">Guardar configuración país</button>
+        <button type="button" id="reloadBtn" class="btn secondary">Recargar país</button>
+      </div>
+      <div id="msg" class="form-help"></div>
+    </form>
+
+    <div class="card" style="margin-top:12px;">
+      <h2 style="margin-top:0;">Configuraciones por país de esta empresa</h2>
+      <div id="list">Cargando...</div>
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      empresaID: 0,
+      paisSeleccionado: "",
+      paises: []
+    };
+
+    function q(name) {
+      const p = new URLSearchParams(window.location.search);
+      return p.get(name);
+    }
+
+    function txt(v) {
+      return (v || "").toString().trim();
+    }
+
+    function setMessage(text, isError) {
+      const el = document.getElementById("msg");
+      el.textContent = text || "";
+      el.style.color = isError ? "#ef5350" : "";
+    }
+
+    function safeJSON(raw) {
+      const input = txt(raw);
+      if (!input) return "{}";
+      try {
+        const parsed = JSON.parse(input);
+        return JSON.stringify(parsed);
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function ensureOk(res) {
+      if (res.ok) return Promise.resolve(res);
+      return res.text().then(function(t) {
+        throw new Error(t || ("HTTP " + res.status));
+      });
+    }
+
+    function countryLabel(item) {
+      if (!item) return "";
+      return (item.bandera || "") + " " + (item.nombre || item.codigo || "");
+    }
+
+    function fillCountryHint(code) {
+      const hint = document.getElementById("countryHint");
+      const key = (code || "").toUpperCase();
+      if (key === "PA") {
+        hint.textContent = "Panamá: puedes guardar campos como {\"ruc\":\"...\",\"dv\":\"...\",\"punto_factura\":\"...\"}.";
+        return;
+      }
+      if (key === "EC") {
+        hint.textContent = "Ecuador: puedes guardar campos como {\"ruc\":\"...\",\"ambiente_sri\":\"2\",\"establecimiento\":\"001\",\"punto_emision\":\"001\"}.";
+        return;
+      }
+      hint.textContent = "Colombia: puedes guardar campos como {\"software_id\":\"...\",\"pin\":\"...\",\"tipo_operacion\":\"10\"}.";
+    }
+
+    function renderList(items) {
+      const list = document.getElementById("list");
+      const arr = Array.isArray(items) ? items : [];
+      if (!arr.length) {
+        list.textContent = "No hay configuraciones de facturación por país para esta empresa.";
+        return;
+      }
+
+      const table = document.createElement("table");
+      table.className = "table";
+      table.innerHTML = "<thead><tr><th>País</th><th>Proveedor</th><th>Ambiente</th><th>Moneda</th><th>Estado</th><th>Acciones</th></tr></thead>";
+      const tbody = document.createElement("tbody");
+
+      arr.forEach(function(item) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = "<td>" + (item.bandera_pais || "") + " " + (item.pais_nombre || item.pais_codigo || "") + "</td>" +
+                       "<td>" + (item.proveedor || "manual") + "</td>" +
+                       "<td>" + (item.ambiente || "sandbox") + "</td>" +
+                       "<td>" + (item.moneda_codigo || "") + "</td>" +
+                       "<td>" + (item.estado || "activo") + "</td>" +
+                       "<td class=\"actions\"><button class=\"btn secondary load-country\" data-country=\"" + (item.pais_codigo || "") + "\">Cargar</button></td>";
+        tbody.appendChild(tr);
+      });
+
+      table.appendChild(tbody);
+      list.innerHTML = "";
+      list.appendChild(table);
+
+      list.querySelectorAll(".load-country").forEach(function(btn) {
+        btn.addEventListener("click", function() {
+          const c = btn.getAttribute("data-country");
+          if (c) {
+            document.getElementById("pais_codigo").value = c;
+            state.paisSeleccionado = c;
+            loadCountryConfig(c);
+          }
+        });
+      });
+    }
+
+    function collectPayload() {
+      return {
+        empresa_id: Number(state.empresaID),
+        pais_codigo: txt(document.getElementById("pais_codigo").value).toUpperCase(),
+        proveedor: txt(document.getElementById("proveedor").value),
+        ambiente: txt(document.getElementById("ambiente").value),
+        moneda_codigo: txt(document.getElementById("moneda_codigo").value).toUpperCase(),
+        tipo_documento_emisor: txt(document.getElementById("tipo_documento_emisor").value),
+        identificador_fiscal: txt(document.getElementById("identificador_fiscal").value),
+        razon_social: txt(document.getElementById("razon_social").value),
+        email_facturacion: txt(document.getElementById("email_facturacion").value),
+        telefono_facturacion: txt(document.getElementById("telefono_facturacion").value),
+        direccion_fiscal: txt(document.getElementById("direccion_fiscal").value),
+        prefijo_factura: txt(document.getElementById("prefijo_factura").value),
+        resolucion_numero: txt(document.getElementById("resolucion_numero").value),
+        api_base_url: txt(document.getElementById("api_base_url").value),
+        campos_pais_json: txt(document.getElementById("campos_pais_json").value),
+        observaciones: txt(document.getElementById("observaciones").value)
+      };
+    }
+
+    function setFormData(cfg) {
+      document.getElementById("pais_codigo").value = txt(cfg.pais_codigo || state.paisSeleccionado || "CO");
+      document.getElementById("proveedor").value = txt(cfg.proveedor) || "manual";
+      document.getElementById("ambiente").value = txt(cfg.ambiente) || "sandbox";
+      document.getElementById("moneda_codigo").value = txt(cfg.moneda_codigo);
+      document.getElementById("tipo_documento_emisor").value = txt(cfg.tipo_documento_emisor);
+      document.getElementById("identificador_fiscal").value = txt(cfg.identificador_fiscal);
+      document.getElementById("razon_social").value = txt(cfg.razon_social);
+      document.getElementById("email_facturacion").value = txt(cfg.email_facturacion);
+      document.getElementById("telefono_facturacion").value = txt(cfg.telefono_facturacion);
+      document.getElementById("direccion_fiscal").value = txt(cfg.direccion_fiscal);
+      document.getElementById("prefijo_factura").value = txt(cfg.prefijo_factura);
+      document.getElementById("resolucion_numero").value = txt(cfg.resolucion_numero);
+      document.getElementById("api_base_url").value = txt(cfg.api_base_url);
+      document.getElementById("campos_pais_json").value = txt(cfg.campos_pais_json) || "{}";
+      document.getElementById("observaciones").value = txt(cfg.observaciones);
+      fillCountryHint(document.getElementById("pais_codigo").value);
+    }
+
+    async function loadCountryConfig(countryCode) {
+      const code = txt(countryCode).toUpperCase() || txt(document.getElementById("pais_codigo").value).toUpperCase();
+      if (!code) return;
+      const url = "/api/empresa/facturacion_electronica?empresa_id=" + encodeURIComponent(state.empresaID) + "&pais_codigo=" + encodeURIComponent(code);
+      const res = await fetch(url);
+      await ensureOk(res);
+      const cfg = await res.json();
+      state.paisSeleccionado = code;
+      setFormData(cfg || { pais_codigo: code });
+    }
+
+    async function detectCountry() {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+      const lang = navigator.language || "";
+      const url = "/api/empresa/facturacion_electronica/pais_detectado?empresa_id=" + encodeURIComponent(state.empresaID) + "&tz=" + encodeURIComponent(tz) + "&lang=" + encodeURIComponent(lang);
+      const res = await fetch(url);
+      await ensureOk(res);
+      const info = await res.json();
+      const label = (info.bandera || "") + " " + (info.pais_nombre || info.pais_codigo || "");
+      document.getElementById("detectedCountry").textContent = label.trim() || "No detectado";
+      document.getElementById("detectedSource").textContent = "Fuente: " + (info.source || "desconocida");
+      if (info.pais_codigo) {
+        state.paisSeleccionado = String(info.pais_codigo).toUpperCase();
+        document.getElementById("pais_codigo").value = state.paisSeleccionado;
+        fillCountryHint(state.paisSeleccionado);
+      }
+      return info;
+    }
+
+    async function loadCountries() {
+      const res = await fetch("/api/empresa/facturacion_electronica/paises_disponibles");
+      await ensureOk(res);
+      const data = await res.json();
+      state.paises = Array.isArray(data.items) ? data.items : [];
+      const sel = document.getElementById("pais_codigo");
+      sel.innerHTML = "";
+      state.paises.forEach(function(item) {
+        const opt = document.createElement("option");
+        opt.value = item.codigo;
+        opt.textContent = countryLabel(item);
+        sel.appendChild(opt);
+      });
+      if (!state.paises.length) {
+        const opt = document.createElement("option");
+        opt.value = "CO";
+        opt.textContent = "🇨🇴 Colombia";
+        sel.appendChild(opt);
+      }
+    }
+
+    async function loadList() {
+      const res = await fetch("/api/empresa/facturacion_electronica?empresa_id=" + encodeURIComponent(state.empresaID));
+      await ensureOk(res);
+      const data = await res.json();
+      renderList(data.items || []);
+    }
+
+    document.getElementById("pais_codigo").addEventListener("change", function() {
+      const code = txt(document.getElementById("pais_codigo").value).toUpperCase();
+      fillCountryHint(code);
+      if (code) {
+        loadCountryConfig(code).catch(function(err) {
+          setMessage(err.message || "No se pudo cargar configuración de país", true);
+        });
+      }
+    });
+
+    document.getElementById("detectBtn").addEventListener("click", function() {
+      detectCountry().then(function(info) {
+        if (info && info.pais_codigo) {
+          return loadCountryConfig(info.pais_codigo);
+        }
+      }).catch(function(err) {
+        setMessage(err.message || "No se pudo detectar el país", true);
+      });
+    });
+
+    document.getElementById("reloadBtn").addEventListener("click", function() {
+      loadCountryConfig(document.getElementById("pais_codigo").value).then(function() {
+        setMessage("Configuración recargada", false);
+      }).catch(function(err) {
+        setMessage(err.message || "No se pudo recargar", true);
+      });
+    });
+
+    document.getElementById("feForm").addEventListener("submit", async function(ev) {
+      ev.preventDefault();
+      const payload = collectPayload();
+      if (!payload.empresa_id || !payload.pais_codigo) {
+        setMessage("empresa_id y pais_codigo son obligatorios", true);
+        return;
+      }
+      const jsonSafe = safeJSON(payload.campos_pais_json);
+      if (jsonSafe === null) {
+        setMessage("campos_pais_json no es JSON válido", true);
+        return;
+      }
+      payload.campos_pais_json = jsonSafe;
+
+      try {
+        const res = await fetch("/api/empresa/facturacion_electronica?empresa_id=" + encodeURIComponent(state.empresaID), {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        await ensureOk(res);
+        await loadCountryConfig(payload.pais_codigo);
+        await loadList();
+        setMessage("Configuración de facturación electrónica guardada", false);
+      } catch (err) {
+        setMessage(err.message || "No se pudo guardar", true);
+      }
+    });
+
+    (async function init() {
+      const empresaID = Number(q("empresa_id") || 0);
+      if (!empresaID) {
+        setMessage("empresa_id requerido en la URL", true);
+        document.getElementById("feForm").style.display = "none";
+        return;
+      }
+
+      state.empresaID = empresaID;
+      document.getElementById("empresa_id").value = String(empresaID);
+      try {
+        localStorage.setItem("active_empresa_id", String(empresaID));
+      } catch (_) {}
+
+      try {
+        const empRes = await fetch("/super/api/empresas?id=" + encodeURIComponent(empresaID));
+        if (empRes.ok) {
+          const empresa = await empRes.json();
+          if (empresa && empresa.nombre) {
+            document.getElementById("pageTitle").textContent = "Facturación electrónica por país - " + empresa.nombre;
+          }
+        }
+      } catch (_) {}
+
+      try {
+        await loadCountries();
+        const info = await detectCountry();
+        await loadCountryConfig((info && info.pais_codigo) || document.getElementById("pais_codigo").value || "CO");
+        await loadList();
+      } catch (err) {
+        setMessage(err.message || "No se pudo inicializar el módulo", true);
+      }
+    })();
+  </script>
+</body>
+</html>

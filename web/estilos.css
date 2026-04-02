@@ -17,6 +17,10 @@
   --focus: rgba(31,142,241,0.34);
   --accent-yellow: #ffd58a;
   --accent-yellow-light: #ffeac1;
+  --form-surface-top: #1f3a52;
+  --form-surface-bottom: #2c5576;
+  --form-border: rgba(145,198,238,0.4);
+  --form-input-bg: #0f2236;
   --page-gutter: 10px;
 }
 /* Modo claro (override de variables) */
@@ -38,6 +42,10 @@ html.theme-light{
   --focus: rgba(15,111,203,0.24);
   --accent-yellow: #d9ad58;
   --accent-yellow-light: #f3ddaf;
+  --form-surface-top: #edf5ff;
+  --form-surface-bottom: #dbeaff;
+  --form-border: rgba(41,94,152,0.24);
+  --form-input-bg: #ffffff;
 }
 
 *{box-sizing:border-box}
@@ -76,14 +84,14 @@ p{color:var(--muted);line-height:1.5}
 .footer{color:var(--muted);font-size:13px;margin-top:18px}
 .input{width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text)}
 /* Formularios profesionales y responsive */
-.form{max-width:900px;margin:0 auto 18px auto;padding:16px;border-radius:12px;background:linear-gradient(180deg,var(--surface-soft),var(--surface));border:1px solid var(--border);box-shadow:0 10px 24px rgba(7,16,29,0.34)}
+.form{max-width:900px;margin:0 auto 18px auto;padding:16px;border-radius:12px;background:linear-gradient(180deg,var(--form-surface-top),var(--form-surface-bottom));border:1px solid var(--form-border);box-shadow:0 12px 26px rgba(7,16,29,0.34)}
 .form, .form .form-input, .form .form-textarea { color: var(--text); }
 .form-row{display:flex;gap:12px;margin-bottom:12px}
 .form-col{flex:1;min-width:0}
 .form-label{display:block;font-weight:700;margin-bottom:6px;color:var(--muted);font-size:0.95rem}
-.form-input{width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--input-bg);color:var(--text)}
+.form-input{width:100%;padding:10px;border-radius:10px;border:1px solid var(--form-border);background:var(--form-input-bg);color:var(--text)}
 .form-input::placeholder{color:rgba(159,179,204,0.78)}
-.form-textarea{min-height:110px;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);resize:vertical}
+.form-textarea{min-height:110px;padding:10px;border-radius:10px;border:1px solid var(--form-border);background:var(--form-input-bg);color:var(--text);resize:vertical}
 .form-textarea::placeholder{color:rgba(159,179,204,0.78)}
 .form-actions{display:flex;gap:8px;justify-content:flex-end}
 .form-help{color:var(--muted);font-size:13px;margin-top:6px}
@@ -91,8 +99,8 @@ p{color:var(--muted);line-height:1.5}
 .success{color:var(--success);font-weight:700}
 
 /* Tablas estilizadas */
-.table{width:100%;border-collapse:collapse;margin-top:12px}
-.table th,.table td{padding:12px;border-bottom:1px solid var(--border);text-align:left}
+.table{width:auto;max-width:100%;table-layout:auto;border-collapse:collapse;margin-top:12px}
+.table th,.table td{padding:12px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap;width:1%}
 .table thead th{color:var(--muted);font-weight:700;font-size:0.95rem;background:rgba(15,34,56,0.44)}
 .table tbody tr:hover{background:linear-gradient(90deg, rgba(36,76,122,0.2), rgba(24,44,71,0.18))}
 .actions button{margin-right:6px}
@@ -231,8 +239,8 @@ ul{padding-left:18px}
 }
 
 /* Formularios con fondo más oscuro sólo en páginas específicas (tipos_empresas, licencias) */
-.form-bg-dark .form{background:linear-gradient(180deg,var(--surface-soft),var(--surface));border-color:var(--border)}
-.form-bg-dark .form .form-input, .form-bg-dark .form .form-textarea{background:var(--input-bg-soft)}
+.form-bg-dark .form{background:linear-gradient(180deg,#1d344b,#294b6b);border-color:rgba(152,197,234,0.44)}
+.form-bg-dark .form .form-input, .form-bg-dark .form .form-textarea{background:#0e2134}
 
 /* Tablas CRUD: cuadricula y zebra */
 .table th, .table td{padding:12px;border:1px solid var(--border);text-align:left}
@@ -253,6 +261,8 @@ ul{padding-left:18px}
 .floating-menu .fm-panel.open{display:block}
 .floating-menu .fm-item{display:block;color:var(--text);text-decoration:none;padding:10px 12px;border-radius:8px;font-weight:600}
 .floating-menu .fm-item:hover{background:rgba(56,91,133,0.32)}
+.floating-menu .fm-country{cursor:default;background:rgba(56,91,133,0.18);border:1px solid rgba(145,198,238,0.24)}
+.floating-menu .fm-country:hover{background:rgba(56,91,133,0.18)}
 
 /* SVG dentro de items del menú: mantener color legible según tema */
 .floating-menu .fm-item svg{width:18px;height:18px;vertical-align:middle;fill:currentColor}
@@ -292,12 +302,13 @@ html.theme-light .floating-menu #themeToggle{color:var(--accent-2)}
   box-shadow:0 10px 18px rgba(7,30,57,0.38);
 }
 
-/* Tabla de administradores: una fila por admin, evitar saltos y truncar texto largo */
+/* Tablas CRUD en contenedores #list: ajustar ancho por contenido y permitir scroll horizontal */
+#list { overflow-x: auto; }
 #list .table th, #list .table td { white-space: nowrap; }
-#list .table { table-layout: fixed; width: 100%; }
-#list .table td { overflow: hidden; text-overflow: ellipsis; }
-#list .table td.actions { overflow: visible; white-space: nowrap; min-width: 220px; }
-#list .table .actions { min-width: 180px; }
+#list .table { table-layout: auto; width: auto; }
+#list .table td { overflow: visible; text-overflow: clip; }
+#list .table td.actions { overflow: visible; white-space: nowrap; min-width: auto; }
+#list .table .actions { min-width: auto; }
 
 /* Asegurar botones de acción visibles y consistentes */
 .actions { display:inline-flex; gap:6px; align-items:center; }

@@ -355,8 +355,9 @@ func EmpresaUsuarioLoginHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		var payload struct {
-			Email    string `json:"email"`
-			Password string `json:"password"`
+			EmpresaID int64  `json:"empresa_id"`
+			Email     string `json:"email"`
+			Password  string `json:"password"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			http.Error(w, "invalid payload", http.StatusBadRequest)
@@ -372,8 +373,13 @@ func EmpresaUsuarioLoginHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "email inválido", http.StatusBadRequest)
 			return
 		}
+		if payload.EmpresaID <= 0 {
+			if qEmpresaID, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && qEmpresaID > 0 {
+				payload.EmpresaID = qEmpresaID
+			}
+		}
 
-		item, err := dbpkg.GetEmpresaUsuarioByEmail(dbEmp, email)
+		item, err := dbpkg.GetEmpresaUsuarioByEmailScoped(dbEmp, email, payload.EmpresaID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				http.Error(w, "credenciales inválidas", http.StatusUnauthorized)
@@ -428,6 +434,7 @@ func EmpresaUsuarioSetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		var payload struct {
+			EmpresaID          int64  `json:"empresa_id"`
 			Email              string `json:"email"`
 			DocumentoIdentidad string `json:"documento_identidad"`
 			Password           string `json:"password"`
@@ -448,6 +455,11 @@ func EmpresaUsuarioSetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "email inválido", http.StatusBadRequest)
 			return
 		}
+		if payload.EmpresaID <= 0 {
+			if qEmpresaID, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && qEmpresaID > 0 {
+				payload.EmpresaID = qEmpresaID
+			}
+		}
 		if strings.TrimSpace(payload.Password) == "" {
 			http.Error(w, "debes ingresar una contraseña", http.StatusBadRequest)
 			return
@@ -461,7 +473,7 @@ func EmpresaUsuarioSetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		item, err := dbpkg.GetEmpresaUsuarioByEmail(dbEmp, email)
+		item, err := dbpkg.GetEmpresaUsuarioByEmailScoped(dbEmp, email, payload.EmpresaID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				http.Error(w, "usuario no encontrado", http.StatusNotFound)

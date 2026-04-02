@@ -1,5 +1,48 @@
 - Historial de cambios
 
+- 2026-04-01: Corrección de estado de licencia activa en tarjetas de seleccionar_empresa
+    - Se corrigió `backend/db/db.go` para que `GetLicenciasFiltered` no falle cuando se usa `scope=mine` y no existe tabla `empresas` en `superadministrador.db`.
+    - Se ajustó `web/js/seleccionar_empresa.js` para aplicar fallback automático a `/super/api/licencias?con_empresa=1&activo=1` si la consulta con `scope=mine` falla.
+    - Resultado: las tarjetas de empresas vuelven a reflejar correctamente cuando una empresa tiene licencia activa.
+    - Verificación ejecutada:
+        - `go test ./db ./handlers` (ok)
+        - `runTests` dirigido: 4 pruebas aprobadas, 0 fallidas.
+    - Archivos afectados: backend/db/db.go, web/js/seleccionar_empresa.js, documentos/historial_de_cambios.
+
+- 2026-04-01: Auditoría de alcance multiempresa + módulo de facturación electrónica por país
+    - Se auditó `empresas.db` y se validó que todas las tablas de operación queden con referencia `empresa_id`.
+    - Se añadió migración de alcance en `backend/db/empresa_scope.go` para asegurar `empresa_id` en tablas base (`empresas`, `schema_migrations` y `tipos_de_empresas` legacy).
+    - Se creó el módulo `facturacion_electronica_pais` por empresa y país (CO/PA/EC) con CRUD y detección automática de país.
+    - Nuevos endpoints:
+        - `GET/POST/PUT /api/empresa/facturacion_electronica`
+        - `GET /api/empresa/facturacion_electronica/pais_detectado`
+        - `GET /api/empresa/facturacion_electronica/paises_disponibles`
+    - Se creó la subpágina `web/administrar_empresa/facturacion_electronica.html` y se integró al menú de administrar empresa.
+    - Se actualizó `web/menu.js` para mostrar bandera del país detectado en el menú flotante.
+    - Se reforzó login/primer ingreso de usuario empresa con alcance opcional por `empresa_id` en consultas por correo.
+    - Verificación ejecutada:
+        - `go test ./auth ./db ./handlers ./metrics ./utils` (ok)
+        - Auditoría post-migración en `empresas.db`: todas las tablas no sistema con `empresa_id`.
+    - Archivos afectados: backend/db/empresa_scope.go, backend/db/facturacion_electronica.go, backend/db/db.go, backend/db/usuarios_empresa.go, backend/handlers/facturacion_electronica.go, backend/handlers/usuarios_empresa.go, backend/main.go, web/administrar_empresa/facturacion_electronica.html, web/administrar_empresa.html, web/js/administrar_empresa.js, web/menu.js, web/estilos.css, documentos/descripcion_de_las_bases_De_datos, documentos/diagramas/estructura_del_codigo.md, documentos/diagramas/diagrama_flujo_procesos.md, documentos/diagramas/diagrama_entidad_relacion.md, documentos/descripcion_de_archivos, documentos/historial_de_cambios.
+
+- 2026-04-01: Tablas CRUD con columnas ajustadas al contenido de texto
+    - Se actualizó `web/estilos.css` para que las tablas CRUD usen `table-layout: auto` y ancho por contenido en cada columna.
+    - Se eliminó el layout fijo y truncado en `#list .table` (`table-layout: fixed`, `width: 100%`, `text-overflow: ellipsis`) para evitar columnas sobredimensionadas.
+    - Se añadió `overflow-x: auto` en contenedores `#list` para conservar navegación cuando el contenido sea amplio.
+    - Resultado: el ancho de las columnas ahora se determina por el texto de cada columna.
+    - Archivos afectados: web/estilos.css, documentos/descripcion_de_archivos, documentos/historial_de_cambios.
+
+- 2026-04-01: Licencias filtradas por estado activo y por usuario + actualización visual de formularios
+    - Se agregó filtrado en backend para `GET /super/api/licencias` con parámetros `activo`, `con_empresa`, `usuario_creador` y `scope=mine`.
+    - En `Resumen de Licencias` (`/super/licencias_resumen.html`) ahora se cuentan únicamente licencias activas asignadas a empresa (`activo=1` y `con_empresa=1`).
+    - En `seleccionar_empresa`, la sección `Licencias` ahora abre filtrada por usuario autenticado (`scope=mine`) y por licencias asociadas a empresa.
+    - En `seleccionar_empresa`, la carga de tarjetas también usa licencias activas filtradas del usuario autenticado para mantener consistencia de estado.
+    - Se actualizó el estilo global de formularios en `web/estilos.css` con una paleta diferenciada (`--form-*`) para que todos los formularios tengan color distinto.
+    - Verificación local ejecutada:
+        - Conteo directo en DB: `activo=1 AND empresa_id>0` => `1` licencia activa asignada.
+        - Compilación backend: `go build -o server.exe .` sin errores.
+    - Archivos afectados: backend/db/db.go, backend/handlers/payments_handlers.go, web/super/licencias_resumen.html, web/super/licencias.html, web/seleccionar_empresa.html, web/js/seleccionar_empresa.js, web/estilos.css, documentos/descripcion_de_archivos, documentos/diagramas/diagrama_flujo_procesos.md, documentos/historial_de_cambios.
+
 - 2026-04-03: Monitor de procesos en Super Admin y ajuste de iframe por defecto
     - Se implementó `SecurityProcessesHandler` en `backend/handlers/system_empresas_handlers.go` para listar procesos activos: PID, nombre y memoria (KB). Lógica cross-platform (Windows: `tasklist`, Unix: `ps`) y parámetro `limit`.
     - Se registró la ruta `/super/api/security/processes` en `backend/main.go`.

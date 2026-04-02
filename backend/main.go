@@ -226,6 +226,7 @@ func main() {
 
 	createEmpresas := `CREATE TABLE IF NOT EXISTS empresas (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		empresa_id INTEGER,
 		nombre TEXT NOT NULL,
 		nit TEXT,
 		tipo_id INTEGER,
@@ -275,12 +276,23 @@ func main() {
 
 		addIfMissing("tipo_id INTEGER", "tipo_id")
 		addIfMissing("tipo_nombre TEXT", "tipo_nombre")
+		addIfMissing("empresa_id INTEGER", "empresa_id")
 		addIfMissing("fecha_actualizacion TEXT", "fecha_actualizacion")
 		addIfMissing("usuario_creador TEXT", "usuario_creador")
 		addIfMissing("estado TEXT DEFAULT 'activo'", "estado")
 		addIfMissing("observaciones TEXT", "observaciones")
+
+		if _, err := db.Exec("UPDATE empresas SET empresa_id = id WHERE empresa_id IS NULL OR empresa_id <= 0"); err != nil {
+			log.Printf("warning: unable to backfill empresa_id in empresas table: %v", err)
+		}
+		if _, err := db.Exec("CREATE UNIQUE INDEX IF NOT EXISTS ux_empresas_empresa_id ON empresas(empresa_id)"); err != nil {
+			log.Printf("warning: unable to create ux_empresas_empresa_id: %v", err)
+		}
 	}
 	ensureEmpresasSchema(dbEmpresas)
+	if err := dbpkg.EnsureEmpresasScopeReferences(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure scope references in empresas db: %v", err)
+	}
 	if err := dbpkg.EnsureEmpresaProductosSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure productos schema in empresas db: %v", err)
 	}
@@ -293,6 +305,9 @@ func main() {
 	if err := dbpkg.EnsureEmpresaConfiguracionAvanzadaSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure empresa_configuracion_avanzada schema in empresas db: %v", err)
 	}
+	if err := dbpkg.EnsureEmpresaFacturacionElectronicaSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure facturacion_electronica schema in empresas db: %v", err)
+	}
 	if err := dbpkg.EnsureEmpresaChatTareasSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure chat_tareas schema in empresas db: %v", err)
 	}
@@ -301,6 +316,9 @@ func main() {
 	}
 	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-02-001-chat-tareas", "chat y tareas por empresa: conversaciones, participantes, mensajes, adjuntos y tareas"); err != nil {
 		log.Fatalf("failed to register chat_tareas schema migration in empresas db: %v", err)
+	}
+	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-01-002-empresa-scope-and-fe", "asegura referencia empresa_id en tablas base y agrega modulo de facturacion electronica por pais"); err != nil {
+		log.Fatalf("failed to register empresas scope/fe schema migration in empresas db: %v", err)
 	}
 	// Crear tipos_de_empresas en la base de datos de superadministrador (ubicación centralizada)
 	createTiposSuper := `CREATE TABLE IF NOT EXISTS tipos_de_empresas (
@@ -681,6 +699,9 @@ func main() {
 	http.HandleFunc("/api/empresa/carritos_compra", handlers.EmpresaCarritosCompraHandler(dbEmpresas))
 	http.HandleFunc("/api/empresa/carritos_compra/items", handlers.EmpresaCarritoItemsHandler(dbEmpresas))
 	http.HandleFunc("/api/empresa/configuracion_avanzada", handlers.EmpresaConfiguracionAvanzadaHandler(dbEmpresas))
+	http.HandleFunc("/api/empresa/facturacion_electronica", handlers.EmpresaFacturacionElectronicaHandler(dbEmpresas))
+	http.HandleFunc("/api/empresa/facturacion_electronica/pais_detectado", handlers.EmpresaFacturacionElectronicaPaisDetectadoHandler(dbEmpresas))
+	http.HandleFunc("/api/empresa/facturacion_electronica/paises_disponibles", handlers.EmpresaFacturacionElectronicaPaisesDisponiblesHandler())
 	http.HandleFunc("/api/empresa/chat_tareas/conversaciones", handlers.EmpresaChatTareasConversacionesHandler(dbEmpresas))
 	http.HandleFunc("/api/empresa/chat_tareas/participantes", handlers.EmpresaChatTareasParticipantesHandler(dbEmpresas))
 	http.HandleFunc("/api/empresa/chat_tareas/mensajes", handlers.EmpresaChatTareasMensajesHandler(dbEmpresas))

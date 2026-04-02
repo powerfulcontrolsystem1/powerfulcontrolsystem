@@ -38,7 +38,36 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
-			licencias, err := dbpkg.GetLicencias(dbSuper)
+			q := r.URL.Query()
+			parseTruthy := func(v string) bool {
+				switch strings.ToLower(strings.TrimSpace(v)) {
+				case "1", "true", "si", "yes", "activo":
+					return true
+				default:
+					return false
+				}
+			}
+
+			soloActivas := parseTruthy(q.Get("activo"))
+			conEmpresa := parseTruthy(q.Get("con_empresa"))
+			usuarioCreador := strings.TrimSpace(q.Get("usuario_creador"))
+
+			// scope=mine permite filtrar por el administrador autenticado sin exponer email en la URL.
+			if strings.EqualFold(strings.TrimSpace(q.Get("scope")), "mine") && usuarioCreador == "" {
+				c, err := r.Cookie("session_token")
+				if err != nil || c == nil || strings.TrimSpace(c.Value) == "" {
+					http.Error(w, "unauthenticated", http.StatusUnauthorized)
+					return
+				}
+				s, err := dbpkg.GetSessionByToken(dbSuper, c.Value)
+				if err != nil || s == nil {
+					http.Error(w, "unauthenticated", http.StatusUnauthorized)
+					return
+				}
+				usuarioCreador = strings.TrimSpace(s.AdminEmail)
+			}
+
+			licencias, err := dbpkg.GetLicenciasFiltered(dbSuper, soloActivas, usuarioCreador, conEmpresa)
 			if err != nil {
 				log.Println("GET /super/api/licencias error:", err)
 				http.Error(w, "failed to query licencias: "+err.Error(), http.StatusInternalServerError)

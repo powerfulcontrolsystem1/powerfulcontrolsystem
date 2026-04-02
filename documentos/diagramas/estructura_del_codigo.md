@@ -1,6 +1,6 @@
 # Estructura del codigo
 
-Fecha de actualizacion: 2026-04-02
+Fecha de actualizacion: 2026-04-01
 
 ## Objetivo
 Este documento resume la estructura tecnica principal del sistema y sirve como referencia para mantenimiento y evolucion.
@@ -122,3 +122,25 @@ Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe re
 
 - Impacto funcional:
   - Se habilita colaboracion interna por empresa con chat, adjuntos de imagen/audio y seguimiento de tareas, manteniendo aislamiento por `empresa_id`.
+
+## Actualizacion 2026-04-01 (facturacion electronica por pais + auditoria de alcance empresa)
+
+- Backend DB:
+  - Se agrega `backend/db/facturacion_electronica.go` con tabla `facturacion_electronica_pais` y CRUD por `empresa_id + pais_codigo`.
+  - Se agrega `backend/db/empresa_scope.go` para asegurar referencia `empresa_id` en tablas base de `empresas.db` (`empresas`, `schema_migrations` y `tipos_de_empresas` legacy).
+  - Se actualiza `backend/db/db.go` para mantener `empresa_id` autoconsistente en `empresas` (autorreferencia con `id`) al crear nuevas empresas.
+
+- Backend handlers/rutas:
+  - Se agrega `backend/handlers/facturacion_electronica.go` con endpoints:
+    - `GET/POST/PUT /api/empresa/facturacion_electronica`
+    - `GET /api/empresa/facturacion_electronica/pais_detectado`
+    - `GET /api/empresa/facturacion_electronica/paises_disponibles`
+  - Se refuerza login/primer ingreso de usuarios de empresa con lookup opcional por `empresa_id`.
+
+- Frontend:
+  - Nueva subpagina `web/administrar_empresa/facturacion_electronica.html` para configurar FE por país (CO/PA/EC).
+  - Menú de `administrar_empresa` actualizado con acceso a `Facturación electrónica`.
+  - `web/menu.js` ahora detecta país automáticamente (API + señales de navegador) y muestra bandera en el menú flotante.
+
+- Validacion de alcance multiempresa:
+  - Auditoría post-migración en `empresas.db`: todas las tablas no sistema quedaron con columna `empresa_id`.

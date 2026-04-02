@@ -22,6 +22,7 @@ El agente debe leer y actualizar este documento cada vez que se realicen cambios
 
    - `empresas`
      - `id` INTEGER PRIMARY KEY AUTOINCREMENT
+     - `empresa_id` INTEGER  -- referencia de alcance (autorreferencia al `id` de la empresa)
      - `nombre` TEXT NOT NULL
      - `nit` TEXT
      - `tipo_id` INTEGER  -- referencia conceptual a `tipos_de_empresas.id` que reside en `superadministrador.db`
@@ -141,6 +142,32 @@ El agente debe leer y actualizar este documento cada vez que se realicen cambios
      - `estado` TEXT DEFAULT 'activo'
      - `observaciones` TEXT
      - Índices: `ux_empresa_config_avanzada_empresa`, `ix_empresa_config_avanzada_estado`
+
+   - `facturacion_electronica_pais` (nuevo módulo FE multi-país por empresa)
+     - `id` INTEGER PRIMARY KEY AUTOINCREMENT
+     - `empresa_id` INTEGER NOT NULL
+     - `pais_codigo` TEXT NOT NULL  -- CO, PA, EC, etc.
+     - `pais_nombre` TEXT NOT NULL
+     - `moneda_codigo` TEXT
+     - `proveedor` TEXT
+     - `ambiente` TEXT DEFAULT 'sandbox' -- sandbox/produccion
+     - `tipo_documento_emisor` TEXT
+     - `identificador_fiscal` TEXT
+     - `razon_social` TEXT
+     - `email_facturacion` TEXT
+     - `telefono_facturacion` TEXT
+     - `direccion_fiscal` TEXT
+     - `prefijo_factura` TEXT
+     - `resolucion_numero` TEXT
+     - `api_base_url` TEXT
+     - `campos_pais_json` TEXT DEFAULT '{}'
+     - `fecha_creacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `fecha_actualizacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `usuario_creador` TEXT
+     - `estado` TEXT DEFAULT 'activo'
+     - `observaciones` TEXT
+     - Restricción única: `(empresa_id, pais_codigo)`
+     - Índices: `ix_fe_pais_empresa`, `ix_fe_pais_estado`
 
    - `bodegas` (nuevo módulo de inventario por empresa)
      - `id` INTEGER PRIMARY KEY AUTOINCREMENT

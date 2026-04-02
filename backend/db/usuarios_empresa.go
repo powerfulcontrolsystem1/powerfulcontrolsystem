@@ -169,9 +169,9 @@ func GetEmpresaUsuarioByID(dbConn *sql.DB, empresaID, id int64) (*EmpresaUsuario
 	return &item, nil
 }
 
-// GetEmpresaUsuarioByEmail obtiene un usuario por correo (case-insensitive).
-func GetEmpresaUsuarioByEmail(dbConn *sql.DB, email string) (*EmpresaUsuario, error) {
-	row := dbConn.QueryRow(`SELECT
+// GetEmpresaUsuarioByEmailScoped obtiene un usuario por correo con alcance opcional por empresa.
+func GetEmpresaUsuarioByEmailScoped(dbConn *sql.DB, email string, empresaID int64) (*EmpresaUsuario, error) {
+	query := `SELECT
 		id,
 		empresa_id,
 		email,
@@ -190,8 +190,15 @@ func GetEmpresaUsuarioByEmail(dbConn *sql.DB, email string) (*EmpresaUsuario, er
 		COALESCE(estado, 'activo'),
 		COALESCE(observaciones, '')
 	FROM users
-	WHERE lower(email) = lower(?)
-	LIMIT 1`, email)
+	WHERE lower(email) = lower(?)`
+	args := []interface{}{email}
+	if empresaID > 0 {
+		query += " AND empresa_id = ?"
+		args = append(args, empresaID)
+	}
+	query += " LIMIT 1"
+
+	row := dbConn.QueryRow(query, args...)
 
 	var item EmpresaUsuario
 	if err := row.Scan(
@@ -216,6 +223,11 @@ func GetEmpresaUsuarioByEmail(dbConn *sql.DB, email string) (*EmpresaUsuario, er
 		return nil, err
 	}
 	return &item, nil
+}
+
+// GetEmpresaUsuarioByEmail obtiene un usuario por correo (case-insensitive).
+func GetEmpresaUsuarioByEmail(dbConn *sql.DB, email string) (*EmpresaUsuario, error) {
+	return GetEmpresaUsuarioByEmailScoped(dbConn, email, 0)
 }
 
 // SetEmpresaUsuarioPassword define la contraseña de acceso para un usuario de empresa.

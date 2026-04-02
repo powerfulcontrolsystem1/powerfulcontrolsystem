@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"strings"
 )
 
 // UpsertUser inserta o actualiza un usuario en la base de datos de empresas (registro por empresa)
@@ -138,12 +139,47 @@ func CreateLicencia(dbConn *sql.DB, tipoID int64, nombre, descripcion string, va
 	return res.LastInsertId()
 }
 
-// GetLicencias obtiene todas las licencias (con nombre de tipo si existe)
+// GetLicencias obtiene todas las licencias (comportamiento legado sin filtros)
 func GetLicencias(dbConn *sql.DB) ([]Licencia, error) {
+	return GetLicenciasFiltered(dbConn, false, "", false)
+}
+
+// GetLicenciasFiltered obtiene licencias con filtros opcionales.
+func GetLicenciasFiltered(dbConn *sql.DB, soloActivas bool, usuarioCreador string, conEmpresa bool) ([]Licencia, error) {
 	q := `SELECT l.id, l.empresa_id, l.tipo_id, t.nombre, l.nombre, l.descripcion, l.valor, l.duracion_dias, l.fecha_creacion, l.activo
-		FROM licencias l LEFT JOIN tipos_de_empresas t ON l.tipo_id = t.id
-		ORDER BY l.id DESC`
-	rows, err := dbConn.Query(q)
+		FROM licencias l LEFT JOIN tipos_de_empresas t ON l.tipo_id = t.id`
+
+	usuarioCreador = strings.TrimSpace(usuarioCreador)
+	canFilterByUsuarioCreador := false
+	if usuarioCreador != "" {
+		hasEmpresasTable, err := tableExists(dbConn, "empresas")
+		if err != nil {
+			return nil, err
+		}
+		if hasEmpresasTable {
+			q += " LEFT JOIN empresas e ON e.id = l.empresa_id"
+			canFilterByUsuarioCreador = true
+		}
+	}
+
+	var where []string
+	var args []interface{}
+	if soloActivas {
+		where = append(where, "l.activo = 1")
+	}
+	if conEmpresa {
+		where = append(where, "l.empresa_id IS NOT NULL AND l.empresa_id > 0")
+	}
+	if usuarioCreador != "" && canFilterByUsuarioCreador {
+		where = append(where, "LOWER(COALESCE(e.usuario_creador, '')) = LOWER(?)")
+		args = append(args, usuarioCreador)
+	}
+	if len(where) > 0 {
+		q += " WHERE " + strings.Join(where, " AND ")
+	}
+	q += " ORDER BY l.id DESC"
+
+	rows, err := dbConn.Query(q, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -365,6 +401,7 @@ func SetTipoEmpresaActivo(dbConn *sql.DB, id int64, estado string) error {
 // Empresa representa una empresa registrada en empresas.db
 type Empresa struct {
 	ID                 int64  `json:"id"`
+	EmpresaID          int64  `json:"empresa_id,omitempty"`
 	Nombre             string `json:"nombre"`
 	Nit                string `json:"nit,omitempty"`
 	TipoID             int64  `json:"tipo_id,omitempty"`
@@ -378,16 +415,32 @@ type Empresa struct {
 
 // CreateEmpresa inserta una nueva empresa en la base empresas.db
 func CreateEmpresa(dbConn *sql.DB, tipoID int64, tipoNombre, nombre, nit, observaciones, usuarioCreador string) (int64, error) {
-	res, err := dbConn.Exec("INSERT INTO empresas (tipo_id, tipo_nombre, nombre, nit, observaciones, usuario_creador, fecha_creacion, estado) VALUES (?, ?, ?, ?, ?, ?, datetime('now','localtime'), 'activo')", tipoID, tipoNombre, nombre, nit, observaciones, usuarioCreador)
+	tx, err := dbConn.Begin()
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	defer tx.Rollback()
+
+	res, err := tx.Exec("INSERT INTO empresas (tipo_id, tipo_nombre, nombre, nit, observaciones, usuario_creador, fecha_creacion, estado) VALUES (?, ?, ?, ?, ?, ?, datetime('now','localtime'), 'activo')", tipoID, tipoNombre, nombre, nit, observaciones, usuarioCreador)
+	if err != nil {
+		return 0, err
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+	if _, err := tx.Exec("UPDATE empresas SET empresa_id = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ? AND (empresa_id IS NULL OR empresa_id <= 0)", id, id); err != nil {
+		return 0, err
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return id, nil
 }
 
 // GetEmpresas obtiene todas las empresas
 func GetEmpresas(dbConn *sql.DB) ([]Empresa, error) {
-	rows, err := dbConn.Query("SELECT id, nombre, nit, tipo_id, tipo_nombre, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones FROM empresas ORDER BY id DESC")
+	rows, err := dbConn.Query("SELECT id, COALESCE(empresa_id, id), nombre, nit, tipo_id, tipo_nombre, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones FROM empresas ORDER BY id DESC")
 	if err != nil {
 		return nil, err
 	}
@@ -395,6 +448,7 @@ func GetEmpresas(dbConn *sql.DB) ([]Empresa, error) {
 	var out []Empresa
 	for rows.Next() {
 		var e Empresa
+		var empresaID sql.NullInt64
 		var nit sql.NullString
 		var tipoID sql.NullInt64
 		var tipoNombre sql.NullString
@@ -403,8 +457,13 @@ func GetEmpresas(dbConn *sql.DB) ([]Empresa, error) {
 		var usuario sql.NullString
 		var estado sql.NullString
 		var obs sql.NullString
-		if err := rows.Scan(&e.ID, &e.Nombre, &nit, &tipoID, &tipoNombre, &fechaCre, &fechaAct, &usuario, &estado, &obs); err != nil {
+		if err := rows.Scan(&e.ID, &empresaID, &e.Nombre, &nit, &tipoID, &tipoNombre, &fechaCre, &fechaAct, &usuario, &estado, &obs); err != nil {
 			return nil, err
+		}
+		if empresaID.Valid {
+			e.EmpresaID = empresaID.Int64
+		} else {
+			e.EmpresaID = e.ID
 		}
 		if nit.Valid {
 			e.Nit = nit.String
@@ -437,8 +496,9 @@ func GetEmpresas(dbConn *sql.DB) ([]Empresa, error) {
 
 // GetEmpresaByID devuelve una empresa por id
 func GetEmpresaByID(dbConn *sql.DB, id int64) (*Empresa, error) {
-	row := dbConn.QueryRow("SELECT id, nombre, nit, tipo_id, tipo_nombre, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones FROM empresas WHERE id = ? LIMIT 1", id)
+	row := dbConn.QueryRow("SELECT id, COALESCE(empresa_id, id), nombre, nit, tipo_id, tipo_nombre, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones FROM empresas WHERE id = ? LIMIT 1", id)
 	var e Empresa
+	var empresaID sql.NullInt64
 	var nit sql.NullString
 	var tipoID sql.NullInt64
 	var tipoNombre sql.NullString
@@ -447,8 +507,13 @@ func GetEmpresaByID(dbConn *sql.DB, id int64) (*Empresa, error) {
 	var usuario sql.NullString
 	var estado sql.NullString
 	var obs sql.NullString
-	if err := row.Scan(&e.ID, &e.Nombre, &nit, &tipoID, &tipoNombre, &fechaCre, &fechaAct, &usuario, &estado, &obs); err != nil {
+	if err := row.Scan(&e.ID, &empresaID, &e.Nombre, &nit, &tipoID, &tipoNombre, &fechaCre, &fechaAct, &usuario, &estado, &obs); err != nil {
 		return nil, err
+	}
+	if empresaID.Valid {
+		e.EmpresaID = empresaID.Int64
+	} else {
+		e.EmpresaID = e.ID
 	}
 	if nit.Valid {
 		e.Nit = nit.String

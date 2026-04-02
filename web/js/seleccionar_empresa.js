@@ -100,10 +100,18 @@
         }
       } catch (e) {}
 
-      var responses = await Promise.all([fetch("/super/api/empresas"), fetch("/super/api/licencias"), fetch("/super/api/tipos_empresas")]);
-      var empRes = responses[0];
-      var licRes = responses[1];
-      var tiposRes = responses[2];
+      var licenciasURL = "/super/api/licencias?scope=mine&con_empresa=1&activo=1";
+      var empPromise = fetch("/super/api/empresas");
+      var tiposPromise = fetch("/super/api/tipos_empresas");
+
+      var licRes = await fetch(licenciasURL);
+      if (!licRes.ok) {
+        console.warn("Fallo consulta de licencias con scope=mine, usando fallback global filtrado por activas.");
+        licRes = await fetch("/super/api/licencias?con_empresa=1&activo=1");
+      }
+
+      var empRes = await empPromise;
+      var tiposRes = await tiposPromise;
 
       if (!empRes.ok) {
         var txt = await empRes.text().catch(function () {

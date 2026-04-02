@@ -52,6 +52,17 @@
   <!-- Menú flotante eliminado en páginas del panel /super -->
 
   <script>
+    function buildLicenciasApiURL(){
+      const currentParams = new URLSearchParams(window.location.search || '');
+      const apiParams = new URLSearchParams();
+      ['scope','usuario_creador','con_empresa','activo'].forEach(function(key){
+        const value = currentParams.get(key);
+        if (value !== null && value !== '') apiParams.set(key, value);
+      });
+      const query = apiParams.toString();
+      return '/super/api/licencias' + (query ? ('?' + query) : '');
+    }
+
     async function load(){
       // cargar tipos para el select
       try{
@@ -65,7 +76,7 @@
       }catch(e){ console.warn('No se pudieron cargar tipos:', e); }
 
       // cargar licencias
-      const res = await fetch('/super/api/licencias');
+      const res = await fetch(buildLicenciasApiURL());
       const data = await res.json();
       const table = document.createElement('table');
       table.className = 'table';

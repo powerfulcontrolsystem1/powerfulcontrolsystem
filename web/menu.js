@@ -9,6 +9,7 @@
       '<div class="fm-panel" role="menu">' +
         '<a class="fm-item" href="/index.html">Portal</a>' +
         '<button id="themeToggle" class="fm-item" type="button" aria-label="Cambiar tema"></button>' +
+        '<div id="countryFlagItem" class="fm-item fm-country" style="display:none"></div>' +
         '<a id="sessionLink" class="fm-item" href="/login.html">Iniciar sesión</a>' +
       '</div>';
     // insertar al inicio del body
@@ -71,7 +72,71 @@
 
     // (Modo ventana eliminado por petición)
 
-      // Nota: no mostramos avatar/usuario en el menú flotante por simplicidad.
+    function detectCountryFromBrowserSignals(){
+      var tz = '';
+      try { tz = (Intl.DateTimeFormat().resolvedOptions().timeZone || '').toLowerCase(); } catch(e) { tz = ''; }
+      var lang = ((navigator && navigator.language) ? navigator.language : '').toLowerCase();
+      if (tz.indexOf('panama') >= 0 || lang.indexOf('es-pa') === 0) return { code:'PA', name:'Panamá', flag:'🇵🇦', source:'navegador' };
+      if (tz.indexOf('guayaquil') >= 0 || tz.indexOf('quito') >= 0 || lang.indexOf('es-ec') === 0) return { code:'EC', name:'Ecuador', flag:'🇪🇨', source:'navegador' };
+      return { code:'CO', name:'Colombia', flag:'🇨🇴', source:'navegador' };
+    }
+
+    function resolveEmpresaId(){
+      try {
+        var p = new URLSearchParams(window.location.search || '');
+        var id = p.get('empresa_id') || p.get('id') || '';
+        if (id) {
+          try { localStorage.setItem('active_empresa_id', String(id)); } catch(e) {}
+          return id;
+        }
+        return localStorage.getItem('active_empresa_id') || '';
+      } catch(e) {
+        try { return localStorage.getItem('active_empresa_id') || ''; } catch(ee) { return ''; }
+      }
+    }
+
+    function renderCountryItem(info){
+      var item = wrapper.querySelector('#countryFlagItem');
+      if (!item || !info) return;
+      var label = (info.flag || '🌐') + ' ' + (info.name || info.code || 'País');
+      item.textContent = 'País: ' + label;
+      item.title = 'Detección: ' + (info.source || 'desconocida');
+      item.style.display = '';
+    }
+
+    function loadCountryItem(){
+      var empresaId = resolveEmpresaId();
+      var tz = '';
+      try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch(e) { tz = ''; }
+      var lang = (navigator && navigator.language) ? navigator.language : '';
+
+      if (!empresaId) {
+        renderCountryItem(detectCountryFromBrowserSignals());
+        return;
+      }
+
+      var url = '/api/empresa/facturacion_electronica/pais_detectado?empresa_id=' + encodeURIComponent(empresaId) + '&tz=' + encodeURIComponent(tz) + '&lang=' + encodeURIComponent(lang);
+      fetch(url, { credentials: 'same-origin' })
+        .then(function(res){
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return res.json();
+        })
+        .then(function(data){
+          renderCountryItem({
+            code: data.pais_codigo || '',
+            name: data.pais_nombre || '',
+            flag: data.bandera || '🌐',
+            source: data.source || 'api'
+          });
+        })
+        .catch(function(){
+          renderCountryItem(detectCountryFromBrowserSignals());
+        });
+    }
+
+    loadCountryItem();
+
+    // Nota: no mostramos avatar/usuario en el menú flotante por simplicidad.
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', injectMenu); else injectMenu();

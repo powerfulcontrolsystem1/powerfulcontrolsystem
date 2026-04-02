@@ -1,5 +1,108 @@
 Descripcion de archivos del proyecto
 
+Actualizacion 2026-04-01: Modulo de facturacion electronica por pais + auditoria de empresa_id
+
+- backend/db/empresa_scope.go:
+	- Nuevo modulo de auditoria/migracion para asegurar referencia `empresa_id` en tablas base de `empresas.db`.
+
+- backend/db/facturacion_electronica.go:
+	- Nuevo modulo de datos para facturacion electronica por país y empresa.
+	- Incluye catálogo de países soportados (CO/PA/EC), detección automática por configuración/zona horaria/idioma y CRUD por `empresa_id + pais_codigo`.
+
+- backend/db/db.go:
+	- Se amplía modelo `Empresa` con `empresa_id` y se mantiene autorreferencia (`empresa_id = id`) al crear empresas nuevas.
+
+- backend/db/usuarios_empresa.go:
+	- Se agrega lookup scoped `GetEmpresaUsuarioByEmailScoped` para fortalecer aislamiento por `empresa_id` en login/primer ingreso.
+
+- backend/handlers/facturacion_electronica.go:
+	- Nuevos endpoints:
+		- `GET/POST/PUT /api/empresa/facturacion_electronica`
+		- `GET /api/empresa/facturacion_electronica/pais_detectado`
+		- `GET /api/empresa/facturacion_electronica/paises_disponibles`
+
+- backend/handlers/usuarios_empresa.go:
+	- Login y establecimiento de contraseña ahora aceptan `empresa_id` opcional para consultas de usuario con alcance empresarial.
+
+- backend/main.go:
+	- Se agrega `EnsureEmpresasScopeReferences` y `EnsureEmpresaFacturacionElectronicaSchema`.
+	- Se registran rutas del módulo FE por país.
+
+- web/administrar_empresa/facturacion_electronica.html:
+	- Nueva subpagina para configurar facturación electrónica por país (CO/PA/EC) por empresa.
+
+- web/administrar_empresa.html:
+	- Menú lateral actualizado con acceso a `Facturación electrónica`.
+
+- web/js/administrar_empresa.js:
+	- Propagación de `empresa_id` al nuevo enlace del módulo FE.
+
+- web/menu.js:
+	- Detección automática de país y visualización de bandera en menú flotante.
+
+- web/estilos.css:
+	- Estilo de soporte para item de país detectado en menú flotante (`.fm-country`).
+
+- documentos/descripcion_de_las_bases_De_datos:
+	- Documentación de tabla `facturacion_electronica_pais` y referencia `empresa_id` en `empresas`.
+
+- documentos/diagramas/estructura_del_codigo.md:
+	- Se documenta la incorporación del módulo FE por país y la auditoría de alcance `empresa_id`.
+
+- documentos/diagramas/diagrama_flujo_procesos.md:
+	- Se agrega flujo de detección automática de país y configuración FE por país.
+
+- documentos/diagramas/diagrama_entidad_relacion.md:
+	- Se agrega entidad `FACTURACION_ELECTRONICA_PAIS` y su relación con `EMPRESAS`.
+
+- documentos/historial_de_cambios:
+	- Se registra implementación y validación técnica del módulo FE por país.
+
+Actualizacion 2026-04-01: Ajuste global de ancho de columnas en tablas CRUD
+
+- web/estilos.css:
+	- Se ajusta `.table` para usar `table-layout: auto` y ancho por contenido.
+	- Las celdas (`th`/`td`) ahora usan `white-space: nowrap` y ancho basado en el texto de cada columna.
+	- Se elimina configuración fija/truncada en `#list .table` (`table-layout: fixed`, `width: 100%`, `text-overflow: ellipsis`) para que las columnas no se estiren artificialmente.
+	- Se añade `overflow-x: auto` en `#list` para mantener usabilidad cuando una tabla exceda el ancho visible.
+
+- documentos/historial_de_cambios:
+	- Se registra el cambio visual global de tablas CRUD y archivos impactados.
+
+Actualizacion 2026-04-01: Filtros de licencias por activas y por usuario + nuevo color global de formularios
+
+- backend/db/db.go:
+	- Se agrega `GetLicenciasFiltered` con filtros opcionales por `activo`, `con_empresa` y `usuario_creador`.
+	- `GetLicencias` mantiene compatibilidad y delega al nuevo método sin filtros.
+
+- backend/handlers/payments_handlers.go:
+	- `GET /super/api/licencias` ahora acepta filtros por query string:
+		- `activo=1`
+		- `con_empresa=1`
+		- `usuario_creador=<email>`
+		- `scope=mine` (resuelve `usuario_creador` desde la sesión autenticada).
+
+- web/super/licencias_resumen.html:
+	- El resumen consume `/super/api/licencias?activo=1&con_empresa=1` para contar solo licencias activas asignadas a empresa.
+
+- web/super/licencias.html:
+	- Se agrega lectura de parámetros de URL (`scope`, `usuario_creador`, `con_empresa`, `activo`) para filtrar la carga de licencias en el listado.
+
+- web/seleccionar_empresa.html:
+	- El enlace lateral de `Licencias` ahora abre `licencias.html` con `scope=mine&con_empresa=1`.
+
+- web/js/seleccionar_empresa.js:
+	- La carga de licencias para agrupar empresas usa `/super/api/licencias?scope=mine&con_empresa=1&activo=1`.
+
+- web/estilos.css:
+	- Se define una paleta global diferenciada para formularios (`--form-*`) y se aplican nuevos fondos/bordes a `.form`, `.form-input` y `.form-textarea`.
+
+- documentos/diagramas/diagrama_flujo_procesos.md:
+	- Se actualiza el resultado esperado con la nueva regla de visibilidad de licencias activas y filtradas por usuario en seleccionar empresa.
+
+- documentos/historial_de_cambios:
+	- Se registra esta actualización funcional y visual con sus archivos afectados.
+
 Actualizacion 2026-04-01: Panel de empresa con carga predeterminada en Inicio
 
 - web/js/administrar_empresa.js:

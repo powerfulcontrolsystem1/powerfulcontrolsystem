@@ -17,6 +17,7 @@ erDiagram
     EMPRESAS ||--o{ SERVICIOS : "empresa_id"
     EMPRESAS ||--o{ CARRITOS_COMPRAS : "empresa_id"
     EMPRESAS ||--|| EMPRESA_CONFIG_AVANZADA : "empresa_id"
+    EMPRESAS ||--o{ FACTURACION_ELECTRONICA_PAIS : "empresa_id"
     EMPRESAS ||--o{ CHAT_TAREAS_CONVERSACIONES : "empresa_id"
     EMPRESAS ||--o{ CHAT_TAREAS : "empresa_id"
 
@@ -102,6 +103,18 @@ erDiagram
       int imprimir_copia_factura
       int mostrar_logo
       string logo_url
+    }
+    FACTURACION_ELECTRONICA_PAIS {
+      int id PK
+      int empresa_id FK
+      string pais_codigo
+      string pais_nombre
+      string moneda_codigo
+      string proveedor
+      string ambiente
+      string identificador_fiscal
+      string prefijo_factura
+      string estado
     }
     CHAT_TAREAS_CONVERSACIONES {
       int id PK

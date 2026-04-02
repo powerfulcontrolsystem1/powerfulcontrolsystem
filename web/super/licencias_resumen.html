@@ -32,13 +32,10 @@
       const btn = document.getElementById('refreshBtn');
       try{
         if (btn) { btn.disabled = true; btn.textContent = 'Actualizando...'; }
-        const res = await fetch('/super/api/licencias');
+        const res = await fetch('/super/api/licencias?activo=1&con_empresa=1');
         if(!res.ok){ document.getElementById('activeCount').textContent = 'Error'; return }
         const arr = await res.json();
-        const active = arr.filter(x=> {
-          if (x.activo === undefined) return false;
-          return x.activo == 1 || x.activo === true || x.activo === '1' || x.activo === 'activo';
-        }).length;
+        const active = Array.isArray(arr) ? arr.length : 0;
         document.getElementById('activeCount').textContent = active;
         document.getElementById('lastUpdate').textContent = 'Última actualización: ' + new Date().toLocaleString();
       }catch(e){
