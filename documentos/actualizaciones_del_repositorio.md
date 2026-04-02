@@ -409,3 +409,34 @@ Archivos modificados:
 - web/js/administrar_empresa.js
 - web/super/seguridad.html
 
+
+2026-04-01 21:10:40 - Mensaje: Actualización automática desde script: añadir/actualizar archivos; Commit: 39a565e; PushStatus: OK
+Archivos modificados:
+- backend/db/db.go
+- backend/db/empresa_scope.go
+- backend/db/facturacion_electronica.go
+- backend/db/usuarios_empresa.go
+- backend/handlers/facturacion_electronica.go
+- backend/handlers/payments_handlers.go
+- backend/handlers/usuarios_empresa.go
+- backend/main.go
+- backend/server.err
+- backend/server.exe
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_las_bases_De_datos
+- documentos/diagramas/diagrama_entidad_relacion.md
+- documentos/diagramas/diagrama_flujo_procesos.md
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/historial_de_cambios
+- scripts/logs/actualizar_repositorio-20260401-201654.log
+- scripts/logs/actualizar_repositorio-20260401-211027.log
+- web/administrar_empresa.html
+- web/administrar_empresa/facturacion_electronica.html
+- web/estilos.css
+- web/js/administrar_empresa.js
+- web/js/seleccionar_empresa.js
+- web/menu.js
+- web/seleccionar_empresa.html
+- web/super/licencias.html
+- web/super/licencias_resumen.html
+
