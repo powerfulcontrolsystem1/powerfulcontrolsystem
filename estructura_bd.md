@@ -1,7 +1,7 @@
 # Estructura de Base de Datos
 
-Version: 2026-04-01
-Ultima actualizacion: 2026-04-01
+Version: 2026-04-02
+Ultima actualizacion: 2026-04-02
 
 Este documento consolida la estructura activa de SQLite para el proyecto.
 Todas las tablas operativas usan como base los campos estandar:
@@ -32,8 +32,10 @@ Todas las tablas operativas usan como base los campos estandar:
   - email, telefono, direccion, pais, departamento, municipio, codigo_postal
 - bodegas:
   - empresa_id, codigo, nombre, ubicacion, responsable
+- categorias_productos:
+  - empresa_id, codigo, nombre, descripcion, color_hex, orden
 - productos:
-  - empresa_id, bodega_principal_id, proveedor_principal_id, sku, codigo_barras
+  - empresa_id, bodega_principal_id, proveedor_principal_id, categoria_id, sku, codigo_barras
   - nombre, descripcion, categoria, marca, unidad_medida
   - costo, precio, impuesto_porcentaje, stock_minimo, stock_maximo, imagen_url
 - proveedores:
@@ -106,6 +108,17 @@ Todas las tablas operativas usan como base los campos estandar:
   - creado_por_tipo, creado_por_email
   - estado_tarea, porcentaje_avance, completada_en
 
+### Tablas de ubicacion GPS por empresa
+- empresa_gps_dispositivos:
+  - empresa_id, codigo, nombre, descripcion
+  - ultima_latitud, ultima_longitud, ultima_precision_metros, ultima_velocidad_kmh
+  - ultimo_reporte_en
+  - UNIQUE(empresa_id, codigo)
+- empresa_gps_recorridos:
+  - empresa_id, dispositivo_id
+  - latitud, longitud, precision_metros, velocidad_kmh
+  - rumbo_grados, altitud_metros, fuente, capturado_en
+
 ## 2) Base: superadministrador.db
 
 ### Tablas de control y administracion
@@ -142,12 +155,17 @@ Todas las tablas operativas usan como base los campos estandar:
 
 ## 3) Relaciones clave
 - empresas.id -> users.empresa_id
-- empresas.id -> clientes.empresa_id, productos.empresa_id, carritos_compras.empresa_id, chat_tareas*.empresa_id
+- empresas.id -> clientes.empresa_id, categorias_productos.empresa_id, productos.empresa_id, carritos_compras.empresa_id, chat_tareas*.empresa_id
+- empresas.id -> empresa_gps_dispositivos.empresa_id, empresa_gps_recorridos.empresa_id
+- categorias_productos.id -> productos.categoria_id
 - carritos_compras.id -> carrito_compra_items.carrito_id
 - chat_tareas_conversaciones.id -> chat_tareas_participantes.conversacion_id, chat_tareas_mensajes.conversacion_id, chat_tareas.conversacion_id
 - chat_tareas_mensajes.id -> chat_tareas_adjuntos.mensaje_id
+- empresa_gps_dispositivos.id -> empresa_gps_recorridos.dispositivo_id
 - tipos_de_empresas.id -> roles_de_usuario.tipo_empresa_id / tipos_de_usuario.tipo_empresa_id
 - roles_de_usuario.id -> tipos_de_usuario.rol_id
 
 ## 4) Historial resumido
+- 2026-04-02: se agrega `categorias_productos`, se incorpora `productos.categoria_id` y se documentan relaciones del catálogo de categorías por empresa.
 - 2026-04-02: se agregan tablas del modulo chat_y_tareas en empresas.db y se actualiza este documento.
+- 2026-04-02: se agregan `empresa_gps_dispositivos` y `empresa_gps_recorridos` para tracking de ubicacion GPS por empresa, con registro periodico de recorridos.

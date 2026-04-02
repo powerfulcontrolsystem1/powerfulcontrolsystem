@@ -33,7 +33,10 @@
     <section class="card empresa-section">
       <div class="empresa-section-header">
         <h2>Nombres de estaciones</h2>
-        <button id="btnGuardarNombres" class="btn secondary" type="button">Guardar nombres</button>
+        <div class="form-actions">
+          <button id="btnInactivarCarritos" class="btn secondary" type="button">Inactivar carritos de estaciones</button>
+          <button id="btnGuardarNombres" class="btn secondary" type="button">Guardar nombres</button>
+        </div>
       </div>
       <div class="table-wrap">
         <table class="table" id="estacionesTable">
@@ -89,6 +92,12 @@
 
     function normalizedCode(value) {
       return String(value || '').trim().toUpperCase();
+    }
+
+    function isStationCarrito(item) {
+      const code = normalizedCode(item && item.codigo);
+      const expectedPrefix = normalizedCode('EST-' + empresaId + '-');
+      return !!code && code.startsWith(expectedPrefix);
     }
 
     function storageKey() {
@@ -245,6 +254,74 @@
       return { created, updated };
     }
 
+    async function inactivarTodosLosCarritosEstacion() {
+      if (!empresaId) {
+        showMessage('No se encontró empresa_id para inactivar carritos.', 'error');
+        return;
+      }
+
+      if (!confirm('Se inactivarán y cerrarán todos los carritos de estaciones de esta empresa. ¿Deseas continuar?')) {
+        return;
+      }
+
+      showMessage('Inactivando carritos de estaciones...', 'help');
+      const rows = await requestJSON('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(empresaId) + '&include_inactive=1');
+      const allCarritos = Array.isArray(rows) ? rows : [];
+      const stationCarritos = allCarritos.filter(isStationCarrito);
+
+      if (!stationCarritos.length) {
+        showMessage('No se encontraron carritos de estaciones para esta empresa.', 'success');
+        return;
+      }
+
+      let procesados = 0;
+      let actualizados = 0;
+      let yaInactivos = 0;
+      let errores = 0;
+
+      for (const item of stationCarritos) {
+        const carritoID = Number(item && item.id ? item.id : 0);
+        if (!carritoID) {
+          continue;
+        }
+
+        procesados += 1;
+        let cambioAplicado = false;
+
+        try {
+          if (String(item.estado || 'inactivo').toLowerCase() !== 'inactivo') {
+            await requestJSON('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(empresaId) + '&id=' + encodeURIComponent(carritoID) + '&action=desactivar', {
+              method: 'PUT'
+            });
+            cambioAplicado = true;
+          }
+
+          if (String(item.estado_carrito || 'cerrado').toLowerCase() !== 'cerrado') {
+            await requestJSON('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(empresaId) + '&id=' + encodeURIComponent(carritoID) + '&action=cerrar', {
+              method: 'PUT'
+            });
+            cambioAplicado = true;
+          }
+
+          if (cambioAplicado) {
+            actualizados += 1;
+          } else {
+            yaInactivos += 1;
+          }
+        } catch (err) {
+          errores += 1;
+          console.error('No se pudo inactivar carrito de estación', carritoID, err);
+        }
+      }
+
+      if (errores > 0) {
+        showMessage('Proceso finalizado con errores. Procesados: ' + procesados + ' | Actualizados: ' + actualizados + ' | Ya inactivos: ' + yaInactivos + ' | Errores: ' + errores + '.', 'error');
+        return;
+      }
+
+      showMessage('Carritos de estaciones inactivados correctamente. Procesados: ' + procesados + ' | Actualizados: ' + actualizados + ' | Ya inactivos: ' + yaInactivos + '.', 'success');
+    }
+
     function guardarNombres() {
       const current = readConfig() || { cantidad: 1, estaciones: [{ id: 1, nombre: 'Estación 1' }] };
       const inputs = document.querySelectorAll('#estacionesTable tbody input[data-idx]');
@@ -294,6 +371,11 @@
         }
       });
       document.getElementById('btnGuardarNombres').addEventListener('click', guardarNombres);
+      document.getElementById('btnInactivarCarritos').addEventListener('click', () => {
+        inactivarTodosLosCarritosEstacion().catch(err => {
+          showMessage(err.message || 'No se pudo completar la inactivación de carritos.', 'error');
+        });
+      });
     }
 
     function bootstrap() {

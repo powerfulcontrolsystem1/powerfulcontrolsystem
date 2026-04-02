@@ -185,16 +185,32 @@ El agente debe leer y actualizar este documento cada vez que se realicen cambios
      - `observaciones` TEXT
      - Índices: `ux_bodegas_empresa_codigo`, `ux_bodegas_empresa_nombre`
 
+   - `categorias_productos` (catálogo multiempresa de categorías para productos)
+     - `id` INTEGER PRIMARY KEY AUTOINCREMENT
+     - `empresa_id` INTEGER NOT NULL
+     - `codigo` TEXT
+     - `nombre` TEXT NOT NULL
+     - `descripcion` TEXT
+     - `color_hex` TEXT
+     - `orden` INTEGER DEFAULT 0
+     - `fecha_creacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `fecha_actualizacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `usuario_creador` TEXT
+     - `estado` TEXT DEFAULT 'activo'
+     - `observaciones` TEXT
+     - Índices: `ux_categorias_productos_empresa_codigo`, `ux_categorias_productos_empresa_nombre`, `ix_categorias_productos_empresa_orden`
+
    - `productos` (nuevo módulo de inventario por empresa)
      - `id` INTEGER PRIMARY KEY AUTOINCREMENT
      - `empresa_id` INTEGER NOT NULL  -- todos los productos pertenecen a la empresa administrada
      - `bodega_principal_id` INTEGER
      - `proveedor_principal_id` INTEGER  -- proveedor preferido para compras/reposición
+     - `categoria_id` INTEGER  -- referencia conceptual a `categorias_productos.id`
      - `sku` TEXT
      - `codigo_barras` TEXT
      - `nombre` TEXT NOT NULL
      - `descripcion` TEXT
-     - `categoria` TEXT
+     - `categoria` TEXT  -- copia de respaldo del nombre de categoría
      - `marca` TEXT
      - `unidad_medida` TEXT DEFAULT 'unidad'
      - `costo` REAL DEFAULT 0
@@ -208,7 +224,7 @@ El agente debe leer y actualizar este documento cada vez que se realicen cambios
      - `usuario_creador` TEXT
      - `estado` TEXT DEFAULT 'activo'
      - `observaciones` TEXT
-     - Índices: `ux_productos_empresa_sku`, `ux_productos_empresa_barras`
+      - Índices: `ux_productos_empresa_sku`, `ux_productos_empresa_barras`, `ix_productos_empresa_categoria_id`
 
    - `proveedores`
      - `id` INTEGER PRIMARY KEY AUTOINCREMENT
@@ -380,10 +396,49 @@ El agente debe leer y actualizar este documento cada vez que se realicen cambios
      - `estado` TEXT DEFAULT 'activo'
      - `observaciones` TEXT
 
+   - `empresa_gps_dispositivos` (nuevo modulo de ubicacion GPS por empresa)
+     - `id` INTEGER PRIMARY KEY AUTOINCREMENT
+     - `empresa_id` INTEGER NOT NULL
+     - `codigo` TEXT NOT NULL
+     - `nombre` TEXT NOT NULL
+     - `descripcion` TEXT
+     - `ultima_latitud` REAL
+     - `ultima_longitud` REAL
+     - `ultima_precision_metros` REAL DEFAULT 0
+     - `ultima_velocidad_kmh` REAL DEFAULT 0
+     - `ultimo_reporte_en` TEXT
+     - `fecha_creacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `fecha_actualizacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `usuario_creador` TEXT
+     - `estado` TEXT DEFAULT 'activo'
+     - `observaciones` TEXT
+     - Restriccion unica: `(empresa_id, codigo)`
+     - Indices: `ix_empresa_gps_dispositivos_empresa_estado`, `ix_empresa_gps_dispositivos_empresa_codigo`
+
+   - `empresa_gps_recorridos`
+     - `id` INTEGER PRIMARY KEY AUTOINCREMENT
+     - `empresa_id` INTEGER NOT NULL
+     - `dispositivo_id` INTEGER NOT NULL  -- referencia conceptual a `empresa_gps_dispositivos.id`
+     - `latitud` REAL NOT NULL
+     - `longitud` REAL NOT NULL
+     - `precision_metros` REAL DEFAULT 0
+     - `velocidad_kmh` REAL DEFAULT 0
+     - `rumbo_grados` REAL DEFAULT 0
+     - `altitud_metros` REAL DEFAULT 0
+     - `fuente` TEXT DEFAULT 'manual' -- manual/map_click/navegador/simulado_10s
+     - `capturado_en` TEXT DEFAULT (datetime('now','localtime'))
+     - `fecha_creacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `fecha_actualizacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `usuario_creador` TEXT
+     - `estado` TEXT DEFAULT 'activo'
+     - `observaciones` TEXT
+     - Indices: `ix_empresa_gps_recorridos_empresa_dispositivo_fecha`, `ix_empresa_gps_recorridos_empresa_fecha`
+
    Notas y recomendaciones:
    - Todas las tablas siguen el esquema estándar del proyecto: campos `fecha_creacion`, `fecha_actualizacion`, `usuario_creador`, `estado`, `observaciones`.
    - `empresa_id` en `users` es la FK conceptual hacia `empresas.id`. El proyecto usa SQLite simple, las FK deben manejarse desde la lógica de aplicación.
-   - Aislamiento multiempresa: los endpoints del nuevo módulo de productos exigen `empresa_id`; las consultas y movimientos de inventario siempre filtran por empresa para evitar mezcla de datos.
+    - `productos.categoria_id` referencia de forma conceptual a `categorias_productos.id`; además se conserva `productos.categoria` como respaldo textual para compatibilidad histórica.
+    - Aislamiento multiempresa: los endpoints del módulo de productos y categorías (`/api/empresa/productos`, `/api/empresa/categorias_productos`) exigen `empresa_id`; las consultas y movimientos de inventario siempre filtran por empresa para evitar mezcla de datos.
 
 2) Base de datos: `superadministrador.db`
    - Propósito: almacenar datos globales del sistema (administradores globales, tipos de licencia, licencias y tablas de configuración/sesiones).

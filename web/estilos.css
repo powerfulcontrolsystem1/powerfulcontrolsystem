@@ -992,3 +992,164 @@ html.theme-light .floating-menu #themeToggle{color:var(--accent-2)}
     align-items:stretch;
   }
 }
+
+/* Modulo ubicacion_gps */
+.gps-page{
+  max-width:none;
+}
+
+.gps-layout{
+  display:grid;
+  grid-template-columns:minmax(300px,32%) minmax(360px,68%);
+  gap:12px;
+  align-items:start;
+}
+
+.gps-panel,
+.gps-map-panel{
+  min-height:74vh;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.gps-panel-header h2,
+.gps-map-header h2{
+  margin:0;
+  font-size:1rem;
+}
+
+.gps-mini-form{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+
+.gps-filter-row{
+  display:flex;
+  gap:8px;
+  align-items:stretch;
+}
+
+.gps-device-list{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  max-height:48vh;
+  overflow:auto;
+  padding-right:2px;
+}
+
+.gps-device-item{
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:rgba(255,255,255,0.03);
+  padding:9px;
+}
+
+.gps-device-item.selected{
+  border-color:var(--accent);
+  background:rgba(31,142,241,0.12);
+}
+
+.gps-device-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:8px;
+}
+
+.gps-device-meta{
+  margin-top:4px;
+  color:var(--muted);
+  font-size:.84rem;
+}
+
+.gps-device-actions{
+  margin-top:8px;
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+}
+
+.gps-state-badge{
+  display:inline-flex;
+  align-items:center;
+  padding:2px 8px;
+  border-radius:999px;
+  font-size:.74rem;
+  font-weight:700;
+}
+
+.gps-state-badge.active{
+  background:rgba(36,136,91,0.2);
+  color:#b8f5d4;
+}
+
+.gps-state-badge.inactive{
+  background:rgba(239,83,80,0.2);
+  color:#ffd2d0;
+}
+
+.gps-empty{
+  color:var(--muted);
+  font-size:.9rem;
+}
+
+.gps-toolbar{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  align-items:flex-end;
+}
+
+.gps-toolbar-field{
+  flex:1;
+  min-width:230px;
+}
+
+.gps-toolbar-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.gps-help-row{
+  margin-top:-2px;
+}
+
+.gps-map{
+  width:100%;
+  min-height:500px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  overflow:hidden;
+}
+
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip{
+  background:var(--surface);
+  color:var(--text);
+}
+
+@media (max-width:1180px){
+  .gps-layout{
+    grid-template-columns:1fr;
+  }
+  .gps-panel,
+  .gps-map-panel{
+    min-height:unset;
+  }
+}
+
+@media (max-width:760px){
+  .gps-filter-row,
+  .gps-toolbar,
+  .gps-toolbar-actions{
+    flex-direction:column;
+    align-items:stretch;
+  }
+  .gps-map{
+    min-height:420px;
+  }
+}

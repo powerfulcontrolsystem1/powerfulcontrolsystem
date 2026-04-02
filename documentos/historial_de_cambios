@@ -1,5 +1,78 @@
 - Historial de cambios
 
+- 2026-04-02: Cierre de validacion final del modulo de ubicacion GPS
+    - Se ejecuta validacion final de paquetes productivos de backend:
+        - `go test ./auth ./db ./handlers ./metrics ./utils` (ok).
+    - Se confirma bloqueo preexistente fuera del alcance funcional del modulo:
+        - `go test ./...` falla por multiples funciones `main` en `backend/tools`.
+    - Archivos afectados: documentos/historial_de_cambios.
+
+- 2026-04-02: Modulo de ubicacion GPS por empresa (dispositivos + recorridos cada 10 segundos)
+    - Se agrega en `empresas.db` el esquema GPS:
+        - `empresa_gps_dispositivos`
+        - `empresa_gps_recorridos`
+    - Se implementa API empresarial del modulo:
+        - `GET/POST/PUT/DELETE /api/empresa/ubicacion_gps/dispositivos`
+        - `GET/POST/PUT/DELETE /api/empresa/ubicacion_gps/recorridos`
+    - Se registra migracion de esquema `2026-04-02-002-ubicacion-gps` y se asegura en arranque con `EnsureEmpresaUbicacionGPSSchema`.
+    - Se crea la subpagina `web/administrar_empresa/ubicacion_gps.html` con:
+        - gestion de multiples dispositivos por empresa,
+        - visualizacion en mapa OpenStreetMap (Leaflet),
+        - tracking automatico por dispositivo cada 10 segundos,
+        - registro manual de puntos por click en mapa o geolocalizacion del navegador.
+    - Se integra acceso al modulo en menu de `administrar_empresa` y propagacion de `empresa_id`.
+    - Se crea `CHANGELOG.md` en la raiz para trazabilidad de versiones/cambios.
+    - Se agregan pruebas nuevas:
+        - `backend/db/ubicacion_gps_test.go`
+        - `backend/handlers/ubicacion_gps_test.go`
+    - Validacion tecnica ejecutada:
+        - `go test ./db ./handlers` (ok).
+    - Archivos afectados: backend/db/ubicacion_gps.go, backend/handlers/ubicacion_gps.go, backend/main.go, backend/db/ubicacion_gps_test.go, backend/handlers/ubicacion_gps_test.go, web/administrar_empresa/ubicacion_gps.html, web/administrar_empresa.html, web/js/administrar_empresa.js, web/estilos.css, documentos/descripcion_de_las_bases_De_datos, estructura_bd.md, documentos/diagramas/diagrama_entidad_relacion.md, documentos/diagramas/diagrama_flujo_procesos.md, documentos/diagramas/diagrama_arquitectura_sistema.md, documentos/diagramas/estructura_del_codigo.md, documentos/descripcion_de_archivos, documentos/historial_de_cambios, CHANGELOG.md.
+
+- 2026-04-02: Catalogo de categorias de productos multiempresa + filtro por categoría
+    - Se agrega la tabla `categorias_productos` en `empresas.db` y la columna `productos.categoria_id` para relación por empresa.
+    - Se implementa migración compatible con histórico:
+        - seed automático de categorías desde `productos.categoria` legacy,
+        - backfill de `productos.categoria_id` por coincidencia de nombre.
+    - Se agrega endpoint CRUD para categorías:
+        - `GET/POST/PUT/DELETE /api/empresa/categorias_productos`
+    - Se amplía `GET /api/empresa/productos` con filtro opcional `categoria_id`.
+    - En UI (`administrar_productos`) se incorpora:
+        - sección CRUD de categorías,
+        - selector de categoría en formulario de productos,
+        - filtro y columna de categoría en listado de productos.
+    - Se agregan pruebas nuevas:
+        - `backend/db/productos_categorias_test.go`
+        - `backend/handlers/productos_categorias_test.go`
+    - Validación técnica ejecutada:
+        - `go test ./auth ./db ./handlers ./metrics ./utils` (ok).
+    - Archivos afectados: backend/db/productos.go, backend/handlers/productos.go, backend/main.go, backend/db/productos_categorias_test.go, backend/handlers/productos_categorias_test.go, web/administrar_empresa/administrar_productos.html, documentos/descripcion_de_las_bases_De_datos, estructura_bd.md, documentos/diagramas/diagrama_entidad_relacion.md, documentos/diagramas/diagrama_flujo_procesos.md, documentos/diagramas/estructura_del_codigo.md, documentos/descripcion_de_archivos, documentos/historial_de_cambios.
+
+- 2026-04-01: Ajuste visual en carrito de compras (modo estacion)
+    - Se elimina la tarjeta de contexto de estacion en `web/administrar_empresa/carrito_de_compras.html`.
+    - Se elimina la tarjeta `Carrito asociado a la estacion` en modo estacion.
+    - Se mantiene el boton principal `Buscar productos` para no afectar el flujo de carga de items en carrito.
+    - Validacion ejecutada:
+        - Revision de errores en `web/administrar_empresa/carrito_de_compras.html` (sin errores).
+    - Archivos afectados: web/administrar_empresa/carrito_de_compras.html, documentos/descripcion_de_archivos, documentos/historial_de_cambios.
+
+- 2026-04-01: Boton de inactivacion masiva de carritos de estaciones + validacion E2E de venta
+    - Se agrega en `web/administrar_empresa/configuracion_de_estaciones.html` el boton `Inactivar carritos de estaciones`.
+    - La accion recorre carritos con codigo `EST-{empresa_id}-*` y aplica `desactivar` + `cerrar` para dejarlos inactivos/cerrados.
+    - Se ejecuta prueba E2E por API en local con autenticacion de sesion:
+        - crear producto,
+        - activar carrito de estacion,
+        - agregar item,
+        - pagar/cerrar carrito,
+        - validar estado final inactivo/cerrado.
+    - Resultado E2E observado: `carrito_estado=inactivo`, `carrito_estado_operativo=cerrado`, `total_calculado=29750`.
+    - Al finalizar pruebas se normalizo estado base de estaciones en `empresa_id=6`: `activos_operativos=0`.
+    - Verificacion adicional:
+        - `go test ./handlers ./db` (ok).
+    - Hallazgo de alcance actual:
+        - El sistema aun no expone endpoint de emision DIAN real (XML UBL/CUFE firmado) ni envio de XML de factura por correo.
+    - Archivos afectados: web/administrar_empresa/configuracion_de_estaciones.html, documentos/descripcion_de_archivos, documentos/diagramas/diagrama_flujo_procesos.md, documentos/diagramas/estructura_del_codigo.md, documentos/historial_de_cambios.
+
 - 2026-04-01: Persistencia de subpagina al recargar (F5) + inactivación de carritos para prueba de estaciones
     - Se inactivaron manualmente los carritos de `empresa_id=6` en `empresas.db` para pruebas del flujo visual de estaciones.
     - Se ajustó `web/js/administrar_empresa.js` para restaurar la última subpagina del iframe por empresa tras recargar con F5.

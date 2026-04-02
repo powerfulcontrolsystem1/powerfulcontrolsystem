@@ -1,0 +1,882 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Ubicacion GPS</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container gps-page">
+    <div class="page-header">
+      <h1 id="gpsPageTitle">Ubicacion GPS</h1>
+      <button id="reloadBtn" class="btn secondary" type="button">Actualizar</button>
+    </div>
+
+    <div class="gps-layout">
+      <section class="card gps-panel">
+        <div class="gps-panel-header">
+          <h2>Dispositivos GPS</h2>
+          <p class="form-help">Registra varios dispositivos por empresa y activa el tracking cada 10 segundos.</p>
+        </div>
+
+        <form id="deviceForm" class="gps-mini-form">
+          <label class="form-label" for="deviceCodigo">Codigo</label>
+          <input id="deviceCodigo" class="form-input" placeholder="Ej: CAMION-01">
+
+          <label class="form-label" for="deviceNombre">Nombre</label>
+          <input id="deviceNombre" class="form-input" required placeholder="Ej: Camion zona norte">
+
+          <label class="form-label" for="deviceDescripcion">Descripcion</label>
+          <textarea id="deviceDescripcion" class="form-textarea" placeholder="Area o detalle del dispositivo"></textarea>
+
+          <div class="form-actions">
+            <button id="createDeviceBtn" class="btn" type="submit">Crear dispositivo</button>
+          </div>
+        </form>
+
+        <div class="gps-filter-row">
+          <input id="deviceSearch" class="form-input" placeholder="Buscar por codigo o nombre">
+          <button id="deviceSearchBtn" class="btn secondary" type="button">Buscar</button>
+        </div>
+
+        <div id="deviceList" class="gps-device-list">Cargando dispositivos...</div>
+        <div id="deviceMsg" class="form-help"></div>
+      </section>
+
+      <section class="card gps-map-panel">
+        <div class="gps-map-header">
+          <h2>Mapa de codigo abierto (OpenStreetMap)</h2>
+          <div id="trackingSummary" class="form-help">Tracking inactivo.</div>
+        </div>
+
+        <div class="gps-toolbar">
+          <div class="gps-toolbar-field">
+            <label class="form-label" for="activeDeviceSelect">Dispositivo seleccionado</label>
+            <select id="activeDeviceSelect" class="form-input"></select>
+          </div>
+          <div class="gps-toolbar-actions">
+            <button id="toggleSelectedTrackingBtn" class="btn" type="button">Iniciar tracking 10s</button>
+            <button id="registerPointBtn" class="btn secondary" type="button">Registrar punto ahora</button>
+          </div>
+        </div>
+
+        <div class="gps-help-row form-help">Tip: haz clic en el mapa para registrar una posicion manual del dispositivo seleccionado.</div>
+
+        <div id="gpsMap" class="gps-map"></div>
+        <div id="mapMsg" class="form-help"></div>
+      </section>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script>
+    const state = {
+      empresaID: 0,
+      empresaNombre: "",
+      devices: [],
+      selectedDeviceID: 0,
+      search: "",
+      map: null,
+      markersByDevice: new Map(),
+      linesByDevice: new Map(),
+      pointsByDevice: new Map(),
+      trackingTimers: new Map()
+    };
+
+    function getQueryParam(name) {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name);
+    }
+
+    function normalize(value) {
+      return (value == null ? "" : String(value)).trim();
+    }
+
+    function escapeHtml(value) {
+      return String(value == null ? "" : value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function setHelp(id, text, isError) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = text || "";
+      el.style.color = isError ? "#ef5350" : "";
+    }
+
+    async function ensureOk(resp) {
+      if (resp.ok) return;
+      const text = await resp.text();
+      throw new Error(text || ("HTTP " + resp.status));
+    }
+
+    function apiUrl(path, params) {
+      const url = new URL(path, window.location.origin);
+      Object.keys(params || {}).forEach(function (key) {
+        const value = params[key];
+        if (value == null || value === "") return;
+        url.searchParams.set(key, String(value));
+      });
+      return url.pathname + url.search;
+    }
+
+    function parseDateLabel(raw) {
+      const value = normalize(raw);
+      if (!value) return "-";
+      const dt = new Date(value.replace(" ", "T"));
+      if (Number.isNaN(dt.getTime())) return value;
+      return dt.toLocaleString();
+    }
+
+    function colorForDevice(deviceID) {
+      const palette = ["#1f8ef1", "#00a884", "#ef5350", "#f4a261", "#8e44ad", "#2d6a4f", "#3a86ff", "#fb5607"];
+      return palette[Math.abs(Number(deviceID || 0)) % palette.length];
+    }
+
+    function isTracking(deviceID) {
+      return state.trackingTimers.has(Number(deviceID));
+    }
+
+    function updateTrackingSummary() {
+      const el = document.getElementById("trackingSummary");
+      if (!el) return;
+      const active = state.trackingTimers.size;
+      if (!active) {
+        el.textContent = "Tracking inactivo.";
+        return;
+      }
+      el.textContent = "Tracking activo en " + active + " dispositivo(s), envio cada 10 segundos.";
+    }
+
+    async function loadEmpresa() {
+      if (!state.empresaID) return;
+      try {
+        const resp = await fetch("/super/api/empresas?id=" + encodeURIComponent(state.empresaID));
+        if (!resp.ok) return;
+        const data = await resp.json();
+        const nombre = normalize(data && (data.nombre || data.Nombre));
+        if (!nombre) return;
+        state.empresaNombre = nombre;
+        const title = "Ubicacion GPS - " + nombre;
+        document.getElementById("gpsPageTitle").textContent = title;
+      } catch (err) {
+        console.warn("No se pudo cargar nombre de empresa:", err);
+      }
+    }
+
+    async function loadDevices() {
+      const url = apiUrl("/api/empresa/ubicacion_gps/dispositivos", {
+        empresa_id: state.empresaID,
+        include_inactive: 1,
+        q: state.search
+      });
+      const resp = await fetch(url, { credentials: "same-origin" });
+      await ensureOk(resp);
+      const rows = await resp.json();
+      state.devices = Array.isArray(rows) ? rows : [];
+
+      if (state.selectedDeviceID) {
+        const stillExists = state.devices.some(function (d) {
+          return Number(d.id) === Number(state.selectedDeviceID);
+        });
+        if (!stillExists) state.selectedDeviceID = 0;
+      }
+      if (!state.selectedDeviceID && state.devices.length > 0) {
+        state.selectedDeviceID = Number(state.devices[0].id);
+      }
+
+      stopTrackingForInactiveDevices();
+      renderDeviceSelect();
+      renderDeviceList();
+      updateSelectedTrackingButton();
+    }
+
+    async function loadRecorridos() {
+      const url = apiUrl("/api/empresa/ubicacion_gps/recorridos", {
+        empresa_id: state.empresaID,
+        include_inactive: 1,
+        desde_minutos: 1440,
+        limit: 4000
+      });
+      const resp = await fetch(url, { credentials: "same-origin" });
+      await ensureOk(resp);
+      const rows = await resp.json();
+      state.pointsByDevice = new Map();
+
+      (Array.isArray(rows) ? rows : []).forEach(function (point) {
+        const deviceID = Number(point.dispositivo_id || 0);
+        if (!deviceID) return;
+        if (!state.pointsByDevice.has(deviceID)) {
+          state.pointsByDevice.set(deviceID, []);
+        }
+        state.pointsByDevice.get(deviceID).push(point);
+      });
+
+      drawMapLayers();
+    }
+
+    function renderDeviceSelect() {
+      const select = document.getElementById("activeDeviceSelect");
+      if (!select) return;
+      let html = "";
+      if (!state.devices.length) {
+        html = '<option value="">Sin dispositivos</option>';
+      } else {
+        state.devices.forEach(function (device) {
+          const id = Number(device.id || 0);
+          const selected = id === Number(state.selectedDeviceID) ? " selected" : "";
+          const estado = normalize(device.estado || "activo").toLowerCase();
+          const name = normalize(device.nombre || ("Dispositivo " + id));
+          html += '<option value="' + id + '"' + selected + '>' + escapeHtml(name) + ' [' + escapeHtml(estado) + ']</option>';
+        });
+      }
+      select.innerHTML = html;
+    }
+
+    function renderDeviceList() {
+      const box = document.getElementById("deviceList");
+      if (!box) return;
+      if (!state.devices.length) {
+        box.innerHTML = '<div class="gps-empty">No hay dispositivos GPS registrados.</div>';
+        return;
+      }
+
+      let html = "";
+      state.devices.forEach(function (device) {
+        const id = Number(device.id || 0);
+        const estado = normalize(device.estado || "activo").toLowerCase();
+        const tracking = isTracking(id);
+        const isSelected = id === Number(state.selectedDeviceID);
+        const badgeClass = estado === "activo" ? "active" : "inactive";
+        const pointCount = (state.pointsByDevice.get(id) || []).length;
+        const ultimo = normalize(device.ultimo_reporte_en);
+
+        html += '<article class="gps-device-item' + (isSelected ? ' selected' : '') + '">';
+        html += '<div class="gps-device-top">';
+        html += '<strong>' + escapeHtml(device.nombre || ("Dispositivo " + id)) + '</strong>';
+        html += '<span class="gps-state-badge ' + badgeClass + '">' + escapeHtml(estado.toUpperCase()) + '</span>';
+        html += '</div>';
+        html += '<div class="gps-device-meta">Codigo: ' + escapeHtml(device.codigo || "-") + '</div>';
+        html += '<div class="gps-device-meta">Ultimo reporte: ' + escapeHtml(parseDateLabel(ultimo)) + '</div>';
+        html += '<div class="gps-device-meta">Puntos: ' + pointCount + (tracking ? ' | Tracking 10s activo' : '') + '</div>';
+
+        html += '<div class="gps-device-actions">';
+        html += '<button class="btn secondary" type="button" data-action="select" data-id="' + id + '">Seleccionar</button>';
+        html += '<button class="btn" type="button" data-action="toggle-tracking" data-id="' + id + '">' + (tracking ? 'Detener 10s' : 'Iniciar 10s') + '</button>';
+        html += '<button class="btn secondary" type="button" data-action="edit" data-id="' + id + '">Editar</button>';
+        html += '<button class="btn secondary" type="button" data-action="toggle-state" data-id="' + id + '" data-next="' + (estado === 'activo' ? 'desactivar' : 'activar') + '">' + (estado === 'activo' ? 'Desactivar' : 'Activar') + '</button>';
+        html += '<button class="btn danger" type="button" data-action="delete" data-id="' + id + '">Eliminar</button>';
+        html += '</div>';
+
+        html += '</article>';
+      });
+      box.innerHTML = html;
+    }
+
+    function initMap() {
+      state.map = L.map("gpsMap", {
+        zoomControl: true
+      }).setView([4.711, -74.072], 6);
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(state.map);
+
+      state.map.on("click", function (ev) {
+        if (!state.selectedDeviceID) {
+          setHelp("mapMsg", "Selecciona un dispositivo para registrar puntos en el mapa.", true);
+          return;
+        }
+        registerPoint(state.selectedDeviceID, {
+          latitud: Number(ev.latlng.lat),
+          longitud: Number(ev.latlng.lng),
+          precision_metros: 5,
+          velocidad_kmh: 0,
+          rumbo_grados: 0,
+          altitud_metros: 0,
+          fuente: "map_click"
+        }, false);
+      });
+    }
+
+    function drawMapLayers() {
+      if (!state.map) return;
+      const bounds = [];
+
+      state.devices.forEach(function (device) {
+        const deviceID = Number(device.id || 0);
+        const color = colorForDevice(deviceID);
+        const points = (state.pointsByDevice.get(deviceID) || []).slice();
+
+        if (!points.length) {
+          const lat = Number(device.ultima_latitud || 0);
+          const lng = Number(device.ultima_longitud || 0);
+          if (Number.isFinite(lat) && Number.isFinite(lng) && (lat !== 0 || lng !== 0)) {
+            points.push({
+              latitud: lat,
+              longitud: lng,
+              capturado_en: device.ultimo_reporte_en || ""
+            });
+          }
+        }
+
+        const latlngs = points
+          .map(function (p) {
+            const lat = Number(p.latitud);
+            const lng = Number(p.longitud);
+            if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+            return [lat, lng];
+          })
+          .filter(Boolean);
+
+        if (!latlngs.length) {
+          removeDeviceLayers(deviceID);
+          return;
+        }
+
+        let polyline = state.linesByDevice.get(deviceID);
+        if (!polyline) {
+          polyline = L.polyline(latlngs, {
+            color: color,
+            weight: 4,
+            opacity: 0.75
+          }).addTo(state.map);
+          state.linesByDevice.set(deviceID, polyline);
+        } else {
+          polyline.setLatLngs(latlngs);
+          polyline.setStyle({ color: color });
+        }
+
+        const last = latlngs[latlngs.length - 1];
+        let marker = state.markersByDevice.get(deviceID);
+        if (!marker) {
+          marker = L.circleMarker(last, {
+            radius: 7,
+            color: color,
+            fillColor: color,
+            fillOpacity: 0.9,
+            weight: 2
+          }).addTo(state.map);
+          state.markersByDevice.set(deviceID, marker);
+        } else {
+          marker.setLatLng(last);
+          marker.setStyle({ color: color, fillColor: color });
+        }
+
+        const ultimo = points[points.length - 1];
+        marker.bindPopup(
+          '<strong>' + escapeHtml(device.nombre || ('Dispositivo ' + deviceID)) + '</strong><br>' +
+          'Codigo: ' + escapeHtml(device.codigo || '-') + '<br>' +
+          'Ultimo punto: ' + escapeHtml(parseDateLabel(ultimo.capturado_en || device.ultimo_reporte_en || ''))
+        );
+
+        bounds.push(last);
+      });
+
+      if (bounds.length) {
+        const mapBounds = L.latLngBounds(bounds);
+        if (mapBounds.isValid()) {
+          state.map.fitBounds(mapBounds.pad(0.2));
+        }
+      }
+    }
+
+    function removeDeviceLayers(deviceID) {
+      const marker = state.markersByDevice.get(deviceID);
+      if (marker) {
+        state.map.removeLayer(marker);
+        state.markersByDevice.delete(deviceID);
+      }
+      const line = state.linesByDevice.get(deviceID);
+      if (line) {
+        state.map.removeLayer(line);
+        state.linesByDevice.delete(deviceID);
+      }
+    }
+
+    function updateSelectedTrackingButton() {
+      const btn = document.getElementById("toggleSelectedTrackingBtn");
+      if (!btn) return;
+      const id = Number(state.selectedDeviceID || 0);
+      if (!id) {
+        btn.textContent = "Iniciar tracking 10s";
+        btn.disabled = true;
+        return;
+      }
+      btn.disabled = false;
+      btn.textContent = isTracking(id) ? "Detener tracking 10s" : "Iniciar tracking 10s";
+    }
+
+    function stopTrackingForInactiveDevices() {
+      const activos = new Set(
+        state.devices
+          .filter(function (d) {
+            return normalize(d.estado || "activo").toLowerCase() === "activo";
+          })
+          .map(function (d) {
+            return Number(d.id || 0);
+          })
+      );
+      Array.from(state.trackingTimers.keys()).forEach(function (deviceID) {
+        if (!activos.has(Number(deviceID))) {
+          stopTracking(deviceID);
+        }
+      });
+    }
+
+    function startTracking(deviceID) {
+      const id = Number(deviceID || 0);
+      if (!id) return;
+      if (isTracking(id)) return;
+
+      const timer = setInterval(function () {
+        sendSimulatedPoint(id);
+      }, 10000);
+
+      state.trackingTimers.set(id, timer);
+      sendSimulatedPoint(id);
+      updateTrackingSummary();
+      updateSelectedTrackingButton();
+      renderDeviceList();
+    }
+
+    function stopTracking(deviceID) {
+      const id = Number(deviceID || 0);
+      const timer = state.trackingTimers.get(id);
+      if (timer) {
+        clearInterval(timer);
+      }
+      state.trackingTimers.delete(id);
+      updateTrackingSummary();
+      updateSelectedTrackingButton();
+      renderDeviceList();
+    }
+
+    function stopAllTracking() {
+      Array.from(state.trackingTimers.keys()).forEach(function (id) {
+        stopTracking(id);
+      });
+    }
+
+    function getDeviceByID(deviceID) {
+      return state.devices.find(function (d) {
+        return Number(d.id || 0) === Number(deviceID || 0);
+      }) || null;
+    }
+
+    function getLastPointForDevice(deviceID) {
+      const points = state.pointsByDevice.get(Number(deviceID)) || [];
+      if (points.length) {
+        return points[points.length - 1];
+      }
+      const device = getDeviceByID(deviceID);
+      if (!device) return null;
+      const lat = Number(device.ultima_latitud || 0);
+      const lng = Number(device.ultima_longitud || 0);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng) || (lat === 0 && lng === 0)) return null;
+      return {
+        latitud: lat,
+        longitud: lng,
+        precision_metros: Number(device.ultima_precision_metros || 0),
+        velocidad_kmh: Number(device.ultima_velocidad_kmh || 0),
+        capturado_en: device.ultimo_reporte_en || ""
+      };
+    }
+
+    function sendSimulatedPoint(deviceID) {
+      const last = getLastPointForDevice(deviceID);
+      const baseLat = last ? Number(last.latitud) : 4.711;
+      const baseLng = last ? Number(last.longitud) : -74.072;
+
+      const driftLat = (Math.random() - 0.5) * 0.0012;
+      const driftLng = (Math.random() - 0.5) * 0.0012;
+      const latitud = Number((baseLat + driftLat).toFixed(7));
+      const longitud = Number((baseLng + driftLng).toFixed(7));
+
+      registerPoint(deviceID, {
+        latitud: latitud,
+        longitud: longitud,
+        precision_metros: Number((5 + Math.random() * 10).toFixed(2)),
+        velocidad_kmh: Number((8 + Math.random() * 45).toFixed(2)),
+        rumbo_grados: Number((Math.random() * 359).toFixed(2)),
+        altitud_metros: Number((10 + Math.random() * 120).toFixed(2)),
+        fuente: "simulado_10s"
+      }, true);
+    }
+
+    async function registerPoint(deviceID, data, silent) {
+      const payload = {
+        empresa_id: state.empresaID,
+        dispositivo_id: Number(deviceID),
+        latitud: Number(data.latitud),
+        longitud: Number(data.longitud),
+        precision_metros: Number(data.precision_metros || 0),
+        velocidad_kmh: Number(data.velocidad_kmh || 0),
+        rumbo_grados: Number(data.rumbo_grados || 0),
+        altitud_metros: Number(data.altitud_metros || 0),
+        fuente: normalize(data.fuente || "manual") || "manual"
+      };
+
+      try {
+        const resp = await fetch("/api/empresa/ubicacion_gps/recorridos", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify(payload)
+        });
+        await ensureOk(resp);
+
+        const now = new Date();
+        const capturadoEn = now.toISOString().slice(0, 19).replace("T", " ");
+        const localPoint = {
+          id: 0,
+          empresa_id: state.empresaID,
+          dispositivo_id: Number(deviceID),
+          latitud: payload.latitud,
+          longitud: payload.longitud,
+          precision_metros: payload.precision_metros,
+          velocidad_kmh: payload.velocidad_kmh,
+          rumbo_grados: payload.rumbo_grados,
+          altitud_metros: payload.altitud_metros,
+          fuente: payload.fuente,
+          capturado_en: capturadoEn,
+          estado: "activo"
+        };
+        appendPoint(localPoint);
+
+        if (!silent) {
+          setHelp("mapMsg", "Punto GPS registrado correctamente.", false);
+        }
+      } catch (err) {
+        console.error("registerPoint error:", err);
+        if (!silent) {
+          setHelp("mapMsg", "No se pudo registrar el punto GPS: " + err.message, true);
+        }
+      }
+    }
+
+    function appendPoint(point) {
+      const deviceID = Number(point.dispositivo_id || 0);
+      if (!deviceID) return;
+      if (!state.pointsByDevice.has(deviceID)) {
+        state.pointsByDevice.set(deviceID, []);
+      }
+
+      const arr = state.pointsByDevice.get(deviceID);
+      arr.push(point);
+      while (arr.length > 500) arr.shift();
+
+      const device = getDeviceByID(deviceID);
+      if (device) {
+        device.ultima_latitud = point.latitud;
+        device.ultima_longitud = point.longitud;
+        device.ultima_precision_metros = point.precision_metros;
+        device.ultima_velocidad_kmh = point.velocidad_kmh;
+        device.ultimo_reporte_en = point.capturado_en;
+      }
+
+      drawMapLayers();
+      renderDeviceList();
+    }
+
+    async function createDevice() {
+      const codigo = normalize(document.getElementById("deviceCodigo").value);
+      const nombre = normalize(document.getElementById("deviceNombre").value);
+      const descripcion = normalize(document.getElementById("deviceDescripcion").value);
+      if (!nombre) {
+        setHelp("deviceMsg", "nombre es obligatorio", true);
+        return;
+      }
+
+      const payload = {
+        empresa_id: state.empresaID,
+        codigo: codigo,
+        nombre: nombre,
+        descripcion: descripcion
+      };
+
+      try {
+        const resp = await fetch("/api/empresa/ubicacion_gps/dispositivos", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify(payload)
+        });
+        await ensureOk(resp);
+
+        document.getElementById("deviceForm").reset();
+        setHelp("deviceMsg", "Dispositivo GPS creado.", false);
+        await loadDevices();
+        await loadRecorridos();
+      } catch (err) {
+        setHelp("deviceMsg", "No se pudo crear el dispositivo: " + err.message, true);
+      }
+    }
+
+    async function updateDevice(deviceID) {
+      const device = getDeviceByID(deviceID);
+      if (!device) return;
+
+      const nombre = window.prompt("Nombre del dispositivo", normalize(device.nombre || ""));
+      if (nombre == null) return;
+      const codigo = window.prompt("Codigo del dispositivo", normalize(device.codigo || ""));
+      if (codigo == null) return;
+      const descripcion = window.prompt("Descripcion", normalize(device.descripcion || ""));
+      if (descripcion == null) return;
+
+      const payload = {
+        id: Number(device.id),
+        empresa_id: state.empresaID,
+        codigo: normalize(codigo),
+        nombre: normalize(nombre),
+        descripcion: normalize(descripcion)
+      };
+
+      try {
+        const resp = await fetch("/api/empresa/ubicacion_gps/dispositivos", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify(payload)
+        });
+        await ensureOk(resp);
+        setHelp("deviceMsg", "Dispositivo actualizado.", false);
+        await loadDevices();
+      } catch (err) {
+        setHelp("deviceMsg", "No se pudo actualizar el dispositivo: " + err.message, true);
+      }
+    }
+
+    async function toggleDeviceState(deviceID, nextAction) {
+      const action = normalize(nextAction || "").toLowerCase();
+      if (action !== "activar" && action !== "desactivar") return;
+
+      try {
+        const url = apiUrl("/api/empresa/ubicacion_gps/dispositivos", {
+          empresa_id: state.empresaID,
+          id: Number(deviceID),
+          action: action
+        });
+        const resp = await fetch(url, {
+          method: "PUT",
+          credentials: "same-origin"
+        });
+        await ensureOk(resp);
+
+        if (action === "desactivar") {
+          stopTracking(deviceID);
+        }
+
+        setHelp("deviceMsg", "Estado actualizado.", false);
+        await loadDevices();
+      } catch (err) {
+        setHelp("deviceMsg", "No se pudo actualizar estado: " + err.message, true);
+      }
+    }
+
+    async function deleteDevice(deviceID) {
+      const device = getDeviceByID(deviceID);
+      const label = device ? (device.nombre || ("Dispositivo " + deviceID)) : ("Dispositivo " + deviceID);
+      if (!window.confirm("Eliminar " + label + " y su recorrido?")) return;
+
+      try {
+        const url = apiUrl("/api/empresa/ubicacion_gps/dispositivos", {
+          empresa_id: state.empresaID,
+          id: Number(deviceID)
+        });
+        const resp = await fetch(url, {
+          method: "DELETE",
+          credentials: "same-origin"
+        });
+        await ensureOk(resp);
+
+        stopTracking(deviceID);
+        state.pointsByDevice.delete(Number(deviceID));
+        removeDeviceLayers(Number(deviceID));
+
+        if (Number(state.selectedDeviceID) === Number(deviceID)) {
+          state.selectedDeviceID = 0;
+        }
+
+        setHelp("deviceMsg", "Dispositivo eliminado.", false);
+        await loadDevices();
+        drawMapLayers();
+      } catch (err) {
+        setHelp("deviceMsg", "No se pudo eliminar: " + err.message, true);
+      }
+    }
+
+    async function registerPointNow() {
+      if (!state.selectedDeviceID) {
+        setHelp("mapMsg", "Selecciona un dispositivo primero.", true);
+        return;
+      }
+
+      if (!navigator.geolocation) {
+        sendSimulatedPoint(state.selectedDeviceID);
+        setHelp("mapMsg", "Navegador sin geolocalizacion. Se uso punto simulado.", false);
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        function (position) {
+          registerPoint(state.selectedDeviceID, {
+            latitud: Number(position.coords.latitude),
+            longitud: Number(position.coords.longitude),
+            precision_metros: Number(position.coords.accuracy || 0),
+            velocidad_kmh: 0,
+            rumbo_grados: Number(position.coords.heading || 0),
+            altitud_metros: Number(position.coords.altitude || 0),
+            fuente: "navegador"
+          }, false);
+        },
+        function () {
+          sendSimulatedPoint(state.selectedDeviceID);
+          setHelp("mapMsg", "No fue posible leer geolocalizacion. Se uso punto simulado.", false);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 5000,
+          maximumAge: 0
+        }
+      );
+    }
+
+    function selectDevice(deviceID) {
+      state.selectedDeviceID = Number(deviceID || 0);
+      renderDeviceSelect();
+      renderDeviceList();
+      updateSelectedTrackingButton();
+
+      const marker = state.markersByDevice.get(Number(state.selectedDeviceID));
+      if (marker) {
+        state.map.setView(marker.getLatLng(), 15);
+        marker.openPopup();
+      }
+    }
+
+    async function refreshAll() {
+      try {
+        setHelp("deviceMsg", "", false);
+        setHelp("mapMsg", "", false);
+        await loadDevices();
+        await loadRecorridos();
+        updateTrackingSummary();
+      } catch (err) {
+        setHelp("deviceMsg", "Error al recargar modulo GPS: " + err.message, true);
+      }
+    }
+
+    function bindEvents() {
+      document.getElementById("reloadBtn").addEventListener("click", function () {
+        refreshAll();
+      });
+
+      document.getElementById("deviceForm").addEventListener("submit", function (ev) {
+        ev.preventDefault();
+        createDevice();
+      });
+
+      document.getElementById("deviceSearchBtn").addEventListener("click", function () {
+        state.search = normalize(document.getElementById("deviceSearch").value);
+        refreshAll();
+      });
+
+      document.getElementById("activeDeviceSelect").addEventListener("change", function (ev) {
+        const id = Number(ev.target.value || 0);
+        selectDevice(id);
+      });
+
+      document.getElementById("toggleSelectedTrackingBtn").addEventListener("click", function () {
+        const id = Number(state.selectedDeviceID || 0);
+        if (!id) return;
+        if (isTracking(id)) {
+          stopTracking(id);
+          setHelp("mapMsg", "Tracking detenido para el dispositivo seleccionado.", false);
+        } else {
+          const device = getDeviceByID(id);
+          if (!device || normalize(device.estado || "activo").toLowerCase() !== "activo") {
+            setHelp("mapMsg", "Solo se puede iniciar tracking en dispositivos activos.", true);
+            return;
+          }
+          startTracking(id);
+          setHelp("mapMsg", "Tracking iniciado (cada 10 segundos).", false);
+        }
+      });
+
+      document.getElementById("registerPointBtn").addEventListener("click", function () {
+        registerPointNow();
+      });
+
+      document.getElementById("deviceList").addEventListener("click", function (ev) {
+        const btn = ev.target.closest("button[data-action]");
+        if (!btn) return;
+        const action = normalize(btn.dataset.action).toLowerCase();
+        const id = Number(btn.dataset.id || 0);
+        if (!id) return;
+
+        if (action === "select") {
+          selectDevice(id);
+          return;
+        }
+
+        if (action === "toggle-tracking") {
+          const device = getDeviceByID(id);
+          if (!device || normalize(device.estado || "activo").toLowerCase() !== "activo") {
+            setHelp("deviceMsg", "El dispositivo debe estar activo para iniciar tracking.", true);
+            return;
+          }
+          if (isTracking(id)) {
+            stopTracking(id);
+          } else {
+            startTracking(id);
+          }
+          return;
+        }
+
+        if (action === "edit") {
+          updateDevice(id);
+          return;
+        }
+
+        if (action === "toggle-state") {
+          toggleDeviceState(id, btn.dataset.next || "");
+          return;
+        }
+
+        if (action === "delete") {
+          deleteDevice(id);
+        }
+      });
+
+      window.addEventListener("beforeunload", function () {
+        stopAllTracking();
+      });
+    }
+
+    async function init() {
+      const empresaID = Number(getQueryParam("empresa_id") || 0);
+      if (!empresaID) {
+        setHelp("deviceMsg", "empresa_id es obligatorio en la URL", true);
+        return;
+      }
+      state.empresaID = empresaID;
+
+      initMap();
+      bindEvents();
+
+      await loadEmpresa();
+      await refreshAll();
+    }
+
+    init();
+  </script>
+</body>
+</html>

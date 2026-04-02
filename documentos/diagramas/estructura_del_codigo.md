@@ -1,6 +1,6 @@
 # Estructura del codigo
 
-Fecha de actualizacion: 2026-04-01
+Fecha de actualizacion: 2026-04-02
 
 ## Objetivo
 Este documento resume la estructura tecnica principal del sistema y sirve como referencia para mantenimiento y evolucion.
@@ -185,3 +185,66 @@ Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe re
 
 - Impacto funcional:
   - Al recargar con F5, los paneles administrativos mantienen la misma página/vista abierta y evitan volver al estado inicial por defecto.
+
+## Actualizacion 2026-04-01 (inactivacion masiva de carritos de estaciones + validacion E2E)
+
+- Frontend:
+  - `web/administrar_empresa/configuracion_de_estaciones.html` incorpora el boton `Inactivar carritos de estaciones`.
+  - La accion lista carritos de la empresa con patron `EST-{empresa_id}-*` y fuerza estado base mediante:
+    - `PUT /api/empresa/carritos_compra?action=desactivar`
+    - `PUT /api/empresa/carritos_compra?action=cerrar`
+
+- Validacion funcional ejecutada en local:
+  - Flujo E2E por API completado: creacion de producto -> activacion de carrito de estacion -> adicion de item -> pago/cierre.
+  - Resultado verificado: carrito finaliza en `estado=inactivo` y `estado_carrito=cerrado`.
+
+- Alcance actual de facturacion:
+  - El modulo de `facturacion_electronica` vigente gestiona configuracion por pais/empresa.
+  - No existe aun endpoint de emision DIAN real (generacion/firma/envio XML UBL/CUFE) ni envio de XML de factura por correo en este flujo.
+
+## Actualizacion 2026-04-02 (catalogo de categorias de productos multiempresa)
+
+- Backend DB:
+  - `backend/db/productos.go` incorpora tabla `categorias_productos` por `empresa_id`.
+  - Se agrega `productos.categoria_id` para relación con catálogo y se mantiene `productos.categoria` como respaldo textual de compatibilidad.
+  - Migración segura: se crean categorías automáticas a partir de valores legacy en `productos.categoria` y se hace backfill de `categoria_id`.
+
+- Backend handlers/rutas:
+  - `backend/handlers/productos.go` agrega endpoint CRUD:
+    - `GET/POST/PUT/DELETE /api/empresa/categorias_productos`
+  - `GET /api/empresa/productos` ahora acepta filtro opcional `categoria_id`.
+  - `backend/main.go` registra la nueva ruta del módulo.
+
+- Frontend:
+  - `web/administrar_empresa/administrar_productos.html` agrega sección de gestión de categorías (crear/editar/activar/eliminar).
+  - El formulario de productos cambia de categoría libre a selector de catálogo.
+  - El listado de productos agrega columna de categoría y filtro por categoría.
+
+- Pruebas:
+  - Nuevas pruebas en `backend/db/productos_categorias_test.go`.
+  - Nuevas pruebas en `backend/handlers/productos_categorias_test.go`.
+
+## Actualizacion 2026-04-02 (modulo ubicacion_gps por empresa)
+
+- Backend DB:
+  - Se agrega `backend/db/ubicacion_gps.go` con esquema y CRUD de:
+    - `empresa_gps_dispositivos`
+    - `empresa_gps_recorridos`
+  - Integracion en arranque via `EnsureEmpresaUbicacionGPSSchema` y migracion `2026-04-02-002-ubicacion-gps`.
+
+- Backend handlers/rutas:
+  - Se agrega `backend/handlers/ubicacion_gps.go` con endpoints:
+    - `GET/POST/PUT/DELETE /api/empresa/ubicacion_gps/dispositivos`
+    - `GET/POST/PUT/DELETE /api/empresa/ubicacion_gps/recorridos`
+
+- Frontend:
+  - Nueva subpagina `web/administrar_empresa/ubicacion_gps.html`.
+  - Navegacion actualizada en `web/administrar_empresa.html` y `web/js/administrar_empresa.js`.
+  - Estilos responsive del modulo incorporados en `web/estilos.css`.
+
+- Impacto funcional:
+  - Se habilita seguimiento de multiples dispositivos por empresa sobre mapa de codigo abierto (OpenStreetMap + Leaflet), con registro automatico de recorrido cada 10 segundos.
+
+- Pruebas:
+  - Nuevas pruebas en `backend/db/ubicacion_gps_test.go`.
+  - Nuevas pruebas en `backend/handlers/ubicacion_gps_test.go`.

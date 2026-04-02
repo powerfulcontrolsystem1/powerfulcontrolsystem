@@ -1,5 +1,138 @@
 Descripcion de archivos del proyecto
 
+Actualizacion 2026-04-02: Modulo de ubicacion GPS por empresa
+
+- backend/db/ubicacion_gps.go:
+	- Nuevo modulo de datos para `empresas.db` con esquema y CRUD de `empresa_gps_dispositivos` y `empresa_gps_recorridos`.
+	- Incluye registro de puntos de recorrido y actualizacion de ultima posicion por dispositivo.
+
+- backend/handlers/ubicacion_gps.go:
+	- Nuevo modulo HTTP para API GPS empresarial.
+	- Endpoints REST para dispositivos (`/api/empresa/ubicacion_gps/dispositivos`) y recorridos (`/api/empresa/ubicacion_gps/recorridos`) con soporte de activar/desactivar.
+
+- backend/main.go:
+	- Se agrega `EnsureEmpresaUbicacionGPSSchema` en arranque.
+	- Se registra migracion `2026-04-02-002-ubicacion-gps`.
+	- Se agregan rutas API del modulo GPS.
+
+- backend/db/ubicacion_gps_test.go:
+	- Pruebas de DB para CRUD de dispositivos, registro de recorridos y consistencia de estados.
+
+- backend/handlers/ubicacion_gps_test.go:
+	- Pruebas HTTP para flujo CRUD de dispositivos y puntos GPS.
+
+- web/administrar_empresa/ubicacion_gps.html:
+	- Nueva subpagina de administrar empresa para geolocalizacion.
+	- Gestion de multiples dispositivos GPS por empresa.
+	- Visualizacion de recorridos sobre mapa OpenStreetMap (Leaflet).
+	- Tracking automatico cada 10 segundos y registro manual de puntos.
+
+- web/administrar_empresa.html:
+	- Menu lateral actualizado con acceso a `Ubicacion GPS`.
+
+- web/js/administrar_empresa.js:
+	- Se agrega propagacion de `empresa_id` al enlace `ubicacion_gps`.
+
+- web/estilos.css:
+	- Se agregan estilos responsive del modulo `ubicacion_gps` (panel de dispositivos + mapa).
+
+- documentos/descripcion_de_las_bases_De_datos:
+	- Se documentan tablas `empresa_gps_dispositivos` y `empresa_gps_recorridos`.
+
+- estructura_bd.md:
+	- Se actualiza estructura y relaciones de BD con el nuevo modulo GPS.
+
+- documentos/diagramas/diagrama_entidad_relacion.md:
+	- Se agregan entidades y relaciones del modulo GPS.
+
+- documentos/diagramas/diagrama_flujo_procesos.md:
+	- Se agrega flujo de tracking GPS por empresa con registro cada 10 segundos.
+
+- documentos/diagramas/diagrama_arquitectura_sistema.md:
+	- Se incorpora componente `ubicacion_gps handlers` y consumo de tiles OpenStreetMap.
+
+- documentos/diagramas/estructura_del_codigo.md:
+	- Se registra la incorporacion tecnica del modulo `ubicacion_gps`.
+
+- documentos/historial_de_cambios:
+	- Se registra implementacion, pruebas y archivos impactados.
+
+- CHANGELOG.md:
+	- Nuevo changelog raiz para trazabilidad de entregas y cambios funcionales.
+
+Actualizacion 2026-04-02: Catalogo de categorias de productos multiempresa
+
+- backend/db/productos.go:
+	- Se agrega tabla `categorias_productos` con migraciones seguras.
+	- Se agrega relación `productos.categoria_id` y sincronización con `productos.categoria`.
+	- Se agrega seed/backfill desde categorías legacy para mantener compatibilidad histórica.
+
+- backend/handlers/productos.go:
+	- Nuevo endpoint CRUD `GET/POST/PUT/DELETE /api/empresa/categorias_productos`.
+	- `GET /api/empresa/productos` acepta filtro `categoria_id`.
+
+- backend/main.go:
+	- Se registra ruta `/api/empresa/categorias_productos`.
+
+- backend/db/productos_categorias_test.go:
+	- Pruebas de DB para CRUD de categorías, sincronización con productos y migración legacy.
+
+- backend/handlers/productos_categorias_test.go:
+	- Pruebas HTTP de CRUD de categorías y filtro de productos por categoría.
+
+- web/administrar_empresa/administrar_productos.html:
+	- Nueva sección de gestión de categorías.
+	- Formulario de productos ahora usa selector de categoría.
+	- Listado de productos con columna y filtro por categoría.
+
+- documentos/diagramas/diagrama_entidad_relacion.md:
+	- Se incorpora entidad `CATEGORIAS_PRODUCTOS` y su relación con `PRODUCTOS`.
+
+- documentos/diagramas/diagrama_flujo_procesos.md:
+	- Se documenta flujo de gestión de categorías y asignación en productos.
+
+- documentos/diagramas/estructura_del_codigo.md:
+	- Se registra actualización técnica del módulo de categorías multiempresa.
+
+- documentos/descripcion_de_las_bases_De_datos:
+	- Se documenta tabla `categorias_productos` y columna `productos.categoria_id`.
+
+- estructura_bd.md:
+	- Se actualiza resumen de estructura y relaciones para categorías de productos.
+
+- documentos/historial_de_cambios:
+	- Se registra implementación, validación y archivos impactados.
+
+Actualizacion 2026-04-01: Limpieza visual en carrito de compras (modo estacion)
+
+- web/administrar_empresa/carrito_de_compras.html:
+	- Se elimina la tarjeta superior de contexto de estacion (`Estacion #...` con resumen de estado/tiempo activo).
+	- Se elimina la tarjeta `Carrito asociado a la estacion` dentro del listado de carritos en modo estacion.
+	- Se conserva el boton principal `Buscar productos` en la seccion de items para mantener el flujo de seleccion de productos.
+
+- documentos/historial_de_cambios:
+	- Se registra el ajuste visual solicitado y la validacion de que no afecta el boton Buscar productos.
+
+Actualizacion 2026-04-01: Boton de inactivacion masiva de estaciones + validacion E2E de venta
+
+- web/administrar_empresa/configuracion_de_estaciones.html:
+	- Se agrega el boton `Inactivar carritos de estaciones`.
+	- El boton recorre todos los carritos con codigo `EST-{empresa_id}-*` y aplica acciones `desactivar` y `cerrar` para dejarlos en estado base inactivo/cerrado.
+	- Se muestra resumen de proceso (procesados, actualizados, ya inactivos, errores).
+
+- documentos/diagramas/diagrama_flujo_procesos.md:
+	- Se incorpora paso funcional opcional de inactivacion masiva de estaciones desde configuracion.
+
+- documentos/diagramas/estructura_del_codigo.md:
+	- Se documenta la nueva accion operativa de estaciones y el alcance real de facturacion implementado.
+
+- documentos/historial_de_cambios:
+	- Se registra la implementacion del boton y las pruebas E2E por API.
+
+- Validacion tecnica ejecutada:
+	- Flujo E2E local por API: producto -> carrito estacion -> item -> pagar/cerrar (ok).
+	- `go test ./handlers ./db` (ok).
+
 Actualizacion 2026-04-01: Persistencia de subpagina al recargar (F5) en paneles administrativos
 
 - web/js/administrar_empresa.js:

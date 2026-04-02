@@ -1,6 +1,6 @@
 # Diagrama de flujo de procesos
 
-Fecha: 2026-04-01
+Fecha: 2026-04-02
 
 ```mermaid
 flowchart TD
@@ -27,6 +27,9 @@ flowchart TD
     S0 --> S1[Guardar color activo/inactivo en configuración avanzada]
     S1 --> S2[Sincronizar estaciones con carritos en estado inactivo/cerrado]
     S2 --> S3[Abrir módulo estaciones]
+    S3 --> S3A[Opcional: usar boton Inactivar carritos de estaciones]
+    S3A --> S3B[Aplicar desactivar + cerrar en carritos EST-empresa-*]
+    S3B --> S4[Tarjetas inician inactivas]
     S3 --> S4[Tarjetas inician inactivas]
     S4 --> S5[Usuario selecciona estación]
     S5 --> S6[Activar carrito de estación y registrar activado_en]
@@ -37,6 +40,10 @@ flowchart TD
 
     L --> M[Crear cliente de venta]
     L --> N[Crear bodega y proveedor]
+    L --> N0[Administrar categorias de productos por empresa]
+    N0 --> N1[Crear/editar/activar categorias]
+    N1 --> N2[Asignar categoria al producto desde selector]
+    N2 --> O
     M --> O[Crear carrito]
     N --> O
     O --> P[Agregar items al carrito]
@@ -50,6 +57,14 @@ flowchart TD
     V --> W[Intercambiar mensajes y adjuntos foto/voz]
     W --> X[Crear tareas vinculadas a la conversacion]
     X --> Y[Actualizar avance: pendiente/en_progreso/completada]
+
+    L --> G0[Entrar a modulo ubicacion_gps]
+    G0 --> G1[Registrar dispositivos GPS por empresa]
+    G1 --> G2[Mostrar dispositivos en mapa OpenStreetMap]
+    G2 --> G3[Iniciar tracking automatico cada 10 segundos]
+    G3 --> G4[Guardar punto en empresa_gps_recorridos]
+    G4 --> G5[Actualizar ultima posicion en empresa_gps_dispositivos]
+    G5 --> G6[Visualizar recorrido historico por dispositivo]
 
     L --> Z[Entrar a modulo facturacion electronica]
     Z --> Z1[Detectar pais automaticamente tz/lang/config empresa]
@@ -68,4 +83,7 @@ Resultado esperado:
 - El sistema detecta país para facturación electrónica y muestra su bandera en el menú flotante.
 - En `estaciones`, los carritos de estación inician inactivos, se activan al seleccionar la estación y vuelven a inactivos al finalizar la compra.
 - En `estaciones`, la tarjeta activa muestra fecha y hora de entrada (`activado_en`), y las inactivas no muestran esa marca.
+- En `configuracion_de_estaciones`, existe accion manual para forzar inactivacion/cierre masivo de carritos de estaciones.
 - En `administrar_empresa`, `super_administrador` y `seleccionar_empresa`, al recargar con F5 se restaura la subpagina/vista que estaba abierta.
+- En `administrar_productos`, el catálogo de `categorias_productos` permite filtrar y asignar categorías de forma consistente por `empresa_id`.
+- En `ubicacion_gps`, cada dispositivo puede registrar su recorrido automaticamente cada 10 segundos y visualizarse sobre mapa de codigo abierto.

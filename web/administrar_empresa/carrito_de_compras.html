@@ -13,13 +13,6 @@
       <button id="addCarritoBtn" class="btn add">Agregar carrito</button>
     </div>
 
-    <div id="stationContextPanel" class="card empresa-section" style="display:none;margin-top:0;margin-bottom:12px;">
-      <div class="empresa-section-header">
-        <h2 id="stationContextTitle">Estación</h2>
-      </div>
-      <div id="stationStateSummary" class="form-help"></div>
-    </div>
-
     <p id="moduleHelp" class="form-help" style="margin:0 0 12px 0;">
       Este módulo permite manejar múltiples carritos por empresa y deja preparada la base operativa para facturación electrónica.
     </p>
@@ -520,31 +513,15 @@
 
     function renderStationPaymentPanel(carrito) {
       const panel = document.getElementById('stationCheckoutPanel');
-      const stationPanel = document.getElementById('stationContextPanel');
       if (!state.stationMode || !carrito) {
         panel.style.display = 'none';
-        stationPanel.style.display = 'none';
         return;
       }
 
       panel.style.display = '';
-      stationPanel.style.display = '';
 
       const caps = getDiscountCapabilities();
       const selectedActive = isCarritoOperativoActivo(carrito);
-      const activado = formatDateTime(carrito.activado_en);
-      const pagado = formatDateTime(carrito.pagado_en);
-      const duration = formatDurationSince(carrito.activado_en, selectedActive ? '' : carrito.pagado_en);
-
-      document.getElementById('stationContextTitle').textContent = 'Estación #' + state.stationID + (state.stationName ? (' - ' + state.stationName) : '');
-      document.getElementById('stationStateSummary').textContent =
-        'Carrito: ' + (normalize(carrito.nombre) || '-') +
-        ' | Código: ' + (normalize(carrito.codigo) || '-') +
-        ' | Estado: ' + (normalize(carrito.estado) || 'activo') +
-        ' | Operación: ' + (normalize(carrito.estado_carrito) || 'abierto') +
-        ' | Activado: ' + activado +
-        ' | Tiempo activo: ' + duration +
-        (normalize(carrito.pagado_en) ? (' | Último pago: ' + pagado) : '');
 
       const block = document.getElementById('stationDiscountSettings');
       const breakdownEl = document.getElementById('stationPaymentBreakdown');
@@ -913,30 +890,7 @@
           return;
         }
 
-        const estado = normalize(selected.estado) || 'activo';
-        const estadoCarrito = normalize(selected.estado_carrito) || 'abierto';
-        const cliente = normalize(selected.cliente_nombre) || 'Consumidor final';
-        const activeDuration = formatDurationSince(selected.activado_en, estado === 'activo' ? '' : selected.pagado_en);
-
-        box.innerHTML = '<section class="card empresa-section">' +
-          '<div class="empresa-section-header"><h3 style="margin:0;">Carrito asociado a la estación</h3></div>' +
-          '<p class="form-help" style="margin:0;">Cliente: ' + escapeHtml(cliente) +
-          ' | Estado: ' + escapeHtml(estado) +
-          ' | Operación: ' + escapeHtml(estadoCarrito) +
-          ' | Activado: ' + escapeHtml(formatDateTime(selected.activado_en)) +
-          ' | Tiempo activo: ' + escapeHtml(activeDuration) +
-          '</p>' +
-          '<div class="form-actions" style="margin-top:10px;">' +
-          '<button type="button" id="stationBuscarProductosBtn" class="btn secondary">Buscar productos</button>' +
-          '</div>' +
-          '</section>';
-
-        const stationBuscarBtn = document.getElementById('stationBuscarProductosBtn');
-        if (stationBuscarBtn) {
-          stationBuscarBtn.onclick = function() {
-            openBuscarProductosForCarrito(selected);
-          };
-        }
+        box.innerHTML = '';
 
         renderStationPaymentPanel(selected);
         syncBuscarProductosButton();
@@ -1369,9 +1323,8 @@
       document.getElementById('addCarritoBtn').style.display = stationMode ? 'none' : '';
       document.getElementById('carritoForm').style.display = stationMode ? 'none' : document.getElementById('carritoForm').style.display;
       document.getElementById('carritoSearchBlock').style.display = stationMode ? 'none' : '';
-      document.getElementById('moduleHelp').textContent = stationMode
-        ? 'Modo estación: esta vista trabaja únicamente con el carrito asociado a la estación seleccionada.'
-        : 'Este módulo permite manejar múltiples carritos por empresa y deja preparada la base operativa para facturación electrónica.';
+      document.getElementById('moduleHelp').textContent =
+        'Este módulo permite manejar múltiples carritos por empresa y deja preparada la base operativa para facturación electrónica.';
     }
 
     async function ensureStationCarritoLifecycle() {

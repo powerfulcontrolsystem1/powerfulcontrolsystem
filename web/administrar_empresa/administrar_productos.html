@@ -26,6 +26,10 @@
           <span class="kpi-label">Servicios</span>
           <strong id="kpiServicios">0</strong>
         </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Categorías</span>
+          <strong id="kpiCategoriasProductos">0</strong>
+        </div>
       </div>
     </section>
 
@@ -144,8 +148,74 @@
 
     <section class="card empresa-section">
       <div class="empresa-section-header">
+        <h2>Categorías de productos</h2>
+        <div class="empresa-inline-actions">
+          <input id="filtroCategoriasProducto" class="form-input" placeholder="Buscar por nombre/código">
+          <button id="btnBuscarCategoriasProducto" type="button" class="btn secondary">Buscar</button>
+          <button id="btnNuevaCategoriaProducto" type="button" class="btn secondary">Nueva</button>
+        </div>
+      </div>
+
+      <form id="categoriaProductoForm" class="form" style="display:none;">
+        <input type="hidden" id="categoriaProductoId">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="categoriaProductoCodigo">Código</label>
+            <input id="categoriaProductoCodigo" class="form-input" placeholder="CAT-001">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="categoriaProductoNombre">Nombre</label>
+            <input id="categoriaProductoNombre" class="form-input" required placeholder="Bebidas">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="categoriaProductoColor">Color</label>
+            <input id="categoriaProductoColor" class="form-input" placeholder="#0EA5E9">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="categoriaProductoOrden">Orden</label>
+            <input id="categoriaProductoOrden" class="form-input" type="number" step="1" min="0" value="0">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="categoriaProductoDescripcion">Descripción</label>
+            <input id="categoriaProductoDescripcion" class="form-input" placeholder="Grupo comercial para reportes y filtros">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="categoriaProductoObservaciones">Observaciones</label>
+            <input id="categoriaProductoObservaciones" class="form-input" placeholder="Notas internas">
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn" type="submit">Guardar categoría</button>
+        </div>
+      </form>
+
+      <div class="table-wrap">
+        <table class="table" id="categoriasProductosTable">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Código</th>
+              <th>Nombre</th>
+              <th>Color</th>
+              <th>Orden</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
         <h2>Productos</h2>
         <div class="empresa-inline-actions">
+          <select id="filtroCategoriaProducto" class="form-input">
+            <option value="">Todas las categorías</option>
+          </select>
           <input id="filtroProductos" class="form-input" placeholder="Buscar por nombre/SKU/código de barras">
           <button id="btnBuscarProductos" class="btn secondary" type="button">Buscar</button>
           <button id="btnNuevoProducto" class="btn secondary" type="button">Nuevo</button>
@@ -172,7 +242,9 @@
         <div class="form-row">
           <div class="form-col">
             <label class="form-label" for="productoCategoria">Categoría</label>
-            <input id="productoCategoria" class="form-input" placeholder="Lácteos">
+            <select id="productoCategoria" class="form-input">
+              <option value="">Sin categoría</option>
+            </select>
           </div>
           <div class="form-col">
             <label class="form-label" for="productoMarca">Marca</label>
@@ -268,6 +340,7 @@
               <th>Imagen</th>
               <th>SKU</th>
               <th>Nombre</th>
+              <th>Categoría</th>
               <th>Precio</th>
               <th>Stock total</th>
               <th>Estado</th>
@@ -543,6 +616,7 @@
       bodegas: [],
       productos: [],
       proveedores: [],
+      categoriasProductos: [],
       servicios: []
     };
 
@@ -605,6 +679,7 @@
     function hideCRUDForms() {
       setCRUDFormVisible('bodegaForm', false);
       setCRUDFormVisible('proveedorForm', false);
+      setCRUDFormVisible('categoriaProductoForm', false);
       setCRUDFormVisible('productoForm', false);
       setCRUDFormVisible('servicioForm', false);
     }
@@ -832,9 +907,147 @@
       await loadProveedores();
     }
 
+    async function loadCategoriasProductos() {
+      const q = document.getElementById('filtroCategoriasProducto').value.trim();
+      let url = '/api/empresa/categorias_productos?empresa_id=' + empresaId + '&include_inactive=1';
+      if (q) {
+        url += '&q=' + encodeURIComponent(q);
+      }
+      state.categoriasProductos = await requestJSON(url);
+      document.getElementById('kpiCategoriasProductos').textContent = String(state.categoriasProductos.length);
+      renderCategoriasProductos();
+      refreshCategoriaProductoSelectors();
+    }
+
+    function renderCategoriasProductos() {
+      const tbody = document.querySelector('#categoriasProductosTable tbody');
+      if (!state.categoriasProductos.length) {
+        tbody.innerHTML = '<tr><td colspan="7">No hay categorías registradas.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = state.categoriasProductos.map(c => {
+        const estado = sanitize(c.estado || 'activo');
+        const activar = estado === 'activo' ? 'Desactivar' : 'Activar';
+        const activo = estado === 'activo' ? '0' : '1';
+        const colorHex = sanitize(c.color_hex || '');
+        return '<tr>' +
+          '<td>' + Number(c.id) + '</td>' +
+          '<td>' + sanitize(c.codigo || '') + '</td>' +
+          '<td>' + sanitize(c.nombre || '') + '</td>' +
+          '<td>' + (colorHex || '-') + '</td>' +
+          '<td>' + Number(c.orden || 0) + '</td>' +
+          '<td>' + estado + '</td>' +
+          '<td class="actions">' +
+            '<button type="button" class="btn secondary" data-action="edit-categoria-producto" data-id="' + Number(c.id) + '">Editar</button>' +
+            '<button type="button" class="btn secondary" data-action="toggle-categoria-producto" data-id="' + Number(c.id) + '" data-activo="' + activo + '">' + activar + '</button>' +
+            '<button type="button" class="btn danger" data-action="delete-categoria-producto" data-id="' + Number(c.id) + '">Eliminar</button>' +
+          '</td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    function refreshCategoriaProductoSelectors() {
+      const categoriaSelect = document.getElementById('productoCategoria');
+      const filtroSelect = document.getElementById('filtroCategoriaProducto');
+      const selectedCategoria = categoriaSelect.value;
+      const selectedFiltro = filtroSelect.value;
+
+      let categoriaHTML = '<option value="">Sin categoría</option>';
+      state.categoriasProductos.forEach(c => {
+        const estado = (c.estado || 'activo') === 'activo' ? '' : ' (inactiva)';
+        categoriaHTML += '<option value="' + Number(c.id) + '">' + sanitize(c.nombre || ('Categoría ' + c.id)) + estado + '</option>';
+      });
+      categoriaSelect.innerHTML = categoriaHTML;
+      categoriaSelect.value = selectedCategoria;
+
+      let filtroHTML = '<option value="">Todas las categorías</option>';
+      getActivos(state.categoriasProductos).forEach(c => {
+        filtroHTML += '<option value="' + Number(c.id) + '">' + sanitize(c.nombre || ('Categoría ' + c.id)) + '</option>';
+      });
+      filtroSelect.innerHTML = filtroHTML;
+      filtroSelect.value = selectedFiltro;
+    }
+
+    function fillCategoriaProductoForm(c) {
+      document.getElementById('categoriaProductoId').value = c ? Number(c.id) : '';
+      document.getElementById('categoriaProductoCodigo').value = c ? (c.codigo || '') : '';
+      document.getElementById('categoriaProductoNombre').value = c ? (c.nombre || '') : '';
+      document.getElementById('categoriaProductoColor').value = c ? (c.color_hex || '') : '';
+      document.getElementById('categoriaProductoOrden').value = c ? Number(c.orden || 0) : 0;
+      document.getElementById('categoriaProductoDescripcion').value = c ? (c.descripcion || '') : '';
+      document.getElementById('categoriaProductoObservaciones').value = c ? (c.observaciones || '') : '';
+    }
+
+    async function saveCategoriaProducto(ev) {
+      ev.preventDefault();
+      const id = Number(document.getElementById('categoriaProductoId').value || 0);
+      const payload = {
+        id,
+        empresa_id: empresaId,
+        codigo: document.getElementById('categoriaProductoCodigo').value.trim(),
+        nombre: document.getElementById('categoriaProductoNombre').value.trim(),
+        color_hex: document.getElementById('categoriaProductoColor').value.trim(),
+        orden: Math.max(0, Math.round(num(document.getElementById('categoriaProductoOrden').value))),
+        descripcion: document.getElementById('categoriaProductoDescripcion').value.trim(),
+        observaciones: document.getElementById('categoriaProductoObservaciones').value.trim()
+      };
+      if (!payload.nombre) {
+        showMessage('El nombre de la categoría es obligatorio.', 'error');
+        return;
+      }
+
+      if (id > 0) {
+        await requestJSON('/api/empresa/categorias_productos', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        showMessage('Categoría actualizada correctamente.', 'success');
+      } else {
+        await requestJSON('/api/empresa/categorias_productos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        showMessage('Categoría creada correctamente.', 'success');
+      }
+
+      fillCategoriaProductoForm(null);
+      setCRUDFormVisible('categoriaProductoForm', false);
+      await loadCategoriasProductos();
+      await loadProductos();
+    }
+
+    async function accionCategoriaProducto(action, id, activo) {
+      if (action === 'edit-categoria-producto') {
+        const c = state.categoriasProductos.find(x => Number(x.id) === Number(id));
+        fillCategoriaProductoForm(c || null);
+        setCRUDFormVisible('categoriaProductoForm', true);
+        return;
+      }
+      if (action === 'delete-categoria-producto') {
+        if (!confirm('¿Eliminar esta categoría?')) return;
+        await requestJSON('/api/empresa/categorias_productos?empresa_id=' + empresaId + '&id=' + id, { method: 'DELETE' });
+        showMessage('Categoría eliminada.', 'success');
+      }
+      if (action === 'toggle-categoria-producto') {
+        await requestJSON('/api/empresa/categorias_productos?empresa_id=' + empresaId + '&id=' + id + '&action=activar&activo=' + activo, { method: 'PUT' });
+        showMessage('Estado de categoría actualizado.', 'success');
+      }
+      await loadCategoriasProductos();
+      await loadProductos();
+    }
+
     async function loadProductos() {
       const q = document.getElementById('filtroProductos').value.trim();
-      const url = '/api/empresa/productos?empresa_id=' + empresaId + (q ? '&q=' + encodeURIComponent(q) : '');
+      const categoriaID = Number(document.getElementById('filtroCategoriaProducto').value || 0);
+      let url = '/api/empresa/productos?empresa_id=' + empresaId;
+      if (q) {
+        url += '&q=' + encodeURIComponent(q);
+      }
+      if (categoriaID > 0) {
+        url += '&categoria_id=' + categoriaID;
+      }
       state.productos = await requestJSON(url);
       document.getElementById('kpiProductos').textContent = String(state.productos.length);
       renderProductos();
@@ -859,7 +1072,7 @@
     function renderProductos() {
       const tbody = document.querySelector('#productosTable tbody');
       if (!state.productos.length) {
-        tbody.innerHTML = '<tr><td colspan="8">No hay productos registrados.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9">No hay productos registrados.</td></tr>';
         return;
       }
       tbody.innerHTML = state.productos.map(p => {
@@ -872,6 +1085,7 @@
           '<td>' + img + '</td>' +
           '<td>' + sanitize(p.sku || '') + '</td>' +
           '<td>' + sanitize(p.nombre || '') + '</td>' +
+          '<td>' + sanitize(p.categoria || '') + '</td>' +
           '<td>' + Number(p.precio || 0).toFixed(2) + '</td>' +
           '<td>' + Number(p.stock_total || 0).toFixed(2) + '</td>' +
           '<td>' + estado + '</td>' +
@@ -889,7 +1103,18 @@
       document.getElementById('productoNombre').value = p ? (p.nombre || '') : '';
       document.getElementById('productoSKU').value = p ? (p.sku || '') : '';
       document.getElementById('productoCodigoBarras').value = p ? (p.codigo_barras || '') : '';
-      document.getElementById('productoCategoria').value = p ? (p.categoria || '') : '';
+      const categoriaSelect = document.getElementById('productoCategoria');
+      categoriaSelect.value = '';
+      if (p) {
+        if (Number(p.categoria_id || 0) > 0) {
+          categoriaSelect.value = String(Number(p.categoria_id));
+        } else {
+          const legacy = state.categoriasProductos.find(c => String(c.nombre || '').trim().toLowerCase() === String(p.categoria || '').trim().toLowerCase());
+          if (legacy) {
+            categoriaSelect.value = String(Number(legacy.id));
+          }
+        }
+      }
       document.getElementById('productoMarca').value = p ? (p.marca || '') : '';
       document.getElementById('productoUnidad').value = p ? (p.unidad_medida || '') : '';
       document.getElementById('productoCosto').value = p ? num(p.costo) : 0;
@@ -911,16 +1136,19 @@
     async function saveProducto(ev) {
       ev.preventDefault();
       const id = Number(document.getElementById('productoId').value || 0);
+      const categoriaID = Number(document.getElementById('productoCategoria').value || 0);
+      const categoria = state.categoriasProductos.find(c => Number(c.id) === categoriaID);
       const payload = {
         id,
         empresa_id: empresaId,
         bodega_principal_id: Number(document.getElementById('productoBodegaPrincipal').value || 0),
         proveedor_principal_id: Number(document.getElementById('productoProveedorPrincipal').value || 0),
+        categoria_id: categoriaID,
         sku: document.getElementById('productoSKU').value.trim(),
         codigo_barras: document.getElementById('productoCodigoBarras').value.trim(),
         nombre: document.getElementById('productoNombre').value.trim(),
         descripcion: document.getElementById('productoDescripcion').value.trim(),
-        categoria: document.getElementById('productoCategoria').value.trim(),
+        categoria: categoria ? String(categoria.nombre || '').trim() : '',
         marca: document.getElementById('productoMarca').value.trim(),
         unidad_medida: document.getElementById('productoUnidad').value.trim(),
         costo: num(document.getElementById('productoCosto').value),
@@ -1290,6 +1518,34 @@
         }
       });
 
+      document.getElementById('btnNuevaCategoriaProducto').addEventListener('click', () => {
+        fillCategoriaProductoForm(null);
+        setCRUDFormVisible('categoriaProductoForm', true);
+      });
+      document.getElementById('btnBuscarCategoriasProducto').addEventListener('click', async () => {
+        try {
+          await loadCategoriasProductos();
+        } catch (e) {
+          showMessage(e.message || 'No se pudieron cargar categorías.', 'error');
+        }
+      });
+      document.getElementById('categoriaProductoForm').addEventListener('submit', async ev => {
+        try {
+          await saveCategoriaProducto(ev);
+        } catch (e) {
+          showMessage(e.message || 'No se pudo guardar la categoría.', 'error');
+        }
+      });
+      document.getElementById('categoriasProductosTable').addEventListener('click', async ev => {
+        const btn = ev.target.closest('button[data-action]');
+        if (!btn) return;
+        try {
+          await accionCategoriaProducto(btn.dataset.action, btn.dataset.id, btn.dataset.activo);
+        } catch (e) {
+          showMessage(e.message || 'No se pudo ejecutar la acción en categoría.', 'error');
+        }
+      });
+
       document.getElementById('btnNuevoProducto').addEventListener('click', () => {
         fillProductoForm(null);
         setCRUDFormVisible('productoForm', true);
@@ -1299,6 +1555,13 @@
           await loadProductos();
         } catch (e) {
           showMessage(e.message || 'No se pudieron cargar productos.', 'error');
+        }
+      });
+      document.getElementById('filtroCategoriaProducto').addEventListener('change', async () => {
+        try {
+          await loadProductos();
+        } catch (e) {
+          showMessage(e.message || 'No se pudieron filtrar productos por categoría.', 'error');
         }
       });
 
@@ -1385,6 +1648,7 @@
       await loadEmpresaInfo();
       await loadProveedores();
       await loadBodegas();
+      await loadCategoriasProductos();
       await loadProductos();
       await loadServicios();
       await loadExistencias();

@@ -1,117 +1,295 @@
-2026/04/01 22:15:34 INFO: OAuth Google cargado desde DB (google.client_id, google.client_secret)
-2026/04/01 22:15:34 INFO: redirect OAuth cargado desde DB (google.redirect_url)
-2026/04/01 22:15:34 index.html encontrado en ..\web\index.html
-2026/04/01 22:15:34 Servidor arrancado en :8080
-2026/04/01 22:15:34 metrics: stored cpu=34.20 mem=87.00% recv=9288651945 sent=2679399882
-2026/04/01 22:15:36 -> GET /api/empresa/facturacion_electronica/pais_detectado from [::1]:55972
-2026/04/01 22:15:36 <- 200 GET /api/empresa/facturacion_electronica/pais_detectado
-2026/04/01 22:15:38 -> GET /assets/estilos.css from [::1]:55972
-2026/04/01 22:15:38 <- 304 GET /assets/estilos.css
-2026/04/01 22:15:38 -> GET /api/empresa/facturacion_electronica/pais_detectado from [::1]:55972
-2026/04/01 22:15:38 <- 200 GET /api/empresa/facturacion_electronica/pais_detectado
-2026/04/01 22:15:38 -> GET /auth/google/login from [::1]:55972
-2026/04/01 22:15:38 handleGoogleLogin: oauth redirect requested (client configured=true)
-2026/04/01 22:15:38 handleGoogleLogin: redirecting to OAuth provider
-2026/04/01 22:15:38 <- 302 GET /auth/google/login
-2026/04/01 22:15:38 -> GET /auth/google/callback from [::1]:55972
-2026/04/01 22:15:39 <- 302 GET /auth/google/callback
-2026/04/01 22:15:39 -> GET /js/super_administrador.js from [::1]:55972
-2026/04/01 22:15:39 <- 304 GET /js/super_administrador.js
-2026/04/01 22:15:39 -> GET /super/api/licencias from [::1]:55972
-2026/04/01 22:15:39 <- 200 GET /super/api/licencias
-2026/04/01 22:15:39 -> GET /me from [::1]:55972
-2026/04/01 22:15:39 <- 200 GET /me
-2026/04/01 22:15:39 -> GET /api/empresa/facturacion_electronica/pais_detectado from [::1]:55972
-2026/04/01 22:15:39 <- 200 GET /api/empresa/facturacion_electronica/pais_detectado
-2026/04/01 22:15:40 -> GET /super/api/licencias from [::1]:50632
-2026/04/01 22:15:40 <- 200 GET /super/api/licencias
-2026/04/01 22:15:44 metrics: stored cpu=53.79 mem=89.00% recv=9288972114 sent=2680350583
-2026/04/01 22:15:44 -> GET /js/seleccionar_empresa.js from [::1]:50632
-2026/04/01 22:15:44 <- 304 GET /js/seleccionar_empresa.js
-2026/04/01 22:15:44 -> GET /me from [::1]:50632
-2026/04/01 22:15:44 <- 200 GET /me
-2026/04/01 22:15:45 -> GET /api/empresa/facturacion_electronica/pais_detectado from [::1]:50632
-2026/04/01 22:15:45 <- 200 GET /api/empresa/facturacion_electronica/pais_detectado
-2026/04/01 22:15:45 -> GET /super/api/empresas from [::1]:50632
-2026/04/01 22:15:45 -> GET /super/api/tipos_empresas from [::1]:55972
-2026/04/01 22:15:45 <- 200 GET /super/api/empresas
-2026/04/01 22:15:45 <- 200 GET /super/api/tipos_empresas
-2026/04/01 22:15:45 -> GET /super/api/licencias from [::1]:59704
-2026/04/01 22:15:45 <- 200 GET /super/api/licencias
-2026/04/01 22:15:46 -> GET /js/administrar_empresa.js from [::1]:59704
-2026/04/01 22:15:46 <- 304 GET /js/administrar_empresa.js
-2026/04/01 22:15:46 -> GET /super/api/empresas from [::1]:59704
-2026/04/01 22:15:46 <- 200 GET /super/api/empresas
-2026/04/01 22:15:46 -> GET /api/empresa/facturacion_electronica/pais_detectado from [::1]:55972
-2026/04/01 22:15:46 <- 200 GET /api/empresa/facturacion_electronica/pais_detectado
-2026/04/01 22:15:46 -> GET /super/api/empresas from [::1]:55972
-2026/04/01 22:15:46 <- 200 GET /super/api/empresas
-2026/04/01 22:15:50 -> GET /administrar_empresa/estaciones.html from [::1]:55972
-2026/04/01 22:15:50 <- 304 GET /administrar_empresa/estaciones.html
-2026/04/01 22:15:50 -> GET /api/empresa/configuracion_avanzada from [::1]:55972
-2026/04/01 22:15:50 -> GET /api/empresa/carritos_compra from [::1]:59704
-2026/04/01 22:15:50 <- 200 GET /api/empresa/configuracion_avanzada
-2026/04/01 22:15:51 <- 200 GET /api/empresa/carritos_compra
-2026/04/01 22:15:52 -> GET /administrar_empresa.html from [::1]:59704
-2026/04/01 22:15:52 <- 200 GET /administrar_empresa.html
-2026/04/01 22:15:52 -> GET /estilos.css from [::1]:59704
-2026/04/01 22:15:52 -> GET /menu.js from [::1]:55972
-2026/04/01 22:15:52 -> GET /img/company-briefcase.svg from [::1]:50632
-2026/04/01 22:15:52 -> GET /img/analytics.svg from [::1]:55522
-2026/04/01 22:15:52 <- 200 GET /estilos.css
-2026/04/01 22:15:52 <- 200 GET /img/company-briefcase.svg
-2026/04/01 22:15:52 <- 200 GET /img/analytics.svg
-2026/04/01 22:15:53 -> GET /img/shield-license.svg from [::1]:55522
-2026/04/01 22:15:53 -> GET /img/network.svg from [::1]:50632
-2026/04/01 22:15:53 <- 200 GET /img/shield-license.svg
-2026/04/01 22:15:53 <- 200 GET /img/network.svg
-2026/04/01 22:15:53 -> GET /js/administrar_empresa.js from [::1]:50632
-2026/04/01 22:15:53 <- 200 GET /js/administrar_empresa.js
-2026/04/01 22:15:53 -> GET /img/user-avatar.svg from [::1]:50632
-2026/04/01 22:15:53 <- 200 GET /img/user-avatar.svg
-2026/04/01 22:15:53 <- 200 GET /menu.js
-2026/04/01 22:15:53 -> GET /super/api/empresas from [::1]:55972
-2026/04/01 22:15:53 -> GET /api/empresa/facturacion_electronica/pais_detectado from [::1]:50632
-2026/04/01 22:15:53 <- 200 GET /super/api/empresas
-2026/04/01 22:15:53 <- 200 GET /api/empresa/facturacion_electronica/pais_detectado
-2026/04/01 22:15:53 -> GET /estilos.css from [::1]:50632
-2026/04/01 22:15:53 <- 200 GET /estilos.css
-2026/04/01 22:15:53 -> GET /api/empresa/configuracion_avanzada from [::1]:50632
-2026/04/01 22:15:53 -> GET /api/empresa/carritos_compra from [::1]:55972
-2026/04/01 22:15:53 <- 200 GET /api/empresa/configuracion_avanzada
-2026/04/01 22:15:53 <- 200 GET /api/empresa/carritos_compra
-2026/04/01 22:15:53 -> GET /favicon.ico from [::1]:55972
-2026/04/01 22:15:53 <- 404 GET /favicon.ico
-2026/04/01 22:15:54 metrics: stored cpu=23.14 mem=90.00% recv=9289012821 sent=2680460809
-2026/04/01 22:15:57 -> GET /administrar_empresa/carrito_de_compras.html from [::1]:55972
-2026/04/01 22:15:57 <- 304 GET /administrar_empresa/carrito_de_compras.html
-2026/04/01 22:15:57 -> GET /super/api/empresas from [::1]:55972
-2026/04/01 22:15:57 <- 200 GET /super/api/empresas
-2026/04/01 22:15:57 -> GET /api/empresa/clientes from [::1]:55972
-2026/04/01 22:15:57 <- 200 GET /api/empresa/clientes
-2026/04/01 22:15:57 -> GET /api/empresa/carritos_compra from [::1]:55972
-2026/04/01 22:15:57 <- 200 GET /api/empresa/carritos_compra
-2026/04/01 22:15:57 -> PUT /api/empresa/carritos_compra from [::1]:55972
-2026/04/01 22:15:57 <- 200 PUT /api/empresa/carritos_compra
-2026/04/01 22:15:57 -> GET /api/empresa/carritos_compra from [::1]:55972
-2026/04/01 22:15:57 <- 200 GET /api/empresa/carritos_compra
-2026/04/01 22:15:57 -> GET /api/empresa/carritos_compra/items from [::1]:55972
-2026/04/01 22:15:57 <- 200 GET /api/empresa/carritos_compra/items
-2026/04/01 22:15:57 -> GET /api/empresa/carritos_compra from [::1]:55972
-2026/04/01 22:15:57 <- 200 GET /api/empresa/carritos_compra
-2026/04/01 22:15:57 -> GET /api/empresa/carritos_compra/items from [::1]:55972
-2026/04/01 22:15:57 <- 200 GET /api/empresa/carritos_compra/items
-2026/04/01 22:16:04 metrics: stored cpu=15.10 mem=89.00% recv=9289021796 sent=2680461348
-2026/04/01 22:16:14 metrics: stored cpu=32.42 mem=88.00% recv=9289138509 sent=2681406354
-2026/04/01 22:16:15 -> GET /administrar_empresa/buscar_producto_botones.html from [::1]:50796
-2026/04/01 22:16:15 <- 200 GET /administrar_empresa/buscar_producto_botones.html
-2026/04/01 22:16:15 -> GET /api/empresa/carritos_compra from [::1]:50796
-2026/04/01 22:16:15 <- 200 GET /api/empresa/carritos_compra
-2026/04/01 22:16:15 -> GET /api/empresa/productos from [::1]:50796
-2026/04/01 22:16:15 <- 200 GET /api/empresa/productos
-2026/04/01 22:16:24 metrics: stored cpu=13.67 mem=87.00% recv=9289167225 sent=2681478570
-2026/04/01 22:16:27 -> GET /api/empresa/configuracion_avanzada from [::1]:50796
-2026/04/01 22:16:27 -> GET /api/empresa/carritos_compra from [::1]:65348
-2026/04/01 22:16:27 <- 200 GET /api/empresa/configuracion_avanzada
-2026/04/01 22:16:27 <- 200 GET /api/empresa/carritos_compra
-2026/04/01 22:16:34 metrics: stored cpu=15.75 mem=88.00% recv=9289312279 sent=2682413230
+2026/04/02 01:19:58 INFO: OAuth Google cargado desde DB (google.client_id, google.client_secret)
+2026/04/02 01:19:58 INFO: redirect OAuth cargado desde DB (google.redirect_url)
+2026/04/02 01:19:58 index.html encontrado en ..\web\index.html
+2026/04/02 01:19:58 Servidor arrancado en :8080
+2026/04/02 01:19:58 metrics: stored cpu=64.87 mem=89.00% recv=9655231393 sent=2988019635
+2026/04/02 01:20:01 -> GET /menu.js from [::1]:50418
+2026/04/02 01:20:01 -> GET /estilos.css from [::1]:57533
+2026/04/02 01:20:01 <- 304 GET /menu.js
+2026/04/02 01:20:02 <- 200 GET /estilos.css
+2026/04/02 01:20:02 -> GET /api/empresa/facturacion_electronica/pais_detectado from [::1]:57533
+2026/04/02 01:20:02 <- 200 GET /api/empresa/facturacion_electronica/pais_detectado
+2026/04/02 01:20:05 -> GET /login.html from [::1]:57533
+2026/04/02 01:20:05 <- 200 GET /login.html
+2026/04/02 01:20:05 -> GET /assets/estilos.css from [::1]:50418
+2026/04/02 01:20:05 -> GET /js/login.js from [::1]:57533
+2026/04/02 01:20:05 <- 200 GET /assets/estilos.css
+2026/04/02 01:20:05 <- 200 GET /js/login.js
+2026/04/02 01:20:05 -> GET /api/empresa/facturacion_electronica/pais_detectado from [::1]:57533
+2026/04/02 01:20:05 <- 200 GET /api/empresa/facturacion_electronica/pais_detectado
+2026/04/02 01:20:05 -> GET /auth/google/login from [::1]:57533
+2026/04/02 01:20:05 handleGoogleLogin: oauth redirect requested (client configured=true)
+2026/04/02 01:20:05 handleGoogleLogin: redirecting to OAuth provider
+2026/04/02 01:20:05 <- 302 GET /auth/google/login
+2026/04/02 01:20:06 -> GET /auth/google/callback from [::1]:57533
+2026/04/02 01:20:06 <- 302 GET /auth/google/callback
+2026/04/02 01:20:06 -> GET /super_administrador.html from [::1]:57533
+2026/04/02 01:20:06 <- 304 GET /super_administrador.html
+2026/04/02 01:20:07 -> GET /super/licencias_resumen.html from [::1]:57533
+2026/04/02 01:20:07 -> GET /js/super_administrador.js from [::1]:50418
+2026/04/02 01:20:07 <- 304 GET /js/super_administrador.js
+2026/04/02 01:20:07 -> GET /super/licencias_resumen.html from [::1]:50418
+2026/04/02 01:20:07 <- 304 GET /super/licencias_resumen.html
+2026/04/02 01:20:07 -> GET /me from [::1]:51334
+2026/04/02 01:20:07 -> GET /api/empresa/facturacion_electronica/pais_detectado from [::1]:58435
+2026/04/02 01:20:07 <- 200 GET /me
+2026/04/02 01:20:07 <- 200 GET /api/empresa/facturacion_electronica/pais_detectado
+2026/04/02 01:20:07 <- 200 GET /super/licencias_resumen.html
+2026/04/02 01:20:07 -> GET /super/api/licencias from [::1]:50418
+2026/04/02 01:20:07 <- 200 GET /super/api/licencias
+2026/04/02 01:20:09 metrics: stored cpu=45.51 mem=90.00% recv=9655413873 sent=2988520992
+2026/04/02 01:20:14 -> GET /super_administrador.html from [::1]:50418
+2026/04/02 01:20:14 <- 200 GET /super_administrador.html
+2026/04/02 01:20:14 -> GET /estilos.css from [::1]:50418
+2026/04/02 01:20:14 -> GET /menu.js from [::1]:58435
+2026/04/02 01:20:14 <- 200 GET /estilos.css
+2026/04/02 01:20:14 -> GET /img/company-briefcase.svg from [::1]:51334
+2026/04/02 01:20:15 <- 200 GET /img/company-briefcase.svg
+2026/04/02 01:20:15 -> GET /img/shield-license.svg from [::1]:51334
+2026/04/02 01:20:15 -> GET /img/user-avatar.svg from [::1]:54275
+2026/04/02 01:20:15 <- 200 GET /menu.js
+2026/04/02 01:20:15 <- 200 GET /img/shield-license.svg
+2026/04/02 01:20:15 -> GET /img/analytics.svg from [::1]:51334
+2026/04/02 01:20:15 -> GET /super/licencias_resumen.html from [::1]:50418
+2026/04/02 01:20:15 -> GET /js/super_administrador.js from [::1]:58435
+2026/04/02 01:20:15 -> GET /img/network.svg from [::1]:64723
+2026/04/02 01:20:15 -> GET /img/shield-security.svg from [::1]:50439
+2026/04/02 01:20:15 <- 200 GET /img/user-avatar.svg
+2026/04/02 01:20:15 <- 200 GET /img/analytics.svg
+2026/04/02 01:20:15 <- 200 GET /super/licencias_resumen.html
+2026/04/02 01:20:15 <- 200 GET /img/network.svg
+2026/04/02 01:20:15 <- 200 GET /img/shield-security.svg
+2026/04/02 01:20:15 <- 200 GET /js/super_administrador.js
+2026/04/02 01:20:15 -> GET /estilos.css from [::1]:58435
+2026/04/02 01:20:15 <- 200 GET /estilos.css
+2026/04/02 01:20:15 -> GET /me from [::1]:58435
+2026/04/02 01:20:15 -> GET /api/empresa/facturacion_electronica/pais_detectado from [::1]:50439
+2026/04/02 01:20:15 <- 200 GET /me
+2026/04/02 01:20:15 <- 200 GET /api/empresa/facturacion_electronica/pais_detectado
+2026/04/02 01:20:15 -> GET /estilos.css from [::1]:50439
+2026/04/02 01:20:15 <- 200 GET /estilos.css
+2026/04/02 01:20:15 -> GET /super/api/licencias from [::1]:50439
+2026/04/02 01:20:15 <- 200 GET /super/api/licencias
+2026/04/02 01:20:15 -> GET /favicon.ico from [::1]:50439
+2026/04/02 01:20:15 <- 404 GET /favicon.ico
+2026/04/02 01:20:17 -> GET /seleccionar_empresa.html from [::1]:50439
+2026/04/02 01:20:17 <- 304 GET /seleccionar_empresa.html
+2026/04/02 01:20:18 -> GET /js/seleccionar_empresa.js from [::1]:50439
+2026/04/02 01:20:18 <- 304 GET /js/seleccionar_empresa.js
+2026/04/02 01:20:18 -> GET /me from [::1]:50439
+2026/04/02 01:20:18 <- 200 GET /me
+2026/04/02 01:20:18 -> GET /api/empresa/facturacion_electronica/pais_detectado from [::1]:50439
+2026/04/02 01:20:18 <- 200 GET /api/empresa/facturacion_electronica/pais_detectado
+2026/04/02 01:20:18 -> GET /super/api/empresas from [::1]:58435
+2026/04/02 01:20:18 <- 200 GET /super/api/empresas
+2026/04/02 01:20:18 -> GET /super/api/tipos_empresas from [::1]:50439
+2026/04/02 01:20:18 -> GET /super/api/licencias from [::1]:64723
+2026/04/02 01:20:18 <- 200 GET /super/api/tipos_empresas
+2026/04/02 01:20:18 <- 200 GET /super/api/licencias
+2026/04/02 01:20:18 metrics: stored cpu=30.09 mem=87.00% recv=9655515487 sent=2988542276
+2026/04/02 01:20:26 -> GET /administrar_empresa.html from [::1]:64723
+2026/04/02 01:20:26 <- 200 GET /administrar_empresa.html
+2026/04/02 01:20:26 -> GET /js/administrar_empresa.js from [::1]:64723
+2026/04/02 01:20:26 <- 200 GET /js/administrar_empresa.js
+2026/04/02 01:20:26 -> GET /super/api/empresas from [::1]:64723
+2026/04/02 01:20:26 -> GET /api/empresa/facturacion_electronica/pais_detectado from [::1]:50439
+2026/04/02 01:20:26 <- 200 GET /super/api/empresas
+2026/04/02 01:20:26 <- 200 GET /api/empresa/facturacion_electronica/pais_detectado
+2026/04/02 01:20:26 -> GET /super/api/empresas from [::1]:50439
+2026/04/02 01:20:26 <- 200 GET /super/api/empresas
+2026/04/02 01:20:28 metrics: stored cpu=28.25 mem=89.00% recv=9655542952 sent=2988570796
+2026/04/02 01:20:38 metrics: stored cpu=13.83 mem=89.00% recv=9655580954 sent=2988593679
+2026/04/02 01:20:41 -> GET /administrar_empresa.html from [::1]:50439
+2026/04/02 01:20:41 <- 200 GET /administrar_empresa.html
+2026/04/02 01:20:41 -> GET /estilos.css from [::1]:50439
+2026/04/02 01:20:41 -> GET /menu.js from [::1]:64723
+2026/04/02 01:20:41 -> GET /img/company-briefcase.svg from [::1]:58435
+2026/04/02 01:20:41 -> GET /img/analytics.svg from [::1]:50418
+2026/04/02 01:20:41 <- 200 GET /estilos.css
+2026/04/02 01:20:41 <- 200 GET /menu.js
+2026/04/02 01:20:41 <- 200 GET /img/company-briefcase.svg
+2026/04/02 01:20:41 <- 200 GET /img/analytics.svg
+2026/04/02 01:20:41 -> GET /img/shield-license.svg from [::1]:50418
+2026/04/02 01:20:41 -> GET /img/network.svg from [::1]:58435
+2026/04/02 01:20:41 -> GET /js/administrar_empresa.js from [::1]:64723
+2026/04/02 01:20:41 -> GET /img/user-avatar.svg from [::1]:50439
+2026/04/02 01:20:41 <- 200 GET /img/shield-license.svg
+2026/04/02 01:20:41 <- 200 GET /img/network.svg
+2026/04/02 01:20:41 <- 200 GET /img/user-avatar.svg
+2026/04/02 01:20:41 <- 200 GET /js/administrar_empresa.js
+2026/04/02 01:20:41 -> GET /super/api/empresas from [::1]:50439
+2026/04/02 01:20:41 -> GET /api/empresa/facturacion_electronica/pais_detectado from [::1]:58435
+2026/04/02 01:20:41 <- 200 GET /super/api/empresas
+2026/04/02 01:20:41 <- 200 GET /api/empresa/facturacion_electronica/pais_detectado
+2026/04/02 01:20:41 -> GET /estilos.css from [::1]:58435
+2026/04/02 01:20:41 <- 200 GET /estilos.css
+2026/04/02 01:20:41 -> GET /super/api/empresas from [::1]:58435
+2026/04/02 01:20:41 <- 200 GET /super/api/empresas
+2026/04/02 01:20:41 -> GET /favicon.ico from [::1]:58435
+2026/04/02 01:20:41 <- 404 GET /favicon.ico
+2026/04/02 01:20:46 -> GET /administrar_empresa.html from [::1]:58435
+2026/04/02 01:20:46 <- 200 GET /administrar_empresa.html
+2026/04/02 01:20:46 -> GET /estilos.css from [::1]:58435
+2026/04/02 01:20:46 -> GET /menu.js from [::1]:50439
+2026/04/02 01:20:46 -> GET /img/company-briefcase.svg from [::1]:50418
+2026/04/02 01:20:46 -> GET /img/analytics.svg from [::1]:64723
+2026/04/02 01:20:46 <- 200 GET /estilos.css
+2026/04/02 01:20:46 <- 200 GET /menu.js
+2026/04/02 01:20:46 <- 200 GET /img/company-briefcase.svg
+2026/04/02 01:20:46 <- 200 GET /img/analytics.svg
+2026/04/02 01:20:46 -> GET /img/shield-license.svg from [::1]:64723
+2026/04/02 01:20:46 -> GET /img/network.svg from [::1]:50418
+2026/04/02 01:20:46 -> GET /js/administrar_empresa.js from [::1]:50439
+2026/04/02 01:20:46 -> GET /img/user-avatar.svg from [::1]:58435
+2026/04/02 01:20:46 <- 200 GET /img/shield-license.svg
+2026/04/02 01:20:46 <- 200 GET /img/network.svg
+2026/04/02 01:20:46 <- 200 GET /img/user-avatar.svg
+2026/04/02 01:20:46 <- 200 GET /js/administrar_empresa.js
+2026/04/02 01:20:46 -> GET /super/api/empresas from [::1]:58435
+2026/04/02 01:20:46 -> GET /api/empresa/facturacion_electronica/pais_detectado from [::1]:50418
+2026/04/02 01:20:46 <- 200 GET /super/api/empresas
+2026/04/02 01:20:46 <- 200 GET /api/empresa/facturacion_electronica/pais_detectado
+2026/04/02 01:20:46 -> GET /estilos.css from [::1]:50418
+2026/04/02 01:20:46 <- 200 GET /estilos.css
+2026/04/02 01:20:46 -> GET /favicon.ico from [::1]:50418
+2026/04/02 01:20:46 <- 404 GET /favicon.ico
+2026/04/02 01:20:49 metrics: stored cpu=21.74 mem=87.00% recv=9655597282 sent=2988610915
+2026/04/02 01:20:51 -> GET /administrar_empresa/carrito_de_compras.html from [::1]:50418
+2026/04/02 01:20:51 <- 304 GET /administrar_empresa/carrito_de_compras.html
+2026/04/02 01:20:51 -> GET /super/api/empresas from [::1]:50418
+2026/04/02 01:20:51 <- 200 GET /super/api/empresas
+2026/04/02 01:20:51 -> GET /api/empresa/clientes from [::1]:50418
+2026/04/02 01:20:51 <- 200 GET /api/empresa/clientes
+2026/04/02 01:20:51 -> GET /api/empresa/carritos_compra from [::1]:50418
+2026/04/02 01:20:51 <- 200 GET /api/empresa/carritos_compra
+2026/04/02 01:20:55 -> GET /administrar_empresa/administrar_productos.html from [::1]:50418
+2026/04/02 01:20:55 <- 304 GET /administrar_empresa/administrar_productos.html
+2026/04/02 01:20:55 -> GET /super/api/empresas from [::1]:50418
+2026/04/02 01:20:55 <- 200 GET /super/api/empresas
+2026/04/02 01:20:55 -> GET /api/empresa/proveedores from [::1]:50418
+2026/04/02 01:20:55 <- 200 GET /api/empresa/proveedores
+2026/04/02 01:20:55 -> GET /api/empresa/bodegas from [::1]:50418
+2026/04/02 01:20:55 <- 200 GET /api/empresa/bodegas
+2026/04/02 01:20:56 -> GET /api/empresa/categorias_productos from [::1]:50418
+2026/04/02 01:20:56 <- 200 GET /api/empresa/categorias_productos
+2026/04/02 01:20:56 -> GET /api/empresa/productos from [::1]:50418
+2026/04/02 01:20:56 <- 200 GET /api/empresa/productos
+2026/04/02 01:20:56 -> GET /api/empresa/servicios from [::1]:50418
+2026/04/02 01:20:56 <- 200 GET /api/empresa/servicios
+2026/04/02 01:20:56 -> GET /api/empresa/inventario/existencias from [::1]:50418
+2026/04/02 01:20:56 <- 200 GET /api/empresa/inventario/existencias
+2026/04/02 01:20:56 -> GET /api/empresa/inventario/movimientos from [::1]:50418
+2026/04/02 01:20:56 <- 200 GET /api/empresa/inventario/movimientos
+2026/04/02 01:20:56 -> GET /api/empresa/productos/precios_historial from [::1]:50418
+2026/04/02 01:20:56 <- 200 GET /api/empresa/productos/precios_historial
+2026/04/02 01:20:58 metrics: stored cpu=14.50 mem=87.00% recv=9655625898 sent=2988650763
+2026/04/02 01:21:04 -> GET /administrar_empresa/configuracion.html from [::1]:50418
+2026/04/02 01:21:04 <- 304 GET /administrar_empresa/configuracion.html
+2026/04/02 01:21:04 -> GET /super/api/empresas from [::1]:50418
+2026/04/02 01:21:04 -> GET /api/empresa/configuracion_avanzada from [::1]:58435
+2026/04/02 01:21:04 <- 200 GET /super/api/empresas
+2026/04/02 01:21:04 <- 200 GET /api/empresa/configuracion_avanzada
+2026/04/02 01:21:08 metrics: stored cpu=16.04 mem=88.00% recv=9655975606 sent=2989089049
+2026/04/02 01:21:18 metrics: stored cpu=20.41 mem=89.00% recv=9656118536 sent=2989832729
+2026/04/02 01:21:28 -> GET /super/api/empresas from [::1]:58435
+2026/04/02 01:21:28 <- 200 GET /super/api/empresas
+2026/04/02 01:21:28 -> GET /api/empresa/roles_de_usuario from [::1]:58435
+2026/04/02 01:21:28 -> GET /api/empresa/usuarios from [::1]:50418
+2026/04/02 01:21:28 <- 200 GET /api/empresa/usuarios
+2026/04/02 01:21:28 <- 200 GET /api/empresa/roles_de_usuario
+2026/04/02 01:21:28 metrics: stored cpu=29.18 mem=89.00% recv=9656211776 sent=2990240710
+2026/04/02 01:21:35 -> GET /administrar_empresa/chat_y_tareas.html from [::1]:58435
+2026/04/02 01:21:35 <- 304 GET /administrar_empresa/chat_y_tareas.html
+2026/04/02 01:21:35 -> GET /super/api/empresas from [::1]:58435
+2026/04/02 01:21:35 <- 200 GET /super/api/empresas
+2026/04/02 01:21:35 -> GET /api/empresa/usuarios from [::1]:64723
+2026/04/02 01:21:35 -> GET /me from [::1]:50418
+2026/04/02 01:21:35 <- 200 GET /api/empresa/usuarios
+2026/04/02 01:21:35 <- 200 GET /me
+2026/04/02 01:21:35 -> GET /api/empresa/chat_tareas/conversaciones from [::1]:50418
+2026/04/02 01:21:35 <- 200 GET /api/empresa/chat_tareas/conversaciones
+2026/04/02 01:21:35 -> GET /api/empresa/chat_tareas/tareas from [::1]:50418
+2026/04/02 01:21:35 <- 200 GET /api/empresa/chat_tareas/tareas
+2026/04/02 01:21:38 metrics: stored cpu=15.19 mem=87.00% recv=9656406736 sent=2991387175
+2026/04/02 01:21:39 -> GET /super/api/empresas from [::1]:50418
+2026/04/02 01:21:39 <- 200 GET /super/api/empresas
+2026/04/02 01:21:39 -> GET /api/empresa/clientes from [::1]:50418
+2026/04/02 01:21:39 <- 200 GET /api/empresa/clientes
+2026/04/02 01:21:41 -> GET /administrar_empresa/configuracion_avanzada.html from [::1]:50418
+2026/04/02 01:21:41 <- 304 GET /administrar_empresa/configuracion_avanzada.html
+2026/04/02 01:21:41 -> GET /api/empresa/configuracion_avanzada from [::1]:50418
+2026/04/02 01:21:41 <- 200 GET /api/empresa/configuracion_avanzada
+2026/04/02 01:21:41 -> GET /super/api/empresas from [::1]:50418
+2026/04/02 01:21:41 <- 200 GET /super/api/empresas
+2026/04/02 01:21:43 -> GET /administrar_empresa/facturacion_electronica.html from [::1]:50418
+2026/04/02 01:21:43 <- 304 GET /administrar_empresa/facturacion_electronica.html
+2026/04/02 01:21:43 -> GET /super/api/empresas from [::1]:50418
+2026/04/02 01:21:43 <- 200 GET /super/api/empresas
+2026/04/02 01:21:43 -> GET /api/empresa/facturacion_electronica/paises_disponibles from [::1]:50418
+2026/04/02 01:21:43 <- 200 GET /api/empresa/facturacion_electronica/paises_disponibles
+2026/04/02 01:21:43 -> GET /api/empresa/facturacion_electronica/pais_detectado from [::1]:50418
+2026/04/02 01:21:43 <- 200 GET /api/empresa/facturacion_electronica/pais_detectado
+2026/04/02 01:21:43 -> GET /api/empresa/facturacion_electronica from [::1]:50418
+2026/04/02 01:21:43 <- 200 GET /api/empresa/facturacion_electronica
+2026/04/02 01:21:43 -> GET /api/empresa/facturacion_electronica from [::1]:50418
+2026/04/02 01:21:43 <- 200 GET /api/empresa/facturacion_electronica
+2026/04/02 01:21:48 metrics: stored cpu=16.95 mem=88.00% recv=9656513151 sent=2992098745
+2026/04/02 01:21:51 -> GET /administrar_empresa/ubicacion_gps.html from [::1]:50418
+2026/04/02 01:21:51 <- 200 GET /administrar_empresa/ubicacion_gps.html
+2026/04/02 01:21:52 -> GET /super/api/empresas from [::1]:50418
+2026/04/02 01:21:52 <- 200 GET /super/api/empresas
+2026/04/02 01:21:52 -> GET /api/empresa/ubicacion_gps/dispositivos from [::1]:50418
+2026/04/02 01:21:52 <- 200 GET /api/empresa/ubicacion_gps/dispositivos
+2026/04/02 01:21:52 -> GET /api/empresa/ubicacion_gps/recorridos from [::1]:50418
+2026/04/02 01:21:52 <- 200 GET /api/empresa/ubicacion_gps/recorridos
+2026/04/02 01:21:58 metrics: stored cpu=12.54 mem=88.00% recv=9656994392 sent=2992594782
+2026/04/02 01:22:08 metrics: stored cpu=21.17 mem=88.00% recv=9657445466 sent=2993195310
+2026/04/02 01:22:10 -> GET /administrar_empresa/configuracion_de_estaciones.html from [::1]:50418
+2026/04/02 01:22:10 <- 304 GET /administrar_empresa/configuracion_de_estaciones.html
+2026/04/02 01:22:11 -> GET /estilos.css from [::1]:50418
+2026/04/02 01:22:11 <- 304 GET /estilos.css
+2026/04/02 01:22:11 -> GET /super/api/empresas from [::1]:50418
+2026/04/02 01:22:11 <- 200 GET /super/api/empresas
+2026/04/02 01:22:15 -> GET /administrar_empresa/estaciones.html from [::1]:50418
+2026/04/02 01:22:15 <- 304 GET /administrar_empresa/estaciones.html
+2026/04/02 01:22:16 -> GET /api/empresa/configuracion_avanzada from [::1]:50418
+2026/04/02 01:22:16 -> GET /api/empresa/carritos_compra from [::1]:64723
+2026/04/02 01:22:16 <- 200 GET /api/empresa/configuracion_avanzada
+2026/04/02 01:22:16 <- 200 GET /api/empresa/carritos_compra
+2026/04/02 01:22:18 metrics: stored cpu=14.39 mem=88.00% recv=9657628707 sent=2993799216
+2026/04/02 01:22:21 -> GET /administrar_empresa/carrito_de_compras.html from [::1]:64723
+2026/04/02 01:22:21 <- 200 GET /administrar_empresa/carrito_de_compras.html
+2026/04/02 01:22:21 -> GET /super/api/empresas from [::1]:64723
+2026/04/02 01:22:21 <- 200 GET /super/api/empresas
+2026/04/02 01:22:21 -> GET /api/empresa/clientes from [::1]:64723
+2026/04/02 01:22:21 <- 200 GET /api/empresa/clientes
+2026/04/02 01:22:21 -> GET /api/empresa/carritos_compra from [::1]:64723
+2026/04/02 01:22:21 <- 200 GET /api/empresa/carritos_compra
+2026/04/02 01:22:21 -> PUT /api/empresa/carritos_compra from [::1]:64723
+2026/04/02 01:22:21 <- 200 PUT /api/empresa/carritos_compra
+2026/04/02 01:22:21 -> GET /api/empresa/carritos_compra from [::1]:64723
+2026/04/02 01:22:21 <- 200 GET /api/empresa/carritos_compra
+2026/04/02 01:22:21 -> GET /api/empresa/carritos_compra/items from [::1]:64723
+2026/04/02 01:22:22 <- 200 GET /api/empresa/carritos_compra/items
+2026/04/02 01:22:22 -> GET /api/empresa/carritos_compra from [::1]:64723
+2026/04/02 01:22:22 <- 200 GET /api/empresa/carritos_compra
+2026/04/02 01:22:22 -> GET /api/empresa/carritos_compra/items from [::1]:64723
+2026/04/02 01:22:22 <- 200 GET /api/empresa/carritos_compra/items
+2026/04/02 01:22:28 metrics: stored cpu=25.18 mem=89.00% recv=9657707215 sent=2994280291
+2026/04/02 01:22:29 -> GET /api/empresa/configuracion_avanzada from [::1]:64723
+2026/04/02 01:22:29 <- 200 GET /api/empresa/configuracion_avanzada
+2026/04/02 01:22:29 -> GET /api/empresa/carritos_compra from [::1]:50418
+2026/04/02 01:22:29 <- 200 GET /api/empresa/carritos_compra
+2026/04/02 01:22:38 metrics: stored cpu=12.31 mem=88.00% recv=9657800823 sent=2994372008
+2026/04/02 01:22:43 -> GET /super/api/empresas from [::1]:50418
+2026/04/02 01:22:43 <- 200 GET /super/api/empresas
+2026/04/02 01:22:43 -> GET /api/empresa/clientes from [::1]:50418
+2026/04/02 01:22:43 <- 200 GET /api/empresa/clientes
+2026/04/02 01:22:43 -> GET /api/empresa/carritos_compra from [::1]:50418
+2026/04/02 01:22:43 <- 200 GET /api/empresa/carritos_compra
+2026/04/02 01:22:43 -> GET /api/empresa/carritos_compra from [::1]:50418
+2026/04/02 01:22:43 <- 200 GET /api/empresa/carritos_compra
+2026/04/02 01:22:43 -> GET /api/empresa/carritos_compra/items from [::1]:50418
+2026/04/02 01:22:43 <- 200 GET /api/empresa/carritos_compra/items
+2026/04/02 01:22:48 metrics: stored cpu=18.85 mem=89.00% recv=9657853978 sent=2994954610
+2026/04/02 01:22:58 metrics: stored cpu=20.35 mem=89.00% recv=9658159669 sent=2995601608

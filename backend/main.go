@@ -311,6 +311,9 @@ func main() {
 	if err := dbpkg.EnsureEmpresaChatTareasSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure chat_tareas schema in empresas db: %v", err)
 	}
+	if err := dbpkg.EnsureEmpresaUbicacionGPSSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure ubicacion_gps schema in empresas db: %v", err)
+	}
 	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-01-001-baseline", "baseline schema snapshot: users, empresas, productos, clientes, carritos, configuracion_avanzada"); err != nil {
 		log.Fatalf("failed to register schema migration in empresas db: %v", err)
 	}
@@ -319,6 +322,9 @@ func main() {
 	}
 	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-01-002-empresa-scope-and-fe", "asegura referencia empresa_id en tablas base y agrega modulo de facturacion electronica por pais"); err != nil {
 		log.Fatalf("failed to register empresas scope/fe schema migration in empresas db: %v", err)
+	}
+	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-02-002-ubicacion-gps", "modulo de ubicacion gps por empresa: dispositivos y recorridos con tracking periodico"); err != nil {
+		log.Fatalf("failed to register ubicacion_gps schema migration in empresas db: %v", err)
 	}
 	// Crear tipos_de_empresas en la base de datos de superadministrador (ubicación centralizada)
 	createTiposSuper := `CREATE TABLE IF NOT EXISTS tipos_de_empresas (
@@ -682,6 +688,7 @@ func main() {
 	http.HandleFunc("/super/api/empresas", handlers.EmpresasHandler(dbEmpresas))
 	// Módulo de productos por empresa (empresas.db)
 	http.HandleFunc("/api/empresa/bodegas", handlers.EmpresaBodegasHandler(dbEmpresas))
+	http.HandleFunc("/api/empresa/categorias_productos", handlers.EmpresaCategoriasProductosHandler(dbEmpresas))
 	http.HandleFunc("/api/empresa/productos", handlers.EmpresaProductosHandler(dbEmpresas))
 	http.HandleFunc("/api/empresa/productos/imagen", handlers.EmpresaProductoImagenUploadHandler(dbEmpresas))
 	http.HandleFunc("/api/empresa/inventario/existencias", handlers.EmpresaInventarioExistenciasHandler(dbEmpresas))
@@ -707,6 +714,8 @@ func main() {
 	http.HandleFunc("/api/empresa/chat_tareas/mensajes", handlers.EmpresaChatTareasMensajesHandler(dbEmpresas))
 	http.HandleFunc("/api/empresa/chat_tareas/mensajes/adjunto", handlers.EmpresaChatTareasAdjuntoUploadHandler(dbEmpresas))
 	http.HandleFunc("/api/empresa/chat_tareas/tareas", handlers.EmpresaChatTareasTareasHandler(dbEmpresas))
+	http.HandleFunc("/api/empresa/ubicacion_gps/dispositivos", handlers.EmpresaUbicacionGPSDispositivosHandler(dbEmpresas))
+	http.HandleFunc("/api/empresa/ubicacion_gps/recorridos", handlers.EmpresaUbicacionGPSRecorridosHandler(dbEmpresas))
 	http.HandleFunc("/api/empresa/roles_de_usuario", handlers.EmpresaRolesDeUsuarioHandler(dbEmpresas, dbSuper))
 	// Endpoint para obtener admin actual desde la cookie de sesión
 	http.HandleFunc("/me", handlers.MeHandler(dbSuper))

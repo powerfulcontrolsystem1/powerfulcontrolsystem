@@ -12,6 +12,7 @@ erDiagram
     EMPRESAS ||--o{ USERS : "empresa_id"
     EMPRESAS ||--o{ CLIENTES : "empresa_id"
     EMPRESAS ||--o{ BODEGAS : "empresa_id"
+    EMPRESAS ||--o{ CATEGORIAS_PRODUCTOS : "empresa_id"
     EMPRESAS ||--o{ PROVEEDORES : "empresa_id"
     EMPRESAS ||--o{ PRODUCTOS : "empresa_id"
     EMPRESAS ||--o{ SERVICIOS : "empresa_id"
@@ -20,13 +21,17 @@ erDiagram
     EMPRESAS ||--o{ FACTURACION_ELECTRONICA_PAIS : "empresa_id"
     EMPRESAS ||--o{ CHAT_TAREAS_CONVERSACIONES : "empresa_id"
     EMPRESAS ||--o{ CHAT_TAREAS : "empresa_id"
+    EMPRESAS ||--o{ EMPRESA_GPS_DISPOSITIVOS : "empresa_id"
+    EMPRESAS ||--o{ EMPRESA_GPS_RECORRIDOS : "empresa_id"
 
     CLIENTES ||--o{ CARRITOS_COMPRAS : "cliente_id"
     CARRITOS_COMPRAS ||--o{ CARRITO_COMPRA_ITEMS : "carrito_id"
+    CATEGORIAS_PRODUCTOS ||--o{ PRODUCTOS : "categoria_id"
     CHAT_TAREAS_CONVERSACIONES ||--o{ CHAT_TAREAS_PARTICIPANTES : "conversacion_id"
     CHAT_TAREAS_CONVERSACIONES ||--o{ CHAT_TAREAS_MENSAJES : "conversacion_id"
     CHAT_TAREAS_CONVERSACIONES ||--o{ CHAT_TAREAS : "conversacion_id"
     CHAT_TAREAS_MENSAJES ||--o{ CHAT_TAREAS_ADJUNTOS : "mensaje_id"
+    EMPRESA_GPS_DISPOSITIVOS ||--o{ EMPRESA_GPS_RECORRIDOS : "dispositivo_id"
 
     ADMINISTRADORES {
       int id PK
@@ -70,11 +75,30 @@ erDiagram
       string nombre
       string estado
     }
+    CATEGORIAS_PRODUCTOS {
+      int id PK
+      int empresa_id FK
+      string codigo
+      string nombre
+      string color_hex
+      int orden
+      string estado
+    }
     PROVEEDORES {
       int id PK
       int empresa_id FK
       string nombre
       string contacto
+      string estado
+    }
+    PRODUCTOS {
+      int id PK
+      int empresa_id FK
+      int categoria_id FK
+      string sku
+      string codigo_barras
+      string nombre
+      string categoria
       string estado
     }
     CARRITOS_COMPRAS {
@@ -159,6 +183,25 @@ erDiagram
       string titulo
       string estado_tarea
       int porcentaje_avance
+      string estado
+    }
+    EMPRESA_GPS_DISPOSITIVOS {
+      int id PK
+      int empresa_id FK
+      string codigo
+      string nombre
+      string estado
+      string ultimo_reporte_en
+    }
+    EMPRESA_GPS_RECORRIDOS {
+      int id PK
+      int empresa_id FK
+      int dispositivo_id FK
+      float latitud
+      float longitud
+      float precision_metros
+      float velocidad_kmh
+      string capturado_en
       string estado
     }
 ```

@@ -27,12 +27,29 @@ type Bodega struct {
 	Observaciones      string `json:"observaciones,omitempty"`
 }
 
+// CategoriaProducto representa una categoría de productos dentro de una empresa.
+type CategoriaProducto struct {
+	ID                 int64  `json:"id"`
+	EmpresaID          int64  `json:"empresa_id"`
+	Codigo             string `json:"codigo,omitempty"`
+	Nombre             string `json:"nombre"`
+	Descripcion        string `json:"descripcion,omitempty"`
+	ColorHex           string `json:"color_hex,omitempty"`
+	Orden              int64  `json:"orden,omitempty"`
+	FechaCreacion      string `json:"fecha_creacion,omitempty"`
+	FechaActualizacion string `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador     string `json:"usuario_creador,omitempty"`
+	Estado             string `json:"estado,omitempty"`
+	Observaciones      string `json:"observaciones,omitempty"`
+}
+
 // Producto representa un producto asociado a una empresa.
 type Producto struct {
 	ID                   int64   `json:"id"`
 	EmpresaID            int64   `json:"empresa_id"`
 	BodegaPrincipalID    int64   `json:"bodega_principal_id,omitempty"`
 	ProveedorPrincipalID int64   `json:"proveedor_principal_id,omitempty"`
+	CategoriaID          int64   `json:"categoria_id,omitempty"`
 	SKU                  string  `json:"sku,omitempty"`
 	CodigoBarras         string  `json:"codigo_barras,omitempty"`
 	Nombre               string  `json:"nombre"`
@@ -168,11 +185,26 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
+		`CREATE TABLE IF NOT EXISTS categorias_productos (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			empresa_id INTEGER NOT NULL,
+			codigo TEXT,
+			nombre TEXT NOT NULL,
+			descripcion TEXT,
+			color_hex TEXT,
+			orden INTEGER DEFAULT 0,
+			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			usuario_creador TEXT,
+			estado TEXT DEFAULT 'activo',
+			observaciones TEXT
+		);`,
 		`CREATE TABLE IF NOT EXISTS productos (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			empresa_id INTEGER NOT NULL,
 			bodega_principal_id INTEGER,
 			proveedor_principal_id INTEGER,
+			categoria_id INTEGER,
 			sku TEXT,
 			codigo_barras TEXT,
 			nombre TEXT NOT NULL,
@@ -276,6 +308,9 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 		);`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_bodegas_empresa_codigo ON bodegas(empresa_id, codigo);`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_bodegas_empresa_nombre ON bodegas(empresa_id, nombre);`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS ux_categorias_productos_empresa_codigo ON categorias_productos(empresa_id, codigo);`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS ux_categorias_productos_empresa_nombre ON categorias_productos(empresa_id, nombre);`,
+		`CREATE INDEX IF NOT EXISTS ix_categorias_productos_empresa_orden ON categorias_productos(empresa_id, orden, nombre);`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_productos_empresa_sku ON productos(empresa_id, sku);`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_productos_empresa_barras ON productos(empresa_id, codigo_barras);`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_proveedores_empresa_codigo ON proveedores(empresa_id, codigo);`,
@@ -316,10 +351,41 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 		return err
 	}
 
+	if err := ensureColumnIfMissing(dbConn, "categorias_productos", "codigo", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "categorias_productos", "nombre", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "categorias_productos", "descripcion", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "categorias_productos", "color_hex", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "categorias_productos", "orden", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "categorias_productos", "fecha_actualizacion", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "categorias_productos", "usuario_creador", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "categorias_productos", "estado", "TEXT DEFAULT 'activo'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "categorias_productos", "observaciones", "TEXT"); err != nil {
+		return err
+	}
+
 	if err := ensureColumnIfMissing(dbConn, "productos", "bodega_principal_id", "INTEGER"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "productos", "proveedor_principal_id", "INTEGER"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "productos", "categoria_id", "INTEGER"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "productos", "codigo_barras", "TEXT"); err != nil {
@@ -362,6 +428,9 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "productos", "observaciones", "TEXT"); err != nil {
+		return err
+	}
+	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_productos_empresa_categoria_id ON productos(empresa_id, categoria_id);`); err != nil {
 		return err
 	}
 
@@ -498,6 +567,12 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "inventario_movimientos", "observaciones", "TEXT"); err != nil {
 		return err
 	}
+	if err := seedCategoriasProductosFromLegacy(dbConn); err != nil {
+		return err
+	}
+	if err := backfillProductoCategoriaIDs(dbConn); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -613,6 +688,122 @@ func SetBodegaEstado(dbConn *sql.DB, empresaID, bodegaID int64, estado string) e
 	return err
 }
 
+// CreateCategoriaProducto inserta una categoría de producto para una empresa.
+func CreateCategoriaProducto(dbConn *sql.DB, c CategoriaProducto) (int64, error) {
+	res, err := dbConn.Exec(`INSERT INTO categorias_productos (
+		empresa_id, codigo, nombre, descripcion, color_hex, orden,
+		usuario_creador, estado, observaciones, fecha_creacion, fecha_actualizacion
+	) VALUES (?, NULLIF(?, ''), ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), 'activo'), ?, datetime('now','localtime'), datetime('now','localtime'))`,
+		c.EmpresaID, strings.TrimSpace(c.Codigo), strings.TrimSpace(c.Nombre), strings.TrimSpace(c.Descripcion), strings.TrimSpace(c.ColorHex), c.Orden,
+		strings.TrimSpace(c.UsuarioCreador), strings.TrimSpace(c.Estado), strings.TrimSpace(c.Observaciones))
+	if err != nil {
+		return 0, err
+	}
+	return res.LastInsertId()
+}
+
+// GetCategoriasProductoByEmpresa lista categorías de producto por empresa.
+func GetCategoriasProductoByEmpresa(dbConn *sql.DB, empresaID int64, incluirInactivas bool, filtro string) ([]CategoriaProducto, error) {
+	query := `SELECT id, empresa_id, codigo, nombre, descripcion, color_hex, orden,
+		fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones
+	FROM categorias_productos
+	WHERE empresa_id = ?`
+	args := []interface{}{empresaID}
+	if !incluirInactivas {
+		query += ` AND estado = 'activo'`
+	}
+	if strings.TrimSpace(filtro) != "" {
+		like := "%" + strings.TrimSpace(filtro) + "%"
+		query += ` AND (nombre LIKE ? OR codigo LIKE ? OR descripcion LIKE ?)`
+		args = append(args, like, like, like)
+	}
+	query += ` ORDER BY orden ASC, nombre ASC`
+
+	rows, err := dbConn.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]CategoriaProducto, 0)
+	for rows.Next() {
+		var c CategoriaProducto
+		var codigo, descripcion, colorHex, fechaCreacion, fechaActualizacion, usuario, estado, observaciones sql.NullString
+		if err := rows.Scan(&c.ID, &c.EmpresaID, &codigo, &c.Nombre, &descripcion, &colorHex, &c.Orden, &fechaCreacion, &fechaActualizacion, &usuario, &estado, &observaciones); err != nil {
+			return nil, err
+		}
+		if codigo.Valid {
+			c.Codigo = codigo.String
+		}
+		if descripcion.Valid {
+			c.Descripcion = descripcion.String
+		}
+		if colorHex.Valid {
+			c.ColorHex = colorHex.String
+		}
+		if fechaCreacion.Valid {
+			c.FechaCreacion = fechaCreacion.String
+		}
+		if fechaActualizacion.Valid {
+			c.FechaActualizacion = fechaActualizacion.String
+		}
+		if usuario.Valid {
+			c.UsuarioCreador = usuario.String
+		}
+		if estado.Valid {
+			c.Estado = estado.String
+		}
+		if observaciones.Valid {
+			c.Observaciones = observaciones.String
+		}
+		out = append(out, c)
+	}
+	return out, nil
+}
+
+// UpdateCategoriaProducto actualiza una categoría y sincroniza el nombre en productos asociados.
+func UpdateCategoriaProducto(dbConn *sql.DB, c CategoriaProducto) error {
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.Exec(`UPDATE categorias_productos
+		SET codigo = NULLIF(?, ''), nombre = ?, descripcion = ?, color_hex = ?, orden = ?, observaciones = ?, fecha_actualizacion = datetime('now','localtime')
+		WHERE id = ? AND empresa_id = ?`,
+		strings.TrimSpace(c.Codigo), strings.TrimSpace(c.Nombre), strings.TrimSpace(c.Descripcion), strings.TrimSpace(c.ColorHex), c.Orden, strings.TrimSpace(c.Observaciones), c.ID, c.EmpresaID); err != nil {
+		return err
+	}
+
+	if _, err := tx.Exec(`UPDATE productos
+		SET categoria = ?, fecha_actualizacion = datetime('now','localtime')
+		WHERE empresa_id = ? AND categoria_id = ?`, strings.TrimSpace(c.Nombre), c.EmpresaID, c.ID); err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+// DeleteCategoriaProducto elimina una categoría si no está asociada a productos.
+func DeleteCategoriaProducto(dbConn *sql.DB, empresaID, categoriaID int64) error {
+	var totalProductos int64
+	if err := dbConn.QueryRow(`SELECT COUNT(1) FROM productos WHERE empresa_id = ? AND categoria_id = ?`, empresaID, categoriaID).Scan(&totalProductos); err != nil {
+		return err
+	}
+	if totalProductos > 0 {
+		return fmt.Errorf("no se puede eliminar la categoría porque está asociada a productos")
+	}
+	_, err := dbConn.Exec(`DELETE FROM categorias_productos WHERE id = ? AND empresa_id = ?`, categoriaID, empresaID)
+	return err
+}
+
+// SetCategoriaProductoEstado activa/desactiva una categoría de producto.
+func SetCategoriaProductoEstado(dbConn *sql.DB, empresaID, categoriaID int64, estado string) error {
+	_, err := dbConn.Exec(`UPDATE categorias_productos SET estado = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ? AND empresa_id = ?`, strings.TrimSpace(estado), categoriaID, empresaID)
+	return err
+}
+
 // CreateProducto crea un producto y opcionalmente su stock inicial.
 func CreateProducto(dbConn *sql.DB, p Producto, stockInicial float64, referenciaInicial string) (int64, error) {
 	tx, err := dbConn.Begin()
@@ -631,13 +822,20 @@ func CreateProducto(dbConn *sql.DB, p Producto, stockInicial float64, referencia
 			return 0, err
 		}
 	}
+	if p.CategoriaID > 0 {
+		categoriaNombre, err := resolveCategoriaProductoTx(tx, p.EmpresaID, p.CategoriaID)
+		if err != nil {
+			return 0, err
+		}
+		p.Categoria = categoriaNombre
+	}
 
 	res, err := tx.Exec(`INSERT INTO productos (
-		empresa_id, bodega_principal_id, proveedor_principal_id, sku, codigo_barras, nombre, descripcion, categoria, marca, unidad_medida,
+		empresa_id, bodega_principal_id, proveedor_principal_id, categoria_id, sku, codigo_barras, nombre, descripcion, categoria, marca, unidad_medida,
 		costo, precio, impuesto_porcentaje, stock_minimo, stock_maximo, imagen_url,
 		usuario_creador, estado, observaciones, fecha_creacion, fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), 'activo'), ?, datetime('now','localtime'), datetime('now','localtime'))`,
-		p.EmpresaID, nullableInt64(p.BodegaPrincipalID), nullableInt64(p.ProveedorPrincipalID), strings.TrimSpace(p.SKU), strings.TrimSpace(p.CodigoBarras), strings.TrimSpace(p.Nombre), strings.TrimSpace(p.Descripcion), strings.TrimSpace(p.Categoria), strings.TrimSpace(p.Marca), defaultUnidad(p.UnidadMedida),
+	) VALUES (?, ?, ?, ?, NULLIF(?, ''), NULLIF(?, ''), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), 'activo'), ?, datetime('now','localtime'), datetime('now','localtime'))`,
+		p.EmpresaID, nullableInt64(p.BodegaPrincipalID), nullableInt64(p.ProveedorPrincipalID), nullableInt64(p.CategoriaID), strings.TrimSpace(p.SKU), strings.TrimSpace(p.CodigoBarras), strings.TrimSpace(p.Nombre), strings.TrimSpace(p.Descripcion), strings.TrimSpace(p.Categoria), strings.TrimSpace(p.Marca), defaultUnidad(p.UnidadMedida),
 		p.Costo, p.Precio, p.ImpuestoPorcentaje, p.StockMinimo, p.StockMaximo, strings.TrimSpace(p.ImagenURL),
 		strings.TrimSpace(p.UsuarioCreador), strings.TrimSpace(p.Estado), strings.TrimSpace(p.Observaciones))
 	if err != nil {
@@ -693,7 +891,7 @@ func CreateProducto(dbConn *sql.DB, p Producto, stockInicial float64, referencia
 }
 
 // GetProductosByEmpresa lista productos con filtros y stock total.
-func GetProductosByEmpresa(dbConn *sql.DB, empresaID int64, filtro, estado string, bodegaID int64, limit, offset int) ([]Producto, error) {
+func GetProductosByEmpresa(dbConn *sql.DB, empresaID int64, filtro, estado string, bodegaID, categoriaID int64, limit, offset int) ([]Producto, error) {
 	if limit <= 0 || limit > 500 {
 		limit = 200
 	}
@@ -702,11 +900,12 @@ func GetProductosByEmpresa(dbConn *sql.DB, empresaID int64, filtro, estado strin
 	}
 
 	query := `SELECT
-		p.id, p.empresa_id, p.bodega_principal_id, p.proveedor_principal_id, p.sku, p.codigo_barras, p.nombre, p.descripcion, p.categoria, p.marca, p.unidad_medida,
+		p.id, p.empresa_id, p.bodega_principal_id, p.proveedor_principal_id, p.categoria_id, p.sku, p.codigo_barras, p.nombre, p.descripcion, COALESCE(NULLIF(cp.nombre, ''), p.categoria), p.marca, p.unidad_medida,
 		p.costo, p.precio, p.impuesto_porcentaje, p.stock_minimo, p.stock_maximo, p.imagen_url,
 		p.fecha_creacion, p.fecha_actualizacion, p.usuario_creador, p.estado, p.observaciones,
 		COALESCE(SUM(e.cantidad), 0) AS stock_total
 	FROM productos p
+	LEFT JOIN categorias_productos cp ON cp.empresa_id = p.empresa_id AND cp.id = p.categoria_id
 	LEFT JOIN inventario_existencias e ON e.empresa_id = p.empresa_id AND e.producto_id = p.id
 	WHERE p.empresa_id = ?`
 
@@ -717,8 +916,8 @@ func GetProductosByEmpresa(dbConn *sql.DB, empresaID int64, filtro, estado strin
 	}
 	if strings.TrimSpace(filtro) != "" {
 		like := "%" + strings.TrimSpace(filtro) + "%"
-		query += " AND (p.nombre LIKE ? OR p.sku LIKE ? OR p.codigo_barras LIKE ? OR p.marca LIKE ? OR p.categoria LIKE ?)"
-		args = append(args, like, like, like, like, like)
+		query += " AND (p.nombre LIKE ? OR p.sku LIKE ? OR p.codigo_barras LIKE ? OR p.marca LIKE ? OR p.categoria LIKE ? OR cp.nombre LIKE ?)"
+		args = append(args, like, like, like, like, like, like)
 	}
 	if bodegaID > 0 {
 		query += ` AND EXISTS (
@@ -726,6 +925,10 @@ func GetProductosByEmpresa(dbConn *sql.DB, empresaID int64, filtro, estado strin
 			WHERE ex.empresa_id = p.empresa_id AND ex.producto_id = p.id AND ex.bodega_id = ?
 		)`
 		args = append(args, bodegaID)
+	}
+	if categoriaID > 0 {
+		query += ` AND p.categoria_id = ?`
+		args = append(args, categoriaID)
 	}
 
 	query += ` GROUP BY p.id ORDER BY p.id DESC LIMIT ? OFFSET ?`
@@ -742,9 +945,10 @@ func GetProductosByEmpresa(dbConn *sql.DB, empresaID int64, filtro, estado strin
 		var p Producto
 		var bodegaPrincipalID sql.NullInt64
 		var proveedorPrincipalID sql.NullInt64
+		var categoriaIDVal sql.NullInt64
 		var sku, codigoBarras, desc, categoria, marca, unidad, imagenURL, fechaCre, fechaAct, usuario, estadoVal, obs sql.NullString
 		if err := rows.Scan(
-			&p.ID, &p.EmpresaID, &bodegaPrincipalID, &proveedorPrincipalID, &sku, &codigoBarras, &p.Nombre, &desc, &categoria, &marca, &unidad,
+			&p.ID, &p.EmpresaID, &bodegaPrincipalID, &proveedorPrincipalID, &categoriaIDVal, &sku, &codigoBarras, &p.Nombre, &desc, &categoria, &marca, &unidad,
 			&p.Costo, &p.Precio, &p.ImpuestoPorcentaje, &p.StockMinimo, &p.StockMaximo, &imagenURL,
 			&fechaCre, &fechaAct, &usuario, &estadoVal, &obs,
 			&p.StockTotal,
@@ -756,6 +960,9 @@ func GetProductosByEmpresa(dbConn *sql.DB, empresaID int64, filtro, estado strin
 		}
 		if proveedorPrincipalID.Valid {
 			p.ProveedorPrincipalID = proveedorPrincipalID.Int64
+		}
+		if categoriaIDVal.Valid {
+			p.CategoriaID = categoriaIDVal.Int64
 		}
 		if sku.Valid {
 			p.SKU = sku.String
@@ -801,19 +1008,21 @@ func GetProductosByEmpresa(dbConn *sql.DB, empresaID int64, filtro, estado strin
 
 // GetProductoByID devuelve un producto específico por empresa.
 func GetProductoByID(dbConn *sql.DB, empresaID, productoID int64) (*Producto, error) {
-	query := `SELECT id, empresa_id, bodega_principal_id, proveedor_principal_id, sku, codigo_barras, nombre, descripcion, categoria, marca, unidad_medida,
-		costo, precio, impuesto_porcentaje, stock_minimo, stock_maximo, imagen_url,
-		fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones
-	FROM productos
-	WHERE empresa_id = ? AND id = ? LIMIT 1`
+	query := `SELECT p.id, p.empresa_id, p.bodega_principal_id, p.proveedor_principal_id, p.categoria_id, p.sku, p.codigo_barras, p.nombre, p.descripcion, COALESCE(NULLIF(cp.nombre, ''), p.categoria), p.marca, p.unidad_medida,
+		p.costo, p.precio, p.impuesto_porcentaje, p.stock_minimo, p.stock_maximo, p.imagen_url,
+		p.fecha_creacion, p.fecha_actualizacion, p.usuario_creador, p.estado, p.observaciones
+	FROM productos p
+	LEFT JOIN categorias_productos cp ON cp.empresa_id = p.empresa_id AND cp.id = p.categoria_id
+	WHERE p.empresa_id = ? AND p.id = ? LIMIT 1`
 
 	row := dbConn.QueryRow(query, empresaID, productoID)
 	var p Producto
 	var bodegaPrincipalID sql.NullInt64
 	var proveedorPrincipalID sql.NullInt64
+	var categoriaID sql.NullInt64
 	var sku, codigoBarras, desc, categoria, marca, unidad, imagenURL, fechaCre, fechaAct, usuario, estadoVal, obs sql.NullString
 	if err := row.Scan(
-		&p.ID, &p.EmpresaID, &bodegaPrincipalID, &proveedorPrincipalID, &sku, &codigoBarras, &p.Nombre, &desc, &categoria, &marca, &unidad,
+		&p.ID, &p.EmpresaID, &bodegaPrincipalID, &proveedorPrincipalID, &categoriaID, &sku, &codigoBarras, &p.Nombre, &desc, &categoria, &marca, &unidad,
 		&p.Costo, &p.Precio, &p.ImpuestoPorcentaje, &p.StockMinimo, &p.StockMaximo, &imagenURL,
 		&fechaCre, &fechaAct, &usuario, &estadoVal, &obs,
 	); err != nil {
@@ -824,6 +1033,9 @@ func GetProductoByID(dbConn *sql.DB, empresaID, productoID int64) (*Producto, er
 	}
 	if proveedorPrincipalID.Valid {
 		p.ProveedorPrincipalID = proveedorPrincipalID.Int64
+	}
+	if categoriaID.Valid {
+		p.CategoriaID = categoriaID.Int64
 	}
 	if sku.Valid {
 		p.SKU = sku.String
@@ -882,6 +1094,13 @@ func UpdateProducto(dbConn *sql.DB, p Producto, motivoCambio, referenciaCambio s
 			return err
 		}
 	}
+	if p.CategoriaID > 0 {
+		categoriaNombre, err := resolveCategoriaProductoTx(tx, p.EmpresaID, p.CategoriaID)
+		if err != nil {
+			return err
+		}
+		p.Categoria = categoriaNombre
+	}
 
 	var costoAnterior, precioAnterior, impuestoAnterior float64
 	if err := tx.QueryRow(`SELECT costo, precio, impuesto_porcentaje FROM productos WHERE id = ? AND empresa_id = ? LIMIT 1`, p.ID, p.EmpresaID).Scan(&costoAnterior, &precioAnterior, &impuestoAnterior); err != nil {
@@ -889,10 +1108,10 @@ func UpdateProducto(dbConn *sql.DB, p Producto, motivoCambio, referenciaCambio s
 	}
 
 	if _, err := tx.Exec(`UPDATE productos
-		SET bodega_principal_id = ?, proveedor_principal_id = ?, sku = ?, codigo_barras = ?, nombre = ?, descripcion = ?, categoria = ?, marca = ?, unidad_medida = ?,
+		SET bodega_principal_id = ?, proveedor_principal_id = ?, categoria_id = ?, sku = NULLIF(?, ''), codigo_barras = NULLIF(?, ''), nombre = ?, descripcion = ?, categoria = ?, marca = ?, unidad_medida = ?,
 			costo = ?, precio = ?, impuesto_porcentaje = ?, stock_minimo = ?, stock_maximo = ?, imagen_url = ?, observaciones = ?, fecha_actualizacion = datetime('now','localtime')
 		WHERE id = ? AND empresa_id = ?`,
-		nullableInt64(p.BodegaPrincipalID), nullableInt64(p.ProveedorPrincipalID), strings.TrimSpace(p.SKU), strings.TrimSpace(p.CodigoBarras), strings.TrimSpace(p.Nombre), strings.TrimSpace(p.Descripcion), strings.TrimSpace(p.Categoria), strings.TrimSpace(p.Marca), defaultUnidad(p.UnidadMedida),
+		nullableInt64(p.BodegaPrincipalID), nullableInt64(p.ProveedorPrincipalID), nullableInt64(p.CategoriaID), strings.TrimSpace(p.SKU), strings.TrimSpace(p.CodigoBarras), strings.TrimSpace(p.Nombre), strings.TrimSpace(p.Descripcion), strings.TrimSpace(p.Categoria), strings.TrimSpace(p.Marca), defaultUnidad(p.UnidadMedida),
 		p.Costo, p.Precio, p.ImpuestoPorcentaje, p.StockMinimo, p.StockMaximo, strings.TrimSpace(p.ImagenURL), strings.TrimSpace(p.Observaciones), p.ID, p.EmpresaID); err != nil {
 		return err
 	}
@@ -1597,6 +1816,94 @@ func RegistrarCambioProducto(dbConn *sql.DB, empresaID, productoOrigenID, produc
 	}
 
 	return tx.Commit()
+}
+
+func seedCategoriasProductosFromLegacy(dbConn *sql.DB) error {
+	rows, err := dbConn.Query(`SELECT DISTINCT empresa_id, TRIM(categoria)
+		FROM productos
+		WHERE TRIM(COALESCE(categoria, '')) <> ''`)
+	if err != nil {
+		return err
+	}
+	type categoriaSeed struct {
+		empresaID int64
+		nombre    string
+	}
+	seeds := make([]categoriaSeed, 0)
+
+	for rows.Next() {
+		var empresaID int64
+		var nombre string
+		if err := rows.Scan(&empresaID, &nombre); err != nil {
+			rows.Close()
+			return err
+		}
+		nombre = strings.TrimSpace(nombre)
+		if empresaID <= 0 || nombre == "" {
+			continue
+		}
+		seeds = append(seeds, categoriaSeed{empresaID: empresaID, nombre: nombre})
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return err
+	}
+	if err := rows.Close(); err != nil {
+		return err
+	}
+
+	for _, seed := range seeds {
+		if _, err := dbConn.Exec(`INSERT OR IGNORE INTO categorias_productos (
+			empresa_id, nombre, descripcion, usuario_creador, estado, observaciones, fecha_creacion, fecha_actualizacion
+		) VALUES (?, ?, ?, 'migracion', 'activo', ?, datetime('now','localtime'), datetime('now','localtime'))`,
+			seed.empresaID, seed.nombre, "categoria migrada desde productos.categoria", "registro automático por migración"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func backfillProductoCategoriaIDs(dbConn *sql.DB) error {
+	if _, err := dbConn.Exec(`UPDATE productos
+		SET categoria_id = (
+			SELECT cp.id
+			FROM categorias_productos cp
+			WHERE cp.empresa_id = productos.empresa_id
+				AND LOWER(TRIM(cp.nombre)) = LOWER(TRIM(productos.categoria))
+			LIMIT 1
+		)
+		WHERE (categoria_id IS NULL OR categoria_id <= 0)
+			AND TRIM(COALESCE(categoria, '')) <> ''`); err != nil {
+		return err
+	}
+
+	if _, err := dbConn.Exec(`UPDATE productos
+		SET categoria = (
+			SELECT cp.nombre
+			FROM categorias_productos cp
+			WHERE cp.empresa_id = productos.empresa_id
+				AND cp.id = productos.categoria_id
+			LIMIT 1
+		)
+		WHERE categoria_id IS NOT NULL AND categoria_id > 0`); err != nil {
+		return err
+	}
+	return nil
+}
+
+func resolveCategoriaProductoTx(tx *sql.Tx, empresaID, categoriaID int64) (string, error) {
+	var nombre string
+	if err := tx.QueryRow(`SELECT nombre FROM categorias_productos WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, categoriaID).Scan(&nombre); err != nil {
+		if err == sql.ErrNoRows {
+			return "", fmt.Errorf("categoria %d no pertenece a la empresa %d", categoriaID, empresaID)
+		}
+		return "", err
+	}
+	nombre = strings.TrimSpace(nombre)
+	if nombre == "" {
+		return "", fmt.Errorf("la categoría seleccionada no tiene nombre")
+	}
+	return nombre, nil
 }
 
 func insertProductoPrecioHistorialTx(tx *sql.Tx, h ProductoPrecioHistorial) error {

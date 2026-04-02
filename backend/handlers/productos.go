@@ -126,6 +126,121 @@ func EmpresaBodegasHandler(dbEmp *sql.DB) http.HandlerFunc {
 	}
 }
 
+// EmpresaCategoriasProductosHandler maneja CRUD de categorías de productos por empresa.
+func EmpresaCategoriasProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			empresaID, err := parseEmpresaIDQuery(r)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			includeInactive := r.URL.Query().Get("include_inactive") == "1"
+			q := r.URL.Query().Get("q")
+			rows, err := dbpkg.GetCategoriasProductoByEmpresa(dbEmp, empresaID, includeInactive, q)
+			if err != nil {
+				http.Error(w, "failed to list categorias de productos: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(rows)
+			return
+		case http.MethodPost:
+			var payload dbpkg.CategoriaProducto
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "invalid payload", http.StatusBadRequest)
+				return
+			}
+			if payload.EmpresaID <= 0 {
+				http.Error(w, "empresa_id required", http.StatusBadRequest)
+				return
+			}
+			if strings.TrimSpace(payload.Nombre) == "" {
+				http.Error(w, "nombre required", http.StatusBadRequest)
+				return
+			}
+			payload.UsuarioCreador = adminEmailFromRequest(r)
+			id, err := dbpkg.CreateCategoriaProducto(dbEmp, payload)
+			if err != nil {
+				http.Error(w, "failed to create categoria de producto: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]interface{}{"id": id})
+			return
+		case http.MethodPut:
+			q := r.URL.Query()
+			if q.Get("action") == "activar" {
+				empresaID, err := parseEmpresaIDQuery(r)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				id, err := parseInt64Query(r, "id")
+				if err != nil {
+					http.Error(w, "id required", http.StatusBadRequest)
+					return
+				}
+				estado := "inactivo"
+				if q.Get("activo") == "1" || strings.EqualFold(q.Get("estado"), "activo") {
+					estado = "activo"
+				}
+				if err := dbpkg.SetCategoriaProductoEstado(dbEmp, empresaID, id, estado); err != nil {
+					http.Error(w, "failed to set categoria estado: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
+
+			var payload dbpkg.CategoriaProducto
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "invalid payload", http.StatusBadRequest)
+				return
+			}
+			if payload.EmpresaID <= 0 || payload.ID <= 0 {
+				http.Error(w, "empresa_id and id required", http.StatusBadRequest)
+				return
+			}
+			if strings.TrimSpace(payload.Nombre) == "" {
+				http.Error(w, "nombre required", http.StatusBadRequest)
+				return
+			}
+			if err := dbpkg.UpdateCategoriaProducto(dbEmp, payload); err != nil {
+				http.Error(w, "failed to update categoria de producto: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+			return
+		case http.MethodDelete:
+			empresaID, err := parseEmpresaIDQuery(r)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			id, err := parseInt64Query(r, "id")
+			if err != nil {
+				http.Error(w, "id required", http.StatusBadRequest)
+				return
+			}
+			if err := dbpkg.DeleteCategoriaProducto(dbEmp, empresaID, id); err != nil {
+				if strings.Contains(strings.ToLower(err.Error()), "asociada") {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				http.Error(w, "failed to delete categoria de producto: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+			return
+		default:
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+	}
+}
+
 // EmpresaProductosHandler maneja CRUD de productos por empresa.
 func EmpresaProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -154,9 +269,10 @@ func EmpresaProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			q := r.URL.Query().Get("q")
 			estado := r.URL.Query().Get("estado")
 			bodegaID, _ := parseInt64QueryOptional(r, "bodega_id")
+			categoriaID, _ := parseInt64QueryOptional(r, "categoria_id")
 			limit, _ := parseIntQueryOptional(r, "limit")
 			offset, _ := parseIntQueryOptional(r, "offset")
-			rows, err := dbpkg.GetProductosByEmpresa(dbEmp, empresaID, q, estado, bodegaID, limit, offset)
+			rows, err := dbpkg.GetProductosByEmpresa(dbEmp, empresaID, q, estado, bodegaID, categoriaID, limit, offset)
 			if err != nil {
 				http.Error(w, "failed to list productos: "+err.Error(), http.StatusInternalServerError)
 				return
