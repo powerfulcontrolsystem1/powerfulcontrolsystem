@@ -2369,3 +2369,43 @@ Archivos modificados:
 - web/js/seleccionar_empresa.js
 - web/js/super_administrador.js
 
+
+2026-04-02: Actualización automática desde script: añadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/productos.go
+- backend/db/productos_categorias_test.go
+- backend/db/ubicacion_gps.go
+- backend/db/ubicacion_gps_test.go
+- backend/handlers/productos.go
+- backend/handlers/productos_categorias_test.go
+- backend/handlers/ubicacion_gps.go
+- backend/handlers/ubicacion_gps_test.go
+- backend/main.go
+- backend/server.err
+- backend/server.exe
+- backend/tools/add_role_super/main.go
+- backend/tools/inspect_tipos/main.go
+- backend/tools/migrate_and_list/main.go
+- backend/tools/query_users/main.go
+- backend/tools/set_admin_role/main.go
+- backend/tools/sync_users_to_super/main.go
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_las_bases_De_datos
+- documentos/diagramas/diagrama_arquitectura_sistema.md
+- documentos/diagramas/diagrama_entidad_relacion.md
+- documentos/diagramas/diagrama_flujo_procesos.md
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/historial_de_cambios
+- estructura_bd.md
+- scripts/logs/actualizar_repositorio-20260401-221652.log
+- scripts/logs/actualizar_repositorio-20260402-012311.log
+- web/administrar_empresa.html
+- web/administrar_empresa/administrar_productos.html
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/configuracion_de_estaciones.html
+- web/administrar_empresa/ubicacion_gps.html
+- web/estilos.css
+- web/js/administrar_empresa.js
+
