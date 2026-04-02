@@ -2270,3 +2270,29 @@ Archivos modificados:
 - web/super/licencias.html
 - web/super/licencias_resumen.html
 
+
+2026-04-01: Actualización automática desde script: añadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- backend/db/empresa_configuracion_avanzada.go
+- backend/db/facturacion_electronica.go
+- backend/server.err
+- backend/server.exe
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_las_bases_De_datos
+- documentos/diagramas/diagrama_entidad_relacion.md
+- documentos/diagramas/diagrama_flujo_procesos.md
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/historial_de_cambios
+- estructura_bd.md
+- scripts/logs/actualizar_repositorio-20260401-211027.log
+- scripts/logs/actualizar_repositorio-20260401-221652.log
+- web/administrar_empresa/configuracion.html
+- web/administrar_empresa/configuracion_avanzada.html
+- web/administrar_empresa/configuracion_de_estaciones.html
+- web/administrar_empresa/estaciones.html
+- web/estilos.css
+- web/js/administrar_empresa.js
+- web/js/seleccionar_empresa.js
+- web/js/super_administrador.js
+
