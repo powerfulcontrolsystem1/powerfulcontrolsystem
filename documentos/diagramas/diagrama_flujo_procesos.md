@@ -17,6 +17,9 @@ flowchart TD
     J --> K
     K --> L[Sesion iniciada]
 
+    L --> L0[Abrir administrar_empresa]
+    L0 --> L1[Cargar Inicio por defecto en Panel de la Empresa]
+
     L --> M[Crear cliente de venta]
     L --> N[Crear bodega y proveedor]
     M --> O[Crear carrito]
@@ -25,7 +28,16 @@ flowchart TD
     P --> Q[Calcular totales]
     Q --> R[Pagar carrito]
     R --> S[Cerrar carrito y guardar resumen de pago]
+
+    L --> T[Administrador abre modulo chat_y_tareas]
+    T --> U[Crear conversacion por empresa]
+    U --> V[Agregar participantes de la empresa]
+    V --> W[Intercambiar mensajes y adjuntos foto/voz]
+    W --> X[Crear tareas vinculadas a la conversacion]
+    X --> Y[Actualizar avance: pendiente/en_progreso/completada]
 ```
 
 Resultado esperado:
 - Flujo completo desde onboarding de usuario hasta cierre de venta con carrito pagado.
+- Flujo colaborativo interno por empresa para comunicacion operativa y seguimiento de tareas.
+- Al abrir el Panel de la Empresa, la subpagina inicial predeterminada es Inicio.

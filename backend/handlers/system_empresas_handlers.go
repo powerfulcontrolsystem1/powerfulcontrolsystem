@@ -1,12 +1,18 @@
 package handlers
 
 import (
+	"bytes"
 	"database/sql"
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"net/http"
+	"os/exec"
+	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -85,6 +91,102 @@ func SecurityPortsHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(resp)
+	}
+}
+
+// SecurityProcessesHandler devuelve la lista de procesos activos y uso de memoria.
+func SecurityProcessesHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		q := r.URL.Query()
+		limit := 200
+		if l := q.Get("limit"); l != "" {
+			if n, err := strconv.Atoi(l); err == nil && n > 0 {
+				limit = n
+			}
+		}
+
+		type ProcEntry struct {
+			PID      int64  `json:"pid"`
+			Name     string `json:"name"`
+			MemoryKB int64  `json:"memory_kb"`
+		}
+
+		var procs []ProcEntry
+
+		if runtime.GOOS == "windows" {
+			// tasklist CSV: "Image Name","PID","Session Name","Session#","Mem Usage"
+			cmd := exec.Command("tasklist", "/FO", "CSV", "/NH")
+			out, err := cmd.Output()
+			if err != nil {
+				http.Error(w, "failed to list processes", http.StatusInternalServerError)
+				return
+			}
+			rdr := csv.NewReader(bytes.NewReader(out))
+			rdr.FieldsPerRecord = -1
+			for {
+				rec, err := rdr.Read()
+				if err == io.EOF {
+					break
+				}
+				if err != nil {
+					continue
+				}
+				if len(rec) < 5 {
+					continue
+				}
+				name := strings.Trim(rec[0], " \"\r\n")
+				pidStr := strings.Trim(rec[1], " \"\r\n")
+				memStr := strings.Trim(rec[4], " \"\r\n")
+				pid, _ := strconv.ParseInt(strings.TrimSpace(pidStr), 10, 64)
+				// Mem string example: "12,345 K"
+				memClean := strings.ReplaceAll(memStr, ",", "")
+				memClean = strings.ReplaceAll(memClean, "K", "")
+				memClean = strings.ReplaceAll(memClean, "k", "")
+				memClean = strings.TrimSpace(memClean)
+				memVal, _ := strconv.ParseInt(memClean, 10, 64)
+				procs = append(procs, ProcEntry{PID: pid, Name: name, MemoryKB: memVal})
+			}
+		} else {
+			// Unix-like: ps -eo pid,comm,rss  (rss in KB)
+			cmd := exec.Command("ps", "-eo", "pid,comm,rss")
+			out, err := cmd.Output()
+			if err != nil {
+				http.Error(w, "failed to list processes", http.StatusInternalServerError)
+				return
+			}
+			lines := strings.Split(strings.TrimSpace(string(out)), "\n")
+			start := 0
+			if len(lines) > 0 && strings.Contains(strings.ToUpper(lines[0]), "PID") {
+				start = 1
+			}
+			for i := start; i < len(lines); i++ {
+				if len(procs) >= limit*10 { // safety cap while parsing
+					break
+				}
+				f := strings.Fields(lines[i])
+				if len(f) < 3 {
+					continue
+				}
+				pid, _ := strconv.ParseInt(f[0], 10, 64)
+				name := f[1]
+				rss, _ := strconv.ParseInt(f[len(f)-1], 10, 64)
+				procs = append(procs, ProcEntry{PID: pid, Name: name, MemoryKB: rss})
+			}
+		}
+
+		// Ordenar por memoria descendente
+		sort.Slice(procs, func(i, j int) bool { return procs[i].MemoryKB > procs[j].MemoryKB })
+
+		if len(procs) > limit {
+			procs = procs[:limit]
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(procs)
 	}
 }
 

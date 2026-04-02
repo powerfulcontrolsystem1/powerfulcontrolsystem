@@ -1,5 +1,64 @@
 - Historial de cambios
 
+- 2026-04-03: Monitor de procesos en Super Admin y ajuste de iframe por defecto
+    - Se implementó `SecurityProcessesHandler` en `backend/handlers/system_empresas_handlers.go` para listar procesos activos: PID, nombre y memoria (KB). Lógica cross-platform (Windows: `tasklist`, Unix: `ps`) y parámetro `limit`.
+    - Se registró la ruta `/super/api/security/processes` en `backend/main.go`.
+    - Se añadió sección y tabla en `web/super/seguridad.html` que consume la API y permite refrescar la lista de procesos.
+    - Se ajustó `web/js/administrar_empresa.js` para que el iframe de `administrar_empresa.html?id=...` cargue `administrar_empresa/inicio.html` por defecto, preservando `empresa_id`.
+    - Se actualizó `documentos/descripcion_de_archivos` con trazabilidad de los archivos afectados.
+    - Archivos afectados: backend/handlers/system_empresas_handlers.go, backend/main.go, web/super/seguridad.html, web/js/administrar_empresa.js, documentos/descripcion_de_archivos.
+
+- 2026-04-01: Panel de empresa carga Inicio como pagina predeterminada
+    - Se ajusta `web/js/administrar_empresa.js` para que al abrir `/administrar_empresa.html?id=...` el iframe cargue `inicio.html` por defecto.
+    - Se conserva el parametro `empresa_id` en la carga inicial para mantener el contexto de empresa.
+    - Se actualiza `documentos/diagramas/diagrama_flujo_procesos.md` para reflejar el flujo funcional de entrada al panel.
+    - Se actualiza `documentos/descripcion_de_archivos` con la trazabilidad del cambio.
+    - Archivos afectados: web/js/administrar_empresa.js, documentos/diagramas/diagrama_flujo_procesos.md, documentos/descripcion_de_archivos, documentos/historial_de_cambios
+
+- 2026-04-02: Reanudacion de sesion y validacion de estado sin cambios funcionales
+    - Se reviso `documentos/descripcion_del_proyecto` para confirmar alineacion operativa.
+    - Se verifico el estado actual del repositorio para continuidad del modulo `chat_y_tareas`.
+    - No se realizaron cambios de codigo ni ajustes de arquitectura en esta iteracion.
+    - Archivos afectados: documentos/historial_de_cambios
+
+- 2026-04-02: Implementacion integral del modulo chat_y_tareas por empresa
+    - Se crea el modulo backend de datos `backend/db/chat_tareas.go` con tablas y CRUD de:
+        - conversaciones,
+        - participantes,
+        - mensajes,
+        - adjuntos,
+        - tareas.
+    - Se crea el modulo HTTP `backend/handlers/chat_tareas.go` con endpoints:
+        - `/api/empresa/chat_tareas/conversaciones`
+        - `/api/empresa/chat_tareas/participantes`
+        - `/api/empresa/chat_tareas/mensajes`
+        - `/api/empresa/chat_tareas/mensajes/adjunto`
+        - `/api/empresa/chat_tareas/tareas`
+    - Se actualiza `backend/main.go` para:
+        - asegurar esquema (`EnsureEmpresaChatTareasSchema`),
+        - registrar migracion (`2026-04-02-001-chat-tareas`),
+        - exponer rutas API del nuevo modulo.
+    - Se crea la subpagina `web/administrar_empresa/chat_y_tareas.html` con interfaz tipo correo:
+        - bandeja de conversaciones,
+        - hilo de mensajes,
+        - adjuntos foto/voz,
+        - panel de tareas con seguimiento de estado.
+    - Se integra el acceso al modulo en:
+        - `web/administrar_empresa.html`
+        - `web/js/administrar_empresa.js`
+    - Se agregan estilos responsive del modulo en `web/estilos.css`.
+    - Se actualiza documentacion tecnica y de diagramas:
+        - `documentos/descripcion_de_archivos`
+        - `documentos/descripcion_de_las_bases_De_datos`
+        - `documentos/diagramas/diagrama_arquitectura_sistema.md`
+        - `documentos/diagramas/diagrama_flujo_procesos.md`
+        - `documentos/diagramas/diagrama_entidad_relacion.md`
+        - `documentos/diagramas/estructura_del_codigo.md`
+        - `estructura_bd.md` (nuevo documento raiz)
+    - Validacion tecnica ejecutada:
+        - `go test ./auth ./db ./handlers ./metrics ./utils`
+    - Archivos afectados: backend/db/chat_tareas.go, backend/handlers/chat_tareas.go, backend/main.go, web/administrar_empresa/chat_y_tareas.html, web/administrar_empresa.html, web/js/administrar_empresa.js, web/estilos.css, documentos/descripcion_de_archivos, documentos/historial_de_cambios, documentos/descripcion_de_las_bases_De_datos, documentos/diagramas/diagrama_arquitectura_sistema.md, documentos/diagramas/diagrama_flujo_procesos.md, documentos/diagramas/diagrama_entidad_relacion.md, documentos/diagramas/estructura_del_codigo.md, estructura_bd.md
+
 - 2026-04-01: Reparacion login admin/super (login.html) por OAuth Google
     - Se diagnostico fallo `token exchange failed` con causa `invalid_client` en callback OAuth.
     - Se restauraron en `backend/db/superadministrador.db` (tabla `configuraciones`) las claves:

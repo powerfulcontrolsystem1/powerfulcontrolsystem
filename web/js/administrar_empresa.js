@@ -14,6 +14,7 @@ function getQueryParam(name) {
     document.getElementById("linkProductos"),
     document.getElementById("linkConfiguracion"),
     document.getElementById("linkUsuarios"),
+    document.getElementById("linkChatTareas"),
     document.getElementById("linkClientes"),
     document.getElementById("linkConfigAvanzada"),
     document.getElementById("linkConfigEstaciones"),
@@ -37,7 +38,7 @@ function getQueryParam(name) {
   if (id) {
     setLinksWithEmpresa(id);
     if (frame) {
-      frame.src = "/administrar_empresa/administrar_productos.html?empresa_id=" + encodeURIComponent(id);
+      frame.src = "/administrar_empresa/inicio.html?empresa_id=" + encodeURIComponent(id);
     }
     fetch("/super/api/empresas?id=" + encodeURIComponent(id), { credentials: "same-origin" })
       .then(function (resp) {

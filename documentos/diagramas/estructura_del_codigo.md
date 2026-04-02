@@ -1,6 +1,6 @@
 # Estructura del codigo
 
-Fecha de actualizacion: 2026-04-01
+Fecha de actualizacion: 2026-04-02
 
 ## Objetivo
 Este documento resume la estructura tecnica principal del sistema y sirve como referencia para mantenimiento y evolucion.
@@ -95,3 +95,30 @@ Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe re
 
 - Impacto funcional:
   - Se restaura la continuidad del flujo de login admin/super (`/login.html` -> `/auth/google/login`) en escenarios donde la fuente operativa de credenciales es la DB.
+
+## Actualizacion 2026-04-02 (modulo chat_y_tareas por empresa)
+
+- Backend DB:
+  - Se agrega `backend/db/chat_tareas.go` con esquema y CRUD de:
+    - `chat_tareas_conversaciones`
+    - `chat_tareas_participantes`
+    - `chat_tareas_mensajes`
+    - `chat_tareas_adjuntos`
+    - `chat_tareas`
+  - Integracion en arranque via `EnsureEmpresaChatTareasSchema` y registro de migracion `2026-04-02-001-chat-tareas`.
+
+- Backend handlers:
+  - Se agrega `backend/handlers/chat_tareas.go` con endpoints:
+    - `GET/POST/PUT/DELETE /api/empresa/chat_tareas/conversaciones`
+    - `GET/POST/PUT/DELETE /api/empresa/chat_tareas/participantes`
+    - `GET/POST/PUT/DELETE /api/empresa/chat_tareas/mensajes`
+    - `POST /api/empresa/chat_tareas/mensajes/adjunto`
+    - `GET/POST/PUT/DELETE /api/empresa/chat_tareas/tareas`
+
+- Frontend:
+  - Nueva subpagina `web/administrar_empresa/chat_y_tareas.html`.
+  - Navegacion actualizada en `web/administrar_empresa.html` y `web/js/administrar_empresa.js`.
+  - Estilos responsive del modulo incorporados en `web/estilos.css`.
+
+- Impacto funcional:
+  - Se habilita colaboracion interna por empresa con chat, adjuntos de imagen/audio y seguimiento de tareas, manteniendo aislamiento por `empresa_id`.

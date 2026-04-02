@@ -265,6 +265,92 @@ El agente debe leer y actualizar este documento cada vez que se realicen cambios
      - `observaciones` TEXT
      - Índice: `ix_movimientos_empresa_producto`
 
+   - `chat_tareas_conversaciones` (nuevo módulo colaborativo por empresa)
+     - `id` INTEGER PRIMARY KEY AUTOINCREMENT
+     - `empresa_id` INTEGER NOT NULL
+     - `titulo` TEXT NOT NULL
+     - `descripcion` TEXT
+     - `prioridad` TEXT DEFAULT 'media'  -- baja/media/alta/urgente
+     - `estado_conversacion` TEXT DEFAULT 'abierta' -- abierta/cerrada
+     - `ultimo_mensaje_en` TEXT
+     - `fecha_creacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `fecha_actualizacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `usuario_creador` TEXT
+     - `estado` TEXT DEFAULT 'activo'
+     - `observaciones` TEXT
+
+   - `chat_tareas_participantes`
+     - `id` INTEGER PRIMARY KEY AUTOINCREMENT
+     - `empresa_id` INTEGER NOT NULL
+     - `conversacion_id` INTEGER NOT NULL
+     - `participante_tipo` TEXT DEFAULT 'usuario' -- admin/usuario/sistema
+     - `participante_ref_id` INTEGER
+     - `nombre` TEXT
+     - `email` TEXT
+     - `activo_chat` INTEGER DEFAULT 1
+     - `fecha_creacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `fecha_actualizacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `usuario_creador` TEXT
+     - `estado` TEXT DEFAULT 'activo'
+     - `observaciones` TEXT
+     - Restricción única: `(empresa_id, conversacion_id, participante_tipo, participante_ref_id, email)`
+
+   - `chat_tareas_mensajes`
+     - `id` INTEGER PRIMARY KEY AUTOINCREMENT
+     - `empresa_id` INTEGER NOT NULL
+     - `conversacion_id` INTEGER NOT NULL
+     - `autor_tipo` TEXT DEFAULT 'admin' -- admin/usuario/sistema
+     - `autor_ref_id` INTEGER
+     - `autor_nombre` TEXT
+     - `autor_email` TEXT
+     - `contenido` TEXT
+     - `tipo_mensaje` TEXT DEFAULT 'texto' -- texto/tarea/sistema
+     - `fecha_envio` TEXT DEFAULT (datetime('now','localtime'))
+     - `fecha_creacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `fecha_actualizacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `usuario_creador` TEXT
+     - `estado` TEXT DEFAULT 'activo'
+     - `observaciones` TEXT
+
+   - `chat_tareas_adjuntos`
+     - `id` INTEGER PRIMARY KEY AUTOINCREMENT
+     - `empresa_id` INTEGER NOT NULL
+     - `mensaje_id` INTEGER NOT NULL
+     - `tipo_archivo` TEXT DEFAULT 'otro' -- imagen/audio/archivo/otro
+     - `nombre_archivo` TEXT
+     - `mime_type` TEXT
+     - `file_url` TEXT NOT NULL
+     - `tamano_bytes` INTEGER DEFAULT 0
+     - `duracion_segundos` REAL DEFAULT 0
+     - `fecha_creacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `fecha_actualizacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `usuario_creador` TEXT
+     - `estado` TEXT DEFAULT 'activo'
+     - `observaciones` TEXT
+
+   - `chat_tareas`
+     - `id` INTEGER PRIMARY KEY AUTOINCREMENT
+     - `empresa_id` INTEGER NOT NULL
+     - `conversacion_id` INTEGER
+     - `titulo` TEXT NOT NULL
+     - `descripcion` TEXT
+     - `prioridad` TEXT DEFAULT 'media'
+     - `fecha_limite` TEXT
+     - `asignado_tipo` TEXT DEFAULT 'usuario'
+     - `asignado_ref_id` INTEGER
+     - `asignado_nombre` TEXT
+     - `asignado_email` TEXT
+     - `creado_por_tipo` TEXT DEFAULT 'admin'
+     - `creado_por_email` TEXT
+     - `estado_tarea` TEXT DEFAULT 'pendiente' -- pendiente/en_progreso/bloqueada/completada/cancelada
+     - `porcentaje_avance` INTEGER DEFAULT 0
+     - `completada_en` TEXT
+     - `fecha_creacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `fecha_actualizacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `usuario_creador` TEXT
+     - `estado` TEXT DEFAULT 'activo'
+     - `observaciones` TEXT
+
    Notas y recomendaciones:
    - Todas las tablas siguen el esquema estándar del proyecto: campos `fecha_creacion`, `fecha_actualizacion`, `usuario_creador`, `estado`, `observaciones`.
    - `empresa_id` en `users` es la FK conceptual hacia `empresas.id`. El proyecto usa SQLite simple, las FK deben manejarse desde la lógica de aplicación.

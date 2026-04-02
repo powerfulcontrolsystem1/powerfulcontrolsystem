@@ -1,6 +1,6 @@
 # Diagrama entidad-relacion
 
-Fecha: 2026-04-01
+Fecha: 2026-04-02
 
 ```mermaid
 erDiagram
@@ -17,9 +17,15 @@ erDiagram
     EMPRESAS ||--o{ SERVICIOS : "empresa_id"
     EMPRESAS ||--o{ CARRITOS_COMPRAS : "empresa_id"
     EMPRESAS ||--|| EMPRESA_CONFIG_AVANZADA : "empresa_id"
+    EMPRESAS ||--o{ CHAT_TAREAS_CONVERSACIONES : "empresa_id"
+    EMPRESAS ||--o{ CHAT_TAREAS : "empresa_id"
 
     CLIENTES ||--o{ CARRITOS_COMPRAS : "cliente_id"
     CARRITOS_COMPRAS ||--o{ CARRITO_COMPRA_ITEMS : "carrito_id"
+    CHAT_TAREAS_CONVERSACIONES ||--o{ CHAT_TAREAS_PARTICIPANTES : "conversacion_id"
+    CHAT_TAREAS_CONVERSACIONES ||--o{ CHAT_TAREAS_MENSAJES : "conversacion_id"
+    CHAT_TAREAS_CONVERSACIONES ||--o{ CHAT_TAREAS : "conversacion_id"
+    CHAT_TAREAS_MENSAJES ||--o{ CHAT_TAREAS_ADJUNTOS : "mensaje_id"
 
     ADMINISTRADORES {
       int id PK
@@ -96,6 +102,49 @@ erDiagram
       int imprimir_copia_factura
       int mostrar_logo
       string logo_url
+    }
+    CHAT_TAREAS_CONVERSACIONES {
+      int id PK
+      int empresa_id FK
+      string titulo
+      string prioridad
+      string estado_conversacion
+      string estado
+    }
+    CHAT_TAREAS_PARTICIPANTES {
+      int id PK
+      int empresa_id FK
+      int conversacion_id FK
+      string participante_tipo
+      int participante_ref_id
+      string email
+      string estado
+    }
+    CHAT_TAREAS_MENSAJES {
+      int id PK
+      int empresa_id FK
+      int conversacion_id FK
+      string autor_tipo
+      string autor_email
+      string tipo_mensaje
+      string estado
+    }
+    CHAT_TAREAS_ADJUNTOS {
+      int id PK
+      int empresa_id FK
+      int mensaje_id FK
+      string tipo_archivo
+      string file_url
+      string estado
+    }
+    CHAT_TAREAS {
+      int id PK
+      int empresa_id FK
+      int conversacion_id FK
+      string titulo
+      string estado_tarea
+      int porcentaje_avance
+      string estado
     }
 ```
 

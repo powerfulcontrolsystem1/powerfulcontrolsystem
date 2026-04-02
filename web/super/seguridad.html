@@ -38,6 +38,24 @@
     </div>
   </div>
 
+  <div class="container">
+    <div class="card">
+      <div class="page-header">
+        <h2>Procesos activos en memoria</h2>
+        <div>
+          <button id="refreshProcessesBtn" class="btn">Actualizar procesos</button>
+        </div>
+      </div>
+
+      <table class="table" id="processesTable">
+        <thead>
+          <tr><th>PID</th><th>Nombre</th><th>Memoria (KB)</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
   <script>
     async function scan(){
       const ip = document.getElementById('ipInput').value || '127.0.0.1';
@@ -60,6 +78,30 @@
       } finally { btn.disabled = false; btn.textContent = 'Escanear'; }
     }
     document.addEventListener('DOMContentLoaded', function(){ document.getElementById('scanBtn').addEventListener('click', scan); scan(); });
+
+    // --- Procesos en memoria ---
+    async function loadProcesses(){
+      const btn = document.getElementById('refreshProcessesBtn');
+      btn.disabled = true; btn.textContent = 'Cargando...';
+      try{
+        const res = await fetch('/super/api/security/processes?limit=200');
+        if(!res.ok) throw new Error('Error en la consulta: '+res.status);
+        const data = await res.json();
+        const tbody = document.querySelector('#processesTable tbody'); tbody.innerHTML = '';
+        data.forEach(item => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = '<td>'+item.pid+'</td><td>'+ (item.name||'') +'</td><td>'+ (item.memory_kb||0) +'</td>';
+          tbody.appendChild(tr);
+        });
+      }catch(e){
+        console.error(e); alert('Error cargando procesos: '+(e && e.message? e.message : e));
+      } finally { btn.disabled = false; btn.textContent = 'Actualizar procesos'; }
+    }
+    document.addEventListener('DOMContentLoaded', function(){
+      const b = document.getElementById('refreshProcessesBtn'); if (b) b.addEventListener('click', loadProcesses);
+      // cargar procesos al abrir la página
+      try { loadProcesses(); } catch(e) {}
+    });
   </script>
 </body>
 </html>

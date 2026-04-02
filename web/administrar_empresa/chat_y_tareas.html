@@ -1,0 +1,812 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Chat y tareas</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container chat-tareas-page">
+    <div class="page-header">
+      <h1 id="pageTitle">Chat y tareas</h1>
+      <button id="reloadBtn" class="btn secondary" type="button">Actualizar</button>
+    </div>
+
+    <div class="chat-tareas-layout">
+      <section class="card chat-panel conversaciones-panel">
+        <div class="chat-panel-header">
+          <h2>Conversaciones</h2>
+        </div>
+
+        <form id="convForm" class="chat-mini-form">
+          <label class="form-label" for="convTitulo">Nueva conversación</label>
+          <input id="convTitulo" class="form-input" required placeholder="Ej: Gestión pedido cliente X">
+          <textarea id="convDescripcion" class="form-textarea" placeholder="Contexto o objetivo"></textarea>
+          <div class="form-row compact-row">
+            <div class="form-col">
+              <label class="form-label" for="convPrioridad">Prioridad</label>
+              <select id="convPrioridad" class="form-input">
+                <option value="media">Media</option>
+                <option value="alta">Alta</option>
+                <option value="urgente">Urgente</option>
+                <option value="baja">Baja</option>
+              </select>
+            </div>
+            <div class="form-col form-col-end">
+              <button id="createConvBtn" class="btn" type="submit">Crear</button>
+            </div>
+          </div>
+        </form>
+
+        <div class="chat-search-row">
+          <input id="convSearch" class="form-input" placeholder="Buscar conversación">
+          <button id="convSearchBtn" class="btn secondary" type="button">Buscar</button>
+        </div>
+
+        <div id="convList" class="chat-conv-list">Cargando...</div>
+        <div id="convMsg" class="form-help"></div>
+      </section>
+
+      <section class="card chat-panel mensajes-panel">
+        <div class="chat-panel-header">
+          <h2 id="activeConvTitle">Selecciona una conversación</h2>
+          <div id="activeConvMeta" class="form-help"></div>
+        </div>
+
+        <div class="chat-participants-box">
+          <div class="chat-participants-header">Participantes</div>
+          <div id="participantsList" class="chat-participants-list">Sin participantes cargados.</div>
+          <div class="chat-add-participant-row">
+            <select id="participantSelect" class="form-input"></select>
+            <button id="addParticipantBtn" class="btn secondary" type="button">Agregar</button>
+          </div>
+        </div>
+
+        <div id="messagesList" class="chat-messages-list">Selecciona una conversación para ver mensajes.</div>
+
+        <form id="messageForm" class="chat-message-form">
+          <label class="form-label" for="messageText">Mensaje</label>
+          <textarea id="messageText" class="form-textarea" placeholder="Escribe tu mensaje"></textarea>
+          <div class="chat-attach-row">
+            <input id="messageFile" class="form-input" type="file" accept="image/*,audio/*,.pdf,.txt,.csv,.json">
+            <button id="sendMessageBtn" class="btn" type="submit">Enviar</button>
+          </div>
+        </form>
+        <div id="messageMsg" class="form-help"></div>
+      </section>
+
+      <section class="card chat-panel tareas-panel">
+        <div class="chat-panel-header">
+          <h2>Tareas</h2>
+        </div>
+
+        <form id="taskForm" class="chat-mini-form">
+          <input id="taskId" type="hidden">
+          <label class="form-label" for="taskTitulo">Título</label>
+          <input id="taskTitulo" class="form-input" required placeholder="Ej: Enviar cotización">
+          <label class="form-label" for="taskDescripcion">Descripción</label>
+          <textarea id="taskDescripcion" class="form-textarea" placeholder="Detalle breve"></textarea>
+
+          <div class="form-row compact-row">
+            <div class="form-col">
+              <label class="form-label" for="taskPrioridad">Prioridad</label>
+              <select id="taskPrioridad" class="form-input">
+                <option value="media">Media</option>
+                <option value="alta">Alta</option>
+                <option value="urgente">Urgente</option>
+                <option value="baja">Baja</option>
+              </select>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="taskFechaLimite">Fecha límite</label>
+              <input id="taskFechaLimite" class="form-input" type="datetime-local">
+            </div>
+          </div>
+
+          <div class="form-row compact-row">
+            <div class="form-col">
+              <label class="form-label" for="taskAsignado">Asignar a</label>
+              <select id="taskAsignado" class="form-input"></select>
+            </div>
+            <div class="form-col form-col-end">
+              <button id="saveTaskBtn" class="btn" type="submit">Guardar</button>
+            </div>
+          </div>
+        </form>
+
+        <div class="chat-search-row">
+          <select id="taskEstadoFilter" class="form-input">
+            <option value="">Todas</option>
+            <option value="pendiente">Pendientes</option>
+            <option value="en_progreso">En progreso</option>
+            <option value="bloqueada">Bloqueadas</option>
+            <option value="completada">Completadas</option>
+            <option value="cancelada">Canceladas</option>
+          </select>
+          <input id="taskSearch" class="form-input" placeholder="Buscar tarea">
+          <button id="taskSearchBtn" class="btn secondary" type="button">Filtrar</button>
+        </div>
+
+        <div id="taskList" class="chat-task-list">Cargando tareas...</div>
+        <div id="taskMsg" class="form-help"></div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      empresaID: 0,
+      empresaNombre: "",
+      adminEmail: "",
+      users: [],
+      conversaciones: [],
+      conversacionID: 0,
+      participantes: [],
+      mensajes: [],
+      tareas: [],
+      convSearch: "",
+      taskSearch: "",
+      taskEstadoFilter: ""
+    };
+
+    function getQueryParam(name) {
+      const p = new URLSearchParams(window.location.search);
+      return p.get(name);
+    }
+
+    function normalize(v) {
+      return (v == null ? "" : String(v)).trim();
+    }
+
+    function escapeHtml(v) {
+      return String(v == null ? "" : v)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function setHelp(id, text, isError) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = text || "";
+      el.style.color = isError ? "#ef5350" : "";
+    }
+
+    async function ensureOk(resp) {
+      if (resp.ok) return;
+      const text = await resp.text();
+      throw new Error(text || ("HTTP " + resp.status));
+    }
+
+    function formatDate(raw) {
+      const value = normalize(raw);
+      if (!value) return "-";
+      const dt = new Date(value.replace(" ", "T"));
+      if (Number.isNaN(dt.getTime())) return value;
+      return dt.toLocaleString();
+    }
+
+    function getTaskStatusLabel(status) {
+      switch (normalize(status).toLowerCase()) {
+        case "pendiente": return "Pendiente";
+        case "en_progreso": return "En progreso";
+        case "bloqueada": return "Bloqueada";
+        case "completada": return "Completada";
+        case "cancelada": return "Cancelada";
+        default: return "Pendiente";
+      }
+    }
+
+    function getPriorityClass(priority) {
+      const v = normalize(priority).toLowerCase();
+      if (v === "urgente") return "urgent";
+      if (v === "alta") return "high";
+      if (v === "baja") return "low";
+      return "mid";
+    }
+
+    function getTaskStatusClass(status) {
+      const v = normalize(status).toLowerCase();
+      if (v === "completada") return "done";
+      if (v === "en_progreso") return "progress";
+      if (v === "bloqueada") return "blocked";
+      if (v === "cancelada") return "cancel";
+      return "pending";
+    }
+
+    async function loadEmpresa() {
+      const resp = await fetch("/super/api/empresas?id=" + encodeURIComponent(state.empresaID));
+      if (!resp.ok) return;
+      const data = await resp.json();
+      const nombre = normalize(data && (data.nombre || data.Nombre));
+      if (nombre) {
+        state.empresaNombre = nombre;
+        document.getElementById("pageTitle").textContent = "Chat y tareas - " + nombre;
+      }
+    }
+
+    async function loadMe() {
+      const resp = await fetch("/me", { credentials: "same-origin" });
+      if (!resp.ok) return;
+      const data = await resp.json();
+      state.adminEmail = normalize(data && data.email);
+      renderAssignOptions();
+    }
+
+    async function loadUsers() {
+      const url = new URL("/api/empresa/usuarios", window.location.origin);
+      url.searchParams.set("empresa_id", String(state.empresaID));
+      url.searchParams.set("include_inactive", "1");
+      const resp = await fetch(url.pathname + url.search);
+      await ensureOk(resp);
+      const rows = await resp.json();
+      state.users = Array.isArray(rows) ? rows : [];
+      renderAssignOptions();
+      renderParticipantOptions();
+    }
+
+    function renderAssignOptions() {
+      const select = document.getElementById("taskAsignado");
+      if (!select) return;
+      let html = "";
+      const adminLabel = state.adminEmail || "Administrador";
+      html += '<option value="admin|0|' + escapeHtml(adminLabel) + '|' + escapeHtml(state.adminEmail || "") + '">Admin empresa (' + escapeHtml(adminLabel) + ')</option>';
+      state.users.forEach(function (u) {
+        if (normalize(u.estado || "activo").toLowerCase() !== "activo") return;
+        const id = Number(u.id || 0);
+        const name = normalize(u.nombre || u.name || u.email || ("Usuario " + id));
+        const email = normalize(u.email || "");
+        html += '<option value="usuario|' + id + '|' + escapeHtml(name) + '|' + escapeHtml(email) + '">' + escapeHtml(name) + (email ? " (" + escapeHtml(email) + ")" : "") + "</option>";
+      });
+      select.innerHTML = html;
+    }
+
+    function renderParticipantOptions() {
+      const select = document.getElementById("participantSelect");
+      if (!select) return;
+      let html = '<option value="">Selecciona usuario</option>';
+      state.users.forEach(function (u) {
+        if (normalize(u.estado || "activo").toLowerCase() !== "activo") return;
+        const id = Number(u.id || 0);
+        const name = normalize(u.nombre || u.name || u.email || ("Usuario " + id));
+        const email = normalize(u.email || "");
+        html += '<option value="' + id + '|' + escapeHtml(name) + '|' + escapeHtml(email) + '">' + escapeHtml(name) + (email ? " (" + escapeHtml(email) + ")" : "") + "</option>";
+      });
+      select.innerHTML = html;
+    }
+
+    async function loadConversaciones() {
+      const url = new URL("/api/empresa/chat_tareas/conversaciones", window.location.origin);
+      url.searchParams.set("empresa_id", String(state.empresaID));
+      url.searchParams.set("include_inactive", "1");
+      if (state.convSearch) url.searchParams.set("q", state.convSearch);
+      const resp = await fetch(url.pathname + url.search);
+      await ensureOk(resp);
+      const rows = await resp.json();
+      state.conversaciones = Array.isArray(rows) ? rows : [];
+      if (state.conversacionID) {
+        const exists = state.conversaciones.some(function (c) { return Number(c.id) === Number(state.conversacionID); });
+        if (!exists) state.conversacionID = 0;
+      }
+      if (!state.conversacionID && state.conversaciones.length > 0) {
+        state.conversacionID = Number(state.conversaciones[0].id);
+      }
+      renderConversaciones();
+    }
+
+    function renderConversaciones() {
+      const box = document.getElementById("convList");
+      if (!box) return;
+      if (!state.conversaciones.length) {
+        box.innerHTML = "<div class=\"chat-empty\">No hay conversaciones registradas.</div>";
+        return;
+      }
+
+      let html = "";
+      state.conversaciones.forEach(function (c) {
+        const id = Number(c.id || 0);
+        const active = id === Number(state.conversacionID);
+        const status = normalize(c.estado_conversacion || "abierta").toLowerCase();
+        const estado = normalize(c.estado || "activo").toLowerCase();
+        html += '<article class="chat-conv-item' + (active ? ' active' : '') + '">';
+        html += '<button type="button" class="chat-conv-select" data-id="' + id + '">';
+        html += '<div class="chat-conv-top"><strong>' + escapeHtml(c.titulo || "Sin titulo") + '</strong>';
+        html += '<span class="badge ' + getPriorityClass(c.prioridad) + '">' + escapeHtml((c.prioridad || "media").toUpperCase()) + '</span></div>';
+        html += '<div class="chat-conv-mid">' + escapeHtml(c.descripcion || "") + '</div>';
+        html += '<div class="chat-conv-meta">Msg: ' + Number(c.mensajes_count || 0) + ' | Tareas pendientes: ' + Number(c.tareas_pendientes || 0) + '</div>';
+        html += '<div class="chat-conv-meta">Estado: ' + escapeHtml(status) + ' | Registro: ' + escapeHtml(estado) + '</div>';
+        html += '</button>';
+        html += '<div class="chat-conv-actions">';
+        html += '<button type="button" class="btn secondary conv-action" data-action="' + (status === "abierta" ? "cerrar" : "reabrir") + '" data-id="' + id + '">' + (status === "abierta" ? "Cerrar" : "Reabrir") + '</button>';
+        html += '<button type="button" class="btn secondary conv-action" data-action="' + (estado === "activo" ? "desactivar" : "activar") + '" data-id="' + id + '">' + (estado === "activo" ? "Desactivar" : "Activar") + '</button>';
+        html += '<button type="button" class="btn danger conv-delete" data-id="' + id + '">Eliminar</button>';
+        html += '</div>';
+        html += '</article>';
+      });
+
+      box.innerHTML = html;
+
+      Array.from(box.querySelectorAll(".chat-conv-select")).forEach(function (btn) {
+        btn.onclick = async function () {
+          state.conversacionID = Number(btn.getAttribute("data-id"));
+          renderConversaciones();
+          await loadCurrentConversationData();
+        };
+      });
+
+      Array.from(box.querySelectorAll(".conv-action")).forEach(function (btn) {
+        btn.onclick = async function () {
+          const id = Number(btn.getAttribute("data-id"));
+          const action = normalize(btn.getAttribute("data-action"));
+          try {
+            const url = new URL("/api/empresa/chat_tareas/conversaciones", window.location.origin);
+            url.searchParams.set("empresa_id", String(state.empresaID));
+            url.searchParams.set("id", String(id));
+            url.searchParams.set("action", action);
+            const resp = await fetch(url.pathname + url.search, { method: "PUT" });
+            await ensureOk(resp);
+            await loadConversaciones();
+            await loadCurrentConversationData();
+          } catch (err) {
+            setHelp("convMsg", err.message || "Error actualizando conversación", true);
+          }
+        };
+      });
+
+      Array.from(box.querySelectorAll(".conv-delete")).forEach(function (btn) {
+        btn.onclick = async function () {
+          const id = Number(btn.getAttribute("data-id"));
+          if (!confirm("¿Eliminar la conversación y su historial de mensajes/tareas?")) return;
+          try {
+            const url = new URL("/api/empresa/chat_tareas/conversaciones", window.location.origin);
+            url.searchParams.set("empresa_id", String(state.empresaID));
+            url.searchParams.set("id", String(id));
+            const resp = await fetch(url.pathname + url.search, { method: "DELETE" });
+            await ensureOk(resp);
+            if (Number(state.conversacionID) === id) state.conversacionID = 0;
+            await loadConversaciones();
+            await loadCurrentConversationData();
+          } catch (err) {
+            setHelp("convMsg", err.message || "Error eliminando conversación", true);
+          }
+        };
+      });
+    }
+
+    async function loadParticipantes() {
+      if (!state.conversacionID) {
+        state.participantes = [];
+        renderParticipantes();
+        return;
+      }
+      const url = new URL("/api/empresa/chat_tareas/participantes", window.location.origin);
+      url.searchParams.set("empresa_id", String(state.empresaID));
+      url.searchParams.set("conversacion_id", String(state.conversacionID));
+      url.searchParams.set("include_inactive", "1");
+      const resp = await fetch(url.pathname + url.search);
+      await ensureOk(resp);
+      const rows = await resp.json();
+      state.participantes = Array.isArray(rows) ? rows : [];
+      renderParticipantes();
+    }
+
+    function renderParticipantes() {
+      const box = document.getElementById("participantsList");
+      if (!box) return;
+      if (!state.participantes.length) {
+        box.innerHTML = "<span class=\"chat-empty\">Sin participantes.</span>";
+        return;
+      }
+      const html = state.participantes.map(function (p) {
+        const name = normalize(p.nombre || p.email || "Participante");
+        const tipo = normalize(p.participante_tipo || "usuario");
+        const estado = normalize(p.estado || "activo");
+        return '<span class="participant-chip">' + escapeHtml(name) + ' <small>(' + escapeHtml(tipo) + ', ' + escapeHtml(estado) + ')</small></span>';
+      }).join("");
+      box.innerHTML = html;
+    }
+
+    async function loadMensajes() {
+      if (!state.conversacionID) {
+        state.mensajes = [];
+        renderMensajes();
+        return;
+      }
+      const url = new URL("/api/empresa/chat_tareas/mensajes", window.location.origin);
+      url.searchParams.set("empresa_id", String(state.empresaID));
+      url.searchParams.set("conversacion_id", String(state.conversacionID));
+      url.searchParams.set("include_inactive", "1");
+      url.searchParams.set("limit", "300");
+      const resp = await fetch(url.pathname + url.search);
+      await ensureOk(resp);
+      const rows = await resp.json();
+      state.mensajes = Array.isArray(rows) ? rows : [];
+      renderMensajes();
+    }
+
+    function renderAttachment(a) {
+      const tipo = normalize(a.tipo_archivo).toLowerCase();
+      const url = normalize(a.file_url);
+      const nombre = normalize(a.nombre_archivo || "adjunto");
+      if (!url) return "";
+      if (tipo === "imagen") {
+        return '<div class="chat-attachment-image"><img src="' + escapeHtml(url) + '" alt="adjunto"></div>';
+      }
+      if (tipo === "audio") {
+        return '<div class="chat-attachment-audio"><audio controls preload="none" src="' + escapeHtml(url) + '"></audio></div>';
+      }
+      return '<div class="chat-attachment-file"><a href="' + escapeHtml(url) + '" target="_blank" rel="noopener">' + escapeHtml(nombre) + '</a></div>';
+    }
+
+    function renderMensajes() {
+      const box = document.getElementById("messagesList");
+      if (!box) return;
+      if (!state.conversacionID) {
+        box.innerHTML = "<div class=\"chat-empty\">Selecciona una conversación para ver mensajes.</div>";
+        document.getElementById("activeConvTitle").textContent = "Selecciona una conversación";
+        document.getElementById("activeConvMeta").textContent = "";
+        return;
+      }
+
+      const conv = state.conversaciones.find(function (c) { return Number(c.id) === Number(state.conversacionID); });
+      document.getElementById("activeConvTitle").textContent = conv ? normalize(conv.titulo || "Conversación") : "Conversación";
+      document.getElementById("activeConvMeta").textContent = conv ? ("Prioridad: " + normalize(conv.prioridad || "media") + " | Estado: " + normalize(conv.estado_conversacion || "abierta")) : "";
+
+      if (!state.mensajes.length) {
+        box.innerHTML = "<div class=\"chat-empty\">No hay mensajes todavía.</div>";
+        return;
+      }
+
+      let html = "";
+      state.mensajes.forEach(function (m) {
+        const email = normalize(m.autor_email);
+        const own = state.adminEmail && normalize(state.adminEmail).toLowerCase() === email.toLowerCase();
+        html += '<article class="chat-bubble ' + (own ? "self" : "other") + '">';
+        html += '<header><strong>' + escapeHtml(normalize(m.autor_nombre || email || "Usuario")) + '</strong> <span>' + escapeHtml(formatDate(m.fecha_envio || m.fecha_creacion)) + '</span></header>';
+        html += '<div class="chat-content">' + escapeHtml(normalize(m.contenido)) + '</div>';
+        if (Array.isArray(m.adjuntos) && m.adjuntos.length) {
+          html += '<div class="chat-attachments">';
+          m.adjuntos.forEach(function (a) { html += renderAttachment(a); });
+          html += '</div>';
+        }
+        html += '</article>';
+      });
+
+      box.innerHTML = html;
+      box.scrollTop = box.scrollHeight;
+    }
+
+    async function loadTareas() {
+      const url = new URL("/api/empresa/chat_tareas/tareas", window.location.origin);
+      url.searchParams.set("empresa_id", String(state.empresaID));
+      url.searchParams.set("include_inactive", "1");
+      if (state.conversacionID) url.searchParams.set("conversacion_id", String(state.conversacionID));
+      if (state.taskEstadoFilter) url.searchParams.set("estado_tarea", state.taskEstadoFilter);
+      if (state.taskSearch) url.searchParams.set("q", state.taskSearch);
+      const resp = await fetch(url.pathname + url.search);
+      await ensureOk(resp);
+      const rows = await resp.json();
+      state.tareas = Array.isArray(rows) ? rows : [];
+      renderTareas();
+    }
+
+    function taskActionButtons(t) {
+      const status = normalize(t.estado_tarea).toLowerCase();
+      let html = "";
+      if (status !== "en_progreso" && status !== "completada" && status !== "cancelada") {
+        html += '<button type="button" class="btn secondary task-action" data-id="' + Number(t.id) + '" data-action="en_progreso">Iniciar</button>';
+      }
+      if (status !== "completada") {
+        html += '<button type="button" class="btn secondary task-action" data-id="' + Number(t.id) + '" data-action="completar">Completar</button>';
+      }
+      if (status === "completada" || status === "cancelada") {
+        html += '<button type="button" class="btn secondary task-action" data-id="' + Number(t.id) + '" data-action="reabrir">Reabrir</button>';
+      }
+      if (status !== "cancelada") {
+        html += '<button type="button" class="btn secondary task-action" data-id="' + Number(t.id) + '" data-action="cancelar">Cancelar</button>';
+      }
+      html += '<button type="button" class="btn danger task-delete" data-id="' + Number(t.id) + '">Eliminar</button>';
+      return html;
+    }
+
+    function renderTareas() {
+      const box = document.getElementById("taskList");
+      if (!box) return;
+      if (!state.tareas.length) {
+        box.innerHTML = "<div class=\"chat-empty\">No hay tareas para el filtro actual.</div>";
+        return;
+      }
+
+      let html = "";
+      state.tareas.forEach(function (t) {
+        html += '<article class="task-item">';
+        html += '<div class="task-top">';
+        html += '<strong>' + escapeHtml(t.titulo || "Sin título") + '</strong>';
+        html += '<span class="badge ' + getPriorityClass(t.prioridad) + '">' + escapeHtml((t.prioridad || "media").toUpperCase()) + '</span>';
+        html += '</div>';
+        html += '<div class="task-meta">Estado: <span class="task-status ' + getTaskStatusClass(t.estado_tarea) + '">' + escapeHtml(getTaskStatusLabel(t.estado_tarea)) + '</span> | Avance: ' + Number(t.porcentaje_avance || 0) + '%</div>';
+        if (normalize(t.descripcion)) {
+          html += '<div class="task-desc">' + escapeHtml(t.descripcion) + '</div>';
+        }
+        html += '<div class="task-meta">Asignado: ' + escapeHtml(normalize(t.asignado_nombre || t.asignado_email || "Sin asignar")) + '</div>';
+        html += '<div class="task-meta">Límite: ' + escapeHtml(formatDate(t.fecha_limite)) + '</div>';
+        html += '<div class="task-actions">' + taskActionButtons(t) + '</div>';
+        html += '</article>';
+      });
+
+      box.innerHTML = html;
+
+      Array.from(box.querySelectorAll(".task-action")).forEach(function (btn) {
+        btn.onclick = async function () {
+          const id = Number(btn.getAttribute("data-id"));
+          const action = normalize(btn.getAttribute("data-action"));
+          try {
+            const url = new URL("/api/empresa/chat_tareas/tareas", window.location.origin);
+            url.searchParams.set("empresa_id", String(state.empresaID));
+            url.searchParams.set("id", String(id));
+            url.searchParams.set("action", action);
+            const resp = await fetch(url.pathname + url.search, { method: "PUT" });
+            await ensureOk(resp);
+            await loadTareas();
+            await loadConversaciones();
+          } catch (err) {
+            setHelp("taskMsg", err.message || "Error actualizando tarea", true);
+          }
+        };
+      });
+
+      Array.from(box.querySelectorAll(".task-delete")).forEach(function (btn) {
+        btn.onclick = async function () {
+          const id = Number(btn.getAttribute("data-id"));
+          if (!confirm("¿Eliminar tarea?")) return;
+          try {
+            const url = new URL("/api/empresa/chat_tareas/tareas", window.location.origin);
+            url.searchParams.set("empresa_id", String(state.empresaID));
+            url.searchParams.set("id", String(id));
+            const resp = await fetch(url.pathname + url.search, { method: "DELETE" });
+            await ensureOk(resp);
+            await loadTareas();
+            await loadConversaciones();
+          } catch (err) {
+            setHelp("taskMsg", err.message || "Error eliminando tarea", true);
+          }
+        };
+      });
+    }
+
+    async function loadCurrentConversationData() {
+      await Promise.all([
+        loadParticipantes(),
+        loadMensajes(),
+        loadTareas()
+      ]);
+    }
+
+    document.getElementById("reloadBtn").onclick = async function () {
+      try {
+        await loadConversaciones();
+        await loadCurrentConversationData();
+        setHelp("convMsg", "Datos actualizados", false);
+      } catch (err) {
+        setHelp("convMsg", err.message || "No se pudo actualizar", true);
+      }
+    };
+
+    document.getElementById("convForm").onsubmit = async function (e) {
+      e.preventDefault();
+      const payload = {
+        empresa_id: state.empresaID,
+        titulo: normalize(document.getElementById("convTitulo").value),
+        descripcion: normalize(document.getElementById("convDescripcion").value),
+        prioridad: normalize(document.getElementById("convPrioridad").value) || "media",
+        estado_conversacion: "abierta"
+      };
+      if (!payload.titulo) {
+        setHelp("convMsg", "El título es obligatorio", true);
+        return;
+      }
+      try {
+        const resp = await fetch("/api/empresa/chat_tareas/conversaciones", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        await ensureOk(resp);
+        const body = await resp.json();
+        document.getElementById("convForm").reset();
+        state.conversacionID = Number(body.id || 0);
+        await loadConversaciones();
+        await loadCurrentConversationData();
+        setHelp("convMsg", "Conversación creada", false);
+      } catch (err) {
+        setHelp("convMsg", err.message || "No se pudo crear la conversación", true);
+      }
+    };
+
+    document.getElementById("convSearchBtn").onclick = async function () {
+      state.convSearch = normalize(document.getElementById("convSearch").value);
+      try {
+        await loadConversaciones();
+        await loadCurrentConversationData();
+      } catch (err) {
+        setHelp("convMsg", err.message || "No se pudo filtrar", true);
+      }
+    };
+
+    document.getElementById("addParticipantBtn").onclick = async function () {
+      if (!state.conversacionID) {
+        setHelp("messageMsg", "Selecciona una conversación", true);
+        return;
+      }
+      const raw = normalize(document.getElementById("participantSelect").value);
+      if (!raw) {
+        setHelp("messageMsg", "Selecciona un usuario", true);
+        return;
+      }
+      const parts = raw.split("|");
+      const id = Number(parts[0] || 0);
+      const nombre = normalize(parts[1]);
+      const email = normalize(parts[2]);
+      try {
+        const resp = await fetch("/api/empresa/chat_tareas/participantes", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            empresa_id: state.empresaID,
+            conversacion_id: state.conversacionID,
+            participante_tipo: "usuario",
+            participante_ref_id: id,
+            nombre: nombre,
+            email: email,
+            estado: "activo"
+          })
+        });
+        await ensureOk(resp);
+        await loadParticipantes();
+        setHelp("messageMsg", "Participante agregado", false);
+      } catch (err) {
+        setHelp("messageMsg", err.message || "No se pudo agregar participante", true);
+      }
+    };
+
+    document.getElementById("messageForm").onsubmit = async function (e) {
+      e.preventDefault();
+      if (!state.conversacionID) {
+        setHelp("messageMsg", "Selecciona una conversación", true);
+        return;
+      }
+
+      const contenido = normalize(document.getElementById("messageText").value);
+      const fileInput = document.getElementById("messageFile");
+      const file = fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
+
+      if (!contenido && !file) {
+        setHelp("messageMsg", "Escribe un mensaje o adjunta un archivo", true);
+        return;
+      }
+
+      try {
+        if (file) {
+          const fd = new FormData();
+          fd.append("empresa_id", String(state.empresaID));
+          fd.append("conversacion_id", String(state.conversacionID));
+          fd.append("contenido", contenido);
+          fd.append("autor_tipo", "admin");
+          fd.append("autor_nombre", state.adminEmail || "Administrador");
+          fd.append("autor_email", state.adminEmail || "");
+          fd.append("archivo", file);
+
+          const resp = await fetch("/api/empresa/chat_tareas/mensajes/adjunto", {
+            method: "POST",
+            body: fd
+          });
+          await ensureOk(resp);
+        } else {
+          const resp = await fetch("/api/empresa/chat_tareas/mensajes", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              empresa_id: state.empresaID,
+              conversacion_id: state.conversacionID,
+              autor_tipo: "admin",
+              autor_nombre: state.adminEmail || "Administrador",
+              autor_email: state.adminEmail || "",
+              contenido: contenido,
+              tipo_mensaje: "texto"
+            })
+          });
+          await ensureOk(resp);
+        }
+
+        document.getElementById("messageText").value = "";
+        fileInput.value = "";
+        await loadMensajes();
+        await loadConversaciones();
+        setHelp("messageMsg", "Mensaje enviado", false);
+      } catch (err) {
+        setHelp("messageMsg", err.message || "No se pudo enviar mensaje", true);
+      }
+    };
+
+    document.getElementById("taskForm").onsubmit = async function (e) {
+      e.preventDefault();
+      const titulo = normalize(document.getElementById("taskTitulo").value);
+      if (!titulo) {
+        setHelp("taskMsg", "El título es obligatorio", true);
+        return;
+      }
+
+      const assignRaw = normalize(document.getElementById("taskAsignado").value);
+      const parts = assignRaw.split("|");
+      const asignadoTipo = normalize(parts[0] || "usuario");
+      const asignadoRefID = Number(parts[1] || 0);
+      const asignadoNombre = normalize(parts[2] || "");
+      const asignadoEmail = normalize(parts[3] || "");
+
+      const payload = {
+        empresa_id: state.empresaID,
+        conversacion_id: state.conversacionID || 0,
+        titulo: titulo,
+        descripcion: normalize(document.getElementById("taskDescripcion").value),
+        prioridad: normalize(document.getElementById("taskPrioridad").value) || "media",
+        fecha_limite: normalize(document.getElementById("taskFechaLimite").value).replace("T", " "),
+        asignado_tipo: asignadoTipo,
+        asignado_ref_id: asignadoRefID,
+        asignado_nombre: asignadoNombre,
+        asignado_email: asignadoEmail,
+        estado_tarea: "pendiente",
+        porcentaje_avance: 0
+      };
+
+      try {
+        const resp = await fetch("/api/empresa/chat_tareas/tareas", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        await ensureOk(resp);
+        document.getElementById("taskForm").reset();
+        renderAssignOptions();
+        await loadTareas();
+        await loadConversaciones();
+        setHelp("taskMsg", "Tarea creada", false);
+      } catch (err) {
+        setHelp("taskMsg", err.message || "No se pudo crear la tarea", true);
+      }
+    };
+
+    document.getElementById("taskSearchBtn").onclick = async function () {
+      state.taskSearch = normalize(document.getElementById("taskSearch").value);
+      state.taskEstadoFilter = normalize(document.getElementById("taskEstadoFilter").value);
+      try {
+        await loadTareas();
+      } catch (err) {
+        setHelp("taskMsg", err.message || "No se pudo filtrar tareas", true);
+      }
+    };
+
+    (async function init() {
+      state.empresaID = Number(getQueryParam("empresa_id") || 0);
+      if (!state.empresaID) {
+        document.getElementById("convList").textContent = "empresa_id requerido en la URL";
+        document.getElementById("messagesList").textContent = "empresa_id requerido en la URL";
+        document.getElementById("taskList").textContent = "empresa_id requerido en la URL";
+        return;
+      }
+
+      try {
+        await Promise.all([loadEmpresa(), loadMe(), loadUsers()]);
+        await loadConversaciones();
+        await loadCurrentConversationData();
+      } catch (err) {
+        setHelp("convMsg", err.message || "Error cargando módulo", true);
+        setHelp("messageMsg", err.message || "Error cargando módulo", true);
+        setHelp("taskMsg", err.message || "Error cargando módulo", true);
+      }
+    })();
+  </script>
+</body>
+</html>

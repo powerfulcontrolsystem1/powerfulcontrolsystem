@@ -1,5 +1,74 @@
 Descripcion de archivos del proyecto
 
+Actualizacion 2026-04-01: Panel de empresa con carga predeterminada en Inicio
+
+- web/js/administrar_empresa.js:
+	- Se ajusta la carga inicial del iframe para que, cuando se abre `administrar_empresa.html?id=...`, se abra por defecto `inicio.html` en lugar de `administrar_productos.html`.
+	- Se conserva el paso de `empresa_id` a la subpagina inicial.
+
+- documentos/diagramas/diagrama_flujo_procesos.md:
+	- Se agrega el paso funcional de entrada al panel de empresa con carga inicial en `Inicio`.
+
+- documentos/historial_de_cambios:
+	- Se registra el ajuste funcional y sus archivos afectados.
+
+ Actualizacion 2026-04-03: Monitor de procesos en Super Admin (Seguridad) y ajuste de página por defecto
+ 
+ - backend/handlers/system_empresas_handlers.go:
+ 	- Añadida función `SecurityProcessesHandler` que lista procesos activos (PID, nombre, memoria en KB), con lógica cross-platform (Windows: `tasklist` / Unix: `ps`) y soporte de parámetro `limit`.
+ - backend/main.go:
+ 	- Registro de ruta `/super/api/security/processes` apuntando a `SecurityProcessesHandler`.
+ - web/super/seguridad.html:
+ 	- Nueva sección "Procesos activos en memoria" con tabla y botón de actualizar que consume la API `/super/api/security/processes`.
+ - web/js/administrar_empresa.js:
+ 	- Ajuste de carga inicial del iframe para abrir `administrar_empresa/inicio.html` por defecto cuando existe `empresa_id`.
+ - documentos/historial_de_cambios:
+ 	- Se añadió entrada documentando la implementación del monitor de procesos y el ajuste de la página por defecto.
+ 
+ Actualizacion 2026-04-02: Nuevo modulo chat_y_tareas por empresa
+
+- backend/db/chat_tareas.go:
+	- Nuevo modulo de datos para `empresas.db` con esquema y CRUD de conversaciones, participantes, mensajes, adjuntos y tareas.
+	- Garantiza aislamiento multiempresa en todas las consultas mediante `empresa_id`.
+
+- backend/handlers/chat_tareas.go:
+	- Nuevo modulo HTTP para API de colaboracion interna por empresa.
+	- Endpoints REST para conversaciones, participantes, mensajes y tareas, incluyendo subida multipart de adjuntos (foto/voz/archivo).
+
+- backend/main.go:
+	- Registro de `EnsureEmpresaChatTareasSchema` y migracion `2026-04-02-001-chat-tareas`.
+	- Registro de rutas `/api/empresa/chat_tareas/...`.
+
+- web/administrar_empresa/chat_y_tareas.html:
+	- Nueva subpagina del panel de empresa con interfaz tipo correo: bandeja de conversaciones, hilo de mensajes y panel de tareas.
+
+- web/administrar_empresa.html:
+	- Menu lateral actualizado con acceso a `Chat y tareas`.
+
+- web/js/administrar_empresa.js:
+	- Se agrega propagacion de `empresa_id` al nuevo enlace `chat_y_tareas`.
+
+- web/estilos.css:
+	- Se incorporan estilos dedicados del modulo `chat_y_tareas`, con comportamiento responsive para escritorio y movil.
+
+- documentos/descripcion_de_las_bases_De_datos:
+	- Se documentan las nuevas tablas del modulo chat/tareas en `empresas.db`.
+
+- estructura_bd.md:
+	- Nuevo documento raiz que consolida la estructura vigente de `empresas.db` y `superadministrador.db`.
+
+- documentos/diagramas/diagrama_arquitectura_sistema.md:
+	- Se integra el componente `chat_tareas handlers` y almacenamiento de adjuntos en `web/uploads/chat_tareas`.
+
+- documentos/diagramas/diagrama_flujo_procesos.md:
+	- Se agrega flujo de colaboracion interna (chat + tareas) dentro del ciclo operativo empresarial.
+
+- documentos/diagramas/diagrama_entidad_relacion.md:
+	- Se agregan entidades y relaciones del modulo `chat_y_tareas`.
+
+- documentos/diagramas/estructura_del_codigo.md:
+	- Se registra la incorporacion del nuevo modulo a nivel backend/frontend/base de datos.
+
 Actualizacion 2026-04-01: Recuperacion operativa de login admin/super por OAuth Google
 
 - backend/db/superadministrador.db:

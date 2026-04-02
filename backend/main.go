@@ -293,8 +293,14 @@ func main() {
 	if err := dbpkg.EnsureEmpresaConfiguracionAvanzadaSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure empresa_configuracion_avanzada schema in empresas db: %v", err)
 	}
+	if err := dbpkg.EnsureEmpresaChatTareasSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure chat_tareas schema in empresas db: %v", err)
+	}
 	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-01-001-baseline", "baseline schema snapshot: users, empresas, productos, clientes, carritos, configuracion_avanzada"); err != nil {
 		log.Fatalf("failed to register schema migration in empresas db: %v", err)
+	}
+	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-02-001-chat-tareas", "chat y tareas por empresa: conversaciones, participantes, mensajes, adjuntos y tareas"); err != nil {
+		log.Fatalf("failed to register chat_tareas schema migration in empresas db: %v", err)
 	}
 	// Crear tipos_de_empresas en la base de datos de superadministrador (ubicación centralizada)
 	createTiposSuper := `CREATE TABLE IF NOT EXISTS tipos_de_empresas (
@@ -675,6 +681,11 @@ func main() {
 	http.HandleFunc("/api/empresa/carritos_compra", handlers.EmpresaCarritosCompraHandler(dbEmpresas))
 	http.HandleFunc("/api/empresa/carritos_compra/items", handlers.EmpresaCarritoItemsHandler(dbEmpresas))
 	http.HandleFunc("/api/empresa/configuracion_avanzada", handlers.EmpresaConfiguracionAvanzadaHandler(dbEmpresas))
+	http.HandleFunc("/api/empresa/chat_tareas/conversaciones", handlers.EmpresaChatTareasConversacionesHandler(dbEmpresas))
+	http.HandleFunc("/api/empresa/chat_tareas/participantes", handlers.EmpresaChatTareasParticipantesHandler(dbEmpresas))
+	http.HandleFunc("/api/empresa/chat_tareas/mensajes", handlers.EmpresaChatTareasMensajesHandler(dbEmpresas))
+	http.HandleFunc("/api/empresa/chat_tareas/mensajes/adjunto", handlers.EmpresaChatTareasAdjuntoUploadHandler(dbEmpresas))
+	http.HandleFunc("/api/empresa/chat_tareas/tareas", handlers.EmpresaChatTareasTareasHandler(dbEmpresas))
 	http.HandleFunc("/api/empresa/roles_de_usuario", handlers.EmpresaRolesDeUsuarioHandler(dbEmpresas, dbSuper))
 	// Endpoint para obtener admin actual desde la cookie de sesión
 	http.HandleFunc("/me", handlers.MeHandler(dbSuper))
@@ -706,6 +717,8 @@ func main() {
 	http.HandleFunc("/super/api/metrics/history", handlers.MetricsHistoryHandler(dbSuper))
 	// Endpoint de seguridad: escaneo de puertos
 	http.HandleFunc("/super/api/security/ports", handlers.SecurityPortsHandler(dbSuper))
+	// Endpoint de seguridad: listado de procesos en memoria RAM
+	http.HandleFunc("/super/api/security/processes", handlers.SecurityProcessesHandler(dbSuper))
 
 	// Logout handler: limpiar cookie de sesión (si existe) y redirigir a la página de login
 	http.HandleFunc("/auth/logout", func(w http.ResponseWriter, r *http.Request) {
