@@ -660,3 +660,42 @@ Archivos modificados:
 - web/seleccionar_empresa.html
 - web/super/configuracion_avanzada.html
 
+
+2026-04-04 08:58:50 - Mensaje: Actualización automática desde script: añadir/actualizar archivos; Commit: 0d47b1b; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- Pendiente Notas
+- backend/db/auditoria_empresa.go
+- backend/db/auditoria_empresa_test.go
+- backend/db/eventos_contables.go
+- backend/db/eventos_contables_test.go
+- backend/db/finanzas.go
+- backend/db/finanzas_test.go
+- backend/handlers/auditoria_empresa.go
+- backend/handlers/auditoria_empresa_test.go
+- backend/handlers/empresa_permisos.go
+- backend/handlers/empresa_permisos_test.go
+- backend/handlers/eventos_contables_modulos_test.go
+- backend/handlers/finanzas.go
+- backend/logs/empresa_6.log
+- backend/logs/empresa_global.log
+- backend/main.go
+- backend/server.err
+- backend/server.exe
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_las_bases_De_datos
+- documentos/descripcion_del_proyecto
+- documentos/diagramas/diagrama_arquitectura_sistema.md
+- documentos/diagramas/diagrama_entidad_relacion.md
+- documentos/diagramas/diagrama_flujo_procesos.md
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/historial_de_cambios
+- documentos/matriz_kpi_pos_multiempresa.md
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- documentos/plan_maestro_pos_multiempresa_14_puntos.md
+- estructura_bd.md
+- scripts/logs/actualizar_repositorio-20260404-075441.log
+- scripts/logs/actualizar_repositorio-20260404-085836.log
+- web/administrar_empresa/finanzas.html
+- web/administrar_empresa/reportes.html
+
