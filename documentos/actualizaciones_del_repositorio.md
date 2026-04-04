@@ -607,3 +607,56 @@ Archivos modificados:
 - web/estilos.css
 - web/super/configuracion_avanzada.html
 
+
+2026-04-04 07:54:56 - Mensaje: Actualización automática desde script: añadir/actualizar archivos; Commit: 86ba4d1; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- Pendiente Notas
+- backend/db/carritos_compras.go
+- backend/db/carritos_inventario_test.go
+- backend/db/documentos_transaccionales.go
+- backend/db/documentos_transaccionales_test.go
+- backend/db/eventos_contables.go
+- backend/db/eventos_contables_test.go
+- backend/db/finanzas.go
+- backend/db/finanzas_test.go
+- backend/handlers/ai_config_handlers.go
+- backend/handlers/auth_users_carritos_test.go
+- backend/handlers/carritos_compras.go
+- backend/handlers/chat_con_inteligencia_artificial_controller_test.go
+- backend/handlers/documentos_lifecycle.go
+- backend/handlers/empresa_permisos.go
+- backend/handlers/empresa_permisos_test.go
+- backend/handlers/eventos_contables.go
+- backend/handlers/eventos_contables_modulos_test.go
+- backend/handlers/facturacion_electronica.go
+- backend/handlers/finanzas.go
+- backend/handlers/payments_handlers.go
+- backend/handlers/productos.go
+- backend/handlers/usuarios_empresa.go
+- backend/logs/empresa_6.log
+- backend/logs/empresa_global.log
+- backend/main.go
+- backend/server.err
+- backend/server.exe
+- backend/tools/register_gemini_key/main.go
+- backend/tools/test_gemini_key/main.go
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_las_bases_De_datos
+- documentos/diagramas/diagrama_arquitectura_sistema.md
+- documentos/diagramas/diagrama_entidad_relacion.md
+- documentos/diagramas/diagrama_flujo_procesos.md
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/historial_de_cambios
+- documentos/historial_de_cambios_addendum_2026-04-04.md
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- documentos/plan_maestro_pos_multiempresa_14_puntos.md
+- estructura_bd.md
+- scripts/logs/actualizar_repositorio-20260403-221311.log
+- scripts/logs/actualizar_repositorio-20260404-075441.log
+- web/administrar_empresa/reportes.html
+- web/estilos.css
+- web/js/seleccionar_empresa.js
+- web/seleccionar_empresa.html
+- web/super/configuracion_avanzada.html
+
