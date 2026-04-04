@@ -9,7 +9,7 @@ Clear-Host
 $backend = Join-Path $PSScriptRoot "..\backend"
 Push-Location $backend
 
-function Load-DotEnvValues {
+function Import-DotEnvValues {
     param([string]$Path)
     $map = @{}
     if (-not (Test-Path $Path)) { return $map }
@@ -46,13 +46,13 @@ function Resolve-GoogleOAuthCredentials {
     }
 
     $envCandidates = @(
-        Join-Path $BackendDir '.env.local',
-        Join-Path $BackendDir '.env'
+        (Join-Path -Path $BackendDir -ChildPath '.env.local')
+        (Join-Path -Path $BackendDir -ChildPath '.env')
     )
 
     foreach ($envPath in $envCandidates) {
         if (-not (Test-Path $envPath)) { continue }
-        $vals = Load-DotEnvValues -Path $envPath
+        $vals = Import-DotEnvValues -Path $envPath
         if ($vals.ContainsKey('GOOGLE_CLIENT_ID') -and -not [string]::IsNullOrWhiteSpace($vals['GOOGLE_CLIENT_ID'])) {
             $result.ClientId = $vals['GOOGLE_CLIENT_ID']
             $result.Source = $envPath
@@ -262,8 +262,13 @@ if ($clientSecret) { $env:GOOGLE_CLIENT_SECRET = $clientSecret }
 if ($env:GOOGLE_REDIRECT_URL) { $env:GOOGLE_REDIRECT_URL = $env:GOOGLE_REDIRECT_URL }
 
 # Iniciar sin -Environment para compatibilidad con Windows PowerShell 5.1
-Start-Process -FilePath $serverPath -WorkingDirectory $backend -RedirectStandardOutput (Join-Path $backend "server.log") -RedirectStandardError (Join-Path $backend "server.err") -PassThru | Out-Null
-Write-Host "Proceso del servidor lanzado." -ForegroundColor Green
+$serverProc = Start-Process -FilePath $serverPath -WorkingDirectory $backend -RedirectStandardOutput (Join-Path $backend "server.log") -RedirectStandardError (Join-Path $backend "server.err") -PassThru
+if (-not $serverProc) {
+    Write-Error "No se pudo iniciar server.exe"
+    Pop-Location
+    exit 1
+}
+Write-Host ("Proceso del servidor lanzado. PID={0}" -f $serverProc.Id) -ForegroundColor Green
 
 # Esperar a que el puerto 8080 esté en LISTENING
 $maxWait = 30  # segundos
@@ -272,6 +277,18 @@ Write-Host "Esperando a que http://localhost:8080 responda (timeout ${maxWait}s)
 while ($waited -lt $maxWait) {
     Start-Sleep -Seconds 1
     $waited++
+
+    if ($serverProc.HasExited) {
+        Write-Host ("ERROR: server.exe finalizo antes de abrir el puerto 8080 (ExitCode={0})." -f $serverProc.ExitCode) -ForegroundColor Red
+        $errPath = Join-Path $backend "server.err"
+        if (Test-Path $errPath) {
+            Write-Host "Ultimas lineas de backend/server.err:" -ForegroundColor Yellow
+            Get-Content -Path $errPath -Tail 40 | ForEach-Object { Write-Host $_ }
+        }
+        Pop-Location
+        exit 1
+    }
+
     $listening = (netstat -ano | findstr ":8080" 2>$null) -match 'LISTENING'
     if ($listening) { break }
 }
@@ -287,6 +304,11 @@ if ($listening) {
     }
 } else {
     Write-Host "AVISO: el servidor no respondió en ${maxWait}s. Verifica logs." -ForegroundColor Yellow
+    $errPath = Join-Path $backend "server.err"
+    if (Test-Path $errPath) {
+        Write-Host "Ultimas lineas de backend/server.err:" -ForegroundColor Yellow
+        Get-Content -Path $errPath -Tail 40 | ForEach-Object { Write-Host $_ }
+    }
 }
 
 Pop-Location

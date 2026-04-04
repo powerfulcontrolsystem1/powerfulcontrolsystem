@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"html"
+	"log"
 	"net"
 	"net/http"
 	"net/mail"
@@ -166,7 +167,8 @@ func EmpresaUsuariosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 						http.Error(w, "user not found", http.StatusNotFound)
 						return
 					}
-					http.Error(w, "failed to query user: "+err.Error(), http.StatusInternalServerError)
+					log.Printf("[usuarios_empresa] failed to query user (activar) empresa_id=%d id=%d error=%v", empresaID, id, err)
+					http.Error(w, "No se pudo validar el usuario", http.StatusInternalServerError)
 					return
 				}
 				estado := "inactivo"
@@ -202,7 +204,8 @@ func EmpresaUsuariosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 						http.Error(w, "user not found", http.StatusNotFound)
 						return
 					}
-					http.Error(w, "failed to query user: "+err.Error(), http.StatusInternalServerError)
+					log.Printf("[usuarios_empresa] failed to query user (reenviar_confirmacion) empresa_id=%d id=%d error=%v", empresaID, id, err)
+					http.Error(w, "No se pudo validar el usuario", http.StatusInternalServerError)
 					return
 				}
 				if item.EmailConfirmado == 1 {
@@ -262,7 +265,8 @@ func EmpresaUsuariosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					http.Error(w, "user not found", http.StatusNotFound)
 					return
 				}
-				http.Error(w, "failed to query user: "+err.Error(), http.StatusInternalServerError)
+				log.Printf("[usuarios_empresa] failed to query user (update) empresa_id=%d id=%d error=%v", payload.EmpresaID, id, err)
+				http.Error(w, "No se pudo validar el usuario", http.StatusInternalServerError)
 				return
 			}
 
@@ -385,7 +389,8 @@ func EmpresaUsuarioLoginHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "credenciales inválidas", http.StatusUnauthorized)
 				return
 			}
-			http.Error(w, "failed to query user: "+err.Error(), http.StatusInternalServerError)
+			log.Printf("[usuarios_empresa] failed to query user (login) empresa_id=%d email=%s error=%v", payload.EmpresaID, email, err)
+			http.Error(w, "No se pudo validar el usuario", http.StatusInternalServerError)
 			return
 		}
 
@@ -419,7 +424,8 @@ func EmpresaUsuarioLoginHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		if err := createEmpresaUsuarioSessionAndRespond(w, r, dbSuper, item); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Printf("[usuarios_empresa] failed to create session (login) empresa_id=%d email=%s error=%v", item.EmpresaID, item.Email, err)
+			http.Error(w, "No se pudo iniciar sesión del usuario", http.StatusInternalServerError)
 			return
 		}
 	}
@@ -479,7 +485,8 @@ func EmpresaUsuarioSetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "usuario no encontrado", http.StatusNotFound)
 				return
 			}
-			http.Error(w, "failed to query user: "+err.Error(), http.StatusInternalServerError)
+			log.Printf("[usuarios_empresa] failed to query user (set_password) empresa_id=%d email=%s error=%v", payload.EmpresaID, email, err)
+			http.Error(w, "No se pudo validar el usuario", http.StatusInternalServerError)
 			return
 		}
 		if !strings.EqualFold(strings.TrimSpace(item.DocumentoIdentidad), documento) {
@@ -505,7 +512,8 @@ func EmpresaUsuarioSetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 		if err := dbpkg.SetEmpresaUsuarioPassword(dbEmp, item.EmpresaID, item.ID, hash, salt); err != nil {
-			http.Error(w, "failed to set password: "+err.Error(), http.StatusInternalServerError)
+			log.Printf("[usuarios_empresa] failed to set password empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, item.Email, err)
+			http.Error(w, "No se pudo actualizar la contraseña", http.StatusInternalServerError)
 			return
 		}
 
@@ -514,7 +522,8 @@ func EmpresaUsuarioSetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 		item.PasswordSet = 1
 
 		if err := createEmpresaUsuarioSessionAndRespond(w, r, dbSuper, item); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Printf("[usuarios_empresa] failed to create session (set_password) empresa_id=%d email=%s error=%v", item.EmpresaID, item.Email, err)
+			http.Error(w, "No se pudo iniciar sesión del usuario", http.StatusInternalServerError)
 			return
 		}
 	}

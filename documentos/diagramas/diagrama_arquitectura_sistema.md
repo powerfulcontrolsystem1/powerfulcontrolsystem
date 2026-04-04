@@ -15,12 +15,14 @@ flowchart LR
     H5[chat_tareas handlers]
     H6[ubicacion_gps handlers]
     H7[finanzas handlers]
+    H8[chat_con_inteligencia_artificial handlers]
     DB1[(empresas.db)]
     DB2[(superadministrador.db)]
     FS[(web/uploads/chat_tareas)]
     OSM[OpenStreetMap Tiles]
     SMTP[SMTP Gmail]
     MP[Pasarela de pago Mercado Pago / Wompi]
+    AI[APIs IA externas OpenAI/DeepSeek/Hugging Face]
 
     U -->|HTML/CSS| JS
     U -->|HTTP/HTTPS| S
@@ -32,6 +34,7 @@ flowchart LR
     M --> H5
     M --> H6
     M --> H7
+    M --> H8
 
     U -->|Leaflet + Tiles| OSM
 
@@ -49,6 +52,8 @@ flowchart LR
     H5 --> FS
     H6 --> DB1
     H7 --> DB1
+    H8 --> DB1
+    H8 --> AI
 
     DB2 -->|sesiones/roles/config| M
 ```
@@ -59,5 +64,6 @@ Componentes:
 - Persistencia: SQLite separada por contexto global y empresarial.
 - Colaboracion interna: modulo `chat_y_tareas` con adjuntos en `web/uploads/chat_tareas/` y metadatos en `empresas.db`.
 - Geolocalizacion empresarial: modulo `ubicacion_gps` con mapa OpenStreetMap y almacenamiento de recorridos por `empresa_id`.
-- Finanzas empresariales: modulo `finanzas` con configuracion por empresa y registro de ingresos/egresos con comprobantes.
+- Finanzas empresariales: modulo `finanzas` con configuracion por empresa, gestion de periodos contables (abrir/cerrar), retenciones y registro de ingresos/egresos con comprobantes.
+- Chat IA empresarial: modulo `chat_con_inteligencia_artificial` con alcance por `empresa_id`, limites free-tier, auditoria de consultas/respuestas por proveedor/modelo y persistencia de `modelo_preferido` por cuenta Google (`empresa_id + admin_email`).
 - Integraciones: SMTP para validacion de correo y pasarelas para pagos.

@@ -111,6 +111,7 @@ El agente debe leer y actualizar este documento cada vez que se realicen cambios
      - `tipo_movimiento` TEXT NOT NULL  -- ingreso / egreso
      - `codigo` TEXT NOT NULL
      - `fecha_movimiento` TEXT DEFAULT (datetime('now','localtime'))
+     - `periodo_contable` TEXT  -- formato YYYY-MM
      - `categoria` TEXT
      - `subcategoria` TEXT
      - `concepto` TEXT
@@ -119,7 +120,12 @@ El agente debe leer y actualizar este documento cada vez que se realicen cambios
      - `moneda` TEXT DEFAULT 'COP'
      - `monto` REAL DEFAULT 0
      - `impuesto` REAL DEFAULT 0
+     - `retencion_fuente` REAL DEFAULT 0
+     - `retencion_ica` REAL DEFAULT 0
+     - `retencion_iva` REAL DEFAULT 0
+     - `total_retenciones` REAL DEFAULT 0
      - `total` REAL DEFAULT 0
+     - `total_neto` REAL DEFAULT 0
      - `tercero_nombre` TEXT
      - `tercero_documento` TEXT
      - `tipo_comprobante` TEXT DEFAULT 'recibo_interno'
@@ -133,7 +139,23 @@ El agente debe leer y actualizar este documento cada vez que se realicen cambios
      - `estado` TEXT DEFAULT 'activo'
      - `observaciones` TEXT
      - Restricción única: `(empresa_id, codigo)`
-     - Índices: `ix_empresa_finanzas_movimientos_empresa_fecha`, `ix_empresa_finanzas_movimientos_empresa_tipo_estado`, `ix_empresa_finanzas_movimientos_empresa_comprobante`
+     - Índices: `ix_empresa_finanzas_movimientos_empresa_fecha`, `ix_empresa_finanzas_movimientos_empresa_tipo_estado`, `ix_empresa_finanzas_movimientos_empresa_comprobante`, `ix_empresa_finanzas_movimientos_empresa_periodo`
+
+   - `empresa_finanzas_periodos` (control de periodos contables por empresa)
+     - `id` INTEGER PRIMARY KEY AUTOINCREMENT
+     - `empresa_id` INTEGER NOT NULL
+     - `periodo` TEXT NOT NULL -- YYYY-MM
+     - `fecha_inicio` TEXT
+     - `fecha_fin` TEXT
+     - `estado` TEXT DEFAULT 'abierto' -- abierto/cerrado/inactivo
+     - `fecha_cierre` TEXT
+     - `cerrado_por` TEXT
+     - `fecha_creacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `fecha_actualizacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `usuario_creador` TEXT
+     - `observaciones` TEXT
+     - Restricción única: `(empresa_id, periodo)`
+     - Índices: `ix_empresa_finanzas_periodos_empresa_estado`
 
    - `empresa_finanzas_configuracion` (configuración financiera por empresa)
      - `id` INTEGER PRIMARY KEY AUTOINCREMENT
@@ -153,6 +175,8 @@ El agente debe leer y actualizar este documento cada vez que se realicen cambios
       - `cuenta_iva_generado` TEXT DEFAULT '240805'
       - `cuenta_gastos` TEXT DEFAULT '519595'
       - `cuenta_iva_descontable` TEXT DEFAULT '240810'
+      - `cuenta_retenciones_cobrar` TEXT DEFAULT '135595'
+      - `cuenta_retenciones_pagar` TEXT DEFAULT '236595'
       - `cuentas_ingreso_categoria` TEXT
       - `cuentas_egreso_categoria` TEXT
      - `fecha_creacion` TEXT DEFAULT (datetime('now','localtime'))
@@ -160,6 +184,56 @@ El agente debe leer y actualizar este documento cada vez que se realicen cambios
      - `usuario_creador` TEXT
      - `estado` TEXT DEFAULT 'activo'
      - `observaciones` TEXT
+
+   - `empresa_ai_consultas` (auditoria de consultas/respuestas IA por empresa)
+     - `id` INTEGER PRIMARY KEY AUTOINCREMENT
+     - `empresa_id` INTEGER NOT NULL
+     - `provider` TEXT NOT NULL -- openai / deepseek / huggingface
+     - `model_id` TEXT NOT NULL
+     - `pregunta` TEXT NOT NULL
+     - `respuesta` TEXT
+     - `prompt_tokens` INTEGER DEFAULT 0
+     - `completion_tokens` INTEGER DEFAULT 0
+     - `total_tokens` INTEGER DEFAULT 0
+     - `fecha_consulta` TEXT DEFAULT (datetime('now','localtime'))
+     - `plan_actual` TEXT DEFAULT 'free'
+     - `fecha_creacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `fecha_actualizacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `usuario_creador` TEXT
+     - `estado` TEXT DEFAULT 'activo'
+     - `observaciones` TEXT
+     - Índices: `ix_empresa_ai_consultas_empresa_fecha`, `ix_empresa_ai_consultas_empresa_modelo`
+
+   - `empresa_ai_uso_diario` (control diario de consumo IA por empresa/modelo)
+     - `id` INTEGER PRIMARY KEY AUTOINCREMENT
+     - `empresa_id` INTEGER NOT NULL
+     - `provider` TEXT NOT NULL
+     - `model_id` TEXT NOT NULL
+     - `fecha_uso` TEXT NOT NULL -- YYYY-MM-DD
+     - `consultas_total` INTEGER DEFAULT 0
+     - `tokens_total` INTEGER DEFAULT 0
+     - `plan_actual` TEXT DEFAULT 'free'
+     - `fecha_creacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `fecha_actualizacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `usuario_creador` TEXT
+     - `estado` TEXT DEFAULT 'activo'
+     - `observaciones` TEXT
+     - Restricción única: `(empresa_id, provider, model_id, fecha_uso)`
+     - Índices: `ix_empresa_ai_uso_diario_empresa_fecha`
+
+   - `empresa_ai_modelo_preferido` (modelo IA preferido por empresa y cuenta Google)
+     - `id` INTEGER PRIMARY KEY AUTOINCREMENT
+     - `empresa_id` INTEGER NOT NULL
+     - `admin_email` TEXT NOT NULL
+     - `provider` TEXT
+     - `model_id` TEXT NOT NULL
+     - `fecha_creacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `fecha_actualizacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `usuario_creador` TEXT
+     - `estado` TEXT DEFAULT 'activo'
+     - `observaciones` TEXT
+     - Restricción única: `(empresa_id, admin_email)`
+     - Índices: `ix_empresa_ai_modelo_preferido_empresa_admin`
 
    - `empresa_configuracion_avanzada` (preparación de facturación electrónica por empresa)
      - `id` INTEGER PRIMARY KEY AUTOINCREMENT

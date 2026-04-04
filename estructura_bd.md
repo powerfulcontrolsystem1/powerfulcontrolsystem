@@ -1,6 +1,6 @@
 # Estructura de Base de Datos
 
-Version: 2026-04-04
+Version: 2026-04-04.3
 Ultima actualizacion: 2026-04-04
 
 Este documento consolida la estructura activa de SQLite para el proyecto.
@@ -69,12 +69,20 @@ Todas las tablas operativas usan como base los campos estandar:
 ### Tablas de finanzas empresariales
 - empresa_finanzas_movimientos:
   - empresa_id, tipo_movimiento, codigo, fecha_movimiento
+  - periodo_contable
   - categoria, subcategoria, concepto, descripcion, metodo_pago, moneda
-  - monto, impuesto, total
+  - monto, impuesto
+  - retencion_fuente, retencion_ica, retencion_iva, total_retenciones
+  - total, total_neto
   - tercero_nombre, tercero_documento
   - tipo_comprobante, numero_comprobante, comprobante_url
   - referencia_externa, aprobado_por
   - UNIQUE(empresa_id, codigo)
+- empresa_finanzas_periodos:
+  - empresa_id, periodo (UNIQUE por empresa)
+  - fecha_inicio, fecha_fin
+  - fecha_cierre, cerrado_por
+  - estado (abierto/cerrado/inactivo)
 - empresa_finanzas_configuracion:
   - empresa_id (UNIQUE)
   - habilitar_ingresos, habilitar_egresos, moneda
@@ -84,7 +92,24 @@ Todas las tablas operativas usan como base los campos estandar:
   - integracion_contable_destino
   - cuenta_caja_bancos, cuenta_ingresos, cuenta_iva_generado
   - cuenta_gastos, cuenta_iva_descontable
+  - cuenta_retenciones_cobrar, cuenta_retenciones_pagar
   - cuentas_ingreso_categoria, cuentas_egreso_categoria
+
+### Tablas de IA empresarial
+- empresa_ai_consultas:
+  - empresa_id, provider, model_id
+  - pregunta, respuesta
+  - prompt_tokens, completion_tokens, total_tokens
+  - fecha_consulta, plan_actual
+- empresa_ai_uso_diario:
+  - empresa_id, provider, model_id, fecha_uso
+  - consultas_total, tokens_total
+  - plan_actual
+  - UNIQUE(empresa_id, provider, model_id, fecha_uso)
+- empresa_ai_modelo_preferido:
+  - empresa_id, admin_email
+  - provider, model_id
+  - UNIQUE(empresa_id, admin_email)
 
 ### Tabla de configuracion empresarial
 - empresa_configuracion_avanzada:
@@ -176,7 +201,9 @@ Todas las tablas operativas usan como base los campos estandar:
 ## 3) Relaciones clave
 - empresas.id -> users.empresa_id
 - empresas.id -> clientes.empresa_id, categorias_productos.empresa_id, productos.empresa_id, carritos_compras.empresa_id, chat_tareas*.empresa_id
-- empresas.id -> empresa_finanzas_movimientos.empresa_id, empresa_finanzas_configuracion.empresa_id
+- empresas.id -> empresa_finanzas_movimientos.empresa_id, empresa_finanzas_periodos.empresa_id, empresa_finanzas_configuracion.empresa_id
+- empresas.id -> empresa_ai_consultas.empresa_id, empresa_ai_uso_diario.empresa_id
+- empresas.id -> empresa_ai_modelo_preferido.empresa_id
 - empresas.id -> empresa_gps_dispositivos.empresa_id, empresa_gps_recorridos.empresa_id
 - categorias_productos.id -> productos.categoria_id
 - carritos_compras.id -> carrito_compra_items.carrito_id
@@ -187,6 +214,10 @@ Todas las tablas operativas usan como base los campos estandar:
 - roles_de_usuario.id -> tipos_de_usuario.rol_id
 
 ## 4) Historial resumido
+- 2026-04-04: se agrega `empresa_ai_modelo_preferido` para persistir el `model_id` preferido por `empresa_id + admin_email` (cuenta Google autenticada).
+- 2026-04-04: se agregan `empresa_ai_consultas` y `empresa_ai_uso_diario` para el modulo `chat_con_inteligencia_artificial`, con auditoria y limites diarios por empresa/proveedor/modelo.
+- 2026-04-04: se amplía finanzas con `empresa_finanzas_periodos`, control de cierre/reapertura de periodos, retenciones (`fuente/ica/iva`) y `total_neto` en `empresa_finanzas_movimientos`.
+- 2026-04-04: se amplía `empresa_finanzas_configuracion` con cuentas de retenciones por cobrar y por pagar para asiento contable.
 - 2026-04-04: se amplía `empresa_finanzas_configuracion` con parametrización contable externa por empresa (destino ERP, cuentas base y mapeo por categoría) para exportación JSON contable avanzada.
 - 2026-04-04: se agregan `empresa_finanzas_movimientos` y `empresa_finanzas_configuracion` para el módulo financiero por empresa (ingresos/egresos con comprobantes e impresión).
 - 2026-04-02: se agrega `categorias_productos`, se incorpora `productos.categoria_id` y se documentan relaciones del catálogo de categorías por empresa.

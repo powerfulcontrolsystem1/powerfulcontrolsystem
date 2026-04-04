@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/csv"
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
 	"net"
@@ -80,7 +79,7 @@ func SecurityPortsHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 		var resp []Entry
 		for _, p := range ports {
-			addr := fmt.Sprintf("%s:%d", ip, p)
+			addr := net.JoinHostPort(ip, strconv.Itoa(p))
 			conn, err := net.DialTimeout("tcp", addr, timeout)
 			estado := "cerrado"
 			if err == nil {

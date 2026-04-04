@@ -544,6 +544,7 @@ func EmpresaChatTareasAdjuntoUploadHandler(dbEmp *sql.DB) http.HandlerFunc {
 			http.Error(w, "empresa_id required", http.StatusBadRequest)
 			return
 		}
+		w.Header().Set("X-Empresa-ID", strconv.FormatInt(empresaID, 10))
 		conversacionID, err := parseInt64Form(r, "conversacion_id")
 		if err != nil || conversacionID <= 0 {
 			http.Error(w, "conversacion_id required", http.StatusBadRequest)

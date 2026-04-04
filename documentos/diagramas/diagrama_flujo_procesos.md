@@ -71,8 +71,10 @@ flowchart TD
     F0 --> F1[Consultar configuracion financiera por empresa]
     F1 --> F2[Definir categorias, prefijos, formato y plan de cuentas contable]
     F2 --> F21[Configurar destino externo: generico, SIIGO, World Office o Alegra]
-    F21 --> F3[Registrar ingreso o egreso con comprobante]
-    F3 --> F4[Filtrar movimientos y calcular balance]
+    F21 --> F22[Gestionar periodo contable: abierto/cerrado]
+    F22 --> F3[Registrar ingreso o egreso con comprobante]
+    F3 --> F31[Calcular total bruto, retenciones y total neto]
+    F31 --> F4[Filtrar movimientos y calcular balance]
     F4 --> F41[Navegar pestañas: Todos, Ingresos o Egresos]
     F41 --> F42[Exportar libro filtrado]
     F42 --> F421[Excel CSV y PDF]
@@ -81,7 +83,18 @@ flowchart TD
     F42 --> F45[Generar plantilla dedicada SIIGO CSV]
     F42 --> F46[Generar balance de prueba CSV]
     F42 --> F47[Generar estado de resultados CSV]
+    F42 --> F48[Generar libro diario, libro mayor y balance general CSV]
     F42 --> F5[Imprimir comprobante financiero Carta/POS]
+
+    L --> AI0[Entrar al modulo chat con inteligencia artificial]
+    AI0 --> AI1[Cargar modelos famosos y seleccionar proveedor/modelo]
+    AI1 --> AI15[Resolver cuenta Google autenticada y modelo preferido]
+    AI15 --> AI16[Guardar preferencia al cambiar modelo]
+    AI16 --> AI2[Validar alcance por empresa_id y limite diario free-tier]
+    AI2 --> AI3[Construir contexto empresarial desde la base de datos]
+    AI3 --> AI4[Consultar proveedor IA externo OpenAI/DeepSeek/Hugging Face]
+    AI4 --> AI5[Registrar pregunta/respuesta y acumular uso diario]
+    AI5 --> AI6[Mostrar respuesta o sugerir upgrade de plan]
 
     L --> T[Administrador abre modulo chat_y_tareas]
     T --> U[Crear conversacion por empresa]
@@ -129,3 +142,9 @@ Resultado esperado:
 - En `finanzas`, el libro financiero se consulta por pestañas (`Todos`, `Ingresos`, `Egresos`) y puede exportarse por rango a Excel (CSV), PDF y JSON contable para integración externa.
 - En `finanzas`, el JSON contable usa cuentas parametrizadas por empresa/categoria e incluye perfil de referencia para ERP destino.
 - En `finanzas`, existe plantilla dedicada SIIGO en CSV y exportaciones de `balance de prueba` y `estado de resultados` para trabajo contable/directivo.
+- En `finanzas`, los movimientos quedan asociados a `periodo_contable`; al cerrar un periodo se bloquean edición, activación/desactivación y eliminación hasta reabrir.
+- En `finanzas`, cada movimiento calcula total bruto, retenciones (`fuente`, `ICA`, `IVA`) y total neto antes de persistir/exportar.
+- En `finanzas`, también se exportan `libro diario`, `libro mayor` y `balance general` en CSV.
+- En `chat_con_inteligencia_artificial`, el alcance de consultas queda restringido por `empresa_id` y validacion del usuario autenticado.
+- En `chat_con_inteligencia_artificial`, el sistema controla limite free-tier diario por `empresa/proveedor/modelo` y muestra opcion de upgrade cuando aplica.
+- En `chat_con_inteligencia_artificial`, cada consulta/respuesta queda auditada junto con metrica de tokens para trazabilidad operativa.

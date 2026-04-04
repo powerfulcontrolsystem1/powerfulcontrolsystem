@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Chat con inteligencia artificial</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container ai-chat-page">
+    <div class="page-header">
+      <h1 id="pageTitle">Chat con inteligencia artificial</h1>
+      <button id="reloadBtn" class="btn secondary" type="button">Actualizar</button>
+    </div>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2 style="margin:0;">Modelos de IA</h2>
+        <div class="empresa-inline-actions ai-chat-model-actions">
+          <select id="modelSelect" class="form-input"></select>
+          <button id="reloadModelsBtn" class="btn secondary" type="button">Recargar modelos</button>
+          <button id="loadHistoryBtn" class="btn secondary" type="button">Ver historial</button>
+        </div>
+      </div>
+      <div class="form-row compact-row">
+        <div class="form-col">
+          <div id="modelInfo" class="form-help">Cargando modelos...</div>
+        </div>
+        <div class="form-col">
+          <div id="usageInfo" class="form-help ai-chat-usage">Uso diario: -</div>
+        </div>
+      </div>
+      <div class="form-help ai-model-note">
+        Las credenciales de OpenAI, DeepSeek y Hugging Face se manejan solo en backend (variables de entorno), nunca en el navegador.
+      </div>
+      <div id="modelPrefMsg" class="form-help"></div>
+    </section>
+
+    <section class="card ai-chat-shell">
+      <div id="messagesList" class="ai-chat-messages"></div>
+
+      <form id="promptForm" class="ai-chat-form">
+        <label class="form-label" for="promptInput">Pregunta para la IA</label>
+        <textarea id="promptInput" class="form-textarea" maxlength="2500" placeholder="Ejemplo: Resumeme ventas y balance de mi empresa este mes"></textarea>
+        <div class="ai-chat-actions">
+          <button id="sendBtn" class="btn" type="submit">Enviar consulta</button>
+          <button id="clearBtn" class="btn secondary" type="button">Limpiar chat</button>
+          <a id="upgradeLink" class="btn dark" href="#" style="display:none;" target="_blank" rel="noopener">Adquirir plan</a>
+        </div>
+        <div id="chatMsg" class="form-help"></div>
+      </form>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2 style="margin:0;">Consultas recientes</h2>
+      </div>
+      <div id="historyList" class="ai-history-list">Sin historial cargado.</div>
+      <div id="historyMsg" class="form-help"></div>
+    </section>
+  </div>
+
+  <script>
+    const state = {
+      empresaID: 0,
+      empresaNombre: "",
+      modelos: [],
+      modelID: "",
+      googleAccount: "",
+      messages: [],
+      usage: null,
+      loading: false
+    };
+
+    function getQueryParam(name) {
+      const p = new URLSearchParams(window.location.search);
+      return p.get(name);
+    }
+
+    function normalize(v) {
+      return (v == null ? "" : String(v)).trim();
+    }
+
+    function escapeHtml(v) {
+      return String(v == null ? "" : v)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function setMsg(id, text, isError) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = text || "";
+      el.style.color = isError ? "#ef5350" : "";
+    }
+
+    async function apiFetch(url, options) {
+      const resp = await fetch(url, options || {});
+      const ct = normalize(resp.headers.get("content-type")).toLowerCase();
+      let payload = null;
+
+      if (ct.includes("application/json")) {
+        payload = await resp.json().catch(() => null);
+      } else {
+        const txt = await resp.text().catch(() => "");
+        payload = txt ? { error: txt } : null;
+      }
+
+      if (!resp.ok) {
+        const msg = normalize(payload && (payload.error || payload.message)) || ("HTTP " + resp.status);
+        const err = new Error(msg);
+        err.status = resp.status;
+        err.payload = payload || {};
+        throw err;
+      }
+
+      return payload || {};
+    }
+
+    function getSelectedModel() {
+      return state.modelos.find(function(item) {
+        return normalize(item.id) === normalize(state.modelID);
+      }) || null;
+    }
+
+    function renderModelInfo() {
+      const model = getSelectedModel();
+      const info = document.getElementById("modelInfo");
+      if (!info) return;
+      if (!model) {
+        info.textContent = "Selecciona un modelo para iniciar consultas.";
+        return;
+      }
+
+      const famous = model.famous ? "Si" : "No";
+      info.textContent = "Proveedor: " + normalize(model.provider) + " | Modelo: " + normalize(model.display_name) +
+        " | Famoso: " + famous + " | Limite gratis diario: " + Number(model.free_daily_limit || 0) +
+        " | " + normalize(model.description);
+    }
+
+    function renderUsage() {
+      const box = document.getElementById("usageInfo");
+      if (!box) return;
+      const accountInfo = " | Cuenta Google: " + (normalize(state.googleAccount) || "no detectada");
+      if (!state.usage) {
+        box.textContent = "Uso diario: -" + accountInfo;
+        return;
+      }
+      box.textContent = "Plan: " + normalize(state.usage.plan || "free") +
+        " | Usadas hoy: " + Number(state.usage.daily_used || 0) +
+        " | Limite: " + Number(state.usage.daily_limit || 0) +
+        " | Restantes: " + Number(state.usage.daily_remaining || 0) +
+        accountInfo;
+    }
+
+    async function savePreferredModel(modelID) {
+      const data = await apiFetch("/api/empresa/chat_con_inteligencia_artificial/modelo_preferido", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          empresa_id: Number(state.empresaID),
+          model_id: normalize(modelID)
+        })
+      });
+      state.googleAccount = normalize(data.google_account || state.googleAccount);
+      renderUsage();
+      return data;
+    }
+
+    function renderMessages() {
+      const list = document.getElementById("messagesList");
+      if (!list) return;
+
+      if (!state.messages.length) {
+        list.innerHTML = '<div class="ai-chat-empty">Sin mensajes. Escribe una pregunta para comenzar.</div>';
+        return;
+      }
+
+      list.innerHTML = state.messages.map(function(item) {
+        const role = normalize(item.role).toLowerCase();
+        const cls = role === "assistant" ? "assistant" : (role === "user" ? "user" : "system");
+        return '<article class="ai-chat-bubble ' + cls + '">' +
+          '<header><strong>' + escapeHtml(role === "assistant" ? "Asistente IA" : (role === "user" ? "Usuario" : "Sistema")) +
+          '</strong><span>' + escapeHtml(normalize(item.at)) + '</span></header>' +
+          '<div class="ai-chat-content">' + escapeHtml(normalize(item.content)) + '</div>' +
+          '</article>';
+      }).join("");
+
+      list.scrollTop = list.scrollHeight;
+    }
+
+    function appendMessage(role, content) {
+      state.messages.push({
+        role: normalize(role).toLowerCase(),
+        content: normalize(content),
+        at: new Date().toLocaleString("es-CO")
+      });
+      renderMessages();
+    }
+
+    function clearUpgradeOption() {
+      const link = document.getElementById("upgradeLink");
+      if (!link) return;
+      link.style.display = "none";
+      link.href = "#";
+    }
+
+    function showUpgradeOption(url) {
+      const link = document.getElementById("upgradeLink");
+      if (!link) return;
+      link.href = normalize(url) || ("/pagar_licencia.html?empresa_id=" + encodeURIComponent(state.empresaID));
+      link.style.display = "inline-flex";
+    }
+
+    async function loadEmpresa() {
+      const data = await apiFetch("/super/api/empresas?id=" + encodeURIComponent(state.empresaID));
+      const nombre = normalize(data && (data.nombre || data.Nombre));
+      if (nombre) {
+        state.empresaNombre = nombre;
+        document.getElementById("pageTitle").textContent = "Chat con inteligencia artificial - " + nombre;
+      }
+    }
+
+    async function loadModelos() {
+      const data = await apiFetch("/api/empresa/chat_con_inteligencia_artificial/modelos?empresa_id=" + encodeURIComponent(state.empresaID));
+      const modelos = Array.isArray(data.modelos) ? data.modelos : [];
+      const modeloPreferido = normalize(data.modelo_preferido);
+      state.googleAccount = normalize(data.google_account || state.googleAccount);
+      state.modelos = modelos;
+
+      const select = document.getElementById("modelSelect");
+      if (!select) return;
+
+      if (!modelos.length) {
+        select.innerHTML = '<option value="">Sin modelos disponibles</option>';
+        state.modelID = "";
+        renderModelInfo();
+        return;
+      }
+
+      select.innerHTML = modelos.map(function(item) {
+        const label = normalize(item.display_name) + " (" + normalize(item.provider) + ")";
+        return '<option value="' + escapeHtml(item.id) + '">' + escapeHtml(label) + '</option>';
+      }).join("");
+
+      if (modeloPreferido && modelos.some(function(item) { return normalize(item.id) === modeloPreferido; })) {
+        state.modelID = modeloPreferido;
+      } else if (!state.modelID || !modelos.some(function(item) { return normalize(item.id) === normalize(state.modelID); })) {
+        state.modelID = normalize(modelos[0].id);
+      }
+      select.value = state.modelID;
+      renderModelInfo();
+      renderUsage();
+
+      if (modeloPreferido) {
+        setMsg("modelPrefMsg", "Modelo preferido cargado para tu cuenta Google.", false);
+      } else {
+        setMsg("modelPrefMsg", "Aun no tienes un modelo preferido registrado.", false);
+      }
+    }
+
+    async function loadHistorial() {
+      try {
+        const data = await apiFetch("/api/empresa/chat_con_inteligencia_artificial/historial?empresa_id=" + encodeURIComponent(state.empresaID) + "&limit=20");
+        const items = Array.isArray(data.items) ? data.items : [];
+        const box = document.getElementById("historyList");
+        if (!box) return;
+
+        if (!items.length) {
+          box.innerHTML = '<div class="ai-chat-empty">No hay historial registrado.</div>';
+          setMsg("historyMsg", "Historial actualizado: 0 registros.", false);
+          return;
+        }
+
+        box.innerHTML = items.map(function(it) {
+          const pregunta = normalize(it.pregunta);
+          const respuesta = normalize(it.respuesta);
+          const fecha = normalize(it.fecha_consulta);
+          const model = normalize(it.model_id);
+          return '<article class="ai-history-item">' +
+            '<header><strong>' + escapeHtml(model) + '</strong><span>' + escapeHtml(fecha) + '</span></header>' +
+            '<div><b>Q:</b> ' + escapeHtml(pregunta.length > 200 ? (pregunta.slice(0, 200) + "...") : pregunta) + '</div>' +
+            '<div><b>A:</b> ' + escapeHtml(respuesta.length > 260 ? (respuesta.slice(0, 260) + "...") : respuesta) + '</div>' +
+            '</article>';
+        }).join("");
+
+        setMsg("historyMsg", "Historial actualizado: " + items.length + " registros.", false);
+      } catch (err) {
+        setMsg("historyMsg", err.message || "No se pudo cargar historial.", true);
+      }
+    }
+
+    function buildHistoryPayload() {
+      const items = state.messages
+        .filter(function(m) {
+          const role = normalize(m.role).toLowerCase();
+          return role === "user" || role === "assistant";
+        })
+        .slice(-8)
+        .map(function(m) {
+          return {
+            rol: normalize(m.role).toLowerCase(),
+            contenido: normalize(m.content)
+          };
+        });
+      return items;
+    }
+
+    async function onSendPrompt(ev) {
+      ev.preventDefault();
+      if (state.loading) return;
+
+      clearUpgradeOption();
+      const pregunta = normalize(document.getElementById("promptInput").value);
+      if (!pregunta) {
+        setMsg("chatMsg", "Debes escribir una pregunta.", true);
+        return;
+      }
+      if (!state.modelID) {
+        setMsg("chatMsg", "Debes seleccionar un modelo.", true);
+        return;
+      }
+
+      state.loading = true;
+      setMsg("chatMsg", "Consultando modelo...", false);
+      appendMessage("user", pregunta);
+      document.getElementById("promptInput").value = "";
+
+      try {
+        const data = await apiFetch("/api/empresa/chat_con_inteligencia_artificial/consultar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            empresa_id: Number(state.empresaID),
+            model_id: state.modelID,
+            pregunta: pregunta,
+            historial: buildHistoryPayload(),
+            temperatura: 0.2
+          })
+        });
+
+        appendMessage("assistant", normalize(data.respuesta));
+        state.googleAccount = normalize(data.google_account || state.googleAccount);
+        state.usage = data.usage || null;
+        renderUsage();
+        setMsg("chatMsg", "Respuesta generada correctamente.", false);
+      } catch (err) {
+        const payload = err && err.payload ? err.payload : {};
+        if (normalize(payload.code) === "free_tier_limit_reached") {
+          showUpgradeOption(payload.upgrade_url);
+          appendMessage("system", normalize(payload.error || "Limite gratuito alcanzado."));
+          setMsg("chatMsg", normalize(payload.upgrade_message || "Se alcanzo el limite del plan gratuito."), true);
+        } else {
+          appendMessage("system", "Error al consultar IA: " + normalize(err.message));
+          setMsg("chatMsg", err.message || "No se pudo procesar la consulta.", true);
+        }
+      } finally {
+        state.loading = false;
+      }
+    }
+
+    function bindEvents() {
+      document.getElementById("reloadBtn").addEventListener("click", async function() {
+        await Promise.all([loadModelos(), loadHistorial()]);
+      });
+
+      document.getElementById("reloadModelsBtn").addEventListener("click", loadModelos);
+      document.getElementById("loadHistoryBtn").addEventListener("click", loadHistorial);
+      document.getElementById("promptForm").addEventListener("submit", onSendPrompt);
+
+      document.getElementById("modelSelect").addEventListener("change", function() {
+        const prev = state.modelID;
+        state.modelID = normalize(this.value);
+        renderModelInfo();
+
+        const select = this;
+        setMsg("modelPrefMsg", "Guardando modelo preferido...", false);
+        savePreferredModel(state.modelID)
+          .then(function() {
+            setMsg("modelPrefMsg", "Modelo guardado para tu cuenta Google.", false);
+          })
+          .catch(function(err) {
+            state.modelID = prev;
+            select.value = prev;
+            renderModelInfo();
+            setMsg("modelPrefMsg", err.message || "No se pudo guardar el modelo preferido.", true);
+          });
+      });
+
+      document.getElementById("clearBtn").addEventListener("click", function() {
+        state.messages = [];
+        clearUpgradeOption();
+        renderMessages();
+        setMsg("chatMsg", "Conversacion local limpiada.", false);
+      });
+    }
+
+    async function init() {
+      state.empresaID = Number(getQueryParam("empresa_id") || getQueryParam("id") || 0);
+      if (!state.empresaID) {
+        setMsg("chatMsg", "empresa_id es obligatorio en la URL.", true);
+        return;
+      }
+
+      bindEvents();
+      appendMessage("system", "Bienvenido al chat IA empresarial. Tus consultas se procesan con alcance estricto por empresa_id.");
+
+      await loadEmpresa();
+      await loadModelos();
+      await loadHistorial();
+    }
+
+    init().catch(function(err) {
+      setMsg("chatMsg", err.message || "No se pudo iniciar el modulo de chat IA.", true);
+    });
+  </script>
+</body>
+</html>

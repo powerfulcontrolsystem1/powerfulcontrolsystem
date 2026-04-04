@@ -18,7 +18,11 @@ erDiagram
     EMPRESAS ||--o{ SERVICIOS : "empresa_id"
     EMPRESAS ||--o{ CARRITOS_COMPRAS : "empresa_id"
     EMPRESAS ||--o{ EMPRESA_FINANZAS_MOVIMIENTOS : "empresa_id"
+    EMPRESAS ||--o{ EMPRESA_FINANZAS_PERIODOS : "empresa_id"
     EMPRESAS ||--|| EMPRESA_FINANZAS_CONFIGURACION : "empresa_id"
+    EMPRESAS ||--o{ EMPRESA_AI_CONSULTAS : "empresa_id"
+    EMPRESAS ||--o{ EMPRESA_AI_USO_DIARIO : "empresa_id"
+    EMPRESAS ||--o{ EMPRESA_AI_MODELO_PREFERIDO : "empresa_id"
     EMPRESAS ||--|| EMPRESA_CONFIG_AVANZADA : "empresa_id"
     EMPRESAS ||--o{ FACTURACION_ELECTRONICA_PAIS : "empresa_id"
     EMPRESAS ||--o{ CHAT_TAREAS_CONVERSACIONES : "empresa_id"
@@ -127,11 +131,24 @@ erDiagram
       int empresa_id FK
       string tipo_movimiento
       string codigo
+      string periodo_contable
       string categoria
       string concepto
+      double total_retenciones
       double total
+      double total_neto
       string numero_comprobante
       string estado
+    }
+    EMPRESA_FINANZAS_PERIODOS {
+      int id PK
+      int empresa_id FK
+      string periodo
+      string fecha_inicio
+      string fecha_fin
+      string estado
+      string fecha_cierre
+      string cerrado_por
     }
     EMPRESA_FINANZAS_CONFIGURACION {
       int id PK
@@ -149,8 +166,40 @@ erDiagram
       string cuenta_iva_generado
       string cuenta_gastos
       string cuenta_iva_descontable
+      string cuenta_retenciones_cobrar
+      string cuenta_retenciones_pagar
       string cuentas_ingreso_categoria
       string cuentas_egreso_categoria
+      string estado
+    }
+    EMPRESA_AI_CONSULTAS {
+      int id PK
+      int empresa_id FK
+      string provider
+      string model_id
+      string pregunta
+      double total_tokens
+      string plan_actual
+      string fecha_consulta
+      string estado
+    }
+    EMPRESA_AI_USO_DIARIO {
+      int id PK
+      int empresa_id FK
+      string provider
+      string model_id
+      string fecha_uso
+      int consultas_total
+      double tokens_total
+      string plan_actual
+      string estado
+    }
+    EMPRESA_AI_MODELO_PREFERIDO {
+      int id PK
+      int empresa_id FK
+      string admin_email
+      string provider
+      string model_id
       string estado
     }
     EMPRESA_CONFIG_AVANZADA {

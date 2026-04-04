@@ -24,6 +24,7 @@ function getQueryParam(name) {
     document.getElementById("linkClientes"),
     document.getElementById("linkConfigAvanzada"),
     document.getElementById("linkFacturacionElectronica"),
+    document.getElementById("linkChatIA"),
     document.getElementById("linkFinanzas"),
     document.getElementById("linkUbicacionGPS"),
     document.getElementById("linkConfigEstaciones"),

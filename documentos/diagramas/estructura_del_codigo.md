@@ -64,6 +64,27 @@ Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe re
 - diagrama_flujo_procesos.md
 - diagrama_arquitectura_sistema.md
 
+## Actualizacion 2026-04-03 (observabilidad transversal por empresa)
+
+- Backend utilidades (`backend/utils/utils.go`):
+  - `LoggingMiddleware` ahora agrega trazabilidad por request con `request_id`, `empresa_id` y latencia.
+  - Se incorpora separación de logs por empresa en archivos dedicados:
+    - `backend/logs/empresa_<id>.log`
+    - `backend/logs/empresa_global.log` (fallback)
+  - `JSONErrorMiddleware` normaliza errores API no-JSON con respuesta estructurada y metadatos de trazabilidad (`request_id` / `empresa_id`).
+
+- Backend handlers multipart:
+  - `backend/handlers/chat_tareas.go` y `backend/handlers/productos.go` fijan `X-Empresa-ID` al resolver `empresa_id` desde formulario.
+  - Esto mantiene separación de logs por empresa también en endpoints de upload.
+
+- Backend autenticación de usuarios empresa:
+  - `backend/handlers/usuarios_empresa.go` aplica hardening de respuestas `500` para no exponer detalles internos.
+  - Se conserva trazabilidad con logs de servidor contextualizados por empresa/usuario.
+
+- Scripts operativos (`scripts/iniciar_servidor.ps1`):
+  - Se agrega detección de caída temprana de `server.exe` durante arranque.
+  - Ante fallo, se imprime diagnóstico inmediato con últimas líneas de `backend/server.err`.
+
 ## Actualizacion 2026-04-04 (modulo de finanzas multiempresa)
 
 - Backend DB:
@@ -107,6 +128,103 @@ Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe re
 - Pruebas y datos demo:
   - Nuevo archivo `backend/db/finanzas_test.go`.
   - `backend/tools/seed_motel_malibu/main.go` ahora incluye semilla financiera demo por empresa.
+
+## Actualizacion 2026-04-04 (periodos contables + retenciones + reportes contables avanzados)
+
+- Backend DB (`backend/db/finanzas.go`):
+  - Se agrega `empresa_finanzas_periodos` para control de estado por periodo (`abierto`, `cerrado`, `inactivo`) por `empresa_id`.
+  - `empresa_finanzas_movimientos` incorpora:
+    - `periodo_contable`,
+    - `retencion_fuente`, `retencion_ica`, `retencion_iva`, `total_retenciones`,
+    - `total_neto`.
+  - Se aplica bloqueo de cambios cuando el periodo está cerrado en operaciones de crear/editar/eliminar/activar/desactivar movimientos.
+  - `empresa_finanzas_configuracion` incorpora cuentas de retenciones por cobrar/pagar.
+
+- Backend handlers (`backend/handlers/finanzas.go`):
+  - Se amplía filtro de movimientos por `periodo`.
+  - Se agrega endpoint de periodos:
+    - `GET/POST/PUT /api/empresa/finanzas/periodos`
+  - Se normaliza respuesta HTTP 409 cuando el periodo del movimiento está cerrado.
+
+- Bootstrap (`backend/main.go`):
+  - Se registra migración `2026-04-03-004-finanzas-periodos-retenciones`.
+  - Se publica ruta `/api/empresa/finanzas/periodos`.
+
+- Frontend (`web/administrar_empresa/finanzas.html`):
+  - Se agregan controles para cerrar/reabrir periodos contables y refrescar listado de periodos.
+  - Se incorporan campos de retenciones y totales calculados (bruto, retenciones, neto) en formulario y tabla.
+  - Se agregan exportaciones contables de `balance general`, `libro diario` y `libro mayor` en CSV.
+  - Se integra validación local para evitar guardado cuando el periodo se encuentra cerrado.
+
+- Endurecimiento técnico:
+  - `backend/handlers/system_empresas_handlers.go` usa `net.JoinHostPort` para compatibilidad IPv6 en escaneo de puertos.
+  - `scripts/iniciar_servidor.ps1` ajusta nombre de función de lectura `.env` con verbo aprobado en el script.
+
+## Actualizacion 2026-04-04 (chat_con_inteligencia_artificial por empresa)
+
+- Backend DB (`backend/db/chat_inteligencia_artificial.go`):
+  - Se crea esquema IA empresarial con:
+    - `empresa_ai_consultas` (auditoria de pregunta/respuesta/tokens por empresa),
+    - `empresa_ai_uso_diario` (contador diario por empresa/proveedor/modelo).
+  - Se implementan funciones para:
+    - validar alcance de administracion (`CanAdminAccessEmpresaIA`),
+    - construir contexto de negocio (`BuildEmpresaAIContexto`),
+    - registrar consulta y consumo diario (`RegisterEmpresaAIConsulta`).
+
+- Backend handlers:
+  - Nuevo controlador `backend/handlers/chat_con_inteligencia_artificial_controller.go`:
+    - catalogo de modelos famosos,
+    - consulta a proveedores OpenAI/DeepSeek/Hugging Face,
+    - validacion de `empresa_id`,
+    - control de limite free-tier y respuesta de upgrade.
+  - Nuevo router `backend/handlers/chat_con_inteligencia_artificial_router.go` con rutas:
+    - `GET /api/empresa/chat_con_inteligencia_artificial/modelos`
+    - `POST /api/empresa/chat_con_inteligencia_artificial/consultar`
+    - `GET /api/empresa/chat_con_inteligencia_artificial/historial`
+
+- Bootstrap (`backend/main.go`):
+  - Se agrega `EnsureEmpresaAIChatSchema` en inicializacion.
+  - Se registra migracion `2026-04-03-005-chat-ia-empresa`.
+  - Se integra el registro modular de rutas con `RegisterEmpresaChatIARoutes`.
+
+- Frontend:
+  - Nueva subpagina `web/administrar_empresa/chat_con_inteligencia_artificial.html` con experiencia tipo chat:
+    - selector de modelos,
+    - conversacion y contexto operativo,
+    - historial de consultas,
+    - estado de consumo diario y enlace de upgrade.
+  - Integracion de navegacion en `web/administrar_empresa.html` y persistencia en `web/js/administrar_empresa.js`.
+  - Estilos del modulo integrados en `web/estilos.css`.
+
+- Seguridad operacional:
+  - Credenciales de IA gestionadas solo en backend por variables de entorno:
+    - `OPENAI_API_KEY`
+    - `DEEPSEEK_API_KEY`
+    - `HUGGINGFACE_API_KEY`
+  - El navegador no recibe ni expone llaves privadas.
+
+## Actualizacion 2026-04-04 (chat IA: modelo preferido por cuenta Google)
+
+- Backend DB (`backend/db/chat_inteligencia_artificial.go`):
+  - Se agrega tabla `empresa_ai_modelo_preferido` para persistir el modelo IA preferido por `empresa_id + admin_email`.
+  - Se incorporan funciones:
+    - `GetEmpresaAIModeloPreferido` (lectura de preferencia),
+    - `UpsertEmpresaAIModeloPreferido` (alta/actualización de preferencia).
+
+- Backend handlers:
+  - `backend/handlers/chat_con_inteligencia_artificial_controller.go`:
+    - incorpora endpoint `GET/PUT /api/empresa/chat_con_inteligencia_artificial/modelo_preferido`,
+    - amplía `GET /modelos` para devolver `google_account` y `modelo_preferido`,
+    - registra automáticamente el modelo usado en `POST /consultar` como preferencia de la cuenta Google autenticada.
+  - `backend/handlers/chat_con_inteligencia_artificial_router.go` registra la nueva ruta de preferencia.
+
+- Frontend (`web/administrar_empresa/chat_con_inteligencia_artificial.html`):
+  - Carga el modelo preferido al iniciar la pantalla.
+  - Guarda automáticamente el nuevo modelo seleccionado para la cuenta Google.
+  - Muestra la cuenta Google vinculada dentro del bloque de uso diario.
+
+- Impacto funcional:
+  - Se aproxima la experiencia de selección persistente de modelo al patrón de plataformas tipo ChatGPT, manteniendo aislamiento por `empresa_id`.
 
 ## Actualizacion 2026-04-03 (centro de ayuda + scanner de codigo + configuracion por empresa)
 

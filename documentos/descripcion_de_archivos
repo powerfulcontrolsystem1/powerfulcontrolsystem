@@ -1,5 +1,135 @@
 Descripcion de archivos del proyecto
 
+Actualizacion 2026-04-04: Chat IA con modelo preferido por cuenta Google
+
+- backend/db/chat_inteligencia_artificial.go:
+	- Se agrega tabla `empresa_ai_modelo_preferido` para persistir el modelo seleccionado por `empresa_id + admin_email`.
+	- Se agregan funciones `GetEmpresaAIModeloPreferido` y `UpsertEmpresaAIModeloPreferido`.
+
+- backend/handlers/chat_con_inteligencia_artificial_controller.go:
+	- Se amplía `GET /modelos` para incluir `google_account` y `modelo_preferido`.
+	- Se agrega `ModeloPreferidoHandler` con `GET/PUT /api/empresa/chat_con_inteligencia_artificial/modelo_preferido`.
+	- `POST /consultar` ahora registra automáticamente el `model_id` usado como preferencia de la cuenta Google autenticada.
+
+- backend/handlers/chat_con_inteligencia_artificial_router.go:
+	- Se registra la nueva ruta `modelo_preferido` del modulo Chat IA.
+
+- web/administrar_empresa/chat_con_inteligencia_artificial.html:
+	- Se carga el modelo preferido de la cuenta Google al inicializar la pantalla.
+	- Se guarda automáticamente la preferencia al cambiar el selector de modelo.
+	- Se muestra la cuenta Google vinculada en el bloque de uso diario y mensajes de estado de guardado.
+
+Actualizacion 2026-04-03: Observabilidad profesional (errores/logs) con separación por empresa
+
+- backend/utils/utils.go:
+	- Se fortalece `LoggingMiddleware` con `request_id` por solicitud, inferencia de `empresa_id` y métricas de latencia por request.
+	- Se agrega escritura de logs por empresa en `backend/logs/empresa_<id>.log` y fallback operativo en `backend/logs/empresa_global.log`.
+	- Se mejora `JSONErrorMiddleware` para normalizar errores API no-JSON con payload estructurado (`ok`, `status`, `error`, `path`, `method`, `request_id`, `empresa_id`).
+	- Se registra telemetría de errores API (`WARN`/`ERROR`) separada por empresa para facilitar soporte y auditoría.
+
+- backend/handlers/chat_tareas.go y backend/handlers/productos.go:
+	- En endpoints multipart (subida de adjuntos/imagenes), tras resolver `empresa_id` desde formulario se establece cabecera `X-Empresa-ID`.
+	- Esto asegura que el middleware global enrute el cierre de logs al archivo correcto de empresa incluso cuando `empresa_id` no viene en query/header.
+
+- backend/handlers/usuarios_empresa.go:
+	- Se reemplazan respuestas de error `500` que exponían detalles internos por mensajes seguros y consistentes para cliente.
+	- Se agrega logging técnico en servidor con contexto (`empresa_id`, `email`, `id`) para diagnóstico sin fuga de información sensible.
+
+- scripts/iniciar_servidor.ps1:
+	- Se endurece el arranque de backend con verificación de salida prematura de `server.exe`.
+	- El script conserva el `PID` del proceso y, si hay caída temprana o timeout sin escucha en `:8080`, muestra las últimas líneas de `backend/server.err` para diagnóstico inmediato.
+
+Actualizacion 2026-04-04: Modulo chat_con_inteligencia_artificial (Chat IA empresarial)
+
+- backend/db/chat_inteligencia_artificial.go:
+	- Nuevo modulo de acceso a datos para chat IA por empresa.
+	- Crea y mantiene tablas `empresa_ai_consultas` y `empresa_ai_uso_diario`.
+	- Implementa auditoria de consultas, control de uso diario y construccion de contexto de empresa para prompts.
+	- Incluye validacion de alcance por `empresa_id` para administradores/super administradores.
+
+- backend/handlers/chat_con_inteligencia_artificial_controller.go:
+	- Nuevo controlador HTTP del modulo IA.
+	- Expone catalogo de modelos famosos y soporta consultas con OpenAI, DeepSeek y Hugging Face.
+	- Implementa validaciones de entrada, aislamiento por `empresa_id`, limite free-tier y respuesta de upgrade.
+
+- backend/handlers/chat_con_inteligencia_artificial_router.go:
+	- Router modular de rutas IA para mantener separacion de responsabilidades.
+	- Registra:
+		- `/api/empresa/chat_con_inteligencia_artificial/modelos`
+		- `/api/empresa/chat_con_inteligencia_artificial/consultar`
+		- `/api/empresa/chat_con_inteligencia_artificial/historial`
+
+- backend/main.go:
+	- Se integra `EnsureEmpresaAIChatSchema` en arranque.
+	- Se registra migracion `2026-04-03-005-chat-ia-empresa`.
+	- Se incorpora `RegisterEmpresaChatIARoutes(dbEmpresas, dbSuper)`.
+
+- web/administrar_empresa/chat_con_inteligencia_artificial.html:
+	- Nueva subpagina de chat tipo ChatGPT para administracion de empresa.
+	- Incluye selector de modelo, panel de mensajes, historial reciente y manejo de limite de plan gratuito.
+
+- web/administrar_empresa.html:
+	- Se agrega opcion de menu `Chat con IA` para cargar la nueva subpagina.
+
+- web/js/administrar_empresa.js:
+	- Se agrega `linkChatIA` al arreglo de enlaces para mantener navegacion y persistencia del iframe.
+
+- web/estilos.css:
+	- Se agregan estilos del modulo IA (layout de chat, burbujas, bloque de uso/historial y comportamiento responsive).
+
+- documentos/diagramas/diagrama_arquitectura_sistema.md:
+	- Se incorpora componente de handlers IA y conexion con proveedores externos de IA.
+
+- documentos/diagramas/diagrama_entidad_relacion.md:
+	- Se agregan entidades `EMPRESA_AI_CONSULTAS` y `EMPRESA_AI_USO_DIARIO` relacionadas por `empresa_id`.
+
+- documentos/diagramas/diagrama_flujo_procesos.md:
+	- Se agrega flujo del chat IA empresarial (seleccion de modelo, validacion de alcance, consulta externa y auditoria/uso diario).
+
+- documentos/diagramas/estructura_del_codigo.md:
+	- Se registra seccion tecnica del modulo IA con su arquitectura modular (DB + controller + router + UI).
+
+Actualizacion 2026-04-04: Cierre/reapertura de periodos contables + retenciones + reportes financieros avanzados
+
+- backend/db/finanzas.go:
+	- Se agrega tabla `empresa_finanzas_periodos` para administrar periodos por empresa.
+	- `empresa_finanzas_movimientos` se amplía con `periodo_contable`, retenciones (`fuente/ica/iva`), `total_retenciones` y `total_neto`.
+	- Se bloquea creación/edición/eliminación/cambio de estado de movimientos cuando el periodo está cerrado.
+	- `empresa_finanzas_configuracion` agrega cuentas de `retenciones por cobrar` y `retenciones por pagar`.
+
+- backend/handlers/finanzas.go:
+	- Se agrega soporte de filtro `periodo` en listado de movimientos.
+	- Se crea endpoint `GET/POST/PUT /api/empresa/finanzas/periodos` para administración de periodos.
+	- Se normaliza respuesta de conflicto (`409`) cuando se intenta modificar un periodo cerrado.
+
+- backend/main.go:
+	- Se registra migración `2026-04-03-004-finanzas-periodos-retenciones`.
+	- Se publica ruta `/api/empresa/finanzas/periodos`.
+
+- web/administrar_empresa/finanzas.html:
+	- Se agregan controles de periodo contable (filtro, cerrar, reabrir, actualizar).
+	- Se agregan campos de retenciones y cálculo automático de total bruto, total retenciones y total neto.
+	- Se agregan exportaciones de `balance general`, `libro diario` y `libro mayor` en CSV.
+	- Se completa el cableado de eventos para los nuevos controles y exportaciones.
+
+- backend/handlers/system_empresas_handlers.go:
+	- Se corrige construcción de host/puerto en escaneo de seguridad con `net.JoinHostPort` (compatibilidad IPv6).
+
+- scripts/iniciar_servidor.ps1:
+	- Se ajusta la función de carga de `.env` a verbo aprobado del estándar PowerShell.
+
+- documentos/diagramas/diagrama_flujo_procesos.md:
+	- Se amplía flujo financiero con gestión de periodos y bloqueo por cierre, además de retenciones y nuevos reportes CSV.
+
+- documentos/diagramas/diagrama_entidad_relacion.md:
+	- Se incorporan entidad `EMPRESA_FINANZAS_PERIODOS` y nuevos campos de retenciones/periodo en finanzas.
+
+- documentos/diagramas/diagrama_arquitectura_sistema.md:
+	- Se actualiza descripción del componente finanzas para incluir periodos contables y retenciones.
+
+- documentos/diagramas/estructura_del_codigo.md:
+	- Se añade sección técnica de ampliación financiera y ajustes de hardening.
+
 Actualizacion 2026-04-04: Modulo de finanzas multiempresa (ingresos/egresos + comprobantes)
 
 - backend/db/finanzas.go:

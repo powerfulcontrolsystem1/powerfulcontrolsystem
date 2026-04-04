@@ -11,10 +11,16 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
+	"net"
 	"net/http"
 	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
+	"sync"
+	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
 )
@@ -29,6 +35,15 @@ type apiCaptureResponseWriter struct {
 	body    bytes.Buffer
 	status  int
 }
+
+type requestContextKey string
+
+const (
+	ctxKeyRequestID requestContextKey = "request_id"
+	ctxKeyEmpresaID requestContextKey = "empresa_id"
+)
+
+var companyLogMu sync.Mutex
 
 func newAPICaptureResponseWriter() *apiCaptureResponseWriter {
 	return &apiCaptureResponseWriter{headers: make(http.Header), status: http.StatusOK}
@@ -54,13 +69,219 @@ func (lrw *loggingResponseWriter) WriteHeader(code int) {
 	lrw.ResponseWriter.WriteHeader(code)
 }
 
-// LoggingMiddleware registra método, ruta, remoto y código de respuesta
+func requestIDFromContext(ctx context.Context) string {
+	v := ctx.Value(ctxKeyRequestID)
+	s, _ := v.(string)
+	return strings.TrimSpace(s)
+}
+
+func empresaIDFromContext(ctx context.Context) int64 {
+	v := ctx.Value(ctxKeyEmpresaID)
+	if n, ok := v.(int64); ok && n > 0 {
+		return n
+	}
+	return 0
+}
+
+func makeRequestID() string {
+	b := make([]byte, 6)
+	if _, err := rand.Read(b); err != nil {
+		return fmt.Sprintf("req-%d", time.Now().UnixNano())
+	}
+	return fmt.Sprintf("req-%d-%x", time.Now().UnixNano(), b)
+}
+
+func parsePositiveInt64(raw string) int64 {
+	v := strings.TrimSpace(raw)
+	if v == "" {
+		return 0
+	}
+	n, err := strconv.ParseInt(v, 10, 64)
+	if err != nil || n <= 0 {
+		return 0
+	}
+	return n
+}
+
+func extractEmpresaIDFromBody(raw []byte) int64 {
+	if len(raw) == 0 {
+		return 0
+	}
+	if len(raw) > 2*1024*1024 {
+		return 0
+	}
+	var payload map[string]interface{}
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		return 0
+	}
+	toInt64 := func(v interface{}) int64 {
+		switch n := v.(type) {
+		case float64:
+			if n <= 0 {
+				return 0
+			}
+			return int64(n)
+		case string:
+			return parsePositiveInt64(n)
+		case int:
+			if n > 0 {
+				return int64(n)
+			}
+		case int64:
+			if n > 0 {
+				return n
+			}
+		}
+		return 0
+	}
+
+	if v, ok := payload["empresa_id"]; ok {
+		if id := toInt64(v); id > 0 {
+			return id
+		}
+	}
+	if v, ok := payload["empresaId"]; ok {
+		if id := toInt64(v); id > 0 {
+			return id
+		}
+	}
+	if empresaObj, ok := payload["empresa"].(map[string]interface{}); ok {
+		if v, exists := empresaObj["id"]; exists {
+			if id := toInt64(v); id > 0 {
+				return id
+			}
+		}
+	}
+
+	return 0
+}
+
+func inferEmpresaIDFromRequest(r *http.Request) int64 {
+	if id := parsePositiveInt64(r.URL.Query().Get("empresa_id")); id > 0 {
+		return id
+	}
+	if id := parsePositiveInt64(r.Header.Get("X-Empresa-ID")); id > 0 {
+		return id
+	}
+	if id := empresaIDFromContext(r.Context()); id > 0 {
+		return id
+	}
+
+	if r.Body == nil {
+		return 0
+	}
+	method := strings.ToUpper(strings.TrimSpace(r.Method))
+	if method != http.MethodPost && method != http.MethodPut && method != http.MethodPatch {
+		return 0
+	}
+	contentType := strings.ToLower(strings.TrimSpace(r.Header.Get("Content-Type")))
+	if !strings.Contains(contentType, "application/json") {
+		return 0
+	}
+
+	raw, err := io.ReadAll(r.Body)
+	if err != nil {
+		r.Body = io.NopCloser(bytes.NewReader(raw))
+		return 0
+	}
+	r.Body = io.NopCloser(bytes.NewReader(raw))
+	return extractEmpresaIDFromBody(raw)
+}
+
+func requestClientIP(r *http.Request) string {
+	if v := strings.TrimSpace(r.Header.Get("X-Forwarded-For")); v != "" {
+		parts := strings.Split(v, ",")
+		if len(parts) > 0 {
+			return strings.TrimSpace(parts[0])
+		}
+	}
+	if v := strings.TrimSpace(r.Header.Get("X-Real-IP")); v != "" {
+		return v
+	}
+	host, _, err := net.SplitHostPort(strings.TrimSpace(r.RemoteAddr))
+	if err == nil && host != "" {
+		return host
+	}
+	return strings.TrimSpace(r.RemoteAddr)
+}
+
+func writeCompanyLogEntry(empresaID int64, level, msg string) {
+	logDir := filepath.Join(".", "logs")
+	if err := os.MkdirAll(logDir, 0o755); err != nil {
+		log.Printf("warning: no se pudo crear carpeta de logs %s: %v", logDir, err)
+		return
+	}
+
+	fileName := "empresa_global.log"
+	if empresaID > 0 {
+		fileName = fmt.Sprintf("empresa_%d.log", empresaID)
+	}
+	filePath := filepath.Join(logDir, fileName)
+	line := fmt.Sprintf("%s [%s] %s\n", time.Now().Format(time.RFC3339), strings.ToUpper(strings.TrimSpace(level)), strings.TrimSpace(msg))
+
+	companyLogMu.Lock()
+	defer companyLogMu.Unlock()
+
+	f, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
+		log.Printf("warning: no se pudo abrir log de empresa %s: %v", filePath, err)
+		return
+	}
+	defer f.Close()
+
+	if _, err := f.WriteString(line); err != nil {
+		log.Printf("warning: no se pudo escribir log de empresa %s: %v", filePath, err)
+	}
+}
+
+func truncateLogMessage(s string, max int) string {
+	v := strings.TrimSpace(s)
+	if max <= 0 || len(v) <= max {
+		return v
+	}
+	return v[:max]
+}
+
+// LoggingMiddleware registra trazabilidad profesional por request y por empresa.
 func LoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestID := makeRequestID()
+		empresaID := inferEmpresaIDFromRequest(r)
+
+		ctx := context.WithValue(r.Context(), ctxKeyRequestID, requestID)
+		if empresaID > 0 {
+			ctx = context.WithValue(ctx, ctxKeyEmpresaID, empresaID)
+		}
+		r = r.WithContext(ctx)
+
+		w.Header().Set("X-Request-ID", requestID)
+		if empresaID > 0 {
+			w.Header().Set("X-Empresa-ID", strconv.FormatInt(empresaID, 10))
+		}
+
+		start := time.Now()
+		clientIP := requestClientIP(r)
 		lrw := &loggingResponseWriter{ResponseWriter: w, status: 200}
-		log.Printf("-> %s %s from %s", r.Method, r.URL.Path, r.RemoteAddr)
+		log.Printf("-> req_id=%s empresa_id=%d %s %s from %s", requestID, empresaID, r.Method, r.URL.RequestURI(), clientIP)
+		writeCompanyLogEntry(empresaID, "INFO", fmt.Sprintf("req_id=%s event=request_start method=%s path=%s ip=%s ua=%q", requestID, r.Method, r.URL.RequestURI(), clientIP, r.UserAgent()))
+
 		next.ServeHTTP(lrw, r)
-		log.Printf("<- %d %s %s", lrw.status, r.Method, r.URL.Path)
+
+		finalEmpresaID := empresaID
+		if headerEmpresaID := parsePositiveInt64(lrw.Header().Get("X-Empresa-ID")); headerEmpresaID > 0 {
+			finalEmpresaID = headerEmpresaID
+		}
+
+		elapsedMs := time.Since(start).Milliseconds()
+		level := "INFO"
+		if lrw.status >= 500 {
+			level = "ERROR"
+		} else if lrw.status >= 400 {
+			level = "WARN"
+		}
+
+		log.Printf("<- req_id=%s empresa_id=%d status=%d %s %s dur_ms=%d", requestID, finalEmpresaID, lrw.status, r.Method, r.URL.Path, elapsedMs)
+		writeCompanyLogEntry(finalEmpresaID, level, fmt.Sprintf("req_id=%s event=request_end method=%s path=%s status=%d dur_ms=%d", requestID, r.Method, r.URL.RequestURI(), lrw.status, elapsedMs))
 	})
 }
 
@@ -96,16 +317,49 @@ func JSONErrorMiddleware(next http.Handler) http.Handler {
 			if msg == "" {
 				msg = http.StatusText(capture.status)
 			}
+			reqID := requestIDFromContext(r.Context())
+			if reqID == "" {
+				reqID = makeRequestID()
+			}
+			empresaID := inferEmpresaIDFromRequest(r)
+			if empresaID > 0 {
+				w.Header().Set("X-Empresa-ID", strconv.FormatInt(empresaID, 10))
+			}
+			w.Header().Set("X-Request-ID", reqID)
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(capture.status)
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
-				"ok":     false,
-				"status": capture.status,
-				"error":  msg,
-				"path":   path,
-				"method": r.Method,
-			})
+			payload := map[string]interface{}{
+				"ok":         false,
+				"status":     capture.status,
+				"error":      msg,
+				"path":       path,
+				"method":     r.Method,
+				"request_id": reqID,
+			}
+			if empresaID > 0 {
+				payload["empresa_id"] = empresaID
+			}
+			_ = json.NewEncoder(w).Encode(payload)
+
+			level := "WARN"
+			if capture.status >= 500 {
+				level = "ERROR"
+			}
+			writeCompanyLogEntry(empresaID, level, fmt.Sprintf("req_id=%s event=api_error method=%s path=%s status=%d error=%q", reqID, r.Method, path, capture.status, truncateLogMessage(msg, 500)))
 			return
+		}
+
+		if capture.status >= 400 && isJSON {
+			reqID := requestIDFromContext(r.Context())
+			if reqID == "" {
+				reqID = makeRequestID()
+			}
+			empresaID := inferEmpresaIDFromRequest(r)
+			level := "WARN"
+			if capture.status >= 500 {
+				level = "ERROR"
+			}
+			writeCompanyLogEntry(empresaID, level, fmt.Sprintf("req_id=%s event=api_error_json method=%s path=%s status=%d body=%q", reqID, r.Method, path, capture.status, truncateLogMessage(capture.body.String(), 500)))
 		}
 
 		w.WriteHeader(capture.status)

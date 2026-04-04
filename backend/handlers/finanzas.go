@@ -24,6 +24,7 @@ func EmpresaFinanzasMovimientosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			tipo := strings.TrimSpace(strings.ToLower(r.URL.Query().Get("tipo")))
 			desde := strings.TrimSpace(r.URL.Query().Get("desde"))
 			hasta := strings.TrimSpace(r.URL.Query().Get("hasta"))
+			periodo := strings.TrimSpace(r.URL.Query().Get("periodo"))
 			q := strings.TrimSpace(r.URL.Query().Get("q"))
 			limit, err := parseIntQueryOptional(r, "limit")
 			if err != nil {
@@ -34,6 +35,7 @@ func EmpresaFinanzasMovimientosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				Tipo:            tipo,
 				Desde:           desde,
 				Hasta:           hasta,
+				Periodo:         periodo,
 				Q:               q,
 				IncludeInactive: includeInactive,
 				Limit:           limit,
@@ -59,6 +61,10 @@ func EmpresaFinanzasMovimientosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
 			id, err := dbpkg.CreateEmpresaFinanzasMovimiento(dbEmp, payload)
 			if err != nil {
+				if errors.Is(err, dbpkg.ErrPeriodoFinancieroCerrado) {
+					http.Error(w, "el periodo contable del movimiento esta cerrado", http.StatusConflict)
+					return
+				}
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
@@ -90,6 +96,10 @@ func EmpresaFinanzasMovimientosHandler(dbEmp *sql.DB) http.HandlerFunc {
 						http.Error(w, "movimiento no encontrado", http.StatusNotFound)
 						return
 					}
+					if errors.Is(err, dbpkg.ErrPeriodoFinancieroCerrado) {
+						http.Error(w, "el periodo contable del movimiento esta cerrado", http.StatusConflict)
+						return
+					}
 					http.Error(w, "No se pudo actualizar el estado", http.StatusInternalServerError)
 					return
 				}
@@ -114,6 +124,10 @@ func EmpresaFinanzasMovimientosHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, "movimiento no encontrado", http.StatusNotFound)
 					return
 				}
+				if errors.Is(err, dbpkg.ErrPeriodoFinancieroCerrado) {
+					http.Error(w, "el periodo contable del movimiento esta cerrado", http.StatusConflict)
+					return
+				}
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
@@ -134,6 +148,10 @@ func EmpresaFinanzasMovimientosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			if err := dbpkg.DeleteEmpresaFinanzasMovimiento(dbEmp, empresaID, id); err != nil {
 				if errors.Is(err, sql.ErrNoRows) {
 					http.Error(w, "movimiento no encontrado", http.StatusNotFound)
+					return
+				}
+				if errors.Is(err, dbpkg.ErrPeriodoFinancieroCerrado) {
+					http.Error(w, "el periodo contable del movimiento esta cerrado", http.StatusConflict)
 					return
 				}
 				http.Error(w, "No se pudo eliminar el movimiento", http.StatusInternalServerError)
@@ -184,6 +202,102 @@ func EmpresaFinanzasConfiguracionHandler(dbEmp *sql.DB) http.HandlerFunc {
 			id, err := dbpkg.UpsertEmpresaFinanzasConfiguracion(dbEmp, payload)
 			if err != nil {
 				http.Error(w, "No se pudo guardar la configuracion financiera", http.StatusBadRequest)
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": id})
+			return
+		}
+
+		http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
+	}
+}
+
+// EmpresaFinanzasPeriodosHandler gestiona periodos contables por empresa.
+func EmpresaFinanzasPeriodosHandler(dbEmp *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			empresaID, err := parseEmpresaIDQuery(r)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			includeInactive := queryBool(r, "include_inactive")
+			rows, err := dbpkg.ListEmpresaFinanzasPeriodos(dbEmp, empresaID, includeInactive)
+			if err != nil {
+				http.Error(w, "No se pudieron listar los periodos", http.StatusInternalServerError)
+				return
+			}
+			writeJSON(w, http.StatusOK, rows)
+			return
+
+		case http.MethodPost:
+			var payload dbpkg.EmpresaFinanzasPeriodo
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "JSON invalido", http.StatusBadRequest)
+				return
+			}
+			if payload.EmpresaID <= 0 {
+				if empresaID, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && empresaID > 0 {
+					payload.EmpresaID = empresaID
+				}
+			}
+			if payload.EmpresaID <= 0 {
+				http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+				return
+			}
+			payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
+			id, err := dbpkg.UpsertEmpresaFinanzasPeriodo(dbEmp, payload)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": id})
+			return
+
+		case http.MethodPut:
+			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+			if action == "cerrar" || action == "reabrir" {
+				empresaID, err := parseEmpresaIDQuery(r)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				periodo := strings.TrimSpace(r.URL.Query().Get("periodo"))
+				if periodo == "" {
+					http.Error(w, "periodo es obligatorio", http.StatusBadRequest)
+					return
+				}
+				estado := "cerrado"
+				if action == "reabrir" {
+					estado = "abierto"
+				}
+				if err := dbpkg.SetEmpresaFinanzasPeriodoEstado(dbEmp, empresaID, periodo, estado, strings.TrimSpace(adminEmailFromRequest(r)), "actualizacion desde API"); err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "periodo": periodo, "estado": estado})
+				return
+			}
+
+			var payload dbpkg.EmpresaFinanzasPeriodo
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "JSON invalido", http.StatusBadRequest)
+				return
+			}
+			if payload.EmpresaID <= 0 {
+				if empresaID, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && empresaID > 0 {
+					payload.EmpresaID = empresaID
+				}
+			}
+			if payload.EmpresaID <= 0 {
+				http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+				return
+			}
+			payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
+			id, err := dbpkg.UpsertEmpresaFinanzasPeriodo(dbEmp, payload)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
 			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": id})

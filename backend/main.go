@@ -317,6 +317,9 @@ func main() {
 	if err := dbpkg.EnsureEmpresaFinanzasSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure finanzas schema in empresas db: %v", err)
 	}
+	if err := dbpkg.EnsureEmpresaAIChatSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure chat IA schema in empresas db: %v", err)
+	}
 	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-01-001-baseline", "baseline schema snapshot: users, empresas, productos, clientes, carritos, configuracion_avanzada"); err != nil {
 		log.Fatalf("failed to register schema migration in empresas db: %v", err)
 	}
@@ -331,6 +334,15 @@ func main() {
 	}
 	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-03-003-finanzas", "modulo financiero por empresa: ingresos, egresos, comprobantes y configuracion"); err != nil {
 		log.Fatalf("failed to register finanzas schema migration in empresas db: %v", err)
+	}
+	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-03-004-finanzas-periodos-retenciones", "periodos contables, bloqueo por cierre, retenciones y reportes contables avanzados"); err != nil {
+		log.Fatalf("failed to register finanzas periodos schema migration in empresas db: %v", err)
+	}
+	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-03-005-chat-ia-empresa", "chat con inteligencia artificial por empresa, modelos externos y control de uso diario"); err != nil {
+		log.Fatalf("failed to register chat ia schema migration in empresas db: %v", err)
+	}
+	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-04-006-chat-ia-modelo-preferido", "persistencia de modelo preferido por empresa y cuenta Google autenticada"); err != nil {
+		log.Fatalf("failed to register chat ia preferred model schema migration in empresas db: %v", err)
 	}
 	// Crear tipos_de_empresas en la base de datos de superadministrador (ubicación centralizada)
 	createTiposSuper := `CREATE TABLE IF NOT EXISTS tipos_de_empresas (
@@ -724,6 +736,8 @@ func main() {
 	http.HandleFunc("/api/empresa/ubicacion_gps/recorridos", handlers.EmpresaUbicacionGPSRecorridosHandler(dbEmpresas))
 	http.HandleFunc("/api/empresa/finanzas/movimientos", handlers.EmpresaFinanzasMovimientosHandler(dbEmpresas))
 	http.HandleFunc("/api/empresa/finanzas/configuracion", handlers.EmpresaFinanzasConfiguracionHandler(dbEmpresas))
+	http.HandleFunc("/api/empresa/finanzas/periodos", handlers.EmpresaFinanzasPeriodosHandler(dbEmpresas))
+	handlers.RegisterEmpresaChatIARoutes(dbEmpresas, dbSuper)
 	http.HandleFunc("/api/empresa/roles_de_usuario", handlers.EmpresaRolesDeUsuarioHandler(dbEmpresas, dbSuper))
 	// Endpoint para obtener admin actual desde la cookie de sesión
 	http.HandleFunc("/me", handlers.MeHandler(dbSuper))

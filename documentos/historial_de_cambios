@@ -1,5 +1,141 @@
 - Historial de cambios
 
+- 2026-04-04: Chat IA registra modelo preferido por cuenta Google
+    - Se amplía `backend/db/chat_inteligencia_artificial.go`:
+        - nueva tabla `empresa_ai_modelo_preferido` (UNIQUE por `empresa_id + admin_email`),
+        - nuevas funciones `GetEmpresaAIModeloPreferido` y `UpsertEmpresaAIModeloPreferido`.
+    - Se amplía `backend/handlers/chat_con_inteligencia_artificial_controller.go`:
+        - `GET /api/empresa/chat_con_inteligencia_artificial/modelos` ahora devuelve `google_account` y `modelo_preferido`,
+        - nuevo endpoint `GET/PUT /api/empresa/chat_con_inteligencia_artificial/modelo_preferido`,
+        - `POST /api/empresa/chat_con_inteligencia_artificial/consultar` registra el modelo usado como preferencia de la cuenta Google.
+    - Se actualiza `backend/handlers/chat_con_inteligencia_artificial_router.go` para registrar la ruta `modelo_preferido`.
+    - Se actualiza `web/administrar_empresa/chat_con_inteligencia_artificial.html`:
+        - carga del modelo preferido al iniciar,
+        - guardado automático al cambiar el modelo,
+        - visualización de cuenta Google asociada en uso diario.
+    - Se actualiza documentación técnica y diagramas:
+        - `estructura_bd.md`
+        - `documentos/descripcion_de_las_bases_De_datos`
+        - `documentos/descripcion_de_archivos`
+        - `documentos/diagramas/estructura_del_codigo.md`
+        - `documentos/diagramas/diagrama_entidad_relacion.md`
+        - `documentos/diagramas/diagrama_flujo_procesos.md`
+        - `documentos/diagramas/diagrama_arquitectura_sistema.md`
+        - `CHANGELOG.md`
+    - Validaciones ejecutadas:
+        - `gofmt -w backend/db/chat_inteligencia_artificial.go backend/handlers/chat_con_inteligencia_artificial_controller.go backend/handlers/chat_con_inteligencia_artificial_router.go` (ok).
+        - `go test ./...` en `backend` (ok).
+    - Archivos afectados: backend/db/chat_inteligencia_artificial.go, backend/handlers/chat_con_inteligencia_artificial_controller.go, backend/handlers/chat_con_inteligencia_artificial_router.go, web/administrar_empresa/chat_con_inteligencia_artificial.html, estructura_bd.md, documentos/descripcion_de_las_bases_De_datos, documentos/descripcion_de_archivos, documentos/diagramas/estructura_del_codigo.md, documentos/diagramas/diagrama_entidad_relacion.md, documentos/diagramas/diagrama_flujo_procesos.md, documentos/diagramas/diagrama_arquitectura_sistema.md, documentos/historial_de_cambios, CHANGELOG.md.
+
+- 2026-04-03: Endurecimiento de manejo de errores y logging separado por empresa
+    - Se actualiza `backend/utils/utils.go` con trazabilidad transversal:
+        - generación de `request_id` por request,
+        - inferencia de `empresa_id` desde query/header/body JSON,
+        - registro de inicio/fin de request con latencia y nivel (`INFO/WARN/ERROR`),
+        - escritura de logs por empresa en `backend/logs/empresa_<id>.log` y fallback en `backend/logs/empresa_global.log`.
+    - Se cubren flujos multipart donde `empresa_id` llega en formulario:
+        - `backend/handlers/chat_tareas.go` y `backend/handlers/productos.go` establecen `X-Empresa-ID` para enrutar correctamente logs por empresa en uploads.
+    - Se endurece `backend/handlers/usuarios_empresa.go`:
+        - se eliminan respuestas `500` con detalle interno en login/set_password/consulta de usuario,
+        - se reemplazan por mensajes seguros para cliente y logging detallado en servidor con contexto de empresa/usuario.
+    - Se refuerza `JSONErrorMiddleware` para respuestas de error API no-JSON:
+        - normaliza salida JSON,
+        - agrega `request_id` y `empresa_id` cuando aplica,
+        - registra eventos de error por empresa para trazabilidad operativa.
+    - Se endurece `scripts/iniciar_servidor.ps1`:
+        - captura `PID` de `server.exe`,
+        - detecta salida prematura del proceso antes de abrir `:8080`,
+        - imprime últimas líneas de `backend/server.err` para diagnóstico inmediato.
+    - Validaciones ejecutadas:
+        - `gofmt -w backend/utils/utils.go` (ok).
+        - `go test ./...` en `backend` (ok).
+        - `get_errors` sobre archivos cambiados (ok en Go; warning de analizador PowerShell persistente/stale en el script).
+    - Archivos afectados: backend/utils/utils.go, backend/handlers/chat_tareas.go, backend/handlers/productos.go, backend/handlers/usuarios_empresa.go, scripts/iniciar_servidor.ps1, CHANGELOG.md, documentos/historial_de_cambios, documentos/descripcion_de_archivos, documentos/diagramas/estructura_del_codigo.md.
+
+- 2026-04-03: Correccion de arranque local (script OAuth + migracion finanzas compatible)
+    - Se corrige `scripts/iniciar_servidor.ps1` en `Resolve-GoogleOAuthCredentials`:
+        - `envCandidates` ahora se construye con llamadas separadas a `Join-Path -Path/-ChildPath`.
+        - Se elimina el error de PowerShell: `Join-Path : No se puede convertir 'System.Object[]' al tipo 'System.String' requerido por ChildPath`.
+    - Se corrige `backend/db/finanzas.go` en `EnsureEmpresaFinanzasSchema`:
+        - los indices dependientes de columnas migradas se crean en etapa posterior (`postMigrationIndexes`),
+        - evita fallo de arranque en esquemas previos: `SQL logic error: no such column: periodo_contable`.
+    - Validaciones ejecutadas:
+        - `gofmt -w backend/db/finanzas.go` (ok).
+        - `go test ./...` en `backend` (ok).
+        - `go run .` en `backend` (ok: servidor arrancado en `:8080`).
+    - Archivos afectados: scripts/iniciar_servidor.ps1, backend/db/finanzas.go, documentos/historial_de_cambios, CHANGELOG.md.
+
+- 2026-04-04: Modulo chat_con_inteligencia_artificial (tipo ChatGPT) por empresa con modelos externos y control free-tier
+    - Se crea `backend/db/chat_inteligencia_artificial.go` con:
+        - tabla `empresa_ai_consultas` para auditoria de pregunta/respuesta/tokens,
+        - tabla `empresa_ai_uso_diario` para control de consultas y tokens por `empresa_id + provider + model_id + fecha_uso`,
+        - funciones de alcance por empresa (`CanAdminAccessEmpresaIA`), contexto empresarial (`BuildEmpresaAIContexto`) y registro de uso (`RegisterEmpresaAIConsulta`).
+    - Se crean `backend/handlers/chat_con_inteligencia_artificial_controller.go` y `backend/handlers/chat_con_inteligencia_artificial_router.go`.
+    - Se publican rutas:
+        - `GET /api/empresa/chat_con_inteligencia_artificial/modelos`
+        - `POST /api/empresa/chat_con_inteligencia_artificial/consultar`
+        - `GET /api/empresa/chat_con_inteligencia_artificial/historial`
+    - Se integra en `backend/main.go`:
+        - `EnsureEmpresaAIChatSchema`,
+        - migracion `2026-04-03-005-chat-ia-empresa`,
+        - registro de rutas por router modular.
+    - Se crea `web/administrar_empresa/chat_con_inteligencia_artificial.html` con:
+        - selector de modelos famosos,
+        - conversacion estilo chat,
+        - historial reciente,
+        - aviso de limite y enlace de upgrade de plan.
+    - Se actualiza navegacion en `web/administrar_empresa.html` y `web/js/administrar_empresa.js` para acceso/persistencia del modulo.
+    - Se aplican reglas de seguridad:
+        - credenciales de proveedores solo en backend por variables de entorno,
+        - alcance estricto por `empresa_id`,
+        - limite diario free-tier por empresa/proveedor/modelo.
+    - Se actualiza documentacion tecnica en:
+        - `documentos/diagramas/estructura_del_codigo.md`
+        - `documentos/diagramas/diagrama_arquitectura_sistema.md`
+        - `documentos/diagramas/diagrama_entidad_relacion.md`
+        - `documentos/diagramas/diagrama_flujo_procesos.md`
+        - `estructura_bd.md`
+        - `documentos/descripcion_de_las_bases_De_datos`
+        - `documentos/descripcion_de_archivos`
+        - `CHANGELOG.md`
+    - Validaciones ejecutadas:
+        - `gofmt` en archivos Go del modulo IA (ok).
+        - `go test ./...` en `backend` (ok).
+        - `get_errors` sobre archivos del modulo IA y archivos integrados (ok).
+    - Archivos afectados: backend/db/chat_inteligencia_artificial.go, backend/handlers/chat_con_inteligencia_artificial_controller.go, backend/handlers/chat_con_inteligencia_artificial_router.go, backend/main.go, web/administrar_empresa/chat_con_inteligencia_artificial.html, web/administrar_empresa.html, web/js/administrar_empresa.js, web/estilos.css, documentos/diagramas/estructura_del_codigo.md, documentos/diagramas/diagrama_arquitectura_sistema.md, documentos/diagramas/diagrama_entidad_relacion.md, documentos/diagramas/diagrama_flujo_procesos.md, estructura_bd.md, documentos/descripcion_de_las_bases_De_datos, documentos/descripcion_de_archivos, documentos/historial_de_cambios, CHANGELOG.md.
+
+- 2026-04-04: Periodos contables (cerrar/reabrir) + retenciones + reportes contables avanzados + ajustes técnicos
+    - Se amplía `backend/db/finanzas.go` con:
+        - tabla `empresa_finanzas_periodos`,
+        - campos de retenciones y `total_neto` en movimientos,
+        - bloqueo de cambios en periodos cerrados,
+        - nuevas cuentas de retenciones en configuración financiera.
+    - Se actualiza `backend/handlers/finanzas.go`:
+        - filtro por `periodo` en movimientos,
+        - nuevo endpoint `GET/POST/PUT /api/empresa/finanzas/periodos`,
+        - respuesta `409` al intentar modificar movimientos de periodos cerrados.
+    - Se actualiza `backend/main.go` con migración `2026-04-03-004-finanzas-periodos-retenciones` y nueva ruta de periodos.
+    - Se completa `web/administrar_empresa/finanzas.html` con:
+        - controles de periodos,
+        - retenciones (fuente/ICA/IVA), total retenciones y total neto,
+        - exportaciones de balance general, libro diario y libro mayor,
+        - listeners e inicialización de nuevos controles.
+    - Se corrige compatibilidad IPv6 en `backend/handlers/system_empresas_handlers.go` usando `net.JoinHostPort`.
+    - Se ajusta `scripts/iniciar_servidor.ps1` para usar función con verbo aprobado en lectura de `.env`.
+    - Se actualiza documentación técnica y diagramas en:
+        - `documentos/diagramas/estructura_del_codigo.md`
+        - `documentos/diagramas/diagrama_flujo_procesos.md`
+        - `documentos/diagramas/diagrama_entidad_relacion.md`
+        - `documentos/diagramas/diagrama_arquitectura_sistema.md`
+        - `estructura_bd.md`
+        - `documentos/descripcion_de_las_bases_De_datos`
+        - `documentos/descripcion_de_archivos`
+        - `CHANGELOG.md`
+    - Validaciones ejecutadas:
+        - `go test ./...` en `backend` (ok).
+        - `get_errors` sobre archivos modificados (ok en Go/HTML; aviso persistente no actualizado por el analizador de PowerShell).
+    - Archivos afectados: backend/db/finanzas.go, backend/handlers/finanzas.go, backend/main.go, web/administrar_empresa/finanzas.html, backend/handlers/system_empresas_handlers.go, scripts/iniciar_servidor.ps1, documentos/diagramas/estructura_del_codigo.md, documentos/diagramas/diagrama_flujo_procesos.md, documentos/diagramas/diagrama_entidad_relacion.md, documentos/diagramas/diagrama_arquitectura_sistema.md, estructura_bd.md, documentos/descripcion_de_las_bases_De_datos, documentos/descripcion_de_archivos, documentos/historial_de_cambios, CHANGELOG.md.
+
 - 2026-04-03: Plantilla ERP dedicada + balances contables exportables + informe directivo
     - Se actualiza `web/administrar_empresa/finanzas.html` con nuevas salidas contables:
         - plantilla dedicada SIIGO en CSV,

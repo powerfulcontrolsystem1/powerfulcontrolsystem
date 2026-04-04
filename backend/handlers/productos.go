@@ -849,6 +849,7 @@ func EmpresaProductoImagenUploadHandler(dbEmp *sql.DB) http.HandlerFunc {
 			http.Error(w, "empresa_id required", http.StatusBadRequest)
 			return
 		}
+		w.Header().Set("X-Empresa-ID", strconv.FormatInt(empresaID, 10))
 		productoID, err := parseInt64Form(r, "producto_id")
 		if err != nil || productoID <= 0 {
 			http.Error(w, "producto_id required", http.StatusBadRequest)

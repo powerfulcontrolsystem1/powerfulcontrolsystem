@@ -1,324 +1,50 @@
-2026/04/03 19:39:33 INFO: OAuth Google cargado desde DB (google.client_id, google.client_secret)
-2026/04/03 19:39:33 INFO: redirect OAuth cargado desde DB (google.redirect_url)
-2026/04/03 19:39:33 index.html encontrado en ..\web\index.html
-2026/04/03 19:39:33 Servidor arrancado en :8080
-2026/04/03 19:39:33 metrics: stored cpu=22.31 mem=84.00% recv=5163504496 sent=349383081
-2026/04/03 19:39:34 -> GET /menu.js from [::1]:64619
-2026/04/03 19:39:34 <- 304 GET /menu.js
-2026/04/03 19:39:34 -> GET /api/empresa/facturacion_electronica/pais_detectado from [::1]:64619
-2026/04/03 19:39:34 <- 200 GET /api/empresa/facturacion_electronica/pais_detectado
-2026/04/03 19:39:43 metrics: stored cpu=20.31 mem=83.00% recv=5163530511 sent=349410648
-2026/04/03 19:39:53 metrics: stored cpu=11.82 mem=83.00% recv=5164339872 sent=350073956
-2026/04/03 19:40:03 metrics: stored cpu=14.26 mem=82.00% recv=5165091788 sent=350968966
-2026/04/03 19:40:13 metrics: stored cpu=9.67 mem=82.00% recv=5165110374 sent=350994117
-2026/04/03 19:40:19 -> GET / from [::1]:64619
-2026/04/03 19:40:20 <- 200 GET /
-2026/04/03 19:40:20 -> GET /estilos.css from [::1]:64619
-2026/04/03 19:40:20 -> GET /menu.js from [::1]:50630
-2026/04/03 19:40:20 <- 200 GET /menu.js
-2026/04/03 19:40:20 -> GET /img/punto_venta.png from [::1]:50977
-2026/04/03 19:40:20 -> GET /img/motel.png from [::1]:57967
-2026/04/03 19:40:20 <- 200 GET /estilos.css
-2026/04/03 19:40:20 <- 200 GET /img/motel.png
-2026/04/03 19:40:20 <- 200 GET /img/punto_venta.png
-2026/04/03 19:40:20 -> GET /img/restaurante.png from [::1]:57967
-2026/04/03 19:40:20 <- 200 GET /img/restaurante.png
-2026/04/03 19:40:20 -> GET /img/sensor.png from [::1]:50977
-2026/04/03 19:40:20 -> GET /api/empresa/facturacion_electronica/pais_detectado from [::1]:64619
-2026/04/03 19:40:20 <- 200 GET /api/empresa/facturacion_electronica/pais_detectado
-2026/04/03 19:40:20 <- 200 GET /img/sensor.png
-2026/04/03 19:40:20 -> GET /favicon.ico from [::1]:50977
-2026/04/03 19:40:20 <- 404 GET /favicon.ico
-2026/04/03 19:40:22 -> GET /api/empresa/facturacion_electronica/pais_detectado from [::1]:50977
-2026/04/03 19:40:22 <- 200 GET /api/empresa/facturacion_electronica/pais_detectado
-2026/04/03 19:40:22 -> GET /auth/google/login from [::1]:50977
-2026/04/03 19:40:22 handleGoogleLogin: oauth redirect requested (client configured=true)
-2026/04/03 19:40:22 handleGoogleLogin: redirecting to OAuth provider
-2026/04/03 19:40:22 <- 302 GET /auth/google/login
-2026/04/03 19:40:23 -> GET /auth/google/callback from [::1]:50977
-2026/04/03 19:40:23 metrics: stored cpu=13.73 mem=83.00% recv=5165218429 sent=351128724
-2026/04/03 19:40:23 <- 302 GET /auth/google/callback
-2026/04/03 19:40:24 -> GET /super/api/licencias from [::1]:50977
-2026/04/03 19:40:24 <- 200 GET /super/api/licencias
-2026/04/03 19:40:24 -> GET /me from [::1]:50977
-2026/04/03 19:40:24 <- 200 GET /me
-2026/04/03 19:40:24 -> GET /api/empresa/facturacion_electronica/pais_detectado from [::1]:50977
-2026/04/03 19:40:24 <- 200 GET /api/empresa/facturacion_electronica/pais_detectado
-2026/04/03 19:40:24 -> GET /super/api/licencias from [::1]:50977
-2026/04/03 19:40:24 <- 200 GET /super/api/licencias
-2026/04/03 19:40:33 metrics: stored cpu=13.80 mem=82.00% recv=5165434706 sent=351140060
-2026/04/03 19:40:43 metrics: stored cpu=9.05 mem=83.00% recv=5165981556 sent=351526349
-2026/04/03 19:40:53 metrics: stored cpu=2.34 mem=83.00% recv=5166009319 sent=351705868
-2026/04/03 19:41:03 metrics: stored cpu=14.78 mem=82.00% recv=5166707501 sent=351731985
-2026/04/03 19:41:13 metrics: stored cpu=16.39 mem=81.00% recv=5167638741 sent=351768838
-2026/04/03 19:41:23 metrics: stored cpu=20.08 mem=82.00% recv=5168520845 sent=351801505
-2026/04/03 19:41:33 metrics: stored cpu=30.45 mem=86.00% recv=5169131561 sent=352217312
-2026/04/03 19:41:43 metrics: stored cpu=13.22 mem=86.00% recv=5169790654 sent=352242633
-2026/04/03 19:41:53 metrics: stored cpu=18.79 mem=86.00% recv=5170823093 sent=352779991
-2026/04/03 19:42:03 metrics: stored cpu=28.05 mem=86.00% recv=5171758430 sent=353430183
-2026/04/03 19:42:13 metrics: stored cpu=24.65 mem=86.00% recv=5172734688 sent=353902188
-2026/04/03 19:42:23 metrics: stored cpu=22.95 mem=86.00% recv=5173555420 sent=353958790
-2026/04/03 19:42:33 metrics: stored cpu=22.30 mem=86.00% recv=5174361664 sent=354549012
-2026/04/03 19:42:43 metrics: stored cpu=24.04 mem=86.00% recv=5175164826 sent=355038310
-2026/04/03 19:42:53 metrics: stored cpu=18.48 mem=87.00% recv=5175193275 sent=355262851
-2026/04/03 19:42:59 -> GET /me from [::1]:50977
-2026/04/03 19:42:59 <- 200 GET /me
-2026/04/03 19:42:59 -> GET /api/empresa/facturacion_electronica/pais_detectado from [::1]:50977
-2026/04/03 19:42:59 <- 200 GET /api/empresa/facturacion_electronica/pais_detectado
-2026/04/03 19:42:59 -> GET /super/api/licencias from [::1]:57967
-2026/04/03 19:42:59 -> GET /super/api/tipos_empresas from [::1]:64619
-2026/04/03 19:42:59 -> GET /super/api/empresas from [::1]:50977
-2026/04/03 19:42:59 <- 200 GET /super/api/licencias
-2026/04/03 19:42:59 <- 200 GET /super/api/tipos_empresas
-2026/04/03 19:42:59 <- 200 GET /super/api/empresas
-2026/04/03 19:43:00 -> GET /api/empresa/facturacion_electronica/pais_detectado from [::1]:50977
-2026/04/03 19:43:00 -> GET /super/api/empresas from [::1]:64619
-2026/04/03 19:43:00 <- 200 GET /api/empresa/facturacion_electronica/pais_detectado
-2026/04/03 19:43:00 <- 200 GET /super/api/empresas
-2026/04/03 19:43:00 -> GET /super/api/empresas from [::1]:64619
-2026/04/03 19:43:00 <- 200 GET /super/api/empresas
-2026/04/03 19:43:03 metrics: stored cpu=29.24 mem=86.00% recv=5175789718 sent=356169883
-2026/04/03 19:43:03 -> GET /administrar_empresa.html from [::1]:64619
-2026/04/03 19:43:03 <- 200 GET /administrar_empresa.html
-2026/04/03 19:43:03 -> GET /estilos.css from [::1]:64619
-2026/04/03 19:43:03 -> GET /menu.js from [::1]:50977
-2026/04/03 19:43:03 -> GET /img/company-briefcase.svg from [::1]:57967
-2026/04/03 19:43:03 -> GET /img/analytics.svg from [::1]:50630
-2026/04/03 19:43:03 <- 200 GET /estilos.css
-2026/04/03 19:43:03 <- 200 GET /menu.js
-2026/04/03 19:43:03 <- 200 GET /img/company-briefcase.svg
-2026/04/03 19:43:03 <- 200 GET /img/analytics.svg
-2026/04/03 19:43:03 -> GET /img/shield-license.svg from [::1]:50630
-2026/04/03 19:43:03 -> GET /img/user-avatar.svg from [::1]:64619
-2026/04/03 19:43:03 -> GET /img/network.svg from [::1]:57967
-2026/04/03 19:43:03 -> GET /js/administrar_empresa.js from [::1]:50977
-2026/04/03 19:43:03 <- 200 GET /img/shield-license.svg
-2026/04/03 19:43:03 <- 200 GET /img/user-avatar.svg
-2026/04/03 19:43:03 <- 200 GET /js/administrar_empresa.js
-2026/04/03 19:43:03 <- 200 GET /img/network.svg
-2026/04/03 19:43:03 -> GET /super/api/empresas from [::1]:57967
-2026/04/03 19:43:03 -> GET /api/empresa/facturacion_electronica/pais_detectado from [::1]:50977
-2026/04/03 19:43:03 <- 200 GET /super/api/empresas
-2026/04/03 19:43:03 <- 200 GET /api/empresa/facturacion_electronica/pais_detectado
-2026/04/03 19:43:03 -> GET /estilos.css from [::1]:50977
-2026/04/03 19:43:03 <- 200 GET /estilos.css
-2026/04/03 19:43:04 -> GET /super/api/empresas from [::1]:50977
-2026/04/03 19:43:04 <- 200 GET /super/api/empresas
-2026/04/03 19:43:04 -> GET /favicon.ico from [::1]:50977
-2026/04/03 19:43:04 <- 404 GET /favicon.ico
-2026/04/03 19:43:09 -> GET /administrar_empresa/finanzas.html from [::1]:50977
-2026/04/03 19:43:09 <- 200 GET /administrar_empresa/finanzas.html
-2026/04/03 19:43:09 -> GET /super/api/empresas from [::1]:50977
-2026/04/03 19:43:09 <- 200 GET /super/api/empresas
-2026/04/03 19:43:09 -> GET /api/empresa/finanzas/configuracion from [::1]:50977
-2026/04/03 19:43:09 <- 200 GET /api/empresa/finanzas/configuracion
-2026/04/03 19:43:09 -> GET /api/empresa/finanzas/movimientos from [::1]:50977
-2026/04/03 19:43:09 <- 200 GET /api/empresa/finanzas/movimientos
-2026/04/03 19:43:13 metrics: stored cpu=19.18 mem=86.00% recv=5175965399 sent=356927412
-2026/04/03 19:43:23 metrics: stored cpu=23.91 mem=84.00% recv=5176608178 sent=357498267
-2026/04/03 19:43:33 metrics: stored cpu=16.70 mem=84.00% recv=5177624455 sent=358283776
-2026/04/03 19:43:43 metrics: stored cpu=18.93 mem=84.00% recv=5178724146 sent=359412922
-2026/04/03 19:43:53 metrics: stored cpu=15.57 mem=83.00% recv=5179388937 sent=360385597
-2026/04/03 19:44:03 -> GET /administrar_empresa/reportes.html from [::1]:64965
-2026/04/03 19:44:03 <- 304 GET /administrar_empresa/reportes.html
-2026/04/03 19:44:03 -> GET /api/empresa/carritos_compra from [::1]:64965
-2026/04/03 19:44:03 <- 200 GET /api/empresa/carritos_compra
-2026/04/03 19:44:03 -> GET /api/empresa/clientes from [::1]:52398
-2026/04/03 19:44:03 -> GET /api/empresa/productos from [::1]:63276
-2026/04/03 19:44:03 <- 200 GET /api/empresa/clientes
-2026/04/03 19:44:03 -> GET /api/empresa/inventario/existencias from [::1]:62442
-2026/04/03 19:44:03 <- 200 GET /api/empresa/productos
-2026/04/03 19:44:03 <- 200 GET /api/empresa/inventario/existencias
-2026/04/03 19:44:03 -> GET /api/empresa/inventario/movimientos from [::1]:56451
-2026/04/03 19:44:03 -> GET /api/empresa/configuracion_avanzada from [::1]:52915
-2026/04/03 19:44:03 <- 200 GET /api/empresa/inventario/movimientos
-2026/04/03 19:44:03 <- 200 GET /api/empresa/configuracion_avanzada
-2026/04/03 19:44:03 -> GET /api/empresa/carritos_compra/items from [::1]:52915
-2026/04/03 19:44:03 -> GET /api/empresa/carritos_compra/items from [::1]:56451
-2026/04/03 19:44:03 -> GET /api/empresa/carritos_compra/items from [::1]:62442
-2026/04/03 19:44:03 -> GET /api/empresa/carritos_compra/items from [::1]:63276
-2026/04/03 19:44:03 <- 200 GET /api/empresa/carritos_compra/items
-2026/04/03 19:44:03 -> GET /api/empresa/carritos_compra/items from [::1]:52398
-2026/04/03 19:44:03 -> GET /api/empresa/carritos_compra/items from [::1]:64965
-2026/04/03 19:44:03 <- 200 GET /api/empresa/carritos_compra/items
-2026/04/03 19:44:03 <- 200 GET /api/empresa/carritos_compra/items
-2026/04/03 19:44:03 <- 200 GET /api/empresa/carritos_compra/items
-2026/04/03 19:44:03 <- 200 GET /api/empresa/carritos_compra/items
-2026/04/03 19:44:03 <- 200 GET /api/empresa/carritos_compra/items
-2026/04/03 19:44:03 -> GET /api/empresa/carritos_compra/items from [::1]:52915
-2026/04/03 19:44:03 <- 200 GET /api/empresa/carritos_compra/items
-2026/04/03 19:44:03 -> GET /api/empresa/carritos_compra/items from [::1]:56451
-2026/04/03 19:44:03 -> GET /api/empresa/carritos_compra/items from [::1]:62442
-2026/04/03 19:44:03 -> GET /api/empresa/carritos_compra/items from [::1]:63276
-2026/04/03 19:44:03 <- 200 GET /api/empresa/carritos_compra/items
-2026/04/03 19:44:03 -> GET /api/empresa/carritos_compra/items from [::1]:52398
-2026/04/03 19:44:03 -> GET /api/empresa/carritos_compra/items from [::1]:64965
-2026/04/03 19:44:03 <- 200 GET /api/empresa/carritos_compra/items
-2026/04/03 19:44:03 <- 200 GET /api/empresa/carritos_compra/items
-2026/04/03 19:44:03 <- 200 GET /api/empresa/carritos_compra/items
-2026/04/03 19:44:03 <- 200 GET /api/empresa/carritos_compra/items
-2026/04/03 19:44:03 metrics: stored cpu=19.66 mem=83.00% recv=5180315832 sent=361526152
-2026/04/03 19:44:13 metrics: stored cpu=23.49 mem=82.00% recv=5181143362 sent=363084266
-2026/04/03 19:44:23 metrics: stored cpu=5.20 mem=82.00% recv=5181452113 sent=363256006
-2026/04/03 19:44:33 metrics: stored cpu=18.67 mem=82.00% recv=5182303961 sent=363298359
-2026/04/03 19:44:43 metrics: stored cpu=24.01 mem=83.00% recv=5183352286 sent=364044126
-2026/04/03 19:44:53 metrics: stored cpu=32.49 mem=83.00% recv=5184259751 sent=365887332
-2026/04/03 19:45:03 metrics: stored cpu=23.20 mem=83.00% recv=5184993029 sent=367589947
-2026/04/03 19:45:13 metrics: stored cpu=18.21 mem=83.00% recv=5185846476 sent=369233174
-2026/04/03 19:45:23 metrics: stored cpu=19.58 mem=83.00% recv=5186807443 sent=370492489
-2026/04/03 19:45:33 metrics: stored cpu=21.29 mem=84.00% recv=5188040489 sent=372292157
-2026/04/03 19:45:43 metrics: stored cpu=22.29 mem=84.00% recv=5189025551 sent=374118686
-2026/04/03 19:45:53 metrics: stored cpu=18.90 mem=83.00% recv=5189401999 sent=375337709
-2026/04/03 19:46:03 metrics: stored cpu=9.80 mem=83.00% recv=5190029336 sent=375623820
-2026/04/03 19:46:13 metrics: stored cpu=10.28 mem=81.00% recv=5190315769 sent=375689903
-2026/04/03 19:46:23 metrics: stored cpu=10.89 mem=81.00% recv=5190342007 sent=375717615
-2026/04/03 19:46:33 metrics: stored cpu=8.65 mem=81.00% recv=5190382735 sent=375747745
-2026/04/03 19:46:43 metrics: stored cpu=9.59 mem=81.00% recv=5190389838 sent=375754489
-2026/04/03 19:46:53 metrics: stored cpu=6.34 mem=80.00% recv=5190406743 sent=375790549
-2026/04/03 19:47:03 metrics: stored cpu=5.17 mem=79.00% recv=5190424845 sent=375803366
-2026/04/03 19:47:13 metrics: stored cpu=4.01 mem=78.00% recv=5190429134 sent=375810191
-2026/04/03 19:47:23 metrics: stored cpu=4.53 mem=79.00% recv=5190436951 sent=375816139
-2026/04/03 19:47:33 metrics: stored cpu=10.92 mem=81.00% recv=5190471793 sent=375853195
-2026/04/03 19:47:43 metrics: stored cpu=18.70 mem=79.00% recv=5190509740 sent=376418802
-2026/04/03 19:47:53 metrics: stored cpu=9.04 mem=78.00% recv=5190535561 sent=376443359
-2026/04/03 19:48:03 metrics: stored cpu=9.46 mem=77.00% recv=5190555442 sent=376452268
-2026/04/03 19:48:13 metrics: stored cpu=13.80 mem=78.00% recv=5191221055 sent=377064149
-2026/04/03 19:48:23 metrics: stored cpu=17.99 mem=79.00% recv=5191369126 sent=377773472
-2026/04/03 19:48:33 metrics: stored cpu=16.02 mem=79.00% recv=5191408943 sent=378074209
-2026/04/03 19:48:43 metrics: stored cpu=17.81 mem=80.00% recv=5192001613 sent=378790285
-2026/04/03 19:48:53 metrics: stored cpu=14.49 mem=80.00% recv=5192437370 sent=378967387
-2026/04/03 19:49:03 metrics: stored cpu=22.80 mem=80.00% recv=5193457465 sent=379731764
-2026/04/03 19:49:13 metrics: stored cpu=23.77 mem=79.00% recv=5194357527 sent=380043731
-2026/04/03 19:49:23 metrics: stored cpu=23.52 mem=79.00% recv=5195246432 sent=380072781
-2026/04/03 19:49:33 metrics: stored cpu=22.22 mem=80.00% recv=5196282159 sent=382047861
-2026/04/03 19:49:43 metrics: stored cpu=18.07 mem=80.00% recv=5196695087 sent=383659592
-2026/04/03 19:49:53 metrics: stored cpu=22.52 mem=80.00% recv=5197481610 sent=385276915
-2026/04/03 19:50:03 metrics: stored cpu=20.57 mem=80.00% recv=5198260581 sent=385711422
-2026/04/03 19:50:13 metrics: stored cpu=20.77 mem=80.00% recv=5198734442 sent=386531904
-2026/04/03 19:50:23 metrics: stored cpu=23.35 mem=80.00% recv=5199768831 sent=387375771
-2026/04/03 19:50:33 metrics: stored cpu=23.94 mem=80.00% recv=5200605303 sent=389330871
-2026/04/03 19:50:43 metrics: stored cpu=17.90 mem=80.00% recv=5200973459 sent=389515120
-2026/04/03 19:50:53 metrics: stored cpu=21.58 mem=80.00% recv=5201799329 sent=391192185
-2026/04/03 19:51:03 metrics: stored cpu=15.82 mem=80.00% recv=5202537101 sent=393298815
-2026/04/03 19:51:13 metrics: stored cpu=22.83 mem=79.00% recv=5202894659 sent=394420634
-2026/04/03 19:51:23 metrics: stored cpu=16.67 mem=79.00% recv=5203311105 sent=394435809
-2026/04/03 19:51:33 metrics: stored cpu=19.54 mem=79.00% recv=5204031257 sent=394488072
-2026/04/03 19:51:43 metrics: stored cpu=18.87 mem=78.00% recv=5204712166 sent=394646767
-2026/04/03 19:51:53 metrics: stored cpu=17.69 mem=78.00% recv=5205417816 sent=394673979
-2026/04/03 19:52:03 metrics: stored cpu=16.96 mem=78.00% recv=5205737670 sent=395243031
-2026/04/03 19:52:13 metrics: stored cpu=17.40 mem=79.00% recv=5206120734 sent=396008635
-2026/04/03 19:52:23 metrics: stored cpu=12.83 mem=78.00% recv=5206934903 sent=397232648
-2026/04/03 19:52:33 metrics: stored cpu=15.39 mem=78.00% recv=5207362453 sent=397923828
-2026/04/03 19:52:43 metrics: stored cpu=17.09 mem=77.00% recv=5208078853 sent=398968287
-2026/04/03 19:52:53 metrics: stored cpu=6.57 mem=77.00% recv=5208498119 sent=399290782
-2026/04/03 19:53:03 metrics: stored cpu=4.30 mem=77.00% recv=5208502709 sent=399293796
-2026/04/03 19:53:13 metrics: stored cpu=3.14 mem=76.00% recv=5208518393 sent=399299092
-2026/04/03 19:53:23 metrics: stored cpu=7.62 mem=76.00% recv=5208536227 sent=399309756
-2026/04/03 19:53:33 metrics: stored cpu=5.88 mem=77.00% recv=5208556277 sent=399332283
-2026/04/03 19:53:43 metrics: stored cpu=3.57 mem=77.00% recv=5208655355 sent=399346578
-2026/04/03 19:53:53 metrics: stored cpu=2.81 mem=77.00% recv=5208668880 sent=399355223
-2026/04/03 19:54:03 metrics: stored cpu=2.44 mem=77.00% recv=5208684490 sent=399370308
-2026/04/03 19:54:13 metrics: stored cpu=6.21 mem=77.00% recv=5208723301 sent=399391266
-2026/04/03 19:54:23 metrics: stored cpu=2.03 mem=77.00% recv=5208733749 sent=399394342
-2026/04/03 19:54:33 metrics: stored cpu=6.38 mem=78.00% recv=5208750034 sent=399411198
-2026/04/03 19:54:43 metrics: stored cpu=2.52 mem=75.00% recv=5208764165 sent=399420093
-2026/04/03 19:54:53 metrics: stored cpu=2.36 mem=75.00% recv=5208770174 sent=399423158
-2026/04/03 19:55:03 metrics: stored cpu=2.27 mem=75.00% recv=5208785997 sent=399428092
-2026/04/03 19:55:13 metrics: stored cpu=8.79 mem=75.00% recv=5208791825 sent=399428544
-2026/04/03 19:55:23 metrics: stored cpu=2.38 mem=75.00% recv=5208802852 sent=399445634
-2026/04/03 19:55:33 metrics: stored cpu=4.96 mem=75.00% recv=5208817977 sent=399464989
-2026/04/03 19:55:43 metrics: stored cpu=3.94 mem=74.00% recv=5208829341 sent=399476076
-2026/04/03 19:55:53 metrics: stored cpu=2.67 mem=75.00% recv=5208847019 sent=399488728
-2026/04/03 19:56:03 metrics: stored cpu=2.93 mem=75.00% recv=5208852546 sent=399491834
-2026/04/03 19:56:13 metrics: stored cpu=3.77 mem=73.00% recv=5208866956 sent=399497071
-2026/04/03 19:56:23 metrics: stored cpu=6.83 mem=73.00% recv=5208884592 sent=399507910
-2026/04/03 19:56:33 metrics: stored cpu=5.81 mem=73.00% recv=5208898368 sent=399518947
-2026/04/03 19:56:43 metrics: stored cpu=3.34 mem=74.00% recv=5208906490 sent=399522631
-2026/04/03 19:56:53 metrics: stored cpu=2.56 mem=74.00% recv=5208922667 sent=399534285
-2026/04/03 19:57:03 metrics: stored cpu=2.46 mem=73.00% recv=5208928183 sent=399537465
-2026/04/03 19:57:13 metrics: stored cpu=5.22 mem=74.00% recv=5208952113 sent=399548695
-2026/04/03 19:57:23 metrics: stored cpu=3.30 mem=74.00% recv=5208955866 sent=399554186
-2026/04/03 19:57:33 metrics: stored cpu=5.84 mem=73.00% recv=5208972379 sent=399568377
-2026/04/03 19:57:43 metrics: stored cpu=2.50 mem=73.00% recv=5208984692 sent=399573692
-2026/04/03 19:57:53 metrics: stored cpu=2.40 mem=73.00% recv=5208996497 sent=399578974
-2026/04/03 19:58:03 metrics: stored cpu=2.05 mem=73.00% recv=5209005174 sent=399579029
-2026/04/03 19:58:13 metrics: stored cpu=2.52 mem=73.00% recv=5209010761 sent=399579235
-2026/04/03 19:58:23 metrics: stored cpu=2.07 mem=73.00% recv=5209015294 sent=399579519
-2026/04/03 19:58:33 metrics: stored cpu=3.87 mem=74.00% recv=5209026671 sent=399593127
-2026/04/03 19:58:43 metrics: stored cpu=4.03 mem=73.00% recv=5209113388 sent=399606500
-2026/04/03 19:58:53 metrics: stored cpu=2.32 mem=73.00% recv=5209120411 sent=399612502
-2026/04/03 19:59:03 metrics: stored cpu=2.26 mem=73.00% recv=5209137706 sent=399623817
-2026/04/03 19:59:13 metrics: stored cpu=2.23 mem=73.00% recv=5209151233 sent=399632366
-2026/04/03 19:59:23 metrics: stored cpu=6.94 mem=73.00% recv=5209171333 sent=399643976
-2026/04/03 19:59:33 metrics: stored cpu=5.17 mem=74.00% recv=5209185218 sent=399658231
-2026/04/03 19:59:43 metrics: stored cpu=3.42 mem=74.00% recv=5209204253 sent=399668739
-2026/04/03 19:59:53 metrics: stored cpu=3.15 mem=74.00% recv=5209213830 sent=399672019
-2026/04/03 20:00:03 metrics: stored cpu=2.38 mem=74.00% recv=5209226226 sent=399677202
-2026/04/03 20:00:13 metrics: stored cpu=2.64 mem=74.00% recv=5209235401 sent=399677396
-2026/04/03 20:00:23 metrics: stored cpu=5.74 mem=74.00% recv=5209248431 sent=399697512
-2026/04/03 20:00:33 metrics: stored cpu=4.57 mem=73.00% recv=5209262814 sent=399712246
-2026/04/03 20:00:43 metrics: stored cpu=2.64 mem=73.00% recv=5209271315 sent=399721227
-2026/04/03 20:00:53 metrics: stored cpu=2.34 mem=73.00% recv=5209285215 sent=399733008
-2026/04/03 20:01:03 metrics: stored cpu=2.32 mem=73.00% recv=5209292756 sent=399736060
-2026/04/03 20:01:13 metrics: stored cpu=2.87 mem=73.00% recv=5209313466 sent=399743071
-2026/04/03 20:01:23 metrics: stored cpu=2.40 mem=73.00% recv=5209319600 sent=399743288
-2026/04/03 20:01:33 metrics: stored cpu=4.44 mem=74.00% recv=5209325870 sent=399749233
-2026/04/03 20:01:43 metrics: stored cpu=4.49 mem=73.00% recv=5209345607 sent=399751672
-2026/04/03 20:01:53 metrics: stored cpu=2.71 mem=73.00% recv=5209355633 sent=399751769
-2026/04/03 20:02:03 metrics: stored cpu=2.28 mem=73.00% recv=5209362687 sent=399751824
-2026/04/03 20:02:13 metrics: stored cpu=2.23 mem=73.00% recv=5209367588 sent=399752060
-2026/04/03 20:02:23 metrics: stored cpu=6.88 mem=73.00% recv=5209387088 sent=399763896
-2026/04/03 20:02:33 metrics: stored cpu=4.30 mem=74.00% recv=5209399657 sent=399774911
-2026/04/03 20:02:43 metrics: stored cpu=2.91 mem=74.00% recv=5209404962 sent=399775008
-2026/04/03 20:02:53 metrics: stored cpu=2.17 mem=74.00% recv=5209413533 sent=399775171
-2026/04/03 20:03:03 metrics: stored cpu=2.52 mem=74.00% recv=5209418838 sent=399775226
-2026/04/03 20:03:13 metrics: stored cpu=2.46 mem=74.00% recv=5209425099 sent=399775391
-2026/04/03 20:03:23 metrics: stored cpu=5.55 mem=74.00% recv=5209442549 sent=399784174
-2026/04/03 20:03:33 metrics: stored cpu=7.83 mem=74.00% recv=5209455179 sent=399792181
-2026/04/03 20:03:43 metrics: stored cpu=3.09 mem=74.00% recv=5209551256 sent=399800080
-2026/04/03 20:03:53 metrics: stored cpu=2.46 mem=74.00% recv=5209557553 sent=399801299
-2026/04/03 20:04:03 metrics: stored cpu=2.38 mem=74.00% recv=5209563428 sent=399804815
-2026/04/03 20:04:13 metrics: stored cpu=2.23 mem=74.00% recv=5209579261 sent=399810220
-2026/04/03 20:04:23 metrics: stored cpu=2.07 mem=74.00% recv=5209588935 sent=399812019
-2026/04/03 20:04:33 metrics: stored cpu=4.10 mem=74.00% recv=5209595935 sent=399820998
-2026/04/03 20:04:43 metrics: stored cpu=3.70 mem=73.00% recv=5209608835 sent=399825802
-2026/04/03 20:04:53 metrics: stored cpu=2.20 mem=73.00% recv=5209621284 sent=399828297
-2026/04/03 20:05:03 metrics: stored cpu=2.29 mem=73.00% recv=5209628932 sent=399828352
-2026/04/03 20:05:13 metrics: stored cpu=1.84 mem=73.00% recv=5209634210 sent=399828570
-2026/04/03 20:05:23 metrics: stored cpu=2.27 mem=73.00% recv=5209644695 sent=399831985
-2026/04/03 20:05:33 metrics: stored cpu=4.43 mem=74.00% recv=5209650218 sent=399840708
-2026/04/03 20:05:43 metrics: stored cpu=2.65 mem=74.00% recv=5209668430 sent=399851450
-2026/04/03 20:05:53 metrics: stored cpu=1.91 mem=74.00% recv=5209678010 sent=399855391
-2026/04/03 20:06:03 metrics: stored cpu=1.97 mem=74.00% recv=5209692164 sent=399863490
-2026/04/03 20:06:13 metrics: stored cpu=2.62 mem=74.00% recv=5209697611 sent=399863642
-2026/04/03 20:06:23 metrics: stored cpu=6.22 mem=74.00% recv=5209712505 sent=399872106
-2026/04/03 20:06:33 metrics: stored cpu=4.28 mem=74.00% recv=5209717641 sent=399883429
-2026/04/03 20:06:43 metrics: stored cpu=6.52 mem=74.00% recv=5209725625 sent=399884186
-2026/04/03 20:06:53 metrics: stored cpu=2.34 mem=74.00% recv=5209732823 sent=399887778
-2026/04/03 20:07:03 metrics: stored cpu=2.39 mem=74.00% recv=5209745035 sent=399890716
-2026/04/03 20:07:13 metrics: stored cpu=2.01 mem=75.00% recv=5209752900 sent=399890977
-2026/04/03 20:07:23 metrics: stored cpu=2.17 mem=74.00% recv=5209757362 sent=399891141
-2026/04/03 20:07:33 metrics: stored cpu=4.92 mem=75.00% recv=5209771077 sent=399898919
-2026/04/03 20:07:43 metrics: stored cpu=2.42 mem=75.00% recv=5209780418 sent=399901346
-2026/04/03 20:07:53 metrics: stored cpu=2.27 mem=75.00% recv=5209785571 sent=399901456
-2026/04/03 20:08:03 metrics: stored cpu=3.12 mem=75.00% recv=5209793626 sent=399901511
-2026/04/03 20:08:13 metrics: stored cpu=1.84 mem=75.00% recv=5209798699 sent=399901620
-2026/04/03 20:08:23 metrics: stored cpu=2.65 mem=75.00% recv=5209805371 sent=399901905
-2026/04/03 20:08:33 metrics: stored cpu=2.83 mem=75.00% recv=5209811776 sent=399907766
-2026/04/03 20:08:43 metrics: stored cpu=3.07 mem=74.00% recv=5209918466 sent=399918190
-2026/04/03 20:08:53 metrics: stored cpu=2.01 mem=74.00% recv=5209926973 sent=399918587
-2026/04/03 20:09:03 metrics: stored cpu=2.09 mem=74.00% recv=5209940206 sent=399920678
-2026/04/03 20:09:13 metrics: stored cpu=2.21 mem=74.00% recv=5209945771 sent=399920842
-2026/04/03 20:09:23 metrics: stored cpu=7.22 mem=74.00% recv=5209974104 sent=399928461
-2026/04/03 20:09:33 metrics: stored cpu=4.50 mem=75.00% recv=5209979626 sent=399939931
-2026/04/03 20:09:43 metrics: stored cpu=3.43 mem=74.00% recv=5209991326 sent=399942412
-2026/04/03 20:09:53 metrics: stored cpu=2.33 mem=74.00% recv=5209995913 sent=399942577
-2026/04/03 20:10:03 metrics: stored cpu=2.60 mem=74.00% recv=5210000961 sent=399942686
-2026/04/03 20:10:13 metrics: stored cpu=2.48 mem=74.00% recv=5210009647 sent=399943054
-2026/04/03 20:10:23 metrics: stored cpu=2.54 mem=74.00% recv=5210019399 sent=399944908
-2026/04/03 20:10:33 metrics: stored cpu=4.32 mem=74.00% recv=5210026968 sent=399951062
-2026/04/03 20:10:43 metrics: stored cpu=3.36 mem=74.00% recv=5210031249 sent=399951171
-2026/04/03 20:10:53 metrics: stored cpu=2.63 mem=74.00% recv=5210039750 sent=399953424
-2026/04/03 20:11:03 metrics: stored cpu=3.03 mem=74.00% recv=5210049083 sent=399953479
-2026/04/03 20:11:13 metrics: stored cpu=2.01 mem=74.00% recv=5210054514 sent=399953643
-2026/04/03 20:11:23 metrics: stored cpu=7.11 mem=74.00% recv=5210074544 sent=399965056
+2026/04/03 21:15:15 INFO: OAuth Google cargado desde DB (google.client_id, google.client_secret)
+2026/04/03 21:15:15 INFO: redirect OAuth cargado desde DB (google.redirect_url)
+2026/04/03 21:15:15 index.html encontrado en ..\web\index.html
+2026/04/03 21:15:15 Servidor arrancado en :8080
+2026/04/03 21:15:15 metrics: stored cpu=41.72 mem=81.00% recv=5472991454 sent=689072581
+2026/04/03 21:15:16 -> req_id=req-1775268916701375000-5d5d8277aeed empresa_id=0 GET /estilos.css from ::1
+2026/04/03 21:15:16 -> req_id=req-1775268916704633800-7b939c18f1df empresa_id=0 GET /menu.js from ::1
+2026/04/03 21:15:16 <- req_id=req-1775268916701375000-5d5d8277aeed empresa_id=0 status=304 GET /estilos.css dur_ms=5
+2026/04/03 21:15:16 <- req_id=req-1775268916704633800-7b939c18f1df empresa_id=0 status=304 GET /menu.js dur_ms=3
+2026/04/03 21:15:16 -> req_id=req-1775268916985567800-a4bd670dc5db empresa_id=6 GET /api/empresa/facturacion_electronica/pais_detectado?empresa_id=6&tz=America%2FBogota&lang=es-419 from ::1
+2026/04/03 21:15:16 <- req_id=req-1775268916985567800-a4bd670dc5db empresa_id=6 status=200 GET /api/empresa/facturacion_electronica/pais_detectado dur_ms=9
+2026/04/03 21:15:25 metrics: stored cpu=21.02 mem=83.00% recv=5473110417 sent=689175242
+2026/04/03 21:15:31 -> req_id=req-1775268931140163000-e0cf261bddae empresa_id=6 GET /api/empresa/facturacion_electronica/pais_detectado?empresa_id=6&tz=America%2FBogota&lang=es-419 from ::1
+2026/04/03 21:15:31 <- req_id=req-1775268931140163000-e0cf261bddae empresa_id=6 status=200 GET /api/empresa/facturacion_electronica/pais_detectado dur_ms=2
+2026/04/03 21:15:31 -> req_id=req-1775268931381842400-434c88903700 empresa_id=0 GET /auth/google/login?login_hint=powerfulcontrolsystem%40gmail.com from ::1
+2026/04/03 21:15:31 handleGoogleLogin: oauth redirect requested (client configured=true)
+2026/04/03 21:15:31 handleGoogleLogin: redirecting to OAuth provider
+2026/04/03 21:15:31 <- req_id=req-1775268931381842400-434c88903700 empresa_id=0 status=302 GET /auth/google/login dur_ms=2
+2026/04/03 21:15:31 -> req_id=req-1775268931803223100-7a7af284a2f6 empresa_id=0 GET /auth/google/callback?state=state-token&iss=https%3A%2F%2Faccounts.google.com&code=4%2F0Aci98E-Ui4QeJRsJHakg5S46Dxre3GJjDR5I1c0Pu2qjZkpgCtC2ptSHuRXQ06TIyrDD6g&scope=email+profile+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+openid+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile&authuser=1&prompt=none from ::1
+2026/04/03 21:15:32 <- req_id=req-1775268931803223100-7a7af284a2f6 empresa_id=0 status=302 GET /auth/google/callback dur_ms=1149
+2026/04/03 21:15:33 -> req_id=req-1775268933141129500-bdc481b7449c empresa_id=0 GET /super/api/licencias?activo=1&con_empresa=1 from ::1
+2026/04/03 21:15:33 <- req_id=req-1775268933141129500-bdc481b7449c empresa_id=0 status=200 GET /super/api/licencias dur_ms=1
+2026/04/03 21:15:33 -> req_id=req-1775268933155676000-cdc9aa552ab5 empresa_id=0 GET /me from ::1
+2026/04/03 21:15:33 <- req_id=req-1775268933155676000-cdc9aa552ab5 empresa_id=0 status=200 GET /me dur_ms=3
+2026/04/03 21:15:33 -> req_id=req-1775268933176515300-265de0710076 empresa_id=6 GET /api/empresa/facturacion_electronica/pais_detectado?empresa_id=6&tz=America%2FBogota&lang=es-419 from ::1
+2026/04/03 21:15:33 <- req_id=req-1775268933176515300-265de0710076 empresa_id=6 status=200 GET /api/empresa/facturacion_electronica/pais_detectado dur_ms=2
+2026/04/03 21:15:33 -> req_id=req-1775268933208621100-c9339f49ca4b empresa_id=0 GET /super/api/licencias?activo=1&con_empresa=1 from ::1
+2026/04/03 21:15:33 <- req_id=req-1775268933208621100-c9339f49ca4b empresa_id=0 status=200 GET /super/api/licencias dur_ms=2
+2026/04/03 21:15:35 -> req_id=req-1775268935838745600-fa2bdc65ae90 empresa_id=0 GET /me from ::1
+2026/04/03 21:15:35 metrics: stored cpu=14.55 mem=85.00% recv=5473240921 sent=689293521
+2026/04/03 21:15:35 <- req_id=req-1775268935838745600-fa2bdc65ae90 empresa_id=0 status=200 GET /me dur_ms=9
+2026/04/03 21:15:35 -> req_id=req-1775268935894295700-24738d2f8417 empresa_id=6 GET /api/empresa/facturacion_electronica/pais_detectado?empresa_id=6&tz=America%2FBogota&lang=es-419 from ::1
+2026/04/03 21:15:35 <- req_id=req-1775268935894295700-24738d2f8417 empresa_id=6 status=200 GET /api/empresa/facturacion_electronica/pais_detectado dur_ms=3
+2026/04/03 21:15:35 -> req_id=req-1775268935953959800-13f1c4bbbb4a empresa_id=0 GET /super/api/empresas from ::1
+2026/04/03 21:15:35 -> req_id=req-1775268935956811000-fb8a2dd090e9 empresa_id=0 GET /super/api/tipos_empresas from ::1
+2026/04/03 21:15:35 <- req_id=req-1775268935953959800-13f1c4bbbb4a empresa_id=0 status=200 GET /super/api/empresas dur_ms=2
+2026/04/03 21:15:35 <- req_id=req-1775268935956811000-fb8a2dd090e9 empresa_id=0 status=200 GET /super/api/tipos_empresas dur_ms=2
+2026/04/03 21:15:35 -> req_id=req-1775268935963905000-3d70b7c444e1 empresa_id=0 GET /super/api/licencias?scope=mine&con_empresa=1&activo=1 from ::1
+2026/04/03 21:15:35 <- req_id=req-1775268935963905000-3d70b7c444e1 empresa_id=0 status=200 GET /super/api/licencias dur_ms=2
+2026/04/03 21:15:42 -> req_id=req-1775268942716685800-09be080201af empresa_id=0 GET /administrar_empresa.html?id=6 from ::1
+2026/04/03 21:15:42 <- req_id=req-1775268942716685800-09be080201af empresa_id=0 status=304 GET /administrar_empresa.html dur_ms=1
+2026/04/03 21:15:42 -> req_id=req-1775268942808258900-60d8c7272039 empresa_id=0 GET /js/administrar_empresa.js from ::1
+2026/04/03 21:15:42 <- req_id=req-1775268942808258900-60d8c7272039 empresa_id=0 status=304 GET /js/administrar_empresa.js dur_ms=1
+2026/04/03 21:15:42 -> req_id=req-1775268942857555100-ec2e762031e3 empresa_id=0 GET /super/api/empresas?id=6 from ::1
+2026/04/03 21:15:42 -> req_id=req-1775268942857555100-a22ce4f81922 empresa_id=6 GET /api/empresa/facturacion_electronica/pais_detectado?empresa_id=6&tz=America%2FBogota&lang=es-419 from ::1
+2026/04/03 21:15:42 <- req_id=req-1775268942857555100-ec2e762031e3 empresa_id=0 status=200 GET /super/api/empresas dur_ms=1
+2026/04/03 21:15:42 <- req_id=req-1775268942857555100-a22ce4f81922 empresa_id=6 status=200 GET /api/empresa/facturacion_electronica/pais_detectado dur_ms=2
+2026/04/03 21:15:42 -> req_id=req-1775268942890063400-053577274f37 empresa_id=0 GET /super/api/empresas?id=6 from ::1
+2026/04/03 21:15:42 <- req_id=req-1775268942890063400-053577274f37 empresa_id=0 status=200 GET /super/api/empresas dur_ms=2
+2026/04/03 21:15:45 metrics: stored cpu=12.81 mem=86.00% recv=5473340561 sent=689382156

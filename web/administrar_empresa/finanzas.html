@@ -102,6 +102,16 @@
             <input id="cuentaIVADescontable" class="form-input" value="240810" maxlength="32">
           </div>
           <div class="form-col">
+            <label class="form-label" for="cuentaRetencionesCobrar">Cuenta retenciones por cobrar</label>
+            <input id="cuentaRetencionesCobrar" class="form-input" value="135595" maxlength="32">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cuentaRetencionesPagar">Cuenta retenciones por pagar</label>
+            <input id="cuentaRetencionesPagar" class="form-input" value="236595" maxlength="32">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
             <label class="form-label" for="cuentasIngresoMap">Cuentas por categoría ingreso</label>
             <textarea id="cuentasIngresoMap" class="form-textarea" style="min-height:90px;" placeholder="ventas=413595\nservicios=417595"></textarea>
             <div class="form-help">Formato: categoria=cuenta (una por línea).</div>
@@ -189,12 +199,39 @@
             <input id="impuesto" class="form-input" type="number" min="0" step="0.01" value="0">
           </div>
           <div class="form-col">
-            <label class="form-label" for="total">Total</label>
-            <input id="total" class="form-input" type="number" min="0.01" step="0.01" required>
+            <label class="form-label" for="total">Total bruto</label>
+            <input id="total" class="form-input" type="number" min="0.01" step="0.01" required readonly>
           </div>
           <div class="form-col">
             <label class="form-label" for="aprobadoPor">Aprobado por</label>
             <input id="aprobadoPor" class="form-input" placeholder="Opcional">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="retencionFuente">Retención fuente</label>
+            <input id="retencionFuente" class="form-input" type="number" min="0" step="0.01" value="0">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="retencionICA">Retención ICA</label>
+            <input id="retencionICA" class="form-input" type="number" min="0" step="0.01" value="0">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="retencionIVA">Retención IVA</label>
+            <input id="retencionIVA" class="form-input" type="number" min="0" step="0.01" value="0">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="totalRetenciones">Total retenciones</label>
+            <input id="totalRetenciones" class="form-input" type="number" min="0" step="0.01" value="0" readonly>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="totalNeto">Total neto</label>
+            <input id="totalNeto" class="form-input" type="number" min="0" step="0.01" value="0" readonly>
+            <div class="form-help">Total neto = total bruto - retenciones.</div>
           </div>
         </div>
 
@@ -253,6 +290,9 @@
           <button id="btnExportarSIIGO" class="btn secondary" type="button">Plantilla SIIGO CSV</button>
           <button id="btnExportarBalancePrueba" class="btn secondary" type="button">Balance de prueba CSV</button>
           <button id="btnExportarEstadoResultados" class="btn secondary" type="button">Estado resultados CSV</button>
+          <button id="btnExportarBalanceGeneral" class="btn secondary" type="button">Balance general CSV</button>
+          <button id="btnExportarLibroDiario" class="btn secondary" type="button">Libro diario CSV</button>
+          <button id="btnExportarLibroMayor" class="btn secondary" type="button">Libro mayor CSV</button>
         </div>
       </div>
 
@@ -270,7 +310,23 @@
             <label class="form-label" for="filtroQ">Buscar</label>
             <input id="filtroQ" class="form-input" placeholder="Código, concepto, comprobante, tercero">
           </div>
+          <div class="form-col">
+            <label class="form-label" for="filtroPeriodo">Periodo contable (YYYY-MM)</label>
+            <input id="filtroPeriodo" class="form-input" placeholder="2026-04">
+          </div>
         </div>
+        <div class="form-row" style="margin-top:8px;">
+          <div class="form-col" style="max-width:220px;display:flex;align-items:flex-end;">
+            <button id="btnCerrarPeriodo" class="btn danger" type="button" style="width:100%;">Cerrar periodo</button>
+          </div>
+          <div class="form-col" style="max-width:220px;display:flex;align-items:flex-end;">
+            <button id="btnReabrirPeriodo" class="btn secondary" type="button" style="width:100%;">Reabrir periodo</button>
+          </div>
+          <div class="form-col" style="max-width:220px;display:flex;align-items:flex-end;">
+            <button id="btnRefrescarPeriodos" class="btn secondary" type="button" style="width:100%;">Actualizar periodos</button>
+          </div>
+        </div>
+        <div id="periodoMsg" class="form-help"></div>
       </div>
 
       <div class="empresa-inline-actions" style="margin-top:12px;">
@@ -305,6 +361,7 @@
               <th>Categoría</th>
               <th>Concepto</th>
               <th>Total</th>
+              <th>Neto</th>
               <th>Comprobante</th>
               <th>Estado</th>
               <th>Acciones</th>
@@ -323,6 +380,7 @@
       empresaNombre: '',
       config: null,
       movimientos: [],
+      periodos: [],
       activeTab: 'todos'
     };
 
@@ -358,6 +416,18 @@
       if (!el) return;
       el.textContent = text || '';
       el.style.color = isError ? '#ef5350' : '';
+    }
+
+    function setPeriodoMsg(text, isError) {
+      setMsg('periodoMsg', text, isError);
+    }
+
+    function normalizePeriodoContableInput(raw) {
+      const clean = normalize(raw).replace(/\//g, '-');
+      if (!clean) return '';
+      const candidate = clean.slice(0, 7);
+      if (!/^\d{4}-\d{2}$/.test(candidate)) return '';
+      return candidate;
     }
 
     function currentTabLabel() {
@@ -462,6 +532,8 @@
         cuenta_iva_generado: normalizeContableAccount(document.getElementById('cuentaIVAGenerado').value || (state.config && state.config.cuenta_iva_generado) || '240805') || '240805',
         cuenta_gastos: normalizeContableAccount(document.getElementById('cuentaGastos').value || (state.config && state.config.cuenta_gastos) || '519595') || '519595',
         cuenta_iva_descontable: normalizeContableAccount(document.getElementById('cuentaIVADescontable').value || (state.config && state.config.cuenta_iva_descontable) || '240810') || '240810',
+        cuenta_retenciones_cobrar: normalizeContableAccount(document.getElementById('cuentaRetencionesCobrar').value || (state.config && state.config.cuenta_retenciones_cobrar) || '135595') || '135595',
+        cuenta_retenciones_pagar: normalizeContableAccount(document.getElementById('cuentaRetencionesPagar').value || (state.config && state.config.cuenta_retenciones_pagar) || '236595') || '236595',
         cuentas_ingreso_categoria: parseCuentaCategoriaMap(document.getElementById('cuentasIngresoMap').value || (state.config && state.config.cuentas_ingreso_categoria) || ''),
         cuentas_egreso_categoria: parseCuentaCategoriaMap(document.getElementById('cuentasEgresoMap').value || (state.config && state.config.cuentas_egreso_categoria) || '')
       };
@@ -486,10 +558,19 @@
       }
     }
 
-    function syncTotal() {
+    function syncTotalesContables() {
       const monto = toNumber(document.getElementById('monto').value, 0);
       const impuesto = toNumber(document.getElementById('impuesto').value, 0);
-      document.getElementById('total').value = (monto + impuesto).toFixed(2);
+      const retFuente = toNumber(document.getElementById('retencionFuente').value, 0);
+      const retICA = toNumber(document.getElementById('retencionICA').value, 0);
+      const retIVA = toNumber(document.getElementById('retencionIVA').value, 0);
+      const totalBruto = monto + impuesto;
+      const totalRet = retFuente + retICA + retIVA;
+      const totalNeto = totalBruto - totalRet;
+
+      document.getElementById('total').value = totalBruto.toFixed(2);
+      document.getElementById('totalRetenciones').value = totalRet.toFixed(2);
+      document.getElementById('totalNeto').value = totalNeto.toFixed(2);
     }
 
     function defaultDateTimeLocal() {
@@ -510,7 +591,12 @@
       document.getElementById('terceroDocumento').value = '';
       document.getElementById('monto').value = '';
       document.getElementById('impuesto').value = '0';
-      document.getElementById('total').value = '';
+      document.getElementById('retencionFuente').value = '0';
+      document.getElementById('retencionICA').value = '0';
+      document.getElementById('retencionIVA').value = '0';
+      document.getElementById('total').value = '0';
+      document.getElementById('totalRetenciones').value = '0';
+      document.getElementById('totalNeto').value = '0';
       document.getElementById('tipoComprobante').value = 'recibo_interno';
       document.getElementById('numeroComprobante').value = '';
       document.getElementById('comprobanteURL').value = '';
@@ -520,6 +606,7 @@
       document.getElementById('observaciones').value = '';
       document.getElementById('btnGuardarMovimiento').textContent = 'Guardar movimiento';
       setMsg('movMsg', '', false);
+      syncTotalesContables();
     }
 
     function fillConfigForm(cfg) {
@@ -538,6 +625,8 @@
       document.getElementById('cuentaIVAGenerado').value = normalize(cfg.cuenta_iva_generado) || '240805';
       document.getElementById('cuentaGastos').value = normalize(cfg.cuenta_gastos) || '519595';
       document.getElementById('cuentaIVADescontable').value = normalize(cfg.cuenta_iva_descontable) || '240810';
+      document.getElementById('cuentaRetencionesCobrar').value = normalize(cfg.cuenta_retenciones_cobrar) || '135595';
+      document.getElementById('cuentaRetencionesPagar').value = normalize(cfg.cuenta_retenciones_pagar) || '236595';
       document.getElementById('cuentasIngresoMap').value = normalize(cfg.cuentas_ingreso_categoria);
       document.getElementById('cuentasEgresoMap').value = normalize(cfg.cuentas_egreso_categoria);
       document.getElementById('configObservaciones').value = normalize(cfg.observaciones);
@@ -562,6 +651,8 @@
         cuenta_iva_generado: normalize(document.getElementById('cuentaIVAGenerado').value),
         cuenta_gastos: normalize(document.getElementById('cuentaGastos').value),
         cuenta_iva_descontable: normalize(document.getElementById('cuentaIVADescontable').value),
+        cuenta_retenciones_cobrar: normalize(document.getElementById('cuentaRetencionesCobrar').value),
+        cuenta_retenciones_pagar: normalize(document.getElementById('cuentaRetencionesPagar').value),
         cuentas_ingreso_categoria: normalize(document.getElementById('cuentasIngresoMap').value),
         cuentas_egreso_categoria: normalize(document.getElementById('cuentasEgresoMap').value),
         observaciones: normalize(document.getElementById('configObservaciones').value)
@@ -573,6 +664,44 @@
       await ensureOk(res);
       state.config = await res.json();
       fillConfigForm(state.config || {});
+    }
+
+    async function loadPeriodos() {
+      const res = await fetch('/api/empresa/finanzas/periodos?empresa_id=' + state.empresaID);
+      await ensureOk(res);
+      state.periodos = await res.json();
+      setPeriodoMsg('Periodos cargados: ' + (Array.isArray(state.periodos) ? state.periodos.length : 0), false);
+    }
+
+    function periodoSeleccionado() {
+      const periodoInput = normalizePeriodoContableInput(document.getElementById('filtroPeriodo').value);
+      if (periodoInput) return periodoInput;
+      return normalizePeriodoContableInput(document.getElementById('fechaMovimiento').value || defaultDateTimeLocal());
+    }
+
+    function isPeriodoCerradoLocal(periodo) {
+      const periodoNorm = normalizePeriodoContableInput(periodo);
+      if (!periodoNorm || !Array.isArray(state.periodos)) return false;
+      const item = state.periodos.find(function(x) {
+        return normalizePeriodoContableInput(x && x.periodo) === periodoNorm;
+      });
+      return !!item && normalize(item.estado).toLowerCase() === 'cerrado';
+    }
+
+    async function cambiarEstadoPeriodo(action) {
+      const periodo = periodoSeleccionado();
+      if (!periodo) {
+        setPeriodoMsg('Debes indicar un periodo contable valido (YYYY-MM).', true);
+        return;
+      }
+      const titulo = action === 'cerrar' ? 'cerrar' : 'reabrir';
+      if (!confirm('¿Confirmas ' + titulo + ' el periodo ' + periodo + '?')) return;
+      const url = '/api/empresa/finanzas/periodos?action=' + action + '&empresa_id=' + state.empresaID + '&periodo=' + encodeURIComponent(periodo);
+      const res = await fetch(url, { method: 'PUT' });
+      await ensureOk(res);
+      await loadPeriodos();
+      await loadMovimientos();
+      setPeriodoMsg('Periodo ' + periodo + ' actualizado a estado ' + (action === 'cerrar' ? 'cerrado' : 'abierto') + '.', false);
     }
 
     async function saveConfig() {
@@ -588,11 +717,13 @@
     }
 
     function movimientoPayload() {
+      const periodoFiltro = normalizePeriodoContableInput(document.getElementById('filtroPeriodo').value);
       const payload = {
         id: Number(document.getElementById('movId').value || 0),
         empresa_id: Number(state.empresaID),
         tipo_movimiento: normalize(document.getElementById('tipoMovimiento').value).toLowerCase(),
         fecha_movimiento: dbDateFromInput(document.getElementById('fechaMovimiento').value),
+        periodo_contable: periodoFiltro,
         categoria: normalize(document.getElementById('categoriaMovimiento').value),
         subcategoria: normalize(document.getElementById('subcategoria').value),
         concepto: normalize(document.getElementById('concepto').value),
@@ -602,6 +733,11 @@
         monto: toNumber(document.getElementById('monto').value, 0),
         impuesto: toNumber(document.getElementById('impuesto').value, 0),
         total: toNumber(document.getElementById('total').value, 0),
+        retencion_fuente: toNumber(document.getElementById('retencionFuente').value, 0),
+        retencion_ica: toNumber(document.getElementById('retencionICA').value, 0),
+        retencion_iva: toNumber(document.getElementById('retencionIVA').value, 0),
+        total_retenciones: toNumber(document.getElementById('totalRetenciones').value, 0),
+        total_neto: toNumber(document.getElementById('totalNeto').value, 0),
         tercero_nombre: normalize(document.getElementById('terceroNombre').value),
         tercero_documento: normalize(document.getElementById('terceroDocumento').value),
         tipo_comprobante: normalize(document.getElementById('tipoComprobante').value),
@@ -611,7 +747,12 @@
         aprobado_por: normalize(document.getElementById('aprobadoPor').value),
         observaciones: normalize(document.getElementById('observaciones').value)
       };
+      if (!payload.periodo_contable) {
+        payload.periodo_contable = normalizePeriodoContableInput(payload.fecha_movimiento);
+      }
       if (payload.total <= 0) payload.total = payload.monto + payload.impuesto;
+      if (payload.total_retenciones < 0) payload.total_retenciones = 0;
+      if (payload.total_neto <= 0) payload.total_neto = payload.total - payload.total_retenciones;
       return payload;
     }
 
@@ -629,6 +770,11 @@
       document.getElementById('monto').value = String(toNumber(item.monto, 0));
       document.getElementById('impuesto').value = String(toNumber(item.impuesto, 0));
       document.getElementById('total').value = String(toNumber(item.total, 0));
+      document.getElementById('retencionFuente').value = String(toNumber(item.retencion_fuente, 0));
+      document.getElementById('retencionICA').value = String(toNumber(item.retencion_ica, 0));
+      document.getElementById('retencionIVA').value = String(toNumber(item.retencion_iva, 0));
+      document.getElementById('totalRetenciones').value = String(toNumber(item.total_retenciones, 0));
+      document.getElementById('totalNeto').value = String(toNumber(item.total_neto, toNumber(item.total, 0) - toNumber(item.total_retenciones, 0)));
       document.getElementById('tipoComprobante').value = normalize(item.tipo_comprobante) || 'recibo_interno';
       document.getElementById('numeroComprobante').value = normalize(item.numero_comprobante);
       document.getElementById('comprobanteURL').value = normalize(item.comprobante_url);
@@ -638,6 +784,7 @@
       document.getElementById('observaciones').value = normalize(item.observaciones);
       document.getElementById('btnGuardarMovimiento').textContent = 'Actualizar movimiento';
       setMsg('movMsg', '', false);
+      syncTotalesContables();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -649,9 +796,11 @@
       const desde = normalize(document.getElementById('filtroDesde').value);
       const hasta = normalize(document.getElementById('filtroHasta').value);
       const q = normalize(document.getElementById('filtroQ').value);
+      const periodo = normalizePeriodoContableInput(document.getElementById('filtroPeriodo').value);
       if (desde) params.set('desde', desde);
       if (hasta) params.set('hasta', hasta);
       if (q) params.set('q', q);
+      if (periodo) params.set('periodo', periodo);
       params.set('limit', '500');
       return params.toString();
     }
@@ -744,7 +893,7 @@
       const tbody = document.querySelector('#tablaMovimientos tbody');
       const rows = Array.isArray(state.movimientos) ? state.movimientos : [];
       if (!rows.length) {
-        tbody.innerHTML = '<tr><td colspan="9">No hay registros en la pestaña ' + sanitize(currentTabLabel()) + ' para el filtro actual.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10">No hay registros en la pestaña ' + sanitize(currentTabLabel()) + ' para el filtro actual.</td></tr>';
         return;
       }
 
@@ -759,6 +908,7 @@
           '<td>' + sanitize(item.categoria || '') + '</td>' +
           '<td>' + sanitize(item.concepto || '') + '</td>' +
           '<td>' + sanitize(fmtMoney(item.total)) + '</td>' +
+          '<td>' + sanitize(fmtMoney(toNumber(item.total_neto, toNumber(item.total, 0) - toNumber(item.total_retenciones, 0)))) + '</td>' +
           '<td>' + sanitize(comp) + '</td>' +
           '<td>' + sanitize(estado) + '</td>' +
           '<td class="actions">' +
@@ -933,13 +1083,21 @@
       const monto = toNumber(item.monto, 0);
       const impuesto = toNumber(item.impuesto, 0);
       const total = toNumber(item.total, 0);
+      const retFuente = toNumber(item.retencion_fuente, 0);
+      const retICA = toNumber(item.retencion_ica, 0);
+      const retIVA = toNumber(item.retencion_iva, 0);
+      const totalRetenciones = toNumber(item.total_retenciones, retFuente + retICA + retIVA);
+      const totalNeto = toNumber(item.total_neto, total - totalRetenciones);
       const cfg = accountingProfile || getAccountingProfile();
 
       if (tipo === 'ingreso') {
         const cuentaIngreso = resolveCuentaPorCategoria(cfg.cuentas_ingreso_categoria, categoria, cfg.cuenta_ingresos);
         const debe = [
-          { cuenta: cfg.cuenta_caja_bancos, descripcion: 'Caja y bancos', valor: Number(total.toFixed(2)) }
+          { cuenta: cfg.cuenta_caja_bancos, descripcion: 'Caja y bancos', valor: Number(totalNeto.toFixed(2)) }
         ];
+        if (totalRetenciones > 0) {
+          debe.push({ cuenta: cfg.cuenta_retenciones_cobrar, descripcion: 'Retenciones por cobrar', valor: Number(totalRetenciones.toFixed(2)) });
+        }
         const haber = [
           { cuenta: cuentaIngreso, descripcion: 'Ingresos operacionales', valor: Number(monto.toFixed(2)) }
         ];
@@ -957,8 +1115,11 @@
         debe.push({ cuenta: cfg.cuenta_iva_descontable, descripcion: 'IVA descontable', valor: Number(impuesto.toFixed(2)) });
       }
       const haber = [
-        { cuenta: cfg.cuenta_caja_bancos, descripcion: 'Caja y bancos', valor: Number(total.toFixed(2)) }
+        { cuenta: cfg.cuenta_caja_bancos, descripcion: 'Caja y bancos', valor: Number(totalNeto.toFixed(2)) }
       ];
+      if (totalRetenciones > 0) {
+        haber.push({ cuenta: cfg.cuenta_retenciones_pagar, descripcion: 'Retenciones por pagar', valor: Number(totalRetenciones.toFixed(2)) });
+      }
       return { debe: debe, haber: haber };
     }
 
@@ -1291,6 +1452,213 @@
       setMsg('listMsg', 'Estado de resultados (CSV) generado correctamente.', false);
     }
 
+    function exportarLibroDiarioCSV() {
+      const rows = Array.isArray(state.movimientos) ? state.movimientos : [];
+      if (!rows.length) {
+        setMsg('listMsg', 'No hay datos para libro diario.', true);
+        return;
+      }
+      const accountingProfile = getAccountingProfile();
+      const linesAsiento = asientosActivos(rows, accountingProfile)
+        .sort(function(a, b) {
+          if (a.fecha !== b.fecha) return a.fecha.localeCompare(b.fecha);
+          if (a.comprobante !== b.comprobante) return a.comprobante.localeCompare(b.comprobante);
+          return a.cuenta.localeCompare(b.cuenta);
+        });
+      if (!linesAsiento.length) {
+        setMsg('listMsg', 'No hay asientos activos para libro diario.', true);
+        return;
+      }
+
+      const headers = ['Fecha', 'TipoComprobante', 'Comprobante', 'Cuenta', 'DescripcionCuenta', 'Debito', 'Credito', 'Descripcion', 'TerceroDocumento', 'TerceroNombre', 'Referencia'];
+      const lines = [headers.map(csvEscape).join(',')];
+      linesAsiento.forEach(function(line) {
+        lines.push([
+          line.fecha,
+          line.tipo_comprobante,
+          line.comprobante,
+          line.cuenta,
+          line.descripcion_cuenta,
+          Number(line.debito || 0).toFixed(2),
+          Number(line.credito || 0).toFixed(2),
+          line.descripcion,
+          line.tercero_documento,
+          line.tercero_nombre,
+          line.referencia
+        ].map(csvEscape).join(','));
+      });
+
+      const csv = '\uFEFF' + lines.join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const desde = normalize(document.getElementById('filtroDesde').value) || 'sin-desde';
+      const hasta = normalize(document.getElementById('filtroHasta').value) || 'sin-hasta';
+      const filename = 'libro_diario_' + state.activeTab + '_' + desde + '_' + hasta + '.csv';
+
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+      setMsg('listMsg', 'Libro diario (CSV) generado correctamente.', false);
+    }
+
+    function buildLibroMayor(rows, accountingProfile) {
+      const linesAsiento = asientosActivos(rows, accountingProfile);
+      const byCuenta = {};
+      linesAsiento.forEach(function(line) {
+        const cuenta = normalize(line.cuenta);
+        if (!cuenta) return;
+        if (!byCuenta[cuenta]) {
+          byCuenta[cuenta] = {
+            cuenta: cuenta,
+            descripcion: normalize(line.descripcion_cuenta) || 'Cuenta contable',
+            debito: 0,
+            credito: 0
+          };
+        }
+        byCuenta[cuenta].debito += Number(toNumber(line.debito, 0).toFixed(2));
+        byCuenta[cuenta].credito += Number(toNumber(line.credito, 0).toFixed(2));
+      });
+      return Object.keys(byCuenta)
+        .sort(function(a, b) { return a.localeCompare(b); })
+        .map(function(cuenta) {
+          const row = byCuenta[cuenta];
+          const saldo = Number((row.debito - row.credito).toFixed(2));
+          return {
+            cuenta: cuenta,
+            descripcion: row.descripcion,
+            debito: Number(row.debito.toFixed(2)),
+            credito: Number(row.credito.toFixed(2)),
+            saldo: saldo
+          };
+        });
+    }
+
+    function exportarLibroMayorCSV() {
+      const rows = Array.isArray(state.movimientos) ? state.movimientos : [];
+      if (!rows.length) {
+        setMsg('listMsg', 'No hay datos para libro mayor.', true);
+        return;
+      }
+      const accountingProfile = getAccountingProfile();
+      const mayor = buildLibroMayor(rows, accountingProfile);
+      if (!mayor.length) {
+        setMsg('listMsg', 'No hay asientos activos para libro mayor.', true);
+        return;
+      }
+
+      const headers = ['Cuenta', 'Descripcion', 'Debito', 'Credito', 'Saldo'];
+      const lines = [headers.map(csvEscape).join(',')];
+      let totalDebito = 0;
+      let totalCredito = 0;
+      mayor.forEach(function(item) {
+        totalDebito += item.debito;
+        totalCredito += item.credito;
+        lines.push([
+          item.cuenta,
+          item.descripcion,
+          item.debito.toFixed(2),
+          item.credito.toFixed(2),
+          item.saldo.toFixed(2)
+        ].map(csvEscape).join(','));
+      });
+      lines.push(['TOTAL', '', totalDebito.toFixed(2), totalCredito.toFixed(2), (totalDebito - totalCredito).toFixed(2)].map(csvEscape).join(','));
+
+      const csv = '\uFEFF' + lines.join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const desde = normalize(document.getElementById('filtroDesde').value) || 'sin-desde';
+      const hasta = normalize(document.getElementById('filtroHasta').value) || 'sin-hasta';
+      const filename = 'libro_mayor_' + state.activeTab + '_' + desde + '_' + hasta + '.csv';
+
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+      setMsg('listMsg', 'Libro mayor (CSV) generado correctamente.', false);
+    }
+
+    function exportarBalanceGeneralCSV() {
+      const rows = Array.isArray(state.movimientos) ? state.movimientos : [];
+      if (!rows.length) {
+        setMsg('listMsg', 'No hay datos para balance general.', true);
+        return;
+      }
+      const accountingProfile = getAccountingProfile();
+      const mayor = buildLibroMayor(rows, accountingProfile);
+      if (!mayor.length) {
+        setMsg('listMsg', 'No hay asientos activos para balance general.', true);
+        return;
+      }
+
+      const headers = ['Seccion', 'Cuenta', 'Descripcion', 'Valor'];
+      const lines = [headers.map(csvEscape).join(',')];
+      let totalActivos = 0;
+      let totalPasivos = 0;
+      let totalPatrimonio = 0;
+      let resultadoIngresos = 0;
+      let resultadoGastos = 0;
+
+      mayor.forEach(function(item) {
+        const prefijo = normalize(item.cuenta).charAt(0);
+        const saldo = toNumber(item.saldo, 0);
+        if (prefijo === '1') {
+          const valor = Number(saldo.toFixed(2));
+          totalActivos += valor;
+          lines.push(['ACTIVO', item.cuenta, item.descripcion, valor.toFixed(2)].map(csvEscape).join(','));
+          return;
+        }
+        if (prefijo === '2') {
+          const valor = Number((-saldo).toFixed(2));
+          totalPasivos += valor;
+          lines.push(['PASIVO', item.cuenta, item.descripcion, valor.toFixed(2)].map(csvEscape).join(','));
+          return;
+        }
+        if (prefijo === '3') {
+          const valor = Number((-saldo).toFixed(2));
+          totalPatrimonio += valor;
+          lines.push(['PATRIMONIO', item.cuenta, item.descripcion, valor.toFixed(2)].map(csvEscape).join(','));
+          return;
+        }
+        if (prefijo === '4') {
+          resultadoIngresos += (item.credito - item.debito);
+          return;
+        }
+        if (prefijo === '5' || prefijo === '6' || prefijo === '7') {
+          resultadoGastos += (item.debito - item.credito);
+        }
+      });
+
+      const resultadoEjercicio = Number((resultadoIngresos - resultadoGastos).toFixed(2));
+      totalPatrimonio += resultadoEjercicio;
+
+      lines.push(['TOTAL_ACTIVOS', '', '', totalActivos.toFixed(2)].map(csvEscape).join(','));
+      lines.push(['TOTAL_PASIVOS', '', '', totalPasivos.toFixed(2)].map(csvEscape).join(','));
+      lines.push(['TOTAL_PATRIMONIO', '', '', totalPatrimonio.toFixed(2)].map(csvEscape).join(','));
+      lines.push(['RESULTADO_EJERCICIO', '', '', resultadoEjercicio.toFixed(2)].map(csvEscape).join(','));
+      lines.push(['PASIVO_MAS_PATRIMONIO', '', '', (totalPasivos + totalPatrimonio).toFixed(2)].map(csvEscape).join(','));
+      lines.push(['CUADRE', '', '', (totalActivos - (totalPasivos + totalPatrimonio)).toFixed(2)].map(csvEscape).join(','));
+
+      const csv = '\uFEFF' + lines.join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const desde = normalize(document.getElementById('filtroDesde').value) || 'sin-desde';
+      const hasta = normalize(document.getElementById('filtroHasta').value) || 'sin-hasta';
+      const filename = 'balance_general_' + state.activeTab + '_' + desde + '_' + hasta + '.csv';
+
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+      setMsg('listMsg', 'Balance general (CSV) generado correctamente.', false);
+    }
+
     function exportarJSONContable() {
       const rows = Array.isArray(state.movimientos) ? state.movimientos : [];
       if (!rows.length) {
@@ -1313,6 +1681,12 @@
       const totalEgresos = activos
         .filter(function(item) { return normalize(item.tipo_movimiento).toLowerCase() === 'egreso'; })
         .reduce(function(acc, item) { return acc + toNumber(item.total, 0); }, 0);
+      const totalRetenciones = activos.reduce(function(acc, item) {
+        return acc + toNumber(item.total_retenciones, toNumber(item.retencion_fuente, 0) + toNumber(item.retencion_ica, 0) + toNumber(item.retencion_iva, 0));
+      }, 0);
+      const totalNeto = activos.reduce(function(acc, item) {
+        return acc + toNumber(item.total_neto, toNumber(item.total, 0) - toNumber(item.total_retenciones, 0));
+      }, 0);
 
       const payload = {
         export_version: '1.0.0',
@@ -1335,6 +1709,8 @@
           moneda: moneda,
           total_ingresos: Number(totalIngresos.toFixed(2)),
           total_egresos: Number(totalEgresos.toFixed(2)),
+          total_retenciones: Number(totalRetenciones.toFixed(2)),
+          total_neto: Number(totalNeto.toFixed(2)),
           balance: Number((totalIngresos - totalEgresos).toFixed(2))
         },
         accounting_profile: {
@@ -1345,7 +1721,9 @@
             cuenta_ingresos: accountingProfile.cuenta_ingresos,
             cuenta_iva_generado: accountingProfile.cuenta_iva_generado,
             cuenta_gastos: accountingProfile.cuenta_gastos,
-            cuenta_iva_descontable: accountingProfile.cuenta_iva_descontable
+            cuenta_iva_descontable: accountingProfile.cuenta_iva_descontable,
+            cuenta_retenciones_cobrar: accountingProfile.cuenta_retenciones_cobrar,
+            cuenta_retenciones_pagar: accountingProfile.cuenta_retenciones_pagar
           },
           cuentas_por_categoria: {
             ingreso: accountingProfile.cuentas_ingreso_categoria,
@@ -1375,7 +1753,14 @@
             moneda: normalize(item.moneda) || moneda,
             monto: Number(monto.toFixed(2)),
             impuesto: Number(impuesto.toFixed(2)),
+            retenciones: {
+              fuente: Number(toNumber(item.retencion_fuente, 0).toFixed(2)),
+              ica: Number(toNumber(item.retencion_ica, 0).toFixed(2)),
+              iva: Number(toNumber(item.retencion_iva, 0).toFixed(2)),
+              total: Number(toNumber(item.total_retenciones, 0).toFixed(2))
+            },
             total: Number(total.toFixed(2)),
+            total_neto: Number(toNumber(item.total_neto, total - toNumber(item.total_retenciones, 0)).toFixed(2)),
             comprobante: {
               tipo: normalize(item.tipo_comprobante) || null,
               numero: normalize(item.numero_comprobante || item.codigo) || null,
@@ -1411,6 +1796,10 @@
       ev.preventDefault();
       try {
         const payload = movimientoPayload();
+        if (isPeriodoCerradoLocal(payload.periodo_contable)) {
+          setMsg('movMsg', 'El periodo contable ' + payload.periodo_contable + ' está cerrado. Reabre el periodo para editar movimientos.', true);
+          return;
+        }
         const method = payload.id > 0 ? 'PUT' : 'POST';
         const res = await fetch('/api/empresa/finanzas/movimientos', {
           method: method,
@@ -1435,10 +1824,15 @@
         { tipo_movimiento: 'egreso', categoria: 'compras', concepto: 'Compra de insumos inventario', monto: 123500, impuesto: 0, metodo_pago: 'transferencia', tipo_comprobante: 'factura', numero_comprobante: '', tercero_nombre: 'Proveedor Local Medellin' },
         { tipo_movimiento: 'egreso', categoria: 'servicios', concepto: 'Pago de servicios públicos', monto: 76000, impuesto: 0, metodo_pago: 'efectivo', tipo_comprobante: 'soporte_externo', numero_comprobante: '', tercero_nombre: 'Empresa de servicios' }
       ].map(r => {
+        const retFuente = 0;
+        const retICA = 0;
+        const retIVA = 0;
+        const totalRet = retFuente + retICA + retIVA;
         return {
           empresa_id: Number(state.empresaID),
           tipo_movimiento: r.tipo_movimiento,
           fecha_movimiento: dbDateFromInput(dateStr),
+          periodo_contable: normalizePeriodoContableInput(dateStr),
           categoria: r.categoria,
           subcategoria: '',
           concepto: r.concepto,
@@ -1447,7 +1841,12 @@
           moneda: normalize(document.getElementById('moneda').value) || 'COP',
           monto: r.monto,
           impuesto: r.impuesto,
+          retencion_fuente: retFuente,
+          retencion_ica: retICA,
+          retencion_iva: retIVA,
+          total_retenciones: totalRet,
           total: r.monto + r.impuesto,
+          total_neto: (r.monto + r.impuesto - totalRet),
           tercero_nombre: r.tercero_nombre,
           tercero_documento: '',
           tipo_comprobante: r.tipo_comprobante,
@@ -1501,8 +1900,11 @@
         renderCategoriasSelect(normalize(this.value), '');
       });
 
-      document.getElementById('monto').addEventListener('input', syncTotal);
-      document.getElementById('impuesto').addEventListener('input', syncTotal);
+      document.getElementById('monto').addEventListener('input', syncTotalesContables);
+      document.getElementById('impuesto').addEventListener('input', syncTotalesContables);
+      document.getElementById('retencionFuente').addEventListener('input', syncTotalesContables);
+      document.getElementById('retencionICA').addEventListener('input', syncTotalesContables);
+      document.getElementById('retencionIVA').addEventListener('input', syncTotalesContables);
 
       document.getElementById('movForm').addEventListener('submit', saveMovimiento);
       document.getElementById('btnCancelarMovimiento').addEventListener('click', function() {
@@ -1544,6 +1946,33 @@
       document.getElementById('btnExportarSIIGO').addEventListener('click', exportarPlantillaSIIGOCSV);
       document.getElementById('btnExportarBalancePrueba').addEventListener('click', exportarBalancePruebaCSV);
       document.getElementById('btnExportarEstadoResultados').addEventListener('click', exportarEstadoResultadosCSV);
+      document.getElementById('btnExportarBalanceGeneral').addEventListener('click', exportarBalanceGeneralCSV);
+      document.getElementById('btnExportarLibroDiario').addEventListener('click', exportarLibroDiarioCSV);
+      document.getElementById('btnExportarLibroMayor').addEventListener('click', exportarLibroMayorCSV);
+
+      document.getElementById('btnCerrarPeriodo').addEventListener('click', async function() {
+        try {
+          await cambiarEstadoPeriodo('cerrar');
+        } catch (err) {
+          setPeriodoMsg(err.message || 'No se pudo cerrar el periodo.', true);
+        }
+      });
+
+      document.getElementById('btnReabrirPeriodo').addEventListener('click', async function() {
+        try {
+          await cambiarEstadoPeriodo('reabrir');
+        } catch (err) {
+          setPeriodoMsg(err.message || 'No se pudo reabrir el periodo.', true);
+        }
+      });
+
+      document.getElementById('btnRefrescarPeriodos').addEventListener('click', async function() {
+        try {
+          await loadPeriodos();
+        } catch (err) {
+          setPeriodoMsg(err.message || 'No se pudieron actualizar los periodos.', true);
+        }
+      });
 
       document.getElementById('btnCargarDemo').addEventListener('click', cargarDemo);
     }
@@ -1562,9 +1991,11 @@
       const desde = new Date(hasta.getTime() - (30 * 24 * 60 * 60 * 1000));
       document.getElementById('filtroHasta').value = hasta.toISOString().slice(0, 10);
       document.getElementById('filtroDesde').value = desde.toISOString().slice(0, 10);
+      document.getElementById('filtroPeriodo').value = normalizePeriodoContableInput(defaultDateTimeLocal());
 
       await loadEmpresaNombre();
       await loadConfig();
+      await loadPeriodos();
       await loadMovimientos();
     }
 

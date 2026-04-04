@@ -1,6 +1,67 @@
 # CHANGELOG
 
 ## 2026-04-04
+- Se amplía el módulo `chat_con_inteligencia_artificial` para registrar el modelo preferido por cuenta Google autenticada (por empresa):
+	- Nueva tabla `empresa_ai_modelo_preferido` en `empresas.db` (UNIQUE por `empresa_id + admin_email`).
+	- Nuevas funciones en `backend/db/chat_inteligencia_artificial.go`: `GetEmpresaAIModeloPreferido` y `UpsertEmpresaAIModeloPreferido`.
+	- Nuevo endpoint `GET/PUT /api/empresa/chat_con_inteligencia_artificial/modelo_preferido`.
+	- `GET /modelos` ahora devuelve `google_account` y `modelo_preferido`.
+	- `POST /consultar` ahora persiste el `model_id` usado como preferencia de la cuenta Google y devuelve confirmación en respuesta.
+- Se actualiza `web/administrar_empresa/chat_con_inteligencia_artificial.html` para:
+	- cargar automáticamente el modelo preferido de la cuenta Google,
+	- guardar el modelo preferido al cambiar selección,
+	- mostrar la cuenta Google vinculada en el bloque de uso diario.
+- Validación técnica ejecutada para esta ampliación:
+	- `gofmt -w backend/db/chat_inteligencia_artificial.go backend/handlers/chat_con_inteligencia_artificial_controller.go backend/handlers/chat_con_inteligencia_artificial_router.go` (ok).
+	- `go test ./...` en `backend` (ok).
+- Se fortalece `backend/utils/utils.go` para observabilidad profesional:
+	- `LoggingMiddleware` ahora genera `request_id` por solicitud, calcula `empresa_id` (query/header/JSON body) y registra inicio/fin con latencia.
+	- Se agregan logs separados por empresa en `backend/logs/empresa_<id>.log` y un fallback global en `backend/logs/empresa_global.log`.
+	- `JSONErrorMiddleware` ahora normaliza errores no-JSON incluyendo `request_id` y `empresa_id` cuando aplica, y registra errores API por empresa.
+- Se ajustan endpoints multipart para reforzar separación de logs por empresa:
+	- `backend/handlers/chat_tareas.go` y `backend/handlers/productos.go` ahora establecen `X-Empresa-ID` tras parsear `empresa_id` del formulario.
+- Se endurece `backend/handlers/usuarios_empresa.go` en autenticación/primer ingreso:
+	- se reemplazan respuestas `500` que exponían detalles internos por mensajes profesionales y seguros,
+	- se agrega logging servidor con contexto (`empresa_id`, `email`, `id`) para trazabilidad sin filtrar errores sensibles al cliente.
+- Se endurece `scripts/iniciar_servidor.ps1` para detectar caída temprana de `server.exe`: ahora conserva el `PID`, valida salida prematura y muestra las últimas líneas de `backend/server.err` para diagnóstico inmediato.
+- Validación de corrección ejecutada:
+	- `gofmt -w backend/utils/utils.go` (ok).
+	- `go test ./...` en `backend` (ok).
+- Se corrige `scripts/iniciar_servidor.ps1` en `Resolve-GoogleOAuthCredentials`: la construccion de `envCandidates` ahora usa `Join-Path -Path/-ChildPath` por elemento, evitando el error `CannotConvertArgument` de `Join-Path`.
+- Se corrige `backend/db/finanzas.go` en `EnsureEmpresaFinanzasSchema`: los indices que dependen de columnas migradas (`periodo_contable` y `estado` de periodos) se crean al final de la migracion para compatibilidad con bases antiguas.
+- Validacion de correccion ejecutada:
+	- `go test ./...` en `backend` (ok).
+	- `go run .` en `backend` (arranque correcto en `:8080`).
+- Se incorpora el modulo `chat_con_inteligencia_artificial` en el panel empresarial con interfaz tipo chat en `web/administrar_empresa/chat_con_inteligencia_artificial.html`.
+- Se crean `backend/db/chat_inteligencia_artificial.go`, `backend/handlers/chat_con_inteligencia_artificial_controller.go` y `backend/handlers/chat_con_inteligencia_artificial_router.go` para arquitectura modular (DB + controller + router).
+- Se publican rutas del modulo IA:
+	- `GET /api/empresa/chat_con_inteligencia_artificial/modelos`
+	- `POST /api/empresa/chat_con_inteligencia_artificial/consultar`
+	- `GET /api/empresa/chat_con_inteligencia_artificial/historial`
+- Se agregan tablas en `empresas.db` para auditoria y limites diarios:
+	- `empresa_ai_consultas`
+	- `empresa_ai_uso_diario`
+- Se integra `EnsureEmpresaAIChatSchema` y la migracion `2026-04-03-005-chat-ia-empresa` en `backend/main.go`.
+- Se implementa aislamiento estricto por `empresa_id`, validacion de alcance de usuario y control de limite free-tier por empresa/proveedor/modelo/dia con opcion de upgrade.
+- Se habilitan modelos famosos de OpenAI, DeepSeek y Hugging Face usando credenciales solo en backend mediante variables de entorno (`OPENAI_API_KEY`, `DEEPSEEK_API_KEY`, `HUGGINGFACE_API_KEY`).
+- Se amplía el módulo financiero con control de periodos contables por empresa:
+	- tabla `empresa_finanzas_periodos`.
+	- endpoint `GET/POST/PUT /api/empresa/finanzas/periodos`.
+	- acciones de cierre y reapertura de periodo.
+- Se aplican bloqueos de integridad contable: no se permite crear/editar/eliminar/activar/desactivar movimientos cuando su periodo está cerrado.
+- Se amplía `empresa_finanzas_movimientos` con:
+	- `periodo_contable`,
+	- retenciones (`retencion_fuente`, `retencion_ica`, `retencion_iva`, `total_retenciones`),
+	- `total_neto`.
+- Se amplía `empresa_finanzas_configuracion` con `cuenta_retenciones_cobrar` y `cuenta_retenciones_pagar`.
+- Se completa la UI de finanzas para:
+	- gestionar periodos (cerrar/reabrir/actualizar),
+	- calcular total bruto, retenciones y neto,
+	- filtrar por periodo,
+	- exportar `balance general`, `libro diario` y `libro mayor` en CSV.
+- Se corrige el escaneo de puertos de seguridad para compatibilidad IPv6 usando `net.JoinHostPort` en `backend/handlers/system_empresas_handlers.go`.
+- Se ajusta `scripts/iniciar_servidor.ps1` para usar nombre de función con verbo aprobado de PowerShell en la carga de `.env`.
+- Validación técnica ejecutada: `go test ./...` en `backend` (ok).
 - Se implementa el módulo financiero multiempresa con enfoque unificado de ingresos y egresos en `web/administrar_empresa/finanzas.html`.
 - Se crea `backend/db/finanzas.go` con esquema, validaciones y CRUD de:
 	- `empresa_finanzas_movimientos`
