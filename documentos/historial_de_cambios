@@ -1,5 +1,139 @@
 - Historial de cambios
 
+- 2026-04-04: Punto 5 — continuacion operativa-analitica (balance por bodega)
+    - Se actualiza `backend/db/productos.go`:
+        - nuevo contrato `InventarioBalanceBodega`,
+        - nueva consulta `GetInventarioBalanceBodegasByEmpresa` con consolidado por bodega (`entradas`, `salidas`, `traslado_neto`, `neto`, `eventos`) por rango.
+    - Se actualiza `backend/handlers/productos.go`:
+        - nuevo endpoint `GET /api/empresa/inventario/balance_bodegas` con validacion de fechas (`YYYY-MM-DD`) y filtros por bodega/rango.
+    - Se actualiza `backend/main.go`:
+        - registro de ruta protegida `/api/empresa/inventario/balance_bodegas`.
+    - Se actualiza `web/administrar_empresa/administrar_productos.html`:
+        - nuevo bloque `Balance por bodega`,
+        - sincronizacion con filtros de kardex,
+        - contexto de neto acumulado del rango consultado.
+    - Se actualizan pruebas:
+        - `backend/handlers/productos_categorias_test.go` (handler de balance por bodega),
+        - `backend/db/productos_categorias_test.go` (consolidado de balance en DB).
+    - Se actualiza documentacion tecnica:
+        - `documentos/plan_maestro_pos_multiempresa_14_puntos.md`,
+        - `documentos/diagramas/estructura_del_codigo.md`,
+        - `documentos/descripcion_del_proyecto`,
+        - `documentos/descripcion_de_archivos`,
+        - `documentos/historial_de_cambios`,
+        - `CHANGELOG.md`.
+    - Validaciones ejecutadas:
+        - `gofmt -w db/productos.go handlers/productos.go handlers/productos_categorias_test.go db/productos_categorias_test.go main.go`.
+        - `go test ./handlers ./db -count=1` (ok).
+        - `get_errors` en `web/administrar_empresa/administrar_productos.html` (ok).
+
+- 2026-04-04: Punto 5 — continuacion analitica (tendencia diaria de inventario)
+    - Se actualiza `backend/db/productos.go`:
+        - nuevo contrato `InventarioTendenciaDia`,
+        - nueva consulta `GetInventarioTendenciaByEmpresa` con serie diaria (`entradas`, `salidas`, `traslados`, `neto`, `eventos`) y filtros por bodega/rango.
+    - Se actualiza `backend/handlers/productos.go`:
+        - nuevo endpoint `GET /api/empresa/inventario/tendencia` con validacion de fechas (`YYYY-MM-DD`) y parametro de ventana (`dias`).
+    - Se actualiza `backend/main.go`:
+        - registro de ruta protegida `/api/empresa/inventario/tendencia`.
+    - Se actualiza `web/administrar_empresa/administrar_productos.html`:
+        - nueva tabla `Tendencia diaria inventario`,
+        - sincronizacion con filtros de kardex,
+        - contexto de neto acumulado y eventos del periodo.
+    - Se actualizan pruebas:
+        - `backend/handlers/productos_categorias_test.go` (handler de tendencia por rango),
+        - `backend/db/productos_categorias_test.go` (serie diaria en DB).
+    - Se actualiza documentacion tecnica:
+        - `documentos/plan_maestro_pos_multiempresa_14_puntos.md`,
+        - `documentos/diagramas/estructura_del_codigo.md`,
+        - `documentos/descripcion_del_proyecto`,
+        - `documentos/descripcion_de_archivos`,
+        - `documentos/historial_de_cambios`,
+        - `CHANGELOG.md`.
+    - Validaciones ejecutadas:
+        - `gofmt -w db/productos.go handlers/productos.go handlers/productos_categorias_test.go db/productos_categorias_test.go main.go`.
+        - `go test ./handlers ./db -count=1` (ok).
+        - `get_errors` en `web/administrar_empresa/administrar_productos.html` (ok).
+
+- 2026-04-04: Punto 5 — continuacion operacional (top criticos y reposicion guiada)
+    - Se actualiza `web/administrar_empresa/administrar_productos.html`:
+        - nueva tabla `Top productos críticos (déficit)` en inventario,
+        - priorizacion por estado `sin_stock` y mayor `deficit`,
+        - accion `Preparar reposición` que preconfigura ajuste de inventario (`entrada`) con producto, bodega y cantidad sugerida.
+    - Se actualiza documentacion tecnica:
+        - `documentos/plan_maestro_pos_multiempresa_14_puntos.md`,
+        - `documentos/diagramas/estructura_del_codigo.md`,
+        - `documentos/descripcion_de_archivos`,
+        - `documentos/historial_de_cambios`,
+        - `CHANGELOG.md`.
+    - Validacion ejecutada:
+        - `get_errors` en `web/administrar_empresa/administrar_productos.html` (ok).
+
+- 2026-04-04: Punto 5 — continuacion KPI operativo (resumen de inventario por rango)
+    - Se actualiza `backend/db/productos.go`:
+        - nuevo modelo `InventarioResumen`,
+        - nueva consulta `GetInventarioResumenByEmpresa` con consolidado de existencias, alertas, deficit y movimientos por rango.
+    - Se actualiza `backend/handlers/productos.go`:
+        - nuevo endpoint `GET /api/empresa/inventario/resumen` con validacion de fechas (`YYYY-MM-DD`).
+    - Se actualiza `backend/main.go`:
+        - registro de ruta protegida `/api/empresa/inventario/resumen`.
+    - Se actualiza `web/administrar_empresa/administrar_productos.html`:
+        - KPI visibles de inventario en cabecera (alertas, sin stock, movimientos del periodo, deficit total),
+        - integracion de carga de resumen con el rango de fechas del kardex.
+    - Se actualizan pruebas:
+        - `backend/handlers/productos_categorias_test.go` (resumen handler por rango + validacion de fechas),
+        - `backend/db/productos_categorias_test.go` (calculo de resumen KPI en DB).
+    - Se actualiza documentacion tecnica:
+        - `documentos/plan_maestro_pos_multiempresa_14_puntos.md`,
+        - `documentos/diagramas/estructura_del_codigo.md`,
+        - `documentos/descripcion_de_archivos`,
+        - `documentos/historial_de_cambios`,
+        - `CHANGELOG.md`.
+    - Validaciones ejecutadas:
+        - `gofmt -w db/productos.go handlers/productos.go handlers/productos_categorias_test.go db/productos_categorias_test.go main.go`.
+        - `go test ./handlers ./db -count=1` (ok).
+        - `get_errors` en `web/administrar_empresa/administrar_productos.html` (ok).
+
+- 2026-04-04: Punto 5 — continuacion UI operativa (filtros alertas y kardex)
+    - Se actualiza `web/administrar_empresa/administrar_productos.html`:
+        - filtro por bodega en `Alertas de quiebre por bodega`,
+        - filtros de kardex por `bodega_id`, `tipo`, `desde`, `hasta`,
+        - acciones `Filtrar` y `Limpiar` para ambos bloques.
+    - Se actualiza documentacion tecnica:
+        - `documentos/plan_maestro_pos_multiempresa_14_puntos.md`,
+        - `documentos/diagramas/estructura_del_codigo.md`,
+        - `documentos/descripcion_de_archivos`,
+        - `documentos/historial_de_cambios`,
+        - `CHANGELOG.md`.
+    - Validaciones ejecutadas:
+        - `get_errors` en `web/administrar_empresa/administrar_productos.html` (ok).
+
+- 2026-04-04: Punto 5 — inicio (kardex operativo + reglas de stock min/max + alertas de quiebre por bodega)
+    - Se actualiza `backend/db/productos.go`:
+        - validacion de reglas `stock_minimo/stock_maximo` en creacion/edicion de productos,
+        - nueva consulta `GetAlertasQuiebreByEmpresa`,
+        - ampliacion de kardex `GetMovimientosByEmpresa` con filtros por `bodega_id`, `tipo`, `desde`, `hasta`.
+    - Se actualiza `backend/handlers/productos.go`:
+        - nuevo endpoint `GET /api/empresa/inventario/alertas`,
+        - soporte `action=alertas|alertas_quiebre|quiebre` en `GET /api/empresa/inventario/existencias`,
+        - filtros de kardex y validacion de fechas `YYYY-MM-DD` en `GET /api/empresa/inventario/movimientos`.
+    - Se actualiza `backend/main.go`:
+        - registro de ruta protegida `/api/empresa/inventario/alertas`.
+    - Se actualizan pruebas:
+        - `backend/handlers/productos_categorias_test.go` (alertas por bodega + filtros kardex),
+        - `backend/db/productos_categorias_test.go` (reglas stock min/max).
+    - Se actualiza frontend inventario:
+        - `web/administrar_empresa/administrar_productos.html` agrega tabla de alertas de quiebre por bodega.
+    - Se actualiza documentacion tecnica:
+        - `documentos/plan_maestro_pos_multiempresa_14_puntos.md` (Punto 5 pasa a `en curso`),
+        - `documentos/descripcion_del_proyecto`,
+        - `documentos/diagramas/estructura_del_codigo.md`,
+        - `documentos/descripcion_de_archivos`,
+        - `documentos/historial_de_cambios`,
+        - `CHANGELOG.md`.
+    - Validaciones ejecutadas:
+        - `runTests` sobre `backend/handlers/productos_categorias_test.go` y `backend/db/productos_categorias_test.go` (ok).
+        - `go test ./handlers ./db -count=1` desde `backend` (ok).
+
 - 2026-04-04: Punto 3 — continuidad (catalogo frontend por rol + regresion endpoints sin wrapper)
     - Se actualiza `web/js/administrar_empresa.js`:
         - catalogo de permisos por enlace del menu lateral,

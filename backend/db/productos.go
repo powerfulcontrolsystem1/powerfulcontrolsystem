@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 )
 
 var (
@@ -160,6 +161,50 @@ type InventarioAlertaQuiebre struct {
 	EstadoStock        string  `json:"estado_stock"`
 	Deficit            float64 `json:"deficit"`
 	SugeridoReposicion float64 `json:"sugerido_reposicion"`
+}
+
+// InventarioResumen representa indicadores operativos de inventario por empresa.
+type InventarioResumen struct {
+	EmpresaID              int64   `json:"empresa_id"`
+	TotalExistencias       float64 `json:"total_existencias"`
+	ProductosConExistencia int64   `json:"productos_con_existencia"`
+	BodegasConStock        int64   `json:"bodegas_con_stock"`
+	AlertasTotal           int64   `json:"alertas_total"`
+	AlertasSinStock        int64   `json:"alertas_sin_stock"`
+	AlertasBajoMinimo      int64   `json:"alertas_bajo_minimo"`
+	DeficitTotal           float64 `json:"deficit_total"`
+	MovimientosTotal       int64   `json:"movimientos_total"`
+	MovimientosEntrada     int64   `json:"movimientos_entrada"`
+	MovimientosSalida      int64   `json:"movimientos_salida"`
+	MovimientosTraslado    int64   `json:"movimientos_traslado"`
+	MovimientosAjuste      int64   `json:"movimientos_ajuste"`
+	UltimoMovimiento       string  `json:"ultimo_movimiento,omitempty"`
+	PeriodoDesde           string  `json:"periodo_desde,omitempty"`
+	PeriodoHasta           string  `json:"periodo_hasta,omitempty"`
+}
+
+// InventarioTendenciaDia representa el comportamiento diario del inventario.
+type InventarioTendenciaDia struct {
+	Fecha      string  `json:"fecha"`
+	Entradas   float64 `json:"entradas"`
+	Salidas    float64 `json:"salidas"`
+	AjusteNeto float64 `json:"ajuste_neto"`
+	Traslados  float64 `json:"traslados"`
+	Eventos    int64   `json:"eventos"`
+	Neto       float64 `json:"neto"`
+}
+
+// InventarioBalanceBodega representa el balance operativo por bodega en un rango.
+type InventarioBalanceBodega struct {
+	BodegaID         int64   `json:"bodega_id"`
+	BodegaNombre     string  `json:"bodega_nombre"`
+	Entradas         float64 `json:"entradas"`
+	Salidas          float64 `json:"salidas"`
+	TrasladosEntrada float64 `json:"traslados_entrada"`
+	TrasladosSalida  float64 `json:"traslados_salida"`
+	TrasladoNeto     float64 `json:"traslado_neto"`
+	Eventos          int64   `json:"eventos"`
+	Neto             float64 `json:"neto"`
 }
 
 // InventarioMovimiento representa un evento de inventario (entrada/salida/traslado/ajuste).
@@ -1350,6 +1395,302 @@ func GetAlertasQuiebreByEmpresa(dbConn *sql.DB, empresaID, productoID, bodegaID 
 		a.SugeridoReposicion = a.Deficit
 
 		out = append(out, a)
+	}
+
+	return out, nil
+}
+
+// GetInventarioResumenByEmpresa devuelve KPI operativos del inventario por empresa.
+func GetInventarioResumenByEmpresa(dbConn *sql.DB, empresaID int64, desde, hasta string) (InventarioResumen, error) {
+	resumen := InventarioResumen{
+		EmpresaID:    empresaID,
+		PeriodoDesde: strings.TrimSpace(desde),
+		PeriodoHasta: strings.TrimSpace(hasta),
+	}
+
+	err := dbConn.QueryRow(`SELECT
+		COALESCE(SUM(CASE WHEN LOWER(COALESCE(e.estado, 'activo')) = 'activo' THEN COALESCE(e.cantidad, 0) ELSE 0 END), 0),
+		COALESCE(COUNT(DISTINCT CASE WHEN LOWER(COALESCE(e.estado, 'activo')) = 'activo' THEN e.producto_id END), 0),
+		COALESCE(COUNT(DISTINCT CASE WHEN LOWER(COALESCE(e.estado, 'activo')) = 'activo' THEN e.bodega_id END), 0)
+	FROM inventario_existencias e
+	WHERE e.empresa_id = ?`, empresaID).Scan(
+		&resumen.TotalExistencias,
+		&resumen.ProductosConExistencia,
+		&resumen.BodegasConStock,
+	)
+	if err != nil {
+		return resumen, err
+	}
+
+	err = dbConn.QueryRow(`SELECT
+		COALESCE(SUM(CASE WHEN COALESCE(e.cantidad, 0) <= 0 THEN 1 ELSE 0 END), 0),
+		COALESCE(SUM(CASE
+			WHEN COALESCE(e.cantidad, 0) > 0
+				AND COALESCE(p.stock_minimo, 0) > 0
+				AND COALESCE(e.cantidad, 0) <= COALESCE(p.stock_minimo, 0)
+			THEN 1 ELSE 0 END), 0),
+		COALESCE(SUM(CASE
+			WHEN COALESCE(p.stock_minimo, 0) > COALESCE(e.cantidad, 0)
+			THEN COALESCE(p.stock_minimo, 0) - COALESCE(e.cantidad, 0)
+			ELSE 0 END), 0)
+	FROM inventario_existencias e
+	JOIN productos p ON p.id = e.producto_id AND p.empresa_id = e.empresa_id
+	WHERE e.empresa_id = ?
+		AND LOWER(COALESCE(e.estado, 'activo')) = 'activo'
+		AND LOWER(COALESCE(p.estado, 'activo')) = 'activo'
+		AND (
+			COALESCE(e.cantidad, 0) <= 0
+			OR (COALESCE(p.stock_minimo, 0) > 0 AND COALESCE(e.cantidad, 0) <= COALESCE(p.stock_minimo, 0))
+		)`, empresaID).Scan(
+		&resumen.AlertasSinStock,
+		&resumen.AlertasBajoMinimo,
+		&resumen.DeficitTotal,
+	)
+	if err != nil {
+		return resumen, err
+	}
+	resumen.AlertasTotal = resumen.AlertasSinStock + resumen.AlertasBajoMinimo
+
+	query := `SELECT
+		COALESCE(COUNT(*), 0),
+		COALESCE(SUM(CASE WHEN LOWER(COALESCE(m.tipo, '')) IN ('entrada', 'compra', 'devolucion', 'ajuste_positivo') THEN 1 ELSE 0 END), 0),
+		COALESCE(SUM(CASE WHEN LOWER(COALESCE(m.tipo, '')) IN ('salida', 'perdida', 'ajuste_negativo') THEN 1 ELSE 0 END), 0),
+		COALESCE(SUM(CASE WHEN LOWER(COALESCE(m.tipo, '')) = 'traslado' THEN 1 ELSE 0 END), 0),
+		COALESCE(SUM(CASE WHEN LOWER(COALESCE(m.tipo, '')) IN ('ajuste_positivo', 'ajuste_negativo') THEN 1 ELSE 0 END), 0),
+		MAX(COALESCE(m.fecha_movimiento, m.fecha_creacion))
+	FROM inventario_movimientos m
+	WHERE m.empresa_id = ?
+		AND LOWER(COALESCE(m.estado, 'activo')) = 'activo'`
+	args := []interface{}{empresaID}
+	if resumen.PeriodoDesde != "" {
+		query += " AND date(COALESCE(m.fecha_movimiento, m.fecha_creacion)) >= date(?)"
+		args = append(args, resumen.PeriodoDesde)
+	}
+	if resumen.PeriodoHasta != "" {
+		query += " AND date(COALESCE(m.fecha_movimiento, m.fecha_creacion)) <= date(?)"
+		args = append(args, resumen.PeriodoHasta)
+	}
+
+	var ultimoMovimiento sql.NullString
+	err = dbConn.QueryRow(query, args...).Scan(
+		&resumen.MovimientosTotal,
+		&resumen.MovimientosEntrada,
+		&resumen.MovimientosSalida,
+		&resumen.MovimientosTraslado,
+		&resumen.MovimientosAjuste,
+		&ultimoMovimiento,
+	)
+	if err != nil {
+		return resumen, err
+	}
+	if ultimoMovimiento.Valid {
+		resumen.UltimoMovimiento = ultimoMovimiento.String
+	}
+
+	return resumen, nil
+}
+
+// GetInventarioTendenciaByEmpresa devuelve una serie diaria de entradas/salidas de inventario.
+func GetInventarioTendenciaByEmpresa(dbConn *sql.DB, empresaID, bodegaID int64, desde, hasta string, dias int) ([]InventarioTendenciaDia, error) {
+	desde = strings.TrimSpace(desde)
+	hasta = strings.TrimSpace(hasta)
+	if dias <= 0 {
+		dias = 7
+	}
+	if dias > 120 {
+		dias = 120
+	}
+
+	now := time.Now()
+	if hasta == "" {
+		hasta = now.Format("2006-01-02")
+	}
+	if desde == "" {
+		parsedHasta, err := time.Parse("2006-01-02", hasta)
+		if err != nil {
+			parsedHasta = now
+			hasta = parsedHasta.Format("2006-01-02")
+		}
+		desde = parsedHasta.AddDate(0, 0, -dias+1).Format("2006-01-02")
+	}
+	if desde > hasta {
+		desde, hasta = hasta, desde
+	}
+
+	query := `WITH RECURSIVE dias(fecha) AS (
+		SELECT date(?)
+		UNION ALL
+		SELECT date(fecha, '+1 day') FROM dias WHERE fecha < date(?)
+	)
+	SELECT
+		d.fecha,
+		COALESCE(SUM(CASE
+			WHEN LOWER(COALESCE(m.tipo, '')) IN ('entrada', 'compra', 'devolucion', 'ajuste_positivo') THEN COALESCE(m.cantidad, 0)
+			ELSE 0 END), 0),
+		COALESCE(SUM(CASE
+			WHEN LOWER(COALESCE(m.tipo, '')) IN ('salida', 'perdida', 'ajuste_negativo') THEN COALESCE(m.cantidad, 0)
+			ELSE 0 END), 0),
+		COALESCE(SUM(CASE
+			WHEN LOWER(COALESCE(m.tipo, '')) = 'ajuste_positivo' THEN COALESCE(m.cantidad, 0)
+			WHEN LOWER(COALESCE(m.tipo, '')) = 'ajuste_negativo' THEN -COALESCE(m.cantidad, 0)
+			ELSE 0 END), 0),
+		COALESCE(SUM(CASE
+			WHEN LOWER(COALESCE(m.tipo, '')) IN ('traslado', 'cambio_producto') THEN COALESCE(m.cantidad, 0)
+			ELSE 0 END), 0),
+		COALESCE(COUNT(m.id), 0)
+	FROM dias d
+	LEFT JOIN inventario_movimientos m
+		ON m.empresa_id = ?
+		AND LOWER(COALESCE(m.estado, 'activo')) = 'activo'
+		AND date(COALESCE(m.fecha_movimiento, m.fecha_creacion)) = d.fecha`
+	args := []interface{}{desde, hasta, empresaID}
+	if bodegaID > 0 {
+		query += " AND (m.bodega_origen_id = ? OR m.bodega_destino_id = ?)"
+		args = append(args, bodegaID, bodegaID)
+	}
+	query += `
+	GROUP BY d.fecha
+	ORDER BY d.fecha ASC`
+
+	rows, err := dbConn.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]InventarioTendenciaDia, 0)
+	for rows.Next() {
+		var row InventarioTendenciaDia
+		if err := rows.Scan(&row.Fecha, &row.Entradas, &row.Salidas, &row.AjusteNeto, &row.Traslados, &row.Eventos); err != nil {
+			return nil, err
+		}
+		row.Neto = row.Entradas - row.Salidas
+		out = append(out, row)
+	}
+
+	return out, nil
+}
+
+// GetInventarioBalanceBodegasByEmpresa devuelve balance de entradas/salidas por bodega en un rango.
+func GetInventarioBalanceBodegasByEmpresa(dbConn *sql.DB, empresaID, bodegaID int64, desde, hasta string, dias int) ([]InventarioBalanceBodega, error) {
+	desde = strings.TrimSpace(desde)
+	hasta = strings.TrimSpace(hasta)
+	if dias <= 0 {
+		dias = 7
+	}
+	if dias > 120 {
+		dias = 120
+	}
+
+	now := time.Now()
+	if hasta == "" {
+		hasta = now.Format("2006-01-02")
+	}
+	if desde == "" {
+		parsedHasta, err := time.Parse("2006-01-02", hasta)
+		if err != nil {
+			parsedHasta = now
+			hasta = parsedHasta.Format("2006-01-02")
+		}
+		desde = parsedHasta.AddDate(0, 0, -dias+1).Format("2006-01-02")
+	}
+	if desde > hasta {
+		desde, hasta = hasta, desde
+	}
+
+	query := `WITH mov_base AS (
+		SELECT m.id, m.bodega_origen_id, m.bodega_destino_id, LOWER(COALESCE(m.tipo, '')) AS tipo, COALESCE(m.cantidad, 0) AS cantidad
+		FROM inventario_movimientos m
+		WHERE m.empresa_id = ?
+			AND LOWER(COALESCE(m.estado, 'activo')) = 'activo'
+			AND date(COALESCE(m.fecha_movimiento, m.fecha_creacion)) >= date(?)
+			AND date(COALESCE(m.fecha_movimiento, m.fecha_creacion)) <= date(?)`
+	args := []interface{}{empresaID, desde, hasta}
+	if bodegaID > 0 {
+		query += " AND (m.bodega_origen_id = ? OR m.bodega_destino_id = ?)"
+		args = append(args, bodegaID, bodegaID)
+	}
+	query += `
+	), mov_expand AS (
+		SELECT
+			mb.bodega_destino_id AS bodega_id,
+			CASE WHEN mb.tipo IN ('entrada', 'compra', 'devolucion', 'ajuste_positivo', 'ajuste_entrada') THEN mb.cantidad ELSE 0 END AS entradas,
+			0 AS salidas,
+			CASE WHEN mb.tipo IN ('traslado', 'cambio_producto') THEN mb.cantidad ELSE 0 END AS traslados_entrada,
+			0 AS traslados_salida,
+			CASE
+				WHEN mb.tipo IN ('entrada', 'compra', 'devolucion', 'ajuste_positivo', 'ajuste_entrada', 'traslado', 'cambio_producto') THEN mb.cantidad
+				ELSE 0
+			END AS neto,
+			CASE
+				WHEN mb.tipo IN ('entrada', 'compra', 'devolucion', 'ajuste_positivo', 'ajuste_entrada', 'traslado', 'cambio_producto') THEN 1
+				ELSE 0
+			END AS eventos
+		FROM mov_base mb
+		WHERE mb.bodega_destino_id IS NOT NULL
+		UNION ALL
+		SELECT
+			mb.bodega_origen_id AS bodega_id,
+			0 AS entradas,
+			CASE WHEN mb.tipo IN ('salida', 'perdida', 'ajuste_negativo', 'ajuste_salida') THEN mb.cantidad ELSE 0 END AS salidas,
+			0 AS traslados_entrada,
+			CASE WHEN mb.tipo IN ('traslado', 'cambio_producto') THEN mb.cantidad ELSE 0 END AS traslados_salida,
+			CASE
+				WHEN mb.tipo IN ('salida', 'perdida', 'ajuste_negativo', 'ajuste_salida', 'traslado', 'cambio_producto') THEN -mb.cantidad
+				ELSE 0
+			END AS neto,
+			CASE
+				WHEN mb.tipo IN ('salida', 'perdida', 'ajuste_negativo', 'ajuste_salida', 'traslado', 'cambio_producto') THEN 1
+				ELSE 0
+			END AS eventos
+		FROM mov_base mb
+		WHERE mb.bodega_origen_id IS NOT NULL
+	)
+	SELECT
+		b.id,
+		b.nombre,
+		COALESCE(SUM(me.entradas), 0),
+		COALESCE(SUM(me.salidas), 0),
+		COALESCE(SUM(me.traslados_entrada), 0),
+		COALESCE(SUM(me.traslados_salida), 0),
+		COALESCE(SUM(me.eventos), 0),
+		COALESCE(SUM(me.neto), 0)
+	FROM bodegas b
+	LEFT JOIN mov_expand me ON me.bodega_id = b.id
+	WHERE b.empresa_id = ?
+		AND LOWER(COALESCE(b.estado, 'activo')) = 'activo'`
+	args = append(args, empresaID)
+	if bodegaID > 0 {
+		query += " AND b.id = ?"
+		args = append(args, bodegaID)
+	}
+	query += `
+	GROUP BY b.id, b.nombre
+	ORDER BY ABS(COALESCE(SUM(me.neto), 0)) DESC, b.nombre ASC`
+
+	rows, err := dbConn.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]InventarioBalanceBodega, 0)
+	for rows.Next() {
+		var row InventarioBalanceBodega
+		if err := rows.Scan(
+			&row.BodegaID,
+			&row.BodegaNombre,
+			&row.Entradas,
+			&row.Salidas,
+			&row.TrasladosEntrada,
+			&row.TrasladosSalida,
+			&row.Eventos,
+			&row.Neto,
+		); err != nil {
+			return nil, err
+		}
+		row.TrasladoNeto = row.TrasladosEntrada - row.TrasladosSalida
+		out = append(out, row)
 	}
 
 	return out, nil

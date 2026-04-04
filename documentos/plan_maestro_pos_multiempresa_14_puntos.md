@@ -14,7 +14,7 @@ Implementar y consolidar un sistema POS multiempresa con contabilidad integrada,
 | 2 | Arquitectura multiempresa | completado | matriz de entidades y llaves de aislamiento por endpoint |
 | 3 | Permisos y seguridad | en curso | matriz de roles/permisos por empresa/sucursal |
 | 4 | Gestion de ventas | en curso | flujo de venta/factura/descuento/inventario |
-| 5 | Control de inventarios | pendiente | stock, alertas y movimientos de bodega |
+| 5 | Control de inventarios | en curso | stock, alertas y movimientos de bodega |
 | 6 | Gestion de clientes | pendiente | perfil, historial y segmentacion |
 | 7 | Gestion de proveedores | pendiente | catalogo, precios y condiciones |
 | 8 | Modulo de facturacion electronica | pendiente | emision legal y cumplimiento normativo |
@@ -25,6 +25,141 @@ Implementar y consolidar un sistema POS multiempresa con contabilidad integrada,
 | 13 | Calidad, UAT y despliegue | pendiente | validacion integral y salida controlada |
 | 14 | Operacion continua | pendiente | mejora continua con KPI y roadmap trimestral |
 | 15 | Modulo de auditoria por empresa | en curso | trazabilidad por usuario/accion/recurso con consulta por empresa |
+
+### Punto 5. Control de inventarios (inicio ejecutado 2026-04-04)
+
+Implementacion tecnica completada (fase inicial):
+- `backend/db/productos.go`:
+	- valida reglas de stock en alta/edicion de productos (`stock_minimo <= stock_maximo`, sin negativos),
+	- agrega `GetAlertasQuiebreByEmpresa` para alertas por empresa/producto/bodega,
+	- formaliza kardex operativo en `GetMovimientosByEmpresa` con filtros `bodega_id`, `tipo`, `desde`, `hasta`.
+- `backend/handlers/productos.go`:
+	- agrega endpoint `GET /api/empresa/inventario/alertas`,
+	- agrega modo de compatibilidad `GET /api/empresa/inventario/existencias?action=alertas|alertas_quiebre|quiebre`,
+	- amplía `GET /api/empresa/inventario/movimientos` con filtros de kardex por bodega/tipo/rango y validacion de fechas (`YYYY-MM-DD`).
+- `backend/main.go`:
+	- registra ruta protegida `/api/empresa/inventario/alertas` bajo `WithEmpresaInventarioPermissions`.
+- `web/administrar_empresa/administrar_productos.html`:
+	- incorpora tabla `Alertas de quiebre por bodega` en el modulo de inventario.
+
+Cobertura de pruebas agregada/extendida:
+- `backend/handlers/productos_categorias_test.go`:
+	- `TestEmpresaInventarioAlertasHandlerDevuelveQuiebrePorBodega`.
+	- `TestEmpresaInventarioMovimientosHandlerFiltraPorBodegaTipoYRango`.
+- `backend/db/productos_categorias_test.go`:
+	- `TestCreateAndUpdateProductoValidanStockMinMax`.
+
+Validacion ejecutada:
+- `go test ./handlers ./db -count=1` (ok).
+
+### Punto 5. Control de inventarios (continuacion UI operativa 2026-04-04)
+
+Implementacion tecnica completada (fase 2):
+- `web/administrar_empresa/administrar_productos.html`:
+	- agrega filtros operativos para `Alertas de quiebre` por bodega,
+	- agrega filtros de kardex en `Movimientos recientes` por:
+		- `bodega_id`,
+		- `tipo`,
+		- `desde` y `hasta`.
+	- integra acciones de `Filtrar` y `Limpiar` para ambos bloques, reutilizando endpoints existentes del backend.
+
+Validacion ejecutada:
+- diagnostico de archivo (`get_errors`) en `web/administrar_empresa/administrar_productos.html` (ok).
+
+### Punto 5. Control de inventarios (continuacion KPI operativo 2026-04-04)
+
+Implementacion tecnica completada (fase 3):
+- `backend/db/productos.go`:
+	- agrega `InventarioResumen` con metricas operativas del modulo,
+	- agrega `GetInventarioResumenByEmpresa` para consolidar:
+		- existencias totales,
+		- alertas (`sin_stock`, `bajo_minimo`, `deficit_total`),
+		- movimientos por rango (`entrada`, `salida`, `traslado`, `ajuste`, `total`) y ultimo movimiento.
+- `backend/handlers/productos.go`:
+	- agrega endpoint `GET /api/empresa/inventario/resumen` con validacion de fechas `YYYY-MM-DD`.
+- `backend/main.go`:
+	- registra ruta protegida `/api/empresa/inventario/resumen` bajo `WithEmpresaInventarioPermissions`.
+- `web/administrar_empresa/administrar_productos.html`:
+	- agrega KPI de inventario visibles en cabecera (`alertas`, `sin_stock`, `movimientos del periodo`, `deficit total`),
+	- integra consumo de `GET /api/empresa/inventario/resumen`,
+	- sincroniza resumen con filtros de rango del kardex y con refrescos de existencias.
+
+Cobertura de pruebas agregada/extendida:
+- `backend/handlers/productos_categorias_test.go`:
+	- `TestEmpresaInventarioResumenHandlerDevuelveKPIsPorRango`.
+- `backend/db/productos_categorias_test.go`:
+	- `TestGetInventarioResumenByEmpresaCalculaIndicadores`.
+
+Validacion ejecutada:
+- `gofmt -w db/productos.go handlers/productos.go handlers/productos_categorias_test.go db/productos_categorias_test.go main.go`.
+- `go test ./handlers ./db -count=1` (ok).
+- `get_errors` en `web/administrar_empresa/administrar_productos.html` (ok).
+
+### Punto 5. Control de inventarios (continuacion operacional 2026-04-04)
+
+Implementacion tecnica completada (fase 4):
+- `web/administrar_empresa/administrar_productos.html`:
+	- agrega bloque `Top productos críticos (déficit)` basado en alertas de quiebre,
+	- prioriza visualmente productos `sin_stock` y mayor déficit,
+	- agrega accion `Preparar reposición` que preconfigura el formulario de ajuste (`tipo=entrada`, producto, bodega, cantidad sugerida y referencia).
+
+Validacion ejecutada:
+- `get_errors` en `web/administrar_empresa/administrar_productos.html` (ok).
+
+### Punto 5. Control de inventarios (continuacion analitica 2026-04-04)
+
+Implementacion tecnica completada (fase 5):
+- `backend/db/productos.go`:
+	- agrega `InventarioTendenciaDia`,
+	- agrega `GetInventarioTendenciaByEmpresa` con serie diaria de `entradas`, `salidas`, `traslados`, `neto` y `eventos`,
+	- soporta filtros por `bodega_id`, `desde`, `hasta` y ventana por `dias`.
+- `backend/handlers/productos.go`:
+	- agrega endpoint `GET /api/empresa/inventario/tendencia` con validacion de fechas (`YYYY-MM-DD`) y parametros operativos.
+- `backend/main.go`:
+	- registra ruta protegida `/api/empresa/inventario/tendencia` bajo `WithEmpresaInventarioPermissions`.
+- `web/administrar_empresa/administrar_productos.html`:
+	- agrega tabla `Tendencia diaria inventario` sincronizada con filtros del kardex,
+	- muestra neto acumulado y eventos del rango para seguimiento operativo.
+
+Cobertura de pruebas agregada/extendida:
+- `backend/handlers/productos_categorias_test.go`:
+	- `TestEmpresaInventarioTendenciaHandlerDevuelveSeriePorRango`.
+- `backend/db/productos_categorias_test.go`:
+	- `TestGetInventarioTendenciaByEmpresaDevuelveSerieDiaria`.
+
+Validacion ejecutada:
+- `gofmt -w db/productos.go handlers/productos.go handlers/productos_categorias_test.go db/productos_categorias_test.go main.go`.
+- `go test ./handlers ./db -count=1` (ok).
+- `get_errors` en `web/administrar_empresa/administrar_productos.html` (ok).
+
+### Punto 5. Control de inventarios (continuacion operativa-analitica 2026-04-04)
+
+Implementacion tecnica completada (fase 6):
+- `backend/db/productos.go`:
+	- agrega `InventarioBalanceBodega`,
+	- agrega `GetInventarioBalanceBodegasByEmpresa` para consolidar por bodega:
+		- `entradas`,
+		- `salidas`,
+		- `traslados_entrada`, `traslados_salida`, `traslado_neto`,
+		- `neto` y `eventos` en rango.
+- `backend/handlers/productos.go`:
+	- agrega endpoint `GET /api/empresa/inventario/balance_bodegas` con validacion de fechas (`YYYY-MM-DD`) y soporte por `bodega_id`.
+- `backend/main.go`:
+	- registra ruta protegida `/api/empresa/inventario/balance_bodegas` bajo `WithEmpresaInventarioPermissions`.
+- `web/administrar_empresa/administrar_productos.html`:
+	- agrega bloque `Balance por bodega` sincronizado con filtros de kardex,
+	- muestra neto por bodega y neto acumulado del rango consultado.
+
+Cobertura de pruebas agregada/extendida:
+- `backend/handlers/productos_categorias_test.go`:
+	- `TestEmpresaInventarioBalanceBodegasHandlerDevuelveResumenPorBodega`.
+- `backend/db/productos_categorias_test.go`:
+	- `TestGetInventarioBalanceBodegasByEmpresaConsolidaMovimientos`.
+
+Validacion ejecutada:
+- `gofmt -w db/productos.go handlers/productos.go handlers/productos_categorias_test.go db/productos_categorias_test.go main.go`.
+- `go test ./handlers ./db -count=1` (ok).
+- `get_errors` en `web/administrar_empresa/administrar_productos.html` (ok).
 
 ### Punto 1 + Punto 2. Cierre de backlog inmediato (2026-04-04)
 

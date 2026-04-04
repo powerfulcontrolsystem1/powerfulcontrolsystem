@@ -69,6 +69,136 @@ Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe re
     - `POST /api/empresa/usuarios/establecer_password`.
   - `backend/handlers/chat_con_inteligencia_artificial_controller_test.go` agrega cobertura en `ModelosHandler` para alcance por cuenta Google (`adminEmail`) fuera de alcance.
 
+## Actualizacion 2026-04-04 (inicio punto 5 - inventario: kardex operativo + alertas de quiebre)
+
+- Backend DB (`backend/db/productos.go`):
+  - se formalizan reglas de stock en productos:
+    - `stock_minimo` y `stock_maximo` no pueden ser negativos,
+    - `stock_minimo` no puede superar `stock_maximo` cuando `stock_maximo > 0`.
+  - se agrega `GetAlertasQuiebreByEmpresa` para listar quiebres/bajo minimo por empresa, producto y bodega.
+  - se amplía `GetMovimientosByEmpresa` como kardex operativo con filtros de consulta:
+    - `bodega_id` (origen o destino),
+    - `tipo` de movimiento,
+    - rango `desde`/`hasta` por fecha.
+
+- Backend handlers (`backend/handlers/productos.go`):
+  - nuevo endpoint `GET /api/empresa/inventario/alertas`.
+  - compatibilidad adicional en existencias: `GET /api/empresa/inventario/existencias?action=alertas|alertas_quiebre|quiebre`.
+  - `GET /api/empresa/inventario/movimientos` ahora admite filtros de kardex por bodega/tipo/rango con validacion de formato de fecha `YYYY-MM-DD`.
+
+- Rutas (`backend/main.go`):
+  - se registra `/api/empresa/inventario/alertas` bajo `WithEmpresaInventarioPermissions`.
+
+- Frontend empresa (`web/administrar_empresa/administrar_productos.html`):
+  - se agrega seccion visual de `Alertas de quiebre por bodega` consumiendo el endpoint de alertas.
+
+- Pruebas:
+  - `backend/handlers/productos_categorias_test.go` agrega cobertura de alertas y filtros de kardex.
+  - `backend/db/productos_categorias_test.go` agrega cobertura de reglas `stock_minimo/stock_maximo`.
+
+## Actualizacion 2026-04-04 (continuacion punto 5 - filtros operativos en UI de inventario)
+
+- Frontend empresa (`web/administrar_empresa/administrar_productos.html`):
+  - el bloque de alertas incorpora filtro por bodega con acciones `Filtrar` y `Limpiar`.
+  - el bloque de movimientos (kardex) incorpora filtros por:
+    - bodega,
+    - tipo de movimiento,
+    - rango de fechas (`desde`, `hasta`),
+    junto con acciones `Filtrar` y `Limpiar`.
+  - los filtros consumen directamente los endpoints ya extendidos:
+    - `GET /api/empresa/inventario/alertas`,
+    - `GET /api/empresa/inventario/movimientos`.
+
+## Actualizacion 2026-04-04 (continuacion punto 5 - resumen KPI operativo de inventario)
+
+- Backend DB (`backend/db/productos.go`):
+  - se agrega `InventarioResumen` como contrato de KPI operativos de inventario.
+  - se agrega `GetInventarioResumenByEmpresa` para consolidar:
+    - existencias totales y cobertura por producto/bodega,
+    - alertas de quiebre (`sin_stock`, `bajo_minimo`) y `deficit_total`,
+    - movimientos por rango (`entrada`, `salida`, `traslado`, `ajuste`, `total`) y ultimo movimiento.
+
+- Backend handlers (`backend/handlers/productos.go`):
+  - nuevo endpoint `GET /api/empresa/inventario/resumen` con validacion de fechas `YYYY-MM-DD`.
+
+- Rutas (`backend/main.go`):
+  - se registra `/api/empresa/inventario/resumen` bajo `WithEmpresaInventarioPermissions`.
+
+- Frontend empresa (`web/administrar_empresa/administrar_productos.html`):
+  - se agregan KPI operativos en cabecera del modulo de productos:
+    - alertas de inventario,
+    - productos sin stock,
+    - movimientos del periodo,
+    - deficit total.
+  - se integra carga de resumen desde backend y se sincroniza con filtros de rango del kardex.
+
+- Pruebas:
+  - `backend/handlers/productos_categorias_test.go` agrega cobertura de endpoint resumen por rango y validacion de fecha.
+  - `backend/db/productos_categorias_test.go` agrega cobertura de calculo de resumen en capa DB.
+
+## Actualizacion 2026-04-04 (continuacion punto 5 - top criticos y reposicion guiada)
+
+- Frontend empresa (`web/administrar_empresa/administrar_productos.html`):
+  - se agrega bloque `Top productos críticos (déficit)` dentro de inventario.
+  - la lista se alimenta de `GET /api/empresa/inventario/alertas` y prioriza:
+    - estado `sin_stock`,
+    - mayor `deficit`.
+  - se agrega accion `Preparar reposición` para precargar el formulario de ajuste de inventario con:
+    - `producto_id`,
+    - `bodega_id`,
+    - `tipo=entrada`,
+    - `cantidad` sugerida por deficit.
+
+## Actualizacion 2026-04-04 (continuacion punto 5 - tendencia diaria de inventario)
+
+- Backend DB (`backend/db/productos.go`):
+  - se agrega `InventarioTendenciaDia` como contrato de serie diaria de inventario.
+  - se agrega `GetInventarioTendenciaByEmpresa` para consolidar por fecha:
+    - `entradas`,
+    - `salidas`,
+    - `traslados`,
+    - `neto`,
+    - `eventos`.
+  - la consulta soporta filtros por `bodega_id`, `desde`, `hasta` y ventana de `dias`.
+
+- Backend handlers (`backend/handlers/productos.go`):
+  - nuevo endpoint `GET /api/empresa/inventario/tendencia` con validacion `YYYY-MM-DD` y normalizacion de `dias`.
+
+- Rutas (`backend/main.go`):
+  - se registra `/api/empresa/inventario/tendencia` bajo `WithEmpresaInventarioPermissions`.
+
+- Frontend empresa (`web/administrar_empresa/administrar_productos.html`):
+  - se agrega bloque `Tendencia diaria inventario` en el panel de movimientos.
+  - la vista se sincroniza con filtros de kardex (bodega y rango) y muestra neto acumulado del periodo.
+
+- Pruebas:
+  - `backend/handlers/productos_categorias_test.go` agrega cobertura de endpoint por rango.
+  - `backend/db/productos_categorias_test.go` agrega cobertura de serie diaria en capa DB.
+
+## Actualizacion 2026-04-04 (continuacion punto 5 - balance por bodega)
+
+- Backend DB (`backend/db/productos.go`):
+  - se agrega `InventarioBalanceBodega` como contrato de balance operativo por bodega.
+  - se agrega `GetInventarioBalanceBodegasByEmpresa` para consolidar por bodega:
+    - entradas,
+    - salidas,
+    - traslados de entrada/salida y traslado neto,
+    - neto final y cantidad de eventos en rango.
+
+- Backend handlers (`backend/handlers/productos.go`):
+  - nuevo endpoint `GET /api/empresa/inventario/balance_bodegas` con validacion `YYYY-MM-DD` y filtros por `bodega_id`.
+
+- Rutas (`backend/main.go`):
+  - se registra `/api/empresa/inventario/balance_bodegas` bajo `WithEmpresaInventarioPermissions`.
+
+- Frontend empresa (`web/administrar_empresa/administrar_productos.html`):
+  - se agrega bloque `Balance por bodega` dentro del panel de movimientos.
+  - la vista usa filtros del kardex y muestra neto por bodega y neto acumulado del rango.
+
+- Pruebas:
+  - `backend/handlers/productos_categorias_test.go` agrega cobertura del endpoint de balance por bodega.
+  - `backend/db/productos_categorias_test.go` agrega cobertura del consolidado de balance por bodega en DB.
+
 ## Actualizacion 2026-04-03 (configuracion IA en panel super)
 
 - Backend handlers:

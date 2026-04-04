@@ -399,6 +399,19 @@ func EmpresaInventarioExistenciasHandler(dbEmp *sql.DB) http.HandlerFunc {
 		bodegaID, _ := parseInt64QueryOptional(r, "bodega_id")
 		limit, _ := parseIntQueryOptional(r, "limit")
 		offset, _ := parseIntQueryOptional(r, "offset")
+		action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+
+		if action == "alertas" || action == "alertas_quiebre" || action == "quiebre" {
+			rows, err := dbpkg.GetAlertasQuiebreByEmpresa(dbEmp, empresaID, productoID, bodegaID, limit, offset)
+			if err != nil {
+				http.Error(w, "failed to list alertas: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(rows)
+			return
+		}
+
 		rows, err := dbpkg.GetExistenciasByEmpresa(dbEmp, empresaID, productoID, bodegaID, limit, offset)
 		if err != nil {
 			http.Error(w, "failed to list existencias: "+err.Error(), http.StatusInternalServerError)
@@ -407,6 +420,176 @@ func EmpresaInventarioExistenciasHandler(dbEmp *sql.DB) http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(rows)
 	}
+}
+
+// EmpresaInventarioAlertasHandler lista alertas de quiebre/bajo minimo por bodega.
+func EmpresaInventarioAlertasHandler(dbEmp *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		empresaID, err := parseEmpresaIDQuery(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		productoID, _ := parseInt64QueryOptional(r, "producto_id")
+		bodegaID, _ := parseInt64QueryOptional(r, "bodega_id")
+		limit, _ := parseIntQueryOptional(r, "limit")
+		offset, _ := parseIntQueryOptional(r, "offset")
+
+		rows, err := dbpkg.GetAlertasQuiebreByEmpresa(dbEmp, empresaID, productoID, bodegaID, limit, offset)
+		if err != nil {
+			http.Error(w, "failed to list alertas: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(rows)
+	}
+}
+
+// EmpresaInventarioResumenHandler devuelve KPI operativos de inventario por empresa.
+func EmpresaInventarioResumenHandler(dbEmp *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		empresaID, err := parseEmpresaIDQuery(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		desde := strings.TrimSpace(r.URL.Query().Get("desde"))
+		hasta := strings.TrimSpace(r.URL.Query().Get("hasta"))
+		if desde != "" && !isISODate(desde) {
+			http.Error(w, "desde debe usar formato YYYY-MM-DD", http.StatusBadRequest)
+			return
+		}
+		if hasta != "" && !isISODate(hasta) {
+			http.Error(w, "hasta debe usar formato YYYY-MM-DD", http.StatusBadRequest)
+			return
+		}
+
+		resumen, err := dbpkg.GetInventarioResumenByEmpresa(dbEmp, empresaID, desde, hasta)
+		if err != nil {
+			http.Error(w, "failed to build inventario resumen: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resumen)
+	}
+}
+
+// EmpresaInventarioTendenciaHandler devuelve tendencia diaria de inventario por empresa.
+func EmpresaInventarioTendenciaHandler(dbEmp *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		empresaID, err := parseEmpresaIDQuery(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		bodegaID, err := parseInt64QueryOptional(r, "bodega_id")
+		if err != nil {
+			http.Error(w, "bodega_id invalido", http.StatusBadRequest)
+			return
+		}
+		dias, err := parseIntQueryOptional(r, "dias")
+		if err != nil {
+			http.Error(w, "dias invalido", http.StatusBadRequest)
+			return
+		}
+		if dias <= 0 {
+			dias = 7
+		}
+		if dias > 120 {
+			dias = 120
+		}
+
+		desde := strings.TrimSpace(r.URL.Query().Get("desde"))
+		hasta := strings.TrimSpace(r.URL.Query().Get("hasta"))
+		if desde != "" && !isISODate(desde) {
+			http.Error(w, "desde debe usar formato YYYY-MM-DD", http.StatusBadRequest)
+			return
+		}
+		if hasta != "" && !isISODate(hasta) {
+			http.Error(w, "hasta debe usar formato YYYY-MM-DD", http.StatusBadRequest)
+			return
+		}
+
+		rows, err := dbpkg.GetInventarioTendenciaByEmpresa(dbEmp, empresaID, bodegaID, desde, hasta, dias)
+		if err != nil {
+			http.Error(w, "failed to build inventario tendencia: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(rows)
+	}
+}
+
+// EmpresaInventarioBalanceBodegasHandler devuelve el balance operativo por bodega.
+func EmpresaInventarioBalanceBodegasHandler(dbEmp *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		empresaID, err := parseEmpresaIDQuery(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		bodegaID, err := parseInt64QueryOptional(r, "bodega_id")
+		if err != nil {
+			http.Error(w, "bodega_id invalido", http.StatusBadRequest)
+			return
+		}
+		dias, err := parseIntQueryOptional(r, "dias")
+		if err != nil {
+			http.Error(w, "dias invalido", http.StatusBadRequest)
+			return
+		}
+		if dias <= 0 {
+			dias = 7
+		}
+		if dias > 120 {
+			dias = 120
+		}
+
+		desde := strings.TrimSpace(r.URL.Query().Get("desde"))
+		hasta := strings.TrimSpace(r.URL.Query().Get("hasta"))
+		if desde != "" && !isISODate(desde) {
+			http.Error(w, "desde debe usar formato YYYY-MM-DD", http.StatusBadRequest)
+			return
+		}
+		if hasta != "" && !isISODate(hasta) {
+			http.Error(w, "hasta debe usar formato YYYY-MM-DD", http.StatusBadRequest)
+			return
+		}
+
+		rows, err := dbpkg.GetInventarioBalanceBodegasByEmpresa(dbEmp, empresaID, bodegaID, desde, hasta, dias)
+		if err != nil {
+			http.Error(w, "failed to build inventario balance por bodega: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(rows)
+	}
+}
+
+func isISODate(raw string) bool {
+	_, err := time.Parse("2006-01-02", strings.TrimSpace(raw))
+	return err == nil
 }
 
 // EmpresaInventarioMovimientosHandler lista movimientos de inventario por empresa.
@@ -422,9 +605,21 @@ func EmpresaInventarioMovimientosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			return
 		}
 		productoID, _ := parseInt64QueryOptional(r, "producto_id")
+		bodegaID, _ := parseInt64QueryOptional(r, "bodega_id")
+		tipo := strings.TrimSpace(r.URL.Query().Get("tipo"))
+		desde := strings.TrimSpace(r.URL.Query().Get("desde"))
+		hasta := strings.TrimSpace(r.URL.Query().Get("hasta"))
+		if desde != "" && !isISODate(desde) {
+			http.Error(w, "desde debe usar formato YYYY-MM-DD", http.StatusBadRequest)
+			return
+		}
+		if hasta != "" && !isISODate(hasta) {
+			http.Error(w, "hasta debe usar formato YYYY-MM-DD", http.StatusBadRequest)
+			return
+		}
 		limit, _ := parseIntQueryOptional(r, "limit")
 		offset, _ := parseIntQueryOptional(r, "offset")
-		rows, err := dbpkg.GetMovimientosByEmpresa(dbEmp, empresaID, productoID, limit, offset)
+		rows, err := dbpkg.GetMovimientosByEmpresa(dbEmp, empresaID, productoID, bodegaID, tipo, desde, hasta, limit, offset)
 		if err != nil {
 			http.Error(w, "failed to list movimientos: "+err.Error(), http.StatusInternalServerError)
 			return

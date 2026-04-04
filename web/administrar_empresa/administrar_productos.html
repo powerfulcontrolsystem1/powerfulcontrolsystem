@@ -30,6 +30,22 @@
           <span class="kpi-label">Categorías</span>
           <strong id="kpiCategoriasProductos">0</strong>
         </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Alertas inventario</span>
+          <strong id="kpiInventarioAlertas">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Sin stock</span>
+          <strong id="kpiInventarioSinStock">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Mov. periodo</span>
+          <strong id="kpiInventarioMovPeriodo">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Déficit total</span>
+          <strong id="kpiInventarioDeficit">0.00</strong>
+        </div>
       </div>
     </section>
 
@@ -560,10 +576,76 @@
             <tbody></tbody>
           </table>
         </div>
+
+        <div class="empresa-section-header" style="margin-top:16px;">
+          <h3 style="margin:0;">Alertas de quiebre por bodega</h3>
+          <div class="empresa-inline-actions">
+            <select id="alertaBodegaFiltro" class="form-input">
+              <option value="">Todas las bodegas</option>
+            </select>
+            <button id="btnAplicarAlertasFiltro" class="btn secondary" type="button">Filtrar</button>
+            <button id="btnLimpiarAlertasFiltro" class="btn secondary" type="button">Limpiar</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="table" id="alertasQuiebreTable">
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Bodega</th>
+                <th>Stock actual</th>
+                <th>Stock minimo</th>
+                <th>Estado</th>
+                <th>Deficit</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="empresa-section-header" style="margin-top:16px;">
+          <h3 style="margin:0;">Top productos críticos (déficit)</h3>
+        </div>
+        <div class="table-wrap">
+          <table class="table" id="inventarioCriticosTable">
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Bodega</th>
+                <th>Estado</th>
+                <th>Déficit</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
       </section>
 
       <section class="card empresa-section">
-        <h2>Movimientos recientes</h2>
+        <div class="empresa-section-header">
+          <h2>Movimientos recientes</h2>
+          <div class="empresa-inline-actions">
+            <select id="kardexBodegaFiltro" class="form-input">
+              <option value="">Todas las bodegas</option>
+            </select>
+            <select id="kardexTipoFiltro" class="form-input">
+              <option value="">Todos los tipos</option>
+              <option value="entrada">Entrada</option>
+              <option value="salida">Salida</option>
+              <option value="traslado">Traslado</option>
+              <option value="devolucion">Devolución</option>
+              <option value="perdida">Pérdida</option>
+              <option value="ajuste_positivo">Ajuste positivo</option>
+              <option value="ajuste_negativo">Ajuste negativo</option>
+              <option value="cambio_producto">Cambio producto</option>
+            </select>
+            <input id="kardexDesdeFiltro" class="form-input" type="date" title="Desde">
+            <input id="kardexHastaFiltro" class="form-input" type="date" title="Hasta">
+            <button id="btnAplicarKardexFiltros" class="btn secondary" type="button">Filtrar</button>
+            <button id="btnLimpiarKardexFiltros" class="btn secondary" type="button">Limpiar</button>
+          </div>
+        </div>
         <div class="table-wrap">
           <table class="table" id="movimientosTable">
             <thead>
@@ -580,6 +662,47 @@
             <tbody></tbody>
           </table>
         </div>
+        <p id="inventarioResumenContexto" class="form-help">Movimientos del periodo: cargando resumen...</p>
+
+        <div class="empresa-section-header" style="margin-top:16px;">
+          <h3 style="margin:0;">Tendencia diaria inventario</h3>
+        </div>
+        <div class="table-wrap">
+          <table class="table" id="inventarioTendenciaTable">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Entradas</th>
+                <th>Salidas</th>
+                <th>Traslados</th>
+                <th>Neto</th>
+                <th>Eventos</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p id="inventarioTendenciaContexto" class="form-help">Tendencia: cargando...</p>
+
+        <div class="empresa-section-header" style="margin-top:16px;">
+          <h3 style="margin:0;">Balance por bodega</h3>
+        </div>
+        <div class="table-wrap">
+          <table class="table" id="inventarioBalanceBodegasTable">
+            <thead>
+              <tr>
+                <th>Bodega</th>
+                <th>Entradas</th>
+                <th>Salidas</th>
+                <th>Traslado neto</th>
+                <th>Neto</th>
+                <th>Eventos</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p id="inventarioBalanceBodegasContexto" class="form-help">Balance por bodega: cargando...</p>
       </section>
     </section>
 
@@ -617,7 +740,8 @@
       productos: [],
       proveedores: [],
       categoriasProductos: [],
-      servicios: []
+      servicios: [],
+      alertasInventario: []
     };
 
     const messageBox = document.getElementById('messageBox');
@@ -737,6 +861,8 @@
       buildOptions(document.getElementById('transferDestino'), activas, '', 'Seleccione destino');
       buildOptions(document.getElementById('ajusteBodega'), activas, '', 'Seleccione bodega');
       buildOptions(document.getElementById('cambioBodega'), activas, '', 'Seleccione bodega');
+      buildOptions(document.getElementById('alertaBodegaFiltro'), activas, document.getElementById('alertaBodegaFiltro').value, 'Todas las bodegas');
+      buildOptions(document.getElementById('kardexBodegaFiltro'), activas, document.getElementById('kardexBodegaFiltro').value, 'Todas las bodegas');
     }
 
     function fillBodegaForm(b) {
@@ -1338,6 +1464,8 @@
       const tbody = document.querySelector('#existenciasTable tbody');
       if (!rows.length) {
         tbody.innerHTML = '<tr><td colspan="3">Sin existencias registradas.</td></tr>';
+        await loadAlertasInventario();
+        await loadInventarioResumen();
         return;
       }
       tbody.innerHTML = rows.map(r => '<tr>' +
@@ -1345,13 +1473,258 @@
         '<td>' + sanitize(r.bodega_nombre || '') + '</td>' +
         '<td>' + Number(r.cantidad || 0).toFixed(2) + '</td>' +
       '</tr>').join('');
+      await loadAlertasInventario();
+      await loadInventarioResumen();
+    }
+
+    async function loadInventarioResumen() {
+      const desde = String(document.getElementById('kardexDesdeFiltro').value || '').trim();
+      const hasta = String(document.getElementById('kardexHastaFiltro').value || '').trim();
+
+      const params = new URLSearchParams();
+      params.set('empresa_id', String(empresaId));
+      if (desde) {
+        params.set('desde', desde);
+      }
+      if (hasta) {
+        params.set('hasta', hasta);
+      }
+
+      const resumen = await requestJSON('/api/empresa/inventario/resumen?' + params.toString());
+
+      document.getElementById('kpiInventarioAlertas').textContent = String(Number(resumen.alertas_total || 0));
+      document.getElementById('kpiInventarioSinStock').textContent = String(Number(resumen.alertas_sin_stock || 0));
+      document.getElementById('kpiInventarioMovPeriodo').textContent = String(Number(resumen.movimientos_total || 0));
+      document.getElementById('kpiInventarioDeficit').textContent = Number(resumen.deficit_total || 0).toFixed(2);
+
+      const rango = (desde || hasta)
+        ? ('desde ' + (desde || 'inicio') + ' hasta ' + (hasta || 'hoy'))
+        : 'sin filtro de fechas';
+      const detalle =
+        'Movimientos (' + rango + '): entradas ' + Number(resumen.movimientos_entrada || 0) +
+        ', salidas ' + Number(resumen.movimientos_salida || 0) +
+        ', traslados ' + Number(resumen.movimientos_traslado || 0) +
+        ', ajustes ' + Number(resumen.movimientos_ajuste || 0) +
+        '. Último movimiento: ' + String(resumen.ultimo_movimiento || 'no disponible') + '.';
+      document.getElementById('inventarioResumenContexto').textContent = detalle;
+    }
+
+    async function loadInventarioTendencia() {
+      const bodegaID = Number(document.getElementById('kardexBodegaFiltro').value || 0);
+      const desde = String(document.getElementById('kardexDesdeFiltro').value || '').trim();
+      const hasta = String(document.getElementById('kardexHastaFiltro').value || '').trim();
+
+      const params = new URLSearchParams();
+      params.set('empresa_id', String(empresaId));
+      if (bodegaID > 0) {
+        params.set('bodega_id', String(bodegaID));
+      }
+      if (desde) {
+        params.set('desde', desde);
+      }
+      if (hasta) {
+        params.set('hasta', hasta);
+      }
+      if (!desde && !hasta) {
+        params.set('dias', '7');
+      }
+
+      const rows = await requestJSON('/api/empresa/inventario/tendencia?' + params.toString());
+      const tbody = document.querySelector('#inventarioTendenciaTable tbody');
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="6">Sin datos de tendencia para el rango seleccionado.</td></tr>';
+        document.getElementById('inventarioTendenciaContexto').textContent = 'No hay movimientos para construir tendencia en el rango actual.';
+        return;
+      }
+
+      let netoTotal = 0;
+      let eventosTotal = 0;
+      tbody.innerHTML = rows.map(r => {
+        const neto = Number(r.neto || 0);
+        netoTotal += neto;
+        eventosTotal += Number(r.eventos || 0);
+        const netoStyle = neto < 0
+          ? ' style="color:#B42318;font-weight:600;"'
+          : (neto > 0 ? ' style="color:#027A48;font-weight:600;"' : '');
+        return '<tr>' +
+          '<td>' + sanitize(r.fecha || '') + '</td>' +
+          '<td>' + Number(r.entradas || 0).toFixed(2) + '</td>' +
+          '<td>' + Number(r.salidas || 0).toFixed(2) + '</td>' +
+          '<td>' + Number(r.traslados || 0).toFixed(2) + '</td>' +
+          '<td' + netoStyle + '>' + neto.toFixed(2) + '</td>' +
+          '<td>' + Number(r.eventos || 0) + '</td>' +
+        '</tr>';
+      }).join('');
+
+      const rango = (desde || hasta)
+        ? ('desde ' + (desde || 'inicio') + ' hasta ' + (hasta || 'hoy'))
+        : 'ultimos 7 dias';
+      const alcance = bodegaID > 0 ? (' para bodega #' + bodegaID) : ' en todas las bodegas';
+      document.getElementById('inventarioTendenciaContexto').textContent =
+        'Tendencia ' + rango + alcance + ': neto acumulado ' + netoTotal.toFixed(2) + ' con ' + eventosTotal + ' eventos.';
+    }
+
+    async function loadInventarioBalanceBodegas() {
+      const bodegaID = Number(document.getElementById('kardexBodegaFiltro').value || 0);
+      const desde = String(document.getElementById('kardexDesdeFiltro').value || '').trim();
+      const hasta = String(document.getElementById('kardexHastaFiltro').value || '').trim();
+
+      const params = new URLSearchParams();
+      params.set('empresa_id', String(empresaId));
+      if (bodegaID > 0) {
+        params.set('bodega_id', String(bodegaID));
+      }
+      if (desde) {
+        params.set('desde', desde);
+      }
+      if (hasta) {
+        params.set('hasta', hasta);
+      }
+      if (!desde && !hasta) {
+        params.set('dias', '7');
+      }
+
+      const rows = await requestJSON('/api/empresa/inventario/balance_bodegas?' + params.toString());
+      const tbody = document.querySelector('#inventarioBalanceBodegasTable tbody');
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="6">Sin datos de balance por bodega para el rango seleccionado.</td></tr>';
+        document.getElementById('inventarioBalanceBodegasContexto').textContent = 'No hay eventos para calcular balance por bodega en el rango actual.';
+        return;
+      }
+
+      const top = rows.slice(0, 6);
+      let netoTotal = 0;
+      let eventosTotal = 0;
+      tbody.innerHTML = top.map(r => {
+        const neto = Number(r.neto || 0);
+        netoTotal += neto;
+        eventosTotal += Number(r.eventos || 0);
+        const netoStyle = neto < 0
+          ? ' style="color:#B42318;font-weight:600;"'
+          : (neto > 0 ? ' style="color:#027A48;font-weight:600;"' : '');
+        return '<tr>' +
+          '<td>' + sanitize(r.bodega_nombre || ('Bodega #' + Number(r.bodega_id || 0))) + '</td>' +
+          '<td>' + Number(r.entradas || 0).toFixed(2) + '</td>' +
+          '<td>' + Number(r.salidas || 0).toFixed(2) + '</td>' +
+          '<td>' + Number(r.traslado_neto || 0).toFixed(2) + '</td>' +
+          '<td' + netoStyle + '>' + neto.toFixed(2) + '</td>' +
+          '<td>' + Number(r.eventos || 0) + '</td>' +
+        '</tr>';
+      }).join('');
+
+      const rango = (desde || hasta)
+        ? ('desde ' + (desde || 'inicio') + ' hasta ' + (hasta || 'hoy'))
+        : 'ultimos 7 dias';
+      const alcance = bodegaID > 0 ? (' para bodega #' + bodegaID) : ' para bodegas activas';
+      document.getElementById('inventarioBalanceBodegasContexto').textContent =
+        'Balance ' + rango + alcance + ': neto acumulado ' + netoTotal.toFixed(2) + ' y ' + eventosTotal + ' eventos.';
+    }
+
+    async function loadAlertasInventario() {
+      const bodegaID = Number(document.getElementById('alertaBodegaFiltro').value || 0);
+      let url = '/api/empresa/inventario/alertas?empresa_id=' + empresaId + '&limit=200';
+      if (bodegaID > 0) {
+        url += '&bodega_id=' + bodegaID;
+      }
+      const rows = await requestJSON(url);
+      state.alertasInventario = Array.isArray(rows) ? rows : [];
+      const tbody = document.querySelector('#alertasQuiebreTable tbody');
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="6">Sin alertas de quiebre para la empresa.</td></tr>';
+        renderInventarioCriticos([]);
+        return;
+      }
+      tbody.innerHTML = rows.map(r => '<tr>' +
+        '<td>' + sanitize(r.producto_nombre || '') + '</td>' +
+        '<td>' + sanitize(r.bodega_nombre || '') + '</td>' +
+        '<td>' + Number(r.cantidad || 0).toFixed(2) + '</td>' +
+        '<td>' + Number(r.stock_minimo || 0).toFixed(2) + '</td>' +
+        '<td>' + sanitize((r.estado_stock || '').replace('_', ' ')) + '</td>' +
+        '<td>' + Number(r.deficit || 0).toFixed(2) + '</td>' +
+      '</tr>').join('');
+      renderInventarioCriticos(rows);
+    }
+
+    function renderInventarioCriticos(rows) {
+      const tbody = document.querySelector('#inventarioCriticosTable tbody');
+      if (!rows || !rows.length) {
+        tbody.innerHTML = '<tr><td colspan="5">Sin productos críticos para reposición.</td></tr>';
+        return;
+      }
+
+      const top = rows.slice().sort((a, b) => {
+        const estadoA = String(a.estado_stock || '').toLowerCase() === 'sin_stock' ? 1 : 0;
+        const estadoB = String(b.estado_stock || '').toLowerCase() === 'sin_stock' ? 1 : 0;
+        if (estadoA !== estadoB) {
+          return estadoB - estadoA;
+        }
+        return Number(b.deficit || 0) - Number(a.deficit || 0);
+      }).slice(0, 5);
+
+      tbody.innerHTML = top.map(r => '<tr>' +
+        '<td>' + sanitize(r.producto_nombre || '') + '</td>' +
+        '<td>' + sanitize(r.bodega_nombre || '') + '</td>' +
+        '<td>' + sanitize((r.estado_stock || '').replace('_', ' ')) + '</td>' +
+        '<td>' + Number(r.deficit || 0).toFixed(2) + '</td>' +
+        '<td><button type="button" class="btn secondary" data-action="reponer-critico" data-producto-id="' + Number(r.producto_id || 0) + '" data-bodega-id="' + Number(r.bodega_id || 0) + '" data-deficit="' + Number(r.deficit || 0) + '" data-producto-nombre="' + sanitize(r.producto_nombre || '') + '" data-bodega-nombre="' + sanitize(r.bodega_nombre || '') + '">Preparar reposición</button></td>' +
+      '</tr>').join('');
+    }
+
+    function prepararReposicionCritica(btn) {
+      const productoID = Number(btn.dataset.productoId || 0);
+      const bodegaID = Number(btn.dataset.bodegaId || 0);
+      const deficit = Number(btn.dataset.deficit || 0);
+      const productoNombre = String(btn.dataset.productoNombre || 'producto');
+      const bodegaNombre = String(btn.dataset.bodegaNombre || 'bodega');
+
+      if (productoID <= 0 || bodegaID <= 0) {
+        showMessage('No se pudo preparar la reposición: faltan datos del producto o bodega.', 'error');
+        return;
+      }
+
+      const cantidad = Math.max(0.01, deficit > 0 ? deficit : 1);
+      document.getElementById('ajusteProducto').value = String(productoID);
+      document.getElementById('ajusteBodega').value = String(bodegaID);
+      document.getElementById('ajusteTipo').value = 'entrada';
+      document.getElementById('ajusteCantidad').value = cantidad.toFixed(2);
+      document.getElementById('ajusteReferencia').value = 'REP-CRITICO-UI';
+      document.getElementById('ajusteObservaciones').value = 'Reposición sugerida desde alertas para ' + productoNombre + ' en ' + bodegaNombre + '.';
+
+      const form = document.getElementById('ajusteForm');
+      if (form && typeof form.scrollIntoView === 'function') {
+        form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      showMessage('Ajuste preconfigurado para reposición crítica. Verifica y confirma.', 'success');
     }
 
     async function loadMovimientos() {
-      const rows = await requestJSON('/api/empresa/inventario/movimientos?empresa_id=' + empresaId + '&limit=100');
+      const bodegaID = Number(document.getElementById('kardexBodegaFiltro').value || 0);
+      const tipo = String(document.getElementById('kardexTipoFiltro').value || '').trim();
+      const desde = String(document.getElementById('kardexDesdeFiltro').value || '').trim();
+      const hasta = String(document.getElementById('kardexHastaFiltro').value || '').trim();
+
+      const params = new URLSearchParams();
+      params.set('empresa_id', String(empresaId));
+      params.set('limit', '100');
+      if (bodegaID > 0) {
+        params.set('bodega_id', String(bodegaID));
+      }
+      if (tipo) {
+        params.set('tipo', tipo);
+      }
+      if (desde) {
+        params.set('desde', desde);
+      }
+      if (hasta) {
+        params.set('hasta', hasta);
+      }
+
+      const rows = await requestJSON('/api/empresa/inventario/movimientos?' + params.toString());
       const tbody = document.querySelector('#movimientosTable tbody');
       if (!rows.length) {
         tbody.innerHTML = '<tr><td colspan="7">Sin movimientos de inventario.</td></tr>';
+        await loadInventarioTendencia();
+        await loadInventarioBalanceBodegas();
         return;
       }
       tbody.innerHTML = rows.map(m => '<tr>' +
@@ -1363,6 +1736,8 @@
         '<td>' + Number(m.cantidad || 0).toFixed(2) + '</td>' +
         '<td>' + sanitize(m.referencia || '') + '</td>' +
       '</tr>').join('');
+      await loadInventarioTendencia();
+      await loadInventarioBalanceBodegas();
     }
 
     async function loadPreciosHistorial() {
@@ -1635,6 +2010,51 @@
         } catch (e) {
           showMessage(e.message || 'No se pudo cargar el historial de precios.', 'error');
         }
+      });
+
+      document.getElementById('btnAplicarAlertasFiltro').addEventListener('click', async () => {
+        try {
+          await loadAlertasInventario();
+        } catch (e) {
+          showMessage(e.message || 'No se pudieron cargar las alertas de quiebre.', 'error');
+        }
+      });
+
+      document.getElementById('btnLimpiarAlertasFiltro').addEventListener('click', async () => {
+        try {
+          document.getElementById('alertaBodegaFiltro').value = '';
+          await loadAlertasInventario();
+        } catch (e) {
+          showMessage(e.message || 'No se pudieron limpiar los filtros de alertas.', 'error');
+        }
+      });
+
+      document.getElementById('btnAplicarKardexFiltros').addEventListener('click', async () => {
+        try {
+          await loadMovimientos();
+          await loadInventarioResumen();
+        } catch (e) {
+          showMessage(e.message || 'No se pudo consultar el kardex filtrado.', 'error');
+        }
+      });
+
+      document.getElementById('btnLimpiarKardexFiltros').addEventListener('click', async () => {
+        try {
+          document.getElementById('kardexBodegaFiltro').value = '';
+          document.getElementById('kardexTipoFiltro').value = '';
+          document.getElementById('kardexDesdeFiltro').value = '';
+          document.getElementById('kardexHastaFiltro').value = '';
+          await loadMovimientos();
+          await loadInventarioResumen();
+        } catch (e) {
+          showMessage(e.message || 'No se pudieron limpiar los filtros de kardex.', 'error');
+        }
+      });
+
+      document.getElementById('inventarioCriticosTable').addEventListener('click', ev => {
+        const btn = ev.target.closest('button[data-action="reponer-critico"]');
+        if (!btn) return;
+        prepararReposicionCritica(btn);
       });
     }
 

@@ -1,6 +1,84 @@
 # CHANGELOG
 
 ## 2026-04-04
+- Punto 5 (control de inventarios) — continuidad operativa-analitica con balance por bodega.
+	- `backend/db/productos.go` agrega `InventarioBalanceBodega` y `GetInventarioBalanceBodegasByEmpresa` para consolidar entradas/salidas/traslados/neto por bodega en rango.
+	- `backend/handlers/productos.go` agrega endpoint `GET /api/empresa/inventario/balance_bodegas` con validacion de fechas y filtros por bodega/rango.
+	- `backend/main.go` registra `/api/empresa/inventario/balance_bodegas` bajo permisos de inventario.
+	- `web/administrar_empresa/administrar_productos.html` agrega tabla `Balance por bodega` y contexto de neto acumulado sincronizado con filtros del kardex.
+	- Cobertura nueva en:
+		- `backend/handlers/productos_categorias_test.go`.
+		- `backend/db/productos_categorias_test.go`.
+- Validacion tecnica:
+	- `go test ./handlers ./db -count=1` (ok).
+	- `get_errors` sobre `web/administrar_empresa/administrar_productos.html` (ok).
+
+## 2026-04-04
+- Punto 5 (control de inventarios) — continuidad analitica con tendencia diaria.
+	- `backend/db/productos.go` agrega `InventarioTendenciaDia` y `GetInventarioTendenciaByEmpresa` para serie diaria por empresa con filtros por bodega/rango.
+	- `backend/handlers/productos.go` agrega endpoint `GET /api/empresa/inventario/tendencia` con validacion de fechas y ventana por `dias`.
+	- `backend/main.go` registra `/api/empresa/inventario/tendencia` bajo permisos de inventario.
+	- `web/administrar_empresa/administrar_productos.html` agrega tabla `Tendencia diaria inventario` y contexto de neto acumulado/eventos sincronizado con filtros del kardex.
+	- Cobertura nueva en:
+		- `backend/handlers/productos_categorias_test.go`.
+		- `backend/db/productos_categorias_test.go`.
+- Validacion tecnica:
+	- `go test ./handlers ./db -count=1` (ok).
+	- `get_errors` sobre `web/administrar_empresa/administrar_productos.html` (ok).
+
+## 2026-04-04
+- Punto 5 (control de inventarios) — continuidad operacional en panel de productos.
+	- `web/administrar_empresa/administrar_productos.html` agrega:
+		- bloque `Top productos críticos (déficit)` alimentado desde alertas de inventario,
+		- priorización de críticos por `sin_stock` y mayor déficit,
+		- acción `Preparar reposición` para precargar ajuste de inventario con producto, bodega y cantidad sugerida.
+- Validacion tecnica:
+	- `get_errors` sobre `web/administrar_empresa/administrar_productos.html` (ok).
+
+## 2026-04-04
+- Punto 5 (control de inventarios) — continuidad KPI operativo en panel de productos.
+	- `backend/db/productos.go` agrega `InventarioResumen` y `GetInventarioResumenByEmpresa` para consolidar existencias, alertas y movimientos por rango.
+	- `backend/handlers/productos.go` agrega endpoint `GET /api/empresa/inventario/resumen` con validacion de fechas `YYYY-MM-DD`.
+	- `backend/main.go` registra `/api/empresa/inventario/resumen` bajo permisos de inventario.
+	- `web/administrar_empresa/administrar_productos.html` agrega KPI visibles de inventario e integra consumo del resumen segun rango del kardex.
+	- Cobertura nueva en:
+		- `backend/handlers/productos_categorias_test.go`,
+		- `backend/db/productos_categorias_test.go`.
+- Validacion tecnica:
+	- `go test ./handlers ./db -count=1` (ok).
+	- `get_errors` sobre `web/administrar_empresa/administrar_productos.html` (ok).
+
+## 2026-04-04
+- Punto 5 (control de inventarios) — continuidad UI operativa en panel de productos.
+	- `web/administrar_empresa/administrar_productos.html` agrega:
+		- filtro por bodega para alertas de quiebre,
+		- filtros de kardex por bodega, tipo y rango de fechas,
+		- acciones `Filtrar` y `Limpiar` en ambos bloques de consulta.
+	- Se actualiza documentacion asociada en plan maestro y estructura tecnica.
+- Validacion tecnica:
+	- `get_errors` sobre `web/administrar_empresa/administrar_productos.html` (ok).
+
+## 2026-04-04
+- Punto 5 (control de inventarios) — inicio tecnico: kardex operativo + reglas de stock + alertas de quiebre por bodega.
+	- `backend/db/productos.go`:
+		- valida `stock_minimo/stock_maximo` en creacion y edicion de productos,
+		- agrega `GetAlertasQuiebreByEmpresa`,
+		- amplía `GetMovimientosByEmpresa` con filtros `bodega_id`, `tipo`, `desde`, `hasta`.
+	- `backend/handlers/productos.go`:
+		- nuevo endpoint `GET /api/empresa/inventario/alertas`,
+		- compatibilidad `action=alertas|alertas_quiebre|quiebre` en existencias,
+		- filtros de kardex + validacion de fechas `YYYY-MM-DD` en movimientos.
+	- `backend/main.go` registra `/api/empresa/inventario/alertas` bajo permisos de inventario.
+	- `web/administrar_empresa/administrar_productos.html` agrega tabla de alertas de quiebre por bodega.
+	- `documentos/descripcion_del_proyecto` actualiza la descripcion de inventario con alertas de quiebre y kardex filtrable.
+	- Cobertura nueva en:
+		- `backend/handlers/productos_categorias_test.go`,
+		- `backend/db/productos_categorias_test.go`.
+- Validacion tecnica:
+	- `runTests` en archivos de prueba modificados (ok).
+	- `go test ./handlers ./db -count=1` en `backend` (ok).
+
+## 2026-04-04
 - Punto 3 (permisos y seguridad) — continuidad operativa: catalogo frontend por rol + regresion endpoints sin wrapper.
 	- `web/js/administrar_empresa.js` agrega catalogo de permisos por enlace y aplica ocultamiento de opciones no autorizadas segun rol autenticado (`GET /me`).
 	- Se agrega fallback de navegacion en iframe cuando la ultima pagina guardada no es visible para el rol actual.

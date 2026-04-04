@@ -42,7 +42,7 @@ Sistema POS multiempresa con backend en Go y persistencia SQLite, orientado a op
 3) Operacion por empresa
 - Usuarios de empresa (alta, confirmacion, estado, primer ingreso).
 - Clientes.
-- Inventario: bodegas, productos, proveedores, servicios.
+- Inventario: bodegas, productos, proveedores, servicios, alertas de quiebre por bodega, kardex filtrable por bodega/tipo/rango de fechas, resumen KPI operativo por periodo, tendencia diaria por bodega/rango, balance por bodega en rango y reposicion guiada desde top de productos criticos.
 - Carritos de compra e items (incluye modo estaciones).
 - Finanzas y contabilidad: movimientos, periodos, cierres de caja, eventos contables y asientos canonicos por lote, con ejecucion manual y automatica configurable por politica de reintentos y conciliacion por periodo (eventos vs asientos).
 - Auditoria empresarial: trazabilidad de acciones criticas por modulo, usuario, request_id y resultado, con vista de consulta en panel empresa, filtros avanzados (`codigo_http`, `recurso_id`), exportacion CSV/JSON y retencion automatica programada.

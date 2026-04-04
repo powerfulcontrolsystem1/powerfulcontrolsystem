@@ -1,98 +1,311 @@
-2026/04/04 15:13:21 INFO: OAuth Google cargado desde DB (google.client_id, google.client_secret)
-2026/04/04 15:13:21 INFO: redirect OAuth cargado desde DB (google.redirect_url)
-2026/04/04 15:13:21 [asientos_worker] policy interval=15m0s batch=100 max_reintentos=5
-2026/04/04 15:13:21 index.html encontrado en ..\web\index.html
-2026/04/04 15:13:21 Servidor arrancado en :8080
-2026/04/04 15:13:21 metrics: stored cpu=80.93 mem=85.00% recv=768297370 sent=517805225
-2026/04/04 15:13:23 -> req_id=req-1775333603763288600-60cc3a2c269e empresa_id=0 GET /menu.js from ::1
-2026/04/04 15:13:23 -> req_id=req-1775333603765873800-69c4b8a73296 empresa_id=0 GET /estilos.css from ::1
-2026/04/04 15:13:23 <- req_id=req-1775333603763288600-60cc3a2c269e empresa_id=0 status=304 GET /menu.js dur_ms=88
-2026/04/04 15:13:23 <- req_id=req-1775333603765873800-69c4b8a73296 empresa_id=0 status=304 GET /estilos.css dur_ms=81
-2026/04/04 15:13:24 -> req_id=req-1775333604089205500-ca3643ecf517 empresa_id=6 GET /api/empresa/facturacion_electronica/pais_detectado?empresa_id=6&tz=America%2FBogota&lang=es-419 from ::1
-2026/04/04 15:13:24 <- req_id=req-1775333604089205500-ca3643ecf517 empresa_id=6 status=200 GET /api/empresa/facturacion_electronica/pais_detectado dur_ms=169
-2026/04/04 15:13:31 metrics: stored cpu=48.07 mem=87.00% recv=769370861 sent=519159057
-2026/04/04 15:13:36 -> req_id=req-1775333616595580300-e0d57e47c005 empresa_id=0 GET /login.html from ::1
-2026/04/04 15:13:36 <- req_id=req-1775333616595580300-e0d57e47c005 empresa_id=0 status=304 GET /login.html dur_ms=1
-2026/04/04 15:13:36 -> req_id=req-1775333616677231600-47c90bef93d8 empresa_id=0 GET /assets/estilos.css from ::1
-2026/04/04 15:13:36 -> req_id=req-1775333616678344900-f9ff2a9fec2f empresa_id=0 GET /js/login.js from ::1
-2026/04/04 15:13:36 <- req_id=req-1775333616677231600-47c90bef93d8 empresa_id=0 status=304 GET /assets/estilos.css dur_ms=1
-2026/04/04 15:13:36 <- req_id=req-1775333616678344900-f9ff2a9fec2f empresa_id=0 status=304 GET /js/login.js dur_ms=2
-2026/04/04 15:13:36 -> req_id=req-1775333616742584500-5378bd14a3d3 empresa_id=6 GET /api/empresa/facturacion_electronica/pais_detectado?empresa_id=6&tz=America%2FBogota&lang=es-419 from ::1
-2026/04/04 15:13:36 <- req_id=req-1775333616742584500-5378bd14a3d3 empresa_id=6 status=200 GET /api/empresa/facturacion_electronica/pais_detectado dur_ms=2
-2026/04/04 15:13:36 -> req_id=req-1775333616920766600-0d7ae94fe7e0 empresa_id=0 GET /auth/google/login?login_hint=powerfulcontrolsystem%40gmail.com from ::1
-2026/04/04 15:13:36 handleGoogleLogin: oauth redirect requested (client configured=true)
-2026/04/04 15:13:36 handleGoogleLogin: redirecting to OAuth provider
-2026/04/04 15:13:36 <- req_id=req-1775333616920766600-0d7ae94fe7e0 empresa_id=0 status=302 GET /auth/google/login dur_ms=2
-2026/04/04 15:13:37 -> req_id=req-1775333617275839100-3334adb23d75 empresa_id=0 GET /auth/google/callback?state=state-token&iss=https%3A%2F%2Faccounts.google.com&code=4%2F0Aci98E8wj9XQlgj7uEEFT6jRP7pUy30iGP-DjHpbDPG5WDL6xodqIUHt2HnoV6g6gxyxeg&scope=email+profile+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile+openid&authuser=1&prompt=none from ::1
-2026/04/04 15:13:38 <- req_id=req-1775333617275839100-3334adb23d75 empresa_id=0 status=302 GET /auth/google/callback dur_ms=912
-2026/04/04 15:13:38 -> req_id=req-1775333618196976900-207b41340577 empresa_id=0 GET /super_administrador.html from ::1
-2026/04/04 15:13:38 <- req_id=req-1775333618196976900-207b41340577 empresa_id=0 status=304 GET /super_administrador.html dur_ms=2
-2026/04/04 15:13:38 -> req_id=req-1775333618306560900-3d1ca33bdca5 empresa_id=0 GET /js/super_administrador.js from ::1
-2026/04/04 15:13:38 -> req_id=req-1775333618307196500-9cb473d39822 empresa_id=0 GET /super/licencias_resumen.html from ::1
-2026/04/04 15:13:38 <- req_id=req-1775333618306560900-3d1ca33bdca5 empresa_id=0 status=304 GET /js/super_administrador.js dur_ms=3
-2026/04/04 15:13:38 <- req_id=req-1775333618307196500-9cb473d39822 empresa_id=0 status=304 GET /super/licencias_resumen.html dur_ms=4
-2026/04/04 15:13:38 -> req_id=req-1775333618356953100-565bb498c698 empresa_id=0 GET /super/licencias_resumen.html from ::1
-2026/04/04 15:13:38 -> req_id=req-1775333618364121500-2489ee0bd5e8 empresa_id=6 GET /api/empresa/facturacion_electronica/pais_detectado?empresa_id=6&tz=America%2FBogota&lang=es-419 from ::1
-2026/04/04 15:13:38 -> req_id=req-1775333618364121500-19437dd69250 empresa_id=0 GET /me from ::1
-2026/04/04 15:13:38 <- req_id=req-1775333618364121500-2489ee0bd5e8 empresa_id=6 status=200 GET /api/empresa/facturacion_electronica/pais_detectado dur_ms=6
-2026/04/04 15:13:38 <- req_id=req-1775333618364121500-19437dd69250 empresa_id=0 status=200 GET /me dur_ms=6
-2026/04/04 15:13:38 <- req_id=req-1775333618356953100-565bb498c698 empresa_id=0 status=200 GET /super/licencias_resumen.html dur_ms=265
-2026/04/04 15:13:38 -> req_id=req-1775333618652293300-4367b80b11de empresa_id=0 GET /super/api/licencias?activo=1&con_empresa=1 from ::1
-2026/04/04 15:13:38 <- req_id=req-1775333618652293300-4367b80b11de empresa_id=0 status=200 GET /super/api/licencias dur_ms=1
-2026/04/04 15:13:41 metrics: stored cpu=50.00 mem=85.00% recv=770498243 sent=520454890
-2026/04/04 15:13:51 metrics: stored cpu=30.89 mem=84.00% recv=770886053 sent=521372026
-2026/04/04 15:13:53 -> req_id=req-1775333633851325500-9350249f09c8 empresa_id=0 GET /ayuda/ayuda.html from ::1
-2026/04/04 15:13:53 <- req_id=req-1775333633851325500-9350249f09c8 empresa_id=0 status=200 GET /ayuda/ayuda.html dur_ms=61
-2026/04/04 15:13:53 -> req_id=req-1775333633977889500-b8684c149815 empresa_id=6 GET /api/empresa/facturacion_electronica/pais_detectado?empresa_id=6&tz=America%2FBogota&lang=es-419 from ::1
-2026/04/04 15:13:53 <- req_id=req-1775333633977889500-b8684c149815 empresa_id=6 status=200 GET /api/empresa/facturacion_electronica/pais_detectado dur_ms=2
-2026/04/04 15:14:01 metrics: stored cpu=24.48 mem=85.00% recv=771982741 sent=522717061
-2026/04/04 15:14:11 metrics: stored cpu=22.53 mem=84.00% recv=773059366 sent=524393331
-2026/04/04 15:14:21 metrics: stored cpu=18.73 mem=85.00% recv=773471101 sent=525272201
-2026/04/04 15:14:31 metrics: stored cpu=19.95 mem=83.00% recv=773575647 sent=525288084
-2026/04/04 15:14:36 -> req_id=req-1775333676074288000-4ddbc0c85cea empresa_id=6 GET /api/empresa/facturacion_electronica/pais_detectado?empresa_id=6&tz=America%2FBogota&lang=es-419 from ::1
-2026/04/04 15:14:36 <- req_id=req-1775333676074288000-4ddbc0c85cea empresa_id=6 status=200 GET /api/empresa/facturacion_electronica/pais_detectado dur_ms=20
-2026/04/04 15:14:37 -> req_id=req-1775333677530910200-5aa98de41e84 empresa_id=6 GET /api/empresa/facturacion_electronica/pais_detectado?empresa_id=6&tz=America%2FBogota&lang=es-419 from ::1
-2026/04/04 15:14:37 <- req_id=req-1775333677530910200-5aa98de41e84 empresa_id=6 status=200 GET /api/empresa/facturacion_electronica/pais_detectado dur_ms=1
-2026/04/04 15:14:37 -> req_id=req-1775333677773279900-e30b882353d0 empresa_id=0 GET /auth/google/login?login_hint=powerfulcontrolsystem%40gmail.com from ::1
-2026/04/04 15:14:37 handleGoogleLogin: oauth redirect requested (client configured=true)
-2026/04/04 15:14:37 handleGoogleLogin: redirecting to OAuth provider
-2026/04/04 15:14:37 <- req_id=req-1775333677773279900-e30b882353d0 empresa_id=0 status=302 GET /auth/google/login dur_ms=2
-2026/04/04 15:14:38 -> req_id=req-1775333678351642600-3722d3553189 empresa_id=0 GET /auth/google/callback?state=state-token&iss=https%3A%2F%2Faccounts.google.com&code=4%2F0Aci98E92sjzSnSvR9dE2D9r3vw8y3sQvQJskS_GaM5keSFBrJU8VTOUxhj6cLbU295r9cw&scope=email+profile+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+openid+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile&authuser=1&prompt=none from ::1
-2026/04/04 15:14:38 <- req_id=req-1775333678351642600-3722d3553189 empresa_id=0 status=302 GET /auth/google/callback dur_ms=471
-2026/04/04 15:14:38 -> req_id=req-1775333678956841200-6818ba46918e empresa_id=0 GET /super/api/licencias?activo=1&con_empresa=1 from ::1
-2026/04/04 15:14:38 <- req_id=req-1775333678956841200-6818ba46918e empresa_id=0 status=200 GET /super/api/licencias dur_ms=3
-2026/04/04 15:14:38 -> req_id=req-1775333678968680700-774890502483 empresa_id=0 GET /me from ::1
-2026/04/04 15:14:38 <- req_id=req-1775333678968680700-774890502483 empresa_id=0 status=200 GET /me dur_ms=4
-2026/04/04 15:14:38 -> req_id=req-1775333678985433500-61a1d1adbab4 empresa_id=6 GET /api/empresa/facturacion_electronica/pais_detectado?empresa_id=6&tz=America%2FBogota&lang=es-419 from ::1
-2026/04/04 15:14:38 <- req_id=req-1775333678985433500-61a1d1adbab4 empresa_id=6 status=200 GET /api/empresa/facturacion_electronica/pais_detectado dur_ms=3
-2026/04/04 15:14:39 -> req_id=req-1775333679003803700-2e96bc4b2222 empresa_id=0 GET /super/api/licencias?activo=1&con_empresa=1 from ::1
-2026/04/04 15:14:39 <- req_id=req-1775333679003803700-2e96bc4b2222 empresa_id=0 status=200 GET /super/api/licencias dur_ms=2
-2026/04/04 15:14:40 -> req_id=req-1775333680308950600-51a1f9658669 empresa_id=0 GET /seleccionar_empresa.html from ::1
-2026/04/04 15:14:40 <- req_id=req-1775333680308950600-51a1f9658669 empresa_id=0 status=304 GET /seleccionar_empresa.html dur_ms=1
-2026/04/04 15:14:40 -> req_id=req-1775333680403242900-8edc703b3b9b empresa_id=0 GET /js/seleccionar_empresa.js from ::1
-2026/04/04 15:14:40 <- req_id=req-1775333680403242900-8edc703b3b9b empresa_id=0 status=304 GET /js/seleccionar_empresa.js dur_ms=1
-2026/04/04 15:14:40 -> req_id=req-1775333680464958000-6feff71651df empresa_id=0 GET /me from ::1
-2026/04/04 15:14:40 <- req_id=req-1775333680464958000-6feff71651df empresa_id=0 status=200 GET /me dur_ms=1
-2026/04/04 15:14:40 -> req_id=req-1775333680508687600-14f10356684d empresa_id=6 GET /api/empresa/facturacion_electronica/pais_detectado?empresa_id=6&tz=America%2FBogota&lang=es-419 from ::1
-2026/04/04 15:14:40 <- req_id=req-1775333680508687600-14f10356684d empresa_id=6 status=200 GET /api/empresa/facturacion_electronica/pais_detectado dur_ms=2
-2026/04/04 15:14:40 -> req_id=req-1775333680558293700-ea574dee6874 empresa_id=0 GET /super/api/empresas from ::1
-2026/04/04 15:14:40 <- req_id=req-1775333680558293700-ea574dee6874 empresa_id=0 status=200 GET /super/api/empresas dur_ms=1
-2026/04/04 15:14:40 -> req_id=req-1775333680562721500-2cd861148c77 empresa_id=0 GET /super/api/tipos_empresas from ::1
-2026/04/04 15:14:40 -> req_id=req-1775333680565310600-71301604a4d6 empresa_id=0 GET /super/api/licencias?scope=mine&con_empresa=1&activo=1 from ::1
-2026/04/04 15:14:40 <- req_id=req-1775333680562721500-2cd861148c77 empresa_id=0 status=200 GET /super/api/tipos_empresas dur_ms=3
-2026/04/04 15:14:40 <- req_id=req-1775333680565310600-71301604a4d6 empresa_id=0 status=200 GET /super/api/licencias dur_ms=2
-2026/04/04 15:14:41 metrics: stored cpu=30.39 mem=86.00% recv=774371014 sent=525848732
-2026/04/04 15:14:41 -> req_id=req-1775333681951229000-15298279622c empresa_id=0 GET /administrar_empresa.html?id=6 from ::1
-2026/04/04 15:14:41 <- req_id=req-1775333681951229000-15298279622c empresa_id=0 status=200 GET /administrar_empresa.html dur_ms=3
-2026/04/04 15:14:42 -> req_id=req-1775333682045187100-189ebc101ed7 empresa_id=0 GET /js/administrar_empresa.js from ::1
-2026/04/04 15:14:42 <- req_id=req-1775333682045187100-189ebc101ed7 empresa_id=0 status=200 GET /js/administrar_empresa.js dur_ms=2
-2026/04/04 15:14:42 -> req_id=req-1775333682076859200-4b827acaf1bf empresa_id=0 GET /me from ::1
-2026/04/04 15:14:42 <- req_id=req-1775333682076859200-4b827acaf1bf empresa_id=0 status=200 GET /me dur_ms=3
-2026/04/04 15:14:42 -> req_id=req-1775333682089832300-9fcb5d1997d9 empresa_id=6 GET /api/empresa/facturacion_electronica/pais_detectado?empresa_id=6&tz=America%2FBogota&lang=es-419 from ::1
-2026/04/04 15:14:42 <- req_id=req-1775333682089832300-9fcb5d1997d9 empresa_id=6 status=200 GET /api/empresa/facturacion_electronica/pais_detectado dur_ms=5
-2026/04/04 15:14:42 -> req_id=req-1775333682129590800-5747e0c21055 empresa_id=6 GET /administrar_empresa/inicio.html?empresa_id=6 from ::1
-2026/04/04 15:14:42 -> req_id=req-1775333682129590800-7e1db886aa5b empresa_id=0 GET /super/api/empresas?id=6 from ::1
-2026/04/04 15:14:42 <- req_id=req-1775333682129590800-5747e0c21055 empresa_id=6 status=304 GET /administrar_empresa/inicio.html dur_ms=2
-2026/04/04 15:14:42 <- req_id=req-1775333682129590800-7e1db886aa5b empresa_id=0 status=200 GET /super/api/empresas dur_ms=2
-2026/04/04 15:14:42 -> req_id=req-1775333682163268200-e1563c5d9a5f empresa_id=0 GET /super/api/empresas?id=6 from ::1
-2026/04/04 15:14:42 <- req_id=req-1775333682163268200-e1563c5d9a5f empresa_id=0 status=200 GET /super/api/empresas dur_ms=1
+2026/04/04 16:44:08 INFO: OAuth Google cargado desde DB (google.client_id, google.client_secret)
+2026/04/04 16:44:08 INFO: redirect OAuth cargado desde DB (google.redirect_url)
+2026/04/04 16:44:08 [asientos_worker] policy interval=15m0s batch=100 max_reintentos=5
+2026/04/04 16:44:08 index.html encontrado en ..\web\index.html
+2026/04/04 16:44:08 Servidor arrancado en :8080
+2026/04/04 16:44:08 metrics: stored cpu=34.84 mem=80.00% recv=897244625 sent=919151844
+2026/04/04 16:44:10 -> req_id=req-1775339050700507800-a87c616252c4 empresa_id=6 GET /api/empresa/facturacion_electronica/pais_detectado?empresa_id=6&tz=America%2FBogota&lang=es-419 from ::1
+2026/04/04 16:44:10 <- req_id=req-1775339050700507800-a87c616252c4 empresa_id=6 status=200 GET /api/empresa/facturacion_electronica/pais_detectado dur_ms=43
+2026/04/04 16:44:12 -> req_id=req-1775339052267186900-5b1f8f0c1286 empresa_id=6 GET /api/empresa/facturacion_electronica/pais_detectado?empresa_id=6&tz=America%2FBogota&lang=es-419 from ::1
+2026/04/04 16:44:12 <- req_id=req-1775339052267186900-5b1f8f0c1286 empresa_id=6 status=200 GET /api/empresa/facturacion_electronica/pais_detectado dur_ms=1
+2026/04/04 16:44:12 -> req_id=req-1775339052499387200-02c8fcf09816 empresa_id=0 GET /auth/google/login?login_hint=powerfulcontrolsystem%40gmail.com from ::1
+2026/04/04 16:44:12 handleGoogleLogin: oauth redirect requested (client configured=true)
+2026/04/04 16:44:12 handleGoogleLogin: redirecting to OAuth provider
+2026/04/04 16:44:12 <- req_id=req-1775339052499387200-02c8fcf09816 empresa_id=0 status=302 GET /auth/google/login dur_ms=39
+2026/04/04 16:44:12 -> req_id=req-1775339052925669000-768850efc2a0 empresa_id=0 GET /auth/google/callback?state=state-token&iss=https%3A%2F%2Faccounts.google.com&code=4%2F0Aci98E9nadCKBWfaClHTP__HRJCCoYmHoFX4DlPg7_vNTaA06UHfixg4Q6V8Q9tdb4TSuw&scope=email+profile+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile+openid&authuser=1&prompt=none from ::1
+2026/04/04 16:44:13 <- req_id=req-1775339052925669000-768850efc2a0 empresa_id=0 status=302 GET /auth/google/callback dur_ms=854
+2026/04/04 16:44:13 -> req_id=req-1775339053914639300-21f9bea7c0ab empresa_id=0 GET /me from ::1
+2026/04/04 16:44:13 -> req_id=req-1775339053915152300-e244aa61d997 empresa_id=6 GET /api/empresa/facturacion_electronica/pais_detectado?empresa_id=6&tz=America%2FBogota&lang=es-419 from ::1
+2026/04/04 16:44:13 <- req_id=req-1775339053914639300-21f9bea7c0ab empresa_id=0 status=200 GET /me dur_ms=2
+2026/04/04 16:44:13 <- req_id=req-1775339053915152300-e244aa61d997 empresa_id=6 status=200 GET /api/empresa/facturacion_electronica/pais_detectado dur_ms=2
+2026/04/04 16:44:13 -> req_id=req-1775339053936145400-f180a0f300db empresa_id=0 GET /super/api/licencias?activo=1&con_empresa=1 from ::1
+2026/04/04 16:44:13 <- req_id=req-1775339053936145400-f180a0f300db empresa_id=0 status=200 GET /super/api/licencias dur_ms=1
+2026/04/04 16:44:15 -> req_id=req-1775339055915415200-cc4032a0e890 empresa_id=0 GET /me from ::1
+2026/04/04 16:44:15 <- req_id=req-1775339055915415200-cc4032a0e890 empresa_id=0 status=200 GET /me dur_ms=2
+2026/04/04 16:44:15 -> req_id=req-1775339055949011500-482eb6de599e empresa_id=6 GET /api/empresa/facturacion_electronica/pais_detectado?empresa_id=6&tz=America%2FBogota&lang=es-419 from ::1
+2026/04/04 16:44:15 <- req_id=req-1775339055949011500-482eb6de599e empresa_id=6 status=200 GET /api/empresa/facturacion_electronica/pais_detectado dur_ms=1
+2026/04/04 16:44:15 -> req_id=req-1775339055985269600-b9a583ea20ab empresa_id=0 GET /super/api/empresas from ::1
+2026/04/04 16:44:15 -> req_id=req-1775339055985269600-ac51da9200eb empresa_id=0 GET /super/api/tipos_empresas from ::1
+2026/04/04 16:44:15 -> req_id=req-1775339055986340800-89a6d7b1c492 empresa_id=0 GET /super/api/licencias?scope=mine&con_empresa=1&activo=1 from ::1
+2026/04/04 16:44:15 <- req_id=req-1775339055985269600-b9a583ea20ab empresa_id=0 status=200 GET /super/api/empresas dur_ms=1
+2026/04/04 16:44:15 <- req_id=req-1775339055985269600-ac51da9200eb empresa_id=0 status=200 GET /super/api/tipos_empresas dur_ms=2
+2026/04/04 16:44:15 <- req_id=req-1775339055986340800-89a6d7b1c492 empresa_id=0 status=200 GET /super/api/licencias dur_ms=2
+2026/04/04 16:44:17 -> req_id=req-1775339057376569200-1254e536a58a empresa_id=0 GET /administrar_empresa.html?id=6 from ::1
+2026/04/04 16:44:17 <- req_id=req-1775339057376569200-1254e536a58a empresa_id=0 status=304 GET /administrar_empresa.html dur_ms=1
+2026/04/04 16:44:17 -> req_id=req-1775339057438342700-59e44e05e6b9 empresa_id=0 GET /js/administrar_empresa.js from ::1
+2026/04/04 16:44:17 <- req_id=req-1775339057438342700-59e44e05e6b9 empresa_id=0 status=304 GET /js/administrar_empresa.js dur_ms=3
+2026/04/04 16:44:17 -> req_id=req-1775339057468182300-9de0daa6907c empresa_id=0 GET /me from ::1
+2026/04/04 16:44:17 <- req_id=req-1775339057468182300-9de0daa6907c empresa_id=0 status=200 GET /me dur_ms=4
+2026/04/04 16:44:17 -> req_id=req-1775339057483215200-c9f336901ea5 empresa_id=6 GET /api/empresa/facturacion_electronica/pais_detectado?empresa_id=6&tz=America%2FBogota&lang=es-419 from ::1
+2026/04/04 16:44:17 <- req_id=req-1775339057483215200-c9f336901ea5 empresa_id=6 status=200 GET /api/empresa/facturacion_electronica/pais_detectado dur_ms=3
+2026/04/04 16:44:17 -> req_id=req-1775339057517744200-671af9669e2c empresa_id=0 GET /super/api/empresas?id=6 from ::1
+2026/04/04 16:44:17 <- req_id=req-1775339057517744200-671af9669e2c empresa_id=0 status=200 GET /super/api/empresas dur_ms=1
+2026/04/04 16:44:17 -> req_id=req-1775339057539554200-40b3b1737b2c empresa_id=0 GET /super/api/empresas?id=6 from ::1
+2026/04/04 16:44:17 <- req_id=req-1775339057539554200-40b3b1737b2c empresa_id=0 status=200 GET /super/api/empresas dur_ms=1
+2026/04/04 16:44:18 metrics: stored cpu=11.84 mem=83.00% recv=897306289 sent=919206649
+2026/04/04 16:44:20 -> req_id=req-1775339060167133600-649ef0ac6477 empresa_id=0 GET /administrar_empresa.html?id=6 from ::1
+2026/04/04 16:44:20 <- req_id=req-1775339060167133600-649ef0ac6477 empresa_id=0 status=200 GET /administrar_empresa.html dur_ms=165
+2026/04/04 16:44:20 -> req_id=req-1775339060397646100-a3d705f750c7 empresa_id=0 GET /estilos.css from ::1
+2026/04/04 16:44:20 -> req_id=req-1775339060398753300-182ab6204bce empresa_id=0 GET /menu.js from ::1
+2026/04/04 16:44:20 -> req_id=req-1775339060398753300-fa9b8785a965 empresa_id=0 GET /img/company-briefcase.svg from ::1
+2026/04/04 16:44:20 -> req_id=req-1775339060398753300-9d70cd33ad71 empresa_id=0 GET /img/analytics.svg from ::1
+2026/04/04 16:44:20 <- req_id=req-1775339060398753300-fa9b8785a965 empresa_id=0 status=200 GET /img/company-briefcase.svg dur_ms=2
+2026/04/04 16:44:20 <- req_id=req-1775339060398753300-9d70cd33ad71 empresa_id=0 status=200 GET /img/analytics.svg dur_ms=3
+2026/04/04 16:44:20 -> req_id=req-1775339060409788900-970af3aac4d2 empresa_id=0 GET /img/shield-license.svg from ::1
+2026/04/04 16:44:20 -> req_id=req-1775339060410353600-d95d23ee5d6d empresa_id=0 GET /img/network.svg from ::1
+2026/04/04 16:44:20 <- req_id=req-1775339060409788900-970af3aac4d2 empresa_id=0 status=200 GET /img/shield-license.svg dur_ms=0
+2026/04/04 16:44:20 <- req_id=req-1775339060410353600-d95d23ee5d6d empresa_id=0 status=200 GET /img/network.svg dur_ms=0
+2026/04/04 16:44:20 -> req_id=req-1775339060417284500-7d8884981627 empresa_id=0 GET /js/administrar_empresa.js from ::1
+2026/04/04 16:44:20 <- req_id=req-1775339060398753300-182ab6204bce empresa_id=0 status=200 GET /menu.js dur_ms=87
+2026/04/04 16:44:20 <- req_id=req-1775339060417284500-7d8884981627 empresa_id=0 status=200 GET /js/administrar_empresa.js dur_ms=80
+2026/04/04 16:44:20 -> req_id=req-1775339060503438100-e47b544b05bc empresa_id=0 GET /img/user-avatar.svg from ::1
+2026/04/04 16:44:20 <- req_id=req-1775339060503438100-e47b544b05bc empresa_id=0 status=200 GET /img/user-avatar.svg dur_ms=1
+2026/04/04 16:44:20 <- req_id=req-1775339060397646100-a3d705f750c7 empresa_id=0 status=200 GET /estilos.css dur_ms=171
+2026/04/04 16:44:20 -> req_id=req-1775339060594403500-9af07bcea5df empresa_id=0 GET /me from ::1
+2026/04/04 16:44:20 <- req_id=req-1775339060594403500-9af07bcea5df empresa_id=0 status=200 GET /me dur_ms=2
+2026/04/04 16:44:20 -> req_id=req-1775339060601794100-f3892580a131 empresa_id=6 GET /api/empresa/facturacion_electronica/pais_detectado?empresa_id=6&tz=America%2FBogota&lang=es-419 from ::1
+2026/04/04 16:44:20 <- req_id=req-1775339060601794100-f3892580a131 empresa_id=6 status=200 GET /api/empresa/facturacion_electronica/pais_detectado dur_ms=3
+2026/04/04 16:44:20 -> req_id=req-1775339060628620600-1ea495360a81 empresa_id=0 GET /favicon.ico from ::1
+2026/04/04 16:44:20 <- req_id=req-1775339060628620600-1ea495360a81 empresa_id=0 status=404 GET /favicon.ico dur_ms=1
+2026/04/04 16:44:20 -> req_id=req-1775339060633852900-e344d22bcf33 empresa_id=0 GET /super/api/empresas?id=6 from ::1
+2026/04/04 16:44:20 <- req_id=req-1775339060633852900-e344d22bcf33 empresa_id=0 status=200 GET /super/api/empresas dur_ms=2
+2026/04/04 16:44:20 -> req_id=req-1775339060660150500-29a96d0856c3 empresa_id=0 GET /super/api/empresas?id=6 from ::1
+2026/04/04 16:44:20 <- req_id=req-1775339060660150500-29a96d0856c3 empresa_id=0 status=200 GET /super/api/empresas dur_ms=2
+2026/04/04 16:44:22 -> req_id=req-1775339062757039200-c5204f4d103c empresa_id=6 GET /administrar_empresa/ventas.html?empresa_id=6 from ::1
+2026/04/04 16:44:22 <- req_id=req-1775339062757039200-c5204f4d103c empresa_id=6 status=304 GET /administrar_empresa/ventas.html dur_ms=1
+2026/04/04 16:44:25 -> req_id=req-1775339065956610000-31ce3234f223 empresa_id=6 GET /administrar_empresa/carrito_de_compras.html?empresa_id=6 from ::1
+2026/04/04 16:44:25 <- req_id=req-1775339065956610000-31ce3234f223 empresa_id=6 status=304 GET /administrar_empresa/carrito_de_compras.html dur_ms=1
+2026/04/04 16:44:25 -> req_id=req-1775339065989498500-dff1d23aa921 empresa_id=0 GET /super/api/empresas?id=6 from ::1
+2026/04/04 16:44:25 <- req_id=req-1775339065989498500-dff1d23aa921 empresa_id=0 status=200 GET /super/api/empresas dur_ms=1
+2026/04/04 16:44:26 -> req_id=req-1775339066039292300-45bc249ae987 empresa_id=6 GET /api/empresa/clientes?empresa_id=6 from ::1
+2026/04/04 16:44:26 <- req_id=req-1775339066039292300-45bc249ae987 empresa_id=6 status=200 GET /api/empresa/clientes dur_ms=2
+2026/04/04 16:44:26 -> req_id=req-1775339066051630200-7fa32709f18d empresa_id=6 GET /api/empresa/carritos_compra?empresa_id=6&include_inactive=1 from ::1
+2026/04/04 16:44:26 <- req_id=req-1775339066051630200-7fa32709f18d empresa_id=6 status=200 GET /api/empresa/carritos_compra dur_ms=2
+2026/04/04 16:44:28 metrics: stored cpu=7.52 mem=83.00% recv=897320302 sent=919219321
+2026/04/04 16:44:30 -> req_id=req-1775339070909274500-62e7bcd55ae7 empresa_id=6 GET /administrar_empresa/administrar_productos.html?empresa_id=6 from ::1
+2026/04/04 16:44:30 <- req_id=req-1775339070909274500-62e7bcd55ae7 empresa_id=6 status=200 GET /administrar_empresa/administrar_productos.html dur_ms=1
+2026/04/04 16:44:30 -> req_id=req-1775339070945584600-cf3cdd251586 empresa_id=0 GET /super/api/empresas?id=6 from ::1
+2026/04/04 16:44:30 <- req_id=req-1775339070945584600-cf3cdd251586 empresa_id=0 status=200 GET /super/api/empresas dur_ms=1
+2026/04/04 16:44:30 -> req_id=req-1775339070993491200-b3bcc38b5166 empresa_id=6 GET /api/empresa/proveedores?empresa_id=6&include_inactive=1 from ::1
+2026/04/04 16:44:30 <- req_id=req-1775339070993491200-b3bcc38b5166 empresa_id=6 status=200 GET /api/empresa/proveedores dur_ms=1
+2026/04/04 16:44:31 -> req_id=req-1775339071014276700-f70bd45bed16 empresa_id=6 GET /api/empresa/bodegas?empresa_id=6&include_inactive=1 from ::1
+2026/04/04 16:44:31 <- req_id=req-1775339071014276700-f70bd45bed16 empresa_id=6 status=200 GET /api/empresa/bodegas dur_ms=2
+2026/04/04 16:44:31 -> req_id=req-1775339071026688000-d83a9b6efb7d empresa_id=6 GET /api/empresa/categorias_productos?empresa_id=6&include_inactive=1 from ::1
+2026/04/04 16:44:31 <- req_id=req-1775339071026688000-d83a9b6efb7d empresa_id=6 status=200 GET /api/empresa/categorias_productos dur_ms=31
+2026/04/04 16:44:31 -> req_id=req-1775339071077980600-1300e8cde1d4 empresa_id=6 GET /api/empresa/productos?empresa_id=6 from ::1
+2026/04/04 16:44:31 <- req_id=req-1775339071077980600-1300e8cde1d4 empresa_id=6 status=200 GET /api/empresa/productos dur_ms=6
+2026/04/04 16:44:31 -> req_id=req-1775339071103862000-095c8b980c79 empresa_id=6 GET /api/empresa/servicios?empresa_id=6 from ::1
+2026/04/04 16:44:31 <- req_id=req-1775339071103862000-095c8b980c79 empresa_id=6 status=200 GET /api/empresa/servicios dur_ms=2
+2026/04/04 16:44:31 -> req_id=req-1775339071130085400-0825ba3e0e8c empresa_id=6 GET /api/empresa/inventario/existencias?empresa_id=6&limit=300 from ::1
+2026/04/04 16:44:31 <- req_id=req-1775339071130085400-0825ba3e0e8c empresa_id=6 status=200 GET /api/empresa/inventario/existencias dur_ms=2
+2026/04/04 16:44:31 -> req_id=req-1775339071134900900-32fc86186492 empresa_id=6 GET /api/empresa/inventario/alertas?empresa_id=6&limit=200 from ::1
+2026/04/04 16:44:31 <- req_id=req-1775339071134900900-32fc86186492 empresa_id=6 status=200 GET /api/empresa/inventario/alertas dur_ms=2
+2026/04/04 16:44:31 -> req_id=req-1775339071155478800-31d602f663f6 empresa_id=6 GET /api/empresa/inventario/resumen?empresa_id=6 from ::1
+2026/04/04 16:44:31 <- req_id=req-1775339071155478800-31d602f663f6 empresa_id=6 status=200 GET /api/empresa/inventario/resumen dur_ms=3
+2026/04/04 16:44:31 -> req_id=req-1775339071171501300-a179c463e81f empresa_id=6 GET /api/empresa/inventario/movimientos?empresa_id=6&limit=100 from ::1
+2026/04/04 16:44:31 <- req_id=req-1775339071171501300-a179c463e81f empresa_id=6 status=200 GET /api/empresa/inventario/movimientos dur_ms=2
+2026/04/04 16:44:31 -> req_id=req-1775339071197376600-c964bdb9943d empresa_id=6 GET /api/empresa/inventario/tendencia?empresa_id=6&dias=7 from ::1
+2026/04/04 16:44:31 <- req_id=req-1775339071197376600-c964bdb9943d empresa_id=6 status=200 GET /api/empresa/inventario/tendencia dur_ms=2
+2026/04/04 16:44:31 -> req_id=req-1775339071211394000-871599860dc5 empresa_id=6 GET /api/empresa/inventario/balance_bodegas?empresa_id=6&dias=7 from ::1
+2026/04/04 16:44:31 <- req_id=req-1775339071211394000-871599860dc5 empresa_id=6 status=200 GET /api/empresa/inventario/balance_bodegas dur_ms=3
+2026/04/04 16:44:31 -> req_id=req-1775339071216893500-37d2be4f5cdd empresa_id=6 GET /api/empresa/productos/precios_historial?empresa_id=6&limit=200 from ::1
+2026/04/04 16:44:31 <- req_id=req-1775339071216893500-37d2be4f5cdd empresa_id=6 status=200 GET /api/empresa/productos/precios_historial dur_ms=96
+2026/04/04 16:44:34 -> req_id=req-1775339074223633100-1f6a7e53a890 empresa_id=6 GET /administrar_empresa/configuracion.html?empresa_id=6 from ::1
+2026/04/04 16:44:34 <- req_id=req-1775339074223633100-1f6a7e53a890 empresa_id=6 status=304 GET /administrar_empresa/configuracion.html dur_ms=3
+2026/04/04 16:44:34 -> req_id=req-1775339074263350700-07552bcf38e0 empresa_id=0 GET /super/api/empresas?id=6 from ::1
+2026/04/04 16:44:34 -> req_id=req-1775339074263350700-a9c9b31fc47d empresa_id=6 GET /api/empresa/configuracion_avanzada?empresa_id=6 from ::1
+2026/04/04 16:44:34 <- req_id=req-1775339074263350700-07552bcf38e0 empresa_id=0 status=200 GET /super/api/empresas dur_ms=2
+2026/04/04 16:44:34 <- req_id=req-1775339074263350700-a9c9b31fc47d empresa_id=6 status=200 GET /api/empresa/configuracion_avanzada dur_ms=3
+2026/04/04 16:44:37 -> req_id=req-1775339077429766100-78552866a3b6 empresa_id=6 GET /administrar_empresa/administrar_usuarios.html?empresa_id=6 from ::1
+2026/04/04 16:44:37 <- req_id=req-1775339077429766100-78552866a3b6 empresa_id=6 status=304 GET /administrar_empresa/administrar_usuarios.html dur_ms=1
+2026/04/04 16:44:37 -> req_id=req-1775339077455117900-0a01a1d4dda8 empresa_id=0 GET /super/api/empresas?id=6 from ::1
+2026/04/04 16:44:37 <- req_id=req-1775339077455117900-0a01a1d4dda8 empresa_id=0 status=200 GET /super/api/empresas dur_ms=1
+2026/04/04 16:44:37 -> req_id=req-1775339077479183100-29a2b652788b empresa_id=6 GET /api/empresa/usuarios?empresa_id=6&include_inactive=1 from ::1
+2026/04/04 16:44:37 -> req_id=req-1775339077479183100-fe07db8d6dbb empresa_id=6 GET /api/empresa/roles_de_usuario?empresa_id=6 from ::1
+2026/04/04 16:44:37 <- req_id=req-1775339077479183100-29a2b652788b empresa_id=6 status=200 GET /api/empresa/usuarios dur_ms=3
+2026/04/04 16:44:37 <- req_id=req-1775339077479183100-fe07db8d6dbb empresa_id=6 status=200 GET /api/empresa/roles_de_usuario dur_ms=34
+2026/04/04 16:44:38 metrics: stored cpu=8.98 mem=84.00% recv=897344225 sent=919242471
+2026/04/04 16:44:39 -> req_id=req-1775339079788276300-7bfe6cc17515 empresa_id=0 GET /super/api/empresas?id=6 from ::1
+2026/04/04 16:44:39 -> req_id=req-1775339079788276300-a9635993e164 empresa_id=6 GET /api/empresa/configuracion_avanzada?empresa_id=6 from ::1
+2026/04/04 16:44:39 <- req_id=req-1775339079788276300-7bfe6cc17515 empresa_id=0 status=200 GET /super/api/empresas dur_ms=2
+2026/04/04 16:44:39 <- req_id=req-1775339079788276300-a9635993e164 empresa_id=6 status=200 GET /api/empresa/configuracion_avanzada dur_ms=3
+2026/04/04 16:44:41 -> req_id=req-1775339081302099200-4c43159d2349 empresa_id=0 GET /super/api/empresas?id=6 from ::1
+2026/04/04 16:44:41 <- req_id=req-1775339081302099200-4c43159d2349 empresa_id=0 status=200 GET /super/api/empresas dur_ms=2
+2026/04/04 16:44:41 -> req_id=req-1775339081321526600-a64d3bcb78ac empresa_id=6 GET /api/empresa/roles_de_usuario?empresa_id=6 from ::1
+2026/04/04 16:44:41 -> req_id=req-1775339081321526600-488bdefb4bab empresa_id=6 GET /api/empresa/usuarios?empresa_id=6&include_inactive=1 from ::1
+2026/04/04 16:44:41 <- req_id=req-1775339081321526600-a64d3bcb78ac empresa_id=6 status=200 GET /api/empresa/roles_de_usuario dur_ms=2
+2026/04/04 16:44:41 <- req_id=req-1775339081321526600-488bdefb4bab empresa_id=6 status=200 GET /api/empresa/usuarios dur_ms=2
+2026/04/04 16:44:43 -> req_id=req-1775339083531877900-d38d6d19fdc8 empresa_id=6 GET /administrar_empresa/auditoria.html?empresa_id=6 from ::1
+2026/04/04 16:44:43 <- req_id=req-1775339083531877900-d38d6d19fdc8 empresa_id=6 status=200 GET /administrar_empresa/auditoria.html dur_ms=50
+2026/04/04 16:44:43 -> req_id=req-1775339083608699100-a0fa7988ee39 empresa_id=0 GET /super/api/empresas?id=6 from ::1
+2026/04/04 16:44:43 <- req_id=req-1775339083608699100-a0fa7988ee39 empresa_id=0 status=200 GET /super/api/empresas dur_ms=3
+2026/04/04 16:44:43 -> req_id=req-1775339083642110500-6b50b17213f7 empresa_id=6 GET /api/empresa/auditoria/eventos?empresa_id=6&limit=200&desde=2026-03-28+00%3A00%3A00&hasta=2026-04-04+23%3A59%3A59 from ::1
+2026/04/04 16:44:43 <- req_id=req-1775339083642110500-6b50b17213f7 empresa_id=6 status=200 GET /api/empresa/auditoria/eventos dur_ms=34
+2026/04/04 16:44:48 metrics: stored cpu=4.22 mem=83.00% recv=897365765 sent=919272283
+2026/04/04 16:44:58 -> req_id=req-1775339098008038600-91f9dabb4184 empresa_id=6 GET /administrar_empresa/chat_y_tareas.html?empresa_id=6 from ::1
+2026/04/04 16:44:58 <- req_id=req-1775339098008038600-91f9dabb4184 empresa_id=6 status=304 GET /administrar_empresa/chat_y_tareas.html dur_ms=2
+2026/04/04 16:44:58 -> req_id=req-1775339098049459900-02918fefd481 empresa_id=0 GET /super/api/empresas?id=6 from ::1
+2026/04/04 16:44:58 -> req_id=req-1775339098049459900-acefd3cca2ab empresa_id=0 GET /me from ::1
+2026/04/04 16:44:58 -> req_id=req-1775339098050427700-02d28ff9dbc9 empresa_id=6 GET /api/empresa/usuarios?empresa_id=6&include_inactive=1 from ::1
+2026/04/04 16:44:58 <- req_id=req-1775339098049459900-02918fefd481 empresa_id=0 status=200 GET /super/api/empresas dur_ms=3
+2026/04/04 16:44:58 <- req_id=req-1775339098049459900-acefd3cca2ab empresa_id=0 status=200 GET /me dur_ms=4
+2026/04/04 16:44:58 <- req_id=req-1775339098050427700-02d28ff9dbc9 empresa_id=6 status=200 GET /api/empresa/usuarios dur_ms=4
+2026/04/04 16:44:58 -> req_id=req-1775339098092591300-01ac62c0f97e empresa_id=6 GET /api/empresa/chat_tareas/conversaciones?empresa_id=6&include_inactive=1 from ::1
+2026/04/04 16:44:58 <- req_id=req-1775339098092591300-01ac62c0f97e empresa_id=6 status=200 GET /api/empresa/chat_tareas/conversaciones dur_ms=31
+2026/04/04 16:44:58 -> req_id=req-1775339098133538300-2f060f83cc84 empresa_id=6 GET /api/empresa/chat_tareas/tareas?empresa_id=6&include_inactive=1 from ::1
+2026/04/04 16:44:58 <- req_id=req-1775339098133538300-2f060f83cc84 empresa_id=6 status=200 GET /api/empresa/chat_tareas/tareas dur_ms=3
+2026/04/04 16:44:58 metrics: stored cpu=4.88 mem=84.00% recv=897377289 sent=919277569
+2026/04/04 16:44:59 -> req_id=req-1775339099756626200-e3e51a3d0176 empresa_id=6 GET /administrar_empresa/administrar_clientes.html?empresa_id=6 from ::1
+2026/04/04 16:44:59 <- req_id=req-1775339099756626200-e3e51a3d0176 empresa_id=6 status=304 GET /administrar_empresa/administrar_clientes.html dur_ms=24
+2026/04/04 16:44:59 -> req_id=req-1775339099804253200-4ee667cbff67 empresa_id=0 GET /super/api/empresas?id=6 from ::1
+2026/04/04 16:44:59 <- req_id=req-1775339099804253200-4ee667cbff67 empresa_id=0 status=200 GET /super/api/empresas dur_ms=1
+2026/04/04 16:44:59 -> req_id=req-1775339099827230100-5e41381fb697 empresa_id=6 GET /api/empresa/clientes?empresa_id=6&include_inactive=1 from ::1
+2026/04/04 16:44:59 <- req_id=req-1775339099827230100-5e41381fb697 empresa_id=6 status=200 GET /api/empresa/clientes dur_ms=2
+2026/04/04 16:45:04 -> req_id=req-1775339104557692800-1e1147fdd778 empresa_id=6 GET /administrar_empresa/configuracion_avanzada.html?empresa_id=6 from ::1
+2026/04/04 16:45:04 <- req_id=req-1775339104557692800-1e1147fdd778 empresa_id=6 status=304 GET /administrar_empresa/configuracion_avanzada.html dur_ms=2
+2026/04/04 16:45:04 -> req_id=req-1775339104596470500-481e612106f8 empresa_id=6 GET /api/empresa/configuracion_avanzada?empresa_id=6 from ::1
+2026/04/04 16:45:04 <- req_id=req-1775339104596470500-481e612106f8 empresa_id=6 status=200 GET /api/empresa/configuracion_avanzada dur_ms=1
+2026/04/04 16:45:04 -> req_id=req-1775339104626421400-63fd6bcf916f empresa_id=0 GET /super/api/empresas?id=6 from ::1
+2026/04/04 16:45:04 <- req_id=req-1775339104626421400-63fd6bcf916f empresa_id=0 status=200 GET /super/api/empresas dur_ms=2
+2026/04/04 16:45:08 metrics: stored cpu=5.76 mem=84.00% recv=897385463 sent=919281811
+2026/04/04 16:45:18 metrics: stored cpu=3.93 mem=84.00% recv=897398662 sent=919291995
+2026/04/04 16:45:21 -> req_id=req-1775339121015156600-8b5fdbe1c96f empresa_id=6 GET /administrar_empresa/facturacion_electronica.html?empresa_id=6 from ::1
+2026/04/04 16:45:21 <- req_id=req-1775339121015156600-8b5fdbe1c96f empresa_id=6 status=304 GET /administrar_empresa/facturacion_electronica.html dur_ms=2
+2026/04/04 16:45:21 -> req_id=req-1775339121056071000-ee0fb1e265a1 empresa_id=0 GET /super/api/empresas?id=6 from ::1
+2026/04/04 16:45:21 <- req_id=req-1775339121056071000-ee0fb1e265a1 empresa_id=0 status=200 GET /super/api/empresas dur_ms=4
+2026/04/04 16:45:21 -> req_id=req-1775339121103429200-2847b52f05e6 empresa_id=0 GET /api/empresa/facturacion_electronica/paises_disponibles from ::1
+2026/04/04 16:45:21 <- req_id=req-1775339121103429200-2847b52f05e6 empresa_id=0 status=200 GET /api/empresa/facturacion_electronica/paises_disponibles dur_ms=2
+2026/04/04 16:45:21 -> req_id=req-1775339121116280800-57b4ad32364e empresa_id=6 GET /api/empresa/facturacion_electronica/pais_detectado?empresa_id=6&tz=America%2FBogota&lang=es-419 from ::1
+2026/04/04 16:45:21 <- req_id=req-1775339121116280800-57b4ad32364e empresa_id=6 status=200 GET /api/empresa/facturacion_electronica/pais_detectado dur_ms=1
+2026/04/04 16:45:21 -> req_id=req-1775339121127979200-d4de5d630554 empresa_id=6 GET /api/empresa/facturacion_electronica?empresa_id=6&pais_codigo=CO from ::1
+2026/04/04 16:45:21 <- req_id=req-1775339121127979200-d4de5d630554 empresa_id=6 status=200 GET /api/empresa/facturacion_electronica dur_ms=32
+2026/04/04 16:45:21 -> req_id=req-1775339121175939000-26ee23a708ab empresa_id=6 GET /api/empresa/facturacion_electronica?empresa_id=6 from ::1
+2026/04/04 16:45:21 <- req_id=req-1775339121175939000-26ee23a708ab empresa_id=6 status=200 GET /api/empresa/facturacion_electronica dur_ms=2
+2026/04/04 16:45:26 -> req_id=req-1775339126533098800-40a4ec3e7cde empresa_id=6 GET /administrar_empresa/chat_con_inteligencia_artificial.html?empresa_id=6 from ::1
+2026/04/04 16:45:26 <- req_id=req-1775339126533098800-40a4ec3e7cde empresa_id=6 status=304 GET /administrar_empresa/chat_con_inteligencia_artificial.html dur_ms=2
+2026/04/04 16:45:26 -> req_id=req-1775339126596092600-fa9980ac917f empresa_id=0 GET /super/api/empresas?id=6 from ::1
+2026/04/04 16:45:26 <- req_id=req-1775339126596092600-fa9980ac917f empresa_id=0 status=200 GET /super/api/empresas dur_ms=1
+2026/04/04 16:45:26 -> req_id=req-1775339126611149200-022a7290db61 empresa_id=6 GET /api/empresa/chat_con_inteligencia_artificial/modelos?empresa_id=6 from ::1
+2026/04/04 16:45:26 <- req_id=req-1775339126611149200-022a7290db61 empresa_id=6 status=200 GET /api/empresa/chat_con_inteligencia_artificial/modelos dur_ms=64
+2026/04/04 16:45:26 -> req_id=req-1775339126677849900-306fa3c2c4dd empresa_id=6 GET /api/empresa/chat_con_inteligencia_artificial/historial?empresa_id=6&limit=20 from ::1
+2026/04/04 16:45:26 <- req_id=req-1775339126677849900-306fa3c2c4dd empresa_id=6 status=200 GET /api/empresa/chat_con_inteligencia_artificial/historial dur_ms=1
+2026/04/04 16:45:28 metrics: stored cpu=7.95 mem=82.00% recv=897416659 sent=919318663
+2026/04/04 16:45:29 -> req_id=req-1775339129744967500-f8cf2bd4eac2 empresa_id=6 GET /administrar_empresa/finanzas.html?empresa_id=6 from ::1
+2026/04/04 16:45:29 <- req_id=req-1775339129744967500-f8cf2bd4eac2 empresa_id=6 status=304 GET /administrar_empresa/finanzas.html dur_ms=2
+2026/04/04 16:45:29 -> req_id=req-1775339129786466200-11883de73c27 empresa_id=0 GET /super/api/empresas?id=6 from ::1
+2026/04/04 16:45:29 <- req_id=req-1775339129786466200-11883de73c27 empresa_id=0 status=200 GET /super/api/empresas dur_ms=1
+2026/04/04 16:45:29 -> req_id=req-1775339129818201400-1a828be9dad4 empresa_id=6 GET /api/empresa/finanzas/configuracion?empresa_id=6 from ::1
+2026/04/04 16:45:29 <- req_id=req-1775339129818201400-1a828be9dad4 empresa_id=6 status=200 GET /api/empresa/finanzas/configuracion dur_ms=47
+2026/04/04 16:45:29 -> req_id=req-1775339129876123800-f5b1fa0bdedc empresa_id=6 GET /api/empresa/finanzas/periodos?empresa_id=6 from ::1
+2026/04/04 16:45:29 <- req_id=req-1775339129876123800-f5b1fa0bdedc empresa_id=6 status=200 GET /api/empresa/finanzas/periodos dur_ms=49
+2026/04/04 16:45:29 -> req_id=req-1775339129936187000-caec4d0aa705 empresa_id=6 GET /api/empresa/finanzas/cierres_caja?empresa_id=6&limit=300&desde=2026-03-05&hasta=2026-04-04 from ::1
+2026/04/04 16:45:29 <- req_id=req-1775339129936187000-caec4d0aa705 empresa_id=6 status=200 GET /api/empresa/finanzas/cierres_caja dur_ms=46
+2026/04/04 16:45:29 -> req_id=req-1775339129994427900-7bcbee836fef empresa_id=6 GET /api/empresa/finanzas/movimientos?empresa_id=6&desde=2026-03-05&hasta=2026-04-04&periodo=2026-04&limit=500 from ::1
+2026/04/04 16:45:30 <- req_id=req-1775339129994427900-7bcbee836fef empresa_id=6 status=200 GET /api/empresa/finanzas/movimientos dur_ms=35
+2026/04/04 16:45:30 -> req_id=req-1775339130052706800-dbe86a2726a9 empresa_id=6 GET /api/empresa/finanzas/asientos_contables?action=conciliacion_periodo&empresa_id=6&desde=2026-03-05&hasta=2026-04-04&limit=24 from ::1
+2026/04/04 16:45:30 <- req_id=req-1775339130052706800-dbe86a2726a9 empresa_id=6 status=200 GET /api/empresa/finanzas/asientos_contables dur_ms=21
+2026/04/04 16:45:35 -> req_id=req-1775339135987779700-7310e3e6dcc8 empresa_id=0 GET /administrar_empresa.html?id=6 from ::1
+2026/04/04 16:45:35 <- req_id=req-1775339135987779700-7310e3e6dcc8 empresa_id=0 status=200 GET /administrar_empresa.html dur_ms=2
+2026/04/04 16:45:36 -> req_id=req-1775339136045249900-45ff78f99851 empresa_id=0 GET /estilos.css from ::1
+2026/04/04 16:45:36 -> req_id=req-1775339136045762300-b8ca183b35a6 empresa_id=0 GET /img/company-briefcase.svg from ::1
+2026/04/04 16:45:36 -> req_id=req-1775339136045249900-a00116664079 empresa_id=0 GET /menu.js from ::1
+2026/04/04 16:45:36 -> req_id=req-1775339136045762300-1b94328184c7 empresa_id=0 GET /img/analytics.svg from ::1
+2026/04/04 16:45:36 <- req_id=req-1775339136045249900-45ff78f99851 empresa_id=0 status=200 GET /estilos.css dur_ms=1
+2026/04/04 16:45:36 <- req_id=req-1775339136045762300-b8ca183b35a6 empresa_id=0 status=200 GET /img/company-briefcase.svg dur_ms=0
+2026/04/04 16:45:36 <- req_id=req-1775339136045249900-a00116664079 empresa_id=0 status=200 GET /menu.js dur_ms=1
+2026/04/04 16:45:36 <- req_id=req-1775339136045762300-1b94328184c7 empresa_id=0 status=200 GET /img/analytics.svg dur_ms=1
+2026/04/04 16:45:36 -> req_id=req-1775339136058354800-7efc1ea31cc5 empresa_id=0 GET /img/shield-license.svg from ::1
+2026/04/04 16:45:36 -> req_id=req-1775339136058354800-2a220cd1cc3f empresa_id=0 GET /img/network.svg from ::1
+2026/04/04 16:45:36 -> req_id=req-1775339136058354800-f20257d04259 empresa_id=0 GET /js/administrar_empresa.js from ::1
+2026/04/04 16:45:36 -> req_id=req-1775339136058354800-5025f0f538c7 empresa_id=0 GET /img/user-avatar.svg from ::1
+2026/04/04 16:45:36 <- req_id=req-1775339136058354800-7efc1ea31cc5 empresa_id=0 status=200 GET /img/shield-license.svg dur_ms=1
+2026/04/04 16:45:36 <- req_id=req-1775339136058354800-2a220cd1cc3f empresa_id=0 status=200 GET /img/network.svg dur_ms=1
+2026/04/04 16:45:36 <- req_id=req-1775339136058354800-f20257d04259 empresa_id=0 status=200 GET /js/administrar_empresa.js dur_ms=3
+2026/04/04 16:45:36 <- req_id=req-1775339136058354800-5025f0f538c7 empresa_id=0 status=200 GET /img/user-avatar.svg dur_ms=4
+2026/04/04 16:45:36 -> req_id=req-1775339136086062600-c45cba626b75 empresa_id=0 GET /me from ::1
+2026/04/04 16:45:36 <- req_id=req-1775339136086062600-c45cba626b75 empresa_id=0 status=200 GET /me dur_ms=3
+2026/04/04 16:45:36 -> req_id=req-1775339136091842200-0de2a4f34db2 empresa_id=6 GET /api/empresa/facturacion_electronica/pais_detectado?empresa_id=6&tz=America%2FBogota&lang=es-419 from ::1
+2026/04/04 16:45:36 <- req_id=req-1775339136091842200-0de2a4f34db2 empresa_id=6 status=200 GET /api/empresa/facturacion_electronica/pais_detectado dur_ms=4
+2026/04/04 16:45:36 -> req_id=req-1775339136134060600-3d6fa24297ca empresa_id=0 GET /favicon.ico from ::1
+2026/04/04 16:45:36 -> req_id=req-1775339136134060600-b49b92afa24f empresa_id=0 GET /super/api/empresas?id=6 from ::1
+2026/04/04 16:45:36 <- req_id=req-1775339136134060600-3d6fa24297ca empresa_id=0 status=404 GET /favicon.ico dur_ms=1
+2026/04/04 16:45:36 <- req_id=req-1775339136134060600-b49b92afa24f empresa_id=0 status=200 GET /super/api/empresas dur_ms=4
+2026/04/04 16:45:36 -> req_id=req-1775339136161233300-28034b262774 empresa_id=0 GET /super/api/empresas?id=6 from ::1
+2026/04/04 16:45:36 <- req_id=req-1775339136161233300-28034b262774 empresa_id=0 status=200 GET /super/api/empresas dur_ms=1
+2026/04/04 16:45:36 -> req_id=req-1775339136191028900-1168080b8167 empresa_id=6 GET /api/empresa/finanzas/configuracion?empresa_id=6 from ::1
+2026/04/04 16:45:36 <- req_id=req-1775339136191028900-1168080b8167 empresa_id=6 status=200 GET /api/empresa/finanzas/configuracion dur_ms=1
+2026/04/04 16:45:36 -> req_id=req-1775339136214314800-5f27977bbba1 empresa_id=6 GET /api/empresa/finanzas/periodos?empresa_id=6 from ::1
+2026/04/04 16:45:36 <- req_id=req-1775339136214314800-5f27977bbba1 empresa_id=6 status=200 GET /api/empresa/finanzas/periodos dur_ms=2
+2026/04/04 16:45:36 -> req_id=req-1775339136227837300-eeba596b9aeb empresa_id=6 GET /api/empresa/finanzas/cierres_caja?empresa_id=6&limit=300&desde=2026-03-05&hasta=2026-04-04 from ::1
+2026/04/04 16:45:36 <- req_id=req-1775339136227837300-eeba596b9aeb empresa_id=6 status=200 GET /api/empresa/finanzas/cierres_caja dur_ms=2
+2026/04/04 16:45:36 -> req_id=req-1775339136242457200-708dc5368d92 empresa_id=6 GET /api/empresa/finanzas/movimientos?empresa_id=6&desde=2026-03-05&hasta=2026-04-04&periodo=2026-04&limit=500 from ::1
+2026/04/04 16:45:36 <- req_id=req-1775339136242457200-708dc5368d92 empresa_id=6 status=200 GET /api/empresa/finanzas/movimientos dur_ms=3
+2026/04/04 16:45:36 -> req_id=req-1775339136260275800-833fe992c3a7 empresa_id=6 GET /api/empresa/finanzas/asientos_contables?action=conciliacion_periodo&empresa_id=6&desde=2026-03-05&hasta=2026-04-04&limit=24 from ::1
+2026/04/04 16:45:36 <- req_id=req-1775339136260275800-833fe992c3a7 empresa_id=6 status=200 GET /api/empresa/finanzas/asientos_contables dur_ms=2
+2026/04/04 16:45:38 metrics: stored cpu=11.40 mem=82.00% recv=897437441 sent=919335566
+2026/04/04 16:45:48 metrics: stored cpu=5.21 mem=80.00% recv=897443097 sent=919340169
+2026/04/04 16:45:58 metrics: stored cpu=3.05 mem=79.00% recv=897463918 sent=919353253
+2026/04/04 16:46:08 -> req_id=req-1775339168094741600-bba74a2c3d73 empresa_id=0 GET /super/api/empresas?id=6 from ::1
+2026/04/04 16:46:08 <- req_id=req-1775339168094741600-bba74a2c3d73 empresa_id=0 status=200 GET /super/api/empresas dur_ms=2
+2026/04/04 16:46:08 -> req_id=req-1775339168119187400-b30fb7810ea8 empresa_id=6 GET /api/empresa/ubicacion_gps/dispositivos?empresa_id=6&include_inactive=1 from ::1
+2026/04/04 16:46:08 <- req_id=req-1775339168119187400-b30fb7810ea8 empresa_id=6 status=200 GET /api/empresa/ubicacion_gps/dispositivos dur_ms=27
+2026/04/04 16:46:08 -> req_id=req-1775339168156698300-eddeaa3b18fb empresa_id=6 GET /api/empresa/ubicacion_gps/recorridos?empresa_id=6&include_inactive=1&desde_minutos=1440&limit=4000 from ::1
+2026/04/04 16:46:08 <- req_id=req-1775339168156698300-eddeaa3b18fb empresa_id=6 status=200 GET /api/empresa/ubicacion_gps/recorridos dur_ms=1
+2026/04/04 16:46:08 metrics: stored cpu=6.12 mem=80.00% recv=897468467 sent=919353797
+2026/04/04 16:46:18 metrics: stored cpu=2.56 mem=79.00% recv=897488247 sent=919366135
+2026/04/04 16:46:19 -> req_id=req-1775339179484685400-f705639b3c70 empresa_id=6 GET /administrar_empresa/configuracion_de_estaciones.html?empresa_id=6 from ::1
+2026/04/04 16:46:19 <- req_id=req-1775339179484685400-f705639b3c70 empresa_id=6 status=304 GET /administrar_empresa/configuracion_de_estaciones.html dur_ms=2
+2026/04/04 16:46:19 -> req_id=req-1775339179519621200-4c3eb9c71f95 empresa_id=0 GET /super/api/empresas?id=6 from ::1
+2026/04/04 16:46:19 <- req_id=req-1775339179519621200-4c3eb9c71f95 empresa_id=0 status=200 GET /super/api/empresas dur_ms=2
+2026/04/04 16:46:28 metrics: stored cpu=2.40 mem=79.00% recv=897507105 sent=919385474
+2026/04/04 16:46:38 metrics: stored cpu=7.41 mem=81.00% recv=897595786 sent=919397185
+2026/04/04 16:46:43 -> req_id=req-1775339203166053800-a5d48ac9df6b empresa_id=6 GET /administrar_empresa/estaciones.html?empresa_id=6 from ::1
+2026/04/04 16:46:43 <- req_id=req-1775339203166053800-a5d48ac9df6b empresa_id=6 status=304 GET /administrar_empresa/estaciones.html dur_ms=2
+2026/04/04 16:46:43 -> req_id=req-1775339203211977300-3307aebc2de4 empresa_id=6 GET /api/empresa/configuracion_avanzada?empresa_id=6 from ::1
+2026/04/04 16:46:43 -> req_id=req-1775339203212550800-41cac693d78a empresa_id=6 GET /api/empresa/carritos_compra?empresa_id=6&include_inactive=1 from ::1
+2026/04/04 16:46:43 <- req_id=req-1775339203211977300-3307aebc2de4 empresa_id=6 status=200 GET /api/empresa/configuracion_avanzada dur_ms=3
+2026/04/04 16:46:43 <- req_id=req-1775339203212550800-41cac693d78a empresa_id=6 status=200 GET /api/empresa/carritos_compra dur_ms=7
+2026/04/04 16:46:48 metrics: stored cpu=7.35 mem=80.00% recv=897622312 sent=919411644
+2026/04/04 16:46:52 -> req_id=req-1775339212995846400-136f17f3e24a empresa_id=6 GET /administrar_empresa/carrito_de_compras.html?empresa_id=6&estacion_id=1&estacion_nombre=Habitaci%C3%B3n%201&carrito_codigo=EST-6-1 from ::1
+2026/04/04 16:46:52 <- req_id=req-1775339212995846400-136f17f3e24a empresa_id=6 status=304 GET /administrar_empresa/carrito_de_compras.html dur_ms=1
+2026/04/04 16:46:53 -> req_id=req-1775339213031837500-21b3196d13a2 empresa_id=0 GET /super/api/empresas?id=6 from ::1
+2026/04/04 16:46:53 <- req_id=req-1775339213031837500-21b3196d13a2 empresa_id=0 status=200 GET /super/api/empresas dur_ms=2
+2026/04/04 16:46:53 -> req_id=req-1775339213068936100-a0898df744ce empresa_id=6 GET /api/empresa/clientes?empresa_id=6 from ::1
+2026/04/04 16:46:53 <- req_id=req-1775339213068936100-a0898df744ce empresa_id=6 status=200 GET /api/empresa/clientes dur_ms=2
+2026/04/04 16:46:53 -> req_id=req-1775339213080016400-84d5cb8f6664 empresa_id=6 GET /api/empresa/carritos_compra?empresa_id=6&include_inactive=1 from ::1
+2026/04/04 16:46:53 <- req_id=req-1775339213080016400-84d5cb8f6664 empresa_id=6 status=200 GET /api/empresa/carritos_compra dur_ms=2
+2026/04/04 16:46:53 -> req_id=req-1775339213091839800-c1d795950a07 empresa_id=6 GET /api/empresa/carritos_compra?empresa_id=6&include_inactive=1 from ::1
+2026/04/04 16:46:53 <- req_id=req-1775339213091839800-c1d795950a07 empresa_id=6 status=200 GET /api/empresa/carritos_compra dur_ms=4
+2026/04/04 16:46:53 -> req_id=req-1775339213109282800-db389f432ca3 empresa_id=6 GET /api/empresa/carritos_compra/items?empresa_id=6&carrito_id=1&include_inactive=1 from ::1
+2026/04/04 16:46:53 <- req_id=req-1775339213109282800-db389f432ca3 empresa_id=6 status=200 GET /api/empresa/carritos_compra/items dur_ms=2
+2026/04/04 16:46:58 metrics: stored cpu=3.16 mem=80.00% recv=897630663 sent=919422142
+2026/04/04 16:47:08 metrics: stored cpu=4.67 mem=78.00% recv=897644179 sent=919438686
+2026/04/04 16:47:14 -> req_id=req-1775339234243150100-5b75d550e49c empresa_id=6 GET /administrar_empresa/administrar_productos.html?empresa_id=6 from ::1
+2026/04/04 16:47:14 <- req_id=req-1775339234243150100-5b75d550e49c empresa_id=6 status=304 GET /administrar_empresa/administrar_productos.html dur_ms=1
+2026/04/04 16:47:14 -> req_id=req-1775339234279196900-ad3462b2245e empresa_id=0 GET /super/api/empresas?id=6 from ::1
+2026/04/04 16:47:14 <- req_id=req-1775339234279196900-ad3462b2245e empresa_id=0 status=200 GET /super/api/empresas dur_ms=1
+2026/04/04 16:47:14 -> req_id=req-1775339234299085700-afe525532e0f empresa_id=6 GET /api/empresa/proveedores?empresa_id=6&include_inactive=1 from ::1
+2026/04/04 16:47:14 <- req_id=req-1775339234299085700-afe525532e0f empresa_id=6 status=200 GET /api/empresa/proveedores dur_ms=2
+2026/04/04 16:47:14 -> req_id=req-1775339234314616500-5c7c523eef36 empresa_id=6 GET /api/empresa/bodegas?empresa_id=6&include_inactive=1 from ::1
+2026/04/04 16:47:14 <- req_id=req-1775339234314616500-5c7c523eef36 empresa_id=6 status=200 GET /api/empresa/bodegas dur_ms=2
+2026/04/04 16:47:14 -> req_id=req-1775339234333158200-c8bc17f440ea empresa_id=6 GET /api/empresa/categorias_productos?empresa_id=6&include_inactive=1 from ::1
+2026/04/04 16:47:14 <- req_id=req-1775339234333158200-c8bc17f440ea empresa_id=6 status=200 GET /api/empresa/categorias_productos dur_ms=1
+2026/04/04 16:47:14 -> req_id=req-1775339234345711600-f4a3f184f18e empresa_id=6 GET /api/empresa/productos?empresa_id=6 from ::1
+2026/04/04 16:47:14 <- req_id=req-1775339234345711600-f4a3f184f18e empresa_id=6 status=200 GET /api/empresa/productos dur_ms=2
+2026/04/04 16:47:14 -> req_id=req-1775339234364259600-dbd9eb63e05e empresa_id=6 GET /api/empresa/servicios?empresa_id=6 from ::1
+2026/04/04 16:47:14 <- req_id=req-1775339234364259600-dbd9eb63e05e empresa_id=6 status=200 GET /api/empresa/servicios dur_ms=1
+2026/04/04 16:47:14 -> req_id=req-1775339234380026600-11dbcf5b0796 empresa_id=6 GET /api/empresa/inventario/existencias?empresa_id=6&limit=300 from ::1
+2026/04/04 16:47:14 <- req_id=req-1775339234380026600-11dbcf5b0796 empresa_id=6 status=200 GET /api/empresa/inventario/existencias dur_ms=1
+2026/04/04 16:47:14 -> req_id=req-1775339234389699400-557da175f7ef empresa_id=6 GET /api/empresa/inventario/alertas?empresa_id=6&limit=200 from ::1
+2026/04/04 16:47:14 <- req_id=req-1775339234389699400-557da175f7ef empresa_id=6 status=200 GET /api/empresa/inventario/alertas dur_ms=1
+2026/04/04 16:47:14 -> req_id=req-1775339234405604900-aa617cfa8d69 empresa_id=6 GET /api/empresa/inventario/resumen?empresa_id=6 from ::1
+2026/04/04 16:47:14 <- req_id=req-1775339234405604900-aa617cfa8d69 empresa_id=6 status=200 GET /api/empresa/inventario/resumen dur_ms=2
+2026/04/04 16:47:14 -> req_id=req-1775339234422116100-c25dfeacb5e4 empresa_id=6 GET /api/empresa/inventario/movimientos?empresa_id=6&limit=100 from ::1
+2026/04/04 16:47:14 <- req_id=req-1775339234422116100-c25dfeacb5e4 empresa_id=6 status=200 GET /api/empresa/inventario/movimientos dur_ms=2
+2026/04/04 16:47:14 -> req_id=req-1775339234430961600-b4a1a1b83766 empresa_id=6 GET /api/empresa/inventario/tendencia?empresa_id=6&dias=7 from ::1
+2026/04/04 16:47:14 <- req_id=req-1775339234430961600-b4a1a1b83766 empresa_id=6 status=200 GET /api/empresa/inventario/tendencia dur_ms=1
+2026/04/04 16:47:14 -> req_id=req-1775339234443941100-a5bd036a2c7e empresa_id=6 GET /api/empresa/inventario/balance_bodegas?empresa_id=6&dias=7 from ::1
+2026/04/04 16:47:14 <- req_id=req-1775339234443941100-a5bd036a2c7e empresa_id=6 status=200 GET /api/empresa/inventario/balance_bodegas dur_ms=3
+2026/04/04 16:47:14 -> req_id=req-1775339234456249800-7a2b0a1cf0ee empresa_id=6 GET /api/empresa/productos/precios_historial?empresa_id=6&limit=200 from ::1
+2026/04/04 16:47:14 <- req_id=req-1775339234456249800-7a2b0a1cf0ee empresa_id=6 status=200 GET /api/empresa/productos/precios_historial dur_ms=1
+2026/04/04 16:47:18 metrics: stored cpu=5.89 mem=78.00% recv=897657654 sent=919448639

@@ -1,5 +1,195 @@
 Descripcion de archivos del proyecto
 
+Actualizacion 2026-04-04: Punto 5 (continuacion operativa-analitica) — balance por bodega
+
+- backend/db/productos.go:
+	- Agrega `InventarioBalanceBodega` y `GetInventarioBalanceBodegasByEmpresa` para consolidar balance de inventario por bodega.
+
+- backend/handlers/productos.go:
+	- Agrega endpoint `GET /api/empresa/inventario/balance_bodegas` con validacion de fechas y filtros operativos.
+
+- backend/main.go:
+	- Registra la ruta protegida `/api/empresa/inventario/balance_bodegas`.
+
+- backend/handlers/productos_categorias_test.go:
+	- Agrega prueba del contrato HTTP de balance por bodega.
+
+- backend/db/productos_categorias_test.go:
+	- Agrega prueba de consolidado de balance por bodega en capa DB.
+
+- web/administrar_empresa/administrar_productos.html:
+	- Agrega tabla `Balance por bodega` sincronizada con filtros del kardex.
+	- Muestra neto por bodega y neto acumulado del rango.
+
+- documentos/plan_maestro_pos_multiempresa_14_puntos.md:
+	- Registra la fase 6 del Punto 5 (continuacion operativa-analitica).
+
+- documentos/diagramas/estructura_del_codigo.md:
+	- Documenta el flujo backend/frontend de balance por bodega.
+
+- documentos/descripcion_del_proyecto:
+	- Actualiza el alcance funcional de inventario incluyendo balance por bodega.
+
+- documentos/descripcion_de_archivos:
+	- Registra esta actualizacion.
+
+- documentos/historial_de_cambios:
+	- Registra trazabilidad y validacion.
+
+- CHANGELOG.md:
+	- Registra el hito de continuidad operativa-analitica del Punto 5.
+
+Actualizacion 2026-04-04: Punto 5 (continuacion analitica) — tendencia diaria de inventario
+
+- backend/db/productos.go:
+	- Agrega `InventarioTendenciaDia` y `GetInventarioTendenciaByEmpresa` para consolidar serie diaria de inventario.
+
+- backend/handlers/productos.go:
+	- Agrega endpoint `GET /api/empresa/inventario/tendencia` con validacion de fechas y parametros operativos.
+
+- backend/main.go:
+	- Registra la ruta protegida `/api/empresa/inventario/tendencia`.
+
+- backend/handlers/productos_categorias_test.go:
+	- Agrega prueba del contrato HTTP de tendencia diaria por rango.
+
+- backend/db/productos_categorias_test.go:
+	- Agrega prueba de calculo de tendencia diaria en capa DB.
+
+- web/administrar_empresa/administrar_productos.html:
+	- Agrega tabla `Tendencia diaria inventario` sincronizada con filtros de kardex.
+	- Muestra neto acumulado y eventos del rango consultado.
+
+- documentos/plan_maestro_pos_multiempresa_14_puntos.md:
+	- Registra la fase 5 del Punto 5 (continuacion analitica).
+
+- documentos/diagramas/estructura_del_codigo.md:
+	- Documenta el flujo backend/frontend de tendencia diaria de inventario.
+
+- documentos/descripcion_del_proyecto:
+	- Actualiza el alcance funcional de inventario incluyendo tendencia diaria.
+
+- documentos/descripcion_de_archivos:
+	- Registra esta actualizacion.
+
+- documentos/historial_de_cambios:
+	- Registra trazabilidad y validacion.
+
+- CHANGELOG.md:
+	- Registra el hito de continuidad analitica del Punto 5.
+
+Actualizacion 2026-04-04: Punto 5 (continuacion operacional) — top criticos y reposicion guiada
+
+- web/administrar_empresa/administrar_productos.html:
+	- Agrega tabla `Top productos críticos (déficit)` en inventario.
+	- Agrega accion `Preparar reposición` para precargar el formulario de ajuste con producto, bodega y cantidad sugerida.
+
+- documentos/plan_maestro_pos_multiempresa_14_puntos.md:
+	- Registra la fase 4 del Punto 5 (operacional).
+
+- documentos/diagramas/estructura_del_codigo.md:
+	- Documenta el flujo de reposicion guiada desde alertas.
+
+- documentos/descripcion_de_archivos:
+	- Registra esta actualizacion.
+
+- documentos/historial_de_cambios:
+	- Registra trazabilidad y validacion.
+
+- CHANGELOG.md:
+	- Registra el hito de continuidad operacional de inventario.
+
+Actualizacion 2026-04-04: Punto 5 (continuacion KPI operativo) — resumen de inventario por rango
+
+- backend/db/productos.go:
+	- Agrega `InventarioResumen` y `GetInventarioResumenByEmpresa` para KPI operativos de inventario.
+
+- backend/handlers/productos.go:
+	- Agrega endpoint `GET /api/empresa/inventario/resumen` con validacion de fechas (`YYYY-MM-DD`).
+
+- backend/main.go:
+	- Registra la ruta protegida `/api/empresa/inventario/resumen`.
+
+- backend/handlers/productos_categorias_test.go:
+	- Agrega prueba de contrato HTTP del resumen por rango.
+
+- backend/db/productos_categorias_test.go:
+	- Agrega prueba de calculo de resumen KPI en capa DB.
+
+- web/administrar_empresa/administrar_productos.html:
+	- Agrega KPI visibles de inventario en cabecera (alertas, sin stock, movimientos del periodo, deficit).
+	- Integra carga de resumen con `GET /api/empresa/inventario/resumen` y sincronizacion con filtros de kardex.
+
+- documentos/plan_maestro_pos_multiempresa_14_puntos.md:
+	- Registra la fase 3 del Punto 5 (resumen KPI operativo).
+
+- documentos/diagramas/estructura_del_codigo.md:
+	- Documenta la ruta y flujo de resumen KPI de inventario.
+
+- documentos/descripcion_de_archivos:
+	- Registra esta actualizacion.
+
+- documentos/historial_de_cambios:
+	- Registra trazabilidad del cambio y validaciones.
+
+- CHANGELOG.md:
+	- Registra el hito de continuidad del Punto 5 con KPI operativo.
+
+Actualizacion 2026-04-04: Punto 5 (continuacion UI) — filtros operativos de alertas y kardex
+
+- web/administrar_empresa/administrar_productos.html:
+	- Agrega filtro por bodega en la tabla de alertas de quiebre.
+	- Agrega filtros de kardex por bodega, tipo de movimiento y rango de fechas (`desde`, `hasta`).
+	- Agrega acciones de `Filtrar` y `Limpiar` en ambos bloques para operacion diaria.
+
+- documentos/plan_maestro_pos_multiempresa_14_puntos.md:
+	- Registra la continuacion del Punto 5 con el tramo de UI operativa.
+
+- documentos/diagramas/estructura_del_codigo.md:
+	- Documenta la incorporacion de filtros de inventario en frontend.
+
+- documentos/descripcion_de_archivos:
+	- Registra esta actualizacion.
+
+- documentos/historial_de_cambios:
+	- Registra trazabilidad del cambio y validacion.
+
+- CHANGELOG.md:
+	- Registra el hito de continuidad de Punto 5 en interfaz de inventario.
+
+Actualizacion 2026-04-04: Punto 5 (inicio) — kardex operativo + alertas de quiebre por bodega
+
+- backend/db/productos.go:
+	- Agrega reglas de validacion para `stock_minimo` y `stock_maximo` en alta/edicion de productos.
+	- Agrega `GetAlertasQuiebreByEmpresa` para consulta de alertas de quiebre/bajo minimo por empresa/producto/bodega.
+	- Amplia `GetMovimientosByEmpresa` con filtros de kardex por `bodega_id`, `tipo`, `desde`, `hasta`.
+
+- backend/handlers/productos.go:
+	- Agrega endpoint `GET /api/empresa/inventario/alertas`.
+	- Extiende `GET /api/empresa/inventario/existencias` con modo `action=alertas|alertas_quiebre|quiebre`.
+	- Extiende `GET /api/empresa/inventario/movimientos` con filtros de kardex y validacion de fechas `YYYY-MM-DD`.
+
+- backend/main.go:
+	- Registra la ruta protegida `/api/empresa/inventario/alertas`.
+
+- backend/handlers/productos_categorias_test.go:
+	- Agrega pruebas para alertas de quiebre por bodega y filtros de kardex.
+
+- backend/db/productos_categorias_test.go:
+	- Agrega prueba de validacion de reglas de stock en creacion/edicion de productos.
+
+- web/administrar_empresa/administrar_productos.html:
+	- Agrega tabla de `Alertas de quiebre por bodega` en la vista de inventario.
+
+- documentos/plan_maestro_pos_multiempresa_14_puntos.md:
+	- Marca Punto 5 como `en curso` y documenta la implementacion inicial.
+
+- documentos/descripcion_del_proyecto:
+	- Actualiza la descripcion funcional de inventario para incluir alertas de quiebre por bodega y kardex filtrable.
+
+- documentos/diagramas/estructura_del_codigo.md:
+	- Registra el nuevo flujo funcional de inventario (alertas + kardex filtrable + reglas de stock).
+
 Actualizacion 2026-04-04: Punto 3 (continuidad) — catalogo frontend por rol + regresion endpoints sin wrapper
 
 - web/js/administrar_empresa.js:
