@@ -115,7 +115,7 @@ p{color:var(--muted);line-height:1.5}
 .admin-sidebar .nav a:hover{background:linear-gradient(180deg, rgba(54,95,146,0.42), rgba(30,55,85,0.9));color:#f2f8ff}
 .admin-sidebar .nav a.active{background:linear-gradient(180deg,var(--accent),#1475cc);color:#fff;border-color:rgba(20,95,162,0.6);box-shadow:0 10px 18px rgba(7,31,58,0.42)}
 .admin-sidebar .nav a img.icon{width:18px;height:18px;vertical-align:middle;margin-right:8px;transition:filter .15s ease}
-.admin-content{flex:1;padding:10px;overflow:auto;background:linear-gradient(180deg,rgba(17,31,49,0.34),rgba(11,22,37,0.28))}
+.admin-content{flex:1;padding:10px;overflow:hidden;display:flex;flex-direction:column;min-height:0;background:linear-gradient(180deg,rgba(17,31,49,0.34),rgba(11,22,37,0.28))}
 /* Hacer que los botones dentro del contenido administrativo concuerden visualmente con el sidebar */
 .admin-content .btn{
   padding:10px 14px;
@@ -130,7 +130,10 @@ p{color:var(--muted);line-height:1.5}
 /* Icon visibility: make icons light in dark theme so they contrast with dark buttons */
 html:not(.theme-light) .admin-sidebar .nav a img.icon{filter:invert(1) brightness(1.8) saturate(1.15)}
 html.theme-light .admin-sidebar .nav a img.icon{filter:none}
-.admin-toolbar{padding:8px 10px;border-bottom:1px solid var(--border);background:rgba(17,33,52,0.35)}
+.admin-toolbar{padding:8px 10px;border-bottom:1px solid var(--border);background:rgba(17,33,52,0.35);flex:0 0 auto}
+
+/* Hacer que el iframe de administrar_empresa ocupe el espacio restante y evitar doble scrollbar */
+.admin-empresa-frame{flex:1 1 auto;width:100%;min-height:0;border:0;display:block}
 
 /* Responsive: colapsar sidebar */
 @media (max-width:900px){

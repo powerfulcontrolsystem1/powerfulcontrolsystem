@@ -620,10 +620,6 @@ func GmailConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "invalid payload: "+err.Error(), http.StatusBadRequest)
 				return
 			}
-			if payload.Encrypt && !utils.EncryptionAvailable() {
-				http.Error(w, "encryption failed: CONFIG_ENC_KEY not set", http.StatusBadRequest)
-				return
-			}
 
 			smtpEmail := strings.TrimSpace(payload.SMTPEmail)
 			if smtpEmail != "" {
@@ -639,21 +635,18 @@ func GmailConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 
 			if strings.TrimSpace(payload.SMTPAppPass) != "" {
 				appPass := strings.TrimSpace(payload.SMTPAppPass)
-				if payload.Encrypt {
-					encVal, err := utils.EncryptString(appPass)
-					if err != nil {
-						http.Error(w, "encryption failed: "+err.Error(), http.StatusInternalServerError)
-						return
-					}
-					if err := dbpkg.SetConfigValue(dbSuper, "gmail.smtp_app_password", encVal, true); err != nil {
-						http.Error(w, "failed to save gmail.smtp_app_password: "+err.Error(), http.StatusInternalServerError)
-						return
-					}
-				} else {
-					if err := dbpkg.SetConfigValue(dbSuper, "gmail.smtp_app_password", appPass, false); err != nil {
-						http.Error(w, "failed to save gmail.smtp_app_password: "+err.Error(), http.StatusInternalServerError)
-						return
-					}
+				if !utils.EncryptionAvailable() {
+					http.Error(w, "encryption required: CONFIG_ENC_KEY not set", http.StatusBadRequest)
+					return
+				}
+				encVal, err := utils.EncryptString(appPass)
+				if err != nil {
+					http.Error(w, "encryption failed: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				if err := dbpkg.SetConfigValue(dbSuper, "gmail.smtp_app_password", encVal, true); err != nil {
+					http.Error(w, "failed to save gmail.smtp_app_password: "+err.Error(), http.StatusInternalServerError)
+					return
 				}
 			}
 

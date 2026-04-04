@@ -492,27 +492,19 @@ func MercadoPagoConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 					}
 				}
 
-				// save token after successful validation or when skipping validation
-				if payload.Encrypt {
-					if !utils.EncryptionAvailable() {
-						http.Error(w, "encryption failed: CONFIG_ENC_KEY not set", http.StatusBadRequest)
-						return
-					}
-					encVal, err := utils.EncryptString(payload.AccessToken)
-					if err != nil {
-						http.Error(w, "encryption failed: "+err.Error(), http.StatusInternalServerError)
-						return
-					}
-					if err := dbpkg.SetConfigValue(dbSuper, "mercadopago.access_token", encVal, true); err != nil {
-						http.Error(w, "failed to save access token: "+err.Error(), http.StatusInternalServerError)
-						return
-					}
-				} else {
-					if err := dbpkg.SetConfigValue(dbSuper, "mercadopago.access_token", payload.AccessToken, false); err != nil {
-						http.Error(w, "failed to save access token: "+err.Error(), http.StatusInternalServerError)
-						return
-					}
-					// no payer prefill handled here (belongs to create_preference)
+				// Guardar token: cifrado obligatorio
+				if !utils.EncryptionAvailable() {
+					http.Error(w, "encryption required: CONFIG_ENC_KEY not set", http.StatusBadRequest)
+					return
+				}
+				encVal, err := utils.EncryptString(payload.AccessToken)
+				if err != nil {
+					http.Error(w, "encryption failed: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				if err := dbpkg.SetConfigValue(dbSuper, "mercadopago.access_token", encVal, true); err != nil {
+					http.Error(w, "failed to save access token: "+err.Error(), http.StatusInternalServerError)
+					return
 				}
 			}
 
@@ -536,27 +528,20 @@ func MercadoPagoConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				}
 			}
 
-			// Webhook secret
+			// Webhook secret (si se proporciona) — cifrado obligatorio
 			if payload.WebhookSecret != "" {
-				if payload.WebhookEncrypt {
-					if !utils.EncryptionAvailable() {
-						http.Error(w, "encryption failed: CONFIG_ENC_KEY not set", http.StatusBadRequest)
-						return
-					}
-					encVal, err := utils.EncryptString(payload.WebhookSecret)
-					if err != nil {
-						http.Error(w, "encryption failed: "+err.Error(), http.StatusInternalServerError)
-						return
-					}
-					if err := dbpkg.SetConfigValue(dbSuper, "mercadopago.webhook_secret", encVal, true); err != nil {
-						http.Error(w, "failed to save webhook secret: "+err.Error(), http.StatusInternalServerError)
-						return
-					}
-				} else {
-					if err := dbpkg.SetConfigValue(dbSuper, "mercadopago.webhook_secret", payload.WebhookSecret, false); err != nil {
-						http.Error(w, "failed to save webhook secret: "+err.Error(), http.StatusInternalServerError)
-						return
-					}
+				if !utils.EncryptionAvailable() {
+					http.Error(w, "encryption required: CONFIG_ENC_KEY not set", http.StatusBadRequest)
+					return
+				}
+				encVal2, err := utils.EncryptString(payload.WebhookSecret)
+				if err != nil {
+					http.Error(w, "encryption failed: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				if err := dbpkg.SetConfigValue(dbSuper, "mercadopago.webhook_secret", encVal2, true); err != nil {
+					http.Error(w, "failed to save webhook secret: "+err.Error(), http.StatusInternalServerError)
+					return
 				}
 			}
 
@@ -807,30 +792,25 @@ func WompiConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 
-			if payload.Encrypt && !utils.EncryptionAvailable() {
-				http.Error(w, "encryption failed: CONFIG_ENC_KEY not set", http.StatusBadRequest)
-				return
-			}
-
+			// Requerir cifrado obligatorio para llaves sensibles.
 			if payload.PublicKey != "" {
 				if err := dbpkg.SetConfigValue(dbSuper, "wompi.public_key", payload.PublicKey, false); err != nil {
 					http.Error(w, "failed to save wompi.public_key: "+err.Error(), http.StatusInternalServerError)
 					return
 				}
 			}
-
 			saveSensitive := func(key, value string) error {
 				if value == "" {
 					return nil
 				}
-				if payload.Encrypt {
-					encVal, err := utils.EncryptString(value)
-					if err != nil {
-						return err
-					}
-					return dbpkg.SetConfigValue(dbSuper, key, encVal, true)
+				if !utils.EncryptionAvailable() {
+					return fmt.Errorf("encryption required: CONFIG_ENC_KEY not set")
 				}
-				return dbpkg.SetConfigValue(dbSuper, key, value, false)
+				encVal, err := utils.EncryptString(value)
+				if err != nil {
+					return err
+				}
+				return dbpkg.SetConfigValue(dbSuper, key, encVal, true)
 			}
 
 			if err := saveSensitive("wompi.private_key", payload.PrivateKey); err != nil {

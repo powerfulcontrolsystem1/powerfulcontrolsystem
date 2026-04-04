@@ -20,6 +20,9 @@ flowchart LR
     H9[ai_config handlers super]
     DB1[(empresas.db)]
     DB2[(superadministrador.db)]
+    EVC[(empresa_eventos_contables)]
+    DTF[(empresa_facturacion_documentos)]
+    DTC[(empresa_compras_documentos)]
     FS[(web/uploads/chat_tareas)]
     OSM[OpenStreetMap Tiles]
     SMTP[SMTP Gmail]
@@ -34,8 +37,8 @@ flowchart LR
     M --> H3
     M --> P
     P --> H4
-    M --> H5
-    M --> H6
+    P --> H5
+    P --> H6
     P --> H7
     M --> H8
     M --> H9
@@ -51,6 +54,9 @@ flowchart LR
     H3 --> DB2
     H4 --> DB1
     H4 --> DB2
+    H4 --> DTF
+    H4 --> DTC
+    H4 --> EVC
     H4 --> SMTP
     H5 --> DB1
     H5 --> FS
@@ -60,6 +66,9 @@ flowchart LR
     H8 --> DB2
     H9 --> DB2
     H8 --> AI
+    DTF -.id canonico documento.- EVC
+    DTC -.id canonico documento.- EVC
+    EVC -.persistencia contable.- DB1
 
     DB2 -->|sesiones/roles/config| M
 ```
@@ -73,5 +82,12 @@ Componentes:
 - Finanzas empresariales: modulo `finanzas` con configuracion por empresa, gestion de periodos contables (abrir/cerrar), retenciones y registro de ingresos/egresos con comprobantes.
 - Chat IA empresarial: modulo `chat_con_inteligencia_artificial` con alcance por `empresa_id`, limites free-tier, auditoria de consultas/respuestas y persistencia de `modelo_preferido` por cuenta Google (`empresa_id + admin_email`), usando Google Gemini.
 - Configuracion IA super: endpoint administrativo para credencial Gemini con almacenamiento seguro en `superadministrador.db`.
-- Seguridad por rol/empresa: middleware de permisos empresariales para rutas criticas de ventas, inventario y finanzas antes de ejecutar handlers de negocio.
+- Seguridad por rol/empresa: middleware de permisos empresariales para rutas criticas de ventas, inventario, finanzas, clientes, compras/proveedores, facturacion y seguridad/usuarios; incluye cobertura en `chat_tareas`, `ubicacion_gps` y `productos/imagen`.
+- Ventas/carritos: el dominio `carritos_compras` expone `estado_venta` derivado (`venta_abierta`, `venta_cerrada`, `venta_pagada`, `venta_suspendida`) para estandarizar ciclo de vida comercial en API y reportes.
+- Ventas/carritos: el handler aplica validacion de transiciones y devuelve `409` en cambios de estado no permitidos y `404` cuando el carrito objetivo no existe.
+- Eventos contables: el backend registra eventos por modulo en `empresa_eventos_contables` como base para asientos automaticos y trazabilidad financiera.
+- Eventos contables (extension 2026-04-04): se emiten eventos desde ventas, facturacion, compras/proveedores y finanzas (movimientos + periodos) usando helper comun no bloqueante en handlers.
+- Eventos contables (transaccional 2026-04-04): facturacion y compras exponen acciones `emitir/anular/nota_credito` y `emitir_orden/recepcionar_compra/contabilizar_compra` para trazar ciclo documental inicial.
+- Ciclo documental transaccional (2026-04-04): facturacion y compras validan `estado_actual` con reglas de transicion y devuelven `409` en transiciones invalidas; en transiciones validas exponen `estado_anterior` y `estado_nuevo`.
+- Persistencia canonica documental (2026-04-04): los ciclos transaccionales de facturacion/compras guardan estado en tablas dedicadas y enlazan `empresa_eventos_contables.entidad_id` al ID estable de `empresa_facturacion_documentos` / `empresa_compras_documentos`.
 - Integraciones: SMTP para validacion de correo y pasarelas para pagos.

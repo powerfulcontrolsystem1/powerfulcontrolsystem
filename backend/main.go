@@ -317,6 +317,12 @@ func main() {
 	if err := dbpkg.EnsureEmpresaFinanzasSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure finanzas schema in empresas db: %v", err)
 	}
+	if err := dbpkg.EnsureEmpresaEventosContablesSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure eventos contables schema in empresas db: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaDocumentosTransaccionalesSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure documentos transaccionales schema in empresas db: %v", err)
+	}
 	if err := dbpkg.EnsureEmpresaAIChatSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure chat IA schema in empresas db: %v", err)
 	}
@@ -343,6 +349,15 @@ func main() {
 	}
 	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-04-006-chat-ia-modelo-preferido", "persistencia de modelo preferido por empresa y cuenta Google autenticada"); err != nil {
 		log.Fatalf("failed to register chat ia preferred model schema migration in empresas db: %v", err)
+	}
+	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-04-007-eventos-contables", "contrato de eventos contables por modulo y trazabilidad de ventas"); err != nil {
+		log.Fatalf("failed to register eventos contables schema migration in empresas db: %v", err)
+	}
+	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-04-008-documentos-transaccionales", "persistencia canonica de documentos transaccionales de facturacion y compras"); err != nil {
+		log.Fatalf("failed to register documentos transaccionales schema migration in empresas db: %v", err)
+	}
+	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-04-009-cierres-caja", "flujo operativo de cierre de caja por sucursal y arqueo de efectivo"); err != nil {
+		log.Fatalf("failed to register cierres caja schema migration in empresas db: %v", err)
 	}
 	// Crear tipos_de_empresas en la base de datos de superadministrador (ubicación centralizada)
 	createTiposSuper := `CREATE TABLE IF NOT EXISTS tipos_de_empresas (
@@ -708,37 +723,38 @@ func main() {
 	http.HandleFunc("/api/empresa/bodegas", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaBodegasHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/categorias_productos", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaCategoriasProductosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/productos", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaProductosHandler(dbEmpresas)))
-	http.HandleFunc("/api/empresa/productos/imagen", handlers.EmpresaProductoImagenUploadHandler(dbEmpresas))
+	http.HandleFunc("/api/empresa/productos/imagen", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaProductoImagenUploadHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/inventario/existencias", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaInventarioExistenciasHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/inventario/movimientos", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaInventarioMovimientosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/inventario/transferir", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaInventarioTransferHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/inventario/ajustar", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaInventarioAjusteHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/inventario/cambiar_producto", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaInventarioCambioProductoHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/productos/precios_historial", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaProductoPrecioHistorialHandler(dbEmpresas)))
-	http.HandleFunc("/api/empresa/proveedores", handlers.EmpresaProveedoresHandler(dbEmpresas))
-	http.HandleFunc("/api/empresa/servicios", handlers.EmpresaServiciosHandler(dbEmpresas))
+	http.HandleFunc("/api/empresa/proveedores", handlers.WithEmpresaComprasPermissions(dbEmpresas, dbSuper, handlers.EmpresaProveedoresHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/servicios", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaServiciosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/usuarios/login", handlers.EmpresaUsuarioLoginHandler(dbEmpresas, dbSuper))
 	http.HandleFunc("/api/empresa/usuarios/establecer_password", handlers.EmpresaUsuarioSetPasswordHandler(dbEmpresas, dbSuper))
-	http.HandleFunc("/api/empresa/usuarios", handlers.EmpresaUsuariosHandler(dbEmpresas, dbSuper))
-	http.HandleFunc("/api/empresa/clientes", handlers.EmpresaClientesHandler(dbEmpresas))
+	http.HandleFunc("/api/empresa/usuarios", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaUsuariosHandler(dbEmpresas, dbSuper)))
+	http.HandleFunc("/api/empresa/clientes", handlers.WithEmpresaClientesPermissions(dbEmpresas, dbSuper, handlers.EmpresaClientesHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/carritos_compra", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCarritosCompraHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/carritos_compra/items", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCarritoItemsHandler(dbEmpresas)))
-	http.HandleFunc("/api/empresa/configuracion_avanzada", handlers.EmpresaConfiguracionAvanzadaHandler(dbEmpresas))
-	http.HandleFunc("/api/empresa/facturacion_electronica", handlers.EmpresaFacturacionElectronicaHandler(dbEmpresas))
-	http.HandleFunc("/api/empresa/facturacion_electronica/pais_detectado", handlers.EmpresaFacturacionElectronicaPaisDetectadoHandler(dbEmpresas))
+	http.HandleFunc("/api/empresa/configuracion_avanzada", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaConfiguracionAvanzadaHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/facturacion_electronica", handlers.WithEmpresaFacturacionPermissions(dbEmpresas, dbSuper, handlers.EmpresaFacturacionElectronicaHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/facturacion_electronica/pais_detectado", handlers.WithEmpresaFacturacionPermissions(dbEmpresas, dbSuper, handlers.EmpresaFacturacionElectronicaPaisDetectadoHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/facturacion_electronica/paises_disponibles", handlers.EmpresaFacturacionElectronicaPaisesDisponiblesHandler())
-	http.HandleFunc("/api/empresa/chat_tareas/conversaciones", handlers.EmpresaChatTareasConversacionesHandler(dbEmpresas))
-	http.HandleFunc("/api/empresa/chat_tareas/participantes", handlers.EmpresaChatTareasParticipantesHandler(dbEmpresas))
-	http.HandleFunc("/api/empresa/chat_tareas/mensajes", handlers.EmpresaChatTareasMensajesHandler(dbEmpresas))
-	http.HandleFunc("/api/empresa/chat_tareas/mensajes/adjunto", handlers.EmpresaChatTareasAdjuntoUploadHandler(dbEmpresas))
-	http.HandleFunc("/api/empresa/chat_tareas/tareas", handlers.EmpresaChatTareasTareasHandler(dbEmpresas))
-	http.HandleFunc("/api/empresa/ubicacion_gps/dispositivos", handlers.EmpresaUbicacionGPSDispositivosHandler(dbEmpresas))
-	http.HandleFunc("/api/empresa/ubicacion_gps/recorridos", handlers.EmpresaUbicacionGPSRecorridosHandler(dbEmpresas))
+	http.HandleFunc("/api/empresa/chat_tareas/conversaciones", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaChatTareasConversacionesHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/chat_tareas/participantes", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaChatTareasParticipantesHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/chat_tareas/mensajes", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaChatTareasMensajesHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/chat_tareas/mensajes/adjunto", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaChatTareasAdjuntoUploadHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/chat_tareas/tareas", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaChatTareasTareasHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/ubicacion_gps/dispositivos", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaUbicacionGPSDispositivosHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/ubicacion_gps/recorridos", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaUbicacionGPSRecorridosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/finanzas/movimientos", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasMovimientosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/finanzas/configuracion", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasConfiguracionHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/finanzas/periodos", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasPeriodosHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/finanzas/cierres_caja", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasCierresCajaHandler(dbEmpresas)))
 	handlers.RegisterEmpresaChatIARoutes(dbEmpresas, dbSuper)
-	http.HandleFunc("/api/empresa/roles_de_usuario", handlers.EmpresaRolesDeUsuarioHandler(dbEmpresas, dbSuper))
+	http.HandleFunc("/api/empresa/roles_de_usuario", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaRolesDeUsuarioHandler(dbEmpresas, dbSuper)))
 	// Endpoint para obtener admin actual desde la cookie de sesión
 	http.HandleFunc("/me", handlers.MeHandler(dbSuper))
 	// Endpoint CRUD para administradores (API)

@@ -21,9 +21,13 @@ const (
 	permActionDelete  = "D"
 	permActionApprove = "A"
 
-	permModuleVentas     = "ventas"
-	permModuleInventario = "inventario"
-	permModuleFinanzas   = "finanzas"
+	permModuleVentas      = "ventas"
+	permModuleInventario  = "inventario"
+	permModuleFinanzas    = "finanzas"
+	permModuleClientes    = "clientes"
+	permModuleCompras     = "compras"
+	permModuleFacturacion = "facturacion"
+	permModuleSeguridad   = "seguridad"
 )
 
 // WithEmpresaVentasPermissions aplica control de alcance por empresa y permisos por rol para ventas.
@@ -39,6 +43,26 @@ func WithEmpresaInventarioPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerF
 // WithEmpresaFinanzasPermissions aplica control de alcance por empresa y permisos por rol para finanzas.
 func WithEmpresaFinanzasPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
 	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleFinanzas, resolveFinanzasPermissionAction, next)
+}
+
+// WithEmpresaClientesPermissions aplica control de alcance por empresa y permisos por rol para clientes.
+func WithEmpresaClientesPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleClientes, resolveClientesPermissionAction, next)
+}
+
+// WithEmpresaComprasPermissions aplica control de alcance por empresa y permisos por rol para compras/proveedores.
+func WithEmpresaComprasPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleCompras, resolveComprasPermissionAction, next)
+}
+
+// WithEmpresaFacturacionPermissions aplica control de alcance por empresa y permisos por rol para facturacion.
+func WithEmpresaFacturacionPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleFacturacion, resolveFacturacionPermissionAction, next)
+}
+
+// WithEmpresaSeguridadPermissions aplica control de alcance por empresa y permisos por rol para seguridad/usuarios.
+func WithEmpresaSeguridadPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleSeguridad, resolveSeguridadPermissionAction, next)
 }
 
 func withEmpresaRolePermissions(dbEmp, dbSuper *sql.DB, module string, resolveAction func(*http.Request) string, next http.HandlerFunc) http.HandlerFunc {
@@ -248,12 +272,56 @@ func resolveInventarioPermissionAction(r *http.Request) string {
 func resolveFinanzasPermissionAction(r *http.Request) string {
 	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 	switch action {
-	case "cerrar", "reabrir":
+	case "cerrar", "reabrir", "aprobar":
 		return permActionApprove
 	case "anular":
 		return permActionDelete
 	case "activar", "desactivar":
 		return permActionUpdate
+	}
+	return defaultPermissionActionFromMethod(r.Method)
+}
+
+func resolveClientesPermissionAction(r *http.Request) string {
+	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+	if action == "activar" || action == "desactivar" {
+		return permActionUpdate
+	}
+	return defaultPermissionActionFromMethod(r.Method)
+}
+
+func resolveComprasPermissionAction(r *http.Request) string {
+	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+	if action == "activar" || action == "desactivar" {
+		return permActionUpdate
+	}
+	if action == "aprobar" || action == "cerrar" || action == "emitir" || action == "emitir_orden" || action == "recepcionar" || action == "recepcionar_compra" || action == "contabilizar" || action == "contabilizar_compra" {
+		return permActionApprove
+	}
+	return defaultPermissionActionFromMethod(r.Method)
+}
+
+func resolveFacturacionPermissionAction(r *http.Request) string {
+	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+	if action == "activar" || action == "desactivar" {
+		return permActionUpdate
+	}
+	if action == "aprobar" || action == "emitir" || action == "nota_credito" || action == "emitir_nota_credito" {
+		return permActionApprove
+	}
+	if action == "anular" {
+		return permActionDelete
+	}
+	return defaultPermissionActionFromMethod(r.Method)
+}
+
+func resolveSeguridadPermissionAction(r *http.Request) string {
+	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+	switch action {
+	case "activar", "desactivar":
+		return permActionUpdate
+	case "reenviar_confirmacion":
+		return permActionApprove
 	}
 	return defaultPermissionActionFromMethod(r.Method)
 }
@@ -313,6 +381,44 @@ func roleAllowsModuleAction(role, module, action string) bool {
 			return roleIn(role, "admin_empresa", "contabilidad")
 		case permActionDelete:
 			return roleIn(role, "contabilidad")
+		}
+
+	case permModuleClientes:
+		switch action {
+		case permActionRead:
+			return roleIn(role, allReadRoles...)
+		case permActionCreate, permActionUpdate, permActionApprove:
+			return roleIn(role, "admin_empresa", "supervisor_sucursal", "cajero")
+		case permActionDelete:
+			return false
+		}
+
+	case permModuleCompras:
+		switch action {
+		case permActionRead:
+			return roleIn(role, allReadRoles...)
+		case permActionCreate, permActionUpdate, permActionApprove:
+			return roleIn(role, "admin_empresa", "supervisor_sucursal", "compras")
+		case permActionDelete:
+			return false
+		}
+
+	case permModuleFacturacion:
+		switch action {
+		case permActionRead:
+			return roleIn(role, allReadRoles...)
+		case permActionCreate, permActionUpdate, permActionApprove:
+			return roleIn(role, "admin_empresa", "cajero")
+		case permActionDelete:
+			return false
+		}
+
+	case permModuleSeguridad:
+		switch action {
+		case permActionRead:
+			return roleIn(role, allReadRoles...)
+		case permActionCreate, permActionUpdate, permActionDelete, permActionApprove:
+			return roleIn(role, "admin_empresa")
 		}
 	}
 

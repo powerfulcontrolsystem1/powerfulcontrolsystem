@@ -1,0 +1,36 @@
+﻿**********************
+Inicio de la transcripción de Windows PowerShell
+Hora de inicio: 20260403221311
+Nombre de usuario: NITRO\ivanm
+Usuario RunAs: NITRO\ivanm
+Nombre de la configuración: 
+Máquina: NITRO (Microsoft Windows NT 10.0.26200.0)
+Aplicación host: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -ExecutionPolicy Bypass -Command Import-Module 'c:\Users\ivanm\.vscode\extensions\ms-vscode.powershell-2025.4.0\modules\PowerShellEditorServices\PowerShellEditorServices.psd1'; Start-EditorServices -HostName 'Visual Studio Code Host' -HostProfileId 'Microsoft.VSCode' -HostVersion '2025.4.0' -BundledModulesPath 'c:\Users\ivanm\.vscode\extensions\ms-vscode.powershell-2025.4.0\modules' -EnableConsoleRepl -StartupBanner "PowerShell Extension v2025.4.0
+Copyright (c) Microsoft Corporation.
+
+https://aka.ms/vscode-powershell
+Type 'help' to get help.
+" -LogLevel 'Warning' -LogPath 'c:\Users\ivanm\AppData\Roaming\Code\logs\20260403T183808\window1\exthost\ms-vscode.powershell' -SessionDetailsPath 'c:\Users\ivanm\AppData\Roaming\Code\User\globalStorage\ms-vscode.powershell\sessions\PSES-VSCode-18940-903734.json' -FeatureFlags @() 
+Id. de proceso: 20808
+PSVersion: 5.1.26100.7920
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.7920
+BuildVersion: 10.0.26100.7920
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+La transcripción ha comenzado. El archivo de salida es D:\powerfulcontrolsystem\scripts\logs\actualizar_repositorio-20260403-221311.log
+Preparando cambios para commit...
+
+Creando commit: ActualizaciÃ³n automÃ¡tica desde script: aÃ±adir/actualizar archivos
+
+Intentando push al remoto 'origin' (modo normal)...
+Ejecutando: git push  -u origin HEAD
+Ã‰xito: cambios empujados al remoto 'origin'.
+OperaciÃ³n completada con Ã©xito.
+**********************
+Fin de la transcripción de Windows PowerShell
+Hora de finalización: 20260403221328
+**********************

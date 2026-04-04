@@ -17,7 +17,7 @@
 
     <section class="card form mp-card" id="mpAdvancedConfig">
       <h2>Mercado Pago — Credenciales secretas</h2>
-      <p class="form-help">Guarde el Access Token de Mercado Pago. Active cifrado si el servidor soporta `CONFIG_ENC_KEY`.</p>
+      <p class="form-help">Guarde el Access Token de Mercado Pago. El secreto se guarda cifrado obligatoriamente en el servidor.</p>
 
       <div class="form-row">
         <div class="form-col">
@@ -35,7 +35,7 @@
       <div class="form-row">
         <div class="form-col">
           <label class="form-label">Opciones</label>
-          <div class="form-help"><label><input id="mpEncryptToggleAdv" type="checkbox"> Cifrar al guardar (si el servidor lo permite)</label></div>
+          <div class="form-help">Los secretos se guardan cifrados obligatoriamente.</div>
           <div class="form-help"><label><input id="mpSkipValidateAdv" type="checkbox"> Guardar sin validar (aceptar token aunque la validación externa falle)</label></div>
         </div>
       </div>
@@ -62,7 +62,7 @@
           <label class="form-label">Webhook Secret (secreto)</label>
           <input id="mpWebhookSecret" class="form-input" type="password" placeholder="Clave secreta para validar webhooks">
           <div id="mpWebhookSecretSetAdv" class="form-help">Cargando estado...</div>
-          <div class="form-help"><label><input id="mpWebhookEncryptToggle" type="checkbox"> Cifrar al guardar (si el servidor lo permite)</label></div>
+          <div class="form-help">El secreto del webhook se guarda cifrado obligatoriamente.</div>
         </div>
       </div>
 
@@ -116,7 +116,7 @@
         </div>
         <div class="form-col">
           <label class="form-label">Opciones</label>
-          <div class="form-help"><label><input id="wompiEncryptToggle" type="checkbox"> Cifrar llaves secretas al guardar</label></div>
+          <div class="form-help">Las llaves secretas se guardan cifradas obligatoriamente.</div>
           <div class="form-help">Si no conoces las credenciales, deja este formulario listo y luego pégalas cuando te las entregue Wompi.</div>
         </div>
       </div>
@@ -171,7 +171,7 @@
       <div class="form-row">
         <div class="form-col">
           <label class="form-label">Opciones</label>
-          <div class="form-help"><label><input id="gmailEncryptToggle" type="checkbox"> Cifrar contraseña al guardar (si el servidor lo permite)</label></div>
+          <div class="form-help">La contraseña de aplicación se guarda cifrada obligatoriamente.</div>
         </div>
       </div>
 
@@ -197,7 +197,7 @@
         </div>
         <div class="form-col">
           <label class="form-label">Opciones</label>
-          <div class="form-help"><label><input id="aiEncryptToggle" type="checkbox"> Cifrar credencial al guardar (si el servidor lo permite)</label></div>
+          <div class="form-help">La credencial Gemini se guarda cifrada obligatoriamente en backend.</div>
           <div class="form-help">La llave se guarda en backend y se registra la cuenta Google que realizó el cambio.</div>
         </div>
       </div>
@@ -225,24 +225,19 @@
             const mp = await res2.json();
             // habilitar/deshabilitar opción de cifrado según soporte del servidor
             if (typeof mp.encryption_available !== 'undefined' && !mp.encryption_available) {
-              document.getElementById('mpEncryptToggleAdv').disabled = true;
-              document.getElementById('mpEncryptToggleAdv').checked = false;
-              if (document.getElementById('mpWebhookEncryptToggle')) document.getElementById('mpWebhookEncryptToggle').disabled = true;
-              // informar al usuario
-              document.getElementById('mpMsgAdv').innerText = 'Nota: cifrado no disponible en este servidor (CONFIG_ENC_KEY no definido).';
+              // Cifrado obligatorio no disponible: deshabilitar guardado y mostrar instrucción clara
+              document.getElementById('saveMpAdvBtn').disabled = true;
+              if (document.getElementById('saveMpWebhookBtn')) document.getElementById('saveMpWebhookBtn').disabled = true;
+              document.getElementById('mpMsgAdv').innerText = 'ERROR: cifrado obligatorio no disponible en este servidor (CONFIG_ENC_KEY no definido). Configure la variable de entorno en el servidor antes de guardar credenciales sensibles.';
             }
             // Mostrar asteriscos fijos para no exponer fragmentos, y mostrar fecha de última actualización si existe
             if (mp.access_token_set) {
               const ts = mp.access_token_updated ? (' — Última actualización: ' + mp.access_token_updated) : '';
               document.getElementById('mpAccessSetAdv').innerText = 'Access token guardado (********)' + ts;
               document.getElementById('mpAccessTokenAdv').disabled = true;
-              document.getElementById('editMpAdvBtn').style.display = '';
-              document.getElementById('saveMpAdvBtn').disabled = true;
             } else {
               document.getElementById('mpAccessSetAdv').innerText = 'No configurado';
               document.getElementById('mpAccessTokenAdv').disabled = false;
-              document.getElementById('editMpAdvBtn').style.display = 'none';
-              document.getElementById('saveMpAdvBtn').disabled = false;
             }
             if (mp.public_key_set) {
               const pts = mp.public_key_updated ? (' — Última actualización: ' + mp.public_key_updated) : '';
@@ -283,8 +278,8 @@
           if (rw.ok) {
             const wompi = await rw.json();
             if (typeof wompi.encryption_available !== 'undefined' && !wompi.encryption_available) {
-              document.getElementById('wompiEncryptToggle').disabled = true;
-              document.getElementById('wompiEncryptToggle').checked = false;
+              document.getElementById('saveWompiBtn').disabled = true;
+              document.getElementById('wompiMsg').innerText = 'ERROR: cifrado obligatorio no disponible en el servidor (CONFIG_ENC_KEY no definido).';
             }
 
             const modeToggle = document.getElementById('wompiModeToggle');
@@ -385,9 +380,8 @@
           const cfg = await rg.json();
 
           if (typeof cfg.encryption_available !== 'undefined' && !cfg.encryption_available) {
-            document.getElementById('gmailEncryptToggle').disabled = true;
-            document.getElementById('gmailEncryptToggle').checked = false;
-            msg.innerText = 'Nota: cifrado no disponible en este servidor (CONFIG_ENC_KEY no definido).';
+            document.getElementById('saveGmailBtn').disabled = true;
+            msg.innerText = 'ERROR: cifrado obligatorio no disponible en este servidor (CONFIG_ENC_KEY no definido). Configure la variable de entorno en el servidor.';
           }
 
           document.getElementById('gmailSMTPEmail').value = cfg.smtp_email || '';
@@ -455,10 +449,8 @@
           accountEl.innerText = 'Cuenta Google logueada: ' + (data.google_account || 'no disponible');
 
           if (typeof data.encryption_available !== 'undefined' && !data.encryption_available) {
-            document.getElementById('aiEncryptToggle').disabled = true;
-            document.getElementById('aiEncryptToggle').checked = false;
-          } else {
-            document.getElementById('aiEncryptToggle').disabled = false;
+            document.getElementById('saveAiConfigBtn').disabled = true;
+            document.getElementById('aiConfigMsg').innerText = 'ERROR: cifrado obligatorio no disponible en este servidor (CONFIG_ENC_KEY no definido).';
           }
 
           const byModel = {};
@@ -518,14 +510,9 @@
         }
 
         const payload = {
-          encrypt: !!document.getElementById('aiEncryptToggle').checked,
+          encrypt: true,
           credentials: credentials
         };
-
-        const btn = document.getElementById('saveAiConfigBtn');
-        const msg = document.getElementById('aiConfigMsg');
-        btn.disabled = true;
-        btn.innerText = 'Guardando...';
 
         try {
           const res = await fetch('/super/api/config/ai', {
@@ -575,7 +562,7 @@
           smtp_host: document.getElementById('gmailHost').value.trim(),
           smtp_port: document.getElementById('gmailPort').value.trim(),
           confirm_base_url: document.getElementById('gmailBaseURL').value.trim(),
-          encrypt: !!document.getElementById('gmailEncryptToggle').checked
+          encrypt: true
         };
 
         if (!payload.smtp_email && !payload.smtp_app_password && !payload.smtp_from_name && !payload.smtp_host && !payload.smtp_port && !payload.confirm_base_url) {
@@ -633,10 +620,10 @@
         if (e && e.preventDefault) e.preventDefault();
         const access = document.getElementById('mpAccessTokenAdv').value.trim();
         const pub = document.getElementById('mpPublicKeyAdv').value.trim();
-        const encrypt = !!document.getElementById('mpEncryptToggleAdv').checked;
+        const encrypt = true; // cifrado obligatorio
         const webhookUrl = document.getElementById('mpWebhookUrl').value.trim();
         const webhookSecret = document.getElementById('mpWebhookSecret').value.trim();
-        const webhookEncrypt = !!(document.getElementById('mpWebhookEncryptToggle') && document.getElementById('mpWebhookEncryptToggle').checked);
+        const webhookEncrypt = true; // cifrado obligatorio
         if (!access && !pub && !webhookUrl && !webhookSecret){ alert('Ingrese al menos un valor para guardar'); return }
         const payload = { encrypt };
         const skipValidation = !!document.getElementById('mpSkipValidateAdv').checked;
@@ -725,7 +712,7 @@
         const pub = document.getElementById('wompiPublicKey').value.trim();
         const prv = document.getElementById('wompiPrivateKey').value.trim();
         const integrity = document.getElementById('wompiIntegrityKey').value.trim();
-        const encrypt = !!document.getElementById('wompiEncryptToggle').checked;
+        const encrypt = true; // cifrado obligatorio
         const mode = document.getElementById('wompiModeToggle').checked ? 'production' : 'sandbox';
 
         const payload = { encrypt, mode };

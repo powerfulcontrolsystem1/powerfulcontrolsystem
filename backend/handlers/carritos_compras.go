@@ -72,12 +72,36 @@ func EmpresaCarritosCompraHandler(dbEmp *sql.DB) http.HandlerFunc {
 				}
 				resetItems := strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("reset_items")), "1") ||
 					strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("reset_items")), "true")
+				carrito, errCarrito := dbpkg.GetCarritoCompraByID(dbEmp, empresaID, id)
+				if errCarrito != nil {
+					if errors.Is(errCarrito, sql.ErrNoRows) {
+						http.Error(w, "carrito no encontrado", http.StatusNotFound)
+						return
+					}
+					log.Printf("[carritos] get for activar_estacion empresa_id=%d id=%d error: %v", empresaID, id, errCarrito)
+					http.Error(w, "No se pudo validar estado del carrito", http.StatusInternalServerError)
+					return
+				}
+				if isCarritoVentaPagada(carrito) && !resetItems {
+					http.Error(w, "venta pagada: use reset_items=1 para iniciar una nueva sesion", http.StatusConflict)
+					return
+				}
+				if !resetItems && normalizeCarritoRegistroEstado(carrito.Estado) == "activo" && normalizeCarritoOperativoEstado(carrito.EstadoCarrito) == "abierto" {
+					http.Error(w, "la venta ya se encuentra activa y abierta", http.StatusConflict)
+					return
+				}
 				if err := dbpkg.ActivateCarritoStationSession(dbEmp, empresaID, id, resetItems); err != nil {
 					log.Printf("[carritos] activar_estacion empresa_id=%d id=%d reset_items=%v error: %v", empresaID, id, resetItems, err)
 					http.Error(w, "No se pudo activar el carrito de estación", http.StatusInternalServerError)
 					return
 				}
-				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "estado": "activo", "estado_carrito": "abierto"})
+				registrarEventoContableVentaCarrito(dbEmp, r, carrito, "venta_sesion_activada", carrito.Total, map[string]interface{}{
+					"action":                "activar_estacion",
+					"reset_items":           resetItems,
+					"estado_venta_anterior": carrito.EstadoVenta,
+					"estado_venta_nuevo":    "venta_abierta",
+				}, "activacion de sesion de venta en estacion")
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "estado": "activo", "estado_carrito": "abierto", "estado_venta": "venta_abierta"})
 				return
 			}
 
@@ -90,6 +114,20 @@ func EmpresaCarritosCompraHandler(dbEmp *sql.DB) http.HandlerFunc {
 				id, errID := parseInt64Query(r, "id")
 				if errID != nil {
 					http.Error(w, errID.Error(), http.StatusBadRequest)
+					return
+				}
+				carrito, errCarrito := dbpkg.GetCarritoCompraByID(dbEmp, empresaID, id)
+				if errCarrito != nil {
+					if errors.Is(errCarrito, sql.ErrNoRows) {
+						http.Error(w, "carrito no encontrado", http.StatusNotFound)
+						return
+					}
+					log.Printf("[carritos] get for pagar_estacion empresa_id=%d id=%d error: %v", empresaID, id, errCarrito)
+					http.Error(w, "No se pudo validar estado del carrito", http.StatusInternalServerError)
+					return
+				}
+				if err := validateCarritoTransitionForAction(carrito, action); err != nil {
+					http.Error(w, err.Error(), http.StatusConflict)
 					return
 				}
 
@@ -121,7 +159,21 @@ func EmpresaCarritosCompraHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, "No se pudo cerrar el carrito por pago", http.StatusInternalServerError)
 					return
 				}
-				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "estado": "inactivo", "estado_carrito": "cerrado"})
+				montoEvento := payload.TotalPagado
+				if montoEvento <= 0 {
+					montoEvento = carrito.Total
+				}
+				registrarEventoContableVentaCarrito(dbEmp, r, carrito, "venta_pagada", montoEvento, map[string]interface{}{
+					"action":                "pagar_estacion",
+					"descuento_tipo":        payload.DescuentoTipo,
+					"descuento_codigo":      payload.DescuentoCodigo,
+					"descuento_valor":       payload.DescuentoValor,
+					"devolucion_total":      payload.DevolucionTotal,
+					"total_pagado":          payload.TotalPagado,
+					"estado_venta_anterior": carrito.EstadoVenta,
+					"estado_venta_nuevo":    "venta_pagada",
+				}, "pago de venta en estacion")
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "estado": "inactivo", "estado_carrito": "cerrado", "estado_venta": "venta_pagada"})
 				return
 			}
 
@@ -136,16 +188,42 @@ func EmpresaCarritosCompraHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, errID.Error(), http.StatusBadRequest)
 					return
 				}
+				carrito, errCarrito := dbpkg.GetCarritoCompraByID(dbEmp, empresaID, id)
+				if errCarrito != nil {
+					if errors.Is(errCarrito, sql.ErrNoRows) {
+						http.Error(w, "carrito no encontrado", http.StatusNotFound)
+						return
+					}
+					log.Printf("[carritos] get for estado empresa_id=%d id=%d action=%s error: %v", empresaID, id, action, errCarrito)
+					http.Error(w, "No se pudo validar estado del carrito", http.StatusInternalServerError)
+					return
+				}
+				if err := validateCarritoTransitionForAction(carrito, action); err != nil {
+					http.Error(w, err.Error(), http.StatusConflict)
+					return
+				}
 				estado := "activo"
+				estadoVenta := "venta_abierta"
 				if action == "desactivar" {
 					estado = "inactivo"
+					estadoVenta = "venta_suspendida"
 				}
 				if err := dbpkg.SetCarritoCompraEstado(dbEmp, empresaID, id, estado); err != nil {
 					log.Printf("[carritos] set estado empresa_id=%d id=%d estado=%s error: %v", empresaID, id, estado, err)
 					http.Error(w, "No se pudo actualizar estado del carrito", http.StatusInternalServerError)
 					return
 				}
-				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "estado": estado})
+				evento := "venta_suspendida"
+				if action == "activar" {
+					evento = "venta_activada"
+				}
+				registrarEventoContableVentaCarrito(dbEmp, r, carrito, evento, carrito.Total, map[string]interface{}{
+					"action":                action,
+					"estado_registro_nuevo": estado,
+					"estado_venta_anterior": carrito.EstadoVenta,
+					"estado_venta_nuevo":    estadoVenta,
+				}, "actualizacion de estado de venta")
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "estado": estado, "estado_venta": estadoVenta})
 				return
 			}
 
@@ -160,16 +238,42 @@ func EmpresaCarritosCompraHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, errID.Error(), http.StatusBadRequest)
 					return
 				}
+				carrito, errCarrito := dbpkg.GetCarritoCompraByID(dbEmp, empresaID, id)
+				if errCarrito != nil {
+					if errors.Is(errCarrito, sql.ErrNoRows) {
+						http.Error(w, "carrito no encontrado", http.StatusNotFound)
+						return
+					}
+					log.Printf("[carritos] get for estado_operacion empresa_id=%d id=%d action=%s error: %v", empresaID, id, action, errCarrito)
+					http.Error(w, "No se pudo validar estado del carrito", http.StatusInternalServerError)
+					return
+				}
+				if err := validateCarritoTransitionForAction(carrito, action); err != nil {
+					http.Error(w, err.Error(), http.StatusConflict)
+					return
+				}
 				estadoCarrito := "abierto"
+				estadoVenta := "venta_abierta"
 				if action == "cerrar" {
 					estadoCarrito = "cerrado"
+					estadoVenta = "venta_cerrada"
 				}
 				if err := dbpkg.SetCarritoOperacionEstado(dbEmp, empresaID, id, estadoCarrito); err != nil {
 					log.Printf("[carritos] set estado_operacion empresa_id=%d id=%d estado=%s error: %v", empresaID, id, estadoCarrito, err)
 					http.Error(w, "No se pudo actualizar estado operativo del carrito", http.StatusInternalServerError)
 					return
 				}
-				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "estado_carrito": estadoCarrito})
+				evento := "venta_reabierta"
+				if action == "cerrar" {
+					evento = "venta_cerrada"
+				}
+				registrarEventoContableVentaCarrito(dbEmp, r, carrito, evento, carrito.Total, map[string]interface{}{
+					"action":                 action,
+					"estado_operativo_nuevo": estadoCarrito,
+					"estado_venta_anterior":  carrito.EstadoVenta,
+					"estado_venta_nuevo":     estadoVenta,
+				}, "actualizacion de estado operativo de venta")
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "estado_carrito": estadoCarrito, "estado_venta": estadoVenta})
 				return
 			}
 
@@ -372,6 +476,111 @@ func validateCarritoPayload(payload dbpkg.CarritoCompra) error {
 		return fmt.Errorf("cliente_id invalido")
 	}
 	return nil
+}
+
+func normalizeCarritoRegistroEstado(v string) string {
+	trim := strings.TrimSpace(strings.ToLower(v))
+	if trim == "" {
+		return "activo"
+	}
+	return trim
+}
+
+func normalizeCarritoOperativoEstado(v string) string {
+	trim := strings.TrimSpace(strings.ToLower(v))
+	if trim == "" {
+		return "abierto"
+	}
+	return trim
+}
+
+func isCarritoVentaPagada(carrito *dbpkg.CarritoCompra) bool {
+	if carrito == nil {
+		return false
+	}
+	return strings.TrimSpace(carrito.PagadoEn) != ""
+}
+
+func validateCarritoTransitionForAction(carrito *dbpkg.CarritoCompra, action string) error {
+	if carrito == nil {
+		return fmt.Errorf("carrito no encontrado")
+	}
+	estadoRegistro := normalizeCarritoRegistroEstado(carrito.Estado)
+	estadoOperativo := normalizeCarritoOperativoEstado(carrito.EstadoCarrito)
+	pagada := isCarritoVentaPagada(carrito)
+
+	switch strings.TrimSpace(strings.ToLower(action)) {
+	case "pagar_estacion":
+		if pagada {
+			return fmt.Errorf("la venta ya fue pagada")
+		}
+		if estadoRegistro != "activo" {
+			return fmt.Errorf("solo se puede pagar una venta activa")
+		}
+
+	case "cerrar":
+		if pagada {
+			return fmt.Errorf("la venta ya fue pagada")
+		}
+		if estadoRegistro != "activo" {
+			return fmt.Errorf("solo se puede cerrar una venta activa")
+		}
+		if estadoOperativo == "cerrado" {
+			return fmt.Errorf("la venta ya se encuentra cerrada")
+		}
+
+	case "reabrir":
+		if pagada {
+			return fmt.Errorf("no se puede reabrir una venta pagada")
+		}
+		if estadoRegistro != "activo" {
+			return fmt.Errorf("solo se puede reabrir una venta activa")
+		}
+		if estadoOperativo != "cerrado" {
+			return fmt.Errorf("solo se puede reabrir una venta cerrada")
+		}
+
+	case "activar":
+		if pagada {
+			return fmt.Errorf("no se puede activar una venta pagada; use activar_estacion para iniciar una nueva sesion")
+		}
+		if estadoRegistro == "activo" {
+			return fmt.Errorf("la venta ya se encuentra activa")
+		}
+
+	case "desactivar":
+		if pagada {
+			return fmt.Errorf("la venta pagada ya se encuentra inactiva")
+		}
+		if estadoRegistro != "activo" {
+			return fmt.Errorf("la venta ya se encuentra inactiva")
+		}
+	}
+
+	return nil
+}
+
+func registrarEventoContableVentaCarrito(dbEmp *sql.DB, r *http.Request, carrito *dbpkg.CarritoCompra, evento string, monto float64, payload map[string]interface{}, observaciones string) {
+	if dbEmp == nil || carrito == nil || strings.TrimSpace(evento) == "" {
+		return
+	}
+	if monto <= 0 {
+		monto = carrito.Total
+	}
+	registrarEventoContableNoBloqueante(dbEmp, r, "carritos", dbpkg.EmpresaEventoContable{
+		EmpresaID:       carrito.EmpresaID,
+		Modulo:          "ventas",
+		Evento:          evento,
+		Entidad:         "carrito_compra",
+		EntidadID:       carrito.ID,
+		DocumentoTipo:   "carrito",
+		DocumentoCodigo: strings.TrimSpace(carrito.Codigo),
+		MontoTotal:      monto,
+		Moneda:          strings.TrimSpace(carrito.Moneda),
+		Origen:          "api_carritos_compra",
+		Estado:          "activo",
+		Observaciones:   strings.TrimSpace(observaciones),
+	}, payload)
 }
 
 func validateCarritoItemPayload(payload dbpkg.CarritoCompraItem) error {

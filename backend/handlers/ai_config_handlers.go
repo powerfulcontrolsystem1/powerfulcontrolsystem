@@ -61,7 +61,6 @@ func AIModelsConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 
 		case http.MethodPut, http.MethodPost:
 			var payload struct {
-				Encrypt     bool `json:"encrypt"`
 				Credentials []struct {
 					ModelID string `json:"model_id"`
 					APIKey  string `json:"api_key"`
@@ -72,8 +71,9 @@ func AIModelsConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 
-			if payload.Encrypt && !utils.EncryptionAvailable() {
-				http.Error(w, "encryption failed: CONFIG_ENC_KEY not set", http.StatusBadRequest)
+			// Forzar cifrado obligatorio para todas las credenciales sensibles en configuración avanzada.
+			if !utils.EncryptionAvailable() {
+				http.Error(w, "encryption required: CONFIG_ENC_KEY not set", http.StatusBadRequest)
 				return
 			}
 
@@ -97,19 +97,14 @@ func AIModelsConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 					return
 				}
 
-				persistValue := apiKey
-				encrypted := false
-				if payload.Encrypt {
-					encVal, err := utils.EncryptString(apiKey)
-					if err != nil {
-						http.Error(w, "encryption failed: "+err.Error(), http.StatusInternalServerError)
-						return
-					}
-					persistValue = encVal
-					encrypted = true
+				// Siempre cifrar el valor antes de persistir
+				encVal, err := utils.EncryptString(apiKey)
+				if err != nil {
+					http.Error(w, "encryption failed: "+err.Error(), http.StatusInternalServerError)
+					return
 				}
 
-				if err := dbpkg.SetConfigValue(dbSuper, def.ConfigKey, persistValue, encrypted); err != nil {
+				if err := dbpkg.SetConfigValue(dbSuper, def.ConfigKey, encVal, true); err != nil {
 					http.Error(w, "failed to save "+def.ConfigKey+": "+err.Error(), http.StatusInternalServerError)
 					return
 				}
@@ -120,7 +115,7 @@ func AIModelsConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 
 				providerKey := aiProviderConfigKey(def.Provider)
 				if providerKey != "" {
-					if err := dbpkg.SetConfigValue(dbSuper, providerKey, persistValue, encrypted); err != nil {
+					if err := dbpkg.SetConfigValue(dbSuper, providerKey, encVal, true); err != nil {
 						http.Error(w, "failed to save provider key "+providerKey+": "+err.Error(), http.StatusInternalServerError)
 						return
 					}

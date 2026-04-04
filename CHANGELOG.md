@@ -1,6 +1,178 @@
 # CHANGELOG
 
 ## 2026-04-04
+- Punto 12 (cierres de caja) — inicio de flujo operativo por sucursal:
+	- `backend/db/finanzas.go` agrega `empresa_cierres_caja` con soporte de apertura, arqueo, cierre, reapertura, aprobacion y anulacion.
+	- `backend/handlers/finanzas.go` incorpora `GET/POST/PUT/DELETE /api/empresa/finanzas/cierres_caja`.
+	- `backend/main.go` publica la ruta de cierres de caja y registra migracion `2026-04-04-009-cierres-caja`.
+	- `backend/handlers/empresa_permisos.go` trata `action=aprobar` en finanzas como accion `A`.
+	- Pruebas nuevas:
+		- `backend/db/finanzas_test.go`: `TestEmpresaCierresCajaFlow`.
+		- `backend/handlers/eventos_contables_modulos_test.go`: `TestEmpresaFinanzasCierresCajaHandler`.
+- Validacion tecnica:
+	- `go test ./db -run "TestEmpresaCierresCajaFlow|TestGetEmpresaReportesTableroResumen|TestEmpresaFinanzas" -count=1` (ok).
+	- `go test ./handlers -run "TestEmpresaFinanzasCierresCajaHandler|TestEmpresaFinanzasTableroResumenHandler|TestEmpresaFinanzasEmiteEventosContables" -count=1` (ok).
+	- `go test ./auth ./db ./handlers ./metrics ./utils -count=1` (ok).
+
+## 2026-04-04
+- Punto 11 (reportes financieros) — inicio de tablero minimo financiero-operativo:
+	- `backend/db/finanzas.go` agrega `GetEmpresaReportesTableroResumen` con KPI consolidados:
+		- operativos (ventas/ticket/clientes/productos/compras),
+		- financieros (ingresos/egresos/balance/periodos),
+		- contables (eventos y documentos activos).
+	- `backend/handlers/finanzas.go` extiende `GET /api/empresa/finanzas/movimientos` con `action=tablero|dashboard|resumen_kpi`.
+	- `web/administrar_empresa/reportes.html` incorpora KPI financieros y contables en la misma vista de reportes.
+	- Pruebas nuevas:
+		- `backend/db/finanzas_test.go`: `TestGetEmpresaReportesTableroResumen`.
+		- `backend/handlers/eventos_contables_modulos_test.go`: `TestEmpresaFinanzasTableroResumenHandler`.
+- Validacion tecnica:
+	- `go test ./db -run "TestGetEmpresaReportesTableroResumen|TestEmpresaFinanzas" -count=1` (ok).
+	- `go test ./handlers -run "TestEmpresaFinanzasTableroResumenHandler|TestEmpresaFinanzasEmiteEventosContables" -count=1` (ok).
+	- `go test ./... -count=1` en `backend` (ok).
+
+## 2026-04-04
+- Punto 8 + Punto 9 + Punto 10 (facturacion/compras) — persistencia canonica de documentos transaccionales para `entidad_id`:
+	- Se agrega `backend/db/documentos_transaccionales.go` con tablas y APIs de upsert/lectura para:
+		- `empresa_facturacion_documentos`.
+		- `empresa_compras_documentos`.
+	- `backend/main.go` integra:
+		- `EnsureEmpresaDocumentosTransaccionalesSchema`.
+		- migracion `2026-04-04-008-documentos-transaccionales`.
+	- `backend/handlers/facturacion_electronica.go` y `backend/handlers/productos.go` ahora:
+		- consultan estado documental persistido por `documento_codigo`,
+		- aplican transicion de ciclo sobre estado canonico,
+		- persisten el nuevo estado en tabla de negocio,
+		- emiten evento contable usando `entidad_id` canonico (ID persistido en tabla documental).
+	- Se agrega `backend/db/documentos_transaccionales_test.go` y se amplian aserciones en `backend/handlers/eventos_contables_modulos_test.go` para verificar estabilidad de `entidad_id` en el ciclo documental.
+- Validacion tecnica:
+	- `go test ./handlers -run "FacturacionTransaccionalEmiteEventosContables|ComprasTransaccionalEmiteEventosContables|FacturacionElectronicaEmiteEventoContable|ProveedoresEmiteEventoContableCompras|FinanzasEmiteEventosContables" -count=1` (ok).
+	- `go test ./auth ./db ./handlers ./metrics ./utils` (ok).
+	- `go test ./...` en `backend` (ok).
+
+## 2026-04-04
+- Punto 8 + Punto 9 + Punto 10 (facturacion/compras) — estandarizacion de estados en ciclo documental transaccional:
+	- Se agrega `backend/handlers/documentos_lifecycle.go` con reglas de transicion por accion y estado previo para facturacion/compras.
+	- `backend/handlers/facturacion_electronica.go` ahora valida `estado_actual` en `emitir/anular/nota_credito`, devuelve `409` en conflictos y responde `estado_anterior`/`estado_nuevo` cuando la transicion es valida.
+	- `backend/handlers/productos.go` (`EmpresaProveedoresHandler`) aplica validacion equivalente para `emitir_orden/recepcionar_compra/contabilizar_compra`.
+	- `backend/handlers/eventos_contables_modulos_test.go` amplía cobertura con pruebas de transiciones invalidas para facturacion y compras.
+- Validacion tecnica:
+	- `runTests` sobre `backend/handlers/eventos_contables_modulos_test.go` (ok).
+	- `go test ./...` en `backend` (ok).
+
+## 2026-04-04
+- Punto 8 + Punto 9 + Punto 10 (facturacion/compras) — eventos transaccionales de factura y orden:
+	- `backend/handlers/facturacion_electronica.go` agrega acciones transaccionales:
+		- `action=emitir` -> `factura_emitida`.
+		- `action=anular` -> `factura_anulada`.
+		- `action=nota_credito|emitir_nota_credito` -> `nota_credito_emitida`.
+	- `backend/handlers/productos.go` (`EmpresaProveedoresHandler`) agrega acciones transaccionales:
+		- `action=emitir|emitir_orden` -> `orden_compra_emitida`.
+		- `action=recepcionar|recepcionar_compra` -> `compra_recepcionada`.
+		- `action=contabilizar|contabilizar_compra` -> `compra_contabilizada`.
+	- `backend/handlers/empresa_permisos.go` amplía mapeo de acciones de permisos para compras/facturacion.
+	- `backend/handlers/eventos_contables_modulos_test.go` agrega pruebas de emisiones transaccionales de factura/orden.
+- Validacion tecnica:
+	- `go test ./handlers -run "FacturacionTransaccionalEmiteEventosContables|ComprasTransaccionalEmiteEventosContables|FacturacionElectronicaEmiteEventoContable|ProveedoresEmiteEventoContableCompras|FinanzasEmiteEventosContables" -count=1` (ok).
+	- `go test ./...` en `backend` (ok).
+
+## 2026-04-04
+- Punto 8 + Punto 9 + Punto 10 (facturacion/compras/finanzas) — extension de emision de eventos contables por modulo:
+	- Se agrega `backend/handlers/eventos_contables.go` para registro no bloqueante y reutilizable de eventos contables en handlers.
+	- Se amplia `backend/db/eventos_contables.go` con eventos operativos de:
+		- `facturacion`: `configuracion_facturacion_actualizada`.
+		- `compras`: `proveedor_registrado`, `proveedor_actualizado`, `proveedor_activado`, `proveedor_desactivado`, `proveedor_eliminado`.
+	- Se integra emision en:
+		- `backend/handlers/facturacion_electronica.go`.
+		- `backend/handlers/productos.go` (proveedores).
+		- `backend/handlers/finanzas.go` (movimientos y periodos).
+	- `backend/handlers/carritos_compras.go` migra a helper comun para consistencia del registro contable.
+	- Se agregan pruebas en `backend/handlers/eventos_contables_modulos_test.go` para validar emision en facturacion, compras y finanzas.
+- Validacion tecnica:
+	- `go test ./db -run "EventosContables" -count=1` (ok).
+	- `go test ./handlers -run "FacturacionElectronicaEmiteEventoContable|ProveedoresEmiteEventoContableCompras|FinanzasEmiteEventosContables|CarritosCompraAndItemsFlow" -count=1` (ok).
+	- `go test ./...` en `backend` (ok).
+
+## 2026-04-04
+- Punto 4 + Punto 10 (gestion de ventas + modulo contable integrado) — contrato de eventos contables por modulo:
+	- Se agrega `backend/db/eventos_contables.go` con contrato base de eventos para `ventas`, `facturacion`, `compras` y `finanzas`.
+	- Se crea tabla `empresa_eventos_contables` en `empresas.db` para registrar trazabilidad contable por empresa (`modulo`, `evento`, `entidad`, `documento`, `periodo_contable`, `monto`, `payload_json`, `procesado`).
+	- Se integra bootstrap en `backend/main.go`:
+		- `EnsureEmpresaEventosContablesSchema`.
+		- migracion `2026-04-04-007-eventos-contables`.
+	- Se actualiza `backend/handlers/carritos_compras.go` para emitir eventos contables en transiciones de venta de carritos (`venta_sesion_activada`, `venta_activada`, `venta_suspendida`, `venta_cerrada`, `venta_reabierta`, `venta_pagada`).
+	- Se agregan pruebas:
+		- `backend/db/eventos_contables_test.go`.
+		- `backend/handlers/auth_users_carritos_test.go` (validacion de emision de `venta_pagada`).
+- Validacion tecnica:
+	- `go test ./db -run "EventosContables|CarritoEstadoVentaLifecycle|Finanzas" -count=1` (ok).
+	- `go test ./handlers -run "EmpresaCarritosCompra|CarritosCompraAndItemsFlow" -count=1` (ok).
+	- `go test ./...` en `backend` (ok).
+
+## 2026-04-04
+- Punto 4 (gestion de ventas) — formalizacion de transiciones del ciclo de venta en carritos:
+	- `backend/handlers/carritos_compras.go` ahora valida transiciones por accion y estado actual del carrito.
+	- Se agregan respuestas de control para integridad de flujo:
+		- `404` para carrito inexistente,
+		- `409` para transiciones no permitidas (doble pago, reabrir pagada, activar estacion pagada sin `reset_items=1`, etc.).
+	- Se agregan pruebas en `backend/handlers/auth_users_carritos_test.go`:
+		- `TestEmpresaCarritosCompraRejectsDoublePago`.
+		- `TestEmpresaCarritosCompraRejectsReabrirVentaPagada`.
+		- `TestEmpresaCarritosCompraRejectsActivarEstacionPagadaSinReset`.
+- Validacion tecnica:
+	- `go test ./handlers -run "Carritos|EmpresaCarritosCompra" -count=1` (ok).
+	- `go test ./...` en `backend` (ok).
+
+## 2026-04-04
+- Cierre validado del punto 3 (permisos y seguridad) con pruebas de endpoints protegidos recien incorporados:
+	- `backend/handlers/empresa_permisos_test.go` agrega:
+		- `TestWithEmpresaInventarioPermissionsDeniesCajeroWriteGPS`.
+		- `TestWithEmpresaVentasPermissionsAllowsCajeroChatAdjuntoMultipart`.
+		- `TestWithEmpresaVentasPermissionsRejectsChatAdjuntoWithoutAuth`.
+	- Se valida control por rol en GPS, extraccion de `empresa_id` en `multipart/form-data` para adjuntos de chat y rechazo `401` sin autenticacion.
+- Inicio del punto 4 (gestion de ventas):
+	- `backend/db/carritos_compras.go` incorpora `estado_venta` derivado en el modelo `CarritoCompra` para estandarizar ciclo de vida de venta:
+		- `venta_abierta`,
+		- `venta_cerrada`,
+		- `venta_pagada`,
+		- `venta_suspendida`.
+	- `backend/handlers/carritos_compras.go` expone `estado_venta` en acciones operativas (`activar_estacion`, `pagar_estacion`, `activar/desactivar`, `cerrar/reabrir`).
+	- Se amplian pruebas en:
+		- `backend/handlers/auth_users_carritos_test.go`.
+		- `backend/db/carritos_inventario_test.go`.
+- Validacion tecnica de esta iteracion:
+	- `runTests` sobre archivos de pruebas modificados (ok).
+	- `go test ./...` en `backend` (ok).
+
+## 2026-04-04
+- Continuacion del punto 3 del plan maestro (permisos y seguridad) con cierre de rutas operativas pendientes:
+	- `backend/handlers/empresa_permisos.go` agrega modulo `seguridad` y wrapper `WithEmpresaSeguridadPermissions`.
+	- `backend/main.go` amplía middleware en rutas:
+		- seguridad: `/api/empresa/usuarios`, `/api/empresa/configuracion_avanzada`, `/api/empresa/roles_de_usuario`.
+		- inventario: `/api/empresa/productos/imagen`, `/api/empresa/ubicacion_gps/dispositivos`, `/api/empresa/ubicacion_gps/recorridos`.
+		- colaboracion operativa (politica ventas): `/api/empresa/chat_tareas/conversaciones`, `/api/empresa/chat_tareas/participantes`, `/api/empresa/chat_tareas/mensajes`, `/api/empresa/chat_tareas/mensajes/adjunto`, `/api/empresa/chat_tareas/tareas`.
+	- `backend/handlers/empresa_permisos_test.go` agrega cobertura para modulo seguridad:
+		- `TestWithEmpresaSeguridadPermissionsDeniesSupervisorWrite`.
+		- `TestWithEmpresaSeguridadPermissionsAllowsSupervisorRead`.
+		- `TestWithEmpresaSeguridadPermissionsAllowsAdminApprove`.
+	- Validacion tecnica: `go test ./handlers -run "WithEmpresa|ConsultarHandlerRejectsEmpresaFueraDeAlcance" -count=1` (ok) y `go test ./...` (ok).
+
+## 2026-04-04
+- Continuacion del punto 3 del plan maestro (permisos y seguridad):
+	- `backend/handlers/empresa_permisos.go` amplía modulos de autorizacion para `clientes`, `compras` y `facturacion`.
+	- Se agregan wrappers: `WithEmpresaClientesPermissions`, `WithEmpresaComprasPermissions`, `WithEmpresaFacturacionPermissions`.
+	- `backend/main.go` aplica middleware en rutas: `/api/empresa/clientes`, `/api/empresa/proveedores`, `/api/empresa/facturacion_electronica`, `/api/empresa/facturacion_electronica/pais_detectado`, y `/api/empresa/servicios` (politica inventario).
+	- Se amplian pruebas en `backend/handlers/empresa_permisos_test.go` para cobertura de los modulos nuevos.
+	- Validacion tecnica: `go test ./handlers -run "WithEmpresa|ConsultarHandlerRejectsEmpresaFueraDeAlcance" -count=1` (ok) y `go test ./...` (ok).
+
+## 2026-04-04
+- Se registra nueva credencial Gemini cifrada en configuración avanzada (`ai.model.google.gemini_2_0_flash.api_key` en `superadministrador.db`).
+- Se valida consumo de Gemini con la nueva credencial: respuesta del proveedor `429` por cuota excedida (sin error de credencial/servicio bloqueado).
+- Se verifica la presencia de la tarjeta de Gemini en `web/super/configuracion_avanzada.html` y se corrige un bloque JavaScript en la carga de estado para mantener consistencia de la vista.
+- Se agrega prueba de seguridad de alcance por empresa para chat IA en `backend/handlers/chat_con_inteligencia_artificial_controller_test.go`:
+	- `TestConsultarHandlerRejectsEmpresaFueraDeAlcance`.
+	- Validación: `go test ./handlers -run "TestConsultarHandlerRejectsEmpresaFueraDeAlcance|TestModelosHandlerRequiresGoogleAccount|TestModelosHandlerReturnsPreferredModelForGoogleAccount" -count=1` (ok).
+
+## 2026-04-04
 - Chat IA empresarial migrado a Gemini-only:
 	- `backend/handlers/chat_con_inteligencia_artificial_controller.go` ahora integra Google Gemini (`generateContent`) y elimina dependencias de OpenAI/DeepSeek/Hugging Face para este módulo.
 	- El catálogo y la configuración de credenciales IA quedan en un único modelo soportado: `google:gemini-2.0-flash` (`GEMINI_API_KEY`).

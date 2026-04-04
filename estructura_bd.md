@@ -1,6 +1,6 @@
 # Estructura de Base de Datos
 
-Version: 2026-04-04.3
+Version: 2026-04-04.6
 Ultima actualizacion: 2026-04-04
 
 Este documento consolida la estructura activa de SQLite para el proyecto.
@@ -83,6 +83,15 @@ Todas las tablas operativas usan como base los campos estandar:
   - fecha_inicio, fecha_fin
   - fecha_cierre, cerrado_por
   - estado (abierto/cerrado/inactivo)
+- empresa_cierres_caja:
+  - empresa_id, sucursal_id, caja_codigo, turno
+  - fecha_operacion, fecha_apertura, fecha_cierre
+  - estado_cierre (abierto/cerrado/aprobado/anulado)
+  - apertura_monto, ingresos_efectivo, egresos_efectivo, retiros_efectivo
+  - caja_teorica, caja_fisica, diferencia_caja
+  - tiene_incidencia, umbral_incidencia
+  - cerrado_por, aprobado_por, aprobado_en
+  - UNIQUE(empresa_id, sucursal_id, caja_codigo, fecha_operacion, turno)
 - empresa_finanzas_configuracion:
   - empresa_id (UNIQUE)
   - habilitar_ingresos, habilitar_egresos, moneda
@@ -94,6 +103,31 @@ Todas las tablas operativas usan como base los campos estandar:
   - cuenta_gastos, cuenta_iva_descontable
   - cuenta_retenciones_cobrar, cuenta_retenciones_pagar
   - cuentas_ingreso_categoria, cuentas_egreso_categoria
+
+### Tabla de eventos contables empresariales
+- empresa_eventos_contables:
+  - empresa_id, modulo, evento
+  - entidad, entidad_id
+  - documento_tipo, documento_codigo
+  - periodo_contable
+  - monto_total, moneda
+  - payload_json, origen
+  - fecha_evento
+  - procesado, fecha_procesado
+
+### Tablas de documentos transaccionales canonicos
+- empresa_facturacion_documentos:
+  - empresa_id, tipo_documento, documento_codigo
+  - estado_documento, estado_anterior, evento_ultimo
+  - periodo_contable, monto_total, moneda
+  - fecha_documento, entidad_relacionada_id
+  - UNIQUE(empresa_id, tipo_documento, documento_codigo)
+- empresa_compras_documentos:
+  - empresa_id, proveedor_id, tipo_documento, documento_codigo
+  - estado_documento, estado_anterior, evento_ultimo
+  - periodo_contable, monto_total, moneda
+  - fecha_documento, entidad_relacionada_id
+  - UNIQUE(empresa_id, tipo_documento, documento_codigo)
 
 ### Tablas de IA empresarial
 - empresa_ai_consultas:
@@ -202,9 +236,13 @@ Todas las tablas operativas usan como base los campos estandar:
 - empresas.id -> users.empresa_id
 - empresas.id -> clientes.empresa_id, categorias_productos.empresa_id, productos.empresa_id, carritos_compras.empresa_id, chat_tareas*.empresa_id
 - empresas.id -> empresa_finanzas_movimientos.empresa_id, empresa_finanzas_periodos.empresa_id, empresa_finanzas_configuracion.empresa_id
+- empresas.id -> empresa_cierres_caja.empresa_id
+- empresas.id -> empresa_facturacion_documentos.empresa_id, empresa_compras_documentos.empresa_id
+- empresas.id -> empresa_eventos_contables.empresa_id
 - empresas.id -> empresa_ai_consultas.empresa_id, empresa_ai_uso_diario.empresa_id
 - empresas.id -> empresa_ai_modelo_preferido.empresa_id
 - empresas.id -> empresa_gps_dispositivos.empresa_id, empresa_gps_recorridos.empresa_id
+- proveedores.id -> empresa_compras_documentos.proveedor_id
 - categorias_productos.id -> productos.categoria_id
 - carritos_compras.id -> carrito_compra_items.carrito_id
 - chat_tareas_conversaciones.id -> chat_tareas_participantes.conversacion_id, chat_tareas_mensajes.conversacion_id, chat_tareas.conversacion_id
@@ -214,6 +252,11 @@ Todas las tablas operativas usan como base los campos estandar:
 - roles_de_usuario.id -> tipos_de_usuario.rol_id
 
 ## 4) Historial resumido
+- 2026-04-04: se agrega `empresa_cierres_caja` para soportar apertura/arqueo/cierre/aprobacion de caja por sucursal y turno, con diferencia e incidencia de arqueo.
+- 2026-04-04: se agregan `empresa_facturacion_documentos` y `empresa_compras_documentos` para persistencia canonica del ciclo documental y referencia estable de `entidad_id` en eventos contables.
+- 2026-04-04: se agrega `empresa_eventos_contables` para contrato de eventos contables por modulo (`ventas`, `facturacion`, `compras`, `finanzas`) y trazabilidad de integracion contable.
+- 2026-04-04: se amplia contrato operativo de `empresa_eventos_contables` con emision activa en `facturacion` (configuracion), `compras` (proveedores) y `finanzas` (movimientos/periodos).
+- 2026-04-04: se activa emision transaccional en endpoints existentes para `facturacion` (`factura_emitida`, `factura_anulada`, `nota_credito_emitida`) y `compras` (`orden_compra_emitida`, `compra_recepcionada`, `compra_contabilizada`).
 - 2026-04-04: se agrega `empresa_ai_modelo_preferido` para persistir el `model_id` preferido por `empresa_id + admin_email` (cuenta Google autenticada).
 - 2026-04-04: se agregan `empresa_ai_consultas` y `empresa_ai_uso_diario` para el modulo `chat_con_inteligencia_artificial`, con auditoria y limites diarios por empresa/proveedor/modelo.
 - 2026-04-04: se amplía finanzas con `empresa_finanzas_periodos`, control de cierre/reapertura de periodos, retenciones (`fuente/ica/iva`) y `total_neto` en `empresa_finanzas_movimientos`.

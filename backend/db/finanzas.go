@@ -4,11 +4,14 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 )
 
 var ErrPeriodoFinancieroCerrado = errors.New("el periodo contable esta cerrado")
+var ErrCierreCajaTransicionInvalida = errors.New("la transicion de estado del cierre de caja no es valida")
+var ErrCierreCajaAprobadoBloqueado = errors.New("el cierre de caja aprobado no permite modificaciones")
 
 // EmpresaFinanzasMovimiento representa un registro de ingreso/egreso por empresa.
 type EmpresaFinanzasMovimiento struct {
@@ -70,6 +73,46 @@ type EmpresaFinanzasPeriodo struct {
 	FechaActualizacion string `json:"fecha_actualizacion"`
 	UsuarioCreador     string `json:"usuario_creador"`
 	Observaciones      string `json:"observaciones"`
+}
+
+type EmpresaCierreCaja struct {
+	ID                 int64   `json:"id"`
+	EmpresaID          int64   `json:"empresa_id"`
+	SucursalID         int64   `json:"sucursal_id"`
+	CajaCodigo         string  `json:"caja_codigo"`
+	Turno              string  `json:"turno"`
+	FechaOperacion     string  `json:"fecha_operacion"`
+	FechaApertura      string  `json:"fecha_apertura"`
+	FechaCierre        string  `json:"fecha_cierre"`
+	EstadoCierre       string  `json:"estado_cierre"`
+	AperturaMonto      float64 `json:"apertura_monto"`
+	IngresosEfectivo   float64 `json:"ingresos_efectivo"`
+	EgresosEfectivo    float64 `json:"egresos_efectivo"`
+	RetirosEfectivo    float64 `json:"retiros_efectivo"`
+	CajaTeorica        float64 `json:"caja_teorica"`
+	CajaFisica         float64 `json:"caja_fisica"`
+	DiferenciaCaja     float64 `json:"diferencia_caja"`
+	Moneda             string  `json:"moneda"`
+	CerradoPor         string  `json:"cerrado_por"`
+	AprobadoPor        string  `json:"aprobado_por"`
+	AprobadoEn         string  `json:"aprobado_en"`
+	TieneIncidencia    bool    `json:"tiene_incidencia"`
+	UmbralIncidencia   float64 `json:"umbral_incidencia"`
+	FechaCreacion      string  `json:"fecha_creacion"`
+	FechaActualizacion string  `json:"fecha_actualizacion"`
+	UsuarioCreador     string  `json:"usuario_creador"`
+	Estado             string  `json:"estado"`
+	Observaciones      string  `json:"observaciones"`
+}
+
+type EmpresaCierreCajaFilter struct {
+	SucursalID      int64
+	CajaCodigo      string
+	EstadoCierre    string
+	Desde           string
+	Hasta           string
+	IncludeInactive bool
+	Limit           int
 }
 
 // EmpresaFinanzasConfiguracion define la parametrizacion por empresa del modulo financiero.
@@ -183,9 +226,41 @@ func EnsureEmpresaFinanzasSchema(dbConn *sql.DB) error {
 			observaciones TEXT,
 			UNIQUE(empresa_id, periodo)
 		);`,
+		`CREATE TABLE IF NOT EXISTS empresa_cierres_caja (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			empresa_id INTEGER NOT NULL,
+			sucursal_id INTEGER DEFAULT 0,
+			caja_codigo TEXT NOT NULL,
+			turno TEXT DEFAULT 'general',
+			fecha_operacion TEXT DEFAULT (date('now','localtime')),
+			fecha_apertura TEXT DEFAULT (datetime('now','localtime')),
+			fecha_cierre TEXT,
+			estado_cierre TEXT DEFAULT 'abierto',
+			apertura_monto REAL DEFAULT 0,
+			ingresos_efectivo REAL DEFAULT 0,
+			egresos_efectivo REAL DEFAULT 0,
+			retiros_efectivo REAL DEFAULT 0,
+			caja_teorica REAL DEFAULT 0,
+			caja_fisica REAL DEFAULT 0,
+			diferencia_caja REAL DEFAULT 0,
+			moneda TEXT DEFAULT 'COP',
+			cerrado_por TEXT,
+			aprobado_por TEXT,
+			aprobado_en TEXT,
+			tiene_incidencia INTEGER DEFAULT 0,
+			umbral_incidencia REAL DEFAULT 0,
+			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			usuario_creador TEXT,
+			estado TEXT DEFAULT 'activo',
+			observaciones TEXT,
+			UNIQUE(empresa_id, sucursal_id, caja_codigo, fecha_operacion, turno)
+		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_finanzas_movimientos_empresa_fecha ON empresa_finanzas_movimientos(empresa_id, fecha_movimiento DESC, id DESC);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_finanzas_movimientos_empresa_tipo_estado ON empresa_finanzas_movimientos(empresa_id, tipo_movimiento, estado);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_finanzas_movimientos_empresa_comprobante ON empresa_finanzas_movimientos(empresa_id, numero_comprobante);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_cierres_caja_empresa_fecha ON empresa_cierres_caja(empresa_id, fecha_operacion DESC, id DESC);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_cierres_caja_empresa_estado ON empresa_cierres_caja(empresa_id, estado_cierre, estado);`,
 	}
 	for _, stmt := range stmts {
 		if _, err := dbConn.Exec(stmt); err != nil {
@@ -317,12 +392,85 @@ func EnsureEmpresaFinanzasSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_finanzas_periodos", "observaciones", "TEXT"); err != nil {
 		return err
 	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_cierres_caja", "sucursal_id", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_cierres_caja", "caja_codigo", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_cierres_caja", "turno", "TEXT DEFAULT 'general'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_cierres_caja", "fecha_operacion", "TEXT DEFAULT (date('now','localtime'))"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_cierres_caja", "fecha_apertura", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_cierres_caja", "fecha_cierre", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_cierres_caja", "estado_cierre", "TEXT DEFAULT 'abierto'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_cierres_caja", "apertura_monto", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_cierres_caja", "ingresos_efectivo", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_cierres_caja", "egresos_efectivo", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_cierres_caja", "retiros_efectivo", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_cierres_caja", "caja_teorica", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_cierres_caja", "caja_fisica", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_cierres_caja", "diferencia_caja", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_cierres_caja", "moneda", "TEXT DEFAULT 'COP'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_cierres_caja", "cerrado_por", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_cierres_caja", "aprobado_por", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_cierres_caja", "aprobado_en", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_cierres_caja", "tiene_incidencia", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_cierres_caja", "umbral_incidencia", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_cierres_caja", "fecha_actualizacion", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_cierres_caja", "usuario_creador", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_cierres_caja", "estado", "TEXT DEFAULT 'activo'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_cierres_caja", "observaciones", "TEXT"); err != nil {
+		return err
+	}
 
 	// Los indices que dependen de columnas agregadas en migracion se crean al final
 	// para mantener compatibilidad con bases existentes.
 	postMigrationIndexes := []string{
 		`CREATE INDEX IF NOT EXISTS ix_empresa_finanzas_movimientos_empresa_periodo ON empresa_finanzas_movimientos(empresa_id, periodo_contable, estado);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_finanzas_periodos_empresa_estado ON empresa_finanzas_periodos(empresa_id, estado, periodo DESC);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_cierres_caja_empresa_sucursal ON empresa_cierres_caja(empresa_id, sucursal_id, caja_codigo, fecha_operacion DESC);`,
 	}
 	for _, stmt := range postMigrationIndexes {
 		if _, err := dbConn.Exec(stmt); err != nil {
@@ -948,6 +1096,486 @@ func IsEmpresaFinanzasPeriodoCerrado(dbConn *sql.DB, empresaID int64, periodo st
 	return normalizeEstadoPeriodo(estado) == "cerrado", nil
 }
 
+func CreateEmpresaCierreCaja(dbConn *sql.DB, cierre EmpresaCierreCaja) (int64, error) {
+	cierre, err := normalizeEmpresaCierreCaja(cierre, true)
+	if err != nil {
+		return 0, err
+	}
+
+	if cierre.EstadoCierre == "cerrado" && strings.TrimSpace(cierre.FechaCierre) == "" {
+		cierre.FechaCierre = time.Now().Format("2006-01-02 15:04:05")
+	}
+	if cierre.EstadoCierre == "cerrado" && strings.TrimSpace(cierre.CerradoPor) == "" {
+		cierre.CerradoPor = cierre.UsuarioCreador
+	}
+	if cierre.EstadoCierre == "aprobado" {
+		if strings.TrimSpace(cierre.FechaCierre) == "" {
+			cierre.FechaCierre = time.Now().Format("2006-01-02 15:04:05")
+		}
+		if strings.TrimSpace(cierre.CerradoPor) == "" {
+			cierre.CerradoPor = cierre.UsuarioCreador
+		}
+		if strings.TrimSpace(cierre.AprobadoPor) == "" {
+			cierre.AprobadoPor = cierre.UsuarioCreador
+		}
+		if strings.TrimSpace(cierre.AprobadoEn) == "" {
+			cierre.AprobadoEn = time.Now().Format("2006-01-02 15:04:05")
+		}
+	}
+
+	res, err := dbConn.Exec(`INSERT INTO empresa_cierres_caja (
+		empresa_id, sucursal_id, caja_codigo, turno,
+		fecha_operacion, fecha_apertura, fecha_cierre, estado_cierre,
+		apertura_monto, ingresos_efectivo, egresos_efectivo, retiros_efectivo,
+		caja_teorica, caja_fisica, diferencia_caja,
+		moneda, cerrado_por, aprobado_por, aprobado_en,
+		tiene_incidencia, umbral_incidencia,
+		usuario_creador, estado, observaciones,
+		fecha_creacion, fecha_actualizacion
+	) VALUES (
+		?, ?, ?, ?,
+		?, ?, ?, ?,
+		?, ?, ?, ?,
+		?, ?, ?,
+		?, ?, ?, ?,
+		?, ?,
+		?, ?, ?,
+		datetime('now','localtime'), datetime('now','localtime')
+	)`,
+		cierre.EmpresaID, cierre.SucursalID, cierre.CajaCodigo, cierre.Turno,
+		cierre.FechaOperacion, cierre.FechaApertura, cierre.FechaCierre, cierre.EstadoCierre,
+		cierre.AperturaMonto, cierre.IngresosEfectivo, cierre.EgresosEfectivo, cierre.RetirosEfectivo,
+		cierre.CajaTeorica, cierre.CajaFisica, cierre.DiferenciaCaja,
+		cierre.Moneda, cierre.CerradoPor, cierre.AprobadoPor, cierre.AprobadoEn,
+		boolToInt(cierre.TieneIncidencia), cierre.UmbralIncidencia,
+		cierre.UsuarioCreador, cierre.Estado, cierre.Observaciones,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return res.LastInsertId()
+}
+
+func ListEmpresaCierresCaja(dbConn *sql.DB, empresaID int64, f EmpresaCierreCajaFilter) ([]EmpresaCierreCaja, error) {
+	query := `SELECT
+		id,
+		empresa_id,
+		COALESCE(sucursal_id, 0),
+		COALESCE(caja_codigo, ''),
+		COALESCE(turno, 'general'),
+		COALESCE(fecha_operacion, ''),
+		COALESCE(fecha_apertura, ''),
+		COALESCE(fecha_cierre, ''),
+		COALESCE(estado_cierre, 'abierto'),
+		COALESCE(apertura_monto, 0),
+		COALESCE(ingresos_efectivo, 0),
+		COALESCE(egresos_efectivo, 0),
+		COALESCE(retiros_efectivo, 0),
+		COALESCE(caja_teorica, 0),
+		COALESCE(caja_fisica, 0),
+		COALESCE(diferencia_caja, 0),
+		COALESCE(moneda, 'COP'),
+		COALESCE(cerrado_por, ''),
+		COALESCE(aprobado_por, ''),
+		COALESCE(aprobado_en, ''),
+		COALESCE(tiene_incidencia, 0),
+		COALESCE(umbral_incidencia, 0),
+		COALESCE(fecha_creacion, ''),
+		COALESCE(fecha_actualizacion, ''),
+		COALESCE(usuario_creador, ''),
+		COALESCE(estado, 'activo'),
+		COALESCE(observaciones, '')
+	FROM empresa_cierres_caja
+	WHERE empresa_id = ?`
+	args := []interface{}{empresaID}
+
+	if f.SucursalID > 0 {
+		query += ` AND COALESCE(sucursal_id, 0) = ?`
+		args = append(args, f.SucursalID)
+	}
+	if caja := sanitizeCajaCodigo(f.CajaCodigo); caja != "" {
+		query += ` AND UPPER(COALESCE(caja_codigo, '')) = ?`
+		args = append(args, caja)
+	}
+	if estadoCierre := normalizeEstadoCierre(f.EstadoCierre); estadoCierre != "" {
+		query += ` AND LOWER(COALESCE(estado_cierre, 'abierto')) = ?`
+		args = append(args, estadoCierre)
+	}
+	if strings.TrimSpace(f.Desde) != "" {
+		query += ` AND date(fecha_operacion) >= date(?)`
+		args = append(args, strings.TrimSpace(f.Desde))
+	}
+	if strings.TrimSpace(f.Hasta) != "" {
+		query += ` AND date(fecha_operacion) <= date(?)`
+		args = append(args, strings.TrimSpace(f.Hasta))
+	}
+	if !f.IncludeInactive {
+		query += ` AND LOWER(COALESCE(estado, 'activo')) = 'activo'`
+	}
+
+	query += ` ORDER BY date(fecha_operacion) DESC, id DESC`
+	limit := f.Limit
+	if limit <= 0 {
+		limit = 200
+	}
+	query += ` LIMIT ?`
+	args = append(args, limit)
+
+	rows, err := dbConn.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	items := make([]EmpresaCierreCaja, 0)
+	for rows.Next() {
+		var item EmpresaCierreCaja
+		var incidencia int
+		if err := rows.Scan(
+			&item.ID,
+			&item.EmpresaID,
+			&item.SucursalID,
+			&item.CajaCodigo,
+			&item.Turno,
+			&item.FechaOperacion,
+			&item.FechaApertura,
+			&item.FechaCierre,
+			&item.EstadoCierre,
+			&item.AperturaMonto,
+			&item.IngresosEfectivo,
+			&item.EgresosEfectivo,
+			&item.RetirosEfectivo,
+			&item.CajaTeorica,
+			&item.CajaFisica,
+			&item.DiferenciaCaja,
+			&item.Moneda,
+			&item.CerradoPor,
+			&item.AprobadoPor,
+			&item.AprobadoEn,
+			&incidencia,
+			&item.UmbralIncidencia,
+			&item.FechaCreacion,
+			&item.FechaActualizacion,
+			&item.UsuarioCreador,
+			&item.Estado,
+			&item.Observaciones,
+		); err != nil {
+			return nil, err
+		}
+		item.TieneIncidencia = incidencia == 1
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
+func UpdateEmpresaCierreCaja(dbConn *sql.DB, cierre EmpresaCierreCaja) error {
+	var estadoActual string
+	err := dbConn.QueryRow(`SELECT COALESCE(estado_cierre, 'abierto')
+	FROM empresa_cierres_caja
+	WHERE empresa_id = ? AND id = ?
+	LIMIT 1`, cierre.EmpresaID, cierre.ID).Scan(&estadoActual)
+	if err != nil {
+		return err
+	}
+	if normalizeEstadoCierre(estadoActual) == "aprobado" {
+		return ErrCierreCajaAprobadoBloqueado
+	}
+
+	cierre, err = normalizeEmpresaCierreCaja(cierre, false)
+	if err != nil {
+		return err
+	}
+	if cierre.EstadoCierre == "cerrado" && strings.TrimSpace(cierre.FechaCierre) == "" {
+		cierre.FechaCierre = time.Now().Format("2006-01-02 15:04:05")
+	}
+	if cierre.EstadoCierre == "cerrado" && strings.TrimSpace(cierre.CerradoPor) == "" {
+		cierre.CerradoPor = cierre.UsuarioCreador
+	}
+	if cierre.EstadoCierre == "aprobado" {
+		if strings.TrimSpace(cierre.FechaCierre) == "" {
+			cierre.FechaCierre = time.Now().Format("2006-01-02 15:04:05")
+		}
+		if strings.TrimSpace(cierre.CerradoPor) == "" {
+			cierre.CerradoPor = cierre.UsuarioCreador
+		}
+		if strings.TrimSpace(cierre.AprobadoPor) == "" {
+			cierre.AprobadoPor = cierre.UsuarioCreador
+		}
+		if strings.TrimSpace(cierre.AprobadoEn) == "" {
+			cierre.AprobadoEn = time.Now().Format("2006-01-02 15:04:05")
+		}
+	}
+
+	res, err := dbConn.Exec(`UPDATE empresa_cierres_caja SET
+		sucursal_id = ?,
+		caja_codigo = ?,
+		turno = ?,
+		fecha_operacion = ?,
+		fecha_apertura = ?,
+		fecha_cierre = ?,
+		estado_cierre = ?,
+		apertura_monto = ?,
+		ingresos_efectivo = ?,
+		egresos_efectivo = ?,
+		retiros_efectivo = ?,
+		caja_teorica = ?,
+		caja_fisica = ?,
+		diferencia_caja = ?,
+		moneda = ?,
+		cerrado_por = ?,
+		aprobado_por = ?,
+		aprobado_en = ?,
+		tiene_incidencia = ?,
+		umbral_incidencia = ?,
+		estado = ?,
+		observaciones = ?,
+		fecha_actualizacion = datetime('now','localtime')
+	WHERE empresa_id = ? AND id = ?`,
+		cierre.SucursalID,
+		cierre.CajaCodigo,
+		cierre.Turno,
+		cierre.FechaOperacion,
+		cierre.FechaApertura,
+		cierre.FechaCierre,
+		cierre.EstadoCierre,
+		cierre.AperturaMonto,
+		cierre.IngresosEfectivo,
+		cierre.EgresosEfectivo,
+		cierre.RetirosEfectivo,
+		cierre.CajaTeorica,
+		cierre.CajaFisica,
+		cierre.DiferenciaCaja,
+		cierre.Moneda,
+		cierre.CerradoPor,
+		cierre.AprobadoPor,
+		cierre.AprobadoEn,
+		boolToInt(cierre.TieneIncidencia),
+		cierre.UmbralIncidencia,
+		cierre.Estado,
+		cierre.Observaciones,
+		cierre.EmpresaID,
+		cierre.ID,
+	)
+	if err != nil {
+		return err
+	}
+	affected, _ := res.RowsAffected()
+	if affected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
+func SetEmpresaCierreCajaEstado(dbConn *sql.DB, empresaID, id int64, estado string, cajaFisica *float64, usuario, observaciones string) error {
+	estado = normalizeEstadoCierre(estado)
+	if estado == "" {
+		return fmt.Errorf("estado_cierre invalido")
+	}
+	usuario = strings.TrimSpace(usuario)
+	if usuario == "" {
+		usuario = "sistema"
+	}
+
+	var actualEstado string
+	var fechaCierreActual string
+	var apertura float64
+	var ingresos float64
+	var egresos float64
+	var retiros float64
+	var cajaFisicaActual float64
+	var umbral float64
+	var cerradoPorActual string
+	var aprobadoPorActual string
+	var aprobadoEnActual string
+	var observacionesActual string
+	err := dbConn.QueryRow(`SELECT
+		COALESCE(estado_cierre, 'abierto'),
+		COALESCE(fecha_cierre, ''),
+		COALESCE(apertura_monto, 0),
+		COALESCE(ingresos_efectivo, 0),
+		COALESCE(egresos_efectivo, 0),
+		COALESCE(retiros_efectivo, 0),
+		COALESCE(caja_fisica, 0),
+		COALESCE(umbral_incidencia, 0),
+		COALESCE(cerrado_por, ''),
+		COALESCE(aprobado_por, ''),
+		COALESCE(aprobado_en, ''),
+		COALESCE(observaciones, '')
+	FROM empresa_cierres_caja
+	WHERE empresa_id = ? AND id = ?
+	LIMIT 1`, empresaID, id).Scan(
+		&actualEstado,
+		&fechaCierreActual,
+		&apertura,
+		&ingresos,
+		&egresos,
+		&retiros,
+		&cajaFisicaActual,
+		&umbral,
+		&cerradoPorActual,
+		&aprobadoPorActual,
+		&aprobadoEnActual,
+		&observacionesActual,
+	)
+	if err != nil {
+		return err
+	}
+
+	actualEstado = normalizeEstadoCierre(actualEstado)
+	if !isValidCierreCajaTransition(actualEstado, estado) {
+		return ErrCierreCajaTransicionInvalida
+	}
+
+	if estado == "cerrado" && cajaFisica == nil {
+		return fmt.Errorf("caja_fisica es obligatoria para cerrar caja")
+	}
+	if cajaFisica != nil {
+		cajaFisicaActual = maxFloat64(*cajaFisica, 0)
+	}
+
+	cajaTeorica := calculateCajaTeorica(apertura, ingresos, egresos, retiros)
+	diferencia := cajaTeorica - cajaFisicaActual
+	tieneIncidencia := hasCajaIncidencia(diferencia, umbral)
+	fechaCierre := fechaCierreActual
+	cerradoPor := cerradoPorActual
+	aprobadoPor := aprobadoPorActual
+	aprobadoEn := aprobadoEnActual
+
+	switch estado {
+	case "abierto":
+		fechaCierre = ""
+		cerradoPor = ""
+		aprobadoPor = ""
+		aprobadoEn = ""
+		cajaFisicaActual = 0
+		diferencia = 0
+		tieneIncidencia = false
+	case "cerrado":
+		fechaCierre = time.Now().Format("2006-01-02 15:04:05")
+		cerradoPor = usuario
+		aprobadoPor = ""
+		aprobadoEn = ""
+	case "aprobado":
+		if strings.TrimSpace(fechaCierre) == "" {
+			fechaCierre = time.Now().Format("2006-01-02 15:04:05")
+		}
+		if strings.TrimSpace(cerradoPor) == "" {
+			cerradoPor = usuario
+		}
+		aprobadoPor = usuario
+		aprobadoEn = time.Now().Format("2006-01-02 15:04:05")
+	case "anulado":
+		if strings.TrimSpace(fechaCierre) == "" {
+			fechaCierre = time.Now().Format("2006-01-02 15:04:05")
+		}
+		if strings.TrimSpace(cerradoPor) == "" {
+			cerradoPor = usuario
+		}
+	}
+
+	obs := strings.TrimSpace(observaciones)
+	if obs == "" {
+		obs = observacionesActual
+	}
+
+	res, err := dbConn.Exec(`UPDATE empresa_cierres_caja SET
+		estado_cierre = ?,
+		fecha_cierre = ?,
+		cerrado_por = ?,
+		aprobado_por = ?,
+		aprobado_en = ?,
+		caja_teorica = ?,
+		caja_fisica = ?,
+		diferencia_caja = ?,
+		tiene_incidencia = ?,
+		observaciones = ?,
+		fecha_actualizacion = datetime('now','localtime')
+	WHERE empresa_id = ? AND id = ?`,
+		estado,
+		fechaCierre,
+		cerradoPor,
+		aprobadoPor,
+		aprobadoEn,
+		cajaTeorica,
+		cajaFisicaActual,
+		diferencia,
+		boolToInt(tieneIncidencia),
+		obs,
+		empresaID,
+		id,
+	)
+	if err != nil {
+		return err
+	}
+	affected, _ := res.RowsAffected()
+	if affected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
+func SetEmpresaCierreCajaRegistroEstado(dbConn *sql.DB, empresaID, id int64, estado string) error {
+	estado = normalizeEstadoMovimiento(estado)
+	res, err := dbConn.Exec(`UPDATE empresa_cierres_caja
+	SET estado = ?, fecha_actualizacion = datetime('now','localtime')
+	WHERE empresa_id = ? AND id = ?`, estado, empresaID, id)
+	if err != nil {
+		return err
+	}
+	affected, _ := res.RowsAffected()
+	if affected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
+func DeleteEmpresaCierreCaja(dbConn *sql.DB, empresaID, id int64) error {
+	var estadoCierre string
+	err := dbConn.QueryRow(`SELECT COALESCE(estado_cierre, 'abierto')
+	FROM empresa_cierres_caja
+	WHERE empresa_id = ? AND id = ?
+	LIMIT 1`, empresaID, id).Scan(&estadoCierre)
+	if err != nil {
+		return err
+	}
+	if normalizeEstadoCierre(estadoCierre) == "aprobado" {
+		return ErrCierreCajaAprobadoBloqueado
+	}
+
+	res, err := dbConn.Exec(`DELETE FROM empresa_cierres_caja WHERE empresa_id = ? AND id = ?`, empresaID, id)
+	if err != nil {
+		return err
+	}
+	affected, _ := res.RowsAffected()
+	if affected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
+func isValidCierreCajaTransition(fromEstado, toEstado string) bool {
+	fromEstado = normalizeEstadoCierre(fromEstado)
+	toEstado = normalizeEstadoCierre(toEstado)
+	if fromEstado == "" || toEstado == "" {
+		return false
+	}
+	if fromEstado == toEstado {
+		return true
+	}
+	switch fromEstado {
+	case "abierto":
+		return toEstado == "cerrado" || toEstado == "anulado"
+	case "cerrado":
+		return toEstado == "abierto" || toEstado == "aprobado" || toEstado == "anulado"
+	case "aprobado":
+		return toEstado == "abierto"
+	case "anulado":
+		return toEstado == "abierto"
+	default:
+		return false
+	}
+}
+
 func getPeriodoContableMovimiento(dbConn *sql.DB, empresaID, id int64) (string, error) {
 	var periodo string
 	var fechaMovimiento string
@@ -1081,6 +1709,79 @@ func normalizeEmpresaFinanzasMovimiento(dbConn *sql.DB, m EmpresaFinanzasMovimie
 	return m, nil
 }
 
+func normalizeEmpresaCierreCaja(cierre EmpresaCierreCaja, isCreate bool) (EmpresaCierreCaja, error) {
+	if cierre.EmpresaID <= 0 {
+		return cierre, fmt.Errorf("empresa_id es obligatorio")
+	}
+	if !isCreate && cierre.ID <= 0 {
+		return cierre, fmt.Errorf("id es obligatorio")
+	}
+
+	if cierre.SucursalID < 0 {
+		cierre.SucursalID = 0
+	}
+	cierre.CajaCodigo = sanitizeCajaCodigo(cierre.CajaCodigo)
+	if cierre.CajaCodigo == "" {
+		return cierre, fmt.Errorf("caja_codigo es obligatorio")
+	}
+	cierre.Turno = strings.ToLower(strings.TrimSpace(cierre.Turno))
+	if cierre.Turno == "" {
+		cierre.Turno = "general"
+	}
+
+	cierre.FechaOperacion = normalizeDateOnly(cierre.FechaOperacion)
+	if cierre.FechaOperacion == "" {
+		cierre.FechaOperacion = time.Now().Format("2006-01-02")
+	}
+	cierre.FechaApertura = strings.TrimSpace(cierre.FechaApertura)
+	if cierre.FechaApertura == "" {
+		cierre.FechaApertura = time.Now().Format("2006-01-02 15:04:05")
+	}
+	cierre.FechaCierre = strings.TrimSpace(cierre.FechaCierre)
+
+	cierre.EstadoCierre = normalizeEstadoCierre(cierre.EstadoCierre)
+	if cierre.EstadoCierre == "" {
+		cierre.EstadoCierre = "abierto"
+	}
+
+	cierre.AperturaMonto = maxFloat64(cierre.AperturaMonto, 0)
+	cierre.IngresosEfectivo = maxFloat64(cierre.IngresosEfectivo, 0)
+	cierre.EgresosEfectivo = maxFloat64(cierre.EgresosEfectivo, 0)
+	cierre.RetirosEfectivo = maxFloat64(cierre.RetirosEfectivo, 0)
+	cierre.CajaTeorica = calculateCajaTeorica(cierre.AperturaMonto, cierre.IngresosEfectivo, cierre.EgresosEfectivo, cierre.RetirosEfectivo)
+	cierre.CajaFisica = maxFloat64(cierre.CajaFisica, 0)
+	cierre.DiferenciaCaja = cierre.CajaTeorica - cierre.CajaFisica
+	cierre.UmbralIncidencia = maxFloat64(cierre.UmbralIncidencia, 0)
+	cierre.TieneIncidencia = hasCajaIncidencia(cierre.DiferenciaCaja, cierre.UmbralIncidencia)
+
+	cierre.Moneda = strings.ToUpper(strings.TrimSpace(cierre.Moneda))
+	if cierre.Moneda == "" {
+		cierre.Moneda = "COP"
+	}
+	cierre.CerradoPor = strings.TrimSpace(cierre.CerradoPor)
+	cierre.AprobadoPor = strings.TrimSpace(cierre.AprobadoPor)
+	cierre.AprobadoEn = strings.TrimSpace(cierre.AprobadoEn)
+
+	if cierre.EstadoCierre == "abierto" {
+		cierre.FechaCierre = ""
+		cierre.CerradoPor = ""
+		cierre.AprobadoPor = ""
+		cierre.AprobadoEn = ""
+		cierre.CajaFisica = 0
+		cierre.DiferenciaCaja = 0
+		cierre.TieneIncidencia = false
+	}
+
+	cierre.UsuarioCreador = strings.TrimSpace(cierre.UsuarioCreador)
+	if cierre.UsuarioCreador == "" {
+		cierre.UsuarioCreador = "sistema"
+	}
+	cierre.Estado = normalizeEstadoMovimiento(cierre.Estado)
+	cierre.Observaciones = strings.TrimSpace(cierre.Observaciones)
+
+	return cierre, nil
+}
+
 func normalizeEmpresaFinanzasConfiguracion(cfg EmpresaFinanzasConfiguracion) EmpresaFinanzasConfiguracion {
 	cfg.HabilitarIngresos = cfg.HabilitarIngresos || !cfg.HabilitarEgresos
 	cfg.HabilitarEgresos = cfg.HabilitarEgresos || !cfg.HabilitarIngresos
@@ -1208,6 +1909,16 @@ func normalizeEstadoPeriodo(estado string) string {
 	return "abierto"
 }
 
+func normalizeEstadoCierre(estado string) string {
+	e := strings.ToLower(strings.TrimSpace(estado))
+	switch e {
+	case "abierto", "cerrado", "aprobado", "anulado":
+		return e
+	default:
+		return ""
+	}
+}
+
 func normalizePeriodoContable(v string) string {
 	v = strings.TrimSpace(strings.ReplaceAll(v, "/", "-"))
 	if v == "" {
@@ -1234,7 +1945,64 @@ func normalizePeriodoContable(v string) string {
 	return ""
 }
 
+func normalizeDateOnly(v string) string {
+	v = strings.TrimSpace(v)
+	if v == "" {
+		return ""
+	}
+	if len(v) >= 10 {
+		candidate := v[:10]
+		if _, err := time.Parse("2006-01-02", candidate); err == nil {
+			return candidate
+		}
+	}
+	layouts := []string{
+		"2006-01-02 15:04:05",
+		"2006-01-02T15:04:05",
+		"2006-01-02T15:04",
+		"2006-01-02",
+		time.RFC3339,
+	}
+	for _, layout := range layouts {
+		if t, err := time.Parse(layout, v); err == nil {
+			return t.Format("2006-01-02")
+		}
+	}
+	return ""
+}
+
+func calculateCajaTeorica(apertura, ingresos, egresos, retiros float64) float64 {
+	return maxFloat64(apertura, 0) + maxFloat64(ingresos, 0) - maxFloat64(egresos, 0) - maxFloat64(retiros, 0)
+}
+
+func hasCajaIncidencia(diferencia, umbral float64) bool {
+	umbral = maxFloat64(umbral, 0)
+	if umbral == 0 {
+		return math.Abs(diferencia) > 0
+	}
+	return math.Abs(diferencia) > umbral
+}
+
 func sanitizeFinancialCode(v string) string {
+	v = strings.ToUpper(strings.TrimSpace(v))
+	if v == "" {
+		return ""
+	}
+	var b strings.Builder
+	for _, r := range v {
+		switch {
+		case r >= 'A' && r <= 'Z':
+			b.WriteRune(r)
+		case r >= '0' && r <= '9':
+			b.WriteRune(r)
+		case r == '-' || r == '_' || r == '/':
+			b.WriteRune(r)
+		}
+	}
+	return strings.TrimSpace(b.String())
+}
+
+func sanitizeCajaCodigo(v string) string {
 	v = strings.ToUpper(strings.TrimSpace(v))
 	if v == "" {
 		return ""
@@ -1327,4 +2095,195 @@ func maxFloat64(v, min float64) float64 {
 		return min
 	}
 	return v
+}
+
+// EmpresaReportesTableroOperativo consolida KPI operativos por empresa.
+type EmpresaReportesTableroOperativo struct {
+	VentasCerradas      int64   `json:"ventas_cerradas"`
+	VentasHoy           int64   `json:"ventas_hoy"`
+	IngresosVentas      float64 `json:"ingresos_ventas"`
+	TicketPromedio      float64 `json:"ticket_promedio"`
+	ClientesActivos     int64   `json:"clientes_activos"`
+	ProductosActivos    int64   `json:"productos_activos"`
+	ProductosBajoMinimo int64   `json:"productos_bajo_minimo"`
+	ComprasMovimientos  int64   `json:"compras_movimientos"`
+	ComprasCosto        float64 `json:"compras_costo"`
+}
+
+// EmpresaReportesTableroFinanciero consolida KPI financieros por empresa.
+type EmpresaReportesTableroFinanciero struct {
+	MovimientosIngresos int64   `json:"movimientos_ingresos"`
+	MovimientosEgresos  int64   `json:"movimientos_egresos"`
+	Ingresos            float64 `json:"ingresos"`
+	Egresos             float64 `json:"egresos"`
+	Balance             float64 `json:"balance"`
+	PeriodosAbiertos    int64   `json:"periodos_abiertos"`
+	PeriodosCerrados    int64   `json:"periodos_cerrados"`
+}
+
+// EmpresaReportesTableroContable consolida KPI contables por empresa.
+type EmpresaReportesTableroContable struct {
+	EventosPendientes            int64   `json:"eventos_pendientes"`
+	EventosProcesados            int64   `json:"eventos_procesados"`
+	EventosTotal                 int64   `json:"eventos_total"`
+	EventosMontoTotal            float64 `json:"eventos_monto_total"`
+	DocumentosFacturacionActivos int64   `json:"documentos_facturacion_activos"`
+	DocumentosComprasActivos     int64   `json:"documentos_compras_activos"`
+}
+
+// EmpresaReportesTableroResumen agrupa el tablero minimo financiero-operativo.
+type EmpresaReportesTableroResumen struct {
+	EmpresaID  int64                            `json:"empresa_id"`
+	Desde      string                           `json:"desde"`
+	Hasta      string                           `json:"hasta"`
+	GeneradoEn string                           `json:"generado_en"`
+	Operativo  EmpresaReportesTableroOperativo  `json:"operativo"`
+	Financiero EmpresaReportesTableroFinanciero `json:"financiero"`
+	Contable   EmpresaReportesTableroContable   `json:"contable"`
+}
+
+// GetEmpresaReportesTableroResumen devuelve el tablero minimo financiero-operativo para una empresa.
+func GetEmpresaReportesTableroResumen(dbConn *sql.DB, empresaID int64, desde, hasta string) (*EmpresaReportesTableroResumen, error) {
+	if empresaID <= 0 {
+		return nil, fmt.Errorf("empresa_id es obligatorio")
+	}
+
+	resumen := &EmpresaReportesTableroResumen{
+		EmpresaID:  empresaID,
+		Desde:      strings.TrimSpace(desde),
+		Hasta:      strings.TrimSpace(hasta),
+		GeneradoEn: time.Now().Format("2006-01-02 15:04:05"),
+	}
+
+	ventasCond, ventasArgs := buildDateRangeCondition("COALESCE(c.pagado_en, c.fecha_actualizacion, c.fecha_creacion)", resumen.Desde, resumen.Hasta)
+	ventasQuery := `SELECT
+		COALESCE(COUNT(1), 0),
+		COALESCE(SUM(CASE WHEN COALESCE(c.total_pagado, 0) > 0 THEN COALESCE(c.total_pagado, 0) ELSE COALESCE(c.total, 0) END), 0),
+		COALESCE(SUM(CASE WHEN date(COALESCE(c.pagado_en, c.fecha_actualizacion, c.fecha_creacion)) = date('now','localtime') THEN 1 ELSE 0 END), 0)
+	FROM carritos_compras c
+	WHERE c.empresa_id = ?
+		AND LOWER(COALESCE(c.estado_carrito, '')) = 'cerrado'
+		AND LOWER(COALESCE(c.estado, 'activo')) = 'activo'` + ventasCond
+	ventasParams := append([]interface{}{empresaID}, ventasArgs...)
+	if err := dbConn.QueryRow(ventasQuery, ventasParams...).Scan(
+		&resumen.Operativo.VentasCerradas,
+		&resumen.Operativo.IngresosVentas,
+		&resumen.Operativo.VentasHoy,
+	); err != nil {
+		return nil, err
+	}
+	if resumen.Operativo.VentasCerradas > 0 {
+		resumen.Operativo.TicketPromedio = resumen.Operativo.IngresosVentas / float64(resumen.Operativo.VentasCerradas)
+	}
+
+	if err := dbConn.QueryRow(`SELECT COALESCE(COUNT(1), 0)
+		FROM clientes
+		WHERE empresa_id = ? AND LOWER(COALESCE(estado, 'activo')) = 'activo'`, empresaID).Scan(&resumen.Operativo.ClientesActivos); err != nil {
+		return nil, err
+	}
+
+	if err := dbConn.QueryRow(`SELECT
+		COALESCE(COUNT(1), 0),
+		COALESCE(SUM(CASE WHEN COALESCE(p.stock_minimo, 0) > 0 AND COALESCE(inv.stock_total, 0) <= COALESCE(p.stock_minimo, 0) THEN 1 ELSE 0 END), 0)
+	FROM productos p
+	LEFT JOIN (
+		SELECT producto_id, COALESCE(SUM(COALESCE(cantidad, 0)), 0) AS stock_total
+		FROM inventario_existencias
+		WHERE empresa_id = ? AND LOWER(COALESCE(estado, 'activo')) = 'activo'
+		GROUP BY producto_id
+	) inv ON inv.producto_id = p.id
+	WHERE p.empresa_id = ? AND LOWER(COALESCE(p.estado, 'activo')) = 'activo'`, empresaID, empresaID).Scan(&resumen.Operativo.ProductosActivos, &resumen.Operativo.ProductosBajoMinimo); err != nil {
+		return nil, err
+	}
+
+	comprasCond, comprasArgs := buildDateRangeCondition("m.fecha_movimiento", resumen.Desde, resumen.Hasta)
+	comprasQuery := `SELECT
+		COALESCE(COUNT(1), 0),
+		COALESCE(SUM(COALESCE(m.cantidad, 0) * COALESCE(m.costo_unitario, 0)), 0)
+	FROM inventario_movimientos m
+	WHERE m.empresa_id = ?
+		AND LOWER(COALESCE(m.estado, 'activo')) = 'activo'
+		AND LOWER(COALESCE(m.tipo, '')) IN ('entrada', 'ajuste_entrada', 'ajuste_positivo', 'compra')` + comprasCond
+	comprasParams := append([]interface{}{empresaID}, comprasArgs...)
+	if err := dbConn.QueryRow(comprasQuery, comprasParams...).Scan(&resumen.Operativo.ComprasMovimientos, &resumen.Operativo.ComprasCosto); err != nil {
+		return nil, err
+	}
+
+	finanzasCond, finanzasArgs := buildDateRangeCondition("m.fecha_movimiento", resumen.Desde, resumen.Hasta)
+	finanzasQuery := `SELECT
+		COALESCE(SUM(CASE WHEN LOWER(COALESCE(m.tipo_movimiento, '')) = 'ingreso' THEN 1 ELSE 0 END), 0),
+		COALESCE(SUM(CASE WHEN LOWER(COALESCE(m.tipo_movimiento, '')) = 'egreso' THEN 1 ELSE 0 END), 0),
+		COALESCE(SUM(CASE WHEN LOWER(COALESCE(m.tipo_movimiento, '')) = 'ingreso' THEN COALESCE(NULLIF(m.total_neto, 0), NULLIF(m.total, 0), m.monto, 0) ELSE 0 END), 0),
+		COALESCE(SUM(CASE WHEN LOWER(COALESCE(m.tipo_movimiento, '')) = 'egreso' THEN COALESCE(NULLIF(m.total_neto, 0), NULLIF(m.total, 0), m.monto, 0) ELSE 0 END), 0)
+	FROM empresa_finanzas_movimientos m
+	WHERE m.empresa_id = ?
+		AND LOWER(COALESCE(m.estado, 'activo')) = 'activo'
+		AND LOWER(COALESCE(m.tipo_movimiento, '')) IN ('ingreso', 'egreso')` + finanzasCond
+	finanzasParams := append([]interface{}{empresaID}, finanzasArgs...)
+	if err := dbConn.QueryRow(finanzasQuery, finanzasParams...).Scan(
+		&resumen.Financiero.MovimientosIngresos,
+		&resumen.Financiero.MovimientosEgresos,
+		&resumen.Financiero.Ingresos,
+		&resumen.Financiero.Egresos,
+	); err != nil {
+		return nil, err
+	}
+	resumen.Financiero.Balance = resumen.Financiero.Ingresos - resumen.Financiero.Egresos
+
+	if err := dbConn.QueryRow(`SELECT
+		COALESCE(SUM(CASE WHEN LOWER(COALESCE(estado, 'abierto')) = 'abierto' THEN 1 ELSE 0 END), 0),
+		COALESCE(SUM(CASE WHEN LOWER(COALESCE(estado, 'abierto')) = 'cerrado' THEN 1 ELSE 0 END), 0)
+	FROM empresa_finanzas_periodos
+	WHERE empresa_id = ? AND LOWER(COALESCE(estado, 'abierto')) <> 'inactivo'`, empresaID).Scan(
+		&resumen.Financiero.PeriodosAbiertos,
+		&resumen.Financiero.PeriodosCerrados,
+	); err != nil {
+		return nil, err
+	}
+
+	eventosCond, eventosArgs := buildDateRangeCondition("e.fecha_evento", resumen.Desde, resumen.Hasta)
+	eventosQuery := `SELECT
+		COALESCE(SUM(CASE WHEN COALESCE(e.procesado, 0) = 0 THEN 1 ELSE 0 END), 0),
+		COALESCE(SUM(CASE WHEN COALESCE(e.procesado, 0) = 1 THEN 1 ELSE 0 END), 0),
+		COALESCE(COUNT(1), 0),
+		COALESCE(SUM(COALESCE(e.monto_total, 0)), 0)
+	FROM empresa_eventos_contables e
+	WHERE e.empresa_id = ?
+		AND LOWER(COALESCE(e.estado, 'activo')) = 'activo'` + eventosCond
+	eventosParams := append([]interface{}{empresaID}, eventosArgs...)
+	if err := dbConn.QueryRow(eventosQuery, eventosParams...).Scan(
+		&resumen.Contable.EventosPendientes,
+		&resumen.Contable.EventosProcesados,
+		&resumen.Contable.EventosTotal,
+		&resumen.Contable.EventosMontoTotal,
+	); err != nil {
+		return nil, err
+	}
+
+	if err := dbConn.QueryRow(`SELECT COALESCE(COUNT(1), 0)
+		FROM empresa_facturacion_documentos
+		WHERE empresa_id = ? AND LOWER(COALESCE(estado, 'activo')) = 'activo'`, empresaID).Scan(&resumen.Contable.DocumentosFacturacionActivos); err != nil {
+		return nil, err
+	}
+	if err := dbConn.QueryRow(`SELECT COALESCE(COUNT(1), 0)
+		FROM empresa_compras_documentos
+		WHERE empresa_id = ? AND LOWER(COALESCE(estado, 'activo')) = 'activo'`, empresaID).Scan(&resumen.Contable.DocumentosComprasActivos); err != nil {
+		return nil, err
+	}
+
+	return resumen, nil
+}
+
+func buildDateRangeCondition(dateExpr, desde, hasta string) (string, []interface{}) {
+	cond := ""
+	args := make([]interface{}, 0, 2)
+	if strings.TrimSpace(desde) != "" {
+		cond += " AND date(" + dateExpr + ") >= date(?)"
+		args = append(args, strings.TrimSpace(desde))
+	}
+	if strings.TrimSpace(hasta) != "" {
+		cond += " AND date(" + dateExpr + ") <= date(?)"
+		args = append(args, strings.TrimSpace(hasta))
+	}
+	return cond, args
 }

@@ -10,7 +10,7 @@
   <div class="container">
     <section class="card empresa-section">
       <div class="empresa-section-header">
-        <h1 style="margin:0;">Reportes operativos</h1>
+        <h1 style="margin:0;">Reportes operativos y financieros</h1>
         <div class="empresa-inline-actions">
           <input id="fechaDesde" type="date" class="form-input">
           <input id="fechaHasta" type="date" class="form-input">
@@ -18,7 +18,7 @@
           <button id="btnRefrescarReportes" class="btn" type="button">Actualizar</button>
         </div>
       </div>
-      <p class="form-help">Resumen comercial por empresa usando ventas cerradas, clientes, productos y configuración de impresión.</p>
+      <p class="form-help">Resumen mínimo de operación, finanzas y contabilidad por empresa con filtro de fechas.</p>
       <div id="reportesMsg" class="form-help"></div>
 
       <div class="kpi-grid" style="margin-top:12px;">
@@ -57,6 +57,53 @@
         <div class="kpi-box">
           <span class="kpi-label">Costo compras (rango)</span>
           <strong id="kpiComprasCosto">$0</strong>
+        </div>
+      </div>
+
+      <div class="kpi-grid" style="margin-top:12px;">
+        <div class="kpi-box">
+          <span class="kpi-label">Ingresos financieros</span>
+          <strong id="kpiFinIngresos">$0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Egresos financieros</span>
+          <strong id="kpiFinEgresos">$0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Balance financiero</span>
+          <strong id="kpiFinBalance">$0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Mov. ingreso</span>
+          <strong id="kpiFinMovIngresos">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Mov. egreso</span>
+          <strong id="kpiFinMovEgresos">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Periodos abiertos</span>
+          <strong id="kpiFinPeriodosAbiertos">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Periodos cerrados</span>
+          <strong id="kpiFinPeriodosCerrados">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Eventos pendientes</span>
+          <strong id="kpiContEventosPendientes">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Eventos procesados</span>
+          <strong id="kpiContEventosProcesados">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Docs facturación</span>
+          <strong id="kpiContDocsFacturacion">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Docs compras</span>
+          <strong id="kpiContDocsCompras">0</strong>
         </div>
       </div>
     </section>
@@ -208,6 +255,7 @@
       existencias: [],
       movimientos: [],
       config: null,
+      tablero: null,
       ventasFiltradas: [],
       movimientosFiltrados: [],
       itemsByCarrito: new Map()
@@ -402,6 +450,69 @@
       document.getElementById('kpiProductosBajoMinimo').textContent = String(productosBajoMinimo);
       document.getElementById('kpiComprasMovimientos').textContent = String(compras.length);
       document.getElementById('kpiComprasCosto').textContent = fmtMoney(costoCompras);
+    }
+
+    function setFinancialKPIsFallback(text) {
+      const value = text || 'N/D';
+      [
+        'kpiFinIngresos',
+        'kpiFinEgresos',
+        'kpiFinBalance',
+        'kpiFinMovIngresos',
+        'kpiFinMovEgresos',
+        'kpiFinPeriodosAbiertos',
+        'kpiFinPeriodosCerrados',
+        'kpiContEventosPendientes',
+        'kpiContEventosProcesados',
+        'kpiContDocsFacturacion',
+        'kpiContDocsCompras'
+      ].forEach(function(id) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+      });
+    }
+
+    function buildRangeQueryParams() {
+      const params = new URLSearchParams();
+      const desde = normalize(document.getElementById('fechaDesde').value);
+      const hasta = normalize(document.getElementById('fechaHasta').value);
+      if (desde) params.set('desde', desde);
+      if (hasta) params.set('hasta', hasta);
+      return params;
+    }
+
+    async function loadTableroResumen() {
+      const params = buildRangeQueryParams();
+      params.set('empresa_id', String(state.empresaID));
+      params.set('action', 'tablero');
+      try {
+        state.tablero = await requestJSON('/api/empresa/finanzas/movimientos?' + params.toString());
+      } catch (err) {
+        state.tablero = null;
+      }
+    }
+
+    function renderKPIsFinancierosContables() {
+      const tablero = state.tablero;
+      if (!tablero || typeof tablero !== 'object') {
+        setFinancialKPIsFallback('N/D');
+        return;
+      }
+
+      const fin = tablero.financiero || {};
+      const cont = tablero.contable || {};
+
+      document.getElementById('kpiFinIngresos').textContent = fmtMoney(fin.ingresos);
+      document.getElementById('kpiFinEgresos').textContent = fmtMoney(fin.egresos);
+      document.getElementById('kpiFinBalance').textContent = fmtMoney(fin.balance);
+      document.getElementById('kpiFinMovIngresos').textContent = String(num(fin.movimientos_ingresos));
+      document.getElementById('kpiFinMovEgresos').textContent = String(num(fin.movimientos_egresos));
+      document.getElementById('kpiFinPeriodosAbiertos').textContent = String(num(fin.periodos_abiertos));
+      document.getElementById('kpiFinPeriodosCerrados').textContent = String(num(fin.periodos_cerrados));
+      document.getElementById('kpiContEventosPendientes').textContent = String(num(cont.eventos_pendientes));
+      document.getElementById('kpiContEventosProcesados').textContent = String(num(cont.eventos_procesados));
+      document.getElementById('kpiContDocsFacturacion').textContent = String(num(cont.documentos_facturacion_activos));
+      document.getElementById('kpiContDocsCompras').textContent = String(num(cont.documentos_compras_activos));
     }
 
     function renderVentasTable() {
@@ -756,7 +867,9 @@
       filtrarVentas();
       filtrarMovimientos();
       await loadItemsForSales();
+      await loadTableroResumen();
       renderKPIs();
+      renderKPIsFinancierosContables();
       renderVentasTable();
       renderTopProductos();
       renderTopClientes();
@@ -772,7 +885,9 @@
       filtrarVentas();
       filtrarMovimientos();
       await loadItemsForSales();
+      await loadTableroResumen();
       renderKPIs();
+      renderKPIsFinancierosContables();
       renderVentasTable();
       renderTopProductos();
       renderTopClientes();

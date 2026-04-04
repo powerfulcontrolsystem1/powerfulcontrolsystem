@@ -71,6 +71,120 @@ func EmpresaFacturacionElectronicaHandler(dbEmp *sql.DB) http.HandlerFunc {
 			return
 
 		case http.MethodPost, http.MethodPut:
+			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+			if action == "emitir" || action == "anular" || action == "nota_credito" || action == "emitir_nota_credito" {
+				var payload struct {
+					EmpresaID       int64   `json:"empresa_id"`
+					EntidadID       int64   `json:"entidad_id"`
+					DocumentoCodigo string  `json:"documento_codigo"`
+					EstadoActual    string  `json:"estado_actual"`
+					MontoTotal      float64 `json:"monto_total"`
+					Moneda          string  `json:"moneda"`
+					PeriodoContable string  `json:"periodo_contable"`
+					Observaciones   string  `json:"observaciones"`
+				}
+				if r.Body != nil {
+					_ = json.NewDecoder(r.Body).Decode(&payload)
+				}
+				if payload.EmpresaID <= 0 {
+					if empresaID, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && empresaID > 0 {
+						payload.EmpresaID = empresaID
+					}
+				}
+				if payload.EmpresaID <= 0 {
+					http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+					return
+				}
+				if strings.TrimSpace(payload.DocumentoCodigo) == "" {
+					payload.DocumentoCodigo = strings.TrimSpace(r.URL.Query().Get("documento_codigo"))
+				}
+				if strings.TrimSpace(payload.DocumentoCodigo) == "" {
+					http.Error(w, "documento_codigo es obligatorio para la accion", http.StatusBadRequest)
+					return
+				}
+
+				if strings.TrimSpace(payload.EstadoActual) == "" {
+					payload.EstadoActual = strings.TrimSpace(r.URL.Query().Get("estado_actual"))
+				}
+
+				documentoTipo := "factura_electronica"
+				entidad := "factura_electronica"
+				actionNormalized := normalizeDocumentoState(action)
+				if actionNormalized == "nota_credito" || actionNormalized == "emitir_nota_credito" {
+					documentoTipo = "nota_credito"
+					entidad = "nota_credito"
+				}
+
+				docExistente, err := dbpkg.GetEmpresaDocumentoFacturacionByCodigo(dbEmp, payload.EmpresaID, documentoTipo, payload.DocumentoCodigo)
+				if err != nil && !errors.Is(err, sql.ErrNoRows) {
+					http.Error(w, "No se pudo consultar el estado documental de facturacion", http.StatusInternalServerError)
+					return
+				}
+				if docExistente != nil {
+					payload.EstadoActual = docExistente.EstadoDocumento
+				}
+
+				transition, err := resolveFacturacionTransition(action, payload.EstadoActual)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusConflict)
+					return
+				}
+
+				evento := transition.Evento
+				docPersistido, err := dbpkg.UpsertEmpresaDocumentoFacturacion(dbEmp, dbpkg.EmpresaDocumentoFacturacion{
+					EmpresaID:            payload.EmpresaID,
+					TipoDocumento:        documentoTipo,
+					DocumentoCodigo:      payload.DocumentoCodigo,
+					EstadoDocumento:      transition.EstadoNuevo,
+					EstadoAnterior:       transition.EstadoAnterior,
+					EventoUltimo:         evento,
+					PeriodoContable:      payload.PeriodoContable,
+					MontoTotal:           payload.MontoTotal,
+					Moneda:               payload.Moneda,
+					EntidadRelacionadaID: payload.EntidadID,
+					UsuarioCreador:       strings.TrimSpace(adminEmailFromRequest(r)),
+					Observaciones:        payload.Observaciones,
+				})
+				if err != nil {
+					http.Error(w, "No se pudo persistir el documento transaccional", http.StatusInternalServerError)
+					return
+				}
+
+				registrarEventoContableNoBloqueante(dbEmp, r, "facturacion", dbpkg.EmpresaEventoContable{
+					EmpresaID:       payload.EmpresaID,
+					Modulo:          "facturacion",
+					Evento:          evento,
+					Entidad:         entidad,
+					EntidadID:       docPersistido.ID,
+					DocumentoTipo:   documentoTipo,
+					DocumentoCodigo: strings.TrimSpace(payload.DocumentoCodigo),
+					PeriodoContable: strings.TrimSpace(payload.PeriodoContable),
+					MontoTotal:      payload.MontoTotal,
+					Moneda:          strings.ToUpper(strings.TrimSpace(payload.Moneda)),
+					Origen:          "api_facturacion_electronica",
+					Observaciones:   strings.TrimSpace(payload.Observaciones),
+				}, map[string]interface{}{
+					"accion":           transition.Accion,
+					"estado_anterior":  transition.EstadoAnterior,
+					"estado_nuevo":     transition.EstadoNuevo,
+					"entidad_id":       docPersistido.ID,
+					"documento_codigo": strings.TrimSpace(payload.DocumentoCodigo),
+					"periodo_contable": strings.TrimSpace(payload.PeriodoContable),
+					"empresa_id":       payload.EmpresaID,
+				})
+
+				writeJSON(w, http.StatusOK, map[string]interface{}{
+					"ok":               true,
+					"accion":           transition.Accion,
+					"evento":           evento,
+					"estado_anterior":  transition.EstadoAnterior,
+					"estado_nuevo":     transition.EstadoNuevo,
+					"entidad_id":       docPersistido.ID,
+					"documento_codigo": strings.TrimSpace(payload.DocumentoCodigo),
+				})
+				return
+			}
+
 			var payload dbpkg.FacturacionElectronicaPaisConfig
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "JSON invalido", http.StatusBadRequest)
@@ -102,6 +216,27 @@ func EmpresaFacturacionElectronicaHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, "No se pudo recuperar la configuración guardada", http.StatusInternalServerError)
 				return
 			}
+			monedaEvento := strings.ToUpper(strings.TrimSpace(payload.MonedaCodigo))
+			if monedaEvento == "" && cfg != nil {
+				monedaEvento = strings.ToUpper(strings.TrimSpace(cfg.MonedaCodigo))
+			}
+			registrarEventoContableNoBloqueante(dbEmp, r, "facturacion", dbpkg.EmpresaEventoContable{
+				EmpresaID:       payload.EmpresaID,
+				Modulo:          "facturacion",
+				Evento:          "configuracion_facturacion_actualizada",
+				Entidad:         "facturacion_electronica_pais",
+				EntidadID:       id,
+				DocumentoTipo:   "facturacion_pais",
+				DocumentoCodigo: strings.ToUpper(strings.TrimSpace(payload.PaisCodigo)),
+				Moneda:          monedaEvento,
+				Origen:          "api_facturacion_electronica",
+				Observaciones:   "configuracion de facturacion electronica actualizada",
+			}, map[string]interface{}{
+				"pais_codigo": strings.ToUpper(strings.TrimSpace(payload.PaisCodigo)),
+				"ambiente":    strings.ToLower(strings.TrimSpace(payload.Ambiente)),
+				"proveedor":   strings.TrimSpace(payload.Proveedor),
+				"estado":      strings.ToLower(strings.TrimSpace(payload.Estado)),
+			})
 			writeJSON(w, http.StatusOK, map[string]interface{}{
 				"ok":            true,
 				"id":            id,

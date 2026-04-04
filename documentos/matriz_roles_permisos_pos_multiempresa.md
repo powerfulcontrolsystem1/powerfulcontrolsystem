@@ -48,10 +48,33 @@ Leyenda:
 	- Ventas: `/api/empresa/carritos_compra`, `/api/empresa/carritos_compra/items`.
 	- Inventario: `/api/empresa/bodegas`, `/api/empresa/categorias_productos`, `/api/empresa/productos`, `/api/empresa/inventario/*`, `/api/empresa/productos/precios_historial`.
 	- Finanzas: `/api/empresa/finanzas/movimientos`, `/api/empresa/finanzas/configuracion`, `/api/empresa/finanzas/periodos`.
+- Cobertura ampliada (2026-04-04):
+	- Clientes: `/api/empresa/clientes`.
+	- Compras/Proveedores: `/api/empresa/proveedores`.
+	- Facturacion: `/api/empresa/facturacion_electronica`, `/api/empresa/facturacion_electronica/pais_detectado`.
+	- Servicios de catalogo: `/api/empresa/servicios` bajo politica de inventario.
+- Cobertura adicional (2026-04-04 - cierre de rutas pendientes):
+	- Seguridad/usuarios:
+		- `/api/empresa/usuarios`.
+		- `/api/empresa/configuracion_avanzada`.
+		- `/api/empresa/roles_de_usuario`.
+	- Inventario:
+		- `/api/empresa/productos/imagen`.
+		- `/api/empresa/ubicacion_gps/dispositivos`.
+		- `/api/empresa/ubicacion_gps/recorridos`.
+	- Colaboracion operativa (politica ventas):
+		- `/api/empresa/chat_tareas/conversaciones`.
+		- `/api/empresa/chat_tareas/participantes`.
+		- `/api/empresa/chat_tareas/mensajes`.
+		- `/api/empresa/chat_tareas/mensajes/adjunto`.
+		- `/api/empresa/chat_tareas/tareas`.
 - Cobertura automatizada inicial en `backend/handlers/empresa_permisos_test.go`:
 	- denegacion de escritura sin permiso por rol,
 	- aprobacion permitida para rol contabilidad en cierre de periodos,
 	- bloqueo por fuera de alcance de empresa.
+	- denegacion/escritura por rol en modulos `compras` y `facturacion`, y aprobacion de escritura en `clientes` para `cajero` segun matriz.
+	- denegacion de escritura en modulo seguridad para `supervisor_sucursal`.
+	- aprobacion permitida en modulo seguridad para `admin_empresa`.
 
 ## Reglas de seguridad obligatorias
 

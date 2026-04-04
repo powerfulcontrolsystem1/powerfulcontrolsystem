@@ -659,11 +659,144 @@ func EmpresaProveedoresHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, "failed to create proveedor: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
+			registrarEventoContableNoBloqueante(dbEmp, r, "compras", dbpkg.EmpresaEventoContable{
+				EmpresaID:       payload.EmpresaID,
+				Modulo:          "compras",
+				Evento:          "proveedor_registrado",
+				Entidad:         "proveedor",
+				EntidadID:       id,
+				DocumentoTipo:   "proveedor",
+				DocumentoCodigo: strings.TrimSpace(payload.Codigo),
+				Origen:          "api_proveedores",
+				Observaciones:   "alta de proveedor en modulo de compras",
+			}, map[string]interface{}{
+				"nombre":     strings.TrimSpace(payload.Nombre),
+				"documento":  strings.TrimSpace(payload.Documento),
+				"contacto":   strings.TrimSpace(payload.Contacto),
+				"estado":     "activo",
+				"empresa_id": payload.EmpresaID,
+			})
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(map[string]interface{}{"id": id})
 			return
 		case http.MethodPut:
 			q := r.URL.Query()
+			action := strings.ToLower(strings.TrimSpace(q.Get("action")))
+			if action == "emitir" || action == "emitir_orden" || action == "recepcionar" || action == "recepcionar_compra" || action == "contabilizar" || action == "contabilizar_compra" {
+				var payload struct {
+					EmpresaID       int64   `json:"empresa_id"`
+					ProveedorID     int64   `json:"proveedor_id"`
+					DocumentoCodigo string  `json:"documento_codigo"`
+					EstadoActual    string  `json:"estado_actual"`
+					MontoTotal      float64 `json:"monto_total"`
+					Moneda          string  `json:"moneda"`
+					PeriodoContable string  `json:"periodo_contable"`
+					Observaciones   string  `json:"observaciones"`
+				}
+				if r.Body != nil {
+					_ = json.NewDecoder(r.Body).Decode(&payload)
+				}
+				if payload.EmpresaID <= 0 {
+					if empresaID, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && empresaID > 0 {
+						payload.EmpresaID = empresaID
+					}
+				}
+				if payload.EmpresaID <= 0 {
+					http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+					return
+				}
+				if payload.ProveedorID <= 0 {
+					if proveedorID, err := parseInt64QueryOptional(r, "id"); err == nil && proveedorID > 0 {
+						payload.ProveedorID = proveedorID
+					}
+				}
+				if payload.ProveedorID <= 0 {
+					http.Error(w, "id/proveedor_id es obligatorio para la accion", http.StatusBadRequest)
+					return
+				}
+				if strings.TrimSpace(payload.DocumentoCodigo) == "" {
+					payload.DocumentoCodigo = strings.TrimSpace(q.Get("documento_codigo"))
+				}
+				if strings.TrimSpace(payload.DocumentoCodigo) == "" {
+					http.Error(w, "documento_codigo es obligatorio para la accion", http.StatusBadRequest)
+					return
+				}
+
+				if strings.TrimSpace(payload.EstadoActual) == "" {
+					payload.EstadoActual = strings.TrimSpace(q.Get("estado_actual"))
+				}
+
+				docExistente, err := dbpkg.GetEmpresaDocumentoCompraByCodigo(dbEmp, payload.EmpresaID, "orden_compra", payload.DocumentoCodigo)
+				if err != nil && !errors.Is(err, sql.ErrNoRows) {
+					http.Error(w, "No se pudo consultar el estado documental de compras", http.StatusInternalServerError)
+					return
+				}
+				if docExistente != nil {
+					payload.EstadoActual = docExistente.EstadoDocumento
+				}
+
+				transition, err := resolveComprasTransition(action, payload.EstadoActual)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusConflict)
+					return
+				}
+
+				evento := transition.Evento
+				docPersistido, err := dbpkg.UpsertEmpresaDocumentoCompra(dbEmp, dbpkg.EmpresaDocumentoCompra{
+					EmpresaID:            payload.EmpresaID,
+					ProveedorID:          payload.ProveedorID,
+					TipoDocumento:        "orden_compra",
+					DocumentoCodigo:      payload.DocumentoCodigo,
+					EstadoDocumento:      transition.EstadoNuevo,
+					EstadoAnterior:       transition.EstadoAnterior,
+					EventoUltimo:         evento,
+					PeriodoContable:      payload.PeriodoContable,
+					MontoTotal:           payload.MontoTotal,
+					Moneda:               payload.Moneda,
+					EntidadRelacionadaID: payload.ProveedorID,
+					UsuarioCreador:       strings.TrimSpace(adminEmailFromRequest(r)),
+					Observaciones:        payload.Observaciones,
+				})
+				if err != nil {
+					http.Error(w, "No se pudo persistir el documento transaccional", http.StatusInternalServerError)
+					return
+				}
+
+				registrarEventoContableNoBloqueante(dbEmp, r, "compras", dbpkg.EmpresaEventoContable{
+					EmpresaID:       payload.EmpresaID,
+					Modulo:          "compras",
+					Evento:          evento,
+					Entidad:         "orden_compra",
+					EntidadID:       docPersistido.ID,
+					DocumentoTipo:   "orden_compra",
+					DocumentoCodigo: strings.TrimSpace(payload.DocumentoCodigo),
+					PeriodoContable: strings.TrimSpace(payload.PeriodoContable),
+					MontoTotal:      payload.MontoTotal,
+					Moneda:          strings.ToUpper(strings.TrimSpace(payload.Moneda)),
+					Origen:          "api_proveedores",
+					Observaciones:   strings.TrimSpace(payload.Observaciones),
+				}, map[string]interface{}{
+					"accion":           transition.Accion,
+					"estado_anterior":  transition.EstadoAnterior,
+					"estado_nuevo":     transition.EstadoNuevo,
+					"entidad_id":       docPersistido.ID,
+					"documento_codigo": strings.TrimSpace(payload.DocumentoCodigo),
+					"proveedor_id":     payload.ProveedorID,
+					"empresa_id":       payload.EmpresaID,
+				})
+
+				w.Header().Set("Content-Type", "application/json")
+				json.NewEncoder(w).Encode(map[string]interface{}{
+					"ok":               true,
+					"accion":           transition.Accion,
+					"evento":           evento,
+					"estado_anterior":  transition.EstadoAnterior,
+					"estado_nuevo":     transition.EstadoNuevo,
+					"entidad_id":       docPersistido.ID,
+					"documento_codigo": strings.TrimSpace(payload.DocumentoCodigo),
+				})
+				return
+			}
 			if q.Get("action") == "activar" {
 				empresaID, err := parseEmpresaIDQuery(r)
 				if err != nil {
@@ -683,6 +816,25 @@ func EmpresaProveedoresHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, "failed to set proveedor estado: "+err.Error(), http.StatusInternalServerError)
 					return
 				}
+				evento := "proveedor_desactivado"
+				if estado == "activo" {
+					evento = "proveedor_activado"
+				}
+				registrarEventoContableNoBloqueante(dbEmp, r, "compras", dbpkg.EmpresaEventoContable{
+					EmpresaID:       empresaID,
+					Modulo:          "compras",
+					Evento:          evento,
+					Entidad:         "proveedor",
+					EntidadID:       id,
+					DocumentoTipo:   "proveedor",
+					DocumentoCodigo: strconv.FormatInt(id, 10),
+					Origen:          "api_proveedores",
+					Observaciones:   "actualizacion de estado del proveedor",
+				}, map[string]interface{}{
+					"estado":     estado,
+					"empresa_id": empresaID,
+					"id":         id,
+				})
 				w.WriteHeader(http.StatusNoContent)
 				return
 			}
@@ -700,6 +852,23 @@ func EmpresaProveedoresHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, "failed to update proveedor: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
+			registrarEventoContableNoBloqueante(dbEmp, r, "compras", dbpkg.EmpresaEventoContable{
+				EmpresaID:       payload.EmpresaID,
+				Modulo:          "compras",
+				Evento:          "proveedor_actualizado",
+				Entidad:         "proveedor",
+				EntidadID:       payload.ID,
+				DocumentoTipo:   "proveedor",
+				DocumentoCodigo: strings.TrimSpace(payload.Codigo),
+				Origen:          "api_proveedores",
+				Observaciones:   "actualizacion de proveedor en modulo de compras",
+			}, map[string]interface{}{
+				"nombre":     strings.TrimSpace(payload.Nombre),
+				"documento":  strings.TrimSpace(payload.Documento),
+				"contacto":   strings.TrimSpace(payload.Contacto),
+				"empresa_id": payload.EmpresaID,
+				"id":         payload.ID,
+			})
 			w.WriteHeader(http.StatusNoContent)
 			return
 		case http.MethodDelete:
@@ -717,6 +886,20 @@ func EmpresaProveedoresHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, "failed to delete proveedor: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
+			registrarEventoContableNoBloqueante(dbEmp, r, "compras", dbpkg.EmpresaEventoContable{
+				EmpresaID:       empresaID,
+				Modulo:          "compras",
+				Evento:          "proveedor_eliminado",
+				Entidad:         "proveedor",
+				EntidadID:       id,
+				DocumentoTipo:   "proveedor",
+				DocumentoCodigo: strconv.FormatInt(id, 10),
+				Origen:          "api_proveedores",
+				Observaciones:   "eliminacion de proveedor en modulo de compras",
+			}, map[string]interface{}{
+				"empresa_id": empresaID,
+				"id":         id,
+			})
 			w.WriteHeader(http.StatusNoContent)
 			return
 		default:

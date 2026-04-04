@@ -194,3 +194,74 @@ func TestCarritoProductoStockInsuficiente(t *testing.T) {
 		t.Fatalf("expected unchanged stock 1 after failed add-to-cart, got %.2f", stockFinal)
 	}
 }
+
+func TestCarritoEstadoVentaLifecycle(t *testing.T) {
+	dbConn := openCarritoInventarioTestDB(t)
+	if err := EnsureEmpresaCarritosSchema(dbConn); err != nil {
+		t.Fatalf("ensure carritos schema: %v", err)
+	}
+
+	carritoAbiertoID, err := CreateCarritoCompra(dbConn, CarritoCompra{
+		EmpresaID:      1,
+		Codigo:         "CAR-LIFE-001",
+		Nombre:         "Carrito Lifecycle A",
+		CanalVenta:     "mostrador",
+		Moneda:         "COP",
+		UsuarioCreador: "test",
+	})
+	if err != nil {
+		t.Fatalf("create carrito abierto: %v", err)
+	}
+
+	carritoAbierto, err := GetCarritoCompraByID(dbConn, 1, carritoAbiertoID)
+	if err != nil {
+		t.Fatalf("get carrito abierto: %v", err)
+	}
+	if carritoAbierto.EstadoVenta != "venta_abierta" {
+		t.Fatalf("expected venta_abierta, got %q", carritoAbierto.EstadoVenta)
+	}
+
+	if err := SetCarritoOperacionEstado(dbConn, 1, carritoAbiertoID, "cerrado"); err != nil {
+		t.Fatalf("cerrar carrito: %v", err)
+	}
+	carritoCerrado, err := GetCarritoCompraByID(dbConn, 1, carritoAbiertoID)
+	if err != nil {
+		t.Fatalf("get carrito cerrado: %v", err)
+	}
+	if carritoCerrado.EstadoVenta != "venta_cerrada" {
+		t.Fatalf("expected venta_cerrada, got %q", carritoCerrado.EstadoVenta)
+	}
+
+	if err := PayCarritoStationSession(dbConn, 1, carritoAbiertoID, "", "", 0, 0, carritoCerrado.Total); err != nil {
+		t.Fatalf("pagar carrito: %v", err)
+	}
+	carritoPagado, err := GetCarritoCompraByID(dbConn, 1, carritoAbiertoID)
+	if err != nil {
+		t.Fatalf("get carrito pagado: %v", err)
+	}
+	if carritoPagado.EstadoVenta != "venta_pagada" {
+		t.Fatalf("expected venta_pagada, got %q", carritoPagado.EstadoVenta)
+	}
+
+	carritoSuspendidoID, err := CreateCarritoCompra(dbConn, CarritoCompra{
+		EmpresaID:      1,
+		Codigo:         "CAR-LIFE-002",
+		Nombre:         "Carrito Lifecycle B",
+		CanalVenta:     "mostrador",
+		Moneda:         "COP",
+		UsuarioCreador: "test",
+	})
+	if err != nil {
+		t.Fatalf("create carrito suspendido: %v", err)
+	}
+	if err := SetCarritoCompraEstado(dbConn, 1, carritoSuspendidoID, "inactivo"); err != nil {
+		t.Fatalf("desactivar carrito: %v", err)
+	}
+	carritoSuspendido, err := GetCarritoCompraByID(dbConn, 1, carritoSuspendidoID)
+	if err != nil {
+		t.Fatalf("get carrito suspendido: %v", err)
+	}
+	if carritoSuspendido.EstadoVenta != "venta_suspendida" {
+		t.Fatalf("expected venta_suspendida, got %q", carritoSuspendido.EstadoVenta)
+	}
+}

@@ -199,6 +199,15 @@
       var list = myEmpresas.length > 0 ? myEmpresas : empresas;
       if (list.length === 0) {
         showForm();
+        try {
+          var msgEl = document.getElementById("msg");
+          if (msgEl) msgEl.textContent = "Agrega una empresa para continuar";
+        } catch (e) {}
+      } else {
+        try {
+          var msgEl = document.getElementById("msg");
+          if (msgEl) msgEl.textContent = "";
+        } catch (e) {}
       }
 
       var conLicenciaActiva = list.filter(function (e) {

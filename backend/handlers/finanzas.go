@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 
 	dbpkg "github.com/you/pos-backend/db"
@@ -18,6 +19,18 @@ func EmpresaFinanzasMovimientosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			empresaID, err := parseEmpresaIDQuery(r)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+			if action == "tablero" || action == "dashboard" || action == "resumen_kpi" {
+				desde := strings.TrimSpace(r.URL.Query().Get("desde"))
+				hasta := strings.TrimSpace(r.URL.Query().Get("hasta"))
+				resumen, err := dbpkg.GetEmpresaReportesTableroResumen(dbEmp, empresaID, desde, hasta)
+				if err != nil {
+					http.Error(w, "No se pudo construir el tablero de reportes", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, resumen)
 				return
 			}
 			includeInactive := queryBool(r, "include_inactive")
@@ -68,6 +81,34 @@ func EmpresaFinanzasMovimientosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
+			evento := "movimiento_ingreso_registrado"
+			if strings.EqualFold(strings.TrimSpace(payload.TipoMovimiento), "egreso") {
+				evento = "movimiento_egreso_registrado"
+			}
+			montoEvento := payload.Total
+			if montoEvento <= 0 {
+				montoEvento = payload.Monto
+			}
+			registrarEventoContableNoBloqueante(dbEmp, r, "finanzas", dbpkg.EmpresaEventoContable{
+				EmpresaID:       payload.EmpresaID,
+				Modulo:          "finanzas",
+				Evento:          evento,
+				Entidad:         "finanzas_movimiento",
+				EntidadID:       id,
+				DocumentoTipo:   strings.TrimSpace(payload.TipoComprobante),
+				DocumentoCodigo: strings.TrimSpace(payload.Codigo),
+				PeriodoContable: strings.TrimSpace(payload.PeriodoContable),
+				MontoTotal:      montoEvento,
+				Moneda:          strings.TrimSpace(payload.Moneda),
+				Origen:          "api_finanzas_movimientos",
+				Observaciones:   "movimiento financiero registrado desde API",
+			}, map[string]interface{}{
+				"tipo_movimiento":  strings.ToLower(strings.TrimSpace(payload.TipoMovimiento)),
+				"concepto":         strings.TrimSpace(payload.Concepto),
+				"categoria":        strings.TrimSpace(payload.Categoria),
+				"periodo_contable": strings.TrimSpace(payload.PeriodoContable),
+				"empresa_id":       payload.EmpresaID,
+			})
 			writeJSON(w, http.StatusCreated, map[string]interface{}{"ok": true, "id": id})
 			return
 
@@ -276,6 +317,25 @@ func EmpresaFinanzasPeriodosHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
 				}
+				evento := "periodo_contable_cerrado"
+				if estado == "abierto" {
+					evento = "periodo_contable_reabierto"
+				}
+				registrarEventoContableNoBloqueante(dbEmp, r, "finanzas", dbpkg.EmpresaEventoContable{
+					EmpresaID:       empresaID,
+					Modulo:          "finanzas",
+					Evento:          evento,
+					Entidad:         "finanzas_periodo",
+					DocumentoTipo:   "periodo_contable",
+					DocumentoCodigo: periodo,
+					PeriodoContable: periodo,
+					Origen:          "api_finanzas_periodos",
+					Observaciones:   "actualizacion de estado de periodo contable",
+				}, map[string]interface{}{
+					"periodo":    periodo,
+					"estado":     estado,
+					"empresa_id": empresaID,
+				})
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "periodo": periodo, "estado": estado})
 				return
 			}
@@ -301,6 +361,198 @@ func EmpresaFinanzasPeriodosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": id})
+			return
+		}
+
+		http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
+	}
+}
+
+// EmpresaFinanzasCierresCajaHandler gestiona apertura/arqueo/cierre de caja por empresa/sucursal.
+func EmpresaFinanzasCierresCajaHandler(dbEmp *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			empresaID, err := parseEmpresaIDQuery(r)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			sucursalID, err := parseInt64QueryOptional(r, "sucursal_id")
+			if err != nil {
+				http.Error(w, "sucursal_id invalido", http.StatusBadRequest)
+				return
+			}
+			limit, err := parseIntQueryOptional(r, "limit")
+			if err != nil {
+				http.Error(w, "limit invalido", http.StatusBadRequest)
+				return
+			}
+			rows, err := dbpkg.ListEmpresaCierresCaja(dbEmp, empresaID, dbpkg.EmpresaCierreCajaFilter{
+				SucursalID:      sucursalID,
+				CajaCodigo:      strings.TrimSpace(r.URL.Query().Get("caja_codigo")),
+				EstadoCierre:    strings.TrimSpace(r.URL.Query().Get("estado_cierre")),
+				Desde:           strings.TrimSpace(r.URL.Query().Get("desde")),
+				Hasta:           strings.TrimSpace(r.URL.Query().Get("hasta")),
+				IncludeInactive: queryBool(r, "include_inactive"),
+				Limit:           limit,
+			})
+			if err != nil {
+				http.Error(w, "No se pudieron listar los cierres de caja", http.StatusInternalServerError)
+				return
+			}
+			writeJSON(w, http.StatusOK, rows)
+			return
+
+		case http.MethodPost:
+			var payload dbpkg.EmpresaCierreCaja
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "JSON invalido", http.StatusBadRequest)
+				return
+			}
+			if payload.EmpresaID <= 0 {
+				if empresaID, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && empresaID > 0 {
+					payload.EmpresaID = empresaID
+				}
+			}
+			payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
+			id, err := dbpkg.CreateEmpresaCierreCaja(dbEmp, payload)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			writeJSON(w, http.StatusCreated, map[string]interface{}{"ok": true, "id": id})
+			return
+
+		case http.MethodPut:
+			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+			if action == "cerrar" || action == "reabrir" || action == "aprobar" || action == "anular" || action == "activar" || action == "desactivar" {
+				empresaID, err := parseEmpresaIDQuery(r)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				id, err := parseInt64Query(r, "id")
+				if err != nil {
+					http.Error(w, "id es obligatorio", http.StatusBadRequest)
+					return
+				}
+
+				if action == "activar" || action == "desactivar" {
+					estado := "activo"
+					if action == "desactivar" {
+						estado = "inactivo"
+					}
+					if err := dbpkg.SetEmpresaCierreCajaRegistroEstado(dbEmp, empresaID, id, estado); err != nil {
+						if errors.Is(err, sql.ErrNoRows) {
+							http.Error(w, "cierre de caja no encontrado", http.StatusNotFound)
+							return
+						}
+						http.Error(w, "No se pudo actualizar el estado del registro", http.StatusInternalServerError)
+						return
+					}
+					writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "estado": estado})
+					return
+				}
+
+				estadoCierre := "cerrado"
+				switch action {
+				case "reabrir":
+					estadoCierre = "abierto"
+				case "aprobar":
+					estadoCierre = "aprobado"
+				case "anular":
+					estadoCierre = "anulado"
+				}
+
+				var cajaFisica *float64
+				if raw := strings.TrimSpace(r.URL.Query().Get("caja_fisica")); raw != "" {
+					v, err := strconv.ParseFloat(raw, 64)
+					if err != nil {
+						http.Error(w, "caja_fisica invalida", http.StatusBadRequest)
+						return
+					}
+					if v < 0 {
+						v = 0
+					}
+					cajaFisica = &v
+				}
+
+				if err := dbpkg.SetEmpresaCierreCajaEstado(
+					dbEmp,
+					empresaID,
+					id,
+					estadoCierre,
+					cajaFisica,
+					strings.TrimSpace(adminEmailFromRequest(r)),
+					strings.TrimSpace(r.URL.Query().Get("observaciones")),
+				); err != nil {
+					if errors.Is(err, sql.ErrNoRows) {
+						http.Error(w, "cierre de caja no encontrado", http.StatusNotFound)
+						return
+					}
+					if errors.Is(err, dbpkg.ErrCierreCajaTransicionInvalida) || errors.Is(err, dbpkg.ErrCierreCajaAprobadoBloqueado) {
+						http.Error(w, err.Error(), http.StatusConflict)
+						return
+					}
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "estado_cierre": estadoCierre})
+				return
+			}
+
+			var payload dbpkg.EmpresaCierreCaja
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "JSON invalido", http.StatusBadRequest)
+				return
+			}
+			if payload.EmpresaID <= 0 || payload.ID <= 0 {
+				http.Error(w, "id y empresa_id son obligatorios", http.StatusBadRequest)
+				return
+			}
+			if payload.UsuarioCreador == "" {
+				payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
+			}
+			if err := dbpkg.UpdateEmpresaCierreCaja(dbEmp, payload); err != nil {
+				if errors.Is(err, sql.ErrNoRows) {
+					http.Error(w, "cierre de caja no encontrado", http.StatusNotFound)
+					return
+				}
+				if errors.Is(err, dbpkg.ErrCierreCajaAprobadoBloqueado) {
+					http.Error(w, err.Error(), http.StatusConflict)
+					return
+				}
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
+			return
+
+		case http.MethodDelete:
+			empresaID, err := parseEmpresaIDQuery(r)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			id, err := parseInt64Query(r, "id")
+			if err != nil {
+				http.Error(w, "id es obligatorio", http.StatusBadRequest)
+				return
+			}
+			if err := dbpkg.DeleteEmpresaCierreCaja(dbEmp, empresaID, id); err != nil {
+				if errors.Is(err, sql.ErrNoRows) {
+					http.Error(w, "cierre de caja no encontrado", http.StatusNotFound)
+					return
+				}
+				if errors.Is(err, dbpkg.ErrCierreCajaAprobadoBloqueado) {
+					http.Error(w, err.Error(), http.StatusConflict)
+					return
+				}
+				http.Error(w, "No se pudo eliminar el cierre de caja", http.StatusInternalServerError)
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
 			return
 		}
 

@@ -20,6 +20,10 @@ erDiagram
     EMPRESAS ||--o{ EMPRESA_FINANZAS_MOVIMIENTOS : "empresa_id"
     EMPRESAS ||--o{ EMPRESA_FINANZAS_PERIODOS : "empresa_id"
     EMPRESAS ||--|| EMPRESA_FINANZAS_CONFIGURACION : "empresa_id"
+    EMPRESAS ||--o{ EMPRESA_CIERRES_CAJA : "empresa_id"
+    EMPRESAS ||--o{ EMPRESA_FACTURACION_DOCUMENTOS : "empresa_id"
+    EMPRESAS ||--o{ EMPRESA_COMPRAS_DOCUMENTOS : "empresa_id"
+    EMPRESAS ||--o{ EMPRESA_EVENTOS_CONTABLES : "empresa_id"
     EMPRESAS ||--o{ EMPRESA_AI_CONSULTAS : "empresa_id"
     EMPRESAS ||--o{ EMPRESA_AI_USO_DIARIO : "empresa_id"
     EMPRESAS ||--o{ EMPRESA_AI_MODELO_PREFERIDO : "empresa_id"
@@ -31,6 +35,7 @@ erDiagram
     EMPRESAS ||--o{ EMPRESA_GPS_RECORRIDOS : "empresa_id"
 
     CLIENTES ||--o{ CARRITOS_COMPRAS : "cliente_id"
+    PROVEEDORES ||--o{ EMPRESA_COMPRAS_DOCUMENTOS : "proveedor_id"
     CARRITOS_COMPRAS ||--o{ CARRITO_COMPRA_ITEMS : "carrito_id"
     CATEGORIAS_PRODUCTOS ||--o{ PRODUCTOS : "categoria_id"
     CHAT_TAREAS_CONVERSACIONES ||--o{ CHAT_TAREAS_PARTICIPANTES : "conversacion_id"
@@ -170,6 +175,69 @@ erDiagram
       string cuenta_retenciones_pagar
       string cuentas_ingreso_categoria
       string cuentas_egreso_categoria
+      string estado
+    }
+    EMPRESA_CIERRES_CAJA {
+      int id PK
+      int empresa_id FK
+      int sucursal_id
+      string caja_codigo
+      string turno
+      string fecha_operacion
+      string estado_cierre
+      double apertura_monto
+      double ingresos_efectivo
+      double egresos_efectivo
+      double retiros_efectivo
+      double caja_teorica
+      double caja_fisica
+      double diferencia_caja
+      int tiene_incidencia
+      string estado
+    }
+    EMPRESA_FACTURACION_DOCUMENTOS {
+      int id PK
+      int empresa_id FK
+      string tipo_documento
+      string documento_codigo
+      string estado_documento
+      string estado_anterior
+      string evento_ultimo
+      string periodo_contable
+      double monto_total
+      string moneda
+      int entidad_relacionada_id
+      string estado
+    }
+    EMPRESA_COMPRAS_DOCUMENTOS {
+      int id PK
+      int empresa_id FK
+      int proveedor_id FK
+      string tipo_documento
+      string documento_codigo
+      string estado_documento
+      string estado_anterior
+      string evento_ultimo
+      string periodo_contable
+      double monto_total
+      string moneda
+      int entidad_relacionada_id
+      string estado
+    }
+    EMPRESA_EVENTOS_CONTABLES {
+      int id PK
+      int empresa_id FK
+      string modulo
+      string evento
+      string entidad
+      int entidad_id
+      string documento_tipo
+      string documento_codigo
+      string periodo_contable
+      double monto_total
+      string moneda
+      int procesado
+      string fecha_evento
       string estado
     }
     EMPRESA_AI_CONSULTAS {

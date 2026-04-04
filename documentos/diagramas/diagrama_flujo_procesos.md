@@ -49,9 +49,17 @@ flowchart TD
     AUTHZ --> M
     AUTHZ --> N
     AUTHZ --> F0
+    AUTHZ --> T
+    AUTHZ --> G0
+    AUTHZ --> Z
 
     L --> M[Crear cliente de venta]
     L --> N[Crear bodega y proveedor]
+    N --> CP0[Ejecutar accion compras emitir_orden/recepcionar/contabilizar]
+    CP0 --> CP1{Transicion valida segun estado_actual?}
+    CP1 -->|No| CP2[Responder 409 y no registrar evento]
+    CP1 -->|Si| CP3[Persistir documento canonico de compra]
+    CP3 --> CP4[Registrar evento con entidad_id canonico]
     L --> N0[Administrar categorias de productos por empresa]
     N0 --> N1[Crear/editar/activar categorias]
     N1 --> N2[Asignar categoria al producto desde selector]
@@ -67,7 +75,10 @@ flowchart TD
     Q --> R[Pagar carrito]
     R --> R1[Conservar descuento de inventario al cerrar venta]
     R1 --> S[Cerrar carrito y guardar resumen de pago]
-    S --> RP0[Entrar al modulo reportes]
+    S --> S11[Registrar evento contable de venta]
+    S11 --> RP0[Entrar al modulo reportes]
+    RP0 --> RF0[Consultar tablero financiero-operativo action=tablero]
+    RF0 --> RF1[Renderizar KPI operativos financieros y contables]
     RP0 --> RP1[Filtrar ventas cerradas por rango de fechas]
     RP1 --> RP2[Calcular KPIs: ventas, ingresos y ticket promedio]
     RP2 --> RP3[Construir reporte de ventas por fecha]
@@ -82,6 +93,16 @@ flowchart TD
     F1 --> F2[Definir categorias, prefijos, formato y plan de cuentas contable]
     F2 --> F21[Configurar destino externo: generico, SIIGO, World Office o Alegra]
     F21 --> F22[Gestionar periodo contable: abierto/cerrado]
+    F22 --> C0[Gestionar cierre de caja por sucursal y caja]
+    C0 --> C1[Abrir caja con base inicial de efectivo]
+    C1 --> C2[Registrar ingresos, egresos y retiros del turno]
+    C2 --> C3[Calcular caja teorica]
+    C3 --> C4[Capturar arqueo de caja fisica]
+    C4 --> C5{Diferencia supera umbral?}
+    C5 -->|Si| C6[Marcar incidencia para revision]
+    C5 -->|No| C7[Cerrar caja]
+    C6 --> C7
+    C7 --> C8[Aprobar cierre por rol autorizado]
     F22 --> F3[Registrar ingreso o egreso con comprobante]
     F3 --> F31[Calcular total bruto, retenciones y total neto]
     F31 --> F4[Filtrar movimientos y calcular balance]
@@ -127,6 +148,11 @@ flowchart TD
     Z2 --> Z3[Configurar parametros FE por pais CO/PA/EC]
     Z3 --> Z31[Si no existe configuracion FE, prellenar desde configuracion avanzada]
     Z31 --> Z4[Guardar configuracion por empresa y pais]
+    Z4 --> Z5[Ejecutar accion transaccional emitir/anular/nota_credito]
+    Z5 --> Z6{Transicion valida segun estado_actual?}
+    Z6 -->|No| Z7[Responder 409 y no registrar evento]
+    Z6 -->|Si| Z8[Persistir documento canonico de facturacion]
+    Z8 --> Z9[Registrar evento con entidad_id canonico]
 ```
 
 Resultado esperado:
@@ -149,6 +175,7 @@ Resultado esperado:
 - En `configuracion`, las opciones del lector de barras se gestionan por empresa y aplican al flujo operativo del carrito.
 - En `reportes`, se agrega tabla de inventario actual por bodega y KPI de productos bajo minimo.
 - En `finanzas`, cada empresa administra ingresos y egresos con configuracion propia, comprobantes y soporte de impresion.
+- En `finanzas`, el flujo de caja operativo permite apertura, arqueo, cierre y aprobacion de caja por `sucursal_id` y `caja_codigo`.
 - En `finanzas`, el libro financiero se consulta por pestañas (`Todos`, `Ingresos`, `Egresos`) y puede exportarse por rango a Excel (CSV), PDF y JSON contable para integración externa.
 - En `finanzas`, el JSON contable usa cuentas parametrizadas por empresa/categoria e incluye perfil de referencia para ERP destino.
 - En `finanzas`, existe plantilla dedicada SIIGO en CSV y exportaciones de `balance de prueba` y `estado de resultados` para trabajo contable/directivo.
@@ -158,5 +185,20 @@ Resultado esperado:
 - En `chat_con_inteligencia_artificial`, el alcance de consultas queda restringido por `empresa_id` y validacion del usuario autenticado.
 - En `chat_con_inteligencia_artificial`, el sistema controla limite free-tier diario por `empresa/proveedor/modelo` y muestra opcion de upgrade cuando aplica.
 - En `chat_con_inteligencia_artificial`, cada consulta/respuesta queda auditada junto con metrica de tokens para trazabilidad operativa.
-- En rutas criticas de `ventas`, `inventario` y `finanzas`, el middleware de permisos valida rol y alcance de `empresa_id` antes de ejecutar operaciones sensibles.
+- En rutas criticas de `ventas`, `inventario`, `finanzas`, `clientes`, `compras/proveedores`, `facturacion` y `seguridad/usuarios`, el middleware valida rol y alcance de `empresa_id` antes de ejecutar operaciones sensibles.
+- En rutas operativas de `chat_tareas`, `ubicacion_gps` y `productos/imagen`, el middleware aplica politicas por modulo para mantener control uniforme de acceso.
+- En `carritos_compra`, cada lectura de carrito expone `estado_venta` estandarizado (`venta_abierta`, `venta_cerrada`, `venta_pagada`, `venta_suspendida`) para normalizar decisiones operativas y reportes.
+- En acciones de carrito (`activar_estacion`, `pagar_estacion`, `activar/desactivar`, `cerrar/reabrir`), la API responde `estado_venta` para trazabilidad inmediata del ciclo de venta.
+- En acciones de ciclo de venta, el backend bloquea transiciones no permitidas (doble pago, reabrir pagada, activar estacion pagada sin `reset_items=1`) con `409`, y usa `404` cuando el carrito no existe.
+- En cierre y cambios operativos de venta, se registra un evento contable (`empresa_eventos_contables`) para habilitar integracion contable por modulo.
+- En `reportes`, la vista consume `GET /api/empresa/finanzas/movimientos?action=tablero` para mostrar KPI financieros y contables junto a los KPI operativos.
+- En `facturacion_electronica`, al guardar configuracion FE por pais se registra evento contable de modulo `facturacion` para trazabilidad de parametrizacion fiscal.
+- En `facturacion_electronica`, acciones transaccionales (`emitir`, `anular`, `nota_credito`) registran eventos `factura_emitida`, `factura_anulada` y `nota_credito_emitida`.
+- En `proveedores`, las operaciones de alta, actualizacion, activacion/desactivacion y eliminacion registran eventos del modulo `compras`.
+- En `proveedores`, acciones transaccionales (`emitir_orden`, `recepcionar_compra`, `contabilizar_compra`) registran eventos de orden y ciclo contable de compra.
+- En acciones transaccionales de `facturacion_electronica` y `proveedores`, el backend valida `estado_actual` y responde `409` cuando la transicion no corresponde al ciclo documental.
+- En transacciones documentales validas, la API devuelve `estado_anterior` y `estado_nuevo`, y los persiste en el payload del evento contable para auditoria.
+- En transacciones de facturacion y compras, `empresa_eventos_contables.entidad_id` corresponde al ID canonico persistido en `empresa_facturacion_documentos` o `empresa_compras_documentos`.
+- En `finanzas`, el alta de movimientos y el cierre/reapertura de periodos registran eventos contables del modulo `finanzas`.
+- En pruebas de seguridad de endpoints protegidos, se valida extraccion de `empresa_id` desde `multipart/form-data` para `chat_tareas/mensajes/adjunto` y denegacion por rol en `ubicacion_gps/dispositivos`.
 - En `super/configuracion_avanzada`, la tarjeta IA permite guardar credenciales de 5 modelos populares y registrar la cuenta Google del administrador que realiza el cambio.

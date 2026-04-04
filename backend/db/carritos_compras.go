@@ -18,6 +18,7 @@ type CarritoCompra struct {
 	ClienteID          int64   `json:"cliente_id,omitempty"`
 	ClienteNombre      string  `json:"cliente_nombre,omitempty"`
 	EstadoCarrito      string  `json:"estado_carrito,omitempty"`
+	EstadoVenta        string  `json:"estado_venta,omitempty"`
 	Moneda             string  `json:"moneda,omitempty"`
 	ReferenciaExterna  string  `json:"referencia_externa,omitempty"`
 	Subtotal           float64 `json:"subtotal"`
@@ -301,6 +302,27 @@ func defaultImpuestoCodigo(v string) string {
 	return v
 }
 
+func resolveCarritoEstadoVenta(estadoCarrito, estadoRegistro, pagadoEn string) string {
+	estadoOp := strings.TrimSpace(strings.ToLower(estadoCarrito))
+	if estadoOp == "" {
+		estadoOp = "abierto"
+	}
+	estadoReg := strings.TrimSpace(strings.ToLower(estadoRegistro))
+	if estadoReg == "" {
+		estadoReg = "activo"
+	}
+	if estadoOp == "cerrado" && strings.TrimSpace(pagadoEn) != "" {
+		return "venta_pagada"
+	}
+	if estadoOp == "cerrado" {
+		return "venta_cerrada"
+	}
+	if estadoReg == "inactivo" {
+		return "venta_suspendida"
+	}
+	return "venta_abierta"
+}
+
 func round2(v float64) float64 {
 	return math.Round(v*100) / 100
 }
@@ -477,6 +499,7 @@ func GetCarritosCompraByEmpresa(dbConn *sql.DB, empresaID int64, includeInactive
 		); err != nil {
 			return nil, err
 		}
+		item.EstadoVenta = resolveCarritoEstadoVenta(item.EstadoCarrito, item.Estado, item.PagadoEn)
 		out = append(out, item)
 	}
 	return out, nil
@@ -545,6 +568,7 @@ func GetCarritoCompraByID(dbConn *sql.DB, empresaID, carritoID int64) (*CarritoC
 	); err != nil {
 		return nil, err
 	}
+	item.EstadoVenta = resolveCarritoEstadoVenta(item.EstadoCarrito, item.Estado, item.PagadoEn)
 	return &item, nil
 }
 

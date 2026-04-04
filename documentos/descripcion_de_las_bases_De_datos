@@ -185,6 +185,80 @@ El agente debe leer y actualizar este documento cada vez que se realicen cambios
      - `estado` TEXT DEFAULT 'activo'
      - `observaciones` TEXT
 
+   - `empresa_eventos_contables` (contrato de eventos contables por modulo)
+     - `id` INTEGER PRIMARY KEY AUTOINCREMENT
+     - `empresa_id` INTEGER NOT NULL
+     - `modulo` TEXT NOT NULL -- ventas / facturacion / compras / finanzas
+     - `evento` TEXT NOT NULL
+     - `entidad` TEXT NOT NULL
+     - `entidad_id` INTEGER
+     - `documento_tipo` TEXT
+     - `documento_codigo` TEXT
+     - `periodo_contable` TEXT -- formato YYYY-MM
+     - `monto_total` REAL DEFAULT 0
+     - `moneda` TEXT DEFAULT 'COP'
+     - `payload_json` TEXT
+     - `origen` TEXT DEFAULT 'backend'
+     - `fecha_evento` TEXT DEFAULT (datetime('now','localtime'))
+     - `procesado` INTEGER DEFAULT 0
+     - `fecha_procesado` TEXT
+     - `fecha_creacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `fecha_actualizacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `usuario_creador` TEXT
+     - `estado` TEXT DEFAULT 'activo'
+     - `observaciones` TEXT
+     - Índices: `ix_empresa_eventos_contables_empresa_fecha`, `ix_empresa_eventos_contables_empresa_modulo_evento`, `ix_empresa_eventos_contables_pendientes`, `ix_empresa_eventos_contables_empresa_periodo`
+     - Eventos operativos actuales por modulo:
+       - `ventas`: `venta_sesion_activada`, `venta_activada`, `venta_suspendida`, `venta_cerrada`, `venta_reabierta`, `venta_pagada`
+       - `facturacion`: `configuracion_facturacion_actualizada`, `factura_emitida`, `factura_anulada`, `nota_credito_emitida`
+       - `compras`: `proveedor_registrado`, `proveedor_actualizado`, `proveedor_activado`, `proveedor_desactivado`, `proveedor_eliminado`, `orden_compra_emitida`, `compra_recepcionada`, `compra_contabilizada`
+       - `finanzas`: `movimiento_ingreso_registrado`, `movimiento_egreso_registrado`, `periodo_contable_cerrado`, `periodo_contable_reabierto`
+     - Nota operativa:
+       - En transacciones de facturacion/compras, `entidad_id` referencia el ID canonico persistido en tablas documentales dedicadas.
+
+   - `empresa_facturacion_documentos` (documentos canonicos de facturacion)
+     - `id` INTEGER PRIMARY KEY AUTOINCREMENT
+     - `empresa_id` INTEGER NOT NULL
+     - `tipo_documento` TEXT NOT NULL -- factura_electronica / nota_credito
+     - `documento_codigo` TEXT NOT NULL
+     - `estado_documento` TEXT NOT NULL
+     - `estado_anterior` TEXT
+     - `evento_ultimo` TEXT
+     - `periodo_contable` TEXT -- formato YYYY-MM
+     - `monto_total` REAL DEFAULT 0
+     - `moneda` TEXT DEFAULT 'COP'
+     - `fecha_documento` TEXT
+     - `entidad_relacionada_id` INTEGER
+     - `fecha_creacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `fecha_actualizacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `usuario_creador` TEXT
+     - `estado` TEXT DEFAULT 'activo'
+     - `observaciones` TEXT
+     - Restriccion unica: `(empresa_id, tipo_documento, documento_codigo)`
+     - Indices: `ix_empresa_facturacion_documentos_lookup`, `ix_empresa_facturacion_documentos_estado`
+
+   - `empresa_compras_documentos` (documentos canonicos de compras)
+     - `id` INTEGER PRIMARY KEY AUTOINCREMENT
+     - `empresa_id` INTEGER NOT NULL
+     - `proveedor_id` INTEGER
+     - `tipo_documento` TEXT NOT NULL -- orden_compra (extensible)
+     - `documento_codigo` TEXT NOT NULL
+     - `estado_documento` TEXT NOT NULL
+     - `estado_anterior` TEXT
+     - `evento_ultimo` TEXT
+     - `periodo_contable` TEXT -- formato YYYY-MM
+     - `monto_total` REAL DEFAULT 0
+     - `moneda` TEXT DEFAULT 'COP'
+     - `fecha_documento` TEXT
+     - `entidad_relacionada_id` INTEGER
+     - `fecha_creacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `fecha_actualizacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `usuario_creador` TEXT
+     - `estado` TEXT DEFAULT 'activo'
+     - `observaciones` TEXT
+     - Restriccion unica: `(empresa_id, tipo_documento, documento_codigo)`
+     - Indices: `ix_empresa_compras_documentos_lookup`, `ix_empresa_compras_documentos_estado`
+
    - `empresa_ai_consultas` (auditoria de consultas/respuestas IA por empresa)
      - `id` INTEGER PRIMARY KEY AUTOINCREMENT
      - `empresa_id` INTEGER NOT NULL

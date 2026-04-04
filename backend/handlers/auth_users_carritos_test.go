@@ -104,6 +104,16 @@ func ensureClientesSchema(t *testing.T, dbEmp *sql.DB) {
 	}
 }
 
+func ensureCarritosVentasSchema(t *testing.T, dbEmp *sql.DB) {
+	t.Helper()
+	if err := dbpkg.EnsureEmpresaCarritosSchema(dbEmp); err != nil {
+		t.Fatalf("ensure carritos schema: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaEventosContablesSchema(dbEmp); err != nil {
+		t.Fatalf("ensure eventos contables schema: %v", err)
+	}
+}
+
 func TestHandleGoogleLoginRedirectIncludesLoginHint(t *testing.T) {
 	h := HandleGoogleLogin("client-123", "http://localhost:8080/auth/google/callback")
 	req := httptest.NewRequest(http.MethodGet, "/auth/google/login?login_hint=usuario@example.com", nil)
@@ -254,9 +264,7 @@ func TestEmpresaUsuarioSetPasswordHandlerSuccess(t *testing.T) {
 func TestEmpresaCarritosCompraAndItemsFlow(t *testing.T) {
 	dbEmp := openTestSQLite(t, "empresas_carritos.db")
 	ensureClientesSchema(t, dbEmp)
-	if err := dbpkg.EnsureEmpresaCarritosSchema(dbEmp); err != nil {
-		t.Fatalf("ensure carritos schema: %v", err)
-	}
+	ensureCarritosVentasSchema(t, dbEmp)
 
 	carritosHandler := EmpresaCarritosCompraHandler(dbEmp)
 	createCarritoBody := `{"empresa_id":1,"nombre":"Caja Principal","canal_venta":"mostrador","moneda":"COP"}`
@@ -308,5 +316,231 @@ func TestEmpresaCarritosCompraAndItemsFlow(t *testing.T) {
 	}
 	if rows[0].Total <= 0 {
 		t.Fatalf("expected total > 0 after item creation, got %v", rows[0].Total)
+	}
+	if rows[0].EstadoVenta != "venta_abierta" {
+		t.Fatalf("expected estado_venta=venta_abierta, got %q", rows[0].EstadoVenta)
+	}
+
+	payReq := httptest.NewRequest(http.MethodPut, "/api/empresa/carritos_compra?empresa_id=1&id="+strconv.FormatInt(carritoID, 10)+"&action=pagar_estacion", strings.NewReader(`{"total_pagado":3000}`))
+	payReq.Header.Set("Content-Type", "application/json")
+	payRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(payRR, payReq)
+	if payRR.Code != http.StatusOK {
+		t.Fatalf("expected pay status %d, got %d body=%s", http.StatusOK, payRR.Code, payRR.Body.String())
+	}
+
+	var payResp map[string]interface{}
+	if err := json.Unmarshal(payRR.Body.Bytes(), &payResp); err != nil {
+		t.Fatalf("decode pay response: %v", err)
+	}
+	if got, _ := payResp["estado_venta"].(string); got != "venta_pagada" {
+		t.Fatalf("expected pay response estado_venta=venta_pagada, got %q", got)
+	}
+
+	listPaidReq := httptest.NewRequest(http.MethodGet, "/api/empresa/carritos_compra?empresa_id=1&include_inactive=1", nil)
+	listPaidRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(listPaidRR, listPaidReq)
+	if listPaidRR.Code != http.StatusOK {
+		t.Fatalf("expected list after pay status %d, got %d body=%s", http.StatusOK, listPaidRR.Code, listPaidRR.Body.String())
+	}
+
+	var paidRows []dbpkg.CarritoCompra
+	if err := json.Unmarshal(listPaidRR.Body.Bytes(), &paidRows); err != nil {
+		t.Fatalf("decode list after pay: %v", err)
+	}
+	if len(paidRows) == 0 {
+		t.Fatalf("expected at least one carrito after pay, got %d", len(paidRows))
+	}
+	if paidRows[0].EstadoVenta != "venta_pagada" {
+		t.Fatalf("expected estado_venta=venta_pagada after pay, got %q", paidRows[0].EstadoVenta)
+	}
+
+	eventos, err := dbpkg.ListEmpresaEventosContables(dbEmp, 1, dbpkg.EmpresaEventoContableFilter{Modulo: "ventas", Limit: 10})
+	if err != nil {
+		t.Fatalf("list eventos contables: %v", err)
+	}
+	if len(eventos) == 0 {
+		t.Fatalf("expected at least one evento contable de ventas")
+	}
+	if eventos[0].Evento != "venta_pagada" {
+		t.Fatalf("expected latest evento venta_pagada, got %q", eventos[0].Evento)
+	}
+}
+
+func TestEmpresaCarritosCompraEstadoVentaSuspendida(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_carritos_suspendida.db")
+	ensureClientesSchema(t, dbEmp)
+	ensureCarritosVentasSchema(t, dbEmp)
+
+	carritosHandler := EmpresaCarritosCompraHandler(dbEmp)
+	createCarritoBody := `{"empresa_id":1,"nombre":"Caja Secundaria","canal_venta":"mostrador","moneda":"COP"}`
+	createReq := httptest.NewRequest(http.MethodPost, "/api/empresa/carritos_compra", strings.NewReader(createCarritoBody))
+	createReq.Header.Set("Content-Type", "application/json")
+	createRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(createRR, createReq)
+
+	if createRR.Code != http.StatusCreated {
+		t.Fatalf("expected create status %d, got %d body=%s", http.StatusCreated, createRR.Code, createRR.Body.String())
+	}
+
+	var createResp map[string]interface{}
+	if err := json.Unmarshal(createRR.Body.Bytes(), &createResp); err != nil {
+		t.Fatalf("decode create carrito: %v", err)
+	}
+	carritoIDFloat, ok := createResp["id"].(float64)
+	if !ok || carritoIDFloat <= 0 {
+		t.Fatalf("invalid carrito id in response: %v", createResp)
+	}
+	carritoID := int64(carritoIDFloat)
+
+	disableReq := httptest.NewRequest(http.MethodPut, "/api/empresa/carritos_compra?empresa_id=1&id="+strconv.FormatInt(carritoID, 10)+"&action=desactivar", nil)
+	disableRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(disableRR, disableReq)
+
+	if disableRR.Code != http.StatusOK {
+		t.Fatalf("expected disable status %d, got %d body=%s", http.StatusOK, disableRR.Code, disableRR.Body.String())
+	}
+
+	var disableResp map[string]interface{}
+	if err := json.Unmarshal(disableRR.Body.Bytes(), &disableResp); err != nil {
+		t.Fatalf("decode disable response: %v", err)
+	}
+	if got, _ := disableResp["estado_venta"].(string); got != "venta_suspendida" {
+		t.Fatalf("expected disable response estado_venta=venta_suspendida, got %q", got)
+	}
+
+	listReq := httptest.NewRequest(http.MethodGet, "/api/empresa/carritos_compra?empresa_id=1&include_inactive=1", nil)
+	listRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(listRR, listReq)
+	if listRR.Code != http.StatusOK {
+		t.Fatalf("expected list status %d, got %d body=%s", http.StatusOK, listRR.Code, listRR.Body.String())
+	}
+
+	var rows []dbpkg.CarritoCompra
+	if err := json.Unmarshal(listRR.Body.Bytes(), &rows); err != nil {
+		t.Fatalf("decode list carritos: %v", err)
+	}
+	if len(rows) == 0 {
+		t.Fatalf("expected at least one carrito, got %d", len(rows))
+	}
+	if rows[0].EstadoVenta != "venta_suspendida" {
+		t.Fatalf("expected estado_venta=venta_suspendida, got %q", rows[0].EstadoVenta)
+	}
+}
+
+func TestEmpresaCarritosCompraRejectsDoublePago(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_carritos_double_pay.db")
+	ensureClientesSchema(t, dbEmp)
+	ensureCarritosVentasSchema(t, dbEmp)
+
+	carritosHandler := EmpresaCarritosCompraHandler(dbEmp)
+	createReq := httptest.NewRequest(http.MethodPost, "/api/empresa/carritos_compra", strings.NewReader(`{"empresa_id":1,"nombre":"Caja Doble Pago","canal_venta":"mostrador","moneda":"COP"}`))
+	createReq.Header.Set("Content-Type", "application/json")
+	createRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(createRR, createReq)
+	if createRR.Code != http.StatusCreated {
+		t.Fatalf("expected create status %d, got %d body=%s", http.StatusCreated, createRR.Code, createRR.Body.String())
+	}
+
+	var createResp map[string]interface{}
+	if err := json.Unmarshal(createRR.Body.Bytes(), &createResp); err != nil {
+		t.Fatalf("decode create response: %v", err)
+	}
+	carritoID := int64(createResp["id"].(float64))
+
+	payURL := "/api/empresa/carritos_compra?empresa_id=1&id=" + strconv.FormatInt(carritoID, 10) + "&action=pagar_estacion"
+	payReq := httptest.NewRequest(http.MethodPut, payURL, strings.NewReader(`{"total_pagado":0}`))
+	payReq.Header.Set("Content-Type", "application/json")
+	payRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(payRR, payReq)
+	if payRR.Code != http.StatusOK {
+		t.Fatalf("expected first pay status %d, got %d body=%s", http.StatusOK, payRR.Code, payRR.Body.String())
+	}
+
+	payAgainReq := httptest.NewRequest(http.MethodPut, payURL, strings.NewReader(`{"total_pagado":0}`))
+	payAgainReq.Header.Set("Content-Type", "application/json")
+	payAgainRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(payAgainRR, payAgainReq)
+	if payAgainRR.Code != http.StatusConflict {
+		t.Fatalf("expected second pay status %d, got %d body=%s", http.StatusConflict, payAgainRR.Code, payAgainRR.Body.String())
+	}
+}
+
+func TestEmpresaCarritosCompraRejectsReabrirVentaPagada(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_carritos_reopen_paid.db")
+	ensureClientesSchema(t, dbEmp)
+	ensureCarritosVentasSchema(t, dbEmp)
+
+	carritosHandler := EmpresaCarritosCompraHandler(dbEmp)
+	createReq := httptest.NewRequest(http.MethodPost, "/api/empresa/carritos_compra", strings.NewReader(`{"empresa_id":1,"nombre":"Caja Reabrir","canal_venta":"mostrador","moneda":"COP"}`))
+	createReq.Header.Set("Content-Type", "application/json")
+	createRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(createRR, createReq)
+	if createRR.Code != http.StatusCreated {
+		t.Fatalf("expected create status %d, got %d body=%s", http.StatusCreated, createRR.Code, createRR.Body.String())
+	}
+
+	var createResp map[string]interface{}
+	if err := json.Unmarshal(createRR.Body.Bytes(), &createResp); err != nil {
+		t.Fatalf("decode create response: %v", err)
+	}
+	carritoID := int64(createResp["id"].(float64))
+
+	payReq := httptest.NewRequest(http.MethodPut, "/api/empresa/carritos_compra?empresa_id=1&id="+strconv.FormatInt(carritoID, 10)+"&action=pagar_estacion", strings.NewReader(`{"total_pagado":0}`))
+	payReq.Header.Set("Content-Type", "application/json")
+	payRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(payRR, payReq)
+	if payRR.Code != http.StatusOK {
+		t.Fatalf("expected pay status %d, got %d body=%s", http.StatusOK, payRR.Code, payRR.Body.String())
+	}
+
+	reopenReq := httptest.NewRequest(http.MethodPut, "/api/empresa/carritos_compra?empresa_id=1&id="+strconv.FormatInt(carritoID, 10)+"&action=reabrir", nil)
+	reopenRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(reopenRR, reopenReq)
+	if reopenRR.Code != http.StatusConflict {
+		t.Fatalf("expected reopen paid status %d, got %d body=%s", http.StatusConflict, reopenRR.Code, reopenRR.Body.String())
+	}
+}
+
+func TestEmpresaCarritosCompraRejectsActivarEstacionPagadaSinReset(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_carritos_activate_paid.db")
+	ensureClientesSchema(t, dbEmp)
+	ensureCarritosVentasSchema(t, dbEmp)
+
+	carritosHandler := EmpresaCarritosCompraHandler(dbEmp)
+	createReq := httptest.NewRequest(http.MethodPost, "/api/empresa/carritos_compra", strings.NewReader(`{"empresa_id":1,"nombre":"Caja Activar Pagada","canal_venta":"mostrador","moneda":"COP"}`))
+	createReq.Header.Set("Content-Type", "application/json")
+	createRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(createRR, createReq)
+	if createRR.Code != http.StatusCreated {
+		t.Fatalf("expected create status %d, got %d body=%s", http.StatusCreated, createRR.Code, createRR.Body.String())
+	}
+
+	var createResp map[string]interface{}
+	if err := json.Unmarshal(createRR.Body.Bytes(), &createResp); err != nil {
+		t.Fatalf("decode create response: %v", err)
+	}
+	carritoID := int64(createResp["id"].(float64))
+
+	payReq := httptest.NewRequest(http.MethodPut, "/api/empresa/carritos_compra?empresa_id=1&id="+strconv.FormatInt(carritoID, 10)+"&action=pagar_estacion", strings.NewReader(`{"total_pagado":0}`))
+	payReq.Header.Set("Content-Type", "application/json")
+	payRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(payRR, payReq)
+	if payRR.Code != http.StatusOK {
+		t.Fatalf("expected pay status %d, got %d body=%s", http.StatusOK, payRR.Code, payRR.Body.String())
+	}
+
+	activateReq := httptest.NewRequest(http.MethodPut, "/api/empresa/carritos_compra?empresa_id=1&id="+strconv.FormatInt(carritoID, 10)+"&action=activar_estacion", nil)
+	activateRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(activateRR, activateReq)
+	if activateRR.Code != http.StatusConflict {
+		t.Fatalf("expected activar_estacion pagada sin reset status %d, got %d body=%s", http.StatusConflict, activateRR.Code, activateRR.Body.String())
+	}
+
+	activateResetReq := httptest.NewRequest(http.MethodPut, "/api/empresa/carritos_compra?empresa_id=1&id="+strconv.FormatInt(carritoID, 10)+"&action=activar_estacion&reset_items=1", nil)
+	activateResetRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(activateResetRR, activateResetReq)
+	if activateResetRR.Code != http.StatusOK {
+		t.Fatalf("expected activar_estacion con reset status %d, got %d body=%s", http.StatusOK, activateResetRR.Code, activateResetRR.Body.String())
 	}
 }

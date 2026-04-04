@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	dbpkg "github.com/you/pos-backend/db"
@@ -91,5 +92,33 @@ func TestModelosHandlerReturnsPreferredModelForGoogleAccount(t *testing.T) {
 	}
 	if payload["modelo_preferido"] != "google:gemini-2.0-flash" {
 		t.Fatalf("expected modelo_preferido google:gemini-2.0-flash, got %#v", payload["modelo_preferido"])
+	}
+}
+
+func TestConsultarHandlerRejectsEmpresaFueraDeAlcance(t *testing.T) {
+	dbEmp := openChatIAHandlerTestDB(t)
+	if err := dbpkg.EnsureEmpresaAIChatSchema(dbEmp); err != nil {
+		t.Fatalf("ensure chat ia schema: %v", err)
+	}
+	ensureEmpresasTableForChatIATest(t, dbEmp)
+
+	_, err := dbEmp.Exec(`INSERT INTO empresas (id, nombre, nit, usuario_creador) VALUES (?, ?, ?, ?)`, 11, "Empresa Scope", "900999", "owner@scope.com")
+	if err != nil {
+		t.Fatalf("insert empresa: %v", err)
+	}
+
+	ctrl := NewEmpresaAIChatController(dbEmp, nil)
+	body := `{"empresa_id":11,"model_id":"google:gemini-2.0-flash","pregunta":"Hola"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/empresa/chat_con_inteligencia_artificial/consultar", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req = req.WithContext(context.WithValue(req.Context(), "adminEmail", "admin@example.com"))
+	rr := httptest.NewRecorder()
+
+	ctrl.ConsultarHandler(rr, req)
+	if rr.Code != http.StatusForbidden {
+		t.Fatalf("expected status 403 for out-of-scope empresa, got %d body=%s", rr.Code, rr.Body.String())
+	}
+	if !strings.Contains(strings.ToLower(rr.Body.String()), "fuera del alcance") {
+		t.Fatalf("expected out-of-scope message, got body=%s", rr.Body.String())
 	}
 }
