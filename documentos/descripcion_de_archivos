@@ -1,5 +1,117 @@
 Descripcion de archivos del proyecto
 
+Actualizacion 2026-04-03: Chat IA empresarial Gemini-only + UX estilo Gemini
+
+- backend/handlers/ai_credentials_catalog.go:
+	- El catalogo de credenciales IA se simplifica a un unico modelo soportado: `google:gemini-2.0-flash`.
+	- Se estandariza la variable de entorno/fallback a `GEMINI_API_KEY`.
+
+- backend/handlers/ai_config_handlers.go:
+	- `GET/PUT /super/api/config/ai` ahora opera con una sola credencial Gemini en panel super.
+	- Se mantiene cifrado opcional y trazabilidad de cuenta Google autenticada que realiza cambios.
+
+- backend/handlers/chat_con_inteligencia_artificial_controller.go:
+	- El catalogo de modelos de chat empresarial queda en Gemini-only.
+	- Se reemplaza integración multi-proveedor por llamada oficial a Google Generative Language API (`generateContent`).
+	- Se conserva alcance estricto por `empresa_id` y cuenta Google autenticada.
+
+- web/super/configuracion_avanzada.html:
+	- La tarjeta de IA se simplifica a un solo input de credencial Gemini con flujo guardar/editar/cancelar.
+
+- web/administrar_empresa/chat_con_inteligencia_artificial.html:
+	- Se rediseña UI a experiencia estilo Gemini (compositor central, chips de contexto, sugerencias rápidas y conversación optimizada).
+	- Se mantiene base funcional en datos de la empresa seleccionada y cuenta Google administradora autenticada.
+	- Se agrega panel explícito para login Google cuando hay `401`, indicando registro automático en primer acceso.
+
+- web/estilos.css:
+	- Se reemplaza bloque visual del módulo IA por estilos específicos Gemini (fondo atmosférico, tarjetas de contexto, burbujas diferenciadas y responsive móvil).
+
+Actualizacion 2026-04-03: Tarjeta de credenciales IA en configuracion avanzada super
+
+- backend/handlers/ai_credentials_catalog.go:
+	- Nuevo catalogo central de 5 modelos IA populares con plan gratuito limitado para configuracion administrativa.
+	- Define claves de configuracion por modelo y por proveedor.
+
+- backend/handlers/ai_config_handlers.go:
+	- Nuevo endpoint `GET/PUT /super/api/config/ai` para gestionar credenciales IA desde panel super.
+	- Soporta cifrado opcional y registro de cuenta Google autenticada que actualiza credenciales.
+
+- backend/handlers/chat_con_inteligencia_artificial_controller.go:
+	- El chat IA ahora intenta credenciales desde configuracion super (por modelo/proveedor) antes de usar variables de entorno.
+
+- backend/main.go:
+	- Se registra ruta nueva `/super/api/config/ai`.
+
+- web/super/configuracion_avanzada.html:
+	- Se agrega tarjeta de credenciales IA con 5 modelos populares, estado por modelo y acciones guardar/editar/cancelar.
+	- Muestra cuenta Google logueada y aplica cifrado opcional al guardar.
+
+Actualizacion 2026-04-04: Implementacion inicial de permisos por rol y alcance de empresa (punto 3)
+
+- backend/handlers/empresa_permisos.go:
+	- Nuevo middleware de autorizacion por rol y alcance de `empresa_id`.
+	- Define politicas C/R/U/D/A para modulos criticos: ventas, inventario y finanzas.
+	- Resuelve accion por metodo/parametro `action` y rechaza operaciones fuera de alcance o sin permiso.
+
+- backend/main.go:
+	- Se aplica middleware de permisos en rutas criticas de:
+		- ventas (`/api/empresa/carritos_compra`, `/api/empresa/carritos_compra/items`),
+		- inventario (`/api/empresa/bodegas`, `categorias_productos`, `productos`, `inventario/*`, `productos/precios_historial`),
+		- finanzas (`/api/empresa/finanzas/movimientos`, `configuracion`, `periodos`).
+
+- backend/handlers/empresa_permisos_test.go:
+	- Nuevo archivo de pruebas para validacion de permisos por rol/accion y alcance por empresa.
+	- Cubre escenarios de denegacion y aprobacion en rutas de finanzas, inventario y ventas.
+
+- documentos/plan_maestro_pos_multiempresa_14_puntos.md:
+	- Se documenta avance tecnico del punto 3 con middleware y pruebas.
+
+- documentos/matriz_roles_permisos_pos_multiempresa.md:
+	- Se agrega estado de implementacion tecnica inicial y cobertura de rutas protegidas.
+
+- documentos/diagramas/estructura_del_codigo.md:
+	- Se agrega actualizacion de arquitectura para middleware de permisos por rol/empresa.
+
+- documentos/diagramas/diagrama_flujo_procesos.md:
+	- Se incorpora validacion de permisos por rol/empresa en el flujo operativo de modulos criticos.
+
+- documentos/diagramas/diagrama_arquitectura_sistema.md:
+	- Se incorpora el componente de middleware de permisos empresariales entre middleware global y handlers de negocio.
+
+Actualizacion 2026-04-03: Plan maestro POS multiempresa (14 puntos)
+
+- documentos/plan_maestro_pos_multiempresa_14_puntos.md:
+	- Nuevo documento de plan de trabajo paso a paso con 14 puntos.
+	- Incluye estado por modulo, entregables, backlog inmediato y criterios de avance por fase.
+
+- documentos/matriz_kpi_pos_multiempresa.md:
+	- Nuevo documento con matriz de KPI operativos, financieros, de caja y seguridad.
+	- Define formulas, frecuencia y fuentes de datos esperadas por cada indicador.
+
+- documentos/matriz_roles_permisos_pos_multiempresa.md:
+	- Nuevo documento para inicio del punto 3 (permisos y seguridad).
+	- Define roles base, permisos por modulo (C/R/U/D/A), reglas obligatorias y acciones tecnicas siguientes.
+
+- documentos/descripcion_del_proyecto:
+	- Se actualiza la seccion de estado de documentacion con referencia al plan maestro, matriz KPI y matriz de roles/permisos.
+
+- documentos/plan_maestro_pos_multiempresa_14_puntos.md:
+	- Se actualiza estado del punto 3 a `en curso` y se agrega referencia al entregable de permisos.
+
+Actualizacion 2026-04-03: Continuacion Chat IA (autorizacion Google + pruebas)
+
+- backend/handlers/chat_con_inteligencia_artificial_controller.go:
+	- Se corrige flujo de validación para que la falta de cuenta Google autenticada responda `401` de forma consistente.
+	- Se añade helper `ensureEmpresaAccessByAccount` para validar alcance con la cuenta ya autenticada.
+
+- backend/db/chat_inteligencia_artificial_test.go:
+	- Nuevo archivo de pruebas del dominio IA en DB.
+	- Cubre `Get/Upsert` de `empresa_ai_modelo_preferido` y acumulación de uso diario en `empresa_ai_uso_diario`.
+
+- backend/handlers/chat_con_inteligencia_artificial_controller_test.go:
+	- Nuevo archivo de pruebas de handlers del módulo IA.
+	- Valida `401` cuando falta cuenta Google y `200` con `modelo_preferido` cuando hay cuenta autenticada con alcance válido.
+
 Actualizacion 2026-04-04: Chat IA con modelo preferido por cuenta Google
 
 - backend/db/chat_inteligencia_artificial.go:

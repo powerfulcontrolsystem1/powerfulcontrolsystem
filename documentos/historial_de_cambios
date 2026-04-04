@@ -1,5 +1,85 @@
 - Historial de cambios
 
+- 2026-04-03: Chat IA empresarial migrado a Gemini-only + interfaz estilo Gemini
+    - Se simplifica catálogo IA backend a un único modelo: `google:gemini-2.0-flash`.
+    - Se actualiza `backend/handlers/chat_con_inteligencia_artificial_controller.go` para integrar Google Gemini (`generateContent`) y conservar alcance estricto por `empresa_id` + cuenta Google autenticada.
+    - Se ajusta `backend/handlers/ai_config_handlers.go` y `backend/handlers/ai_credentials_catalog.go` para gestionar una sola credencial Gemini en `/super/api/config/ai`.
+    - Se rediseña `web/administrar_empresa/chat_con_inteligencia_artificial.html` con experiencia visual tipo Gemini, sugerencias rápidas y panel de autenticación Google cuando hay sesión inválida.
+    - Se simplifica la tarjeta IA en `web/super/configuracion_avanzada.html` a una única credencial Gemini.
+    - Se actualizan estilos del módulo en `web/estilos.css`.
+    - Se ajustan pruebas en `backend/handlers/chat_con_inteligencia_artificial_controller_test.go` y `backend/db/chat_inteligencia_artificial_test.go` para proveedor/modelo Google.
+    - Validaciones ejecutadas:
+        - `gofmt -w handlers/ai_credentials_catalog.go handlers/ai_config_handlers.go handlers/chat_con_inteligencia_artificial_controller.go handlers/chat_con_inteligencia_artificial_controller_test.go db/chat_inteligencia_artificial_test.go` (ok).
+        - `go test ./auth ./db ./handlers ./metrics ./utils` en `backend` (ok).
+    - Archivos afectados: backend/handlers/ai_credentials_catalog.go, backend/handlers/ai_config_handlers.go, backend/handlers/chat_con_inteligencia_artificial_controller.go, backend/handlers/chat_con_inteligencia_artificial_controller_test.go, backend/db/chat_inteligencia_artificial_test.go, web/super/configuracion_avanzada.html, web/administrar_empresa/chat_con_inteligencia_artificial.html, web/estilos.css, documentos/descripcion_de_archivos, documentos/historial_de_cambios, documentos/plan_maestro_pos_multiempresa_14_puntos.md, documentos/diagramas/estructura_del_codigo.md, documentos/diagramas/diagrama_flujo_procesos.md, documentos/diagramas/diagrama_arquitectura_sistema.md, CHANGELOG.md.
+
+- 2026-04-03: Configuracion avanzada super con credenciales IA para 5 modelos populares
+    - Se crea `backend/handlers/ai_credentials_catalog.go` con el catalogo base de 5 modelos IA de uso frecuente y plan gratuito limitado.
+    - Se crea `backend/handlers/ai_config_handlers.go` con endpoint `GET/PUT /super/api/config/ai` para:
+        - consultar estado enmascarado de credenciales,
+        - guardar credenciales con cifrado opcional,
+        - registrar la cuenta Google autenticada que actualiza credenciales.
+    - Se actualiza `backend/handlers/chat_con_inteligencia_artificial_controller.go` para resolver API keys desde configuración en DB con fallback a variables de entorno.
+    - Se registra la nueva ruta en `backend/main.go`: `/super/api/config/ai`.
+    - Se actualiza `web/super/configuracion_avanzada.html` con tarjeta de credenciales IA (5 modelos), estado por modelo y acciones guardar/editar/cancelar.
+    - Validaciones ejecutadas:
+        - `go test ./handlers -run "AIModelsConfigHandler|Chat|ModelosHandler" -count=1` (ok).
+        - `go test ./...` en `backend` (ok).
+    - Archivos afectados: backend/handlers/ai_credentials_catalog.go, backend/handlers/ai_config_handlers.go, backend/handlers/chat_con_inteligencia_artificial_controller.go, backend/main.go, web/super/configuracion_avanzada.html, documentos/descripcion_del_proyecto, documentos/descripcion_de_archivos, documentos/diagramas/estructura_del_codigo.md, documentos/diagramas/diagrama_flujo_procesos.md, documentos/diagramas/diagrama_arquitectura_sistema.md, documentos/historial_de_cambios, CHANGELOG.md.
+
+- 2026-04-04: Implementacion inicial de permisos por rol y alcance de empresa (continuacion punto 3)
+    - Se crea `backend/handlers/empresa_permisos.go` con middleware de autorizacion por modulo/accion:
+        - validacion de `empresa_id`,
+        - validacion de admin autenticado,
+        - validacion de alcance por empresa,
+        - validacion de permisos C/R/U/D/A por rol.
+    - Se aplica el middleware en `backend/main.go` para rutas criticas de:
+        - ventas (`/api/empresa/carritos_compra`, `/api/empresa/carritos_compra/items`),
+        - inventario (`/api/empresa/bodegas`, `categorias_productos`, `productos`, `inventario/*`, `productos/precios_historial`),
+        - finanzas (`/api/empresa/finanzas/movimientos`, `configuracion`, `periodos`).
+    - Se crea `backend/handlers/empresa_permisos_test.go` con pruebas de denegacion/aprobacion por rol y alcance.
+    - Validaciones ejecutadas:
+        - `go test ./handlers -run WithEmpresa -count=1` (ok).
+        - `go test ./...` en `backend` (ok).
+    - Archivos afectados: backend/handlers/empresa_permisos.go, backend/handlers/empresa_permisos_test.go, backend/main.go, documentos/plan_maestro_pos_multiempresa_14_puntos.md, documentos/matriz_roles_permisos_pos_multiempresa.md, documentos/descripcion_del_proyecto, documentos/descripcion_de_archivos, documentos/diagramas/estructura_del_codigo.md, documentos/diagramas/diagrama_flujo_procesos.md, documentos/diagramas/diagrama_arquitectura_sistema.md, documentos/historial_de_cambios, CHANGELOG.md.
+
+- 2026-04-03: Actualizacion documental y continuacion del plan de 14 puntos
+    - Se crea `documentos/plan_maestro_pos_multiempresa_14_puntos.md` con:
+        - estado por cada uno de los 14 puntos,
+        - entregables principales por modulo,
+        - backlog inmediato de ejecucion,
+        - criterios de avance para cierre de fase.
+    - Se crea `documentos/matriz_kpi_pos_multiempresa.md` con:
+        - KPI de ventas, inventarios, clientes, proveedores/compras,
+        - KPI contables/financieros, cierres de caja y seguridad,
+        - formulas, frecuencia y fuente de datos esperada.
+    - Se crea `documentos/matriz_roles_permisos_pos_multiempresa.md` para iniciar punto 3 (permisos y seguridad):
+        - roles base,
+        - permisos por modulo,
+        - reglas obligatorias de autorizacion,
+        - acciones tecnicas de implementacion.
+    - Se actualiza `documentos/plan_maestro_pos_multiempresa_14_puntos.md` para marcar punto 3 en estado `en curso`.
+    - Se actualiza `documentos/descripcion_del_proyecto` para referenciar plan maestro, matriz KPI y matriz de roles/permisos.
+    - Archivos afectados: documentos/plan_maestro_pos_multiempresa_14_puntos.md, documentos/matriz_kpi_pos_multiempresa.md, documentos/matriz_roles_permisos_pos_multiempresa.md, documentos/descripcion_del_proyecto, documentos/descripcion_de_archivos, documentos/historial_de_cambios, CHANGELOG.md.
+
+- 2026-04-03: Continuacion de implementacion Chat IA (autorizacion + cobertura de pruebas)
+    - Se ajusta `backend/handlers/chat_con_inteligencia_artificial_controller.go`:
+        - validación temprana de cuenta Google autenticada para responder `401` cuando falta identidad,
+        - centralización de control de alcance en `ensureEmpresaAccessByAccount` para evitar duplicación.
+    - Se crean pruebas nuevas:
+        - `backend/db/chat_inteligencia_artificial_test.go`:
+            - `TestEmpresaAIModeloPreferidoUpsertAndGet`,
+            - `TestRegisterEmpresaAIConsultaAcumulaUsoDiario`.
+        - `backend/handlers/chat_con_inteligencia_artificial_controller_test.go`:
+            - `TestModelosHandlerRequiresGoogleAccount`,
+            - `TestModelosHandlerReturnsPreferredModelForGoogleAccount`.
+    - Validaciones ejecutadas:
+        - `gofmt -w handlers/chat_con_inteligencia_artificial_controller.go handlers/chat_con_inteligencia_artificial_controller_test.go db/chat_inteligencia_artificial_test.go main.go` (ok).
+        - `go test ./db -run EmpresaAI -count=1` (ok).
+        - `go test ./handlers -run ModelosHandler -count=1` (ok).
+        - `go test ./...` en `backend` (ok).
+    - Archivos afectados: backend/handlers/chat_con_inteligencia_artificial_controller.go, backend/db/chat_inteligencia_artificial_test.go, backend/handlers/chat_con_inteligencia_artificial_controller_test.go, CHANGELOG.md, documentos/descripcion_de_archivos, documentos/historial_de_cambios.
+
 - 2026-04-04: Chat IA registra modelo preferido por cuenta Google
     - Se amplía `backend/db/chat_inteligencia_artificial.go`:
         - nueva tabla `empresa_ai_modelo_preferido` (UNIQUE por `empresa_id + admin_email`),

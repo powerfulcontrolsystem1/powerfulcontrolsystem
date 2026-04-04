@@ -21,6 +21,7 @@ Sistema POS multiempresa con backend en Go y persistencia SQLite, orientado a op
 
 - `backend/main.go`: arranque, conexion a DB, migraciones simples y registro de rutas.
 - `backend/handlers/`: capa HTTP (validacion de entrada, reglas de negocio de API, respuestas JSON).
+- `backend/handlers/empresa_permisos.go`: middleware de autorizacion por rol y alcance de `empresa_id` en rutas criticas (ventas, inventario, finanzas).
 - `backend/db/`: capa de acceso a datos y operaciones CRUD.
 - `backend/utils/`: middleware, seguridad y utilidades generales.
 - `backend/auth/`: intercambio OAuth y lectura de perfil Google.
@@ -36,6 +37,7 @@ Sistema POS multiempresa con backend en Go y persistencia SQLite, orientado a op
 2) Administracion global (super)
 - Empresas, tipos de empresa, licencias, administradores.
 - Configuracion de pasarelas de pago y correo.
+- Configuracion avanzada de credenciales IA para modelos populares con trazabilidad de cuenta Google administradora.
 
 3) Operacion por empresa
 - Usuarios de empresa (alta, confirmacion, estado, primer ingreso).
@@ -87,4 +89,7 @@ Regla general de tablas:
 ## Estado de documentacion
 
 - El detalle tecnico de arquitectura y mapa de funciones esta en `documentos/estructura_del_codigo`.
+- El plan maestro de implementacion POS multiempresa (14 puntos) esta en `documentos/plan_maestro_pos_multiempresa_14_puntos.md`.
+- La matriz de KPI operativos y financieros esta en `documentos/matriz_kpi_pos_multiempresa.md`.
+- La matriz base de roles y permisos esta en `documentos/matriz_roles_permisos_pos_multiempresa.md`.
    

@@ -17,7 +17,13 @@ flowchart TD
     J --> K
     K --> L[Sesion iniciada]
 
+    SA0[Super administrador abre configuracion avanzada] --> SA1[Gestionar credencial IA de Google Gemini]
+    SA1 --> SA2[Guardar en endpoint super de configuracion IA]
+    SA2 --> SA3[Registrar cuenta Google autenticada que actualiza credenciales]
+    SA3 --> AI1
+
     L --> L0[Abrir administrar_empresa]
+    L0 --> AUTHZ[Middleware permisos valida rol y empresa_id por modulo]
     L0 --> L1[Cargar Inicio por defecto en Panel de la Empresa]
     L1 --> L1A[Abrir Centro de Ayuda]
     L1A --> L1B[Consultar menu interno y APIs operativas]
@@ -39,6 +45,10 @@ flowchart TD
     S7 --> S8[Finalizar compra en carrito de estación]
     S8 --> S9[Marcar carrito inactivo/cerrado]
     S9 --> S10[Tarjeta vuelve a estado inactivo y oculta fecha/hora]
+
+    AUTHZ --> M
+    AUTHZ --> N
+    AUTHZ --> F0
 
     L --> M[Crear cliente de venta]
     L --> N[Crear bodega y proveedor]
@@ -87,12 +97,12 @@ flowchart TD
     F42 --> F5[Imprimir comprobante financiero Carta/POS]
 
     L --> AI0[Entrar al modulo chat con inteligencia artificial]
-    AI0 --> AI1[Cargar modelos famosos y seleccionar proveedor/modelo]
+    AI0 --> AI1[Cargar Gemini empresarial para la empresa seleccionada]
     AI1 --> AI15[Resolver cuenta Google autenticada y modelo preferido]
-    AI15 --> AI16[Guardar preferencia al cambiar modelo]
+    AI15 --> AI16[Registrar preferencia Gemini para la cuenta Google]
     AI16 --> AI2[Validar alcance por empresa_id y limite diario free-tier]
     AI2 --> AI3[Construir contexto empresarial desde la base de datos]
-    AI3 --> AI4[Consultar proveedor IA externo OpenAI/DeepSeek/Hugging Face]
+    AI3 --> AI4[Consultar proveedor IA externo Google Gemini]
     AI4 --> AI5[Registrar pregunta/respuesta y acumular uso diario]
     AI5 --> AI6[Mostrar respuesta o sugerir upgrade de plan]
 
@@ -148,3 +158,5 @@ Resultado esperado:
 - En `chat_con_inteligencia_artificial`, el alcance de consultas queda restringido por `empresa_id` y validacion del usuario autenticado.
 - En `chat_con_inteligencia_artificial`, el sistema controla limite free-tier diario por `empresa/proveedor/modelo` y muestra opcion de upgrade cuando aplica.
 - En `chat_con_inteligencia_artificial`, cada consulta/respuesta queda auditada junto con metrica de tokens para trazabilidad operativa.
+- En rutas criticas de `ventas`, `inventario` y `finanzas`, el middleware de permisos valida rol y alcance de `empresa_id` antes de ejecutar operaciones sensibles.
+- En `super/configuracion_avanzada`, la tarjeta IA permite guardar credenciales de 5 modelos populares y registrar la cuenta Google del administrador que realiza el cambio.

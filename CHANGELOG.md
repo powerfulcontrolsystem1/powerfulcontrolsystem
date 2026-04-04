@@ -1,6 +1,49 @@
 # CHANGELOG
 
 ## 2026-04-04
+- Chat IA empresarial migrado a Gemini-only:
+	- `backend/handlers/chat_con_inteligencia_artificial_controller.go` ahora integra Google Gemini (`generateContent`) y elimina dependencias de OpenAI/DeepSeek/Hugging Face para este módulo.
+	- El catálogo y la configuración de credenciales IA quedan en un único modelo soportado: `google:gemini-2.0-flash` (`GEMINI_API_KEY`).
+	- `web/super/configuracion_avanzada.html` simplifica la tarjeta IA a una sola credencial Gemini con trazabilidad por cuenta Google.
+	- `web/administrar_empresa/chat_con_inteligencia_artificial.html` se rediseña con experiencia visual tipo Gemini, chips de contexto y flujo explícito de autenticación Google.
+	- Pruebas ajustadas y validadas: `go test ./auth ./db ./handlers ./metrics ./utils` (ok) en `backend`.
+- Se agrega gestión de credenciales IA en `super/configuracion_avanzada.html` para 5 modelos populares con plan gratuito limitado:
+	- OpenAI GPT-4o mini,
+	- OpenAI GPT-4.1 mini,
+	- DeepSeek Chat,
+	- DeepSeek Reasoner,
+	- Meta Llama 3.1 8B Instruct (Hugging Face).
+- Se crea endpoint `GET/PUT /super/api/config/ai` en backend para guardar/consultar credenciales con registro de la cuenta Google logueada que realiza cambios.
+- El módulo `chat_con_inteligencia_artificial` ahora resuelve credenciales en este orden:
+	- configuración guardada por modelo,
+	- configuración por proveedor,
+	- variable de entorno.
+- Validación técnica ejecutada:
+	- `go test ./handlers -run "AIModelsConfigHandler|Chat|ModelosHandler" -count=1` (ok).
+	- `go test ./...` en `backend` (ok).
+- Se implementa la primera fase tecnica del punto 3 (permisos y seguridad) con middleware de autorizacion por rol + alcance de empresa:
+	- nuevo `backend/handlers/empresa_permisos.go`,
+	- aplicacion en rutas criticas de ventas, inventario y finanzas desde `backend/main.go`,
+	- pruebas nuevas en `backend/handlers/empresa_permisos_test.go` para denegacion/aprobacion por rol y empresa.
+- Validacion tecnica de la fase:
+	- `go test ./handlers -run WithEmpresa -count=1` (ok).
+	- `go test ./...` en `backend` (ok).
+- Se actualiza la documentacion del proyecto para continuar el plan maestro de 14 puntos:
+	- nuevo `documentos/plan_maestro_pos_multiempresa_14_puntos.md` con estado, entregables y backlog de ejecucion,
+	- nueva `documentos/matriz_kpi_pos_multiempresa.md` con formulas/frecuencia/fuentes de KPI,
+	- nueva `documentos/matriz_roles_permisos_pos_multiempresa.md` para iniciar el punto 3 de permisos y seguridad,
+	- actualizacion de `documentos/descripcion_del_proyecto` para referenciar estos documentos como base de seguimiento.
+- Continuación de implementación en `chat_con_inteligencia_artificial`:
+	- Se corrige el orden de validación de autenticación para cuenta Google en `backend/handlers/chat_con_inteligencia_artificial_controller.go`.
+	- Cuando no hay cuenta Google autenticada, los endpoints del módulo IA ahora responden `401` de forma consistente (en lugar de caer en validación de alcance con `403`).
+	- Se centraliza validación de alcance con `ensureEmpresaAccessByAccount` para reutilizar la cuenta ya validada.
+- Se agregan pruebas automáticas del módulo IA:
+	- `backend/db/chat_inteligencia_artificial_test.go` (upsert/get de modelo preferido y acumulación de uso diario).
+	- `backend/handlers/chat_con_inteligencia_artificial_controller_test.go` (autorización por cuenta Google y respuesta con modelo preferido).
+- Validación técnica ejecutada en esta continuación:
+	- `go test ./db -run EmpresaAI -count=1` (ok).
+	- `go test ./handlers -run ModelosHandler -count=1` (ok).
+	- `go test ./...` en `backend` (ok).
 - Se amplía el módulo `chat_con_inteligencia_artificial` para registrar el modelo preferido por cuenta Google autenticada (por empresa):
 	- Nueva tabla `empresa_ai_modelo_preferido` en `empresas.db` (UNIQUE por `empresa_id + admin_email`).
 	- Nuevas funciones en `backend/db/chat_inteligencia_artificial.go`: `GetEmpresaAIModeloPreferido` y `UpsertEmpresaAIModeloPreferido`.

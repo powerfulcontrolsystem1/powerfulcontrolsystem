@@ -56,6 +56,47 @@ flowchart TD
 ## Regla de mantenimiento
 Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe reflejarse en este documento y en los diagramas relacionados dentro de documentos/diagramas/.
 
+## Actualizacion 2026-04-03 (configuracion IA en panel super)
+
+- Backend handlers:
+  - Se agrega `backend/handlers/ai_credentials_catalog.go` para definir 5 modelos IA populares y sus claves de configuracion.
+  - Se agrega `backend/handlers/ai_config_handlers.go` con endpoint `GET/PUT /super/api/config/ai`.
+
+- Integracion de chat IA:
+  - `backend/handlers/chat_con_inteligencia_artificial_controller.go` ahora toma credenciales desde configuracion super por modelo/proveedor, con fallback a variables de entorno.
+
+- Frontend super:
+  - `web/super/configuracion_avanzada.html` incorpora tarjeta para guardar/editar credenciales IA con estado por modelo y registro de cuenta Google autenticada.
+
+## Actualizacion 2026-04-03 (chat IA empresarial Gemini-only)
+
+- Backend handlers:
+  - `backend/handlers/ai_credentials_catalog.go` se simplifica a un unico modelo soportado: `google:gemini-2.0-flash`.
+  - `backend/handlers/ai_config_handlers.go` conserva `GET/PUT /super/api/config/ai`, ahora con una sola credencial Gemini.
+  - `backend/handlers/chat_con_inteligencia_artificial_controller.go` migra el consumo de IA a Google Generative Language API (`generateContent`).
+
+- Frontend empresa:
+  - `web/administrar_empresa/chat_con_inteligencia_artificial.html` se rediseña con experiencia visual tipo Gemini.
+  - Se hace explicita la autenticacion Google y el alcance por `empresa_id` en la interfaz.
+
+- Frontend super:
+  - `web/super/configuracion_avanzada.html` simplifica la tarjeta IA a credencial unica Gemini.
+
+## Actualizacion 2026-04-04 (permisos por rol y alcance de empresa - punto 3)
+
+- Backend handlers:
+  - Se agrega `backend/handlers/empresa_permisos.go` como middleware de autorizacion por rol y modulo.
+  - Valida `empresa_id`, identidad administrativa, alcance por empresa y accion C/R/U/D/A.
+
+- Bootstrap y rutas (`backend/main.go`):
+  - Se aplica middleware a rutas criticas de:
+    - ventas (`/api/empresa/carritos_compra`, `/api/empresa/carritos_compra/items`),
+    - inventario (`/api/empresa/bodegas`, `categorias_productos`, `productos`, `inventario/*`, `productos/precios_historial`),
+    - finanzas (`/api/empresa/finanzas/movimientos`, `configuracion`, `periodos`).
+
+- Pruebas:
+  - Se agrega `backend/handlers/empresa_permisos_test.go` con escenarios de autorizacion/denegacion por rol y alcance de empresa.
+
 ## Indice de diagramas de referencia
 
 - diagrama_entidad_relacion.md

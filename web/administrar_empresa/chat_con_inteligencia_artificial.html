@@ -3,49 +3,67 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Chat con inteligencia artificial</title>
+  <title>Gemini Empresarial</title>
   <link rel="stylesheet" href="/estilos.css">
 </head>
-<body class="super-page form-bg-dark">
-  <div class="container ai-chat-page">
-    <div class="page-header">
-      <h1 id="pageTitle">Chat con inteligencia artificial</h1>
-      <button id="reloadBtn" class="btn secondary" type="button">Actualizar</button>
-    </div>
+<body class="super-page form-bg-dark ai-gemini-body">
+  <div class="container ai-chat-page ai-gemini-page">
+    <header class="page-header ai-gemini-header">
+      <div>
+        <h1 id="pageTitle">Gemini Empresarial</h1>
+        <p class="form-help">Tus preguntas y respuestas se construyen con contexto de la base de datos de la empresa seleccionada y acceso restringido por empresa_id.</p>
+      </div>
+      <div class="ai-gemini-toolbar">
+        <button id="reloadBtn" class="btn secondary" type="button">Actualizar</button>
+        <button id="loadHistoryBtn" class="btn secondary" type="button">Ver historial</button>
+        <button id="clearBtn" class="btn secondary" type="button">Limpiar chat</button>
+      </div>
+    </header>
 
-    <section class="card empresa-section">
-      <div class="empresa-section-header">
-        <h2 style="margin:0;">Modelos de IA</h2>
-        <div class="empresa-inline-actions ai-chat-model-actions">
-          <select id="modelSelect" class="form-input"></select>
-          <button id="reloadModelsBtn" class="btn secondary" type="button">Recargar modelos</button>
-          <button id="loadHistoryBtn" class="btn secondary" type="button">Ver historial</button>
-        </div>
+    <section class="card ai-gemini-context">
+      <div class="ai-gemini-chip">
+        <span class="ai-gemini-chip-label">Empresa</span>
+        <strong id="chipEmpresa">Cargando...</strong>
       </div>
-      <div class="form-row compact-row">
-        <div class="form-col">
-          <div id="modelInfo" class="form-help">Cargando modelos...</div>
-        </div>
-        <div class="form-col">
-          <div id="usageInfo" class="form-help ai-chat-usage">Uso diario: -</div>
-        </div>
+      <div class="ai-gemini-chip">
+        <span class="ai-gemini-chip-label">Cuenta Google</span>
+        <strong id="chipGoogle">Cargando...</strong>
       </div>
-      <div class="form-help ai-model-note">
-        Las credenciales de OpenAI, DeepSeek y Hugging Face se manejan solo en backend (variables de entorno), nunca en el navegador.
+      <div class="ai-gemini-chip">
+        <span class="ai-gemini-chip-label">Modelo</span>
+        <strong id="chipModel">Google Gemini</strong>
       </div>
-      <div id="modelPrefMsg" class="form-help"></div>
+      <div class="ai-gemini-chip">
+        <span class="ai-gemini-chip-label">Uso diario</span>
+        <strong id="chipUsage">-</strong>
+      </div>
     </section>
 
-    <section class="card ai-chat-shell">
-      <div id="messagesList" class="ai-chat-messages"></div>
+    <section id="authPanel" class="card ai-gemini-auth" hidden>
+      <h2>Inicia sesión con Google</h2>
+      <p class="form-help">Para usar el chat empresarial debes autenticarte con Google. El sistema registra automáticamente tu cuenta administradora en el primer acceso válido.</p>
+      <div class="form-actions">
+        <a id="googleLoginLink" class="btn" href="/auth/google/login">Continuar con Google</a>
+      </div>
+      <div id="authMsg" class="form-help"></div>
+    </section>
 
-      <form id="promptForm" class="ai-chat-form">
-        <label class="form-label" for="promptInput">Pregunta para la IA</label>
-        <textarea id="promptInput" class="form-textarea" maxlength="2500" placeholder="Ejemplo: Resumeme ventas y balance de mi empresa este mes"></textarea>
+    <section class="card ai-chat-shell ai-gemini-shell">
+      <div id="messagesList" class="ai-chat-messages ai-gemini-messages"></div>
+
+      <form id="promptForm" class="ai-chat-form ai-gemini-form">
+        <div class="ai-gemini-suggestions">
+          <button class="ai-gemini-pill" type="button" data-prompt="Resume ventas, clientes y balance de hoy para mi empresa.">Resumen del día</button>
+          <button class="ai-gemini-pill" type="button" data-prompt="Muestra alertas de inventario bajo y productos con mayor rotación.">Alertas de inventario</button>
+          <button class="ai-gemini-pill" type="button" data-prompt="Dame 3 recomendaciones para mejorar flujo de caja esta semana.">Mejorar flujo de caja</button>
+        </div>
+
+        <label class="form-label" for="promptInput">Pregunta empresarial</label>
+        <textarea id="promptInput" class="form-textarea ai-gemini-input" maxlength="2500" placeholder="Ejemplo: ¿Qué productos se están vendiendo más y cuáles debo reabastecer primero?"></textarea>
+
         <div class="ai-chat-actions">
-          <button id="sendBtn" class="btn" type="submit">Enviar consulta</button>
-          <button id="clearBtn" class="btn secondary" type="button">Limpiar chat</button>
-          <a id="upgradeLink" class="btn dark" href="#" style="display:none;" target="_blank" rel="noopener">Adquirir plan</a>
+          <button id="sendBtn" class="btn" type="submit">Preguntar a Gemini</button>
+          <a id="upgradeLink" class="btn dark" href="#" hidden target="_blank" rel="noopener">Adquirir plan</a>
         </div>
         <div id="chatMsg" class="form-help"></div>
       </form>
@@ -53,7 +71,7 @@
 
     <section class="card empresa-section">
       <div class="empresa-section-header">
-        <h2 style="margin:0;">Consultas recientes</h2>
+        <h2>Consultas recientes</h2>
       </div>
       <div id="historyList" class="ai-history-list">Sin historial cargado.</div>
       <div id="historyMsg" class="form-help"></div>
@@ -64,17 +82,18 @@
     const state = {
       empresaID: 0,
       empresaNombre: "",
-      modelos: [],
       modelID: "",
+      modelDisplay: "Google Gemini",
       googleAccount: "",
-      messages: [],
       usage: null,
-      loading: false
+      loading: false,
+      authRequired: false,
+      messages: []
     };
 
     function getQueryParam(name) {
-      const p = new URLSearchParams(window.location.search);
-      return p.get(name);
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name);
     }
 
     function normalize(v) {
@@ -94,25 +113,41 @@
       const el = document.getElementById(id);
       if (!el) return;
       el.textContent = text || "";
-      el.style.color = isError ? "#ef5350" : "";
+      el.style.color = isError ? "#ffd1d1" : "";
+    }
+
+    function showAuthPanel(message) {
+      state.authRequired = true;
+      document.getElementById("authPanel").hidden = false;
+      document.getElementById("promptInput").disabled = true;
+      document.getElementById("sendBtn").disabled = true;
+      setMsg("authMsg", message || "Se requiere autenticación con Google.", true);
+      setMsg("chatMsg", "Inicia sesión con Google para continuar.", true);
+    }
+
+    function hideAuthPanel() {
+      state.authRequired = false;
+      document.getElementById("authPanel").hidden = true;
+      document.getElementById("promptInput").disabled = false;
+      document.getElementById("sendBtn").disabled = false;
+      setMsg("authMsg", "", false);
     }
 
     async function apiFetch(url, options) {
-      const resp = await fetch(url, options || {});
-      const ct = normalize(resp.headers.get("content-type")).toLowerCase();
+      const response = await fetch(url, options || {});
+      const ct = normalize(response.headers.get("content-type")).toLowerCase();
       let payload = null;
 
-      if (ct.includes("application/json")) {
-        payload = await resp.json().catch(() => null);
+      if (ct.indexOf("application/json") >= 0) {
+        payload = await response.json().catch(function() { return null; });
       } else {
-        const txt = await resp.text().catch(() => "");
+        const txt = await response.text().catch(function() { return ""; });
         payload = txt ? { error: txt } : null;
       }
 
-      if (!resp.ok) {
-        const msg = normalize(payload && (payload.error || payload.message)) || ("HTTP " + resp.status);
-        const err = new Error(msg);
-        err.status = resp.status;
+      if (!response.ok) {
+        const err = new Error(normalize(payload && (payload.error || payload.message)) || ("HTTP " + response.status));
+        err.status = response.status;
         err.payload = payload || {};
         throw err;
       }
@@ -120,71 +155,36 @@
       return payload || {};
     }
 
-    function getSelectedModel() {
-      return state.modelos.find(function(item) {
-        return normalize(item.id) === normalize(state.modelID);
-      }) || null;
-    }
+    function renderContext() {
+      const empresaText = state.empresaNombre ? (state.empresaNombre + " (#" + state.empresaID + ")") : ("Empresa #" + state.empresaID);
+      document.getElementById("chipEmpresa").textContent = empresaText;
+      document.getElementById("chipGoogle").textContent = state.googleAccount || "No detectada";
+      document.getElementById("chipModel").textContent = state.modelDisplay || "Google Gemini";
 
-    function renderModelInfo() {
-      const model = getSelectedModel();
-      const info = document.getElementById("modelInfo");
-      if (!info) return;
-      if (!model) {
-        info.textContent = "Selecciona un modelo para iniciar consultas.";
-        return;
-      }
-
-      const famous = model.famous ? "Si" : "No";
-      info.textContent = "Proveedor: " + normalize(model.provider) + " | Modelo: " + normalize(model.display_name) +
-        " | Famoso: " + famous + " | Limite gratis diario: " + Number(model.free_daily_limit || 0) +
-        " | " + normalize(model.description);
-    }
-
-    function renderUsage() {
-      const box = document.getElementById("usageInfo");
-      if (!box) return;
-      const accountInfo = " | Cuenta Google: " + (normalize(state.googleAccount) || "no detectada");
       if (!state.usage) {
-        box.textContent = "Uso diario: -" + accountInfo;
+        document.getElementById("chipUsage").textContent = "Sin consumo";
         return;
       }
-      box.textContent = "Plan: " + normalize(state.usage.plan || "free") +
-        " | Usadas hoy: " + Number(state.usage.daily_used || 0) +
-        " | Limite: " + Number(state.usage.daily_limit || 0) +
-        " | Restantes: " + Number(state.usage.daily_remaining || 0) +
-        accountInfo;
-    }
 
-    async function savePreferredModel(modelID) {
-      const data = await apiFetch("/api/empresa/chat_con_inteligencia_artificial/modelo_preferido", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          empresa_id: Number(state.empresaID),
-          model_id: normalize(modelID)
-        })
-      });
-      state.googleAccount = normalize(data.google_account || state.googleAccount);
-      renderUsage();
-      return data;
+      const used = Number(state.usage.daily_used || 0);
+      const limit = Number(state.usage.daily_limit || 0);
+      const remaining = Number(state.usage.daily_remaining || 0);
+      document.getElementById("chipUsage").textContent = used + " / " + limit + " (restan " + remaining + ")";
     }
 
     function renderMessages() {
       const list = document.getElementById("messagesList");
-      if (!list) return;
-
       if (!state.messages.length) {
-        list.innerHTML = '<div class="ai-chat-empty">Sin mensajes. Escribe una pregunta para comenzar.</div>';
+        list.innerHTML = '<div class="ai-chat-empty">Inicia una consulta. Gemini responderá con contexto estricto de la empresa seleccionada.</div>';
         return;
       }
 
       list.innerHTML = state.messages.map(function(item) {
         const role = normalize(item.role).toLowerCase();
         const cls = role === "assistant" ? "assistant" : (role === "user" ? "user" : "system");
+        const label = role === "assistant" ? "Gemini" : (role === "user" ? "Tú" : "Sistema");
         return '<article class="ai-chat-bubble ' + cls + '">' +
-          '<header><strong>' + escapeHtml(role === "assistant" ? "Asistente IA" : (role === "user" ? "Usuario" : "Sistema")) +
-          '</strong><span>' + escapeHtml(normalize(item.at)) + '</span></header>' +
+          '<header><strong>' + escapeHtml(label) + '</strong><span>' + escapeHtml(normalize(item.at)) + '</span></header>' +
           '<div class="ai-chat-content">' + escapeHtml(normalize(item.content)) + '</div>' +
           '</article>';
       }).join("");
@@ -203,62 +203,75 @@
 
     function clearUpgradeOption() {
       const link = document.getElementById("upgradeLink");
-      if (!link) return;
-      link.style.display = "none";
+      link.hidden = true;
       link.href = "#";
     }
 
     function showUpgradeOption(url) {
       const link = document.getElementById("upgradeLink");
-      if (!link) return;
       link.href = normalize(url) || ("/pagar_licencia.html?empresa_id=" + encodeURIComponent(state.empresaID));
-      link.style.display = "inline-flex";
+      link.hidden = false;
     }
 
-    async function loadEmpresa() {
-      const data = await apiFetch("/super/api/empresas?id=" + encodeURIComponent(state.empresaID));
-      const nombre = normalize(data && (data.nombre || data.Nombre));
-      if (nombre) {
-        state.empresaNombre = nombre;
-        document.getElementById("pageTitle").textContent = "Chat con inteligencia artificial - " + nombre;
+    function buildHistoryPayload() {
+      return state.messages
+        .filter(function(item) {
+          const role = normalize(item.role).toLowerCase();
+          return role === "user" || role === "assistant";
+        })
+        .slice(-8)
+        .map(function(item) {
+          return {
+            rol: normalize(item.role).toLowerCase(),
+            contenido: normalize(item.content)
+          };
+        });
+    }
+
+    async function loadEmpresaNameBestEffort() {
+      state.empresaNombre = "";
+      try {
+        const data = await apiFetch("/super/api/empresas?id=" + encodeURIComponent(state.empresaID));
+        const nombre = normalize(data && (data.nombre || data.Nombre));
+        if (nombre) {
+          state.empresaNombre = nombre;
+        }
+      } catch (err) {
+        state.empresaNombre = "";
       }
+
+      if (state.empresaNombre) {
+        document.getElementById("pageTitle").textContent = "Gemini Empresarial - " + state.empresaNombre;
+      } else {
+        document.getElementById("pageTitle").textContent = "Gemini Empresarial - Empresa #" + state.empresaID;
+      }
+      renderContext();
     }
 
-    async function loadModelos() {
+    async function loadGeminiModel() {
       const data = await apiFetch("/api/empresa/chat_con_inteligencia_artificial/modelos?empresa_id=" + encodeURIComponent(state.empresaID));
       const modelos = Array.isArray(data.modelos) ? data.modelos : [];
-      const modeloPreferido = normalize(data.modelo_preferido);
-      state.googleAccount = normalize(data.google_account || state.googleAccount);
-      state.modelos = modelos;
-
-      const select = document.getElementById("modelSelect");
-      if (!select) return;
-
       if (!modelos.length) {
-        select.innerHTML = '<option value="">Sin modelos disponibles</option>';
-        state.modelID = "";
-        renderModelInfo();
-        return;
+        throw new Error("No hay modelos IA disponibles para esta empresa.");
       }
 
-      select.innerHTML = modelos.map(function(item) {
-        const label = normalize(item.display_name) + " (" + normalize(item.provider) + ")";
-        return '<option value="' + escapeHtml(item.id) + '">' + escapeHtml(label) + '</option>';
-      }).join("");
+      const model = modelos[0];
+      state.modelID = normalize(model.id);
+      state.modelDisplay = normalize(model.display_name) || "Google Gemini";
+      state.googleAccount = normalize(data.google_account || state.googleAccount);
 
-      if (modeloPreferido && modelos.some(function(item) { return normalize(item.id) === modeloPreferido; })) {
-        state.modelID = modeloPreferido;
-      } else if (!state.modelID || !modelos.some(function(item) { return normalize(item.id) === normalize(state.modelID); })) {
-        state.modelID = normalize(modelos[0].id);
-      }
-      select.value = state.modelID;
-      renderModelInfo();
-      renderUsage();
+      renderContext();
 
-      if (modeloPreferido) {
-        setMsg("modelPrefMsg", "Modelo preferido cargado para tu cuenta Google.", false);
-      } else {
-        setMsg("modelPrefMsg", "Aun no tienes un modelo preferido registrado.", false);
+      const modeloPreferido = normalize(data.modelo_preferido);
+      if (modeloPreferido !== state.modelID) {
+        await apiFetch("/api/empresa/chat_con_inteligencia_artificial/modelo_preferido", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            empresa_id: Number(state.empresaID),
+            model_id: state.modelID
+          })
+        });
       }
     }
 
@@ -267,7 +280,6 @@
         const data = await apiFetch("/api/empresa/chat_con_inteligencia_artificial/historial?empresa_id=" + encodeURIComponent(state.empresaID) + "&limit=20");
         const items = Array.isArray(data.items) ? data.items : [];
         const box = document.getElementById("historyList");
-        if (!box) return;
 
         if (!items.length) {
           box.innerHTML = '<div class="ai-chat-empty">No hay historial registrado.</div>';
@@ -275,13 +287,12 @@
           return;
         }
 
-        box.innerHTML = items.map(function(it) {
-          const pregunta = normalize(it.pregunta);
-          const respuesta = normalize(it.respuesta);
-          const fecha = normalize(it.fecha_consulta);
-          const model = normalize(it.model_id);
+        box.innerHTML = items.map(function(item) {
+          const pregunta = normalize(item.pregunta);
+          const respuesta = normalize(item.respuesta);
+          const fecha = normalize(item.fecha_consulta);
           return '<article class="ai-history-item">' +
-            '<header><strong>' + escapeHtml(model) + '</strong><span>' + escapeHtml(fecha) + '</span></header>' +
+            '<header><strong>Gemini</strong><span>' + escapeHtml(fecha) + '</span></header>' +
             '<div><b>Q:</b> ' + escapeHtml(pregunta.length > 200 ? (pregunta.slice(0, 200) + "...") : pregunta) + '</div>' +
             '<div><b>A:</b> ' + escapeHtml(respuesta.length > 260 ? (respuesta.slice(0, 260) + "...") : respuesta) + '</div>' +
             '</article>';
@@ -289,29 +300,17 @@
 
         setMsg("historyMsg", "Historial actualizado: " + items.length + " registros.", false);
       } catch (err) {
+        if (err && err.status === 401) {
+          showAuthPanel("Tu sesión no es válida o expiró. Inicia sesión con Google para continuar.");
+          return;
+        }
         setMsg("historyMsg", err.message || "No se pudo cargar historial.", true);
       }
     }
 
-    function buildHistoryPayload() {
-      const items = state.messages
-        .filter(function(m) {
-          const role = normalize(m.role).toLowerCase();
-          return role === "user" || role === "assistant";
-        })
-        .slice(-8)
-        .map(function(m) {
-          return {
-            rol: normalize(m.role).toLowerCase(),
-            contenido: normalize(m.content)
-          };
-        });
-      return items;
-    }
-
     async function onSendPrompt(ev) {
       ev.preventDefault();
-      if (state.loading) return;
+      if (state.loading || state.authRequired) return;
 
       clearUpgradeOption();
       const pregunta = normalize(document.getElementById("promptInput").value);
@@ -320,12 +319,12 @@
         return;
       }
       if (!state.modelID) {
-        setMsg("chatMsg", "Debes seleccionar un modelo.", true);
+        setMsg("chatMsg", "No hay modelo Gemini disponible.", true);
         return;
       }
 
       state.loading = true;
-      setMsg("chatMsg", "Consultando modelo...", false);
+      setMsg("chatMsg", "Consultando a Gemini con contexto de empresa...", false);
       appendMessage("user", pregunta);
       document.getElementById("promptInput").value = "";
 
@@ -345,16 +344,20 @@
         appendMessage("assistant", normalize(data.respuesta));
         state.googleAccount = normalize(data.google_account || state.googleAccount);
         state.usage = data.usage || null;
-        renderUsage();
+        renderContext();
+        hideAuthPanel();
         setMsg("chatMsg", "Respuesta generada correctamente.", false);
       } catch (err) {
         const payload = err && err.payload ? err.payload : {};
-        if (normalize(payload.code) === "free_tier_limit_reached") {
+        if (err && err.status === 401) {
+          appendMessage("system", "Sesión expirada o no autenticada. Debes iniciar sesión con Google.");
+          showAuthPanel("Inicia sesión con Google. Si es tu primer ingreso, tu cuenta administradora se registra automáticamente.");
+        } else if (normalize(payload.code) === "free_tier_limit_reached") {
           showUpgradeOption(payload.upgrade_url);
-          appendMessage("system", normalize(payload.error || "Limite gratuito alcanzado."));
-          setMsg("chatMsg", normalize(payload.upgrade_message || "Se alcanzo el limite del plan gratuito."), true);
+          appendMessage("system", normalize(payload.error || "Límite gratuito alcanzado."));
+          setMsg("chatMsg", normalize(payload.upgrade_message || "Se alcanzó el límite del plan gratuito."), true);
         } else {
-          appendMessage("system", "Error al consultar IA: " + normalize(err.message));
+          appendMessage("system", "Error al consultar Gemini: " + normalize(err.message));
           setMsg("chatMsg", err.message || "No se pudo procesar la consulta.", true);
         }
       } finally {
@@ -362,39 +365,32 @@
       }
     }
 
+    function onSuggestionClick(ev) {
+      const btn = ev.currentTarget;
+      const text = normalize(btn.getAttribute("data-prompt"));
+      if (!text) return;
+      const input = document.getElementById("promptInput");
+      input.value = text;
+      input.focus();
+    }
+
     function bindEvents() {
       document.getElementById("reloadBtn").addEventListener("click", async function() {
-        await Promise.all([loadModelos(), loadHistorial()]);
+        setMsg("chatMsg", "Actualizando contexto y estado...", false);
+        await Promise.all([loadGeminiModel(), loadHistorial(), loadEmpresaNameBestEffort()]);
       });
 
-      document.getElementById("reloadModelsBtn").addEventListener("click", loadModelos);
       document.getElementById("loadHistoryBtn").addEventListener("click", loadHistorial);
-      document.getElementById("promptForm").addEventListener("submit", onSendPrompt);
-
-      document.getElementById("modelSelect").addEventListener("change", function() {
-        const prev = state.modelID;
-        state.modelID = normalize(this.value);
-        renderModelInfo();
-
-        const select = this;
-        setMsg("modelPrefMsg", "Guardando modelo preferido...", false);
-        savePreferredModel(state.modelID)
-          .then(function() {
-            setMsg("modelPrefMsg", "Modelo guardado para tu cuenta Google.", false);
-          })
-          .catch(function(err) {
-            state.modelID = prev;
-            select.value = prev;
-            renderModelInfo();
-            setMsg("modelPrefMsg", err.message || "No se pudo guardar el modelo preferido.", true);
-          });
-      });
-
       document.getElementById("clearBtn").addEventListener("click", function() {
         state.messages = [];
         clearUpgradeOption();
         renderMessages();
-        setMsg("chatMsg", "Conversacion local limpiada.", false);
+        setMsg("chatMsg", "Conversación local limpiada.", false);
+      });
+
+      document.getElementById("promptForm").addEventListener("submit", onSendPrompt);
+      document.querySelectorAll(".ai-gemini-pill").forEach(function(btn) {
+        btn.addEventListener("click", onSuggestionClick);
       });
     }
 
@@ -402,19 +398,32 @@
       state.empresaID = Number(getQueryParam("empresa_id") || getQueryParam("id") || 0);
       if (!state.empresaID) {
         setMsg("chatMsg", "empresa_id es obligatorio en la URL.", true);
+        showAuthPanel("No se detectó empresa_id. Regresa al selector de empresas y vuelve a abrir el chat.");
         return;
       }
 
       bindEvents();
-      appendMessage("system", "Bienvenido al chat IA empresarial. Tus consultas se procesan con alcance estricto por empresa_id.");
+      appendMessage("system", "Hola. Soy Gemini Empresarial. Responderé usando solo el contexto de la empresa seleccionada.");
 
-      await loadEmpresa();
-      await loadModelos();
+      await loadEmpresaNameBestEffort();
+      try {
+        await loadGeminiModel();
+        hideAuthPanel();
+      } catch (err) {
+        if (err && err.status === 401) {
+          showAuthPanel("Para usar el chat empresarial debes iniciar sesión con Google.");
+        } else {
+          setMsg("chatMsg", err.message || "No se pudo cargar el modelo Gemini.", true);
+        }
+      }
+
       await loadHistorial();
+      renderContext();
+      renderMessages();
     }
 
     init().catch(function(err) {
-      setMsg("chatMsg", err.message || "No se pudo iniciar el modulo de chat IA.", true);
+      setMsg("chatMsg", err.message || "No se pudo iniciar el módulo de chat IA.", true);
     });
   </script>
 </body>

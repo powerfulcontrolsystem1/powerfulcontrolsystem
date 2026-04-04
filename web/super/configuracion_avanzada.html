@@ -182,10 +182,41 @@
       </div>
       <div id="gmailMsg" class="form-help"></div>
     </section>
+
+    <section class="card form mp-card" id="aiConfigCard">
+      <h2>Inteligencia Artificial — Google Gemini</h2>
+      <p class="form-help">Esta credencial habilita el chat empresarial con Gemini, con trazabilidad por cuenta Google autenticada y alcance por empresa_id.</p>
+      <div id="aiLoggedAccount" class="form-help">Cuenta Google logueada: Cargando...</div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Google Gemini 2.0 Flash</label>
+          <input id="aiKeyGemini" class="form-input" type="password" placeholder="API key para google:gemini-2.0-flash">
+          <div id="aiStatusGemini" class="form-help">Cargando estado...</div>
+          <div class="form-help">Plan gratuito limitado según cuota diaria de Google AI Studio.</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Opciones</label>
+          <div class="form-help"><label><input id="aiEncryptToggle" type="checkbox"> Cifrar credencial al guardar (si el servidor lo permite)</label></div>
+          <div class="form-help">La llave se guarda en backend y se registra la cuenta Google que realizó el cambio.</div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button id="saveAiConfigBtn" class="btn">Guardar credencial Gemini</button>
+        <button id="editAiConfigBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Editar</button>
+        <button id="cancelAiConfigBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Cancelar</button>
+      </div>
+      <div id="aiConfigMsg" class="form-help"></div>
+    </section>
   </div>
 
   <script>
     (function(){
+      const aiCredentialBindings = [
+        { model_id: 'google:gemini-2.0-flash', inputId: 'aiKeyGemini', statusId: 'aiStatusGemini' }
+      ];
+
       async function load(){
         // cargar estado Mercado Pago
         try{
@@ -326,6 +357,8 @@
 
 		// cargar estado Gmail SMTP
 		await loadGmailConfig();
+    // cargar estado credenciales IA
+    await loadAIConfig();
       }
 
       function refreshWompiModeHint(){
@@ -401,6 +434,135 @@
           statusEmail.innerText = 'Error cargando configuración Gmail';
           statusPass.innerText = 'Error cargando configuración Gmail';
         }
+      }
+
+      async function loadAIConfig(){
+        const msg = document.getElementById('aiConfigMsg');
+        const accountEl = document.getElementById('aiLoggedAccount');
+        try {
+          const res = await fetch('/super/api/config/ai');
+          if (!res.ok) {
+            msg.innerText = 'Error al leer configuración IA.';
+            accountEl.innerText = 'Cuenta Google logueada: no disponible';
+            aiCredentialBindings.forEach(function(binding){
+              const statusEl = document.getElementById(binding.statusId);
+              if (statusEl) statusEl.innerText = 'Error al leer estado';
+            });
+            return;
+          }
+
+          const data = await res.json();
+          accountEl.innerText = 'Cuenta Google logueada: ' + (data.google_account || 'no disponible');
+
+          if (typeof data.encryption_available !== 'undefined' && !data.encryption_available) {
+            document.getElementById('aiEncryptToggle').disabled = true;
+            document.getElementById('aiEncryptToggle').checked = false;
+          } else {
+            document.getElementById('aiEncryptToggle').disabled = false;
+          }
+
+          const byModel = {};
+          (data.modelos || []).forEach(function(item){ byModel[item.model_id] = item; });
+
+          let hasAIConfig = false;
+          aiCredentialBindings.forEach(function(binding){
+            const inputEl = document.getElementById(binding.inputId);
+            const statusEl = document.getElementById(binding.statusId);
+            const item = byModel[binding.model_id] || {};
+            if (item.configured) {
+              hasAIConfig = true;
+              const sourceTxt = item.source === 'env' ? ' (origen: variable de entorno)' : '';
+              const ts = item.updated_at ? (' — Última actualización: ' + item.updated_at) : '';
+              const by = item.updated_by ? (' — Actualizó: ' + item.updated_by) : '';
+              statusEl.innerText = 'Credencial configurada (' + (item.masked || '****') + ')' + sourceTxt + ts + by;
+            } else {
+              statusEl.innerText = 'No configurada';
+            }
+            inputEl.value = '';
+          });
+
+          aiCredentialBindings.forEach(function(binding){
+            const inputEl = document.getElementById(binding.inputId);
+            if (inputEl) inputEl.disabled = hasAIConfig;
+          });
+
+          document.getElementById('saveAiConfigBtn').disabled = hasAIConfig;
+          document.getElementById('editAiConfigBtn').style.display = hasAIConfig ? '' : 'none';
+          document.getElementById('cancelAiConfigBtn').style.display = 'none';
+          if (!msg.innerText || msg.innerText.indexOf('Error') === -1) {
+            msg.innerText = hasAIConfig
+              ? 'Credencial Gemini disponible. Usa Editar para actualizarla.'
+              : 'Aún no hay credencial Gemini guardada en este panel.';
+          }
+        } catch (err) {
+          msg.innerText = 'Error cargando configuración IA: ' + (err.message || err);
+          accountEl.innerText = 'Cuenta Google logueada: no disponible';
+        }
+      }
+
+      async function saveAIConfig(e){
+        if (e && e.preventDefault) e.preventDefault();
+
+        const credentials = [];
+        aiCredentialBindings.forEach(function(binding){
+          const inputEl = document.getElementById(binding.inputId);
+          const value = (inputEl && inputEl.value || '').trim();
+          if (value) {
+            credentials.push({ model_id: binding.model_id, api_key: value });
+          }
+        });
+
+        if (!credentials.length) {
+          alert('Ingrese la credencial de Google Gemini para guardar.');
+          return;
+        }
+
+        const payload = {
+          encrypt: !!document.getElementById('aiEncryptToggle').checked,
+          credentials: credentials
+        };
+
+        const btn = document.getElementById('saveAiConfigBtn');
+        const msg = document.getElementById('aiConfigMsg');
+        btn.disabled = true;
+        btn.innerText = 'Guardando...';
+
+        try {
+          const res = await fetch('/super/api/config/ai', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const raw = await res.text();
+          if (!res.ok) {
+            msg.innerText = 'Error guardando credencial Gemini: ' + raw;
+            return;
+          }
+
+          msg.innerText = 'Credencial Gemini guardada correctamente para la cuenta Google logueada.';
+          await loadAIConfig();
+        } catch (err) {
+          msg.innerText = 'Error guardando credencial Gemini: ' + (err.message || err);
+        }
+
+        btn.disabled = false;
+        btn.innerText = 'Guardar credencial Gemini';
+      }
+
+      function enableEditAIConfig(){
+        aiCredentialBindings.forEach(function(binding){
+          const inputEl = document.getElementById(binding.inputId);
+          if (inputEl) inputEl.disabled = false;
+        });
+        document.getElementById('saveAiConfigBtn').disabled = false;
+        document.getElementById('editAiConfigBtn').style.display = 'none';
+        document.getElementById('cancelAiConfigBtn').style.display = '';
+        document.getElementById('aiConfigMsg').innerText = 'Modo edición activo: ingrese la nueva credencial Gemini y guarde.';
+      }
+
+      function cancelEditAIConfig(){
+        loadAIConfig();
+        document.getElementById('aiConfigMsg').innerText = 'Edición de credencial Gemini cancelada.';
       }
 
       async function saveGmail(e){
@@ -623,6 +785,9 @@
       document.getElementById('saveGmailBtn').addEventListener('click', saveGmail);
       document.getElementById('editGmailBtn').addEventListener('click', enableEditGmail);
       document.getElementById('cancelGmailBtn').addEventListener('click', cancelEditGmail);
+      document.getElementById('saveAiConfigBtn').addEventListener('click', saveAIConfig);
+      document.getElementById('editAiConfigBtn').addEventListener('click', enableEditAIConfig);
+      document.getElementById('cancelAiConfigBtn').addEventListener('click', cancelEditAIConfig);
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', load); else load();
     })();
   </script>

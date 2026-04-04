@@ -1,0 +1,42 @@
+package handlers
+
+import "strings"
+
+type aiCredentialModelDef struct {
+	ModelID      string
+	Provider     string
+	DisplayName  string
+	ApiKeyEnv    string
+	ConfigKey    string
+	FreePlanNote string
+}
+
+func aiCredentialCatalogModels() []aiCredentialModelDef {
+	return []aiCredentialModelDef{
+		{
+			ModelID:      "google:gemini-2.0-flash",
+			Provider:     "google",
+			DisplayName:  "Google Gemini 2.0 Flash",
+			ApiKeyEnv:    "GEMINI_API_KEY",
+			ConfigKey:    "ai.model.google.gemini_2_0_flash.api_key",
+			FreePlanNote: "Google Gemini: plan gratuito limitado segun cuota de la cuenta en Google AI Studio.",
+		},
+	}
+}
+
+func aiCredentialByModelID() map[string]aiCredentialModelDef {
+	defs := aiCredentialCatalogModels()
+	out := make(map[string]aiCredentialModelDef, len(defs))
+	for _, it := range defs {
+		out[it.ModelID] = it
+	}
+	return out
+}
+
+func aiProviderConfigKey(provider string) string {
+	v := strings.ToLower(strings.TrimSpace(provider))
+	if v == "" {
+		return ""
+	}
+	return "ai.provider." + v + ".api_key"
+}
