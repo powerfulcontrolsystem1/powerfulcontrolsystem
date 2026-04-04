@@ -1,5 +1,198 @@
 - Historial de cambios
 
+- 2026-04-04: Punto 3 — continuidad (catalogo frontend por rol + regresion endpoints sin wrapper)
+    - Se actualiza `web/js/administrar_empresa.js`:
+        - catalogo de permisos por enlace del menu lateral,
+        - consumo de `GET /me` para rol autenticado,
+        - ocultamiento de opciones no autorizadas por rol,
+        - fallback automatico del iframe a la primera opcion visible.
+    - Se actualizan pruebas de regresion en endpoints sin wrapper de modulo:
+        - `backend/handlers/auth_users_carritos_test.go`:
+            - `TestEmpresaUsuarioLoginHandlerRejectsWrongEmpresaScope`.
+            - `TestEmpresaUsuarioSetPasswordHandlerRejectsWrongEmpresaScope`.
+        - `backend/handlers/chat_con_inteligencia_artificial_controller_test.go`:
+            - `TestModelosHandlerRejectsEmpresaFueraDeAlcanceByGoogleAccount`.
+    - Se actualiza documentacion tecnica en diagramas:
+        - `documentos/diagramas/diagrama_roles_permisos.md`.
+        - `documentos/diagramas/estructura_del_codigo.md`.
+    - Se actualiza trazabilidad documental:
+        - `documentos/descripcion_de_archivos`.
+        - `documentos/historial_de_cambios`.
+        - `CHANGELOG.md`.
+    - Validaciones ejecutadas:
+        - `runTests` en `backend/handlers/auth_users_carritos_test.go` y `backend/handlers/chat_con_inteligencia_artificial_controller_test.go`.
+        - resultado: 14 pruebas aprobadas, 0 fallidas.
+        - `get_errors` en `web/js/administrar_empresa.js`: sin errores.
+
+- 2026-04-04: Punto 3 — consolidacion endpoint/rol y checklist UAT de permisos
+    - Se actualiza `documentos/matriz_roles_permisos_pos_multiempresa.md`:
+        - matriz final endpoint/rol alineada a implementacion real de wrappers y reglas por accion,
+        - registro de endpoints fuera de wrapper con control alterno,
+        - checklist UAT de punto 3 con evidencia por pruebas automatizadas.
+    - Se actualiza `documentos/plan_maestro_pos_multiempresa_14_puntos.md`:
+        - seccion de consolidacion de punto 3 con estado operativo y pendientes para cierre total.
+    - Se actualiza trazabilidad documental:
+        - `documentos/descripcion_de_archivos`.
+        - `documentos/historial_de_cambios`.
+        - `CHANGELOG.md`.
+    - Validacion ejecutada:
+        - `runTests` en `backend/handlers/empresa_permisos_test.go` y `backend/handlers/auditoria_empresa_test.go`.
+        - resultado: 25 pruebas aprobadas, 0 fallidas.
+
+- 2026-04-04: Ajuste editorial de consistencia en plan maestro (pasos 1 y 2 ya cerrados)
+    - Se actualiza `documentos/plan_maestro_pos_multiempresa_14_puntos.md`:
+        - se corrige `Backlog inmediato` para retirar tareas ya completadas de Punto 1 y Punto 2,
+        - se prioriza la siguiente iteracion en Punto 3 (permisos y seguridad) y Punto 5 (control de inventarios).
+    - Se actualiza trazabilidad documental:
+        - `documentos/descripcion_de_archivos`.
+        - `documentos/historial_de_cambios`.
+        - `CHANGELOG.md`.
+    - Validacion ejecutada:
+        - ajuste documental (sin ejecucion de pruebas automatizadas).
+
+- 2026-04-04: Punto 1 + Punto 2 — cierre de backlog inmediato (formalizacion documental)
+    - Se actualiza `documentos/matriz_kpi_pos_multiempresa.md`:
+        - matriz KPI formal con formula implementada,
+        - endpoint canonico de consumo/exportacion,
+        - tablas fuente reales por metrica.
+    - Se agrega `documentos/matriz_entidades_multiempresa_aislamiento.md`:
+        - inventario formal de endpoints `/api/empresa/*`,
+        - llave primaria de aislamiento y llaves secundarias por endpoint,
+        - tipo de control de alcance (middleware/validacion interna).
+    - Se actualiza `documentos/plan_maestro_pos_multiempresa_14_puntos.md`:
+        - Punto 1 y Punto 2 pasan a estado `completado`.
+    - Se actualiza trazabilidad documental:
+        - `documentos/descripcion_de_archivos`.
+        - `documentos/historial_de_cambios`.
+        - `CHANGELOG.md`.
+    - Validacion ejecutada:
+        - cambio documental (sin ejecucion de pruebas de backend/frontend).
+
+- 2026-04-04: Punto 11 — continuidad plan maestro (exportacion unificada del tablero completada)
+    - Se actualiza `backend/handlers/finanzas.go`:
+        - nuevo `action=tablero_export` en `GET /api/empresa/finanzas/movimientos`,
+        - soporte de descarga `format=json|csv`,
+        - exportacion unificada con bloques `operativo`, `financiero`, `contable`, `estado_resultados` y `balance_general`.
+    - Se actualiza `web/administrar_empresa/reportes.html`:
+        - nuevos botones `Exportar tablero CSV` y `Exportar tablero JSON`,
+        - descarga directa por rango (`desde`, `hasta`) y `empresa_id` activo.
+    - Se actualizan pruebas:
+        - `backend/handlers/eventos_contables_modulos_test.go` agrega `TestEmpresaFinanzasTableroResumenExportHandler`.
+    - Se actualiza documentacion relacionada:
+        - `documentos/plan_maestro_pos_multiempresa_14_puntos.md`.
+        - `documentos/diagramas/estructura_del_codigo.md`.
+        - `documentos/diagramas/diagrama_flujo_procesos.md`.
+        - `documentos/diagramas/diagrama_arquitectura_sistema.md`.
+        - `documentos/descripcion_de_archivos`.
+        - `documentos/descripcion_del_proyecto`.
+        - `documentos/historial_de_cambios`.
+        - `CHANGELOG.md`.
+    - Validaciones ejecutadas:
+        - `go test ./handlers -run "TestEmpresaFinanzasTableroResumenHandler|TestEmpresaFinanzasTableroResumenExportHandler|TestEmpresaFinanzasAsientosContablesHandlerConciliacionPeriodo" -count=1` (ok).
+        - `go test ./handlers -count=1` (ok).
+        - `go test ./db -count=1` (ok).
+
+- 2026-04-04: Punto 10 — continuidad plan maestro (vista de conciliacion por periodo completada)
+    - Se actualiza `backend/db/eventos_contables.go`:
+        - nuevos structs de conciliacion por periodo,
+        - nueva funcion `GetEmpresaConciliacionContablePorPeriodo` para comparar eventos vs asientos y calcular estado de conciliacion.
+    - Se actualiza `backend/handlers/finanzas.go` para exponer `GET /api/empresa/finanzas/asientos_contables?action=conciliacion_periodo|conciliacion`.
+    - Se actualiza `web/administrar_empresa/finanzas.html` con tarjeta de conciliacion por periodo (filtros, KPIs y tabla comparativa).
+    - Se actualizan pruebas:
+        - `backend/db/eventos_contables_test.go` (conciliacion por periodo).
+        - `backend/handlers/eventos_contables_modulos_test.go` (endpoint de conciliacion).
+    - Se actualiza documentacion relacionada:
+        - `documentos/plan_maestro_pos_multiempresa_14_puntos.md`.
+        - `documentos/diagramas/estructura_del_codigo.md`.
+        - `documentos/diagramas/diagrama_flujo_procesos.md`.
+        - `documentos/diagramas/diagrama_arquitectura_sistema.md`.
+        - `documentos/descripcion_de_archivos`.
+        - `documentos/descripcion_del_proyecto`.
+        - `documentos/historial_de_cambios`.
+        - `CHANGELOG.md`.
+    - Validaciones ejecutadas:
+        - `go test ./db -run "EventosContables|ConPolitica|Conciliacion" -count=1` (ok).
+        - `go test ./handlers -run "AsientosContablesHandler|ConciliacionPeriodo" -count=1` (ok).
+        - `go test ./db -count=1` (ok).
+        - `go test ./handlers -count=1` (ok).
+
+- 2026-04-04: Punto 10 — continuidad plan maestro (automatizacion por lotes de asientos completada)
+    - Se actualiza `backend/db/eventos_contables.go`:
+        - nueva funcion `ProcessEmpresaEventosContablesPendientesConPolitica` con limite de reintentos,
+        - nueva corrida global `RunEmpresaAsientosContablesWorkerCycle`,
+        - nuevo worker periodico `StartEmpresaAsientosContablesWorker`.
+    - Se actualiza `backend/handlers/finanzas.go` para aceptar `max_reintentos` opcional en `PUT/POST /api/empresa/finanzas/asientos_contables?action=procesar_asientos`.
+    - Se actualiza `backend/main.go` para iniciar worker automatico de asientos con politica configurable por entorno.
+    - Se actualizan pruebas:
+        - `backend/db/eventos_contables_test.go` (politica de reintentos),
+        - `backend/handlers/eventos_contables_modulos_test.go` (validacion de `max_reintentos`).
+    - Se actualiza documentacion relacionada:
+        - `documentos/plan_maestro_pos_multiempresa_14_puntos.md`.
+        - `documentos/diagramas/estructura_del_codigo.md`.
+        - `documentos/diagramas/diagrama_flujo_procesos.md`.
+        - `documentos/diagramas/diagrama_arquitectura_sistema.md`.
+        - `documentos/descripcion_de_archivos`.
+        - `documentos/descripcion_del_proyecto`.
+        - `documentos/historial_de_cambios`.
+        - `CHANGELOG.md`.
+    - Validaciones ejecutadas:
+        - `go test ./db -run "EventosContables|ConPolitica|Asientos" -count=1` (ok).
+        - `go test ./handlers -run "AsientosContablesHandler|FinanzasAsientos" -count=1` (ok).
+        - `go test ./handlers -count=1` (ok).
+        - `go test ./db -count=1` (ok).
+
+- 2026-04-04: Punto 15 — continuidad plan maestro (backlog inmediato 1 y 2 completado)
+    - Se actualiza `backend/db/auditoria_empresa.go` para soportar filtros avanzados de consulta por `recurso_id` y `codigo_http`.
+    - Se actualiza `backend/handlers/auditoria_empresa.go` para validar y propagar `recurso_id`/`codigo_http` en el endpoint `GET /api/empresa/auditoria/eventos`.
+    - Se actualiza `web/administrar_empresa/auditoria.html`:
+        - nuevos filtros avanzados (`codigo_http`, `recurso_id`),
+        - exportacion local de resultados filtrados a `CSV` y `JSON`.
+    - Se actualizan pruebas:
+        - `backend/db/auditoria_empresa_test.go` (listado con filtros avanzados),
+        - `backend/handlers/auditoria_empresa_test.go` (`TestEmpresaAuditoriaEventosHandlerFiltrosAvanzados`).
+    - Se actualiza documentacion relacionada:
+        - `documentos/plan_maestro_pos_multiempresa_14_puntos.md`.
+        - `documentos/diagramas/estructura_del_codigo.md`.
+        - `documentos/diagramas/diagrama_flujo_procesos.md`.
+        - `documentos/descripcion_de_archivos`.
+        - `documentos/descripcion_del_proyecto`.
+        - `documentos/historial_de_cambios`.
+        - `CHANGELOG.md`.
+    - Validaciones ejecutadas:
+        - `go test ./db -run "Auditoria" -count=1` (ok).
+        - `go test ./handlers -run "Auditoria" -count=1` (ok).
+        - `go test ./handlers -count=1` (ok).
+        - `go test ./db -count=1` (ok).
+
+- 2026-04-04: Punto 15 — continuacion completada (cobertura ventas/compras/facturacion + UI auditoria + purga automatica)
+    - Se actualiza `backend/handlers/empresa_permisos.go` para ampliar alias de acciones criticas en modulos `ventas`, `compras` y `facturacion`.
+    - Se actualiza `backend/handlers/auditoria_empresa.go` para enriquecer metadata de trazabilidad (`carrito_id`, `proveedor_id`, `entidad_id`, `documento_codigo`) y resolucion de recurso_id.
+    - Se actualiza `backend/db/auditoria_empresa.go`:
+        - purga automatica por expiracion (`PurgeExpiredEmpresaAuditoriaEventos`),
+        - worker periodico (`StartEmpresaAuditoriaRetentionWorker`),
+        - alineacion de `fecha_expiracion` con `fecha_evento` cuando se provee.
+    - Se actualiza `backend/main.go` para iniciar worker de retencion automatica de auditoria (12h).
+    - Se agrega nueva pagina `web/administrar_empresa/auditoria.html` para consulta filtrable y retencion manual de eventos.
+    - Se actualiza navegacion de panel empresa:
+        - `web/administrar_empresa.html` (nuevo item de menu `Auditoria`).
+        - `web/js/administrar_empresa.js` (registro de `linkAuditoria`).
+    - Se amplian pruebas:
+        - `backend/handlers/auditoria_empresa_test.go` (ventas/compras/facturacion).
+        - `backend/db/auditoria_empresa_test.go` (purga de expirados).
+    - Se actualiza documentacion relacionada:
+        - `documentos/plan_maestro_pos_multiempresa_14_puntos.md`.
+        - `documentos/diagramas/estructura_del_codigo.md`.
+        - `documentos/diagramas/diagrama_flujo_procesos.md`.
+        - `documentos/diagramas/diagrama_arquitectura_sistema.md`.
+        - `documentos/descripcion_de_archivos`.
+        - `documentos/historial_de_cambios`.
+        - `CHANGELOG.md`.
+    - Validaciones ejecutadas:
+        - `go test ./handlers -run "Auditoria|WithEmpresa(Ventas|Compras|Facturacion|Finanzas)Permissions" -count=1` (ok).
+        - `go test ./db -run "Auditoria" -count=1` (ok).
+        - `go test ./handlers -count=1` (ok).
+        - `go test ./db -count=1` (ok).
+
 - 2026-04-04: Punto 15 — implementacion base del modulo de auditoria por empresa
     - Se agrega `backend/db/auditoria_empresa.go`:
         - esquema `empresa_auditoria_eventos`,

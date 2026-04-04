@@ -16,6 +16,8 @@
           <input id="fechaHasta" type="date" class="form-input">
           <button id="btnAplicarFiltro" class="btn secondary" type="button">Aplicar rango</button>
           <button id="btnRefrescarReportes" class="btn" type="button">Actualizar</button>
+          <button id="btnExportarTableroCSV" class="btn secondary" type="button">Exportar tablero CSV</button>
+          <button id="btnExportarTableroJSON" class="btn secondary" type="button">Exportar tablero JSON</button>
         </div>
       </div>
       <p class="form-help">Resumen mínimo de operación, finanzas y contabilidad por empresa con filtro de fechas.</p>
@@ -521,6 +523,56 @@
       return params;
     }
 
+    function resolveDownloadFilenameFromHeader(contentDisposition, fallbackName) {
+      const raw = normalize(contentDisposition);
+      if (!raw) return fallbackName;
+
+      const starMatch = raw.match(/filename\*=UTF-8''([^;]+)/i);
+      if (starMatch && starMatch[1]) {
+        try {
+          return decodeURIComponent(starMatch[1]);
+        } catch (_) {
+          return fallbackName;
+        }
+      }
+
+      const plainMatch = raw.match(/filename="?([^";]+)"?/i);
+      if (plainMatch && plainMatch[1]) {
+        return plainMatch[1].trim();
+      }
+      return fallbackName;
+    }
+
+    function downloadBlobFile(blob, filename) {
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = normalize(filename) || 'descarga.bin';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(link.href), 0);
+    }
+
+    async function exportarTableroUnificado(format) {
+      const formato = normalize(format).toLowerCase() === 'csv' ? 'csv' : 'json';
+      const params = buildRangeQueryParams();
+      params.set('empresa_id', String(state.empresaID));
+      params.set('action', 'tablero_export');
+      params.set('format', formato);
+
+      const res = await fetch('/api/empresa/finanzas/movimientos?' + params.toString());
+      if (!res.ok) {
+        const body = await res.text();
+        throw new Error(body || 'No se pudo exportar el tablero.');
+      }
+
+      const blob = await res.blob();
+      const stamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
+      const fallback = 'tablero_empresa_' + state.empresaID + '_' + stamp + '.' + formato;
+      const filename = resolveDownloadFilenameFromHeader(res.headers.get('Content-Disposition'), fallback);
+      downloadBlobFile(blob, filename);
+    }
+
     async function loadTableroResumen() {
       const params = buildRangeQueryParams();
       params.set('empresa_id', String(state.empresaID));
@@ -963,6 +1015,24 @@
           setMsg('Filtro aplicado.', 'success');
         } catch (err) {
           setMsg(err.message || 'No se pudo aplicar el filtro.', 'error');
+        }
+      });
+
+      document.getElementById('btnExportarTableroCSV').addEventListener('click', async () => {
+        try {
+          await exportarTableroUnificado('csv');
+          setMsg('Exportación CSV del tablero generada correctamente.', 'success');
+        } catch (err) {
+          setMsg(err.message || 'No se pudo exportar el tablero en CSV.', 'error');
+        }
+      });
+
+      document.getElementById('btnExportarTableroJSON').addEventListener('click', async () => {
+        try {
+          await exportarTableroUnificado('json');
+          setMsg('Exportación JSON del tablero generada correctamente.', 'success');
+        } catch (err) {
+          setMsg(err.message || 'No se pudo exportar el tablero en JSON.', 'error');
         }
       });
 

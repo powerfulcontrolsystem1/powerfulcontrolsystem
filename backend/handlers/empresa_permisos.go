@@ -258,7 +258,7 @@ func normalizePermissionAction(candidate, fallback string) string {
 func resolveVentasPermissionAction(r *http.Request) string {
 	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 	switch action {
-	case "cerrar", "reabrir", "pagar_estacion", "activar_estacion":
+	case "cerrar", "reabrir", "pagar_estacion", "activar_estacion", "pagar", "suspender", "suspender_venta", "reactivar", "reabrir_venta":
 		return permActionApprove
 	case "activar", "desactivar":
 		return permActionUpdate
@@ -300,6 +300,9 @@ func resolveComprasPermissionAction(r *http.Request) string {
 	if action == "activar" || action == "desactivar" {
 		return permActionUpdate
 	}
+	if action == "anular" || action == "cancelar" {
+		return permActionDelete
+	}
 	if action == "aprobar" || action == "cerrar" || action == "emitir" || action == "emitir_orden" || action == "recepcionar" || action == "recepcionar_compra" || action == "contabilizar" || action == "contabilizar_compra" {
 		return permActionApprove
 	}
@@ -311,7 +314,7 @@ func resolveFacturacionPermissionAction(r *http.Request) string {
 	if action == "activar" || action == "desactivar" {
 		return permActionUpdate
 	}
-	if action == "aprobar" || action == "emitir" || action == "nota_credito" || action == "emitir_nota_credito" {
+	if action == "aprobar" || action == "emitir" || action == "emitir_factura" || action == "emitir_documento" || action == "nota_credito" || action == "emitir_nota_credito" {
 		return permActionApprove
 	}
 	if action == "anular" {

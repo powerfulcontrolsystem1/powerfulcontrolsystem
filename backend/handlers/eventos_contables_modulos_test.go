@@ -481,6 +481,106 @@ func TestEmpresaFinanzasTableroResumenHandler(t *testing.T) {
 	}
 }
 
+func TestEmpresaFinanzasTableroResumenExportHandler(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_finanzas_tablero_export_handler.db")
+	if err := dbpkg.EnsureEmpresaFinanzasSchema(dbEmp); err != nil {
+		t.Fatalf("ensure finanzas schema: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaCarritosSchema(dbEmp); err != nil {
+		t.Fatalf("ensure carritos schema: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaClientesSchema(dbEmp); err != nil {
+		t.Fatalf("ensure clientes schema: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaProductosSchema(dbEmp); err != nil {
+		t.Fatalf("ensure productos schema: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaEventosContablesSchema(dbEmp); err != nil {
+		t.Fatalf("ensure eventos contables schema: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaDocumentosTransaccionalesSchema(dbEmp); err != nil {
+		t.Fatalf("ensure documentos transaccionales schema: %v", err)
+	}
+
+	empresaID := int64(56)
+	todayDate := time.Now().Format("2006-01-02")
+	todayStamp := time.Now().Format("2006-01-02 15:04:05")
+
+	if _, err := dbpkg.CreateEmpresaFinanzasMovimiento(dbEmp, dbpkg.EmpresaFinanzasMovimiento{
+		EmpresaID:       empresaID,
+		TipoMovimiento:  "ingreso",
+		Concepto:        "Ingreso export",
+		Categoria:       "ventas",
+		MetodoPago:      "efectivo",
+		Moneda:          "COP",
+		Monto:           125000,
+		Total:           125000,
+		FechaMovimiento: todayStamp,
+		UsuarioCreador:  "tester",
+	}); err != nil {
+		t.Fatalf("create movimiento ingreso: %v", err)
+	}
+
+	h := EmpresaFinanzasMovimientosHandler(dbEmp)
+
+	reqJSON := httptest.NewRequest(http.MethodGet, "/api/empresa/finanzas/movimientos?action=tablero_export&format=json&empresa_id=56&desde="+todayDate+"&hasta="+todayDate, nil)
+	reqJSON = reqJSON.WithContext(context.WithValue(reqJSON.Context(), "adminEmail", "finanzas@test.com"))
+	rrJSON := httptest.NewRecorder()
+	h.ServeHTTP(rrJSON, reqJSON)
+	if rrJSON.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, rrJSON.Code, rrJSON.Body.String())
+	}
+	if ct := strings.ToLower(rrJSON.Header().Get("Content-Type")); !strings.Contains(ct, "application/json") {
+		t.Fatalf("expected content-type application/json, got %q", rrJSON.Header().Get("Content-Type"))
+	}
+	if disp := strings.ToLower(rrJSON.Header().Get("Content-Disposition")); !strings.Contains(disp, ".json") {
+		t.Fatalf("expected content-disposition json filename, got %q", rrJSON.Header().Get("Content-Disposition"))
+	}
+
+	var payload map[string]interface{}
+	if err := json.Unmarshal(rrJSON.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode export json payload: %v", err)
+	}
+	if _, ok := payload["estado_resultados"].(map[string]interface{}); !ok {
+		t.Fatalf("expected estado_resultados block in export json payload")
+	}
+	if _, ok := payload["balance_general"].(map[string]interface{}); !ok {
+		t.Fatalf("expected balance_general block in export json payload")
+	}
+
+	reqCSV := httptest.NewRequest(http.MethodGet, "/api/empresa/finanzas/movimientos?action=tablero_export&format=csv&empresa_id=56&desde="+todayDate+"&hasta="+todayDate, nil)
+	reqCSV = reqCSV.WithContext(context.WithValue(reqCSV.Context(), "adminEmail", "finanzas@test.com"))
+	rrCSV := httptest.NewRecorder()
+	h.ServeHTTP(rrCSV, reqCSV)
+	if rrCSV.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, rrCSV.Code, rrCSV.Body.String())
+	}
+	if ct := strings.ToLower(rrCSV.Header().Get("Content-Type")); !strings.Contains(ct, "text/csv") {
+		t.Fatalf("expected content-type text/csv, got %q", rrCSV.Header().Get("Content-Type"))
+	}
+	if disp := strings.ToLower(rrCSV.Header().Get("Content-Disposition")); !strings.Contains(disp, ".csv") {
+		t.Fatalf("expected content-disposition csv filename, got %q", rrCSV.Header().Get("Content-Disposition"))
+	}
+	csvBody := rrCSV.Body.String()
+	if !strings.Contains(csvBody, "empresa_id,desde,hasta,generado_en,bloque,metrica,valor") {
+		t.Fatalf("expected csv header row in export output")
+	}
+	if !strings.Contains(csvBody, "estado_resultados,utilidad_operacional") {
+		t.Fatalf("expected estado_resultados rows in export csv output")
+	}
+	if !strings.Contains(csvBody, "balance_general,activos") {
+		t.Fatalf("expected balance_general rows in export csv output")
+	}
+
+	reqInvalid := httptest.NewRequest(http.MethodGet, "/api/empresa/finanzas/movimientos?action=tablero_export&format=xlsx&empresa_id=56", nil)
+	reqInvalid = reqInvalid.WithContext(context.WithValue(reqInvalid.Context(), "adminEmail", "finanzas@test.com"))
+	rrInvalid := httptest.NewRecorder()
+	h.ServeHTTP(rrInvalid, reqInvalid)
+	if rrInvalid.Code != http.StatusBadRequest {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusBadRequest, rrInvalid.Code, rrInvalid.Body.String())
+	}
+}
+
 func TestEmpresaFinanzasAsientosContablesHandlerProcesaPendientes(t *testing.T) {
 	dbEmp := openTestSQLite(t, "empresas_finanzas_asientos_handler.db")
 	if err := dbpkg.EnsureEmpresaFinanzasSchema(dbEmp); err != nil {
@@ -508,7 +608,7 @@ func TestEmpresaFinanzasAsientosContablesHandlerProcesaPendientes(t *testing.T) 
 	}
 
 	h := EmpresaFinanzasAsientosContablesHandler(dbEmp)
-	reqProcess := httptest.NewRequest(http.MethodPut, "/api/empresa/finanzas/asientos_contables?action=procesar_asientos&empresa_id=77&limit=20", nil)
+	reqProcess := httptest.NewRequest(http.MethodPut, "/api/empresa/finanzas/asientos_contables?action=procesar_asientos&empresa_id=77&limit=20&max_reintentos=5", nil)
 	reqProcess = reqProcess.WithContext(context.WithValue(reqProcess.Context(), "adminEmail", "conta@test.com"))
 	rrProcess := httptest.NewRecorder()
 	h.ServeHTTP(rrProcess, reqProcess)
@@ -541,6 +641,104 @@ func TestEmpresaFinanzasAsientosContablesHandlerProcesaPendientes(t *testing.T) 
 	}
 	if len(asientos) != 1 {
 		t.Fatalf("expected 1 asiento in listing, got %d", len(asientos))
+	}
+}
+
+func TestEmpresaFinanzasAsientosContablesHandlerValidaMaxReintentos(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_finanzas_asientos_handler_max_reintentos.db")
+	h := EmpresaFinanzasAsientosContablesHandler(dbEmp)
+
+	req := httptest.NewRequest(http.MethodPut, "/api/empresa/finanzas/asientos_contables?action=procesar_asientos&empresa_id=77&max_reintentos=abc", nil)
+	req = req.WithContext(context.WithValue(req.Context(), "adminEmail", "conta@test.com"))
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusBadRequest, rr.Code, rr.Body.String())
+	}
+}
+
+func TestEmpresaFinanzasAsientosContablesHandlerConciliacionPeriodo(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_finanzas_asientos_handler_conciliacion.db")
+	if err := dbpkg.EnsureEmpresaFinanzasSchema(dbEmp); err != nil {
+		t.Fatalf("ensure finanzas schema: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaEventosContablesSchema(dbEmp); err != nil {
+		t.Fatalf("ensure eventos contables schema: %v", err)
+	}
+
+	empresaID := int64(91)
+	if _, err := dbpkg.CreateEmpresaEventoContable(dbEmp, dbpkg.EmpresaEventoContable{
+		EmpresaID:       empresaID,
+		Modulo:          "finanzas",
+		Evento:          "movimiento_ingreso_registrado",
+		Entidad:         "finanzas_movimiento",
+		EntidadID:       9101,
+		DocumentoTipo:   "comprobante",
+		DocumentoCodigo: "ING-9101",
+		PeriodoContable: "2026-04",
+		MontoTotal:      77000,
+		Moneda:          "COP",
+		PayloadJSON:     `{"tipo_movimiento":"ingreso","categoria":"ventas"}`,
+		UsuarioCreador:  "tester",
+	}); err != nil {
+		t.Fatalf("create evento 1: %v", err)
+	}
+	pendienteID, err := dbpkg.CreateEmpresaEventoContable(dbEmp, dbpkg.EmpresaEventoContable{
+		EmpresaID:       empresaID,
+		Modulo:          "finanzas",
+		Evento:          "movimiento_egreso_registrado",
+		Entidad:         "finanzas_movimiento",
+		EntidadID:       9102,
+		DocumentoTipo:   "comprobante",
+		DocumentoCodigo: "EGR-9102",
+		PeriodoContable: "2026-04",
+		MontoTotal:      23000,
+		Moneda:          "COP",
+		PayloadJSON:     `{"tipo_movimiento":"egreso","categoria":"compras"}`,
+		UsuarioCreador:  "tester",
+	})
+	if err != nil {
+		t.Fatalf("create evento 2: %v", err)
+	}
+
+	if _, err := dbpkg.ProcessEmpresaEventosContablesPendientes(dbEmp, empresaID, "tester", 1); err != nil {
+		t.Fatalf("process eventos pendientes: %v", err)
+	}
+	if _, err := dbEmp.Exec(`UPDATE empresa_eventos_contables SET error_procesamiento = 'fallo temporal', intentos_procesamiento = 2 WHERE id = ?`, pendienteID); err != nil {
+		t.Fatalf("mark pending error: %v", err)
+	}
+
+	h := EmpresaFinanzasAsientosContablesHandler(dbEmp)
+	req := httptest.NewRequest(http.MethodGet, "/api/empresa/finanzas/asientos_contables?action=conciliacion_periodo&empresa_id=91&periodo=2026-04&limit=20", nil)
+	req = req.WithContext(context.WithValue(req.Context(), "adminEmail", "conta@test.com"))
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, rr.Code, rr.Body.String())
+	}
+
+	var payload map[string]interface{}
+	if err := json.Unmarshal(rr.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode conciliacion payload: %v", err)
+	}
+	if int64(payload["total_periodos"].(float64)) != 1 {
+		t.Fatalf("expected total_periodos=1, got %v", payload["total_periodos"])
+	}
+	filas, _ := payload["filas"].([]interface{})
+	if len(filas) != 1 {
+		t.Fatalf("expected 1 fila de conciliacion, got %d", len(filas))
+	}
+	row, _ := filas[0].(map[string]interface{})
+	if strings.TrimSpace(row["periodo_contable"].(string)) != "2026-04" {
+		t.Fatalf("expected periodo_contable=2026-04, got %v", row["periodo_contable"])
+	}
+	if int64(row["eventos_pendientes"].(float64)) != 1 {
+		t.Fatalf("expected eventos_pendientes=1, got %v", row["eventos_pendientes"])
+	}
+	if strings.TrimSpace(row["estado_conciliacion"].(string)) != "con_pendientes" {
+		t.Fatalf("expected estado_conciliacion=con_pendientes, got %v", row["estado_conciliacion"])
 	}
 }
 

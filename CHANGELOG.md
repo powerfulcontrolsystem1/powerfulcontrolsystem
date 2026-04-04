@@ -1,6 +1,143 @@
 # CHANGELOG
 
 ## 2026-04-04
+- Punto 3 (permisos y seguridad) — continuidad operativa: catalogo frontend por rol + regresion endpoints sin wrapper.
+	- `web/js/administrar_empresa.js` agrega catalogo de permisos por enlace y aplica ocultamiento de opciones no autorizadas segun rol autenticado (`GET /me`).
+	- Se agrega fallback de navegacion en iframe cuando la ultima pagina guardada no es visible para el rol actual.
+	- `backend/handlers/auth_users_carritos_test.go` agrega regresiones de alcance por `empresa_id` para:
+		- `POST /api/empresa/usuarios/login`.
+		- `POST /api/empresa/usuarios/establecer_password`.
+	- `backend/handlers/chat_con_inteligencia_artificial_controller_test.go` agrega regresion de alcance por cuenta Google en `ModelosHandler`.
+	- Se actualiza documentacion tecnica en:
+		- `documentos/diagramas/diagrama_roles_permisos.md`.
+		- `documentos/diagramas/estructura_del_codigo.md`.
+- Validacion tecnica:
+	- `runTests` sobre `backend/handlers/auth_users_carritos_test.go` y `backend/handlers/chat_con_inteligencia_artificial_controller_test.go`.
+	- resultado: 14 pruebas aprobadas, 0 fallidas.
+	- `get_errors` sobre `web/js/administrar_empresa.js`: sin errores.
+
+## 2026-04-04
+- Punto 3 (permisos y seguridad) — consolidacion documental endpoint/rol y checklist UAT:
+	- `documentos/matriz_roles_permisos_pos_multiempresa.md` agrega matriz final endpoint/rol alineada con wrappers reales y reglas por accion.
+	- Se documentan endpoints fuera de wrapper con control alterno por handler/cuenta Google.
+	- Se agrega checklist UAT de punto 3 con evidencia automatizada.
+	- `documentos/plan_maestro_pos_multiempresa_14_puntos.md` agrega seccion de consolidacion con estado operativo y pendientes de cierre total.
+- Validacion tecnica:
+	- `runTests` sobre `backend/handlers/empresa_permisos_test.go` y `backend/handlers/auditoria_empresa_test.go`.
+	- resultado: 25 pruebas aprobadas, 0 fallidas.
+
+## 2026-04-04
+- Ajuste editorial de consistencia documental (plan maestro):
+	- `documentos/plan_maestro_pos_multiempresa_14_puntos.md` corrige `Backlog inmediato` para reflejar cierre real de Punto 1 y Punto 2.
+	- El backlog siguiente queda enfocado en Punto 3 (permisos y seguridad) y Punto 5 (control de inventarios).
+- Validacion tecnica:
+	- cambio documental (sin ejecucion de pruebas automatizadas).
+
+## 2026-04-04
+- Punto 1 + Punto 2 (plan maestro) — cierre de backlog inmediato con formalizacion tecnica documental.
+	- `documentos/matriz_kpi_pos_multiempresa.md` se actualiza a formato formal con:
+		- formula implementada por KPI,
+		- endpoint canonico de lectura/exportacion,
+		- tablas fuente reales por metrica.
+	- Se crea `documentos/matriz_entidades_multiempresa_aislamiento.md` con matriz de aislamiento por endpoint:
+		- llave primaria `empresa_id`,
+		- llaves secundarias por recurso,
+		- mecanismo de control de alcance (middleware o validacion interna).
+	- `documentos/plan_maestro_pos_multiempresa_14_puntos.md` marca Punto 1 y Punto 2 como `completado`.
+- Validacion tecnica:
+	- cambio documental (sin ejecucion de pruebas automatizadas).
+
+## 2026-04-04
+- Punto 11 (reportes financieros) — continuidad de backlog inmediato: exportacion unificada del tablero por rango.
+	- `backend/handlers/finanzas.go` agrega `action=tablero_export` en `GET /api/empresa/finanzas/movimientos` con:
+		- `format=json` para payload unificado del tablero,
+		- `format=csv` para matriz unificada por bloque/metrica/valor.
+	- La exportacion integra bloques `estado_resultados` y `balance_general` junto con KPI operativos/financieros/contables.
+	- `web/administrar_empresa/reportes.html` incorpora botones:
+		- `Exportar tablero CSV`,
+		- `Exportar tablero JSON`.
+	- `backend/handlers/eventos_contables_modulos_test.go` agrega `TestEmpresaFinanzasTableroResumenExportHandler`.
+- Validacion tecnica:
+	- `go test ./handlers -run "TestEmpresaFinanzasTableroResumenHandler|TestEmpresaFinanzasTableroResumenExportHandler|TestEmpresaFinanzasAsientosContablesHandlerConciliacionPeriodo" -count=1` (ok).
+	- `go test ./handlers -count=1` (ok).
+	- `go test ./db -count=1` (ok).
+
+## 2026-04-04
+- Punto 10 (modulo contable integrado) — continuidad de backlog inmediato: vista de conciliacion por periodo (eventos vs asientos).
+	- `backend/db/eventos_contables.go` agrega modelos y funcion `GetEmpresaConciliacionContablePorPeriodo` para consolidar por periodo:
+		- eventos totales/procesados/pendientes/con error,
+		- asientos generados,
+		- desfase de conteo y desfase de monto,
+		- estado de conciliacion por periodo.
+	- `backend/handlers/finanzas.go` agrega `GET /api/empresa/finanzas/asientos_contables?action=conciliacion_periodo|conciliacion`.
+	- `web/administrar_empresa/finanzas.html` incorpora vista de conciliacion con filtros, KPIs y tabla comparativa por periodo.
+	- `backend/db/eventos_contables_test.go` agrega prueba de conciliacion por periodo.
+	- `backend/handlers/eventos_contables_modulos_test.go` agrega prueba del endpoint de conciliacion.
+- Validacion tecnica:
+	- `go test ./db -run "EventosContables|ConPolitica|Conciliacion" -count=1` (ok).
+	- `go test ./handlers -run "AsientosContablesHandler|ConciliacionPeriodo" -count=1` (ok).
+	- `go test ./db -count=1` (ok).
+	- `go test ./handlers -count=1` (ok).
+
+## 2026-04-04
+- Punto 10 (modulo contable integrado) — continuidad de backlog inmediato: ejecucion automatica por lotes de asientos.
+	- `backend/db/eventos_contables.go` agrega:
+		- `ProcessEmpresaEventosContablesPendientesConPolitica` con soporte de `max_reintentos`,
+		- `RunEmpresaAsientosContablesWorkerCycle`,
+		- `StartEmpresaAsientosContablesWorker`.
+	- `backend/main.go` integra worker automatico de asientos con politica configurable por entorno:
+		- `ASIENTOS_WORKER_INTERVAL_MINUTES`,
+		- `ASIENTOS_WORKER_BATCH_SIZE`,
+		- `ASIENTOS_WORKER_MAX_RETRIES`.
+	- `backend/handlers/finanzas.go` permite `max_reintentos` opcional en proceso manual de `/api/empresa/finanzas/asientos_contables?action=procesar_asientos`.
+	- `backend/db/eventos_contables_test.go` agrega prueba de politica de reintentos.
+	- `backend/handlers/eventos_contables_modulos_test.go` agrega validacion `400` para `max_reintentos` invalido y cobertura del parametro.
+- Validacion tecnica:
+	- `go test ./db -run "EventosContables|ConPolitica|Asientos" -count=1` (ok).
+	- `go test ./handlers -run "AsientosContablesHandler|FinanzasAsientos" -count=1` (ok).
+	- `go test ./handlers -count=1` (ok).
+	- `go test ./db -count=1` (ok).
+
+## 2026-04-04
+- Punto 15 (auditoria por empresa) — continuacion de backlog inmediato 1 y 2:
+	- `backend/db/auditoria_empresa.go` agrega filtros avanzados de consulta por `recurso_id` y `codigo_http` en `ListEmpresaAuditoriaEventos`.
+	- `backend/handlers/auditoria_empresa.go` valida y expone nuevos filtros en `GET /api/empresa/auditoria/eventos`:
+		- `recurso_id`.
+		- `codigo_http`.
+	- `web/administrar_empresa/auditoria.html` incorpora:
+		- filtros avanzados por `codigo_http` y `recurso_id`,
+		- exportacion de resultados filtrados a `CSV` y `JSON`.
+	- `backend/db/auditoria_empresa_test.go` fortalece cobertura de listado con filtros avanzados.
+	- `backend/handlers/auditoria_empresa_test.go` agrega `TestEmpresaAuditoriaEventosHandlerFiltrosAvanzados` para contrato HTTP y validacion de parametros invalidos.
+- Validacion tecnica:
+	- `go test ./db -run "Auditoria" -count=1` (ok).
+	- `go test ./handlers -run "Auditoria" -count=1` (ok).
+	- `go test ./handlers -count=1` (ok).
+	- `go test ./db -count=1` (ok).
+
+## 2026-04-04
+- Punto 15 (auditoria por empresa) — continuacion de backlog 1, 2 y 3:
+	- `backend/handlers/empresa_permisos.go` refuerza clasificacion de acciones criticas en `ventas`, `compras` y `facturacion` (alias operativos de aprobacion/eliminacion).
+	- `backend/handlers/auditoria_empresa.go` amplia metadata de trazabilidad para recursos de ventas/compras/facturacion (`carrito_id`, `proveedor_id`, `entidad_id`, `documento_codigo`).
+	- `backend/handlers/auditoria_empresa_test.go` agrega pruebas de registro automatico de auditoria en acciones criticas de:
+		- ventas (`action=cerrar`),
+		- compras (`action=emitir_orden`),
+		- facturacion (`action=emitir`).
+	- `web/administrar_empresa/auditoria.html` agrega vista de consulta filtrable y retencion manual para auditoria por empresa.
+	- `web/administrar_empresa.html` y `web/js/administrar_empresa.js` agregan acceso del menu lateral a la nueva vista `Auditoria`.
+	- `backend/db/auditoria_empresa.go` agrega:
+		- purga automatica por expiracion (`PurgeExpiredEmpresaAuditoriaEventos`),
+		- worker programado (`StartEmpresaAuditoriaRetentionWorker`),
+		- calculo de `fecha_expiracion` alineado a `fecha_evento` cuando se provee.
+	- `backend/main.go` arranca worker de retencion automatica de auditoria (intervalo 12h).
+	- `backend/db/auditoria_empresa_test.go` agrega prueba de purga automatica por expiracion.
+- Validacion tecnica:
+	- `go test ./handlers -run "Auditoria|WithEmpresa(Ventas|Compras|Facturacion|Finanzas)Permissions" -count=1` (ok).
+	- `go test ./db -run "Auditoria" -count=1` (ok).
+	- `go test ./handlers -count=1` (ok).
+	- `go test ./db -count=1` (ok).
+
+## 2026-04-04
 - Punto 15 (auditoria por empresa) — implementacion base minima:
 	- `backend/db/auditoria_empresa.go` agrega tabla `empresa_auditoria_eventos`, filtros de consulta y purga por retencion.
 	- `backend/handlers/auditoria_empresa.go` agrega endpoint protegido:

@@ -122,3 +122,29 @@ func TestConsultarHandlerRejectsEmpresaFueraDeAlcance(t *testing.T) {
 		t.Fatalf("expected out-of-scope message, got body=%s", rr.Body.String())
 	}
 }
+
+func TestModelosHandlerRejectsEmpresaFueraDeAlcanceByGoogleAccount(t *testing.T) {
+	dbEmp := openChatIAHandlerTestDB(t)
+	if err := dbpkg.EnsureEmpresaAIChatSchema(dbEmp); err != nil {
+		t.Fatalf("ensure chat ia schema: %v", err)
+	}
+	ensureEmpresasTableForChatIATest(t, dbEmp)
+
+	_, err := dbEmp.Exec(`INSERT INTO empresas (id, nombre, nit, usuario_creador) VALUES (?, ?, ?, ?)`, 21, "Empresa Scope Modelos", "900321", "owner@scope.com")
+	if err != nil {
+		t.Fatalf("insert empresa: %v", err)
+	}
+
+	ctrl := NewEmpresaAIChatController(dbEmp, nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/empresa/chat_con_inteligencia_artificial/modelos?empresa_id=21", nil)
+	req = req.WithContext(context.WithValue(req.Context(), "adminEmail", "admin@example.com"))
+	rr := httptest.NewRecorder()
+
+	ctrl.ModelosHandler(rr, req)
+	if rr.Code != http.StatusForbidden {
+		t.Fatalf("expected status 403 for out-of-scope empresa, got %d body=%s", rr.Code, rr.Body.String())
+	}
+	if !strings.Contains(strings.ToLower(rr.Body.String()), "fuera del alcance") {
+		t.Fatalf("expected out-of-scope message, got body=%s", rr.Body.String())
+	}
+}

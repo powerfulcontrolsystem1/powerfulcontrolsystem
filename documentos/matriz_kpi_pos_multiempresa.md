@@ -1,77 +1,75 @@
 # Matriz KPI POS multiempresa
 
 Fecha de actualizacion: 2026-04-04
-Alcance: punto 1 del plan maestro (definicion funcional y KPI)
+Alcance: punto 1 del plan maestro (matriz formal de KPI con formula, endpoint y tabla fuente)
 
-## KPI de ventas
+## Fuente canonica de consulta
 
-| KPI | Formula | Frecuencia | Fuente esperada |
+- Endpoint de lectura: `GET /api/empresa/finanzas/movimientos?action=tablero|dashboard|resumen_kpi&empresa_id={id}&desde={yyyy-mm-dd}&hasta={yyyy-mm-dd}`.
+- Endpoint de exportacion: `GET /api/empresa/finanzas/movimientos?action=tablero_export&format=json|csv&empresa_id={id}&desde={yyyy-mm-dd}&hasta={yyyy-mm-dd}`.
+- Funcion DB fuente: `GetEmpresaReportesTableroResumen` en `backend/db/finanzas.go`.
+
+## KPI operativos
+
+| KPI | Formula implementada | Endpoint de lectura | Tablas fuente |
 |---|---|---|---|
-| ventas_diarias | suma(total_ventas_cerradas_dia) | diaria | carritos_compras, carrito_compra_items |
-| ticket_promedio | ventas_diarias / numero_ventas_cerradas | diaria | carritos_compras |
-| margen_bruto | (ventas - costo_ventas) / ventas | diaria/semanal | carritos_compras, inventario_movimientos |
-| devoluciones_porcentaje | valor_devoluciones / ventas_brutas | diaria | carritos_compras |
+| ventas_cerradas | `COUNT(*)` de `carritos_compras` con `estado_carrito='cerrado'` y `estado='activo'` en rango | `/api/empresa/finanzas/movimientos?action=tablero` | `carritos_compras` |
+| ventas_hoy | `SUM(CASE WHEN date(fecha_pago_o_actualizacion)=date('now','localtime') THEN 1 END)` sobre ventas cerradas activas | `/api/empresa/finanzas/movimientos?action=tablero` | `carritos_compras` |
+| ingresos_ventas | `SUM(CASE WHEN total_pagado>0 THEN total_pagado ELSE total END)` sobre ventas cerradas activas en rango | `/api/empresa/finanzas/movimientos?action=tablero` | `carritos_compras` |
+| ticket_promedio | `ingresos_ventas / ventas_cerradas` (si `ventas_cerradas > 0`) | `/api/empresa/finanzas/movimientos?action=tablero` | derivado de `carritos_compras` |
+| clientes_activos | `COUNT(*)` de clientes con `estado='activo'` | `/api/empresa/finanzas/movimientos?action=tablero` | `clientes` |
+| productos_activos | `COUNT(*)` de productos con `estado='activo'` | `/api/empresa/finanzas/movimientos?action=tablero` | `productos` |
+| productos_bajo_minimo | `SUM(CASE WHEN stock_total <= stock_minimo THEN 1 END)` con `stock_total` agregado desde existencias activas | `/api/empresa/finanzas/movimientos?action=tablero` | `productos`, `inventario_existencias` |
+| compras_movimientos | `COUNT(*)` de movimientos inventario activos tipo `entrada/ajuste_entrada/ajuste_positivo/compra` en rango | `/api/empresa/finanzas/movimientos?action=tablero` | `inventario_movimientos` |
+| compras_costo | `SUM(cantidad * costo_unitario)` para los movimientos de compra/entrada en rango | `/api/empresa/finanzas/movimientos?action=tablero` | `inventario_movimientos` |
 
-## KPI de inventario
+## KPI financieros
 
-| KPI | Formula | Frecuencia | Fuente esperada |
+| KPI | Formula implementada | Endpoint de lectura | Tablas fuente |
 |---|---|---|---|
-| rotacion_inventario | costo_ventas_periodo / inventario_promedio | semanal/mensual | inventario_existencias, inventario_movimientos |
-| dias_inventario | inventario_promedio / costo_ventas_diario | semanal/mensual | inventario_existencias, inventario_movimientos |
-| quiebres_stock | conteo_skus_bajo_minimo | diaria | productos, inventario_existencias |
-| precision_inventario | 1 - (diferencias_conteo / stock_teorico) | mensual | inventario_existencias, ajustes |
+| movimientos_ingresos | `SUM(CASE WHEN tipo_movimiento='ingreso' THEN 1 END)` en movimientos activos por rango | `/api/empresa/finanzas/movimientos?action=tablero` | `empresa_finanzas_movimientos` |
+| movimientos_egresos | `SUM(CASE WHEN tipo_movimiento='egreso' THEN 1 END)` en movimientos activos por rango | `/api/empresa/finanzas/movimientos?action=tablero` | `empresa_finanzas_movimientos` |
+| ingresos | `SUM(CASE ingreso THEN COALESCE(NULLIF(total_neto,0), NULLIF(total,0), monto,0) END)` | `/api/empresa/finanzas/movimientos?action=tablero` | `empresa_finanzas_movimientos` |
+| egresos | `SUM(CASE egreso THEN COALESCE(NULLIF(total_neto,0), NULLIF(total,0), monto,0) END)` | `/api/empresa/finanzas/movimientos?action=tablero` | `empresa_finanzas_movimientos` |
+| balance | `ingresos - egresos` | `/api/empresa/finanzas/movimientos?action=tablero` | derivado de `empresa_finanzas_movimientos` |
+| periodos_abiertos | `SUM(CASE WHEN estado='abierto' THEN 1 END)` excluyendo `estado='inactivo'` | `/api/empresa/finanzas/movimientos?action=tablero` | `empresa_finanzas_periodos` |
+| periodos_cerrados | `SUM(CASE WHEN estado='cerrado' THEN 1 END)` excluyendo `estado='inactivo'` | `/api/empresa/finanzas/movimientos?action=tablero` | `empresa_finanzas_periodos` |
 
-## KPI de clientes
+## KPI contables
 
-| KPI | Formula | Frecuencia | Fuente esperada |
+| KPI | Formula implementada | Endpoint de lectura | Tablas fuente |
 |---|---|---|---|
-| clientes_activos_30d | conteo_clientes_con_compra_30d | diaria | clientes, carritos_compras |
-| tasa_recompra_30d | clientes_con_2_mas_compras_30d / clientes_activos_30d | semanal | clientes, carritos_compras |
-| valor_vida_cliente | ingreso_neto_cliente_historico / clientes_totales | mensual | clientes, carritos_compras |
-| tiempo_promedio_recompra | promedio(dias_entre_compras_por_cliente) | mensual | carritos_compras |
+| eventos_pendientes | `SUM(CASE WHEN procesado=0 THEN 1 END)` en eventos activos por rango | `/api/empresa/finanzas/movimientos?action=tablero` | `empresa_eventos_contables` |
+| eventos_procesados | `SUM(CASE WHEN procesado=1 THEN 1 END)` en eventos activos por rango | `/api/empresa/finanzas/movimientos?action=tablero` | `empresa_eventos_contables` |
+| eventos_total | `COUNT(*)` de eventos contables activos por rango | `/api/empresa/finanzas/movimientos?action=tablero` | `empresa_eventos_contables` |
+| eventos_monto_total | `SUM(monto_total)` de eventos contables activos por rango | `/api/empresa/finanzas/movimientos?action=tablero` | `empresa_eventos_contables` |
+| asientos_generados | `COUNT(*)` de asientos activos en rango | `/api/empresa/finanzas/movimientos?action=tablero` | `empresa_asientos_contables` |
+| asientos_monto_total | `SUM(max(total_debito,total_credito))` por asiento activo en rango | `/api/empresa/finanzas/movimientos?action=tablero` | `empresa_asientos_contables` |
+| documentos_facturacion_activos | `COUNT(*)` con `estado='activo'` | `/api/empresa/finanzas/movimientos?action=tablero` | `empresa_facturacion_documentos` |
+| documentos_compras_activos | `COUNT(*)` con `estado='activo'` | `/api/empresa/finanzas/movimientos?action=tablero` | `empresa_compras_documentos` |
 
-## KPI de proveedores y compras
+## Estado de resultados y balance general
 
-| KPI | Formula | Frecuencia | Fuente esperada |
+| KPI | Formula implementada | Endpoint de lectura | Tablas fuente |
 |---|---|---|---|
-| cumplimiento_entrega | ordenes_entregadas_a_tiempo / ordenes_totales | semanal/mensual | compras, recepciones |
-| lead_time_promedio | promedio(fecha_recepcion - fecha_orden) | semanal/mensual | compras |
-| variacion_costo_compra | (costo_actual - costo_anterior) / costo_anterior | semanal | compras, productos |
-| pedidos_con_diferencia | recepciones_con_diferencias / recepciones_totales | semanal | recepciones |
+| estado_resultados.ingresos | suma de lineas contables clase `4` (`ingresos += -delta`) | `/api/empresa/finanzas/movimientos?action=tablero` | `empresa_asientos_contables` (`lineas_json`) |
+| estado_resultados.gastos | suma de lineas clase `5/6/7` (`gastos += delta`) | `/api/empresa/finanzas/movimientos?action=tablero` | `empresa_asientos_contables` (`lineas_json`) |
+| estado_resultados.utilidad_operacional | `ingresos - gastos` | `/api/empresa/finanzas/movimientos?action=tablero` | derivado de asientos |
+| balance_general.activos | suma de lineas clase `1` (`activos += delta`) | `/api/empresa/finanzas/movimientos?action=tablero` | `empresa_asientos_contables` (`lineas_json`) |
+| balance_general.pasivos | suma de lineas clase `2` (`pasivos += -delta`) | `/api/empresa/finanzas/movimientos?action=tablero` | `empresa_asientos_contables` (`lineas_json`) |
+| balance_general.patrimonio | `patrimonio_base + utilidad` con `patrimonio_base` en clase `3` (`patrimonio += -delta`) | `/api/empresa/finanzas/movimientos?action=tablero` | `empresa_asientos_contables` (`lineas_json`) |
+| balance_general.resultado_ejercicio | `utilidad_operacional` | `/api/empresa/finanzas/movimientos?action=tablero` | derivado de asientos |
+| balance_general.cuadre | `activos - (pasivos + patrimonio)` | `/api/empresa/finanzas/movimientos?action=tablero` | derivado de asientos |
 
-## KPI contables y financieros
+## Regla de fallback contable (implementada)
 
-| KPI | Formula | Frecuencia | Fuente esperada |
-|---|---|---|---|
-| utilidad_operativa | ingresos_operativos - egresos_operativos | diaria/mensual | empresa_finanzas_movimientos |
-| asientos_generados | conteo(asientos_contables_generados_periodo) | diaria/mensual | empresa_asientos_contables |
-| asientos_monto_total | suma(total_debito_asientos_periodo) | diaria/mensual | empresa_asientos_contables |
-| cuadre_balance | activos_totales - (pasivos_totales + patrimonio) | diaria/mensual | empresa_asientos_contables, balance |
-| razon_corriente | activos_corrientes / pasivos_corrientes | mensual | asientos contables, balance |
-| flujo_caja_neto | entradas_caja - salidas_caja | diaria/mensual | caja, empresa_finanzas_movimientos |
-| indice_endudamiento | pasivos_totales / activos_totales | mensual | reportes contables |
+- Si `asientos_generados = 0` en el rango solicitado:
+	- `estado_resultados.ingresos = financiero.ingresos`.
+	- `estado_resultados.gastos = financiero.egresos`.
+	- `estado_resultados.utilidad_operacional = ingresos - egresos`.
+	- El balance se construye con la utilidad como aproximacion transitoria hasta tener asientos canonicos.
 
-## KPI de caja y operacion
+## Notas operativas
 
-| KPI | Formula | Frecuencia | Fuente esperada |
-|---|---|---|---|
-| diferencia_caja | caja_teorica - caja_fisica | por cierre | cierres_caja |
-| cierres_con_incidencia | cierres_con_diferencia_mayor_umbral / cierres_totales | diaria | cierres_caja |
-| tiempo_promedio_cierre | promedio(minutos_cierre) | diaria | cierres_caja |
-| porcentaje_cierres_a_tiempo | cierres_en_horario / cierres_totales | diaria | cierres_caja |
-
-## KPI de seguridad y permisos
-
-| KPI | Formula | Frecuencia | Fuente esperada |
-|---|---|---|---|
-| acciones_denegadas | total_eventos_autorizacion_denegada | diaria | logs auditoria |
-| acciones_criticas_auditadas | acciones_criticas_con_log / acciones_criticas_totales | diaria | logs auditoria |
-| sesiones_activas_por_rol | conteo_sesiones_activas_por_rol | diaria | sesiones |
-| intentos_fallidos_login | total_login_fallido | diaria | logs auth |
-
-## Notas de implementacion
-
-- Todos los KPI deben ser filtrables por empresa_id y sucursal_id.
-- El tablero debe permitir corte por fecha desde/hasta y comparativo contra periodo anterior.
-- Los KPI financieros deben cuadrar contra reportes contables oficiales del mismo periodo.
-- El tablero financiero-operativo (`action=tablero`) debe incluir `estado_resultados` y `balance_general` calculados desde asientos canónicos; si no hay asientos en rango, debe aplicar fallback controlado desde movimientos financieros.
+- Todas las metricas del tablero se calculan por `empresa_id` y aceptan rango `desde/hasta`.
+- La exportacion `tablero_export` usa exactamente la misma fuente que `action=tablero` para evitar desviaciones entre UI y descarga.

@@ -10,8 +10,8 @@ Implementar y consolidar un sistema POS multiempresa con contabilidad integrada,
 
 | Punto | Modulo | Estado | Entregable principal |
 |---|---|---|---|
-| 1 | Alcance funcional y KPI | en curso | matriz de procesos y KPI operativos/financieros |
-| 2 | Arquitectura multiempresa | en curso | lineamientos de aislamiento por empresa/sucursal |
+| 1 | Alcance funcional y KPI | completado | matriz KPI formal con formula, endpoint y tablas fuente |
+| 2 | Arquitectura multiempresa | completado | matriz de entidades y llaves de aislamiento por endpoint |
 | 3 | Permisos y seguridad | en curso | matriz de roles/permisos por empresa/sucursal |
 | 4 | Gestion de ventas | en curso | flujo de venta/factura/descuento/inventario |
 | 5 | Control de inventarios | pendiente | stock, alertas y movimientos de bodega |
@@ -25,6 +25,25 @@ Implementar y consolidar un sistema POS multiempresa con contabilidad integrada,
 | 13 | Calidad, UAT y despliegue | pendiente | validacion integral y salida controlada |
 | 14 | Operacion continua | pendiente | mejora continua con KPI y roadmap trimestral |
 | 15 | Modulo de auditoria por empresa | en curso | trazabilidad por usuario/accion/recurso con consulta por empresa |
+
+### Punto 1 + Punto 2. Cierre de backlog inmediato (2026-04-04)
+
+Entregables completados:
+- Punto 1:
+	- `documentos/matriz_kpi_pos_multiempresa.md` queda formalizada con:
+		- formula implementada (nivel SQL/logica),
+		- endpoint canonico de consumo,
+		- tablas fuente reales por KPI.
+- Punto 2:
+	- se crea `documentos/matriz_entidades_multiempresa_aislamiento.md` con:
+		- inventario completo de endpoints `/api/empresa/*`,
+		- llave primaria de aislamiento (`empresa_id`),
+		- llaves secundarias por recurso/modulo,
+		- tipo de control de alcance (middleware o validacion interna).
+
+Criterio de cierre aplicado:
+- Se valida trazabilidad endpoint -> handler -> fuente de datos real.
+- Se registran excepciones de aislamiento de forma explicita (catalogos globales y rutas de autenticacion).
 
 ## Continuacion ejecutada ahora
 
@@ -145,6 +164,25 @@ Validacion tecnica adicional completada:
 Validacion ejecutada:
 - `runTests` sobre `backend/handlers/empresa_permisos_test.go` (ok).
 - `go test ./...` en `backend` (ok).
+
+### Punto 3. Permisos y seguridad (consolidacion endpoint/rol + checklist UAT, 2026-04-04)
+
+Consolidacion documental completada:
+- `documentos/matriz_roles_permisos_pos_multiempresa.md` queda ampliada con:
+	- matriz final endpoint/rol alineada a wrappers reales de `backend/main.go` y reglas de `backend/handlers/empresa_permisos.go`,
+	- excepciones fuera de wrapper (login/establecer_password/catalogos/chat IA con validacion por cuenta Google),
+	- checklist UAT de punto 3 con evidencia por prueba automatizada.
+
+Validacion ejecutada (corte actual):
+- `runTests` sobre:
+	- `backend/handlers/empresa_permisos_test.go`,
+	- `backend/handlers/auditoria_empresa_test.go`.
+- Resultado: 25 pruebas aprobadas, 0 fallidas.
+
+Estado operativo del punto 3 tras esta consolidacion:
+- Definicion de permisos por endpoint y accion: consolidada.
+- Evidencia automatizada de denegacion/aprobacion por rol: consolidada.
+- Pendiente para cierre total del punto: exposicion de catalogo de permisos en frontend y regresion especifica de endpoints sin wrapper de modulo.
 
 ### Punto 4. Gestion de ventas (inicio 2026-04-04)
 
@@ -477,12 +515,143 @@ Validacion ejecutada:
 - `go test ./handlers -count=1` (ok).
 - `go test ./db -count=1` (ok).
 
+### Punto 15. Modulo de auditoria por empresa (continuacion 2026-04-04 - cierre de backlog 1, 2 y 3)
+
+Implementacion tecnica completada:
+- Cobertura automatica de acciones criticas en modulos transaccionales:
+	- `backend/handlers/empresa_permisos.go` amplia alias operativos de clasificacion en `ventas`, `compras` y `facturacion` para asegurar registro de auditoria en acciones criticas.
+	- `backend/handlers/auditoria_empresa.go` enriquece metadata de trazabilidad por dominio (`carrito_id`, `proveedor_id`, `entidad_id`, `documento_codigo`).
+- Vista de auditoria en panel empresa:
+	- Nuevo `web/administrar_empresa/auditoria.html` con consulta filtrable por modulo/accion/resultado/usuario/request_id/rango.
+	- Soporte de accion manual de retencion (`retencion_dias`) desde UI.
+	- `web/administrar_empresa.html` y `web/js/administrar_empresa.js` integran nuevo acceso de menu `Auditoria`.
+- Purga automatica programada:
+	- `backend/db/auditoria_empresa.go` agrega `PurgeExpiredEmpresaAuditoriaEventos` y `StartEmpresaAuditoriaRetentionWorker`.
+	- `backend/main.go` arranca worker de purga automatica cada 12 horas.
+	- La limpieza usa `fecha_expiracion` y fallback por `retencion_dias` para registros legacy.
+
+Cobertura de pruebas agregada:
+- `backend/handlers/auditoria_empresa_test.go`:
+	- `TestWithEmpresaVentasPermissionsRegistraAuditoriaAccionCritica`.
+	- `TestWithEmpresaComprasPermissionsRegistraAuditoriaAccionCritica`.
+	- `TestWithEmpresaFacturacionPermissionsRegistraAuditoriaAccionCritica`.
+- `backend/db/auditoria_empresa_test.go`:
+	- `TestPurgeExpiredEmpresaAuditoriaEventos`.
+
+Validacion ejecutada:
+- `go test ./handlers -run "Auditoria|WithEmpresa(Ventas|Compras|Facturacion|Finanzas)Permissions" -count=1` (ok).
+- `go test ./db -run "Auditoria" -count=1` (ok).
+- `go test ./handlers -count=1` (ok).
+- `go test ./db -count=1` (ok).
+
+### Punto 15. Modulo de auditoria por empresa (continuacion 2026-04-04 - cierre de backlog inmediato 1 y 2)
+
+Implementacion tecnica completada:
+- Exportacion CSV/JSON en UI de auditoria:
+	- `web/administrar_empresa/auditoria.html` agrega botones de exportacion directa de resultados filtrados.
+	- La exportacion soporta trazabilidad directiva por rango/modulo segun filtros activos.
+- Filtros avanzados por `codigo_http` y `recurso_id` en endpoint/UI:
+	- `backend/db/auditoria_empresa.go` amplia `EmpresaAuditoriaEventoFilter` y consulta SQL en `ListEmpresaAuditoriaEventos`.
+	- `backend/handlers/auditoria_empresa.go` valida parametros y expone filtros en `GET /api/empresa/auditoria/eventos`.
+	- `web/administrar_empresa/auditoria.html` incorpora controles de filtro para ambos campos.
+
+Cobertura de pruebas agregada/extendida:
+- `backend/db/auditoria_empresa_test.go` aplica filtros combinados (`recurso_id` + `codigo_http`) en listado.
+- `backend/handlers/auditoria_empresa_test.go` agrega `TestEmpresaAuditoriaEventosHandlerFiltrosAvanzados` (filtro combinado + validacion `400` para parametro invalido).
+
+Validacion ejecutada:
+- `go test ./db -run "Auditoria" -count=1` (ok).
+- `go test ./handlers -run "Auditoria" -count=1` (ok).
+- `go test ./handlers -count=1` (ok).
+- `go test ./db -count=1` (ok).
+
+### Punto 10. Modulo contable integrado (continuacion 2026-04-04 - automatizacion por lotes controlada)
+
+Implementacion tecnica completada:
+- Ejecucion automatica por lotes para `procesar_asientos` con politica configurable:
+	- `backend/db/eventos_contables.go` agrega:
+		- `ProcessEmpresaEventosContablesPendientesConPolitica` (soporte de `max_reintentos`),
+		- `RunEmpresaAsientosContablesWorkerCycle` (corrida global por empresas pendientes),
+		- `StartEmpresaAsientosContablesWorker` (worker periodico de asientos).
+	- La seleccion de pendientes ahora puede filtrar por limite de reintentos (`intentos_procesamiento < max_reintentos`).
+- Integracion en arranque de servidor:
+	- `backend/main.go` arranca worker automatico de asientos y carga politica por variables de entorno:
+		- `ASIENTOS_WORKER_INTERVAL_MINUTES`,
+		- `ASIENTOS_WORKER_BATCH_SIZE`,
+		- `ASIENTOS_WORKER_MAX_RETRIES`.
+- Endpoints manuales alineados a la politica:
+	- `backend/handlers/finanzas.go` permite `max_reintentos` opcional en `POST/PUT /api/empresa/finanzas/asientos_contables?action=procesar_asientos`.
+
+Cobertura de pruebas agregada/extendida:
+- `backend/db/eventos_contables_test.go` agrega `TestProcessEmpresaEventosContablesPendientesConPoliticaRespetaMaxReintentos`.
+- `backend/handlers/eventos_contables_modulos_test.go`:
+	- amplía prueba de proceso manual con `max_reintentos`,
+	- agrega validacion `400` para `max_reintentos` invalido.
+
+Validacion ejecutada:
+- `go test ./db -run "EventosContables|ConPolitica|Asientos" -count=1` (ok).
+- `go test ./handlers -run "AsientosContablesHandler|FinanzasAsientos" -count=1` (ok).
+- `go test ./handlers -count=1` (ok).
+- `go test ./db -count=1` (ok).
+
+### Punto 10. Modulo contable integrado (continuacion 2026-04-04 - vista de conciliacion por periodo)
+
+Implementacion tecnica completada:
+- Vista de conciliacion contable por periodo (eventos vs asientos):
+	- `backend/db/eventos_contables.go` agrega:
+		- `EmpresaConciliacionContableFilter`,
+		- `EmpresaConciliacionContablePeriodo`,
+		- `EmpresaConciliacionContableResumen`,
+		- `GetEmpresaConciliacionContablePorPeriodo` para consolidar por periodo los totales de eventos, procesados, pendientes, errores, asientos y desfases.
+	- `backend/handlers/finanzas.go` amplía `GET /api/empresa/finanzas/asientos_contables` con `action=conciliacion_periodo|conciliacion`.
+	- `web/administrar_empresa/finanzas.html` agrega tarjeta de conciliacion por periodo con:
+		- filtros por rango, periodo y limite,
+		- KPIs de periodos conciliados/pendientes/descuadre,
+		- tabla de comparativo eventos vs asientos.
+
+Cobertura de pruebas agregada/extendida:
+- `backend/db/eventos_contables_test.go` agrega `TestGetEmpresaConciliacionContablePorPeriodo`.
+- `backend/handlers/eventos_contables_modulos_test.go` agrega `TestEmpresaFinanzasAsientosContablesHandlerConciliacionPeriodo`.
+
+Validacion ejecutada:
+- `go test ./db -run "EventosContables|ConPolitica|Conciliacion" -count=1` (ok).
+- `go test ./handlers -run "AsientosContablesHandler|ConciliacionPeriodo" -count=1` (ok).
+- `go test ./db -count=1` (ok).
+- `go test ./handlers -count=1` (ok).
+
+### Punto 11. Reportes financieros (continuacion 2026-04-04 - exportacion unificada del tablero)
+
+Implementacion tecnica completada:
+- Exportacion unificada del tablero por rango (`estado_resultados` + `balance_general`):
+	- `backend/handlers/finanzas.go` amplía `GET /api/empresa/finanzas/movimientos` con `action=tablero_export` para descarga en:
+		- `format=json` (payload unificado del tablero),
+		- `format=csv` (matriz unificada por bloque/metrica/valor).
+	- La exportacion CSV incluye bloques:
+		- `operativo`,
+		- `financiero`,
+		- `contable`,
+		- `estado_resultados`,
+		- `balance_general`.
+	- `web/administrar_empresa/reportes.html` incorpora botones:
+		- `Exportar tablero CSV`,
+		- `Exportar tablero JSON`,
+		con descarga por rango activo (`desde`, `hasta`).
+
+Cobertura de pruebas agregada/extendida:
+- `backend/handlers/eventos_contables_modulos_test.go` agrega `TestEmpresaFinanzasTableroResumenExportHandler` para validar:
+	- descarga JSON con bloques `estado_resultados` y `balance_general`,
+	- descarga CSV unificada con filas de ambos bloques,
+	- error `400` para `format` invalido.
+
+Validacion ejecutada:
+- `go test ./handlers -run "TestEmpresaFinanzasTableroResumenHandler|TestEmpresaFinanzasTableroResumenExportHandler|TestEmpresaFinanzasAsientosContablesHandlerConciliacionPeriodo" -count=1` (ok).
+- `go test ./handlers -count=1` (ok).
+- `go test ./db -count=1` (ok).
+
 ## Backlog inmediato (siguiente iteracion)
 
-1. Extender cobertura de auditoria automatica a acciones criticas de ventas, compras y facturacion con clasificacion por modulo.
-2. Programar ejecucion automatica por lotes para `procesar_asientos` con politica configurable (intervalo, tamano de lote y limite de reintentos).
-3. Incorporar vista de conciliacion contable por periodo (eventos vs asientos) para detectar rezagos y errores recurrentes.
-4. Ampliar exportaciones del tablero para incluir `estado_resultados` y `balance_general` en CSV/JSON unificado por rango.
+1. Cerrar Punto 3 (permisos y seguridad): consolidar matriz final por endpoint/rol y completar evidencia UAT en acciones criticas.
+2. Iniciar Punto 5 (control de inventarios): formalizar kardex operativo, reglas de stock min/max y alertas de quiebre por bodega.
 
 ## Criterios de avance para la siguiente fase
 

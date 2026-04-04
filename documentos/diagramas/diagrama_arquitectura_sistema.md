@@ -5,10 +5,13 @@ Fecha: 2026-04-04
 ```mermaid
 flowchart LR
     U[Browser Web UI]
+    AW[auditoria.html panel empresa]
     JS[Modulos JS externos web/js]
     S[Servidor Go]
     M[Auth Middleware + JSONError + Logging]
     P[EmpresaRolePermissions middleware]
+    WKR[auditoria retention worker]
+    WKA[asientos contables worker]
     H1[auth_admin_handlers]
     H2[payments_handlers]
     H3[system_empresas_handlers]
@@ -33,8 +36,12 @@ flowchart LR
     AI[API IA externa Google Gemini]
 
     U -->|HTML/CSS| JS
+    U -->|Navegacion auditoria| AW
     U -->|HTTP/HTTPS| S
+    AW -->|GET/PUT auditoria| S
     S --> M
+    S --> WKR
+    S --> WKA
     M --> H1
     M --> H2
     M --> H3
@@ -66,9 +73,13 @@ flowchart LR
     H5 --> FS
     H6 --> DB1
     H7 --> DB1
+    H7 --> EVC
     H7 --> ASC
     H10 --> DB1
     H10 --> AEV
+    WKR --> AEV
+    WKA --> EVC
+    WKA --> ASC
     H8 --> DB1
     H8 --> DB2
     H9 --> DB2
@@ -79,6 +90,8 @@ flowchart LR
     EVC -.persistencia contable.- DB1
     ASC -.asientos canonicos.- DB1
     AEV -.trazabilidad acciones criticas.- DB1
+    WKR -.purga expirados.- AEV
+    WKA -.procesamiento automatico por lotes.- ASC
 
     DB2 -->|sesiones/roles/config| M
 ```
@@ -91,7 +104,12 @@ Componentes:
 - Geolocalizacion empresarial: modulo `ubicacion_gps` con mapa OpenStreetMap y almacenamiento de recorridos por `empresa_id`.
 - Finanzas empresariales: modulo `finanzas` con configuracion por empresa, gestion de periodos contables (abrir/cerrar), retenciones y registro de ingresos/egresos con comprobantes.
 - Contabilidad integrada: procesamiento por lotes de `empresa_eventos_contables` hacia `empresa_asientos_contables` con control de idempotencia por hash y trazabilidad de intentos/errores.
+- Contabilidad automatizada: worker periodico de asientos con politica configurable por entorno (`ASIENTOS_WORKER_INTERVAL_MINUTES`, `ASIENTOS_WORKER_BATCH_SIZE`, `ASIENTOS_WORKER_MAX_RETRIES`).
+- Conciliacion contable por periodo: el modulo `finanzas` consulta eventos y asientos por periodo con endpoint `action=conciliacion_periodo` y vista operativa en `web/administrar_empresa/finanzas.html`.
+- Exportacion unificada de tablero: `GET /api/empresa/finanzas/movimientos?action=tablero_export&format=csv|json` entrega descargas por rango con bloques operativos/financieros/contables, `estado_resultados` y `balance_general` para consumo directivo.
 - Auditoria empresarial: registro no bloqueante de acciones criticas (`C/U/D/A`) desde middleware de permisos hacia `empresa_auditoria_eventos`, con consulta filtrable por empresa.
+- Auditoria empresarial UI: pagina `web/administrar_empresa/auditoria.html` para filtros de consulta y ejecucion de retencion manual.
+- Retencion automatica de auditoria: worker periodico en backend que elimina eventos expirados por `fecha_expiracion` (con fallback por `retencion_dias`).
 - Chat IA empresarial: modulo `chat_con_inteligencia_artificial` con alcance por `empresa_id`, limites free-tier, auditoria de consultas/respuestas y persistencia de `modelo_preferido` por cuenta Google (`empresa_id + admin_email`), usando Google Gemini.
 - Configuracion IA super: endpoint administrativo para credencial Gemini con almacenamiento seguro en `superadministrador.db`.
 - Seguridad por rol/empresa: middleware de permisos empresariales para rutas criticas de ventas, inventario, finanzas, clientes, compras/proveedores, facturacion y seguridad/usuarios; incluye cobertura en `chat_tareas`, `ubicacion_gps` y `productos/imagen`.

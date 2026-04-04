@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Auditoria empresa</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="empresa-subpage">
+  <div class="container empresa-module">
+    <section class="card empresa-section">
+      <h1>Auditoria por empresa</h1>
+      <p id="empresaInfo">Empresa: cargando...</p>
+      <p class="form-help">Consulta trazabilidad de acciones criticas por modulo, usuario, request y rango de fechas.</p>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Filtros</h2>
+        <div class="empresa-inline-actions">
+          <button id="btnBuscar" class="btn" type="button">Buscar</button>
+          <button id="btnLimpiar" class="btn secondary" type="button">Limpiar</button>
+          <button id="btnExportCSV" class="btn secondary" type="button">Exportar CSV</button>
+          <button id="btnExportJSON" class="btn secondary" type="button">Exportar JSON</button>
+        </div>
+      </div>
+
+      <div class="form">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="fModulo">Modulo</label>
+            <select id="fModulo" class="form-input">
+              <option value="">Todos</option>
+              <option value="ventas">Ventas</option>
+              <option value="compras">Compras</option>
+              <option value="facturacion">Facturacion</option>
+              <option value="finanzas">Finanzas</option>
+              <option value="inventario">Inventario</option>
+              <option value="clientes">Clientes</option>
+              <option value="seguridad">Seguridad</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="fAccion">Accion</label>
+            <input id="fAccion" class="form-input" placeholder="Ej: cerrar, emitir, aprobar">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="fResultado">Resultado</label>
+            <select id="fResultado" class="form-input">
+              <option value="">Todos</option>
+              <option value="ok">OK</option>
+              <option value="error">Error</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="fUsuario">Usuario</label>
+            <input id="fUsuario" class="form-input" placeholder="correo@empresa.com">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="fRequestId">Request ID</label>
+            <input id="fRequestId" class="form-input" placeholder="req-...">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="fDesde">Desde</label>
+            <input id="fDesde" type="date" class="form-input">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="fHasta">Hasta</label>
+            <input id="fHasta" type="date" class="form-input">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="fLimit">Limite</label>
+            <input id="fLimit" type="number" min="1" max="1000" class="form-input" value="200">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="fCodigoHttp">Codigo HTTP</label>
+            <input id="fCodigoHttp" type="number" min="100" max="599" class="form-input" placeholder="Ej: 200, 404, 500">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="fRecursoId">Recurso ID</label>
+            <input id="fRecursoId" type="number" min="1" class="form-input" placeholder="ID exacto del recurso">
+          </div>
+        </div>
+
+        <div class="form-row" style="margin-top:8px;">
+          <div class="form-col">
+            <label class="empresa-config-check" for="fIncluirInactivos">
+              <input id="fIncluirInactivos" type="checkbox">
+              <span>Incluir registros inactivos</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div id="filtroMsg" class="form-help"></div>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Retencion y purga</h2>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="retencionDias">Retencion (dias)</label>
+          <input id="retencionDias" type="number" min="1" max="3650" class="form-input" value="180">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Accion</label>
+          <button id="btnPurgar" type="button" class="btn secondary">Aplicar retencion</button>
+        </div>
+      </div>
+      <div id="retencionMsg" class="form-help"></div>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Eventos</h2>
+      </div>
+      <div class="table-wrap">
+        <table class="table" id="tablaAuditoria">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Modulo</th>
+              <th>Accion</th>
+              <th>Recurso</th>
+              <th>ID</th>
+              <th>HTTP</th>
+              <th>Resultado</th>
+              <th>Usuario</th>
+              <th>Request</th>
+              <th>IP</th>
+              <th>Metadata</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div id="tablaMsg" class="form-help"></div>
+    </section>
+  </div>
+
+  <script>
+    const state = {
+      empresaId: Number(new URLSearchParams(window.location.search).get('empresa_id') || 0),
+      rows: []
+    };
+
+    function normalize(v) {
+      return String(v || '').trim();
+    }
+
+    function toNumber(v, fallback) {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : (fallback || 0);
+    }
+
+    function setMsg(id, text, isError) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = text || '';
+      el.style.color = isError ? '#ef5350' : '';
+    }
+
+    async function ensureOk(res) {
+      if (res.ok) return;
+      const text = await res.text();
+      throw new Error(text || ('HTTP ' + res.status));
+    }
+
+    function sanitizeHtml(raw) {
+      return String(raw || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function safeDate(raw) {
+      const text = normalize(raw);
+      if (!text) return '-';
+      const dt = new Date(text.replace(' ', 'T'));
+      if (Number.isNaN(dt.getTime())) return text;
+      return dt.toLocaleString('es-CO');
+    }
+
+    function formatMetadata(raw) {
+      const text = normalize(raw);
+      if (!text) return '-';
+      try {
+        const parsed = JSON.parse(text);
+        const compact = JSON.stringify(parsed);
+        if (compact.length > 140) {
+          return compact.slice(0, 140) + '...';
+        }
+        return compact;
+      } catch (_) {
+        if (text.length > 140) return text.slice(0, 140) + '...';
+        return text;
+      }
+    }
+
+    function buildQuery() {
+      const p = new URLSearchParams();
+      p.set('empresa_id', String(state.empresaId));
+
+      const modulo = normalize(document.getElementById('fModulo').value).toLowerCase();
+      const accion = normalize(document.getElementById('fAccion').value).toLowerCase();
+      const resultado = normalize(document.getElementById('fResultado').value).toLowerCase();
+      const usuario = normalize(document.getElementById('fUsuario').value);
+      const requestId = normalize(document.getElementById('fRequestId').value);
+      const desde = normalize(document.getElementById('fDesde').value);
+      const hasta = normalize(document.getElementById('fHasta').value);
+      const limit = Math.max(1, Math.min(1000, Math.trunc(toNumber(document.getElementById('fLimit').value, 200))));
+      const codigoHttp = Math.max(0, Math.trunc(toNumber(document.getElementById('fCodigoHttp').value, 0)));
+      const recursoId = Math.max(0, Math.trunc(toNumber(document.getElementById('fRecursoId').value, 0)));
+
+      p.set('limit', String(limit));
+      if (modulo) p.set('modulo', modulo);
+      if (accion) p.set('accion', accion);
+      if (resultado) p.set('resultado', resultado);
+      if (usuario) p.set('usuario', usuario);
+      if (requestId) p.set('request_id', requestId);
+      if (codigoHttp > 0) p.set('codigo_http', String(codigoHttp));
+      if (recursoId > 0) p.set('recurso_id', String(recursoId));
+      if (desde) p.set('desde', desde + ' 00:00:00');
+      if (hasta) p.set('hasta', hasta + ' 23:59:59');
+      if (document.getElementById('fIncluirInactivos').checked) p.set('include_inactive', '1');
+
+      return p.toString();
+    }
+
+    function renderTable() {
+      const tbody = document.querySelector('#tablaAuditoria tbody');
+      const rows = Array.isArray(state.rows) ? state.rows : [];
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="11">No hay eventos para el filtro actual.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = rows.map(function(item) {
+        return '<tr>' +
+          '<td>' + sanitizeHtml(safeDate(item.fecha_evento || item.fecha_creacion)) + '</td>' +
+          '<td>' + sanitizeHtml(item.modulo || '-') + '</td>' +
+          '<td>' + sanitizeHtml(item.accion || '-') + '</td>' +
+          '<td>' + sanitizeHtml(item.recurso || '-') + '</td>' +
+          '<td>' + sanitizeHtml(String(toNumber(item.recurso_id, 0) || '-')) + '</td>' +
+          '<td>' + sanitizeHtml(String(toNumber(item.codigo_http, 0) || '-')) + '</td>' +
+          '<td>' + sanitizeHtml(item.resultado || '-') + '</td>' +
+          '<td>' + sanitizeHtml(item.usuario_creador || '-') + '</td>' +
+          '<td>' + sanitizeHtml(item.request_id || '-') + '</td>' +
+          '<td>' + sanitizeHtml(item.ip_origen || '-') + '</td>' +
+          '<td title="' + sanitizeHtml(item.metadata_json || '') + '">' + sanitizeHtml(formatMetadata(item.metadata_json)) + '</td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    async function loadEmpresaInfo() {
+      const info = document.getElementById('empresaInfo');
+      if (!state.empresaId) {
+        info.textContent = 'Empresa no definida.';
+        return;
+      }
+      try {
+        const res = await fetch('/super/api/empresas?id=' + encodeURIComponent(state.empresaId), { credentials: 'same-origin' });
+        if (!res.ok) {
+          info.textContent = 'Empresa ID: ' + state.empresaId;
+          return;
+        }
+        const empresa = await res.json();
+        if (empresa && empresa.nombre) {
+          info.textContent = 'Empresa: ' + empresa.nombre;
+          document.title = 'Auditoria - ' + empresa.nombre;
+          return;
+        }
+        info.textContent = 'Empresa ID: ' + state.empresaId;
+      } catch (_) {
+        info.textContent = 'Empresa ID: ' + state.empresaId;
+      }
+    }
+
+    function buildExportFilename(ext) {
+      const modulo = normalize(document.getElementById('fModulo').value).toLowerCase() || 'todos';
+      const fecha = new Date().toISOString().slice(0, 19).replace(/[-:T]/g, '');
+      return 'auditoria_empresa_' + state.empresaId + '_' + modulo + '_' + fecha + '.' + ext;
+    }
+
+    function downloadBlob(filename, mimeType, content) {
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function ensureRowsForExport() {
+      const rows = Array.isArray(state.rows) ? state.rows : [];
+      if (!rows.length) {
+        throw new Error('No hay eventos cargados para exportar. Ejecuta una busqueda primero.');
+      }
+      return rows;
+    }
+
+    function exportJSON() {
+      try {
+        const rows = ensureRowsForExport();
+        downloadBlob(
+          buildExportFilename('json'),
+          'application/json;charset=utf-8',
+          JSON.stringify(rows, null, 2)
+        );
+        setMsg('tablaMsg', 'Exportacion JSON completada (' + rows.length + ' eventos).', false);
+      } catch (err) {
+        setMsg('tablaMsg', err.message || 'No se pudo exportar JSON.', true);
+      }
+    }
+
+    function csvCell(v) {
+      const text = String(v == null ? '' : v);
+      if (text.includes('"')) {
+        return '"' + text.replace(/"/g, '""') + '"';
+      }
+      if (text.includes(',') || text.includes('\n') || text.includes('\r')) {
+        return '"' + text + '"';
+      }
+      return text;
+    }
+
+    function exportCSV() {
+      try {
+        const rows = ensureRowsForExport();
+        const headers = [
+          'fecha_evento',
+          'modulo',
+          'accion',
+          'recurso',
+          'recurso_id',
+          'metodo_http',
+          'endpoint',
+          'resultado',
+          'codigo_http',
+          'usuario_creador',
+          'request_id',
+          'ip_origen',
+          'metadata_json'
+        ];
+
+        const lines = [];
+        lines.push(headers.join(','));
+        rows.forEach(function(item) {
+          const row = [
+            item.fecha_evento || item.fecha_creacion || '',
+            item.modulo || '',
+            item.accion || '',
+            item.recurso || '',
+            toNumber(item.recurso_id, 0) || '',
+            item.metodo_http || '',
+            item.endpoint || '',
+            item.resultado || '',
+            toNumber(item.codigo_http, 0) || '',
+            item.usuario_creador || '',
+            item.request_id || '',
+            item.ip_origen || '',
+            item.metadata_json || ''
+          ];
+          lines.push(row.map(csvCell).join(','));
+        });
+
+        downloadBlob(
+          buildExportFilename('csv'),
+          'text/csv;charset=utf-8',
+          lines.join('\r\n')
+        );
+        setMsg('tablaMsg', 'Exportacion CSV completada (' + rows.length + ' eventos).', false);
+      } catch (err) {
+        setMsg('tablaMsg', err.message || 'No se pudo exportar CSV.', true);
+      }
+    }
+
+    async function buscarAuditoria() {
+      try {
+        const res = await fetch('/api/empresa/auditoria/eventos?' + buildQuery(), { credentials: 'same-origin' });
+        await ensureOk(res);
+        state.rows = await res.json();
+        renderTable();
+        setMsg('tablaMsg', 'Eventos cargados: ' + (Array.isArray(state.rows) ? state.rows.length : 0), false);
+        setMsg('filtroMsg', '', false);
+      } catch (err) {
+        setMsg('tablaMsg', '', false);
+        setMsg('filtroMsg', err.message || 'No se pudo consultar la auditoria.', true);
+      }
+    }
+
+    async function aplicarRetencion() {
+      const dias = Math.max(1, Math.min(3650, Math.trunc(toNumber(document.getElementById('retencionDias').value, 180))));
+      if (!window.confirm('Se eliminaran eventos fuera del periodo de retencion (' + dias + ' dias). Deseas continuar?')) {
+        return;
+      }
+      try {
+        const query = new URLSearchParams();
+        query.set('action', 'retener');
+        query.set('empresa_id', String(state.empresaId));
+        query.set('retencion_dias', String(dias));
+
+        const res = await fetch('/api/empresa/auditoria/eventos?' + query.toString(), {
+          method: 'PUT',
+          credentials: 'same-origin'
+        });
+        await ensureOk(res);
+        const data = await res.json();
+        const eliminados = toNumber(data && data.eliminados, 0);
+        setMsg('retencionMsg', 'Retencion aplicada. Registros eliminados: ' + eliminados + '.', false);
+        await buscarAuditoria();
+      } catch (err) {
+        setMsg('retencionMsg', err.message || 'No se pudo aplicar la retencion.', true);
+      }
+    }
+
+    function limpiarFiltros() {
+      document.getElementById('fModulo').value = '';
+      document.getElementById('fAccion').value = '';
+      document.getElementById('fResultado').value = '';
+      document.getElementById('fUsuario').value = '';
+      document.getElementById('fRequestId').value = '';
+      document.getElementById('fIncluirInactivos').checked = false;
+      document.getElementById('fLimit').value = '200';
+      document.getElementById('fCodigoHttp').value = '';
+      document.getElementById('fRecursoId').value = '';
+
+      const hoy = new Date();
+      const desde = new Date(hoy.getTime() - (7 * 24 * 60 * 60 * 1000));
+      document.getElementById('fDesde').value = desde.toISOString().slice(0, 10);
+      document.getElementById('fHasta').value = hoy.toISOString().slice(0, 10);
+    }
+
+    function bindEvents() {
+      document.getElementById('btnBuscar').addEventListener('click', buscarAuditoria);
+      document.getElementById('btnLimpiar').addEventListener('click', function() {
+        limpiarFiltros();
+        buscarAuditoria();
+      });
+      document.getElementById('btnPurgar').addEventListener('click', aplicarRetencion);
+      document.getElementById('btnExportCSV').addEventListener('click', exportCSV);
+      document.getElementById('btnExportJSON').addEventListener('click', exportJSON);
+    }
+
+    (async function init() {
+      if (!state.empresaId) {
+        setMsg('filtroMsg', 'empresa_id requerido en la URL', true);
+        return;
+      }
+      limpiarFiltros();
+      bindEvents();
+      await loadEmpresaInfo();
+      await buscarAuditoria();
+    })();
+  </script>
+</body>
+</html>

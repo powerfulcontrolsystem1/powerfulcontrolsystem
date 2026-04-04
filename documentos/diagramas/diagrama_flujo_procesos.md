@@ -55,6 +55,12 @@ flowchart TD
     AUTHZ --> AU0[Ejecutar accion critica autorizada]
     AU0 --> AU1[Registrar auditoria no bloqueante]
     AU1 --> AU2[Persistir empresa_auditoria_eventos]
+    AU2 --> AU3[Consultar auditoria en panel empresa]
+    AU3 --> AU31[Aplicar filtros avanzados por codigo_http y recurso_id]
+    AU31 --> AU32[Exportar trazabilidad filtrada en CSV y JSON]
+    AU3 --> AU4[Aplicar retencion manual por dias]
+    AU2 --> AU5[Worker programado de retencion]
+    AU5 --> AU6[Purgar eventos expirados por fecha_expiracion]
 
     L --> M[Crear cliente de venta]
     L --> N[Crear bodega y proveedor]
@@ -83,6 +89,7 @@ flowchart TD
     RP0 --> RF0[Consultar tablero financiero-operativo action=tablero]
     RF0 --> RF1[Renderizar KPI operativos financieros y contables]
     RF1 --> RF2[Renderizar estado de resultados y balance general]
+    RF2 --> RF3[Exportar tablero unificado CSV JSON por rango]
     RP0 --> RP1[Filtrar ventas cerradas por rango de fechas]
     RP1 --> RP2[Calcular KPIs: ventas, ingresos y ticket promedio]
     RP2 --> RP3[Construir reporte de ventas por fecha]
@@ -111,10 +118,15 @@ flowchart TD
     F3 --> F31[Calcular total bruto, retenciones y total neto]
     F31 --> F4[Filtrar movimientos y calcular balance]
     F4 --> FA0[Consultar eventos contables pendientes]
+    FA0 --> FA00[Worker automatico por intervalo y politica]
+    FA00 --> FA1
     FA0 --> FA1[Ejecutar action=procesar_asientos por lote]
     FA1 --> FA2[Persistir empresa_asientos_contables con hash_idempotencia]
     FA2 --> FA3[Marcar evento procesado o error con intentos]
-    FA3 --> F41
+    FA3 --> FA4[Consultar action=conciliacion_periodo]
+    FA4 --> FA5[Comparar eventos procesados vs asientos por periodo]
+    FA5 --> FA6[Clasificar estado conciliado o con alertas]
+    FA6 --> F41
     F4 --> F41[Navegar pestañas: Todos, Ingresos o Egresos]
     F41 --> F42[Exportar libro filtrado]
     F42 --> F421[Excel CSV y PDF]
@@ -180,6 +192,7 @@ Resultado esperado:
 - En `reportes`, el usuario consulta ventas cerradas por rango, indicadores clave y top comerciales, con validacion visual de formato de impresion POS/Carta.
 - En `carrito_de_compras`, al agregar items de tipo producto se descuenta inventario y, al cerrar la venta, el descuento se mantiene aplicado.
 - En `reportes`, se dispone de reportes profesionales por rango de fechas: ventas, productos y compras de productos.
+- En `reportes`, el tablero financiero-operativo puede exportarse en formato unificado `CSV/JSON` por rango, incluyendo `estado_resultados` y `balance_general`.
 - En `ayuda`, existe un menu interno con accesos rapidos y una seccion de APIs principales para operacion diaria.
 - En `configuracion`, las opciones del lector de barras se gestionan por empresa y aplican al flujo operativo del carrito.
 - En `reportes`, se agrega tabla de inventario actual por bodega y KPI de productos bajo minimo.
@@ -188,8 +201,13 @@ Resultado esperado:
 - En `finanzas`, la interfaz operativa de cierres de caja permite ejecutar acciones de ciclo desde la tabla (cerrar, reabrir, aprobar, anular), junto con activacion/desactivacion y filtros por estado/rango.
 - En `finanzas/cierres_caja`, la validacion UAT por rol confirma autorizacion esperada: `admin_empresa` aprueba, `cajero` y `supervisor_sucursal` no aprueban bajo politica financiera actual.
 - En `finanzas`, el libro financiero se consulta por pestañas (`Todos`, `Ingresos`, `Egresos`) y puede exportarse por rango a Excel (CSV), PDF y JSON contable para integración externa.
-- En `finanzas/asientos_contables`, la API permite consultar asientos canonicos (`GET`) y ejecutar procesamiento manual por lotes (`POST/PUT action=procesar_asientos`).
+- En `finanzas/asientos_contables`, la API permite consultar asientos canonicos (`GET`) y ejecutar procesamiento manual por lotes (`POST/PUT action=procesar_asientos`) con `max_reintentos` opcional.
+- En backend, un worker automatico procesa eventos contables pendientes por lotes con politica configurable de intervalo, tamaño de lote y limite de reintentos.
+- En `finanzas/asientos_contables`, la API expone `GET action=conciliacion_periodo` para comparar por periodo los eventos contables vs asientos canonicos y detectar pendientes, errores y descuadres.
+- En `administrar_empresa/finanzas`, existe vista de conciliacion por periodo con filtros de rango/periodo y KPIs de estado de conciliacion.
 - En `auditoria/eventos`, la API permite consultar trazabilidad por filtros (`GET`) y aplicar retencion manual (`PUT/POST action=retener|purgar`) por `empresa_id`.
+- En `administrar_empresa/auditoria`, la UI permite consultar eventos con filtros de modulo/accion/usuario/request/rango y filtros avanzados por `codigo_http`/`recurso_id`, exportar resultados a CSV/JSON y ejecutar purga manual por dias de retencion.
+- En backend, un worker periodico elimina eventos expirados de auditoria usando `fecha_expiracion` (con fallback por `retencion_dias` para registros legacy).
 - En `finanzas`, el JSON contable usa cuentas parametrizadas por empresa/categoria e incluye perfil de referencia para ERP destino.
 - En `finanzas`, existe plantilla dedicada SIIGO en CSV y exportaciones de `balance de prueba` y `estado de resultados` para trabajo contable/directivo.
 - En `finanzas`, los movimientos quedan asociados a `periodo_contable`; al cerrar un periodo se bloquean edición, activación/desactivación y eliminación hasta reabrir.
@@ -208,6 +226,7 @@ Resultado esperado:
 - En `reportes`, el tablero incluye `estado_resultados` y `balance_general` con base en asientos canonicos procesados por periodo.
 - En `finanzas`, la accion `procesar_asientos` requiere permiso de aprobacion (`A`) en el middleware de roles.
 - En middleware de permisos por empresa, toda accion critica autorizada (`C/U/D/A`) registra auditoria no bloqueante con modulo, accion, recurso, resultado HTTP y metadatos de trazabilidad.
+- En acciones criticas de `ventas`, `compras` y `facturacion`, la auditoria automatica conserva metadata de negocio (`carrito_id`, `proveedor_id`, `entidad_id`, `documento_codigo`) para trazabilidad operacional.
 - En `facturacion_electronica`, al guardar configuracion FE por pais se registra evento contable de modulo `facturacion` para trazabilidad de parametrizacion fiscal.
 - En `facturacion_electronica`, acciones transaccionales (`emitir`, `anular`, `nota_credito`) registran eventos `factura_emitida`, `factura_anulada` y `nota_credito_emitida`.
 - En `proveedores`, las operaciones de alta, actualizacion, activacion/desactivacion y eliminacion registran eventos del modulo `compras`.

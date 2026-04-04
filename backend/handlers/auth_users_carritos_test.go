@@ -206,6 +206,55 @@ func TestEmpresaUsuarioLoginHandlerSuccess(t *testing.T) {
 	}
 }
 
+func TestEmpresaUsuarioLoginHandlerRejectsWrongEmpresaScope(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_login_wrong_scope.db")
+	dbSuper := openTestSQLite(t, "super_login_wrong_scope.db")
+	ensureEmpresaUsersSchema(t, dbEmp)
+	ensureSuperSchema(t, dbSuper)
+
+	salt := "salt-login-scope"
+	hash := hashEmpresaUsuarioPassword("PasswordSegura1", salt)
+	_, err := dbEmp.Exec(`INSERT INTO users (
+		email, name, role, empresa_id, documento_identidad,
+		password_hash, password_salt, password_set,
+		rol_usuario_id, email_confirmado, estado
+	) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, 1, 'activo')`,
+		"scope@login.com", "Usuario Scope", "vendedor", int64(10), "DOC-10", hash, salt, int64(2),
+	)
+	if err != nil {
+		t.Fatalf("seed user login wrong scope: %v", err)
+	}
+
+	h := EmpresaUsuarioLoginHandler(dbEmp, dbSuper)
+	body := `{"empresa_id":99,"email":"scope@login.com","password":"PasswordSegura1"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/empresa/usuarios/login", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusUnauthorized {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusUnauthorized, rr.Code, rr.Body.String())
+	}
+	if !strings.Contains(strings.ToLower(rr.Body.String()), "credenciales") {
+		t.Fatalf("expected credentials message, got body=%s", rr.Body.String())
+	}
+
+	for _, c := range rr.Result().Cookies() {
+		if c.Name == "session_token" && strings.TrimSpace(c.Value) != "" {
+			t.Fatal("session_token must not be issued when empresa scope is invalid")
+		}
+	}
+
+	var sesionesCount int
+	if err := dbSuper.QueryRow("SELECT COUNT(1) FROM sesiones").Scan(&sesionesCount); err != nil {
+		t.Fatalf("count sesiones: %v", err)
+	}
+	if sesionesCount != 0 {
+		t.Fatalf("expected 0 sessions, got %d", sesionesCount)
+	}
+}
+
 func TestEmpresaUsuarioSetPasswordHandlerSuccess(t *testing.T) {
 	dbEmp := openTestSQLite(t, "empresas_set_password.db")
 	dbSuper := openTestSQLite(t, "super_set_password.db")
@@ -258,6 +307,55 @@ func TestEmpresaUsuarioSetPasswordHandlerSuccess(t *testing.T) {
 	}
 	if !hasSessionCookie {
 		t.Fatal("expected session_token cookie")
+	}
+}
+
+func TestEmpresaUsuarioSetPasswordHandlerRejectsWrongEmpresaScope(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_set_password_wrong_scope.db")
+	dbSuper := openTestSQLite(t, "super_set_password_wrong_scope.db")
+	ensureEmpresaUsersSchema(t, dbEmp)
+	ensureSuperSchema(t, dbSuper)
+
+	_, err := dbEmp.Exec(`INSERT INTO users (
+		email, name, role, empresa_id, documento_identidad,
+		password_hash, password_salt, password_set,
+		rol_usuario_id, email_confirmado, estado
+	) VALUES (?, ?, ?, ?, ?, '', '', 0, ?, 1, 'activo')`,
+		"scopepass@empresa.com", "Usuario Scope Password", "auxiliar", int64(12), "DOC-22", int64(3),
+	)
+	if err != nil {
+		t.Fatalf("seed user set password wrong scope: %v", err)
+	}
+
+	h := EmpresaUsuarioSetPasswordHandler(dbEmp, dbSuper)
+	body := `{"empresa_id":99,"email":"scopepass@empresa.com","documento_identidad":"DOC-22","password":"ClaveNueva88","password_confirm":"ClaveNueva88"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/empresa/usuarios/establecer_password", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusNotFound {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusNotFound, rr.Code, rr.Body.String())
+	}
+	if !strings.Contains(strings.ToLower(rr.Body.String()), "usuario no encontrado") {
+		t.Fatalf("expected not found message, got body=%s", rr.Body.String())
+	}
+
+	var passwordSet int
+	if err := dbEmp.QueryRow("SELECT COALESCE(password_set,0) FROM users WHERE email = ?", "scopepass@empresa.com").Scan(&passwordSet); err != nil {
+		t.Fatalf("query password_set: %v", err)
+	}
+	if passwordSet != 0 {
+		t.Fatalf("expected password_set=0 for wrong scope, got %d", passwordSet)
+	}
+
+	var sesionesCount int
+	if err := dbSuper.QueryRow("SELECT COUNT(1) FROM sesiones").Scan(&sesionesCount); err != nil {
+		t.Fatalf("count sesiones: %v", err)
+	}
+	if sesionesCount != 0 {
+		t.Fatalf("expected 0 sessions, got %d", sesionesCount)
 	}
 }
 

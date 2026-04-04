@@ -158,3 +158,171 @@ func TestProcessEmpresaEventosContablesPendientesGeneraAsientosIdempotentes(t *t
 		t.Fatalf("expected asiento totals 120000/120000, got %.2f/%.2f", asientos[0].TotalDebito, asientos[0].TotalCredito)
 	}
 }
+
+func TestProcessEmpresaEventosContablesPendientesConPoliticaRespetaMaxReintentos(t *testing.T) {
+	dbConn := openFinanzasTestDB(t)
+	if err := EnsureEmpresaFinanzasSchema(dbConn); err != nil {
+		t.Fatalf("ensure finanzas schema: %v", err)
+	}
+	if err := EnsureEmpresaEventosContablesSchema(dbConn); err != nil {
+		t.Fatalf("ensure eventos contables schema: %v", err)
+	}
+
+	empresaID := int64(33)
+	idProcesable, err := CreateEmpresaEventoContable(dbConn, EmpresaEventoContable{
+		EmpresaID:       empresaID,
+		Modulo:          "finanzas",
+		Evento:          "movimiento_ingreso_registrado",
+		Entidad:         "finanzas_movimiento",
+		EntidadID:       3301,
+		DocumentoTipo:   "comprobante",
+		DocumentoCodigo: "ING-3301",
+		PeriodoContable: "2026-04",
+		MontoTotal:      90000,
+		Moneda:          "COP",
+		PayloadJSON:     `{"tipo_movimiento":"ingreso","categoria":"ventas"}`,
+		UsuarioCreador:  "tester",
+	})
+	if err != nil {
+		t.Fatalf("create procesable evento: %v", err)
+	}
+
+	idBloqueado, err := CreateEmpresaEventoContable(dbConn, EmpresaEventoContable{
+		EmpresaID:       empresaID,
+		Modulo:          "finanzas",
+		Evento:          "movimiento_egreso_registrado",
+		Entidad:         "finanzas_movimiento",
+		EntidadID:       3302,
+		DocumentoTipo:   "comprobante",
+		DocumentoCodigo: "EGR-3302",
+		PeriodoContable: "2026-04",
+		MontoTotal:      45000,
+		Moneda:          "COP",
+		PayloadJSON:     `{"tipo_movimiento":"egreso","categoria":"compras"}`,
+		UsuarioCreador:  "tester",
+	})
+	if err != nil {
+		t.Fatalf("create bloqueado evento: %v", err)
+	}
+
+	if _, err := dbConn.Exec(`UPDATE empresa_eventos_contables SET intentos_procesamiento = 5 WHERE id = ?`, idBloqueado); err != nil {
+		t.Fatalf("set intentos_procesamiento for blocked event: %v", err)
+	}
+
+	resultado, err := ProcessEmpresaEventosContablesPendientesConPolitica(dbConn, empresaID, "tester", 20, 5)
+	if err != nil {
+		t.Fatalf("process eventos with policy: %v", err)
+	}
+	if resultado.EventosRevisados != 1 {
+		t.Fatalf("expected eventos_revisados=1 with max_reintentos=5, got %d", resultado.EventosRevisados)
+	}
+	if resultado.EventosProcesados != 1 {
+		t.Fatalf("expected eventos_procesados=1, got %d", resultado.EventosProcesados)
+	}
+
+	var procesadoFlag int64
+	if err := dbConn.QueryRow(`SELECT COALESCE(procesado, 0) FROM empresa_eventos_contables WHERE id = ?`, idProcesable).Scan(&procesadoFlag); err != nil {
+		t.Fatalf("read procesado for procesable event: %v", err)
+	}
+	if procesadoFlag != 1 {
+		t.Fatalf("expected procesable event as procesado=1, got %d", procesadoFlag)
+	}
+
+	if err := dbConn.QueryRow(`SELECT COALESCE(procesado, 0) FROM empresa_eventos_contables WHERE id = ?`, idBloqueado).Scan(&procesadoFlag); err != nil {
+		t.Fatalf("read procesado for blocked event: %v", err)
+	}
+	if procesadoFlag != 0 {
+		t.Fatalf("expected blocked event to remain procesado=0, got %d", procesadoFlag)
+	}
+}
+
+func TestGetEmpresaConciliacionContablePorPeriodo(t *testing.T) {
+	dbConn := openFinanzasTestDB(t)
+	if err := EnsureEmpresaFinanzasSchema(dbConn); err != nil {
+		t.Fatalf("ensure finanzas schema: %v", err)
+	}
+	if err := EnsureEmpresaEventosContablesSchema(dbConn); err != nil {
+		t.Fatalf("ensure eventos contables schema: %v", err)
+	}
+
+	empresaID := int64(44)
+	if _, err := CreateEmpresaEventoContable(dbConn, EmpresaEventoContable{
+		EmpresaID:       empresaID,
+		Modulo:          "finanzas",
+		Evento:          "movimiento_ingreso_registrado",
+		Entidad:         "finanzas_movimiento",
+		EntidadID:       4401,
+		DocumentoTipo:   "comprobante",
+		DocumentoCodigo: "ING-4401",
+		PeriodoContable: "2026-04",
+		MontoTotal:      100000,
+		Moneda:          "COP",
+		PayloadJSON:     `{"tipo_movimiento":"ingreso","categoria":"ventas"}`,
+		UsuarioCreador:  "tester",
+	}); err != nil {
+		t.Fatalf("create primer evento: %v", err)
+	}
+	pendienteID, err := CreateEmpresaEventoContable(dbConn, EmpresaEventoContable{
+		EmpresaID:       empresaID,
+		Modulo:          "finanzas",
+		Evento:          "movimiento_egreso_registrado",
+		Entidad:         "finanzas_movimiento",
+		EntidadID:       4402,
+		DocumentoTipo:   "comprobante",
+		DocumentoCodigo: "EGR-4402",
+		PeriodoContable: "2026-04",
+		MontoTotal:      35000,
+		Moneda:          "COP",
+		PayloadJSON:     `{"tipo_movimiento":"egreso","categoria":"compras"}`,
+		UsuarioCreador:  "tester",
+	})
+	if err != nil {
+		t.Fatalf("create segundo evento: %v", err)
+	}
+
+	resultado, err := ProcessEmpresaEventosContablesPendientes(dbConn, empresaID, "tester", 1)
+	if err != nil {
+		t.Fatalf("process eventos pendientes: %v", err)
+	}
+	if resultado.EventosProcesados != 1 {
+		t.Fatalf("expected eventos_procesados=1, got %d", resultado.EventosProcesados)
+	}
+
+	if _, err := dbConn.Exec(`UPDATE empresa_eventos_contables SET error_procesamiento = 'fallo temporal', intentos_procesamiento = 2 WHERE id = ?`, pendienteID); err != nil {
+		t.Fatalf("mark pendiente con error: %v", err)
+	}
+
+	resumen, err := GetEmpresaConciliacionContablePorPeriodo(dbConn, empresaID, EmpresaConciliacionContableFilter{PeriodoContable: "2026-04", Limit: 12})
+	if err != nil {
+		t.Fatalf("get conciliacion por periodo: %v", err)
+	}
+	if resumen.TotalPeriodos != 1 {
+		t.Fatalf("expected total_periodos=1, got %d", resumen.TotalPeriodos)
+	}
+	if len(resumen.Filas) != 1 {
+		t.Fatalf("expected 1 fila de conciliacion, got %d", len(resumen.Filas))
+	}
+
+	fila := resumen.Filas[0]
+	if fila.PeriodoContable != "2026-04" {
+		t.Fatalf("expected periodo_contable=2026-04, got %q", fila.PeriodoContable)
+	}
+	if fila.EventosTotal != 2 {
+		t.Fatalf("expected eventos_total=2, got %d", fila.EventosTotal)
+	}
+	if fila.EventosProcesados != 1 {
+		t.Fatalf("expected eventos_procesados=1, got %d", fila.EventosProcesados)
+	}
+	if fila.EventosPendientes != 1 {
+		t.Fatalf("expected eventos_pendientes=1, got %d", fila.EventosPendientes)
+	}
+	if fila.EventosConError != 1 {
+		t.Fatalf("expected eventos_con_error=1, got %d", fila.EventosConError)
+	}
+	if fila.AsientosTotal != 1 {
+		t.Fatalf("expected asientos_total=1, got %d", fila.AsientosTotal)
+	}
+	if fila.EstadoConciliacion != "con_pendientes" {
+		t.Fatalf("expected estado_conciliacion=con_pendientes, got %q", fila.EstadoConciliacion)
+	}
+}

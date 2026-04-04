@@ -6,6 +6,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"log"
+	"sort"
 	"strings"
 	"time"
 )
@@ -103,6 +105,66 @@ type EmpresaEventoContableFilter struct {
 	PeriodoContable string
 	IncludeInactive bool
 	Limit           int
+}
+
+const (
+	defaultAsientosWorkerInterval  = 15 * time.Minute
+	defaultAsientosWorkerBatchSize = 100
+	defaultAsientosWorkerRetries   = 5
+	maxAsientosWorkerBatchSize     = 500
+	maxAsientosWorkerRetries       = 50
+)
+
+// EmpresaAsientosWorkerResumen resume una corrida global del worker de asientos.
+type EmpresaAsientosWorkerResumen struct {
+	EmpresasConPendientes int      `json:"empresas_con_pendientes"`
+	EmpresasProcesadas    int      `json:"empresas_procesadas"`
+	EventosRevisados      int      `json:"eventos_revisados"`
+	EventosProcesados     int      `json:"eventos_procesados"`
+	AsientosCreados       int      `json:"asientos_creados"`
+	AsientosExistentes    int      `json:"asientos_existentes"`
+	Fallidos              int      `json:"fallidos"`
+	Errores               []string `json:"errores"`
+}
+
+// EmpresaConciliacionContableFilter permite consultar conciliacion por periodo.
+type EmpresaConciliacionContableFilter struct {
+	Desde           string
+	Hasta           string
+	PeriodoContable string
+	IncludeInactive bool
+	Limit           int
+}
+
+// EmpresaConciliacionContablePeriodo representa un periodo conciliado entre eventos y asientos.
+type EmpresaConciliacionContablePeriodo struct {
+	PeriodoContable       string  `json:"periodo_contable"`
+	EventosTotal          int64   `json:"eventos_total"`
+	EventosProcesados     int64   `json:"eventos_procesados"`
+	EventosPendientes     int64   `json:"eventos_pendientes"`
+	EventosConError       int64   `json:"eventos_con_error"`
+	EventosMontoProcesado float64 `json:"eventos_monto_procesado"`
+	AsientosTotal         int64   `json:"asientos_total"`
+	AsientosMontoTotal    float64 `json:"asientos_monto_total"`
+	DesfaseEventosAsiento int64   `json:"desfase_eventos_asientos"`
+	DesfaseMonto          float64 `json:"desfase_monto"`
+	UltimoEvento          string  `json:"ultimo_evento"`
+	UltimoAsiento         string  `json:"ultimo_asiento"`
+	EstadoConciliacion    string  `json:"estado_conciliacion"`
+}
+
+// EmpresaConciliacionContableResumen consolida conciliacion por periodos para una empresa.
+type EmpresaConciliacionContableResumen struct {
+	EmpresaID              int64                                `json:"empresa_id"`
+	Desde                  string                               `json:"desde"`
+	Hasta                  string                               `json:"hasta"`
+	PeriodoContable        string                               `json:"periodo_contable"`
+	TotalPeriodos          int                                  `json:"total_periodos"`
+	PeriodosConciliados    int                                  `json:"periodos_conciliados"`
+	PeriodosConPendientes  int                                  `json:"periodos_con_pendientes"`
+	PeriodosConDescuadre   int                                  `json:"periodos_con_descuadre"`
+	PeriodosSinMovimientos int                                  `json:"periodos_sin_movimientos"`
+	Filas                  []EmpresaConciliacionContablePeriodo `json:"filas"`
 }
 
 var empresaEventoContableContrato = map[string]map[string]struct{}{
@@ -644,8 +706,194 @@ func ListEmpresaAsientosContables(dbConn *sql.DB, empresaID int64, f EmpresaAsie
 	return out, rows.Err()
 }
 
+// GetEmpresaConciliacionContablePorPeriodo resume eventos vs asientos por periodo contable.
+func GetEmpresaConciliacionContablePorPeriodo(dbConn *sql.DB, empresaID int64, f EmpresaConciliacionContableFilter) (EmpresaConciliacionContableResumen, error) {
+	resumen := EmpresaConciliacionContableResumen{
+		EmpresaID:       empresaID,
+		Desde:           strings.TrimSpace(f.Desde),
+		Hasta:           strings.TrimSpace(f.Hasta),
+		PeriodoContable: normalizePeriodoEventoContable(f.PeriodoContable),
+		Filas:           make([]EmpresaConciliacionContablePeriodo, 0),
+	}
+	if empresaID <= 0 {
+		return resumen, fmt.Errorf("empresa_id es obligatorio")
+	}
+
+	periodos := make(map[string]*EmpresaConciliacionContablePeriodo)
+
+	periodoEventoExpr := `COALESCE(NULLIF(periodo_contable, ''), substr(COALESCE(fecha_evento, ''), 1, 7), 'sin_periodo')`
+	queryEventos := `SELECT
+		` + periodoEventoExpr + `,
+		COALESCE(COUNT(1), 0),
+		COALESCE(SUM(CASE WHEN COALESCE(procesado, 0) = 1 THEN 1 ELSE 0 END), 0),
+		COALESCE(SUM(CASE WHEN COALESCE(procesado, 0) = 0 THEN 1 ELSE 0 END), 0),
+		COALESCE(SUM(CASE WHEN COALESCE(procesado, 0) = 0 AND COALESCE(error_procesamiento, '') <> '' THEN 1 ELSE 0 END), 0),
+		COALESCE(SUM(CASE WHEN COALESCE(procesado, 0) = 1 THEN COALESCE(monto_total, 0) ELSE 0 END), 0),
+		COALESCE(MAX(fecha_evento), '')
+	FROM empresa_eventos_contables
+	WHERE empresa_id = ?`
+	argsEventos := []interface{}{empresaID}
+	if !f.IncludeInactive {
+		queryEventos += ` AND COALESCE(estado, 'activo') = 'activo'`
+	}
+	if resumen.Desde != "" {
+		queryEventos += ` AND date(fecha_evento) >= date(?)`
+		argsEventos = append(argsEventos, resumen.Desde)
+	}
+	if resumen.Hasta != "" {
+		queryEventos += ` AND date(fecha_evento) <= date(?)`
+		argsEventos = append(argsEventos, resumen.Hasta)
+	}
+	if resumen.PeriodoContable != "" {
+		queryEventos += ` AND ` + periodoEventoExpr + ` = ?`
+		argsEventos = append(argsEventos, resumen.PeriodoContable)
+	}
+	queryEventos += ` GROUP BY ` + periodoEventoExpr
+
+	rowsEventos, err := dbConn.Query(queryEventos, argsEventos...)
+	if err != nil {
+		return resumen, err
+	}
+	defer rowsEventos.Close()
+
+	for rowsEventos.Next() {
+		var periodo, ultimoEvento string
+		var eventosTotal, eventosProcesados, eventosPendientes, eventosConError int64
+		var eventosMontoProcesado float64
+		if err := rowsEventos.Scan(
+			&periodo,
+			&eventosTotal,
+			&eventosProcesados,
+			&eventosPendientes,
+			&eventosConError,
+			&eventosMontoProcesado,
+			&ultimoEvento,
+		); err != nil {
+			return resumen, err
+		}
+		item := getOrCreateEmpresaConciliacionPeriodo(periodos, periodo)
+		item.EventosTotal = eventosTotal
+		item.EventosProcesados = eventosProcesados
+		item.EventosPendientes = eventosPendientes
+		item.EventosConError = eventosConError
+		item.EventosMontoProcesado = eventosMontoProcesado
+		item.UltimoEvento = strings.TrimSpace(ultimoEvento)
+	}
+	if err := rowsEventos.Err(); err != nil {
+		return resumen, err
+	}
+
+	periodoAsientoExpr := `COALESCE(NULLIF(periodo_contable, ''), substr(COALESCE(fecha_asiento, ''), 1, 7), 'sin_periodo')`
+	queryAsientos := `SELECT
+		` + periodoAsientoExpr + `,
+		COALESCE(COUNT(1), 0),
+		COALESCE(SUM(CASE WHEN COALESCE(total_debito, 0) > 0 THEN COALESCE(total_debito, 0) ELSE COALESCE(total_credito, 0) END), 0),
+		COALESCE(MAX(fecha_asiento), '')
+	FROM empresa_asientos_contables
+	WHERE empresa_id = ?`
+	argsAsientos := []interface{}{empresaID}
+	if !f.IncludeInactive {
+		queryAsientos += ` AND COALESCE(estado, 'activo') = 'activo'`
+	}
+	if resumen.Desde != "" {
+		queryAsientos += ` AND date(fecha_asiento) >= date(?)`
+		argsAsientos = append(argsAsientos, resumen.Desde)
+	}
+	if resumen.Hasta != "" {
+		queryAsientos += ` AND date(fecha_asiento) <= date(?)`
+		argsAsientos = append(argsAsientos, resumen.Hasta)
+	}
+	if resumen.PeriodoContable != "" {
+		queryAsientos += ` AND ` + periodoAsientoExpr + ` = ?`
+		argsAsientos = append(argsAsientos, resumen.PeriodoContable)
+	}
+	queryAsientos += ` GROUP BY ` + periodoAsientoExpr
+
+	rowsAsientos, err := dbConn.Query(queryAsientos, argsAsientos...)
+	if err != nil {
+		return resumen, err
+	}
+	defer rowsAsientos.Close()
+
+	for rowsAsientos.Next() {
+		var periodo, ultimoAsiento string
+		var asientosTotal int64
+		var asientosMontoTotal float64
+		if err := rowsAsientos.Scan(&periodo, &asientosTotal, &asientosMontoTotal, &ultimoAsiento); err != nil {
+			return resumen, err
+		}
+		item := getOrCreateEmpresaConciliacionPeriodo(periodos, periodo)
+		item.AsientosTotal = asientosTotal
+		item.AsientosMontoTotal = asientosMontoTotal
+		item.UltimoAsiento = strings.TrimSpace(ultimoAsiento)
+	}
+	if err := rowsAsientos.Err(); err != nil {
+		return resumen, err
+	}
+
+	filas := make([]EmpresaConciliacionContablePeriodo, 0, len(periodos))
+	for _, item := range periodos {
+		item.EventosMontoProcesado = roundReportesMoney(item.EventosMontoProcesado)
+		item.AsientosMontoTotal = roundReportesMoney(item.AsientosMontoTotal)
+		item.DesfaseEventosAsiento = item.EventosProcesados - item.AsientosTotal
+		item.DesfaseMonto = roundReportesMoney(item.EventosMontoProcesado - item.AsientosMontoTotal)
+
+		switch {
+		case item.EventosPendientes > 0 || item.EventosConError > 0:
+			item.EstadoConciliacion = "con_pendientes"
+		case item.DesfaseEventosAsiento != 0 || conciliacionAbsFloat64(item.DesfaseMonto) > 0.009:
+			item.EstadoConciliacion = "con_descuadre"
+		case item.EventosTotal == 0 && item.AsientosTotal == 0:
+			item.EstadoConciliacion = "sin_movimientos"
+		default:
+			item.EstadoConciliacion = "conciliado"
+		}
+
+		filas = append(filas, *item)
+	}
+
+	sort.Slice(filas, func(i, j int) bool {
+		keyI := conciliacionPeriodoSortKey(filas[i].PeriodoContable)
+		keyJ := conciliacionPeriodoSortKey(filas[j].PeriodoContable)
+		if keyI == keyJ {
+			if filas[i].UltimoEvento == filas[j].UltimoEvento {
+				return filas[i].UltimoAsiento > filas[j].UltimoAsiento
+			}
+			return filas[i].UltimoEvento > filas[j].UltimoEvento
+		}
+		return keyI > keyJ
+	})
+
+	limit := normalizeConciliacionLimit(f.Limit)
+	if len(filas) > limit {
+		filas = filas[:limit]
+	}
+
+	resumen.TotalPeriodos = len(filas)
+	for _, item := range filas {
+		switch item.EstadoConciliacion {
+		case "conciliado":
+			resumen.PeriodosConciliados++
+		case "con_pendientes":
+			resumen.PeriodosConPendientes++
+		case "con_descuadre":
+			resumen.PeriodosConDescuadre++
+		case "sin_movimientos":
+			resumen.PeriodosSinMovimientos++
+		}
+	}
+	resumen.Filas = filas
+
+	return resumen, nil
+}
+
 // ProcessEmpresaEventosContablesPendientes procesa por lotes eventos pendientes y genera asientos idempotentes.
 func ProcessEmpresaEventosContablesPendientes(dbConn *sql.DB, empresaID int64, procesadoPor string, limit int) (EmpresaProcesoAsientosResultado, error) {
+	return ProcessEmpresaEventosContablesPendientesConPolitica(dbConn, empresaID, procesadoPor, limit, 0)
+}
+
+// ProcessEmpresaEventosContablesPendientesConPolitica procesa eventos pendientes aplicando limite de reintentos cuando se configura.
+func ProcessEmpresaEventosContablesPendientesConPolitica(dbConn *sql.DB, empresaID int64, procesadoPor string, limit int, maxRetries int) (EmpresaProcesoAsientosResultado, error) {
 	result := EmpresaProcesoAsientosResultado{
 		EmpresaID: empresaID,
 		Errores:   make([]string, 0),
@@ -653,18 +901,14 @@ func ProcessEmpresaEventosContablesPendientes(dbConn *sql.DB, empresaID int64, p
 	if empresaID <= 0 {
 		return result, fmt.Errorf("empresa_id es obligatorio")
 	}
-	if limit <= 0 {
-		limit = 100
-	}
-	if limit > 500 {
-		limit = 500
-	}
+	limit = normalizeAsientosWorkerBatchSize(limit)
 	procesadoPor = strings.TrimSpace(procesadoPor)
 	if procesadoPor == "" {
 		procesadoPor = "sistema"
 	}
+	maxRetries = normalizeAsientosWorkerRetriesForPolicy(maxRetries)
 
-	eventos, err := listEmpresaEventosContablesPendientes(dbConn, empresaID, limit)
+	eventos, err := listEmpresaEventosContablesPendientes(dbConn, empresaID, limit, maxRetries)
 	if err != nil {
 		return result, err
 	}
@@ -701,8 +945,92 @@ func ProcessEmpresaEventosContablesPendientes(dbConn *sql.DB, empresaID int64, p
 	return result, nil
 }
 
-func listEmpresaEventosContablesPendientes(dbConn *sql.DB, empresaID int64, limit int) ([]EmpresaEventoContable, error) {
-	rows, err := dbConn.Query(`SELECT
+// RunEmpresaAsientosContablesWorkerCycle ejecuta una corrida global por empresas con eventos pendientes.
+func RunEmpresaAsientosContablesWorkerCycle(dbConn *sql.DB, procesadoPor string, batchSize int, maxRetries int) (EmpresaAsientosWorkerResumen, error) {
+	resumen := EmpresaAsientosWorkerResumen{Errores: make([]string, 0)}
+	if dbConn == nil {
+		return resumen, fmt.Errorf("conexion de base de datos no disponible")
+	}
+
+	batchSize = normalizeAsientosWorkerBatchSize(batchSize)
+	maxRetries = normalizeAsientosWorkerRetries(maxRetries)
+	procesadoPor = strings.TrimSpace(procesadoPor)
+	if procesadoPor == "" {
+		procesadoPor = "worker_asientos"
+	}
+
+	empresaIDs, err := listEmpresaIDsConEventosPendientes(dbConn, maxRetries, 500)
+	if err != nil {
+		return resumen, err
+	}
+	resumen.EmpresasConPendientes = len(empresaIDs)
+
+	for _, empresaID := range empresaIDs {
+		resultado, processErr := ProcessEmpresaEventosContablesPendientesConPolitica(dbConn, empresaID, procesadoPor, batchSize, maxRetries)
+		if processErr != nil {
+			if len(resumen.Errores) < 20 {
+				resumen.Errores = append(resumen.Errores, fmt.Sprintf("empresa_id=%d: %s", empresaID, trimProcessingError(processErr)))
+			}
+			continue
+		}
+
+		if resultado.EventosRevisados > 0 {
+			resumen.EmpresasProcesadas++
+		}
+		resumen.EventosRevisados += resultado.EventosRevisados
+		resumen.EventosProcesados += resultado.EventosProcesados
+		resumen.AsientosCreados += resultado.AsientosCreados
+		resumen.AsientosExistentes += resultado.AsientosExistentes
+		resumen.Fallidos += resultado.Fallidos
+
+		for _, errMsg := range resultado.Errores {
+			if len(resumen.Errores) >= 20 {
+				break
+			}
+			resumen.Errores = append(resumen.Errores, fmt.Sprintf("empresa_id=%d: %s", empresaID, errMsg))
+		}
+	}
+
+	return resumen, nil
+}
+
+// StartEmpresaAsientosContablesWorker ejecuta procesamiento automático por lotes en intervalo fijo.
+func StartEmpresaAsientosContablesWorker(dbConn *sql.DB, interval time.Duration, batchSize int, maxRetries int, stop <-chan struct{}) {
+	if dbConn == nil {
+		return
+	}
+
+	interval = normalizeAsientosWorkerInterval(interval)
+	batchSize = normalizeAsientosWorkerBatchSize(batchSize)
+	maxRetries = normalizeAsientosWorkerRetries(maxRetries)
+
+	runCycle := func(origin string) {
+		resumen, err := RunEmpresaAsientosContablesWorkerCycle(dbConn, "worker_asientos", batchSize, maxRetries)
+		if err != nil {
+			log.Printf("[asientos_worker] ciclo=%s error=%v", origin, err)
+			return
+		}
+		if resumen.EventosRevisados > 0 || resumen.Fallidos > 0 {
+			log.Printf("[asientos_worker] ciclo=%s empresas=%d revisados=%d procesados=%d creados=%d existentes=%d fallidos=%d", origin, resumen.EmpresasProcesadas, resumen.EventosRevisados, resumen.EventosProcesados, resumen.AsientosCreados, resumen.AsientosExistentes, resumen.Fallidos)
+		}
+	}
+
+	runCycle("startup")
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			runCycle("ticker")
+		case <-stop:
+			return
+		}
+	}
+}
+
+func listEmpresaEventosContablesPendientes(dbConn *sql.DB, empresaID int64, limit int, maxRetries int) ([]EmpresaEventoContable, error) {
+	query := `SELECT
 		id,
 		empresa_id,
 		COALESCE(modulo, ''),
@@ -731,9 +1059,16 @@ func listEmpresaEventosContablesPendientes(dbConn *sql.DB, empresaID int64, limi
 	FROM empresa_eventos_contables
 	WHERE empresa_id = ?
 		AND COALESCE(estado, 'activo') = 'activo'
-		AND COALESCE(procesado, 0) = 0
-	ORDER BY COALESCE(fecha_evento, '') ASC, id ASC
-	LIMIT ?`, empresaID, limit)
+		AND COALESCE(procesado, 0) = 0`
+	args := []interface{}{empresaID}
+	if maxRetries > 0 {
+		query += ` AND COALESCE(intentos_procesamiento, 0) < ?`
+		args = append(args, maxRetries)
+	}
+	query += ` ORDER BY COALESCE(fecha_evento, '') ASC, id ASC LIMIT ?`
+	args = append(args, limit)
+
+	rows, err := dbConn.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -776,6 +1111,124 @@ func listEmpresaEventosContablesPendientes(dbConn *sql.DB, empresaID int64, limi
 		out = append(out, item)
 	}
 	return out, rows.Err()
+}
+
+func listEmpresaIDsConEventosPendientes(dbConn *sql.DB, maxRetries int, limitEmpresas int) ([]int64, error) {
+	if limitEmpresas <= 0 {
+		limitEmpresas = 500
+	}
+
+	query := `SELECT DISTINCT empresa_id
+	FROM empresa_eventos_contables
+	WHERE COALESCE(estado, 'activo') = 'activo'
+		AND COALESCE(procesado, 0) = 0`
+	args := make([]interface{}, 0)
+	if maxRetries > 0 {
+		query += ` AND COALESCE(intentos_procesamiento, 0) < ?`
+		args = append(args, maxRetries)
+	}
+	query += ` ORDER BY empresa_id ASC LIMIT ?`
+	args = append(args, limitEmpresas)
+
+	rows, err := dbConn.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]int64, 0)
+	for rows.Next() {
+		var empresaID int64
+		if err := rows.Scan(&empresaID); err != nil {
+			return nil, err
+		}
+		if empresaID > 0 {
+			out = append(out, empresaID)
+		}
+	}
+	return out, rows.Err()
+}
+
+func normalizeConciliacionLimit(limit int) int {
+	if limit <= 0 {
+		return 24
+	}
+	if limit > 120 {
+		return 120
+	}
+	return limit
+}
+
+func conciliacionPeriodoSortKey(periodo string) string {
+	periodo = normalizePeriodoEventoContable(periodo)
+	if periodo == "" {
+		return "0000-00"
+	}
+	return periodo
+}
+
+func conciliacionAbsFloat64(v float64) float64 {
+	if v < 0 {
+		return -v
+	}
+	return v
+}
+
+func getOrCreateEmpresaConciliacionPeriodo(periodos map[string]*EmpresaConciliacionContablePeriodo, periodo string) *EmpresaConciliacionContablePeriodo {
+	periodo = strings.TrimSpace(periodo)
+	if norm := normalizePeriodoEventoContable(periodo); norm != "" {
+		periodo = norm
+	}
+	if periodo == "" {
+		periodo = "sin_periodo"
+	}
+	item, ok := periodos[periodo]
+	if ok {
+		return item
+	}
+	item = &EmpresaConciliacionContablePeriodo{PeriodoContable: periodo}
+	periodos[periodo] = item
+	return item
+}
+
+func normalizeAsientosWorkerInterval(interval time.Duration) time.Duration {
+	if interval <= 0 {
+		return defaultAsientosWorkerInterval
+	}
+	if interval < time.Minute {
+		return time.Minute
+	}
+	return interval
+}
+
+func normalizeAsientosWorkerBatchSize(limit int) int {
+	if limit <= 0 {
+		return defaultAsientosWorkerBatchSize
+	}
+	if limit > maxAsientosWorkerBatchSize {
+		return maxAsientosWorkerBatchSize
+	}
+	return limit
+}
+
+func normalizeAsientosWorkerRetries(maxRetries int) int {
+	if maxRetries <= 0 {
+		return defaultAsientosWorkerRetries
+	}
+	if maxRetries > maxAsientosWorkerRetries {
+		return maxAsientosWorkerRetries
+	}
+	return maxRetries
+}
+
+func normalizeAsientosWorkerRetriesForPolicy(maxRetries int) int {
+	if maxRetries <= 0 {
+		return 0
+	}
+	if maxRetries > maxAsientosWorkerRetries {
+		return maxAsientosWorkerRetries
+	}
+	return maxRetries
 }
 
 func ensureEmpresaAsientoContableFromEvento(dbConn *sql.DB, evento EmpresaEventoContable, procesadoPor string) (int64, bool, error) {

@@ -4,7 +4,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
+	"time"
 )
 
 const (
@@ -42,6 +44,8 @@ type EmpresaAuditoriaEvento struct {
 type EmpresaAuditoriaEventoFilter struct {
 	Modulo          string
 	Accion          string
+	RecursoID       int64
+	CodigoHTTP      int64
 	Resultado       string
 	UsuarioCreador  string
 	RequestID       string
@@ -223,7 +227,7 @@ func CreateEmpresaAuditoriaEvento(dbConn *sql.DB, in EmpresaAuditoriaEvento) (in
 	) VALUES (
 		?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
 		COALESCE(NULLIF(?, ''), datetime('now','localtime')),
-		datetime('now','localtime', ?),
+		datetime(COALESCE(NULLIF(?, ''), datetime('now','localtime')), ?),
 		datetime('now','localtime'),
 		datetime('now','localtime'),
 		?, ?, ?
@@ -242,6 +246,7 @@ func CreateEmpresaAuditoriaEvento(dbConn *sql.DB, in EmpresaAuditoriaEvento) (in
 		in.UserAgent,
 		metadata,
 		retencionDias,
+		strings.TrimSpace(in.FechaEvento),
 		strings.TrimSpace(in.FechaEvento),
 		ttlExpr,
 		in.UsuarioCreador,
@@ -300,6 +305,14 @@ func ListEmpresaAuditoriaEventos(dbConn *sql.DB, empresaID int64, f EmpresaAudit
 	if accion := normalizeAuditoriaValue(f.Accion); accion != "" {
 		query += ` AND COALESCE(accion, '') = ?`
 		args = append(args, accion)
+	}
+	if recursoID := f.RecursoID; recursoID > 0 {
+		query += ` AND COALESCE(recurso_id, 0) = ?`
+		args = append(args, recursoID)
+	}
+	if codigoHTTP := f.CodigoHTTP; codigoHTTP > 0 {
+		query += ` AND COALESCE(codigo_http, 0) = ?`
+		args = append(args, codigoHTTP)
 	}
 	if resultado := normalizeAuditoriaResultado(f.Resultado); resultado != "" {
 		query += ` AND COALESCE(resultado, 'ok') = ?`
@@ -393,6 +406,61 @@ func PurgeEmpresaAuditoriaEventos(dbConn *sql.DB, empresaID int64, retencionDias
 		return 0, err
 	}
 	return res.RowsAffected()
+}
+
+// PurgeExpiredEmpresaAuditoriaEventos elimina eventos expirados usando fecha_expiracion o regla fallback por retencion_dias.
+func PurgeExpiredEmpresaAuditoriaEventos(dbConn *sql.DB) (int64, error) {
+	if err := EnsureEmpresaAuditoriaSchema(dbConn); err != nil {
+		return 0, err
+	}
+
+	res, err := dbConn.Exec(`DELETE FROM empresa_auditoria_eventos
+	WHERE datetime(
+		CASE
+			WHEN COALESCE(fecha_expiracion, '') <> '' THEN fecha_expiracion
+			WHEN COALESCE(fecha_evento, '') <> '' THEN datetime(fecha_evento, printf('+%d days', COALESCE(retencion_dias, 180)))
+			WHEN COALESCE(fecha_creacion, '') <> '' THEN datetime(fecha_creacion, printf('+%d days', COALESCE(retencion_dias, 180)))
+			ELSE datetime('now','localtime','+36500 days')
+		END
+	) <= datetime('now','localtime')`)
+	if err != nil {
+		return 0, err
+	}
+	return res.RowsAffected()
+}
+
+// StartEmpresaAuditoriaRetentionWorker ejecuta limpieza periódica de auditoría expirada.
+func StartEmpresaAuditoriaRetentionWorker(dbConn *sql.DB, interval time.Duration, stop <-chan struct{}) {
+	if dbConn == nil {
+		return
+	}
+	if interval <= 0 {
+		interval = 12 * time.Hour
+	}
+
+	runPurge := func(origin string) {
+		deleted, err := PurgeExpiredEmpresaAuditoriaEventos(dbConn)
+		if err != nil {
+			log.Printf("[auditoria] purge expirados (%s) error: %v", origin, err)
+			return
+		}
+		if deleted > 0 {
+			log.Printf("[auditoria] purge expirados (%s): %d registros eliminados", origin, deleted)
+		}
+	}
+
+	runPurge("startup")
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			runPurge("ticker")
+		case <-stop:
+			return
+		}
+	}
 }
 
 func normalizeAuditoriaValue(raw string) string {

@@ -44,9 +44,21 @@ func EmpresaAuditoriaEventosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, "limit invalido", http.StatusBadRequest)
 				return
 			}
+			recursoID, err := parseInt64QueryOptional(r, "recurso_id")
+			if err != nil {
+				http.Error(w, "recurso_id invalido", http.StatusBadRequest)
+				return
+			}
+			codigoHTTP, err := parseInt64QueryOptional(r, "codigo_http")
+			if err != nil {
+				http.Error(w, "codigo_http invalido", http.StatusBadRequest)
+				return
+			}
 			rows, err := dbpkg.ListEmpresaAuditoriaEventos(dbEmp, empresaID, dbpkg.EmpresaAuditoriaEventoFilter{
 				Modulo:          strings.TrimSpace(r.URL.Query().Get("modulo")),
 				Accion:          strings.TrimSpace(r.URL.Query().Get("accion")),
+				RecursoID:       recursoID,
+				CodigoHTTP:      codigoHTTP,
 				Resultado:       strings.TrimSpace(r.URL.Query().Get("resultado")),
 				UsuarioCreador:  strings.TrimSpace(r.URL.Query().Get("usuario")),
 				RequestID:       strings.TrimSpace(r.URL.Query().Get("request_id")),
@@ -124,6 +136,18 @@ func registrarAuditoriaOperacionNoBloqueante(dbEmp *sql.DB, r *http.Request, emp
 	if rid, err := parseInt64QueryOptional(r, "id"); err == nil && rid > 0 {
 		metadata["recurso_id_query"] = rid
 	}
+	if carritoID, err := parseInt64QueryOptional(r, "carrito_id"); err == nil && carritoID > 0 {
+		metadata["carrito_id"] = carritoID
+	}
+	if proveedorID, err := parseInt64QueryOptional(r, "proveedor_id"); err == nil && proveedorID > 0 {
+		metadata["proveedor_id"] = proveedorID
+	}
+	if entidadID, err := parseInt64QueryOptional(r, "entidad_id"); err == nil && entidadID > 0 {
+		metadata["entidad_id"] = entidadID
+	}
+	if documentoCodigo := strings.TrimSpace(r.URL.Query().Get("documento_codigo")); documentoCodigo != "" {
+		metadata["documento_codigo"] = documentoCodigo
+	}
 	metaJSON, err := json.Marshal(metadata)
 	if err != nil {
 		metaJSON = []byte(`{"marshal_error":"metadata"}`)
@@ -196,8 +220,11 @@ func resolveAuditoriaRecursoDesdePath(path string) string {
 }
 
 func resolveAuditoriaRecursoID(r *http.Request) int64 {
-	if id, err := parseInt64QueryOptional(r, "id"); err == nil && id > 0 {
-		return id
+	keys := []string{"id", "carrito_id", "item_id", "proveedor_id", "entidad_id", "sucursal_id"}
+	for _, key := range keys {
+		if id, err := parseInt64QueryOptional(r, key); err == nil && id > 0 {
+			return id
+		}
 	}
 	return 0
 }

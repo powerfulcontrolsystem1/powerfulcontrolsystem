@@ -8,7 +8,9 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"time"
 
 	_ "modernc.org/sqlite"
 
@@ -27,6 +29,32 @@ var (
 	dbEmpresas     *sql.DB
 	dbSuper        *sql.DB
 )
+
+func getenvIntRange(key string, defaultVal, minVal, maxVal int) int {
+	raw := strings.TrimSpace(os.Getenv(key))
+	if raw == "" {
+		return defaultVal
+	}
+	v, err := strconv.Atoi(raw)
+	if err != nil {
+		log.Printf("warning: %s invalido (%q), se usa valor por defecto %d", key, raw, defaultVal)
+		return defaultVal
+	}
+	if v < minVal {
+		return minVal
+	}
+	if v > maxVal {
+		return maxVal
+	}
+	return v
+}
+
+func resolveAsientosWorkerPolicy() (time.Duration, int, int) {
+	intervalMinutes := getenvIntRange("ASIENTOS_WORKER_INTERVAL_MINUTES", 15, 1, 1440)
+	batchSize := getenvIntRange("ASIENTOS_WORKER_BATCH_SIZE", 100, 1, 500)
+	maxRetries := getenvIntRange("ASIENTOS_WORKER_MAX_RETRIES", 5, 1, 50)
+	return time.Duration(intervalMinutes) * time.Minute, batchSize, maxRetries
+}
 
 func readConfigValueFromDB(dbConn *sql.DB, keys []string) (string, string, error) {
 	for _, key := range keys {
@@ -712,6 +740,14 @@ func main() {
 	metricsInterval := metrics.DefaultIntervalSeconds()
 	stopMetrics := make(chan struct{})
 	go metrics.StartCollector(dbSuper, metricsInterval, stopMetrics)
+
+	stopAuditRetention := make(chan struct{})
+	go dbpkg.StartEmpresaAuditoriaRetentionWorker(dbEmpresas, 12*time.Hour, stopAuditRetention)
+
+	asientosInterval, asientosBatchSize, asientosMaxRetries := resolveAsientosWorkerPolicy()
+	log.Printf("[asientos_worker] policy interval=%s batch=%d max_reintentos=%d", asientosInterval, asientosBatchSize, asientosMaxRetries)
+	stopAsientosWorker := make(chan struct{})
+	go dbpkg.StartEmpresaAsientosContablesWorker(dbEmpresas, asientosInterval, asientosBatchSize, asientosMaxRetries, stopAsientosWorker)
 
 	http.HandleFunc("/auth/google/login", handlers.HandleGoogleLogin(clientID, redirectURL))
 	// Pasar la conexión de la base `empresas` al callback para persistir usuarios y empresas

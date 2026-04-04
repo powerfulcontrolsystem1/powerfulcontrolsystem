@@ -56,6 +56,19 @@ flowchart TD
 ## Regla de mantenimiento
 Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe reflejarse en este documento y en los diagramas relacionados dentro de documentos/diagramas/.
 
+## Actualizacion 2026-04-04 (catalogo frontend por rol + regresion endpoints sin wrapper)
+
+- Frontend empresa:
+  - `web/js/administrar_empresa.js` incorpora un catalogo de permisos por enlace para el menu lateral.
+  - El rol se obtiene desde `GET /me`, se normaliza y se aplica evaluacion por modulo/accion para ocultar opciones no autorizadas.
+  - Cuando una pagina almacenada ya no es visible por permisos, el iframe cae automaticamente en la primera opcion permitida.
+
+- Pruebas de regresion backend (sin wrapper de modulo):
+  - `backend/handlers/auth_users_carritos_test.go` agrega cobertura para rechazo por `empresa_id` fuera de alcance en:
+    - `POST /api/empresa/usuarios/login`.
+    - `POST /api/empresa/usuarios/establecer_password`.
+  - `backend/handlers/chat_con_inteligencia_artificial_controller_test.go` agrega cobertura en `ModelosHandler` para alcance por cuenta Google (`adminEmail`) fuera de alcance.
+
 ## Actualizacion 2026-04-03 (configuracion IA en panel super)
 
 - Backend handlers:
@@ -406,6 +419,146 @@ Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe re
   - `go test ./handlers -run "Auditoria|AsientosContables|WithEmpresaFinanzasPermissions" -count=1` (ok).
   - `go test ./handlers -count=1` (ok).
   - `go test ./db -count=1` (ok).
+
+## Actualizacion 2026-04-04 (punto 15 - continuacion backlog 1/2/3)
+
+- Cobertura automatica de auditoria por modulo:
+  - `backend/handlers/empresa_permisos.go` amplia alias de acciones criticas en:
+    - `ventas` (`pagar`, `suspender`, `reactivar` y variantes),
+    - `compras` (`anular/cancelar` como eliminacion),
+    - `facturacion` (`emitir_factura/emitir_documento` como aprobacion).
+
+- Enriquecimiento de trazabilidad:
+  - `backend/handlers/auditoria_empresa.go` agrega metadata de negocio para acciones de:
+    - ventas (`carrito_id`),
+    - compras (`proveedor_id`),
+    - facturacion (`entidad_id`, `documento_codigo`).
+  - Se amplia resolucion de `recurso_id` con llaves alternativas (`id`, `carrito_id`, `item_id`, `proveedor_id`, `entidad_id`, `sucursal_id`).
+
+- Purga automatica de auditoria:
+  - `backend/db/auditoria_empresa.go` agrega:
+    - `PurgeExpiredEmpresaAuditoriaEventos`,
+    - `StartEmpresaAuditoriaRetentionWorker`.
+  - `backend/main.go` arranca worker de retencion de auditoria en background (intervalo 12h).
+
+- Frontend empresa:
+  - Nuevo `web/administrar_empresa/auditoria.html` para consulta filtrable y retencion manual.
+  - `web/administrar_empresa.html` agrega item de menu `Auditoria`.
+  - `web/js/administrar_empresa.js` incorpora `linkAuditoria` al ciclo de navegacion y restauracion de subpagina.
+
+- Pruebas:
+  - `backend/handlers/auditoria_empresa_test.go` agrega escenarios de auditoria automatica para acciones criticas en `ventas`, `compras` y `facturacion`.
+  - `backend/db/auditoria_empresa_test.go` agrega prueba de purga automatica por expiracion.
+
+- Validacion:
+  - `go test ./handlers -run "Auditoria|WithEmpresa(Ventas|Compras|Facturacion|Finanzas)Permissions" -count=1` (ok).
+  - `go test ./db -run "Auditoria" -count=1` (ok).
+  - `go test ./handlers -count=1` (ok).
+  - `go test ./db -count=1` (ok).
+
+## Actualizacion 2026-04-04 (punto 15 - continuacion backlog inmediato 1/2)
+
+- Exportacion directiva de auditoria:
+  - `web/administrar_empresa/auditoria.html` incorpora exportacion de resultados filtrados a `CSV` y `JSON`.
+  - Se soporta descarga local con nombre de archivo contextual (`empresa_id`, modulo, timestamp).
+
+- Filtros avanzados de auditoria:
+  - `backend/db/auditoria_empresa.go` amplia `EmpresaAuditoriaEventoFilter` con `recurso_id` y `codigo_http`.
+  - `ListEmpresaAuditoriaEventos` agrega condiciones SQL por ambos campos.
+  - `backend/handlers/auditoria_empresa.go` valida y expone `recurso_id` y `codigo_http` en `GET /api/empresa/auditoria/eventos`.
+  - `web/administrar_empresa/auditoria.html` agrega campos de filtro para ambos atributos en UI.
+
+- Pruebas:
+  - `backend/db/auditoria_empresa_test.go` fortalece listado con filtros avanzados.
+  - `backend/handlers/auditoria_empresa_test.go` agrega `TestEmpresaAuditoriaEventosHandlerFiltrosAvanzados`.
+
+- Validacion:
+  - `go test ./db -run "Auditoria" -count=1` (ok).
+  - `go test ./handlers -run "Auditoria" -count=1` (ok).
+  - `go test ./handlers -count=1` (ok).
+  - `go test ./db -count=1` (ok).
+
+## Actualizacion 2026-04-04 (punto 11 - exportacion unificada de tablero por rango)
+
+- Capa handler de finanzas:
+  - `backend/handlers/finanzas.go` incorpora `action=tablero_export` en `GET /api/empresa/finanzas/movimientos`.
+  - Soporta `format=json|csv` con descarga directa (`Content-Disposition`) y payload unificado del tablero.
+  - La exportacion CSV consolida metricas por bloque:
+    - `operativo`,
+    - `financiero`,
+    - `contable`,
+    - `estado_resultados`,
+    - `balance_general`.
+
+- Frontend reportes:
+  - `web/administrar_empresa/reportes.html` agrega botones `Exportar tablero CSV` y `Exportar tablero JSON`.
+  - La descarga respeta rango activo (`desde`, `hasta`) y `empresa_id` actual.
+
+- Pruebas:
+  - `backend/handlers/eventos_contables_modulos_test.go` agrega `TestEmpresaFinanzasTableroResumenExportHandler`.
+  - Valida export JSON, export CSV y rechazo de formato invalido (`400`).
+
+- Validacion:
+  - `go test ./handlers -run "TestEmpresaFinanzasTableroResumenHandler|TestEmpresaFinanzasTableroResumenExportHandler|TestEmpresaFinanzasAsientosContablesHandlerConciliacionPeriodo" -count=1` (ok).
+  - `go test ./handlers -count=1` (ok).
+  - `go test ./db -count=1` (ok).
+
+## Actualizacion 2026-04-04 (punto 10 - automatizacion por lotes de asientos)
+
+- Politica configurable de procesamiento:
+  - `backend/db/eventos_contables.go` agrega `ProcessEmpresaEventosContablesPendientesConPolitica` con soporte de limite de reintentos (`max_reintentos`).
+  - Se incorporan `RunEmpresaAsientosContablesWorkerCycle` y `StartEmpresaAsientosContablesWorker` para ejecucion automatica por intervalo.
+  - El filtro de pendientes considera `intentos_procesamiento < max_reintentos` cuando la politica lo define.
+
+- Integracion de arranque:
+  - `backend/main.go` arranca worker automatico de asientos en background.
+  - Variables de entorno de politica:
+    - `ASIENTOS_WORKER_INTERVAL_MINUTES`.
+    - `ASIENTOS_WORKER_BATCH_SIZE`.
+    - `ASIENTOS_WORKER_MAX_RETRIES`.
+
+- Endpoint manual alineado:
+  - `backend/handlers/finanzas.go` permite `max_reintentos` opcional en `PUT/POST /api/empresa/finanzas/asientos_contables?action=procesar_asientos`.
+
+- Pruebas:
+  - `backend/db/eventos_contables_test.go` agrega validacion de politica de reintentos.
+  - `backend/handlers/eventos_contables_modulos_test.go` agrega validacion de `max_reintentos` invalido y cobertura del parametro en proceso manual.
+
+- Validacion:
+  - `go test ./db -run "EventosContables|ConPolitica|Asientos" -count=1` (ok).
+  - `go test ./handlers -run "AsientosContablesHandler|FinanzasAsientos" -count=1` (ok).
+  - `go test ./handlers -count=1` (ok).
+  - `go test ./db -count=1` (ok).
+
+## Actualizacion 2026-04-04 (punto 10 - conciliacion contable por periodo)
+
+- Capa DB contable:
+  - `backend/db/eventos_contables.go` agrega modelo de conciliacion por periodo:
+    - `EmpresaConciliacionContableFilter`.
+    - `EmpresaConciliacionContablePeriodo`.
+    - `EmpresaConciliacionContableResumen`.
+  - Nueva funcion `GetEmpresaConciliacionContablePorPeriodo` para consolidar eventos vs asientos por periodo y calcular estado de conciliacion (`conciliado`, `con_pendientes`, `con_descuadre`, `sin_movimientos`).
+
+- Capa handler:
+  - `backend/handlers/finanzas.go` amplia `EmpresaFinanzasAsientosContablesHandler` con accion de consulta:
+    - `GET /api/empresa/finanzas/asientos_contables?action=conciliacion_periodo|conciliacion`.
+
+- Frontend modulo finanzas:
+  - `web/administrar_empresa/finanzas.html` agrega tarjeta "Conciliacion contable por periodo" con:
+    - filtros (`desde`, `hasta`, `periodo`, `limit`),
+    - KPIs de conciliacion,
+    - tabla comparativa eventos/asientos y desfases.
+  - La UI refresca conciliacion al ejecutar procesamiento manual de asientos.
+
+- Pruebas:
+  - `backend/db/eventos_contables_test.go` agrega `TestGetEmpresaConciliacionContablePorPeriodo`.
+  - `backend/handlers/eventos_contables_modulos_test.go` agrega `TestEmpresaFinanzasAsientosContablesHandlerConciliacionPeriodo`.
+
+- Validacion:
+  - `go test ./db -run "EventosContables|ConPolitica|Conciliacion" -count=1` (ok).
+  - `go test ./handlers -run "AsientosContablesHandler|ConciliacionPeriodo" -count=1` (ok).
+  - `go test ./db -count=1` (ok).
+  - `go test ./handlers -count=1` (ok).
 
 ## Indice de diagramas de referencia
 

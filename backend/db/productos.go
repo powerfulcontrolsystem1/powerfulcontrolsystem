@@ -147,6 +147,21 @@ type InventarioExistencia struct {
 	Observaciones      string  `json:"observaciones,omitempty"`
 }
 
+// InventarioAlertaQuiebre representa una alerta de quiebre/bajo minimo por producto y bodega.
+type InventarioAlertaQuiebre struct {
+	EmpresaID          int64   `json:"empresa_id"`
+	ProductoID         int64   `json:"producto_id"`
+	ProductoNombre     string  `json:"producto_nombre"`
+	BodegaID           int64   `json:"bodega_id"`
+	BodegaNombre       string  `json:"bodega_nombre"`
+	Cantidad           float64 `json:"cantidad"`
+	StockMinimo        float64 `json:"stock_minimo"`
+	StockMaximo        float64 `json:"stock_maximo"`
+	EstadoStock        string  `json:"estado_stock"`
+	Deficit            float64 `json:"deficit"`
+	SugeridoReposicion float64 `json:"sugerido_reposicion"`
+}
+
 // InventarioMovimiento representa un evento de inventario (entrada/salida/traslado/ajuste).
 type InventarioMovimiento struct {
 	ID                  int64   `json:"id"`
@@ -804,8 +819,22 @@ func SetCategoriaProductoEstado(dbConn *sql.DB, empresaID, categoriaID int64, es
 	return err
 }
 
+func validateProductoStockThresholds(stockMinimo, stockMaximo float64) error {
+	if stockMinimo < 0 || stockMaximo < 0 {
+		return fmt.Errorf("stock_minimo y stock_maximo no pueden ser negativos")
+	}
+	if stockMaximo > 0 && stockMinimo > stockMaximo {
+		return fmt.Errorf("stock_minimo no puede ser mayor que stock_maximo")
+	}
+	return nil
+}
+
 // CreateProducto crea un producto y opcionalmente su stock inicial.
 func CreateProducto(dbConn *sql.DB, p Producto, stockInicial float64, referenciaInicial string) (int64, error) {
+	if err := validateProductoStockThresholds(p.StockMinimo, p.StockMaximo); err != nil {
+		return 0, err
+	}
+
 	tx, err := dbConn.Begin()
 	if err != nil {
 		return 0, err
@@ -1078,6 +1107,10 @@ func GetProductoByID(dbConn *sql.DB, empresaID, productoID int64) (*Producto, er
 
 // UpdateProducto actualiza un producto de la empresa.
 func UpdateProducto(dbConn *sql.DB, p Producto, motivoCambio, referenciaCambio string) error {
+	if err := validateProductoStockThresholds(p.StockMinimo, p.StockMaximo); err != nil {
+		return err
+	}
+
 	tx, err := dbConn.Begin()
 	if err != nil {
 		return err
@@ -1234,6 +1267,94 @@ func GetExistenciasByEmpresa(dbConn *sql.DB, empresaID, productoID, bodegaID int
 	return out, nil
 }
 
+// GetAlertasQuiebreByEmpresa devuelve alertas de quiebre/bajo minimo por producto y bodega.
+func GetAlertasQuiebreByEmpresa(dbConn *sql.DB, empresaID, productoID, bodegaID int64, limit int, offset int) ([]InventarioAlertaQuiebre, error) {
+	if limit <= 0 || limit > 1000 {
+		limit = 300
+	}
+	if offset < 0 {
+		offset = 0
+	}
+
+	query := `SELECT
+		e.empresa_id,
+		e.producto_id,
+		p.nombre,
+		e.bodega_id,
+		b.nombre,
+		e.cantidad,
+		COALESCE(p.stock_minimo, 0),
+		COALESCE(p.stock_maximo, 0)
+	FROM inventario_existencias e
+	JOIN productos p ON p.id = e.producto_id AND p.empresa_id = e.empresa_id
+	JOIN bodegas b ON b.id = e.bodega_id AND b.empresa_id = e.empresa_id
+	WHERE e.empresa_id = ?
+		AND LOWER(COALESCE(e.estado, 'activo')) = 'activo'
+		AND LOWER(COALESCE(p.estado, 'activo')) = 'activo'
+		AND (
+			COALESCE(e.cantidad, 0) <= 0
+			OR (COALESCE(p.stock_minimo, 0) > 0 AND COALESCE(e.cantidad, 0) <= COALESCE(p.stock_minimo, 0))
+		)`
+	args := []interface{}{empresaID}
+
+	if productoID > 0 {
+		query += " AND e.producto_id = ?"
+		args = append(args, productoID)
+	}
+	if bodegaID > 0 {
+		query += " AND e.bodega_id = ?"
+		args = append(args, bodegaID)
+	}
+
+	query += ` ORDER BY
+		CASE WHEN COALESCE(e.cantidad, 0) <= 0 THEN 0 ELSE 1 END ASC,
+		(COALESCE(p.stock_minimo, 0) - COALESCE(e.cantidad, 0)) DESC,
+		p.nombre ASC,
+		b.nombre ASC
+		LIMIT ? OFFSET ?`
+	args = append(args, limit, offset)
+
+	rows, err := dbConn.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]InventarioAlertaQuiebre, 0)
+	for rows.Next() {
+		var a InventarioAlertaQuiebre
+		if err := rows.Scan(
+			&a.EmpresaID,
+			&a.ProductoID,
+			&a.ProductoNombre,
+			&a.BodegaID,
+			&a.BodegaNombre,
+			&a.Cantidad,
+			&a.StockMinimo,
+			&a.StockMaximo,
+		); err != nil {
+			return nil, err
+		}
+
+		a.EstadoStock = "bajo_minimo"
+		if a.Cantidad <= 0 {
+			a.EstadoStock = "sin_stock"
+		}
+
+		if a.Cantidad < a.StockMinimo {
+			a.Deficit = a.StockMinimo - a.Cantidad
+		}
+		if a.Deficit < 0 {
+			a.Deficit = 0
+		}
+		a.SugeridoReposicion = a.Deficit
+
+		out = append(out, a)
+	}
+
+	return out, nil
+}
+
 // TransferirProductoEntreBodegas mueve unidades entre bodegas de una empresa y registra movimiento.
 func TransferirProductoEntreBodegas(dbConn *sql.DB, empresaID, productoID, bodegaOrigenID, bodegaDestinoID int64, cantidad float64, referencia, usuario, observaciones string) error {
 	if cantidad <= 0 {
@@ -1302,8 +1423,8 @@ func TransferirProductoEntreBodegas(dbConn *sql.DB, empresaID, productoID, bodeg
 	return tx.Commit()
 }
 
-// GetMovimientosByEmpresa devuelve historial de movimientos de inventario.
-func GetMovimientosByEmpresa(dbConn *sql.DB, empresaID, productoID int64, limit int, offset int) ([]InventarioMovimiento, error) {
+// GetMovimientosByEmpresa devuelve historial de movimientos de inventario (kardex) con filtros operativos.
+func GetMovimientosByEmpresa(dbConn *sql.DB, empresaID, productoID, bodegaID int64, tipo, desde, hasta string, limit int, offset int) ([]InventarioMovimiento, error) {
 	if limit <= 0 || limit > 1000 {
 		limit = 300
 	}
@@ -1326,7 +1447,24 @@ func GetMovimientosByEmpresa(dbConn *sql.DB, empresaID, productoID int64, limit 
 		query += " AND m.producto_id = ?"
 		args = append(args, productoID)
 	}
-	query += " ORDER BY m.id DESC LIMIT ? OFFSET ?"
+	if bodegaID > 0 {
+		query += " AND (m.bodega_origen_id = ? OR m.bodega_destino_id = ?)"
+		args = append(args, bodegaID, bodegaID)
+	}
+	if strings.TrimSpace(tipo) != "" {
+		query += " AND LOWER(COALESCE(m.tipo, '')) = LOWER(?)"
+		args = append(args, strings.TrimSpace(tipo))
+	}
+	if strings.TrimSpace(desde) != "" {
+		query += " AND date(COALESCE(m.fecha_movimiento, m.fecha_creacion)) >= date(?)"
+		args = append(args, strings.TrimSpace(desde))
+	}
+	if strings.TrimSpace(hasta) != "" {
+		query += " AND date(COALESCE(m.fecha_movimiento, m.fecha_creacion)) <= date(?)"
+		args = append(args, strings.TrimSpace(hasta))
+	}
+
+	query += " ORDER BY datetime(COALESCE(m.fecha_movimiento, m.fecha_creacion)) DESC, m.id DESC LIMIT ? OFFSET ?"
 	args = append(args, limit, offset)
 
 	rows, err := dbConn.Query(query, args...)

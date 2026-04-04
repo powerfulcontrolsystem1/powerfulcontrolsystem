@@ -2,14 +2,106 @@ package handlers
 
 import (
 	"database/sql"
+	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
 )
+
+func buildTableroResumenExportPayload(resumen *dbpkg.EmpresaReportesTableroResumen) map[string]interface{} {
+	if resumen == nil {
+		return map[string]interface{}{}
+	}
+	return map[string]interface{}{
+		"empresa_id":        resumen.EmpresaID,
+		"desde":             resumen.Desde,
+		"hasta":             resumen.Hasta,
+		"generado_en":       resumen.GeneradoEn,
+		"operativo":         resumen.Operativo,
+		"financiero":        resumen.Financiero,
+		"contable":          resumen.Contable,
+		"estado_resultados": resumen.EstadoResultados,
+		"balance_general":   resumen.BalanceGeneral,
+	}
+}
+
+func formatTableroMetricFloat(value float64) string {
+	return strconv.FormatFloat(value, 'f', 2, 64)
+}
+
+func buildTableroResumenCSVRows(resumen *dbpkg.EmpresaReportesTableroResumen) [][]string {
+	rows := [][]string{}
+	if resumen == nil {
+		return rows
+	}
+
+	empresaID := strconv.FormatInt(resumen.EmpresaID, 10)
+	addRow := func(bloque, metrica, valor string) {
+		rows = append(rows, []string{empresaID, resumen.Desde, resumen.Hasta, resumen.GeneradoEn, bloque, metrica, valor})
+	}
+
+	addRow("operativo", "ventas_cerradas", strconv.FormatInt(resumen.Operativo.VentasCerradas, 10))
+	addRow("operativo", "ventas_hoy", strconv.FormatInt(resumen.Operativo.VentasHoy, 10))
+	addRow("operativo", "ingresos_ventas", formatTableroMetricFloat(resumen.Operativo.IngresosVentas))
+	addRow("operativo", "ticket_promedio", formatTableroMetricFloat(resumen.Operativo.TicketPromedio))
+	addRow("operativo", "clientes_activos", strconv.FormatInt(resumen.Operativo.ClientesActivos, 10))
+	addRow("operativo", "productos_activos", strconv.FormatInt(resumen.Operativo.ProductosActivos, 10))
+	addRow("operativo", "productos_bajo_minimo", strconv.FormatInt(resumen.Operativo.ProductosBajoMinimo, 10))
+	addRow("operativo", "compras_movimientos", strconv.FormatInt(resumen.Operativo.ComprasMovimientos, 10))
+	addRow("operativo", "compras_costo", formatTableroMetricFloat(resumen.Operativo.ComprasCosto))
+
+	addRow("financiero", "movimientos_ingresos", strconv.FormatInt(resumen.Financiero.MovimientosIngresos, 10))
+	addRow("financiero", "movimientos_egresos", strconv.FormatInt(resumen.Financiero.MovimientosEgresos, 10))
+	addRow("financiero", "ingresos", formatTableroMetricFloat(resumen.Financiero.Ingresos))
+	addRow("financiero", "egresos", formatTableroMetricFloat(resumen.Financiero.Egresos))
+	addRow("financiero", "balance", formatTableroMetricFloat(resumen.Financiero.Balance))
+	addRow("financiero", "periodos_abiertos", strconv.FormatInt(resumen.Financiero.PeriodosAbiertos, 10))
+	addRow("financiero", "periodos_cerrados", strconv.FormatInt(resumen.Financiero.PeriodosCerrados, 10))
+
+	addRow("contable", "eventos_pendientes", strconv.FormatInt(resumen.Contable.EventosPendientes, 10))
+	addRow("contable", "eventos_procesados", strconv.FormatInt(resumen.Contable.EventosProcesados, 10))
+	addRow("contable", "eventos_total", strconv.FormatInt(resumen.Contable.EventosTotal, 10))
+	addRow("contable", "eventos_monto_total", formatTableroMetricFloat(resumen.Contable.EventosMontoTotal))
+	addRow("contable", "asientos_generados", strconv.FormatInt(resumen.Contable.AsientosGenerados, 10))
+	addRow("contable", "asientos_monto_total", formatTableroMetricFloat(resumen.Contable.AsientosMontoTotal))
+	addRow("contable", "documentos_facturacion_activos", strconv.FormatInt(resumen.Contable.DocumentosFacturacionActivos, 10))
+	addRow("contable", "documentos_compras_activos", strconv.FormatInt(resumen.Contable.DocumentosComprasActivos, 10))
+
+	addRow("estado_resultados", "ingresos", formatTableroMetricFloat(resumen.EstadoResultados.Ingresos))
+	addRow("estado_resultados", "gastos", formatTableroMetricFloat(resumen.EstadoResultados.Gastos))
+	addRow("estado_resultados", "utilidad_operacional", formatTableroMetricFloat(resumen.EstadoResultados.UtilidadOperacional))
+
+	addRow("balance_general", "activos", formatTableroMetricFloat(resumen.BalanceGeneral.Activos))
+	addRow("balance_general", "pasivos", formatTableroMetricFloat(resumen.BalanceGeneral.Pasivos))
+	addRow("balance_general", "patrimonio", formatTableroMetricFloat(resumen.BalanceGeneral.Patrimonio))
+	addRow("balance_general", "resultado_ejercicio", formatTableroMetricFloat(resumen.BalanceGeneral.ResultadoEjercicio))
+	addRow("balance_general", "cuadre", formatTableroMetricFloat(resumen.BalanceGeneral.Cuadre))
+
+	return rows
+}
+
+func buildTableroResumenCSVContent(resumen *dbpkg.EmpresaReportesTableroResumen) (string, error) {
+	var builder strings.Builder
+	writer := csv.NewWriter(&builder)
+	if err := writer.Write([]string{"empresa_id", "desde", "hasta", "generado_en", "bloque", "metrica", "valor"}); err != nil {
+		return "", err
+	}
+	for _, row := range buildTableroResumenCSVRows(resumen) {
+		if err := writer.Write(row); err != nil {
+			return "", err
+		}
+	}
+	writer.Flush()
+	if err := writer.Error(); err != nil {
+		return "", err
+	}
+	return builder.String(), nil
+}
 
 // EmpresaFinanzasMovimientosHandler gestiona CRUD de ingresos/egresos por empresa.
 func EmpresaFinanzasMovimientosHandler(dbEmp *sql.DB) http.HandlerFunc {
@@ -22,6 +114,42 @@ func EmpresaFinanzasMovimientosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+			if action == "tablero_export" || action == "tablero_exportar" || action == "export_tablero" {
+				desde := strings.TrimSpace(r.URL.Query().Get("desde"))
+				hasta := strings.TrimSpace(r.URL.Query().Get("hasta"))
+				resumen, err := dbpkg.GetEmpresaReportesTableroResumen(dbEmp, empresaID, desde, hasta)
+				if err != nil {
+					http.Error(w, "No se pudo construir el tablero de reportes", http.StatusInternalServerError)
+					return
+				}
+
+				format := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("format")))
+				if format == "" {
+					format = "json"
+				}
+				fileNameBase := "tablero_empresa_" + strconv.FormatInt(empresaID, 10) + "_" + time.Now().Format("20060102_150405")
+
+				switch format {
+				case "json":
+					w.Header().Set("Content-Disposition", "attachment; filename=\""+fileNameBase+".json\"")
+					writeJSON(w, http.StatusOK, buildTableroResumenExportPayload(resumen))
+					return
+				case "csv":
+					content, err := buildTableroResumenCSVContent(resumen)
+					if err != nil {
+						http.Error(w, "No se pudo generar la exportacion CSV del tablero", http.StatusInternalServerError)
+						return
+					}
+					w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+					w.Header().Set("Content-Disposition", "attachment; filename=\""+fileNameBase+".csv\"")
+					w.WriteHeader(http.StatusOK)
+					_, _ = w.Write([]byte(content))
+					return
+				default:
+					http.Error(w, "format invalido (use csv o json)", http.StatusBadRequest)
+					return
+				}
+			}
 			if action == "tablero" || action == "dashboard" || action == "resumen_kpi" {
 				desde := strings.TrimSpace(r.URL.Query().Get("desde"))
 				hasta := strings.TrimSpace(r.URL.Query().Get("hasta"))
@@ -570,9 +698,25 @@ func EmpresaFinanzasAsientosContablesHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
+			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 			limit, err := parseIntQueryOptional(r, "limit")
 			if err != nil {
 				http.Error(w, "limit invalido", http.StatusBadRequest)
+				return
+			}
+			if action == "conciliacion_periodo" || action == "conciliacion" || action == "conciliar" {
+				resumen, err := dbpkg.GetEmpresaConciliacionContablePorPeriodo(dbEmp, empresaID, dbpkg.EmpresaConciliacionContableFilter{
+					Desde:           strings.TrimSpace(r.URL.Query().Get("desde")),
+					Hasta:           strings.TrimSpace(r.URL.Query().Get("hasta")),
+					PeriodoContable: strings.TrimSpace(r.URL.Query().Get("periodo")),
+					IncludeInactive: queryBool(r, "include_inactive"),
+					Limit:           limit,
+				})
+				if err != nil {
+					http.Error(w, "No se pudo construir la conciliacion contable", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, resumen)
 				return
 			}
 			rows, err := dbpkg.ListEmpresaAsientosContables(dbEmp, empresaID, dbpkg.EmpresaAsientoContableFilter{
@@ -611,8 +755,13 @@ func EmpresaFinanzasAsientosContablesHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, "limit invalido", http.StatusBadRequest)
 				return
 			}
+			maxRetries, err := parseIntQueryOptional(r, "max_reintentos")
+			if err != nil {
+				http.Error(w, "max_reintentos invalido", http.StatusBadRequest)
+				return
+			}
 
-			resultado, err := dbpkg.ProcessEmpresaEventosContablesPendientes(dbEmp, empresaID, strings.TrimSpace(adminEmailFromRequest(r)), limit)
+			resultado, err := dbpkg.ProcessEmpresaEventosContablesPendientesConPolitica(dbEmp, empresaID, strings.TrimSpace(adminEmailFromRequest(r)), limit, maxRetries)
 			if err != nil {
 				http.Error(w, "No se pudieron procesar los eventos contables pendientes", http.StatusInternalServerError)
 				return

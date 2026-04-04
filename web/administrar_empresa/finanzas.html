@@ -546,6 +546,78 @@
       </div>
       <div id="listMsg" class="form-help"></div>
     </section>
+
+    <section class="card empresa-section" style="margin-top:12px;">
+      <div class="empresa-section-header">
+        <h2 style="margin:0;">Conciliacion contable por periodo</h2>
+        <div class="empresa-inline-actions">
+          <button id="btnBuscarConciliacion" class="btn secondary" type="button">Actualizar conciliacion</button>
+        </div>
+      </div>
+      <p class="form-help">Compara eventos contables vs asientos canonicos para detectar pendientes, errores y descuadres por periodo.</p>
+
+      <div class="form" style="margin-top:10px;">
+        <div class="form-row" style="margin-bottom:0;">
+          <div class="form-col">
+            <label class="form-label" for="concDesde">Desde</label>
+            <input id="concDesde" class="form-input" type="date">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="concHasta">Hasta</label>
+            <input id="concHasta" class="form-input" type="date">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="concPeriodo">Periodo (YYYY-MM)</label>
+            <input id="concPeriodo" class="form-input" placeholder="2026-04">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="concLimit">Limite de periodos</label>
+            <input id="concLimit" class="form-input" type="number" min="1" max="120" value="24">
+          </div>
+        </div>
+      </div>
+
+      <div class="kpi-grid" style="margin-top:10px;">
+        <div class="kpi-box">
+          <span class="kpi-label">Periodos listados</span>
+          <strong id="kpiConcTotal">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Conciliados</span>
+          <strong id="kpiConcOk">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Con pendientes</span>
+          <strong id="kpiConcPendientes">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Con descuadre</span>
+          <strong id="kpiConcDescuadre">0</strong>
+        </div>
+      </div>
+
+      <div class="table-wrap" style="margin-top:10px;">
+        <table class="table" id="tablaConciliacionContable">
+          <thead>
+            <tr>
+              <th>Periodo</th>
+              <th>Eventos</th>
+              <th>Procesados</th>
+              <th>Pendientes</th>
+              <th>Con error</th>
+              <th>Asientos</th>
+              <th>Desfase evt/as</th>
+              <th>Monto eventos</th>
+              <th>Monto asientos</th>
+              <th>Desfase monto</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div id="conciliacionMsg" class="form-help"></div>
+    </section>
   </div>
 
   <script>
@@ -556,6 +628,7 @@
       movimientos: [],
       cierresCaja: [],
       periodos: [],
+      conciliacion: null,
       activeTab: 'todos'
     };
 
@@ -1338,6 +1411,69 @@
       document.getElementById('kpiIngresos').textContent = fmtMoney(ingresos);
       document.getElementById('kpiEgresos').textContent = fmtMoney(egresos);
       document.getElementById('kpiBalance').textContent = fmtMoney(ingresos - egresos);
+    }
+
+    function conciliacionEstadoLabel(raw) {
+      const estado = normalize(raw).toLowerCase();
+      if (estado === 'conciliado') return 'Conciliado';
+      if (estado === 'con_pendientes') return 'Con pendientes';
+      if (estado === 'con_descuadre') return 'Con descuadre';
+      if (estado === 'sin_movimientos') return 'Sin movimientos';
+      return estado || '-';
+    }
+
+    function renderConciliacionTable() {
+      const tbody = document.querySelector('#tablaConciliacionContable tbody');
+      const payload = state.conciliacion && typeof state.conciliacion === 'object' ? state.conciliacion : {};
+      const rows = Array.isArray(payload.filas) ? payload.filas : [];
+
+      document.getElementById('kpiConcTotal').textContent = String(toNumber(payload.total_periodos, rows.length));
+      document.getElementById('kpiConcOk').textContent = String(toNumber(payload.periodos_conciliados, 0));
+      document.getElementById('kpiConcPendientes').textContent = String(toNumber(payload.periodos_con_pendientes, 0));
+      document.getElementById('kpiConcDescuadre').textContent = String(toNumber(payload.periodos_con_descuadre, 0));
+
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="11">No hay datos de conciliacion para el filtro actual.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = rows.map(function(item) {
+        return '<tr>' +
+          '<td>' + sanitize(normalize(item.periodo_contable) || '-') + '</td>' +
+          '<td>' + sanitize(String(toNumber(item.eventos_total, 0))) + '</td>' +
+          '<td>' + sanitize(String(toNumber(item.eventos_procesados, 0))) + '</td>' +
+          '<td>' + sanitize(String(toNumber(item.eventos_pendientes, 0))) + '</td>' +
+          '<td>' + sanitize(String(toNumber(item.eventos_con_error, 0))) + '</td>' +
+          '<td>' + sanitize(String(toNumber(item.asientos_total, 0))) + '</td>' +
+          '<td>' + sanitize(String(toNumber(item.desfase_eventos_asientos, 0))) + '</td>' +
+          '<td>' + sanitize(fmtMoney(toNumber(item.eventos_monto_procesado, 0))) + '</td>' +
+          '<td>' + sanitize(fmtMoney(toNumber(item.asientos_monto_total, 0))) + '</td>' +
+          '<td>' + sanitize(fmtMoney(toNumber(item.desfase_monto, 0))) + '</td>' +
+          '<td>' + sanitize(conciliacionEstadoLabel(item.estado_conciliacion)) + '</td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    async function loadConciliacionContable() {
+      const params = new URLSearchParams();
+      params.set('action', 'conciliacion_periodo');
+      params.set('empresa_id', String(state.empresaID));
+
+      const desde = normalize(document.getElementById('concDesde').value);
+      const hasta = normalize(document.getElementById('concHasta').value);
+      const periodo = normalizePeriodoContableInput(document.getElementById('concPeriodo').value);
+      const limit = Math.max(1, Math.min(120, Math.trunc(toNumber(document.getElementById('concLimit').value, 24))));
+
+      if (desde) params.set('desde', desde);
+      if (hasta) params.set('hasta', hasta);
+      if (periodo) params.set('periodo', periodo);
+      params.set('limit', String(limit));
+
+      const res = await fetch('/api/empresa/finanzas/asientos_contables?' + params.toString());
+      await ensureOk(res);
+      state.conciliacion = await res.json();
+      renderConciliacionTable();
+      setMsg('conciliacionMsg', 'Conciliacion actualizada correctamente.', false);
     }
 
     function formatDateTime(v) {
@@ -2410,6 +2546,7 @@
         const fallidos = toNumber(data && data.fallidos, 0);
         const msg = 'Proceso contable completado. Revisados: ' + revisados + ', procesados: ' + procesados + ', asientos nuevos: ' + creados + ', asientos existentes: ' + existentes + ', fallidos: ' + fallidos + '.';
         setMsg('listMsg', msg, fallidos > 0);
+        await loadConciliacionContable();
       } catch (err) {
         setMsg('listMsg', err.message || 'No se pudieron procesar los eventos contables.', true);
       }
@@ -2506,6 +2643,13 @@
       document.getElementById('btnExportarLibroDiario').addEventListener('click', exportarLibroDiarioCSV);
       document.getElementById('btnExportarLibroMayor').addEventListener('click', exportarLibroMayorCSV);
       document.getElementById('btnProcesarAsientos').addEventListener('click', procesarEventosContablesPendientes);
+      document.getElementById('btnBuscarConciliacion').addEventListener('click', async function() {
+        try {
+          await loadConciliacionContable();
+        } catch (err) {
+          setMsg('conciliacionMsg', err.message || 'No se pudo actualizar la conciliacion.', true);
+        }
+      });
 
       document.getElementById('btnCerrarPeriodo').addEventListener('click', async function() {
         try {
@@ -2552,12 +2696,21 @@
       document.getElementById('filtroPeriodo').value = normalizePeriodoContableInput(defaultDateTimeLocal());
       document.getElementById('filtroCierreHasta').value = hasta.toISOString().slice(0, 10);
       document.getElementById('filtroCierreDesde').value = desde.toISOString().slice(0, 10);
+      document.getElementById('concHasta').value = hasta.toISOString().slice(0, 10);
+      document.getElementById('concDesde').value = desde.toISOString().slice(0, 10);
+      document.getElementById('concPeriodo').value = '';
+      document.getElementById('concLimit').value = '24';
 
       await loadEmpresaNombre();
       await loadConfig();
       await loadPeriodos();
       await loadCierresCaja();
       await loadMovimientos();
+      try {
+        await loadConciliacionContable();
+      } catch (err) {
+        setMsg('conciliacionMsg', err.message || 'No se pudo cargar la conciliacion inicial.', true);
+      }
     }
 
     init().catch(function(err) {
