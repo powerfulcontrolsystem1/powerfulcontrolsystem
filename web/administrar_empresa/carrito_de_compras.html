@@ -102,6 +102,26 @@
         <button type="button" id="buscarProductosBtn" class="btn secondary" disabled>Buscar productos</button>
       </div>
 
+      <div id="scannerPanel" class="card empresa-section" style="margin-top:12px;">
+        <div class="empresa-section-header">
+          <h3 style="margin:0;">Lector de código de barras</h3>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="scannerCodigo">Código de barras o SKU</label>
+            <input id="scannerCodigo" class="form-input" autocomplete="off" placeholder="Escanea y presiona Enter">
+          </div>
+          <div class="form-col" style="max-width:180px;">
+            <label class="form-label" for="scannerCantidad">Cantidad</label>
+            <input id="scannerCantidad" type="number" min="0.01" step="0.01" class="form-input" value="1">
+          </div>
+          <div class="form-col" style="max-width:240px;display:flex;align-items:flex-end;">
+            <button type="button" id="scannerAgregarBtn" class="btn" style="width:100%;">Agregar por escaneo</button>
+          </div>
+        </div>
+        <div id="scannerMsg" class="form-help"></div>
+      </div>
+
       <div id="stationCheckoutPanel" class="card empresa-section" style="display:none;margin-top:12px;">
         <div class="empresa-section-header">
           <h3 style="margin:0;">Cobro y estados del carrito</h3>
@@ -326,6 +346,37 @@
         allowValue: productos.permitir_descuento_valor === undefined ? true : Boolean(productos.permitir_descuento_valor),
         rawCodes: String(productos.codigos_descuento || '').trim()
       };
+    }
+
+    function getBarcodeCapabilities() {
+      const cfg = loadEmpresaGeneralConfig();
+      const productos = cfg && cfg.productos && typeof cfg.productos === 'object' ? cfg.productos : {};
+      return {
+        enabled: productos.lector_codigo_barras_habilitado === undefined ? true : Boolean(productos.lector_codigo_barras_habilitado),
+        autofocus: productos.lector_codigo_barras_autofoco === undefined ? true : Boolean(productos.lector_codigo_barras_autofoco),
+        accumulate: productos.lector_codigo_barras_acumular === undefined ? true : Boolean(productos.lector_codigo_barras_acumular)
+      };
+    }
+
+    function setScannerMessage(text, isError) {
+      setMessage('scannerMsg', text, isError);
+    }
+
+    function normalizeScanCode(value) {
+      return normalize(value).replace(/\s+/g, '').toUpperCase();
+    }
+
+    function focusScannerInput() {
+      const caps = getBarcodeCapabilities();
+      if (!caps.enabled || !caps.autofocus) return;
+      const input = document.getElementById('scannerCodigo');
+      if (!input || input.disabled) return;
+      setTimeout(function() {
+        try {
+          input.focus();
+          input.select();
+        } catch (_) {}
+      }, 0);
     }
 
     function parseDiscountCodesMap(rawCodes) {
@@ -569,6 +620,8 @@
       if (!selectedActive) {
         setMessage('itemMsg', 'El carrito está inactivo. Debes activarlo para agregar productos o servicios.', true);
       }
+
+      renderScannerPanel();
     }
 
     async function activateStationSession(resetItems) {
@@ -686,6 +739,183 @@
         return;
       }
       btn.textContent = 'Buscar productos en ' + (normalize(selected.nombre) || ('carrito #' + selected.id));
+    }
+
+    function findExactProductoByCode(rows, code) {
+      const normalizedTarget = normalizeScanCode(code);
+      if (!normalizedTarget) return null;
+      if (!Array.isArray(rows) || !rows.length) return null;
+
+      let skuFallback = null;
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i] || {};
+        const barcode = normalizeScanCode(row.codigo_barras);
+        const sku = normalizeScanCode(row.sku);
+        if (barcode && barcode === normalizedTarget) {
+          return row;
+        }
+        if (!skuFallback && sku && sku === normalizedTarget) {
+          skuFallback = row;
+        }
+      }
+
+      if (skuFallback) return skuFallback;
+      if (rows.length === 1) return rows[0];
+      return null;
+    }
+
+    async function resolveProductoFromScanCode(code) {
+      const q = normalizeScanCode(code);
+      if (!q) throw new Error('Código de escaneo inválido.');
+
+      const url = new URL('/api/empresa/productos', window.location.origin);
+      url.searchParams.set('empresa_id', String(state.empresaID));
+      url.searchParams.set('estado', 'activo');
+      url.searchParams.set('q', q);
+      url.searchParams.set('limit', '25');
+
+      const res = await fetch(url.pathname + url.search);
+      await ensureOk(res);
+      const rows = await res.json();
+      const producto = findExactProductoByCode(rows, q);
+      if (!producto || Number(producto.id || 0) <= 0) {
+        throw new Error('No se encontró un producto activo con ese código de barras o SKU.');
+      }
+      return producto;
+    }
+
+    function findExistingScannedItem(productoID, code) {
+      const normalizedTarget = normalizeScanCode(code);
+      return state.items.find(function(it) {
+        if (normalize(it.estado || 'activo').toLowerCase() !== 'activo') return false;
+        if (normalize(it.tipo_item || 'producto').toLowerCase() !== 'producto') return false;
+        if (Number(it.referencia_id || 0) === Number(productoID)) return true;
+        if (!normalizedTarget) return false;
+        return normalizeScanCode(it.codigo_item || '') === normalizedTarget;
+      }) || null;
+    }
+
+    function renderScannerPanel() {
+      const panel = document.getElementById('scannerPanel');
+      if (!panel) return;
+
+      const caps = getBarcodeCapabilities();
+      const selected = getSelectedCarrito();
+      const canUseByStation = !state.stationMode || isCarritoOperativoActivo(selected);
+      const canUse = !!selected && canUseByStation;
+
+      panel.style.display = caps.enabled ? '' : 'none';
+
+      const inputCode = document.getElementById('scannerCodigo');
+      const inputQty = document.getElementById('scannerCantidad');
+      const btnAdd = document.getElementById('scannerAgregarBtn');
+      const disabled = !caps.enabled || !canUse;
+
+      inputCode.disabled = disabled;
+      inputQty.disabled = disabled;
+      btnAdd.disabled = disabled;
+
+      if (!caps.enabled) {
+        setScannerMessage('El lector de código de barras está deshabilitado en Configuración de empresa.', false);
+        return;
+      }
+      if (!selected) {
+        setScannerMessage('Selecciona un carrito para usar el lector de código de barras.', false);
+        return;
+      }
+      if (!canUseByStation) {
+        setScannerMessage('El carrito está inactivo. Actívalo para agregar productos por escaneo.', true);
+        return;
+      }
+
+      setScannerMessage('Lector listo. Escanea código y presiona Enter.', false);
+      focusScannerInput();
+    }
+
+    async function processScannerInput() {
+      const caps = getBarcodeCapabilities();
+      if (!caps.enabled) {
+        setScannerMessage('El lector de código de barras está deshabilitado para esta empresa.', true);
+        return;
+      }
+
+      const selected = getSelectedCarrito();
+      if (!selected) {
+        setScannerMessage('Selecciona un carrito antes de escanear.', true);
+        return;
+      }
+      if (state.stationMode && !isCarritoOperativoActivo(selected)) {
+        setScannerMessage('El carrito de estación está inactivo. Actívalo para continuar.', true);
+        return;
+      }
+
+      const codeRaw = document.getElementById('scannerCodigo').value;
+      const scanCode = normalizeScanCode(codeRaw);
+      const qty = toNumber(document.getElementById('scannerCantidad').value, 1);
+      if (!scanCode) {
+        setScannerMessage('Escanea o digita un código de barras o SKU válido.', true);
+        return;
+      }
+      if (qty <= 0) {
+        setScannerMessage('La cantidad debe ser mayor que cero.', true);
+        return;
+      }
+
+      try {
+        setScannerMessage('Buscando producto en catálogo...', false);
+        const producto = await resolveProductoFromScanCode(scanCode);
+        const existing = findExistingScannedItem(Number(producto.id || 0), scanCode);
+
+        const payload = {
+          id: existing ? Number(existing.id || 0) : 0,
+          empresa_id: Number(state.empresaID),
+          carrito_id: Number(state.selectedCarritoID),
+          tipo_item: 'producto',
+          referencia_id: Number(producto.id || 0),
+          codigo_item: normalize(producto.codigo_barras) || normalize(producto.sku),
+          descripcion: normalize(producto.nombre) || 'Producto',
+          unidad_medida: normalize(producto.unidad_medida) || 'unidad',
+          cantidad: Number(qty),
+          precio_unitario: Number(producto.precio || 0),
+          descuento_porcentaje: 0,
+          impuesto_porcentaje: Number(producto.impuesto_porcentaje || 0),
+          impuesto_codigo: 'IVA',
+          observaciones: 'agregado por lector de codigo de barras'
+        };
+
+        const shouldAccumulate = caps.accumulate && !!existing;
+        if (shouldAccumulate) {
+          payload.cantidad = Number(existing.cantidad || 0) + Number(qty);
+          payload.precio_unitario = Number(existing.precio_unitario || payload.precio_unitario);
+          payload.descuento_porcentaje = Number(existing.descuento_porcentaje || 0);
+          payload.impuesto_porcentaje = Number(existing.impuesto_porcentaje || payload.impuesto_porcentaje);
+          payload.impuesto_codigo = normalize(existing.impuesto_codigo) || 'IVA';
+          payload.descripcion = normalize(existing.descripcion) || payload.descripcion;
+          payload.unidad_medida = normalize(existing.unidad_medida) || payload.unidad_medida;
+          payload.observaciones = normalize(existing.observaciones) || payload.observaciones;
+        }
+
+        const endpoint = '/api/empresa/carritos_compra/items';
+        const method = shouldAccumulate ? 'PUT' : 'POST';
+        const res = await fetch(endpoint, {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        await ensureOk(res);
+
+        await Promise.all([loadItems(), loadCarritos()]);
+        const msgAction = shouldAccumulate ? 'Cantidad actualizada por escaneo.' : 'Producto agregado por escaneo.';
+        setScannerMessage(msgAction, false);
+        setMessage('itemMsg', msgAction, false);
+        document.getElementById('scannerCodigo').value = '';
+        if (caps.autofocus) {
+          focusScannerInput();
+        }
+      } catch (err) {
+        const msg = err && err.message ? err.message : 'No se pudo procesar el escaneo.';
+        setScannerMessage(msg, true);
+      }
     }
 
     function fillClientesSelect(selected) {
@@ -887,6 +1117,7 @@
         if (!selected) {
           box.textContent = 'No se encontró el carrito asociado a esta estación.';
           renderStationPaymentPanel(null);
+          renderScannerPanel();
           return;
         }
 
@@ -894,6 +1125,7 @@
 
         renderStationPaymentPanel(selected);
         syncBuscarProductosButton();
+        renderScannerPanel();
         return;
       }
 
@@ -903,6 +1135,7 @@
           renderResumen();
           renderItems();
         }
+        renderScannerPanel();
         return;
       }
 
@@ -1055,6 +1288,7 @@
 
       renderStationPaymentPanel(null);
       syncBuscarProductosButton();
+      renderScannerPanel();
     }
 
     function renderResumen() {
@@ -1064,6 +1298,7 @@
       if (!selected) {
         title.textContent = state.stationMode ? 'Items de la estación' : 'Items del carrito';
         target.textContent = state.stationMode ? 'Se está preparando el carrito asociado a la estación.' : 'Selecciona un carrito para agregar items.';
+        renderScannerPanel();
         return;
       }
 
@@ -1077,6 +1312,7 @@
         (normalize(selected.pagado_en) ? (' | Pagado: ' + formatAmount(selected.total_pagado, selected.moneda)) : '');
 
       syncBuscarProductosButton();
+      renderScannerPanel();
     }
 
     function renderProductosCarritoTable() {
@@ -1132,6 +1368,7 @@
       if (!selected) {
         box.textContent = state.stationMode ? 'Se está preparando el carrito de la estación.' : 'Selecciona un carrito para gestionar sus items.';
         renderProductosCarritoTable();
+        renderScannerPanel();
         return;
       }
 
@@ -1140,6 +1377,7 @@
       if (!state.items.length) {
         box.textContent = readOnlyMode ? 'Este carrito no tiene items activos para mostrar.' : 'Este carrito aún no tiene items.';
         renderProductosCarritoTable();
+        renderScannerPanel();
         return;
       }
 
@@ -1188,6 +1426,7 @@
       renderProductosCarritoTable();
 
       if (readOnlyMode) {
+        renderScannerPanel();
         return;
       }
 
@@ -1252,6 +1491,8 @@
           }
         };
       });
+
+      renderScannerPanel();
     }
 
     async function loadEmpresaTitle() {
@@ -1577,6 +1818,22 @@
         return;
       }
       openBuscarProductosForCarrito(selected);
+    });
+
+    document.getElementById('scannerAgregarBtn').addEventListener('click', async function() {
+      await processScannerInput();
+    });
+
+    document.getElementById('scannerCodigo').addEventListener('keydown', function(e) {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      processScannerInput();
+    });
+
+    document.getElementById('scannerCantidad').addEventListener('keydown', function(e) {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      processScannerInput();
     });
 
     ['discountType', 'discountValue', 'discountCode', 'devolucionMonto'].forEach(function(id) {

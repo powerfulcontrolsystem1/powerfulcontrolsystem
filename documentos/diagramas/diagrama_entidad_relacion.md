@@ -1,6 +1,6 @@
 # Diagrama entidad-relacion
 
-Fecha: 2026-04-02
+Fecha: 2026-04-04
 
 ```mermaid
 erDiagram
@@ -17,6 +17,8 @@ erDiagram
     EMPRESAS ||--o{ PRODUCTOS : "empresa_id"
     EMPRESAS ||--o{ SERVICIOS : "empresa_id"
     EMPRESAS ||--o{ CARRITOS_COMPRAS : "empresa_id"
+    EMPRESAS ||--o{ EMPRESA_FINANZAS_MOVIMIENTOS : "empresa_id"
+    EMPRESAS ||--|| EMPRESA_FINANZAS_CONFIGURACION : "empresa_id"
     EMPRESAS ||--|| EMPRESA_CONFIG_AVANZADA : "empresa_id"
     EMPRESAS ||--o{ FACTURACION_ELECTRONICA_PAIS : "empresa_id"
     EMPRESAS ||--o{ CHAT_TAREAS_CONVERSACIONES : "empresa_id"
@@ -118,6 +120,37 @@ erDiagram
       double cantidad
       double precio_unitario
       double total_linea
+      string estado
+    }
+    EMPRESA_FINANZAS_MOVIMIENTOS {
+      int id PK
+      int empresa_id FK
+      string tipo_movimiento
+      string codigo
+      string categoria
+      string concepto
+      double total
+      string numero_comprobante
+      string estado
+    }
+    EMPRESA_FINANZAS_CONFIGURACION {
+      int id PK
+      int empresa_id FK
+      int habilitar_ingresos
+      int habilitar_egresos
+      string moneda
+      string prefijo_ingreso
+      string prefijo_egreso
+      string formato_impresion
+      int requiere_aprobacion
+      string integracion_contable_destino
+      string cuenta_caja_bancos
+      string cuenta_ingresos
+      string cuenta_iva_generado
+      string cuenta_gastos
+      string cuenta_iva_descontable
+      string cuentas_ingreso_categoria
+      string cuentas_egreso_categoria
       string estado
     }
     EMPRESA_CONFIG_AVANZADA {

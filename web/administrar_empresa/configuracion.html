@@ -54,6 +54,19 @@
               </label>
             </div>
           </div>
+
+          <label class="empresa-config-check" for="habilitarLectorCodigoBarras" style="margin-top:12px;">
+            <input id="habilitarLectorCodigoBarras" type="checkbox">
+            <span>Habilitar lector de código de barras en carrito (modo supermercado)</span>
+          </label>
+          <label class="empresa-config-check" for="autofocoLectorCodigoBarras" style="margin-top:8px;">
+            <input id="autofocoLectorCodigoBarras" type="checkbox">
+            <span>Autofoco del campo de escaneo para lectura continua</span>
+          </label>
+          <label class="empresa-config-check" for="acumularLectorCodigoBarras" style="margin-top:8px;">
+            <input id="acumularLectorCodigoBarras" type="checkbox">
+            <span>Acumular cantidad si el producto ya existe en el carrito</span>
+          </label>
         </div>
 
         <div class="form">
@@ -203,7 +216,10 @@
           permitir_descuento_porcentaje: productos.permitir_descuento_porcentaje === undefined ? true : Boolean(productos.permitir_descuento_porcentaje),
           permitir_descuento_codigo: productos.permitir_descuento_codigo === undefined ? true : Boolean(productos.permitir_descuento_codigo),
           permitir_descuento_valor: productos.permitir_descuento_valor === undefined ? true : Boolean(productos.permitir_descuento_valor),
-          codigos_descuento: String(productos.codigos_descuento || '').trim().slice(0, 2000)
+          codigos_descuento: String(productos.codigos_descuento || '').trim().slice(0, 2000),
+          lector_codigo_barras_habilitado: productos.lector_codigo_barras_habilitado === undefined ? true : Boolean(productos.lector_codigo_barras_habilitado),
+          lector_codigo_barras_autofoco: productos.lector_codigo_barras_autofoco === undefined ? true : Boolean(productos.lector_codigo_barras_autofoco),
+          lector_codigo_barras_acumular: productos.lector_codigo_barras_acumular === undefined ? true : Boolean(productos.lector_codigo_barras_acumular)
         }
       };
     }
@@ -381,6 +397,9 @@
       document.getElementById('permitirDescuentoCodigo').checked = Boolean(productos.permitir_descuento_codigo);
       document.getElementById('permitirDescuentoValor').checked = Boolean(productos.permitir_descuento_valor);
       document.getElementById('codigosDescuento').value = productos.codigos_descuento || '';
+      document.getElementById('habilitarLectorCodigoBarras').checked = Boolean(productos.lector_codigo_barras_habilitado);
+      document.getElementById('autofocoLectorCodigoBarras').checked = Boolean(productos.lector_codigo_barras_autofoco);
+      document.getElementById('acumularLectorCodigoBarras').checked = Boolean(productos.lector_codigo_barras_acumular);
     }
 
     function getFormData() {
@@ -394,7 +413,10 @@
           permitir_descuento_porcentaje: document.getElementById('permitirDescuentoPorcentaje').checked,
           permitir_descuento_codigo: document.getElementById('permitirDescuentoCodigo').checked,
           permitir_descuento_valor: document.getElementById('permitirDescuentoValor').checked,
-          codigos_descuento: document.getElementById('codigosDescuento').value
+          codigos_descuento: document.getElementById('codigosDescuento').value,
+          lector_codigo_barras_habilitado: document.getElementById('habilitarLectorCodigoBarras').checked,
+          lector_codigo_barras_autofoco: document.getElementById('autofocoLectorCodigoBarras').checked,
+          lector_codigo_barras_acumular: document.getElementById('acumularLectorCodigoBarras').checked
         }
       });
     }

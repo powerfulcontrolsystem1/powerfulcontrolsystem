@@ -1,6 +1,6 @@
 # Diagrama de arquitectura del sistema
 
-Fecha: 2026-04-02
+Fecha: 2026-04-04
 
 ```mermaid
 flowchart LR
@@ -14,6 +14,7 @@ flowchart LR
     H4[handlers de negocio empresa]
     H5[chat_tareas handlers]
     H6[ubicacion_gps handlers]
+    H7[finanzas handlers]
     DB1[(empresas.db)]
     DB2[(superadministrador.db)]
     FS[(web/uploads/chat_tareas)]
@@ -30,6 +31,7 @@ flowchart LR
     M --> H4
     M --> H5
     M --> H6
+    M --> H7
 
     U -->|Leaflet + Tiles| OSM
 
@@ -46,6 +48,7 @@ flowchart LR
     H5 --> DB1
     H5 --> FS
     H6 --> DB1
+    H7 --> DB1
 
     DB2 -->|sesiones/roles/config| M
 ```
@@ -56,4 +59,5 @@ Componentes:
 - Persistencia: SQLite separada por contexto global y empresarial.
 - Colaboracion interna: modulo `chat_y_tareas` con adjuntos en `web/uploads/chat_tareas/` y metadatos en `empresas.db`.
 - Geolocalizacion empresarial: modulo `ubicacion_gps` con mapa OpenStreetMap y almacenamiento de recorridos por `empresa_id`.
+- Finanzas empresariales: modulo `finanzas` con configuracion por empresa y registro de ingresos/egresos con comprobantes.
 - Integraciones: SMTP para validacion de correo y pasarelas para pagos.

@@ -9,10 +9,819 @@
 <body class="empresa-subpage">
   <div class="container">
     <section class="card empresa-section">
-      <h1>Módulo de Reportes</h1>
-      <p>Espacio reservado para reportes operativos de la empresa administrada.</p>
-      <p>La base del módulo ya queda centralizada dentro del directorio <strong>/web/administrar_empresa</strong>.</p>
+      <div class="empresa-section-header">
+        <h1 style="margin:0;">Reportes operativos</h1>
+        <div class="empresa-inline-actions">
+          <input id="fechaDesde" type="date" class="form-input">
+          <input id="fechaHasta" type="date" class="form-input">
+          <button id="btnAplicarFiltro" class="btn secondary" type="button">Aplicar rango</button>
+          <button id="btnRefrescarReportes" class="btn" type="button">Actualizar</button>
+        </div>
+      </div>
+      <p class="form-help">Resumen comercial por empresa usando ventas cerradas, clientes, productos y configuración de impresión.</p>
+      <div id="reportesMsg" class="form-help"></div>
+
+      <div class="kpi-grid" style="margin-top:12px;">
+        <div class="kpi-box">
+          <span class="kpi-label">Ventas cerradas</span>
+          <strong id="kpiVentasCerradas">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Ventas de hoy</span>
+          <strong id="kpiVentasHoy">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Ingresos</span>
+          <strong id="kpiIngresos">$0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Ticket promedio</span>
+          <strong id="kpiTicketPromedio">$0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Clientes activos</span>
+          <strong id="kpiClientesActivos">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Productos activos</span>
+          <strong id="kpiProductosActivos">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Productos bajo mínimo</span>
+          <strong id="kpiProductosBajoMinimo">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Mov. compras (rango)</span>
+          <strong id="kpiComprasMovimientos">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Costo compras (rango)</span>
+          <strong id="kpiComprasCosto">$0</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2 style="margin:0;">Ventas cerradas recientes</h2>
+      </div>
+      <div class="table-wrap">
+        <table class="table" id="tablaVentasCerradas">
+          <thead>
+            <tr>
+              <th>Fecha pago</th>
+              <th>Carrito</th>
+              <th>Cliente</th>
+              <th>Items</th>
+              <th>Total</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2 style="margin:0;">Top productos vendidos</h2>
+      </div>
+      <div class="table-wrap">
+        <table class="table" id="tablaTopProductos">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>Cantidad</th>
+              <th>Total vendido</th>
+              <th>Ventas donde aparece</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2 style="margin:0;">Top clientes por ingresos</h2>
+      </div>
+      <div class="table-wrap">
+        <table class="table" id="tablaTopClientes">
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>Ventas</th>
+              <th>Total comprado</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2 style="margin:0;">Reporte de productos (rango de fechas)</h2>
+      </div>
+      <div class="table-wrap">
+        <table class="table" id="tablaReporteProductos">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>SKU</th>
+              <th>Stock actual</th>
+              <th>Precio</th>
+              <th>Vendidos</th>
+              <th>Ingresos</th>
+              <th>Comprados</th>
+              <th>Último movimiento</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2 style="margin:0;">Reporte de inventario actual por bodega</h2>
+      </div>
+      <div class="table-wrap">
+        <table class="table" id="tablaInventarioActual">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>Bodega</th>
+              <th>Existencia</th>
+              <th>Stock mínimo</th>
+              <th>Stock máximo</th>
+              <th>Estado stock</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2 style="margin:0;">Reporte de compra de productos (por fecha)</h2>
+      </div>
+      <p id="comprasResumen" class="form-help"></p>
+      <div class="table-wrap">
+        <table class="table" id="tablaComprasProductos">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Producto</th>
+              <th>Tipo</th>
+              <th>Cantidad</th>
+              <th>Costo unitario</th>
+              <th>Costo total</th>
+              <th>Referencia</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2 style="margin:0;">Impresión y formatos</h2>
+        <div class="empresa-inline-actions">
+          <button id="btnPreviewPOS" class="btn secondary" type="button">Vista previa POS</button>
+          <button id="btnPreviewCarta" class="btn" type="button">Vista previa carta</button>
+        </div>
+      </div>
+      <p class="form-help" id="impresionResumen">Cargando configuración de impresión...</p>
+      <p class="form-help" id="impresionMsg"></p>
     </section>
   </div>
+
+  <script>
+    const state = {
+      empresaID: 0,
+      carritos: [],
+      clientes: [],
+      productos: [],
+      existencias: [],
+      movimientos: [],
+      config: null,
+      ventasFiltradas: [],
+      movimientosFiltrados: [],
+      itemsByCarrito: new Map()
+    };
+
+    function getQueryParam(name) {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name);
+    }
+
+    function normalize(value) {
+      return String(value == null ? "" : value).trim();
+    }
+
+    function sanitize(value) {
+      return String(value == null ? "" : value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function num(value) {
+      const n = Number(value);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    function fmtMoney(v) {
+      const n = num(v);
+      return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
+    }
+
+    function toISODatePart(raw) {
+      const dt = parseDate(raw);
+      if (!dt) return "";
+      return dt.toISOString().slice(0, 10);
+    }
+
+    function parseDate(raw) {
+      const val = normalize(raw);
+      if (!val) return null;
+      const dt = new Date(val.includes('T') ? val : val.replace(' ', 'T'));
+      if (Number.isNaN(dt.getTime())) return null;
+      return dt;
+    }
+
+    function formatDate(raw) {
+      const dt = parseDate(raw);
+      if (!dt) return "-";
+      return dt.toLocaleString('es-CO');
+    }
+
+    function setMsg(text, type) {
+      const el = document.getElementById('reportesMsg');
+      if (!el) return;
+      el.textContent = text || '';
+      el.style.color = type === 'error' ? '#ef5350' : '';
+    }
+
+    function setImpresionMsg(text, type) {
+      const el = document.getElementById('impresionMsg');
+      if (!el) return;
+      el.textContent = text || '';
+      el.style.color = type === 'error' ? '#ef5350' : '';
+    }
+
+    async function requestJSON(url, options) {
+      const res = await fetch(url, options || {});
+      if (!res.ok) {
+        const body = await res.text();
+        throw new Error(body || ('HTTP ' + res.status));
+      }
+      return res.json();
+    }
+
+    function getFechaPago(item) {
+      return normalize(item.pagado_en) || normalize(item.fecha_actualizacion) || normalize(item.fecha_creacion);
+    }
+
+    function isVentaCerrada(item) {
+      return normalize(item.estado_carrito).toLowerCase() === 'cerrado';
+    }
+
+    function getVentaTotal(item) {
+      const totalPagado = num(item.total_pagado);
+      if (totalPagado > 0) return totalPagado;
+      return num(item.total);
+    }
+
+    function getFechaMovimiento(item) {
+      return normalize(item.fecha_movimiento) || normalize(item.fecha_actualizacion) || normalize(item.fecha_creacion);
+    }
+
+    function tipoMovimiento(v) {
+      return normalize(v).toLowerCase();
+    }
+
+    function isCompraMovimiento(item) {
+      const tipo = tipoMovimiento(item && item.tipo);
+      return tipo === 'entrada' || tipo === 'ajuste_entrada' || tipo === 'ajuste_positivo' || tipo === 'compra';
+    }
+
+    function applyDateDefaults() {
+      const hoy = new Date();
+      const desde = new Date(hoy.getTime() - (30 * 24 * 60 * 60 * 1000));
+      document.getElementById('fechaHasta').value = hoy.toISOString().slice(0, 10);
+      document.getElementById('fechaDesde').value = desde.toISOString().slice(0, 10);
+    }
+
+    function filtrarVentas() {
+      const desde = normalize(document.getElementById('fechaDesde').value);
+      const hasta = normalize(document.getElementById('fechaHasta').value);
+      let ventas = state.carritos.filter(isVentaCerrada);
+
+      if (desde) {
+        ventas = ventas.filter(v => {
+          const part = toISODatePart(getFechaPago(v));
+          return part && part >= desde;
+        });
+      }
+      if (hasta) {
+        ventas = ventas.filter(v => {
+          const part = toISODatePart(getFechaPago(v));
+          return part && part <= hasta;
+        });
+      }
+
+      ventas.sort((a, b) => {
+        const aDate = parseDate(getFechaPago(a));
+        const bDate = parseDate(getFechaPago(b));
+        const aVal = aDate ? aDate.getTime() : 0;
+        const bVal = bDate ? bDate.getTime() : 0;
+        return bVal - aVal;
+      });
+
+      state.ventasFiltradas = ventas;
+    }
+
+    function filtrarMovimientos() {
+      const desde = normalize(document.getElementById('fechaDesde').value);
+      const hasta = normalize(document.getElementById('fechaHasta').value);
+      let movimientos = Array.isArray(state.movimientos) ? state.movimientos.slice() : [];
+
+      if (desde) {
+        movimientos = movimientos.filter(m => {
+          const part = toISODatePart(getFechaMovimiento(m));
+          return part && part >= desde;
+        });
+      }
+      if (hasta) {
+        movimientos = movimientos.filter(m => {
+          const part = toISODatePart(getFechaMovimiento(m));
+          return part && part <= hasta;
+        });
+      }
+
+      movimientos.sort((a, b) => {
+        const aDate = parseDate(getFechaMovimiento(a));
+        const bDate = parseDate(getFechaMovimiento(b));
+        const aVal = aDate ? aDate.getTime() : 0;
+        const bVal = bDate ? bDate.getTime() : 0;
+        return bVal - aVal;
+      });
+
+      state.movimientosFiltrados = movimientos;
+    }
+
+    function renderKPIs() {
+      const ventas = state.ventasFiltradas;
+      const ingresos = ventas.reduce((acc, v) => acc + getVentaTotal(v), 0);
+      const ticket = ventas.length ? ingresos / ventas.length : 0;
+      const hoy = new Date().toISOString().slice(0, 10);
+      const ventasHoy = ventas.filter(v => toISODatePart(getFechaPago(v)) === hoy).length;
+      const clientesActivos = state.clientes.filter(c => normalize(c.estado || 'activo').toLowerCase() === 'activo').length;
+      const productosActivos = state.productos.filter(p => normalize(p.estado || 'activo').toLowerCase() === 'activo').length;
+      const productosBajoMinimo = state.productos.filter(p => {
+        if (normalize(p.estado || 'activo').toLowerCase() !== 'activo') return false;
+        const min = num(p.stock_minimo);
+        if (min <= 0) return false;
+        return num(p.stock_total) <= min;
+      }).length;
+      const compras = state.movimientosFiltrados.filter(isCompraMovimiento);
+      const costoCompras = compras.reduce((acc, mov) => acc + (num(mov.cantidad) * num(mov.costo_unitario)), 0);
+
+      document.getElementById('kpiVentasCerradas').textContent = String(ventas.length);
+      document.getElementById('kpiVentasHoy').textContent = String(ventasHoy);
+      document.getElementById('kpiIngresos').textContent = fmtMoney(ingresos);
+      document.getElementById('kpiTicketPromedio').textContent = fmtMoney(ticket);
+      document.getElementById('kpiClientesActivos').textContent = String(clientesActivos);
+      document.getElementById('kpiProductosActivos').textContent = String(productosActivos);
+      document.getElementById('kpiProductosBajoMinimo').textContent = String(productosBajoMinimo);
+      document.getElementById('kpiComprasMovimientos').textContent = String(compras.length);
+      document.getElementById('kpiComprasCosto').textContent = fmtMoney(costoCompras);
+    }
+
+    function renderVentasTable() {
+      const tbody = document.querySelector('#tablaVentasCerradas tbody');
+      const rows = state.ventasFiltradas.slice(0, 60);
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="6">No hay ventas cerradas para el rango seleccionado.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = rows.map(v => {
+        const fecha = formatDate(getFechaPago(v));
+        const carrito = sanitize(v.codigo || ('#' + v.id)) + ' - ' + sanitize(v.nombre || 'Sin nombre');
+        const cliente = sanitize(v.cliente_nombre || 'Sin cliente');
+        const items = num(v.item_count || 0);
+        const total = fmtMoney(getVentaTotal(v));
+        const estado = sanitize(v.estado_carrito || 'cerrado');
+        return '<tr>' +
+          '<td>' + fecha + '</td>' +
+          '<td>' + carrito + '</td>' +
+          '<td>' + cliente + '</td>' +
+          '<td>' + items + '</td>' +
+          '<td>' + total + '</td>' +
+          '<td>' + estado + '</td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    async function loadItemsForSales() {
+      state.itemsByCarrito = new Map();
+      const selected = state.ventasFiltradas.slice(0, 80);
+      const tasks = selected.map(v => requestJSON('/api/empresa/carritos_compra/items?empresa_id=' + state.empresaID + '&carrito_id=' + Number(v.id) + '&include_inactive=1'));
+      const all = await Promise.all(tasks);
+      selected.forEach((v, idx) => {
+        state.itemsByCarrito.set(Number(v.id), Array.isArray(all[idx]) ? all[idx] : []);
+      });
+    }
+
+    function renderTopProductos() {
+      const tbody = document.querySelector('#tablaTopProductos tbody');
+      const agg = new Map();
+
+      state.ventasFiltradas.forEach(v => {
+        const carritoID = Number(v.id);
+        const items = state.itemsByCarrito.get(carritoID) || [];
+        items.forEach(it => {
+          if (normalize(it.estado || 'activo').toLowerCase() !== 'activo') return;
+          const key = normalize(it.codigo_item) || normalize(it.descripcion) || ('item-' + it.id);
+          if (!agg.has(key)) {
+            agg.set(key, {
+              nombre: normalize(it.descripcion) || 'Sin descripción',
+              cantidad: 0,
+              total: 0,
+              ventas: new Set()
+            });
+          }
+          const row = agg.get(key);
+          row.cantidad += num(it.cantidad);
+          row.total += num(it.total_linea);
+          row.ventas.add(carritoID);
+        });
+      });
+
+      const rows = Array.from(agg.values())
+        .map(x => ({ nombre: x.nombre, cantidad: x.cantidad, total: x.total, ventas: x.ventas.size }))
+        .sort((a, b) => (b.cantidad - a.cantidad) || (b.total - a.total))
+        .slice(0, 15);
+
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="4">Aún no hay detalle de productos vendidos para el rango seleccionado.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = rows.map(r => '<tr>' +
+        '<td>' + sanitize(r.nombre) + '</td>' +
+        '<td>' + Number(r.cantidad).toFixed(2) + '</td>' +
+        '<td>' + fmtMoney(r.total) + '</td>' +
+        '<td>' + Number(r.ventas) + '</td>' +
+      '</tr>').join('');
+    }
+
+    function renderTopClientes() {
+      const tbody = document.querySelector('#tablaTopClientes tbody');
+      const agg = new Map();
+
+      state.ventasFiltradas.forEach(v => {
+        const key = normalize(v.cliente_nombre) || 'Sin cliente';
+        if (!agg.has(key)) {
+          agg.set(key, { cliente: key, ventas: 0, total: 0 });
+        }
+        const row = agg.get(key);
+        row.ventas += 1;
+        row.total += getVentaTotal(v);
+      });
+
+      const rows = Array.from(agg.values())
+        .sort((a, b) => (b.total - a.total) || (b.ventas - a.ventas))
+        .slice(0, 15);
+
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="3">No hay clientes con compras cerradas en el rango seleccionado.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = rows.map(r => '<tr>' +
+        '<td>' + sanitize(r.cliente) + '</td>' +
+        '<td>' + Number(r.ventas) + '</td>' +
+        '<td>' + fmtMoney(r.total) + '</td>' +
+      '</tr>').join('');
+    }
+
+    function renderReporteProductos() {
+      const tbody = document.querySelector('#tablaReporteProductos tbody');
+      const ventasAgg = new Map();
+      const comprasAgg = new Map();
+      const ultimoMov = new Map();
+
+      state.ventasFiltradas.forEach(v => {
+        const carritoID = Number(v.id);
+        const items = state.itemsByCarrito.get(carritoID) || [];
+        items.forEach(it => {
+          if (normalize(it.estado || 'activo').toLowerCase() !== 'activo') return;
+          const productoID = Number(it.referencia_id || 0);
+          if (productoID <= 0) return;
+          if (!ventasAgg.has(productoID)) {
+            ventasAgg.set(productoID, { cantidad: 0, ingresos: 0 });
+          }
+          const row = ventasAgg.get(productoID);
+          row.cantidad += num(it.cantidad);
+          row.ingresos += num(it.total_linea);
+        });
+      });
+
+      state.movimientosFiltrados.forEach(m => {
+        const productoID = Number(m.producto_id || 0);
+        if (productoID <= 0) return;
+        if (!ultimoMov.has(productoID)) {
+          ultimoMov.set(productoID, normalize(getFechaMovimiento(m)));
+        }
+        if (isCompraMovimiento(m)) {
+          if (!comprasAgg.has(productoID)) {
+            comprasAgg.set(productoID, 0);
+          }
+          comprasAgg.set(productoID, comprasAgg.get(productoID) + num(m.cantidad));
+        }
+      });
+
+      const rows = (Array.isArray(state.productos) ? state.productos : []).map(p => {
+        const productoID = Number(p.id || 0);
+        const venta = ventasAgg.get(productoID) || { cantidad: 0, ingresos: 0 };
+        const compras = comprasAgg.get(productoID) || 0;
+        return {
+          nombre: normalize(p.nombre) || 'Sin nombre',
+          sku: normalize(p.sku) || '-',
+          stock: num(p.stock_total),
+          precio: num(p.precio),
+          vendidos: venta.cantidad,
+          ingresos: venta.ingresos,
+          comprados: compras,
+          fechaMov: ultimoMov.get(productoID) || ''
+        };
+      }).sort((a, b) => (b.ingresos - a.ingresos) || (b.vendidos - a.vendidos) || (a.nombre.localeCompare(b.nombre)));
+
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="8">No hay productos registrados para la empresa.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = rows.slice(0, 120).map(r => '<tr>' +
+        '<td>' + sanitize(r.nombre) + '</td>' +
+        '<td>' + sanitize(r.sku) + '</td>' +
+        '<td>' + Number(r.stock).toFixed(2) + '</td>' +
+        '<td>' + fmtMoney(r.precio) + '</td>' +
+        '<td>' + Number(r.vendidos).toFixed(2) + '</td>' +
+        '<td>' + fmtMoney(r.ingresos) + '</td>' +
+        '<td>' + Number(r.comprados).toFixed(2) + '</td>' +
+        '<td>' + sanitize(formatDate(r.fechaMov)) + '</td>' +
+      '</tr>').join('');
+    }
+
+    function renderInventarioActual() {
+      const tbody = document.querySelector('#tablaInventarioActual tbody');
+      const productosByID = new Map((Array.isArray(state.productos) ? state.productos : []).map(function(p) {
+        return [Number(p.id || 0), p || {}];
+      }));
+
+      const rows = (Array.isArray(state.existencias) ? state.existencias : []).map(function(ex) {
+        const productoID = Number(ex.producto_id || 0);
+        const prod = productosByID.get(productoID) || {};
+        const stockActual = num(ex.cantidad);
+        const min = num(prod.stock_minimo);
+        const max = num(prod.stock_maximo);
+
+        let estado = 'ok';
+        if (stockActual <= 0) {
+          estado = 'sin stock';
+        } else if (min > 0 && stockActual <= min) {
+          estado = 'bajo mínimo';
+        } else if (max > 0 && stockActual >= max) {
+          estado = 'sobre stock';
+        }
+
+        return {
+          producto: normalize(ex.producto_nombre) || normalize(prod.nombre) || ('Producto #' + productoID),
+          bodega: normalize(ex.bodega_nombre) || ('Bodega #' + Number(ex.bodega_id || 0)),
+          stockActual: stockActual,
+          min: min,
+          max: max,
+          estado: estado
+        };
+      }).sort(function(a, b) {
+        if (a.estado !== b.estado) {
+          const order = { 'sin stock': 0, 'bajo mínimo': 1, 'ok': 2, 'sobre stock': 3 };
+          return (order[a.estado] || 9) - (order[b.estado] || 9);
+        }
+        if (a.producto !== b.producto) return a.producto.localeCompare(b.producto);
+        return a.bodega.localeCompare(b.bodega);
+      });
+
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="6">No hay existencias registradas para la empresa.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = rows.slice(0, 300).map(function(r) {
+        return '<tr>' +
+          '<td>' + sanitize(r.producto) + '</td>' +
+          '<td>' + sanitize(r.bodega) + '</td>' +
+          '<td>' + Number(r.stockActual).toFixed(2) + '</td>' +
+          '<td>' + Number(r.min).toFixed(2) + '</td>' +
+          '<td>' + Number(r.max).toFixed(2) + '</td>' +
+          '<td>' + sanitize(r.estado) + '</td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    function renderComprasProductos() {
+      const tbody = document.querySelector('#tablaComprasProductos tbody');
+      const resumen = document.getElementById('comprasResumen');
+      const compras = state.movimientosFiltrados.filter(isCompraMovimiento);
+      const totalCosto = compras.reduce((acc, m) => acc + (num(m.cantidad) * num(m.costo_unitario)), 0);
+      const totalCantidad = compras.reduce((acc, m) => acc + num(m.cantidad), 0);
+      resumen.textContent = 'Movimientos de compra en el rango: ' + compras.length + ' | Cantidad total: ' + totalCantidad.toFixed(2) + ' | Costo estimado: ' + fmtMoney(totalCosto);
+
+      if (!compras.length) {
+        tbody.innerHTML = '<tr><td colspan="7">No hay compras de productos en el rango seleccionado.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = compras.slice(0, 150).map(m => {
+        const costoUnitario = num(m.costo_unitario);
+        const cantidad = num(m.cantidad);
+        const costoTotal = costoUnitario * cantidad;
+        return '<tr>' +
+          '<td>' + sanitize(formatDate(getFechaMovimiento(m))) + '</td>' +
+          '<td>' + sanitize(m.producto_nombre || 'Producto #' + m.producto_id) + '</td>' +
+          '<td>' + sanitize(tipoMovimiento(m.tipo) || '-') + '</td>' +
+          '<td>' + cantidad.toFixed(2) + '</td>' +
+          '<td>' + fmtMoney(costoUnitario) + '</td>' +
+          '<td>' + fmtMoney(costoTotal) + '</td>' +
+          '<td>' + sanitize(m.referencia || '-') + '</td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    function renderImpresionConfig() {
+      const cfg = state.config || {};
+      const formato = normalize(cfg.formato_impresion) || 'carta';
+      const copia = cfg.imprimir_copia_factura === true ? 'Sí' : 'No';
+      const logo = cfg.mostrar_logo !== false ? 'Sí' : 'No';
+      const pie = normalize(cfg.pie_factura) || 'Sin pie configurado';
+      document.getElementById('impresionResumen').textContent =
+        'Formato: ' + formato.toUpperCase() + ' | Imprimir copia: ' + copia + ' | Mostrar logo: ' + logo + ' | Pie: ' + pie;
+    }
+
+    function getSampleSale() {
+      const sale = state.ventasFiltradas[0] || null;
+      if (!sale) return null;
+      const items = state.itemsByCarrito.get(Number(sale.id)) || [];
+      return { sale, items };
+    }
+
+    function buildPreviewHtml(format) {
+      const sample = getSampleSale();
+      if (!sample) return '';
+      const cfg = state.config || {};
+      const venta = sample.sale;
+      const items = sample.items.filter(it => normalize(it.estado || 'activo').toLowerCase() === 'activo');
+      const empresa = 'Empresa #' + state.empresaID;
+
+      if (format === 'pos') {
+        const itemsHtml = items.map(it =>
+          '<tr><td>' + sanitize(it.descripcion || '') + '</td><td style="text-align:center;">' + Number(it.cantidad || 0).toFixed(2) + '</td><td style="text-align:right;">' + fmtMoney(it.total_linea || 0) + '</td></tr>'
+        ).join('');
+        return '<!doctype html><html><head><meta charset="utf-8"><title>Vista previa POS</title><style>body{font-family:monospace;padding:12px;color:#111}h1{font-size:18px;margin:0 0 10px}table{width:100%;border-collapse:collapse}td{padding:3px 0;border-bottom:1px dashed #ccc}small{color:#666}</style></head><body>' +
+          '<h1>Tiquete POS</h1>' +
+          '<p><strong>' + sanitize(empresa) + '</strong><br>Carrito: ' + sanitize(venta.codigo || venta.id) + '<br>Cliente: ' + sanitize(venta.cliente_nombre || 'Sin cliente') + '</p>' +
+          '<table><tbody>' + itemsHtml + '</tbody></table>' +
+          '<p><strong>Total: ' + fmtMoney(getVentaTotal(venta)) + '</strong></p>' +
+          '<small>Formato configurado: ' + sanitize(normalize(cfg.formato_impresion) || 'carta') + ' | Copia: ' + (cfg.imprimir_copia_factura === true ? 'Sí' : 'No') + '</small>' +
+          (normalize(cfg.pie_factura) ? ('<p><small>' + sanitize(cfg.pie_factura) + '</small></p>') : '') +
+          '</body></html>';
+      }
+
+      const rowsCarta = items.map(it =>
+        '<tr><td>' + sanitize(it.descripcion || '') + '</td><td>' + Number(it.cantidad || 0).toFixed(2) + '</td><td>' + fmtMoney(it.precio_unitario || 0) + '</td><td>' + fmtMoney(it.total_linea || 0) + '</td></tr>'
+      ).join('');
+      return '<!doctype html><html><head><meta charset="utf-8"><title>Vista previa Carta</title><style>body{font-family:Arial,sans-serif;padding:20px;color:#111}h1{margin:0 0 8px}table{width:100%;border-collapse:collapse;margin-top:8px}th,td{border:1px solid #bbb;padding:6px;text-align:left}small{color:#666}</style></head><body>' +
+        '<h1>Factura (vista carta)</h1>' +
+        '<p><strong>' + sanitize(empresa) + '</strong><br>Fecha pago: ' + sanitize(formatDate(getFechaPago(venta))) + '<br>Cliente: ' + sanitize(venta.cliente_nombre || 'Sin cliente') + '</p>' +
+        '<table><thead><tr><th>Descripción</th><th>Cant</th><th>Vlr unitario</th><th>Total</th></tr></thead><tbody>' + rowsCarta + '</tbody></table>' +
+        '<p><strong>Total pagado: ' + fmtMoney(getVentaTotal(venta)) + '</strong></p>' +
+        (normalize(cfg.notas_legales) ? ('<p><small>' + sanitize(cfg.notas_legales) + '</small></p>') : '') +
+        '</body></html>';
+    }
+
+    function openPreview(format) {
+      const html = buildPreviewHtml(format);
+      if (!html) {
+        setImpresionMsg('No hay ventas cerradas para generar vista previa de impresión.', 'error');
+        return;
+      }
+      const win = window.open('', '_blank', 'width=900,height=700');
+      if (!win) {
+        setImpresionMsg('El navegador bloqueó la ventana de vista previa.', 'error');
+        return;
+      }
+      win.document.open();
+      win.document.write(html);
+      win.document.close();
+      setImpresionMsg('Vista previa ' + format.toUpperCase() + ' abierta correctamente.', 'success');
+    }
+
+    async function loadAllData() {
+      setMsg('Cargando reportes...', 'success');
+      const empresaID = state.empresaID;
+      const [carritos, clientes, productos, existencias, movimientos, config] = await Promise.all([
+        requestJSON('/api/empresa/carritos_compra?empresa_id=' + empresaID + '&include_inactive=1'),
+        requestJSON('/api/empresa/clientes?empresa_id=' + empresaID + '&include_inactive=1'),
+        requestJSON('/api/empresa/productos?empresa_id=' + empresaID + '&limit=500'),
+        requestJSON('/api/empresa/inventario/existencias?empresa_id=' + empresaID + '&limit=2000'),
+        requestJSON('/api/empresa/inventario/movimientos?empresa_id=' + empresaID + '&limit=2000'),
+        requestJSON('/api/empresa/configuracion_avanzada?empresa_id=' + empresaID)
+      ]);
+
+      state.carritos = Array.isArray(carritos) ? carritos : [];
+      state.clientes = Array.isArray(clientes) ? clientes : [];
+      state.productos = Array.isArray(productos) ? productos : [];
+      state.existencias = Array.isArray(existencias) ? existencias : [];
+      state.movimientos = Array.isArray(movimientos) ? movimientos : [];
+      state.config = config || {};
+
+      filtrarVentas();
+      filtrarMovimientos();
+      await loadItemsForSales();
+      renderKPIs();
+      renderVentasTable();
+      renderTopProductos();
+      renderTopClientes();
+      renderReporteProductos();
+      renderInventarioActual();
+      renderComprasProductos();
+      renderImpresionConfig();
+
+      setMsg('Reportes actualizados correctamente.', 'success');
+    }
+
+    async function refreshWithCurrentFilter() {
+      filtrarVentas();
+      filtrarMovimientos();
+      await loadItemsForSales();
+      renderKPIs();
+      renderVentasTable();
+      renderTopProductos();
+      renderTopClientes();
+      renderReporteProductos();
+      renderInventarioActual();
+      renderComprasProductos();
+    }
+
+    function bindEvents() {
+      document.getElementById('btnRefrescarReportes').addEventListener('click', async () => {
+        try {
+          await loadAllData();
+        } catch (err) {
+          setMsg(err.message || 'No se pudieron actualizar los reportes.', 'error');
+        }
+      });
+
+      document.getElementById('btnAplicarFiltro').addEventListener('click', async () => {
+        try {
+          await refreshWithCurrentFilter();
+          setMsg('Filtro aplicado.', 'success');
+        } catch (err) {
+          setMsg(err.message || 'No se pudo aplicar el filtro.', 'error');
+        }
+      });
+
+      document.getElementById('btnPreviewPOS').addEventListener('click', () => openPreview('pos'));
+      document.getElementById('btnPreviewCarta').addEventListener('click', () => openPreview('carta'));
+    }
+
+    async function init() {
+      const rawEmpresaID = Number(getQueryParam('id') || getQueryParam('empresa_id') || 0);
+      if (!rawEmpresaID) {
+        setMsg('No se encontró id de empresa en la URL.', 'error');
+        return;
+      }
+      state.empresaID = rawEmpresaID;
+
+      applyDateDefaults();
+      bindEvents();
+
+      try {
+        await loadAllData();
+      } catch (err) {
+        setMsg(err.message || 'No se pudo cargar el módulo de reportes.', 'error');
+      }
+    }
+
+    init();
+  </script>
 </body>
 </html>

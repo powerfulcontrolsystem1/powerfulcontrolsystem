@@ -1,6 +1,6 @@
 # Diagrama de flujo de procesos
 
-Fecha: 2026-04-02
+Fecha: 2026-04-04
 
 ```mermaid
 flowchart TD
@@ -19,6 +19,8 @@ flowchart TD
 
     L --> L0[Abrir administrar_empresa]
     L0 --> L1[Cargar Inicio por defecto en Panel de la Empresa]
+    L1 --> L1A[Abrir Centro de Ayuda]
+    L1A --> L1B[Consultar menu interno y APIs operativas]
     L1 --> L11[Usuario navega a una subpagina del panel]
     L11 --> L12[Guardar subpagina actual en sessionStorage]
     L12 --> L13[Al presionar F5, restaurar la misma subpagina]
@@ -47,9 +49,39 @@ flowchart TD
     M --> O[Crear carrito]
     N --> O
     O --> P[Agregar items al carrito]
-    P --> Q[Calcular totales]
+    O --> O1[Configurar lector de barras por empresa]
+    O1 --> P0[Escanear codigo de barras o SKU]
+    P0 --> P
+    P --> P1[Descontar inventario por item producto agregado]
+    P1 --> Q[Calcular totales]
     Q --> R[Pagar carrito]
-    R --> S[Cerrar carrito y guardar resumen de pago]
+    R --> R1[Conservar descuento de inventario al cerrar venta]
+    R1 --> S[Cerrar carrito y guardar resumen de pago]
+    S --> RP0[Entrar al modulo reportes]
+    RP0 --> RP1[Filtrar ventas cerradas por rango de fechas]
+    RP1 --> RP2[Calcular KPIs: ventas, ingresos y ticket promedio]
+    RP2 --> RP3[Construir reporte de ventas por fecha]
+    RP3 --> RP31[Construir reporte de productos por fecha]
+    RP31 --> RP32[Construir reporte de compras de productos por fecha]
+    RP32 --> RP33[Consultar inventario actual por bodega y KPI bajo minimo]
+    RP33 --> RP4[Consultar configuracion de impresion vigente]
+    RP4 --> RP5[Visualizar vista previa de formato POS/Carta]
+
+    L --> F0[Entrar al modulo finanzas]
+    F0 --> F1[Consultar configuracion financiera por empresa]
+    F1 --> F2[Definir categorias, prefijos, formato y plan de cuentas contable]
+    F2 --> F21[Configurar destino externo: generico, SIIGO, World Office o Alegra]
+    F21 --> F3[Registrar ingreso o egreso con comprobante]
+    F3 --> F4[Filtrar movimientos y calcular balance]
+    F4 --> F41[Navegar pestañas: Todos, Ingresos o Egresos]
+    F41 --> F42[Exportar libro filtrado]
+    F42 --> F421[Excel CSV y PDF]
+    F42 --> F43[Generar asientos con cuentas parametrizadas por empresa y categoria]
+    F43 --> F44[Incluir perfil contable y proyeccion ERP en JSON]
+    F42 --> F45[Generar plantilla dedicada SIIGO CSV]
+    F42 --> F46[Generar balance de prueba CSV]
+    F42 --> F47[Generar estado de resultados CSV]
+    F42 --> F5[Imprimir comprobante financiero Carta/POS]
 
     L --> T[Administrador abre modulo chat_y_tareas]
     T --> U[Crear conversacion por empresa]
@@ -87,3 +119,13 @@ Resultado esperado:
 - En `administrar_empresa`, `super_administrador` y `seleccionar_empresa`, al recargar con F5 se restaura la subpagina/vista que estaba abierta.
 - En `administrar_productos`, el catálogo de `categorias_productos` permite filtrar y asignar categorías de forma consistente por `empresa_id`.
 - En `ubicacion_gps`, cada dispositivo puede registrar su recorrido automaticamente cada 10 segundos y visualizarse sobre mapa de codigo abierto.
+- En `reportes`, el usuario consulta ventas cerradas por rango, indicadores clave y top comerciales, con validacion visual de formato de impresion POS/Carta.
+- En `carrito_de_compras`, al agregar items de tipo producto se descuenta inventario y, al cerrar la venta, el descuento se mantiene aplicado.
+- En `reportes`, se dispone de reportes profesionales por rango de fechas: ventas, productos y compras de productos.
+- En `ayuda`, existe un menu interno con accesos rapidos y una seccion de APIs principales para operacion diaria.
+- En `configuracion`, las opciones del lector de barras se gestionan por empresa y aplican al flujo operativo del carrito.
+- En `reportes`, se agrega tabla de inventario actual por bodega y KPI de productos bajo minimo.
+- En `finanzas`, cada empresa administra ingresos y egresos con configuracion propia, comprobantes y soporte de impresion.
+- En `finanzas`, el libro financiero se consulta por pestañas (`Todos`, `Ingresos`, `Egresos`) y puede exportarse por rango a Excel (CSV), PDF y JSON contable para integración externa.
+- En `finanzas`, el JSON contable usa cuentas parametrizadas por empresa/categoria e incluye perfil de referencia para ERP destino.
+- En `finanzas`, existe plantilla dedicada SIIGO en CSV y exportaciones de `balance de prueba` y `estado de resultados` para trabajo contable/directivo.

@@ -1,5 +1,208 @@
 Descripcion de archivos del proyecto
 
+Actualizacion 2026-04-04: Modulo de finanzas multiempresa (ingresos/egresos + comprobantes)
+
+- backend/db/finanzas.go:
+	- Nuevo modulo de datos financieros por empresa.
+	- Implementa esquema y CRUD de movimientos financieros (`empresa_finanzas_movimientos`).
+	- Implementa configuracion por empresa (`empresa_finanzas_configuracion`) para prefijos, categorias, formato de impresion y banderas de operacion.
+	- Amplia la configuracion con plan de cuentas contables por empresa:
+		- destino de integracion contable,
+		- cuentas base,
+		- mapeo de cuentas por categoria (ingresos/egresos).
+
+- backend/handlers/finanzas.go:
+	- Nuevo modulo HTTP para finanzas empresariales.
+	- Endpoints para movimientos y configuracion:
+		- `/api/empresa/finanzas/movimientos`
+		- `/api/empresa/finanzas/configuracion`
+
+- backend/main.go:
+	- Se agrega aseguramiento de esquema financiero en arranque.
+	- Se registra migracion `2026-04-03-003-finanzas`.
+	- Se exponen rutas API del nuevo modulo financiero.
+
+- web/administrar_empresa/finanzas.html:
+	- Nueva subpagina profesional para gestion de ingresos y egresos por empresa.
+	- Incluye configuracion por empresa, formulario de movimientos, filtros, KPIs, tabla operativa y generacion de comprobantes imprimibles (carta/POS).
+	- Se incorporan tres pestañas funcionales del libro financiero: `Todos`, `Ingresos` y `Egresos`.
+	- Se agrega exportacion del libro financiero filtrado a Excel (CSV), PDF y JSON contable para integracion externa.
+	- Se agrega plantilla dedicada SIIGO (CSV) para importacion de asientos contables.
+	- Se agrega exportacion de `balance de prueba` (CSV).
+	- Se agrega exportacion de `estado de resultados` (CSV).
+	- La exportacion JSON incluye estructura de resumen y asientos contables recomendados (debe/haber).
+	- La configuracion permite parametrizar cuentas contables por empresa y por categoria.
+	- El JSON exportado incluye `accounting_profile` y `erp_projection` para mapeo hacia software contable externo.
+
+- documentos/plantillas/siigo_plantilla_importacion_asientos.csv:
+	- Plantilla base de referencia para importacion de asientos al ERP SIIGO.
+	- Incluye encabezados y filas ejemplo para validar layout de importacion.
+
+- documentos/informe_contable_directivo_2026-04-03.md:
+	- Informe de revision contable/directiva del sistema.
+	- Incluye matriz de cumplimiento, brechas, riesgos y plan de mejoras priorizado.
+
+- web/administrar_empresa.html:
+	- Menu lateral actualizado con acceso a `Finanzas (ingresos/egresos)`.
+
+- web/js/administrar_empresa.js:
+	- Se agrega `linkFinanzas` a la navegacion/persistencia del iframe del panel empresarial.
+
+- backend/db/finanzas_test.go:
+	- Nuevo archivo de pruebas para validar:
+		- configuracion financiera por empresa,
+		- CRUD de movimientos,
+		- persistencia de plan de cuentas parametrizable,
+		- validaciones de monto y estados.
+
+- backend/tools/seed_motel_malibu/main.go:
+	- Se amplía para incluir semilla financiera demo por empresa.
+	- Inserta configuracion y movimientos de ingreso/egreso de prueba con resumen de balance.
+
+- documentos/diagramas/estructura_del_codigo.md:
+	- Se documenta la incorporacion tecnica del modulo financiero multiempresa.
+	- Se registra la ampliacion de exportaciones contables (SIIGO, balance de prueba y estado de resultados).
+
+- documentos/diagramas/diagrama_flujo_procesos.md:
+	- Se incorpora el flujo funcional de finanzas (configuracion, registro, comprobante e impresion).
+	- Se amplía el flujo para incluir parametrización de plan de cuentas y proyección por destino ERP en exportación JSON.
+
+- documentos/diagramas/diagrama_entidad_relacion.md:
+	- Se agregan entidades y relaciones de `empresa_finanzas_movimientos` y `empresa_finanzas_configuracion`.
+	- Se amplía `EMPRESA_FINANZAS_CONFIGURACION` con campos de integración contable y cuentas por categoría.
+
+- documentos/diagramas/diagrama_arquitectura_sistema.md:
+	- Se incorpora el componente de handlers de finanzas y su conexion con `empresas.db`.
+
+- documentos/descripcion_de_las_bases_De_datos:
+	- Se amplía la definición de `empresa_finanzas_configuracion` con campos de integración contable externa y plan de cuentas por categoría.
+
+- documentos/historial_de_cambios:
+	- Se registra implementacion, pruebas y carga de datos demo del modulo financiero.
+
+- CHANGELOG.md:
+	- Se agrega entrada de trazabilidad para la entrega de finanzas multiempresa.
+
+Actualizacion 2026-04-03: Centro de ayuda + scanner de codigo de barras + inventario por bodega
+
+- web/menu.js:
+	- Se agrega acceso global `Ayuda` en el menu flotante para navegacion rapida desde cualquier vista.
+
+- web/ayuda/ayuda.html:
+	- Se convierte en centro de ayuda estructurado por secciones.
+	- Incluye menu interno y documentacion operativa de APIs de catalogo, inventario, carrito y configuracion.
+
+- web/administrar_empresa/configuracion.html:
+	- Se agregan opciones por empresa para lector de codigo de barras en carrito:
+		- habilitar lector,
+		- autofoco en campo de escaneo,
+		- acumulacion de cantidad en item existente.
+
+- web/administrar_empresa/carrito_de_compras.html:
+	- Se agrega panel de lector de codigo de barras (modo supermercado).
+	- Se implementa busqueda de producto activo por `codigo_barras` o `sku`.
+	- Se agrega flujo para crear item o acumular cantidad en item activo existente del carrito.
+
+- web/administrar_empresa/reportes.html:
+	- Se agrega KPI `Productos bajo minimo`.
+	- Se agrega tabla `Reporte de inventario actual por bodega` con estado de stock (sin stock, bajo minimo, ok, sobre stock).
+
+- documentos/diagramas/estructura_del_codigo.md:
+	- Se documenta la actualizacion funcional de ayuda, scanner de carrito y configuracion por empresa.
+
+- documentos/diagramas/diagrama_flujo_procesos.md:
+	- Se incorpora flujo de ayuda, configuracion de scanner por empresa y consulta de inventario por bodega en reportes.
+
+- documentos/historial_de_cambios:
+	- Se registra implementacion y validaciones tecnicas ejecutadas.
+
+- CHANGELOG.md:
+	- Se agrega entrada de trazabilidad de la entrega operativa de ayuda/scanner/reportes.
+
+Actualizacion 2026-04-03: Inventario en carrito + reportes profesionales por fecha + seed ampliado
+
+- backend/db/carritos_compras.go:
+	- Se implementa reserva de inventario al agregar items de tipo producto al carrito.
+	- Se implementa liberación de inventario al desactivar/eliminar items activos o al resetear carritos abiertos.
+	- Se evita reversar inventario en ventas ya cerradas al pagar carrito.
+
+- backend/handlers/carritos_compras.go:
+	- Se mejoran respuestas de error para stock insuficiente en operaciones de items de carrito.
+	- Se preserva trazabilidad de usuario creador/actualizador al modificar items.
+
+- backend/db/carritos_inventario_test.go:
+	- Nuevo archivo de pruebas para validar descuento de inventario al agregar al carrito, permanencia tras pago y manejo de stock insuficiente.
+
+- backend/tools/seed_motel_malibu/main.go:
+	- La semilla comercial queda en 10 productos, 10 clientes y 10 usuarios de empresa.
+	- Se agrega validación automática del inventario en flujo de venta (antes/agregar/pagar).
+	- Se agrega confirmación explícita de vista previa de impresión POS/Carta.
+
+- web/administrar_empresa/reportes.html:
+	- Se amplía con reporte de productos y reporte de compras de productos.
+	- Se mantienen filtros por fecha y se agregan KPIs de compras y costo estimado.
+
+- documentos/diagramas/estructura_del_codigo.md:
+	- Se documenta actualización técnica de inventario en carrito, reportes por fecha y seed ampliado.
+
+- documentos/diagramas/diagrama_flujo_procesos.md:
+	- Se actualiza flujo con descuento de inventario en agregar/vender y nuevos reportes por fecha.
+
+- documentos/historial_de_cambios:
+	- Se registra implementación, validaciones y evidencias de prueba ejecutadas en local.
+
+- CHANGELOG.md:
+	- Se agrega hito 2026-04-03 para trazabilidad del módulo comercial e inventario.
+
+Actualizacion 2026-04-02: Reportes operativos + seed comercial Motel Malibu
+
+- web/administrar_empresa/reportes.html:
+	- Se reemplaza el placeholder por un modulo funcional de reportes por empresa.
+	- Incluye KPIs (ventas cerradas, ventas de hoy, ingresos, ticket promedio, clientes y productos activos).
+	- Incluye tablas de ventas cerradas, top productos y top clientes por ingresos.
+	- Incluye lectura de configuracion de impresion y vista previa de formatos POS/Carta.
+
+- backend/tools/seed_motel_malibu/main.go:
+	- Nueva herramienta de carga semilla para la empresa Motel Malibu.
+	- Crea/asegura bodega, proveedor, categorias, 10 productos de ejemplo con precios COP y 5 clientes.
+	- Genera una venta de prueba cerrada y valida configuracion/vista previa de impresion POS y Carta.
+
+- documentos/diagramas/diagrama_flujo_procesos.md:
+	- Se agrega flujo de reportes operativos e inspeccion de formatos de impresion.
+
+- documentos/diagramas/estructura_del_codigo.md:
+	- Se documenta la incorporacion del modulo de reportes y de la herramienta de seed comercial.
+
+- documentos/historial_de_cambios:
+	- Se registra la ejecucion de carga de datos en Motel Malibu y validaciones funcionales.
+
+- CHANGELOG.md:
+	- Se agrega hito de reportes operativos y carga de datos demo comercial.
+
+Actualizacion 2026-04-02: Reestructuracion del paquete de herramientas backend/tools
+
+- backend/tools/add_role_super/main.go:
+	- Herramienta aislada para agregar columna/valor de `role` en `administradores`.
+
+- backend/tools/inspect_tipos/main.go:
+	- Herramienta aislada para inspeccion de `tipos_de_usuario` y `roles_de_usuario`.
+
+- backend/tools/migrate_and_list/main.go:
+	- Herramienta aislada para asegurar indices y listar administradores/usuarios.
+
+- backend/tools/query_users/main.go:
+	- Herramienta aislada para consultar usuarios/admins y configuraciones relacionadas.
+
+- backend/tools/set_admin_role/main.go:
+	- Herramienta aislada para asignar/actualizar rol de administrador por email.
+
+- backend/tools/sync_users_to_super/main.go:
+	- Herramienta aislada para sincronizacion de `users` hacia `administradores`.
+
+- Nota estructural:
+	- Se elimina el conflicto de compilacion por multiples `main` en una sola carpeta.
+	- Resultado: `go test ./...` en `backend` vuelve a ejecutarse en verde.
+
 Actualizacion 2026-04-02: Modulo de ubicacion GPS por empresa
 
 - backend/db/ubicacion_gps.go:

@@ -1,0 +1,196 @@
+package db
+
+import (
+	"database/sql"
+	"path/filepath"
+	"testing"
+
+	_ "modernc.org/sqlite"
+)
+
+func openCarritoInventarioTestDB(t *testing.T) *sql.DB {
+	t.Helper()
+	dbPath := filepath.Join(t.TempDir(), "carritos_inventario_test.db")
+	dbConn, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		t.Fatalf("open sqlite: %v", err)
+	}
+	dbConn.SetMaxOpenConns(1)
+	t.Cleanup(func() {
+		_ = dbConn.Close()
+	})
+	return dbConn
+}
+
+func stockTotalByProducto(t *testing.T, dbConn *sql.DB, empresaID, productoID int64) float64 {
+	t.Helper()
+	var total float64
+	err := dbConn.QueryRow(`SELECT COALESCE(SUM(cantidad), 0) FROM inventario_existencias WHERE empresa_id = ? AND producto_id = ?`, empresaID, productoID).Scan(&total)
+	if err != nil {
+		t.Fatalf("stock total query: %v", err)
+	}
+	return total
+}
+
+func TestCarritoProductoDescuentaInventarioYVentaMantieneStock(t *testing.T) {
+	dbConn := openCarritoInventarioTestDB(t)
+	if err := EnsureEmpresaProductosSchema(dbConn); err != nil {
+		t.Fatalf("ensure productos schema: %v", err)
+	}
+	if err := EnsureEmpresaCarritosSchema(dbConn); err != nil {
+		t.Fatalf("ensure carritos schema: %v", err)
+	}
+
+	bodegaID, err := CreateBodega(dbConn, Bodega{
+		EmpresaID: 1,
+		Codigo:    "BOD-T-001",
+		Nombre:    "Bodega Test",
+		Estado:    "activo",
+	})
+	if err != nil {
+		t.Fatalf("create bodega: %v", err)
+	}
+
+	productoID, err := CreateProducto(dbConn, Producto{
+		EmpresaID:          1,
+		BodegaPrincipalID:  bodegaID,
+		SKU:                "SKU-T-001",
+		CodigoBarras:       "7701000000001",
+		Nombre:             "Producto Test",
+		UnidadMedida:       "unidad",
+		Costo:              1000,
+		Precio:             2000,
+		ImpuestoPorcentaje: 19,
+		Estado:             "activo",
+	}, 10, "TEST_INVENTARIO_CARRITO")
+	if err != nil {
+		t.Fatalf("create producto: %v", err)
+	}
+
+	carritoID, err := CreateCarritoCompra(dbConn, CarritoCompra{
+		EmpresaID:      1,
+		Codigo:         "CAR-T-001",
+		Nombre:         "Carrito Test",
+		CanalVenta:     "mostrador",
+		Moneda:         "COP",
+		UsuarioCreador: "test",
+		Estado:         "activo",
+	})
+	if err != nil {
+		t.Fatalf("create carrito: %v", err)
+	}
+
+	stockInicial := stockTotalByProducto(t, dbConn, 1, productoID)
+	if stockInicial != 10 {
+		t.Fatalf("expected initial stock 10, got %.2f", stockInicial)
+	}
+
+	_, err = CreateCarritoCompraItem(dbConn, CarritoCompraItem{
+		EmpresaID:          1,
+		CarritoID:          carritoID,
+		TipoItem:           "producto",
+		ReferenciaID:       productoID,
+		CodigoItem:         "SKU-T-001",
+		Descripcion:        "Producto Test",
+		UnidadMedida:       "unidad",
+		Cantidad:           2,
+		PrecioUnitario:     2000,
+		ImpuestoPorcentaje: 19,
+		ImpuestoCodigo:     "IVA",
+		UsuarioCreador:     "test",
+		Estado:             "activo",
+	})
+	if err != nil {
+		t.Fatalf("create carrito item: %v", err)
+	}
+
+	stockTrasAgregar := stockTotalByProducto(t, dbConn, 1, productoID)
+	if stockTrasAgregar != 8 {
+		t.Fatalf("expected stock 8 after add-to-cart, got %.2f", stockTrasAgregar)
+	}
+
+	carrito, err := GetCarritoCompraByID(dbConn, 1, carritoID)
+	if err != nil {
+		t.Fatalf("get carrito: %v", err)
+	}
+	if err := PayCarritoStationSession(dbConn, 1, carritoID, "", "", 0, 0, carrito.Total); err != nil {
+		t.Fatalf("pay carrito: %v", err)
+	}
+
+	stockTrasPago := stockTotalByProducto(t, dbConn, 1, productoID)
+	if stockTrasPago != 8 {
+		t.Fatalf("expected stock 8 after sale payment, got %.2f", stockTrasPago)
+	}
+}
+
+func TestCarritoProductoStockInsuficiente(t *testing.T) {
+	dbConn := openCarritoInventarioTestDB(t)
+	if err := EnsureEmpresaProductosSchema(dbConn); err != nil {
+		t.Fatalf("ensure productos schema: %v", err)
+	}
+	if err := EnsureEmpresaCarritosSchema(dbConn); err != nil {
+		t.Fatalf("ensure carritos schema: %v", err)
+	}
+
+	bodegaID, err := CreateBodega(dbConn, Bodega{
+		EmpresaID: 1,
+		Codigo:    "BOD-T-002",
+		Nombre:    "Bodega Test 2",
+		Estado:    "activo",
+	})
+	if err != nil {
+		t.Fatalf("create bodega: %v", err)
+	}
+
+	productoID, err := CreateProducto(dbConn, Producto{
+		EmpresaID:         1,
+		BodegaPrincipalID: bodegaID,
+		SKU:               "SKU-T-002",
+		CodigoBarras:      "7701000000002",
+		Nombre:            "Producto Stock Corto",
+		UnidadMedida:      "unidad",
+		Costo:             500,
+		Precio:            900,
+		Estado:            "activo",
+	}, 1, "TEST_INVENTARIO_STOCK")
+	if err != nil {
+		t.Fatalf("create producto: %v", err)
+	}
+
+	carritoID, err := CreateCarritoCompra(dbConn, CarritoCompra{
+		EmpresaID:      1,
+		Codigo:         "CAR-T-002",
+		Nombre:         "Carrito Test 2",
+		CanalVenta:     "mostrador",
+		Moneda:         "COP",
+		UsuarioCreador: "test",
+		Estado:         "activo",
+	})
+	if err != nil {
+		t.Fatalf("create carrito: %v", err)
+	}
+
+	err = nil
+	_, err = CreateCarritoCompraItem(dbConn, CarritoCompraItem{
+		EmpresaID:      1,
+		CarritoID:      carritoID,
+		TipoItem:       "producto",
+		ReferenciaID:   productoID,
+		Descripcion:    "Producto Stock Corto",
+		UnidadMedida:   "unidad",
+		Cantidad:       2,
+		PrecioUnitario: 900,
+		Estado:         "activo",
+	})
+	if err == nil {
+		t.Fatal("expected stock insufficient error, got nil")
+	}
+	if err != ErrStockInsuficiente {
+		t.Fatalf("expected ErrStockInsuficiente, got %v", err)
+	}
+
+	stockFinal := stockTotalByProducto(t, dbConn, 1, productoID)
+	if stockFinal != 1 {
+		t.Fatalf("expected unchanged stock 1 after failed add-to-cart, got %.2f", stockFinal)
+	}
+}

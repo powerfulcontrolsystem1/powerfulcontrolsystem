@@ -1,6 +1,6 @@
 # Estructura del codigo
 
-Fecha de actualizacion: 2026-04-02
+Fecha de actualizacion: 2026-04-04
 
 ## Objetivo
 Este documento resume la estructura tecnica principal del sistema y sirve como referencia para mantenimiento y evolucion.
@@ -63,6 +63,116 @@ Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe re
 - diagrama_roles_permisos.md
 - diagrama_flujo_procesos.md
 - diagrama_arquitectura_sistema.md
+
+## Actualizacion 2026-04-04 (modulo de finanzas multiempresa)
+
+- Backend DB:
+  - Se agrega `backend/db/finanzas.go` con el dominio financiero por empresa.
+  - Nuevas tablas:
+    - `empresa_finanzas_movimientos` para ingresos/egresos con comprobantes.
+    - `empresa_finanzas_configuracion` para parametrizacion financiera por empresa.
+  - `empresa_finanzas_configuracion` se amplía con plan de cuentas contable por empresa:
+    - destino de integracion externa,
+    - cuentas base de asiento,
+    - mapeo de cuentas por categoria para ingresos/egresos.
+  - Se normalizan validaciones de tipo (`ingreso`/`egreso`), estado (`activo`/`inactivo`/`anulado`) y codigos de comprobante.
+
+- Backend handlers:
+  - Se agrega `backend/handlers/finanzas.go` con endpoints:
+    - `GET/POST/PUT/DELETE /api/empresa/finanzas/movimientos`
+    - `GET/POST/PUT /api/empresa/finanzas/configuracion`
+
+- Bootstrap y rutas:
+  - `backend/main.go` integra `EnsureEmpresaFinanzasSchema` en arranque.
+  - Se registra migracion `2026-04-03-003-finanzas`.
+  - Se publican rutas API del modulo financiero para el panel empresarial.
+
+- Frontend:
+  - Nueva subpagina `web/administrar_empresa/finanzas.html` con:
+    - configuracion financiera por empresa,
+    - formulario de movimientos,
+    - filtros operativos,
+    - KPIs de ingresos/egresos/balance,
+    - impresion de comprobantes en formato carta y POS.
+    - separacion del libro en pestañas `Todos`, `Ingresos` y `Egresos`.
+    - exportacion de resultados filtrados a Excel (CSV), PDF y JSON contable.
+    - plantilla dedicada SIIGO en CSV para importacion de asientos.
+    - exportacion de balance de prueba en CSV.
+    - exportacion de estado de resultados en CSV.
+    - salida JSON lista para integracion externa con resumen y asientos recomendados (debe/haber).
+    - parametrizacion visual de plan de cuentas por empresa (base + categoria).
+    - proyeccion de referencia por ERP destino (`generico`, `siigo`, `world_office`, `alegra`) dentro del JSON exportado.
+  - Navegacion integrada en `web/administrar_empresa.html` y `web/js/administrar_empresa.js`.
+
+- Pruebas y datos demo:
+  - Nuevo archivo `backend/db/finanzas_test.go`.
+  - `backend/tools/seed_motel_malibu/main.go` ahora incluye semilla financiera demo por empresa.
+
+## Actualizacion 2026-04-03 (centro de ayuda + scanner de codigo + configuracion por empresa)
+
+- Navegacion global:
+  - `web/menu.js` agrega acceso directo a `web/ayuda/ayuda.html` desde el menu flotante.
+
+- Frontend ayuda:
+  - `web/ayuda/ayuda.html` se reestructura como centro de ayuda con menu interno y seccion de APIs principales.
+
+- Frontend configuracion por empresa:
+  - `web/administrar_empresa/configuracion.html` incorpora banderas operativas para lector de barras:
+    - `lector_codigo_barras_habilitado`
+    - `lector_codigo_barras_autofoco`
+    - `lector_codigo_barras_acumular`
+  - Estas opciones se persisten por `empresa_id` en configuracion local de empresa.
+
+- Frontend carrito:
+  - `web/administrar_empresa/carrito_de_compras.html` integra panel de escaneo tipo supermercado.
+  - Permite resolver productos por `codigo_barras` o `sku`, agregar item nuevo o acumular cantidad sobre item activo existente.
+  - En modo estacion respeta estado operativo activo antes de aceptar escaneos.
+
+- Frontend reportes:
+  - `web/administrar_empresa/reportes.html` agrega visibilidad de inventario actual por bodega y KPI de productos bajo minimo.
+
+- Impacto funcional:
+  - Se mejora la operacion de punto de venta multiempresa sin romper el aislamiento por `empresa_id` en configuracion y consumo de APIs.
+
+## Actualizacion 2026-04-03 (inventario en carrito + reportes profesionales por fecha + seed comercial ampliado)
+
+- Backend DB:
+  - `backend/db/carritos_compras.go` ahora reserva inventario al agregar items de tipo producto al carrito.
+  - Se libera inventario automaticamente al desactivar/eliminar items activos o al resetear carritos abiertos de estación.
+  - En venta cerrada, el stock reservado se mantiene y no se revierte en el pago.
+
+- Backend handlers:
+  - `backend/handlers/carritos_compras.go` mejora respuestas para casos de stock insuficiente al crear/actualizar/activar items de carrito.
+
+- Pruebas:
+  - Nuevo archivo `backend/db/carritos_inventario_test.go` con cobertura de:
+    - descuento de inventario en agregar al carrito,
+    - persistencia del descuento tras pago de venta,
+    - validacion de error por stock insuficiente.
+
+- Tooling seed:
+  - `backend/tools/seed_motel_malibu/main.go` amplía carga demo a 10 clientes y 10 usuarios de empresa.
+  - Incluye validacion automatica de inventario (antes de agregar, despues de agregar y despues de pagar).
+  - Mantiene y confirma validacion de impresion con vista previa POS/Carta.
+
+- Frontend reportes:
+  - `web/administrar_empresa/reportes.html` agrega reporte de productos y reporte de compras de productos.
+  - Todos los reportes operan con filtro por fecha (rango desde/hasta) y KPIs comerciales ampliados.
+
+## Actualizacion 2026-04-02 (reportes operativos + seed comercial Motel Malibu)
+
+- Backend tools:
+  - Se agrega `backend/tools/seed_motel_malibu/main.go` para carga demo de datos comerciales por empresa.
+  - La herramienta asegura estructura base comercial, crea datos de ejemplo (productos/clientes) y genera venta de prueba cerrada.
+  - Tambien consulta configuracion de impresion y ejecuta vista previa simulada de formatos POS/Carta.
+
+- Frontend:
+  - `web/administrar_empresa/reportes.html` deja de ser placeholder y pasa a modulo operativo.
+  - Implementa indicadores comerciales por empresa: ventas cerradas, ventas del dia, ingresos, ticket promedio, top productos y top clientes.
+  - Integra resumen de configuracion de impresion y previsualizacion de formatos.
+
+- Impacto funcional:
+  - Se habilita cierre de ciclo comercial visible para administracion de empresa: captura de venta cerrada -> consolidacion en reportes -> validacion de formato de impresion.
 
 ## Actualizacion 2026-04-01 (modularizacion tecnica)
 

@@ -105,6 +105,62 @@ El agente debe leer y actualizar este documento cada vez que se realicen cambios
      - `observaciones` TEXT
      - Índices: `ix_carrito_items_empresa_carrito`, `ix_carrito_items_empresa_referencia`
 
+   - `empresa_finanzas_movimientos` (módulo financiero por empresa: ingresos/egresos)
+     - `id` INTEGER PRIMARY KEY AUTOINCREMENT
+     - `empresa_id` INTEGER NOT NULL
+     - `tipo_movimiento` TEXT NOT NULL  -- ingreso / egreso
+     - `codigo` TEXT NOT NULL
+     - `fecha_movimiento` TEXT DEFAULT (datetime('now','localtime'))
+     - `categoria` TEXT
+     - `subcategoria` TEXT
+     - `concepto` TEXT
+     - `descripcion` TEXT
+     - `metodo_pago` TEXT
+     - `moneda` TEXT DEFAULT 'COP'
+     - `monto` REAL DEFAULT 0
+     - `impuesto` REAL DEFAULT 0
+     - `total` REAL DEFAULT 0
+     - `tercero_nombre` TEXT
+     - `tercero_documento` TEXT
+     - `tipo_comprobante` TEXT DEFAULT 'recibo_interno'
+     - `numero_comprobante` TEXT
+     - `comprobante_url` TEXT
+     - `referencia_externa` TEXT
+     - `aprobado_por` TEXT
+     - `fecha_creacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `fecha_actualizacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `usuario_creador` TEXT
+     - `estado` TEXT DEFAULT 'activo'
+     - `observaciones` TEXT
+     - Restricción única: `(empresa_id, codigo)`
+     - Índices: `ix_empresa_finanzas_movimientos_empresa_fecha`, `ix_empresa_finanzas_movimientos_empresa_tipo_estado`, `ix_empresa_finanzas_movimientos_empresa_comprobante`
+
+   - `empresa_finanzas_configuracion` (configuración financiera por empresa)
+     - `id` INTEGER PRIMARY KEY AUTOINCREMENT
+     - `empresa_id` INTEGER NOT NULL UNIQUE
+     - `habilitar_ingresos` INTEGER DEFAULT 1
+     - `habilitar_egresos` INTEGER DEFAULT 1
+     - `moneda` TEXT DEFAULT 'COP'
+     - `categorias_ingreso` TEXT
+     - `categorias_egreso` TEXT
+     - `prefijo_ingreso` TEXT DEFAULT 'ING'
+     - `prefijo_egreso` TEXT DEFAULT 'EGR'
+     - `formato_impresion` TEXT DEFAULT 'carta' -- carta/pos
+     - `requiere_aprobacion` INTEGER DEFAULT 0
+      - `integracion_contable_destino` TEXT DEFAULT 'generico'
+      - `cuenta_caja_bancos` TEXT DEFAULT '110505'
+      - `cuenta_ingresos` TEXT DEFAULT '413595'
+      - `cuenta_iva_generado` TEXT DEFAULT '240805'
+      - `cuenta_gastos` TEXT DEFAULT '519595'
+      - `cuenta_iva_descontable` TEXT DEFAULT '240810'
+      - `cuentas_ingreso_categoria` TEXT
+      - `cuentas_egreso_categoria` TEXT
+     - `fecha_creacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `fecha_actualizacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `usuario_creador` TEXT
+     - `estado` TEXT DEFAULT 'activo'
+     - `observaciones` TEXT
+
    - `empresa_configuracion_avanzada` (preparación de facturación electrónica por empresa)
      - `id` INTEGER PRIMARY KEY AUTOINCREMENT
      - `empresa_id` INTEGER NOT NULL UNIQUE
@@ -439,6 +495,7 @@ El agente debe leer y actualizar este documento cada vez que se realicen cambios
    - `empresa_id` en `users` es la FK conceptual hacia `empresas.id`. El proyecto usa SQLite simple, las FK deben manejarse desde la lógica de aplicación.
     - `productos.categoria_id` referencia de forma conceptual a `categorias_productos.id`; además se conserva `productos.categoria` como respaldo textual para compatibilidad histórica.
     - Aislamiento multiempresa: los endpoints del módulo de productos y categorías (`/api/empresa/productos`, `/api/empresa/categorias_productos`) exigen `empresa_id`; las consultas y movimientos de inventario siempre filtran por empresa para evitar mezcla de datos.
+    - Aislamiento multiempresa financiero: los endpoints `/api/empresa/finanzas/movimientos` y `/api/empresa/finanzas/configuracion` exigen `empresa_id` y operan con separación estricta por empresa.
 
 2) Base de datos: `superadministrador.db`
    - Propósito: almacenar datos globales del sistema (administradores globales, tipos de licencia, licencias y tablas de configuración/sesiones).

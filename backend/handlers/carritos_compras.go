@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -260,6 +261,10 @@ func EmpresaCarritoItemsHandler(dbEmp *sql.DB) http.HandlerFunc {
 			id, err := dbpkg.CreateCarritoCompraItem(dbEmp, payload)
 			if err != nil {
 				log.Printf("[carritos_items] create empresa_id=%d carrito_id=%d error: %v", payload.EmpresaID, payload.CarritoID, err)
+				if errors.Is(err, dbpkg.ErrStockInsuficiente) {
+					http.Error(w, "Stock insuficiente para agregar el item al carrito", http.StatusBadRequest)
+					return
+				}
 				http.Error(w, "No se pudo crear el item del carrito", http.StatusBadRequest)
 				return
 			}
@@ -290,6 +295,10 @@ func EmpresaCarritoItemsHandler(dbEmp *sql.DB) http.HandlerFunc {
 				}
 				if err := dbpkg.SetCarritoCompraItemEstado(dbEmp, empresaID, carritoID, id, estado); err != nil {
 					log.Printf("[carritos_items] set estado empresa_id=%d carrito_id=%d id=%d estado=%s error: %v", empresaID, carritoID, id, estado, err)
+					if errors.Is(err, dbpkg.ErrStockInsuficiente) {
+						http.Error(w, "Stock insuficiente para activar el item en carrito", http.StatusBadRequest)
+						return
+					}
 					http.Error(w, "No se pudo actualizar el estado del item", http.StatusInternalServerError)
 					return
 				}
@@ -310,8 +319,13 @@ func EmpresaCarritoItemsHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
+			payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
 			if err := dbpkg.UpdateCarritoCompraItem(dbEmp, payload); err != nil {
 				log.Printf("[carritos_items] update empresa_id=%d carrito_id=%d id=%d error: %v", payload.EmpresaID, payload.CarritoID, payload.ID, err)
+				if errors.Is(err, dbpkg.ErrStockInsuficiente) {
+					http.Error(w, "Stock insuficiente para actualizar el item del carrito", http.StatusBadRequest)
+					return
+				}
 				http.Error(w, "No se pudo actualizar el item del carrito", http.StatusBadRequest)
 				return
 			}

@@ -8,6 +8,7 @@
     wrapper.innerHTML = '<button class="fm-toggle" aria-label="Abrir menú">☰</button>' +
       '<div class="fm-panel" role="menu">' +
         '<a class="fm-item" href="/index.html">Portal</a>' +
+        '<a class="fm-item" href="/ayuda/ayuda.html">Ayuda</a>' +
         '<button id="themeToggle" class="fm-item" type="button" aria-label="Cambiar tema"></button>' +
         '<div id="countryFlagItem" class="fm-item fm-country" style="display:none"></div>' +
         '<a id="sessionLink" class="fm-item" href="/login.html">Iniciar sesión</a>' +

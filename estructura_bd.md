@@ -1,7 +1,7 @@
 # Estructura de Base de Datos
 
-Version: 2026-04-02
-Ultima actualizacion: 2026-04-02
+Version: 2026-04-04
+Ultima actualizacion: 2026-04-04
 
 Este documento consolida la estructura activa de SQLite para el proyecto.
 Todas las tablas operativas usan como base los campos estandar:
@@ -65,6 +65,26 @@ Todas las tablas operativas usan como base los campos estandar:
   - unidad_medida, cantidad, precio_unitario
   - descuento_porcentaje, impuesto_porcentaje, impuesto_codigo
   - base_gravable, valor_descuento, valor_impuesto, subtotal_linea, total_linea
+
+### Tablas de finanzas empresariales
+- empresa_finanzas_movimientos:
+  - empresa_id, tipo_movimiento, codigo, fecha_movimiento
+  - categoria, subcategoria, concepto, descripcion, metodo_pago, moneda
+  - monto, impuesto, total
+  - tercero_nombre, tercero_documento
+  - tipo_comprobante, numero_comprobante, comprobante_url
+  - referencia_externa, aprobado_por
+  - UNIQUE(empresa_id, codigo)
+- empresa_finanzas_configuracion:
+  - empresa_id (UNIQUE)
+  - habilitar_ingresos, habilitar_egresos, moneda
+  - categorias_ingreso, categorias_egreso
+  - prefijo_ingreso, prefijo_egreso
+  - formato_impresion, requiere_aprobacion
+  - integracion_contable_destino
+  - cuenta_caja_bancos, cuenta_ingresos, cuenta_iva_generado
+  - cuenta_gastos, cuenta_iva_descontable
+  - cuentas_ingreso_categoria, cuentas_egreso_categoria
 
 ### Tabla de configuracion empresarial
 - empresa_configuracion_avanzada:
@@ -156,6 +176,7 @@ Todas las tablas operativas usan como base los campos estandar:
 ## 3) Relaciones clave
 - empresas.id -> users.empresa_id
 - empresas.id -> clientes.empresa_id, categorias_productos.empresa_id, productos.empresa_id, carritos_compras.empresa_id, chat_tareas*.empresa_id
+- empresas.id -> empresa_finanzas_movimientos.empresa_id, empresa_finanzas_configuracion.empresa_id
 - empresas.id -> empresa_gps_dispositivos.empresa_id, empresa_gps_recorridos.empresa_id
 - categorias_productos.id -> productos.categoria_id
 - carritos_compras.id -> carrito_compra_items.carrito_id
@@ -166,6 +187,8 @@ Todas las tablas operativas usan como base los campos estandar:
 - roles_de_usuario.id -> tipos_de_usuario.rol_id
 
 ## 4) Historial resumido
+- 2026-04-04: se amplía `empresa_finanzas_configuracion` con parametrización contable externa por empresa (destino ERP, cuentas base y mapeo por categoría) para exportación JSON contable avanzada.
+- 2026-04-04: se agregan `empresa_finanzas_movimientos` y `empresa_finanzas_configuracion` para el módulo financiero por empresa (ingresos/egresos con comprobantes e impresión).
 - 2026-04-02: se agrega `categorias_productos`, se incorpora `productos.categoria_id` y se documentan relaciones del catálogo de categorías por empresa.
 - 2026-04-02: se agregan tablas del modulo chat_y_tareas en empresas.db y se actualiza este documento.
 - 2026-04-02: se agregan `empresa_gps_dispositivos` y `empresa_gps_recorridos` para tracking de ubicacion GPS por empresa, con registro periodico de recorridos.

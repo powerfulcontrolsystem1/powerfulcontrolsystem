@@ -7,27 +7,134 @@
   <link rel="stylesheet" href="/estilos.css">
   <script src="/menu.js"></script>
 </head>
-<body>
-  
+<body class="empresa-subpage">
+  <div class="container empresa-module">
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h1 style="margin:0;">Centro de ayuda</h1>
+      </div>
+      <p class="form-help" style="margin-top:8px;">Guía funcional y técnica para operación de inventario, carritos, reportes y configuración por empresa.</p>
+      <div class="empresa-inline-actions" style="margin-top:10px;flex-wrap:wrap;gap:8px;">
+        <a class="btn secondary" href="#menu-rapido">Guía rápida</a>
+        <a class="btn secondary" href="#menu-apis">APIs</a>
+        <a class="btn secondary" href="#menu-inventario">Inventario</a>
+        <a class="btn secondary" href="#menu-carrito">Carrito y lector</a>
+        <a class="btn secondary" href="#menu-configuracion">Configuración por empresa</a>
+      </div>
+    </section>
 
-  <div class="container">
-    <h1>Ayuda</h1>
-    <p>Bienvenido al centro de ayuda. Aquí encontrarás documentación básica y enlaces de soporte.</p>
-    <section>
-      <h2>Guía rápida</h2>
+    <section id="menu-rapido" class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2 style="margin:0;">Guía rápida</h2>
+      </div>
       <ul>
-        <li>Para iniciar sesión: ve a <a href="/login.html">Login</a>.</li>
-        <li>Panel de administración: <a href="/super_administrador.html">Super Administrador</a> (requiere rol).</li>
-        <li>Documentación y cambios: revisa la carpeta <code>documentos/</code> en el repositorio.</li>
+        <li>Ingreso administrativo: <a href="/login.html">/login.html</a></li>
+        <li>Panel super administrador: <a href="/super_administrador.html">/super_administrador.html</a></li>
+        <li>Panel de empresa: <a href="/administrar_empresa.html">/administrar_empresa.html</a></li>
+        <li>Módulo de productos e inventario: <a href="/administrar_empresa/administrar_productos.html">/administrar_empresa/administrar_productos.html</a></li>
+        <li>Módulo de carrito: <a href="/administrar_empresa/carrito_de_compras.html">/administrar_empresa/carrito_de_compras.html</a></li>
+        <li>Módulo de reportes: <a href="/administrar_empresa/reportes.html">/administrar_empresa/reportes.html</a></li>
+        <li>Configuración de empresa: <a href="/administrar_empresa/configuracion.html">/administrar_empresa/configuracion.html</a></li>
       </ul>
     </section>
 
-    <section>
-      <h2>Contacto</h2>
-      <p>Si necesitas soporte, contacta al administrador del sistema.</p>
+    <section id="menu-apis" class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2 style="margin:0;">APIs principales</h2>
+      </div>
+      <p class="form-help">Las APIs operativas usan <strong>empresa_id</strong> para garantizar separación por empresa.</p>
+
+      <h3 style="margin:14px 0 8px 0;">Catálogo e inventario</h3>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Método</th>
+              <th>Endpoint</th>
+              <th>Descripción</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>GET/POST/PUT/DELETE</td><td>/api/empresa/productos</td><td>CRUD de productos por empresa</td></tr>
+            <tr><td>POST</td><td>/api/empresa/productos/imagen</td><td>Carga imagen por producto</td></tr>
+            <tr><td>GET/POST/PUT/DELETE</td><td>/api/empresa/categorias_productos</td><td>Categorías de productos</td></tr>
+            <tr><td>GET</td><td>/api/empresa/inventario/existencias</td><td>Stock por bodega</td></tr>
+            <tr><td>GET</td><td>/api/empresa/inventario/movimientos</td><td>Movimientos de inventario</td></tr>
+            <tr><td>POST</td><td>/api/empresa/inventario/transferir</td><td>Transferencia entre bodegas</td></tr>
+            <tr><td>POST</td><td>/api/empresa/inventario/ajustar</td><td>Ajustes de entrada/salida</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 style="margin:14px 0 8px 0;">Carrito y venta</h3>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Método</th>
+              <th>Endpoint</th>
+              <th>Descripción</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>GET/POST/PUT/DELETE</td><td>/api/empresa/carritos_compra</td><td>CRUD de carritos por empresa</td></tr>
+            <tr><td>GET/POST/PUT/DELETE</td><td>/api/empresa/carritos_compra/items</td><td>CRUD de items en carrito</td></tr>
+            <tr><td>PUT?action=activar_estacion</td><td>/api/empresa/carritos_compra</td><td>Activación de carrito de estación</td></tr>
+            <tr><td>PUT?action=pagar_estacion</td><td>/api/empresa/carritos_compra</td><td>Cierre/pago de carrito</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 style="margin:14px 0 8px 0;">Configuración de empresa</h3>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Método</th>
+              <th>Endpoint</th>
+              <th>Descripción</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>GET/POST/PUT</td><td>/api/empresa/configuracion_avanzada</td><td>Configuración operativa y avanzada por empresa</td></tr>
+            <tr><td>GET/POST/PUT</td><td>/api/empresa/facturacion_electronica</td><td>Configuración FE por país y empresa</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="menu-inventario" class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2 style="margin:0;">Inventario y reportes</h2>
+      </div>
+      <ul>
+        <li>El inventario se administra por empresa con bodegas, movimientos y existencias separadas por empresa_id.</li>
+        <li>El módulo de reportes consolida ventas cerradas, compras de inventario y stock actual.</li>
+        <li>Los reportes deben consumirse siempre con empresa_id para no mezclar datos entre empresas.</li>
+      </ul>
+    </section>
+
+    <section id="menu-carrito" class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2 style="margin:0;">Carrito y lector de código de barras</h2>
+      </div>
+      <ul>
+        <li>El carrito permite agregar productos por catálogo o por lectura de código de barras/SKU.</li>
+        <li>Al leer un código válido, el sistema incrementa cantidad o crea el item automáticamente.</li>
+        <li>El proceso descuenta inventario del producto asociado respetando el contexto de empresa.</li>
+      </ul>
+    </section>
+
+    <section id="menu-configuracion" class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2 style="margin:0;">Configuración por empresa</h2>
+      </div>
+      <ul>
+        <li>La configuración operativa se guarda por llave de empresa en la interfaz de administración.</li>
+        <li>La configuración avanzada/fiscal se guarda en base de datos por empresa_id.</li>
+        <li>No se debe reutilizar una configuración de una empresa en otra sin respaldo/restauración explícita.</li>
+      </ul>
     </section>
   </div>
-
-  
 </body>
 </html>
