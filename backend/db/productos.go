@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 )
@@ -74,20 +75,25 @@ type Producto struct {
 
 // Proveedor representa un proveedor comercial de la empresa.
 type Proveedor struct {
-	ID                 int64  `json:"id"`
-	EmpresaID          int64  `json:"empresa_id"`
-	Codigo             string `json:"codigo,omitempty"`
-	Nombre             string `json:"nombre"`
-	Documento          string `json:"documento,omitempty"`
-	Contacto           string `json:"contacto,omitempty"`
-	Telefono           string `json:"telefono,omitempty"`
-	Email              string `json:"email,omitempty"`
-	Direccion          string `json:"direccion,omitempty"`
-	FechaCreacion      string `json:"fecha_creacion,omitempty"`
-	FechaActualizacion string `json:"fecha_actualizacion,omitempty"`
-	UsuarioCreador     string `json:"usuario_creador,omitempty"`
-	Estado             string `json:"estado,omitempty"`
-	Observaciones      string `json:"observaciones,omitempty"`
+	ID                    int64   `json:"id"`
+	EmpresaID             int64   `json:"empresa_id"`
+	Codigo                string  `json:"codigo,omitempty"`
+	Nombre                string  `json:"nombre"`
+	Documento             string  `json:"documento,omitempty"`
+	Contacto              string  `json:"contacto,omitempty"`
+	Telefono              string  `json:"telefono,omitempty"`
+	Email                 string  `json:"email,omitempty"`
+	Direccion             string  `json:"direccion,omitempty"`
+	CatalogoReferencia    string  `json:"catalogo_referencia,omitempty"`
+	PrecioBaseReferencial float64 `json:"precio_base_referencial"`
+	DescuentoPorcentaje   float64 `json:"descuento_porcentaje"`
+	PlazoPagoDias         int64   `json:"plazo_pago_dias,omitempty"`
+	CondicionEntrega      string  `json:"condicion_entrega,omitempty"`
+	FechaCreacion         string  `json:"fecha_creacion,omitempty"`
+	FechaActualizacion    string  `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador        string  `json:"usuario_creador,omitempty"`
+	Estado                string  `json:"estado,omitempty"`
+	Observaciones         string  `json:"observaciones,omitempty"`
 }
 
 // Servicio representa un servicio vendible como si fuese un producto.
@@ -207,6 +213,127 @@ type InventarioBalanceBodega struct {
 	Neto             float64 `json:"neto"`
 }
 
+// InventarioProyeccionQuiebre representa una alerta preventiva de agotamiento.
+type InventarioProyeccionQuiebre struct {
+	EmpresaID            int64   `json:"empresa_id"`
+	ProductoID           int64   `json:"producto_id"`
+	ProductoNombre       string  `json:"producto_nombre"`
+	BodegaID             int64   `json:"bodega_id"`
+	BodegaNombre         string  `json:"bodega_nombre"`
+	StockActual          float64 `json:"stock_actual"`
+	StockMinimo          float64 `json:"stock_minimo"`
+	StockMaximo          float64 `json:"stock_maximo"`
+	Deficit              float64 `json:"deficit"`
+	SalidaPromedioDiaria float64 `json:"salida_promedio_diaria"`
+	DiasCobertura        float64 `json:"dias_cobertura"`
+	EstadoProyeccion     string  `json:"estado_proyeccion"`
+	SugeridoReposicion   float64 `json:"sugerido_reposicion"`
+	DiasVentana          int     `json:"dias_ventana"`
+}
+
+// InventarioPlanReposicionItem representa una sugerencia de compra preventiva por proveedor.
+type InventarioPlanReposicionItem struct {
+	EmpresaID          int64   `json:"empresa_id"`
+	ProveedorID        int64   `json:"proveedor_id"`
+	ProveedorNombre    string  `json:"proveedor_nombre"`
+	ProductoID         int64   `json:"producto_id"`
+	ProductoNombre     string  `json:"producto_nombre"`
+	BodegaID           int64   `json:"bodega_id"`
+	BodegaNombre       string  `json:"bodega_nombre"`
+	EstadoProyeccion   string  `json:"estado_proyeccion"`
+	DiasCobertura      float64 `json:"dias_cobertura"`
+	SugeridoReposicion float64 `json:"sugerido_reposicion"`
+	CostoUnitarioRef   float64 `json:"costo_unitario_ref"`
+	CostoEstimado      float64 `json:"costo_estimado"`
+	DiasVentana        int     `json:"dias_ventana"`
+}
+
+// InventarioPlanReposicionProveedorResumen representa el consolidado de compra por proveedor.
+type InventarioPlanReposicionProveedorResumen struct {
+	EmpresaID        int64   `json:"empresa_id"`
+	ProveedorID      int64   `json:"proveedor_id"`
+	ProveedorNombre  string  `json:"proveedor_nombre"`
+	Items            int64   `json:"items"`
+	ProductosUnicos  int64   `json:"productos_unicos"`
+	CantidadTotal    float64 `json:"cantidad_total"`
+	CostoTotal       float64 `json:"costo_total"`
+	QuiebreInminente int64   `json:"quiebre_inminente"`
+	BajoMinimo       int64   `json:"bajo_minimo"`
+	RiesgoAlto       int64   `json:"riesgo_alto"`
+	RiesgoMedio      int64   `json:"riesgo_medio"`
+	DiasVentana      int     `json:"dias_ventana"`
+}
+
+// InventarioPlanReposicionBorradorItem representa una linea sugerida en un borrador de orden de compra.
+type InventarioPlanReposicionBorradorItem struct {
+	EmpresaID        int64   `json:"empresa_id"`
+	ProveedorID      int64   `json:"proveedor_id"`
+	ProveedorNombre  string  `json:"proveedor_nombre"`
+	ProductoID       int64   `json:"producto_id"`
+	ProductoNombre   string  `json:"producto_nombre"`
+	BodegaID         int64   `json:"bodega_id"`
+	BodegaNombre     string  `json:"bodega_nombre"`
+	EstadoProyeccion string  `json:"estado_proyeccion"`
+	DiasCobertura    float64 `json:"dias_cobertura"`
+	CantidadSugerida float64 `json:"cantidad_sugerida"`
+	CostoUnitarioRef float64 `json:"costo_unitario_ref"`
+	CostoEstimado    float64 `json:"costo_estimado"`
+}
+
+// InventarioPlanReposicionBorradorCompra representa un borrador consolidado de orden de compra por proveedor.
+type InventarioPlanReposicionBorradorCompra struct {
+	EmpresaID        int64                                  `json:"empresa_id"`
+	ProveedorID      int64                                  `json:"proveedor_id"`
+	ProveedorNombre  string                                 `json:"proveedor_nombre"`
+	FechaDocumento   string                                 `json:"fecha_documento"`
+	CodigoBorrador   string                                 `json:"codigo_borrador"`
+	DiasVentana      int                                    `json:"dias_ventana"`
+	Items            []InventarioPlanReposicionBorradorItem `json:"items"`
+	TotalItems       int64                                  `json:"total_items"`
+	ProductosUnicos  int64                                  `json:"productos_unicos"`
+	CantidadTotal    float64                                `json:"cantidad_total"`
+	CostoTotal       float64                                `json:"costo_total"`
+	QuiebreInminente int64                                  `json:"quiebre_inminente"`
+	BajoMinimo       int64                                  `json:"bajo_minimo"`
+	RiesgoAlto       int64                                  `json:"riesgo_alto"`
+	RiesgoMedio      int64                                  `json:"riesgo_medio"`
+}
+
+// InventarioPlanReposicionOrdenEmitida representa el resultado de emitir una OC desde un borrador de reposicion.
+type InventarioPlanReposicionOrdenEmitida struct {
+	EmpresaID       int64   `json:"empresa_id"`
+	ProveedorID     int64   `json:"proveedor_id"`
+	ProveedorNombre string  `json:"proveedor_nombre"`
+	DocumentoCodigo string  `json:"documento_codigo"`
+	Accion          string  `json:"accion"`
+	EstadoAnterior  string  `json:"estado_anterior"`
+	EstadoNuevo     string  `json:"estado_nuevo"`
+	Evento          string  `json:"evento"`
+	PeriodoContable string  `json:"periodo_contable"`
+	Moneda          string  `json:"moneda"`
+	FechaDocumento  string  `json:"fecha_documento"`
+	TotalItems      int64   `json:"total_items"`
+	ProductosUnicos int64   `json:"productos_unicos"`
+	CantidadTotal   float64 `json:"cantidad_total"`
+	CostoTotal      float64 `json:"costo_total"`
+	EntidadID       int64   `json:"entidad_id"`
+}
+
+// InventarioPlanReposicionOrdenEstadoActualizado representa el resultado de transicionar la OC emitida.
+type InventarioPlanReposicionOrdenEstadoActualizado struct {
+	EmpresaID       int64   `json:"empresa_id"`
+	ProveedorID     int64   `json:"proveedor_id"`
+	DocumentoCodigo string  `json:"documento_codigo"`
+	Accion          string  `json:"accion"`
+	EstadoAnterior  string  `json:"estado_anterior"`
+	EstadoNuevo     string  `json:"estado_nuevo"`
+	Evento          string  `json:"evento"`
+	PeriodoContable string  `json:"periodo_contable"`
+	Moneda          string  `json:"moneda"`
+	MontoTotal      float64 `json:"monto_total"`
+	EntidadID       int64   `json:"entidad_id"`
+}
+
 // InventarioMovimiento representa un evento de inventario (entrada/salida/traslado/ajuste).
 type InventarioMovimiento struct {
 	ID                  int64   `json:"id"`
@@ -294,6 +421,11 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 			telefono TEXT,
 			email TEXT,
 			direccion TEXT,
+			catalogo_referencia TEXT,
+			precio_base_referencial REAL DEFAULT 0,
+			descuento_porcentaje REAL DEFAULT 0,
+			plazo_pago_dias INTEGER DEFAULT 0,
+			condicion_entrega TEXT,
 			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
 			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
 			usuario_creador TEXT,
@@ -510,6 +642,21 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "proveedores", "direccion", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "proveedores", "catalogo_referencia", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "proveedores", "precio_base_referencial", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "proveedores", "descuento_porcentaje", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "proveedores", "plazo_pago_dias", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "proveedores", "condicion_entrega", "TEXT"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "proveedores", "fecha_actualizacion", "TEXT"); err != nil {
@@ -1696,6 +1843,751 @@ func GetInventarioBalanceBodegasByEmpresa(dbConn *sql.DB, empresaID, bodegaID in
 	return out, nil
 }
 
+// GetInventarioProyeccionQuiebreByEmpresa estima cobertura y riesgo de quiebre por producto/bodega.
+func GetInventarioProyeccionQuiebreByEmpresa(dbConn *sql.DB, empresaID, bodegaID int64, diasVentana int, limit int, offset int) ([]InventarioProyeccionQuiebre, error) {
+	if diasVentana <= 0 {
+		diasVentana = 30
+	}
+	if diasVentana > 180 {
+		diasVentana = 180
+	}
+	if limit <= 0 || limit > 500 {
+		limit = 80
+	}
+	if offset < 0 {
+		offset = 0
+	}
+
+	periodExpr := fmt.Sprintf("-%d day", diasVentana-1)
+	query := `SELECT
+		e.empresa_id,
+		e.producto_id,
+		p.nombre,
+		e.bodega_id,
+		b.nombre,
+		COALESCE(e.cantidad, 0),
+		COALESCE(p.stock_minimo, 0),
+		COALESCE(p.stock_maximo, 0),
+		COALESCE((
+			SELECT SUM(COALESCE(m.cantidad, 0))
+			FROM inventario_movimientos m
+			WHERE m.empresa_id = e.empresa_id
+				AND m.producto_id = e.producto_id
+				AND m.bodega_origen_id = e.bodega_id
+				AND LOWER(COALESCE(m.estado, 'activo')) = 'activo'
+				AND LOWER(COALESCE(m.tipo, '')) IN ('salida', 'perdida', 'ajuste_negativo', 'ajuste_salida', 'traslado', 'cambio_producto')
+				AND date(COALESCE(m.fecha_movimiento, m.fecha_creacion)) >= date('now', ?)
+		), 0) / CAST(? AS REAL) AS salida_promedio
+	FROM inventario_existencias e
+	JOIN productos p ON p.id = e.producto_id AND p.empresa_id = e.empresa_id
+	JOIN bodegas b ON b.id = e.bodega_id AND b.empresa_id = e.empresa_id
+	WHERE e.empresa_id = ?
+		AND LOWER(COALESCE(e.estado, 'activo')) = 'activo'
+		AND LOWER(COALESCE(p.estado, 'activo')) = 'activo'
+		AND LOWER(COALESCE(b.estado, 'activo')) = 'activo'`
+	args := []interface{}{periodExpr, diasVentana, empresaID}
+	if bodegaID > 0 {
+		query += " AND e.bodega_id = ?"
+		args = append(args, bodegaID)
+	}
+	query += " ORDER BY p.nombre ASC, b.nombre ASC LIMIT ? OFFSET ?"
+	args = append(args, limit, offset)
+
+	rows, err := dbConn.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]InventarioProyeccionQuiebre, 0)
+	for rows.Next() {
+		var row InventarioProyeccionQuiebre
+		if err := rows.Scan(
+			&row.EmpresaID,
+			&row.ProductoID,
+			&row.ProductoNombre,
+			&row.BodegaID,
+			&row.BodegaNombre,
+			&row.StockActual,
+			&row.StockMinimo,
+			&row.StockMaximo,
+			&row.SalidaPromedioDiaria,
+		); err != nil {
+			return nil, err
+		}
+		row.DiasVentana = diasVentana
+		if row.StockMinimo > row.StockActual {
+			row.Deficit = row.StockMinimo - row.StockActual
+		}
+
+		if row.SalidaPromedioDiaria > 0 {
+			row.DiasCobertura = row.StockActual / row.SalidaPromedioDiaria
+		} else if row.StockActual > 0 {
+			row.DiasCobertura = -1
+		}
+
+		targetStock := row.StockMaximo
+		if targetStock <= 0 {
+			if row.StockMinimo > 0 {
+				targetStock = row.StockMinimo * 2
+			} else {
+				targetStock = row.StockActual
+			}
+		}
+		if targetStock > row.StockActual {
+			row.SugeridoReposicion = targetStock - row.StockActual
+		}
+
+		switch {
+		case row.StockActual <= 0:
+			row.EstadoProyeccion = "quiebre_inminente"
+		case row.SalidaPromedioDiaria > 0 && row.DiasCobertura > 0 && row.DiasCobertura <= 3:
+			row.EstadoProyeccion = "quiebre_inminente"
+		case row.StockMinimo > 0 && row.StockActual <= row.StockMinimo:
+			row.EstadoProyeccion = "bajo_minimo"
+		case row.SalidaPromedioDiaria <= 0:
+			row.EstadoProyeccion = "sin_consumo_reciente"
+		case row.DiasCobertura <= 7:
+			row.EstadoProyeccion = "riesgo_alto"
+		case row.DiasCobertura <= 14:
+			row.EstadoProyeccion = "riesgo_medio"
+		default:
+			row.EstadoProyeccion = "estable"
+		}
+
+		out = append(out, row)
+	}
+
+	severity := func(estado string) int {
+		switch estado {
+		case "quiebre_inminente":
+			return 0
+		case "bajo_minimo":
+			return 1
+		case "riesgo_alto":
+			return 2
+		case "riesgo_medio":
+			return 3
+		case "sin_consumo_reciente":
+			return 4
+		default:
+			return 5
+		}
+	}
+	normalizeDias := func(d float64) float64 {
+		if d < 0 {
+			return 999999
+		}
+		return d
+	}
+
+	sort.Slice(out, func(i, j int) bool {
+		si := severity(out[i].EstadoProyeccion)
+		sj := severity(out[j].EstadoProyeccion)
+		if si != sj {
+			return si < sj
+		}
+		di := normalizeDias(out[i].DiasCobertura)
+		dj := normalizeDias(out[j].DiasCobertura)
+		if di != dj {
+			return di < dj
+		}
+		if out[i].Deficit != out[j].Deficit {
+			return out[i].Deficit > out[j].Deficit
+		}
+		if out[i].ProductoNombre != out[j].ProductoNombre {
+			return out[i].ProductoNombre < out[j].ProductoNombre
+		}
+		return out[i].BodegaNombre < out[j].BodegaNombre
+	})
+
+	return out, nil
+}
+
+// GetInventarioPlanReposicionByEmpresa consolida una propuesta preventiva de compra por proveedor.
+func GetInventarioPlanReposicionByEmpresa(dbConn *sql.DB, empresaID, bodegaID int64, diasVentana int, soloRiesgo bool, limit int, offset int) ([]InventarioPlanReposicionItem, error) {
+	if diasVentana <= 0 {
+		diasVentana = 30
+	}
+	if diasVentana > 180 {
+		diasVentana = 180
+	}
+	if limit <= 0 || limit > 500 {
+		limit = 80
+	}
+	if offset < 0 {
+		offset = 0
+	}
+
+	baseRows, err := GetInventarioProyeccionQuiebreByEmpresa(dbConn, empresaID, bodegaID, diasVentana, 500, 0)
+	if err != nil {
+		return nil, err
+	}
+	if len(baseRows) == 0 {
+		return []InventarioPlanReposicionItem{}, nil
+	}
+
+	productIDSet := make(map[int64]struct{})
+	for _, row := range baseRows {
+		if row.ProductoID > 0 {
+			productIDSet[row.ProductoID] = struct{}{}
+		}
+	}
+	if len(productIDSet) == 0 {
+		return []InventarioPlanReposicionItem{}, nil
+	}
+
+	productIDs := make([]int64, 0, len(productIDSet))
+	for id := range productIDSet {
+		productIDs = append(productIDs, id)
+	}
+	sort.Slice(productIDs, func(i, j int) bool {
+		return productIDs[i] < productIDs[j]
+	})
+
+	placeholders := make([]string, 0, len(productIDs))
+	args := make([]interface{}, 0, 1+len(productIDs))
+	args = append(args, empresaID)
+	for _, id := range productIDs {
+		placeholders = append(placeholders, "?")
+		args = append(args, id)
+	}
+
+	metaQuery := `SELECT
+		p.id,
+		COALESCE(p.proveedor_principal_id, 0),
+		COALESCE(pr.nombre, ''),
+		COALESCE(p.costo, 0)
+	FROM productos p
+	LEFT JOIN proveedores pr ON pr.id = p.proveedor_principal_id AND pr.empresa_id = p.empresa_id
+	WHERE p.empresa_id = ?
+		AND p.id IN (` + strings.Join(placeholders, ",") + `)`
+
+	metaRows, err := dbConn.Query(metaQuery, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer metaRows.Close()
+
+	type productMeta struct {
+		ProveedorID     int64
+		ProveedorNombre string
+		Costo           float64
+	}
+	metaByProduct := make(map[int64]productMeta)
+	for metaRows.Next() {
+		var productID int64
+		var meta productMeta
+		if err := metaRows.Scan(&productID, &meta.ProveedorID, &meta.ProveedorNombre, &meta.Costo); err != nil {
+			return nil, err
+		}
+		metaByProduct[productID] = meta
+	}
+
+	isRiesgo := func(estado string) bool {
+		switch estado {
+		case "quiebre_inminente", "bajo_minimo", "riesgo_alto", "riesgo_medio":
+			return true
+		default:
+			return false
+		}
+	}
+	severity := func(estado string) int {
+		switch estado {
+		case "quiebre_inminente":
+			return 0
+		case "bajo_minimo":
+			return 1
+		case "riesgo_alto":
+			return 2
+		case "riesgo_medio":
+			return 3
+		case "sin_consumo_reciente":
+			return 4
+		default:
+			return 5
+		}
+	}
+
+	out := make([]InventarioPlanReposicionItem, 0, len(baseRows))
+	for _, row := range baseRows {
+		if row.SugeridoReposicion <= 0 {
+			continue
+		}
+		estado := strings.TrimSpace(row.EstadoProyeccion)
+		if soloRiesgo && !isRiesgo(estado) {
+			continue
+		}
+
+		meta := metaByProduct[row.ProductoID]
+		proveedorNombre := strings.TrimSpace(meta.ProveedorNombre)
+		if proveedorNombre == "" {
+			if meta.ProveedorID > 0 {
+				proveedorNombre = fmt.Sprintf("Proveedor #%d", meta.ProveedorID)
+			} else {
+				proveedorNombre = "Sin proveedor principal"
+			}
+		}
+
+		item := InventarioPlanReposicionItem{
+			EmpresaID:          row.EmpresaID,
+			ProveedorID:        meta.ProveedorID,
+			ProveedorNombre:    proveedorNombre,
+			ProductoID:         row.ProductoID,
+			ProductoNombre:     row.ProductoNombre,
+			BodegaID:           row.BodegaID,
+			BodegaNombre:       row.BodegaNombre,
+			EstadoProyeccion:   estado,
+			DiasCobertura:      row.DiasCobertura,
+			SugeridoReposicion: row.SugeridoReposicion,
+			CostoUnitarioRef:   meta.Costo,
+			DiasVentana:        diasVentana,
+		}
+		item.CostoEstimado = item.SugeridoReposicion * item.CostoUnitarioRef
+		out = append(out, item)
+	}
+
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].ProveedorNombre != out[j].ProveedorNombre {
+			return out[i].ProveedorNombre < out[j].ProveedorNombre
+		}
+		si := severity(out[i].EstadoProyeccion)
+		sj := severity(out[j].EstadoProyeccion)
+		if si != sj {
+			return si < sj
+		}
+		if out[i].CostoEstimado != out[j].CostoEstimado {
+			return out[i].CostoEstimado > out[j].CostoEstimado
+		}
+		if out[i].ProductoNombre != out[j].ProductoNombre {
+			return out[i].ProductoNombre < out[j].ProductoNombre
+		}
+		return out[i].BodegaNombre < out[j].BodegaNombre
+	})
+
+	if offset >= len(out) {
+		return []InventarioPlanReposicionItem{}, nil
+	}
+	end := offset + limit
+	if end > len(out) {
+		end = len(out)
+	}
+
+	return out[offset:end], nil
+}
+
+// GetInventarioPlanReposicionResumenByEmpresa consolida el plan preventivo agrupado por proveedor.
+func GetInventarioPlanReposicionResumenByEmpresa(dbConn *sql.DB, empresaID, bodegaID int64, diasVentana int, soloRiesgo bool, limit int, offset int) ([]InventarioPlanReposicionProveedorResumen, error) {
+	if limit <= 0 || limit > 500 {
+		limit = 80
+	}
+	if offset < 0 {
+		offset = 0
+	}
+
+	rows, err := GetInventarioPlanReposicionByEmpresa(dbConn, empresaID, bodegaID, diasVentana, soloRiesgo, 500, 0)
+	if err != nil {
+		return nil, err
+	}
+	if len(rows) == 0 {
+		return []InventarioPlanReposicionProveedorResumen{}, nil
+	}
+
+	type providerAgg struct {
+		summary      InventarioPlanReposicionProveedorResumen
+		productIDSet map[int64]struct{}
+	}
+	aggByProvider := make(map[string]*providerAgg)
+
+	for _, row := range rows {
+		providerName := strings.TrimSpace(row.ProveedorNombre)
+		if providerName == "" {
+			if row.ProveedorID > 0 {
+				providerName = fmt.Sprintf("Proveedor #%d", row.ProveedorID)
+			} else {
+				providerName = "Sin proveedor principal"
+			}
+		}
+		key := fmt.Sprintf("%d|%s", row.ProveedorID, providerName)
+
+		agg := aggByProvider[key]
+		if agg == nil {
+			agg = &providerAgg{
+				summary: InventarioPlanReposicionProveedorResumen{
+					EmpresaID:       row.EmpresaID,
+					ProveedorID:     row.ProveedorID,
+					ProveedorNombre: providerName,
+					DiasVentana:     row.DiasVentana,
+				},
+				productIDSet: make(map[int64]struct{}),
+			}
+			aggByProvider[key] = agg
+		}
+
+		agg.summary.Items++
+		agg.summary.CantidadTotal += row.SugeridoReposicion
+		agg.summary.CostoTotal += row.CostoEstimado
+		agg.productIDSet[row.ProductoID] = struct{}{}
+
+		switch row.EstadoProyeccion {
+		case "quiebre_inminente":
+			agg.summary.QuiebreInminente++
+		case "bajo_minimo":
+			agg.summary.BajoMinimo++
+		case "riesgo_alto":
+			agg.summary.RiesgoAlto++
+		case "riesgo_medio":
+			agg.summary.RiesgoMedio++
+		}
+	}
+
+	out := make([]InventarioPlanReposicionProveedorResumen, 0, len(aggByProvider))
+	for _, agg := range aggByProvider {
+		agg.summary.ProductosUnicos = int64(len(agg.productIDSet))
+		out = append(out, agg.summary)
+	}
+
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].CostoTotal != out[j].CostoTotal {
+			return out[i].CostoTotal > out[j].CostoTotal
+		}
+		if out[i].QuiebreInminente != out[j].QuiebreInminente {
+			return out[i].QuiebreInminente > out[j].QuiebreInminente
+		}
+		return out[i].ProveedorNombre < out[j].ProveedorNombre
+	})
+
+	if offset >= len(out) {
+		return []InventarioPlanReposicionProveedorResumen{}, nil
+	}
+	end := offset + limit
+	if end > len(out) {
+		end = len(out)
+	}
+
+	return out[offset:end], nil
+}
+
+// GetInventarioPlanReposicionBorradorByEmpresa construye un borrador de orden de compra para un proveedor.
+func GetInventarioPlanReposicionBorradorByEmpresa(dbConn *sql.DB, empresaID, proveedorID, bodegaID int64, diasVentana int, soloRiesgo bool) (InventarioPlanReposicionBorradorCompra, error) {
+	if empresaID <= 0 {
+		return InventarioPlanReposicionBorradorCompra{}, fmt.Errorf("empresa_id invalido")
+	}
+	if proveedorID <= 0 {
+		return InventarioPlanReposicionBorradorCompra{}, fmt.Errorf("proveedor_id invalido")
+	}
+	if diasVentana <= 0 {
+		diasVentana = 30
+	}
+	if diasVentana > 180 {
+		diasVentana = 180
+	}
+
+	nowLocal := time.Now()
+	out := InventarioPlanReposicionBorradorCompra{
+		EmpresaID:       empresaID,
+		ProveedorID:     proveedorID,
+		ProveedorNombre: fmt.Sprintf("Proveedor #%d", proveedorID),
+		FechaDocumento:  nowLocal.Format("2006-01-02"),
+		CodigoBorrador:  fmt.Sprintf("BORR-OC-%d-%s", proveedorID, nowLocal.Format("20060102150405")),
+		DiasVentana:     diasVentana,
+		Items:           []InventarioPlanReposicionBorradorItem{},
+	}
+
+	var providerName string
+	if err := dbConn.QueryRow("SELECT COALESCE(nombre, '') FROM proveedores WHERE empresa_id = ? AND id = ?", empresaID, proveedorID).Scan(&providerName); err == nil {
+		providerName = strings.TrimSpace(providerName)
+		if providerName != "" {
+			out.ProveedorNombre = providerName
+		}
+	} else if err != nil && err != sql.ErrNoRows {
+		return InventarioPlanReposicionBorradorCompra{}, err
+	}
+
+	rows, err := GetInventarioPlanReposicionByEmpresa(dbConn, empresaID, bodegaID, diasVentana, soloRiesgo, 500, 0)
+	if err != nil {
+		return InventarioPlanReposicionBorradorCompra{}, err
+	}
+	if len(rows) == 0 {
+		return out, nil
+	}
+
+	severity := func(estado string) int {
+		switch estado {
+		case "quiebre_inminente":
+			return 0
+		case "bajo_minimo":
+			return 1
+		case "riesgo_alto":
+			return 2
+		case "riesgo_medio":
+			return 3
+		default:
+			return 4
+		}
+	}
+
+	productIDSet := make(map[int64]struct{})
+	for _, row := range rows {
+		if row.ProveedorID != proveedorID {
+			continue
+		}
+		if row.SugeridoReposicion <= 0 {
+			continue
+		}
+		if strings.TrimSpace(row.ProveedorNombre) != "" {
+			out.ProveedorNombre = strings.TrimSpace(row.ProveedorNombre)
+		}
+
+		item := InventarioPlanReposicionBorradorItem{
+			EmpresaID:        row.EmpresaID,
+			ProveedorID:      row.ProveedorID,
+			ProveedorNombre:  out.ProveedorNombre,
+			ProductoID:       row.ProductoID,
+			ProductoNombre:   row.ProductoNombre,
+			BodegaID:         row.BodegaID,
+			BodegaNombre:     row.BodegaNombre,
+			EstadoProyeccion: row.EstadoProyeccion,
+			DiasCobertura:    row.DiasCobertura,
+			CantidadSugerida: row.SugeridoReposicion,
+			CostoUnitarioRef: row.CostoUnitarioRef,
+			CostoEstimado:    row.CostoEstimado,
+		}
+
+		out.Items = append(out.Items, item)
+		out.TotalItems++
+		out.CantidadTotal += item.CantidadSugerida
+		out.CostoTotal += item.CostoEstimado
+		productIDSet[item.ProductoID] = struct{}{}
+
+		switch item.EstadoProyeccion {
+		case "quiebre_inminente":
+			out.QuiebreInminente++
+		case "bajo_minimo":
+			out.BajoMinimo++
+		case "riesgo_alto":
+			out.RiesgoAlto++
+		case "riesgo_medio":
+			out.RiesgoMedio++
+		}
+	}
+
+	if len(out.Items) == 0 {
+		return out, nil
+	}
+
+	sort.Slice(out.Items, func(i, j int) bool {
+		si := severity(out.Items[i].EstadoProyeccion)
+		sj := severity(out.Items[j].EstadoProyeccion)
+		if si != sj {
+			return si < sj
+		}
+		if out.Items[i].CostoEstimado != out.Items[j].CostoEstimado {
+			return out.Items[i].CostoEstimado > out.Items[j].CostoEstimado
+		}
+		if out.Items[i].ProductoNombre != out.Items[j].ProductoNombre {
+			return out.Items[i].ProductoNombre < out.Items[j].ProductoNombre
+		}
+		return out.Items[i].BodegaNombre < out.Items[j].BodegaNombre
+	})
+
+	out.ProductosUnicos = int64(len(productIDSet))
+	return out, nil
+}
+
+// EmitirOrdenCompraDesdePlanReposicionBorrador emite una orden de compra tomando como base el borrador preventivo.
+func EmitirOrdenCompraDesdePlanReposicionBorrador(dbConn *sql.DB, empresaID, proveedorID, bodegaID int64, diasVentana int, soloRiesgo bool, documentoCodigo, periodoContable, moneda, usuario, observaciones string) (InventarioPlanReposicionOrdenEmitida, error) {
+	borrador, err := GetInventarioPlanReposicionBorradorByEmpresa(dbConn, empresaID, proveedorID, bodegaID, diasVentana, soloRiesgo)
+	if err != nil {
+		return InventarioPlanReposicionOrdenEmitida{}, err
+	}
+	if len(borrador.Items) == 0 {
+		return InventarioPlanReposicionOrdenEmitida{}, fmt.Errorf("no hay items sugeridos para emitir orden")
+	}
+
+	codigo := strings.ToUpper(strings.TrimSpace(documentoCodigo))
+	if codigo == "" {
+		codigo = strings.ToUpper(strings.TrimSpace(borrador.CodigoBorrador))
+		if strings.HasPrefix(codigo, "BORR-") {
+			codigo = strings.TrimPrefix(codigo, "BORR-")
+		}
+	}
+	if codigo == "" {
+		codigo = fmt.Sprintf("OC-%d-%s", proveedorID, time.Now().Format("20060102150405"))
+	}
+
+	estadoAnterior := "borrador"
+	estadoNuevo := "emitida"
+	evento := "orden_compra_emitida"
+
+	docPersistido, err := UpsertEmpresaDocumentoCompra(dbConn, EmpresaDocumentoCompra{
+		EmpresaID:            empresaID,
+		ProveedorID:          proveedorID,
+		TipoDocumento:        "orden_compra",
+		DocumentoCodigo:      codigo,
+		EstadoDocumento:      estadoNuevo,
+		EstadoAnterior:       estadoAnterior,
+		EventoUltimo:         evento,
+		PeriodoContable:      periodoContable,
+		MontoTotal:           borrador.CostoTotal,
+		Moneda:               moneda,
+		FechaDocumento:       borrador.FechaDocumento,
+		EntidadRelacionadaID: proveedorID,
+		UsuarioCreador:       strings.TrimSpace(usuario),
+		Estado:               "activo",
+		Observaciones:        strings.TrimSpace(observaciones),
+	})
+	if err != nil {
+		return InventarioPlanReposicionOrdenEmitida{}, err
+	}
+
+	out := InventarioPlanReposicionOrdenEmitida{
+		EmpresaID:       empresaID,
+		ProveedorID:     proveedorID,
+		ProveedorNombre: borrador.ProveedorNombre,
+		DocumentoCodigo: docPersistido.DocumentoCodigo,
+		Accion:          "emitir_orden",
+		EstadoAnterior:  estadoAnterior,
+		EstadoNuevo:     estadoNuevo,
+		Evento:          evento,
+		PeriodoContable: docPersistido.PeriodoContable,
+		Moneda:          docPersistido.Moneda,
+		FechaDocumento:  docPersistido.FechaDocumento,
+		TotalItems:      borrador.TotalItems,
+		ProductosUnicos: borrador.ProductosUnicos,
+		CantidadTotal:   borrador.CantidadTotal,
+		CostoTotal:      borrador.CostoTotal,
+		EntidadID:       docPersistido.ID,
+	}
+
+	return out, nil
+}
+
+// ActualizarEstadoOrdenCompraDesdeReposicion actualiza la OC emitida en su ciclo documental (recepcionar/contabilizar).
+func ActualizarEstadoOrdenCompraDesdeReposicion(dbConn *sql.DB, empresaID, proveedorID int64, documentoCodigo, accion, estadoActual, periodoContable, observaciones, usuario string) (InventarioPlanReposicionOrdenEstadoActualizado, error) {
+	if empresaID <= 0 {
+		return InventarioPlanReposicionOrdenEstadoActualizado{}, fmt.Errorf("empresa_id invalido")
+	}
+	if proveedorID <= 0 {
+		return InventarioPlanReposicionOrdenEstadoActualizado{}, fmt.Errorf("proveedor_id invalido")
+	}
+	codigo := strings.ToUpper(strings.TrimSpace(documentoCodigo))
+	if codigo == "" {
+		return InventarioPlanReposicionOrdenEstadoActualizado{}, fmt.Errorf("documento_codigo es obligatorio")
+	}
+
+	docActual, err := GetEmpresaDocumentoCompraByCodigo(dbConn, empresaID, "orden_compra", codigo)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return InventarioPlanReposicionOrdenEstadoActualizado{}, fmt.Errorf("documento no encontrado para codigo %s", codigo)
+		}
+		return InventarioPlanReposicionOrdenEstadoActualizado{}, err
+	}
+
+	normalize := func(raw string) string {
+		v := strings.ToLower(strings.TrimSpace(raw))
+		v = strings.ReplaceAll(v, "-", "_")
+		v = strings.ReplaceAll(v, " ", "_")
+		return v
+	}
+
+	action := normalize(accion)
+	if action == "" {
+		return InventarioPlanReposicionOrdenEstadoActualizado{}, fmt.Errorf("accion es obligatoria")
+	}
+
+	resolvedEstadoActual := normalize(estadoActual)
+	if resolvedEstadoActual == "" {
+		resolvedEstadoActual = normalize(docActual.EstadoDocumento)
+	}
+	if resolvedEstadoActual == "" {
+		resolvedEstadoActual = "emitida"
+	}
+
+	transition := struct {
+		accionCanonica string
+		evento         string
+		estadoNuevo    string
+		allowedPrev    map[string]struct{}
+	}{
+		accionCanonica: "",
+		evento:         "",
+		estadoNuevo:    "",
+		allowedPrev:    map[string]struct{}{},
+	}
+
+	switch action {
+	case "recepcionar", "recepcionar_compra":
+		transition.accionCanonica = "recepcionar_compra"
+		transition.evento = "compra_recepcionada"
+		transition.estadoNuevo = "recepcionada"
+		transition.allowedPrev = map[string]struct{}{"emitida": {}, "recepcion_parcial": {}}
+	case "contabilizar", "contabilizar_compra":
+		transition.accionCanonica = "contabilizar_compra"
+		transition.evento = "compra_contabilizada"
+		transition.estadoNuevo = "contabilizada"
+		transition.allowedPrev = map[string]struct{}{"recepcionada": {}}
+	default:
+		return InventarioPlanReposicionOrdenEstadoActualizado{}, fmt.Errorf("accion no soportada para compras reposicion: %s", strings.TrimSpace(accion))
+	}
+
+	if _, ok := transition.allowedPrev[resolvedEstadoActual]; !ok {
+		keys := make([]string, 0, len(transition.allowedPrev))
+		for k := range transition.allowedPrev {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		return InventarioPlanReposicionOrdenEstadoActualizado{}, fmt.Errorf("transicion invalida para compras reposicion: accion=%s requiere estado_actual en [%s], recibido=%s", transition.accionCanonica, strings.Join(keys, ","), resolvedEstadoActual)
+	}
+
+	docPersistido, err := UpsertEmpresaDocumentoCompra(dbConn, EmpresaDocumentoCompra{
+		EmpresaID:            empresaID,
+		ProveedorID:          proveedorID,
+		TipoDocumento:        "orden_compra",
+		DocumentoCodigo:      codigo,
+		EstadoDocumento:      transition.estadoNuevo,
+		EstadoAnterior:       resolvedEstadoActual,
+		EventoUltimo:         transition.evento,
+		PeriodoContable:      firstNonBlank(periodoContable, docActual.PeriodoContable),
+		MontoTotal:           docActual.MontoTotal,
+		Moneda:               firstNonBlank(docActual.Moneda, "COP"),
+		FechaDocumento:       docActual.FechaDocumento,
+		EntidadRelacionadaID: proveedorID,
+		UsuarioCreador:       strings.TrimSpace(usuario),
+		Estado:               "activo",
+		Observaciones:        strings.TrimSpace(observaciones),
+	})
+	if err != nil {
+		return InventarioPlanReposicionOrdenEstadoActualizado{}, err
+	}
+
+	out := InventarioPlanReposicionOrdenEstadoActualizado{
+		EmpresaID:       empresaID,
+		ProveedorID:     proveedorID,
+		DocumentoCodigo: docPersistido.DocumentoCodigo,
+		Accion:          transition.accionCanonica,
+		EstadoAnterior:  resolvedEstadoActual,
+		EstadoNuevo:     transition.estadoNuevo,
+		Evento:          transition.evento,
+		PeriodoContable: docPersistido.PeriodoContable,
+		Moneda:          docPersistido.Moneda,
+		MontoTotal:      docPersistido.MontoTotal,
+		EntidadID:       docPersistido.ID,
+	}
+
+	return out, nil
+}
+
+func firstNonBlank(values ...string) string {
+	for _, value := range values {
+		trimmed := strings.TrimSpace(value)
+		if trimmed != "" {
+			return trimmed
+		}
+	}
+	return ""
+}
+
 // TransferirProductoEntreBodegas mueve unidades entre bodegas de una empresa y registra movimiento.
 func TransferirProductoEntreBodegas(dbConn *sql.DB, empresaID, productoID, bodegaOrigenID, bodegaDestinoID int64, cantidad float64, referencia, usuario, observaciones string) error {
 	if cantidad <= 0 {
@@ -1870,11 +2762,31 @@ func GetMovimientosByEmpresa(dbConn *sql.DB, empresaID, productoID, bodegaID int
 
 // CreateProveedor inserta un proveedor para la empresa.
 func CreateProveedor(dbConn *sql.DB, p Proveedor) (int64, error) {
+	if err := validateProveedorCondiciones(p); err != nil {
+		return 0, err
+	}
+
 	res, err := dbConn.Exec(`INSERT INTO proveedores (
-		empresa_id, codigo, nombre, documento, contacto, telefono, email, direccion,
+		empresa_id, codigo, nombre, documento, contacto, telefono, email, direccion, catalogo_referencia,
+		precio_base_referencial, descuento_porcentaje, plazo_pago_dias, condicion_entrega,
 		usuario_creador, estado, observaciones, fecha_creacion, fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), 'activo'), ?, datetime('now','localtime'), datetime('now','localtime'))`,
-		p.EmpresaID, strings.TrimSpace(p.Codigo), strings.TrimSpace(p.Nombre), strings.TrimSpace(p.Documento), strings.TrimSpace(p.Contacto), strings.TrimSpace(p.Telefono), strings.TrimSpace(p.Email), strings.TrimSpace(p.Direccion), strings.TrimSpace(p.UsuarioCreador), strings.TrimSpace(p.Estado), strings.TrimSpace(p.Observaciones))
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), 'activo'), ?, datetime('now','localtime'), datetime('now','localtime'))`,
+		p.EmpresaID,
+		strings.TrimSpace(p.Codigo),
+		strings.TrimSpace(p.Nombre),
+		strings.TrimSpace(p.Documento),
+		strings.TrimSpace(p.Contacto),
+		strings.TrimSpace(p.Telefono),
+		strings.TrimSpace(p.Email),
+		strings.TrimSpace(p.Direccion),
+		strings.TrimSpace(p.CatalogoReferencia),
+		p.PrecioBaseReferencial,
+		p.DescuentoPorcentaje,
+		p.PlazoPagoDias,
+		strings.TrimSpace(p.CondicionEntrega),
+		strings.TrimSpace(p.UsuarioCreador),
+		strings.TrimSpace(p.Estado),
+		strings.TrimSpace(p.Observaciones))
 	if err != nil {
 		return 0, err
 	}
@@ -1884,6 +2796,8 @@ func CreateProveedor(dbConn *sql.DB, p Proveedor) (int64, error) {
 // GetProveedoresByEmpresa lista proveedores por empresa.
 func GetProveedoresByEmpresa(dbConn *sql.DB, empresaID int64, incluirInactivos bool) ([]Proveedor, error) {
 	query := `SELECT id, empresa_id, codigo, nombre, documento, contacto, telefono, email, direccion,
+		COALESCE(precio_base_referencial, 0), COALESCE(descuento_porcentaje, 0), COALESCE(plazo_pago_dias, 0),
+		catalogo_referencia, condicion_entrega,
 		fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones
 	FROM proveedores WHERE empresa_id = ?`
 	args := []interface{}{empresaID}
@@ -1901,8 +2815,8 @@ func GetProveedoresByEmpresa(dbConn *sql.DB, empresaID int64, incluirInactivos b
 	out := make([]Proveedor, 0)
 	for rows.Next() {
 		var p Proveedor
-		var codigo, documento, contacto, telefono, email, direccion, fechaCre, fechaAct, usuario, estado, obs sql.NullString
-		if err := rows.Scan(&p.ID, &p.EmpresaID, &codigo, &p.Nombre, &documento, &contacto, &telefono, &email, &direccion, &fechaCre, &fechaAct, &usuario, &estado, &obs); err != nil {
+		var codigo, documento, contacto, telefono, email, direccion, catalogoReferencia, condicionEntrega, fechaCre, fechaAct, usuario, estado, obs sql.NullString
+		if err := rows.Scan(&p.ID, &p.EmpresaID, &codigo, &p.Nombre, &documento, &contacto, &telefono, &email, &direccion, &p.PrecioBaseReferencial, &p.DescuentoPorcentaje, &p.PlazoPagoDias, &catalogoReferencia, &condicionEntrega, &fechaCre, &fechaAct, &usuario, &estado, &obs); err != nil {
 			return nil, err
 		}
 		if codigo.Valid {
@@ -1922,6 +2836,12 @@ func GetProveedoresByEmpresa(dbConn *sql.DB, empresaID int64, incluirInactivos b
 		}
 		if direccion.Valid {
 			p.Direccion = direccion.String
+		}
+		if catalogoReferencia.Valid {
+			p.CatalogoReferencia = catalogoReferencia.String
+		}
+		if condicionEntrega.Valid {
+			p.CondicionEntrega = condicionEntrega.String
 		}
 		if fechaCre.Valid {
 			p.FechaCreacion = fechaCre.String
@@ -1945,11 +2865,30 @@ func GetProveedoresByEmpresa(dbConn *sql.DB, empresaID int64, incluirInactivos b
 
 // UpdateProveedor actualiza proveedor.
 func UpdateProveedor(dbConn *sql.DB, p Proveedor) error {
+	if err := validateProveedorCondiciones(p); err != nil {
+		return err
+	}
+
 	_, err := dbConn.Exec(`UPDATE proveedores
-		SET codigo = ?, nombre = ?, documento = ?, contacto = ?, telefono = ?, email = ?, direccion = ?, observaciones = ?, fecha_actualizacion = datetime('now','localtime')
+		SET codigo = ?, nombre = ?, documento = ?, contacto = ?, telefono = ?, email = ?, direccion = ?,
+			catalogo_referencia = ?, precio_base_referencial = ?, descuento_porcentaje = ?, plazo_pago_dias = ?, condicion_entrega = ?,
+			observaciones = ?, fecha_actualizacion = datetime('now','localtime')
 		WHERE id = ? AND empresa_id = ?`,
-		strings.TrimSpace(p.Codigo), strings.TrimSpace(p.Nombre), strings.TrimSpace(p.Documento), strings.TrimSpace(p.Contacto), strings.TrimSpace(p.Telefono), strings.TrimSpace(p.Email), strings.TrimSpace(p.Direccion), strings.TrimSpace(p.Observaciones), p.ID, p.EmpresaID)
+		strings.TrimSpace(p.Codigo), strings.TrimSpace(p.Nombre), strings.TrimSpace(p.Documento), strings.TrimSpace(p.Contacto), strings.TrimSpace(p.Telefono), strings.TrimSpace(p.Email), strings.TrimSpace(p.Direccion), strings.TrimSpace(p.CatalogoReferencia), p.PrecioBaseReferencial, p.DescuentoPorcentaje, p.PlazoPagoDias, strings.TrimSpace(p.CondicionEntrega), strings.TrimSpace(p.Observaciones), p.ID, p.EmpresaID)
 	return err
+}
+
+func validateProveedorCondiciones(p Proveedor) error {
+	if p.PrecioBaseReferencial < 0 {
+		return fmt.Errorf("precio_base_referencial no puede ser negativo")
+	}
+	if p.DescuentoPorcentaje < 0 || p.DescuentoPorcentaje > 100 {
+		return fmt.Errorf("descuento_porcentaje debe estar entre 0 y 100")
+	}
+	if p.PlazoPagoDias < 0 {
+		return fmt.Errorf("plazo_pago_dias no puede ser negativo")
+	}
+	return nil
 }
 
 // DeleteProveedor elimina proveedor.

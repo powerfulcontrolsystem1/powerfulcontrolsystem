@@ -135,6 +135,30 @@
             <input id="proveedorEmail" class="form-input" type="email" placeholder="compras@proveedor.com">
           </div>
           <div class="form-col">
+            <label class="form-label" for="proveedorCatalogoReferencia">Catálogo referencia</label>
+            <input id="proveedorCatalogoReferencia" class="form-input" placeholder="URL, código o documento de catálogo">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="proveedorCondicionEntrega">Condición de entrega</label>
+            <input id="proveedorCondicionEntrega" class="form-input" placeholder="Entrega 24h, CIF bodega principal, etc.">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="proveedorPrecioBaseReferencial">Precio base referencial</label>
+            <input id="proveedorPrecioBaseReferencial" class="form-input" type="number" min="0" step="0.01" value="0">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="proveedorDescuentoPorcentaje">Descuento (%)</label>
+            <input id="proveedorDescuentoPorcentaje" class="form-input" type="number" min="0" max="100" step="0.01" value="0">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="proveedorPlazoPagoDias">Plazo pago (días)</label>
+            <input id="proveedorPlazoPagoDias" class="form-input" type="number" min="0" step="1" value="0">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
             <label class="form-label" for="proveedorObservaciones">Observaciones</label>
             <input id="proveedorObservaciones" class="form-input" placeholder="Horario de entregas y condiciones">
           </div>
@@ -151,8 +175,9 @@
               <th>ID</th>
               <th>Nombre</th>
               <th>Contacto</th>
-              <th>Teléfono</th>
               <th>Email</th>
+		      <th>Precio base</th>
+		      <th>Condiciones</th>
               <th>Estado</th>
               <th>Acciones</th>
             </tr>
@@ -703,6 +728,104 @@
           </table>
         </div>
         <p id="inventarioBalanceBodegasContexto" class="form-help">Balance por bodega: cargando...</p>
+
+        <div class="empresa-section-header" style="margin-top:16px;">
+          <h3 style="margin:0;">Proyección de quiebre (preventiva)</h3>
+        </div>
+        <div class="table-wrap">
+          <table class="table" id="inventarioProyeccionTable">
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Bodega</th>
+                <th>Stock</th>
+                <th>Consumo diario</th>
+                <th>Días cobertura</th>
+                <th>Estado</th>
+                <th>Sugerido</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p id="inventarioProyeccionContexto" class="form-help">Proyección: cargando...</p>
+
+        <div class="empresa-section-header" style="margin-top:16px;">
+          <h3 style="margin:0;">Plan de reposición por proveedor (fase 8)</h3>
+          <div class="empresa-inline-actions">
+            <button id="btnLimpiarPlanProveedor" class="btn secondary" type="button">Ver todos</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="table" id="inventarioPlanReposicionTable">
+            <thead>
+              <tr>
+                <th>Proveedor</th>
+                <th>Producto</th>
+                <th>Bodega</th>
+                <th>Estado</th>
+                <th>Sugerido</th>
+                <th>Costo unitario</th>
+                <th>Costo estimado</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p id="inventarioPlanReposicionContexto" class="form-help">Plan de reposición: cargando...</p>
+
+        <div class="empresa-section-header" style="margin-top:16px;">
+          <h3 style="margin:0;">Consolidado de compra por proveedor (fase 9)</h3>
+        </div>
+        <div class="table-wrap">
+          <table class="table" id="inventarioPlanReposicionResumenTable">
+            <thead>
+              <tr>
+                <th>Proveedor</th>
+                <th>Items</th>
+                <th>Productos</th>
+                <th>Cantidad</th>
+                <th>Costo total</th>
+                <th>Quiebre</th>
+                <th>Riesgo alto</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p id="inventarioPlanReposicionResumenContexto" class="form-help">Consolidado de compra: cargando...</p>
+
+        <div class="empresa-section-header" style="margin-top:16px;">
+          <h3 style="margin:0;">Borrador y ciclo de orden por proveedor (fases 10-12)</h3>
+          <div class="empresa-inline-actions">
+            <button id="btnEmitirOrdenBorrador" class="btn" type="button">Emitir orden</button>
+            <button id="btnRecepcionarOrdenBorrador" class="btn secondary" type="button">Recepcionar orden</button>
+            <button id="btnContabilizarOrdenBorrador" class="btn secondary" type="button">Contabilizar orden</button>
+            <button id="btnLimpiarPlanBorrador" class="btn secondary" type="button">Limpiar borrador</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="table" id="inventarioPlanReposicionBorradorTable">
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Bodega</th>
+                <th>Estado</th>
+                <th>Cantidad</th>
+                <th>Costo unitario</th>
+                <th>Costo estimado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td colspan="6">Selecciona un proveedor para generar el borrador.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p id="inventarioPlanReposicionBorradorContexto" class="form-help">Borrador de orden: pendiente.</p>
+        <p id="inventarioPlanReposicionOrdenContexto" class="form-help">Ciclo de orden: pendiente.</p>
       </section>
     </section>
 
@@ -741,7 +864,11 @@
       proveedores: [],
       categoriasProductos: [],
       servicios: [],
-      alertasInventario: []
+      alertasInventario: [],
+      inventarioPlanReposicionRows: [],
+      planReposicionProveedorFiltro: 0,
+      planReposicionBorrador: null,
+      ultimaOrdenReposicion: null
     };
 
     const messageBox = document.getElementById('messageBox');
@@ -941,19 +1068,33 @@
     function renderProveedores() {
       const tbody = document.querySelector('#proveedoresTable tbody');
       if (!state.proveedores.length) {
-        tbody.innerHTML = '<tr><td colspan="7">No hay proveedores registrados.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8">No hay proveedores registrados.</td></tr>';
         return;
       }
       tbody.innerHTML = state.proveedores.map(p => {
         const estado = sanitize(p.estado || 'activo');
         const activar = estado === 'activo' ? 'Desactivar' : 'Activar';
         const activo = estado === 'activo' ? '0' : '1';
+        const contacto = [p.contacto || '', p.telefono || '']
+          .map(v => String(v || '').trim())
+          .filter(v => v)
+          .map(v => sanitize(v))
+          .join(' / ');
+        const precioBase = Number(p.precio_base_referencial || 0);
+        const descuento = Number(p.descuento_porcentaje || 0);
+        const plazoPagoDias = Number(p.plazo_pago_dias || 0);
+        const condiciones = [];
+        if (descuento > 0) condiciones.push('Desc. ' + descuento.toFixed(2) + '%');
+        if (plazoPagoDias > 0) condiciones.push('Pago ' + Math.trunc(plazoPagoDias) + ' días');
+        if (String(p.condicion_entrega || '').trim()) condiciones.push(sanitize(String(p.condicion_entrega)));
+        const condicionesTxt = condiciones.length ? condiciones.join(' | ') : '-';
         return '<tr>' +
           '<td>' + Number(p.id) + '</td>' +
           '<td>' + sanitize(p.nombre || '') + '</td>' +
-          '<td>' + sanitize(p.contacto || '') + '</td>' +
-          '<td>' + sanitize(p.telefono || '') + '</td>' +
+          '<td>' + (contacto || '-') + '</td>' +
           '<td>' + sanitize(p.email || '') + '</td>' +
+          '<td>' + precioBase.toFixed(2) + '</td>' +
+          '<td>' + condicionesTxt + '</td>' +
           '<td>' + estado + '</td>' +
           '<td class="actions">' +
             '<button type="button" class="btn secondary" data-action="edit-proveedor" data-id="' + Number(p.id) + '">Editar</button>' +
@@ -975,6 +1116,11 @@
       document.getElementById('proveedorContacto').value = p ? (p.contacto || '') : '';
       document.getElementById('proveedorTelefono').value = p ? (p.telefono || '') : '';
       document.getElementById('proveedorEmail').value = p ? (p.email || '') : '';
+	    document.getElementById('proveedorCatalogoReferencia').value = p ? (p.catalogo_referencia || '') : '';
+	    document.getElementById('proveedorCondicionEntrega').value = p ? (p.condicion_entrega || '') : '';
+	    document.getElementById('proveedorPrecioBaseReferencial').value = p ? Number(p.precio_base_referencial || 0) : 0;
+	    document.getElementById('proveedorDescuentoPorcentaje').value = p ? Number(p.descuento_porcentaje || 0) : 0;
+	    document.getElementById('proveedorPlazoPagoDias').value = p ? Number(p.plazo_pago_dias || 0) : 0;
       document.getElementById('proveedorObservaciones').value = p ? (p.observaciones || '') : '';
     }
 
@@ -988,12 +1134,30 @@
         contacto: document.getElementById('proveedorContacto').value.trim(),
         telefono: document.getElementById('proveedorTelefono').value.trim(),
         email: document.getElementById('proveedorEmail').value.trim(),
+        catalogo_referencia: document.getElementById('proveedorCatalogoReferencia').value.trim(),
+        condicion_entrega: document.getElementById('proveedorCondicionEntrega').value.trim(),
+        precio_base_referencial: Number(document.getElementById('proveedorPrecioBaseReferencial').value || 0),
+        descuento_porcentaje: Number(document.getElementById('proveedorDescuentoPorcentaje').value || 0),
+        plazo_pago_dias: Number(document.getElementById('proveedorPlazoPagoDias').value || 0),
         observaciones: document.getElementById('proveedorObservaciones').value.trim()
       };
       if (!payload.nombre) {
         showMessage('El nombre del proveedor es obligatorio.', 'error');
         return;
       }
+      if (payload.precio_base_referencial < 0) {
+        showMessage('El precio base referencial no puede ser negativo.', 'error');
+        return;
+      }
+      if (payload.descuento_porcentaje < 0 || payload.descuento_porcentaje > 100) {
+        showMessage('El descuento del proveedor debe estar entre 0 y 100%.', 'error');
+        return;
+      }
+      if (payload.plazo_pago_dias < 0 || !Number.isFinite(payload.plazo_pago_dias)) {
+        showMessage('El plazo de pago debe ser un número válido mayor o igual a 0.', 'error');
+        return;
+      }
+      payload.plazo_pago_dias = Math.trunc(payload.plazo_pago_dias);
       if (id > 0) {
         await requestJSON('/api/empresa/proveedores', {
           method: 'PUT',
@@ -1620,6 +1784,376 @@
         'Balance ' + rango + alcance + ': neto acumulado ' + netoTotal.toFixed(2) + ' y ' + eventosTotal + ' eventos.';
     }
 
+    function inferDiasVentanaKardex() {
+      const desde = String(document.getElementById('kardexDesdeFiltro').value || '').trim();
+      const hasta = String(document.getElementById('kardexHastaFiltro').value || '').trim();
+      if (desde && hasta) {
+        const d1 = new Date(desde + 'T00:00:00');
+        const d2 = new Date(hasta + 'T00:00:00');
+        if (!Number.isNaN(d1.getTime()) && !Number.isNaN(d2.getTime())) {
+          const diffDays = Math.floor(Math.abs(d2.getTime() - d1.getTime()) / 86400000) + 1;
+          if (diffDays > 0) {
+            return Math.min(180, Math.max(1, diffDays));
+          }
+        }
+      }
+      return 30;
+    }
+
+    async function loadInventarioProyeccion() {
+      const bodegaID = Number(document.getElementById('kardexBodegaFiltro').value || 0);
+      const diasVentana = inferDiasVentanaKardex();
+
+      const params = new URLSearchParams();
+      params.set('empresa_id', String(empresaId));
+      params.set('dias_ventana', String(diasVentana));
+      params.set('limit', '12');
+      if (bodegaID > 0) {
+        params.set('bodega_id', String(bodegaID));
+      }
+
+      const rows = await requestJSON('/api/empresa/inventario/proyeccion_quiebre?' + params.toString());
+      const tbody = document.querySelector('#inventarioProyeccionTable tbody');
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="8">Sin datos de proyección de quiebre para el rango actual.</td></tr>';
+        document.getElementById('inventarioProyeccionContexto').textContent = 'No hay inventario activo para calcular proyección en este alcance.';
+        return;
+      }
+
+      const top = rows.slice(0, 8);
+      const riesgos = top.filter(r => {
+        const estado = String(r.estado_proyeccion || '');
+        return estado === 'quiebre_inminente' || estado === 'bajo_minimo' || estado === 'riesgo_alto';
+      }).length;
+
+      tbody.innerHTML = top.map(r => {
+        const dias = Number(r.dias_cobertura || 0);
+        const diasLabel = dias < 0 ? 'N/A' : dias.toFixed(1);
+        const estado = String(r.estado_proyeccion || '').replace(/_/g, ' ');
+        const estadoSafe = sanitize(estado);
+        const estadoStyle = String(r.estado_proyeccion || '') === 'quiebre_inminente'
+          ? ' style="color:#B42318;font-weight:600;"'
+          : (String(r.estado_proyeccion || '') === 'riesgo_alto' || String(r.estado_proyeccion || '') === 'bajo_minimo'
+            ? ' style="color:#B54708;font-weight:600;"' : '');
+        return '<tr>' +
+          '<td>' + sanitize(r.producto_nombre || '') + '</td>' +
+          '<td>' + sanitize(r.bodega_nombre || '') + '</td>' +
+          '<td>' + Number(r.stock_actual || 0).toFixed(2) + '</td>' +
+          '<td>' + Number(r.salida_promedio_diaria || 0).toFixed(2) + '</td>' +
+          '<td>' + diasLabel + '</td>' +
+          '<td' + estadoStyle + '>' + estadoSafe + '</td>' +
+          '<td>' + Number(r.sugerido_reposicion || 0).toFixed(2) + '</td>' +
+          '<td><button type="button" class="btn secondary" data-action="reponer-proyeccion" data-producto-id="' + Number(r.producto_id || 0) + '" data-bodega-id="' + Number(r.bodega_id || 0) + '" data-sugerido="' + Number(r.sugerido_reposicion || 0) + '" data-producto-nombre="' + sanitize(r.producto_nombre || '') + '" data-bodega-nombre="' + sanitize(r.bodega_nombre || '') + '">Preparar</button></td>' +
+        '</tr>';
+      }).join('');
+
+      const alcance = bodegaID > 0 ? ('bodega #' + bodegaID) : 'todas las bodegas';
+      document.getElementById('inventarioProyeccionContexto').textContent =
+        'Proyección con ventana de ' + diasVentana + ' días para ' + alcance + ': ' + riesgos + ' registros con riesgo alto/inminente.';
+    }
+
+    function renderInventarioPlanReposicionRows(rows) {
+      const tbody = document.querySelector('#inventarioPlanReposicionTable tbody');
+      const bodegaID = Number(document.getElementById('kardexBodegaFiltro').value || 0);
+      const diasVentana = inferDiasVentanaKardex();
+
+      let scoped = Array.isArray(rows) ? rows.slice() : [];
+      let filtroProveedorTxt = 'sin filtro por proveedor';
+      const proveedorFiltroID = Number(state.planReposicionProveedorFiltro || 0);
+      if (proveedorFiltroID > 0) {
+        scoped = scoped.filter(r => Number(r.proveedor_id || 0) === proveedorFiltroID);
+        const ref = rows.find(r => Number(r.proveedor_id || 0) === proveedorFiltroID);
+        filtroProveedorTxt = ref ? ('filtrado por ' + String(ref.proveedor_nombre || ('Proveedor #' + proveedorFiltroID))) : ('filtrado por proveedor #' + proveedorFiltroID);
+      }
+
+      if (!scoped.length) {
+        tbody.innerHTML = '<tr><td colspan="8">Sin sugerencias de reposición para el alcance actual.</td></tr>';
+        document.getElementById('inventarioPlanReposicionContexto').textContent =
+          'No hay compras preventivas recomendadas con el filtro actual (' + filtroProveedorTxt + ').';
+        return;
+      }
+
+      const top = scoped.slice(0, 10);
+      const proveedoresSet = {};
+      let costoTotal = 0;
+      tbody.innerHTML = top.map(r => {
+        const proveedor = String(r.proveedor_nombre || 'Sin proveedor principal');
+        proveedoresSet[proveedor] = true;
+        const estado = String(r.estado_proyeccion || '').replace(/_/g, ' ');
+        const estadoSafe = sanitize(estado);
+        const estadoStyle = String(r.estado_proyeccion || '') === 'quiebre_inminente'
+          ? ' style="color:#B42318;font-weight:600;"'
+          : (String(r.estado_proyeccion || '') === 'riesgo_alto' || String(r.estado_proyeccion || '') === 'bajo_minimo'
+            ? ' style="color:#B54708;font-weight:600;"' : '');
+        const sugerido = Number(r.sugerido_reposicion || 0);
+        const costoUnit = Number(r.costo_unitario_ref || 0);
+        const costoEst = Number(r.costo_estimado || 0);
+        costoTotal += costoEst;
+        return '<tr>' +
+          '<td>' + sanitize(proveedor) + '</td>' +
+          '<td>' + sanitize(r.producto_nombre || '') + '</td>' +
+          '<td>' + sanitize(r.bodega_nombre || '') + '</td>' +
+          '<td' + estadoStyle + '>' + estadoSafe + '</td>' +
+          '<td>' + sugerido.toFixed(2) + '</td>' +
+          '<td>' + costoUnit.toFixed(2) + '</td>' +
+          '<td>' + costoEst.toFixed(2) + '</td>' +
+          '<td><button type="button" class="btn secondary" data-action="reponer-plan" data-producto-id="' + Number(r.producto_id || 0) + '" data-bodega-id="' + Number(r.bodega_id || 0) + '" data-sugerido="' + sugerido + '" data-producto-nombre="' + sanitize(r.producto_nombre || '') + '" data-bodega-nombre="' + sanitize(r.bodega_nombre || '') + '">Preparar</button></td>' +
+        '</tr>';
+      }).join('');
+
+      const proveedores = Object.keys(proveedoresSet).length;
+      const alcance = bodegaID > 0 ? ('bodega #' + bodegaID) : 'todas las bodegas';
+      document.getElementById('inventarioPlanReposicionContexto').textContent =
+        'Plan preventivo (' + diasVentana + ' días) para ' + alcance + ': ' + top.length + ' ítems, ' + proveedores + ' proveedores y costo estimado ' + costoTotal.toFixed(2) + ' (' + filtroProveedorTxt + ').';
+    }
+
+    async function loadInventarioPlanReposicion() {
+      const bodegaID = Number(document.getElementById('kardexBodegaFiltro').value || 0);
+      const diasVentana = inferDiasVentanaKardex();
+
+      const params = new URLSearchParams();
+      params.set('empresa_id', String(empresaId));
+      params.set('dias_ventana', String(diasVentana));
+      params.set('solo_riesgo', '1');
+      params.set('limit', '20');
+      if (bodegaID > 0) {
+        params.set('bodega_id', String(bodegaID));
+      }
+
+      const rows = await requestJSON('/api/empresa/inventario/plan_reposicion?' + params.toString());
+      state.inventarioPlanReposicionRows = Array.isArray(rows) ? rows : [];
+      renderInventarioPlanReposicionRows(state.inventarioPlanReposicionRows);
+    }
+
+    async function loadInventarioPlanReposicionResumen(preserveOrderState) {
+      limpiarInventarioPlanReposicionBorrador(Boolean(preserveOrderState));
+      const bodegaID = Number(document.getElementById('kardexBodegaFiltro').value || 0);
+      const diasVentana = inferDiasVentanaKardex();
+
+      const params = new URLSearchParams();
+      params.set('empresa_id', String(empresaId));
+      params.set('dias_ventana', String(diasVentana));
+      params.set('solo_riesgo', '1');
+      params.set('limit', '20');
+      if (bodegaID > 0) {
+        params.set('bodega_id', String(bodegaID));
+      }
+
+      const rows = await requestJSON('/api/empresa/inventario/plan_reposicion_resumen?' + params.toString());
+      const tbody = document.querySelector('#inventarioPlanReposicionResumenTable tbody');
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="8">Sin consolidado de compra para el alcance actual.</td></tr>';
+        document.getElementById('inventarioPlanReposicionResumenContexto').textContent = 'No hay proveedores con compras preventivas sugeridas.';
+        return;
+      }
+
+      const top = rows.slice(0, 10);
+      let costoTotal = 0;
+      let quiebres = 0;
+      tbody.innerHTML = top.map(r => {
+        const costo = Number(r.costo_total || 0);
+        costoTotal += costo;
+        quiebres += Number(r.quiebre_inminente || 0);
+        const proveedorID = Number(r.proveedor_id || 0);
+        return '<tr>' +
+          '<td>' + sanitize(r.proveedor_nombre || 'Sin proveedor principal') + '</td>' +
+          '<td>' + Number(r.items || 0) + '</td>' +
+          '<td>' + Number(r.productos_unicos || 0) + '</td>' +
+          '<td>' + Number(r.cantidad_total || 0).toFixed(2) + '</td>' +
+          '<td>' + costo.toFixed(2) + '</td>' +
+          '<td>' + Number(r.quiebre_inminente || 0) + '</td>' +
+          '<td>' + Number(r.riesgo_alto || 0) + '</td>' +
+          '<td>' +
+            '<button type="button" class="btn secondary" data-action="filtrar-proveedor-plan" data-proveedor-id="' + proveedorID + '">Ver items</button> ' +
+            '<button type="button" class="btn secondary" data-action="borrador-proveedor-plan" data-proveedor-id="' + proveedorID + '">Borrador OC</button>' +
+          '</td>' +
+        '</tr>';
+      }).join('');
+
+      const alcance = bodegaID > 0 ? ('bodega #' + bodegaID) : 'todas las bodegas';
+      document.getElementById('inventarioPlanReposicionResumenContexto').textContent =
+        'Consolidado preventivo (' + diasVentana + ' días) para ' + alcance + ': ' + top.length + ' proveedores, ' + quiebres + ' quiebres inminentes y costo total estimado ' + costoTotal.toFixed(2) + '.';
+    }
+
+    function renderEstadoOrdenReposicion(orden) {
+      const el = document.getElementById('inventarioPlanReposicionOrdenContexto');
+      if (!el) return;
+      if (!orden || !String(orden.documento_codigo || '').trim()) {
+        el.textContent = 'Ciclo de orden: pendiente.';
+        return;
+      }
+
+      const proveedorID = Number(orden.proveedor_id || 0);
+      const codigo = String(orden.documento_codigo || '').trim();
+      const estado = String(orden.estado_nuevo || orden.estado_actual || '').trim() || 'sin_estado';
+      const accion = String(orden.accion || '').trim() || 'emitir_orden';
+      el.textContent =
+        'OC ' + codigo + ' del proveedor #' + proveedorID + ' en estado ' + estado + ' (acción ' + accion + ').';
+    }
+
+    function limpiarInventarioPlanReposicionBorrador(preserveOrderState) {
+      state.planReposicionBorrador = null;
+      if (!preserveOrderState) {
+        state.ultimaOrdenReposicion = null;
+      }
+      const tbody = document.querySelector('#inventarioPlanReposicionBorradorTable tbody');
+      tbody.innerHTML = '<tr><td colspan="6">Selecciona un proveedor para generar el borrador.</td></tr>';
+      document.getElementById('inventarioPlanReposicionBorradorContexto').textContent = 'Borrador de orden: pendiente.';
+      if (!preserveOrderState) {
+        renderEstadoOrdenReposicion(null);
+      }
+    }
+
+    function renderInventarioPlanReposicionBorrador(borrador) {
+      const tbody = document.querySelector('#inventarioPlanReposicionBorradorTable tbody');
+      if (!borrador || !Array.isArray(borrador.items) || !borrador.items.length) {
+        tbody.innerHTML = '<tr><td colspan="6">Sin lineas sugeridas para este proveedor con el alcance actual.</td></tr>';
+        document.getElementById('inventarioPlanReposicionBorradorContexto').textContent =
+          'No hay lineas para el borrador con los filtros actuales.';
+        return;
+      }
+
+      const top = borrador.items.slice(0, 15);
+      tbody.innerHTML = top.map(r => {
+        const estado = String(r.estado_proyeccion || '').replace(/_/g, ' ');
+        const estadoSafe = sanitize(estado);
+        const estadoStyle = String(r.estado_proyeccion || '') === 'quiebre_inminente'
+          ? ' style="color:#B42318;font-weight:600;"'
+          : (String(r.estado_proyeccion || '') === 'riesgo_alto' || String(r.estado_proyeccion || '') === 'bajo_minimo'
+            ? ' style="color:#B54708;font-weight:600;"' : '');
+        return '<tr>' +
+          '<td>' + sanitize(r.producto_nombre || '') + '</td>' +
+          '<td>' + sanitize(r.bodega_nombre || '') + '</td>' +
+          '<td' + estadoStyle + '>' + estadoSafe + '</td>' +
+          '<td>' + Number(r.cantidad_sugerida || 0).toFixed(2) + '</td>' +
+          '<td>' + Number(r.costo_unitario_ref || 0).toFixed(2) + '</td>' +
+          '<td>' + Number(r.costo_estimado || 0).toFixed(2) + '</td>' +
+        '</tr>';
+      }).join('');
+
+      const proveedorNombre = String(borrador.proveedor_nombre || ('Proveedor #' + Number(borrador.proveedor_id || 0)));
+      document.getElementById('inventarioPlanReposicionBorradorContexto').textContent =
+        'Borrador ' + String(borrador.codigo_borrador || '') + ' para ' + proveedorNombre + ': ' +
+        Number(borrador.total_items || 0) + ' lineas, ' + Number(borrador.productos_unicos || 0) + ' productos, ' +
+        'cantidad total ' + Number(borrador.cantidad_total || 0).toFixed(2) + ' y costo total ' + Number(borrador.costo_total || 0).toFixed(2) + '.';
+    }
+
+    async function loadInventarioPlanReposicionBorrador(proveedorID) {
+      const resolvedProveedorID = Number(proveedorID || 0);
+      if (resolvedProveedorID <= 0) {
+        throw new Error('Proveedor inválido para generar borrador.');
+      }
+
+      state.ultimaOrdenReposicion = null;
+      renderEstadoOrdenReposicion(null);
+
+      const bodegaID = Number(document.getElementById('kardexBodegaFiltro').value || 0);
+      const diasVentana = inferDiasVentanaKardex();
+
+      const params = new URLSearchParams();
+      params.set('empresa_id', String(empresaId));
+      params.set('proveedor_id', String(resolvedProveedorID));
+      params.set('dias_ventana', String(diasVentana));
+      params.set('solo_riesgo', '1');
+      if (bodegaID > 0) {
+        params.set('bodega_id', String(bodegaID));
+      }
+
+      const borrador = await requestJSON('/api/empresa/inventario/plan_reposicion_borrador?' + params.toString());
+      state.planReposicionBorrador = borrador;
+      renderInventarioPlanReposicionBorrador(state.planReposicionBorrador);
+    }
+
+    async function emitirInventarioPlanReposicionBorrador() {
+      const borrador = state.planReposicionBorrador;
+      if (!borrador || !Array.isArray(borrador.items) || !borrador.items.length) {
+        throw new Error('No hay borrador disponible para emitir la orden.');
+      }
+
+      const proveedorID = Number(borrador.proveedor_id || 0);
+      if (proveedorID <= 0) {
+        throw new Error('El borrador no tiene proveedor válido para emisión.');
+      }
+
+      const bodegaID = Number(document.getElementById('kardexBodegaFiltro').value || 0);
+      const diasVentana = inferDiasVentanaKardex();
+      const now = new Date();
+      const periodoContable = String(now.getFullYear()) + '-' + String(now.getMonth() + 1).padStart(2, '0');
+      const documentoCodigo = String(borrador.codigo_borrador || '').replace(/^BORR-/i, '').trim();
+
+      const payload = {
+        empresa_id: empresaId,
+        proveedor_id: proveedorID,
+        bodega_id: bodegaID > 0 ? bodegaID : 0,
+        dias_ventana: diasVentana,
+        solo_riesgo: true,
+        documento_codigo: documentoCodigo,
+        periodo_contable: periodoContable,
+        moneda: 'COP',
+        observaciones: 'Orden emitida desde plan de reposición fase 11.'
+      };
+
+      const resp = await requestJSON('/api/empresa/compras/plan_reposicion/emitir_orden', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const resultado = resp && resp.resultado ? resp.resultado : resp;
+      if (!resultado || !String(resultado.documento_codigo || '').trim()) {
+        throw new Error('La emisión no devolvió el código de documento.');
+      }
+
+      await loadInventarioPlanReposicion();
+      await loadInventarioPlanReposicionResumen(true);
+      state.ultimaOrdenReposicion = resultado;
+      renderEstadoOrdenReposicion(state.ultimaOrdenReposicion);
+      return resultado;
+    }
+
+    async function actualizarEstadoInventarioPlanReposicionBorrador(accion) {
+      const orden = state.ultimaOrdenReposicion;
+      if (!orden || !String(orden.documento_codigo || '').trim()) {
+        throw new Error('Primero debes emitir una orden para poder actualizar su estado.');
+      }
+
+      const proveedorID = Number(orden.proveedor_id || (state.planReposicionBorrador && state.planReposicionBorrador.proveedor_id) || 0);
+      if (proveedorID <= 0) {
+        throw new Error('No se pudo determinar el proveedor de la orden emitida.');
+      }
+
+      const now = new Date();
+      const periodoContable = String(now.getFullYear()) + '-' + String(now.getMonth() + 1).padStart(2, '0');
+      const accionNormalizada = String(accion || '').trim();
+      const observaciones = accionNormalizada === 'contabilizar_compra'
+        ? 'Contabilización de orden desde ciclo de reposición fase 12.'
+        : 'Recepción de orden desde ciclo de reposición fase 12.';
+
+      const payload = {
+        empresa_id: empresaId,
+        proveedor_id: proveedorID,
+        documento_codigo: String(orden.documento_codigo || '').trim(),
+        accion: accionNormalizada,
+        periodo_contable: periodoContable,
+        observaciones: observaciones
+      };
+
+      const resp = await requestJSON('/api/empresa/compras/plan_reposicion/actualizar_estado', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const resultado = resp && resp.resultado ? resp.resultado : resp;
+      if (!resultado || !String(resultado.documento_codigo || '').trim()) {
+        throw new Error('La actualización de estado no devolvió el documento de compra.');
+      }
+
+      state.ultimaOrdenReposicion = Object.assign({}, state.ultimaOrdenReposicion || {}, resultado);
+      renderEstadoOrdenReposicion(state.ultimaOrdenReposicion);
+      return resultado;
+    }
+
     async function loadAlertasInventario() {
       const bodegaID = Number(document.getElementById('alertaBodegaFiltro').value || 0);
       let url = '/api/empresa/inventario/alertas?empresa_id=' + empresaId + '&limit=200';
@@ -1697,6 +2231,33 @@
       showMessage('Ajuste preconfigurado para reposición crítica. Verifica y confirma.', 'success');
     }
 
+    function prepararReposicionProyeccion(btn) {
+      const productoID = Number(btn.dataset.productoId || 0);
+      const bodegaID = Number(btn.dataset.bodegaId || 0);
+      const sugerido = Number(btn.dataset.sugerido || 0);
+      const productoNombre = String(btn.dataset.productoNombre || 'producto');
+      const bodegaNombre = String(btn.dataset.bodegaNombre || 'bodega');
+
+      if (productoID <= 0 || bodegaID <= 0) {
+        showMessage('No se pudo preparar la reposición preventiva: faltan datos del producto o bodega.', 'error');
+        return;
+      }
+
+      const cantidad = Math.max(0.01, sugerido > 0 ? sugerido : 1);
+      document.getElementById('ajusteProducto').value = String(productoID);
+      document.getElementById('ajusteBodega').value = String(bodegaID);
+      document.getElementById('ajusteTipo').value = 'entrada';
+      document.getElementById('ajusteCantidad').value = cantidad.toFixed(2);
+      document.getElementById('ajusteReferencia').value = 'REP-PROY-UI';
+      document.getElementById('ajusteObservaciones').value = 'Reposición preventiva sugerida por proyección para ' + productoNombre + ' en ' + bodegaNombre + '.';
+
+      const form = document.getElementById('ajusteForm');
+      if (form && typeof form.scrollIntoView === 'function') {
+        form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      showMessage('Ajuste preconfigurado desde proyección preventiva. Verifica y confirma.', 'success');
+    }
+
     async function loadMovimientos() {
       const bodegaID = Number(document.getElementById('kardexBodegaFiltro').value || 0);
       const tipo = String(document.getElementById('kardexTipoFiltro').value || '').trim();
@@ -1725,6 +2286,9 @@
         tbody.innerHTML = '<tr><td colspan="7">Sin movimientos de inventario.</td></tr>';
         await loadInventarioTendencia();
         await loadInventarioBalanceBodegas();
+        await loadInventarioProyeccion();
+        await loadInventarioPlanReposicion();
+        await loadInventarioPlanReposicionResumen();
         return;
       }
       tbody.innerHTML = rows.map(m => '<tr>' +
@@ -1738,6 +2302,9 @@
       '</tr>').join('');
       await loadInventarioTendencia();
       await loadInventarioBalanceBodegas();
+      await loadInventarioProyeccion();
+      await loadInventarioPlanReposicion();
+      await loadInventarioPlanReposicionResumen();
     }
 
     async function loadPreciosHistorial() {
@@ -2055,6 +2622,72 @@
         const btn = ev.target.closest('button[data-action="reponer-critico"]');
         if (!btn) return;
         prepararReposicionCritica(btn);
+      });
+
+      document.getElementById('inventarioProyeccionTable').addEventListener('click', ev => {
+        const btn = ev.target.closest('button[data-action="reponer-proyeccion"]');
+        if (!btn) return;
+        prepararReposicionProyeccion(btn);
+      });
+
+      document.getElementById('inventarioPlanReposicionTable').addEventListener('click', ev => {
+        const btn = ev.target.closest('button[data-action="reponer-plan"]');
+        if (!btn) return;
+        prepararReposicionProyeccion(btn);
+      });
+
+      document.getElementById('inventarioPlanReposicionResumenTable').addEventListener('click', async ev => {
+        const btnFiltro = ev.target.closest('button[data-action="filtrar-proveedor-plan"]');
+        if (btnFiltro) {
+          state.planReposicionProveedorFiltro = Number(btnFiltro.dataset.proveedorId || 0);
+          renderInventarioPlanReposicionRows(state.inventarioPlanReposicionRows);
+          return;
+        }
+
+        const btnBorrador = ev.target.closest('button[data-action="borrador-proveedor-plan"]');
+        if (!btnBorrador) return;
+        try {
+          await loadInventarioPlanReposicionBorrador(Number(btnBorrador.dataset.proveedorId || 0));
+          showMessage('Borrador de orden generado para el proveedor seleccionado.', 'success');
+        } catch (e) {
+          showMessage(e.message || 'No se pudo generar el borrador de orden.', 'error');
+        }
+      });
+
+      document.getElementById('btnLimpiarPlanProveedor').addEventListener('click', () => {
+        state.planReposicionProveedorFiltro = 0;
+        renderInventarioPlanReposicionRows(state.inventarioPlanReposicionRows);
+      });
+
+      document.getElementById('btnLimpiarPlanBorrador').addEventListener('click', () => {
+        limpiarInventarioPlanReposicionBorrador();
+      });
+
+      document.getElementById('btnEmitirOrdenBorrador').addEventListener('click', async () => {
+        try {
+          const resultado = await emitirInventarioPlanReposicionBorrador();
+          showMessage('Orden de compra emitida: ' + String(resultado.documento_codigo || '') + '.', 'success');
+        } catch (e) {
+          showMessage(e.message || 'No se pudo emitir la orden de compra desde el borrador.', 'error');
+        }
+      });
+
+      document.getElementById('btnRecepcionarOrdenBorrador').addEventListener('click', async () => {
+        try {
+          const resultado = await actualizarEstadoInventarioPlanReposicionBorrador('recepcionar_compra');
+          showMessage('Orden recepcionada: ' + String(resultado.documento_codigo || '') + '.', 'success');
+        } catch (e) {
+          showMessage(e.message || 'No se pudo recepcionar la orden de compra.', 'error');
+        }
+      });
+
+      document.getElementById('btnContabilizarOrdenBorrador').addEventListener('click', async () => {
+        try {
+          const resultado = await actualizarEstadoInventarioPlanReposicionBorrador('contabilizar_compra');
+          showMessage('Orden contabilizada: ' + String(resultado.documento_codigo || '') + '.', 'success');
+        } catch (e) {
+          showMessage(e.message || 'No se pudo contabilizar la orden de compra.', 'error');
+        }
       });
     }
 

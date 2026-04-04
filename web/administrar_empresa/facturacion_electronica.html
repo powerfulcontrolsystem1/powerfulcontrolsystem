@@ -121,6 +121,49 @@
       <h2 style="margin-top:0;">Configuraciones por país de esta empresa</h2>
       <div id="list">Cargando...</div>
     </div>
+
+    <div class="card" style="margin-top:12px;">
+      <h2 style="margin-top:0;">Emisión documental (punto 8)</h2>
+      <p class="form-help" style="margin-top:-4px;">
+        Ejecuta ciclo documental de factura electrónica con validación de cumplimiento normativo en emisión legal.
+      </p>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Código documento</label>
+          <input id="op_documento_codigo" class="form-input" placeholder="FAC-1001">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Estado actual</label>
+          <select id="op_estado_actual" class="form-input">
+            <option value="borrador">borrador</option>
+            <option value="emitida">emitida</option>
+            <option value="anulada">anulada</option>
+            <option value="ajustada">ajustada</option>
+          </select>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Periodo contable</label>
+          <input id="op_periodo_contable" class="form-input" placeholder="2026-04">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Monto total</label>
+          <input id="op_monto_total" type="number" step="0.01" class="form-input" placeholder="120000">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Moneda</label>
+          <input id="op_moneda" class="form-input" value="COP">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" id="btnEmitirFactura" class="btn">Emitir factura</button>
+        <button type="button" id="btnAnularFactura" class="btn secondary">Anular factura</button>
+        <button type="button" id="btnEmitirNC" class="btn secondary">Emitir nota crédito</button>
+      </div>
+      <div id="op_msg" class="form-help"></div>
+      <pre id="op_resultado" class="form-help" style="white-space:pre-wrap;background:#f6f6f6;padding:10px;border-radius:8px;margin-top:8px;"></pre>
+    </div>
   </div>
 
   <script>
@@ -143,6 +186,26 @@
       const el = document.getElementById("msg");
       el.textContent = text || "";
       el.style.color = isError ? "#ef5350" : "";
+    }
+
+    function setOperationMessage(text, isError) {
+      const el = document.getElementById("op_msg");
+      el.textContent = text || "";
+      el.style.color = isError ? "#ef5350" : "";
+    }
+
+    function setOperationResult(data) {
+      const box = document.getElementById("op_resultado");
+      if (!box) return;
+      if (!data) {
+        box.textContent = "";
+        return;
+      }
+      try {
+        box.textContent = JSON.stringify(data, null, 2);
+      } catch (_) {
+        box.textContent = String(data);
+      }
     }
 
     function safeJSON(raw) {
@@ -243,6 +306,20 @@
       };
     }
 
+    function collectOperacionPayload(action) {
+      const rawMonto = Number(document.getElementById("op_monto_total").value || 0);
+      return {
+        empresa_id: Number(state.empresaID),
+        pais_codigo: txt(document.getElementById("pais_codigo").value).toUpperCase(),
+        documento_codigo: txt(document.getElementById("op_documento_codigo").value),
+        estado_actual: txt(document.getElementById("op_estado_actual").value),
+        monto_total: Number.isFinite(rawMonto) && rawMonto > 0 ? rawMonto : 0,
+        moneda: txt(document.getElementById("op_moneda").value).toUpperCase() || "COP",
+        periodo_contable: txt(document.getElementById("op_periodo_contable").value),
+        observaciones: "operacion " + action + " desde modulo facturacion_electronica"
+      };
+    }
+
     function setFormData(cfg) {
       document.getElementById("pais_codigo").value = txt(cfg.pais_codigo || state.paisSeleccionado || "CO");
       document.getElementById("proveedor").value = txt(cfg.proveedor) || "manual";
@@ -319,6 +396,36 @@
       renderList(data.items || []);
     }
 
+    async function ejecutarOperacionFacturacion(action) {
+      const payload = collectOperacionPayload(action);
+      if (!payload.documento_codigo) {
+        setOperationMessage("documento_codigo es obligatorio", true);
+        return;
+      }
+      try {
+        const url = "/api/empresa/facturacion_electronica?action=" + encodeURIComponent(action) + "&empresa_id=" + encodeURIComponent(state.empresaID);
+        const res = await fetch(url, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        await ensureOk(res);
+        const data = await res.json();
+        setOperationResult(data);
+        if (data && data.estado_nuevo) {
+          document.getElementById("op_estado_actual").value = String(data.estado_nuevo);
+        }
+        if (data && data.numero_legal) {
+          setOperationMessage("Operación ejecutada. Número legal: " + data.numero_legal, false);
+        } else {
+          setOperationMessage("Operación ejecutada correctamente", false);
+        }
+      } catch (err) {
+        setOperationResult(null);
+        setOperationMessage(err && err.message ? err.message : "No se pudo ejecutar la operación", true);
+      }
+    }
+
     document.getElementById("pais_codigo").addEventListener("change", function() {
       const code = txt(document.getElementById("pais_codigo").value).toUpperCase();
       fillCountryHint(code);
@@ -345,6 +452,18 @@
       }).catch(function(err) {
         setMessage(err.message || "No se pudo recargar", true);
       });
+    });
+
+    document.getElementById("btnEmitirFactura").addEventListener("click", function() {
+      ejecutarOperacionFacturacion("emitir");
+    });
+
+    document.getElementById("btnAnularFactura").addEventListener("click", function() {
+      ejecutarOperacionFacturacion("anular");
+    });
+
+    document.getElementById("btnEmitirNC").addEventListener("click", function() {
+      ejecutarOperacionFacturacion("nota_credito");
     });
 
     document.getElementById("feForm").addEventListener("submit", async function(ev) {

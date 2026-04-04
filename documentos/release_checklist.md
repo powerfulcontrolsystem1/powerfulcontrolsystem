@@ -11,6 +11,10 @@ Fecha de referencia: 2026-04-01
 
 ## 2) Validacion tecnica minima
 
+- [ ] Ejecutar script operativo del punto 13:
+	- `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\validar_punto_13.ps1`
+- [ ] Verificar reporte tecnico generado:
+	- `documentos/punto_13_validacion_integral_resultado.md`
 - [ ] Ejecutar pruebas backend productivas:
 	- `go test ./auth ./db ./handlers ./metrics ./utils`
 - [ ] Verificar compilacion del backend sin errores.
@@ -47,6 +51,10 @@ Fecha de referencia: 2026-04-01
 
 ## 6) Documentacion y trazabilidad
 
+- [ ] Adjuntar/actualizar evidencia del punto 13:
+	- `documentos/punto_13_validacion_integral_resultado.md`
+- [ ] Actualizar guia de calidad/UAT/despliegue si cambia el flujo:
+	- `documentos/punto_13_calidad_uat_despliegue.md`
 - [ ] Actualizar `documentos/descripcion_de_archivos` con archivos nuevos o modificados.
 - [ ] Actualizar `documentos/historial_de_cambios` con resumen y fecha.
 - [ ] Si cambia arquitectura/flujo, actualizar `documentos/diagramas/`.

@@ -136,13 +136,31 @@
     </div>
 
     <div id="list">Cargando...</div>
+
+    <div class="form" style="margin-top:14px;">
+      <div class="page-header" style="margin-bottom:10px;">
+        <h2 style="margin:0;font-size:1.1rem;">Segmentación de clientes (punto 6)</h2>
+      </div>
+      <div id="segmentacionList">Cargando segmentación...</div>
+    </div>
+
+    <div class="form" style="margin-top:14px;display:none;" id="perfilClientePanel">
+      <div class="page-header" style="margin-bottom:10px;">
+        <h2 style="margin:0;font-size:1.1rem;">Perfil e historial del cliente</h2>
+      </div>
+      <p id="perfilClienteInfo" class="form-help">Selecciona un cliente para ver su perfil comercial.</p>
+      <div id="historialClienteList"></div>
+    </div>
   </div>
 
   <script>
     const state = {
       empresaID: 0,
       clientes: [],
-      q: ''
+    q: '',
+    segmentacion: [],
+    perfilCliente: null,
+    historialCliente: []
     };
 
     function getQueryParam(name) {
@@ -164,6 +182,110 @@
 
     function normalize(value) {
       return (value || '').toString().trim();
+    }
+
+    function esc(value) {
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function money(value) {
+      return Number(value || 0).toFixed(2);
+    }
+
+    function renderSegmentacion() {
+      const root = document.getElementById('segmentacionList');
+      if (!Array.isArray(state.segmentacion) || !state.segmentacion.length) {
+        root.innerHTML = '<p class="form-help">Sin datos de segmentación para el filtro actual.</p>';
+        return;
+      }
+
+      const table = document.createElement('table');
+      table.className = 'table';
+      table.innerHTML = '<thead><tr>' +
+        '<th>Segmento</th>' +
+        '<th>Clientes</th>' +
+        '<th>Compras</th>' +
+        '<th>Monto compras</th>' +
+        '<th>Ticket promedio</th>' +
+      '</tr></thead>';
+
+      const tbody = document.createElement('tbody');
+      state.segmentacion.forEach(function(row) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td>' + esc(normalize(row.segmento) || 'nuevo') + '</td>' +
+          '<td>' + Number(row.clientes || 0) + '</td>' +
+          '<td>' + Number(row.compras || 0) + '</td>' +
+          '<td>' + money(row.monto_compras) + '</td>' +
+          '<td>' + money(row.ticket_promedio_global) + '</td>';
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+
+      root.innerHTML = '';
+      root.appendChild(table);
+    }
+
+    function renderPerfilCliente() {
+      const panel = document.getElementById('perfilClientePanel');
+      const info = document.getElementById('perfilClienteInfo');
+      if (!state.perfilCliente || !state.perfilCliente.cliente) {
+        panel.style.display = 'none';
+        info.textContent = 'Selecciona un cliente para ver su perfil comercial.';
+        document.getElementById('historialClienteList').innerHTML = '';
+        return;
+      }
+
+      panel.style.display = '';
+      const perfil = state.perfilCliente;
+      const cliente = perfil.cliente;
+      info.innerHTML =
+        '<strong>' + esc(normalize(cliente.nombre_razon_social)) + '</strong> (' + esc(normalize(cliente.tipo_documento)) + ' ' + esc(normalize(cliente.numero_documento)) + ')' +
+        ' · Segmento: <strong>' + esc(normalize(perfil.segmento)) + '</strong>' +
+        ' · Compras: <strong>' + Number(perfil.numero_compras || 0) + '</strong>' +
+        ' · Monto: <strong>' + money(perfil.monto_compras) + '</strong>' +
+        ' · Ticket promedio: <strong>' + money(perfil.ticket_promedio) + '</strong>' +
+        ' · Última compra: <strong>' + esc(normalize(perfil.ultima_compra) || 'N/D') + '</strong>' +
+        ' · Días sin compra: <strong>' + Number(perfil.dias_sin_compra || 0) + '</strong>';
+    }
+
+    function renderHistorialCliente() {
+      const root = document.getElementById('historialClienteList');
+      if (!Array.isArray(state.historialCliente) || !state.historialCliente.length) {
+        root.innerHTML = '<p class="form-help">Sin compras registradas para este cliente.</p>';
+        return;
+      }
+
+      const table = document.createElement('table');
+      table.className = 'table';
+      table.innerHTML = '<thead><tr>' +
+        '<th>Fecha</th>' +
+        '<th>Código</th>' +
+        '<th>Canal</th>' +
+        '<th>Estado venta</th>' +
+        '<th>Items</th>' +
+        '<th>Monto</th>' +
+      '</tr></thead>';
+
+      const tbody = document.createElement('tbody');
+      state.historialCliente.forEach(function(item) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td>' + esc(normalize(item.fecha_operacion)) + '</td>' +
+          '<td>' + esc(normalize(item.codigo)) + '</td>' +
+          '<td>' + esc(normalize(item.canal_venta)) + '</td>' +
+          '<td>' + esc(normalize(item.estado_venta)) + '</td>' +
+          '<td>' + Number(item.items_activos || 0) + '</td>' +
+          '<td>' + money(item.monto_total) + '</td>';
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+
+      root.innerHTML = '';
+      root.appendChild(table);
     }
 
     function resetForm(hide) {
@@ -228,6 +350,7 @@
           '<td>' + (ciudad || '') + '</td>' +
           '<td>' + estado + '</td>' +
           '<td class="actions">' +
+            '<button data-id="' + item.id + '" class="perfil btn secondary">Perfil</button> ' +
             '<button data-id="' + item.id + '" class="edit btn secondary">Editar</button> ' +
             '<button data-id="' + item.id + '" class="del btn danger">Eliminar</button> ' +
             '<button data-id="' + item.id + '" data-activo="' + (activo ? '1' : '0') + '" class="toggle btn">' + toggleLabel + '</button>' +
@@ -282,7 +405,7 @@
             const res = await fetch('/api/empresa/clientes?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(id), { method: 'DELETE' });
             await ensureOk(res);
             setMessage('Cliente eliminado', false);
-            await loadClients();
+			await loadData();
           } catch (err) {
             setMessage(err.message || 'Error eliminando cliente', true);
           }
@@ -303,12 +426,54 @@
             });
             await ensureOk(res);
             setMessage('Estado actualizado', false);
-            await loadClients();
+			await loadData();
           } catch (err) {
             setMessage(err.message || 'Error cambiando estado', true);
           }
         };
       });
+
+      document.querySelectorAll('.perfil').forEach(function(btn) {
+        btn.onclick = async function() {
+          const id = Number(btn.getAttribute('data-id'));
+          if (!id) return;
+          try {
+            await loadPerfilCliente(id);
+            setMessage('Perfil de cliente cargado.', false);
+          } catch (err) {
+            setMessage(err.message || 'No se pudo cargar el perfil del cliente.', true);
+          }
+        };
+      });
+    }
+
+    async function loadSegmentacion() {
+      const url = new URL('/api/empresa/clientes', window.location.origin);
+      url.searchParams.set('empresa_id', String(state.empresaID));
+      url.searchParams.set('action', 'segmentacion');
+      url.searchParams.set('include_inactive', '1');
+      if (state.q) {
+        url.searchParams.set('q', state.q);
+      }
+
+      const res = await fetch(url.pathname + url.search);
+      await ensureOk(res);
+      state.segmentacion = await res.json();
+      renderSegmentacion();
+    }
+
+    async function loadPerfilCliente(clienteID) {
+      const perfilRes = await fetch('/api/empresa/clientes?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=perfil&id=' + encodeURIComponent(clienteID));
+      await ensureOk(perfilRes);
+      state.perfilCliente = await perfilRes.json();
+
+      const histRes = await fetch('/api/empresa/clientes?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=historial&id=' + encodeURIComponent(clienteID) + '&limit=20');
+      await ensureOk(histRes);
+      state.historialCliente = await histRes.json();
+
+      renderPerfilCliente();
+      renderHistorialCliente();
+      document.getElementById('perfilClientePanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     async function loadEmpresaTitle() {
@@ -338,6 +503,10 @@
 
     async function loadData() {
       await loadClients();
+      await loadSegmentacion();
+      state.perfilCliente = null;
+      state.historialCliente = [];
+      renderPerfilCliente();
     }
 
     document.getElementById('form').onsubmit = async function(e) {
@@ -382,7 +551,7 @@
 
         setMessage(isEdit ? 'Cliente actualizado' : 'Cliente creado', false);
         resetForm(true);
-        await loadClients();
+		await loadData();
       } catch (err) {
         setMessage(err.message || 'Error guardando cliente', true);
       }
@@ -402,7 +571,7 @@
     document.getElementById('buscarBtn').onclick = async function() {
       state.q = normalize(document.getElementById('buscar').value);
       try {
-        await loadClients();
+		await loadData();
       } catch (err) {
         setMessage(err.message || 'Error buscando clientes', true);
       }

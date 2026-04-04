@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"net/mail"
@@ -21,6 +22,62 @@ func EmpresaClientesHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
+
+			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+			switch action {
+			case "perfil":
+				clienteID, err := parseClienteIDFromQuery(r)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				perfil, err := db.GetClientePerfilComercialByEmpresa(dbEmp, empresaID, clienteID)
+				if err != nil {
+					if errors.Is(err, sql.ErrNoRows) {
+						http.Error(w, "Cliente no encontrado", http.StatusNotFound)
+						return
+					}
+					log.Printf("[clientes] perfil empresa_id=%d id=%d error: %v", empresaID, clienteID, err)
+					http.Error(w, "No se pudo obtener el perfil del cliente", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, perfil)
+				return
+
+			case "historial":
+				clienteID, err := parseClienteIDFromQuery(r)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				limit, err := parseIntQueryOptional(r, "limit")
+				if err != nil {
+					http.Error(w, "limit invalido", http.StatusBadRequest)
+					return
+				}
+				rows, err := db.GetClienteHistorialComprasByEmpresa(dbEmp, empresaID, clienteID, limit)
+				if err != nil {
+					log.Printf("[clientes] historial empresa_id=%d id=%d error: %v", empresaID, clienteID, err)
+					http.Error(w, "No se pudo obtener el historial del cliente", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, rows)
+				return
+
+			case "segmentacion", "segmentos":
+				includeInactive := strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("include_inactive")), "1") ||
+					strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("include_inactive")), "true")
+				q := strings.TrimSpace(r.URL.Query().Get("q"))
+				rows, err := db.GetClientesSegmentacionByEmpresa(dbEmp, empresaID, includeInactive, q)
+				if err != nil {
+					log.Printf("[clientes] segmentacion empresa_id=%d error: %v", empresaID, err)
+					http.Error(w, "No se pudo obtener la segmentacion de clientes", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, rows)
+				return
+			}
+
 			includeInactive := strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("include_inactive")), "1") ||
 				strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("include_inactive")), "true")
 			q := strings.TrimSpace(r.URL.Query().Get("q"))
@@ -162,4 +219,21 @@ func writeJSON(w http.ResponseWriter, status int, payload interface{}) {
 	if err := json.NewEncoder(w).Encode(payload); err != nil {
 		log.Printf("[clientes] write json response error: %v", err)
 	}
+}
+
+func parseClienteIDFromQuery(r *http.Request) (int64, error) {
+	clienteID, err := parseInt64QueryOptional(r, "cliente_id")
+	if err != nil {
+		return 0, errBadRequest("cliente_id invalido")
+	}
+	if clienteID <= 0 {
+		clienteID, err = parseInt64QueryOptional(r, "id")
+		if err != nil {
+			return 0, errBadRequest("id/cliente_id invalido")
+		}
+	}
+	if clienteID <= 0 {
+		return 0, errBadRequest("cliente_id es obligatorio")
+	}
+	return clienteID, nil
 }

@@ -41,8 +41,10 @@ Sistema POS multiempresa con backend en Go y persistencia SQLite, orientado a op
 
 3) Operacion por empresa
 - Usuarios de empresa (alta, confirmacion, estado, primer ingreso).
-- Clientes.
-- Inventario: bodegas, productos, proveedores, servicios, alertas de quiebre por bodega, kardex filtrable por bodega/tipo/rango de fechas, resumen KPI operativo por periodo, tendencia diaria por bodega/rango, balance por bodega en rango y reposicion guiada desde top de productos criticos.
+- Clientes: CRUD operativo con perfil comercial, historial de compras y segmentacion por comportamiento.
+- Inventario: bodegas, productos, proveedores (con catalogo referencia, precio base referencial y condiciones comerciales por proveedor), servicios, alertas de quiebre por bodega, kardex filtrable por bodega/tipo/rango de fechas, resumen KPI operativo por periodo, tendencia diaria por bodega/rango, balance por bodega en rango, proyeccion preventiva de quiebre por producto/bodega, plan de reposicion por proveedor con costo estimado, consolidado de compra por proveedor, borrador de orden de compra por proveedor, emision de orden de compra desde borrador, ciclo documental de la orden emitida (recepcion y contabilizacion) y reposicion guiada desde top de productos criticos.
+- Compras: modulo dedicado con endpoint `/api/empresa/compras/documentos` y vista `administrar_empresa/compras.html` para crear, consultar y transicionar documentos (`emitir_orden`, `recepcionar_compra`, `contabilizar_compra`) con trazabilidad contable.
+- Facturacion electronica: configuracion por pais y ciclo documental (`emitir`, `anular`, `nota_credito`) con validacion normativa inicial de emision (prefijo/resolucion/consecutivo) y trazabilidad por `numero_legal` + `codigo_validacion`.
 - Carritos de compra e items (incluye modo estaciones).
 - Finanzas y contabilidad: movimientos, periodos, cierres de caja, eventos contables y asientos canonicos por lote, con ejecucion manual y automatica configurable por politica de reintentos y conciliacion por periodo (eventos vs asientos).
 - Auditoria empresarial: trazabilidad de acciones criticas por modulo, usuario, request_id y resultado, con vista de consulta en panel empresa, filtros avanzados (`codigo_http`, `recurso_id`), exportacion CSV/JSON y retencion automatica programada.

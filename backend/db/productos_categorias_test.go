@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	_ "modernc.org/sqlite"
@@ -187,6 +188,91 @@ func TestCreateAndUpdateProductoValidanStockMinMax(t *testing.T) {
 
 	if err := UpdateProducto(dbConn, *p, "", ""); err == nil {
 		t.Fatal("expected error updating producto when stock_minimo > stock_maximo")
+	}
+}
+
+func TestProveedorCRUDIncluyeCatalogoPreciosYCondiciones(t *testing.T) {
+	dbConn := openProductosTestDB(t)
+	if err := EnsureEmpresaProductosSchema(dbConn); err != nil {
+		t.Fatalf("ensure schema: %v", err)
+	}
+
+	proveedorID, err := CreateProveedor(dbConn, Proveedor{
+		EmpresaID:             62,
+		Nombre:                "Proveedor Comercial",
+		Contacto:              "Camila R",
+		Telefono:              "3000001111",
+		Email:                 "compras@proveedor-comercial.com",
+		CatalogoReferencia:    "CAT-2026-Q2",
+		PrecioBaseReferencial: 12500.75,
+		DescuentoPorcentaje:   7.5,
+		PlazoPagoDias:         30,
+		CondicionEntrega:      "Entrega 24h en bodega principal",
+		Observaciones:         "Precio sujeto a volumen",
+	})
+	if err != nil {
+		t.Fatalf("create proveedor comercial: %v", err)
+	}
+
+	rows, err := GetProveedoresByEmpresa(dbConn, 62, true)
+	if err != nil {
+		t.Fatalf("list proveedores: %v", err)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("expected 1 proveedor, got %d", len(rows))
+	}
+	if rows[0].CatalogoReferencia != "CAT-2026-Q2" {
+		t.Fatalf("expected catalogo referencia CAT-2026-Q2, got %q", rows[0].CatalogoReferencia)
+	}
+	if rows[0].PrecioBaseReferencial != 12500.75 {
+		t.Fatalf("expected precio_base_referencial 12500.75, got %.2f", rows[0].PrecioBaseReferencial)
+	}
+	if rows[0].DescuentoPorcentaje != 7.5 {
+		t.Fatalf("expected descuento_porcentaje 7.5, got %.2f", rows[0].DescuentoPorcentaje)
+	}
+	if rows[0].PlazoPagoDias != 30 {
+		t.Fatalf("expected plazo_pago_dias 30, got %d", rows[0].PlazoPagoDias)
+	}
+
+	if err := UpdateProveedor(dbConn, Proveedor{
+		ID:                    proveedorID,
+		EmpresaID:             62,
+		Nombre:                "Proveedor Comercial",
+		PrecioBaseReferencial: 13200,
+		DescuentoPorcentaje:   10,
+		PlazoPagoDias:         45,
+		CondicionEntrega:      "Entrega 48h",
+		CatalogoReferencia:    "CAT-2026-Q3",
+		Observaciones:         "Ajuste trimestral",
+	}); err != nil {
+		t.Fatalf("update proveedor comercial: %v", err)
+	}
+
+	rows, err = GetProveedoresByEmpresa(dbConn, 62, true)
+	if err != nil {
+		t.Fatalf("list proveedores after update: %v", err)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("expected 1 proveedor after update, got %d", len(rows))
+	}
+	if rows[0].PrecioBaseReferencial != 13200 {
+		t.Fatalf("expected precio_base_referencial 13200, got %.2f", rows[0].PrecioBaseReferencial)
+	}
+	if rows[0].DescuentoPorcentaje != 10 {
+		t.Fatalf("expected descuento_porcentaje 10, got %.2f", rows[0].DescuentoPorcentaje)
+	}
+	if rows[0].PlazoPagoDias != 45 {
+		t.Fatalf("expected plazo_pago_dias 45, got %d", rows[0].PlazoPagoDias)
+	}
+	if rows[0].CatalogoReferencia != "CAT-2026-Q3" {
+		t.Fatalf("expected catalogo referencia CAT-2026-Q3, got %q", rows[0].CatalogoReferencia)
+	}
+
+	if _, err := CreateProveedor(dbConn, Proveedor{EmpresaID: 62, Nombre: "Proveedor invalido", PrecioBaseReferencial: -10}); err == nil {
+		t.Fatalf("expected error for precio_base_referencial negativo")
+	}
+	if err := UpdateProveedor(dbConn, Proveedor{ID: proveedorID, EmpresaID: 62, Nombre: "Proveedor Comercial", DescuentoPorcentaje: 150}); err == nil {
+		t.Fatalf("expected error for descuento_porcentaje fuera de rango")
 	}
 }
 
@@ -402,5 +488,399 @@ func TestGetInventarioBalanceBodegasByEmpresaConsolidaMovimientos(t *testing.T) 
 	}
 	if rowB.Entradas != 2 || rowB.TrasladosEntrada != 1 || rowB.Neto != 3 {
 		t.Fatalf("unexpected balance bodega B: %+v", rowB)
+	}
+}
+
+func TestGetInventarioProyeccionQuiebreByEmpresaPriorizaRiesgo(t *testing.T) {
+	dbConn := openProductosTestDB(t)
+	if err := EnsureEmpresaProductosSchema(dbConn); err != nil {
+		t.Fatalf("ensure schema: %v", err)
+	}
+
+	bodegaA, err := CreateBodega(dbConn, Bodega{EmpresaID: 91, Codigo: "BOD-A-91", Nombre: "A"})
+	if err != nil {
+		t.Fatalf("create bodega A: %v", err)
+	}
+
+	prodRiesgo, err := CreateProducto(dbConn, Producto{EmpresaID: 91, Nombre: "Producto Riesgo", StockMinimo: 5, StockMaximo: 20}, 0, "TEST")
+	if err != nil {
+		t.Fatalf("create producto riesgo: %v", err)
+	}
+	prodEstable, err := CreateProducto(dbConn, Producto{EmpresaID: 91, Nombre: "Producto Estable", StockMinimo: 3, StockMaximo: 40}, 0, "TEST")
+	if err != nil {
+		t.Fatalf("create producto estable: %v", err)
+	}
+
+	if _, err := dbConn.Exec(`INSERT INTO inventario_existencias (empresa_id, producto_id, bodega_id, cantidad, estado) VALUES (91, ?, ?, 2, 'activo')`, prodRiesgo, bodegaA); err != nil {
+		t.Fatalf("insert existencia riesgo: %v", err)
+	}
+	if _, err := dbConn.Exec(`INSERT INTO inventario_existencias (empresa_id, producto_id, bodega_id, cantidad, estado) VALUES (91, ?, ?, 30, 'activo')`, prodEstable, bodegaA); err != nil {
+		t.Fatalf("insert existencia estable: %v", err)
+	}
+
+	if _, err := dbConn.Exec(`INSERT INTO inventario_movimientos (
+		empresa_id, producto_id, bodega_origen_id, bodega_destino_id, tipo, cantidad, costo_unitario, referencia, fecha_movimiento, estado
+	) VALUES (91, ?, ?, NULL, 'salida', 10, 10, 'PROY-R-1', datetime('now','-1 day'), 'activo')`, prodRiesgo, bodegaA); err != nil {
+		t.Fatalf("insert salida riesgo: %v", err)
+	}
+	if _, err := dbConn.Exec(`INSERT INTO inventario_movimientos (
+		empresa_id, producto_id, bodega_origen_id, bodega_destino_id, tipo, cantidad, costo_unitario, referencia, fecha_movimiento, estado
+	) VALUES (91, ?, ?, NULL, 'salida', 5, 10, 'PROY-E-1', datetime('now','-1 day'), 'activo')`, prodEstable, bodegaA); err != nil {
+		t.Fatalf("insert salida estable: %v", err)
+	}
+
+	rows, err := GetInventarioProyeccionQuiebreByEmpresa(dbConn, 91, bodegaA, 5, 20, 0)
+	if err != nil {
+		t.Fatalf("get inventario proyeccion quiebre: %v", err)
+	}
+	if len(rows) < 2 {
+		t.Fatalf("expected at least 2 rows in proyeccion, got %d", len(rows))
+	}
+
+	if rows[0].ProductoID != prodRiesgo {
+		t.Fatalf("expected first row as riesgo product %d, got %d", prodRiesgo, rows[0].ProductoID)
+	}
+	if rows[0].EstadoProyeccion != "quiebre_inminente" {
+		t.Fatalf("expected estado quiebre_inminente, got %q", rows[0].EstadoProyeccion)
+	}
+	if rows[0].SugeridoReposicion <= 0 {
+		t.Fatalf("expected sugerido_reposicion > 0, got %.2f", rows[0].SugeridoReposicion)
+	}
+}
+
+func TestGetInventarioPlanReposicionByEmpresaConsolidaProveedorYCosto(t *testing.T) {
+	dbConn := openProductosTestDB(t)
+	if err := EnsureEmpresaProductosSchema(dbConn); err != nil {
+		t.Fatalf("ensure schema: %v", err)
+	}
+
+	bodegaA, err := CreateBodega(dbConn, Bodega{EmpresaID: 95, Codigo: "BOD-A-95", Nombre: "A"})
+	if err != nil {
+		t.Fatalf("create bodega A: %v", err)
+	}
+
+	proveedorID, err := CreateProveedor(dbConn, Proveedor{EmpresaID: 95, Nombre: "Proveedor Central"})
+	if err != nil {
+		t.Fatalf("create proveedor: %v", err)
+	}
+
+	prodRiesgo, err := CreateProducto(dbConn, Producto{EmpresaID: 95, Nombre: "Producto Plan", ProveedorPrincipalID: proveedorID, Costo: 12.5, StockMinimo: 4, StockMaximo: 18}, 0, "TEST")
+	if err != nil {
+		t.Fatalf("create producto plan: %v", err)
+	}
+	prodEstable, err := CreateProducto(dbConn, Producto{EmpresaID: 95, Nombre: "Producto Estable", ProveedorPrincipalID: proveedorID, Costo: 10, StockMinimo: 2, StockMaximo: 40}, 0, "TEST")
+	if err != nil {
+		t.Fatalf("create producto estable: %v", err)
+	}
+
+	if _, err := dbConn.Exec(`INSERT INTO inventario_existencias (empresa_id, producto_id, bodega_id, cantidad, estado) VALUES (95, ?, ?, 3, 'activo')`, prodRiesgo, bodegaA); err != nil {
+		t.Fatalf("insert existencia plan: %v", err)
+	}
+	if _, err := dbConn.Exec(`INSERT INTO inventario_existencias (empresa_id, producto_id, bodega_id, cantidad, estado) VALUES (95, ?, ?, 25, 'activo')`, prodEstable, bodegaA); err != nil {
+		t.Fatalf("insert existencia estable: %v", err)
+	}
+
+	if _, err := dbConn.Exec(`INSERT INTO inventario_movimientos (
+		empresa_id, producto_id, bodega_origen_id, bodega_destino_id, tipo, cantidad, costo_unitario, referencia, fecha_movimiento, estado
+	) VALUES (95, ?, ?, NULL, 'salida', 8, 12.5, 'PLAN-R-1', datetime('now','-1 day'), 'activo')`, prodRiesgo, bodegaA); err != nil {
+		t.Fatalf("insert salida riesgo: %v", err)
+	}
+
+	rows, err := GetInventarioPlanReposicionByEmpresa(dbConn, 95, bodegaA, 7, true, 20, 0)
+	if err != nil {
+		t.Fatalf("get inventario plan reposicion: %v", err)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("expected 1 row in plan reposicion, got %d", len(rows))
+	}
+
+	if rows[0].ProductoID != prodRiesgo {
+		t.Fatalf("expected producto riesgo %d, got %d", prodRiesgo, rows[0].ProductoID)
+	}
+	if rows[0].ProveedorID != proveedorID {
+		t.Fatalf("expected proveedor_id %d, got %d", proveedorID, rows[0].ProveedorID)
+	}
+	if rows[0].CostoUnitarioRef != 12.5 {
+		t.Fatalf("expected costo_unitario_ref 12.5, got %.2f", rows[0].CostoUnitarioRef)
+	}
+	if rows[0].CostoEstimado <= 0 {
+		t.Fatalf("expected costo_estimado > 0, got %.2f", rows[0].CostoEstimado)
+	}
+}
+
+func TestGetInventarioPlanReposicionResumenByEmpresaAgrupaProveedor(t *testing.T) {
+	dbConn := openProductosTestDB(t)
+	if err := EnsureEmpresaProductosSchema(dbConn); err != nil {
+		t.Fatalf("ensure schema: %v", err)
+	}
+
+	bodegaA, err := CreateBodega(dbConn, Bodega{EmpresaID: 96, Codigo: "BOD-A-96", Nombre: "A"})
+	if err != nil {
+		t.Fatalf("create bodega A: %v", err)
+	}
+
+	proveedorID, err := CreateProveedor(dbConn, Proveedor{EmpresaID: 96, Nombre: "Proveedor Resumen"})
+	if err != nil {
+		t.Fatalf("create proveedor: %v", err)
+	}
+
+	p1, err := CreateProducto(dbConn, Producto{EmpresaID: 96, Nombre: "Producto 1", ProveedorPrincipalID: proveedorID, Costo: 11, StockMinimo: 3, StockMaximo: 15}, 0, "TEST")
+	if err != nil {
+		t.Fatalf("create producto 1: %v", err)
+	}
+	p2, err := CreateProducto(dbConn, Producto{EmpresaID: 96, Nombre: "Producto 2", ProveedorPrincipalID: proveedorID, Costo: 8, StockMinimo: 2, StockMaximo: 12}, 0, "TEST")
+	if err != nil {
+		t.Fatalf("create producto 2: %v", err)
+	}
+
+	if _, err := dbConn.Exec(`INSERT INTO inventario_existencias (empresa_id, producto_id, bodega_id, cantidad, estado) VALUES (96, ?, ?, 2, 'activo')`, p1, bodegaA); err != nil {
+		t.Fatalf("insert existencia p1: %v", err)
+	}
+	if _, err := dbConn.Exec(`INSERT INTO inventario_existencias (empresa_id, producto_id, bodega_id, cantidad, estado) VALUES (96, ?, ?, 1.5, 'activo')`, p2, bodegaA); err != nil {
+		t.Fatalf("insert existencia p2: %v", err)
+	}
+
+	if _, err := dbConn.Exec(`INSERT INTO inventario_movimientos (
+		empresa_id, producto_id, bodega_origen_id, bodega_destino_id, tipo, cantidad, costo_unitario, referencia, fecha_movimiento, estado
+	) VALUES (96, ?, ?, NULL, 'salida', 6, 11, 'RES-1', datetime('now','-1 day'), 'activo')`, p1, bodegaA); err != nil {
+		t.Fatalf("insert salida p1: %v", err)
+	}
+	if _, err := dbConn.Exec(`INSERT INTO inventario_movimientos (
+		empresa_id, producto_id, bodega_origen_id, bodega_destino_id, tipo, cantidad, costo_unitario, referencia, fecha_movimiento, estado
+	) VALUES (96, ?, ?, NULL, 'salida', 4, 8, 'RES-2', datetime('now','-1 day'), 'activo')`, p2, bodegaA); err != nil {
+		t.Fatalf("insert salida p2: %v", err)
+	}
+
+	rows, err := GetInventarioPlanReposicionResumenByEmpresa(dbConn, 96, bodegaA, 7, true, 20, 0)
+	if err != nil {
+		t.Fatalf("get inventario plan reposicion resumen: %v", err)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("expected 1 provider row in resumen, got %d", len(rows))
+	}
+	if rows[0].ProveedorID != proveedorID {
+		t.Fatalf("expected proveedor_id=%d, got %d", proveedorID, rows[0].ProveedorID)
+	}
+	if rows[0].Items != 2 || rows[0].ProductosUnicos != 2 {
+		t.Fatalf("expected 2 items/productos, got %+v", rows[0])
+	}
+	if rows[0].CostoTotal <= 0 {
+		t.Fatalf("expected costo_total > 0, got %+v", rows[0])
+	}
+}
+
+func TestGetInventarioPlanReposicionBorradorByEmpresaProveedor(t *testing.T) {
+	dbConn := openProductosTestDB(t)
+	if err := EnsureEmpresaProductosSchema(dbConn); err != nil {
+		t.Fatalf("ensure schema: %v", err)
+	}
+
+	bodegaA, err := CreateBodega(dbConn, Bodega{EmpresaID: 97, Codigo: "BOD-A-97", Nombre: "A"})
+	if err != nil {
+		t.Fatalf("create bodega A: %v", err)
+	}
+
+	proveedorID, err := CreateProveedor(dbConn, Proveedor{EmpresaID: 97, Nombre: "Proveedor Borrador"})
+	if err != nil {
+		t.Fatalf("create proveedor: %v", err)
+	}
+
+	p1, err := CreateProducto(dbConn, Producto{EmpresaID: 97, Nombre: "Producto B1", ProveedorPrincipalID: proveedorID, Costo: 13, StockMinimo: 4, StockMaximo: 18}, 0, "TEST")
+	if err != nil {
+		t.Fatalf("create producto 1: %v", err)
+	}
+	p2, err := CreateProducto(dbConn, Producto{EmpresaID: 97, Nombre: "Producto B2", ProveedorPrincipalID: proveedorID, Costo: 9, StockMinimo: 2, StockMaximo: 12}, 0, "TEST")
+	if err != nil {
+		t.Fatalf("create producto 2: %v", err)
+	}
+
+	if _, err := dbConn.Exec(`INSERT INTO inventario_existencias (empresa_id, producto_id, bodega_id, cantidad, estado) VALUES (97, ?, ?, 1, 'activo')`, p1, bodegaA); err != nil {
+		t.Fatalf("insert existencia p1: %v", err)
+	}
+	if _, err := dbConn.Exec(`INSERT INTO inventario_existencias (empresa_id, producto_id, bodega_id, cantidad, estado) VALUES (97, ?, ?, 0.5, 'activo')`, p2, bodegaA); err != nil {
+		t.Fatalf("insert existencia p2: %v", err)
+	}
+
+	if _, err := dbConn.Exec(`INSERT INTO inventario_movimientos (
+		empresa_id, producto_id, bodega_origen_id, bodega_destino_id, tipo, cantidad, costo_unitario, referencia, fecha_movimiento, estado
+	) VALUES (97, ?, ?, NULL, 'salida', 7, 13, 'BORR-1', datetime('now','-1 day'), 'activo')`, p1, bodegaA); err != nil {
+		t.Fatalf("insert salida p1: %v", err)
+	}
+	if _, err := dbConn.Exec(`INSERT INTO inventario_movimientos (
+		empresa_id, producto_id, bodega_origen_id, bodega_destino_id, tipo, cantidad, costo_unitario, referencia, fecha_movimiento, estado
+	) VALUES (97, ?, ?, NULL, 'salida', 4, 9, 'BORR-2', datetime('now','-1 day'), 'activo')`, p2, bodegaA); err != nil {
+		t.Fatalf("insert salida p2: %v", err)
+	}
+
+	borrador, err := GetInventarioPlanReposicionBorradorByEmpresa(dbConn, 97, proveedorID, bodegaA, 7, true)
+	if err != nil {
+		t.Fatalf("get inventario plan reposicion borrador: %v", err)
+	}
+
+	if borrador.ProveedorID != proveedorID {
+		t.Fatalf("expected proveedor_id=%d, got %d", proveedorID, borrador.ProveedorID)
+	}
+	if borrador.TotalItems != 2 {
+		t.Fatalf("expected total_items=2, got %+v", borrador)
+	}
+	if borrador.ProductosUnicos != 2 {
+		t.Fatalf("expected productos_unicos=2, got %+v", borrador)
+	}
+	if len(borrador.Items) != 2 {
+		t.Fatalf("expected 2 detail rows, got %d", len(borrador.Items))
+	}
+	if borrador.CostoTotal <= 0 {
+		t.Fatalf("expected costo_total > 0, got %+v", borrador)
+	}
+	if len(borrador.CodigoBorrador) < 8 || borrador.CodigoBorrador[:8] != "BORR-OC-" {
+		t.Fatalf("expected codigo borrador with BORR-OC- prefix, got %q", borrador.CodigoBorrador)
+	}
+
+	if _, err := GetInventarioPlanReposicionBorradorByEmpresa(dbConn, 97, 0, bodegaA, 7, true); err == nil {
+		t.Fatalf("expected error for proveedor_id invalido")
+	}
+}
+
+func TestEmitirOrdenCompraDesdePlanReposicionBorradorPersistDoc(t *testing.T) {
+	dbConn := openProductosTestDB(t)
+	if err := EnsureEmpresaProductosSchema(dbConn); err != nil {
+		t.Fatalf("ensure productos schema: %v", err)
+	}
+	if err := EnsureEmpresaDocumentosTransaccionalesSchema(dbConn); err != nil {
+		t.Fatalf("ensure documentos transaccionales schema: %v", err)
+	}
+
+	bodegaA, err := CreateBodega(dbConn, Bodega{EmpresaID: 98, Codigo: "BOD-A-98", Nombre: "A"})
+	if err != nil {
+		t.Fatalf("create bodega A: %v", err)
+	}
+
+	proveedorID, err := CreateProveedor(dbConn, Proveedor{EmpresaID: 98, Nombre: "Proveedor Emision"})
+	if err != nil {
+		t.Fatalf("create proveedor: %v", err)
+	}
+
+	productoID, err := CreateProducto(dbConn, Producto{EmpresaID: 98, Nombre: "Producto Emitir", ProveedorPrincipalID: proveedorID, Costo: 15, StockMinimo: 4, StockMaximo: 18}, 0, "TEST")
+	if err != nil {
+		t.Fatalf("create producto: %v", err)
+	}
+
+	if _, err := dbConn.Exec(`INSERT INTO inventario_existencias (empresa_id, producto_id, bodega_id, cantidad, estado) VALUES (98, ?, ?, 1, 'activo')`, productoID, bodegaA); err != nil {
+		t.Fatalf("insert existencia: %v", err)
+	}
+	if _, err := dbConn.Exec(`INSERT INTO inventario_movimientos (
+		empresa_id, producto_id, bodega_origen_id, bodega_destino_id, tipo, cantidad, costo_unitario, referencia, fecha_movimiento, estado
+	) VALUES (98, ?, ?, NULL, 'salida', 6, 15, 'EMI-1', datetime('now','-1 day'), 'activo')`, productoID, bodegaA); err != nil {
+		t.Fatalf("insert salida: %v", err)
+	}
+
+	resultado, err := EmitirOrdenCompraDesdePlanReposicionBorrador(dbConn, 98, proveedorID, bodegaA, 7, true, "", "2026-04", "COP", "tester@local", "emision desde fase 11")
+	if err != nil {
+		t.Fatalf("emitir orden desde borrador: %v", err)
+	}
+
+	if resultado.EstadoNuevo != "emitida" {
+		t.Fatalf("expected estado_nuevo emitida, got %+v", resultado)
+	}
+	if resultado.Evento != "orden_compra_emitida" {
+		t.Fatalf("expected evento orden_compra_emitida, got %+v", resultado)
+	}
+	if len(resultado.DocumentoCodigo) < 3 || resultado.DocumentoCodigo[:3] != "OC-" {
+		t.Fatalf("expected documento_codigo with OC- prefix, got %+v", resultado)
+	}
+	if resultado.EntidadID <= 0 {
+		t.Fatalf("expected entidad_id > 0, got %+v", resultado)
+	}
+
+	doc, err := GetEmpresaDocumentoCompraByCodigo(dbConn, 98, "orden_compra", resultado.DocumentoCodigo)
+	if err != nil {
+		t.Fatalf("get compra documento emitido: %v", err)
+	}
+	if doc.EstadoDocumento != "emitida" {
+		t.Fatalf("expected documento emitida, got %+v", doc)
+	}
+	if doc.MontoTotal <= 0 {
+		t.Fatalf("expected monto_total > 0, got %+v", doc)
+	}
+
+	if _, err := EmitirOrdenCompraDesdePlanReposicionBorrador(dbConn, 98, 999999, bodegaA, 7, true, "", "", "", "", ""); err == nil {
+		t.Fatalf("expected error when provider has no suggested items")
+	}
+}
+
+func TestActualizarEstadoOrdenCompraDesdeReposicionCiclo(t *testing.T) {
+	dbConn := openProductosTestDB(t)
+	if err := EnsureEmpresaProductosSchema(dbConn); err != nil {
+		t.Fatalf("ensure productos schema: %v", err)
+	}
+	if err := EnsureEmpresaDocumentosTransaccionalesSchema(dbConn); err != nil {
+		t.Fatalf("ensure documentos transaccionales schema: %v", err)
+	}
+
+	bodegaA, err := CreateBodega(dbConn, Bodega{EmpresaID: 99, Codigo: "BOD-A-99", Nombre: "A"})
+	if err != nil {
+		t.Fatalf("create bodega A: %v", err)
+	}
+
+	proveedorID, err := CreateProveedor(dbConn, Proveedor{EmpresaID: 99, Nombre: "Proveedor F12"})
+	if err != nil {
+		t.Fatalf("create proveedor: %v", err)
+	}
+
+	productoID, err := CreateProducto(dbConn, Producto{EmpresaID: 99, Nombre: "Producto F12", ProveedorPrincipalID: proveedorID, Costo: 10, StockMinimo: 4, StockMaximo: 18}, 0, "TEST")
+	if err != nil {
+		t.Fatalf("create producto: %v", err)
+	}
+
+	if _, err := dbConn.Exec(`INSERT INTO inventario_existencias (empresa_id, producto_id, bodega_id, cantidad, estado) VALUES (99, ?, ?, 1, 'activo')`, productoID, bodegaA); err != nil {
+		t.Fatalf("insert existencia: %v", err)
+	}
+	if _, err := dbConn.Exec(`INSERT INTO inventario_movimientos (
+		empresa_id, producto_id, bodega_origen_id, bodega_destino_id, tipo, cantidad, costo_unitario, referencia, fecha_movimiento, estado
+	) VALUES (99, ?, ?, NULL, 'salida', 6, 10, 'F12-1', datetime('now','-1 day'), 'activo')`, productoID, bodegaA); err != nil {
+		t.Fatalf("insert salida: %v", err)
+	}
+
+	emitida, err := EmitirOrdenCompraDesdePlanReposicionBorrador(dbConn, 99, proveedorID, bodegaA, 7, true, "", "2026-04", "COP", "tester@local", "emision fase 11")
+	if err != nil {
+		t.Fatalf("emitir orden desde borrador: %v", err)
+	}
+
+	recepcion, err := ActualizarEstadoOrdenCompraDesdeReposicion(dbConn, 99, proveedorID, emitida.DocumentoCodigo, "recepcionar_compra", "", "2026-04", "recepcion fase12", "tester")
+	if err != nil {
+		t.Fatalf("recepcionar compra: %v", err)
+	}
+	if recepcion.EstadoNuevo != "recepcionada" {
+		t.Fatalf("estado nuevo recepcion inesperado: %q", recepcion.EstadoNuevo)
+	}
+	if recepcion.Evento != "compra_recepcionada" {
+		t.Fatalf("evento recepcion inesperado: %q", recepcion.Evento)
+	}
+
+	contabilizada, err := ActualizarEstadoOrdenCompraDesdeReposicion(dbConn, 99, proveedorID, emitida.DocumentoCodigo, "contabilizar_compra", "", "2026-04", "contabilizacion fase12", "tester")
+	if err != nil {
+		t.Fatalf("contabilizar compra: %v", err)
+	}
+	if contabilizada.EstadoNuevo != "contabilizada" {
+		t.Fatalf("estado nuevo contabilizacion inesperado: %q", contabilizada.EstadoNuevo)
+	}
+	if contabilizada.Evento != "compra_contabilizada" {
+		t.Fatalf("evento contabilizacion inesperado: %q", contabilizada.Evento)
+	}
+
+	doc, err := GetEmpresaDocumentoCompraByCodigo(dbConn, 99, "orden_compra", emitida.DocumentoCodigo)
+	if err != nil {
+		t.Fatalf("consultar documento final: %v", err)
+	}
+	if doc.EstadoDocumento != "contabilizada" {
+		t.Fatalf("estado final inesperado: %q", doc.EstadoDocumento)
+	}
+
+	_, err = ActualizarEstadoOrdenCompraDesdeReposicion(dbConn, 99, proveedorID, emitida.DocumentoCodigo, "contabilizar_compra", "", "2026-04", "contabilizacion duplicada", "tester")
+	if err == nil {
+		t.Fatalf("se esperaba error por transicion invalida")
+	}
+	if !strings.Contains(strings.ToLower(err.Error()), "transicion invalida") {
+		t.Fatalf("error inesperado en transicion invalida: %v", err)
 	}
 }

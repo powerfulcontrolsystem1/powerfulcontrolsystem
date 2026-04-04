@@ -18,6 +18,7 @@ function getQueryParam(name) {
     document.getElementById("linkVentas"),
     document.getElementById("linkCarritoCompras"),
     document.getElementById("linkProductos"),
+    document.getElementById("linkCompras"),
     document.getElementById("linkConfiguracion"),
     document.getElementById("linkUsuarios"),
     document.getElementById("linkAuditoria"),
@@ -40,6 +41,7 @@ function getQueryParam(name) {
 
   var permModuleVentas = "ventas";
   var permModuleInventario = "inventario";
+  var permModuleCompras = "compras";
   var permModuleFinanzas = "finanzas";
   var permModuleClientes = "clientes";
   var permModuleFacturacion = "facturacion";
@@ -50,6 +52,7 @@ function getQueryParam(name) {
     linkVentas: { module: permModuleVentas, action: permActionRead },
     linkCarritoCompras: { module: permModuleVentas, action: permActionCreate },
     linkProductos: { module: permModuleInventario, action: permActionCreate },
+    linkCompras: { module: permModuleCompras, action: permActionCreate },
     linkConfiguracion: { module: permModuleSeguridad, action: permActionUpdate },
     linkUsuarios: { module: permModuleSeguridad, action: permActionUpdate },
     linkAuditoria: { module: permModuleSeguridad, action: permActionRead },
@@ -210,6 +213,13 @@ function getQueryParam(name) {
         if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles);
         if (normalizedAction === permActionCreate || normalizedAction === permActionUpdate || normalizedAction === "D" || normalizedAction === permActionApprove) {
           return roleIn(normalizedRole, ["admin_empresa", "supervisor_sucursal", "inventario"]);
+        }
+        break;
+
+      case permModuleCompras:
+        if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles);
+        if (normalizedAction === permActionCreate || normalizedAction === permActionUpdate || normalizedAction === "D" || normalizedAction === permActionApprove) {
+          return roleIn(normalizedRole, ["admin_empresa", "supervisor_sucursal", "compras"]);
         }
         break;
 

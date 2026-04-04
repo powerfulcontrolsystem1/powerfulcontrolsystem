@@ -12,6 +12,10 @@ type EmpresaDocumentoFacturacion struct {
 	EmpresaID            int64   `json:"empresa_id"`
 	TipoDocumento        string  `json:"tipo_documento"`
 	DocumentoCodigo      string  `json:"documento_codigo"`
+	NumeroLegal          string  `json:"numero_legal"`
+	CodigoValidacion     string  `json:"codigo_validacion"`
+	PaisCodigo           string  `json:"pais_codigo"`
+	AmbienteFE           string  `json:"ambiente_fe"`
 	EstadoDocumento      string  `json:"estado_documento"`
 	EstadoAnterior       string  `json:"estado_anterior"`
 	EventoUltimo         string  `json:"evento_ultimo"`
@@ -63,6 +67,10 @@ func EnsureEmpresaDocumentosTransaccionalesSchema(dbConn *sql.DB) error {
 			periodo_contable TEXT,
 			monto_total REAL DEFAULT 0,
 			moneda TEXT DEFAULT 'COP',
+			numero_legal TEXT,
+			codigo_validacion TEXT,
+			pais_codigo TEXT,
+			ambiente_fe TEXT,
 			fecha_documento TEXT,
 			entidad_relacionada_id INTEGER,
 			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
@@ -129,6 +137,18 @@ func EnsureEmpresaDocumentosTransaccionalesSchema(dbConn *sql.DB) error {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_facturacion_documentos", "moneda", "TEXT DEFAULT 'COP'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_facturacion_documentos", "numero_legal", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_facturacion_documentos", "codigo_validacion", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_facturacion_documentos", "pais_codigo", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_facturacion_documentos", "ambiente_fe", "TEXT"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_facturacion_documentos", "fecha_documento", "TEXT"); err != nil {
@@ -219,6 +239,10 @@ func GetEmpresaDocumentoFacturacionByCodigo(dbConn *sql.DB, empresaID int64, tip
 		empresa_id,
 		COALESCE(tipo_documento, 'factura_electronica'),
 		COALESCE(documento_codigo, ''),
+		COALESCE(numero_legal, ''),
+		COALESCE(codigo_validacion, ''),
+		COALESCE(pais_codigo, ''),
+		COALESCE(ambiente_fe, ''),
 		COALESCE(estado_documento, 'borrador'),
 		COALESCE(estado_anterior, ''),
 		COALESCE(evento_ultimo, ''),
@@ -239,6 +263,10 @@ func GetEmpresaDocumentoFacturacionByCodigo(dbConn *sql.DB, empresaID int64, tip
 		&item.EmpresaID,
 		&item.TipoDocumento,
 		&item.DocumentoCodigo,
+		&item.NumeroLegal,
+		&item.CodigoValidacion,
+		&item.PaisCodigo,
+		&item.AmbienteFE,
 		&item.EstadoDocumento,
 		&item.EstadoAnterior,
 		&item.EventoUltimo,
@@ -277,6 +305,10 @@ func UpsertEmpresaDocumentoFacturacion(dbConn *sql.DB, payload EmpresaDocumentoF
 		payload.PeriodoContable = normalizePeriodoEventoContable(payload.FechaDocumento)
 	}
 	payload.Moneda = normalizeDocumentoTransaccionalMoneda(payload.Moneda)
+	payload.NumeroLegal = strings.ToUpper(strings.TrimSpace(payload.NumeroLegal))
+	payload.CodigoValidacion = strings.ToUpper(strings.TrimSpace(payload.CodigoValidacion))
+	payload.PaisCodigo = strings.ToUpper(strings.TrimSpace(payload.PaisCodigo))
+	payload.AmbienteFE = strings.ToLower(strings.TrimSpace(payload.AmbienteFE))
 	payload.FechaDocumento = strings.TrimSpace(payload.FechaDocumento)
 	payload.UsuarioCreador = strings.TrimSpace(payload.UsuarioCreador)
 	payload.Estado = strings.TrimSpace(strings.ToLower(payload.Estado))
@@ -298,6 +330,10 @@ func UpsertEmpresaDocumentoFacturacion(dbConn *sql.DB, payload EmpresaDocumentoF
 		periodo_contable,
 		monto_total,
 		moneda,
+		numero_legal,
+		codigo_validacion,
+		pais_codigo,
+		ambiente_fe,
 		fecha_documento,
 		entidad_relacionada_id,
 		fecha_creacion,
@@ -305,7 +341,7 @@ func UpsertEmpresaDocumentoFacturacion(dbConn *sql.DB, payload EmpresaDocumentoF
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)
 	ON CONFLICT(empresa_id, tipo_documento, documento_codigo) DO UPDATE SET
 		estado_documento = excluded.estado_documento,
 		estado_anterior = excluded.estado_anterior,
@@ -313,6 +349,10 @@ func UpsertEmpresaDocumentoFacturacion(dbConn *sql.DB, payload EmpresaDocumentoF
 		periodo_contable = CASE WHEN excluded.periodo_contable <> '' THEN excluded.periodo_contable ELSE empresa_facturacion_documentos.periodo_contable END,
 		monto_total = CASE WHEN excluded.monto_total > 0 THEN excluded.monto_total ELSE empresa_facturacion_documentos.monto_total END,
 		moneda = CASE WHEN excluded.moneda <> '' THEN excluded.moneda ELSE empresa_facturacion_documentos.moneda END,
+		numero_legal = CASE WHEN excluded.numero_legal <> '' THEN excluded.numero_legal ELSE empresa_facturacion_documentos.numero_legal END,
+		codigo_validacion = CASE WHEN excluded.codigo_validacion <> '' THEN excluded.codigo_validacion ELSE empresa_facturacion_documentos.codigo_validacion END,
+		pais_codigo = CASE WHEN excluded.pais_codigo <> '' THEN excluded.pais_codigo ELSE empresa_facturacion_documentos.pais_codigo END,
+		ambiente_fe = CASE WHEN excluded.ambiente_fe <> '' THEN excluded.ambiente_fe ELSE empresa_facturacion_documentos.ambiente_fe END,
 		fecha_documento = CASE WHEN excluded.fecha_documento <> '' THEN excluded.fecha_documento ELSE empresa_facturacion_documentos.fecha_documento END,
 		entidad_relacionada_id = CASE WHEN excluded.entidad_relacionada_id > 0 THEN excluded.entidad_relacionada_id ELSE empresa_facturacion_documentos.entidad_relacionada_id END,
 		fecha_actualizacion = datetime('now','localtime'),
@@ -328,6 +368,10 @@ func UpsertEmpresaDocumentoFacturacion(dbConn *sql.DB, payload EmpresaDocumentoF
 		payload.PeriodoContable,
 		payload.MontoTotal,
 		payload.Moneda,
+		payload.NumeroLegal,
+		payload.CodigoValidacion,
+		payload.PaisCodigo,
+		payload.AmbienteFE,
 		payload.FechaDocumento,
 		payload.EntidadRelacionadaID,
 		payload.UsuarioCreador,
@@ -483,6 +527,137 @@ func UpsertEmpresaDocumentoCompra(dbConn *sql.DB, payload EmpresaDocumentoCompra
 	}
 
 	return GetEmpresaDocumentoCompraByCodigo(dbConn, payload.EmpresaID, payload.TipoDocumento, payload.DocumentoCodigo)
+}
+
+// ListEmpresaDocumentosCompraByEmpresa lista documentos de compras por filtros operativos.
+func ListEmpresaDocumentosCompraByEmpresa(dbConn *sql.DB, empresaID int64, tipoDocumento string, proveedorID int64, estadoDocumento string, includeInactive bool, q string, limit int, offset int) ([]EmpresaDocumentoCompra, error) {
+	if empresaID <= 0 {
+		return nil, fmt.Errorf("empresa_id es obligatorio")
+	}
+
+	if limit <= 0 || limit > 500 {
+		limit = 100
+	}
+	if offset < 0 {
+		offset = 0
+	}
+
+	tipo := normalizeDocumentoTransaccionalTipo(tipoDocumento, "")
+	estadoDoc := normalizeDocumentoTransaccionalEstado(estadoDocumento, "")
+	busqueda := strings.ToUpper(strings.TrimSpace(q))
+
+	query := `SELECT
+		id,
+		empresa_id,
+		COALESCE(proveedor_id, 0),
+		COALESCE(tipo_documento, 'orden_compra'),
+		COALESCE(documento_codigo, ''),
+		COALESCE(estado_documento, 'borrador'),
+		COALESCE(estado_anterior, ''),
+		COALESCE(evento_ultimo, ''),
+		COALESCE(periodo_contable, ''),
+		COALESCE(monto_total, 0),
+		COALESCE(moneda, 'COP'),
+		COALESCE(fecha_documento, ''),
+		COALESCE(entidad_relacionada_id, 0),
+		COALESCE(fecha_creacion, ''),
+		COALESCE(fecha_actualizacion, ''),
+		COALESCE(usuario_creador, ''),
+		COALESCE(estado, 'activo'),
+		COALESCE(observaciones, '')
+	FROM empresa_compras_documentos
+	WHERE empresa_id = ?`
+	args := []interface{}{empresaID}
+
+	if tipo != "" {
+		query += ` AND tipo_documento = ?`
+		args = append(args, tipo)
+	}
+	if proveedorID > 0 {
+		query += ` AND proveedor_id = ?`
+		args = append(args, proveedorID)
+	}
+	if estadoDoc != "" {
+		query += ` AND estado_documento = ?`
+		args = append(args, estadoDoc)
+	}
+	if !includeInactive {
+		query += ` AND COALESCE(estado, 'activo') = 'activo'`
+	}
+	if busqueda != "" {
+		query += ` AND (documento_codigo LIKE ? OR observaciones LIKE ?)`
+		like := "%" + busqueda + "%"
+		args = append(args, like, like)
+	}
+
+	query += `
+	ORDER BY datetime(COALESCE(NULLIF(fecha_actualizacion, ''), fecha_creacion)) DESC, id DESC
+	LIMIT ? OFFSET ?`
+	args = append(args, limit, offset)
+
+	rows, err := dbConn.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]EmpresaDocumentoCompra, 0)
+	for rows.Next() {
+		var item EmpresaDocumentoCompra
+		if err := rows.Scan(
+			&item.ID,
+			&item.EmpresaID,
+			&item.ProveedorID,
+			&item.TipoDocumento,
+			&item.DocumentoCodigo,
+			&item.EstadoDocumento,
+			&item.EstadoAnterior,
+			&item.EventoUltimo,
+			&item.PeriodoContable,
+			&item.MontoTotal,
+			&item.Moneda,
+			&item.FechaDocumento,
+			&item.EntidadRelacionadaID,
+			&item.FechaCreacion,
+			&item.FechaActualizacion,
+			&item.UsuarioCreador,
+			&item.Estado,
+			&item.Observaciones,
+		); err != nil {
+			return nil, err
+		}
+		out = append(out, item)
+	}
+
+	return out, rows.Err()
+}
+
+// SetEmpresaDocumentoCompraEstadoByCodigo actualiza estado activo/inactivo del documento de compras.
+func SetEmpresaDocumentoCompraEstadoByCodigo(dbConn *sql.DB, empresaID int64, tipoDocumento, documentoCodigo, estado string) error {
+	if empresaID <= 0 {
+		return fmt.Errorf("empresa_id es obligatorio")
+	}
+	tipo := normalizeDocumentoTransaccionalTipo(tipoDocumento, "orden_compra")
+	codigo := normalizeDocumentoTransaccionalCodigo(documentoCodigo)
+	if codigo == "" {
+		return fmt.Errorf("documento_codigo es obligatorio")
+	}
+	estadoNorm := strings.ToLower(strings.TrimSpace(estado))
+	if estadoNorm == "" {
+		estadoNorm = "activo"
+	}
+
+	res, err := dbConn.Exec(`UPDATE empresa_compras_documentos
+		SET estado = ?, fecha_actualizacion = datetime('now','localtime')
+		WHERE empresa_id = ? AND tipo_documento = ? AND documento_codigo = ?`, estadoNorm, empresaID, tipo, codigo)
+	if err != nil {
+		return err
+	}
+	affected, _ := res.RowsAffected()
+	if affected <= 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }
 
 func normalizeDocumentoTransaccionalTipo(v, fallback string) string {

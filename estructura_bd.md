@@ -1,6 +1,6 @@
 # Estructura de Base de Datos
 
-Version: 2026-04-04.8
+Version: 2026-04-04.10
 Ultima actualizacion: 2026-04-04
 
 Este documento consolida la estructura activa de SQLite para el proyecto.
@@ -40,6 +40,7 @@ Todas las tablas operativas usan como base los campos estandar:
   - costo, precio, impuesto_porcentaje, stock_minimo, stock_maximo, imagen_url
 - proveedores:
   - empresa_id, codigo, nombre, documento, contacto, telefono, email, direccion
+  - catalogo_referencia, precio_base_referencial, descuento_porcentaje, plazo_pago_dias, condicion_entrega
 - servicios:
   - empresa_id, codigo, nombre, descripcion, categoria, duracion_minutos
   - costo_referencial, precio, impuesto_porcentaje, imagen_url
@@ -147,6 +148,7 @@ Todas las tablas operativas usan como base los campos estandar:
   - empresa_id, tipo_documento, documento_codigo
   - estado_documento, estado_anterior, evento_ultimo
   - periodo_contable, monto_total, moneda
+  - numero_legal, codigo_validacion, pais_codigo, ambiente_fe
   - fecha_documento, entidad_relacionada_id
   - UNIQUE(empresa_id, tipo_documento, documento_codigo)
 - empresa_compras_documentos:
@@ -282,6 +284,7 @@ Todas las tablas operativas usan como base los campos estandar:
 - roles_de_usuario.id -> tipos_de_usuario.rol_id
 
 ## 4) Historial resumido
+- 2026-04-04: se amplía `proveedores` con campos comerciales (`catalogo_referencia`, `precio_base_referencial`, `descuento_porcentaje`, `plazo_pago_dias`, `condicion_entrega`) para gestionar catálogo, precios y condiciones por empresa.
 - 2026-04-04: se agrega `empresa_auditoria_eventos` para trazabilidad de acciones criticas por `empresa_id`, modulo/accion/recurso, resultado HTTP y metadatos (`request_id`, IP, user-agent), con retencion configurable y purga.
 - 2026-04-04: se agrega `empresa_asientos_contables` como persistencia canonica de asientos por evento procesado, con idempotencia por `hash_idempotencia` y referencia a `evento_contable_id`.
 - 2026-04-04: se amplía `empresa_eventos_contables` con metadatos de procesamiento (`intentos_procesamiento`, `fecha_ultimo_intento`, `error_procesamiento`, `asiento_contable_id`) para trazabilidad de lotes y reintentos.

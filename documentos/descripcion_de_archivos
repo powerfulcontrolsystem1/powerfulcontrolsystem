@@ -1,5 +1,459 @@
 Descripcion de archivos del proyecto
 
+Actualizacion 2026-04-04: Tutorial por modulo en centro de ayuda
+
+- `web/ayuda/ayuda.html`:
+	- Se amplía con sección de tutorial por cada módulo del sistema (administración global y panel de empresa).
+	- Incluye pasos operativos y enlaces directos por pantalla para facilitar capacitación y soporte.
+
+Actualizacion 2026-04-04: Limpieza de archivos temporales/no usados
+
+- Archivos eliminados por limpieza operativa:
+	- `backend/tmp_api.json` (temporal de pruebas, sin uso en ejecucion).
+	- `backend/tmp_config.html` (temporal de pruebas, sin uso en ejecucion).
+	- `backend/server.err` (artefacto de log de ejecucion local; se regenera automaticamente).
+	- `backend/server.run.err` (artefacto de log de ejecucion local; se regenera automaticamente).
+	- `backend/db/empresas.db.20260326-174525.bak` (backup local historico, no usado por runtime).
+	- `backend/db/superadministrador.db.20260326-174324.bak` (backup local historico, no usado por runtime).
+	- `backend/db/superadministrador.db.20260326-174525.bak` (backup local historico, no usado por runtime).
+
+Nota:
+- Esta limpieza no afecta la ejecucion real del sistema. Las validaciones backend completas posteriores a la limpieza se ejecutaron en verde.
+
+Actualizacion 2026-04-04: Punto 14 (operacion continua con KPI y roadmap trimestral)
+
+- documentos/punto_14_operacion_continua.md (nuevo):
+	- Marco operativo de mejora continua con cadencia de seguimiento.
+	- KPI de gobierno operativo y flujo minimo obligatorio de ejecucion.
+
+- documentos/roadmap_trimestral_pos_multiempresa.md (nuevo):
+	- Roadmap trimestral 2026 (Q2, Q3, Q4) con focos, entregables e indicadores de salida.
+
+- scripts/generar_reporte_operacion_continua.ps1 (nuevo):
+	- Genera reporte consolidado de operacion continua desde el estado del plan maestro.
+	- Integra evidencia del punto 13 y registra bitacora en `scripts/logs/`.
+
+- documentos/punto_14_operacion_continua_reporte.md (nuevo, generado por script):
+	- Reporte operativo trimestral con KPI de gobierno, pendientes detectados y acciones 30/60/90 dias.
+
+- documentos/plan_maestro_pos_multiempresa_14_puntos.md:
+	- Punto 14 actualizado a `en curso` con entregables y validacion ejecutada.
+
+
+Actualizacion 2026-04-04: Punto 13 (calidad, UAT y despliegue controlado)
+
+- scripts/validar_punto_13.ps1 (nuevo):
+	- Script operativo para validar gate tecnico del punto 13.
+	- Ejecuta pruebas backend productivas y suite completa.
+	- Genera log tecnico en `scripts/logs/punto13-validacion-*.log`.
+	- Genera reporte consolidado en `documentos/punto_13_validacion_integral_resultado.md`.
+
+- documentos/punto_13_calidad_uat_despliegue.md (nuevo):
+	- Guia formal del punto 13 con:
+		- flujo de validacion tecnica,
+		- matriz UAT minima,
+		- criterios de salida controlada,
+		- regla de gates previos a despliegue.
+
+- documentos/punto_13_validacion_integral_resultado.md (nuevo, generado por script):
+	- Evidencia de la ultima ejecucion del gate tecnico con fecha, comandos y estado.
+
+- documentos/release_checklist.md:
+	- Incluye gate del punto 13 con comando de validacion y verificacion de evidencia.
+
+- documentos/plan_maestro_pos_multiempresa_14_puntos.md:
+	- Actualiza estado del punto 13 a `en curso` y documenta avance con validacion ejecutada.
+
+
+Actualizacion 2026-04-04: Punto 8 (facturacion electronica) - refuerzo de pruebas de cumplimiento legal
+
+- backend/db/facturacion_electronica_test.go (nuevo):
+	- Agrega cobertura directa para `PrepareFacturacionDocumentoLegal` con escenarios de:
+		- emision legal exitosa y avance de consecutivo,
+		- rechazo por resolucion vencida,
+		- rechazo por configuracion FE inactiva,
+		- rechazo por agotamiento de rango de consecutivos.
+
+- documentos/plan_maestro_pos_multiempresa_14_puntos.md:
+	- Amplia la seccion del Punto 8 con evidencia adicional de cobertura en capa DB.
+
+- documentos/descripcion_de_archivos:
+	- Registra esta actualizacion.
+
+- documentos/historial_de_cambios:
+	- Registra trazabilidad y validacion de la iteracion.
+
+- CHANGELOG.md:
+	- Registra el refuerzo de cobertura del Punto 8.
+
+Actualizacion 2026-04-04: Punto 9 (modulo de compras dedicado) - orden, recepcion y contabilizacion
+
+- backend/db/documentos_transaccionales.go:
+	- Agrega `ListEmpresaDocumentosCompraByEmpresa` para listado de documentos de compra con filtros por tipo, proveedor, estado documental, busqueda y paginacion.
+	- Agrega `SetEmpresaDocumentoCompraEstadoByCodigo` para activacion/desactivacion logica por `empresa_id + tipo_documento + documento_codigo`.
+
+- backend/handlers/compras.go (nuevo):
+	- Implementa `EmpresaComprasDocumentosHandler` como endpoint dedicado para el ciclo documental de compras.
+	- Soporta:
+		- `GET`: listado de documentos.
+		- `POST`: creacion y emision inicial.
+		- `PUT`: transiciones (`emitir_orden`, `recepcionar_compra`, `contabilizar_compra`) y activar/desactivar.
+		- `DELETE`: eliminacion logica (estado `inactivo`).
+	- Integra emision de eventos contables del modulo compras con payload de trazabilidad.
+
+- backend/main.go:
+	- Registra la ruta protegida `/api/empresa/compras/documentos` usando `WithEmpresaComprasPermissions`.
+
+- backend/handlers/compras_documentos_test.go (nuevo):
+	- Pruebas del handler dedicado de compras:
+		- flujo completo del ciclo documental,
+		- gestion de activacion/inactivacion,
+		- rechazo de transicion invalida con `409`.
+
+- backend/db/documentos_transaccionales_test.go:
+	- Agrega `TestEmpresaDocumentoCompraListAndSetEstadoByCodigo` para validar listado y cambio de estado por codigo.
+
+- web/administrar_empresa/compras.html (nuevo):
+	- Nueva pagina del modulo de compras con:
+		- formulario de creacion/emision de documentos,
+		- filtros de consulta,
+		- tabla con acciones de ciclo documental y activacion/inactivacion.
+
+- web/administrar_empresa.html:
+	- Agrega acceso lateral `Compras` hacia la nueva vista dedicada.
+
+- web/js/administrar_empresa.js:
+	- Incorpora `linkCompras` al menu administrable.
+	- Agrega reglas de permiso por modulo `compras` para visibilidad de menu por rol.
+
+Actualizacion 2026-04-04: Punto 7 (gestion de proveedores) - catalogo, precios y condiciones
+
+- backend/db/productos.go:
+	- Amplia `Proveedor` con campos comerciales (`catalogo_referencia`, `precio_base_referencial`, `descuento_porcentaje`, `plazo_pago_dias`, `condicion_entrega`).
+	- Amplia migraciones seguras de `proveedores` para nuevas columnas.
+	- Agrega validaciones de rango para precio/descuento/plazo en `CreateProveedor` y `UpdateProveedor`.
+
+- backend/handlers/productos.go:
+	- Valida payload comercial de proveedores en `POST/PUT /api/empresa/proveedores`.
+	- Enriquecimiento del payload de eventos contables de compras con metadata comercial del proveedor.
+
+- web/administrar_empresa/administrar_productos.html:
+	- Amplia formulario de proveedores con campos de catalogo, precio base, descuento, plazo y condicion de entrega.
+	- Amplia visualizacion en tabla para mostrar precio base y condiciones comerciales por proveedor.
+	- Agrega validaciones frontend para datos comerciales antes de enviar al backend.
+
+- backend/db/productos_categorias_test.go:
+	- Agrega prueba `TestProveedorCRUDIncluyeCatalogoPreciosYCondiciones` para validar persistencia y reglas de negocio.
+
+- backend/handlers/eventos_contables_modulos_test.go:
+	- Extiende prueba de alta de proveedor con campos comerciales.
+	- Agrega prueba `TestEmpresaProveedoresRechazaCamposComercialesInvalidos`.
+
+- documentos/plan_maestro_pos_multiempresa_14_puntos.md:
+	- Actualiza estado del Punto 7 a `en curso` y registra alcance tecnico/validaciones.
+
+- documentos/descripcion_del_proyecto:
+	- Amplia descripcion del modulo inventario para incluir gestion comercial de proveedores.
+
+- estructura_bd.md:
+	- Version `2026-04-04.9` con nuevos campos de proveedores en inventario.
+
+- documentos/diagramas/estructura_del_codigo.md:
+	- Documenta flujo tecnico de backend/frontend para el Punto 7.
+
+- documentos/descripcion_de_archivos:
+	- Registra esta actualizacion.
+
+- documentos/historial_de_cambios:
+	- Registra trazabilidad y validacion.
+
+- CHANGELOG.md:
+	- Registra el avance funcional del Punto 7.
+
+Actualizacion 2026-04-04: Punto 6 (gestion de clientes) - perfil, historial y segmentacion
+
+- backend/db/clientes.go:
+	- Agrega contratos analiticos `ClientePerfilComercial`, `ClienteCompraHistorial`, `ClienteSegmentacionResumen`.
+	- Agrega funciones `GetClientePerfilComercialByEmpresa`, `GetClienteHistorialComprasByEmpresa`, `GetClientesSegmentacionByEmpresa`.
+
+- backend/handlers/clientes.go:
+	- Extiende `GET /api/empresa/clientes` con acciones:
+		- `action=perfil`,
+		- `action=historial`,
+		- `action=segmentacion|segmentos`.
+	- Agrega helper `parseClienteIDFromQuery`.
+
+- web/administrar_empresa/administrar_clientes.html:
+	- Agrega bloque `Segmentacion de clientes (punto 6)`.
+	- Agrega bloque `Perfil e historial del cliente`.
+	- Agrega accion `Perfil` por fila y carga asincrona de perfil/historial.
+
+- backend/db/clientes_test.go:
+	- Nuevo archivo de pruebas DB para validar perfil comercial, historial de compras y segmentacion por cliente.
+
+- backend/handlers/clientes_test.go:
+	- Nuevo archivo de pruebas de handler para validar `action=perfil`, `action=historial`, `action=segmentacion` y casos de error.
+
+- documentos/plan_maestro_pos_multiempresa_14_puntos.md:
+	- Actualiza estado del Punto 6 y registra el avance tecnico/validaciones.
+
+- documentos/diagramas/estructura_del_codigo.md:
+	- Documenta el flujo tecnico de perfil/historial/segmentacion de clientes en backend/frontend.
+
+- documentos/descripcion_del_proyecto:
+	- Actualiza descripcion del modulo clientes con capacidades analiticas operativas.
+
+- documentos/descripcion_de_archivos:
+	- Registra esta actualizacion.
+
+- documentos/historial_de_cambios:
+	- Registra trazabilidad y validacion.
+
+- CHANGELOG.md:
+	- Registra el hito del Punto 6 en gestion de clientes.
+
+Actualizacion 2026-04-04: Punto 5 (continuacion preventiva-compras ciclo documental) — recepcion y contabilizacion desde reposicion
+
+- backend/db/productos.go:
+	- Agrega `InventarioPlanReposicionOrdenEstadoActualizado`.
+	- Agrega `ActualizarEstadoOrdenCompraDesdeReposicion` para transiciones de la OC emitida (`recepcionar_compra`, `contabilizar_compra`).
+
+- backend/handlers/productos.go:
+	- Agrega endpoint `POST /api/empresa/compras/plan_reposicion/actualizar_estado` con validacion operacional/documental.
+	- Registra eventos contables `compra_recepcionada` y `compra_contabilizada`.
+
+- backend/main.go:
+	- Registra la ruta protegida `/api/empresa/compras/plan_reposicion/actualizar_estado` bajo `WithEmpresaComprasPermissions`.
+
+- backend/handlers/productos_categorias_test.go:
+	- Agrega prueba del contrato HTTP para ciclo documental desde reposicion.
+
+- backend/db/productos_categorias_test.go:
+	- Agrega prueba de transiciones de estado validas/invalidas en capa DB.
+
+- web/administrar_empresa/administrar_productos.html:
+	- Amplia el bloque del borrador a `fases 10-12`.
+	- Agrega acciones `Recepcionar orden` y `Contabilizar orden`.
+	- Agrega contexto de estado para seguimiento de la OC emitida.
+
+- documentos/plan_maestro_pos_multiempresa_14_puntos.md:
+	- Registra la fase 12 del Punto 5 (ciclo documental de compras desde reposicion).
+
+- documentos/diagramas/estructura_del_codigo.md:
+	- Documenta el nuevo flujo backend/frontend de recepcion y contabilizacion desde el documento emitido.
+
+- documentos/descripcion_del_proyecto:
+	- Actualiza el alcance funcional de inventario incluyendo el ciclo documental de la OC emitida.
+
+- documentos/descripcion_de_archivos:
+	- Registra esta actualizacion.
+
+- documentos/historial_de_cambios:
+	- Registra trazabilidad y validacion.
+
+- CHANGELOG.md:
+	- Registra el hito de continuidad preventiva-compras ciclo documental del Punto 5.
+
+Actualizacion 2026-04-04: Punto 5 (continuacion preventiva-compras emitible) — emision de orden desde borrador
+
+- backend/db/productos.go:
+	- Agrega `InventarioPlanReposicionOrdenEmitida`.
+	- Agrega `EmitirOrdenCompraDesdePlanReposicionBorrador` para emitir una OC desde sugerencias de reposicion y persistirla en `empresa_compras_documentos`.
+
+- backend/handlers/productos.go:
+	- Agrega endpoint `POST /api/empresa/compras/plan_reposicion/emitir_orden` con validaciones operativas y documentales.
+	- Registra evento contable `orden_compra_emitida` tras la emision.
+
+- backend/main.go:
+	- Registra la ruta protegida `/api/empresa/compras/plan_reposicion/emitir_orden` bajo `WithEmpresaComprasPermissions`.
+
+- backend/handlers/productos_categorias_test.go:
+	- Agrega prueba del contrato HTTP de emision desde borrador.
+
+- backend/db/productos_categorias_test.go:
+	- Agrega prueba de persistencia documental al emitir desde borrador.
+
+- web/administrar_empresa/administrar_productos.html:
+	- Agrega accion `Emitir orden` en el bloque de borrador (fase 10).
+	- Consume el endpoint de compras para materializar la orden y refresca paneles de plan/consolidado.
+
+- documentos/plan_maestro_pos_multiempresa_14_puntos.md:
+	- Registra la fase 11 del Punto 5 (continuacion preventiva-compras emitible).
+
+- documentos/diagramas/estructura_del_codigo.md:
+	- Documenta el flujo backend/frontend de emision desde borrador.
+
+- documentos/descripcion_del_proyecto:
+	- Actualiza el alcance funcional de inventario incluyendo emision de orden desde borrador.
+
+- documentos/descripcion_de_archivos:
+	- Registra esta actualizacion.
+
+- documentos/historial_de_cambios:
+	- Registra trazabilidad y validacion.
+
+- CHANGELOG.md:
+	- Registra el hito de continuidad preventiva-compras emitible del Punto 5.
+
+Actualizacion 2026-04-04: Punto 5 (continuacion preventiva-compras ordenable) — borrador de orden de compra por proveedor
+
+- backend/db/productos.go:
+	- Agrega `InventarioPlanReposicionBorradorItem` y `InventarioPlanReposicionBorradorCompra`.
+	- Agrega `GetInventarioPlanReposicionBorradorByEmpresa` para generar borrador de orden por proveedor con detalle y totales.
+
+- backend/handlers/productos.go:
+	- Agrega endpoint `GET /api/empresa/inventario/plan_reposicion_borrador` con validaciones de entrada.
+
+- backend/main.go:
+	- Registra la ruta protegida `/api/empresa/inventario/plan_reposicion_borrador`.
+
+- backend/handlers/productos_categorias_test.go:
+	- Agrega prueba del contrato HTTP de borrador por proveedor.
+
+- backend/db/productos_categorias_test.go:
+	- Agrega prueba de consolidado del borrador en capa DB.
+
+- web/administrar_empresa/administrar_productos.html:
+	- Agrega bloque `Borrador de orden de compra por proveedor (fase 10)`.
+	- Agrega accion `Borrador OC` desde el consolidado de proveedores (fase 9).
+	- Agrega accion `Limpiar borrador` para reiniciar la vista.
+
+- documentos/plan_maestro_pos_multiempresa_14_puntos.md:
+	- Registra la fase 10 del Punto 5 (continuacion preventiva-compras ordenable).
+
+- documentos/diagramas/estructura_del_codigo.md:
+	- Documenta el flujo backend/frontend del borrador por proveedor.
+
+- documentos/descripcion_del_proyecto:
+	- Actualiza el alcance funcional de inventario incluyendo borrador de orden de compra por proveedor.
+
+- documentos/descripcion_de_archivos:
+	- Registra esta actualizacion.
+
+- documentos/historial_de_cambios:
+	- Registra trazabilidad y validacion.
+
+- CHANGELOG.md:
+	- Registra el hito de continuidad preventiva-compras ordenable del Punto 5.
+
+Actualizacion 2026-04-04: Punto 5 (continuacion preventiva-compras consolidada) — consolidado de compra por proveedor
+
+- backend/db/productos.go:
+	- Agrega `InventarioPlanReposicionProveedorResumen` y `GetInventarioPlanReposicionResumenByEmpresa` para consolidar sugerencias por proveedor.
+
+- backend/handlers/productos.go:
+	- Agrega endpoint `GET /api/empresa/inventario/plan_reposicion_resumen` con validaciones operativas.
+
+- backend/main.go:
+	- Registra la ruta protegida `/api/empresa/inventario/plan_reposicion_resumen`.
+
+- backend/handlers/productos_categorias_test.go:
+	- Agrega prueba del contrato HTTP del resumen por proveedor.
+
+- backend/db/productos_categorias_test.go:
+	- Agrega prueba de agrupacion por proveedor en capa DB.
+
+- web/administrar_empresa/administrar_productos.html:
+	- Agrega tabla `Consolidado de compra por proveedor (fase 9)`.
+	- Permite filtrar la tabla del plan de reposicion por proveedor y limpiar filtro con `Ver todos`.
+
+- documentos/plan_maestro_pos_multiempresa_14_puntos.md:
+	- Registra la fase 9 del Punto 5 (continuacion preventiva-compras consolidada).
+
+- documentos/diagramas/estructura_del_codigo.md:
+	- Documenta el flujo backend/frontend del consolidado por proveedor.
+
+- documentos/descripcion_del_proyecto:
+	- Actualiza el alcance funcional de inventario incluyendo consolidado de compra por proveedor.
+
+- documentos/descripcion_de_archivos:
+	- Registra esta actualizacion.
+
+- documentos/historial_de_cambios:
+	- Registra trazabilidad y validacion.
+
+- CHANGELOG.md:
+	- Registra el hito de continuidad preventiva-compras consolidada del Punto 5.
+
+Actualizacion 2026-04-04: Punto 5 (continuacion preventiva-compras) — plan de reposicion por proveedor
+
+- backend/db/productos.go:
+	- Agrega `InventarioPlanReposicionItem` y `GetInventarioPlanReposicionByEmpresa` para consolidar sugerencias preventivas por proveedor con costo estimado.
+
+- backend/handlers/productos.go:
+	- Agrega endpoint `GET /api/empresa/inventario/plan_reposicion` con validaciones operativas.
+
+- backend/main.go:
+	- Registra la ruta protegida `/api/empresa/inventario/plan_reposicion`.
+
+- backend/handlers/productos_categorias_test.go:
+	- Agrega prueba del contrato HTTP de plan de reposicion.
+
+- backend/db/productos_categorias_test.go:
+	- Agrega prueba de consolidado por proveedor/costo en capa DB.
+
+- web/administrar_empresa/administrar_productos.html:
+	- Agrega tabla `Plan de reposicion por proveedor (fase 8)` sincronizada con filtros del kardex.
+	- Muestra costo estimado por item y resumen de costo total.
+	- Agrega accion `Preparar` para preconfigurar reposicion preventiva en ajuste de inventario.
+
+- documentos/plan_maestro_pos_multiempresa_14_puntos.md:
+	- Registra la fase 8 del Punto 5 (continuacion preventiva-compras).
+
+- documentos/diagramas/estructura_del_codigo.md:
+	- Documenta el flujo backend/frontend del plan de reposicion por proveedor.
+
+- documentos/descripcion_del_proyecto:
+	- Actualiza el alcance funcional de inventario incluyendo plan de reposicion con costo estimado.
+
+- documentos/descripcion_de_archivos:
+	- Registra esta actualizacion.
+
+- documentos/historial_de_cambios:
+	- Registra trazabilidad y validacion.
+
+- CHANGELOG.md:
+	- Registra el hito de continuidad preventiva-compras del Punto 5.
+
+Actualizacion 2026-04-04: Punto 5 (continuacion preventiva) — proyeccion de quiebre
+
+- backend/db/productos.go:
+	- Agrega `InventarioProyeccionQuiebre` y `GetInventarioProyeccionQuiebreByEmpresa` para estimar cobertura y riesgo por producto/bodega.
+
+- backend/handlers/productos.go:
+	- Agrega endpoint `GET /api/empresa/inventario/proyeccion_quiebre` con validaciones operativas.
+
+- backend/main.go:
+	- Registra la ruta protegida `/api/empresa/inventario/proyeccion_quiebre`.
+
+- backend/handlers/productos_categorias_test.go:
+	- Agrega prueba del contrato HTTP de proyeccion preventiva.
+
+- backend/db/productos_categorias_test.go:
+	- Agrega prueba de priorizacion por riesgo en capa DB.
+
+- web/administrar_empresa/administrar_productos.html:
+	- Agrega tabla `Proyeccion de quiebre (preventiva)` sincronizada con filtros del kardex.
+	- Agrega accion `Preparar` para preconfigurar reposicion preventiva en ajuste de inventario.
+
+- documentos/plan_maestro_pos_multiempresa_14_puntos.md:
+	- Registra la fase 7 del Punto 5 (continuacion preventiva).
+
+- documentos/diagramas/estructura_del_codigo.md:
+	- Documenta el flujo backend/frontend de proyeccion preventiva.
+
+- documentos/descripcion_del_proyecto:
+	- Actualiza el alcance funcional de inventario incluyendo proyeccion preventiva de quiebre.
+
+- documentos/descripcion_de_archivos:
+	- Registra esta actualizacion.
+
+- documentos/historial_de_cambios:
+	- Registra trazabilidad y validacion.
+
+- CHANGELOG.md:
+	- Registra el hito de continuidad preventiva del Punto 5.
+
 Actualizacion 2026-04-04: Punto 5 (continuacion operativa-analitica) — balance por bodega
 
 - backend/db/productos.go:
@@ -2268,3 +2722,19 @@ API añadida:
 - `/super/api/security/ports`: Endpoint que intenta conexiones TCP a los puertos solicitados y devuelve JSON con `puerto`, `estado` ("abierto"/"cerrado"), `ip` y `firewall` (campo informativo, no inspección de reglas de firewall en este entorno).
 
 Nota: Estos archivos fueron generados localmente como placeholders SVG para entornos offline o cuando no se dispone de logos oficiales. Reemplazarlos por logos reales es recomendado en producción.
+
+Actualizacion 2026-04-04: Punto 8 - cumplimiento normativo en emision de facturacion
+- `backend/db/facturacion_electronica.go`:
+	- agrega `PrepareFacturacionDocumentoLegal` para validar datos fiscales, vigencia de resolucion y consecutivo legal por empresa/pais.
+	- genera `numero_legal` y `codigo_validacion` para trazabilidad de emision.
+- `backend/db/documentos_transaccionales.go`:
+	- amplia `EmpresaDocumentoFacturacion` y tabla `empresa_facturacion_documentos` con `numero_legal`, `codigo_validacion`, `pais_codigo`, `ambiente_fe`.
+	- actualiza lectura y upsert para persistir metadata normativa.
+- `backend/handlers/facturacion_electronica.go`:
+	- endurece `action=emitir` con control de cumplimiento legal (respuesta `422` si falta configuracion).
+	- devuelve bloque `cumplimiento_normativo` en emisiones exitosas.
+- `web/administrar_empresa/facturacion_electronica.html`:
+	- agrega bloque `Emision documental (punto 8)` con acciones `Emitir factura`, `Anular factura` y `Emitir nota credito`.
+	- muestra salida estructurada de la operacion y datos legales cuando aplica.
+- `backend/db/documentos_transaccionales_test.go` y `backend/handlers/eventos_contables_modulos_test.go`:
+	- cobertura nueva/extendida para persistencia y validacion legal en emision.

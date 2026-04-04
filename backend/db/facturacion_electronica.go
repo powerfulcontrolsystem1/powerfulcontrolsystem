@@ -1,11 +1,14 @@
 package db
 
 import (
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 )
 
 // FacturacionElectronicaPaisConfig define configuración FE por empresa y país.
@@ -41,6 +44,24 @@ type PaisFacturacion struct {
 	Nombre  string `json:"nombre"`
 	Bandera string `json:"bandera"`
 	Moneda  string `json:"moneda"`
+}
+
+// FacturacionDocumentoLegal representa los datos legales generados al emitir una factura.
+type FacturacionDocumentoLegal struct {
+	EmpresaID            int64  `json:"empresa_id"`
+	PaisCodigo           string `json:"pais_codigo"`
+	Ambiente             string `json:"ambiente"`
+	TipoDocumentoEmisor  string `json:"tipo_documento_emisor"`
+	IdentificadorFiscal  string `json:"identificador_fiscal"`
+	RazonSocial          string `json:"razon_social"`
+	PrefijoFactura       string `json:"prefijo_factura"`
+	ResolucionNumero     string `json:"resolucion_numero"`
+	ConsecutivoAsignado  int64  `json:"consecutivo_asignado"`
+	NumeroLegal          string `json:"numero_legal"`
+	CodigoValidacion     string `json:"codigo_validacion"`
+	FechaEmisionLegal    string `json:"fecha_emision_legal"`
+	ResolucionFechaDesde string `json:"resolucion_fecha_desde,omitempty"`
+	ResolucionFechaHasta string `json:"resolucion_fecha_hasta,omitempty"`
 }
 
 func supportedPaisesFacturacionMap() map[string]PaisFacturacion {
@@ -611,4 +632,241 @@ func DetectFacturacionPais(dbConn *sql.DB, empresaID int64, timezone, language s
 		return paisFacturacionByCodigo(codigo), "language", nil
 	}
 	return defaultPaisFacturacion(), "default", nil
+}
+
+func parseFechaISODate(raw string) (time.Time, error) {
+	return time.Parse("2006-01-02", strings.TrimSpace(raw))
+}
+
+func normalizeAmbienteFEFromConfig(ambienteFE string) string {
+	ambienteFE = strings.ToLower(strings.TrimSpace(ambienteFE))
+	if ambienteFE == "produccion" {
+		return "produccion"
+	}
+	return "sandbox"
+}
+
+func buildFacturaCodigoValidacion(empresaID int64, paisCodigo, documentoCodigo, numeroLegal string, montoTotal float64, moneda, identificadorFiscal, resolucionNumero, fechaEmision string) string {
+	raw := fmt.Sprintf("%d|%s|%s|%s|%.2f|%s|%s|%s|%s",
+		empresaID,
+		strings.ToUpper(strings.TrimSpace(paisCodigo)),
+		strings.ToUpper(strings.TrimSpace(documentoCodigo)),
+		strings.ToUpper(strings.TrimSpace(numeroLegal)),
+		montoTotal,
+		strings.ToUpper(strings.TrimSpace(moneda)),
+		strings.TrimSpace(identificadorFiscal),
+		strings.TrimSpace(resolucionNumero),
+		strings.TrimSpace(fechaEmision),
+	)
+	sum := sha256.Sum256([]byte(raw))
+	return strings.ToUpper(hex.EncodeToString(sum[:]))
+}
+
+// PrepareFacturacionDocumentoLegal valida cumplimiento y reserva consecutivo para emisión legal.
+func PrepareFacturacionDocumentoLegal(dbConn *sql.DB, empresaID int64, paisCodigo, documentoCodigo string, montoTotal float64, moneda string) (*FacturacionDocumentoLegal, error) {
+	if empresaID <= 0 {
+		return nil, fmt.Errorf("empresa_id es obligatorio")
+	}
+	documentoCodigo = strings.ToUpper(strings.TrimSpace(documentoCodigo))
+	if documentoCodigo == "" {
+		return nil, fmt.Errorf("documento_codigo es obligatorio")
+	}
+	if montoTotal < 0 {
+		montoTotal = 0
+	}
+	moneda = strings.ToUpper(strings.TrimSpace(moneda))
+
+	paisCodigo = normalizePaisCodigo(paisCodigo)
+	if paisCodigo == "" {
+		paisDetectado, _, err := DetectFacturacionPais(dbConn, empresaID, "", "")
+		if err != nil {
+			return nil, err
+		}
+		paisCodigo = paisDetectado.Codigo
+	}
+
+	cfg, err := GetFacturacionElectronicaPaisConfig(dbConn, empresaID, paisCodigo)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
+	}
+	if cfg == nil {
+		return nil, fmt.Errorf("no existe configuracion de facturacion electronica para el pais solicitado")
+	}
+	if strings.ToLower(strings.TrimSpace(cfg.Estado)) == "inactivo" {
+		return nil, fmt.Errorf("la configuracion de facturacion electronica esta inactiva para %s", cfg.PaisCodigo)
+	}
+
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	var tipoDocumentoEmisor string
+	var nit string
+	var razonSocial string
+	var ambienteFE string
+	var prefijoFactura string
+	var resolucionNumero string
+	var resolucionFechaDesde string
+	var resolucionFechaHasta string
+	var consecutivoDesde int64
+	var consecutivoHasta int64
+	var proximoConsecutivo int64
+
+	err = tx.QueryRow(`SELECT
+		COALESCE(tipo_documento_emisor, ''),
+		COALESCE(nit, ''),
+		COALESCE(razon_social, ''),
+		COALESCE(ambiente_fe, 'habilitacion'),
+		COALESCE(prefijo_factura, ''),
+		COALESCE(resolucion_numero, ''),
+		COALESCE(resolucion_fecha_desde, ''),
+		COALESCE(resolucion_fecha_hasta, ''),
+		COALESCE(consecutivo_desde, 1),
+		COALESCE(consecutivo_hasta, 999999),
+		COALESCE(proximo_consecutivo, 1)
+	FROM empresa_configuracion_avanzada
+	WHERE empresa_id = ?
+	LIMIT 1`, empresaID).Scan(
+		&tipoDocumentoEmisor,
+		&nit,
+		&razonSocial,
+		&ambienteFE,
+		&prefijoFactura,
+		&resolucionNumero,
+		&resolucionFechaDesde,
+		&resolucionFechaHasta,
+		&consecutivoDesde,
+		&consecutivoHasta,
+		&proximoConsecutivo,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("debe configurar empresa_configuracion_avanzada antes de emitir legalmente")
+		}
+		return nil, err
+	}
+
+	if strings.TrimSpace(cfg.TipoDocumentoEmisor) == "" {
+		cfg.TipoDocumentoEmisor = strings.TrimSpace(tipoDocumentoEmisor)
+	}
+	if strings.TrimSpace(cfg.IdentificadorFiscal) == "" {
+		cfg.IdentificadorFiscal = strings.TrimSpace(nit)
+	}
+	if strings.TrimSpace(cfg.RazonSocial) == "" {
+		cfg.RazonSocial = strings.TrimSpace(razonSocial)
+	}
+	if strings.TrimSpace(cfg.PrefijoFactura) == "" {
+		cfg.PrefijoFactura = strings.TrimSpace(prefijoFactura)
+	}
+	if strings.TrimSpace(cfg.ResolucionNumero) == "" {
+		cfg.ResolucionNumero = strings.TrimSpace(resolucionNumero)
+	}
+	if strings.TrimSpace(cfg.MonedaCodigo) == "" {
+		cfg.MonedaCodigo = strings.ToUpper(strings.TrimSpace(moneda))
+	}
+	if strings.TrimSpace(cfg.Ambiente) == "" {
+		cfg.Ambiente = normalizeAmbienteFEFromConfig(ambienteFE)
+	}
+
+	if strings.TrimSpace(cfg.TipoDocumentoEmisor) == "" {
+		return nil, fmt.Errorf("falta tipo_documento_emisor en configuracion de facturacion")
+	}
+	if strings.TrimSpace(cfg.IdentificadorFiscal) == "" {
+		return nil, fmt.Errorf("falta identificador_fiscal en configuracion de facturacion")
+	}
+	if strings.TrimSpace(cfg.RazonSocial) == "" {
+		return nil, fmt.Errorf("falta razon_social en configuracion de facturacion")
+	}
+	if strings.TrimSpace(cfg.PrefijoFactura) == "" {
+		return nil, fmt.Errorf("falta prefijo_factura en configuracion de facturacion")
+	}
+	if strings.TrimSpace(cfg.ResolucionNumero) == "" {
+		return nil, fmt.Errorf("falta resolucion_numero en configuracion de facturacion")
+	}
+
+	now := time.Now().In(time.Local)
+	fechaHoy := now.Format("2006-01-02")
+	if strings.TrimSpace(resolucionFechaDesde) != "" {
+		fechaDesde, err := parseFechaISODate(resolucionFechaDesde)
+		if err != nil {
+			return nil, fmt.Errorf("resolucion_fecha_desde invalida")
+		}
+		if fechaHoy < fechaDesde.Format("2006-01-02") {
+			return nil, fmt.Errorf("la resolucion de facturacion aun no inicia vigencia")
+		}
+	}
+	if strings.TrimSpace(resolucionFechaHasta) != "" {
+		fechaHasta, err := parseFechaISODate(resolucionFechaHasta)
+		if err != nil {
+			return nil, fmt.Errorf("resolucion_fecha_hasta invalida")
+		}
+		if fechaHoy > fechaHasta.Format("2006-01-02") {
+			return nil, fmt.Errorf("la resolucion de facturacion esta vencida")
+		}
+	}
+
+	if consecutivoDesde <= 0 {
+		consecutivoDesde = 1
+	}
+	if consecutivoHasta < consecutivoDesde {
+		return nil, fmt.Errorf("rango de consecutivos invalido")
+	}
+	if proximoConsecutivo < consecutivoDesde {
+		proximoConsecutivo = consecutivoDesde
+	}
+	if proximoConsecutivo > consecutivoHasta {
+		return nil, fmt.Errorf("rango de consecutivos agotado para facturacion")
+	}
+
+	if _, err := tx.Exec(`UPDATE empresa_configuracion_avanzada
+		SET proximo_consecutivo = ?,
+			fecha_actualizacion = datetime('now','localtime')
+		WHERE empresa_id = ?`, proximoConsecutivo+1, empresaID); err != nil {
+		return nil, err
+	}
+
+	prefix := strings.ToUpper(strings.TrimSpace(cfg.PrefijoFactura))
+	prefix = strings.ReplaceAll(prefix, " ", "")
+	numeroLegal := fmt.Sprintf("%s-%d", prefix, proximoConsecutivo)
+	fechaEmisionLegal := now.Format("2006-01-02 15:04:05")
+	if moneda == "" {
+		moneda = strings.ToUpper(strings.TrimSpace(cfg.MonedaCodigo))
+	}
+	if moneda == "" {
+		moneda = "COP"
+	}
+	codigoValidacion := buildFacturaCodigoValidacion(
+		empresaID,
+		cfg.PaisCodigo,
+		documentoCodigo,
+		numeroLegal,
+		montoTotal,
+		moneda,
+		cfg.IdentificadorFiscal,
+		cfg.ResolucionNumero,
+		fechaEmisionLegal,
+	)
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return &FacturacionDocumentoLegal{
+		EmpresaID:            empresaID,
+		PaisCodigo:           strings.ToUpper(strings.TrimSpace(cfg.PaisCodigo)),
+		Ambiente:             normalizeAmbienteFEFromConfig(cfg.Ambiente),
+		TipoDocumentoEmisor:  strings.TrimSpace(cfg.TipoDocumentoEmisor),
+		IdentificadorFiscal:  strings.TrimSpace(cfg.IdentificadorFiscal),
+		RazonSocial:          strings.TrimSpace(cfg.RazonSocial),
+		PrefijoFactura:       prefix,
+		ResolucionNumero:     strings.TrimSpace(cfg.ResolucionNumero),
+		ConsecutivoAsignado:  proximoConsecutivo,
+		NumeroLegal:          numeroLegal,
+		CodigoValidacion:     codigoValidacion,
+		FechaEmisionLegal:    fechaEmisionLegal,
+		ResolucionFechaDesde: strings.TrimSpace(resolucionFechaDesde),
+		ResolucionFechaHasta: strings.TrimSpace(resolucionFechaHasta),
+	}, nil
 }

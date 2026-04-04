@@ -76,6 +76,7 @@ func EmpresaFacturacionElectronicaHandler(dbEmp *sql.DB) http.HandlerFunc {
 				var payload struct {
 					EmpresaID       int64   `json:"empresa_id"`
 					EntidadID       int64   `json:"entidad_id"`
+					PaisCodigo      string  `json:"pais_codigo"`
 					DocumentoCodigo string  `json:"documento_codigo"`
 					EstadoActual    string  `json:"estado_actual"`
 					MontoTotal      float64 `json:"monto_total"`
@@ -130,8 +131,21 @@ func EmpresaFacturacionElectronicaHandler(dbEmp *sql.DB) http.HandlerFunc {
 					return
 				}
 
+				var legalDoc *dbpkg.FacturacionDocumentoLegal
+				if transition.Accion == "emitir" && documentoTipo == "factura_electronica" {
+					paisCodigo := strings.TrimSpace(payload.PaisCodigo)
+					if paisCodigo == "" {
+						paisCodigo = strings.TrimSpace(r.URL.Query().Get("pais_codigo"))
+					}
+					legalDoc, err = dbpkg.PrepareFacturacionDocumentoLegal(dbEmp, payload.EmpresaID, paisCodigo, payload.DocumentoCodigo, payload.MontoTotal, payload.Moneda)
+					if err != nil {
+						http.Error(w, "cumplimiento normativo: "+err.Error(), http.StatusUnprocessableEntity)
+						return
+					}
+				}
+
 				evento := transition.Evento
-				docPersistido, err := dbpkg.UpsertEmpresaDocumentoFacturacion(dbEmp, dbpkg.EmpresaDocumentoFacturacion{
+				docPayload := dbpkg.EmpresaDocumentoFacturacion{
 					EmpresaID:            payload.EmpresaID,
 					TipoDocumento:        documentoTipo,
 					DocumentoCodigo:      payload.DocumentoCodigo,
@@ -144,7 +158,33 @@ func EmpresaFacturacionElectronicaHandler(dbEmp *sql.DB) http.HandlerFunc {
 					EntidadRelacionadaID: payload.EntidadID,
 					UsuarioCreador:       strings.TrimSpace(adminEmailFromRequest(r)),
 					Observaciones:        payload.Observaciones,
-				})
+				}
+				if legalDoc != nil {
+					docPayload.NumeroLegal = legalDoc.NumeroLegal
+					docPayload.CodigoValidacion = legalDoc.CodigoValidacion
+					docPayload.PaisCodigo = legalDoc.PaisCodigo
+					docPayload.AmbienteFE = legalDoc.Ambiente
+					docPayload.FechaDocumento = legalDoc.FechaEmisionLegal
+				}
+				if docExistente != nil {
+					if docPayload.NumeroLegal == "" {
+						docPayload.NumeroLegal = docExistente.NumeroLegal
+					}
+					if docPayload.CodigoValidacion == "" {
+						docPayload.CodigoValidacion = docExistente.CodigoValidacion
+					}
+					if docPayload.PaisCodigo == "" {
+						docPayload.PaisCodigo = docExistente.PaisCodigo
+					}
+					if docPayload.AmbienteFE == "" {
+						docPayload.AmbienteFE = docExistente.AmbienteFE
+					}
+					if docPayload.FechaDocumento == "" {
+						docPayload.FechaDocumento = docExistente.FechaDocumento
+					}
+				}
+
+				docPersistido, err := dbpkg.UpsertEmpresaDocumentoFacturacion(dbEmp, docPayload)
 				if err != nil {
 					http.Error(w, "No se pudo persistir el documento transaccional", http.StatusInternalServerError)
 					return
@@ -164,24 +204,44 @@ func EmpresaFacturacionElectronicaHandler(dbEmp *sql.DB) http.HandlerFunc {
 					Origen:          "api_facturacion_electronica",
 					Observaciones:   strings.TrimSpace(payload.Observaciones),
 				}, map[string]interface{}{
-					"accion":           transition.Accion,
-					"estado_anterior":  transition.EstadoAnterior,
-					"estado_nuevo":     transition.EstadoNuevo,
-					"entidad_id":       docPersistido.ID,
-					"documento_codigo": strings.TrimSpace(payload.DocumentoCodigo),
-					"periodo_contable": strings.TrimSpace(payload.PeriodoContable),
-					"empresa_id":       payload.EmpresaID,
+					"accion":            transition.Accion,
+					"estado_anterior":   transition.EstadoAnterior,
+					"estado_nuevo":      transition.EstadoNuevo,
+					"entidad_id":        docPersistido.ID,
+					"documento_codigo":  strings.TrimSpace(payload.DocumentoCodigo),
+					"numero_legal":      docPersistido.NumeroLegal,
+					"codigo_validacion": docPersistido.CodigoValidacion,
+					"pais_codigo":       docPersistido.PaisCodigo,
+					"ambiente_fe":       docPersistido.AmbienteFE,
+					"periodo_contable":  strings.TrimSpace(payload.PeriodoContable),
+					"empresa_id":        payload.EmpresaID,
 				})
 
-				writeJSON(w, http.StatusOK, map[string]interface{}{
-					"ok":               true,
-					"accion":           transition.Accion,
-					"evento":           evento,
-					"estado_anterior":  transition.EstadoAnterior,
-					"estado_nuevo":     transition.EstadoNuevo,
-					"entidad_id":       docPersistido.ID,
-					"documento_codigo": strings.TrimSpace(payload.DocumentoCodigo),
-				})
+				resp := map[string]interface{}{
+					"ok":                true,
+					"accion":            transition.Accion,
+					"evento":            evento,
+					"estado_anterior":   transition.EstadoAnterior,
+					"estado_nuevo":      transition.EstadoNuevo,
+					"entidad_id":        docPersistido.ID,
+					"documento_codigo":  strings.TrimSpace(payload.DocumentoCodigo),
+					"numero_legal":      docPersistido.NumeroLegal,
+					"codigo_validacion": docPersistido.CodigoValidacion,
+					"pais_codigo":       docPersistido.PaisCodigo,
+					"ambiente_fe":       docPersistido.AmbienteFE,
+				}
+				if legalDoc != nil {
+					resp["cumplimiento_normativo"] = map[string]interface{}{
+						"validado":               true,
+						"prefijo_factura":        legalDoc.PrefijoFactura,
+						"resolucion_numero":      legalDoc.ResolucionNumero,
+						"consecutivo_asignado":   legalDoc.ConsecutivoAsignado,
+						"fecha_emision_legal":    legalDoc.FechaEmisionLegal,
+						"resolucion_fecha_desde": legalDoc.ResolucionFechaDesde,
+						"resolucion_fecha_hasta": legalDoc.ResolucionFechaHasta,
+					}
+				}
+				writeJSON(w, http.StatusOK, resp)
 				return
 			}
 

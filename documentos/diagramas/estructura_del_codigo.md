@@ -56,6 +56,90 @@ flowchart TD
 ## Regla de mantenimiento
 Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe reflejarse en este documento y en los diagramas relacionados dentro de documentos/diagramas/.
 
+## Actualizacion 2026-04-04 (punto 9 - modulo de compras dedicado)
+
+- Backend DB (`backend/db/documentos_transaccionales.go`):
+  - se agrega `ListEmpresaDocumentosCompraByEmpresa` para consulta operativa de documentos de compra con filtros de estado, proveedor y busqueda.
+  - se agrega `SetEmpresaDocumentoCompraEstadoByCodigo` para activacion/desactivacion logica por codigo documental.
+
+- Backend handlers (`backend/handlers/compras.go`):
+  - nuevo handler dedicado `EmpresaComprasDocumentosHandler`.
+  - expone ciclo documental de compras en ruta unica con acciones:
+    - crear,
+    - emitir_orden,
+    - recepcionar_compra,
+    - contabilizar_compra,
+    - activar/desactivar,
+    - eliminacion logica.
+  - mantiene trazabilidad en `empresa_eventos_contables` para cada transicion relevante.
+
+- Rutas (`backend/main.go`):
+  - se registra `/api/empresa/compras/documentos` bajo `WithEmpresaComprasPermissions`.
+
+- Frontend empresa (`web/administrar_empresa/compras.html`):
+  - nueva pagina dedicada de compras con formulario de documento, filtros y acciones por estado documental.
+  - se integra en el menu lateral via:
+    - `web/administrar_empresa.html` (`linkCompras`),
+    - `web/js/administrar_empresa.js` (catalogo de permisos modulo `compras`).
+
+- Pruebas:
+  - `backend/db/documentos_transaccionales_test.go` agrega prueba de listado y estado activo por codigo.
+  - `backend/handlers/compras_documentos_test.go` agrega cobertura del flujo documental completo del modulo de compras.
+
+## Actualizacion 2026-04-04 (punto 6 - gestion de clientes: perfil, historial y segmentacion)
+
+- Backend DB (`backend/db/clientes.go`):
+  - se agregan contratos analiticos:
+    - `ClientePerfilComercial`,
+    - `ClienteCompraHistorial`,
+    - `ClienteSegmentacionResumen`.
+  - se agregan consultas por empresa/cliente:
+    - `GetClientePerfilComercialByEmpresa`,
+    - `GetClienteHistorialComprasByEmpresa`,
+    - `GetClientesSegmentacionByEmpresa`.
+  - el perfil y la segmentacion se calculan con metricas de compras sobre `carritos_compras`.
+
+- Backend handlers (`backend/handlers/clientes.go`):
+  - se mantiene el endpoint unico `GET /api/empresa/clientes` y se habilitan variantes por accion:
+    - `action=perfil`,
+    - `action=historial`,
+    - `action=segmentacion|segmentos`.
+  - se agrega parseo robusto de `cliente_id` con fallback a `id` en query.
+
+- Frontend empresa (`web/administrar_empresa/administrar_clientes.html`):
+  - se agrega panel `Segmentacion de clientes (punto 6)` con consolidado por segmento.
+  - se agrega panel `Perfil e historial del cliente` con detalle comercial por cliente.
+  - se incorpora accion `Perfil` en cada fila para consultar y visualizar datos analiticos.
+
+- Pruebas:
+  - `backend/db/clientes_test.go` valida perfil/historial/segmentacion en capa DB.
+  - `backend/handlers/clientes_test.go` valida contrato HTTP para acciones de clientes y errores esperados.
+
+## Actualizacion 2026-04-04 (punto 7 - gestion de proveedores: catalogo, precios y condiciones)
+
+- Backend DB (`backend/db/productos.go`):
+  - se amplía el modelo `Proveedor` con:
+    - `catalogo_referencia`,
+    - `precio_base_referencial`,
+    - `descuento_porcentaje`,
+    - `plazo_pago_dias`,
+    - `condicion_entrega`.
+  - se actualiza la migracion segura de `proveedores` en `EnsureEmpresaProductosSchema` para soportar nuevas instalaciones y bases existentes.
+  - se agregan validaciones en CRUD para rango de descuento, precio no negativo y plazo de pago no negativo.
+
+- Backend handlers (`backend/handlers/productos.go`):
+  - `POST/PUT /api/empresa/proveedores` valida los campos comerciales y retorna error de negocio en caso de payload invalido.
+  - los eventos contables del modulo compras incluyen metadata comercial del proveedor para trazabilidad.
+
+- Frontend empresa (`web/administrar_empresa/administrar_productos.html`):
+  - se amplía el formulario de proveedores con campos de catalogo, precio base y condiciones de negociacion.
+  - se amplía la tabla de proveedores para mostrar precio base y condiciones relevantes.
+  - se agrega validacion de rango en cliente antes de enviar cambios al backend.
+
+- Pruebas:
+  - `backend/db/productos_categorias_test.go` agrega `TestProveedorCRUDIncluyeCatalogoPreciosYCondiciones`.
+  - `backend/handlers/eventos_contables_modulos_test.go` extiende cobertura de proveedores y agrega validacion de payload invalido.
+
 ## Actualizacion 2026-04-04 (catalogo frontend por rol + regresion endpoints sin wrapper)
 
 - Frontend empresa:
@@ -198,6 +282,163 @@ Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe re
 - Pruebas:
   - `backend/handlers/productos_categorias_test.go` agrega cobertura del endpoint de balance por bodega.
   - `backend/db/productos_categorias_test.go` agrega cobertura del consolidado de balance por bodega en DB.
+
+## Actualizacion 2026-04-04 (continuacion punto 5 - proyeccion preventiva de quiebre)
+
+- Backend DB (`backend/db/productos.go`):
+  - se agrega `InventarioProyeccionQuiebre` como contrato preventivo de riesgo por producto/bodega.
+  - se agrega `GetInventarioProyeccionQuiebreByEmpresa` para estimar:
+    - `salida_promedio_diaria`,
+    - `dias_cobertura`,
+    - `estado_proyeccion`,
+    - `sugerido_reposicion`.
+  - la salida se ordena por severidad y prioridad operativa.
+
+- Backend handlers (`backend/handlers/productos.go`):
+  - nuevo endpoint `GET /api/empresa/inventario/proyeccion_quiebre` con validacion de `dias_ventana`, `bodega_id`, `limit` y `offset`.
+
+- Rutas (`backend/main.go`):
+  - se registra `/api/empresa/inventario/proyeccion_quiebre` bajo `WithEmpresaInventarioPermissions`.
+
+- Frontend empresa (`web/administrar_empresa/administrar_productos.html`):
+  - se agrega bloque `Proyeccion de quiebre (preventiva)` en el panel de movimientos de inventario.
+  - la vista se sincroniza con filtros del kardex para ajustar la ventana de analisis.
+  - se agrega accion `Preparar` para precargar reposicion preventiva en el formulario de ajuste.
+
+- Pruebas:
+  - `backend/handlers/productos_categorias_test.go` agrega cobertura del endpoint de proyeccion preventiva.
+  - `backend/db/productos_categorias_test.go` agrega cobertura de priorizacion por riesgo en capa DB.
+
+## Actualizacion 2026-04-04 (continuacion punto 5 - plan de reposicion por proveedor)
+
+- Backend DB (`backend/db/productos.go`):
+  - se agrega `InventarioPlanReposicionItem` como contrato de compra preventiva.
+  - se agrega `GetInventarioPlanReposicionByEmpresa` para consolidar por proveedor:
+    - cantidad sugerida,
+    - costo unitario de referencia,
+    - costo estimado por item,
+    - prioridad por severidad de riesgo.
+
+- Backend handlers (`backend/handlers/productos.go`):
+  - nuevo endpoint `GET /api/empresa/inventario/plan_reposicion` con validacion de `dias_ventana`, `solo_riesgo`, `bodega_id`, `limit` y `offset`.
+
+- Rutas (`backend/main.go`):
+  - se registra `/api/empresa/inventario/plan_reposicion` bajo `WithEmpresaInventarioPermissions`.
+
+- Frontend empresa (`web/administrar_empresa/administrar_productos.html`):
+  - se agrega bloque `Plan de reposicion por proveedor (fase 8)` en el panel de movimientos de inventario.
+  - la vista muestra costo estimado por item y resumen de costo total para el alcance filtrado.
+  - se agrega accion `Preparar` para precargar reposicion preventiva desde el plan.
+
+- Pruebas:
+  - `backend/handlers/productos_categorias_test.go` agrega cobertura del endpoint de plan de reposicion.
+  - `backend/db/productos_categorias_test.go` agrega cobertura de consolidado proveedor/costo en capa DB.
+
+## Actualizacion 2026-04-04 (continuacion punto 5 - consolidado de compra por proveedor)
+
+- Backend DB (`backend/db/productos.go`):
+  - se agrega `InventarioPlanReposicionProveedorResumen` como contrato de consolidado de compra.
+  - se agrega `GetInventarioPlanReposicionResumenByEmpresa` para agrupar por proveedor:
+    - items,
+    - productos unicos,
+    - cantidad total sugerida,
+    - costo total estimado,
+    - severidad acumulada por riesgo.
+
+- Backend handlers (`backend/handlers/productos.go`):
+  - nuevo endpoint `GET /api/empresa/inventario/plan_reposicion_resumen` con validacion de `dias_ventana`, `solo_riesgo`, `bodega_id`, `limit` y `offset`.
+
+- Rutas (`backend/main.go`):
+  - se registra `/api/empresa/inventario/plan_reposicion_resumen` bajo `WithEmpresaInventarioPermissions`.
+
+- Frontend empresa (`web/administrar_empresa/administrar_productos.html`):
+  - se agrega bloque `Consolidado de compra por proveedor (fase 9)`.
+  - desde el consolidado se filtran los items del plan de reposicion por proveedor.
+  - se agrega accion `Ver todos` para restablecer la vista global del plan.
+
+- Pruebas:
+  - `backend/handlers/productos_categorias_test.go` agrega cobertura del endpoint resumen por proveedor.
+  - `backend/db/productos_categorias_test.go` agrega cobertura de agrupacion por proveedor en DB.
+
+## Actualizacion 2026-04-04 (continuacion punto 5 - borrador de orden de compra por proveedor)
+
+- Backend DB (`backend/db/productos.go`):
+  - se agregan `InventarioPlanReposicionBorradorItem` y `InventarioPlanReposicionBorradorCompra`.
+  - se agrega `GetInventarioPlanReposicionBorradorByEmpresa` para construir borrador de orden de compra por proveedor con:
+    - codigo sugerido de borrador,
+    - detalle por producto/bodega,
+    - totales de cantidad/costo,
+    - conteo de severidad de riesgo.
+
+- Backend handlers (`backend/handlers/productos.go`):
+  - nuevo endpoint `GET /api/empresa/inventario/plan_reposicion_borrador` con validacion de:
+    - `empresa_id`,
+    - `proveedor_id`,
+    - `dias_ventana`,
+    - `solo_riesgo`,
+    - `bodega_id`.
+
+- Rutas (`backend/main.go`):
+  - se registra `/api/empresa/inventario/plan_reposicion_borrador` bajo `WithEmpresaInventarioPermissions`.
+
+- Frontend empresa (`web/administrar_empresa/administrar_productos.html`):
+  - se agrega bloque `Borrador de orden de compra por proveedor (fase 10)`.
+  - desde `Consolidado de compra por proveedor (fase 9)` se agrega accion `Borrador OC`.
+  - se agrega accion `Limpiar borrador` para restablecer la vista inicial del documento.
+
+- Pruebas:
+  - `backend/handlers/productos_categorias_test.go` agrega cobertura del endpoint de borrador por proveedor.
+  - `backend/db/productos_categorias_test.go` agrega cobertura de consolidado de borrador en DB.
+
+## Actualizacion 2026-04-04 (continuacion punto 5 - emision de orden desde borrador de reposicion)
+
+- Backend DB (`backend/db/productos.go`):
+  - se agrega `InventarioPlanReposicionOrdenEmitida` como contrato de respuesta al emitir la OC.
+  - se agrega `EmitirOrdenCompraDesdePlanReposicionBorrador` para:
+    - tomar el borrador preventivo por proveedor,
+    - validar que existan lineas sugeridas,
+    - persistir la orden en `empresa_compras_documentos` con estado `emitida`.
+
+- Backend handlers (`backend/handlers/productos.go`):
+  - nuevo endpoint `POST /api/empresa/compras/plan_reposicion/emitir_orden`.
+  - valida datos operativos y documentales (`empresa_id`, `proveedor_id`, `bodega_id`, `dias_ventana`, `solo_riesgo`, metadatos de documento).
+  - registra evento contable `orden_compra_emitida` con `entidad_id` del documento persistido.
+
+- Rutas (`backend/main.go`):
+  - se registra `/api/empresa/compras/plan_reposicion/emitir_orden` bajo `WithEmpresaComprasPermissions`.
+
+- Frontend empresa (`web/administrar_empresa/administrar_productos.html`):
+  - en el bloque de borrador (fase 10) se agrega boton `Emitir orden`.
+  - la accion emite la OC al endpoint de compras y luego refresca plan/consolidado.
+
+- Pruebas:
+  - `backend/handlers/productos_categorias_test.go` agrega cobertura del endpoint de emision.
+  - `backend/db/productos_categorias_test.go` agrega cobertura de persistencia documental desde borrador.
+
+## Actualizacion 2026-04-04 (continuacion punto 5 - ciclo documental de orden emitida desde reposicion)
+
+- Backend DB (`backend/db/productos.go`):
+  - se agrega `InventarioPlanReposicionOrdenEstadoActualizado` como contrato de salida para cambios de estado de la OC.
+  - se agrega `ActualizarEstadoOrdenCompraDesdeReposicion` para transicionar documentos emitidos con:
+    - `recepcionar_compra` (`emitida` -> `recepcionada`),
+    - `contabilizar_compra` (`recepcionada` -> `contabilizada`).
+
+- Backend handlers (`backend/handlers/productos.go`):
+  - nuevo endpoint `POST /api/empresa/compras/plan_reposicion/actualizar_estado`.
+  - valida `empresa_id`, `proveedor_id`, `documento_codigo` y `accion`.
+  - registra eventos contables `compra_recepcionada` y `compra_contabilizada`.
+
+- Rutas (`backend/main.go`):
+  - se registra `/api/empresa/compras/plan_reposicion/actualizar_estado` bajo `WithEmpresaComprasPermissions`.
+
+- Frontend empresa (`web/administrar_empresa/administrar_productos.html`):
+  - el bloque de compras por reposicion pasa a `fases 10-12`.
+  - se agregan botones `Recepcionar orden` y `Contabilizar orden`.
+  - se agrega contexto visual del estado de la OC para seguimiento del ciclo documental.
+
+- Pruebas:
+  - `backend/handlers/productos_categorias_test.go` agrega cobertura del endpoint de actualizacion de estado por ciclo.
+  - `backend/db/productos_categorias_test.go` agrega cobertura de transiciones validas/invalidas en DB.
 
 ## Actualizacion 2026-04-03 (configuracion IA en panel super)
 
@@ -1061,8 +1302,30 @@ Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe re
   - Resultado verificado: carrito finaliza en `estado=inactivo` y `estado_carrito=cerrado`.
 
 - Alcance actual de facturacion:
-  - El modulo de `facturacion_electronica` vigente gestiona configuracion por pais/empresa.
-  - No existe aun endpoint de emision DIAN real (generacion/firma/envio XML UBL/CUFE) ni envio de XML de factura por correo en este flujo.
+  - El modulo de `facturacion_electronica` vigente gestiona configuracion por pais/empresa y ciclo transaccional de factura (`emitir`, `anular`, `nota_credito`).
+  - En `action=emitir` se aplica validacion de cumplimiento normativo inicial (datos fiscales minimos, vigencia de resolucion, rango de consecutivos) y se persisten `numero_legal` + `codigo_validacion` para trazabilidad.
+  - Aun no existe integracion DIAN real de generacion/firma/envio XML UBL/CUFE ni envio del XML de factura por correo en este flujo.
+
+## Actualizacion 2026-04-04 (punto 8 - emision legal con control normativo)
+
+- Backend DB:
+  - `backend/db/facturacion_electronica.go` agrega `PrepareFacturacionDocumentoLegal` para:
+    - validar configuracion legal por empresa/pais,
+    - verificar vigencia de resolucion,
+    - reservar consecutivo y actualizar `proximo_consecutivo`,
+    - construir `numero_legal` y `codigo_validacion`.
+  - `backend/db/documentos_transaccionales.go` amplia `empresa_facturacion_documentos` con:
+    - `numero_legal`,
+    - `codigo_validacion`,
+    - `pais_codigo`,
+    - `ambiente_fe`.
+
+- Backend handlers:
+  - `backend/handlers/facturacion_electronica.go` exige cumplimiento normativo en `action=emitir` y retorna `422` cuando no se cumple.
+  - La respuesta de emision incluye bloque `cumplimiento_normativo` y los campos legales persistidos.
+
+- Frontend:
+  - `web/administrar_empresa/facturacion_electronica.html` incorpora bloque `Emision documental (punto 8)` para ejecutar `emitir`, `anular` y `nota_credito`, mostrando salida estructurada.
 
 ## Actualizacion 2026-04-02 (catalogo de categorias de productos multiempresa)
 

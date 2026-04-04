@@ -16,6 +16,7 @@
       <p class="form-help" style="margin-top:8px;">Guía funcional y técnica para operación de inventario, carritos, reportes y configuración por empresa.</p>
       <div class="empresa-inline-actions" style="margin-top:10px;flex-wrap:wrap;gap:8px;">
         <a class="btn secondary" href="#menu-rapido">Guía rápida</a>
+        <a class="btn secondary" href="#menu-tutorial-modulos">Tutorial por módulos</a>
         <a class="btn secondary" href="#menu-apis">APIs</a>
         <a class="btn secondary" href="#menu-inventario">Inventario</a>
         <a class="btn secondary" href="#menu-carrito">Carrito y lector</a>
@@ -36,6 +37,185 @@
         <li>Módulo de reportes: <a href="/administrar_empresa/reportes.html">/administrar_empresa/reportes.html</a></li>
         <li>Configuración de empresa: <a href="/administrar_empresa/configuracion.html">/administrar_empresa/configuracion.html</a></li>
       </ul>
+    </section>
+
+    <section id="menu-tutorial-modulos" class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2 style="margin:0;">Tutorial por módulos</h2>
+      </div>
+      <p class="form-help" style="margin-top:8px;">Secuencia recomendada para operar cada módulo de forma segura y separada por empresa.</p>
+
+      <h3 style="margin:14px 0 8px 0;">Módulos de administración global</h3>
+
+      <h4 style="margin:12px 0 6px 0;">1) Panel super administrador</h4>
+      <p class="form-help" style="margin-top:0;">Ruta: <a href="/super_administrador.html">/super_administrador.html</a></p>
+      <ol>
+        <li>Inicia sesión como super administrador desde <a href="/login.html">/login.html</a>.</li>
+        <li>Verifica empresa, licencias y estado de módulos globales.</li>
+        <li>Aplica cambios administrativos y confirma que impacten solo la empresa objetivo.</li>
+      </ol>
+
+      <h4 style="margin:12px 0 6px 0;">2) Empresas y tipos de empresa</h4>
+      <p class="form-help" style="margin-top:0;">Ruta de apoyo: <a href="/super/tipos_empresas.html">/super/tipos_empresas.html</a></p>
+      <ol>
+        <li>Crea o actualiza tipo de empresa según el modelo operativo.</li>
+        <li>Relaciona cada empresa con su tipo y valida estado activo.</li>
+        <li>Confirma que la empresa aparezca disponible para administración.</li>
+      </ol>
+
+      <h4 style="margin:12px 0 6px 0;">3) Licencias</h4>
+      <p class="form-help" style="margin-top:0;">Ruta de apoyo: <a href="/super/licencias.html">/super/licencias.html</a></p>
+      <ol>
+        <li>Crea o renueva licencia para la empresa seleccionada.</li>
+        <li>Valida fecha de vigencia y estado de activación.</li>
+        <li>Verifica en el resumen que la licencia quede aplicada.</li>
+      </ol>
+
+      <h4 style="margin:12px 0 6px 0;">4) Seguridad y administradores</h4>
+      <p class="form-help" style="margin-top:0;">Rutas de apoyo: <a href="/super/seguridad.html">/super/seguridad.html</a> y <a href="/super/administradores.html">/super/administradores.html</a></p>
+      <ol>
+        <li>Asigna roles y permisos a administradores globales.</li>
+        <li>Configura políticas de acceso y revisa eventos de seguridad.</li>
+        <li>Prueba acceso con un usuario no privilegiado para validar restricciones.</li>
+      </ol>
+
+      <h3 style="margin:14px 0 8px 0;">Módulos del panel de empresa</h3>
+
+      <h4 style="margin:12px 0 6px 0;">5) Inicio de empresa</h4>
+      <p class="form-help" style="margin-top:0;">Ruta: <a href="/administrar_empresa/inicio.html">/administrar_empresa/inicio.html</a></p>
+      <ol>
+        <li>Confirma empresa activa y usuario autenticado.</li>
+        <li>Revisa accesos del menú habilitados por rol.</li>
+        <li>Usa este tablero como punto de entrada de operación diaria.</li>
+      </ol>
+
+      <h4 style="margin:12px 0 6px 0;">6) Ventas</h4>
+      <p class="form-help" style="margin-top:0;">Ruta: <a href="/administrar_empresa/ventas.html">/administrar_empresa/ventas.html</a></p>
+      <ol>
+        <li>Selecciona cliente, productos y condiciones de venta.</li>
+        <li>Valida totales, descuentos y medio de pago.</li>
+        <li>Cierra la venta y confirma trazabilidad en reportes y finanzas.</li>
+      </ol>
+
+      <h4 style="margin:12px 0 6px 0;">7) Carrito de compras</h4>
+      <p class="form-help" style="margin-top:0;">Ruta: <a href="/administrar_empresa/carrito_de_compras.html">/administrar_empresa/carrito_de_compras.html</a></p>
+      <ol>
+        <li>Crea o selecciona carrito por empresa y estación.</li>
+        <li>Agrega ítems manualmente o por lector de código de barras.</li>
+        <li>Finaliza pago del carrito y valida estado cerrado.</li>
+      </ol>
+
+      <h4 style="margin:12px 0 6px 0;">8) Productos e inventario</h4>
+      <p class="form-help" style="margin-top:0;">Ruta: <a href="/administrar_empresa/administrar_productos.html">/administrar_empresa/administrar_productos.html</a></p>
+      <ol>
+        <li>Gestiona catálogo de productos, categorías, proveedores y servicios.</li>
+        <li>Ejecuta movimientos de inventario (ajuste, transferencia, análisis).</li>
+        <li>Revisa alertas de quiebre y plan de reposición por proveedor.</li>
+      </ol>
+
+      <h4 style="margin:12px 0 6px 0;">9) Compras</h4>
+      <p class="form-help" style="margin-top:0;">Ruta: <a href="/administrar_empresa/compras.html">/administrar_empresa/compras.html</a></p>
+      <ol>
+        <li>Crea documento de compra en borrador o emitido.</li>
+        <li>Ejecuta transición documental (emitir, recepcionar, contabilizar).</li>
+        <li>Confirma estado final y evento contable asociado.</li>
+      </ol>
+
+      <h4 style="margin:12px 0 6px 0;">10) Clientes</h4>
+      <p class="form-help" style="margin-top:0;">Ruta: <a href="/administrar_empresa/administrar_clientes.html">/administrar_empresa/administrar_clientes.html</a></p>
+      <ol>
+        <li>Registra y actualiza clientes por empresa.</li>
+        <li>Consulta perfil comercial e historial de compras del cliente.</li>
+        <li>Usa la segmentación para decisiones comerciales y seguimiento.</li>
+      </ol>
+
+      <h4 style="margin:12px 0 6px 0;">11) Facturación electrónica</h4>
+      <p class="form-help" style="margin-top:0;">Ruta: <a href="/administrar_empresa/facturacion_electronica.html">/administrar_empresa/facturacion_electronica.html</a></p>
+      <ol>
+        <li>Configura país, resolución y datos fiscales por empresa.</li>
+        <li>Ejecuta emitir, anular o nota crédito según ciclo documental.</li>
+        <li>Valida número legal y código de validación en la respuesta.</li>
+      </ol>
+
+      <h4 style="margin:12px 0 6px 0;">12) Finanzas</h4>
+      <p class="form-help" style="margin-top:0;">Ruta: <a href="/administrar_empresa/finanzas.html">/administrar_empresa/finanzas.html</a></p>
+      <ol>
+        <li>Consulta configuración financiera, períodos y cierres de caja.</li>
+        <li>Revisa movimientos, asientos y conciliación por período.</li>
+        <li>Corrige desbalances antes de cierre operativo diario.</li>
+      </ol>
+
+      <h4 style="margin:12px 0 6px 0;">13) Reportes</h4>
+      <p class="form-help" style="margin-top:0;">Ruta: <a href="/administrar_empresa/reportes.html">/administrar_empresa/reportes.html</a></p>
+      <ol>
+        <li>Selecciona rango de fechas y empresa objetivo.</li>
+        <li>Genera indicadores de ventas, inventario y resultado operativo.</li>
+        <li>Exporta reporte para seguimiento directivo y auditoría.</li>
+      </ol>
+
+      <h4 style="margin:12px 0 6px 0;">14) Usuarios de empresa</h4>
+      <p class="form-help" style="margin-top:0;">Ruta: <a href="/administrar_empresa/administrar_usuarios.html">/administrar_empresa/administrar_usuarios.html</a></p>
+      <ol>
+        <li>Crea usuario y asigna rol según funciones operativas.</li>
+        <li>Activa/desactiva accesos por estado y perfil.</li>
+        <li>Valida permisos en menú y acceso a endpoints del módulo.</li>
+      </ol>
+
+      <h4 style="margin:12px 0 6px 0;">15) Auditoría</h4>
+      <p class="form-help" style="margin-top:0;">Ruta: <a href="/administrar_empresa/auditoria.html">/administrar_empresa/auditoria.html</a></p>
+      <ol>
+        <li>Filtra eventos por módulo, usuario y rango de fechas.</li>
+        <li>Revisa request_id, código HTTP y recurso afectado.</li>
+        <li>Exporta evidencia para control interno o revisión externa.</li>
+      </ol>
+
+      <h4 style="margin:12px 0 6px 0;">16) Configuración general</h4>
+      <p class="form-help" style="margin-top:0;">Ruta: <a href="/administrar_empresa/configuracion.html">/administrar_empresa/configuracion.html</a></p>
+      <ol>
+        <li>Ajusta parámetros operativos de la empresa.</li>
+        <li>Guarda cambios y valida persistencia por empresa_id.</li>
+        <li>Confirma impacto en módulos dependientes.</li>
+      </ol>
+
+      <h4 style="margin:12px 0 6px 0;">17) Configuración avanzada</h4>
+      <p class="form-help" style="margin-top:0;">Ruta: <a href="/administrar_empresa/configuracion_avanzada.html">/administrar_empresa/configuracion_avanzada.html</a></p>
+      <ol>
+        <li>Configura parámetros fiscales y técnicos avanzados.</li>
+        <li>Valida formatos y consistencia de datos críticos.</li>
+        <li>Ejecuta prueba funcional antes de operar en producción.</li>
+      </ol>
+
+      <h4 style="margin:12px 0 6px 0;">18) Estaciones y configuración de estaciones</h4>
+      <p class="form-help" style="margin-top:0;">Rutas: <a href="/administrar_empresa/estaciones.html">/administrar_empresa/estaciones.html</a> y <a href="/administrar_empresa/configuracion_de_estaciones.html">/administrar_empresa/configuracion_de_estaciones.html</a></p>
+      <ol>
+        <li>Registra estaciones de trabajo por punto de operación.</li>
+        <li>Asigna carritos o flujos según la estación.</li>
+        <li>Verifica sincronización con el módulo de carrito de compras.</li>
+      </ol>
+
+      <h4 style="margin:12px 0 6px 0;">19) Ubicación GPS</h4>
+      <p class="form-help" style="margin-top:0;">Ruta: <a href="/administrar_empresa/ubicacion_gps.html">/administrar_empresa/ubicacion_gps.html</a></p>
+      <ol>
+        <li>Configura dispositivo o fuente de geolocalización.</li>
+        <li>Consulta recorridos y posiciones recientes por empresa.</li>
+        <li>Cruza eventos de ubicación con operación y auditoría.</li>
+      </ol>
+
+      <h4 style="margin:12px 0 6px 0;">20) Chat con inteligencia artificial</h4>
+      <p class="form-help" style="margin-top:0;">Ruta: <a href="/administrar_empresa/chat_con_inteligencia_artificial.html">/administrar_empresa/chat_con_inteligencia_artificial.html</a></p>
+      <ol>
+        <li>Selecciona modelo configurado para la empresa.</li>
+        <li>Realiza consulta operativa con contexto del negocio.</li>
+        <li>Revisa historial para continuidad de soporte y decisiones.</li>
+      </ol>
+
+      <h4 style="margin:12px 0 6px 0;">21) Chat y tareas</h4>
+      <p class="form-help" style="margin-top:0;">Ruta: <a href="/administrar_empresa/chat_y_tareas.html">/administrar_empresa/chat_y_tareas.html</a></p>
+      <ol>
+        <li>Crea conversación y registra tareas por responsable.</li>
+        <li>Asigna prioridades y estado de ejecución.</li>
+        <li>Monitorea cumplimiento de actividades del equipo.</li>
+      </ol>
     </section>
 
     <section id="menu-apis" class="card empresa-section">

@@ -64,6 +64,9 @@ flowchart TD
 
     L --> M[Crear cliente de venta]
     L --> N[Crear bodega y proveedor]
+    L --> CM0[Entrar al modulo compras dedicado]
+    CM0 --> CM1[Registrar documento en /api/empresa/compras/documentos]
+    CM1 --> CP0
     N --> CP0[Ejecutar accion compras emitir_orden/recepcionar/contabilizar]
     CP0 --> CP1{Transicion valida segun estado_actual?}
     CP1 -->|No| CP2[Responder 409 y no registrar evento]
@@ -231,6 +234,7 @@ Resultado esperado:
 - En `facturacion_electronica`, acciones transaccionales (`emitir`, `anular`, `nota_credito`) registran eventos `factura_emitida`, `factura_anulada` y `nota_credito_emitida`.
 - En `proveedores`, las operaciones de alta, actualizacion, activacion/desactivacion y eliminacion registran eventos del modulo `compras`.
 - En `proveedores`, acciones transaccionales (`emitir_orden`, `recepcionar_compra`, `contabilizar_compra`) registran eventos de orden y ciclo contable de compra.
+- En `administrar_empresa/compras`, el modulo dedicado permite crear, consultar y ejecutar ciclo documental de compras sobre `/api/empresa/compras/documentos`.
 - En acciones transaccionales de `facturacion_electronica` y `proveedores`, el backend valida `estado_actual` y responde `409` cuando la transicion no corresponde al ciclo documental.
 - En transacciones documentales validas, la API devuelve `estado_anterior` y `estado_nuevo`, y los persiste en el payload del evento contable para auditoria.
 - En transacciones de facturacion y compras, `empresa_eventos_contables.entidad_id` corresponde al ID canonico persistido en `empresa_facturacion_documentos` o `empresa_compras_documentos`.

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -12,6 +13,50 @@ import (
 
 	dbpkg "github.com/you/pos-backend/db"
 )
+
+func seedFacturacionCumplimientoConfig(t *testing.T, dbEmp *sql.DB, empresaID int64) {
+	t.Helper()
+
+	if err := dbpkg.EnsureEmpresaConfiguracionAvanzadaSchema(dbEmp); err != nil {
+		t.Fatalf("ensure configuracion avanzada schema: %v", err)
+	}
+
+	if _, err := dbpkg.UpsertEmpresaConfiguracionAvanzada(dbEmp, dbpkg.EmpresaConfiguracionAvanzada{
+		EmpresaID:            empresaID,
+		TipoDocumentoEmisor:  "NIT",
+		NIT:                  "900123456",
+		RazonSocial:          "Empresa Facturacion QA SAS",
+		PaisCodigo:           "CO",
+		AmbienteFE:           "produccion",
+		PrefijoFactura:       "FE",
+		ResolucionNumero:     "18760000000001",
+		ResolucionFechaDesde: "2026-01-01",
+		ResolucionFechaHasta: "2030-12-31",
+		ConsecutivoDesde:     1,
+		ConsecutivoHasta:     999999,
+		ProximoConsecutivo:   1,
+		UsuarioCreador:       "facturacion@test.com",
+		Estado:               "activo",
+	}); err != nil {
+		t.Fatalf("upsert configuracion avanzada: %v", err)
+	}
+
+	if _, err := dbpkg.UpsertFacturacionElectronicaPaisConfig(dbEmp, dbpkg.FacturacionElectronicaPaisConfig{
+		EmpresaID:           empresaID,
+		PaisCodigo:          "CO",
+		Proveedor:           "manual",
+		Ambiente:            "produccion",
+		TipoDocumentoEmisor: "NIT",
+		IdentificadorFiscal: "900123456",
+		RazonSocial:         "Empresa Facturacion QA SAS",
+		PrefijoFactura:      "FE",
+		ResolucionNumero:    "18760000000001",
+		Estado:              "activo",
+		UsuarioCreador:      "facturacion@test.com",
+	}); err != nil {
+		t.Fatalf("upsert config facturacion pais: %v", err)
+	}
+}
 
 func TestEmpresaFacturacionElectronicaEmiteEventoContable(t *testing.T) {
 	dbEmp := openTestSQLite(t, "empresas_eventos_facturacion_handler.db")
@@ -60,7 +105,7 @@ func TestEmpresaProveedoresEmiteEventoContableCompras(t *testing.T) {
 	}
 
 	h := EmpresaProveedoresHandler(dbEmp)
-	req := httptest.NewRequest(http.MethodPost, "/api/empresa/proveedores", strings.NewReader(`{"empresa_id":12,"codigo":"PRV-01","nombre":"Proveedor Uno","documento":"900123"}`))
+	req := httptest.NewRequest(http.MethodPost, "/api/empresa/proveedores", strings.NewReader(`{"empresa_id":12,"codigo":"PRV-01","nombre":"Proveedor Uno","documento":"900123","catalogo_referencia":"CAT-PRV-01","precio_base_referencial":9800.5,"descuento_porcentaje":6.25,"plazo_pago_dias":21,"condicion_entrega":"Entrega semanal"}`))
 	req = req.WithContext(context.WithValue(req.Context(), "adminEmail", "compras@test.com"))
 	req.Header.Set("Content-Type", "application/json")
 	rr := httptest.NewRecorder()
@@ -78,6 +123,29 @@ func TestEmpresaProveedoresEmiteEventoContableCompras(t *testing.T) {
 		t.Fatalf("expected proveedor id > 0")
 	}
 
+	proveedores, err := dbpkg.GetProveedoresByEmpresa(dbEmp, 12, true)
+	if err != nil {
+		t.Fatalf("list proveedores after create: %v", err)
+	}
+	if len(proveedores) != 1 {
+		t.Fatalf("expected 1 proveedor, got %d", len(proveedores))
+	}
+	if proveedores[0].CatalogoReferencia != "CAT-PRV-01" {
+		t.Fatalf("expected catalogo_referencia CAT-PRV-01, got %q", proveedores[0].CatalogoReferencia)
+	}
+	if proveedores[0].PrecioBaseReferencial != 9800.5 {
+		t.Fatalf("expected precio_base_referencial 9800.5, got %.2f", proveedores[0].PrecioBaseReferencial)
+	}
+	if proveedores[0].DescuentoPorcentaje != 6.25 {
+		t.Fatalf("expected descuento_porcentaje 6.25, got %.2f", proveedores[0].DescuentoPorcentaje)
+	}
+	if proveedores[0].PlazoPagoDias != 21 {
+		t.Fatalf("expected plazo_pago_dias 21, got %d", proveedores[0].PlazoPagoDias)
+	}
+	if proveedores[0].CondicionEntrega != "Entrega semanal" {
+		t.Fatalf("expected condicion_entrega 'Entrega semanal', got %q", proveedores[0].CondicionEntrega)
+	}
+
 	eventos, err := dbpkg.ListEmpresaEventosContables(dbEmp, 12, dbpkg.EmpresaEventoContableFilter{Modulo: "compras", Limit: 10})
 	if err != nil {
 		t.Fatalf("list eventos compras: %v", err)
@@ -90,6 +158,30 @@ func TestEmpresaProveedoresEmiteEventoContableCompras(t *testing.T) {
 	}
 	if eventos[0].EntidadID != createdID {
 		t.Fatalf("expected entidad_id=%d, got %d", createdID, eventos[0].EntidadID)
+	}
+}
+
+func TestEmpresaProveedoresRechazaCamposComercialesInvalidos(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_eventos_compras_invalid_payload_handler.db")
+	if err := dbpkg.EnsureEmpresaProductosSchema(dbEmp); err != nil {
+		t.Fatalf("ensure productos schema: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaEventosContablesSchema(dbEmp); err != nil {
+		t.Fatalf("ensure eventos contables schema: %v", err)
+	}
+
+	h := EmpresaProveedoresHandler(dbEmp)
+	req := httptest.NewRequest(http.MethodPost, "/api/empresa/proveedores", strings.NewReader(`{"empresa_id":12,"nombre":"Proveedor Invalido","descuento_porcentaje":120}`))
+	req = req.WithContext(context.WithValue(req.Context(), "adminEmail", "compras@test.com"))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusBadRequest, rr.Code, rr.Body.String())
+	}
+	if !strings.Contains(strings.ToLower(rr.Body.String()), "descuento_porcentaje") {
+		t.Fatalf("expected validation error about descuento_porcentaje, got body=%s", rr.Body.String())
 	}
 }
 
@@ -150,12 +242,16 @@ func TestEmpresaFacturacionTransaccionalEmiteEventosContables(t *testing.T) {
 	if err := dbpkg.EnsureEmpresaFacturacionElectronicaSchema(dbEmp); err != nil {
 		t.Fatalf("ensure facturacion schema: %v", err)
 	}
+	if err := dbpkg.EnsureEmpresaConfiguracionAvanzadaSchema(dbEmp); err != nil {
+		t.Fatalf("ensure configuracion avanzada schema: %v", err)
+	}
 	if err := dbpkg.EnsureEmpresaDocumentosTransaccionalesSchema(dbEmp); err != nil {
 		t.Fatalf("ensure documentos transaccionales schema: %v", err)
 	}
 	if err := dbpkg.EnsureEmpresaEventosContablesSchema(dbEmp); err != nil {
 		t.Fatalf("ensure eventos contables schema: %v", err)
 	}
+	seedFacturacionCumplimientoConfig(t, dbEmp, 31)
 
 	h := EmpresaFacturacionElectronicaHandler(dbEmp)
 
@@ -169,6 +265,12 @@ func TestEmpresaFacturacionTransaccionalEmiteEventosContables(t *testing.T) {
 	}
 	if !strings.Contains(rrEmitir.Body.String(), `"estado_nuevo":"emitida"`) {
 		t.Fatalf("expected estado_nuevo emitida, got body=%s", rrEmitir.Body.String())
+	}
+	if !strings.Contains(rrEmitir.Body.String(), `"numero_legal":"FE-1"`) {
+		t.Fatalf("expected numero_legal FE-1, got body=%s", rrEmitir.Body.String())
+	}
+	if !strings.Contains(strings.ToLower(rrEmitir.Body.String()), `"cumplimiento_normativo"`) {
+		t.Fatalf("expected cumplimiento_normativo block, got body=%s", rrEmitir.Body.String())
 	}
 
 	reqAnular := httptest.NewRequest(http.MethodPut, "/api/empresa/facturacion_electronica?action=anular", strings.NewReader(`{"empresa_id":31,"documento_codigo":"FAC-1001","estado_actual":"emitida","periodo_contable":"2026-04"}`))
@@ -216,6 +318,51 @@ func TestEmpresaFacturacionTransaccionalEmiteEventosContables(t *testing.T) {
 	}
 	if facturaAnulada.EntidadID != facturaEmitida.EntidadID {
 		t.Fatalf("expected factura_anulada entidad_id=%d, got %d", facturaEmitida.EntidadID, facturaAnulada.EntidadID)
+	}
+
+	docPersistido, err := dbpkg.GetEmpresaDocumentoFacturacionByCodigo(dbEmp, 31, "factura_electronica", "FAC-1001")
+	if err != nil {
+		t.Fatalf("get documento facturacion persistido: %v", err)
+	}
+	if docPersistido.NumeroLegal != "FE-1" {
+		t.Fatalf("expected numero_legal FE-1, got %q", docPersistido.NumeroLegal)
+	}
+	if docPersistido.CodigoValidacion == "" {
+		t.Fatalf("expected codigo_validacion not empty")
+	}
+}
+
+func TestEmpresaFacturacionTransaccionalEmitirRechazaSinCumplimientoLegal(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_eventos_facturacion_transaccional_sin_cumplimiento_handler.db")
+	if err := dbpkg.EnsureEmpresaFacturacionElectronicaSchema(dbEmp); err != nil {
+		t.Fatalf("ensure facturacion schema: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaDocumentosTransaccionalesSchema(dbEmp); err != nil {
+		t.Fatalf("ensure documentos transaccionales schema: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaEventosContablesSchema(dbEmp); err != nil {
+		t.Fatalf("ensure eventos contables schema: %v", err)
+	}
+
+	h := EmpresaFacturacionElectronicaHandler(dbEmp)
+	reqEmitir := httptest.NewRequest(http.MethodPut, "/api/empresa/facturacion_electronica?action=emitir", strings.NewReader(`{"empresa_id":31,"documento_codigo":"FAC-2001","estado_actual":"borrador","monto_total":85000,"moneda":"COP","periodo_contable":"2026-04"}`))
+	reqEmitir = reqEmitir.WithContext(context.WithValue(reqEmitir.Context(), "adminEmail", "facturacion@test.com"))
+	reqEmitir.Header.Set("Content-Type", "application/json")
+	rrEmitir := httptest.NewRecorder()
+	h.ServeHTTP(rrEmitir, reqEmitir)
+	if rrEmitir.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusUnprocessableEntity, rrEmitir.Code, rrEmitir.Body.String())
+	}
+	if !strings.Contains(strings.ToLower(rrEmitir.Body.String()), "cumplimiento normativo") {
+		t.Fatalf("expected cumplimiento normativo error, got body=%s", rrEmitir.Body.String())
+	}
+
+	eventos, err := dbpkg.ListEmpresaEventosContables(dbEmp, 31, dbpkg.EmpresaEventoContableFilter{Modulo: "facturacion", Limit: 10})
+	if err != nil {
+		t.Fatalf("list eventos facturacion: %v", err)
+	}
+	if hasEventoContable(eventos, "factura_emitida") {
+		t.Fatalf("expected no factura_emitida event when cumplimiento fails")
 	}
 }
 

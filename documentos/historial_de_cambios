@@ -1,5 +1,343 @@
 - Historial de cambios
 
+- 2026-04-04: Actualizacion de pagina de ayuda con tutorial por modulo
+    - Se actualiza `web/ayuda/ayuda.html` con la seccion `Tutorial por módulos`.
+    - Se documentan pasos operativos para modulos de administracion global y para cada modulo del panel de empresa.
+    - Se agregan accesos directos a rutas clave para acelerar onboarding y soporte operativo.
+
+- 2026-04-04: Revision integral real de modulos + separacion multiempresa + limpieza de temporales
+    - Validacion tecnica real ejecutada (sin simulaciones) sobre backend:
+        - `go test ./auth ./db ./handlers ./metrics ./utils -count=1` (ok).
+        - `go test ./... -count=1` (ok).
+        - `go test ./handlers -run "TestEmpresaScope|FueraDeAlcance|WithEmpresa|isol|Aisla|multiempresa|UsuariosHandlerAislaEmpresa|ConsolidaEmpresa" -count=1` (ok).
+        - `go test ./handlers -run "TestEmpresaClientes|TestEmpresaProveedores|TestEmpresaFacturacion|TestEmpresaCompras|TestEmpresaInventario|TestEmpresaFinanzas|TestEmpresaAuditoria|TestEmpresaCarritos|TestEmpresaUsuarios|TestModelosHandler" -count=1` (ok).
+        - `go test ./db -run "Test.*(Cliente|Proveedor|Facturacion|Compra|Inventario|Finanzas|Evento|Auditoria|Scope|Empresa)" -count=1` (ok).
+    - Resultado de la revision:
+        - modulos integrados y operativos en capa DB + handlers.
+        - aislamiento por empresa validado por pruebas de alcance/permisos (`empresa_id` y `WithEmpresa*Permissions`).
+    - Limpieza de artefactos temporales/no usados ejecutada:
+        - `backend/tmp_api.json`.
+        - `backend/tmp_config.html`.
+        - `backend/server.err`.
+        - `backend/server.run.err`.
+        - `backend/db/empresas.db.20260326-174525.bak`.
+        - `backend/db/superadministrador.db.20260326-174324.bak`.
+        - `backend/db/superadministrador.db.20260326-174525.bak`.
+    - Revalidacion posterior a limpieza:
+        - `go test ./... -count=1` (ok).
+
+- 2026-04-04: Punto 14 - cierre de validacion final operativa
+    - Se valida consistencia final sin errores en:
+        - `scripts/generar_reporte_operacion_continua.ps1`.
+        - `documentos/punto_14_operacion_continua.md`.
+        - `documentos/roadmap_trimestral_pos_multiempresa.md`.
+        - `documentos/punto_14_operacion_continua_reporte.md`.
+        - `documentos/plan_maestro_pos_multiempresa_14_puntos.md`.
+        - `documentos/descripcion_de_archivos`.
+        - `documentos/historial_de_cambios`.
+        - `CHANGELOG.md`.
+    - Se confirma evidencia operativa vigente:
+        - `scripts/logs/operacion-continua-20260404-184414.log`.
+        - `documentos/punto_14_operacion_continua_reporte.md`.
+    - Resultado: el punto 14 queda en `en curso` con framework operativo activo y seguimiento trimestral inicializado.
+
+- 2026-04-04: Punto 14 - operacion continua (inicio con KPI y roadmap trimestral)
+    - Se crea `documentos/punto_14_operacion_continua.md`:
+        - define cadencia operativa (diaria, semanal, mensual y trimestral).
+        - define KPI de gobierno y flujo minimo obligatorio de seguimiento.
+    - Se crea `documentos/roadmap_trimestral_pos_multiempresa.md`:
+        - incorpora roadmap 2026 por trimestres (Q2, Q3, Q4) con indicadores de salida.
+    - Se crea `scripts/generar_reporte_operacion_continua.ps1`:
+        - consolida estado del plan maestro y gate tecnico de referencia del punto 13.
+        - genera `documentos/punto_14_operacion_continua_reporte.md` y log en `scripts/logs/`.
+    - Se actualiza `documentos/plan_maestro_pos_multiempresa_14_puntos.md`:
+        - punto 14 cambia a estado `en curso`.
+    - Validacion ejecutada:
+        - `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\generar_reporte_operacion_continua.ps1` (ok).
+
+- 2026-04-04: Punto 13 - calidad, UAT y despliegue (validacion integral inicial)
+    - Se crea `scripts/validar_punto_13.ps1`:
+        - ejecuta gate tecnico con:
+            - `go test ./auth ./db ./handlers ./metrics ./utils -count=1`,
+            - `go test ./... -count=1`.
+        - genera evidencia automatica en:
+            - `documentos/punto_13_validacion_integral_resultado.md`,
+            - `scripts/logs/punto13-validacion-*.log`.
+    - Se crea `documentos/punto_13_calidad_uat_despliegue.md`:
+        - define flujo de validacion, matriz UAT minima, gates de salida y regla de rollback.
+    - Se actualiza `documentos/release_checklist.md`:
+        - incorpora gate explicito del punto 13 y verificacion de evidencia.
+    - Se actualiza `documentos/plan_maestro_pos_multiempresa_14_puntos.md`:
+        - punto 13 pasa a estado `en curso` con evidencia de validacion tecnica ejecutada.
+    - Validaciones ejecutadas:
+        - `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\validar_punto_13.ps1` (ok).
+        - `go test ./auth ./db ./handlers ./metrics ./utils -count=1` (ok).
+        - `go test ./... -count=1` (ok).
+
+- 2026-04-04: Punto 8 - refuerzo de pruebas de cumplimiento normativo en emision de facturacion
+    - Se crea `backend/db/facturacion_electronica_test.go`:
+        - `TestPrepareFacturacionDocumentoLegalSuccessAndConsecutivo` valida emision legal exitosa e incremento secuencial de `proximo_consecutivo`.
+        - `TestPrepareFacturacionDocumentoLegalRejectsExpiredResolution` valida rechazo por resolucion vencida sin consumir consecutivo.
+        - `TestPrepareFacturacionDocumentoLegalRejectsConfigInactivaAndRangoAgotado` valida rechazo por configuracion FE inactiva y por agotamiento de rango de consecutivos.
+    - Se actualiza documentacion de trazabilidad:
+        - `documentos/plan_maestro_pos_multiempresa_14_puntos.md`,
+        - `documentos/descripcion_de_archivos`,
+        - `documentos/historial_de_cambios`,
+        - `CHANGELOG.md`.
+    - Validaciones ejecutadas:
+        - `gofmt -w db/facturacion_electronica_test.go` (ok).
+        - `go test ./db -run "TestPrepareFacturacionDocumentoLegal" -count=1` (ok).
+        - `go test ./db ./handlers -run "TestPrepareFacturacionDocumentoLegal|TestEmpresaDocumentoFacturacionUpsertAndGet|TestEmpresaFacturacionTransaccional" -count=1` (ok).
+
+- 2026-04-04: Punto 9 - modulo de compras dedicado (orden, recepcion y contabilizacion)
+    - Se actualiza `backend/db/documentos_transaccionales.go`:
+        - se agregan `ListEmpresaDocumentosCompraByEmpresa` y `SetEmpresaDocumentoCompraEstadoByCodigo` para consulta filtrada y activacion/desactivacion logica por codigo documental.
+    - Se actualiza `backend/handlers/compras.go` (nuevo archivo):
+        - se agrega endpoint unificado `EmpresaComprasDocumentosHandler` con operaciones `GET/POST/PUT/DELETE` para ciclo documental de compras.
+        - soporta acciones `crear`, `emitir_orden`, `recepcionar_compra`, `contabilizar_compra` y `activar/desactivar` con validacion de transiciones.
+    - Se actualiza `backend/main.go`:
+        - se registra ruta protegida `/api/empresa/compras/documentos` bajo `WithEmpresaComprasPermissions`.
+    - Se crea `backend/handlers/compras_documentos_test.go`:
+        - cobertura del flujo completo del modulo dedicado (crear/emitir/recepcionar/contabilizar), activacion/inactivacion y transicion invalida.
+    - Se actualiza `backend/db/documentos_transaccionales_test.go`:
+        - nueva prueba `TestEmpresaDocumentoCompraListAndSetEstadoByCodigo` para listado y cambio de estado activo por codigo.
+    - Se crea `web/administrar_empresa/compras.html`:
+        - nueva vista dedicada de compras con formulario de documento, filtros y acciones de ciclo documental.
+    - Se actualiza navegacion de empresa:
+        - `web/administrar_empresa.html` agrega enlace `Compras`.
+        - `web/js/administrar_empresa.js` agrega catalogo de permisos para `linkCompras` bajo modulo `compras`.
+    - Se actualiza documentacion tecnica:
+        - `documentos/plan_maestro_pos_multiempresa_14_puntos.md`,
+        - `documentos/diagramas/estructura_del_codigo.md`,
+        - `documentos/diagramas/diagrama_flujo_procesos.md`,
+        - `documentos/descripcion_del_proyecto`,
+        - `documentos/descripcion_de_archivos`,
+        - `documentos/historial_de_cambios`,
+        - `CHANGELOG.md`.
+    - Validaciones ejecutadas:
+        - `gofmt -w handlers/compras.go handlers/compras_documentos_test.go main.go db/documentos_transaccionales.go db/documentos_transaccionales_test.go`.
+        - `go test ./db -run "TestEmpresaDocumentoCompraListAndSetEstadoByCodigo" -count=1` (ok).
+        - `go test ./handlers -run "TestEmpresaComprasDocumentos" -count=1` (ok).
+        - `go test ./db ./handlers -run "TestEmpresaDocumentoCompraListAndSetEstadoByCodigo|TestEmpresaComprasDocumentos" -count=1` (ok).
+        - `go test ./... -run "TestEmpresaComprasDocumentos|TestEmpresaDocumentoCompraListAndSetEstadoByCodigo" -count=1` (ok).
+
+- 2026-04-04: Punto 7 - gestion de proveedores (catalogo, precios y condiciones)
+    - Se actualiza `backend/db/productos.go`:
+        - se amplia `Proveedor` con `catalogo_referencia`, `precio_base_referencial`, `descuento_porcentaje`, `plazo_pago_dias` y `condicion_entrega`.
+        - se actualiza `EnsureEmpresaProductosSchema` para crear/migrar dichas columnas en `proveedores`.
+        - se agregan validaciones de negocio para precio/descuento/plazo en CRUD de proveedores.
+    - Se actualiza `backend/handlers/productos.go`:
+        - se valida payload comercial en `POST/PUT /api/empresa/proveedores`.
+        - se amplian metadatos de eventos contables de compras con condiciones/precios del proveedor.
+    - Se actualiza `web/administrar_empresa/administrar_productos.html`:
+        - se amplia formulario de proveedores con catalogo, precio base, descuento, plazo y condicion de entrega.
+        - se amplia grilla para mostrar precio base y resumen de condiciones comerciales.
+    - Se actualizan pruebas:
+        - `backend/db/productos_categorias_test.go` agrega `TestProveedorCRUDIncluyeCatalogoPreciosYCondiciones`.
+        - `backend/handlers/eventos_contables_modulos_test.go` extiende cobertura y agrega `TestEmpresaProveedoresRechazaCamposComercialesInvalidos`.
+    - Se actualiza documentacion tecnica:
+        - `documentos/plan_maestro_pos_multiempresa_14_puntos.md`,
+        - `documentos/diagramas/estructura_del_codigo.md`,
+        - `documentos/descripcion_del_proyecto`,
+        - `estructura_bd.md`,
+        - `documentos/descripcion_de_archivos`,
+        - `documentos/historial_de_cambios`,
+        - `CHANGELOG.md`.
+    - Validaciones ejecutadas:
+        - `gofmt -w db/productos.go db/productos_categorias_test.go handlers/productos.go handlers/eventos_contables_modulos_test.go`.
+        - `go test ./db -run "TestProveedorCRUDIncluyeCatalogoPreciosYCondiciones" -count=1` (ok).
+        - `go test ./handlers -run "TestEmpresaProveedoresEmiteEventoContableCompras|TestEmpresaProveedoresRechazaCamposComercialesInvalidos" -count=1` (ok).
+        - `get_errors` en backend/frontend modificado (ok).
+
+- 2026-04-04: Punto 6 - gestion de clientes (perfil, historial y segmentacion)
+    - Se actualiza `backend/db/clientes.go`:
+        - nuevos contratos `ClientePerfilComercial`, `ClienteCompraHistorial`, `ClienteSegmentacionResumen`.
+        - nuevas funciones `GetClientePerfilComercialByEmpresa`, `GetClienteHistorialComprasByEmpresa`, `GetClientesSegmentacionByEmpresa`.
+    - Se actualiza `backend/handlers/clientes.go`:
+        - se amplia `GET /api/empresa/clientes` con `action=perfil`, `action=historial` y `action=segmentacion|segmentos`.
+        - se agrega helper `parseClienteIDFromQuery`.
+    - Se actualiza `web/administrar_empresa/administrar_clientes.html`:
+        - nuevo bloque de segmentacion de clientes.
+        - nuevo bloque de perfil e historial por cliente.
+        - nueva accion `Perfil` por fila con carga de datos analiticos.
+    - Se crean pruebas nuevas:
+        - `backend/db/clientes_test.go` (perfil/historial/segmentacion en DB).
+        - `backend/handlers/clientes_test.go` (acciones del handler y escenarios de error).
+    - Se actualiza documentacion tecnica:
+        - `documentos/plan_maestro_pos_multiempresa_14_puntos.md`,
+        - `documentos/diagramas/estructura_del_codigo.md`,
+        - `documentos/descripcion_del_proyecto`,
+        - `documentos/descripcion_de_archivos`,
+        - `documentos/historial_de_cambios`,
+        - `CHANGELOG.md`.
+    - Validaciones ejecutadas:
+        - `gofmt -w db/clientes.go db/clientes_test.go handlers/clientes.go handlers/clientes_test.go`.
+        - `go test ./db -run "TestGetClientePerfilComercialByEmpresaAndHistorial|TestGetClientePerfilComercialByEmpresaSinComprasSegmentoNuevo" -count=1` (ok).
+        - `go test ./handlers -run "TestEmpresaClientesHandlerPerfilHistorialSegmentacion" -count=1` (ok).
+        - `get_errors` en backend/frontend modificado (ok).
+
+- 2026-04-04: Punto 5 — continuacion preventiva-compras ciclo documental (fase 12)
+    - Se actualiza `backend/db/productos.go`:
+        - nuevo contrato `InventarioPlanReposicionOrdenEstadoActualizado`,
+        - nueva funcion `ActualizarEstadoOrdenCompraDesdeReposicion` para transiciones de OC emitida por reposicion (`recepcionar_compra`, `contabilizar_compra`).
+    - Se actualiza `backend/handlers/productos.go`:
+        - nuevo endpoint `POST /api/empresa/compras/plan_reposicion/actualizar_estado`.
+        - registro de eventos contables `compra_recepcionada` y `compra_contabilizada`.
+    - Se actualiza `backend/main.go`:
+        - registro de ruta protegida `/api/empresa/compras/plan_reposicion/actualizar_estado` bajo permisos de compras.
+    - Se actualiza `web/administrar_empresa/administrar_productos.html`:
+        - bloque unificado `fases 10-12` con nuevas acciones `Recepcionar orden` y `Contabilizar orden`.
+        - contexto visible del estado de la OC emitida en el flujo de reposicion.
+    - Se actualizan pruebas:
+        - `backend/handlers/productos_categorias_test.go` (ciclo HTTP de actualizacion de estado),
+        - `backend/db/productos_categorias_test.go` (transiciones validas/invalidas en DB).
+    - Se actualiza documentacion tecnica:
+        - `documentos/plan_maestro_pos_multiempresa_14_puntos.md`,
+        - `documentos/diagramas/estructura_del_codigo.md`,
+        - `documentos/descripcion_del_proyecto`,
+        - `documentos/descripcion_de_archivos`,
+        - `documentos/historial_de_cambios`,
+        - `CHANGELOG.md`.
+    - Validaciones ejecutadas:
+        - `gofmt -w backend/db/productos.go backend/db/productos_categorias_test.go backend/handlers/productos.go backend/handlers/productos_categorias_test.go backend/main.go`.
+        - `go test ./db -run "TestEmitirOrdenCompraDesdePlanReposicionBorradorPersistDoc|TestActualizarEstadoOrdenCompraDesdeReposicionCiclo"` (ok).
+        - `go test ./handlers -run "TestEmpresaComprasPlanReposicionEmitirOrdenHandlerEmiteDocumento|TestEmpresaComprasPlanReposicionActualizarEstadoHandlerGestionaCiclo"` (ok).
+        - `get_errors` en backend/frontend modificado (ok).
+
+- 2026-04-04: Punto 5 — continuacion preventiva-compras emitible (emision desde borrador)
+    - Se actualiza `backend/db/productos.go`:
+        - nuevo contrato `InventarioPlanReposicionOrdenEmitida`,
+        - nueva funcion `EmitirOrdenCompraDesdePlanReposicionBorrador` para persistir ordenes de compra desde el borrador preventivo.
+    - Se actualiza `backend/handlers/productos.go`:
+        - nuevo endpoint `POST /api/empresa/compras/plan_reposicion/emitir_orden` con validacion de entrada y emision de evento contable.
+    - Se actualiza `backend/main.go`:
+        - registro de ruta protegida `/api/empresa/compras/plan_reposicion/emitir_orden` bajo permisos de compras.
+    - Se actualiza `web/administrar_empresa/administrar_productos.html`:
+        - nueva accion `Emitir orden` en el bloque de borrador (fase 10),
+        - integracion con endpoint de compras para materializar la OC,
+        - refresco de plan/consolidado tras la emision.
+    - Se actualizan pruebas:
+        - `backend/handlers/productos_categorias_test.go` (handler de emision desde borrador),
+        - `backend/db/productos_categorias_test.go` (persistencia documental desde borrador).
+    - Se actualiza documentacion tecnica:
+        - `documentos/plan_maestro_pos_multiempresa_14_puntos.md`,
+        - `documentos/diagramas/estructura_del_codigo.md`,
+        - `documentos/descripcion_del_proyecto`,
+        - `documentos/descripcion_de_archivos`,
+        - `documentos/historial_de_cambios`,
+        - `CHANGELOG.md`.
+    - Validaciones ejecutadas:
+        - `gofmt -w db/productos.go handlers/productos.go main.go db/productos_categorias_test.go handlers/productos_categorias_test.go`.
+        - `go test ./handlers ./db -count=1` (ok).
+        - `get_errors` en backend/frontend modificado (ok).
+
+- 2026-04-04: Punto 5 — continuacion preventiva-compras ordenable (borrador por proveedor)
+    - Se actualiza `backend/db/productos.go`:
+        - nuevos contratos `InventarioPlanReposicionBorradorItem` y `InventarioPlanReposicionBorradorCompra`,
+        - nueva consulta `GetInventarioPlanReposicionBorradorByEmpresa` para construir borrador de orden por proveedor con lineas y agregados.
+    - Se actualiza `backend/handlers/productos.go`:
+        - nuevo endpoint `GET /api/empresa/inventario/plan_reposicion_borrador` con validacion de `proveedor_id`, `dias_ventana`, `solo_riesgo` y `bodega_id`.
+    - Se actualiza `backend/main.go`:
+        - registro de ruta protegida `/api/empresa/inventario/plan_reposicion_borrador`.
+    - Se actualiza `web/administrar_empresa/administrar_productos.html`:
+        - nuevo bloque `Borrador de orden de compra por proveedor (fase 10)`,
+        - accion `Borrador OC` desde consolidado de proveedores,
+        - accion `Limpiar borrador` para reiniciar vista.
+    - Se actualizan pruebas:
+        - `backend/handlers/productos_categorias_test.go` (handler de borrador por proveedor),
+        - `backend/db/productos_categorias_test.go` (construccion de borrador en DB).
+    - Se actualiza documentacion tecnica:
+        - `documentos/plan_maestro_pos_multiempresa_14_puntos.md`,
+        - `documentos/diagramas/estructura_del_codigo.md`,
+        - `documentos/descripcion_del_proyecto`,
+        - `documentos/descripcion_de_archivos`,
+        - `documentos/historial_de_cambios`,
+        - `CHANGELOG.md`.
+    - Validaciones ejecutadas:
+        - `gofmt -w db/productos.go handlers/productos.go main.go db/productos_categorias_test.go handlers/productos_categorias_test.go`.
+        - `go test ./handlers ./db -count=1` (ok).
+        - `get_errors` en backend/frontend modificado (ok).
+
+- 2026-04-04: Punto 5 — continuacion preventiva-compras consolidada (consolidado por proveedor)
+    - Se actualiza `backend/db/productos.go`:
+        - nuevo contrato `InventarioPlanReposicionProveedorResumen`,
+        - nueva consulta `GetInventarioPlanReposicionResumenByEmpresa` para consolidar por proveedor items, cantidad y costo estimado total.
+    - Se actualiza `backend/handlers/productos.go`:
+        - nuevo endpoint `GET /api/empresa/inventario/plan_reposicion_resumen` con validacion de `dias_ventana`, `solo_riesgo`, `bodega_id`, `limit` y `offset`.
+    - Se actualiza `backend/main.go`:
+        - registro de ruta protegida `/api/empresa/inventario/plan_reposicion_resumen`.
+    - Se actualiza `web/administrar_empresa/administrar_productos.html`:
+        - nuevo bloque `Consolidado de compra por proveedor (fase 9)`,
+        - accion para filtrar items del plan de reposicion por proveedor,
+        - accion `Ver todos` para limpiar filtro y recuperar vista global.
+    - Se actualizan pruebas:
+        - `backend/handlers/productos_categorias_test.go` (handler de resumen por proveedor),
+        - `backend/db/productos_categorias_test.go` (agrupacion por proveedor en DB).
+    - Se actualiza documentacion tecnica:
+        - `documentos/plan_maestro_pos_multiempresa_14_puntos.md`,
+        - `documentos/diagramas/estructura_del_codigo.md`,
+        - `documentos/descripcion_del_proyecto`,
+        - `documentos/descripcion_de_archivos`,
+        - `documentos/historial_de_cambios`,
+        - `CHANGELOG.md`.
+    - Validaciones ejecutadas:
+        - `gofmt -w db/productos.go handlers/productos.go handlers/productos_categorias_test.go db/productos_categorias_test.go main.go`.
+        - `go test ./handlers ./db -count=1` (ok).
+        - `get_errors` en `web/administrar_empresa/administrar_productos.html` (ok).
+
+- 2026-04-04: Punto 5 — continuacion preventiva-compras (plan de reposicion por proveedor)
+    - Se actualiza `backend/db/productos.go`:
+        - nuevo contrato `InventarioPlanReposicionItem`,
+        - nueva consulta `GetInventarioPlanReposicionByEmpresa` para consolidar sugerencias por proveedor con cantidad, costo unitario y costo estimado.
+    - Se actualiza `backend/handlers/productos.go`:
+        - nuevo endpoint `GET /api/empresa/inventario/plan_reposicion` con validacion de `dias_ventana`, `solo_riesgo`, `bodega_id`, `limit` y `offset`.
+    - Se actualiza `backend/main.go`:
+        - registro de ruta protegida `/api/empresa/inventario/plan_reposicion`.
+    - Se actualiza `web/administrar_empresa/administrar_productos.html`:
+        - nuevo bloque `Plan de reposicion por proveedor (fase 8)`,
+        - visualizacion de costo estimado por item y resumen total,
+        - accion `Preparar` para preconfigurar reposicion preventiva en ajuste de inventario.
+    - Se actualizan pruebas:
+        - `backend/handlers/productos_categorias_test.go` (handler de plan de reposicion),
+        - `backend/db/productos_categorias_test.go` (consolidado proveedor/costo en DB).
+    - Se actualiza documentacion tecnica:
+        - `documentos/plan_maestro_pos_multiempresa_14_puntos.md`,
+        - `documentos/diagramas/estructura_del_codigo.md`,
+        - `documentos/descripcion_del_proyecto`,
+        - `documentos/descripcion_de_archivos`,
+        - `documentos/historial_de_cambios`,
+        - `CHANGELOG.md`.
+    - Validaciones ejecutadas:
+        - `gofmt -w db/productos.go handlers/productos.go handlers/productos_categorias_test.go db/productos_categorias_test.go main.go`.
+        - `go test ./handlers ./db -count=1` (ok).
+        - `get_errors` en `web/administrar_empresa/administrar_productos.html` (ok).
+
+- 2026-04-04: Punto 5 — continuacion preventiva (proyeccion de quiebre)
+    - Se actualiza `backend/db/productos.go`:
+        - nuevo contrato `InventarioProyeccionQuiebre`,
+        - nueva consulta `GetInventarioProyeccionQuiebreByEmpresa` para estimar consumo diario, dias de cobertura, estado proyectado y reposicion sugerida por producto/bodega.
+    - Se actualiza `backend/handlers/productos.go`:
+        - nuevo endpoint `GET /api/empresa/inventario/proyeccion_quiebre` con validacion de `dias_ventana`, `bodega_id`, `limit` y `offset`.
+    - Se actualiza `backend/main.go`:
+        - registro de ruta protegida `/api/empresa/inventario/proyeccion_quiebre`.
+    - Se actualiza `web/administrar_empresa/administrar_productos.html`:
+        - nuevo bloque `Proyeccion de quiebre (preventiva)` sincronizado con filtros de kardex,
+        - nueva accion `Preparar` para preconfigurar reposicion preventiva en ajuste de inventario.
+    - Se actualizan pruebas:
+        - `backend/handlers/productos_categorias_test.go` (handler de proyeccion preventiva),
+        - `backend/db/productos_categorias_test.go` (priorizacion por riesgo en DB).
+    - Se actualiza documentacion tecnica:
+        - `documentos/plan_maestro_pos_multiempresa_14_puntos.md`,
+        - `documentos/diagramas/estructura_del_codigo.md`,
+        - `documentos/descripcion_del_proyecto`,
+        - `documentos/descripcion_de_archivos`,
+        - `documentos/historial_de_cambios`,
+        - `CHANGELOG.md`.
+    - Validaciones ejecutadas:
+        - `gofmt -w db/productos.go handlers/productos.go handlers/productos_categorias_test.go db/productos_categorias_test.go main.go`.
+        - `go test ./handlers ./db -count=1` (ok).
+        - `get_errors` en `web/administrar_empresa/administrar_productos.html` (ok).
+
 - 2026-04-04: Punto 5 — continuacion operativa-analitica (balance por bodega)
     - Se actualiza `backend/db/productos.go`:
         - nuevo contrato `InventarioBalanceBodega`,
@@ -3721,4 +4059,21 @@ Archivos modificados:
 - scripts/logs/actualizar_repositorio-20260404-151619.log
 - scripts/logs/actualizar_repositorio-20260404-164727.log
 - web/administrar_empresa/administrar_productos.html
+
+2026-04-04: Punto 8 - emision legal y cumplimiento normativo (fase inicial)
+- Accion: Se fortalece el flujo `action=emitir` en facturacion electronica con validacion legal previa por empresa/pais.
+- Backend DB:
+    - `backend/db/facturacion_electronica.go`: nuevo helper `PrepareFacturacionDocumentoLegal` que valida datos fiscales minimos, vigencia de resolucion y reserva consecutivo legal.
+    - `backend/db/documentos_transaccionales.go`: se amplia `empresa_facturacion_documentos` con `numero_legal`, `codigo_validacion`, `pais_codigo` y `ambiente_fe`.
+- Backend handlers:
+    - `backend/handlers/facturacion_electronica.go`: `emitir` retorna `422` cuando no se cumple la configuracion legal; en exito persiste y devuelve metadata normativa.
+- Frontend:
+    - `web/administrar_empresa/facturacion_electronica.html`: se agrega bloque operativo para emitir/anular/nota credito y visualizar resultado estructurado.
+- Pruebas:
+    - `backend/db/documentos_transaccionales_test.go` valida persistencia de metadata legal.
+    - `backend/handlers/eventos_contables_modulos_test.go` agrega cobertura de emision legal exitosa y rechazo sin cumplimiento.
+- Validacion ejecutada:
+    - `go test ./db -run "TestEmpresaDocumentoFacturacionUpsertAndGet" -count=1` (ok).
+    - `go test ./handlers -run "TestEmpresaFacturacionTransaccionalEmiteEventosContables|TestEmpresaFacturacionTransaccionalEmitirRechazaSinCumplimientoLegal|TestEmpresaFacturacionTransaccionalRechazaTransicionInvalida" -count=1` (ok).
+    - `go test ./db ./handlers -count=1` (ok).
 

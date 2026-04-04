@@ -587,6 +587,559 @@ func EmpresaInventarioBalanceBodegasHandler(dbEmp *sql.DB) http.HandlerFunc {
 	}
 }
 
+// EmpresaInventarioProyeccionQuiebreHandler estima quiebre por producto/bodega.
+func EmpresaInventarioProyeccionQuiebreHandler(dbEmp *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		empresaID, err := parseEmpresaIDQuery(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		bodegaID, err := parseInt64QueryOptional(r, "bodega_id")
+		if err != nil {
+			http.Error(w, "bodega_id invalido", http.StatusBadRequest)
+			return
+		}
+		diasVentana, err := parseIntQueryOptional(r, "dias_ventana")
+		if err != nil {
+			http.Error(w, "dias_ventana invalido", http.StatusBadRequest)
+			return
+		}
+		if diasVentana <= 0 {
+			diasVentana = 30
+		}
+		if diasVentana > 180 {
+			diasVentana = 180
+		}
+		limit, err := parseIntQueryOptional(r, "limit")
+		if err != nil {
+			http.Error(w, "limit invalido", http.StatusBadRequest)
+			return
+		}
+		offset, err := parseIntQueryOptional(r, "offset")
+		if err != nil {
+			http.Error(w, "offset invalido", http.StatusBadRequest)
+			return
+		}
+
+		rows, err := dbpkg.GetInventarioProyeccionQuiebreByEmpresa(dbEmp, empresaID, bodegaID, diasVentana, limit, offset)
+		if err != nil {
+			http.Error(w, "failed to build inventario proyeccion quiebre: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(rows)
+	}
+}
+
+// EmpresaInventarioPlanReposicionHandler consolida sugerencias de reposicion por proveedor.
+func EmpresaInventarioPlanReposicionHandler(dbEmp *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		empresaID, err := parseEmpresaIDQuery(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		bodegaID, err := parseInt64QueryOptional(r, "bodega_id")
+		if err != nil {
+			http.Error(w, "bodega_id invalido", http.StatusBadRequest)
+			return
+		}
+		diasVentana, err := parseIntQueryOptional(r, "dias_ventana")
+		if err != nil {
+			http.Error(w, "dias_ventana invalido", http.StatusBadRequest)
+			return
+		}
+		if diasVentana <= 0 {
+			diasVentana = 30
+		}
+		if diasVentana > 180 {
+			diasVentana = 180
+		}
+
+		soloRiesgo := true
+		rawSoloRiesgo := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("solo_riesgo")))
+		if rawSoloRiesgo != "" {
+			switch rawSoloRiesgo {
+			case "1", "true", "si", "yes":
+				soloRiesgo = true
+			case "0", "false", "no":
+				soloRiesgo = false
+			default:
+				http.Error(w, "solo_riesgo invalido", http.StatusBadRequest)
+				return
+			}
+		}
+
+		limit, err := parseIntQueryOptional(r, "limit")
+		if err != nil {
+			http.Error(w, "limit invalido", http.StatusBadRequest)
+			return
+		}
+		offset, err := parseIntQueryOptional(r, "offset")
+		if err != nil {
+			http.Error(w, "offset invalido", http.StatusBadRequest)
+			return
+		}
+
+		rows, err := dbpkg.GetInventarioPlanReposicionByEmpresa(dbEmp, empresaID, bodegaID, diasVentana, soloRiesgo, limit, offset)
+		if err != nil {
+			http.Error(w, "failed to build inventario plan reposicion: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(rows)
+	}
+}
+
+// EmpresaInventarioPlanReposicionResumenHandler devuelve el consolidado de compra por proveedor.
+func EmpresaInventarioPlanReposicionResumenHandler(dbEmp *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		empresaID, err := parseEmpresaIDQuery(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		bodegaID, err := parseInt64QueryOptional(r, "bodega_id")
+		if err != nil {
+			http.Error(w, "bodega_id invalido", http.StatusBadRequest)
+			return
+		}
+		diasVentana, err := parseIntQueryOptional(r, "dias_ventana")
+		if err != nil {
+			http.Error(w, "dias_ventana invalido", http.StatusBadRequest)
+			return
+		}
+		if diasVentana <= 0 {
+			diasVentana = 30
+		}
+		if diasVentana > 180 {
+			diasVentana = 180
+		}
+
+		soloRiesgo := true
+		rawSoloRiesgo := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("solo_riesgo")))
+		if rawSoloRiesgo != "" {
+			switch rawSoloRiesgo {
+			case "1", "true", "si", "yes":
+				soloRiesgo = true
+			case "0", "false", "no":
+				soloRiesgo = false
+			default:
+				http.Error(w, "solo_riesgo invalido", http.StatusBadRequest)
+				return
+			}
+		}
+
+		limit, err := parseIntQueryOptional(r, "limit")
+		if err != nil {
+			http.Error(w, "limit invalido", http.StatusBadRequest)
+			return
+		}
+		offset, err := parseIntQueryOptional(r, "offset")
+		if err != nil {
+			http.Error(w, "offset invalido", http.StatusBadRequest)
+			return
+		}
+
+		rows, err := dbpkg.GetInventarioPlanReposicionResumenByEmpresa(dbEmp, empresaID, bodegaID, diasVentana, soloRiesgo, limit, offset)
+		if err != nil {
+			http.Error(w, "failed to build inventario plan reposicion resumen: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(rows)
+	}
+}
+
+// EmpresaInventarioPlanReposicionBorradorHandler devuelve un borrador de orden de compra para un proveedor.
+func EmpresaInventarioPlanReposicionBorradorHandler(dbEmp *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		empresaID, err := parseEmpresaIDQuery(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		proveedorID, err := parseInt64QueryOptional(r, "proveedor_id")
+		if err != nil {
+			http.Error(w, "proveedor_id invalido", http.StatusBadRequest)
+			return
+		}
+		if proveedorID <= 0 {
+			http.Error(w, "proveedor_id es obligatorio", http.StatusBadRequest)
+			return
+		}
+
+		bodegaID, err := parseInt64QueryOptional(r, "bodega_id")
+		if err != nil {
+			http.Error(w, "bodega_id invalido", http.StatusBadRequest)
+			return
+		}
+		diasVentana, err := parseIntQueryOptional(r, "dias_ventana")
+		if err != nil {
+			http.Error(w, "dias_ventana invalido", http.StatusBadRequest)
+			return
+		}
+		if diasVentana <= 0 {
+			diasVentana = 30
+		}
+		if diasVentana > 180 {
+			diasVentana = 180
+		}
+
+		soloRiesgo := true
+		rawSoloRiesgo := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("solo_riesgo")))
+		if rawSoloRiesgo != "" {
+			switch rawSoloRiesgo {
+			case "1", "true", "si", "yes":
+				soloRiesgo = true
+			case "0", "false", "no":
+				soloRiesgo = false
+			default:
+				http.Error(w, "solo_riesgo invalido", http.StatusBadRequest)
+				return
+			}
+		}
+
+		row, err := dbpkg.GetInventarioPlanReposicionBorradorByEmpresa(dbEmp, empresaID, proveedorID, bodegaID, diasVentana, soloRiesgo)
+		if err != nil {
+			http.Error(w, "failed to build inventario plan reposicion borrador: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(row)
+	}
+}
+
+// EmpresaComprasPlanReposicionEmitirOrdenHandler emite una OC desde un borrador de reposicion por proveedor.
+func EmpresaComprasPlanReposicionEmitirOrdenHandler(dbEmp *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		q := r.URL.Query()
+		var payload struct {
+			EmpresaID       int64  `json:"empresa_id"`
+			ProveedorID     int64  `json:"proveedor_id"`
+			BodegaID        int64  `json:"bodega_id"`
+			DiasVentana     int    `json:"dias_ventana"`
+			SoloRiesgo      *bool  `json:"solo_riesgo"`
+			DocumentoCodigo string `json:"documento_codigo"`
+			PeriodoContable string `json:"periodo_contable"`
+			Moneda          string `json:"moneda"`
+			Observaciones   string `json:"observaciones"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil && !errors.Is(err, io.EOF) {
+			http.Error(w, "invalid payload", http.StatusBadRequest)
+			return
+		}
+
+		if payload.EmpresaID <= 0 {
+			empresaID, err := parseInt64QueryOptional(r, "empresa_id")
+			if err != nil {
+				http.Error(w, "empresa_id invalido", http.StatusBadRequest)
+				return
+			}
+			payload.EmpresaID = empresaID
+		}
+		if payload.EmpresaID <= 0 {
+			http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+			return
+		}
+
+		if payload.ProveedorID <= 0 {
+			proveedorID, err := parseInt64QueryOptional(r, "proveedor_id")
+			if err != nil {
+				http.Error(w, "proveedor_id invalido", http.StatusBadRequest)
+				return
+			}
+			if proveedorID <= 0 {
+				proveedorID, err = parseInt64QueryOptional(r, "id")
+				if err != nil {
+					http.Error(w, "id/proveedor_id invalido", http.StatusBadRequest)
+					return
+				}
+			}
+			payload.ProveedorID = proveedorID
+		}
+		if payload.ProveedorID <= 0 {
+			http.Error(w, "proveedor_id es obligatorio", http.StatusBadRequest)
+			return
+		}
+
+		if payload.BodegaID <= 0 {
+			bodegaID, err := parseInt64QueryOptional(r, "bodega_id")
+			if err != nil {
+				http.Error(w, "bodega_id invalido", http.StatusBadRequest)
+				return
+			}
+			payload.BodegaID = bodegaID
+		}
+
+		if payload.DiasVentana <= 0 {
+			diasVentana, err := parseIntQueryOptional(r, "dias_ventana")
+			if err != nil {
+				http.Error(w, "dias_ventana invalido", http.StatusBadRequest)
+				return
+			}
+			payload.DiasVentana = diasVentana
+		}
+		if payload.DiasVentana <= 0 {
+			payload.DiasVentana = 30
+		}
+		if payload.DiasVentana > 180 {
+			payload.DiasVentana = 180
+		}
+
+		soloRiesgo := true
+		if payload.SoloRiesgo != nil {
+			soloRiesgo = *payload.SoloRiesgo
+		} else {
+			rawSoloRiesgo := strings.ToLower(strings.TrimSpace(q.Get("solo_riesgo")))
+			if rawSoloRiesgo != "" {
+				switch rawSoloRiesgo {
+				case "1", "true", "si", "yes":
+					soloRiesgo = true
+				case "0", "false", "no":
+					soloRiesgo = false
+				default:
+					http.Error(w, "solo_riesgo invalido", http.StatusBadRequest)
+					return
+				}
+			}
+		}
+
+		if strings.TrimSpace(payload.DocumentoCodigo) == "" {
+			payload.DocumentoCodigo = strings.TrimSpace(q.Get("documento_codigo"))
+		}
+		if strings.TrimSpace(payload.PeriodoContable) == "" {
+			payload.PeriodoContable = strings.TrimSpace(q.Get("periodo_contable"))
+		}
+		if strings.TrimSpace(payload.Moneda) == "" {
+			payload.Moneda = strings.TrimSpace(q.Get("moneda"))
+		}
+
+		resultado, err := dbpkg.EmitirOrdenCompraDesdePlanReposicionBorrador(
+			dbEmp,
+			payload.EmpresaID,
+			payload.ProveedorID,
+			payload.BodegaID,
+			payload.DiasVentana,
+			soloRiesgo,
+			payload.DocumentoCodigo,
+			payload.PeriodoContable,
+			payload.Moneda,
+			adminEmailFromRequest(r),
+			payload.Observaciones,
+		)
+		if err != nil {
+			if strings.Contains(strings.ToLower(err.Error()), "no hay items sugeridos") {
+				http.Error(w, err.Error(), http.StatusConflict)
+				return
+			}
+			http.Error(w, "failed to emitir orden de compra desde borrador: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		registrarEventoContableNoBloqueante(dbEmp, r, "compras", dbpkg.EmpresaEventoContable{
+			EmpresaID:       resultado.EmpresaID,
+			Modulo:          "compras",
+			Evento:          resultado.Evento,
+			Entidad:         "orden_compra",
+			EntidadID:       resultado.EntidadID,
+			DocumentoTipo:   "orden_compra",
+			DocumentoCodigo: strings.TrimSpace(resultado.DocumentoCodigo),
+			PeriodoContable: strings.TrimSpace(resultado.PeriodoContable),
+			MontoTotal:      resultado.CostoTotal,
+			Moneda:          strings.ToUpper(strings.TrimSpace(resultado.Moneda)),
+			Origen:          "api_compras_plan_reposicion",
+			Observaciones:   strings.TrimSpace(payload.Observaciones),
+		}, map[string]interface{}{
+			"accion":           "emitir_orden",
+			"estado_anterior":  resultado.EstadoAnterior,
+			"estado_nuevo":     resultado.EstadoNuevo,
+			"entidad_id":       resultado.EntidadID,
+			"documento_codigo": strings.TrimSpace(resultado.DocumentoCodigo),
+			"proveedor_id":     resultado.ProveedorID,
+			"empresa_id":       resultado.EmpresaID,
+			"total_items":      resultado.TotalItems,
+			"costo_total":      resultado.CostoTotal,
+		})
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"ok":        true,
+			"resultado": resultado,
+		})
+	}
+}
+
+// EmpresaComprasPlanReposicionActualizarEstadoHandler gestiona recepcion/contabilizacion de OC emitidas por reposicion.
+func EmpresaComprasPlanReposicionActualizarEstadoHandler(dbEmp *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		q := r.URL.Query()
+		var payload struct {
+			EmpresaID       int64  `json:"empresa_id"`
+			ProveedorID     int64  `json:"proveedor_id"`
+			DocumentoCodigo string `json:"documento_codigo"`
+			Accion          string `json:"accion"`
+			EstadoActual    string `json:"estado_actual"`
+			PeriodoContable string `json:"periodo_contable"`
+			Observaciones   string `json:"observaciones"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil && !errors.Is(err, io.EOF) {
+			http.Error(w, "invalid payload", http.StatusBadRequest)
+			return
+		}
+
+		if payload.EmpresaID <= 0 {
+			empresaID, err := parseInt64QueryOptional(r, "empresa_id")
+			if err != nil {
+				http.Error(w, "empresa_id invalido", http.StatusBadRequest)
+				return
+			}
+			payload.EmpresaID = empresaID
+		}
+		if payload.EmpresaID <= 0 {
+			http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+			return
+		}
+
+		if payload.ProveedorID <= 0 {
+			proveedorID, err := parseInt64QueryOptional(r, "proveedor_id")
+			if err != nil {
+				http.Error(w, "proveedor_id invalido", http.StatusBadRequest)
+				return
+			}
+			if proveedorID <= 0 {
+				proveedorID, err = parseInt64QueryOptional(r, "id")
+				if err != nil {
+					http.Error(w, "id/proveedor_id invalido", http.StatusBadRequest)
+					return
+				}
+			}
+			payload.ProveedorID = proveedorID
+		}
+		if payload.ProveedorID <= 0 {
+			http.Error(w, "proveedor_id es obligatorio", http.StatusBadRequest)
+			return
+		}
+
+		if strings.TrimSpace(payload.DocumentoCodigo) == "" {
+			payload.DocumentoCodigo = strings.TrimSpace(q.Get("documento_codigo"))
+		}
+		if strings.TrimSpace(payload.DocumentoCodigo) == "" {
+			http.Error(w, "documento_codigo es obligatorio", http.StatusBadRequest)
+			return
+		}
+
+		if strings.TrimSpace(payload.Accion) == "" {
+			payload.Accion = strings.TrimSpace(q.Get("accion"))
+		}
+		if strings.TrimSpace(payload.Accion) == "" {
+			http.Error(w, "accion es obligatoria", http.StatusBadRequest)
+			return
+		}
+
+		if strings.TrimSpace(payload.EstadoActual) == "" {
+			payload.EstadoActual = strings.TrimSpace(q.Get("estado_actual"))
+		}
+		if strings.TrimSpace(payload.PeriodoContable) == "" {
+			payload.PeriodoContable = strings.TrimSpace(q.Get("periodo_contable"))
+		}
+
+		resultado, err := dbpkg.ActualizarEstadoOrdenCompraDesdeReposicion(
+			dbEmp,
+			payload.EmpresaID,
+			payload.ProveedorID,
+			payload.DocumentoCodigo,
+			payload.Accion,
+			payload.EstadoActual,
+			payload.PeriodoContable,
+			payload.Observaciones,
+			adminEmailFromRequest(r),
+		)
+		if err != nil {
+			errLower := strings.ToLower(err.Error())
+			switch {
+			case strings.Contains(errLower, "documento no encontrado"):
+				http.Error(w, err.Error(), http.StatusNotFound)
+				return
+			case strings.Contains(errLower, "transicion invalida"):
+				http.Error(w, err.Error(), http.StatusConflict)
+				return
+			case strings.Contains(errLower, "accion no soportada"), strings.Contains(errLower, "obligatori"), strings.Contains(errLower, "invalido"):
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			default:
+				http.Error(w, "failed to actualizar estado de orden de compra de reposicion: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+
+		registrarEventoContableNoBloqueante(dbEmp, r, "compras", dbpkg.EmpresaEventoContable{
+			EmpresaID:       resultado.EmpresaID,
+			Modulo:          "compras",
+			Evento:          resultado.Evento,
+			Entidad:         "orden_compra",
+			EntidadID:       resultado.EntidadID,
+			DocumentoTipo:   "orden_compra",
+			DocumentoCodigo: strings.TrimSpace(resultado.DocumentoCodigo),
+			PeriodoContable: strings.TrimSpace(resultado.PeriodoContable),
+			MontoTotal:      resultado.MontoTotal,
+			Moneda:          strings.ToUpper(strings.TrimSpace(resultado.Moneda)),
+			Origen:          "api_compras_plan_reposicion",
+			Observaciones:   strings.TrimSpace(payload.Observaciones),
+		}, map[string]interface{}{
+			"accion":           resultado.Accion,
+			"estado_anterior":  resultado.EstadoAnterior,
+			"estado_nuevo":     resultado.EstadoNuevo,
+			"entidad_id":       resultado.EntidadID,
+			"documento_codigo": strings.TrimSpace(resultado.DocumentoCodigo),
+			"proveedor_id":     resultado.ProveedorID,
+			"empresa_id":       resultado.EmpresaID,
+			"monto_total":      resultado.MontoTotal,
+		})
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"ok":        true,
+			"resultado": resultado,
+		})
+	}
+}
+
 func isISODate(raw string) bool {
 	_, err := time.Parse("2006-01-02", strings.TrimSpace(raw))
 	return err == nil
@@ -848,6 +1401,10 @@ func EmpresaProveedoresHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, "empresa_id y nombre son obligatorios", http.StatusBadRequest)
 				return
 			}
+			if err := validateProveedorComercialPayload(payload); err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
 			payload.UsuarioCreador = adminEmailFromRequest(r)
 			id, err := dbpkg.CreateProveedor(dbEmp, payload)
 			if err != nil {
@@ -865,11 +1422,16 @@ func EmpresaProveedoresHandler(dbEmp *sql.DB) http.HandlerFunc {
 				Origen:          "api_proveedores",
 				Observaciones:   "alta de proveedor en modulo de compras",
 			}, map[string]interface{}{
-				"nombre":     strings.TrimSpace(payload.Nombre),
-				"documento":  strings.TrimSpace(payload.Documento),
-				"contacto":   strings.TrimSpace(payload.Contacto),
-				"estado":     "activo",
-				"empresa_id": payload.EmpresaID,
+				"nombre":                  strings.TrimSpace(payload.Nombre),
+				"documento":               strings.TrimSpace(payload.Documento),
+				"contacto":                strings.TrimSpace(payload.Contacto),
+				"catalogo_referencia":     strings.TrimSpace(payload.CatalogoReferencia),
+				"precio_base_referencial": payload.PrecioBaseReferencial,
+				"descuento_porcentaje":    payload.DescuentoPorcentaje,
+				"plazo_pago_dias":         payload.PlazoPagoDias,
+				"condicion_entrega":       strings.TrimSpace(payload.CondicionEntrega),
+				"estado":                  "activo",
+				"empresa_id":              payload.EmpresaID,
 			})
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(map[string]interface{}{"id": id})
@@ -1043,6 +1605,10 @@ func EmpresaProveedoresHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, "empresa_id, id y nombre son obligatorios", http.StatusBadRequest)
 				return
 			}
+			if err := validateProveedorComercialPayload(payload); err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
 			if err := dbpkg.UpdateProveedor(dbEmp, payload); err != nil {
 				http.Error(w, "failed to update proveedor: "+err.Error(), http.StatusInternalServerError)
 				return
@@ -1058,11 +1624,16 @@ func EmpresaProveedoresHandler(dbEmp *sql.DB) http.HandlerFunc {
 				Origen:          "api_proveedores",
 				Observaciones:   "actualizacion de proveedor en modulo de compras",
 			}, map[string]interface{}{
-				"nombre":     strings.TrimSpace(payload.Nombre),
-				"documento":  strings.TrimSpace(payload.Documento),
-				"contacto":   strings.TrimSpace(payload.Contacto),
-				"empresa_id": payload.EmpresaID,
-				"id":         payload.ID,
+				"nombre":                  strings.TrimSpace(payload.Nombre),
+				"documento":               strings.TrimSpace(payload.Documento),
+				"contacto":                strings.TrimSpace(payload.Contacto),
+				"catalogo_referencia":     strings.TrimSpace(payload.CatalogoReferencia),
+				"precio_base_referencial": payload.PrecioBaseReferencial,
+				"descuento_porcentaje":    payload.DescuentoPorcentaje,
+				"plazo_pago_dias":         payload.PlazoPagoDias,
+				"condicion_entrega":       strings.TrimSpace(payload.CondicionEntrega),
+				"empresa_id":              payload.EmpresaID,
+				"id":                      payload.ID,
 			})
 			w.WriteHeader(http.StatusNoContent)
 			return
@@ -1336,6 +1907,19 @@ func parseInt64Form(r *http.Request, key string) (int64, error) {
 		return 0, fmt.Errorf("%s required", key)
 	}
 	return strconv.ParseInt(raw, 10, 64)
+}
+
+func validateProveedorComercialPayload(payload dbpkg.Proveedor) error {
+	if payload.PrecioBaseReferencial < 0 {
+		return fmt.Errorf("precio_base_referencial no puede ser negativo")
+	}
+	if payload.DescuentoPorcentaje < 0 || payload.DescuentoPorcentaje > 100 {
+		return fmt.Errorf("descuento_porcentaje debe estar entre 0 y 100")
+	}
+	if payload.PlazoPagoDias < 0 {
+		return fmt.Errorf("plazo_pago_dias no puede ser negativo")
+	}
+	return nil
 }
 
 func adminEmailFromRequest(r *http.Request) string {

@@ -1,6 +1,11 @@
 - que la configuracion sea una pagina con menu vertical izquierdo al iguak que la pagina de super administrador, igual que la pagina selleccionar empresa.
 - pedido hecho por los clientes.
-que productos tenga su propio menu.
+que productos tenga su propio  portal .
 - Modulo de auditoria.
 - siguen 2 scrollbar
  - modulo de llegada del personal 
+ - Combos de productos.
+- genera un docuento que me informe a mi, cuantos modulos hay en el sistema y una descripcion de cada uno.  el documento se llamara: modulos del proyecto.
+ a partir de los modulos,  generar los reportes en reportes.
+ - actualiza la pagina ayuda con un tutorial de cada modulo.
+4 formas de pago: efectico, debito, credito, codigo de edescuento.

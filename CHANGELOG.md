@@ -1,6 +1,207 @@
 # CHANGELOG
 
 ## 2026-04-04
+- Centro de ayuda actualizado con tutorial por cada módulo del sistema.
+	- `web/ayuda/ayuda.html` amplía el contenido con una sección de tutoriales por módulos de administración global y módulos del panel de empresa.
+	- Se agregan pasos operativos por módulo y enlaces directos a cada pantalla para facilitar onboarding y uso diario.
+
+## 2026-04-04
+- Verificacion integral real de modulos + limpieza de artefactos temporales.
+	- Validacion real ejecutada (sin simulaciones/mocks) sobre SQLite y capa HTTP:
+		- `go test ./auth ./db ./handlers ./metrics ./utils -count=1` (ok).
+		- `go test ./... -count=1` (ok).
+		- `go test ./handlers -run "TestEmpresaScope|FueraDeAlcance|WithEmpresa|isol|Aisla|multiempresa|UsuariosHandlerAislaEmpresa|ConsolidaEmpresa" -count=1` (ok).
+		- `go test ./handlers -run "TestEmpresaClientes|TestEmpresaProveedores|TestEmpresaFacturacion|TestEmpresaCompras|TestEmpresaInventario|TestEmpresaFinanzas|TestEmpresaAuditoria|TestEmpresaCarritos|TestEmpresaUsuarios|TestModelosHandler" -count=1` (ok).
+		- `go test ./db -run "Test.*(Cliente|Proveedor|Facturacion|Compra|Inventario|Finanzas|Evento|Auditoria|Scope|Empresa)" -count=1` (ok).
+	- Se eliminan artefactos temporales/no usados del repositorio:
+		- `backend/tmp_api.json`.
+		- `backend/tmp_config.html`.
+		- `backend/server.err`.
+		- `backend/server.run.err`.
+		- `backend/db/empresas.db.20260326-174525.bak`.
+		- `backend/db/superadministrador.db.20260326-174324.bak`.
+		- `backend/db/superadministrador.db.20260326-174525.bak`.
+
+## 2026-04-04
+- Punto 14 (operacion continua) - inicio operativo con KPI y roadmap trimestral.
+	- `documentos/punto_14_operacion_continua.md` (nuevo): define marco de mejora continua y cadencia de seguimiento.
+	- `documentos/roadmap_trimestral_pos_multiempresa.md` (nuevo): formaliza roadmap Q2/Q3/Q4 2026.
+	- `scripts/generar_reporte_operacion_continua.ps1` (nuevo): genera reporte operativo y bitacora tecnica.
+	- `documentos/punto_14_operacion_continua_reporte.md` (nuevo): evidencia de la ultima corrida operativa.
+	- `documentos/plan_maestro_pos_multiempresa_14_puntos.md`: punto 14 actualizado a `en curso`.
+- Validacion tecnica:
+	- `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\generar_reporte_operacion_continua.ps1` (ok).
+
+## 2026-04-04
+- Punto 13 (calidad, UAT y despliegue) - arranque operativo con validacion integral automatizada.
+	- `scripts/validar_punto_13.ps1` (nuevo): ejecuta gate tecnico y genera evidencia automatica.
+	- `documentos/punto_13_calidad_uat_despliegue.md` (nuevo): formaliza flujo de calidad/UAT/salida controlada.
+	- `documentos/punto_13_validacion_integral_resultado.md` (nuevo): reporte de ultima validacion tecnica.
+	- `documentos/release_checklist.md`: incorpora gate del punto 13 y verificacion de evidencia.
+	- `documentos/plan_maestro_pos_multiempresa_14_puntos.md`: punto 13 pasa a `en curso`.
+- Validacion tecnica:
+	- `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\validar_punto_13.ps1` (ok).
+	- `go test ./auth ./db ./handlers ./metrics ./utils -count=1` (ok).
+	- `go test ./... -count=1` (ok).
+
+## 2026-04-04
+- Punto 8 (facturacion electronica) - refuerzo de cobertura en cumplimiento legal de emision.
+	- `backend/db/facturacion_electronica_test.go` (nuevo) agrega pruebas unitarias para `PrepareFacturacionDocumentoLegal`:
+		- `TestPrepareFacturacionDocumentoLegalSuccessAndConsecutivo`.
+		- `TestPrepareFacturacionDocumentoLegalRejectsExpiredResolution`.
+		- `TestPrepareFacturacionDocumentoLegalRejectsConfigInactivaAndRangoAgotado`.
+	- Se valida reserva e incremento de consecutivo legal, rechazo por resolucion vencida, rechazo por configuracion FE inactiva y agotamiento de rango.
+- Validacion tecnica:
+	- `gofmt -w db/facturacion_electronica_test.go` (ok).
+	- `go test ./db -run "TestPrepareFacturacionDocumentoLegal" -count=1` (ok).
+	- `go test ./db ./handlers -run "TestPrepareFacturacionDocumentoLegal|TestEmpresaDocumentoFacturacionUpsertAndGet|TestEmpresaFacturacionTransaccional" -count=1` (ok).
+
+## 2026-04-04
+- Punto 9 (modulo de compras) - avance funcional con endpoint y vista dedicados para ciclo documental.
+	- `backend/db/documentos_transaccionales.go` agrega:
+		- `ListEmpresaDocumentosCompraByEmpresa`.
+		- `SetEmpresaDocumentoCompraEstadoByCodigo`.
+	- `backend/handlers/compras.go` (nuevo) implementa `GET/POST/PUT/DELETE /api/empresa/compras/documentos` con acciones documentales (`crear`, `emitir_orden`, `recepcionar_compra`, `contabilizar_compra`) y activar/desactivar.
+	- `backend/main.go` registra la ruta protegida `/api/empresa/compras/documentos`.
+	- `web/administrar_empresa/compras.html` (nuevo) incorpora interfaz dedicada de compras para crear, consultar y transicionar documentos.
+	- `web/administrar_empresa.html` y `web/js/administrar_empresa.js` integran el acceso de menu `Compras` con control por permisos de modulo.
+	- Cobertura agregada en:
+		- `backend/db/documentos_transaccionales_test.go`.
+		- `backend/handlers/compras_documentos_test.go` (nuevo).
+- Validacion tecnica:
+	- `gofmt -w handlers/compras.go handlers/compras_documentos_test.go main.go db/documentos_transaccionales.go db/documentos_transaccionales_test.go` (ok).
+	- `go test ./db -run "TestEmpresaDocumentoCompraListAndSetEstadoByCodigo" -count=1` (ok).
+	- `go test ./handlers -run "TestEmpresaComprasDocumentos" -count=1` (ok).
+	- `go test ./db ./handlers -run "TestEmpresaDocumentoCompraListAndSetEstadoByCodigo|TestEmpresaComprasDocumentos" -count=1` (ok).
+	- `go test ./... -run "TestEmpresaComprasDocumentos|TestEmpresaDocumentoCompraListAndSetEstadoByCodigo" -count=1` (ok).
+
+## 2026-04-04
+- Punto 8 (facturacion electronica) - avance funcional de emision legal y cumplimiento normativo inicial.
+	- `backend/db/facturacion_electronica.go` agrega `PrepareFacturacionDocumentoLegal` para validar configuracion legal, vigencia de resolucion y rango de consecutivos por empresa/pais antes de emitir.
+	- `backend/db/documentos_transaccionales.go` amplia `empresa_facturacion_documentos` con metadata legal persistida: `numero_legal`, `codigo_validacion`, `pais_codigo`, `ambiente_fe`.
+	- `backend/handlers/facturacion_electronica.go` endurece `action=emitir` con rechazo `422` cuando no hay cumplimiento normativo y devuelve bloque `cumplimiento_normativo` en emisiones exitosas.
+	- `web/administrar_empresa/facturacion_electronica.html` incorpora bloque operativo para `emitir`, `anular` y `nota_credito`, con visualizacion del resultado legal.
+	- Cobertura extendida en:
+		- `backend/db/documentos_transaccionales_test.go`.
+		- `backend/handlers/eventos_contables_modulos_test.go`.
+- Validacion tecnica:
+	- `go test ./db -run "TestEmpresaDocumentoFacturacionUpsertAndGet" -count=1` (ok).
+	- `go test ./handlers -run "TestEmpresaFacturacionTransaccionalEmiteEventosContables|TestEmpresaFacturacionTransaccionalEmitirRechazaSinCumplimientoLegal|TestEmpresaFacturacionTransaccionalRechazaTransicionInvalida" -count=1` (ok).
+	- `go test ./db ./handlers -count=1` (ok).
+
+## 2026-04-04
+- Punto 7 (gestion de proveedores) - avance funcional de catalogo, precios y condiciones comerciales.
+	- `backend/db/productos.go` amplia el modelo `Proveedor` y su migracion segura con campos:
+		- `catalogo_referencia`,
+		- `precio_base_referencial`,
+		- `descuento_porcentaje`,
+		- `plazo_pago_dias`,
+		- `condicion_entrega`.
+	- `backend/handlers/productos.go` agrega validacion HTTP de rango para los nuevos campos en `POST/PUT /api/empresa/proveedores` y enriquece metadata de eventos contables de compras.
+	- `web/administrar_empresa/administrar_productos.html` amplia el formulario y la tabla de proveedores para gestionar y visualizar datos comerciales.
+	- Cobertura nueva/extendida en:
+		- `backend/db/productos_categorias_test.go`.
+		- `backend/handlers/eventos_contables_modulos_test.go`.
+- Validacion tecnica:
+	- `gofmt -w db/productos.go db/productos_categorias_test.go handlers/productos.go handlers/eventos_contables_modulos_test.go` (ok).
+	- `go test ./db -run "TestProveedorCRUDIncluyeCatalogoPreciosYCondiciones" -count=1` (ok).
+	- `go test ./handlers -run "TestEmpresaProveedoresEmiteEventoContableCompras|TestEmpresaProveedoresRechazaCamposComercialesInvalidos" -count=1` (ok).
+	- `get_errors` sobre backend/frontend modificado (ok).
+
+## 2026-04-04
+- Punto 6 (gestion de clientes) - avance funcional de perfil, historial y segmentacion.
+	- `backend/db/clientes.go` agrega contratos analiticos (`ClientePerfilComercial`, `ClienteCompraHistorial`, `ClienteSegmentacionResumen`) y funciones de consulta por cliente/empresa.
+	- `backend/handlers/clientes.go` amplia `GET /api/empresa/clientes` con `action=perfil`, `action=historial`, `action=segmentacion|segmentos`.
+	- `web/administrar_empresa/administrar_clientes.html` agrega paneles de segmentacion y de perfil/historial por cliente con accion `Perfil`.
+	- Cobertura nueva en:
+		- `backend/db/clientes_test.go`.
+		- `backend/handlers/clientes_test.go`.
+- Validacion tecnica:
+	- `gofmt -w db/clientes.go db/clientes_test.go handlers/clientes.go handlers/clientes_test.go` (ok).
+	- `go test ./db -run "TestGetClientePerfilComercialByEmpresaAndHistorial|TestGetClientePerfilComercialByEmpresaSinComprasSegmentoNuevo" -count=1` (ok).
+	- `go test ./handlers -run "TestEmpresaClientesHandlerPerfilHistorialSegmentacion" -count=1` (ok).
+	- `get_errors` sobre backend/frontend modificado (ok).
+
+## 2026-04-04
+- Punto 5 (control de inventarios) — continuidad preventiva-compras ciclo documental desde reposicion.
+	- `backend/db/productos.go` agrega `InventarioPlanReposicionOrdenEstadoActualizado` y `ActualizarEstadoOrdenCompraDesdeReposicion` para transiciones `recepcionar_compra` y `contabilizar_compra`.
+	- `backend/handlers/productos.go` agrega endpoint `POST /api/empresa/compras/plan_reposicion/actualizar_estado`.
+	- `backend/main.go` registra `/api/empresa/compras/plan_reposicion/actualizar_estado` bajo permisos de compras.
+	- `web/administrar_empresa/administrar_productos.html` amplía el flujo a `fases 10-12` con acciones `Recepcionar orden` y `Contabilizar orden` y contexto de estado de OC.
+	- Cobertura nueva en:
+		- `backend/handlers/productos_categorias_test.go`.
+		- `backend/db/productos_categorias_test.go`.
+- Validacion tecnica:
+	- `go test ./db -run "TestEmitirOrdenCompraDesdePlanReposicionBorradorPersistDoc|TestActualizarEstadoOrdenCompraDesdeReposicionCiclo"` (ok).
+	- `go test ./handlers -run "TestEmpresaComprasPlanReposicionEmitirOrdenHandlerEmiteDocumento|TestEmpresaComprasPlanReposicionActualizarEstadoHandlerGestionaCiclo"` (ok).
+	- `get_errors` sobre backend/frontend modificado (ok).
+
+## 2026-04-04
+- Punto 5 (control de inventarios) — continuidad preventiva-compras emitible desde borrador.
+	- `backend/db/productos.go` agrega `InventarioPlanReposicionOrdenEmitida` y `EmitirOrdenCompraDesdePlanReposicionBorrador` para emitir OC desde el borrador y persistirla en documentos de compras.
+	- `backend/handlers/productos.go` agrega endpoint `POST /api/empresa/compras/plan_reposicion/emitir_orden`.
+	- `backend/main.go` registra `/api/empresa/compras/plan_reposicion/emitir_orden` bajo permisos de compras.
+	- `web/administrar_empresa/administrar_productos.html` agrega accion `Emitir orden` en el bloque de borrador (fase 10).
+	- Cobertura nueva en:
+		- `backend/handlers/productos_categorias_test.go`.
+		- `backend/db/productos_categorias_test.go`.
+- Validacion tecnica:
+	- `go test ./handlers ./db -count=1` (ok).
+	- `get_errors` sobre backend/frontend modificado (ok).
+
+## 2026-04-04
+- Punto 5 (control de inventarios) — continuidad preventiva-compras ordenable por proveedor.
+	- `backend/db/productos.go` agrega `InventarioPlanReposicionBorradorItem`, `InventarioPlanReposicionBorradorCompra` y `GetInventarioPlanReposicionBorradorByEmpresa` para generar borradores de orden por proveedor con detalle y totales.
+	- `backend/handlers/productos.go` agrega endpoint `GET /api/empresa/inventario/plan_reposicion_borrador`.
+	- `backend/main.go` registra `/api/empresa/inventario/plan_reposicion_borrador` bajo permisos de inventario.
+	- `web/administrar_empresa/administrar_productos.html` agrega bloque `Borrador de orden de compra por proveedor (fase 10)` y accion `Borrador OC` desde consolidado fase 9.
+	- Cobertura nueva en:
+		- `backend/handlers/productos_categorias_test.go`.
+		- `backend/db/productos_categorias_test.go`.
+- Validacion tecnica:
+	- `go test ./handlers ./db -count=1` (ok).
+	- `get_errors` sobre backend/frontend modificado (ok).
+
+## 2026-04-04
+- Punto 5 (control de inventarios) — continuidad preventiva-compras consolidada por proveedor.
+	- `backend/db/productos.go` agrega `InventarioPlanReposicionProveedorResumen` y `GetInventarioPlanReposicionResumenByEmpresa` para consolidar compra preventiva por proveedor.
+	- `backend/handlers/productos.go` agrega endpoint `GET /api/empresa/inventario/plan_reposicion_resumen`.
+	- `backend/main.go` registra `/api/empresa/inventario/plan_reposicion_resumen` bajo permisos de inventario.
+	- `web/administrar_empresa/administrar_productos.html` agrega tabla `Consolidado de compra por proveedor (fase 9)` y filtro de items del plan por proveedor.
+	- Cobertura nueva en:
+		- `backend/handlers/productos_categorias_test.go`.
+		- `backend/db/productos_categorias_test.go`.
+- Validacion tecnica:
+	- `go test ./handlers ./db -count=1` (ok).
+	- `get_errors` sobre `web/administrar_empresa/administrar_productos.html` (ok).
+
+## 2026-04-04
+- Punto 5 (control de inventarios) — continuidad preventiva-compras con plan de reposicion por proveedor.
+	- `backend/db/productos.go` agrega `InventarioPlanReposicionItem` y `GetInventarioPlanReposicionByEmpresa` para consolidar sugerencias por proveedor con costo estimado.
+	- `backend/handlers/productos.go` agrega endpoint `GET /api/empresa/inventario/plan_reposicion` con validaciones operativas.
+	- `backend/main.go` registra `/api/empresa/inventario/plan_reposicion` bajo permisos de inventario.
+	- `web/administrar_empresa/administrar_productos.html` agrega tabla `Plan de reposicion por proveedor (fase 8)` con resumen de costo estimado y accion `Preparar`.
+	- Cobertura nueva en:
+		- `backend/handlers/productos_categorias_test.go`.
+		- `backend/db/productos_categorias_test.go`.
+- Validacion tecnica:
+	- `go test ./handlers ./db -count=1` (ok).
+	- `get_errors` sobre `web/administrar_empresa/administrar_productos.html` (ok).
+
+## 2026-04-04
+- Punto 5 (control de inventarios) — continuidad preventiva con proyeccion de quiebre.
+	- `backend/db/productos.go` agrega `InventarioProyeccionQuiebre` y `GetInventarioProyeccionQuiebreByEmpresa` para estimar consumo diario, cobertura y sugerido de reposicion por producto/bodega.
+	- `backend/handlers/productos.go` agrega endpoint `GET /api/empresa/inventario/proyeccion_quiebre` con validacion de `dias_ventana`, `bodega_id`, `limit` y `offset`.
+	- `backend/main.go` registra `/api/empresa/inventario/proyeccion_quiebre` bajo permisos de inventario.
+	- `web/administrar_empresa/administrar_productos.html` agrega tabla `Proyeccion de quiebre (preventiva)` y accion `Preparar` para reposicion preventiva guiada.
+	- Cobertura nueva en:
+		- `backend/handlers/productos_categorias_test.go`.
+		- `backend/db/productos_categorias_test.go`.
+- Validacion tecnica:
+	- `go test ./handlers ./db -count=1` (ok).
+	- `get_errors` sobre `web/administrar_empresa/administrar_productos.html` (ok).
+
+## 2026-04-04
 - Punto 5 (control de inventarios) — continuidad operativa-analitica con balance por bodega.
 	- `backend/db/productos.go` agrega `InventarioBalanceBodega` y `GetInventarioBalanceBodegasByEmpresa` para consolidar entradas/salidas/traslados/neto por bodega en rango.
 	- `backend/handlers/productos.go` agrega endpoint `GET /api/empresa/inventario/balance_bodegas` con validacion de fechas y filtros por bodega/rango.
