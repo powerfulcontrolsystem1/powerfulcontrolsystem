@@ -2831,3 +2831,35 @@ Archivos modificados:
 - web/estilos.css
 - web/js/administrar_empresa.js
 
+
+2026-04-03: Actualización automática desde script: añadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/chat_inteligencia_artificial_test.go
+- backend/handlers/ai_config_handlers.go
+- backend/handlers/ai_credentials_catalog.go
+- backend/handlers/chat_con_inteligencia_artificial_controller.go
+- backend/handlers/chat_con_inteligencia_artificial_controller_test.go
+- backend/handlers/empresa_permisos.go
+- backend/handlers/empresa_permisos_test.go
+- backend/logs/empresa_6.log
+- backend/logs/empresa_global.log
+- backend/main.go
+- backend/server.err
+- backend/server.exe
+- documentos/descripcion_de_archivos
+- documentos/descripcion_del_proyecto
+- documentos/diagramas/diagrama_arquitectura_sistema.md
+- documentos/diagramas/diagrama_flujo_procesos.md
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/historial_de_cambios
+- documentos/matriz_kpi_pos_multiempresa.md
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- documentos/plan_maestro_pos_multiempresa_14_puntos.md
+- scripts/logs/actualizar_repositorio-20260403-211552.log
+- scripts/logs/actualizar_repositorio-20260403-221311.log
+- web/administrar_empresa/chat_con_inteligencia_artificial.html
+- web/estilos.css
+- web/super/configuracion_avanzada.html
+
