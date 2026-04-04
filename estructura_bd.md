@@ -1,6 +1,6 @@
 # Estructura de Base de Datos
 
-Version: 2026-04-04.6
+Version: 2026-04-04.8
 Ultima actualizacion: 2026-04-04
 
 Este documento consolida la estructura activa de SQLite para el proyecto.
@@ -114,6 +114,33 @@ Todas las tablas operativas usan como base los campos estandar:
   - payload_json, origen
   - fecha_evento
   - procesado, fecha_procesado
+  - intentos_procesamiento, fecha_ultimo_intento
+  - error_procesamiento, asiento_contable_id
+
+### Tabla canonica de asientos contables empresariales
+- empresa_asientos_contables:
+  - empresa_id, evento_contable_id
+  - modulo, evento
+  - fecha_asiento, periodo_contable
+  - documento_tipo, documento_codigo
+  - moneda
+  - total_debito, total_credito, diferencia
+  - lineas_json
+  - hash_idempotencia
+  - payload_origen_json
+  - fecha_procesado, procesado_por
+  - UNIQUE(empresa_id, evento_contable_id)
+  - UNIQUE(empresa_id, hash_idempotencia)
+
+### Tabla de auditoria empresarial
+- empresa_auditoria_eventos:
+  - empresa_id, modulo, accion
+  - recurso, recurso_id
+  - metodo_http, endpoint
+  - resultado, codigo_http
+  - request_id, ip_origen, user_agent
+  - metadata_json
+  - retencion_dias, fecha_evento, fecha_expiracion
 
 ### Tablas de documentos transaccionales canonicos
 - empresa_facturacion_documentos:
@@ -239,9 +266,12 @@ Todas las tablas operativas usan como base los campos estandar:
 - empresas.id -> empresa_cierres_caja.empresa_id
 - empresas.id -> empresa_facturacion_documentos.empresa_id, empresa_compras_documentos.empresa_id
 - empresas.id -> empresa_eventos_contables.empresa_id
+- empresas.id -> empresa_asientos_contables.empresa_id
+- empresas.id -> empresa_auditoria_eventos.empresa_id
 - empresas.id -> empresa_ai_consultas.empresa_id, empresa_ai_uso_diario.empresa_id
 - empresas.id -> empresa_ai_modelo_preferido.empresa_id
 - empresas.id -> empresa_gps_dispositivos.empresa_id, empresa_gps_recorridos.empresa_id
+- empresa_eventos_contables.id -> empresa_asientos_contables.evento_contable_id
 - proveedores.id -> empresa_compras_documentos.proveedor_id
 - categorias_productos.id -> productos.categoria_id
 - carritos_compras.id -> carrito_compra_items.carrito_id
@@ -252,6 +282,9 @@ Todas las tablas operativas usan como base los campos estandar:
 - roles_de_usuario.id -> tipos_de_usuario.rol_id
 
 ## 4) Historial resumido
+- 2026-04-04: se agrega `empresa_auditoria_eventos` para trazabilidad de acciones criticas por `empresa_id`, modulo/accion/recurso, resultado HTTP y metadatos (`request_id`, IP, user-agent), con retencion configurable y purga.
+- 2026-04-04: se agrega `empresa_asientos_contables` como persistencia canonica de asientos por evento procesado, con idempotencia por `hash_idempotencia` y referencia a `evento_contable_id`.
+- 2026-04-04: se amplía `empresa_eventos_contables` con metadatos de procesamiento (`intentos_procesamiento`, `fecha_ultimo_intento`, `error_procesamiento`, `asiento_contable_id`) para trazabilidad de lotes y reintentos.
 - 2026-04-04: se agrega `empresa_cierres_caja` para soportar apertura/arqueo/cierre/aprobacion de caja por sucursal y turno, con diferencia e incidencia de arqueo.
 - 2026-04-04: se agregan `empresa_facturacion_documentos` y `empresa_compras_documentos` para persistencia canonica del ciclo documental y referencia estable de `entidad_id` en eventos contables.
 - 2026-04-04: se agrega `empresa_eventos_contables` para contrato de eventos contables por modulo (`ventas`, `facturacion`, `compras`, `finanzas`) y trazabilidad de integracion contable.

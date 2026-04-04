@@ -202,6 +202,10 @@ El agente debe leer y actualizar este documento cada vez que se realicen cambios
      - `fecha_evento` TEXT DEFAULT (datetime('now','localtime'))
      - `procesado` INTEGER DEFAULT 0
      - `fecha_procesado` TEXT
+    - `intentos_procesamiento` INTEGER DEFAULT 0
+    - `fecha_ultimo_intento` TEXT
+    - `error_procesamiento` TEXT
+    - `asiento_contable_id` INTEGER
      - `fecha_creacion` TEXT DEFAULT (datetime('now','localtime'))
      - `fecha_actualizacion` TEXT DEFAULT (datetime('now','localtime'))
      - `usuario_creador` TEXT
@@ -215,6 +219,60 @@ El agente debe leer y actualizar este documento cada vez que se realicen cambios
        - `finanzas`: `movimiento_ingreso_registrado`, `movimiento_egreso_registrado`, `periodo_contable_cerrado`, `periodo_contable_reabierto`
      - Nota operativa:
        - En transacciones de facturacion/compras, `entidad_id` referencia el ID canonico persistido en tablas documentales dedicadas.
+
+   - `empresa_asientos_contables` (persistencia canonica de asientos por evento)
+     - `id` INTEGER PRIMARY KEY AUTOINCREMENT
+     - `empresa_id` INTEGER NOT NULL
+     - `evento_contable_id` INTEGER NOT NULL -- referencia al evento origen en `empresa_eventos_contables`
+     - `modulo` TEXT NOT NULL
+     - `evento` TEXT NOT NULL
+     - `fecha_asiento` TEXT DEFAULT (datetime('now','localtime'))
+     - `periodo_contable` TEXT
+     - `documento_tipo` TEXT
+     - `documento_codigo` TEXT
+     - `moneda` TEXT DEFAULT 'COP'
+     - `total_debito` REAL DEFAULT 0
+     - `total_credito` REAL DEFAULT 0
+     - `diferencia` REAL DEFAULT 0
+     - `lineas_json` TEXT
+     - `hash_idempotencia` TEXT NOT NULL
+     - `payload_origen_json` TEXT
+     - `fecha_procesado` TEXT
+     - `procesado_por` TEXT
+     - `fecha_creacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `fecha_actualizacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `usuario_creador` TEXT
+     - `estado` TEXT DEFAULT 'activo'
+     - `observaciones` TEXT
+     - Restricciones únicas:
+       - `(empresa_id, evento_contable_id)`
+       - `(empresa_id, hash_idempotencia)`
+     - Índices: `ix_empresa_asientos_contables_empresa_fecha`, `ix_empresa_asientos_contables_empresa_modulo_evento`, `ix_empresa_asientos_contables_empresa_periodo`
+
+   - `empresa_auditoria_eventos` (trazabilidad de acciones criticas por empresa)
+     - `id` INTEGER PRIMARY KEY AUTOINCREMENT
+     - `empresa_id` INTEGER NOT NULL
+     - `modulo` TEXT NOT NULL
+     - `accion` TEXT NOT NULL
+     - `recurso` TEXT
+     - `recurso_id` INTEGER
+     - `metodo_http` TEXT
+     - `endpoint` TEXT
+     - `resultado` TEXT DEFAULT 'ok' -- ok/error
+     - `codigo_http` INTEGER DEFAULT 0
+     - `request_id` TEXT
+     - `ip_origen` TEXT
+     - `user_agent` TEXT
+     - `metadata_json` TEXT
+     - `retencion_dias` INTEGER DEFAULT 180
+     - `fecha_evento` TEXT DEFAULT (datetime('now','localtime'))
+     - `fecha_expiracion` TEXT
+     - `fecha_creacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `fecha_actualizacion` TEXT DEFAULT (datetime('now','localtime'))
+     - `usuario_creador` TEXT
+     - `estado` TEXT DEFAULT 'activo'
+     - `observaciones` TEXT
+     - Índices: `ix_empresa_auditoria_eventos_empresa_fecha`, `ix_empresa_auditoria_eventos_empresa_modulo_accion`, `ix_empresa_auditoria_eventos_empresa_usuario`, `ix_empresa_auditoria_eventos_request_id`
 
    - `empresa_facturacion_documentos` (documentos canonicos de facturacion)
      - `id` INTEGER PRIMARY KEY AUTOINCREMENT

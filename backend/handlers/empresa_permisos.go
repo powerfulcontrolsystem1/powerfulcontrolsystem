@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
 )
@@ -112,7 +113,11 @@ func withEmpresaRolePermissions(dbEmp, dbSuper *sql.DB, module string, resolveAc
 		}
 
 		w.Header().Set("X-Empresa-ID", strconv.FormatInt(empresaID, 10))
-		next.ServeHTTP(w, r)
+
+		auditStart := time.Now()
+		auditRW := &auditCaptureResponseWriter{ResponseWriter: w, status: http.StatusOK}
+		next.ServeHTTP(auditRW, r)
+		registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, auditRW.status, time.Since(auditStart))
 	}
 }
 
@@ -272,7 +277,7 @@ func resolveInventarioPermissionAction(r *http.Request) string {
 func resolveFinanzasPermissionAction(r *http.Request) string {
 	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 	switch action {
-	case "cerrar", "reabrir", "aprobar":
+	case "cerrar", "reabrir", "aprobar", "procesar_asientos", "procesar":
 		return permActionApprove
 	case "anular":
 		return permActionDelete

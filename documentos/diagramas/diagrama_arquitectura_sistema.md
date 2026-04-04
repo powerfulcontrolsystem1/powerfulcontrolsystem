@@ -18,9 +18,12 @@ flowchart LR
     H7[finanzas handlers]
     H8[chat_con_inteligencia_artificial handlers]
     H9[ai_config handlers super]
+    H10[auditoria handlers]
     DB1[(empresas.db)]
     DB2[(superadministrador.db)]
     EVC[(empresa_eventos_contables)]
+    ASC[(empresa_asientos_contables)]
+    AEV[(empresa_auditoria_eventos)]
     DTF[(empresa_facturacion_documentos)]
     DTC[(empresa_compras_documentos)]
     FS[(web/uploads/chat_tareas)]
@@ -40,6 +43,7 @@ flowchart LR
     P --> H5
     P --> H6
     P --> H7
+    P --> H10
     M --> H8
     M --> H9
 
@@ -62,13 +66,19 @@ flowchart LR
     H5 --> FS
     H6 --> DB1
     H7 --> DB1
+    H7 --> ASC
+    H10 --> DB1
+    H10 --> AEV
     H8 --> DB1
     H8 --> DB2
     H9 --> DB2
     H8 --> AI
     DTF -.id canonico documento.- EVC
     DTC -.id canonico documento.- EVC
+    EVC -.procesamiento por lote + idempotencia.- ASC
     EVC -.persistencia contable.- DB1
+    ASC -.asientos canonicos.- DB1
+    AEV -.trazabilidad acciones criticas.- DB1
 
     DB2 -->|sesiones/roles/config| M
 ```
@@ -80,6 +90,8 @@ Componentes:
 - Colaboracion interna: modulo `chat_y_tareas` con adjuntos en `web/uploads/chat_tareas/` y metadatos en `empresas.db`.
 - Geolocalizacion empresarial: modulo `ubicacion_gps` con mapa OpenStreetMap y almacenamiento de recorridos por `empresa_id`.
 - Finanzas empresariales: modulo `finanzas` con configuracion por empresa, gestion de periodos contables (abrir/cerrar), retenciones y registro de ingresos/egresos con comprobantes.
+- Contabilidad integrada: procesamiento por lotes de `empresa_eventos_contables` hacia `empresa_asientos_contables` con control de idempotencia por hash y trazabilidad de intentos/errores.
+- Auditoria empresarial: registro no bloqueante de acciones criticas (`C/U/D/A`) desde middleware de permisos hacia `empresa_auditoria_eventos`, con consulta filtrable por empresa.
 - Chat IA empresarial: modulo `chat_con_inteligencia_artificial` con alcance por `empresa_id`, limites free-tier, auditoria de consultas/respuestas y persistencia de `modelo_preferido` por cuenta Google (`empresa_id + admin_email`), usando Google Gemini.
 - Configuracion IA super: endpoint administrativo para credencial Gemini con almacenamiento seguro en `superadministrador.db`.
 - Seguridad por rol/empresa: middleware de permisos empresariales para rutas criticas de ventas, inventario, finanzas, clientes, compras/proveedores, facturacion y seguridad/usuarios; incluye cobertura en `chat_tareas`, `ubicacion_gps` y `productos/imagen`.

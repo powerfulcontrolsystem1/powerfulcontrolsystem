@@ -1,5 +1,121 @@
 Descripcion de archivos del proyecto
 
+Actualizacion 2026-04-04: Punto 15 (auditoria por empresa) — base minima implementada
+
+- backend/db/auditoria_empresa.go:
+	- Nuevo modulo DB para auditoria empresarial.
+	- Crea y migra `empresa_auditoria_eventos`.
+	- Expone funciones para crear eventos, consultar por filtros y purgar por retencion.
+
+- backend/handlers/auditoria_empresa.go:
+	- Nuevo handler para endpoint `/api/empresa/auditoria/eventos`.
+	- Soporta:
+		- `GET` filtrable por modulo/accion/resultado/usuario/request_id/rango,
+		- `PUT/POST action=retener|purgar` para depuracion por retencion.
+	- Incluye helper de registro no bloqueante para acciones criticas.
+
+- backend/handlers/empresa_permisos.go:
+	- Integra trazabilidad automatica en middleware de permisos para acciones criticas (`C/U/D/A`).
+
+- backend/main.go:
+	- Agrega `EnsureEmpresaAuditoriaSchema` y migracion `2026-04-04-011-auditoria-empresa`.
+	- Publica ruta protegida `/api/empresa/auditoria/eventos` bajo `WithEmpresaSeguridadPermissions`.
+
+- backend/db/auditoria_empresa_test.go:
+	- Nuevo archivo de pruebas para esquema, filtros y retencion de auditoria.
+
+- backend/handlers/auditoria_empresa_test.go:
+	- Nuevo archivo de pruebas para registro automatico en middleware y contrato HTTP del endpoint de auditoria.
+
+Actualizacion 2026-04-04: Plan maestro — incorporacion de modulo de auditoria por empresa
+
+- documentos/plan_maestro_pos_multiempresa_14_puntos.md:
+	- El plan maestro se amplía de 14 a 15 puntos.
+	- Se agrega `Punto 15: Modulo de auditoria por empresa`.
+	- Se define alcance inicial del modulo (registro de eventos por empresa, usuario, accion y recurso), entregables tecnicos, backlog y criterio de avance.
+
+- documentos/descripcion_del_proyecto:
+	- Se actualiza referencia del plan maestro para indicar alcance de 15 puntos.
+
+Actualizacion 2026-04-04: Punto 10 + Punto 11 (continuacion) — asientos canonicos y estados financieros en tablero
+
+- backend/db/eventos_contables.go:
+	- Se amplía el esquema de `empresa_eventos_contables` con metadatos de ejecución por lote (`intentos_procesamiento`, `fecha_ultimo_intento`, `error_procesamiento`, `asiento_contable_id`).
+	- Se crea la tabla `empresa_asientos_contables` para persistencia canonica por evento procesado.
+	- Se agregan funciones para:
+		- listar asientos contables por empresa,
+		- procesar eventos pendientes por lotes,
+		- aplicar idempotencia por hash,
+		- marcar resultado por evento (ok/error).
+
+- backend/handlers/finanzas.go:
+	- Se agrega `EmpresaFinanzasAsientosContablesHandler` con endpoint `GET/POST/PUT /api/empresa/finanzas/asientos_contables`.
+	- Soporta procesamiento manual por `action=procesar_asientos|procesar` y consulta de asientos por rango/limite.
+
+- backend/handlers/empresa_permisos.go:
+	- En modulo finanzas, `action=procesar_asientos` y `action=procesar` se clasifican como permiso de aprobacion (`A`).
+
+- backend/main.go:
+	- Registra migracion `2026-04-04-010-asientos-canonicos`.
+	- Publica ruta protegida `/api/empresa/finanzas/asientos_contables`.
+
+- backend/db/finanzas.go:
+	- `GetEmpresaReportesTableroResumen` agrega bloques `estado_resultados` y `balance_general` calculados desde asientos canónicos.
+	- Se incorporan KPI contables `asientos_generados` y `asientos_monto_total`.
+	- Se agrega fallback de calculo cuando no existen asientos en el rango solicitado.
+
+- backend/db/eventos_contables_test.go:
+	- Se agrega `TestProcessEmpresaEventosContablesPendientesGeneraAsientosIdempotentes`.
+
+- backend/db/finanzas_test.go:
+	- Se agregan validaciones de `estado_resultados` y `balance_general` en tablero.
+	- Se incorpora `TestGetEmpresaReportesTableroResumenConAsientosCanonicos`.
+
+- backend/handlers/eventos_contables_modulos_test.go:
+	- Se agrega `TestEmpresaFinanzasAsientosContablesHandlerProcesaPendientes` y verificacion de nuevos bloques del tablero.
+
+- backend/handlers/empresa_permisos_test.go:
+	- Se agregan pruebas de autorizacion para procesar asientos:
+		- denegacion para `cajero`,
+		- aprobacion para `contabilidad`.
+
+- web/administrar_empresa/finanzas.html:
+	- Se incorpora boton `Procesar eventos contables` y flujo JS para ejecutar lote de procesamiento.
+
+- web/administrar_empresa/reportes.html:
+	- Se incorporan KPI de `estado_resultados` y `balance_general` (incluye resultado del ejercicio y cuadre).
+
+Actualizacion 2026-04-04: Punto 12 + Punto 10 (continuacion) — UAT de cierres y estrategia de asientos
+
+- backend/handlers/empresa_permisos_test.go:
+	- Se agregan pruebas UAT por rol para aprobacion en `cierres_caja`:
+		- rechazo para `cajero`,
+		- rechazo para `supervisor_sucursal`,
+		- aprobacion permitida para `admin_empresa`.
+
+- documentos/matriz_roles_permisos_pos_multiempresa.md:
+	- Se agrega matriz UAT de cierres de caja con casos por rol y casos de transicion de estado con resultado HTTP esperado.
+
+- documentos/plan_maestro_pos_multiempresa_14_puntos.md:
+	- Se documenta la estrategia de procesamiento de asientos basada en consumo por lotes de `empresa_eventos_contables`, idempotencia por referencia canonica y marcacion de eventos procesados.
+
+- documentos/diagramas/estructura_del_codigo.md:
+	- Se registra avance tecnico de pruebas UAT de cierres y definicion de estrategia de asientos.
+
+- documentos/diagramas/diagrama_flujo_procesos.md:
+	- Se actualiza resultado esperado con politicas UAT por rol en `cierres_caja` y la estrategia de asientos por lotes.
+
+Actualizacion 2026-04-04: Punto 12 (continuacion) — UI operativa de cierres de caja en panel empresa
+
+- web/administrar_empresa/finanzas.html:
+	- Se integra una seccion operativa de cierres de caja por sucursal con formulario, filtros, KPIs y tabla de ejecucion.
+	- Se habilita gestion completa desde UI para:
+		- apertura/actualizacion de cierre,
+		- acciones de ciclo (`cerrar`, `reabrir`, `aprobar`, `anular`),
+		- estado de registro (`activar`, `desactivar`, `eliminar`).
+	- Se agregan calculos visuales de `caja_teorica` y `diferencia_caja` antes de persistir.
+	- Se conecta consumo del endpoint `GET/POST/PUT/DELETE /api/empresa/finanzas/cierres_caja`.
+
 Actualizacion 2026-04-04: Punto 12 (inicio) — cierres de caja por sucursal
 
 - backend/db/finanzas.go:

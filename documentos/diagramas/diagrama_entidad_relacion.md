@@ -24,6 +24,8 @@ erDiagram
     EMPRESAS ||--o{ EMPRESA_FACTURACION_DOCUMENTOS : "empresa_id"
     EMPRESAS ||--o{ EMPRESA_COMPRAS_DOCUMENTOS : "empresa_id"
     EMPRESAS ||--o{ EMPRESA_EVENTOS_CONTABLES : "empresa_id"
+    EMPRESAS ||--o{ EMPRESA_ASIENTOS_CONTABLES : "empresa_id"
+    EMPRESAS ||--o{ EMPRESA_AUDITORIA_EVENTOS : "empresa_id"
     EMPRESAS ||--o{ EMPRESA_AI_CONSULTAS : "empresa_id"
     EMPRESAS ||--o{ EMPRESA_AI_USO_DIARIO : "empresa_id"
     EMPRESAS ||--o{ EMPRESA_AI_MODELO_PREFERIDO : "empresa_id"
@@ -38,6 +40,7 @@ erDiagram
     PROVEEDORES ||--o{ EMPRESA_COMPRAS_DOCUMENTOS : "proveedor_id"
     CARRITOS_COMPRAS ||--o{ CARRITO_COMPRA_ITEMS : "carrito_id"
     CATEGORIAS_PRODUCTOS ||--o{ PRODUCTOS : "categoria_id"
+    EMPRESA_EVENTOS_CONTABLES ||--o{ EMPRESA_ASIENTOS_CONTABLES : "evento_contable_id"
     CHAT_TAREAS_CONVERSACIONES ||--o{ CHAT_TAREAS_PARTICIPANTES : "conversacion_id"
     CHAT_TAREAS_CONVERSACIONES ||--o{ CHAT_TAREAS_MENSAJES : "conversacion_id"
     CHAT_TAREAS_CONVERSACIONES ||--o{ CHAT_TAREAS : "conversacion_id"
@@ -237,6 +240,38 @@ erDiagram
       double monto_total
       string moneda
       int procesado
+      int intentos_procesamiento
+      int asiento_contable_id
+      string fecha_evento
+      string estado
+    }
+    EMPRESA_ASIENTOS_CONTABLES {
+      int id PK
+      int empresa_id FK
+      int evento_contable_id FK
+      string modulo
+      string evento
+      string periodo_contable
+      string documento_codigo
+      double total_debito
+      double total_credito
+      double diferencia
+      string hash_idempotencia
+      string estado
+    }
+    EMPRESA_AUDITORIA_EVENTOS {
+      int id PK
+      int empresa_id FK
+      string modulo
+      string accion
+      string recurso
+      int recurso_id
+      string metodo_http
+      string endpoint
+      string resultado
+      int codigo_http
+      string request_id
+      int retencion_dias
       string fecha_evento
       string estado
     }

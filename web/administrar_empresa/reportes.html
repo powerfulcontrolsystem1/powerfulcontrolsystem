@@ -105,6 +105,38 @@
           <span class="kpi-label">Docs compras</span>
           <strong id="kpiContDocsCompras">0</strong>
         </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Asientos generados</span>
+          <strong id="kpiContAsientosGenerados">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Monto asientos</span>
+          <strong id="kpiContAsientosMonto">$0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Utilidad operacional</span>
+          <strong id="kpiERUtilidad">$0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Activos</span>
+          <strong id="kpiBGActivos">$0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Pasivos</span>
+          <strong id="kpiBGPasivos">$0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Patrimonio</span>
+          <strong id="kpiBGPatrimonio">$0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Resultado ejercicio</span>
+          <strong id="kpiBGResultado">$0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Cuadre balance</span>
+          <strong id="kpiBGCuadre">$0</strong>
+        </div>
       </div>
     </section>
 
@@ -465,7 +497,15 @@
         'kpiContEventosPendientes',
         'kpiContEventosProcesados',
         'kpiContDocsFacturacion',
-        'kpiContDocsCompras'
+        'kpiContDocsCompras',
+        'kpiContAsientosGenerados',
+        'kpiContAsientosMonto',
+        'kpiERUtilidad',
+        'kpiBGActivos',
+        'kpiBGPasivos',
+        'kpiBGPatrimonio',
+        'kpiBGResultado',
+        'kpiBGCuadre'
       ].forEach(function(id) {
         const el = document.getElementById(id);
         if (el) el.textContent = value;
@@ -501,6 +541,8 @@
 
       const fin = tablero.financiero || {};
       const cont = tablero.contable || {};
+      const er = tablero.estado_resultados || {};
+      const bg = tablero.balance_general || {};
 
       document.getElementById('kpiFinIngresos').textContent = fmtMoney(fin.ingresos);
       document.getElementById('kpiFinEgresos').textContent = fmtMoney(fin.egresos);
@@ -513,6 +555,16 @@
       document.getElementById('kpiContEventosProcesados').textContent = String(num(cont.eventos_procesados));
       document.getElementById('kpiContDocsFacturacion').textContent = String(num(cont.documentos_facturacion_activos));
       document.getElementById('kpiContDocsCompras').textContent = String(num(cont.documentos_compras_activos));
+      document.getElementById('kpiContAsientosGenerados').textContent = String(num(cont.asientos_generados));
+      document.getElementById('kpiContAsientosMonto').textContent = fmtMoney(cont.asientos_monto_total);
+      document.getElementById('kpiERUtilidad').textContent = fmtMoney(er.utilidad_operacional);
+      document.getElementById('kpiBGActivos').textContent = fmtMoney(bg.activos);
+      document.getElementById('kpiBGPasivos').textContent = fmtMoney(bg.pasivos);
+      document.getElementById('kpiBGPatrimonio').textContent = fmtMoney(bg.patrimonio);
+      document.getElementById('kpiBGResultado').textContent = fmtMoney(bg.resultado_ejercicio);
+      const cuadreEl = document.getElementById('kpiBGCuadre');
+      cuadreEl.textContent = fmtMoney(bg.cuadre);
+      cuadreEl.style.color = Math.abs(num(bg.cuadre)) > 1 ? '#ef5350' : '';
     }
 
     function renderVentasTable() {

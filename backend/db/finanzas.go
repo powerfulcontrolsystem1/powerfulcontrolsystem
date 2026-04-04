@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -2127,19 +2128,39 @@ type EmpresaReportesTableroContable struct {
 	EventosProcesados            int64   `json:"eventos_procesados"`
 	EventosTotal                 int64   `json:"eventos_total"`
 	EventosMontoTotal            float64 `json:"eventos_monto_total"`
+	AsientosGenerados            int64   `json:"asientos_generados"`
+	AsientosMontoTotal           float64 `json:"asientos_monto_total"`
 	DocumentosFacturacionActivos int64   `json:"documentos_facturacion_activos"`
 	DocumentosComprasActivos     int64   `json:"documentos_compras_activos"`
 }
 
+// EmpresaReportesEstadoResultados consolida ingresos, gastos y utilidad operacional.
+type EmpresaReportesEstadoResultados struct {
+	Ingresos            float64 `json:"ingresos"`
+	Gastos              float64 `json:"gastos"`
+	UtilidadOperacional float64 `json:"utilidad_operacional"`
+}
+
+// EmpresaReportesBalanceGeneral consolida saldos principales de balance.
+type EmpresaReportesBalanceGeneral struct {
+	Activos            float64 `json:"activos"`
+	Pasivos            float64 `json:"pasivos"`
+	Patrimonio         float64 `json:"patrimonio"`
+	ResultadoEjercicio float64 `json:"resultado_ejercicio"`
+	Cuadre             float64 `json:"cuadre"`
+}
+
 // EmpresaReportesTableroResumen agrupa el tablero minimo financiero-operativo.
 type EmpresaReportesTableroResumen struct {
-	EmpresaID  int64                            `json:"empresa_id"`
-	Desde      string                           `json:"desde"`
-	Hasta      string                           `json:"hasta"`
-	GeneradoEn string                           `json:"generado_en"`
-	Operativo  EmpresaReportesTableroOperativo  `json:"operativo"`
-	Financiero EmpresaReportesTableroFinanciero `json:"financiero"`
-	Contable   EmpresaReportesTableroContable   `json:"contable"`
+	EmpresaID        int64                            `json:"empresa_id"`
+	Desde            string                           `json:"desde"`
+	Hasta            string                           `json:"hasta"`
+	GeneradoEn       string                           `json:"generado_en"`
+	Operativo        EmpresaReportesTableroOperativo  `json:"operativo"`
+	Financiero       EmpresaReportesTableroFinanciero `json:"financiero"`
+	Contable         EmpresaReportesTableroContable   `json:"contable"`
+	EstadoResultados EmpresaReportesEstadoResultados  `json:"estado_resultados"`
+	BalanceGeneral   EmpresaReportesBalanceGeneral    `json:"balance_general"`
 }
 
 // GetEmpresaReportesTableroResumen devuelve el tablero minimo financiero-operativo para una empresa.
@@ -2271,6 +2292,32 @@ func GetEmpresaReportesTableroResumen(dbConn *sql.DB, empresaID int64, desde, ha
 		return nil, err
 	}
 
+	estadoResultados, balanceGeneral, asientosGenerados, asientosMontoTotal, err := getEmpresaEstadosFinancierosDesdeAsientos(dbConn, empresaID, resumen.Desde, resumen.Hasta)
+	if err != nil {
+		return nil, err
+	}
+	if asientosGenerados == 0 {
+		estadoResultados.Ingresos = roundReportesMoney(resumen.Financiero.Ingresos)
+		estadoResultados.Gastos = roundReportesMoney(resumen.Financiero.Egresos)
+		estadoResultados.UtilidadOperacional = roundReportesMoney(resumen.Financiero.Ingresos - resumen.Financiero.Egresos)
+
+		if estadoResultados.UtilidadOperacional >= 0 {
+			balanceGeneral.Activos = estadoResultados.UtilidadOperacional
+			balanceGeneral.Pasivos = 0
+			balanceGeneral.Patrimonio = estadoResultados.UtilidadOperacional
+		} else {
+			balanceGeneral.Activos = 0
+			balanceGeneral.Pasivos = -estadoResultados.UtilidadOperacional
+			balanceGeneral.Patrimonio = 0
+		}
+		balanceGeneral.ResultadoEjercicio = estadoResultados.UtilidadOperacional
+		balanceGeneral.Cuadre = roundReportesMoney(balanceGeneral.Activos - (balanceGeneral.Pasivos + balanceGeneral.Patrimonio))
+	}
+	resumen.EstadoResultados = estadoResultados
+	resumen.BalanceGeneral = balanceGeneral
+	resumen.Contable.AsientosGenerados = asientosGenerados
+	resumen.Contable.AsientosMontoTotal = asientosMontoTotal
+
 	return resumen, nil
 }
 
@@ -2286,4 +2333,109 @@ func buildDateRangeCondition(dateExpr, desde, hasta string) (string, []interface
 		args = append(args, strings.TrimSpace(hasta))
 	}
 	return cond, args
+}
+
+func getEmpresaEstadosFinancierosDesdeAsientos(dbConn *sql.DB, empresaID int64, desde, hasta string) (EmpresaReportesEstadoResultados, EmpresaReportesBalanceGeneral, int64, float64, error) {
+	estadoResultados := EmpresaReportesEstadoResultados{}
+	balanceGeneral := EmpresaReportesBalanceGeneral{}
+
+	cond, args := buildDateRangeCondition("a.fecha_asiento", desde, hasta)
+	query := `SELECT
+		COALESCE(lineas_json, '[]'),
+		COALESCE(total_debito, 0),
+		COALESCE(total_credito, 0)
+	FROM empresa_asientos_contables a
+	WHERE a.empresa_id = ?
+		AND LOWER(COALESCE(a.estado, 'activo')) = 'activo'` + cond
+	query += ` ORDER BY COALESCE(a.fecha_asiento, '') ASC, a.id ASC`
+	params := append([]interface{}{empresaID}, args...)
+
+	rows, err := dbConn.Query(query, params...)
+	if err != nil {
+		return estadoResultados, balanceGeneral, 0, 0, err
+	}
+	defer rows.Close()
+
+	var asientosGenerados int64
+	asientosMontoTotal := 0.0
+	activos := 0.0
+	pasivos := 0.0
+	patrimonioBase := 0.0
+	ingresos := 0.0
+	gastos := 0.0
+
+	for rows.Next() {
+		var lineasJSON string
+		var totalDebito float64
+		var totalCredito float64
+		if err := rows.Scan(&lineasJSON, &totalDebito, &totalCredito); err != nil {
+			return estadoResultados, balanceGeneral, 0, 0, err
+		}
+		asientosGenerados++
+		if totalDebito > totalCredito {
+			asientosMontoTotal += totalDebito
+		} else {
+			asientosMontoTotal += totalCredito
+		}
+
+		var lineas []EmpresaAsientoContableLinea
+		if err := json.Unmarshal([]byte(strings.TrimSpace(lineasJSON)), &lineas); err != nil {
+			continue
+		}
+		for _, ln := range lineas {
+			cuenta := strings.TrimSpace(ln.Cuenta)
+			if cuenta == "" {
+				continue
+			}
+			delta := maxFloat64(ln.Debito, 0) - maxFloat64(ln.Credito, 0)
+			switch cuenta[0] {
+			case '1':
+				activos += delta
+			case '2':
+				pasivos += -delta
+			case '3':
+				patrimonioBase += -delta
+			case '4':
+				ingresos += -delta
+			case '5', '6', '7':
+				gastos += delta
+			}
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return estadoResultados, balanceGeneral, 0, 0, err
+	}
+
+	utilidad := ingresos - gastos
+	estadoResultados.Ingresos = roundReportesMoney(ingresos)
+	estadoResultados.Gastos = roundReportesMoney(gastos)
+	estadoResultados.UtilidadOperacional = roundReportesMoney(utilidad)
+
+	balanceGeneral.Activos = roundReportesMoney(activos)
+	balanceGeneral.Pasivos = roundReportesMoney(pasivos)
+	balanceGeneral.ResultadoEjercicio = roundReportesMoney(utilidad)
+	balanceGeneral.Patrimonio = roundReportesMoney(patrimonioBase + utilidad)
+	balanceGeneral.Cuadre = roundReportesMoney(balanceGeneral.Activos - (balanceGeneral.Pasivos + balanceGeneral.Patrimonio))
+
+	// Fallback mínimo cuando aún no hay asientos generados en el rango.
+	if asientosGenerados == 0 {
+		balance := roundReportesMoney(estadoResultados.UtilidadOperacional)
+		if balance > 0 {
+			balanceGeneral.Activos = balance
+			balanceGeneral.Pasivos = 0
+			balanceGeneral.Patrimonio = balance
+			balanceGeneral.Cuadre = 0
+		} else if balance < 0 {
+			balanceGeneral.Activos = 0
+			balanceGeneral.Pasivos = -balance
+			balanceGeneral.Patrimonio = 0
+			balanceGeneral.Cuadre = roundReportesMoney(balanceGeneral.Activos - (balanceGeneral.Pasivos + balanceGeneral.Patrimonio))
+		}
+	}
+
+	return estadoResultados, balanceGeneral, asientosGenerados, roundReportesMoney(asientosMontoTotal), nil
+}
+
+func roundReportesMoney(v float64) float64 {
+	return math.Round(v*100) / 100
 }

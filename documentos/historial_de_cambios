@@ -1,5 +1,120 @@
 - Historial de cambios
 
+- 2026-04-04: Punto 15 — implementacion base del modulo de auditoria por empresa
+    - Se agrega `backend/db/auditoria_empresa.go`:
+        - esquema `empresa_auditoria_eventos`,
+        - alta/consulta filtrable,
+        - purga por politica de retencion (`retencion_dias`).
+    - Se agrega `backend/handlers/auditoria_empresa.go` con endpoint:
+        - `GET /api/empresa/auditoria/eventos`.
+        - `PUT/POST /api/empresa/auditoria/eventos?action=retener|purgar`.
+    - Se actualiza `backend/handlers/empresa_permisos.go` para registrar auditoria no bloqueante en acciones criticas autorizadas (`C/U/D/A`).
+    - Se actualiza `backend/main.go`:
+        - bootstrap `EnsureEmpresaAuditoriaSchema`,
+        - migracion `2026-04-04-011-auditoria-empresa`,
+        - ruta protegida `/api/empresa/auditoria/eventos`.
+    - Se agregan pruebas:
+        - `backend/db/auditoria_empresa_test.go`.
+        - `backend/handlers/auditoria_empresa_test.go`.
+    - Se actualiza documentacion relacionada:
+        - `documentos/plan_maestro_pos_multiempresa_14_puntos.md`.
+        - `documentos/descripcion_del_proyecto`.
+        - `documentos/diagramas/estructura_del_codigo.md`.
+        - `documentos/diagramas/diagrama_arquitectura_sistema.md`.
+        - `documentos/diagramas/diagrama_entidad_relacion.md`.
+        - `documentos/diagramas/diagrama_flujo_procesos.md`.
+        - `documentos/descripcion_de_las_bases_De_datos`.
+        - `estructura_bd.md`.
+        - `documentos/matriz_roles_permisos_pos_multiempresa.md`.
+        - `documentos/descripcion_de_archivos`.
+        - `CHANGELOG.md`.
+    - Validaciones ejecutadas:
+        - `go test ./db -run "Auditoria|EventosContables|ReportesTableroResumen" -count=1` (ok).
+        - `go test ./handlers -run "Auditoria|AsientosContables|WithEmpresaFinanzasPermissions" -count=1` (ok).
+        - `go test ./handlers -count=1` (ok).
+        - `go test ./db -count=1` (ok).
+
+- 2026-04-04: Plan maestro — se agrega modulo de auditoria por empresa (punto 15)
+    - Se actualiza `documentos/plan_maestro_pos_multiempresa_14_puntos.md`:
+        - el plan evoluciona a 15 puntos,
+        - se incorpora el nuevo `Punto 15: Modulo de auditoria por empresa`,
+        - se actualiza backlog inmediato y criterio de avance para incluir auditoria por empresa.
+    - Se actualiza `documentos/descripcion_del_proyecto` para reflejar referencia al plan de 15 puntos.
+    - Se actualiza documentacion de trazabilidad:
+        - `documentos/descripcion_de_archivos`.
+        - `documentos/historial_de_cambios`.
+        - `CHANGELOG.md`.
+    - Validacion ejecutada:
+        - ajuste documental sin cambios de codigo ni ejecucion de pruebas adicionales.
+
+- 2026-04-04: Punto 10 + Punto 11 — asientos canonicos por lote y estados financieros en tablero
+    - Se actualiza `backend/db/eventos_contables.go`:
+        - se amplía `empresa_eventos_contables` con metadatos de proceso (`intentos_procesamiento`, `fecha_ultimo_intento`, `error_procesamiento`, `asiento_contable_id`),
+        - se crea `empresa_asientos_contables` con hash de idempotencia,
+        - se incorpora procesamiento por lote y marcado de exito/fallo por evento.
+    - Se actualiza `backend/handlers/finanzas.go` con endpoint `GET/POST/PUT /api/empresa/finanzas/asientos_contables` para consulta y `action=procesar_asientos|procesar`.
+    - Se actualiza `backend/handlers/empresa_permisos.go` para clasificar `procesar_asientos` como accion de aprobacion (`A`) en finanzas.
+    - Se actualiza `backend/main.go`:
+        - ruta protegida `/api/empresa/finanzas/asientos_contables`,
+        - migracion `2026-04-04-010-asientos-canonicos`.
+    - Se actualiza `backend/db/finanzas.go` para incluir `estado_resultados`, `balance_general`, `asientos_generados` y `asientos_monto_total` en `GetEmpresaReportesTableroResumen`.
+    - Se actualiza frontend:
+        - `web/administrar_empresa/reportes.html` con KPI de estado de resultados y balance general,
+        - `web/administrar_empresa/finanzas.html` con accion manual de procesamiento de eventos contables.
+    - Se actualizan pruebas:
+        - `backend/db/eventos_contables_test.go`,
+        - `backend/db/finanzas_test.go`,
+        - `backend/handlers/eventos_contables_modulos_test.go`,
+        - `backend/handlers/empresa_permisos_test.go`.
+    - Se actualiza documentacion relacionada:
+        - `documentos/plan_maestro_pos_multiempresa_14_puntos.md`.
+        - `documentos/diagramas/estructura_del_codigo.md`.
+        - `documentos/diagramas/diagrama_flujo_procesos.md`.
+        - `documentos/diagramas/diagrama_entidad_relacion.md`.
+        - `documentos/diagramas/diagrama_arquitectura_sistema.md`.
+        - `documentos/matriz_roles_permisos_pos_multiempresa.md`.
+        - `documentos/matriz_kpi_pos_multiempresa.md`.
+        - `documentos/descripcion_de_archivos`.
+        - `documentos/descripcion_de_las_bases_De_datos`.
+        - `estructura_bd.md`.
+        - `CHANGELOG.md`.
+    - Validaciones ejecutadas:
+        - `go test ./db -run "EventosContables|ReportesTableroResumen" -count=1` (ok).
+        - `go test ./handlers -run "AsientosContables|TableroResumen|WithEmpresaFinanzasPermissions" -count=1` (ok).
+        - `go test ./handlers -count=1` (ok).
+        - `go test ./db -count=1` (ok).
+
+- 2026-04-04: Punto 12 + Punto 10 — UAT por rol en cierres y estrategia de asientos
+    - Se actualiza `backend/handlers/empresa_permisos_test.go` con pruebas UAT para `/api/empresa/finanzas/cierres_caja`:
+        - `TestWithEmpresaFinanzasPermissionsDeniesCajeroAprobarCierreCaja`.
+        - `TestWithEmpresaFinanzasPermissionsDeniesSupervisorAprobarCierreCaja`.
+        - `TestWithEmpresaFinanzasPermissionsAllowsAdminAprobarCierreCaja`.
+    - Se actualiza `documentos/matriz_roles_permisos_pos_multiempresa.md` con matriz UAT de transiciones de cierres de caja.
+    - Se actualiza `documentos/plan_maestro_pos_multiempresa_14_puntos.md` con estrategia de procesamiento de asientos desde `empresa_eventos_contables` y documentos canonicos.
+    - Se actualiza documentacion relacionada:
+        - `documentos/diagramas/estructura_del_codigo.md`.
+        - `documentos/diagramas/diagrama_flujo_procesos.md`.
+        - `documentos/descripcion_de_archivos`.
+        - `CHANGELOG.md`.
+    - Validacion ejecutada:
+        - `go test ./handlers -run "TestWithEmpresaFinanzasPermissions(DeniesCajeroAprobarCierreCaja|DeniesSupervisorAprobarCierreCaja|AllowsAdminAprobarCierreCaja)" -count=1` (ok).
+
+- 2026-04-04: Punto 12 — continuacion UI operativa de cierres de caja en panel empresa
+    - Se actualiza `web/administrar_empresa/finanzas.html` con modulo visual de cierres de caja:
+        - formulario de apertura/actualizacion,
+        - calculo local de `caja_teorica` y `diferencia_caja`,
+        - filtros por sucursal/caja/estado/fecha,
+        - tabla de acciones (`cerrar`, `reabrir`, `aprobar`, `anular`, `activar/desactivar`, `eliminar`).
+    - Se actualiza documentacion relacionada:
+        - `documentos/plan_maestro_pos_multiempresa_14_puntos.md`.
+        - `documentos/diagramas/estructura_del_codigo.md`.
+        - `documentos/diagramas/diagrama_flujo_procesos.md`.
+        - `documentos/descripcion_de_archivos`.
+        - `documentos/historial_de_cambios`.
+        - `CHANGELOG.md`.
+    - Validacion ejecutada:
+        - `get_errors` sobre `web/administrar_empresa/finanzas.html` (ok).
+
 - 2026-04-04: Punto 12 — inicio de cierres de caja por sucursal
     - Se actualiza `backend/db/finanzas.go` con el dominio `empresa_cierres_caja` (schema, CRUD, transiciones de estado y calculo de arqueo).
     - Se actualiza `backend/handlers/finanzas.go` con endpoint `GET/POST/PUT/DELETE /api/empresa/finanzas/cierres_caja`.

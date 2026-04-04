@@ -1,4 +1,4 @@
-# Plan maestro POS multiempresa (14 puntos)
+# Plan maestro POS multiempresa (15 puntos)
 
 Fecha de actualizacion: 2026-04-04
 Estado global: en ejecucion
@@ -19,11 +19,12 @@ Implementar y consolidar un sistema POS multiempresa con contabilidad integrada,
 | 7 | Gestion de proveedores | pendiente | catalogo, precios y condiciones |
 | 8 | Modulo de facturacion electronica | pendiente | emision legal y cumplimiento normativo |
 | 9 | Modulo de compras | pendiente | orden, recepcion y contabilizacion |
-| 10 | Modulo contable integrado | pendiente | asientos automaticos por evento |
+| 10 | Modulo contable integrado | en curso | asientos automaticos por evento |
 | 11 | Reportes financieros | en curso | balance, estado de resultados, flujo de caja |
 | 12 | Cierres de caja | en curso | arqueo y cierre por sucursal/empresa |
 | 13 | Calidad, UAT y despliegue | pendiente | validacion integral y salida controlada |
 | 14 | Operacion continua | pendiente | mejora continua con KPI y roadmap trimestral |
+| 15 | Modulo de auditoria por empresa | en curso | trazabilidad por usuario/accion/recurso con consulta por empresa |
 
 ## Continuacion ejecutada ahora
 
@@ -331,14 +332,161 @@ Validacion ejecutada:
 - `go test ./handlers -run "TestEmpresaFinanzasCierresCajaHandler|TestEmpresaFinanzasTableroResumenHandler|TestEmpresaFinanzasEmiteEventosContables" -count=1` (ok).
 - `go test ./auth ./db ./handlers ./metrics ./utils -count=1` (ok).
 
+### Punto 12. Cierres de caja (continuacion 2026-04-04 - UI operativa en panel empresa)
+
+Implementacion tecnica adicional completada:
+- `web/administrar_empresa/finanzas.html` integra interfaz operativa de cierres de caja con:
+	- formulario de apertura/actualizacion por `sucursal_id`, `caja_codigo`, `turno` y fecha,
+	- calculo visual de `caja_teorica` y `diferencia_caja`,
+	- filtros por sucursal/caja/estado/rango de fechas e inclusion de inactivos,
+	- tabla de ejecucion con acciones de ciclo (`cerrar`, `reabrir`, `aprobar`, `anular`) y estado de registro (`activar/desactivar`, `eliminar`).
+- La UI consume `GET/POST/PUT/DELETE /api/empresa/finanzas/cierres_caja` reutilizando el contrato ya implementado en backend.
+- Se agregan KPI visuales de apoyo operativo para seguimiento rapido de:
+	- cajas abiertas,
+	- cierres cerrados/aprobados,
+	- cierres con incidencia.
+
+Validacion ejecutada:
+- `get_errors` sobre `web/administrar_empresa/finanzas.html` (ok).
+
+### Punto 12. Cierres de caja (continuacion 2026-04-04 - UAT por rol y matriz de transiciones)
+
+Implementacion tecnica adicional completada:
+- Se amplian pruebas en `backend/handlers/empresa_permisos_test.go` para UAT de autorizacion en `/api/empresa/finanzas/cierres_caja`:
+	- `TestWithEmpresaFinanzasPermissionsDeniesCajeroAprobarCierreCaja`.
+	- `TestWithEmpresaFinanzasPermissionsDeniesSupervisorAprobarCierreCaja`.
+	- `TestWithEmpresaFinanzasPermissionsAllowsAdminAprobarCierreCaja`.
+- Se agrega en `documentos/matriz_roles_permisos_pos_multiempresa.md` una matriz UAT de cierres con:
+	- casos por rol,
+	- casos de transicion de estados (`abierto`, `cerrado`, `aprobado`, `anulado`) y resultado HTTP esperado.
+
+Validacion ejecutada:
+- `go test ./handlers -run "TestWithEmpresaFinanzasPermissions(DeniesCajeroAprobarCierreCaja|DeniesSupervisorAprobarCierreCaja|AllowsAdminAprobarCierreCaja)" -count=1` (ok).
+
+### Punto 10. Modulo contable integrado (definicion de estrategia 2026-04-04)
+
+Estrategia de procesamiento de asientos definida:
+- Fuente unica de eventos: consumir pendientes desde `empresa_eventos_contables` por `empresa_id` y `procesado=0`.
+- Resolucion canonica documental:
+	- facturacion desde `empresa_facturacion_documentos`,
+	- compras desde `empresa_compras_documentos`,
+	- usar `entidad_id` como referencia estable para idempotencia.
+- Regla de idempotencia: una combinacion (`empresa_id`, `modulo`, `evento`, `entidad_id`, `documento_codigo`) no debe generar asientos duplicados.
+- Pipeline propuesto de ejecucion:
+	1) seleccionar lote ordenado por `id` asc,
+	2) validar contrato de evento y estado documental,
+	3) mapear cuentas (configuracion financiera por empresa),
+	4) persistir asientos en transaccion,
+	5) marcar evento como procesado con trazabilidad de fecha/resultado.
+- Manejo de errores y reintentos:
+	- errores funcionales: marcar observacion y dejar pendiente para correccion,
+	- errores transitorios: reintentar por lote con backoff y tope de intentos.
+- Entregables de implementacion siguientes:
+	- tabla canonica de asientos contables por empresa,
+	- worker o endpoint de procesamiento por lote,
+	- pruebas de idempotencia y consistencia debito/haber.
+
+### Punto 10 + Punto 11. Continuacion ejecutada (2026-04-04 - backlog 1 y 2)
+
+Implementacion tecnica completada:
+- `backend/db/eventos_contables.go` amplia `empresa_eventos_contables` con trazabilidad de procesamiento:
+	- `intentos_procesamiento`,
+	- `fecha_ultimo_intento`,
+	- `error_procesamiento`,
+	- `asiento_contable_id`.
+- Se crea tabla canonica `empresa_asientos_contables` con:
+	- referencia al evento (`evento_contable_id`),
+	- lineas contables serializadas,
+	- hash de idempotencia (`hash_idempotencia`) con restriccion unica,
+	- control de debito/credito y diferencia.
+- Se implementa proceso por lotes en DB para convertir eventos pendientes en asientos:
+	- seleccion por `empresa_id` y `procesado=0`,
+	- persistencia idempotente,
+	- marcacion de exito/fallo por evento con contador de intentos.
+- `backend/handlers/finanzas.go` agrega endpoint:
+	- `GET /api/empresa/finanzas/asientos_contables` (consulta),
+	- `POST/PUT action=procesar_asientos|procesar` (lote manual).
+- `backend/handlers/empresa_permisos.go` clasifica `action=procesar_asientos` como accion de aprobacion (`A`).
+- `backend/main.go` publica ruta de asientos y registra migracion:
+	- `2026-04-04-010-asientos-canonicos`.
+- `backend/db/finanzas.go` integra en tablero minimo:
+	- `estado_resultados`,
+	- `balance_general`,
+	- KPI contables de asientos (`asientos_generados`, `asientos_monto_total`).
+- `web/administrar_empresa/reportes.html` renderiza nuevos KPI de estado de resultados y balance general.
+- `web/administrar_empresa/finanzas.html` agrega accion manual `Procesar eventos contables`.
+
+Cobertura de pruebas agregada/actualizada:
+- `backend/db/eventos_contables_test.go`:
+	- `TestProcessEmpresaEventosContablesPendientesGeneraAsientosIdempotentes`.
+- `backend/db/finanzas_test.go`:
+	- `TestGetEmpresaReportesTableroResumenConAsientosCanonicos`.
+- `backend/handlers/eventos_contables_modulos_test.go`:
+	- `TestEmpresaFinanzasAsientosContablesHandlerProcesaPendientes`.
+- `backend/handlers/empresa_permisos_test.go`:
+	- `TestWithEmpresaFinanzasPermissionsDeniesCajeroProcesarAsientos`.
+	- `TestWithEmpresaFinanzasPermissionsAllowsContabilidadProcesarAsientos`.
+
+Validacion ejecutada:
+- `go test ./db -run "EventosContables|ReportesTableroResumen" -count=1` (ok).
+- `go test ./handlers -run "AsientosContables|TableroResumen|WithEmpresaFinanzasPermissions" -count=1` (ok).
+- `go test ./handlers -count=1` (ok).
+- `go test ./db -count=1` (ok).
+
+### Punto 15. Modulo de auditoria por empresa (nuevo)
+
+Definicion funcional incorporada al plan:
+- Alcance minimo del modulo:
+	- registrar eventos de auditoria por `empresa_id`, usuario y accion,
+	- guardar recurso afectado (modulo, entidad, entidad_id, endpoint/metodo),
+	- persistir resultado (`ok`/`error`) con metadatos de trazabilidad (`request_id`, timestamp, ip cuando aplique),
+	- exponer consulta filtrable por empresa, rango de fechas, modulo y usuario.
+- Criterios de uso:
+	- toda accion critica (creacion, actualizacion, eliminacion, aprobacion y procesos por lote) debe emitir evento de auditoria,
+	- las consultas de auditoria deben respetar permisos por rol y alcance de empresa.
+- Entregables iniciales del punto 15:
+	- esquema canonico `empresa_auditoria_eventos`,
+	- helper/middleware de registro no bloqueante,
+	- endpoint de consulta para panel empresa,
+	- pruebas de integridad y alcance por permisos.
+
+### Punto 15. Modulo de auditoria por empresa (continuacion 2026-04-04 - base minima implementada)
+
+Implementacion tecnica completada:
+- Se agrega `backend/db/auditoria_empresa.go` con:
+	- esquema `empresa_auditoria_eventos`,
+	- filtros de consulta por `empresa_id`, modulo, accion, resultado, usuario, `request_id` y rango de fechas,
+	- politica de retencion configurable por registro (`retencion_dias`) y funcion de purga por empresa.
+- Se integra middleware de auditoria no bloqueante en `backend/handlers/empresa_permisos.go`:
+	- toda accion critica autorizada (`C/U/D/A`) registra automaticamente evento de auditoria,
+	- se persiste modulo, accion, recurso, metodo, endpoint, resultado (`ok/error`), codigo HTTP, IP, metadatos y usuario.
+- Se agrega `backend/handlers/auditoria_empresa.go` con endpoint:
+	- `GET /api/empresa/auditoria/eventos` para consulta filtrable,
+	- `PUT/POST /api/empresa/auditoria/eventos?action=retener|purgar` para aplicar retencion manual.
+- Se actualiza `backend/main.go`:
+	- bootstrap de esquema con `EnsureEmpresaAuditoriaSchema`,
+	- migracion `2026-04-04-011-auditoria-empresa`,
+	- ruta protegida `/api/empresa/auditoria/eventos` bajo `WithEmpresaSeguridadPermissions`.
+- Cobertura de pruebas nueva:
+	- `backend/db/auditoria_empresa_test.go`.
+	- `backend/handlers/auditoria_empresa_test.go`.
+
+Validacion ejecutada:
+- `go test ./db -run "Auditoria|EventosContables|ReportesTableroResumen" -count=1` (ok).
+- `go test ./handlers -run "Auditoria|AsientosContables|WithEmpresaFinanzasPermissions" -count=1` (ok).
+- `go test ./handlers -count=1` (ok).
+- `go test ./db -count=1` (ok).
+
 ## Backlog inmediato (siguiente iteracion)
 
-1. Integrar UI operativa de cierres de caja (apertura/arqueo/cierre/aprobacion) en panel empresa.
-2. Definir estrategia de procesamiento de asientos (consumo de `empresa_eventos_contables` y documentos canonicos).
-3. Integrar estado de resultados/balance general del modulo finanzas con el tablero minimo en reportes.
+1. Extender cobertura de auditoria automatica a acciones criticas de ventas, compras y facturacion con clasificacion por modulo.
+2. Programar ejecucion automatica por lotes para `procesar_asientos` con politica configurable (intervalo, tamano de lote y limite de reintentos).
+3. Incorporar vista de conciliacion contable por periodo (eventos vs asientos) para detectar rezagos y errores recurrentes.
+4. Ampliar exportaciones del tablero para incluir `estado_resultados` y `balance_general` en CSV/JSON unificado por rango.
 
 ## Criterios de avance para la siguiente fase
 
 - Punto 1 queda en estado completo cuando exista una matriz formal de KPI con formulas y fuente de datos por endpoint/tabla.
 - Punto 2 queda en estado completo cuando exista matriz de entidades con llaves de aislamiento (empresa/sucursal/bodega) y reglas de validacion por endpoint.
-- Punto 3 queda en estado completo cuando exista proceso documentado y probado para convertir eventos en asientos con referencia canonica de documento (`entidad_id`).
+- Punto 10 queda en estado completo cuando exista proceso documentado y probado para convertir eventos en asientos con referencia canonica de documento (`entidad_id`) y ejecucion automatica controlada.
+- Punto 15 queda en estado completo cuando el registro de auditoria por empresa cubra acciones criticas, tenga consulta segura por rol y cuente con pruebas automatizadas de trazabilidad.

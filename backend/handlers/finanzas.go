@@ -559,3 +559,68 @@ func EmpresaFinanzasCierresCajaHandler(dbEmp *sql.DB) http.HandlerFunc {
 		http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
 	}
 }
+
+// EmpresaFinanzasAsientosContablesHandler procesa eventos contables pendientes y consulta asientos canónicos.
+func EmpresaFinanzasAsientosContablesHandler(dbEmp *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			empresaID, err := parseEmpresaIDQuery(r)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			limit, err := parseIntQueryOptional(r, "limit")
+			if err != nil {
+				http.Error(w, "limit invalido", http.StatusBadRequest)
+				return
+			}
+			rows, err := dbpkg.ListEmpresaAsientosContables(dbEmp, empresaID, dbpkg.EmpresaAsientoContableFilter{
+				Modulo:          strings.TrimSpace(r.URL.Query().Get("modulo")),
+				Evento:          strings.TrimSpace(r.URL.Query().Get("evento")),
+				PeriodoContable: strings.TrimSpace(r.URL.Query().Get("periodo")),
+				Desde:           strings.TrimSpace(r.URL.Query().Get("desde")),
+				Hasta:           strings.TrimSpace(r.URL.Query().Get("hasta")),
+				IncludeInactive: queryBool(r, "include_inactive"),
+				Limit:           limit,
+			})
+			if err != nil {
+				http.Error(w, "No se pudieron listar los asientos contables", http.StatusInternalServerError)
+				return
+			}
+			writeJSON(w, http.StatusOK, rows)
+			return
+
+		case http.MethodPut, http.MethodPost:
+			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+			if action == "" {
+				action = "procesar_asientos"
+			}
+			if action != "procesar_asientos" && action != "procesar" {
+				http.Error(w, "action invalida", http.StatusBadRequest)
+				return
+			}
+
+			empresaID, err := parseEmpresaIDQuery(r)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			limit, err := parseIntQueryOptional(r, "limit")
+			if err != nil {
+				http.Error(w, "limit invalido", http.StatusBadRequest)
+				return
+			}
+
+			resultado, err := dbpkg.ProcessEmpresaEventosContablesPendientes(dbEmp, empresaID, strings.TrimSpace(adminEmailFromRequest(r)), limit)
+			if err != nil {
+				http.Error(w, "No se pudieron procesar los eventos contables pendientes", http.StatusInternalServerError)
+				return
+			}
+			writeJSON(w, http.StatusOK, resultado)
+			return
+		}
+
+		http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
+	}
+}

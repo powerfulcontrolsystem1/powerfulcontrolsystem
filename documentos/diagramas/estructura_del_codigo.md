@@ -302,6 +302,111 @@ Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe re
   - `backend/db/finanzas_test.go` agrega `TestEmpresaCierresCajaFlow`.
   - `backend/handlers/eventos_contables_modulos_test.go` agrega `TestEmpresaFinanzasCierresCajaHandler`.
 
+## Actualizacion 2026-04-04 (continuacion punto 12 - UI operativa de cierres en finanzas)
+
+- Frontend empresa:
+  - `web/administrar_empresa/finanzas.html` incorpora seccion operativa de cierres de caja con:
+    - formulario para apertura/actualizacion por sucursal, caja, turno y fecha,
+    - calculo visual de `caja_teorica` y `diferencia_caja`,
+    - filtros por estado y rango,
+    - tabla con acciones de ciclo (`cerrar`, `reabrir`, `aprobar`, `anular`) y estado de registro (`activar/desactivar`, `eliminar`).
+  - La vista consume el endpoint existente `GET/POST/PUT/DELETE /api/empresa/finanzas/cierres_caja` y presenta KPI de seguimiento de cajas abiertas, cierres cerrados/aprobados e incidencias.
+
+- Validacion:
+  - Diagnostico de archivo con `get_errors` sobre `web/administrar_empresa/finanzas.html` (ok).
+
+## Actualizacion 2026-04-04 (continuacion puntos 12 y 10 - UAT de cierres + estrategia de asientos)
+
+- Backend pruebas:
+  - `backend/handlers/empresa_permisos_test.go` agrega UAT por rol para `cierres_caja`:
+    - rechazo de aprobacion para `cajero`,
+    - rechazo de aprobacion para `supervisor_sucursal`,
+    - aprobacion permitida para `admin_empresa`.
+
+- Documentacion funcional:
+  - `documentos/matriz_roles_permisos_pos_multiempresa.md` incorpora matriz UAT de transiciones para cierres de caja con casos por rol y estado.
+  - `documentos/plan_maestro_pos_multiempresa_14_puntos.md` define estrategia de procesamiento de asientos basada en:
+    - consumo de `empresa_eventos_contables` pendientes,
+    - resolucion canonica por `entidad_id` en documentos transaccionales,
+    - idempotencia y procesamiento por lotes con trazabilidad de resultado.
+
+- Validacion:
+  - `go test ./handlers -run "TestWithEmpresaFinanzasPermissions(DeniesCajeroAprobarCierreCaja|DeniesSupervisorAprobarCierreCaja|AllowsAdminAprobarCierreCaja)" -count=1` (ok).
+
+## Actualizacion 2026-04-04 (continuacion puntos 10 y 11 - asientos canonicos + tablero financiero)
+
+- Backend DB:
+  - `backend/db/eventos_contables.go` amplía trazabilidad de `empresa_eventos_contables` con:
+    - intentos y fecha de ultimo intento,
+    - error de procesamiento,
+    - referencia a asiento generado.
+  - Se crea `empresa_asientos_contables` como persistencia canonica de asientos con:
+    - relacion por `evento_contable_id`,
+    - `hash_idempotencia` unico,
+    - lineas contables serializadas y control de debito/credito.
+  - Se incorpora pipeline de procesamiento por lotes para eventos pendientes con marcado de resultado por evento.
+
+- Backend handlers:
+  - `backend/handlers/finanzas.go` agrega `EmpresaFinanzasAsientosContablesHandler`:
+    - `GET /api/empresa/finanzas/asientos_contables`.
+    - `POST/PUT action=procesar_asientos|procesar`.
+  - `backend/handlers/empresa_permisos.go` clasifica `procesar_asientos` como accion de aprobacion (`A`) en modulo finanzas.
+
+- Bootstrap y rutas (`backend/main.go`):
+  - Se registra migracion `2026-04-04-010-asientos-canonicos`.
+  - Se publica ruta protegida `/api/empresa/finanzas/asientos_contables`.
+
+- Reportes y tablero:
+  - `backend/db/finanzas.go` amplía `GetEmpresaReportesTableroResumen` con:
+    - `estado_resultados`,
+    - `balance_general`,
+    - KPI contables `asientos_generados` y `asientos_monto_total`.
+  - `web/administrar_empresa/reportes.html` renderiza los nuevos bloques financieros.
+  - `web/administrar_empresa/finanzas.html` incorpora accion manual `Procesar eventos contables`.
+
+- Pruebas:
+  - `backend/db/eventos_contables_test.go`: `TestProcessEmpresaEventosContablesPendientesGeneraAsientosIdempotentes`.
+  - `backend/db/finanzas_test.go`: `TestGetEmpresaReportesTableroResumenConAsientosCanonicos`.
+  - `backend/handlers/eventos_contables_modulos_test.go`: `TestEmpresaFinanzasAsientosContablesHandlerProcesaPendientes`.
+  - `backend/handlers/empresa_permisos_test.go`:
+    - `TestWithEmpresaFinanzasPermissionsDeniesCajeroProcesarAsientos`.
+    - `TestWithEmpresaFinanzasPermissionsAllowsContabilidadProcesarAsientos`.
+
+- Validacion:
+  - `go test ./db -run "EventosContables|ReportesTableroResumen" -count=1` (ok).
+  - `go test ./handlers -run "AsientosContables|TableroResumen|WithEmpresaFinanzasPermissions" -count=1` (ok).
+  - `go test ./handlers -count=1` (ok).
+  - `go test ./db -count=1` (ok).
+
+## Actualizacion 2026-04-04 (punto 15 - auditoria por empresa, base minima)
+
+- Backend DB:
+  - Nuevo `backend/db/auditoria_empresa.go` con:
+    - esquema `empresa_auditoria_eventos`,
+    - alta y consulta filtrable por empresa/modulo/accion/resultado/usuario/request_id/rango,
+    - politica de retencion (`retencion_dias`) y purga por empresa.
+
+- Backend handlers:
+  - Nuevo `backend/handlers/auditoria_empresa.go` con endpoint:
+    - `GET /api/empresa/auditoria/eventos`.
+    - `PUT/POST /api/empresa/auditoria/eventos?action=retener|purgar`.
+  - `backend/handlers/empresa_permisos.go` integra registro no bloqueante en middleware para acciones criticas autorizadas (`C/U/D/A`).
+
+- Bootstrap y rutas (`backend/main.go`):
+  - Se integra `EnsureEmpresaAuditoriaSchema`.
+  - Se registra migracion `2026-04-04-011-auditoria-empresa`.
+  - Se publica ruta protegida `/api/empresa/auditoria/eventos` con `WithEmpresaSeguridadPermissions`.
+
+- Pruebas:
+  - Nuevo `backend/db/auditoria_empresa_test.go`.
+  - Nuevo `backend/handlers/auditoria_empresa_test.go`.
+
+- Validacion:
+  - `go test ./db -run "Auditoria|EventosContables|ReportesTableroResumen" -count=1` (ok).
+  - `go test ./handlers -run "Auditoria|AsientosContables|WithEmpresaFinanzasPermissions" -count=1` (ok).
+  - `go test ./handlers -count=1` (ok).
+  - `go test ./db -count=1` (ok).
+
 ## Indice de diagramas de referencia
 
 - diagrama_entidad_relacion.md

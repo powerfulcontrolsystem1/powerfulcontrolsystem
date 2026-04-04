@@ -474,6 +474,74 @@ func TestEmpresaFinanzasTableroResumenHandler(t *testing.T) {
 	if int64(financiero["movimientos_ingresos"].(float64)) != 1 {
 		t.Fatalf("expected movimientos_ingresos=1, got %v", financiero["movimientos_ingresos"])
 	}
+	estadoResultados, _ := payload["estado_resultados"].(map[string]interface{})
+	balanceGeneral, _ := payload["balance_general"].(map[string]interface{})
+	if estadoResultados == nil || balanceGeneral == nil {
+		t.Fatalf("expected estado_resultados and balance_general blocks in payload")
+	}
+}
+
+func TestEmpresaFinanzasAsientosContablesHandlerProcesaPendientes(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_finanzas_asientos_handler.db")
+	if err := dbpkg.EnsureEmpresaFinanzasSchema(dbEmp); err != nil {
+		t.Fatalf("ensure finanzas schema: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaEventosContablesSchema(dbEmp); err != nil {
+		t.Fatalf("ensure eventos contables schema: %v", err)
+	}
+
+	if _, err := dbpkg.CreateEmpresaEventoContable(dbEmp, dbpkg.EmpresaEventoContable{
+		EmpresaID:       77,
+		Modulo:          "finanzas",
+		Evento:          "movimiento_ingreso_registrado",
+		Entidad:         "finanzas_movimiento",
+		EntidadID:       701,
+		DocumentoTipo:   "comprobante",
+		DocumentoCodigo: "ING-701",
+		PeriodoContable: time.Now().Format("2006-01"),
+		MontoTotal:      50000,
+		Moneda:          "COP",
+		PayloadJSON:     `{"tipo_movimiento":"ingreso","categoria":"ventas"}`,
+		UsuarioCreador:  "tester",
+	}); err != nil {
+		t.Fatalf("create evento contable: %v", err)
+	}
+
+	h := EmpresaFinanzasAsientosContablesHandler(dbEmp)
+	reqProcess := httptest.NewRequest(http.MethodPut, "/api/empresa/finanzas/asientos_contables?action=procesar_asientos&empresa_id=77&limit=20", nil)
+	reqProcess = reqProcess.WithContext(context.WithValue(reqProcess.Context(), "adminEmail", "conta@test.com"))
+	rrProcess := httptest.NewRecorder()
+	h.ServeHTTP(rrProcess, reqProcess)
+	if rrProcess.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, rrProcess.Code, rrProcess.Body.String())
+	}
+
+	var processResp map[string]interface{}
+	if err := json.Unmarshal(rrProcess.Body.Bytes(), &processResp); err != nil {
+		t.Fatalf("decode process response: %v", err)
+	}
+	if int64(processResp["eventos_procesados"].(float64)) != 1 {
+		t.Fatalf("expected eventos_procesados=1, got %v", processResp["eventos_procesados"])
+	}
+	if int64(processResp["asientos_creados"].(float64)) != 1 {
+		t.Fatalf("expected asientos_creados=1, got %v", processResp["asientos_creados"])
+	}
+
+	reqList := httptest.NewRequest(http.MethodGet, "/api/empresa/finanzas/asientos_contables?empresa_id=77&limit=20", nil)
+	reqList = reqList.WithContext(context.WithValue(reqList.Context(), "adminEmail", "conta@test.com"))
+	rrList := httptest.NewRecorder()
+	h.ServeHTTP(rrList, reqList)
+	if rrList.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, rrList.Code, rrList.Body.String())
+	}
+
+	var asientos []map[string]interface{}
+	if err := json.Unmarshal(rrList.Body.Bytes(), &asientos); err != nil {
+		t.Fatalf("decode list asientos response: %v", err)
+	}
+	if len(asientos) != 1 {
+		t.Fatalf("expected 1 asiento in listing, got %d", len(asientos))
+	}
 }
 
 func TestEmpresaFinanzasCierresCajaHandler(t *testing.T) {

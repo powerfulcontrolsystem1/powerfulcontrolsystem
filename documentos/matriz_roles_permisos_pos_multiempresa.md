@@ -1,6 +1,6 @@
 # Matriz base de roles y permisos POS multiempresa
 
-Fecha de actualizacion: 2026-04-03
+Fecha de actualizacion: 2026-04-04
 Alcance: punto 3 del plan maestro (permisos y seguridad)
 
 ## Roles base
@@ -47,7 +47,7 @@ Leyenda:
 - Cobertura inicial aplicada en `backend/main.go` sobre rutas criticas:
 	- Ventas: `/api/empresa/carritos_compra`, `/api/empresa/carritos_compra/items`.
 	- Inventario: `/api/empresa/bodegas`, `/api/empresa/categorias_productos`, `/api/empresa/productos`, `/api/empresa/inventario/*`, `/api/empresa/productos/precios_historial`.
-	- Finanzas: `/api/empresa/finanzas/movimientos`, `/api/empresa/finanzas/configuracion`, `/api/empresa/finanzas/periodos`.
+	- Finanzas: `/api/empresa/finanzas/movimientos`, `/api/empresa/finanzas/configuracion`, `/api/empresa/finanzas/periodos`, `/api/empresa/finanzas/asientos_contables`.
 - Cobertura ampliada (2026-04-04):
 	- Clientes: `/api/empresa/clientes`.
 	- Compras/Proveedores: `/api/empresa/proveedores`.
@@ -58,6 +58,7 @@ Leyenda:
 		- `/api/empresa/usuarios`.
 		- `/api/empresa/configuracion_avanzada`.
 		- `/api/empresa/roles_de_usuario`.
+		- `/api/empresa/auditoria/eventos`.
 	- Inventario:
 		- `/api/empresa/productos/imagen`.
 		- `/api/empresa/ubicacion_gps/dispositivos`.
@@ -75,6 +76,31 @@ Leyenda:
 	- denegacion/escritura por rol en modulos `compras` y `facturacion`, y aprobacion de escritura en `clientes` para `cajero` segun matriz.
 	- denegacion de escritura en modulo seguridad para `supervisor_sucursal`.
 	- aprobacion permitida en modulo seguridad para `admin_empresa`.
+	- denegacion para `cajero` al procesar asientos (`action=procesar_asientos`) en modulo finanzas.
+	- aprobacion para `contabilidad` al procesar asientos (`action=procesar_asientos`) en modulo finanzas.
+	- registro automatico de auditoria para acciones criticas autorizadas (`C/U/D/A`) en middleware de permisos empresariales.
+
+## Matriz UAT de cierres de caja (roles y transiciones)
+
+Fecha de actualizacion: 2026-04-04
+
+### Casos por rol en endpoint `/api/empresa/finanzas/cierres_caja`
+
+| Caso | Rol | Metodo/accion | Resultado esperado |
+|---|---|---|---|
+| UAT-CC-R1 | cajero | `PUT action=aprobar` | `403 forbidden` |
+| UAT-CC-R2 | supervisor_sucursal | `PUT action=aprobar` | `403 forbidden` |
+| UAT-CC-R3 | admin_empresa | `PUT action=aprobar` | `200 ok` |
+
+### Casos de transicion del estado de cierre
+
+| Caso | Estado actual | Accion | Precondicion | Resultado esperado |
+|---|---|---|---|---|
+| UAT-CC-T1 | abierto | aprobar | ninguna | `409 conflict` (transicion invalida) |
+| UAT-CC-T2 | abierto | cerrar | `caja_fisica` valida | `200 ok`, estado `cerrado` |
+| UAT-CC-T3 | cerrado | aprobar | ninguna | `200 ok`, estado `aprobado` |
+| UAT-CC-T4 | aprobado | reabrir | ninguna | `200 ok`, estado `abierto` |
+| UAT-CC-T5 | aprobado | editar/eliminar | ninguna | bloqueo (`409`/error de negocio) |
 
 ## Reglas de seguridad obligatorias
 

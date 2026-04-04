@@ -1,6 +1,6 @@
 # Matriz KPI POS multiempresa
 
-Fecha de actualizacion: 2026-04-03
+Fecha de actualizacion: 2026-04-04
 Alcance: punto 1 del plan maestro (definicion funcional y KPI)
 
 ## KPI de ventas
@@ -44,6 +44,9 @@ Alcance: punto 1 del plan maestro (definicion funcional y KPI)
 | KPI | Formula | Frecuencia | Fuente esperada |
 |---|---|---|---|
 | utilidad_operativa | ingresos_operativos - egresos_operativos | diaria/mensual | empresa_finanzas_movimientos |
+| asientos_generados | conteo(asientos_contables_generados_periodo) | diaria/mensual | empresa_asientos_contables |
+| asientos_monto_total | suma(total_debito_asientos_periodo) | diaria/mensual | empresa_asientos_contables |
+| cuadre_balance | activos_totales - (pasivos_totales + patrimonio) | diaria/mensual | empresa_asientos_contables, balance |
 | razon_corriente | activos_corrientes / pasivos_corrientes | mensual | asientos contables, balance |
 | flujo_caja_neto | entradas_caja - salidas_caja | diaria/mensual | caja, empresa_finanzas_movimientos |
 | indice_endudamiento | pasivos_totales / activos_totales | mensual | reportes contables |
@@ -71,3 +74,4 @@ Alcance: punto 1 del plan maestro (definicion funcional y KPI)
 - Todos los KPI deben ser filtrables por empresa_id y sucursal_id.
 - El tablero debe permitir corte por fecha desde/hasta y comparativo contra periodo anterior.
 - Los KPI financieros deben cuadrar contra reportes contables oficiales del mismo periodo.
+- El tablero financiero-operativo (`action=tablero`) debe incluir `estado_resultados` y `balance_general` calculados desde asientos canónicos; si no hay asientos en rango, debe aplicar fallback controlado desde movimientos financieros.

@@ -280,10 +280,184 @@
 
     <section class="card empresa-section" style="margin-top:12px;">
       <div class="empresa-section-header">
+        <h2 style="margin:0;">Cierres de caja por sucursal</h2>
+        <div class="empresa-inline-actions">
+          <button id="btnBuscarCierresCaja" class="btn secondary" type="button">Buscar cierres</button>
+        </div>
+      </div>
+      <p class="form-help">Controla apertura, arqueo, cierre y aprobacion de caja por sucursal y turno.</p>
+
+      <form id="cierreCajaForm" class="form" style="margin-top:10px;">
+        <input id="cierreCajaId" type="hidden">
+        <input id="cierreCajaEstado" type="hidden" value="abierto">
+        <input id="cierreCajaRegistroEstado" type="hidden" value="activo">
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="sucursalCierre">Sucursal ID</label>
+            <input id="sucursalCierre" class="form-input" type="number" min="0" step="1" value="0">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cajaCodigoCierre">Codigo de caja</label>
+            <input id="cajaCodigoCierre" class="form-input" value="CAJA_PRINCIPAL" maxlength="40" required>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="turnoCierre">Turno</label>
+            <input id="turnoCierre" class="form-input" value="general" maxlength="30">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="fechaOperacionCierre">Fecha operacion</label>
+            <input id="fechaOperacionCierre" class="form-input" type="date">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="monedaCierre">Moneda</label>
+            <input id="monedaCierre" class="form-input" value="COP" maxlength="5">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="aperturaMontoCierre">Apertura efectivo</label>
+            <input id="aperturaMontoCierre" class="form-input" type="number" min="0" step="0.01" value="0">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="ingresosEfectivoCierre">Ingresos efectivo</label>
+            <input id="ingresosEfectivoCierre" class="form-input" type="number" min="0" step="0.01" value="0">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="egresosEfectivoCierre">Egresos efectivo</label>
+            <input id="egresosEfectivoCierre" class="form-input" type="number" min="0" step="0.01" value="0">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="retirosEfectivoCierre">Retiros efectivo</label>
+            <input id="retirosEfectivoCierre" class="form-input" type="number" min="0" step="0.01" value="0">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="umbralIncidenciaCierre">Umbral incidencia</label>
+            <input id="umbralIncidenciaCierre" class="form-input" type="number" min="0" step="0.01" value="0">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="cajaTeoricaCierre">Caja teorica</label>
+            <input id="cajaTeoricaCierre" class="form-input" type="number" value="0" readonly>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cajaFisicaCierre">Caja fisica (arqueo)</label>
+            <input id="cajaFisicaCierre" class="form-input" type="number" min="0" step="0.01" value="0">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="diferenciaCierre">Diferencia caja</label>
+            <input id="diferenciaCierre" class="form-input" type="number" value="0" readonly>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="estadoCierreVisual">Estado cierre</label>
+            <input id="estadoCierreVisual" class="form-input" value="abierto" readonly>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="estadoRegistroCierreVisual">Estado registro</label>
+            <input id="estadoRegistroCierreVisual" class="form-input" value="activo" readonly>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="observacionesCierre">Observaciones cierre</label>
+            <textarea id="observacionesCierre" class="form-textarea" style="min-height:70px;"></textarea>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button id="btnGuardarCierreCaja" class="btn" type="submit">Registrar apertura de caja</button>
+          <button id="btnNuevoCierreCaja" class="btn secondary" type="button">Nuevo cierre</button>
+        </div>
+      </form>
+
+      <div class="form" style="margin-top:10px;">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="filtroCierreSucursal">Filtro sucursal ID</label>
+            <input id="filtroCierreSucursal" class="form-input" type="number" min="0" step="1" value="0">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="filtroCierreCaja">Filtro caja</label>
+            <input id="filtroCierreCaja" class="form-input" placeholder="CAJA_PRINCIPAL">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="filtroCierreEstado">Estado cierre</label>
+            <select id="filtroCierreEstado" class="form-input">
+              <option value="">Todos</option>
+              <option value="abierto">Abierto</option>
+              <option value="cerrado">Cerrado</option>
+              <option value="aprobado">Aprobado</option>
+              <option value="anulado">Anulado</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="filtroCierreDesde">Desde</label>
+            <input id="filtroCierreDesde" class="form-input" type="date">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="filtroCierreHasta">Hasta</label>
+            <input id="filtroCierreHasta" class="form-input" type="date">
+          </div>
+        </div>
+        <div class="form-row" style="margin-top:8px;">
+          <div class="form-col">
+            <label class="empresa-config-check" for="filtroCierreInactivos">
+              <input id="filtroCierreInactivos" type="checkbox">
+              <span>Incluir registros inactivos</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="kpi-grid" style="margin-top:10px;">
+        <div class="kpi-box">
+          <span class="kpi-label">Cajas abiertas</span>
+          <strong id="kpiCierresAbiertos">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Cierres cerrados/aprobados</span>
+          <strong id="kpiCierresCerrados">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Cierres con incidencia</span>
+          <strong id="kpiCierresIncidencia">0</strong>
+        </div>
+      </div>
+
+      <div class="table-wrap" style="margin-top:10px;">
+        <table class="table" id="tablaCierresCaja">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Sucursal</th>
+              <th>Caja</th>
+              <th>Turno</th>
+              <th>Teorica</th>
+              <th>Fisica</th>
+              <th>Diferencia</th>
+              <th>Estado cierre</th>
+              <th>Estado registro</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div id="cierresMsg" class="form-help"></div>
+    </section>
+
+    <section class="card empresa-section" style="margin-top:12px;">
+      <div class="empresa-section-header">
         <h2 style="margin:0;">Movimientos registrados</h2>
         <div class="empresa-inline-actions">
           <button id="btnBuscar" class="btn secondary" type="button">Buscar</button>
           <button id="btnCargarDemo" class="btn" type="button">Cargar datos demo</button>
+          <button id="btnProcesarAsientos" class="btn secondary" type="button">Procesar eventos contables</button>
           <button id="btnExportarExcel" class="btn secondary" type="button">Exportar Excel</button>
           <button id="btnExportarPDF" class="btn secondary" type="button">Exportar PDF</button>
           <button id="btnExportarJSON" class="btn secondary" type="button">Exportar JSON contable</button>
@@ -380,6 +554,7 @@
       empresaNombre: '',
       config: null,
       movimientos: [],
+      cierresCaja: [],
       periodos: [],
       activeTab: 'todos'
     };
@@ -420,6 +595,10 @@
 
     function setPeriodoMsg(text, isError) {
       setMsg('periodoMsg', text, isError);
+    }
+
+    function setCierresMsg(text, isError) {
+      setMsg('cierresMsg', text, isError);
     }
 
     function normalizePeriodoContableInput(raw) {
@@ -614,6 +793,9 @@
       document.getElementById('habilitarEgresos').checked = !!cfg.habilitar_egresos;
       document.getElementById('requiereAprobacion').checked = !!cfg.requiere_aprobacion;
       document.getElementById('moneda').value = normalize(cfg.moneda) || 'COP';
+      if (!normalize(document.getElementById('cierreCajaId').value)) {
+        document.getElementById('monedaCierre').value = normalize(cfg.moneda) || 'COP';
+      }
       document.getElementById('prefijoIngreso').value = normalize(cfg.prefijo_ingreso) || 'ING';
       document.getElementById('prefijoEgreso').value = normalize(cfg.prefijo_egreso) || 'EGR';
       document.getElementById('formatoImpresion').value = normalize(cfg.formato_impresion) === 'pos' ? 'pos' : 'carta';
@@ -671,6 +853,341 @@
       await ensureOk(res);
       state.periodos = await res.json();
       setPeriodoMsg('Periodos cargados: ' + (Array.isArray(state.periodos) ? state.periodos.length : 0), false);
+    }
+
+    function dateOnlyFromInput(raw) {
+      const val = normalize(raw);
+      if (!val) return '';
+      if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
+      const dt = new Date(val.replace(' ', 'T'));
+      if (Number.isNaN(dt.getTime())) return '';
+      return dt.toISOString().slice(0, 10);
+    }
+
+    function normalizeCajaCodigoInput(raw) {
+      const cleaned = normalize(raw).toUpperCase().replace(/\s+/g, '_').replace(/[^A-Z0-9_-]/g, '_').replace(/_+/g, '_');
+      return cleaned.replace(/^_+|_+$/g, '');
+    }
+
+    function estadoCierreVisual(estado) {
+      const out = normalize(estado).toLowerCase();
+      if (out === 'cerrado' || out === 'aprobado' || out === 'anulado') return out;
+      return 'abierto';
+    }
+
+    function syncCierreCajaPreview() {
+      const apertura = toNumber(document.getElementById('aperturaMontoCierre').value, 0);
+      const ingresos = toNumber(document.getElementById('ingresosEfectivoCierre').value, 0);
+      const egresos = toNumber(document.getElementById('egresosEfectivoCierre').value, 0);
+      const retiros = toNumber(document.getElementById('retirosEfectivoCierre').value, 0);
+      const cajaFisica = toNumber(document.getElementById('cajaFisicaCierre').value, 0);
+      const cajaTeorica = apertura + ingresos - egresos - retiros;
+      const diferencia = cajaTeorica - cajaFisica;
+      document.getElementById('cajaTeoricaCierre').value = cajaTeorica.toFixed(2);
+      document.getElementById('diferenciaCierre').value = diferencia.toFixed(2);
+    }
+
+    function resetCierreCajaForm() {
+      const hoy = new Date().toISOString().slice(0, 10);
+      document.getElementById('cierreCajaId').value = '';
+      document.getElementById('cierreCajaEstado').value = 'abierto';
+      document.getElementById('cierreCajaRegistroEstado').value = 'activo';
+      document.getElementById('sucursalCierre').value = '0';
+      document.getElementById('cajaCodigoCierre').value = 'CAJA_PRINCIPAL';
+      document.getElementById('turnoCierre').value = 'general';
+      document.getElementById('fechaOperacionCierre').value = hoy;
+      document.getElementById('monedaCierre').value = normalize(document.getElementById('moneda').value) || 'COP';
+      document.getElementById('aperturaMontoCierre').value = '0';
+      document.getElementById('ingresosEfectivoCierre').value = '0';
+      document.getElementById('egresosEfectivoCierre').value = '0';
+      document.getElementById('retirosEfectivoCierre').value = '0';
+      document.getElementById('umbralIncidenciaCierre').value = '0';
+      document.getElementById('cajaFisicaCierre').value = '0';
+      document.getElementById('observacionesCierre').value = '';
+      document.getElementById('estadoCierreVisual').value = 'abierto';
+      document.getElementById('estadoRegistroCierreVisual').value = 'activo';
+      document.getElementById('btnGuardarCierreCaja').textContent = 'Registrar apertura de caja';
+      syncCierreCajaPreview();
+      setCierresMsg('', false);
+    }
+
+    function setCierreCajaForm(item) {
+      document.getElementById('cierreCajaId').value = String(item.id || '');
+      document.getElementById('cierreCajaEstado').value = estadoCierreVisual(item.estado_cierre);
+      document.getElementById('cierreCajaRegistroEstado').value = normalize(item.estado || 'activo').toLowerCase() === 'inactivo' ? 'inactivo' : 'activo';
+      document.getElementById('sucursalCierre').value = String(toNumber(item.sucursal_id, 0));
+      document.getElementById('cajaCodigoCierre').value = normalize(item.caja_codigo);
+      document.getElementById('turnoCierre').value = normalize(item.turno) || 'general';
+      document.getElementById('fechaOperacionCierre').value = dateOnlyFromInput(item.fecha_operacion) || new Date().toISOString().slice(0, 10);
+      document.getElementById('monedaCierre').value = normalize(item.moneda) || 'COP';
+      document.getElementById('aperturaMontoCierre').value = String(toNumber(item.apertura_monto, 0));
+      document.getElementById('ingresosEfectivoCierre').value = String(toNumber(item.ingresos_efectivo, 0));
+      document.getElementById('egresosEfectivoCierre').value = String(toNumber(item.egresos_efectivo, 0));
+      document.getElementById('retirosEfectivoCierre').value = String(toNumber(item.retiros_efectivo, 0));
+      document.getElementById('umbralIncidenciaCierre').value = String(toNumber(item.umbral_incidencia, 0));
+      document.getElementById('cajaFisicaCierre').value = String(toNumber(item.caja_fisica, 0));
+      document.getElementById('observacionesCierre').value = normalize(item.observaciones);
+      document.getElementById('estadoCierreVisual').value = estadoCierreVisual(item.estado_cierre);
+      document.getElementById('estadoRegistroCierreVisual').value = normalize(item.estado || 'activo').toLowerCase();
+      document.getElementById('btnGuardarCierreCaja').textContent = 'Actualizar cierre de caja';
+      syncCierreCajaPreview();
+      setCierresMsg('', false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function cierreCajaPayload() {
+      const estadoCierre = estadoCierreVisual(document.getElementById('cierreCajaEstado').value);
+      const estadoRegistro = normalize(document.getElementById('cierreCajaRegistroEstado').value).toLowerCase() === 'inactivo' ? 'inactivo' : 'activo';
+      const payload = {
+        id: Number(document.getElementById('cierreCajaId').value || 0),
+        empresa_id: Number(state.empresaID),
+        sucursal_id: Math.max(0, Math.floor(toNumber(document.getElementById('sucursalCierre').value, 0))),
+        caja_codigo: normalizeCajaCodigoInput(document.getElementById('cajaCodigoCierre').value),
+        turno: normalize(document.getElementById('turnoCierre').value) || 'general',
+        fecha_operacion: dateOnlyFromInput(document.getElementById('fechaOperacionCierre').value) || new Date().toISOString().slice(0, 10),
+        estado_cierre: estadoCierre,
+        apertura_monto: Math.max(0, toNumber(document.getElementById('aperturaMontoCierre').value, 0)),
+        ingresos_efectivo: Math.max(0, toNumber(document.getElementById('ingresosEfectivoCierre').value, 0)),
+        egresos_efectivo: Math.max(0, toNumber(document.getElementById('egresosEfectivoCierre').value, 0)),
+        retiros_efectivo: Math.max(0, toNumber(document.getElementById('retirosEfectivoCierre').value, 0)),
+        caja_fisica: Math.max(0, toNumber(document.getElementById('cajaFisicaCierre').value, 0)),
+        moneda: normalize(document.getElementById('monedaCierre').value || document.getElementById('moneda').value || 'COP').toUpperCase() || 'COP',
+        umbral_incidencia: Math.max(0, toNumber(document.getElementById('umbralIncidenciaCierre').value, 0)),
+        estado: estadoRegistro,
+        observaciones: normalize(document.getElementById('observacionesCierre').value)
+      };
+      if (!payload.caja_codigo) {
+        throw new Error('El codigo de caja es obligatorio.');
+      }
+      return payload;
+    }
+
+    function filtroCierresCajaQuery() {
+      const params = new URLSearchParams();
+      params.set('empresa_id', String(state.empresaID));
+      params.set('limit', '300');
+      const sucursalID = Math.max(0, Math.floor(toNumber(document.getElementById('filtroCierreSucursal').value, 0)));
+      const caja = normalizeCajaCodigoInput(document.getElementById('filtroCierreCaja').value);
+      const estadoCierre = estadoCierreVisual(document.getElementById('filtroCierreEstado').value);
+      const desde = dateOnlyFromInput(document.getElementById('filtroCierreDesde').value);
+      const hasta = dateOnlyFromInput(document.getElementById('filtroCierreHasta').value);
+
+      if (sucursalID > 0) params.set('sucursal_id', String(sucursalID));
+      if (caja) params.set('caja_codigo', caja);
+      if (estadoCierre && normalize(document.getElementById('filtroCierreEstado').value)) params.set('estado_cierre', estadoCierre);
+      if (desde) params.set('desde', desde);
+      if (hasta) params.set('hasta', hasta);
+      if (document.getElementById('filtroCierreInactivos').checked) params.set('include_inactive', '1');
+
+      return params.toString();
+    }
+
+    function renderCierresKPIs() {
+      const rows = Array.isArray(state.cierresCaja) ? state.cierresCaja : [];
+      const activos = rows.filter(function(item) {
+        return normalize(item.estado || 'activo').toLowerCase() === 'activo';
+      });
+      const abiertos = activos.filter(function(item) {
+        return estadoCierreVisual(item.estado_cierre) === 'abierto';
+      }).length;
+      const cerrados = activos.filter(function(item) {
+        const estado = estadoCierreVisual(item.estado_cierre);
+        return estado === 'cerrado' || estado === 'aprobado';
+      }).length;
+      const incidencias = activos.filter(function(item) {
+        return !!item.tiene_incidencia;
+      }).length;
+
+      document.getElementById('kpiCierresAbiertos').textContent = String(abiertos);
+      document.getElementById('kpiCierresCerrados').textContent = String(cerrados);
+      document.getElementById('kpiCierresIncidencia').textContent = String(incidencias);
+    }
+
+    async function loadCierresCaja() {
+      const res = await fetch('/api/empresa/finanzas/cierres_caja?' + filtroCierresCajaQuery());
+      await ensureOk(res);
+      state.cierresCaja = await res.json();
+      renderCierresCaja();
+      renderCierresKPIs();
+      setCierresMsg('Cierres cargados: ' + (Array.isArray(state.cierresCaja) ? state.cierresCaja.length : 0), false);
+    }
+
+    async function saveCierreCaja(ev) {
+      ev.preventDefault();
+      try {
+        const payload = cierreCajaPayload();
+        const method = payload.id > 0 ? 'PUT' : 'POST';
+        const res = await fetch('/api/empresa/finanzas/cierres_caja', {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        await ensureOk(res);
+        await loadCierresCaja();
+        resetCierreCajaForm();
+        setCierresMsg('Cierre de caja guardado correctamente.', false);
+      } catch (err) {
+        setCierresMsg(err.message || 'No se pudo guardar el cierre de caja.', true);
+      }
+    }
+
+    async function ejecutarAccionCierreCaja(item, action) {
+      const estadoActual = estadoCierreVisual(item && item.estado_cierre);
+      if (!item || !item.id || !action) return;
+
+      let cajaFisica = '';
+      if (action === 'cerrar') {
+        const sugerida = toNumber(item.caja_fisica, toNumber(item.caja_teorica, 0)).toFixed(2);
+        const raw = window.prompt('Ingresa caja fisica para cerrar la caja (sugerida: ' + sugerida + ').', sugerida);
+        if (raw == null) return;
+        const parsed = Number(String(raw).replace(',', '.'));
+        if (!Number.isFinite(parsed) || parsed < 0) {
+          setCierresMsg('Debes ingresar una caja fisica valida para cerrar.', true);
+          return;
+        }
+        cajaFisica = String(parsed);
+      } else {
+        if (!confirm('¿Confirmas la accion "' + action + '" para la caja ' + normalize(item.caja_codigo) + '?')) return;
+      }
+
+      const observaciones = normalize(document.getElementById('observacionesCierre').value);
+      const params = new URLSearchParams();
+      params.set('action', action);
+      params.set('empresa_id', String(state.empresaID));
+      params.set('id', String(item.id));
+      if (cajaFisica !== '') params.set('caja_fisica', cajaFisica);
+      if (observaciones) params.set('observaciones', observaciones);
+
+      try {
+        const res = await fetch('/api/empresa/finanzas/cierres_caja?' + params.toString(), { method: 'PUT' });
+        await ensureOk(res);
+        await loadCierresCaja();
+        if (normalize(document.getElementById('cierreCajaId').value) === String(item.id)) {
+          resetCierreCajaForm();
+        }
+        setCierresMsg('Accion aplicada: ' + action + ' (' + estadoActual + ' -> ' + action + ').', false);
+      } catch (err) {
+        setCierresMsg(err.message || 'No se pudo ejecutar la accion de cierre.', true);
+      }
+    }
+
+    async function cambiarEstadoRegistroCierreCaja(item, action) {
+      if (!item || !item.id) return;
+      const params = new URLSearchParams();
+      params.set('action', action);
+      params.set('empresa_id', String(state.empresaID));
+      params.set('id', String(item.id));
+
+      try {
+        const res = await fetch('/api/empresa/finanzas/cierres_caja?' + params.toString(), { method: 'PUT' });
+        await ensureOk(res);
+        await loadCierresCaja();
+        setCierresMsg('Estado del registro actualizado a ' + (action === 'activar' ? 'activo' : 'inactivo') + '.', false);
+      } catch (err) {
+        setCierresMsg(err.message || 'No se pudo actualizar el estado del registro.', true);
+      }
+    }
+
+    async function eliminarCierreCaja(item) {
+      if (!item || !item.id) return;
+      if (!confirm('¿Eliminar este cierre de caja? Esta accion no se puede deshacer.')) return;
+      try {
+        const res = await fetch('/api/empresa/finanzas/cierres_caja?empresa_id=' + state.empresaID + '&id=' + item.id, { method: 'DELETE' });
+        await ensureOk(res);
+        await loadCierresCaja();
+        if (normalize(document.getElementById('cierreCajaId').value) === String(item.id)) {
+          resetCierreCajaForm();
+        }
+        setCierresMsg('Cierre de caja eliminado.', false);
+      } catch (err) {
+        setCierresMsg(err.message || 'No se pudo eliminar el cierre.', true);
+      }
+    }
+
+    function renderCierresCaja() {
+      const tbody = document.querySelector('#tablaCierresCaja tbody');
+      const rows = Array.isArray(state.cierresCaja) ? state.cierresCaja : [];
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="10">No hay cierres de caja para el filtro actual.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = rows.map(function(item) {
+        const estadoCierre = estadoCierreVisual(item.estado_cierre);
+        const estadoRegistro = normalize(item.estado || 'activo').toLowerCase() === 'inactivo' ? 'inactivo' : 'activo';
+        const acciones = [];
+
+        if (estadoRegistro === 'activo' && estadoCierre === 'abierto') {
+          acciones.push('<button class="btn secondary cierre-edit" data-id="' + item.id + '">Editar</button>');
+          acciones.push('<button class="btn cierre-flow" data-action="cerrar" data-id="' + item.id + '">Cerrar</button>');
+          acciones.push('<button class="btn secondary cierre-flow" data-action="anular" data-id="' + item.id + '">Anular</button>');
+        }
+        if (estadoRegistro === 'activo' && estadoCierre === 'cerrado') {
+          acciones.push('<button class="btn cierre-flow" data-action="aprobar" data-id="' + item.id + '">Aprobar</button>');
+          acciones.push('<button class="btn secondary cierre-flow" data-action="reabrir" data-id="' + item.id + '">Reabrir</button>');
+          acciones.push('<button class="btn secondary cierre-flow" data-action="anular" data-id="' + item.id + '">Anular</button>');
+        }
+        if (estadoRegistro === 'activo' && (estadoCierre === 'aprobado' || estadoCierre === 'anulado')) {
+          acciones.push('<button class="btn secondary cierre-flow" data-action="reabrir" data-id="' + item.id + '">Reabrir</button>');
+        }
+
+        acciones.push('<button class="btn secondary cierre-toggle" data-id="' + item.id + '" data-estado="' + estadoRegistro + '">' + (estadoRegistro === 'activo' ? 'Desactivar' : 'Activar') + '</button>');
+        if (estadoCierre !== 'aprobado') {
+          acciones.push('<button class="btn danger cierre-del" data-id="' + item.id + '">Eliminar</button>');
+        }
+
+        return '<tr>' +
+          '<td>' + sanitize(dateOnlyFromInput(item.fecha_operacion) || '-') + '</td>' +
+          '<td>' + sanitize(String(toNumber(item.sucursal_id, 0))) + '</td>' +
+          '<td>' + sanitize(item.caja_codigo || '-') + '</td>' +
+          '<td>' + sanitize(item.turno || '-') + '</td>' +
+          '<td>' + sanitize(fmtMoney(item.caja_teorica)) + '</td>' +
+          '<td>' + sanitize(fmtMoney(item.caja_fisica)) + '</td>' +
+          '<td>' + sanitize(fmtMoney(item.diferencia_caja)) + '</td>' +
+          '<td>' + sanitize(estadoCierre + (item.tiene_incidencia ? ' (incidencia)' : '')) + '</td>' +
+          '<td>' + sanitize(estadoRegistro) + '</td>' +
+          '<td class="actions">' + acciones.join(' ') + '</td>' +
+        '</tr>';
+      }).join('');
+
+      document.querySelectorAll('.cierre-edit').forEach(function(btn) {
+        btn.onclick = function() {
+          const id = Number(btn.getAttribute('data-id'));
+          const item = state.cierresCaja.find(function(x) { return Number(x.id) === id; });
+          if (!item) return;
+          setCierreCajaForm(item);
+        };
+      });
+
+      document.querySelectorAll('.cierre-flow').forEach(function(btn) {
+        btn.onclick = async function() {
+          const id = Number(btn.getAttribute('data-id'));
+          const action = normalize(btn.getAttribute('data-action')).toLowerCase();
+          const item = state.cierresCaja.find(function(x) { return Number(x.id) === id; });
+          if (!item || !action) return;
+          await ejecutarAccionCierreCaja(item, action);
+        };
+      });
+
+      document.querySelectorAll('.cierre-toggle').forEach(function(btn) {
+        btn.onclick = async function() {
+          const id = Number(btn.getAttribute('data-id'));
+          const estado = normalize(btn.getAttribute('data-estado')).toLowerCase();
+          const action = estado === 'activo' ? 'desactivar' : 'activar';
+          const item = state.cierresCaja.find(function(x) { return Number(x.id) === id; });
+          if (!item) return;
+          await cambiarEstadoRegistroCierreCaja(item, action);
+        };
+      });
+
+      document.querySelectorAll('.cierre-del').forEach(function(btn) {
+        btn.onclick = async function() {
+          const id = Number(btn.getAttribute('data-id'));
+          const item = state.cierresCaja.find(function(x) { return Number(x.id) === id; });
+          if (!item) return;
+          await eliminarCierreCaja(item);
+        };
+      });
     }
 
     function periodoSeleccionado() {
@@ -1878,6 +2395,26 @@
       }
     }
 
+    async function procesarEventosContablesPendientes() {
+      if (!confirm('¿Procesar eventos contables pendientes y generar asientos canónicos?')) return;
+      try {
+        const res = await fetch('/api/empresa/finanzas/asientos_contables?action=procesar_asientos&empresa_id=' + state.empresaID + '&limit=300', {
+          method: 'PUT'
+        });
+        await ensureOk(res);
+        const data = await res.json();
+        const revisados = toNumber(data && data.eventos_revisados, 0);
+        const procesados = toNumber(data && data.eventos_procesados, 0);
+        const creados = toNumber(data && data.asientos_creados, 0);
+        const existentes = toNumber(data && data.asientos_existentes, 0);
+        const fallidos = toNumber(data && data.fallidos, 0);
+        const msg = 'Proceso contable completado. Revisados: ' + revisados + ', procesados: ' + procesados + ', asientos nuevos: ' + creados + ', asientos existentes: ' + existentes + ', fallidos: ' + fallidos + '.';
+        setMsg('listMsg', msg, fallidos > 0);
+      } catch (err) {
+        setMsg('listMsg', err.message || 'No se pudieron procesar los eventos contables.', true);
+      }
+    }
+
     async function loadEmpresaNombre() {
       try {
         const res = await fetch('/super/api/empresas?id=' + state.empresaID, { credentials: 'same-origin' });
@@ -1912,6 +2449,25 @@
       });
       document.getElementById('btnNuevo').addEventListener('click', function() {
         resetMovForm();
+      });
+
+      document.getElementById('aperturaMontoCierre').addEventListener('input', syncCierreCajaPreview);
+      document.getElementById('ingresosEfectivoCierre').addEventListener('input', syncCierreCajaPreview);
+      document.getElementById('egresosEfectivoCierre').addEventListener('input', syncCierreCajaPreview);
+      document.getElementById('retirosEfectivoCierre').addEventListener('input', syncCierreCajaPreview);
+      document.getElementById('cajaFisicaCierre').addEventListener('input', syncCierreCajaPreview);
+
+      document.getElementById('cierreCajaForm').addEventListener('submit', saveCierreCaja);
+      document.getElementById('btnNuevoCierreCaja').addEventListener('click', function() {
+        resetCierreCajaForm();
+      });
+
+      document.getElementById('btnBuscarCierresCaja').addEventListener('click', async function() {
+        try {
+          await loadCierresCaja();
+        } catch (err) {
+          setCierresMsg(err.message || 'No se pudieron consultar los cierres de caja.', true);
+        }
       });
 
       document.getElementById('btnBuscar').addEventListener('click', async function() {
@@ -1949,6 +2505,7 @@
       document.getElementById('btnExportarBalanceGeneral').addEventListener('click', exportarBalanceGeneralCSV);
       document.getElementById('btnExportarLibroDiario').addEventListener('click', exportarLibroDiarioCSV);
       document.getElementById('btnExportarLibroMayor').addEventListener('click', exportarLibroMayorCSV);
+      document.getElementById('btnProcesarAsientos').addEventListener('click', procesarEventosContablesPendientes);
 
       document.getElementById('btnCerrarPeriodo').addEventListener('click', async function() {
         try {
@@ -1986,16 +2543,20 @@
       updateTabsUI();
       bindEvents();
       resetMovForm();
+      resetCierreCajaForm();
 
       const hasta = new Date();
       const desde = new Date(hasta.getTime() - (30 * 24 * 60 * 60 * 1000));
       document.getElementById('filtroHasta').value = hasta.toISOString().slice(0, 10);
       document.getElementById('filtroDesde').value = desde.toISOString().slice(0, 10);
       document.getElementById('filtroPeriodo').value = normalizePeriodoContableInput(defaultDateTimeLocal());
+      document.getElementById('filtroCierreHasta').value = hasta.toISOString().slice(0, 10);
+      document.getElementById('filtroCierreDesde').value = desde.toISOString().slice(0, 10);
 
       await loadEmpresaNombre();
       await loadConfig();
       await loadPeriodos();
+      await loadCierresCaja();
       await loadMovimientos();
     }
 

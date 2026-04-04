@@ -52,6 +52,9 @@ flowchart TD
     AUTHZ --> T
     AUTHZ --> G0
     AUTHZ --> Z
+    AUTHZ --> AU0[Ejecutar accion critica autorizada]
+    AU0 --> AU1[Registrar auditoria no bloqueante]
+    AU1 --> AU2[Persistir empresa_auditoria_eventos]
 
     L --> M[Crear cliente de venta]
     L --> N[Crear bodega y proveedor]
@@ -79,6 +82,7 @@ flowchart TD
     S11 --> RP0[Entrar al modulo reportes]
     RP0 --> RF0[Consultar tablero financiero-operativo action=tablero]
     RF0 --> RF1[Renderizar KPI operativos financieros y contables]
+    RF1 --> RF2[Renderizar estado de resultados y balance general]
     RP0 --> RP1[Filtrar ventas cerradas por rango de fechas]
     RP1 --> RP2[Calcular KPIs: ventas, ingresos y ticket promedio]
     RP2 --> RP3[Construir reporte de ventas por fecha]
@@ -106,6 +110,11 @@ flowchart TD
     F22 --> F3[Registrar ingreso o egreso con comprobante]
     F3 --> F31[Calcular total bruto, retenciones y total neto]
     F31 --> F4[Filtrar movimientos y calcular balance]
+    F4 --> FA0[Consultar eventos contables pendientes]
+    FA0 --> FA1[Ejecutar action=procesar_asientos por lote]
+    FA1 --> FA2[Persistir empresa_asientos_contables con hash_idempotencia]
+    FA2 --> FA3[Marcar evento procesado o error con intentos]
+    FA3 --> F41
     F4 --> F41[Navegar pestañas: Todos, Ingresos o Egresos]
     F41 --> F42[Exportar libro filtrado]
     F42 --> F421[Excel CSV y PDF]
@@ -176,7 +185,11 @@ Resultado esperado:
 - En `reportes`, se agrega tabla de inventario actual por bodega y KPI de productos bajo minimo.
 - En `finanzas`, cada empresa administra ingresos y egresos con configuracion propia, comprobantes y soporte de impresion.
 - En `finanzas`, el flujo de caja operativo permite apertura, arqueo, cierre y aprobacion de caja por `sucursal_id` y `caja_codigo`.
+- En `finanzas`, la interfaz operativa de cierres de caja permite ejecutar acciones de ciclo desde la tabla (cerrar, reabrir, aprobar, anular), junto con activacion/desactivacion y filtros por estado/rango.
+- En `finanzas/cierres_caja`, la validacion UAT por rol confirma autorizacion esperada: `admin_empresa` aprueba, `cajero` y `supervisor_sucursal` no aprueban bajo politica financiera actual.
 - En `finanzas`, el libro financiero se consulta por pestañas (`Todos`, `Ingresos`, `Egresos`) y puede exportarse por rango a Excel (CSV), PDF y JSON contable para integración externa.
+- En `finanzas/asientos_contables`, la API permite consultar asientos canonicos (`GET`) y ejecutar procesamiento manual por lotes (`POST/PUT action=procesar_asientos`).
+- En `auditoria/eventos`, la API permite consultar trazabilidad por filtros (`GET`) y aplicar retencion manual (`PUT/POST action=retener|purgar`) por `empresa_id`.
 - En `finanzas`, el JSON contable usa cuentas parametrizadas por empresa/categoria e incluye perfil de referencia para ERP destino.
 - En `finanzas`, existe plantilla dedicada SIIGO en CSV y exportaciones de `balance de prueba` y `estado de resultados` para trabajo contable/directivo.
 - En `finanzas`, los movimientos quedan asociados a `periodo_contable`; al cerrar un periodo se bloquean edición, activación/desactivación y eliminación hasta reabrir.
@@ -192,6 +205,9 @@ Resultado esperado:
 - En acciones de ciclo de venta, el backend bloquea transiciones no permitidas (doble pago, reabrir pagada, activar estacion pagada sin `reset_items=1`) con `409`, y usa `404` cuando el carrito no existe.
 - En cierre y cambios operativos de venta, se registra un evento contable (`empresa_eventos_contables`) para habilitar integracion contable por modulo.
 - En `reportes`, la vista consume `GET /api/empresa/finanzas/movimientos?action=tablero` para mostrar KPI financieros y contables junto a los KPI operativos.
+- En `reportes`, el tablero incluye `estado_resultados` y `balance_general` con base en asientos canonicos procesados por periodo.
+- En `finanzas`, la accion `procesar_asientos` requiere permiso de aprobacion (`A`) en el middleware de roles.
+- En middleware de permisos por empresa, toda accion critica autorizada (`C/U/D/A`) registra auditoria no bloqueante con modulo, accion, recurso, resultado HTTP y metadatos de trazabilidad.
 - En `facturacion_electronica`, al guardar configuracion FE por pais se registra evento contable de modulo `facturacion` para trazabilidad de parametrizacion fiscal.
 - En `facturacion_electronica`, acciones transaccionales (`emitir`, `anular`, `nota_credito`) registran eventos `factura_emitida`, `factura_anulada` y `nota_credito_emitida`.
 - En `proveedores`, las operaciones de alta, actualizacion, activacion/desactivacion y eliminacion registran eventos del modulo `compras`.
@@ -200,5 +216,6 @@ Resultado esperado:
 - En transacciones documentales validas, la API devuelve `estado_anterior` y `estado_nuevo`, y los persiste en el payload del evento contable para auditoria.
 - En transacciones de facturacion y compras, `empresa_eventos_contables.entidad_id` corresponde al ID canonico persistido en `empresa_facturacion_documentos` o `empresa_compras_documentos`.
 - En `finanzas`, el alta de movimientos y el cierre/reapertura de periodos registran eventos contables del modulo `finanzas`.
+- La estrategia de asientos contables se define sobre consumo por lotes de eventos pendientes con idempotencia por referencia canonica documental y marcacion de procesamiento por resultado.
 - En pruebas de seguridad de endpoints protegidos, se valida extraccion de `empresa_id` desde `multipart/form-data` para `chat_tareas/mensajes/adjunto` y denegacion por rol en `ubicacion_gps/dispositivos`.
 - En `super/configuracion_avanzada`, la tarjeta IA permite guardar credenciales de 5 modelos populares y registrar la cuenta Google del administrador que realiza el cambio.

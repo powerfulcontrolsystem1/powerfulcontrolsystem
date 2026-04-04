@@ -326,6 +326,9 @@ func main() {
 	if err := dbpkg.EnsureEmpresaAIChatSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure chat IA schema in empresas db: %v", err)
 	}
+	if err := dbpkg.EnsureEmpresaAuditoriaSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure auditoria schema in empresas db: %v", err)
+	}
 	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-01-001-baseline", "baseline schema snapshot: users, empresas, productos, clientes, carritos, configuracion_avanzada"); err != nil {
 		log.Fatalf("failed to register schema migration in empresas db: %v", err)
 	}
@@ -358,6 +361,12 @@ func main() {
 	}
 	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-04-009-cierres-caja", "flujo operativo de cierre de caja por sucursal y arqueo de efectivo"); err != nil {
 		log.Fatalf("failed to register cierres caja schema migration in empresas db: %v", err)
+	}
+	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-04-010-asientos-canonicos", "persistencia canonica de asientos por evento procesado con control de idempotencia y reintentos"); err != nil {
+		log.Fatalf("failed to register asientos canonicos schema migration in empresas db: %v", err)
+	}
+	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-04-011-auditoria-empresa", "registro de auditoria por empresa para acciones criticas con consulta filtrable y politica de retencion"); err != nil {
+		log.Fatalf("failed to register auditoria empresa schema migration in empresas db: %v", err)
 	}
 	// Crear tipos_de_empresas en la base de datos de superadministrador (ubicación centralizada)
 	createTiposSuper := `CREATE TABLE IF NOT EXISTS tipos_de_empresas (
@@ -752,7 +761,9 @@ func main() {
 	http.HandleFunc("/api/empresa/finanzas/movimientos", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasMovimientosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/finanzas/configuracion", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasConfiguracionHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/finanzas/periodos", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasPeriodosHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/finanzas/asientos_contables", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasAsientosContablesHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/finanzas/cierres_caja", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasCierresCajaHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/auditoria/eventos", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaAuditoriaEventosHandler(dbEmpresas)))
 	handlers.RegisterEmpresaChatIARoutes(dbEmpresas, dbSuper)
 	http.HandleFunc("/api/empresa/roles_de_usuario", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaRolesDeUsuarioHandler(dbEmpresas, dbSuper)))
 	// Endpoint para obtener admin actual desde la cookie de sesión

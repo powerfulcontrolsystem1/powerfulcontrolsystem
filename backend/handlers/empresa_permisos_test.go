@@ -472,3 +472,143 @@ func TestWithEmpresaVentasPermissionsRejectsChatAdjuntoWithoutAuth(t *testing.T)
 		t.Fatalf("next handler must not be called when unauthenticated")
 	}
 }
+
+func TestWithEmpresaFinanzasPermissionsDeniesCajeroAprobarCierreCaja(t *testing.T) {
+	dbEmp := openPermsTestDB(t, "empresas.db")
+	dbSuper := openPermsTestDB(t, "super.db")
+	ensurePermsEmpresasSchema(t, dbEmp)
+	ensurePermsAdminSchema(t, dbSuper)
+	seedPermsEmpresa(t, dbEmp, 41, "cajero@cierres.com")
+	seedPermsAdmin(t, dbSuper, "cajero@cierres.com", "cajero")
+
+	nextCalled := false
+	h := WithEmpresaFinanzasPermissions(dbEmp, dbSuper, func(w http.ResponseWriter, r *http.Request) {
+		nextCalled = true
+		w.WriteHeader(http.StatusOK)
+	})
+
+	req := httptest.NewRequest(http.MethodPut, "/api/empresa/finanzas/cierres_caja?action=aprobar&empresa_id=41&id=101", nil)
+	req = req.WithContext(context.WithValue(req.Context(), "adminEmail", "cajero@cierres.com"))
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusForbidden {
+		t.Fatalf("expected 403 for cajero approving cierres_caja, got %d body=%s", rr.Code, rr.Body.String())
+	}
+	if nextCalled {
+		t.Fatalf("next handler must not be called when permission is denied")
+	}
+}
+
+func TestWithEmpresaFinanzasPermissionsDeniesSupervisorAprobarCierreCaja(t *testing.T) {
+	dbEmp := openPermsTestDB(t, "empresas.db")
+	dbSuper := openPermsTestDB(t, "super.db")
+	ensurePermsEmpresasSchema(t, dbEmp)
+	ensurePermsAdminSchema(t, dbSuper)
+	seedPermsEmpresa(t, dbEmp, 42, "supervisor@cierres.com")
+	seedPermsAdmin(t, dbSuper, "supervisor@cierres.com", "supervisor_sucursal")
+
+	nextCalled := false
+	h := WithEmpresaFinanzasPermissions(dbEmp, dbSuper, func(w http.ResponseWriter, r *http.Request) {
+		nextCalled = true
+		w.WriteHeader(http.StatusOK)
+	})
+
+	req := httptest.NewRequest(http.MethodPut, "/api/empresa/finanzas/cierres_caja?action=aprobar&empresa_id=42&id=102", nil)
+	req = req.WithContext(context.WithValue(req.Context(), "adminEmail", "supervisor@cierres.com"))
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusForbidden {
+		t.Fatalf("expected 403 for supervisor approving cierres_caja, got %d body=%s", rr.Code, rr.Body.String())
+	}
+	if nextCalled {
+		t.Fatalf("next handler must not be called when permission is denied")
+	}
+}
+
+func TestWithEmpresaFinanzasPermissionsAllowsAdminAprobarCierreCaja(t *testing.T) {
+	dbEmp := openPermsTestDB(t, "empresas.db")
+	dbSuper := openPermsTestDB(t, "super.db")
+	ensurePermsEmpresasSchema(t, dbEmp)
+	ensurePermsAdminSchema(t, dbSuper)
+	seedPermsEmpresa(t, dbEmp, 43, "admin@cierres.com")
+	seedPermsAdmin(t, dbSuper, "admin@cierres.com", "administrador")
+
+	nextCalled := false
+	h := WithEmpresaFinanzasPermissions(dbEmp, dbSuper, func(w http.ResponseWriter, r *http.Request) {
+		nextCalled = true
+		w.WriteHeader(http.StatusOK)
+	})
+
+	req := httptest.NewRequest(http.MethodPut, "/api/empresa/finanzas/cierres_caja?action=aprobar&empresa_id=43&id=103", nil)
+	req = req.WithContext(context.WithValue(req.Context(), "adminEmail", "admin@cierres.com"))
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200 for admin approving cierres_caja, got %d body=%s", rr.Code, rr.Body.String())
+	}
+	if !nextCalled {
+		t.Fatalf("next handler must be called when permission is granted")
+	}
+}
+
+func TestWithEmpresaFinanzasPermissionsDeniesCajeroProcesarAsientos(t *testing.T) {
+	dbEmp := openPermsTestDB(t, "empresas.db")
+	dbSuper := openPermsTestDB(t, "super.db")
+	ensurePermsEmpresasSchema(t, dbEmp)
+	ensurePermsAdminSchema(t, dbSuper)
+	seedPermsEmpresa(t, dbEmp, 44, "cajero@asientos.com")
+	seedPermsAdmin(t, dbSuper, "cajero@asientos.com", "cajero")
+
+	nextCalled := false
+	h := WithEmpresaFinanzasPermissions(dbEmp, dbSuper, func(w http.ResponseWriter, r *http.Request) {
+		nextCalled = true
+		w.WriteHeader(http.StatusOK)
+	})
+
+	req := httptest.NewRequest(http.MethodPut, "/api/empresa/finanzas/asientos_contables?action=procesar_asientos&empresa_id=44", nil)
+	req = req.WithContext(context.WithValue(req.Context(), "adminEmail", "cajero@asientos.com"))
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusForbidden {
+		t.Fatalf("expected 403 for cajero processing asientos, got %d body=%s", rr.Code, rr.Body.String())
+	}
+	if nextCalled {
+		t.Fatalf("next handler must not be called when permission is denied")
+	}
+}
+
+func TestWithEmpresaFinanzasPermissionsAllowsContabilidadProcesarAsientos(t *testing.T) {
+	dbEmp := openPermsTestDB(t, "empresas.db")
+	dbSuper := openPermsTestDB(t, "super.db")
+	ensurePermsEmpresasSchema(t, dbEmp)
+	ensurePermsAdminSchema(t, dbSuper)
+	seedPermsEmpresa(t, dbEmp, 45, "conta@asientos.com")
+	seedPermsAdmin(t, dbSuper, "conta@asientos.com", "contabilidad")
+
+	nextCalled := false
+	h := WithEmpresaFinanzasPermissions(dbEmp, dbSuper, func(w http.ResponseWriter, r *http.Request) {
+		nextCalled = true
+		w.WriteHeader(http.StatusOK)
+	})
+
+	req := httptest.NewRequest(http.MethodPut, "/api/empresa/finanzas/asientos_contables?action=procesar_asientos&empresa_id=45", nil)
+	req = req.WithContext(context.WithValue(req.Context(), "adminEmail", "conta@asientos.com"))
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200 for contabilidad processing asientos, got %d body=%s", rr.Code, rr.Body.String())
+	}
+	if !nextCalled {
+		t.Fatalf("next handler must be called when permission is granted")
+	}
+}

@@ -402,6 +402,12 @@ func TestGetEmpresaReportesTableroResumen(t *testing.T) {
 	if resumen.Financiero.Balance != 50000 {
 		t.Fatalf("expected balance=50000, got %.2f", resumen.Financiero.Balance)
 	}
+	if resumen.EstadoResultados.UtilidadOperacional != 50000 {
+		t.Fatalf("expected utilidad_operacional=50000, got %.2f", resumen.EstadoResultados.UtilidadOperacional)
+	}
+	if resumen.BalanceGeneral.Cuadre != 0 {
+		t.Fatalf("expected cuadre=0, got %.2f", resumen.BalanceGeneral.Cuadre)
+	}
 	if resumen.Financiero.PeriodosAbiertos != 1 {
 		t.Fatalf("expected periodos_abiertos=1, got %d", resumen.Financiero.PeriodosAbiertos)
 	}
@@ -423,6 +429,97 @@ func TestGetEmpresaReportesTableroResumen(t *testing.T) {
 	}
 	if resumen.Contable.DocumentosComprasActivos != 1 {
 		t.Fatalf("expected documentos_compras_activos=1, got %d", resumen.Contable.DocumentosComprasActivos)
+	}
+}
+
+func TestGetEmpresaReportesTableroResumenConAsientosCanonicos(t *testing.T) {
+	dbConn := openFinanzasTestDB(t)
+	if err := EnsureEmpresaCarritosSchema(dbConn); err != nil {
+		t.Fatalf("ensure carritos schema: %v", err)
+	}
+	if err := EnsureEmpresaClientesSchema(dbConn); err != nil {
+		t.Fatalf("ensure clientes schema: %v", err)
+	}
+	if err := EnsureEmpresaProductosSchema(dbConn); err != nil {
+		t.Fatalf("ensure productos schema: %v", err)
+	}
+	if err := EnsureEmpresaFinanzasSchema(dbConn); err != nil {
+		t.Fatalf("ensure finanzas schema: %v", err)
+	}
+	if err := EnsureEmpresaEventosContablesSchema(dbConn); err != nil {
+		t.Fatalf("ensure eventos contables schema: %v", err)
+	}
+	if err := EnsureEmpresaDocumentosTransaccionalesSchema(dbConn); err != nil {
+		t.Fatalf("ensure documentos transaccionales schema: %v", err)
+	}
+
+	empresaID := int64(109)
+	if _, err := CreateEmpresaEventoContable(dbConn, EmpresaEventoContable{
+		EmpresaID:       empresaID,
+		Modulo:          "finanzas",
+		Evento:          "movimiento_ingreso_registrado",
+		Entidad:         "finanzas_movimiento",
+		EntidadID:       2001,
+		DocumentoTipo:   "comprobante",
+		DocumentoCodigo: "ING-2001",
+		PeriodoContable: time.Now().Format("2006-01"),
+		MontoTotal:      100,
+		Moneda:          "COP",
+		PayloadJSON:     `{"tipo_movimiento":"ingreso","categoria":"ventas"}`,
+		UsuarioCreador:  "tester",
+	}); err != nil {
+		t.Fatalf("create ingreso event: %v", err)
+	}
+	if _, err := CreateEmpresaEventoContable(dbConn, EmpresaEventoContable{
+		EmpresaID:       empresaID,
+		Modulo:          "finanzas",
+		Evento:          "movimiento_egreso_registrado",
+		Entidad:         "finanzas_movimiento",
+		EntidadID:       2002,
+		DocumentoTipo:   "comprobante",
+		DocumentoCodigo: "EGR-2002",
+		PeriodoContable: time.Now().Format("2006-01"),
+		MontoTotal:      40,
+		Moneda:          "COP",
+		PayloadJSON:     `{"tipo_movimiento":"egreso","categoria":"compras"}`,
+		UsuarioCreador:  "tester",
+	}); err != nil {
+		t.Fatalf("create egreso event: %v", err)
+	}
+
+	resultado, err := ProcessEmpresaEventosContablesPendientes(dbConn, empresaID, "tester", 20)
+	if err != nil {
+		t.Fatalf("process eventos pendientes: %v", err)
+	}
+	if resultado.AsientosCreados != 2 {
+		t.Fatalf("expected asientos_creados=2, got %d", resultado.AsientosCreados)
+	}
+
+	hoy := time.Now().Format("2006-01-02")
+	resumen, err := GetEmpresaReportesTableroResumen(dbConn, empresaID, hoy, hoy)
+	if err != nil {
+		t.Fatalf("get tablero resumen: %v", err)
+	}
+	if resumen.EstadoResultados.Ingresos != 100 {
+		t.Fatalf("expected estado_resultados ingresos=100, got %.2f", resumen.EstadoResultados.Ingresos)
+	}
+	if resumen.EstadoResultados.Gastos != 40 {
+		t.Fatalf("expected estado_resultados gastos=40, got %.2f", resumen.EstadoResultados.Gastos)
+	}
+	if resumen.EstadoResultados.UtilidadOperacional != 60 {
+		t.Fatalf("expected utilidad_operacional=60, got %.2f", resumen.EstadoResultados.UtilidadOperacional)
+	}
+	if resumen.BalanceGeneral.Activos != 60 {
+		t.Fatalf("expected activos=60, got %.2f", resumen.BalanceGeneral.Activos)
+	}
+	if resumen.BalanceGeneral.Patrimonio != 60 {
+		t.Fatalf("expected patrimonio=60, got %.2f", resumen.BalanceGeneral.Patrimonio)
+	}
+	if resumen.BalanceGeneral.Cuadre != 0 {
+		t.Fatalf("expected cuadre=0, got %.2f", resumen.BalanceGeneral.Cuadre)
+	}
+	if resumen.Contable.AsientosGenerados != 2 {
+		t.Fatalf("expected asientos_generados=2, got %d", resumen.Contable.AsientosGenerados)
 	}
 }
 

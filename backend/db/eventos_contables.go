@@ -1,7 +1,10 @@
 package db
 
 import (
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -9,27 +12,88 @@ import (
 
 // EmpresaEventoContable representa un evento de negocio listo para integracion contable.
 type EmpresaEventoContable struct {
+	ID                    int64   `json:"id"`
+	EmpresaID             int64   `json:"empresa_id"`
+	Modulo                string  `json:"modulo"`
+	Evento                string  `json:"evento"`
+	Entidad               string  `json:"entidad"`
+	EntidadID             int64   `json:"entidad_id"`
+	DocumentoTipo         string  `json:"documento_tipo"`
+	DocumentoCodigo       string  `json:"documento_codigo"`
+	PeriodoContable       string  `json:"periodo_contable"`
+	MontoTotal            float64 `json:"monto_total"`
+	Moneda                string  `json:"moneda"`
+	PayloadJSON           string  `json:"payload_json"`
+	Origen                string  `json:"origen"`
+	FechaEvento           string  `json:"fecha_evento"`
+	Procesado             bool    `json:"procesado"`
+	FechaProcesado        string  `json:"fecha_procesado"`
+	IntentosProcesamiento int64   `json:"intentos_procesamiento"`
+	FechaUltimoIntento    string  `json:"fecha_ultimo_intento"`
+	ErrorProcesamiento    string  `json:"error_procesamiento"`
+	AsientoContableID     int64   `json:"asiento_contable_id"`
+	FechaCreacion         string  `json:"fecha_creacion"`
+	FechaActualizacion    string  `json:"fecha_actualizacion"`
+	UsuarioCreador        string  `json:"usuario_creador"`
+	Estado                string  `json:"estado"`
+	Observaciones         string  `json:"observaciones"`
+}
+
+// EmpresaAsientoContableLinea representa una línea del asiento (débito/crédito).
+type EmpresaAsientoContableLinea struct {
+	Cuenta      string  `json:"cuenta"`
+	Descripcion string  `json:"descripcion"`
+	Debito      float64 `json:"debito"`
+	Credito     float64 `json:"credito"`
+}
+
+// EmpresaAsientoContable representa un asiento canónico derivado de un evento contable.
+type EmpresaAsientoContable struct {
 	ID                 int64   `json:"id"`
 	EmpresaID          int64   `json:"empresa_id"`
+	EventoContableID   int64   `json:"evento_contable_id"`
 	Modulo             string  `json:"modulo"`
 	Evento             string  `json:"evento"`
-	Entidad            string  `json:"entidad"`
-	EntidadID          int64   `json:"entidad_id"`
+	FechaAsiento       string  `json:"fecha_asiento"`
+	PeriodoContable    string  `json:"periodo_contable"`
 	DocumentoTipo      string  `json:"documento_tipo"`
 	DocumentoCodigo    string  `json:"documento_codigo"`
-	PeriodoContable    string  `json:"periodo_contable"`
-	MontoTotal         float64 `json:"monto_total"`
 	Moneda             string  `json:"moneda"`
-	PayloadJSON        string  `json:"payload_json"`
-	Origen             string  `json:"origen"`
-	FechaEvento        string  `json:"fecha_evento"`
-	Procesado          bool    `json:"procesado"`
+	TotalDebito        float64 `json:"total_debito"`
+	TotalCredito       float64 `json:"total_credito"`
+	Diferencia         float64 `json:"diferencia"`
+	LineasJSON         string  `json:"lineas_json"`
+	HashIdempotencia   string  `json:"hash_idempotencia"`
+	PayloadOrigenJSON  string  `json:"payload_origen_json"`
 	FechaProcesado     string  `json:"fecha_procesado"`
+	ProcesadoPor       string  `json:"procesado_por"`
 	FechaCreacion      string  `json:"fecha_creacion"`
 	FechaActualizacion string  `json:"fecha_actualizacion"`
 	UsuarioCreador     string  `json:"usuario_creador"`
 	Estado             string  `json:"estado"`
 	Observaciones      string  `json:"observaciones"`
+}
+
+// EmpresaAsientoContableFilter permite consultar asientos por empresa.
+type EmpresaAsientoContableFilter struct {
+	Modulo          string
+	Evento          string
+	PeriodoContable string
+	Desde           string
+	Hasta           string
+	IncludeInactive bool
+	Limit           int
+}
+
+// EmpresaProcesoAsientosResultado resume la ejecución del procesamiento por lotes.
+type EmpresaProcesoAsientosResultado struct {
+	EmpresaID          int64    `json:"empresa_id"`
+	EventosRevisados   int      `json:"eventos_revisados"`
+	EventosProcesados  int      `json:"eventos_procesados"`
+	AsientosCreados    int      `json:"asientos_creados"`
+	AsientosExistentes int      `json:"asientos_existentes"`
+	Fallidos           int      `json:"fallidos"`
+	Errores            []string `json:"errores"`
 }
 
 // EmpresaEventoContableFilter permite consultar eventos contables por empresa.
@@ -94,15 +158,49 @@ func EnsureEmpresaEventosContablesSchema(dbConn *sql.DB) error {
 			fecha_evento TEXT DEFAULT (datetime('now','localtime')),
 			procesado INTEGER DEFAULT 0,
 			fecha_procesado TEXT,
+			intentos_procesamiento INTEGER DEFAULT 0,
+			fecha_ultimo_intento TEXT,
+			error_procesamiento TEXT,
+			asiento_contable_id INTEGER,
 			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
 			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
+		`CREATE TABLE IF NOT EXISTS empresa_asientos_contables (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			empresa_id INTEGER NOT NULL,
+			evento_contable_id INTEGER NOT NULL,
+			modulo TEXT NOT NULL,
+			evento TEXT NOT NULL,
+			fecha_asiento TEXT DEFAULT (datetime('now','localtime')),
+			periodo_contable TEXT,
+			documento_tipo TEXT,
+			documento_codigo TEXT,
+			moneda TEXT DEFAULT 'COP',
+			total_debito REAL DEFAULT 0,
+			total_credito REAL DEFAULT 0,
+			diferencia REAL DEFAULT 0,
+			lineas_json TEXT,
+			hash_idempotencia TEXT NOT NULL,
+			payload_origen_json TEXT,
+			fecha_procesado TEXT,
+			procesado_por TEXT,
+			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			usuario_creador TEXT,
+			estado TEXT DEFAULT 'activo',
+			observaciones TEXT,
+			UNIQUE(empresa_id, evento_contable_id),
+			UNIQUE(empresa_id, hash_idempotencia)
+		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_eventos_contables_empresa_fecha ON empresa_eventos_contables(empresa_id, fecha_evento DESC, id DESC);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_eventos_contables_empresa_modulo_evento ON empresa_eventos_contables(empresa_id, modulo, evento);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_eventos_contables_pendientes ON empresa_eventos_contables(empresa_id, procesado, fecha_evento);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_asientos_contables_empresa_fecha ON empresa_asientos_contables(empresa_id, fecha_asiento DESC, id DESC);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_asientos_contables_empresa_modulo_evento ON empresa_asientos_contables(empresa_id, modulo, evento);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_asientos_contables_empresa_periodo ON empresa_asientos_contables(empresa_id, periodo_contable, estado);`,
 	}
 	for _, stmt := range stmts {
 		if _, err := dbConn.Exec(stmt); err != nil {
@@ -143,6 +241,18 @@ func EnsureEmpresaEventosContablesSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_eventos_contables", "fecha_procesado", "TEXT"); err != nil {
 		return err
 	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_eventos_contables", "intentos_procesamiento", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_eventos_contables", "fecha_ultimo_intento", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_eventos_contables", "error_procesamiento", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_eventos_contables", "asiento_contable_id", "INTEGER"); err != nil {
+		return err
+	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_eventos_contables", "fecha_actualizacion", "TEXT"); err != nil {
 		return err
 	}
@@ -156,6 +266,67 @@ func EnsureEmpresaEventosContablesSchema(dbConn *sql.DB) error {
 		return err
 	}
 	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_empresa_eventos_contables_empresa_periodo ON empresa_eventos_contables(empresa_id, periodo_contable, estado);`); err != nil {
+		return err
+	}
+	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_empresa_eventos_contables_reintentos ON empresa_eventos_contables(empresa_id, procesado, intentos_procesamiento, fecha_evento);`); err != nil {
+		return err
+	}
+
+	if err := ensureColumnIfMissing(dbConn, "empresa_asientos_contables", "modulo", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_asientos_contables", "evento", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_asientos_contables", "fecha_asiento", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_asientos_contables", "periodo_contable", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_asientos_contables", "documento_tipo", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_asientos_contables", "documento_codigo", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_asientos_contables", "moneda", "TEXT DEFAULT 'COP'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_asientos_contables", "total_debito", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_asientos_contables", "total_credito", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_asientos_contables", "diferencia", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_asientos_contables", "lineas_json", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_asientos_contables", "hash_idempotencia", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_asientos_contables", "payload_origen_json", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_asientos_contables", "fecha_procesado", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_asientos_contables", "procesado_por", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_asientos_contables", "fecha_actualizacion", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_asientos_contables", "usuario_creador", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_asientos_contables", "estado", "TEXT DEFAULT 'activo'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_asientos_contables", "observaciones", "TEXT"); err != nil {
 		return err
 	}
 
@@ -280,6 +451,10 @@ func ListEmpresaEventosContables(dbConn *sql.DB, empresaID int64, f EmpresaEvent
 		COALESCE(fecha_evento, ''),
 		COALESCE(procesado, 0),
 		COALESCE(fecha_procesado, ''),
+		COALESCE(intentos_procesamiento, 0),
+		COALESCE(fecha_ultimo_intento, ''),
+		COALESCE(error_procesamiento, ''),
+		COALESCE(asiento_contable_id, 0),
 		COALESCE(fecha_creacion, ''),
 		COALESCE(fecha_actualizacion, ''),
 		COALESCE(usuario_creador, ''),
@@ -342,6 +517,10 @@ func ListEmpresaEventosContables(dbConn *sql.DB, empresaID int64, f EmpresaEvent
 			&item.FechaEvento,
 			&procesadoInt,
 			&item.FechaProcesado,
+			&item.IntentosProcesamiento,
+			&item.FechaUltimoIntento,
+			&item.ErrorProcesamiento,
+			&item.AsientoContableID,
 			&item.FechaCreacion,
 			&item.FechaActualizacion,
 			&item.UsuarioCreador,
@@ -354,6 +533,622 @@ func ListEmpresaEventosContables(dbConn *sql.DB, empresaID int64, f EmpresaEvent
 		out = append(out, item)
 	}
 	return out, nil
+}
+
+// ListEmpresaAsientosContables lista asientos canónicos por empresa con filtros opcionales.
+func ListEmpresaAsientosContables(dbConn *sql.DB, empresaID int64, f EmpresaAsientoContableFilter) ([]EmpresaAsientoContable, error) {
+	if empresaID <= 0 {
+		return nil, fmt.Errorf("empresa_id es obligatorio")
+	}
+
+	query := `SELECT
+		id,
+		empresa_id,
+		COALESCE(evento_contable_id, 0),
+		COALESCE(modulo, ''),
+		COALESCE(evento, ''),
+		COALESCE(fecha_asiento, ''),
+		COALESCE(periodo_contable, ''),
+		COALESCE(documento_tipo, ''),
+		COALESCE(documento_codigo, ''),
+		COALESCE(moneda, 'COP'),
+		COALESCE(total_debito, 0),
+		COALESCE(total_credito, 0),
+		COALESCE(diferencia, 0),
+		COALESCE(lineas_json, ''),
+		COALESCE(hash_idempotencia, ''),
+		COALESCE(payload_origen_json, ''),
+		COALESCE(fecha_procesado, ''),
+		COALESCE(procesado_por, ''),
+		COALESCE(fecha_creacion, ''),
+		COALESCE(fecha_actualizacion, ''),
+		COALESCE(usuario_creador, ''),
+		COALESCE(estado, 'activo'),
+		COALESCE(observaciones, '')
+	FROM empresa_asientos_contables
+	WHERE empresa_id = ?`
+	args := []interface{}{empresaID}
+
+	if !f.IncludeInactive {
+		query += ` AND COALESCE(estado, 'activo') = 'activo'`
+	}
+	if modulo := normalizeEventoContableModulo(f.Modulo); modulo != "" {
+		query += ` AND COALESCE(modulo, '') = ?`
+		args = append(args, modulo)
+	}
+	if evento := normalizeEventoContableNombre(f.Evento); evento != "" {
+		query += ` AND COALESCE(evento, '') = ?`
+		args = append(args, evento)
+	}
+	if periodo := normalizePeriodoEventoContable(f.PeriodoContable); periodo != "" {
+		query += ` AND COALESCE(periodo_contable, '') = ?`
+		args = append(args, periodo)
+	}
+	if desde := strings.TrimSpace(f.Desde); desde != "" {
+		query += ` AND date(fecha_asiento) >= date(?)`
+		args = append(args, desde)
+	}
+	if hasta := strings.TrimSpace(f.Hasta); hasta != "" {
+		query += ` AND date(fecha_asiento) <= date(?)`
+		args = append(args, hasta)
+	}
+
+	limit := f.Limit
+	if limit <= 0 {
+		limit = 100
+	}
+	if limit > 500 {
+		limit = 500
+	}
+	query += ` ORDER BY COALESCE(fecha_asiento, '') DESC, id DESC LIMIT ?`
+	args = append(args, limit)
+
+	rows, err := dbConn.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]EmpresaAsientoContable, 0)
+	for rows.Next() {
+		var item EmpresaAsientoContable
+		if err := rows.Scan(
+			&item.ID,
+			&item.EmpresaID,
+			&item.EventoContableID,
+			&item.Modulo,
+			&item.Evento,
+			&item.FechaAsiento,
+			&item.PeriodoContable,
+			&item.DocumentoTipo,
+			&item.DocumentoCodigo,
+			&item.Moneda,
+			&item.TotalDebito,
+			&item.TotalCredito,
+			&item.Diferencia,
+			&item.LineasJSON,
+			&item.HashIdempotencia,
+			&item.PayloadOrigenJSON,
+			&item.FechaProcesado,
+			&item.ProcesadoPor,
+			&item.FechaCreacion,
+			&item.FechaActualizacion,
+			&item.UsuarioCreador,
+			&item.Estado,
+			&item.Observaciones,
+		); err != nil {
+			return nil, err
+		}
+		out = append(out, item)
+	}
+	return out, rows.Err()
+}
+
+// ProcessEmpresaEventosContablesPendientes procesa por lotes eventos pendientes y genera asientos idempotentes.
+func ProcessEmpresaEventosContablesPendientes(dbConn *sql.DB, empresaID int64, procesadoPor string, limit int) (EmpresaProcesoAsientosResultado, error) {
+	result := EmpresaProcesoAsientosResultado{
+		EmpresaID: empresaID,
+		Errores:   make([]string, 0),
+	}
+	if empresaID <= 0 {
+		return result, fmt.Errorf("empresa_id es obligatorio")
+	}
+	if limit <= 0 {
+		limit = 100
+	}
+	if limit > 500 {
+		limit = 500
+	}
+	procesadoPor = strings.TrimSpace(procesadoPor)
+	if procesadoPor == "" {
+		procesadoPor = "sistema"
+	}
+
+	eventos, err := listEmpresaEventosContablesPendientes(dbConn, empresaID, limit)
+	if err != nil {
+		return result, err
+	}
+	result.EventosRevisados = len(eventos)
+
+	for _, evento := range eventos {
+		asientoID, creado, err := ensureEmpresaAsientoContableFromEvento(dbConn, evento, procesadoPor)
+		if err != nil {
+			_ = markEmpresaEventoContableFailed(dbConn, evento.ID, err)
+			result.Fallidos++
+			if len(result.Errores) < 20 {
+				result.Errores = append(result.Errores, fmt.Sprintf("evento_id=%d: %s", evento.ID, trimProcessingError(err)))
+			}
+			continue
+		}
+
+		if err := markEmpresaEventoContableProcessed(dbConn, evento.ID, asientoID); err != nil {
+			_ = markEmpresaEventoContableFailed(dbConn, evento.ID, err)
+			result.Fallidos++
+			if len(result.Errores) < 20 {
+				result.Errores = append(result.Errores, fmt.Sprintf("evento_id=%d: %s", evento.ID, trimProcessingError(err)))
+			}
+			continue
+		}
+
+		result.EventosProcesados++
+		if creado {
+			result.AsientosCreados++
+		} else {
+			result.AsientosExistentes++
+		}
+	}
+
+	return result, nil
+}
+
+func listEmpresaEventosContablesPendientes(dbConn *sql.DB, empresaID int64, limit int) ([]EmpresaEventoContable, error) {
+	rows, err := dbConn.Query(`SELECT
+		id,
+		empresa_id,
+		COALESCE(modulo, ''),
+		COALESCE(evento, ''),
+		COALESCE(entidad, ''),
+		COALESCE(entidad_id, 0),
+		COALESCE(documento_tipo, ''),
+		COALESCE(documento_codigo, ''),
+		COALESCE(periodo_contable, ''),
+		COALESCE(monto_total, 0),
+		COALESCE(moneda, 'COP'),
+		COALESCE(payload_json, ''),
+		COALESCE(origen, 'backend'),
+		COALESCE(fecha_evento, ''),
+		COALESCE(procesado, 0),
+		COALESCE(fecha_procesado, ''),
+		COALESCE(intentos_procesamiento, 0),
+		COALESCE(fecha_ultimo_intento, ''),
+		COALESCE(error_procesamiento, ''),
+		COALESCE(asiento_contable_id, 0),
+		COALESCE(fecha_creacion, ''),
+		COALESCE(fecha_actualizacion, ''),
+		COALESCE(usuario_creador, ''),
+		COALESCE(estado, 'activo'),
+		COALESCE(observaciones, '')
+	FROM empresa_eventos_contables
+	WHERE empresa_id = ?
+		AND COALESCE(estado, 'activo') = 'activo'
+		AND COALESCE(procesado, 0) = 0
+	ORDER BY COALESCE(fecha_evento, '') ASC, id ASC
+	LIMIT ?`, empresaID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]EmpresaEventoContable, 0)
+	for rows.Next() {
+		var item EmpresaEventoContable
+		var procesadoInt int64
+		if err := rows.Scan(
+			&item.ID,
+			&item.EmpresaID,
+			&item.Modulo,
+			&item.Evento,
+			&item.Entidad,
+			&item.EntidadID,
+			&item.DocumentoTipo,
+			&item.DocumentoCodigo,
+			&item.PeriodoContable,
+			&item.MontoTotal,
+			&item.Moneda,
+			&item.PayloadJSON,
+			&item.Origen,
+			&item.FechaEvento,
+			&procesadoInt,
+			&item.FechaProcesado,
+			&item.IntentosProcesamiento,
+			&item.FechaUltimoIntento,
+			&item.ErrorProcesamiento,
+			&item.AsientoContableID,
+			&item.FechaCreacion,
+			&item.FechaActualizacion,
+			&item.UsuarioCreador,
+			&item.Estado,
+			&item.Observaciones,
+		); err != nil {
+			return nil, err
+		}
+		item.Procesado = procesadoInt == 1
+		out = append(out, item)
+	}
+	return out, rows.Err()
+}
+
+func ensureEmpresaAsientoContableFromEvento(dbConn *sql.DB, evento EmpresaEventoContable, procesadoPor string) (int64, bool, error) {
+	if evento.EmpresaID <= 0 || evento.ID <= 0 {
+		return 0, false, fmt.Errorf("evento contable invalido para generar asiento")
+	}
+
+	asientoID, err := findEmpresaAsientoByEventoOrHash(dbConn, evento.EmpresaID, evento.ID, "")
+	if err != nil {
+		return 0, false, err
+	}
+	if asientoID > 0 {
+		return asientoID, false, nil
+	}
+
+	cfg, err := GetEmpresaFinanzasConfiguracion(dbConn, evento.EmpresaID)
+	if err != nil {
+		return 0, false, err
+	}
+	if cfg == nil {
+		cfg = defaultEmpresaFinanzasConfiguracion(evento.EmpresaID)
+	}
+
+	lineas := buildEmpresaAsientoContableLineas(evento, cfg)
+	lineasJSONBytes, err := json.Marshal(lineas)
+	if err != nil {
+		return 0, false, err
+	}
+
+	totalDebito := 0.0
+	totalCredito := 0.0
+	for _, ln := range lineas {
+		totalDebito += maxFloat64(ln.Debito, 0)
+		totalCredito += maxFloat64(ln.Credito, 0)
+	}
+	diferencia := totalDebito - totalCredito
+
+	fechaAsiento := strings.TrimSpace(evento.FechaEvento)
+	if fechaAsiento == "" {
+		fechaAsiento = time.Now().Format("2006-01-02 15:04:05")
+	}
+	periodo := normalizePeriodoEventoContable(evento.PeriodoContable)
+	if periodo == "" {
+		periodo = normalizePeriodoEventoContable(fechaAsiento)
+	}
+	if periodo == "" {
+		periodo = time.Now().Format("2006-01")
+	}
+	moneda := strings.TrimSpace(strings.ToUpper(evento.Moneda))
+	if moneda == "" {
+		moneda = "COP"
+	}
+
+	hash := buildAsientoIdempotenciaHash(evento)
+	res, err := dbConn.Exec(`INSERT INTO empresa_asientos_contables (
+		empresa_id,
+		evento_contable_id,
+		modulo,
+		evento,
+		fecha_asiento,
+		periodo_contable,
+		documento_tipo,
+		documento_codigo,
+		moneda,
+		total_debito,
+		total_credito,
+		diferencia,
+		lineas_json,
+		hash_idempotencia,
+		payload_origen_json,
+		fecha_procesado,
+		procesado_por,
+		fecha_creacion,
+		fecha_actualizacion,
+		usuario_creador,
+		estado,
+		observaciones
+	) VALUES (
+		?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), ?, datetime('now','localtime'), datetime('now','localtime'), ?, 'activo', ?
+	)`,
+		evento.EmpresaID,
+		evento.ID,
+		evento.Modulo,
+		evento.Evento,
+		fechaAsiento,
+		periodo,
+		evento.DocumentoTipo,
+		evento.DocumentoCodigo,
+		moneda,
+		totalDebito,
+		totalCredito,
+		diferencia,
+		string(lineasJSONBytes),
+		hash,
+		strings.TrimSpace(evento.PayloadJSON),
+		procesadoPor,
+		strings.TrimSpace(evento.UsuarioCreador),
+		strings.TrimSpace(evento.Observaciones),
+	)
+	if err != nil {
+		if isSQLiteUniqueConstraint(err) {
+			existingID, findErr := findEmpresaAsientoByEventoOrHash(dbConn, evento.EmpresaID, evento.ID, hash)
+			if findErr != nil {
+				return 0, false, findErr
+			}
+			if existingID > 0 {
+				return existingID, false, nil
+			}
+		}
+		return 0, false, err
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		return 0, false, err
+	}
+	return id, true, nil
+}
+
+func markEmpresaEventoContableProcessed(dbConn *sql.DB, eventoID, asientoID int64) error {
+	if eventoID <= 0 {
+		return fmt.Errorf("evento_id invalido")
+	}
+	_, err := dbConn.Exec(`UPDATE empresa_eventos_contables
+	SET procesado = 1,
+		fecha_procesado = datetime('now','localtime'),
+		fecha_ultimo_intento = datetime('now','localtime'),
+		intentos_procesamiento = COALESCE(intentos_procesamiento, 0) + 1,
+		error_procesamiento = '',
+		asiento_contable_id = ?,
+		fecha_actualizacion = datetime('now','localtime')
+	WHERE id = ?`, asientoID, eventoID)
+	return err
+}
+
+func markEmpresaEventoContableFailed(dbConn *sql.DB, eventoID int64, processErr error) error {
+	if eventoID <= 0 {
+		return fmt.Errorf("evento_id invalido")
+	}
+	_, err := dbConn.Exec(`UPDATE empresa_eventos_contables
+	SET procesado = 0,
+		fecha_ultimo_intento = datetime('now','localtime'),
+		intentos_procesamiento = COALESCE(intentos_procesamiento, 0) + 1,
+		error_procesamiento = ?,
+		fecha_actualizacion = datetime('now','localtime')
+	WHERE id = ?`, trimProcessingError(processErr), eventoID)
+	return err
+}
+
+func findEmpresaAsientoByEventoOrHash(dbConn *sql.DB, empresaID, eventoID int64, hash string) (int64, error) {
+	if empresaID <= 0 {
+		return 0, fmt.Errorf("empresa_id invalido")
+	}
+	if eventoID > 0 {
+		var id int64
+		err := dbConn.QueryRow(`SELECT id FROM empresa_asientos_contables WHERE empresa_id = ? AND evento_contable_id = ? LIMIT 1`, empresaID, eventoID).Scan(&id)
+		if err == nil {
+			return id, nil
+		}
+		if err != sql.ErrNoRows {
+			return 0, err
+		}
+	}
+	hash = strings.TrimSpace(hash)
+	if hash != "" {
+		var id int64
+		err := dbConn.QueryRow(`SELECT id FROM empresa_asientos_contables WHERE empresa_id = ? AND hash_idempotencia = ? LIMIT 1`, empresaID, hash).Scan(&id)
+		if err == nil {
+			return id, nil
+		}
+		if err != sql.ErrNoRows {
+			return 0, err
+		}
+	}
+	return 0, nil
+}
+
+func buildEmpresaAsientoContableLineas(evento EmpresaEventoContable, cfg *EmpresaFinanzasConfiguracion) []EmpresaAsientoContableLinea {
+	payload := parseEventoPayload(evento.PayloadJSON)
+	monto := resolveMontoEventoContable(evento, payload)
+	if monto <= 0 {
+		return []EmpresaAsientoContableLinea{}
+	}
+
+	if cfg == nil {
+		cfg = defaultEmpresaFinanzasConfiguracion(evento.EmpresaID)
+	}
+	categoria := payloadString(payload, "categoria")
+	tipoMovimiento := payloadString(payload, "tipo_movimiento")
+
+	cuentaCaja := sanitizeContableAccount(cfg.CuentaCajaBancos)
+	if cuentaCaja == "" {
+		cuentaCaja = "110505"
+	}
+	cuentaIngresos := resolveEmpresaCuentaPorCategoria(cfg.CuentasIngresoCategoria, categoria, cfg.CuentaIngresos, "413595")
+	cuentaGastos := resolveEmpresaCuentaPorCategoria(cfg.CuentasEgresoCategoria, categoria, cfg.CuentaGastos, "519595")
+
+	nuevoIngreso := func() []EmpresaAsientoContableLinea {
+		return []EmpresaAsientoContableLinea{
+			{Cuenta: cuentaCaja, Descripcion: "Caja y bancos", Debito: monto, Credito: 0},
+			{Cuenta: cuentaIngresos, Descripcion: "Ingresos operacionales", Debito: 0, Credito: monto},
+		}
+	}
+	nuevoEgreso := func() []EmpresaAsientoContableLinea {
+		return []EmpresaAsientoContableLinea{
+			{Cuenta: cuentaGastos, Descripcion: "Gastos operacionales", Debito: monto, Credito: 0},
+			{Cuenta: cuentaCaja, Descripcion: "Caja y bancos", Debito: 0, Credito: monto},
+		}
+	}
+
+	switch normalizeEventoContableModulo(evento.Modulo) {
+	case "finanzas":
+		switch normalizeEventoContableNombre(evento.Evento) {
+		case "movimiento_ingreso_registrado":
+			return nuevoIngreso()
+		case "movimiento_egreso_registrado":
+			return nuevoEgreso()
+		}
+		if strings.EqualFold(tipoMovimiento, "ingreso") {
+			return nuevoIngreso()
+		}
+		if strings.EqualFold(tipoMovimiento, "egreso") {
+			return nuevoEgreso()
+		}
+
+	case "ventas":
+		switch normalizeEventoContableNombre(evento.Evento) {
+		case "venta_pagada", "venta_cerrada":
+			return nuevoIngreso()
+		}
+
+	case "facturacion":
+		switch normalizeEventoContableNombre(evento.Evento) {
+		case "factura_emitida":
+			return nuevoIngreso()
+		case "factura_anulada", "nota_credito_emitida":
+			return []EmpresaAsientoContableLinea{
+				{Cuenta: cuentaIngresos, Descripcion: "Reversion de ingresos", Debito: monto, Credito: 0},
+				{Cuenta: cuentaCaja, Descripcion: "Reversion caja y bancos", Debito: 0, Credito: monto},
+			}
+		}
+
+	case "compras":
+		switch normalizeEventoContableNombre(evento.Evento) {
+		case "orden_compra_emitida", "compra_recepcionada", "compra_contabilizada":
+			return nuevoEgreso()
+		}
+	}
+
+	return []EmpresaAsientoContableLinea{}
+}
+
+func resolveEmpresaCuentaPorCategoria(rawMap, categoria, fallback, fallbackDefault string) string {
+	fallback = sanitizeContableAccount(fallback)
+	if fallback == "" {
+		fallback = fallbackDefault
+	}
+	cat := strings.TrimSpace(strings.ToLower(categoria))
+	if cat == "" {
+		return fallback
+	}
+
+	for _, line := range strings.Split(strings.TrimSpace(rawMap), "\n") {
+		entry := strings.TrimSpace(line)
+		if entry == "" {
+			continue
+		}
+		idx := strings.IndexAny(entry, "=:")
+		if idx <= 0 {
+			continue
+		}
+		catLine := strings.TrimSpace(strings.ToLower(entry[:idx]))
+		if catLine != cat {
+			continue
+		}
+		cuenta := sanitizeContableAccount(strings.TrimSpace(entry[idx+1:]))
+		if cuenta != "" {
+			return cuenta
+		}
+	}
+	return fallback
+}
+
+func parseEventoPayload(raw string) map[string]interface{} {
+	out := map[string]interface{}{}
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return out
+	}
+	_ = json.Unmarshal([]byte(raw), &out)
+	return out
+}
+
+func payloadString(payload map[string]interface{}, keys ...string) string {
+	for _, key := range keys {
+		v, ok := payload[key]
+		if !ok {
+			continue
+		}
+		s := strings.TrimSpace(fmt.Sprintf("%v", v))
+		if s != "" && s != "<nil>" {
+			return s
+		}
+	}
+	return ""
+}
+
+func payloadNumber(payload map[string]interface{}, keys ...string) float64 {
+	for _, key := range keys {
+		v, ok := payload[key]
+		if !ok || v == nil {
+			continue
+		}
+		s := strings.TrimSpace(fmt.Sprintf("%v", v))
+		if s == "" {
+			continue
+		}
+		var n float64
+		if _, err := fmt.Sscanf(strings.ReplaceAll(s, ",", "."), "%f", &n); err == nil {
+			if n > 0 {
+				return n
+			}
+		}
+	}
+	return 0
+}
+
+func resolveMontoEventoContable(evento EmpresaEventoContable, payload map[string]interface{}) float64 {
+	if evento.MontoTotal > 0 {
+		return evento.MontoTotal
+	}
+	monto := payloadNumber(payload, "total_neto", "total", "monto_total", "monto")
+	if monto > 0 {
+		return monto
+	}
+	return 0
+}
+
+func buildAsientoIdempotenciaHash(evento EmpresaEventoContable) string {
+	base := fmt.Sprintf("%d|%d|%s|%s|%s|%s|%s|%.2f",
+		evento.EmpresaID,
+		evento.ID,
+		normalizeEventoContableModulo(evento.Modulo),
+		normalizeEventoContableNombre(evento.Evento),
+		strings.TrimSpace(strings.ToLower(evento.DocumentoTipo)),
+		strings.TrimSpace(evento.DocumentoCodigo),
+		normalizePeriodoEventoContable(evento.PeriodoContable),
+		evento.MontoTotal,
+	)
+	sum := sha256.Sum256([]byte(base))
+	return hex.EncodeToString(sum[:])
+}
+
+func isSQLiteUniqueConstraint(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "unique constraint failed")
+}
+
+func trimProcessingError(err error) string {
+	if err == nil {
+		return ""
+	}
+	msg := strings.TrimSpace(err.Error())
+	if msg == "" {
+		return "error de procesamiento"
+	}
+	const maxLen = 450
+	if len(msg) > maxLen {
+		return msg[:maxLen]
+	}
+	return msg
 }
 
 func isEventoContableContratado(modulo, evento string) bool {
