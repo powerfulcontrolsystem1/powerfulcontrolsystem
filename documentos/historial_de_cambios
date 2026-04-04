@@ -4077,3 +4077,61 @@ Archivos modificados:
     - `go test ./handlers -run "TestEmpresaFacturacionTransaccionalEmiteEventosContables|TestEmpresaFacturacionTransaccionalEmitirRechazaSinCumplimientoLegal|TestEmpresaFacturacionTransaccionalRechazaTransicionInvalida" -count=1` (ok).
     - `go test ./db ./handlers -count=1` (ok).
 
+
+2026-04-04: Actualización automática desde script: añadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- Pendiente Notas
+- backend/db/clientes.go
+- backend/db/clientes_test.go
+- backend/db/documentos_transaccionales.go
+- backend/db/documentos_transaccionales_test.go
+- backend/db/empresas.db.20260326-174525.bak
+- backend/db/facturacion_electronica.go
+- backend/db/facturacion_electronica_test.go
+- backend/db/productos.go
+- backend/db/productos_categorias_test.go
+- backend/db/superadministrador.db.20260326-174324.bak
+- backend/db/superadministrador.db.20260326-174525.bak
+- backend/handlers/clientes.go
+- backend/handlers/clientes_test.go
+- backend/handlers/compras.go
+- backend/handlers/compras_documentos_test.go
+- backend/handlers/eventos_contables_modulos_test.go
+- backend/handlers/facturacion_electronica.go
+- backend/handlers/productos.go
+- backend/handlers/productos_categorias_test.go
+- backend/main.go
+- backend/server.err
+- backend/tmp_api.json
+- backend/tmp_config.html
+- documentos/descripcion_de_archivos
+- documentos/descripcion_del_proyecto
+- documentos/diagramas/diagrama_flujo_procesos.md
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/historial_de_cambios
+- documentos/plan_maestro_pos_multiempresa_14_puntos.md
+- documentos/punto_13_calidad_uat_despliegue.md
+- documentos/punto_13_validacion_integral_resultado.md
+- documentos/punto_14_operacion_continua.md
+- documentos/punto_14_operacion_continua_reporte.md
+- documentos/release_checklist.md
+- documentos/roadmap_trimestral_pos_multiempresa.md
+- estructura_bd.md
+- scripts/generar_reporte_operacion_continua.ps1
+- scripts/logs/actualizar_repositorio-20260404-164727.log
+- scripts/logs/actualizar_repositorio-20260404-185545.log
+- scripts/logs/operacion-continua-20260404-184335.log
+- scripts/logs/operacion-continua-20260404-184414.log
+- scripts/logs/punto13-validacion-20260404-183802.log
+- scripts/logs/punto13-validacion-20260404-183815.log
+- scripts/validar_punto_13.ps1
+- web/administrar_empresa.html
+- web/administrar_empresa/administrar_clientes.html
+- web/administrar_empresa/administrar_productos.html
+- web/administrar_empresa/compras.html
+- web/administrar_empresa/facturacion_electronica.html
+- web/ayuda/ayuda.html
+- web/js/administrar_empresa.js
+
