@@ -1,6 +1,6 @@
 # Diagrama de flujo de procesos
 
-Fecha: 2026-04-04
+Fecha: 2026-04-05
 
 ```mermaid
 flowchart TD
@@ -93,6 +93,12 @@ flowchart TD
     RF0 --> RF1[Renderizar KPI operativos financieros y contables]
     RF1 --> RF2[Renderizar estado de resultados y balance general]
     RF2 --> RF3[Exportar tablero unificado CSV JSON por rango]
+    RP0 --> RPD0[Consultar catalogo de datasets action=catalogo]
+    RPD0 --> RPD1[Seleccionar dataset empresarial operativo o contable]
+    RPD1 --> RPD2[Cargar dataset action=dataset]
+    RPD2 --> RPD3[Renderizar tabla profesional y resumen del dataset]
+    RPD3 --> RPD4[Exportar dataset JSON CSV TXT XLS]
+    RPD3 --> RPD5[Exportar suite completa action=export format=json]
     RP0 --> RP1[Filtrar ventas cerradas por rango de fechas]
     RP1 --> RP2[Calcular KPIs: ventas, ingresos y ticket promedio]
     RP2 --> RP3[Construir reporte de ventas por fecha]
@@ -196,6 +202,8 @@ Resultado esperado:
 - En `carrito_de_compras`, al agregar items de tipo producto se descuenta inventario y, al cerrar la venta, el descuento se mantiene aplicado.
 - En `reportes`, se dispone de reportes profesionales por rango de fechas: ventas, productos y compras de productos.
 - En `reportes`, el tablero financiero-operativo puede exportarse en formato unificado `CSV/JSON` por rango, incluyendo `estado_resultados` y `balance_general`.
+- En `reportes`, existe un centro profesional de datasets por empresa con selector de nivel (`empresarial`, `operativo`, `contable`) y vista tabular dinamica.
+- En `reportes`, los datasets se exportan en `JSON`, `CSV`, `TXT` y `XLS`, y la suite consolidada se exporta en `JSON`.
 - En `ayuda`, existe un menu interno con accesos rapidos y una seccion de APIs principales para operacion diaria.
 - En `configuracion`, las opciones del lector de barras se gestionan por empresa y aplican al flujo operativo del carrito.
 - En `reportes`, se agrega tabla de inventario actual por bodega y KPI de productos bajo minimo.

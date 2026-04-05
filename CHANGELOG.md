@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 2026-04-05
+- Modulo de reportes robustecido a nivel empresarial, operativo y contable con enfoque escalable por dataset.
+	- `backend/handlers/reportes.go` (nuevo) implementa `/api/empresa/reportes` con acciones `catalogo`, `suite`, `dataset`, `tablero` y `export`.
+	- Se habilitan exportaciones multi-formato para datasets: `JSON`, `CSV`, `TXT` y `XLS`.
+	- `backend/main.go` registra la nueva ruta protegida bajo permisos de finanzas.
+	- `web/administrar_empresa/reportes.html` incorpora selector de dataset, vista tabular profesional y exportes desde interfaz.
+	- `backend/handlers/reportes_test.go` (nuevo) agrega cobertura de contrato HTTP y validacion de exportaciones.
+	- Se actualizan diagramas de arquitectura/flujo en `documentos/diagramas/estructura_del_codigo.md` y `documentos/diagramas/diagrama_flujo_procesos.md`.
+
 ## 2026-04-04
 - Centro de ayuda actualizado con tutorial por cada módulo del sistema.
 	- `web/ayuda/ayuda.html` amplía el contenido con una sección de tutoriales por módulos de administración global y módulos del panel de empresa.

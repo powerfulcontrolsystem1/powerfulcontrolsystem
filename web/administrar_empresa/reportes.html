@@ -22,6 +22,19 @@
       </div>
       <p class="form-help">Resumen mínimo de operación, finanzas y contabilidad por empresa con filtro de fechas.</p>
       <div id="reportesMsg" class="form-help"></div>
+      <div class="empresa-inline-actions" style="margin-top:10px;flex-wrap:wrap;gap:8px;">
+        <select id="datasetSelect" class="form-input" style="min-width:260px;"></select>
+        <select id="datasetFormato" class="form-input" style="min-width:140px;">
+          <option value="json">JSON</option>
+          <option value="csv">CSV</option>
+          <option value="txt">TXT</option>
+          <option value="xls">XLS (Excel)</option>
+        </select>
+        <button id="btnCargarDataset" class="btn secondary" type="button">Ver dataset</button>
+        <button id="btnExportarDataset" class="btn secondary" type="button">Exportar dataset</button>
+        <button id="btnExportarSuite" class="btn secondary" type="button">Exportar suite JSON</button>
+      </div>
+      <p id="datasetMeta" class="form-help"></p>
 
       <div class="kpi-grid" style="margin-top:12px;">
         <div class="kpi-box">
@@ -139,6 +152,19 @@
           <span class="kpi-label">Cuadre balance</span>
           <strong id="kpiBGCuadre">$0</strong>
         </div>
+      </div>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2 style="margin:0;">Vista profesional por dataset</h2>
+      </div>
+      <p id="datasetResumen" class="form-help"></p>
+      <div class="table-wrap">
+        <table class="table" id="tablaDatasetProfesional">
+          <thead></thead>
+          <tbody></tbody>
+        </table>
       </div>
     </section>
 
@@ -290,6 +316,9 @@
       movimientos: [],
       config: null,
       tablero: null,
+      reportesCatalogo: [],
+      datasetActivo: '',
+      datasetDetalle: null,
       ventasFiltradas: [],
       movimientosFiltrados: [],
       itemsByCarrito: new Map()
@@ -551,6 +580,170 @@
       link.click();
       document.body.removeChild(link);
       setTimeout(() => URL.revokeObjectURL(link.href), 0);
+    }
+
+    function buildReportesQueryParams(action) {
+      const params = buildRangeQueryParams();
+      params.set('empresa_id', String(state.empresaID));
+      params.set('action', action);
+      params.set('max_rows', '300');
+      return params;
+    }
+
+    function formatDatasetValue(column, value) {
+      if (value == null) return '-';
+      if (typeof value === 'boolean') return value ? 'Sí' : 'No';
+      if (typeof value === 'number') {
+        const col = normalize(column).toLowerCase();
+        if (col.includes('monto') || col.includes('total') || col.includes('ingres') || col.includes('egres') || col.includes('costo') || col.includes('balance') || col.includes('utilidad') || col.includes('activos') || col.includes('pasivos') || col.includes('patrimonio') || col.includes('ticket') || col.includes('precio')) {
+          return fmtMoney(value);
+        }
+        return Number(value).toFixed(2);
+      }
+      if (typeof value === 'object') return sanitize(JSON.stringify(value));
+      return sanitize(String(value));
+    }
+
+    function renderDatasetProfesional() {
+      const thead = document.querySelector('#tablaDatasetProfesional thead');
+      const tbody = document.querySelector('#tablaDatasetProfesional tbody');
+      const metaEl = document.getElementById('datasetMeta');
+      const resumenEl = document.getElementById('datasetResumen');
+      const ds = state.datasetDetalle;
+
+      if (!ds || !Array.isArray(ds.columns) || !Array.isArray(ds.rows)) {
+        thead.innerHTML = '';
+        tbody.innerHTML = '<tr><td>No hay dataset cargado.</td></tr>';
+        if (metaEl) metaEl.textContent = 'Seleccione un dataset para visualizar información empresarial, operativa o contable.';
+        if (resumenEl) resumenEl.textContent = '';
+        return;
+      }
+
+      const cols = ds.columns.slice();
+      thead.innerHTML = '<tr>' + cols.map(c => '<th>' + sanitize(c) + '</th>').join('') + '</tr>';
+
+      if (!ds.rows.length) {
+        tbody.innerHTML = '<tr><td colspan="' + cols.length + '">No hay registros para el rango seleccionado.</td></tr>';
+      } else {
+        tbody.innerHTML = ds.rows.map(function(row) {
+          return '<tr>' + cols.map(function(col) {
+            return '<td>' + formatDatasetValue(col, row[col]) + '</td>';
+          }).join('') + '</tr>';
+        }).join('');
+      }
+
+      if (metaEl) {
+        metaEl.textContent =
+          'Dataset: ' + (ds.title || ds.key || '-') +
+          ' | Nivel: ' + (ds.level || '-') +
+          ' | Filas: ' + String(ds.row_count || 0) +
+          ' | Generado: ' + (ds.generated_at || '-');
+      }
+
+      const summary = ds.summary && typeof ds.summary === 'object' ? ds.summary : null;
+      if (!summary) {
+        if (resumenEl) resumenEl.textContent = '';
+        return;
+      }
+      const keys = Object.keys(summary);
+      if (!keys.length) {
+        if (resumenEl) resumenEl.textContent = '';
+        return;
+      }
+      if (resumenEl) {
+        resumenEl.textContent = 'Resumen: ' + keys.map(function(key) {
+          return key + ': ' + String(summary[key]);
+        }).join(' | ');
+      }
+    }
+
+    function setDatasetSelectOptions() {
+      const select = document.getElementById('datasetSelect');
+      if (!select) return;
+      const catalogo = Array.isArray(state.reportesCatalogo) ? state.reportesCatalogo : [];
+      if (!catalogo.length) {
+        select.innerHTML = '<option value="">Sin datasets disponibles</option>';
+        return;
+      }
+      select.innerHTML = catalogo.map(function(item) {
+        const key = normalize(item.key);
+        const title = normalize(item.title) || key;
+        const level = normalize(item.level) || 'operativo';
+        return '<option value="' + sanitize(key) + '">' + sanitize('[' + level + '] ' + title) + '</option>';
+      }).join('');
+      if (state.datasetActivo) {
+        select.value = state.datasetActivo;
+      } else {
+        state.datasetActivo = normalize(catalogo[0] && catalogo[0].key);
+        select.value = state.datasetActivo;
+      }
+    }
+
+    async function loadReportesCatalogo() {
+      const params = buildReportesQueryParams('catalogo');
+      const data = await requestJSON('/api/empresa/reportes?' + params.toString());
+      state.reportesCatalogo = Array.isArray(data && data.datasets) ? data.datasets : [];
+      setDatasetSelectOptions();
+    }
+
+    async function loadDatasetProfesional(datasetKey) {
+      const key = normalize(datasetKey || state.datasetActivo);
+      if (!key) {
+        state.datasetDetalle = null;
+        renderDatasetProfesional();
+        return;
+      }
+      const params = buildReportesQueryParams('dataset');
+      params.set('dataset', key);
+      const dataset = await requestJSON('/api/empresa/reportes?' + params.toString());
+      state.datasetActivo = key;
+      state.datasetDetalle = dataset || null;
+      const select = document.getElementById('datasetSelect');
+      if (select && select.value !== key) {
+        select.value = key;
+      }
+      renderDatasetProfesional();
+    }
+
+    async function exportarDatasetProfesional() {
+      const selectDataset = document.getElementById('datasetSelect');
+      const selectFormato = document.getElementById('datasetFormato');
+      const dataset = normalize(selectDataset && selectDataset.value);
+      const formato = normalize(selectFormato && selectFormato.value).toLowerCase() || 'json';
+      if (!dataset) {
+        throw new Error('Seleccione un dataset para exportar.');
+      }
+
+      const params = buildReportesQueryParams('export');
+      params.set('dataset', dataset);
+      params.set('format', formato);
+
+      const res = await fetch('/api/empresa/reportes?' + params.toString());
+      if (!res.ok) {
+        const body = await res.text();
+        throw new Error(body || 'No se pudo exportar el dataset seleccionado.');
+      }
+
+      const blob = await res.blob();
+      const stamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
+      const fallback = dataset + '_empresa_' + state.empresaID + '_' + stamp + '.' + formato;
+      const filename = resolveDownloadFilenameFromHeader(res.headers.get('Content-Disposition'), fallback);
+      downloadBlobFile(blob, filename);
+    }
+
+    async function exportarSuiteReportesJSON() {
+      const params = buildReportesQueryParams('export');
+      params.set('format', 'json');
+      const res = await fetch('/api/empresa/reportes?' + params.toString());
+      if (!res.ok) {
+        const body = await res.text();
+        throw new Error(body || 'No se pudo exportar la suite de reportes.');
+      }
+      const blob = await res.blob();
+      const stamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
+      const fallback = 'suite_reportes_empresa_' + state.empresaID + '_' + stamp + '.json';
+      const filename = resolveDownloadFilenameFromHeader(res.headers.get('Content-Disposition'), fallback);
+      downloadBlobFile(blob, filename);
     }
 
     async function exportarTableroUnificado(format) {
@@ -972,6 +1165,8 @@
       filtrarMovimientos();
       await loadItemsForSales();
       await loadTableroResumen();
+      await loadReportesCatalogo();
+      await loadDatasetProfesional(state.datasetActivo);
       renderKPIs();
       renderKPIsFinancierosContables();
       renderVentasTable();
@@ -990,6 +1185,7 @@
       filtrarMovimientos();
       await loadItemsForSales();
       await loadTableroResumen();
+      await loadDatasetProfesional(state.datasetActivo);
       renderKPIs();
       renderKPIsFinancierosContables();
       renderVentasTable();
@@ -1033,6 +1229,44 @@
           setMsg('Exportación JSON del tablero generada correctamente.', 'success');
         } catch (err) {
           setMsg(err.message || 'No se pudo exportar el tablero en JSON.', 'error');
+        }
+      });
+
+      document.getElementById('btnCargarDataset').addEventListener('click', async () => {
+        try {
+          const select = document.getElementById('datasetSelect');
+          await loadDatasetProfesional(select && select.value);
+          setMsg('Dataset profesional cargado correctamente.', 'success');
+        } catch (err) {
+          setMsg(err.message || 'No se pudo cargar el dataset profesional.', 'error');
+        }
+      });
+
+      document.getElementById('datasetSelect').addEventListener('change', async (event) => {
+        const nextValue = normalize(event && event.target ? event.target.value : '');
+        if (!nextValue) return;
+        try {
+          await loadDatasetProfesional(nextValue);
+        } catch (err) {
+          setMsg(err.message || 'No se pudo cambiar el dataset seleccionado.', 'error');
+        }
+      });
+
+      document.getElementById('btnExportarDataset').addEventListener('click', async () => {
+        try {
+          await exportarDatasetProfesional();
+          setMsg('Exportación del dataset generada correctamente.', 'success');
+        } catch (err) {
+          setMsg(err.message || 'No se pudo exportar el dataset.', 'error');
+        }
+      });
+
+      document.getElementById('btnExportarSuite').addEventListener('click', async () => {
+        try {
+          await exportarSuiteReportesJSON();
+          setMsg('Exportación de suite JSON generada correctamente.', 'success');
+        } catch (err) {
+          setMsg(err.message || 'No se pudo exportar la suite de reportes.', 'error');
         }
       });
 

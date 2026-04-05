@@ -1,5 +1,20 @@
 - Historial de cambios
 
+- 2026-04-05: Robustecimiento del modulo de reportes por empresa (empresarial, operativo y contable)
+    - Se crea `backend/handlers/reportes.go` con endpoint unificado `/api/empresa/reportes`.
+    - Se agregan acciones de reporte: `catalogo`, `suite`, `dataset`, `tablero`, `export`.
+    - Se habilitan exportaciones de dataset en `json`, `csv`, `txt` y `xls`, y exportacion de suite en `json`.
+    - Se actualiza `backend/main.go` para registrar la ruta bajo `WithEmpresaFinanzasPermissions`.
+    - Se actualiza `web/administrar_empresa/reportes.html` con centro profesional de datasets, vista tabular dinamica y botones de exportacion.
+    - Se crea `backend/handlers/reportes_test.go` para cobertura de catalogo/suite/dataset/export y formato invalido.
+    - Se actualizan diagramas tecnicos:
+        - `documentos/diagramas/estructura_del_codigo.md`.
+        - `documentos/diagramas/diagrama_flujo_procesos.md`.
+    - Validaciones ejecutadas:
+        - `gofmt -w handlers/reportes.go handlers/reportes_test.go main.go`.
+        - `go test ./handlers -run Reportes -v -count=1` (ok).
+        - `go test ./... -count=1` (ok).
+
 - 2026-04-04: Actualizacion de pagina de ayuda con tutorial por modulo
     - Se actualiza `web/ayuda/ayuda.html` con la seccion `Tutorial por módulos`.
     - Se documentan pasos operativos para modulos de administracion global y para cada modulo del panel de empresa.

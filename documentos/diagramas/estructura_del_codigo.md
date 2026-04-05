@@ -1,6 +1,6 @@
 # Estructura del codigo
 
-Fecha de actualizacion: 2026-04-04
+Fecha de actualizacion: 2026-04-05
 
 ## Objetivo
 Este documento resume la estructura tecnica principal del sistema y sirve como referencia para mantenimiento y evolucion.
@@ -55,6 +55,36 @@ flowchart TD
 
 ## Regla de mantenimiento
 Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe reflejarse en este documento y en los diagramas relacionados dentro de documentos/diagramas/.
+
+## Actualizacion 2026-04-05 (modulo de reportes empresarial-contable-operativo escalable)
+
+- Backend handlers (`backend/handlers/reportes.go`):
+  - nuevo endpoint unificado `GET /api/empresa/reportes` orientado a datasets con acciones:
+    - `catalogo` (inventario de reportes disponibles),
+    - `suite` (consolidado completo por empresa),
+    - `dataset` (consulta puntual por clave),
+    - `tablero` (vista ejecutiva),
+    - `export` (descarga por dataset/suite).
+  - niveles de reporte cubiertos:
+    - empresarial,
+    - operativo,
+    - contable.
+  - formatos de exportacion habilitados: `json`, `csv`, `txt`, `xls`.
+
+- Rutas (`backend/main.go`):
+  - se registra `/api/empresa/reportes` bajo `WithEmpresaFinanzasPermissions`.
+
+- Frontend empresa (`web/administrar_empresa/reportes.html`):
+  - se agrega centro de reportes profesionales por dataset:
+    - selector de dataset,
+    - vista tabular dinamica,
+    - resumen por dataset,
+    - exportacion en varios formatos,
+    - exportacion de suite completa en JSON.
+
+- Pruebas (`backend/handlers/reportes_test.go`):
+  - cobertura de contrato HTTP para `catalogo`, `suite`, `dataset` y `export`.
+  - validacion de export multi-formato y rechazo de formatos invalidos.
 
 ## Actualizacion 2026-04-04 (punto 9 - modulo de compras dedicado)
 

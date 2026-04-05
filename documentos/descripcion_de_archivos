@@ -1,5 +1,36 @@
 Descripcion de archivos del proyecto
 
+Actualizacion 2026-04-05: Modulo de reportes empresarial, contable y operativo (escalable por dataset)
+
+- `backend/handlers/reportes.go` (nuevo):
+	- Implementa endpoint unificado `GET /api/empresa/reportes`.
+	- Soporta acciones `catalogo`, `suite`, `dataset`, `tablero` y `export`.
+	- Entrega datasets por nivel (`empresarial`, `operativo`, `contable`) y exporta en `json/csv/txt/xls`.
+
+- `backend/handlers/reportes_test.go` (nuevo):
+	- Valida contrato HTTP del modulo (`catalogo`, `suite`, `dataset`, `export`).
+	- Incluye pruebas de export multi-formato y rechazo de formato invalido.
+
+- `backend/main.go`:
+	- Registra la ruta `/api/empresa/reportes` bajo `WithEmpresaFinanzasPermissions`.
+
+- `web/administrar_empresa/reportes.html`:
+	- Agrega centro profesional de reportes por dataset.
+	- Incluye selector de dataset, vista tabular dinamica, resumen y exportacion multi-formato.
+	- Incluye exportacion de suite completa en JSON.
+
+- `documentos/diagramas/estructura_del_codigo.md`:
+	- Documenta la nueva arquitectura del modulo de reportes y sus rutas/acciones.
+
+- `documentos/diagramas/diagrama_flujo_procesos.md`:
+	- Integra el flujo funcional de catalogo-dataset-export para reportes profesionales.
+
+- `CHANGELOG.md`:
+	- Registra el hito funcional del robustecimiento del modulo de reportes.
+
+- `documentos/historial_de_cambios`:
+	- Registra trazabilidad tecnica y validacion de pruebas del cambio.
+
 Actualizacion 2026-04-04: Tutorial por modulo en centro de ayuda
 
 - `web/ayuda/ayuda.html`:
