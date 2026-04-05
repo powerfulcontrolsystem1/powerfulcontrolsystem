@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Control de asistencia</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container">
+    <div class="page-header">
+      <h1 id="pageTitle">Control de asistencia de empleados</h1>
+      <button id="addBtn" class="btn add" type="button">Agregar registro</button>
+    </div>
+
+    <p class="form-help" style="margin:0 0 12px 0;">Registra entrada, salida, estado y novedad diaria por empleado y empresa.</p>
+
+    <form id="form" class="form">
+      <input type="hidden" id="itemId">
+      <input type="hidden" id="empresa_id">
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Codigo empleado</label>
+          <input id="empleado_codigo" class="form-input" placeholder="Ej: EMP-001">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Nombre empleado</label>
+          <input id="empleado_nombre" class="form-input" required placeholder="Nombre completo">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Documento</label>
+          <input id="empleado_documento" class="form-input" placeholder="Cedula / documento">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Cargo</label>
+          <input id="cargo" class="form-input" placeholder="Ej: Cajero, Recepcion, Bodega">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Turno</label>
+          <select id="turno" class="form-input">
+            <option value="general">General</option>
+            <option value="manana">Manana</option>
+            <option value="tarde">Tarde</option>
+            <option value="noche">Noche</option>
+            <option value="mixto">Mixto</option>
+            <option value="rotativo">Rotativo</option>
+          </select>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Fecha asistencia</label>
+          <input id="fecha_asistencia" type="date" class="form-input" required>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Hora entrada</label>
+          <input id="hora_entrada" type="time" step="1" class="form-input">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Hora salida</label>
+          <input id="hora_salida" type="time" step="1" class="form-input">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Minutos tarde</label>
+          <input id="minutos_tarde" type="number" min="0" class="form-input" value="0">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Estado asistencia</label>
+          <select id="estado_asistencia" class="form-input">
+            <option value="pendiente">Pendiente</option>
+            <option value="presente">Presente</option>
+            <option value="tarde">Tarde</option>
+            <option value="ausente">Ausente</option>
+            <option value="permiso">Permiso</option>
+            <option value="incapacidad">Incapacidad</option>
+            <option value="vacaciones">Vacaciones</option>
+          </select>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Novedad</label>
+          <input id="novedad" class="form-input" placeholder="Detalle de novedad del turno">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Observaciones</label>
+          <textarea id="observaciones" class="form-textarea" placeholder="Opcional"></textarea>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" id="saveBtn" class="btn">Guardar</button>
+        <button type="button" id="cancelBtn" class="btn secondary">Cancelar</button>
+      </div>
+      <div id="msg" class="form-help"></div>
+    </form>
+
+    <div class="form" style="margin-top:14px;">
+      <div class="form-row" style="margin-bottom:0;">
+        <div class="form-col">
+          <label class="form-label">Buscar</label>
+          <input id="buscar" class="form-input" placeholder="Codigo, nombre, documento, cargo o turno">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Desde</label>
+          <input id="filtro_desde" type="date" class="form-input">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Hasta</label>
+          <input id="filtro_hasta" type="date" class="form-input">
+        </div>
+      </div>
+      <div class="form-row" style="margin-bottom:0;">
+        <div class="form-col">
+          <label class="form-label">Estado asistencia</label>
+          <select id="filtro_estado_asistencia" class="form-input">
+            <option value="">Todos</option>
+            <option value="pendiente">Pendiente</option>
+            <option value="presente">Presente</option>
+            <option value="tarde">Tarde</option>
+            <option value="ausente">Ausente</option>
+            <option value="permiso">Permiso</option>
+            <option value="incapacidad">Incapacidad</option>
+            <option value="vacaciones">Vacaciones</option>
+          </select>
+        </div>
+        <div class="form-col" style="max-width:220px;display:flex;align-items:flex-end;gap:8px;">
+          <button id="filtrarBtn" class="btn secondary" type="button" style="flex:1;">Filtrar</button>
+          <button id="limpiarBtn" class="btn secondary" type="button" style="flex:1;">Limpiar</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="list">Cargando...</div>
+  </div>
+
+  <script>
+    const state = {
+      empresaID: 0,
+      items: [],
+      q: '',
+      desde: '',
+      hasta: '',
+      estadoAsistencia: ''
+    };
+
+    function getQueryParam(name) {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name);
+    }
+
+    function normalize(value) {
+      return (value == null ? '' : String(value)).trim();
+    }
+
+    function esc(value) {
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function setMessage(text, isError) {
+      const el = document.getElementById('msg');
+      if (!el) return;
+      el.textContent = text || '';
+      el.style.color = isError ? '#ef5350' : '';
+    }
+
+    async function ensureOk(resp) {
+      if (resp.ok) return;
+      const text = await resp.text();
+      throw new Error(text || ('HTTP ' + resp.status));
+    }
+
+    function defaultDates() {
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      const first = yyyy + '-' + mm + '-01';
+      const now = yyyy + '-' + mm + '-' + dd;
+
+      document.getElementById('fecha_asistencia').value = now;
+      document.getElementById('filtro_desde').value = first;
+      document.getElementById('filtro_hasta').value = now;
+      state.desde = first;
+      state.hasta = now;
+    }
+
+    function buildPayloadFromForm() {
+      return {
+        id: Number(document.getElementById('itemId').value || 0),
+        empresa_id: Number(state.empresaID),
+        empleado_codigo: normalize(document.getElementById('empleado_codigo').value),
+        empleado_nombre: normalize(document.getElementById('empleado_nombre').value),
+        empleado_documento: normalize(document.getElementById('empleado_documento').value),
+        cargo: normalize(document.getElementById('cargo').value),
+        turno: normalize(document.getElementById('turno').value),
+        fecha_asistencia: normalize(document.getElementById('fecha_asistencia').value),
+        hora_entrada: normalize(document.getElementById('hora_entrada').value),
+        hora_salida: normalize(document.getElementById('hora_salida').value),
+        minutos_tarde: Number(document.getElementById('minutos_tarde').value || 0),
+        estado_asistencia: normalize(document.getElementById('estado_asistencia').value),
+        novedad: normalize(document.getElementById('novedad').value),
+        observaciones: normalize(document.getElementById('observaciones').value)
+      };
+    }
+
+    function resetForm() {
+      document.getElementById('itemId').value = '';
+      document.getElementById('empleado_codigo').value = '';
+      document.getElementById('empleado_nombre').value = '';
+      document.getElementById('empleado_documento').value = '';
+      document.getElementById('cargo').value = '';
+      document.getElementById('turno').value = 'general';
+      document.getElementById('hora_entrada').value = '';
+      document.getElementById('hora_salida').value = '';
+      document.getElementById('minutos_tarde').value = '0';
+      document.getElementById('estado_asistencia').value = 'pendiente';
+      document.getElementById('novedad').value = '';
+      document.getElementById('observaciones').value = '';
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      document.getElementById('fecha_asistencia').value = yyyy + '-' + mm + '-' + dd;
+      setMessage('', false);
+    }
+
+    function applyFilters() {
+      state.q = normalize(document.getElementById('buscar').value);
+      state.desde = normalize(document.getElementById('filtro_desde').value);
+      state.hasta = normalize(document.getElementById('filtro_hasta').value);
+      state.estadoAsistencia = normalize(document.getElementById('filtro_estado_asistencia').value);
+    }
+
+    async function loadItems() {
+      applyFilters();
+      const params = new URLSearchParams();
+      params.set('empresa_id', String(state.empresaID));
+      params.set('include_inactive', '1');
+      params.set('limit', '500');
+      if (state.q) params.set('q', state.q);
+      if (state.desde) params.set('desde', state.desde);
+      if (state.hasta) params.set('hasta', state.hasta);
+      if (state.estadoAsistencia) params.set('estado_asistencia', state.estadoAsistencia);
+
+      const resp = await fetch('/api/empresa/asistencia_empleados?' + params.toString(), { credentials: 'same-origin' });
+      await ensureOk(resp);
+      const rows = await resp.json();
+      state.items = Array.isArray(rows) ? rows : [];
+      renderList();
+    }
+
+    function formatHours(value) {
+      const num = Number(value || 0);
+      return Number.isFinite(num) ? num.toFixed(2) : '0.00';
+    }
+
+    function renderList() {
+      const root = document.getElementById('list');
+      if (!Array.isArray(state.items) || !state.items.length) {
+        root.innerHTML = '<p class="form-help">No hay registros de asistencia para los filtros seleccionados.</p>';
+        return;
+      }
+
+      const html = state.items.map(function(item) {
+        const id = Number(item.id || 0);
+        const estadoRegistro = normalize(item.estado || 'activo').toLowerCase();
+        const nextAction = estadoRegistro === 'activo' ? 'desactivar' : 'activar';
+        const nextLabel = estadoRegistro === 'activo' ? 'Desactivar' : 'Activar';
+        const rowData = esc(JSON.stringify(item));
+
+        return '<tr>' +
+          '<td>' + esc(item.fecha_asistencia || '-') + '</td>' +
+          '<td>' + esc(item.empleado_codigo || '-') + '</td>' +
+          '<td><strong>' + esc(item.empleado_nombre || '-') + '</strong><br><small>' + esc(item.empleado_documento || '') + '</small></td>' +
+          '<td>' + esc(item.cargo || '-') + '</td>' +
+          '<td>' + esc(item.turno || '-') + '</td>' +
+          '<td>' + esc(item.hora_entrada || '-') + '</td>' +
+          '<td>' + esc(item.hora_salida || '-') + '</td>' +
+          '<td>' + formatHours(item.horas_trabajadas) + '</td>' +
+          '<td>' + esc(item.estado_asistencia || 'pendiente') + '</td>' +
+          '<td>' + esc(estadoRegistro) + '</td>' +
+          '<td>' +
+            '<button class="btn secondary" type="button" data-action="edit" data-item="' + rowData + '">Editar</button> ' +
+            '<button class="btn secondary" type="button" data-action="entrada" data-id="' + id + '">Entrada</button> ' +
+            '<button class="btn secondary" type="button" data-action="salida" data-id="' + id + '">Salida</button> ' +
+            '<button class="btn secondary" type="button" data-action="toggle" data-id="' + id + '" data-next="' + nextAction + '">' + nextLabel + '</button> ' +
+            '<button class="btn danger" type="button" data-action="delete" data-id="' + id + '">Eliminar</button>' +
+          '</td>' +
+        '</tr>';
+      }).join('');
+
+      root.innerHTML = '<div class="table-wrap"><table class="table"><thead><tr>' +
+        '<th>Fecha</th>' +
+        '<th>Codigo</th>' +
+        '<th>Empleado</th>' +
+        '<th>Cargo</th>' +
+        '<th>Turno</th>' +
+        '<th>Entrada</th>' +
+        '<th>Salida</th>' +
+        '<th>Horas</th>' +
+        '<th>Estado asistencia</th>' +
+        '<th>Estado registro</th>' +
+        '<th>Acciones</th>' +
+      '</tr></thead><tbody>' + html + '</tbody></table></div>';
+    }
+
+    async function saveForm(ev) {
+      ev.preventDefault();
+      try {
+        const payload = buildPayloadFromForm();
+        if (!payload.empresa_id) {
+          throw new Error('empresa_id es obligatorio');
+        }
+        if (!payload.empleado_nombre) {
+          throw new Error('empleado_nombre es obligatorio');
+        }
+
+        let url = '/api/empresa/asistencia_empleados';
+        let method = 'POST';
+        if (payload.id > 0) {
+          method = 'PUT';
+        }
+
+        const resp = await fetch(url, {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify(payload)
+        });
+        await ensureOk(resp);
+
+        resetForm();
+        await loadItems();
+        setMessage(method === 'POST' ? 'Registro de asistencia creado.' : 'Registro de asistencia actualizado.', false);
+      } catch (err) {
+        setMessage(err.message || 'No se pudo guardar el registro.', true);
+      }
+    }
+
+    function fillForm(item) {
+      document.getElementById('itemId').value = Number(item.id || 0);
+      document.getElementById('empresa_id').value = Number(item.empresa_id || state.empresaID);
+      document.getElementById('empleado_codigo').value = normalize(item.empleado_codigo);
+      document.getElementById('empleado_nombre').value = normalize(item.empleado_nombre);
+      document.getElementById('empleado_documento').value = normalize(item.empleado_documento);
+      document.getElementById('cargo').value = normalize(item.cargo);
+      document.getElementById('turno').value = normalize(item.turno) || 'general';
+      document.getElementById('fecha_asistencia').value = normalize(item.fecha_asistencia);
+      document.getElementById('hora_entrada').value = normalize(item.hora_entrada);
+      document.getElementById('hora_salida').value = normalize(item.hora_salida);
+      document.getElementById('minutos_tarde').value = String(Number(item.minutos_tarde || 0));
+      document.getElementById('estado_asistencia').value = normalize(item.estado_asistencia) || 'pendiente';
+      document.getElementById('novedad').value = normalize(item.novedad);
+      document.getElementById('observaciones').value = normalize(item.observaciones);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function markEntrada(id) {
+      const timeInput = prompt('Hora de entrada (HH:MM o HH:MM:SS):', '08:00:00');
+      if (timeInput === null) return;
+      const tardanzaInput = prompt('Minutos de tardanza:', '0');
+      if (tardanzaInput === null) return;
+      const novedadInput = prompt('Novedad (opcional):', '');
+
+      const payload = {
+        empresa_id: state.empresaID,
+        id: Number(id),
+        hora_entrada: normalize(timeInput),
+        minutos_tarde: Number(tardanzaInput || 0),
+        novedad: normalize(novedadInput)
+      };
+
+      const resp = await fetch('/api/empresa/asistencia_empleados?action=marcar_entrada', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(payload)
+      });
+      await ensureOk(resp);
+      await loadItems();
+      setMessage('Entrada registrada correctamente.', false);
+    }
+
+    async function markSalida(id) {
+      const timeInput = prompt('Hora de salida (HH:MM o HH:MM:SS):', '17:00:00');
+      if (timeInput === null) return;
+      const novedadInput = prompt('Novedad (opcional):', '');
+
+      const payload = {
+        empresa_id: state.empresaID,
+        id: Number(id),
+        hora_salida: normalize(timeInput),
+        novedad: normalize(novedadInput)
+      };
+
+      const resp = await fetch('/api/empresa/asistencia_empleados?action=marcar_salida', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(payload)
+      });
+      await ensureOk(resp);
+      await loadItems();
+      setMessage('Salida registrada correctamente.', false);
+    }
+
+    async function toggleEstado(id, action) {
+      const params = new URLSearchParams();
+      params.set('empresa_id', String(state.empresaID));
+      params.set('id', String(id));
+      params.set('action', action);
+
+      const resp = await fetch('/api/empresa/asistencia_empleados?' + params.toString(), {
+        method: 'PUT',
+        credentials: 'same-origin'
+      });
+      await ensureOk(resp);
+      await loadItems();
+      setMessage('Estado del registro actualizado.', false);
+    }
+
+    async function removeItem(id) {
+      if (!confirm('Deseas eliminar este registro de asistencia?')) return;
+      const params = new URLSearchParams();
+      params.set('empresa_id', String(state.empresaID));
+      params.set('id', String(id));
+
+      const resp = await fetch('/api/empresa/asistencia_empleados?' + params.toString(), {
+        method: 'DELETE',
+        credentials: 'same-origin'
+      });
+      await ensureOk(resp);
+      await loadItems();
+      setMessage('Registro de asistencia eliminado.', false);
+    }
+
+    function bindEvents() {
+      document.getElementById('form').addEventListener('submit', saveForm);
+      document.getElementById('cancelBtn').addEventListener('click', resetForm);
+      document.getElementById('addBtn').addEventListener('click', function() {
+        resetForm();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+
+      document.getElementById('filtrarBtn').addEventListener('click', async function() {
+        try {
+          await loadItems();
+          setMessage('Filtro aplicado.', false);
+        } catch (err) {
+          setMessage(err.message || 'No se pudo aplicar el filtro.', true);
+        }
+      });
+
+      document.getElementById('limpiarBtn').addEventListener('click', async function() {
+        document.getElementById('buscar').value = '';
+        document.getElementById('filtro_estado_asistencia').value = '';
+        defaultDates();
+        try {
+          await loadItems();
+          setMessage('Filtro limpiado.', false);
+        } catch (err) {
+          setMessage(err.message || 'No se pudo limpiar el filtro.', true);
+        }
+      });
+
+      document.getElementById('list').addEventListener('click', async function(ev) {
+        const target = ev.target;
+        if (!target || !target.dataset) return;
+        const action = normalize(target.dataset.action).toLowerCase();
+
+        try {
+          if (action === 'edit') {
+            const raw = normalize(target.dataset.item);
+            if (!raw) return;
+            fillForm(JSON.parse(raw));
+            return;
+          }
+          if (action === 'entrada') {
+            await markEntrada(Number(target.dataset.id || 0));
+            return;
+          }
+          if (action === 'salida') {
+            await markSalida(Number(target.dataset.id || 0));
+            return;
+          }
+          if (action === 'toggle') {
+            await toggleEstado(Number(target.dataset.id || 0), normalize(target.dataset.next));
+            return;
+          }
+          if (action === 'delete') {
+            await removeItem(Number(target.dataset.id || 0));
+            return;
+          }
+        } catch (err) {
+          setMessage(err.message || 'No se pudo ejecutar la accion.', true);
+        }
+      });
+    }
+
+    async function init() {
+      const empresaID = Number(getQueryParam('empresa_id') || getQueryParam('id') || 0);
+      if (!empresaID) {
+        setMessage('No se encontro empresa_id en la URL.', true);
+        return;
+      }
+      state.empresaID = empresaID;
+      document.getElementById('empresa_id').value = String(empresaID);
+      defaultDates();
+      bindEvents();
+
+      try {
+        await loadItems();
+      } catch (err) {
+        setMessage(err.message || 'No se pudo cargar el modulo de asistencia.', true);
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

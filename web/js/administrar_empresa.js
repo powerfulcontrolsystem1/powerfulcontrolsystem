@@ -18,9 +18,12 @@ function getQueryParam(name) {
     document.getElementById("linkVentas"),
     document.getElementById("linkCarritoCompras"),
     document.getElementById("linkProductos"),
+    document.getElementById("linkCombosProductos"),
+    document.getElementById("linkCodigosDescuento"),
     document.getElementById("linkCompras"),
     document.getElementById("linkConfiguracion"),
     document.getElementById("linkUsuarios"),
+    document.getElementById("linkAsistenciaEmpleados"),
     document.getElementById("linkAuditoria"),
     document.getElementById("linkChatTareas"),
     document.getElementById("linkClientes"),
@@ -32,6 +35,7 @@ function getQueryParam(name) {
     document.getElementById("linkConfigEstaciones"),
     document.getElementById("linkEstaciones"),
     document.getElementById("linkReportes"),
+    document.getElementById("linkGraficosEstadisticas"),
   ];
 
   var permActionRead = "R";
@@ -52,9 +56,12 @@ function getQueryParam(name) {
     linkVentas: { module: permModuleVentas, action: permActionRead },
     linkCarritoCompras: { module: permModuleVentas, action: permActionCreate },
     linkProductos: { module: permModuleInventario, action: permActionCreate },
+    linkCombosProductos: { module: permModuleInventario, action: permActionCreate },
+    linkCodigosDescuento: { module: permModuleVentas, action: permActionCreate },
     linkCompras: { module: permModuleCompras, action: permActionCreate },
     linkConfiguracion: { module: permModuleSeguridad, action: permActionUpdate },
     linkUsuarios: { module: permModuleSeguridad, action: permActionUpdate },
+    linkAsistenciaEmpleados: { module: permModuleSeguridad, action: permActionUpdate },
     linkAuditoria: { module: permModuleSeguridad, action: permActionRead },
     linkChatTareas: { module: permModuleVentas, action: permActionCreate },
     linkClientes: { module: permModuleClientes, action: permActionCreate },
@@ -66,6 +73,7 @@ function getQueryParam(name) {
     linkConfigEstaciones: { module: permModuleVentas, action: permActionApprove },
     linkEstaciones: { module: permModuleVentas, action: permActionUpdate },
     linkReportes: { module: permModuleFinanzas, action: permActionRead },
+    linkGraficosEstadisticas: { module: permModuleFinanzas, action: permActionRead },
   };
 
   function storageKey(empresaId) {

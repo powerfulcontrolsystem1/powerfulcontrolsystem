@@ -56,6 +56,181 @@ flowchart TD
 ## Regla de mantenimiento
 Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe reflejarse en este documento y en los diagramas relacionados dentro de documentos/diagramas/.
 
+## Actualizacion 2026-04-05 (facturacion electronica: envio automatico al correo del cliente)
+
+- Backend DB (`backend/db/clientes.go`):
+  - se agrega `GetClienteByID` para resolver de forma directa el correo del cliente por `empresa_id + cliente_id`.
+
+- Backend facturacion (`backend/handlers/facturacion_electronica.go`):
+  - el flujo `action=emitir` de `factura_electronica` intenta despacho automatico por SMTP hacia el correo del cliente.
+  - se soporta resolucion de destinatario por:
+    - `cliente_email` enviado en payload,
+    - `cliente_id`/`entidad_id` consultando tabla `clientes`.
+  - la emision legal no se bloquea por fallos de correo; la API retorna bloque `factura_email` con estado de intento/envio/error para trazabilidad operativa.
+
+- Integracion de rutas (`backend/main.go`):
+  - `EmpresaFacturacionElectronicaHandler` pasa a recibir `dbEmpresas` y `dbSuper` para acceder a configuracion SMTP global.
+
+- Frontend FE (`web/administrar_empresa/facturacion_electronica.html`):
+  - se agregan campos operativos para `cliente_id`, `cliente_email` y `cliente_nombre` en la emision.
+  - el resultado de la operacion muestra estado del envio (`Correo enviado` / `Correo no enviado`).
+
+- Pruebas:
+  - `backend/db/clientes_test.go` agrega cobertura de `GetClienteByID`.
+  - `backend/handlers/eventos_contables_modulos_test.go` agrega cobertura de respuesta `factura_email` en emision FE.
+
+## Actualizacion 2026-04-05 (modulo de codigos de descuento y validacion de pagos en carrito)
+
+- Backend DB (`backend/db/codigos_descuento.go`):
+  - nueva tabla `codigos_de_descuento` por empresa.
+  - operaciones soportadas:
+    - crear, listar, consultar por id,
+    - actualizar,
+    - activar/desactivar,
+    - eliminar,
+    - validar aplicacion por monto.
+  - generacion automatica de codigo promocional cuando no se envía valor manual.
+
+- Backend carrito/pagos (`backend/db/carritos_compras.go`):
+  - se agregan campos `metodo_pago` y `referencia_pago` en `carritos_compras`.
+  - se normalizan metodos de pago permitidos:
+    - `efectivo`,
+    - `tarjeta_credito`,
+    - `tarjeta_debito`,
+    - `codigo_descuento`.
+  - cierre de venta en estacion con consumo transaccional del uso de codigo de descuento.
+
+- Backend handlers:
+  - `backend/handlers/codigos_descuento.go` (nuevo):
+    - endpoint `GET/POST/PUT/DELETE /api/empresa/codigos_de_descuento`.
+    - acciones de estado y validacion (`activar`, `desactivar`, `validar`).
+  - `backend/handlers/carritos_compras.go`:
+    - valida metodo de pago y referencia para tarjetas.
+    - valida codigo de descuento en backend antes de cerrar el carrito.
+
+- Rutas (`backend/main.go`):
+  - se registra `/api/empresa/codigos_de_descuento` bajo `WithEmpresaVentasPermissions`.
+  - se registra migracion `2026-04-05-012-codigos-descuento-pagos`.
+
+- Frontend empresa:
+  - nueva pagina `web/administrar_empresa/codigos_de_descuento.html` para CRUD de codigos promocionales.
+  - `web/administrar_empresa/carrito_de_compras.html` amplía el flujo de cierre con metodo de pago, referencia y validacion de codigo.
+  - integracion de menu en:
+    - `web/administrar_empresa.html` (`linkCodigosDescuento`),
+    - `web/js/administrar_empresa.js` (permiso modulo `ventas`, accion `create`).
+
+- Pruebas:
+  - `backend/db/codigos_descuento_test.go` valida creacion, generacion automatica y vigencia.
+  - `backend/handlers/auth_users_carritos_test.go` valida rechazo de metodo invalido y consumo de usos al pagar con codigo.
+
+## Actualizacion 2026-04-05 (modulo de combos de productos y venta compuesta)
+
+- Backend DB (`backend/db/productos.go`):
+  - se agregan entidades `ComboProducto` y `ComboProductoDetalle`.
+  - se agregan tablas:
+    - `combos_productos` (cabecera del combo),
+    - `combos_productos_detalle` (receta por ingrediente).
+  - se agregan operaciones CRUD por empresa para combos y receta:
+    - crear, listar, consultar por id,
+    - actualizar,
+    - activar/desactivar,
+    - eliminar.
+  - se agrega control de consistencia para evitar cambios estructurales en combos con items activos en carritos abiertos.
+
+- Backend inventario/carrito (`backend/db/carritos_compras.go`):
+  - se extiende el flujo de reserva/liberacion de inventario para `tipo_item=combo`.
+  - al agregar combo al carrito se descompone la receta y se descuenta stock por ingrediente.
+  - al inactivar/reactivar/eliminar item combo se revierte o reaplica stock por ingrediente de forma transaccional.
+
+- Backend handlers:
+  - `backend/handlers/combos_productos.go` (nuevo):
+    - endpoint `GET/POST/PUT/DELETE /api/empresa/combos_productos`.
+    - acciones de estado por query: `action=activar` y `action=desactivar`.
+  - `backend/handlers/carritos_compras.go`:
+    - valida `referencia_id` obligatorio cuando `tipo_item=combo`.
+
+- Rutas (`backend/main.go`):
+  - se registra `/api/empresa/combos_productos` bajo `WithEmpresaInventarioPermissions`.
+
+- Frontend empresa:
+  - nueva pagina `web/administrar_empresa/combos_productos.html` para CRUD de combos y receta por ingredientes.
+  - integracion de menu en:
+    - `web/administrar_empresa.html` (`linkCombosProductos`),
+    - `web/js/administrar_empresa.js` (permiso modulo `inventario`, accion `create`).
+  - `web/administrar_empresa/carrito_de_compras.html` amplía el flujo para incluir `tipo_item=combo` y busqueda en catalogo inteligente de combos.
+
+- Pruebas:
+  - `backend/db/productos_categorias_test.go` agrega `TestCombosProductoCRUDConReceta`.
+  - `backend/db/carritos_inventario_test.go` agrega pruebas de descuento/reversion de ingredientes y escenario de stock insuficiente en combo.
+
+## Actualizacion 2026-04-05 (modulo de asistencia de empleados)
+
+- Backend DB (`backend/db/asistencia_empleados.go`):
+  - nueva tabla `empresa_asistencia_empleados` con control diario por empleado.
+  - operaciones soportadas:
+    - crear y listar asistencia por rango,
+    - actualizar registro,
+    - activar/desactivar,
+    - eliminar,
+    - marcar entrada,
+    - marcar salida con calculo de horas trabajadas.
+
+- Backend handlers (`backend/handlers/asistencia_empleados.go`):
+  - nuevo endpoint `GET/POST/PUT/DELETE /api/empresa/asistencia_empleados`.
+  - acciones de operacion:
+    - `action=marcar_entrada`,
+    - `action=marcar_salida`,
+    - `action=activar`,
+    - `action=desactivar`.
+
+- Rutas (`backend/main.go`):
+  - se registra `/api/empresa/asistencia_empleados` bajo `WithEmpresaSeguridadPermissions`.
+
+- Frontend empresa:
+  - nueva pagina `web/administrar_empresa/asistencia_empleados.html`.
+  - integracion de menu en:
+    - `web/administrar_empresa.html`,
+    - `web/js/administrar_empresa.js` (`linkAsistenciaEmpleados`).
+
+- Ayuda y operacion:
+  - `web/ayuda/ayuda.html` agrega tutorial operativo del modulo.
+
+- Pruebas:
+  - `backend/handlers/asistencia_empleados_test.go` valida flujo CRUD y marcacion de entrada/salida.
+
+## Actualizacion 2026-04-05 (modulo de graficos y estadisticas)
+
+- Backend handlers (`backend/handlers/graficos_estadisticas.go`):
+  - nuevo endpoint `GET /api/empresa/graficos_estadisticas`.
+  - acciones soportadas:
+    - `panel` (default) para tablero visual consolidado,
+    - `serie` para serie puntual (`ventas`, `finanzas`, `compras`, `asistencia`),
+    - `rankings` para top de productos/clientes,
+    - `distribuciones` para estado de stock y asistencia,
+    - `catalogo` para discovery de contrato API.
+  - reutiliza el motor de reportes para evitar duplicidad de logica y mantener consistencia de KPI.
+
+- Rutas (`backend/main.go`):
+  - se registra `/api/empresa/graficos_estadisticas` bajo `WithEmpresaFinanzasPermissions`.
+
+- Pruebas (`backend/handlers/graficos_estadisticas_test.go`):
+  - cobertura de panel, serie y catalogo,
+  - validacion de errores de parametros (`empresa_id`, `action`, `max_points`).
+
+- Frontend empresa:
+  - nueva pagina `web/administrar_empresa/graficos_estadisticas.html`.
+  - renderiza graficos visuales por rango de fechas:
+    - ventas por dia,
+    - ingresos vs egresos,
+    - compras por dia,
+    - asistencia diaria,
+    - distribuciones tipo donut,
+    - rankings top productos/clientes.
+  - integracion en menu y permisos:
+    - `web/administrar_empresa.html` (`linkGraficosEstadisticas`),
+    - `web/js/administrar_empresa.js` (catalogo por modulo `finanzas` accion `read`).
+  - estilos dedicados incorporados en `web/estilos.css`.
+
 ## Actualizacion 2026-04-05 (modulo de reportes empresarial-contable-operativo escalable)
 
 - Backend handlers (`backend/handlers/reportes.go`):

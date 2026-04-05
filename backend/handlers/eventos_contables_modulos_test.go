@@ -67,7 +67,7 @@ func TestEmpresaFacturacionElectronicaEmiteEventoContable(t *testing.T) {
 		t.Fatalf("ensure eventos contables schema: %v", err)
 	}
 
-	h := EmpresaFacturacionElectronicaHandler(dbEmp)
+	h := EmpresaFacturacionElectronicaHandler(dbEmp, nil)
 	req := httptest.NewRequest(http.MethodPost, "/api/empresa/facturacion_electronica", strings.NewReader(`{"empresa_id":31,"pais_codigo":"CO","ambiente":"sandbox","proveedor":"manual"}`))
 	req = req.WithContext(context.WithValue(req.Context(), "adminEmail", "facturacion@test.com"))
 	req.Header.Set("Content-Type", "application/json")
@@ -253,7 +253,7 @@ func TestEmpresaFacturacionTransaccionalEmiteEventosContables(t *testing.T) {
 	}
 	seedFacturacionCumplimientoConfig(t, dbEmp, 31)
 
-	h := EmpresaFacturacionElectronicaHandler(dbEmp)
+	h := EmpresaFacturacionElectronicaHandler(dbEmp, nil)
 
 	reqEmitir := httptest.NewRequest(http.MethodPut, "/api/empresa/facturacion_electronica?action=emitir", strings.NewReader(`{"empresa_id":31,"documento_codigo":"FAC-1001","estado_actual":"borrador","monto_total":120000,"moneda":"COP","periodo_contable":"2026-04"}`))
 	reqEmitir = reqEmitir.WithContext(context.WithValue(reqEmitir.Context(), "adminEmail", "facturacion@test.com"))
@@ -332,6 +332,70 @@ func TestEmpresaFacturacionTransaccionalEmiteEventosContables(t *testing.T) {
 	}
 }
 
+func TestEmpresaFacturacionTransaccionalReportaEstadoCorreoCliente(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_eventos_facturacion_email_cliente_handler.db")
+	if err := dbpkg.EnsureEmpresaFacturacionElectronicaSchema(dbEmp); err != nil {
+		t.Fatalf("ensure facturacion schema: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaConfiguracionAvanzadaSchema(dbEmp); err != nil {
+		t.Fatalf("ensure configuracion avanzada schema: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaDocumentosTransaccionalesSchema(dbEmp); err != nil {
+		t.Fatalf("ensure documentos transaccionales schema: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaEventosContablesSchema(dbEmp); err != nil {
+		t.Fatalf("ensure eventos contables schema: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaClientesSchema(dbEmp); err != nil {
+		t.Fatalf("ensure clientes schema: %v", err)
+	}
+	seedFacturacionCumplimientoConfig(t, dbEmp, 31)
+
+	clienteID, err := dbpkg.CreateCliente(dbEmp, dbpkg.Cliente{
+		EmpresaID:         31,
+		TipoDocumento:     "CC",
+		NumeroDocumento:   "10000001",
+		NombreRazonSocial: "Cliente FE QA",
+		Email:             "cliente.fe.qa@test.com",
+		UsuarioCreador:    "facturacion@test.com",
+	})
+	if err != nil {
+		t.Fatalf("create cliente: %v", err)
+	}
+
+	h := EmpresaFacturacionElectronicaHandler(dbEmp, nil)
+	reqEmitir := httptest.NewRequest(http.MethodPut, "/api/empresa/facturacion_electronica?action=emitir", strings.NewReader(`{"empresa_id":31,"documento_codigo":"FAC-EMAIL-1001","estado_actual":"borrador","monto_total":95000,"moneda":"COP","periodo_contable":"2026-04","cliente_id":`+strconv.FormatInt(clienteID, 10)+`}`))
+	reqEmitir = reqEmitir.WithContext(context.WithValue(reqEmitir.Context(), "adminEmail", "facturacion@test.com"))
+	reqEmitir.Header.Set("Content-Type", "application/json")
+	rrEmitir := httptest.NewRecorder()
+	h.ServeHTTP(rrEmitir, reqEmitir)
+	if rrEmitir.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, rrEmitir.Code, rrEmitir.Body.String())
+	}
+
+	var resp map[string]interface{}
+	if err := json.Unmarshal(rrEmitir.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+
+	facturaEmailRaw, ok := resp["factura_email"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected factura_email block, got %+v", resp)
+	}
+	if intentado, _ := facturaEmailRaw["intentado"].(bool); !intentado {
+		t.Fatalf("expected intentado=true, got %+v", facturaEmailRaw)
+	}
+	if enviado, _ := facturaEmailRaw["enviado"].(bool); enviado {
+		t.Fatalf("expected enviado=false without SMTP config, got %+v", facturaEmailRaw)
+	}
+	if destinatario, _ := facturaEmailRaw["destinatario"].(string); destinatario != "cliente.fe.qa@test.com" {
+		t.Fatalf("expected destinatario cliente.fe.qa@test.com, got %+v", facturaEmailRaw)
+	}
+	if errMsg, _ := facturaEmailRaw["error"].(string); strings.TrimSpace(errMsg) == "" {
+		t.Fatalf("expected email error detail when SMTP not configured, got %+v", facturaEmailRaw)
+	}
+}
+
 func TestEmpresaFacturacionTransaccionalEmitirRechazaSinCumplimientoLegal(t *testing.T) {
 	dbEmp := openTestSQLite(t, "empresas_eventos_facturacion_transaccional_sin_cumplimiento_handler.db")
 	if err := dbpkg.EnsureEmpresaFacturacionElectronicaSchema(dbEmp); err != nil {
@@ -344,7 +408,7 @@ func TestEmpresaFacturacionTransaccionalEmitirRechazaSinCumplimientoLegal(t *tes
 		t.Fatalf("ensure eventos contables schema: %v", err)
 	}
 
-	h := EmpresaFacturacionElectronicaHandler(dbEmp)
+	h := EmpresaFacturacionElectronicaHandler(dbEmp, nil)
 	reqEmitir := httptest.NewRequest(http.MethodPut, "/api/empresa/facturacion_electronica?action=emitir", strings.NewReader(`{"empresa_id":31,"documento_codigo":"FAC-2001","estado_actual":"borrador","monto_total":85000,"moneda":"COP","periodo_contable":"2026-04"}`))
 	reqEmitir = reqEmitir.WithContext(context.WithValue(reqEmitir.Context(), "adminEmail", "facturacion@test.com"))
 	reqEmitir.Header.Set("Content-Type", "application/json")
@@ -378,7 +442,7 @@ func TestEmpresaFacturacionTransaccionalRechazaTransicionInvalida(t *testing.T) 
 		t.Fatalf("ensure eventos contables schema: %v", err)
 	}
 
-	h := EmpresaFacturacionElectronicaHandler(dbEmp)
+	h := EmpresaFacturacionElectronicaHandler(dbEmp, nil)
 	req := httptest.NewRequest(http.MethodPut, "/api/empresa/facturacion_electronica?action=anular", strings.NewReader(`{"empresa_id":31,"documento_codigo":"FAC-9999","estado_actual":"borrador","periodo_contable":"2026-04"}`))
 	req = req.WithContext(context.WithValue(req.Context(), "adminEmail", "facturacion@test.com"))
 	req.Header.Set("Content-Type", "application/json")

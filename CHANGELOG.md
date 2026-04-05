@@ -1,6 +1,60 @@
 # CHANGELOG
 
 ## 2026-04-05
+- Facturación electrónica: envío automático del resumen de factura al correo del cliente al emitir.
+	- `backend/handlers/facturacion_electronica.go` ahora intenta enviar correo en `action=emitir` de `factura_electronica`.
+	- Soporta destinatario por `cliente_email` o por `cliente_id`/`entidad_id` consultando clientes.
+	- La respuesta incluye bloque `factura_email` con estado de intento/envío/error sin bloquear la emisión legal.
+	- `backend/db/clientes.go` agrega `GetClienteByID` para resolver destinatario desde la base de datos.
+	- `backend/main.go` actualiza la inyección de `dbSuper` al handler de facturación para lectura de SMTP.
+	- `web/administrar_empresa/facturacion_electronica.html` agrega campos de cliente y muestra el resultado de envío en pantalla.
+	- Cobertura añadida en `backend/db/clientes_test.go` y `backend/handlers/eventos_contables_modulos_test.go`.
+
+## 2026-04-05
+- Se crea el modulo de codigos de descuento por empresa y validacion de metodos de pago en carrito de compras.
+	- `backend/db/codigos_descuento.go` (nuevo) agrega la tabla `codigos_de_descuento`, generacion automatica de codigos, CRUD, validacion por vencimiento/usos y resolucion de descuento aplicable por monto.
+	- `backend/handlers/codigos_descuento.go` (nuevo) expone `/api/empresa/codigos_de_descuento` con operaciones CRUD, activar/desactivar y `action=validar`.
+	- `backend/db/carritos_compras.go` agrega campos `metodo_pago` y `referencia_pago`, normaliza metodos permitidos y registra consumo transaccional de codigo de descuento al cerrar venta.
+	- `backend/handlers/carritos_compras.go` valida `metodo_pago` (`efectivo`, `tarjeta_credito`, `tarjeta_debito`, `codigo_descuento`) y exige referencia para pagos con tarjeta.
+	- `backend/main.go` asegura esquema `codigos_de_descuento`, registra migracion `2026-04-05-012-codigos-descuento-pagos` y expone ruta protegida de codigos de descuento.
+	- `web/administrar_empresa/codigos_de_descuento.html` (nuevo) incorpora modulo profesional para crear/editar/activar/eliminar codigos con valor y fecha de vencimiento.
+	- `web/administrar_empresa/carrito_de_compras.html` agrega selector de metodo de pago, referencia y aplicacion de codigos de descuento con validacion operativa.
+	- `web/administrar_empresa.html` y `web/js/administrar_empresa.js` integran el enlace de menu `Codigos de descuento` con permisos del modulo ventas.
+	- `backend/db/codigos_descuento_test.go` y `backend/handlers/auth_users_carritos_test.go` agregan cobertura para validacion/uso de codigos y rechazo de metodo de pago invalido.
+
+## 2026-04-05
+- Se crea el modulo de combos de productos con receta de ingredientes y precio unico de venta.
+	- `backend/handlers/combos_productos.go` (nuevo) expone `/api/empresa/combos_productos` con operaciones CRUD y acciones `activar/desactivar`.
+	- `backend/db/productos.go` incorpora esquema y logica de combos (`combos_productos`, `combos_productos_detalle`) con controles de consistencia para carritos abiertos.
+	- `backend/db/carritos_compras.go` extiende el ajuste de inventario para descontar/liberar stock por ingrediente cuando el item es `tipo_item=combo`.
+	- `backend/handlers/carritos_compras.go` valida `referencia_id` obligatorio para items combo.
+	- `backend/main.go` registra la nueva ruta protegida bajo permisos de inventario.
+	- `web/administrar_empresa/combos_productos.html` (nuevo) agrega interfaz completa para gestionar combos y receta.
+	- `web/administrar_empresa/carrito_de_compras.html` incorpora busqueda/catalogo y visualizacion de combos en carrito.
+	- `web/administrar_empresa.html` y `web/js/administrar_empresa.js` integran el modulo en menu y permisos.
+	- `backend/db/productos_categorias_test.go` y `backend/db/carritos_inventario_test.go` agregan cobertura de CRUD y flujo de inventario por ingredientes.
+
+## 2026-04-05
+- Se crea el modulo de graficos y estadisticas por empresa.
+	- `backend/handlers/graficos_estadisticas.go` (nuevo) expone `/api/empresa/graficos_estadisticas` con acciones `panel`, `serie`, `rankings`, `distribuciones` y `catalogo`.
+	- `backend/main.go` registra la nueva ruta protegida bajo permisos de finanzas.
+	- `backend/handlers/graficos_estadisticas_test.go` (nuevo) agrega cobertura de contrato HTTP y validaciones de error.
+	- `web/administrar_empresa/graficos_estadisticas.html` (nuevo) incorpora panel visual con series, distribuciones y rankings.
+	- `web/estilos.css` agrega estilos responsivos del nuevo modulo.
+	- `web/administrar_empresa.html` y `web/js/administrar_empresa.js` integran el acceso en menu con control de permisos.
+	- `web/ayuda/ayuda.html` incorpora guia y API del modulo de analitica.
+
+## 2026-04-05
+- Se crea el modulo de control de asistencia de empleados por empresa.
+	- `backend/db/asistencia_empleados.go` (nuevo) agrega tabla `empresa_asistencia_empleados` y operaciones CRUD con marcacion de entrada/salida.
+	- `backend/handlers/asistencia_empleados.go` (nuevo) expone `/api/empresa/asistencia_empleados` con acciones operativas de asistencia.
+	- `backend/main.go` incorpora esquema, migracion `2026-04-05-010-asistencia-empleados` y registro de ruta protegida.
+	- `web/administrar_empresa/asistencia_empleados.html` (nuevo) agrega UI completa para gestion diaria de asistencia.
+	- `web/administrar_empresa.html` y `web/js/administrar_empresa.js` integran el modulo en menu y permisos.
+	- `backend/handlers/asistencia_empleados_test.go` (nuevo) valida flujo funcional del modulo.
+	- Se actualizan `web/ayuda/ayuda.html`, `estructura_bd.md` y diagramas/documentacion tecnica para trazabilidad.
+
+## 2026-04-05
 - Modulo de reportes robustecido a nivel empresarial, operativo y contable con enfoque escalable por dataset.
 	- `backend/handlers/reportes.go` (nuevo) implementa `/api/empresa/reportes` con acciones `catalogo`, `suite`, `dataset`, `tablero` y `export`.
 	- Se habilitan exportaciones multi-formato para datasets: `JSON`, `CSV`, `TXT` y `XLS`.

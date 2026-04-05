@@ -352,6 +352,73 @@ func GetClientesByEmpresa(dbConn *sql.DB, empresaID int64, includeInactive bool,
 	return out, nil
 }
 
+// GetClienteByID devuelve un cliente puntual por empresa.
+func GetClienteByID(dbConn *sql.DB, empresaID, clienteID int64) (*Cliente, error) {
+	if empresaID <= 0 {
+		return nil, fmt.Errorf("empresa_id invalido")
+	}
+	if clienteID <= 0 {
+		return nil, fmt.Errorf("cliente_id invalido")
+	}
+
+	row := dbConn.QueryRow(`SELECT
+		id,
+		empresa_id,
+		COALESCE(tipo_documento, 'NIT'),
+		COALESCE(numero_documento, ''),
+		COALESCE(digito_verificacion, ''),
+		COALESCE(tipo_persona, 'juridica'),
+		COALESCE(nombre_razon_social, ''),
+		COALESCE(nombre_comercial, ''),
+		COALESCE(regimen_fiscal, ''),
+		COALESCE(responsabilidad_tributaria, ''),
+		COALESCE(email, ''),
+		COALESCE(telefono, ''),
+		COALESCE(direccion, ''),
+		COALESCE(pais, 'CO'),
+		COALESCE(departamento, ''),
+		COALESCE(municipio, ''),
+		COALESCE(codigo_postal, ''),
+		COALESCE(fecha_creacion, ''),
+		COALESCE(fecha_actualizacion, ''),
+		COALESCE(usuario_creador, ''),
+		COALESCE(estado, 'activo'),
+		COALESCE(observaciones, '')
+	FROM clientes
+	WHERE empresa_id = ? AND id = ?
+	LIMIT 1`, empresaID, clienteID)
+
+	var item Cliente
+	if err := row.Scan(
+		&item.ID,
+		&item.EmpresaID,
+		&item.TipoDocumento,
+		&item.NumeroDocumento,
+		&item.DigitoVerificacion,
+		&item.TipoPersona,
+		&item.NombreRazonSocial,
+		&item.NombreComercial,
+		&item.RegimenFiscal,
+		&item.ResponsabilidadTributaria,
+		&item.Email,
+		&item.Telefono,
+		&item.Direccion,
+		&item.Pais,
+		&item.Departamento,
+		&item.Municipio,
+		&item.CodigoPostal,
+		&item.FechaCreacion,
+		&item.FechaActualizacion,
+		&item.UsuarioCreador,
+		&item.Estado,
+		&item.Observaciones,
+	); err != nil {
+		return nil, err
+	}
+
+	return &item, nil
+}
+
 // UpdateCliente actualiza un cliente por empresa.
 func UpdateCliente(dbConn *sql.DB, payload Cliente) error {
 	if strings.TrimSpace(payload.TipoDocumento) == "" {

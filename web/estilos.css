@@ -586,6 +586,11 @@ html.theme-light .floating-menu #themeToggle{color:var(--accent-2)}
   gap:10px;
   flex-wrap:wrap;
 }
+.kpi-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:10px;
+}
 .kpi-box{
   min-width:110px;
   padding:10px 12px;
@@ -620,6 +625,174 @@ html.theme-light .floating-menu #themeToggle{color:var(--accent-2)}
   gap:10px;
   margin-top:10px;
 }
+
+/* Modulo graficos y estadisticas */
+.graficos-page .empresa-title,
+.graficos-page .empresa-subtitle{
+  margin:0;
+}
+
+.graficos-inline-actions{
+  min-width:420px;
+}
+
+.graficos-top-input{
+  max-width:120px;
+  min-width:90px;
+}
+
+.graficos-kpi-grid{
+  margin-top:12px;
+}
+
+.graficos-charts-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+}
+
+.graficos-bottom-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+}
+
+.graficos-chart-card{
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:12px;
+  background:rgba(255,255,255,0.02);
+}
+
+.graficos-chart-card h3{
+  margin:0;
+  font-size:1rem;
+}
+
+.graficos-chart-meta{
+  margin:8px 0 10px;
+}
+
+.graficos-chart-canvas{
+  border:1px dashed rgba(255,255,255,0.14);
+  border-radius:10px;
+  min-height:210px;
+  padding:10px;
+  display:flex;
+  align-items:flex-end;
+  gap:7px;
+  overflow-x:auto;
+}
+
+.graficos-col{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-end;
+  gap:6px;
+  min-width:30px;
+  flex:1 0 30px;
+}
+
+.graficos-col-track{
+  width:14px;
+  min-height:160px;
+  display:flex;
+  align-items:flex-end;
+  background:rgba(255,255,255,0.06);
+  border-radius:8px;
+  overflow:hidden;
+}
+
+.graficos-col-pair{
+  min-height:160px;
+  display:flex;
+  align-items:flex-end;
+  gap:4px;
+}
+
+.graficos-col-bar{
+  display:block;
+  width:12px;
+  border-radius:8px 8px 4px 4px;
+  min-height:4px;
+}
+
+.graficos-col-track .graficos-col-bar{
+  width:100%;
+}
+
+.graficos-col-label{
+  font-size:.72rem;
+  color:var(--muted);
+  writing-mode:vertical-rl;
+  text-orientation:mixed;
+  transform:rotate(180deg);
+  letter-spacing:.04em;
+}
+
+.bar-sales{background:#16a34a}
+.bar-income{background:#0ea5e9}
+.bar-expense{background:#ef4444}
+.bar-purchase{background:#f59e0b}
+.bar-attendance{background:#22c55e}
+.bar-absence{background:#f97316}
+
+.graficos-donut-wrap{
+  display:grid;
+  grid-template-columns:150px 1fr;
+  gap:12px;
+  align-items:center;
+}
+
+.graficos-donut{
+  width:140px;
+  height:140px;
+  border-radius:50%;
+  border:2px solid rgba(255,255,255,0.16);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:700;
+  color:var(--text);
+  background:rgba(255,255,255,0.06);
+}
+
+.graficos-legend{
+  margin:0;
+  padding:0;
+  list-style:none;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.graficos-legend-item{
+  display:grid;
+  grid-template-columns:12px 1fr auto;
+  gap:8px;
+  align-items:center;
+  font-size:.86rem;
+}
+
+.graficos-legend-dot{
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  display:inline-block;
+}
+
+.graficos-legend-label{
+  color:var(--muted);
+}
+
+.graficos-legend-empty{
+  color:var(--muted);
+  font-size:.9rem;
+}
+
+.msg-error{color:#ef4444}
+.msg-ok{color:#22c55e}
 
 /* Configuracion de empresa: tarjetas de opciones */
 .empresa-config-grid{
@@ -716,6 +889,21 @@ html.theme-light .floating-menu #themeToggle{color:var(--accent-2)}
   .empresa-grid-2{grid-template-columns:1fr}
   .empresa-inline-actions{width:100%;min-width:unset}
   .empresa-inline-actions .form-input{min-width:0;flex:1}
+  .graficos-charts-grid,
+  .graficos-bottom-grid{grid-template-columns:1fr}
+  .graficos-donut-wrap{grid-template-columns:1fr}
+  .graficos-donut{margin:0 auto}
+}
+
+@media (max-width:680px){
+  .graficos-col-label{
+    writing-mode:horizontal-tb;
+    transform:none;
+  }
+  .graficos-col{
+    min-width:26px;
+    flex:1 0 26px;
+  }
 }
 
 /* Modulo chat_y_tareas */

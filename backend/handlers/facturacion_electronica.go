@@ -4,7 +4,12 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"log"
+	"net"
 	"net/http"
+	"net/mail"
+	"net/smtp"
 	"strings"
 
 	dbpkg "github.com/you/pos-backend/db"
@@ -19,8 +24,32 @@ func parseTruthy(v string) bool {
 	}
 }
 
+type facturacionOperacionPayload struct {
+	EmpresaID       int64   `json:"empresa_id"`
+	EntidadID       int64   `json:"entidad_id"`
+	ClienteID       int64   `json:"cliente_id"`
+	ClienteEmail    string  `json:"cliente_email"`
+	ClienteNombre   string  `json:"cliente_nombre"`
+	PaisCodigo      string  `json:"pais_codigo"`
+	DocumentoCodigo string  `json:"documento_codigo"`
+	EstadoActual    string  `json:"estado_actual"`
+	MontoTotal      float64 `json:"monto_total"`
+	Moneda          string  `json:"moneda"`
+	PeriodoContable string  `json:"periodo_contable"`
+	Observaciones   string  `json:"observaciones"`
+}
+
+type facturaEmailResultado struct {
+	Intentado          bool   `json:"intentado"`
+	Enviado            bool   `json:"enviado"`
+	Destinatario       string `json:"destinatario,omitempty"`
+	ClienteID          int64  `json:"cliente_id,omitempty"`
+	OrigenDestinatario string `json:"origen_destinatario,omitempty"`
+	Error              string `json:"error,omitempty"`
+}
+
 // EmpresaFacturacionElectronicaHandler gestiona configuración FE por empresa y país.
-func EmpresaFacturacionElectronicaHandler(dbEmp *sql.DB) http.HandlerFunc {
+func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
@@ -73,17 +102,7 @@ func EmpresaFacturacionElectronicaHandler(dbEmp *sql.DB) http.HandlerFunc {
 		case http.MethodPost, http.MethodPut:
 			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 			if action == "emitir" || action == "anular" || action == "nota_credito" || action == "emitir_nota_credito" {
-				var payload struct {
-					EmpresaID       int64   `json:"empresa_id"`
-					EntidadID       int64   `json:"entidad_id"`
-					PaisCodigo      string  `json:"pais_codigo"`
-					DocumentoCodigo string  `json:"documento_codigo"`
-					EstadoActual    string  `json:"estado_actual"`
-					MontoTotal      float64 `json:"monto_total"`
-					Moneda          string  `json:"moneda"`
-					PeriodoContable string  `json:"periodo_contable"`
-					Observaciones   string  `json:"observaciones"`
-				}
+				var payload facturacionOperacionPayload
 				if r.Body != nil {
 					_ = json.NewDecoder(r.Body).Decode(&payload)
 				}
@@ -106,6 +125,13 @@ func EmpresaFacturacionElectronicaHandler(dbEmp *sql.DB) http.HandlerFunc {
 
 				if strings.TrimSpace(payload.EstadoActual) == "" {
 					payload.EstadoActual = strings.TrimSpace(r.URL.Query().Get("estado_actual"))
+				}
+
+				if payload.ClienteID <= 0 && payload.EntidadID > 0 {
+					payload.ClienteID = payload.EntidadID
+				}
+				if payload.EntidadID <= 0 && payload.ClienteID > 0 {
+					payload.EntidadID = payload.ClienteID
 				}
 
 				documentoTipo := "factura_electronica"
@@ -241,6 +267,9 @@ func EmpresaFacturacionElectronicaHandler(dbEmp *sql.DB) http.HandlerFunc {
 						"resolucion_fecha_hasta": legalDoc.ResolucionFechaHasta,
 					}
 				}
+				if transition.Accion == "emitir" && documentoTipo == "factura_electronica" {
+					resp["factura_email"] = enviarFacturaElectronicaAlCliente(dbEmp, dbSuper, payload, *docPersistido)
+				}
 				writeJSON(w, http.StatusOK, resp)
 				return
 			}
@@ -307,6 +336,177 @@ func EmpresaFacturacionElectronicaHandler(dbEmp *sql.DB) http.HandlerFunc {
 
 		http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
 	}
+}
+
+func enviarFacturaElectronicaAlCliente(dbEmp, dbSuper *sql.DB, payload facturacionOperacionPayload, doc dbpkg.EmpresaDocumentoFacturacion) facturaEmailResultado {
+	emailCliente, nombreCliente, clienteID, origen, err := resolverDestinoCorreoFactura(dbEmp, payload)
+	resultado := facturaEmailResultado{
+		Intentado:          false,
+		Enviado:            false,
+		ClienteID:          clienteID,
+		OrigenDestinatario: origen,
+	}
+	if err != nil {
+		resultado.Error = err.Error()
+		return resultado
+	}
+	if strings.TrimSpace(emailCliente) == "" {
+		resultado.Error = "sin destinatario de cliente para envio automatico"
+		return resultado
+	}
+
+	resultado.Intentado = true
+	resultado.Destinatario = emailCliente
+	if err := sendFacturaElectronicaEmail(dbSuper, emailCliente, nombreCliente, doc, payload); err != nil {
+		resultado.Error = err.Error()
+		log.Printf("[facturacion_electronica] envio correo fallido empresa_id=%d documento=%s destinatario=%s error=%v", payload.EmpresaID, payload.DocumentoCodigo, emailCliente, err)
+		return resultado
+	}
+
+	resultado.Enviado = true
+	resultado.Error = ""
+	return resultado
+}
+
+func resolverDestinoCorreoFactura(dbEmp *sql.DB, payload facturacionOperacionPayload) (string, string, int64, string, error) {
+	clienteID := payload.ClienteID
+	if clienteID <= 0 {
+		clienteID = payload.EntidadID
+	}
+
+	emailCliente := strings.TrimSpace(payload.ClienteEmail)
+	nombreCliente := strings.TrimSpace(payload.ClienteNombre)
+	if emailCliente != "" {
+		if _, err := mail.ParseAddress(emailCliente); err != nil {
+			return "", nombreCliente, clienteID, "payload", fmt.Errorf("cliente_email invalido: %w", err)
+		}
+		if nombreCliente == "" {
+			nombreCliente = "cliente"
+		}
+		return emailCliente, nombreCliente, clienteID, "payload", nil
+	}
+
+	if clienteID <= 0 {
+		return "", nombreCliente, 0, "sin_cliente", nil
+	}
+
+	cliente, err := dbpkg.GetClienteByID(dbEmp, payload.EmpresaID, clienteID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", nombreCliente, clienteID, "cliente_id", nil
+		}
+		return "", nombreCliente, clienteID, "cliente_id", err
+	}
+
+	emailCliente = strings.TrimSpace(cliente.Email)
+	if nombreCliente == "" {
+		nombreCliente = strings.TrimSpace(cliente.NombreRazonSocial)
+	}
+	if emailCliente == "" {
+		return "", nombreCliente, clienteID, "cliente_id", nil
+	}
+	if _, err := mail.ParseAddress(emailCliente); err != nil {
+		return "", nombreCliente, clienteID, "cliente_id", fmt.Errorf("email de cliente invalido en registro: %w", err)
+	}
+	if nombreCliente == "" {
+		nombreCliente = "cliente"
+	}
+
+	return emailCliente, nombreCliente, clienteID, "cliente_id", nil
+}
+
+func sendFacturaElectronicaEmail(dbSuper *sql.DB, toEmail, toName string, doc dbpkg.EmpresaDocumentoFacturacion, payload facturacionOperacionPayload) error {
+	if dbSuper == nil {
+		return fmt.Errorf("configuracion SMTP no disponible")
+	}
+
+	smtpEmail, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_email")
+	if err != nil {
+		return err
+	}
+	smtpEmail = strings.TrimSpace(smtpEmail)
+	if smtpEmail == "" {
+		return fmt.Errorf("gmail.smtp_email no configurado")
+	}
+
+	smtpPass, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_app_password")
+	if err != nil {
+		return err
+	}
+	smtpPass = strings.TrimSpace(smtpPass)
+	if smtpPass == "" {
+		return fmt.Errorf("gmail.smtp_app_password no configurado")
+	}
+
+	smtpHost, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_host")
+	smtpPort, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_port")
+	fromName, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_from_name")
+
+	smtpHost = strings.TrimSpace(smtpHost)
+	if smtpHost == "" {
+		smtpHost = "smtp.gmail.com"
+	}
+	smtpPort = strings.TrimSpace(smtpPort)
+	if smtpPort == "" {
+		smtpPort = "587"
+	}
+	fromName = strings.TrimSpace(fromName)
+	if fromName == "" {
+		fromName = "Powerful Control System"
+	}
+
+	mailHostForAuth := smtpHost
+	if strings.Contains(smtpHost, ":") {
+		if h, _, err := net.SplitHostPort(smtpHost); err == nil {
+			mailHostForAuth = h
+		}
+	}
+	addr := smtpHost
+	if !strings.Contains(addr, ":") {
+		addr = smtpHost + ":" + smtpPort
+	}
+
+	auth := smtp.PlainAuth("", smtpEmail, smtpPass, mailHostForAuth)
+	safeName := strings.TrimSpace(toName)
+	if safeName == "" {
+		safeName = "cliente"
+	}
+	numeroLegal := strings.TrimSpace(doc.NumeroLegal)
+	if numeroLegal == "" {
+		numeroLegal = strings.TrimSpace(doc.DocumentoCodigo)
+	}
+	codigoValidacion := strings.TrimSpace(doc.CodigoValidacion)
+	monto := doc.MontoTotal
+	if monto <= 0 {
+		monto = payload.MontoTotal
+	}
+	moneda := strings.ToUpper(strings.TrimSpace(doc.Moneda))
+	if moneda == "" {
+		moneda = strings.ToUpper(strings.TrimSpace(payload.Moneda))
+	}
+	if moneda == "" {
+		moneda = "COP"
+	}
+
+	subject := "Factura electronica emitida " + numeroLegal
+	body := "Hola " + safeName + ",\r\n\r\n" +
+		"Tu factura electronica fue emitida correctamente.\r\n" +
+		"Documento: " + strings.TrimSpace(doc.DocumentoCodigo) + "\r\n" +
+		"Numero legal: " + numeroLegal + "\r\n" +
+		"Codigo de validacion: " + codigoValidacion + "\r\n" +
+		"Total: " + fmt.Sprintf("%.2f", monto) + " " + moneda + "\r\n" +
+		"Pais FE: " + strings.ToUpper(strings.TrimSpace(doc.PaisCodigo)) + "\r\n" +
+		"Ambiente FE: " + strings.TrimSpace(doc.AmbienteFE) + "\r\n\r\n" +
+		"Gracias por tu compra.\r\n"
+
+	msg := "From: " + fromName + " <" + smtpEmail + ">\r\n" +
+		"To: " + toEmail + "\r\n" +
+		"Subject: " + subject + "\r\n" +
+		"MIME-Version: 1.0\r\n" +
+		"Content-Type: text/plain; charset=UTF-8\r\n\r\n" +
+		body
+
+	return smtp.SendMail(addr, auth, smtpEmail, []string{toEmail}, []byte(msg))
 }
 
 // EmpresaFacturacionElectronicaPaisDetectadoHandler detecta automáticamente país FE.

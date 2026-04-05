@@ -108,6 +108,39 @@ func TestGetClientePerfilComercialByEmpresaAndHistorial(t *testing.T) {
 	}
 }
 
+func TestGetClienteByID(t *testing.T) {
+	dbConn := openClientesTestDB(t)
+	if err := EnsureEmpresaClientesSchema(dbConn); err != nil {
+		t.Fatalf("ensure clientes schema: %v", err)
+	}
+
+	clienteID, err := CreateCliente(dbConn, Cliente{
+		EmpresaID:         450,
+		TipoDocumento:     "CC",
+		NumeroDocumento:   "999111333",
+		NombreRazonSocial: "Cliente Email FE",
+		Email:             "cliente.fe@test.com",
+		UsuarioCreador:    "tester",
+	})
+	if err != nil {
+		t.Fatalf("create cliente: %v", err)
+	}
+
+	item, err := GetClienteByID(dbConn, 450, clienteID)
+	if err != nil {
+		t.Fatalf("get cliente by id: %v", err)
+	}
+	if item == nil {
+		t.Fatalf("expected cliente item, got nil")
+	}
+	if item.ID != clienteID {
+		t.Fatalf("expected cliente id=%d, got %d", clienteID, item.ID)
+	}
+	if item.Email != "cliente.fe@test.com" {
+		t.Fatalf("expected email cliente.fe@test.com, got %q", item.Email)
+	}
+}
+
 func TestGetClientePerfilComercialByEmpresaSinComprasSegmentoNuevo(t *testing.T) {
 	dbConn := openClientesTestDB(t)
 	if err := EnsureEmpresaClientesSchema(dbConn); err != nil {

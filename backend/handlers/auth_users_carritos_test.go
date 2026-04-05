@@ -109,6 +109,9 @@ func ensureCarritosVentasSchema(t *testing.T, dbEmp *sql.DB) {
 	if err := dbpkg.EnsureEmpresaCarritosSchema(dbEmp); err != nil {
 		t.Fatalf("ensure carritos schema: %v", err)
 	}
+	if err := dbpkg.EnsureEmpresaCodigosDescuentoSchema(dbEmp); err != nil {
+		t.Fatalf("ensure codigos descuento schema: %v", err)
+	}
 	if err := dbpkg.EnsureEmpresaEventosContablesSchema(dbEmp); err != nil {
 		t.Fatalf("ensure eventos contables schema: %v", err)
 	}
@@ -640,5 +643,101 @@ func TestEmpresaCarritosCompraRejectsActivarEstacionPagadaSinReset(t *testing.T)
 	carritosHandler.ServeHTTP(activateResetRR, activateResetReq)
 	if activateResetRR.Code != http.StatusOK {
 		t.Fatalf("expected activar_estacion con reset status %d, got %d body=%s", http.StatusOK, activateResetRR.Code, activateResetRR.Body.String())
+	}
+}
+
+func TestEmpresaCarritosCompraRejectsMetodoPagoInvalido(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_carritos_metodo_invalido.db")
+	ensureClientesSchema(t, dbEmp)
+	ensureCarritosVentasSchema(t, dbEmp)
+
+	carritosHandler := EmpresaCarritosCompraHandler(dbEmp)
+	createReq := httptest.NewRequest(http.MethodPost, "/api/empresa/carritos_compra", strings.NewReader(`{"empresa_id":1,"nombre":"Caja Metodo Invalido","canal_venta":"mostrador","moneda":"COP"}`))
+	createReq.Header.Set("Content-Type", "application/json")
+	createRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(createRR, createReq)
+	if createRR.Code != http.StatusCreated {
+		t.Fatalf("expected create status %d, got %d body=%s", http.StatusCreated, createRR.Code, createRR.Body.String())
+	}
+
+	var createResp map[string]interface{}
+	if err := json.Unmarshal(createRR.Body.Bytes(), &createResp); err != nil {
+		t.Fatalf("decode create response: %v", err)
+	}
+	carritoID := int64(createResp["id"].(float64))
+
+	if _, err := dbEmp.Exec(`UPDATE carritos_compras SET subtotal = 10000, total = 10000, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = 1 AND id = ?`, carritoID); err != nil {
+		t.Fatalf("seed carrito total: %v", err)
+	}
+
+	payReq := httptest.NewRequest(http.MethodPut, "/api/empresa/carritos_compra?empresa_id=1&id="+strconv.FormatInt(carritoID, 10)+"&action=pagar_estacion", strings.NewReader(`{"metodo_pago":"cripto","total_pagado":10000}`))
+	payReq.Header.Set("Content-Type", "application/json")
+	payRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(payRR, payReq)
+
+	if payRR.Code != http.StatusBadRequest {
+		t.Fatalf("expected invalid payment method status %d, got %d body=%s", http.StatusBadRequest, payRR.Code, payRR.Body.String())
+	}
+}
+
+func TestEmpresaCarritosCompraCodigoDescuentoConsumeUso(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_carritos_codigo_uso.db")
+	ensureClientesSchema(t, dbEmp)
+	ensureCarritosVentasSchema(t, dbEmp)
+
+	carritosHandler := EmpresaCarritosCompraHandler(dbEmp)
+
+	codigoID, err := dbpkg.CreateCodigoDescuento(dbEmp, dbpkg.CodigoDescuento{
+		EmpresaID:      1,
+		Codigo:         "PROMOUNO",
+		TipoDescuento:  "valor_fijo",
+		Valor:          15000,
+		Moneda:         "COP",
+		UsosMaximos:    1,
+		UsuarioCreador: "test",
+	})
+	if err != nil {
+		t.Fatalf("create discount code: %v", err)
+	}
+	if codigoID <= 0 {
+		t.Fatalf("expected codigo id > 0, got %d", codigoID)
+	}
+
+	createAndSeedCarrito := func(nombre string) int64 {
+		createReq := httptest.NewRequest(http.MethodPost, "/api/empresa/carritos_compra", strings.NewReader(`{"empresa_id":1,"nombre":"`+nombre+`","canal_venta":"mostrador","moneda":"COP"}`))
+		createReq.Header.Set("Content-Type", "application/json")
+		createRR := httptest.NewRecorder()
+		carritosHandler.ServeHTTP(createRR, createReq)
+		if createRR.Code != http.StatusCreated {
+			t.Fatalf("expected create status %d, got %d body=%s", http.StatusCreated, createRR.Code, createRR.Body.String())
+		}
+
+		var createResp map[string]interface{}
+		if err := json.Unmarshal(createRR.Body.Bytes(), &createResp); err != nil {
+			t.Fatalf("decode create response: %v", err)
+		}
+		carritoID := int64(createResp["id"].(float64))
+		if _, err := dbEmp.Exec(`UPDATE carritos_compras SET subtotal = 12000, total = 12000, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = 1 AND id = ?`, carritoID); err != nil {
+			t.Fatalf("seed carrito total: %v", err)
+		}
+		return carritoID
+	}
+
+	firstCarritoID := createAndSeedCarrito("Caja Promo 1")
+	firstPayReq := httptest.NewRequest(http.MethodPut, "/api/empresa/carritos_compra?empresa_id=1&id="+strconv.FormatInt(firstCarritoID, 10)+"&action=pagar_estacion", strings.NewReader(`{"metodo_pago":"codigo_descuento","descuento_tipo":"code","descuento_codigo":"PROMOUNO","codigo_descuento":"PROMOUNO","total_pagado":0}`))
+	firstPayReq.Header.Set("Content-Type", "application/json")
+	firstPayRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(firstPayRR, firstPayReq)
+	if firstPayRR.Code != http.StatusOK {
+		t.Fatalf("expected first discount payment status %d, got %d body=%s", http.StatusOK, firstPayRR.Code, firstPayRR.Body.String())
+	}
+
+	secondCarritoID := createAndSeedCarrito("Caja Promo 2")
+	secondPayReq := httptest.NewRequest(http.MethodPut, "/api/empresa/carritos_compra?empresa_id=1&id="+strconv.FormatInt(secondCarritoID, 10)+"&action=pagar_estacion", strings.NewReader(`{"metodo_pago":"codigo_descuento","descuento_tipo":"code","descuento_codigo":"PROMOUNO","codigo_descuento":"PROMOUNO","total_pagado":0}`))
+	secondPayReq.Header.Set("Content-Type", "application/json")
+	secondPayRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(secondPayRR, secondPayReq)
+	if secondPayRR.Code != http.StatusBadRequest {
+		t.Fatalf("expected second discount payment status %d, got %d body=%s", http.StatusBadRequest, secondPayRR.Code, secondPayRR.Body.String())
 	}
 }

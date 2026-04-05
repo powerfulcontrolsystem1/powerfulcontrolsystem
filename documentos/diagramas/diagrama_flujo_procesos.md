@@ -72,6 +72,17 @@ flowchart TD
     CP1 -->|No| CP2[Responder 409 y no registrar evento]
     CP1 -->|Si| CP3[Persistir documento canonico de compra]
     CP3 --> CP4[Registrar evento con entidad_id canonico]
+    L --> CB0[Entrar a modulo combos_productos]
+    CB0 --> CB1[Definir combo con precio unico y receta de ingredientes]
+    CB1 --> CB2[Guardar combo en /api/empresa/combos_productos]
+    CB2 --> CB3[Agregar item tipo combo en carrito_de_compras]
+    CB3 --> CB4[Descontar inventario por ingredientes del combo]
+    CB4 --> Q
+    L --> CD0[Entrar a modulo codigos_de_descuento]
+    CD0 --> CD1[Crear codigo con valor y fecha de vencimiento]
+    CD1 --> CD2[Guardar codigo en /api/empresa/codigos_de_descuento]
+    CD2 --> CD3[Usar codigo en cierre de carrito de estacion]
+    CD3 --> R
     L --> N0[Administrar categorias de productos por empresa]
     N0 --> N1[Crear/editar/activar categorias]
     N1 --> N2[Asignar categoria al producto desde selector]
@@ -85,8 +96,10 @@ flowchart TD
     P --> P1[Descontar inventario por item producto agregado]
     P1 --> Q[Calcular totales]
     Q --> R[Pagar carrito]
-    R --> R1[Conservar descuento de inventario al cerrar venta]
-    R1 --> S[Cerrar carrito y guardar resumen de pago]
+    R --> R0[Validar metodo de pago efectivo/tarjeta/codigo_descuento]
+    R0 --> R1[Validar referencia para tarjeta y vigencia/usos de codigo]
+    R1 --> R2[Conservar descuento de inventario al cerrar venta]
+    R2 --> S[Cerrar carrito y guardar resumen de pago]
     S --> S11[Registrar evento contable de venta]
     S11 --> RP0[Entrar al modulo reportes]
     RP0 --> RF0[Consultar tablero financiero-operativo action=tablero]
@@ -107,6 +120,13 @@ flowchart TD
     RP32 --> RP33[Consultar inventario actual por bodega y KPI bajo minimo]
     RP33 --> RP4[Consultar configuracion de impresion vigente]
     RP4 --> RP5[Visualizar vista previa de formato POS/Carta]
+
+    L --> GX0[Entrar a modulo graficos_estadisticas]
+    GX0 --> GX1[Consultar action=panel en /api/empresa/graficos_estadisticas]
+    GX1 --> GX2[Renderizar series de ventas finanzas compras y asistencia]
+    GX2 --> GX3[Visualizar distribuciones de stock y asistencia]
+    GX3 --> GX4[Analizar rankings top productos y top clientes]
+    GX4 --> GX5[Ajustar rango y top N para seguimiento directivo]
 
     L --> F0[Entrar al modulo finanzas]
     F0 --> F1[Consultar configuracion financiera por empresa]
@@ -172,6 +192,13 @@ flowchart TD
     G4 --> G5[Actualizar ultima posicion en empresa_gps_dispositivos]
     G5 --> G6[Visualizar recorrido historico por dispositivo]
 
+    L --> AS0[Entrar a modulo asistencia de empleados]
+    AS0 --> AS1[Registrar asistencia diaria por empleado]
+    AS1 --> AS2[Marcar entrada del turno]
+    AS2 --> AS3[Marcar salida del turno]
+    AS3 --> AS4[Calcular horas trabajadas y consolidar novedad]
+    AS4 --> AS5[Consultar asistencia por rango y estado]
+
     L --> Z[Entrar a modulo facturacion electronica]
     Z --> Z1[Detectar pais automaticamente tz/lang/config empresa]
     Z1 --> Z2[Mostrar bandera del pais detectado en menu flotante]
@@ -182,7 +209,14 @@ flowchart TD
     Z5 --> Z6{Transicion valida segun estado_actual?}
     Z6 -->|No| Z7[Responder 409 y no registrar evento]
     Z6 -->|Si| Z8[Persistir documento canonico de facturacion]
-    Z8 --> Z9[Registrar evento con entidad_id canonico]
+    Z8 --> Z8A{Accion emitir factura_electronica?}
+    Z8A -->|No| Z9
+    Z8A -->|Si| Z8B[Resolver destinatario cliente por cliente_id o cliente_email]
+    Z8B --> Z8C{SMTP configurado y envio exitoso?}
+    Z8C -->|Si| Z8D[Responder factura_email enviado=true]
+    Z8C -->|No| Z8E[Responder factura_email con error sin bloquear emision]
+    Z8D --> Z9[Registrar evento con entidad_id canonico]
+    Z8E --> Z9
 ```
 
 Resultado esperado:
@@ -198,6 +232,15 @@ Resultado esperado:
 - En `administrar_empresa`, `super_administrador` y `seleccionar_empresa`, al recargar con F5 se restaura la subpagina/vista que estaba abierta.
 - En `administrar_productos`, el catálogo de `categorias_productos` permite filtrar y asignar categorías de forma consistente por `empresa_id`.
 - En `ubicacion_gps`, cada dispositivo puede registrar su recorrido automaticamente cada 10 segundos y visualizarse sobre mapa de codigo abierto.
+- En `asistencia_empleados`, el sistema registra entrada/salida por empleado y calcula horas trabajadas por jornada.
+- En `asistencia_empleados`, la consulta por rango/estado permite control operativo diario y trazabilidad de novedades.
+- En `facturacion_electronica`, la accion `emitir` intenta envio automatico al correo del cliente y reporta el resultado en `factura_email` sin bloquear la emision legal.
+- En `combos_productos`, el usuario puede crear combos con precio unico y receta de ingredientes por empresa.
+- En `carrito_de_compras`, al agregar un item `tipo_item=combo`, el sistema descuenta inventario por ingrediente y revierte correctamente en inactivacion/eliminacion del item.
+- En `codigos_de_descuento`, el usuario puede crear codigos promocionales con generacion automatica, fecha de vencimiento y limite de usos por empresa.
+- En `carrito_de_compras`, el cierre de venta valida en backend los metodos `efectivo`, `tarjeta_credito`, `tarjeta_debito` y `codigo_descuento`, exigiendo referencia para tarjetas.
+- En `graficos_estadisticas`, el usuario visualiza series por dia de ventas, finanzas, compras y asistencia por `empresa_id`.
+- En `graficos_estadisticas`, el panel muestra distribuciones y rankings para priorizar decisiones operativas/comerciales por rango.
 - En `reportes`, el usuario consulta ventas cerradas por rango, indicadores clave y top comerciales, con validacion visual de formato de impresion POS/Carta.
 - En `carrito_de_compras`, al agregar items de tipo producto se descuenta inventario y, al cerrar la venta, el descuento se mantiene aplicado.
 - En `reportes`, se dispone de reportes profesionales por rango de fechas: ventas, productos y compras de productos.

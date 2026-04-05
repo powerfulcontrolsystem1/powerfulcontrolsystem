@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -188,6 +189,107 @@ func TestCreateAndUpdateProductoValidanStockMinMax(t *testing.T) {
 
 	if err := UpdateProducto(dbConn, *p, "", ""); err == nil {
 		t.Fatal("expected error updating producto when stock_minimo > stock_maximo")
+	}
+}
+
+func TestCombosProductoCRUDConReceta(t *testing.T) {
+	dbConn := openProductosTestDB(t)
+	if err := EnsureEmpresaProductosSchema(dbConn); err != nil {
+		t.Fatalf("ensure schema: %v", err)
+	}
+
+	bodegaID, err := CreateBodega(dbConn, Bodega{EmpresaID: 82, Codigo: "BOD-CMB-82", Nombre: "Bodega combos"})
+	if err != nil {
+		t.Fatalf("create bodega: %v", err)
+	}
+
+	prodA, err := CreateProducto(dbConn, Producto{EmpresaID: 82, BodegaPrincipalID: bodegaID, Nombre: "Insumo A", UnidadMedida: "unidad", Precio: 100, Costo: 40}, 20, "TEST")
+	if err != nil {
+		t.Fatalf("create producto A: %v", err)
+	}
+	prodB, err := CreateProducto(dbConn, Producto{EmpresaID: 82, BodegaPrincipalID: bodegaID, Nombre: "Insumo B", UnidadMedida: "unidad", Precio: 200, Costo: 80}, 15, "TEST")
+	if err != nil {
+		t.Fatalf("create producto B: %v", err)
+	}
+
+	comboID, err := CreateComboProducto(dbConn, ComboProducto{
+		EmpresaID:          82,
+		Codigo:             "CMB-82-01",
+		Nombre:             "Combo 82",
+		Precio:             5000,
+		ImpuestoPorcentaje: 19,
+		Estado:             "activo",
+	}, []ComboProductoDetalle{
+		{ProductoID: prodA, Cantidad: 2, UnidadMedida: "unidad"},
+		{ProductoID: prodB, Cantidad: 1, UnidadMedida: "unidad"},
+	})
+	if err != nil {
+		t.Fatalf("create combo: %v", err)
+	}
+
+	rows, err := GetCombosProductosByEmpresa(dbConn, 82, "", "", true, 50, 0)
+	if err != nil {
+		t.Fatalf("list combos: %v", err)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("expected 1 combo, got %d", len(rows))
+	}
+	if rows[0].IngredientesCount != 2 {
+		t.Fatalf("expected ingredientes_count=2, got %d", rows[0].IngredientesCount)
+	}
+
+	combo, err := GetComboProductoByID(dbConn, 82, comboID)
+	if err != nil {
+		t.Fatalf("get combo by id: %v", err)
+	}
+	if combo.Nombre != "Combo 82" {
+		t.Fatalf("expected combo name Combo 82, got %q", combo.Nombre)
+	}
+	if len(combo.Ingredientes) != 2 {
+		t.Fatalf("expected 2 ingredientes, got %d", len(combo.Ingredientes))
+	}
+
+	if err := UpdateComboProducto(dbConn, ComboProducto{
+		ID:                 comboID,
+		EmpresaID:          82,
+		Codigo:             "CMB-82-01",
+		Nombre:             "Combo 82 Ajustado",
+		Precio:             6200,
+		ImpuestoPorcentaje: 19,
+		Estado:             "activo",
+	}, []ComboProductoDetalle{
+		{ProductoID: prodA, Cantidad: 3, UnidadMedida: "unidad"},
+	}); err != nil {
+		t.Fatalf("update combo: %v", err)
+	}
+
+	comboActualizado, err := GetComboProductoByID(dbConn, 82, comboID)
+	if err != nil {
+		t.Fatalf("get combo updated: %v", err)
+	}
+	if comboActualizado.Nombre != "Combo 82 Ajustado" {
+		t.Fatalf("expected updated combo name, got %q", comboActualizado.Nombre)
+	}
+	if comboActualizado.Precio != 6200 {
+		t.Fatalf("expected updated combo price 6200, got %.2f", comboActualizado.Precio)
+	}
+	if len(comboActualizado.Ingredientes) != 1 {
+		t.Fatalf("expected 1 ingrediente after update, got %d", len(comboActualizado.Ingredientes))
+	}
+	if comboActualizado.Ingredientes[0].Cantidad != 3 {
+		t.Fatalf("expected ingrediente cantidad 3, got %.2f", comboActualizado.Ingredientes[0].Cantidad)
+	}
+
+	if err := SetComboProductoEstado(dbConn, 82, comboID, "inactivo"); err != nil {
+		t.Fatalf("set combo estado: %v", err)
+	}
+
+	if err := DeleteComboProducto(dbConn, 82, comboID); err != nil {
+		t.Fatalf("delete combo: %v", err)
+	}
+
+	if _, err := GetComboProductoByID(dbConn, 82, comboID); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("expected sql.ErrNoRows after combo delete, got %v", err)
 	}
 }
 

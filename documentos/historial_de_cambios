@@ -1,5 +1,154 @@
 - Historial de cambios
 
+- 2026-04-05: Facturacion electronica con envio automatico al correo del cliente
+    - Se actualiza `backend/handlers/facturacion_electronica.go` para que la accion `emitir`:
+        - resuelva destinatario por `cliente_email` o por `cliente_id`/`entidad_id`,
+        - intente envio SMTP del resumen de factura,
+        - responda bloque `factura_email` con trazabilidad de intento/envio/error,
+        - no bloquee la emision legal cuando falla el correo.
+    - Se actualiza `backend/db/clientes.go` con `GetClienteByID` para consulta directa de cliente.
+    - Se actualiza `backend/main.go` para registrar `EmpresaFacturacionElectronicaHandler(dbEmpresas, dbSuper)`.
+    - Se actualiza `web/administrar_empresa/facturacion_electronica.html` para capturar `cliente_id`, `cliente_email`, `cliente_nombre` y mostrar estado de envio.
+    - Se amplian pruebas:
+        - `backend/db/clientes_test.go`: `TestGetClienteByID`.
+        - `backend/handlers/eventos_contables_modulos_test.go`: `TestEmpresaFacturacionTransaccionalReportaEstadoCorreoCliente`.
+    - Se actualiza documentacion de trazabilidad:
+        - `CHANGELOG.md`.
+        - `documentos/descripcion_del_proyecto`.
+        - `documentos/descripcion_de_archivos`.
+        - `documentos/diagramas/estructura_del_codigo.md`.
+        - `documentos/diagramas/diagrama_flujo_procesos.md`.
+        - `web/ayuda/ayuda.html`.
+        - `documentos/historial_de_cambios`.
+    - Validaciones ejecutadas:
+        - `gofmt -w db/clientes.go db/clientes_test.go handlers/facturacion_electronica.go handlers/eventos_contables_modulos_test.go main.go` (ok).
+        - `go test ./db ./handlers -count=1` (ok).
+        - `go test ./... -count=1` (ok).
+
+- 2026-04-05: Creacion del modulo de codigos de descuento por empresa y validacion de pagos en carrito
+    - Se crea `backend/db/codigos_descuento.go` con:
+        - tabla `codigos_de_descuento`,
+        - generacion automatica de codigo,
+        - CRUD completo,
+        - validacion por vencimiento/monto minimo/usos,
+        - resolucion de descuento aplicable por monto de carrito.
+    - Se crea `backend/handlers/codigos_descuento.go` con endpoint `GET/POST/PUT/DELETE /api/empresa/codigos_de_descuento` y acciones `activar/desactivar/validar`.
+    - Se actualiza `backend/db/carritos_compras.go` para:
+        - agregar `metodo_pago` y `referencia_pago` en `carritos_compras`,
+        - validar metodos permitidos,
+        - consumir uso de codigo de descuento de forma transaccional al cerrar venta.
+    - Se actualiza `backend/handlers/carritos_compras.go` para:
+        - validar metodo de pago en `action=pagar_estacion`,
+        - exigir referencia para pagos con tarjeta,
+        - validar/aplicar codigo de descuento en backend.
+    - Se actualiza `backend/main.go` para:
+        - asegurar esquema `codigos_de_descuento`,
+        - registrar migracion `2026-04-05-012-codigos-descuento-pagos`,
+        - registrar ruta protegida `/api/empresa/codigos_de_descuento`.
+    - Se crea `web/administrar_empresa/codigos_de_descuento.html` con modulo completo de gestion de codigos.
+    - Se actualiza `web/administrar_empresa/carrito_de_compras.html` con selector de metodo de pago, referencia y flujo de validacion de codigo de descuento.
+    - Se actualizan `web/administrar_empresa.html` y `web/js/administrar_empresa.js` para integrar `linkCodigosDescuento` con permisos por modulo ventas.
+    - Se actualizan pruebas:
+        - `backend/db/codigos_descuento_test.go`.
+        - `backend/handlers/auth_users_carritos_test.go`.
+        - `backend/db/carritos_inventario_test.go` y `backend/tools/seed_motel_malibu/main.go` por firma extendida de pago.
+    - Se actualiza documentacion tecnica y funcional:
+        - `estructura_bd.md`.
+        - `documentos/descripcion_del_proyecto`.
+        - `documentos/diagramas/estructura_del_codigo.md`.
+        - `documentos/diagramas/diagrama_flujo_procesos.md`.
+        - `documentos/descripcion_de_archivos`.
+        - `web/ayuda/ayuda.html`.
+        - `CHANGELOG.md`.
+        - `documentos/historial_de_cambios`.
+    - Validaciones ejecutadas:
+        - `gofmt -w db/codigos_descuento.go db/codigos_descuento_test.go db/carritos_compras.go db/carritos_inventario_test.go handlers/codigos_descuento.go handlers/carritos_compras.go handlers/auth_users_carritos_test.go main.go tools/seed_motel_malibu/main.go` (ok).
+        - `go test ./db ./handlers ./metrics ./utils ./auth -count=1` (ok).
+
+- 2026-04-05: Creacion del modulo de combos de productos y descuento por ingredientes en carrito
+    - Se crea `backend/handlers/combos_productos.go` con endpoint `GET/POST/PUT/DELETE /api/empresa/combos_productos`.
+    - Se actualiza `backend/db/productos.go` con:
+        - tablas `combos_productos` y `combos_productos_detalle`,
+        - CRUD de combos y receta,
+        - control de bloqueo de cambios cuando existen items combo activos en carritos abiertos.
+    - Se actualiza `backend/main.go` para registrar la ruta protegida de combos en inventario.
+    - Se actualiza `backend/db/carritos_compras.go` para descontar/liberar inventario por ingredientes cuando `tipo_item=combo`.
+    - Se actualiza `backend/handlers/carritos_compras.go` para validar `referencia_id` obligatorio en items combo.
+    - Se crea `web/administrar_empresa/combos_productos.html` con CRUD completo y constructor de receta.
+    - Se actualiza `web/administrar_empresa/carrito_de_compras.html` para soportar busqueda y carga de items tipo combo.
+    - Se actualizan `web/administrar_empresa.html` y `web/js/administrar_empresa.js` para integrar menu y permisos de combos.
+    - Se actualizan pruebas:
+        - `backend/db/productos_categorias_test.go` agrega `TestCombosProductoCRUDConReceta`.
+        - `backend/db/carritos_inventario_test.go` agrega pruebas de descuento/reversion y stock insuficiente en combos.
+    - Se actualiza documentacion tecnica y funcional:
+        - `estructura_bd.md`.
+        - `documentos/descripcion_del_proyecto`.
+        - `documentos/diagramas/estructura_del_codigo.md`.
+        - `documentos/diagramas/diagrama_flujo_procesos.md`.
+        - `documentos/descripcion_de_archivos`.
+        - `documentos/historial_de_cambios`.
+        - `web/ayuda/ayuda.html`.
+        - `CHANGELOG.md`.
+    - Validaciones ejecutadas:
+        - `gofmt -w db/productos.go db/carritos_compras.go db/carritos_inventario_test.go db/productos_categorias_test.go handlers/combos_productos.go handlers/carritos_compras.go main.go`.
+        - `go test ./db -run "TestCarritoCombo|TestCombosProductoCRUDConReceta" -count=1` (ok).
+        - `go test ./handlers -run "TestEmpresaCarritosCompraAndItemsFlow|TestEmpresaUsuarioLoginHandlerSuccess" -count=1` (ok).
+        - `go test ./... -count=1` (ok).
+
+- 2026-04-05: Creacion del modulo de graficos y estadisticas por empresa
+    - Se crea `backend/handlers/graficos_estadisticas.go` con endpoint `GET /api/empresa/graficos_estadisticas` y acciones:
+        - `panel`,
+        - `serie`,
+        - `rankings`,
+        - `distribuciones`,
+        - `catalogo`.
+    - Se crea `backend/handlers/graficos_estadisticas_test.go` con pruebas de panel/serie/catalogo y manejo de errores de parametros.
+    - Se actualiza `backend/main.go` para registrar la ruta protegida bajo `WithEmpresaFinanzasPermissions`.
+    - Se crea `web/administrar_empresa/graficos_estadisticas.html` con filtros por rango, graficos de series, distribuciones y rankings top.
+    - Se actualiza `web/estilos.css` con estilos del nuevo modulo visual.
+    - Se actualizan `web/administrar_empresa.html` y `web/js/administrar_empresa.js` para integrar enlace de menu y permisos por rol.
+    - Se actualiza `web/ayuda/ayuda.html` con ruta, tutorial y API del nuevo modulo.
+    - Se actualiza documentacion tecnica y funcional:
+        - `documentos/descripcion_del_proyecto`.
+        - `documentos/diagramas/estructura_del_codigo.md`.
+        - `documentos/diagramas/diagrama_flujo_procesos.md`.
+        - `documentos/descripcion_de_archivos`.
+        - `CHANGELOG.md`.
+    - Validaciones ejecutadas:
+        - `gofmt -w handlers/graficos_estadisticas.go handlers/graficos_estadisticas_test.go main.go`.
+        - `go test ./handlers -run GraficosEstadisticas -count=1` (ok).
+        - `go test ./auth ./db ./handlers ./metrics ./utils -count=1` (ok).
+        - `go test ./... -count=1` (ok).
+
+- 2026-04-05: Creacion del modulo de control de asistencia de empleados
+    - Se crea `backend/db/asistencia_empleados.go` con:
+        - tabla `empresa_asistencia_empleados`,
+        - CRUD completo,
+        - activacion/desactivacion,
+        - marcacion de entrada y salida,
+        - calculo de horas trabajadas.
+    - Se crea `backend/handlers/asistencia_empleados.go` con endpoint `GET/POST/PUT/DELETE /api/empresa/asistencia_empleados`.
+    - Se actualiza `backend/main.go` para:
+        - asegurar esquema de asistencia,
+        - registrar migracion `2026-04-05-010-asistencia-empleados`,
+        - exponer ruta protegida por `WithEmpresaSeguridadPermissions`.
+    - Se crea `backend/handlers/asistencia_empleados_test.go` para validar flujo funcional del modulo.
+    - Se crea `web/administrar_empresa/asistencia_empleados.html` con formulario, filtros y grilla operativa.
+    - Se actualizan `web/administrar_empresa.html` y `web/js/administrar_empresa.js` para integrar el enlace en menu y permisos.
+    - Se actualiza `web/ayuda/ayuda.html` con tutorial del nuevo modulo.
+    - Se actualiza documentacion tecnica y de datos:
+        - `estructura_bd.md`.
+        - `documentos/descripcion_del_proyecto`.
+        - `documentos/diagramas/estructura_del_codigo.md`.
+        - `documentos/diagramas/diagrama_flujo_procesos.md`.
+        - `documentos/descripcion_de_archivos`.
+        - `documentos/historial_de_cambios`.
+        - `CHANGELOG.md`.
+    - Validaciones ejecutadas:
+        - `gofmt -w db/asistencia_empleados.go handlers/asistencia_empleados.go handlers/asistencia_empleados_test.go main.go`.
+        - `go test ./handlers -run TestEmpresaAsistenciaEmpleadosHandlerCRUDFlow -count=1` (ok).
+        - `go test ./... -count=1` (ok).
+
 - 2026-04-05: Robustecimiento del modulo de reportes por empresa (empresarial, operativo y contable)
     - Se crea `backend/handlers/reportes.go` con endpoint unificado `/api/empresa/reportes`.
     - Se agregan acciones de reporte: `catalogo`, `suite`, `dataset`, `tablero`, `export`.

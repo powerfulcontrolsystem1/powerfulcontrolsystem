@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"math"
+	"sort"
 	"strings"
 	"time"
 )
@@ -32,6 +33,8 @@ type CarritoCompra struct {
 	DescuentoValor     float64 `json:"descuento_valor"`
 	DevolucionTotal    float64 `json:"devolucion_total"`
 	TotalPagado        float64 `json:"total_pagado"`
+	MetodoPago         string  `json:"metodo_pago,omitempty"`
+	ReferenciaPago     string  `json:"referencia_pago,omitempty"`
 	ItemCount          int64   `json:"item_count"`
 	FechaCreacion      string  `json:"fecha_creacion,omitempty"`
 	FechaActualizacion string  `json:"fecha_actualizacion,omitempty"`
@@ -91,6 +94,8 @@ func EnsureEmpresaCarritosSchema(dbConn *sql.DB) error {
 			descuento_valor REAL DEFAULT 0,
 			devolucion_total REAL DEFAULT 0,
 			total_pagado REAL DEFAULT 0,
+			metodo_pago TEXT DEFAULT 'efectivo',
+			referencia_pago TEXT,
 			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
 			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
 			usuario_creador TEXT,
@@ -183,6 +188,12 @@ func EnsureEmpresaCarritosSchema(dbConn *sql.DB) error {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "carritos_compras", "total_pagado", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carritos_compras", "metodo_pago", "TEXT DEFAULT 'efectivo'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carritos_compras", "referencia_pago", "TEXT"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "carritos_compras", "fecha_actualizacion", "TEXT"); err != nil {
@@ -302,6 +313,32 @@ func defaultImpuestoCodigo(v string) string {
 	return v
 }
 
+// NormalizeMetodoPagoCarrito normaliza metodos de pago aceptados en el flujo de carrito.
+func NormalizeMetodoPagoCarrito(v string) string {
+	normalized := strings.TrimSpace(strings.ToLower(v))
+	normalized = strings.ReplaceAll(normalized, "-", "_")
+	normalized = strings.ReplaceAll(normalized, " ", "_")
+	switch normalized {
+	case "", "efectivo", "cash":
+		return "efectivo"
+	case "tarjeta_credito", "credito":
+		return "tarjeta_credito"
+	case "tarjeta_debito", "debito", "debito_tarjeta":
+		return "tarjeta_debito"
+	case "codigo_descuento", "descuento", "codigo":
+		return "codigo_descuento"
+	case "mixto", "mixed", "pago_mixto":
+		return "mixto"
+	default:
+		return ""
+	}
+}
+
+// IsMetodoPagoCarritoValido valida si el metodo de pago pertenece al catalogo permitido.
+func IsMetodoPagoCarritoValido(v string) bool {
+	return NormalizeMetodoPagoCarrito(v) != ""
+}
+
 func resolveCarritoEstadoVenta(estadoCarrito, estadoRegistro, pagadoEn string) string {
 	estadoOp := strings.TrimSpace(strings.ToLower(estadoCarrito))
 	if estadoOp == "" {
@@ -365,6 +402,10 @@ func CreateCarritoCompra(dbConn *sql.DB, payload CarritoCompra) (int64, error) {
 	if strings.TrimSpace(payload.Codigo) == "" {
 		payload.Codigo = nextCarritoCodigo()
 	}
+	metodoPago := NormalizeMetodoPagoCarrito(payload.MetodoPago)
+	if metodoPago == "" {
+		metodoPago = "efectivo"
+	}
 	res, err := dbConn.Exec(`INSERT INTO carritos_compras (
 		empresa_id,
 		codigo,
@@ -384,13 +425,15 @@ func CreateCarritoCompra(dbConn *sql.DB, payload CarritoCompra) (int64, error) {
 		descuento_valor,
 		devolucion_total,
 		total_pagado,
+		metodo_pago,
+		referencia_pago,
 		fecha_creacion,
 		fecha_actualizacion,
 		subtotal,
 		descuento_total,
 		impuesto_total,
 		total
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'activo', ?, NULL, NULL, '', '', 0, 0, 0, datetime('now','localtime'), datetime('now','localtime'), 0, 0, 0, 0)`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'activo', ?, NULL, NULL, '', '', 0, 0, 0, ?, ?, datetime('now','localtime'), datetime('now','localtime'), 0, 0, 0, 0)`,
 		payload.EmpresaID,
 		strings.TrimSpace(payload.Codigo),
 		strings.TrimSpace(payload.Nombre),
@@ -401,6 +444,8 @@ func CreateCarritoCompra(dbConn *sql.DB, payload CarritoCompra) (int64, error) {
 		strings.TrimSpace(payload.ReferenciaExterna),
 		strings.TrimSpace(payload.UsuarioCreador),
 		strings.TrimSpace(payload.Observaciones),
+		metodoPago,
+		strings.TrimSpace(payload.ReferenciaPago),
 	)
 	if err != nil {
 		return 0, err
@@ -432,6 +477,8 @@ func GetCarritosCompraByEmpresa(dbConn *sql.DB, empresaID int64, includeInactive
 		COALESCE(c.descuento_valor, 0),
 		COALESCE(c.devolucion_total, 0),
 		COALESCE(c.total_pagado, 0),
+		COALESCE(c.metodo_pago, 'efectivo'),
+		COALESCE(c.referencia_pago, ''),
 		COALESCE(COUNT(i.id), 0),
 		COALESCE(c.fecha_creacion, ''),
 		COALESCE(c.fecha_actualizacion, ''),
@@ -490,6 +537,8 @@ func GetCarritosCompraByEmpresa(dbConn *sql.DB, empresaID int64, includeInactive
 			&item.DescuentoValor,
 			&item.DevolucionTotal,
 			&item.TotalPagado,
+			&item.MetodoPago,
+			&item.ReferenciaPago,
 			&item.ItemCount,
 			&item.FechaCreacion,
 			&item.FechaActualizacion,
@@ -528,6 +577,8 @@ func GetCarritoCompraByID(dbConn *sql.DB, empresaID, carritoID int64) (*CarritoC
 		COALESCE(descuento_valor, 0),
 		COALESCE(devolucion_total, 0),
 		COALESCE(total_pagado, 0),
+		COALESCE(metodo_pago, 'efectivo'),
+		COALESCE(referencia_pago, ''),
 		COALESCE(fecha_creacion, ''),
 		COALESCE(fecha_actualizacion, ''),
 		COALESCE(usuario_creador, ''),
@@ -560,6 +611,8 @@ func GetCarritoCompraByID(dbConn *sql.DB, empresaID, carritoID int64) (*CarritoC
 		&item.DescuentoValor,
 		&item.DevolucionTotal,
 		&item.TotalPagado,
+		&item.MetodoPago,
+		&item.ReferenciaPago,
 		&item.FechaCreacion,
 		&item.FechaActualizacion,
 		&item.UsuarioCreador,
@@ -673,6 +726,8 @@ func ActivateCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, r
 		descuento_valor = 0,
 		devolucion_total = 0,
 		total_pagado = 0,
+		metodo_pago = 'efectivo',
+		referencia_pago = '',
 		fecha_actualizacion = datetime('now','localtime')
 	WHERE empresa_id = ? AND id = ?`, empresaID, carritoID); err != nil {
 		return err
@@ -686,7 +741,11 @@ func ActivateCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, r
 }
 
 // PayCarritoStationSession marca un carrito como pagado/inactivo y guarda resumen de cobro.
-func PayCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, descuentoTipo, descuentoCodigo string, descuentoValor, devolucionTotal, totalPagado float64) error {
+func PayCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, metodoPago, referenciaPago, descuentoTipo, descuentoCodigo string, descuentoValor, devolucionTotal, totalPagado float64, codigoDescuentoID int64) error {
+	metodoPago = NormalizeMetodoPagoCarrito(metodoPago)
+	if metodoPago == "" {
+		return fmt.Errorf("metodo_pago invalido")
+	}
 	if descuentoValor < 0 {
 		descuentoValor = 0
 	}
@@ -697,10 +756,24 @@ func PayCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, descue
 		totalPagado = 0
 	}
 
-	_, err := dbConn.Exec(`UPDATE carritos_compras SET
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if codigoDescuentoID > 0 {
+		if err := markCodigoDescuentoUsoTx(tx, empresaID, codigoDescuentoID); err != nil {
+			return err
+		}
+	}
+
+	_, err = tx.Exec(`UPDATE carritos_compras SET
 		estado = 'inactivo',
 		estado_carrito = 'cerrado',
 		pagado_en = datetime('now','localtime'),
+		metodo_pago = ?,
+		referencia_pago = ?,
 		descuento_tipo = ?,
 		descuento_codigo = ?,
 		descuento_valor = ?,
@@ -708,6 +781,8 @@ func PayCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, descue
 		total_pagado = ?,
 		fecha_actualizacion = datetime('now','localtime')
 	WHERE empresa_id = ? AND id = ?`,
+		metodoPago,
+		strings.TrimSpace(referenciaPago),
 		strings.TrimSpace(descuentoTipo),
 		strings.TrimSpace(descuentoCodigo),
 		round2(descuentoValor),
@@ -716,7 +791,11 @@ func PayCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, descue
 		empresaID,
 		carritoID,
 	)
-	return err
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 // CreateCarritoCompraItem crea un item y recalcula totales del carrito.
@@ -1227,7 +1306,104 @@ func isTrackableProduct(tipoItem string, referenciaID int64) bool {
 	if referenciaID <= 0 {
 		return false
 	}
-	return strings.EqualFold(strings.TrimSpace(tipoItem), "producto")
+	itemType := strings.TrimSpace(strings.ToLower(tipoItem))
+	return itemType == "producto" || itemType == "combo"
+}
+
+type carritoStockComponent struct {
+	ProductoID int64
+	Cantidad   float64
+}
+
+type carritoStockContext struct {
+	ProductoID    int64
+	Cantidad      float64
+	BodegaID      int64
+	CostoUnitario float64
+}
+
+func resolveCarritoStockComponentsTx(tx *sql.Tx, empresaID int64, tipoItem string, referenciaID int64, cantidad float64, requireActiveCombo bool) ([]carritoStockComponent, error) {
+	tipo := strings.TrimSpace(strings.ToLower(tipoItem))
+	if referenciaID <= 0 || cantidad <= 0 {
+		return nil, nil
+	}
+
+	if tipo == "producto" {
+		return []carritoStockComponent{{ProductoID: referenciaID, Cantidad: cantidad}}, nil
+	}
+	if tipo != "combo" {
+		return nil, nil
+	}
+
+	comboQuery := `SELECT COUNT(1) FROM combos_productos WHERE empresa_id = ? AND id = ?`
+	comboArgs := []interface{}{empresaID, referenciaID}
+	if requireActiveCombo {
+		comboQuery += ` AND COALESCE(estado, 'activo') = 'activo'`
+	}
+	var comboCount int64
+	if err := tx.QueryRow(comboQuery, comboArgs...).Scan(&comboCount); err != nil {
+		if strings.Contains(strings.ToLower(err.Error()), "no such table") {
+			return nil, fmt.Errorf("modulo de combos no disponible en la base de datos")
+		}
+		return nil, err
+	}
+	if comboCount == 0 {
+		if requireActiveCombo {
+			return nil, fmt.Errorf("combo no encontrado o inactivo")
+		}
+		return nil, fmt.Errorf("combo no encontrado")
+	}
+
+	rows, err := tx.Query(`SELECT
+		COALESCE(producto_id, 0),
+		COALESCE(cantidad, 0)
+	FROM combos_productos_detalle
+	WHERE empresa_id = ? AND combo_id = ? AND COALESCE(estado, 'activo') = 'activo'`, empresaID, referenciaID)
+	if err != nil {
+		if strings.Contains(strings.ToLower(err.Error()), "no such table") {
+			return nil, fmt.Errorf("detalle de combos no disponible en la base de datos")
+		}
+		return nil, err
+	}
+	defer rows.Close()
+
+	merged := make(map[int64]float64)
+	for rows.Next() {
+		var productoID int64
+		var cantidadPorCombo float64
+		if err := rows.Scan(&productoID, &cantidadPorCombo); err != nil {
+			return nil, err
+		}
+		if productoID <= 0 || cantidadPorCombo <= 0 {
+			continue
+		}
+		merged[productoID] = round2(merged[productoID] + (cantidadPorCombo * cantidad))
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if len(merged) == 0 {
+		return nil, fmt.Errorf("el combo no tiene ingredientes activos")
+	}
+
+	ids := make([]int64, 0, len(merged))
+	for id := range merged {
+		ids = append(ids, id)
+	}
+	sort.Slice(ids, func(i, j int) bool { return ids[i] < ids[j] })
+
+	components := make([]carritoStockComponent, 0, len(ids))
+	for _, id := range ids {
+		qty := round2(merged[id])
+		if qty <= 0 {
+			continue
+		}
+		components = append(components, carritoStockComponent{ProductoID: id, Cantidad: qty})
+	}
+	if len(components) == 0 {
+		return nil, fmt.Errorf("el combo no tiene ingredientes validos")
+	}
+	return components, nil
 }
 
 func resolveProductoStockContextTx(tx *sql.Tx, empresaID, productoID int64) (int64, float64, error) {
@@ -1264,58 +1440,102 @@ func adjustCarritoItemStockTx(tx *sql.Tx, empresaID, carritoID int64, tipoItem s
 		return nil
 	}
 
-	bodegaID, costoUnitario, err := resolveProductoStockContextTx(tx, empresaID, referenciaID)
+	components, err := resolveCarritoStockComponentsTx(tx, empresaID, tipoItem, referenciaID, cantidad, reservar)
 	if err != nil {
 		return err
 	}
+	if len(components) == 0 {
+		return nil
+	}
+
 	if strings.TrimSpace(usuario) == "" {
 		usuario = seedCarritoSystemUser
 	}
 
-	if reservar {
-		var stockActual float64
-		err := tx.QueryRow(`SELECT cantidad FROM inventario_existencias WHERE empresa_id = ? AND producto_id = ? AND bodega_id = ?`, empresaID, referenciaID, bodegaID).Scan(&stockActual)
+	contexts := make([]carritoStockContext, 0, len(components))
+	for _, component := range components {
+		bodegaID, costoUnitario, err := resolveProductoStockContextTx(tx, empresaID, component.ProductoID)
 		if err != nil {
-			if err == sql.ErrNoRows {
+			return err
+		}
+
+		ctx := carritoStockContext{
+			ProductoID:    component.ProductoID,
+			Cantidad:      component.Cantidad,
+			BodegaID:      bodegaID,
+			CostoUnitario: costoUnitario,
+		}
+
+		if reservar {
+			var stockActual float64
+			err := tx.QueryRow(`SELECT cantidad FROM inventario_existencias WHERE empresa_id = ? AND producto_id = ? AND bodega_id = ?`, empresaID, component.ProductoID, bodegaID).Scan(&stockActual)
+			if err != nil {
+				if err == sql.ErrNoRows {
+					return ErrStockInsuficiente
+				}
+				return err
+			}
+			if stockActual < component.Cantidad {
 				return ErrStockInsuficiente
 			}
-			return err
 		}
-		if stockActual < cantidad {
-			return ErrStockInsuficiente
-		}
-		if _, err := tx.Exec(`UPDATE inventario_existencias SET cantidad = cantidad - ?, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND producto_id = ? AND bodega_id = ?`, cantidad, empresaID, referenciaID, bodegaID); err != nil {
-			return err
-		}
-		return insertMovimientoTx(tx, InventarioMovimiento{
-			EmpresaID:      empresaID,
-			ProductoID:     referenciaID,
-			BodegaOrigenID: bodegaID,
-			Tipo:           "salida",
-			Cantidad:       cantidad,
-			CostoUnitario:  costoUnitario,
-			Referencia:     strings.TrimSpace(referencia),
-			UsuarioCreador: strings.TrimSpace(usuario),
-			Estado:         "activo",
-			Observaciones:  strings.TrimSpace(observaciones),
-		})
+
+		contexts = append(contexts, ctx)
 	}
 
-	if err := upsertExistenciaTx(tx, empresaID, referenciaID, bodegaID, cantidad, usuario, observaciones); err != nil {
-		return err
+	normalizedTipo := strings.TrimSpace(strings.ToLower(tipoItem))
+	baseReferencia := strings.TrimSpace(referencia)
+	if baseReferencia == "" {
+		baseReferencia = fmt.Sprintf("carrito:%d:item", carritoID)
 	}
-	return insertMovimientoTx(tx, InventarioMovimiento{
-		EmpresaID:       empresaID,
-		ProductoID:      referenciaID,
-		BodegaDestinoID: bodegaID,
-		Tipo:            "devolucion",
-		Cantidad:        cantidad,
-		CostoUnitario:   costoUnitario,
-		Referencia:      strings.TrimSpace(referencia),
-		UsuarioCreador:  strings.TrimSpace(usuario),
-		Estado:          "activo",
-		Observaciones:   strings.TrimSpace(observaciones),
-	})
+
+	for _, ctx := range contexts {
+		movRef := baseReferencia
+		if normalizedTipo == "combo" {
+			movRef = fmt.Sprintf("%s:combo:%d:producto:%d", baseReferencia, referenciaID, ctx.ProductoID)
+		}
+
+		if reservar {
+			if _, err := tx.Exec(`UPDATE inventario_existencias SET cantidad = cantidad - ?, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND producto_id = ? AND bodega_id = ?`, ctx.Cantidad, empresaID, ctx.ProductoID, ctx.BodegaID); err != nil {
+				return err
+			}
+			if err := insertMovimientoTx(tx, InventarioMovimiento{
+				EmpresaID:      empresaID,
+				ProductoID:     ctx.ProductoID,
+				BodegaOrigenID: ctx.BodegaID,
+				Tipo:           "salida",
+				Cantidad:       ctx.Cantidad,
+				CostoUnitario:  ctx.CostoUnitario,
+				Referencia:     strings.TrimSpace(movRef),
+				UsuarioCreador: strings.TrimSpace(usuario),
+				Estado:         "activo",
+				Observaciones:  strings.TrimSpace(observaciones),
+			}); err != nil {
+				return err
+			}
+			continue
+		}
+
+		if err := upsertExistenciaTx(tx, empresaID, ctx.ProductoID, ctx.BodegaID, ctx.Cantidad, usuario, observaciones); err != nil {
+			return err
+		}
+		if err := insertMovimientoTx(tx, InventarioMovimiento{
+			EmpresaID:       empresaID,
+			ProductoID:      ctx.ProductoID,
+			BodegaDestinoID: ctx.BodegaID,
+			Tipo:            "devolucion",
+			Cantidad:        ctx.Cantidad,
+			CostoUnitario:   ctx.CostoUnitario,
+			Referencia:      strings.TrimSpace(movRef),
+			UsuarioCreador:  strings.TrimSpace(usuario),
+			Estado:          "activo",
+			Observaciones:   strings.TrimSpace(observaciones),
+		}); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func restoreCarritoItemsStockTx(tx *sql.Tx, empresaID, carritoID int64, motivo string) error {

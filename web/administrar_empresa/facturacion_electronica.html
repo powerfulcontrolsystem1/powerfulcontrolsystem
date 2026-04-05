@@ -156,6 +156,20 @@
           <input id="op_moneda" class="form-input" value="COP">
         </div>
       </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Cliente ID</label>
+          <input id="op_cliente_id" type="number" class="form-input" placeholder="ID interno del cliente">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Correo cliente (opcional)</label>
+          <input id="op_cliente_email" type="email" class="form-input" placeholder="cliente@correo.com">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Nombre cliente (opcional)</label>
+          <input id="op_cliente_nombre" class="form-input" placeholder="Nombre del cliente">
+        </div>
+      </div>
       <div class="form-actions">
         <button type="button" id="btnEmitirFactura" class="btn">Emitir factura</button>
         <button type="button" id="btnAnularFactura" class="btn secondary">Anular factura</button>
@@ -308,8 +322,14 @@
 
     function collectOperacionPayload(action) {
       const rawMonto = Number(document.getElementById("op_monto_total").value || 0);
+      const rawClienteID = Number(document.getElementById("op_cliente_id").value || 0);
+      const clienteID = Number.isFinite(rawClienteID) && rawClienteID > 0 ? Math.trunc(rawClienteID) : 0;
       return {
         empresa_id: Number(state.empresaID),
+        entidad_id: clienteID,
+        cliente_id: clienteID,
+        cliente_email: txt(document.getElementById("op_cliente_email").value),
+        cliente_nombre: txt(document.getElementById("op_cliente_nombre").value),
         pais_codigo: txt(document.getElementById("pais_codigo").value).toUpperCase(),
         documento_codigo: txt(document.getElementById("op_documento_codigo").value),
         estado_actual: txt(document.getElementById("op_estado_actual").value),
@@ -415,11 +435,19 @@
         if (data && data.estado_nuevo) {
           document.getElementById("op_estado_actual").value = String(data.estado_nuevo);
         }
+        let opMessage = "Operación ejecutada correctamente";
         if (data && data.numero_legal) {
-          setOperationMessage("Operación ejecutada. Número legal: " + data.numero_legal, false);
-        } else {
-          setOperationMessage("Operación ejecutada correctamente", false);
+          opMessage = "Operación ejecutada. Número legal: " + data.numero_legal;
         }
+        if (data && data.factura_email && action === "emitir") {
+          const envio = data.factura_email;
+          if (envio.enviado && envio.destinatario) {
+            opMessage += " | Correo enviado a: " + envio.destinatario;
+          } else if (envio.error) {
+            opMessage += " | Correo no enviado: " + envio.error;
+          }
+        }
+        setOperationMessage(opMessage, false);
       } catch (err) {
         setOperationResult(null);
         setOperationMessage(err && err.message ? err.message : "No se pudo ejecutar la operación", true);

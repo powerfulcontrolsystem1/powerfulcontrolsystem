@@ -1,7 +1,7 @@
 # Estructura de Base de Datos
 
-Version: 2026-04-04.10
-Ultima actualizacion: 2026-04-04
+Version: 2026-04-05.13
+Ultima actualizacion: 2026-04-05
 
 Este documento consolida la estructura activa de SQLite para el proyecto.
 Todas las tablas operativas usan como base los campos estandar:
@@ -38,6 +38,12 @@ Todas las tablas operativas usan como base los campos estandar:
   - empresa_id, bodega_principal_id, proveedor_principal_id, categoria_id, sku, codigo_barras
   - nombre, descripcion, categoria, marca, unidad_medida
   - costo, precio, impuesto_porcentaje, stock_minimo, stock_maximo, imagen_url
+- combos_productos:
+  - empresa_id, codigo, nombre, descripcion, unidad_medida
+  - precio, impuesto_porcentaje
+- combos_productos_detalle:
+  - empresa_id, combo_id, producto_id
+  - cantidad, unidad_medida
 - proveedores:
   - empresa_id, codigo, nombre, documento, contacto, telefono, email, direccion
   - catalogo_referencia, precio_base_referencial, descuento_porcentaje, plazo_pago_dias, condicion_entrega
@@ -60,12 +66,18 @@ Todas las tablas operativas usan como base los campos estandar:
   - estado_carrito, moneda, referencia_externa
   - subtotal, descuento_total, impuesto_total, total
   - activado_en, pagado_en, descuento_tipo, descuento_codigo, descuento_valor
-  - devolucion_total, total_pagado
+  - devolucion_total, total_pagado, metodo_pago, referencia_pago
 - carrito_compra_items:
   - empresa_id, carrito_id, tipo_item, referencia_id, codigo_item, descripcion
   - unidad_medida, cantidad, precio_unitario
   - descuento_porcentaje, impuesto_porcentaje, impuesto_codigo
   - base_gravable, valor_descuento, valor_impuesto, subtotal_linea, total_linea
+
+### Tabla de codigos de descuento por empresa
+- codigos_de_descuento:
+  - empresa_id, codigo, tipo_descuento, valor, moneda
+  - monto_minimo_compra, fecha_vencimiento
+  - usos_maximos, usos_actuales
 
 ### Tablas de finanzas empresariales
 - empresa_finanzas_movimientos:
@@ -227,6 +239,13 @@ Todas las tablas operativas usan como base los campos estandar:
   - latitud, longitud, precision_metros, velocidad_kmh
   - rumbo_grados, altitud_metros, fuente, capturado_en
 
+### Tabla de asistencia de empleados por empresa
+- empresa_asistencia_empleados:
+  - empresa_id, empleado_id, empleado_codigo, empleado_nombre, empleado_documento
+  - cargo, turno, fecha_asistencia
+  - hora_entrada, hora_salida, minutos_tarde, horas_trabajadas
+  - estado_asistencia, novedad
+
 ## 2) Base: superadministrador.db
 
 ### Tablas de control y administracion
@@ -264,6 +283,8 @@ Todas las tablas operativas usan como base los campos estandar:
 ## 3) Relaciones clave
 - empresas.id -> users.empresa_id
 - empresas.id -> clientes.empresa_id, categorias_productos.empresa_id, productos.empresa_id, carritos_compras.empresa_id, chat_tareas*.empresa_id
+- empresas.id -> combos_productos.empresa_id, combos_productos_detalle.empresa_id
+- empresas.id -> codigos_de_descuento.empresa_id
 - empresas.id -> empresa_finanzas_movimientos.empresa_id, empresa_finanzas_periodos.empresa_id, empresa_finanzas_configuracion.empresa_id
 - empresas.id -> empresa_cierres_caja.empresa_id
 - empresas.id -> empresa_facturacion_documentos.empresa_id, empresa_compras_documentos.empresa_id
@@ -273,9 +294,12 @@ Todas las tablas operativas usan como base los campos estandar:
 - empresas.id -> empresa_ai_consultas.empresa_id, empresa_ai_uso_diario.empresa_id
 - empresas.id -> empresa_ai_modelo_preferido.empresa_id
 - empresas.id -> empresa_gps_dispositivos.empresa_id, empresa_gps_recorridos.empresa_id
+- empresas.id -> empresa_asistencia_empleados.empresa_id
 - empresa_eventos_contables.id -> empresa_asientos_contables.evento_contable_id
 - proveedores.id -> empresa_compras_documentos.proveedor_id
 - categorias_productos.id -> productos.categoria_id
+- combos_productos.id -> combos_productos_detalle.combo_id
+- productos.id -> combos_productos_detalle.producto_id
 - carritos_compras.id -> carrito_compra_items.carrito_id
 - chat_tareas_conversaciones.id -> chat_tareas_participantes.conversacion_id, chat_tareas_mensajes.conversacion_id, chat_tareas.conversacion_id
 - chat_tareas_mensajes.id -> chat_tareas_adjuntos.mensaje_id
@@ -284,6 +308,9 @@ Todas las tablas operativas usan como base los campos estandar:
 - roles_de_usuario.id -> tipos_de_usuario.rol_id
 
 ## 4) Historial resumido
+- 2026-04-05: se agrega `codigos_de_descuento` por empresa para promociones con vigencia, usos y validacion de pago en carrito.
+- 2026-04-05: se amplía `carritos_compras` con `metodo_pago` y `referencia_pago` para trazabilidad del cierre de venta por estacion.
+- 2026-04-05: se agregan `combos_productos` y `combos_productos_detalle` para venta compuesta con precio unico y receta de ingredientes por empresa.
 - 2026-04-04: se amplía `proveedores` con campos comerciales (`catalogo_referencia`, `precio_base_referencial`, `descuento_porcentaje`, `plazo_pago_dias`, `condicion_entrega`) para gestionar catálogo, precios y condiciones por empresa.
 - 2026-04-04: se agrega `empresa_auditoria_eventos` para trazabilidad de acciones criticas por `empresa_id`, modulo/accion/recurso, resultado HTTP y metadatos (`request_id`, IP, user-agent), con retencion configurable y purga.
 - 2026-04-04: se agrega `empresa_asientos_contables` como persistencia canonica de asientos por evento procesado, con idempotencia por `hash_idempotencia` y referencia a `evento_contable_id`.

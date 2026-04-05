@@ -73,6 +73,43 @@ type Producto struct {
 	Observaciones        string  `json:"observaciones,omitempty"`
 }
 
+// ComboProducto representa un producto compuesto (combo) que se vende a precio unico.
+type ComboProducto struct {
+	ID                 int64                  `json:"id"`
+	EmpresaID          int64                  `json:"empresa_id"`
+	Codigo             string                 `json:"codigo,omitempty"`
+	Nombre             string                 `json:"nombre"`
+	Descripcion        string                 `json:"descripcion,omitempty"`
+	UnidadMedida       string                 `json:"unidad_medida,omitempty"`
+	Precio             float64                `json:"precio"`
+	ImpuestoPorcentaje float64                `json:"impuesto_porcentaje"`
+	IngredientesCount  int64                  `json:"ingredientes_count,omitempty"`
+	FechaCreacion      string                 `json:"fecha_creacion,omitempty"`
+	FechaActualizacion string                 `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador     string                 `json:"usuario_creador,omitempty"`
+	Estado             string                 `json:"estado,omitempty"`
+	Observaciones      string                 `json:"observaciones,omitempty"`
+	Ingredientes       []ComboProductoDetalle `json:"ingredientes,omitempty"`
+}
+
+// ComboProductoDetalle representa la receta/ingredientes de un combo.
+type ComboProductoDetalle struct {
+	ID                 int64   `json:"id"`
+	EmpresaID          int64   `json:"empresa_id"`
+	ComboID            int64   `json:"combo_id"`
+	ProductoID         int64   `json:"producto_id"`
+	ProductoNombre     string  `json:"producto_nombre,omitempty"`
+	ProductoSKU        string  `json:"producto_sku,omitempty"`
+	ProductoCodigo     string  `json:"producto_codigo_barras,omitempty"`
+	Cantidad           float64 `json:"cantidad"`
+	UnidadMedida       string  `json:"unidad_medida,omitempty"`
+	FechaCreacion      string  `json:"fecha_creacion,omitempty"`
+	FechaActualizacion string  `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador     string  `json:"usuario_creador,omitempty"`
+	Estado             string  `json:"estado,omitempty"`
+	Observaciones      string  `json:"observaciones,omitempty"`
+}
+
 // Proveedor representa un proveedor comercial de la empresa.
 type Proveedor struct {
 	ID                    int64   `json:"id"`
@@ -450,6 +487,34 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
+		`CREATE TABLE IF NOT EXISTS combos_productos (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			usuario_creador TEXT,
+			estado TEXT DEFAULT 'activo',
+			observaciones TEXT,
+			empresa_id INTEGER NOT NULL,
+			codigo TEXT,
+			nombre TEXT NOT NULL,
+			descripcion TEXT,
+			unidad_medida TEXT DEFAULT 'combo',
+			precio REAL DEFAULT 0,
+			impuesto_porcentaje REAL DEFAULT 0
+		);`,
+		`CREATE TABLE IF NOT EXISTS combos_productos_detalle (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			usuario_creador TEXT,
+			estado TEXT DEFAULT 'activo',
+			observaciones TEXT,
+			empresa_id INTEGER NOT NULL,
+			combo_id INTEGER NOT NULL,
+			producto_id INTEGER NOT NULL,
+			cantidad REAL NOT NULL DEFAULT 0,
+			unidad_medida TEXT DEFAULT 'unidad'
+		);`,
 		`CREATE TABLE IF NOT EXISTS producto_precios_historial (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			empresa_id INTEGER NOT NULL,
@@ -508,6 +573,11 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_proveedores_empresa_codigo ON proveedores(empresa_id, codigo);`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_proveedores_empresa_nombre ON proveedores(empresa_id, nombre);`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_servicios_empresa_codigo ON servicios(empresa_id, codigo);`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS ux_combos_empresa_codigo ON combos_productos(empresa_id, codigo);`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS ux_combos_empresa_nombre ON combos_productos(empresa_id, nombre);`,
+		`CREATE INDEX IF NOT EXISTS ix_combos_empresa_estado ON combos_productos(empresa_id, estado, nombre);`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS ux_combos_detalle_combo_producto ON combos_productos_detalle(empresa_id, combo_id, producto_id);`,
+		`CREATE INDEX IF NOT EXISTS ix_combos_detalle_empresa_producto ON combos_productos_detalle(empresa_id, producto_id);`,
 		`CREATE INDEX IF NOT EXISTS ix_historial_precios_empresa_producto ON producto_precios_historial(empresa_id, producto_id);`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_existencias_empresa_prod_bodega ON inventario_existencias(empresa_id, producto_id, bodega_id);`,
 		`CREATE INDEX IF NOT EXISTS ix_existencias_empresa_bodega ON inventario_existencias(empresa_id, bodega_id);`,
@@ -703,6 +773,74 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "servicios", "observaciones", "TEXT"); err != nil {
+		return err
+	}
+
+	if err := ensureColumnIfMissing(dbConn, "combos_productos", "fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "combos_productos", "fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "combos_productos", "usuario_creador", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "combos_productos", "estado", "TEXT DEFAULT 'activo'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "combos_productos", "observaciones", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "combos_productos", "empresa_id", "INTEGER"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "combos_productos", "codigo", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "combos_productos", "nombre", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "combos_productos", "descripcion", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "combos_productos", "unidad_medida", "TEXT DEFAULT 'combo'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "combos_productos", "precio", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "combos_productos", "impuesto_porcentaje", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+
+	if err := ensureColumnIfMissing(dbConn, "combos_productos_detalle", "fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "combos_productos_detalle", "fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "combos_productos_detalle", "usuario_creador", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "combos_productos_detalle", "estado", "TEXT DEFAULT 'activo'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "combos_productos_detalle", "observaciones", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "combos_productos_detalle", "empresa_id", "INTEGER"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "combos_productos_detalle", "combo_id", "INTEGER"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "combos_productos_detalle", "producto_id", "INTEGER"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "combos_productos_detalle", "cantidad", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "combos_productos_detalle", "unidad_medida", "TEXT DEFAULT 'unidad'"); err != nil {
 		return err
 	}
 
@@ -2901,6 +3039,578 @@ func DeleteProveedor(dbConn *sql.DB, empresaID, proveedorID int64) error {
 func SetProveedorEstado(dbConn *sql.DB, empresaID, proveedorID int64, estado string) error {
 	_, err := dbConn.Exec(`UPDATE proveedores SET estado = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ? AND empresa_id = ?`, strings.TrimSpace(estado), proveedorID, empresaID)
 	return err
+}
+
+func defaultComboUnidad(v string) string {
+	v = strings.TrimSpace(strings.ToLower(v))
+	if v == "" {
+		return "combo"
+	}
+	return v
+}
+
+func normalizeComboEstado(v string) string {
+	v = strings.TrimSpace(strings.ToLower(v))
+	if v == "" {
+		return "activo"
+	}
+	return v
+}
+
+func validateComboProductoPayload(c ComboProducto) error {
+	if c.EmpresaID <= 0 {
+		return fmt.Errorf("empresa_id es obligatorio")
+	}
+	if strings.TrimSpace(c.Nombre) == "" {
+		return fmt.Errorf("nombre es obligatorio")
+	}
+	if c.Precio < 0 {
+		return fmt.Errorf("precio invalido")
+	}
+	if c.ImpuestoPorcentaje < 0 || c.ImpuestoPorcentaje > 100 {
+		return fmt.Errorf("impuesto_porcentaje debe estar entre 0 y 100")
+	}
+	return nil
+}
+
+func validateComboIngredientePayload(i ComboProductoDetalle) error {
+	if i.ProductoID <= 0 {
+		return fmt.Errorf("producto_id es obligatorio")
+	}
+	if i.Cantidad <= 0 {
+		return fmt.Errorf("cantidad debe ser mayor a cero")
+	}
+	return nil
+}
+
+func normalizeComboIngredientesInput(ingredientes []ComboProductoDetalle) ([]ComboProductoDetalle, error) {
+	if len(ingredientes) == 0 {
+		return nil, fmt.Errorf("el combo debe tener al menos un ingrediente")
+	}
+
+	merged := make(map[int64]ComboProductoDetalle)
+	for _, raw := range ingredientes {
+		if err := validateComboIngredientePayload(raw); err != nil {
+			return nil, err
+		}
+		item, exists := merged[raw.ProductoID]
+		if !exists {
+			merged[raw.ProductoID] = ComboProductoDetalle{
+				ProductoID:    raw.ProductoID,
+				Cantidad:      raw.Cantidad,
+				UnidadMedida:  strings.TrimSpace(raw.UnidadMedida),
+				Estado:        normalizeComboEstado(raw.Estado),
+				Observaciones: strings.TrimSpace(raw.Observaciones),
+			}
+			continue
+		}
+		item.Cantidad = round2(item.Cantidad + raw.Cantidad)
+		if strings.TrimSpace(item.UnidadMedida) == "" {
+			item.UnidadMedida = strings.TrimSpace(raw.UnidadMedida)
+		}
+		if strings.TrimSpace(item.Observaciones) == "" {
+			item.Observaciones = strings.TrimSpace(raw.Observaciones)
+		}
+		if item.Estado == "" {
+			item.Estado = normalizeComboEstado(raw.Estado)
+		}
+		merged[raw.ProductoID] = item
+	}
+
+	keys := make([]int64, 0, len(merged))
+	for productID := range merged {
+		keys = append(keys, productID)
+	}
+	sort.Slice(keys, func(i, j int) bool { return keys[i] < keys[j] })
+
+	out := make([]ComboProductoDetalle, 0, len(keys))
+	for _, productID := range keys {
+		item := merged[productID]
+		if item.Cantidad <= 0 {
+			continue
+		}
+		item.Cantidad = round2(item.Cantidad)
+		item.Estado = normalizeComboEstado(item.Estado)
+		out = append(out, item)
+	}
+	if len(out) == 0 {
+		return nil, fmt.Errorf("el combo debe tener al menos un ingrediente")
+	}
+	return out, nil
+}
+
+func replaceComboIngredientesTx(tx *sql.Tx, empresaID, comboID int64, ingredientes []ComboProductoDetalle, usuario string) error {
+	normalized, err := normalizeComboIngredientesInput(ingredientes)
+	if err != nil {
+		return err
+	}
+
+	if _, err := tx.Exec(`DELETE FROM combos_productos_detalle WHERE empresa_id = ? AND combo_id = ?`, empresaID, comboID); err != nil {
+		return err
+	}
+
+	for _, it := range normalized {
+		var unidadProducto sql.NullString
+		err := tx.QueryRow(`SELECT COALESCE(unidad_medida, 'unidad') FROM productos WHERE empresa_id = ? AND id = ? AND COALESCE(estado, 'activo') = 'activo' LIMIT 1`, empresaID, it.ProductoID).Scan(&unidadProducto)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return fmt.Errorf("producto %d no existe o esta inactivo", it.ProductoID)
+			}
+			return err
+		}
+
+		unidad := strings.TrimSpace(it.UnidadMedida)
+		if unidad == "" && unidadProducto.Valid {
+			unidad = strings.TrimSpace(unidadProducto.String)
+		}
+		if unidad == "" {
+			unidad = "unidad"
+		}
+
+		if _, err := tx.Exec(`INSERT INTO combos_productos_detalle (
+			fecha_creacion,
+			fecha_actualizacion,
+			usuario_creador,
+			estado,
+			observaciones,
+			empresa_id,
+			combo_id,
+			producto_id,
+			cantidad,
+			unidad_medida
+		) VALUES (
+			datetime('now','localtime'),
+			datetime('now','localtime'),
+			?,
+			?,
+			?,
+			?,
+			?,
+			?,
+			?,
+			?
+		)`,
+			strings.TrimSpace(usuario),
+			normalizeComboEstado(it.Estado),
+			strings.TrimSpace(it.Observaciones),
+			empresaID,
+			comboID,
+			it.ProductoID,
+			it.Cantidad,
+			unidad,
+		); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func countActiveOpenCarritoItemsByComboTx(tx *sql.Tx, empresaID, comboID int64) (int64, error) {
+	var total int64
+	err := tx.QueryRow(`SELECT COUNT(1)
+	FROM carrito_compra_items i
+	JOIN carritos_compras c ON c.empresa_id = i.empresa_id AND c.id = i.carrito_id
+	WHERE i.empresa_id = ?
+	  AND COALESCE(LOWER(i.tipo_item), '') = 'combo'
+	  AND COALESCE(i.referencia_id, 0) = ?
+	  AND COALESCE(i.estado, 'activo') = 'activo'
+	  AND COALESCE(c.estado_carrito, 'abierto') <> 'cerrado'`, empresaID, comboID).Scan(&total)
+	if err != nil {
+		if strings.Contains(strings.ToLower(err.Error()), "no such table") {
+			return 0, nil
+		}
+		return 0, err
+	}
+	return total, nil
+}
+
+// CreateComboProducto crea un combo y su receta de ingredientes por empresa.
+func CreateComboProducto(dbConn *sql.DB, combo ComboProducto, ingredientes []ComboProductoDetalle) (int64, error) {
+	if err := validateComboProductoPayload(combo); err != nil {
+		return 0, err
+	}
+
+	combo.UnidadMedida = defaultComboUnidad(combo.UnidadMedida)
+	combo.Estado = normalizeComboEstado(combo.Estado)
+
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+
+	res, err := tx.Exec(`INSERT INTO combos_productos (
+		fecha_creacion,
+		fecha_actualizacion,
+		usuario_creador,
+		estado,
+		observaciones,
+		empresa_id,
+		codigo,
+		nombre,
+		descripcion,
+		unidad_medida,
+		precio,
+		impuesto_porcentaje
+	) VALUES (
+		datetime('now','localtime'),
+		datetime('now','localtime'),
+		?,
+		?,
+		?,
+		?,
+		NULLIF(?, ''),
+		?,
+		?,
+		?,
+		?,
+		?
+	)`,
+		strings.TrimSpace(combo.UsuarioCreador),
+		combo.Estado,
+		strings.TrimSpace(combo.Observaciones),
+		combo.EmpresaID,
+		strings.TrimSpace(combo.Codigo),
+		strings.TrimSpace(combo.Nombre),
+		strings.TrimSpace(combo.Descripcion),
+		combo.UnidadMedida,
+		round2(combo.Precio),
+		round2(combo.ImpuestoPorcentaje),
+	)
+	if err != nil {
+		return 0, err
+	}
+
+	comboID, err := res.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+
+	if err := replaceComboIngredientesTx(tx, combo.EmpresaID, comboID, ingredientes, combo.UsuarioCreador); err != nil {
+		return 0, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return comboID, nil
+}
+
+// GetCombosProductosByEmpresa lista combos por empresa con filtros opcionales.
+func GetCombosProductosByEmpresa(dbConn *sql.DB, empresaID int64, filtro, estado string, incluirInactivos bool, limit, offset int) ([]ComboProducto, error) {
+	if limit <= 0 || limit > 500 {
+		limit = 200
+	}
+	if offset < 0 {
+		offset = 0
+	}
+
+	query := `SELECT
+		c.id,
+		c.empresa_id,
+		COALESCE(c.codigo, ''),
+		COALESCE(c.nombre, ''),
+		COALESCE(c.descripcion, ''),
+		COALESCE(c.unidad_medida, 'combo'),
+		COALESCE(c.precio, 0),
+		COALESCE(c.impuesto_porcentaje, 0),
+		COALESCE(det.ingredientes_count, 0),
+		COALESCE(c.fecha_creacion, ''),
+		COALESCE(c.fecha_actualizacion, ''),
+		COALESCE(c.usuario_creador, ''),
+		COALESCE(c.estado, 'activo'),
+		COALESCE(c.observaciones, '')
+	FROM combos_productos c
+	LEFT JOIN (
+		SELECT empresa_id, combo_id, COUNT(1) AS ingredientes_count
+		FROM combos_productos_detalle
+		WHERE COALESCE(estado, 'activo') = 'activo'
+		GROUP BY empresa_id, combo_id
+	) det ON det.empresa_id = c.empresa_id AND det.combo_id = c.id
+	WHERE c.empresa_id = ?`
+
+	args := []interface{}{empresaID}
+	if strings.TrimSpace(estado) != "" {
+		query += ` AND COALESCE(c.estado, 'activo') = ?`
+		args = append(args, strings.TrimSpace(estado))
+	} else if !incluirInactivos {
+		query += ` AND COALESCE(c.estado, 'activo') = 'activo'`
+	}
+
+	if strings.TrimSpace(filtro) != "" {
+		like := "%" + strings.TrimSpace(filtro) + "%"
+		query += ` AND (c.nombre LIKE ? OR c.codigo LIKE ? OR c.descripcion LIKE ?)`
+		args = append(args, like, like, like)
+	}
+
+	query += ` ORDER BY c.id DESC LIMIT ? OFFSET ?`
+	args = append(args, limit, offset)
+
+	rows, err := dbConn.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]ComboProducto, 0)
+	for rows.Next() {
+		var c ComboProducto
+		if err := rows.Scan(
+			&c.ID,
+			&c.EmpresaID,
+			&c.Codigo,
+			&c.Nombre,
+			&c.Descripcion,
+			&c.UnidadMedida,
+			&c.Precio,
+			&c.ImpuestoPorcentaje,
+			&c.IngredientesCount,
+			&c.FechaCreacion,
+			&c.FechaActualizacion,
+			&c.UsuarioCreador,
+			&c.Estado,
+			&c.Observaciones,
+		); err != nil {
+			return nil, err
+		}
+		out = append(out, c)
+	}
+	return out, nil
+}
+
+// GetComboProductoByID obtiene un combo por empresa e incluye su receta.
+func GetComboProductoByID(dbConn *sql.DB, empresaID, comboID int64) (*ComboProducto, error) {
+	row := dbConn.QueryRow(`SELECT
+		id,
+		empresa_id,
+		COALESCE(codigo, ''),
+		COALESCE(nombre, ''),
+		COALESCE(descripcion, ''),
+		COALESCE(unidad_medida, 'combo'),
+		COALESCE(precio, 0),
+		COALESCE(impuesto_porcentaje, 0),
+		COALESCE(fecha_creacion, ''),
+		COALESCE(fecha_actualizacion, ''),
+		COALESCE(usuario_creador, ''),
+		COALESCE(estado, 'activo'),
+		COALESCE(observaciones, '')
+	FROM combos_productos
+	WHERE empresa_id = ? AND id = ?
+	LIMIT 1`, empresaID, comboID)
+
+	var combo ComboProducto
+	if err := row.Scan(
+		&combo.ID,
+		&combo.EmpresaID,
+		&combo.Codigo,
+		&combo.Nombre,
+		&combo.Descripcion,
+		&combo.UnidadMedida,
+		&combo.Precio,
+		&combo.ImpuestoPorcentaje,
+		&combo.FechaCreacion,
+		&combo.FechaActualizacion,
+		&combo.UsuarioCreador,
+		&combo.Estado,
+		&combo.Observaciones,
+	); err != nil {
+		return nil, err
+	}
+
+	ingredientes, err := GetComboProductoIngredientes(dbConn, empresaID, comboID, true)
+	if err != nil {
+		return nil, err
+	}
+	combo.Ingredientes = ingredientes
+	combo.IngredientesCount = int64(len(ingredientes))
+	return &combo, nil
+}
+
+// GetComboProductoIngredientes lista la receta de un combo.
+func GetComboProductoIngredientes(dbConn *sql.DB, empresaID, comboID int64, incluirInactivos bool) ([]ComboProductoDetalle, error) {
+	query := `SELECT
+		d.id,
+		d.empresa_id,
+		d.combo_id,
+		d.producto_id,
+		COALESCE(p.nombre, ''),
+		COALESCE(p.sku, ''),
+		COALESCE(p.codigo_barras, ''),
+		COALESCE(d.cantidad, 0),
+		COALESCE(d.unidad_medida, 'unidad'),
+		COALESCE(d.fecha_creacion, ''),
+		COALESCE(d.fecha_actualizacion, ''),
+		COALESCE(d.usuario_creador, ''),
+		COALESCE(d.estado, 'activo'),
+		COALESCE(d.observaciones, '')
+	FROM combos_productos_detalle d
+	LEFT JOIN productos p ON p.empresa_id = d.empresa_id AND p.id = d.producto_id
+	WHERE d.empresa_id = ? AND d.combo_id = ?`
+	args := []interface{}{empresaID, comboID}
+	if !incluirInactivos {
+		query += ` AND COALESCE(d.estado, 'activo') = 'activo'`
+	}
+	query += ` ORDER BY d.id ASC`
+
+	rows, err := dbConn.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]ComboProductoDetalle, 0)
+	for rows.Next() {
+		var d ComboProductoDetalle
+		if err := rows.Scan(
+			&d.ID,
+			&d.EmpresaID,
+			&d.ComboID,
+			&d.ProductoID,
+			&d.ProductoNombre,
+			&d.ProductoSKU,
+			&d.ProductoCodigo,
+			&d.Cantidad,
+			&d.UnidadMedida,
+			&d.FechaCreacion,
+			&d.FechaActualizacion,
+			&d.UsuarioCreador,
+			&d.Estado,
+			&d.Observaciones,
+		); err != nil {
+			return nil, err
+		}
+		out = append(out, d)
+	}
+	return out, nil
+}
+
+// UpdateComboProducto actualiza cabecera y receta de un combo.
+func UpdateComboProducto(dbConn *sql.DB, combo ComboProducto, ingredientes []ComboProductoDetalle) error {
+	if combo.ID <= 0 {
+		return fmt.Errorf("id es obligatorio")
+	}
+	if err := validateComboProductoPayload(combo); err != nil {
+		return err
+	}
+
+	combo.UnidadMedida = defaultComboUnidad(combo.UnidadMedida)
+	combo.Estado = normalizeComboEstado(combo.Estado)
+
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	openItems, err := countActiveOpenCarritoItemsByComboTx(tx, combo.EmpresaID, combo.ID)
+	if err != nil {
+		return err
+	}
+	if openItems > 0 {
+		return fmt.Errorf("no se puede modificar el combo mientras tenga items activos en carritos abiertos")
+	}
+
+	res, err := tx.Exec(`UPDATE combos_productos SET
+		codigo = NULLIF(?, ''),
+		nombre = ?,
+		descripcion = ?,
+		unidad_medida = ?,
+		precio = ?,
+		impuesto_porcentaje = ?,
+		estado = ?,
+		observaciones = ?,
+		fecha_actualizacion = datetime('now','localtime')
+	WHERE id = ? AND empresa_id = ?`,
+		strings.TrimSpace(combo.Codigo),
+		strings.TrimSpace(combo.Nombre),
+		strings.TrimSpace(combo.Descripcion),
+		combo.UnidadMedida,
+		round2(combo.Precio),
+		round2(combo.ImpuestoPorcentaje),
+		combo.Estado,
+		strings.TrimSpace(combo.Observaciones),
+		combo.ID,
+		combo.EmpresaID,
+	)
+	if err != nil {
+		return err
+	}
+	affected, _ := res.RowsAffected()
+	if affected == 0 {
+		return sql.ErrNoRows
+	}
+
+	if err := replaceComboIngredientesTx(tx, combo.EmpresaID, combo.ID, ingredientes, combo.UsuarioCreador); err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+// DeleteComboProducto elimina un combo y su receta.
+func DeleteComboProducto(dbConn *sql.DB, empresaID, comboID int64) error {
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	openItems, err := countActiveOpenCarritoItemsByComboTx(tx, empresaID, comboID)
+	if err != nil {
+		return err
+	}
+	if openItems > 0 {
+		return fmt.Errorf("no se puede eliminar el combo mientras tenga items activos en carritos abiertos")
+	}
+
+	if _, err := tx.Exec(`DELETE FROM combos_productos_detalle WHERE empresa_id = ? AND combo_id = ?`, empresaID, comboID); err != nil {
+		return err
+	}
+	res, err := tx.Exec(`DELETE FROM combos_productos WHERE empresa_id = ? AND id = ?`, empresaID, comboID)
+	if err != nil {
+		return err
+	}
+	affected, _ := res.RowsAffected()
+	if affected == 0 {
+		return sql.ErrNoRows
+	}
+
+	return tx.Commit()
+}
+
+// SetComboProductoEstado activa/desactiva un combo por empresa.
+func SetComboProductoEstado(dbConn *sql.DB, empresaID, comboID int64, estado string) error {
+	nuevoEstado := normalizeComboEstado(estado)
+
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if nuevoEstado == "inactivo" {
+		openItems, err := countActiveOpenCarritoItemsByComboTx(tx, empresaID, comboID)
+		if err != nil {
+			return err
+		}
+		if openItems > 0 {
+			return fmt.Errorf("no se puede desactivar el combo mientras tenga items activos en carritos abiertos")
+		}
+	}
+
+	res, err := tx.Exec(`UPDATE combos_productos
+	SET estado = ?, fecha_actualizacion = datetime('now','localtime')
+	WHERE id = ? AND empresa_id = ?`, nuevoEstado, comboID, empresaID)
+	if err != nil {
+		return err
+	}
+	affected, _ := res.RowsAffected()
+	if affected == 0 {
+		return sql.ErrNoRows
+	}
+
+	return tx.Commit()
 }
 
 // CreateServicio crea un servicio comercial por empresa.

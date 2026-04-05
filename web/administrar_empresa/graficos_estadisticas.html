@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Graficos y estadisticas</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="empresa-subpage">
+  <div class="container empresa-module graficos-page">
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h1 class="empresa-title">Graficos y estadisticas</h1>
+        <div class="empresa-inline-actions graficos-inline-actions">
+          <input id="fechaDesde" type="date" class="form-input">
+          <input id="fechaHasta" type="date" class="form-input">
+          <input id="topN" type="number" min="3" max="30" step="1" value="10" class="form-input graficos-top-input" placeholder="Top N">
+          <button id="btnAplicarFiltro" class="btn secondary" type="button">Aplicar rango</button>
+          <button id="btnActualizarPanel" class="btn" type="button">Actualizar</button>
+        </div>
+      </div>
+      <p class="form-help">Panel visual para seguimiento diario de ventas, finanzas, compras, asistencia y distribuciones operativas por empresa.</p>
+      <p id="graficosMsg" class="form-help"></p>
+      <p id="graficosResumen" class="form-help"></p>
+
+      <div class="kpi-grid graficos-kpi-grid">
+        <div class="kpi-box"><span class="kpi-label">Ventas cerradas</span><strong id="kpiVentas">0</strong></div>
+        <div class="kpi-box"><span class="kpi-label">Ingresos de ventas</span><strong id="kpiIngresos">$0</strong></div>
+        <div class="kpi-box"><span class="kpi-label">Ticket promedio</span><strong id="kpiTicket">$0</strong></div>
+        <div class="kpi-box"><span class="kpi-label">Movimientos de compra</span><strong id="kpiCompras">0</strong></div>
+        <div class="kpi-box"><span class="kpi-label">Costo compras</span><strong id="kpiComprasCosto">$0</strong></div>
+        <div class="kpi-box"><span class="kpi-label">Clientes activos</span><strong id="kpiClientes">0</strong></div>
+        <div class="kpi-box"><span class="kpi-label">Productos activos</span><strong id="kpiProductos">0</strong></div>
+        <div class="kpi-box"><span class="kpi-label">Bajo minimo</span><strong id="kpiBajoMinimo">0</strong></div>
+        <div class="kpi-box"><span class="kpi-label">Ingresos financieros</span><strong id="kpiFinIngresos">$0</strong></div>
+        <div class="kpi-box"><span class="kpi-label">Egresos financieros</span><strong id="kpiFinEgresos">$0</strong></div>
+        <div class="kpi-box"><span class="kpi-label">Balance financiero</span><strong id="kpiFinBalance">$0</strong></div>
+        <div class="kpi-box"><span class="kpi-label">Utilidad operacional</span><strong id="kpiUtilidad">$0</strong></div>
+      </div>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2 class="empresa-subtitle">Series principales</h2>
+      </div>
+      <div class="graficos-charts-grid">
+        <article class="graficos-chart-card">
+          <h3>Ventas por dia</h3>
+          <p id="metaVentas" class="form-help graficos-chart-meta"></p>
+          <div id="chartVentas" class="graficos-chart-canvas"></div>
+        </article>
+
+        <article class="graficos-chart-card">
+          <h3>Ingresos vs egresos</h3>
+          <p id="metaFinanzas" class="form-help graficos-chart-meta"></p>
+          <div id="chartFinanzas" class="graficos-chart-canvas"></div>
+        </article>
+
+        <article class="graficos-chart-card">
+          <h3>Compras por dia</h3>
+          <p id="metaCompras" class="form-help graficos-chart-meta"></p>
+          <div id="chartCompras" class="graficos-chart-canvas"></div>
+        </article>
+
+        <article class="graficos-chart-card">
+          <h3>Asistencia diaria</h3>
+          <p id="metaAsistencia" class="form-help graficos-chart-meta"></p>
+          <div id="chartAsistencia" class="graficos-chart-canvas"></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2 class="empresa-subtitle">Distribuciones y rankings</h2>
+      </div>
+      <div class="graficos-bottom-grid">
+        <article class="graficos-chart-card">
+          <h3>Distribucion de stock</h3>
+          <div class="graficos-donut-wrap">
+            <div id="donutStock" class="graficos-donut"></div>
+            <ul id="legendStock" class="graficos-legend"></ul>
+          </div>
+        </article>
+
+        <article class="graficos-chart-card">
+          <h3>Distribucion de asistencia</h3>
+          <div class="graficos-donut-wrap">
+            <div id="donutAsistencia" class="graficos-donut"></div>
+            <ul id="legendAsistencia" class="graficos-legend"></ul>
+          </div>
+        </article>
+
+        <article class="graficos-chart-card">
+          <h3>Top productos</h3>
+          <div class="table-wrap">
+            <table class="table" id="tablaTopProductosGraficos">
+              <thead>
+                <tr>
+                  <th>Producto</th>
+                  <th>Cantidad</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="graficos-chart-card">
+          <h3>Top clientes</h3>
+          <div class="table-wrap">
+            <table class="table" id="tablaTopClientesGraficos">
+              <thead>
+                <tr>
+                  <th>Cliente</th>
+                  <th>Ventas</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </article>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const graficosState = {
+      empresaID: 0,
+      panel: null
+    };
+
+    const donutPalette = ["#16a34a", "#0ea5e9", "#f59e0b", "#ef4444", "#14b8a6", "#f97316", "#64748b"];
+
+    function getQueryParam(name) {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name);
+    }
+
+    function normalize(value) {
+      return String(value == null ? "" : value).trim();
+    }
+
+    function sanitize(value) {
+      return String(value == null ? "" : value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function num(value) {
+      const n = Number(value);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    function fmtMoney(value) {
+      return new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(num(value));
+    }
+
+    function fmtNumber(value) {
+      return new Intl.NumberFormat("es-CO", { maximumFractionDigits: 2 }).format(num(value));
+    }
+
+    function parseDate(raw) {
+      const val = normalize(raw);
+      if (!val) return null;
+      const dt = new Date(val.includes("T") ? val : val.replace(" ", "T"));
+      if (Number.isNaN(dt.getTime())) return null;
+      return dt;
+    }
+
+    function shortDate(raw) {
+      const dt = parseDate(raw);
+      if (!dt) return "-";
+      const mm = String(dt.getMonth() + 1).padStart(2, "0");
+      const dd = String(dt.getDate()).padStart(2, "0");
+      return mm + "-" + dd;
+    }
+
+    function setMsg(text, type) {
+      const el = document.getElementById("graficosMsg");
+      if (!el) return;
+      el.textContent = text || "";
+      el.classList.remove("msg-error", "msg-ok");
+      if (type === "error") {
+        el.classList.add("msg-error");
+      } else if (type === "ok") {
+        el.classList.add("msg-ok");
+      }
+    }
+
+    function setDefaultDateRange() {
+      const now = new Date();
+      const desde = new Date(now.getTime() - (1000 * 60 * 60 * 24 * 30));
+      const desdeInput = document.getElementById("fechaDesde");
+      const hastaInput = document.getElementById("fechaHasta");
+      if (desdeInput && !desdeInput.value) {
+        desdeInput.value = desde.toISOString().slice(0, 10);
+      }
+      if (hastaInput && !hastaInput.value) {
+        hastaInput.value = now.toISOString().slice(0, 10);
+      }
+    }
+
+    function getFilters() {
+      const desde = normalize(document.getElementById("fechaDesde")?.value);
+      const hasta = normalize(document.getElementById("fechaHasta")?.value);
+      let top = Number(document.getElementById("topN")?.value || 10);
+      if (!Number.isFinite(top) || top <= 0) top = 10;
+      if (top > 30) top = 30;
+      if (top < 3) top = 3;
+      return { desde, hasta, top };
+    }
+
+    async function fetchPanel() {
+      const { desde, hasta, top } = getFilters();
+      const params = new URLSearchParams();
+      params.set("action", "panel");
+      params.set("empresa_id", String(graficosState.empresaID));
+      params.set("max_points", "60");
+      params.set("top", String(top));
+      if (desde) params.set("desde", desde);
+      if (hasta) params.set("hasta", hasta);
+
+      const resp = await fetch("/api/empresa/graficos_estadisticas?" + params.toString(), { credentials: "same-origin" });
+      if (!resp.ok) {
+        let detail = "";
+        try {
+          detail = await resp.text();
+        } catch (_) {
+          detail = "";
+        }
+        throw new Error(detail || "No se pudo cargar el panel de graficos.");
+      }
+      return resp.json();
+    }
+
+    function applySummary(panel) {
+      const resumen = document.getElementById("graficosResumen");
+      if (!resumen) return;
+      const desde = normalize(panel?.desde) || "sin limite";
+      const hasta = normalize(panel?.hasta) || "sin limite";
+      const generado = normalize(panel?.generado_en) || "-";
+      resumen.textContent = "Rango: " + desde + " a " + hasta + " | Generado: " + generado;
+    }
+
+    function applyKpis(panel) {
+      const tablero = panel?.tablero || {};
+      const operativo = tablero.operativo || {};
+      const financiero = tablero.financiero || {};
+      const estadoResultados = tablero.estado_resultados || {};
+
+      const setText = (id, text) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = text;
+      };
+
+      setText("kpiVentas", fmtNumber(operativo.ventas_cerradas));
+      setText("kpiIngresos", fmtMoney(operativo.ingresos_ventas));
+      setText("kpiTicket", fmtMoney(operativo.ticket_promedio));
+      setText("kpiCompras", fmtNumber(operativo.compras_movimientos));
+      setText("kpiComprasCosto", fmtMoney(operativo.compras_costo));
+      setText("kpiClientes", fmtNumber(operativo.clientes_activos));
+      setText("kpiProductos", fmtNumber(operativo.productos_activos));
+      setText("kpiBajoMinimo", fmtNumber(operativo.productos_bajo_minimo));
+      setText("kpiFinIngresos", fmtMoney(financiero.ingresos));
+      setText("kpiFinEgresos", fmtMoney(financiero.egresos));
+      setText("kpiFinBalance", fmtMoney(financiero.balance));
+      setText("kpiUtilidad", fmtMoney(estadoResultados.utilidad_operacional));
+    }
+
+    function renderSingleBarChart(containerId, rows, valueKey, barClass, valueFormatter) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      if (!Array.isArray(rows) || rows.length === 0) {
+        container.innerHTML = '<p class="form-help">Sin datos para el rango seleccionado.</p>';
+        return;
+      }
+
+      const maxVal = Math.max(1, ...rows.map(row => num(row[valueKey])));
+      container.innerHTML = rows.map((row) => {
+        const value = num(row[valueKey]);
+        const percent = Math.max(4, Math.round((value / maxVal) * 100));
+        const label = sanitize(shortDate(row.fecha));
+        const title = sanitize((row.fecha || "-") + " | " + (valueFormatter ? valueFormatter(value) : fmtNumber(value)));
+        return '' +
+          '<div class="graficos-col" title="' + title + '">' +
+          '<div class="graficos-col-track">' +
+          '<span class="graficos-col-bar ' + barClass + '" style="height:' + percent + '%"></span>' +
+          '</div>' +
+          '<span class="graficos-col-label">' + label + '</span>' +
+          '</div>';
+      }).join('');
+    }
+
+    function renderDualBarChart(containerId, rows, leftKey, rightKey, leftClass, rightClass, leftFormatter, rightFormatter) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      if (!Array.isArray(rows) || rows.length === 0) {
+        container.innerHTML = '<p class="form-help">Sin datos para el rango seleccionado.</p>';
+        return;
+      }
+
+      const maxVal = Math.max(1, ...rows.map(row => Math.max(num(row[leftKey]), num(row[rightKey]))));
+      container.innerHTML = rows.map((row) => {
+        const left = num(row[leftKey]);
+        const right = num(row[rightKey]);
+        const leftPercent = Math.max(4, Math.round((left / maxVal) * 100));
+        const rightPercent = Math.max(4, Math.round((right / maxVal) * 100));
+        const label = sanitize(shortDate(row.fecha));
+        const title = sanitize((row.fecha || "-") + " | A: " + (leftFormatter ? leftFormatter(left) : fmtNumber(left)) + " | B: " + (rightFormatter ? rightFormatter(right) : fmtNumber(right)));
+        return '' +
+          '<div class="graficos-col" title="' + title + '">' +
+          '<div class="graficos-col-pair">' +
+          '<span class="graficos-col-bar ' + leftClass + '" style="height:' + leftPercent + '%"></span>' +
+          '<span class="graficos-col-bar ' + rightClass + '" style="height:' + rightPercent + '%"></span>' +
+          '</div>' +
+          '<span class="graficos-col-label">' + label + '</span>' +
+          '</div>';
+      }).join('');
+    }
+
+    function setMeta(id, text) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = text || "";
+    }
+
+    function renderDonut(donutId, legendId, items) {
+      const donut = document.getElementById(donutId);
+      const legend = document.getElementById(legendId);
+      if (!donut || !legend) return;
+
+      if (!Array.isArray(items) || items.length === 0) {
+        donut.style.background = "rgba(255,255,255,0.06)";
+        donut.textContent = "0";
+        legend.innerHTML = '<li class="graficos-legend-empty">Sin datos</li>';
+        return;
+      }
+
+      const total = items.reduce((acc, item) => acc + num(item.value), 0);
+      if (total <= 0) {
+        donut.style.background = "rgba(255,255,255,0.06)";
+        donut.textContent = "0";
+        legend.innerHTML = '<li class="graficos-legend-empty">Sin datos</li>';
+        return;
+      }
+
+      let cursor = 0;
+      const gradientParts = [];
+      const legendRows = [];
+      items.forEach((item, idx) => {
+        const value = num(item.value);
+        const pct = (value / total) * 100;
+        const color = donutPalette[idx % donutPalette.length];
+        const start = cursor;
+        const end = cursor + pct;
+        cursor = end;
+        gradientParts.push(color + " " + start.toFixed(2) + "% " + end.toFixed(2) + "%");
+
+        const label = sanitize(item.label || item.key || "-");
+        legendRows.push('' +
+          '<li class="graficos-legend-item">' +
+          '<span class="graficos-legend-dot" style="background:' + color + '"></span>' +
+          '<span class="graficos-legend-label">' + label + '</span>' +
+          '<strong>' + fmtNumber(value) + ' (' + pct.toFixed(1) + '%)</strong>' +
+          '</li>');
+      });
+
+      donut.style.background = "conic-gradient(" + gradientParts.join(",") + ")";
+      donut.textContent = fmtNumber(total);
+      legend.innerHTML = legendRows.join('');
+    }
+
+    function renderTopProductos(rows) {
+      const tbody = document.querySelector("#tablaTopProductosGraficos tbody");
+      if (!tbody) return;
+      if (!Array.isArray(rows) || rows.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3">Sin datos</td></tr>';
+        return;
+      }
+      tbody.innerHTML = rows.map((row) => {
+        return '' +
+          '<tr>' +
+          '<td>' + sanitize(row.producto || '-') + '</td>' +
+          '<td>' + fmtNumber(row.cantidad) + '</td>' +
+          '<td>' + fmtMoney(row.total) + '</td>' +
+          '</tr>';
+      }).join('');
+    }
+
+    function renderTopClientes(rows) {
+      const tbody = document.querySelector("#tablaTopClientesGraficos tbody");
+      if (!tbody) return;
+      if (!Array.isArray(rows) || rows.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3">Sin datos</td></tr>';
+        return;
+      }
+      tbody.innerHTML = rows.map((row) => {
+        return '' +
+          '<tr>' +
+          '<td>' + sanitize(row.cliente || '-') + '</td>' +
+          '<td>' + fmtNumber(row.ventas) + '</td>' +
+          '<td>' + fmtMoney(row.total) + '</td>' +
+          '</tr>';
+      }).join('');
+    }
+
+    function renderPanel(panel) {
+      graficosState.panel = panel;
+      applySummary(panel);
+      applyKpis(panel);
+
+      const ventas = panel?.series?.ventas || [];
+      const finanzas = panel?.series?.finanzas || [];
+      const compras = panel?.series?.compras || [];
+      const asistencia = panel?.series?.asistencia || [];
+
+      renderSingleBarChart("chartVentas", ventas, "total", "bar-sales", fmtMoney);
+      renderDualBarChart("chartFinanzas", finanzas, "ingresos", "egresos", "bar-income", "bar-expense", fmtMoney, fmtMoney);
+      renderSingleBarChart("chartCompras", compras, "costo", "bar-purchase", fmtMoney);
+      renderDualBarChart("chartAsistencia", asistencia, "presentes", "ausentes", "bar-attendance", "bar-absence", fmtNumber, fmtNumber);
+
+      const totalVentas = ventas.reduce((acc, row) => acc + num(row.ventas), 0);
+      const totalComprasMov = compras.reduce((acc, row) => acc + num(row.movimientos), 0);
+      const totalTardanzas = asistencia.reduce((acc, row) => acc + num(row.tardanzas), 0);
+      const totalHoras = asistencia.reduce((acc, row) => acc + num(row.horas), 0);
+      const balanceSerie = finanzas.reduce((acc, row) => acc + (num(row.ingresos) - num(row.egresos)), 0);
+
+      setMeta("metaVentas", "Dias: " + ventas.length + " | Ventas: " + fmtNumber(totalVentas));
+      setMeta("metaFinanzas", "Dias: " + finanzas.length + " | Balance acumulado serie: " + fmtMoney(balanceSerie));
+      setMeta("metaCompras", "Dias: " + compras.length + " | Movimientos: " + fmtNumber(totalComprasMov));
+      setMeta("metaAsistencia", "Dias: " + asistencia.length + " | Tardanzas: " + fmtNumber(totalTardanzas) + " | Horas: " + fmtNumber(totalHoras));
+
+      renderDonut("donutStock", "legendStock", panel?.distribuciones?.stock_estado || []);
+      renderDonut("donutAsistencia", "legendAsistencia", panel?.distribuciones?.asistencia_estado || []);
+      renderTopProductos(panel?.rankings?.top_productos || []);
+      renderTopClientes(panel?.rankings?.top_clientes || []);
+    }
+
+    async function loadPanel() {
+      setMsg("Cargando graficos y estadisticas...", "");
+      try {
+        const panel = await fetchPanel();
+        renderPanel(panel);
+        setMsg("Panel actualizado correctamente.", "ok");
+      } catch (err) {
+        console.error(err);
+        setMsg(err && err.message ? err.message : "Error al cargar graficos y estadisticas.", "error");
+      }
+    }
+
+    function bindEvents() {
+      const btnAplicar = document.getElementById("btnAplicarFiltro");
+      const btnActualizar = document.getElementById("btnActualizarPanel");
+      if (btnAplicar) {
+        btnAplicar.addEventListener("click", loadPanel);
+      }
+      if (btnActualizar) {
+        btnActualizar.addEventListener("click", loadPanel);
+      }
+      const topInput = document.getElementById("topN");
+      if (topInput) {
+        topInput.addEventListener("change", loadPanel);
+      }
+    }
+
+    function init() {
+      const empresaRaw = normalize(getQueryParam("empresa_id") || getQueryParam("id"));
+      const empresaID = Number(empresaRaw);
+      if (!Number.isFinite(empresaID) || empresaID <= 0) {
+        setMsg("empresa_id es obligatorio para cargar este modulo.", "error");
+        return;
+      }
+      graficosState.empresaID = empresaID;
+      setDefaultDateRange();
+      bindEvents();
+      loadPanel();
+    }
+
+    init();
+  </script>
+</body>
+</html>

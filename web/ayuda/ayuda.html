@@ -33,8 +33,12 @@
         <li>Panel super administrador: <a href="/super_administrador.html">/super_administrador.html</a></li>
         <li>Panel de empresa: <a href="/administrar_empresa.html">/administrar_empresa.html</a></li>
         <li>Módulo de productos e inventario: <a href="/administrar_empresa/administrar_productos.html">/administrar_empresa/administrar_productos.html</a></li>
+        <li>Módulo de combos de productos: <a href="/administrar_empresa/combos_productos.html">/administrar_empresa/combos_productos.html</a></li>
+        <li>Módulo de códigos de descuento: <a href="/administrar_empresa/codigos_de_descuento.html">/administrar_empresa/codigos_de_descuento.html</a></li>
         <li>Módulo de carrito: <a href="/administrar_empresa/carrito_de_compras.html">/administrar_empresa/carrito_de_compras.html</a></li>
+        <li>Módulo de asistencia de empleados: <a href="/administrar_empresa/asistencia_empleados.html">/administrar_empresa/asistencia_empleados.html</a></li>
         <li>Módulo de reportes: <a href="/administrar_empresa/reportes.html">/administrar_empresa/reportes.html</a></li>
+        <li>Módulo de gráficos y estadísticas: <a href="/administrar_empresa/graficos_estadisticas.html">/administrar_empresa/graficos_estadisticas.html</a></li>
         <li>Configuración de empresa: <a href="/administrar_empresa/configuracion.html">/administrar_empresa/configuracion.html</a></li>
       </ul>
     </section>
@@ -133,8 +137,8 @@
       <p class="form-help" style="margin-top:0;">Ruta: <a href="/administrar_empresa/facturacion_electronica.html">/administrar_empresa/facturacion_electronica.html</a></p>
       <ol>
         <li>Configura país, resolución y datos fiscales por empresa.</li>
-        <li>Ejecuta emitir, anular o nota crédito según ciclo documental.</li>
-        <li>Valida número legal y código de validación en la respuesta.</li>
+        <li>Ejecuta emitir, anular o nota crédito según ciclo documental (en emitir usa cliente_id o cliente_email para despacho automático).</li>
+        <li>Valida número legal, código de validación y estado de envío al cliente en la respuesta.</li>
       </ol>
 
       <h4 style="margin:12px 0 6px 0;">12) Finanzas</h4>
@@ -216,6 +220,38 @@
         <li>Asigna prioridades y estado de ejecución.</li>
         <li>Monitorea cumplimiento de actividades del equipo.</li>
       </ol>
+
+      <h4 style="margin:12px 0 6px 0;">22) Asistencia de empleados</h4>
+      <p class="form-help" style="margin-top:0;">Ruta: <a href="/administrar_empresa/asistencia_empleados.html">/administrar_empresa/asistencia_empleados.html</a></p>
+      <ol>
+        <li>Registra asistencia diaria por empleado (fecha, turno y estado).</li>
+        <li>Marca entrada y salida para calcular horas trabajadas del turno.</li>
+        <li>Aplica activación/desactivación y filtra por rango de fechas para control operativo.</li>
+      </ol>
+
+      <h4 style="margin:12px 0 6px 0;">23) Gráficos y estadísticas</h4>
+      <p class="form-help" style="margin-top:0;">Ruta: <a href="/administrar_empresa/graficos_estadisticas.html">/administrar_empresa/graficos_estadisticas.html</a></p>
+      <ol>
+        <li>Define rango de fechas y cantidad de elementos top para el análisis visual.</li>
+        <li>Revisa series de ventas, finanzas, compras y asistencia para detectar tendencias.</li>
+        <li>Analiza distribuciones y rankings para priorizar decisiones operativas y comerciales.</li>
+      </ol>
+
+      <h4 style="margin:12px 0 6px 0;">24) Combos de productos</h4>
+      <p class="form-help" style="margin-top:0;">Ruta: <a href="/administrar_empresa/combos_productos.html">/administrar_empresa/combos_productos.html</a></p>
+      <ol>
+        <li>Crea un combo con nombre, precio único e impuesto de venta.</li>
+        <li>Agrega ingredientes del catálogo de productos con sus cantidades por receta.</li>
+        <li>Usa el combo en carrito como <strong>tipo item = combo</strong> para descontar inventario por ingrediente automáticamente.</li>
+      </ol>
+
+      <h4 style="margin:12px 0 6px 0;">25) Códigos de descuento</h4>
+      <p class="form-help" style="margin-top:0;">Ruta: <a href="/administrar_empresa/codigos_de_descuento.html">/administrar_empresa/codigos_de_descuento.html</a></p>
+      <ol>
+        <li>Crea códigos promocionales por empresa con tipo de descuento en valor fijo o porcentaje.</li>
+        <li>Configura monto mínimo, fecha de vencimiento y usos máximos para control comercial.</li>
+        <li>Aplica el código en el cierre de carrito y valida método de pago según reglas operativas.</li>
+      </ol>
     </section>
 
     <section id="menu-apis" class="card empresa-section">
@@ -236,6 +272,7 @@
           </thead>
           <tbody>
             <tr><td>GET/POST/PUT/DELETE</td><td>/api/empresa/productos</td><td>CRUD de productos por empresa</td></tr>
+            <tr><td>GET/POST/PUT/DELETE</td><td>/api/empresa/combos_productos</td><td>CRUD de combos con receta de ingredientes</td></tr>
             <tr><td>POST</td><td>/api/empresa/productos/imagen</td><td>Carga imagen por producto</td></tr>
             <tr><td>GET/POST/PUT/DELETE</td><td>/api/empresa/categorias_productos</td><td>Categorías de productos</td></tr>
             <tr><td>GET</td><td>/api/empresa/inventario/existencias</td><td>Stock por bodega</td></tr>
@@ -259,8 +296,9 @@
           <tbody>
             <tr><td>GET/POST/PUT/DELETE</td><td>/api/empresa/carritos_compra</td><td>CRUD de carritos por empresa</td></tr>
             <tr><td>GET/POST/PUT/DELETE</td><td>/api/empresa/carritos_compra/items</td><td>CRUD de items en carrito</td></tr>
+            <tr><td>GET/POST/PUT/DELETE</td><td>/api/empresa/codigos_de_descuento</td><td>CRUD y validación de códigos de descuento por empresa</td></tr>
             <tr><td>PUT?action=activar_estacion</td><td>/api/empresa/carritos_compra</td><td>Activación de carrito de estación</td></tr>
-            <tr><td>PUT?action=pagar_estacion</td><td>/api/empresa/carritos_compra</td><td>Cierre/pago de carrito</td></tr>
+            <tr><td>PUT?action=pagar_estacion</td><td>/api/empresa/carritos_compra</td><td>Cierre/pago con validación de efectivo, tarjeta crédito, tarjeta débito o código de descuento</td></tr>
           </tbody>
         </table>
       </div>
@@ -277,7 +315,24 @@
           </thead>
           <tbody>
             <tr><td>GET/POST/PUT</td><td>/api/empresa/configuracion_avanzada</td><td>Configuración operativa y avanzada por empresa</td></tr>
-            <tr><td>GET/POST/PUT</td><td>/api/empresa/facturacion_electronica</td><td>Configuración FE por país y empresa</td></tr>
+            <tr><td>GET/POST/PUT</td><td>/api/empresa/facturacion_electronica</td><td>Configuración FE por país y ciclo documental con respuesta de envío automático al cliente en emisión</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 style="margin:14px 0 8px 0;">Reportes y analítica</h3>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Método</th>
+              <th>Endpoint</th>
+              <th>Descripción</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>GET</td><td>/api/empresa/reportes</td><td>Reportes por datasets y exportaciones multi-formato</td></tr>
+            <tr><td>GET</td><td>/api/empresa/graficos_estadisticas</td><td>Series gráficas, rankings y distribuciones operativas por empresa</td></tr>
           </tbody>
         </table>
       </div>
@@ -289,6 +344,7 @@
       </div>
       <ul>
         <li>El inventario se administra por empresa con bodegas, movimientos y existencias separadas por empresa_id.</li>
+        <li>Los combos permiten vender a precio único y mantener control de stock por ingrediente (receta).</li>
         <li>El módulo de reportes consolida ventas cerradas, compras de inventario y stock actual.</li>
         <li>Los reportes deben consumirse siempre con empresa_id para no mezclar datos entre empresas.</li>
       </ul>
@@ -300,6 +356,9 @@
       </div>
       <ul>
         <li>El carrito permite agregar productos por catálogo o por lectura de código de barras/SKU.</li>
+        <li>También permite agregar combos; el descuento de inventario se realiza por cada ingrediente del combo.</li>
+        <li>El cierre de carrito valida método de pago y exige referencia para pagos con tarjeta.</li>
+        <li>El pago con código de descuento valida vigencia, monto mínimo y usos disponibles del código.</li>
         <li>Al leer un código válido, el sistema incrementa cantidad o crea el item automáticamente.</li>
         <li>El proceso descuenta inventario del producto asociado respetando el contexto de empresa.</li>
       </ul>

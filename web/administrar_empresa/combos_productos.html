@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Combos de productos</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container">
+    <div class="page-header">
+      <h1 id="pageTitle">Combos de productos</h1>
+      <button id="nuevoComboBtn" class="btn add" type="button">Nuevo combo</button>
+    </div>
+
+    <p class="form-help" style="margin:0 0 12px 0;">
+      Define recetas de combos con precio unico. Al vender un combo en el carrito, el inventario se descuenta automaticamente por ingrediente.
+    </p>
+
+    <form id="comboForm" class="form" style="display:none;">
+      <input type="hidden" id="comboId">
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Nombre del combo</label>
+          <input id="comboNombre" class="form-input" required placeholder="Ej: Plato ejecutivo">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Codigo</label>
+          <input id="comboCodigo" class="form-input" placeholder="Opcional">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Precio de venta</label>
+          <input id="comboPrecio" type="number" min="0" step="0.01" class="form-input" value="0" required>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Impuesto %</label>
+          <input id="comboImpuesto" type="number" min="0" max="100" step="0.01" class="form-input" value="0">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Unidad</label>
+          <input id="comboUnidad" class="form-input" value="combo" placeholder="combo">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Descripcion</label>
+          <textarea id="comboDescripcion" class="form-textarea" placeholder="Opcional"></textarea>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Observaciones</label>
+          <textarea id="comboObservaciones" class="form-textarea" placeholder="Opcional"></textarea>
+        </div>
+      </div>
+
+      <div class="card empresa-section" style="margin-top:10px;">
+        <div class="empresa-section-header">
+          <h3 style="margin:0;">Ingredientes del combo</h3>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Producto ingrediente</label>
+            <select id="ingredienteProducto" class="form-input"></select>
+          </div>
+          <div class="form-col" style="max-width:180px;">
+            <label class="form-label">Cantidad</label>
+            <input id="ingredienteCantidad" type="number" min="0.01" step="0.01" class="form-input" value="1">
+          </div>
+          <div class="form-col" style="max-width:180px;">
+            <label class="form-label">Unidad</label>
+            <input id="ingredienteUnidad" class="form-input" placeholder="unidad">
+          </div>
+          <div class="form-col" style="max-width:220px;display:flex;align-items:flex-end;">
+            <button id="agregarIngredienteBtn" type="button" class="btn" style="width:100%;">Agregar ingrediente</button>
+          </div>
+        </div>
+
+        <div id="ingredientesList" class="table-wrap" style="margin-top:10px;">Sin ingredientes agregados.</div>
+      </div>
+
+      <div class="form-actions" style="margin-top:12px;">
+        <button type="submit" id="guardarComboBtn" class="btn">Guardar combo</button>
+        <button type="button" id="cancelarComboBtn" class="btn secondary">Cancelar</button>
+      </div>
+      <div id="comboMsg" class="form-help"></div>
+    </form>
+
+    <div id="comboSearchBlock" class="form" style="margin-top:14px;">
+      <div class="form-row" style="margin-bottom:0;">
+        <div class="form-col">
+          <label class="form-label">Buscar combo</label>
+          <input id="buscarCombo" class="form-input" placeholder="Buscar por nombre o codigo">
+        </div>
+        <div class="form-col" style="max-width:180px;display:flex;align-items:flex-end;">
+          <button id="buscarComboBtn" type="button" class="btn secondary" style="width:100%;">Buscar</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="combosList" style="margin-top:14px;">Cargando combos...</div>
+  </div>
+
+  <script>
+    const state = {
+      empresaID: 0,
+      q: '',
+      combos: [],
+      productos: [],
+      draftIngredientes: []
+    };
+
+    function getQueryParam(name) {
+      const p = new URLSearchParams(window.location.search);
+      return p.get(name);
+    }
+
+    function normalize(v) {
+      return (v || '').toString().trim();
+    }
+
+    function toNumber(v, fallback) {
+      const n = Number(v);
+      if (!Number.isFinite(n)) return fallback;
+      return n;
+    }
+
+    function round2(v) {
+      return Math.round(Number(v || 0) * 100) / 100;
+    }
+
+    function setMessage(id, text, isError) {
+      const el = document.getElementById(id);
+      el.textContent = text || '';
+      el.style.color = isError ? '#ef5350' : '';
+    }
+
+    async function ensureOk(res) {
+      if (res.ok) return;
+      const t = await res.text();
+      throw new Error(t || ('HTTP ' + res.status));
+    }
+
+    function escapeHtml(v) {
+      return String(v == null ? '' : v)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function formatMoney(v) {
+      return Number(v || 0).toFixed(2);
+    }
+
+    function fillProductosSelect() {
+      const sel = document.getElementById('ingredienteProducto');
+      sel.innerHTML = '';
+      if (!state.productos.length) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = 'Sin productos activos';
+        sel.appendChild(opt);
+        sel.disabled = true;
+        return;
+      }
+
+      sel.disabled = false;
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.textContent = '-- Selecciona producto ingrediente --';
+      sel.appendChild(placeholder);
+
+      state.productos.forEach(function(p) {
+        const opt = document.createElement('option');
+        opt.value = String(p.id);
+        const code = normalize(p.codigo_barras) || normalize(p.sku) || '-';
+        opt.textContent = (normalize(p.nombre) || 'Producto') + ' | ' + code + ' | stock ' + Number(p.stock_total || 0).toFixed(2);
+        sel.appendChild(opt);
+      });
+    }
+
+    async function loadProductosActivos() {
+      const url = new URL('/api/empresa/productos', window.location.origin);
+      url.searchParams.set('empresa_id', String(state.empresaID));
+      url.searchParams.set('estado', 'activo');
+      url.searchParams.set('limit', '600');
+      const res = await fetch(url.pathname + url.search);
+      await ensureOk(res);
+      const rows = await res.json();
+      state.productos = Array.isArray(rows) ? rows : [];
+      fillProductosSelect();
+    }
+
+    function getProductoByID(productoID) {
+      return state.productos.find(function(p) { return Number(p.id) === Number(productoID); }) || null;
+    }
+
+    function resolveIngredienteNombre(item) {
+      const fromCatalog = getProductoByID(item.producto_id);
+      if (fromCatalog && normalize(fromCatalog.nombre)) {
+        return normalize(fromCatalog.nombre);
+      }
+      return normalize(item.producto_nombre) || ('Producto #' + Number(item.producto_id || 0));
+    }
+
+    function renderIngredientesDraft() {
+      const box = document.getElementById('ingredientesList');
+      if (!state.draftIngredientes.length) {
+        box.textContent = 'Sin ingredientes agregados.';
+        return;
+      }
+
+      const table = document.createElement('table');
+      table.className = 'table';
+      table.innerHTML = '<thead><tr>' +
+        '<th>Producto</th>' +
+        '<th>Cantidad</th>' +
+        '<th>Unidad</th>' +
+        '<th>Acciones</th>' +
+        '</tr></thead>';
+
+      const tbody = document.createElement('tbody');
+      state.draftIngredientes.forEach(function(item, idx) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td>' + escapeHtml(resolveIngredienteNombre(item)) + '</td>' +
+          '<td>' + Number(item.cantidad || 0).toFixed(4) + '</td>' +
+          '<td>' + escapeHtml(normalize(item.unidad_medida) || 'unidad') + '</td>' +
+          '<td class="actions"><button class="btn danger removeIngrediente" data-idx="' + idx + '">Quitar</button></td>';
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+
+      box.innerHTML = '';
+      box.appendChild(table);
+
+      document.querySelectorAll('.removeIngrediente').forEach(function(btn) {
+        btn.onclick = function() {
+          const idx = Number(btn.getAttribute('data-idx'));
+          if (idx < 0 || idx >= state.draftIngredientes.length) return;
+          state.draftIngredientes.splice(idx, 1);
+          renderIngredientesDraft();
+        };
+      });
+    }
+
+    function addIngredienteDraft() {
+      const productoID = Number(document.getElementById('ingredienteProducto').value || 0);
+      const cantidad = toNumber(document.getElementById('ingredienteCantidad').value, 0);
+      const unidadInput = normalize(document.getElementById('ingredienteUnidad').value);
+
+      if (productoID <= 0) {
+        setMessage('comboMsg', 'Selecciona un producto ingrediente válido.', true);
+        return;
+      }
+      if (cantidad <= 0) {
+        setMessage('comboMsg', 'La cantidad del ingrediente debe ser mayor que cero.', true);
+        return;
+      }
+
+      const producto = getProductoByID(productoID);
+      const unidad = unidadInput || normalize(producto && producto.unidad_medida) || 'unidad';
+
+      const existing = state.draftIngredientes.find(function(it) {
+        return Number(it.producto_id) === productoID;
+      });
+
+      if (existing) {
+        existing.cantidad = round2(Number(existing.cantidad || 0) + cantidad);
+        if (!normalize(existing.unidad_medida)) {
+          existing.unidad_medida = unidad;
+        }
+      } else {
+        state.draftIngredientes.push({
+          producto_id: productoID,
+          producto_nombre: normalize(producto && producto.nombre),
+          cantidad: round2(cantidad),
+          unidad_medida: unidad
+        });
+      }
+
+      document.getElementById('ingredienteCantidad').value = '1';
+      document.getElementById('ingredienteUnidad').value = '';
+      renderIngredientesDraft();
+      setMessage('comboMsg', 'Ingrediente agregado al combo.', false);
+    }
+
+    function resetComboForm(hide) {
+      document.getElementById('comboId').value = '';
+      document.getElementById('comboNombre').value = '';
+      document.getElementById('comboCodigo').value = '';
+      document.getElementById('comboPrecio').value = '0';
+      document.getElementById('comboImpuesto').value = '0';
+      document.getElementById('comboUnidad').value = 'combo';
+      document.getElementById('comboDescripcion').value = '';
+      document.getElementById('comboObservaciones').value = '';
+      document.getElementById('guardarComboBtn').textContent = 'Guardar combo';
+      state.draftIngredientes = [];
+      renderIngredientesDraft();
+      setMessage('comboMsg', '', false);
+      if (hide) {
+        document.getElementById('comboForm').style.display = 'none';
+      }
+    }
+
+    function openCreateComboForm() {
+      resetComboForm(false);
+      document.getElementById('comboForm').style.display = '';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function buildComboPayload() {
+      return {
+        id: Number(document.getElementById('comboId').value || 0),
+        empresa_id: Number(state.empresaID),
+        codigo: normalize(document.getElementById('comboCodigo').value),
+        nombre: normalize(document.getElementById('comboNombre').value),
+        descripcion: normalize(document.getElementById('comboDescripcion').value),
+        unidad_medida: normalize(document.getElementById('comboUnidad').value) || 'combo',
+        precio: toNumber(document.getElementById('comboPrecio').value, 0),
+        impuesto_porcentaje: toNumber(document.getElementById('comboImpuesto').value, 0),
+        observaciones: normalize(document.getElementById('comboObservaciones').value),
+        ingredientes: state.draftIngredientes.map(function(it) {
+          return {
+            producto_id: Number(it.producto_id || 0),
+            cantidad: Number(it.cantidad || 0),
+            unidad_medida: normalize(it.unidad_medida) || 'unidad'
+          };
+        })
+      };
+    }
+
+    async function loadComboForEdit(comboID) {
+      const url = new URL('/api/empresa/combos_productos', window.location.origin);
+      url.searchParams.set('empresa_id', String(state.empresaID));
+      url.searchParams.set('id', String(comboID));
+      const res = await fetch(url.pathname + url.search);
+      await ensureOk(res);
+      return await res.json();
+    }
+
+    function renderCombos() {
+      const box = document.getElementById('combosList');
+      if (!state.combos.length) {
+        box.textContent = 'No hay combos registrados para esta empresa.';
+        return;
+      }
+
+      const table = document.createElement('table');
+      table.className = 'table';
+      table.innerHTML = '<thead><tr>' +
+        '<th>ID</th>' +
+        '<th>Código</th>' +
+        '<th>Nombre</th>' +
+        '<th>Precio</th>' +
+        '<th>Imp %</th>' +
+        '<th>Ingredientes</th>' +
+        '<th>Estado</th>' +
+        '<th>Acciones</th>' +
+        '</tr></thead>';
+
+      const tbody = document.createElement('tbody');
+      state.combos.forEach(function(c) {
+        const estado = normalize(c.estado) || 'activo';
+        const toggleLabel = estado === 'activo' ? 'Desactivar' : 'Activar';
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td>' + Number(c.id || 0) + '</td>' +
+          '<td>' + escapeHtml(normalize(c.codigo) || '-') + '</td>' +
+          '<td>' + escapeHtml(normalize(c.nombre) || '-') + '</td>' +
+          '<td>' + formatMoney(c.precio) + '</td>' +
+          '<td>' + Number(c.impuesto_porcentaje || 0).toFixed(2) + '</td>' +
+          '<td>' + Number(c.ingredientes_count || 0) + '</td>' +
+          '<td>' + escapeHtml(estado) + '</td>' +
+          '<td class="actions">' +
+            '<button class="btn secondary editCombo" data-id="' + Number(c.id || 0) + '">Editar</button> ' +
+            '<button class="btn toggleCombo" data-id="' + Number(c.id || 0) + '" data-estado="' + escapeHtml(estado) + '">' + toggleLabel + '</button> ' +
+            '<button class="btn danger delCombo" data-id="' + Number(c.id || 0) + '">Eliminar</button>' +
+          '</td>';
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+
+      box.innerHTML = '';
+      box.appendChild(table);
+
+      document.querySelectorAll('.editCombo').forEach(function(btn) {
+        btn.onclick = async function() {
+          const comboID = Number(btn.getAttribute('data-id'));
+          if (comboID <= 0) return;
+          try {
+            const combo = await loadComboForEdit(comboID);
+            document.getElementById('comboForm').style.display = '';
+            document.getElementById('comboId').value = String(combo.id || '');
+            document.getElementById('comboNombre').value = normalize(combo.nombre);
+            document.getElementById('comboCodigo').value = normalize(combo.codigo);
+            document.getElementById('comboPrecio').value = Number(combo.precio || 0);
+            document.getElementById('comboImpuesto').value = Number(combo.impuesto_porcentaje || 0);
+            document.getElementById('comboUnidad').value = normalize(combo.unidad_medida) || 'combo';
+            document.getElementById('comboDescripcion').value = normalize(combo.descripcion);
+            document.getElementById('comboObservaciones').value = normalize(combo.observaciones);
+            document.getElementById('guardarComboBtn').textContent = 'Actualizar combo';
+            state.draftIngredientes = (combo.ingredientes || []).map(function(it) {
+              return {
+                producto_id: Number(it.producto_id || 0),
+                producto_nombre: normalize(it.producto_nombre),
+                cantidad: Number(it.cantidad || 0),
+                unidad_medida: normalize(it.unidad_medida) || 'unidad'
+              };
+            }).filter(function(it) { return it.producto_id > 0 && it.cantidad > 0; });
+            renderIngredientesDraft();
+            setMessage('comboMsg', '', false);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          } catch (err) {
+            setMessage('comboMsg', err.message || 'No se pudo cargar el combo para editar.', true);
+          }
+        };
+      });
+
+      document.querySelectorAll('.toggleCombo').forEach(function(btn) {
+        btn.onclick = async function() {
+          const comboID = Number(btn.getAttribute('data-id'));
+          const estadoActual = normalize(btn.getAttribute('data-estado')) || 'activo';
+          const action = estadoActual === 'activo' ? 'desactivar' : 'activar';
+          try {
+            const res = await fetch('/api/empresa/combos_productos?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(comboID) + '&action=' + encodeURIComponent(action), {
+              method: 'PUT'
+            });
+            await ensureOk(res);
+            await loadCombos();
+          } catch (err) {
+            setMessage('comboMsg', err.message || 'No se pudo cambiar el estado del combo.', true);
+          }
+        };
+      });
+
+      document.querySelectorAll('.delCombo').forEach(function(btn) {
+        btn.onclick = async function() {
+          const comboID = Number(btn.getAttribute('data-id'));
+          if (comboID <= 0) return;
+          if (!confirm('Eliminar este combo y su receta?')) return;
+          try {
+            const res = await fetch('/api/empresa/combos_productos?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(comboID), {
+              method: 'DELETE'
+            });
+            await ensureOk(res);
+            await loadCombos();
+            setMessage('comboMsg', 'Combo eliminado.', false);
+          } catch (err) {
+            setMessage('comboMsg', err.message || 'No se pudo eliminar el combo.', true);
+          }
+        };
+      });
+    }
+
+    async function loadCombos() {
+      const url = new URL('/api/empresa/combos_productos', window.location.origin);
+      url.searchParams.set('empresa_id', String(state.empresaID));
+      url.searchParams.set('include_inactive', '1');
+      url.searchParams.set('limit', '300');
+      if (state.q) url.searchParams.set('q', state.q);
+      const res = await fetch(url.pathname + url.search);
+      await ensureOk(res);
+      const rows = await res.json();
+      state.combos = Array.isArray(rows) ? rows : [];
+      renderCombos();
+    }
+
+    document.getElementById('nuevoComboBtn').addEventListener('click', function() {
+      openCreateComboForm();
+    });
+
+    document.getElementById('cancelarComboBtn').addEventListener('click', function() {
+      resetComboForm(true);
+    });
+
+    document.getElementById('agregarIngredienteBtn').addEventListener('click', function() {
+      addIngredienteDraft();
+    });
+
+    document.getElementById('comboForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const payload = buildComboPayload();
+
+      if (!payload.nombre) {
+        setMessage('comboMsg', 'El nombre del combo es obligatorio.', true);
+        return;
+      }
+      if (payload.precio < 0) {
+        setMessage('comboMsg', 'El precio del combo no puede ser negativo.', true);
+        return;
+      }
+      if (payload.impuesto_porcentaje < 0 || payload.impuesto_porcentaje > 100) {
+        setMessage('comboMsg', 'El impuesto del combo debe estar entre 0 y 100.', true);
+        return;
+      }
+      if (!payload.ingredientes.length) {
+        setMessage('comboMsg', 'Debes agregar al menos un ingrediente al combo.', true);
+        return;
+      }
+
+      try {
+        const method = payload.id > 0 ? 'PUT' : 'POST';
+        const res = await fetch('/api/empresa/combos_productos', {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        await ensureOk(res);
+        resetComboForm(true);
+        await loadCombos();
+        setMessage('comboMsg', payload.id > 0 ? 'Combo actualizado.' : 'Combo creado.', false);
+      } catch (err) {
+        setMessage('comboMsg', err.message || 'No se pudo guardar el combo.', true);
+      }
+    });
+
+    document.getElementById('buscarComboBtn').addEventListener('click', async function() {
+      state.q = normalize(document.getElementById('buscarCombo').value);
+      try {
+        await loadCombos();
+      } catch (err) {
+        setMessage('comboMsg', err.message || 'Error buscando combos.', true);
+      }
+    });
+
+    document.getElementById('buscarCombo').addEventListener('keydown', function(e) {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      document.getElementById('buscarComboBtn').click();
+    });
+
+    (async function init() {
+      const empresaID = Number(getQueryParam('empresa_id') || 0);
+      if (!empresaID) {
+        document.getElementById('combosList').textContent = 'empresa_id requerido en la URL';
+        document.getElementById('nuevoComboBtn').disabled = true;
+        return;
+      }
+      state.empresaID = empresaID;
+
+      try {
+        await Promise.all([loadProductosActivos(), loadCombos()]);
+      } catch (err) {
+        document.getElementById('combosList').textContent = 'Error cargando combos';
+        setMessage('comboMsg', err.message || 'Error cargando combos', true);
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Códigos de descuento</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container">
+    <div class="page-header">
+      <h1 id="pageTitle">Códigos de descuento</h1>
+      <button id="addCodigoBtn" class="btn add">Nuevo código</button>
+    </div>
+
+    <p class="form-help" style="margin:0 0 12px 0;">
+      Administra promociones por empresa con vigencia, tope de usos y valor fijo o porcentaje.
+      Si dejas vacío el campo código, el sistema genera uno automáticamente.
+    </p>
+
+    <form id="codigoForm" class="form" style="display:none;">
+      <input type="hidden" id="codigoId">
+      <input type="hidden" id="empresaID">
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="codigoTexto">Código</label>
+          <input id="codigoTexto" class="form-input" placeholder="Ej: DSCTAB12 (opcional)">
+          <div class="form-help">Solo letras y números. Si está vacío se genera automáticamente.</div>
+        </div>
+        <div class="form-col" style="max-width:220px;display:flex;align-items:flex-end;">
+          <button type="button" id="generarCodigoBtn" class="btn secondary" style="width:100%;">Generar automático</button>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="tipoDescuento">Tipo de descuento</label>
+          <select id="tipoDescuento" class="form-input">
+            <option value="valor_fijo">Valor fijo</option>
+            <option value="porcentaje">Porcentaje</option>
+          </select>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="valorDescuento">Valor</label>
+          <input id="valorDescuento" type="number" min="0.01" step="0.01" class="form-input" value="0">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="monedaCodigo">Moneda</label>
+          <select id="monedaCodigo" class="form-input">
+            <option value="COP">COP</option>
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+          </select>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="montoMinimo">Monto mínimo de compra</label>
+          <input id="montoMinimo" type="number" min="0" step="0.01" class="form-input" value="0">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="usosMaximos">Usos máximos</label>
+          <input id="usosMaximos" type="number" min="1" step="1" class="form-input" value="1">
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="fechaVencimiento">Fecha de vencimiento</label>
+          <input id="fechaVencimiento" type="date" class="form-input">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="observacionesCodigo">Observaciones</label>
+          <textarea id="observacionesCodigo" class="form-textarea" placeholder="Opcional"></textarea>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button id="saveCodigoBtn" type="submit" class="btn">Guardar código</button>
+        <button id="cancelCodigoBtn" type="button" class="btn secondary">Cancelar</button>
+      </div>
+      <div id="codigoMsg" class="form-help"></div>
+    </form>
+
+    <div class="form" style="margin-top:14px;">
+      <div class="form-row" style="margin-bottom:0;">
+        <div class="form-col">
+          <label class="form-label" for="buscarCodigo">Buscar</label>
+          <input id="buscarCodigo" class="form-input" placeholder="Buscar por código u observación">
+        </div>
+        <div class="form-col" style="max-width:220px;display:flex;align-items:flex-end;gap:8px;">
+          <button id="buscarCodigoBtn" type="button" class="btn secondary" style="width:100%;">Buscar</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="codigosList" style="margin-top:14px;">Cargando códigos de descuento...</div>
+  </div>
+
+  <script>
+    const state = {
+      empresaID: 0,
+      codigos: [],
+      q: ''
+    };
+
+    function getQueryParam(name) {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name);
+    }
+
+    function normalize(v) {
+      return String(v == null ? '' : v).trim();
+    }
+
+    function toNumber(v, fallback) {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : fallback;
+    }
+
+    function setMessage(text, isError) {
+      const el = document.getElementById('codigoMsg');
+      el.textContent = text || '';
+      el.style.color = isError ? '#ef5350' : '';
+    }
+
+    async function ensureOk(res) {
+      if (res.ok) return;
+      const t = await res.text();
+      throw new Error(t || ('HTTP ' + res.status));
+    }
+
+    function normalizeCodigo(v) {
+      return normalize(v).toUpperCase().replace(/[^A-Z0-9]/g, '');
+    }
+
+    function generarCodigoCliente() {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let randomPart = '';
+      for (let i = 0; i < 4; i++) {
+        const idx = Math.floor(Math.random() * chars.length);
+        randomPart += chars[idx];
+      }
+      const d = new Date();
+      const yy = String(d.getFullYear()).slice(-2);
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return 'DSCT' + yy + mm + dd + randomPart;
+    }
+
+    function formatSQLiteDate(dateText) {
+      const raw = normalize(dateText);
+      if (!raw) return '-';
+      const iso = raw.replace(' ', 'T');
+      const dt = new Date(iso);
+      if (Number.isNaN(dt.getTime())) return raw;
+      return dt.toLocaleString();
+    }
+
+    function formatValor(item) {
+      const tipo = normalize(item.tipo_descuento).toLowerCase();
+      const valor = toNumber(item.valor, 0);
+      if (tipo === 'porcentaje') {
+        return valor.toFixed(2) + '%';
+      }
+      return (normalize(item.moneda) || 'COP') + ' ' + valor.toFixed(2);
+    }
+
+    function resetForm(hide) {
+      document.getElementById('codigoId').value = '';
+      document.getElementById('codigoTexto').value = '';
+      document.getElementById('tipoDescuento').value = 'valor_fijo';
+      document.getElementById('valorDescuento').value = '0';
+      document.getElementById('monedaCodigo').value = 'COP';
+      document.getElementById('montoMinimo').value = '0';
+      document.getElementById('usosMaximos').value = '1';
+      document.getElementById('fechaVencimiento').value = '';
+      document.getElementById('observacionesCodigo').value = '';
+      document.getElementById('saveCodigoBtn').textContent = 'Guardar código';
+      setMessage('', false);
+
+      if (hide) {
+        document.getElementById('codigoForm').style.display = 'none';
+        document.getElementById('addCodigoBtn').style.display = '';
+      }
+    }
+
+    function openFormForCreate() {
+      document.getElementById('codigoForm').style.display = '';
+      document.getElementById('addCodigoBtn').style.display = 'none';
+      resetForm(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function openFormForEdit(item) {
+      document.getElementById('codigoForm').style.display = '';
+      document.getElementById('addCodigoBtn').style.display = 'none';
+
+      document.getElementById('codigoId').value = String(item.id || '');
+      document.getElementById('codigoTexto').value = normalize(item.codigo);
+      document.getElementById('tipoDescuento').value = normalize(item.tipo_descuento) || 'valor_fijo';
+      document.getElementById('valorDescuento').value = toNumber(item.valor, 0);
+      document.getElementById('monedaCodigo').value = normalize(item.moneda) || 'COP';
+      document.getElementById('montoMinimo').value = toNumber(item.monto_minimo_compra, 0);
+      document.getElementById('usosMaximos').value = Math.max(1, toNumber(item.usos_maximos, 1));
+      document.getElementById('fechaVencimiento').value = normalize(item.fecha_vencimiento).slice(0, 10);
+      document.getElementById('observacionesCodigo').value = normalize(item.observaciones);
+      document.getElementById('saveCodigoBtn').textContent = 'Actualizar código';
+      setMessage('', false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function loadCodigos() {
+      const url = new URL('/api/empresa/codigos_de_descuento', window.location.origin);
+      url.searchParams.set('empresa_id', String(state.empresaID));
+      url.searchParams.set('include_inactive', '1');
+      if (state.q) {
+        url.searchParams.set('q', state.q);
+      }
+
+      const res = await fetch(url.pathname + url.search);
+      await ensureOk(res);
+      const rows = await res.json();
+      state.codigos = Array.isArray(rows) ? rows : [];
+      renderCodigos();
+    }
+
+    function renderCodigos() {
+      const box = document.getElementById('codigosList');
+      if (!state.codigos.length) {
+        box.textContent = 'No hay códigos registrados para esta empresa.';
+        return;
+      }
+
+      const table = document.createElement('table');
+      table.className = 'table';
+      table.innerHTML = '<thead><tr>' +
+        '<th>ID</th>' +
+        '<th>Código</th>' +
+        '<th>Tipo / valor</th>' +
+        '<th>Mínimo compra</th>' +
+        '<th>Usos</th>' +
+        '<th>Vence</th>' +
+        '<th>Estado</th>' +
+        '<th>Acciones</th>' +
+        '</tr></thead>';
+
+      const tbody = document.createElement('tbody');
+      state.codigos.forEach(function(item) {
+        const estado = normalize(item.estado) || 'activo';
+        const toggleText = estado === 'activo' ? 'Desactivar' : 'Activar';
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td>' + Number(item.id || 0) + '</td>' +
+          '<td>' + normalize(item.codigo) + '</td>' +
+          '<td>' + formatValor(item) + '</td>' +
+          '<td>' + (normalize(item.moneda) || 'COP') + ' ' + toNumber(item.monto_minimo_compra, 0).toFixed(2) + '</td>' +
+          '<td>' + Number(item.usos_actuales || 0) + ' / ' + Number(item.usos_maximos || 1) + '</td>' +
+          '<td>' + formatSQLiteDate(item.fecha_vencimiento) + '</td>' +
+          '<td>' + estado + '</td>' +
+          '<td class="actions">' +
+          '<button class="edit btn secondary" data-id="' + Number(item.id || 0) + '">Editar</button> ' +
+          '<button class="toggle btn" data-id="' + Number(item.id || 0) + '" data-estado="' + estado + '">' + toggleText + '</button> ' +
+          '<button class="del btn danger" data-id="' + Number(item.id || 0) + '">Eliminar</button>' +
+          '</td>';
+        tbody.appendChild(tr);
+      });
+
+      table.appendChild(tbody);
+      box.innerHTML = '';
+      box.appendChild(table);
+
+      document.querySelectorAll('.edit').forEach(function(btn) {
+        btn.onclick = function() {
+          const id = Number(btn.getAttribute('data-id'));
+          const item = state.codigos.find(function(x) { return Number(x.id) === id; });
+          if (!item) return;
+          openFormForEdit(item);
+        };
+      });
+
+      document.querySelectorAll('.toggle').forEach(function(btn) {
+        btn.onclick = async function() {
+          const id = Number(btn.getAttribute('data-id'));
+          const estadoActual = normalize(btn.getAttribute('data-estado'));
+          const action = estadoActual === 'activo' ? 'desactivar' : 'activar';
+          try {
+            const res = await fetch('/api/empresa/codigos_de_descuento?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(id) + '&action=' + encodeURIComponent(action), {
+              method: 'PUT'
+            });
+            await ensureOk(res);
+            await loadCodigos();
+            setMessage('Estado del código actualizado.', false);
+          } catch (err) {
+            setMessage(err.message || 'No se pudo actualizar el estado', true);
+          }
+        };
+      });
+
+      document.querySelectorAll('.del').forEach(function(btn) {
+        btn.onclick = async function() {
+          const id = Number(btn.getAttribute('data-id'));
+          if (!confirm('¿Eliminar código de descuento #' + id + '?')) return;
+          try {
+            const res = await fetch('/api/empresa/codigos_de_descuento?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(id), {
+              method: 'DELETE'
+            });
+            await ensureOk(res);
+            await loadCodigos();
+            setMessage('Código eliminado.', false);
+          } catch (err) {
+            setMessage(err.message || 'No se pudo eliminar el código', true);
+          }
+        };
+      });
+    }
+
+    document.getElementById('addCodigoBtn').onclick = function() {
+      openFormForCreate();
+    };
+
+    document.getElementById('cancelCodigoBtn').onclick = function() {
+      resetForm(true);
+    };
+
+    document.getElementById('generarCodigoBtn').onclick = function() {
+      document.getElementById('codigoTexto').value = generarCodigoCliente();
+    };
+
+    document.getElementById('buscarCodigoBtn').onclick = async function() {
+      state.q = normalize(document.getElementById('buscarCodigo').value);
+      try {
+        await loadCodigos();
+      } catch (err) {
+        setMessage(err.message || 'No se pudo buscar', true);
+      }
+    };
+
+    document.getElementById('buscarCodigo').addEventListener('keydown', function(e) {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      document.getElementById('buscarCodigoBtn').click();
+    });
+
+    document.getElementById('codigoForm').onsubmit = async function(e) {
+      e.preventDefault();
+
+      const id = Number(document.getElementById('codigoId').value || 0);
+      const tipo = normalize(document.getElementById('tipoDescuento').value) || 'valor_fijo';
+      const valor = toNumber(document.getElementById('valorDescuento').value, 0);
+      const usosMax = Math.max(1, Math.floor(toNumber(document.getElementById('usosMaximos').value, 1)));
+      const fechaVence = normalize(document.getElementById('fechaVencimiento').value);
+      const codigo = normalizeCodigo(document.getElementById('codigoTexto').value);
+
+      if (valor <= 0) {
+        setMessage('El valor del descuento debe ser mayor a cero.', true);
+        return;
+      }
+      if (tipo === 'porcentaje' && valor > 100) {
+        setMessage('El porcentaje no puede ser superior a 100.', true);
+        return;
+      }
+
+      const payload = {
+        id: id,
+        empresa_id: Number(state.empresaID),
+        codigo: codigo,
+        tipo_descuento: tipo,
+        valor: valor,
+        moneda: normalize(document.getElementById('monedaCodigo').value) || 'COP',
+        monto_minimo_compra: Math.max(0, toNumber(document.getElementById('montoMinimo').value, 0)),
+        usos_maximos: usosMax,
+        fecha_vencimiento: fechaVence,
+        observaciones: normalize(document.getElementById('observacionesCodigo').value)
+      };
+
+      try {
+        const method = id > 0 ? 'PUT' : 'POST';
+        const res = await fetch('/api/empresa/codigos_de_descuento', {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        await ensureOk(res);
+        await loadCodigos();
+        resetForm(true);
+        setMessage(id > 0 ? 'Código actualizado correctamente.' : 'Código creado correctamente.', false);
+      } catch (err) {
+        setMessage(err.message || 'No se pudo guardar el código', true);
+      }
+    };
+
+    (async function init() {
+      const empresaID = Number(getQueryParam('empresa_id') || 0);
+      if (!empresaID) {
+        document.getElementById('codigosList').textContent = 'empresa_id requerido en la URL';
+        document.getElementById('addCodigoBtn').disabled = true;
+        return;
+      }
+      state.empresaID = empresaID;
+      document.getElementById('empresaID').value = String(empresaID);
+
+      try {
+        const empresaRes = await fetch('/super/api/empresas?id=' + encodeURIComponent(empresaID));
+        if (empresaRes.ok) {
+          const empresa = await empresaRes.json();
+          if (empresa && empresa.nombre) {
+            document.getElementById('pageTitle').textContent = 'Códigos de descuento - ' + empresa.nombre;
+          }
+        }
+      } catch (_) {}
+
+      try {
+        await loadCodigos();
+      } catch (err) {
+        document.getElementById('codigosList').textContent = 'Error cargando códigos de descuento';
+        setMessage(err.message || 'Error cargando códigos de descuento', true);
+      }
+    })();
+  </script>
+</body>
+</html>

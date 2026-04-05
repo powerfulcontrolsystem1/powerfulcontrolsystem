@@ -146,10 +146,64 @@
             <input id="discountCode" class="form-input" placeholder="Ej: VIP10">
           </div>
           <div class="form-col">
+            <label class="form-label" for="paymentMethod">Método de pago</label>
+            <select id="paymentMethod" class="form-input">
+              <option value="efectivo">Efectivo</option>
+              <option value="tarjeta_credito">Tarjeta crédito</option>
+              <option value="tarjeta_debito">Tarjeta débito</option>
+              <option value="mixto">Pago mixto</option>
+              <option value="codigo_descuento">Código de descuento</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="paymentReference">Referencia de pago</label>
+            <input id="paymentReference" class="form-input" placeholder="Ej: AUT-9482 / últimos 4 dígitos">
+          </div>
+          <div class="form-col">
             <label class="form-label" for="devolucionMonto">Devolución (valor)</label>
             <input id="devolucionMonto" type="number" step="0.01" min="0" class="form-input" value="0">
           </div>
         </div>
+
+        <div id="mixedPaymentBlock" class="form-row" style="display:none;">
+          <div class="form-col">
+            <label class="form-label" for="mixedMethod1">Pago mixto 1 - Método</label>
+            <select id="mixedMethod1" class="form-input">
+              <option value="efectivo">Efectivo</option>
+              <option value="tarjeta_credito">Tarjeta crédito</option>
+              <option value="tarjeta_debito">Tarjeta débito</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="mixedAmount1">Pago mixto 1 - Monto</label>
+            <input id="mixedAmount1" type="number" step="0.01" min="0" class="form-input" value="0">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="mixedReference1">Pago mixto 1 - Referencia</label>
+            <input id="mixedReference1" class="form-input" placeholder="Obligatoria si es tarjeta">
+          </div>
+        </div>
+
+        <div id="mixedPaymentBlock2" class="form-row" style="display:none;">
+          <div class="form-col">
+            <label class="form-label" for="mixedMethod2">Pago mixto 2 - Método</label>
+            <select id="mixedMethod2" class="form-input">
+              <option value="tarjeta_debito">Tarjeta débito</option>
+              <option value="tarjeta_credito">Tarjeta crédito</option>
+              <option value="efectivo">Efectivo</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="mixedAmount2">Pago mixto 2 - Monto</label>
+            <input id="mixedAmount2" type="number" step="0.01" min="0" class="form-input" value="0">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="mixedReference2">Pago mixto 2 - Referencia</label>
+            <input id="mixedReference2" class="form-input" placeholder="Obligatoria si es tarjeta">
+          </div>
+        </div>
+
+        <div id="mixedPaymentHint" class="form-help" style="display:none;">En pago mixto debes registrar mínimo 2 métodos y la suma exacta del total a pagar.</div>
 
         <div id="stationPaymentBreakdown" class="form-help" style="margin-top:8px;"></div>
 
@@ -168,7 +222,7 @@
           <div class="form-col">
             <label class="form-label">Buscar en catálogo inteligente</label>
             <input id="itemBuscarCatalogo" class="form-input" placeholder="Busca por nombre, SKU, código de barras o código del servicio">
-            <div id="itemBusquedaHint" class="form-help">Selecciona tipo de item (producto/servicio) y escribe al menos 2 caracteres.</div>
+            <div id="itemBusquedaHint" class="form-help">Selecciona tipo de item (producto/servicio/combo) y escribe al menos 2 caracteres.</div>
           </div>
           <div class="form-col" style="max-width:220px;display:flex;align-items:flex-end;">
             <button id="buscarCatalogoBtn" type="button" class="btn secondary" style="width:100%;">Buscar catálogo</button>
@@ -191,6 +245,7 @@
             <label class="form-label">Tipo de item</label>
             <select id="itemTipo" class="form-input">
               <option value="producto">Producto</option>
+              <option value="combo">Combo</option>
               <option value="servicio">Servicio</option>
               <option value="otro">Otro</option>
             </select>
@@ -208,7 +263,7 @@
         <div class="form-row">
           <div class="form-col">
             <label class="form-label">Descripción</label>
-            <input id="itemDescripcion" class="form-input" required placeholder="Nombre del producto o servicio">
+            <input id="itemDescripcion" class="form-input" required placeholder="Nombre del producto, combo o servicio">
           </div>
           <div class="form-col">
             <label class="form-label">Unidad</label>
@@ -260,7 +315,7 @@
 
       <div class="card empresa-section" style="margin-top:12px;">
         <div class="empresa-section-header">
-          <h3 style="margin:0;">Tabla de productos del carrito</h3>
+          <h3 style="margin:0;">Tabla de productos y combos del carrito</h3>
         </div>
         <div id="productosCarritoList" class="table-wrap">Selecciona un carrito para visualizar sus productos.</div>
       </div>
@@ -281,11 +336,18 @@
       items: [],
       itemCatalogResults: [],
       itemCatalogQueryToken: 0,
+      discountCodes: [],
       stationDiscount: {
         type: 'none',
         code: '',
         value: 0,
-        devolucion: 0
+        devolucion: 0,
+        paymentMethod: 'efectivo',
+        paymentReference: '',
+        mixedPayments: [
+          { metodo: 'efectivo', monto: 0, referencia: '' },
+          { metodo: 'tarjeta_debito', monto: 0, referencia: '' }
+        ]
       }
     };
 
@@ -400,6 +462,103 @@
       return map;
     }
 
+    async function loadDiscountCodes() {
+      if (!state.empresaID) {
+        state.discountCodes = [];
+        return;
+      }
+      try {
+        const url = new URL('/api/empresa/codigos_de_descuento', window.location.origin);
+        url.searchParams.set('empresa_id', String(state.empresaID));
+        url.searchParams.set('include_inactive', '1');
+        url.searchParams.set('limit', '500');
+        const res = await fetch(url.pathname + url.search);
+        if (!res.ok) {
+          state.discountCodes = [];
+          return;
+        }
+        const rows = await res.json();
+        state.discountCodes = Array.isArray(rows) ? rows : [];
+      } catch (_) {
+        state.discountCodes = [];
+      }
+    }
+
+    function findDiscountCodeInModule(code) {
+      const normalized = normalize(code).toUpperCase();
+      if (!normalized) return null;
+      return state.discountCodes.find(function(item) {
+        return normalize(item.codigo).toUpperCase() === normalized;
+      }) || null;
+    }
+
+    function resolveDiscountCodeFromModule(code, totalBase) {
+      const normalized = normalize(code).toUpperCase();
+      if (!normalized) {
+        return { ok: false, message: 'Código no válido' };
+      }
+      const item = findDiscountCodeInModule(normalized);
+      if (!item) {
+        return { ok: false, message: 'Código no registrado' };
+      }
+
+      const estado = normalize(item.estado || 'activo').toLowerCase();
+      if (estado !== 'activo') {
+        return { ok: false, message: 'Código inactivo' };
+      }
+
+      const usosActuales = Math.max(0, Number(item.usos_actuales || 0));
+      const usosMaximos = Math.max(1, Number(item.usos_maximos || 1));
+      if (usosActuales >= usosMaximos) {
+        return { ok: false, message: 'Código sin usos disponibles' };
+      }
+
+      const montoMinimo = Math.max(0, Number(item.monto_minimo_compra || 0));
+      if (totalBase < montoMinimo) {
+        return { ok: false, message: 'No cumple monto mínimo de compra' };
+      }
+
+      const vencimientoRaw = normalize(item.fecha_vencimiento);
+      if (vencimientoRaw) {
+        const exp = parseSQLiteDate(vencimientoRaw);
+        if (exp) {
+          let threshold = exp;
+          if (vencimientoRaw.length <= 10) {
+            threshold = new Date(exp.getFullYear(), exp.getMonth(), exp.getDate(), 23, 59, 59, 0);
+          }
+          if (Date.now() > threshold.getTime()) {
+            return { ok: false, message: 'Código vencido' };
+          }
+        }
+      }
+
+      const tipo = normalize(item.tipo_descuento || 'valor_fijo').toLowerCase();
+      const valorRaw = Math.max(0, Number(item.valor || 0));
+      let value = 0;
+      let label = 'Código ' + normalized;
+
+      if (tipo === 'porcentaje') {
+        const pct = Math.max(0, Math.min(100, valorRaw));
+        value = roundMoney(totalBase * (pct / 100));
+        label = 'Código ' + normalized + ' (' + pct.toFixed(2) + '%)';
+      } else {
+        value = roundMoney(valorRaw);
+        label = 'Código ' + normalized + ' (valor fijo)';
+      }
+
+      value = Math.max(0, Math.min(totalBase, value));
+      if (value <= 0) {
+        return { ok: false, message: 'Código sin valor aplicable' };
+      }
+
+      return {
+        ok: true,
+        code: normalized,
+        value: value,
+        label: label
+      };
+    }
+
     function parseSQLiteDate(dateText) {
       const raw = normalize(dateText);
       if (!raw) return null;
@@ -448,10 +607,14 @@
       let discountValue = 0;
       let discountType = 'none';
       let discountCodeApplied = '';
+      let discountCodeMessage = '';
 
       const currentType = normalize(state.stationDiscount.type) || 'none';
       const currentValue = Math.max(0, toNumber(state.stationDiscount.value, 0));
       const currentCode = normalize(state.stationDiscount.code).toUpperCase();
+      const paymentMethod = normalize(state.stationDiscount.paymentMethod) || 'efectivo';
+      const paymentReference = normalize(state.stationDiscount.paymentReference);
+      const mixedRaw = Array.isArray(state.stationDiscount.mixedPayments) ? state.stationDiscount.mixedPayments : [];
 
       if (caps.enabled) {
         if (currentType === 'percent' && caps.allowPercent) {
@@ -464,23 +627,32 @@
           discountType = 'value';
           discountLabel = 'Descuento en valor fijo';
         } else if (currentType === 'code' && caps.allowCode) {
-          const map = parseDiscountCodesMap(caps.rawCodes);
-          const match = map.get(currentCode);
-          if (match) {
-            if (match.type === 'percent') {
-              const pctCode = Math.max(0, Math.min(100, Number(match.value || 0)));
-              discountValue = roundMoney(totalBase * (pctCode / 100));
-              discountLabel = 'Código ' + currentCode + ' (' + pctCode.toFixed(2) + '%)';
-              discountType = 'code';
-              discountCodeApplied = currentCode;
-            } else {
-              discountValue = Math.max(0, Math.min(totalBase, roundMoney(Number(match.value || 0))));
-              discountLabel = 'Código ' + currentCode + ' (valor fijo)';
-              discountType = 'code';
-              discountCodeApplied = currentCode;
+          const moduleEval = resolveDiscountCodeFromModule(currentCode, totalBase);
+          if (moduleEval.ok) {
+            discountValue = moduleEval.value;
+            discountLabel = moduleEval.label;
+            discountType = 'code';
+            discountCodeApplied = moduleEval.code;
+          } else {
+            const map = parseDiscountCodesMap(caps.rawCodes);
+            const match = map.get(currentCode);
+            if (match) {
+              if (match.type === 'percent') {
+                const pctCode = Math.max(0, Math.min(100, Number(match.value || 0)));
+                discountValue = roundMoney(totalBase * (pctCode / 100));
+                discountLabel = 'Código ' + currentCode + ' (' + pctCode.toFixed(2) + '%)';
+                discountType = 'code';
+                discountCodeApplied = currentCode;
+              } else {
+                discountValue = Math.max(0, Math.min(totalBase, roundMoney(Number(match.value || 0))));
+                discountLabel = 'Código ' + currentCode + ' (valor fijo)';
+                discountType = 'code';
+                discountCodeApplied = currentCode;
+              }
+            } else if (currentCode) {
+              discountLabel = moduleEval.message || 'Código no válido';
+              discountCodeMessage = discountLabel;
             }
-          } else if (currentCode) {
-            discountLabel = 'Código no válido';
           }
         }
       }
@@ -489,6 +661,50 @@
       const devolucion = Math.max(0, Math.min(maxReturn, roundMoney(toNumber(state.stationDiscount.devolucion, 0))));
       const totalPagar = Math.max(0, roundMoney(totalBase - discountValue - devolucion));
 
+      let mixedPayments = [];
+      let mixedTotal = 0;
+      let mixedSummary = '';
+      let mixedMessage = '';
+      let paymentLabel = paymentMethod.replace(/_/g, ' ');
+
+      if (paymentMethod === 'mixto') {
+        const allowed = {
+          efectivo: true,
+          tarjeta_credito: true,
+          tarjeta_debito: true
+        };
+        mixedRaw.forEach(function(item) {
+          const metodo = normalize(item && item.metodo).toLowerCase();
+          const monto = Math.max(0, roundMoney(toNumber(item && item.monto, 0)));
+          const referencia = normalize(item && item.referencia);
+          if (monto <= 0) return;
+          if (!allowed[metodo]) {
+            mixedMessage = 'Pago mixto solo permite efectivo, tarjeta crédito o tarjeta débito.';
+            return;
+          }
+          if ((metodo === 'tarjeta_credito' || metodo === 'tarjeta_debito') && referencia.length < 4) {
+            mixedMessage = 'Cada tramo de tarjeta en pago mixto requiere referencia mínima de 4 caracteres.';
+            return;
+          }
+          mixedPayments.push({ metodo: metodo, monto: monto, referencia: referencia });
+          mixedTotal = roundMoney(mixedTotal + monto);
+        });
+
+        if (!mixedMessage && mixedPayments.length < 2) {
+          mixedMessage = 'Pago mixto requiere al menos 2 tramos con monto mayor a cero.';
+        }
+        if (!mixedMessage && Math.abs(mixedTotal - totalPagar) > 0.01) {
+          mixedMessage = 'La suma del pago mixto debe ser igual al total a pagar.';
+        }
+        if (mixedPayments.length) {
+          mixedSummary = mixedPayments.map(function(item) {
+            const refPart = item.referencia ? (' ref:' + item.referencia) : '';
+            return item.metodo.replace(/_/g, ' ') + ' ' + formatAmount(item.monto, carrito.moneda) + refPart;
+          }).join(' + ');
+          paymentLabel = 'mixto';
+        }
+      }
+
       return {
         totalBase: roundMoney(totalBase),
         discountLabel: discountLabel,
@@ -496,7 +712,15 @@
         devolucion: roundMoney(devolucion),
         totalPagar: totalPagar,
         discountType: discountType,
-        discountCodeApplied: discountCodeApplied
+        discountCodeApplied: discountCodeApplied,
+        discountCodeMessage: discountCodeMessage,
+        paymentMethod: paymentMethod,
+        paymentReference: paymentReference,
+        paymentLabel: paymentLabel,
+        mixedPayments: mixedPayments,
+        mixedTotal: mixedTotal,
+        mixedSummary: mixedSummary,
+        mixedMessage: mixedMessage
       };
     }
 
@@ -560,6 +784,20 @@
       state.stationDiscount.value = Math.max(0, toNumber(document.getElementById('discountValue').value, 0));
       state.stationDiscount.code = normalize(document.getElementById('discountCode').value).toUpperCase();
       state.stationDiscount.devolucion = Math.max(0, toNumber(document.getElementById('devolucionMonto').value, 0));
+      state.stationDiscount.paymentMethod = normalize(document.getElementById('paymentMethod').value) || 'efectivo';
+      state.stationDiscount.paymentReference = normalize(document.getElementById('paymentReference').value);
+      state.stationDiscount.mixedPayments = [
+        {
+          metodo: normalize(document.getElementById('mixedMethod1').value) || 'efectivo',
+          monto: Math.max(0, toNumber(document.getElementById('mixedAmount1').value, 0)),
+          referencia: normalize(document.getElementById('mixedReference1').value)
+        },
+        {
+          metodo: normalize(document.getElementById('mixedMethod2').value) || 'tarjeta_debito',
+          monto: Math.max(0, toNumber(document.getElementById('mixedAmount2').value, 0)),
+          referencia: normalize(document.getElementById('mixedReference2').value)
+        }
+      ];
     }
 
     function renderStationPaymentPanel(carrito) {
@@ -579,18 +817,22 @@
       const btnPay = document.getElementById('btnPagarCarrito');
       const btnActivate = document.getElementById('btnActivarSesionCarrito');
 
-      block.style.display = caps.enabled ? '' : 'none';
+      block.style.display = '';
       btnPay.style.display = selectedActive ? '' : 'none';
       btnActivate.style.display = selectedActive ? 'none' : '';
 
       const discountTypeEl = document.getElementById('discountType');
       const discountValueEl = document.getElementById('discountValue');
       const discountCodeEl = document.getElementById('discountCode');
+      const paymentMethodEl = document.getElementById('paymentMethod');
+      const paymentReferenceEl = document.getElementById('paymentReference');
       const devolucionEl = document.getElementById('devolucionMonto');
 
       discountTypeEl.disabled = !selectedActive || !caps.enabled;
       discountValueEl.disabled = !selectedActive || !caps.enabled;
       discountCodeEl.disabled = !selectedActive || !caps.enabled;
+      paymentMethodEl.disabled = !selectedActive;
+      paymentReferenceEl.disabled = !selectedActive;
       devolucionEl.disabled = !selectedActive;
 
       Array.from(discountTypeEl.options).forEach(function(opt) {
@@ -600,16 +842,24 @@
       });
 
       syncStationDiscountFromInputs();
+      if (state.stationDiscount.paymentMethod === 'codigo_descuento' && state.stationDiscount.type !== 'code') {
+        state.stationDiscount.type = 'code';
+        discountTypeEl.value = 'code';
+      }
+
       const pay = getStationPaymentBreakdown(carrito);
 
       breakdownEl.textContent =
         'Subtotal carrito: ' + formatAmount(pay.totalBase, carrito.moneda) +
         ' | ' + pay.discountLabel + ': -' + formatAmount(pay.discountValue, carrito.moneda) +
         ' | Devolución: -' + formatAmount(pay.devolucion, carrito.moneda) +
-        ' | Total a pagar: ' + formatAmount(pay.totalPagar, carrito.moneda);
+        ' | Total a pagar: ' + formatAmount(pay.totalPagar, carrito.moneda) +
+        ' | Método de pago: ' + pay.paymentMethod.replace(/_/g, ' ');
 
       if (!caps.enabled) {
         setStationPaymentMessage('Los descuentos están desactivados en Configuración de empresa para esta empresa.', false);
+      } else if (pay.discountCodeMessage) {
+        setStationPaymentMessage(pay.discountCodeMessage, true);
       } else if (!selectedActive) {
         setStationPaymentMessage('Carrito inactivo. Actívalo para iniciar una nueva sesión de estación.', false);
       } else {
@@ -618,7 +868,7 @@
 
       document.getElementById('itemForm').style.display = selectedActive ? '' : 'none';
       if (!selectedActive) {
-        setMessage('itemMsg', 'El carrito está inactivo. Debes activarlo para agregar productos o servicios.', true);
+        setMessage('itemMsg', 'El carrito está inactivo. Debes activarlo para agregar productos, combos o servicios.', true);
       }
 
       renderScannerPanel();
@@ -649,6 +899,16 @@
       }
 
       const pay = getStationPaymentBreakdown(selected);
+
+      if (pay.paymentMethod === 'codigo_descuento' && !pay.discountCodeApplied) {
+        setStationPaymentMessage('Debes aplicar un código de descuento válido para pagar con código de descuento.', true);
+        return;
+      }
+      if ((pay.paymentMethod === 'tarjeta_credito' || pay.paymentMethod === 'tarjeta_debito') && normalize(pay.paymentReference).length < 4) {
+        setStationPaymentMessage('Para pagos con tarjeta debes ingresar una referencia de pago (mínimo 4 caracteres).', true);
+        return;
+      }
+
       if (!confirm('Confirmar pago y cierre del carrito por ' + formatAmount(pay.totalPagar, selected.moneda) + '?')) return;
 
       try {
@@ -656,8 +916,11 @@
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            metodo_pago: pay.paymentMethod,
+            referencia_pago: pay.paymentReference,
             descuento_tipo: pay.discountType,
             descuento_codigo: pay.discountCodeApplied,
+            codigo_descuento: pay.discountCodeApplied,
             descuento_valor: pay.discountValue,
             devolucion_total: pay.devolucion,
             total_pagado: pay.totalPagar
@@ -968,11 +1231,11 @@
       document.getElementById('cancelItemBtn').style.display = 'none';
       setMessage('itemMsg', '', false);
       document.getElementById('itemBuscarCatalogo').value = '';
-      clearCatalogResults('Selecciona tipo de item (producto/servicio) y escribe al menos 2 caracteres.');
+      clearCatalogResults('Selecciona tipo de item (producto/servicio/combo) y escribe al menos 2 caracteres.');
     }
 
     function isCatalogSearchType(tipo) {
-      return tipo === 'producto' || tipo === 'servicio';
+      return tipo === 'producto' || tipo === 'servicio' || tipo === 'combo';
     }
 
     function renderCatalogHint(text, isError) {
@@ -1021,10 +1284,10 @@
 
       const nombre = normalize(raw.nombre);
       const descripcionBase = normalize(raw.descripcion);
-      const descripcion = descripcionBase || nombre || (tipo === 'servicio' ? 'Servicio' : 'Producto');
+      const descripcion = descripcionBase || nombre || (tipo === 'servicio' ? 'Servicio' : (tipo === 'combo' ? 'Combo' : 'Producto'));
       const unidad = tipo === 'producto'
         ? (normalize(raw.unidad_medida) || 'unidad')
-        : (normalize(raw.unidad_medida) || 'servicio');
+        : (normalize(raw.unidad_medida) || (tipo === 'combo' ? 'combo' : 'servicio'));
 
       return {
         id: toNumber(raw.id, 0),
@@ -1043,7 +1306,7 @@
       const q = normalize(document.getElementById('itemBuscarCatalogo').value);
 
       if (!isCatalogSearchType(tipo)) {
-        clearCatalogResults('Para búsqueda inteligente selecciona tipo Producto o Servicio.');
+        clearCatalogResults('Para búsqueda inteligente selecciona tipo Producto, Servicio o Combo.');
         return;
       }
 
@@ -1052,7 +1315,12 @@
         return;
       }
 
-      const endpoint = tipo === 'servicio' ? '/api/empresa/servicios' : '/api/empresa/productos';
+      let endpoint = '/api/empresa/productos';
+      if (tipo === 'servicio') {
+        endpoint = '/api/empresa/servicios';
+      } else if (tipo === 'combo') {
+        endpoint = '/api/empresa/combos_productos';
+      }
       const url = new URL(endpoint, window.location.origin);
       url.searchParams.set('empresa_id', String(state.empresaID));
       url.searchParams.set('estado', 'activo');
@@ -1089,7 +1357,7 @@
       const sel = document.getElementById('itemBusquedaResultados');
       const idx = Number(sel.value);
       if (!Number.isInteger(idx) || idx < 0 || idx >= state.itemCatalogResults.length) {
-        setMessage('itemMsg', 'Selecciona un producto o servicio de la lista', true);
+        setMessage('itemMsg', 'Selecciona un producto, combo o servicio de la lista', true);
         return false;
       }
 
@@ -1324,11 +1592,12 @@
       }
 
       const productos = state.items.filter(function(item) {
-        return normalize(item.tipo_item) === 'producto';
+        const tipo = normalize(item.tipo_item);
+        return tipo === 'producto' || tipo === 'combo';
       });
 
       if (!productos.length) {
-        box.textContent = 'Este carrito no tiene productos agregados.';
+        box.textContent = 'Este carrito no tiene productos o combos agregados.';
         return;
       }
 
@@ -1336,8 +1605,9 @@
       table.className = 'table';
       table.innerHTML = '<thead><tr>' +
         '<th>ID item</th>' +
+        '<th>Tipo</th>' +
         '<th>Código</th>' +
-        '<th>Producto</th>' +
+        '<th>Item</th>' +
         '<th>Cantidad</th>' +
         '<th>Precio</th>' +
         '<th>Total línea</th>' +
@@ -1348,6 +1618,7 @@
       productos.forEach(function(item) {
         const tr = document.createElement('tr');
         tr.innerHTML = '<td>' + Number(item.id || 0) + '</td>' +
+          '<td>' + escapeHtml(normalize(item.tipo_item) || '-') + '</td>' +
           '<td>' + escapeHtml(normalize(item.codigo_item) || '-') + '</td>' +
           '<td>' + escapeHtml(normalize(item.descripcion) || '-') + '</td>' +
           '<td>' + Number(item.cantidad || 0).toFixed(2) + '</td>' +
@@ -1770,7 +2041,7 @@
     document.getElementById('itemTipo').addEventListener('change', function() {
       const tipo = normalize(document.getElementById('itemTipo').value);
       if (!isCatalogSearchType(tipo)) {
-        clearCatalogResults('Para búsqueda inteligente selecciona tipo Producto o Servicio.');
+        clearCatalogResults('Para búsqueda inteligente selecciona tipo Producto, Servicio o Combo.');
         return;
       }
 
@@ -1836,7 +2107,7 @@
       processScannerInput();
     });
 
-    ['discountType', 'discountValue', 'discountCode', 'devolucionMonto'].forEach(function(id) {
+    ['discountType', 'discountValue', 'discountCode', 'devolucionMonto', 'paymentMethod', 'paymentReference'].forEach(function(id) {
       const el = document.getElementById(id);
       if (!el) return;
       el.addEventListener('input', function() {
@@ -1902,6 +2173,7 @@
 
       await loadEmpresaTitle();
       await loadClientes();
+      await loadDiscountCodes();
       try {
         await loadCarritos();
         if (state.stationMode) {
