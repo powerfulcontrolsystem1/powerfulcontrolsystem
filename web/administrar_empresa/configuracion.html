@@ -102,6 +102,129 @@
 
     <section class="card empresa-section">
       <div class="empresa-section-header">
+        <h2>Configuracion operativa de cobro</h2>
+        <button id="btnGuardarConfigOperativa" type="button" class="btn">Guardar empresa</button>
+      </div>
+      <p class="form-help">Activa o desactiva metodos de pago, propinas y comisiones por empresa y por rol de usuario.</p>
+
+      <div class="empresa-config-grid">
+        <div class="form">
+          <h3 style="margin:0 0 10px 0;font-size:0.95rem;">Empresa (regla base)</h3>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="empresa-config-check" for="opMetodoEfectivo">
+                <input id="opMetodoEfectivo" type="checkbox" checked>
+                <span>Efectivo</span>
+              </label>
+              <label class="empresa-config-check" for="opMetodoTarjetaCredito" style="margin-top:8px;">
+                <input id="opMetodoTarjetaCredito" type="checkbox" checked>
+                <span>Tarjeta credito</span>
+              </label>
+              <label class="empresa-config-check" for="opMetodoTarjetaDebito" style="margin-top:8px;">
+                <input id="opMetodoTarjetaDebito" type="checkbox" checked>
+                <span>Tarjeta debito</span>
+              </label>
+            </div>
+            <div class="form-col">
+              <label class="empresa-config-check" for="opMetodoTransferencia">
+                <input id="opMetodoTransferencia" type="checkbox" checked>
+                <span>Transferencia bancaria</span>
+              </label>
+              <label class="empresa-config-check" for="opMetodoMixto" style="margin-top:8px;">
+                <input id="opMetodoMixto" type="checkbox" checked>
+                <span>Pago mixto</span>
+              </label>
+              <label class="empresa-config-check" for="opMetodoCodigoDescuento" style="margin-top:8px;">
+                <input id="opMetodoCodigoDescuento" type="checkbox" checked>
+                <span>Codigo de descuento</span>
+              </label>
+            </div>
+            <div class="form-col">
+              <label class="empresa-config-check" for="opHabilitarPropinas">
+                <input id="opHabilitarPropinas" type="checkbox" checked>
+                <span>Permitir propinas</span>
+              </label>
+              <label class="empresa-config-check" for="opHabilitarComisiones" style="margin-top:8px;">
+                <input id="opHabilitarComisiones" type="checkbox" checked>
+                <span>Permitir comisiones</span>
+              </label>
+            </div>
+          </div>
+          <div id="operativaMsg" class="form-help"></div>
+        </div>
+
+        <div class="form">
+          <h3 style="margin:0 0 10px 0;font-size:0.95rem;">Override por rol</h3>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="opRolSelect">Rol</label>
+              <select id="opRolSelect" class="form-input">
+                <option value="admin_empresa">admin_empresa</option>
+                <option value="supervisor_sucursal">supervisor_sucursal</option>
+                <option value="cajero">cajero</option>
+                <option value="inventario">inventario</option>
+                <option value="compras">compras</option>
+                <option value="contabilidad">contabilidad</option>
+                <option value="auditor">auditor</option>
+              </select>
+              <label class="empresa-config-check" for="opRolActivo" style="margin-top:8px;">
+                <input id="opRolActivo" type="checkbox" checked>
+                <span>Regla de rol activa</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-col">
+              <label class="empresa-config-check" for="opRolMetodoEfectivo">
+                <input id="opRolMetodoEfectivo" type="checkbox" checked>
+                <span>Efectivo</span>
+              </label>
+              <label class="empresa-config-check" for="opRolMetodoTarjetaCredito" style="margin-top:8px;">
+                <input id="opRolMetodoTarjetaCredito" type="checkbox" checked>
+                <span>Tarjeta credito</span>
+              </label>
+              <label class="empresa-config-check" for="opRolMetodoTarjetaDebito" style="margin-top:8px;">
+                <input id="opRolMetodoTarjetaDebito" type="checkbox" checked>
+                <span>Tarjeta debito</span>
+              </label>
+            </div>
+            <div class="form-col">
+              <label class="empresa-config-check" for="opRolMetodoTransferencia">
+                <input id="opRolMetodoTransferencia" type="checkbox" checked>
+                <span>Transferencia bancaria</span>
+              </label>
+              <label class="empresa-config-check" for="opRolMetodoMixto" style="margin-top:8px;">
+                <input id="opRolMetodoMixto" type="checkbox" checked>
+                <span>Pago mixto</span>
+              </label>
+              <label class="empresa-config-check" for="opRolMetodoCodigoDescuento" style="margin-top:8px;">
+                <input id="opRolMetodoCodigoDescuento" type="checkbox" checked>
+                <span>Codigo de descuento</span>
+              </label>
+            </div>
+            <div class="form-col">
+              <label class="empresa-config-check" for="opRolHabilitarPropinas">
+                <input id="opRolHabilitarPropinas" type="checkbox" checked>
+                <span>Permitir propinas</span>
+              </label>
+              <label class="empresa-config-check" for="opRolHabilitarComisiones" style="margin-top:8px;">
+                <input id="opRolHabilitarComisiones" type="checkbox" checked>
+                <span>Permitir comisiones</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-actions" style="margin-top:8px;">
+            <button id="btnGuardarConfigOperativaRol" type="button" class="btn secondary">Guardar rol</button>
+          </div>
+          <div id="operativaRolMsg" class="form-help"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
         <h2>Impresion de facturas</h2>
         <button id="btnGuardarFacturaConfig" type="button" class="btn">Guardar impresión</button>
       </div>
@@ -197,6 +320,7 @@
 
   <script>
     const empresaId = Number(new URLSearchParams(window.location.search).get('empresa_id') || 0);
+    let operativaConfigCache = null;
 
     function configStorageKey() {
       return 'empresa_configuracion_general_' + empresaId;
@@ -262,6 +386,235 @@
       const box = document.getElementById('estadoCarritoMsg');
       box.textContent = text || '';
       box.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'form-help');
+    }
+
+    function setOperativaMessage(text, type) {
+      const box = document.getElementById('operativaMsg');
+      box.textContent = text || '';
+      box.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'form-help');
+    }
+
+    function setOperativaRoleMessage(text, type) {
+      const box = document.getElementById('operativaRolMsg');
+      box.textContent = text || '';
+      box.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'form-help');
+    }
+
+    function normalizeRoleName(raw) {
+      const role = String(raw || '').trim().toLowerCase();
+      if (!role) return '';
+      if (role === 'super_administrador' || role === 'superadmin' || role === 'super') return 'super_administrador';
+      if (role === 'administrador' || role === 'admin' || role === 'admin_empresa') return 'admin_empresa';
+      if (role === 'supervisor' || role === 'supervisor_sucursal') return 'supervisor_sucursal';
+      if (role === 'contabilidad' || role === 'contador') return 'contabilidad';
+      return role;
+    }
+
+    function normalizeOperativaRole(raw) {
+      const src = raw && typeof raw === 'object' ? raw : {};
+      return {
+        empresa_id: Number(src.empresa_id || empresaId || 0),
+        rol: normalizeRoleName(src.rol),
+        metodo_pago_efectivo: src.metodo_pago_efectivo === undefined ? true : Boolean(src.metodo_pago_efectivo),
+        metodo_pago_tarjeta_credito: src.metodo_pago_tarjeta_credito === undefined ? true : Boolean(src.metodo_pago_tarjeta_credito),
+        metodo_pago_tarjeta_debito: src.metodo_pago_tarjeta_debito === undefined ? true : Boolean(src.metodo_pago_tarjeta_debito),
+        metodo_pago_transferencia_bancaria: src.metodo_pago_transferencia_bancaria === undefined ? true : Boolean(src.metodo_pago_transferencia_bancaria),
+        metodo_pago_mixto: src.metodo_pago_mixto === undefined ? true : Boolean(src.metodo_pago_mixto),
+        metodo_pago_codigo_descuento: src.metodo_pago_codigo_descuento === undefined ? true : Boolean(src.metodo_pago_codigo_descuento),
+        habilitar_propinas: src.habilitar_propinas === undefined ? true : Boolean(src.habilitar_propinas),
+        habilitar_comisiones: src.habilitar_comisiones === undefined ? true : Boolean(src.habilitar_comisiones),
+        estado: String(src.estado || 'activo').trim().toLowerCase() === 'inactivo' ? 'inactivo' : 'activo'
+      };
+    }
+
+    function normalizeOperativaConfig(raw) {
+      const src = raw && typeof raw === 'object' ? raw : {};
+      const roles = Array.isArray(src.roles) ? src.roles.map(normalizeOperativaRole).filter(function(item) {
+        return item.rol;
+      }) : [];
+      return {
+        empresa_id: Number(src.empresa_id || empresaId || 0),
+        metodo_pago_efectivo: src.metodo_pago_efectivo === undefined ? true : Boolean(src.metodo_pago_efectivo),
+        metodo_pago_tarjeta_credito: src.metodo_pago_tarjeta_credito === undefined ? true : Boolean(src.metodo_pago_tarjeta_credito),
+        metodo_pago_tarjeta_debito: src.metodo_pago_tarjeta_debito === undefined ? true : Boolean(src.metodo_pago_tarjeta_debito),
+        metodo_pago_transferencia_bancaria: src.metodo_pago_transferencia_bancaria === undefined ? true : Boolean(src.metodo_pago_transferencia_bancaria),
+        metodo_pago_mixto: src.metodo_pago_mixto === undefined ? true : Boolean(src.metodo_pago_mixto),
+        metodo_pago_codigo_descuento: src.metodo_pago_codigo_descuento === undefined ? true : Boolean(src.metodo_pago_codigo_descuento),
+        habilitar_propinas: src.habilitar_propinas === undefined ? true : Boolean(src.habilitar_propinas),
+        habilitar_comisiones: src.habilitar_comisiones === undefined ? true : Boolean(src.habilitar_comisiones),
+        roles: roles
+      };
+    }
+
+    function setOperativaBaseFormData(cfg) {
+      const src = normalizeOperativaConfig(cfg);
+      document.getElementById('opMetodoEfectivo').checked = src.metodo_pago_efectivo;
+      document.getElementById('opMetodoTarjetaCredito').checked = src.metodo_pago_tarjeta_credito;
+      document.getElementById('opMetodoTarjetaDebito').checked = src.metodo_pago_tarjeta_debito;
+      document.getElementById('opMetodoTransferencia').checked = src.metodo_pago_transferencia_bancaria;
+      document.getElementById('opMetodoMixto').checked = src.metodo_pago_mixto;
+      document.getElementById('opMetodoCodigoDescuento').checked = src.metodo_pago_codigo_descuento;
+      document.getElementById('opHabilitarPropinas').checked = src.habilitar_propinas;
+      document.getElementById('opHabilitarComisiones').checked = src.habilitar_comisiones;
+    }
+
+    function getOperativaBaseFormData() {
+      return {
+        empresa_id: Number(empresaId),
+        metodo_pago_efectivo: document.getElementById('opMetodoEfectivo').checked,
+        metodo_pago_tarjeta_credito: document.getElementById('opMetodoTarjetaCredito').checked,
+        metodo_pago_tarjeta_debito: document.getElementById('opMetodoTarjetaDebito').checked,
+        metodo_pago_transferencia_bancaria: document.getElementById('opMetodoTransferencia').checked,
+        metodo_pago_mixto: document.getElementById('opMetodoMixto').checked,
+        metodo_pago_codigo_descuento: document.getElementById('opMetodoCodigoDescuento').checked,
+        habilitar_propinas: document.getElementById('opHabilitarPropinas').checked,
+        habilitar_comisiones: document.getElementById('opHabilitarComisiones').checked
+      };
+    }
+
+    function selectedOperativaRole() {
+      return normalizeRoleName(document.getElementById('opRolSelect').value);
+    }
+
+    function findOperativaRoleConfig(cfg, role) {
+      const src = normalizeOperativaConfig(cfg);
+      const target = normalizeRoleName(role);
+      if (!target) return null;
+      for (let i = 0; i < src.roles.length; i++) {
+        if (normalizeRoleName(src.roles[i].rol) === target) return src.roles[i];
+      }
+      return null;
+    }
+
+    function setOperativaRoleFormData(roleCfg) {
+      const base = normalizeOperativaConfig(operativaConfigCache || {});
+      const src = roleCfg ? normalizeOperativaRole(roleCfg) : {
+        rol: selectedOperativaRole(),
+        metodo_pago_efectivo: base.metodo_pago_efectivo,
+        metodo_pago_tarjeta_credito: base.metodo_pago_tarjeta_credito,
+        metodo_pago_tarjeta_debito: base.metodo_pago_tarjeta_debito,
+        metodo_pago_transferencia_bancaria: base.metodo_pago_transferencia_bancaria,
+        metodo_pago_mixto: base.metodo_pago_mixto,
+        metodo_pago_codigo_descuento: base.metodo_pago_codigo_descuento,
+        habilitar_propinas: base.habilitar_propinas,
+        habilitar_comisiones: base.habilitar_comisiones,
+        estado: 'activo'
+      };
+
+      document.getElementById('opRolActivo').checked = src.estado !== 'inactivo';
+      document.getElementById('opRolMetodoEfectivo').checked = src.metodo_pago_efectivo;
+      document.getElementById('opRolMetodoTarjetaCredito').checked = src.metodo_pago_tarjeta_credito;
+      document.getElementById('opRolMetodoTarjetaDebito').checked = src.metodo_pago_tarjeta_debito;
+      document.getElementById('opRolMetodoTransferencia').checked = src.metodo_pago_transferencia_bancaria;
+      document.getElementById('opRolMetodoMixto').checked = src.metodo_pago_mixto;
+      document.getElementById('opRolMetodoCodigoDescuento').checked = src.metodo_pago_codigo_descuento;
+      document.getElementById('opRolHabilitarPropinas').checked = src.habilitar_propinas;
+      document.getElementById('opRolHabilitarComisiones').checked = src.habilitar_comisiones;
+    }
+
+    function getOperativaRoleFormData() {
+      const role = selectedOperativaRole();
+      return {
+        empresa_id: Number(empresaId),
+        rol: role,
+        metodo_pago_efectivo: document.getElementById('opRolMetodoEfectivo').checked,
+        metodo_pago_tarjeta_credito: document.getElementById('opRolMetodoTarjetaCredito').checked,
+        metodo_pago_tarjeta_debito: document.getElementById('opRolMetodoTarjetaDebito').checked,
+        metodo_pago_transferencia_bancaria: document.getElementById('opRolMetodoTransferencia').checked,
+        metodo_pago_mixto: document.getElementById('opRolMetodoMixto').checked,
+        metodo_pago_codigo_descuento: document.getElementById('opRolMetodoCodigoDescuento').checked,
+        habilitar_propinas: document.getElementById('opRolHabilitarPropinas').checked,
+        habilitar_comisiones: document.getElementById('opRolHabilitarComisiones').checked,
+        estado: document.getElementById('opRolActivo').checked ? 'activo' : 'inactivo'
+      };
+    }
+
+    function syncOperativaRoleFormFromCache() {
+      const role = selectedOperativaRole();
+      const roleCfg = findOperativaRoleConfig(operativaConfigCache, role);
+      setOperativaRoleFormData(roleCfg);
+      if (roleCfg) {
+        setOperativaRoleMessage('Se cargó la configuración del rol ' + role + '.', '');
+      } else {
+        setOperativaRoleMessage('Sin override para ' + role + '. Se usa la regla base de empresa.', '');
+      }
+    }
+
+    async function fetchOperativaConfig() {
+      const res = await fetch('/api/empresa/configuracion_operativa?empresa_id=' + encodeURIComponent(empresaId), {
+        credentials: 'same-origin'
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    }
+
+    async function loadOperativaConfig() {
+      if (!empresaId) return;
+      try {
+        const cfg = await fetchOperativaConfig();
+        operativaConfigCache = normalizeOperativaConfig(cfg || {});
+        setOperativaBaseFormData(operativaConfigCache);
+        syncOperativaRoleFormFromCache();
+      } catch (err) {
+        operativaConfigCache = normalizeOperativaConfig({ empresa_id: empresaId });
+        setOperativaBaseFormData(operativaConfigCache);
+        syncOperativaRoleFormFromCache();
+        setOperativaMessage('No se pudo cargar configuración operativa: ' + (err && err.message ? err.message : err), 'error');
+      }
+    }
+
+    async function guardarOperativaEmpresa() {
+      if (!empresaId) {
+        setOperativaMessage('No se puede guardar sin empresa seleccionada.', 'error');
+        return;
+      }
+      try {
+        const payload = getOperativaBaseFormData();
+        const res = await fetch('/api/empresa/configuracion_operativa?empresa_id=' + encodeURIComponent(empresaId), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(await res.text());
+        const out = await res.json();
+        operativaConfigCache = normalizeOperativaConfig(out && out.configuracion ? out.configuracion : payload);
+        setOperativaBaseFormData(operativaConfigCache);
+        syncOperativaRoleFormFromCache();
+        setOperativaMessage('Configuración operativa de empresa guardada correctamente.', 'success');
+      } catch (err) {
+        setOperativaMessage('No se pudo guardar la configuración operativa: ' + (err && err.message ? err.message : err), 'error');
+      }
+    }
+
+    async function guardarOperativaRol() {
+      if (!empresaId) {
+        setOperativaRoleMessage('No se puede guardar sin empresa seleccionada.', 'error');
+        return;
+      }
+      const role = selectedOperativaRole();
+      if (!role) {
+        setOperativaRoleMessage('Selecciona un rol válido.', 'error');
+        return;
+      }
+
+      try {
+        const payload = getOperativaRoleFormData();
+        const res = await fetch('/api/empresa/configuracion_operativa?empresa_id=' + encodeURIComponent(empresaId) + '&action=rol', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(await res.text());
+        const out = await res.json();
+        operativaConfigCache = normalizeOperativaConfig(out && out.configuracion ? out.configuracion : (operativaConfigCache || {}));
+        setOperativaBaseFormData(operativaConfigCache);
+        syncOperativaRoleFormFromCache();
+        setOperativaRoleMessage('Configuración del rol ' + role + ' guardada correctamente.', 'success');
+      } catch (err) {
+        setOperativaRoleMessage('No se pudo guardar la configuración del rol: ' + (err && err.message ? err.message : err), 'error');
+      }
     }
 
     function normalizeColorHex(value, fallback) {
@@ -499,7 +852,13 @@
       loadEmpresaInfo();
       setFormData(loadConfig());
       loadFacturaConfig();
+      loadOperativaConfig();
       document.getElementById('btnGuardarConfig').addEventListener('click', guardarConfiguracion);
+      document.getElementById('btnGuardarConfigOperativa').addEventListener('click', guardarOperativaEmpresa);
+      document.getElementById('btnGuardarConfigOperativaRol').addEventListener('click', guardarOperativaRol);
+      document.getElementById('opRolSelect').addEventListener('change', function() {
+        syncOperativaRoleFormFromCache();
+      });
       document.getElementById('btnGuardarFacturaConfig').addEventListener('click', guardarFacturaConfig);
       document.getElementById('btnGuardarEstadoCarrito').addEventListener('click', guardarEstadoCarritoConfig);
       document.getElementById('btnDescargarBackup').addEventListener('click', descargarBackup);

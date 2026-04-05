@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	dbpkg "github.com/you/pos-backend/db"
+	utilspkg "github.com/you/pos-backend/utils"
 )
 
 func TestWithEmpresaFinanzasPermissionsRegistraAuditoriaAccionCritica(t *testing.T) {
@@ -340,11 +341,20 @@ func TestEmpresaAuditoriaEventosHandlerFiltrosAvanzados(t *testing.T) {
 
 	h := EmpresaAuditoriaEventosHandler(dbEmp)
 
-	reqList := httptest.NewRequest(http.MethodGet, "/api/empresa/auditoria/eventos?empresa_id=99&modulo=ventas&codigo_http=409&recurso_id=1002&limit=20", nil)
+	reqList := httptest.NewRequest(http.MethodGet, "/api/empresa/auditoria/eventos?empresa_id=99&modulo=ventas&codigo_http=409&recurso_id=1002&metodo_http=PUT&recurso=carritos&endpoint=carritos_compra&search=cajero&limit=20&offset=0", nil)
 	rrList := httptest.NewRecorder()
 	h.ServeHTTP(rrList, reqList)
 	if rrList.Code != http.StatusOK {
 		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, rrList.Code, rrList.Body.String())
+	}
+	if got := strings.TrimSpace(rrList.Header().Get("X-Total-Count")); got != "1" {
+		t.Fatalf("expected X-Total-Count=1, got %q", got)
+	}
+	if got := strings.TrimSpace(rrList.Header().Get("X-Page-Limit")); got != "20" {
+		t.Fatalf("expected X-Page-Limit=20, got %q", got)
+	}
+	if got := strings.TrimSpace(rrList.Header().Get("X-Page-Offset")); got != "0" {
+		t.Fatalf("expected X-Page-Offset=0, got %q", got)
 	}
 
 	var rows []dbpkg.EmpresaAuditoriaEvento
@@ -363,5 +373,102 @@ func TestEmpresaAuditoriaEventosHandlerFiltrosAvanzados(t *testing.T) {
 	h.ServeHTTP(rrInvalid, reqInvalid)
 	if rrInvalid.Code != http.StatusBadRequest {
 		t.Fatalf("expected status %d for invalid codigo_http, got %d body=%s", http.StatusBadRequest, rrInvalid.Code, rrInvalid.Body.String())
+	}
+
+	reqInvalidDate := httptest.NewRequest(http.MethodGet, "/api/empresa/auditoria/eventos?empresa_id=99&desde=2026-99-99", nil)
+	rrInvalidDate := httptest.NewRecorder()
+	h.ServeHTTP(rrInvalidDate, reqInvalidDate)
+	if rrInvalidDate.Code != http.StatusBadRequest {
+		t.Fatalf("expected status %d for invalid desde, got %d body=%s", http.StatusBadRequest, rrInvalidDate.Code, rrInvalidDate.Body.String())
+	}
+}
+
+func TestWithEmpresaVentasPermissionsRegistraRequestIDDesdeMiddleware(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_auditoria_reqid.db")
+	dbSuper := openTestSQLite(t, "super_auditoria_reqid.db")
+	ensurePermsEmpresasSchema(t, dbEmp)
+	ensurePermsAdminSchema(t, dbSuper)
+	seedPermsEmpresa(t, dbEmp, 620, "cajero@reqid.com")
+	seedPermsAdmin(t, dbSuper, "cajero@reqid.com", "cajero")
+	if err := dbpkg.EnsureEmpresaAuditoriaSchema(dbEmp); err != nil {
+		t.Fatalf("ensure auditoria schema: %v", err)
+	}
+
+	h := WithEmpresaVentasPermissions(dbEmp, dbSuper, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+	wrapped := utilspkg.LoggingMiddleware(h)
+
+	req := httptest.NewRequest(http.MethodPut, "/api/empresa/carritos_compra?action=cerrar&empresa_id=620&id=77", nil)
+	req = req.WithContext(context.WithValue(req.Context(), "adminEmail", "cajero@reqid.com"))
+	rr := httptest.NewRecorder()
+
+	wrapped.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusNoContent {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusNoContent, rr.Code, rr.Body.String())
+	}
+	reqID := strings.TrimSpace(rr.Header().Get("X-Request-ID"))
+	if reqID == "" {
+		t.Fatalf("expected response X-Request-ID header")
+	}
+
+	eventos, err := dbpkg.ListEmpresaAuditoriaEventos(dbEmp, 620, dbpkg.EmpresaAuditoriaEventoFilter{Limit: 20})
+	if err != nil {
+		t.Fatalf("list auditoria eventos: %v", err)
+	}
+	if len(eventos) != 1 {
+		t.Fatalf("expected 1 auditoria event, got %d", len(eventos))
+	}
+	if eventos[0].RequestID != reqID {
+		t.Fatalf("expected request_id=%q, got %q", reqID, eventos[0].RequestID)
+	}
+}
+
+func TestWithEmpresaVentasPermissionsRegistraIntentoDenegadoCritico(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_auditoria_denegada.db")
+	dbSuper := openTestSQLite(t, "super_auditoria_denegada.db")
+	ensurePermsEmpresasSchema(t, dbEmp)
+	ensurePermsAdminSchema(t, dbSuper)
+	seedPermsEmpresa(t, dbEmp, 630, "auditor@denegada.com")
+	seedPermsAdmin(t, dbSuper, "auditor@denegada.com", "auditor")
+	if err := dbpkg.EnsureEmpresaAuditoriaSchema(dbEmp); err != nil {
+		t.Fatalf("ensure auditoria schema: %v", err)
+	}
+
+	called := false
+	h := WithEmpresaVentasPermissions(dbEmp, dbSuper, func(w http.ResponseWriter, r *http.Request) {
+		called = true
+		w.WriteHeader(http.StatusOK)
+	})
+
+	req := httptest.NewRequest(http.MethodDelete, "/api/empresa/carritos_compra?empresa_id=630&id=88", nil)
+	req = req.WithContext(context.WithValue(req.Context(), "adminEmail", "auditor@denegada.com"))
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusForbidden {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusForbidden, rr.Code, rr.Body.String())
+	}
+	if called {
+		t.Fatalf("expected next handler not to be called")
+	}
+
+	eventos, err := dbpkg.ListEmpresaAuditoriaEventos(dbEmp, 630, dbpkg.EmpresaAuditoriaEventoFilter{Limit: 20})
+	if err != nil {
+		t.Fatalf("list auditoria eventos: %v", err)
+	}
+	if len(eventos) != 1 {
+		t.Fatalf("expected 1 auditoria event, got %d", len(eventos))
+	}
+	if eventos[0].Accion != "eliminar" {
+		t.Fatalf("expected accion eliminar, got %q", eventos[0].Accion)
+	}
+	if eventos[0].CodigoHTTP != http.StatusForbidden {
+		t.Fatalf("expected codigo_http=%d, got %d", http.StatusForbidden, eventos[0].CodigoHTTP)
+	}
+	if eventos[0].Resultado != "error" {
+		t.Fatalf("expected resultado error, got %q", eventos[0].Resultado)
 	}
 }

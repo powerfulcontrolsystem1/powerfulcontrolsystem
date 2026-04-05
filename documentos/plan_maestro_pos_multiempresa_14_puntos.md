@@ -1,6 +1,6 @@
 # Plan maestro POS multiempresa (15 puntos)
 
-Fecha de actualizacion: 2026-04-04
+Fecha de actualizacion: 2026-04-05
 Estado global: en ejecucion
 
 ## Objetivo
@@ -1148,9 +1148,93 @@ Validacion ejecutada:
 - `go test ./handlers -count=1` (ok).
 - `go test ./db -count=1` (ok).
 
+### Punto 11. Reportes financieros (continuacion 2026-04-05 - dataset de flujo de caja diario)
+
+Implementacion tecnica completada:
+- Se extiende el endpoint central `GET /api/empresa/reportes?action=dataset` con el dataset `contable_flujo_caja`:
+	- `backend/handlers/reportes.go` agrega `contable_flujo_caja` al catalogo de datasets empresariales.
+	- El dataset consolida movimientos financieros por fecha y calcula:
+		- `ingresos`,
+		- `egresos`,
+		- `neto_dia`,
+		- `saldo_acumulado`,
+		- `movimientos`.
+	- El resumen del periodo incluye `total_ingresos`, `total_egresos`, `neto_periodo`, `saldo_final`, promedio diario y cantidad de dias con movimiento.
+	- Mantiene exportacion homologada del modulo en `pdf`, `xls`, `csv`, `json` y `txt`.
+
+Cobertura de pruebas agregada/extendida:
+- `backend/handlers/reportes_test.go` agrega `TestEmpresaReportesHandlerDatasetContableFlujoCaja` para validar:
+	- agregacion diaria,
+	- saldo acumulado por dia,
+	- totales del resumen en el periodo.
+
+Validacion ejecutada:
+- `runTests` en `backend/handlers/reportes_test.go` (5 passed, 0 failed).
+
+### Punto 11. Reportes financieros (continuacion 2026-04-05 - filtros contables en flujo de caja diario)
+
+Implementacion tecnica completada:
+- Se extiende el dataset `contable_flujo_caja` para analitica segmentada por atributos contables:
+	- `backend/handlers/reportes.go` incorpora filtros `categoria` y `metodo_pago` en el endpoint `GET /api/empresa/reportes?action=dataset`.
+	- El flujo de consolidacion diaria aplica filtros antes de calcular `ingresos`, `egresos`, `neto_dia` y `saldo_acumulado`.
+	- El resumen del dataset agrega `filtro_categoria` y `filtro_metodo_pago` para trazabilidad inter-formato en exportaciones.
+- `web/administrar_empresa/reportes.html` agrega controles de filtro contable y envia estos parametros en consultas y exportaciones del modulo.
+
+Cobertura de pruebas agregada/extendida:
+- `backend/handlers/reportes_test.go` agrega `TestEmpresaReportesHandlerDatasetContableFlujoCajaFiltros` para validar:
+	- agregacion diaria con filtro por categoria,
+	- filtro por metodo de pago,
+	- consistencia de totales y resumen.
+
+Validacion ejecutada:
+- `runTests` en `backend/handlers/reportes_test.go` (6 passed, 0 failed).
+
+### Punto 3. Permisos y seguridad (continuacion 2026-04-05 - endpoint de contexto de permisos)
+
+Implementacion tecnica completada:
+- Se agrega endpoint de lectura para inspeccionar permisos efectivos por rol en la operacion empresarial:
+	- `backend/handlers/empresa_permisos.go` incorpora `GET /api/empresa/permisos_contexto`.
+	- La respuesta incluye permisos por modulo/accion (`R/C/U/D/A`) y resumen de capacidad efectiva del rol autenticado.
+	- Se soporta `include_matrix=1` para exponer matriz comparativa por roles canonicos (`super_administrador`, `admin_empresa`, `supervisor_sucursal`, `cajero`, `inventario`, `compras`, `contabilidad`, `auditor`).
+- `backend/main.go` registra la ruta bajo `WithEmpresaSeguridadPermissions` para conservar aislamiento por `empresa_id` y control de seguridad.
+
+Cobertura de pruebas agregada/extendida:
+- `backend/handlers/empresa_permisos_test.go` agrega:
+	- `TestEmpresaPermisosContextoHandlerRetornaPermisosPorRol`.
+	- `TestEmpresaPermisosContextoHandlerIncluyeMatrizRoles`.
+
+Validacion ejecutada:
+- `go test ./handlers -run "PermisosContexto|WithEmpresa.*Permissions" -count=1` (ok).
+
+### Punto 3. Permisos y seguridad (continuacion 2026-04-05 - menu dinamico por permisos efectivos)
+
+Implementacion tecnica completada:
+- Se completa el consumo frontend del contexto de permisos para cierre operativo del Punto 3:
+	- `web/js/administrar_empresa.js` consume `GET /api/empresa/permisos_contexto?empresa_id={id}` para resolver visibilidad real de enlaces del menu lateral por modulo/accion.
+	- Se mantiene fallback local por rol para continuidad cuando no hay respuesta del endpoint.
+	- `web/administrar_empresa.html` agrega `menuPermsEvidence` para evidencia UAT visual de rol y fuente de permisos aplicada.
+
+Validacion ejecutada:
+- `get_errors` sobre `web/js/administrar_empresa.js` y `web/administrar_empresa.html` (sin errores).
+
+### Punto 3. Permisos y seguridad (continuacion 2026-04-05 - regresion UAT en endpoints sin wrapper)
+
+Implementacion tecnica completada:
+- Se refuerza cobertura de regresion en endpoints sin wrapper de modulo para validar aislamiento por `empresa_id` y cuenta Google autenticada:
+	- `backend/handlers/auth_users_carritos_test.go` agrega:
+		- `TestEmpresaUsuarioLoginHandlerRejectsWrongEmpresaScopeFromQuery`.
+		- `TestEmpresaUsuarioSetPasswordHandlerRejectsWrongEmpresaScopeFromQuery`.
+	- `backend/handlers/chat_con_inteligencia_artificial_controller_test.go` agrega:
+		- `TestModeloPreferidoHandlerGetRejectsEmpresaFueraDeAlcanceByGoogleAccount`.
+		- `TestModeloPreferidoHandlerPutRejectsEmpresaFueraDeAlcanceByGoogleAccount`.
+		- `TestHistorialHandlerRejectsEmpresaFueraDeAlcanceByGoogleAccount`.
+
+Validacion ejecutada:
+- `go test ./handlers -run "EmpresaUsuario(LoginHandlerRejectsWrongEmpresaScope|SetPasswordHandlerRejectsWrongEmpresaScope)|ModelosHandlerRejectsEmpresaFueraDeAlcanceByGoogleAccount|ConsultarHandlerRejectsEmpresaFueraDeAlcance|ModeloPreferidoHandler(Get|Put)RejectsEmpresaFueraDeAlcanceByGoogleAccount|HistorialHandlerRejectsEmpresaFueraDeAlcanceByGoogleAccount" -count=1` (ok).
+
 ## Backlog inmediato (siguiente iteracion)
 
-1. Cerrar Punto 3 (permisos y seguridad): consolidar matriz final por endpoint/rol y completar evidencia UAT en acciones criticas.
+1. Cerrar Punto 3 (permisos y seguridad): definir e implementar politica final de lectura sensible en auditoria (`/api/empresa/auditoria/eventos`) por rol (`auditor`, `admin_empresa`, `super_administrador`) y su evidencia UAT automatizada.
 2. Iniciar Punto 5 (control de inventarios): formalizar kardex operativo, reglas de stock min/max y alertas de quiebre por bodega.
 
 ## Criterios de avance para la siguiente fase

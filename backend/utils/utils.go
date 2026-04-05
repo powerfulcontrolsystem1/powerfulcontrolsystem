@@ -75,6 +75,11 @@ func requestIDFromContext(ctx context.Context) string {
 	return strings.TrimSpace(s)
 }
 
+// RequestIDFromContext expone el request_id propagado por middleware para otros paquetes.
+func RequestIDFromContext(ctx context.Context) string {
+	return requestIDFromContext(ctx)
+}
+
 func empresaIDFromContext(ctx context.Context) int64 {
 	v := ctx.Value(ctxKeyEmpresaID)
 	if n, ok := v.(int64); ok && n > 0 {

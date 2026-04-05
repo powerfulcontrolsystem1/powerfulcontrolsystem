@@ -181,8 +181,8 @@
         <li>Confirma impacto en módulos dependientes.</li>
       </ol>
 
-      <h4 style="margin:12px 0 6px 0;">17) Configuración avanzada</h4>
-      <p class="form-help" style="margin-top:0;">Ruta: <a href="/administrar_empresa/configuracion_avanzada.html">/administrar_empresa/configuracion_avanzada.html</a></p>
+      <h4 style="margin:12px 0 6px 0;">17) Configuración avanzada (integrada)</h4>
+      <p class="form-help" style="margin-top:0;">Ruta: <a href="/administrar_empresa/facturacion_electronica.html">/administrar_empresa/facturacion_electronica.html</a> (sección Configuración avanzada)</p>
       <ol>
         <li>Configura parámetros fiscales y técnicos avanzados.</li>
         <li>Valida formatos y consistencia de datos críticos.</li>
@@ -298,7 +298,7 @@
             <tr><td>GET/POST/PUT/DELETE</td><td>/api/empresa/carritos_compra/items</td><td>CRUD de items en carrito</td></tr>
             <tr><td>GET/POST/PUT/DELETE</td><td>/api/empresa/codigos_de_descuento</td><td>CRUD y validación de códigos de descuento por empresa</td></tr>
             <tr><td>PUT?action=activar_estacion</td><td>/api/empresa/carritos_compra</td><td>Activación de carrito de estación</td></tr>
-            <tr><td>PUT?action=pagar_estacion</td><td>/api/empresa/carritos_compra</td><td>Cierre/pago con validación de efectivo, tarjeta crédito, tarjeta débito o código de descuento</td></tr>
+            <tr><td>PUT?action=pagar_estacion</td><td>/api/empresa/carritos_compra</td><td>Cierre/pago con validación de efectivo, tarjeta crédito, tarjeta débito, transferencia bancaria, pago mixto o código de descuento</td></tr>
           </tbody>
         </table>
       </div>
@@ -357,7 +357,7 @@
       <ul>
         <li>El carrito permite agregar productos por catálogo o por lectura de código de barras/SKU.</li>
         <li>También permite agregar combos; el descuento de inventario se realiza por cada ingrediente del combo.</li>
-        <li>El cierre de carrito valida método de pago y exige referencia para pagos con tarjeta.</li>
+        <li>El cierre de carrito valida método de pago y exige referencia para pagos con tarjeta o transferencia bancaria.</li>
         <li>El pago con código de descuento valida vigencia, monto mínimo y usos disponibles del código.</li>
         <li>Al leer un código válido, el sistema incrementa cantidad o crea el item automáticamente.</li>
         <li>El proceso descuenta inventario del producto asociado respetando el contexto de empresa.</li>

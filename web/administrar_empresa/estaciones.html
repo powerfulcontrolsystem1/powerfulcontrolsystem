@@ -47,6 +47,13 @@
       return String(v == null ? '' : v).trim().toLowerCase();
     }
 
+    function toBool(v) {
+      if (typeof v === 'boolean') return v;
+      if (typeof v === 'number') return v === 1;
+      const raw = String(v == null ? '' : v).trim().toLowerCase();
+      return raw === '1' || raw === 'true' || raw === 'si' || raw === 'sí';
+    }
+
     function normalizeColor(v, fallback) {
       const raw = String(v == null ? '' : v).trim().toLowerCase();
       const base = String(fallback == null ? '' : fallback).trim().toLowerCase();
@@ -88,10 +95,11 @@
       return 'EST-' + empresaId + '-' + stationID;
     }
 
-    function openStationCarrito(stationID, stationName) {
+    function openStationCarrito(stationID, stationName, useSimpleSales) {
       if (!empresaId || !stationID) return;
       const carritoCode = getCarritoCodeForStation(stationID);
-      const url = '/administrar_empresa/carrito_de_compras.html?empresa_id=' + encodeURIComponent(empresaId) +
+      const page = useSimpleSales ? '/administrar_empresa/ventas_simple.html' : '/administrar_empresa/carrito_de_compras.html';
+      const url = page + '?empresa_id=' + encodeURIComponent(empresaId) +
         '&estacion_id=' + encodeURIComponent(stationID) +
         '&estacion_nombre=' + encodeURIComponent(stationName || ('Estación ' + stationID)) +
         '&carrito_codigo=' + encodeURIComponent(carritoCode);
@@ -153,7 +161,8 @@
         for (let i = 0; i < cantidad; i++) {
           const est = estacionesRaw[i] || {};
           const nombre = String(est.nombre || '').trim();
-          estaciones.push({ id: i + 1, nombre: nombre || ('Estación ' + (i + 1)) });
+          const ventaSimpleHabilitada = toBool(est.venta_simple_habilitada) || toBool(est.modo_venta_simple);
+          estaciones.push({ id: i + 1, nombre: nombre || ('Estación ' + (i + 1)), venta_simple_habilitada: ventaSimpleHabilitada });
         }
         return { cantidad, estaciones };
       } catch (_) {
@@ -169,6 +178,7 @@
       }
       grid.innerHTML = cfg.estaciones.map(est => {
         const stationID = Number(est.id || 0);
+        const useSimpleSales = !!est.venta_simple_habilitada;
         const carritoCode = getCarritoCodeForStation(stationID);
         const info = state.carritosPorCodigo[normalizeCode(carritoCode)] || null;
         const carritoActivo = !!(info && info.activo);
@@ -177,13 +187,15 @@
           ? '<p class="station-entry-time">Entrada: ' + sanitize(entradaLabel) + '</p>'
           : '';
         const badgeText = carritoActivo ? 'Carrito activo' : 'Carrito inactivo';
+        const modeText = useSimpleSales ? 'Modo: Venta simple' : 'Modo: Carrito completo';
         const badgeClass = carritoActivo ? 'station-status-active' : 'station-status-inactive';
         const stationClass = carritoActivo ? 'station-card-active' : 'station-card-inactive';
         const stationColor = carritoActivo ? state.colores.activo : state.colores.inactivo;
 
-        return '<article class="portal-card ' + stationClass + '" style="--station-state-bg:' + sanitize(stationColor) + ';" data-estacion-id="' + stationID + '" data-estacion-nombre="' + sanitize(est.nombre) + '" tabindex="0" role="button" aria-label="Abrir carrito de ' + sanitize(est.nombre) + '">' +
+        return '<article class="portal-card ' + stationClass + '" style="--station-state-bg:' + sanitize(stationColor) + ';" data-estacion-id="' + stationID + '" data-estacion-nombre="' + sanitize(est.nombre) + '" data-venta-simple="' + (useSimpleSales ? '1' : '0') + '" tabindex="0" role="button" aria-label="Abrir estación ' + sanitize(est.nombre) + '">' +
           '<h3>' + sanitize(est.nombre) + '</h3>' +
           '<p>Estación #' + stationID + '</p>' +
+          '<p class="station-mode-label">' + modeText + '</p>' +
           entradaHtml +
           '<span class="station-status-badge ' + badgeClass + '">' + badgeText + '</span>' +
           '</article>';
@@ -194,14 +206,16 @@
         card.addEventListener('click', ev => {
           const stationID = Number(card.getAttribute('data-estacion-id') || 0);
           const stationName = String(card.getAttribute('data-estacion-nombre') || '').trim();
-          openStationCarrito(stationID, stationName);
+          const useSimpleSales = card.getAttribute('data-venta-simple') === '1';
+          openStationCarrito(stationID, stationName, useSimpleSales);
         });
         card.addEventListener('keydown', ev => {
           if (ev.key !== 'Enter' && ev.key !== ' ') return;
           ev.preventDefault();
           const stationID = Number(card.getAttribute('data-estacion-id') || 0);
           const stationName = String(card.getAttribute('data-estacion-nombre') || '').trim();
-          openStationCarrito(stationID, stationName);
+          const useSimpleSales = card.getAttribute('data-venta-simple') === '1';
+          openStationCarrito(stationID, stationName, useSimpleSales);
         });
       });
     }

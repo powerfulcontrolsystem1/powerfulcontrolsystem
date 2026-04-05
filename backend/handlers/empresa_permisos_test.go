@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -436,6 +437,57 @@ func TestWithEmpresaVentasPermissionsAllowsCajeroChatAdjuntoMultipart(t *testing
 	}
 }
 
+func TestWithEmpresaVentasPermissionsInjectsEmpresaIDContextForParsers(t *testing.T) {
+	dbEmp := openPermsTestDB(t, "empresas.db")
+	dbSuper := openPermsTestDB(t, "super.db")
+	ensurePermsEmpresasSchema(t, dbEmp)
+	ensurePermsAdminSchema(t, dbSuper)
+	seedPermsEmpresa(t, dbEmp, 71, "admin@scope.com")
+	seedPermsAdmin(t, dbSuper, "admin@scope.com", "administrador")
+
+	h := WithEmpresaVentasPermissions(dbEmp, dbSuper, func(w http.ResponseWriter, r *http.Request) {
+		empresaIDByRequired, err := parseEmpresaIDQuery(r)
+		if err != nil {
+			http.Error(w, "parseEmpresaIDQuery fallo: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		empresaIDByOptional, err := parseInt64QueryOptional(r, "empresa_id")
+		if err != nil {
+			http.Error(w, "parseInt64QueryOptional fallo: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]int64{
+			"empresa_id_required": empresaIDByRequired,
+			"empresa_id_optional": empresaIDByOptional,
+		})
+	})
+
+	req := httptest.NewRequest(http.MethodPost, "/api/empresa/ventas/context_scope", strings.NewReader(`{"empresa_id":71,"descripcion":"prueba"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req = req.WithContext(context.WithValue(req.Context(), "adminEmail", "admin@scope.com"))
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200 for context injected empresa_id, got %d body=%s", rr.Code, rr.Body.String())
+	}
+	if got := rr.Header().Get("X-Empresa-ID"); got != "71" {
+		t.Fatalf("expected response header X-Empresa-ID=71, got %q", got)
+	}
+
+	var payload map[string]int64
+	if err := json.Unmarshal(rr.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode response: %v body=%s", err, rr.Body.String())
+	}
+	if payload["empresa_id_required"] != 71 {
+		t.Fatalf("expected empresa_id_required=71, got %d", payload["empresa_id_required"])
+	}
+	if payload["empresa_id_optional"] != 71 {
+		t.Fatalf("expected empresa_id_optional=71, got %d", payload["empresa_id_optional"])
+	}
+}
+
 func TestWithEmpresaVentasPermissionsRejectsChatAdjuntoWithoutAuth(t *testing.T) {
 	dbEmp := openPermsTestDB(t, "empresas.db")
 	dbSuper := openPermsTestDB(t, "super.db")
@@ -611,4 +663,126 @@ func TestWithEmpresaFinanzasPermissionsAllowsContabilidadProcesarAsientos(t *tes
 	if !nextCalled {
 		t.Fatalf("next handler must be called when permission is granted")
 	}
+}
+
+func TestEmpresaPermisosContextoHandlerRetornaPermisosPorRol(t *testing.T) {
+	dbEmp := openPermsTestDB(t, "empresas.db")
+	dbSuper := openPermsTestDB(t, "super.db")
+	ensurePermsEmpresasSchema(t, dbEmp)
+	ensurePermsAdminSchema(t, dbSuper)
+	seedPermsEmpresa(t, dbEmp, 46, "conta@contexto.com")
+	seedPermsAdmin(t, dbSuper, "conta@contexto.com", "contabilidad")
+
+	h := WithEmpresaSeguridadPermissions(dbEmp, dbSuper, EmpresaPermisosContextoHandler(dbSuper))
+	req := httptest.NewRequest(http.MethodGet, "/api/empresa/permisos_contexto?empresa_id=46", nil)
+	req = req.WithContext(context.WithValue(req.Context(), "adminEmail", "conta@contexto.com"))
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200 for permisos_contexto, got %d body=%s", rr.Code, rr.Body.String())
+	}
+
+	var resp empresaPermisosContextResponse
+	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode permisos_contexto response: %v body=%s", err, rr.Body.String())
+	}
+
+	if resp.EmpresaID != 46 {
+		t.Fatalf("expected empresa_id=46, got %d", resp.EmpresaID)
+	}
+	if resp.Rol != "contabilidad" {
+		t.Fatalf("expected rol=contabilidad, got %q", resp.Rol)
+	}
+	if resp.IncluyeMatriz {
+		t.Fatalf("expected incluye_matriz=false by default")
+	}
+	if got, want := len(resp.Modulos), len(permissionModulesCatalogOrdered); got != want {
+		t.Fatalf("expected %d modulos, got %d", want, got)
+	}
+
+	finanzas, ok := findPermissionModuleRow(resp.Modulos, permModuleFinanzas)
+	if !ok {
+		t.Fatalf("finanzas module must exist in response")
+	}
+	if !finanzas.Read || !finanzas.Create || !finanzas.Update || !finanzas.Approve {
+		t.Fatalf("contabilidad must have read/create/update/approve over finanzas: %+v", finanzas)
+	}
+
+	seguridad, ok := findPermissionModuleRow(resp.Modulos, permModuleSeguridad)
+	if !ok {
+		t.Fatalf("seguridad module must exist in response")
+	}
+	if !seguridad.Read {
+		t.Fatalf("contabilidad must keep read on seguridad")
+	}
+	if seguridad.Create || seguridad.Update || seguridad.Delete || seguridad.Approve {
+		t.Fatalf("contabilidad must not escalate seguridad write/approve actions: %+v", seguridad)
+	}
+}
+
+func TestEmpresaPermisosContextoHandlerIncluyeMatrizRoles(t *testing.T) {
+	dbEmp := openPermsTestDB(t, "empresas.db")
+	dbSuper := openPermsTestDB(t, "super.db")
+	ensurePermsEmpresasSchema(t, dbEmp)
+	ensurePermsAdminSchema(t, dbSuper)
+	seedPermsEmpresa(t, dbEmp, 47, "admin@contexto.com")
+	seedPermsAdmin(t, dbSuper, "admin@contexto.com", "administrador")
+
+	h := WithEmpresaSeguridadPermissions(dbEmp, dbSuper, EmpresaPermisosContextoHandler(dbSuper))
+	req := httptest.NewRequest(http.MethodGet, "/api/empresa/permisos_contexto?empresa_id=47&include_matrix=1", nil)
+	req = req.WithContext(context.WithValue(req.Context(), "adminEmail", "admin@contexto.com"))
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200 for permisos_contexto include_matrix, got %d body=%s", rr.Code, rr.Body.String())
+	}
+
+	var resp empresaPermisosContextResponse
+	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode permisos_contexto include_matrix response: %v body=%s", err, rr.Body.String())
+	}
+
+	if !resp.IncluyeMatriz {
+		t.Fatalf("expected incluye_matriz=true when include_matrix=1")
+	}
+	if got, want := len(resp.MatrizRoles), len(permissionRolesCatalogOrdered); got != want {
+		t.Fatalf("expected %d role rows in matriz_roles, got %d", want, got)
+	}
+
+	superAdmin, ok := findPermissionRoleRow(resp.MatrizRoles, "super_administrador")
+	if !ok {
+		t.Fatalf("matriz_roles must include super_administrador")
+	}
+	seguridad, ok := findPermissionModuleRow(superAdmin.Modulos, permModuleSeguridad)
+	if !ok {
+		t.Fatalf("seguridad module must exist in super_administrador matrix")
+	}
+	if !seguridad.Read || !seguridad.Create || !seguridad.Update || !seguridad.Delete || !seguridad.Approve {
+		t.Fatalf("super_administrador must have full seguridad permissions: %+v", seguridad)
+	}
+	if superAdmin.Resumen.AccionesHabilitadas == 0 {
+		t.Fatalf("summary for super_administrador must expose enabled actions")
+	}
+}
+
+func findPermissionModuleRow(rows []permissionModuleMatrixRow, modulo string) (permissionModuleMatrixRow, bool) {
+	for _, row := range rows {
+		if row.Modulo == modulo {
+			return row, true
+		}
+	}
+	return permissionModuleMatrixRow{}, false
+}
+
+func findPermissionRoleRow(rows []empresaPermisosRolMatriz, role string) (empresaPermisosRolMatriz, bool) {
+	for _, row := range rows {
+		if row.Rol == role {
+			return row, true
+		}
+	}
+	return empresaPermisosRolMatriz{}, false
 }

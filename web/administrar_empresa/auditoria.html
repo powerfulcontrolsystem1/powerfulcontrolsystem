@@ -41,6 +41,17 @@
             </select>
           </div>
           <div class="form-col">
+            <label class="form-label" for="fMetodoHttp">Metodo HTTP</label>
+            <select id="fMetodoHttp" class="form-input">
+              <option value="">Todos</option>
+              <option value="GET">GET</option>
+              <option value="POST">POST</option>
+              <option value="PUT">PUT</option>
+              <option value="PATCH">PATCH</option>
+              <option value="DELETE">DELETE</option>
+            </select>
+          </div>
+          <div class="form-col">
             <label class="form-label" for="fAccion">Accion</label>
             <input id="fAccion" class="form-input" placeholder="Ej: cerrar, emitir, aprobar">
           </div>
@@ -63,6 +74,21 @@
             <label class="form-label" for="fRequestId">Request ID</label>
             <input id="fRequestId" class="form-input" placeholder="req-...">
           </div>
+          <div class="form-col">
+            <label class="form-label" for="fRecurso">Recurso</label>
+            <input id="fRecurso" class="form-input" placeholder="Ej: carritos_compra, usuarios">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="fEndpoint">Endpoint</label>
+            <input id="fEndpoint" class="form-input" placeholder="Ej: /api/empresa/carritos_compra">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="fSearch">Busqueda libre</label>
+            <input id="fSearch" class="form-input" placeholder="Texto en modulo, accion, endpoint, usuario, request, IP">
+          </div>
+        </div>
+
+        <div class="form-row">
           <div class="form-col">
             <label class="form-label" for="fDesde">Desde</label>
             <input id="fDesde" type="date" class="form-input">
@@ -88,7 +114,7 @@
           </div>
         </div>
 
-        <div class="form-row" style="margin-top:8px;">
+        <div class="form-row auditoria-checkbox-row">
           <div class="form-col">
             <label class="empresa-config-check" for="fIncluirInactivos">
               <input id="fIncluirInactivos" type="checkbox">
@@ -122,6 +148,11 @@
       <div class="empresa-section-header">
         <h2>Eventos</h2>
       </div>
+      <div class="auditoria-pagination">
+        <button id="btnPrevPage" class="btn secondary" type="button">Anterior</button>
+        <button id="btnNextPage" class="btn secondary" type="button">Siguiente</button>
+        <span id="pagerInfo" class="auditoria-pager-info">Mostrando 0-0 de 0</span>
+      </div>
       <div class="table-wrap">
         <table class="table" id="tablaAuditoria">
           <thead>
@@ -129,6 +160,8 @@
               <th>Fecha</th>
               <th>Modulo</th>
               <th>Accion</th>
+              <th>Metodo</th>
+              <th>Endpoint</th>
               <th>Recurso</th>
               <th>ID</th>
               <th>HTTP</th>
@@ -137,6 +170,7 @@
               <th>Request</th>
               <th>IP</th>
               <th>Metadata</th>
+              <th>Detalle</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -144,12 +178,26 @@
       </div>
       <div id="tablaMsg" class="form-help"></div>
     </section>
+
+    <section class="card empresa-section" id="detalleEventoCard" hidden>
+      <div class="empresa-section-header">
+        <h2>Detalle del evento</h2>
+        <button id="btnCerrarDetalle" class="btn secondary" type="button">Cerrar</button>
+      </div>
+      <pre id="detalleEventoJson" class="auditoria-detail-pre"></pre>
+      <div id="detalleMsg" class="form-help"></div>
+    </section>
   </div>
 
   <script>
+    const DEFAULT_LIMIT = 200;
+
     const state = {
       empresaId: Number(new URLSearchParams(window.location.search).get('empresa_id') || 0),
-      rows: []
+      rows: [],
+      total: 0,
+      limit: DEFAULT_LIMIT,
+      offset: 0
     };
 
     function normalize(v) {
@@ -158,7 +206,8 @@
 
     function toNumber(v, fallback) {
       const n = Number(v);
-      return Number.isFinite(n) ? n : (fallback || 0);
+      if (Number.isFinite(n)) return n;
+      return Number.isFinite(fallback) ? fallback : 0;
     }
 
     function setMsg(id, text, isError) {
@@ -191,15 +240,20 @@
       return dt.toLocaleString('es-CO');
     }
 
+    function shortText(raw, maxLen) {
+      const text = normalize(raw);
+      if (!text) return '-';
+      if (!maxLen || text.length <= maxLen) return text;
+      return text.slice(0, maxLen) + '...';
+    }
+
     function formatMetadata(raw) {
       const text = normalize(raw);
       if (!text) return '-';
       try {
         const parsed = JSON.parse(text);
         const compact = JSON.stringify(parsed);
-        if (compact.length > 140) {
-          return compact.slice(0, 140) + '...';
-        }
+        if (compact.length > 140) return compact.slice(0, 140) + '...';
         return compact;
       } catch (_) {
         if (text.length > 140) return text.slice(0, 140) + '...';
@@ -207,49 +261,93 @@
       }
     }
 
+    function currentLimitFromInput() {
+      const raw = toNumber(document.getElementById('fLimit').value, DEFAULT_LIMIT);
+      return Math.max(1, Math.min(1000, Math.trunc(raw || DEFAULT_LIMIT)));
+    }
+
     function buildQuery() {
       const p = new URLSearchParams();
       p.set('empresa_id', String(state.empresaId));
 
       const modulo = normalize(document.getElementById('fModulo').value).toLowerCase();
+      const metodoHttp = normalize(document.getElementById('fMetodoHttp').value).toUpperCase();
       const accion = normalize(document.getElementById('fAccion').value).toLowerCase();
       const resultado = normalize(document.getElementById('fResultado').value).toLowerCase();
       const usuario = normalize(document.getElementById('fUsuario').value);
       const requestId = normalize(document.getElementById('fRequestId').value);
+      const recurso = normalize(document.getElementById('fRecurso').value);
+      const endpoint = normalize(document.getElementById('fEndpoint').value);
+      const search = normalize(document.getElementById('fSearch').value);
       const desde = normalize(document.getElementById('fDesde').value);
       const hasta = normalize(document.getElementById('fHasta').value);
-      const limit = Math.max(1, Math.min(1000, Math.trunc(toNumber(document.getElementById('fLimit').value, 200))));
+      const limit = currentLimitFromInput();
       const codigoHttp = Math.max(0, Math.trunc(toNumber(document.getElementById('fCodigoHttp').value, 0)));
       const recursoId = Math.max(0, Math.trunc(toNumber(document.getElementById('fRecursoId').value, 0)));
 
+      state.limit = limit;
+
       p.set('limit', String(limit));
+      p.set('offset', String(state.offset));
       if (modulo) p.set('modulo', modulo);
+      if (metodoHttp) p.set('metodo_http', metodoHttp);
       if (accion) p.set('accion', accion);
       if (resultado) p.set('resultado', resultado);
       if (usuario) p.set('usuario', usuario);
       if (requestId) p.set('request_id', requestId);
+      if (recurso) p.set('recurso', recurso);
+      if (endpoint) p.set('endpoint', endpoint);
+      if (search) p.set('search', search);
       if (codigoHttp > 0) p.set('codigo_http', String(codigoHttp));
       if (recursoId > 0) p.set('recurso_id', String(recursoId));
-      if (desde) p.set('desde', desde + ' 00:00:00');
-      if (hasta) p.set('hasta', hasta + ' 23:59:59');
+      if (desde) p.set('desde', desde);
+      if (hasta) p.set('hasta', hasta);
       if (document.getElementById('fIncluirInactivos').checked) p.set('include_inactive', '1');
 
       return p.toString();
+    }
+
+    function hideDetalleEvento() {
+      document.getElementById('detalleEventoCard').hidden = true;
+      document.getElementById('detalleEventoJson').textContent = '';
+      setMsg('detalleMsg', '', false);
+    }
+
+    function mostrarDetalleEvento(index) {
+      const rows = Array.isArray(state.rows) ? state.rows : [];
+      if (index < 0 || index >= rows.length) return;
+      const item = rows[index];
+      document.getElementById('detalleEventoCard').hidden = false;
+      document.getElementById('detalleEventoJson').textContent = JSON.stringify(item, null, 2);
+      setMsg('detalleMsg', 'Evento #' + (index + 1) + ' de la pagina actual.', false);
+    }
+
+    function bindDetalleButtons() {
+      const buttons = document.querySelectorAll('.js-auditoria-detalle');
+      buttons.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          const idx = Math.trunc(toNumber(btn.getAttribute('data-index'), -1));
+          mostrarDetalleEvento(idx);
+        });
+      });
     }
 
     function renderTable() {
       const tbody = document.querySelector('#tablaAuditoria tbody');
       const rows = Array.isArray(state.rows) ? state.rows : [];
       if (!rows.length) {
-        tbody.innerHTML = '<tr><td colspan="11">No hay eventos para el filtro actual.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="14">No hay eventos para el filtro actual.</td></tr>';
+        hideDetalleEvento();
         return;
       }
 
-      tbody.innerHTML = rows.map(function(item) {
+      tbody.innerHTML = rows.map(function(item, index) {
         return '<tr>' +
           '<td>' + sanitizeHtml(safeDate(item.fecha_evento || item.fecha_creacion)) + '</td>' +
           '<td>' + sanitizeHtml(item.modulo || '-') + '</td>' +
           '<td>' + sanitizeHtml(item.accion || '-') + '</td>' +
+          '<td>' + sanitizeHtml(item.metodo_http || '-') + '</td>' +
+          '<td title="' + sanitizeHtml(item.endpoint || '') + '">' + sanitizeHtml(shortText(item.endpoint || '-', 44)) + '</td>' +
           '<td>' + sanitizeHtml(item.recurso || '-') + '</td>' +
           '<td>' + sanitizeHtml(String(toNumber(item.recurso_id, 0) || '-')) + '</td>' +
           '<td>' + sanitizeHtml(String(toNumber(item.codigo_http, 0) || '-')) + '</td>' +
@@ -258,8 +356,34 @@
           '<td>' + sanitizeHtml(item.request_id || '-') + '</td>' +
           '<td>' + sanitizeHtml(item.ip_origen || '-') + '</td>' +
           '<td title="' + sanitizeHtml(item.metadata_json || '') + '">' + sanitizeHtml(formatMetadata(item.metadata_json)) + '</td>' +
+          '<td><button type="button" class="btn secondary js-auditoria-detalle" data-index="' + index + '">Ver</button></td>' +
         '</tr>';
       }).join('');
+
+      bindDetalleButtons();
+    }
+
+    function renderPager() {
+      const total = Math.max(0, Math.trunc(toNumber(state.total, 0)));
+      const offset = Math.max(0, Math.trunc(toNumber(state.offset, 0)));
+      const pageRows = Array.isArray(state.rows) ? state.rows.length : 0;
+      const start = total > 0 ? offset + 1 : 0;
+      const end = total > 0 ? Math.min(offset + pageRows, total) : 0;
+
+      document.getElementById('pagerInfo').textContent = 'Mostrando ' + start + '-' + end + ' de ' + total;
+      document.getElementById('btnPrevPage').disabled = offset <= 0;
+      document.getElementById('btnNextPage').disabled = (offset + state.limit) >= total;
+    }
+
+    function applyMetaFromHeaders(res) {
+      const headerTotal = Math.trunc(toNumber(res.headers.get('X-Total-Count'), 0));
+      const headerLimit = Math.trunc(toNumber(res.headers.get('X-Page-Limit'), state.limit));
+      const headerOffset = Math.trunc(toNumber(res.headers.get('X-Page-Offset'), state.offset));
+
+      state.total = headerTotal;
+      state.limit = Math.max(1, Math.min(1000, headerLimit || state.limit || DEFAULT_LIMIT));
+      state.offset = Math.max(0, headerOffset);
+      document.getElementById('fLimit').value = String(state.limit);
     }
 
     async function loadEmpresaInfo() {
@@ -320,7 +444,7 @@
           'application/json;charset=utf-8',
           JSON.stringify(rows, null, 2)
         );
-        setMsg('tablaMsg', 'Exportacion JSON completada (' + rows.length + ' eventos).', false);
+        setMsg('tablaMsg', 'Exportacion JSON completada (' + rows.length + ' eventos de la pagina actual).', false);
       } catch (err) {
         setMsg('tablaMsg', err.message || 'No se pudo exportar JSON.', true);
       }
@@ -344,10 +468,10 @@
           'fecha_evento',
           'modulo',
           'accion',
-          'recurso',
-          'recurso_id',
           'metodo_http',
           'endpoint',
+          'recurso',
+          'recurso_id',
           'resultado',
           'codigo_http',
           'usuario_creador',
@@ -356,17 +480,16 @@
           'metadata_json'
         ];
 
-        const lines = [];
-        lines.push(headers.join(','));
+        const lines = [headers.join(',')];
         rows.forEach(function(item) {
           const row = [
             item.fecha_evento || item.fecha_creacion || '',
             item.modulo || '',
             item.accion || '',
-            item.recurso || '',
-            toNumber(item.recurso_id, 0) || '',
             item.metodo_http || '',
             item.endpoint || '',
+            item.recurso || '',
+            toNumber(item.recurso_id, 0) || '',
             item.resultado || '',
             toNumber(item.codigo_http, 0) || '',
             item.usuario_creador || '',
@@ -382,19 +505,29 @@
           'text/csv;charset=utf-8',
           lines.join('\r\n')
         );
-        setMsg('tablaMsg', 'Exportacion CSV completada (' + rows.length + ' eventos).', false);
+        setMsg('tablaMsg', 'Exportacion CSV completada (' + rows.length + ' eventos de la pagina actual).', false);
       } catch (err) {
         setMsg('tablaMsg', err.message || 'No se pudo exportar CSV.', true);
       }
     }
 
-    async function buscarAuditoria() {
+    async function buscarAuditoria(options) {
+      const opts = options || {};
+      if (opts.resetOffset) {
+        state.offset = 0;
+      }
+
       try {
         const res = await fetch('/api/empresa/auditoria/eventos?' + buildQuery(), { credentials: 'same-origin' });
         await ensureOk(res);
+        applyMetaFromHeaders(res);
         state.rows = await res.json();
+        if (state.total <= 0 && state.rows.length > 0) {
+          state.total = state.rows.length;
+        }
         renderTable();
-        setMsg('tablaMsg', 'Eventos cargados: ' + (Array.isArray(state.rows) ? state.rows.length : 0), false);
+        renderPager();
+        setMsg('tablaMsg', 'Eventos cargados: ' + state.rows.length + '. Total del filtro: ' + state.total + '.', false);
         setMsg('filtroMsg', '', false);
       } catch (err) {
         setMsg('tablaMsg', '', false);
@@ -421,7 +554,7 @@
         const data = await res.json();
         const eliminados = toNumber(data && data.eliminados, 0);
         setMsg('retencionMsg', 'Retencion aplicada. Registros eliminados: ' + eliminados + '.', false);
-        await buscarAuditoria();
+        await buscarAuditoria({ resetOffset: true });
       } catch (err) {
         setMsg('retencionMsg', err.message || 'No se pudo aplicar la retencion.', true);
       }
@@ -429,12 +562,16 @@
 
     function limpiarFiltros() {
       document.getElementById('fModulo').value = '';
+      document.getElementById('fMetodoHttp').value = '';
       document.getElementById('fAccion').value = '';
       document.getElementById('fResultado').value = '';
       document.getElementById('fUsuario').value = '';
       document.getElementById('fRequestId').value = '';
+      document.getElementById('fRecurso').value = '';
+      document.getElementById('fEndpoint').value = '';
+      document.getElementById('fSearch').value = '';
       document.getElementById('fIncluirInactivos').checked = false;
-      document.getElementById('fLimit').value = '200';
+      document.getElementById('fLimit').value = String(DEFAULT_LIMIT);
       document.getElementById('fCodigoHttp').value = '';
       document.getElementById('fRecursoId').value = '';
 
@@ -442,17 +579,48 @@
       const desde = new Date(hoy.getTime() - (7 * 24 * 60 * 60 * 1000));
       document.getElementById('fDesde').value = desde.toISOString().slice(0, 10);
       document.getElementById('fHasta').value = hoy.toISOString().slice(0, 10);
+
+      state.offset = 0;
+      state.limit = DEFAULT_LIMIT;
+      state.total = 0;
+      state.rows = [];
+      renderPager();
+      hideDetalleEvento();
+    }
+
+    function paginaAnterior() {
+      if (state.offset <= 0) return;
+      state.offset = Math.max(0, state.offset - state.limit);
+      buscarAuditoria();
+    }
+
+    function paginaSiguiente() {
+      if ((state.offset + state.limit) >= state.total) return;
+      state.offset = state.offset + state.limit;
+      buscarAuditoria();
     }
 
     function bindEvents() {
-      document.getElementById('btnBuscar').addEventListener('click', buscarAuditoria);
+      document.getElementById('btnBuscar').addEventListener('click', function() {
+        buscarAuditoria({ resetOffset: true });
+      });
       document.getElementById('btnLimpiar').addEventListener('click', function() {
         limpiarFiltros();
-        buscarAuditoria();
+        buscarAuditoria({ resetOffset: true });
       });
       document.getElementById('btnPurgar').addEventListener('click', aplicarRetencion);
       document.getElementById('btnExportCSV').addEventListener('click', exportCSV);
       document.getElementById('btnExportJSON').addEventListener('click', exportJSON);
+      document.getElementById('btnPrevPage').addEventListener('click', paginaAnterior);
+      document.getElementById('btnNextPage').addEventListener('click', paginaSiguiente);
+      document.getElementById('btnCerrarDetalle').addEventListener('click', hideDetalleEvento);
+
+      document.querySelector('.form').addEventListener('keydown', function(ev) {
+        if (ev.key === 'Enter') {
+          ev.preventDefault();
+          buscarAuditoria({ resetOffset: true });
+        }
+      });
     }
 
     (async function init() {
@@ -463,7 +631,7 @@
       limpiarFiltros();
       bindEvents();
       await loadEmpresaInfo();
-      await buscarAuditoria();
+      await buscarAuditoria({ resetOffset: true });
     })();
   </script>
 </body>

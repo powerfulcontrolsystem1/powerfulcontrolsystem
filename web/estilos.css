@@ -376,6 +376,15 @@ html.theme-light .floating-menu #themeToggle{color:var(--accent-2)}
   color: #1e5f57;
 }
 
+#estacionesGrid .station-mode-label{
+  margin: -2px 0 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #5a6f86;
+}
+
 #estacionesGrid .station-status-badge{
   display: inline-block;
   border-radius: 999px;
@@ -619,11 +628,82 @@ html.theme-light .floating-menu #themeToggle{color:var(--accent-2)}
 }
 .empresa-inline-actions .form-input{min-width:260px}
 
+.auditoria-checkbox-row{margin-top:8px}
+
+.auditoria-pagination{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-bottom:8px;
+}
+
+.auditoria-pager-info{
+  color:var(--muted);
+  font-size:.9rem;
+  font-weight:600;
+}
+
+.auditoria-detail-pre{
+  margin:0;
+  padding:12px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:rgba(255,255,255,0.03);
+  color:var(--text);
+  max-height:340px;
+  overflow:auto;
+  font-size:.83rem;
+  line-height:1.4;
+}
+
 .empresa-grid-2{
   display:grid;
   grid-template-columns:1fr 1fr;
   gap:10px;
   margin-top:10px;
+}
+
+/* Modulo nomina de sueldos */
+.nomina-page .empresa-section h1,
+.nomina-page .empresa-section h2{
+  margin:0;
+}
+
+.nomina-kpi-grid{
+  margin-top:10px;
+}
+
+.nomina-layout-grid{
+  align-items:start;
+}
+
+.nomina-form-compact{
+  margin-bottom:10px;
+}
+
+.nomina-filter-box{
+  margin-bottom:10px;
+}
+
+.nomina-filter-actions{
+  display:flex;
+  align-items:flex-end;
+  gap:8px;
+}
+
+.nomina-result-summary{
+  margin:8px 0 10px;
+  padding:10px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:rgba(255,255,255,0.03);
+  color:var(--text);
+  font-weight:600;
+}
+
+.nomina-table td small{
+  color:var(--muted);
 }
 
 /* Modulo graficos y estadisticas */
@@ -883,6 +963,125 @@ html.theme-light .floating-menu #themeToggle{color:var(--accent-2)}
   display:inline-block;
   font-size:.78rem;
   color:var(--muted);
+}
+
+/* Ventas simples por estación (modo supermercado) */
+.ventas-simple-page .empresa-title,
+.ventas-simple-page .empresa-subtitle{
+  margin: 0;
+}
+
+.ventas-simple-kpis{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+  margin-top:12px;
+}
+
+.ventas-simple-kpi{
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:10px;
+  background:rgba(255,255,255,0.03);
+}
+
+.ventas-simple-kpi-label{
+  display:block;
+  color:var(--muted);
+  font-size:.8rem;
+}
+
+.ventas-simple-kpi-value{
+  display:block;
+  margin-top:4px;
+  font-size:1rem;
+  font-weight:700;
+  color:var(--text);
+}
+
+.ventas-simple-layout{
+  display:grid;
+  grid-template-columns:minmax(320px,1fr) minmax(360px,1.08fr);
+  gap:12px;
+}
+
+.ventas-simple-search-row{
+  display:grid;
+  grid-template-columns:1fr 140px auto;
+  gap:8px;
+  align-items:end;
+}
+
+.ventas-simple-products,
+.ventas-simple-items{
+  max-height:360px;
+  overflow:auto;
+}
+
+.ventas-simple-products .table,
+.ventas-simple-items .table{
+  width:100%;
+}
+
+.ventas-simple-qty-actions{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+
+.ventas-simple-qty-value{
+  min-width:42px;
+  text-align:center;
+  font-weight:700;
+  color:var(--text);
+}
+
+.ventas-simple-qty-btn{
+  min-width:30px;
+  height:30px;
+  padding:4px 8px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.ventas-simple-pay-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+}
+
+.ventas-simple-tag{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:4px 10px;
+  border-radius:999px;
+  border:1px solid rgba(145,198,238,0.28);
+  background:rgba(31,142,241,0.12);
+  color:#cde5ff;
+  font-size:.78rem;
+  font-weight:700;
+  letter-spacing:.03em;
+  text-transform:uppercase;
+}
+
+.ventas-simple-section-title{
+  margin:0;
+}
+
+.ventas-simple-hidden{
+  display:none;
+}
+
+@media (max-width:1100px){
+  .ventas-simple-layout{grid-template-columns:1fr;}
+}
+
+@media (max-width:760px){
+  .ventas-simple-search-row{grid-template-columns:1fr;}
+  .ventas-simple-kpis{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .ventas-simple-pay-grid{grid-template-columns:1fr;}
 }
 
 @media (max-width:1100px){

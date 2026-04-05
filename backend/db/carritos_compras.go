@@ -325,6 +325,8 @@ func NormalizeMetodoPagoCarrito(v string) string {
 		return "tarjeta_credito"
 	case "tarjeta_debito", "debito", "debito_tarjeta":
 		return "tarjeta_debito"
+	case "transferencia", "transferencia_bancaria", "bank_transfer":
+		return "transferencia_bancaria"
 	case "codigo_descuento", "descuento", "codigo":
 		return "codigo_descuento"
 	case "mixto", "mixed", "pago_mixto":
@@ -1234,16 +1236,8 @@ func SetCarritoCompraItemEstado(dbConn *sql.DB, empresaID, carritoID, itemID int
 
 // RecalculateCarritoCompraTotals recalcula totales del carrito basado en items activos.
 func RecalculateCarritoCompraTotals(dbConn *sql.DB, empresaID, carritoID int64) error {
-	tx, err := dbConn.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	if err := recalculateCarritoTotalsTx(tx, empresaID, carritoID); err != nil {
-		return err
-	}
-	return tx.Commit()
+	_, err := RefreshCarritoTotalConTarifaPorDia(dbConn, empresaID, carritoID, time.Now())
+	return err
 }
 
 type carritoItemSnapshot struct {

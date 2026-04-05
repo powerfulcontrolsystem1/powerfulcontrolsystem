@@ -4,6 +4,21 @@ function setMessage(targetId, text, isError) {
   el.style.color = isError ? "#ef5350" : "";
 }
 
+function getQueryParam(name) {
+  var params = new URLSearchParams(window.location.search || "");
+  return params.get(name);
+}
+
+var empresaID = Number(getQueryParam("empresa_id") || getQueryParam("id") || 0);
+
+function ensureEmpresaScope(targetId) {
+  if (empresaID > 0) {
+    return true;
+  }
+  setMessage(targetId, "Falta empresa_id en la URL para iniciar sesion de empresa.", true);
+  return false;
+}
+
 async function getErrorMessage(res) {
   var t = await res.text();
   return t || "HTTP " + res.status;
@@ -28,6 +43,10 @@ function showLoginForm() {
 document.getElementById("loginUsuarioForm").addEventListener("submit", async function (ev) {
   ev.preventDefault();
 
+  if (!ensureEmpresaScope("msg")) {
+    return;
+  }
+
   var btn = document.getElementById("btnIngresar");
   var email = (document.getElementById("email").value || "").trim();
   var password = document.getElementById("password").value || "";
@@ -43,10 +62,11 @@ document.getElementById("loginUsuarioForm").addEventListener("submit", async fun
   setMessage("msg", "", false);
 
   try {
-    var res = await fetch("/api/empresa/usuarios/login", {
+    var loginURL = "/api/empresa/usuarios/login?empresa_id=" + encodeURIComponent(String(empresaID));
+    var res = await fetch(loginURL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: email, password: password }),
+      body: JSON.stringify({ empresa_id: empresaID, email: email, password: password }),
     });
 
     if (!res.ok) {
@@ -72,6 +92,10 @@ document.getElementById("loginUsuarioForm").addEventListener("submit", async fun
 document.getElementById("setupPasswordForm").addEventListener("submit", async function (ev) {
   ev.preventDefault();
 
+  if (!ensureEmpresaScope("setupMsg")) {
+    return;
+  }
+
   var btn = document.getElementById("btnCrearPassword");
   var email = (document.getElementById("setupEmail").value || "").trim();
   var documento = (document.getElementById("setupDocumento").value || "").trim();
@@ -93,10 +117,12 @@ document.getElementById("setupPasswordForm").addEventListener("submit", async fu
   setMessage("setupMsg", "", false);
 
   try {
-    var res = await fetch("/api/empresa/usuarios/establecer_password", {
+    var setupURL = "/api/empresa/usuarios/establecer_password?empresa_id=" + encodeURIComponent(String(empresaID));
+    var res = await fetch(setupURL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        empresa_id: empresaID,
         email: email,
         documento_identidad: documento,
         password: password,

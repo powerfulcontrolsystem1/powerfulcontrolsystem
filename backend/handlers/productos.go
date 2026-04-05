@@ -1870,6 +1870,9 @@ func resolveWebRootDir() string {
 }
 
 func parseEmpresaIDQuery(r *http.Request) (int64, error) {
+	if empresaID := parseEmpresaIDFromContext(r); empresaID > 0 {
+		return empresaID, nil
+	}
 	empresaID, err := parseInt64Query(r, "empresa_id")
 	if err != nil || empresaID <= 0 {
 		return 0, fmt.Errorf("empresa_id required")
@@ -1878,6 +1881,11 @@ func parseEmpresaIDQuery(r *http.Request) (int64, error) {
 }
 
 func parseInt64Query(r *http.Request, key string) (int64, error) {
+	if isEmpresaIDKey(key) {
+		if empresaID := parseEmpresaIDFromContext(r); empresaID > 0 {
+			return empresaID, nil
+		}
+	}
 	raw := strings.TrimSpace(r.URL.Query().Get(key))
 	if raw == "" {
 		return 0, fmt.Errorf("%s required", key)
@@ -1886,11 +1894,49 @@ func parseInt64Query(r *http.Request, key string) (int64, error) {
 }
 
 func parseInt64QueryOptional(r *http.Request, key string) (int64, error) {
+	if isEmpresaIDKey(key) {
+		if empresaID := parseEmpresaIDFromContext(r); empresaID > 0 {
+			return empresaID, nil
+		}
+	}
 	raw := strings.TrimSpace(r.URL.Query().Get(key))
 	if raw == "" {
 		return 0, nil
 	}
 	return strconv.ParseInt(raw, 10, 64)
+}
+
+func isEmpresaIDKey(key string) bool {
+	return strings.EqualFold(strings.TrimSpace(key), "empresa_id")
+}
+
+func parseEmpresaIDFromContext(r *http.Request) int64 {
+	if r == nil {
+		return 0
+	}
+	v := r.Context().Value("empresaID")
+	if v == nil {
+		return 0
+	}
+	switch id := v.(type) {
+	case int64:
+		if id > 0 {
+			return id
+		}
+	case int:
+		if id > 0 {
+			return int64(id)
+		}
+	case float64:
+		if id > 0 {
+			return int64(id)
+		}
+	case string:
+		if parsed, err := strconv.ParseInt(strings.TrimSpace(id), 10, 64); err == nil && parsed > 0 {
+			return parsed
+		}
+	}
+	return 0
 }
 
 func parseIntQueryOptional(r *http.Request, key string) (int, error) {
@@ -1932,4 +1978,19 @@ func adminEmailFromRequest(r *http.Request) string {
 		return h
 	}
 	return "sistema"
+}
+
+func adminRoleFromRequest(r *http.Request) string {
+	if v := r.Context().Value("adminRole"); v != nil {
+		if s, ok := v.(string); ok {
+			trim := strings.TrimSpace(s)
+			if trim != "" {
+				return trim
+			}
+		}
+	}
+	if h := strings.TrimSpace(r.Header.Get("X-Admin-Role")); h != "" {
+		return h
+	}
+	return ""
 }

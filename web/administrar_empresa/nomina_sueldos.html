@@ -1,0 +1,1065 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Nomina de sueldos</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="empresa-subpage nomina-page">
+  <div class="container empresa-module">
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <div>
+          <h1>Nomina de sueldos</h1>
+          <p id="empresaInfo" class="form-help">Empresa: cargando...</p>
+        </div>
+        <div class="form-actions">
+          <button id="btnRecargarTodo" class="btn secondary" type="button">Actualizar</button>
+        </div>
+      </div>
+      <p class="form-help">Modulo de nomina integrado con asistencia para calcular horas ordinarias, recargos nocturnos, horas extras y liquidacion salarial por periodo.</p>
+      <div class="kpi-grid nomina-kpi-grid">
+        <div class="kpi-box">
+          <span class="kpi-label">Empleados nomina</span>
+          <strong id="kpiEmpleados">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Festivos configurados</span>
+          <strong id="kpiFestivos">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Liquidaciones en rango</span>
+          <strong id="kpiLiquidaciones">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Neto total</span>
+          <strong id="kpiNeto">$0</strong>
+        </div>
+      </div>
+      <div id="mainMsg" class="form-help"></div>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Configuracion legal de nomina</h2>
+      </div>
+      <form id="cfgForm" class="form">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="cfgPais">Pais</label>
+            <input id="cfgPais" class="form-input" maxlength="2" value="CO">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgMoneda">Moneda</label>
+            <input id="cfgMoneda" class="form-input" maxlength="3" value="COP">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgHorasSemana">Horas ordinarias semana</label>
+            <input id="cfgHorasSemana" class="form-input" type="number" min="1" max="168" step="0.01" value="44">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgHorasDia">Horas ordinarias dia</label>
+            <input id="cfgHorasDia" class="form-input" type="number" min="1" max="24" step="0.01" value="8">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgDiasMes">Dias nomina mes</label>
+            <input id="cfgDiasMes" class="form-input" type="number" min="1" max="31" step="1" value="30">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgDivisorHora">Divisor hora ordinaria</label>
+            <input id="cfgDivisorHora" class="form-input" type="number" min="1" max="400" step="0.01" value="220">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="cfgNocDesde">Hora nocturna desde</label>
+            <input id="cfgNocDesde" class="form-input" type="time" step="1" value="21:00:00">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgNocHasta">Hora nocturna hasta</label>
+            <input id="cfgNocHasta" class="form-input" type="time" step="1" value="06:00:00">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgRecargoNocturno">Recargo nocturno (%)</label>
+            <input id="cfgRecargoNocturno" class="form-input" type="number" min="0" step="0.01" value="35">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgExtraDiurna">Hora extra diurna (%)</label>
+            <input id="cfgExtraDiurna" class="form-input" type="number" min="0" step="0.01" value="25">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgExtraNocturna">Hora extra nocturna (%)</label>
+            <input id="cfgExtraNocturna" class="form-input" type="number" min="0" step="0.01" value="75">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgDomDiurno">Recargo dominical diurno (%)</label>
+            <input id="cfgDomDiurno" class="form-input" type="number" min="0" step="0.01" value="75">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="cfgDomNocturno">Recargo dominical nocturno (%)</label>
+            <input id="cfgDomNocturno" class="form-input" type="number" min="0" step="0.01" value="110">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgExtraDomDiurna">Hora extra dominical diurna (%)</label>
+            <input id="cfgExtraDomDiurna" class="form-input" type="number" min="0" step="0.01" value="100">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgExtraDomNocturna">Hora extra dominical nocturna (%)</label>
+            <input id="cfgExtraDomNocturna" class="form-input" type="number" min="0" step="0.01" value="150">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgDedSalud">Deduccion salud (%)</label>
+            <input id="cfgDedSalud" class="form-input" type="number" min="0" step="0.01" value="4">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgDedPension">Deduccion pension (%)</label>
+            <input id="cfgDedPension" class="form-input" type="number" min="0" step="0.01" value="4">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgDedSolidaridad">Fondo solidaridad (%)</label>
+            <input id="cfgDedSolidaridad" class="form-input" type="number" min="0" step="0.01" value="0">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="cfgObservaciones">Observaciones</label>
+            <textarea id="cfgObservaciones" class="form-textarea" placeholder="Opcional"></textarea>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn">Guardar configuracion</button>
+        </div>
+        <div id="cfgMsg" class="form-help"></div>
+      </form>
+    </section>
+
+    <div class="empresa-grid-2 nomina-layout-grid">
+      <section class="card empresa-section">
+        <div class="empresa-section-header">
+          <h2>Empleados para nomina</h2>
+        </div>
+        <form id="empForm" class="form nomina-form-compact">
+          <input id="empId" type="hidden">
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="empCodigo">Codigo</label>
+              <input id="empCodigo" class="form-input" placeholder="EMP-001">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="empNombre">Nombre empleado</label>
+              <input id="empNombre" class="form-input" required>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="empDocumento">Documento</label>
+              <input id="empDocumento" class="form-input">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="empCargo">Cargo</label>
+              <input id="empCargo" class="form-input">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="empTipoContrato">Tipo contrato</label>
+              <select id="empTipoContrato" class="form-input">
+                <option value="indefinido">Indefinido</option>
+                <option value="fijo">Fijo</option>
+                <option value="obra_labor">Obra labor</option>
+                <option value="aprendizaje">Aprendizaje</option>
+              </select>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="empFechaIngreso">Fecha ingreso</label>
+              <input id="empFechaIngreso" type="date" class="form-input">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="empSalario">Salario basico mensual</label>
+              <input id="empSalario" class="form-input" type="number" min="0" step="0.01" value="0">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="empAuxilio">Auxilio transporte mensual</label>
+              <input id="empAuxilio" class="form-input" type="number" min="0" step="0.01" value="0">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="empBonificacion">Bonificacion fija mensual</label>
+              <input id="empBonificacion" class="form-input" type="number" min="0" step="0.01" value="0">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="empDeduccionFija">Deduccion fija mensual</label>
+              <input id="empDeduccionFija" class="form-input" type="number" min="0" step="0.01" value="0">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="empJornadaDia">Jornada horas dia</label>
+              <input id="empJornadaDia" class="form-input" type="number" min="1" max="24" step="0.01" value="8">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="empAuxilioFlag">Auxilio transporte</label>
+              <select id="empAuxilioFlag" class="form-input">
+                <option value="1">Incluir</option>
+                <option value="0">No incluir</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn">Guardar empleado</button>
+            <button id="empCancelar" type="button" class="btn secondary">Cancelar</button>
+          </div>
+          <div id="empMsg" class="form-help"></div>
+        </form>
+
+        <div class="form nomina-filter-box">
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="empBuscar">Buscar empleado</label>
+              <input id="empBuscar" class="form-input" placeholder="Nombre, codigo, documento o cargo">
+            </div>
+            <div class="form-col nomina-filter-actions">
+              <button id="empBuscarBtn" type="button" class="btn secondary">Buscar</button>
+              <button id="empLimpiarBtn" type="button" class="btn secondary">Limpiar</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table class="table nomina-table">
+            <thead>
+              <tr>
+                <th>Empleado</th>
+                <th>Cargo</th>
+                <th>Salario</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="empTableBody">
+              <tr><td colspan="5">Sin datos</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card empresa-section">
+        <div class="empresa-section-header">
+          <h2>Dias festivos para recargos</h2>
+        </div>
+
+        <form id="festForm" class="form nomina-form-compact">
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="festFecha">Fecha festivo</label>
+              <input id="festFecha" type="date" class="form-input" required>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="festDescripcion">Descripcion</label>
+              <input id="festDescripcion" class="form-input" placeholder="Ej: Jueves santo">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn">Agregar festivo</button>
+          </div>
+          <div id="festMsg" class="form-help"></div>
+        </form>
+
+        <div class="form nomina-filter-box">
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="festDesde">Desde</label>
+              <input id="festDesde" type="date" class="form-input">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="festHasta">Hasta</label>
+              <input id="festHasta" type="date" class="form-input">
+            </div>
+            <div class="form-col nomina-filter-actions">
+              <button id="festBuscarBtn" type="button" class="btn secondary">Filtrar</button>
+              <button id="festLimpiarBtn" type="button" class="btn secondary">Limpiar</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table class="table nomina-table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Descripcion</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="festTableBody">
+              <tr><td colspan="4">Sin datos</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Calculo de nomina por asistencia</h2>
+      </div>
+      <form id="calcForm" class="form">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="calcDesde">Periodo desde</label>
+            <input id="calcDesde" type="date" class="form-input" required>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="calcHasta">Periodo hasta</label>
+            <input id="calcHasta" type="date" class="form-input" required>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="calcEmpleado">Empleado (opcional)</label>
+            <select id="calcEmpleado" class="form-input">
+              <option value="">Todos los empleados</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="calcOtrasDeducciones">Otras deducciones</label>
+            <input id="calcOtrasDeducciones" type="number" min="0" step="0.01" class="form-input" value="0">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="calcOverwrite">Recalcular</label>
+            <select id="calcOverwrite" class="form-input">
+              <option value="1">Si, reemplazar periodo</option>
+              <option value="0">No, mantener existentes</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn">Calcular nomina</button>
+          <button id="calcListarBtn" type="button" class="btn secondary">Consultar liquidaciones</button>
+          <select id="calcExportFormat" class="form-input" style="max-width:170px;">
+            <option value="pdf">PDF</option>
+            <option value="xls">XLS (Excel)</option>
+            <option value="csv">CSV</option>
+            <option value="json">JSON</option>
+            <option value="txt">TXT</option>
+          </select>
+          <button id="calcExportBtn" type="button" class="btn secondary">Exportar liquidaciones</button>
+        </div>
+        <div id="calcMsg" class="form-help"></div>
+      </form>
+
+      <div class="nomina-result-summary" id="calcResumen">Sin calculos recientes.</div>
+
+      <div class="table-wrap">
+        <table class="table nomina-table">
+          <thead>
+            <tr>
+              <th>Empleado</th>
+              <th>Dias</th>
+              <th>Horas asistencia</th>
+              <th>Horas extra</th>
+              <th>Devengado</th>
+              <th>Deducciones</th>
+              <th>Neto pagar</th>
+            </tr>
+          </thead>
+          <tbody id="liqTableBody">
+            <tr><td colspan="7">Sin liquidaciones para mostrar.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    (function () {
+      const state = {
+        empresaID: 0,
+        empresaNombre: '',
+        config: null,
+        empleados: [],
+        festivos: [],
+        liquidaciones: []
+      };
+
+      function getQueryParam(name) {
+        const params = new URLSearchParams(window.location.search);
+        return params.get(name);
+      }
+
+      function normalize(v) {
+        return String(v == null ? '' : v).trim();
+      }
+
+      function esc(raw) {
+        return String(raw == null ? '' : raw)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function toNumber(v, fallback) {
+        const n = Number(v);
+        return Number.isFinite(n) ? n : fallback;
+      }
+
+      function money(v) {
+        const moneda = normalize(state.config && state.config.moneda).toUpperCase() || 'COP';
+        const n = toNumber(v, 0);
+        try {
+          return n.toLocaleString('es-CO', {
+            style: 'currency',
+            currency: moneda,
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          });
+        } catch (_) {
+          return moneda + ' ' + n.toFixed(2);
+        }
+      }
+
+      async function requestJSON(url, options) {
+        const resp = await fetch(url, Object.assign({ credentials: 'same-origin' }, options || {}));
+        const text = await resp.text();
+        let data = null;
+        if (text) {
+          try {
+            data = JSON.parse(text);
+          } catch (_) {
+            data = text;
+          }
+        }
+        if (!resp.ok) {
+          const msg = typeof data === 'string' ? data : (data && (data.error || data.message)) || ('HTTP ' + resp.status);
+          throw new Error(msg);
+        }
+        return data;
+      }
+
+      function setMessage(id, text, kind) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = text || '';
+        if (kind === 'error') {
+          el.className = 'error';
+          return;
+        }
+        if (kind === 'success') {
+          el.className = 'success';
+          return;
+        }
+        el.className = 'form-help';
+      }
+
+      function setDefaultDates() {
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        const firstDay = yyyy + '-' + mm + '-01';
+        const today = yyyy + '-' + mm + '-' + dd;
+
+        document.getElementById('calcDesde').value = firstDay;
+        document.getElementById('calcHasta').value = today;
+        resetFestivoRangeToYear(yyyy);
+      }
+
+      function resetFestivoRangeToYear(year) {
+        const yyyy = Number(year) || new Date().getFullYear();
+        document.getElementById('festDesde').value = yyyy + '-01-01';
+        document.getElementById('festHasta').value = yyyy + '-12-31';
+      }
+
+      function setEmpresaInfo() {
+        const label = document.getElementById('empresaInfo');
+        if (!state.empresaID) {
+          label.textContent = 'Empresa: no definida';
+          return;
+        }
+        if (state.empresaNombre) {
+          label.textContent = 'Empresa: ' + state.empresaNombre + ' (#' + state.empresaID + ')';
+          return;
+        }
+        label.textContent = 'Empresa ID: ' + state.empresaID;
+      }
+
+      async function loadEmpresaInfo() {
+        if (!state.empresaID) return;
+        try {
+          const data = await requestJSON('/super/api/empresas?id=' + encodeURIComponent(state.empresaID));
+          state.empresaNombre = normalize(data && data.nombre);
+        } catch (_) {
+          state.empresaNombre = '';
+        }
+        setEmpresaInfo();
+      }
+
+      function applyConfig(cfg) {
+        state.config = cfg || null;
+        const item = cfg || {};
+        document.getElementById('cfgPais').value = normalize(item.pais_codigo || 'CO');
+        document.getElementById('cfgMoneda').value = normalize(item.moneda || 'COP');
+        document.getElementById('cfgHorasSemana').value = toNumber(item.horas_ordinarias_semana, 44);
+        document.getElementById('cfgHorasDia').value = toNumber(item.horas_ordinarias_dia, 8);
+        document.getElementById('cfgDiasMes').value = toNumber(item.dias_nomina_mes, 30);
+        document.getElementById('cfgDivisorHora').value = toNumber(item.divisor_hora_ordinaria, 220);
+        document.getElementById('cfgNocDesde').value = normalize(item.hora_nocturna_desde || '21:00:00');
+        document.getElementById('cfgNocHasta').value = normalize(item.hora_nocturna_hasta || '06:00:00');
+        document.getElementById('cfgRecargoNocturno').value = toNumber(item.recargo_nocturno_porcentaje, 35);
+        document.getElementById('cfgExtraDiurna').value = toNumber(item.hora_extra_diurna_porcentaje, 25);
+        document.getElementById('cfgExtraNocturna').value = toNumber(item.hora_extra_nocturna_porcentaje, 75);
+        document.getElementById('cfgDomDiurno').value = toNumber(item.recargo_dominical_diurno_porcentaje, 75);
+        document.getElementById('cfgDomNocturno').value = toNumber(item.recargo_dominical_nocturno_porcentaje, 110);
+        document.getElementById('cfgExtraDomDiurna').value = toNumber(item.hora_extra_dominical_diurna_porcentaje, 100);
+        document.getElementById('cfgExtraDomNocturna').value = toNumber(item.hora_extra_dominical_nocturna_porcentaje, 150);
+        document.getElementById('cfgDedSalud').value = toNumber(item.deduccion_salud_porcentaje, 4);
+        document.getElementById('cfgDedPension').value = toNumber(item.deduccion_pension_porcentaje, 4);
+        document.getElementById('cfgDedSolidaridad').value = toNumber(item.deduccion_fondo_solidaridad_porcentaje, 0);
+        document.getElementById('cfgObservaciones').value = normalize(item.observaciones);
+      }
+
+      function buildConfigPayload() {
+        return {
+          empresa_id: Number(state.empresaID),
+          pais_codigo: normalize(document.getElementById('cfgPais').value).toUpperCase(),
+          moneda: normalize(document.getElementById('cfgMoneda').value).toUpperCase(),
+          horas_ordinarias_semana: toNumber(document.getElementById('cfgHorasSemana').value, 44),
+          horas_ordinarias_dia: toNumber(document.getElementById('cfgHorasDia').value, 8),
+          dias_nomina_mes: Math.max(1, Math.round(toNumber(document.getElementById('cfgDiasMes').value, 30))),
+          divisor_hora_ordinaria: toNumber(document.getElementById('cfgDivisorHora').value, 220),
+          hora_nocturna_desde: normalize(document.getElementById('cfgNocDesde').value),
+          hora_nocturna_hasta: normalize(document.getElementById('cfgNocHasta').value),
+          recargo_nocturno_porcentaje: toNumber(document.getElementById('cfgRecargoNocturno').value, 35),
+          hora_extra_diurna_porcentaje: toNumber(document.getElementById('cfgExtraDiurna').value, 25),
+          hora_extra_nocturna_porcentaje: toNumber(document.getElementById('cfgExtraNocturna').value, 75),
+          recargo_dominical_diurno_porcentaje: toNumber(document.getElementById('cfgDomDiurno').value, 75),
+          recargo_dominical_nocturno_porcentaje: toNumber(document.getElementById('cfgDomNocturno').value, 110),
+          hora_extra_dominical_diurna_porcentaje: toNumber(document.getElementById('cfgExtraDomDiurna').value, 100),
+          hora_extra_dominical_nocturna_porcentaje: toNumber(document.getElementById('cfgExtraDomNocturna').value, 150),
+          deduccion_salud_porcentaje: toNumber(document.getElementById('cfgDedSalud').value, 4),
+          deduccion_pension_porcentaje: toNumber(document.getElementById('cfgDedPension').value, 4),
+          deduccion_fondo_solidaridad_porcentaje: toNumber(document.getElementById('cfgDedSolidaridad').value, 0),
+          observaciones: normalize(document.getElementById('cfgObservaciones').value)
+        };
+      }
+
+      async function loadConfig() {
+        const cfg = await requestJSON('/api/empresa/nomina?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=config');
+        applyConfig(cfg || {});
+      }
+
+      async function saveConfig(ev) {
+        ev.preventDefault();
+        try {
+          const payload = buildConfigPayload();
+          const resp = await requestJSON('/api/empresa/nomina?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=config', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          applyConfig(resp && resp.configuracion ? resp.configuracion : payload);
+          setMessage('cfgMsg', 'Configuracion de nomina guardada correctamente.', 'success');
+        } catch (err) {
+          setMessage('cfgMsg', err.message || 'No se pudo guardar la configuracion.', 'error');
+        }
+      }
+
+      function resetEmployeeForm() {
+        document.getElementById('empId').value = '';
+        document.getElementById('empCodigo').value = '';
+        document.getElementById('empNombre').value = '';
+        document.getElementById('empDocumento').value = '';
+        document.getElementById('empCargo').value = '';
+        document.getElementById('empTipoContrato').value = 'indefinido';
+        document.getElementById('empFechaIngreso').value = '';
+        document.getElementById('empSalario').value = '0';
+        document.getElementById('empAuxilio').value = '0';
+        document.getElementById('empBonificacion').value = '0';
+        document.getElementById('empDeduccionFija').value = '0';
+        document.getElementById('empJornadaDia').value = '8';
+        document.getElementById('empAuxilioFlag').value = '1';
+      }
+
+      function buildEmployeePayload() {
+        return {
+          id: Number(document.getElementById('empId').value || 0),
+          empresa_id: Number(state.empresaID),
+          empleado_codigo: normalize(document.getElementById('empCodigo').value),
+          empleado_nombre: normalize(document.getElementById('empNombre').value),
+          empleado_documento: normalize(document.getElementById('empDocumento').value),
+          cargo: normalize(document.getElementById('empCargo').value),
+          tipo_contrato: normalize(document.getElementById('empTipoContrato').value),
+          fecha_ingreso: normalize(document.getElementById('empFechaIngreso').value),
+          salario_basico_mensual: toNumber(document.getElementById('empSalario').value, 0),
+          auxilio_transporte_mensual: toNumber(document.getElementById('empAuxilio').value, 0),
+          bonificacion_fija_mensual: toNumber(document.getElementById('empBonificacion').value, 0),
+          deduccion_fija_mensual: toNumber(document.getElementById('empDeduccionFija').value, 0),
+          jornada_horas_dia: toNumber(document.getElementById('empJornadaDia').value, 8),
+          incluir_auxilio_transporte: document.getElementById('empAuxilioFlag').value === '1'
+        };
+      }
+
+      async function loadEmployees() {
+        const q = normalize(document.getElementById('empBuscar').value);
+        const params = new URLSearchParams();
+        params.set('empresa_id', String(state.empresaID));
+        params.set('action', 'empleados');
+        params.set('include_inactive', '1');
+        params.set('limit', '500');
+        if (q) params.set('q', q);
+        const rows = await requestJSON('/api/empresa/nomina?' + params.toString());
+        state.empleados = Array.isArray(rows) ? rows : [];
+        renderEmployees();
+        refreshEmployeeSelector();
+      }
+
+      function renderEmployees() {
+        const body = document.getElementById('empTableBody');
+        const rows = Array.isArray(state.empleados) ? state.empleados : [];
+        if (!rows.length) {
+          body.innerHTML = '<tr><td colspan="5">No hay empleados de nomina.</td></tr>';
+          return;
+        }
+
+        body.innerHTML = rows.map(function (item) {
+          const id = Number(item.id || 0);
+          const estado = normalize(item.estado || 'activo').toLowerCase();
+          const action = estado === 'activo' ? 'desactivar_empleado' : 'activar_empleado';
+          const actionLabel = estado === 'activo' ? 'Desactivar' : 'Activar';
+
+          return '<tr>' +
+            '<td><strong>' + esc(item.empleado_nombre || '-') + '</strong><br><small>' + esc(item.empleado_codigo || item.empleado_documento || '-') + '</small></td>' +
+            '<td>' + esc(item.cargo || '-') + '</td>' +
+            '<td>' + esc(money(item.salario_basico_mensual)) + '</td>' +
+            '<td>' + esc(estado) + '</td>' +
+            '<td>' +
+              '<button type="button" class="btn secondary" data-action="edit" data-id="' + id + '">Editar</button> ' +
+              '<button type="button" class="btn secondary" data-action="toggle" data-id="' + id + '" data-next="' + action + '">' + actionLabel + '</button> ' +
+              '<button type="button" class="btn danger" data-action="delete" data-id="' + id + '">Eliminar</button>' +
+            '</td>' +
+          '</tr>';
+        }).join('');
+      }
+
+      function refreshEmployeeSelector() {
+        const sel = document.getElementById('calcEmpleado');
+        const current = normalize(sel.value);
+        const options = ['<option value="">Todos los empleados</option>'];
+        state.empleados.forEach(function (item) {
+          const id = Number(item.id || 0);
+          if (id <= 0) return;
+          options.push('<option value="' + id + '">' + esc(item.empleado_nombre || ('Empleado #' + id)) + ' - ' + esc(item.empleado_documento || item.empleado_codigo || '') + '</option>');
+        });
+        sel.innerHTML = options.join('');
+        if (current) {
+          sel.value = current;
+        }
+      }
+
+      function fillEmployeeForm(item) {
+        document.getElementById('empId').value = Number(item.id || 0);
+        document.getElementById('empCodigo').value = normalize(item.empleado_codigo);
+        document.getElementById('empNombre').value = normalize(item.empleado_nombre);
+        document.getElementById('empDocumento').value = normalize(item.empleado_documento);
+        document.getElementById('empCargo').value = normalize(item.cargo);
+        document.getElementById('empTipoContrato').value = normalize(item.tipo_contrato) || 'indefinido';
+        document.getElementById('empFechaIngreso').value = normalize(item.fecha_ingreso);
+        document.getElementById('empSalario').value = toNumber(item.salario_basico_mensual, 0);
+        document.getElementById('empAuxilio').value = toNumber(item.auxilio_transporte_mensual, 0);
+        document.getElementById('empBonificacion').value = toNumber(item.bonificacion_fija_mensual, 0);
+        document.getElementById('empDeduccionFija').value = toNumber(item.deduccion_fija_mensual, 0);
+        document.getElementById('empJornadaDia').value = toNumber(item.jornada_horas_dia, 8);
+        document.getElementById('empAuxilioFlag').value = item.incluir_auxilio_transporte ? '1' : '0';
+      }
+
+      async function saveEmployee(ev) {
+        ev.preventDefault();
+        try {
+          const payload = buildEmployeePayload();
+          if (!payload.empleado_nombre) {
+            throw new Error('El nombre del empleado es obligatorio.');
+          }
+          const isUpdate = payload.id > 0;
+          const action = isUpdate ? 'empleado' : 'empleado';
+          await requestJSON('/api/empresa/nomina?action=' + action, {
+            method: isUpdate ? 'PUT' : 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          resetEmployeeForm();
+          await loadEmployees();
+          setMessage('empMsg', isUpdate ? 'Empleado actualizado.' : 'Empleado creado.', 'success');
+        } catch (err) {
+          setMessage('empMsg', err.message || 'No se pudo guardar empleado.', 'error');
+        }
+      }
+
+      async function deleteEmployee(id) {
+        if (!confirm('¿Eliminar empleado de nomina?')) return;
+        await requestJSON('/api/empresa/nomina?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=empleado&id=' + encodeURIComponent(id), {
+          method: 'DELETE'
+        });
+      }
+
+      async function toggleEmployee(id, action) {
+        await requestJSON('/api/empresa/nomina?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(id) + '&action=' + encodeURIComponent(action), {
+          method: 'PUT'
+        });
+      }
+
+      async function onEmployeeTableClick(ev) {
+        const btn = ev.target.closest('button[data-action]');
+        if (!btn) return;
+        const action = normalize(btn.getAttribute('data-action')).toLowerCase();
+        const id = Number(btn.getAttribute('data-id') || 0);
+        if (id <= 0) return;
+
+        try {
+          if (action === 'edit') {
+            const item = state.empleados.find(function (row) { return Number(row.id || 0) === id; });
+            if (!item) return;
+            fillEmployeeForm(item);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+          }
+          if (action === 'toggle') {
+            const next = normalize(btn.getAttribute('data-next')).toLowerCase();
+            await toggleEmployee(id, next);
+            await loadEmployees();
+            setMessage('empMsg', 'Estado de empleado actualizado.', 'success');
+            return;
+          }
+          if (action === 'delete') {
+            await deleteEmployee(id);
+            await loadEmployees();
+            setMessage('empMsg', 'Empleado eliminado.', 'success');
+          }
+        } catch (err) {
+          setMessage('empMsg', err.message || 'No se pudo ejecutar la accion.', 'error');
+        }
+      }
+
+      async function loadFestivos() {
+        const desde = normalize(document.getElementById('festDesde').value);
+        const hasta = normalize(document.getElementById('festHasta').value);
+        const params = new URLSearchParams();
+        params.set('empresa_id', String(state.empresaID));
+        params.set('action', 'festivos');
+        params.set('include_inactive', '1');
+        params.set('limit', '500');
+        if (desde) params.set('desde', desde);
+        if (hasta) params.set('hasta', hasta);
+        const rows = await requestJSON('/api/empresa/nomina?' + params.toString());
+        state.festivos = Array.isArray(rows) ? rows : [];
+        renderFestivos();
+      }
+
+      function renderFestivos() {
+        const body = document.getElementById('festTableBody');
+        const rows = Array.isArray(state.festivos) ? state.festivos : [];
+        if (!rows.length) {
+          body.innerHTML = '<tr><td colspan="4">No hay festivos configurados.</td></tr>';
+          return;
+        }
+
+        body.innerHTML = rows.map(function (item) {
+          const id = Number(item.id || 0);
+          return '<tr>' +
+            '<td>' + esc(item.fecha_festivo || '-') + '</td>' +
+            '<td>' + esc(item.descripcion || '-') + '</td>' +
+            '<td>' + esc(normalize(item.estado || 'activo').toLowerCase()) + '</td>' +
+            '<td><button type="button" class="btn danger" data-festivo-delete="' + id + '">Eliminar</button></td>' +
+          '</tr>';
+        }).join('');
+      }
+
+      async function saveFestivo(ev) {
+        ev.preventDefault();
+        try {
+          const payload = {
+            empresa_id: Number(state.empresaID),
+            fecha_festivo: normalize(document.getElementById('festFecha').value),
+            descripcion: normalize(document.getElementById('festDescripcion').value)
+          };
+          if (!payload.fecha_festivo) {
+            throw new Error('La fecha festiva es obligatoria.');
+          }
+          await requestJSON('/api/empresa/nomina?action=festivo', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          document.getElementById('festFecha').value = '';
+          document.getElementById('festDescripcion').value = '';
+          await loadFestivos();
+          setMessage('festMsg', 'Festivo agregado.', 'success');
+        } catch (err) {
+          setMessage('festMsg', err.message || 'No se pudo guardar festivo.', 'error');
+        }
+      }
+
+      async function deleteFestivo(id) {
+        if (!confirm('¿Eliminar dia festivo?')) return;
+        await requestJSON('/api/empresa/nomina?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=festivo&id=' + encodeURIComponent(id), {
+          method: 'DELETE'
+        });
+      }
+
+      function sumHorasExtra(item) {
+        return toNumber(item.horas_extra_diurnas, 0) +
+          toNumber(item.horas_extra_nocturnas, 0) +
+          toNumber(item.horas_extra_dominicales_diurnas, 0) +
+          toNumber(item.horas_extra_dominicales_nocturnas, 0);
+      }
+
+      function renderLiquidaciones(rows, summaryText) {
+        const body = document.getElementById('liqTableBody');
+        const list = Array.isArray(rows) ? rows : [];
+
+        if (!list.length) {
+          body.innerHTML = '<tr><td colspan="7">Sin liquidaciones para mostrar.</td></tr>';
+          document.getElementById('calcResumen').textContent = summaryText || 'Sin calculos recientes.';
+          updateKpis();
+          return;
+        }
+
+        body.innerHTML = list.map(function (item) {
+          return '<tr>' +
+            '<td><strong>' + esc(item.empleado_nombre || '-') + '</strong><br><small>' + esc(item.empleado_documento || item.empleado_codigo || '-') + '</small></td>' +
+            '<td>' + toNumber(item.dias_liquidados, 0).toFixed(2) + '</td>' +
+            '<td>' + toNumber(item.horas_asistencia_total, 0).toFixed(2) + '</td>' +
+            '<td>' + sumHorasExtra(item).toFixed(2) + '</td>' +
+            '<td>' + esc(money(item.devengado_total)) + '</td>' +
+            '<td>' + esc(money(item.deduccion_total)) + '</td>' +
+            '<td><strong>' + esc(money(item.neto_pagar)) + '</strong></td>' +
+          '</tr>';
+        }).join('');
+
+        document.getElementById('calcResumen').textContent = summaryText || ('Liquidaciones cargadas: ' + list.length);
+        updateKpis();
+      }
+
+      async function loadLiquidaciones() {
+        const desde = normalize(document.getElementById('calcDesde').value);
+        const hasta = normalize(document.getElementById('calcHasta').value);
+        const empleadoNominaID = Number(document.getElementById('calcEmpleado').value || 0);
+        const params = new URLSearchParams();
+        params.set('empresa_id', String(state.empresaID));
+        params.set('action', 'liquidaciones');
+        params.set('limit', '500');
+        if (desde) params.set('periodo_desde', desde);
+        if (hasta) params.set('periodo_hasta', hasta);
+        if (empleadoNominaID > 0) params.set('empleado_nomina_id', String(empleadoNominaID));
+
+        const rows = await requestJSON('/api/empresa/nomina?' + params.toString());
+        state.liquidaciones = Array.isArray(rows) ? rows : [];
+        renderLiquidaciones(state.liquidaciones, 'Liquidaciones consultadas para el rango seleccionado.');
+      }
+
+      async function exportarLiquidaciones() {
+    const select = document.getElementById('calcExportFormat');
+    const formato = normalize(select && select.value).toLowerCase() || 'pdf';
+    const permitidos = ['pdf', 'xls', 'csv', 'json', 'txt'];
+    if (permitidos.indexOf(formato) < 0) {
+      throw new Error('Formato de exportacion no soportado.');
+    }
+
+    const desde = normalize(document.getElementById('calcDesde').value);
+    const hasta = normalize(document.getElementById('calcHasta').value);
+    const empleadoNominaID = Number(document.getElementById('calcEmpleado').value || 0);
+
+    const params = new URLSearchParams();
+    params.set('action', 'export');
+    params.set('empresa_id', String(state.empresaID));
+    params.set('dataset', 'contable_nomina_liquidaciones');
+    params.set('format', formato);
+    if (desde) params.set('desde', desde);
+    if (hasta) params.set('hasta', hasta);
+    if (empleadoNominaID > 0) params.set('empleado_nomina_id', String(empleadoNominaID));
+
+    const response = await fetch('/api/empresa/reportes?' + params.toString(), {
+      credentials: 'same-origin'
+    });
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(body || 'No se pudo exportar liquidaciones de nomina.');
+    }
+
+    const blob = await response.blob();
+    const contentDisposition = String(response.headers.get('content-disposition') || '');
+    const fileNameMatch = contentDisposition.match(/filename\s*=\s*"?([^";]+)"?/i);
+    const stamp = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14);
+    const fallback = 'nomina_liquidaciones_empresa_' + state.empresaID + '_' + stamp + '.' + formato;
+    const fileName = fileNameMatch && fileNameMatch[1] ? fileNameMatch[1] : fallback;
+
+    const href = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = href;
+    anchor.download = fileName;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    setTimeout(function () { URL.revokeObjectURL(href); }, 0);
+  }
+
+      async function calcularNomina(ev) {
+        ev.preventDefault();
+        try {
+          const payload = {
+            empresa_id: Number(state.empresaID),
+            periodo_desde: normalize(document.getElementById('calcDesde').value),
+            periodo_hasta: normalize(document.getElementById('calcHasta').value),
+            empleado_nomina_id: Number(document.getElementById('calcEmpleado').value || 0),
+            overwrite: document.getElementById('calcOverwrite').value === '1',
+            otras_deducciones: toNumber(document.getElementById('calcOtrasDeducciones').value, 0)
+          };
+
+          if (!payload.periodo_desde || !payload.periodo_hasta) {
+            throw new Error('Debes indicar periodo desde y hasta.');
+          }
+
+          setMessage('calcMsg', 'Calculando nomina...', null);
+          const result = await requestJSON('/api/empresa/nomina?action=calcular', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          state.liquidaciones = Array.isArray(result && result.liquidaciones) ? result.liquidaciones : [];
+          const resumen = 'Calculadas: ' + Number(result && result.calculados || 0) +
+            ' | Devengado: ' + money(result && result.total_devengado || 0) +
+            ' | Deducciones: ' + money(result && result.total_deduccion || 0) +
+            ' | Neto: ' + money(result && result.total_neto || 0);
+
+          renderLiquidaciones(state.liquidaciones, resumen);
+          setMessage('calcMsg', 'Nomina calculada correctamente.', 'success');
+        } catch (err) {
+          setMessage('calcMsg', err.message || 'No se pudo calcular la nomina.', 'error');
+        }
+      }
+
+      function updateKpis() {
+        const empleados = Array.isArray(state.empleados) ? state.empleados : [];
+        const festivos = Array.isArray(state.festivos) ? state.festivos : [];
+        const liquidaciones = Array.isArray(state.liquidaciones) ? state.liquidaciones : [];
+
+        const neto = liquidaciones.reduce(function (acc, item) {
+          return acc + toNumber(item.neto_pagar, 0);
+        }, 0);
+
+        document.getElementById('kpiEmpleados').textContent = String(empleados.length);
+        document.getElementById('kpiFestivos').textContent = String(festivos.length);
+        document.getElementById('kpiLiquidaciones').textContent = String(liquidaciones.length);
+        document.getElementById('kpiNeto').textContent = money(neto);
+      }
+
+      async function refreshAll() {
+        await Promise.all([loadConfig(), loadEmployees(), loadFestivos()]);
+        await loadLiquidaciones();
+        updateKpis();
+      }
+
+      function bindEvents() {
+        document.getElementById('cfgForm').addEventListener('submit', saveConfig);
+        document.getElementById('empForm').addEventListener('submit', saveEmployee);
+        document.getElementById('empCancelar').addEventListener('click', function () {
+          resetEmployeeForm();
+          setMessage('empMsg', '', null);
+        });
+        document.getElementById('empBuscarBtn').addEventListener('click', function () {
+          loadEmployees().catch(function (err) {
+            setMessage('empMsg', err.message || 'No se pudo listar empleados.', 'error');
+          });
+        });
+        document.getElementById('empLimpiarBtn').addEventListener('click', function () {
+          document.getElementById('empBuscar').value = '';
+          loadEmployees().catch(function (err) {
+            setMessage('empMsg', err.message || 'No se pudo listar empleados.', 'error');
+          });
+        });
+        document.getElementById('empTableBody').addEventListener('click', onEmployeeTableClick);
+
+        document.getElementById('festForm').addEventListener('submit', saveFestivo);
+        document.getElementById('festBuscarBtn').addEventListener('click', function () {
+          loadFestivos().catch(function (err) {
+            setMessage('festMsg', err.message || 'No se pudo listar festivos.', 'error');
+          });
+        });
+        document.getElementById('festLimpiarBtn').addEventListener('click', function () {
+          resetFestivoRangeToYear(new Date().getFullYear());
+          loadFestivos().catch(function (err) {
+            setMessage('festMsg', err.message || 'No se pudo listar festivos.', 'error');
+          });
+        });
+        document.getElementById('festTableBody').addEventListener('click', function (ev) {
+          const btn = ev.target.closest('button[data-festivo-delete]');
+          if (!btn) return;
+          const id = Number(btn.getAttribute('data-festivo-delete') || 0);
+          if (id <= 0) return;
+          deleteFestivo(id)
+            .then(function () { return loadFestivos(); })
+            .then(function () { setMessage('festMsg', 'Festivo eliminado.', 'success'); })
+            .catch(function (err) {
+              setMessage('festMsg', err.message || 'No se pudo eliminar festivo.', 'error');
+            });
+        });
+
+        document.getElementById('calcForm').addEventListener('submit', calcularNomina);
+        document.getElementById('calcListarBtn').addEventListener('click', function () {
+          loadLiquidaciones().catch(function (err) {
+            setMessage('calcMsg', err.message || 'No se pudo consultar liquidaciones.', 'error');
+          });
+        });
+        document.getElementById('calcExportBtn').addEventListener('click', function () {
+      exportarLiquidaciones()
+        .then(function () {
+          setMessage('calcMsg', 'Exportacion de liquidaciones generada correctamente.', 'success');
+        })
+        .catch(function (err) {
+          setMessage('calcMsg', err.message || 'No se pudo exportar liquidaciones.', 'error');
+        });
+    });
+
+        document.getElementById('btnRecargarTodo').addEventListener('click', function () {
+          refreshAll()
+            .then(function () {
+              setMessage('mainMsg', 'Datos de nomina actualizados.', 'success');
+            })
+            .catch(function (err) {
+              setMessage('mainMsg', err.message || 'No se pudo actualizar el modulo de nomina.', 'error');
+            });
+        });
+      }
+
+      async function bootstrap() {
+        state.empresaID = Number(getQueryParam('empresa_id') || 0);
+        if (!state.empresaID) {
+          setMessage('mainMsg', 'Falta empresa_id en la URL.', 'error');
+          return;
+        }
+
+        setDefaultDates();
+        bindEvents();
+        setEmpresaInfo();
+
+        try {
+          await loadEmpresaInfo();
+          await refreshAll();
+          setMessage('mainMsg', 'Modulo de nomina listo para operar.', 'success');
+        } catch (err) {
+          setMessage('mainMsg', err.message || 'No se pudo inicializar el modulo de nomina.', 'error');
+        }
+      }
+
+      bootstrap();
+    })();
+  </script>
+</body>
+</html>

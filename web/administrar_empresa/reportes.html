@@ -29,11 +29,24 @@
           <option value="csv">CSV</option>
           <option value="txt">TXT</option>
           <option value="xls">XLS (Excel)</option>
+          <option value="pdf">PDF</option>
         </select>
         <button id="btnCargarDataset" class="btn secondary" type="button">Ver dataset</button>
         <button id="btnExportarDataset" class="btn secondary" type="button">Exportar dataset</button>
         <button id="btnExportarSuite" class="btn secondary" type="button">Exportar suite JSON</button>
       </div>
+      <div class="empresa-inline-actions" style="margin-top:8px;flex-wrap:wrap;gap:8px;">
+        <input id="filtroUsuarioTurno" type="text" class="form-input" style="min-width:180px;" placeholder="Usuario turno (opcional)">
+        <input id="filtroCajaTurno" type="text" class="form-input" style="min-width:160px;" placeholder="Caja (ej: CAJA-01)">
+        <input id="filtroTurnoCaja" type="text" class="form-input" style="min-width:150px;" placeholder="Turno (ej: manana)">
+        <input id="filtroCierreID" type="number" class="form-input" style="max-width:140px;" min="1" step="1" placeholder="Cierre ID">
+      </div>
+      <div class="empresa-inline-actions" style="margin-top:8px;flex-wrap:wrap;gap:8px;">
+        <input id="filtroCategoriaContable" type="text" class="form-input" style="min-width:190px;" placeholder="Categoría contable (opcional)">
+        <input id="filtroMetodoPagoContable" type="text" class="form-input" style="min-width:190px;" placeholder="Método pago (ej: efectivo)">
+      </div>
+      <p class="form-help">Filtros de turno aplican al dataset <strong>Reporte de Turno</strong> y sus exportaciones.</p>
+      <p class="form-help">Filtros de categoría y método de pago aplican al dataset <strong>Flujo de Caja Diario</strong>.</p>
       <p id="datasetMeta" class="form-help"></p>
 
       <div class="kpi-grid" style="margin-top:12px;">
@@ -587,6 +600,23 @@
       params.set('empresa_id', String(state.empresaID));
       params.set('action', action);
       params.set('max_rows', '300');
+
+      const usuarioTurno = normalize(document.getElementById('filtroUsuarioTurno') && document.getElementById('filtroUsuarioTurno').value);
+      const cajaTurno = normalize(document.getElementById('filtroCajaTurno') && document.getElementById('filtroCajaTurno').value);
+      const turno = normalize(document.getElementById('filtroTurnoCaja') && document.getElementById('filtroTurnoCaja').value);
+      const cierreIDRaw = normalize(document.getElementById('filtroCierreID') && document.getElementById('filtroCierreID').value);
+      const categoriaContable = normalize(document.getElementById('filtroCategoriaContable') && document.getElementById('filtroCategoriaContable').value);
+      const metodoPagoContable = normalize(document.getElementById('filtroMetodoPagoContable') && document.getElementById('filtroMetodoPagoContable').value);
+
+      if (usuarioTurno) params.set('usuario', usuarioTurno);
+      if (cajaTurno) params.set('caja_codigo', cajaTurno);
+      if (turno) params.set('turno', turno);
+      if (/^\d+$/.test(cierreIDRaw) && Number(cierreIDRaw) > 0) {
+        params.set('cierre_id', String(Number(cierreIDRaw)));
+      }
+      if (categoriaContable) params.set('categoria', categoriaContable);
+      if (metodoPagoContable) params.set('metodo_pago', metodoPagoContable);
+
       return params;
     }
 

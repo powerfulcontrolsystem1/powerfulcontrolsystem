@@ -28,6 +28,7 @@ type facturacionOperacionPayload struct {
 	EmpresaID       int64   `json:"empresa_id"`
 	EntidadID       int64   `json:"entidad_id"`
 	ClienteID       int64   `json:"cliente_id"`
+	TipoDocumento   string  `json:"tipo_documento"`
 	ClienteEmail    string  `json:"cliente_email"`
 	ClienteNombre   string  `json:"cliente_nombre"`
 	PaisCodigo      string  `json:"pais_codigo"`
@@ -48,6 +49,25 @@ type facturaEmailResultado struct {
 	Error              string `json:"error,omitempty"`
 }
 
+func isISODateYYYYMMDD(v string) bool {
+	v = strings.TrimSpace(v)
+	if len(v) != 10 {
+		return false
+	}
+	for i := 0; i < len(v); i += 1 {
+		if i == 4 || i == 7 {
+			if v[i] != '-' {
+				return false
+			}
+			continue
+		}
+		if v[i] < '0' || v[i] > '9' {
+			return false
+		}
+	}
+	return true
+}
+
 // EmpresaFacturacionElectronicaHandler gestiona configuración FE por empresa y país.
 func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -56,6 +76,55 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 			empresaID, err := parseEmpresaIDQuery(r)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+
+			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+			if action == "documentos" {
+				limit, err := parseIntQueryOptional(r, "limit")
+				if err != nil {
+					http.Error(w, "limit invalido", http.StatusBadRequest)
+					return
+				}
+				offset, err := parseIntQueryOptional(r, "offset")
+				if err != nil {
+					http.Error(w, "offset invalido", http.StatusBadRequest)
+					return
+				}
+
+				fechaDesde := strings.TrimSpace(r.URL.Query().Get("fecha_desde"))
+				if fechaDesde != "" && !isISODateYYYYMMDD(fechaDesde) {
+					http.Error(w, "fecha_desde invalida (use YYYY-MM-DD)", http.StatusBadRequest)
+					return
+				}
+				fechaHasta := strings.TrimSpace(r.URL.Query().Get("fecha_hasta"))
+				if fechaHasta != "" && !isISODateYYYYMMDD(fechaHasta) {
+					http.Error(w, "fecha_hasta invalida (use YYYY-MM-DD)", http.StatusBadRequest)
+					return
+				}
+
+				items, err := dbpkg.ListEmpresaDocumentosFacturacionByEmpresa(dbEmp, dbpkg.EmpresaDocumentoFacturacionListFilter{
+					EmpresaID:       empresaID,
+					TipoDocumento:   strings.TrimSpace(r.URL.Query().Get("tipo_documento")),
+					EstadoDocumento: strings.TrimSpace(r.URL.Query().Get("estado_documento")),
+					IncludeInactive: parseTruthy(r.URL.Query().Get("include_inactive")) || parseTruthy(r.URL.Query().Get("incluir_inactivas")),
+					ClienteQuery:    strings.TrimSpace(r.URL.Query().Get("cliente")),
+					DocumentoQuery:  strings.TrimSpace(r.URL.Query().Get("documento")),
+					FechaDesde:      fechaDesde,
+					FechaHasta:      fechaHasta,
+					Query:           strings.TrimSpace(r.URL.Query().Get("q")),
+					Limit:           limit,
+					Offset:          offset,
+				})
+				if err != nil {
+					http.Error(w, "No se pudo listar documentos de facturacion", http.StatusInternalServerError)
+					return
+				}
+
+				writeJSON(w, http.StatusOK, map[string]interface{}{
+					"empresa_id": empresaID,
+					"items":      items,
+				})
 				return
 			}
 
@@ -101,6 +170,55 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 
 		case http.MethodPost, http.MethodPut:
 			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+			if action == "reenviar_correo" || action == "enviar_correo" {
+				var payload facturacionOperacionPayload
+				if r.Body != nil {
+					_ = json.NewDecoder(r.Body).Decode(&payload)
+				}
+				if payload.EmpresaID <= 0 {
+					if empresaID, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && empresaID > 0 {
+						payload.EmpresaID = empresaID
+					}
+				}
+				if payload.EmpresaID <= 0 {
+					http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+					return
+				}
+				if strings.TrimSpace(payload.DocumentoCodigo) == "" {
+					payload.DocumentoCodigo = strings.TrimSpace(r.URL.Query().Get("documento_codigo"))
+				}
+				if strings.TrimSpace(payload.DocumentoCodigo) == "" {
+					http.Error(w, "documento_codigo es obligatorio", http.StatusBadRequest)
+					return
+				}
+				if strings.TrimSpace(payload.TipoDocumento) == "" {
+					payload.TipoDocumento = strings.TrimSpace(r.URL.Query().Get("tipo_documento"))
+				}
+				doc, err := dbpkg.GetEmpresaDocumentoFacturacionByCodigo(dbEmp, payload.EmpresaID, payload.TipoDocumento, payload.DocumentoCodigo)
+				if err != nil {
+					if errors.Is(err, sql.ErrNoRows) {
+						http.Error(w, "documento no encontrado", http.StatusNotFound)
+						return
+					}
+					http.Error(w, "No se pudo consultar el documento", http.StatusInternalServerError)
+					return
+				}
+				if payload.ClienteID <= 0 && payload.EntidadID <= 0 && doc.EntidadRelacionadaID > 0 {
+					payload.ClienteID = doc.EntidadRelacionadaID
+					payload.EntidadID = doc.EntidadRelacionadaID
+				}
+
+				resultado := enviarFacturaElectronicaAlCliente(dbEmp, dbSuper, payload, *doc)
+				writeJSON(w, http.StatusOK, map[string]interface{}{
+					"ok":               true,
+					"accion":           "reenviar_correo",
+					"empresa_id":       payload.EmpresaID,
+					"tipo_documento":   doc.TipoDocumento,
+					"documento_codigo": doc.DocumentoCodigo,
+					"factura_email":    resultado,
+				})
+				return
+			}
 			if action == "emitir" || action == "anular" || action == "nota_credito" || action == "emitir_nota_credito" {
 				var payload facturacionOperacionPayload
 				if r.Body != nil {

@@ -31,8 +31,8 @@ flowchart TD
     L11 --> L12[Guardar subpagina actual en sessionStorage]
     L12 --> L13[Al presionar F5, restaurar la misma subpagina]
 
-    L --> S0[Configurar colores de estado del carrito en Configuración de empresa]
-    S0 --> S1[Guardar color activo/inactivo en configuración avanzada]
+    L --> S0[Configurar colores de estado del carrito en Facturación electrónica]
+    S0 --> S1[Guardar color activo/inactivo en la sección Configuración avanzada integrada]
     S1 --> S2[Sincronizar estaciones con carritos en estado inactivo/cerrado]
     S2 --> S3[Abrir módulo estaciones]
     S3 --> S3A[Opcional: usar boton Inactivar carritos de estaciones]
@@ -42,7 +42,8 @@ flowchart TD
     S4 --> S5[Usuario selecciona estación]
     S5 --> S6[Activar carrito de estación y registrar activado_en]
     S6 --> S7[Tarjeta activa muestra color configurado y fecha/hora de entrada]
-    S7 --> S8[Finalizar compra en carrito de estación]
+    S7 --> S7A[Motor de tarifa diaria recalcula deuda por dias segun check-in/check-out]
+    S7A --> S8[Finalizar compra en carrito de estación]
     S8 --> S9[Marcar carrito inactivo/cerrado]
     S9 --> S10[Tarjeta vuelve a estado inactivo y oculta fecha/hora]
 
@@ -53,11 +54,16 @@ flowchart TD
     AUTHZ --> G0
     AUTHZ --> Z
     AUTHZ --> AU0[Ejecutar accion critica autorizada]
+    AUTHZ --> AUF0[Intento critico denegado por permisos o alcance]
     AU0 --> AU1[Registrar auditoria no bloqueante]
+    AUF0 --> AUF1[Registrar auditoria de denegacion no bloqueante]
+    AUF1 --> AU2
     AU1 --> AU2[Persistir empresa_auditoria_eventos]
     AU2 --> AU3[Consultar auditoria en panel empresa]
-    AU3 --> AU31[Aplicar filtros avanzados por codigo_http y recurso_id]
-    AU31 --> AU32[Exportar trazabilidad filtrada en CSV y JSON]
+    AU3 --> AU31[Aplicar filtros avanzados por codigo_http recurso_id metodo_http recurso endpoint y search]
+    AU31 --> AU311[Paginar resultados con limit offset y total]
+    AU311 --> AU312[Inspeccionar detalle JSON por evento]
+    AU312 --> AU32[Exportar trazabilidad filtrada en CSV y JSON]
     AU3 --> AU4[Aplicar retencion manual por dias]
     AU2 --> AU5[Worker programado de retencion]
     AU5 --> AU6[Purgar eventos expirados por fecha_expiracion]
@@ -83,6 +89,16 @@ flowchart TD
     CD1 --> CD2[Guardar codigo en /api/empresa/codigos_de_descuento]
     CD2 --> CD3[Usar codigo en cierre de carrito de estacion]
     CD3 --> R
+    L --> PR0[Entrar al modulo propinas]
+    PR0 --> PR1[Configurar habilitacion porcentaje modo y aplicacion automatica]
+    PR1 --> PR2[Guardar configuracion en /api/empresa/propinas]
+    PR2 --> PR3[Consultar reporte por rango usuario y modo]
+    PR3 --> PR4[Visualizar resumen acumulado por usuario y movimientos]
+    L --> CO0[Entrar al modulo comisiones]
+    CO0 --> CO1[Configurar comision por servicio filtro y aplicacion automatica]
+    CO1 --> CO2[Guardar configuracion en /api/empresa/comisiones]
+    CO2 --> CO3[Consultar reporte por rango y lavador]
+    CO3 --> CO4[Visualizar acumulado por lavador y movimientos]
     L --> N0[Administrar categorias de productos por empresa]
     N0 --> N1[Crear/editar/activar categorias]
     N1 --> N2[Asignar categoria al producto desde selector]
@@ -96,9 +112,25 @@ flowchart TD
     P --> P1[Descontar inventario por item producto agregado]
     P1 --> Q[Calcular totales]
     Q --> R[Pagar carrito]
-    R --> R0[Validar metodo de pago efectivo/tarjeta/codigo_descuento]
-    R0 --> R1[Validar referencia para tarjeta y vigencia/usos de codigo]
-    R1 --> R2[Conservar descuento de inventario al cerrar venta]
+    R --> R0[Validar metodo de pago efectivo/tarjeta/transferencia/codigo_descuento/mixto]
+    R0 --> R0A[Consultar configuracion operativa de cobro por empresa y rol]
+    R0A --> R0B{Metodo de pago habilitado para el rol?}
+    R0B -->|No| R0C[Rechazar cierre de cobro por politica operativa]
+    R0B -->|Si| R1[Validar referencia para tarjeta o transferencia y vigencia/usos de codigo]
+    R1 --> R11[Consultar configuracion de propinas y politica operativa del rol]
+    R11 --> R12{Propina habilitada y aplicada en el cobro?}
+    R12 -->|Si| R13[Calcular monto de propina y total final]
+    R12 -->|No| R14[Conservar total sin propina]
+    R13 --> R15[Validar total_pagado contra total final]
+    R14 --> R15
+    R15 --> RC0[Consultar configuracion de comisiones por servicio y politica operativa]
+    RC0 --> RC1{Comisiones habilitadas y automaticas?}
+    RC1 -->|Si| RC2[Filtrar items de servicio segun criterio de lavado]
+    RC2 --> RC3[Calcular comision por item y asignar lavador]
+    RC3 --> RC4[Registrar movimientos de comision por servicio]
+    RC1 -->|No| RC5[Omitir registro automatico de comision]
+    RC4 --> R2[Conservar descuento de inventario al cerrar venta]
+    RC5 --> R2
     R2 --> S[Cerrar carrito y guardar resumen de pago]
     S --> S11[Registrar evento contable de venta]
     S11 --> RP0[Entrar al modulo reportes]
@@ -199,6 +231,33 @@ flowchart TD
     AS3 --> AS4[Calcular horas trabajadas y consolidar novedad]
     AS4 --> AS5[Consultar asistencia por rango y estado]
 
+    L --> VH0[Entrar a modulo registro de vehiculos]
+    VH0 --> VH1[Registrar ingreso con patente tipo y motivo]
+    VH1 --> VH2[Guardar registro en /api/empresa/vehiculos_registro]
+    VH2 --> VH3[Consultar registros por patente estado y rango]
+    VH3 --> VH4[Marcar salida del vehiculo cuando abandona la empresa]
+    VH4 --> VH5[Actualizar estado_registro en_empresa o retirado]
+
+    L --> RH0[Entrar a modulo reservas por estacion]
+    RH0 --> RH1[Consultar disponibilidad por fecha de entrada y salida]
+    RH1 --> RH2[Crear reserva pendiente_pago para estacion disponible]
+    RH2 --> RH3[Editar reserva pendiente o cambiar estacion]
+    RH3 --> RH4[Confirmar pago o cancelar reserva]
+    RH4 --> RH5[Actualizar disponibilidad segun estado final de reserva]
+
+    L --> TPM0[Entrar a modulo tarifas por minutos]
+    TPM0 --> TPM1[Seleccionar estacion y rango de dias operativos]
+    TPM1 --> TPM2[Definir tarifa base y bloque adicional por minutos]
+    TPM2 --> TPM3[Guardar regla en /api/empresa/tarifas_por_minutos]
+    TPM3 --> TPM4[Simular cobro segun minutos consumidos y dia de semana]
+
+    L --> TPD0[Entrar a modulo tarifas por dia]
+    TPD0 --> TPD1[Seleccionar estacion y servicio hotelero]
+    TPD1 --> TPD2[Configurar valor por dia y horarios check-in/check-out]
+    TPD2 --> TPD3[Definir aplicacion automatica en carritos activos]
+    TPD3 --> TPD4[Guardar regla en /api/empresa/tarifas_por_dia]
+    TPD4 --> TPD5[Simular deuda por rango de fechas activado_en-fecha_corte]
+
     L --> Z[Entrar a modulo facturacion electronica]
     Z --> Z1[Detectar pais automaticamente tz/lang/config empresa]
     Z1 --> Z2[Mostrar bandera del pais detectado en menu flotante]
@@ -217,6 +276,13 @@ flowchart TD
     Z8C -->|No| Z8E[Responder factura_email con error sin bloquear emision]
     Z8D --> Z9[Registrar evento con entidad_id canonico]
     Z8E --> Z9
+
+    L --> ZQ0[Entrar a modulo facturas electronicas]
+    ZQ0 --> ZQ1[Aplicar filtros por cliente documento estado y fecha]
+    ZQ1 --> ZQ2[Consultar /api/empresa/facturacion_electronica action=documentos]
+    ZQ2 --> ZQ3[Visualizar listado y detalle documental]
+    ZQ3 --> ZQ4[Reenviar correo de factura action=reenviar_correo]
+    ZQ3 --> ZQ5[Imprimir factura desde vista de detalle]
 ```
 
 Resultado esperado:
@@ -234,11 +300,20 @@ Resultado esperado:
 - En `ubicacion_gps`, cada dispositivo puede registrar su recorrido automaticamente cada 10 segundos y visualizarse sobre mapa de codigo abierto.
 - En `asistencia_empleados`, el sistema registra entrada/salida por empleado y calcula horas trabajadas por jornada.
 - En `asistencia_empleados`, la consulta por rango/estado permite control operativo diario y trazabilidad de novedades.
+- En `vehiculos_registro`, la empresa puede registrar ingresos por patente, conductor y motivo operativo por `empresa_id`.
+- En `vehiculos_registro`, la operacion `marcar_salida` actualiza fecha de salida y estado del vehiculo a `retirado` para trazabilidad de permanencia.
+- En `reservas_hotel`, la empresa puede consultar disponibilidad por rango y crear reservas por estacion con datos de cliente, monto y fechas de entrada/salida.
+- En `reservas_hotel`, el flujo operativo permite editar reservas pendientes, confirmar pago, cancelar y activar/desactivar registros segun politica operativa.
+- En `reservas_hotel`, el backend evita solapamientos de rango para la misma estacion y expira reservas `pendiente_pago` fuera de vigencia.
 - En `facturacion_electronica`, la accion `emitir` intenta envio automatico al correo del cliente y reporta el resultado en `factura_email` sin bloquear la emision legal.
+- En `facturas_electronicas`, la empresa puede buscar por cliente/documento/rango de fechas, ver detalle documental, reenviar factura por correo e imprimir comprobante.
 - En `combos_productos`, el usuario puede crear combos con precio unico y receta de ingredientes por empresa.
 - En `carrito_de_compras`, al agregar un item `tipo_item=combo`, el sistema descuenta inventario por ingrediente y revierte correctamente en inactivacion/eliminacion del item.
 - En `codigos_de_descuento`, el usuario puede crear codigos promocionales con generacion automatica, fecha de vencimiento y limite de usos por empresa.
-- En `carrito_de_compras`, el cierre de venta valida en backend los metodos `efectivo`, `tarjeta_credito`, `tarjeta_debito` y `codigo_descuento`, exigiendo referencia para tarjetas.
+- En `carrito_de_compras`, el cierre de venta valida en backend los metodos `efectivo`, `tarjeta_credito`, `tarjeta_debito`, `transferencia_bancaria`, `mixto` y `codigo_descuento`, exigiendo referencia para tarjetas y transferencias bancarias.
+- En `carrito_de_compras`, antes de cerrar la venta se resuelve la configuracion operativa de cobro por `empresa_id + rol`, bloqueando metodos no habilitados y desactivando propina/comision cuando la politica lo define.
+- En `propinas`, la empresa puede activar/desactivar porcentaje de propina, definir modo `por_usuario` o `universal` y consultar reporte de acumulados y movimientos.
+- En `carrito_de_compras`, al cerrar venta en estacion, el backend calcula el total final con propina (si aplica), valida `total_pagado` contra ese total y registra el movimiento de propina.
 - En `graficos_estadisticas`, el usuario visualiza series por dia de ventas, finanzas, compras y asistencia por `empresa_id`.
 - En `graficos_estadisticas`, el panel muestra distribuciones y rankings para priorizar decisiones operativas/comerciales por rango.
 - En `reportes`, el usuario consulta ventas cerradas por rango, indicadores clave y top comerciales, con validacion visual de formato de impresion POS/Carta.

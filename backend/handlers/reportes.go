@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"database/sql"
 	"encoding/csv"
 	"encoding/json"
@@ -48,12 +49,19 @@ type empresaReportesSuiteResponse struct {
 }
 
 type reportesBuilder struct {
-	db              *sql.DB
-	empresaID       int64
-	desde           string
-	hasta           string
-	maxRows         int
-	includeInactive bool
+	db               *sql.DB
+	empresaID        int64
+	desde            string
+	hasta            string
+	cierreID         int64
+	empleadoNominaID int64
+	cajaCodigo       string
+	turno            string
+	usuario          string
+	categoria        string
+	metodoPago       string
+	maxRows          int
+	includeInactive  bool
 
 	tableroCache *dbpkg.EmpresaReportesTableroResumen
 	ventasCache  []dbpkg.CarritoCompra
@@ -64,7 +72,9 @@ const (
 	reporteDatasetEmpresarialTablero       = "empresarial_tablero"
 	reporteDatasetContableEstadoResultados = "contable_estado_resultados"
 	reporteDatasetContableBalanceGeneral   = "contable_balance_general"
+	reporteDatasetContableFlujoCaja        = "contable_flujo_caja"
 	reporteDatasetOperativoVentasDetalle   = "operativo_ventas_detalle"
+	reporteDatasetOperativoTurno           = "reporte_de_turno"
 	reporteDatasetOperativoTopProductos    = "operativo_top_productos"
 	reporteDatasetOperativoTopClientes     = "operativo_top_clientes"
 	reporteDatasetOperativoInventario      = "operativo_inventario_bodega"
@@ -72,6 +82,7 @@ const (
 	reporteDatasetContableMovFin           = "contable_movimientos_financieros"
 	reporteDatasetContableEventos          = "contable_eventos_contables"
 	reporteDatasetContableAsientos         = "contable_asientos_contables"
+	reporteDatasetContableNomina           = "contable_nomina_liquidaciones"
 )
 
 var reportesCatalogo = []empresaReporteCatalogoItem{
@@ -80,77 +91,98 @@ var reportesCatalogo = []empresaReporteCatalogoItem{
 		Title:       "Tablero Empresarial Ejecutivo",
 		Level:       "empresarial",
 		Description: "KPI consolidados operativos, financieros y contables por empresa.",
-		Formats:     []string{"json", "csv", "txt", "xls"},
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
 	},
 	{
 		Key:         reporteDatasetContableEstadoResultados,
 		Title:       "Estado de Resultados",
 		Level:       "contable",
 		Description: "Ingresos, gastos y utilidad operacional del rango.",
-		Formats:     []string{"json", "csv", "txt", "xls"},
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
 	},
 	{
 		Key:         reporteDatasetContableBalanceGeneral,
 		Title:       "Balance General",
 		Level:       "contable",
 		Description: "Activos, pasivos, patrimonio y cuadre contable.",
-		Formats:     []string{"json", "csv", "txt", "xls"},
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
+	},
+	{
+		Key:         reporteDatasetContableFlujoCaja,
+		Title:       "Flujo de Caja Diario",
+		Level:       "contable",
+		Description: "Flujo diario de ingresos y egresos con neto y saldo acumulado del periodo.",
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
 	},
 	{
 		Key:         reporteDatasetOperativoVentasDetalle,
 		Title:       "Ventas Cerradas Detalle",
 		Level:       "operativo",
 		Description: "Detalle de ventas cerradas con cliente, canal e importe.",
-		Formats:     []string{"json", "csv", "txt", "xls"},
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
+	},
+	{
+		Key:         reporteDatasetOperativoTurno,
+		Title:       "Reporte de Turno",
+		Level:       "operativo",
+		Description: "Turno por usuario/caja con activacion de carritos, ventas por tipo, gastos y efectivo esperado.",
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
 	},
 	{
 		Key:         reporteDatasetOperativoTopProductos,
 		Title:       "Top Productos Vendidos",
 		Level:       "operativo",
 		Description: "Ranking de productos por unidades e ingresos vendidos.",
-		Formats:     []string{"json", "csv", "txt", "xls"},
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
 	},
 	{
 		Key:         reporteDatasetOperativoTopClientes,
 		Title:       "Top Clientes",
 		Level:       "operativo",
 		Description: "Ranking de clientes por ventas e ingresos del periodo.",
-		Formats:     []string{"json", "csv", "txt", "xls"},
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
 	},
 	{
 		Key:         reporteDatasetOperativoInventario,
 		Title:       "Inventario por Bodega",
 		Level:       "operativo",
 		Description: "Existencias por bodega y estado de stock.",
-		Formats:     []string{"json", "csv", "txt", "xls"},
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
 	},
 	{
 		Key:         reporteDatasetOperativoCompras,
 		Title:       "Compras y Movimientos de Inventario",
 		Level:       "operativo",
 		Description: "Movimientos de compra (entradas/ajustes positivos) con costos.",
-		Formats:     []string{"json", "csv", "txt", "xls"},
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
 	},
 	{
 		Key:         reporteDatasetContableMovFin,
 		Title:       "Movimientos Financieros",
 		Level:       "contable",
 		Description: "Libro de ingresos/egresos con totales y netos.",
-		Formats:     []string{"json", "csv", "txt", "xls"},
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
 	},
 	{
 		Key:         reporteDatasetContableEventos,
 		Title:       "Eventos Contables",
 		Level:       "contable",
 		Description: "Eventos contables por modulo/evento y estado de procesamiento.",
-		Formats:     []string{"json", "csv", "txt", "xls"},
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
 	},
 	{
 		Key:         reporteDatasetContableAsientos,
 		Title:       "Asientos Contables",
 		Level:       "contable",
 		Description: "Asientos canónicos con débitos/créditos y diferencia.",
-		Formats:     []string{"json", "csv", "txt", "xls"},
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
+	},
+	{
+		Key:         reporteDatasetContableNomina,
+		Title:       "Nomina Liquidaciones",
+		Level:       "contable",
+		Description: "Liquidaciones de nomina por periodo y empleado con totales devengado, deducciones y neto.",
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
 	},
 }
 
@@ -186,16 +218,41 @@ func EmpresaReportesHandler(dbEmp *sql.DB) http.HandlerFunc {
 		if maxRows > 1000 {
 			maxRows = 1000
 		}
+		cierreID, err := parseInt64QueryOptional(r, "cierre_id")
+		if err != nil {
+			http.Error(w, "cierre_id invalido", http.StatusBadRequest)
+			return
+		}
+		if cierreID < 0 {
+			http.Error(w, "cierre_id invalido", http.StatusBadRequest)
+			return
+		}
+		empleadoNominaID, err := parseInt64QueryOptional(r, "empleado_nomina_id")
+		if err != nil {
+			http.Error(w, "empleado_nomina_id invalido", http.StatusBadRequest)
+			return
+		}
+		if empleadoNominaID < 0 {
+			http.Error(w, "empleado_nomina_id invalido", http.StatusBadRequest)
+			return
+		}
 		includeInactive := queryBool(r, "include_inactive")
 
 		builder := &reportesBuilder{
-			db:              dbEmp,
-			empresaID:       empresaID,
-			desde:           desde,
-			hasta:           hasta,
-			maxRows:         maxRows,
-			includeInactive: includeInactive,
-			itemsCache:      make(map[int64][]dbpkg.CarritoCompraItem),
+			db:               dbEmp,
+			empresaID:        empresaID,
+			desde:            desde,
+			hasta:            hasta,
+			cierreID:         cierreID,
+			empleadoNominaID: empleadoNominaID,
+			cajaCodigo:       strings.TrimSpace(r.URL.Query().Get("caja_codigo")),
+			turno:            strings.TrimSpace(r.URL.Query().Get("turno")),
+			usuario:          strings.TrimSpace(r.URL.Query().Get("usuario")),
+			categoria:        strings.TrimSpace(r.URL.Query().Get("categoria")),
+			metodoPago:       strings.TrimSpace(r.URL.Query().Get("metodo_pago")),
+			maxRows:          maxRows,
+			includeInactive:  includeInactive,
+			itemsCache:       make(map[int64][]dbpkg.CarritoCompraItem),
 		}
 
 		switch action {
@@ -238,7 +295,7 @@ func EmpresaReportesHandler(dbEmp *sql.DB) http.HandlerFunc {
 
 			if datasetKey == "" {
 				if format != "json" {
-					http.Error(w, "dataset es obligatorio para formatos tabulares (csv, txt, xls)", http.StatusBadRequest)
+					http.Error(w, "dataset es obligatorio para formatos tabulares (csv, txt, xls o pdf)", http.StatusBadRequest)
 					return
 				}
 				suite, err := builder.buildSuite()
@@ -314,8 +371,12 @@ func (b *reportesBuilder) buildDataset(key string) (empresaReporteDataset, error
 		return b.buildContableEstadoResultadosDataset()
 	case reporteDatasetContableBalanceGeneral:
 		return b.buildContableBalanceGeneralDataset()
+	case reporteDatasetContableFlujoCaja:
+		return b.buildContableFlujoCajaDataset()
 	case reporteDatasetOperativoVentasDetalle:
 		return b.buildOperativoVentasDetalleDataset()
+	case reporteDatasetOperativoTurno:
+		return b.buildOperativoTurnoDataset()
 	case reporteDatasetOperativoTopProductos:
 		return b.buildOperativoTopProductosDataset()
 	case reporteDatasetOperativoTopClientes:
@@ -330,6 +391,8 @@ func (b *reportesBuilder) buildDataset(key string) (empresaReporteDataset, error
 		return b.buildContableEventosDataset()
 	case reporteDatasetContableAsientos:
 		return b.buildContableAsientosDataset()
+	case reporteDatasetContableNomina:
+		return b.buildContableNominaLiquidacionesDataset()
 	default:
 		return empresaReporteDataset{}, fmt.Errorf("dataset no soportado")
 	}
@@ -553,6 +616,341 @@ func (b *reportesBuilder) buildOperativoVentasDetalleDataset() (empresaReporteDa
 	if ds.RowCount > 0 {
 		ds.Summary["ticket_promedio"] = reportesRound(totalVentas / float64(ds.RowCount))
 	}
+	return ds, nil
+}
+
+func (b *reportesBuilder) buildOperativoTurnoDataset() (empresaReporteDataset, error) {
+	ds := b.newDataset(reporteDatasetOperativoTurno, []string{
+		"fecha_operacion",
+		"caja_codigo",
+		"turno",
+		"usuario_turno",
+		"carrito_id",
+		"carrito_codigo",
+		"cliente",
+		"activado_en",
+		"pagado_en",
+		"metodo_pago",
+		"total_productos",
+		"total_servicios",
+		"total_otros",
+		"total_carrito",
+	})
+
+	usuarioFiltro := strings.ToLower(strings.TrimSpace(b.usuario))
+	cajaFiltro := strings.ToUpper(strings.TrimSpace(b.cajaCodigo))
+	turnoFiltro := strings.ToLower(strings.TrimSpace(b.turno))
+
+	cierres, err := dbpkg.ListEmpresaCierresCaja(b.db, b.empresaID, dbpkg.EmpresaCierreCajaFilter{
+		CajaCodigo:      cajaFiltro,
+		Desde:           b.desde,
+		Hasta:           b.hasta,
+		IncludeInactive: b.includeInactive,
+		Limit:           1000,
+	})
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+
+	cierresFiltrados := make([]dbpkg.EmpresaCierreCaja, 0, len(cierres))
+	for _, cierre := range cierres {
+		if turnoFiltro != "" && strings.ToLower(strings.TrimSpace(cierre.Turno)) != turnoFiltro {
+			continue
+		}
+		if usuarioFiltro != "" && !reportesStringEqualsFoldAny(usuarioFiltro, cierre.UsuarioCreador, cierre.CerradoPor, cierre.AprobadoPor) {
+			continue
+		}
+		cierresFiltrados = append(cierresFiltrados, cierre)
+	}
+
+	var cierreSeleccionado *dbpkg.EmpresaCierreCaja
+	if b.cierreID > 0 {
+		for i := range cierresFiltrados {
+			if cierresFiltrados[i].ID == b.cierreID {
+				cierreSeleccionado = &cierresFiltrados[i]
+				break
+			}
+		}
+		if cierreSeleccionado == nil {
+			return empresaReporteDataset{}, fmt.Errorf("cierre_id no encontrado para los filtros aplicados")
+		}
+	}
+
+	cierresAplicados := cierresFiltrados
+	if cierreSeleccionado != nil {
+		cierresAplicados = []dbpkg.EmpresaCierreCaja{*cierreSeleccionado}
+	}
+
+	rangoDesde := strings.TrimSpace(b.desde)
+	rangoHasta := strings.TrimSpace(b.hasta)
+	if cierreSeleccionado != nil {
+		if rangoDesde == "" {
+			rangoDesde = reportesNormalizeDatePart(reportesFirstNonBlank(cierreSeleccionado.FechaApertura, cierreSeleccionado.FechaOperacion))
+		}
+		if rangoHasta == "" {
+			rangoHasta = reportesNormalizeDatePart(reportesFirstNonBlank(cierreSeleccionado.FechaCierre, cierreSeleccionado.FechaOperacion))
+		}
+	}
+
+	if (rangoDesde == "" || rangoHasta == "") && len(cierresAplicados) > 0 {
+		minDate := ""
+		maxDate := ""
+		for _, cierre := range cierresAplicados {
+			fechaOperacion := reportesNormalizeDatePart(cierre.FechaOperacion)
+			if fechaOperacion == "" {
+				continue
+			}
+			if minDate == "" || fechaOperacion < minDate {
+				minDate = fechaOperacion
+			}
+			if maxDate == "" || fechaOperacion > maxDate {
+				maxDate = fechaOperacion
+			}
+		}
+		if rangoDesde == "" {
+			rangoDesde = minDate
+		}
+		if rangoHasta == "" {
+			rangoHasta = maxDate
+		}
+	}
+
+	if rangoDesde != "" {
+		ds.Desde = rangoDesde
+	}
+	if rangoHasta != "" {
+		ds.Hasta = rangoHasta
+	}
+
+	cierresPorFecha := make(map[string]dbpkg.EmpresaCierreCaja)
+	fechasCierreSet := make(map[string]struct{})
+	aperturaEfectivo := 0.0
+	gastosCierres := 0.0
+	efectivoTeoricoCierre := 0.0
+	efectivoFisicoCierre := 0.0
+	diferenciaCajaCierre := 0.0
+	monedaTurno := "COP"
+	for _, cierre := range cierresAplicados {
+		fechaOperacion := reportesNormalizeDatePart(cierre.FechaOperacion)
+		if fechaOperacion != "" {
+			fechasCierreSet[fechaOperacion] = struct{}{}
+			if _, ok := cierresPorFecha[fechaOperacion]; !ok {
+				cierresPorFecha[fechaOperacion] = cierre
+			}
+		}
+		aperturaEfectivo += cierre.AperturaMonto
+		gastosCierres += cierre.EgresosEfectivo + cierre.RetirosEfectivo
+		efectivoTeoricoCierre += cierre.CajaTeorica
+		efectivoFisicoCierre += cierre.CajaFisica
+		diferenciaCajaCierre += cierre.DiferenciaCaja
+		if strings.TrimSpace(monedaTurno) == "" {
+			monedaTurno = strings.TrimSpace(cierre.Moneda)
+		}
+	}
+
+	aperturaSeleccionadaUnix := int64(0)
+	cierreSeleccionadaUnix := int64(0)
+	if cierreSeleccionado != nil {
+		aperturaSeleccionadaUnix = reportesDateUnix(cierreSeleccionado.FechaApertura)
+		cierreSeleccionadaUnix = reportesDateUnix(cierreSeleccionado.FechaCierre)
+	}
+
+	carritos, err := dbpkg.GetCarritosCompraByEmpresa(b.db, b.empresaID, true, "")
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+
+	ventas := make([]dbpkg.CarritoCompra, 0)
+	requiereRelacionTurno := b.cierreID > 0 || cajaFiltro != "" || turnoFiltro != ""
+	for _, carrito := range carritos {
+		if strings.ToLower(strings.TrimSpace(carrito.EstadoCarrito)) != "cerrado" {
+			continue
+		}
+		fechaPago := reportesFirstNonBlank(carrito.PagadoEn, carrito.FechaActualizacion, carrito.FechaCreacion)
+		if !reportesDateWithinRange(fechaPago, rangoDesde, rangoHasta) {
+			continue
+		}
+		if usuarioFiltro != "" && strings.ToLower(strings.TrimSpace(carrito.UsuarioCreador)) != usuarioFiltro {
+			continue
+		}
+
+		if requiereRelacionTurno {
+			fechaOperacion := reportesNormalizeDatePart(fechaPago)
+			if fechaOperacion == "" {
+				continue
+			}
+			if _, ok := fechasCierreSet[fechaOperacion]; !ok {
+				continue
+			}
+		}
+
+		if cierreSeleccionado != nil {
+			fechaPagoUnix := reportesDateUnix(fechaPago)
+			if aperturaSeleccionadaUnix > 0 && fechaPagoUnix > 0 && fechaPagoUnix < aperturaSeleccionadaUnix {
+				continue
+			}
+			if cierreSeleccionadaUnix > 0 && fechaPagoUnix > 0 && fechaPagoUnix > cierreSeleccionadaUnix {
+				continue
+			}
+		}
+
+		ventas = append(ventas, carrito)
+	}
+
+	sort.SliceStable(ventas, func(i, j int) bool {
+		return reportesDateUnix(reportesFirstNonBlank(ventas[i].PagadoEn, ventas[i].FechaActualizacion, ventas[i].FechaCreacion)) >
+			reportesDateUnix(reportesFirstNonBlank(ventas[j].PagadoEn, ventas[j].FechaActualizacion, ventas[j].FechaCreacion))
+	})
+	if len(ventas) > b.maxRows {
+		ventas = ventas[:b.maxRows]
+	}
+
+	if err := b.ensureItemsForCarritos(ventas); err != nil {
+		return empresaReporteDataset{}, err
+	}
+
+	totalProductos := 0.0
+	totalServicios := 0.0
+	totalOtros := 0.0
+	totalVentas := 0.0
+	ventasEfectivo := 0.0
+	ventasNoEfectivo := 0.0
+
+	for _, venta := range ventas {
+		items := b.itemsCache[venta.ID]
+		totalProductosCarrito := 0.0
+		totalServiciosCarrito := 0.0
+		totalOtrosCarrito := 0.0
+		for _, item := range items {
+			if !reportesEstadoActivo(item.Estado) {
+				continue
+			}
+			totalLinea := reportesRound(item.TotalLinea)
+			switch strings.ToLower(strings.TrimSpace(item.TipoItem)) {
+			case "servicio":
+				totalServiciosCarrito += totalLinea
+			case "producto", "combo":
+				totalProductosCarrito += totalLinea
+			default:
+				totalOtrosCarrito += totalLinea
+			}
+		}
+
+		totalCarrito := reportesVentaTotal(venta)
+		if reportesRound(totalProductosCarrito+totalServiciosCarrito+totalOtrosCarrito) == 0 && totalCarrito > 0 {
+			totalOtrosCarrito = totalCarrito
+		}
+
+		totalProductos += totalProductosCarrito
+		totalServicios += totalServiciosCarrito
+		totalOtros += totalOtrosCarrito
+		totalVentas += totalCarrito
+
+		metodoPago := dbpkg.NormalizeMetodoPagoCarrito(venta.MetodoPago)
+		if metodoPago == "" {
+			metodoPago = strings.ToLower(strings.TrimSpace(venta.MetodoPago))
+		}
+		if metodoPago == "" {
+			metodoPago = "efectivo"
+		}
+		if metodoPago == "efectivo" {
+			ventasEfectivo += totalCarrito
+		} else {
+			ventasNoEfectivo += totalCarrito
+		}
+
+		fechaPago := reportesFirstNonBlank(venta.PagadoEn, venta.FechaActualizacion, venta.FechaCreacion)
+		fechaOperacion := reportesNormalizeDatePart(fechaPago)
+		cierreMeta, existeCierreMeta := cierresPorFecha[fechaOperacion]
+		if cierreSeleccionado != nil {
+			cierreMeta = *cierreSeleccionado
+			existeCierreMeta = true
+		}
+
+		cajaCodigo := reportesFirstNonBlank(cajaFiltro, "-")
+		turno := reportesFirstNonBlank(turnoFiltro, "-")
+		usuarioTurno := reportesFirstNonBlank(venta.UsuarioCreador, "sistema")
+		if existeCierreMeta {
+			cajaCodigo = reportesFirstNonBlank(cierreMeta.CajaCodigo, cajaCodigo)
+			turno = reportesFirstNonBlank(cierreMeta.Turno, turno)
+			usuarioTurno = reportesFirstNonBlank(cierreMeta.UsuarioCreador, cierreMeta.CerradoPor, usuarioTurno)
+		}
+
+		ds.Rows = append(ds.Rows, map[string]interface{}{
+			"fecha_operacion": fechaOperacion,
+			"caja_codigo":     cajaCodigo,
+			"turno":           turno,
+			"usuario_turno":   usuarioTurno,
+			"carrito_id":      venta.ID,
+			"carrito_codigo":  reportesFirstNonBlank(venta.Codigo, venta.Nombre),
+			"cliente":         reportesFirstNonBlank(venta.ClienteNombre, "Sin cliente"),
+			"activado_en":     reportesFirstNonBlank(venta.ActivadoEn, venta.FechaCreacion),
+			"pagado_en":       fechaPago,
+			"metodo_pago":     metodoPago,
+			"total_productos": reportesRound(totalProductosCarrito),
+			"total_servicios": reportesRound(totalServiciosCarrito),
+			"total_otros":     reportesRound(totalOtrosCarrito),
+			"total_carrito":   reportesRound(totalCarrito),
+		})
+	}
+
+	movimientosEgreso, err := dbpkg.ListEmpresaFinanzasMovimientos(b.db, b.empresaID, dbpkg.EmpresaFinanzasMovimientoFilter{
+		Tipo:            "egreso",
+		Desde:           rangoDesde,
+		Hasta:           rangoHasta,
+		IncludeInactive: b.includeInactive,
+		Limit:           b.maxRows * 10,
+	})
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+	gastosMovimientos := 0.0
+	for _, mov := range movimientosEgreso {
+		if usuarioFiltro != "" && strings.ToLower(strings.TrimSpace(mov.UsuarioCreador)) != usuarioFiltro {
+			continue
+		}
+		gastosMovimientos += reportesMovimientoTotalNeto(mov)
+	}
+
+	gastosTurno := gastosMovimientos
+	if len(cierresAplicados) > 0 {
+		gastosTurno = gastosCierres
+	}
+	efectivoCalculado := aperturaEfectivo + ventasEfectivo - gastosTurno
+	efectivoDeberiaHaber := efectivoCalculado
+	if len(cierresAplicados) > 0 {
+		efectivoDeberiaHaber = efectivoTeoricoCierre
+	}
+
+	ds.RowCount = len(ds.Rows)
+	ds.Summary["filtro_usuario"] = reportesFirstNonBlank(strings.TrimSpace(b.usuario), "todos")
+	ds.Summary["filtro_caja_codigo"] = reportesFirstNonBlank(cajaFiltro, "todas")
+	ds.Summary["filtro_turno"] = reportesFirstNonBlank(turnoFiltro, "todos")
+	ds.Summary["filtro_cierre_id"] = b.cierreID
+	ds.Summary["cierres_relacionados"] = len(cierresAplicados)
+	ds.Summary["ventas_carritos"] = ds.RowCount
+	ds.Summary["ventas_productos"] = reportesRound(totalProductos)
+	ds.Summary["ventas_servicios"] = reportesRound(totalServicios)
+	ds.Summary["ventas_otros"] = reportesRound(totalOtros)
+	ds.Summary["ventas_totales"] = reportesRound(totalVentas)
+	ds.Summary["ventas_efectivo"] = reportesRound(ventasEfectivo)
+	ds.Summary["ventas_no_efectivo"] = reportesRound(ventasNoEfectivo)
+	ds.Summary["gastos_movimientos"] = reportesRound(gastosMovimientos)
+	ds.Summary["gastos_cierres_caja"] = reportesRound(gastosCierres)
+	ds.Summary["gastos_turno"] = reportesRound(gastosTurno)
+	ds.Summary["apertura_efectivo"] = reportesRound(aperturaEfectivo)
+	ds.Summary["efectivo_calculado"] = reportesRound(efectivoCalculado)
+	ds.Summary["efectivo_caja_teorica"] = reportesRound(efectivoTeoricoCierre)
+	ds.Summary["efectivo_caja_fisica"] = reportesRound(efectivoFisicoCierre)
+	ds.Summary["diferencia_caja"] = reportesRound(diferenciaCajaCierre)
+	ds.Summary["efectivo_deberia_haber"] = reportesRound(efectivoDeberiaHaber)
+	ds.Summary["moneda"] = reportesFirstNonBlank(strings.TrimSpace(monedaTurno), "COP")
+
+	if cierreSeleccionado != nil {
+		ds.Summary["cierre_estado"] = cierreSeleccionado.EstadoCierre
+		ds.Summary["cierre_fecha_operacion"] = cierreSeleccionado.FechaOperacion
+	}
+
 	return ds, nil
 }
 
@@ -843,6 +1241,129 @@ func (b *reportesBuilder) buildOperativoComprasMovimientosDataset() (empresaRepo
 	return ds, nil
 }
 
+func (b *reportesBuilder) buildContableFlujoCajaDataset() (empresaReporteDataset, error) {
+	limit := b.maxRows * 20
+	if limit < 1000 {
+		limit = 1000
+	}
+	movimientos, err := dbpkg.ListEmpresaFinanzasMovimientos(b.db, b.empresaID, dbpkg.EmpresaFinanzasMovimientoFilter{
+		Desde:           b.desde,
+		Hasta:           b.hasta,
+		IncludeInactive: b.includeInactive,
+		Limit:           limit,
+	})
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+
+	type flujoDia struct {
+		ingresos    float64
+		egresos     float64
+		movimientos int
+	}
+
+	porFecha := make(map[string]*flujoDia)
+	filtroCategoria := strings.ToLower(strings.TrimSpace(b.categoria))
+	filtroMetodoPago := reportesNormalizeMetodoPagoFinanzas(b.metodoPago)
+	moneda := ""
+	for _, mov := range movimientos {
+		if filtroCategoria != "" && strings.ToLower(strings.TrimSpace(mov.Categoria)) != filtroCategoria {
+			continue
+		}
+		if filtroMetodoPago != "" && reportesNormalizeMetodoPagoFinanzas(mov.MetodoPago) != filtroMetodoPago {
+			continue
+		}
+
+		fecha := reportesNormalizeDatePart(reportesFirstNonBlank(mov.FechaMovimiento, mov.FechaActualizacion, mov.FechaCreacion))
+		if fecha == "" {
+			continue
+		}
+		if strings.TrimSpace(moneda) == "" {
+			moneda = strings.TrimSpace(mov.Moneda)
+		}
+
+		item, ok := porFecha[fecha]
+		if !ok {
+			item = &flujoDia{}
+			porFecha[fecha] = item
+		}
+
+		netoMovimiento := reportesRound(reportesMovimientoTotalNeto(mov))
+		tipo := strings.ToLower(strings.TrimSpace(mov.TipoMovimiento))
+		switch tipo {
+		case "ingreso":
+			item.ingresos += netoMovimiento
+		case "egreso":
+			item.egresos += netoMovimiento
+		default:
+			if netoMovimiento >= 0 {
+				item.ingresos += netoMovimiento
+			} else {
+				item.egresos += math.Abs(netoMovimiento)
+			}
+		}
+		item.movimientos++
+	}
+
+	fechas := make([]string, 0, len(porFecha))
+	for fecha := range porFecha {
+		fechas = append(fechas, fecha)
+	}
+	sort.Strings(fechas)
+	if len(fechas) > b.maxRows {
+		fechas = fechas[len(fechas)-b.maxRows:]
+	}
+
+	ds := b.newDataset(reporteDatasetContableFlujoCaja, []string{
+		"fecha",
+		"ingresos",
+		"egresos",
+		"neto_dia",
+		"saldo_acumulado",
+		"movimientos",
+	})
+
+	saldoAcumulado := 0.0
+	totalIngresos := 0.0
+	totalEgresos := 0.0
+	totalMovimientos := 0
+	for _, fecha := range fechas {
+		item := porFecha[fecha]
+		ingresos := reportesRound(item.ingresos)
+		egresos := reportesRound(item.egresos)
+		netoDia := reportesRound(ingresos - egresos)
+		saldoAcumulado = reportesRound(saldoAcumulado + netoDia)
+		totalIngresos += ingresos
+		totalEgresos += egresos
+		totalMovimientos += item.movimientos
+
+		ds.Rows = append(ds.Rows, map[string]interface{}{
+			"fecha":           fecha,
+			"ingresos":        ingresos,
+			"egresos":         egresos,
+			"neto_dia":        netoDia,
+			"saldo_acumulado": saldoAcumulado,
+			"movimientos":     item.movimientos,
+		})
+	}
+
+	ds.RowCount = len(ds.Rows)
+	ds.Summary["dias"] = ds.RowCount
+	ds.Summary["movimientos_total"] = totalMovimientos
+	ds.Summary["total_ingresos"] = reportesRound(totalIngresos)
+	ds.Summary["total_egresos"] = reportesRound(totalEgresos)
+	ds.Summary["neto_periodo"] = reportesRound(totalIngresos - totalEgresos)
+	ds.Summary["saldo_final"] = reportesRound(saldoAcumulado)
+	ds.Summary["filtro_categoria"] = reportesFirstNonBlank(strings.TrimSpace(b.categoria), "todas")
+	ds.Summary["filtro_metodo_pago"] = reportesFirstNonBlank(reportesNormalizeMetodoPagoFinanzas(b.metodoPago), "todos")
+	if ds.RowCount > 0 {
+		ds.Summary["promedio_neto_dia"] = reportesRound((totalIngresos - totalEgresos) / float64(ds.RowCount))
+	}
+	ds.Summary["moneda"] = reportesFirstNonBlank(strings.ToUpper(strings.TrimSpace(moneda)), "COP")
+
+	return ds, nil
+}
+
 func (b *reportesBuilder) buildContableMovimientosFinancierosDataset() (empresaReporteDataset, error) {
 	rows, err := dbpkg.ListEmpresaFinanzasMovimientos(b.db, b.empresaID, dbpkg.EmpresaFinanzasMovimientoFilter{
 		Desde:           b.desde,
@@ -991,6 +1512,87 @@ func (b *reportesBuilder) buildContableAsientosDataset() (empresaReporteDataset,
 	return ds, nil
 }
 
+func (b *reportesBuilder) buildContableNominaLiquidacionesDataset() (empresaReporteDataset, error) {
+	rows, err := dbpkg.ListEmpresaNominaLiquidaciones(b.db, b.empresaID, dbpkg.EmpresaNominaLiquidacionFilter{
+		PeriodoDesde:     b.desde,
+		PeriodoHasta:     b.hasta,
+		EmpleadoNominaID: b.empleadoNominaID,
+		IncludeInactive:  b.includeInactive,
+		Limit:            b.maxRows,
+	})
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+
+	ds := b.newDataset(reporteDatasetContableNomina, []string{
+		"fecha_generacion",
+		"periodo_desde",
+		"periodo_hasta",
+		"empleado_nomina_id",
+		"empleado_nombre",
+		"empleado_documento",
+		"cargo",
+		"dias_liquidados",
+		"horas_asistencia_total",
+		"horas_extra_totales",
+		"devengado_total",
+		"deduccion_total",
+		"neto_pagar",
+		"estado",
+	})
+
+	totalDevengado := 0.0
+	totalDeduccion := 0.0
+	totalNeto := 0.0
+
+	for _, item := range rows {
+		horasExtraTotales := reportesRound(
+			item.HorasExtraDiurnas +
+				item.HorasExtraNocturnas +
+				item.HorasExtraDominicalesDiurnas +
+				item.HorasExtraDominicalesNocturnas,
+		)
+		totalDevengado += item.DevengadoTotal
+		totalDeduccion += item.DeduccionTotal
+		totalNeto += item.NetoPagar
+
+		ds.Rows = append(ds.Rows, map[string]interface{}{
+			"fecha_generacion":       reportesFirstNonBlank(item.FechaGeneracion, item.FechaActualizacion, item.FechaCreacion),
+			"periodo_desde":          item.PeriodoDesde,
+			"periodo_hasta":          item.PeriodoHasta,
+			"empleado_nomina_id":     item.EmpleadoNominaID,
+			"empleado_nombre":        item.EmpleadoNombre,
+			"empleado_documento":     item.EmpleadoDocumento,
+			"cargo":                  item.Cargo,
+			"dias_liquidados":        reportesRound(item.DiasLiquidados),
+			"horas_asistencia_total": reportesRound(item.HorasAsistenciaTotal),
+			"horas_extra_totales":    horasExtraTotales,
+			"devengado_total":        reportesRound(item.DevengadoTotal),
+			"deduccion_total":        reportesRound(item.DeduccionTotal),
+			"neto_pagar":             reportesRound(item.NetoPagar),
+			"estado":                 item.Estado,
+		})
+	}
+
+	ds.RowCount = len(ds.Rows)
+	ds.Summary["filtro_empleado_nomina_id"] = b.empleadoNominaID
+	ds.Summary["liquidaciones"] = ds.RowCount
+	ds.Summary["total_devengado"] = reportesRound(totalDevengado)
+	ds.Summary["total_deduccion"] = reportesRound(totalDeduccion)
+	ds.Summary["total_neto"] = reportesRound(totalNeto)
+	if ds.RowCount > 0 {
+		ds.Summary["promedio_neto"] = reportesRound(totalNeto / float64(ds.RowCount))
+	}
+
+	if cfg, cfgErr := dbpkg.GetEmpresaNominaConfiguracion(b.db, b.empresaID); cfgErr == nil && cfg != nil {
+		ds.Summary["moneda"] = reportesFirstNonBlank(strings.ToUpper(strings.TrimSpace(cfg.Moneda)), "COP")
+	} else {
+		ds.Summary["moneda"] = "COP"
+	}
+
+	return ds, nil
+}
+
 func writeReportesDatasetExport(w http.ResponseWriter, ds empresaReporteDataset, format string) error {
 	format = strings.ToLower(strings.TrimSpace(format))
 	if format == "excel" {
@@ -1033,8 +1635,16 @@ func writeReportesDatasetExport(w http.ResponseWriter, ds empresaReporteDataset,
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("\ufeff" + content))
 		return nil
+	case "pdf":
+		content := reportesDatasetPDFContent(ds)
+		fileName := reportesBuildFileName(ds.Key, ds.EmpresaID, "pdf")
+		w.Header().Set("Content-Type", "application/pdf")
+		w.Header().Set("Content-Disposition", "attachment; filename=\""+fileName+"\"")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(content)
+		return nil
 	default:
-		return fmt.Errorf("format invalido (use json, csv, txt o xls)")
+		return fmt.Errorf("format invalido (use json, csv, txt, xls o pdf)")
 	}
 }
 
@@ -1116,6 +1726,115 @@ func reportesDatasetTXTContent(ds empresaReporteDataset) string {
 	return builder.String()
 }
 
+func reportesDatasetPDFContent(ds empresaReporteDataset) []byte {
+	lines := reportesDatasetPDFLines(ds)
+	if len(lines) > 46 {
+		lines = append(lines[:45], "Salida truncada. Use CSV o JSON para detalle completo.")
+	}
+
+	var streamBuilder strings.Builder
+	streamBuilder.WriteString("BT\n/F1 9 Tf\n13 TL\n50 760 Td\n")
+	for idx, line := range lines {
+		if idx > 0 {
+			streamBuilder.WriteString("T*\n")
+		}
+		streamBuilder.WriteString("(")
+		streamBuilder.WriteString(reportesEscapePDFText(line))
+		streamBuilder.WriteString(") Tj\n")
+	}
+	streamBuilder.WriteString("ET\n")
+	stream := streamBuilder.String()
+
+	var pdf bytes.Buffer
+	offsets := make([]int, 6)
+
+	pdf.WriteString("%PDF-1.4\n")
+	offsets[1] = pdf.Len()
+	pdf.WriteString("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n")
+	offsets[2] = pdf.Len()
+	pdf.WriteString("2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n")
+	offsets[3] = pdf.Len()
+	pdf.WriteString("3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>\nendobj\n")
+	offsets[4] = pdf.Len()
+	pdf.WriteString(fmt.Sprintf("4 0 obj\n<< /Length %d >>\nstream\n%sendstream\nendobj\n", len(stream), stream))
+	offsets[5] = pdf.Len()
+	pdf.WriteString("5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n")
+
+	startXRef := pdf.Len()
+	pdf.WriteString("xref\n0 6\n")
+	pdf.WriteString("0000000000 65535 f \n")
+	for i := 1; i <= 5; i++ {
+		pdf.WriteString(fmt.Sprintf("%010d 00000 n \n", offsets[i]))
+	}
+	pdf.WriteString("trailer\n<< /Size 6 /Root 1 0 R >>\n")
+	pdf.WriteString(fmt.Sprintf("startxref\n%d\n%%%%EOF", startXRef))
+
+	return pdf.Bytes()
+}
+
+func reportesDatasetPDFLines(ds empresaReporteDataset) []string {
+	lines := []string{
+		"Reporte: " + ds.Title,
+		"Nivel: " + ds.Level,
+		"Empresa: " + strconv.FormatInt(ds.EmpresaID, 10),
+		"Rango: " + reportesFirstNonBlank(ds.Desde, "sin_desde") + " .. " + reportesFirstNonBlank(ds.Hasta, "sin_hasta"),
+		"Generado: " + ds.GeneratedAt,
+		"",
+	}
+
+	if len(ds.Summary) > 0 {
+		keys := make([]string, 0, len(ds.Summary))
+		for k := range ds.Summary {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		lines = append(lines, "Resumen:")
+		for _, key := range keys {
+			lines = append(lines, "- "+key+": "+reportesStringValue(ds.Summary[key]))
+		}
+		lines = append(lines, "")
+	}
+
+	if len(ds.Columns) > 0 {
+		lines = append(lines, strings.Join(ds.Columns, " | "))
+	}
+
+	for _, row := range ds.Rows {
+		values := make([]string, len(ds.Columns))
+		for i, col := range ds.Columns {
+			values[i] = reportesStringValue(row[col])
+		}
+		lines = append(lines, strings.Join(values, " | "))
+	}
+
+	if len(ds.Rows) == 0 {
+		lines = append(lines, "Sin filas para el rango consultado.")
+	}
+
+	return lines
+}
+
+func reportesEscapePDFText(raw string) string {
+	raw = strings.ReplaceAll(raw, "\\", "\\\\")
+	raw = strings.ReplaceAll(raw, "(", "\\(")
+	raw = strings.ReplaceAll(raw, ")", "\\)")
+
+	var builder strings.Builder
+	for _, r := range raw {
+		switch {
+		case r == '\n' || r == '\r' || r == '\t':
+			builder.WriteByte(' ')
+		case r < 32:
+			continue
+		case r > 126:
+			builder.WriteByte('?')
+		default:
+			builder.WriteRune(r)
+		}
+	}
+	return builder.String()
+}
+
 func reportesBuildFileName(base string, empresaID int64, ext string) string {
 	safe := strings.ToLower(strings.TrimSpace(base))
 	safe = strings.ReplaceAll(safe, " ", "_")
@@ -1163,6 +1882,29 @@ func reportesVentaTotal(venta dbpkg.CarritoCompra) float64 {
 	return reportesRound(venta.Total)
 }
 
+func reportesMovimientoTotalNeto(mov dbpkg.EmpresaFinanzasMovimiento) float64 {
+	if mov.TotalNeto > 0 {
+		return reportesRound(mov.TotalNeto)
+	}
+	if mov.Total > 0 {
+		return reportesRound(mov.Total)
+	}
+	return reportesRound(mov.Monto)
+}
+
+func reportesStringEqualsFoldAny(expected string, values ...string) bool {
+	expected = strings.ToLower(strings.TrimSpace(expected))
+	if expected == "" {
+		return false
+	}
+	for _, value := range values {
+		if strings.ToLower(strings.TrimSpace(value)) == expected {
+			return true
+		}
+	}
+	return false
+}
+
 func reportesEstadoActivo(estado string) bool {
 	e := strings.ToLower(strings.TrimSpace(estado))
 	return e == "" || e == "activo"
@@ -1170,6 +1912,18 @@ func reportesEstadoActivo(estado string) bool {
 
 func reportesRound(v float64) float64 {
 	return math.Round(v*100) / 100
+}
+
+func reportesNormalizeMetodoPagoFinanzas(v string) string {
+	n := strings.ToLower(strings.TrimSpace(v))
+	switch n {
+	case "":
+		return ""
+	case "transferencia":
+		return "transferencia_bancaria"
+	default:
+		return n
+	}
 }
 
 func reportesFirstNonBlank(values ...string) string {

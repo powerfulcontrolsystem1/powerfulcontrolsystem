@@ -185,3 +185,110 @@ func TestPurgeExpiredEmpresaAuditoriaEventos(t *testing.T) {
 		t.Fatalf("expected remaining row codigo_http=201, got %d", rows[0].CodigoHTTP)
 	}
 }
+
+func TestCountAndListEmpresaAuditoriaEventosWithPaginationAndSearch(t *testing.T) {
+	dbConn := openFinanzasTestDB(t)
+	if err := EnsureEmpresaAuditoriaSchema(dbConn); err != nil {
+		t.Fatalf("ensure auditoria schema: %v", err)
+	}
+
+	fixtures := []EmpresaAuditoriaEvento{
+		{
+			EmpresaID:      123,
+			Modulo:         "clientes",
+			Accion:         "crear",
+			Recurso:        "clientes",
+			RecursoID:      1001,
+			MetodoHTTP:     "POST",
+			Endpoint:       "/api/empresa/clientes",
+			Resultado:      "ok",
+			CodigoHTTP:     201,
+			UsuarioCreador: "cajero@empresa.com",
+		},
+		{
+			EmpresaID:      123,
+			Modulo:         "clientes",
+			Accion:         "actualizar",
+			Recurso:        "clientes",
+			RecursoID:      1002,
+			MetodoHTTP:     "PUT",
+			Endpoint:       "/api/empresa/clientes",
+			Resultado:      "ok",
+			CodigoHTTP:     200,
+			UsuarioCreador: "supervisor@empresa.com",
+		},
+		{
+			EmpresaID:      123,
+			Modulo:         "inventario",
+			Accion:         "eliminar",
+			Recurso:        "productos",
+			RecursoID:      2001,
+			MetodoHTTP:     "DELETE",
+			Endpoint:       "/api/empresa/productos",
+			Resultado:      "error",
+			CodigoHTTP:     409,
+			UsuarioCreador: "inventario@empresa.com",
+		},
+	}
+
+	for i, fixture := range fixtures {
+		if _, err := CreateEmpresaAuditoriaEvento(dbConn, fixture); err != nil {
+			t.Fatalf("create fixture auditoria %d: %v", i+1, err)
+		}
+	}
+
+	baseFilter := EmpresaAuditoriaEventoFilter{Modulo: "clientes", Limit: 1}
+	total, err := CountEmpresaAuditoriaEventos(dbConn, 123, baseFilter)
+	if err != nil {
+		t.Fatalf("count auditoria eventos: %v", err)
+	}
+	if total != 2 {
+		t.Fatalf("expected total=2 for modulo clientes, got %d", total)
+	}
+
+	firstPage, err := ListEmpresaAuditoriaEventos(dbConn, 123, baseFilter)
+	if err != nil {
+		t.Fatalf("list auditoria first page: %v", err)
+	}
+	if len(firstPage) != 1 {
+		t.Fatalf("expected 1 row on first page, got %d", len(firstPage))
+	}
+	if firstPage[0].Accion != "actualizar" {
+		t.Fatalf("expected first row accion=actualizar, got %q", firstPage[0].Accion)
+	}
+
+	secondPage, err := ListEmpresaAuditoriaEventos(dbConn, 123, EmpresaAuditoriaEventoFilter{Modulo: "clientes", Limit: 1, Offset: 1})
+	if err != nil {
+		t.Fatalf("list auditoria second page: %v", err)
+	}
+	if len(secondPage) != 1 {
+		t.Fatalf("expected 1 row on second page, got %d", len(secondPage))
+	}
+	if secondPage[0].Accion != "crear" {
+		t.Fatalf("expected second row accion=crear, got %q", secondPage[0].Accion)
+	}
+
+	byMethod, err := ListEmpresaAuditoriaEventos(dbConn, 123, EmpresaAuditoriaEventoFilter{Modulo: "clientes", MetodoHTTP: "POST", Limit: 10})
+	if err != nil {
+		t.Fatalf("list auditoria by method: %v", err)
+	}
+	if len(byMethod) != 1 || byMethod[0].MetodoHTTP != "POST" {
+		t.Fatalf("expected one POST row for clientes, got len=%d metodo=%q", len(byMethod), func() string {
+			if len(byMethod) == 0 {
+				return ""
+			}
+			return byMethod[0].MetodoHTTP
+		}())
+	}
+
+	bySearch, err := ListEmpresaAuditoriaEventos(dbConn, 123, EmpresaAuditoriaEventoFilter{Search: "supervisor", Limit: 10})
+	if err != nil {
+		t.Fatalf("list auditoria by search: %v", err)
+	}
+	if len(bySearch) != 1 {
+		t.Fatalf("expected one row for search supervisor, got %d", len(bySearch))
+	}
+	if bySearch[0].UsuarioCreador != "supervisor@empresa.com" {
+		t.Fatalf("expected supervisor row, got %q", bySearch[0].UsuarioCreador)
+	}
+}

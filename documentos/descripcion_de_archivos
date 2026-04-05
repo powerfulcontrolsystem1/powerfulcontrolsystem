@@ -1,5 +1,649 @@
 Descripcion de archivos del proyecto
 
+Actualizacion 2026-04-05: Ajuste de login de usuario con `empresa_id` obligatorio
+
+- `backend/handlers/usuarios_empresa.go`:
+	- `sendEmpresaUsuarioConfirmationEmail` ahora incluye `empresa_id` en enlaces de confirmacion y login para preservar alcance multiempresa en el flujo de primer ingreso.
+	- `ConfirmarCorreoUsuarioHandler` genera enlaces de retorno a `login_usuario.html` con `empresa_id` en escenarios de exito y error.
+
+- `web/js/login_usuario.js`:
+	- Lee `empresa_id` (o `id`) de querystring y lo propaga en query + body al invocar:
+		- `/api/empresa/usuarios/login`.
+		- `/api/empresa/usuarios/establecer_password`.
+	- Evita envio de formularios cuando falta `empresa_id`, mostrando mensaje explicito al usuario.
+
+- `documentos/diagramas/estructura_del_codigo.md`:
+	- Se documenta la propagacion obligatoria de `empresa_id` en el flujo de autenticacion empresarial (correo de confirmacion -> login_usuario -> endpoints publicos).
+
+Actualizacion 2026-04-05: Cierre de wrappers en todas las rutas `/api/empresa`
+
+- `backend/handlers/empresa_permisos.go`:
+	- Agrega `WithEmpresaPublicScope` para endpoints publicos que deben exigir `empresa_id` sin requerir autenticacion previa de admin.
+	- Mantiene inyeccion de `empresaID` en `context.Context` para consumo uniforme de parsers en handlers.
+
+- `backend/main.go`:
+	- Envuelve `/api/empresa/usuarios/login` y `/api/empresa/usuarios/establecer_password` con `WithEmpresaPublicScope`.
+	- Envuelve `/api/empresa/facturacion_electronica/paises_disponibles` con `WithEmpresaFacturacionPermissions`.
+
+- `backend/handlers/chat_con_inteligencia_artificial_router.go`:
+	- Envuelve rutas del modulo IA (`modelos`, `modelo_preferido`, `consultar`, `historial`) con `WithEmpresaSeguridadPermissions` para aplicar control de alcance y rol por `empresa_id`.
+
+- `web/administrar_empresa/facturacion_electronica.html`:
+	- Ajusta `loadCountries()` para enviar `empresa_id` al endpoint `paises_disponibles` bajo el nuevo wrapper de facturacion.
+
+Actualizacion 2026-04-05: Refuerzo de integracion multiempresa por contexto de request
+
+- `backend/handlers/empresa_permisos.go`:
+	- `WithEmpresa*Permissions` inyecta `empresaID` en `context.Context` para que el handler consuma siempre el alcance autorizado por middleware.
+
+- `backend/handlers/productos.go`:
+	- `parseEmpresaIDQuery`, `parseInt64Query` y `parseInt64QueryOptional` priorizan `empresa_id` desde contexto cuando la ruta ya paso por wrapper de permisos.
+	- Se evita dependencia estricta de querystring en handlers que reutilizan estos parsers bajo rutas empresariales autenticadas.
+
+- `backend/handlers/empresa_permisos_test.go`:
+	- Agrega `TestWithEmpresaVentasPermissionsInjectsEmpresaIDContextForParsers` para validar propagacion de `empresa_id` desde middleware hasta parsers compartidos.
+
+Actualizacion 2026-04-05: Regresion UAT en endpoints sin wrapper de modulo (Punto 3)
+
+- `backend/handlers/auth_users_carritos_test.go`:
+	- Agrega pruebas para validar que `usuarios/login` y `usuarios/establecer_password` respetan alcance por `empresa_id` cuando este llega por querystring en endpoints sin wrapper de modulo.
+	- Casos agregados:
+		- `TestEmpresaUsuarioLoginHandlerRejectsWrongEmpresaScopeFromQuery`.
+		- `TestEmpresaUsuarioSetPasswordHandlerRejectsWrongEmpresaScopeFromQuery`.
+
+- `backend/handlers/chat_con_inteligencia_artificial_controller_test.go`:
+	- Agrega pruebas de regresion para reforzar aislamiento por cuenta Google autenticada en rutas de chat IA sin wrapper.
+	- Casos agregados:
+		- `TestModeloPreferidoHandlerGetRejectsEmpresaFueraDeAlcanceByGoogleAccount`.
+		- `TestModeloPreferidoHandlerPutRejectsEmpresaFueraDeAlcanceByGoogleAccount`.
+		- `TestHistorialHandlerRejectsEmpresaFueraDeAlcanceByGoogleAccount`.
+
+- `documentos/plan_maestro_pos_multiempresa_14_puntos.md`:
+	- Registra el cierre del subbloque de regresion UAT para endpoints sin wrapper y actualiza backlog inmediato de Punto 3.
+
+Actualizacion 2026-04-05: Menu dinamico por permisos efectivos (Punto 3)
+
+- `web/js/administrar_empresa.js`:
+	- Consume `GET /api/empresa/permisos_contexto` para aplicar visibilidad real de enlaces por modulo/accion en el menu lateral del panel empresa.
+	- Acepta `id` o `empresa_id` en query para resolver el contexto de permisos de forma consistente.
+	- Mantiene fallback local por rol para evitar degradacion funcional si el endpoint no responde.
+	- Agrega texto de evidencia operativa (`menuPermsEvidence`) con rol y fuente de permisos usada en la sesion.
+
+- `web/administrar_empresa.html`:
+	- Agrega contenedor visual `menuPermsEvidence` para mostrar en sidebar la evidencia UAT de permisos aplicados por rol.
+
+- `documentos/matriz_roles_permisos_pos_multiempresa.md`:
+	- Registra adopcion frontend de `permisos_contexto` para ocultamiento dinamico de menu y evidencia visual por rol.
+
+- `documentos/descripcion_del_proyecto`:
+	- Actualiza alcance del modulo de seguridad/permisos con consumo frontend del contexto efectivo para control de menu.
+
+- `documentos/diagramas/estructura_del_codigo.md`:
+	- Registra integracion frontend del endpoint `permisos_contexto` y fallback local de permisos.
+
+- `documentos/plan_maestro_pos_multiempresa_14_puntos.md`:
+	- Marca continuidad del Punto 3 sobre ocultamiento dinamico de menu por permisos efectivos.
+
+Actualizacion 2026-04-05: Endpoint de contexto de permisos por empresa (Punto 3)
+
+- `backend/handlers/empresa_permisos.go`:
+	- Agrega `GET /api/empresa/permisos_contexto` para exponer permisos efectivos por rol en cada modulo (`ventas`, `inventario`, `finanzas`, `clientes`, `compras`, `facturacion`, `seguridad`).
+	- Incluye resumen de acciones habilitadas por rol y soporte opcional de matriz completa por roles con `include_matrix=1`.
+
+- `backend/main.go`:
+	- Registra la ruta `/api/empresa/permisos_contexto` bajo `WithEmpresaSeguridadPermissions` para aplicar aislamiento por `empresa_id` y control de lectura por modulo seguridad.
+
+- `backend/handlers/empresa_permisos_test.go`:
+	- Agrega `TestEmpresaPermisosContextoHandlerRetornaPermisosPorRol` para validar permisos efectivos de `contabilidad`.
+	- Agrega `TestEmpresaPermisosContextoHandlerIncluyeMatrizRoles` para validar `include_matrix=1` y la matriz del rol `super_administrador`.
+
+- `documentos/matriz_roles_permisos_pos_multiempresa.md`:
+	- Registra el nuevo endpoint en la matriz final endpoint/rol y agrega evidencia UAT automatizada del contexto de permisos.
+
+- `documentos/descripcion_del_proyecto`:
+	- Actualiza la arquitectura para incluir el endpoint de contexto de permisos en el modulo de seguridad por empresa.
+
+- `documentos/diagramas/estructura_del_codigo.md`:
+	- Registra el flujo tecnico del endpoint de permisos_contexto y su integracion con rutas y pruebas.
+
+- `documentos/plan_maestro_pos_multiempresa_14_puntos.md`:
+	- Registra continuidad del Punto 3 con implementacion backend y validacion automatizada.
+
+Actualizacion 2026-04-05: Filtros contables en flujo de caja diario
+
+- `backend/handlers/reportes.go`:
+	- Extiende el dataset `contable_flujo_caja` con filtros por `categoria` y `metodo_pago`.
+	- Agrega trazabilidad en resumen del reporte (`filtro_categoria`, `filtro_metodo_pago`) para exportaciones y auditoria operativa.
+
+- `backend/handlers/reportes_test.go`:
+	- Agrega prueba `TestEmpresaReportesHandlerDatasetContableFlujoCajaFiltros` para validar consolidacion diaria filtrada por categoria/metodo de pago.
+
+- `web/administrar_empresa/reportes.html`:
+	- Agrega campos de filtro contable (categoria y metodo de pago) y envia estos parametros a las acciones `dataset` y `export`.
+
+- `documentos/descripcion_del_proyecto`:
+	- Actualiza la descripcion del modulo de reportes para incluir segmentacion contable de flujo de caja por categoria y metodo de pago.
+
+- `documentos/diagramas/estructura_del_codigo.md`:
+	- Registra la extension tecnica backend/frontend de filtros contables en el endpoint central de reportes.
+
+- `documentos/plan_maestro_pos_multiempresa_14_puntos.md`:
+	- Registra nueva continuidad del Punto 11 con filtros contables en flujo de caja diario y su validacion.
+
+Actualizacion 2026-04-05: Dataset contable de flujo de caja diario en reportes
+
+- `backend/handlers/reportes.go`:
+	- Agrega dataset `contable_flujo_caja` al modulo central `/api/empresa/reportes`.
+	- Consolida movimientos financieros por fecha para calcular `ingresos`, `egresos`, `neto_dia`, `saldo_acumulado` y `movimientos`.
+	- Publica resumen del periodo con `total_ingresos`, `total_egresos`, `neto_periodo`, `saldo_final` y promedio diario.
+
+- `backend/handlers/reportes_test.go`:
+	- Agrega prueba `TestEmpresaReportesHandlerDatasetContableFlujoCaja` para validar la agregacion diaria y el saldo acumulado del nuevo dataset.
+
+- `documentos/descripcion_del_proyecto`:
+	- Actualiza el alcance del modulo de reportes para incluir el dataset `contable_flujo_caja` como continuidad del Punto 11 (reportes financieros).
+
+- `documentos/diagramas/estructura_del_codigo.md`:
+	- Registra la integracion tecnica del dataset `contable_flujo_caja` en el flujo backend del endpoint central de reportes.
+
+- `documentos/plan_maestro_pos_multiempresa_14_puntos.md`:
+	- Registra la continuacion del Punto 11 con el entregable de flujo de caja diario y su evidencia de validacion.
+
+Actualizacion 2026-04-05: Reportes contables de nomina y exportacion PDF
+
+- `backend/handlers/reportes.go`:
+	- Agrega dataset `contable_nomina_liquidaciones` al modulo central `/api/empresa/reportes`.
+	- Incorpora filtro `empleado_nomina_id` para segmentar liquidaciones por empleado.
+	- Extiende exportador de datasets con formato `pdf` para mantener paridad multi-formato.
+
+- `backend/handlers/reportes_test.go`:
+	- Agrega validacion de exportacion `pdf` en pruebas de contrato del modulo de reportes.
+	- Agrega prueba `TestEmpresaReportesHandlerDatasetNominaLiquidaciones` para validar filas y resumen del dataset de nomina.
+
+- `web/administrar_empresa/reportes.html`:
+	- Agrega opcion `PDF` al selector de formatos de exportacion.
+
+- `web/administrar_empresa/nomina_sueldos.html`:
+	- Agrega control de exportacion de liquidaciones (`pdf`, `xls`, `csv`, `json`, `txt`) reutilizando el endpoint central `/api/empresa/reportes?action=export`.
+
+- `documentos/descripcion_del_proyecto`:
+	- Actualiza alcance del modulo de reportes para reflejar exportacion unificada `PDF/XLS/CSV/JSON/TXT` y dataset contable de nomina.
+
+- `documentos/diagramas/estructura_del_codigo.md`:
+	- Registra la integracion tecnica backend/frontend del dataset de liquidaciones de nomina en reportes.
+
+Actualizacion 2026-04-05: Modulo de nomina de sueldos integrado con asistencia
+
+- `backend/main.go`:
+	- Integra `EnsureEmpresaNominaSchema` en bootstrap de `empresas.db`.
+	- Registra migracion `2026-04-05-020-nomina-sueldos`.
+	- Expone endpoint `/api/empresa/nomina` protegido por permisos de finanzas.
+
+- `web/administrar_empresa/nomina_sueldos.html` (nuevo):
+	- Pantalla completa de nomina: configuracion legal, empleados de nomina, festivos, calculo y consulta de liquidaciones.
+	- Integra calculo de nomina por periodo con base en asistencia (`action=calcular`).
+
+- `web/administrar_empresa.html`:
+	- Agrega enlace lateral `Nomina de sueldos` (`linkNominaSueldos`).
+
+- `web/js/administrar_empresa.js`:
+	- Integra `linkNominaSueldos` al arreglo de navegacion.
+	- Configura regla de permisos de menu para modulo `finanzas` accion `create`.
+
+- `web/estilos.css`:
+	- Agrega estilos del modulo de nomina para layout, filtros, resumen y tablas.
+
+Actualizacion documental asociada:
+
+- `documentos/descripcion_del_proyecto`:
+	- Incluye el modulo de nomina como capacidad operativa por empresa.
+
+- `documentos/diagramas/estructura_del_codigo.md`:
+	- Documenta arquitectura backend/frontend y flujo de nomina integrado con asistencia.
+
+- `documentos/estructura_bd.md` y `estructura_bd.md`:
+	- Incorporan tablas de nomina y relaciones por `empresa_id`.
+
+Actualizacion 2026-04-05: Ventas simples por estacion (modo supermercado)
+
+- `web/administrar_empresa/ventas_simple.html` (nuevo):
+	- Pantalla de venta rapida por estacion para agregar productos del catalogo, ajustar cantidades, visualizar total y ejecutar cobro simple.
+	- Reutiliza APIs de carritos/items/productos y acciones de estacion (`activar_estacion`, `pagar_estacion`).
+
+- `web/administrar_empresa/configuracion_de_estaciones.html`:
+	- Agrega columna de configuracion `Venta simple` por estacion.
+	- Persiste bandera `venta_simple_habilitada` junto con nombre de cada estacion en `localStorage`.
+
+- `web/administrar_empresa/estaciones.html`:
+	- Lee la bandera por estacion y enruta la tarjeta a `ventas_simple.html` o `carrito_de_compras.html`.
+	- Muestra en la tarjeta el modo operativo configurado para la estacion.
+
+- `web/estilos.css`:
+	- Incorpora estilos de tarjetas de estaciones para etiqueta de modo.
+	- Incorpora estilos responsive del modulo `ventas_simple`.
+
+Actualizacion 2026-04-05: Reporte de turno en modulo de reportes
+
+- `backend/handlers/reportes.go`:
+	- Agrega dataset `reporte_de_turno` en `/api/empresa/reportes`.
+	- Implementa filtros por `usuario`, `caja_codigo`, `turno` y `cierre_id`.
+	- Calcula por carrito la hora de activacion, ventas por productos/servicios y consolida gastos + efectivo esperado de caja.
+
+- `backend/handlers/reportes_test.go`:
+	- Agrega prueba `TestEmpresaReportesHandlerDatasetReporteTurno` con datos controlados de cierre, carrito e item para validar la salida del dataset.
+
+- `web/administrar_empresa/reportes.html`:
+	- Agrega campos de filtro de turno/caja/usuario/cierre en la seccion de datasets.
+	- Envía filtros al backend en consultas y exportaciones del modulo reportes.
+
+- `documentos/descripcion_del_proyecto`:
+	- Amplia la descripcion del modulo de reportes para incluir el dataset `reporte_de_turno`.
+
+- `documentos/diagramas/estructura_del_codigo.md`:
+	- Registra el flujo tecnico del nuevo reporte de turno y su integracion backend/frontend.
+
+Actualizacion 2026-04-05: Modulo de tarifas por dia por estacion
+
+- `backend/db/tarifas_por_dia.go` (nuevo):
+	- Define tabla `empresa_tarifas_por_dia` y operaciones CRUD por `empresa_id`.
+	- Implementa configuracion de `hora_check_in` y `hora_check_out` por estacion.
+	- Implementa calculo de dias cobrados y monto total por permanencia.
+
+- `backend/db/carritos_tarifa_dia.go` (nuevo):
+	- Implementa recálculo de deuda diaria para carritos activos de estaciones.
+	- Expone refresco por carrito y refresco masivo para listado operativo.
+
+- `backend/handlers/tarifas_por_dia.go` (nuevo):
+	- Expone endpoint `GET/POST/PUT/DELETE /api/empresa/tarifas_por_dia`.
+	- Soporta acciones `listar`, `detalle`, `aplicable`, `calcular`, `activar` y `desactivar`.
+
+- `backend/handlers/carritos_compras.go`:
+	- Integra recálculo automático de tarifa diaria en `GET /api/empresa/carritos_compra`.
+	- Recalcula tarifa diaria antes de `action=pagar_estacion` para cobrar deuda actualizada.
+
+- `backend/db/carritos_compras.go`:
+	- `RecalculateCarritoCompraTotals` pasa a recalcular total base + tarifa diaria automática.
+
+- `backend/main.go`:
+	- Registra `EnsureEmpresaTarifasPorDiaSchema`.
+	- Registra migracion `2026-04-05-019-tarifas-por-dia`.
+	- Registra ruta protegida `/api/empresa/tarifas_por_dia` bajo permisos de ventas.
+
+- `web/administrar_empresa/tarifas_por_dia.html` (nuevo):
+	- Pantalla de configuracion de tarifa diaria por estacion, servicio y horarios.
+	- Incluye filtros y simulador por rango de fechas (`activado_en` y `fecha_corte`).
+
+- `web/administrar_empresa.html` y `web/js/administrar_empresa.js`:
+	- Integran enlace lateral `Tarifas por día` (`linkTarifasPorDia`) y regla de permisos del modulo ventas.
+
+- Pruebas nuevas/actualizadas:
+	- `backend/db/tarifas_por_dia_test.go`.
+	- `backend/handlers/tarifas_por_dia_test.go`.
+	- `backend/handlers/carritos_tarifa_por_dia_test.go`.
+
+- Documentacion actualizada:
+	- `documentos/estructura_bd.md` y `estructura_bd.md` (version `2026-04-05.20`).
+	- `documentos/descripcion_del_proyecto`.
+	- `documentos/diagramas/estructura_del_codigo.md`.
+	- `documentos/diagramas/diagrama_flujo_procesos.md`.
+	- `documentos/diagramas/diagrama_entidad_relacion.md`.
+	- `documentos/diagramas/diagrama_arquitectura_sistema.md`.
+	- `CHANGELOG.md`.
+	- `documentos/descripcion_de_archivos`.
+	- `documentos/historial_de_cambios`.
+
+Actualizacion 2026-04-05: Modulo de tarifas por minutos por estacion
+
+- `backend/db/tarifas_por_minutos.go` (nuevo):
+	- Define tabla `empresa_tarifas_por_minutos` y operaciones CRUD por `empresa_id`.
+	- Implementa resolucion de tarifa aplicable por dia de semana y calculo de cobro por bloques extra de minutos.
+
+- `backend/handlers/tarifas_por_minutos.go` (nuevo):
+	- Expone endpoint `GET/POST/PUT/DELETE /api/empresa/tarifas_por_minutos`.
+	- Soporta acciones `listar`, `detalle`, `aplicable`, `calcular`, `activar` y `desactivar`.
+
+- `backend/main.go`:
+	- Registra `EnsureEmpresaTarifasPorMinutosSchema`.
+	- Registra migracion `2026-04-05-018-tarifas-por-minutos`.
+	- Registra ruta protegida `/api/empresa/tarifas_por_minutos` bajo permisos de ventas.
+
+- `web/administrar_empresa/tarifas_por_minutos.html` (nuevo):
+	- Pantalla de configuracion de tarifa base/bloque extra por estacion y rango de dias.
+	- Incluye filtros operativos y simulador de cobro por minutos consumidos.
+
+- `web/administrar_empresa.html` y `web/js/administrar_empresa.js`:
+	- Integran el enlace lateral `Tarifas por minutos` (`linkTarifasPorMinutos`) y su regla de permisos.
+
+- `backend/db/tarifas_por_minutos_test.go` (nuevo):
+	- Cobertura de CRUD, resolucion por dia y calculo de bloques extra.
+
+- `backend/handlers/tarifas_por_minutos_test.go` (nuevo):
+	- Cobertura del contrato HTTP y flujo de simulacion del endpoint.
+
+- `documentos/estructura_bd.md` y `estructura_bd.md`:
+	- Se actualiza version de esquema a `2026-04-05.19`.
+	- Se documenta la nueva tabla `empresa_tarifas_por_minutos`.
+
+- `documentos/descripcion_del_proyecto`:
+	- Agrega el modulo de tarifas por minutos dentro del alcance funcional de operacion por empresa.
+
+- `documentos/diagramas/estructura_del_codigo.md` y `documentos/diagramas/diagrama_flujo_procesos.md`:
+	- Se documenta arquitectura y flujo operativo del nuevo modulo.
+
+Actualizacion 2026-04-05: Ubicacion del documento de base de datos en carpeta documentos
+
+- `documentos/estructura_bd.md` (nuevo):
+	- Documento de estructura de base de datos ubicado en la carpeta `documentos` como fuente canonica.
+
+- `.github/agents/agente_go.agent.md`:
+	- Regla tecnica actualizada para leer `documentos/estructura_bd.md` antes de cambios en tablas, consultas, migraciones o datos operativos.
+
+- `estructura_bd.md`:
+	- Se mantiene como copia de compatibilidad con nota de sincronizacion hacia la fuente canonica en `documentos/estructura_bd.md`.
+
+Actualizacion 2026-04-05: Modulo de busqueda y gestion de facturas electronicas
+
+- `web/administrar_empresa/facturas_electronicas.html` (nuevo):
+	- Pantalla operativa para buscar facturas por `empresa_id`, cliente, documento y rango de fechas.
+	- Incluye acciones de visualizar detalle, reenviar factura al correo del cliente e imprimir comprobante.
+
+- `web/administrar_empresa.html`:
+	- Integra el enlace lateral `Facturas electrónicas` (`linkFacturasElectronicas`) en el panel de empresa.
+
+- `web/js/administrar_empresa.js`:
+	- Agrega `linkFacturasElectronicas` al arreglo de enlaces del menu.
+	- Agrega regla de permisos para el enlace en modulo `facturacion` con accion de lectura.
+
+- `backend/handlers/facturacion_electronica.go`:
+	- Agrega `GET action=documentos` para listado de documentos de facturacion con filtros de cliente/documento/fecha.
+	- Agrega `PUT/POST action=reenviar_correo` para reintento manual de envio de factura por correo.
+
+- `backend/db/documentos_transaccionales.go`:
+	- Agrega estructura de listado enriquecido con datos de cliente y funcion `ListEmpresaDocumentosFacturacionByEmpresa` para filtros operativos.
+
+- `backend/db/documentos_transaccionales_test.go`:
+	- Incorpora pruebas de listado de facturacion con filtros por cliente, fecha y documento.
+
+Actualizacion 2026-04-05: Normalizacion de documentos de base de datos
+
+- `estructura_bd.md`:
+	- Se confirma como documento canonico de estructura fisica (tablas, campos, relaciones e historial de version de esquema).
+
+- `documentos/descripcion_de_las_bases_De_datos`:
+	- Se transforma en documento complementario funcional (alcance de bases, convenciones, aislamiento y flujo de mantenimiento).
+	- Se elimina el duplicado tabla-por-tabla para evitar desalineacion documental.
+
+Actualizacion 2026-04-05: Consolidacion de configuracion avanzada en facturacion electronica
+
+- `web/administrar_empresa/facturacion_electronica.html`:
+	- Integra el formulario de configuracion avanzada fiscal y de impresion en una seccion adicional dentro del mismo modulo.
+	- Conserva persistencia sobre `GET/PUT /api/empresa/configuracion_avanzada` sin duplicar endpoints.
+	- Unifica operacion para evitar navegacion fragmentada entre dos pantallas de facturacion.
+
+- `web/administrar_empresa.html`:
+	- Elimina `linkConfigAvanzada` del menu lateral del panel empresa.
+
+- `web/js/administrar_empresa.js`:
+	- Retira `linkConfigAvanzada` del arreglo de enlaces y del catalogo de permisos del menu.
+
+- `web/ayuda/ayuda.html`:
+	- Actualiza la ruta de uso para configuracion avanzada, apuntando a `web/administrar_empresa/facturacion_electronica.html`.
+
+- `web/administrar_empresa/configuracion_avanzada.html`:
+	- Eliminado del repositorio por consolidacion funcional en `facturacion_electronica.html`.
+
+Actualizacion 2026-04-05: Configuracion operativa de cobro por empresa y rol
+
+- `backend/db/configuracion_operativa.go` (nuevo):
+	- Define esquema de `empresa_configuracion_operativa` y `empresa_configuracion_operativa_roles`.
+	- Implementa resolucion de permisos efectivos por rol para metodos de pago, propinas y comisiones.
+
+- `backend/handlers/configuracion_operativa.go` (nuevo):
+	- Expone endpoint `GET/POST/PUT /api/empresa/configuracion_operativa`.
+	- Soporta configuracion base por empresa y override por rol mediante `action=rol`.
+
+- `backend/handlers/carritos_compras.go`:
+	- Aplica enforcement de configuracion operativa en `action=pagar_estacion`.
+	- Bloquea metodos de pago no habilitados y respeta bloqueos de propinas/comisiones por rol.
+
+- `backend/handlers/empresa_permisos.go` y `backend/handlers/productos.go`:
+	- Estandarizan lectura/propagacion de rol admin para decisiones operativas por request.
+
+- `backend/main.go`:
+	- Registra `EnsureEmpresaConfiguracionOperativaSchema`.
+	- Registra migracion `2026-04-05-017-configuracion-operativa-cobro`.
+	- Registra ruta protegida `/api/empresa/configuracion_operativa`.
+
+- `web/administrar_empresa/configuracion.html`:
+	- Agrega tarjeta de configuracion operativa con checks por empresa y por rol.
+	- Permite guardar reglas base y overrides persistidos en base de datos.
+
+- `web/administrar_empresa/carrito_de_compras.html`:
+	- Consulta configuracion operativa efectiva del rol actual.
+	- Habilita/deshabilita metodos de pago en UI segun politica.
+	- Bloquea aplicacion de propina/comision cuando la politica del rol lo restringe.
+
+- `backend/db/configuracion_operativa_test.go` (nuevo):
+	- Prueba defaults, upsert de empresa y resolucion efectiva por rol.
+
+- `backend/handlers/configuracion_operativa_test.go` (nuevo):
+	- Prueba contrato HTTP de configuracion base + override por rol.
+
+- `backend/handlers/auth_users_carritos_test.go`:
+	- Agrega integracion de pago con bloqueo por metodo/propina/comision segun rol.
+
+Actualizacion 2026-04-05: Modulo de comisiones por servicio por empresa
+
+- `backend/db/comisiones_servicio.go` (nuevo):
+	- Define esquema de `empresa_comisiones_servicio_configuracion` y `empresa_comisiones_servicio_movimientos`.
+	- Implementa configuracion por empresa, registro de movimientos y reporte agregado por lavador.
+	- Implementa registro automatico de comisiones desde carrito pagado (`RegisterEmpresaComisionesServicioDesdeCarrito`).
+
+- `backend/handlers/comisiones.go` (nuevo):
+	- Expone endpoint `GET/POST/PUT /api/empresa/comisiones`.
+	- Soporta acciones `config`, `reporte` y `movimientos`.
+
+- `backend/handlers/carritos_compras.go`:
+	- Integra `usuario_lavador` en `action=pagar_estacion`.
+	- Registra comisiones por servicio al cerrar carrito cuando la configuracion empresarial lo permite.
+	- Incluye bloque `comision` en la respuesta de pago y metadatos de evento contable.
+
+- `backend/main.go`:
+	- Registra `EnsureEmpresaComisionesServicioSchema`.
+	- Registra migracion `2026-04-05-016-comisiones-servicio`.
+	- Registra ruta protegida `/api/empresa/comisiones` bajo permisos de finanzas.
+
+- `web/administrar_empresa/comisiones.html` (nuevo):
+	- Pagina de configuracion de comisiones por servicio y reporte por lavador.
+	- Visualiza resumen, acumulado por lavador y detalle de movimientos.
+
+- `web/administrar_empresa/carrito_de_compras.html`:
+	- Agrega campo `Lavador (comision)` en el cobro de estacion.
+	- Carga configuracion de comisiones y muestra estimacion operativa.
+	- Incluye resultado de comision registrada al cerrar el carrito.
+
+- `web/administrar_empresa.html` y `web/js/administrar_empresa.js`:
+	- Integran el enlace lateral `Comisiones` (`linkComisiones`) y su control de permisos (modulo finanzas).
+
+- `backend/db/comisiones_servicio_test.go` (nuevo):
+	- Pruebas de configuracion, registro automatico desde carrito y reporte por lavador.
+
+- `backend/handlers/comisiones_test.go` (nuevo):
+	- Pruebas de contrato HTTP para configuracion y reporte del endpoint de comisiones.
+
+- `backend/handlers/auth_users_carritos_test.go`:
+	- Agrega integracion de pago con registro de comision por servicio y validacion de `usuario_lavador`.
+
+Actualizacion 2026-04-05: Modulo de reservas por estacion/habitacion
+
+- `backend/db/reservas_hotel.go` (nuevo):
+	- Define la entidad `ReservaHotel` y la tabla `reservas_hotel` por empresa.
+	- Implementa disponibilidad por rango, control de conflicto, expiracion automatica de pendientes y ciclo de estados de reserva/pago.
+
+- `backend/handlers/reservas_hotel.go` (nuevo):
+	- Expone endpoint `GET/POST/PUT/DELETE /api/empresa/reservas_hotel`.
+	- Soporta acciones `listar`, `detalle`, `disponibilidad`, `confirmar_pago`, `cancelar`, `activar` y `desactivar`.
+
+- `backend/main.go`:
+	- Registra `EnsureEmpresaReservasHotelSchema`.
+	- Registra migracion `2026-04-05-015-reservas-hotel`.
+	- Expone ruta protegida `/api/empresa/reservas_hotel` bajo permisos de ventas.
+
+- `web/administrar_empresa/reservas_hotel.html` (nuevo):
+	- Interfaz de reservas para crear/editar, filtrar por estado/rango, consultar disponibilidad y ejecutar acciones de confirmacion/cancelacion/estado.
+
+- `web/administrar_empresa.html` y `web/js/administrar_empresa.js`:
+	- Integran el enlace lateral `Reservas` (`linkReservasHotel`) y su control de permisos (modulo ventas).
+
+- `backend/db/reservas_hotel_test.go` (nuevo):
+	- Pruebas de capa DB para flujo CRUD, conflicto de solapamiento, disponibilidad, confirmacion de pago y desactivacion/eliminacion.
+
+- `backend/handlers/reservas_hotel_test.go` (nuevo):
+	- Pruebas de contrato HTTP para flujo completo del endpoint de reservas (crear, listar, disponibilidad, editar, confirmar, desactivar y eliminar).
+
+Actualizacion 2026-04-05: Modulo de registro de vehiculos por empresa
+
+- `backend/db/vehiculos_registro.go` (nuevo):
+	- Define la entidad `EmpresaVehiculoRegistro` y la tabla `empresa_vehiculos_registro` por empresa.
+	- Implementa CRUD, activacion/desactivacion y accion operativa `marcar_salida`.
+
+- `backend/handlers/vehiculos_registro.go` (nuevo):
+	- Expone endpoint `GET/POST/PUT/DELETE /api/empresa/vehiculos_registro`.
+	- Soporta acciones `activar`, `desactivar` y `marcar_salida`.
+
+- `backend/main.go`:
+	- Registra `EnsureEmpresaVehiculosRegistroSchema`.
+	- Registra migracion `2026-04-05-014-vehiculos-registro`.
+	- Expone ruta protegida `/api/empresa/vehiculos_registro` bajo permisos de seguridad.
+
+- `web/administrar_empresa/vehiculos_registro.html` (nuevo):
+	- Interfaz de registro y consulta vehicular con patente, conductor, propietario, motivo y control de ingreso/salida.
+
+- `web/administrar_empresa.html` y `web/js/administrar_empresa.js`:
+	- Integran el enlace lateral `Registro de vehiculos` (`linkVehiculosRegistro`) y su control de permisos.
+
+- `backend/db/vehiculos_registro_test.go` (nuevo):
+	- Pruebas de CRUD, cambio de estado y marcacion de salida en capa DB.
+
+- `backend/handlers/vehiculos_registro_test.go` (nuevo):
+	- Pruebas del contrato HTTP del endpoint y acciones operativas.
+
+Actualizacion 2026-04-05: Modulo de propinas por empresa
+
+- `backend/db/propinas.go` (nuevo):
+	- Define esquema de `empresa_propinas_configuracion` y `empresa_propinas_movimientos`.
+	- Implementa configuracion por empresa, registro de movimientos y reporte por usuario/universal.
+
+- `backend/handlers/propinas.go` (nuevo):
+	- Expone endpoint `GET/POST/PUT /api/empresa/propinas` con acciones `config`, `reporte` y `movimientos`.
+
+- `backend/handlers/carritos_compras.go`:
+	- Integra `aplicar_propina` en pago de estacion.
+	- Calcula total final con propina y valida `total_pagado` contra el total esperado final.
+	- Registra movimiento de propina al cerrar carrito cuando aplica.
+
+- `backend/main.go`:
+	- Asegura esquema de propinas con `EnsureEmpresaPropinasSchema`.
+	- Registra migracion `2026-04-05-013-propinas`.
+	- Registra ruta protegida `/api/empresa/propinas` bajo permisos de finanzas.
+
+- `web/administrar_empresa/propinas.html` (nuevo):
+	- Pagina de configuracion de propinas (activar/desactivar, porcentaje, modo de distribucion, aplicacion automatica).
+	- Reporte por rango con resumen, acumulado por usuario y listado de movimientos.
+
+- `web/administrar_empresa/carrito_de_compras.html`:
+	- Agrega control para aplicar propina configurada durante el cobro en estacion.
+	- Muestra desglose de total sin propina, monto de propina y total final.
+
+- `web/administrar_empresa.html` y `web/js/administrar_empresa.js`:
+	- Integran el enlace lateral `Propinas` (`linkPropinas`) y su control de permisos (modulo finanzas).
+
+- `backend/db/propinas_test.go` (nuevo):
+	- Pruebas de configuracion y reporte de distribucion universal/por usuario.
+
+- `backend/handlers/propinas_test.go` (nuevo):
+	- Pruebas del endpoint de configuracion y reporte.
+
+- `backend/handlers/auth_users_carritos_test.go`:
+	- Agrega caso de integracion para pago de carrito con propina y verificacion de movimiento registrado.
+
+Actualizacion 2026-04-05: Transferencia bancaria en formas de pago
+
+- `backend/db/carritos_compras.go`:
+	- Amplia la normalizacion de metodos de pago para aceptar `transferencia` y `transferencia_bancaria`.
+
+- `backend/handlers/carritos_compras.go`:
+	- Permite `transferencia_bancaria` en el cierre de carrito (`action=pagar_estacion`).
+	- Exige referencia minima para pagos con tarjeta o transferencia bancaria.
+	- Habilita transferencia bancaria como tramo valido en pago mixto.
+
+- `backend/handlers/auth_users_carritos_test.go`:
+	- Agrega pruebas de pago exitoso con transferencia bancaria.
+	- Agrega prueba de rechazo cuando la referencia de transferencia no cumple longitud minima.
+
+- `web/administrar_empresa/carrito_de_compras.html`:
+	- Incorpora `Transferencia bancaria` en selectores de pago directo y mixto.
+	- Refuerza validaciones de referencia para tarjeta/transferencia.
+	- Envia `pagos_mixtos` al backend y muestra detalle operativo del cobro mixto.
+
+- `web/administrar_empresa/finanzas.html`:
+	- Estandariza `transferencia_bancaria` como opcion de metodo de pago.
+	- Mantiene compatibilidad de datos legacy mapeando `transferencia` -> `transferencia_bancaria`.
+
+- `web/ayuda/ayuda.html`:
+	- Actualiza la documentacion funcional de metodos soportados en cierre de carrito.
+
+- `documentos/descripcion_del_proyecto`:
+	- Refleja `transferencia_bancaria` y `mixto` en el alcance de metodos de pago del flujo de carritos.
+
+- `documentos/diagramas/estructura_del_codigo.md`:
+	- Actualiza la seccion de pagos del modulo de carritos para incluir transferencia bancaria.
+
+- `documentos/diagramas/diagrama_flujo_procesos.md`:
+	- Actualiza el flujo de validacion de pago con referencia para tarjeta/transferencia.
+
+- `CHANGELOG.md`:
+	- Registra el cambio transversal de transferencia bancaria en backend, frontend y pruebas.
+
+Actualizacion 2026-04-05: Robustecimiento del modulo de auditoria empresarial
+
+- `backend/db/auditoria_empresa.go`:
+	- Amplia el filtro de consulta de eventos con `metodo_http`, `recurso`, `endpoint`, `search` y `offset`.
+	- Agrega `CountEmpresaAuditoriaEventos` para paginacion robusta en frontend.
+	- Refuerza rendimiento con nuevos indices de consulta y retencion.
+
+- `backend/handlers/auditoria_empresa.go`:
+	- Refuerza validacion de parametros (`codigo_http`, fechas y offsets).
+	- Expone metadata de paginacion por headers (`X-Total-Count`, `X-Page-Limit`, `X-Page-Offset`).
+	- Integra correlacion de `request_id` desde contexto del middleware.
+
+- `backend/handlers/empresa_permisos.go`:
+	- Registra eventos de auditoria para acciones criticas denegadas por permisos o alcance.
+
+- `backend/utils/utils.go`:
+	- Expone helper `RequestIDFromContext` para reutilizar el `request_id` del middleware en capas de negocio.
+
+- `web/administrar_empresa/auditoria.html`:
+	- Agrega filtros avanzados (`metodo_http`, `recurso`, `endpoint`, `busqueda libre`).
+	- Agrega paginador de resultados y consumo de headers de conteo.
+	- Agrega panel de detalle JSON por evento.
+	- Mantiene exportaciones CSV/JSON para la pagina actual de resultados.
+
+- `web/estilos.css`:
+	- Agrega clases visuales de auditoria para paginacion y detalle sin estilos inline.
+
+- `backend/db/auditoria_empresa_test.go`:
+	- Agrega pruebas de conteo, paginacion y filtros de busqueda avanzada.
+
+- `backend/handlers/auditoria_empresa_test.go`:
+	- Agrega pruebas de metadatos de paginacion, validacion de fecha invalida, correlacion de `request_id` y auditoria de denegaciones.
+
+- `documentos/diagramas/estructura_del_codigo.md`:
+	- Documenta la arquitectura del robustecimiento de auditoria en backend y frontend.
+
+- `documentos/diagramas/diagrama_flujo_procesos.md`:
+	- Actualiza flujo para incluir auditoria de intentos denegados y consulta paginada con detalle.
+
 Actualizacion 2026-04-05: Facturacion electronica con envio automatico al correo del cliente
 
 - `backend/handlers/facturacion_electronica.go`:

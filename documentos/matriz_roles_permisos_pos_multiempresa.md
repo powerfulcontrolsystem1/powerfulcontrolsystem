@@ -1,6 +1,6 @@
 # Matriz base de roles y permisos POS multiempresa
 
-Fecha de actualizacion: 2026-04-04
+Fecha de actualizacion: 2026-04-05
 Alcance: punto 3 del plan maestro (permisos y seguridad)
 
 ## Roles base
@@ -69,6 +69,13 @@ Leyenda:
 		- `/api/empresa/chat_tareas/mensajes`.
 		- `/api/empresa/chat_tareas/mensajes/adjunto`.
 		- `/api/empresa/chat_tareas/tareas`.
+- Cobertura adicional (2026-04-05 - contexto de permisos por rol):
+	- Seguridad:
+		- `/api/empresa/permisos_contexto` con soporte de matriz expandida (`include_matrix=1`) para consulta de permisos efectivos por modulo/accion.
+- Cobertura adicional (2026-04-05 - control visual de menu por permisos efectivos):
+	- Frontend empresa:
+		- `web/js/administrar_empresa.js` consume `/api/empresa/permisos_contexto` para ocultar enlaces no autorizados por rol/modulo.
+		- `web/administrar_empresa.html` muestra evidencia visual (`menuPermsEvidence`) con rol y fuente de permisos activa para UAT.
 - Cobertura automatizada inicial en `backend/handlers/empresa_permisos_test.go`:
 	- denegacion de escritura sin permiso por rol,
 	- aprobacion permitida para rol contabilidad en cierre de periodos,
@@ -155,6 +162,7 @@ Regla de lectura comun (R):
 | `/api/empresa/usuarios` | `WithEmpresaSeguridadPermissions` | SA, AE | SA, AE | seguridad/usuarios solo administracion empresa |
 | `/api/empresa/configuracion_avanzada` | `WithEmpresaSeguridadPermissions` | SA, AE | SA, AE | seguridad/configuracion sensible |
 | `/api/empresa/roles_de_usuario` | `WithEmpresaSeguridadPermissions` | SA, AE | SA, AE | consulta catalogo de roles con control de alcance |
+| `/api/empresa/permisos_contexto` | `WithEmpresaSeguridadPermissions` | - | - | endpoint `GET` para visualizar permisos efectivos por modulo/accion; `include_matrix=1` retorna matriz comparativa por rol |
 | `/api/empresa/auditoria/eventos` | `WithEmpresaSeguridadPermissions` | SA, AE | SA, AE | consulta y retencion (`action=retener|purgar`) |
 
 ### Endpoints fuera de wrapper (control alterno)
@@ -183,12 +191,12 @@ Regla de lectura comun (R):
 | P3-UAT-08 | Denegar escritura seguridad a `supervisor_sucursal` | ok | `TestWithEmpresaSeguridadPermissionsDeniesSupervisorWrite` |
 | P3-UAT-09 | Permitir accion de seguridad a `admin_empresa` | ok | `TestWithEmpresaSeguridadPermissionsAllowsAdminApprove` |
 | P3-UAT-10 | Registrar auditoria en acciones criticas ventas/compras/facturacion | ok | `TestWithEmpresaVentasPermissionsRegistraAuditoriaAccionCritica`, `TestWithEmpresaComprasPermissionsRegistraAuditoriaAccionCritica`, `TestWithEmpresaFacturacionPermissionsRegistraAuditoriaAccionCritica` |
+| P3-UAT-11 | Exponer contexto de permisos por rol/modulo en endpoint de seguridad | ok | `TestEmpresaPermisosContextoHandlerRetornaPermisosPorRol`, `TestEmpresaPermisosContextoHandlerIncluyeMatrizRoles` |
+| P3-UAT-12 | Ocultar menu por permisos efectivos y mostrar evidencia visual por rol en panel empresa | ok | evidencia visual `menuPermsEvidence` + consumo `GET /api/empresa/permisos_contexto` en `web/js/administrar_empresa.js` |
 
-Ejecucion de validacion actual (2026-04-04):
-- `runTests` sobre:
-	- `backend/handlers/empresa_permisos_test.go`.
-	- `backend/handlers/auditoria_empresa_test.go`.
-- Resultado: 25 pruebas aprobadas, 0 fallidas.
+Ejecucion de validacion actual (2026-04-05):
+- `go test ./handlers -run "PermisosContexto|WithEmpresa.*Permissions" -count=1`.
+- Resultado: validacion del bloque de permisos y endpoint de contexto (ok).
 
 ## Reglas de seguridad obligatorias
 
@@ -200,6 +208,6 @@ Ejecucion de validacion actual (2026-04-04):
 
 ## Acciones tecnicas siguientes (cierre operativo punto 3)
 
-1. Publicar catalogo de permisos en frontend para ocultar opciones no autorizadas por rol.
-2. Incorporar pruebas UAT de regresion para endpoints sin wrapper de modulo (`usuarios/login`, `establecer_password`, chat IA por cuenta Google).
-3. Definir politica de aprobacion para rutas de lectura sensible en seguridad (`auditoria/eventos`) segun perfil `auditor` vs `admin_empresa`.
+1. Incorporar pruebas UAT de regresion para endpoints sin wrapper de modulo (`usuarios/login`, `establecer_password`, chat IA por cuenta Google).
+2. Definir politica de aprobacion para rutas de lectura sensible en seguridad (`auditoria/eventos`) segun perfil `auditor` vs `admin_empresa`.
+3. Evaluar prueba automatizada E2E del menu dinamico para evitar regresiones de visibilidad por rol.

@@ -3,13 +3,16 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
+	utilspkg "github.com/you/pos-backend/utils"
 )
 
 type auditCaptureResponseWriter struct {
@@ -44,8 +47,25 @@ func EmpresaAuditoriaEventosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, "limit invalido", http.StatusBadRequest)
 				return
 			}
+			offset, err := parseIntQueryOptional(r, "offset")
+			if err != nil {
+				http.Error(w, "offset invalido", http.StatusBadRequest)
+				return
+			}
+			if limit < 0 {
+				http.Error(w, "limit invalido", http.StatusBadRequest)
+				return
+			}
+			if offset < 0 {
+				http.Error(w, "offset invalido", http.StatusBadRequest)
+				return
+			}
 			recursoID, err := parseInt64QueryOptional(r, "recurso_id")
 			if err != nil {
+				http.Error(w, "recurso_id invalido", http.StatusBadRequest)
+				return
+			}
+			if recursoID < 0 {
 				http.Error(w, "recurso_id invalido", http.StatusBadRequest)
 				return
 			}
@@ -54,23 +74,64 @@ func EmpresaAuditoriaEventosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, "codigo_http invalido", http.StatusBadRequest)
 				return
 			}
-			rows, err := dbpkg.ListEmpresaAuditoriaEventos(dbEmp, empresaID, dbpkg.EmpresaAuditoriaEventoFilter{
+			if codigoHTTP < 0 || (codigoHTTP > 0 && (codigoHTTP < 100 || codigoHTTP > 599)) {
+				http.Error(w, "codigo_http invalido", http.StatusBadRequest)
+				return
+			}
+
+			desde, err := normalizeAuditoriaDateTime(strings.TrimSpace(r.URL.Query().Get("desde")), false)
+			if err != nil {
+				http.Error(w, "desde invalido", http.StatusBadRequest)
+				return
+			}
+			hasta, err := normalizeAuditoriaDateTime(strings.TrimSpace(r.URL.Query().Get("hasta")), true)
+			if err != nil {
+				http.Error(w, "hasta invalido", http.StatusBadRequest)
+				return
+			}
+			if desde != "" && hasta != "" {
+				desdeTime, _ := time.ParseInLocation("2006-01-02 15:04:05", desde, time.Local)
+				hastaTime, _ := time.ParseInLocation("2006-01-02 15:04:05", hasta, time.Local)
+				if desdeTime.After(hastaTime) {
+					http.Error(w, "rango de fechas invalido", http.StatusBadRequest)
+					return
+				}
+			}
+
+			filter := dbpkg.EmpresaAuditoriaEventoFilter{
 				Modulo:          strings.TrimSpace(r.URL.Query().Get("modulo")),
 				Accion:          strings.TrimSpace(r.URL.Query().Get("accion")),
+				MetodoHTTP:      strings.TrimSpace(r.URL.Query().Get("metodo_http")),
+				Recurso:         strings.TrimSpace(r.URL.Query().Get("recurso")),
+				Endpoint:        strings.TrimSpace(r.URL.Query().Get("endpoint")),
+				Search:          strings.TrimSpace(r.URL.Query().Get("search")),
 				RecursoID:       recursoID,
 				CodigoHTTP:      codigoHTTP,
 				Resultado:       strings.TrimSpace(r.URL.Query().Get("resultado")),
 				UsuarioCreador:  strings.TrimSpace(r.URL.Query().Get("usuario")),
 				RequestID:       strings.TrimSpace(r.URL.Query().Get("request_id")),
-				Desde:           strings.TrimSpace(r.URL.Query().Get("desde")),
-				Hasta:           strings.TrimSpace(r.URL.Query().Get("hasta")),
+				Desde:           desde,
+				Hasta:           hasta,
 				IncludeInactive: queryBool(r, "include_inactive"),
 				Limit:           limit,
-			})
+				Offset:          offset,
+			}
+
+			total, err := dbpkg.CountEmpresaAuditoriaEventos(dbEmp, empresaID, filter)
+			if err != nil {
+				http.Error(w, "No se pudo consultar el total de auditoria", http.StatusInternalServerError)
+				return
+			}
+
+			rows, err := dbpkg.ListEmpresaAuditoriaEventos(dbEmp, empresaID, filter)
 			if err != nil {
 				http.Error(w, "No se pudo consultar la auditoria", http.StatusInternalServerError)
 				return
 			}
+			pageLimit, pageOffset := normalizeAuditoriaPage(limit, offset)
+			w.Header().Set("X-Total-Count", strconv.FormatInt(total, 10))
+			w.Header().Set("X-Page-Limit", strconv.Itoa(pageLimit))
+			w.Header().Set("X-Page-Offset", strconv.Itoa(pageOffset))
 			writeJSON(w, http.StatusOK, rows)
 			return
 
@@ -237,6 +298,9 @@ func resolveAuditoriaResultado(statusCode int) string {
 }
 
 func resolveAuditoriaRequestID(r *http.Request) string {
+	if v := strings.TrimSpace(utilspkg.RequestIDFromContext(r.Context())); v != "" {
+		return v
+	}
 	if v := strings.TrimSpace(r.Header.Get("X-Request-ID")); v != "" {
 		return v
 	}
@@ -271,4 +335,52 @@ func normalizeRetencionDiasForHandler(days int64) int64 {
 		return 3650
 	}
 	return days
+}
+
+func normalizeAuditoriaPage(limit, offset int) (int, int) {
+	if limit <= 0 {
+		limit = 200
+	}
+	if limit > 1000 {
+		limit = 1000
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	if offset > 500000 {
+		offset = 500000
+	}
+	return limit, offset
+}
+
+func normalizeAuditoriaDateTime(raw string, endOfDay bool) (string, error) {
+	v := strings.TrimSpace(raw)
+	if v == "" {
+		return "", nil
+	}
+
+	if t, err := time.ParseInLocation("2006-01-02", v, time.Local); err == nil {
+		if endOfDay {
+			t = t.Add(23*time.Hour + 59*time.Minute + 59*time.Second)
+		}
+		return t.Format("2006-01-02 15:04:05"), nil
+	}
+
+	layouts := []string{
+		"2006-01-02 15:04:05",
+		"2006-01-02 15:04",
+		"2006-01-02T15:04:05",
+		"2006-01-02T15:04",
+	}
+	for _, layout := range layouts {
+		if t, err := time.ParseInLocation(layout, v, time.Local); err == nil {
+			return t.Format("2006-01-02 15:04:05"), nil
+		}
+	}
+
+	if t, err := time.Parse(time.RFC3339, v); err == nil {
+		return t.Local().Format("2006-01-02 15:04:05"), nil
+	}
+
+	return "", fmt.Errorf("formato de fecha invalido")
 }

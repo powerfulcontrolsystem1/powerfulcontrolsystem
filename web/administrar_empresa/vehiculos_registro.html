@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Registro de vehiculos</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container">
+    <div class="page-header">
+      <h1 id="pageTitle">Registro de vehiculos</h1>
+      <button id="addBtn" class="btn add" type="button">Agregar registro</button>
+    </div>
+
+    <p class="form-help" style="margin:0 0 12px 0;">Registra la patente y el control de ingreso/salida de vehiculos por empresa.</p>
+
+    <form id="form" class="form">
+      <input type="hidden" id="itemId">
+      <input type="hidden" id="empresa_id">
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Patente</label>
+          <input id="patente" class="form-input" required placeholder="Ej: ABC123, XYZ-789">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Tipo de vehiculo</label>
+          <select id="tipo_vehiculo" class="form-input">
+            <option value="automovil">Automovil</option>
+            <option value="moto">Moto</option>
+            <option value="camion">Camion</option>
+            <option value="camioneta">Camioneta</option>
+            <option value="bus">Bus</option>
+            <option value="van">Van</option>
+            <option value="bicicleta">Bicicleta</option>
+            <option value="otro">Otro</option>
+          </select>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Estado registro</label>
+          <select id="estado_registro" class="form-input">
+            <option value="en_empresa">En empresa</option>
+            <option value="retirado">Retirado</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Marca</label>
+          <input id="marca" class="form-input" placeholder="Ej: Toyota">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Modelo</label>
+          <input id="modelo" class="form-input" placeholder="Ej: Corolla 2024">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Color</label>
+          <input id="color" class="form-input" placeholder="Ej: Blanco">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Conductor</label>
+          <input id="conductor_nombre" class="form-input" placeholder="Nombre conductor">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Documento conductor</label>
+          <input id="conductor_documento" class="form-input" placeholder="Documento conductor">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Referencia externa</label>
+          <input id="referencia_externa" class="form-input" placeholder="Ej: visitante, proveedor, OT-123">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Propietario</label>
+          <input id="propietario_nombre" class="form-input" placeholder="Nombre propietario">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Documento propietario</label>
+          <input id="propietario_documento" class="form-input" placeholder="Documento propietario">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Fecha ingreso</label>
+          <input id="fecha_ingreso" type="datetime-local" class="form-input">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Fecha salida</label>
+          <input id="fecha_salida" type="datetime-local" class="form-input">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Usuario salida</label>
+          <input id="usuario_salida" class="form-input" placeholder="Usuario que registra salida">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Motivo de ingreso</label>
+          <input id="motivo_ingreso" class="form-input" placeholder="Ej: visita comercial, entrega, mantenimiento">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Observaciones</label>
+          <textarea id="observaciones" class="form-textarea" placeholder="Opcional"></textarea>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" id="saveBtn" class="btn">Guardar</button>
+        <button type="button" id="cancelBtn" class="btn secondary">Cancelar</button>
+      </div>
+      <div id="msg" class="form-help"></div>
+    </form>
+
+    <div class="form" style="margin-top:14px;">
+      <div class="form-row" style="margin-bottom:0;">
+        <div class="form-col">
+          <label class="form-label">Buscar</label>
+          <input id="buscar" class="form-input" placeholder="Patente, conductor, propietario, motivo o referencia">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Patente</label>
+          <input id="filtro_patente" class="form-input" placeholder="Filtro exacto o parcial">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Estado registro</label>
+          <select id="filtro_estado_registro" class="form-input">
+            <option value="">Todos</option>
+            <option value="en_empresa">En empresa</option>
+            <option value="retirado">Retirado</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row" style="margin-bottom:0;">
+        <div class="form-col">
+          <label class="form-label">Desde</label>
+          <input id="filtro_desde" type="date" class="form-input">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Hasta</label>
+          <input id="filtro_hasta" type="date" class="form-input">
+        </div>
+        <div class="form-col" style="max-width:220px;display:flex;align-items:flex-end;gap:8px;">
+          <button id="filtrarBtn" class="btn secondary" type="button" style="flex:1;">Filtrar</button>
+          <button id="limpiarBtn" class="btn secondary" type="button" style="flex:1;">Limpiar</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="list">Cargando...</div>
+  </div>
+
+  <script>
+    const state = {
+      empresaID: 0,
+      items: [],
+      q: '',
+      patente: '',
+      desde: '',
+      hasta: '',
+      estadoRegistro: ''
+    };
+
+    function getQueryParam(name) {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name);
+    }
+
+    function normalize(value) {
+      return (value == null ? '' : String(value)).trim();
+    }
+
+    function esc(value) {
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function setMessage(text, isError) {
+      const el = document.getElementById('msg');
+      if (!el) return;
+      el.textContent = text || '';
+      el.style.color = isError ? '#ef5350' : '';
+    }
+
+    async function ensureOk(resp) {
+      if (resp.ok) return;
+      const text = await resp.text();
+      throw new Error(text || ('HTTP ' + resp.status));
+    }
+
+    function pad2(v) {
+      return String(v).padStart(2, '0');
+    }
+
+    function nowDateTimeLocal() {
+      const dt = new Date();
+      return dt.getFullYear() + '-' + pad2(dt.getMonth() + 1) + '-' + pad2(dt.getDate()) + 'T' + pad2(dt.getHours()) + ':' + pad2(dt.getMinutes());
+    }
+
+    function dateOnlyToday() {
+      const dt = new Date();
+      return dt.getFullYear() + '-' + pad2(dt.getMonth() + 1) + '-' + pad2(dt.getDate());
+    }
+
+    function toInputDateTime(raw) {
+      const value = normalize(raw);
+      if (!value) return '';
+      const candidate = value.replace(' ', 'T');
+      if (candidate.length >= 16) {
+        return candidate.slice(0, 16);
+      }
+      return candidate;
+    }
+
+    function defaultDates() {
+      const today = dateOnlyToday();
+      const first = today.slice(0, 8) + '01';
+      document.getElementById('fecha_ingreso').value = nowDateTimeLocal();
+      document.getElementById('filtro_desde').value = first;
+      document.getElementById('filtro_hasta').value = today;
+      state.desde = first;
+      state.hasta = today;
+    }
+
+    function buildPayloadFromForm() {
+      return {
+        id: Number(document.getElementById('itemId').value || 0),
+        empresa_id: Number(state.empresaID),
+        patente: normalize(document.getElementById('patente').value),
+        tipo_vehiculo: normalize(document.getElementById('tipo_vehiculo').value),
+        marca: normalize(document.getElementById('marca').value),
+        modelo: normalize(document.getElementById('modelo').value),
+        color: normalize(document.getElementById('color').value),
+        propietario_nombre: normalize(document.getElementById('propietario_nombre').value),
+        propietario_documento: normalize(document.getElementById('propietario_documento').value),
+        conductor_nombre: normalize(document.getElementById('conductor_nombre').value),
+        conductor_documento: normalize(document.getElementById('conductor_documento').value),
+        motivo_ingreso: normalize(document.getElementById('motivo_ingreso').value),
+        referencia_externa: normalize(document.getElementById('referencia_externa').value),
+        fecha_ingreso: normalize(document.getElementById('fecha_ingreso').value),
+        fecha_salida: normalize(document.getElementById('fecha_salida').value),
+        estado_registro: normalize(document.getElementById('estado_registro').value),
+        usuario_salida: normalize(document.getElementById('usuario_salida').value),
+        observaciones: normalize(document.getElementById('observaciones').value)
+      };
+    }
+
+    function resetForm() {
+      document.getElementById('itemId').value = '';
+      document.getElementById('patente').value = '';
+      document.getElementById('tipo_vehiculo').value = 'automovil';
+      document.getElementById('estado_registro').value = 'en_empresa';
+      document.getElementById('marca').value = '';
+      document.getElementById('modelo').value = '';
+      document.getElementById('color').value = '';
+      document.getElementById('propietario_nombre').value = '';
+      document.getElementById('propietario_documento').value = '';
+      document.getElementById('conductor_nombre').value = '';
+      document.getElementById('conductor_documento').value = '';
+      document.getElementById('motivo_ingreso').value = '';
+      document.getElementById('referencia_externa').value = '';
+      document.getElementById('fecha_ingreso').value = nowDateTimeLocal();
+      document.getElementById('fecha_salida').value = '';
+      document.getElementById('usuario_salida').value = '';
+      document.getElementById('observaciones').value = '';
+      setMessage('', false);
+    }
+
+    function applyFilters() {
+      state.q = normalize(document.getElementById('buscar').value);
+      state.patente = normalize(document.getElementById('filtro_patente').value);
+      state.desde = normalize(document.getElementById('filtro_desde').value);
+      state.hasta = normalize(document.getElementById('filtro_hasta').value);
+      state.estadoRegistro = normalize(document.getElementById('filtro_estado_registro').value);
+    }
+
+    async function loadItems() {
+      applyFilters();
+      const params = new URLSearchParams();
+      params.set('empresa_id', String(state.empresaID));
+      params.set('include_inactive', '1');
+      params.set('limit', '500');
+      if (state.q) params.set('q', state.q);
+      if (state.patente) params.set('patente', state.patente);
+      if (state.desde) params.set('desde', state.desde);
+      if (state.hasta) params.set('hasta', state.hasta);
+      if (state.estadoRegistro) params.set('estado_registro', state.estadoRegistro);
+
+      const resp = await fetch('/api/empresa/vehiculos_registro?' + params.toString(), { credentials: 'same-origin' });
+      await ensureOk(resp);
+      const rows = await resp.json();
+      state.items = Array.isArray(rows) ? rows : [];
+      renderList();
+    }
+
+    function renderList() {
+      const root = document.getElementById('list');
+      if (!Array.isArray(state.items) || !state.items.length) {
+        root.innerHTML = '<p class="form-help">No hay registros de vehiculos para los filtros seleccionados.</p>';
+        return;
+      }
+
+      const html = state.items.map(function(item) {
+        const id = Number(item.id || 0);
+        const estado = normalize(item.estado || 'activo').toLowerCase();
+        const nextAction = estado === 'activo' ? 'desactivar' : 'activar';
+        const nextLabel = estado === 'activo' ? 'Desactivar' : 'Activar';
+        const rowData = esc(JSON.stringify(item));
+
+        return '<tr>' +
+          '<td><strong>' + esc(item.patente || '-') + '</strong><br><small>' + esc(item.tipo_vehiculo || '') + '</small></td>' +
+          '<td>' + esc(item.conductor_nombre || '-') + '<br><small>' + esc(item.conductor_documento || '') + '</small></td>' +
+          '<td>' + esc(item.propietario_nombre || '-') + '</td>' +
+          '<td>' + esc(item.motivo_ingreso || '-') + '</td>' +
+          '<td>' + esc(item.fecha_ingreso || '-') + '</td>' +
+          '<td>' + esc(item.fecha_salida || '-') + '</td>' +
+          '<td>' + esc(item.estado_registro || 'en_empresa') + '</td>' +
+          '<td>' + esc(estado) + '</td>' +
+          '<td>' +
+            '<button class="btn secondary" type="button" data-action="edit" data-item="' + rowData + '">Editar</button> ' +
+            '<button class="btn secondary" type="button" data-action="salida" data-id="' + id + '">Marcar salida</button> ' +
+            '<button class="btn secondary" type="button" data-action="toggle" data-id="' + id + '" data-next="' + nextAction + '">' + nextLabel + '</button> ' +
+            '<button class="btn danger" type="button" data-action="delete" data-id="' + id + '">Eliminar</button>' +
+          '</td>' +
+        '</tr>';
+      }).join('');
+
+      root.innerHTML = '<div class="table-wrap"><table class="table"><thead><tr>' +
+        '<th>Patente</th>' +
+        '<th>Conductor</th>' +
+        '<th>Propietario</th>' +
+        '<th>Motivo</th>' +
+        '<th>Ingreso</th>' +
+        '<th>Salida</th>' +
+        '<th>Estado vehiculo</th>' +
+        '<th>Estado registro</th>' +
+        '<th>Acciones</th>' +
+      '</tr></thead><tbody>' + html + '</tbody></table></div>';
+    }
+
+    async function saveForm(ev) {
+      ev.preventDefault();
+      try {
+        const payload = buildPayloadFromForm();
+        if (!payload.empresa_id) throw new Error('empresa_id es obligatorio');
+        if (!payload.patente) throw new Error('patente es obligatoria');
+
+        const method = payload.id > 0 ? 'PUT' : 'POST';
+        const resp = await fetch('/api/empresa/vehiculos_registro', {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify(payload)
+        });
+        await ensureOk(resp);
+
+        resetForm();
+        await loadItems();
+        setMessage(method === 'POST' ? 'Registro de vehiculo creado.' : 'Registro de vehiculo actualizado.', false);
+      } catch (err) {
+        setMessage(err.message || 'No se pudo guardar el registro.', true);
+      }
+    }
+
+    function fillForm(item) {
+      document.getElementById('itemId').value = Number(item.id || 0);
+      document.getElementById('empresa_id').value = Number(item.empresa_id || state.empresaID);
+      document.getElementById('patente').value = normalize(item.patente);
+      document.getElementById('tipo_vehiculo').value = normalize(item.tipo_vehiculo) || 'automovil';
+      document.getElementById('estado_registro').value = normalize(item.estado_registro) || 'en_empresa';
+      document.getElementById('marca').value = normalize(item.marca);
+      document.getElementById('modelo').value = normalize(item.modelo);
+      document.getElementById('color').value = normalize(item.color);
+      document.getElementById('propietario_nombre').value = normalize(item.propietario_nombre);
+      document.getElementById('propietario_documento').value = normalize(item.propietario_documento);
+      document.getElementById('conductor_nombre').value = normalize(item.conductor_nombre);
+      document.getElementById('conductor_documento').value = normalize(item.conductor_documento);
+      document.getElementById('motivo_ingreso').value = normalize(item.motivo_ingreso);
+      document.getElementById('referencia_externa').value = normalize(item.referencia_externa);
+      document.getElementById('fecha_ingreso').value = toInputDateTime(item.fecha_ingreso);
+      document.getElementById('fecha_salida').value = toInputDateTime(item.fecha_salida);
+      document.getElementById('usuario_salida').value = normalize(item.usuario_salida);
+      document.getElementById('observaciones').value = normalize(item.observaciones);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function markSalida(id) {
+      const fechaSalida = prompt('Fecha/hora salida (opcional, formato YYYY-MM-DD HH:MM:SS). Deja vacio para usar la hora actual:', '');
+      if (fechaSalida === null) return;
+      const observaciones = prompt('Observaciones de salida (opcional):', '');
+
+      const payload = {
+        empresa_id: Number(state.empresaID),
+        id: Number(id || 0),
+        fecha_salida: normalize(fechaSalida),
+        observaciones: normalize(observaciones)
+      };
+
+      try {
+        const resp = await fetch('/api/empresa/vehiculos_registro?action=marcar_salida', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify(payload)
+        });
+        await ensureOk(resp);
+        await loadItems();
+        setMessage('Salida de vehiculo registrada.', false);
+      } catch (err) {
+        setMessage(err.message || 'No se pudo marcar salida.', true);
+      }
+    }
+
+    async function toggleEstado(id, nextAction) {
+      try {
+        const params = new URLSearchParams();
+        params.set('empresa_id', String(state.empresaID));
+        params.set('id', String(id));
+        params.set('action', nextAction);
+        const resp = await fetch('/api/empresa/vehiculos_registro?' + params.toString(), {
+          method: 'PUT',
+          credentials: 'same-origin'
+        });
+        await ensureOk(resp);
+        await loadItems();
+      } catch (err) {
+        setMessage(err.message || 'No se pudo actualizar el estado.', true);
+      }
+    }
+
+    async function removeItem(id) {
+      if (!confirm('¿Eliminar este registro de vehiculo?')) return;
+      try {
+        const params = new URLSearchParams();
+        params.set('empresa_id', String(state.empresaID));
+        params.set('id', String(id));
+        const resp = await fetch('/api/empresa/vehiculos_registro?' + params.toString(), {
+          method: 'DELETE',
+          credentials: 'same-origin'
+        });
+        await ensureOk(resp);
+        await loadItems();
+      } catch (err) {
+        setMessage(err.message || 'No se pudo eliminar.', true);
+      }
+    }
+
+    function bindListActions() {
+      const root = document.getElementById('list');
+      root.addEventListener('click', function(ev) {
+        const btn = ev.target.closest('button[data-action]');
+        if (!btn) return;
+        const action = btn.getAttribute('data-action');
+        if (action === 'edit') {
+          const raw = btn.getAttribute('data-item') || '{}';
+          try {
+            fillForm(JSON.parse(raw));
+          } catch (_) {}
+          return;
+        }
+        const id = Number(btn.getAttribute('data-id') || 0);
+        if (!id) return;
+        if (action === 'salida') {
+          markSalida(id);
+          return;
+        }
+        if (action === 'toggle') {
+          const next = btn.getAttribute('data-next') || 'activar';
+          toggleEstado(id, next);
+          return;
+        }
+        if (action === 'delete') {
+          removeItem(id);
+          return;
+        }
+      });
+    }
+
+    function bindUI() {
+      document.getElementById('form').addEventListener('submit', saveForm);
+      document.getElementById('cancelBtn').addEventListener('click', resetForm);
+      document.getElementById('addBtn').addEventListener('click', function() {
+        resetForm();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+      document.getElementById('filtrarBtn').addEventListener('click', function() {
+        loadItems().catch(function(err) {
+          setMessage(err.message || 'No se pudo filtrar.', true);
+        });
+      });
+      document.getElementById('limpiarBtn').addEventListener('click', function() {
+        document.getElementById('buscar').value = '';
+        document.getElementById('filtro_patente').value = '';
+        document.getElementById('filtro_estado_registro').value = '';
+        defaultDates();
+        loadItems().catch(function(err) {
+          setMessage(err.message || 'No se pudo recargar.', true);
+        });
+      });
+    }
+
+    async function init() {
+      state.empresaID = Number(getQueryParam('empresa_id') || 0);
+      if (!state.empresaID) {
+        setMessage('empresa_id es obligatorio en la URL.', true);
+        return;
+      }
+      document.getElementById('empresa_id').value = String(state.empresaID);
+      defaultDates();
+      bindUI();
+      bindListActions();
+      resetForm();
+      await loadItems();
+    }
+
+    init().catch(function(err) {
+      setMessage(err.message || 'No se pudo inicializar el modulo.', true);
+    });
+  </script>
+</body>
+</html>

@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -111,6 +112,15 @@ func ensureCarritosVentasSchema(t *testing.T, dbEmp *sql.DB) {
 	}
 	if err := dbpkg.EnsureEmpresaCodigosDescuentoSchema(dbEmp); err != nil {
 		t.Fatalf("ensure codigos descuento schema: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaPropinasSchema(dbEmp); err != nil {
+		t.Fatalf("ensure propinas schema: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaComisionesServicioSchema(dbEmp); err != nil {
+		t.Fatalf("ensure comisiones servicio schema: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaConfiguracionOperativaSchema(dbEmp); err != nil {
+		t.Fatalf("ensure configuracion operativa schema: %v", err)
 	}
 	if err := dbpkg.EnsureEmpresaEventosContablesSchema(dbEmp); err != nil {
 		t.Fatalf("ensure eventos contables schema: %v", err)
@@ -258,6 +268,55 @@ func TestEmpresaUsuarioLoginHandlerRejectsWrongEmpresaScope(t *testing.T) {
 	}
 }
 
+func TestEmpresaUsuarioLoginHandlerRejectsWrongEmpresaScopeFromQuery(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_login_wrong_scope_query.db")
+	dbSuper := openTestSQLite(t, "super_login_wrong_scope_query.db")
+	ensureEmpresaUsersSchema(t, dbEmp)
+	ensureSuperSchema(t, dbSuper)
+
+	salt := "salt-login-query-scope"
+	hash := hashEmpresaUsuarioPassword("PasswordSegura1", salt)
+	_, err := dbEmp.Exec(`INSERT INTO users (
+		email, name, role, empresa_id, documento_identidad,
+		password_hash, password_salt, password_set,
+		rol_usuario_id, email_confirmado, estado
+	) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, 1, 'activo')`,
+		"scope-query@login.com", "Usuario Scope Query", "vendedor", int64(10), "DOC-10", hash, salt, int64(2),
+	)
+	if err != nil {
+		t.Fatalf("seed user login wrong scope query: %v", err)
+	}
+
+	h := EmpresaUsuarioLoginHandler(dbEmp, dbSuper)
+	body := `{"email":"scope-query@login.com","password":"PasswordSegura1"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/empresa/usuarios/login?empresa_id=99", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusUnauthorized {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusUnauthorized, rr.Code, rr.Body.String())
+	}
+	if !strings.Contains(strings.ToLower(rr.Body.String()), "credenciales") {
+		t.Fatalf("expected credentials message, got body=%s", rr.Body.String())
+	}
+
+	for _, c := range rr.Result().Cookies() {
+		if c.Name == "session_token" && strings.TrimSpace(c.Value) != "" {
+			t.Fatal("session_token must not be issued when empresa scope from query is invalid")
+		}
+	}
+
+	var sesionesCount int
+	if err := dbSuper.QueryRow("SELECT COUNT(1) FROM sesiones").Scan(&sesionesCount); err != nil {
+		t.Fatalf("count sesiones: %v", err)
+	}
+	if sesionesCount != 0 {
+		t.Fatalf("expected 0 sessions, got %d", sesionesCount)
+	}
+}
+
 func TestEmpresaUsuarioSetPasswordHandlerSuccess(t *testing.T) {
 	dbEmp := openTestSQLite(t, "empresas_set_password.db")
 	dbSuper := openTestSQLite(t, "super_set_password.db")
@@ -351,6 +410,55 @@ func TestEmpresaUsuarioSetPasswordHandlerRejectsWrongEmpresaScope(t *testing.T) 
 	}
 	if passwordSet != 0 {
 		t.Fatalf("expected password_set=0 for wrong scope, got %d", passwordSet)
+	}
+
+	var sesionesCount int
+	if err := dbSuper.QueryRow("SELECT COUNT(1) FROM sesiones").Scan(&sesionesCount); err != nil {
+		t.Fatalf("count sesiones: %v", err)
+	}
+	if sesionesCount != 0 {
+		t.Fatalf("expected 0 sessions, got %d", sesionesCount)
+	}
+}
+
+func TestEmpresaUsuarioSetPasswordHandlerRejectsWrongEmpresaScopeFromQuery(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_set_password_wrong_scope_query.db")
+	dbSuper := openTestSQLite(t, "super_set_password_wrong_scope_query.db")
+	ensureEmpresaUsersSchema(t, dbEmp)
+	ensureSuperSchema(t, dbSuper)
+
+	_, err := dbEmp.Exec(`INSERT INTO users (
+		email, name, role, empresa_id, documento_identidad,
+		password_hash, password_salt, password_set,
+		rol_usuario_id, email_confirmado, estado
+	) VALUES (?, ?, ?, ?, ?, '', '', 0, ?, 1, 'activo')`,
+		"scopepass-query@empresa.com", "Usuario Scope Password Query", "auxiliar", int64(12), "DOC-22", int64(3),
+	)
+	if err != nil {
+		t.Fatalf("seed user set password wrong scope query: %v", err)
+	}
+
+	h := EmpresaUsuarioSetPasswordHandler(dbEmp, dbSuper)
+	body := `{"email":"scopepass-query@empresa.com","documento_identidad":"DOC-22","password":"ClaveNueva88","password_confirm":"ClaveNueva88"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/empresa/usuarios/establecer_password?empresa_id=99", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusNotFound {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusNotFound, rr.Code, rr.Body.String())
+	}
+	if !strings.Contains(strings.ToLower(rr.Body.String()), "usuario no encontrado") {
+		t.Fatalf("expected not found message, got body=%s", rr.Body.String())
+	}
+
+	var passwordSet int
+	if err := dbEmp.QueryRow("SELECT COALESCE(password_set,0) FROM users WHERE email = ?", "scopepass-query@empresa.com").Scan(&passwordSet); err != nil {
+		t.Fatalf("query password_set: %v", err)
+	}
+	if passwordSet != 0 {
+		t.Fatalf("expected password_set=0 for wrong scope from query, got %d", passwordSet)
 	}
 
 	var sesionesCount int
@@ -666,8 +774,31 @@ func TestEmpresaCarritosCompraRejectsMetodoPagoInvalido(t *testing.T) {
 	}
 	carritoID := int64(createResp["id"].(float64))
 
-	if _, err := dbEmp.Exec(`UPDATE carritos_compras SET subtotal = 10000, total = 10000, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = 1 AND id = ?`, carritoID); err != nil {
-		t.Fatalf("seed carrito total: %v", err)
+	if _, err := dbpkg.CreateCarritoCompraItem(dbEmp, dbpkg.CarritoCompraItem{
+		EmpresaID:           1,
+		CarritoID:           carritoID,
+		TipoItem:            "otro",
+		CodigoItem:          "PROPINA-ITEM-" + strconv.FormatInt(carritoID, 10),
+		Descripcion:         "Consumo base para propina",
+		UnidadMedida:        "unidad",
+		Cantidad:            1,
+		PrecioUnitario:      10000,
+		DescuentoPorcentaje: 0,
+		ImpuestoPorcentaje:  0,
+		ImpuestoCodigo:      "IVA",
+		UsuarioCreador:      "test@empresa.com",
+		Estado:              "activo",
+	}); err != nil {
+		t.Fatalf("seed carrito item para propina: %v", err)
+	}
+
+	var subtotalSeed float64
+	var totalSeed float64
+	if err := dbEmp.QueryRow(`SELECT COALESCE(subtotal, 0), COALESCE(total, 0) FROM carritos_compras WHERE empresa_id = 1 AND id = ?`, carritoID).Scan(&subtotalSeed, &totalSeed); err != nil {
+		t.Fatalf("read seeded carrito totals: %v", err)
+	}
+	if math.Abs(subtotalSeed-10000) > 0.001 || math.Abs(totalSeed-10000) > 0.001 {
+		t.Fatalf("expected seeded totals subtotal=10000 total=10000, got subtotal=%.4f total=%.4f", subtotalSeed, totalSeed)
 	}
 
 	payReq := httptest.NewRequest(http.MethodPut, "/api/empresa/carritos_compra?empresa_id=1&id="+strconv.FormatInt(carritoID, 10)+"&action=pagar_estacion", strings.NewReader(`{"metodo_pago":"cripto","total_pagado":10000}`))
@@ -677,6 +808,340 @@ func TestEmpresaCarritosCompraRejectsMetodoPagoInvalido(t *testing.T) {
 
 	if payRR.Code != http.StatusBadRequest {
 		t.Fatalf("expected invalid payment method status %d, got %d body=%s", http.StatusBadRequest, payRR.Code, payRR.Body.String())
+	}
+}
+
+func TestEmpresaCarritosCompraPermitePagoTransferenciaBancaria(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_carritos_transferencia_ok.db")
+	ensureClientesSchema(t, dbEmp)
+	ensureCarritosVentasSchema(t, dbEmp)
+
+	carritosHandler := EmpresaCarritosCompraHandler(dbEmp)
+	createReq := httptest.NewRequest(http.MethodPost, "/api/empresa/carritos_compra", strings.NewReader(`{"empresa_id":1,"nombre":"Caja Transferencia","canal_venta":"mostrador","moneda":"COP"}`))
+	createReq.Header.Set("Content-Type", "application/json")
+	createRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(createRR, createReq)
+	if createRR.Code != http.StatusCreated {
+		t.Fatalf("expected create status %d, got %d body=%s", http.StatusCreated, createRR.Code, createRR.Body.String())
+	}
+
+	var createResp map[string]interface{}
+	if err := json.Unmarshal(createRR.Body.Bytes(), &createResp); err != nil {
+		t.Fatalf("decode create response: %v", err)
+	}
+	carritoID := int64(createResp["id"].(float64))
+
+	if _, err := dbpkg.CreateCarritoCompraItem(dbEmp, dbpkg.CarritoCompraItem{
+		EmpresaID:           1,
+		CarritoID:           carritoID,
+		TipoItem:            "otro",
+		CodigoItem:          "PROPINA-ITEM-" + strconv.FormatInt(carritoID, 10),
+		Descripcion:         "Consumo base para propina",
+		UnidadMedida:        "unidad",
+		Cantidad:            1,
+		PrecioUnitario:      10000,
+		DescuentoPorcentaje: 0,
+		ImpuestoPorcentaje:  0,
+		ImpuestoCodigo:      "IVA",
+		UsuarioCreador:      "test@empresa.com",
+		Estado:              "activo",
+	}); err != nil {
+		t.Fatalf("seed carrito item para propina: %v", err)
+	}
+
+	var subtotalSeed float64
+	var totalSeed float64
+	if err := dbEmp.QueryRow(`SELECT COALESCE(subtotal, 0), COALESCE(total, 0) FROM carritos_compras WHERE empresa_id = 1 AND id = ?`, carritoID).Scan(&subtotalSeed, &totalSeed); err != nil {
+		t.Fatalf("read seeded carrito totals: %v", err)
+	}
+	if math.Abs(subtotalSeed-10000) > 0.001 || math.Abs(totalSeed-10000) > 0.001 {
+		t.Fatalf("expected seeded totals subtotal=10000 total=10000, got subtotal=%.4f total=%.4f", subtotalSeed, totalSeed)
+	}
+
+	payReq := httptest.NewRequest(http.MethodPut, "/api/empresa/carritos_compra?empresa_id=1&id="+strconv.FormatInt(carritoID, 10)+"&action=pagar_estacion", strings.NewReader(`{"metodo_pago":"transferencia","referencia_pago":"TRX-4455","total_pagado":10000}`))
+	payReq.Header.Set("Content-Type", "application/json")
+	payRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(payRR, payReq)
+
+	if payRR.Code != http.StatusOK {
+		t.Fatalf("expected transferencia payment status %d, got %d body=%s", http.StatusOK, payRR.Code, payRR.Body.String())
+	}
+
+	var metodoPago string
+	var referenciaPago string
+	err := dbEmp.QueryRow(`SELECT COALESCE(metodo_pago,''), COALESCE(referencia_pago,'') FROM carritos_compras WHERE empresa_id = 1 AND id = ?`, carritoID).Scan(&metodoPago, &referenciaPago)
+	if err != nil {
+		t.Fatalf("query paid carrito: %v", err)
+	}
+	if metodoPago != "transferencia_bancaria" {
+		t.Fatalf("expected metodo_pago transferencia_bancaria, got %q", metodoPago)
+	}
+	if referenciaPago != "TRX-4455" {
+		t.Fatalf("expected referencia_pago TRX-4455, got %q", referenciaPago)
+	}
+}
+
+func TestEmpresaCarritosCompraExigeReferenciaTransferenciaBancaria(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_carritos_transferencia_ref.db")
+	ensureClientesSchema(t, dbEmp)
+	ensureCarritosVentasSchema(t, dbEmp)
+
+	carritosHandler := EmpresaCarritosCompraHandler(dbEmp)
+	createReq := httptest.NewRequest(http.MethodPost, "/api/empresa/carritos_compra", strings.NewReader(`{"empresa_id":1,"nombre":"Caja Transferencia Ref","canal_venta":"mostrador","moneda":"COP"}`))
+	createReq.Header.Set("Content-Type", "application/json")
+	createRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(createRR, createReq)
+	if createRR.Code != http.StatusCreated {
+		t.Fatalf("expected create status %d, got %d body=%s", http.StatusCreated, createRR.Code, createRR.Body.String())
+	}
+
+	var createResp map[string]interface{}
+	if err := json.Unmarshal(createRR.Body.Bytes(), &createResp); err != nil {
+		t.Fatalf("decode create response: %v", err)
+	}
+	carritoID := int64(createResp["id"].(float64))
+
+	if _, err := dbEmp.Exec(`UPDATE carritos_compras SET subtotal = 10000, total = 10000, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = 1 AND id = ?`, carritoID); err != nil {
+		t.Fatalf("seed carrito total: %v", err)
+	}
+
+	payReq := httptest.NewRequest(http.MethodPut, "/api/empresa/carritos_compra?empresa_id=1&id="+strconv.FormatInt(carritoID, 10)+"&action=pagar_estacion", strings.NewReader(`{"metodo_pago":"transferencia_bancaria","referencia_pago":"12","total_pagado":10000}`))
+	payReq.Header.Set("Content-Type", "application/json")
+	payRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(payRR, payReq)
+
+	if payRR.Code != http.StatusBadRequest {
+		t.Fatalf("expected transferencia without reference status %d, got %d body=%s", http.StatusBadRequest, payRR.Code, payRR.Body.String())
+	}
+	if !strings.Contains(strings.ToLower(payRR.Body.String()), "referencia_pago") {
+		t.Fatalf("expected referencia_pago message, got body=%s", payRR.Body.String())
+	}
+}
+
+func TestEmpresaCarritosCompraAplicaPropinaSegunConfiguracion(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_carritos_propina_ok.db")
+	ensureClientesSchema(t, dbEmp)
+	ensureCarritosVentasSchema(t, dbEmp)
+
+	if _, err := dbpkg.UpsertEmpresaConfiguracionOperativa(dbEmp, dbpkg.EmpresaConfiguracionOperativa{
+		EmpresaID:                       1,
+		MetodoPagoEfectivo:              true,
+		MetodoPagoTarjetaCredito:        true,
+		MetodoPagoTarjetaDebito:         true,
+		MetodoPagoTransferenciaBancaria: true,
+		MetodoPagoMixto:                 true,
+		MetodoPagoCodigoDescuento:       true,
+		HabilitarPropinas:               true,
+		HabilitarComisiones:             true,
+		UsuarioCreador:                  "test@empresa.com",
+		Estado:                          "activo",
+	}); err != nil {
+		t.Fatalf("upsert empresa configuracion operativa: %v", err)
+	}
+
+	if _, err := dbpkg.UpsertEmpresaPropinasConfiguracion(dbEmp, dbpkg.EmpresaPropinasConfiguracion{
+		EmpresaID:              1,
+		HabilitarPropina:       true,
+		PorcentajePropina:      10,
+		ModoDistribucion:       dbpkg.EmpresaPropinaModoPorUsuario,
+		AplicarAutomaticamente: true,
+		UsuarioCreador:         "test@empresa.com",
+		Estado:                 "activo",
+	}); err != nil {
+		t.Fatalf("upsert propinas config: %v", err)
+	}
+
+	carritosHandler := EmpresaCarritosCompraHandler(dbEmp)
+	createReq := httptest.NewRequest(http.MethodPost, "/api/empresa/carritos_compra", strings.NewReader(`{"empresa_id":1,"nombre":"Caja Propina","canal_venta":"mostrador","moneda":"COP"}`))
+	createReq.Header.Set("Content-Type", "application/json")
+	createRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(createRR, createReq)
+	if createRR.Code != http.StatusCreated {
+		t.Fatalf("expected create status %d, got %d body=%s", http.StatusCreated, createRR.Code, createRR.Body.String())
+	}
+
+	var createResp map[string]interface{}
+	if err := json.Unmarshal(createRR.Body.Bytes(), &createResp); err != nil {
+		t.Fatalf("decode create response: %v", err)
+	}
+	carritoID := int64(createResp["id"].(float64))
+
+	if _, err := dbpkg.CreateCarritoCompraItem(dbEmp, dbpkg.CarritoCompraItem{
+		EmpresaID:           1,
+		CarritoID:           carritoID,
+		TipoItem:            "otro",
+		CodigoItem:          "PROPINA-ITEM-" + strconv.FormatInt(carritoID, 10),
+		Descripcion:         "Consumo base para propina",
+		UnidadMedida:        "unidad",
+		Cantidad:            1,
+		PrecioUnitario:      10000,
+		DescuentoPorcentaje: 0,
+		ImpuestoPorcentaje:  0,
+		ImpuestoCodigo:      "IVA",
+		UsuarioCreador:      "test@empresa.com",
+		Estado:              "activo",
+	}); err != nil {
+		t.Fatalf("seed carrito item para propina: %v", err)
+	}
+
+	var subtotalSeed float64
+	var totalSeed float64
+	if err := dbEmp.QueryRow(`SELECT COALESCE(subtotal, 0), COALESCE(total, 0) FROM carritos_compras WHERE empresa_id = 1 AND id = ?`, carritoID).Scan(&subtotalSeed, &totalSeed); err != nil {
+		t.Fatalf("read seeded carrito totals: %v", err)
+	}
+	if math.Abs(subtotalSeed-10000) > 0.001 || math.Abs(totalSeed-10000) > 0.001 {
+		t.Fatalf("expected seeded totals subtotal=10000 total=10000, got subtotal=%.4f total=%.4f", subtotalSeed, totalSeed)
+	}
+
+	payReq := httptest.NewRequest(http.MethodPut, "/api/empresa/carritos_compra?empresa_id=1&id="+strconv.FormatInt(carritoID, 10)+"&action=pagar_estacion", strings.NewReader(`{"metodo_pago":"efectivo","aplicar_propina":true,"total_pagado":11000}`))
+	payReq.Header.Set("Content-Type", "application/json")
+	payRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(payRR, payReq)
+
+	if payRR.Code != http.StatusOK {
+		t.Fatalf("expected payment status %d, got %d body=%s", http.StatusOK, payRR.Code, payRR.Body.String())
+	}
+
+	var payResp map[string]interface{}
+	if err := json.Unmarshal(payRR.Body.Bytes(), &payResp); err != nil {
+		t.Fatalf("decode pay response: %v", err)
+	}
+	propinaRaw, ok := payResp["propina"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected propina block in response, got %v", payResp)
+	}
+	if applied, _ := propinaRaw["aplicada"].(bool); !applied {
+		t.Fatalf("expected propina aplicada=true, got %v", propinaRaw["aplicada"])
+	}
+	if monto, _ := propinaRaw["monto"].(float64); math.Abs(monto-1000) > 0.001 {
+		t.Fatalf("expected propina monto 1000, got %.4f body=%s", monto, payRR.Body.String())
+	}
+
+	movs, err := dbpkg.ListEmpresaPropinaMovimientos(dbEmp, 1, dbpkg.EmpresaPropinaMovimientoFilter{Limit: 10})
+	if err != nil {
+		t.Fatalf("list propina movements: %v", err)
+	}
+	if len(movs) == 0 {
+		t.Fatal("expected at least one propina movement")
+	}
+	if movs[0].CarritoID != carritoID {
+		t.Fatalf("expected propina carrito_id %d, got %d", carritoID, movs[0].CarritoID)
+	}
+	if math.Abs(movs[0].MontoPropina-1000) > 0.001 {
+		t.Fatalf("expected stored propina 1000, got %.4f", movs[0].MontoPropina)
+	}
+}
+
+func TestEmpresaCarritosCompraRegistraComisionServicioPorLavador(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_carritos_comision_servicio.db")
+	ensureClientesSchema(t, dbEmp)
+	ensureCarritosVentasSchema(t, dbEmp)
+	if err := dbpkg.EnsureEmpresaProductosSchema(dbEmp); err != nil {
+		t.Fatalf("ensure productos schema: %v", err)
+	}
+
+	if _, err := dbpkg.UpsertEmpresaComisionesServicioConfiguracion(dbEmp, dbpkg.EmpresaComisionesServicioConfiguracion{
+		EmpresaID:              1,
+		HabilitarComisiones:    true,
+		PorcentajeComision:     15,
+		FiltroServicio:         "lavado",
+		AplicarAutomaticamente: true,
+		UsuarioCreador:         "test@empresa.com",
+		Estado:                 "activo",
+	}); err != nil {
+		t.Fatalf("upsert comisiones config: %v", err)
+	}
+
+	carritosHandler := EmpresaCarritosCompraHandler(dbEmp)
+	createReq := httptest.NewRequest(http.MethodPost, "/api/empresa/carritos_compra", strings.NewReader(`{"empresa_id":1,"nombre":"Caja Comision","canal_venta":"mostrador","moneda":"COP"}`))
+	createReq.Header.Set("Content-Type", "application/json")
+	createRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(createRR, createReq)
+	if createRR.Code != http.StatusCreated {
+		t.Fatalf("expected create status %d, got %d body=%s", http.StatusCreated, createRR.Code, createRR.Body.String())
+	}
+
+	var createResp map[string]interface{}
+	if err := json.Unmarshal(createRR.Body.Bytes(), &createResp); err != nil {
+		t.Fatalf("decode create response: %v", err)
+	}
+	carritoID := int64(createResp["id"].(float64))
+
+	servicioID, err := dbpkg.CreateServicio(dbEmp, dbpkg.Servicio{
+		EmpresaID:          1,
+		Codigo:             "LAV-001",
+		Nombre:             "Lavado premium",
+		Categoria:          "lavado",
+		Precio:             10000,
+		ImpuestoPorcentaje: 0,
+		UsuarioCreador:     "test@empresa.com",
+		Estado:             "activo",
+	})
+	if err != nil {
+		t.Fatalf("create servicio: %v", err)
+	}
+
+	if _, err := dbpkg.CreateCarritoCompraItem(dbEmp, dbpkg.CarritoCompraItem{
+		EmpresaID:           1,
+		CarritoID:           carritoID,
+		TipoItem:            "servicio",
+		ReferenciaID:        servicioID,
+		CodigoItem:          "LAV-001",
+		Descripcion:         "Lavado premium de auto",
+		UnidadMedida:        "servicio",
+		Cantidad:            1,
+		PrecioUnitario:      10000,
+		DescuentoPorcentaje: 0,
+		ImpuestoPorcentaje:  0,
+		ImpuestoCodigo:      "IVA",
+		UsuarioCreador:      "test@empresa.com",
+		Estado:              "activo",
+	}); err != nil {
+		t.Fatalf("create carrito item servicio: %v", err)
+	}
+
+	payReq := httptest.NewRequest(http.MethodPut, "/api/empresa/carritos_compra?empresa_id=1&id="+strconv.FormatInt(carritoID, 10)+"&action=pagar_estacion", strings.NewReader(`{"metodo_pago":"efectivo","total_pagado":10000,"usuario_lavador":"lavador1@empresa.com"}`))
+	payReq.Header.Set("Content-Type", "application/json")
+	payRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(payRR, payReq)
+
+	if payRR.Code != http.StatusOK {
+		t.Fatalf("expected payment status %d, got %d body=%s", http.StatusOK, payRR.Code, payRR.Body.String())
+	}
+
+	var payResp map[string]interface{}
+	if err := json.Unmarshal(payRR.Body.Bytes(), &payResp); err != nil {
+		t.Fatalf("decode pay response: %v", err)
+	}
+	comisionRaw, ok := payResp["comision"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected comision block in response, got %v", payResp)
+	}
+	if applied, _ := comisionRaw["aplicada"].(bool); !applied {
+		t.Fatalf("expected comision aplicada=true, got %v", comisionRaw["aplicada"])
+	}
+	if monto, _ := comisionRaw["monto_comision"].(float64); math.Abs(monto-1500) > 0.001 {
+		t.Fatalf("expected comision monto 1500, got %.4f", monto)
+	}
+
+	movs, err := dbpkg.ListEmpresaComisionServicioMovimientos(dbEmp, 1, dbpkg.EmpresaComisionServicioMovimientoFilter{
+		UsuarioLavador: "lavador1",
+		Limit:          10,
+	})
+	if err != nil {
+		t.Fatalf("list comisiones movimientos: %v", err)
+	}
+	if len(movs) == 0 {
+		t.Fatal("expected at least one comision movement")
+	}
+	if movs[0].CarritoID != carritoID {
+		t.Fatalf("expected comision carrito_id %d, got %d", carritoID, movs[0].CarritoID)
+	}
+	if movs[0].UsuarioLavador != "lavador1@empresa.com" {
+		t.Fatalf("expected usuario_lavador lavador1@empresa.com, got %q", movs[0].UsuarioLavador)
+	}
+	if math.Abs(movs[0].MontoComision-1500) > 0.001 {
+		t.Fatalf("expected stored comision 1500, got %.4f", movs[0].MontoComision)
 	}
 }
 
@@ -717,8 +1182,22 @@ func TestEmpresaCarritosCompraCodigoDescuentoConsumeUso(t *testing.T) {
 			t.Fatalf("decode create response: %v", err)
 		}
 		carritoID := int64(createResp["id"].(float64))
-		if _, err := dbEmp.Exec(`UPDATE carritos_compras SET subtotal = 12000, total = 12000, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = 1 AND id = ?`, carritoID); err != nil {
-			t.Fatalf("seed carrito total: %v", err)
+		if _, err := dbpkg.CreateCarritoCompraItem(dbEmp, dbpkg.CarritoCompraItem{
+			EmpresaID:           1,
+			CarritoID:           carritoID,
+			TipoItem:            "otro",
+			CodigoItem:          "PROMO-ITEM-" + strconv.FormatInt(carritoID, 10),
+			Descripcion:         "Consumo base para descuento",
+			UnidadMedida:        "unidad",
+			Cantidad:            1,
+			PrecioUnitario:      12000,
+			DescuentoPorcentaje: 0,
+			ImpuestoPorcentaje:  0,
+			ImpuestoCodigo:      "IVA",
+			UsuarioCreador:      "test@empresa.com",
+			Estado:              "activo",
+		}); err != nil {
+			t.Fatalf("seed carrito item para descuento: %v", err)
 		}
 		return carritoID
 	}
@@ -739,5 +1218,236 @@ func TestEmpresaCarritosCompraCodigoDescuentoConsumeUso(t *testing.T) {
 	carritosHandler.ServeHTTP(secondPayRR, secondPayReq)
 	if secondPayRR.Code != http.StatusBadRequest {
 		t.Fatalf("expected second discount payment status %d, got %d body=%s", http.StatusBadRequest, secondPayRR.Code, secondPayRR.Body.String())
+	}
+}
+
+func TestEmpresaCarritosCompraBloqueaMetodoPagoSegunRol(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_carritos_config_operativa_rol.db")
+	ensureClientesSchema(t, dbEmp)
+	ensureCarritosVentasSchema(t, dbEmp)
+
+	if _, err := dbpkg.UpsertEmpresaConfiguracionOperativa(dbEmp, dbpkg.EmpresaConfiguracionOperativa{
+		EmpresaID:                       1,
+		MetodoPagoEfectivo:              true,
+		MetodoPagoTarjetaCredito:        true,
+		MetodoPagoTarjetaDebito:         true,
+		MetodoPagoTransferenciaBancaria: true,
+		MetodoPagoMixto:                 true,
+		MetodoPagoCodigoDescuento:       true,
+		HabilitarPropinas:               true,
+		HabilitarComisiones:             true,
+		UsuarioCreador:                  "qa@empresa.com",
+		Estado:                          "activo",
+	}); err != nil {
+		t.Fatalf("upsert empresa configuracion operativa: %v", err)
+	}
+	if _, err := dbpkg.UpsertEmpresaConfiguracionOperativaRol(dbEmp, dbpkg.EmpresaConfiguracionOperativaRol{
+		EmpresaID:                       1,
+		Rol:                             "cajero",
+		MetodoPagoEfectivo:              true,
+		MetodoPagoTarjetaCredito:        true,
+		MetodoPagoTarjetaDebito:         true,
+		MetodoPagoTransferenciaBancaria: false,
+		MetodoPagoMixto:                 true,
+		MetodoPagoCodigoDescuento:       true,
+		HabilitarPropinas:               true,
+		HabilitarComisiones:             true,
+		UsuarioCreador:                  "qa@empresa.com",
+		Estado:                          "activo",
+	}); err != nil {
+		t.Fatalf("upsert role configuracion operativa: %v", err)
+	}
+
+	carritosHandler := EmpresaCarritosCompraHandler(dbEmp)
+	createReq := httptest.NewRequest(http.MethodPost, "/api/empresa/carritos_compra", strings.NewReader(`{"empresa_id":1,"nombre":"Caja Config Rol","canal_venta":"mostrador","moneda":"COP"}`))
+	createReq.Header.Set("Content-Type", "application/json")
+	createRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(createRR, createReq)
+	if createRR.Code != http.StatusCreated {
+		t.Fatalf("expected create status %d, got %d body=%s", http.StatusCreated, createRR.Code, createRR.Body.String())
+	}
+
+	var createResp map[string]interface{}
+	if err := json.Unmarshal(createRR.Body.Bytes(), &createResp); err != nil {
+		t.Fatalf("decode create response: %v", err)
+	}
+	carritoID := int64(createResp["id"].(float64))
+
+	if _, err := dbEmp.Exec(`UPDATE carritos_compras SET subtotal = 10000, total = 10000, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = 1 AND id = ?`, carritoID); err != nil {
+		t.Fatalf("seed carrito totals: %v", err)
+	}
+
+	payReq := httptest.NewRequest(http.MethodPut, "/api/empresa/carritos_compra?empresa_id=1&id="+strconv.FormatInt(carritoID, 10)+"&action=pagar_estacion", strings.NewReader(`{"metodo_pago":"transferencia_bancaria","referencia_pago":"TRX-ROL-001","total_pagado":10000}`))
+	payReq.Header.Set("Content-Type", "application/json")
+	payReq.Header.Set("X-Admin-Role", "cajero")
+	payRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(payRR, payReq)
+	if payRR.Code != http.StatusForbidden {
+		t.Fatalf("expected forbidden status %d, got %d body=%s", http.StatusForbidden, payRR.Code, payRR.Body.String())
+	}
+}
+
+func TestEmpresaCarritosCompraRespetaBloqueoPropinaYComisionPorRol(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_carritos_config_operativa_propina_comision.db")
+	ensureClientesSchema(t, dbEmp)
+	ensureCarritosVentasSchema(t, dbEmp)
+	if err := dbpkg.EnsureEmpresaProductosSchema(dbEmp); err != nil {
+		t.Fatalf("ensure productos schema: %v", err)
+	}
+
+	if _, err := dbpkg.UpsertEmpresaConfiguracionOperativa(dbEmp, dbpkg.EmpresaConfiguracionOperativa{
+		EmpresaID:                       1,
+		MetodoPagoEfectivo:              true,
+		MetodoPagoTarjetaCredito:        true,
+		MetodoPagoTarjetaDebito:         true,
+		MetodoPagoTransferenciaBancaria: true,
+		MetodoPagoMixto:                 true,
+		MetodoPagoCodigoDescuento:       true,
+		HabilitarPropinas:               true,
+		HabilitarComisiones:             true,
+		UsuarioCreador:                  "qa@empresa.com",
+		Estado:                          "activo",
+	}); err != nil {
+		t.Fatalf("upsert empresa configuracion operativa: %v", err)
+	}
+	if _, err := dbpkg.UpsertEmpresaConfiguracionOperativaRol(dbEmp, dbpkg.EmpresaConfiguracionOperativaRol{
+		EmpresaID:                       1,
+		Rol:                             "cajero",
+		MetodoPagoEfectivo:              true,
+		MetodoPagoTarjetaCredito:        true,
+		MetodoPagoTarjetaDebito:         true,
+		MetodoPagoTransferenciaBancaria: true,
+		MetodoPagoMixto:                 true,
+		MetodoPagoCodigoDescuento:       true,
+		HabilitarPropinas:               false,
+		HabilitarComisiones:             false,
+		UsuarioCreador:                  "qa@empresa.com",
+		Estado:                          "activo",
+	}); err != nil {
+		t.Fatalf("upsert role configuracion operativa: %v", err)
+	}
+
+	if _, err := dbpkg.UpsertEmpresaPropinasConfiguracion(dbEmp, dbpkg.EmpresaPropinasConfiguracion{
+		EmpresaID:              1,
+		HabilitarPropina:       true,
+		PorcentajePropina:      10,
+		ModoDistribucion:       dbpkg.EmpresaPropinaModoPorUsuario,
+		AplicarAutomaticamente: true,
+		UsuarioCreador:         "qa@empresa.com",
+		Estado:                 "activo",
+	}); err != nil {
+		t.Fatalf("upsert propinas config: %v", err)
+	}
+
+	if _, err := dbpkg.UpsertEmpresaComisionesServicioConfiguracion(dbEmp, dbpkg.EmpresaComisionesServicioConfiguracion{
+		EmpresaID:              1,
+		HabilitarComisiones:    true,
+		PorcentajeComision:     15,
+		FiltroServicio:         "lavado",
+		AplicarAutomaticamente: true,
+		UsuarioCreador:         "qa@empresa.com",
+		Estado:                 "activo",
+	}); err != nil {
+		t.Fatalf("upsert comisiones config: %v", err)
+	}
+
+	carritosHandler := EmpresaCarritosCompraHandler(dbEmp)
+	createReq := httptest.NewRequest(http.MethodPost, "/api/empresa/carritos_compra", strings.NewReader(`{"empresa_id":1,"nombre":"Caja Config Propina Comision","canal_venta":"mostrador","moneda":"COP"}`))
+	createReq.Header.Set("Content-Type", "application/json")
+	createRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(createRR, createReq)
+	if createRR.Code != http.StatusCreated {
+		t.Fatalf("expected create status %d, got %d body=%s", http.StatusCreated, createRR.Code, createRR.Body.String())
+	}
+
+	var createResp map[string]interface{}
+	if err := json.Unmarshal(createRR.Body.Bytes(), &createResp); err != nil {
+		t.Fatalf("decode create response: %v", err)
+	}
+	carritoID := int64(createResp["id"].(float64))
+
+	servicioID, err := dbpkg.CreateServicio(dbEmp, dbpkg.Servicio{
+		EmpresaID:          1,
+		Codigo:             "LAV-ROL-01",
+		Nombre:             "Lavado rol",
+		Categoria:          "lavado",
+		Precio:             10000,
+		ImpuestoPorcentaje: 0,
+		UsuarioCreador:     "qa@empresa.com",
+		Estado:             "activo",
+	})
+	if err != nil {
+		t.Fatalf("create servicio: %v", err)
+	}
+
+	if _, err := dbpkg.CreateCarritoCompraItem(dbEmp, dbpkg.CarritoCompraItem{
+		EmpresaID:           1,
+		CarritoID:           carritoID,
+		TipoItem:            "servicio",
+		ReferenciaID:        servicioID,
+		CodigoItem:          "LAV-ROL-01",
+		Descripcion:         "Lavado rol por prueba",
+		UnidadMedida:        "servicio",
+		Cantidad:            1,
+		PrecioUnitario:      10000,
+		DescuentoPorcentaje: 0,
+		ImpuestoPorcentaje:  0,
+		ImpuestoCodigo:      "IVA",
+		UsuarioCreador:      "qa@empresa.com",
+		Estado:              "activo",
+	}); err != nil {
+		t.Fatalf("create carrito item: %v", err)
+	}
+
+	payReq := httptest.NewRequest(http.MethodPut, "/api/empresa/carritos_compra?empresa_id=1&id="+strconv.FormatInt(carritoID, 10)+"&action=pagar_estacion", strings.NewReader(`{"metodo_pago":"efectivo","total_pagado":10000,"aplicar_propina":true,"usuario_lavador":"lavador-rol@empresa.com"}`))
+	payReq.Header.Set("Content-Type", "application/json")
+	payReq.Header.Set("X-Admin-Role", "cajero")
+	payRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(payRR, payReq)
+	if payRR.Code != http.StatusOK {
+		t.Fatalf("expected payment status %d, got %d body=%s", http.StatusOK, payRR.Code, payRR.Body.String())
+	}
+
+	var payResp map[string]interface{}
+	if err := json.Unmarshal(payRR.Body.Bytes(), &payResp); err != nil {
+		t.Fatalf("decode pay response: %v", err)
+	}
+
+	propinaRaw, ok := payResp["propina"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected propina block in response, got %v", payResp)
+	}
+	if aplicada, _ := propinaRaw["aplicada"].(bool); aplicada {
+		t.Fatalf("expected propina aplicada=false, got %v", propinaRaw["aplicada"])
+	}
+	if warning, _ := propinaRaw["warning"].(string); !strings.Contains(strings.ToLower(warning), "deshabilitadas") {
+		t.Fatalf("expected propina warning about disabled policy, got %q", warning)
+	}
+
+	comisionRaw, ok := payResp["comision"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected comision block in response, got %v", payResp)
+	}
+	if aplicada, _ := comisionRaw["aplicada"].(bool); aplicada {
+		t.Fatalf("expected comision aplicada=false, got %v", comisionRaw["aplicada"])
+	}
+	if warning, _ := comisionRaw["warning"].(string); !strings.Contains(strings.ToLower(warning), "deshabilitadas") {
+		t.Fatalf("expected comision warning about disabled policy, got %q", warning)
+	}
+
+	propinaMovs, err := dbpkg.ListEmpresaPropinaMovimientos(dbEmp, 1, dbpkg.EmpresaPropinaMovimientoFilter{Limit: 10})
+	if err != nil {
+		t.Fatalf("list propina movimientos: %v", err)
+	}
+	if len(propinaMovs) != 0 {
+		t.Fatalf("expected no propina movements, got %d", len(propinaMovs))
+	}
+
+	comisionMovs, err := dbpkg.ListEmpresaComisionServicioMovimientos(dbEmp, 1, dbpkg.EmpresaComisionServicioMovimientoFilter{Limit: 10})
+	if err != nil {
+		t.Fatalf("list comision movimientos: %v", err)
+	}
+	if len(comisionMovs) != 0 {
+		t.Fatalf("expected no comision movements, got %d", len(comisionMovs))
 	}
 }

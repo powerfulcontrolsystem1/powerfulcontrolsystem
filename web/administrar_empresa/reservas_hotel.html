@@ -1,0 +1,589 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Reservas por estacion</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container">
+    <div class="page-header">
+      <h1 id="pageTitle">Modulo de reservas por estacion</h1>
+      <button id="addBtn" class="btn add" type="button">Agregar reserva</button>
+    </div>
+
+    <p class="form-help">Gestiona reservas por estacion/habitacion, disponibilidad por rango y confirmacion de pago.</p>
+
+    <form id="form" class="form">
+      <input type="hidden" id="itemId">
+      <input type="hidden" id="empresa_id">
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Estacion ID</label>
+          <input id="estacion_id" class="form-input" type="number" min="1" required>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Codigo reserva</label>
+          <input id="codigo_reserva" class="form-input" placeholder="Opcional, se genera automatico si va vacio">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Moneda</label>
+          <select id="moneda" class="form-input">
+            <option value="COP">COP</option>
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Cliente</label>
+          <input id="cliente_nombre" class="form-input" required placeholder="Nombre completo">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Documento</label>
+          <input id="cliente_documento" class="form-input" placeholder="Documento cliente">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Correo</label>
+          <input id="cliente_email" class="form-input" type="email" placeholder="correo@cliente.com">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Telefono</label>
+          <input id="cliente_telefono" class="form-input" placeholder="Telefono contacto">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Cantidad huespedes</label>
+          <input id="cantidad_huespedes" class="form-input" type="number" min="1" value="1">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Monto total</label>
+          <input id="monto_total" class="form-input" type="number" step="0.01" min="0" value="0">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Fecha entrada</label>
+          <input id="fecha_entrada" class="form-input" type="datetime-local" required>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Fecha salida</label>
+          <input id="fecha_salida" class="form-input" type="datetime-local" required>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Canal origen</label>
+          <input id="canal_origen" class="form-input" value="panel_empresa" placeholder="panel_empresa, web_reservas, callcenter">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Observaciones</label>
+          <textarea id="observaciones" class="form-textarea" placeholder="Opcional"></textarea>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" id="saveBtn" class="btn">Guardar</button>
+        <button type="button" id="cancelBtn" class="btn secondary">Cancelar</button>
+      </div>
+      <div id="msg" class="form-help"></div>
+    </form>
+
+    <div class="form" style="margin-top:14px;">
+      <div class="form-row" style="margin-bottom:0;">
+        <div class="form-col">
+          <label class="form-label">Buscar</label>
+          <input id="buscar" class="form-input" placeholder="Codigo, cliente, correo o estacion">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Estado reserva</label>
+          <select id="filtro_estado_reserva" class="form-input">
+            <option value="">Todos</option>
+            <option value="pendiente_pago">Pendiente pago</option>
+            <option value="confirmada">Confirmada</option>
+            <option value="cancelada">Cancelada</option>
+            <option value="expirada">Expirada</option>
+          </select>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Estado pago</label>
+          <select id="filtro_estado_pago" class="form-input">
+            <option value="">Todos</option>
+            <option value="pendiente">Pendiente</option>
+            <option value="confirmado">Confirmado</option>
+            <option value="cancelado">Cancelado</option>
+            <option value="expirado">Expirado</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row" style="margin-bottom:0;">
+        <div class="form-col">
+          <label class="form-label">Filtro estacion ID</label>
+          <input id="filtro_estacion_id" class="form-input" type="number" min="1" placeholder="Opcional">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Desde</label>
+          <input id="filtro_desde" class="form-input" type="datetime-local">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Hasta</label>
+          <input id="filtro_hasta" class="form-input" type="datetime-local">
+        </div>
+        <div class="form-col" style="max-width:280px;display:flex;align-items:flex-end;gap:8px;">
+          <button id="filtrarBtn" class="btn secondary" type="button" style="flex:1;">Filtrar</button>
+          <button id="limpiarBtn" class="btn secondary" type="button" style="flex:1;">Limpiar</button>
+        </div>
+      </div>
+
+      <div class="form-row" style="margin-bottom:0;">
+        <div class="form-col" style="max-width:260px;display:flex;align-items:flex-end;gap:8px;">
+          <button id="disponibilidadBtn" class="btn secondary" type="button" style="flex:1;">Ver disponibilidad</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="disponibilidad" class="form-help" style="margin:12px 0;"></div>
+    <div id="list">Cargando...</div>
+  </div>
+
+  <script>
+    const state = {
+      empresaID: 0,
+      items: [],
+      q: "",
+      estadoReserva: "",
+      estadoPago: "",
+      estacionID: 0,
+      fechaDesde: "",
+      fechaHasta: ""
+    };
+
+    function getQueryParam(name) {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name);
+    }
+
+    function normalize(value) {
+      return (value == null ? "" : String(value)).trim();
+    }
+
+    function esc(value) {
+      return String(value == null ? "" : value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function setMessage(text, isError) {
+      const el = document.getElementById("msg");
+      if (!el) return;
+      el.textContent = text || "";
+      el.style.color = isError ? "#ef5350" : "";
+    }
+
+    async function ensureOk(resp) {
+      if (resp.ok) return;
+      const text = await resp.text();
+      throw new Error(text || ("HTTP " + resp.status));
+    }
+
+    function pad2(v) {
+      return String(v).padStart(2, "0");
+    }
+
+    function toInputDateTime(raw) {
+      const value = normalize(raw);
+      if (!value) return "";
+      return value.replace(" ", "T").slice(0, 16);
+    }
+
+    function nowDateTime() {
+      const d = new Date();
+      return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()) + "T" + pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+    }
+
+    function plusHoursDateTime(hours) {
+      const d = new Date();
+      d.setHours(d.getHours() + hours);
+      return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()) + "T" + pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+    }
+
+    function setDefaultDates() {
+      const start = nowDateTime();
+      const end = plusHoursDateTime(2);
+      document.getElementById("fecha_entrada").value = start;
+      document.getElementById("fecha_salida").value = end;
+      document.getElementById("filtro_desde").value = start;
+      document.getElementById("filtro_hasta").value = plusHoursDateTime(24);
+    }
+
+    function buildPayloadFromForm() {
+      return {
+        id: Number(document.getElementById("itemId").value || 0),
+        empresa_id: Number(state.empresaID),
+        estacion_id: Number(document.getElementById("estacion_id").value || 0),
+        codigo_reserva: normalize(document.getElementById("codigo_reserva").value),
+        cliente_nombre: normalize(document.getElementById("cliente_nombre").value),
+        cliente_documento: normalize(document.getElementById("cliente_documento").value),
+        cliente_email: normalize(document.getElementById("cliente_email").value),
+        cliente_telefono: normalize(document.getElementById("cliente_telefono").value),
+        cantidad_huespedes: Number(document.getElementById("cantidad_huespedes").value || 1),
+        fecha_entrada: normalize(document.getElementById("fecha_entrada").value),
+        fecha_salida: normalize(document.getElementById("fecha_salida").value),
+        monto_total: Number(document.getElementById("monto_total").value || 0),
+        moneda: normalize(document.getElementById("moneda").value || "COP"),
+        canal_origen: normalize(document.getElementById("canal_origen").value || "panel_empresa"),
+        observaciones: normalize(document.getElementById("observaciones").value)
+      };
+    }
+
+    function resetForm() {
+      document.getElementById("itemId").value = "";
+      document.getElementById("estacion_id").value = "";
+      document.getElementById("codigo_reserva").value = "";
+      document.getElementById("cliente_nombre").value = "";
+      document.getElementById("cliente_documento").value = "";
+      document.getElementById("cliente_email").value = "";
+      document.getElementById("cliente_telefono").value = "";
+      document.getElementById("cantidad_huespedes").value = "1";
+      document.getElementById("monto_total").value = "0";
+      document.getElementById("moneda").value = "COP";
+      document.getElementById("canal_origen").value = "panel_empresa";
+      document.getElementById("observaciones").value = "";
+      document.getElementById("fecha_entrada").value = nowDateTime();
+      document.getElementById("fecha_salida").value = plusHoursDateTime(2);
+      setMessage("", false);
+    }
+
+    function applyFilters() {
+      state.q = normalize(document.getElementById("buscar").value);
+      state.estadoReserva = normalize(document.getElementById("filtro_estado_reserva").value);
+      state.estadoPago = normalize(document.getElementById("filtro_estado_pago").value);
+      state.estacionID = Number(document.getElementById("filtro_estacion_id").value || 0);
+      state.fechaDesde = normalize(document.getElementById("filtro_desde").value);
+      state.fechaHasta = normalize(document.getElementById("filtro_hasta").value);
+    }
+
+    async function loadItems() {
+      applyFilters();
+      const params = new URLSearchParams();
+      params.set("empresa_id", String(state.empresaID));
+      params.set("limit", "500");
+      if (state.q) params.set("search", state.q);
+      if (state.estadoReserva) params.set("estado_reserva", state.estadoReserva);
+      if (state.estadoPago) params.set("estado_pago", state.estadoPago);
+      if (state.estacionID > 0) params.set("estacion_id", String(state.estacionID));
+      if (state.fechaDesde) params.set("fecha_desde", state.fechaDesde);
+      if (state.fechaHasta) params.set("fecha_hasta", state.fechaHasta);
+
+      const resp = await fetch("/api/empresa/reservas_hotel?" + params.toString(), { credentials: "same-origin" });
+      await ensureOk(resp);
+      const rows = await resp.json();
+      state.items = Array.isArray(rows) ? rows : [];
+      renderList();
+    }
+
+    function renderList() {
+      const root = document.getElementById("list");
+      if (!Array.isArray(state.items) || state.items.length === 0) {
+        root.innerHTML = '<p class="form-help">No hay reservas para los filtros seleccionados.</p>';
+        return;
+      }
+
+      const rows = state.items.map(function (item) {
+        const rowData = esc(JSON.stringify(item));
+        const id = Number(item.id || 0);
+        const estadoRegistro = normalize(item.estado || "activo").toLowerCase();
+        const nextAction = estadoRegistro === "activo" ? "desactivar" : "activar";
+        const nextLabel = estadoRegistro === "activo" ? "Desactivar" : "Activar";
+
+        return "<tr>" +
+          "<td><strong>" + esc(item.codigo_reserva || "-") + "</strong><br><small>Estacion " + esc(item.estacion_id || "-") + "</small></td>" +
+          "<td>" + esc(item.cliente_nombre || "-") + "<br><small>" + esc(item.cliente_documento || "") + "</small></td>" +
+          "<td>" + esc(item.fecha_entrada || "-") + "</td>" +
+          "<td>" + esc(item.fecha_salida || "-") + "</td>" +
+          "<td>" + esc(item.estado_reserva || "-") + "</td>" +
+          "<td>" + esc(item.estado_pago || "-") + "</td>" +
+          "<td>" + esc(item.estado || "activo") + "</td>" +
+          "<td>" + esc(item.monto_total || 0) + " " + esc(item.moneda || "COP") + "</td>" +
+          "<td>" +
+            '<button class="btn secondary" type="button" data-action="edit" data-item="' + rowData + '">Editar</button> ' +
+            '<button class="btn secondary" type="button" data-action="confirmar" data-id="' + id + '">Confirmar pago</button> ' +
+            '<button class="btn secondary" type="button" data-action="cancelar" data-id="' + id + '">Cancelar</button> ' +
+            '<button class="btn secondary" type="button" data-action="toggle" data-id="' + id + '" data-next="' + nextAction + '">' + nextLabel + "</button> " +
+            '<button class="btn danger" type="button" data-action="delete" data-id="' + id + '">Eliminar</button>' +
+          "</td>" +
+        "</tr>";
+      }).join("");
+
+      root.innerHTML = '<div class="table-wrap"><table class="table"><thead><tr>' +
+        "<th>Reserva</th>" +
+        "<th>Cliente</th>" +
+        "<th>Entrada</th>" +
+        "<th>Salida</th>" +
+        "<th>Estado reserva</th>" +
+        "<th>Estado pago</th>" +
+        "<th>Estado registro</th>" +
+        "<th>Monto</th>" +
+        "<th>Acciones</th>" +
+      "</tr></thead><tbody>" + rows + "</tbody></table></div>";
+    }
+
+    function fillForm(item) {
+      document.getElementById("itemId").value = Number(item.id || 0);
+      document.getElementById("empresa_id").value = Number(item.empresa_id || state.empresaID);
+      document.getElementById("estacion_id").value = Number(item.estacion_id || 0);
+      document.getElementById("codigo_reserva").value = normalize(item.codigo_reserva);
+      document.getElementById("cliente_nombre").value = normalize(item.cliente_nombre);
+      document.getElementById("cliente_documento").value = normalize(item.cliente_documento);
+      document.getElementById("cliente_email").value = normalize(item.cliente_email);
+      document.getElementById("cliente_telefono").value = normalize(item.cliente_telefono);
+      document.getElementById("cantidad_huespedes").value = String(Number(item.cantidad_huespedes || 1));
+      document.getElementById("fecha_entrada").value = toInputDateTime(item.fecha_entrada);
+      document.getElementById("fecha_salida").value = toInputDateTime(item.fecha_salida);
+      document.getElementById("monto_total").value = String(Number(item.monto_total || 0));
+      document.getElementById("moneda").value = normalize(item.moneda || "COP");
+      document.getElementById("canal_origen").value = normalize(item.canal_origen || "panel_empresa");
+      document.getElementById("observaciones").value = normalize(item.observaciones);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    async function saveForm(ev) {
+      ev.preventDefault();
+      try {
+        const payload = buildPayloadFromForm();
+        if (!payload.empresa_id) throw new Error("empresa_id es obligatorio");
+        if (!payload.estacion_id) throw new Error("estacion_id es obligatorio");
+        if (!payload.cliente_nombre) throw new Error("cliente_nombre es obligatorio");
+        if (!payload.fecha_entrada || !payload.fecha_salida) throw new Error("fecha_entrada y fecha_salida son obligatorias");
+
+        const method = payload.id > 0 ? "PUT" : "POST";
+        const resp = await fetch("/api/empresa/reservas_hotel", {
+          method: method,
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify(payload)
+        });
+        await ensureOk(resp);
+        resetForm();
+        await loadItems();
+        setMessage(method === "POST" ? "Reserva creada correctamente." : "Reserva actualizada correctamente.", false);
+      } catch (err) {
+        setMessage(err.message || "No se pudo guardar la reserva.", true);
+      }
+    }
+
+    async function confirmReservation(id) {
+      const referenciaPago = prompt("Referencia de pago (opcional):", "");
+      if (referenciaPago === null) return;
+      const observaciones = prompt("Observaciones (opcional):", "");
+      if (observaciones === null) return;
+
+      const payload = {
+        empresa_id: state.empresaID,
+        id: Number(id),
+        referencia_pago: normalize(referenciaPago),
+        observaciones: normalize(observaciones)
+      };
+      const resp = await fetch("/api/empresa/reservas_hotel?action=confirmar_pago", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify(payload)
+      });
+      await ensureOk(resp);
+      await loadItems();
+      setMessage("Pago de reserva confirmado.", false);
+    }
+
+    async function cancelReservation(id) {
+      const motivo = prompt("Motivo de cancelacion:", "");
+      if (motivo === null) return;
+
+      const payload = {
+        empresa_id: state.empresaID,
+        id: Number(id),
+        observaciones: normalize(motivo)
+      };
+      const resp = await fetch("/api/empresa/reservas_hotel?action=cancelar", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify(payload)
+      });
+      await ensureOk(resp);
+      await loadItems();
+      setMessage("Reserva cancelada.", false);
+    }
+
+    async function toggleEstado(id, nextAction) {
+      const params = new URLSearchParams();
+      params.set("empresa_id", String(state.empresaID));
+      params.set("id", String(id));
+      params.set("action", nextAction);
+      const resp = await fetch("/api/empresa/reservas_hotel?" + params.toString(), {
+        method: "PUT",
+        credentials: "same-origin"
+      });
+      await ensureOk(resp);
+      await loadItems();
+    }
+
+    async function deleteReservation(id) {
+      if (!window.confirm("Eliminar esta reserva?")) return;
+      const params = new URLSearchParams();
+      params.set("empresa_id", String(state.empresaID));
+      params.set("id", String(id));
+      const resp = await fetch("/api/empresa/reservas_hotel?" + params.toString(), {
+        method: "DELETE",
+        credentials: "same-origin"
+      });
+      await ensureOk(resp);
+      await loadItems();
+      setMessage("Reserva eliminada.", false);
+    }
+
+    async function loadDisponibilidad() {
+      const fechaEntrada = normalize(document.getElementById("filtro_desde").value) || normalize(document.getElementById("fecha_entrada").value);
+      const fechaSalida = normalize(document.getElementById("filtro_hasta").value) || normalize(document.getElementById("fecha_salida").value);
+      const wrap = document.getElementById("disponibilidad");
+
+      if (!fechaEntrada || !fechaSalida) {
+        wrap.textContent = "Define fecha de entrada y salida para consultar disponibilidad.";
+        return;
+      }
+
+      const params = new URLSearchParams();
+      params.set("empresa_id", String(state.empresaID));
+      params.set("action", "disponibilidad");
+      params.set("fecha_entrada", fechaEntrada);
+      params.set("fecha_salida", fechaSalida);
+
+      try {
+        const resp = await fetch("/api/empresa/reservas_hotel?" + params.toString(), { credentials: "same-origin" });
+        await ensureOk(resp);
+        const rows = await resp.json();
+        if (!Array.isArray(rows) || rows.length === 0) {
+          wrap.innerHTML = '<p class="form-help">No hay estaciones para el rango consultado.</p>';
+          return;
+        }
+
+        const html = rows.map(function (item) {
+          return "<tr>" +
+            "<td>" + esc(item.estacion_id || "-") + "</td>" +
+            "<td>" + esc(item.estacion_codigo || "-") + "</td>" +
+            "<td>" + esc(item.estacion_nombre || "-") + "</td>" +
+            "<td>" + esc(item.estado || "-") + "</td>" +
+            "<td>" + esc(item.reservas_activas || 0) + "</td>" +
+            "<td>" + (item.disponible ? "si" : "no") + "</td>" +
+          "</tr>";
+        }).join("");
+
+        wrap.innerHTML = '<div class="table-wrap"><table class="table"><thead><tr>' +
+          "<th>Estacion ID</th><th>Codigo</th><th>Nombre</th><th>Estado</th><th>Reservas activas</th><th>Disponible</th>" +
+          "</tr></thead><tbody>" + html + "</tbody></table></div>";
+      } catch (err) {
+        wrap.textContent = err.message || "No se pudo consultar disponibilidad.";
+      }
+    }
+
+    function bindListActions() {
+      const root = document.getElementById("list");
+      root.addEventListener("click", function (ev) {
+        const btn = ev.target.closest("button[data-action]");
+        if (!btn) return;
+
+        const action = btn.getAttribute("data-action");
+        const id = Number(btn.getAttribute("data-id") || 0);
+        if (action === "edit") {
+          const raw = btn.getAttribute("data-item") || "{}";
+          try {
+            fillForm(JSON.parse(raw));
+          } catch (_) {}
+          return;
+        }
+        if (!id) return;
+
+        if (action === "confirmar") {
+          confirmReservation(id).catch(function (err) {
+            setMessage(err.message || "No se pudo confirmar el pago.", true);
+          });
+          return;
+        }
+        if (action === "cancelar") {
+          cancelReservation(id).catch(function (err) {
+            setMessage(err.message || "No se pudo cancelar.", true);
+          });
+          return;
+        }
+        if (action === "toggle") {
+          const nextAction = btn.getAttribute("data-next") || "activar";
+          toggleEstado(id, nextAction).catch(function (err) {
+            setMessage(err.message || "No se pudo cambiar estado.", true);
+          });
+          return;
+        }
+        if (action === "delete") {
+          deleteReservation(id).catch(function (err) {
+            setMessage(err.message || "No se pudo eliminar.", true);
+          });
+        }
+      });
+    }
+
+    function bindUI() {
+      document.getElementById("form").addEventListener("submit", saveForm);
+      document.getElementById("cancelBtn").addEventListener("click", resetForm);
+      document.getElementById("addBtn").addEventListener("click", function () {
+        resetForm();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+      document.getElementById("filtrarBtn").addEventListener("click", function () {
+        loadItems().catch(function (err) {
+          setMessage(err.message || "No se pudo filtrar.", true);
+        });
+      });
+      document.getElementById("limpiarBtn").addEventListener("click", function () {
+        document.getElementById("buscar").value = "";
+        document.getElementById("filtro_estado_reserva").value = "";
+        document.getElementById("filtro_estado_pago").value = "";
+        document.getElementById("filtro_estacion_id").value = "";
+        setDefaultDates();
+        loadItems().catch(function (err) {
+          setMessage(err.message || "No se pudo recargar.", true);
+        });
+      });
+      document.getElementById("disponibilidadBtn").addEventListener("click", loadDisponibilidad);
+    }
+
+    async function init() {
+      state.empresaID = Number(getQueryParam("empresa_id") || 0);
+      if (!state.empresaID) {
+        setMessage("empresa_id es obligatorio en la URL.", true);
+        return;
+      }
+      document.getElementById("empresa_id").value = String(state.empresaID);
+      setDefaultDates();
+      bindUI();
+      bindListActions();
+      resetForm();
+      await loadItems();
+    }
+
+    init().catch(function (err) {
+      setMessage(err.message || "No se pudo inicializar el modulo.", true);
+    });
+  </script>
+</body>
+</html>

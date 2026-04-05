@@ -1,0 +1,535 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Facturas electronicas</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="empresa-subpage">
+  <div class="container empresa-module">
+    <section class="card empresa-module-header">
+      <div>
+        <h1 id="pageTitle">Facturas electronicas</h1>
+        <p id="empresaInfo">Empresa: cargando...</p>
+      </div>
+      <div class="empresa-module-kpis">
+        <div class="kpi-box">
+          <span class="kpi-label">Documentos</span>
+          <strong id="kpiTotal">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Emitidas</span>
+          <strong id="kpiEmitidas">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Anuladas</span>
+          <strong id="kpiAnuladas">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Monto total</span>
+          <strong id="kpiMonto">$0</strong>
+        </div>
+      </div>
+    </section>
+
+    <div id="messageBox" class="form-help"></div>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Filtros de busqueda</h2>
+      </div>
+      <form id="filtrosForm" class="form">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="tipoDocumento">Tipo documento</label>
+            <select id="tipoDocumento" class="form-input">
+              <option value="">Todos</option>
+              <option value="factura_electronica">Factura electronica</option>
+              <option value="nota_credito">Nota credito</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="estadoDocumento">Estado documento</label>
+            <select id="estadoDocumento" class="form-input">
+              <option value="">Todos</option>
+              <option value="borrador">Borrador</option>
+              <option value="emitida">Emitida</option>
+              <option value="anulada">Anulada</option>
+              <option value="ajustada">Ajustada</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="clienteFiltro">Cliente</label>
+            <input id="clienteFiltro" class="form-input" placeholder="Nombre, correo o documento">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="documentoFiltro">Documento</label>
+            <input id="documentoFiltro" class="form-input" placeholder="Codigo, numero legal o validacion">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="fechaDesde">Fecha desde</label>
+            <input id="fechaDesde" class="form-input" type="date">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="fechaHasta">Fecha hasta</label>
+            <input id="fechaHasta" class="form-input" type="date">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="busquedaGlobal">Busqueda libre</label>
+            <input id="busquedaGlobal" class="form-input" placeholder="Observaciones, cliente, codigo...">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Opciones</label>
+            <label class="empresa-config-check" for="includeInactive" style="display:inline-flex;align-items:center;gap:8px;">
+              <input id="includeInactive" type="checkbox">
+              <span>Incluir inactivos</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button id="btnBuscar" type="submit" class="btn">Buscar facturas</button>
+          <button id="btnLimpiar" type="button" class="btn secondary">Limpiar filtros</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Resultados</h2>
+      </div>
+      <div class="table-wrap">
+        <table class="table" id="facturasTable">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Tipo</th>
+              <th>Codigo</th>
+              <th>Numero legal</th>
+              <th>Cliente</th>
+              <th>Total</th>
+              <th>Estado doc</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Detalle de factura seleccionada</h2>
+      </div>
+      <div id="detalleFactura" class="form-help">Selecciona una factura para ver su detalle.</div>
+    </section>
+  </div>
+
+  <script>
+    (function () {
+      function getQueryParam(name) {
+        var params = new URLSearchParams(window.location.search || "");
+        return params.get(name);
+      }
+
+      function normalize(value) {
+        return String(value || "").trim();
+      }
+
+      function escapeHtml(raw) {
+        return String(raw || "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/\"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function formatMoney(value, moneda) {
+        var amount = Number(value || 0);
+        var currency = normalize(moneda).toUpperCase() || "COP";
+        try {
+          return new Intl.NumberFormat("es-CO", {
+            style: "currency",
+            currency: currency,
+            maximumFractionDigits: 2
+          }).format(amount);
+        } catch (err) {
+          return amount.toFixed(2) + " " + currency;
+        }
+      }
+
+      function formatDate(value) {
+        var raw = normalize(value);
+        if (!raw) return "-";
+        var datePart = raw.length >= 10 ? raw.slice(0, 10) : raw;
+        var bits = datePart.split("-");
+        if (bits.length === 3) {
+          return bits[2] + "/" + bits[1] + "/" + bits[0];
+        }
+        return datePart;
+      }
+
+      function statusBadge(estado) {
+        var norm = normalize(estado).toLowerCase();
+        if (norm === "emitida") return '<span class="badge low">emitida</span>';
+        if (norm === "anulada") return '<span class="badge urgent">anulada</span>';
+        if (norm === "ajustada") return '<span class="badge mid">ajustada</span>';
+        return '<span class="badge high">' + escapeHtml(norm || "borrador") + "</span>";
+      }
+
+      function apiRequest(url, options) {
+        return fetch(url, Object.assign({ credentials: "same-origin" }, options || {})).then(function (resp) {
+          if (!resp.ok) {
+            return resp.text().then(function (text) {
+              throw new Error(text || ("HTTP " + resp.status));
+            });
+          }
+          if (resp.status === 204) {
+            return null;
+          }
+          return resp.json();
+        });
+      }
+
+      var empresaID = Number(getQueryParam("empresa_id") || getQueryParam("id") || 0);
+      var pageTitle = document.getElementById("pageTitle");
+      var empresaInfo = document.getElementById("empresaInfo");
+      var messageBox = document.getElementById("messageBox");
+      var facturasBody = document.querySelector("#facturasTable tbody");
+      var detalleFactura = document.getElementById("detalleFactura");
+
+      var state = {
+        items: [],
+        index: Object.create(null),
+        selectedKey: ""
+      };
+
+      function showMessage(text, type) {
+        messageBox.textContent = text || "";
+        if (type === "error") {
+          messageBox.style.color = "#ff7f7f";
+          return;
+        }
+        if (type === "ok") {
+          messageBox.style.color = "#7de09e";
+          return;
+        }
+        messageBox.style.color = "";
+      }
+
+      function makeKey(item) {
+        return normalize(item.tipo_documento).toLowerCase() + "::" + normalize(item.documento_codigo).toUpperCase();
+      }
+
+      function updateKPIs() {
+        var total = state.items.length;
+        var emitidas = 0;
+        var anuladas = 0;
+        var monto = 0;
+
+        state.items.forEach(function (item) {
+          var estadoDoc = normalize(item.estado_documento).toLowerCase();
+          if (estadoDoc === "emitida") emitidas += 1;
+          if (estadoDoc === "anulada") anuladas += 1;
+          monto += Number(item.monto_total || 0);
+        });
+
+        document.getElementById("kpiTotal").textContent = String(total);
+        document.getElementById("kpiEmitidas").textContent = String(emitidas);
+        document.getElementById("kpiAnuladas").textContent = String(anuladas);
+        document.getElementById("kpiMonto").textContent = formatMoney(monto, "COP");
+      }
+
+      function renderDetalle(item) {
+        if (!item) {
+          detalleFactura.textContent = "Selecciona una factura para ver su detalle.";
+          return;
+        }
+
+        var cliente = normalize(item.cliente_nombre) || "Sin cliente asociado";
+        var clienteEmail = normalize(item.cliente_email) || "Sin correo";
+        var clienteDocumento = normalize(item.cliente_documento) || "Sin documento";
+
+        detalleFactura.innerHTML =
+          '<div class="form-row">' +
+            '<div class="form-col"><strong>Tipo:</strong> ' + escapeHtml(item.tipo_documento || "") + '</div>' +
+            '<div class="form-col"><strong>Codigo:</strong> ' + escapeHtml(item.documento_codigo || "") + '</div>' +
+            '<div class="form-col"><strong>Numero legal:</strong> ' + escapeHtml(item.numero_legal || "") + '</div>' +
+          '</div>' +
+          '<div class="form-row">' +
+            '<div class="form-col"><strong>Cliente:</strong> ' + escapeHtml(cliente) + '</div>' +
+            '<div class="form-col"><strong>Correo:</strong> ' + escapeHtml(clienteEmail) + '</div>' +
+            '<div class="form-col"><strong>Documento:</strong> ' + escapeHtml(clienteDocumento) + '</div>' +
+          '</div>' +
+          '<div class="form-row">' +
+            '<div class="form-col"><strong>Fecha:</strong> ' + escapeHtml(formatDate(item.fecha_documento || item.fecha_creacion)) + '</div>' +
+            '<div class="form-col"><strong>Total:</strong> ' + escapeHtml(formatMoney(item.monto_total, item.moneda || "COP")) + '</div>' +
+            '<div class="form-col"><strong>Estado:</strong> ' + statusBadge(item.estado_documento) + '</div>' +
+          '</div>' +
+          '<div class="form-row">' +
+            '<div class="form-col"><strong>Codigo validacion:</strong> ' + escapeHtml(item.codigo_validacion || "") + '</div>' +
+            '<div class="form-col"><strong>Pais:</strong> ' + escapeHtml(item.pais_codigo || "") + '</div>' +
+            '<div class="form-col"><strong>Ambiente:</strong> ' + escapeHtml(item.ambiente_fe || "") + '</div>' +
+          '</div>' +
+          '<div class="form-row">' +
+            '<div class="form-col"><strong>Observaciones:</strong> ' + escapeHtml(item.observaciones || "-") + '</div>' +
+          '</div>';
+      }
+
+      function renderTable() {
+        state.index = Object.create(null);
+
+        if (!state.items.length) {
+          facturasBody.innerHTML = '<tr><td colspan="9">No se encontraron facturas para los filtros seleccionados.</td></tr>';
+          renderDetalle(null);
+          updateKPIs();
+          return;
+        }
+
+        var rows = state.items.map(function (item) {
+          var key = makeKey(item);
+          state.index[key] = item;
+
+          var clienteLabel = normalize(item.cliente_nombre) || normalize(item.cliente_email) || "Sin cliente";
+
+          return '<tr data-key="' + escapeHtml(key) + '">' +
+            '<td>' + escapeHtml(formatDate(item.fecha_documento || item.fecha_creacion)) + '</td>' +
+            '<td>' + escapeHtml(item.tipo_documento || "") + '</td>' +
+            '<td>' + escapeHtml(item.documento_codigo || "") + '</td>' +
+            '<td>' + escapeHtml(item.numero_legal || "") + '</td>' +
+            '<td>' + escapeHtml(clienteLabel) + '</td>' +
+            '<td>' + escapeHtml(formatMoney(item.monto_total, item.moneda || "COP")) + '</td>' +
+            '<td>' + statusBadge(item.estado_documento) + '</td>' +
+            '<td>' + escapeHtml(item.estado || "activo") + '</td>' +
+            '<td>' +
+              '<button type="button" class="btn secondary" data-action="ver" data-key="' + escapeHtml(key) + '">Ver</button> ' +
+              '<button type="button" class="btn secondary" data-action="enviar" data-key="' + escapeHtml(key) + '">Enviar correo</button> ' +
+              '<button type="button" class="btn secondary" data-action="imprimir" data-key="' + escapeHtml(key) + '">Imprimir</button>' +
+            '</td>' +
+          '</tr>';
+        });
+
+        facturasBody.innerHTML = rows.join("");
+        updateKPIs();
+
+        if (state.selectedKey && state.index[state.selectedKey]) {
+          renderDetalle(state.index[state.selectedKey]);
+        } else {
+          state.selectedKey = makeKey(state.items[0]);
+          renderDetalle(state.items[0]);
+        }
+      }
+
+      function buildQueryString() {
+        var params = new URLSearchParams();
+        params.set("action", "documentos");
+        params.set("empresa_id", String(empresaID));
+
+        var tipoDocumento = normalize(document.getElementById("tipoDocumento").value);
+        var estadoDocumento = normalize(document.getElementById("estadoDocumento").value);
+        var cliente = normalize(document.getElementById("clienteFiltro").value);
+        var documento = normalize(document.getElementById("documentoFiltro").value);
+        var fechaDesde = normalize(document.getElementById("fechaDesde").value);
+        var fechaHasta = normalize(document.getElementById("fechaHasta").value);
+        var q = normalize(document.getElementById("busquedaGlobal").value);
+
+        if (tipoDocumento) params.set("tipo_documento", tipoDocumento);
+        if (estadoDocumento) params.set("estado_documento", estadoDocumento);
+        if (cliente) params.set("cliente", cliente);
+        if (documento) params.set("documento", documento);
+        if (fechaDesde) params.set("fecha_desde", fechaDesde);
+        if (fechaHasta) params.set("fecha_hasta", fechaHasta);
+        if (q) params.set("q", q);
+        if (document.getElementById("includeInactive").checked) {
+          params.set("include_inactive", "1");
+        }
+
+        return params.toString();
+      }
+
+      function setDefaultDateRange() {
+        var now = new Date();
+        var year = now.getFullYear();
+        var month = String(now.getMonth() + 1).padStart(2, "0");
+        var day = String(now.getDate()).padStart(2, "0");
+        var firstDay = year + "-" + month + "-01";
+        var today = year + "-" + month + "-" + day;
+        document.getElementById("fechaDesde").value = firstDay;
+        document.getElementById("fechaHasta").value = today;
+      }
+
+      function clearFilters() {
+        document.getElementById("tipoDocumento").value = "";
+        document.getElementById("estadoDocumento").value = "";
+        document.getElementById("clienteFiltro").value = "";
+        document.getElementById("documentoFiltro").value = "";
+        document.getElementById("busquedaGlobal").value = "";
+        document.getElementById("includeInactive").checked = false;
+        setDefaultDateRange();
+      }
+
+      function printInvoice(item) {
+        var win = window.open("", "_blank", "noopener,noreferrer,width=980,height=760");
+        if (!win) {
+          showMessage("No se pudo abrir la ventana de impresion. Revisa el bloqueador de popups.", "error");
+          return;
+        }
+
+        var cliente = normalize(item.cliente_nombre) || "Sin cliente asociado";
+        var html =
+          '<!doctype html><html lang="es"><head><meta charset="utf-8">' +
+          '<title>Factura ' + escapeHtml(item.documento_codigo || "") + '</title>' +
+          '<style>' +
+            'body{font-family:Arial,sans-serif;margin:24px;color:#222;}' +
+            'h1{margin:0 0 8px 0;font-size:22px;}' +
+            '.meta{margin-bottom:14px;color:#444;}' +
+            'table{width:100%;border-collapse:collapse;margin-top:12px;}' +
+            'th,td{border:1px solid #ddd;padding:10px;text-align:left;}' +
+            '.right{text-align:right;}' +
+            '.box{border:1px solid #ddd;padding:12px;border-radius:8px;margin-top:10px;}' +
+          '</style></head><body>' +
+          '<h1>Factura electronica</h1>' +
+          '<div class="meta">Documento: ' + escapeHtml(item.documento_codigo || "") + ' | Numero legal: ' + escapeHtml(item.numero_legal || "") + '</div>' +
+          '<div class="box"><strong>Cliente:</strong> ' + escapeHtml(cliente) + '<br>' +
+          '<strong>Correo:</strong> ' + escapeHtml(item.cliente_email || "") + '<br>' +
+          '<strong>Documento cliente:</strong> ' + escapeHtml(item.cliente_documento || "") + '</div>' +
+          '<table><tbody>' +
+          '<tr><th>Tipo documento</th><td>' + escapeHtml(item.tipo_documento || "") + '</td></tr>' +
+          '<tr><th>Fecha</th><td>' + escapeHtml(formatDate(item.fecha_documento || item.fecha_creacion)) + '</td></tr>' +
+          '<tr><th>Estado documento</th><td>' + escapeHtml(item.estado_documento || "") + '</td></tr>' +
+          '<tr><th>Codigo validacion</th><td>' + escapeHtml(item.codigo_validacion || "") + '</td></tr>' +
+          '<tr><th>Total</th><td class="right">' + escapeHtml(formatMoney(item.monto_total, item.moneda || "COP")) + '</td></tr>' +
+          '<tr><th>Observaciones</th><td>' + escapeHtml(item.observaciones || "-") + '</td></tr>' +
+          '</tbody></table>' +
+          '<script>window.onload=function(){window.print();};</' + 'script>' +
+          '</body></html>';
+
+        win.document.open();
+        win.document.write(html);
+        win.document.close();
+      }
+
+      function resendInvoiceEmail(item) {
+        var correoSugerido = normalize(item.cliente_email);
+        var correo = window.prompt("Correo destino (deja vacio para usar el correo del cliente):", correoSugerido);
+        if (correo === null) return;
+
+        var nombreSugerido = normalize(item.cliente_nombre);
+        var nombre = window.prompt("Nombre del cliente (opcional):", nombreSugerido);
+        if (nombre === null) return;
+
+        var payload = {
+          empresa_id: empresaID,
+          tipo_documento: item.tipo_documento,
+          documento_codigo: item.documento_codigo,
+          cliente_id: Number(item.entidad_relacionada_id || 0),
+          cliente_email: normalize(correo),
+          cliente_nombre: normalize(nombre)
+        };
+
+        apiRequest("/api/empresa/facturacion_electronica?action=reenviar_correo&empresa_id=" + encodeURIComponent(String(empresaID)), {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        }).then(function (out) {
+          var envio = out && out.factura_email ? out.factura_email : null;
+          if (envio && envio.enviado) {
+            showMessage("Correo enviado a " + (envio.destinatario || "destinatario"), "ok");
+            return;
+          }
+          if (envio && envio.error) {
+            showMessage("No se pudo enviar correo: " + envio.error, "error");
+            return;
+          }
+          showMessage("Intento de envio procesado.", "ok");
+        }).catch(function (err) {
+          showMessage(err.message || "No se pudo reenviar el correo", "error");
+        });
+      }
+
+      function runSearch() {
+        showMessage("");
+        var query = buildQueryString();
+        return apiRequest("/api/empresa/facturacion_electronica?" + query)
+          .then(function (data) {
+            state.items = Array.isArray(data && data.items) ? data.items : [];
+            renderTable();
+          })
+          .catch(function (err) {
+            state.items = [];
+            renderTable();
+            showMessage(err.message || "No se pudo consultar facturas", "error");
+          });
+      }
+
+      function loadEmpresa() {
+        empresaInfo.textContent = "Empresa ID: " + String(empresaID);
+        return apiRequest("/super/api/empresas?id=" + encodeURIComponent(String(empresaID)))
+          .then(function (empresa) {
+            if (empresa && empresa.nombre) {
+              pageTitle.textContent = "Facturas electronicas - " + empresa.nombre;
+              empresaInfo.textContent = "Empresa: " + empresa.nombre + " (ID " + empresaID + ")";
+            }
+          })
+          .catch(function () {
+            // No bloquea la vista si falla la consulta del nombre.
+          });
+      }
+
+      document.getElementById("filtrosForm").addEventListener("submit", function (event) {
+        event.preventDefault();
+        runSearch();
+      });
+
+      document.getElementById("btnLimpiar").addEventListener("click", function () {
+        clearFilters();
+        runSearch();
+      });
+
+      facturasBody.addEventListener("click", function (event) {
+        var button = event.target.closest("button[data-action]");
+        if (!button) return;
+
+        var action = normalize(button.getAttribute("data-action")).toLowerCase();
+        var key = normalize(button.getAttribute("data-key"));
+        var item = state.index[key];
+        if (!item) return;
+
+        state.selectedKey = key;
+        if (action === "ver") {
+          renderDetalle(item);
+          return;
+        }
+        if (action === "enviar") {
+          resendInvoiceEmail(item);
+          return;
+        }
+        if (action === "imprimir") {
+          printInvoice(item);
+        }
+      });
+
+      function init() {
+        if (!empresaID) {
+          showMessage("empresa_id es obligatorio en la URL", "error");
+          return;
+        }
+        clearFilters();
+        loadEmpresa();
+        runSearch();
+      }
+
+      init();
+    })();
+  </script>
+</body>
+</html>

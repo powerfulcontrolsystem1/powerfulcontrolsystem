@@ -333,6 +333,15 @@ func main() {
 	if err := dbpkg.EnsureEmpresaCodigosDescuentoSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure codigos de descuento schema in empresas db: %v", err)
 	}
+	if err := dbpkg.EnsureEmpresaPropinasSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure propinas schema in empresas db: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaComisionesServicioSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure comisiones servicio schema in empresas db: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaConfiguracionOperativaSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure configuracion operativa schema in empresas db: %v", err)
+	}
 	if err := dbpkg.EnsureEmpresaConfiguracionAvanzadaSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure empresa_configuracion_avanzada schema in empresas db: %v", err)
 	}
@@ -362,6 +371,21 @@ func main() {
 	}
 	if err := dbpkg.EnsureEmpresaAsistenciaSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure asistencia schema in empresas db: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaNominaSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure nomina schema in empresas db: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaVehiculosRegistroSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure vehiculos registro schema in empresas db: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaReservasHotelSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure reservas hotel schema in empresas db: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaTarifasPorMinutosSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure tarifas por minutos schema in empresas db: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaTarifasPorDiaSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure tarifas por dia schema in empresas db: %v", err)
 	}
 	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-01-001-baseline", "baseline schema snapshot: users, empresas, productos, clientes, carritos, configuracion_avanzada"); err != nil {
 		log.Fatalf("failed to register schema migration in empresas db: %v", err)
@@ -407,6 +431,30 @@ func main() {
 	}
 	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-05-012-codigos-descuento-pagos", "modulo de codigos de descuento por empresa y validacion de metodos de pago en carritos"); err != nil {
 		log.Fatalf("failed to register codigos descuento/pagos schema migration in empresas db: %v", err)
+	}
+	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-05-013-propinas", "modulo de propinas por empresa con configuracion y reporte por usuario/universal"); err != nil {
+		log.Fatalf("failed to register propinas schema migration in empresas db: %v", err)
+	}
+	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-05-014-vehiculos-registro", "modulo de registro de vehiculos por empresa con control de ingreso y salida"); err != nil {
+		log.Fatalf("failed to register vehiculos registro schema migration in empresas db: %v", err)
+	}
+	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-05-015-reservas-hotel", "modulo de reservas por empresa para control de disponibilidad por estacion y confirmacion de pago"); err != nil {
+		log.Fatalf("failed to register reservas hotel schema migration in empresas db: %v", err)
+	}
+	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-05-016-comisiones-servicio", "modulo de comisiones por servicio por empresa con configuracion, movimientos y reporte por lavador"); err != nil {
+		log.Fatalf("failed to register comisiones servicio schema migration in empresas db: %v", err)
+	}
+	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-05-017-configuracion-operativa-cobro", "configuracion operativa de metodos de pago, propinas y comisiones por empresa y rol"); err != nil {
+		log.Fatalf("failed to register configuracion operativa schema migration in empresas db: %v", err)
+	}
+	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-05-018-tarifas-por-minutos", "modulo de tarifas por minutos por estacion y rango de dias con calculo de bloques extra"); err != nil {
+		log.Fatalf("failed to register tarifas por minutos schema migration in empresas db: %v", err)
+	}
+	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-05-019-tarifas-por-dia", "modulo de tarifas por dia por estacion con horario configurable de check-in/check-out y cobro automatico"); err != nil {
+		log.Fatalf("failed to register tarifas por dia schema migration in empresas db: %v", err)
+	}
+	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-05-020-nomina-sueldos", "modulo de nomina de sueldos por empresa integrado con asistencia, horas extras y parametros legales"); err != nil {
+		log.Fatalf("failed to register nomina sueldos schema migration in empresas db: %v", err)
 	}
 	// Crear tipos_de_empresas en la base de datos de superadministrador (ubicación centralizada)
 	createTiposSuper := `CREATE TABLE IF NOT EXISTS tipos_de_empresas (
@@ -801,18 +849,26 @@ func main() {
 	http.HandleFunc("/api/empresa/compras/documentos", handlers.WithEmpresaComprasPermissions(dbEmpresas, dbSuper, handlers.EmpresaComprasDocumentosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/proveedores", handlers.WithEmpresaComprasPermissions(dbEmpresas, dbSuper, handlers.EmpresaProveedoresHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/servicios", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaServiciosHandler(dbEmpresas)))
-	http.HandleFunc("/api/empresa/usuarios/login", handlers.EmpresaUsuarioLoginHandler(dbEmpresas, dbSuper))
-	http.HandleFunc("/api/empresa/usuarios/establecer_password", handlers.EmpresaUsuarioSetPasswordHandler(dbEmpresas, dbSuper))
+	http.HandleFunc("/api/empresa/usuarios/login", handlers.WithEmpresaPublicScope(handlers.EmpresaUsuarioLoginHandler(dbEmpresas, dbSuper)))
+	http.HandleFunc("/api/empresa/usuarios/establecer_password", handlers.WithEmpresaPublicScope(handlers.EmpresaUsuarioSetPasswordHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/usuarios", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaUsuariosHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/asistencia_empleados", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaAsistenciaEmpleadosHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/nomina", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaNominaSueldosHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/vehiculos_registro", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaVehiculosRegistroHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/clientes", handlers.WithEmpresaClientesPermissions(dbEmpresas, dbSuper, handlers.EmpresaClientesHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/carritos_compra", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCarritosCompraHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/carritos_compra/items", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCarritoItemsHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/reservas_hotel", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaReservasHotelHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/tarifas_por_minutos", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaTarifasPorMinutosHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/tarifas_por_dia", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaTarifasPorDiaHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/codigos_de_descuento", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCodigosDescuentoHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/propinas", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaPropinasHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/comisiones", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaComisionesServicioHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/configuracion_operativa", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaConfiguracionOperativaHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/configuracion_avanzada", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaConfiguracionAvanzadaHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/facturacion_electronica", handlers.WithEmpresaFacturacionPermissions(dbEmpresas, dbSuper, handlers.EmpresaFacturacionElectronicaHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/facturacion_electronica/pais_detectado", handlers.WithEmpresaFacturacionPermissions(dbEmpresas, dbSuper, handlers.EmpresaFacturacionElectronicaPaisDetectadoHandler(dbEmpresas)))
-	http.HandleFunc("/api/empresa/facturacion_electronica/paises_disponibles", handlers.EmpresaFacturacionElectronicaPaisesDisponiblesHandler())
+	http.HandleFunc("/api/empresa/facturacion_electronica/paises_disponibles", handlers.WithEmpresaFacturacionPermissions(dbEmpresas, dbSuper, handlers.EmpresaFacturacionElectronicaPaisesDisponiblesHandler()))
 	http.HandleFunc("/api/empresa/chat_tareas/conversaciones", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaChatTareasConversacionesHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/chat_tareas/participantes", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaChatTareasParticipantesHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/chat_tareas/mensajes", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaChatTareasMensajesHandler(dbEmpresas)))
@@ -830,6 +886,7 @@ func main() {
 	http.HandleFunc("/api/empresa/auditoria/eventos", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaAuditoriaEventosHandler(dbEmpresas)))
 	handlers.RegisterEmpresaChatIARoutes(dbEmpresas, dbSuper)
 	http.HandleFunc("/api/empresa/roles_de_usuario", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaRolesDeUsuarioHandler(dbEmpresas, dbSuper)))
+	http.HandleFunc("/api/empresa/permisos_contexto", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaPermisosContextoHandler(dbSuper)))
 	// Endpoint para obtener admin actual desde la cookie de sesión
 	http.HandleFunc("/me", handlers.MeHandler(dbSuper))
 	// Endpoint CRUD para administradores (API)

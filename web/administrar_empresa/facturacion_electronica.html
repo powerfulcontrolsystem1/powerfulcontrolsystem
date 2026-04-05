@@ -178,6 +178,207 @@
       <div id="op_msg" class="form-help"></div>
       <pre id="op_resultado" class="form-help" style="white-space:pre-wrap;background:#f6f6f6;padding:10px;border-radius:8px;margin-top:8px;"></pre>
     </div>
+
+    <div class="card" id="advancedConfigCard" style="margin-top:12px;">
+      <h2 style="margin-top:0;">Configuración avanzada de facturación e impresión</h2>
+      <p class="form-help" style="margin-top:-4px;">
+        Este bloque consolida los parámetros avanzados de facturación: datos fiscales, resolución y diseño de impresión.
+      </p>
+
+      <div id="advancedConfigNoAccess" class="form-help" style="display:none;">
+        Tu rol actual no tiene permisos para consultar o editar la configuración avanzada.
+      </div>
+
+      <form id="advancedConfigForm" class="form">
+        <input type="hidden" id="adv_empresa_id">
+
+        <h3 style="margin-top:0;">Datos fiscales del emisor</h3>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Tipo documento</label>
+            <select id="adv_tipo_documento_emisor" class="form-input">
+              <option value="NIT">NIT</option>
+              <option value="CC">CC</option>
+              <option value="CE">CE</option>
+              <option value="PAS">PAS</option>
+              <option value="OTRO">OTRO</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label">NIT / Documento</label>
+            <input id="adv_nit" class="form-input" placeholder="900123456">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Dígito verificación</label>
+            <input id="adv_digito_verificacion" class="form-input" placeholder="0-9">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Razón social</label>
+            <input id="adv_razon_social" class="form-input" placeholder="Mi empresa S.A.S.">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Nombre comercial</label>
+            <input id="adv_nombre_comercial" class="form-input" placeholder="Marca visible en factura">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Régimen fiscal</label>
+            <input id="adv_regimen_fiscal" class="form-input" placeholder="Responsable de IVA / SIMPLE">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Responsabilidad tributaria</label>
+            <input id="adv_responsabilidad_tributaria" class="form-input" placeholder="R-99-PN, O-13, O-15">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Correo facturación</label>
+            <input id="adv_email_facturacion" type="email" class="form-input" placeholder="facturacion@empresa.com">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Teléfono facturación</label>
+            <input id="adv_telefono_facturacion" class="form-input" placeholder="3001234567">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Dirección fiscal</label>
+            <input id="adv_direccion_fiscal" class="form-input" placeholder="Dirección principal para FE">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Departamento</label>
+            <input id="adv_departamento" class="form-input" placeholder="Antioquia">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Municipio</label>
+            <input id="adv_municipio" class="form-input" placeholder="Medellín">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">País</label>
+            <input id="adv_pais_codigo" class="form-input" value="CO" placeholder="CO">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Código postal</label>
+            <input id="adv_codigo_postal" class="form-input" placeholder="Opcional">
+          </div>
+        </div>
+
+        <h3>Resolución y numeración de factura</h3>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Ambiente FE</label>
+            <select id="adv_ambiente_fe" class="form-input">
+              <option value="habilitacion">Habilitación</option>
+              <option value="produccion">Producción</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label">Tipo operación</label>
+            <input id="adv_tipo_operacion" class="form-input" value="10" placeholder="10 (estándar DIAN)">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Prefijo factura</label>
+            <input id="adv_prefijo_factura" class="form-input" placeholder="FE, POS, FV...">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Número resolución</label>
+            <input id="adv_resolucion_numero" class="form-input" placeholder="18760000000000">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Resolución desde</label>
+            <input id="adv_resolucion_fecha_desde" type="date" class="form-input">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Resolución hasta</label>
+            <input id="adv_resolucion_fecha_hasta" type="date" class="form-input">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Consecutivo desde</label>
+            <input id="adv_consecutivo_desde" type="number" min="1" class="form-input" value="1">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Consecutivo hasta</label>
+            <input id="adv_consecutivo_hasta" type="number" min="1" class="form-input" value="999999">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Próximo consecutivo</label>
+            <input id="adv_proximo_consecutivo" type="number" min="1" class="form-input" value="1">
+          </div>
+        </div>
+
+        <h3>Impresión y apariencia de factura</h3>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Formato de impresión</label>
+            <select id="adv_formato_impresion" class="form-input">
+              <option value="carta">Tamaño grande / carta</option>
+              <option value="pos">Impresora POS (tirilla)</option>
+            </select>
+            <div class="form-help"><label><input id="adv_imprimir_copia_factura" type="checkbox"> Imprimir copia de la factura</label></div>
+          </div>
+          <div class="form-col">
+            <label class="form-label">Logo</label>
+            <input id="adv_logo_url" class="form-input" placeholder="/img/logo_empresa.png o URL pública">
+            <div class="form-help"><label><input id="adv_mostrar_logo" type="checkbox" checked> Mostrar logo en factura</label></div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Pie de factura</label>
+            <textarea id="adv_pie_factura" class="form-textarea" placeholder="Mensaje comercial o de agradecimiento"></textarea>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Notas legales</label>
+            <textarea id="adv_notas_legales" class="form-textarea" placeholder="Texto legal/tributario que deba aparecer en la factura"></textarea>
+          </div>
+        </div>
+
+        <h3>Colores de estado del carrito en estaciones</h3>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Color cuando carrito está activo</label>
+            <input id="adv_color_carrito_activo" type="color" class="form-input" value="#d9fbe8">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Color cuando carrito está inactivo</label>
+            <input id="adv_color_carrito_inactivo" type="color" class="form-input" value="#fff9ef">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Observaciones</label>
+            <textarea id="adv_observaciones" class="form-textarea" placeholder="Observaciones internas de la configuración"></textarea>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn">Guardar configuración avanzada</button>
+          <button type="button" id="advReloadBtn" class="btn secondary">Recargar configuración avanzada</button>
+        </div>
+        <div id="adv_msg" class="form-help"></div>
+      </form>
+    </div>
   </div>
 
   <script>
@@ -185,6 +386,10 @@
       empresaID: 0,
       paisSeleccionado: "",
       paises: []
+    };
+
+    const advancedConfigState = {
+      allowed: true
     };
 
     function q(name) {
@@ -238,6 +443,140 @@
       return res.text().then(function(t) {
         throw new Error(t || ("HTTP " + res.status));
       });
+    }
+
+    function toInt(value, fallback) {
+      const n = Number(value);
+      if (!Number.isFinite(n)) return fallback;
+      return Math.trunc(n);
+    }
+
+    function asDateValue(value) {
+      const raw = txt(value);
+      if (!raw) return "";
+      return raw.length >= 10 ? raw.slice(0, 10) : raw;
+    }
+
+    function normalizeColorHex(value, fallback) {
+      const raw = txt(value).toLowerCase();
+      const base = txt(fallback).toLowerCase();
+      const color = raw || base;
+      if (!color || color.length !== 7 || color.charAt(0) !== "#") {
+        return base || "#fff9ef";
+      }
+      for (let i = 1; i < color.length; i += 1) {
+        const c = color.charCodeAt(i);
+        const isDigit = c >= 48 && c <= 57;
+        const isHexLower = c >= 97 && c <= 102;
+        if (!isDigit && !isHexLower) {
+          return base || "#fff9ef";
+        }
+      }
+      return color;
+    }
+
+    function setAdvancedMessage(text, isError) {
+      const el = document.getElementById("adv_msg");
+      if (!el) return;
+      el.textContent = text || "";
+      el.style.color = isError ? "#ef5350" : "";
+    }
+
+    function setAdvancedSectionVisibility(allowed) {
+      const denied = document.getElementById("advancedConfigNoAccess");
+      const form = document.getElementById("advancedConfigForm");
+      if (!denied || !form) return;
+      denied.style.display = allowed ? "none" : "";
+      form.style.display = allowed ? "" : "none";
+    }
+
+    function setAdvancedFormData(cfg) {
+      document.getElementById("adv_tipo_documento_emisor").value = txt(cfg.tipo_documento_emisor) || "NIT";
+      document.getElementById("adv_nit").value = txt(cfg.nit);
+      document.getElementById("adv_digito_verificacion").value = txt(cfg.digito_verificacion);
+      document.getElementById("adv_razon_social").value = txt(cfg.razon_social);
+      document.getElementById("adv_nombre_comercial").value = txt(cfg.nombre_comercial);
+      document.getElementById("adv_regimen_fiscal").value = txt(cfg.regimen_fiscal);
+      document.getElementById("adv_responsabilidad_tributaria").value = txt(cfg.responsabilidad_tributaria);
+      document.getElementById("adv_email_facturacion").value = txt(cfg.email_facturacion);
+      document.getElementById("adv_telefono_facturacion").value = txt(cfg.telefono_facturacion);
+      document.getElementById("adv_direccion_fiscal").value = txt(cfg.direccion_fiscal);
+      document.getElementById("adv_departamento").value = txt(cfg.departamento);
+      document.getElementById("adv_municipio").value = txt(cfg.municipio);
+      document.getElementById("adv_pais_codigo").value = txt(cfg.pais_codigo) || "CO";
+      document.getElementById("adv_codigo_postal").value = txt(cfg.codigo_postal);
+      document.getElementById("adv_ambiente_fe").value = txt(cfg.ambiente_fe) || "habilitacion";
+      document.getElementById("adv_tipo_operacion").value = txt(cfg.tipo_operacion) || "10";
+      document.getElementById("adv_prefijo_factura").value = txt(cfg.prefijo_factura);
+      document.getElementById("adv_resolucion_numero").value = txt(cfg.resolucion_numero);
+      document.getElementById("adv_resolucion_fecha_desde").value = asDateValue(cfg.resolucion_fecha_desde);
+      document.getElementById("adv_resolucion_fecha_hasta").value = asDateValue(cfg.resolucion_fecha_hasta);
+      document.getElementById("adv_consecutivo_desde").value = toInt(cfg.consecutivo_desde, 1);
+      document.getElementById("adv_consecutivo_hasta").value = toInt(cfg.consecutivo_hasta, 999999);
+      document.getElementById("adv_proximo_consecutivo").value = toInt(cfg.proximo_consecutivo, 1);
+      document.getElementById("adv_formato_impresion").value = txt(cfg.formato_impresion) || "carta";
+      document.getElementById("adv_imprimir_copia_factura").checked = cfg.imprimir_copia_factura === true;
+      document.getElementById("adv_logo_url").value = txt(cfg.logo_url);
+      document.getElementById("adv_mostrar_logo").checked = cfg.mostrar_logo !== false;
+      document.getElementById("adv_pie_factura").value = txt(cfg.pie_factura);
+      document.getElementById("adv_notas_legales").value = txt(cfg.notas_legales);
+      document.getElementById("adv_color_carrito_activo").value = normalizeColorHex(cfg.color_carrito_activo, "#d9fbe8");
+      document.getElementById("adv_color_carrito_inactivo").value = normalizeColorHex(cfg.color_carrito_inactivo, "#fff9ef");
+      document.getElementById("adv_observaciones").value = txt(cfg.observaciones);
+    }
+
+    function collectAdvancedPayload() {
+      return {
+        empresa_id: Number(state.empresaID),
+        tipo_documento_emisor: txt(document.getElementById("adv_tipo_documento_emisor").value) || "NIT",
+        nit: txt(document.getElementById("adv_nit").value),
+        digito_verificacion: txt(document.getElementById("adv_digito_verificacion").value),
+        razon_social: txt(document.getElementById("adv_razon_social").value),
+        nombre_comercial: txt(document.getElementById("adv_nombre_comercial").value),
+        regimen_fiscal: txt(document.getElementById("adv_regimen_fiscal").value),
+        responsabilidad_tributaria: txt(document.getElementById("adv_responsabilidad_tributaria").value),
+        email_facturacion: txt(document.getElementById("adv_email_facturacion").value),
+        telefono_facturacion: txt(document.getElementById("adv_telefono_facturacion").value),
+        direccion_fiscal: txt(document.getElementById("adv_direccion_fiscal").value),
+        departamento: txt(document.getElementById("adv_departamento").value),
+        municipio: txt(document.getElementById("adv_municipio").value),
+        pais_codigo: txt(document.getElementById("adv_pais_codigo").value) || "CO",
+        codigo_postal: txt(document.getElementById("adv_codigo_postal").value),
+        ambiente_fe: txt(document.getElementById("adv_ambiente_fe").value) || "habilitacion",
+        tipo_operacion: txt(document.getElementById("adv_tipo_operacion").value) || "10",
+        prefijo_factura: txt(document.getElementById("adv_prefijo_factura").value),
+        resolucion_numero: txt(document.getElementById("adv_resolucion_numero").value),
+        resolucion_fecha_desde: txt(document.getElementById("adv_resolucion_fecha_desde").value),
+        resolucion_fecha_hasta: txt(document.getElementById("adv_resolucion_fecha_hasta").value),
+        consecutivo_desde: toInt(document.getElementById("adv_consecutivo_desde").value, 1),
+        consecutivo_hasta: toInt(document.getElementById("adv_consecutivo_hasta").value, 999999),
+        proximo_consecutivo: toInt(document.getElementById("adv_proximo_consecutivo").value, 1),
+        formato_impresion: txt(document.getElementById("adv_formato_impresion").value) || "carta",
+        imprimir_copia_factura: !!document.getElementById("adv_imprimir_copia_factura").checked,
+        mostrar_logo: !!document.getElementById("adv_mostrar_logo").checked,
+        logo_url: txt(document.getElementById("adv_logo_url").value),
+        pie_factura: txt(document.getElementById("adv_pie_factura").value),
+        notas_legales: txt(document.getElementById("adv_notas_legales").value),
+        color_carrito_activo: normalizeColorHex(document.getElementById("adv_color_carrito_activo").value, "#d9fbe8"),
+        color_carrito_inactivo: normalizeColorHex(document.getElementById("adv_color_carrito_inactivo").value, "#fff9ef"),
+        observaciones: txt(document.getElementById("adv_observaciones").value)
+      };
+    }
+
+    async function loadAdvancedConfig() {
+      const res = await fetch("/api/empresa/configuracion_avanzada?empresa_id=" + encodeURIComponent(state.empresaID));
+      if (res.status === 401 || res.status === 403) {
+        advancedConfigState.allowed = false;
+        setAdvancedSectionVisibility(false);
+        setAdvancedMessage("", false);
+        return false;
+      }
+      await ensureOk(res);
+      const cfg = await res.json();
+      advancedConfigState.allowed = true;
+      setAdvancedSectionVisibility(true);
+      setAdvancedFormData(cfg || {});
+      return true;
     }
 
     function countryLabel(item) {
@@ -389,7 +728,7 @@
     }
 
     async function loadCountries() {
-      const res = await fetch("/api/empresa/facturacion_electronica/paises_disponibles");
+	  const res = await fetch("/api/empresa/facturacion_electronica/paises_disponibles?empresa_id=" + encodeURIComponent(state.empresaID));
       await ensureOk(res);
       const data = await res.json();
       state.paises = Array.isArray(data.items) ? data.items : [];
@@ -523,16 +862,57 @@
       }
     });
 
+    document.getElementById("advancedConfigForm").addEventListener("submit", async function(ev) {
+      ev.preventDefault();
+      if (!advancedConfigState.allowed) {
+        setAdvancedMessage("No tienes permisos para guardar la configuración avanzada", true);
+        return;
+      }
+      const payload = collectAdvancedPayload();
+      try {
+        const res = await fetch("/api/empresa/configuracion_avanzada?empresa_id=" + encodeURIComponent(state.empresaID), {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        if (res.status === 401 || res.status === 403) {
+          advancedConfigState.allowed = false;
+          setAdvancedSectionVisibility(false);
+          return;
+        }
+        await ensureOk(res);
+        const out = await res.json();
+        if (out && out.configuracion) {
+          setAdvancedFormData(out.configuracion);
+        }
+        setAdvancedMessage("Configuración avanzada guardada correctamente", false);
+      } catch (err) {
+        setAdvancedMessage(err && err.message ? err.message : "No se pudo guardar la configuración avanzada", true);
+      }
+    });
+
+    document.getElementById("advReloadBtn").addEventListener("click", function() {
+      loadAdvancedConfig().then(function(loaded) {
+        if (loaded) {
+          setAdvancedMessage("Configuración avanzada recargada", false);
+        }
+      }).catch(function(err) {
+        setAdvancedMessage(err && err.message ? err.message : "No se pudo recargar la configuración avanzada", true);
+      });
+    });
+
     (async function init() {
       const empresaID = Number(q("empresa_id") || 0);
       if (!empresaID) {
         setMessage("empresa_id requerido en la URL", true);
         document.getElementById("feForm").style.display = "none";
+        document.getElementById("advancedConfigForm").style.display = "none";
         return;
       }
 
       state.empresaID = empresaID;
       document.getElementById("empresa_id").value = String(empresaID);
+      document.getElementById("adv_empresa_id").value = String(empresaID);
       try {
         localStorage.setItem("active_empresa_id", String(empresaID));
       } catch (_) {}
@@ -554,6 +934,12 @@
         await loadList();
       } catch (err) {
         setMessage(err.message || "No se pudo inicializar el módulo", true);
+      }
+
+      try {
+        await loadAdvancedConfig();
+      } catch (err) {
+        setAdvancedMessage(err && err.message ? err.message : "No se pudo cargar la configuración avanzada", true);
       }
     })();
   </script>

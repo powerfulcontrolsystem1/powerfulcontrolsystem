@@ -1,0 +1,27 @@
+# Punto 13 - bitacora de validacion
+Inicio: 2026-04-05 18:04:52
+
+### Suite productiva
+PS> go test ./auth ./db ./handlers ./metrics ./utils -count=1
+?   	github.com/you/pos-backend/auth	[no test files]
+?   	github.com/you/pos-backend/metrics	[no test files]
+?   	github.com/you/pos-backend/utils	[no test files]
+ok  	github.com/you/pos-backend/db	7.609s
+2026/04/05 18:04:56 -> req_id=req-1775430296280518500-544c2f903d99 empresa_id=620 PUT /api/empresa/carritos_compra?action=cerrar&empresa_id=620&id=77 from 192.0.2.1
+2026/04/05 18:04:56 <- req_id=req-1775430296280518500-544c2f903d99 empresa_id=620 status=204 PUT /api/empresa/carritos_compra dur_ms=10
+2026/04/05 18:04:56 handleGoogleLogin: oauth redirect requested (client configured=true)
+2026/04/05 18:04:56 handleGoogleLogin: redirecting to OAuth provider
+--- FAIL: TestEmpresaCarritosCompraAplicaPropinaSegunConfiguracion (0.17s)
+    auth_users_carritos_test.go:932: expected propina monto 1000, got 0.0000
+--- FAIL: TestEmpresaCarritosCompraCodigoDescuentoConsumeUso (0.16s)
+    auth_users_carritos_test.go:1112: expected first discount payment status 200, got 400 body=codigo de descuento sin valor aplicable
+2026/04/05 18:05:01 [compras] evento contable omitido empresa_id=62 modulo=compras evento=orden_compra_creada entidad=orden_compra entidad_id=1 error: evento contable no soportado para modulo=compras evento=orden_compra_creada
+2026/04/05 18:05:01 [compras] evento contable omitido empresa_id=62 modulo=compras evento=orden_compra_desactivada entidad=orden_compra entidad_id=0 error: evento contable no soportado para modulo=compras evento=orden_compra_desactivada
+2026/04/05 18:05:01 [compras] evento contable omitido empresa_id=63 modulo=compras evento=orden_compra_creada entidad=orden_compra entidad_id=1 error: evento contable no soportado para modulo=compras evento=orden_compra_creada
+2026/04/05 18:05:03 [facturacion_electronica] envio correo fallido empresa_id=31 documento=FAC-EMAIL-1001 destinatario=cliente.fe.qa@test.com error=configuracion SMTP no disponible
+FAIL
+FAIL	github.com/you/pos-backend/handlers	14.085s
+FAIL
+
+ExitCode: 1
+

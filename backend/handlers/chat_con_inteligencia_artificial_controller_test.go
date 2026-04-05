@@ -148,3 +148,83 @@ func TestModelosHandlerRejectsEmpresaFueraDeAlcanceByGoogleAccount(t *testing.T)
 		t.Fatalf("expected out-of-scope message, got body=%s", rr.Body.String())
 	}
 }
+
+func TestModeloPreferidoHandlerGetRejectsEmpresaFueraDeAlcanceByGoogleAccount(t *testing.T) {
+	dbEmp := openChatIAHandlerTestDB(t)
+	if err := dbpkg.EnsureEmpresaAIChatSchema(dbEmp); err != nil {
+		t.Fatalf("ensure chat ia schema: %v", err)
+	}
+	ensureEmpresasTableForChatIATest(t, dbEmp)
+
+	_, err := dbEmp.Exec(`INSERT INTO empresas (id, nombre, nit, usuario_creador) VALUES (?, ?, ?, ?)`, 31, "Empresa Scope Preferido GET", "900111", "owner@scope.com")
+	if err != nil {
+		t.Fatalf("insert empresa: %v", err)
+	}
+
+	ctrl := NewEmpresaAIChatController(dbEmp, nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/empresa/chat_con_inteligencia_artificial/modelo_preferido?empresa_id=31", nil)
+	req = req.WithContext(context.WithValue(req.Context(), "adminEmail", "admin@example.com"))
+	rr := httptest.NewRecorder()
+
+	ctrl.ModeloPreferidoHandler(rr, req)
+	if rr.Code != http.StatusForbidden {
+		t.Fatalf("expected status 403 for out-of-scope empresa, got %d body=%s", rr.Code, rr.Body.String())
+	}
+	if !strings.Contains(strings.ToLower(rr.Body.String()), "fuera del alcance") {
+		t.Fatalf("expected out-of-scope message, got body=%s", rr.Body.String())
+	}
+}
+
+func TestModeloPreferidoHandlerPutRejectsEmpresaFueraDeAlcanceByGoogleAccount(t *testing.T) {
+	dbEmp := openChatIAHandlerTestDB(t)
+	if err := dbpkg.EnsureEmpresaAIChatSchema(dbEmp); err != nil {
+		t.Fatalf("ensure chat ia schema: %v", err)
+	}
+	ensureEmpresasTableForChatIATest(t, dbEmp)
+
+	_, err := dbEmp.Exec(`INSERT INTO empresas (id, nombre, nit, usuario_creador) VALUES (?, ?, ?, ?)`, 32, "Empresa Scope Preferido PUT", "900112", "owner@scope.com")
+	if err != nil {
+		t.Fatalf("insert empresa: %v", err)
+	}
+
+	ctrl := NewEmpresaAIChatController(dbEmp, nil)
+	body := `{"empresa_id":32,"model_id":"google:gemini-2.0-flash"}`
+	req := httptest.NewRequest(http.MethodPut, "/api/empresa/chat_con_inteligencia_artificial/modelo_preferido", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req = req.WithContext(context.WithValue(req.Context(), "adminEmail", "admin@example.com"))
+	rr := httptest.NewRecorder()
+
+	ctrl.ModeloPreferidoHandler(rr, req)
+	if rr.Code != http.StatusForbidden {
+		t.Fatalf("expected status 403 for out-of-scope empresa, got %d body=%s", rr.Code, rr.Body.String())
+	}
+	if !strings.Contains(strings.ToLower(rr.Body.String()), "fuera del alcance") {
+		t.Fatalf("expected out-of-scope message, got body=%s", rr.Body.String())
+	}
+}
+
+func TestHistorialHandlerRejectsEmpresaFueraDeAlcanceByGoogleAccount(t *testing.T) {
+	dbEmp := openChatIAHandlerTestDB(t)
+	if err := dbpkg.EnsureEmpresaAIChatSchema(dbEmp); err != nil {
+		t.Fatalf("ensure chat ia schema: %v", err)
+	}
+	ensureEmpresasTableForChatIATest(t, dbEmp)
+
+	_, err := dbEmp.Exec(`INSERT INTO empresas (id, nombre, nit, usuario_creador) VALUES (?, ?, ?, ?)`, 33, "Empresa Scope Historial", "900113", "owner@scope.com")
+	if err != nil {
+		t.Fatalf("insert empresa: %v", err)
+	}
+
+	ctrl := NewEmpresaAIChatController(dbEmp, nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/empresa/chat_con_inteligencia_artificial/historial?empresa_id=33&limit=10", nil)
+	req = req.WithContext(context.WithValue(req.Context(), "adminEmail", "admin@example.com"))
+	rr := httptest.NewRecorder()
+
+	ctrl.HistorialHandler(rr, req)
+	if rr.Code != http.StatusForbidden {
+		t.Fatalf("expected status 403 for out-of-scope empresa, got %d body=%s", rr.Code, rr.Body.String())
+	}
+	if !strings.Contains(strings.ToLower(rr.Body.String()), "fuera del alcance") {
+		t.Fatalf("expected out-of-scope message, got body=%s", rr.Body.String())
+	}
+}

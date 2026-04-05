@@ -11,7 +11,7 @@
     <section class="card empresa-section">
       <h1>Configuración de estaciones</h1>
       <p id="empresaInfo">Empresa: cargando...</p>
-      <p class="form-help">Define cuántas estaciones quieres y el nombre de cada una. Ejemplo: Mesa 1, Habitación 1.</p>
+      <p class="form-help">Define cuántas estaciones quieres, el nombre de cada una y si usará venta simple tipo supermercado.</p>
     </section>
 
     <div id="messageBox" class="form-help"></div>
@@ -44,6 +44,7 @@
             <tr>
               <th>#</th>
               <th>Nombre de estación</th>
+              <th>Venta simple</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -68,6 +69,13 @@
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
+    }
+
+    function toBool(v) {
+      if (typeof v === 'boolean') return v;
+      if (typeof v === 'number') return v === 1;
+      const raw = String(v == null ? '' : v).trim().toLowerCase();
+      return raw === '1' || raw === 'true' || raw === 'si' || raw === 'sí';
     }
 
     async function requestJSON(url, options) {
@@ -124,9 +132,11 @@
       for (let i = 0; i < cantidad; i++) {
         const current = estaciones[i] || {};
         const nombre = String(current.nombre || '').trim();
+        const ventaSimpleHabilitada = toBool(current.venta_simple_habilitada) || toBool(current.modo_venta_simple);
         out.push({
           id: i + 1,
-          nombre: nombre || ('Estación ' + (i + 1))
+          nombre: nombre || ('Estación ' + (i + 1)),
+          venta_simple_habilitada: ventaSimpleHabilitada
         });
       }
       return { cantidad, estaciones: out };
@@ -141,19 +151,20 @@
     function renderRows(cfg) {
       const tbody = document.querySelector('#estacionesTable tbody');
       if (!cfg.estaciones.length) {
-        tbody.innerHTML = '<tr><td colspan="2">No hay estaciones configuradas.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="3">No hay estaciones configuradas.</td></tr>';
         return;
       }
       tbody.innerHTML = cfg.estaciones.map((est, idx) => {
         return '<tr>' +
           '<td>' + (idx + 1) + '</td>' +
           '<td><input class="form-input" data-idx="' + idx + '" value="' + sanitize(est.nombre) + '"></td>' +
+          '<td><label><input type="checkbox" data-simple-idx="' + idx + '" ' + (est.venta_simple_habilitada ? 'checked' : '') + '> Activar ventas_simple</label></td>' +
           '</tr>';
       }).join('');
     }
 
     function applyCantidad(cantidad) {
-      const current = readConfig() || { cantidad: 1, estaciones: [{ id: 1, nombre: 'Estación 1' }] };
+      const current = readConfig() || { cantidad: 1, estaciones: [{ id: 1, nombre: 'Estación 1', venta_simple_habilitada: false }] };
       const cfg = normalizeConfig({ cantidad, estaciones: current.estaciones });
       saveConfig(cfg);
       document.getElementById('cantidadEstaciones').value = String(cfg.cantidad);
@@ -323,19 +334,22 @@
     }
 
     function guardarNombres() {
-      const current = readConfig() || { cantidad: 1, estaciones: [{ id: 1, nombre: 'Estación 1' }] };
+      const current = readConfig() || { cantidad: 1, estaciones: [{ id: 1, nombre: 'Estación 1', venta_simple_habilitada: false }] };
       const inputs = document.querySelectorAll('#estacionesTable tbody input[data-idx]');
+      const simpleInputs = document.querySelectorAll('#estacionesTable tbody input[data-simple-idx]');
       const estaciones = current.estaciones.map((est, idx) => {
         const input = Array.from(inputs).find(x => Number(x.dataset.idx) === idx);
+        const simpleInput = Array.from(simpleInputs).find(x => Number(x.dataset.simpleIdx) === idx);
         const nombre = input ? String(input.value || '').trim() : '';
         return {
           id: est.id,
-          nombre: nombre || ('Estación ' + est.id)
+          nombre: nombre || ('Estación ' + est.id),
+          venta_simple_habilitada: simpleInput ? !!simpleInput.checked : !!est.venta_simple_habilitada
         };
       });
       saveConfig({ cantidad: current.cantidad, estaciones });
       renderRows(readConfig());
-      showMessage('Nombres de estaciones guardados.', 'success');
+      showMessage('Configuración de estaciones guardada (nombre + modo de venta simple).', 'success');
     }
 
     async function cargarEmpresa() {

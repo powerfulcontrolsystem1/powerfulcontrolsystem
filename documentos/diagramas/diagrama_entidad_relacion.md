@@ -1,6 +1,6 @@
 # Diagrama entidad-relacion
 
-Fecha: 2026-04-04
+Fecha: 2026-04-05
 
 ```mermaid
 erDiagram
@@ -17,6 +17,11 @@ erDiagram
     EMPRESAS ||--o{ PRODUCTOS : "empresa_id"
     EMPRESAS ||--o{ SERVICIOS : "empresa_id"
     EMPRESAS ||--o{ CARRITOS_COMPRAS : "empresa_id"
+    EMPRESAS ||--o{ EMPRESA_TARIFAS_POR_DIA : "empresa_id"
+    EMPRESAS ||--|| EMPRESA_COMISIONES_SERVICIO_CONFIGURACION : "empresa_id"
+    EMPRESAS ||--o{ EMPRESA_COMISIONES_SERVICIO_MOVIMIENTOS : "empresa_id"
+    EMPRESAS ||--|| EMPRESA_CONFIGURACION_OPERATIVA : "empresa_id"
+    EMPRESAS ||--o{ EMPRESA_CONFIGURACION_OPERATIVA_ROLES : "empresa_id"
     EMPRESAS ||--o{ EMPRESA_FINANZAS_MOVIMIENTOS : "empresa_id"
     EMPRESAS ||--o{ EMPRESA_FINANZAS_PERIODOS : "empresa_id"
     EMPRESAS ||--|| EMPRESA_FINANZAS_CONFIGURACION : "empresa_id"
@@ -39,6 +44,9 @@ erDiagram
     CLIENTES ||--o{ CARRITOS_COMPRAS : "cliente_id"
     PROVEEDORES ||--o{ EMPRESA_COMPRAS_DOCUMENTOS : "proveedor_id"
     CARRITOS_COMPRAS ||--o{ CARRITO_COMPRA_ITEMS : "carrito_id"
+    CARRITOS_COMPRAS ||--o{ EMPRESA_COMISIONES_SERVICIO_MOVIMIENTOS : "carrito_id"
+    CARRITO_COMPRA_ITEMS ||--o{ EMPRESA_COMISIONES_SERVICIO_MOVIMIENTOS : "carrito_item_id"
+    SERVICIOS ||--o{ EMPRESA_COMISIONES_SERVICIO_MOVIMIENTOS : "servicio_id"
     CATEGORIAS_PRODUCTOS ||--o{ PRODUCTOS : "categoria_id"
     EMPRESA_EVENTOS_CONTABLES ||--o{ EMPRESA_ASIENTOS_CONTABLES : "evento_contable_id"
     CHAT_TAREAS_CONVERSACIONES ||--o{ CHAT_TAREAS_PARTICIPANTES : "conversacion_id"
@@ -132,6 +140,74 @@ erDiagram
       double cantidad
       double precio_unitario
       double total_linea
+      string estado
+    }
+    EMPRESA_TARIFAS_POR_DIA {
+      int id PK
+      int empresa_id FK
+      int estacion_id
+      string estacion_codigo
+      string estacion_nombre
+      string servicio_nombre
+      double valor_dia
+      string hora_check_in
+      string hora_check_out
+      string moneda
+      int prioridad
+      int aplicar_automaticamente
+      string estado
+    }
+    EMPRESA_COMISIONES_SERVICIO_CONFIGURACION {
+      int id PK
+      int empresa_id FK
+      int habilitar_comisiones
+      double porcentaje_comision
+      string filtro_servicio
+      int aplicar_automaticamente
+      string estado
+    }
+    EMPRESA_COMISIONES_SERVICIO_MOVIMIENTOS {
+      int id PK
+      int empresa_id FK
+      int carrito_id FK
+      int carrito_item_id FK
+      int servicio_id FK
+      string servicio_codigo
+      string servicio_nombre
+      string servicio_categoria
+      string usuario_origen
+      string usuario_lavador
+      double base_servicio
+      double porcentaje_comision
+      double monto_comision
+      string fecha_movimiento
+      string estado
+    }
+    EMPRESA_CONFIGURACION_OPERATIVA {
+      int id PK
+      int empresa_id FK
+      int metodo_pago_efectivo
+      int metodo_pago_tarjeta_credito
+      int metodo_pago_tarjeta_debito
+      int metodo_pago_transferencia_bancaria
+      int metodo_pago_mixto
+      int metodo_pago_codigo_descuento
+      int habilitar_propinas
+      int habilitar_comisiones
+      string estado
+    }
+    EMPRESA_CONFIGURACION_OPERATIVA_ROLES {
+      int id PK
+      int empresa_id FK
+      string rol
+      int metodo_pago_efectivo
+      int metodo_pago_tarjeta_credito
+      int metodo_pago_tarjeta_debito
+      int metodo_pago_transferencia_bancaria
+      int metodo_pago_mixto
+      int metodo_pago_codigo_descuento
+      int habilitar_propinas
+      int habilitar_comisiones
       string estado
     }
     EMPRESA_FINANZAS_MOVIMIENTOS {

@@ -186,3 +186,109 @@ func TestEmpresaDocumentoCompraListAndSetEstadoByCodigo(t *testing.T) {
 		t.Fatalf("expected sql.ErrNoRows when codigo not found, got %v", err)
 	}
 }
+
+func TestEmpresaDocumentoFacturacionListByEmpresaFiltrosClienteFecha(t *testing.T) {
+	dbConn := openFinanzasTestDB(t)
+	if err := EnsureEmpresaClientesSchema(dbConn); err != nil {
+		t.Fatalf("ensure clientes schema: %v", err)
+	}
+	if err := EnsureEmpresaDocumentosTransaccionalesSchema(dbConn); err != nil {
+		t.Fatalf("ensure documentos transaccionales schema: %v", err)
+	}
+
+	resAna, err := dbConn.Exec(`INSERT INTO clientes (empresa_id, tipo_documento, numero_documento, nombre_razon_social, email, estado)
+	VALUES (?, 'CC', '1001', 'Ana Gomez', 'ana@example.com', 'activo')`, 91)
+	if err != nil {
+		t.Fatalf("insert cliente ana: %v", err)
+	}
+	anaID, _ := resAna.LastInsertId()
+
+	resCarlos, err := dbConn.Exec(`INSERT INTO clientes (empresa_id, tipo_documento, numero_documento, nombre_razon_social, email, estado)
+	VALUES (?, 'CC', '1002', 'Carlos Ruiz', 'carlos@example.com', 'activo')`, 91)
+	if err != nil {
+		t.Fatalf("insert cliente carlos: %v", err)
+	}
+	carlosID, _ := resCarlos.LastInsertId()
+
+	if _, err := UpsertEmpresaDocumentoFacturacion(dbConn, EmpresaDocumentoFacturacion{
+		EmpresaID:            91,
+		TipoDocumento:        "factura_electronica",
+		DocumentoCodigo:      "FAC-9101",
+		NumeroLegal:          "FE-9101",
+		CodigoValidacion:     "VAL9101",
+		EstadoDocumento:      "emitida",
+		EntidadRelacionadaID: anaID,
+		FechaDocumento:       "2026-04-05",
+		Moneda:               "COP",
+		MontoTotal:           98000,
+		Estado:               "activo",
+	}); err != nil {
+		t.Fatalf("upsert facturacion FAC-9101: %v", err)
+	}
+
+	if _, err := UpsertEmpresaDocumentoFacturacion(dbConn, EmpresaDocumentoFacturacion{
+		EmpresaID:            91,
+		TipoDocumento:        "factura_electronica",
+		DocumentoCodigo:      "FAC-9102",
+		NumeroLegal:          "FE-9102",
+		CodigoValidacion:     "VAL9102",
+		EstadoDocumento:      "emitida",
+		EntidadRelacionadaID: carlosID,
+		FechaDocumento:       "2026-04-03",
+		Moneda:               "COP",
+		MontoTotal:           123000,
+		Estado:               "inactivo",
+	}); err != nil {
+		t.Fatalf("upsert facturacion FAC-9102: %v", err)
+	}
+
+	rows, err := ListEmpresaDocumentosFacturacionByEmpresa(dbConn, EmpresaDocumentoFacturacionListFilter{
+		EmpresaID:    91,
+		ClienteQuery: "ana",
+	})
+	if err != nil {
+		t.Fatalf("list facturacion by cliente query: %v", err)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("expected 1 row by cliente query with activos, got %d", len(rows))
+	}
+	if rows[0].DocumentoCodigo != "FAC-9101" {
+		t.Fatalf("expected FAC-9101, got %q", rows[0].DocumentoCodigo)
+	}
+	if rows[0].ClienteNombre != "Ana Gomez" {
+		t.Fatalf("expected cliente Ana Gomez, got %q", rows[0].ClienteNombre)
+	}
+	if rows[0].ClienteEmail != "ana@example.com" {
+		t.Fatalf("expected cliente email ana@example.com, got %q", rows[0].ClienteEmail)
+	}
+
+	rows, err = ListEmpresaDocumentosFacturacionByEmpresa(dbConn, EmpresaDocumentoFacturacionListFilter{
+		EmpresaID:       91,
+		IncludeInactive: true,
+		FechaHasta:      "2026-04-04",
+	})
+	if err != nil {
+		t.Fatalf("list facturacion by fecha_hasta include inactive: %v", err)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("expected 1 row by fecha_hasta include inactive, got %d", len(rows))
+	}
+	if rows[0].DocumentoCodigo != "FAC-9102" {
+		t.Fatalf("expected FAC-9102 by fecha_hasta filter, got %q", rows[0].DocumentoCodigo)
+	}
+
+	rows, err = ListEmpresaDocumentosFacturacionByEmpresa(dbConn, EmpresaDocumentoFacturacionListFilter{
+		EmpresaID:       91,
+		IncludeInactive: true,
+		DocumentoQuery:  "FE-9101",
+	})
+	if err != nil {
+		t.Fatalf("list facturacion by documento query: %v", err)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("expected 1 row by documento query, got %d", len(rows))
+	}
+	if rows[0].DocumentoCodigo != "FAC-9101" {
+		t.Fatalf("expected FAC-9101 by documento query, got %q", rows[0].DocumentoCodigo)
+	}
+}

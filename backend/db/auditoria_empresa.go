@@ -44,6 +44,10 @@ type EmpresaAuditoriaEvento struct {
 type EmpresaAuditoriaEventoFilter struct {
 	Modulo          string
 	Accion          string
+	MetodoHTTP      string
+	Recurso         string
+	Endpoint        string
+	Search          string
 	RecursoID       int64
 	CodigoHTTP      int64
 	Resultado       string
@@ -53,6 +57,7 @@ type EmpresaAuditoriaEventoFilter struct {
 	Hasta           string
 	IncludeInactive bool
 	Limit           int
+	Offset          int
 }
 
 // EnsureEmpresaAuditoriaSchema crea/ajusta el esquema de auditoria empresarial.
@@ -86,6 +91,9 @@ func EnsureEmpresaAuditoriaSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_auditoria_eventos_empresa_modulo_accion ON empresa_auditoria_eventos(empresa_id, modulo, accion);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_auditoria_eventos_empresa_usuario ON empresa_auditoria_eventos(empresa_id, usuario_creador, fecha_evento DESC);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_auditoria_eventos_request_id ON empresa_auditoria_eventos(request_id);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_auditoria_eventos_empresa_http_resultado ON empresa_auditoria_eventos(empresa_id, codigo_http, resultado);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_auditoria_eventos_empresa_recurso_id ON empresa_auditoria_eventos(empresa_id, recurso_id, fecha_evento DESC);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_auditoria_eventos_fecha_expiracion ON empresa_auditoria_eventos(fecha_expiracion);`,
 	}
 	for _, stmt := range stmts {
 		if _, err := dbConn.Exec(stmt); err != nil {
@@ -268,6 +276,8 @@ func ListEmpresaAuditoriaEventos(dbConn *sql.DB, empresaID int64, f EmpresaAudit
 		return nil, err
 	}
 
+	where, args := buildEmpresaAuditoriaWhereClause(empresaID, f)
+
 	query := `SELECT
 		id,
 		empresa_id,
@@ -291,59 +301,10 @@ func ListEmpresaAuditoriaEventos(dbConn *sql.DB, empresaID int64, f EmpresaAudit
 		COALESCE(usuario_creador, ''),
 		COALESCE(estado, 'activo'),
 		COALESCE(observaciones, '')
-	FROM empresa_auditoria_eventos
-	WHERE empresa_id = ?`
-	args := []interface{}{empresaID}
-
-	if !f.IncludeInactive {
-		query += ` AND COALESCE(estado, 'activo') = 'activo'`
-	}
-	if modulo := normalizeAuditoriaValue(f.Modulo); modulo != "" {
-		query += ` AND COALESCE(modulo, '') = ?`
-		args = append(args, modulo)
-	}
-	if accion := normalizeAuditoriaValue(f.Accion); accion != "" {
-		query += ` AND COALESCE(accion, '') = ?`
-		args = append(args, accion)
-	}
-	if recursoID := f.RecursoID; recursoID > 0 {
-		query += ` AND COALESCE(recurso_id, 0) = ?`
-		args = append(args, recursoID)
-	}
-	if codigoHTTP := f.CodigoHTTP; codigoHTTP > 0 {
-		query += ` AND COALESCE(codigo_http, 0) = ?`
-		args = append(args, codigoHTTP)
-	}
-	if resultado := normalizeAuditoriaResultado(f.Resultado); resultado != "" {
-		query += ` AND COALESCE(resultado, 'ok') = ?`
-		args = append(args, resultado)
-	}
-	if usuario := strings.TrimSpace(f.UsuarioCreador); usuario != "" {
-		query += ` AND LOWER(COALESCE(usuario_creador, '')) = LOWER(?)`
-		args = append(args, usuario)
-	}
-	if reqID := strings.TrimSpace(f.RequestID); reqID != "" {
-		query += ` AND COALESCE(request_id, '') = ?`
-		args = append(args, reqID)
-	}
-	if desde := strings.TrimSpace(f.Desde); desde != "" {
-		query += ` AND datetime(COALESCE(fecha_evento, fecha_creacion, '')) >= datetime(?)`
-		args = append(args, desde)
-	}
-	if hasta := strings.TrimSpace(f.Hasta); hasta != "" {
-		query += ` AND datetime(COALESCE(fecha_evento, fecha_creacion, '')) <= datetime(?)`
-		args = append(args, hasta)
-	}
-
-	limit := f.Limit
-	if limit <= 0 {
-		limit = 200
-	}
-	if limit > 1000 {
-		limit = 1000
-	}
-	query += ` ORDER BY COALESCE(fecha_evento, '') DESC, id DESC LIMIT ?`
-	args = append(args, limit)
+	FROM empresa_auditoria_eventos` + where + `
+	ORDER BY COALESCE(fecha_evento, '') DESC, id DESC
+	LIMIT ? OFFSET ?`
+	args = append(args, normalizeAuditoriaLimit(f.Limit), normalizeAuditoriaOffset(f.Offset))
 
 	rows, err := dbConn.Query(query, args...)
 	if err != nil {
@@ -383,6 +344,96 @@ func ListEmpresaAuditoriaEventos(dbConn *sql.DB, empresaID int64, f EmpresaAudit
 		out = append(out, item)
 	}
 	return out, rows.Err()
+}
+
+// CountEmpresaAuditoriaEventos cuenta eventos de auditoria por empresa aplicando filtros.
+func CountEmpresaAuditoriaEventos(dbConn *sql.DB, empresaID int64, f EmpresaAuditoriaEventoFilter) (int64, error) {
+	if empresaID <= 0 {
+		return 0, fmt.Errorf("empresa_id es obligatorio")
+	}
+	if err := EnsureEmpresaAuditoriaSchema(dbConn); err != nil {
+		return 0, err
+	}
+
+	where, args := buildEmpresaAuditoriaWhereClause(empresaID, f)
+	query := `SELECT COUNT(1) FROM empresa_auditoria_eventos` + where
+
+	var total int64
+	if err := dbConn.QueryRow(query, args...).Scan(&total); err != nil {
+		return 0, err
+	}
+	return total, nil
+}
+
+func buildEmpresaAuditoriaWhereClause(empresaID int64, f EmpresaAuditoriaEventoFilter) (string, []interface{}) {
+	where := ` WHERE empresa_id = ?`
+	args := []interface{}{empresaID}
+
+	if !f.IncludeInactive {
+		where += ` AND COALESCE(estado, 'activo') = 'activo'`
+	}
+	if modulo := normalizeAuditoriaValue(f.Modulo); modulo != "" {
+		where += ` AND COALESCE(modulo, '') = ?`
+		args = append(args, modulo)
+	}
+	if accion := normalizeAuditoriaValue(f.Accion); accion != "" {
+		where += ` AND COALESCE(accion, '') = ?`
+		args = append(args, accion)
+	}
+	if metodo := sanitizeAuditoriaText(strings.ToUpper(strings.TrimSpace(f.MetodoHTTP)), 12); metodo != "" {
+		where += ` AND COALESCE(metodo_http, '') = ?`
+		args = append(args, metodo)
+	}
+	if recursoLike := normalizeAuditoriaContains(f.Recurso, 160); recursoLike != "" {
+		where += ` AND LOWER(COALESCE(recurso, '')) LIKE ? ESCAPE '!'`
+		args = append(args, recursoLike)
+	}
+	if endpointLike := normalizeAuditoriaContains(f.Endpoint, 300); endpointLike != "" {
+		where += ` AND LOWER(COALESCE(endpoint, '')) LIKE ? ESCAPE '!'`
+		args = append(args, endpointLike)
+	}
+	if recursoID := f.RecursoID; recursoID > 0 {
+		where += ` AND COALESCE(recurso_id, 0) = ?`
+		args = append(args, recursoID)
+	}
+	if codigoHTTP := f.CodigoHTTP; codigoHTTP > 0 {
+		where += ` AND COALESCE(codigo_http, 0) = ?`
+		args = append(args, codigoHTTP)
+	}
+	if resultado := normalizeAuditoriaResultado(f.Resultado); resultado != "" {
+		where += ` AND COALESCE(resultado, 'ok') = ?`
+		args = append(args, resultado)
+	}
+	if usuario := strings.TrimSpace(f.UsuarioCreador); usuario != "" {
+		where += ` AND LOWER(COALESCE(usuario_creador, '')) = LOWER(?)`
+		args = append(args, usuario)
+	}
+	if reqID := strings.TrimSpace(f.RequestID); reqID != "" {
+		where += ` AND COALESCE(request_id, '') = ?`
+		args = append(args, reqID)
+	}
+	if desde := strings.TrimSpace(f.Desde); desde != "" {
+		where += ` AND datetime(COALESCE(fecha_evento, fecha_creacion, '')) >= datetime(?)`
+		args = append(args, desde)
+	}
+	if hasta := strings.TrimSpace(f.Hasta); hasta != "" {
+		where += ` AND datetime(COALESCE(fecha_evento, fecha_creacion, '')) <= datetime(?)`
+		args = append(args, hasta)
+	}
+	if searchLike := normalizeAuditoriaContains(f.Search, 180); searchLike != "" {
+		where += ` AND (
+			LOWER(COALESCE(modulo, '')) LIKE ? ESCAPE '!'
+			OR LOWER(COALESCE(accion, '')) LIKE ? ESCAPE '!'
+			OR LOWER(COALESCE(recurso, '')) LIKE ? ESCAPE '!'
+			OR LOWER(COALESCE(endpoint, '')) LIKE ? ESCAPE '!'
+			OR LOWER(COALESCE(usuario_creador, '')) LIKE ? ESCAPE '!'
+			OR LOWER(COALESCE(request_id, '')) LIKE ? ESCAPE '!'
+			OR LOWER(COALESCE(ip_origen, '')) LIKE ? ESCAPE '!'
+		)`
+		args = append(args, searchLike, searchLike, searchLike, searchLike, searchLike, searchLike, searchLike)
+	}
+
+	return where, args
 }
 
 // PurgeEmpresaAuditoriaEventos elimina eventos que superan la politica de retencion.
@@ -504,6 +555,37 @@ func normalizeAuditoriaRetencionDias(days int64) int64 {
 		return maxEmpresaAuditoriaRetencionDias
 	}
 	return days
+}
+
+func normalizeAuditoriaLimit(limit int) int {
+	if limit <= 0 {
+		return 200
+	}
+	if limit > 1000 {
+		return 1000
+	}
+	return limit
+}
+
+func normalizeAuditoriaOffset(offset int) int {
+	if offset < 0 {
+		return 0
+	}
+	if offset > 500000 {
+		return 500000
+	}
+	return offset
+}
+
+func normalizeAuditoriaContains(raw string, maxLen int) string {
+	v := sanitizeAuditoriaText(strings.ToLower(strings.TrimSpace(raw)), maxLen)
+	if v == "" {
+		return ""
+	}
+	v = strings.ReplaceAll(v, "!", "!!")
+	v = strings.ReplaceAll(v, "%", "!%")
+	v = strings.ReplaceAll(v, "_", "!_")
+	return "%" + v + "%"
 }
 
 func sanitizeAuditoriaText(raw string, maxLen int) string {

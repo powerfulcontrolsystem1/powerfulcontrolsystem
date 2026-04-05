@@ -1,0 +1,33 @@
+# Punto 13 - bitacora de validacion
+Inicio: 2026-04-05 18:23:45
+
+### Suite productiva
+PS> go test ./auth ./db ./handlers ./metrics ./utils -count=1
+?   	github.com/you/pos-backend/auth	[no test files]
+?   	github.com/you/pos-backend/metrics	[no test files]
+?   	github.com/you/pos-backend/utils	[no test files]
+ok  	github.com/you/pos-backend/db	6.107s
+ok  	github.com/you/pos-backend/handlers	14.271s
+
+ExitCode: 0
+
+### Suite completa backend
+PS> go test ./... -count=1
+?   	github.com/you/pos-backend	[no test files]
+?   	github.com/you/pos-backend/auth	[no test files]
+?   	github.com/you/pos-backend/metrics	[no test files]
+?   	github.com/you/pos-backend/tools/add_role_super	[no test files]
+?   	github.com/you/pos-backend/tools/inspect_tipos	[no test files]
+?   	github.com/you/pos-backend/tools/migrate_and_list	[no test files]
+?   	github.com/you/pos-backend/tools/query_users	[no test files]
+?   	github.com/you/pos-backend/tools/register_gemini_key	[no test files]
+?   	github.com/you/pos-backend/tools/seed_motel_malibu	[no test files]
+?   	github.com/you/pos-backend/tools/set_admin_role	[no test files]
+?   	github.com/you/pos-backend/tools/sync_users_to_super	[no test files]
+?   	github.com/you/pos-backend/tools/test_gemini_key	[no test files]
+?   	github.com/you/pos-backend/utils	[no test files]
+ok  	github.com/you/pos-backend/db	6.965s
+ok  	github.com/you/pos-backend/handlers	13.815s
+
+ExitCode: 0
+

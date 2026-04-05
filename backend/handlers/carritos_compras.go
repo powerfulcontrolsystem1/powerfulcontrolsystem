@@ -10,6 +10,7 @@ import (
 	"math"
 	"net/http"
 	"strings"
+	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
 )
@@ -35,6 +36,9 @@ func EmpresaCarritosCompraHandler(dbEmp *sql.DB) http.HandlerFunc {
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
+			}
+			if err := dbpkg.RefreshCarritosActivosConTarifaPorDia(dbEmp, empresaID, time.Now()); err != nil {
+				log.Printf("[carritos] refresh tarifas_por_dia empresa_id=%d error: %v", empresaID, err)
 			}
 			includeInactive := strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("include_inactive")), "1") ||
 				strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("include_inactive")), "true")
@@ -129,6 +133,12 @@ func EmpresaCarritosCompraHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, errID.Error(), http.StatusBadRequest)
 					return
 				}
+				tarifaPorDiaCalculo, errTarifaDia := dbpkg.RefreshCarritoTotalConTarifaPorDia(dbEmp, empresaID, id, time.Now())
+				if errTarifaDia != nil {
+					log.Printf("[carritos] refresh carrito tarifa_por_dia empresa_id=%d id=%d error: %v", empresaID, id, errTarifaDia)
+					http.Error(w, "No se pudo recalcular tarifa diaria del carrito", http.StatusInternalServerError)
+					return
+				}
 				carrito, errCarrito := dbpkg.GetCarritoCompraByID(dbEmp, empresaID, id)
 				if errCarrito != nil {
 					if errors.Is(errCarrito, sql.ErrNoRows) {
@@ -155,6 +165,8 @@ func EmpresaCarritosCompraHandler(dbEmp *sql.DB) http.HandlerFunc {
 					DescuentoValor  float64                   `json:"descuento_valor"`
 					DevolucionTotal float64                   `json:"devolucion_total"`
 					TotalPagado     float64                   `json:"total_pagado"`
+					AplicarPropina  *bool                     `json:"aplicar_propina"`
+					UsuarioLavador  string                    `json:"usuario_lavador"`
 				}
 				if r.Body != nil {
 					if err := json.NewDecoder(r.Body).Decode(&payload); err != nil && err != io.EOF {
@@ -168,7 +180,19 @@ func EmpresaCarritosCompraHandler(dbEmp *sql.DB) http.HandlerFunc {
 
 				metodoPago := dbpkg.NormalizeMetodoPagoCarrito(payload.MetodoPago)
 				if metodoPago == "" {
-					http.Error(w, "metodo_pago invalido. Use: efectivo, tarjeta_credito, tarjeta_debito, codigo_descuento o mixto", http.StatusBadRequest)
+					http.Error(w, "metodo_pago invalido. Use: efectivo, tarjeta_credito, tarjeta_debito, transferencia_bancaria, codigo_descuento o mixto", http.StatusBadRequest)
+					return
+				}
+
+				rolOperacion := strings.TrimSpace(adminRoleFromRequest(r))
+				cfgOperativa, errCfgOperativa := dbpkg.GetEmpresaConfiguracionOperativa(dbEmp, empresaID)
+				if errCfgOperativa != nil {
+					log.Printf("[carritos] get configuracion_operativa empresa_id=%d error: %v", empresaID, errCfgOperativa)
+					cfgOperativa = nil
+				}
+				permisosOperativos := dbpkg.ResolveEmpresaConfiguracionOperativaParaRol(cfgOperativa, rolOperacion)
+				if !permisosOperativos.IsMetodoPagoHabilitado(metodoPago) {
+					http.Error(w, "metodo_pago no habilitado para la empresa/rol actual", http.StatusForbidden)
 					return
 				}
 
@@ -182,9 +206,15 @@ func EmpresaCarritosCompraHandler(dbEmp *sql.DB) http.HandlerFunc {
 						http.Error(w, err.Error(), http.StatusBadRequest)
 						return
 					}
+					for _, tramo := range pagosMixtos {
+						if !permisosOperativos.IsMetodoPagoHabilitado(tramo.Metodo) {
+							http.Error(w, "uno o mas metodos del pago mixto no estan habilitados para la empresa/rol actual", http.StatusForbidden)
+							return
+						}
+					}
 					referenciaPago = buildReferenciaPagoMixto(pagosMixtos)
-				} else if (metodoPago == "tarjeta_credito" || metodoPago == "tarjeta_debito") && len(referenciaPago) < 4 {
-					http.Error(w, "referencia_pago es obligatoria para pagos con tarjeta (minimo 4 caracteres)", http.StatusBadRequest)
+				} else if (metodoPago == "tarjeta_credito" || metodoPago == "tarjeta_debito" || metodoPago == "transferencia_bancaria") && len(referenciaPago) < 4 {
+					http.Error(w, "referencia_pago es obligatoria para pagos con tarjeta o transferencia bancaria (minimo 4 caracteres)", http.StatusBadRequest)
 					return
 				}
 
@@ -236,6 +266,44 @@ func EmpresaCarritosCompraHandler(dbEmp *sql.DB) http.HandlerFunc {
 					totalEsperado = 0
 				}
 
+				propinaCfg, errCfgPropina := dbpkg.GetEmpresaPropinasConfiguracion(dbEmp, empresaID)
+				if errCfgPropina != nil {
+					log.Printf("[carritos] get propinas config empresa_id=%d error: %v", empresaID, errCfgPropina)
+					propinaCfg = &dbpkg.EmpresaPropinasConfiguracion{
+						EmpresaID:        empresaID,
+						ModoDistribucion: dbpkg.EmpresaPropinaModoPorUsuario,
+					}
+				}
+
+				aplicarPropina := true
+				if payload.AplicarPropina != nil {
+					aplicarPropina = *payload.AplicarPropina
+				} else if propinaCfg != nil {
+					aplicarPropina = propinaCfg.AplicarAutomaticamente
+				}
+
+				propinaHabilitada := propinaCfg != nil && propinaCfg.HabilitarPropina && permisosOperativos.HabilitarPropinas
+				propinaPorcentaje := 0.0
+				propinaModo := dbpkg.EmpresaPropinaModoPorUsuario
+				if propinaCfg != nil {
+					if propinaCfg.PorcentajePropina > 0 {
+						propinaPorcentaje = propinaCfg.PorcentajePropina
+					}
+					if strings.TrimSpace(propinaCfg.ModoDistribucion) != "" {
+						propinaModo = propinaCfg.ModoDistribucion
+					}
+				}
+
+				propinaAplicada := propinaHabilitada && aplicarPropina && propinaPorcentaje > 0
+				montoPropina := 0.0
+				if propinaAplicada {
+					montoPropina = roundMoneyCarritoHandler(totalEsperado * (propinaPorcentaje / 100))
+					if montoPropina < 0 {
+						montoPropina = 0
+					}
+				}
+				totalEsperadoConPropina := roundMoneyCarritoHandler(totalEsperado + montoPropina)
+
 				totalPagado := payload.TotalPagado
 				if metodoPago == "mixto" {
 					totalPagado = totalPagadoMixto
@@ -244,13 +312,13 @@ func EmpresaCarritosCompraHandler(dbEmp *sql.DB) http.HandlerFunc {
 						totalPagado = 0
 					}
 					if totalPagado == 0 && metodoPago != "codigo_descuento" {
-						totalPagado = totalEsperado
+						totalPagado = totalEsperadoConPropina
 					}
 				}
 				totalPagado = roundMoneyCarritoHandler(totalPagado)
 
 				if metodoPago == "codigo_descuento" {
-					if totalEsperado > 0 {
+					if totalEsperadoConPropina > 0 {
 						http.Error(w, "el codigo de descuento no cubre el total del carrito; use efectivo o tarjeta para cubrir el saldo restante", http.StatusBadRequest)
 						return
 					}
@@ -260,12 +328,12 @@ func EmpresaCarritosCompraHandler(dbEmp *sql.DB) http.HandlerFunc {
 						http.Error(w, "pago mixto requiere al menos 2 metodos con monto mayor a cero", http.StatusBadRequest)
 						return
 					}
-					if math.Abs(totalPagado-totalEsperado) > 0.01 {
+					if math.Abs(totalPagado-totalEsperadoConPropina) > 0.01 {
 						http.Error(w, "la suma de pagos mixtos debe coincidir con el total esperado", http.StatusBadRequest)
 						return
 					}
 				} else {
-					if totalPagado+0.009 < totalEsperado {
+					if totalPagado+0.009 < totalEsperadoConPropina {
 						http.Error(w, "total_pagado insuficiente para completar el pago", http.StatusBadRequest)
 						return
 					}
@@ -298,13 +366,77 @@ func EmpresaCarritosCompraHandler(dbEmp *sql.DB) http.HandlerFunc {
 				}
 				montoEvento := totalPagado
 				if montoEvento <= 0 {
-					montoEvento = totalEsperado
+					montoEvento = totalEsperadoConPropina
+				}
+
+				usuarioOperacion := strings.TrimSpace(adminEmailFromRequest(r))
+
+				propinaRegistroID := int64(0)
+				propinaRegistrada := false
+				propinaWarning := ""
+				if propinaCfg != nil && propinaCfg.HabilitarPropina && !permisosOperativos.HabilitarPropinas {
+					propinaWarning = "propinas deshabilitadas por configuracion operativa de empresa/rol"
+				}
+				if montoPropina > 0 {
+					movimientoPropina := dbpkg.EmpresaPropinaMovimiento{
+						EmpresaID:         empresaID,
+						CarritoID:         id,
+						VentaReferencia:   strings.TrimSpace(carrito.Codigo),
+						UsuarioOrigen:     usuarioOperacion,
+						UsuarioAsignado:   usuarioOperacion,
+						ModoDistribucion:  propinaModo,
+						Moneda:            strings.TrimSpace(carrito.Moneda),
+						BaseCobro:         totalEsperado,
+						PorcentajePropina: propinaPorcentaje,
+						MontoPropina:      montoPropina,
+						UsuarioCreador:    usuarioOperacion,
+						Estado:            "activo",
+						Observaciones:     "propina registrada al cerrar carrito en estacion",
+					}
+					if movimientoPropina.ModoDistribucion == dbpkg.EmpresaPropinaModoUniversal {
+						movimientoPropina.UsuarioAsignado = ""
+					}
+					propinaRegistroIDTmp, errReg := dbpkg.CreateEmpresaPropinaMovimiento(dbEmp, movimientoPropina)
+					if errReg != nil {
+						propinaWarning = "no se pudo registrar movimiento de propina"
+						log.Printf("[carritos] registrar propina empresa_id=%d carrito_id=%d error: %v", empresaID, id, errReg)
+					} else {
+						propinaRegistroID = propinaRegistroIDTmp
+						propinaRegistrada = true
+					}
+				}
+
+				comisionResultado := &dbpkg.EmpresaComisionServicioRegistroResultado{}
+				if !permisosOperativos.HabilitarComisiones {
+					comisionResultado.Warning = "comisiones deshabilitadas por configuracion operativa de empresa/rol"
+				} else {
+					if result, errComision := dbpkg.RegisterEmpresaComisionesServicioDesdeCarrito(
+						dbEmp,
+						empresaID,
+						id,
+						strings.TrimSpace(payload.UsuarioLavador),
+						usuarioOperacion,
+					); errComision != nil {
+						comisionResultado.Warning = "no se pudo registrar comisiones por servicio"
+						log.Printf("[carritos] registrar comision servicio empresa_id=%d carrito_id=%d error: %v", empresaID, id, errComision)
+					} else if result != nil {
+						comisionResultado = result
+					}
 				}
 				registrarEventoContableVentaCarrito(dbEmp, r, carrito, "venta_pagada", montoEvento, map[string]interface{}{
 					"action":                "pagar_estacion",
+					"rol_operacion":         rolOperacion,
 					"metodo_pago":           metodoPago,
 					"referencia_pago":       referenciaPago,
 					"pagos_mixtos":          pagosMixtosToEventPayload(pagosMixtos),
+					"cfg_metodo_efectivo":   permisosOperativos.MetodoPagoEfectivo,
+					"cfg_metodo_tc":         permisosOperativos.MetodoPagoTarjetaCredito,
+					"cfg_metodo_td":         permisosOperativos.MetodoPagoTarjetaDebito,
+					"cfg_metodo_transfer":   permisosOperativos.MetodoPagoTransferenciaBancaria,
+					"cfg_metodo_mixto":      permisosOperativos.MetodoPagoMixto,
+					"cfg_metodo_codigo":     permisosOperativos.MetodoPagoCodigoDescuento,
+					"cfg_propinas":          permisosOperativos.HabilitarPropinas,
+					"cfg_comisiones":        permisosOperativos.HabilitarComisiones,
 					"descuento_tipo":        descuentoTipo,
 					"descuento_codigo":      descuentoCodigo,
 					"descuento_valor":       descuentoValor,
@@ -312,10 +444,66 @@ func EmpresaCarritosCompraHandler(dbEmp *sql.DB) http.HandlerFunc {
 					"devolucion_total":      devolucionTotal,
 					"total_pagado":          totalPagado,
 					"total_esperado":        totalEsperado,
+					"total_esperado_final":  totalEsperadoConPropina,
+					"propina_aplicada":      propinaAplicada,
+					"propina_porcentaje":    propinaPorcentaje,
+					"propina_monto":         montoPropina,
+					"propina_modo":          propinaModo,
+					"propina_registro_id":   propinaRegistroID,
+					"propina_registrada":    propinaRegistrada,
+					"comision_aplicada":     comisionResultado.Aplicada,
+					"comision_porcentaje":   comisionResultado.PorcentajeComision,
+					"comision_filtro":       comisionResultado.FiltroServicio,
+					"comision_lavador":      comisionResultado.UsuarioLavador,
+					"comision_base":         comisionResultado.BaseServicios,
+					"comision_monto":        comisionResultado.MontoComision,
+					"comision_movimientos":  comisionResultado.MovimientosRegistrados,
+					"comision_warning":      comisionResultado.Warning,
 					"estado_venta_anterior": carrito.EstadoVenta,
 					"estado_venta_nuevo":    "venta_pagada",
 				}, "pago de venta en estacion")
-				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "estado": "inactivo", "estado_carrito": "cerrado", "estado_venta": "venta_pagada"})
+				writeJSON(w, http.StatusOK, map[string]interface{}{
+					"ok":                         true,
+					"estado":                     "inactivo",
+					"estado_carrito":             "cerrado",
+					"estado_venta":               "venta_pagada",
+					"tarifa_por_dia":             tarifaPorDiaCalculo,
+					"total_esperado":             totalEsperado,
+					"total_esperado_con_propina": totalEsperadoConPropina,
+					"propina": map[string]interface{}{
+						"aplicada":          propinaAplicada,
+						"habilitada":        propinaHabilitada,
+						"porcentaje":        propinaPorcentaje,
+						"monto":             montoPropina,
+						"modo_distribucion": propinaModo,
+						"registrada":        propinaRegistrada,
+						"registro_id":       propinaRegistroID,
+						"warning":           propinaWarning,
+					},
+					"comision": map[string]interface{}{
+						"aplicada":                comisionResultado.Aplicada,
+						"habilitada":              comisionResultado.Habilitada,
+						"aplicacion_automatica":   comisionResultado.AplicacionAutomatica,
+						"porcentaje_comision":     comisionResultado.PorcentajeComision,
+						"filtro_servicio":         comisionResultado.FiltroServicio,
+						"usuario_lavador":         comisionResultado.UsuarioLavador,
+						"base_servicios":          comisionResultado.BaseServicios,
+						"monto_comision":          comisionResultado.MontoComision,
+						"movimientos_registrados": comisionResultado.MovimientosRegistrados,
+						"warning":                 comisionResultado.Warning,
+					},
+					"configuracion_operativa": map[string]interface{}{
+						"rol":                                rolOperacion,
+						"metodo_pago_efectivo":               permisosOperativos.MetodoPagoEfectivo,
+						"metodo_pago_tarjeta_credito":        permisosOperativos.MetodoPagoTarjetaCredito,
+						"metodo_pago_tarjeta_debito":         permisosOperativos.MetodoPagoTarjetaDebito,
+						"metodo_pago_transferencia_bancaria": permisosOperativos.MetodoPagoTransferenciaBancaria,
+						"metodo_pago_mixto":                  permisosOperativos.MetodoPagoMixto,
+						"metodo_pago_codigo_descuento":       permisosOperativos.MetodoPagoCodigoDescuento,
+						"habilitar_propinas":                 permisosOperativos.HabilitarPropinas,
+						"habilitar_comisiones":               permisosOperativos.HabilitarComisiones,
+					},
+				})
 				return
 			}
 
@@ -762,15 +950,15 @@ func normalizePagosMixtosCarrito(entries []carritoPagoMixtoEntrada) ([]carritoPa
 	for _, item := range entries {
 		metodo := dbpkg.NormalizeMetodoPagoCarrito(item.Metodo)
 		if metodo == "" || metodo == "mixto" || metodo == "codigo_descuento" {
-			return nil, 0, fmt.Errorf("pago mixto solo permite efectivo, tarjeta_credito y tarjeta_debito")
+			return nil, 0, fmt.Errorf("pago mixto solo permite efectivo, tarjeta_credito, tarjeta_debito y transferencia_bancaria")
 		}
 		monto := roundMoneyCarritoHandler(item.Monto)
 		if monto <= 0 {
 			continue
 		}
 		referencia := strings.TrimSpace(item.Referencia)
-		if (metodo == "tarjeta_credito" || metodo == "tarjeta_debito") && len(referencia) < 4 {
-			return nil, 0, fmt.Errorf("cada pago con tarjeta en pago mixto requiere referencia minima de 4 caracteres")
+		if (metodo == "tarjeta_credito" || metodo == "tarjeta_debito" || metodo == "transferencia_bancaria") && len(referencia) < 4 {
+			return nil, 0, fmt.Errorf("cada pago con tarjeta o transferencia bancaria en pago mixto requiere referencia minima de 4 caracteres")
 		}
 
 		normalized = append(normalized, carritoPagoMixtoNormalizado{

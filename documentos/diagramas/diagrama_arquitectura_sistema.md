@@ -1,6 +1,6 @@
 # Diagrama de arquitectura del sistema
 
-Fecha: 2026-04-04
+Fecha: 2026-04-05
 
 ```mermaid
 flowchart LR
@@ -114,6 +114,7 @@ Componentes:
 - Configuracion IA super: endpoint administrativo para credencial Gemini con almacenamiento seguro en `superadministrador.db`.
 - Seguridad por rol/empresa: middleware de permisos empresariales para rutas criticas de ventas, inventario, finanzas, clientes, compras/proveedores, facturacion y seguridad/usuarios; incluye cobertura en `chat_tareas`, `ubicacion_gps` y `productos/imagen`.
 - Ventas/carritos: el dominio `carritos_compras` expone `estado_venta` derivado (`venta_abierta`, `venta_cerrada`, `venta_pagada`, `venta_suspendida`) para estandarizar ciclo de vida comercial en API y reportes.
+- Ventas hotel por estacion: el modulo `tarifas_por_dia` permite configurar valor diario con check-in/check-out y se integra con recálculo automático de deuda en carritos activos.
 - Ventas/carritos: el handler aplica validacion de transiciones y devuelve `409` en cambios de estado no permitidos y `404` cuando el carrito objetivo no existe.
 - Eventos contables: el backend registra eventos por modulo en `empresa_eventos_contables` como base para asientos automaticos y trazabilidad financiera.
 - Eventos contables (extension 2026-04-04): se emiten eventos desde ventas, facturacion, compras/proveedores y finanzas (movimientos + periodos) usando helper comun no bloqueante en handlers.

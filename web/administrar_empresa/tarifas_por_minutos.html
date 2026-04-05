@@ -1,0 +1,668 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Tarifas por minutos</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container">
+    <div class="page-header">
+      <h1 id="pageTitle">Tarifas por minutos por estación</h1>
+      <button id="addBtn" class="btn add" type="button">Agregar tarifa</button>
+    </div>
+
+    <p class="form-help">Configura cobro base por minutos y bloques adicionales por estación, con reglas por día de la semana.</p>
+
+    <form id="form" class="form">
+      <input type="hidden" id="itemId">
+      <input type="hidden" id="empresa_id">
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Estación</label>
+          <select id="estacion_selector" class="form-input">
+            <option value="">Selecciona una estación</option>
+          </select>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Estación ID</label>
+          <input id="estacion_id" class="form-input" type="number" min="1" required>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Código estación</label>
+          <input id="estacion_codigo" class="form-input" placeholder="Ej: EST-1-10">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Nombre estación</label>
+          <input id="estacion_nombre" class="form-input" placeholder="Ej: Habitación 10">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Día desde</label>
+          <select id="dia_semana_desde" class="form-input" required></select>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Día hasta</label>
+          <select id="dia_semana_hasta" class="form-input" required></select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Minutos base</label>
+          <input id="minutos_base" class="form-input" type="number" min="1" value="120" required>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Valor base</label>
+          <input id="valor_base" class="form-input" type="number" min="0" step="0.01" value="0" required>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Moneda</label>
+          <select id="moneda" class="form-input">
+            <option value="COP">COP</option>
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Bloque extra (minutos)</label>
+          <input id="minutos_extra" class="form-input" type="number" min="1" value="60" required>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Valor por bloque extra</label>
+          <input id="valor_extra" class="form-input" type="number" min="0" step="0.01" value="0" required>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Prioridad</label>
+          <input id="prioridad" class="form-input" type="number" min="1" max="999" value="1">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Estado</label>
+          <select id="estado" class="form-input">
+            <option value="activo">Activo</option>
+            <option value="inactivo">Inactivo</option>
+          </select>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Observaciones</label>
+          <textarea id="observaciones" class="form-textarea" placeholder="Opcional"></textarea>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" id="saveBtn" class="btn">Guardar</button>
+        <button type="button" id="cancelBtn" class="btn secondary">Cancelar</button>
+      </div>
+      <div id="msg" class="form-help"></div>
+    </form>
+
+    <div class="form">
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Filtro estación</label>
+          <select id="filtro_estacion_id" class="form-input">
+            <option value="">Todas</option>
+          </select>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Filtro día</label>
+          <select id="filtro_dia_semana" class="form-input"></select>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Incluir inactivas</label>
+          <select id="filtro_include_inactive" class="form-input">
+            <option value="0">No</option>
+            <option value="1">Sí</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button id="filtrarBtn" class="btn secondary" type="button">Filtrar</button>
+        <button id="limpiarBtn" class="btn secondary" type="button">Limpiar</button>
+      </div>
+    </div>
+
+    <div class="form">
+      <div class="page-header">
+        <h2>Simulador de cobro</h2>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Estación</label>
+          <select id="sim_estacion_id" class="form-input">
+            <option value="">Selecciona una estación</option>
+          </select>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Día</label>
+          <select id="sim_dia_semana" class="form-input"></select>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Minutos consumidos</label>
+          <input id="sim_minutos" class="form-input" type="number" min="1" value="120">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button id="simularBtn" class="btn secondary" type="button">Calcular</button>
+      </div>
+      <div id="sim_resultado" class="form-help"></div>
+    </div>
+
+    <div id="list">Cargando...</div>
+  </div>
+
+  <script>
+    const DIAS = [
+      { id: 1, nombre: "Lunes" },
+      { id: 2, nombre: "Martes" },
+      { id: 3, nombre: "Miércoles" },
+      { id: 4, nombre: "Jueves" },
+      { id: 5, nombre: "Viernes" },
+      { id: 6, nombre: "Sábado" },
+      { id: 7, nombre: "Domingo" }
+    ];
+
+    const state = {
+      empresaID: 0,
+      items: [],
+      estaciones: [],
+      filtroEstacionID: 0,
+      filtroDiaSemana: 0,
+      includeInactive: false
+    };
+
+    function getQueryParam(name) {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name);
+    }
+
+    function normalize(value) {
+      return (value == null ? "" : String(value)).trim();
+    }
+
+    function esc(value) {
+      return String(value == null ? "" : value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function toNumber(value, fallback) {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : fallback;
+    }
+
+    function formatMoney(value, moneda) {
+      const amount = Number(value || 0);
+      const curr = normalize(moneda) || "COP";
+      return amount.toLocaleString("es-CO", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+      }) + " " + curr;
+    }
+
+    function dayName(day) {
+      const id = Number(day || 0);
+      const found = DIAS.find(function(item) { return item.id === id; });
+      return found ? found.nombre : "-";
+    }
+
+    function dayRangeLabel(desde, hasta) {
+      const from = dayName(desde);
+      const to = dayName(hasta);
+      if (from === "-" || to === "-") return "-";
+      if (from === to) return from;
+      return from + " - " + to;
+    }
+
+    function defaultStationCode(empresaID, estacionID) {
+      if (!empresaID || !estacionID) return "";
+      return "EST-" + empresaID + "-" + estacionID;
+    }
+
+    function stationStorageKey(empresaID) {
+      return "estaciones_config_empresa_" + empresaID;
+    }
+
+    function parseStationIDFromCode(codigo, empresaID) {
+      const text = normalize(codigo).toUpperCase();
+      if (!text) return 0;
+      const match = /^EST-(\d+)-(\d+)$/.exec(text);
+      if (!match) return 0;
+      const emp = Number(match[1]);
+      const est = Number(match[2]);
+      if (!Number.isFinite(emp) || !Number.isFinite(est)) return 0;
+      if (empresaID > 0 && emp !== empresaID) return 0;
+      return est;
+    }
+
+    function setMessage(text, isError) {
+      const el = document.getElementById("msg");
+      if (!el) return;
+      el.textContent = text || "";
+      el.style.color = isError ? "#ef5350" : "";
+    }
+
+    function setSimResult(text, isError) {
+      const el = document.getElementById("sim_resultado");
+      if (!el) return;
+      el.textContent = text || "";
+      el.style.color = isError ? "#ef5350" : "";
+    }
+
+    async function ensureOk(resp) {
+      if (resp.ok) return;
+      const text = await resp.text();
+      throw new Error(text || ("HTTP " + resp.status));
+    }
+
+    function fillDaySelect(selectId, includeAllOption) {
+      const select = document.getElementById(selectId);
+      if (!select) return;
+      const parts = [];
+      if (includeAllOption) {
+        parts.push('<option value="">Todos</option>');
+      }
+      DIAS.forEach(function(dia) {
+        parts.push('<option value="' + dia.id + '">' + esc(dia.nombre) + '</option>');
+      });
+      select.innerHTML = parts.join("");
+    }
+
+    function fillStationsSelect(selectId, includeAllOption) {
+      const select = document.getElementById(selectId);
+      if (!select) return;
+      const parts = [];
+      if (includeAllOption) {
+        parts.push('<option value="">Todas</option>');
+      } else {
+        parts.push('<option value="">Selecciona una estación</option>');
+      }
+      state.estaciones.forEach(function(est) {
+        parts.push('<option value="' + est.id + '">' + esc(est.nombre + ' (#' + est.id + ')') + '</option>');
+      });
+      select.innerHTML = parts.join("");
+    }
+
+    function syncStationFieldsByID(stationID) {
+      const id = Number(stationID || 0);
+      const estacion = state.estaciones.find(function(item) { return item.id === id; });
+      if (!id) return;
+
+      document.getElementById("estacion_id").value = String(id);
+      if (estacion) {
+        document.getElementById("estacion_nombre").value = estacion.nombre || ("Estación " + id);
+        document.getElementById("estacion_codigo").value = estacion.codigo || defaultStationCode(state.empresaID, id);
+      } else if (!normalize(document.getElementById("estacion_codigo").value)) {
+        document.getElementById("estacion_codigo").value = defaultStationCode(state.empresaID, id);
+      }
+    }
+
+    async function loadStations() {
+      const byID = new Map();
+
+      try {
+        const raw = localStorage.getItem(stationStorageKey(state.empresaID));
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          const estaciones = parsed && Array.isArray(parsed.estaciones) ? parsed.estaciones : [];
+          estaciones.forEach(function(item, idx) {
+            const id = Number(item && item.id ? item.id : idx + 1);
+            if (!id) return;
+            const nombre = normalize(item && item.nombre) || ("Estación " + id);
+            byID.set(id, {
+              id: id,
+              codigo: defaultStationCode(state.empresaID, id),
+              nombre: nombre
+            });
+          });
+        }
+      } catch (err) {
+        console.warn("No se pudo leer configuración local de estaciones:", err);
+      }
+
+      try {
+        const params = new URLSearchParams();
+        params.set("empresa_id", String(state.empresaID));
+        params.set("include_inactive", "1");
+        const resp = await fetch("/api/empresa/carritos_compra?" + params.toString(), { credentials: "same-origin" });
+        if (resp.ok) {
+          const rows = await resp.json();
+          const carritos = Array.isArray(rows) ? rows : [];
+          carritos.forEach(function(item) {
+            const code = normalize(item && item.codigo);
+            const stationID = parseStationIDFromCode(code, state.empresaID);
+            if (!stationID) return;
+            const nombre = normalize(item && item.nombre) || ("Estación " + stationID);
+            byID.set(stationID, {
+              id: stationID,
+              codigo: normalize(code).toUpperCase() || defaultStationCode(state.empresaID, stationID),
+              nombre: nombre
+            });
+          });
+        }
+      } catch (err) {
+        console.warn("No se pudieron cargar estaciones desde carritos:", err);
+      }
+
+      state.estaciones = Array.from(byID.values()).sort(function(a, b) {
+        return a.id - b.id;
+      });
+
+      fillStationsSelect("estacion_selector", false);
+      fillStationsSelect("filtro_estacion_id", true);
+      fillStationsSelect("sim_estacion_id", false);
+    }
+
+    function buildPayloadFromForm() {
+      const estacionID = Number(document.getElementById("estacion_id").value || 0);
+      return {
+        id: Number(document.getElementById("itemId").value || 0),
+        empresa_id: Number(state.empresaID),
+        estacion_id: estacionID,
+        estacion_codigo: normalize(document.getElementById("estacion_codigo").value) || defaultStationCode(state.empresaID, estacionID),
+        estacion_nombre: normalize(document.getElementById("estacion_nombre").value),
+        dia_semana_desde: Number(document.getElementById("dia_semana_desde").value || 1),
+        dia_semana_hasta: Number(document.getElementById("dia_semana_hasta").value || 7),
+        minutos_base: Number(document.getElementById("minutos_base").value || 0),
+        valor_base: Number(document.getElementById("valor_base").value || 0),
+        minutos_extra: Number(document.getElementById("minutos_extra").value || 0),
+        valor_extra: Number(document.getElementById("valor_extra").value || 0),
+        moneda: normalize(document.getElementById("moneda").value || "COP"),
+        prioridad: Number(document.getElementById("prioridad").value || 1),
+        estado: normalize(document.getElementById("estado").value || "activo"),
+        observaciones: normalize(document.getElementById("observaciones").value)
+      };
+    }
+
+    function resetForm() {
+      document.getElementById("itemId").value = "";
+      document.getElementById("estacion_selector").value = "";
+      document.getElementById("estacion_id").value = "";
+      document.getElementById("estacion_codigo").value = "";
+      document.getElementById("estacion_nombre").value = "";
+      document.getElementById("dia_semana_desde").value = "1";
+      document.getElementById("dia_semana_hasta").value = "7";
+      document.getElementById("minutos_base").value = "120";
+      document.getElementById("valor_base").value = "0";
+      document.getElementById("minutos_extra").value = "60";
+      document.getElementById("valor_extra").value = "0";
+      document.getElementById("moneda").value = "COP";
+      document.getElementById("prioridad").value = "1";
+      document.getElementById("estado").value = "activo";
+      document.getElementById("observaciones").value = "";
+      setMessage("", false);
+    }
+
+    function applyFilters() {
+      state.filtroEstacionID = Number(document.getElementById("filtro_estacion_id").value || 0);
+      state.filtroDiaSemana = Number(document.getElementById("filtro_dia_semana").value || 0);
+      state.includeInactive = document.getElementById("filtro_include_inactive").value === "1";
+    }
+
+    async function loadItems() {
+      applyFilters();
+      const params = new URLSearchParams();
+      params.set("empresa_id", String(state.empresaID));
+      params.set("limit", "600");
+      if (state.includeInactive) params.set("include_inactive", "1");
+      if (state.filtroEstacionID > 0) params.set("estacion_id", String(state.filtroEstacionID));
+      if (state.filtroDiaSemana > 0) params.set("dia_semana", String(state.filtroDiaSemana));
+
+      const resp = await fetch("/api/empresa/tarifas_por_minutos?" + params.toString(), { credentials: "same-origin" });
+      await ensureOk(resp);
+      const rows = await resp.json();
+      state.items = Array.isArray(rows) ? rows : [];
+      renderList();
+    }
+
+    function renderList() {
+      const root = document.getElementById("list");
+      if (!Array.isArray(state.items) || state.items.length === 0) {
+        root.innerHTML = '<p class="form-help">No hay tarifas por minutos para los filtros seleccionados.</p>';
+        return;
+      }
+
+      const rows = state.items.map(function(item) {
+        const id = Number(item.id || 0);
+        const estado = normalize(item.estado || "activo").toLowerCase();
+        const nextAction = estado === "activo" ? "desactivar" : "activar";
+        const nextLabel = estado === "activo" ? "Desactivar" : "Activar";
+        const rowData = esc(JSON.stringify(item));
+
+        return "<tr>" +
+          "<td><strong>" + esc(item.estacion_nombre || ("Estación #" + item.estacion_id)) + "</strong><br><small>" + esc(item.estacion_codigo || "") + "</small></td>" +
+          "<td>" + esc(dayRangeLabel(item.dia_semana_desde, item.dia_semana_hasta)) + "</td>" +
+          "<td>" + esc(String(item.minutos_base || 0)) + " min / " + esc(formatMoney(item.valor_base || 0, item.moneda || "COP")) + "</td>" +
+          "<td>" + esc(String(item.minutos_extra || 0)) + " min / " + esc(formatMoney(item.valor_extra || 0, item.moneda || "COP")) + "</td>" +
+          "<td>" + esc(String(item.prioridad || 1)) + "</td>" +
+          "<td>" + esc(item.estado || "activo") + "</td>" +
+          "<td>" +
+            '<button class="btn secondary" type="button" data-action="edit" data-item="' + rowData + '">Editar</button> ' +
+            '<button class="btn secondary" type="button" data-action="toggle" data-id="' + id + '" data-next="' + nextAction + '">' + nextLabel + '</button> ' +
+            '<button class="btn danger" type="button" data-action="delete" data-id="' + id + '">Eliminar</button>' +
+          "</td>" +
+        "</tr>";
+      }).join("");
+
+      root.innerHTML = '<div class="table-wrap"><table class="table"><thead><tr>' +
+        "<th>Estación</th>" +
+        "<th>Días</th>" +
+        "<th>Tarifa base</th>" +
+        "<th>Bloque extra</th>" +
+        "<th>Prioridad</th>" +
+        "<th>Estado</th>" +
+        "<th>Acciones</th>" +
+      "</tr></thead><tbody>" + rows + "</tbody></table></div>";
+
+      root.querySelectorAll("button[data-action='edit']").forEach(function(btn) {
+        btn.addEventListener("click", function() {
+          const raw = btn.getAttribute("data-item") || "{}";
+          let item = null;
+          try {
+            item = JSON.parse(raw);
+          } catch (err) {
+            setMessage("No se pudo cargar el registro para edición", true);
+            return;
+          }
+          document.getElementById("itemId").value = String(item.id || "");
+          document.getElementById("estacion_id").value = String(item.estacion_id || "");
+          document.getElementById("estacion_codigo").value = normalize(item.estacion_codigo);
+          document.getElementById("estacion_nombre").value = normalize(item.estacion_nombre);
+          document.getElementById("dia_semana_desde").value = String(item.dia_semana_desde || 1);
+          document.getElementById("dia_semana_hasta").value = String(item.dia_semana_hasta || 7);
+          document.getElementById("minutos_base").value = String(toNumber(item.minutos_base, 120));
+          document.getElementById("valor_base").value = String(toNumber(item.valor_base, 0));
+          document.getElementById("minutos_extra").value = String(toNumber(item.minutos_extra, 60));
+          document.getElementById("valor_extra").value = String(toNumber(item.valor_extra, 0));
+          document.getElementById("moneda").value = normalize(item.moneda) || "COP";
+          document.getElementById("prioridad").value = String(toNumber(item.prioridad, 1));
+          document.getElementById("estado").value = normalize(item.estado) || "activo";
+          document.getElementById("observaciones").value = normalize(item.observaciones);
+          document.getElementById("estacion_selector").value = String(item.estacion_id || "");
+          setMessage("Editando tarifa #" + (item.id || ""), false);
+        });
+      });
+
+      root.querySelectorAll("button[data-action='toggle']").forEach(function(btn) {
+        btn.addEventListener("click", async function() {
+          const id = Number(btn.getAttribute("data-id") || 0);
+          const next = normalize(btn.getAttribute("data-next")).toLowerCase();
+          if (!id || (next !== "activar" && next !== "desactivar")) return;
+          try {
+            const params = new URLSearchParams();
+            params.set("empresa_id", String(state.empresaID));
+            params.set("id", String(id));
+            params.set("action", next);
+            const resp = await fetch("/api/empresa/tarifas_por_minutos?" + params.toString(), {
+              method: "PUT",
+              credentials: "same-origin"
+            });
+            await ensureOk(resp);
+            await loadItems();
+            setMessage("Estado actualizado", false);
+          } catch (err) {
+            setMessage(err.message || "No se pudo actualizar el estado", true);
+          }
+        });
+      });
+
+      root.querySelectorAll("button[data-action='delete']").forEach(function(btn) {
+        btn.addEventListener("click", async function() {
+          const id = Number(btn.getAttribute("data-id") || 0);
+          if (!id) return;
+          if (!window.confirm("¿Eliminar esta tarifa por minutos?")) return;
+          try {
+            const params = new URLSearchParams();
+            params.set("empresa_id", String(state.empresaID));
+            params.set("id", String(id));
+            const resp = await fetch("/api/empresa/tarifas_por_minutos?" + params.toString(), {
+              method: "DELETE",
+              credentials: "same-origin"
+            });
+            await ensureOk(resp);
+            await loadItems();
+            setMessage("Tarifa eliminada", false);
+          } catch (err) {
+            setMessage(err.message || "No se pudo eliminar la tarifa", true);
+          }
+        });
+      });
+    }
+
+    async function saveForm(event) {
+      event.preventDefault();
+      setMessage("", false);
+
+      const payload = buildPayloadFromForm();
+      if (payload.empresa_id <= 0) {
+        setMessage("empresa_id es obligatorio", true);
+        return;
+      }
+
+      try {
+        const isUpdate = payload.id > 0;
+        const resp = await fetch("/api/empresa/tarifas_por_minutos", {
+          method: isUpdate ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify(payload)
+        });
+        await ensureOk(resp);
+        await loadItems();
+        resetForm();
+        setMessage(isUpdate ? "Tarifa actualizada" : "Tarifa creada", false);
+      } catch (err) {
+        setMessage(err.message || "No se pudo guardar la tarifa", true);
+      }
+    }
+
+    async function calcularSimulacion() {
+      setSimResult("", false);
+      const estacionID = Number(document.getElementById("sim_estacion_id").value || 0);
+      const diaSemana = Number(document.getElementById("sim_dia_semana").value || 0);
+      const minutos = Number(document.getElementById("sim_minutos").value || 0);
+
+      if (!estacionID || minutos <= 0) {
+        setSimResult("Selecciona estación y minutos válidos", true);
+        return;
+      }
+
+      try {
+        const params = new URLSearchParams();
+        params.set("empresa_id", String(state.empresaID));
+        params.set("action", "calcular");
+        params.set("estacion_id", String(estacionID));
+        if (diaSemana > 0) params.set("dia_semana", String(diaSemana));
+        params.set("minutos_consumidos", String(minutos));
+
+        const resp = await fetch("/api/empresa/tarifas_por_minutos?" + params.toString(), { credentials: "same-origin" });
+        await ensureOk(resp);
+        const data = await resp.json();
+
+        const bloques = Number(data && data.bloques_extra ? data.bloques_extra : 0);
+        const total = Number(data && data.monto_total ? data.monto_total : 0);
+        const moneda = normalize(data && data.moneda) || "COP";
+        setSimResult("Total estimado: " + formatMoney(total, moneda) + " | Bloques extra: " + bloques, false);
+      } catch (err) {
+        setSimResult(err.message || "No se pudo calcular la simulación", true);
+      }
+    }
+
+    function bindEvents() {
+      document.getElementById("form").addEventListener("submit", saveForm);
+      document.getElementById("cancelBtn").addEventListener("click", resetForm);
+      document.getElementById("addBtn").addEventListener("click", resetForm);
+      document.getElementById("filtrarBtn").addEventListener("click", function() {
+        loadItems().catch(function(err) {
+          setMessage(err.message || "No se pudo filtrar", true);
+        });
+      });
+      document.getElementById("limpiarBtn").addEventListener("click", function() {
+        document.getElementById("filtro_estacion_id").value = "";
+        document.getElementById("filtro_dia_semana").value = "";
+        document.getElementById("filtro_include_inactive").value = "0";
+        loadItems().catch(function(err) {
+          setMessage(err.message || "No se pudo recargar", true);
+        });
+      });
+      document.getElementById("simularBtn").addEventListener("click", function() {
+        calcularSimulacion().catch(function(err) {
+          setSimResult(err.message || "No se pudo calcular", true);
+        });
+      });
+
+      document.getElementById("estacion_selector").addEventListener("change", function() {
+        const id = Number(document.getElementById("estacion_selector").value || 0);
+        syncStationFieldsByID(id);
+      });
+
+      document.getElementById("estacion_id").addEventListener("input", function() {
+        const id = Number(document.getElementById("estacion_id").value || 0);
+        if (id > 0 && !normalize(document.getElementById("estacion_codigo").value)) {
+          document.getElementById("estacion_codigo").value = defaultStationCode(state.empresaID, id);
+        }
+      });
+    }
+
+    async function bootstrap() {
+      state.empresaID = Number(getQueryParam("empresa_id") || 0);
+      if (state.empresaID <= 0) {
+        setMessage("empresa_id es obligatorio", true);
+        document.getElementById("list").innerHTML = '<p class="form-help">No se pudo iniciar el módulo sin empresa_id.</p>';
+        return;
+      }
+
+      document.getElementById("empresa_id").value = String(state.empresaID);
+
+      fillDaySelect("dia_semana_desde", false);
+      fillDaySelect("dia_semana_hasta", false);
+      fillDaySelect("filtro_dia_semana", true);
+      fillDaySelect("sim_dia_semana", false);
+
+      document.getElementById("sim_dia_semana").value = String(new Date().getDay() === 0 ? 7 : new Date().getDay());
+
+      bindEvents();
+      resetForm();
+      await loadStations();
+      await loadItems();
+    }
+
+    bootstrap().catch(function(err) {
+      setMessage(err.message || "No se pudo inicializar el módulo", true);
+    });
+  </script>
+</body>
+</html>

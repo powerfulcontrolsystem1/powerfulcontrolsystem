@@ -53,6 +53,29 @@ type EmpresaDocumentoCompra struct {
 	Observaciones        string  `json:"observaciones"`
 }
 
+// EmpresaDocumentoFacturacionListado representa un documento de facturación enriquecido con datos de cliente.
+type EmpresaDocumentoFacturacionListado struct {
+	EmpresaDocumentoFacturacion
+	ClienteNombre    string `json:"cliente_nombre,omitempty"`
+	ClienteEmail     string `json:"cliente_email,omitempty"`
+	ClienteDocumento string `json:"cliente_documento,omitempty"`
+}
+
+// EmpresaDocumentoFacturacionListFilter define los filtros para consultar documentos de facturación.
+type EmpresaDocumentoFacturacionListFilter struct {
+	EmpresaID       int64
+	TipoDocumento   string
+	EstadoDocumento string
+	IncludeInactive bool
+	ClienteQuery    string
+	DocumentoQuery  string
+	FechaDesde      string
+	FechaHasta      string
+	Query           string
+	Limit           int
+	Offset          int
+}
+
 // EnsureEmpresaDocumentosTransaccionalesSchema crea/migra tablas de documentos de negocio para facturacion y compras.
 func EnsureEmpresaDocumentosTransaccionalesSchema(dbConn *sql.DB) error {
 	stmts := []string{
@@ -383,6 +406,157 @@ func UpsertEmpresaDocumentoFacturacion(dbConn *sql.DB, payload EmpresaDocumentoF
 	}
 
 	return GetEmpresaDocumentoFacturacionByCodigo(dbConn, payload.EmpresaID, payload.TipoDocumento, payload.DocumentoCodigo)
+}
+
+// ListEmpresaDocumentosFacturacionByEmpresa lista documentos de facturación por empresa con filtros operativos.
+func ListEmpresaDocumentosFacturacionByEmpresa(dbConn *sql.DB, filter EmpresaDocumentoFacturacionListFilter) ([]EmpresaDocumentoFacturacionListado, error) {
+	if filter.EmpresaID <= 0 {
+		return nil, fmt.Errorf("empresa_id es obligatorio")
+	}
+
+	if filter.Limit <= 0 || filter.Limit > 500 {
+		filter.Limit = 100
+	}
+	if filter.Offset < 0 {
+		filter.Offset = 0
+	}
+
+	tipo := normalizeDocumentoTransaccionalTipo(filter.TipoDocumento, "")
+	estadoDoc := normalizeDocumentoTransaccionalEstado(filter.EstadoDocumento, "")
+	clienteQuery := strings.TrimSpace(filter.ClienteQuery)
+	documentoQuery := strings.TrimSpace(filter.DocumentoQuery)
+	fechaDesde := strings.TrimSpace(filter.FechaDesde)
+	fechaHasta := strings.TrimSpace(filter.FechaHasta)
+	busqueda := strings.TrimSpace(filter.Query)
+
+	query := `SELECT
+		d.id,
+		d.empresa_id,
+		COALESCE(d.tipo_documento, 'factura_electronica'),
+		COALESCE(d.documento_codigo, ''),
+		COALESCE(d.numero_legal, ''),
+		COALESCE(d.codigo_validacion, ''),
+		COALESCE(d.pais_codigo, ''),
+		COALESCE(d.ambiente_fe, ''),
+		COALESCE(d.estado_documento, 'borrador'),
+		COALESCE(d.estado_anterior, ''),
+		COALESCE(d.evento_ultimo, ''),
+		COALESCE(d.periodo_contable, ''),
+		COALESCE(d.monto_total, 0),
+		COALESCE(d.moneda, 'COP'),
+		COALESCE(d.fecha_documento, ''),
+		COALESCE(d.entidad_relacionada_id, 0),
+		COALESCE(d.fecha_creacion, ''),
+		COALESCE(d.fecha_actualizacion, ''),
+		COALESCE(d.usuario_creador, ''),
+		COALESCE(d.estado, 'activo'),
+		COALESCE(d.observaciones, ''),
+		COALESCE(c.nombre_razon_social, ''),
+		COALESCE(c.email, ''),
+		COALESCE(c.numero_documento, '')
+	FROM empresa_facturacion_documentos d
+	LEFT JOIN clientes c ON c.empresa_id = d.empresa_id AND c.id = d.entidad_relacionada_id
+	WHERE d.empresa_id = ?`
+	args := []interface{}{filter.EmpresaID}
+
+	if tipo != "" {
+		query += ` AND d.tipo_documento = ?`
+		args = append(args, tipo)
+	}
+	if estadoDoc != "" {
+		query += ` AND d.estado_documento = ?`
+		args = append(args, estadoDoc)
+	}
+	if !filter.IncludeInactive {
+		query += ` AND COALESCE(d.estado, 'activo') = 'activo'`
+	}
+	if clienteQuery != "" {
+		query += ` AND (
+			lower(COALESCE(c.nombre_razon_social, '')) LIKE lower(?)
+			OR lower(COALESCE(c.email, '')) LIKE lower(?)
+			OR lower(COALESCE(c.numero_documento, '')) LIKE lower(?)
+		)`
+		clienteLike := "%" + clienteQuery + "%"
+		args = append(args, clienteLike, clienteLike, clienteLike)
+	}
+	if documentoQuery != "" {
+		query += ` AND (
+			upper(COALESCE(d.documento_codigo, '')) LIKE ?
+			OR upper(COALESCE(d.numero_legal, '')) LIKE ?
+			OR upper(COALESCE(d.codigo_validacion, '')) LIKE ?
+		)`
+		documentoLike := "%" + strings.ToUpper(documentoQuery) + "%"
+		args = append(args, documentoLike, documentoLike, documentoLike)
+	}
+	if fechaDesde != "" {
+		query += ` AND date(COALESCE(NULLIF(d.fecha_documento, ''), substr(d.fecha_creacion, 1, 10))) >= date(?)`
+		args = append(args, fechaDesde)
+	}
+	if fechaHasta != "" {
+		query += ` AND date(COALESCE(NULLIF(d.fecha_documento, ''), substr(d.fecha_creacion, 1, 10))) <= date(?)`
+		args = append(args, fechaHasta)
+	}
+	if busqueda != "" {
+		query += ` AND (
+			upper(COALESCE(d.documento_codigo, '')) LIKE ?
+			OR upper(COALESCE(d.numero_legal, '')) LIKE ?
+			OR upper(COALESCE(d.codigo_validacion, '')) LIKE ?
+			OR lower(COALESCE(c.nombre_razon_social, '')) LIKE lower(?)
+			OR lower(COALESCE(c.email, '')) LIKE lower(?)
+			OR lower(COALESCE(c.numero_documento, '')) LIKE lower(?)
+			OR lower(COALESCE(d.observaciones, '')) LIKE lower(?)
+		)`
+		qUpper := "%" + strings.ToUpper(busqueda) + "%"
+		qLower := "%" + busqueda + "%"
+		args = append(args, qUpper, qUpper, qUpper, qLower, qLower, qLower, qLower)
+	}
+
+	query += `
+	ORDER BY datetime(COALESCE(NULLIF(d.fecha_documento, ''), d.fecha_creacion)) DESC, d.id DESC
+	LIMIT ? OFFSET ?`
+	args = append(args, filter.Limit, filter.Offset)
+
+	rows, err := dbConn.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]EmpresaDocumentoFacturacionListado, 0)
+	for rows.Next() {
+		var item EmpresaDocumentoFacturacionListado
+		if err := rows.Scan(
+			&item.ID,
+			&item.EmpresaID,
+			&item.TipoDocumento,
+			&item.DocumentoCodigo,
+			&item.NumeroLegal,
+			&item.CodigoValidacion,
+			&item.PaisCodigo,
+			&item.AmbienteFE,
+			&item.EstadoDocumento,
+			&item.EstadoAnterior,
+			&item.EventoUltimo,
+			&item.PeriodoContable,
+			&item.MontoTotal,
+			&item.Moneda,
+			&item.FechaDocumento,
+			&item.EntidadRelacionadaID,
+			&item.FechaCreacion,
+			&item.FechaActualizacion,
+			&item.UsuarioCreador,
+			&item.Estado,
+			&item.Observaciones,
+			&item.ClienteNombre,
+			&item.ClienteEmail,
+			&item.ClienteDocumento,
+		); err != nil {
+			return nil, err
+		}
+		out = append(out, item)
+	}
+
+	return out, rows.Err()
 }
 
 // GetEmpresaDocumentoCompraByCodigo obtiene un documento de compras por llave de negocio.

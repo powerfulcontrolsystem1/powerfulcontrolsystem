@@ -162,7 +162,7 @@
             <label class="form-label" for="metodoPago">Método de pago</label>
             <select id="metodoPago" class="form-input">
               <option value="efectivo">Efectivo</option>
-              <option value="transferencia">Transferencia</option>
+              <option value="transferencia_bancaria">Transferencia bancaria</option>
               <option value="tarjeta">Tarjeta</option>
               <option value="mixto">Mixto</option>
               <option value="otro">Otro</option>
@@ -638,6 +638,12 @@
 
     function normalize(v) {
       return String(v == null ? '' : v).trim();
+    }
+
+    function normalizeMetodoPago(v) {
+      const method = normalize(v).toLowerCase();
+      if (method === 'transferencia') return 'transferencia_bancaria';
+      return method;
     }
 
     function toNumber(v, d) {
@@ -1318,7 +1324,7 @@
         subcategoria: normalize(document.getElementById('subcategoria').value),
         concepto: normalize(document.getElementById('concepto').value),
         descripcion: normalize(document.getElementById('descripcion').value),
-        metodo_pago: normalize(document.getElementById('metodoPago').value),
+        metodo_pago: normalizeMetodoPago(document.getElementById('metodoPago').value),
         moneda: normalize(document.getElementById('moneda').value),
         monto: toNumber(document.getElementById('monto').value, 0),
         impuesto: toNumber(document.getElementById('impuesto').value, 0),
@@ -1354,7 +1360,7 @@
       renderCategoriasSelect(tipo, normalize(item.categoria));
       document.getElementById('concepto').value = normalize(item.concepto);
       document.getElementById('subcategoria').value = normalize(item.subcategoria);
-      document.getElementById('metodoPago').value = normalize(item.metodo_pago) || 'efectivo';
+      document.getElementById('metodoPago').value = normalizeMetodoPago(item.metodo_pago) || 'efectivo';
       document.getElementById('terceroNombre').value = normalize(item.tercero_nombre);
       document.getElementById('terceroDocumento').value = normalize(item.tercero_documento);
       document.getElementById('monto').value = String(toNumber(item.monto, 0));
@@ -2473,8 +2479,8 @@
       const dateStr = now.toISOString().slice(0, 16);
       return [
         { tipo_movimiento: 'ingreso', categoria: 'ventas', concepto: 'Venta mostrador demo', monto: 245000, impuesto: 0, metodo_pago: 'efectivo', tipo_comprobante: 'recibo_interno', numero_comprobante: '', tercero_nombre: 'Cliente mostrador' },
-        { tipo_movimiento: 'ingreso', categoria: 'servicios', concepto: 'Ingreso por servicio especial', monto: 98000, impuesto: 0, metodo_pago: 'transferencia', tipo_comprobante: 'factura', numero_comprobante: '', tercero_nombre: 'Cliente corporativo' },
-        { tipo_movimiento: 'egreso', categoria: 'compras', concepto: 'Compra de insumos inventario', monto: 123500, impuesto: 0, metodo_pago: 'transferencia', tipo_comprobante: 'factura', numero_comprobante: '', tercero_nombre: 'Proveedor Local Medellin' },
+        { tipo_movimiento: 'ingreso', categoria: 'servicios', concepto: 'Ingreso por servicio especial', monto: 98000, impuesto: 0, metodo_pago: 'transferencia_bancaria', tipo_comprobante: 'factura', numero_comprobante: '', tercero_nombre: 'Cliente corporativo' },
+        { tipo_movimiento: 'egreso', categoria: 'compras', concepto: 'Compra de insumos inventario', monto: 123500, impuesto: 0, metodo_pago: 'transferencia_bancaria', tipo_comprobante: 'factura', numero_comprobante: '', tercero_nombre: 'Proveedor Local Medellin' },
         { tipo_movimiento: 'egreso', categoria: 'servicios', concepto: 'Pago de servicios públicos', monto: 76000, impuesto: 0, metodo_pago: 'efectivo', tipo_comprobante: 'soporte_externo', numero_comprobante: '', tercero_nombre: 'Empresa de servicios' }
       ].map(r => {
         const retFuente = 0;

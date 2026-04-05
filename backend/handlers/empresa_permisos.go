@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -30,6 +31,126 @@ const (
 	permModuleFacturacion = "facturacion"
 	permModuleSeguridad   = "seguridad"
 )
+
+var permissionModulesCatalogOrdered = []string{
+	permModuleVentas,
+	permModuleInventario,
+	permModuleFinanzas,
+	permModuleClientes,
+	permModuleCompras,
+	permModuleFacturacion,
+	permModuleSeguridad,
+}
+
+var permissionActionsCatalogOrdered = []string{
+	permActionRead,
+	permActionCreate,
+	permActionUpdate,
+	permActionDelete,
+	permActionApprove,
+}
+
+var permissionRolesCatalogOrdered = []string{
+	"super_administrador",
+	"admin_empresa",
+	"supervisor_sucursal",
+	"cajero",
+	"inventario",
+	"compras",
+	"contabilidad",
+	"auditor",
+}
+
+type permissionModuleMatrixRow struct {
+	Modulo   string          `json:"modulo"`
+	Read     bool            `json:"read"`
+	Create   bool            `json:"create"`
+	Update   bool            `json:"update"`
+	Delete   bool            `json:"delete"`
+	Approve  bool            `json:"approve"`
+	Acciones map[string]bool `json:"acciones"`
+}
+
+type permissionSummary struct {
+	ModulosTotal        int `json:"modulos_total"`
+	ModulosLectura      int `json:"modulos_lectura"`
+	ModulosAprobacion   int `json:"modulos_aprobacion"`
+	AccionesHabilitadas int `json:"acciones_habilitadas"`
+}
+
+type empresaPermisosRolMatriz struct {
+	Rol     string                      `json:"rol"`
+	Modulos []permissionModuleMatrixRow `json:"modulos"`
+	Resumen permissionSummary           `json:"resumen"`
+}
+
+type empresaPermisosContextResponse struct {
+	EmpresaID        int64                       `json:"empresa_id"`
+	AdminEmail       string                      `json:"admin_email"`
+	Rol              string                      `json:"rol"`
+	AccionesCatalogo []string                    `json:"acciones_catalogo"`
+	Modulos          []permissionModuleMatrixRow `json:"modulos"`
+	Resumen          permissionSummary           `json:"resumen"`
+	IncluyeMatriz    bool                        `json:"incluye_matriz"`
+	MatrizRoles      []empresaPermisosRolMatriz  `json:"matriz_roles,omitempty"`
+}
+
+// EmpresaPermisosContextoHandler expone el contexto de permisos efectivo por rol/modulo.
+// Endpoint recomendado: GET /api/empresa/permisos_contexto?empresa_id={id}[&include_matrix=1]
+func EmpresaPermisosContextoHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
+			return
+		}
+
+		empresaID, err := parseEmpresaIDQuery(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		adminEmail := strings.ToLower(strings.TrimSpace(adminEmailFromRequest(r)))
+		role := normalizePermissionRole(adminRoleFromRequest(r))
+		if role == "" && dbSuper != nil && adminEmail != "" && adminEmail != "sistema" {
+			admin, err := dbpkg.GetAdminByEmail(dbSuper, adminEmail)
+			if err == nil && admin != nil {
+				role = normalizePermissionRole(admin.Role)
+			} else if err != nil && !errors.Is(err, sql.ErrNoRows) {
+				log.Printf("[authz] permisos_contexto get admin email=%s error: %v", adminEmail, err)
+			}
+		}
+		if role == "" {
+			role = "sin_rol"
+		}
+
+		modulos := buildPermissionModuleMatrixForRole(role)
+		resp := empresaPermisosContextResponse{
+			EmpresaID:        empresaID,
+			AdminEmail:       adminEmail,
+			Rol:              role,
+			AccionesCatalogo: append([]string{}, permissionActionsCatalogOrdered...),
+			Modulos:          modulos,
+			Resumen:          summarizePermissionModules(modulos),
+			IncluyeMatriz:    false,
+		}
+
+		if queryBool(r, "include_matrix") {
+			resp.IncluyeMatriz = true
+			resp.MatrizRoles = make([]empresaPermisosRolMatriz, 0, len(permissionRolesCatalogOrdered))
+			for _, catalogRole := range permissionRolesCatalogOrdered {
+				rows := buildPermissionModuleMatrixForRole(catalogRole)
+				resp.MatrizRoles = append(resp.MatrizRoles, empresaPermisosRolMatriz{
+					Rol:     catalogRole,
+					Modulos: rows,
+					Resumen: summarizePermissionModules(rows),
+				})
+			}
+		}
+
+		writeJSON(w, http.StatusOK, resp)
+	}
+}
 
 // WithEmpresaVentasPermissions aplica control de alcance por empresa y permisos por rol para ventas.
 func WithEmpresaVentasPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
@@ -66,6 +187,24 @@ func WithEmpresaSeguridadPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFu
 	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleSeguridad, resolveSeguridadPermissionAction, next)
 }
 
+// WithEmpresaPublicScope aplica validacion minima de alcance por empresa para endpoints publicos
+// que no pueden exigir autenticacion previa (por ejemplo login y primer establecimiento de password).
+func WithEmpresaPublicScope(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		empresaID := extractEmpresaIDForPermissions(r)
+		if empresaID <= 0 {
+			http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), "empresaID", empresaID)
+		r = r.WithContext(ctx)
+		w.Header().Set("X-Empresa-ID", strconv.FormatInt(empresaID, 10))
+
+		next.ServeHTTP(w, r)
+	}
+}
+
 func withEmpresaRolePermissions(dbEmp, dbSuper *sql.DB, module string, resolveAction func(*http.Request) string, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		empresaID := extractEmpresaIDForPermissions(r)
@@ -74,9 +213,15 @@ func withEmpresaRolePermissions(dbEmp, dbSuper *sql.DB, module string, resolveAc
 			return
 		}
 
+		action := defaultPermissionActionFromMethod(r.Method)
+		if resolveAction != nil {
+			action = normalizePermissionAction(resolveAction(r), action)
+		}
+
 		adminEmail := strings.ToLower(strings.TrimSpace(adminEmailFromRequest(r)))
 		if adminEmail == "" || adminEmail == "sistema" {
 			http.Error(w, "unauthenticated", http.StatusUnauthorized)
+			registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusUnauthorized, 0)
 			return
 		}
 
@@ -84,10 +229,12 @@ func withEmpresaRolePermissions(dbEmp, dbSuper *sql.DB, module string, resolveAc
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				http.Error(w, "unauthenticated", http.StatusUnauthorized)
+				registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusUnauthorized, 0)
 				return
 			}
 			log.Printf("[authz] get admin email=%s error: %v", adminEmail, err)
 			http.Error(w, "No se pudo validar permisos del usuario", http.StatusInternalServerError)
+			registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusInternalServerError, 0)
 			return
 		}
 
@@ -95,24 +242,28 @@ func withEmpresaRolePermissions(dbEmp, dbSuper *sql.DB, module string, resolveAc
 		if err != nil {
 			log.Printf("[authz] alcance empresa module=%s email=%s empresa_id=%d error: %v", module, adminEmail, empresaID, err)
 			http.Error(w, "No se pudo validar alcance de empresa", http.StatusInternalServerError)
+			registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusInternalServerError, 0)
 			return
 		}
 		if !canAccess {
 			http.Error(w, "forbidden: empresa_id fuera del alcance del usuario autenticado", http.StatusForbidden)
+			registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusForbidden, 0)
 			return
 		}
 
-		action := defaultPermissionActionFromMethod(r.Method)
-		if resolveAction != nil {
-			action = normalizePermissionAction(resolveAction(r), action)
-		}
 		role := normalizePermissionRole(admin.Role)
 		if !roleAllowsModuleAction(role, module, action) {
 			http.Error(w, "forbidden: rol sin permiso para la accion solicitada", http.StatusForbidden)
+			registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusForbidden, 0)
 			return
 		}
 
+		ctx := context.WithValue(r.Context(), "adminRole", role)
+		ctx = context.WithValue(ctx, "empresaID", empresaID)
+		r = r.WithContext(ctx)
+
 		w.Header().Set("X-Empresa-ID", strconv.FormatInt(empresaID, 10))
+		r.Header.Set("X-Admin-Role", role)
 
 		auditStart := time.Now()
 		auditRW := &auditCaptureResponseWriter{ResponseWriter: w, status: http.StatusOK}
@@ -444,4 +595,57 @@ func roleIn(role string, allowed ...string) bool {
 		}
 	}
 	return false
+}
+
+func buildPermissionModuleMatrixForRole(role string) []permissionModuleMatrixRow {
+	normalizedRole := normalizePermissionRole(role)
+	out := make([]permissionModuleMatrixRow, 0, len(permissionModulesCatalogOrdered))
+	for _, modulo := range permissionModulesCatalogOrdered {
+		readAllowed := roleAllowsModuleAction(normalizedRole, modulo, permActionRead)
+		createAllowed := roleAllowsModuleAction(normalizedRole, modulo, permActionCreate)
+		updateAllowed := roleAllowsModuleAction(normalizedRole, modulo, permActionUpdate)
+		deleteAllowed := roleAllowsModuleAction(normalizedRole, modulo, permActionDelete)
+		approveAllowed := roleAllowsModuleAction(normalizedRole, modulo, permActionApprove)
+
+		out = append(out, permissionModuleMatrixRow{
+			Modulo:  modulo,
+			Read:    readAllowed,
+			Create:  createAllowed,
+			Update:  updateAllowed,
+			Delete:  deleteAllowed,
+			Approve: approveAllowed,
+			Acciones: map[string]bool{
+				permActionRead:    readAllowed,
+				permActionCreate:  createAllowed,
+				permActionUpdate:  updateAllowed,
+				permActionDelete:  deleteAllowed,
+				permActionApprove: approveAllowed,
+			},
+		})
+	}
+	return out
+}
+
+func summarizePermissionModules(rows []permissionModuleMatrixRow) permissionSummary {
+	summary := permissionSummary{ModulosTotal: len(rows)}
+	for _, row := range rows {
+		if row.Read {
+			summary.ModulosLectura++
+			summary.AccionesHabilitadas++
+		}
+		if row.Create {
+			summary.AccionesHabilitadas++
+		}
+		if row.Update {
+			summary.AccionesHabilitadas++
+		}
+		if row.Delete {
+			summary.AccionesHabilitadas++
+		}
+		if row.Approve {
+			summary.ModulosAprobacion++
+			summary.AccionesHabilitadas++
+		}
+	}
+	return summary
 }

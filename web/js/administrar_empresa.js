@@ -4,9 +4,10 @@ function getQueryParam(name) {
 }
 
 (function () {
-  var id = getQueryParam("id");
+  var id = getQueryParam("id") || getQueryParam("empresa_id");
   var title = document.getElementById("empresaTitle");
   var frame = document.getElementById("contentFrame");
+  var permsEvidence = document.getElementById("menuPermsEvidence");
   var storage = null;
   try {
     storage = window.sessionStorage;
@@ -24,16 +25,23 @@ function getQueryParam(name) {
     document.getElementById("linkConfiguracion"),
     document.getElementById("linkUsuarios"),
     document.getElementById("linkAsistenciaEmpleados"),
+    document.getElementById("linkNominaSueldos"),
+    document.getElementById("linkVehiculosRegistro"),
     document.getElementById("linkAuditoria"),
     document.getElementById("linkChatTareas"),
     document.getElementById("linkClientes"),
-    document.getElementById("linkConfigAvanzada"),
     document.getElementById("linkFacturacionElectronica"),
+    document.getElementById("linkFacturasElectronicas"),
     document.getElementById("linkChatIA"),
     document.getElementById("linkFinanzas"),
+    document.getElementById("linkPropinas"),
+    document.getElementById("linkComisiones"),
     document.getElementById("linkUbicacionGPS"),
     document.getElementById("linkConfigEstaciones"),
+    document.getElementById("linkTarifasPorMinutos"),
+    document.getElementById("linkTarifasPorDia"),
     document.getElementById("linkEstaciones"),
+    document.getElementById("linkReservasHotel"),
     document.getElementById("linkReportes"),
     document.getElementById("linkGraficosEstadisticas"),
   ];
@@ -62,16 +70,23 @@ function getQueryParam(name) {
     linkConfiguracion: { module: permModuleSeguridad, action: permActionUpdate },
     linkUsuarios: { module: permModuleSeguridad, action: permActionUpdate },
     linkAsistenciaEmpleados: { module: permModuleSeguridad, action: permActionUpdate },
+    linkNominaSueldos: { module: permModuleFinanzas, action: permActionCreate },
+    linkVehiculosRegistro: { module: permModuleSeguridad, action: permActionCreate },
     linkAuditoria: { module: permModuleSeguridad, action: permActionRead },
     linkChatTareas: { module: permModuleVentas, action: permActionCreate },
     linkClientes: { module: permModuleClientes, action: permActionCreate },
-    linkConfigAvanzada: { module: permModuleSeguridad, action: permActionUpdate },
     linkFacturacionElectronica: { module: permModuleFacturacion, action: permActionCreate },
+    linkFacturasElectronicas: { module: permModuleFacturacion, action: permActionRead },
     linkChatIA: { module: permModuleVentas, action: permActionRead },
     linkFinanzas: { module: permModuleFinanzas, action: permActionCreate },
+    linkPropinas: { module: permModuleFinanzas, action: permActionCreate },
+    linkComisiones: { module: permModuleFinanzas, action: permActionCreate },
     linkUbicacionGPS: { module: permModuleInventario, action: permActionCreate },
     linkConfigEstaciones: { module: permModuleVentas, action: permActionApprove },
+    linkTarifasPorMinutos: { module: permModuleVentas, action: permActionCreate },
+    linkTarifasPorDia: { module: permModuleVentas, action: permActionCreate },
     linkEstaciones: { module: permModuleVentas, action: permActionUpdate },
+    linkReservasHotel: { module: permModuleVentas, action: permActionCreate },
     linkReportes: { module: permModuleFinanzas, action: permActionRead },
     linkGraficosEstadisticas: { module: permModuleFinanzas, action: permActionRead },
   };
@@ -188,6 +203,12 @@ function getQueryParam(name) {
     }
   }
 
+  function normalizePermissionAction(raw) {
+    var value = String(raw || "").trim().toUpperCase();
+    if (!value) return permActionRead;
+    return value;
+  }
+
   function roleIn(role, allowedRoles) {
     var normalized = String(role || "").trim().toLowerCase();
     if (!normalized) return false;
@@ -202,7 +223,7 @@ function getQueryParam(name) {
   function roleAllowsModuleAction(role, module, action) {
     var normalizedRole = normalizePermissionRole(role);
     var normalizedModule = String(module || "").trim().toLowerCase();
-    var normalizedAction = String(action || permActionRead).trim().toUpperCase();
+    var normalizedAction = normalizePermissionAction(action);
     var allReadRoles = ["admin_empresa", "supervisor_sucursal", "cajero", "inventario", "compras", "contabilidad", "auditor"];
 
     if (normalizedRole === "super_administrador") {
@@ -270,6 +291,130 @@ function getQueryParam(name) {
     }
 
     return false;
+  }
+
+  function setMenuPermissionsEvidence(text, isFallback) {
+    if (!permsEvidence) return;
+    permsEvidence.textContent = text || "";
+    if (isFallback) {
+      permsEvidence.style.opacity = "0.85";
+      return;
+    }
+    permsEvidence.style.opacity = "1";
+  }
+
+  function getPermissionContextModuleRow(permissionContext, moduleName) {
+    if (!permissionContext || !Array.isArray(permissionContext.modulos)) {
+      return null;
+    }
+    var target = String(moduleName || "").trim().toLowerCase();
+    if (!target) {
+      return null;
+    }
+    for (var i = 0; i < permissionContext.modulos.length; i += 1) {
+      var row = permissionContext.modulos[i];
+      var rowModule = String(row && row.modulo || "").trim().toLowerCase();
+      if (rowModule && rowModule === target) {
+        return row;
+      }
+    }
+    return null;
+  }
+
+  function boolFromActionMap(actionMap, actionKey) {
+    if (!actionMap || typeof actionMap !== "object") {
+      return false;
+    }
+    if (Object.prototype.hasOwnProperty.call(actionMap, actionKey)) {
+      return !!actionMap[actionKey];
+    }
+    var lowerKey = String(actionKey || "").toLowerCase();
+    if (Object.prototype.hasOwnProperty.call(actionMap, lowerKey)) {
+      return !!actionMap[lowerKey];
+    }
+    return false;
+  }
+
+  function isContextModuleActionAllowed(moduleRow, action) {
+    if (!moduleRow || typeof moduleRow !== "object") {
+      return false;
+    }
+    var actionKey = normalizePermissionAction(action);
+    if (actionKey === permActionRead && typeof moduleRow.read !== "undefined") {
+      return !!moduleRow.read;
+    }
+    if (actionKey === permActionCreate && typeof moduleRow.create !== "undefined") {
+      return !!moduleRow.create;
+    }
+    if (actionKey === permActionUpdate && typeof moduleRow.update !== "undefined") {
+      return !!moduleRow.update;
+    }
+    if (actionKey === "D" && typeof moduleRow.delete !== "undefined") {
+      return !!moduleRow.delete;
+    }
+    if (actionKey === permActionApprove && typeof moduleRow.approve !== "undefined") {
+      return !!moduleRow.approve;
+    }
+    return boolFromActionMap(moduleRow.acciones, actionKey);
+  }
+
+  function canPermissionContextAccessLink(permissionContext, link) {
+    if (!link) return false;
+    var rule = menuPermissionCatalog[link.id || ""];
+    if (!rule || rule.alwaysVisible) {
+      return true;
+    }
+    var moduleRow = getPermissionContextModuleRow(permissionContext, rule.module);
+    return isContextModuleActionAllowed(moduleRow, rule.action);
+  }
+
+  function applyMenuPermissionsByContext(permissionContext) {
+    links.forEach(function (link) {
+      setMenuLinkVisible(link, true);
+    });
+    if (!permissionContext) {
+      return;
+    }
+    links.forEach(function (link) {
+      setMenuLinkVisible(link, canPermissionContextAccessLink(permissionContext, link));
+    });
+  }
+
+  function describePermissionContext(permissionContext) {
+    if (!permissionContext || typeof permissionContext !== "object") {
+      return "Permisos de menú: sin contexto disponible.";
+    }
+    var role = normalizePermissionRole(permissionContext.rol || "sin_rol") || "sin_rol";
+    var summary = permissionContext.resumen || {};
+    var modulesTotal = Number(summary.modulos_total || 0);
+    var modulesRead = Number(summary.modulos_lectura || 0);
+    var modulesApprove = Number(summary.modulos_aprobacion || 0);
+    var enabledActions = Number(summary.acciones_habilitadas || 0);
+    return "Permisos de menú: rol " + role +
+      " | lectura " + modulesRead + "/" + modulesTotal +
+      " | aprobación " + modulesApprove +
+      " | acciones habilitadas " + enabledActions +
+      " | fuente: /api/empresa/permisos_contexto";
+  }
+
+  function fetchEmpresaPermisosContexto(empresaId) {
+    if (!empresaId) {
+      return Promise.resolve(null);
+    }
+    var url = "/api/empresa/permisos_contexto?empresa_id=" + encodeURIComponent(empresaId);
+    return fetch(url, { credentials: "same-origin" })
+      .then(function (resp) {
+        if (!resp.ok) return null;
+        return resp.json();
+      })
+      .then(function (data) {
+        if (!data || typeof data !== "object") return null;
+        if (!Array.isArray(data.modulos)) return null;
+        return data;
+      })
+      .catch(function () {
+        return null;
+      });
   }
 
   function setMenuLinkVisible(link, visible) {
@@ -349,6 +494,24 @@ function getQueryParam(name) {
       return restored;
     }
     return firstVisibleFrameSrc(empresaId);
+  }
+
+  function applyMenuPermissionsWithSource(empresaId, role) {
+    var normalizedRole = normalizePermissionRole(role);
+    return fetchEmpresaPermisosContexto(empresaId)
+      .then(function (permissionContext) {
+        if (permissionContext) {
+          applyMenuPermissionsByContext(permissionContext);
+          setMenuPermissionsEvidence(describePermissionContext(permissionContext), false);
+          return;
+        }
+        applyMenuPermissionsByRole(normalizedRole);
+        if (normalizedRole) {
+          setMenuPermissionsEvidence("Permisos de menú: rol " + normalizedRole + " | fuente local de respaldo.", true);
+        } else {
+          setMenuPermissionsEvidence("Permisos de menú: sin rol detectado | fuente local de respaldo.", true);
+        }
+      });
   }
 
   function setLinksWithEmpresa(empresaId) {
@@ -439,21 +602,27 @@ function getQueryParam(name) {
 
   fetchCurrentAdminRole()
     .then(function (role) {
-      applyMenuPermissionsByRole(role);
       if (id) {
-        initializeMenuAndFrame(id);
-        loadEmpresaTitle(id);
-        return;
+        return applyMenuPermissionsWithSource(id, role)
+          .then(function () {
+            initializeMenuAndFrame(id);
+            loadEmpresaTitle(id);
+          });
       }
+      applyMenuPermissionsByRole(role);
       initializeMenuAndFrame("");
       title.textContent = "Administrar Empresa";
+      return null;
     })
     .catch(function () {
       if (id) {
+        applyMenuPermissionsByRole("");
+        setMenuPermissionsEvidence("Permisos de menú: no se pudo resolver contexto, se mantiene visibilidad base.", true);
         initializeMenuAndFrame(id);
         loadEmpresaTitle(id);
         return;
       }
+      applyMenuPermissionsByRole("");
       initializeMenuAndFrame("");
       title.textContent = "Administrar Empresa";
     });

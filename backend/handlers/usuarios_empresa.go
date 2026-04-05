@@ -127,7 +127,7 @@ func EmpresaUsuariosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 
-			confirmURL, mailErr := sendEmpresaUsuarioConfirmationEmail(r, dbSuper, strings.TrimSpace(payload.Email), strings.TrimSpace(payload.Nombre), token)
+			confirmURL, mailErr := sendEmpresaUsuarioConfirmationEmail(r, dbSuper, payload.EmpresaID, strings.TrimSpace(payload.Email), strings.TrimSpace(payload.Nombre), token)
 			if mailErr != nil {
 				// Regla de negocio: si no se envía correo, no se registra usuario.
 				rollbackErr := dbpkg.DeleteEmpresaUsuario(dbEmp, payload.EmpresaID, id)
@@ -223,7 +223,7 @@ func EmpresaUsuariosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					return
 				}
 
-				confirmURL, mailErr := sendEmpresaUsuarioConfirmationEmail(r, dbSuper, item.Email, item.Nombre, token)
+				confirmURL, mailErr := sendEmpresaUsuarioConfirmationEmail(r, dbSuper, empresaID, item.Email, item.Nombre, token)
 				w.Header().Set("Content-Type", "application/json")
 				resp := map[string]interface{}{
 					"resent":     true,
@@ -315,7 +315,7 @@ func EmpresaUsuariosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				"email_reconfirmation_needed": resetConfirm,
 			}
 			if resetConfirm {
-				confirmURL, mailErr := sendEmpresaUsuarioConfirmationEmail(r, dbSuper, strings.TrimSpace(payload.Email), strings.TrimSpace(payload.Nombre), confirmToken)
+				confirmURL, mailErr := sendEmpresaUsuarioConfirmationEmail(r, dbSuper, payload.EmpresaID, strings.TrimSpace(payload.Email), strings.TrimSpace(payload.Nombre), confirmToken)
 				resp["email_sent"] = mailErr == nil
 				if mailErr != nil {
 					resp["email_error"] = mailErr.Error()
@@ -541,15 +541,27 @@ func ConfirmarCorreoUsuarioHandler(dbEmp *sql.DB) http.HandlerFunc {
 			http.Error(w, "token required", http.StatusBadRequest)
 			return
 		}
-		if _, err := dbpkg.ConfirmEmpresaUsuarioByToken(dbEmp, token); err != nil {
+		empresaID, err := dbpkg.ConfirmEmpresaUsuarioByToken(dbEmp, token)
+		if err != nil {
+			if qEmpresaID, qErr := parseInt64QueryOptional(r, "empresa_id"); qErr == nil && qEmpresaID > 0 {
+				empresaID = qEmpresaID
+			}
+			loginURL := "/login_usuario.html"
+			if empresaID > 0 {
+				loginURL += "?empresa_id=" + strconv.FormatInt(empresaID, 10)
+			}
 			msg := html.EscapeString(err.Error())
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			w.WriteHeader(http.StatusBadRequest)
-			fmt.Fprintf(w, "<html><body style='font-family:sans-serif;background:#10141f;color:#e9eefb;padding:24px'><h2>No se pudo confirmar el correo</h2><p>%s</p><p><a href='/login_usuario.html' style='color:#7fb2ff'>Volver al login de usuario</a></p></body></html>", msg)
+			fmt.Fprintf(w, "<html><body style='font-family:sans-serif;background:#10141f;color:#e9eefb;padding:24px'><h2>No se pudo confirmar el correo</h2><p>%s</p><p><a href='%s' style='color:#7fb2ff'>Volver al login de usuario</a></p></body></html>", msg, html.EscapeString(loginURL))
 			return
 		}
+		loginURL := "/login_usuario.html"
+		if empresaID > 0 {
+			loginURL += "?empresa_id=" + strconv.FormatInt(empresaID, 10)
+		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		fmt.Fprint(w, "<html><body style='font-family:sans-serif;background:#10141f;color:#e9eefb;padding:24px'><h2>Correo confirmado correctamente</h2><p>Tu cuenta ya está confirmada.</p><p><a href='/login_usuario.html' style='color:#7fb2ff'>Ir al login de usuario</a></p></body></html>")
+		fmt.Fprintf(w, "<html><body style='font-family:sans-serif;background:#10141f;color:#e9eefb;padding:24px'><h2>Correo confirmado correctamente</h2><p>Tu cuenta ya está confirmada.</p><p><a href='%s' style='color:#7fb2ff'>Ir al login de usuario</a></p></body></html>", html.EscapeString(loginURL))
 	}
 }
 
@@ -799,7 +811,7 @@ func resolveBaseURLForConfirmation(r *http.Request, dbSuper *sql.DB) string {
 	return scheme + "://" + host
 }
 
-func sendEmpresaUsuarioConfirmationEmail(r *http.Request, dbSuper *sql.DB, toEmail, toName, token string) (string, error) {
+func sendEmpresaUsuarioConfirmationEmail(r *http.Request, dbSuper *sql.DB, empresaID int64, toEmail, toName, token string) (string, error) {
 	smtpEmail, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_email")
 	if err != nil {
 		return "", err
@@ -837,7 +849,13 @@ func sendEmpresaUsuarioConfirmationEmail(r *http.Request, dbSuper *sql.DB, toEma
 
 	baseURL := resolveBaseURLForConfirmation(r, dbSuper)
 	confirmURL := strings.TrimRight(baseURL, "/") + "/auth/confirmar_correo?token=" + url.QueryEscape(token)
+	if empresaID > 0 {
+		confirmURL += "&empresa_id=" + strconv.FormatInt(empresaID, 10)
+	}
 	loginURL := strings.TrimRight(baseURL, "/") + "/login_usuario.html"
+	if empresaID > 0 {
+		loginURL += "?empresa_id=" + strconv.FormatInt(empresaID, 10)
+	}
 
 	mailHostForAuth := smtpHost
 	if strings.Contains(smtpHost, ":") {

@@ -151,6 +151,7 @@
               <option value="efectivo">Efectivo</option>
               <option value="tarjeta_credito">Tarjeta crédito</option>
               <option value="tarjeta_debito">Tarjeta débito</option>
+              <option value="transferencia_bancaria">Transferencia bancaria</option>
               <option value="mixto">Pago mixto</option>
               <option value="codigo_descuento">Código de descuento</option>
             </select>
@@ -163,6 +164,18 @@
             <label class="form-label" for="devolucionMonto">Devolución (valor)</label>
             <input id="devolucionMonto" type="number" step="0.01" min="0" class="form-input" value="0">
           </div>
+          <div class="form-col">
+            <label class="form-label" for="applyTipCheckbox">Propina</label>
+            <label class="form-help" style="display:flex;gap:8px;align-items:center;">
+              <input id="applyTipCheckbox" type="checkbox" checked> Aplicar propina configurada
+            </label>
+            <div id="tipConfigHint" class="form-help" style="margin-top:6px;">Configuracion de propinas: cargando...</div>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="commissionWorker">Lavador (comision)</label>
+            <input id="commissionWorker" class="form-input" placeholder="Ej: lavador1@empresa.com">
+            <div id="commissionConfigHint" class="form-help" style="margin-top:6px;">Configuracion de comisiones: cargando...</div>
+          </div>
         </div>
 
         <div id="mixedPaymentBlock" class="form-row" style="display:none;">
@@ -172,6 +185,7 @@
               <option value="efectivo">Efectivo</option>
               <option value="tarjeta_credito">Tarjeta crédito</option>
               <option value="tarjeta_debito">Tarjeta débito</option>
+              <option value="transferencia_bancaria">Transferencia bancaria</option>
             </select>
           </div>
           <div class="form-col">
@@ -180,7 +194,7 @@
           </div>
           <div class="form-col">
             <label class="form-label" for="mixedReference1">Pago mixto 1 - Referencia</label>
-            <input id="mixedReference1" class="form-input" placeholder="Obligatoria si es tarjeta">
+            <input id="mixedReference1" class="form-input" placeholder="Obligatoria si es tarjeta o transferencia">
           </div>
         </div>
 
@@ -190,6 +204,7 @@
             <select id="mixedMethod2" class="form-input">
               <option value="tarjeta_debito">Tarjeta débito</option>
               <option value="tarjeta_credito">Tarjeta crédito</option>
+              <option value="transferencia_bancaria">Transferencia bancaria</option>
               <option value="efectivo">Efectivo</option>
             </select>
           </div>
@@ -199,7 +214,7 @@
           </div>
           <div class="form-col">
             <label class="form-label" for="mixedReference2">Pago mixto 2 - Referencia</label>
-            <input id="mixedReference2" class="form-input" placeholder="Obligatoria si es tarjeta">
+            <input id="mixedReference2" class="form-input" placeholder="Obligatoria si es tarjeta o transferencia">
           </div>
         </div>
 
@@ -337,6 +352,28 @@
       itemCatalogResults: [],
       itemCatalogQueryToken: 0,
       discountCodes: [],
+      tipConfig: {
+        loaded: false,
+        habilitarPropina: false,
+        porcentajePropina: 0,
+        modoDistribucion: 'por_usuario',
+        aplicarAutomaticamente: true
+      },
+      commissionConfig: {
+        loaded: false,
+        habilitarComisiones: false,
+        porcentajeComision: 0,
+        filtroServicio: 'lavado',
+        aplicarAutomaticamente: true
+      },
+      operativaConfig: {
+        loaded: false,
+        role: '',
+        permisos: null
+      },
+      stationTip: {
+        aplicar: true
+      },
       stationDiscount: {
         type: 'none',
         code: '',
@@ -420,6 +457,174 @@
       };
     }
 
+    function normalizeRoleName(raw) {
+      const role = normalize(raw).toLowerCase();
+      if (!role) return '';
+      if (role === 'super_administrador' || role === 'superadmin' || role === 'super') return 'super_administrador';
+      if (role === 'administrador' || role === 'admin' || role === 'admin_empresa') return 'admin_empresa';
+      if (role === 'supervisor' || role === 'supervisor_sucursal') return 'supervisor_sucursal';
+      if (role === 'contabilidad' || role === 'contador') return 'contabilidad';
+      return role;
+    }
+
+    function defaultOperativaPermisos(role) {
+      return {
+        rol: normalizeRoleName(role),
+        metodo_pago_efectivo: true,
+        metodo_pago_tarjeta_credito: true,
+        metodo_pago_tarjeta_debito: true,
+        metodo_pago_transferencia_bancaria: true,
+        metodo_pago_mixto: true,
+        metodo_pago_codigo_descuento: true,
+        habilitar_propinas: true,
+        habilitar_comisiones: true
+      };
+    }
+
+    function normalizeOperativaPermisos(raw, role) {
+      const src = raw && typeof raw === 'object' ? raw : {};
+      const base = defaultOperativaPermisos(role);
+      return {
+        rol: normalizeRoleName(src.rol || base.rol),
+        metodo_pago_efectivo: src.metodo_pago_efectivo === undefined ? base.metodo_pago_efectivo : Boolean(src.metodo_pago_efectivo),
+        metodo_pago_tarjeta_credito: src.metodo_pago_tarjeta_credito === undefined ? base.metodo_pago_tarjeta_credito : Boolean(src.metodo_pago_tarjeta_credito),
+        metodo_pago_tarjeta_debito: src.metodo_pago_tarjeta_debito === undefined ? base.metodo_pago_tarjeta_debito : Boolean(src.metodo_pago_tarjeta_debito),
+        metodo_pago_transferencia_bancaria: src.metodo_pago_transferencia_bancaria === undefined ? base.metodo_pago_transferencia_bancaria : Boolean(src.metodo_pago_transferencia_bancaria),
+        metodo_pago_mixto: src.metodo_pago_mixto === undefined ? base.metodo_pago_mixto : Boolean(src.metodo_pago_mixto),
+        metodo_pago_codigo_descuento: src.metodo_pago_codigo_descuento === undefined ? base.metodo_pago_codigo_descuento : Boolean(src.metodo_pago_codigo_descuento),
+        habilitar_propinas: src.habilitar_propinas === undefined ? base.habilitar_propinas : Boolean(src.habilitar_propinas),
+        habilitar_comisiones: src.habilitar_comisiones === undefined ? base.habilitar_comisiones : Boolean(src.habilitar_comisiones)
+      };
+    }
+
+    function getOperativaPermisos() {
+      if (!state.operativaConfig || !state.operativaConfig.permisos) {
+        return defaultOperativaPermisos(state.operativaConfig && state.operativaConfig.role);
+      }
+      return normalizeOperativaPermisos(state.operativaConfig.permisos, state.operativaConfig.role);
+    }
+
+    function isPaymentMethodAllowed(metodo) {
+      const m = normalize(metodo).toLowerCase();
+      const p = getOperativaPermisos();
+      if (m === 'efectivo') return p.metodo_pago_efectivo;
+      if (m === 'tarjeta_credito') return p.metodo_pago_tarjeta_credito;
+      if (m === 'tarjeta_debito') return p.metodo_pago_tarjeta_debito;
+      if (m === 'transferencia_bancaria') return p.metodo_pago_transferencia_bancaria;
+      if (m === 'mixto') return p.metodo_pago_mixto;
+      if (m === 'codigo_descuento') return p.metodo_pago_codigo_descuento;
+      return false;
+    }
+
+    function isMixedMethodAllowed(metodo) {
+      const m = normalize(metodo).toLowerCase();
+      if (m !== 'efectivo' && m !== 'tarjeta_credito' && m !== 'tarjeta_debito' && m !== 'transferencia_bancaria') {
+        return false;
+      }
+      return isPaymentMethodAllowed(m);
+    }
+
+    function getAllowedPaymentMethods() {
+      const ordered = ['efectivo', 'tarjeta_credito', 'tarjeta_debito', 'transferencia_bancaria', 'mixto', 'codigo_descuento'];
+      return ordered.filter(function(method) {
+        return isPaymentMethodAllowed(method);
+      });
+    }
+
+    function getAllowedMixedMethods() {
+      const ordered = ['efectivo', 'tarjeta_credito', 'tarjeta_debito', 'transferencia_bancaria'];
+      return ordered.filter(function(method) {
+        return isMixedMethodAllowed(method);
+      });
+    }
+
+    function ensurePaymentMethodInputsFromOperativa() {
+      const paymentMethodEl = document.getElementById('paymentMethod');
+      const mixedMethod1El = document.getElementById('mixedMethod1');
+      const mixedMethod2El = document.getElementById('mixedMethod2');
+      const allowed = getAllowedPaymentMethods();
+      const allowedMixed = getAllowedMixedMethods();
+
+      if (paymentMethodEl) {
+        Array.from(paymentMethodEl.options).forEach(function(opt) {
+          opt.disabled = !isPaymentMethodAllowed(opt.value);
+        });
+        if (!allowed.length) {
+          paymentMethodEl.disabled = true;
+        } else if (!isPaymentMethodAllowed(paymentMethodEl.value)) {
+          paymentMethodEl.value = allowed[0];
+        }
+      }
+
+      if (mixedMethod1El) {
+        Array.from(mixedMethod1El.options).forEach(function(opt) {
+          opt.disabled = !isMixedMethodAllowed(opt.value);
+        });
+        if (allowedMixed.length && !isMixedMethodAllowed(mixedMethod1El.value)) {
+          mixedMethod1El.value = allowedMixed[0];
+        }
+      }
+
+      if (mixedMethod2El) {
+        Array.from(mixedMethod2El.options).forEach(function(opt) {
+          opt.disabled = !isMixedMethodAllowed(opt.value);
+        });
+        if (allowedMixed.length && !isMixedMethodAllowed(mixedMethod2El.value)) {
+          mixedMethod2El.value = allowedMixed[Math.min(1, allowedMixed.length - 1)];
+        }
+      }
+    }
+
+    async function loadCurrentAdminRole() {
+      try {
+        const res = await fetch('/me', { credentials: 'same-origin' });
+        if (!res.ok) return '';
+        const me = await res.json();
+        return normalizeRoleName(me && (me.role || me.rol || me.admin_role));
+      } catch (_) {
+        return '';
+      }
+    }
+
+    async function loadOperativaConfig() {
+      if (!state.empresaID) {
+        state.operativaConfig.loaded = false;
+        state.operativaConfig.role = '';
+        state.operativaConfig.permisos = defaultOperativaPermisos('');
+        return;
+      }
+
+      const role = await loadCurrentAdminRole();
+      state.operativaConfig.role = role;
+
+      try {
+        const url = new URL('/api/empresa/configuracion_operativa', window.location.origin);
+        url.searchParams.set('empresa_id', String(state.empresaID));
+        if (role) {
+          url.searchParams.set('rol', role);
+        }
+
+        const res = await fetch(url.pathname + url.search, { credentials: 'same-origin' });
+        if (!res.ok) {
+          state.operativaConfig.loaded = false;
+          state.operativaConfig.permisos = defaultOperativaPermisos(role);
+          return;
+        }
+
+        const data = await res.json();
+        const sourcePerms = data && data.permisos_rol_resuelto ? data.permisos_rol_resuelto : data;
+        state.operativaConfig.loaded = true;
+        state.operativaConfig.permisos = normalizeOperativaPermisos(sourcePerms, role);
+      } catch (_) {
+        state.operativaConfig.loaded = false;
+        state.operativaConfig.permisos = defaultOperativaPermisos(role);
+      }
+
+      ensurePaymentMethodInputsFromOperativa();
+      renderTipConfigHint();
+      renderCommissionConfigHint();
+    }
+
     function setScannerMessage(text, isError) {
       setMessage('scannerMsg', text, isError);
     }
@@ -482,6 +687,164 @@
       } catch (_) {
         state.discountCodes = [];
       }
+    }
+
+    function renderTipConfigHint() {
+      const hintEl = document.getElementById('tipConfigHint');
+      const applyEl = document.getElementById('applyTipCheckbox');
+      if (!hintEl || !applyEl) return;
+
+      const operativa = getOperativaPermisos();
+      if (!operativa.habilitar_propinas) {
+        const roleTag = normalize(state.operativaConfig.role);
+        hintEl.textContent = 'Propina deshabilitada por configuración operativa' + (roleTag ? (' para el rol ' + roleTag) : '') + '.';
+        applyEl.checked = false;
+        applyEl.disabled = true;
+        state.stationTip.aplicar = false;
+        return;
+      }
+
+      if (!state.tipConfig.loaded) {
+        hintEl.textContent = 'Configuracion de propinas no disponible.';
+        applyEl.checked = false;
+        applyEl.disabled = true;
+        return;
+      }
+
+      const enabled = Boolean(state.tipConfig.habilitarPropina);
+      const pct = Number(state.tipConfig.porcentajePropina || 0).toFixed(2);
+      const mode = normalize(state.tipConfig.modoDistribucion) || 'por_usuario';
+      hintEl.textContent =
+        'Estado: ' + (enabled ? 'habilitada' : 'deshabilitada') +
+        ' | Porcentaje: ' + pct + '% | Modo: ' + mode;
+
+      applyEl.disabled = !enabled;
+      if (!enabled) {
+        applyEl.checked = false;
+        state.stationTip.aplicar = false;
+      } else {
+        applyEl.checked = Boolean(state.stationTip.aplicar);
+      }
+    }
+
+    async function loadTipConfig() {
+      if (!state.empresaID) {
+        state.tipConfig.loaded = false;
+        renderTipConfigHint();
+        return;
+      }
+      try {
+        const url = new URL('/api/empresa/propinas', window.location.origin);
+        url.searchParams.set('empresa_id', String(state.empresaID));
+        url.searchParams.set('action', 'config');
+        const res = await fetch(url.pathname + url.search);
+        if (!res.ok) {
+          state.tipConfig.loaded = false;
+          renderTipConfigHint();
+          return;
+        }
+        const cfg = await res.json();
+        state.tipConfig.loaded = true;
+        state.tipConfig.habilitarPropina = Boolean(cfg && cfg.habilitar_propina);
+        state.tipConfig.porcentajePropina = Math.max(0, Math.min(100, Number((cfg && cfg.porcentaje_propina) || 0)));
+        state.tipConfig.modoDistribucion = normalize((cfg && cfg.modo_distribucion) || 'por_usuario') || 'por_usuario';
+        state.tipConfig.aplicarAutomaticamente = cfg && cfg.aplicar_automaticamente !== false;
+        state.stationTip.aplicar = state.tipConfig.habilitarPropina && state.tipConfig.aplicarAutomaticamente;
+        renderTipConfigHint();
+      } catch (_) {
+        state.tipConfig.loaded = false;
+        renderTipConfigHint();
+      }
+    }
+
+    function renderCommissionConfigHint() {
+      const hintEl = document.getElementById('commissionConfigHint');
+      if (!hintEl) return;
+
+      const operativa = getOperativaPermisos();
+      if (!operativa.habilitar_comisiones) {
+        const roleTag = normalize(state.operativaConfig.role);
+        hintEl.textContent = 'Comisiones deshabilitadas por configuración operativa' + (roleTag ? (' para el rol ' + roleTag) : '') + '.';
+        return;
+      }
+
+      if (!state.commissionConfig.loaded) {
+        hintEl.textContent = 'Configuracion de comisiones no disponible.';
+        return;
+      }
+
+      const enabled = Boolean(state.commissionConfig.habilitarComisiones);
+      const pct = Number(state.commissionConfig.porcentajeComision || 0).toFixed(2);
+      const filtro = normalize(state.commissionConfig.filtroServicio) || 'sin filtro';
+      hintEl.textContent =
+        'Estado: ' + (enabled ? 'habilitada' : 'deshabilitada') +
+        ' | Porcentaje: ' + pct + '% | Filtro: ' + filtro;
+    }
+
+    async function loadCommissionConfig() {
+      if (!state.empresaID) {
+        state.commissionConfig.loaded = false;
+        renderCommissionConfigHint();
+        return;
+      }
+      try {
+        const url = new URL('/api/empresa/comisiones', window.location.origin);
+        url.searchParams.set('empresa_id', String(state.empresaID));
+        url.searchParams.set('action', 'config');
+        const res = await fetch(url.pathname + url.search);
+        if (!res.ok) {
+          state.commissionConfig.loaded = false;
+          renderCommissionConfigHint();
+          return;
+        }
+        const cfg = await res.json();
+        state.commissionConfig.loaded = true;
+        state.commissionConfig.habilitarComisiones = Boolean(cfg && cfg.habilitar_comisiones);
+        state.commissionConfig.porcentajeComision = Math.max(0, Math.min(100, Number((cfg && cfg.porcentaje_comision) || 0)));
+        state.commissionConfig.filtroServicio = normalize((cfg && cfg.filtro_servicio) || 'lavado').toLowerCase();
+        state.commissionConfig.aplicarAutomaticamente = cfg && cfg.aplicar_automaticamente !== false;
+        renderCommissionConfigHint();
+      } catch (_) {
+        state.commissionConfig.loaded = false;
+        renderCommissionConfigHint();
+      }
+    }
+
+    function getCommissionEstimateFromItems() {
+      const operativa = getOperativaPermisos();
+      const enabled = operativa.habilitar_comisiones && state.commissionConfig.loaded && Boolean(state.commissionConfig.habilitarComisiones) && Boolean(state.commissionConfig.aplicarAutomaticamente);
+      const pct = enabled ? Math.max(0, Math.min(100, Number(state.commissionConfig.porcentajeComision || 0))) : 0;
+      const filtro = normalize(state.commissionConfig.filtroServicio).toLowerCase();
+
+      if (!enabled || pct <= 0 || !Array.isArray(state.items)) {
+        return { enabled: enabled, percentage: pct, base: 0, amount: 0, filtro: filtro };
+      }
+
+      let base = 0;
+      state.items.forEach(function(item) {
+        if (normalize(item.estado || 'activo').toLowerCase() !== 'activo') return;
+        if (normalize(item.tipo_item || '').toLowerCase() !== 'servicio') return;
+
+        if (filtro) {
+          const haystack = [
+            normalize(item.descripcion).toLowerCase(),
+            normalize(item.codigo_item).toLowerCase(),
+            normalize(item.servicio_nombre).toLowerCase(),
+            normalize(item.servicio_categoria).toLowerCase()
+          ].join(' ');
+          if (haystack.indexOf(filtro) === -1) return;
+        }
+
+        base = roundMoney(base + Number(item.total_linea || 0));
+      });
+
+      return {
+        enabled: enabled,
+        percentage: pct,
+        base: roundMoney(base),
+        amount: roundMoney(base * (pct / 100)),
+        filtro: filtro
+      };
     }
 
     function findDiscountCodeInModule(code) {
@@ -615,6 +978,8 @@
       const paymentMethod = normalize(state.stationDiscount.paymentMethod) || 'efectivo';
       const paymentReference = normalize(state.stationDiscount.paymentReference);
       const mixedRaw = Array.isArray(state.stationDiscount.mixedPayments) ? state.stationDiscount.mixedPayments : [];
+      const operativa = getOperativaPermisos();
+      let operativaMessage = '';
 
       if (caps.enabled) {
         if (currentType === 'percent' && caps.allowPercent) {
@@ -661,6 +1026,13 @@
       const devolucion = Math.max(0, Math.min(maxReturn, roundMoney(toNumber(state.stationDiscount.devolucion, 0))));
       const totalPagar = Math.max(0, roundMoney(totalBase - discountValue - devolucion));
 
+      const tipConfigEnabled = operativa.habilitar_propinas && state.tipConfig.loaded && Boolean(state.tipConfig.habilitarPropina);
+      const tipPercent = tipConfigEnabled ? Math.max(0, Math.min(100, Number(state.tipConfig.porcentajePropina || 0))) : 0;
+      const tipApplied = tipConfigEnabled && Boolean(state.stationTip.aplicar) && tipPercent > 0;
+      const tipAmount = tipApplied ? roundMoney(totalPagar * (tipPercent / 100)) : 0;
+      const totalPagarFinal = roundMoney(totalPagar + tipAmount);
+      const commissionEstimate = getCommissionEstimateFromItems();
+
       let mixedPayments = [];
       let mixedTotal = 0;
       let mixedSummary = '';
@@ -668,22 +1040,20 @@
       let paymentLabel = paymentMethod.replace(/_/g, ' ');
 
       if (paymentMethod === 'mixto') {
-        const allowed = {
-          efectivo: true,
-          tarjeta_credito: true,
-          tarjeta_debito: true
-        };
+        if (!isPaymentMethodAllowed('mixto')) {
+          operativaMessage = 'El método de pago mixto no está habilitado para este rol.';
+        }
         mixedRaw.forEach(function(item) {
           const metodo = normalize(item && item.metodo).toLowerCase();
           const monto = Math.max(0, roundMoney(toNumber(item && item.monto, 0)));
           const referencia = normalize(item && item.referencia);
           if (monto <= 0) return;
-          if (!allowed[metodo]) {
-            mixedMessage = 'Pago mixto solo permite efectivo, tarjeta crédito o tarjeta débito.';
+          if (!isMixedMethodAllowed(metodo)) {
+            mixedMessage = 'El tramo de pago mixto con método ' + metodo.replace(/_/g, ' ') + ' no está habilitado para este rol.';
             return;
           }
-          if ((metodo === 'tarjeta_credito' || metodo === 'tarjeta_debito') && referencia.length < 4) {
-            mixedMessage = 'Cada tramo de tarjeta en pago mixto requiere referencia mínima de 4 caracteres.';
+          if ((metodo === 'tarjeta_credito' || metodo === 'tarjeta_debito' || metodo === 'transferencia_bancaria') && referencia.length < 4) {
+            mixedMessage = 'Cada tramo con tarjeta o transferencia bancaria en pago mixto requiere referencia mínima de 4 caracteres.';
             return;
           }
           mixedPayments.push({ metodo: metodo, monto: monto, referencia: referencia });
@@ -693,7 +1063,7 @@
         if (!mixedMessage && mixedPayments.length < 2) {
           mixedMessage = 'Pago mixto requiere al menos 2 tramos con monto mayor a cero.';
         }
-        if (!mixedMessage && Math.abs(mixedTotal - totalPagar) > 0.01) {
+        if (!mixedMessage && Math.abs(mixedTotal - totalPagarFinal) > 0.01) {
           mixedMessage = 'La suma del pago mixto debe ser igual al total a pagar.';
         }
         if (mixedPayments.length) {
@@ -705,22 +1075,34 @@
         }
       }
 
+      if (!isPaymentMethodAllowed(paymentMethod)) {
+        operativaMessage = 'El método de pago ' + paymentMethod.replace(/_/g, ' ') + ' no está habilitado para este rol.';
+      }
+
       return {
         totalBase: roundMoney(totalBase),
         discountLabel: discountLabel,
         discountValue: roundMoney(discountValue),
         devolucion: roundMoney(devolucion),
         totalPagar: totalPagar,
+        totalPagarFinal: totalPagarFinal,
         discountType: discountType,
         discountCodeApplied: discountCodeApplied,
         discountCodeMessage: discountCodeMessage,
         paymentMethod: paymentMethod,
         paymentReference: paymentReference,
         paymentLabel: paymentLabel,
+        tipConfigEnabled: tipConfigEnabled,
+        tipApplied: tipApplied,
+        tipPercent: tipPercent,
+        tipAmount: tipAmount,
+        tipMode: normalize(state.tipConfig.modoDistribucion) || 'por_usuario',
+        commissionEstimate: commissionEstimate,
         mixedPayments: mixedPayments,
         mixedTotal: mixedTotal,
         mixedSummary: mixedSummary,
-        mixedMessage: mixedMessage
+        mixedMessage: mixedMessage,
+        operativaMessage: operativaMessage
       };
     }
 
@@ -780,20 +1162,27 @@
     }
 
     function syncStationDiscountFromInputs() {
+      const allowedPaymentMethods = getAllowedPaymentMethods();
+      const allowedMixedMethods = getAllowedMixedMethods();
+      const selectedPaymentMethod = normalize(document.getElementById('paymentMethod').value).toLowerCase();
+      const selectedMixedMethod1 = normalize(document.getElementById('mixedMethod1').value).toLowerCase();
+      const selectedMixedMethod2 = normalize(document.getElementById('mixedMethod2').value).toLowerCase();
+
       state.stationDiscount.type = normalize(document.getElementById('discountType').value) || 'none';
       state.stationDiscount.value = Math.max(0, toNumber(document.getElementById('discountValue').value, 0));
       state.stationDiscount.code = normalize(document.getElementById('discountCode').value).toUpperCase();
       state.stationDiscount.devolucion = Math.max(0, toNumber(document.getElementById('devolucionMonto').value, 0));
-      state.stationDiscount.paymentMethod = normalize(document.getElementById('paymentMethod').value) || 'efectivo';
+      state.stationDiscount.paymentMethod = isPaymentMethodAllowed(selectedPaymentMethod) ? selectedPaymentMethod : (allowedPaymentMethods[0] || '');
       state.stationDiscount.paymentReference = normalize(document.getElementById('paymentReference').value);
+      state.stationTip.aplicar = Boolean(document.getElementById('applyTipCheckbox').checked);
       state.stationDiscount.mixedPayments = [
         {
-          metodo: normalize(document.getElementById('mixedMethod1').value) || 'efectivo',
+          metodo: isMixedMethodAllowed(selectedMixedMethod1) ? selectedMixedMethod1 : (allowedMixedMethods[0] || 'efectivo'),
           monto: Math.max(0, toNumber(document.getElementById('mixedAmount1').value, 0)),
           referencia: normalize(document.getElementById('mixedReference1').value)
         },
         {
-          metodo: normalize(document.getElementById('mixedMethod2').value) || 'tarjeta_debito',
+          metodo: isMixedMethodAllowed(selectedMixedMethod2) ? selectedMixedMethod2 : (allowedMixedMethods[Math.min(1, Math.max(0, allowedMixedMethods.length - 1))] || allowedMixedMethods[0] || 'tarjeta_debito'),
           monto: Math.max(0, toNumber(document.getElementById('mixedAmount2').value, 0)),
           referencia: normalize(document.getElementById('mixedReference2').value)
         }
@@ -816,6 +1205,10 @@
       const breakdownEl = document.getElementById('stationPaymentBreakdown');
       const btnPay = document.getElementById('btnPagarCarrito');
       const btnActivate = document.getElementById('btnActivarSesionCarrito');
+      const mixedBlockEl = document.getElementById('mixedPaymentBlock');
+      const mixedBlock2El = document.getElementById('mixedPaymentBlock2');
+      const mixedHintEl = document.getElementById('mixedPaymentHint');
+      const applyTipEl = document.getElementById('applyTipCheckbox');
 
       block.style.display = '';
       btnPay.style.display = selectedActive ? '' : 'none';
@@ -827,13 +1220,26 @@
       const paymentMethodEl = document.getElementById('paymentMethod');
       const paymentReferenceEl = document.getElementById('paymentReference');
       const devolucionEl = document.getElementById('devolucionMonto');
+      const commissionWorkerEl = document.getElementById('commissionWorker');
+      const operativa = getOperativaPermisos();
+      ensurePaymentMethodInputsFromOperativa();
+      const hasAllowedPaymentMethods = getAllowedPaymentMethods().length > 0;
 
       discountTypeEl.disabled = !selectedActive || !caps.enabled;
       discountValueEl.disabled = !selectedActive || !caps.enabled;
       discountCodeEl.disabled = !selectedActive || !caps.enabled;
-      paymentMethodEl.disabled = !selectedActive;
+      paymentMethodEl.disabled = !selectedActive || !hasAllowedPaymentMethods;
       paymentReferenceEl.disabled = !selectedActive;
       devolucionEl.disabled = !selectedActive;
+      if (commissionWorkerEl) {
+        commissionWorkerEl.disabled = !selectedActive || !operativa.habilitar_comisiones;
+      }
+
+      renderTipConfigHint();
+      renderCommissionConfigHint();
+      if (applyTipEl) {
+        applyTipEl.disabled = applyTipEl.disabled || !selectedActive || !operativa.habilitar_propinas;
+      }
 
       Array.from(discountTypeEl.options).forEach(function(opt) {
         if (opt.value === 'percent') opt.disabled = !caps.allowPercent;
@@ -847,19 +1253,59 @@
         discountTypeEl.value = 'code';
       }
 
+      if (!hasAllowedPaymentMethods) {
+        state.stationDiscount.paymentMethod = '';
+      }
+
       const pay = getStationPaymentBreakdown(carrito);
+      const isMixedMethod = pay.paymentMethod === 'mixto';
+
+      mixedBlockEl.style.display = selectedActive && isMixedMethod ? '' : 'none';
+      mixedBlock2El.style.display = selectedActive && isMixedMethod ? '' : 'none';
+      mixedHintEl.style.display = selectedActive && isMixedMethod ? '' : 'none';
+
+      ['mixedMethod1', 'mixedAmount1', 'mixedReference1', 'mixedMethod2', 'mixedAmount2', 'mixedReference2'].forEach(function(id) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.disabled = !selectedActive || !isMixedMethod;
+      });
+
+      if (isMixedMethod) {
+        mixedHintEl.textContent = pay.mixedMessage || 'En pago mixto debes registrar mínimo 2 métodos y la suma exacta del total a pagar.';
+      }
 
       breakdownEl.textContent =
         'Subtotal carrito: ' + formatAmount(pay.totalBase, carrito.moneda) +
         ' | ' + pay.discountLabel + ': -' + formatAmount(pay.discountValue, carrito.moneda) +
         ' | Devolución: -' + formatAmount(pay.devolucion, carrito.moneda) +
-        ' | Total a pagar: ' + formatAmount(pay.totalPagar, carrito.moneda) +
+        ' | Total sin propina: ' + formatAmount(pay.totalPagar, carrito.moneda) +
+        ' | Propina (' + pay.tipPercent.toFixed(2) + '%): +' + formatAmount(pay.tipAmount, carrito.moneda) +
+        ' | Total final a pagar: ' + formatAmount(pay.totalPagarFinal, carrito.moneda) +
         ' | Método de pago: ' + pay.paymentMethod.replace(/_/g, ' ');
+      if (pay.commissionEstimate && pay.commissionEstimate.enabled) {
+        breakdownEl.textContent +=
+          ' | Comisión estimada (' + Number(pay.commissionEstimate.percentage || 0).toFixed(2) + '%): +' +
+          formatAmount(pay.commissionEstimate.amount, carrito.moneda);
+      }
+      if (isMixedMethod && pay.mixedSummary) {
+        breakdownEl.textContent += ' | Detalle mixto: ' + pay.mixedSummary;
+      }
 
-      if (!caps.enabled) {
+      const hasBlockingError = !hasAllowedPaymentMethods || Boolean(pay.operativaMessage) || Boolean(pay.discountCodeMessage) || Boolean(pay.mixedMessage) || (pay.paymentMethod === 'codigo_descuento' && pay.tipAmount > 0);
+      btnPay.disabled = !selectedActive || hasBlockingError;
+
+      if (!hasAllowedPaymentMethods) {
+        setStationPaymentMessage('No hay métodos de pago habilitados para este rol en la configuración operativa.', true);
+      } else if (pay.operativaMessage) {
+        setStationPaymentMessage(pay.operativaMessage, true);
+      } else if (!caps.enabled) {
         setStationPaymentMessage('Los descuentos están desactivados en Configuración de empresa para esta empresa.', false);
       } else if (pay.discountCodeMessage) {
         setStationPaymentMessage(pay.discountCodeMessage, true);
+      } else if (pay.paymentMethod === 'codigo_descuento' && pay.tipAmount > 0) {
+        setStationPaymentMessage('Cuando hay propina aplicada, el pago por código de descuento no cubre el total. Usa efectivo, tarjeta, transferencia o desactiva propina en este cobro.', true);
+      } else if (pay.mixedMessage) {
+        setStationPaymentMessage(pay.mixedMessage, true);
       } else if (!selectedActive) {
         setStationPaymentMessage('Carrito inactivo. Actívalo para iniciar una nueva sesión de estación.', false);
       } else {
@@ -900,16 +1346,33 @@
 
       const pay = getStationPaymentBreakdown(selected);
 
+      if (!pay.paymentMethod || !isPaymentMethodAllowed(pay.paymentMethod)) {
+        setStationPaymentMessage(pay.operativaMessage || 'El método de pago seleccionado no está habilitado para este rol.', true);
+        return;
+      }
+      if (pay.operativaMessage) {
+        setStationPaymentMessage(pay.operativaMessage, true);
+        return;
+      }
+
       if (pay.paymentMethod === 'codigo_descuento' && !pay.discountCodeApplied) {
         setStationPaymentMessage('Debes aplicar un código de descuento válido para pagar con código de descuento.', true);
         return;
       }
-      if ((pay.paymentMethod === 'tarjeta_credito' || pay.paymentMethod === 'tarjeta_debito') && normalize(pay.paymentReference).length < 4) {
-        setStationPaymentMessage('Para pagos con tarjeta debes ingresar una referencia de pago (mínimo 4 caracteres).', true);
+      if (pay.paymentMethod === 'codigo_descuento' && pay.tipAmount > 0) {
+        setStationPaymentMessage('No puedes usar solo código de descuento cuando la propina está activa en este cobro.', true);
+        return;
+      }
+      if ((pay.paymentMethod === 'tarjeta_credito' || pay.paymentMethod === 'tarjeta_debito' || pay.paymentMethod === 'transferencia_bancaria') && normalize(pay.paymentReference).length < 4) {
+        setStationPaymentMessage('Para pagos con tarjeta o transferencia bancaria debes ingresar una referencia de pago (mínimo 4 caracteres).', true);
+        return;
+      }
+      if (pay.paymentMethod === 'mixto' && pay.mixedMessage) {
+        setStationPaymentMessage(pay.mixedMessage, true);
         return;
       }
 
-      if (!confirm('Confirmar pago y cierre del carrito por ' + formatAmount(pay.totalPagar, selected.moneda) + '?')) return;
+      if (!confirm('Confirmar pago y cierre del carrito por ' + formatAmount(pay.totalPagarFinal, selected.moneda) + '?')) return;
 
       try {
         const res = await fetch('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(selected.id) + '&action=pagar_estacion', {
@@ -918,16 +1381,33 @@
           body: JSON.stringify({
             metodo_pago: pay.paymentMethod,
             referencia_pago: pay.paymentReference,
+            pagos_mixtos: pay.paymentMethod === 'mixto' ? pay.mixedPayments : [],
             descuento_tipo: pay.discountType,
             descuento_codigo: pay.discountCodeApplied,
             codigo_descuento: pay.discountCodeApplied,
             descuento_valor: pay.discountValue,
             devolucion_total: pay.devolucion,
-            total_pagado: pay.totalPagar
+            total_pagado: pay.totalPagarFinal,
+            aplicar_propina: pay.tipApplied,
+            usuario_lavador: normalize(document.getElementById('commissionWorker').value)
           })
         });
         await ensureOk(res);
-        setStationPaymentMessage('Pago registrado. El carrito quedó inactivo.', false);
+        const payResp = await res.json().catch(function() { return null; });
+        var successMsg = 'Pago registrado. El carrito quedó inactivo.';
+        if (payResp && payResp.propina && Number(payResp.propina.monto || 0) > 0) {
+          successMsg += ' Propina registrada: ' + formatAmount(payResp.propina.monto, selected.moneda) + '.';
+        }
+        if (payResp && payResp.propina && normalize(payResp.propina.warning)) {
+          successMsg += ' Aviso propina: ' + normalize(payResp.propina.warning) + '.';
+        }
+        if (payResp && payResp.comision && Number(payResp.comision.monto_comision || 0) > 0) {
+          successMsg += ' Comision registrada: ' + formatAmount(payResp.comision.monto_comision, selected.moneda) + ' para ' + normalize(payResp.comision.usuario_lavador || 'lavador asignado') + '.';
+        }
+        if (payResp && payResp.comision && normalize(payResp.comision.warning)) {
+          successMsg += ' Aviso comision: ' + normalize(payResp.comision.warning) + '.';
+        }
+        setStationPaymentMessage(successMsg, false);
         await loadCarritos();
         await loadItems();
       } catch (err) {
@@ -2107,7 +2587,22 @@
       processScannerInput();
     });
 
-    ['discountType', 'discountValue', 'discountCode', 'devolucionMonto', 'paymentMethod', 'paymentReference'].forEach(function(id) {
+    ['discountType', 'discountValue', 'discountCode', 'devolucionMonto', 'paymentMethod', 'paymentReference', 'applyTipCheckbox', 'commissionWorker'].forEach(function(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('input', function() {
+        const selected = getSelectedCarrito();
+        if (!selected) return;
+        renderStationPaymentPanel(selected);
+      });
+      el.addEventListener('change', function() {
+        const selected = getSelectedCarrito();
+        if (!selected) return;
+        renderStationPaymentPanel(selected);
+      });
+    });
+
+    ['mixedMethod1', 'mixedAmount1', 'mixedReference1', 'mixedMethod2', 'mixedAmount2', 'mixedReference2'].forEach(function(id) {
       const el = document.getElementById(id);
       if (!el) return;
       el.addEventListener('input', function() {
@@ -2174,6 +2669,9 @@
       await loadEmpresaTitle();
       await loadClientes();
       await loadDiscountCodes();
+      await loadOperativaConfig();
+      await loadTipConfig();
+      await loadCommissionConfig();
       try {
         await loadCarritos();
         if (state.stationMode) {

@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Modulo de propinas</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container">
+    <div class="page-header">
+      <h1>Modulo de propinas</h1>
+    </div>
+    <p class="form-help" style="margin:0 0 12px 0;">
+      Configura el porcentaje de propina para facturas y revisa la acumulacion por usuario o reparto universal.
+    </p>
+
+    <div class="form" style="margin-top:12px;">
+      <div class="page-header" style="margin-bottom:8px;">
+        <h2 style="margin:0;font-size:1rem;">Configuracion de propinas</h2>
+      </div>
+      <div class="form-row">
+        <div class="form-col" style="max-width:260px;">
+          <label class="form-label">Estado</label>
+          <label class="form-help" style="display:flex;gap:8px;align-items:center;">
+            <input id="cfgHabilitar" type="checkbox"> Habilitar propina en facturas
+          </label>
+        </div>
+        <div class="form-col" style="max-width:260px;">
+          <label class="form-label" for="cfgPorcentaje">Porcentaje de propina (%)</label>
+          <input id="cfgPorcentaje" class="form-input" type="number" min="0" max="100" step="0.01" value="10">
+        </div>
+        <div class="form-col" style="max-width:260px;">
+          <label class="form-label" for="cfgModo">Modo de distribucion</label>
+          <select id="cfgModo" class="form-input">
+            <option value="por_usuario">Por usuario</option>
+            <option value="universal">Universal (repartida en usuarios activos)</option>
+          </select>
+        </div>
+        <div class="form-col" style="max-width:280px;">
+          <label class="form-label">Aplicacion por defecto</label>
+          <label class="form-help" style="display:flex;gap:8px;align-items:center;">
+            <input id="cfgAplicarAuto" type="checkbox" checked> Aplicar automaticamente al cobrar
+          </label>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="cfgObservaciones">Observaciones</label>
+          <textarea id="cfgObservaciones" class="form-textarea" placeholder="Opcional"></textarea>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button id="btnGuardarCfg" type="button" class="btn">Guardar configuracion</button>
+        <button id="btnActivarCfg" type="button" class="btn secondary">Activar</button>
+        <button id="btnDesactivarCfg" type="button" class="btn secondary">Desactivar</button>
+      </div>
+      <div id="cfgMsg" class="form-help"></div>
+    </div>
+
+    <div class="form" style="margin-top:14px;">
+      <div class="page-header" style="margin-bottom:8px;">
+        <h2 style="margin:0;font-size:1rem;">Reporte de propinas</h2>
+      </div>
+      <div class="form-row">
+        <div class="form-col" style="max-width:220px;">
+          <label class="form-label" for="fDesde">Desde</label>
+          <input id="fDesde" class="form-input" type="date">
+        </div>
+        <div class="form-col" style="max-width:220px;">
+          <label class="form-label" for="fHasta">Hasta</label>
+          <input id="fHasta" class="form-input" type="date">
+        </div>
+        <div class="form-col" style="max-width:280px;">
+          <label class="form-label" for="fUsuario">Usuario</label>
+          <input id="fUsuario" class="form-input" placeholder="email o nombre">
+        </div>
+        <div class="form-col" style="max-width:220px;">
+          <label class="form-label" for="fModo">Modo</label>
+          <select id="fModo" class="form-input">
+            <option value="">Todos</option>
+            <option value="por_usuario">Por usuario</option>
+            <option value="universal">Universal</option>
+          </select>
+        </div>
+        <div class="form-col" style="max-width:180px;">
+          <label class="form-label" for="fLimit">Max. filas</label>
+          <input id="fLimit" class="form-input" type="number" min="10" max="2000" step="10" value="200">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button id="btnRefrescarReporte" type="button" class="btn">Actualizar reporte</button>
+      </div>
+      <div id="reporteMsg" class="form-help"></div>
+
+      <div id="resumenBox" class="form-help" style="margin-top:8px;"></div>
+
+      <div style="margin-top:10px;">
+        <h3 style="margin:0 0 8px 0;font-size:0.96rem;">Acumulado por usuario</h3>
+        <div style="overflow:auto;">
+          <table class="crud-table">
+            <thead>
+              <tr>
+                <th>Usuario</th>
+                <th>Activo</th>
+                <th>Propina por usuario</th>
+                <th>Propina universal</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody id="tablaUsuariosBody">
+              <tr><td colspan="5" style="text-align:center;color:#777;">Sin datos</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div style="margin-top:12px;">
+        <h3 style="margin:0 0 8px 0;font-size:0.96rem;">Movimientos de propinas</h3>
+        <div style="overflow:auto;">
+          <table class="crud-table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Carrito</th>
+                <th>Referencia venta</th>
+                <th>Modo</th>
+                <th>Usuario origen</th>
+                <th>Usuario asignado</th>
+                <th>Base cobro</th>
+                <th>%</th>
+                <th>Monto propina</th>
+              </tr>
+            </thead>
+            <tbody id="tablaMovimientosBody">
+              <tr><td colspan="9" style="text-align:center;color:#777;">Sin datos</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      function getQueryParam(name) {
+        var params = new URLSearchParams(window.location.search);
+        return params.get(name);
+      }
+
+      function normalize(v) {
+        return String(v || '').trim();
+      }
+
+      function escapeHtml(raw) {
+        return String(raw || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function money(v) {
+        var n = Number(v || 0);
+        return n.toFixed(2);
+      }
+
+      function setMessage(id, text, isError) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = text || '';
+        el.style.color = isError ? '#b00020' : '#2a7f62';
+      }
+
+      function ensureOk(res) {
+        if (res.ok) return res;
+        return res.text().then(function (t) {
+          throw new Error(t || ('HTTP ' + res.status));
+        });
+      }
+
+      var empresaID = Number(getQueryParam('empresa_id') || 0);
+      if (!empresaID) {
+        setMessage('cfgMsg', 'empresa_id es obligatorio en la URL', true);
+        setMessage('reporteMsg', 'empresa_id es obligatorio en la URL', true);
+        return;
+      }
+
+      function getCfgPayload() {
+        return {
+          empresa_id: empresaID,
+          habilitar_propina: Boolean(document.getElementById('cfgHabilitar').checked),
+          porcentaje_propina: Math.max(0, Math.min(100, Number(document.getElementById('cfgPorcentaje').value || 0))),
+          modo_distribucion: normalize(document.getElementById('cfgModo').value) || 'por_usuario',
+          aplicar_automaticamente: Boolean(document.getElementById('cfgAplicarAuto').checked),
+          observaciones: normalize(document.getElementById('cfgObservaciones').value)
+        };
+      }
+
+      function applyCfg(cfg) {
+        cfg = cfg || {};
+        document.getElementById('cfgHabilitar').checked = Boolean(cfg.habilitar_propina);
+        document.getElementById('cfgPorcentaje').value = Number(cfg.porcentaje_propina || 10);
+        document.getElementById('cfgModo').value = normalize(cfg.modo_distribucion) || 'por_usuario';
+        document.getElementById('cfgAplicarAuto').checked = cfg.aplicar_automaticamente !== false;
+        document.getElementById('cfgObservaciones').value = normalize(cfg.observaciones);
+      }
+
+      function fetchConfig() {
+        return fetch('/api/empresa/propinas?empresa_id=' + encodeURIComponent(empresaID) + '&action=config')
+          .then(ensureOk)
+          .then(function (res) { return res.json(); })
+          .then(function (cfg) {
+            applyCfg(cfg);
+            return cfg;
+          });
+      }
+
+      function saveConfig(action) {
+        var url = '/api/empresa/propinas?empresa_id=' + encodeURIComponent(empresaID);
+        if (action) {
+          url += '&action=' + encodeURIComponent(action);
+        }
+        return fetch(url, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(getCfgPayload())
+        })
+          .then(ensureOk)
+          .then(function (res) { return res.json(); })
+          .then(function (resp) {
+            var cfg = resp && resp.configuracion ? resp.configuracion : null;
+            if (cfg) applyCfg(cfg);
+            setMessage('cfgMsg', 'Configuracion de propinas guardada correctamente.', false);
+          })
+          .catch(function (err) {
+            setMessage('cfgMsg', err.message || 'No se pudo guardar la configuracion.', true);
+          });
+      }
+
+      function buildReportUrl() {
+        var url = new URL('/api/empresa/propinas', window.location.origin);
+        url.searchParams.set('empresa_id', String(empresaID));
+        url.searchParams.set('action', 'reporte');
+
+        var desde = normalize(document.getElementById('fDesde').value);
+        var hasta = normalize(document.getElementById('fHasta').value);
+        var usuario = normalize(document.getElementById('fUsuario').value);
+        var modo = normalize(document.getElementById('fModo').value);
+        var limit = Math.max(10, Math.min(2000, Number(document.getElementById('fLimit').value || 200)));
+
+        if (desde) url.searchParams.set('desde', desde);
+        if (hasta) url.searchParams.set('hasta', hasta);
+        if (usuario) url.searchParams.set('usuario', usuario);
+        if (modo) url.searchParams.set('modo', modo);
+        url.searchParams.set('limit', String(limit));
+
+        return url.pathname + '?' + url.searchParams.toString();
+      }
+
+      function renderResumen(report) {
+        var resumen = report && report.resumen ? report.resumen : {};
+        var cfg = report && report.configuracion ? report.configuracion : {};
+        var estado = cfg.habilitar_propina ? 'Habilitada' : 'Deshabilitada';
+        var modo = normalize(cfg.modo_distribucion) || 'por_usuario';
+        var porcentaje = Number(cfg.porcentaje_propina || 0).toFixed(2);
+
+        var txt = 'Estado: ' + estado +
+          ' | Porcentaje: ' + porcentaje + '% | Modo: ' + modo +
+          ' | Movimientos: ' + Number(resumen.cantidad_movimientos || 0) +
+          ' | Base cobro: ' + money(resumen.total_base_cobro) +
+          ' | Propinas total: ' + money(resumen.total_propinas) +
+          ' | Propina por usuario: ' + money(resumen.total_propinas_por_usuario) +
+          ' | Propina universal: ' + money(resumen.total_propinas_universal) +
+          ' | Usuarios activos: ' + Number(resumen.usuarios_activos || 0) +
+          ' | Cuota universal por usuario: ' + money(resumen.cuota_universal_por_usuario);
+
+        document.getElementById('resumenBox').textContent = txt;
+      }
+
+      function renderUsuarios(report) {
+        var rows = report && Array.isArray(report.usuarios) ? report.usuarios : [];
+        var body = document.getElementById('tablaUsuariosBody');
+        if (!rows.length) {
+          body.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#777;">Sin datos para el periodo seleccionado</td></tr>';
+          return;
+        }
+
+        body.innerHTML = rows.map(function (item) {
+          return '<tr>' +
+            '<td>' + escapeHtml(item.usuario_etiqueta || item.usuario_clave || '-') + '</td>' +
+            '<td>' + (item.es_usuario_activo ? 'si' : 'no') + '</td>' +
+            '<td>' + money(item.propina_por_usuario) + '</td>' +
+            '<td>' + money(item.propina_universal) + '</td>' +
+            '<td>' + money(item.propina_total) + '</td>' +
+            '</tr>';
+        }).join('');
+      }
+
+      function renderMovimientos(report) {
+        var rows = report && Array.isArray(report.movimientos) ? report.movimientos : [];
+        var body = document.getElementById('tablaMovimientosBody');
+        if (!rows.length) {
+          body.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#777;">Sin movimientos en el periodo seleccionado</td></tr>';
+          return;
+        }
+
+        body.innerHTML = rows.map(function (item) {
+          return '<tr>' +
+            '<td>' + escapeHtml(item.fecha_movimiento || item.fecha_creacion || '-') + '</td>' +
+            '<td>' + escapeHtml(item.carrito_id || '-') + '</td>' +
+            '<td>' + escapeHtml(item.venta_referencia || '-') + '</td>' +
+            '<td>' + escapeHtml(item.modo_distribucion || '-') + '</td>' +
+            '<td>' + escapeHtml(item.usuario_origen || '-') + '</td>' +
+            '<td>' + escapeHtml(item.usuario_asignado || '-') + '</td>' +
+            '<td>' + money(item.base_cobro) + '</td>' +
+            '<td>' + money(item.porcentaje_propina) + '</td>' +
+            '<td>' + money(item.monto_propina) + '</td>' +
+            '</tr>';
+        }).join('');
+      }
+
+      function loadReport() {
+        return fetch(buildReportUrl())
+          .then(ensureOk)
+          .then(function (res) { return res.json(); })
+          .then(function (report) {
+            renderResumen(report);
+            renderUsuarios(report);
+            renderMovimientos(report);
+            setMessage('reporteMsg', '', false);
+          })
+          .catch(function (err) {
+            setMessage('reporteMsg', err.message || 'No se pudo cargar el reporte de propinas.', true);
+          });
+      }
+
+      document.getElementById('btnGuardarCfg').addEventListener('click', function () {
+        saveConfig('');
+      });
+      document.getElementById('btnActivarCfg').addEventListener('click', function () {
+        document.getElementById('cfgHabilitar').checked = true;
+        saveConfig('activar');
+      });
+      document.getElementById('btnDesactivarCfg').addEventListener('click', function () {
+        document.getElementById('cfgHabilitar').checked = false;
+        saveConfig('desactivar');
+      });
+      document.getElementById('btnRefrescarReporte').addEventListener('click', loadReport);
+
+      fetchConfig()
+        .then(loadReport)
+        .catch(function (err) {
+          setMessage('cfgMsg', err.message || 'No se pudo cargar la configuracion de propinas.', true);
+        });
+    })();
+  </script>
+</body>
+</html>
