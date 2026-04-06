@@ -20,7 +20,10 @@
         <a class="btn secondary" href="#menu-apis">APIs</a>
         <a class="btn secondary" href="#menu-inventario">Inventario</a>
         <a class="btn secondary" href="#menu-carrito">Carrito y lector</a>
+        <a class="btn secondary" href="#menu-propinas-comisiones">Propinas y comisiones</a>
+        <a class="btn secondary" href="#menu-erp-calculadora">ERP y calculadora</a>
         <a class="btn secondary" href="#menu-configuracion">Configuración por empresa</a>
+        <a class="btn secondary" href="#menu-dian">Configuración DIAN Colombia</a>
       </div>
     </section>
 
@@ -36,6 +39,10 @@
         <li>Módulo de combos de productos: <a href="/administrar_empresa/combos_productos.html">/administrar_empresa/combos_productos.html</a></li>
         <li>Módulo de códigos de descuento: <a href="/administrar_empresa/codigos_de_descuento.html">/administrar_empresa/codigos_de_descuento.html</a></li>
         <li>Módulo de carrito: <a href="/administrar_empresa/carrito_de_compras.html">/administrar_empresa/carrito_de_compras.html</a></li>
+        <li>Módulo de propinas: <a href="/administrar_empresa/propinas.html">/administrar_empresa/propinas.html</a></li>
+        <li>Módulo de comisiones: <a href="/administrar_empresa/comisiones.html">/administrar_empresa/comisiones.html</a></li>
+        <li>Módulo ERP extendido: <a href="/administrar_empresa/modulos_erp_extendido.html">/administrar_empresa/modulos_erp_extendido.html</a></li>
+        <li>Módulo calculadora: <a href="/administrar_empresa/calculadora.html">/administrar_empresa/calculadora.html</a></li>
         <li>Módulo de asistencia de empleados: <a href="/administrar_empresa/asistencia_empleados.html">/administrar_empresa/asistencia_empleados.html</a></li>
         <li>Módulo de reportes: <a href="/administrar_empresa/reportes.html">/administrar_empresa/reportes.html</a></li>
         <li>Módulo de gráficos y estadísticas: <a href="/administrar_empresa/graficos_estadisticas.html">/administrar_empresa/graficos_estadisticas.html</a></li>
@@ -252,6 +259,61 @@
         <li>Configura monto mínimo, fecha de vencimiento y usos máximos para control comercial.</li>
         <li>Aplica el código en el cierre de carrito y valida método de pago según reglas operativas.</li>
       </ol>
+
+      <h4 style="margin:12px 0 6px 0;">26) Propinas</h4>
+      <p class="form-help" style="margin-top:0;">Ruta: <a href="/administrar_empresa/propinas.html">/administrar_empresa/propinas.html</a></p>
+      <ol>
+        <li>Define si la propina está habilitada, porcentaje y modo de distribución por empresa.</li>
+        <li>Guarda la configuración y valida en carrito el hint operativo de propina.</li>
+        <li>Consulta reporte por fecha/usuario/modo para reconciliación financiera.</li>
+      </ol>
+
+      <h4 style="margin:12px 0 6px 0;">27) Comisiones por servicio</h4>
+      <p class="form-help" style="margin-top:0;">Ruta: <a href="/administrar_empresa/comisiones.html">/administrar_empresa/comisiones.html</a></p>
+      <ol>
+        <li>Configura porcentaje de comisión y filtro de servicio aplicable.</li>
+        <li>Valida que el cobro del carrito registre la comisión al usuario lavador.</li>
+        <li>Consulta acumulados y movimientos para liquidación por responsable.</li>
+      </ol>
+
+      <h4 style="margin:12px 0 6px 0;">28) ERP extendido por dominios</h4>
+      <p class="form-help" style="margin-top:0;">Ruta: <a href="/administrar_empresa/modulos_erp_extendido.html">/administrar_empresa/modulos_erp_extendido.html</a></p>
+      <ol>
+        <li>Selecciona dominio (ventas, finanzas, inventario/compras/RRHH, CRM, producción, logística o documental/integraciones/DIAN).</li>
+        <li>Opera cada submódulo con listar, detalle, crear, actualizar, activar/desactivar y eliminación lógica.</li>
+        <li>Para DIAN, usa utilidades de checklist, validar, CUFE demo y XML demo.</li>
+      </ol>
+
+      <h4 style="margin:12px 0 6px 0;">29) Calculadora por empresa</h4>
+      <p class="form-help" style="margin-top:0;">Ruta: <a href="/administrar_empresa/calculadora.html">/administrar_empresa/calculadora.html</a></p>
+      <ol>
+        <li>Usa operaciones rápidas para apoyo comercial y financiero diario.</li>
+        <li>El historial y memoria se guardan por empresa_id para no mezclar empresas.</li>
+        <li>Exporta historial en JSON cuando necesites respaldo de cálculos operativos.</li>
+      </ol>
+    </section>
+
+    <section id="menu-propinas-comisiones" class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2 style="margin:0;">Propinas y comisiones</h2>
+      </div>
+      <ul>
+        <li>Ambos módulos operan por empresa y deben revisarse junto con configuración operativa por rol.</li>
+        <li>Propinas: controla porcentaje, modo de distribución y acumulados por usuario/periodo.</li>
+        <li>Comisiones: calcula monto por servicio y consolida resultados por lavador o responsable.</li>
+        <li>Antes de cierre diario, cruza ambos reportes con ventas y finanzas para validar totales.</li>
+      </ul>
+    </section>
+
+    <section id="menu-erp-calculadora" class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2 style="margin:0;">ERP extendido y calculadora</h2>
+      </div>
+      <ul>
+        <li>ERP extendido centraliza módulos avanzados por dominio sin cambiar contratos backend.</li>
+        <li>Usa filtros, acciones de estado y trazabilidad por empresa_id en cada submódulo.</li>
+        <li>La calculadora es una utilidad transversal de apoyo con almacenamiento aislado por empresa.</li>
+      </ul>
     </section>
 
     <section id="menu-apis" class="card empresa-section">
@@ -373,6 +435,150 @@
         <li>La configuración avanzada/fiscal se guarda en base de datos por empresa_id.</li>
         <li>No se debe reutilizar una configuración de una empresa en otra sin respaldo/restauración explícita.</li>
       </ul>
+    </section>
+
+    <section id="menu-dian" class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2 style="margin:0;">Cómo configurar facturación DIAN Colombia desde cero</h2>
+      </div>
+      <p class="form-help" style="margin-top:8px;">
+        Esta guía explica el proceso completo para habilitar y operar facturación electrónica con DIAN en Colombia,
+        combinando lo que debes hacer en la plataforma DIAN y lo que debes configurar en el sistema.
+      </p>
+
+      <h3 style="margin:14px 0 8px 0;">1) Requisitos previos antes de entrar a DIAN</h3>
+      <ol>
+        <li>Empresa legalmente constituida con NIT activo y RUT actualizado.</li>
+        <li>Responsabilidad de facturación electrónica activa en RUT (según actividad económica y obligación vigente).</li>
+        <li>Representante legal o usuario autorizado con acceso a servicios DIAN.</li>
+        <li>Correo corporativo operativo para notificaciones y recepción de eventos.</li>
+        <li>Definición del esquema de numeración de facturación (prefijo y rango) a solicitar en DIAN.</li>
+      </ol>
+
+      <h3 style="margin:14px 0 8px 0;">2) Qué debes hacer en la plataforma DIAN</h3>
+      <p class="form-help" style="margin-top:0;">
+        Portal de referencia: facturacionelectronica.dian.gov.co (habilitación y producción).
+      </p>
+      <ol>
+        <li>Ingresar con usuario DIAN y registrar la empresa como facturador electrónico.</li>
+        <li>Elegir modalidad tecnológica:
+          <ul>
+            <li>Software propio.</li>
+            <li>Proveedor tecnológico autorizado.</li>
+          </ul>
+        </li>
+        <li>Obtener credenciales técnicas:
+          <ul>
+            <li>Software ID.</li>
+            <li>Software PIN.</li>
+            <li>TestSetID (fase de habilitación/pruebas).</li>
+          </ul>
+        </li>
+        <li>Solicitar resolución de numeración de facturación (prefijo + rango autorizado):
+          <ul>
+            <li>Número de resolución.</li>
+            <li>Fecha desde / fecha hasta.</li>
+            <li>Consecutivo inicial / final.</li>
+          </ul>
+        </li>
+        <li>Ejecutar set de pruebas (habilitación) hasta obtener aprobación de casos requeridos.</li>
+        <li>Cuando DIAN apruebe habilitación, preparar paso a producción.</li>
+      </ol>
+
+      <h3 style="margin:14px 0 8px 0;">3) Qué debes configurar en este sistema</h3>
+      <p class="form-help" style="margin-top:0;">
+        Ruta principal: <a href="/administrar_empresa/facturacion_electronica.html">/administrar_empresa/facturacion_electronica.html</a>
+      </p>
+      <ol>
+        <li>Completar datos del emisor:
+          <ul>
+            <li>NIT y dígito de verificación.</li>
+            <li>Razón social.</li>
+            <li>Correo y datos fiscales activos.</li>
+          </ul>
+        </li>
+        <li>Seleccionar ambiente:
+          <ul>
+            <li>habilitación (pruebas).</li>
+            <li>producción.</li>
+          </ul>
+        </li>
+        <li>Registrar credenciales DIAN:
+          <ul>
+            <li>Software ID.</li>
+            <li>Software PIN.</li>
+            <li>TestSetID (cuando aplique).</li>
+          </ul>
+        </li>
+        <li>Registrar resolución de numeración:
+          <ul>
+            <li>Prefijo.</li>
+            <li>Número de resolución.</li>
+            <li>Fechas de vigencia.</li>
+            <li>Rango desde/hasta.</li>
+            <li>Consecutivo actual inicial.</li>
+          </ul>
+        </li>
+        <li>Guardar configuración y ejecutar validación interna:
+          <ul>
+            <li>Endpoint: <code>/api/empresa/facturacion_electronica/dian?action=validar</code></li>
+            <li>Checklist: <code>/api/empresa/facturacion_electronica/dian?action=checklist</code></li>
+          </ul>
+        </li>
+      </ol>
+
+      <h3 style="margin:14px 0 8px 0;">4) Flujo recomendado de salida a producción</h3>
+      <ol>
+        <li>Completar y aprobar pruebas en habilitación DIAN.</li>
+        <li>Verificar que numeración en DIAN y numeración en sistema sean idénticas.</li>
+        <li>Cambiar ambiente a producción en DIAN y en el sistema.</li>
+        <li>Emitir primeras facturas con monitoreo estricto de respuesta.</li>
+        <li>Verificar trazabilidad por empresa_id, documento y periodo contable.</li>
+      </ol>
+
+      <h3 style="margin:14px 0 8px 0;">5) Campos críticos que nunca deben quedar vacíos</h3>
+      <ul>
+        <li>NIT del emisor.</li>
+        <li>Razón social del emisor.</li>
+        <li>Tipo de ambiente.</li>
+        <li>Software ID y Software PIN.</li>
+        <li>Prefijo y resolución de numeración.</li>
+        <li>Rango desde y rango hasta.</li>
+      </ul>
+
+      <h3 style="margin:14px 0 8px 0;">6) Endpoints de apoyo técnico DIAN</h3>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Método</th>
+              <th>Endpoint</th>
+              <th>Uso</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>GET/POST/PUT/DELETE</td><td>/api/empresa/facturacion_electronica/dian</td><td>CRUD de configuración DIAN por empresa</td></tr>
+            <tr><td>GET</td><td>/api/empresa/facturacion_electronica/dian?action=checklist</td><td>Lista de campos faltantes para habilitar DIAN</td></tr>
+            <tr><td>GET</td><td>/api/empresa/facturacion_electronica/dian?action=validar</td><td>Validación operativa de configuración DIAN</td></tr>
+            <tr><td>POST/PUT</td><td>/api/empresa/facturacion_electronica/dian?action=generar_cufe_demo</td><td>Genera CUFE de prueba para validación técnica</td></tr>
+            <tr><td>POST/PUT</td><td>/api/empresa/facturacion_electronica/dian?action=generar_xml_demo</td><td>Genera XML de referencia para validación interna</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 style="margin:14px 0 8px 0;">7) Errores frecuentes y cómo evitarlos</h3>
+      <ul>
+        <li>Consecutivo fuera de rango: validar que consecutivo actual esté entre rango desde/hasta.</li>
+        <li>Credenciales inválidas: confirmar Software ID/PIN en DIAN y en sistema sin espacios extra.</li>
+        <li>Resolución vencida: revisar fecha hasta de resolución y gestionar renovación.</li>
+        <li>Datos fiscales inconsistentes: NIT, DV y razón social deben coincidir con RUT y DIAN.</li>
+        <li>Mezcla de ambientes: evitar emitir en producción con credenciales de habilitación.</li>
+      </ul>
+
+      <p class="form-help" style="margin-top:10px;">
+        Recomendación operativa: ejecutar siempre la validación DIAN interna del sistema antes de cada cambio de credenciales,
+        numeración o ambiente, y conservar evidencia de pruebas por período.
+      </p>
     </section>
   </div>
 </body>

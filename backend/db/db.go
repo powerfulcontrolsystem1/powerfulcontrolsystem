@@ -98,7 +98,13 @@ func SetAdministradorEstado(dbConn *sql.DB, id int64, estado string) error {
 
 // CreateSession registra una sesión en la tabla sesiones de superadministrador
 func CreateSession(dbConn *sql.DB, adminEmail, ip, userAgent, token string) error {
-	_, err := dbConn.Exec("INSERT INTO sesiones (admin_email, token, ip, user_agent, fecha_inicio, activo, fecha_creacion) VALUES (?, ?, ?, ?, datetime('now','localtime'), 1, datetime('now','localtime'))", adminEmail, token, ip, userAgent)
+	_, err := dbConn.Exec("INSERT INTO sesiones (admin_email, token, ip, user_agent, fecha_inicio, fecha_fin, activo, fecha_creacion) VALUES (?, ?, ?, ?, datetime('now','localtime'), datetime('now','+24 hours','localtime'), 1, datetime('now','localtime'))", adminEmail, token, ip, userAgent)
+	return err
+}
+
+// RevokeSessionByToken invalida una sesión activa por token.
+func RevokeSessionByToken(dbConn *sql.DB, token string) error {
+	_, err := dbConn.Exec("UPDATE sesiones SET activo = 0, fecha_fin = datetime('now','localtime') WHERE token = ? AND activo = 1", token)
 	return err
 }
 
@@ -260,21 +266,26 @@ type Session struct {
 	IP            string `json:"ip"`
 	UserAgent     string `json:"user_agent"`
 	FechaInicio   string `json:"fecha_inicio"`
+	FechaFin      string `json:"fecha_fin,omitempty"`
 	FechaCreacion string `json:"fecha_creacion"`
 	Activo        int    `json:"activo"`
 }
 
 // GetSessionByToken devuelve una sesión activa por token
 func GetSessionByToken(dbConn *sql.DB, token string) (*Session, error) {
-	row := dbConn.QueryRow("SELECT id, admin_email, token, ip, user_agent, fecha_inicio, fecha_creacion, activo FROM sesiones WHERE token = ? AND activo = 1 LIMIT 1", token)
+	row := dbConn.QueryRow("SELECT id, admin_email, token, ip, user_agent, fecha_inicio, fecha_fin, fecha_creacion, activo FROM sesiones WHERE token = ? AND activo = 1 AND (COALESCE(fecha_fin, '') = '' OR datetime(fecha_fin) > datetime('now','localtime')) LIMIT 1", token)
 	var s Session
 	var fechaInicio sql.NullString
+	var fechaFin sql.NullString
 	var fechaCreacion sql.NullString
-	if err := row.Scan(&s.ID, &s.AdminEmail, &s.Token, &s.IP, &s.UserAgent, &fechaInicio, &fechaCreacion, &s.Activo); err != nil {
+	if err := row.Scan(&s.ID, &s.AdminEmail, &s.Token, &s.IP, &s.UserAgent, &fechaInicio, &fechaFin, &fechaCreacion, &s.Activo); err != nil {
 		return nil, err
 	}
 	if fechaInicio.Valid {
 		s.FechaInicio = fechaInicio.String
+	}
+	if fechaFin.Valid {
+		s.FechaFin = fechaFin.String
 	}
 	if fechaCreacion.Valid {
 		s.FechaCreacion = fechaCreacion.String
@@ -320,7 +331,7 @@ func GetAdministradores(dbConn *sql.DB) ([]Admin, error) {
 
 // GetSesiones lista las sesiones registradas
 func GetSesiones(dbConn *sql.DB) ([]Session, error) {
-	rows, err := dbConn.Query("SELECT id, admin_email, token, ip, user_agent, fecha_inicio, fecha_creacion, activo FROM sesiones ORDER BY id DESC")
+	rows, err := dbConn.Query("SELECT id, admin_email, token, ip, user_agent, fecha_inicio, fecha_fin, fecha_creacion, activo FROM sesiones ORDER BY id DESC")
 	if err != nil {
 		return nil, err
 	}
@@ -329,12 +340,16 @@ func GetSesiones(dbConn *sql.DB) ([]Session, error) {
 	for rows.Next() {
 		var s Session
 		var fechaInicio sql.NullString
+		var fechaFin sql.NullString
 		var fechaCreacion sql.NullString
-		if err := rows.Scan(&s.ID, &s.AdminEmail, &s.Token, &s.IP, &s.UserAgent, &fechaInicio, &fechaCreacion, &s.Activo); err != nil {
+		if err := rows.Scan(&s.ID, &s.AdminEmail, &s.Token, &s.IP, &s.UserAgent, &fechaInicio, &fechaFin, &fechaCreacion, &s.Activo); err != nil {
 			return nil, err
 		}
 		if fechaInicio.Valid {
 			s.FechaInicio = fechaInicio.String
+		}
+		if fechaFin.Valid {
+			s.FechaFin = fechaFin.String
 		}
 		if fechaCreacion.Valid {
 			s.FechaCreacion = fechaCreacion.String
@@ -594,29 +609,6 @@ func InitMetricsTable(dbConn *sql.DB) error {
 	return err
 }
 
-// CreateMPPaymentRecord registra una preferencia/pago inicial de Mercado Pago en la tabla pagos_mercadopago
-func CreateMPPaymentRecord(dbConn *sql.DB, licenciaID, empresaID int64, preferenceID, paymentID, status, rawPayload string) (int64, error) {
-	res, err := dbConn.Exec("INSERT INTO pagos_mercadopago (licencia_id, empresa_id, preference_id, payment_id, status, raw_payload, fecha_creacion) VALUES (?, ?, ?, ?, ?, ?, datetime('now','localtime'))", licenciaID, empresaID, preferenceID, paymentID, status, rawPayload)
-	if err != nil {
-		return 0, err
-	}
-	return res.LastInsertId()
-}
-
-// UpdateMPPaymentRecordByPreference actualiza el registro de pago creado inicialmente por preferencia
-func UpdateMPPaymentRecordByPreference(dbConn *sql.DB, preferenceID, paymentID, status, rawPayload string) error {
-	_, err := dbConn.Exec("UPDATE pagos_mercadopago SET payment_id = ?, status = ?, raw_payload = ?, fecha_actualizacion = datetime('now','localtime') WHERE preference_id = ?", paymentID, status, rawPayload, preferenceID)
-	if err == nil {
-		return nil
-	}
-	// Compatibilidad con bases antiguas que aún no tienen la columna fecha_actualizacion.
-	_, fallbackErr := dbConn.Exec("UPDATE pagos_mercadopago SET payment_id = ?, status = ?, raw_payload = ? WHERE preference_id = ?", paymentID, status, rawPayload, preferenceID)
-	if fallbackErr == nil {
-		return nil
-	}
-	return fallbackErr
-}
-
 // CreateWompiPaymentRecord registra una transacción inicial de Wompi en la tabla pagos_wompi.
 func CreateWompiPaymentRecord(dbConn *sql.DB, licenciaID, empresaID int64, transactionID, reference, status, rawPayload string) (int64, error) {
 	res, err := dbConn.Exec("INSERT INTO pagos_wompi (licencia_id, empresa_id, transaction_id, reference, status, raw_payload, fecha_creacion) VALUES (?, ?, ?, ?, ?, ?, datetime('now','localtime'))", licenciaID, empresaID, transactionID, reference, status, rawPayload)
@@ -638,6 +630,45 @@ func UpdateWompiPaymentRecordByTransaction(dbConn *sql.DB, transactionID, status
 		return nil
 	}
 	return fallbackErr
+}
+
+// UpdateWompiPaymentRecordByReference actualiza una transaccion de Wompi usando su referencia.
+func UpdateWompiPaymentRecordByReference(dbConn *sql.DB, reference, status, rawPayload string) error {
+	_, err := dbConn.Exec("UPDATE pagos_wompi SET status = ?, raw_payload = ?, fecha_actualizacion = datetime('now','localtime') WHERE reference = ?", status, rawPayload, reference)
+	if err == nil {
+		return nil
+	}
+	_, fallbackErr := dbConn.Exec("UPDATE pagos_wompi SET status = ?, raw_payload = ? WHERE reference = ?", status, rawPayload, reference)
+	if fallbackErr == nil {
+		return nil
+	}
+	return fallbackErr
+}
+
+// GetWompiPaymentContext devuelve licencia_id y empresa_id para una transaccion/referencia Wompi.
+func GetWompiPaymentContext(dbConn *sql.DB, transactionID, reference string) (int64, int64, bool, error) {
+	row := dbConn.QueryRow(`
+		SELECT licencia_id, empresa_id
+		FROM pagos_wompi
+		WHERE (transaction_id = ? AND ? <> '') OR (reference = ? AND ? <> '')
+		ORDER BY id DESC
+		LIMIT 1
+	`, transactionID, transactionID, reference, reference)
+
+	var licenciaID sql.NullInt64
+	var empresaID sql.NullInt64
+	if err := row.Scan(&licenciaID, &empresaID); err != nil {
+		if err == sql.ErrNoRows {
+			return 0, 0, false, nil
+		}
+		return 0, 0, false, err
+	}
+
+	if !licenciaID.Valid || !empresaID.Valid {
+		return 0, 0, false, nil
+	}
+
+	return licenciaID.Int64, empresaID.Int64, true, nil
 }
 
 // ActivateLicenciaForEmpresa asigna y activa una licencia para una empresa, estableciendo fechas de inicio y fin

@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Calculadora por empresa</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+</head>
+<body class="empresa-subpage">
+  <div class="container">
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h1 style="margin:0;">Calculadora operativa por empresa</h1>
+        <div class="empresa-inline-actions">
+          <a id="linkReportesEmpresa" class="btn secondary" href="#">Abrir reportes</a>
+          <a id="linkPanelEmpresa" class="btn" href="#">Ir al panel empresa</a>
+        </div>
+      </div>
+      <p id="empresaCalcContexto" class="form-help"></p>
+
+      <div class="calc-layout">
+        <article class="card calc-card">
+          <div class="calc-display-wrap">
+            <div id="calcExpression" class="calc-expression">0</div>
+            <div id="calcResult" class="calc-result">0</div>
+          </div>
+
+          <div class="calc-keypad" role="group" aria-label="Teclado de calculadora">
+            <button type="button" class="calc-key util" data-action="clear">AC</button>
+            <button type="button" class="calc-key util" data-action="backspace">BS</button>
+            <button type="button" class="calc-key util" data-action="percent">%</button>
+            <button type="button" class="calc-key operator" data-action="op" data-op="/">/</button>
+
+            <button type="button" class="calc-key" data-action="digit" data-value="7">7</button>
+            <button type="button" class="calc-key" data-action="digit" data-value="8">8</button>
+            <button type="button" class="calc-key" data-action="digit" data-value="9">9</button>
+            <button type="button" class="calc-key operator" data-action="op" data-op="*">*</button>
+
+            <button type="button" class="calc-key" data-action="digit" data-value="4">4</button>
+            <button type="button" class="calc-key" data-action="digit" data-value="5">5</button>
+            <button type="button" class="calc-key" data-action="digit" data-value="6">6</button>
+            <button type="button" class="calc-key operator" data-action="op" data-op="-">-</button>
+
+            <button type="button" class="calc-key" data-action="digit" data-value="1">1</button>
+            <button type="button" class="calc-key" data-action="digit" data-value="2">2</button>
+            <button type="button" class="calc-key" data-action="digit" data-value="3">3</button>
+            <button type="button" class="calc-key operator" data-action="op" data-op="+">+</button>
+
+            <button type="button" class="calc-key util" data-action="toggle-sign">+/-</button>
+            <button type="button" class="calc-key" data-action="digit" data-value="0">0</button>
+            <button type="button" class="calc-key" data-action="decimal">.</button>
+            <button type="button" class="calc-key operator" data-action="equals">=</button>
+
+            <button type="button" class="calc-key mem" data-action="memory-clear">MC</button>
+            <button type="button" class="calc-key mem" data-action="memory-recall">MR</button>
+            <button type="button" class="calc-key mem" data-action="memory-plus">M+</button>
+            <button type="button" class="calc-key mem" data-action="memory-minus">M-</button>
+          </div>
+        </article>
+
+        <article class="card calc-card">
+          <div class="empresa-section-header">
+            <h2 style="margin:0;">Historial por empresa</h2>
+            <div class="empresa-inline-actions">
+              <button id="btnLimpiarHistorial" class="btn secondary" type="button">Limpiar</button>
+              <button id="btnExportarHistorial" class="btn" type="button">Exportar JSON</button>
+            </div>
+          </div>
+          <p class="form-help">El historial y la memoria se guardan por empresa. Cambiar de empresa no mezcla operaciones.</p>
+          <div id="calcMessage" class="form-help"></div>
+          <ul id="calcHistory" class="calc-history-list"></ul>
+        </article>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    (function () {
+      var params = new URLSearchParams(window.location.search || "");
+      var empresaId = String(
+        params.get("empresa_id") ||
+        params.get("id") ||
+        (function () {
+          try {
+            return localStorage.getItem("active_empresa_id") || "";
+          } catch (e) {
+            return "";
+          }
+        })()
+      ).trim();
+
+      if (empresaId) {
+        try {
+          localStorage.setItem("active_empresa_id", empresaId);
+        } catch (e) {}
+      }
+
+      var empresaKey = empresaId || "global";
+      var historyKey = "calculator:empresa:" + empresaKey + ":history";
+      var memoryKey = "calculator:empresa:" + empresaKey + ":memory";
+
+      var expressionEl = document.getElementById("calcExpression");
+      var resultEl = document.getElementById("calcResult");
+      var historyEl = document.getElementById("calcHistory");
+      var messageEl = document.getElementById("calcMessage");
+      var empresaContextEl = document.getElementById("empresaCalcContexto");
+      var linkReportes = document.getElementById("linkReportesEmpresa");
+      var linkPanel = document.getElementById("linkPanelEmpresa");
+
+      var currentValue = "0";
+      var accumulator = null;
+      var pendingOperator = "";
+      var waitingForOperand = false;
+      var memoryValue = loadMemory();
+      var history = loadHistory();
+
+      empresaContextEl.textContent = empresaId
+        ? "Contexto activo: empresa_id=" + empresaId
+        : "Contexto activo: global (sin empresa seleccionada).";
+
+      setActionLinks();
+      renderHistory();
+      updateDisplay();
+
+      document.querySelectorAll(".calc-keypad .calc-key").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var action = btn.getAttribute("data-action") || "";
+          handleAction(action, btn);
+        });
+      });
+
+      document.getElementById("btnLimpiarHistorial").addEventListener("click", function () {
+        history = [];
+        persistHistory();
+        renderHistory();
+        setMessage("Historial limpiado para la empresa " + empresaKey + ".", false);
+      });
+
+      document.getElementById("btnExportarHistorial").addEventListener("click", function () {
+        if (!history.length) {
+          setMessage("No hay historial para exportar.", true);
+          return;
+        }
+
+        var payload = {
+          empresa_id: empresaId || null,
+          empresa_scope: empresaKey,
+          generado_en: new Date().toISOString(),
+          operaciones: history
+        };
+
+        var blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        var stamp = new Date().toISOString().slice(0, 19).replace(/[-:T]/g, "");
+        a.href = url;
+        a.download = "calculadora_" + empresaKey + "_" + stamp + ".json";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        setMessage("Historial exportado en JSON.", false);
+      });
+
+      function setActionLinks() {
+        var reportesURL = new URL("/administrar_empresa/reportes.html", window.location.origin);
+        var panelURL = new URL("/administrar_empresa.html", window.location.origin);
+        if (empresaId) {
+          reportesURL.searchParams.set("empresa_id", empresaId);
+          panelURL.searchParams.set("empresa_id", empresaId);
+        }
+        linkReportes.setAttribute("href", reportesURL.pathname + reportesURL.search);
+        linkPanel.setAttribute("href", panelURL.pathname + panelURL.search);
+      }
+
+      function setMessage(text, isError) {
+        messageEl.textContent = text || "";
+        messageEl.style.color = isError ? "#ef5350" : "";
+      }
+
+      function formatNumber(value) {
+        var n = Number(value);
+        if (!Number.isFinite(n)) return "0";
+        var rounded = Math.round((n + Number.EPSILON) * 1000000000) / 1000000000;
+        return String(rounded);
+      }
+
+      function safeNumber(value) {
+        var n = Number(value);
+        return Number.isFinite(n) ? n : 0;
+      }
+
+      function symbolForOperator(operator) {
+        switch (operator) {
+          case "+":
+            return "+";
+          case "-":
+            return "-";
+          case "*":
+            return "*";
+          case "/":
+            return "/";
+          default:
+            return "";
+        }
+      }
+
+      function updateDisplay() {
+        resultEl.textContent = currentValue;
+        if (pendingOperator && accumulator !== null) {
+          var right = waitingForOperand ? "..." : currentValue;
+          expressionEl.textContent = formatNumber(accumulator) + " " + symbolForOperator(pendingOperator) + " " + right;
+          return;
+        }
+        expressionEl.textContent = currentValue;
+      }
+
+      function handleAction(action, btn) {
+        setMessage("", false);
+        switch (action) {
+          case "digit":
+            inputDigit(btn.getAttribute("data-value") || "0");
+            break;
+          case "decimal":
+            inputDecimal();
+            break;
+          case "toggle-sign":
+            toggleSign();
+            break;
+          case "clear":
+            clearAll();
+            break;
+          case "backspace":
+            backspace();
+            break;
+          case "percent":
+            applyPercent();
+            break;
+          case "op":
+            setOperator(btn.getAttribute("data-op") || "");
+            break;
+          case "equals":
+            evaluateExpression();
+            break;
+          case "memory-clear":
+            memoryValue = 0;
+            persistMemory();
+            setMessage("Memoria limpiada.", false);
+            break;
+          case "memory-recall":
+            currentValue = formatNumber(memoryValue);
+            waitingForOperand = false;
+            updateDisplay();
+            setMessage("Memoria recuperada: " + currentValue, false);
+            break;
+          case "memory-plus":
+            memoryValue = safeNumber(memoryValue) + safeNumber(currentValue);
+            persistMemory();
+            setMessage("Memoria actual: " + formatNumber(memoryValue), false);
+            break;
+          case "memory-minus":
+            memoryValue = safeNumber(memoryValue) - safeNumber(currentValue);
+            persistMemory();
+            setMessage("Memoria actual: " + formatNumber(memoryValue), false);
+            break;
+          default:
+            break;
+        }
+      }
+
+      function inputDigit(digit) {
+        if (waitingForOperand) {
+          currentValue = digit;
+          waitingForOperand = false;
+        } else {
+          currentValue = currentValue === "0" ? digit : currentValue + digit;
+        }
+        updateDisplay();
+      }
+
+      function inputDecimal() {
+        if (waitingForOperand) {
+          currentValue = "0.";
+          waitingForOperand = false;
+          updateDisplay();
+          return;
+        }
+        if (currentValue.indexOf(".") === -1) {
+          currentValue += ".";
+          updateDisplay();
+        }
+      }
+
+      function toggleSign() {
+        if (currentValue === "0") return;
+        currentValue = currentValue.indexOf("-") === 0 ? currentValue.slice(1) : "-" + currentValue;
+        updateDisplay();
+      }
+
+      function clearAll() {
+        currentValue = "0";
+        accumulator = null;
+        pendingOperator = "";
+        waitingForOperand = false;
+        updateDisplay();
+      }
+
+      function backspace() {
+        if (waitingForOperand) return;
+        if (currentValue.length <= 1 || (currentValue.length === 2 && currentValue.indexOf("-") === 0)) {
+          currentValue = "0";
+        } else {
+          currentValue = currentValue.slice(0, -1);
+        }
+        updateDisplay();
+      }
+
+      function applyPercent() {
+        currentValue = formatNumber(safeNumber(currentValue) / 100);
+        updateDisplay();
+      }
+
+      function setOperator(op) {
+        if (!op) return;
+
+        if (pendingOperator && waitingForOperand) {
+          pendingOperator = op;
+          updateDisplay();
+          return;
+        }
+
+        if (accumulator === null) {
+          accumulator = safeNumber(currentValue);
+        } else if (pendingOperator) {
+          var partial = calculate(accumulator, safeNumber(currentValue), pendingOperator);
+          if (!Number.isFinite(partial)) {
+            setMessage("Operacion no valida.", true);
+            clearAll();
+            return;
+          }
+          accumulator = partial;
+          currentValue = formatNumber(partial);
+        }
+
+        pendingOperator = op;
+        waitingForOperand = true;
+        updateDisplay();
+      }
+
+      function evaluateExpression() {
+        if (!pendingOperator || accumulator === null) {
+          setMessage("No hay operacion pendiente.", true);
+          return;
+        }
+
+        var left = safeNumber(accumulator);
+        var right = safeNumber(currentValue);
+        var operator = pendingOperator;
+        var result = calculate(left, right, operator);
+
+        if (!Number.isFinite(result)) {
+          setMessage("No se puede dividir por cero.", true);
+          clearAll();
+          return;
+        }
+
+        var expression = formatNumber(left) + " " + symbolForOperator(operator) + " " + formatNumber(right);
+        currentValue = formatNumber(result);
+        accumulator = null;
+        pendingOperator = "";
+        waitingForOperand = true;
+        addHistory(expression, currentValue);
+        updateDisplay();
+      }
+
+      function calculate(a, b, op) {
+        switch (op) {
+          case "+":
+            return a + b;
+          case "-":
+            return a - b;
+          case "*":
+            return a * b;
+          case "/":
+            if (b === 0) return Number.NaN;
+            return a / b;
+          default:
+            return Number.NaN;
+        }
+      }
+
+      function addHistory(expression, result) {
+        history.unshift({
+          expression: expression,
+          result: result,
+          timestamp: new Date().toISOString()
+        });
+        if (history.length > 50) {
+          history = history.slice(0, 50);
+        }
+        persistHistory();
+        renderHistory();
+      }
+
+      function renderHistory() {
+        historyEl.innerHTML = "";
+        if (!history.length) {
+          var empty = document.createElement("li");
+          empty.className = "calc-history-empty";
+          empty.textContent = "Sin operaciones registradas para este contexto.";
+          historyEl.appendChild(empty);
+          return;
+        }
+
+        history.forEach(function (item) {
+          var li = document.createElement("li");
+          li.className = "calc-history-item";
+
+          var expr = document.createElement("div");
+          expr.className = "calc-history-expression";
+          expr.textContent = item.expression || "";
+
+          var res = document.createElement("div");
+          res.className = "calc-history-result";
+          res.textContent = "= " + (item.result || "0");
+
+          var meta = document.createElement("div");
+          meta.className = "calc-history-meta";
+          meta.textContent = formatTimestamp(item.timestamp);
+
+          li.appendChild(expr);
+          li.appendChild(res);
+          li.appendChild(meta);
+          historyEl.appendChild(li);
+        });
+      }
+
+      function formatTimestamp(raw) {
+        var dt = new Date(raw || "");
+        if (Number.isNaN(dt.getTime())) return "Sin fecha";
+        return dt.toLocaleString("es-CO");
+      }
+
+      function loadHistory() {
+        try {
+          var raw = localStorage.getItem(historyKey);
+          if (!raw) return [];
+          var parsed = JSON.parse(raw);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function persistHistory() {
+        try {
+          localStorage.setItem(historyKey, JSON.stringify(history));
+        } catch (e) {}
+      }
+
+      function loadMemory() {
+        try {
+          var raw = localStorage.getItem(memoryKey);
+          return safeNumber(raw || 0);
+        } catch (e) {
+          return 0;
+        }
+      }
+
+      function persistMemory() {
+        try {
+          localStorage.setItem(memoryKey, String(formatNumber(memoryValue)));
+        } catch (e) {}
+      }
+    })();
+  </script>
+</body>
+</html>

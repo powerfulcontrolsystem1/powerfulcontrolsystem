@@ -1,5 +1,178 @@
 # CHANGELOG
 
+## 2026-04-06
+- Cierre tecnico backend de pasarela unica Wompi:
+	- Se elimina remanente de Mercado Pago en backend:
+		- `backend/handlers/payments_handlers.go`: retiro de handlers/utilidades Mercado Pago.
+		- `backend/db/db.go`: retiro de tipo/funciones de persistencia `pagos_mercadopago`.
+		- `backend/main.go`: retiro de bootstrap/migracion de `pagos_mercadopago`.
+		- `backend/utils/utils.go`: retiro del prefijo `/mercadopago/` en manejo JSON API.
+		- `backend/tools/query_users/main.go`: migracion de inspeccion local hacia `wompi.*` y `pagos_wompi`.
+	- Se sincroniza documentacion tecnica con el estado real:
+		- `documentos/estructura_bd.md` y `estructura_bd.md`.
+		- `documentos/diagramas/estructura_del_codigo.md`.
+		- `documentos/descripcion_de_archivos`.
+	- Validacion tecnica ejecutada: `go test ./... -run "^$" -count=1` (compilacion global OK).
+- Cierre de pendientes de modulos:
+	- Se valida la matriz de estado de modulos/reportes y no quedan modulos marcados como incompletos (`Pendiente` o `Parcial`) en `documentos/modulos del proyecto.md`.
+	- Se actualiza `Pendiente Notas` marcando como completado el pendiente de pasarela unica Wompi.
+- Pasarela de pago unificada en Wompi:
+	- Se retira la configuración de Mercado Pago de `web/super/configuracion_avanzada.html` y se deja únicamente la sección de credenciales de Wompi en configuración avanzada del panel super administrador.
+	- Se simplifica `web/pagar_licencia.html` eliminando selector/panel/flujo de Mercado Pago para operar solo con Nequi (Wompi) y activación manual interna.
+	- Se desregistran rutas de Mercado Pago en `backend/main.go` (`/super/api/config/mercadopago`, `/mercadopago/create_preference`, `/mercadopago/webhook`, `/mercadopago/reconcile`, `/mercadopago/test_preference`).
+	- Validación técnica ejecutada: `go test ./... -run "^$" -count=1` (compilación global OK).
+- Cierre de trazabilidad y validacion final del plan de reportes:
+	- Se revalida la presencia de los datasets operativos de cierre (`operativo_propinas_acumulado`, `operativo_comisiones_lavador`, `operativo_facturacion_trazabilidad`, `operativo_auditoria_acciones`) en `backend/handlers/reportes.go`.
+	- Se ejecuta validacion completa de `backend/handlers/reportes_test.go` con resultado `16/16` pruebas aprobadas.
+	- Se confirma consistencia de estado documental en `documentos/modulos del proyecto.md`, `CHANGELOG.md` y `documentos/historial_de_cambios`.
+	- Se deja cerrado el pendiente de trazabilidad del plan secuencial.
+- Plan secuencial de cierre de modulos incompletos - bloques 6 a 9 (Propinas, Comisiones, Facturacion y Auditoria):
+	- Se agregan en `backend/handlers/reportes.go` cuatro datasets operativos nuevos:
+		- `operativo_propinas_acumulado` (acumulado por usuario, distribucion directa/universal y participacion),
+		- `operativo_comisiones_lavador` (acumulado por lavador con base de servicios y ticket de comision),
+		- `operativo_facturacion_trazabilidad` (emitidas/anuladas/pendientes y trazabilidad legal por tipo documental),
+		- `operativo_auditoria_acciones` (eventos por modulo/usuario con errores HTTP y acciones criticas).
+	- Se actualiza catalogo y switch de construccion de datasets para incluir estos cuatro reportes en suite/export.
+	- Se amplia `backend/handlers/reportes_test.go` con pruebas dedicadas:
+		- `TestEmpresaReportesHandlerDatasetOperativoPropinasAcumulado`.
+		- `TestEmpresaReportesHandlerDatasetOperativoComisionesLavador`.
+		- `TestEmpresaReportesHandlerDatasetOperativoFacturacionTrazabilidad`.
+		- `TestEmpresaReportesHandlerDatasetOperativoAuditoriaAcciones`.
+	- Se refuerza `ensureEmpresaReportesSchema` con `EnsureEmpresaPropinasSchema`, `EnsureEmpresaComisionesServicioSchema` y `EnsureEmpresaAuditoriaSchema` para cobertura de suite completa.
+	- Se actualiza la matriz en `documentos/modulos del proyecto.md` marcando Propinas, Comisiones, Facturacion y Auditoria como activos en reportes.
+	- Validacion tecnica ejecutada:
+		- `runTests` focalizado en 4 pruebas nuevas (ok).
+		- `runTests` completo sobre `backend/handlers/reportes_test.go` (16/16 ok).
+- Plan secuencial de cierre de modulos incompletos - bloque 5 (Compras):
+	- Se rediseña el dataset `operativo_compras_movimientos` en `backend/handlers/reportes.go` para consolidar compras por proveedor, dejando de depender solo de movimientos de inventario.
+	- El dataset ahora expone KPI de ciclo documental: `ordenes_emitidas`, `recepciones`, `contabilizaciones`, `monto_ordenado`, `monto_recepcionado`, `monto_contabilizado`, `brecha_monto` y cumplimiento de recepcion/monto.
+	- Se actualiza el catalogo del reporte con nuevo titulo y descripcion orientados a `costo por proveedor y recepcion vs orden`.
+	- Se amplia `backend/handlers/reportes_test.go` con `TestEmpresaReportesHandlerDatasetOperativoComprasMovimientos` para validar consolidado por proveedor, totales de resumen y porcentajes de cumplimiento.
+	- Se actualiza la matriz en `documentos/modulos del proyecto.md` marcando Compras como activo en reportes.
+	- Validacion tecnica ejecutada:
+		- `runTests` sobre `backend/handlers/reportes_test.go` con 8 pruebas objetivo (ok).
+- Plan secuencial de cierre de modulos incompletos - bloque 4 (Inventario):
+	- Se extiende el dataset `operativo_inventario_bodega` en `backend/handlers/reportes.go` con metricas de:
+		- rotacion estimada y cobertura (`salida_promedio_diaria`, `dias_cobertura`, `indice_rotacion_30d`),
+		- riesgo de quiebre proyectado (`estado_proyeccion`, `sugerido_reposicion`),
+		- valorizacion por producto/bodega (`valorizacion_costo`, `valorizacion_venta`).
+	- Se agregan KPI de resumen de inventario (`alertas`, `deficit`, `movimientos`, cobertura y rotacion promedio).
+	- Se amplia `backend/handlers/reportes_test.go` con `TestEmpresaReportesHandlerDatasetOperativoInventarioBodega`.
+	- Se actualiza matriz de estado en `documentos/modulos del proyecto.md` marcando Inventario como activo en reportes.
+	- Se marca el bloque 4 como completado en `Pendiente Notas`.
+	- Validacion tecnica ejecutada:
+		- `go test ./handlers -run "TestEmpresaReportesHandler(DatasetOperativoInventarioBodega|DatasetOperativoCadenaCumplimiento|DatasetOperativoTarifasIngresos|DatasetOperativoReservasOcupacion|DatasetOperativoModulosResumen|CatalogoSuiteDataset|Exportes)" -count=1` (ok).
+- Plan secuencial de cierre de modulos incompletos - bloque 3 (CRM/Produccion/Logistica):
+	- Se agrega el dataset `operativo_cadena_cumplimiento` en `backend/handlers/reportes.go` para consolidar conversion comercial y cumplimiento operativo.
+	- El dataset resume por modulo (`crm_leads`, `produccion_ordenes`, `logistica_envios`) registros de rango, estados finalizados/en proceso y monto de referencia.
+	- Se amplia `backend/handlers/reportes_test.go` con `TestEmpresaReportesHandlerDatasetOperativoCadenaCumplimiento`.
+	- Se actualiza matriz de estado en `documentos/modulos del proyecto.md` marcando CRM/Produccion/Logistica como activo en reportes.
+	- Se marca el bloque 3 como completado en `Pendiente Notas`.
+	- Validacion tecnica ejecutada:
+		- `go test ./handlers -run "TestEmpresaReportesHandler(DatasetOperativoCadenaCumplimiento|DatasetOperativoTarifasIngresos|DatasetOperativoReservasOcupacion|DatasetOperativoModulosResumen|CatalogoSuiteDataset|Exportes)" -count=1` (ok).
+- Plan secuencial de cierre de modulos incompletos - bloque 2 (tarifas):
+	- Se consolida el dataset `operativo_tarifas_ingresos` para ingresos por modelo de tarifa (`tarifa_por_dia`, `tarifa_por_minutos`, `sin_modelo`).
+	- Se amplia `backend/handlers/reportes_test.go` con `TestEmpresaReportesHandlerDatasetOperativoTarifasIngresos` y bootstrap de esquemas de tarifas (`EnsureEmpresaTarifasPorDiaSchema`, `EnsureEmpresaTarifasPorMinutosSchema`).
+	- Se actualiza matriz de estado en `documentos/modulos del proyecto.md` marcando tarifas como activo en reportes.
+	- Se marca el bloque de tarifas como completado en `Pendiente Notas`.
+	- Validacion tecnica ejecutada:
+		- `go test ./handlers -run "TestEmpresaReportesHandler(DatasetOperativoTarifasIngresos|DatasetOperativoReservasOcupacion|DatasetOperativoModulosResumen|CatalogoSuiteDataset|Exportes)" -count=1` (ok).
+- Plan secuencial de cierre de modulos incompletos - bloque 1 (reservas):
+	- Se agrega el dataset `operativo_reservas_ocupacion` en `backend/handlers/reportes.go` para consolidar ocupacion y cumplimiento por estacion.
+	- Se amplian pruebas en `backend/handlers/reportes_test.go` con `TestEmpresaReportesHandlerDatasetOperativoReservasOcupacion` y bootstrap de `EnsureEmpresaReservasHotelSchema`.
+	- Se actualiza matriz de estado en `documentos/modulos del proyecto.md` marcando reservas como activo en reportes.
+	- Se documenta plan secuencial de cierre en `Pendiente Notas` y se marca reservas como primer modulo completado.
+	- Validacion tecnica ejecutada:
+		- `go test ./handlers -run "TestEmpresaReportesHandler" -count=1` (ok).
+- Continuidad de plan en reportes por modulos:
+	- Se valida y consolida el dataset `operativo_modulos_resumen` en `backend/handlers/reportes.go`.
+	- Se corrige una llamada interna a `reportesCountByEmpresa` en el builder de resumen por modulos para compatibilidad con la firma actual de la funcion.
+	- Se amplia `backend/handlers/reportes_test.go` con:
+		- bootstrap de esquema para modulos ERP extendidos,
+		- prueba `TestEmpresaReportesHandlerDatasetOperativoModulosResumen` con verificacion de conteos por modulo y consistencia de `summary`.
+	- Validacion tecnica ejecutada:
+		- `go test ./handlers -run "TestEmpresaReportesHandler" -count=1` (ok, 7/7).
+- Continuidad de plan en frontend y ayuda:
+	- Se corrige doble scrollbar en panel empresa eliminando la definicion duplicada de `.admin-empresa-frame` con altura fija en `web/estilos.css`.
+	- Se actualiza `web/administrar_empresa/propinas.html` para recuperar consistencia visual/operativa (layout empresa, tablas estandar e integracion de menu flotante).
+	- Se amplia `web/ayuda/ayuda.html` con guias de modulos pendientes: propinas, comisiones, ERP extendido y calculadora por empresa.
+- Se continua el plan con dos faltantes operativos:
+	- Utilidad nueva `web/administrar_empresa/calculadora.html` con contexto por empresa (`empresa_id`), memoria/historial aislados por empresa y exportacion JSON del historial.
+	- Documento nuevo `documentos/modulos del proyecto.md` con inventario de modulos, conteo total y matriz base modulo -> reportes recomendados.
+- Se integra la calculadora en navegacion:
+	- `web/menu.js` agrega enlace `Calculadora` en menu flotante y propaga `empresa_id`.
+	- `web/administrar_empresa.html` agrega enlace lateral `Calculadora`.
+	- `web/js/administrar_empresa.js` incorpora `linkCalculadora` en navegacion y permisos (`finanzas/read`).
+	- `web/estilos.css` agrega estilos `calc-*` para la nueva pantalla.
+- Se actualiza documentacion tecnica:
+	- `documentos/diagramas/estructura_del_codigo.md`.
+	- `documentos/descripcion_del_proyecto`.
+	- `documentos/descripcion_de_archivos`.
+- Se completan faltantes de cobertura para la maquina de estados documental en ventas y CRM:
+	- `backend/handlers/modulos_faltantes_test.go` amplía pruebas para:
+		- ventas: `pedidos` y `devoluciones` (transiciones validas e invalidas),
+		- CRM: `interacciones` y `campanas` (pipeline basico con validacion de transiciones).
+	- Validacion tecnica ejecutada:
+		- `go test ./handlers -run "TestEmpresa(IntegracionesAPIsHandlerHealthAndSync|IntegracionesBancosHandlerSyncAndEstado|VentasCotizacionesStateMachine|CRMLeadsStateMachine|VentasPedidosStateMachine|VentasDevolucionesStateMachine|CRMInteraccionesStateMachine|CRMCampanasStateMachine)" -count=1` (ok).
+		- `go test ./... -run "^$" -count=1` (ok).
+- Se implementan integraciones API/Bancos ejecutables y maquina de estados documental en CRM/Ventas:
+	- `backend/handlers/modulos_faltantes.go` agrega handlers especializados sobre CRUD base:
+		- Integraciones: `action=health_check`, `action=sync_manual`, `action=estado` en `/api/empresa/integraciones/apis` y `/api/empresa/integraciones/bancos`.
+		- CRM/Ventas documentales: `action=estado`, `action=transiciones`, `action=transicionar` en rutas `/api/empresa/crm/*` y `/api/empresa/ventas/*`.
+	- `backend/handlers/modulos_faltantes_test.go` (nuevo) cubre:
+		- health/sync de integraciones,
+		- transiciones validas/inválidas de cotizaciones y leads.
+	- `web/js/modulos_erp_extendido.js` agrega botones operativos por fila:
+		- Integraciones: `Health`, `Sync`, `Estado`.
+		- CRM/Ventas documentales: `Transiciones`, `Transicionar`.
+	- Validacion tecnica ejecutada:
+		- `go test ./handlers -run "TestEmpresa(IntegracionesAPIsHandlerHealthAndSync|IntegracionesBancosHandlerSyncAndEstado|VentasCotizacionesStateMachine|CRMLeadsStateMachine)" -count=1` (ok).
+		- `go test ./... -run "^$" -count=1` (ok).
+- Inicio de implementacion del bloque de integraciones y pagos (fase de robustecimiento):
+	- `backend/handlers/payments_handlers.go` agrega:
+		- `MercadoPagoReconcileHandler` para conciliacion manual de pagos pendientes contra API Mercado Pago (`/mercadopago/reconcile`, requiere sesion admin).
+		- `WompiWebhookHandler` para notificaciones servidor-servidor (`/wompi/webhook`) con validacion de firma y activacion automatica de licencia cuando aplica.
+		- helpers compartidos para token MP, parseo de `external_reference`, estatus aprobados y activacion idempotente de licencia.
+	- `backend/db/db.go` agrega helpers de persistencia para conciliacion:
+		- listado de pendientes MP (`ListMPPaymentsForReconciliation`),
+		- actualizacion por `id` y `payment_id`,
+		- actualizacion Wompi por `reference`,
+		- resolucion de contexto licencia/empresa para Wompi.
+	- `backend/main.go` registra rutas nuevas:
+		- `/mercadopago/reconcile`
+		- `/wompi/webhook`
+	- Validacion tecnica ejecutada:
+		- `go test ./auth ./db ./handlers ./metrics ./utils` (ok).
+- Se divide la interfaz de ERP extendido en submodulos por dominio, manteniendo el mismo backend.
+	- `web/administrar_empresa/modulos_erp_extendido.html` pasa a ser hub de dominios (ventas, finanzas, inventario/compras/rrhh, crm, produccion, logistica, documental/integraciones/dian).
+	- `web/administrar_empresa/modulos_erp_dominio.html` (nuevo) concentra la operacion CRUD del dominio seleccionado sin cambiar endpoints backend.
+	- `web/js/modulos_erp_extendido.js` (nuevo) centraliza la logica operativa reutilizable de submodulos por dominio.
+	- `web/estilos.css` agrega estilos de navegacion y tarjetas para `erp-domain-*`.
+- Se completa la operacion frontend de los modulos ERP extendidos en panel de empresa.
+	- `web/administrar_empresa/modulos_erp_extendido.html` (nuevo) centraliza el uso de todos los endpoints ERP faltantes con:
+		- listado con filtros (`q`, `limit`, `offset`, `include_inactive`),
+		- detalle por ID,
+		- crear/actualizar por payload JSON,
+		- activar/desactivar y eliminacion logica por registro,
+		- herramientas DIAN (`checklist`, `validar`, `generar_cufe_demo`, `generar_xml_demo`).
+	- `web/administrar_empresa.html` agrega acceso lateral `ERP extendido`.
+	- `web/js/administrar_empresa.js` integra `linkERPExtendido` en navegacion y permisos (modulo `seguridad`, accion `update`).
+	- `web/estilos.css` agrega estilos dedicados del nuevo modulo (`erp-*`) para formularios, salida, tabla y estado visual.
+- Se implementa base de modulos ERP faltantes en backend con esquema multiempresa, migracion y rutas nuevas:
+	- `backend/db/modulos_faltantes.go` (tablas y CRUD generico por `empresa_id`).
+	- `backend/handlers/modulos_faltantes.go` (rutas ERP adicionales y handler DIAN Colombia).
+	- `backend/main.go` integra `EnsureEmpresaModulosFaltantesSchema`, migracion `2026-04-06-021-modulos-faltantes-erp` y `RegisterEmpresaModulosFaltantesRoutes`.
+- Se agrega soporte DIAN Colombia operativo en endpoint `/api/empresa/facturacion_electronica/dian` con acciones:
+	- `checklist` y `validar`.
+	- `generar_cufe_demo` y `generar_xml_demo`.
+- Se amplía `web/ayuda/ayuda.html` con seccion detallada para configurar facturacion DIAN desde cero.
+- Se sincroniza documentacion tecnica y de BD:
+	- `documentos/diagramas/estructura_del_codigo.md`.
+	- `documentos/estructura_bd.md` y `estructura_bd.md`.
+	- `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`.
+- Validacion tecnica ejecutada:
+	- `go test ./... -run "^$" -count=1` (ok).
+
 ## 2026-04-05
 - Se continua con todos los bloques y pruebas en una corrida adicional de verificacion.
 	- Validaciones ejecutadas:

@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ERP por dominio</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="empresa-subpage">
+  <div class="container">
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <div>
+          <h1 class="erp-title">ERP por dominio</h1>
+          <p class="form-help erp-help erp-no-margin">Dominio activo: <strong id="erpDomainTitle">-</strong></p>
+        </div>
+        <a id="backToHub" class="btn secondary" href="/administrar_empresa/modulos_erp_extendido.html">Volver a dominios</a>
+      </div>
+      <div class="erp-domain-nav" id="erpDomainNav">
+        <a class="btn secondary" data-domain-link="ventas" href="#">Ventas</a>
+        <a class="btn secondary" data-domain-link="finanzas" href="#">Finanzas</a>
+        <a class="btn secondary" data-domain-link="inventario_compras_rrhh" href="#">Inventario / Compras / RRHH</a>
+        <a class="btn secondary" data-domain-link="crm" href="#">CRM</a>
+        <a class="btn secondary" data-domain-link="produccion" href="#">Produccion</a>
+        <a class="btn secondary" data-domain-link="logistica" href="#">Logistica</a>
+        <a class="btn secondary" data-domain-link="documental_integraciones_dian" href="#">Documental / Integraciones / DIAN</a>
+      </div>
+    </section>
+
+    <section class="card empresa-section erp-section-gap">
+      <div class="empresa-section-header">
+        <h2 class="erp-title-small">Operacion del dominio</h2>
+        <div class="empresa-inline-actions erp-inline-actions">
+          <button id="btnListar" type="button" class="btn secondary">Listar</button>
+          <button id="btnLimpiar" type="button" class="btn secondary">Limpiar salida</button>
+        </div>
+      </div>
+
+      <div class="form">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="moduloSelector">Modulo</label>
+            <select id="moduloSelector" class="form-input"></select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="busquedaQ">Busqueda</label>
+            <input id="busquedaQ" class="form-input" placeholder="codigo, nombre, estado o texto libre">
+          </div>
+          <div class="form-col erp-col-small">
+            <label class="form-label" for="limitRows">Limite</label>
+            <input id="limitRows" class="form-input" type="number" min="1" step="1" value="100">
+          </div>
+          <div class="form-col erp-col-small">
+            <label class="form-label" for="offsetRows">Offset</label>
+            <input id="offsetRows" class="form-input" type="number" min="0" step="1" value="0">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="empresa-config-check" for="includeInactive">
+              <input id="includeInactive" type="checkbox">
+              <span>Incluir inactivos</span>
+            </label>
+          </div>
+        </div>
+
+        <div id="opsMsg" class="form-help"></div>
+      </div>
+    </section>
+
+    <section class="card empresa-section erp-section-gap">
+      <div class="empresa-section-header">
+        <h2 class="erp-title-small">Registros</h2>
+      </div>
+      <div id="rowsList" class="erp-placeholder">Selecciona un modulo y presiona listar.</div>
+    </section>
+
+    <section id="dianToolsSection" class="card empresa-section erp-section-gap erp-hidden">
+      <div class="empresa-section-header">
+        <h2 class="erp-title-small">Herramientas DIAN</h2>
+        <div class="empresa-inline-actions erp-inline-actions">
+          <button id="btnDianChecklist" type="button" class="btn secondary">Checklist</button>
+          <button id="btnDianValidar" type="button" class="btn secondary">Validar</button>
+          <button id="btnDianCUFE" type="button" class="btn secondary">CUFE demo</button>
+          <button id="btnDianXML" type="button" class="btn secondary">XML demo</button>
+        </div>
+      </div>
+      <div class="form erp-form-compact">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="dianPayload">Payload JSON para CUFE/XML (opcional)</label>
+            <textarea id="dianPayload" class="form-textarea erp-json-area" placeholder='{"documento_codigo":"FV-1001","total":"120000"}'></textarea>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card empresa-section erp-section-gap">
+      <div class="empresa-section-header">
+        <h2 class="erp-title-small">Crear / actualizar</h2>
+      </div>
+      <form id="jsonCrudForm" class="form">
+        <div class="form-row">
+          <div class="form-col erp-col-small">
+            <label class="form-label" for="crudAction">Accion</label>
+            <select id="crudAction" class="form-input">
+              <option value="create">Crear (POST)</option>
+              <option value="update">Actualizar (PUT)</option>
+            </select>
+          </div>
+          <div class="form-col erp-col-small">
+            <label class="form-label" for="recordID">ID (solo update)</label>
+            <input id="recordID" class="form-input" type="number" min="1" step="1" placeholder="Ej: 12">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="payloadArea">Payload JSON</label>
+            <textarea id="payloadArea" class="form-textarea erp-json-area"></textarea>
+            <div class="form-help">Puedes cargar un registro desde la tabla usando el boton Editar.</div>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button id="btnGuardarJSON" type="submit" class="btn">Ejecutar</button>
+          <button id="btnTemplate" type="button" class="btn secondary">Cargar plantilla</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card empresa-section erp-section-gap">
+      <div class="empresa-section-header">
+        <h2 class="erp-title-small">Salida de operacion</h2>
+      </div>
+      <pre id="outputBox" class="erp-output">Sin resultados todavia.</pre>
+    </section>
+  </div>
+
+  <script src="/js/modulos_erp_extendido.js"></script>
+</body>
+</html>

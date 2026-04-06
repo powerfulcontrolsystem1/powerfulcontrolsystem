@@ -32,6 +32,7 @@ function getQueryParam(name) {
     document.getElementById("linkClientes"),
     document.getElementById("linkFacturacionElectronica"),
     document.getElementById("linkFacturasElectronicas"),
+    document.getElementById("linkERPExtendido"),
     document.getElementById("linkChatIA"),
     document.getElementById("linkFinanzas"),
     document.getElementById("linkPropinas"),
@@ -43,6 +44,7 @@ function getQueryParam(name) {
     document.getElementById("linkEstaciones"),
     document.getElementById("linkReservasHotel"),
     document.getElementById("linkReportes"),
+    document.getElementById("linkCalculadora"),
     document.getElementById("linkGraficosEstadisticas"),
   ];
 
@@ -77,6 +79,7 @@ function getQueryParam(name) {
     linkClientes: { module: permModuleClientes, action: permActionCreate },
     linkFacturacionElectronica: { module: permModuleFacturacion, action: permActionCreate },
     linkFacturasElectronicas: { module: permModuleFacturacion, action: permActionRead },
+    linkERPExtendido: { module: permModuleSeguridad, action: permActionUpdate },
     linkChatIA: { module: permModuleVentas, action: permActionRead },
     linkFinanzas: { module: permModuleFinanzas, action: permActionCreate },
     linkPropinas: { module: permModuleFinanzas, action: permActionCreate },
@@ -88,6 +91,7 @@ function getQueryParam(name) {
     linkEstaciones: { module: permModuleVentas, action: permActionUpdate },
     linkReservasHotel: { module: permModuleVentas, action: permActionCreate },
     linkReportes: { module: permModuleFinanzas, action: permActionRead },
+    linkCalculadora: { module: permModuleFinanzas, action: permActionRead },
     linkGraficosEstadisticas: { module: permModuleFinanzas, action: permActionRead },
   };
 

@@ -5,12 +5,14 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Modulo de propinas</title>
   <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
 </head>
-<body class="super-page form-bg-dark">
+<body class="empresa-subpage">
   <div class="container">
     <div class="page-header">
       <h1>Modulo de propinas</h1>
     </div>
+    <p id="empresaContextoPropinas" class="form-help" style="margin:0 0 8px 0;"></p>
     <p class="form-help" style="margin:0 0 12px 0;">
       Configura el porcentaje de propina para facturas y revisa la acumulacion por usuario o reparto universal.
     </p>
@@ -97,8 +99,8 @@
 
       <div style="margin-top:10px;">
         <h3 style="margin:0 0 8px 0;font-size:0.96rem;">Acumulado por usuario</h3>
-        <div style="overflow:auto;">
-          <table class="crud-table">
+        <div class="table-wrap">
+          <table class="table">
             <thead>
               <tr>
                 <th>Usuario</th>
@@ -117,8 +119,8 @@
 
       <div style="margin-top:12px;">
         <h3 style="margin:0 0 8px 0;font-size:0.96rem;">Movimientos de propinas</h3>
-        <div style="overflow:auto;">
-          <table class="crud-table">
+        <div class="table-wrap">
+          <table class="table">
             <thead>
               <tr>
                 <th>Fecha</th>
@@ -185,6 +187,15 @@
         setMessage('cfgMsg', 'empresa_id es obligatorio en la URL', true);
         setMessage('reporteMsg', 'empresa_id es obligatorio en la URL', true);
         return;
+      }
+
+      try {
+        localStorage.setItem('active_empresa_id', String(empresaID));
+      } catch (_) {}
+
+      var empresaContextEl = document.getElementById('empresaContextoPropinas');
+      if (empresaContextEl) {
+        empresaContextEl.textContent = 'Contexto activo: empresa_id=' + String(empresaID);
       }
 
       function getCfgPayload() {

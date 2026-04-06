@@ -372,6 +372,92 @@ Todas las tablas operativas usan como base los campos estandar:
   - fecha_ingreso, fecha_salida
   - estado_registro (`en_empresa` o `retirado`)
 
+### Tablas ERP extendidas por empresa (2026-04-06)
+- empresa_cotizaciones_venta:
+  - empresa_id, codigo, cliente_id, cliente_nombre
+  - fecha_documento, vigencia_hasta, estado_documento
+  - subtotal, descuento_total, impuesto_total, total, moneda
+  - origen, convertido_pedido_id
+- empresa_pedidos_venta:
+  - empresa_id, codigo, cliente_id, cliente_nombre, cotizacion_id
+  - fecha_pedido, fecha_entrega_estimada, estado_pedido
+  - subtotal, descuento_total, impuesto_total, total, moneda
+- empresa_devoluciones_venta:
+  - empresa_id, codigo, carrito_id, documento_referencia, motivo
+  - fecha_devolucion, estado_devolucion, subtotal, impuesto_total, total, moneda
+- empresa_plan_cuentas:
+  - empresa_id, codigo, nombre, tipo_cuenta, naturaleza, nivel
+  - cuenta_padre_codigo, admite_movimiento, aplica_impuesto
+- empresa_cuentas_por_cobrar:
+  - empresa_id, codigo, cliente_id, cliente_nombre
+  - documento_tipo, documento_codigo, fecha_emision, fecha_vencimiento
+  - valor_original, valor_pagado, saldo, estado_cartera, moneda
+- empresa_cuentas_por_pagar:
+  - empresa_id, codigo, proveedor_id, proveedor_nombre
+  - documento_tipo, documento_codigo, fecha_emision, fecha_vencimiento
+  - valor_original, valor_pagado, saldo, estado_cartera, moneda
+- inventario_lotes_series:
+  - empresa_id, producto_id, bodega_id, tipo_control, codigo_lote_serie
+  - fecha_fabricacion, fecha_vencimiento, cantidad_inicial, cantidad_disponible
+  - costo_unitario, estado_lote
+- empresa_devoluciones_proveedor:
+  - empresa_id, codigo, proveedor_id, proveedor_nombre, documento_compra_codigo
+  - fecha_devolucion, motivo, estado_devolucion, subtotal, impuesto_total, total, moneda
+- empresa_rrhh_vacaciones_licencias:
+  - empresa_id, codigo, empleado_id, empleado_nombre, tipo_novedad
+  - fecha_inicio, fecha_fin, dias, remunerada, estado_novedad, soporte_url, aprobado_por
+- crm_leads:
+  - empresa_id, codigo, nombre, empresa_origen, email, telefono, canal_origen
+  - estado_lead, valor_potencial, probabilidad, propietario, proximo_contacto
+- crm_interacciones:
+  - empresa_id, codigo, lead_id, cliente_id, tipo_interaccion, fecha_interaccion
+  - resumen, resultado, usuario_responsable, proxima_accion, estado_interaccion
+- crm_campanas:
+  - empresa_id, codigo, nombre, canal, objetivo, presupuesto
+  - fecha_inicio, fecha_fin, estado_campana, audiencia, kpi_objetivo, resultado_json
+- produccion_bom:
+  - empresa_id, codigo, producto_id, producto_nombre, version
+  - rendimiento, unidad_medida, costo_estimado_total, estado_bom
+- produccion_bom_detalle:
+  - empresa_id, bom_id, insumo_producto_id, insumo_nombre, cantidad, unidad_medida
+  - costo_unitario, costo_total, merma_porcentaje
+- produccion_ordenes:
+  - empresa_id, codigo, bom_id, producto_id, producto_nombre
+  - cantidad_programada, cantidad_producida, fecha_programada, fecha_inicio, fecha_fin
+  - estado_orden, costo_estimado, costo_real, responsable
+- logistica_transportistas:
+  - empresa_id, codigo, nombre, documento, telefono, email, placa, vehiculo_tipo
+  - capacidad_carga, estado_transportista
+- logistica_rutas:
+  - empresa_id, codigo, nombre, origen, destino, distancia_km, tiempo_estimado_min, estado_ruta
+- logistica_envios:
+  - empresa_id, codigo, cliente_id, cliente_nombre, documento_referencia
+  - direccion_entrega, ruta_id, transportista_id
+  - fecha_programada, fecha_salida, fecha_entrega, estado_envio, costo_envio
+  - latitud, longitud, observaciones_seguimiento
+- empresa_documentos_gestion:
+  - empresa_id, codigo, modulo, entidad, entidad_id, documento_codigo
+  - nombre_documento, tipo_documento, mime_type, url_archivo, hash_archivo, tamano_bytes
+  - version, estado_documento
+- empresa_documentos_firmas:
+  - empresa_id, codigo, documento_gestion_id, tipo_firma
+  - firmante_nombre, firmante_documento, firmante_email
+  - certificado_serial, algoritmo_firma, hash_firma, fecha_firma, validez_hasta, estado_firma
+- empresa_integraciones_apis:
+  - empresa_id, codigo, nombre_integracion, tipo_integracion, base_url, auth_tipo, api_key_ref
+  - estado_integracion, ultima_sincronizacion, respuesta_ultimo_sync
+- empresa_integraciones_bancos:
+  - empresa_id, codigo, banco_nombre, tipo_conexion, numero_cuenta, titular, moneda
+  - api_endpoint, credencial_ref, estado_integracion, ultima_conciliacion
+- empresa_dian_configuracion:
+  - empresa_id (UNIQUE), codigo
+  - nit, digito_verificacion, razon_social, tipo_ambiente
+  - software_id, software_pin, test_set_id
+  - certificado_url, certificado_clave_ref
+  - prefijo, resolucion_numero, resolucion_fecha_desde, resolucion_fecha_hasta
+  - rango_desde, rango_hasta, consecutivo_actual
+  - url_dian, token_emisor_ref, ultimo_envio, estado_dian
+
 ## 2) Base: superadministrador.db
 
 ### Tablas de control y administracion
@@ -398,8 +484,6 @@ Todas las tablas operativas usan como base los campos estandar:
   - fecha_inicio, fecha_fin, activo
 
 ### Tablas de pagos y metricas
-- pagos_mercadopago:
-  - licencia_id, empresa_id, preference_id, payment_id, status, raw_payload
 - pagos_wompi:
   - licencia_id, empresa_id, transaction_id, reference, status, raw_payload
 - metrics:
@@ -424,11 +508,24 @@ Todas las tablas operativas usan como base los campos estandar:
 - empresas.id -> empresa_asistencia_empleados.empresa_id
 - empresas.id -> empresa_nomina_configuracion.empresa_id, empresa_nomina_empleados.empresa_id, empresa_nomina_festivos.empresa_id, empresa_nomina_liquidaciones.empresa_id
 - empresas.id -> empresa_vehiculos_registro.empresa_id
+- empresas.id -> empresa_cotizaciones_venta.empresa_id, empresa_pedidos_venta.empresa_id, empresa_devoluciones_venta.empresa_id
+- empresas.id -> empresa_plan_cuentas.empresa_id, empresa_cuentas_por_cobrar.empresa_id, empresa_cuentas_por_pagar.empresa_id
+- empresas.id -> inventario_lotes_series.empresa_id, empresa_devoluciones_proveedor.empresa_id, empresa_rrhh_vacaciones_licencias.empresa_id
+- empresas.id -> crm_leads.empresa_id, crm_interacciones.empresa_id, crm_campanas.empresa_id
+- empresas.id -> produccion_bom.empresa_id, produccion_bom_detalle.empresa_id, produccion_ordenes.empresa_id
+- empresas.id -> logistica_transportistas.empresa_id, logistica_rutas.empresa_id, logistica_envios.empresa_id
+- empresas.id -> empresa_documentos_gestion.empresa_id, empresa_documentos_firmas.empresa_id
+- empresas.id -> empresa_integraciones_apis.empresa_id, empresa_integraciones_bancos.empresa_id, empresa_dian_configuracion.empresa_id
 - empresa_eventos_contables.id -> empresa_asientos_contables.evento_contable_id
 - proveedores.id -> empresa_compras_documentos.proveedor_id
 - categorias_productos.id -> productos.categoria_id
 - combos_productos.id -> combos_productos_detalle.combo_id
 - productos.id -> combos_productos_detalle.producto_id
+- crm_leads.id -> crm_interacciones.lead_id
+- produccion_bom.id -> produccion_bom_detalle.bom_id, produccion_ordenes.bom_id
+- logistica_transportistas.id -> logistica_envios.transportista_id
+- logistica_rutas.id -> logistica_envios.ruta_id
+- empresa_documentos_gestion.id -> empresa_documentos_firmas.documento_gestion_id
 - carritos_compras.id -> carrito_compra_items.carrito_id
 - carritos_compras.id -> reservas_hotel.carrito_id
 - chat_tareas_conversaciones.id -> chat_tareas_participantes.conversacion_id, chat_tareas_mensajes.conversacion_id, chat_tareas.conversacion_id
@@ -438,6 +535,8 @@ Todas las tablas operativas usan como base los campos estandar:
 - roles_de_usuario.id -> tipos_de_usuario.rol_id
 
 ## 4) Historial resumido
+- 2026-04-06: se retira la operacion activa de Mercado Pago en backend y se deja Wompi como pasarela unica; el registro operativo de pagos se concentra en `pagos_wompi`.
+- 2026-04-06: se agregan tablas ERP extendidas por `empresa_id` para ventas avanzadas (cotizaciones/pedidos/devoluciones), contabilidad (plan de cuentas y cartera CxC/CxP), inventario por lotes/series, RRHH (vacaciones/licencias), CRM, produccion (BOM y ordenes), logistica, gestion documental, integraciones externas y configuracion DIAN Colombia.
 - 2026-04-05: se agrega `reservas_hotel` para gestionar reservas por estacion/habitacion con control de disponibilidad por rango, expiracion de pendientes y confirmacion de pago.
 - 2026-04-05: se agrega `empresa_vehiculos_registro` para controlar ingreso y salida de vehiculos por empresa con patente, conductor, propietario y motivo operativo.
 - 2026-04-05: se agrega `codigos_de_descuento` por empresa para promociones con vigencia, usos y validacion de pago en carrito.

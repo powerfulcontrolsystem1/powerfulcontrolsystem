@@ -15,7 +15,7 @@ Sistema POS multiempresa con backend en Go y persistencia SQLite, orientado a op
 - Backend: Go.
 - Frontend: HTML + JavaScript + CSS.
 - Base de datos: SQLite (dos archivos separados por contexto).
-- Integraciones: Google OAuth, SMTP (correo), Mercado Pago y Wompi.
+- Integraciones: Google OAuth, SMTP (correo) y Wompi.
 
 ## Arquitectura por capas
 
@@ -37,7 +37,7 @@ Sistema POS multiempresa con backend en Go y persistencia SQLite, orientado a op
 
 2) Administracion global (super)
 - Empresas, tipos de empresa, licencias, administradores.
-- Configuracion de pasarelas de pago y correo.
+- Configuracion de pasarela de pago Wompi y correo.
 - Configuracion avanzada de credenciales IA para modelos populares con trazabilidad de cuenta Google administradora.
 
 3) Operacion por empresa
@@ -56,6 +56,14 @@ Sistema POS multiempresa con backend en Go y persistencia SQLite, orientado a op
 - Comisiones por servicio: modulo por empresa para activar/desactivar porcentaje de comision de servicios de lavado, registrar movimientos automaticos al cerrar carrito y consultar reporte por lavador.
 - Compras: modulo dedicado con endpoint `/api/empresa/compras/documentos` y vista `administrar_empresa/compras.html` para crear, consultar y transicionar documentos (`emitir_orden`, `recepcionar_compra`, `contabilizar_compra`) con trazabilidad contable.
 - Facturacion electronica: configuracion por pais y ciclo documental (`emitir`, `anular`, `nota_credito`) con validacion normativa inicial de emision (prefijo/resolucion/consecutivo), trazabilidad por `numero_legal` + `codigo_validacion`, envio automatico del resumen de factura al correo del cliente cuando se dispone de destinatario y modulo de consulta de facturas para busqueda por cliente/documento/fecha, reenvio manual por correo e impresion.
+- Facturacion electronica DIAN Colombia (base operativa): endpoint `/api/empresa/facturacion_electronica/dian` con CRUD por `empresa_id`, checklist de habilitacion (`action=checklist`), validacion (`action=validar`) y utilidades de prueba (`action=generar_cufe_demo`, `action=generar_xml_demo`).
+- Gestion comercial extendida: cotizaciones, pedidos de venta y devoluciones de venta con CRUD empresarial en `/api/empresa/ventas/cotizaciones`, `/api/empresa/ventas/pedidos` y `/api/empresa/ventas/devoluciones`, incluyendo maquina de estados documental (`action=estado`, `action=transiciones`, `action=transicionar`).
+- Contabilidad operativa extendida: plan de cuentas y cartera empresarial (CxC/CxP) en `/api/empresa/finanzas/plan_cuentas`, `/api/empresa/finanzas/cuentas_cobrar` y `/api/empresa/finanzas/cuentas_pagar`.
+- Inventario extendido: lotes/series y devoluciones a proveedor con CRUD por empresa en `/api/empresa/inventario/lotes_series` y `/api/empresa/compras/devoluciones_proveedor`.
+- RRHH extendido: vacaciones/licencias por empresa en `/api/empresa/rrhh/vacaciones_licencias`.
+- CRM/Produccion/Logistica: base CRUD multiempresa para leads/interacciones/campanas, BOM/ordenes y transportistas/rutas/envios en rutas `/api/empresa/crm/*`, `/api/empresa/produccion/*` y `/api/empresa/logistica/*`.
+- Documental e integraciones: gestion de documentos y firmas (`/api/empresa/documentos/*`) e integraciones API/bancos (`/api/empresa/integraciones/*`) con trazabilidad por `empresa_id` y acciones ejecutables de operacion (`action=health_check`, `action=sync_manual`, `action=estado`).
+- Panel ERP extendido: operacion dividida por dominios con hub en `administrar_empresa/modulos_erp_extendido.html` y submodulo operativo en `administrar_empresa/modulos_erp_dominio.html`; se mantienen los mismos endpoints ERP faltantes para listar, detalle, crear, actualizar, activar/desactivar, eliminar y utilidades DIAN.
 - Carritos de compra e items (productos, combos, servicios y otros; incluye modo estaciones) con descuento de inventario por ingrediente cuando el item es de tipo combo y cierre de pago validado por backend para `efectivo`, `tarjeta_credito`, `tarjeta_debito`, `transferencia_bancaria`, `mixto` y `codigo_descuento`.
 - Ventas simples por estacion (modo supermercado): pantalla operativa `ventas_simple.html` para agregar productos rapido, ajustar cantidades, visualizar total y cerrar cobro basico por estacion, con activacion/desactivacion por estacion desde configuracion local y enrutamiento automatico desde tarjetas de estaciones.
 - Finanzas y contabilidad: movimientos, periodos, cierres de caja, eventos contables y asientos canonicos por lote, con ejecucion manual y automatica configurable por politica de reintentos y conciliacion por periodo (eventos vs asientos).
@@ -64,6 +72,7 @@ Sistema POS multiempresa con backend en Go y persistencia SQLite, orientado a op
 	- Todas las rutas registradas bajo prefijo `/api/empresa` estan envueltas por wrappers de alcance/permisos por empresa (wrappers de modulo o wrapper publico de alcance para login/primer password), con trazabilidad por `empresa_id`.
 - Reportes: tablero financiero-operativo con KPI, estado de resultados y balance general, incluyendo exportacion unificada por rango en `PDF`, `XLS`, `CSV`, `JSON` y `TXT` para consumo directivo, dataset `reporte_de_turno` con filtros por usuario/caja/turno/cierre, dataset `contable_nomina_liquidaciones` para detallar liquidaciones por periodo y empleado, y dataset `contable_flujo_caja` para consolidar ingresos/egresos diarios con saldo acumulado por periodo y filtros contables por categoria/metodo de pago.
 - Graficos y estadisticas: panel visual por empresa con series de ventas/finanzas/compras/asistencia, distribuciones operativas y rankings top de productos/clientes para analisis rapido por rango de fechas.
+- Calculadora por empresa: utilidad operativa accesible desde menu flotante y panel de empresa, con historial y memoria aislados por `empresa_id`.
 - Configuracion operativa de cobro por empresa y rol (habilitacion de metodos de pago, propinas y comisiones) y configuracion avanzada de impresion/factura.
 
 ## Flujo critico de usuario de empresa

@@ -36,11 +36,6 @@
         const licenciaId = params.get('licencia_id');
         const empresaId = params.get('empresa_id');
         const status = params.get('status');
-        const modeParam = (params.get('mp_mode') || '').toLowerCase();
-        const shouldPrefillPayer = params.get('prefill_payer') === '1';
-        const forceSandbox = modeParam === 'sandbox' || modeParam === 'test';
-        const forceProd = modeParam === 'prod' || modeParam === 'production' || modeParam === 'live';
-        const selectedMode = forceSandbox ? 'sandbox' : (forceProd ? 'prod' : '');
 
         const container = document.getElementById('payment');
         if (status){
@@ -53,15 +48,13 @@
         if (!licenciaId){ container.innerText = 'ID de licencia no proporcionado.'; return }
 
         try{
-          // obtener info del usuario para email de Wompi y prefill opcional en Mercado Pago
+          // obtener info del usuario para correo de Wompi
           let adminEmail = '';
-          let adminName = '';
           try{
             const meRes = await fetch('/me');
             if (meRes.ok) {
               const me = await meRes.json();
               adminEmail = me.email || me.Email || '';
-              adminName = me.name || me.Name || '';
             }
           }catch(e){ /* no auth info */ }
 
@@ -71,12 +64,6 @@
           const empresas = empRes.ok ? await empRes.json() : [];
           const lic = (licencias||[]).find(function(x){ return String(x.id) === String(licenciaId) });
           if (!lic){ container.innerText = 'Licencia no encontrada.'; return }
-
-          const modeHint = selectedMode === 'sandbox'
-            ? 'Modo sandbox forzado por URL. Usa comprador test distinto al vendedor.'
-            : (selectedMode === 'prod'
-              ? 'Modo estándar forzado por URL.'
-              : 'Modo automático: credenciales TEST usan sandbox; credenciales productivas usan modo estándar.');
 
           container.innerHTML = ''+
             '<div class="payment-licencia-summary">'+
@@ -90,10 +77,6 @@
             '</div>'+
             '<h3 class="payment-method-title">Selecciona el método de pago</h3>'+
             '<div class="payment-method-selector">'+
-              '<button id="selectMpCard" type="button" class="payment-method-card payment-method-mp">'+
-                '<span class="method-name">Mercado Pago</span>'+
-                '<span class="method-desc">Tarjetas y checkout de Mercado Pago</span>'+
-              '</button>'+
               '<button id="selectNequiCard" type="button" class="payment-method-card payment-method-nequi">'+
                 '<span class="method-name">Nequi (Wompi)</span>'+
                 '<span class="method-desc">Pago Nequi para Colombia (sandbox/producción)</span>'+
@@ -102,12 +85,6 @@
                 '<span class="method-name">Activar licencia sin pagar</span>'+
                 '<span class="method-desc">Activación directa para continuar desarrollo interno</span>'+
               '</button>'+
-            '</div>'+
-            '<div id="mpPanel" class="payment-method-panel payment-method-panel-mp">'+
-              '<div class="method-panel-heading">Mercado Pago</div>'+
-              '<div class="small payment-method-hint">'+escapeHtml(modeHint)+'</div>'+
-              '<button id="payBtn" class="btn buy payment-btn-mp">Pagar con Mercado Pago</button>'+
-              '<div id="mpStatus" class="small payment-method-status"></div>'+
             '</div>'+
             '<div id="nequiPanel" class="payment-method-panel payment-method-panel-nequi">'+
               '<div class="method-panel-heading">Nequi (Wompi)</div>'+
@@ -126,78 +103,28 @@
               '<div id="manualStatus" class="small payment-method-status"></div>'+
             '</div>';
 
-          const payBtn = document.getElementById('payBtn');
-          const mpStatus = document.getElementById('mpStatus');
-          const selectMpCard = document.getElementById('selectMpCard');
           const selectNequiCard = document.getElementById('selectNequiCard');
           const selectManualCard = document.getElementById('selectManualCard');
-          const mpPanel = document.getElementById('mpPanel');
           const nequiPanel = document.getElementById('nequiPanel');
           const manualPanel = document.getElementById('manualPanel');
 
           function setPaymentMethod(method){
-            const normalized = String(method || 'mp').toLowerCase();
-            const isMp = normalized === 'mp';
+            const normalized = String(method || 'nequi').toLowerCase();
             const isNequi = normalized === 'nequi';
             const isManual = normalized === 'manual';
-            if (selectMpCard) selectMpCard.classList.toggle('active', isMp);
             if (selectNequiCard) selectNequiCard.classList.toggle('active', isNequi);
             if (selectManualCard) selectManualCard.classList.toggle('active', isManual);
-            if (mpPanel) mpPanel.classList.toggle('active', isMp);
             if (nequiPanel) nequiPanel.classList.toggle('active', isNequi);
             if (manualPanel) manualPanel.classList.toggle('active', isManual);
           }
 
-          if (selectMpCard) selectMpCard.addEventListener('click', function(){ setPaymentMethod('mp'); });
           if (selectNequiCard) selectNequiCard.addEventListener('click', function(){ setPaymentMethod('nequi'); });
           if (selectManualCard) selectManualCard.addEventListener('click', function(){ setPaymentMethod('manual'); });
 
           const preferredProvider = String(params.get('provider') || params.get('metodo') || params.get('method') || '').toLowerCase();
           if (preferredProvider === 'nequi') setPaymentMethod('nequi');
           else if (preferredProvider === 'manual' || preferredProvider === 'sin_pago' || preferredProvider === 'gratis' || preferredProvider === 'free') setPaymentMethod('manual');
-          else setPaymentMethod('mp');
-
-          payBtn.addEventListener('click', async function(){
-            payBtn.disabled = true; payBtn.textContent = selectedMode === 'sandbox' ? 'Abriendo sandbox...' : 'Redirigiendo...';
-            if (mpStatus) mpStatus.textContent = '';
-            try{
-              const payload = { licencia_id: Number(licenciaId) };
-              if (selectedMode) payload.mode = selectedMode;
-              if (empresaId) payload.empresa_id = Number(empresaId);
-              // incluir prefill solo cuando se solicita explícitamente y en modo prod forzado
-              if (shouldPrefillPayer && selectedMode === 'prod' && typeof adminEmail !== 'undefined' && adminEmail) payload.payer_email = adminEmail;
-              if (shouldPrefillPayer && selectedMode === 'prod' && typeof adminName !== 'undefined' && adminName) payload.payer_name = adminName;
-              const mpRes = await fetch('/mercadopago/create_preference', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-              if (!mpRes.ok){
-                const txt = await mpRes.text();
-                alert('Error creando preferencia: ' + txt);
-                payBtn.disabled = false; payBtn.textContent = 'Pagar con Mercado Pago';
-                return;
-              }
-              const data = await mpRes.json();
-              if (mpStatus && data && data.checkout_mode) {
-                const env = data.credential_env ? (' | credencial: ' + data.credential_env) : '';
-                mpStatus.textContent = 'Redirigiendo en modo: ' + data.checkout_mode + env;
-              }
-              if (data && data.credential_env === 'test' && data.checkout_mode === 'prod') {
-                const fallbackSandbox = data.sandbox_checkout_url || data.sandbox_init_point;
-                if (fallbackSandbox) {
-                  if (mpStatus) mpStatus.textContent = 'Se detectó credencial TEST; cambiando automáticamente a sandbox.';
-                  window.location.href = fallbackSandbox;
-                  return;
-                }
-              }
-              // priorizar URL según modo y permitir fallback a variantes comunes
-              const init = data.checkout_url ||
-                (selectedMode === 'sandbox'
-                  ? (data.sandbox_init_point || data.init_point)
-                  : (data.init_point || data.sandbox_init_point)) ||
-                (data.preference && (selectedMode === 'sandbox' ? (data.preference.sandbox_init_point || data.preference.init_point) : (data.preference.init_point || data.preference.sandbox_init_point))) ||
-                data.url || (data.checkout && data.checkout.url);
-              if (!init){ alert('Respuesta inválida de Mercado Pago'); payBtn.disabled=false; payBtn.textContent='Pagar con Mercado Pago'; return }
-              window.location.href = init;
-            }catch(err){ console.error(err); alert('Error iniciando pago: '+(err.message||err)); payBtn.disabled=false; payBtn.textContent='Pagar con Mercado Pago'; }
-          });
+          else setPaymentMethod('nequi');
 
           const nequiBtn = document.getElementById('payNequiBtn');
           const nequiPhoneInput = document.getElementById('nequiPhone');

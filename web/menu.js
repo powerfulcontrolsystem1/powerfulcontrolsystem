@@ -9,6 +9,7 @@
       '<div class="fm-panel" role="menu">' +
         '<a class="fm-item" href="/index.html">Portal</a>' +
         '<a class="fm-item" href="/ayuda/ayuda.html">Ayuda</a>' +
+        '<a id="calculatorLink" class="fm-item" href="/administrar_empresa/calculadora.html">Calculadora</a>' +
         '<button id="themeToggle" class="fm-item" type="button" aria-label="Cambiar tema"></button>' +
         '<div id="countryFlagItem" class="fm-item fm-country" style="display:none"></div>' +
         '<a id="sessionLink" class="fm-item" href="/login.html">Iniciar sesión</a>' +
@@ -96,6 +97,17 @@
       }
     }
 
+    function updateCalculatorLink(){
+      var calcLink = wrapper.querySelector('#calculatorLink');
+      if (!calcLink) return;
+      var empresaId = resolveEmpresaId();
+      var url = new URL('/administrar_empresa/calculadora.html', window.location.origin);
+      if (empresaId) {
+        url.searchParams.set('empresa_id', empresaId);
+      }
+      calcLink.setAttribute('href', url.pathname + url.search);
+    }
+
     function renderCountryItem(info){
       var item = wrapper.querySelector('#countryFlagItem');
       if (!item || !info) return;
@@ -135,6 +147,7 @@
         });
     }
 
+    updateCalculatorLink();
     loadCountryItem();
 
     // Nota: no mostramos avatar/usuario en el menú flotante por simplicidad.

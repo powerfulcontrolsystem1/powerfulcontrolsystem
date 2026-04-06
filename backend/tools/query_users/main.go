@@ -78,13 +78,13 @@ func main() {
 		fmt.Printf("Total usuarios tabla users: %d\n", count2)
 	}
 
-	// Query configuraciones for Mercado Pago keys
-	rows3, err := dbSuper.Query("SELECT config_key, value, encrypted, fecha_actualizacion FROM configuraciones WHERE config_key LIKE 'mercadopago.%'")
+	// Query configuraciones for Wompi keys
+	rows3, err := dbSuper.Query("SELECT config_key, value, encrypted, fecha_actualizacion FROM configuraciones WHERE config_key LIKE 'wompi.%'")
 	if err != nil {
 		fmt.Println("No se pudo leer configuraciones:", err)
 	} else {
 		defer rows3.Close()
-		fmt.Println("\nConfiguraciones (mercadopago.*) en superadministrador.db:")
+		fmt.Println("\nConfiguraciones (wompi.*) en superadministrador.db:")
 		for rows3.Next() {
 			var key string
 			var value sql.NullString
@@ -109,22 +109,22 @@ func main() {
 			fmt.Printf(" - %s | encrypted=%d | fecha_actualizacion=%s | value=%s\n", key, enc, ts, val)
 		}
 
-		// Query pagos_mercadopago to verify preferences created
-		rows4, err := dbSuper.Query("SELECT id, licencia_id, empresa_id, preference_id, payment_id, status, fecha_creacion FROM pagos_mercadopago ORDER BY id DESC")
+		// Query pagos_wompi to verify transactions created
+		rows4, err := dbSuper.Query("SELECT id, licencia_id, empresa_id, transaction_id, reference, status, fecha_creacion FROM pagos_wompi ORDER BY id DESC")
 		if err != nil {
-			fmt.Println("No se pudo leer pagos_mercadopago:", err)
+			fmt.Println("No se pudo leer pagos_wompi:", err)
 		} else {
 			defer rows4.Close()
-			fmt.Println("\nPagos Mercado Pago (pagos_mercadopago):")
+			fmt.Println("\nPagos Wompi (pagos_wompi):")
 			for rows4.Next() {
 				var id int64
 				var licenciaID sql.NullInt64
 				var empresaID sql.NullInt64
-				var prefID sql.NullString
-				var paymentID sql.NullString
+				var transactionID sql.NullString
+				var reference sql.NullString
 				var status sql.NullString
 				var fecha sql.NullString
-				if err := rows4.Scan(&id, &licenciaID, &empresaID, &prefID, &paymentID, &status, &fecha); err != nil {
+				if err := rows4.Scan(&id, &licenciaID, &empresaID, &transactionID, &reference, &status, &fecha); err != nil {
 					log.Println("scan error:", err)
 					continue
 				}
@@ -136,13 +136,13 @@ func main() {
 				if empresaID.Valid {
 					eid = fmt.Sprint(empresaID.Int64)
 				}
-				p := "(null)"
-				if prefID.Valid {
-					p = prefID.String
+				tx := "(null)"
+				if transactionID.Valid {
+					tx = transactionID.String
 				}
-				pay := "(null)"
-				if paymentID.Valid {
-					pay = paymentID.String
+				ref := "(null)"
+				if reference.Valid {
+					ref = reference.String
 				}
 				st := "(null)"
 				if status.Valid {
@@ -152,7 +152,7 @@ func main() {
 				if fecha.Valid {
 					ts = fecha.String
 				}
-				fmt.Printf(" - id=%d | licencia=%s | empresa=%s | pref=%s | payment=%s | status=%s | fecha=%s\n", id, lid, eid, p, pay, st, ts)
+				fmt.Printf(" - id=%d | licencia=%s | empresa=%s | tx=%s | reference=%s | status=%s | fecha=%s\n", id, lid, eid, tx, ref, st, ts)
 			}
 		}
 	}

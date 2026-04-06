@@ -73,12 +73,20 @@ const (
 	reporteDatasetContableEstadoResultados = "contable_estado_resultados"
 	reporteDatasetContableBalanceGeneral   = "contable_balance_general"
 	reporteDatasetContableFlujoCaja        = "contable_flujo_caja"
+	reporteDatasetOperativoModulos         = "operativo_modulos_resumen"
+	reporteDatasetOperativoReservas        = "operativo_reservas_ocupacion"
+	reporteDatasetOperativoTarifas         = "operativo_tarifas_ingresos"
+	reporteDatasetOperativoCadena          = "operativo_cadena_cumplimiento"
 	reporteDatasetOperativoVentasDetalle   = "operativo_ventas_detalle"
 	reporteDatasetOperativoTurno           = "reporte_de_turno"
 	reporteDatasetOperativoTopProductos    = "operativo_top_productos"
 	reporteDatasetOperativoTopClientes     = "operativo_top_clientes"
 	reporteDatasetOperativoInventario      = "operativo_inventario_bodega"
 	reporteDatasetOperativoCompras         = "operativo_compras_movimientos"
+	reporteDatasetOperativoPropinas        = "operativo_propinas_acumulado"
+	reporteDatasetOperativoComisiones      = "operativo_comisiones_lavador"
+	reporteDatasetOperativoFacturacion     = "operativo_facturacion_trazabilidad"
+	reporteDatasetOperativoAuditoria       = "operativo_auditoria_acciones"
 	reporteDatasetContableMovFin           = "contable_movimientos_financieros"
 	reporteDatasetContableEventos          = "contable_eventos_contables"
 	reporteDatasetContableAsientos         = "contable_asientos_contables"
@@ -115,6 +123,34 @@ var reportesCatalogo = []empresaReporteCatalogoItem{
 		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
 	},
 	{
+		Key:         reporteDatasetOperativoModulos,
+		Title:       "Resumen por Módulos",
+		Level:       "operativo",
+		Description: "Consolida estado por módulo (totales, activos, rango y último registro) para seguimiento integral.",
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
+	},
+	{
+		Key:         reporteDatasetOperativoReservas,
+		Title:       "Reservas - Ocupación y Cumplimiento",
+		Level:       "operativo",
+		Description: "Consolida reservas por estación con ocupación estimada y cumplimiento de confirmación por rango.",
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
+	},
+	{
+		Key:         reporteDatasetOperativoTarifas,
+		Title:       "Tarifas - Ingresos por Modelo",
+		Level:       "operativo",
+		Description: "Consolida ingresos de ventas por modelo de tarifa aplicado (día, minutos o sin modelo).",
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
+	},
+	{
+		Key:         reporteDatasetOperativoCadena,
+		Title:       "CRM/Producción/Logística - Conversión y Cumplimiento",
+		Level:       "operativo",
+		Description: "Consolida conversión comercial y cumplimiento operativo por módulo en el rango consultado.",
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
+	},
+	{
 		Key:         reporteDatasetOperativoVentasDetalle,
 		Title:       "Ventas Cerradas Detalle",
 		Level:       "operativo",
@@ -146,14 +182,42 @@ var reportesCatalogo = []empresaReporteCatalogoItem{
 		Key:         reporteDatasetOperativoInventario,
 		Title:       "Inventario por Bodega",
 		Level:       "operativo",
-		Description: "Existencias por bodega y estado de stock.",
+		Description: "Existencias por bodega con rotacion estimada, riesgo de quiebre y valorizacion de inventario.",
 		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
 	},
 	{
 		Key:         reporteDatasetOperativoCompras,
-		Title:       "Compras y Movimientos de Inventario",
+		Title:       "Compras por Proveedor y Recepcion vs Orden",
 		Level:       "operativo",
-		Description: "Movimientos de compra (entradas/ajustes positivos) con costos.",
+		Description: "Consolida documentos de compra por proveedor para medir costo ordenado, recepcionado y brecha operativa.",
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
+	},
+	{
+		Key:         reporteDatasetOperativoPropinas,
+		Title:       "Propinas - Acumulado por Usuario",
+		Level:       "operativo",
+		Description: "Consolida propinas por usuario y periodo con distribucion directa/universal y participacion sobre el total.",
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
+	},
+	{
+		Key:         reporteDatasetOperativoComisiones,
+		Title:       "Comisiones por Servicio - Acumulado por Lavador",
+		Level:       "operativo",
+		Description: "Consolida comisiones por lavador en el periodo con base de servicios, total de comision y participacion.",
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
+	},
+	{
+		Key:         reporteDatasetOperativoFacturacion,
+		Title:       "Facturacion Electronica - Documentos y Trazabilidad",
+		Level:       "operativo",
+		Description: "Consolida documentos por tipo para seguimiento de emision, anulacion y trazabilidad legal.",
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
+	},
+	{
+		Key:         reporteDatasetOperativoAuditoria,
+		Title:       "Auditoria Empresarial - Acciones Criticas",
+		Level:       "operativo",
+		Description: "Consolida auditoria por modulo/usuario con errores HTTP y accion principal del periodo.",
 		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
 	},
 	{
@@ -373,6 +437,14 @@ func (b *reportesBuilder) buildDataset(key string) (empresaReporteDataset, error
 		return b.buildContableBalanceGeneralDataset()
 	case reporteDatasetContableFlujoCaja:
 		return b.buildContableFlujoCajaDataset()
+	case reporteDatasetOperativoModulos:
+		return b.buildOperativoModulosResumenDataset()
+	case reporteDatasetOperativoReservas:
+		return b.buildOperativoReservasOcupacionDataset()
+	case reporteDatasetOperativoTarifas:
+		return b.buildOperativoTarifasIngresosDataset()
+	case reporteDatasetOperativoCadena:
+		return b.buildOperativoCadenaCumplimientoDataset()
 	case reporteDatasetOperativoVentasDetalle:
 		return b.buildOperativoVentasDetalleDataset()
 	case reporteDatasetOperativoTurno:
@@ -385,6 +457,14 @@ func (b *reportesBuilder) buildDataset(key string) (empresaReporteDataset, error
 		return b.buildOperativoInventarioBodegaDataset()
 	case reporteDatasetOperativoCompras:
 		return b.buildOperativoComprasMovimientosDataset()
+	case reporteDatasetOperativoPropinas:
+		return b.buildOperativoPropinasAcumuladoDataset()
+	case reporteDatasetOperativoComisiones:
+		return b.buildOperativoComisionesLavadorDataset()
+	case reporteDatasetOperativoFacturacion:
+		return b.buildOperativoFacturacionTrazabilidadDataset()
+	case reporteDatasetOperativoAuditoria:
+		return b.buildOperativoAuditoriaAccionesDataset()
 	case reporteDatasetContableMovFin:
 		return b.buildContableMovimientosFinancierosDataset()
 	case reporteDatasetContableEventos:
@@ -532,6 +612,336 @@ func (b *reportesBuilder) buildContableBalanceGeneralDataset() (empresaReporteDa
 	ds.RowCount = 1
 	ds.Summary["cuadre"] = tablero.BalanceGeneral.Cuadre
 	return ds, nil
+}
+
+type reporteModuloResumenDef struct {
+	ModuloKey  string
+	Modulo     string
+	Categoria  string
+	Tabla      string
+	FechaCampo string
+}
+
+var reporteModulosResumenDefs = []reporteModuloResumenDef{
+	{ModuloKey: "usuarios_empresa", Modulo: "Usuarios de empresa", Categoria: "seguridad", Tabla: "users", FechaCampo: "fecha_creacion"},
+	{ModuloKey: "clientes", Modulo: "Clientes", Categoria: "operativo", Tabla: "clientes", FechaCampo: "fecha_creacion"},
+	{ModuloKey: "productos", Modulo: "Inventario - Productos", Categoria: "operativo", Tabla: "productos", FechaCampo: "fecha_creacion"},
+	{ModuloKey: "servicios", Modulo: "Servicios", Categoria: "operativo", Tabla: "servicios", FechaCampo: "fecha_creacion"},
+	{ModuloKey: "combos_productos", Modulo: "Combos de productos", Categoria: "operativo", Tabla: "combos_productos", FechaCampo: "fecha_creacion"},
+	{ModuloKey: "codigos_descuento", Modulo: "Códigos de descuento", Categoria: "operativo", Tabla: "codigos_de_descuento", FechaCampo: "fecha_creacion"},
+	{ModuloKey: "carritos", Modulo: "Carritos de compra", Categoria: "ventas", Tabla: "carritos_compras", FechaCampo: "fecha_creacion"},
+	{ModuloKey: "reservas", Modulo: "Reservas por estación", Categoria: "ventas", Tabla: "reservas_hotel", FechaCampo: "fecha_creacion"},
+	{ModuloKey: "tarifas_minutos", Modulo: "Tarifas por minutos", Categoria: "configuracion", Tabla: "empresa_tarifas_por_minutos", FechaCampo: "fecha_creacion"},
+	{ModuloKey: "tarifas_dia", Modulo: "Tarifas por día", Categoria: "configuracion", Tabla: "empresa_tarifas_por_dia", FechaCampo: "fecha_creacion"},
+	{ModuloKey: "propinas_movimientos", Modulo: "Propinas", Categoria: "finanzas", Tabla: "empresa_propinas_movimientos", FechaCampo: "fecha_movimiento"},
+	{ModuloKey: "comisiones_movimientos", Modulo: "Comisiones por servicio", Categoria: "finanzas", Tabla: "empresa_comisiones_servicio_movimientos", FechaCampo: "fecha_movimiento"},
+	{ModuloKey: "compras_documentos", Modulo: "Compras documentales", Categoria: "compras", Tabla: "empresa_compras_documentos", FechaCampo: "fecha_documento"},
+	{ModuloKey: "facturacion_documentos", Modulo: "Facturación documental", Categoria: "facturacion", Tabla: "empresa_facturacion_documentos", FechaCampo: "fecha_documento"},
+	{ModuloKey: "finanzas_movimientos", Modulo: "Finanzas - Movimientos", Categoria: "finanzas", Tabla: "empresa_finanzas_movimientos", FechaCampo: "fecha_movimiento"},
+	{ModuloKey: "cierres_caja", Modulo: "Finanzas - Cierres de caja", Categoria: "finanzas", Tabla: "empresa_cierres_caja", FechaCampo: "fecha_operacion"},
+	{ModuloKey: "eventos_contables", Modulo: "Eventos contables", Categoria: "contable", Tabla: "empresa_eventos_contables", FechaCampo: "fecha_evento"},
+	{ModuloKey: "asientos_contables", Modulo: "Asientos contables", Categoria: "contable", Tabla: "empresa_asientos_contables", FechaCampo: "fecha_asiento"},
+	{ModuloKey: "nomina_liquidaciones", Modulo: "Nómina - Liquidaciones", Categoria: "rrhh", Tabla: "empresa_nomina_liquidaciones", FechaCampo: "fecha_generacion"},
+	{ModuloKey: "auditoria", Modulo: "Auditoría empresarial", Categoria: "seguridad", Tabla: "empresa_auditoria_eventos", FechaCampo: "fecha_evento"},
+	{ModuloKey: "crm_leads", Modulo: "CRM - Leads", Categoria: "crm", Tabla: "crm_leads", FechaCampo: "fecha_creacion"},
+	{ModuloKey: "produccion_ordenes", Modulo: "Producción - Órdenes", Categoria: "produccion", Tabla: "produccion_ordenes", FechaCampo: "fecha_creacion"},
+	{ModuloKey: "logistica_envios", Modulo: "Logística - Envíos", Categoria: "logistica", Tabla: "logistica_envios", FechaCampo: "fecha_creacion"},
+	{ModuloKey: "integraciones_apis", Modulo: "Integraciones API", Categoria: "integraciones", Tabla: "empresa_integraciones_apis", FechaCampo: "fecha_creacion"},
+	{ModuloKey: "integraciones_bancos", Modulo: "Integraciones bancos", Categoria: "integraciones", Tabla: "empresa_integraciones_bancos", FechaCampo: "fecha_creacion"},
+	{ModuloKey: "dian_configuracion", Modulo: "DIAN Colombia", Categoria: "facturacion", Tabla: "empresa_dian_configuracion", FechaCampo: "fecha_actualizacion"},
+}
+
+func (b *reportesBuilder) buildOperativoModulosResumenDataset() (empresaReporteDataset, error) {
+	ds := b.newDataset(reporteDatasetOperativoModulos, []string{
+		"modulo_key",
+		"modulo",
+		"categoria",
+		"tabla",
+		"registros_totales",
+		"registros_activos",
+		"registros_rango",
+		"ultimo_registro",
+		"nota",
+	})
+
+	hasDateFilter := strings.TrimSpace(b.desde) != "" || strings.TrimSpace(b.hasta) != ""
+
+	modulosConTabla := 0
+	modulosSinTabla := 0
+	modulosConDatos := 0
+	var registrosTotales int64
+	var registrosActivos int64
+	var registrosRango int64
+
+	for _, mod := range reporteModulosResumenDefs {
+		row := map[string]interface{}{
+			"modulo_key":        mod.ModuloKey,
+			"modulo":            mod.Modulo,
+			"categoria":         mod.Categoria,
+			"tabla":             mod.Tabla,
+			"registros_totales": int64(0),
+			"registros_activos": int64(0),
+			"registros_rango":   int64(0),
+			"ultimo_registro":   "",
+			"nota":              "tabla_no_disponible",
+		}
+
+		tablaExiste, err := b.reportesTableExists(mod.Tabla)
+		if err != nil {
+			return empresaReporteDataset{}, err
+		}
+		if !tablaExiste {
+			modulosSinTabla++
+			ds.Rows = append(ds.Rows, row)
+			continue
+		}
+		modulosConTabla++
+
+		columnas, err := b.reportesTableColumns(mod.Tabla)
+		if err != nil {
+			return empresaReporteDataset{}, err
+		}
+
+		if !columnas["empresa_id"] {
+			row["nota"] = "sin_columna_empresa_id"
+			ds.Rows = append(ds.Rows, row)
+			continue
+		}
+
+		total, err := b.reportesCountByEmpresa(mod.Tabla, "")
+		if err != nil {
+			return empresaReporteDataset{}, err
+		}
+
+		activos := total
+		notas := make([]string, 0, 2)
+		if columnas["estado"] {
+			activos, err = b.reportesCountByEmpresa(mod.Tabla, "AND LOWER(COALESCE(estado, 'activo')) = 'activo'")
+			if err != nil {
+				return empresaReporteDataset{}, err
+			}
+		} else {
+			notas = append(notas, "sin_columna_estado")
+		}
+
+		rango := total
+		ultimoRegistro := ""
+		if mod.FechaCampo != "" && columnas[strings.ToLower(strings.TrimSpace(mod.FechaCampo))] {
+			ultimoRegistro, err = b.reportesMaxDateByEmpresa(mod.Tabla, mod.FechaCampo)
+			if err != nil {
+				return empresaReporteDataset{}, err
+			}
+			if hasDateFilter {
+				filtroFecha, argsFecha := reportesBuildDateFilterClause(mod.FechaCampo, b.desde, b.hasta)
+				rango, err = b.reportesCountByEmpresa(mod.Tabla, filtroFecha, argsFecha...)
+				if err != nil {
+					return empresaReporteDataset{}, err
+				}
+			}
+		} else if hasDateFilter {
+			rango = 0
+			notas = append(notas, "sin_columna_fecha")
+		}
+
+		if len(notas) == 0 {
+			notas = append(notas, "ok")
+		}
+
+		row["registros_totales"] = total
+		row["registros_activos"] = activos
+		row["registros_rango"] = rango
+		row["ultimo_registro"] = ultimoRegistro
+		row["nota"] = strings.Join(notas, ",")
+
+		if total > 0 {
+			modulosConDatos++
+		}
+		registrosTotales += total
+		registrosActivos += activos
+		registrosRango += rango
+
+		ds.Rows = append(ds.Rows, row)
+	}
+
+	ds.RowCount = len(ds.Rows)
+	ds.Summary["modulos_total"] = ds.RowCount
+	ds.Summary["modulos_con_tabla"] = modulosConTabla
+	ds.Summary["modulos_sin_tabla"] = modulosSinTabla
+	ds.Summary["modulos_con_datos"] = modulosConDatos
+	ds.Summary["registros_totales"] = registrosTotales
+	ds.Summary["registros_activos"] = registrosActivos
+	ds.Summary["registros_rango"] = registrosRango
+	ds.Summary["rango_desde"] = reportesFirstNonBlank(strings.TrimSpace(b.desde), "sin_desde")
+	ds.Summary["rango_hasta"] = reportesFirstNonBlank(strings.TrimSpace(b.hasta), "sin_hasta")
+
+	return ds, nil
+}
+
+func (b *reportesBuilder) reportesTableExists(table string) (bool, error) {
+	if !reportesSafeSQLIdentifier(table) {
+		return false, fmt.Errorf("tabla invalida")
+	}
+	var count int
+	err := b.db.QueryRow("SELECT COUNT(1) FROM sqlite_master WHERE type = 'table' AND name = ?", table).Scan(&count)
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
+func (b *reportesBuilder) reportesTableColumns(table string) (map[string]bool, error) {
+	if !reportesSafeSQLIdentifier(table) {
+		return nil, fmt.Errorf("tabla invalida")
+	}
+
+	rows, err := b.db.Query("PRAGMA table_info(" + table + ")")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	cols := make(map[string]bool)
+	for rows.Next() {
+		var cid int
+		var name string
+		var colType string
+		var notnull int
+		var dflt sql.NullString
+		var pk int
+		if err := rows.Scan(&cid, &name, &colType, &notnull, &dflt, &pk); err != nil {
+			return nil, err
+		}
+		cols[strings.ToLower(strings.TrimSpace(name))] = true
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return cols, nil
+}
+
+func (b *reportesBuilder) reportesCountByEmpresa(table string, extraWhere string, extraArgs ...interface{}) (int64, error) {
+	if !reportesSafeSQLIdentifier(table) {
+		return 0, fmt.Errorf("tabla invalida")
+	}
+	query := "SELECT COUNT(1) FROM " + table + " WHERE empresa_id = ?"
+	if strings.TrimSpace(extraWhere) != "" {
+		query += " " + strings.TrimSpace(extraWhere)
+	}
+
+	args := make([]interface{}, 0, 1+len(extraArgs))
+	args = append(args, b.empresaID)
+	args = append(args, extraArgs...)
+
+	var total int64
+	if err := b.db.QueryRow(query, args...).Scan(&total); err != nil {
+		return 0, err
+	}
+	return total, nil
+}
+
+func (b *reportesBuilder) reportesSumByEmpresa(table string, sumColumn string, extraWhere string, extraArgs ...interface{}) (float64, error) {
+	if !reportesSafeSQLIdentifier(table) || !reportesSafeSQLIdentifier(sumColumn) {
+		return 0, fmt.Errorf("identificador invalido")
+	}
+	query := "SELECT COALESCE(SUM(COALESCE(" + sumColumn + ", 0)), 0) FROM " + table + " WHERE empresa_id = ?"
+	if strings.TrimSpace(extraWhere) != "" {
+		query += " " + strings.TrimSpace(extraWhere)
+	}
+
+	args := make([]interface{}, 0, 1+len(extraArgs))
+	args = append(args, b.empresaID)
+	args = append(args, extraArgs...)
+
+	var total float64
+	if err := b.db.QueryRow(query, args...).Scan(&total); err != nil {
+		return 0, err
+	}
+	return reportesRound(total), nil
+}
+
+func (b *reportesBuilder) reportesMaxDateByEmpresa(table string, dateColumn string) (string, error) {
+	if !reportesSafeSQLIdentifier(table) || !reportesSafeSQLIdentifier(dateColumn) {
+		return "", fmt.Errorf("identificador invalido")
+	}
+	query := "SELECT COALESCE(MAX(substr(COALESCE(" + dateColumn + ", ''), 1, 19)), '') FROM " + table + " WHERE empresa_id = ?"
+	var value string
+	if err := b.db.QueryRow(query, b.empresaID).Scan(&value); err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(value), nil
+}
+
+func reportesBuildDateFilterClause(dateColumn string, desde string, hasta string) (string, []interface{}) {
+	dateColumn = strings.TrimSpace(dateColumn)
+	if !reportesSafeSQLIdentifier(dateColumn) {
+		return "", nil
+	}
+	desde = strings.TrimSpace(desde)
+	hasta = strings.TrimSpace(hasta)
+	if desde == "" && hasta == "" {
+		return "", nil
+	}
+
+	dateExpr := "substr(COALESCE(" + dateColumn + ", ''), 1, 10)"
+	parts := make([]string, 0, 2)
+	args := make([]interface{}, 0, 2)
+	if desde != "" {
+		parts = append(parts, dateExpr+" >= ?")
+		args = append(args, desde)
+	}
+	if hasta != "" {
+		parts = append(parts, dateExpr+" <= ?")
+		args = append(args, hasta)
+	}
+
+	if len(parts) == 0 {
+		return "", nil
+	}
+	return "AND " + strings.Join(parts, " AND "), args
+}
+
+func reportesBuildStateFilterClause(stateColumn string, states []string) (string, []interface{}) {
+	stateColumn = strings.TrimSpace(stateColumn)
+	if !reportesSafeSQLIdentifier(stateColumn) {
+		return "", nil
+	}
+
+	normalized := make([]string, 0, len(states))
+	for _, state := range states {
+		s := strings.ToLower(strings.TrimSpace(state))
+		if s == "" {
+			continue
+		}
+		normalized = append(normalized, s)
+	}
+	if len(normalized) == 0 {
+		return "", nil
+	}
+
+	placeholders := make([]string, 0, len(normalized))
+	args := make([]interface{}, 0, len(normalized))
+	for _, state := range normalized {
+		placeholders = append(placeholders, "?")
+		args = append(args, state)
+	}
+
+	clause := "AND LOWER(COALESCE(" + stateColumn + ", '')) IN (" + strings.Join(placeholders, ", ") + ")"
+	return clause, args
+}
+
+func reportesSafeSQLIdentifier(v string) bool {
+	v = strings.TrimSpace(v)
+	if v == "" {
+		return false
+	}
+	for _, ch := range v {
+		if (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '_' {
+			continue
+		}
+		return false
+	}
+	return true
 }
 
 func (b *reportesBuilder) getVentasCerradasFiltradas() ([]dbpkg.CarritoCompra, error) {
@@ -954,6 +1364,573 @@ func (b *reportesBuilder) buildOperativoTurnoDataset() (empresaReporteDataset, e
 	return ds, nil
 }
 
+type reporteReservaOcupacionAgg struct {
+	EstacionID        int64
+	EstacionCodigo    string
+	EstacionNombre    string
+	ReservasTotales   int64
+	ReservasConfirm   int64
+	ReservasPend      int64
+	ReservasCanc      int64
+	ReservasExp       int64
+	HuespedesTotales  int64
+	MontoTotal        float64
+	MontoConfirmado   float64
+	OcupacionDias     float64
+	UltimaFechaInicio string
+	ultimaFechaUnix   int64
+}
+
+func (b *reportesBuilder) buildOperativoReservasOcupacionDataset() (empresaReporteDataset, error) {
+	ds := b.newDataset(reporteDatasetOperativoReservas, []string{
+		"estacion_id",
+		"estacion_codigo",
+		"estacion_nombre",
+		"reservas_totales",
+		"reservas_confirmadas",
+		"reservas_pendientes",
+		"reservas_canceladas",
+		"reservas_expiradas",
+		"cumplimiento_pct",
+		"ocupacion_pct",
+		"huespedes_totales",
+		"monto_total",
+		"monto_confirmado",
+		"ultima_fecha_entrada",
+	})
+
+	tablaExiste, err := b.reportesTableExists("reservas_hotel")
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+	if !tablaExiste {
+		ds.Summary["nota"] = "tabla_reservas_hotel_no_disponible"
+		ds.Summary["estaciones_con_reservas"] = 0
+		ds.Summary["reservas_totales"] = int64(0)
+		return ds, nil
+	}
+
+	reservas, err := dbpkg.ListReservasHotelByEmpresa(b.db, b.empresaID, dbpkg.ReservaHotelFilter{
+		FechaDesde: b.desde,
+		FechaHasta: b.hasta,
+		Limit:      1000,
+		Offset:     0,
+	})
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+
+	periodoDesde, periodoHasta := reportesResolveReservaPeriodo(b.desde, b.hasta, reservas)
+	periodoDias := reportesDaysInclusive(periodoDesde, periodoHasta)
+	if periodoDias <= 0 {
+		periodoDias = 1
+	}
+
+	aggregates := make(map[string]*reporteReservaOcupacionAgg)
+	var totalReservas int64
+	var totalConfirmadas int64
+	var totalPendientes int64
+	var totalCanceladas int64
+	var totalExpiradas int64
+	var totalHuespedes int64
+	var ingresosPotenciales float64
+	var ingresosConfirmados float64
+
+	for _, reserva := range reservas {
+		if !reportesEstadoActivo(reserva.Estado) {
+			continue
+		}
+
+		key := strings.TrimSpace(reserva.EstacionCodigo)
+		if key == "" {
+			key = "estacion_" + strconv.FormatInt(reserva.EstacionID, 10)
+		}
+		current, ok := aggregates[key]
+		if !ok {
+			current = &reporteReservaOcupacionAgg{
+				EstacionID:     reserva.EstacionID,
+				EstacionCodigo: strings.TrimSpace(reserva.EstacionCodigo),
+				EstacionNombre: reportesFirstNonBlank(strings.TrimSpace(reserva.EstacionNombre), strings.TrimSpace(reserva.EstacionCodigo), "Estacion "+strconv.FormatInt(reserva.EstacionID, 10)),
+			}
+			aggregates[key] = current
+		}
+
+		current.ReservasTotales++
+		totalReservas++
+
+		estadoReserva := strings.ToLower(strings.TrimSpace(reserva.EstadoReserva))
+		switch estadoReserva {
+		case "confirmada":
+			current.ReservasConfirm++
+			totalConfirmadas++
+		case "cancelada":
+			current.ReservasCanc++
+			totalCanceladas++
+		case "expirada":
+			current.ReservasExp++
+			totalExpiradas++
+		default:
+			current.ReservasPend++
+			totalPendientes++
+		}
+
+		current.HuespedesTotales += reserva.CantidadHuespedes
+		totalHuespedes += reserva.CantidadHuespedes
+
+		current.MontoTotal += reportesRound(reserva.MontoTotal)
+		ingresosPotenciales += reportesRound(reserva.MontoTotal)
+		if estadoReserva == "confirmada" {
+			current.MontoConfirmado += reportesRound(reserva.MontoTotal)
+			ingresosConfirmados += reportesRound(reserva.MontoTotal)
+		}
+
+		ocupacionDias := reportesReservaOverlapDays(reserva.FechaEntrada, reserva.FechaSalida, periodoDesde, periodoHasta)
+		if ocupacionDias > 0 {
+			current.OcupacionDias += ocupacionDias
+		}
+
+		fechaInicio := reportesFirstNonBlank(reserva.FechaEntrada, reserva.FechaCreacion)
+		fechaUnix := reportesDateUnix(fechaInicio)
+		if fechaUnix > current.ultimaFechaUnix {
+			current.ultimaFechaUnix = fechaUnix
+			current.UltimaFechaInicio = fechaInicio
+		}
+	}
+
+	rows := make([]*reporteReservaOcupacionAgg, 0, len(aggregates))
+	for _, item := range aggregates {
+		rows = append(rows, item)
+	}
+	sort.SliceStable(rows, func(i, j int) bool {
+		if rows[i].OcupacionDias == rows[j].OcupacionDias {
+			if rows[i].ReservasTotales == rows[j].ReservasTotales {
+				return rows[i].EstacionNombre < rows[j].EstacionNombre
+			}
+			return rows[i].ReservasTotales > rows[j].ReservasTotales
+		}
+		return rows[i].OcupacionDias > rows[j].OcupacionDias
+	})
+
+	ocupacionAcumulada := 0.0
+	for _, row := range rows {
+		cumplimiento := 0.0
+		if row.ReservasTotales > 0 {
+			cumplimiento = reportesRound((float64(row.ReservasConfirm) * 100.0) / float64(row.ReservasTotales))
+		}
+		ocupacionPct := 0.0
+		if periodoDias > 0 {
+			ocupacionPct = reportesRound((row.OcupacionDias * 100.0) / periodoDias)
+			if ocupacionPct > 100 {
+				ocupacionPct = 100
+			}
+		}
+		ocupacionAcumulada += ocupacionPct
+
+		ds.Rows = append(ds.Rows, map[string]interface{}{
+			"estacion_id":          row.EstacionID,
+			"estacion_codigo":      row.EstacionCodigo,
+			"estacion_nombre":      row.EstacionNombre,
+			"reservas_totales":     row.ReservasTotales,
+			"reservas_confirmadas": row.ReservasConfirm,
+			"reservas_pendientes":  row.ReservasPend,
+			"reservas_canceladas":  row.ReservasCanc,
+			"reservas_expiradas":   row.ReservasExp,
+			"cumplimiento_pct":     cumplimiento,
+			"ocupacion_pct":        ocupacionPct,
+			"huespedes_totales":    row.HuespedesTotales,
+			"monto_total":          reportesRound(row.MontoTotal),
+			"monto_confirmado":     reportesRound(row.MontoConfirmado),
+			"ultima_fecha_entrada": row.UltimaFechaInicio,
+		})
+	}
+
+	ds.RowCount = len(ds.Rows)
+	ds.Summary["periodo_desde"] = reportesFirstNonBlank(periodoDesde, "sin_desde")
+	ds.Summary["periodo_hasta"] = reportesFirstNonBlank(periodoHasta, "sin_hasta")
+	ds.Summary["periodo_dias"] = reportesRound(periodoDias)
+	ds.Summary["estaciones_con_reservas"] = ds.RowCount
+	ds.Summary["reservas_totales"] = totalReservas
+	ds.Summary["reservas_confirmadas"] = totalConfirmadas
+	ds.Summary["reservas_pendientes"] = totalPendientes
+	ds.Summary["reservas_canceladas"] = totalCanceladas
+	ds.Summary["reservas_expiradas"] = totalExpiradas
+	ds.Summary["huespedes_totales"] = totalHuespedes
+	ds.Summary["ingresos_potenciales"] = reportesRound(ingresosPotenciales)
+	ds.Summary["ingresos_confirmados"] = reportesRound(ingresosConfirmados)
+
+	cumplimientoGlobal := 0.0
+	if totalReservas > 0 {
+		cumplimientoGlobal = reportesRound((float64(totalConfirmadas) * 100.0) / float64(totalReservas))
+	}
+	ds.Summary["cumplimiento_global_pct"] = cumplimientoGlobal
+
+	ocupacionPromedio := 0.0
+	if ds.RowCount > 0 {
+		ocupacionPromedio = reportesRound(ocupacionAcumulada / float64(ds.RowCount))
+	}
+	ds.Summary["ocupacion_promedio_pct"] = ocupacionPromedio
+
+	return ds, nil
+}
+
+func (b *reportesBuilder) buildOperativoTarifasIngresosDataset() (empresaReporteDataset, error) {
+	ds := b.newDataset(reporteDatasetOperativoTarifas, []string{
+		"modelo_tarifa",
+		"carritos_cerrados",
+		"ingresos_totales",
+		"ticket_promedio",
+		"estaciones_distintas",
+		"tarifas_configuradas",
+	})
+
+	ventas, err := b.getVentasCerradasFiltradas()
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+
+	tarifasDiaByEstacion := make(map[int64]struct{})
+	tarifasMinByEstacion := make(map[int64]struct{})
+
+	existeTarifaDia, err := b.reportesTableExists("empresa_tarifas_por_dia")
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+	if existeTarifaDia {
+		tarifasDia, err := dbpkg.ListEmpresaTarifasPorDia(b.db, b.empresaID, dbpkg.EmpresaTarifaPorDiaFilter{IncludeInactive: false, Limit: 2000})
+		if err != nil {
+			return empresaReporteDataset{}, err
+		}
+		for _, tarifa := range tarifasDia {
+			if tarifa.EstacionID > 0 && reportesEstadoActivo(tarifa.Estado) {
+				tarifasDiaByEstacion[tarifa.EstacionID] = struct{}{}
+			}
+		}
+	}
+
+	existeTarifaMin, err := b.reportesTableExists("empresa_tarifas_por_minutos")
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+	if existeTarifaMin {
+		tarifasMin, err := dbpkg.ListEmpresaTarifasPorMinutos(b.db, b.empresaID, dbpkg.EmpresaTarifaPorMinutosFilter{IncludeInactive: false, Limit: 2000})
+		if err != nil {
+			return empresaReporteDataset{}, err
+		}
+		for _, tarifa := range tarifasMin {
+			if tarifa.EstacionID > 0 && reportesEstadoActivo(tarifa.Estado) {
+				tarifasMinByEstacion[tarifa.EstacionID] = struct{}{}
+			}
+		}
+	}
+
+	type agg struct {
+		carritos   int64
+		ingresos   float64
+		estaciones map[int64]struct{}
+	}
+	aggByModel := map[string]*agg{
+		"tarifa_por_dia":     {estaciones: make(map[int64]struct{})},
+		"tarifa_por_minutos": {estaciones: make(map[int64]struct{})},
+		"sin_modelo":         {estaciones: make(map[int64]struct{})},
+	}
+
+	var carritosConModelo int64
+	for _, venta := range ventas {
+		modelo := "sin_modelo"
+		estacionID := reportesParseEstacionID(venta.ReferenciaExterna, venta.Codigo, b.empresaID)
+		if estacionID > 0 {
+			if _, ok := tarifasDiaByEstacion[estacionID]; ok {
+				modelo = "tarifa_por_dia"
+			} else if _, ok := tarifasMinByEstacion[estacionID]; ok {
+				modelo = "tarifa_por_minutos"
+			}
+		}
+
+		current := aggByModel[modelo]
+		current.carritos++
+		totalVenta := reportesVentaTotal(venta)
+		current.ingresos += totalVenta
+		if estacionID > 0 {
+			current.estaciones[estacionID] = struct{}{}
+		}
+		if modelo != "sin_modelo" {
+			carritosConModelo++
+		}
+	}
+
+	models := []string{"tarifa_por_dia", "tarifa_por_minutos", "sin_modelo"}
+	var ingresosTotal float64
+	for _, model := range models {
+		current := aggByModel[model]
+		tarifasConfiguradas := 0
+		switch model {
+		case "tarifa_por_dia":
+			tarifasConfiguradas = len(tarifasDiaByEstacion)
+		case "tarifa_por_minutos":
+			tarifasConfiguradas = len(tarifasMinByEstacion)
+		}
+
+		if current.carritos == 0 && tarifasConfiguradas == 0 && model != "sin_modelo" {
+			continue
+		}
+
+		ticketPromedio := 0.0
+		if current.carritos > 0 {
+			ticketPromedio = reportesRound(current.ingresos / float64(current.carritos))
+		}
+		ingresosTotal += current.ingresos
+
+		ds.Rows = append(ds.Rows, map[string]interface{}{
+			"modelo_tarifa":        model,
+			"carritos_cerrados":    current.carritos,
+			"ingresos_totales":     reportesRound(current.ingresos),
+			"ticket_promedio":      ticketPromedio,
+			"estaciones_distintas": len(current.estaciones),
+			"tarifas_configuradas": tarifasConfiguradas,
+		})
+	}
+
+	ds.RowCount = len(ds.Rows)
+	ds.Summary["carritos_cerrados_total"] = int64(len(ventas))
+	ds.Summary["carritos_con_modelo"] = carritosConModelo
+	ds.Summary["carritos_sin_modelo"] = int64(len(ventas)) - carritosConModelo
+	ds.Summary["ingresos_total"] = reportesRound(ingresosTotal)
+	ds.Summary["ingresos_tarifa_por_dia"] = reportesRound(aggByModel["tarifa_por_dia"].ingresos)
+	ds.Summary["ingresos_tarifa_por_minutos"] = reportesRound(aggByModel["tarifa_por_minutos"].ingresos)
+	ds.Summary["ingresos_sin_modelo"] = reportesRound(aggByModel["sin_modelo"].ingresos)
+	ds.Summary["tarifas_por_dia_configuradas"] = len(tarifasDiaByEstacion)
+	ds.Summary["tarifas_por_minutos_configuradas"] = len(tarifasMinByEstacion)
+
+	cobertura := 0.0
+	if len(ventas) > 0 {
+		cobertura = reportesRound((float64(carritosConModelo) * 100.0) / float64(len(ventas)))
+	}
+	ds.Summary["cobertura_modelo_tarifa_pct"] = cobertura
+
+	return ds, nil
+}
+
+type reporteCadenaCumplimientoDef struct {
+	ModuloKey          string
+	Modulo             string
+	Tabla              string
+	EstadoColumna      string
+	FechaColumnas      []string
+	MontoColumna       string
+	EstadosFinalizados []string
+	EstadosProceso     []string
+}
+
+var reporteCadenaCumplimientoDefs = []reporteCadenaCumplimientoDef{
+	{
+		ModuloKey:          "crm_leads",
+		Modulo:             "CRM - Leads",
+		Tabla:              "crm_leads",
+		EstadoColumna:      "estado_lead",
+		FechaColumnas:      []string{"fecha_creacion", "fecha_actualizacion"},
+		MontoColumna:       "valor_potencial",
+		EstadosFinalizados: []string{"ganado"},
+		EstadosProceso:     []string{"contactado", "calificado", "propuesta", "negociacion", "reactivado"},
+	},
+	{
+		ModuloKey:          "produccion_ordenes",
+		Modulo:             "Producción - Órdenes",
+		Tabla:              "produccion_ordenes",
+		EstadoColumna:      "estado_orden",
+		FechaColumnas:      []string{"fecha_programada", "fecha_inicio", "fecha_creacion"},
+		MontoColumna:       "costo_real",
+		EstadosFinalizados: []string{"entregado", "cerrado", "finalizada", "aplicada"},
+		EstadosProceso:     []string{"confirmado", "en_preparacion", "despachado", "planificada", "en_proceso"},
+	},
+	{
+		ModuloKey:          "logistica_envios",
+		Modulo:             "Logística - Envíos",
+		Tabla:              "logistica_envios",
+		EstadoColumna:      "estado_envio",
+		FechaColumnas:      []string{"fecha_programada", "fecha_salida", "fecha_creacion"},
+		MontoColumna:       "costo_envio",
+		EstadosFinalizados: []string{"entregado", "cerrado", "aplicado"},
+		EstadosProceso:     []string{"programado", "en_ruta", "despachado", "en_preparacion"},
+	},
+}
+
+func (b *reportesBuilder) buildOperativoCadenaCumplimientoDataset() (empresaReporteDataset, error) {
+	ds := b.newDataset(reporteDatasetOperativoCadena, []string{
+		"modulo_key",
+		"modulo",
+		"tabla",
+		"registros_totales",
+		"registros_activos",
+		"registros_rango",
+		"en_proceso",
+		"finalizados",
+		"cumplimiento_pct",
+		"monto_referencia",
+		"fecha_columna",
+		"nota",
+	})
+
+	hasDateFilter := strings.TrimSpace(b.desde) != "" || strings.TrimSpace(b.hasta) != ""
+
+	var registrosTotales int64
+	var registrosRango int64
+	var finalizadosTotal int64
+	var enProcesoTotal int64
+	var montoReferenciaTotal float64
+
+	cumplimientoPorModulo := make(map[string]float64)
+
+	for _, def := range reporteCadenaCumplimientoDefs {
+		row := map[string]interface{}{
+			"modulo_key":        def.ModuloKey,
+			"modulo":            def.Modulo,
+			"tabla":             def.Tabla,
+			"registros_totales": int64(0),
+			"registros_activos": int64(0),
+			"registros_rango":   int64(0),
+			"en_proceso":        int64(0),
+			"finalizados":       int64(0),
+			"cumplimiento_pct":  float64(0),
+			"monto_referencia":  float64(0),
+			"fecha_columna":     "",
+			"nota":              "ok",
+		}
+
+		tablaExiste, err := b.reportesTableExists(def.Tabla)
+		if err != nil {
+			return empresaReporteDataset{}, err
+		}
+		if !tablaExiste {
+			row["nota"] = "tabla_no_disponible"
+			ds.Rows = append(ds.Rows, row)
+			continue
+		}
+
+		columnas, err := b.reportesTableColumns(def.Tabla)
+		if err != nil {
+			return empresaReporteDataset{}, err
+		}
+		if !columnas["empresa_id"] {
+			row["nota"] = "sin_columna_empresa_id"
+			ds.Rows = append(ds.Rows, row)
+			continue
+		}
+
+		total, err := b.reportesCountByEmpresa(def.Tabla, "")
+		if err != nil {
+			return empresaReporteDataset{}, err
+		}
+		activos := total
+		if columnas["estado"] {
+			activos, err = b.reportesCountByEmpresa(def.Tabla, "AND LOWER(COALESCE(estado, 'activo')) = 'activo'")
+			if err != nil {
+				return empresaReporteDataset{}, err
+			}
+		}
+
+		fechaColumna := ""
+		for _, candidate := range def.FechaColumnas {
+			c := strings.ToLower(strings.TrimSpace(candidate))
+			if c != "" && columnas[c] {
+				fechaColumna = c
+				break
+			}
+		}
+
+		rangeClause := ""
+		rangeArgs := make([]interface{}, 0)
+		rango := total
+		if hasDateFilter {
+			if fechaColumna == "" {
+				rango = 0
+				row["nota"] = "sin_columna_fecha"
+			} else {
+				rangeClause, rangeArgs = reportesBuildDateFilterClause(fechaColumna, b.desde, b.hasta)
+				rango, err = b.reportesCountByEmpresa(def.Tabla, rangeClause, rangeArgs...)
+				if err != nil {
+					return empresaReporteDataset{}, err
+				}
+			}
+		}
+
+		finalizados := int64(0)
+		if def.EstadoColumna != "" && columnas[strings.ToLower(strings.TrimSpace(def.EstadoColumna))] {
+			finalClause, finalArgs := reportesBuildStateFilterClause(def.EstadoColumna, def.EstadosFinalizados)
+			extra := strings.TrimSpace(strings.Join([]string{rangeClause, finalClause}, " "))
+			args := append([]interface{}{}, rangeArgs...)
+			args = append(args, finalArgs...)
+			finalizados, err = b.reportesCountByEmpresa(def.Tabla, extra, args...)
+			if err != nil {
+				return empresaReporteDataset{}, err
+			}
+		}
+
+		enProceso := int64(0)
+		if def.EstadoColumna != "" && columnas[strings.ToLower(strings.TrimSpace(def.EstadoColumna))] {
+			procClause, procArgs := reportesBuildStateFilterClause(def.EstadoColumna, def.EstadosProceso)
+			extra := strings.TrimSpace(strings.Join([]string{rangeClause, procClause}, " "))
+			args := append([]interface{}{}, rangeArgs...)
+			args = append(args, procArgs...)
+			enProceso, err = b.reportesCountByEmpresa(def.Tabla, extra, args...)
+			if err != nil {
+				return empresaReporteDataset{}, err
+			}
+		}
+
+		montoReferencia := 0.0
+		if def.MontoColumna != "" && columnas[strings.ToLower(strings.TrimSpace(def.MontoColumna))] {
+			montoReferencia, err = b.reportesSumByEmpresa(def.Tabla, def.MontoColumna, rangeClause, rangeArgs...)
+			if err != nil {
+				return empresaReporteDataset{}, err
+			}
+		}
+
+		cumplimiento := 0.0
+		if rango > 0 {
+			cumplimiento = reportesRound((float64(finalizados) * 100.0) / float64(rango))
+		}
+
+		row["registros_totales"] = total
+		row["registros_activos"] = activos
+		row["registros_rango"] = rango
+		row["en_proceso"] = enProceso
+		row["finalizados"] = finalizados
+		row["cumplimiento_pct"] = cumplimiento
+		row["monto_referencia"] = reportesRound(montoReferencia)
+		row["fecha_columna"] = fechaColumna
+
+		ds.Rows = append(ds.Rows, row)
+
+		registrosTotales += total
+		registrosRango += rango
+		finalizadosTotal += finalizados
+		enProcesoTotal += enProceso
+		montoReferenciaTotal += montoReferencia
+		cumplimientoPorModulo[def.ModuloKey] = cumplimiento
+	}
+
+	ds.RowCount = len(ds.Rows)
+	ds.Summary["modulos_total"] = ds.RowCount
+	ds.Summary["registros_totales"] = registrosTotales
+	ds.Summary["registros_rango"] = registrosRango
+	ds.Summary["finalizados_totales"] = finalizadosTotal
+	ds.Summary["en_proceso_totales"] = enProcesoTotal
+	ds.Summary["monto_referencia_total"] = reportesRound(montoReferenciaTotal)
+	ds.Summary["crm_conversion_pct"] = cumplimientoPorModulo["crm_leads"]
+	ds.Summary["produccion_cumplimiento_pct"] = cumplimientoPorModulo["produccion_ordenes"]
+	ds.Summary["logistica_cumplimiento_pct"] = cumplimientoPorModulo["logistica_envios"]
+	ds.Summary["rango_desde"] = reportesFirstNonBlank(strings.TrimSpace(b.desde), "sin_desde")
+	ds.Summary["rango_hasta"] = reportesFirstNonBlank(strings.TrimSpace(b.hasta), "sin_hasta")
+
+	cumplimientoGlobal := 0.0
+	if registrosRango > 0 {
+		cumplimientoGlobal = reportesRound((float64(finalizadosTotal) * 100.0) / float64(registrosRango))
+	}
+	ds.Summary["cumplimiento_global_pct"] = cumplimientoGlobal
+
+	return ds, nil
+}
+
 func (b *reportesBuilder) buildOperativoTopProductosDataset() (empresaReporteDataset, error) {
 	ventas, err := b.getVentasCerradasFiltradas()
 	if err != nil {
@@ -1110,39 +2087,93 @@ func (b *reportesBuilder) buildOperativoInventarioBodegaDataset() (empresaReport
 	if err != nil {
 		return empresaReporteDataset{}, err
 	}
+	resumen, err := dbpkg.GetInventarioResumenByEmpresa(b.db, b.empresaID, b.desde, b.hasta)
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+	proyecciones, err := dbpkg.GetInventarioProyeccionQuiebreByEmpresa(b.db, b.empresaID, 0, 30, limit, 0)
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+
+	type proyeccionInventario struct {
+		Estado             string
+		SalidaPromedio     float64
+		DiasCobertura      float64
+		SugeridoReposicion float64
+	}
+	proyeccionByKey := make(map[string]proyeccionInventario)
+	for _, proy := range proyecciones {
+		key := reportesInventarioKey(proy.ProductoID, proy.BodegaID)
+		proyeccionByKey[key] = proyeccionInventario{
+			Estado:             strings.TrimSpace(proy.EstadoProyeccion),
+			SalidaPromedio:     proy.SalidaPromedioDiaria,
+			DiasCobertura:      proy.DiasCobertura,
+			SugeridoReposicion: proy.SugeridoReposicion,
+		}
+	}
+
 	productoByID := make(map[int64]dbpkg.Producto)
 	for _, p := range productos {
 		productoByID[p.ID] = p
 	}
 
 	type row struct {
-		Producto  string
-		Bodega    string
-		Cantidad  float64
-		Minimo    float64
-		Maximo    float64
-		Estado    string
-		Prioridad int
+		Producto             string
+		Bodega               string
+		Cantidad             float64
+		Minimo               float64
+		Maximo               float64
+		EstadoStock          string
+		EstadoProyeccion     string
+		SalidaPromedio       float64
+		DiasCobertura        float64
+		IndiceRotacion30d    float64
+		SugeridoReposicion   float64
+		ValorizacionCosto    float64
+		ValorizacionVenta    float64
+		PrioridadOrdenRiesgo int
 	}
 	rows := make([]row, 0, len(existencias))
 	for _, ex := range existencias {
 		prod := productoByID[ex.ProductoID]
 		minimo := prod.StockMinimo
 		maximo := prod.StockMaximo
-		estado, prioridad := reportesEstadoStock(ex.Cantidad, minimo, maximo)
+		estadoStock, prioridadStock := reportesEstadoStock(ex.Cantidad, minimo, maximo)
+
+		proy := proyeccionByKey[reportesInventarioKey(ex.ProductoID, ex.BodegaID)]
+		estadoProyeccion := reportesFirstNonBlank(strings.TrimSpace(proy.Estado), "sin_datos")
+		salidaPromedio := reportesRound(proy.SalidaPromedio)
+		diasCobertura := reportesRound(proy.DiasCobertura)
+		sugeridoReposicion := reportesRound(proy.SugeridoReposicion)
+
+		indiceRotacion30d := 0.0
+		if ex.Cantidad > 0 && proy.SalidaPromedio > 0 {
+			indiceRotacion30d = reportesRound((proy.SalidaPromedio * 30.0) / ex.Cantidad)
+		}
+
+		valorizacionCosto := reportesRound(ex.Cantidad * prod.Costo)
+		valorizacionVenta := reportesRound(ex.Cantidad * prod.Precio)
 		rows = append(rows, row{
-			Producto:  reportesFirstNonBlank(ex.ProductoNombre, prod.Nombre),
-			Bodega:    reportesFirstNonBlank(ex.BodegaNombre, "Bodega #"+strconv.FormatInt(ex.BodegaID, 10)),
-			Cantidad:  reportesRound(ex.Cantidad),
-			Minimo:    reportesRound(minimo),
-			Maximo:    reportesRound(maximo),
-			Estado:    estado,
-			Prioridad: prioridad,
+			Producto:             reportesFirstNonBlank(ex.ProductoNombre, prod.Nombre),
+			Bodega:               reportesFirstNonBlank(ex.BodegaNombre, "Bodega #"+strconv.FormatInt(ex.BodegaID, 10)),
+			Cantidad:             reportesRound(ex.Cantidad),
+			Minimo:               reportesRound(minimo),
+			Maximo:               reportesRound(maximo),
+			EstadoStock:          estadoStock,
+			EstadoProyeccion:     estadoProyeccion,
+			SalidaPromedio:       salidaPromedio,
+			DiasCobertura:        diasCobertura,
+			IndiceRotacion30d:    indiceRotacion30d,
+			SugeridoReposicion:   sugeridoReposicion,
+			ValorizacionCosto:    valorizacionCosto,
+			ValorizacionVenta:    valorizacionVenta,
+			PrioridadOrdenRiesgo: reportesInventarioRiesgoPrioridad(estadoProyeccion, estadoStock, prioridadStock),
 		})
 	}
 	sort.SliceStable(rows, func(i, j int) bool {
-		if rows[i].Prioridad != rows[j].Prioridad {
-			return rows[i].Prioridad < rows[j].Prioridad
+		if rows[i].PrioridadOrdenRiesgo != rows[j].PrioridadOrdenRiesgo {
+			return rows[i].PrioridadOrdenRiesgo < rows[j].PrioridadOrdenRiesgo
 		}
 		if rows[i].Producto != rows[j].Producto {
 			return rows[i].Producto < rows[j].Producto
@@ -1159,17 +2190,47 @@ func (b *reportesBuilder) buildOperativoInventarioBodegaDataset() (empresaReport
 		"stock_minimo",
 		"stock_maximo",
 		"estado_stock",
+		"estado_proyeccion",
+		"salida_promedio_diaria",
+		"dias_cobertura",
+		"indice_rotacion_30d",
+		"sugerido_reposicion",
+		"valorizacion_costo",
+		"valorizacion_venta",
 	})
 	estadoCount := map[string]int{}
+	estadoProyeccionCount := map[string]int{}
+	valorizacionCostoTotal := 0.0
+	valorizacionVentaTotal := 0.0
+	salidaPromedioTotal := 0.0
+	indiceRotacionTotal := 0.0
+	coberturaTotal := 0.0
+	coberturaConDato := 0
 	for _, item := range rows {
-		estadoCount[item.Estado]++
+		estadoCount[item.EstadoStock]++
+		estadoProyeccionCount[item.EstadoProyeccion]++
+		valorizacionCostoTotal += item.ValorizacionCosto
+		valorizacionVentaTotal += item.ValorizacionVenta
+		salidaPromedioTotal += item.SalidaPromedio
+		indiceRotacionTotal += item.IndiceRotacion30d
+		if item.DiasCobertura > 0 {
+			coberturaTotal += item.DiasCobertura
+			coberturaConDato++
+		}
 		ds.Rows = append(ds.Rows, map[string]interface{}{
-			"producto":     item.Producto,
-			"bodega":       item.Bodega,
-			"existencia":   item.Cantidad,
-			"stock_minimo": item.Minimo,
-			"stock_maximo": item.Maximo,
-			"estado_stock": item.Estado,
+			"producto":               item.Producto,
+			"bodega":                 item.Bodega,
+			"existencia":             item.Cantidad,
+			"stock_minimo":           item.Minimo,
+			"stock_maximo":           item.Maximo,
+			"estado_stock":           item.EstadoStock,
+			"estado_proyeccion":      item.EstadoProyeccion,
+			"salida_promedio_diaria": item.SalidaPromedio,
+			"dias_cobertura":         item.DiasCobertura,
+			"indice_rotacion_30d":    item.IndiceRotacion30d,
+			"sugerido_reposicion":    item.SugeridoReposicion,
+			"valorizacion_costo":     item.ValorizacionCosto,
+			"valorizacion_venta":     item.ValorizacionVenta,
 		})
 	}
 	ds.RowCount = len(ds.Rows)
@@ -1177,67 +2238,1186 @@ func (b *reportesBuilder) buildOperativoInventarioBodegaDataset() (empresaReport
 	ds.Summary["bajo_minimo"] = estadoCount["bajo_minimo"]
 	ds.Summary["ok"] = estadoCount["ok"]
 	ds.Summary["sobre_stock"] = estadoCount["sobre_stock"]
+	ds.Summary["quiebre_inminente"] = estadoProyeccionCount["quiebre_inminente"]
+	ds.Summary["bajo_minimo_proyeccion"] = estadoProyeccionCount["bajo_minimo"]
+	ds.Summary["riesgo_alto"] = estadoProyeccionCount["riesgo_alto"]
+	ds.Summary["riesgo_medio"] = estadoProyeccionCount["riesgo_medio"]
+	ds.Summary["sin_consumo_reciente"] = estadoProyeccionCount["sin_consumo_reciente"]
+	ds.Summary["estable"] = estadoProyeccionCount["estable"]
+	ds.Summary["valorizacion_costo_total"] = reportesRound(valorizacionCostoTotal)
+	ds.Summary["valorizacion_venta_total"] = reportesRound(valorizacionVentaTotal)
+	ds.Summary["salida_promedio_diaria_total"] = reportesRound(salidaPromedioTotal)
+	if ds.RowCount > 0 {
+		ds.Summary["rotacion_promedio_30d"] = reportesRound(indiceRotacionTotal / float64(ds.RowCount))
+	} else {
+		ds.Summary["rotacion_promedio_30d"] = 0.0
+	}
+	if coberturaConDato > 0 {
+		ds.Summary["cobertura_promedio_dias"] = reportesRound(coberturaTotal / float64(coberturaConDato))
+	} else {
+		ds.Summary["cobertura_promedio_dias"] = 0.0
+	}
+	ds.Summary["productos_con_existencia"] = resumen.ProductosConExistencia
+	ds.Summary["bodegas_con_stock"] = resumen.BodegasConStock
+	ds.Summary["alertas_total"] = resumen.AlertasTotal
+	ds.Summary["alertas_sin_stock"] = resumen.AlertasSinStock
+	ds.Summary["alertas_bajo_minimo"] = resumen.AlertasBajoMinimo
+	ds.Summary["deficit_total"] = reportesRound(resumen.DeficitTotal)
+	ds.Summary["movimientos_total"] = resumen.MovimientosTotal
+	ds.Summary["movimientos_entrada"] = resumen.MovimientosEntrada
+	ds.Summary["movimientos_salida"] = resumen.MovimientosSalida
+	ds.Summary["movimientos_traslado"] = resumen.MovimientosTraslado
+	ds.Summary["movimientos_ajuste"] = resumen.MovimientosAjuste
+	ds.Summary["ultimo_movimiento"] = reportesFirstNonBlank(strings.TrimSpace(resumen.UltimoMovimiento), "sin_movimientos")
+	ds.Summary["periodo_desde"] = reportesFirstNonBlank(strings.TrimSpace(resumen.PeriodoDesde), strings.TrimSpace(b.desde), "sin_desde")
+	ds.Summary["periodo_hasta"] = reportesFirstNonBlank(strings.TrimSpace(resumen.PeriodoHasta), strings.TrimSpace(b.hasta), "sin_hasta")
 	return ds, nil
 }
 
 func (b *reportesBuilder) buildOperativoComprasMovimientosDataset() (empresaReporteDataset, error) {
-	limit := b.maxRows * 5
-	if limit < 500 {
-		limit = 500
+	type comprasProveedorAgg struct {
+		ProveedorID          int64
+		Proveedor            string
+		Documentos           int
+		OrdenesEmitidas      int
+		Recepciones          int
+		Contabilizaciones    int
+		MontoOrdenado        float64
+		MontoRecepcionado    float64
+		MontoContabilizado   float64
+		UltimaFechaDocumento string
+		Moneda               string
 	}
-	movimientos, err := dbpkg.GetMovimientosByEmpresa(b.db, b.empresaID, 0, 0, "", b.desde, b.hasta, limit, 0)
+
+	normalizeEstadoDocumento := func(raw string) string {
+		value := strings.ToLower(strings.TrimSpace(raw))
+		value = strings.ReplaceAll(value, "-", "_")
+		value = strings.ReplaceAll(value, " ", "_")
+		return value
+	}
+
+	isEstadoOrdenEmitida := func(estado string) bool {
+		switch normalizeEstadoDocumento(estado) {
+		case "emitida", "recepcionada", "recepcion_parcial", "contabilizada":
+			return true
+		default:
+			return false
+		}
+	}
+
+	isEstadoRecepcion := func(estado string) bool {
+		switch normalizeEstadoDocumento(estado) {
+		case "recepcionada", "recepcion_parcial", "contabilizada":
+			return true
+		default:
+			return false
+		}
+	}
+
+	isEstadoContabilizada := func(estado string) bool {
+		return normalizeEstadoDocumento(estado) == "contabilizada"
+	}
+
+	proveedores, err := dbpkg.GetProveedoresByEmpresa(b.db, b.empresaID, true)
 	if err != nil {
 		return empresaReporteDataset{}, err
 	}
-	rows := make([]dbpkg.InventarioMovimiento, 0)
-	for _, mov := range movimientos {
-		tipo := strings.ToLower(strings.TrimSpace(mov.Tipo))
-		switch tipo {
-		case "entrada", "ajuste_entrada", "ajuste_positivo", "compra":
-			rows = append(rows, mov)
+	proveedorNombreByID := make(map[int64]string, len(proveedores))
+	for _, prov := range proveedores {
+		nombre := strings.TrimSpace(prov.Nombre)
+		if nombre == "" {
+			nombre = "Proveedor #" + strconv.FormatInt(prov.ID, 10)
+		}
+		proveedorNombreByID[prov.ID] = nombre
+	}
+
+	const pageSize = 500
+	maxDocs := b.maxRows * 25
+	if maxDocs < pageSize {
+		maxDocs = pageSize
+	}
+	if maxDocs > 5000 {
+		maxDocs = 5000
+	}
+
+	documentos := make([]dbpkg.EmpresaDocumentoCompra, 0, maxDocs)
+	for offset := 0; offset < maxDocs; {
+		remaining := maxDocs - offset
+		limit := pageSize
+		if remaining < limit {
+			limit = remaining
+		}
+
+		batch, listErr := dbpkg.ListEmpresaDocumentosCompraByEmpresa(
+			b.db,
+			b.empresaID,
+			"orden_compra",
+			0,
+			"",
+			b.includeInactive,
+			"",
+			limit,
+			offset,
+		)
+		if listErr != nil {
+			return empresaReporteDataset{}, listErr
+		}
+
+		documentos = append(documentos, batch...)
+		if len(batch) < limit {
+			break
+		}
+		offset += len(batch)
+	}
+
+	aggByProveedor := make(map[int64]*comprasProveedorAgg)
+	globalMoneda := ""
+	globalMonedaMixta := false
+
+	totalDocumentos := 0
+	totalOrdenesEmitidas := 0
+	totalRecepciones := 0
+	totalContabilizaciones := 0
+	totalMontoOrdenado := 0.0
+	totalMontoRecepcionado := 0.0
+	totalMontoContabilizado := 0.0
+
+	for _, doc := range documentos {
+		fechaDocumento := reportesFirstNonBlank(doc.FechaDocumento, doc.FechaActualizacion, doc.FechaCreacion)
+		if !reportesDateWithinRange(fechaDocumento, b.desde, b.hasta) {
+			continue
+		}
+
+		proveedorID := doc.ProveedorID
+		agg, ok := aggByProveedor[proveedorID]
+		if !ok {
+			nombreProveedor := strings.TrimSpace(proveedorNombreByID[proveedorID])
+			if nombreProveedor == "" {
+				if proveedorID > 0 {
+					nombreProveedor = "Proveedor #" + strconv.FormatInt(proveedorID, 10)
+				} else {
+					nombreProveedor = "Sin proveedor"
+				}
+			}
+			agg = &comprasProveedorAgg{
+				ProveedorID: proveedorID,
+				Proveedor:   nombreProveedor,
+			}
+			aggByProveedor[proveedorID] = agg
+		}
+
+		agg.Documentos++
+		totalDocumentos++
+
+		montoDocumento := reportesRound(doc.MontoTotal)
+		if montoDocumento < 0 {
+			montoDocumento = 0
+		}
+
+		estadoDoc := normalizeEstadoDocumento(doc.EstadoDocumento)
+		if isEstadoOrdenEmitida(estadoDoc) {
+			agg.OrdenesEmitidas++
+			agg.MontoOrdenado += montoDocumento
+			totalOrdenesEmitidas++
+			totalMontoOrdenado += montoDocumento
+		}
+		if isEstadoRecepcion(estadoDoc) {
+			agg.Recepciones++
+			agg.MontoRecepcionado += montoDocumento
+			totalRecepciones++
+			totalMontoRecepcionado += montoDocumento
+		}
+		if isEstadoContabilizada(estadoDoc) {
+			agg.Contabilizaciones++
+			agg.MontoContabilizado += montoDocumento
+			totalContabilizaciones++
+			totalMontoContabilizado += montoDocumento
+		}
+
+		if reportesDateUnix(fechaDocumento) > reportesDateUnix(agg.UltimaFechaDocumento) {
+			agg.UltimaFechaDocumento = fechaDocumento
+		}
+
+		monedaDocumento := strings.ToUpper(strings.TrimSpace(doc.Moneda))
+		if monedaDocumento == "" {
+			monedaDocumento = "COP"
+		}
+		if agg.Moneda == "" {
+			agg.Moneda = monedaDocumento
+		} else if agg.Moneda != monedaDocumento {
+			agg.Moneda = "MIXTA"
+		}
+		if globalMoneda == "" {
+			globalMoneda = monedaDocumento
+		} else if globalMoneda != monedaDocumento {
+			globalMonedaMixta = true
 		}
 	}
-	sort.SliceStable(rows, func(i, j int) bool {
-		return reportesDateUnix(reportesFirstNonBlank(rows[i].FechaMovimiento, rows[i].FechaActualizacion, rows[i].FechaCreacion)) >
-			reportesDateUnix(reportesFirstNonBlank(rows[j].FechaMovimiento, rows[j].FechaActualizacion, rows[j].FechaCreacion))
+
+	aggregated := make([]*comprasProveedorAgg, 0, len(aggByProveedor))
+	for _, item := range aggByProveedor {
+		aggregated = append(aggregated, item)
+	}
+	sort.SliceStable(aggregated, func(i, j int) bool {
+		if aggregated[i].MontoOrdenado == aggregated[j].MontoOrdenado {
+			if aggregated[i].Recepciones == aggregated[j].Recepciones {
+				return strings.ToLower(strings.TrimSpace(aggregated[i].Proveedor)) < strings.ToLower(strings.TrimSpace(aggregated[j].Proveedor))
+			}
+			return aggregated[i].Recepciones > aggregated[j].Recepciones
+		}
+		return aggregated[i].MontoOrdenado > aggregated[j].MontoOrdenado
 	})
-	if len(rows) > b.maxRows {
-		rows = rows[:b.maxRows]
+
+	proveedoresConOrden := 0
+	proveedoresPendientesRecepcion := 0
+	for _, item := range aggregated {
+		if item.OrdenesEmitidas > 0 {
+			proveedoresConOrden++
+		}
+		if item.OrdenesEmitidas > item.Recepciones {
+			proveedoresPendientesRecepcion++
+		}
 	}
 
 	ds := b.newDataset(reporteDatasetOperativoCompras, []string{
-		"fecha",
-		"producto",
-		"bodega_origen",
-		"bodega_destino",
-		"tipo",
-		"cantidad",
-		"costo_unitario",
-		"costo_total",
-		"referencia",
+		"proveedor_id",
+		"proveedor",
+		"documentos",
+		"ordenes_emitidas",
+		"recepciones",
+		"contabilizaciones",
+		"monto_ordenado",
+		"monto_recepcionado",
+		"monto_contabilizado",
+		"brecha_monto",
+		"cumplimiento_recepcion_pct",
+		"cumplimiento_monto_pct",
+		"ticket_promedio_orden",
+		"ultima_fecha_documento",
+		"moneda",
 	})
-	totalCantidad := 0.0
-	totalCosto := 0.0
-	for _, mov := range rows {
-		costoTotal := mov.Cantidad * mov.CostoUnitario
-		totalCantidad += mov.Cantidad
-		totalCosto += costoTotal
+
+	shown := aggregated
+	if len(shown) > b.maxRows {
+		shown = shown[:b.maxRows]
+	}
+	for _, item := range shown {
+		cumplimientoRecepcionPct := 0.0
+		cumplimientoMontoPct := 0.0
+		ticketPromedioOrden := 0.0
+		if item.OrdenesEmitidas > 0 {
+			cumplimientoRecepcionPct = reportesRound((float64(item.Recepciones) * 100.0) / float64(item.OrdenesEmitidas))
+			ticketPromedioOrden = reportesRound(item.MontoOrdenado / float64(item.OrdenesEmitidas))
+		}
+		if item.MontoOrdenado > 0 {
+			cumplimientoMontoPct = reportesRound((item.MontoRecepcionado * 100.0) / item.MontoOrdenado)
+		}
+
+		brechaMonto := reportesRound(item.MontoOrdenado - item.MontoRecepcionado)
 		ds.Rows = append(ds.Rows, map[string]interface{}{
-			"fecha":          reportesFirstNonBlank(mov.FechaMovimiento, mov.FechaActualizacion, mov.FechaCreacion),
-			"producto":       reportesFirstNonBlank(mov.ProductoNombre, "Producto #"+strconv.FormatInt(mov.ProductoID, 10)),
-			"bodega_origen":  reportesFirstNonBlank(mov.BodegaOrigenNombre, "-"),
-			"bodega_destino": reportesFirstNonBlank(mov.BodegaDestinoNombre, "-"),
-			"tipo":           strings.ToLower(strings.TrimSpace(mov.Tipo)),
-			"cantidad":       reportesRound(mov.Cantidad),
-			"costo_unitario": reportesRound(mov.CostoUnitario),
-			"costo_total":    reportesRound(costoTotal),
-			"referencia":     mov.Referencia,
+			"proveedor_id":               item.ProveedorID,
+			"proveedor":                  item.Proveedor,
+			"documentos":                 item.Documentos,
+			"ordenes_emitidas":           item.OrdenesEmitidas,
+			"recepciones":                item.Recepciones,
+			"contabilizaciones":          item.Contabilizaciones,
+			"monto_ordenado":             reportesRound(item.MontoOrdenado),
+			"monto_recepcionado":         reportesRound(item.MontoRecepcionado),
+			"monto_contabilizado":        reportesRound(item.MontoContabilizado),
+			"brecha_monto":               brechaMonto,
+			"cumplimiento_recepcion_pct": cumplimientoRecepcionPct,
+			"cumplimiento_monto_pct":     cumplimientoMontoPct,
+			"ticket_promedio_orden":      ticketPromedioOrden,
+			"ultima_fecha_documento":     item.UltimaFechaDocumento,
+			"moneda":                     reportesFirstNonBlank(strings.TrimSpace(item.Moneda), "COP"),
 		})
 	}
+
+	totalBrechaMonto := reportesRound(totalMontoOrdenado - totalMontoRecepcionado)
+	cumplimientoRecepcionGlobal := 0.0
+	if totalOrdenesEmitidas > 0 {
+		cumplimientoRecepcionGlobal = reportesRound((float64(totalRecepciones) * 100.0) / float64(totalOrdenesEmitidas))
+	}
+	cumplimientoMontoGlobal := 0.0
+	if totalMontoOrdenado > 0 {
+		cumplimientoMontoGlobal = reportesRound((totalMontoRecepcionado * 100.0) / totalMontoOrdenado)
+	}
+	monedaResumen := strings.TrimSpace(globalMoneda)
+	if monedaResumen == "" {
+		monedaResumen = "COP"
+	}
+	if globalMonedaMixta {
+		monedaResumen = "MIXTA"
+	}
+
 	ds.RowCount = len(ds.Rows)
-	ds.Summary["movimientos"] = ds.RowCount
-	ds.Summary["cantidad_total"] = reportesRound(totalCantidad)
-	ds.Summary["costo_total"] = reportesRound(totalCosto)
+	ds.Summary["movimientos"] = totalDocumentos
+	ds.Summary["documentos"] = totalDocumentos
+	ds.Summary["proveedores_total"] = len(aggregated)
+	ds.Summary["proveedores_listados"] = ds.RowCount
+	ds.Summary["proveedores_con_orden"] = proveedoresConOrden
+	ds.Summary["proveedores_pendientes_recepcion"] = proveedoresPendientesRecepcion
+	ds.Summary["ordenes_emitidas"] = totalOrdenesEmitidas
+	ds.Summary["recepciones"] = totalRecepciones
+	ds.Summary["contabilizaciones"] = totalContabilizaciones
+	ds.Summary["documentos_pendientes_recepcion"] = totalOrdenesEmitidas - totalRecepciones
+	ds.Summary["monto_ordenado"] = reportesRound(totalMontoOrdenado)
+	ds.Summary["monto_recepcionado"] = reportesRound(totalMontoRecepcionado)
+	ds.Summary["monto_contabilizado"] = reportesRound(totalMontoContabilizado)
+	ds.Summary["brecha_monto"] = totalBrechaMonto
+	ds.Summary["costo_total"] = reportesRound(totalMontoOrdenado)
+	ds.Summary["cantidad_total"] = 0.0
+	ds.Summary["cumplimiento_recepcion_pct"] = cumplimientoRecepcionGlobal
+	ds.Summary["cumplimiento_monto_pct"] = cumplimientoMontoGlobal
+	ds.Summary["moneda"] = monedaResumen
+	ds.Summary["periodo_desde"] = reportesFirstNonBlank(strings.TrimSpace(b.desde), "sin_desde")
+	ds.Summary["periodo_hasta"] = reportesFirstNonBlank(strings.TrimSpace(b.hasta), "sin_hasta")
+	return ds, nil
+}
+
+func (b *reportesBuilder) buildOperativoPropinasAcumuladoDataset() (empresaReporteDataset, error) {
+	limit := b.maxRows * 20
+	if limit < 300 {
+		limit = 300
+	}
+	if limit > 5000 {
+		limit = 5000
+	}
+
+	reporte, err := dbpkg.GetEmpresaPropinasReporte(b.db, b.empresaID, dbpkg.EmpresaPropinaMovimientoFilter{
+		Desde:           b.desde,
+		Hasta:           b.hasta,
+		Usuario:         b.usuario,
+		IncludeInactive: b.includeInactive,
+		Limit:           limit,
+	})
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+
+	ds := b.newDataset(reporteDatasetOperativoPropinas, []string{
+		"usuario_clave",
+		"usuario",
+		"es_usuario_activo",
+		"movimientos",
+		"base_cobro",
+		"propina_por_usuario",
+		"propina_universal",
+		"propina_total",
+		"participacion_pct",
+	})
+
+	if reporte == nil {
+		ds.Summary["movimientos"] = 0
+		ds.Summary["total_propinas"] = 0.0
+		ds.Summary["periodo_desde"] = reportesFirstNonBlank(strings.TrimSpace(b.desde), "sin_desde")
+		ds.Summary["periodo_hasta"] = reportesFirstNonBlank(strings.TrimSpace(b.hasta), "sin_hasta")
+		ds.Summary["moneda"] = "COP"
+		return ds, nil
+	}
+
+	type propinaStats struct {
+		Movimientos int64
+		BaseCobro   float64
+		Propina     float64
+	}
+
+	statsByUsuario := make(map[string]*propinaStats)
+	monedaResumen := ""
+	monedaMixta := false
+	for _, mov := range reporte.Movimientos {
+		usuarioKey := strings.ToLower(strings.TrimSpace(reportesFirstNonBlank(mov.UsuarioAsignado, mov.UsuarioOrigen, mov.UsuarioCreador, "sistema")))
+		if usuarioKey == "" {
+			usuarioKey = "sistema"
+		}
+		stats := statsByUsuario[usuarioKey]
+		if stats == nil {
+			stats = &propinaStats{}
+			statsByUsuario[usuarioKey] = stats
+		}
+		stats.Movimientos++
+		stats.BaseCobro = reportesRound(stats.BaseCobro + mov.BaseCobro)
+		stats.Propina = reportesRound(stats.Propina + mov.MontoPropina)
+
+		moneda := strings.ToUpper(strings.TrimSpace(mov.Moneda))
+		if moneda == "" {
+			moneda = "COP"
+		}
+		if monedaResumen == "" {
+			monedaResumen = moneda
+		} else if monedaResumen != moneda {
+			monedaMixta = true
+		}
+	}
+
+	usuarios := append([]dbpkg.EmpresaPropinaUsuarioResumen{}, reporte.Usuarios...)
+	if len(usuarios) == 0 && len(statsByUsuario) > 0 {
+		type fallbackUsuario struct {
+			Clave string
+			Total float64
+		}
+		fallback := make([]fallbackUsuario, 0, len(statsByUsuario))
+		for key, stats := range statsByUsuario {
+			fallback = append(fallback, fallbackUsuario{Clave: key, Total: reportesRound(stats.Propina)})
+		}
+		sort.SliceStable(fallback, func(i, j int) bool {
+			if fallback[i].Total == fallback[j].Total {
+				return fallback[i].Clave < fallback[j].Clave
+			}
+			return fallback[i].Total > fallback[j].Total
+		})
+		for _, item := range fallback {
+			usuarios = append(usuarios, dbpkg.EmpresaPropinaUsuarioResumen{
+				UsuarioClave:      item.Clave,
+				UsuarioEtiqueta:   item.Clave,
+				EsUsuarioActivo:   false,
+				PropinaPorUsuario: item.Total,
+				PropinaUniversal:  0,
+				PropinaTotal:      item.Total,
+			})
+		}
+	}
+
+	shown := usuarios
+	if len(shown) > b.maxRows {
+		shown = shown[:b.maxRows]
+	}
+
+	totalPropinas := reportesRound(reporte.Resumen.TotalPropinas)
+	for _, usuario := range shown {
+		usuarioClave := strings.ToLower(strings.TrimSpace(reportesFirstNonBlank(usuario.UsuarioClave, usuario.UsuarioEtiqueta, "sistema")))
+		if usuarioClave == "" {
+			usuarioClave = "sistema"
+		}
+
+		movimientos := int64(0)
+		baseCobro := 0.0
+		if stats, ok := statsByUsuario[usuarioClave]; ok && stats != nil {
+			movimientos = stats.Movimientos
+			baseCobro = reportesRound(stats.BaseCobro)
+		}
+
+		propinaPorUsuario := reportesRound(usuario.PropinaPorUsuario)
+		propinaUniversal := reportesRound(usuario.PropinaUniversal)
+		propinaTotal := reportesRound(usuario.PropinaTotal)
+		if propinaTotal == 0 {
+			propinaTotal = reportesRound(propinaPorUsuario + propinaUniversal)
+		}
+		if propinaTotal == 0 {
+			if stats, ok := statsByUsuario[usuarioClave]; ok && stats != nil {
+				propinaTotal = reportesRound(stats.Propina)
+			}
+		}
+
+		participacion := 0.0
+		if totalPropinas > 0 {
+			participacion = reportesRound((propinaTotal * 100.0) / totalPropinas)
+		}
+
+		ds.Rows = append(ds.Rows, map[string]interface{}{
+			"usuario_clave":       usuarioClave,
+			"usuario":             reportesFirstNonBlank(strings.TrimSpace(usuario.UsuarioEtiqueta), usuarioClave),
+			"es_usuario_activo":   usuario.EsUsuarioActivo,
+			"movimientos":         movimientos,
+			"base_cobro":          baseCobro,
+			"propina_por_usuario": propinaPorUsuario,
+			"propina_universal":   propinaUniversal,
+			"propina_total":       propinaTotal,
+			"participacion_pct":   participacion,
+		})
+	}
+
+	if monedaResumen == "" {
+		monedaResumen = "COP"
+	}
+	if monedaMixta {
+		monedaResumen = "MIXTA"
+	}
+
+	cfg := reporte.Configuracion
+	if cfg == nil {
+		cfg = &dbpkg.EmpresaPropinasConfiguracion{
+			EmpresaID:        b.empresaID,
+			ModoDistribucion: dbpkg.EmpresaPropinaModoPorUsuario,
+			Estado:           "activo",
+		}
+	}
+
+	ds.RowCount = len(ds.Rows)
+	ds.Summary["habilitar_propina"] = cfg.HabilitarPropina
+	ds.Summary["porcentaje_propina_config"] = reportesRound(cfg.PorcentajePropina)
+	ds.Summary["modo_distribucion"] = reportesFirstNonBlank(strings.TrimSpace(cfg.ModoDistribucion), dbpkg.EmpresaPropinaModoPorUsuario)
+	ds.Summary["aplicar_automaticamente"] = cfg.AplicarAutomaticamente
+	ds.Summary["usuarios_totales"] = len(usuarios)
+	ds.Summary["usuarios_listados"] = ds.RowCount
+	ds.Summary["usuarios_activos"] = reporte.Resumen.UsuariosActivos
+	ds.Summary["movimientos"] = reporte.Resumen.CantidadMovimientos
+	ds.Summary["movimientos_total"] = reporte.Resumen.CantidadMovimientos
+	ds.Summary["total_base_cobro"] = reportesRound(reporte.Resumen.TotalBaseCobro)
+	ds.Summary["total_propinas"] = totalPropinas
+	ds.Summary["total_propinas_por_usuario"] = reportesRound(reporte.Resumen.TotalPropinasPorUsuario)
+	ds.Summary["total_propinas_universal"] = reportesRound(reporte.Resumen.TotalPropinasUniversal)
+	ds.Summary["cuota_universal_por_usuario"] = reportesRound(reporte.Resumen.CuotaUniversalPorUsuario)
+	ds.Summary["filtro_usuario"] = reportesFirstNonBlank(strings.TrimSpace(b.usuario), "todos")
+	ds.Summary["periodo_desde"] = reportesFirstNonBlank(strings.TrimSpace(reporte.Desde), strings.TrimSpace(b.desde), "sin_desde")
+	ds.Summary["periodo_hasta"] = reportesFirstNonBlank(strings.TrimSpace(reporte.Hasta), strings.TrimSpace(b.hasta), "sin_hasta")
+	ds.Summary["moneda"] = monedaResumen
+
+	if totalPropinas > 0 {
+		divisor := float64(reporte.Resumen.CantidadMovimientos)
+		if divisor <= 0 {
+			divisor = 1
+		}
+		ds.Summary["ticket_promedio_propina"] = reportesRound(totalPropinas / divisor)
+	} else {
+		ds.Summary["ticket_promedio_propina"] = 0.0
+	}
+	if ds.RowCount > 0 {
+		ds.Summary["usuario_top"] = ds.Rows[0]["usuario"]
+		ds.Summary["usuario_top_total"] = ds.Rows[0]["propina_total"]
+		ds.Summary["usuario_top_participacion_pct"] = ds.Rows[0]["participacion_pct"]
+	}
+
+	return ds, nil
+}
+
+func (b *reportesBuilder) buildOperativoComisionesLavadorDataset() (empresaReporteDataset, error) {
+	limit := b.maxRows * 20
+	if limit < 300 {
+		limit = 300
+	}
+	if limit > 5000 {
+		limit = 5000
+	}
+
+	reporte, err := dbpkg.GetEmpresaComisionesServicioReporte(b.db, b.empresaID, dbpkg.EmpresaComisionServicioMovimientoFilter{
+		Desde:           b.desde,
+		Hasta:           b.hasta,
+		UsuarioLavador:  b.usuario,
+		ServicioFiltro:  b.categoria,
+		IncludeInactive: b.includeInactive,
+		Limit:           limit,
+	})
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+
+	ds := b.newDataset(reporteDatasetOperativoComisiones, []string{
+		"usuario_lavador",
+		"movimientos",
+		"base_servicios",
+		"monto_comision",
+		"ticket_comision",
+		"participacion_pct",
+	})
+
+	if reporte == nil {
+		ds.Summary["movimientos_total"] = 0
+		ds.Summary["total_comisiones"] = 0.0
+		ds.Summary["periodo_desde"] = reportesFirstNonBlank(strings.TrimSpace(b.desde), "sin_desde")
+		ds.Summary["periodo_hasta"] = reportesFirstNonBlank(strings.TrimSpace(b.hasta), "sin_hasta")
+		ds.Summary["moneda"] = "COP"
+		return ds, nil
+	}
+
+	monedaResumen := ""
+	monedaMixta := false
+	serviciosUnicos := map[string]struct{}{}
+	for _, mov := range reporte.Movimientos {
+		moneda := strings.ToUpper(strings.TrimSpace(mov.Moneda))
+		if moneda == "" {
+			moneda = "COP"
+		}
+		if monedaResumen == "" {
+			monedaResumen = moneda
+		} else if monedaResumen != moneda {
+			monedaMixta = true
+		}
+
+		servicioKey := strings.ToLower(strings.TrimSpace(reportesFirstNonBlank(mov.ServicioCodigo, mov.ServicioNombre, mov.ServicioCategoria)))
+		if servicioKey != "" {
+			serviciosUnicos[servicioKey] = struct{}{}
+		}
+	}
+
+	lavadores := append([]dbpkg.EmpresaComisionServicioLavadorResumen{}, reporte.Lavadores...)
+	shown := lavadores
+	if len(shown) > b.maxRows {
+		shown = shown[:b.maxRows]
+	}
+
+	totalComision := reportesRound(reporte.Resumen.TotalComisiones)
+	for _, lavador := range shown {
+		movimientos := lavador.CantidadMovimientos
+		montoComision := reportesRound(lavador.TotalComision)
+		ticketComision := 0.0
+		if movimientos > 0 {
+			ticketComision = reportesRound(montoComision / float64(movimientos))
+		}
+		participacion := 0.0
+		if totalComision > 0 {
+			participacion = reportesRound((montoComision * 100.0) / totalComision)
+		}
+
+		ds.Rows = append(ds.Rows, map[string]interface{}{
+			"usuario_lavador":   reportesFirstNonBlank(strings.TrimSpace(lavador.UsuarioLavador), "sistema"),
+			"movimientos":       movimientos,
+			"base_servicios":    reportesRound(lavador.TotalBaseServicios),
+			"monto_comision":    montoComision,
+			"ticket_comision":   ticketComision,
+			"participacion_pct": participacion,
+		})
+	}
+
+	if monedaResumen == "" {
+		monedaResumen = "COP"
+	}
+	if monedaMixta {
+		monedaResumen = "MIXTA"
+	}
+
+	cfg := reporte.Configuracion
+	if cfg == nil {
+		cfg = &dbpkg.EmpresaComisionesServicioConfiguracion{
+			EmpresaID:      b.empresaID,
+			FiltroServicio: "lavado",
+			Estado:         "activo",
+		}
+	}
+
+	ds.RowCount = len(ds.Rows)
+	ds.Summary["habilitar_comisiones"] = cfg.HabilitarComisiones
+	ds.Summary["porcentaje_comision_config"] = reportesRound(cfg.PorcentajeComision)
+	ds.Summary["filtro_servicio_config"] = reportesFirstNonBlank(strings.TrimSpace(cfg.FiltroServicio), "lavado")
+	ds.Summary["aplicar_automaticamente"] = cfg.AplicarAutomaticamente
+	ds.Summary["lavadores_totales"] = len(lavadores)
+	ds.Summary["lavadores_listados"] = ds.RowCount
+	ds.Summary["lavadores_con_comision"] = reporte.Resumen.LavadoresConComision
+	ds.Summary["movimientos_total"] = reporte.Resumen.CantidadMovimientos
+	ds.Summary["total_base_servicios"] = reportesRound(reporte.Resumen.TotalBaseServicios)
+	ds.Summary["total_comisiones"] = totalComision
+	ds.Summary["servicios_unicos"] = len(serviciosUnicos)
+	ds.Summary["filtro_usuario"] = reportesFirstNonBlank(strings.TrimSpace(b.usuario), "todos")
+	ds.Summary["filtro_servicio"] = reportesFirstNonBlank(strings.TrimSpace(b.categoria), "todos")
+	ds.Summary["periodo_desde"] = reportesFirstNonBlank(strings.TrimSpace(reporte.Desde), strings.TrimSpace(b.desde), "sin_desde")
+	ds.Summary["periodo_hasta"] = reportesFirstNonBlank(strings.TrimSpace(reporte.Hasta), strings.TrimSpace(b.hasta), "sin_hasta")
+	ds.Summary["moneda"] = monedaResumen
+
+	if reporte.Resumen.CantidadMovimientos > 0 {
+		ds.Summary["ticket_promedio_comision"] = reportesRound(totalComision / float64(reporte.Resumen.CantidadMovimientos))
+	} else {
+		ds.Summary["ticket_promedio_comision"] = 0.0
+	}
+	if ds.RowCount > 0 {
+		ds.Summary["lavador_top"] = ds.Rows[0]["usuario_lavador"]
+		ds.Summary["lavador_top_total_comision"] = ds.Rows[0]["monto_comision"]
+		ds.Summary["lavador_top_participacion_pct"] = ds.Rows[0]["participacion_pct"]
+	}
+
+	return ds, nil
+}
+
+func (b *reportesBuilder) buildOperativoFacturacionTrazabilidadDataset() (empresaReporteDataset, error) {
+	type facturacionAgg struct {
+		TipoDocumento       string
+		Documentos          int
+		Emitidas            int
+		Anuladas            int
+		Pendientes          int
+		NotasCredito        int
+		MontoTotal          float64
+		ConNumeroLegal      int
+		ConCodigoValidacion int
+		ConTrazabilidad     int
+		UltimaFecha         string
+		Moneda              string
+	}
+
+	normalizeEstado := func(value string) string {
+		v := strings.ToLower(strings.TrimSpace(value))
+		v = strings.ReplaceAll(v, "-", "_")
+		v = strings.ReplaceAll(v, " ", "_")
+		return v
+	}
+
+	isEmitida := func(estado string) bool {
+		switch normalizeEstado(estado) {
+		case "emitida", "emitido", "validada", "aprobada", "contabilizada":
+			return true
+		default:
+			return false
+		}
+	}
+
+	isAnulada := func(estado string) bool {
+		switch normalizeEstado(estado) {
+		case "anulada", "anulado", "cancelada", "cancelado", "rechazada":
+			return true
+		default:
+			return false
+		}
+	}
+
+	isPendiente := func(estado string) bool {
+		switch normalizeEstado(estado) {
+		case "borrador", "pendiente", "por_emitir", "en_proceso":
+			return true
+		default:
+			return false
+		}
+	}
+
+	const pageSize = 300
+	maxDocs := b.maxRows * 40
+	if maxDocs < 500 {
+		maxDocs = 500
+	}
+	if maxDocs > 10000 {
+		maxDocs = 10000
+	}
+
+	documentos := make([]dbpkg.EmpresaDocumentoFacturacionListado, 0, maxDocs)
+	for offset := 0; offset < maxDocs; {
+		remaining := maxDocs - offset
+		limit := pageSize
+		if remaining < limit {
+			limit = remaining
+		}
+
+		batch, listErr := dbpkg.ListEmpresaDocumentosFacturacionByEmpresa(b.db, dbpkg.EmpresaDocumentoFacturacionListFilter{
+			EmpresaID:       b.empresaID,
+			IncludeInactive: b.includeInactive,
+			FechaDesde:      strings.TrimSpace(b.desde),
+			FechaHasta:      strings.TrimSpace(b.hasta),
+			Limit:           limit,
+			Offset:          offset,
+		})
+		if listErr != nil {
+			return empresaReporteDataset{}, listErr
+		}
+
+		documentos = append(documentos, batch...)
+		if len(batch) < limit {
+			break
+		}
+		offset += len(batch)
+	}
+
+	aggByTipo := make(map[string]*facturacionAgg)
+	monedaResumen := ""
+	monedaMixta := false
+
+	totalDocumentos := 0
+	totalEmitidas := 0
+	totalAnuladas := 0
+	totalPendientes := 0
+	totalNotasCredito := 0
+	totalConNumeroLegal := 0
+	totalConCodigoValidacion := 0
+	totalConTrazabilidad := 0
+	totalMonto := 0.0
+
+	for _, doc := range documentos {
+		fechaDocumento := reportesFirstNonBlank(doc.FechaDocumento, doc.FechaActualizacion, doc.FechaCreacion)
+		if !reportesDateWithinRange(fechaDocumento, b.desde, b.hasta) {
+			continue
+		}
+
+		tipoDocumento := strings.ToLower(strings.TrimSpace(doc.TipoDocumento))
+		if tipoDocumento == "" {
+			tipoDocumento = "factura_electronica"
+		}
+
+		agg, ok := aggByTipo[tipoDocumento]
+		if !ok {
+			agg = &facturacionAgg{TipoDocumento: tipoDocumento}
+			aggByTipo[tipoDocumento] = agg
+		}
+
+		agg.Documentos++
+		totalDocumentos++
+
+		montoDocumento := reportesRound(doc.MontoTotal)
+		if montoDocumento < 0 {
+			montoDocumento = 0
+		}
+		agg.MontoTotal += montoDocumento
+		totalMonto += montoDocumento
+
+		estadoDocumento := normalizeEstado(doc.EstadoDocumento)
+		if isEmitida(estadoDocumento) {
+			agg.Emitidas++
+			totalEmitidas++
+		}
+		if isAnulada(estadoDocumento) {
+			agg.Anuladas++
+			totalAnuladas++
+		}
+		if isPendiente(estadoDocumento) {
+			agg.Pendientes++
+			totalPendientes++
+		}
+		if strings.Contains(tipoDocumento, "nota_credito") {
+			agg.NotasCredito++
+			totalNotasCredito++
+		}
+
+		if strings.TrimSpace(doc.NumeroLegal) != "" {
+			agg.ConNumeroLegal++
+			totalConNumeroLegal++
+		}
+		if strings.TrimSpace(doc.CodigoValidacion) != "" {
+			agg.ConCodigoValidacion++
+			totalConCodigoValidacion++
+		}
+		if strings.TrimSpace(doc.NumeroLegal) != "" && strings.TrimSpace(doc.CodigoValidacion) != "" {
+			agg.ConTrazabilidad++
+			totalConTrazabilidad++
+		}
+
+		if reportesDateUnix(fechaDocumento) > reportesDateUnix(agg.UltimaFecha) {
+			agg.UltimaFecha = fechaDocumento
+		}
+
+		monedaDocumento := strings.ToUpper(strings.TrimSpace(doc.Moneda))
+		if monedaDocumento == "" {
+			monedaDocumento = "COP"
+		}
+		if agg.Moneda == "" {
+			agg.Moneda = monedaDocumento
+		} else if agg.Moneda != monedaDocumento {
+			agg.Moneda = "MIXTA"
+		}
+
+		if monedaResumen == "" {
+			monedaResumen = monedaDocumento
+		} else if monedaResumen != monedaDocumento {
+			monedaMixta = true
+		}
+	}
+
+	consolidado := make([]*facturacionAgg, 0, len(aggByTipo))
+	for _, item := range aggByTipo {
+		consolidado = append(consolidado, item)
+	}
+	sort.SliceStable(consolidado, func(i, j int) bool {
+		if consolidado[i].MontoTotal == consolidado[j].MontoTotal {
+			if consolidado[i].Documentos == consolidado[j].Documentos {
+				return consolidado[i].TipoDocumento < consolidado[j].TipoDocumento
+			}
+			return consolidado[i].Documentos > consolidado[j].Documentos
+		}
+		return consolidado[i].MontoTotal > consolidado[j].MontoTotal
+	})
+
+	ds := b.newDataset(reporteDatasetOperativoFacturacion, []string{
+		"tipo_documento",
+		"documentos",
+		"emitidas",
+		"anuladas",
+		"pendientes",
+		"notas_credito",
+		"monto_total",
+		"con_numero_legal",
+		"con_codigo_validacion",
+		"con_trazabilidad",
+		"trazabilidad_pct",
+		"ultima_fecha_documento",
+		"moneda",
+	})
+
+	shown := consolidado
+	if len(shown) > b.maxRows {
+		shown = shown[:b.maxRows]
+	}
+	for _, item := range shown {
+		trazabilidadPct := 0.0
+		if item.Documentos > 0 {
+			trazabilidadPct = reportesRound((float64(item.ConTrazabilidad) * 100.0) / float64(item.Documentos))
+		}
+
+		ds.Rows = append(ds.Rows, map[string]interface{}{
+			"tipo_documento":         item.TipoDocumento,
+			"documentos":             item.Documentos,
+			"emitidas":               item.Emitidas,
+			"anuladas":               item.Anuladas,
+			"pendientes":             item.Pendientes,
+			"notas_credito":          item.NotasCredito,
+			"monto_total":            reportesRound(item.MontoTotal),
+			"con_numero_legal":       item.ConNumeroLegal,
+			"con_codigo_validacion":  item.ConCodigoValidacion,
+			"con_trazabilidad":       item.ConTrazabilidad,
+			"trazabilidad_pct":       trazabilidadPct,
+			"ultima_fecha_documento": item.UltimaFecha,
+			"moneda":                 reportesFirstNonBlank(strings.TrimSpace(item.Moneda), "COP"),
+		})
+	}
+
+	if monedaResumen == "" {
+		monedaResumen = "COP"
+	}
+	if monedaMixta {
+		monedaResumen = "MIXTA"
+	}
+
+	trazabilidadGlobal := 0.0
+	if totalDocumentos > 0 {
+		trazabilidadGlobal = reportesRound((float64(totalConTrazabilidad) * 100.0) / float64(totalDocumentos))
+	}
+
+	ds.RowCount = len(ds.Rows)
+	ds.Summary["documentos"] = totalDocumentos
+	ds.Summary["documentos_total"] = totalDocumentos
+	ds.Summary["tipos_documento"] = len(consolidado)
+	ds.Summary["tipos_documento_listados"] = ds.RowCount
+	ds.Summary["documentos_emitidos"] = totalEmitidas
+	ds.Summary["documentos_anulados"] = totalAnuladas
+	ds.Summary["documentos_pendientes"] = totalPendientes
+	ds.Summary["notas_credito"] = totalNotasCredito
+	ds.Summary["monto_total"] = reportesRound(totalMonto)
+	ds.Summary["con_numero_legal"] = totalConNumeroLegal
+	ds.Summary["con_codigo_validacion"] = totalConCodigoValidacion
+	ds.Summary["documentos_trazables"] = totalConTrazabilidad
+	ds.Summary["trazabilidad_pct"] = trazabilidadGlobal
+	ds.Summary["periodo_desde"] = reportesFirstNonBlank(strings.TrimSpace(b.desde), "sin_desde")
+	ds.Summary["periodo_hasta"] = reportesFirstNonBlank(strings.TrimSpace(b.hasta), "sin_hasta")
+	ds.Summary["moneda"] = monedaResumen
+	if totalDocumentos > 0 {
+		ds.Summary["monto_promedio_documento"] = reportesRound(totalMonto / float64(totalDocumentos))
+	} else {
+		ds.Summary["monto_promedio_documento"] = 0.0
+	}
+
+	return ds, nil
+}
+
+func (b *reportesBuilder) buildOperativoAuditoriaAccionesDataset() (empresaReporteDataset, error) {
+	type auditoriaAgg struct {
+		Modulo      string
+		Usuario     string
+		Eventos     int
+		Errores     int
+		HTTP4xx     int
+		HTTP5xx     int
+		UltimaFecha string
+		Acciones    map[string]int
+		Recursos    map[string]struct{}
+	}
+
+	const pageSize = 300
+	maxEventos := b.maxRows * 40
+	if maxEventos < 500 {
+		maxEventos = 500
+	}
+	if maxEventos > 12000 {
+		maxEventos = 12000
+	}
+
+	eventos := make([]dbpkg.EmpresaAuditoriaEvento, 0, maxEventos)
+	for offset := 0; offset < maxEventos; {
+		remaining := maxEventos - offset
+		limit := pageSize
+		if remaining < limit {
+			limit = remaining
+		}
+
+		batch, listErr := dbpkg.ListEmpresaAuditoriaEventos(b.db, b.empresaID, dbpkg.EmpresaAuditoriaEventoFilter{
+			Desde:           b.desde,
+			Hasta:           b.hasta,
+			UsuarioCreador:  b.usuario,
+			IncludeInactive: b.includeInactive,
+			Limit:           limit,
+			Offset:          offset,
+		})
+		if listErr != nil {
+			return empresaReporteDataset{}, listErr
+		}
+
+		eventos = append(eventos, batch...)
+		if len(batch) < limit {
+			break
+		}
+		offset += len(batch)
+	}
+
+	aggByPair := make(map[string]*auditoriaAgg)
+	modulos := make(map[string]struct{})
+	usuarios := make(map[string]struct{})
+	requestIDs := make(map[string]struct{})
+
+	actionsCriticasSet := map[string]struct{}{
+		"emitir":              {},
+		"anular":              {},
+		"nota_credito":        {},
+		"emitir_nota_credito": {},
+		"eliminar":            {},
+		"desactivar":          {},
+		"contabilizar":        {},
+		"contabilizar_compra": {},
+		"recepcionar":         {},
+		"recepcionar_compra":  {},
+		"emitir_orden":        {},
+		"aprobar":             {},
+		"cerrar":              {},
+	}
+
+	totalErrores := 0
+	totalHTTP4xx := 0
+	totalHTTP5xx := 0
+	totalAccionesCriticas := 0
+
+	for _, ev := range eventos {
+		modulo := reportesFirstNonBlank(strings.TrimSpace(ev.Modulo), "sin_modulo")
+		usuario := reportesFirstNonBlank(strings.TrimSpace(ev.UsuarioCreador), "sistema")
+		key := strings.ToLower(modulo) + "|" + strings.ToLower(usuario)
+
+		agg := aggByPair[key]
+		if agg == nil {
+			agg = &auditoriaAgg{
+				Modulo:   modulo,
+				Usuario:  usuario,
+				Acciones: make(map[string]int),
+				Recursos: make(map[string]struct{}),
+			}
+			aggByPair[key] = agg
+		}
+
+		agg.Eventos++
+
+		hasError := false
+		resultado := strings.ToLower(strings.TrimSpace(ev.Resultado))
+		if resultado != "" && resultado != "ok" {
+			hasError = true
+		}
+		if ev.CodigoHTTP >= 400 {
+			hasError = true
+		}
+		if hasError {
+			agg.Errores++
+			totalErrores++
+		}
+		if ev.CodigoHTTP >= 400 && ev.CodigoHTTP < 500 {
+			agg.HTTP4xx++
+			totalHTTP4xx++
+		}
+		if ev.CodigoHTTP >= 500 {
+			agg.HTTP5xx++
+			totalHTTP5xx++
+		}
+
+		accion := strings.ToLower(strings.TrimSpace(reportesFirstNonBlank(ev.Accion, "sin_accion")))
+		agg.Acciones[accion]++
+		if _, ok := actionsCriticasSet[accion]; ok {
+			totalAccionesCriticas++
+		}
+
+		recurso := strings.ToLower(strings.TrimSpace(ev.Recurso))
+		if recurso != "" || ev.RecursoID > 0 {
+			recursoKey := recurso + "#" + strconv.FormatInt(ev.RecursoID, 10)
+			agg.Recursos[recursoKey] = struct{}{}
+		}
+
+		if reportesDateUnix(ev.FechaEvento) > reportesDateUnix(agg.UltimaFecha) {
+			agg.UltimaFecha = ev.FechaEvento
+		}
+
+		modulos[modulo] = struct{}{}
+		usuarios[usuario] = struct{}{}
+		if reqID := strings.TrimSpace(ev.RequestID); reqID != "" {
+			requestIDs[reqID] = struct{}{}
+		}
+	}
+
+	consolidado := make([]*auditoriaAgg, 0, len(aggByPair))
+	for _, item := range aggByPair {
+		consolidado = append(consolidado, item)
+	}
+
+	ds := b.newDataset(reporteDatasetOperativoAuditoria, []string{
+		"modulo",
+		"usuario",
+		"eventos",
+		"errores",
+		"http_4xx",
+		"http_5xx",
+		"error_pct",
+		"recursos_unicos",
+		"accion_principal",
+		"ultima_fecha_evento",
+	})
+
+	sort.SliceStable(consolidado, func(i, j int) bool {
+		if consolidado[i].Eventos == consolidado[j].Eventos {
+			if consolidado[i].Errores == consolidado[j].Errores {
+				if strings.EqualFold(consolidado[i].Modulo, consolidado[j].Modulo) {
+					return strings.ToLower(consolidado[i].Usuario) < strings.ToLower(consolidado[j].Usuario)
+				}
+				return strings.ToLower(consolidado[i].Modulo) < strings.ToLower(consolidado[j].Modulo)
+			}
+			return consolidado[i].Errores > consolidado[j].Errores
+		}
+		return consolidado[i].Eventos > consolidado[j].Eventos
+	})
+
+	for _, item := range consolidado {
+		accionPrincipal := "sin_accion"
+		conteoAccionPrincipal := 0
+		for accion, total := range item.Acciones {
+			if total > conteoAccionPrincipal || (total == conteoAccionPrincipal && accion < accionPrincipal) {
+				accionPrincipal = accion
+				conteoAccionPrincipal = total
+			}
+		}
+
+		errorPct := 0.0
+		if item.Eventos > 0 {
+			errorPct = reportesRound((float64(item.Errores) * 100.0) / float64(item.Eventos))
+		}
+
+		ds.Rows = append(ds.Rows, map[string]interface{}{
+			"modulo":              item.Modulo,
+			"usuario":             item.Usuario,
+			"eventos":             item.Eventos,
+			"errores":             item.Errores,
+			"http_4xx":            item.HTTP4xx,
+			"http_5xx":            item.HTTP5xx,
+			"error_pct":           errorPct,
+			"recursos_unicos":     len(item.Recursos),
+			"accion_principal":    accionPrincipal,
+			"ultima_fecha_evento": item.UltimaFecha,
+		})
+	}
+
+	if len(ds.Rows) > b.maxRows {
+		ds.Rows = ds.Rows[:b.maxRows]
+	}
+
+	ds.RowCount = len(ds.Rows)
+	ds.Summary["eventos_total"] = len(eventos)
+	ds.Summary["modulos_total"] = len(modulos)
+	ds.Summary["usuarios_total"] = len(usuarios)
+	ds.Summary["parejas_modulo_usuario"] = len(consolidado)
+	ds.Summary["parejas_listadas"] = ds.RowCount
+	ds.Summary["errores_total"] = totalErrores
+	ds.Summary["http_4xx_total"] = totalHTTP4xx
+	ds.Summary["http_5xx_total"] = totalHTTP5xx
+	ds.Summary["acciones_criticas_total"] = totalAccionesCriticas
+	ds.Summary["requests_unicos"] = len(requestIDs)
+	ds.Summary["filtro_usuario"] = reportesFirstNonBlank(strings.TrimSpace(b.usuario), "todos")
+	ds.Summary["periodo_desde"] = reportesFirstNonBlank(strings.TrimSpace(b.desde), "sin_desde")
+	ds.Summary["periodo_hasta"] = reportesFirstNonBlank(strings.TrimSpace(b.hasta), "sin_hasta")
+
+	if len(eventos) > 0 {
+		ds.Summary["error_global_pct"] = reportesRound((float64(totalErrores) * 100.0) / float64(len(eventos)))
+	} else {
+		ds.Summary["error_global_pct"] = 0.0
+	}
+	if ds.RowCount > 0 {
+		ds.Summary["modulo_top"] = ds.Rows[0]["modulo"]
+		ds.Summary["usuario_top"] = ds.Rows[0]["usuario"]
+		ds.Summary["eventos_top"] = ds.Rows[0]["eventos"]
+	}
+
 	return ds, nil
 }
 
@@ -1949,6 +4129,38 @@ func reportesEstadoStock(cantidad, minimo, maximo float64) (string, int) {
 	return "ok", 2
 }
 
+func reportesInventarioKey(productoID, bodegaID int64) string {
+	return strconv.FormatInt(productoID, 10) + ":" + strconv.FormatInt(bodegaID, 10)
+}
+
+func reportesInventarioRiesgoPrioridad(estadoProyeccion, estadoStock string, prioridadStock int) int {
+	switch strings.ToLower(strings.TrimSpace(estadoProyeccion)) {
+	case "quiebre_inminente":
+		return 0
+	case "bajo_minimo":
+		return 1
+	case "riesgo_alto":
+		return 2
+	case "riesgo_medio":
+		return 3
+	case "sin_consumo_reciente":
+		return 4
+	case "estable":
+		return 5
+	}
+
+	if strings.EqualFold(strings.TrimSpace(estadoStock), "sin_stock") {
+		return 0
+	}
+	if strings.EqualFold(strings.TrimSpace(estadoStock), "bajo_minimo") {
+		return 1
+	}
+	if prioridadStock < 0 {
+		prioridadStock = 0
+	}
+	return 10 + prioridadStock
+}
+
 func reportesDateWithinRange(rawDateTime, desde, hasta string) bool {
 	desde = strings.TrimSpace(desde)
 	hasta = strings.TrimSpace(hasta)
@@ -2012,6 +4224,154 @@ func reportesDateUnix(rawDateTime string) int64 {
 	if part := reportesNormalizeDatePart(value); part != "" {
 		if parsed, err := time.Parse("2006-01-02", part); err == nil {
 			return parsed.Unix()
+		}
+	}
+	return 0
+}
+
+func reportesResolveReservaPeriodo(desde, hasta string, reservas []dbpkg.ReservaHotel) (string, string) {
+	periodoDesde := reportesNormalizeDatePart(desde)
+	periodoHasta := reportesNormalizeDatePart(hasta)
+
+	if periodoDesde == "" || periodoHasta == "" {
+		minFecha := ""
+		maxFecha := ""
+		for _, reserva := range reservas {
+			fechaInicio := reportesNormalizeDatePart(reserva.FechaEntrada)
+			fechaFin := reportesNormalizeDatePart(reportesFirstNonBlank(reserva.FechaSalida, reserva.FechaEntrada))
+			if fechaInicio != "" {
+				if minFecha == "" || fechaInicio < minFecha {
+					minFecha = fechaInicio
+				}
+			}
+			if fechaFin != "" {
+				if maxFecha == "" || fechaFin > maxFecha {
+					maxFecha = fechaFin
+				}
+			}
+		}
+		if periodoDesde == "" {
+			periodoDesde = minFecha
+		}
+		if periodoHasta == "" {
+			periodoHasta = maxFecha
+		}
+	}
+
+	if periodoDesde == "" && periodoHasta != "" {
+		periodoDesde = periodoHasta
+	}
+	if periodoHasta == "" && periodoDesde != "" {
+		periodoHasta = periodoDesde
+	}
+	if periodoDesde != "" && periodoHasta != "" && periodoDesde > periodoHasta {
+		periodoDesde, periodoHasta = periodoHasta, periodoDesde
+	}
+
+	return periodoDesde, periodoHasta
+}
+
+func reportesDaysInclusive(desde, hasta string) float64 {
+	desde = strings.TrimSpace(desde)
+	hasta = strings.TrimSpace(hasta)
+	if desde == "" || hasta == "" {
+		return 0
+	}
+	start, errStart := time.Parse("2006-01-02", desde)
+	end, errEnd := time.Parse("2006-01-02", hasta)
+	if errStart != nil || errEnd != nil {
+		return 0
+	}
+	if end.Before(start) {
+		start, end = end, start
+	}
+	return end.Sub(start).Hours()/24 + 1
+}
+
+func reportesParseDateTime(raw string) (time.Time, bool) {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return time.Time{}, false
+	}
+	layouts := []string{
+		time.RFC3339,
+		"2006-01-02 15:04:05",
+		"2006-01-02T15:04:05",
+		"2006-01-02 15:04",
+		"2006-01-02T15:04",
+		"2006-01-02",
+	}
+	for _, layout := range layouts {
+		if parsed, err := time.Parse(layout, value); err == nil {
+			return parsed, true
+		}
+	}
+	return time.Time{}, false
+}
+
+func reportesReservaOverlapDays(fechaEntrada, fechaSalida, periodoDesde, periodoHasta string) float64 {
+	if strings.TrimSpace(periodoDesde) == "" || strings.TrimSpace(periodoHasta) == "" {
+		return 0
+	}
+
+	periodoStart, errDesde := time.Parse("2006-01-02", periodoDesde)
+	periodoHastaDate, errHasta := time.Parse("2006-01-02", periodoHasta)
+	if errDesde != nil || errHasta != nil {
+		return 0
+	}
+	periodoEnd := periodoHastaDate.Add(24 * time.Hour)
+
+	entrada, okEntrada := reportesParseDateTime(fechaEntrada)
+	salida, okSalida := reportesParseDateTime(fechaSalida)
+	if !okEntrada || !okSalida {
+		fecha := reportesNormalizeDatePart(reportesFirstNonBlank(fechaEntrada, fechaSalida))
+		if fecha == "" {
+			return 0
+		}
+		if !reportesDateWithinRange(fecha, periodoDesde, periodoHasta) {
+			return 0
+		}
+		return 1
+	}
+	if !salida.After(entrada) {
+		salida = entrada.Add(24 * time.Hour)
+	}
+
+	if salida.Before(periodoStart) || !entrada.Before(periodoEnd) {
+		return 0
+	}
+
+	overlapStart := entrada
+	if periodoStart.After(overlapStart) {
+		overlapStart = periodoStart
+	}
+	overlapEnd := salida
+	if periodoEnd.Before(overlapEnd) {
+		overlapEnd = periodoEnd
+	}
+	if !overlapEnd.After(overlapStart) {
+		return 0
+	}
+
+	days := overlapEnd.Sub(overlapStart).Hours() / 24
+	if days < 0 {
+		return 0
+	}
+	return reportesRound(days)
+}
+
+func reportesParseEstacionID(referenciaExterna, codigo string, empresaID int64) int64 {
+	referencia := strings.ToUpper(strings.TrimSpace(referenciaExterna))
+	if strings.HasPrefix(referencia, "ESTACION_") {
+		if parsed, err := strconv.ParseInt(strings.TrimPrefix(referencia, "ESTACION_"), 10, 64); err == nil && parsed > 0 {
+			return parsed
+		}
+	}
+	prefix := strings.ToUpper(fmt.Sprintf("EST-%d-", empresaID))
+	codigo = strings.ToUpper(strings.TrimSpace(codigo))
+	if strings.HasPrefix(codigo, prefix) {
+		if parsed, err := strconv.ParseInt(strings.TrimPrefix(codigo, prefix), 10, 64); err == nil && parsed > 0 {
+			return parsed
 		}
 	}
 	return 0

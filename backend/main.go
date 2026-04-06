@@ -245,6 +245,12 @@ func main() {
 		addIfMissing("password_salt TEXT", "password_salt")
 		addIfMissing("password_set INTEGER DEFAULT 0", "password_set")
 		addIfMissing("password_actualizada_en TEXT", "password_actualizada_en")
+		addIfMissing("login_failed_attempts INTEGER DEFAULT 0", "login_failed_attempts")
+		addIfMissing("login_failed_last_at TEXT", "login_failed_last_at")
+		addIfMissing("login_locked_until TEXT", "login_locked_until")
+		addIfMissing("password_reset_token TEXT", "password_reset_token")
+		addIfMissing("password_reset_expira TEXT", "password_reset_expira")
+		addIfMissing("password_reset_requested_en TEXT", "password_reset_requested_en")
 		addIfMissing("fecha_actualizacion TEXT", "fecha_actualizacion")
 		addIfMissing("usuario_creador TEXT", "usuario_creador")
 		addIfMissing("estado TEXT DEFAULT 'activo'", "estado")
@@ -387,6 +393,9 @@ func main() {
 	if err := dbpkg.EnsureEmpresaTarifasPorDiaSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure tarifas por dia schema in empresas db: %v", err)
 	}
+	if err := dbpkg.EnsureEmpresaModulosFaltantesSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure modulos faltantes schema in empresas db: %v", err)
+	}
 	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-01-001-baseline", "baseline schema snapshot: users, empresas, productos, clientes, carritos, configuracion_avanzada"); err != nil {
 		log.Fatalf("failed to register schema migration in empresas db: %v", err)
 	}
@@ -455,6 +464,9 @@ func main() {
 	}
 	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-05-020-nomina-sueldos", "modulo de nomina de sueldos por empresa integrado con asistencia, horas extras y parametros legales"); err != nil {
 		log.Fatalf("failed to register nomina sueldos schema migration in empresas db: %v", err)
+	}
+	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-06-021-modulos-faltantes-erp", "modulos erp faltantes: cotizaciones, pedidos, cxc/cxp, plan de cuentas, lotes/series, rrhh, crm, produccion, logistica, documental, integraciones y dian"); err != nil {
+		log.Fatalf("failed to register modulos faltantes schema migration in empresas db: %v", err)
 	}
 	// Crear tipos_de_empresas en la base de datos de superadministrador (ubicación centralizada)
 	createTiposSuper := `CREATE TABLE IF NOT EXISTS tipos_de_empresas (
@@ -635,66 +647,6 @@ func main() {
 	}
 	ensureLicenciasSchema(dbSuper)
 
-	// Tabla para registrar preferencias/pagos de Mercado Pago
-	createPagos := `CREATE TABLE IF NOT EXISTS pagos_mercadopago (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		licencia_id INTEGER,
-		empresa_id INTEGER,
-		preference_id TEXT,
-		payment_id TEXT,
-		status TEXT,
-		raw_payload TEXT,
-		fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-		fecha_actualizacion TEXT,
-		usuario_creador TEXT,
-		estado TEXT DEFAULT 'activo',
-		observaciones TEXT
-	);`
-	if _, err := dbSuper.Exec(createPagos); err != nil {
-		log.Fatalf("failed to create pagos_mercadopago table in super db: %v", err)
-	}
-
-	// Asegurar columnas nuevas en pagos_mercadopago para compatibilidad con instalaciones previas.
-	ensurePagosSchema := func(db *sql.DB) {
-		rows, err := db.Query("PRAGMA table_info(pagos_mercadopago);")
-		if err != nil {
-			log.Printf("warning: unable to inspect pagos_mercadopago schema: %v", err)
-			return
-		}
-		defer rows.Close()
-		existing := map[string]bool{}
-		for rows.Next() {
-			var cid int
-			var name string
-			var ctype string
-			var notnull int
-			var dflt sql.NullString
-			var pk int
-			if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
-				log.Printf("warning: scan pragma table_info pagos_mercadopago error: %v", err)
-				return
-			}
-			existing[name] = true
-		}
-
-		addIfMissing := func(colDef string, name string) {
-			if !existing[name] {
-				q := fmt.Sprintf("ALTER TABLE pagos_mercadopago ADD COLUMN %s;", colDef)
-				if _, err := db.Exec(q); err != nil {
-					log.Printf("failed to add column %s to pagos_mercadopago: %v", name, err)
-				} else {
-					log.Printf("added missing column %s to pagos_mercadopago", name)
-				}
-			}
-		}
-
-		addIfMissing("fecha_actualizacion TEXT", "fecha_actualizacion")
-		addIfMissing("usuario_creador TEXT", "usuario_creador")
-		addIfMissing("estado TEXT DEFAULT 'activo'", "estado")
-		addIfMissing("observaciones TEXT", "observaciones")
-	}
-	ensurePagosSchema(dbSuper)
-
 	// Tabla para registrar transacciones/pagos de Wompi (Nequi)
 	createPagosWompi := `CREATE TABLE IF NOT EXISTS pagos_wompi (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -851,6 +803,8 @@ func main() {
 	http.HandleFunc("/api/empresa/servicios", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaServiciosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/usuarios/login", handlers.WithEmpresaPublicScope(handlers.EmpresaUsuarioLoginHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/usuarios/establecer_password", handlers.WithEmpresaPublicScope(handlers.EmpresaUsuarioSetPasswordHandler(dbEmpresas, dbSuper)))
+	http.HandleFunc("/api/empresa/usuarios/solicitar_recuperacion_password", handlers.WithEmpresaPublicScope(handlers.EmpresaUsuarioRequestPasswordRecoveryHandler(dbEmpresas, dbSuper)))
+	http.HandleFunc("/api/empresa/usuarios/restablecer_password", handlers.WithEmpresaPublicScope(handlers.EmpresaUsuarioResetPasswordHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/usuarios", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaUsuariosHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/asistencia_empleados", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaAsistenciaEmpleadosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/nomina", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaNominaSueldosHandler(dbEmpresas)))
@@ -885,6 +839,7 @@ func main() {
 	http.HandleFunc("/api/empresa/graficos_estadisticas", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaGraficosEstadisticasHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/auditoria/eventos", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaAuditoriaEventosHandler(dbEmpresas)))
 	handlers.RegisterEmpresaChatIARoutes(dbEmpresas, dbSuper)
+	handlers.RegisterEmpresaModulosFaltantesRoutes(dbEmpresas, dbSuper)
 	http.HandleFunc("/api/empresa/roles_de_usuario", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaRolesDeUsuarioHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/permisos_contexto", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaPermisosContextoHandler(dbSuper)))
 	// Endpoint para obtener admin actual desde la cookie de sesión
@@ -893,22 +848,17 @@ func main() {
 	http.HandleFunc("/super/api/administradores", handlers.AdministradoresHandler(dbSuper))
 	// Endpoint CRUD para licencias (nuevo)
 	http.HandleFunc("/super/api/licencias", handlers.LicenciasHandler(dbSuper))
-	// Endpoint para gestionar credenciales de Mercado Pago (GET/PUT)
-	http.HandleFunc("/super/api/config/mercadopago", handlers.MercadoPagoConfigHandler(dbSuper))
 	// Endpoint para gestionar credenciales de Wompi (GET/PUT)
 	http.HandleFunc("/super/api/config/wompi", handlers.WompiConfigHandler(dbSuper))
 	// Endpoint para gestionar SMTP Gmail (GET/PUT)
 	http.HandleFunc("/super/api/config/gmail", handlers.GmailConfigHandler(dbSuper))
 	// Endpoint para gestionar credenciales IA de modelos populares (GET/PUT)
 	http.HandleFunc("/super/api/config/ai", handlers.AIModelsConfigHandler(dbSuper))
-	// Endpoints for Mercado Pago integration (crear preferencia y webhook)
-	http.HandleFunc("/mercadopago/create_preference", handlers.MercadoPagoCreatePreferenceHandler(dbSuper))
-	http.HandleFunc("/mercadopago/webhook", handlers.MercadoPagoWebhookHandler(dbSuper))
-	http.HandleFunc("/mercadopago/test_preference", handlers.MercadoPagoTestPreferenceHandler(dbSuper))
 	// Endpoints Wompi (Nequi): crear transacción y consultar estado
 	http.HandleFunc("/wompi/terms", handlers.WompiTermsHandler(dbSuper))
 	http.HandleFunc("/wompi/create_transaction_nequi", handlers.WompiCreateNequiTransactionHandler(dbSuper))
 	http.HandleFunc("/wompi/transaction_status", handlers.WompiTransactionStatusHandler(dbSuper))
+	http.HandleFunc("/wompi/webhook", handlers.WompiWebhookHandler(dbSuper))
 	// Activación manual de licencia sin pago (uso interno de avance/prototipo)
 	http.HandleFunc("/licencias/activar_sin_pago", handlers.ActivateLicenciaSinPagoHandler(dbSuper))
 	// Confirmación de correo para usuarios de empresa.
@@ -924,6 +874,22 @@ func main() {
 
 	// Logout handler: limpiar cookie de sesión (si existe) y redirigir a la página de login
 	http.HandleFunc("/auth/logout", func(w http.ResponseWriter, r *http.Request) {
+		token := ""
+		if c, err := r.Cookie("session_token"); err == nil {
+			token = strings.TrimSpace(c.Value)
+		}
+		if token == "" {
+			authHeader := strings.TrimSpace(r.Header.Get("Authorization"))
+			if strings.HasPrefix(strings.ToLower(authHeader), "bearer ") {
+				token = strings.TrimSpace(authHeader[len("Bearer "):])
+			}
+		}
+		if token != "" {
+			if err := dbpkg.RevokeSessionByToken(dbSuper, token); err != nil {
+				log.Printf("warning: failed to revoke session token on logout: %v", err)
+			}
+		}
+
 		// Invalidate common session cookie names
 		cookies := []string{"session", "sid", "auth"}
 		for _, name := range cookies {

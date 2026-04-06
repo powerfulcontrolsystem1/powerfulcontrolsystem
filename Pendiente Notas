@@ -1,10 +1,202 @@
-- que la configuracion sea una pagina con menu vertical izquierdo al iguak que la pagina de super administrador, igual que la pagina selleccionar empresa.
-- pedido hecho por los clientes.
-que productos tenga su propio  portal .
-- Modulo de auditoria.
-- siguen 2 scrollbar
+Pendiente Notas
 
-- genera un docuento que me informe a mi, cuantos modulos hay en el sistema y una descripcion de cada uno.  el documento se llamara: modulos del proyecto.
- a partir de los modulos,  generar los reportes en reportes.
- - revisar lo de propina porque se sobrescribio el archivo. con uno viejo.
+Fecha de actualizacion: 2026-04-06
+Objetivo: cerrar cada modulo al 100% funcional, tecnico y operativo.
 
+Definicion de modulo al 100%
+- Flujo funcional completo (crear, consultar, editar, activar/desactivar, eliminar logico cuando aplique).
+- Permisos y aislamiento por empresa_id validados.
+- Manejo de errores visible en frontend y trazable en backend.
+- Reporteria/exportacion aplicable al modulo (PDF/XLS/CSV/JSON/TXT cuando corresponda).
+- Pruebas automatizadas y evidencia UAT.
+- Documentacion operativa y tecnica actualizada.
+
+Pendientes transversales (aplican a todos los modulos)
+- Definir objetivo minimo de cobertura de pruebas por modulo y registrar evidencia de corrida.
+- Ejecutar UAT formal por rol (super_admin, admin_empresa, usuario_empresa) y documentar acta.
+- Estandarizar checklist de "listo para produccion" por modulo (seguridad, rendimiento, trazabilidad).
+
+Matriz de faltantes por modulo para 100%
+
+1) Autenticacion y sesiones
+- Implementar politica de bloqueo temporal por intentos fallidos.
+- Agregar flujo de recuperacion de contrasena para usuario empresa.
+- Registrar pruebas de seguridad de sesion (expiracion, revocacion, reutilizacion).
+hay dos paginas login (para administrado y super administrador). login usuarios (para los usuarios de cada empresa que operarn el sistema, usuarios de una sola empresa)
+
+2) Administracion global (super)
+- Completar flujo de desactivacion/rehabilitacion de empresa con validaciones de impacto.
+- Agregar respaldo/restauracion operativa de configuraciones criticas desde interfaz.
+- Cerrar pruebas de permisos de endpoints super sobre todos los roles.
+
+3) Usuarios de empresa
+- Completar flujo autogestionado de cambio y recuperacion de clave.
+- Agregar politicas de complejidad y rotacion opcional de contrasena.
+- Validar notificaciones de confirmacion/restablecimiento en entorno de pruebas de correo.
+
+4) Asistencia de empleados
+- Cerrar flujo de cierre de periodo de asistencia con bloqueo de edicion posterior.
+- Agregar validacion de turnos cruzados/nocturnos y tolerancias configurables.
+- Publicar reporte operativo de asistencia para auditoria de nomina.
+
+5) Nomina de sueldos
+- Validar formulas legales por pais/empresa con casos de prueba documentados.
+- Generar desprendible estandar por empleado y periodo.
+- Cerrar conciliacion automatica entre asistencia y liquidacion final.
+
+6) Registro de vehiculos
+- Agregar validacion de placa por formato configurable por pais.
+- Evitar duplicidad de vehiculo activo en patio/empresa.
+- Incorporar reporte de permanencia y tiempos de estancia.
+
+7) Reservas por estacion/habitacion
+- Validar concurrencia para evitar overbooking en ventanas solapadas.
+- Implementar politica automatica de no_show/expiracion avanzada.
+- Cerrar pruebas de ocupacion multiestacion y reconversion a carrito.
+
+8) Tarifas por minutos
+- Agregar simulador previo de cobro y redondeos configurables.
+- Validar casos limite (saltos de fraccion, minimo, maximo diario).
+- Cerrar trazabilidad contable del calculo de tarifa por minutos.
+agregar opcion que se pueda aplicar la misma tarifa a todas las estaciones al mismo tiempo.
+
+9) Tarifas por dia
+- Implementar reglas de prorrateo por entrada/salida fuera de ventana.
+- Validar escenarios de estadias multidia con cambios de tarifa.
+- Cerrar reporte comparativo ingreso esperado vs real por estacion.
+agregar opcion que se pueda aplicar la misma tarifa a todas las estaciones al mismo tiempo.
+
+10) Clientes
+- Agregar deduplicacion por documento/correo/telefono.
+- Completar consolidado de historial comercial por cliente.
+- Cerrar exportacion masiva de segmentos para acciones comerciales.
+
+11) Inventario
+- Completar politicas de costo (promedio/PEPS) seleccionable por empresa.
+- Implementar flujo de conteo ciclico con ajuste auditado.
+- Cerrar alertas operativas proactivas de quiebre/sobrestock.
+
+12) Combos de productos
+- Agregar versionado de receta de combo.
+- Validar costo teorico vs costo real segun consumo de ingredientes.
+- Cerrar pruebas de descuento de inventario concurrente en ventas altas.
+
+13) Codigos de descuento
+- Incorporar reglas avanzadas por segmento, canal y horario.
+- Agregar proteccion antifraude por reuso/abuso de codigo.
+- Cerrar trazabilidad completa de redenciones anuladas/revertidas.
+
+14) Propinas
+- Definir reglas fiscales de propina por pais/regimen.
+- Cerrar conciliacion de propinas en cierre de turno/caja.
+- Incorporar control de ajuste manual con auditoria.
+
+15) Comisiones por servicio
+- Agregar escalas y topes de comision por servicio/rol.
+- Cerrar flujo de ajuste manual con aprobacion y trazabilidad.
+- Vincular reporte de comision a proceso de liquidacion.
+
+16) Compras
+- Implementar aprobacion multinivel de ordenes de compra.
+- Cerrar recepcion parcial avanzada con diferencias por item.
+- Integrar validacion documental proveedor-factura-entrada.
+
+17) Facturacion electronica
+- Cerrar integracion productiva por pais/proveedor fiscal.
+- Implementar cola de reintentos y reconciliacion de estados.
+- Validar numeracion y contingencia en escenarios de fallo.
+
+18) Facturacion electronica DIAN Colombia
+- Completar envio/acuse real con credenciales productivas.
+- Implementar firma digital real con gestion segura de certificado.
+- Cerrar pruebas de contingencia y reconexion con DIAN.
+
+19) Gestion comercial extendida (cotizaciones/pedidos/devoluciones)
+- Automatizar conversion de cotizacion a pedido y a documento final.
+- Definir SLA del embudo comercial y alertas de vencimiento.
+- Cerrar trazabilidad de estados con reportes de conversion.
+
+20) Contabilidad operativa extendida (plan de cuentas, CxC, CxP)
+- Completar plantillas contables por tipo de empresa.
+- Cerrar conciliacion automatica CxC/CxP contra pagos reales.
+- Validar cierre de periodo con bloqueo de modificaciones retroactivas.
+
+21) Inventario extendido (lotes/series, devolucion proveedor)
+- Cerrar trazabilidad completa de serie/lote en todo el ciclo de venta.
+- Bloquear automaticamente lote vencido en venta y reserva.
+- Integrar devolucion a proveedor con impacto contable completo.
+
+22) RRHH extendido (vacaciones/licencias)
+- Implementar calculo de acumulado y saldo de vacaciones.
+- Cerrar flujo de aprobacion jerarquica (jefe->rrhh->admin).
+- Vincular novedades a nomina en periodo correspondiente.
+
+23) CRM/Produccion/Logistica
+- Completar KPI operativos por dominio con metas y desviaciones.
+- Cerrar planificacion de capacidad en produccion.
+- Agregar seguimiento logistico con hitos y alertas de incumplimiento.
+
+24) Documental e integraciones
+- Completar repositorio documental con versionado y control de acceso.
+- Implementar rotacion segura de credenciales/ref de integracion.
+- Cerrar monitoreo y alertas de salud de conectores externos.
+
+25) Panel ERP extendido
+- Reducir dependencia de entrada JSON libre con formularios guiados por tipo.
+- Agregar validaciones dinamicas por campo y modulo.
+- Cerrar guia operativa por dominio con casos de uso reales.
+
+26) Carritos de compra e items
+- Cerrar control de concurrencia de stock en tiempo real multiestacion.
+- Implementar recuperacion de carrito interrumpido con auditoria.
+- Validar reglas mixtas de pago y anulacion parcial de cierre.
+
+27) Ventas simples por estacion
+- Implementar soporte operativo offline con sincronizacion segura.
+- Cerrar flujo de devolucion/correccion rapida post-cobro.
+- Medir tiempos de atencion y rendimiento por estacion.
+
+28) Finanzas y contabilidad
+- Completar conciliacion bancaria automatica.
+- Cerrar politicas de cierre/reapertura con evidencia de autorizacion.
+- Integrar tablero de desviaciones financieras por periodo.
+
+29) Auditoria empresarial
+- Definir politicas de retencion por modulo y severidad.
+- Implementar busqueda avanzada de eventos (full text + filtros).
+- Cerrar exportacion forense con cadena de custodia basica.
+
+30) Seguridad y permisos
+- Ejecutar barrido completo deny_by_default por endpoint.
+- Agregar pruebas automaticas de autorizacion por matriz rol/modulo.
+- Cerrar trazabilidad de cambios de permisos y su aprobacion.
+
+31) Reportes
+- Implementar programacion automatica de reportes (agenda/envio).
+- Cerrar versionamiento de plantillas de exportacion.
+- Agregar validacion automatica de consistencia entre formatos.
+
+32) Graficos y estadisticas
+- Incorporar cache de series y comparativos entre periodos.
+- Cerrar filtros avanzados por sucursal/estacion/segmento.
+- Validar rendimiento en rangos largos de fechas.
+
+33) Configuracion operativa de cobro
+- Agregar politicas por canal/sucursal/turno.
+- Cerrar simulador de reglas antes de publicar cambios.
+- Registrar auditoria de cambios con rollback operativo.
+
+34) Calculadora por empresa
+- Integrar operaciones relevantes con cotizaciones/carritos (opcional configurable).
+- Permitir etiquetar operaciones y asociarlas a cliente/documento.
+- Cerrar exportacion historica por rango y usuario.
+
+Orden sugerido de ejecucion para cierre 100%
+- Fase 1 (base y seguridad): modulos 1, 2, 3, 30.
+- Fase 2 (operacion core): modulos 7, 8, 9, 11, 16, 26, 27, 33.
+- Fase 3 (finanzas y cumplimiento): modulos 5, 17, 18, 20, 28, 31.
+- Fase 4 (expansion ERP): modulos 19, 21, 22, 23, 24, 25.
+- Fase 5 (optimizacion y analitica): modulos 4, 6, 10, 12, 13, 14, 15, 29, 32, 34.
+
+Resultado esperado
+- Cuando cada modulo tenga cerrados sus faltantes y evidencia de pruebas/UAT, marcar como COMPLETADO con fecha en este mismo documento.

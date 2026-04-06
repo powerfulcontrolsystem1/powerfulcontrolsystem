@@ -296,7 +296,6 @@ func JSONErrorMiddleware(next http.Handler) http.Handler {
 		path := r.URL.Path
 		isAPIPath := strings.HasPrefix(path, "/api/") ||
 			strings.HasPrefix(path, "/super/api/") ||
-			strings.HasPrefix(path, "/mercadopago/") ||
 			strings.HasPrefix(path, "/wompi/") ||
 			strings.HasPrefix(path, "/licencias/")
 

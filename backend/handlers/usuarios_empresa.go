@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"crypto/sha256"
+	"crypto/subtle"
 	"database/sql"
 	"encoding/hex"
 	"encoding/json"
@@ -20,6 +21,13 @@ import (
 
 	dbpkg "github.com/you/pos-backend/db"
 	"github.com/you/pos-backend/utils"
+)
+
+const (
+	empresaUsuarioMaxIntentosFallidos = 5
+	empresaUsuarioVentanaIntentos     = 15 * time.Minute
+	empresaUsuarioBloqueoDuracion     = 15 * time.Minute
+	empresaUsuarioRecuperacionTTL     = 30 * time.Minute
 )
 
 // EmpresaRolesDeUsuarioHandler devuelve los roles disponibles para la empresa seleccionada.
@@ -402,6 +410,10 @@ func EmpresaUsuarioLoginHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "tu usuario está inactivo", http.StatusForbidden)
 			return
 		}
+		if blocked, lockUntil := dbpkg.IsEmpresaUsuarioLocked(item, time.Now()); blocked {
+			http.Error(w, "usuario bloqueado temporalmente por intentos fallidos hasta "+lockUntil, http.StatusTooManyRequests)
+			return
+		}
 
 		if item.PasswordSet != 1 || strings.TrimSpace(item.PasswordHash) == "" || strings.TrimSpace(item.PasswordSalt) == "" {
 			w.Header().Set("Content-Type", "application/json")
@@ -419,7 +431,28 @@ func EmpresaUsuarioLoginHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 		if !verifyEmpresaUsuarioPassword(payload.Password, item) {
+			_, lockUntil, registerErr := dbpkg.RegisterEmpresaUsuarioLoginFailure(
+				dbEmp,
+				item.EmpresaID,
+				item.ID,
+				empresaUsuarioMaxIntentosFallidos,
+				empresaUsuarioVentanaIntentos,
+				empresaUsuarioBloqueoDuracion,
+			)
+			if registerErr != nil {
+				log.Printf("[usuarios_empresa] failed to register login failure empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, item.Email, registerErr)
+			}
+			if strings.TrimSpace(lockUntil) != "" {
+				http.Error(w, "usuario bloqueado temporalmente por intentos fallidos hasta "+lockUntil, http.StatusTooManyRequests)
+				return
+			}
 			http.Error(w, "credenciales inválidas", http.StatusUnauthorized)
+			return
+		}
+
+		if err := dbpkg.ClearEmpresaUsuarioLoginFailures(dbEmp, item.EmpresaID, item.ID); err != nil {
+			log.Printf("[usuarios_empresa] failed to clear login failures empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, item.Email, err)
+			http.Error(w, "No se pudo restablecer la seguridad de acceso", http.StatusInternalServerError)
 			return
 		}
 
@@ -523,6 +556,185 @@ func EmpresaUsuarioSetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 
 		if err := createEmpresaUsuarioSessionAndRespond(w, r, dbSuper, item); err != nil {
 			log.Printf("[usuarios_empresa] failed to create session (set_password) empresa_id=%d email=%s error=%v", item.EmpresaID, item.Email, err)
+			http.Error(w, "No se pudo iniciar sesión del usuario", http.StatusInternalServerError)
+			return
+		}
+	}
+}
+
+// EmpresaUsuarioRequestPasswordRecoveryHandler genera un token de recuperación de contraseña.
+func EmpresaUsuarioRequestPasswordRecoveryHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		var payload struct {
+			EmpresaID int64  `json:"empresa_id"`
+			Email     string `json:"email"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			http.Error(w, "invalid payload", http.StatusBadRequest)
+			return
+		}
+
+		email := strings.TrimSpace(payload.Email)
+		if email == "" {
+			http.Error(w, "email es obligatorio", http.StatusBadRequest)
+			return
+		}
+		if _, err := mail.ParseAddress(email); err != nil {
+			http.Error(w, "email inválido", http.StatusBadRequest)
+			return
+		}
+		if payload.EmpresaID <= 0 {
+			if qEmpresaID, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && qEmpresaID > 0 {
+				payload.EmpresaID = qEmpresaID
+			}
+		}
+
+		respondAccepted := func(delivery string) {
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"ok":       true,
+				"delivery": delivery,
+				"message":  "Si el correo existe, enviaremos instrucciones para recuperar la contraseña.",
+			})
+		}
+
+		item, err := dbpkg.GetEmpresaUsuarioByEmailScoped(dbEmp, email, payload.EmpresaID)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				respondAccepted("masked")
+				return
+			}
+			log.Printf("[usuarios_empresa] failed to query user (password_recovery_request) empresa_id=%d email=%s error=%v", payload.EmpresaID, email, err)
+			http.Error(w, "No se pudo procesar la solicitud", http.StatusInternalServerError)
+			return
+		}
+		if item.EmailConfirmado != 1 || strings.EqualFold(strings.TrimSpace(item.Estado), "inactivo") {
+			respondAccepted("masked")
+			return
+		}
+
+		token, expira, err := newPasswordRecoveryTokenAndExpiration()
+		if err != nil {
+			http.Error(w, "failed to generate recovery token", http.StatusInternalServerError)
+			return
+		}
+		if err := dbpkg.SetEmpresaUsuarioPasswordResetToken(dbEmp, item.EmpresaID, item.ID, token, expira); err != nil {
+			log.Printf("[usuarios_empresa] failed to set recovery token empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, item.Email, err)
+			http.Error(w, "No se pudo registrar la recuperación", http.StatusInternalServerError)
+			return
+		}
+
+		if _, mailErr := sendEmpresaUsuarioPasswordRecoveryEmail(r, dbSuper, item.EmpresaID, item.Email, item.Nombre, token); mailErr != nil {
+			log.Printf("[usuarios_empresa] password recovery email not sent empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, item.Email, mailErr)
+			respondAccepted("manual")
+			return
+		}
+
+		respondAccepted("email")
+	}
+}
+
+// EmpresaUsuarioResetPasswordHandler permite restablecer contraseña con token de recuperación.
+func EmpresaUsuarioResetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		var payload struct {
+			EmpresaID       int64  `json:"empresa_id"`
+			Email           string `json:"email"`
+			Token           string `json:"token"`
+			Password        string `json:"password"`
+			PasswordConfirm string `json:"password_confirm"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			http.Error(w, "invalid payload", http.StatusBadRequest)
+			return
+		}
+
+		email := strings.TrimSpace(payload.Email)
+		token := strings.TrimSpace(payload.Token)
+		if payload.EmpresaID <= 0 {
+			if qEmpresaID, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && qEmpresaID > 0 {
+				payload.EmpresaID = qEmpresaID
+			}
+		}
+		if email == "" || token == "" {
+			http.Error(w, "empresa_id, email y token son obligatorios", http.StatusBadRequest)
+			return
+		}
+		if _, err := mail.ParseAddress(email); err != nil {
+			http.Error(w, "email inválido", http.StatusBadRequest)
+			return
+		}
+		if strings.TrimSpace(payload.Password) == "" {
+			http.Error(w, "debes ingresar una contraseña", http.StatusBadRequest)
+			return
+		}
+		if len(payload.Password) < 8 {
+			http.Error(w, "la contraseña debe tener al menos 8 caracteres", http.StatusBadRequest)
+			return
+		}
+		if payload.PasswordConfirm != "" && payload.PasswordConfirm != payload.Password {
+			http.Error(w, "la confirmación de contraseña no coincide", http.StatusBadRequest)
+			return
+		}
+
+		item, err := dbpkg.GetEmpresaUsuarioByEmailScoped(dbEmp, email, payload.EmpresaID)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				http.Error(w, "token de recuperación inválido", http.StatusUnauthorized)
+				return
+			}
+			log.Printf("[usuarios_empresa] failed to query user (password_reset) empresa_id=%d email=%s error=%v", payload.EmpresaID, email, err)
+			http.Error(w, "No se pudo validar el usuario", http.StatusInternalServerError)
+			return
+		}
+		if item.EmailConfirmado != 1 {
+			http.Error(w, "debes confirmar tu correo antes de restablecer contraseña", http.StatusForbidden)
+			return
+		}
+		if strings.EqualFold(strings.TrimSpace(item.Estado), "inactivo") {
+			http.Error(w, "tu usuario está inactivo", http.StatusForbidden)
+			return
+		}
+
+		storedToken := strings.TrimSpace(item.PasswordResetToken)
+		if storedToken == "" || subtle.ConstantTimeCompare([]byte(token), []byte(storedToken)) != 1 {
+			http.Error(w, "token de recuperación inválido", http.StatusUnauthorized)
+			return
+		}
+		expiraAt, ok := parseEmpresaUsuarioDateTime(strings.TrimSpace(item.PasswordResetExpira))
+		if !ok || time.Now().After(expiraAt) {
+			_ = dbpkg.ClearEmpresaUsuarioPasswordResetToken(dbEmp, item.EmpresaID, item.ID)
+			http.Error(w, "token de recuperación expirado", http.StatusUnauthorized)
+			return
+		}
+
+		hash, salt, err := generateEmpresaUsuarioPasswordHash(payload.Password)
+		if err != nil {
+			http.Error(w, "no se pudo generar password hash", http.StatusInternalServerError)
+			return
+		}
+		if err := dbpkg.SetEmpresaUsuarioPassword(dbEmp, item.EmpresaID, item.ID, hash, salt); err != nil {
+			log.Printf("[usuarios_empresa] failed to reset password empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, item.Email, err)
+			http.Error(w, "No se pudo actualizar la contraseña", http.StatusInternalServerError)
+			return
+		}
+
+		item.PasswordHash = hash
+		item.PasswordSalt = salt
+		item.PasswordSet = 1
+
+		if err := createEmpresaUsuarioSessionAndRespond(w, r, dbSuper, item); err != nil {
+			log.Printf("[usuarios_empresa] failed to create session (password_reset) empresa_id=%d email=%s error=%v", item.EmpresaID, item.Email, err)
 			http.Error(w, "No se pudo iniciar sesión del usuario", http.StatusInternalServerError)
 			return
 		}
@@ -789,6 +1001,15 @@ func newEmailConfirmationTokenAndExpiration() (string, string, error) {
 	return token, expira, nil
 }
 
+func newPasswordRecoveryTokenAndExpiration() (string, string, error) {
+	token, err := utils.GenerateSecureToken(32)
+	if err != nil {
+		return "", "", err
+	}
+	expira := time.Now().Add(empresaUsuarioRecuperacionTTL).Format("2006-01-02 15:04:05")
+	return token, expira, nil
+}
+
 func resolveBaseURLForConfirmation(r *http.Request, dbSuper *sql.DB) string {
 	if configured, err := getDecryptedConfigValue(dbSuper, "gmail.confirm_base_url"); err == nil {
 		configured = strings.TrimSpace(configured)
@@ -896,6 +1117,90 @@ func sendEmpresaUsuarioConfirmationEmail(r *http.Request, dbSuper *sql.DB, empre
 	return confirmURL, nil
 }
 
+func sendEmpresaUsuarioPasswordRecoveryEmail(r *http.Request, dbSuper *sql.DB, empresaID int64, toEmail, toName, token string) (string, error) {
+	smtpEmail, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_email")
+	if err != nil {
+		return "", err
+	}
+	smtpEmail = strings.TrimSpace(smtpEmail)
+	if smtpEmail == "" {
+		return "", fmt.Errorf("gmail.smtp_email no configurado")
+	}
+
+	smtpPass, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_app_password")
+	if err != nil {
+		return "", err
+	}
+	smtpPass = strings.TrimSpace(smtpPass)
+	if smtpPass == "" {
+		return "", fmt.Errorf("gmail.smtp_app_password no configurado")
+	}
+
+	smtpHost, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_host")
+	smtpPort, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_port")
+	fromName, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_from_name")
+
+	smtpHost = strings.TrimSpace(smtpHost)
+	if smtpHost == "" {
+		smtpHost = "smtp.gmail.com"
+	}
+	smtpPort = strings.TrimSpace(smtpPort)
+	if smtpPort == "" {
+		smtpPort = "587"
+	}
+	fromName = strings.TrimSpace(fromName)
+	if fromName == "" {
+		fromName = "Powerful Control System"
+	}
+
+	baseURL := resolveBaseURLForConfirmation(r, dbSuper)
+	resetHintURL := strings.TrimRight(baseURL, "/") + "/login_usuario.html"
+	sep := "?"
+	if empresaID > 0 {
+		resetHintURL += "?empresa_id=" + strconv.FormatInt(empresaID, 10)
+		sep = "&"
+	}
+	resetHintURL += sep + "email=" + url.QueryEscape(toEmail) + "&token_recuperacion=" + url.QueryEscape(token)
+
+	mailHostForAuth := smtpHost
+	if strings.Contains(smtpHost, ":") {
+		if h, _, err := net.SplitHostPort(smtpHost); err == nil {
+			mailHostForAuth = h
+		}
+	}
+	addr := smtpHost
+	if !strings.Contains(addr, ":") {
+		addr = smtpHost + ":" + smtpPort
+	}
+
+	auth := smtp.PlainAuth("", smtpEmail, smtpPass, mailHostForAuth)
+	safeName := strings.TrimSpace(toName)
+	if safeName == "" {
+		safeName = "usuario"
+	}
+
+	subject := "Recuperacion de contraseña - Powerful Control System"
+	body := "Hola " + safeName + ",\r\n\r\n" +
+		"Recibimos una solicitud para restablecer tu contraseña.\r\n" +
+		"Token de recuperación (vigencia limitada):\r\n" +
+		token + "\r\n\r\n" +
+		"Abre el login de usuario y usa el token para completar el restablecimiento:\r\n" +
+		resetHintURL + "\r\n\r\n" +
+		"Si no solicitaste este cambio, ignora este mensaje.\r\n"
+
+	msg := "From: " + fromName + " <" + smtpEmail + ">\r\n" +
+		"To: " + toEmail + "\r\n" +
+		"Subject: " + subject + "\r\n" +
+		"MIME-Version: 1.0\r\n" +
+		"Content-Type: text/plain; charset=UTF-8\r\n\r\n" +
+		body
+
+	if err := smtp.SendMail(addr, auth, smtpEmail, []string{toEmail}, []byte(msg)); err != nil {
+		return resetHintURL, err
+	}
+	return resetHintURL, nil
+}
+
 func createEmpresaUsuarioSessionAndRespond(w http.ResponseWriter, r *http.Request, dbSuper *sql.DB, item *dbpkg.EmpresaUsuario) error {
 	if err := dbpkg.UpsertAdministrador(dbSuper, item.Email, item.Nombre, "administrador", ""); err != nil {
 		return fmt.Errorf("failed to upsert admin: %w", err)
@@ -952,4 +1257,22 @@ func verifyEmpresaUsuarioPassword(password string, item *dbpkg.EmpresaUsuario) b
 		return false
 	}
 	return hashEmpresaUsuarioPassword(password, item.PasswordSalt) == strings.TrimSpace(item.PasswordHash)
+}
+
+func parseEmpresaUsuarioDateTime(raw string) (time.Time, bool) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return time.Time{}, false
+	}
+	layouts := []string{
+		"2006-01-02 15:04:05",
+		time.RFC3339,
+		"2006-01-02T15:04:05",
+	}
+	for _, layout := range layouts {
+		if parsed, err := time.ParseInLocation(layout, raw, time.Local); err == nil {
+			return parsed, true
+		}
+	}
+	return time.Time{}, false
 }

@@ -3,28 +3,35 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 )
 
 // EmpresaUsuario representa un usuario gestionado dentro del contexto de una empresa.
 type EmpresaUsuario struct {
-	ID                 int64  `json:"id"`
-	EmpresaID          int64  `json:"empresa_id"`
-	Email              string `json:"email"`
-	Nombre             string `json:"nombre"`
-	DocumentoIdentidad string `json:"documento_identidad,omitempty"`
-	PasswordHash       string `json:"-"`
-	PasswordSalt       string `json:"-"`
-	PasswordSet        int    `json:"password_set,omitempty"`
-	RolUsuarioID       int64  `json:"rol_usuario_id"`
-	RolNombre          string `json:"rol_nombre,omitempty"`
-	EmailConfirmado    int    `json:"email_confirmado"`
-	EmailConfirmadoEn  string `json:"email_confirmado_en,omitempty"`
-	FechaCreacion      string `json:"fecha_creacion,omitempty"`
-	FechaActualizacion string `json:"fecha_actualizacion,omitempty"`
-	UsuarioCreador     string `json:"usuario_creador,omitempty"`
-	Estado             string `json:"estado,omitempty"`
-	Observaciones      string `json:"observaciones,omitempty"`
+	ID                       int64  `json:"id"`
+	EmpresaID                int64  `json:"empresa_id"`
+	Email                    string `json:"email"`
+	Nombre                   string `json:"nombre"`
+	DocumentoIdentidad       string `json:"documento_identidad,omitempty"`
+	PasswordHash             string `json:"-"`
+	PasswordSalt             string `json:"-"`
+	PasswordSet              int    `json:"password_set,omitempty"`
+	LoginFailedAttempts      int    `json:"-"`
+	LoginFailedLastAt        string `json:"-"`
+	LoginLockedUntil         string `json:"-"`
+	PasswordResetToken       string `json:"-"`
+	PasswordResetExpira      string `json:"-"`
+	PasswordResetRequestedEn string `json:"-"`
+	RolUsuarioID             int64  `json:"rol_usuario_id"`
+	RolNombre                string `json:"rol_nombre,omitempty"`
+	EmailConfirmado          int    `json:"email_confirmado"`
+	EmailConfirmadoEn        string `json:"email_confirmado_en,omitempty"`
+	FechaCreacion            string `json:"fecha_creacion,omitempty"`
+	FechaActualizacion       string `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador           string `json:"usuario_creador,omitempty"`
+	Estado                   string `json:"estado,omitempty"`
+	Observaciones            string `json:"observaciones,omitempty"`
 }
 
 // CreateEmpresaUsuario crea un usuario de empresa en estado pendiente de confirmación de correo.
@@ -180,6 +187,12 @@ func GetEmpresaUsuarioByEmailScoped(dbConn *sql.DB, email string, empresaID int6
 		COALESCE(password_hash, ''),
 		COALESCE(password_salt, ''),
 		COALESCE(password_set, 0),
+		COALESCE(login_failed_attempts, 0),
+		COALESCE(login_failed_last_at, ''),
+		COALESCE(login_locked_until, ''),
+		COALESCE(password_reset_token, ''),
+		COALESCE(password_reset_expira, ''),
+		COALESCE(password_reset_requested_en, ''),
 		COALESCE(rol_usuario_id, 0),
 		COALESCE(role, ''),
 		COALESCE(email_confirmado, 0),
@@ -210,6 +223,12 @@ func GetEmpresaUsuarioByEmailScoped(dbConn *sql.DB, email string, empresaID int6
 		&item.PasswordHash,
 		&item.PasswordSalt,
 		&item.PasswordSet,
+		&item.LoginFailedAttempts,
+		&item.LoginFailedLastAt,
+		&item.LoginLockedUntil,
+		&item.PasswordResetToken,
+		&item.PasswordResetExpira,
+		&item.PasswordResetRequestedEn,
 		&item.RolUsuarioID,
 		&item.RolNombre,
 		&item.EmailConfirmado,
@@ -237,9 +256,147 @@ func SetEmpresaUsuarioPassword(dbConn *sql.DB, empresaID, id int64, passwordHash
 			password_salt = ?,
 			password_set = 1,
 			password_actualizada_en = datetime('now','localtime'),
+			password_reset_token = '',
+			password_reset_expira = '',
+			password_reset_requested_en = '',
+			login_failed_attempts = 0,
+			login_failed_last_at = '',
+			login_locked_until = '',
 			fecha_actualizacion = datetime('now','localtime')
 		WHERE id = ? AND empresa_id = ?`, passwordHash, passwordSalt, id, empresaID)
 	return err
+}
+
+// SetEmpresaUsuarioPasswordResetToken registra un token temporal para recuperación de contraseña.
+func SetEmpresaUsuarioPasswordResetToken(dbConn *sql.DB, empresaID, id int64, token, expira string) error {
+	_, err := dbConn.Exec(`UPDATE users
+		SET password_reset_token = ?,
+			password_reset_expira = ?,
+			password_reset_requested_en = datetime('now','localtime'),
+			fecha_actualizacion = datetime('now','localtime')
+		WHERE id = ? AND empresa_id = ?`, token, expira, id, empresaID)
+	return err
+}
+
+// ClearEmpresaUsuarioPasswordResetToken invalida el token de recuperación actual de un usuario.
+func ClearEmpresaUsuarioPasswordResetToken(dbConn *sql.DB, empresaID, id int64) error {
+	_, err := dbConn.Exec(`UPDATE users
+		SET password_reset_token = '',
+			password_reset_expira = '',
+			password_reset_requested_en = '',
+			fecha_actualizacion = datetime('now','localtime')
+		WHERE id = ? AND empresa_id = ?`, id, empresaID)
+	return err
+}
+
+// RegisterEmpresaUsuarioLoginFailure incrementa intentos fallidos y aplica bloqueo temporal.
+func RegisterEmpresaUsuarioLoginFailure(dbConn *sql.DB, empresaID, id int64, maxAttempts int, window, lockDuration time.Duration) (int, string, error) {
+	if maxAttempts <= 0 {
+		maxAttempts = 5
+	}
+	if window <= 0 {
+		window = 15 * time.Minute
+	}
+	if lockDuration <= 0 {
+		lockDuration = 15 * time.Minute
+	}
+
+	row := dbConn.QueryRow(`SELECT
+		COALESCE(login_failed_attempts, 0),
+		COALESCE(login_failed_last_at, ''),
+		COALESCE(login_locked_until, '')
+	FROM users
+	WHERE id = ? AND empresa_id = ?
+	LIMIT 1`, id, empresaID)
+
+	var currentAttempts int
+	var lastFailedRaw string
+	var lockedUntilRaw string
+	if err := row.Scan(&currentAttempts, &lastFailedRaw, &lockedUntilRaw); err != nil {
+		return 0, "", err
+	}
+
+	now := time.Now()
+	attempts := currentAttempts
+	lockedUntil := ""
+
+	if lockAt, ok := parseDateTimeLocal(lockedUntilRaw); ok && now.Before(lockAt) {
+		attempts = maxAttempts
+		lockedUntil = lockAt.Format("2006-01-02 15:04:05")
+	} else {
+		if lastFailedAt, ok := parseDateTimeLocal(lastFailedRaw); !ok || now.Sub(lastFailedAt) > window {
+			attempts = 0
+		}
+		attempts++
+		if attempts >= maxAttempts {
+			lockedUntil = now.Add(lockDuration).Format("2006-01-02 15:04:05")
+		}
+	}
+
+	_, err := dbConn.Exec(`UPDATE users
+		SET login_failed_attempts = ?,
+			login_failed_last_at = ?,
+			login_locked_until = ?,
+			fecha_actualizacion = datetime('now','localtime')
+		WHERE id = ? AND empresa_id = ?`,
+		attempts,
+		now.Format("2006-01-02 15:04:05"),
+		lockedUntil,
+		id,
+		empresaID,
+	)
+	if err != nil {
+		return 0, "", err
+	}
+
+	return attempts, lockedUntil, nil
+}
+
+// ClearEmpresaUsuarioLoginFailures limpia contador y bloqueo de intentos fallidos.
+func ClearEmpresaUsuarioLoginFailures(dbConn *sql.DB, empresaID, id int64) error {
+	_, err := dbConn.Exec(`UPDATE users
+		SET login_failed_attempts = 0,
+			login_failed_last_at = '',
+			login_locked_until = '',
+			fecha_actualizacion = datetime('now','localtime')
+		WHERE id = ? AND empresa_id = ?`, id, empresaID)
+	return err
+}
+
+// IsEmpresaUsuarioLocked evalúa si un usuario está bloqueado por intentos fallidos.
+func IsEmpresaUsuarioLocked(item *EmpresaUsuario, now time.Time) (bool, string) {
+	if item == nil {
+		return false, ""
+	}
+	if now.IsZero() {
+		now = time.Now()
+	}
+	lockAt, ok := parseDateTimeLocal(item.LoginLockedUntil)
+	if !ok {
+		return false, ""
+	}
+	if now.Before(lockAt) {
+		return true, lockAt.Format("2006-01-02 15:04:05")
+	}
+	return false, ""
+}
+
+func parseDateTimeLocal(raw string) (time.Time, bool) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return time.Time{}, false
+	}
+	layouts := []string{
+		"2006-01-02 15:04:05",
+		time.RFC3339,
+		"2006-01-02T15:04:05",
+	}
+	for _, layout := range layouts {
+		if parsed, err := time.ParseInLocation(layout, raw, time.Local); err == nil {
+			return parsed, true
+		}
+	}
+	return time.Time{}, false
 }
 
 // UpdateEmpresaUsuario actualiza los datos de un usuario de empresa.
