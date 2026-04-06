@@ -5578,3 +5578,47 @@ Archivos modificados:
 - documentos/historial_de_cambios
 - CHANGELOG.md
 
+
+2026-04-06: Actualización automática desde script: añadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- Pendiente Notas
+- backend/db/db.go
+- backend/db/modulos_faltantes.go
+- backend/db/usuarios_empresa.go
+- backend/handlers/logs/empresa_620.log
+- backend/handlers/modulos_faltantes.go
+- backend/handlers/modulos_faltantes_test.go
+- backend/handlers/payments_handlers.go
+- backend/handlers/reportes.go
+- backend/handlers/reportes_test.go
+- backend/handlers/usuarios_empresa.go
+- backend/logs/empresa_6.log
+- backend/logs/empresa_global.log
+- backend/main.go
+- backend/server.exe
+- backend/tools/query_users/main.go
+- backend/utils/utils.go
+- documentos/descripcion_de_archivos
+- documentos/descripcion_del_proyecto
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/estructura_bd.md
+- documentos/historial_de_cambios
+- documentos/modulos del proyecto.md
+- estructura_bd.md
+- scripts/logs/actualizar_repositorio-20260406-005434.log
+- scripts/logs/actualizar_repositorio-20260406-131136.log
+- web/administrar_empresa.html
+- web/administrar_empresa/calculadora.html
+- web/administrar_empresa/modulos_erp_dominio.html
+- web/administrar_empresa/modulos_erp_extendido.html
+- web/administrar_empresa/propinas.html
+- web/ayuda/ayuda.html
+- web/estilos.css
+- web/js/administrar_empresa.js
+- web/js/modulos_erp_extendido.js
+- web/menu.js
+- web/pagar_licencia.html
+- web/super/configuracion_avanzada.html
+
