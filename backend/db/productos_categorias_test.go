@@ -245,6 +245,15 @@ func TestCombosProductoCRUDConReceta(t *testing.T) {
 	if combo.Nombre != "Combo 82" {
 		t.Fatalf("expected combo name Combo 82, got %q", combo.Nombre)
 	}
+	if combo.RecetaVersion != 1 {
+		t.Fatalf("expected receta_version=1 after create, got %d", combo.RecetaVersion)
+	}
+	if combo.CostoTeorico != 160 {
+		t.Fatalf("expected costo_teorico=160, got %.2f", combo.CostoTeorico)
+	}
+	if combo.CostoReal != 160 {
+		t.Fatalf("expected costo_real=160, got %.2f", combo.CostoReal)
+	}
 	if len(combo.Ingredientes) != 2 {
 		t.Fatalf("expected 2 ingredientes, got %d", len(combo.Ingredientes))
 	}
@@ -273,11 +282,28 @@ func TestCombosProductoCRUDConReceta(t *testing.T) {
 	if comboActualizado.Precio != 6200 {
 		t.Fatalf("expected updated combo price 6200, got %.2f", comboActualizado.Precio)
 	}
+	if comboActualizado.RecetaVersion != 2 {
+		t.Fatalf("expected receta_version=2 after recipe update, got %d", comboActualizado.RecetaVersion)
+	}
+	if comboActualizado.CostoTeorico != 120 {
+		t.Fatalf("expected updated costo_teorico=120, got %.2f", comboActualizado.CostoTeorico)
+	}
+	if comboActualizado.CostoReal != 120 {
+		t.Fatalf("expected updated costo_real=120, got %.2f", comboActualizado.CostoReal)
+	}
 	if len(comboActualizado.Ingredientes) != 1 {
 		t.Fatalf("expected 1 ingrediente after update, got %d", len(comboActualizado.Ingredientes))
 	}
 	if comboActualizado.Ingredientes[0].Cantidad != 3 {
 		t.Fatalf("expected ingrediente cantidad 3, got %.2f", comboActualizado.Ingredientes[0].Cantidad)
+	}
+
+	var versiones int64
+	if err := dbConn.QueryRow(`SELECT COUNT(1) FROM combos_productos_versiones WHERE empresa_id = ? AND combo_id = ?`, 82, comboID).Scan(&versiones); err != nil {
+		t.Fatalf("count combo versions: %v", err)
+	}
+	if versiones < 2 {
+		t.Fatalf("expected at least 2 combo recipe versions, got %d", versiones)
 	}
 
 	if err := SetComboProductoEstado(dbConn, 82, comboID, "inactivo"); err != nil {
@@ -290,6 +316,72 @@ func TestCombosProductoCRUDConReceta(t *testing.T) {
 
 	if _, err := GetComboProductoByID(dbConn, 82, comboID); !errors.Is(err, sql.ErrNoRows) {
 		t.Fatalf("expected sql.ErrNoRows after combo delete, got %v", err)
+	}
+}
+
+func TestComboProductoValidaCostoTeoricoVsReal(t *testing.T) {
+	dbConn := openProductosTestDB(t)
+	if err := EnsureEmpresaProductosSchema(dbConn); err != nil {
+		t.Fatalf("ensure schema: %v", err)
+	}
+
+	bodegaID, err := CreateBodega(dbConn, Bodega{EmpresaID: 91, Codigo: "BOD-CST-91", Nombre: "Bodega costo"})
+	if err != nil {
+		t.Fatalf("create bodega: %v", err)
+	}
+
+	productoID, err := CreateProducto(dbConn, Producto{
+		EmpresaID:         91,
+		BodegaPrincipalID: bodegaID,
+		Nombre:            "Insumo costo mixto",
+		UnidadMedida:      "unidad",
+		Precio:            120,
+		Costo:             10,
+		Estado:            "activo",
+	}, 5, "TEST")
+	if err != nil {
+		t.Fatalf("create producto: %v", err)
+	}
+
+	if _, err := dbConn.Exec(`DELETE FROM inventario_costos_lotes WHERE empresa_id = ? AND producto_id = ?`, 91, productoID); err != nil {
+		t.Fatalf("clean lotes: %v", err)
+	}
+	if _, err := dbConn.Exec(`INSERT INTO inventario_costos_lotes (
+		empresa_id,
+		producto_id,
+		bodega_id,
+		cantidad_disponible,
+		costo_unitario,
+		referencia,
+		usuario_creador,
+		estado,
+		observaciones
+	) VALUES (?, ?, ?, ?, ?, ?, ?, 'activo', ?)`,
+		91,
+		productoID,
+		bodegaID,
+		5,
+		60,
+		"TEST-REAL-COST",
+		"TEST",
+		"costo real superior para validar variacion",
+	); err != nil {
+		t.Fatalf("insert lotes high cost: %v", err)
+	}
+
+	_, err = CreateComboProducto(dbConn, ComboProducto{
+		EmpresaID:          91,
+		Codigo:             "CMB-CST-91",
+		Nombre:             "Combo validacion costos",
+		Precio:             200,
+		ImpuestoPorcentaje: 0,
+		Estado:             "activo",
+	}, []ComboProductoDetalle{{ProductoID: productoID, Cantidad: 1, UnidadMedida: "unidad"}})
+	if err == nil {
+		t.Fatal("expected costo teorico vs real validation error, got nil")
+	}
+	if !strings.Contains(strings.ToLower(err.Error()), "variacion") {
+		t.Fatalf("expected variacion error, got %v", err)
 	}
 }
 
@@ -984,5 +1076,163 @@ func TestActualizarEstadoOrdenCompraDesdeReposicionCiclo(t *testing.T) {
 	}
 	if !strings.Contains(strings.ToLower(err.Error()), "transicion invalida") {
 		t.Fatalf("error inesperado en transicion invalida: %v", err)
+	}
+}
+
+func TestInventarioPoliticaCostoPromedioYPEPS(t *testing.T) {
+	dbConn := openProductosTestDB(t)
+	if err := EnsureEmpresaProductosSchema(dbConn); err != nil {
+		t.Fatalf("ensure schema: %v", err)
+	}
+
+	bodegaID, err := CreateBodega(dbConn, Bodega{EmpresaID: 110, Codigo: "BOD-110", Nombre: "Principal"})
+	if err != nil {
+		t.Fatalf("create bodega: %v", err)
+	}
+
+	productoID, err := CreateProducto(dbConn, Producto{EmpresaID: 110, BodegaPrincipalID: bodegaID, Nombre: "Producto costos", Costo: 10, StockMinimo: 1, StockMaximo: 30}, 0, "TEST")
+	if err != nil {
+		t.Fatalf("create producto: %v", err)
+	}
+
+	if _, err := UpsertEmpresaInventarioConfiguracion(dbConn, EmpresaInventarioConfiguracion{EmpresaID: 110, PoliticaCosto: "peps", UsuarioCreador: "tester"}); err != nil {
+		t.Fatalf("set config peps: %v", err)
+	}
+
+	if err := RegistrarMovimientoInventario(dbConn, 110, productoID, bodegaID, "entrada", 10, "COST-ENT-1", "tester", "entrada lote 1"); err != nil {
+		t.Fatalf("entrada lote 1: %v", err)
+	}
+	if _, err := dbConn.Exec(`UPDATE productos SET costo = 20, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = 110 AND id = ?`, productoID); err != nil {
+		t.Fatalf("update costo producto a 20: %v", err)
+	}
+	if err := RegistrarMovimientoInventario(dbConn, 110, productoID, bodegaID, "entrada", 10, "COST-ENT-2", "tester", "entrada lote 2"); err != nil {
+		t.Fatalf("entrada lote 2: %v", err)
+	}
+	if err := RegistrarMovimientoInventario(dbConn, 110, productoID, bodegaID, "salida", 12, "COST-SAL-PEPS", "tester", "salida peps"); err != nil {
+		t.Fatalf("salida peps: %v", err)
+	}
+
+	var costoSalidaPEPS float64
+	if err := dbConn.QueryRow(`SELECT costo_unitario FROM inventario_movimientos WHERE empresa_id = 110 AND referencia = 'COST-SAL-PEPS' LIMIT 1`).Scan(&costoSalidaPEPS); err != nil {
+		t.Fatalf("query costo salida peps: %v", err)
+	}
+	if costoSalidaPEPS < 11.66 || costoSalidaPEPS > 11.67 {
+		t.Fatalf("expected costo peps ~11.67, got %.4f", costoSalidaPEPS)
+	}
+
+	if _, err := dbConn.Exec(`UPDATE productos SET costo = 30, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = 110 AND id = ?`, productoID); err != nil {
+		t.Fatalf("update costo producto a 30: %v", err)
+	}
+	if err := RegistrarMovimientoInventario(dbConn, 110, productoID, bodegaID, "entrada", 10, "COST-ENT-3", "tester", "entrada lote 3"); err != nil {
+		t.Fatalf("entrada lote 3: %v", err)
+	}
+
+	if _, err := UpsertEmpresaInventarioConfiguracion(dbConn, EmpresaInventarioConfiguracion{EmpresaID: 110, PoliticaCosto: "promedio", UsuarioCreador: "tester"}); err != nil {
+		t.Fatalf("set config promedio: %v", err)
+	}
+	if err := RegistrarMovimientoInventario(dbConn, 110, productoID, bodegaID, "salida", 4, "COST-SAL-PROM", "tester", "salida promedio"); err != nil {
+		t.Fatalf("salida promedio: %v", err)
+	}
+
+	var costoSalidaProm float64
+	if err := dbConn.QueryRow(`SELECT costo_unitario FROM inventario_movimientos WHERE empresa_id = 110 AND referencia = 'COST-SAL-PROM' LIMIT 1`).Scan(&costoSalidaProm); err != nil {
+		t.Fatalf("query costo salida promedio: %v", err)
+	}
+	if costoSalidaProm < 25.55 || costoSalidaProm > 25.57 {
+		t.Fatalf("expected costo promedio ~25.56, got %.4f", costoSalidaProm)
+	}
+}
+
+func TestRegistrarConteoCiclicoInventarioAjustaYAudita(t *testing.T) {
+	dbConn := openProductosTestDB(t)
+	if err := EnsureEmpresaProductosSchema(dbConn); err != nil {
+		t.Fatalf("ensure schema: %v", err)
+	}
+
+	bodegaID, err := CreateBodega(dbConn, Bodega{EmpresaID: 111, Codigo: "BOD-111", Nombre: "Conteo"})
+	if err != nil {
+		t.Fatalf("create bodega: %v", err)
+	}
+
+	productoID, err := CreateProducto(dbConn, Producto{EmpresaID: 111, BodegaPrincipalID: bodegaID, Nombre: "Producto conteo", Costo: 9, StockMinimo: 1, StockMaximo: 20}, 0, "TEST")
+	if err != nil {
+		t.Fatalf("create producto: %v", err)
+	}
+
+	if err := RegistrarMovimientoInventario(dbConn, 111, productoID, bodegaID, "entrada", 14, "CNT-ENT", "tester", "stock inicial conteo"); err != nil {
+		t.Fatalf("entrada inicial: %v", err)
+	}
+
+	conteo, err := RegistrarConteoCiclicoInventario(dbConn, InventarioConteoCiclico{
+		EmpresaID:       111,
+		ProductoID:      productoID,
+		BodegaID:        bodegaID,
+		CantidadContada: 11,
+		Referencia:      "CNT-CIC-001",
+		UsuarioRevisor:  "auditor@local",
+		Observaciones:   "conteo semanal bodega principal",
+	})
+	if err != nil {
+		t.Fatalf("registrar conteo ciclico: %v", err)
+	}
+
+	if conteo.TipoAjuste != "ajuste_negativo" {
+		t.Fatalf("expected tipo_ajuste ajuste_negativo, got %q", conteo.TipoAjuste)
+	}
+	if conteo.EstadoConteo != "ajustado" {
+		t.Fatalf("expected estado_conteo ajustado, got %q", conteo.EstadoConteo)
+	}
+	if conteo.MovimientoID <= 0 {
+		t.Fatalf("expected movimiento_id > 0, got %+v", conteo)
+	}
+
+	var stockFinal float64
+	if err := dbConn.QueryRow(`SELECT COALESCE(cantidad, 0) FROM inventario_existencias WHERE empresa_id = 111 AND producto_id = ? AND bodega_id = ? LIMIT 1`, productoID, bodegaID).Scan(&stockFinal); err != nil {
+		t.Fatalf("query stock final: %v", err)
+	}
+	if stockFinal < 10.99 || stockFinal > 11.01 {
+		t.Fatalf("expected stock final 11, got %.4f", stockFinal)
+	}
+
+	rows, err := GetInventarioConteosCiclicosByEmpresa(dbConn, 111, productoID, bodegaID, "", "", "", 20, 0)
+	if err != nil {
+		t.Fatalf("list conteos ciclicos: %v", err)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("expected 1 conteo registrado, got %d", len(rows))
+	}
+}
+
+func TestGetAlertasOperativasByEmpresaIncluyeSobrestock(t *testing.T) {
+	dbConn := openProductosTestDB(t)
+	if err := EnsureEmpresaProductosSchema(dbConn); err != nil {
+		t.Fatalf("ensure schema: %v", err)
+	}
+
+	bodegaID, err := CreateBodega(dbConn, Bodega{EmpresaID: 112, Codigo: "BOD-112", Nombre: "Alertas"})
+	if err != nil {
+		t.Fatalf("create bodega: %v", err)
+	}
+
+	prodSobrestock, err := CreateProducto(dbConn, Producto{EmpresaID: 112, Nombre: "Producto sobrestock", StockMinimo: 2, StockMaximo: 5}, 0, "TEST")
+	if err != nil {
+		t.Fatalf("create producto sobrestock: %v", err)
+	}
+	if _, err := dbConn.Exec(`INSERT INTO inventario_existencias (empresa_id, producto_id, bodega_id, cantidad, estado) VALUES (112, ?, ?, 9, 'activo')`, prodSobrestock, bodegaID); err != nil {
+		t.Fatalf("insert sobrestock: %v", err)
+	}
+
+	rows, err := GetAlertasOperativasByEmpresa(dbConn, 112, 0, 0, 20, 0)
+	if err != nil {
+		t.Fatalf("get alertas operativas: %v", err)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("expected 1 alerta operativa, got %d", len(rows))
+	}
+	if rows[0].EstadoStock != "sobrestock" {
+		t.Fatalf("expected estado sobrestock, got %+v", rows[0])
+	}
+	if rows[0].Exceso < 3.99 || rows[0].Exceso > 4.01 {
+		t.Fatalf("expected exceso 4, got %.4f", rows[0].Exceso)
 	}
 }

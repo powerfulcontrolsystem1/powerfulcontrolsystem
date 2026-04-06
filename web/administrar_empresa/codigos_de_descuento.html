@@ -75,6 +75,63 @@
 
       <div class="form-row">
         <div class="form-col">
+          <label class="form-label" for="segmentoCliente">Segmento de cliente</label>
+          <select id="segmentoCliente" class="form-input">
+            <option value="todos">Todos</option>
+            <option value="nuevo">Nuevo</option>
+            <option value="frecuente">Frecuente</option>
+            <option value="recurrente">Recurrente</option>
+            <option value="en_riesgo">En riesgo</option>
+            <option value="vip">VIP</option>
+          </select>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="canalVentaCodigo">Canal de venta</label>
+          <select id="canalVentaCodigo" class="form-input">
+            <option value="todos">Todos</option>
+            <option value="mostrador">Mostrador</option>
+            <option value="app">App</option>
+            <option value="web">Web</option>
+            <option value="kiosko">Kiosko</option>
+            <option value="domicilio">Domicilio</option>
+            <option value="telefono">Teléfono</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="horarioDesdeCodigo">Horario desde</label>
+          <input id="horarioDesdeCodigo" type="time" class="form-input">
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="horarioHastaCodigo">Horario hasta</label>
+          <input id="horarioHastaCodigo" type="time" class="form-input">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="diasSemanaCodigo">Días de semana (ISO)</label>
+          <input id="diasSemanaCodigo" class="form-input" placeholder="1,2,3,4,5,6,7">
+          <div class="form-help">Usa 1=Lunes ... 7=Domingo. Déjalo vacío para todos.</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="maxUsosPorCliente">Máx. usos por cliente (ventana)</label>
+          <input id="maxUsosPorCliente" type="number" min="0" step="1" class="form-input" value="0">
+          <div class="form-help">0 = sin límite antifraude por cliente.</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="ventanaHorasFraude">Ventana antifraude (horas)</label>
+          <input id="ventanaHorasFraude" type="number" min="1" step="1" class="form-input" value="24">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
           <label class="form-label" for="observacionesCodigo">Observaciones</label>
           <textarea id="observacionesCodigo" class="form-textarea" placeholder="Opcional"></textarea>
         </div>
@@ -171,6 +228,52 @@
       return (normalize(item.moneda) || 'COP') + ' ' + valor.toFixed(2);
     }
 
+    function normalizeDiasSemanaInput(v) {
+      const raw = normalize(v);
+      if (!raw) return '';
+      const parts = raw.split(/[\s,;|]+/).map(function(x) { return normalize(x); }).filter(Boolean);
+      const uniq = [];
+      parts.forEach(function(p) {
+        const n = Number(p);
+        if (!Number.isFinite(n)) return;
+        const day = Math.floor(n);
+        if (day < 1 || day > 7) return;
+        if (!uniq.includes(day)) uniq.push(day);
+      });
+      return uniq.sort(function(a, b) { return a - b; }).join(',');
+    }
+
+    function formatReglas(item) {
+      const parts = [];
+      const segmento = normalize(item.segmento_cliente).toLowerCase();
+      const canal = normalize(item.canal_venta).toLowerCase();
+      const desde = normalize(item.horario_desde);
+      const hasta = normalize(item.horario_hasta);
+      const dias = normalize(item.dias_semana);
+      const maxCliente = Math.max(0, Math.floor(toNumber(item.max_usos_por_cliente, 0)));
+      const ventana = Math.max(1, Math.floor(toNumber(item.ventana_horas_fraude, 24)));
+
+      if (segmento && segmento !== 'todos') {
+        parts.push('Segmento: ' + segmento);
+      }
+      if (canal && canal !== 'todos') {
+        parts.push('Canal: ' + canal);
+      }
+      if (desde || hasta) {
+        parts.push('Horario: ' + (desde || '--:--') + ' a ' + (hasta || '--:--'));
+      }
+      if (dias) {
+        parts.push('Días: ' + dias);
+      }
+      if (maxCliente > 0) {
+        parts.push('Antifraude: ' + maxCliente + ' uso(s)/' + ventana + 'h');
+      }
+      if (!parts.length) {
+        return 'Sin reglas avanzadas';
+      }
+      return parts.join(' | ');
+    }
+
     function resetForm(hide) {
       document.getElementById('codigoId').value = '';
       document.getElementById('codigoTexto').value = '';
@@ -180,6 +283,13 @@
       document.getElementById('montoMinimo').value = '0';
       document.getElementById('usosMaximos').value = '1';
       document.getElementById('fechaVencimiento').value = '';
+      document.getElementById('segmentoCliente').value = 'todos';
+      document.getElementById('canalVentaCodigo').value = 'todos';
+      document.getElementById('horarioDesdeCodigo').value = '';
+      document.getElementById('horarioHastaCodigo').value = '';
+      document.getElementById('diasSemanaCodigo').value = '';
+      document.getElementById('maxUsosPorCliente').value = '0';
+      document.getElementById('ventanaHorasFraude').value = '24';
       document.getElementById('observacionesCodigo').value = '';
       document.getElementById('saveCodigoBtn').textContent = 'Guardar código';
       setMessage('', false);
@@ -209,6 +319,13 @@
       document.getElementById('montoMinimo').value = toNumber(item.monto_minimo_compra, 0);
       document.getElementById('usosMaximos').value = Math.max(1, toNumber(item.usos_maximos, 1));
       document.getElementById('fechaVencimiento').value = normalize(item.fecha_vencimiento).slice(0, 10);
+      document.getElementById('segmentoCliente').value = normalize(item.segmento_cliente) || 'todos';
+      document.getElementById('canalVentaCodigo').value = normalize(item.canal_venta) || 'todos';
+      document.getElementById('horarioDesdeCodigo').value = normalize(item.horario_desde).slice(0, 5);
+      document.getElementById('horarioHastaCodigo').value = normalize(item.horario_hasta).slice(0, 5);
+      document.getElementById('diasSemanaCodigo').value = normalize(item.dias_semana);
+      document.getElementById('maxUsosPorCliente').value = Math.max(0, toNumber(item.max_usos_por_cliente, 0));
+      document.getElementById('ventanaHorasFraude').value = Math.max(1, toNumber(item.ventana_horas_fraude, 24));
       document.getElementById('observacionesCodigo').value = normalize(item.observaciones);
       document.getElementById('saveCodigoBtn').textContent = 'Actualizar código';
       setMessage('', false);
@@ -245,6 +362,7 @@
         '<th>Tipo / valor</th>' +
         '<th>Mínimo compra</th>' +
         '<th>Usos</th>' +
+        '<th>Reglas avanzadas</th>' +
         '<th>Vence</th>' +
         '<th>Estado</th>' +
         '<th>Acciones</th>' +
@@ -260,6 +378,7 @@
           '<td>' + formatValor(item) + '</td>' +
           '<td>' + (normalize(item.moneda) || 'COP') + ' ' + toNumber(item.monto_minimo_compra, 0).toFixed(2) + '</td>' +
           '<td>' + Number(item.usos_actuales || 0) + ' / ' + Number(item.usos_maximos || 1) + '</td>' +
+          '<td>' + formatReglas(item) + '</td>' +
           '<td>' + formatSQLiteDate(item.fecha_vencimiento) + '</td>' +
           '<td>' + estado + '</td>' +
           '<td class="actions">' +
@@ -355,6 +474,11 @@
       const usosMax = Math.max(1, Math.floor(toNumber(document.getElementById('usosMaximos').value, 1)));
       const fechaVence = normalize(document.getElementById('fechaVencimiento').value);
       const codigo = normalizeCodigo(document.getElementById('codigoTexto').value);
+      const horarioDesde = normalize(document.getElementById('horarioDesdeCodigo').value);
+      const horarioHasta = normalize(document.getElementById('horarioHastaCodigo').value);
+      const diasSemana = normalizeDiasSemanaInput(document.getElementById('diasSemanaCodigo').value);
+      const maxUsosPorCliente = Math.max(0, Math.floor(toNumber(document.getElementById('maxUsosPorCliente').value, 0)));
+      const ventanaHorasFraude = Math.max(1, Math.floor(toNumber(document.getElementById('ventanaHorasFraude').value, 24)));
 
       if (valor <= 0) {
         setMessage('El valor del descuento debe ser mayor a cero.', true);
@@ -362,6 +486,10 @@
       }
       if (tipo === 'porcentaje' && valor > 100) {
         setMessage('El porcentaje no puede ser superior a 100.', true);
+        return;
+      }
+      if ((horarioDesde && !horarioHasta) || (!horarioDesde && horarioHasta)) {
+        setMessage('Si define horario, debe completar desde y hasta.', true);
         return;
       }
 
@@ -374,6 +502,13 @@
         moneda: normalize(document.getElementById('monedaCodigo').value) || 'COP',
         monto_minimo_compra: Math.max(0, toNumber(document.getElementById('montoMinimo').value, 0)),
         usos_maximos: usosMax,
+        segmento_cliente: normalize(document.getElementById('segmentoCliente').value) || 'todos',
+        canal_venta: normalize(document.getElementById('canalVentaCodigo').value) || 'todos',
+        horario_desde: horarioDesde,
+        horario_hasta: horarioHasta,
+        dias_semana: diasSemana,
+        max_usos_por_cliente: maxUsosPorCliente,
+        ventana_horas_fraude: ventanaHorasFraude,
         fecha_vencimiento: fechaVence,
         observaciones: normalize(document.getElementById('observacionesCodigo').value)
       };

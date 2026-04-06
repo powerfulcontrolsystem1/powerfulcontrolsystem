@@ -19,82 +19,138 @@ Pendientes transversales (aplican a todos los modulos)
 Matriz de faltantes por modulo para 100%
 
 1) Autenticacion y sesiones
-- Implementar politica de bloqueo temporal por intentos fallidos.
-- Agregar flujo de recuperacion de contrasena para usuario empresa.
-- Registrar pruebas de seguridad de sesion (expiracion, revocacion, reutilizacion).
-hay dos paginas login (para administrado y super administrador). login usuarios (para los usuarios de cada empresa que operarn el sistema, usuarios de una sola empresa)
+- COMPLETADO (2026-04-06): Implementada politica de bloqueo temporal por intentos fallidos en login de usuario empresa.
+- COMPLETADO (2026-04-06): Implementado flujo de recuperacion de contrasena para usuario empresa (solicitud y restablecimiento con token temporal).
+- COMPLETADO (2026-04-06): Registradas pruebas de seguridad de sesion (expiracion, revocacion y no reutilizacion de token revocado).
+- Evidencia tecnica (2026-04-06):
+	- runTests backend/handlers/auth_users_carritos_test.go -> 24 passed, 0 failed.
+	- go test ./... -run "^$" -count=1 -> compilacion global backend OK.
+- Nota operativa: hay dos paginas login (para administrador/super administrador) y login de usuarios por empresa (alcance de una sola empresa).
 
 2) Administracion global (super)
-- Completar flujo de desactivacion/rehabilitacion de empresa con validaciones de impacto.
-- Agregar respaldo/restauracion operativa de configuraciones criticas desde interfaz.
-- Cerrar pruebas de permisos de endpoints super sobre todos los roles.
+- COMPLETADO (2026-04-06): Implementado flujo de desactivacion/rehabilitacion de empresa con validaciones de impacto operativo (usuarios, carritos, reservas y licencias activas) con confirmacion explicita.
+- COMPLETADO (2026-04-06): Implementado respaldo/restauracion operativa de configuraciones criticas super (Wompi, Gmail e IA) desde interfaz de configuracion avanzada.
+- COMPLETADO (2026-04-06): Cerradas pruebas de permisos de endpoints super para super_administrador y rechazo para todos los roles no super.
+- Evidencia tecnica (2026-04-06):
+	- go test ./handlers -run "Test(EmpresasHandlerDesactivarConImpactoYForce|EmpresasHandlerImpactoDesactivacion|SuperConfigBackupHandlerExportYRestore|SuperEndpointsPermisosPorRol)" -count=1 -> OK.
+	- go test ./... -run "^$" -count=1 -> compilacion global backend OK.
 
 3) Usuarios de empresa
-- Completar flujo autogestionado de cambio y recuperacion de clave.
-- Agregar politicas de complejidad y rotacion opcional de contrasena.
-- Validar notificaciones de confirmacion/restablecimiento en entorno de pruebas de correo.
+- COMPLETADO (2026-04-06): Implementado flujo autogestionado de cambio de clave (`/api/empresa/usuarios/cambiar_password`) integrado en `login_usuario`.
+- COMPLETADO (2026-04-06): Implementadas politicas de complejidad y rotacion opcional de contrasena por configuraciones (`usuarios.password_*`).
+- COMPLETADO (2026-04-06): Validada notificacion de confirmacion/restablecimiento en entorno de pruebas de correo con captura en `super_correo_notificaciones_prueba`.
+- Evidencia tecnica (2026-04-06):
+	- go test ./handlers -run "Test(EmpresaUsuarioChangePasswordFlow|EmpresaUsuarioChangePasswordPolicyRejectsWeakPassword|EmpresaUsuarioLoginRequiresRotationWhenPolicyEnabled|EmpresaUsuarioNotificationsCaptureInMailTestMode|EmpresaUsuarioPasswordRecoveryFlow)" -count=1 -> OK.
+	- go test ./... -run "^$" -count=1 -> compilacion global backend OK.
 
 4) Asistencia de empleados
-- Cerrar flujo de cierre de periodo de asistencia con bloqueo de edicion posterior.
-- Agregar validacion de turnos cruzados/nocturnos y tolerancias configurables.
-- Publicar reporte operativo de asistencia para auditoria de nomina.
+- COMPLETADO (2026-04-06): Implementado cierre de periodo de asistencia con bloqueo de edicion posterior sobre crear/editar/marcar/activar/desactivar/eliminar.
+- COMPLETADO (2026-04-06): Agregada validacion de turnos cruzados/nocturnos con tolerancias configurables por empresa.
+- COMPLETADO (2026-04-06): Publicado reporte operativo de asistencia para auditoria de nomina (`operativo_asistencia_nomina_auditoria`) con exportacion PDF/XLS/CSV/JSON/TXT.
+- Evidencia tecnica (2026-04-06):
+	- go test ./handlers -run "Test(EmpresaAsistenciaEmpleadosHandlerCRUDFlow|EmpresaAsistenciaEmpleadosHandlerConfigTurnosYTolerancia|EmpresaAsistenciaEmpleadosHandlerCierrePeriodoBloqueaEdicion|EmpresaReportesHandlerDatasetOperativoAsistenciaNominaAuditoria)$" -count=1 -> OK.
+	- go test ./... -run "^$" -count=1 -> compilacion global backend OK.
 
 5) Nomina de sueldos
-- Validar formulas legales por pais/empresa con casos de prueba documentados.
-- Generar desprendible estandar por empleado y periodo.
-- Cerrar conciliacion automatica entre asistencia y liquidacion final.
+- COMPLETADO (2026-04-06): Validadas formulas de nomina por pais/empresa con casos de prueba documentados (escenarios CO/MX y override por empresa).
+- COMPLETADO (2026-04-06): Generado desprendible estandar por empleado y periodo desde endpoint de nomina (`action=desprendible`) con visualizacion en UI.
+- COMPLETADO (2026-04-06): Cerrada conciliacion automatica entre asistencia y liquidacion final con auditoria y opcion de auto-recalculo (`action=conciliar_asistencia`).
+- Evidencia tecnica (2026-04-06):
+	- go test ./db -run "Test(EmpresaNominaGenerateLiquidacionesFromAsistencia|EmpresaNominaCalculoPorPaisYEmpresa|EmpresaNominaDesprendibleYConciliacionAsistencia)$" -count=1 -> OK.
+	- go test ./handlers -run "TestEmpresaNominaSueldosHandlerFlow$" -count=1 -> OK.
+	- go test ./... -run "^$" -count=1 -> compilacion global backend OK.
 
 6) Registro de vehiculos
-- Agregar validacion de placa por formato configurable por pais.
-- Evitar duplicidad de vehiculo activo en patio/empresa.
-- Incorporar reporte de permanencia y tiempos de estancia.
+- COMPLETADO (2026-04-06): Implementada validacion de placa/patente por formato configurable por pais y regex empresarial (`action=config`).
+- COMPLETADO (2026-04-06): Implementado bloqueo de duplicidad de vehiculo activo en patio/empresa por patente canonica (alta/edicion/activacion).
+- COMPLETADO (2026-04-06): Incorporado reporte de permanencia y tiempos de estancia con exportacion PDF/XLS/CSV/JSON/TXT (`operativo_vehiculos_permanencia`).
+- Evidencia tecnica (2026-04-06):
+	- go test ./db -run "TestEmpresaVehiculoRegistroConfigValidacionDuplicidadYPermanencia" -count=1 -> OK.
+	- go test ./handlers -run "TestEmpresaVehiculosRegistroHandlerConfigYReportePermanencia" -count=1 -> OK.
+	- go test ./handlers -run "TestEmpresaReportesHandlerDatasetOperativoVehiculosPermanencia" -count=1 -> OK.
+	- go test ./... -run "^$" -count=1 -> compilacion global backend OK.
 
 7) Reservas por estacion/habitacion
-- Validar concurrencia para evitar overbooking en ventanas solapadas.
-- Implementar politica automatica de no_show/expiracion avanzada.
-- Cerrar pruebas de ocupacion multiestacion y reconversion a carrito.
+- COMPLETADO (2026-04-06): Validada concurrencia para evitar overbooking en ventanas solapadas por estacion con bloqueo activo para estados `pendiente_pago`, `confirmada` y `en_curso`.
+- COMPLETADO (2026-04-06): Implementada politica automatica avanzada de expiracion/no_show (`aplicar_politicas`) con sincronizacion operativa en consultas y transiciones clave.
+- COMPLETADO (2026-04-06): Cerradas pruebas de ocupacion multiestacion y reconversion operativa de reserva a carrito (`action=convertir_carrito`).
+- Evidencia tecnica (2026-04-06):
+	- go test ./db -run "TestReservaHotel(FlowCRUDAndDisponibilidad|MultiEstacionNoOverbookingYReconversion|PoliticaNoShowYExpiracionAvanzada)$" -count=1 -> OK.
+	- go test ./handlers -run "TestEmpresaReservasHotelHandler(CRUDAndDisponibilidad|PoliticasYReconversion)$" -count=1 -> OK.
+	- go test ./... -run "^$" -count=1 -> compilacion global backend OK.
 
 8) Tarifas por minutos
-- Agregar simulador previo de cobro y redondeos configurables.
-- Validar casos limite (saltos de fraccion, minimo, maximo diario).
-- Cerrar trazabilidad contable del calculo de tarifa por minutos.
-agregar opcion que se pueda aplicar la misma tarifa a todas las estaciones al mismo tiempo.
+- COMPLETADO (2026-04-06): Integrado simulador previo con detalle de calculo (base/extra/redondeo) y configuracion empresarial de redondeos (`ninguno`, `arriba`, `abajo`, `matematico`).
+- COMPLETADO (2026-04-06): Validados casos limite de saltos de fraccion y topes por empresa (monto minimo/monto maximo diario).
+- COMPLETADO (2026-04-06): Cerrada trazabilidad contable del calculo por minutos en `empresa_eventos_contables` con evento `finanzas.tarifa_por_minutos_calculada`.
+- COMPLETADO (2026-04-06): Agregada accion para aplicar la misma regla de tarifa a todas las estaciones detectadas (`action=aplicar_todas_estaciones`).
+- Evidencia tecnica (2026-04-06):
+	- go test ./db -run "TestEmpresaTarifasPorMinutos|TestApplyEmpresaTarifaPorMinutosToAllStations|TestRegisterTarifaPorMinutosCalculoContable|TestEmpresaEventosContables" -count=1 -> OK.
+	- go test ./handlers -run "TestEmpresaTarifasPorMinutosHandler" -count=1 -> OK.
+	- go test ./... -run "^$" -count=1 -> compilacion global backend OK.
 
 9) Tarifas por dia
-- Implementar reglas de prorrateo por entrada/salida fuera de ventana.
-- Validar escenarios de estadias multidia con cambios de tarifa.
-- Cerrar reporte comparativo ingreso esperado vs real por estacion.
-agregar opcion que se pueda aplicar la misma tarifa a todas las estaciones al mismo tiempo.
+- COMPLETADO (2026-04-06): Implementadas reglas de prorrateo por entrada/salida fuera de ventana de check-in/check-out, con detalle de calculo por tramos (dias completos, dias equivalentes, minutos y monto por prorrateo).
+- COMPLETADO (2026-04-06): Validados escenarios de estadia multidia con cambio de tarifa diaria y recalculo consistente de carrito por valor vigente.
+- COMPLETADO (2026-04-06): Cerrado reporte comparativo de ingreso esperado vs real por estacion (`operativo_tarifas_comparativo_estaciones`) con exportacion PDF/XLS/CSV/JSON/TXT.
+- COMPLETADO (2026-04-06): Agregada opcion para aplicar la misma tarifa diaria a todas las estaciones detectadas (`action=aplicar_todas_estaciones`).
+- Evidencia tecnica (2026-04-06):
+	- `go test ./db -run "TarifaPorDia|ApplyEmpresaTarifaPorDiaToAllStations|EmpresaTarifasPorDia"` -> OK.
+	- `go test ./handlers -run "TarifasPorDia|CarritosCompraListIncluyeTarifaPorDiaAutomatica|OperativoTarifasIngresos|OperativoTarifasComparativoEstaciones"` -> OK.
+	- `go test ./... -run "^$"` -> compilacion global backend OK.
 
 10) Clientes
-- Agregar deduplicacion por documento/correo/telefono.
-- Completar consolidado de historial comercial por cliente.
-- Cerrar exportacion masiva de segmentos para acciones comerciales.
+- COMPLETADO (2026-04-06): Implementada deduplicacion de clientes por documento/correo/telefono en alta y edicion, con respuesta de conflicto HTTP `409` y mensaje de campo duplicado.
+- COMPLETADO (2026-04-06): Consolidado historial/perfil comercial por cliente para acciones de segmentacion operativa en modulo clientes y dataset de reportes.
+- COMPLETADO (2026-04-06): Cerrada exportacion masiva de segmentos comerciales con dataset `operativo_clientes_segmentacion_comercial` y descarga en `pdf/xls/csv/json/txt` desde UI de clientes.
+- Evidencia tecnica (2026-04-06):
+	- `go test ./db -run "Test(CreateClienteDeduplicacionDocumentoCorreoTelefono|UpdateClienteDeduplicacionCorreoTelefono|GetClientePerfilComercialByEmpresaAndHistorial|GetClientePerfilComercialByEmpresaSinComprasSegmentoNuevo|GetClienteByID)$" -count=1` -> OK.
+	- `go test ./handlers -run "Test(EmpresaClientesHandlerPerfilHistorialSegmentacion|EmpresaClientesHandlerConflictosDeduplicacion|EmpresaReportesHandlerDatasetOperativoClientesSegmentacionComercial)$" -count=1` -> OK.
+	- `go test ./... -run "^$" -count=1` -> compilacion global backend OK.
 
 11) Inventario
-- Completar politicas de costo (promedio/PEPS) seleccionable por empresa.
-- Implementar flujo de conteo ciclico con ajuste auditado.
-- Cerrar alertas operativas proactivas de quiebre/sobrestock.
+- COMPLETADO (2026-04-06): Implementadas politicas de costo seleccionables por empresa (`promedio`/`PEPS`) con persistencia en configuracion empresarial de inventario.
+- COMPLETADO (2026-04-06): Implementado flujo de conteo ciclico con ajuste auditado y trazabilidad de movimiento de inventario asociado.
+- COMPLETADO (2026-04-06): Cerradas alertas operativas proactivas de quiebre/sobrestock con accion sugerida y soporte de filtro por bodega.
+- Evidencia tecnica (2026-04-06):
+	- `go test ./db -run "TestInventarioPoliticaCostoPromedioYPEPS|TestRegistrarConteoCiclicoInventarioAjustaYAudita|TestGetAlertasOperativasByEmpresaIncluyeSobrestock" -count=1` -> OK.
+	- `go test ./handlers -run "TestEmpresaInventarioConfiguracionYConteoCiclicoHandler|TestEmpresaInventarioAlertasHandlerProactivasIncluyeSobrestock" -count=1` -> OK.
+	- `go test ./... -run TestDoesNotExist -count=1` -> compilacion global backend OK.
 
 12) Combos de productos
-- Agregar versionado de receta de combo.
-- Validar costo teorico vs costo real segun consumo de ingredientes.
-- Cerrar pruebas de descuento de inventario concurrente en ventas altas.
+- COMPLETADO (2026-04-06): Implementado versionado de receta por combo (`receta_version`) con historial en `combos_productos_versiones` y snapshot de ingredientes por version.
+- COMPLETADO (2026-04-06): Implementada validacion de costo teorico vs costo real por consumo de ingredientes, con bloqueo de desviaciones fuera de umbral y de precio por debajo del costo real.
+- COMPLETADO (2026-04-06): Cerrada prueba de descuento concurrente de inventario en ventas altas de combos con verificacion de no sobreventa.
+- Evidencia tecnica (2026-04-06):
+	- `runTests` sobre `backend/db/productos_categorias_test.go` y `backend/db/carritos_inventario_test.go` -> OK.
+	- `go test ./... -run TestDoesNotExist -count=1` -> compilacion global backend OK.
 
 13) Codigos de descuento
-- Incorporar reglas avanzadas por segmento, canal y horario.
-- Agregar proteccion antifraude por reuso/abuso de codigo.
-- Cerrar trazabilidad completa de redenciones anuladas/revertidas.
+- COMPLETADO (2026-04-06): Incorporadas reglas avanzadas por segmento, canal, horario y dias de semana en validacion contextual de codigos.
+- COMPLETADO (2026-04-06): Agregado control antifraude por cliente con ventana horaria y bloqueo de reuso en carrito.
+- COMPLETADO (2026-04-06): Cerrada trazabilidad de redenciones con estados `aplicada`, `revertida` y `anulada` integrada al ciclo de carritos.
+- Evidencia tecnica (2026-04-06):
+	- `go test ./db -run "TestCodigoDescuento" -count=1` -> OK.
+	- `go test ./handlers -run "TestNoExiste" -count=1` -> compilacion handlers OK.
+	- `go test ./db -run "TestCarritoProductoDescuentaInventarioYVentaMantieneStock|TestCarritoStockNoSeDuplicaAlReactivarSesionCerrada" -count=1` -> OK.
 
 14) Propinas
-- Definir reglas fiscales de propina por pais/regimen.
-- Cerrar conciliacion de propinas en cierre de turno/caja.
-- Incorporar control de ajuste manual con auditoria.
+- COMPLETADO (2026-04-06): Definidas reglas fiscales de propina por pais/regimen con tratamiento gravado/no gravado e impuesto configurable por empresa.
+- COMPLETADO (2026-04-06): Cerrada conciliacion de propinas en cierre de turno/caja, incluyendo consolidacion en `empresa_cierres_caja`.
+- COMPLETADO (2026-04-06): Incorporado ajuste manual de propinas con auditoria no bloqueante y trazabilidad por cierre.
+- Evidencia tecnica (2026-04-06):
+	- `go test ./handlers -run "Propinas|Cierre" -count=1` -> OK.
+	- `go test ./db -run "Propina|CierreCaja|Finanzas" -count=1` -> OK.
+	- `go test ./... -run "^$" -count=1` -> compilacion global backend OK.
 
 15) Comisiones por servicio
-- Agregar escalas y topes de comision por servicio/rol.
-- Cerrar flujo de ajuste manual con aprobacion y trazabilidad.
-- Vincular reporte de comision a proceso de liquidacion.
+- COMPLETADO (2026-04-06): Incorporadas escalas y topes por servicio/rol con prioridad operativa en `empresa_comisiones_servicio_escalas`.
+- COMPLETADO (2026-04-06): Cerrado flujo de ajuste manual con estados `pendiente/aprobado/rechazado`, acciones de aprobacion y trazabilidad por usuario/fecha.
+- COMPLETADO (2026-04-06): Integrado vinculo de comisiones a liquidacion de nomina con enlazado de movimientos por periodo e identificadores de empleado.
+- Evidencia tecnica (2026-04-06):
+	- `go test ./db -run "TestEmpresaComisionesServicio|TestEmpresaNominaLiquidacionIntegraComisionesServicio" -count=1` -> OK.
+	- `go test ./handlers -run "TestEmpresaComisionesServicioHandler" -count=1` -> OK.
+	- `go test ./... -run TestDoesNotExist -count=1` -> compilacion global backend OK.
 
 16) Compras
 - Implementar aprobacion multinivel de ordenes de compra.
@@ -190,6 +246,63 @@ agregar opcion que se pueda aplicar la misma tarifa a todas las estaciones al mi
 - Integrar operaciones relevantes con cotizaciones/carritos (opcional configurable).
 - Permitir etiquetar operaciones y asociarlas a cliente/documento.
 - Cerrar exportacion historica por rango y usuario.
+
+35) Crea un modulo de creditos:
+1. Creación del crédito
+Cliente asociado
+Monto aprobado
+Cupo de crédito
+Plazo (días / cuotas)
+Tasa de interés
+Tipo de crédito (rotativo, fijo, cuotas)
+Fecha de inicio
+Fecha de vencimiento
+Estado (activo, suspendido, cerrado)
+2. Gestión del crédito
+Saldo actual
+Saldo disponible (cupo restante)
+Historial de movimientos
+Generación automática de cuotas
+Tabla de amortización
+Intereses generados
+Intereses por mora
+Ajustes manuales (refinanciación, abonos)
+3. Cobros y pagos
+Registro de abonos
+Pago total o parcial
+Métodos de pago (efectivo, transferencia, pasarela)
+Aplicación automática a cuotas
+Recibos / comprobantes
+Reversos o anulaciones
+4. Control de cartera
+Créditos vencidos
+Días de mora
+Alertas (vencimientos próximos)
+Clasificación de cartera (al día, vencido, castigado)
+Bloqueo automático por mora
+5. Reportes clave
+Estado de cuenta por cliente
+Cartera total
+Cartera vencida
+Flujo de pagos
+Intereses generados
+Ranking de clientes morosos
+6. Integraciones
+Ventas (crear crédito desde una venta)
+Clientes
+Contabilidad (asientos automáticos)
+Caja / bancos
+Pasarelas de pago
+7. Seguridad y reglas
+Límites de crédito por cliente
+Aprobación manual o automática
+Roles (quién puede aprobar, modificar, condonar)
+Auditoría (quién hizo qué y cuándo)
+
+36) Agrega un modulo completo de Backup, por empresa, un modulo profesional empresarial.
+
+## Ultimo
+ - Actualizar la pagina de ayuda con el tutorial de cada funcion en cada pagina.  tambie de como hacer ventas, tambien de como crear productos , meter impuetos, configurar el sistema por empresa. etc
 
 Orden sugerido de ejecucion para cierre 100%
 - Fase 1 (base y seguridad): modulos 1, 2, 3, 30.

@@ -143,19 +143,31 @@ func handleTarifasPorDiaGet(w http.ResponseWriter, r *http.Request, dbEmp *sql.D
 
 		detalle := dbpkg.CalcularDetalleTarifaPorDia(*tarifa, fechaInicio, fechaCorte)
 		writeJSON(w, http.StatusOK, map[string]interface{}{
-			"ok":                      true,
-			"tarifa":                  tarifa,
-			"tarifa_id":               tarifa.ID,
-			"estacion_id":             tarifa.EstacionID,
-			"activado_en":             detalle.FechaInicio,
-			"fecha_corte":             detalle.FechaCorte,
-			"dias_cobrados":           detalle.DiasCobrados,
-			"valor_dia":               detalle.ValorDia,
-			"monto_total":             detalle.MontoTotal,
-			"hora_check_in":           detalle.HoraCheckIn,
-			"hora_check_out":          detalle.HoraCheckOut,
-			"aplicar_automaticamente": tarifa.AplicarAutomaticamente,
-			"moneda":                  detalle.Moneda,
+			"ok":                              true,
+			"tarifa":                          tarifa,
+			"tarifa_id":                       tarifa.ID,
+			"estacion_id":                     tarifa.EstacionID,
+			"activado_en":                     detalle.FechaInicio,
+			"fecha_corte":                     detalle.FechaCorte,
+			"dias_cobrados":                   detalle.DiasCobrados,
+			"dias_completos":                  detalle.DiasCompletos,
+			"dias_equivalentes":               detalle.DiasEquivalentes,
+			"valor_dia":                       detalle.ValorDia,
+			"monto_dias_completos":            detalle.MontoDiasCompletos,
+			"monto_prorrateo_entrada":         detalle.MontoProrrateoEntrada,
+			"monto_prorrateo_intermedio":      detalle.MontoProrrateoIntermedio,
+			"monto_prorrateo_salida":          detalle.MontoProrrateoSalida,
+			"monto_total":                     detalle.MontoTotal,
+			"hora_check_in":                   detalle.HoraCheckIn,
+			"hora_check_out":                  detalle.HoraCheckOut,
+			"minutos_ventana_dia":             detalle.MinutosVentanaDia,
+			"minutos_prorrateo_entrada":       detalle.MinutosProrrateoEntrada,
+			"minutos_prorrateo_intermedio":    detalle.MinutosProrrateoIntermedio,
+			"minutos_prorrateo_salida":        detalle.MinutosProrrateoSalida,
+			"minutos_prorrateo_fuera_ventana": detalle.MinutosProrrateoFueraWindow,
+			"regla_prorrateo":                 detalle.ReglaProrrateo,
+			"aplicar_automaticamente":         tarifa.AplicarAutomaticamente,
+			"moneda":                          detalle.Moneda,
 		})
 		return
 
@@ -199,6 +211,34 @@ func handleTarifasPorDiaCreate(w http.ResponseWriter, r *http.Request, dbEmp *sq
 
 func handleTarifasPorDiaUpdate(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB) {
 	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+	if action == "aplicar_todas_estaciones" || action == "aplicar_todas" || action == "aplicar_global" {
+		var payload dbpkg.EmpresaTarifaPorDia
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			http.Error(w, "JSON invalido", http.StatusBadRequest)
+			return
+		}
+		if payload.EmpresaID <= 0 {
+			if empresaID, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && empresaID > 0 {
+				payload.EmpresaID = empresaID
+			}
+		}
+		if payload.EmpresaID <= 0 {
+			http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+			return
+		}
+		if strings.TrimSpace(payload.UsuarioCreador) == "" {
+			payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
+		}
+
+		result, err := dbpkg.ApplyEmpresaTarifaPorDiaToAllStations(dbEmp, payload)
+		if err != nil {
+			writeTarifasPorDiaError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, result)
+		return
+	}
+
 	if action == "activar" || action == "desactivar" {
 		empresaID, err := parseEmpresaIDQuery(r)
 		if err != nil {
@@ -329,6 +369,7 @@ func writeTarifasPorDiaError(w http.ResponseWriter, err error) {
 		"constraint",
 		"hora_check",
 		"valor_dia",
+		"no se encontraron estaciones",
 	) {
 		http.Error(w, msg, http.StatusBadRequest)
 		return

@@ -100,6 +100,7 @@
 
       <div class="form-actions">
         <button type="submit" id="saveBtn" class="btn">Guardar</button>
+        <button type="button" id="applyAllBtn" class="btn secondary">Aplicar a todas las estaciones</button>
         <button type="button" id="cancelBtn" class="btn secondary">Cancelar</button>
       </div>
       <div id="msg" class="form-help"></div>
@@ -153,6 +154,36 @@
       <div id="sim_resultado" class="form-help"></div>
     </div>
 
+    <div class="form">
+      <div class="page-header">
+        <h2>Comparativo ingreso esperado vs real por estación</h2>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Desde</label>
+          <input id="cmp_desde" class="form-input" type="date">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Hasta</label>
+          <input id="cmp_hasta" class="form-input" type="date">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Formato</label>
+          <select id="cmp_formato" class="form-input">
+            <option value="pdf">PDF</option>
+            <option value="xls">XLS</option>
+            <option value="csv">CSV</option>
+            <option value="json">JSON</option>
+            <option value="txt">TXT</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button id="cmp_descargar_btn" class="btn secondary" type="button">Descargar comparativo</button>
+      </div>
+      <div id="cmp_msg" class="form-help"></div>
+    </div>
+
     <div id="list">Cargando...</div>
   </div>
 
@@ -162,7 +193,7 @@
       items: [],
       estaciones: [],
       filtroEstacionID: 0,
-      includeInactive: false
+	  includeInactive: false
     };
 
     function getQueryParam(name) {
@@ -242,6 +273,13 @@
 
     function setSimResult(text, isError) {
       const el = document.getElementById("sim_resultado");
+      if (!el) return;
+      el.textContent = text || "";
+      el.style.color = isError ? "#ef5350" : "";
+    }
+
+    function setComparativoMessage(text, isError) {
+      const el = document.getElementById("cmp_msg");
       if (!el) return;
       el.textContent = text || "";
       el.style.color = isError ? "#ef5350" : "";
@@ -539,6 +577,46 @@
       }
     }
 
+    async function applyTarifaToAllStations() {
+      setMessage("", false);
+      const payload = buildPayloadFromForm();
+      payload.id = 0;
+
+      if (payload.empresa_id <= 0) {
+        setMessage("empresa_id es obligatorio", true);
+        return;
+      }
+      if (!window.confirm("¿Aplicar esta tarifa por día a todas las estaciones detectadas de la empresa?")) {
+        return;
+      }
+
+      try {
+        const params = new URLSearchParams();
+        params.set("action", "aplicar_todas_estaciones");
+
+        const resp = await fetch("/api/empresa/tarifas_por_dia?" + params.toString(), {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify(payload)
+        });
+        await ensureOk(resp);
+        const result = await resp.json();
+        await loadItems();
+        setMessage(
+          "Aplicación masiva completada. Estaciones: " +
+            String(result && result.estaciones_objetivo ? result.estaciones_objetivo : 0) +
+            " | Creadas: " +
+            String(result && result.tarifas_creadas ? result.tarifas_creadas : 0) +
+            " | Actualizadas: " +
+            String(result && result.tarifas_actualizadas ? result.tarifas_actualizadas : 0),
+          false
+        );
+      } catch (err) {
+        setMessage(err.message || "No se pudo aplicar la tarifa a todas las estaciones", true);
+      }
+    }
+
     async function calcularSimulacion() {
       setSimResult("", false);
       const estacionID = Number(document.getElementById("sim_estacion_id").value || 0);
@@ -563,13 +641,24 @@
         const data = await resp.json();
 
         const dias = Number(data && data.dias_cobrados ? data.dias_cobrados : 0);
+        const diasEq = Number(data && data.dias_equivalentes ? data.dias_equivalentes : 0);
         const total = Number(data && data.monto_total ? data.monto_total : 0);
+        const montoDiasCompletos = Number(data && data.monto_dias_completos ? data.monto_dias_completos : 0);
+        const montoEntrada = Number(data && data.monto_prorrateo_entrada ? data.monto_prorrateo_entrada : 0);
+        const montoIntermedio = Number(data && data.monto_prorrateo_intermedio ? data.monto_prorrateo_intermedio : 0);
+        const montoSalida = Number(data && data.monto_prorrateo_salida ? data.monto_prorrateo_salida : 0);
         const moneda = normalize(data && data.moneda) || "COP";
         const checkIn = normalize(data && data.hora_check_in) || "15:00";
         const checkOut = normalize(data && data.hora_check_out) || "12:00";
+        const minFuera = Number(data && data.minutos_prorrateo_fuera_ventana ? data.minutos_prorrateo_fuera_ventana : 0);
         setSimResult(
           "Total estimado: " + formatMoney(total, moneda) +
           " | Días: " + dias +
+          " | Días equivalentes: " + diasEq.toFixed(2) +
+          " | Días completos: " + formatMoney(montoDiasCompletos, moneda) +
+          " | Prorrateo entrada/intermedio/salida: " +
+          formatMoney(montoEntrada, moneda) + " / " + formatMoney(montoIntermedio, moneda) + " / " + formatMoney(montoSalida, moneda) +
+          " | Min fuera de ventana: " + minFuera +
           " | Check-in/check-out: " + checkIn + " / " + checkOut,
           false
         );
@@ -578,8 +667,36 @@
       }
     }
 
+    function descargarComparativoTarifas() {
+      setComparativoMessage("", false);
+      const desde = normalize(document.getElementById("cmp_desde").value);
+      const hasta = normalize(document.getElementById("cmp_hasta").value);
+      const formato = normalize(document.getElementById("cmp_formato").value || "pdf").toLowerCase();
+
+      if (!desde || !hasta) {
+        setComparativoMessage("Debes definir rango desde/hasta para el comparativo.", true);
+        return;
+      }
+
+      const params = new URLSearchParams();
+      params.set("action", "export");
+      params.set("empresa_id", String(state.empresaID));
+      params.set("dataset", "operativo_tarifas_comparativo_estaciones");
+      params.set("desde", desde);
+      params.set("hasta", hasta);
+      params.set("format", formato);
+
+      window.open("/api/empresa/reportes?" + params.toString(), "_blank");
+      setComparativoMessage("Descargando comparativo esperado vs real por estación.", false);
+    }
+
     function bindEvents() {
       document.getElementById("form").addEventListener("submit", saveForm);
+      document.getElementById("applyAllBtn").addEventListener("click", function() {
+        applyTarifaToAllStations().catch(function(err) {
+          setMessage(err.message || "No se pudo aplicar la tarifa a todas las estaciones", true);
+        });
+      });
       document.getElementById("cancelBtn").addEventListener("click", resetForm);
       document.getElementById("addBtn").addEventListener("click", resetForm);
       document.getElementById("filtrarBtn").addEventListener("click", function() {
@@ -599,6 +716,7 @@
           setSimResult(err.message || "No se pudo calcular", true);
         });
       });
+      document.getElementById("cmp_descargar_btn").addEventListener("click", descargarComparativoTarifas);
 
       document.getElementById("estacion_selector").addEventListener("change", function() {
         const id = Number(document.getElementById("estacion_selector").value || 0);
@@ -624,8 +742,11 @@
       document.getElementById("empresa_id").value = String(state.empresaID);
 
       const now = new Date();
+      const first = new Date(now.getFullYear(), now.getMonth(), 1);
       document.getElementById("sim_fecha_corte").value = toInputDateTimeValue(now);
       document.getElementById("sim_activado_en").value = toInputDateTimeValue(new Date(now.getTime() - (24 * 60 * 60 * 1000)));
+      document.getElementById("cmp_desde").value = first.toISOString().slice(0, 10);
+      document.getElementById("cmp_hasta").value = now.toISOString().slice(0, 10);
 
       bindEvents();
       resetForm();

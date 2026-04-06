@@ -114,6 +114,9 @@ type EmpresaNominaLiquidacion struct {
 	TotalRecargosHorasExtras       float64 `json:"total_recargos_horas_extras"`
 	AuxilioTransporte              float64 `json:"auxilio_transporte"`
 	Bonificacion                   float64 `json:"bonificacion"`
+	ComisionesServicioTotal        float64 `json:"comisiones_servicio_total"`
+	ComisionesServicioMovimientos  int64   `json:"comisiones_servicio_movimientos"`
+	ComisionesServicioAjustes      float64 `json:"comisiones_servicio_ajustes"`
 	DevengadoTotal                 float64 `json:"devengado_total"`
 	IngresoBaseCotizacion          float64 `json:"ingreso_base_cotizacion"`
 	DeduccionSalud                 float64 `json:"deduccion_salud"`
@@ -165,6 +168,97 @@ type EmpresaNominaCalculoResult struct {
 	TotalDeduccion float64                    `json:"total_deduccion"`
 	TotalNeto      float64                    `json:"total_neto"`
 	Mensajes       []string                   `json:"mensajes,omitempty"`
+}
+
+// EmpresaNominaDesprendible representa un desprendible estandar por empleado y periodo.
+type EmpresaNominaDesprendible struct {
+	EmpresaID                      int64   `json:"empresa_id"`
+	PaisCodigo                     string  `json:"pais_codigo"`
+	Moneda                         string  `json:"moneda"`
+	PeriodoDesde                   string  `json:"periodo_desde"`
+	PeriodoHasta                   string  `json:"periodo_hasta"`
+	FechaGeneracion                string  `json:"fecha_generacion,omitempty"`
+	EmpleadoNominaID               int64   `json:"empleado_nomina_id"`
+	EmpleadoID                     int64   `json:"empleado_id"`
+	EmpleadoCodigo                 string  `json:"empleado_codigo,omitempty"`
+	EmpleadoNombre                 string  `json:"empleado_nombre"`
+	EmpleadoDocumento              string  `json:"empleado_documento,omitempty"`
+	Cargo                          string  `json:"cargo,omitempty"`
+	TipoContrato                   string  `json:"tipo_contrato,omitempty"`
+	FechaIngreso                   string  `json:"fecha_ingreso,omitempty"`
+	DiasLiquidados                 float64 `json:"dias_liquidados"`
+	HorasAsistencia                float64 `json:"horas_asistencia_total"`
+	RegistrosAsistencia            int64   `json:"registros_asistencia"`
+	HorasOrdinarias                float64 `json:"horas_ordinarias"`
+	HorasRecargoNocturno           float64 `json:"horas_recargo_nocturno"`
+	HorasExtraDiurnas              float64 `json:"horas_extra_diurnas"`
+	HorasExtraNocturnas            float64 `json:"horas_extra_nocturnas"`
+	HorasDominicalesDiurnas        float64 `json:"horas_dominicales_diurnas"`
+	HorasDominicalesNocturnas      float64 `json:"horas_dominicales_nocturnas"`
+	HorasExtraDominicalesDiurnas   float64 `json:"horas_extra_dominicales_diurnas"`
+	HorasExtraDominicalesNocturnas float64 `json:"horas_extra_dominicales_nocturnas"`
+	ValorHoraOrdinaria             float64 `json:"valor_hora_ordinaria"`
+	BaseSalarioProporcional        float64 `json:"base_salario_proporcional"`
+	ValorRecargoNocturno           float64 `json:"valor_recargo_nocturno"`
+	ValorDominicalDiurno           float64 `json:"valor_dominical_diurno"`
+	ValorDominicalNocturno         float64 `json:"valor_dominical_nocturno"`
+	ValorExtraDiurna               float64 `json:"valor_extra_diurna"`
+	ValorExtraNocturna             float64 `json:"valor_extra_nocturna"`
+	ValorExtraDominicalDiurna      float64 `json:"valor_extra_dominical_diurna"`
+	ValorExtraDominicalNocturna    float64 `json:"valor_extra_dominical_nocturna"`
+	TotalRecargosHorasExtras       float64 `json:"total_recargos_horas_extras"`
+	AuxilioTransporte              float64 `json:"auxilio_transporte"`
+	Bonificacion                   float64 `json:"bonificacion"`
+	ComisionesServicioTotal        float64 `json:"comisiones_servicio_total"`
+	ComisionesServicioMovimientos  int64   `json:"comisiones_servicio_movimientos"`
+	ComisionesServicioAjustes      float64 `json:"comisiones_servicio_ajustes"`
+	DevengadoTotal                 float64 `json:"devengado_total"`
+	IngresoBaseCotizacion          float64 `json:"ingreso_base_cotizacion"`
+	DeduccionSalud                 float64 `json:"deduccion_salud"`
+	DeduccionPension               float64 `json:"deduccion_pension"`
+	DeduccionFondoSolidaridad      float64 `json:"deduccion_fondo_solidaridad"`
+	DeduccionFija                  float64 `json:"deduccion_fija"`
+	OtrasDeducciones               float64 `json:"otras_deducciones"`
+	DeduccionTotal                 float64 `json:"deduccion_total"`
+	NetoPagar                      float64 `json:"neto_pagar"`
+	ResumenJSON                    string  `json:"resumen_json,omitempty"`
+}
+
+// EmpresaNominaConciliacionRequest representa una solicitud de conciliacion entre asistencia y nomina.
+type EmpresaNominaConciliacionRequest struct {
+	EmpresaID        int64  `json:"empresa_id"`
+	PeriodoDesde     string `json:"periodo_desde"`
+	PeriodoHasta     string `json:"periodo_hasta"`
+	EmpleadoNominaID int64  `json:"empleado_nomina_id,omitempty"`
+	AutoRecalcular   bool   `json:"auto_recalcular"`
+	UsuarioCreador   string `json:"usuario_creador,omitempty"`
+	Observaciones    string `json:"observaciones,omitempty"`
+}
+
+// EmpresaNominaConciliacionItem representa el resultado de conciliacion por empleado.
+type EmpresaNominaConciliacionItem struct {
+	EmpleadoNominaID               int64   `json:"empleado_nomina_id"`
+	EmpleadoNombre                 string  `json:"empleado_nombre"`
+	Estado                         string  `json:"estado"`
+	RegistrosAsistenciaLiquidacion int64   `json:"registros_asistencia_liquidacion"`
+	RegistrosAsistenciaCalculado   int64   `json:"registros_asistencia_calculado"`
+	HorasAsistenciaLiquidacion     float64 `json:"horas_asistencia_liquidacion"`
+	HorasAsistenciaCalculado       float64 `json:"horas_asistencia_calculado"`
+	Mensaje                        string  `json:"mensaje,omitempty"`
+}
+
+// EmpresaNominaConciliacionResult resume la conciliacion de nomina vs asistencia por periodo.
+type EmpresaNominaConciliacionResult struct {
+	EmpresaID            int64                           `json:"empresa_id"`
+	PeriodoDesde         string                          `json:"periodo_desde"`
+	PeriodoHasta         string                          `json:"periodo_hasta"`
+	AutoRecalcular       bool                            `json:"auto_recalcular"`
+	TotalEvaluados       int                             `json:"total_evaluados"`
+	TotalConciliados     int                             `json:"total_conciliados"`
+	TotalInconsistencias int                             `json:"total_inconsistencias"`
+	TotalRecalculados    int                             `json:"total_recalculados"`
+	Items                []EmpresaNominaConciliacionItem `json:"items"`
+	Mensajes             []string                        `json:"mensajes,omitempty"`
 }
 
 type nominaAsistenciaRow struct {
@@ -305,6 +399,9 @@ func EnsureEmpresaNominaSchema(dbConn *sql.DB) error {
 			total_recargos_horas_extras REAL DEFAULT 0,
 			auxilio_transporte REAL DEFAULT 0,
 			bonificacion REAL DEFAULT 0,
+			comisiones_servicio_total REAL DEFAULT 0,
+			comisiones_servicio_movimientos INTEGER DEFAULT 0,
+			comisiones_servicio_ajustes REAL DEFAULT 0,
 			devengado_total REAL DEFAULT 0,
 			ingreso_base_cotizacion REAL DEFAULT 0,
 			deduccion_salud REAL DEFAULT 0,
@@ -341,6 +438,15 @@ func EnsureEmpresaNominaSchema(dbConn *sql.DB) error {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_nomina_liquidaciones", "valor_extra_dominical_nocturna", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_nomina_liquidaciones", "comisiones_servicio_total", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_nomina_liquidaciones", "comisiones_servicio_movimientos", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_nomina_liquidaciones", "comisiones_servicio_ajustes", "REAL DEFAULT 0"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_nomina_liquidaciones", "otras_deducciones", "REAL DEFAULT 0"); err != nil {
@@ -1277,6 +1383,51 @@ func minutesToHours(min int) float64 {
 	return round2(float64(min) / 60.0)
 }
 
+func nominaFloatEqual(a, b float64) bool {
+	if a == b {
+		return true
+	}
+	d := a - b
+	if d < 0 {
+		d = -d
+	}
+	return d <= 0.01
+}
+
+func nominaLiquidacionAlineadaConDetalle(liq EmpresaNominaLiquidacion, detail nominaHorasDetalle) bool {
+	if liq.RegistrosAsistencia != detail.RegistrosAsistencia {
+		return false
+	}
+	if !nominaFloatEqual(liq.HorasAsistenciaTotal, detail.HorasAsistenciaTotal) {
+		return false
+	}
+	if !nominaFloatEqual(liq.HorasOrdinarias, detail.HorasOrdinarias) {
+		return false
+	}
+	if !nominaFloatEqual(liq.HorasRecargoNocturno, detail.HorasRecargoNocturno) {
+		return false
+	}
+	if !nominaFloatEqual(liq.HorasExtraDiurnas, detail.HorasExtraDiurnas) {
+		return false
+	}
+	if !nominaFloatEqual(liq.HorasExtraNocturnas, detail.HorasExtraNocturnas) {
+		return false
+	}
+	if !nominaFloatEqual(liq.HorasDominicalesDiurnas, detail.HorasDominicalesDiurnas) {
+		return false
+	}
+	if !nominaFloatEqual(liq.HorasDominicalesNocturnas, detail.HorasDominicalesNocturnas) {
+		return false
+	}
+	if !nominaFloatEqual(liq.HorasExtraDominicalesDiurnas, detail.HorasExtraDominicalesDiurnas) {
+		return false
+	}
+	if !nominaFloatEqual(liq.HorasExtraDominicalesNocturnas, detail.HorasExtraDominicalesNocturnas) {
+		return false
+	}
+	return true
+}
+
 func buildNominaHorasDetalle(rows []nominaAsistenciaRow, cfg *EmpresaNominaConfiguracion, festivos map[string]bool) nominaHorasDetalle {
 	stats := nominaHorasMinutos{
 		dias: make(map[string]struct{}),
@@ -1438,6 +1589,9 @@ func buildNominaLiquidacion(
 		TotalRecargosHorasExtras:       totalRecargos,
 		AuxilioTransporte:              auxilio,
 		Bonificacion:                   bonificacion,
+		ComisionesServicioTotal:        0,
+		ComisionesServicioMovimientos:  0,
+		ComisionesServicioAjustes:      0,
 		DevengadoTotal:                 devengado,
 		IngresoBaseCotizacion:          ibc,
 		DeduccionSalud:                 dedSalud,
@@ -1453,6 +1607,34 @@ func buildNominaLiquidacion(
 		Estado:                         nominaEstadoActivo,
 		Observaciones:                  strings.TrimSpace(req.Observaciones),
 	}
+}
+
+func incorporarComisionesServicioEnLiquidacion(liq *EmpresaNominaLiquidacion, cfg *EmpresaNominaConfiguracion, resumen *EmpresaComisionServicioLiquidacionResumen) {
+	if liq == nil || cfg == nil || resumen == nil {
+		return
+	}
+	totalComisiones := round2(resumen.TotalComisiones)
+	if totalComisiones == 0 {
+		liq.ComisionesServicioTotal = 0
+		liq.ComisionesServicioMovimientos = 0
+		liq.ComisionesServicioAjustes = 0
+		return
+	}
+
+	liq.ComisionesServicioTotal = totalComisiones
+	liq.ComisionesServicioMovimientos = resumen.CantidadMovimientos
+	liq.ComisionesServicioAjustes = round2(resumen.TotalAjustesManuales)
+
+	devengado := round2(liq.BaseSalarioProporcional + liq.TotalRecargosHorasExtras + liq.AuxilioTransporte + liq.Bonificacion + totalComisiones)
+	ibc := round2(liq.BaseSalarioProporcional + liq.TotalRecargosHorasExtras + liq.Bonificacion + totalComisiones)
+
+	liq.DevengadoTotal = devengado
+	liq.IngresoBaseCotizacion = ibc
+	liq.DeduccionSalud = round2(ibc * (cfg.DeduccionSaludPorcentaje / 100.0))
+	liq.DeduccionPension = round2(ibc * (cfg.DeduccionPensionPorcentaje / 100.0))
+	liq.DeduccionFondoSolidaridad = round2(ibc * (cfg.DeduccionFondoSolidaridadPorcentaje / 100.0))
+	liq.DeduccionTotal = round2(liq.DeduccionSalud + liq.DeduccionPension + liq.DeduccionFondoSolidaridad + liq.DeduccionFija + liq.OtrasDeducciones)
+	liq.NetoPagar = round2(liq.DevengadoTotal - liq.DeduccionTotal)
 }
 
 func upsertEmpresaNominaLiquidacion(dbConn *sql.DB, payload EmpresaNominaLiquidacion, overwrite bool) (int64, error) {
@@ -1506,6 +1688,9 @@ func upsertEmpresaNominaLiquidacion(dbConn *sql.DB, payload EmpresaNominaLiquida
 			total_recargos_horas_extras = ?,
 			auxilio_transporte = ?,
 			bonificacion = ?,
+			comisiones_servicio_total = ?,
+			comisiones_servicio_movimientos = ?,
+			comisiones_servicio_ajustes = ?,
 			devengado_total = ?,
 			ingreso_base_cotizacion = ?,
 			deduccion_salud = ?,
@@ -1551,6 +1736,9 @@ func upsertEmpresaNominaLiquidacion(dbConn *sql.DB, payload EmpresaNominaLiquida
 			payload.TotalRecargosHorasExtras,
 			payload.AuxilioTransporte,
 			payload.Bonificacion,
+			payload.ComisionesServicioTotal,
+			payload.ComisionesServicioMovimientos,
+			payload.ComisionesServicioAjustes,
 			payload.DevengadoTotal,
 			payload.IngresoBaseCotizacion,
 			payload.DeduccionSalud,
@@ -1607,6 +1795,9 @@ func upsertEmpresaNominaLiquidacion(dbConn *sql.DB, payload EmpresaNominaLiquida
 		total_recargos_horas_extras,
 		auxilio_transporte,
 		bonificacion,
+		comisiones_servicio_total,
+		comisiones_servicio_movimientos,
+		comisiones_servicio_ajustes,
 		devengado_total,
 		ingreso_base_cotizacion,
 		deduccion_salud,
@@ -1618,13 +1809,10 @@ func upsertEmpresaNominaLiquidacion(dbConn *sql.DB, payload EmpresaNominaLiquida
 		neto_pagar,
 		origen_calculo,
 		resumen_json,
-		fecha_generacion,
 		usuario_creador,
 		estado,
-		observaciones,
-		fecha_creacion,
-		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
+		observaciones
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		payload.EmpresaID,
 		payload.EmpleadoNominaID,
 		payload.EmpleadoID,
@@ -1657,6 +1845,9 @@ func upsertEmpresaNominaLiquidacion(dbConn *sql.DB, payload EmpresaNominaLiquida
 		payload.TotalRecargosHorasExtras,
 		payload.AuxilioTransporte,
 		payload.Bonificacion,
+		payload.ComisionesServicioTotal,
+		payload.ComisionesServicioMovimientos,
+		payload.ComisionesServicioAjustes,
 		payload.DevengadoTotal,
 		payload.IngresoBaseCotizacion,
 		payload.DeduccionSalud,
@@ -1714,6 +1905,9 @@ func ListEmpresaNominaLiquidaciones(dbConn *sql.DB, empresaID int64, filter Empr
 		COALESCE(total_recargos_horas_extras, 0),
 		COALESCE(auxilio_transporte, 0),
 		COALESCE(bonificacion, 0),
+		COALESCE(comisiones_servicio_total, 0),
+		COALESCE(comisiones_servicio_movimientos, 0),
+		COALESCE(comisiones_servicio_ajustes, 0),
 		COALESCE(devengado_total, 0),
 		COALESCE(ingreso_base_cotizacion, 0),
 		COALESCE(deduccion_salud, 0),
@@ -1804,6 +1998,9 @@ func ListEmpresaNominaLiquidaciones(dbConn *sql.DB, empresaID int64, filter Empr
 			&item.TotalRecargosHorasExtras,
 			&item.AuxilioTransporte,
 			&item.Bonificacion,
+			&item.ComisionesServicioTotal,
+			&item.ComisionesServicioMovimientos,
+			&item.ComisionesServicioAjustes,
 			&item.DevengadoTotal,
 			&item.IngresoBaseCotizacion,
 			&item.DeduccionSalud,
@@ -1853,6 +2050,12 @@ func GenerateEmpresaNominaLiquidaciones(dbConn *sql.DB, req EmpresaNominaCalculo
 	if err != nil {
 		return nil, err
 	}
+	messages := make([]string, 0)
+	comisionesDisponibles := true
+	if err := EnsureEmpresaComisionesServicioSchema(dbConn); err != nil {
+		comisionesDisponibles = false
+		messages = append(messages, fmt.Sprintf("No se pudo habilitar esquema de comisiones para liquidacion: %v", err))
+	}
 
 	empleados, err := ListEmpresaNominaEmpleados(dbConn, req.EmpresaID, false, "", 5000)
 	if err != nil {
@@ -1883,8 +2086,28 @@ func GenerateEmpresaNominaLiquidaciones(dbConn *sql.DB, req EmpresaNominaCalculo
 	}
 
 	liquidaciones := make([]EmpresaNominaLiquidacion, 0, len(empleados))
-	messages := make([]string, 0)
+	usuarioVinculoComision := strings.TrimSpace(req.UsuarioCreador)
+	if usuarioVinculoComision == "" {
+		usuarioVinculoComision = "sistema"
+	}
 	for _, empleado := range empleados {
+		existingLiquidacionID := int64(0)
+		if req.Overwrite {
+			errExisting := dbConn.QueryRow(`SELECT id
+				FROM empresa_nomina_liquidaciones
+				WHERE empresa_id = ? AND empleado_nomina_id = ? AND periodo_desde = ? AND periodo_hasta = ?
+				LIMIT 1`, req.EmpresaID, empleado.ID, req.PeriodoDesde, req.PeriodoHasta).Scan(&existingLiquidacionID)
+			if errExisting != nil && errExisting != sql.ErrNoRows {
+				messages = append(messages, fmt.Sprintf("No se pudo consultar liquidacion previa para %s: %v", empleado.EmpleadoNombre, errExisting))
+				existingLiquidacionID = 0
+			}
+			if comisionesDisponibles && existingLiquidacionID > 0 {
+				if errClear := LimpiarVinculoEmpresaComisionesServicioLiquidacion(dbConn, req.EmpresaID, existingLiquidacionID); errClear != nil {
+					messages = append(messages, fmt.Sprintf("No se pudo limpiar vinculo de comisiones para %s: %v", empleado.EmpleadoNombre, errClear))
+				}
+			}
+		}
+
 		rowsAsistencia, err := listAsistenciaRowsForNomina(dbConn, req.EmpresaID, empleado, req.PeriodoDesde, req.PeriodoHasta)
 		if err != nil {
 			messages = append(messages, fmt.Sprintf("No se pudo consultar asistencia para %s: %v", empleado.EmpleadoNombre, err))
@@ -1893,10 +2116,40 @@ func GenerateEmpresaNominaLiquidaciones(dbConn *sql.DB, req EmpresaNominaCalculo
 
 		detail := buildNominaHorasDetalle(rowsAsistencia, cfg, festivos)
 		liq := buildNominaLiquidacion(empleado, cfg, req, detail)
+		var resumenComision *EmpresaComisionServicioLiquidacionResumen
+		if comisionesDisponibles {
+			aliases := BuildEmpresaComisionServicioAliases(
+				strings.TrimSpace(empleado.EmpleadoCodigo),
+				strings.TrimSpace(empleado.EmpleadoDocumento),
+				strings.TrimSpace(empleado.EmpleadoNombre),
+			)
+			if len(aliases) > 0 {
+				resumenComision, err = GetEmpresaComisionServicioLiquidacionResumen(dbConn, req.EmpresaID, aliases, req.PeriodoDesde, req.PeriodoHasta)
+				if err != nil {
+					messages = append(messages, fmt.Sprintf("No se pudo calcular comisiones para %s: %v", empleado.EmpleadoNombre, err))
+				} else if resumenComision != nil {
+					incorporarComisionesServicioEnLiquidacion(&liq, cfg, resumenComision)
+				}
+			}
+		}
+
 		id, err := upsertEmpresaNominaLiquidacion(dbConn, liq, req.Overwrite)
 		if err != nil {
 			messages = append(messages, fmt.Sprintf("No se pudo guardar liquidacion para %s: %v", empleado.EmpleadoNombre, err))
 			continue
+		}
+		if comisionesDisponibles && resumenComision != nil && len(resumenComision.MovimientoIDs) > 0 {
+			if errVinculo := VincularEmpresaComisionesServicioALiquidacion(
+				dbConn,
+				req.EmpresaID,
+				id,
+				req.PeriodoDesde,
+				req.PeriodoHasta,
+				usuarioVinculoComision,
+				resumenComision.MovimientoIDs,
+			); errVinculo != nil {
+				messages = append(messages, fmt.Sprintf("No se pudo vincular comisiones en liquidacion para %s: %v", empleado.EmpleadoNombre, errVinculo))
+			}
 		}
 		liq.ID = id
 		liquidaciones = append(liquidaciones, liq)
@@ -1919,5 +2172,308 @@ func GenerateEmpresaNominaLiquidaciones(dbConn *sql.DB, req EmpresaNominaCalculo
 		result.TotalDeduccion = round2(result.TotalDeduccion + row.DeduccionTotal)
 		result.TotalNeto = round2(result.TotalNeto + row.NetoPagar)
 	}
+	return result, nil
+}
+
+// GetEmpresaNominaDesprendible obtiene un desprendible estandar por empleado y periodo.
+func GetEmpresaNominaDesprendible(dbConn *sql.DB, empresaID, empleadoNominaID int64, periodoDesde, periodoHasta string) (*EmpresaNominaDesprendible, error) {
+	if empresaID <= 0 {
+		return nil, fmt.Errorf("empresa_id es obligatorio")
+	}
+	if empleadoNominaID <= 0 {
+		return nil, fmt.Errorf("empleado_nomina_id es obligatorio")
+	}
+	desde, err := normalizeNominaDate(periodoDesde)
+	if err != nil {
+		return nil, fmt.Errorf("periodo_desde invalido (use YYYY-MM-DD)")
+	}
+	hasta, err := normalizeNominaDate(periodoHasta)
+	if err != nil {
+		return nil, fmt.Errorf("periodo_hasta invalido (use YYYY-MM-DD)")
+	}
+	if hasta < desde {
+		return nil, fmt.Errorf("periodo_hasta no puede ser menor a periodo_desde")
+	}
+
+	rows, err := ListEmpresaNominaLiquidaciones(dbConn, empresaID, EmpresaNominaLiquidacionFilter{
+		PeriodoDesde:     desde,
+		PeriodoHasta:     hasta,
+		EmpleadoNominaID: empleadoNominaID,
+		IncludeInactive:  true,
+		Limit:            200,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var liq *EmpresaNominaLiquidacion
+	for i := range rows {
+		if rows[i].EmpleadoNominaID == empleadoNominaID && rows[i].PeriodoDesde == desde && rows[i].PeriodoHasta == hasta {
+			copy := rows[i]
+			liq = &copy
+			break
+		}
+	}
+	if liq == nil {
+		return nil, sql.ErrNoRows
+	}
+
+	cfg, err := GetEmpresaNominaConfiguracion(dbConn, empresaID)
+	if err != nil {
+		return nil, err
+	}
+
+	emp, err := getEmpresaNominaEmpleadoByID(dbConn, empresaID, empleadoNominaID)
+	if err != nil {
+		emp = &EmpresaNominaEmpleado{}
+	}
+
+	out := &EmpresaNominaDesprendible{
+		EmpresaID:                      empresaID,
+		PaisCodigo:                     normalizeNominaPais(cfg.PaisCodigo),
+		Moneda:                         normalizeNominaMoneda(cfg.Moneda),
+		PeriodoDesde:                   liq.PeriodoDesde,
+		PeriodoHasta:                   liq.PeriodoHasta,
+		FechaGeneracion:                strings.TrimSpace(liq.FechaGeneracion),
+		EmpleadoNominaID:               liq.EmpleadoNominaID,
+		EmpleadoID:                     liq.EmpleadoID,
+		EmpleadoCodigo:                 strings.TrimSpace(liq.EmpleadoCodigo),
+		EmpleadoNombre:                 liq.EmpleadoNombre,
+		EmpleadoDocumento:              strings.TrimSpace(liq.EmpleadoDocumento),
+		Cargo:                          strings.TrimSpace(liq.Cargo),
+		TipoContrato:                   normalizeNominaTipoContrato(strings.TrimSpace(emp.TipoContrato)),
+		FechaIngreso:                   strings.TrimSpace(emp.FechaIngreso),
+		DiasLiquidados:                 round2(liq.DiasLiquidados),
+		HorasAsistencia:                round2(liq.HorasAsistenciaTotal),
+		RegistrosAsistencia:            liq.RegistrosAsistencia,
+		HorasOrdinarias:                round2(liq.HorasOrdinarias),
+		HorasRecargoNocturno:           round2(liq.HorasRecargoNocturno),
+		HorasExtraDiurnas:              round2(liq.HorasExtraDiurnas),
+		HorasExtraNocturnas:            round2(liq.HorasExtraNocturnas),
+		HorasDominicalesDiurnas:        round2(liq.HorasDominicalesDiurnas),
+		HorasDominicalesNocturnas:      round2(liq.HorasDominicalesNocturnas),
+		HorasExtraDominicalesDiurnas:   round2(liq.HorasExtraDominicalesDiurnas),
+		HorasExtraDominicalesNocturnas: round2(liq.HorasExtraDominicalesNocturnas),
+		ValorHoraOrdinaria:             round2(liq.ValorHoraOrdinaria),
+		BaseSalarioProporcional:        round2(liq.BaseSalarioProporcional),
+		ValorRecargoNocturno:           round2(liq.ValorRecargoNocturno),
+		ValorDominicalDiurno:           round2(liq.ValorDominicalDiurno),
+		ValorDominicalNocturno:         round2(liq.ValorDominicalNocturno),
+		ValorExtraDiurna:               round2(liq.ValorExtraDiurna),
+		ValorExtraNocturna:             round2(liq.ValorExtraNocturna),
+		ValorExtraDominicalDiurna:      round2(liq.ValorExtraDominicalDiurna),
+		ValorExtraDominicalNocturna:    round2(liq.ValorExtraDominicalNocturna),
+		TotalRecargosHorasExtras:       round2(liq.TotalRecargosHorasExtras),
+		AuxilioTransporte:              round2(liq.AuxilioTransporte),
+		Bonificacion:                   round2(liq.Bonificacion),
+		ComisionesServicioTotal:        round2(liq.ComisionesServicioTotal),
+		ComisionesServicioMovimientos:  liq.ComisionesServicioMovimientos,
+		ComisionesServicioAjustes:      round2(liq.ComisionesServicioAjustes),
+		DevengadoTotal:                 round2(liq.DevengadoTotal),
+		IngresoBaseCotizacion:          round2(liq.IngresoBaseCotizacion),
+		DeduccionSalud:                 round2(liq.DeduccionSalud),
+		DeduccionPension:               round2(liq.DeduccionPension),
+		DeduccionFondoSolidaridad:      round2(liq.DeduccionFondoSolidaridad),
+		DeduccionFija:                  round2(liq.DeduccionFija),
+		OtrasDeducciones:               round2(liq.OtrasDeducciones),
+		DeduccionTotal:                 round2(liq.DeduccionTotal),
+		NetoPagar:                      round2(liq.NetoPagar),
+		ResumenJSON:                    strings.TrimSpace(liq.ResumenJSON),
+	}
+
+	if out.TipoContrato == "" {
+		out.TipoContrato = "indefinido"
+	}
+	return out, nil
+}
+
+// ConciliarEmpresaNominaAsistencia verifica y opcionalmente corrige diferencias entre asistencia y liquidaciones.
+func ConciliarEmpresaNominaAsistencia(dbConn *sql.DB, req EmpresaNominaConciliacionRequest) (*EmpresaNominaConciliacionResult, error) {
+	if req.EmpresaID <= 0 {
+		return nil, fmt.Errorf("empresa_id es obligatorio")
+	}
+	desde, err := normalizeNominaDate(req.PeriodoDesde)
+	if err != nil {
+		return nil, fmt.Errorf("periodo_desde invalido (use YYYY-MM-DD)")
+	}
+	hasta, err := normalizeNominaDate(req.PeriodoHasta)
+	if err != nil {
+		return nil, fmt.Errorf("periodo_hasta invalido (use YYYY-MM-DD)")
+	}
+	if hasta < desde {
+		return nil, fmt.Errorf("periodo_hasta no puede ser menor a periodo_desde")
+	}
+
+	cfg, err := GetEmpresaNominaConfiguracion(dbConn, req.EmpresaID)
+	if err != nil {
+		return nil, err
+	}
+	festivos, err := buildEmpresaNominaFestivoSet(dbConn, req.EmpresaID, desde, hasta)
+	if err != nil {
+		return nil, err
+	}
+
+	liquidaciones, err := ListEmpresaNominaLiquidaciones(dbConn, req.EmpresaID, EmpresaNominaLiquidacionFilter{
+		PeriodoDesde:     desde,
+		PeriodoHasta:     hasta,
+		EmpleadoNominaID: req.EmpleadoNominaID,
+		IncludeInactive:  true,
+		Limit:            5000,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	result := &EmpresaNominaConciliacionResult{
+		EmpresaID:      req.EmpresaID,
+		PeriodoDesde:   desde,
+		PeriodoHasta:   hasta,
+		AutoRecalcular: req.AutoRecalcular,
+		Items:          make([]EmpresaNominaConciliacionItem, 0),
+		Mensajes:       make([]string, 0),
+	}
+
+	procesados := make(map[int64]bool)
+	for _, liq := range liquidaciones {
+		if liq.PeriodoDesde != desde || liq.PeriodoHasta != hasta {
+			continue
+		}
+		procesados[liq.EmpleadoNominaID] = true
+
+		item := EmpresaNominaConciliacionItem{
+			EmpleadoNominaID:               liq.EmpleadoNominaID,
+			EmpleadoNombre:                 liq.EmpleadoNombre,
+			RegistrosAsistenciaLiquidacion: liq.RegistrosAsistencia,
+			HorasAsistenciaLiquidacion:     round2(liq.HorasAsistenciaTotal),
+		}
+
+		emp, err := getEmpresaNominaEmpleadoByID(dbConn, req.EmpresaID, liq.EmpleadoNominaID)
+		if err != nil {
+			item.Estado = "omitido"
+			item.Mensaje = "No se encontro ficha de empleado para esta liquidacion"
+			result.Items = append(result.Items, item)
+			result.TotalEvaluados++
+			continue
+		}
+
+		rowsAsistencia, err := listAsistenciaRowsForNomina(dbConn, req.EmpresaID, *emp, desde, hasta)
+		if err != nil {
+			item.Estado = "omitido"
+			item.Mensaje = fmt.Sprintf("No se pudo consultar asistencia: %v", err)
+			result.Items = append(result.Items, item)
+			result.TotalEvaluados++
+			continue
+		}
+
+		detail := buildNominaHorasDetalle(rowsAsistencia, cfg, festivos)
+		item.RegistrosAsistenciaCalculado = detail.RegistrosAsistencia
+		item.HorasAsistenciaCalculado = round2(detail.HorasAsistenciaTotal)
+		result.TotalEvaluados++
+
+		if nominaLiquidacionAlineadaConDetalle(liq, detail) {
+			item.Estado = "conciliado"
+			result.TotalConciliados++
+			result.Items = append(result.Items, item)
+			continue
+		}
+
+		result.TotalInconsistencias++
+		item.Estado = "inconsistente"
+		item.Mensaje = "Asistencia y liquidacion difieren en horas o registros"
+
+		if req.AutoRecalcular {
+			calcReq := EmpresaNominaCalculoRequest{
+				EmpresaID:        req.EmpresaID,
+				PeriodoDesde:     desde,
+				PeriodoHasta:     hasta,
+				EmpleadoNominaID: emp.ID,
+				Overwrite:        true,
+				OtrasDeducciones: liq.OtrasDeducciones,
+				UsuarioCreador:   strings.TrimSpace(req.UsuarioCreador),
+				Observaciones:    strings.TrimSpace(req.Observaciones),
+			}
+			if calcReq.Observaciones == "" {
+				calcReq.Observaciones = "conciliacion_asistencia_nomina"
+			}
+			newLiq := buildNominaLiquidacion(*emp, cfg, calcReq, detail)
+			newLiq.Estado = liq.Estado
+			if _, err := upsertEmpresaNominaLiquidacion(dbConn, newLiq, true); err != nil {
+				item.Mensaje = "Inconsistente y sin recalculo: " + err.Error()
+			} else {
+				item.Estado = "recalculado"
+				item.Mensaje = "Liquidacion ajustada segun asistencia del periodo"
+				result.TotalRecalculados++
+			}
+		}
+
+		result.Items = append(result.Items, item)
+	}
+
+	if req.EmpleadoNominaID <= 0 {
+		empleados, err := ListEmpresaNominaEmpleados(dbConn, req.EmpresaID, false, "", 5000)
+		if err == nil {
+			for _, emp := range empleados {
+				if procesados[emp.ID] {
+					continue
+				}
+				rowsAsistencia, err := listAsistenciaRowsForNomina(dbConn, req.EmpresaID, emp, desde, hasta)
+				if err != nil {
+					continue
+				}
+				detail := buildNominaHorasDetalle(rowsAsistencia, cfg, festivos)
+				if detail.RegistrosAsistencia == 0 && detail.HorasAsistenciaTotal <= 0 {
+					continue
+				}
+
+				result.TotalEvaluados++
+				result.TotalInconsistencias++
+				item := EmpresaNominaConciliacionItem{
+					EmpleadoNominaID:               emp.ID,
+					EmpleadoNombre:                 emp.EmpleadoNombre,
+					Estado:                         "inconsistente",
+					RegistrosAsistenciaLiquidacion: 0,
+					RegistrosAsistenciaCalculado:   detail.RegistrosAsistencia,
+					HorasAsistenciaLiquidacion:     0,
+					HorasAsistenciaCalculado:       round2(detail.HorasAsistenciaTotal),
+					Mensaje:                        "Existe asistencia en el periodo sin liquidacion registrada",
+				}
+
+				if req.AutoRecalcular {
+					calcReq := EmpresaNominaCalculoRequest{
+						EmpresaID:        req.EmpresaID,
+						PeriodoDesde:     desde,
+						PeriodoHasta:     hasta,
+						EmpleadoNominaID: emp.ID,
+						Overwrite:        true,
+						UsuarioCreador:   strings.TrimSpace(req.UsuarioCreador),
+						Observaciones:    strings.TrimSpace(req.Observaciones),
+					}
+					if calcReq.Observaciones == "" {
+						calcReq.Observaciones = "conciliacion_asistencia_nomina"
+					}
+					newLiq := buildNominaLiquidacion(emp, cfg, calcReq, detail)
+					if _, err := upsertEmpresaNominaLiquidacion(dbConn, newLiq, true); err != nil {
+						item.Mensaje = "Inconsistencia detectada y sin recalculo: " + err.Error()
+					} else {
+						item.Estado = "recalculado"
+						item.Mensaje = "Se genero liquidacion faltante segun asistencia"
+						result.TotalRecalculados++
+					}
+				}
+				result.Items = append(result.Items, item)
+			}
+		} else {
+			result.Mensajes = append(result.Mensajes, fmt.Sprintf("No se pudo validar empleados sin liquidacion: %v", err))
+		}
+	}
+
+	sort.Slice(result.Items, func(i, j int) bool {
+		return strings.ToLower(strings.TrimSpace(result.Items[i].EmpleadoNombre)) < strings.ToLower(strings.TrimSpace(result.Items[j].EmpleadoNombre))
+	})
+
+	if len(result.Items) == 0 {
+		result.Mensajes = append(result.Mensajes, "No se encontraron liquidaciones o asistencias para conciliar en el periodo.")
+	}
+
 	return result, nil
 }

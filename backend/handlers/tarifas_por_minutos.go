@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -43,6 +44,15 @@ func handleTarifasPorMinutosGet(w http.ResponseWriter, r *http.Request, dbEmp *s
 	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 
 	switch action {
+	case "config", "configuracion":
+		cfg, err := dbpkg.GetEmpresaTarifaPorMinutosConfiguracion(dbEmp, empresaID)
+		if err != nil {
+			writeTarifasPorMinutosError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, cfg)
+		return
+
 	case "", "listar", "list":
 		filter := dbpkg.EmpresaTarifaPorMinutosFilter{}
 		filter.IncludeInactive = queryBool(r, "include_inactive")
@@ -129,13 +139,9 @@ func handleTarifasPorMinutosGet(w http.ResponseWriter, r *http.Request, dbEmp *s
 			http.Error(w, "estacion_id es obligatorio", http.StatusBadRequest)
 			return
 		}
-		minutosConsumidos, err := parseIntQueryOptional(r, "minutos_consumidos")
+		minutosConsumidos, err := resolveTarifaMinutosConsumidosQuery(r)
 		if err != nil {
 			http.Error(w, "minutos_consumidos invalido", http.StatusBadRequest)
-			return
-		}
-		if minutosConsumidos <= 0 {
-			http.Error(w, "minutos_consumidos debe ser mayor a cero", http.StatusBadRequest)
 			return
 		}
 		diaSemana, err := resolveTarifaDiaSemana(r)
@@ -152,22 +158,60 @@ func handleTarifasPorMinutosGet(w http.ResponseWriter, r *http.Request, dbEmp *s
 			http.Error(w, "no existe tarifa activa para la estacion y dia indicado", http.StatusNotFound)
 			return
 		}
-		total, bloques := dbpkg.CalcularMontoTarifaPorMinutos(*tarifa, minutosConsumidos)
+		cfg, err := dbpkg.GetEmpresaTarifaPorMinutosConfiguracion(dbEmp, empresaID)
+		if err != nil {
+			writeTarifasPorMinutosError(w, err)
+			return
+		}
+		detalle := dbpkg.CalcularDetalleTarifaPorMinutos(*tarifa, minutosConsumidos, *cfg)
+		detalle.DiaSemana = diaSemana
+
+		traceID, documentoCodigo, periodoContable, err := dbpkg.RegisterTarifaPorMinutosCalculoContable(
+			dbEmp,
+			empresaID,
+			*tarifa,
+			*cfg,
+			diaSemana,
+			minutosConsumidos,
+			detalle,
+			strings.TrimSpace(adminEmailFromRequest(r)),
+			resolveTarifaPorMinutosRequestID(r),
+		)
+		if err != nil {
+			http.Error(w, "no se pudo registrar trazabilidad contable del calculo", http.StatusInternalServerError)
+			return
+		}
+
 		writeJSON(w, http.StatusOK, map[string]interface{}{
-			"ok":                 true,
-			"tarifa":             tarifa,
-			"tarifa_id":          tarifa.ID,
-			"estacion_id":        tarifa.EstacionID,
-			"dia_semana":         diaSemana,
-			"minutos_consumidos": minutosConsumidos,
-			"bloques_extra":      bloques,
-			"monto_total":        total,
-			"moneda":             tarifa.Moneda,
+			"ok":                       true,
+			"tarifa":                   tarifa,
+			"tarifa_id":                tarifa.ID,
+			"estacion_id":              tarifa.EstacionID,
+			"dia_semana":               diaSemana,
+			"minutos_consumidos":       detalle.MinutosConsumidos,
+			"bloques_extra":            detalle.BloquesExtra,
+			"monto_base":               detalle.MontoBase,
+			"monto_extra":              detalle.MontoExtra,
+			"monto_subtotal":           detalle.MontoSubtotal,
+			"monto_redondeado":         detalle.MontoRedondeado,
+			"ajuste_redondeo":          detalle.AjusteRedondeo,
+			"monto_minimo_aplicado":    detalle.MontoMinimoAplicado,
+			"monto_maximo_aplicado":    detalle.MontoMaximoAplicado,
+			"monto_minimo_diario":      cfg.MontoMinimoDiario,
+			"monto_maximo_diario":      cfg.MontoMaximoDiario,
+			"monto_total":              detalle.MontoTotal,
+			"moneda":                   detalle.Moneda,
+			"redondeo_modo":            cfg.RedondeoModo,
+			"redondeo_unidad":          cfg.RedondeoUnidad,
+			"trazabilidad_contable_id": traceID,
+			"documento_tipo":           "tarifa_por_minutos_calculo",
+			"documento_codigo":         documentoCodigo,
+			"periodo_contable":         periodoContable,
 		})
 		return
 
 	default:
-		http.Error(w, "action invalida. Use: listar, detalle, aplicable o calcular", http.StatusBadRequest)
+		http.Error(w, "action invalida. Use: listar, detalle, aplicable, calcular o config", http.StatusBadRequest)
 		return
 	}
 }
@@ -206,6 +250,58 @@ func handleTarifasPorMinutosCreate(w http.ResponseWriter, r *http.Request, dbEmp
 
 func handleTarifasPorMinutosUpdate(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB) {
 	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+	if action == "config" || action == "configuracion" {
+		var payload dbpkg.EmpresaTarifaPorMinutosConfiguracion
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			http.Error(w, "JSON invalido", http.StatusBadRequest)
+			return
+		}
+		if payload.EmpresaID <= 0 {
+			if empresaID, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && empresaID > 0 {
+				payload.EmpresaID = empresaID
+			}
+		}
+		if payload.EmpresaID <= 0 {
+			http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+			return
+		}
+		if strings.TrimSpace(payload.UsuarioCreador) == "" {
+			payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
+		}
+		cfg, err := dbpkg.UpsertEmpresaTarifaPorMinutosConfiguracion(dbEmp, payload)
+		if err != nil {
+			writeTarifasPorMinutosError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, cfg)
+		return
+	}
+	if action == "aplicar_todas_estaciones" || action == "aplicar_todas" || action == "aplicar_global" {
+		var payload dbpkg.EmpresaTarifaPorMinutos
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			http.Error(w, "JSON invalido", http.StatusBadRequest)
+			return
+		}
+		if payload.EmpresaID <= 0 {
+			if empresaID, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && empresaID > 0 {
+				payload.EmpresaID = empresaID
+			}
+		}
+		if payload.EmpresaID <= 0 {
+			http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+			return
+		}
+		if strings.TrimSpace(payload.UsuarioCreador) == "" {
+			payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
+		}
+		result, err := dbpkg.ApplyEmpresaTarifaPorMinutosToAllStations(dbEmp, payload)
+		if err != nil {
+			writeTarifasPorMinutosError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, result)
+		return
+	}
 	if action == "activar" || action == "desactivar" {
 		empresaID, err := parseEmpresaIDQuery(r)
 		if err != nil {
@@ -316,6 +412,35 @@ func resolveTarifaDiaSemana(r *http.Request) (int, error) {
 	return 0, errors.New("fecha invalida para resolver dia_semana")
 }
 
+func resolveTarifaMinutosConsumidosQuery(r *http.Request) (float64, error) {
+	raw := strings.TrimSpace(firstNonEmptyStr(
+		r.URL.Query().Get("minutos_consumidos_decimal"),
+		r.URL.Query().Get("minutos_consumidos"),
+	))
+	if raw == "" {
+		return 0, errors.New("minutos_consumidos es obligatorio")
+	}
+	raw = strings.ReplaceAll(raw, ",", ".")
+	val, err := strconv.ParseFloat(raw, 64)
+	if err != nil {
+		return 0, errors.New("minutos_consumidos invalido")
+	}
+	if val <= 0 {
+		return 0, errors.New("minutos_consumidos debe ser mayor a cero")
+	}
+	return val, nil
+}
+
+func resolveTarifaPorMinutosRequestID(r *http.Request) string {
+	if v := strings.TrimSpace(r.Header.Get("X-Request-ID")); v != "" {
+		return v
+	}
+	if v := strings.TrimSpace(r.URL.Query().Get("request_id")); v != "" {
+		return v
+	}
+	return ""
+}
+
 func writeTarifasPorMinutosError(w http.ResponseWriter, err error) {
 	if err == nil {
 		http.Error(w, "error no especificado", http.StatusInternalServerError)
@@ -339,6 +464,10 @@ func writeTarifasPorMinutosError(w http.ResponseWriter, err error) {
 		"debe",
 		"negativo",
 		"dia_semana",
+		"no se encontraron estaciones",
+		"redondeo",
+		"monto_minimo_diario",
+		"monto_maximo_diario",
 		"constraint",
 	) {
 		http.Error(w, msg, http.StatusBadRequest)

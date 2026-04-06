@@ -143,4 +143,70 @@ func TestEmpresaNominaSueldosHandlerFlow(t *testing.T) {
 	if len(rows) != 1 {
 		t.Fatalf("expected 1 liquidacion row, got %d", len(rows))
 	}
+
+	desprendibleReq := httptest.NewRequest(http.MethodGet, "/api/empresa/nomina?empresa_id=9&action=desprendible&empleado_nomina_id="+strconv.FormatInt(empleadoNominaID, 10)+"&periodo_desde=2026-04-01&periodo_hasta=2026-04-10", nil)
+	desprendibleRR := httptest.NewRecorder()
+	h.ServeHTTP(desprendibleRR, desprendibleReq)
+	if desprendibleRR.Code != http.StatusOK {
+		t.Fatalf("desprendible expected=%d got=%d body=%s", http.StatusOK, desprendibleRR.Code, desprendibleRR.Body.String())
+	}
+	var doc dbpkg.EmpresaNominaDesprendible
+	if err := json.Unmarshal(desprendibleRR.Body.Bytes(), &doc); err != nil {
+		t.Fatalf("decode desprendible response: %v", err)
+	}
+	if doc.EmpleadoNominaID != empleadoNominaID {
+		t.Fatalf("desprendible empleado_nomina_id expected=%d got=%d", empleadoNominaID, doc.EmpleadoNominaID)
+	}
+	if doc.NetoPagar <= 0 {
+		t.Fatalf("expected neto_pagar > 0 in desprendible, got %.2f", doc.NetoPagar)
+	}
+
+	if _, err := dbpkg.CreateEmpresaAsistenciaEmpleado(dbEmp, dbpkg.EmpresaAsistenciaEmpleado{
+		EmpresaID:         9,
+		EmpleadoID:        9001,
+		EmpleadoCodigo:    "EMP-9001",
+		EmpleadoNombre:    "Daniel Castro",
+		EmpleadoDocumento: "90112233",
+		Cargo:             "Analista",
+		FechaAsistencia:   "2026-04-04",
+		HoraEntrada:       "08:00:00",
+		HoraSalida:        "16:00:00",
+		HorasTrabajadas:   8,
+		EstadoAsistencia:  "presente",
+		UsuarioCreador:    "qa@empresa.com",
+	}); err != nil {
+		t.Fatalf("seed asistencia conciliacion: %v", err)
+	}
+
+	conciliarBody := `{"empresa_id":9,"periodo_desde":"2026-04-01","periodo_hasta":"2026-04-10","empleado_nomina_id":` + strconv.FormatInt(empleadoNominaID, 10) + `,"auto_recalcular":false}`
+	conciliarReq := httptest.NewRequest(http.MethodPost, "/api/empresa/nomina?action=conciliar_asistencia", strings.NewReader(conciliarBody))
+	conciliarReq.Header.Set("Content-Type", "application/json")
+	conciliarRR := httptest.NewRecorder()
+	h.ServeHTTP(conciliarRR, conciliarReq)
+	if conciliarRR.Code != http.StatusOK {
+		t.Fatalf("conciliar (dry-run) expected=%d got=%d body=%s", http.StatusOK, conciliarRR.Code, conciliarRR.Body.String())
+	}
+	var conciliarResp dbpkg.EmpresaNominaConciliacionResult
+	if err := json.Unmarshal(conciliarRR.Body.Bytes(), &conciliarResp); err != nil {
+		t.Fatalf("decode conciliar dry-run response: %v", err)
+	}
+	if conciliarResp.TotalInconsistencias <= 0 {
+		t.Fatalf("expected inconsistencias > 0 on dry-run, got %d", conciliarResp.TotalInconsistencias)
+	}
+
+	conciliarFixBody := `{"empresa_id":9,"periodo_desde":"2026-04-01","periodo_hasta":"2026-04-10","empleado_nomina_id":` + strconv.FormatInt(empleadoNominaID, 10) + `,"auto_recalcular":true}`
+	conciliarFixReq := httptest.NewRequest(http.MethodPost, "/api/empresa/nomina?action=conciliar_asistencia", strings.NewReader(conciliarFixBody))
+	conciliarFixReq.Header.Set("Content-Type", "application/json")
+	conciliarFixRR := httptest.NewRecorder()
+	h.ServeHTTP(conciliarFixRR, conciliarFixReq)
+	if conciliarFixRR.Code != http.StatusOK {
+		t.Fatalf("conciliar (recalcular) expected=%d got=%d body=%s", http.StatusOK, conciliarFixRR.Code, conciliarFixRR.Body.String())
+	}
+	var conciliarFixResp dbpkg.EmpresaNominaConciliacionResult
+	if err := json.Unmarshal(conciliarFixRR.Body.Bytes(), &conciliarFixResp); err != nil {
+		t.Fatalf("decode conciliar recalcular response: %v", err)
+	}
+	if conciliarFixResp.TotalRecalculados <= 0 {
+		t.Fatalf("expected recalculados > 0, got %d", conciliarFixResp.TotalRecalculados)
+	}
 }

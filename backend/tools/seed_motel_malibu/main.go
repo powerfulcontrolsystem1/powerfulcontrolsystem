@@ -677,7 +677,7 @@ func createVentaDemo(dbConn *sql.DB, empresaID, clienteID int64, products map[st
 	if err != nil {
 		return nil, nil, err
 	}
-	if err := dbpkg.PayCarritoStationSession(dbConn, empresaID, carritoID, "efectivo", "", "", "", 0, 0, beforePay.Total, 0); err != nil {
+	if err := dbpkg.PayCarritoStationSession(dbConn, empresaID, carritoID, "efectivo", "", "", "", 0, 0, beforePay.Total, 0, "seed"); err != nil {
 		return nil, nil, err
 	}
 	afterPay, err := dbpkg.GetCarritoCompraByID(dbConn, empresaID, carritoID)

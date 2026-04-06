@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"testing"
 
 	dbpkg "github.com/you/pos-backend/db"
@@ -95,5 +96,58 @@ func TestEmpresaClientesHandlerPerfilHistorialSegmentacion(t *testing.T) {
 	h.ServeHTTP(rrNotFound, reqNotFound)
 	if rrNotFound.Code != http.StatusNotFound {
 		t.Fatalf("expected not found status %d, got %d body=%s", http.StatusNotFound, rrNotFound.Code, rrNotFound.Body.String())
+	}
+}
+
+func TestEmpresaClientesHandlerConflictosDeduplicacion(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_clientes_dedup_handler.db")
+	if err := dbpkg.EnsureEmpresaClientesSchema(dbEmp); err != nil {
+		t.Fatalf("ensure clientes schema: %v", err)
+	}
+
+	h := EmpresaClientesHandler(dbEmp)
+
+	basePayload := `{"empresa_id":420,"tipo_documento":"CC","numero_documento":"12001","nombre_razon_social":"Cliente Base","email":"cliente.base@test.com","telefono":"3001112233"}`
+	reqBase := httptest.NewRequest(http.MethodPost, "/api/empresa/clientes", strings.NewReader(basePayload))
+	rrBase := httptest.NewRecorder()
+	h.ServeHTTP(rrBase, reqBase)
+	if rrBase.Code != http.StatusCreated {
+		t.Fatalf("expected created status %d, got %d body=%s", http.StatusCreated, rrBase.Code, rrBase.Body.String())
+	}
+
+	dupCorreoPayload := `{"empresa_id":420,"tipo_documento":"CC","numero_documento":"12002","nombre_razon_social":"Cliente Correo Duplicado","email":"CLIENTE.BASE@TEST.COM","telefono":"3005556677"}`
+	reqDupCorreo := httptest.NewRequest(http.MethodPost, "/api/empresa/clientes", strings.NewReader(dupCorreoPayload))
+	rrDupCorreo := httptest.NewRecorder()
+	h.ServeHTTP(rrDupCorreo, reqDupCorreo)
+	if rrDupCorreo.Code != http.StatusConflict {
+		t.Fatalf("expected conflict status %d, got %d body=%s", http.StatusConflict, rrDupCorreo.Code, rrDupCorreo.Body.String())
+	}
+	if !strings.Contains(strings.ToLower(rrDupCorreo.Body.String()), "correo") {
+		t.Fatalf("expected duplicate correo message, got %s", rrDupCorreo.Body.String())
+	}
+
+	segundoPayload := `{"empresa_id":420,"tipo_documento":"CC","numero_documento":"12003","nombre_razon_social":"Cliente Segundo","email":"cliente.segundo@test.com","telefono":"3010001122"}`
+	reqSegundo := httptest.NewRequest(http.MethodPost, "/api/empresa/clientes", strings.NewReader(segundoPayload))
+	rrSegundo := httptest.NewRecorder()
+	h.ServeHTTP(rrSegundo, reqSegundo)
+	if rrSegundo.Code != http.StatusCreated {
+		t.Fatalf("expected second created status %d, got %d body=%s", http.StatusCreated, rrSegundo.Code, rrSegundo.Body.String())
+	}
+
+	var createResp map[string]interface{}
+	if err := json.Unmarshal(rrSegundo.Body.Bytes(), &createResp); err != nil {
+		t.Fatalf("decode second create response: %v", err)
+	}
+	segundoID := int64(createResp["id"].(float64))
+
+	dupTelefonoUpdate := `{"id":` + strconv.FormatInt(segundoID, 10) + `,"empresa_id":420,"tipo_documento":"CC","numero_documento":"12003","nombre_razon_social":"Cliente Segundo","email":"cliente.segundo@test.com","telefono":"(300) 111-2233"}`
+	reqUpdate := httptest.NewRequest(http.MethodPut, "/api/empresa/clientes", strings.NewReader(dupTelefonoUpdate))
+	rrUpdate := httptest.NewRecorder()
+	h.ServeHTTP(rrUpdate, reqUpdate)
+	if rrUpdate.Code != http.StatusConflict {
+		t.Fatalf("expected update conflict status %d, got %d body=%s", http.StatusConflict, rrUpdate.Code, rrUpdate.Body.String())
+	}
+	if !strings.Contains(strings.ToLower(rrUpdate.Body.String()), "telefono") {
+		t.Fatalf("expected duplicate telefono message, got %s", rrUpdate.Body.String())
 	}
 }

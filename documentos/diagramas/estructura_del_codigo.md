@@ -56,6 +56,453 @@ flowchart TD
 ## Regla de mantenimiento
 Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe reflejarse en este documento y en los diagramas relacionados dentro de documentos/diagramas/.
 
+## Actualizacion 2026-04-06 (cierre tecnico modulo 15: comisiones por servicio)
+
+- Backend comisiones por servicio:
+  - `backend/db/comisiones_servicio.go`:
+    - agrega tabla de escalas `empresa_comisiones_servicio_escalas` para reglas por `rol_operacion` y `servicio_filtro` con `porcentaje_comision`, `tope_comision` y `prioridad`.
+    - amplia `empresa_comisiones_servicio_movimientos` con trazabilidad de origen y aprobacion de ajuste manual (`origen_movimiento`, `ajuste_manual`, `ajuste_estado`, `aprobado_por`, `aprobado_en`).
+    - incorpora enlace de movimientos a nomina (`liquidacion_nomina_id`, `periodo_liquidacion_*`, `liquidado_*`) y funciones de resumen/vinculo para liquidacion.
+
+- Backend handlers de comisiones:
+  - `backend/handlers/comisiones.go`:
+    - agrega acciones de escalas (`escalas`, `escala`, `activar_escala`, `desactivar_escala`).
+    - agrega flujo de ajuste manual con aprobacion/rechazo (`ajuste_manual`, `aprobar_ajuste`, `rechazar_ajuste`).
+    - agrega `action=resumen_liquidacion` para interoperar con nomina.
+  - `backend/handlers/carritos_compras.go`:
+    - propaga `rol_operacion` al registro automatico para aplicar escalas/topes por item.
+
+- Integracion con nomina:
+  - `backend/db/nomina_sueldos.go`:
+    - amplia liquidaciones con `comisiones_servicio_total`, `comisiones_servicio_movimientos` y `comisiones_servicio_ajustes`.
+    - incluye comisiones en el devengado/neto y enlaza movimientos al generar liquidacion del periodo.
+
+- Pruebas:
+  - `backend/db/comisiones_servicio_test.go`:
+    - cobertura de escalas con tope, ajustes manuales con aprobacion y vinculo a liquidacion.
+  - `backend/handlers/comisiones_test.go`:
+    - cobertura HTTP de escalas y aprobacion/rechazo de ajustes.
+  - `backend/db/nomina_sueldos_test.go`:
+    - cobertura de integracion de comisiones en liquidacion y desprendible.
+
+## Actualizacion 2026-04-06 (avance modulo 14: propinas fiscales, ajustes y conciliacion)
+
+- Backend propinas y conciliacion de cierres:
+  - `backend/db/propinas.go`:
+    - amplía configuracion con campos fiscales (`pais_fiscal`, `regimen_fiscal`, `tratamiento_fiscal`, `porcentaje_impuesto_propina`).
+    - amplía movimientos con origen, bandera de ajuste manual, referencia de ajuste, `cierre_caja_id`, trazabilidad de conciliacion y snapshot fiscal (`fiscal_*`).
+    - agrega `CreateEmpresaPropinaAjusteManual` para registrar ajustes positivos/negativos con validacion.
+    - agrega `ConciliarEmpresaPropinasConCierreCaja` para consolidar movimientos por fecha/cierre y actualizar totales en `empresa_cierres_caja`.
+  - `backend/db/finanzas.go`:
+    - extiende `empresa_cierres_caja` con resumen persistido de propinas (`propinas_movimientos`, `propinas_total`, `propinas_ajustes`, `propinas_impuesto`, `propinas_neto`, `propinas_conciliado_*`).
+  - `backend/handlers/finanzas.go`:
+    - integra conciliacion de propinas al flujo de transicion `cerrar/aprobar` del cierre de caja.
+  - `backend/handlers/propinas.go`:
+    - agrega `action=ajuste_manual` con auditoria no bloqueante en `empresa_auditoria_eventos`.
+    - agrega `action=conciliacion_cierre` y filtros extendidos de reporte (`origen`, `cierre_caja_id`, `solo_ajustes`).
+
+- Frontend propinas:
+  - `web/administrar_empresa/propinas.html`:
+    - incorpora campos de configuracion fiscal.
+    - incorpora registro UI de ajuste manual auditado.
+    - incorpora ejecucion UI de conciliacion por cierre y visualizacion de resumen.
+    - amplía filtros y columnas del reporte para mostrar origen/ajustes/impuesto/total fiscal.
+
+- Pruebas:
+  - `backend/handlers/propinas_test.go`:
+    - agrega cobertura para `action=ajuste_manual` y `action=conciliacion_cierre` con validacion de auditoria y persistencia en cierre de caja.
+
+## Actualizacion 2026-04-06 (avance modulo 13: codigos de descuento avanzados)
+
+- Backend descuentos y antifraude:
+  - `backend/db/codigos_descuento.go`:
+    - amplia `codigos_de_descuento` con reglas de segmentacion y contexto (`segmento_cliente`, `canal_venta`, `horario_desde`, `horario_hasta`, `dias_semana`).
+    - agrega controles antifraude por cliente (`max_usos_por_cliente`, `ventana_horas_fraude`).
+    - incorpora tabla de trazabilidad `codigos_descuento_redenciones` con estados operativos (`aplicada`, `revertida`, `anulada`).
+    - agrega resolucion contextual (`ResolveCodigoDescuentoParaMontoConContexto`) y consulta de redenciones por empresa.
+
+- Backend carritos y ciclo de redencion:
+  - `backend/db/carritos_compras.go`:
+    - integra registro de redencion al cerrar carrito con codigo de descuento.
+    - revierte redencion y decrementa usos al reabrir sesion de estacion.
+    - anula redencion al eliminar carrito, preservando trazabilidad.
+  - `backend/handlers/carritos_compras.go`:
+    - valida descuentos con contexto de carrito/cliente/canal antes de cerrar pago.
+  - `backend/handlers/codigos_descuento.go`:
+    - extiende `action=validar` para recibir `carrito_id`, `cliente_id` y `canal_venta`.
+    - agrega `action=redenciones` para listar trazabilidad de consumo/reversion/anulacion.
+
+- Frontend codigos de descuento:
+  - `web/administrar_empresa/codigos_de_descuento.html`:
+    - agrega campos de reglas avanzadas (segmento, canal, horario, dias ISO).
+    - agrega configuracion antifraude por cliente/ventana.
+    - muestra resumen de reglas avanzadas en el listado de codigos.
+
+- Pruebas:
+  - `backend/db/codigos_descuento_test.go`:
+    - agrega cobertura para canal de venta contextual.
+    - agrega cobertura de antifraude por limite de uso de cliente.
+    - agrega cobertura de ciclo aplicada -> revertida al reactivar carrito.
+
+## Actualizacion 2026-04-06 (cierre modulo 12: combos de productos)
+
+- Backend combos e inventario:
+  - `backend/db/productos.go`:
+    - agrega versionado de receta en `combos_productos` (`receta_version`) y metricas de costo (`costo_teorico`, `costo_real`, `variacion_costo`, `variacion_costo_porcentaje`).
+    - agrega historial de receta en `combos_productos_versiones` con snapshot JSON de ingredientes por version.
+    - valida costo teorico vs costo real por ingrediente antes de crear/actualizar combos.
+    - bloquea discrepancias de costo fuera de umbral y combos con precio menor al costo real.
+  - `backend/db/carritos_compras.go`:
+    - refuerza reserva de stock con `UPDATE` atomico condicionado (`cantidad >= requerida`) para evitar sobreventa concurrente en items de tipo `combo` y `producto`.
+
+- Frontend combos:
+  - `web/administrar_empresa/combos_productos.html`:
+    - muestra version de receta y metricas de costo teorico/real en el listado.
+    - muestra resumen de costo en formulario de edicion para trazabilidad operativa.
+
+- Backend pruebas:
+  - `backend/db/productos_categorias_test.go`:
+    - valida versionado de receta y registro de historial por actualizacion de ingredientes.
+    - valida rechazo por desviacion de costo teorico vs costo real.
+  - `backend/db/carritos_inventario_test.go`:
+    - agrega prueba concurrente de ventas altas de combo para garantizar que no haya sobreventa de stock.
+
+## Actualizacion 2026-04-06 (cierre modulo 11: inventario)
+
+- Backend inventario:
+  - `backend/db/productos.go`:
+    - agrega configuracion de politica de costo por empresa (`promedio`/`peps`) y upsert/consulta dedicada.
+    - agrega soporte de lotes/capas de costo en `inventario_costos_lotes` para operar PEPS con trazabilidad.
+    - agrega conteo ciclico con ajuste auditado en `inventario_conteos_ciclicos`.
+    - extiende transferencias, ajustes y cambios de producto para aplicar politica de costo activa.
+    - agrega consulta de alertas operativas proactivas (quiebre/sobrestock).
+
+- Backend handlers y rutas:
+  - `backend/handlers/productos.go`:
+    - extiende `EmpresaInventarioAlertasHandler` para modo proactivo (`action=proactivas`).
+    - agrega `EmpresaInventarioConfiguracionHandler`.
+    - agrega `EmpresaInventarioConteoCiclicoHandler`.
+  - `backend/main.go`:
+    - registra ruta `/api/empresa/inventario/configuracion`.
+    - registra ruta `/api/empresa/inventario/conteo_ciclico`.
+    - registra migracion `2026-04-06-022-inventario-costos-conteo`.
+
+- Frontend inventario:
+  - `web/administrar_empresa/administrar_productos.html`:
+    - agrega panel para seleccionar/guardar politica de costo por empresa.
+    - agrega formulario y tabla de conteo ciclico con variacion y ajuste asociado.
+    - actualiza tabla de alertas para incluir stock maximo, exceso y accion sugerida.
+
+- Backend pruebas:
+  - `backend/db/productos_categorias_test.go`:
+    - cubre politica de costo (`promedio`/`peps`), conteo ciclico auditado y alertas proactivas.
+  - `backend/handlers/productos_categorias_test.go`:
+    - cubre endpoints de configuracion inventario, conteo ciclico y alertas proactivas.
+
+## Actualizacion 2026-04-06 (cierre modulo 1: autenticacion y sesiones)
+
+- Backend autenticacion usuarios de empresa:
+  - `backend/handlers/usuarios_empresa.go`:
+    - login con bloqueo temporal por intentos fallidos,
+    - solicitud de recuperacion de contrasena,
+    - restablecimiento de contrasena con token temporal,
+    - reapertura de sesion tras restablecimiento exitoso.
+  - `backend/db/usuarios_empresa.go`:
+    - soporte de lockout (`login_failed_*`, `login_locked_until`) y recuperacion (`password_reset_*`).
+
+- Backend sesion global:
+  - `backend/db/db.go`:
+    - sesiones creadas con `fecha_fin` (expiracion de 24h),
+    - revocacion explicita de token por `RevokeSessionByToken`,
+    - validacion de token activo + no expirado en consultas.
+  - `backend/main.go`:
+    - `auth/logout` ahora revoca token en base de datos,
+    - nuevas rutas publicas:
+      - `/api/empresa/usuarios/solicitar_recuperacion_password`.
+      - `/api/empresa/usuarios/restablecer_password`.
+  - `backend/utils/utils.go`:
+    - middleware permite acceso publico a las rutas de recuperacion.
+
+- Frontend login usuario empresa:
+  - `web/login_usuario.html` y `web/js/login_usuario.js`:
+    - formulario para solicitar token de recuperacion,
+    - formulario para restablecer contraseña con token,
+    - soporte de prellenado por querystring (`email`, `token_recuperacion`).
+
+## Actualizacion 2026-04-06 (cierre modulo 2: administracion global super)
+
+- Backend empresas super:
+  - `backend/handlers/system_empresas_handlers.go`:
+    - `EmpresasHandler` ahora soporta validacion de impacto de desactivacion por empresa,
+    - endpoint de impacto: `/super/api/empresas?id={id}&action=impacto_desactivacion`,
+    - desactivacion con confirmacion forzada: `/super/api/empresas?id={id}&action=desactivar&force=1`,
+    - reactivacion explicita: `/super/api/empresas?id={id}&action=activar&activo=1`.
+  - `backend/main.go`:
+    - `EmpresasHandler` se registra con `dbEmpresas` + `dbSuper` para validar licencias activas en impacto.
+
+- Backend configuracion critica super:
+  - `backend/handlers/super_config_backup_handlers.go` (nuevo):
+    - `SuperConfigBackupHandler` para exportar/restaurar JSON de configuraciones criticas de Wompi, Gmail e IA.
+  - `backend/main.go`:
+    - ruta nueva `/super/api/config/backup`.
+
+- Frontend super:
+  - `web/js/seleccionar_empresa.js`:
+    - incorpora boton por tarjeta para desactivar/reactivar empresa,
+    - consulta impacto operativo y solicita confirmacion antes de desactivar.
+  - `web/super/configuracion_avanzada.html`:
+    - agrega bloque UI para descargar respaldo JSON y restaurar configuracion critica.
+
+- Backend pruebas:
+  - `backend/handlers/system_empresas_handlers_test.go` (nuevo):
+    - valida impacto de desactivacion con/sin force,
+    - valida export/restore de backup,
+    - valida permisos de endpoints super por rol (super_administrador permitido, roles no super denegados).
+
+## Actualizacion 2026-04-06 (cierre modulo 3: usuarios de empresa)
+
+- Backend usuarios de empresa:
+  - `backend/handlers/usuarios_empresa.go`:
+    - nuevo endpoint de cambio autogestionado: `/api/empresa/usuarios/cambiar_password`,
+    - politicas configurables de complejidad (`usuarios.password_*`),
+    - validacion de rotacion opcional en login con respuesta `password_rotation_required`.
+  - `backend/db/usuarios_empresa.go`:
+    - consulta `password_actualizada_en` para evaluar antiguedad de contraseña.
+
+- Backend correo en pruebas:
+  - `backend/db/correo_notificaciones_prueba.go` (nuevo):
+    - tabla `super_correo_notificaciones_prueba` para capturar confirmacion/restablecimiento en entorno de pruebas.
+  - `backend/handlers/usuarios_empresa.go`:
+    - modo pruebas de correo activable por `PCS_MAIL_TEST_MODE=1` o `gmail.smtp_test_mode=1`.
+
+- Backend rutas:
+  - `backend/main.go`:
+    - registra `/api/empresa/usuarios/cambiar_password` en `WithEmpresaPublicScope`.
+    - asegura esquema `super_correo_notificaciones_prueba` al iniciar.
+  - `backend/utils/utils.go`:
+    - declara publica la ruta `/api/empresa/usuarios/cambiar_password`.
+
+- Frontend login usuario empresa:
+  - `web/login_usuario.html` y `web/js/login_usuario.js`:
+    - nuevo formulario para cambio autogestionado de contraseña,
+    - manejo de flujo de rotacion obligatoria desde respuesta de login.
+
+- Backend pruebas:
+  - `backend/handlers/usuarios_empresa_seguridad_test.go` (nuevo):
+    - valida cambio de contraseña,
+    - valida complejidad configurable,
+    - valida rotacion opcional,
+    - valida captura de notificaciones de correo en modo pruebas.
+
+## Actualizacion 2026-04-06 (cierre modulo 4: asistencia de empleados)
+
+- Backend asistencia:
+  - `backend/db/asistencia_empleados.go`:
+    - agrega `empresa_asistencia_configuracion` para tolerancias y reglas de turno por `empresa_id`.
+    - agrega `empresa_asistencia_periodos_cerrados` para cierre operativo y bloqueo de edicion posterior.
+    - aplica validaciones de periodo cerrado y reglas de turno nocturno/cruzado en create/update/marcar/delete.
+  - `backend/handlers/asistencia_empleados.go`:
+    - nuevas acciones:
+      - `GET/PUT /api/empresa/asistencia_empleados?action=config`.
+      - `POST /api/empresa/asistencia_empleados?action=cerrar_periodo`.
+      - `GET /api/empresa/asistencia_empleados?action=periodos_cerrados`.
+    - responde `409` cuando un registro pertenece a periodo cerrado.
+
+- Backend reportes:
+  - `backend/handlers/reportes.go`:
+    - agrega dataset `operativo_asistencia_nomina_auditoria`.
+    - incorpora resumen de horas, tardanzas, ausencias, inconsistencias y completitud por empleado.
+    - mantiene exportacion del dataset en `pdf/xls/csv/json/txt`.
+
+- Frontend asistencia:
+  - `web/administrar_empresa/asistencia_empleados.html`:
+    - panel de configuracion de turnos/tolerancias.
+    - panel de cierre de periodos y listado de cierres.
+    - descarga directa del reporte de auditoria de nomina.
+
+- Backend pruebas:
+  - `backend/handlers/asistencia_empleados_test.go`:
+    - cobertura de configuracion de turnos/tolerancias y bloqueo por cierre de periodo.
+  - `backend/handlers/reportes_test.go`:
+    - cobertura del dataset `operativo_asistencia_nomina_auditoria`.
+
+## Actualizacion 2026-04-06 (cierre modulo 5: nomina de sueldos)
+
+- Backend nomina:
+  - `backend/db/nomina_sueldos.go`:
+    - agrega `GetEmpresaNominaDesprendible` para desprendible estandar por empleado/periodo,
+    - agrega `ConciliarEmpresaNominaAsistencia` para auditar y conciliar asistencia vs liquidacion,
+    - soporta auto-recalculo de inconsistencias y creacion de liquidaciones faltantes cuando hay asistencia.
+  - `backend/handlers/nomina_sueldos.go`:
+    - nuevas acciones:
+      - `GET /api/empresa/nomina?action=desprendible`.
+      - `GET /api/empresa/nomina?action=conciliacion_asistencia`.
+      - `POST /api/empresa/nomina?action=conciliar_asistencia`.
+
+- Frontend nomina:
+  - `web/administrar_empresa/nomina_sueldos.html`:
+    - agrega controles de conciliacion (auditoria y auto-recalculo),
+    - agrega generacion de desprendible por empleado/periodo,
+    - agrega vista de resumen de conciliacion y panel estandar de desprendible,
+    - agrega accion de desprendible desde la tabla de liquidaciones.
+
+- Backend pruebas:
+  - `backend/db/nomina_sueldos_test.go`:
+    - valida formulas por pais/empresa (CO/MX + override por empresa),
+    - valida desprendible y conciliacion con auto-recalculo.
+  - `backend/handlers/nomina_sueldos_test.go`:
+    - cubre endpoints de desprendible y conciliacion.
+
+## Actualizacion 2026-04-06 (cierre modulo 6: registro de vehiculos)
+
+- Backend vehiculos:
+  - `backend/db/vehiculos_registro.go`:
+    - agrega tabla `empresa_vehiculos_configuracion` para reglas de placa/patente por empresa (`pais_codigo`, `patente_regex`, `patente_descripcion`, `evitar_duplicado_activo`).
+    - incorpora validacion de formato de placa por pais/regex configurable antes de crear o editar registros.
+    - bloquea duplicidad activa por patente canonica cuando un vehiculo ya esta activo en patio para el mismo `empresa_id`.
+    - agrega consulta operativa `ListEmpresaVehiculosPermanenciaReporte` con calculo de minutos/horas/dias de estancia.
+  - `backend/handlers/vehiculos_registro.go`:
+    - agrega acciones `GET/PUT action=config` para configurar reglas de placa por empresa.
+    - agrega `GET action=permanencia` para consulta operativa de estancias.
+    - mapea conflictos de duplicidad activa a HTTP `409` en crear/editar/activar.
+
+- Backend reportes:
+  - `backend/handlers/reportes.go`:
+    - agrega dataset `operativo_vehiculos_permanencia` al catalogo y suite de reportes.
+    - mantiene interoperabilidad de exportacion del mismo dataset en `pdf/xls/csv/json/txt`.
+
+- Frontend vehiculos:
+  - `web/administrar_empresa/vehiculos_registro.html`:
+    - agrega panel de configuracion de placa/patente por pais y regex personalizada.
+    - agrega vista de reporte de permanencia con resumen operativo de estancias.
+    - agrega exportacion del reporte `operativo_vehiculos_permanencia` en formatos `pdf/xls/csv/json/txt`.
+
+- Backend pruebas:
+  - `backend/db/vehiculos_registro_test.go`:
+    - agrega `TestEmpresaVehiculoRegistroConfigValidacionDuplicidadYPermanencia`.
+  - `backend/handlers/vehiculos_registro_test.go`:
+    - agrega `TestEmpresaVehiculosRegistroHandlerConfigYReportePermanencia`.
+  - `backend/handlers/reportes_test.go`:
+    - agrega `TestEmpresaReportesHandlerDatasetOperativoVehiculosPermanencia`.
+
+## Actualizacion 2026-04-06 (cierre modulo 7: reservas por estacion/habitacion)
+
+- Backend reservas:
+  - `backend/db/reservas_hotel.go`:
+    - refuerza anti-overbooking en ventanas solapadas por `estacion_id` y `carrito_id` asociado.
+    - agrega politicas operativas automaticas:
+      - expiracion avanzada de pendientes (`fecha_expiracion` + fallback por antiguedad),
+      - marcacion automatica de `no_show` para reservas confirmadas fuera de tolerancia.
+    - agrega `ConvertReservaHotelToCarrito` para reconversion de reserva confirmada a flujo de carrito activo.
+    - extiende estados operativos de reserva con `en_curso` y `no_show`.
+  - `backend/handlers/reservas_hotel.go`:
+    - agrega `GET action=aplicar_politicas`.
+    - agrega `PUT action=convertir_carrito`.
+    - mantiene acciones previas (`listar`, `detalle`, `disponibilidad`, `confirmar_pago`, `cancelar`, `activar`, `desactivar`).
+
+- Frontend reservas:
+  - `web/administrar_empresa/reservas_hotel.html`:
+    - agrega accion `Aplicar politicas` para sincronizacion operativa de reservas.
+    - agrega accion `Reconver. carrito` por fila.
+    - amplia filtros con estados `en_curso` y `no_show`.
+
+- Backend pruebas:
+  - `backend/db/reservas_hotel_test.go`:
+    - agrega `TestReservaHotelMultiEstacionNoOverbookingYReconversion`.
+    - agrega `TestReservaHotelPoliticaNoShowYExpiracionAvanzada`.
+  - `backend/handlers/reservas_hotel_test.go`:
+    - agrega `TestEmpresaReservasHotelHandlerPoliticasYReconversion`.
+
+## Actualizacion 2026-04-06 (cierre modulo 8: tarifas por minutos)
+
+- Backend tarifas por minutos:
+  - `backend/db/tarifas_por_minutos.go`:
+    - agrega tabla `empresa_tarifas_por_minutos_configuracion` para reglas globales por empresa:
+      - `redondeo_modo`, `redondeo_unidad`, `monto_minimo_diario`, `monto_maximo_diario`.
+    - agrega calculo avanzado con detalle completo (base, extra, subtotal, redondeo, ajuste y limites diarios).
+    - soporta minutos consumidos fraccionarios y saltos de bloque por fraccion.
+    - agrega aplicacion masiva de tarifa a todas las estaciones detectadas de la empresa.
+    - agrega registro de trazabilidad contable del calculo por minutos.
+  - `backend/handlers/tarifas_por_minutos.go`:
+    - agrega `GET/PUT action=config` para configuracion avanzada.
+    - extiende `GET action=calcular` con respuesta detallada y referencia contable (`trazabilidad_contable_id`, `documento_codigo`, `periodo_contable`).
+    - agrega `PUT action=aplicar_todas_estaciones` para replicar reglas a todas las estaciones.
+  - `backend/db/eventos_contables.go`:
+    - extiende contrato de eventos contables con `finanzas.tarifa_por_minutos_calculada`.
+
+- Frontend tarifas por minutos:
+  - `web/administrar_empresa/tarifas_por_minutos.html`:
+    - agrega panel de configuracion avanzada de redondeo y limites diarios.
+    - agrega boton `Aplicar a todas las estaciones`.
+    - amplía simulador con detalle de calculo y referencia documental contable.
+
+- Backend pruebas:
+  - `backend/db/tarifas_por_minutos_test.go`:
+    - agrega pruebas de configuracion avanzada y limites (`minimo`/`maximo`) con fraccion.
+    - agrega pruebas de aplicacion masiva de tarifas por estaciones.
+    - agrega pruebas de trazabilidad contable del calculo.
+  - `backend/handlers/tarifas_por_minutos_test.go`:
+    - agrega cobertura de acciones `config`, `aplicar_todas_estaciones` y simulacion con trazabilidad.
+
+## Actualizacion 2026-04-06 (cierre modulo 9: tarifas por dia)
+
+- Backend tarifas por dia:
+  - `backend/db/tarifas_por_dia.go`:
+    - extiende calculo a modelo de prorrateo por ventana `hora_check_in`/`hora_check_out`.
+    - expone detalle de calculo (`dias_completos`, `dias_equivalentes`, minutos/montos de prorrateo por entrada/intermedio/salida).
+    - agrega aplicacion masiva de tarifa diaria a estaciones detectadas por empresa (`ApplyEmpresaTarifaPorDiaToAllStations`).
+  - `backend/handlers/tarifas_por_dia.go`:
+    - extiende `GET action=calcular` con detalle completo de prorrateo.
+    - agrega `PUT action=aplicar_todas_estaciones` para replicar una tarifa diaria en todas las estaciones detectadas.
+  - `backend/handlers/reportes.go`:
+    - agrega dataset `operativo_tarifas_comparativo_estaciones`.
+    - compara ingreso esperado (motor de tarifa diaria con prorrateo) vs ingreso real de carritos cerrados por estacion.
+    - mantiene exportacion en formatos `pdf/xls/csv/json/txt`.
+
+- Frontend tarifas por dia:
+  - `web/administrar_empresa/tarifas_por_dia.html`:
+    - agrega boton `Aplicar a todas las estaciones`.
+    - amplía simulador mostrando dias equivalentes y detalle de prorrateo.
+    - agrega panel de descarga del comparativo esperado vs real por estacion.
+
+- Backend pruebas:
+  - `backend/db/tarifas_por_dia_test.go`:
+    - agrega cobertura de prorrateo multi-dia con cambio de tarifa.
+    - agrega cobertura de aplicacion masiva en estaciones detectadas.
+  - `backend/handlers/tarifas_por_dia_test.go`:
+    - valida respuesta de simulacion con detalle de prorrateo.
+    - valida `action=aplicar_todas_estaciones`.
+  - `backend/handlers/reportes_test.go`:
+    - agrega `TestEmpresaReportesHandlerDatasetOperativoTarifasComparativoEstaciones`.
+
+## Actualizacion 2026-04-06 (cierre modulo 10: clientes)
+
+- Backend clientes:
+  - `backend/db/clientes.go`:
+    - agrega deduplicacion por `documento`, `correo` y `telefono` en crear/editar por `empresa_id`.
+    - incorpora error de negocio `ClienteDuplicadoError` para identificar el campo en conflicto.
+  - `backend/handlers/clientes.go`:
+    - mapea conflictos de deduplicacion a HTTP `409` en `POST/PUT /api/empresa/clientes`.
+
+- Backend reportes:
+  - `backend/handlers/reportes.go`:
+    - agrega dataset `operativo_clientes_segmentacion_comercial` al catalogo/suite/exportaciones.
+    - consolida por cliente: segmento, compras, monto, ticket, ultima compra y accion comercial sugerida.
+    - mantiene exportacion en `pdf/xls/csv/json/txt`.
+
+- Frontend clientes:
+  - `web/administrar_empresa/administrar_clientes.html`:
+    - agrega panel de exportacion masiva por segmento comercial.
+    - habilita descarga directa del dataset de segmentacion comercial en formatos estandar.
+
+- Backend pruebas:
+  - `backend/db/clientes_test.go`:
+    - agrega cobertura de deduplicacion por documento/correo/telefono en create/update.
+  - `backend/handlers/clientes_test.go`:
+    - agrega cobertura HTTP para conflictos de deduplicacion (`409`) en alta/edicion.
+  - `backend/handlers/reportes_test.go`:
+    - agrega `TestEmpresaReportesHandlerDatasetOperativoClientesSegmentacionComercial` con validacion de dataset y export CSV.
+
 ## Actualizacion 2026-04-06 (pasarela de pago unica: Wompi)
 
 - Frontend super:

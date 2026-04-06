@@ -2,8 +2,14 @@ package db
 
 import (
 	"database/sql"
+	"errors"
+	"fmt"
 	"path/filepath"
+	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	_ "modernc.org/sqlite"
 )
@@ -16,6 +22,27 @@ func openCarritoInventarioTestDB(t *testing.T) *sql.DB {
 		t.Fatalf("open sqlite: %v", err)
 	}
 	dbConn.SetMaxOpenConns(1)
+	t.Cleanup(func() {
+		_ = dbConn.Close()
+	})
+	return dbConn
+}
+
+func openCarritoInventarioConcurrentTestDB(t *testing.T) *sql.DB {
+	t.Helper()
+	dbPath := filepath.Join(t.TempDir(), "carritos_inventario_concurrent_test.db")
+	dbConn, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		t.Fatalf("open sqlite concurrent: %v", err)
+	}
+	dbConn.SetMaxOpenConns(8)
+	dbConn.SetMaxIdleConns(8)
+	if _, err := dbConn.Exec(`PRAGMA journal_mode = WAL`); err != nil {
+		t.Fatalf("set wal mode: %v", err)
+	}
+	if _, err := dbConn.Exec(`PRAGMA busy_timeout = 5000`); err != nil {
+		t.Fatalf("set busy timeout: %v", err)
+	}
 	t.Cleanup(func() {
 		_ = dbConn.Close()
 	})
@@ -113,7 +140,7 @@ func TestCarritoProductoDescuentaInventarioYVentaMantieneStock(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get carrito: %v", err)
 	}
-	if err := PayCarritoStationSession(dbConn, 1, carritoID, "efectivo", "", "", "", 0, 0, carrito.Total, 0); err != nil {
+	if err := PayCarritoStationSession(dbConn, 1, carritoID, "efectivo", "", "", "", 0, 0, carrito.Total, 0, "test"); err != nil {
 		t.Fatalf("pay carrito: %v", err)
 	}
 
@@ -414,6 +441,169 @@ func TestCarritoComboStockInsuficienteEnIngrediente(t *testing.T) {
 	}
 }
 
+func TestCarritoComboConcurrenteNoSobrevendeStock(t *testing.T) {
+	dbConn := openCarritoInventarioConcurrentTestDB(t)
+	if err := EnsureEmpresaProductosSchema(dbConn); err != nil {
+		t.Fatalf("ensure productos schema: %v", err)
+	}
+	if err := EnsureEmpresaCarritosSchema(dbConn); err != nil {
+		t.Fatalf("ensure carritos schema: %v", err)
+	}
+
+	bodegaID, err := CreateBodega(dbConn, Bodega{
+		EmpresaID: 1,
+		Codigo:    "BOD-CMB-CONC",
+		Nombre:    "Bodega concurrencia combos",
+		Estado:    "activo",
+	})
+	if err != nil {
+		t.Fatalf("create bodega: %v", err)
+	}
+
+	insumoID, err := CreateProducto(dbConn, Producto{
+		EmpresaID:         1,
+		BodegaPrincipalID: bodegaID,
+		SKU:               "ING-CONC",
+		Nombre:            "Insumo concurrencia",
+		UnidadMedida:      "unidad",
+		Costo:             500,
+		Precio:            900,
+		Estado:            "activo",
+	}, 100, "TEST_COMBO_CONCURRENCIA")
+	if err != nil {
+		t.Fatalf("create producto: %v", err)
+	}
+
+	comboID, err := CreateComboProducto(dbConn, ComboProducto{
+		EmpresaID:          1,
+		Codigo:             "CMB-CONC-001",
+		Nombre:             "Combo concurrencia",
+		Precio:             3000,
+		ImpuestoPorcentaje: 0,
+		Estado:             "activo",
+	}, []ComboProductoDetalle{{ProductoID: insumoID, Cantidad: 1, UnidadMedida: "unidad"}})
+	if err != nil {
+		t.Fatalf("create combo: %v", err)
+	}
+
+	retryOnBusy := func(fn func() error) error {
+		var lastErr error
+		for attempt := 0; attempt < 12; attempt++ {
+			if err := fn(); err != nil {
+				lastErr = err
+				if !strings.Contains(strings.ToLower(err.Error()), "database is locked") {
+					return err
+				}
+				time.Sleep(time.Duration(attempt+1) * 20 * time.Millisecond)
+				continue
+			}
+			return nil
+		}
+		return lastErr
+	}
+	isBusyErr := func(err error) bool {
+		if err == nil {
+			return false
+		}
+		lower := strings.ToLower(err.Error())
+		return strings.Contains(lower, "database is locked") || strings.Contains(lower, "database is busy")
+	}
+
+	const workers = 40
+	const qtyPorCarrito = 3.0
+
+	var okCount int64
+	var insufCount int64
+	errCh := make(chan error, workers)
+	var wg sync.WaitGroup
+
+	for i := 0; i < workers; i++ {
+		idx := i
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			var carritoID int64
+			err := retryOnBusy(func() error {
+				id, createErr := CreateCarritoCompra(dbConn, CarritoCompra{
+					EmpresaID:      1,
+					Codigo:         fmt.Sprintf("CAR-CMB-CONC-%03d", idx),
+					Nombre:         fmt.Sprintf("Carrito concurrente %03d", idx),
+					CanalVenta:     "mostrador",
+					Moneda:         "COP",
+					UsuarioCreador: "test",
+					Estado:         "activo",
+				})
+				if createErr == nil {
+					carritoID = id
+				}
+				return createErr
+			})
+			if err != nil {
+				if isBusyErr(err) {
+					atomic.AddInt64(&insufCount, 1)
+					return
+				}
+				errCh <- fmt.Errorf("create carrito idx=%d: %w", idx, err)
+				return
+			}
+
+			err = retryOnBusy(func() error {
+				_, createErr := CreateCarritoCompraItem(dbConn, CarritoCompraItem{
+					EmpresaID:      1,
+					CarritoID:      carritoID,
+					TipoItem:       "combo",
+					ReferenciaID:   comboID,
+					Descripcion:    "Combo concurrencia",
+					UnidadMedida:   "combo",
+					Cantidad:       qtyPorCarrito,
+					PrecioUnitario: 3000,
+					Estado:         "activo",
+				})
+				return createErr
+			})
+			if err == nil {
+				atomic.AddInt64(&okCount, 1)
+				return
+			}
+			if errors.Is(err, ErrStockInsuficiente) || isBusyErr(err) {
+				atomic.AddInt64(&insufCount, 1)
+				return
+			}
+			errCh <- fmt.Errorf("create item idx=%d: %w", idx, err)
+		}()
+	}
+
+	wg.Wait()
+	close(errCh)
+	for err := range errCh {
+		if err != nil {
+			t.Fatalf("unexpected concurrent error: %v", err)
+		}
+	}
+
+	if okCount == 0 {
+		t.Fatal("expected at least one successful combo reservation")
+	}
+	if insufCount == 0 {
+		t.Fatal("expected stock-insufficient outcomes under concurrent demand")
+	}
+
+	stockFinal := stockTotalByProducto(t, dbConn, 1, insumoID)
+	if stockFinal < 0 {
+		t.Fatalf("expected non-negative stock, got %.2f", stockFinal)
+	}
+
+	consumoEsperado := float64(okCount) * qtyPorCarrito
+	stockEsperado := 100 - consumoEsperado
+	if stockEsperado < 0 {
+		stockEsperado = 0
+	}
+	if round2(stockFinal) != round2(stockEsperado) {
+		t.Fatalf("expected final stock %.2f, got %.2f (okCount=%d insufCount=%d)", stockEsperado, stockFinal, okCount, insufCount)
+	}
+}
+
 func TestCarritoEstadoVentaLifecycle(t *testing.T) {
 	dbConn := openCarritoInventarioTestDB(t)
 	if err := EnsureEmpresaCarritosSchema(dbConn); err != nil {
@@ -451,7 +641,7 @@ func TestCarritoEstadoVentaLifecycle(t *testing.T) {
 		t.Fatalf("expected venta_cerrada, got %q", carritoCerrado.EstadoVenta)
 	}
 
-	if err := PayCarritoStationSession(dbConn, 1, carritoAbiertoID, "efectivo", "", "", "", 0, 0, carritoCerrado.Total, 0); err != nil {
+	if err := PayCarritoStationSession(dbConn, 1, carritoAbiertoID, "efectivo", "", "", "", 0, 0, carritoCerrado.Total, 0, "test"); err != nil {
 		t.Fatalf("pagar carrito: %v", err)
 	}
 	carritoPagado, err := GetCarritoCompraByID(dbConn, 1, carritoAbiertoID)

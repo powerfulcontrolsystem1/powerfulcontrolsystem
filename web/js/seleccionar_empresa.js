@@ -63,6 +63,9 @@
   }
 
   function buildEmpresaCard(empresa, hasLicense) {
+    var estadoRaw = String(empresa && empresa.estado ? empresa.estado : "activo").toLowerCase();
+    var empresaActiva = estadoRaw !== "inactivo";
+
     var a = document.createElement("a");
     a.href = "#";
     a.className = "card-link";
@@ -99,10 +102,119 @@
       '" type="button" aria-hidden="true">' +
       (hasLicense ? "Licencia activa" : "Sin licencia") +
       "</button>" +
+      '<button class="btn secondary empresa-estado-btn" type="button">' +
+      (empresaActiva ? "Desactivar empresa" : "Reactivar empresa") +
+      "</button>" +
+      "</div>" +
+      '<div class="form-help">Estado: ' +
+      (empresaActiva ? "Activa" : "Inactiva") +
       "</div>" +
       "</div>";
+
+    var toggleBtn = div.querySelector(".empresa-estado-btn");
+    if (toggleBtn) {
+      toggleBtn.addEventListener("click", async function (evt) {
+        evt.preventDefault();
+        evt.stopPropagation();
+        toggleBtn.disabled = true;
+        try {
+          if (empresaActiva) {
+            await setEmpresaEstado(empresa, "inactivo");
+          } else {
+            await setEmpresaEstado(empresa, "activo");
+          }
+        } catch (err) {
+          alert("No se pudo actualizar el estado de la empresa: " + (err && err.message ? err.message : String(err)));
+        }
+        toggleBtn.disabled = false;
+      });
+    }
+
     a.appendChild(div);
     return a;
+  }
+
+  async function fetchEmpresaImpacto(empresaId) {
+    var res = await fetch(
+      "/super/api/empresas?id=" + encodeURIComponent(empresaId) + "&action=impacto_desactivacion",
+      { credentials: "same-origin" }
+    );
+    var raw = await res.text();
+    var data = null;
+    try {
+      data = raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      data = null;
+    }
+    if (!res.ok) {
+      throw new Error((data && (data.error || data.message)) || raw || "No se pudo obtener impacto de desactivación");
+    }
+    return data && data.impacto ? data.impacto : null;
+  }
+
+  function formatImpactoTexto(impacto) {
+    if (!impacto) return "";
+    var rows = [];
+    if ((impacto.usuarios_activos || 0) > 0) rows.push("- Usuarios activos: " + impacto.usuarios_activos);
+    if ((impacto.carritos_abiertos || 0) > 0) rows.push("- Carritos abiertos: " + impacto.carritos_abiertos);
+    if ((impacto.reservas_vigentes || 0) > 0) rows.push("- Reservas vigentes: " + impacto.reservas_vigentes);
+    if ((impacto.licencias_activas || 0) > 0) rows.push("- Licencias activas: " + impacto.licencias_activas);
+    return rows.join("\n");
+  }
+
+  async function setEmpresaEstado(empresa, estadoObjetivo) {
+    var empresaId = Number(empresa && empresa.id ? empresa.id : 0);
+    if (!empresaId) {
+      throw new Error("empresa_id inválido");
+    }
+
+    if (estadoObjetivo === "inactivo") {
+      var impacto = await fetchEmpresaImpacto(empresaId);
+      var resumen = formatImpactoTexto(impacto);
+      var force = false;
+
+      if (resumen) {
+        force = window.confirm(
+          "La empresa tiene impacto operativo activo:\n" + resumen + "\n\n¿Deseas desactivarla de todas formas?"
+        );
+        if (!force) {
+          return;
+        }
+      } else {
+        var confirmar = window.confirm("¿Confirmas desactivar la empresa '" + (empresa.nombre || "") + "'?");
+        if (!confirmar) {
+          return;
+        }
+      }
+
+      var disableURL = "/super/api/empresas?id=" + encodeURIComponent(empresaId) + "&action=desactivar";
+      if (force) {
+        disableURL += "&force=1";
+      }
+      var disableRes = await fetch(disableURL, {
+        method: "PUT",
+        credentials: "same-origin",
+      });
+      var disableRaw = await disableRes.text();
+      if (!disableRes.ok) {
+        throw new Error(disableRaw || "No se pudo desactivar la empresa");
+      }
+      await render();
+      return;
+    }
+
+    var activateRes = await fetch(
+      "/super/api/empresas?id=" + encodeURIComponent(empresaId) + "&action=activar&activo=1",
+      {
+        method: "PUT",
+        credentials: "same-origin",
+      }
+    );
+    var activateRaw = await activateRes.text();
+    if (!activateRes.ok) {
+      throw new Error(activateRaw || "No se pudo reactivar la empresa");
+    }
+    await render();
   }
 
   function appendEmpresasGroup(container, title, empresas, activeByEmpresa) {

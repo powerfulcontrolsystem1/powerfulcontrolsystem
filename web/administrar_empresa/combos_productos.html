@@ -90,6 +90,7 @@
         <button type="submit" id="guardarComboBtn" class="btn">Guardar combo</button>
         <button type="button" id="cancelarComboBtn" class="btn secondary">Cancelar</button>
       </div>
+      <div id="comboCostoInfo" class="form-help" style="margin-top:8px;"></div>
       <div id="comboMsg" class="form-help"></div>
     </form>
 
@@ -159,6 +160,28 @@
 
     function formatMoney(v) {
       return Number(v || 0).toFixed(2);
+    }
+
+    function formatSignedPercent(v) {
+      const n = Number(v || 0);
+      if (!Number.isFinite(n)) return '0.00%';
+      const abs = Math.abs(n).toFixed(2) + '%';
+      if (n > 0) return '+' + abs;
+      if (n < 0) return '-' + abs;
+      return abs;
+    }
+
+    function renderComboCostInfo(combo) {
+      const info = document.getElementById('comboCostoInfo');
+      if (!combo || Number(combo.id || 0) <= 0) {
+        info.textContent = '';
+        return;
+      }
+      const version = Number(combo.receta_version || 1);
+      const costoTeorico = formatMoney(combo.costo_teorico || 0);
+      const costoReal = formatMoney(combo.costo_real || 0);
+      const variacion = formatSignedPercent(combo.variacion_costo_porcentaje || 0);
+      info.textContent = 'Receta v' + version + ' | Costo teorico: ' + costoTeorico + ' | Costo real: ' + costoReal + ' | Variacion: ' + variacion;
     }
 
     function fillProductosSelect() {
@@ -305,6 +328,7 @@
       document.getElementById('guardarComboBtn').textContent = 'Guardar combo';
       state.draftIngredientes = [];
       renderIngredientesDraft();
+      renderComboCostInfo(null);
       setMessage('comboMsg', '', false);
       if (hide) {
         document.getElementById('comboForm').style.display = 'none';
@@ -360,8 +384,12 @@
         '<th>ID</th>' +
         '<th>Código</th>' +
         '<th>Nombre</th>' +
+        '<th>Receta v</th>' +
         '<th>Precio</th>' +
         '<th>Imp %</th>' +
+        '<th>Costo teórico</th>' +
+        '<th>Costo real</th>' +
+        '<th>Var %</th>' +
         '<th>Ingredientes</th>' +
         '<th>Estado</th>' +
         '<th>Acciones</th>' +
@@ -371,12 +399,17 @@
       state.combos.forEach(function(c) {
         const estado = normalize(c.estado) || 'activo';
         const toggleLabel = estado === 'activo' ? 'Desactivar' : 'Activar';
+        const version = Number(c.receta_version || 1);
         const tr = document.createElement('tr');
         tr.innerHTML = '<td>' + Number(c.id || 0) + '</td>' +
           '<td>' + escapeHtml(normalize(c.codigo) || '-') + '</td>' +
           '<td>' + escapeHtml(normalize(c.nombre) || '-') + '</td>' +
+          '<td>' + version + '</td>' +
           '<td>' + formatMoney(c.precio) + '</td>' +
           '<td>' + Number(c.impuesto_porcentaje || 0).toFixed(2) + '</td>' +
+          '<td>' + formatMoney(c.costo_teorico || 0) + '</td>' +
+          '<td>' + formatMoney(c.costo_real || 0) + '</td>' +
+          '<td>' + escapeHtml(formatSignedPercent(c.variacion_costo_porcentaje || 0)) + '</td>' +
           '<td>' + Number(c.ingredientes_count || 0) + '</td>' +
           '<td>' + escapeHtml(estado) + '</td>' +
           '<td class="actions">' +
@@ -416,6 +449,7 @@
               };
             }).filter(function(it) { return it.producto_id > 0 && it.cantidad > 0; });
             renderIngredientesDraft();
+            renderComboCostInfo(combo);
             setMessage('comboMsg', '', false);
             window.scrollTo({ top: 0, behavior: 'smooth' });
           } catch (err) {

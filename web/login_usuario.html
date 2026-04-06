@@ -31,6 +31,8 @@
 
         <div class="form-actions" style="margin-top:12px;">
           <button id="btnIngresar" type="submit" class="btn">Ingresar</button>
+          <button id="btnMostrarRecuperacion" type="button" class="btn secondary">Olvide mi contraseña</button>
+          <button id="btnMostrarCambioClave" type="button" class="btn secondary">Cambiar mi contraseña</button>
           <a href="/login.html" class="btn secondary" style="text-decoration:none;display:inline-flex;align-items:center;">Login Google</a>
         </div>
         <div id="msg" class="form-help"></div>
@@ -71,6 +73,98 @@
           <button id="btnVolverLogin" type="button" class="btn secondary">Volver</button>
         </div>
         <div id="setupMsg" class="form-help"></div>
+      </form>
+
+      <form id="recoveryRequestForm" class="form" style="margin-top:14px;display:none;">
+        <h3 style="margin:0 0 8px 0;">Recuperar contraseña</h3>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="recoveryEmail">Correo electrónico</label>
+            <input id="recoveryEmail" type="email" class="form-input" required placeholder="usuario@empresa.com">
+          </div>
+        </div>
+
+        <div class="form-actions" style="margin-top:12px;">
+          <button id="btnSolicitarRecuperacion" type="submit" class="btn">Solicitar recuperación</button>
+          <button id="btnVolverDesdeRecuperacion" type="button" class="btn secondary">Volver</button>
+        </div>
+        <div id="recoveryMsg" class="form-help"></div>
+      </form>
+
+      <form id="resetPasswordForm" class="form" style="margin-top:14px;display:none;">
+        <h3 style="margin:0 0 8px 0;">Restablecer contraseña</h3>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="resetEmail">Correo electrónico</label>
+            <input id="resetEmail" type="email" class="form-input" required placeholder="usuario@empresa.com">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="resetToken">Token de recuperación</label>
+            <input id="resetToken" type="text" class="form-input" required placeholder="Ingresa el token recibido por correo">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="resetPassword">Nueva contraseña</label>
+            <input id="resetPassword" type="password" class="form-input" required placeholder="Mínimo 8 caracteres">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="resetPasswordConfirm">Confirmar contraseña</label>
+            <input id="resetPasswordConfirm" type="password" class="form-input" required placeholder="Repite tu nueva contraseña">
+          </div>
+        </div>
+
+        <div class="form-actions" style="margin-top:12px;">
+          <button id="btnRestablecerPassword" type="submit" class="btn">Restablecer y entrar</button>
+          <button id="btnVolverDesdeReset" type="button" class="btn secondary">Volver</button>
+        </div>
+        <div id="resetMsg" class="form-help"></div>
+      </form>
+
+      <form id="changePasswordForm" class="form" style="margin-top:14px;display:none;">
+        <h3 style="margin:0 0 8px 0;">Cambiar contraseña</h3>
+        <p class="form-help" style="margin-top:0;">Usa tu contraseña actual para actualizarla de forma autogestionada.</p>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="changeEmail">Correo electrónico</label>
+            <input id="changeEmail" type="email" class="form-input" required placeholder="usuario@empresa.com">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="changeCurrentPassword">Contraseña actual</label>
+            <input id="changeCurrentPassword" type="password" class="form-input" required placeholder="Ingresa tu contraseña actual">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="changeNewPassword">Nueva contraseña</label>
+            <input id="changeNewPassword" type="password" class="form-input" required placeholder="Nueva contraseña segura">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="changeNewPasswordConfirm">Confirmar nueva contraseña</label>
+            <input id="changeNewPasswordConfirm" type="password" class="form-input" required placeholder="Repite la nueva contraseña">
+          </div>
+        </div>
+
+        <div class="form-actions" style="margin-top:12px;">
+          <button id="btnCambiarPassword" type="submit" class="btn">Cambiar y entrar</button>
+          <button id="btnVolverDesdeCambio" type="button" class="btn secondary">Volver</button>
+        </div>
+        <div id="changePasswordMsg" class="form-help"></div>
       </form>
     </section>
   </div>

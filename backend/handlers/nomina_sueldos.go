@@ -102,6 +102,61 @@ func EmpresaNominaSueldosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				writeJSON(w, http.StatusOK, rows)
 				return
 
+			case "desprendible", "desprendible_nomina":
+				empleadoNominaID, err := parseInt64Query(r, "empleado_nomina_id")
+				if err != nil {
+					http.Error(w, "empleado_nomina_id es obligatorio", http.StatusBadRequest)
+					return
+				}
+				periodoDesde := strings.TrimSpace(r.URL.Query().Get("periodo_desde"))
+				periodoHasta := strings.TrimSpace(r.URL.Query().Get("periodo_hasta"))
+				if periodoDesde == "" {
+					periodoDesde = strings.TrimSpace(r.URL.Query().Get("desde"))
+				}
+				if periodoHasta == "" {
+					periodoHasta = strings.TrimSpace(r.URL.Query().Get("hasta"))
+				}
+				doc, err := dbpkg.GetEmpresaNominaDesprendible(dbEmp, empresaID, empleadoNominaID, periodoDesde, periodoHasta)
+				if err != nil {
+					if errors.Is(err, sql.ErrNoRows) {
+						http.Error(w, "No se encontro liquidacion para desprendible", http.StatusNotFound)
+						return
+					}
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				writeJSON(w, http.StatusOK, doc)
+				return
+
+			case "conciliacion_asistencia", "conciliar_asistencia":
+				periodoDesde := strings.TrimSpace(r.URL.Query().Get("periodo_desde"))
+				periodoHasta := strings.TrimSpace(r.URL.Query().Get("periodo_hasta"))
+				if periodoDesde == "" {
+					periodoDesde = strings.TrimSpace(r.URL.Query().Get("desde"))
+				}
+				if periodoHasta == "" {
+					periodoHasta = strings.TrimSpace(r.URL.Query().Get("hasta"))
+				}
+				empleadoNominaID, err := parseInt64QueryOptional(r, "empleado_nomina_id")
+				if err != nil {
+					http.Error(w, "empleado_nomina_id invalido", http.StatusBadRequest)
+					return
+				}
+				result, err := dbpkg.ConciliarEmpresaNominaAsistencia(dbEmp, dbpkg.EmpresaNominaConciliacionRequest{
+					EmpresaID:        empresaID,
+					PeriodoDesde:     periodoDesde,
+					PeriodoHasta:     periodoHasta,
+					EmpleadoNominaID: empleadoNominaID,
+					AutoRecalcular:   false,
+					UsuarioCreador:   strings.TrimSpace(adminEmailFromRequest(r)),
+				})
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				writeJSON(w, http.StatusOK, result)
+				return
+
 			default:
 				http.Error(w, "action invalida. Use: config, empleados, festivos o liquidaciones", http.StatusBadRequest)
 				return
@@ -201,8 +256,52 @@ func EmpresaNominaSueldosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				writeJSON(w, http.StatusOK, result)
 				return
 
+			case "conciliar_asistencia", "conciliacion_asistencia":
+				var req dbpkg.EmpresaNominaConciliacionRequest
+				if r.Body != nil {
+					if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+						http.Error(w, "JSON invalido", http.StatusBadRequest)
+						return
+					}
+				}
+				if req.EmpresaID <= 0 {
+					if empresaID, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && empresaID > 0 {
+						req.EmpresaID = empresaID
+					}
+				}
+				if req.EmpresaID <= 0 {
+					http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+					return
+				}
+				if strings.TrimSpace(req.PeriodoDesde) == "" {
+					req.PeriodoDesde = strings.TrimSpace(r.URL.Query().Get("periodo_desde"))
+				}
+				if strings.TrimSpace(req.PeriodoHasta) == "" {
+					req.PeriodoHasta = strings.TrimSpace(r.URL.Query().Get("periodo_hasta"))
+				}
+				if strings.TrimSpace(req.PeriodoDesde) == "" {
+					req.PeriodoDesde = strings.TrimSpace(r.URL.Query().Get("desde"))
+				}
+				if strings.TrimSpace(req.PeriodoHasta) == "" {
+					req.PeriodoHasta = strings.TrimSpace(r.URL.Query().Get("hasta"))
+				}
+				if req.EmpleadoNominaID <= 0 {
+					if id, err := parseInt64QueryOptional(r, "empleado_nomina_id"); err == nil && id > 0 {
+						req.EmpleadoNominaID = id
+					}
+				}
+				req.AutoRecalcular = req.AutoRecalcular || queryBool(r, "auto_recalcular") || queryBool(r, "recalcular")
+				req.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
+				result, err := dbpkg.ConciliarEmpresaNominaAsistencia(dbEmp, req)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				writeJSON(w, http.StatusOK, result)
+				return
+
 			default:
-				http.Error(w, "action invalida. Use: empleado, festivo o calcular", http.StatusBadRequest)
+				http.Error(w, "action invalida. Use: empleado, festivo, calcular o conciliar_asistencia", http.StatusBadRequest)
 				return
 			}
 

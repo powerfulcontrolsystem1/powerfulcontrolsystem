@@ -438,6 +438,20 @@ func EmpresaInventarioAlertasHandler(dbEmp *sql.DB) http.HandlerFunc {
 		bodegaID, _ := parseInt64QueryOptional(r, "bodega_id")
 		limit, _ := parseIntQueryOptional(r, "limit")
 		offset, _ := parseIntQueryOptional(r, "offset")
+		action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+		modo := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("modo")))
+		proactivo := action == "proactivas" || action == "operativas" || action == "sobrestock" || modo == "proactivo" || r.URL.Query().Get("proactivo") == "1"
+
+		if proactivo {
+			rows, err := dbpkg.GetAlertasOperativasByEmpresa(dbEmp, empresaID, productoID, bodegaID, limit, offset)
+			if err != nil {
+				http.Error(w, "failed to list alertas operativas: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(rows)
+			return
+		}
 
 		rows, err := dbpkg.GetAlertasQuiebreByEmpresa(dbEmp, empresaID, productoID, bodegaID, limit, offset)
 		if err != nil {
@@ -446,6 +460,163 @@ func EmpresaInventarioAlertasHandler(dbEmp *sql.DB) http.HandlerFunc {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(rows)
+	}
+}
+
+// EmpresaInventarioConfiguracionHandler gestiona configuracion operativa de inventario por empresa.
+func EmpresaInventarioConfiguracionHandler(dbEmp *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			empresaID, err := parseEmpresaIDQuery(r)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			conf, err := dbpkg.GetEmpresaInventarioConfiguracion(dbEmp, empresaID)
+			if err != nil {
+				http.Error(w, "failed to get inventario config: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(conf)
+			return
+		case http.MethodPut:
+			var payload struct {
+				EmpresaID     int64  `json:"empresa_id"`
+				PoliticaCosto string `json:"politica_costo"`
+				Observaciones string `json:"observaciones"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "invalid payload", http.StatusBadRequest)
+				return
+			}
+			if payload.EmpresaID <= 0 {
+				http.Error(w, "empresa_id requerido", http.StatusBadRequest)
+				return
+			}
+			politica := strings.ToLower(strings.TrimSpace(payload.PoliticaCosto))
+			switch politica {
+			case "", "promedio":
+				politica = "promedio"
+			case "peps", "fifo":
+				politica = "peps"
+			default:
+				http.Error(w, "politica_costo invalida (valores permitidos: promedio, peps)", http.StatusBadRequest)
+				return
+			}
+
+			conf, err := dbpkg.UpsertEmpresaInventarioConfiguracion(dbEmp, dbpkg.EmpresaInventarioConfiguracion{
+				EmpresaID:      payload.EmpresaID,
+				PoliticaCosto:  politica,
+				UsuarioCreador: adminEmailFromRequest(r),
+				Estado:         "activo",
+				Observaciones:  strings.TrimSpace(payload.Observaciones),
+			})
+			if err != nil {
+				http.Error(w, "failed to save inventario config: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(conf)
+			return
+		default:
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+	}
+}
+
+// EmpresaInventarioConteoCiclicoHandler gestiona conteos ciclicos con ajuste auditado.
+func EmpresaInventarioConteoCiclicoHandler(dbEmp *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			empresaID, err := parseEmpresaIDQuery(r)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			productoID, err := parseInt64QueryOptional(r, "producto_id")
+			if err != nil {
+				http.Error(w, "producto_id invalido", http.StatusBadRequest)
+				return
+			}
+			bodegaID, err := parseInt64QueryOptional(r, "bodega_id")
+			if err != nil {
+				http.Error(w, "bodega_id invalido", http.StatusBadRequest)
+				return
+			}
+			estadoConteo := strings.TrimSpace(r.URL.Query().Get("estado_conteo"))
+			desde := strings.TrimSpace(r.URL.Query().Get("desde"))
+			hasta := strings.TrimSpace(r.URL.Query().Get("hasta"))
+			if desde != "" && !isISODate(desde) {
+				http.Error(w, "desde debe usar formato YYYY-MM-DD", http.StatusBadRequest)
+				return
+			}
+			if hasta != "" && !isISODate(hasta) {
+				http.Error(w, "hasta debe usar formato YYYY-MM-DD", http.StatusBadRequest)
+				return
+			}
+			limit, _ := parseIntQueryOptional(r, "limit")
+			offset, _ := parseIntQueryOptional(r, "offset")
+
+			rows, err := dbpkg.GetInventarioConteosCiclicosByEmpresa(dbEmp, empresaID, productoID, bodegaID, estadoConteo, desde, hasta, limit, offset)
+			if err != nil {
+				http.Error(w, "failed to list conteos ciclicos: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(rows)
+			return
+		case http.MethodPost:
+			var payload struct {
+				EmpresaID       int64   `json:"empresa_id"`
+				ProductoID      int64   `json:"producto_id"`
+				BodegaID        int64   `json:"bodega_id"`
+				CantidadContada float64 `json:"cantidad_contada"`
+				Referencia      string  `json:"referencia"`
+				Observaciones   string  `json:"observaciones"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "invalid payload", http.StatusBadRequest)
+				return
+			}
+			if payload.EmpresaID <= 0 || payload.ProductoID <= 0 || payload.BodegaID <= 0 {
+				http.Error(w, "empresa_id, producto_id y bodega_id son obligatorios", http.StatusBadRequest)
+				return
+			}
+			if payload.CantidadContada < 0 {
+				http.Error(w, "cantidad_contada no puede ser negativa", http.StatusBadRequest)
+				return
+			}
+
+			conteo, err := dbpkg.RegistrarConteoCiclicoInventario(dbEmp, dbpkg.InventarioConteoCiclico{
+				EmpresaID:       payload.EmpresaID,
+				ProductoID:      payload.ProductoID,
+				BodegaID:        payload.BodegaID,
+				CantidadContada: payload.CantidadContada,
+				Referencia:      strings.TrimSpace(payload.Referencia),
+				UsuarioRevisor:  adminEmailFromRequest(r),
+				UsuarioCreador:  adminEmailFromRequest(r),
+				Observaciones:   strings.TrimSpace(payload.Observaciones),
+			})
+			if err != nil {
+				if errors.Is(err, dbpkg.ErrStockInsuficiente) {
+					http.Error(w, "stock insuficiente para ajuste de conteo", http.StatusConflict)
+					return
+				}
+				http.Error(w, "failed to register conteo ciclico: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]interface{}{"id": conteo.ID, "resultado": conteo})
+			return
+		default:
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
 	}
 }
 

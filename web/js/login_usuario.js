@@ -10,6 +10,8 @@ function getQueryParam(name) {
 }
 
 var empresaID = Number(getQueryParam("empresa_id") || getQueryParam("id") || 0);
+var tokenRecuperacionPrefill = (getQueryParam("token_recuperacion") || "").trim();
+var emailRecuperacionPrefill = (getQueryParam("email") || "").trim();
 
 function ensureEmpresaScope(targetId) {
   if (empresaID > 0) {
@@ -26,6 +28,9 @@ async function getErrorMessage(res) {
 
 function showSetupForm(email, msg) {
   document.getElementById("loginUsuarioForm").style.display = "none";
+  document.getElementById("recoveryRequestForm").style.display = "none";
+  document.getElementById("resetPasswordForm").style.display = "none";
+  document.getElementById("changePasswordForm").style.display = "none";
   document.getElementById("setupPasswordForm").style.display = "block";
   document.getElementById("setupEmail").value = email || "";
   setMessage("setupMsg", msg || "Primer ingreso detectado. Define tu contrasena para continuar.", false);
@@ -34,10 +39,54 @@ function showSetupForm(email, msg) {
 
 function showLoginForm() {
   document.getElementById("setupPasswordForm").style.display = "none";
+  document.getElementById("recoveryRequestForm").style.display = "none";
+  document.getElementById("resetPasswordForm").style.display = "none";
+  document.getElementById("changePasswordForm").style.display = "none";
   document.getElementById("loginUsuarioForm").style.display = "block";
   setMessage("setupMsg", "", false);
+  setMessage("recoveryMsg", "", false);
+  setMessage("resetMsg", "", false);
+  setMessage("changePasswordMsg", "", false);
   setMessage("msg", "", false);
   document.getElementById("password").focus();
+}
+
+function showRecoveryRequestForm(email) {
+  document.getElementById("loginUsuarioForm").style.display = "none";
+  document.getElementById("setupPasswordForm").style.display = "none";
+  document.getElementById("resetPasswordForm").style.display = "none";
+  document.getElementById("changePasswordForm").style.display = "none";
+  document.getElementById("recoveryRequestForm").style.display = "block";
+  document.getElementById("recoveryEmail").value = (email || "").trim();
+  setMessage("recoveryMsg", "", false);
+  document.getElementById("recoveryEmail").focus();
+}
+
+function showResetForm(email, token, msg) {
+  document.getElementById("loginUsuarioForm").style.display = "none";
+  document.getElementById("setupPasswordForm").style.display = "none";
+  document.getElementById("recoveryRequestForm").style.display = "none";
+  document.getElementById("changePasswordForm").style.display = "none";
+  document.getElementById("resetPasswordForm").style.display = "block";
+  document.getElementById("resetEmail").value = (email || "").trim();
+  document.getElementById("resetToken").value = (token || "").trim();
+  setMessage("resetMsg", msg || "", false);
+  if ((token || "").trim()) {
+    document.getElementById("resetPassword").focus();
+  } else {
+    document.getElementById("resetToken").focus();
+  }
+}
+
+function showChangePasswordForm(email, msg) {
+  document.getElementById("loginUsuarioForm").style.display = "none";
+  document.getElementById("setupPasswordForm").style.display = "none";
+  document.getElementById("recoveryRequestForm").style.display = "none";
+  document.getElementById("resetPasswordForm").style.display = "none";
+  document.getElementById("changePasswordForm").style.display = "block";
+  document.getElementById("changeEmail").value = (email || "").trim();
+  setMessage("changePasswordMsg", msg || "", false);
+  document.getElementById("changeCurrentPassword").focus();
 }
 
 document.getElementById("loginUsuarioForm").addEventListener("submit", async function (ev) {
@@ -76,6 +125,13 @@ document.getElementById("loginUsuarioForm").addEventListener("submit", async fun
     var body = await res.json();
     if (body && body.password_setup_required) {
       showSetupForm(email, body.message || "Primer ingreso detectado. Define tu contrasena para continuar.");
+      return;
+    }
+    if (body && body.password_rotation_required) {
+      showChangePasswordForm(
+        (body.email || email || "").trim(),
+        body.message || "Debes actualizar tu contrasena para continuar."
+      );
       return;
     }
 
@@ -145,6 +201,191 @@ document.getElementById("setupPasswordForm").addEventListener("submit", async fu
   }
 });
 
+document.getElementById("recoveryRequestForm").addEventListener("submit", async function (ev) {
+  ev.preventDefault();
+
+  if (!ensureEmpresaScope("recoveryMsg")) {
+    return;
+  }
+
+  var btn = document.getElementById("btnSolicitarRecuperacion");
+  var email = (document.getElementById("recoveryEmail").value || "").trim();
+  if (!email) {
+    setMessage("recoveryMsg", "Debes completar el correo.", true);
+    return;
+  }
+
+  btn.disabled = true;
+  var prevText = btn.textContent;
+  btn.textContent = "Enviando...";
+  setMessage("recoveryMsg", "", false);
+
+  try {
+    var recoveryURL = "/api/empresa/usuarios/solicitar_recuperacion_password?empresa_id=" + encodeURIComponent(String(empresaID));
+    var res = await fetch(recoveryURL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ empresa_id: empresaID, email: email }),
+    });
+
+    if (!res.ok) {
+      throw new Error(await getErrorMessage(res));
+    }
+
+    var body = await res.json();
+    var delivery = body && body.delivery ? String(body.delivery) : "masked";
+    var msg = body && body.message ? String(body.message) : "Si el correo existe, enviaremos instrucciones para recuperar la contraseña.";
+    if (delivery === "manual") {
+      msg += " Si no recibes correo, solicita soporte al administrador de la empresa.";
+    }
+    setMessage("recoveryMsg", msg, false);
+    showResetForm(email, "", "Cuando recibas el token, ingrésalo aquí para continuar.");
+  } catch (err) {
+    setMessage("recoveryMsg", err.message || "No se pudo solicitar la recuperación.", true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = prevText;
+  }
+});
+
+document.getElementById("resetPasswordForm").addEventListener("submit", async function (ev) {
+  ev.preventDefault();
+
+  if (!ensureEmpresaScope("resetMsg")) {
+    return;
+  }
+
+  var btn = document.getElementById("btnRestablecerPassword");
+  var email = (document.getElementById("resetEmail").value || "").trim();
+  var token = (document.getElementById("resetToken").value || "").trim();
+  var password = document.getElementById("resetPassword").value || "";
+  var passwordConfirm = document.getElementById("resetPasswordConfirm").value || "";
+
+  if (!email || !token || !password || !passwordConfirm) {
+    setMessage("resetMsg", "Debes completar todos los campos.", true);
+    return;
+  }
+  if (password !== passwordConfirm) {
+    setMessage("resetMsg", "Las contrasenas no coinciden.", true);
+    return;
+  }
+
+  btn.disabled = true;
+  var prevText = btn.textContent;
+  btn.textContent = "Restableciendo...";
+  setMessage("resetMsg", "", false);
+
+  try {
+    var resetURL = "/api/empresa/usuarios/restablecer_password?empresa_id=" + encodeURIComponent(String(empresaID));
+    var res = await fetch(resetURL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        empresa_id: empresaID,
+        email: email,
+        token: token,
+        password: password,
+        password_confirm: passwordConfirm,
+      }),
+    });
+
+    if (!res.ok) {
+      throw new Error(await getErrorMessage(res));
+    }
+
+    var body = await res.json();
+    var redirectURL = body && body.redirect_url ? String(body.redirect_url) : "/administrar_empresa.html";
+    window.location.href = redirectURL;
+  } catch (err) {
+    setMessage("resetMsg", err.message || "No se pudo restablecer la contrasena.", true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = prevText;
+  }
+});
+
+document.getElementById("changePasswordForm").addEventListener("submit", async function (ev) {
+  ev.preventDefault();
+
+  if (!ensureEmpresaScope("changePasswordMsg")) {
+    return;
+  }
+
+  var btn = document.getElementById("btnCambiarPassword");
+  var email = (document.getElementById("changeEmail").value || "").trim();
+  var currentPassword = document.getElementById("changeCurrentPassword").value || "";
+  var newPassword = document.getElementById("changeNewPassword").value || "";
+  var newPasswordConfirm = document.getElementById("changeNewPasswordConfirm").value || "";
+
+  if (!email || !currentPassword || !newPassword || !newPasswordConfirm) {
+    setMessage("changePasswordMsg", "Debes completar todos los campos.", true);
+    return;
+  }
+  if (newPassword !== newPasswordConfirm) {
+    setMessage("changePasswordMsg", "Las contrasenas no coinciden.", true);
+    return;
+  }
+
+  btn.disabled = true;
+  var prevText = btn.textContent;
+  btn.textContent = "Actualizando...";
+  setMessage("changePasswordMsg", "", false);
+
+  try {
+    var changeURL = "/api/empresa/usuarios/cambiar_password?empresa_id=" + encodeURIComponent(String(empresaID));
+    var res = await fetch(changeURL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        empresa_id: empresaID,
+        email: email,
+        current_password: currentPassword,
+        new_password: newPassword,
+        new_password_confirm: newPasswordConfirm,
+      }),
+    });
+
+    if (!res.ok) {
+      throw new Error(await getErrorMessage(res));
+    }
+
+    var body = await res.json();
+    var redirectURL = body && body.redirect_url ? String(body.redirect_url) : "/administrar_empresa.html";
+    window.location.href = redirectURL;
+  } catch (err) {
+    setMessage("changePasswordMsg", err.message || "No se pudo cambiar la contrasena.", true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = prevText;
+  }
+});
+
 document.getElementById("btnVolverLogin").addEventListener("click", function () {
   showLoginForm();
 });
+
+document.getElementById("btnMostrarRecuperacion").addEventListener("click", function () {
+  var email = (document.getElementById("email").value || "").trim();
+  showRecoveryRequestForm(email);
+});
+
+document.getElementById("btnMostrarCambioClave").addEventListener("click", function () {
+  var email = (document.getElementById("email").value || "").trim();
+  showChangePasswordForm(email, "");
+});
+
+document.getElementById("btnVolverDesdeRecuperacion").addEventListener("click", function () {
+  showLoginForm();
+});
+
+document.getElementById("btnVolverDesdeReset").addEventListener("click", function () {
+  showLoginForm();
+});
+
+document.getElementById("btnVolverDesdeCambio").addEventListener("click", function () {
+  showLoginForm();
+});
+
+if (tokenRecuperacionPrefill) {
+  showResetForm(emailRecuperacionPrefill, tokenRecuperacionPrefill, "Token detectado en la URL. Completa tu nueva contrasena para continuar.");
+}

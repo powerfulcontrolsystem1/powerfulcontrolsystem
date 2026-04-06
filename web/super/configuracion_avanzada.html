@@ -150,6 +150,24 @@
       </div>
       <div id="aiConfigMsg" class="form-help"></div>
     </section>
+
+    <section class="card form mp-card" id="backupConfigCard">
+      <h2>Respaldo y restauración de configuración crítica</h2>
+      <p class="form-help">Genera o restaura un respaldo operativo JSON de configuración super (Wompi, Gmail e IA).</p>
+      <div class="form-row">
+        <div class="form-col">
+          <button id="downloadConfigBackupBtn" class="btn" type="button">Descargar respaldo JSON</button>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Archivo de respaldo</label>
+          <input id="restoreConfigFile" class="form-input" type="file" accept="application/json,.json">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button id="restoreConfigBtn" class="btn secondary" type="button">Restaurar respaldo</button>
+      </div>
+      <div id="backupConfigMsg" class="form-help"></div>
+    </section>
   </div>
 
   <script>
@@ -553,6 +571,84 @@
         document.getElementById('wompiMsg').innerText = 'Edición cancelada.';
       }
 
+      async function downloadConfigBackup(){
+        const msg = document.getElementById('backupConfigMsg');
+        msg.innerText = 'Generando respaldo...';
+        try {
+          const res = await fetch('/super/api/config/backup', { credentials: 'same-origin' });
+          if (!res.ok) {
+            const rawErr = await res.text();
+            msg.innerText = 'No se pudo generar el respaldo: ' + rawErr;
+            return;
+          }
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'super_config_backup.json';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          msg.innerText = 'Respaldo descargado correctamente.';
+        } catch (err) {
+          msg.innerText = 'Error generando respaldo: ' + (err.message || err);
+        }
+      }
+
+      async function restoreConfigBackup(){
+        const fileInput = document.getElementById('restoreConfigFile');
+        const msg = document.getElementById('backupConfigMsg');
+        const files = fileInput && fileInput.files ? fileInput.files : null;
+        if (!files || !files.length) {
+          msg.innerText = 'Selecciona un archivo JSON de respaldo antes de restaurar.';
+          return;
+        }
+
+        let payload = null;
+        try {
+          const raw = await files[0].text();
+          payload = raw ? JSON.parse(raw) : null;
+        } catch (err) {
+          msg.innerText = 'El archivo seleccionado no es un JSON válido.';
+          return;
+        }
+
+        if (!payload || !Array.isArray(payload.items)) {
+          msg.innerText = 'El respaldo no tiene la estructura esperada (items).';
+          return;
+        }
+
+        const confirmed = window.confirm('Se restaurarán configuraciones críticas de super. ¿Deseas continuar?');
+        if (!confirmed) {
+          msg.innerText = 'Restauración cancelada por el usuario.';
+          return;
+        }
+
+        msg.innerText = 'Restaurando configuración crítica...';
+        try {
+          const res = await fetch('/super/api/config/backup', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            credentials: 'same-origin'
+          });
+          const raw = await res.text();
+          let body = null;
+          try { body = raw ? JSON.parse(raw) : null; } catch (err) { body = null; }
+
+          if (!res.ok) {
+            msg.innerText = 'Error restaurando respaldo: ' + (body ? JSON.stringify(body) : raw);
+            return;
+          }
+
+          msg.innerText = 'Respaldo restaurado correctamente. Claves restauradas: ' + ((body && body.restored_count) || 0) + '.';
+          await load();
+        } catch (err) {
+          msg.innerText = 'Error restaurando respaldo: ' + (err.message || err);
+        }
+      }
+
       document.getElementById('saveWompiBtn').addEventListener('click', saveWompi);
       document.getElementById('editWompiBtn').addEventListener('click', enableEditWompi);
       document.getElementById('cancelWompiBtn').addEventListener('click', cancelEditWompi);
@@ -563,6 +659,8 @@
       document.getElementById('saveAiConfigBtn').addEventListener('click', saveAIConfig);
       document.getElementById('editAiConfigBtn').addEventListener('click', enableEditAIConfig);
       document.getElementById('cancelAiConfigBtn').addEventListener('click', cancelEditAIConfig);
+      document.getElementById('downloadConfigBackupBtn').addEventListener('click', downloadConfigBackup);
+      document.getElementById('restoreConfigBtn').addEventListener('click', restoreConfigBackup);
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', load); else load();
     })();
   </script>

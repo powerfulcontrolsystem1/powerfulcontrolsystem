@@ -341,6 +341,12 @@
         <div class="form-actions">
           <button type="submit" class="btn">Calcular nomina</button>
           <button id="calcListarBtn" type="button" class="btn secondary">Consultar liquidaciones</button>
+          <button id="calcDesprendibleBtn" type="button" class="btn secondary">Generar desprendible</button>
+          <select id="calcConciliarFix" class="form-input" style="max-width:220px;">
+            <option value="0">Conciliar: solo auditar</option>
+            <option value="1">Conciliar y recalcular</option>
+          </select>
+          <button id="calcConciliarBtn" type="button" class="btn secondary">Conciliar asistencia</button>
           <select id="calcExportFormat" class="form-input" style="max-width:170px;">
             <option value="pdf">PDF</option>
             <option value="xls">XLS (Excel)</option>
@@ -354,6 +360,8 @@
       </form>
 
       <div class="nomina-result-summary" id="calcResumen">Sin calculos recientes.</div>
+      <div class="nomina-result-summary" id="conciliacionResumen">Sin conciliacion ejecutada.</div>
+      <div class="nomina-result-summary" id="desprendiblePanel">Sin desprendible generado.</div>
 
       <div class="table-wrap">
         <table class="table nomina-table">
@@ -366,10 +374,11 @@
               <th>Devengado</th>
               <th>Deducciones</th>
               <th>Neto pagar</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody id="liqTableBody">
-            <tr><td colspan="7">Sin liquidaciones para mostrar.</td></tr>
+            <tr><td colspan="8">Sin liquidaciones para mostrar.</td></tr>
           </tbody>
         </table>
       </div>
@@ -824,13 +833,14 @@
         const list = Array.isArray(rows) ? rows : [];
 
         if (!list.length) {
-          body.innerHTML = '<tr><td colspan="7">Sin liquidaciones para mostrar.</td></tr>';
+          body.innerHTML = '<tr><td colspan="8">Sin liquidaciones para mostrar.</td></tr>';
           document.getElementById('calcResumen').textContent = summaryText || 'Sin calculos recientes.';
           updateKpis();
           return;
         }
 
         body.innerHTML = list.map(function (item) {
+          const empleadoNominaID = Number(item.empleado_nomina_id || 0);
           return '<tr>' +
             '<td><strong>' + esc(item.empleado_nombre || '-') + '</strong><br><small>' + esc(item.empleado_documento || item.empleado_codigo || '-') + '</small></td>' +
             '<td>' + toNumber(item.dias_liquidados, 0).toFixed(2) + '</td>' +
@@ -839,11 +849,129 @@
             '<td>' + esc(money(item.devengado_total)) + '</td>' +
             '<td>' + esc(money(item.deduccion_total)) + '</td>' +
             '<td><strong>' + esc(money(item.neto_pagar)) + '</strong></td>' +
+            '<td><button type="button" class="btn secondary" data-liquidacion-desprendible="' + empleadoNominaID + '">Desprendible</button></td>' +
           '</tr>';
         }).join('');
 
         document.getElementById('calcResumen').textContent = summaryText || ('Liquidaciones cargadas: ' + list.length);
         updateKpis();
+      }
+
+      function renderConciliacion(result) {
+        const box = document.getElementById('conciliacionResumen');
+        if (!result || typeof result !== 'object') {
+          box.textContent = 'Sin conciliacion ejecutada.';
+          return;
+        }
+
+        const total = Number(result.total_evaluados || 0);
+        const ok = Number(result.total_conciliados || 0);
+        const inconsistencias = Number(result.total_inconsistencias || 0);
+        const recalculados = Number(result.total_recalculados || 0);
+        const auto = !!result.auto_recalcular;
+
+        let html = '<div><strong>Conciliacion asistencia vs nomina</strong> | Evaluados: ' + total + ' | Conciliados: ' + ok + ' | Inconsistencias: ' + inconsistencias + ' | Recalculados: ' + recalculados + ' | Modo: ' + (auto ? 'auto-recalculo' : 'solo auditoria') + '</div>';
+
+        const items = Array.isArray(result.items) ? result.items : [];
+        if (items.length > 0) {
+          html += '<div style="margin-top:6px;max-height:220px;overflow:auto;">' +
+            items.map(function (row) {
+              const nombre = esc(row.empleado_nombre || ('Empleado #' + String(row.empleado_nomina_id || 0)));
+              const estado = esc(row.estado || 'sin_estado');
+              const horasLiq = toNumber(row.horas_asistencia_liquidacion, 0).toFixed(2);
+              const horasCalc = toNumber(row.horas_asistencia_calculado, 0).toFixed(2);
+              const regsLiq = Number(row.registros_asistencia_liquidacion || 0);
+              const regsCalc = Number(row.registros_asistencia_calculado || 0);
+              const msg = esc(row.mensaje || '');
+              return '<div class="form-help" style="margin-bottom:4px;">[' + estado + '] ' + nombre +
+                ' | registros liq/calc: ' + regsLiq + '/' + regsCalc +
+                ' | horas liq/calc: ' + horasLiq + '/' + horasCalc +
+                (msg ? ' | ' + msg : '') +
+              '</div>';
+            }).join('') +
+          '</div>';
+        }
+
+        box.innerHTML = html;
+      }
+
+      function renderDesprendible(doc) {
+        const root = document.getElementById('desprendiblePanel');
+        if (!doc || typeof doc !== 'object') {
+          root.textContent = 'Sin desprendible generado.';
+          return;
+        }
+
+        const period = esc((doc.periodo_desde || '-') + ' a ' + (doc.periodo_hasta || '-'));
+        const empleado = esc(doc.empleado_nombre || '-');
+        const documento = esc(doc.empleado_documento || doc.empleado_codigo || '-');
+        const contrato = esc(doc.tipo_contrato || '-');
+        const cargo = esc(doc.cargo || '-');
+        const horas = toNumber(doc.horas_asistencia_total, 0).toFixed(2);
+        const dias = toNumber(doc.dias_liquidados, 0).toFixed(2);
+
+        const html = '<div><strong>Desprendible estandar</strong> | Periodo: ' + period + '</div>' +
+          '<div class="form-help" style="margin-top:4px;">Empleado: <strong>' + empleado + '</strong> | Documento/Codigo: ' + documento + ' | Cargo: ' + cargo + ' | Contrato: ' + contrato + '</div>' +
+          '<div class="form-help" style="margin-top:4px;">Dias liquidados: ' + dias + ' | Horas asistencia: ' + horas + '</div>' +
+          '<div style="margin-top:8px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;">' +
+            '<div class="card" style="padding:8px;"><strong>Devengado</strong><br>Base salario: ' + esc(money(doc.base_salario_proporcional)) + '<br>Recargos/Extras: ' + esc(money(doc.total_recargos_horas_extras)) + '<br>Auxilio: ' + esc(money(doc.auxilio_transporte)) + '<br>Bonificacion: ' + esc(money(doc.bonificacion)) + '<br><strong>Total devengado: ' + esc(money(doc.devengado_total)) + '</strong></div>' +
+            '<div class="card" style="padding:8px;"><strong>Deducciones</strong><br>Salud: ' + esc(money(doc.deduccion_salud)) + '<br>Pension: ' + esc(money(doc.deduccion_pension)) + '<br>Fondo solidaridad: ' + esc(money(doc.deduccion_fondo_solidaridad)) + '<br>Fija: ' + esc(money(doc.deduccion_fija)) + '<br>Otras: ' + esc(money(doc.otras_deducciones)) + '<br><strong>Total deducciones: ' + esc(money(doc.deduccion_total)) + '</strong></div>' +
+            '<div class="card" style="padding:8px;"><strong>Pago</strong><br>IBC: ' + esc(money(doc.ingreso_base_cotizacion)) + '<br>Valor hora: ' + esc(money(doc.valor_hora_ordinaria)) + '<br><strong>Neto a pagar: ' + esc(money(doc.neto_pagar)) + '</strong></div>' +
+          '</div>';
+
+        root.innerHTML = html;
+      }
+
+      async function generarDesprendible(empleadoNominaID) {
+        const id = Number(empleadoNominaID || document.getElementById('calcEmpleado').value || 0);
+        if (id <= 0) {
+          throw new Error('Selecciona un empleado para generar el desprendible.');
+        }
+
+        const desde = normalize(document.getElementById('calcDesde').value);
+        const hasta = normalize(document.getElementById('calcHasta').value);
+        if (!desde || !hasta) {
+          throw new Error('Debes indicar periodo desde y hasta.');
+        }
+
+        const params = new URLSearchParams();
+        params.set('empresa_id', String(state.empresaID));
+        params.set('action', 'desprendible');
+        params.set('empleado_nomina_id', String(id));
+        params.set('periodo_desde', desde);
+        params.set('periodo_hasta', hasta);
+
+        const doc = await requestJSON('/api/empresa/nomina?' + params.toString());
+        renderDesprendible(doc);
+      }
+
+      async function conciliarAsistenciaNomina() {
+        const desde = normalize(document.getElementById('calcDesde').value);
+        const hasta = normalize(document.getElementById('calcHasta').value);
+        if (!desde || !hasta) {
+          throw new Error('Debes indicar periodo desde y hasta para conciliar.');
+        }
+
+        const empleadoNominaID = Number(document.getElementById('calcEmpleado').value || 0);
+        const autoRecalcular = document.getElementById('calcConciliarFix').value === '1';
+        const payload = {
+          empresa_id: Number(state.empresaID),
+          periodo_desde: desde,
+          periodo_hasta: hasta,
+          empleado_nomina_id: empleadoNominaID > 0 ? empleadoNominaID : 0,
+          auto_recalcular: autoRecalcular
+        };
+
+        const result = await requestJSON('/api/empresa/nomina?action=conciliar_asistencia', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        renderConciliacion(result);
+
+        if (autoRecalcular) {
+          await loadLiquidaciones();
+        }
       }
 
       async function loadLiquidaciones() {
@@ -1026,6 +1154,40 @@
           setMessage('calcMsg', err.message || 'No se pudo exportar liquidaciones.', 'error');
         });
     });
+
+        document.getElementById('calcDesprendibleBtn').addEventListener('click', function () {
+          generarDesprendible()
+            .then(function () {
+              setMessage('calcMsg', 'Desprendible generado correctamente.', 'success');
+            })
+            .catch(function (err) {
+              setMessage('calcMsg', err.message || 'No se pudo generar el desprendible.', 'error');
+            });
+        });
+
+        document.getElementById('calcConciliarBtn').addEventListener('click', function () {
+          conciliarAsistenciaNomina()
+            .then(function () {
+              setMessage('calcMsg', 'Conciliacion ejecutada correctamente.', 'success');
+            })
+            .catch(function (err) {
+              setMessage('calcMsg', err.message || 'No se pudo conciliar asistencia contra nomina.', 'error');
+            });
+        });
+
+        document.getElementById('liqTableBody').addEventListener('click', function (ev) {
+          const btn = ev.target.closest('button[data-liquidacion-desprendible]');
+          if (!btn) return;
+          const empleadoNominaID = Number(btn.getAttribute('data-liquidacion-desprendible') || 0);
+          if (empleadoNominaID <= 0) return;
+          generarDesprendible(empleadoNominaID)
+            .then(function () {
+              setMessage('calcMsg', 'Desprendible generado correctamente.', 'success');
+            })
+            .catch(function (err) {
+              setMessage('calcMsg', err.message || 'No se pudo generar el desprendible.', 'error');
+            });
+        });
 
         document.getElementById('btnRecargarTodo').addEventListener('click', function () {
           refreshAll()

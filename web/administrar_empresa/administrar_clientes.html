@@ -144,6 +144,28 @@
       <div id="segmentacionList">Cargando segmentación...</div>
     </div>
 
+    <div class="form" style="margin-top:14px;">
+      <div class="page-header" style="margin-bottom:10px;">
+        <h2 style="margin:0;font-size:1.1rem;">Exportación masiva por segmento</h2>
+      </div>
+      <p class="form-help" style="margin:0 0 10px 0;">Descarga el listado comercial de clientes segmentados para ejecutar campañas de fidelización, reactivación o upsell.</p>
+      <div class="form-row" style="margin-bottom:0;">
+        <div class="form-col" style="max-width:220px;">
+          <label class="form-label">Formato</label>
+          <select id="segmentExportFormat" class="form-input">
+            <option value="xls">Excel (XLS)</option>
+            <option value="pdf">PDF</option>
+            <option value="csv">CSV</option>
+            <option value="json">JSON</option>
+            <option value="txt">TXT</option>
+          </select>
+        </div>
+        <div class="form-col" style="max-width:220px;display:flex;align-items:flex-end;">
+          <button id="segmentExportBtn" class="btn secondary" type="button" style="width:100%;">Exportar segmentos</button>
+        </div>
+      </div>
+    </div>
+
     <div class="form" style="margin-top:14px;display:none;" id="perfilClientePanel">
       <div class="page-header" style="margin-bottom:10px;">
         <h2 style="margin:0;font-size:1.1rem;">Perfil e historial del cliente</h2>
@@ -476,6 +498,18 @@
       document.getElementById('perfilClientePanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
+    function exportSegmentacionComercial() {
+      const format = normalize(document.getElementById('segmentExportFormat').value) || 'xls';
+      const url = new URL('/api/empresa/reportes', window.location.origin);
+      url.searchParams.set('action', 'export');
+      url.searchParams.set('empresa_id', String(state.empresaID));
+      url.searchParams.set('dataset', 'operativo_clientes_segmentacion_comercial');
+      url.searchParams.set('format', format);
+      url.searchParams.set('include_inactive', '1');
+      url.searchParams.set('max_rows', '1000');
+      window.open(url.pathname + url.search, '_blank');
+    }
+
     async function loadEmpresaTitle() {
       try {
         const res = await fetch('/super/api/empresas?id=' + encodeURIComponent(state.empresaID));
@@ -582,6 +616,15 @@
       e.preventDefault();
       document.getElementById('buscarBtn').click();
     });
+
+    document.getElementById('segmentExportBtn').onclick = function() {
+      try {
+        exportSegmentacionComercial();
+        setMessage('Exportación de segmentos generada.', false);
+      } catch (err) {
+        setMessage(err.message || 'No se pudo generar la exportación de segmentos.', true);
+      }
+    };
 
     (async function init() {
       const empresaID = Number(getQueryParam('empresa_id') || 0);

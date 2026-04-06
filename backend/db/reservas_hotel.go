@@ -10,8 +10,14 @@ import (
 )
 
 var (
-	ErrReservaHotelConflicto = errors.New("reserva_hotel_conflicto")
-	ErrReservaHotelExpirada  = errors.New("reserva_hotel_expirada")
+	ErrReservaHotelConflicto       = errors.New("reserva_hotel_conflicto")
+	ErrReservaHotelExpirada        = errors.New("reserva_hotel_expirada")
+	ErrReservaHotelNoReconvertible = errors.New("reserva_hotel_no_reconvertible")
+)
+
+const (
+	reservaHotelExpiracionDefaultMin = 30
+	reservaHotelNoShowToleranciaMin  = 90
 )
 
 // ReservaHotel representa una reserva de habitacion/estacion por empresa.
@@ -205,10 +211,14 @@ func normalizeReservaHotelEstado(v string) string {
 	switch strings.ToLower(strings.TrimSpace(v)) {
 	case "confirmada":
 		return "confirmada"
+	case "en_curso":
+		return "en_curso"
 	case "cancelada":
 		return "cancelada"
 	case "expirada":
 		return "expirada"
+	case "no_show", "noshow":
+		return "no_show"
 	case "pendiente_pago", "pendiente":
 		return "pendiente_pago"
 	default:
@@ -316,13 +326,16 @@ func resolveReservaHotelStation(dbConn *sql.DB, empresaID, estacionID int64) (in
 	return carritoID, strings.TrimSpace(codigo), strings.TrimSpace(nombre), normalizeReservaHotelMoneda(moneda), nil
 }
 
-func hasReservaHotelConflict(dbConn *sql.DB, empresaID, carritoID int64, fechaEntrada, fechaSalida string, ignoreID int64) (bool, error) {
+func hasReservaHotelConflict(dbConn *sql.DB, empresaID, estacionID, carritoID int64, fechaEntrada, fechaSalida string, ignoreID int64) (bool, error) {
 	query := `SELECT COUNT(1)
 	FROM reservas_hotel
 	WHERE empresa_id = ?
-		AND carrito_id = ?
+		AND (
+			estacion_id = ?
+			OR carrito_id = ?
+		)
 		AND COALESCE(estado, 'activo') = 'activo'
-		AND estado_reserva IN ('pendiente_pago', 'confirmada')
+		AND estado_reserva IN ('pendiente_pago', 'confirmada', 'en_curso')
 		AND (
 			estado_reserva <> 'pendiente_pago'
 			OR COALESCE(fecha_expiracion, '') = ''
@@ -330,7 +343,7 @@ func hasReservaHotelConflict(dbConn *sql.DB, empresaID, carritoID int64, fechaEn
 		)
 		AND datetime(fecha_entrada) < datetime(?)
 		AND datetime(fecha_salida) > datetime(?)`
-	args := []interface{}{empresaID, carritoID, fechaSalida, fechaEntrada}
+	args := []interface{}{empresaID, estacionID, carritoID, fechaSalida, fechaEntrada}
 	if ignoreID > 0 {
 		query += ` AND id <> ?`
 		args = append(args, ignoreID)
@@ -345,6 +358,10 @@ func hasReservaHotelConflict(dbConn *sql.DB, empresaID, carritoID int64, fechaEn
 
 // ExpirePendientesReservasHotel marca como expiradas las reservas pendientes cuyo limite ya vencio.
 func ExpirePendientesReservasHotel(dbConn *sql.DB, empresaID int64) (int64, error) {
+	return expirePendientesReservasHotelAvanzado(dbConn, empresaID)
+}
+
+func expirePendientesReservasHotelAvanzado(dbConn *sql.DB, empresaID int64) (int64, error) {
 	query := `UPDATE reservas_hotel
 	SET
 		estado_reserva = 'expirada',
@@ -353,9 +370,17 @@ func ExpirePendientesReservasHotel(dbConn *sql.DB, empresaID int64) (int64, erro
 	WHERE COALESCE(estado, 'activo') = 'activo'
 		AND estado_reserva = 'pendiente_pago'
 		AND estado_pago = 'pendiente'
-		AND COALESCE(fecha_expiracion, '') <> ''
-		AND datetime(fecha_expiracion) <= datetime('now','localtime')`
-	args := []interface{}{}
+		AND (
+			(
+				COALESCE(fecha_expiracion, '') <> ''
+				AND datetime(fecha_expiracion) <= datetime('now','localtime')
+			)
+			OR (
+				COALESCE(fecha_expiracion, '') = ''
+				AND datetime(fecha_creacion, '+' || ? || ' minutes') <= datetime('now','localtime')
+			)
+		)`
+	args := []interface{}{reservaHotelExpiracionDefaultMin}
 	if empresaID > 0 {
 		query += ` AND empresa_id = ?`
 		args = append(args, empresaID)
@@ -366,6 +391,48 @@ func ExpirePendientesReservasHotel(dbConn *sql.DB, empresaID int64) (int64, erro
 	}
 	count, _ := res.RowsAffected()
 	return count, nil
+}
+
+func markReservasHotelNoShow(dbConn *sql.DB, empresaID int64, toleranciaMin int) (int64, error) {
+	if toleranciaMin <= 0 {
+		toleranciaMin = reservaHotelNoShowToleranciaMin
+	}
+	query := `UPDATE reservas_hotel
+	SET
+		estado_reserva = 'no_show',
+		observaciones = CASE
+			WHEN trim(COALESCE(observaciones, '')) = '' THEN 'no_show automatico por inasistencia'
+			ELSE trim(observaciones) || ' | no_show automatico por inasistencia'
+		END,
+		fecha_actualizacion = datetime('now','localtime')
+	WHERE COALESCE(estado, 'activo') = 'activo'
+		AND estado_reserva = 'confirmada'
+		AND estado_pago = 'confirmado'
+		AND datetime(fecha_entrada, '+' || ? || ' minutes') <= datetime('now','localtime')`
+	args := []interface{}{toleranciaMin}
+	if empresaID > 0 {
+		query += ` AND empresa_id = ?`
+		args = append(args, empresaID)
+	}
+	res, err := dbConn.Exec(query, args...)
+	if err != nil {
+		return 0, err
+	}
+	count, _ := res.RowsAffected()
+	return count, nil
+}
+
+// ApplyReservasHotelOperationalPolicies aplica expiracion pendiente y politica no_show por empresa.
+func ApplyReservasHotelOperationalPolicies(dbConn *sql.DB, empresaID int64) (int64, int64, error) {
+	expiradas, err := expirePendientesReservasHotelAvanzado(dbConn, empresaID)
+	if err != nil {
+		return 0, 0, err
+	}
+	noShow, err := markReservasHotelNoShow(dbConn, empresaID, reservaHotelNoShowToleranciaMin)
+	if err != nil {
+		return expiradas, 0, err
+	}
+	return expiradas, noShow, nil
 }
 
 // CreateReservaHotel crea una reserva para una estacion/habitacion.
@@ -384,7 +451,7 @@ func CreateReservaHotel(dbConn *sql.DB, payload ReservaHotel) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	if _, err := ExpirePendientesReservasHotel(dbConn, payload.EmpresaID); err != nil {
+	if _, _, err := ApplyReservasHotelOperationalPolicies(dbConn, payload.EmpresaID); err != nil {
 		return 0, err
 	}
 
@@ -396,7 +463,7 @@ func CreateReservaHotel(dbConn *sql.DB, payload ReservaHotel) (int64, error) {
 		return 0, err
 	}
 
-	conflict, err := hasReservaHotelConflict(dbConn, payload.EmpresaID, carritoID, fechaEntrada, fechaSalida, 0)
+	conflict, err := hasReservaHotelConflict(dbConn, payload.EmpresaID, payload.EstacionID, carritoID, fechaEntrada, fechaSalida, 0)
 	if err != nil {
 		return 0, err
 	}
@@ -428,7 +495,7 @@ func CreateReservaHotel(dbConn *sql.DB, payload ReservaHotel) (int64, error) {
 
 	fechaExpiracion := strings.TrimSpace(payload.FechaExpiracion)
 	if fechaExpiracion == "" {
-		fechaExpiracion = time.Now().Add(30 * time.Minute).Format("2006-01-02 15:04:05")
+		fechaExpiracion = time.Now().Add(time.Duration(reservaHotelExpiracionDefaultMin) * time.Minute).Format("2006-01-02 15:04:05")
 	}
 
 	canalOrigen := strings.TrimSpace(payload.CanalOrigen)
@@ -516,7 +583,7 @@ func UpdateReservaHotel(dbConn *sql.DB, payload ReservaHotel) error {
 	if payload.EmpresaID <= 0 || payload.ID <= 0 {
 		return fmt.Errorf("empresa_id e id son obligatorios")
 	}
-	if _, err := ExpirePendientesReservasHotel(dbConn, payload.EmpresaID); err != nil {
+	if _, _, err := ApplyReservasHotelOperationalPolicies(dbConn, payload.EmpresaID); err != nil {
 		return err
 	}
 
@@ -555,7 +622,7 @@ func UpdateReservaHotel(dbConn *sql.DB, payload ReservaHotel) error {
 		return err
 	}
 
-	conflict, err := hasReservaHotelConflict(dbConn, payload.EmpresaID, carritoID, fechaEntrada, fechaSalida, payload.ID)
+	conflict, err := hasReservaHotelConflict(dbConn, payload.EmpresaID, estacionID, carritoID, fechaEntrada, fechaSalida, payload.ID)
 	if err != nil {
 		return err
 	}
@@ -586,7 +653,7 @@ func UpdateReservaHotel(dbConn *sql.DB, payload ReservaHotel) error {
 
 	fechaExpiracion := strings.TrimSpace(firstNonEmpty(payload.FechaExpiracion, current.FechaExpiracion))
 	if fechaExpiracion == "" {
-		fechaExpiracion = time.Now().Add(30 * time.Minute).Format("2006-01-02 15:04:05")
+		fechaExpiracion = time.Now().Add(time.Duration(reservaHotelExpiracionDefaultMin) * time.Minute).Format("2006-01-02 15:04:05")
 	} else if parsedExp, err := parseReservaHotelDateTime(fechaExpiracion); err == nil {
 		fechaExpiracion = parsedExp.Format("2006-01-02 15:04:05")
 	} else {
@@ -694,6 +761,9 @@ func CountReservasHotelByEmpresa(dbConn *sql.DB, empresaID int64, filter Reserva
 	if empresaID <= 0 {
 		return 0, fmt.Errorf("empresa_id es obligatorio")
 	}
+	if _, _, err := ApplyReservasHotelOperationalPolicies(dbConn, empresaID); err != nil {
+		return 0, err
+	}
 	where, args := buildReservaHotelFilterClause(empresaID, filter)
 	query := `SELECT COUNT(1)
 	FROM reservas_hotel r
@@ -711,7 +781,7 @@ func ListReservasHotelByEmpresa(dbConn *sql.DB, empresaID int64, filter ReservaH
 	if empresaID <= 0 {
 		return nil, fmt.Errorf("empresa_id es obligatorio")
 	}
-	if _, err := ExpirePendientesReservasHotel(dbConn, empresaID); err != nil {
+	if _, _, err := ApplyReservasHotelOperationalPolicies(dbConn, empresaID); err != nil {
 		return nil, err
 	}
 
@@ -856,7 +926,7 @@ func GetReservaHotelByID(dbConn *sql.DB, empresaID, reservaID int64) (*ReservaHo
 	if empresaID <= 0 || reservaID <= 0 {
 		return nil, fmt.Errorf("empresa_id e id son obligatorios")
 	}
-	if _, err := ExpirePendientesReservasHotel(dbConn, empresaID); err != nil {
+	if _, _, err := ApplyReservasHotelOperationalPolicies(dbConn, empresaID); err != nil {
 		return nil, err
 	}
 
@@ -951,7 +1021,7 @@ func ConfirmReservaHotelPago(dbConn *sql.DB, empresaID, reservaID int64, referen
 	if empresaID <= 0 || reservaID <= 0 {
 		return fmt.Errorf("empresa_id e id son obligatorios")
 	}
-	if _, err := ExpirePendientesReservasHotel(dbConn, empresaID); err != nil {
+	if _, _, err := ApplyReservasHotelOperationalPolicies(dbConn, empresaID); err != nil {
 		return err
 	}
 
@@ -975,7 +1045,7 @@ func ConfirmReservaHotelPago(dbConn *sql.DB, empresaID, reservaID int64, referen
 		}
 	}
 
-	conflict, err := hasReservaHotelConflict(dbConn, empresaID, current.CarritoID, current.FechaEntrada, current.FechaSalida, reservaID)
+	conflict, err := hasReservaHotelConflict(dbConn, empresaID, current.EstacionID, current.CarritoID, current.FechaEntrada, current.FechaSalida, reservaID)
 	if err != nil {
 		return err
 	}
@@ -1009,6 +1079,100 @@ func ConfirmReservaHotelPago(dbConn *sql.DB, empresaID, reservaID int64, referen
 		reservaID,
 	)
 	return err
+}
+
+// ConvertReservaHotelToCarrito reconvierte una reserva confirmada a flujo de carrito operativo.
+func ConvertReservaHotelToCarrito(dbConn *sql.DB, empresaID, reservaID int64, usuario string) (int64, error) {
+	if empresaID <= 0 || reservaID <= 0 {
+		return 0, fmt.Errorf("empresa_id e id son obligatorios")
+	}
+	if _, _, err := ApplyReservasHotelOperationalPolicies(dbConn, empresaID); err != nil {
+		return 0, err
+	}
+
+	current, err := GetReservaHotelByID(dbConn, empresaID, reservaID)
+	if err != nil {
+		return 0, err
+	}
+	if !strings.EqualFold(strings.TrimSpace(current.Estado), "activo") {
+		return 0, ErrReservaHotelNoReconvertible
+	}
+
+	estadoReserva := strings.ToLower(strings.TrimSpace(current.EstadoReserva))
+	switch estadoReserva {
+	case "en_curso":
+		return current.CarritoID, nil
+	case "confirmada":
+		// estado valido para reconversion.
+	case "pendiente_pago":
+		return 0, fmt.Errorf("debe confirmar pago antes de reconvertir a carrito")
+	default:
+		return 0, ErrReservaHotelNoReconvertible
+	}
+
+	if current.CarritoID <= 0 {
+		return 0, fmt.Errorf("carrito asociado no disponible")
+	}
+
+	by := strings.TrimSpace(usuario)
+	if by == "" {
+		by = "sistema"
+	}
+	obs := strings.TrimSpace(current.Observaciones)
+	if obs == "" {
+		obs = "reconversion a carrito operativa"
+	} else {
+		obs = obs + " | reconversion a carrito operativa"
+	}
+
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return 0, err
+	}
+
+	resCarrito, err := tx.Exec(`UPDATE carritos_compras
+	SET
+		estado = 'activo',
+		estado_carrito = 'abierto',
+		activado_en = CASE
+			WHEN trim(COALESCE(activado_en, '')) = '' THEN datetime('now','localtime')
+			ELSE activado_en
+		END,
+		fecha_actualizacion = datetime('now','localtime')
+	WHERE empresa_id = ? AND id = ?`, empresaID, current.CarritoID)
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+	affectedCarrito, _ := resCarrito.RowsAffected()
+	if affectedCarrito == 0 {
+		tx.Rollback()
+		return 0, sql.ErrNoRows
+	}
+
+	resReserva, err := tx.Exec(`UPDATE reservas_hotel
+	SET
+		estado_reserva = 'en_curso',
+		confirmado_por = ?,
+		observaciones = ?,
+		fecha_actualizacion = datetime('now','localtime')
+	WHERE empresa_id = ?
+		AND id = ?
+		AND COALESCE(estado, 'activo') = 'activo'`, by, obs, empresaID, reservaID)
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+	affectedReserva, _ := resReserva.RowsAffected()
+	if affectedReserva == 0 {
+		tx.Rollback()
+		return 0, sql.ErrNoRows
+	}
+
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return current.CarritoID, nil
 }
 
 // CancelReservaHotel cancela una reserva y libera la estacion para nuevas reservas.
@@ -1049,7 +1213,7 @@ func ListReservasHotelEstacionesDisponibles(dbConn *sql.DB, empresaID int64, fec
 	if err != nil {
 		return nil, err
 	}
-	if _, err := ExpirePendientesReservasHotel(dbConn, empresaID); err != nil {
+	if _, _, err := ApplyReservasHotelOperationalPolicies(dbConn, empresaID); err != nil {
 		return nil, err
 	}
 
@@ -1071,7 +1235,7 @@ func ListReservasHotelEstacionesDisponibles(dbConn *sql.DB, empresaID int64, fec
 	LEFT JOIN reservas_hotel r ON r.empresa_id = c.empresa_id
 		AND r.carrito_id = c.id
 		AND COALESCE(r.estado, 'activo') = 'activo'
-		AND r.estado_reserva IN ('pendiente_pago', 'confirmada')
+		AND r.estado_reserva IN ('pendiente_pago', 'confirmada', 'en_curso')
 		AND (
 			r.estado_reserva <> 'pendiente_pago'
 			OR COALESCE(r.fecha_expiracion, '') = ''

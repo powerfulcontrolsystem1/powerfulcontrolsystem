@@ -2,8 +2,10 @@ package db
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"sort"
 	"strings"
 	"time"
@@ -12,6 +14,12 @@ import (
 var (
 	// ErrStockInsuficiente se usa cuando una salida/traslado excede la existencia disponible.
 	ErrStockInsuficiente = errors.New("stock insuficiente")
+)
+
+const (
+	inventarioPoliticaCostoPromedio = "promedio"
+	inventarioPoliticaCostoPEPS     = "peps"
+	comboCostoVariacionMaximaPct    = 35.0
 )
 
 // Bodega representa una ubicación de inventario dentro de una empresa.
@@ -83,6 +91,11 @@ type ComboProducto struct {
 	UnidadMedida       string                 `json:"unidad_medida,omitempty"`
 	Precio             float64                `json:"precio"`
 	ImpuestoPorcentaje float64                `json:"impuesto_porcentaje"`
+	RecetaVersion      int64                  `json:"receta_version,omitempty"`
+	CostoTeorico       float64                `json:"costo_teorico,omitempty"`
+	CostoReal          float64                `json:"costo_real,omitempty"`
+	VariacionCosto     float64                `json:"variacion_costo,omitempty"`
+	VariacionCostoPct  float64                `json:"variacion_costo_porcentaje,omitempty"`
 	IngredientesCount  int64                  `json:"ingredientes_count,omitempty"`
 	FechaCreacion      string                 `json:"fecha_creacion,omitempty"`
 	FechaActualizacion string                 `json:"fecha_actualizacion,omitempty"`
@@ -204,6 +217,60 @@ type InventarioAlertaQuiebre struct {
 	EstadoStock        string  `json:"estado_stock"`
 	Deficit            float64 `json:"deficit"`
 	SugeridoReposicion float64 `json:"sugerido_reposicion"`
+}
+
+// InventarioAlertaOperativa representa alertas proactivas de quiebre y sobrestock.
+type InventarioAlertaOperativa struct {
+	EmpresaID          int64   `json:"empresa_id"`
+	ProductoID         int64   `json:"producto_id"`
+	ProductoNombre     string  `json:"producto_nombre"`
+	BodegaID           int64   `json:"bodega_id"`
+	BodegaNombre       string  `json:"bodega_nombre"`
+	Cantidad           float64 `json:"cantidad"`
+	StockMinimo        float64 `json:"stock_minimo"`
+	StockMaximo        float64 `json:"stock_maximo"`
+	EstadoStock        string  `json:"estado_stock"`
+	Deficit            float64 `json:"deficit"`
+	Exceso             float64 `json:"exceso"`
+	SugeridoReposicion float64 `json:"sugerido_reposicion"`
+	NivelAlerta        string  `json:"nivel_alerta"`
+	AccionSugerida     string  `json:"accion_sugerida"`
+}
+
+// EmpresaInventarioConfiguracion representa reglas operativas de inventario por empresa.
+type EmpresaInventarioConfiguracion struct {
+	ID                 int64  `json:"id"`
+	EmpresaID          int64  `json:"empresa_id"`
+	PoliticaCosto      string `json:"politica_costo"`
+	FechaCreacion      string `json:"fecha_creacion,omitempty"`
+	FechaActualizacion string `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador     string `json:"usuario_creador,omitempty"`
+	Estado             string `json:"estado,omitempty"`
+	Observaciones      string `json:"observaciones,omitempty"`
+}
+
+// InventarioConteoCiclico representa un conteo ciclico con trazabilidad de ajuste.
+type InventarioConteoCiclico struct {
+	ID                 int64   `json:"id"`
+	EmpresaID          int64   `json:"empresa_id"`
+	ProductoID         int64   `json:"producto_id"`
+	ProductoNombre     string  `json:"producto_nombre,omitempty"`
+	BodegaID           int64   `json:"bodega_id"`
+	BodegaNombre       string  `json:"bodega_nombre,omitempty"`
+	CantidadSistema    float64 `json:"cantidad_sistema"`
+	CantidadContada    float64 `json:"cantidad_contada"`
+	Variacion          float64 `json:"variacion"`
+	TipoAjuste         string  `json:"tipo_ajuste"`
+	MovimientoID       int64   `json:"movimiento_id,omitempty"`
+	Referencia         string  `json:"referencia,omitempty"`
+	FechaConteo        string  `json:"fecha_conteo,omitempty"`
+	UsuarioRevisor     string  `json:"usuario_revisor,omitempty"`
+	EstadoConteo       string  `json:"estado_conteo,omitempty"`
+	FechaCreacion      string  `json:"fecha_creacion,omitempty"`
+	FechaActualizacion string  `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador     string  `json:"usuario_creador,omitempty"`
+	Estado             string  `json:"estado,omitempty"`
+	Observaciones      string  `json:"observaciones,omitempty"`
 }
 
 // InventarioResumen representa indicadores operativos de inventario por empresa.
@@ -500,7 +567,12 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 			descripcion TEXT,
 			unidad_medida TEXT DEFAULT 'combo',
 			precio REAL DEFAULT 0,
-			impuesto_porcentaje REAL DEFAULT 0
+			impuesto_porcentaje REAL DEFAULT 0,
+			receta_version INTEGER DEFAULT 1,
+			costo_teorico REAL DEFAULT 0,
+			costo_real REAL DEFAULT 0,
+			variacion_costo REAL DEFAULT 0,
+			variacion_costo_porcentaje REAL DEFAULT 0
 		);`,
 		`CREATE TABLE IF NOT EXISTS combos_productos_detalle (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -514,6 +586,23 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 			producto_id INTEGER NOT NULL,
 			cantidad REAL NOT NULL DEFAULT 0,
 			unidad_medida TEXT DEFAULT 'unidad'
+		);`,
+		`CREATE TABLE IF NOT EXISTS combos_productos_versiones (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			usuario_creador TEXT,
+			estado TEXT DEFAULT 'activo',
+			observaciones TEXT,
+			empresa_id INTEGER NOT NULL,
+			combo_id INTEGER NOT NULL,
+			receta_version INTEGER NOT NULL,
+			ingredientes_json TEXT DEFAULT '[]',
+			costo_teorico REAL DEFAULT 0,
+			costo_real REAL DEFAULT 0,
+			variacion_costo REAL DEFAULT 0,
+			variacion_costo_porcentaje REAL DEFAULT 0,
+			motivo TEXT
 		);`,
 		`CREATE TABLE IF NOT EXISTS producto_precios_historial (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -563,6 +652,51 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
+		`CREATE TABLE IF NOT EXISTS empresa_inventario_configuracion (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			empresa_id INTEGER NOT NULL UNIQUE,
+			politica_costo TEXT NOT NULL DEFAULT 'promedio',
+			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			usuario_creador TEXT,
+			estado TEXT DEFAULT 'activo',
+			observaciones TEXT
+		);`,
+		`CREATE TABLE IF NOT EXISTS inventario_costos_lotes (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			empresa_id INTEGER NOT NULL,
+			producto_id INTEGER NOT NULL,
+			bodega_id INTEGER NOT NULL,
+			cantidad_disponible REAL NOT NULL DEFAULT 0,
+			costo_unitario REAL NOT NULL DEFAULT 0,
+			referencia TEXT,
+			fecha_lote TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			usuario_creador TEXT,
+			estado TEXT DEFAULT 'activo',
+			observaciones TEXT
+		);`,
+		`CREATE TABLE IF NOT EXISTS inventario_conteos_ciclicos (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			empresa_id INTEGER NOT NULL,
+			producto_id INTEGER NOT NULL,
+			bodega_id INTEGER NOT NULL,
+			cantidad_sistema REAL NOT NULL DEFAULT 0,
+			cantidad_contada REAL NOT NULL DEFAULT 0,
+			variacion REAL NOT NULL DEFAULT 0,
+			tipo_ajuste TEXT NOT NULL DEFAULT 'sin_ajuste',
+			movimiento_id INTEGER,
+			referencia TEXT,
+			fecha_conteo TEXT DEFAULT (datetime('now','localtime')),
+			usuario_revisor TEXT,
+			estado_conteo TEXT DEFAULT 'sin_diferencia',
+			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			usuario_creador TEXT,
+			estado TEXT DEFAULT 'activo',
+			observaciones TEXT
+		);`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_bodegas_empresa_codigo ON bodegas(empresa_id, codigo);`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_bodegas_empresa_nombre ON bodegas(empresa_id, nombre);`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_categorias_productos_empresa_codigo ON categorias_productos(empresa_id, codigo);`,
@@ -578,10 +712,16 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_combos_empresa_estado ON combos_productos(empresa_id, estado, nombre);`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_combos_detalle_combo_producto ON combos_productos_detalle(empresa_id, combo_id, producto_id);`,
 		`CREATE INDEX IF NOT EXISTS ix_combos_detalle_empresa_producto ON combos_productos_detalle(empresa_id, producto_id);`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS ux_combos_versiones_empresa_combo_version ON combos_productos_versiones(empresa_id, combo_id, receta_version);`,
+		`CREATE INDEX IF NOT EXISTS ix_combos_versiones_empresa_combo_fecha ON combos_productos_versiones(empresa_id, combo_id, fecha_creacion);`,
 		`CREATE INDEX IF NOT EXISTS ix_historial_precios_empresa_producto ON producto_precios_historial(empresa_id, producto_id);`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_existencias_empresa_prod_bodega ON inventario_existencias(empresa_id, producto_id, bodega_id);`,
 		`CREATE INDEX IF NOT EXISTS ix_existencias_empresa_bodega ON inventario_existencias(empresa_id, bodega_id);`,
 		`CREATE INDEX IF NOT EXISTS ix_movimientos_empresa_producto ON inventario_movimientos(empresa_id, producto_id);`,
+		`CREATE INDEX IF NOT EXISTS ix_costos_lotes_empresa_producto_bodega ON inventario_costos_lotes(empresa_id, producto_id, bodega_id, fecha_lote, id);`,
+		`CREATE INDEX IF NOT EXISTS ix_costos_lotes_empresa_estado ON inventario_costos_lotes(empresa_id, estado, producto_id);`,
+		`CREATE INDEX IF NOT EXISTS ix_conteos_ciclicos_empresa_fecha ON inventario_conteos_ciclicos(empresa_id, fecha_conteo);`,
+		`CREATE INDEX IF NOT EXISTS ix_conteos_ciclicos_empresa_producto_bodega ON inventario_conteos_ciclicos(empresa_id, producto_id, bodega_id);`,
 	}
 
 	for _, stmt := range stmts {
@@ -812,6 +952,21 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "combos_productos", "impuesto_porcentaje", "REAL DEFAULT 0"); err != nil {
 		return err
 	}
+	if err := ensureColumnIfMissing(dbConn, "combos_productos", "receta_version", "INTEGER DEFAULT 1"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "combos_productos", "costo_teorico", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "combos_productos", "costo_real", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "combos_productos", "variacion_costo", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "combos_productos", "variacion_costo_porcentaje", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
 
 	if err := ensureColumnIfMissing(dbConn, "combos_productos_detalle", "fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
 		return err
@@ -841,6 +996,55 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "combos_productos_detalle", "unidad_medida", "TEXT DEFAULT 'unidad'"); err != nil {
+		return err
+	}
+
+	if err := ensureColumnIfMissing(dbConn, "combos_productos_versiones", "fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "combos_productos_versiones", "fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "combos_productos_versiones", "usuario_creador", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "combos_productos_versiones", "estado", "TEXT DEFAULT 'activo'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "combos_productos_versiones", "observaciones", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "combos_productos_versiones", "empresa_id", "INTEGER"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "combos_productos_versiones", "combo_id", "INTEGER"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "combos_productos_versiones", "receta_version", "INTEGER DEFAULT 1"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "combos_productos_versiones", "ingredientes_json", "TEXT DEFAULT '[]'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "combos_productos_versiones", "costo_teorico", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "combos_productos_versiones", "costo_real", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "combos_productos_versiones", "variacion_costo", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "combos_productos_versiones", "variacion_costo_porcentaje", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "combos_productos_versiones", "motivo", "TEXT"); err != nil {
+		return err
+	}
+	if _, err := dbConn.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS ux_combos_versiones_empresa_combo_version ON combos_productos_versiones(empresa_id, combo_id, receta_version);`); err != nil {
+		return err
+	}
+	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_combos_versiones_empresa_combo_fecha ON combos_productos_versiones(empresa_id, combo_id, fecha_creacion);`); err != nil {
 		return err
 	}
 
@@ -1597,6 +1801,101 @@ func GetExistenciasByEmpresa(dbConn *sql.DB, empresaID, productoID, bodegaID int
 	return out, nil
 }
 
+func normalizeInventarioPoliticaCosto(raw string) string {
+	v := strings.ToLower(strings.TrimSpace(raw))
+	switch v {
+	case inventarioPoliticaCostoPEPS, "fifo":
+		return inventarioPoliticaCostoPEPS
+	default:
+		return inventarioPoliticaCostoPromedio
+	}
+}
+
+// GetEmpresaInventarioConfiguracion obtiene la configuracion operativa de inventario por empresa.
+func GetEmpresaInventarioConfiguracion(dbConn *sql.DB, empresaID int64) (EmpresaInventarioConfiguracion, error) {
+	conf := EmpresaInventarioConfiguracion{
+		EmpresaID:     empresaID,
+		PoliticaCosto: inventarioPoliticaCostoPromedio,
+		Estado:        "activo",
+	}
+
+	row := dbConn.QueryRow(`SELECT id, empresa_id, politica_costo, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones
+		FROM empresa_inventario_configuracion
+		WHERE empresa_id = ?
+		LIMIT 1`, empresaID)
+
+	var politicaCosto sql.NullString
+	var fechaCre, fechaAct, usuario, estado, obs sql.NullString
+	err := row.Scan(&conf.ID, &conf.EmpresaID, &politicaCosto, &fechaCre, &fechaAct, &usuario, &estado, &obs)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return conf, nil
+		}
+		return conf, err
+	}
+
+	conf.PoliticaCosto = normalizeInventarioPoliticaCosto(politicaCosto.String)
+	if fechaCre.Valid {
+		conf.FechaCreacion = fechaCre.String
+	}
+	if fechaAct.Valid {
+		conf.FechaActualizacion = fechaAct.String
+	}
+	if usuario.Valid {
+		conf.UsuarioCreador = usuario.String
+	}
+	if estado.Valid {
+		conf.Estado = estado.String
+	}
+	if obs.Valid {
+		conf.Observaciones = obs.String
+	}
+
+	return conf, nil
+}
+
+// UpsertEmpresaInventarioConfiguracion crea o actualiza la politica de costo por empresa.
+func UpsertEmpresaInventarioConfiguracion(dbConn *sql.DB, conf EmpresaInventarioConfiguracion) (EmpresaInventarioConfiguracion, error) {
+	if conf.EmpresaID <= 0 {
+		return EmpresaInventarioConfiguracion{}, fmt.Errorf("empresa_id invalido")
+	}
+
+	conf.PoliticaCosto = normalizeInventarioPoliticaCosto(conf.PoliticaCosto)
+	if strings.TrimSpace(conf.Estado) == "" {
+		conf.Estado = "activo"
+	}
+
+	_, err := dbConn.Exec(`INSERT INTO empresa_inventario_configuracion (
+		empresa_id,
+		politica_costo,
+		fecha_creacion,
+		fecha_actualizacion,
+		usuario_creador,
+		estado,
+		observaciones
+	) VALUES (?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, COALESCE(NULLIF(?, ''), 'activo'), ?)
+	ON CONFLICT(empresa_id) DO UPDATE SET
+		politica_costo = excluded.politica_costo,
+		fecha_actualizacion = datetime('now','localtime'),
+		usuario_creador = CASE
+			WHEN TRIM(COALESCE(excluded.usuario_creador, '')) <> '' THEN excluded.usuario_creador
+			ELSE empresa_inventario_configuracion.usuario_creador
+		END,
+		estado = COALESCE(NULLIF(excluded.estado, ''), empresa_inventario_configuracion.estado),
+		observaciones = excluded.observaciones`,
+		conf.EmpresaID,
+		conf.PoliticaCosto,
+		strings.TrimSpace(conf.UsuarioCreador),
+		strings.TrimSpace(conf.Estado),
+		strings.TrimSpace(conf.Observaciones),
+	)
+	if err != nil {
+		return EmpresaInventarioConfiguracion{}, err
+	}
+
+	return GetEmpresaInventarioConfiguracion(dbConn, conf.EmpresaID)
+}
+
 // GetAlertasQuiebreByEmpresa devuelve alertas de quiebre/bajo minimo por producto y bodega.
 func GetAlertasQuiebreByEmpresa(dbConn *sql.DB, empresaID, productoID, bodegaID int64, limit int, offset int) ([]InventarioAlertaQuiebre, error) {
 	if limit <= 0 || limit > 1000 {
@@ -1681,6 +1980,136 @@ func GetAlertasQuiebreByEmpresa(dbConn *sql.DB, empresaID, productoID, bodegaID 
 
 		out = append(out, a)
 	}
+
+	return out, nil
+}
+
+// GetAlertasOperativasByEmpresa devuelve alertas proactivas de quiebre y sobrestock por producto/bodega.
+func GetAlertasOperativasByEmpresa(dbConn *sql.DB, empresaID, productoID, bodegaID int64, limit int, offset int) ([]InventarioAlertaOperativa, error) {
+	if limit <= 0 || limit > 1000 {
+		limit = 300
+	}
+	if offset < 0 {
+		offset = 0
+	}
+
+	query := `SELECT
+		e.empresa_id,
+		e.producto_id,
+		p.nombre,
+		e.bodega_id,
+		b.nombre,
+		COALESCE(e.cantidad, 0),
+		COALESCE(p.stock_minimo, 0),
+		COALESCE(p.stock_maximo, 0)
+	FROM inventario_existencias e
+	JOIN productos p ON p.id = e.producto_id AND p.empresa_id = e.empresa_id
+	JOIN bodegas b ON b.id = e.bodega_id AND b.empresa_id = e.empresa_id
+	WHERE e.empresa_id = ?
+		AND LOWER(COALESCE(e.estado, 'activo')) = 'activo'
+		AND LOWER(COALESCE(p.estado, 'activo')) = 'activo'
+		AND LOWER(COALESCE(b.estado, 'activo')) = 'activo'
+		AND (
+			COALESCE(e.cantidad, 0) <= 0
+			OR (COALESCE(p.stock_minimo, 0) > 0 AND COALESCE(e.cantidad, 0) <= COALESCE(p.stock_minimo, 0))
+			OR (COALESCE(p.stock_maximo, 0) > 0 AND COALESCE(e.cantidad, 0) >= COALESCE(p.stock_maximo, 0))
+		)`
+	args := []interface{}{empresaID}
+
+	if productoID > 0 {
+		query += " AND e.producto_id = ?"
+		args = append(args, productoID)
+	}
+	if bodegaID > 0 {
+		query += " AND e.bodega_id = ?"
+		args = append(args, bodegaID)
+	}
+
+	query += ` ORDER BY p.nombre ASC, b.nombre ASC LIMIT ? OFFSET ?`
+	args = append(args, limit, offset)
+
+	rows, err := dbConn.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]InventarioAlertaOperativa, 0)
+	for rows.Next() {
+		var a InventarioAlertaOperativa
+		if err := rows.Scan(
+			&a.EmpresaID,
+			&a.ProductoID,
+			&a.ProductoNombre,
+			&a.BodegaID,
+			&a.BodegaNombre,
+			&a.Cantidad,
+			&a.StockMinimo,
+			&a.StockMaximo,
+		); err != nil {
+			return nil, err
+		}
+
+		a.EstadoStock = "estable"
+		a.NivelAlerta = "baja"
+		a.AccionSugerida = "mantener_monitoreo"
+
+		switch {
+		case a.Cantidad <= 0:
+			a.EstadoStock = "sin_stock"
+			a.NivelAlerta = "critica"
+			a.AccionSugerida = "reponer_urgente"
+		case a.StockMinimo > 0 && a.Cantidad <= a.StockMinimo:
+			a.EstadoStock = "bajo_minimo"
+			a.NivelAlerta = "alta"
+			a.AccionSugerida = "reposicion_preventiva"
+		case a.StockMaximo > 0 && a.Cantidad >= a.StockMaximo:
+			a.EstadoStock = "sobrestock"
+			a.NivelAlerta = "media"
+			a.AccionSugerida = "pausar_compra_promocionar_salida"
+		}
+
+		if a.Cantidad < a.StockMinimo {
+			a.Deficit = a.StockMinimo - a.Cantidad
+			a.SugeridoReposicion = a.Deficit
+		}
+		if a.StockMaximo > 0 && a.Cantidad > a.StockMaximo {
+			a.Exceso = a.Cantidad - a.StockMaximo
+		}
+
+		out = append(out, a)
+	}
+
+	severidad := func(estado string) int {
+		switch estado {
+		case "sin_stock":
+			return 0
+		case "bajo_minimo":
+			return 1
+		case "sobrestock":
+			return 2
+		default:
+			return 3
+		}
+	}
+
+	sort.Slice(out, func(i, j int) bool {
+		si := severidad(out[i].EstadoStock)
+		sj := severidad(out[j].EstadoStock)
+		if si != sj {
+			return si < sj
+		}
+		if out[i].Deficit != out[j].Deficit {
+			return out[i].Deficit > out[j].Deficit
+		}
+		if out[i].Exceso != out[j].Exceso {
+			return out[i].Exceso > out[j].Exceso
+		}
+		if out[i].ProductoNombre != out[j].ProductoNombre {
+			return out[i].ProductoNombre < out[j].ProductoNombre
+		}
+		return out[i].BodegaNombre < out[j].BodegaNombre
+	})
 
 	return out, nil
 }
@@ -2747,6 +3176,14 @@ func TransferirProductoEntreBodegas(dbConn *sql.DB, empresaID, productoID, bodeg
 	if err := validateBodegaEmpresaTx(tx, empresaID, bodegaDestinoID); err != nil {
 		return err
 	}
+	if err := validateProductoEmpresaTx(tx, empresaID, productoID); err != nil {
+		return err
+	}
+
+	politicaCosto, err := getInventarioPoliticaCostoTx(tx, empresaID)
+	if err != nil {
+		return err
+	}
 
 	var costoUnitario float64
 	if err := tx.QueryRow("SELECT costo FROM productos WHERE empresa_id = ? AND id = ?", empresaID, productoID).Scan(&costoUnitario); err != nil {
@@ -2763,6 +3200,17 @@ func TransferirProductoEntreBodegas(dbConn *sql.DB, empresaID, productoID, bodeg
 	}
 	if stockOrigen < cantidad {
 		return ErrStockInsuficiente
+	}
+
+	costoTransferido, err := transferirCostoLotesEntreBodegasTx(tx, empresaID, productoID, bodegaOrigenID, bodegaDestinoID, cantidad, strings.TrimSpace(referencia), strings.TrimSpace(usuario))
+	if err != nil {
+		if errors.Is(err, ErrStockInsuficiente) {
+			return ErrStockInsuficiente
+		}
+		return err
+	}
+	if costoTransferido > 0 {
+		costoUnitario = costoTransferido
 	}
 
 	if _, err := tx.Exec(`UPDATE inventario_existencias
@@ -2789,6 +3237,11 @@ func TransferirProductoEntreBodegas(dbConn *sql.DB, empresaID, productoID, bodeg
 		Observaciones:   strings.TrimSpace(observaciones),
 	}); err != nil {
 		return err
+	}
+	if politicaCosto == inventarioPoliticaCostoPromedio {
+		if err := recalcularCostoPromedioProductoTx(tx, empresaID, productoID); err != nil {
+			return err
+		}
 	}
 
 	return tx.Commit()
@@ -3139,24 +3592,70 @@ func normalizeComboIngredientesInput(ingredientes []ComboProductoDetalle) ([]Com
 	return out, nil
 }
 
-func replaceComboIngredientesTx(tx *sql.Tx, empresaID, comboID int64, ingredientes []ComboProductoDetalle, usuario string) error {
+type comboCostoMetrics struct {
+	CostoTeorico      float64
+	CostoReal         float64
+	VariacionCosto    float64
+	VariacionCostoPct float64
+}
+
+func normalizeComboUnidadDetalle(v string) string {
+	v = strings.TrimSpace(strings.ToLower(v))
+	if v == "" {
+		return "unidad"
+	}
+	return v
+}
+
+func comboIngredientesEquivalent(a, b []ComboProductoDetalle) bool {
+	na, errA := normalizeComboIngredientesInput(a)
+	nb, errB := normalizeComboIngredientesInput(b)
+	if errA != nil || errB != nil {
+		return false
+	}
+	if len(na) != len(nb) {
+		return false
+	}
+	for idx := range na {
+		if na[idx].ProductoID != nb[idx].ProductoID {
+			return false
+		}
+		if round2(na[idx].Cantidad) != round2(nb[idx].Cantidad) {
+			return false
+		}
+		if normalizeComboUnidadDetalle(na[idx].UnidadMedida) != normalizeComboUnidadDetalle(nb[idx].UnidadMedida) {
+			return false
+		}
+	}
+	return true
+}
+
+func buildComboIngredientesValidadosTx(tx *sql.Tx, empresaID int64, ingredientes []ComboProductoDetalle) ([]ComboProductoDetalle, comboCostoMetrics, error) {
+	metrics := comboCostoMetrics{}
 	normalized, err := normalizeComboIngredientesInput(ingredientes)
 	if err != nil {
-		return err
+		return nil, metrics, err
 	}
 
-	if _, err := tx.Exec(`DELETE FROM combos_productos_detalle WHERE empresa_id = ? AND combo_id = ?`, empresaID, comboID); err != nil {
-		return err
+	politicaCosto, err := getInventarioPoliticaCostoTx(tx, empresaID)
+	if err != nil {
+		return nil, metrics, err
 	}
+	usarCostoLotes := politicaCosto == inventarioPoliticaCostoPEPS || politicaCosto == inventarioPoliticaCostoPromedio
 
+	prepared := make([]ComboProductoDetalle, 0, len(normalized))
 	for _, it := range normalized {
 		var unidadProducto sql.NullString
-		err := tx.QueryRow(`SELECT COALESCE(unidad_medida, 'unidad') FROM productos WHERE empresa_id = ? AND id = ? AND COALESCE(estado, 'activo') = 'activo' LIMIT 1`, empresaID, it.ProductoID).Scan(&unidadProducto)
+		var costoProducto float64
+		err := tx.QueryRow(`SELECT COALESCE(unidad_medida, 'unidad'), COALESCE(costo, 0)
+			FROM productos
+			WHERE empresa_id = ? AND id = ? AND COALESCE(estado, 'activo') = 'activo'
+			LIMIT 1`, empresaID, it.ProductoID).Scan(&unidadProducto, &costoProducto)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-				return fmt.Errorf("producto %d no existe o esta inactivo", it.ProductoID)
+				return nil, metrics, fmt.Errorf("producto %d no existe o esta inactivo", it.ProductoID)
 			}
-			return err
+			return nil, metrics, err
 		}
 
 		unidad := strings.TrimSpace(it.UnidadMedida)
@@ -3167,6 +3666,170 @@ func replaceComboIngredientesTx(tx *sql.Tx, empresaID, comboID int64, ingredient
 			unidad = "unidad"
 		}
 
+		costoTeoricoUnit := round2(math.Max(costoProducto, 0))
+		costoRealUnit := costoTeoricoUnit
+		if usarCostoLotes {
+			promedioLotes, err := calcularCostoPromedioDisponibleTx(tx, empresaID, it.ProductoID, 0)
+			if err != nil {
+				return nil, metrics, err
+			}
+			if promedioLotes > 0 {
+				costoRealUnit = promedioLotes
+			}
+		}
+
+		metrics.CostoTeorico += it.Cantidad * costoTeoricoUnit
+		metrics.CostoReal += it.Cantidad * costoRealUnit
+
+		it.UnidadMedida = normalizeComboUnidadDetalle(unidad)
+		it.Estado = normalizeComboEstado(it.Estado)
+		prepared = append(prepared, it)
+	}
+
+	metrics.CostoTeorico = round2(metrics.CostoTeorico)
+	metrics.CostoReal = round2(metrics.CostoReal)
+	metrics.VariacionCosto = round2(metrics.CostoReal - metrics.CostoTeorico)
+	if metrics.CostoTeorico > 0 {
+		metrics.VariacionCostoPct = round2((metrics.VariacionCosto / metrics.CostoTeorico) * 100)
+	}
+
+	return prepared, metrics, nil
+}
+
+func validateComboCostos(c ComboProducto, metrics comboCostoMetrics) error {
+	precioCombo := round2(c.Precio)
+	if metrics.CostoReal > 0 && precioCombo+0.0001 < metrics.CostoReal {
+		return fmt.Errorf("el precio del combo (%.2f) no cubre el costo real (%.2f)", precioCombo, metrics.CostoReal)
+	}
+	if metrics.CostoTeorico > 0 && math.Abs(metrics.VariacionCostoPct) > comboCostoVariacionMaximaPct {
+		return fmt.Errorf("la variacion de costo teorico vs real (%.2f%%) supera el maximo permitido (%.2f%%)", math.Abs(metrics.VariacionCostoPct), comboCostoVariacionMaximaPct)
+	}
+	return nil
+}
+
+func getComboProductoCurrentStateTx(tx *sql.Tx, empresaID, comboID int64) (int64, comboCostoMetrics, error) {
+	metrics := comboCostoMetrics{}
+	var version sql.NullInt64
+	err := tx.QueryRow(`SELECT
+		COALESCE(receta_version, 1),
+		COALESCE(costo_teorico, 0),
+		COALESCE(costo_real, 0),
+		COALESCE(variacion_costo, 0),
+		COALESCE(variacion_costo_porcentaje, 0)
+	FROM combos_productos
+	WHERE empresa_id = ? AND id = ?
+	LIMIT 1`, empresaID, comboID).Scan(
+		&version,
+		&metrics.CostoTeorico,
+		&metrics.CostoReal,
+		&metrics.VariacionCosto,
+		&metrics.VariacionCostoPct,
+	)
+	if err != nil {
+		return 0, metrics, err
+	}
+	if !version.Valid || version.Int64 <= 0 {
+		return 1, metrics, nil
+	}
+	return version.Int64, metrics, nil
+}
+
+func getComboProductoIngredientesTx(tx *sql.Tx, empresaID, comboID int64) ([]ComboProductoDetalle, error) {
+	rows, err := tx.Query(`SELECT
+		COALESCE(producto_id, 0),
+		COALESCE(cantidad, 0),
+		COALESCE(unidad_medida, 'unidad')
+	FROM combos_productos_detalle
+	WHERE empresa_id = ? AND combo_id = ? AND COALESCE(estado, 'activo') = 'activo'
+	ORDER BY producto_id ASC, id ASC`, empresaID, comboID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]ComboProductoDetalle, 0)
+	for rows.Next() {
+		var item ComboProductoDetalle
+		if err := rows.Scan(&item.ProductoID, &item.Cantidad, &item.UnidadMedida); err != nil {
+			return nil, err
+		}
+		item.UnidadMedida = normalizeComboUnidadDetalle(item.UnidadMedida)
+		out = append(out, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if len(out) == 0 {
+		return nil, fmt.Errorf("el combo debe tener al menos un ingrediente")
+	}
+	return out, nil
+}
+
+func insertComboVersionSnapshotTx(tx *sql.Tx, empresaID, comboID, recetaVersion int64, ingredientes []ComboProductoDetalle, metrics comboCostoMetrics, usuario, motivo string) error {
+	if recetaVersion <= 0 {
+		recetaVersion = 1
+	}
+	payload, err := json.Marshal(ingredientes)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(`INSERT OR IGNORE INTO combos_productos_versiones (
+		fecha_creacion,
+		fecha_actualizacion,
+		usuario_creador,
+		estado,
+		observaciones,
+		empresa_id,
+		combo_id,
+		receta_version,
+		ingredientes_json,
+		costo_teorico,
+		costo_real,
+		variacion_costo,
+		variacion_costo_porcentaje,
+		motivo
+	) VALUES (
+		datetime('now','localtime'),
+		datetime('now','localtime'),
+		?,
+		'activo',
+		?,
+		?,
+		?,
+		?,
+		?,
+		?,
+		?,
+		?,
+		?,
+		?
+	)`,
+		strings.TrimSpace(usuario),
+		strings.TrimSpace(motivo),
+		empresaID,
+		comboID,
+		recetaVersion,
+		string(payload),
+		round2(metrics.CostoTeorico),
+		round2(metrics.CostoReal),
+		round2(metrics.VariacionCosto),
+		round2(metrics.VariacionCostoPct),
+		strings.TrimSpace(motivo),
+	)
+	return err
+}
+
+func replaceComboIngredientesTx(tx *sql.Tx, empresaID, comboID int64, ingredientes []ComboProductoDetalle, usuario string) error {
+	if len(ingredientes) == 0 {
+		return fmt.Errorf("el combo debe tener al menos un ingrediente")
+	}
+
+	if _, err := tx.Exec(`DELETE FROM combos_productos_detalle WHERE empresa_id = ? AND combo_id = ?`, empresaID, comboID); err != nil {
+		return err
+	}
+
+	for _, it := range ingredientes {
 		if _, err := tx.Exec(`INSERT INTO combos_productos_detalle (
 			fecha_creacion,
 			fecha_actualizacion,
@@ -3196,8 +3859,8 @@ func replaceComboIngredientesTx(tx *sql.Tx, empresaID, comboID int64, ingredient
 			empresaID,
 			comboID,
 			it.ProductoID,
-			it.Cantidad,
-			unidad,
+			round2(it.Cantidad),
+			normalizeComboUnidadDetalle(it.UnidadMedida),
 		); err != nil {
 			return err
 		}
@@ -3240,6 +3903,14 @@ func CreateComboProducto(dbConn *sql.DB, combo ComboProducto, ingredientes []Com
 	}
 	defer tx.Rollback()
 
+	preparedIngredientes, metrics, err := buildComboIngredientesValidadosTx(tx, combo.EmpresaID, ingredientes)
+	if err != nil {
+		return 0, err
+	}
+	if err := validateComboCostos(combo, metrics); err != nil {
+		return 0, err
+	}
+
 	res, err := tx.Exec(`INSERT INTO combos_productos (
 		fecha_creacion,
 		fecha_actualizacion,
@@ -3252,7 +3923,12 @@ func CreateComboProducto(dbConn *sql.DB, combo ComboProducto, ingredientes []Com
 		descripcion,
 		unidad_medida,
 		precio,
-		impuesto_porcentaje
+		impuesto_porcentaje,
+		receta_version,
+		costo_teorico,
+		costo_real,
+		variacion_costo,
+		variacion_costo_porcentaje
 	) VALUES (
 		datetime('now','localtime'),
 		datetime('now','localtime'),
@@ -3262,6 +3938,11 @@ func CreateComboProducto(dbConn *sql.DB, combo ComboProducto, ingredientes []Com
 		?,
 		NULLIF(?, ''),
 		?,
+		?,
+		?,
+		?,
+		?,
+		1,
 		?,
 		?,
 		?,
@@ -3277,6 +3958,10 @@ func CreateComboProducto(dbConn *sql.DB, combo ComboProducto, ingredientes []Com
 		combo.UnidadMedida,
 		round2(combo.Precio),
 		round2(combo.ImpuestoPorcentaje),
+		metrics.CostoTeorico,
+		metrics.CostoReal,
+		metrics.VariacionCosto,
+		metrics.VariacionCostoPct,
 	)
 	if err != nil {
 		return 0, err
@@ -3287,7 +3972,11 @@ func CreateComboProducto(dbConn *sql.DB, combo ComboProducto, ingredientes []Com
 		return 0, err
 	}
 
-	if err := replaceComboIngredientesTx(tx, combo.EmpresaID, comboID, ingredientes, combo.UsuarioCreador); err != nil {
+	if err := replaceComboIngredientesTx(tx, combo.EmpresaID, comboID, preparedIngredientes, combo.UsuarioCreador); err != nil {
+		return 0, err
+	}
+
+	if err := insertComboVersionSnapshotTx(tx, combo.EmpresaID, comboID, 1, preparedIngredientes, metrics, combo.UsuarioCreador, "creacion_combo"); err != nil {
 		return 0, err
 	}
 
@@ -3315,6 +4004,11 @@ func GetCombosProductosByEmpresa(dbConn *sql.DB, empresaID int64, filtro, estado
 		COALESCE(c.unidad_medida, 'combo'),
 		COALESCE(c.precio, 0),
 		COALESCE(c.impuesto_porcentaje, 0),
+		COALESCE(c.receta_version, 1),
+		COALESCE(c.costo_teorico, 0),
+		COALESCE(c.costo_real, 0),
+		COALESCE(c.variacion_costo, 0),
+		COALESCE(c.variacion_costo_porcentaje, 0),
 		COALESCE(det.ingredientes_count, 0),
 		COALESCE(c.fecha_creacion, ''),
 		COALESCE(c.fecha_actualizacion, ''),
@@ -3365,6 +4059,11 @@ func GetCombosProductosByEmpresa(dbConn *sql.DB, empresaID int64, filtro, estado
 			&c.UnidadMedida,
 			&c.Precio,
 			&c.ImpuestoPorcentaje,
+			&c.RecetaVersion,
+			&c.CostoTeorico,
+			&c.CostoReal,
+			&c.VariacionCosto,
+			&c.VariacionCostoPct,
 			&c.IngredientesCount,
 			&c.FechaCreacion,
 			&c.FechaActualizacion,
@@ -3390,6 +4089,11 @@ func GetComboProductoByID(dbConn *sql.DB, empresaID, comboID int64) (*ComboProdu
 		COALESCE(unidad_medida, 'combo'),
 		COALESCE(precio, 0),
 		COALESCE(impuesto_porcentaje, 0),
+		COALESCE(receta_version, 1),
+		COALESCE(costo_teorico, 0),
+		COALESCE(costo_real, 0),
+		COALESCE(variacion_costo, 0),
+		COALESCE(variacion_costo_porcentaje, 0),
 		COALESCE(fecha_creacion, ''),
 		COALESCE(fecha_actualizacion, ''),
 		COALESCE(usuario_creador, ''),
@@ -3409,6 +4113,11 @@ func GetComboProductoByID(dbConn *sql.DB, empresaID, comboID int64) (*ComboProdu
 		&combo.UnidadMedida,
 		&combo.Precio,
 		&combo.ImpuestoPorcentaje,
+		&combo.RecetaVersion,
+		&combo.CostoTeorico,
+		&combo.CostoReal,
+		&combo.VariacionCosto,
+		&combo.VariacionCostoPct,
 		&combo.FechaCreacion,
 		&combo.FechaActualizacion,
 		&combo.UsuarioCreador,
@@ -3511,6 +4220,39 @@ func UpdateComboProducto(dbConn *sql.DB, combo ComboProducto, ingredientes []Com
 		return fmt.Errorf("no se puede modificar el combo mientras tenga items activos en carritos abiertos")
 	}
 
+	currentVersion, currentMetrics, err := getComboProductoCurrentStateTx(tx, combo.EmpresaID, combo.ID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return sql.ErrNoRows
+		}
+		return err
+	}
+	if currentVersion <= 0 {
+		currentVersion = 1
+	}
+
+	currentIngredientes, err := getComboProductoIngredientesTx(tx, combo.EmpresaID, combo.ID)
+	if err != nil {
+		return err
+	}
+
+	preparedIngredientes, metrics, err := buildComboIngredientesValidadosTx(tx, combo.EmpresaID, ingredientes)
+	if err != nil {
+		return err
+	}
+	if err := validateComboCostos(combo, metrics); err != nil {
+		return err
+	}
+
+	recipeChanged := !comboIngredientesEquivalent(currentIngredientes, preparedIngredientes)
+	nextVersion := currentVersion
+	if recipeChanged {
+		if err := insertComboVersionSnapshotTx(tx, combo.EmpresaID, combo.ID, currentVersion, currentIngredientes, currentMetrics, combo.UsuarioCreador, "snapshot_pre_actualizacion"); err != nil {
+			return err
+		}
+		nextVersion = currentVersion + 1
+	}
+
 	res, err := tx.Exec(`UPDATE combos_productos SET
 		codigo = NULLIF(?, ''),
 		nombre = ?,
@@ -3518,6 +4260,11 @@ func UpdateComboProducto(dbConn *sql.DB, combo ComboProducto, ingredientes []Com
 		unidad_medida = ?,
 		precio = ?,
 		impuesto_porcentaje = ?,
+		receta_version = ?,
+		costo_teorico = ?,
+		costo_real = ?,
+		variacion_costo = ?,
+		variacion_costo_porcentaje = ?,
 		estado = ?,
 		observaciones = ?,
 		fecha_actualizacion = datetime('now','localtime')
@@ -3528,6 +4275,11 @@ func UpdateComboProducto(dbConn *sql.DB, combo ComboProducto, ingredientes []Com
 		combo.UnidadMedida,
 		round2(combo.Precio),
 		round2(combo.ImpuestoPorcentaje),
+		nextVersion,
+		metrics.CostoTeorico,
+		metrics.CostoReal,
+		metrics.VariacionCosto,
+		metrics.VariacionCostoPct,
 		combo.Estado,
 		strings.TrimSpace(combo.Observaciones),
 		combo.ID,
@@ -3541,11 +4293,26 @@ func UpdateComboProducto(dbConn *sql.DB, combo ComboProducto, ingredientes []Com
 		return sql.ErrNoRows
 	}
 
-	if err := replaceComboIngredientesTx(tx, combo.EmpresaID, combo.ID, ingredientes, combo.UsuarioCreador); err != nil {
+	if err := replaceComboIngredientesTx(tx, combo.EmpresaID, combo.ID, preparedIngredientes, combo.UsuarioCreador); err != nil {
 		return err
 	}
 
-	return tx.Commit()
+	if recipeChanged {
+		if err := insertComboVersionSnapshotTx(tx, combo.EmpresaID, combo.ID, nextVersion, preparedIngredientes, metrics, combo.UsuarioCreador, "actualizacion_receta"); err != nil {
+			return err
+		}
+	}
+
+	if !recipeChanged && currentVersion == 1 {
+		if err := insertComboVersionSnapshotTx(tx, combo.EmpresaID, combo.ID, currentVersion, preparedIngredientes, metrics, combo.UsuarioCreador, "normalizacion_version_inicial"); err != nil {
+			return err
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	return nil
 }
 
 // DeleteComboProducto elimina un combo y su receta.
@@ -3785,6 +4552,9 @@ func GetProductoPrecioHistorialByEmpresa(dbConn *sql.DB, empresaID, productoID i
 // RegistrarMovimientoInventario registra entradas, salidas, devoluciones y pérdidas con impacto en stock.
 func RegistrarMovimientoInventario(dbConn *sql.DB, empresaID, productoID, bodegaID int64, tipo string, cantidad float64, referencia, usuario, observaciones string) error {
 	tipo = strings.ToLower(strings.TrimSpace(tipo))
+	referencia = strings.TrimSpace(referencia)
+	usuario = strings.TrimSpace(usuario)
+	observaciones = strings.TrimSpace(observaciones)
 	if cantidad <= 0 {
 		return fmt.Errorf("cantidad debe ser mayor a 0")
 	}
@@ -3807,15 +4577,45 @@ func RegistrarMovimientoInventario(dbConn *sql.DB, empresaID, productoID, bodega
 	if err := validateBodegaEmpresaTx(tx, empresaID, bodegaID); err != nil {
 		return err
 	}
-
-	var costoUnitario float64
-	if err := tx.QueryRow(`SELECT costo FROM productos WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, productoID).Scan(&costoUnitario); err != nil {
+	if err := validateProductoEmpresaTx(tx, empresaID, productoID); err != nil {
 		return err
 	}
 
+	politicaCosto, err := getInventarioPoliticaCostoTx(tx, empresaID)
+	if err != nil {
+		return err
+	}
+
+	var costoUnitario float64
+	if err := tx.QueryRow(`SELECT COALESCE(costo, 0) FROM productos WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, productoID).Scan(&costoUnitario); err != nil {
+		return err
+	}
+	if costoUnitario < 0 {
+		costoUnitario = 0
+	}
+
 	if incoming {
+		costoEntrada := costoUnitario
+		if costoEntrada <= 0 {
+			promedio, err := calcularCostoPromedioDisponibleTx(tx, empresaID, productoID, bodegaID)
+			if err != nil {
+				return err
+			}
+			if promedio > 0 {
+				costoEntrada = promedio
+			}
+		}
+
 		if err := upsertExistenciaTx(tx, empresaID, productoID, bodegaID, cantidad, usuario, observaciones); err != nil {
 			return err
+		}
+		if err := registerCostoLoteTx(tx, empresaID, productoID, bodegaID, cantidad, costoEntrada, referencia, usuario, observaciones); err != nil {
+			return err
+		}
+		if politicaCosto == inventarioPoliticaCostoPromedio {
+			if err := recalcularCostoPromedioProductoTx(tx, empresaID, productoID); err != nil {
+				return err
+			}
 		}
 		if err := insertMovimientoTx(tx, InventarioMovimiento{
 			EmpresaID:       empresaID,
@@ -3823,11 +4623,11 @@ func RegistrarMovimientoInventario(dbConn *sql.DB, empresaID, productoID, bodega
 			BodegaDestinoID: bodegaID,
 			Tipo:            tipo,
 			Cantidad:        cantidad,
-			CostoUnitario:   costoUnitario,
-			Referencia:      strings.TrimSpace(referencia),
-			UsuarioCreador:  strings.TrimSpace(usuario),
+			CostoUnitario:   costoEntrada,
+			Referencia:      referencia,
+			UsuarioCreador:  usuario,
 			Estado:          "activo",
-			Observaciones:   strings.TrimSpace(observaciones),
+			Observaciones:   observaciones,
 		}); err != nil {
 			return err
 		}
@@ -3846,6 +4646,33 @@ func RegistrarMovimientoInventario(dbConn *sql.DB, empresaID, productoID, bodega
 		return ErrStockInsuficiente
 	}
 
+	if err := ensureCostoLotesSeedTx(tx, empresaID, productoID, bodegaID, usuario); err != nil {
+		return err
+	}
+
+	costoSalida := costoUnitario
+	if politicaCosto == inventarioPoliticaCostoPromedio {
+		promedio, err := calcularCostoPromedioDisponibleTx(tx, empresaID, productoID, bodegaID)
+		if err != nil {
+			return err
+		}
+		if promedio > 0 {
+			costoSalida = promedio
+		}
+		if _, err := consumirCostoLotesPEPSTx(tx, empresaID, productoID, bodegaID, cantidad); err != nil && !errors.Is(err, ErrStockInsuficiente) {
+			return err
+		}
+	} else {
+		costoPEPS, err := consumirCostoLotesPEPSTx(tx, empresaID, productoID, bodegaID, cantidad)
+		if err != nil {
+			if !errors.Is(err, ErrStockInsuficiente) {
+				return err
+			}
+		} else if costoPEPS > 0 {
+			costoSalida = costoPEPS
+		}
+	}
+
 	if _, err := tx.Exec(`UPDATE inventario_existencias SET cantidad = cantidad - ?, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND producto_id = ? AND bodega_id = ?`, cantidad, empresaID, productoID, bodegaID); err != nil {
 		return err
 	}
@@ -3855,16 +4682,310 @@ func RegistrarMovimientoInventario(dbConn *sql.DB, empresaID, productoID, bodega
 		BodegaOrigenID: bodegaID,
 		Tipo:           tipo,
 		Cantidad:       cantidad,
-		CostoUnitario:  costoUnitario,
-		Referencia:     strings.TrimSpace(referencia),
-		UsuarioCreador: strings.TrimSpace(usuario),
+		CostoUnitario:  costoSalida,
+		Referencia:     referencia,
+		UsuarioCreador: usuario,
 		Estado:         "activo",
-		Observaciones:  strings.TrimSpace(observaciones),
+		Observaciones:  observaciones,
 	}); err != nil {
 		return err
 	}
+	if politicaCosto == inventarioPoliticaCostoPromedio {
+		if err := recalcularCostoPromedioProductoTx(tx, empresaID, productoID); err != nil {
+			return err
+		}
+	}
 
 	return tx.Commit()
+}
+
+// RegistrarConteoCiclicoInventario registra conteo ciclico y aplica ajuste auditado cuando hay diferencia.
+func RegistrarConteoCiclicoInventario(dbConn *sql.DB, conteo InventarioConteoCiclico) (InventarioConteoCiclico, error) {
+	if conteo.EmpresaID <= 0 {
+		return InventarioConteoCiclico{}, fmt.Errorf("empresa_id invalido")
+	}
+	if conteo.ProductoID <= 0 {
+		return InventarioConteoCiclico{}, fmt.Errorf("producto_id invalido")
+	}
+	if conteo.BodegaID <= 0 {
+		return InventarioConteoCiclico{}, fmt.Errorf("bodega_id invalido")
+	}
+	if conteo.CantidadContada < 0 {
+		return InventarioConteoCiclico{}, fmt.Errorf("cantidad_contada no puede ser negativa")
+	}
+
+	conteo.Referencia = strings.TrimSpace(conteo.Referencia)
+	if conteo.Referencia == "" {
+		conteo.Referencia = fmt.Sprintf("CONTEO-CICLICO-%d", time.Now().Unix())
+	}
+	conteo.UsuarioRevisor = strings.TrimSpace(conteo.UsuarioRevisor)
+	if conteo.UsuarioRevisor == "" {
+		conteo.UsuarioRevisor = strings.TrimSpace(conteo.UsuarioCreador)
+	}
+
+	var exists int
+	if err := dbConn.QueryRow(`SELECT 1 FROM productos WHERE empresa_id = ? AND id = ? LIMIT 1`, conteo.EmpresaID, conteo.ProductoID).Scan(&exists); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return InventarioConteoCiclico{}, fmt.Errorf("producto %d no pertenece a la empresa %d", conteo.ProductoID, conteo.EmpresaID)
+		}
+		return InventarioConteoCiclico{}, err
+	}
+	if err := dbConn.QueryRow(`SELECT 1 FROM bodegas WHERE empresa_id = ? AND id = ? LIMIT 1`, conteo.EmpresaID, conteo.BodegaID).Scan(&exists); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return InventarioConteoCiclico{}, fmt.Errorf("bodega %d no pertenece a la empresa %d", conteo.BodegaID, conteo.EmpresaID)
+		}
+		return InventarioConteoCiclico{}, err
+	}
+
+	stockSistema := 0.0
+	err := dbConn.QueryRow(`SELECT COALESCE(cantidad, 0)
+		FROM inventario_existencias
+		WHERE empresa_id = ? AND producto_id = ? AND bodega_id = ?
+		LIMIT 1`, conteo.EmpresaID, conteo.ProductoID, conteo.BodegaID).Scan(&stockSistema)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return InventarioConteoCiclico{}, err
+	}
+
+	conteo.CantidadSistema = round2(stockSistema)
+	conteo.CantidadContada = round2(conteo.CantidadContada)
+	conteo.Variacion = round2(conteo.CantidadContada - conteo.CantidadSistema)
+	conteo.TipoAjuste = "sin_ajuste"
+	conteo.EstadoConteo = "sin_diferencia"
+	conteo.Estado = "activo"
+
+	movimientoID := int64(0)
+	if conteo.Variacion != 0 {
+		tipoMovimiento := "ajuste_positivo"
+		if conteo.Variacion < 0 {
+			tipoMovimiento = "ajuste_negativo"
+		}
+		conteo.TipoAjuste = tipoMovimiento
+		conteo.EstadoConteo = "ajustado"
+
+		referenciaAjuste := fmt.Sprintf("%s|AJ-%d", conteo.Referencia, time.Now().UnixNano())
+		observacionAjuste := strings.TrimSpace(strings.Join([]string{conteo.Observaciones, "Ajuste automatico por conteo ciclico."}, " "))
+		if err := RegistrarMovimientoInventario(
+			dbConn,
+			conteo.EmpresaID,
+			conteo.ProductoID,
+			conteo.BodegaID,
+			tipoMovimiento,
+			round2(math.Abs(conteo.Variacion)),
+			referenciaAjuste,
+			conteo.UsuarioRevisor,
+			observacionAjuste,
+		); err != nil {
+			return InventarioConteoCiclico{}, err
+		}
+		_ = dbConn.QueryRow(`SELECT id
+			FROM inventario_movimientos
+			WHERE empresa_id = ?
+				AND producto_id = ?
+				AND referencia = ?
+			ORDER BY id DESC
+			LIMIT 1`, conteo.EmpresaID, conteo.ProductoID, referenciaAjuste).Scan(&movimientoID)
+	}
+
+	res, err := dbConn.Exec(`INSERT INTO inventario_conteos_ciclicos (
+		empresa_id,
+		producto_id,
+		bodega_id,
+		cantidad_sistema,
+		cantidad_contada,
+		variacion,
+		tipo_ajuste,
+		movimiento_id,
+		referencia,
+		fecha_conteo,
+		usuario_revisor,
+		estado_conteo,
+		fecha_creacion,
+		fecha_actualizacion,
+		usuario_creador,
+		estado,
+		observaciones
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, COALESCE(NULLIF(?, ''), 'activo'), ?)`,
+		conteo.EmpresaID,
+		conteo.ProductoID,
+		conteo.BodegaID,
+		conteo.CantidadSistema,
+		conteo.CantidadContada,
+		conteo.Variacion,
+		conteo.TipoAjuste,
+		nullableInt64(movimientoID),
+		conteo.Referencia,
+		conteo.UsuarioRevisor,
+		conteo.EstadoConteo,
+		conteo.UsuarioRevisor,
+		conteo.Estado,
+		strings.TrimSpace(conteo.Observaciones),
+	)
+	if err != nil {
+		return InventarioConteoCiclico{}, err
+	}
+
+	conteoID, err := res.LastInsertId()
+	if err != nil {
+		return InventarioConteoCiclico{}, err
+	}
+
+	return getInventarioConteoCiclicoByID(dbConn, conteo.EmpresaID, conteoID)
+}
+
+func getInventarioConteoCiclicoByID(dbConn *sql.DB, empresaID, conteoID int64) (InventarioConteoCiclico, error) {
+	row := dbConn.QueryRow(`SELECT
+		c.id,
+		c.empresa_id,
+		c.producto_id,
+		COALESCE(p.nombre, ''),
+		c.bodega_id,
+		COALESCE(b.nombre, ''),
+		COALESCE(c.cantidad_sistema, 0),
+		COALESCE(c.cantidad_contada, 0),
+		COALESCE(c.variacion, 0),
+		COALESCE(c.tipo_ajuste, 'sin_ajuste'),
+		COALESCE(c.movimiento_id, 0),
+		COALESCE(c.referencia, ''),
+		COALESCE(c.fecha_conteo, ''),
+		COALESCE(c.usuario_revisor, ''),
+		COALESCE(c.estado_conteo, 'sin_diferencia'),
+		COALESCE(c.fecha_creacion, ''),
+		COALESCE(c.fecha_actualizacion, ''),
+		COALESCE(c.usuario_creador, ''),
+		COALESCE(c.estado, 'activo'),
+		COALESCE(c.observaciones, '')
+	FROM inventario_conteos_ciclicos c
+	LEFT JOIN productos p ON p.empresa_id = c.empresa_id AND p.id = c.producto_id
+	LEFT JOIN bodegas b ON b.empresa_id = c.empresa_id AND b.id = c.bodega_id
+	WHERE c.empresa_id = ? AND c.id = ?
+	LIMIT 1`, empresaID, conteoID)
+
+	var out InventarioConteoCiclico
+	if err := row.Scan(
+		&out.ID,
+		&out.EmpresaID,
+		&out.ProductoID,
+		&out.ProductoNombre,
+		&out.BodegaID,
+		&out.BodegaNombre,
+		&out.CantidadSistema,
+		&out.CantidadContada,
+		&out.Variacion,
+		&out.TipoAjuste,
+		&out.MovimientoID,
+		&out.Referencia,
+		&out.FechaConteo,
+		&out.UsuarioRevisor,
+		&out.EstadoConteo,
+		&out.FechaCreacion,
+		&out.FechaActualizacion,
+		&out.UsuarioCreador,
+		&out.Estado,
+		&out.Observaciones,
+	); err != nil {
+		return InventarioConteoCiclico{}, err
+	}
+
+	return out, nil
+}
+
+// GetInventarioConteosCiclicosByEmpresa lista conteos ciclicos auditados por empresa.
+func GetInventarioConteosCiclicosByEmpresa(dbConn *sql.DB, empresaID, productoID, bodegaID int64, estadoConteo, desde, hasta string, limit, offset int) ([]InventarioConteoCiclico, error) {
+	if limit <= 0 || limit > 500 {
+		limit = 120
+	}
+	if offset < 0 {
+		offset = 0
+	}
+
+	query := `SELECT
+		c.id,
+		c.empresa_id,
+		c.producto_id,
+		COALESCE(p.nombre, ''),
+		c.bodega_id,
+		COALESCE(b.nombre, ''),
+		COALESCE(c.cantidad_sistema, 0),
+		COALESCE(c.cantidad_contada, 0),
+		COALESCE(c.variacion, 0),
+		COALESCE(c.tipo_ajuste, 'sin_ajuste'),
+		COALESCE(c.movimiento_id, 0),
+		COALESCE(c.referencia, ''),
+		COALESCE(c.fecha_conteo, ''),
+		COALESCE(c.usuario_revisor, ''),
+		COALESCE(c.estado_conteo, 'sin_diferencia'),
+		COALESCE(c.fecha_creacion, ''),
+		COALESCE(c.fecha_actualizacion, ''),
+		COALESCE(c.usuario_creador, ''),
+		COALESCE(c.estado, 'activo'),
+		COALESCE(c.observaciones, '')
+	FROM inventario_conteos_ciclicos c
+	LEFT JOIN productos p ON p.empresa_id = c.empresa_id AND p.id = c.producto_id
+	LEFT JOIN bodegas b ON b.empresa_id = c.empresa_id AND b.id = c.bodega_id
+	WHERE c.empresa_id = ?`
+	args := []interface{}{empresaID}
+
+	if productoID > 0 {
+		query += ` AND c.producto_id = ?`
+		args = append(args, productoID)
+	}
+	if bodegaID > 0 {
+		query += ` AND c.bodega_id = ?`
+		args = append(args, bodegaID)
+	}
+	if strings.TrimSpace(estadoConteo) != "" {
+		query += ` AND LOWER(COALESCE(c.estado_conteo, '')) = LOWER(?)`
+		args = append(args, strings.TrimSpace(estadoConteo))
+	}
+	if strings.TrimSpace(desde) != "" {
+		query += ` AND date(COALESCE(c.fecha_conteo, c.fecha_creacion)) >= date(?)`
+		args = append(args, strings.TrimSpace(desde))
+	}
+	if strings.TrimSpace(hasta) != "" {
+		query += ` AND date(COALESCE(c.fecha_conteo, c.fecha_creacion)) <= date(?)`
+		args = append(args, strings.TrimSpace(hasta))
+	}
+
+	query += ` ORDER BY datetime(COALESCE(c.fecha_conteo, c.fecha_creacion)) DESC, c.id DESC LIMIT ? OFFSET ?`
+	args = append(args, limit, offset)
+
+	rows, err := dbConn.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]InventarioConteoCiclico, 0)
+	for rows.Next() {
+		var row InventarioConteoCiclico
+		if err := rows.Scan(
+			&row.ID,
+			&row.EmpresaID,
+			&row.ProductoID,
+			&row.ProductoNombre,
+			&row.BodegaID,
+			&row.BodegaNombre,
+			&row.CantidadSistema,
+			&row.CantidadContada,
+			&row.Variacion,
+			&row.TipoAjuste,
+			&row.MovimientoID,
+			&row.Referencia,
+			&row.FechaConteo,
+			&row.UsuarioRevisor,
+			&row.EstadoConteo,
+			&row.FechaCreacion,
+			&row.FechaActualizacion,
+			&row.UsuarioCreador,
+			&row.Estado,
+			&row.Observaciones,
+		); err != nil {
+			return nil, err
+		}
+		out = append(out, row)
+	}
+
+	return out, nil
 }
 
 // RegistrarCambioProducto registra cambio de un producto por otro afectando existencias y movimientos.
@@ -3885,14 +5006,31 @@ func RegistrarCambioProducto(dbConn *sql.DB, empresaID, productoOrigenID, produc
 	if err := validateBodegaEmpresaTx(tx, empresaID, bodegaID); err != nil {
 		return err
 	}
+	if err := validateProductoEmpresaTx(tx, empresaID, productoOrigenID); err != nil {
+		return err
+	}
+	if err := validateProductoEmpresaTx(tx, empresaID, productoDestinoID); err != nil {
+		return err
+	}
+
+	politicaCosto, err := getInventarioPoliticaCostoTx(tx, empresaID)
+	if err != nil {
+		return err
+	}
 
 	var costoOrigen float64
-	if err := tx.QueryRow(`SELECT costo FROM productos WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, productoOrigenID).Scan(&costoOrigen); err != nil {
+	if err := tx.QueryRow(`SELECT COALESCE(costo, 0) FROM productos WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, productoOrigenID).Scan(&costoOrigen); err != nil {
 		return err
 	}
 	var costoDestino float64
-	if err := tx.QueryRow(`SELECT costo FROM productos WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, productoDestinoID).Scan(&costoDestino); err != nil {
+	if err := tx.QueryRow(`SELECT COALESCE(costo, 0) FROM productos WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, productoDestinoID).Scan(&costoDestino); err != nil {
 		return err
+	}
+	if costoOrigen < 0 {
+		costoOrigen = 0
+	}
+	if costoDestino < 0 {
+		costoDestino = 0
 	}
 
 	var stockOrigen float64
@@ -3907,10 +5045,27 @@ func RegistrarCambioProducto(dbConn *sql.DB, empresaID, productoOrigenID, produc
 		return ErrStockInsuficiente
 	}
 
+	if err := ensureCostoLotesSeedTx(tx, empresaID, productoOrigenID, bodegaID, strings.TrimSpace(usuario)); err != nil {
+		return err
+	}
+	costoConsumoOrigen, err := consumirCostoLotesPEPSTx(tx, empresaID, productoOrigenID, bodegaID, cantidad)
+	if err != nil {
+		if !errors.Is(err, ErrStockInsuficiente) {
+			return err
+		}
+		costoConsumoOrigen = costoOrigen
+	}
+	if costoConsumoOrigen > 0 {
+		costoOrigen = costoConsumoOrigen
+	}
+
 	if _, err := tx.Exec(`UPDATE inventario_existencias SET cantidad = cantidad - ?, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND producto_id = ? AND bodega_id = ?`, cantidad, empresaID, productoOrigenID, bodegaID); err != nil {
 		return err
 	}
 	if err := upsertExistenciaTx(tx, empresaID, productoDestinoID, bodegaID, cantidad, usuario, "cambio de producto"); err != nil {
+		return err
+	}
+	if err := registerCostoLoteTx(tx, empresaID, productoDestinoID, bodegaID, cantidad, costoDestino, strings.TrimSpace(referencia), strings.TrimSpace(usuario), "ingreso por cambio de producto"); err != nil {
 		return err
 	}
 
@@ -3941,6 +5096,14 @@ func RegistrarCambioProducto(dbConn *sql.DB, empresaID, productoOrigenID, produc
 		Observaciones:   strings.TrimSpace(observaciones),
 	}); err != nil {
 		return err
+	}
+	if politicaCosto == inventarioPoliticaCostoPromedio {
+		if err := recalcularCostoPromedioProductoTx(tx, empresaID, productoOrigenID); err != nil {
+			return err
+		}
+		if err := recalcularCostoPromedioProductoTx(tx, empresaID, productoDestinoID); err != nil {
+			return err
+		}
 	}
 
 	return tx.Commit()
@@ -4042,6 +5205,241 @@ func insertProductoPrecioHistorialTx(tx *sql.Tx, h ProductoPrecioHistorial) erro
 		h.EmpresaID, h.ProductoID, h.CostoAnterior, h.CostoNuevo, h.PrecioAnterior, h.PrecioNuevo, h.ImpuestoAnterior, h.ImpuestoNuevo,
 		strings.TrimSpace(h.Motivo), strings.TrimSpace(h.Referencia), strings.TrimSpace(h.UsuarioCreador), strings.TrimSpace(h.Estado), strings.TrimSpace(h.Observaciones))
 	return err
+}
+
+func getInventarioPoliticaCostoTx(tx *sql.Tx, empresaID int64) (string, error) {
+	var politica sql.NullString
+	err := tx.QueryRow(`SELECT politica_costo FROM empresa_inventario_configuracion WHERE empresa_id = ? LIMIT 1`, empresaID).Scan(&politica)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return inventarioPoliticaCostoPromedio, nil
+		}
+		return "", err
+	}
+	return normalizeInventarioPoliticaCosto(politica.String), nil
+}
+
+func calcularCostoPromedioDisponibleTx(tx *sql.Tx, empresaID, productoID, bodegaID int64) (float64, error) {
+	query := `SELECT COALESCE(SUM(cantidad_disponible * costo_unitario), 0), COALESCE(SUM(cantidad_disponible), 0)
+		FROM inventario_costos_lotes
+		WHERE empresa_id = ?
+			AND producto_id = ?
+			AND LOWER(COALESCE(estado, 'activo')) = 'activo'
+			AND COALESCE(cantidad_disponible, 0) > 0`
+	args := []interface{}{empresaID, productoID}
+	if bodegaID > 0 {
+		query += ` AND bodega_id = ?`
+		args = append(args, bodegaID)
+	}
+
+	var totalCosto float64
+	var totalCantidad float64
+	if err := tx.QueryRow(query, args...).Scan(&totalCosto, &totalCantidad); err != nil {
+		return 0, err
+	}
+	if totalCantidad <= 0 {
+		return 0, nil
+	}
+	return round2(totalCosto / totalCantidad), nil
+}
+
+func recalcularCostoPromedioProductoTx(tx *sql.Tx, empresaID, productoID int64) error {
+	promedio, err := calcularCostoPromedioDisponibleTx(tx, empresaID, productoID, 0)
+	if err != nil {
+		return err
+	}
+	if promedio <= 0 {
+		return nil
+	}
+	_, err = tx.Exec(`UPDATE productos
+		SET costo = ?, fecha_actualizacion = datetime('now','localtime')
+		WHERE empresa_id = ? AND id = ?`, promedio, empresaID, productoID)
+	return err
+}
+
+func ensureCostoLotesSeedTx(tx *sql.Tx, empresaID, productoID, bodegaID int64, usuario string) error {
+	var existenciaActual float64
+	err := tx.QueryRow(`SELECT COALESCE(cantidad, 0)
+		FROM inventario_existencias
+		WHERE empresa_id = ? AND producto_id = ? AND bodega_id = ?
+		LIMIT 1`, empresaID, productoID, bodegaID).Scan(&existenciaActual)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil
+		}
+		return err
+	}
+	if existenciaActual <= 0 {
+		return nil
+	}
+
+	var lotesActuales float64
+	if err := tx.QueryRow(`SELECT COALESCE(SUM(cantidad_disponible), 0)
+		FROM inventario_costos_lotes
+		WHERE empresa_id = ?
+			AND producto_id = ?
+			AND bodega_id = ?
+			AND LOWER(COALESCE(estado, 'activo')) = 'activo'`, empresaID, productoID, bodegaID).Scan(&lotesActuales); err != nil {
+		return err
+	}
+
+	deltaSeed := round2(existenciaActual - lotesActuales)
+	if deltaSeed <= 0 {
+		return nil
+	}
+
+	var costoBase float64
+	if err := tx.QueryRow(`SELECT COALESCE(costo, 0) FROM productos WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, productoID).Scan(&costoBase); err != nil {
+		return err
+	}
+	if costoBase < 0 {
+		costoBase = 0
+	}
+
+	return registerCostoLoteTx(tx, empresaID, productoID, bodegaID, deltaSeed, costoBase, "SEED-STOCK-LEGACY", usuario, "regularizacion de costos para stock historico")
+}
+
+func registerCostoLoteTx(tx *sql.Tx, empresaID, productoID, bodegaID int64, cantidad, costoUnitario float64, referencia, usuario, observaciones string) error {
+	if cantidad <= 0 {
+		return nil
+	}
+	if costoUnitario < 0 {
+		costoUnitario = 0
+	}
+	_, err := tx.Exec(`INSERT INTO inventario_costos_lotes (
+		empresa_id,
+		producto_id,
+		bodega_id,
+		cantidad_disponible,
+		costo_unitario,
+		referencia,
+		fecha_lote,
+		fecha_creacion,
+		fecha_actualizacion,
+		usuario_creador,
+		estado,
+		observaciones
+	) VALUES (?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), datetime('now','localtime'), ?, 'activo', ?)`,
+		empresaID,
+		productoID,
+		bodegaID,
+		cantidad,
+		round2(costoUnitario),
+		strings.TrimSpace(referencia),
+		strings.TrimSpace(usuario),
+		strings.TrimSpace(observaciones),
+	)
+	return err
+}
+
+func consumirCostoLotesPEPSTx(tx *sql.Tx, empresaID, productoID, bodegaID int64, cantidad float64) (float64, error) {
+	if cantidad <= 0 {
+		return 0, nil
+	}
+
+	rows, err := tx.Query(`SELECT id, COALESCE(cantidad_disponible, 0), COALESCE(costo_unitario, 0)
+		FROM inventario_costos_lotes
+		WHERE empresa_id = ?
+			AND producto_id = ?
+			AND bodega_id = ?
+			AND LOWER(COALESCE(estado, 'activo')) = 'activo'
+			AND COALESCE(cantidad_disponible, 0) > 0
+		ORDER BY datetime(COALESCE(fecha_lote, fecha_creacion)) ASC, id ASC`, empresaID, productoID, bodegaID)
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+
+	type loteConsumo struct {
+		id         int64
+		cantidad   float64
+		costo      float64
+		consumir   float64
+		saldoFinal float64
+		debeCerrar bool
+	}
+	consumos := make([]loteConsumo, 0)
+	restante := cantidad
+	totalCosto := 0.0
+
+	for rows.Next() {
+		if restante <= 0 {
+			break
+		}
+		var lote loteConsumo
+		if err := rows.Scan(&lote.id, &lote.cantidad, &lote.costo); err != nil {
+			return 0, err
+		}
+		if lote.cantidad <= 0 {
+			continue
+		}
+
+		lote.consumir = restante
+		if lote.consumir > lote.cantidad {
+			lote.consumir = lote.cantidad
+		}
+		lote.saldoFinal = round2(lote.cantidad - lote.consumir)
+		lote.debeCerrar = lote.saldoFinal <= 0
+
+		restante = round2(restante - lote.consumir)
+		totalCosto += lote.consumir * lote.costo
+		consumos = append(consumos, lote)
+	}
+
+	if restante > 0 {
+		return 0, ErrStockInsuficiente
+	}
+
+	for _, lote := range consumos {
+		if lote.debeCerrar {
+			if _, err := tx.Exec(`UPDATE inventario_costos_lotes
+				SET cantidad_disponible = 0,
+					estado = 'consumido',
+					fecha_actualizacion = datetime('now','localtime')
+				WHERE id = ?`, lote.id); err != nil {
+				return 0, err
+			}
+			continue
+		}
+		if _, err := tx.Exec(`UPDATE inventario_costos_lotes
+			SET cantidad_disponible = ?, fecha_actualizacion = datetime('now','localtime')
+			WHERE id = ?`, lote.saldoFinal, lote.id); err != nil {
+			return 0, err
+		}
+	}
+
+	if cantidad <= 0 {
+		return 0, nil
+	}
+	return round2(totalCosto / cantidad), nil
+}
+
+func transferirCostoLotesEntreBodegasTx(tx *sql.Tx, empresaID, productoID, bodegaOrigenID, bodegaDestinoID int64, cantidad float64, referencia, usuario string) (float64, error) {
+	if err := ensureCostoLotesSeedTx(tx, empresaID, productoID, bodegaOrigenID, usuario); err != nil {
+		return 0, err
+	}
+	costoTransferido, err := consumirCostoLotesPEPSTx(tx, empresaID, productoID, bodegaOrigenID, cantidad)
+	if err != nil {
+		return 0, err
+	}
+	if costoTransferido < 0 {
+		costoTransferido = 0
+	}
+	if err := registerCostoLoteTx(tx, empresaID, productoID, bodegaDestinoID, cantidad, costoTransferido, referencia, usuario, "traslado recibido entre bodegas"); err != nil {
+		return 0, err
+	}
+	return costoTransferido, nil
+}
+
+func validateProductoEmpresaTx(tx *sql.Tx, empresaID, productoID int64) error {
+	var exists int
+	if err := tx.QueryRow(`SELECT 1 FROM productos WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, productoID).Scan(&exists); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fmt.Errorf("producto %d no pertenece a la empresa %d", productoID, empresaID)
+		}
+		return err
+	}
+	return nil
 }
 
 func validateBodegaEmpresaTx(tx *sql.Tx, empresaID, bodegaID int64) error {

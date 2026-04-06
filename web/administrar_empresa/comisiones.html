@@ -12,7 +12,7 @@
       <h1>Modulo de comisiones por servicio</h1>
     </div>
     <p class="form-help" style="margin:0 0 12px 0;">
-      Configura el porcentaje de comision para servicios de lavado y revisa el acumulado por lavador.
+      Configura comisiones, define escalas y topes por rol/servicio, registra ajustes manuales y revisa trazabilidad para liquidacion de nomina.
     </p>
 
     <div class="form" style="margin-top:12px;">
@@ -57,6 +57,137 @@
 
     <div class="form" style="margin-top:14px;">
       <div class="page-header" style="margin-bottom:8px;">
+        <h2 style="margin:0;font-size:1rem;">Escalas y topes por rol/servicio</h2>
+      </div>
+      <input id="escalaId" type="hidden" value="0">
+      <div class="form-row">
+        <div class="form-col" style="max-width:240px;">
+          <label class="form-label" for="escalaRol">Rol operacion</label>
+          <input id="escalaRol" class="form-input" placeholder="Ej: lavador, supervisor">
+        </div>
+        <div class="form-col" style="max-width:260px;">
+          <label class="form-label" for="escalaServicio">Filtro servicio</label>
+          <input id="escalaServicio" class="form-input" placeholder="Ej: lavado premium">
+        </div>
+        <div class="form-col" style="max-width:200px;">
+          <label class="form-label" for="escalaPct">Porcentaje (%)</label>
+          <input id="escalaPct" class="form-input" type="number" min="0" max="100" step="0.01" value="0">
+        </div>
+        <div class="form-col" style="max-width:200px;">
+          <label class="form-label" for="escalaTope">Tope comision</label>
+          <input id="escalaTope" class="form-input" type="number" min="0" step="0.01" value="0">
+        </div>
+        <div class="form-col" style="max-width:180px;">
+          <label class="form-label" for="escalaPrioridad">Prioridad</label>
+          <input id="escalaPrioridad" class="form-input" type="number" min="1" step="1" value="100">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="escalaObs">Observaciones</label>
+          <input id="escalaObs" class="form-input" placeholder="Opcional">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button id="btnGuardarEscala" type="button" class="btn">Guardar escala</button>
+        <button id="btnLimpiarEscala" type="button" class="btn secondary">Limpiar</button>
+        <button id="btnRefrescarEscalas" type="button" class="btn secondary">Actualizar escalas</button>
+      </div>
+      <div id="escalaMsg" class="form-help"></div>
+
+      <div style="margin-top:10px;overflow:auto;">
+        <table class="crud-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Rol</th>
+              <th>Filtro servicio</th>
+              <th>%</th>
+              <th>Tope</th>
+              <th>Prioridad</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tablaEscalasBody">
+            <tr><td colspan="8" style="text-align:center;color:#777;">Sin escalas</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="form" style="margin-top:14px;">
+      <div class="page-header" style="margin-bottom:8px;">
+        <h2 style="margin:0;font-size:1rem;">Ajuste manual de comision</h2>
+      </div>
+      <div class="form-row">
+        <div class="form-col" style="max-width:220px;">
+          <label class="form-label" for="ajUsuarioLavador">Lavador</label>
+          <input id="ajUsuarioLavador" class="form-input" placeholder="email o codigo" maxlength="180">
+        </div>
+        <div class="form-col" style="max-width:220px;">
+          <label class="form-label" for="ajRolOperacion">Rol operacion</label>
+          <input id="ajRolOperacion" class="form-input" placeholder="Ej: lavador" maxlength="120">
+        </div>
+        <div class="form-col" style="max-width:220px;">
+          <label class="form-label" for="ajMonto">Monto ajuste (+/-)</label>
+          <input id="ajMonto" class="form-input" type="number" step="0.01" placeholder="Ej: 2500 o -1200">
+        </div>
+        <div class="form-col" style="max-width:220px;">
+          <label class="form-label" for="ajBase">Base servicio</label>
+          <input id="ajBase" class="form-input" type="number" min="0" step="0.01" value="0">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col" style="max-width:220px;">
+          <label class="form-label" for="ajCarrito">Carrito ID</label>
+          <input id="ajCarrito" class="form-input" type="number" min="0" step="1" placeholder="Opcional">
+        </div>
+        <div class="form-col" style="max-width:220px;">
+          <label class="form-label" for="ajItem">Carrito item ID</label>
+          <input id="ajItem" class="form-input" type="number" min="0" step="1" placeholder="Opcional">
+        </div>
+        <div class="form-col" style="max-width:260px;">
+          <label class="form-label" for="ajServicioCodigo">Servicio codigo</label>
+          <input id="ajServicioCodigo" class="form-input" maxlength="64" placeholder="Opcional">
+        </div>
+        <div class="form-col" style="max-width:260px;">
+          <label class="form-label" for="ajServicioNombre">Servicio nombre</label>
+          <input id="ajServicioNombre" class="form-input" maxlength="180" placeholder="Opcional">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col" style="max-width:260px;">
+          <label class="form-label" for="ajVentaRef">Referencia venta</label>
+          <input id="ajVentaRef" class="form-input" maxlength="160" placeholder="Opcional">
+        </div>
+        <div class="form-col" style="max-width:260px;">
+          <label class="form-label" for="ajReferencia">Referencia ajuste</label>
+          <input id="ajReferencia" class="form-input" maxlength="160" placeholder="Opcional">
+        </div>
+        <div class="form-col" style="max-width:180px;">
+          <label class="form-label" for="ajMoneda">Moneda</label>
+          <input id="ajMoneda" class="form-input" maxlength="16" value="COP">
+        </div>
+        <div class="form-col" style="max-width:220px;">
+          <label class="form-label" for="ajServicioCategoria">Categoria servicio</label>
+          <input id="ajServicioCategoria" class="form-input" maxlength="120" placeholder="Opcional">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="ajMotivo">Motivo</label>
+          <textarea id="ajMotivo" class="form-textarea" placeholder="Motivo obligatorio"></textarea>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button id="btnRegistrarAjuste" type="button" class="btn">Registrar ajuste</button>
+      </div>
+      <div id="ajusteMsg" class="form-help"></div>
+    </div>
+
+    <div class="form" style="margin-top:14px;">
+      <div class="page-header" style="margin-bottom:8px;">
         <h2 style="margin:0;font-size:1rem;">Reporte de comisiones</h2>
       </div>
       <div class="form-row">
@@ -73,12 +204,51 @@
           <input id="fUsuarioLavador" class="form-input" placeholder="email o nombre">
         </div>
         <div class="form-col" style="max-width:220px;">
+          <label class="form-label" for="fRolOperacion">Rol operacion</label>
+          <input id="fRolOperacion" class="form-input" placeholder="Ej: lavador">
+        </div>
+        <div class="form-col" style="max-width:220px;">
           <label class="form-label" for="fServicioFiltro">Filtro servicio</label>
           <input id="fServicioFiltro" class="form-input" placeholder="Ej: lavado">
+        </div>
+        <div class="form-col" style="max-width:200px;">
+          <label class="form-label" for="fOrigen">Origen</label>
+          <select id="fOrigen" class="form-input">
+            <option value="">Todos</option>
+            <option value="venta">Venta</option>
+            <option value="ajuste_manual">Ajuste manual</option>
+          </select>
+        </div>
+        <div class="form-col" style="max-width:220px;">
+          <label class="form-label" for="fAjusteEstado">Estado ajuste</label>
+          <select id="fAjusteEstado" class="form-input">
+            <option value="">Todos</option>
+            <option value="pendiente">Pendiente</option>
+            <option value="aprobado">Aprobado</option>
+            <option value="rechazado">Rechazado</option>
+          </select>
         </div>
         <div class="form-col" style="max-width:180px;">
           <label class="form-label" for="fLimit">Max. filas</label>
           <input id="fLimit" class="form-input" type="number" min="10" max="2000" step="10" value="200">
+        </div>
+      </div>
+      <div class="form-row" style="margin-top:2px;">
+        <div class="form-col" style="max-width:220px;display:flex;align-items:center;gap:8px;">
+          <input id="fSoloAjustes" type="checkbox">
+          <label class="form-label" for="fSoloAjustes" style="margin:0;">Solo ajustes</label>
+        </div>
+        <div class="form-col" style="max-width:220px;display:flex;align-items:center;gap:8px;">
+          <input id="fSoloPendientes" type="checkbox">
+          <label class="form-label" for="fSoloPendientes" style="margin:0;">Solo pendientes</label>
+        </div>
+        <div class="form-col" style="max-width:220px;display:flex;align-items:center;gap:8px;">
+          <input id="fNoLiquidado" type="checkbox">
+          <label class="form-label" for="fNoLiquidado" style="margin:0;">Solo no liquidado</label>
+        </div>
+        <div class="form-col" style="max-width:220px;display:flex;align-items:center;gap:8px;">
+          <input id="fIncludeInactive" type="checkbox">
+          <label class="form-label" for="fIncludeInactive" style="margin:0;">Incluir inactivos</label>
         </div>
       </div>
       <div class="form-actions">
@@ -114,23 +284,60 @@
             <thead>
               <tr>
                 <th>Fecha</th>
+                <th>ID</th>
                 <th>Carrito</th>
                 <th>Item</th>
+                <th>Origen</th>
+                <th>Ajuste</th>
                 <th>Servicio</th>
                 <th>Categoria</th>
                 <th>Usuario origen</th>
                 <th>Lavador</th>
+                <th>Rol</th>
                 <th>Base servicio</th>
                 <th>%</th>
+                <th>Monto bruto</th>
+                <th>Tope aplicado</th>
                 <th>Monto comision</th>
+                <th>Liquidacion</th>
+                <th>Acciones</th>
               </tr>
             </thead>
             <tbody id="tablaMovimientosBody">
-              <tr><td colspan="10" style="text-align:center;color:#777;">Sin datos</td></tr>
+              <tr><td colspan="17" style="text-align:center;color:#777;">Sin datos</td></tr>
             </tbody>
           </table>
         </div>
       </div>
+    </div>
+
+    <div class="form" style="margin-top:14px;">
+      <div class="page-header" style="margin-bottom:8px;">
+        <h2 style="margin:0;font-size:1rem;">Resumen para liquidacion de nomina</h2>
+      </div>
+      <div class="form-row">
+        <div class="form-col" style="max-width:220px;">
+          <label class="form-label" for="liqDesde">Periodo desde</label>
+          <input id="liqDesde" class="form-input" type="date">
+        </div>
+        <div class="form-col" style="max-width:220px;">
+          <label class="form-label" for="liqHasta">Periodo hasta</label>
+          <input id="liqHasta" class="form-input" type="date">
+        </div>
+        <div class="form-col" style="max-width:260px;">
+          <label class="form-label" for="liqLavador">Lavador / identificador</label>
+          <input id="liqLavador" class="form-input" placeholder="email, codigo o documento">
+        </div>
+        <div class="form-col" style="max-width:260px;">
+          <label class="form-label" for="liqEmpleadoNombre">Empleado nombre</label>
+          <input id="liqEmpleadoNombre" class="form-input" placeholder="Opcional">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button id="btnResumenLiquidacion" type="button" class="btn secondary">Consultar resumen</button>
+      </div>
+      <div id="liqMsg" class="form-help"></div>
+      <pre id="liqResumen" class="form-help" style="white-space:pre-wrap;margin-top:6px;">Sin consulta de liquidacion.</pre>
     </div>
   </div>
 
@@ -159,6 +366,26 @@
         return n.toFixed(2);
       }
 
+      function asBool(v) {
+        if (typeof v === 'boolean') return v;
+        if (v === 1 || v === '1') return true;
+        if (String(v || '').toLowerCase() === 'true') return true;
+        return false;
+      }
+
+      function toInt(v) {
+        var n = Number(v || 0);
+        if (!isFinite(n)) return 0;
+        n = Math.floor(n);
+        return n > 0 ? n : 0;
+      }
+
+      function toDec(v) {
+        var n = Number(v || 0);
+        if (!isFinite(n)) return 0;
+        return n;
+      }
+
       function setMessage(id, text, isError) {
         var el = document.getElementById(id);
         if (!el) return;
@@ -173,10 +400,30 @@
         });
       }
 
+      function requestJSON(url, opts) {
+        return fetch(url, opts)
+          .then(ensureOk)
+          .then(function (res) { return res.json(); });
+      }
+
+      function defaultDateRange() {
+        var now = new Date();
+        var first = new Date(now.getFullYear(), now.getMonth(), 1);
+        var y = now.toISOString().slice(0, 10);
+        var f = first.toISOString().slice(0, 10);
+        document.getElementById('fDesde').value = f;
+        document.getElementById('fHasta').value = y;
+        document.getElementById('liqDesde').value = f;
+        document.getElementById('liqHasta').value = y;
+      }
+
       var empresaID = Number(getQueryParam('empresa_id') || 0);
       if (!empresaID) {
         setMessage('cfgMsg', 'empresa_id es obligatorio en la URL', true);
         setMessage('reporteMsg', 'empresa_id es obligatorio en la URL', true);
+        setMessage('escalaMsg', 'empresa_id es obligatorio en la URL', true);
+        setMessage('ajusteMsg', 'empresa_id es obligatorio en la URL', true);
+        setMessage('liqMsg', 'empresa_id es obligatorio en la URL', true);
         return;
       }
 
@@ -201,9 +448,7 @@
       }
 
       function fetchConfig() {
-        return fetch('/api/empresa/comisiones?empresa_id=' + encodeURIComponent(empresaID) + '&action=config')
-          .then(ensureOk)
-          .then(function (res) { return res.json(); })
+        return requestJSON('/api/empresa/comisiones?empresa_id=' + encodeURIComponent(empresaID) + '&action=config')
           .then(function (cfg) {
             applyCfg(cfg);
             return cfg;
@@ -232,6 +477,172 @@
           });
       }
 
+      function resetEscalaForm() {
+        document.getElementById('escalaId').value = '0';
+        document.getElementById('escalaRol').value = '';
+        document.getElementById('escalaServicio').value = '';
+        document.getElementById('escalaPct').value = '0';
+        document.getElementById('escalaTope').value = '0';
+        document.getElementById('escalaPrioridad').value = '100';
+        document.getElementById('escalaObs').value = '';
+        setMessage('escalaMsg', '', false);
+      }
+
+      function buildEscalaPayload() {
+        return {
+          id: toInt(document.getElementById('escalaId').value),
+          empresa_id: empresaID,
+          rol_operacion: normalize(document.getElementById('escalaRol').value),
+          servicio_filtro: normalize(document.getElementById('escalaServicio').value),
+          porcentaje_comision: Math.max(0, Math.min(100, toDec(document.getElementById('escalaPct').value))),
+          tope_comision: Math.max(0, toDec(document.getElementById('escalaTope').value)),
+          prioridad: Math.max(1, toInt(document.getElementById('escalaPrioridad').value) || 100),
+          observaciones: normalize(document.getElementById('escalaObs').value)
+        };
+      }
+
+      function renderEscalas(rows) {
+        var body = document.getElementById('tablaEscalasBody');
+        if (!rows || !rows.length) {
+          body.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#777;">Sin escalas</td></tr>';
+          return;
+        }
+        body.innerHTML = rows.map(function (item) {
+          var estado = normalize(item.estado) || 'activo';
+          var isActive = estado !== 'inactivo';
+          return '<tr>' +
+            '<td>' + toInt(item.id) + '</td>' +
+            '<td>' + escapeHtml(item.rol_operacion || '-') + '</td>' +
+            '<td>' + escapeHtml(item.servicio_filtro || '-') + '</td>' +
+            '<td>' + money(item.porcentaje_comision) + '</td>' +
+            '<td>' + money(item.tope_comision) + '</td>' +
+            '<td>' + toInt(item.prioridad) + '</td>' +
+            '<td>' + escapeHtml(estado) + '</td>' +
+            '<td>' +
+              '<button class="btn secondary" type="button" data-escala-action="edit" data-escala-id="' + toInt(item.id) + '">Editar</button> ' +
+              '<button class="btn secondary" type="button" data-escala-action="toggle" data-escala-state="' + (isActive ? 'off' : 'on') + '" data-escala-id="' + toInt(item.id) + '">' + (isActive ? 'Desactivar' : 'Activar') + '</button>' +
+            '</td>' +
+            '</tr>';
+        }).join('');
+      }
+
+      function loadEscalas() {
+        var url = '/api/empresa/comisiones?empresa_id=' + encodeURIComponent(empresaID) + '&action=escalas&include_inactive=1&limit=500';
+        return requestJSON(url)
+          .then(function (rows) {
+            window.__comEscalas = Array.isArray(rows) ? rows : [];
+            renderEscalas(window.__comEscalas);
+          })
+          .catch(function (err) {
+            setMessage('escalaMsg', err.message || 'No se pudieron cargar escalas.', true);
+          });
+      }
+
+      function saveEscala() {
+        var payload = buildEscalaPayload();
+        if (!payload.rol_operacion && !payload.servicio_filtro) {
+          setMessage('escalaMsg', 'Debe definir rol_operacion o servicio_filtro para la escala.', true);
+          return Promise.resolve();
+        }
+
+        var isUpdate = payload.id > 0;
+        var url = '/api/empresa/comisiones?empresa_id=' + encodeURIComponent(empresaID) + '&action=escala';
+        return requestJSON(url, {
+          method: isUpdate ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }).then(function () {
+          setMessage('escalaMsg', isUpdate ? 'Escala actualizada.' : 'Escala creada.', false);
+          resetEscalaForm();
+          return loadEscalas();
+        }).catch(function (err) {
+          setMessage('escalaMsg', err.message || 'No se pudo guardar la escala.', true);
+        });
+      }
+
+      function editEscala(id) {
+        var rows = window.__comEscalas || [];
+        var item = null;
+        for (var i = 0; i < rows.length; i += 1) {
+          if (toInt(rows[i].id) === toInt(id)) {
+            item = rows[i];
+            break;
+          }
+        }
+        if (!item) return;
+
+        document.getElementById('escalaId').value = String(toInt(item.id));
+        document.getElementById('escalaRol').value = normalize(item.rol_operacion);
+        document.getElementById('escalaServicio').value = normalize(item.servicio_filtro);
+        document.getElementById('escalaPct').value = money(item.porcentaje_comision);
+        document.getElementById('escalaTope').value = money(item.tope_comision);
+        document.getElementById('escalaPrioridad').value = String(Math.max(1, toInt(item.prioridad) || 100));
+        document.getElementById('escalaObs').value = normalize(item.observaciones);
+        setMessage('escalaMsg', 'Editando escala #' + toInt(item.id), false);
+      }
+
+      function setEscalaEstado(id, active) {
+        var action = active ? 'activar_escala' : 'desactivar_escala';
+        var url = '/api/empresa/comisiones?empresa_id=' + encodeURIComponent(empresaID) + '&action=' + action + '&escala_id=' + encodeURIComponent(id);
+        return requestJSON(url, { method: 'PUT' })
+          .then(function () {
+            setMessage('escalaMsg', 'Escala #' + id + ' ' + (active ? 'activada.' : 'desactivada.'), false);
+            return loadEscalas();
+          })
+          .catch(function (err) {
+            setMessage('escalaMsg', err.message || 'No se pudo cambiar estado de escala.', true);
+          });
+      }
+
+      function buildAjustePayload() {
+        return {
+          empresa_id: empresaID,
+          carrito_id: toInt(document.getElementById('ajCarrito').value),
+          carrito_item_id: toInt(document.getElementById('ajItem').value),
+          servicio_codigo: normalize(document.getElementById('ajServicioCodigo').value),
+          servicio_nombre: normalize(document.getElementById('ajServicioNombre').value),
+          servicio_categoria: normalize(document.getElementById('ajServicioCategoria').value),
+          usuario_lavador: normalize(document.getElementById('ajUsuarioLavador').value),
+          rol_operacion: normalize(document.getElementById('ajRolOperacion').value),
+          venta_referencia: normalize(document.getElementById('ajVentaRef').value),
+          moneda: normalize(document.getElementById('ajMoneda').value) || 'COP',
+          base_servicio: Math.max(0, toDec(document.getElementById('ajBase').value)),
+          monto_ajuste: toDec(document.getElementById('ajMonto').value),
+          referencia_ajuste: normalize(document.getElementById('ajReferencia').value),
+          motivo: normalize(document.getElementById('ajMotivo').value)
+        };
+      }
+
+      function registrarAjuste() {
+        var payload = buildAjustePayload();
+        if (!payload.usuario_lavador) {
+          setMessage('ajusteMsg', 'usuario_lavador es obligatorio.', true);
+          return Promise.resolve();
+        }
+        if (Math.abs(payload.monto_ajuste) < 0.0001) {
+          setMessage('ajusteMsg', 'monto_ajuste debe ser diferente de cero.', true);
+          return Promise.resolve();
+        }
+        if (!payload.motivo) {
+          setMessage('ajusteMsg', 'motivo es obligatorio.', true);
+          return Promise.resolve();
+        }
+
+        var url = '/api/empresa/comisiones?empresa_id=' + encodeURIComponent(empresaID) + '&action=ajuste_manual';
+        return requestJSON(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }).then(function (resp) {
+          setMessage('ajusteMsg', 'Ajuste manual registrado (movimiento #' + toInt(resp && resp.id) + ').', false);
+          document.getElementById('ajMonto').value = '';
+          document.getElementById('ajMotivo').value = '';
+          return loadReport();
+        }).catch(function (err) {
+          setMessage('ajusteMsg', err.message || 'No se pudo registrar ajuste manual.', true);
+        });
+      }
+
       function buildReportUrl() {
         var url = new URL('/api/empresa/comisiones', window.location.origin);
         url.searchParams.set('empresa_id', String(empresaID));
@@ -240,13 +651,27 @@
         var desde = normalize(document.getElementById('fDesde').value);
         var hasta = normalize(document.getElementById('fHasta').value);
         var usuario = normalize(document.getElementById('fUsuarioLavador').value);
+        var rolOperacion = normalize(document.getElementById('fRolOperacion').value);
         var servicioFiltro = normalize(document.getElementById('fServicioFiltro').value);
+        var origen = normalize(document.getElementById('fOrigen').value);
+        var ajusteEstado = normalize(document.getElementById('fAjusteEstado').value);
         var limit = Math.max(10, Math.min(2000, Number(document.getElementById('fLimit').value || 200)));
+        var soloAjustes = asBool(document.getElementById('fSoloAjustes').checked);
+        var soloPendientes = asBool(document.getElementById('fSoloPendientes').checked);
+        var noLiquidado = asBool(document.getElementById('fNoLiquidado').checked);
+        var includeInactive = asBool(document.getElementById('fIncludeInactive').checked);
 
         if (desde) url.searchParams.set('desde', desde);
         if (hasta) url.searchParams.set('hasta', hasta);
         if (usuario) url.searchParams.set('usuario_lavador', usuario);
+        if (rolOperacion) url.searchParams.set('rol_operacion', rolOperacion);
         if (servicioFiltro) url.searchParams.set('servicio_filtro', servicioFiltro);
+        if (origen) url.searchParams.set('origen', origen);
+        if (ajusteEstado) url.searchParams.set('ajuste_estado', ajusteEstado);
+        if (soloAjustes) url.searchParams.set('solo_ajustes', '1');
+        if (soloPendientes) url.searchParams.set('solo_pendientes', '1');
+        if (noLiquidado) url.searchParams.set('no_liquidado', '1');
+        if (includeInactive) url.searchParams.set('include_inactive', '1');
         url.searchParams.set('limit', String(limit));
 
         return url.pathname + '?' + url.searchParams.toString();
@@ -264,6 +689,9 @@
           ' | Movimientos: ' + Number(resumen.cantidad_movimientos || 0) +
           ' | Base servicios: ' + money(resumen.total_base_servicios) +
           ' | Comisiones total: ' + money(resumen.total_comisiones) +
+          ' | Ajustes manuales: ' + money(resumen.total_ajustes_manuales) +
+          ' | Pendientes aprobar: ' + Number(resumen.pendientes_aprobacion || 0) +
+          ' | Pendientes liquidar: ' + money(resumen.total_pendientes_liquidar) +
           ' | Lavadores con comision: ' + Number(resumen.lavadores_con_comision || 0);
 
         document.getElementById('resumenBox').textContent = txt;
@@ -291,24 +719,103 @@
         var rows = report && Array.isArray(report.movimientos) ? report.movimientos : [];
         var body = document.getElementById('tablaMovimientosBody');
         if (!rows.length) {
-          body.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#777;">Sin movimientos en el periodo seleccionado</td></tr>';
+          body.innerHTML = '<tr><td colspan="17" style="text-align:center;color:#777;">Sin movimientos en el periodo seleccionado</td></tr>';
           return;
         }
 
         body.innerHTML = rows.map(function (item) {
+          var ajusteEstado = normalize(item.ajuste_estado) || '-';
+          var isAjuste = asBool(item.es_ajuste_manual);
+          var isPendiente = ajusteEstado === 'pendiente';
+          var acciones = '-';
+          if (isAjuste && isPendiente) {
+            acciones = '<button class="btn secondary" type="button" data-ajuste-action="aprobar" data-mov-id="' + toInt(item.id) + '">Aprobar</button> ' +
+              '<button class="btn secondary" type="button" data-ajuste-action="rechazar" data-mov-id="' + toInt(item.id) + '">Rechazar</button>';
+          }
+
           return '<tr>' +
             '<td>' + escapeHtml(item.fecha_movimiento || item.fecha_creacion || '-') + '</td>' +
+            '<td>' + toInt(item.id) + '</td>' +
             '<td>' + escapeHtml(item.carrito_id || '-') + '</td>' +
             '<td>' + escapeHtml(item.carrito_item_id || '-') + '</td>' +
+            '<td>' + escapeHtml(item.origen_movimiento || 'venta') + '</td>' +
+            '<td>' + escapeHtml(ajusteEstado) + '</td>' +
             '<td>' + escapeHtml(item.servicio_nombre || item.servicio_codigo || '-') + '</td>' +
             '<td>' + escapeHtml(item.servicio_categoria || '-') + '</td>' +
             '<td>' + escapeHtml(item.usuario_origen || '-') + '</td>' +
             '<td>' + escapeHtml(item.usuario_lavador || '-') + '</td>' +
+            '<td>' + escapeHtml(item.rol_operacion || '-') + '</td>' +
             '<td>' + money(item.base_servicio) + '</td>' +
             '<td>' + money(item.porcentaje_comision) + '</td>' +
+            '<td>' + money(item.monto_comision_bruto) + '</td>' +
+            '<td>' + money(item.tope_comision_aplicado) + '</td>' +
             '<td>' + money(item.monto_comision) + '</td>' +
+            '<td>' + escapeHtml(item.liquidacion_nomina_id || '-') + '</td>' +
+            '<td>' + acciones + '</td>' +
             '</tr>';
         }).join('');
+      }
+
+      function resolverAjuste(movimientoID, approve) {
+        var action = approve ? 'aprobar_ajuste' : 'rechazar_ajuste';
+        var observaciones = window.prompt((approve ? 'Observaciones aprobacion' : 'Motivo rechazo') + ' (opcional):', '') || '';
+        var payload = {
+          empresa_id: empresaID,
+          movimiento_id: toInt(movimientoID),
+          observaciones: normalize(observaciones)
+        };
+        if (!payload.movimiento_id) {
+          setMessage('reporteMsg', 'movimiento_id invalido.', true);
+          return Promise.resolve();
+        }
+
+        var url = '/api/empresa/comisiones?empresa_id=' + encodeURIComponent(empresaID) + '&action=' + action;
+        return requestJSON(url, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }).then(function () {
+          setMessage('reporteMsg', 'Ajuste #' + payload.movimiento_id + ' ' + (approve ? 'aprobado.' : 'rechazado.'), false);
+          return loadReport();
+        }).catch(function (err) {
+          setMessage('reporteMsg', err.message || 'No se pudo resolver el ajuste.', true);
+        });
+      }
+
+      function consultarResumenLiquidacion() {
+        var desde = normalize(document.getElementById('liqDesde').value);
+        var hasta = normalize(document.getElementById('liqHasta').value);
+        var identificador = normalize(document.getElementById('liqLavador').value);
+        var empleadoNombre = normalize(document.getElementById('liqEmpleadoNombre').value);
+
+        if (!desde || !hasta) {
+          setMessage('liqMsg', 'Debe definir periodo_desde y periodo_hasta.', true);
+          return Promise.resolve();
+        }
+
+        var url = new URL('/api/empresa/comisiones', window.location.origin);
+        url.searchParams.set('empresa_id', String(empresaID));
+        url.searchParams.set('action', 'resumen_liquidacion');
+        url.searchParams.set('periodo_desde', desde);
+        url.searchParams.set('periodo_hasta', hasta);
+        if (identificador) {
+          url.searchParams.set('identificador', identificador);
+          url.searchParams.set('usuario_lavador', identificador);
+          url.searchParams.set('empleado_codigo', identificador);
+          url.searchParams.set('empleado_documento', identificador);
+        }
+        if (empleadoNombre) {
+          url.searchParams.set('empleado_nombre', empleadoNombre);
+        }
+
+        return requestJSON(url.pathname + '?' + url.searchParams.toString())
+          .then(function (resumen) {
+            setMessage('liqMsg', 'Resumen consultado.', false);
+            document.getElementById('liqResumen').textContent = JSON.stringify(resumen, null, 2);
+          })
+          .catch(function (err) {
+            setMessage('liqMsg', err.message || 'No se pudo consultar resumen de liquidacion.', true);
+          });
       }
 
       function loadReport() {
@@ -337,10 +844,52 @@
         document.getElementById('cfgHabilitar').checked = false;
         saveConfig('desactivar');
       });
+
+      document.getElementById('btnGuardarEscala').addEventListener('click', saveEscala);
+      document.getElementById('btnLimpiarEscala').addEventListener('click', resetEscalaForm);
+      document.getElementById('btnRefrescarEscalas').addEventListener('click', loadEscalas);
+
+      document.getElementById('tablaEscalasBody').addEventListener('click', function (ev) {
+        var target = ev.target;
+        if (!target) return;
+        var action = normalize(target.getAttribute('data-escala-action'));
+        var escalaID = toInt(target.getAttribute('data-escala-id'));
+        if (!action || !escalaID) return;
+        if (action === 'edit') {
+          editEscala(escalaID);
+          return;
+        }
+        if (action === 'toggle') {
+          var on = normalize(target.getAttribute('data-escala-state')) === 'on';
+          setEscalaEstado(escalaID, on);
+        }
+      });
+
+      document.getElementById('btnRegistrarAjuste').addEventListener('click', registrarAjuste);
+
       document.getElementById('btnRefrescarReporte').addEventListener('click', loadReport);
 
+      document.getElementById('tablaMovimientosBody').addEventListener('click', function (ev) {
+        var target = ev.target;
+        if (!target) return;
+        var action = normalize(target.getAttribute('data-ajuste-action'));
+        var movID = toInt(target.getAttribute('data-mov-id'));
+        if (!action || !movID) return;
+        if (action === 'aprobar') {
+          resolverAjuste(movID, true);
+        } else if (action === 'rechazar') {
+          resolverAjuste(movID, false);
+        }
+      });
+
+      document.getElementById('btnResumenLiquidacion').addEventListener('click', consultarResumenLiquidacion);
+
+      defaultDateRange();
+      resetEscalaForm();
       fetchConfig()
-        .then(loadReport)
+        .then(function () {
+          return Promise.all([loadEscalas(), loadReport()]);
+        })
         .catch(function (err) {
           setMessage('cfgMsg', err.message || 'No se pudo cargar la configuracion de comisiones.', true);
         });

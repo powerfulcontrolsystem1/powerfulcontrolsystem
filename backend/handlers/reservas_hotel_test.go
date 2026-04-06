@@ -181,3 +181,185 @@ func TestEmpresaReservasHotelHandlerCRUDAndDisponibilidad(t *testing.T) {
 		t.Fatalf("delete expected=%d got=%d body=%s", http.StatusOK, deleteRR.Code, deleteRR.Body.String())
 	}
 }
+
+func TestEmpresaReservasHotelHandlerPoliticasYReconversion(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_reservas_hotel_handler_politicas.db")
+	if err := dbpkg.EnsureEmpresaCarritosSchema(dbEmp); err != nil {
+		t.Fatalf("ensure carritos schema: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaReservasHotelSchema(dbEmp); err != nil {
+		t.Fatalf("ensure reservas schema: %v", err)
+	}
+
+	if _, err := dbpkg.CreateCarritoCompra(dbEmp, dbpkg.CarritoCompra{
+		EmpresaID:         1,
+		Codigo:            "EST-1-1",
+		Nombre:            "Habitacion 1",
+		CanalVenta:        "estacion",
+		Moneda:            "COP",
+		ReferenciaExterna: "ESTACION_1",
+		UsuarioCreador:    "test",
+		Estado:            "activo",
+	}); err != nil {
+		t.Fatalf("create station 1: %v", err)
+	}
+	if _, err := dbpkg.CreateCarritoCompra(dbEmp, dbpkg.CarritoCompra{
+		EmpresaID:         1,
+		Codigo:            "EST-1-2",
+		Nombre:            "Habitacion 2",
+		CanalVenta:        "estacion",
+		Moneda:            "COP",
+		ReferenciaExterna: "ESTACION_2",
+		UsuarioCreador:    "test",
+		Estado:            "activo",
+	}); err != nil {
+		t.Fatalf("create station 2: %v", err)
+	}
+
+	h := EmpresaReservasHotelHandler(dbEmp)
+
+	entradaFutura := time.Now().Add(3 * time.Hour).Format("2006-01-02 15:04:05")
+	salidaFutura := time.Now().Add(8 * time.Hour).Format("2006-01-02 15:04:05")
+	createFuture := fmt.Sprintf(`{"empresa_id":1,"estacion_id":1,"cliente_nombre":"Cliente Reconversion","cantidad_huespedes":2,"fecha_entrada":"%s","fecha_salida":"%s","monto_total":100000,"moneda":"COP"}`,
+		entradaFutura,
+		salidaFutura,
+	)
+	createFutureReq := httptest.NewRequest(http.MethodPost, "/api/empresa/reservas_hotel", strings.NewReader(createFuture))
+	createFutureReq.Header.Set("Content-Type", "application/json")
+	createFutureRR := httptest.NewRecorder()
+	h.ServeHTTP(createFutureRR, createFutureReq)
+	if createFutureRR.Code != http.StatusCreated {
+		t.Fatalf("create future expected=%d got=%d body=%s", http.StatusCreated, createFutureRR.Code, createFutureRR.Body.String())
+	}
+	var future dbpkg.ReservaHotel
+	if err := json.Unmarshal(createFutureRR.Body.Bytes(), &future); err != nil {
+		t.Fatalf("decode future create: %v", err)
+	}
+
+	confirmBody := fmt.Sprintf(`{"empresa_id":1,"id":%d,"referencia_pago":"TRX-CONV-1"}`, future.ID)
+	confirmReq := httptest.NewRequest(http.MethodPut, "/api/empresa/reservas_hotel?action=confirmar_pago", strings.NewReader(confirmBody))
+	confirmReq.Header.Set("Content-Type", "application/json")
+	confirmRR := httptest.NewRecorder()
+	h.ServeHTTP(confirmRR, confirmReq)
+	if confirmRR.Code != http.StatusOK {
+		t.Fatalf("confirm expected=%d got=%d body=%s", http.StatusOK, confirmRR.Code, confirmRR.Body.String())
+	}
+
+	convertBody := fmt.Sprintf(`{"empresa_id":1,"id":%d}`, future.ID)
+	convertReq := httptest.NewRequest(http.MethodPut, "/api/empresa/reservas_hotel?action=convertir_carrito", strings.NewReader(convertBody))
+	convertReq.Header.Set("Content-Type", "application/json")
+	convertRR := httptest.NewRecorder()
+	h.ServeHTTP(convertRR, convertReq)
+	if convertRR.Code != http.StatusOK {
+		t.Fatalf("convert expected=%d got=%d body=%s", http.StatusOK, convertRR.Code, convertRR.Body.String())
+	}
+	var convertResp map[string]interface{}
+	if err := json.Unmarshal(convertRR.Body.Bytes(), &convertResp); err != nil {
+		t.Fatalf("decode convert response: %v", err)
+	}
+	if got := int64(convertResp["carrito_id"].(float64)); got <= 0 {
+		t.Fatalf("expected carrito_id > 0, got %d", got)
+	}
+
+	detailReq := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/empresa/reservas_hotel?empresa_id=1&action=detalle&id=%d", future.ID), nil)
+	detailRR := httptest.NewRecorder()
+	h.ServeHTTP(detailRR, detailReq)
+	if detailRR.Code != http.StatusOK {
+		t.Fatalf("detail expected=%d got=%d body=%s", http.StatusOK, detailRR.Code, detailRR.Body.String())
+	}
+	var detail dbpkg.ReservaHotel
+	if err := json.Unmarshal(detailRR.Body.Bytes(), &detail); err != nil {
+		t.Fatalf("decode detail reconversion: %v", err)
+	}
+	if detail.EstadoReserva != "en_curso" {
+		t.Fatalf("expected estado_reserva=en_curso, got %s", detail.EstadoReserva)
+	}
+
+	createNoShowBody := fmt.Sprintf(`{"empresa_id":1,"estacion_id":2,"cliente_nombre":"Cliente NoShow","cantidad_huespedes":1,"fecha_entrada":"%s","fecha_salida":"%s","fecha_expiracion":"%s","monto_total":70000,"moneda":"COP"}`,
+		time.Now().Add(-6*time.Hour).Format("2006-01-02 15:04:05"),
+		time.Now().Add(-2*time.Hour).Format("2006-01-02 15:04:05"),
+		time.Now().Add(2*time.Hour).Format("2006-01-02 15:04:05"),
+	)
+	createNoShowReq := httptest.NewRequest(http.MethodPost, "/api/empresa/reservas_hotel", strings.NewReader(createNoShowBody))
+	createNoShowReq.Header.Set("Content-Type", "application/json")
+	createNoShowRR := httptest.NewRecorder()
+	h.ServeHTTP(createNoShowRR, createNoShowReq)
+	if createNoShowRR.Code != http.StatusCreated {
+		t.Fatalf("create no_show expected=%d got=%d body=%s", http.StatusCreated, createNoShowRR.Code, createNoShowRR.Body.String())
+	}
+	var noShowRes dbpkg.ReservaHotel
+	if err := json.Unmarshal(createNoShowRR.Body.Bytes(), &noShowRes); err != nil {
+		t.Fatalf("decode no_show create: %v", err)
+	}
+
+	confirmNoShowBody := fmt.Sprintf(`{"empresa_id":1,"id":%d,"referencia_pago":"TRX-NOSHOW-H"}`, noShowRes.ID)
+	confirmNoShowReq := httptest.NewRequest(http.MethodPut, "/api/empresa/reservas_hotel?action=confirmar_pago", strings.NewReader(confirmNoShowBody))
+	confirmNoShowReq.Header.Set("Content-Type", "application/json")
+	confirmNoShowRR := httptest.NewRecorder()
+	h.ServeHTTP(confirmNoShowRR, confirmNoShowReq)
+	if confirmNoShowRR.Code != http.StatusOK {
+		t.Fatalf("confirm no_show expected=%d got=%d body=%s", http.StatusOK, confirmNoShowRR.Code, confirmNoShowRR.Body.String())
+	}
+
+	createExpirableBody := fmt.Sprintf(`{"empresa_id":1,"estacion_id":2,"cliente_nombre":"Cliente Expira","cantidad_huespedes":1,"fecha_entrada":"%s","fecha_salida":"%s","fecha_expiracion":"%s","monto_total":60000,"moneda":"COP"}`,
+		time.Now().Add(1*time.Hour).Format("2006-01-02 15:04:05"),
+		time.Now().Add(4*time.Hour).Format("2006-01-02 15:04:05"),
+		time.Now().Add(-2*time.Hour).Format("2006-01-02 15:04:05"),
+	)
+	createExpirableReq := httptest.NewRequest(http.MethodPost, "/api/empresa/reservas_hotel", strings.NewReader(createExpirableBody))
+	createExpirableReq.Header.Set("Content-Type", "application/json")
+	createExpirableRR := httptest.NewRecorder()
+	h.ServeHTTP(createExpirableRR, createExpirableReq)
+	if createExpirableRR.Code != http.StatusCreated {
+		t.Fatalf("create expirable expected=%d got=%d body=%s", http.StatusCreated, createExpirableRR.Code, createExpirableRR.Body.String())
+	}
+	var expirableRes dbpkg.ReservaHotel
+	if err := json.Unmarshal(createExpirableRR.Body.Bytes(), &expirableRes); err != nil {
+		t.Fatalf("decode expirable create: %v", err)
+	}
+
+	policyReq := httptest.NewRequest(http.MethodGet, "/api/empresa/reservas_hotel?empresa_id=1&action=aplicar_politicas", nil)
+	policyRR := httptest.NewRecorder()
+	h.ServeHTTP(policyRR, policyReq)
+	if policyRR.Code != http.StatusOK {
+		t.Fatalf("policy expected=%d got=%d body=%s", http.StatusOK, policyRR.Code, policyRR.Body.String())
+	}
+	var policyResp map[string]interface{}
+	if err := json.Unmarshal(policyRR.Body.Bytes(), &policyResp); err != nil {
+		t.Fatalf("decode policy response: %v", err)
+	}
+	if _, ok := policyResp["expiradas"]; !ok {
+		t.Fatalf("policy response must include expiradas: %v", policyResp)
+	}
+	if _, ok := policyResp["no_show"]; !ok {
+		t.Fatalf("policy response must include no_show: %v", policyResp)
+	}
+
+	detailNoShowReq := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/empresa/reservas_hotel?empresa_id=1&action=detalle&id=%d", noShowRes.ID), nil)
+	detailNoShowRR := httptest.NewRecorder()
+	h.ServeHTTP(detailNoShowRR, detailNoShowReq)
+	if detailNoShowRR.Code != http.StatusOK {
+		t.Fatalf("detail no_show expected=%d got=%d body=%s", http.StatusOK, detailNoShowRR.Code, detailNoShowRR.Body.String())
+	}
+	var noShowDetail dbpkg.ReservaHotel
+	if err := json.Unmarshal(detailNoShowRR.Body.Bytes(), &noShowDetail); err != nil {
+		t.Fatalf("decode no_show detail: %v", err)
+	}
+	if noShowDetail.EstadoReserva != "no_show" {
+		t.Fatalf("expected estado_reserva=no_show, got %s", noShowDetail.EstadoReserva)
+	}
+
+	detailExpirableReq := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/empresa/reservas_hotel?empresa_id=1&action=detalle&id=%d", expirableRes.ID), nil)
+	detailExpirableRR := httptest.NewRecorder()
+	h.ServeHTTP(detailExpirableRR, detailExpirableReq)
+	if detailExpirableRR.Code != http.StatusOK {
+		t.Fatalf("detail expirable expected=%d got=%d body=%s", http.StatusOK, detailExpirableRR.Code, detailExpirableRR.Body.String())
+	}
+	var expirableDetail dbpkg.ReservaHotel
+	if err := json.Unmarshal(detailExpirableRR.Body.Bytes(), &expirableDetail); err != nil {
+		t.Fatalf("decode expirable detail: %v", err)
+	}
+	if expirableDetail.EstadoReserva != "expirada" || expirableDetail.EstadoPago != "expirado" {
+		t.Fatalf("expected expirada/expirado, got %s/%s", expirableDetail.EstadoReserva, expirableDetail.EstadoPago)
+	}
+}

@@ -27,12 +27,38 @@ func EmpresaCodigosDescuentoHandler(dbEmp *sql.DB) http.HandlerFunc {
 			if action == "validar" {
 				codigo := strings.TrimSpace(r.URL.Query().Get("codigo"))
 				monto, _ := parseFloat64QueryOptional(r, "monto")
-				aplicado, err := dbpkg.ResolveCodigoDescuentoParaMonto(dbEmp, empresaID, codigo, monto)
+				carritoID, _ := parseInt64QueryOptional(r, "carrito_id")
+				clienteID, _ := parseInt64QueryOptional(r, "cliente_id")
+				canalVenta := strings.TrimSpace(r.URL.Query().Get("canal_venta"))
+				aplicado, err := dbpkg.ResolveCodigoDescuentoParaMontoConContexto(
+					dbEmp,
+					empresaID,
+					codigo,
+					monto,
+					dbpkg.CodigoDescuentoContexto{
+						CarritoID:  carritoID,
+						ClienteID:  clienteID,
+						CanalVenta: canalVenta,
+					},
+				)
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
 				}
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "aplicado": aplicado})
+				return
+			}
+			if action == "redenciones" {
+				codigoID, _ := parseInt64QueryOptional(r, "codigo_id")
+				estado := strings.TrimSpace(r.URL.Query().Get("estado_redencion"))
+				limit, _ := parseIntQueryOptional(r, "limit")
+				rows, err := dbpkg.ListCodigoDescuentoRedencionesByEmpresa(dbEmp, empresaID, codigoID, estado, limit)
+				if err != nil {
+					log.Printf("[codigos_descuento] redenciones empresa_id=%d codigo_id=%d error: %v", empresaID, codigoID, err)
+					http.Error(w, "No se pudieron listar las redenciones", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, rows)
 				return
 			}
 
@@ -169,6 +195,13 @@ func codigoDescuentoWriteStatus(err error) int {
 		strings.Contains(lower, "vencido") ||
 		strings.Contains(lower, "sin usos") ||
 		strings.Contains(lower, "monto minimo") ||
+		strings.Contains(lower, "segmento") ||
+		strings.Contains(lower, "canal") ||
+		strings.Contains(lower, "horario") ||
+		strings.Contains(lower, "dia actual") ||
+		strings.Contains(lower, "antifraude") ||
+		strings.Contains(lower, "ya fue aplicado") ||
+		strings.Contains(lower, "limite de uso por cliente") ||
 		strings.Contains(lower, "debe") {
 		return http.StatusBadRequest
 	}

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"math"
+	"strings"
 	"testing"
 )
 
@@ -152,5 +153,221 @@ func TestEmpresaTarifasPorMinutosCRUDYResolucionPorDia(t *testing.T) {
 	}
 	if _, err := GetEmpresaTarifaPorMinutosByID(dbConn, 1, idSemana); !errors.Is(err, sql.ErrNoRows) {
 		t.Fatalf("expected sql.ErrNoRows after delete, got %v", err)
+	}
+}
+
+func TestEmpresaTarifasPorMinutosConfiguracionYCalculoAvanzado(t *testing.T) {
+	dbConn := openCarritoInventarioTestDB(t)
+	if err := EnsureEmpresaTarifasPorMinutosSchema(dbConn); err != nil {
+		t.Fatalf("ensure tarifas por minutos schema: %v", err)
+	}
+
+	defaultCfg, err := GetEmpresaTarifaPorMinutosConfiguracion(dbConn, 2)
+	if err != nil {
+		t.Fatalf("get default cfg: %v", err)
+	}
+	if defaultCfg.RedondeoModo != "ninguno" {
+		t.Fatalf("expected redondeo_modo ninguno, got %q", defaultCfg.RedondeoModo)
+	}
+
+	cfg, err := UpsertEmpresaTarifaPorMinutosConfiguracion(dbConn, EmpresaTarifaPorMinutosConfiguracion{
+		EmpresaID:         2,
+		RedondeoModo:      "arriba",
+		RedondeoUnidad:    100,
+		MontoMinimoDiario: 50000,
+		MontoMaximoDiario: 70000,
+		UsuarioCreador:    "qa@empresa.com",
+	})
+	if err != nil {
+		t.Fatalf("upsert cfg: %v", err)
+	}
+
+	tarifa := EmpresaTarifaPorMinutos{
+		ID:           99,
+		EmpresaID:    2,
+		EstacionID:   30,
+		MinutosBase:  120,
+		ValorBase:    30000,
+		MinutosExtra: 60,
+		ValorExtra:   15000,
+		Moneda:       "COP",
+	}
+
+	detalleFraccion := CalcularDetalleTarifaPorMinutos(tarifa, 120.25, *cfg)
+	if detalleFraccion.BloquesExtra != 1 {
+		t.Fatalf("expected bloques_extra=1 for fraction jump, got %d", detalleFraccion.BloquesExtra)
+	}
+	if math.Abs(detalleFraccion.MontoSubtotal-45000) > 0.001 {
+		t.Fatalf("expected subtotal 45000, got %.2f", detalleFraccion.MontoSubtotal)
+	}
+	if !detalleFraccion.MontoMinimoAplicado {
+		t.Fatalf("expected monto_minimo_aplicado=true")
+	}
+	if math.Abs(detalleFraccion.MontoTotal-50000) > 0.001 {
+		t.Fatalf("expected total 50000 by minimum, got %.2f", detalleFraccion.MontoTotal)
+	}
+
+	detalleMaximo := CalcularDetalleTarifaPorMinutos(tarifa, 300, *cfg)
+	if detalleMaximo.BloquesExtra != 3 {
+		t.Fatalf("expected bloques_extra=3, got %d", detalleMaximo.BloquesExtra)
+	}
+	if !detalleMaximo.MontoMaximoAplicado {
+		t.Fatalf("expected monto_maximo_aplicado=true")
+	}
+	if math.Abs(detalleMaximo.MontoTotal-70000) > 0.001 {
+		t.Fatalf("expected total 70000 by maximum, got %.2f", detalleMaximo.MontoTotal)
+	}
+}
+
+func TestApplyEmpresaTarifaPorMinutosToAllStations(t *testing.T) {
+	dbConn := openCarritoInventarioTestDB(t)
+	if err := EnsureEmpresaTarifasPorMinutosSchema(dbConn); err != nil {
+		t.Fatalf("ensure tarifas por minutos schema: %v", err)
+	}
+	if err := EnsureEmpresaCarritosSchema(dbConn); err != nil {
+		t.Fatalf("ensure carritos schema: %v", err)
+	}
+
+	_, err := dbConn.Exec(`INSERT INTO carritos_compras (empresa_id, codigo, nombre, referencia_externa, estado, estado_carrito, moneda)
+	VALUES
+		(5, 'EST-5-11', 'Estacion 11', 'ESTACION_11', 'activo', 'abierto', 'COP'),
+		(5, 'EST-5-12', 'Estacion 12', 'ESTACION_12', 'activo', 'abierto', 'COP')`)
+	if err != nil {
+		t.Fatalf("insert estaciones carritos: %v", err)
+	}
+
+	result, err := ApplyEmpresaTarifaPorMinutosToAllStations(dbConn, EmpresaTarifaPorMinutos{
+		EmpresaID:      5,
+		DiaSemanaDesde: 1,
+		DiaSemanaHasta: 7,
+		MinutosBase:    120,
+		ValorBase:      25000,
+		MinutosExtra:   60,
+		ValorExtra:     12000,
+		Moneda:         "COP",
+		Prioridad:      1,
+		Estado:         "activo",
+		UsuarioCreador: "qa@empresa.com",
+	})
+	if err != nil {
+		t.Fatalf("apply all stations create: %v", err)
+	}
+	if result.EstacionesObjetivo < 2 {
+		t.Fatalf("expected at least 2 stations, got %d", result.EstacionesObjetivo)
+	}
+	if result.TarifasCreadas < 2 {
+		t.Fatalf("expected at least 2 created tariffs, got %d", result.TarifasCreadas)
+	}
+
+	resultUpdate, err := ApplyEmpresaTarifaPorMinutosToAllStations(dbConn, EmpresaTarifaPorMinutos{
+		EmpresaID:      5,
+		DiaSemanaDesde: 1,
+		DiaSemanaHasta: 7,
+		MinutosBase:    120,
+		ValorBase:      27000,
+		MinutosExtra:   60,
+		ValorExtra:     13000,
+		Moneda:         "COP",
+		Prioridad:      1,
+		Estado:         "activo",
+		UsuarioCreador: "qa2@empresa.com",
+	})
+	if err != nil {
+		t.Fatalf("apply all stations update: %v", err)
+	}
+	if resultUpdate.TarifasActualizadas < 2 {
+		t.Fatalf("expected at least 2 updated tariffs, got %d", resultUpdate.TarifasActualizadas)
+	}
+
+	rows, err := ListEmpresaTarifasPorMinutos(dbConn, 5, EmpresaTarifaPorMinutosFilter{EstacionID: 11, DiaSemana: 2, Limit: 10})
+	if err != nil {
+		t.Fatalf("list tarifas estacion 11: %v", err)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("expected 1 tarifa for station 11, got %d", len(rows))
+	}
+	if math.Abs(rows[0].ValorBase-27000) > 0.001 {
+		t.Fatalf("expected valor_base updated to 27000, got %.2f", rows[0].ValorBase)
+	}
+}
+
+func TestRegisterTarifaPorMinutosCalculoContable(t *testing.T) {
+	dbConn := openCarritoInventarioTestDB(t)
+	if err := EnsureEmpresaTarifasPorMinutosSchema(dbConn); err != nil {
+		t.Fatalf("ensure tarifas por minutos schema: %v", err)
+	}
+	if err := EnsureEmpresaEventosContablesSchema(dbConn); err != nil {
+		t.Fatalf("ensure eventos contables schema: %v", err)
+	}
+
+	id, err := CreateEmpresaTarifaPorMinutos(dbConn, EmpresaTarifaPorMinutos{
+		EmpresaID:      8,
+		EstacionID:     20,
+		DiaSemanaDesde: 1,
+		DiaSemanaHasta: 7,
+		MinutosBase:    120,
+		ValorBase:      30000,
+		MinutosExtra:   60,
+		ValorExtra:     15000,
+		Moneda:         "COP",
+		Prioridad:      1,
+		Estado:         "activo",
+		UsuarioCreador: "qa@empresa.com",
+	})
+	if err != nil {
+		t.Fatalf("create tarifa: %v", err)
+	}
+	tarifa, err := GetEmpresaTarifaPorMinutosByID(dbConn, 8, id)
+	if err != nil {
+		t.Fatalf("get tarifa by id: %v", err)
+	}
+	cfg, err := UpsertEmpresaTarifaPorMinutosConfiguracion(dbConn, EmpresaTarifaPorMinutosConfiguracion{
+		EmpresaID:         8,
+		RedondeoModo:      "matematico",
+		RedondeoUnidad:    100,
+		MontoMinimoDiario: 0,
+		MontoMaximoDiario: 90000,
+	})
+	if err != nil {
+		t.Fatalf("upsert cfg: %v", err)
+	}
+
+	detalle := CalcularDetalleTarifaPorMinutos(*tarifa, 190, *cfg)
+	eventoID, documentoCodigo, periodo, err := RegisterTarifaPorMinutosCalculoContable(
+		dbConn,
+		8,
+		*tarifa,
+		*cfg,
+		2,
+		190,
+		detalle,
+		"qa@empresa.com",
+		"REQ-TPM-1",
+	)
+	if err != nil {
+		t.Fatalf("register contable trace: %v", err)
+	}
+	if eventoID <= 0 {
+		t.Fatalf("expected evento_id > 0, got %d", eventoID)
+	}
+	if !strings.HasPrefix(documentoCodigo, "TPM-8-") {
+		t.Fatalf("unexpected documento_codigo: %q", documentoCodigo)
+	}
+	if len(periodo) != 7 {
+		t.Fatalf("expected periodo_contable length 7, got %q", periodo)
+	}
+
+	rows, err := ListEmpresaEventosContables(dbConn, 8, EmpresaEventoContableFilter{Evento: "tarifa_por_minutos_calculada", Limit: 10})
+	if err != nil {
+		t.Fatalf("list eventos contables: %v", err)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("expected 1 evento contable, got %d", len(rows))
+	}
+	if rows[0].DocumentoCodigo != documentoCodigo {
+		t.Fatalf("expected documento_codigo %q, got %q", documentoCodigo, rows[0].DocumentoCodigo)
+	}
+	if !rows[0].Procesado {
+		t.Fatalf("expected evento procesado=true")
 	}
 }

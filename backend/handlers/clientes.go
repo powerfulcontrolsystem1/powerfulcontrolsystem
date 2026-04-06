@@ -105,6 +105,12 @@ func EmpresaClientesHandler(dbEmp *sql.DB) http.HandlerFunc {
 
 			newID, err := db.CreateCliente(dbEmp, payload)
 			if err != nil {
+				var dupErr *db.ClienteDuplicadoError
+				if errors.As(err, &dupErr) {
+					log.Printf("[clientes] create duplicado empresa_id=%d doc=%s-%s error: %v", payload.EmpresaID, payload.TipoDocumento, payload.NumeroDocumento, err)
+					http.Error(w, dupErr.Error(), http.StatusConflict)
+					return
+				}
 				log.Printf("[clientes] create empresa_id=%d doc=%s-%s error: %v", payload.EmpresaID, payload.TipoDocumento, payload.NumeroDocumento, err)
 				http.Error(w, "No se pudo crear el cliente (verifique que el documento no este duplicado)", http.StatusBadRequest)
 				return
@@ -155,6 +161,12 @@ func EmpresaClientesHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			if err := db.UpdateCliente(dbEmp, payload); err != nil {
+				var dupErr *db.ClienteDuplicadoError
+				if errors.As(err, &dupErr) {
+					log.Printf("[clientes] update duplicado empresa_id=%d id=%d error: %v", payload.EmpresaID, payload.ID, err)
+					http.Error(w, dupErr.Error(), http.StatusConflict)
+					return
+				}
 				log.Printf("[clientes] update empresa_id=%d id=%d error: %v", payload.EmpresaID, payload.ID, err)
 				http.Error(w, "No se pudo actualizar el cliente", http.StatusBadRequest)
 				return

@@ -14,6 +14,7 @@ import (
 	"testing"
 
 	dbpkg "github.com/you/pos-backend/db"
+	"github.com/you/pos-backend/utils"
 	_ "modernc.org/sqlite"
 )
 
@@ -47,6 +48,12 @@ func ensureEmpresaUsersSchema(t *testing.T, dbEmp *sql.DB) {
 		password_salt TEXT,
 		password_set INTEGER DEFAULT 0,
 		password_actualizada_en TEXT,
+		login_failed_attempts INTEGER DEFAULT 0,
+		login_failed_last_at TEXT,
+		login_locked_until TEXT,
+		password_reset_token TEXT,
+		password_reset_expira TEXT,
+		password_reset_requested_en TEXT,
 		rol_usuario_id INTEGER,
 		email_confirmado INTEGER DEFAULT 0,
 		email_confirmado_en TEXT,
@@ -85,6 +92,7 @@ func ensureSuperSchema(t *testing.T, dbSuper *sql.DB) {
 		ip TEXT,
 		user_agent TEXT,
 		fecha_inicio TEXT,
+		fecha_fin TEXT,
 		fecha_creacion TEXT,
 		activo INTEGER DEFAULT 1
 	);`)
@@ -1449,5 +1457,200 @@ func TestEmpresaCarritosCompraRespetaBloqueoPropinaYComisionPorRol(t *testing.T)
 	}
 	if len(comisionMovs) != 0 {
 		t.Fatalf("expected no comision movements, got %d", len(comisionMovs))
+	}
+}
+
+func TestEmpresaUsuarioLoginHandlerBloqueaTrasIntentosFallidos(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_login_lockout.db")
+	dbSuper := openTestSQLite(t, "super_login_lockout.db")
+	ensureEmpresaUsersSchema(t, dbEmp)
+	ensureSuperSchema(t, dbSuper)
+
+	salt := "salt-lockout"
+	hash := hashEmpresaUsuarioPassword("PasswordSegura1", salt)
+	_, err := dbEmp.Exec(`INSERT INTO users (
+		email, name, role, empresa_id, documento_identidad,
+		password_hash, password_salt, password_set,
+		rol_usuario_id, email_confirmado, estado
+	) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, 1, 'activo')`,
+		"lockout@empresa.com", "Usuario Lockout", "vendedor", int64(25), "DOC-LOCK", hash, salt, int64(2),
+	)
+	if err != nil {
+		t.Fatalf("seed user lockout: %v", err)
+	}
+
+	h := EmpresaUsuarioLoginHandler(dbEmp, dbSuper)
+	for i := 1; i <= 4; i++ {
+		req := httptest.NewRequest(http.MethodPost, "/api/empresa/usuarios/login", strings.NewReader(`{"empresa_id":25,"email":"lockout@empresa.com","password":"ClaveIncorrecta"}`))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		h.ServeHTTP(rr, req)
+		if rr.Code != http.StatusUnauthorized {
+			t.Fatalf("attempt %d expected status %d, got %d body=%s", i, http.StatusUnauthorized, rr.Code, rr.Body.String())
+		}
+	}
+
+	lockedReq := httptest.NewRequest(http.MethodPost, "/api/empresa/usuarios/login", strings.NewReader(`{"empresa_id":25,"email":"lockout@empresa.com","password":"ClaveIncorrecta"}`))
+	lockedReq.Header.Set("Content-Type", "application/json")
+	lockedRR := httptest.NewRecorder()
+	h.ServeHTTP(lockedRR, lockedReq)
+	if lockedRR.Code != http.StatusTooManyRequests {
+		t.Fatalf("expected lockout status %d, got %d body=%s", http.StatusTooManyRequests, lockedRR.Code, lockedRR.Body.String())
+	}
+
+	var lockUntil string
+	if err := dbEmp.QueryRow("SELECT COALESCE(login_locked_until,'') FROM users WHERE email = ?", "lockout@empresa.com").Scan(&lockUntil); err != nil {
+		t.Fatalf("query login_locked_until: %v", err)
+	}
+	if strings.TrimSpace(lockUntil) == "" {
+		t.Fatal("expected login_locked_until to be set")
+	}
+
+	blockedCorrectReq := httptest.NewRequest(http.MethodPost, "/api/empresa/usuarios/login", strings.NewReader(`{"empresa_id":25,"email":"lockout@empresa.com","password":"PasswordSegura1"}`))
+	blockedCorrectReq.Header.Set("Content-Type", "application/json")
+	blockedCorrectRR := httptest.NewRecorder()
+	h.ServeHTTP(blockedCorrectRR, blockedCorrectReq)
+	if blockedCorrectRR.Code != http.StatusTooManyRequests {
+		t.Fatalf("expected status %d while user is locked, got %d body=%s", http.StatusTooManyRequests, blockedCorrectRR.Code, blockedCorrectRR.Body.String())
+	}
+}
+
+func TestEmpresaUsuarioPasswordRecoveryFlow(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_password_recovery.db")
+	dbSuper := openTestSQLite(t, "super_password_recovery.db")
+	ensureEmpresaUsersSchema(t, dbEmp)
+	ensureSuperSchema(t, dbSuper)
+
+	oldSalt := "salt-old"
+	oldHash := hashEmpresaUsuarioPassword("ClaveAnterior99", oldSalt)
+	_, err := dbEmp.Exec(`INSERT INTO users (
+		email, name, role, empresa_id, documento_identidad,
+		password_hash, password_salt, password_set,
+		rol_usuario_id, email_confirmado, estado
+	) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, 1, 'activo')`,
+		"recovery@empresa.com", "Usuario Recovery", "vendedor", int64(31), "DOC-REC", oldHash, oldSalt, int64(2),
+	)
+	if err != nil {
+		t.Fatalf("seed user recovery: %v", err)
+	}
+
+	recoverH := EmpresaUsuarioRequestPasswordRecoveryHandler(dbEmp, dbSuper)
+	recoverReq := httptest.NewRequest(http.MethodPost, "/api/empresa/usuarios/solicitar_recuperacion_password", strings.NewReader(`{"empresa_id":31,"email":"recovery@empresa.com"}`))
+	recoverReq.Header.Set("Content-Type", "application/json")
+	recoverRR := httptest.NewRecorder()
+	recoverH.ServeHTTP(recoverRR, recoverReq)
+	if recoverRR.Code != http.StatusOK {
+		t.Fatalf("expected recovery request status %d, got %d body=%s", http.StatusOK, recoverRR.Code, recoverRR.Body.String())
+	}
+
+	var resetToken string
+	var resetExpira string
+	if err := dbEmp.QueryRow("SELECT COALESCE(password_reset_token,''), COALESCE(password_reset_expira,'') FROM users WHERE email = ?", "recovery@empresa.com").Scan(&resetToken, &resetExpira); err != nil {
+		t.Fatalf("query password reset fields: %v", err)
+	}
+	if strings.TrimSpace(resetToken) == "" || strings.TrimSpace(resetExpira) == "" {
+		t.Fatalf("expected password reset token and expiration, got token=%q expira=%q", resetToken, resetExpira)
+	}
+
+	resetH := EmpresaUsuarioResetPasswordHandler(dbEmp, dbSuper)
+	resetBody := `{"empresa_id":31,"email":"recovery@empresa.com","token":"` + resetToken + `","password":"ClaveNueva101","password_confirm":"ClaveNueva101"}`
+	resetReq := httptest.NewRequest(http.MethodPost, "/api/empresa/usuarios/restablecer_password", strings.NewReader(resetBody))
+	resetReq.Header.Set("Content-Type", "application/json")
+	resetRR := httptest.NewRecorder()
+	resetH.ServeHTTP(resetRR, resetReq)
+	if resetRR.Code != http.StatusOK {
+		t.Fatalf("expected reset status %d, got %d body=%s", http.StatusOK, resetRR.Code, resetRR.Body.String())
+	}
+
+	var newHash string
+	var tokenAfterReset string
+	if err := dbEmp.QueryRow("SELECT COALESCE(password_hash,''), COALESCE(password_reset_token,'') FROM users WHERE email = ?", "recovery@empresa.com").Scan(&newHash, &tokenAfterReset); err != nil {
+		t.Fatalf("query user after reset: %v", err)
+	}
+	if strings.TrimSpace(newHash) == "" || newHash == oldHash {
+		t.Fatalf("expected password hash to change after reset, old=%q new=%q", oldHash, newHash)
+	}
+	if strings.TrimSpace(tokenAfterReset) != "" {
+		t.Fatalf("expected password reset token to be cleared after reset, got %q", tokenAfterReset)
+	}
+
+	loginH := EmpresaUsuarioLoginHandler(dbEmp, dbSuper)
+	loginReq := httptest.NewRequest(http.MethodPost, "/api/empresa/usuarios/login", strings.NewReader(`{"empresa_id":31,"email":"recovery@empresa.com","password":"ClaveNueva101"}`))
+	loginReq.Header.Set("Content-Type", "application/json")
+	loginRR := httptest.NewRecorder()
+	loginH.ServeHTTP(loginRR, loginReq)
+	if loginRR.Code != http.StatusOK {
+		t.Fatalf("expected login with new password status %d, got %d body=%s", http.StatusOK, loginRR.Code, loginRR.Body.String())
+	}
+}
+
+func TestAuthMiddlewareRejectsReusedRevokedSessionToken(t *testing.T) {
+	dbSuper := openTestSQLite(t, "super_auth_revoke.db")
+	ensureSuperSchema(t, dbSuper)
+
+	if err := dbpkg.UpsertAdministrador(dbSuper, "security@empresa.com", "Security Admin", "administrador", ""); err != nil {
+		t.Fatalf("upsert administrador: %v", err)
+	}
+
+	token := "token-revoke-001"
+	if err := dbpkg.CreateSession(dbSuper, "security@empresa.com", "127.0.0.1", "go-test", token); err != nil {
+		t.Fatalf("create session: %v", err)
+	}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/privado", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+	h := utils.AuthMiddleware(dbSuper, mux)
+
+	firstReq := httptest.NewRequest(http.MethodGet, "/api/privado", nil)
+	firstReq.AddCookie(&http.Cookie{Name: "session_token", Value: token})
+	firstRR := httptest.NewRecorder()
+	h.ServeHTTP(firstRR, firstReq)
+	if firstRR.Code != http.StatusNoContent {
+		t.Fatalf("expected first access status %d, got %d body=%s", http.StatusNoContent, firstRR.Code, firstRR.Body.String())
+	}
+
+	if err := dbpkg.RevokeSessionByToken(dbSuper, token); err != nil {
+		t.Fatalf("revoke session token: %v", err)
+	}
+
+	secondReq := httptest.NewRequest(http.MethodGet, "/api/privado", nil)
+	secondReq.AddCookie(&http.Cookie{Name: "session_token", Value: token})
+	secondRR := httptest.NewRecorder()
+	h.ServeHTTP(secondRR, secondReq)
+	if secondRR.Code != http.StatusUnauthorized {
+		t.Fatalf("expected revoked token status %d, got %d body=%s", http.StatusUnauthorized, secondRR.Code, secondRR.Body.String())
+	}
+}
+
+func TestAuthMiddlewareRejectsExpiredSessionToken(t *testing.T) {
+	dbSuper := openTestSQLite(t, "super_auth_expired.db")
+	ensureSuperSchema(t, dbSuper)
+
+	if err := dbpkg.UpsertAdministrador(dbSuper, "expired@empresa.com", "Expired Admin", "administrador", ""); err != nil {
+		t.Fatalf("upsert administrador: %v", err)
+	}
+
+	token := "token-expired-001"
+	if err := dbpkg.CreateSession(dbSuper, "expired@empresa.com", "127.0.0.1", "go-test", token); err != nil {
+		t.Fatalf("create session: %v", err)
+	}
+	if _, err := dbSuper.Exec("UPDATE sesiones SET fecha_fin = datetime('now','-1 minute','localtime') WHERE token = ?", token); err != nil {
+		t.Fatalf("expire session token: %v", err)
+	}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/privado", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+	h := utils.AuthMiddleware(dbSuper, mux)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/privado", nil)
+	req.AddCookie(&http.Cookie{Name: "session_token", Value: token})
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+	if rr.Code != http.StatusUnauthorized {
+		t.Fatalf("expected expired token status %d, got %d body=%s", http.StatusUnauthorized, rr.Code, rr.Body.String())
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/csv"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"net/http"
@@ -69,28 +70,32 @@ type reportesBuilder struct {
 }
 
 const (
-	reporteDatasetEmpresarialTablero       = "empresarial_tablero"
-	reporteDatasetContableEstadoResultados = "contable_estado_resultados"
-	reporteDatasetContableBalanceGeneral   = "contable_balance_general"
-	reporteDatasetContableFlujoCaja        = "contable_flujo_caja"
-	reporteDatasetOperativoModulos         = "operativo_modulos_resumen"
-	reporteDatasetOperativoReservas        = "operativo_reservas_ocupacion"
-	reporteDatasetOperativoTarifas         = "operativo_tarifas_ingresos"
-	reporteDatasetOperativoCadena          = "operativo_cadena_cumplimiento"
-	reporteDatasetOperativoVentasDetalle   = "operativo_ventas_detalle"
-	reporteDatasetOperativoTurno           = "reporte_de_turno"
-	reporteDatasetOperativoTopProductos    = "operativo_top_productos"
-	reporteDatasetOperativoTopClientes     = "operativo_top_clientes"
-	reporteDatasetOperativoInventario      = "operativo_inventario_bodega"
-	reporteDatasetOperativoCompras         = "operativo_compras_movimientos"
-	reporteDatasetOperativoPropinas        = "operativo_propinas_acumulado"
-	reporteDatasetOperativoComisiones      = "operativo_comisiones_lavador"
-	reporteDatasetOperativoFacturacion     = "operativo_facturacion_trazabilidad"
-	reporteDatasetOperativoAuditoria       = "operativo_auditoria_acciones"
-	reporteDatasetContableMovFin           = "contable_movimientos_financieros"
-	reporteDatasetContableEventos          = "contable_eventos_contables"
-	reporteDatasetContableAsientos         = "contable_asientos_contables"
-	reporteDatasetContableNomina           = "contable_nomina_liquidaciones"
+	reporteDatasetEmpresarialTablero          = "empresarial_tablero"
+	reporteDatasetContableEstadoResultados    = "contable_estado_resultados"
+	reporteDatasetContableBalanceGeneral      = "contable_balance_general"
+	reporteDatasetContableFlujoCaja           = "contable_flujo_caja"
+	reporteDatasetOperativoModulos            = "operativo_modulos_resumen"
+	reporteDatasetOperativoReservas           = "operativo_reservas_ocupacion"
+	reporteDatasetOperativoTarifas            = "operativo_tarifas_ingresos"
+	reporteDatasetOperativoTarifasComparativo = "operativo_tarifas_comparativo_estaciones"
+	reporteDatasetOperativoCadena             = "operativo_cadena_cumplimiento"
+	reporteDatasetOperativoVentasDetalle      = "operativo_ventas_detalle"
+	reporteDatasetOperativoTurno              = "reporte_de_turno"
+	reporteDatasetOperativoTopProductos       = "operativo_top_productos"
+	reporteDatasetOperativoTopClientes        = "operativo_top_clientes"
+	reporteDatasetOperativoClientesSegmentos  = "operativo_clientes_segmentacion_comercial"
+	reporteDatasetOperativoInventario         = "operativo_inventario_bodega"
+	reporteDatasetOperativoCompras            = "operativo_compras_movimientos"
+	reporteDatasetOperativoPropinas           = "operativo_propinas_acumulado"
+	reporteDatasetOperativoComisiones         = "operativo_comisiones_lavador"
+	reporteDatasetOperativoFacturacion        = "operativo_facturacion_trazabilidad"
+	reporteDatasetOperativoAuditoria          = "operativo_auditoria_acciones"
+	reporteDatasetOperativoAsistenciaNomina   = "operativo_asistencia_nomina_auditoria"
+	reporteDatasetOperativoVehiculos          = "operativo_vehiculos_permanencia"
+	reporteDatasetContableMovFin              = "contable_movimientos_financieros"
+	reporteDatasetContableEventos             = "contable_eventos_contables"
+	reporteDatasetContableAsientos            = "contable_asientos_contables"
+	reporteDatasetContableNomina              = "contable_nomina_liquidaciones"
 )
 
 var reportesCatalogo = []empresaReporteCatalogoItem{
@@ -144,6 +149,13 @@ var reportesCatalogo = []empresaReporteCatalogoItem{
 		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
 	},
 	{
+		Key:         reporteDatasetOperativoTarifasComparativo,
+		Title:       "Tarifas por Día - Comparativo Esperado vs Real por Estación",
+		Level:       "operativo",
+		Description: "Compara ingresos esperados (motor de tarifa diaria con prorrateo) frente al ingreso real cobrado por estación.",
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
+	},
+	{
 		Key:         reporteDatasetOperativoCadena,
 		Title:       "CRM/Producción/Logística - Conversión y Cumplimiento",
 		Level:       "operativo",
@@ -176,6 +188,13 @@ var reportesCatalogo = []empresaReporteCatalogoItem{
 		Title:       "Top Clientes",
 		Level:       "operativo",
 		Description: "Ranking de clientes por ventas e ingresos del periodo.",
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
+	},
+	{
+		Key:         reporteDatasetOperativoClientesSegmentos,
+		Title:       "Clientes - Segmentacion Comercial Masiva",
+		Level:       "operativo",
+		Description: "Listado masivo de clientes con segmento comercial, metricas de compra y accion sugerida para campanas.",
 		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
 	},
 	{
@@ -218,6 +237,20 @@ var reportesCatalogo = []empresaReporteCatalogoItem{
 		Title:       "Auditoria Empresarial - Acciones Criticas",
 		Level:       "operativo",
 		Description: "Consolida auditoria por modulo/usuario con errores HTTP y accion principal del periodo.",
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
+	},
+	{
+		Key:         reporteDatasetOperativoAsistenciaNomina,
+		Title:       "Asistencia - Auditoria para Nomina",
+		Level:       "operativo",
+		Description: "Consolida asistencia por empleado para auditoria de nomina (horas, tardanzas, ausencias e inconsistencias).",
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
+	},
+	{
+		Key:         reporteDatasetOperativoVehiculos,
+		Title:       "Vehiculos - Permanencia y Tiempos de Estancia",
+		Level:       "operativo",
+		Description: "Consolida permanencia por vehiculo con tiempos de estancia por registro y estado operativo.",
 		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
 	},
 	{
@@ -443,6 +476,8 @@ func (b *reportesBuilder) buildDataset(key string) (empresaReporteDataset, error
 		return b.buildOperativoReservasOcupacionDataset()
 	case reporteDatasetOperativoTarifas:
 		return b.buildOperativoTarifasIngresosDataset()
+	case reporteDatasetOperativoTarifasComparativo:
+		return b.buildOperativoTarifasComparativoEstacionesDataset()
 	case reporteDatasetOperativoCadena:
 		return b.buildOperativoCadenaCumplimientoDataset()
 	case reporteDatasetOperativoVentasDetalle:
@@ -453,6 +488,8 @@ func (b *reportesBuilder) buildDataset(key string) (empresaReporteDataset, error
 		return b.buildOperativoTopProductosDataset()
 	case reporteDatasetOperativoTopClientes:
 		return b.buildOperativoTopClientesDataset()
+	case reporteDatasetOperativoClientesSegmentos:
+		return b.buildOperativoClientesSegmentacionComercialDataset()
 	case reporteDatasetOperativoInventario:
 		return b.buildOperativoInventarioBodegaDataset()
 	case reporteDatasetOperativoCompras:
@@ -465,6 +502,10 @@ func (b *reportesBuilder) buildDataset(key string) (empresaReporteDataset, error
 		return b.buildOperativoFacturacionTrazabilidadDataset()
 	case reporteDatasetOperativoAuditoria:
 		return b.buildOperativoAuditoriaAccionesDataset()
+	case reporteDatasetOperativoAsistenciaNomina:
+		return b.buildOperativoAsistenciaNominaAuditoriaDataset()
+	case reporteDatasetOperativoVehiculos:
+		return b.buildOperativoVehiculosPermanenciaDataset()
 	case reporteDatasetContableMovFin:
 		return b.buildContableMovimientosFinancierosDataset()
 	case reporteDatasetContableEventos:
@@ -1710,6 +1751,175 @@ func (b *reportesBuilder) buildOperativoTarifasIngresosDataset() (empresaReporte
 	return ds, nil
 }
 
+func (b *reportesBuilder) buildOperativoTarifasComparativoEstacionesDataset() (empresaReporteDataset, error) {
+	ds := b.newDataset(reporteDatasetOperativoTarifasComparativo, []string{
+		"estacion_id",
+		"estacion_codigo",
+		"estacion_nombre",
+		"ventas_cerradas",
+		"tarifa_valor_dia",
+		"ingreso_esperado",
+		"ingreso_real",
+		"desviacion_monto",
+		"cumplimiento_pct",
+		"dias_equivalentes_esperados",
+		"minutos_prorrateo_fuera_ventana",
+		"ventas_sin_base_calculo",
+	})
+
+	ventas, err := b.getVentasCerradasFiltradas()
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+
+	existeTarifaDia, err := b.reportesTableExists("empresa_tarifas_por_dia")
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+	if !existeTarifaDia {
+		ds.Summary["nota"] = "tabla_empresa_tarifas_por_dia_no_disponible"
+		ds.Summary["ventas_evaluadas"] = 0
+		ds.Summary["estaciones_comparadas"] = 0
+		return ds, nil
+	}
+
+	tarifasDia, err := dbpkg.ListEmpresaTarifasPorDia(b.db, b.empresaID, dbpkg.EmpresaTarifaPorDiaFilter{IncludeInactive: false, Limit: 2000})
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+	tarifaByStation := make(map[int64]dbpkg.EmpresaTarifaPorDia)
+	for _, tarifa := range tarifasDia {
+		if tarifa.EstacionID <= 0 || !reportesEstadoActivo(tarifa.Estado) {
+			continue
+		}
+		if _, exists := tarifaByStation[tarifa.EstacionID]; !exists {
+			tarifaByStation[tarifa.EstacionID] = tarifa
+		}
+	}
+
+	type tarifaComparativoAgg struct {
+		estacionID       int64
+		estacionCodigo   string
+		estacionNombre   string
+		tarifaValorDia   float64
+		ventasCerradas   int64
+		ingresoEsperado  float64
+		ingresoReal      float64
+		diasEquivalentes float64
+		minutosProrrateo int64
+		ventasSinBase    int64
+	}
+
+	aggByStation := make(map[int64]*tarifaComparativoAgg)
+	for _, venta := range ventas {
+		estacionID := reportesParseEstacionID(venta.ReferenciaExterna, venta.Codigo, b.empresaID)
+		if estacionID <= 0 {
+			continue
+		}
+
+		tarifa, hasTarifa := tarifaByStation[estacionID]
+		if !hasTarifa {
+			continue
+		}
+
+		row, exists := aggByStation[estacionID]
+		if !exists {
+			row = &tarifaComparativoAgg{
+				estacionID:     estacionID,
+				estacionCodigo: reportesFirstNonBlank(strings.TrimSpace(tarifa.EstacionCodigo), strings.TrimSpace(venta.Codigo), fmt.Sprintf("EST-%d-%d", b.empresaID, estacionID)),
+				estacionNombre: reportesFirstNonBlank(strings.TrimSpace(tarifa.EstacionNombre), strings.TrimSpace(venta.Nombre), fmt.Sprintf("Estacion %d", estacionID)),
+				tarifaValorDia: reportesRound(tarifa.ValorDia),
+			}
+			aggByStation[estacionID] = row
+		}
+
+		row.ventasCerradas++
+		row.ingresoReal += reportesVentaTotal(venta)
+
+		activadoRaw := reportesFirstNonBlank(venta.ActivadoEn, venta.FechaCreacion)
+		corteRaw := reportesFirstNonBlank(venta.PagadoEn, venta.FechaActualizacion, venta.FechaCreacion)
+		activadoAt, okInicio := reportesParseDateTime(activadoRaw)
+		corteAt, okCorte := reportesParseDateTime(corteRaw)
+		if !okInicio || !okCorte || corteAt.Before(activadoAt) {
+			row.ventasSinBase++
+			continue
+		}
+
+		detalle := dbpkg.CalcularDetalleTarifaPorDia(tarifa, activadoAt, corteAt)
+		row.ingresoEsperado += reportesRound(detalle.MontoTotal)
+		row.diasEquivalentes += reportesRound(detalle.DiasEquivalentes)
+		row.minutosProrrateo += detalle.MinutosProrrateoFueraWindow
+	}
+
+	rows := make([]*tarifaComparativoAgg, 0, len(aggByStation))
+	for _, row := range aggByStation {
+		rows = append(rows, row)
+	}
+	sort.SliceStable(rows, func(i, j int) bool {
+		diffI := math.Abs(rows[i].ingresoReal - rows[i].ingresoEsperado)
+		diffJ := math.Abs(rows[j].ingresoReal - rows[j].ingresoEsperado)
+		if diffI == diffJ {
+			return rows[i].estacionID < rows[j].estacionID
+		}
+		return diffI > diffJ
+	})
+
+	var ventasEvaluadas int64
+	var totalEsperado float64
+	var totalReal float64
+	var totalDiasEquivalentes float64
+	var totalMinutosProrrateo int64
+	var totalVentasSinBase int64
+
+	for _, row := range rows {
+		ventasEvaluadas += row.ventasCerradas
+		totalEsperado += reportesRound(row.ingresoEsperado)
+		totalReal += reportesRound(row.ingresoReal)
+		totalDiasEquivalentes += reportesRound(row.diasEquivalentes)
+		totalMinutosProrrateo += row.minutosProrrateo
+		totalVentasSinBase += row.ventasSinBase
+
+		desviacion := reportesRound(row.ingresoReal - row.ingresoEsperado)
+		cumplimiento := 0.0
+		if row.ingresoEsperado > 0 {
+			cumplimiento = reportesRound((row.ingresoReal * 100.0) / row.ingresoEsperado)
+		}
+
+		ds.Rows = append(ds.Rows, map[string]interface{}{
+			"estacion_id":                     row.estacionID,
+			"estacion_codigo":                 row.estacionCodigo,
+			"estacion_nombre":                 row.estacionNombre,
+			"ventas_cerradas":                 row.ventasCerradas,
+			"tarifa_valor_dia":                reportesRound(row.tarifaValorDia),
+			"ingreso_esperado":                reportesRound(row.ingresoEsperado),
+			"ingreso_real":                    reportesRound(row.ingresoReal),
+			"desviacion_monto":                desviacion,
+			"cumplimiento_pct":                cumplimiento,
+			"dias_equivalentes_esperados":     reportesRound(row.diasEquivalentes),
+			"minutos_prorrateo_fuera_ventana": row.minutosProrrateo,
+			"ventas_sin_base_calculo":         row.ventasSinBase,
+		})
+	}
+
+	ds.RowCount = len(ds.Rows)
+	ds.Summary["ventas_evaluadas"] = ventasEvaluadas
+	ds.Summary["estaciones_comparadas"] = ds.RowCount
+	ds.Summary["ingreso_esperado_total"] = reportesRound(totalEsperado)
+	ds.Summary["ingreso_real_total"] = reportesRound(totalReal)
+	ds.Summary["desviacion_total"] = reportesRound(totalReal - totalEsperado)
+	ds.Summary["dias_equivalentes_total"] = reportesRound(totalDiasEquivalentes)
+	ds.Summary["minutos_prorrateo_fuera_ventana_total"] = totalMinutosProrrateo
+	ds.Summary["ventas_sin_base_calculo_total"] = totalVentasSinBase
+
+	cumplimientoGlobal := 0.0
+	if totalEsperado > 0 {
+		cumplimientoGlobal = reportesRound((totalReal * 100.0) / totalEsperado)
+	}
+	ds.Summary["cumplimiento_global_pct"] = cumplimientoGlobal
+
+	return ds, nil
+}
+
 type reporteCadenaCumplimientoDef struct {
 	ModuloKey          string
 	Modulo             string
@@ -2071,6 +2281,180 @@ func (b *reportesBuilder) buildOperativoTopClientesDataset() (empresaReporteData
 	ds.RowCount = len(ds.Rows)
 	ds.Summary["clientes"] = ds.RowCount
 	ds.Summary["total_comprado"] = reportesRound(totalComprado)
+	return ds, nil
+}
+
+func reportesClienteSegmentoPrioridad(segmento string) int {
+	switch strings.ToLower(strings.TrimSpace(segmento)) {
+	case "estrategico":
+		return 0
+	case "frecuente":
+		return 1
+	case "activo":
+		return 2
+	case "nuevo":
+		return 3
+	case "inactivo":
+		return 4
+	default:
+		return 99
+	}
+}
+
+func reportesClienteAccionComercial(segmento string) string {
+	switch strings.ToLower(strings.TrimSpace(segmento)) {
+	case "estrategico":
+		return "fidelizacion_vip"
+	case "frecuente":
+		return "upsell_crosssell"
+	case "activo":
+		return "reactivacion_temprana"
+	case "inactivo":
+		return "recuperacion"
+	default:
+		return "onboarding"
+	}
+}
+
+func (b *reportesBuilder) buildOperativoClientesSegmentacionComercialDataset() (empresaReporteDataset, error) {
+	clientes, err := dbpkg.GetClientesByEmpresa(b.db, b.empresaID, b.includeInactive, "")
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+
+	type row struct {
+		ClienteID       int64
+		Documento       string
+		Nombre          string
+		NombreComercial string
+		Email           string
+		Telefono        string
+		Segmento        string
+		Accion          string
+		Compras         int64
+		MontoCompras    float64
+		TicketPromedio  float64
+		UltimaCompra    string
+		DiasSinCompra   int
+		Estado          string
+	}
+
+	rows := make([]row, 0, len(clientes))
+	for _, cliente := range clientes {
+		perfil, err := dbpkg.GetClientePerfilComercialByEmpresa(b.db, b.empresaID, cliente.ID)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				continue
+			}
+			return empresaReporteDataset{}, err
+		}
+
+		segmento := strings.ToLower(strings.TrimSpace(perfil.Segmento))
+		if segmento == "" {
+			segmento = "nuevo"
+		}
+
+		documento := strings.TrimSpace(strings.TrimSpace(perfil.Cliente.TipoDocumento) + " " + strings.TrimSpace(perfil.Cliente.NumeroDocumento))
+		rows = append(rows, row{
+			ClienteID:       perfil.Cliente.ID,
+			Documento:       documento,
+			Nombre:          strings.TrimSpace(perfil.Cliente.NombreRazonSocial),
+			NombreComercial: strings.TrimSpace(perfil.Cliente.NombreComercial),
+			Email:           strings.TrimSpace(perfil.Cliente.Email),
+			Telefono:        strings.TrimSpace(perfil.Cliente.Telefono),
+			Segmento:        segmento,
+			Accion:          reportesClienteAccionComercial(segmento),
+			Compras:         perfil.NumeroCompras,
+			MontoCompras:    reportesRound(perfil.MontoCompras),
+			TicketPromedio:  reportesRound(perfil.TicketPromedio),
+			UltimaCompra:    strings.TrimSpace(perfil.UltimaCompra),
+			DiasSinCompra:   perfil.DiasSinCompra,
+			Estado:          reportesFirstNonBlank(strings.TrimSpace(perfil.Cliente.Estado), "activo"),
+		})
+	}
+
+	sort.SliceStable(rows, func(i, j int) bool {
+		pi := reportesClienteSegmentoPrioridad(rows[i].Segmento)
+		pj := reportesClienteSegmentoPrioridad(rows[j].Segmento)
+		if pi != pj {
+			return pi < pj
+		}
+		if rows[i].MontoCompras != rows[j].MontoCompras {
+			return rows[i].MontoCompras > rows[j].MontoCompras
+		}
+		if rows[i].Compras != rows[j].Compras {
+			return rows[i].Compras > rows[j].Compras
+		}
+		return rows[i].ClienteID < rows[j].ClienteID
+	})
+
+	if len(rows) > b.maxRows {
+		rows = rows[:b.maxRows]
+	}
+
+	ds := b.newDataset(reporteDatasetOperativoClientesSegmentos, []string{
+		"cliente_id",
+		"documento",
+		"nombre_razon_social",
+		"nombre_comercial",
+		"email",
+		"telefono",
+		"segmento",
+		"accion_comercial_sugerida",
+		"numero_compras",
+		"monto_compras",
+		"ticket_promedio",
+		"ultima_compra",
+		"dias_sin_compra",
+		"estado",
+	})
+
+	segmentos := map[string]int64{
+		"estrategico": 0,
+		"frecuente":   0,
+		"activo":      0,
+		"nuevo":       0,
+		"inactivo":    0,
+	}
+	totalCompras := int64(0)
+	totalMonto := 0.0
+
+	for _, item := range rows {
+		totalCompras += item.Compras
+		totalMonto += item.MontoCompras
+		if _, ok := segmentos[item.Segmento]; ok {
+			segmentos[item.Segmento]++
+		}
+		ds.Rows = append(ds.Rows, map[string]interface{}{
+			"cliente_id":                item.ClienteID,
+			"documento":                 item.Documento,
+			"nombre_razon_social":       item.Nombre,
+			"nombre_comercial":          item.NombreComercial,
+			"email":                     item.Email,
+			"telefono":                  item.Telefono,
+			"segmento":                  item.Segmento,
+			"accion_comercial_sugerida": item.Accion,
+			"numero_compras":            item.Compras,
+			"monto_compras":             item.MontoCompras,
+			"ticket_promedio":           item.TicketPromedio,
+			"ultima_compra":             item.UltimaCompra,
+			"dias_sin_compra":           item.DiasSinCompra,
+			"estado":                    item.Estado,
+		})
+	}
+
+	ds.RowCount = len(ds.Rows)
+	ds.Summary["clientes_considerados"] = len(clientes)
+	ds.Summary["clientes_exportados"] = ds.RowCount
+	ds.Summary["compras_totales"] = totalCompras
+	ds.Summary["monto_compras_total"] = reportesRound(totalMonto)
+	ds.Summary["include_inactive"] = b.includeInactive
+	ds.Summary["segmento_estrategico"] = segmentos["estrategico"]
+	ds.Summary["segmento_frecuente"] = segmentos["frecuente"]
+	ds.Summary["segmento_activo"] = segmentos["activo"]
+	ds.Summary["segmento_nuevo"] = segmentos["nuevo"]
+	ds.Summary["segmento_inactivo"] = segmentos["inactivo"]
+
 	return ds, nil
 }
 
@@ -3416,6 +3800,404 @@ func (b *reportesBuilder) buildOperativoAuditoriaAccionesDataset() (empresaRepor
 		ds.Summary["modulo_top"] = ds.Rows[0]["modulo"]
 		ds.Summary["usuario_top"] = ds.Rows[0]["usuario"]
 		ds.Summary["eventos_top"] = ds.Rows[0]["eventos"]
+	}
+
+	return ds, nil
+}
+
+func (b *reportesBuilder) buildOperativoAsistenciaNominaAuditoriaDataset() (empresaReporteDataset, error) {
+	limit := b.maxRows * 25
+	if limit < 500 {
+		limit = 500
+	}
+	if limit > 5000 {
+		limit = 5000
+	}
+
+	rows, err := dbpkg.ListEmpresaAsistenciaEmpleados(
+		b.db,
+		b.empresaID,
+		b.includeInactive,
+		b.desde,
+		b.hasta,
+		"",
+		"",
+		limit,
+	)
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+
+	type asistenciaAuditoriaAgg struct {
+		empleadoCodigo     string
+		empleadoNombre     string
+		empleadoDocumento  string
+		cargo              string
+		turno              string
+		registros          int64
+		registrosCompletos int64
+		entradasMarcadas   int64
+		salidasMarcadas    int64
+		horasTotales       float64
+		minutosTardeTotal  int64
+		tardanzas          int64
+		ausencias          int64
+		inconsistencias    int64
+		novedades          int64
+		dias               map[string]struct{}
+		estados            map[string]int64
+	}
+
+	bucket := make(map[string]*asistenciaAuditoriaAgg)
+	for _, item := range rows {
+		key := strings.ToLower(strings.TrimSpace(reportesFirstNonBlank(item.EmpleadoDocumento, item.EmpleadoCodigo, item.EmpleadoNombre, strconv.FormatInt(item.ID, 10))))
+		if key == "" {
+			continue
+		}
+
+		agg, ok := bucket[key]
+		if !ok {
+			agg = &asistenciaAuditoriaAgg{
+				empleadoCodigo:    strings.TrimSpace(item.EmpleadoCodigo),
+				empleadoNombre:    strings.TrimSpace(item.EmpleadoNombre),
+				empleadoDocumento: strings.TrimSpace(item.EmpleadoDocumento),
+				cargo:             strings.TrimSpace(item.Cargo),
+				turno:             strings.TrimSpace(item.Turno),
+				dias:              make(map[string]struct{}),
+				estados:           make(map[string]int64),
+			}
+			bucket[key] = agg
+		}
+
+		agg.registros++
+		if fecha := strings.TrimSpace(item.FechaAsistencia); fecha != "" {
+			agg.dias[fecha] = struct{}{}
+		}
+		if strings.TrimSpace(item.Cargo) != "" {
+			agg.cargo = strings.TrimSpace(item.Cargo)
+		}
+		if strings.TrimSpace(item.Turno) != "" {
+			agg.turno = strings.TrimSpace(item.Turno)
+		}
+		if strings.TrimSpace(item.EmpleadoCodigo) != "" {
+			agg.empleadoCodigo = strings.TrimSpace(item.EmpleadoCodigo)
+		}
+		if strings.TrimSpace(item.EmpleadoDocumento) != "" {
+			agg.empleadoDocumento = strings.TrimSpace(item.EmpleadoDocumento)
+		}
+		if strings.TrimSpace(item.EmpleadoNombre) != "" {
+			agg.empleadoNombre = strings.TrimSpace(item.EmpleadoNombre)
+		}
+
+		estadoAsistencia := strings.ToLower(strings.TrimSpace(item.EstadoAsistencia))
+		if estadoAsistencia == "" {
+			estadoAsistencia = "pendiente"
+		}
+		agg.estados[estadoAsistencia]++
+
+		horaEntrada := strings.TrimSpace(item.HoraEntrada)
+		horaSalida := strings.TrimSpace(item.HoraSalida)
+		tieneEntrada := horaEntrada != ""
+		tieneSalida := horaSalida != ""
+		if tieneEntrada {
+			agg.entradasMarcadas++
+		}
+		if tieneSalida {
+			agg.salidasMarcadas++
+		}
+		if tieneEntrada && tieneSalida {
+			agg.registrosCompletos++
+		}
+
+		agg.horasTotales += item.HorasTrabajadas
+		if item.MinutosTarde > 0 {
+			agg.minutosTardeTotal += int64(item.MinutosTarde)
+			agg.tardanzas++
+		} else if estadoAsistencia == "tarde" {
+			agg.tardanzas++
+		}
+		if estadoAsistencia == "ausente" {
+			agg.ausencias++
+		}
+		if strings.TrimSpace(item.Novedad) != "" {
+			agg.novedades++
+		}
+
+		if (tieneEntrada && !tieneSalida && estadoAsistencia != "ausente" && estadoAsistencia != "permiso" && estadoAsistencia != "incapacidad" && estadoAsistencia != "vacaciones") || (!tieneEntrada && tieneSalida) {
+			agg.inconsistencias++
+		}
+	}
+
+	ds := b.newDataset(reporteDatasetOperativoAsistenciaNomina, []string{
+		"empleado_codigo",
+		"empleado_nombre",
+		"empleado_documento",
+		"cargo",
+		"turno",
+		"dias_registrados",
+		"registros_asistencia",
+		"registros_completos",
+		"entradas_marcadas",
+		"salidas_marcadas",
+		"horas_trabajadas_total",
+		"minutos_tarde_total",
+		"tardanzas",
+		"ausencias",
+		"novedades",
+		"inconsistencias",
+		"estado_dominante",
+		"completitud_registro_pct",
+	})
+
+	list := make([]map[string]interface{}, 0, len(bucket))
+	totalRegistros := int64(0)
+	totalCompletos := int64(0)
+	totalEntradas := int64(0)
+	totalSalidas := int64(0)
+	totalHoras := 0.0
+	totalMinutosTarde := int64(0)
+	totalTardanzas := int64(0)
+	totalAusencias := int64(0)
+	totalNovedades := int64(0)
+	totalInconsistencias := int64(0)
+
+	for _, agg := range bucket {
+		estadoDominante := "pendiente"
+		maxEstado := int64(0)
+		for estado, cnt := range agg.estados {
+			if cnt > maxEstado {
+				maxEstado = cnt
+				estadoDominante = estado
+			}
+		}
+
+		completitud := 0.0
+		if agg.registros > 0 {
+			completitud = reportesRound((float64(agg.registrosCompletos) * 100.0) / float64(agg.registros))
+		}
+
+		row := map[string]interface{}{
+			"empleado_codigo":          agg.empleadoCodigo,
+			"empleado_nombre":          agg.empleadoNombre,
+			"empleado_documento":       agg.empleadoDocumento,
+			"cargo":                    agg.cargo,
+			"turno":                    agg.turno,
+			"dias_registrados":         len(agg.dias),
+			"registros_asistencia":     agg.registros,
+			"registros_completos":      agg.registrosCompletos,
+			"entradas_marcadas":        agg.entradasMarcadas,
+			"salidas_marcadas":         agg.salidasMarcadas,
+			"horas_trabajadas_total":   reportesRound(agg.horasTotales),
+			"minutos_tarde_total":      agg.minutosTardeTotal,
+			"tardanzas":                agg.tardanzas,
+			"ausencias":                agg.ausencias,
+			"novedades":                agg.novedades,
+			"inconsistencias":          agg.inconsistencias,
+			"estado_dominante":         estadoDominante,
+			"completitud_registro_pct": completitud,
+		}
+		list = append(list, row)
+
+		totalRegistros += agg.registros
+		totalCompletos += agg.registrosCompletos
+		totalEntradas += agg.entradasMarcadas
+		totalSalidas += agg.salidasMarcadas
+		totalHoras += agg.horasTotales
+		totalMinutosTarde += agg.minutosTardeTotal
+		totalTardanzas += agg.tardanzas
+		totalAusencias += agg.ausencias
+		totalNovedades += agg.novedades
+		totalInconsistencias += agg.inconsistencias
+	}
+
+	toFloat := func(v interface{}) float64 {
+		switch value := v.(type) {
+		case float64:
+			return value
+		case float32:
+			return float64(value)
+		case int:
+			return float64(value)
+		case int64:
+			return float64(value)
+		case int32:
+			return float64(value)
+		case json.Number:
+			f, _ := value.Float64()
+			return f
+		case string:
+			f, _ := strconv.ParseFloat(strings.TrimSpace(value), 64)
+			return f
+		default:
+			return 0
+		}
+	}
+
+	toInt := func(v interface{}) int64 {
+		switch value := v.(type) {
+		case int:
+			return int64(value)
+		case int32:
+			return int64(value)
+		case int64:
+			return value
+		case float64:
+			return int64(value)
+		case json.Number:
+			i, _ := value.Int64()
+			return i
+		case string:
+			i, _ := strconv.ParseInt(strings.TrimSpace(value), 10, 64)
+			return i
+		default:
+			return 0
+		}
+	}
+
+	sort.Slice(list, func(i, j int) bool {
+		horasI := toFloat(list[i]["horas_trabajadas_total"])
+		horasJ := toFloat(list[j]["horas_trabajadas_total"])
+		if horasI == horasJ {
+			regI := toInt(list[i]["registros_asistencia"])
+			regJ := toInt(list[j]["registros_asistencia"])
+			if regI == regJ {
+				nameI, _ := list[i]["empleado_nombre"].(string)
+				nameJ, _ := list[j]["empleado_nombre"].(string)
+				return strings.ToLower(strings.TrimSpace(nameI)) < strings.ToLower(strings.TrimSpace(nameJ))
+			}
+			return regI > regJ
+		}
+		return horasI > horasJ
+	})
+
+	if len(list) > b.maxRows {
+		list = list[:b.maxRows]
+	}
+
+	ds.Rows = append(ds.Rows, list...)
+	ds.RowCount = len(ds.Rows)
+	ds.Summary["empleados_auditados"] = len(bucket)
+	ds.Summary["filas_listadas"] = ds.RowCount
+	ds.Summary["registros_total"] = totalRegistros
+	ds.Summary["registros_completos_total"] = totalCompletos
+	ds.Summary["entradas_marcadas_total"] = totalEntradas
+	ds.Summary["salidas_marcadas_total"] = totalSalidas
+	ds.Summary["horas_trabajadas_total"] = reportesRound(totalHoras)
+	ds.Summary["minutos_tarde_total"] = totalMinutosTarde
+	ds.Summary["tardanzas_total"] = totalTardanzas
+	ds.Summary["ausencias_total"] = totalAusencias
+	ds.Summary["novedades_total"] = totalNovedades
+	ds.Summary["inconsistencias_total"] = totalInconsistencias
+	ds.Summary["periodo_desde"] = reportesFirstNonBlank(strings.TrimSpace(b.desde), "sin_desde")
+	ds.Summary["periodo_hasta"] = reportesFirstNonBlank(strings.TrimSpace(b.hasta), "sin_hasta")
+	if totalRegistros > 0 {
+		ds.Summary["completitud_global_pct"] = reportesRound((float64(totalCompletos) * 100.0) / float64(totalRegistros))
+	} else {
+		ds.Summary["completitud_global_pct"] = 0.0
+	}
+
+	return ds, nil
+}
+
+func (b *reportesBuilder) buildOperativoVehiculosPermanenciaDataset() (empresaReporteDataset, error) {
+	limit := b.maxRows * 20
+	if limit < 500 {
+		limit = 500
+	}
+	if limit > 5000 {
+		limit = 5000
+	}
+
+	rows, err := dbpkg.ListEmpresaVehiculosPermanenciaReporte(
+		b.db,
+		b.empresaID,
+		b.includeInactive,
+		b.desde,
+		b.hasta,
+		"",
+		"",
+		limit,
+	)
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+
+	ds := b.newDataset(reporteDatasetOperativoVehiculos, []string{
+		"registro_id",
+		"patente",
+		"tipo_vehiculo",
+		"conductor_nombre",
+		"propietario_nombre",
+		"fecha_ingreso",
+		"fecha_salida",
+		"estado_registro",
+		"estado",
+		"minutos_estadia",
+		"horas_estadia",
+		"dias_estadia",
+	})
+
+	totalMinutos := int64(0)
+	vehiculosEnEmpresa := 0
+	vehiculosRetirados := 0
+	maxMinutos := int64(0)
+
+	for _, item := range rows {
+		if item.MinutosEstadia < 0 {
+			item.MinutosEstadia = 0
+		}
+		totalMinutos += item.MinutosEstadia
+		if item.MinutosEstadia > maxMinutos {
+			maxMinutos = item.MinutosEstadia
+		}
+
+		estadoRegistro := strings.ToLower(strings.TrimSpace(item.EstadoRegistro))
+		switch estadoRegistro {
+		case "retirado":
+			vehiculosRetirados++
+		default:
+			vehiculosEnEmpresa++
+		}
+
+		ds.Rows = append(ds.Rows, map[string]interface{}{
+			"registro_id":        item.ID,
+			"patente":            item.Patente,
+			"tipo_vehiculo":      item.TipoVehiculo,
+			"conductor_nombre":   item.ConductorNombre,
+			"propietario_nombre": item.PropietarioNombre,
+			"fecha_ingreso":      item.FechaIngreso,
+			"fecha_salida":       item.FechaSalida,
+			"estado_registro":    item.EstadoRegistro,
+			"estado":             item.Estado,
+			"minutos_estadia":    item.MinutosEstadia,
+			"horas_estadia":      reportesRound(item.HorasEstadia),
+			"dias_estadia":       reportesRound(item.DiasEstadia),
+		})
+	}
+
+	if len(ds.Rows) > b.maxRows {
+		ds.Rows = ds.Rows[:b.maxRows]
+	}
+
+	ds.RowCount = len(ds.Rows)
+	ds.Summary["registros_total"] = len(rows)
+	ds.Summary["registros_listados"] = ds.RowCount
+	ds.Summary["vehiculos_en_empresa"] = vehiculosEnEmpresa
+	ds.Summary["vehiculos_retirados"] = vehiculosRetirados
+	ds.Summary["minutos_estadia_total"] = totalMinutos
+	ds.Summary["horas_estadia_total"] = reportesRound(float64(totalMinutos) / 60.0)
+	ds.Summary["dias_estadia_total"] = reportesRound(float64(totalMinutos) / 1440.0)
+	ds.Summary["maximo_minutos_estadia"] = maxMinutos
+	ds.Summary["periodo_desde"] = reportesFirstNonBlank(strings.TrimSpace(b.desde), "sin_desde")
+	ds.Summary["periodo_hasta"] = reportesFirstNonBlank(strings.TrimSpace(b.hasta), "sin_hasta")
+	if len(rows) > 0 {
+		ds.Summary["promedio_minutos_estadia"] = reportesRound(float64(totalMinutos) / float64(len(rows)))
+		ds.Summary["promedio_horas_estadia"] = reportesRound((float64(totalMinutos) / 60.0) / float64(len(rows)))
+		ds.Summary["promedio_dias_estadia"] = reportesRound((float64(totalMinutos) / 1440.0) / float64(len(rows)))
+	} else {
+		ds.Summary["promedio_minutos_estadia"] = 0.0
+		ds.Summary["promedio_horas_estadia"] = 0.0
+		ds.Summary["promedio_dias_estadia"] = 0.0
 	}
 
 	return ds, nil

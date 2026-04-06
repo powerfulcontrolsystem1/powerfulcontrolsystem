@@ -13,6 +13,8 @@ import (
 // EmpresaVehiculosRegistroHandler gestiona el modulo de registro de vehiculos por empresa.
 func EmpresaVehiculosRegistroHandler(dbEmp *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+
 		switch r.Method {
 		case http.MethodGet:
 			empresaID, err := parseEmpresaIDQuery(r)
@@ -20,6 +22,38 @@ func EmpresaVehiculosRegistroHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
+
+			switch action {
+			case "config", "configuracion":
+				cfg, err := dbpkg.GetEmpresaVehiculosRegistroConfiguracion(dbEmp, empresaID)
+				if err != nil {
+					http.Error(w, "No se pudo consultar la configuracion de vehiculos", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, cfg)
+				return
+
+			case "permanencia", "reporte_permanencia", "tiempos_estancia":
+				includeInactive := queryBool(r, "include_inactive")
+				desde := strings.TrimSpace(r.URL.Query().Get("desde"))
+				hasta := strings.TrimSpace(r.URL.Query().Get("hasta"))
+				patente := strings.TrimSpace(r.URL.Query().Get("patente"))
+				q := strings.TrimSpace(r.URL.Query().Get("q"))
+				limit, err := parseIntQueryOptional(r, "limit")
+				if err != nil {
+					http.Error(w, "limit invalido", http.StatusBadRequest)
+					return
+				}
+
+				rows, err := dbpkg.ListEmpresaVehiculosPermanenciaReporte(dbEmp, empresaID, includeInactive, desde, hasta, patente, q, limit)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				writeJSON(w, http.StatusOK, rows)
+				return
+			}
+
 			includeInactive := queryBool(r, "include_inactive")
 			desde := strings.TrimSpace(r.URL.Query().Get("desde"))
 			hasta := strings.TrimSpace(r.URL.Query().Get("hasta"))
@@ -58,6 +92,10 @@ func EmpresaVehiculosRegistroHandler(dbEmp *sql.DB) http.HandlerFunc {
 			payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
 			id, err := dbpkg.CreateEmpresaVehiculoRegistro(dbEmp, payload)
 			if err != nil {
+				if errors.Is(err, dbpkg.ErrEmpresaVehiculoDuplicadoActivo) {
+					http.Error(w, err.Error(), http.StatusConflict)
+					return
+				}
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
@@ -65,8 +103,36 @@ func EmpresaVehiculosRegistroHandler(dbEmp *sql.DB) http.HandlerFunc {
 			return
 
 		case http.MethodPut:
-			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 			switch action {
+			case "config", "configuracion":
+				var payload dbpkg.EmpresaVehiculosRegistroConfiguracion
+				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+					http.Error(w, "JSON invalido", http.StatusBadRequest)
+					return
+				}
+				if payload.EmpresaID <= 0 {
+					if empresaID, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && empresaID > 0 {
+						payload.EmpresaID = empresaID
+					}
+				}
+				if payload.EmpresaID <= 0 {
+					http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+					return
+				}
+				payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
+				id, err := dbpkg.UpsertEmpresaVehiculosRegistroConfiguracion(dbEmp, payload)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				cfg, err := dbpkg.GetEmpresaVehiculosRegistroConfiguracion(dbEmp, payload.EmpresaID)
+				if err != nil {
+					writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": id})
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": id, "configuracion": cfg})
+				return
+
 			case "activar", "desactivar":
 				empresaID, err := parseEmpresaIDQuery(r)
 				if err != nil {
@@ -85,6 +151,10 @@ func EmpresaVehiculosRegistroHandler(dbEmp *sql.DB) http.HandlerFunc {
 				if err := dbpkg.SetEmpresaVehiculoRegistroEstado(dbEmp, empresaID, id, estado); err != nil {
 					if errors.Is(err, sql.ErrNoRows) {
 						http.Error(w, "registro de vehiculo no encontrado", http.StatusNotFound)
+						return
+					}
+					if errors.Is(err, dbpkg.ErrEmpresaVehiculoDuplicadoActivo) {
+						http.Error(w, err.Error(), http.StatusConflict)
 						return
 					}
 					http.Error(w, "No se pudo actualizar el estado del registro", http.StatusInternalServerError)
@@ -140,6 +210,10 @@ func EmpresaVehiculosRegistroHandler(dbEmp *sql.DB) http.HandlerFunc {
 			if err := dbpkg.UpdateEmpresaVehiculoRegistro(dbEmp, payload); err != nil {
 				if errors.Is(err, sql.ErrNoRows) {
 					http.Error(w, "registro de vehiculo no encontrado", http.StatusNotFound)
+					return
+				}
+				if errors.Is(err, dbpkg.ErrEmpresaVehiculoDuplicadoActivo) {
+					http.Error(w, err.Error(), http.StatusConflict)
 					return
 				}
 				http.Error(w, err.Error(), http.StatusBadRequest)

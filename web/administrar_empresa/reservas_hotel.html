@@ -109,8 +109,10 @@
             <option value="">Todos</option>
             <option value="pendiente_pago">Pendiente pago</option>
             <option value="confirmada">Confirmada</option>
+            <option value="en_curso">En curso</option>
             <option value="cancelada">Cancelada</option>
             <option value="expirada">Expirada</option>
+            <option value="no_show">No show</option>
           </select>
         </div>
         <div class="form-col">
@@ -145,8 +147,9 @@
       </div>
 
       <div class="form-row" style="margin-bottom:0;">
-        <div class="form-col" style="max-width:260px;display:flex;align-items:flex-end;gap:8px;">
+        <div class="form-col" style="max-width:420px;display:flex;align-items:flex-end;gap:8px;">
           <button id="disponibilidadBtn" class="btn secondary" type="button" style="flex:1;">Ver disponibilidad</button>
+          <button id="politicasBtn" class="btn secondary" type="button" style="flex:1;">Aplicar politicas</button>
         </div>
       </div>
     </div>
@@ -320,6 +323,7 @@
           "<td>" +
             '<button class="btn secondary" type="button" data-action="edit" data-item="' + rowData + '">Editar</button> ' +
             '<button class="btn secondary" type="button" data-action="confirmar" data-id="' + id + '">Confirmar pago</button> ' +
+            '<button class="btn secondary" type="button" data-action="reconvertir" data-id="' + id + '">Reconver. carrito</button> ' +
             '<button class="btn secondary" type="button" data-action="cancelar" data-id="' + id + '">Cancelar</button> ' +
             '<button class="btn secondary" type="button" data-action="toggle" data-id="' + id + '" data-next="' + nextAction + '">' + nextLabel + "</button> " +
             '<button class="btn danger" type="button" data-action="delete" data-id="' + id + '">Eliminar</button>' +
@@ -427,6 +431,36 @@
       setMessage("Reserva cancelada.", false);
     }
 
+    async function reconvertirCarrito(id) {
+      const payload = {
+        empresa_id: state.empresaID,
+        id: Number(id)
+      };
+      const resp = await fetch("/api/empresa/reservas_hotel?action=convertir_carrito", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify(payload)
+      });
+      await ensureOk(resp);
+      const data = await resp.json();
+      await loadItems();
+      setMessage("Reserva reconvertida a carrito " + String(Number(data && data.carrito_id || 0)) + ".", false);
+    }
+
+    async function aplicarPoliticasReserva() {
+      const params = new URLSearchParams();
+      params.set("empresa_id", String(state.empresaID));
+      params.set("action", "aplicar_politicas");
+      const resp = await fetch("/api/empresa/reservas_hotel?" + params.toString(), { credentials: "same-origin" });
+      await ensureOk(resp);
+      const result = await resp.json();
+      await loadItems();
+      const expiradas = Number(result && result.expiradas || 0);
+      const noShow = Number(result && result.no_show || 0);
+      setMessage("Politicas aplicadas. Expiradas: " + expiradas + ", no_show: " + noShow + ".", false);
+    }
+
     async function toggleEstado(id, nextAction) {
       const params = new URLSearchParams();
       params.set("empresa_id", String(state.empresaID));
@@ -521,6 +555,12 @@
           });
           return;
         }
+        if (action === "reconvertir") {
+          reconvertirCarrito(id).catch(function (err) {
+            setMessage(err.message || "No se pudo reconvertir a carrito.", true);
+          });
+          return;
+        }
         if (action === "cancelar") {
           cancelReservation(id).catch(function (err) {
             setMessage(err.message || "No se pudo cancelar.", true);
@@ -565,6 +605,11 @@
         });
       });
       document.getElementById("disponibilidadBtn").addEventListener("click", loadDisponibilidad);
+      document.getElementById("politicasBtn").addEventListener("click", function () {
+        aplicarPoliticasReserva().catch(function (err) {
+          setMessage(err.message || "No se pudieron aplicar politicas.", true);
+        });
+      });
     }
 
     async function init() {

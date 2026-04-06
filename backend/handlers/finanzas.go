@@ -606,13 +606,15 @@ func EmpresaFinanzasCierresCajaHandler(dbEmp *sql.DB) http.HandlerFunc {
 					cajaFisica = &v
 				}
 
+				usuarioOperacion := strings.TrimSpace(adminEmailFromRequest(r))
+
 				if err := dbpkg.SetEmpresaCierreCajaEstado(
 					dbEmp,
 					empresaID,
 					id,
 					estadoCierre,
 					cajaFisica,
-					strings.TrimSpace(adminEmailFromRequest(r)),
+					usuarioOperacion,
 					strings.TrimSpace(r.URL.Query().Get("observaciones")),
 				); err != nil {
 					if errors.Is(err, sql.ErrNoRows) {
@@ -626,7 +628,17 @@ func EmpresaFinanzasCierresCajaHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
 				}
-				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "estado_cierre": estadoCierre})
+
+				resp := map[string]interface{}{"ok": true, "estado_cierre": estadoCierre}
+				if estadoCierre == "cerrado" || estadoCierre == "aprobado" {
+					conciliacion, err := dbpkg.ConciliarEmpresaPropinasConCierreCaja(dbEmp, empresaID, id, usuarioOperacion)
+					if err != nil {
+						http.Error(w, "No se pudo conciliar propinas para el cierre de caja", http.StatusInternalServerError)
+						return
+					}
+					resp["conciliacion_propinas"] = conciliacion
+				}
+				writeJSON(w, http.StatusOK, resp)
 				return
 			}
 

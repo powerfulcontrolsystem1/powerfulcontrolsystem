@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/csv"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -18,6 +19,125 @@ import (
 
 	dbpkg "github.com/you/pos-backend/db"
 )
+
+type empresaImpactoDesactivacion struct {
+	EmpresaID            int64  `json:"empresa_id"`
+	EmpresaNombre        string `json:"empresa_nombre,omitempty"`
+	EstadoActual         string `json:"estado_actual,omitempty"`
+	UsuariosActivos      int64  `json:"usuarios_activos"`
+	CarritosAbiertos     int64  `json:"carritos_abiertos"`
+	ReservasVigentes     int64  `json:"reservas_vigentes"`
+	LicenciasActivas     int64  `json:"licencias_activas"`
+	Bloqueos             int64  `json:"bloqueos"`
+	RequiereConfirmacion bool   `json:"requiere_confirmacion"`
+}
+
+func superTableExists(dbConn *sql.DB, tableName string) bool {
+	if dbConn == nil {
+		return false
+	}
+	var total int
+	err := dbConn.QueryRow(`SELECT COUNT(1) FROM sqlite_master WHERE type = 'table' AND name = ?`, strings.TrimSpace(tableName)).Scan(&total)
+	return err == nil && total > 0
+}
+
+func superCountIfTableExists(dbConn *sql.DB, tableName, query string, args ...interface{}) (int64, error) {
+	if !superTableExists(dbConn, tableName) {
+		return 0, nil
+	}
+	var total int64
+	if err := dbConn.QueryRow(query, args...).Scan(&total); err != nil {
+		return 0, err
+	}
+	return total, nil
+}
+
+func parseBoolQueryValue(raw string) bool {
+	v := strings.ToLower(strings.TrimSpace(raw))
+	switch v {
+	case "1", "true", "t", "si", "sí", "y", "yes", "on":
+		return true
+	default:
+		return false
+	}
+}
+
+func buildEmpresaImpactoDesactivacion(dbEmp, dbSuper *sql.DB, empresaID int64) (*empresaImpactoDesactivacion, error) {
+	if empresaID <= 0 {
+		return nil, fmt.Errorf("empresa_id invalido")
+	}
+
+	empresa, err := dbpkg.GetEmpresaByID(dbEmp, empresaID)
+	if err != nil {
+		return nil, err
+	}
+
+	impacto := &empresaImpactoDesactivacion{
+		EmpresaID:     empresaID,
+		EmpresaNombre: strings.TrimSpace(empresa.Nombre),
+		EstadoActual:  strings.TrimSpace(empresa.Estado),
+	}
+
+	usuariosActivos, err := superCountIfTableExists(
+		dbEmp,
+		"users",
+		`SELECT COUNT(1) FROM users WHERE empresa_id = ? AND LOWER(COALESCE(estado, 'activo')) = 'activo'`,
+		empresaID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	impacto.UsuariosActivos = usuariosActivos
+
+	carritosAbiertos, err := superCountIfTableExists(
+		dbEmp,
+		"carritos_compras",
+		`SELECT COUNT(1)
+		 FROM carritos_compras
+		 WHERE empresa_id = ?
+		   AND LOWER(COALESCE(estado, 'activo')) = 'activo'
+		   AND LOWER(COALESCE(estado_carrito, 'abierto')) NOT IN ('cerrado', 'cancelado', 'anulado')`,
+		empresaID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	impacto.CarritosAbiertos = carritosAbiertos
+
+	reservasVigentes, err := superCountIfTableExists(
+		dbEmp,
+		"reservas_hotel",
+		`SELECT COUNT(1)
+		 FROM reservas_hotel
+		 WHERE empresa_id = ?
+		   AND LOWER(COALESCE(estado, 'activo')) = 'activo'
+		   AND LOWER(COALESCE(estado_reserva, 'pendiente_pago')) IN ('pendiente_pago', 'confirmada')`,
+		empresaID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	impacto.ReservasVigentes = reservasVigentes
+
+	licenciasActivas, err := superCountIfTableExists(
+		dbSuper,
+		"licencias",
+		`SELECT COUNT(1)
+		 FROM licencias
+		 WHERE empresa_id = ?
+		   AND (COALESCE(CAST(activo AS TEXT), '0') IN ('1', 'activo', 'true'))`,
+		empresaID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	impacto.LicenciasActivas = licenciasActivas
+
+	impacto.Bloqueos = impacto.UsuariosActivos + impacto.CarritosAbiertos + impacto.ReservasVigentes + impacto.LicenciasActivas
+	impacto.RequiereConfirmacion = impacto.Bloqueos > 0
+
+	return impacto, nil
+}
 
 func MeHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -190,12 +310,13 @@ func SecurityProcessesHandler(dbSuper *sql.DB) http.HandlerFunc {
 }
 
 // EmpresasHandler maneja CRUD de empresas en la base empresas.db
-func EmpresasHandler(dbEmp *sql.DB) http.HandlerFunc {
+func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			// Si se pasa ?id=<id> devolver una sola empresa
 			q := r.URL.Query()
+			action := strings.ToLower(strings.TrimSpace(q.Get("action")))
 			idStr := q.Get("id")
 			if idStr != "" {
 				id, err := strconv.ParseInt(idStr, 10, 64)
@@ -203,6 +324,22 @@ func EmpresasHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, "invalid id", http.StatusBadRequest)
 					return
 				}
+
+				if action == "impacto" || action == "impacto_desactivacion" {
+					impacto, err := buildEmpresaImpactoDesactivacion(dbEmp, dbSuper, id)
+					if err != nil {
+						if err == sql.ErrNoRows {
+							http.Error(w, "empresa not found", http.StatusNotFound)
+							return
+						}
+						log.Printf("GET /super/api/empresas?action=%s&id=%d impacto error: %v", action, id, err)
+						http.Error(w, "failed to evaluate empresa impact: "+err.Error(), http.StatusInternalServerError)
+						return
+					}
+					writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "impacto": impacto})
+					return
+				}
+
 				empresa, err := dbpkg.GetEmpresaByID(dbEmp, id)
 				if err != nil {
 					if err == sql.ErrNoRows {
@@ -255,6 +392,7 @@ func EmpresasHandler(dbEmp *sql.DB) http.HandlerFunc {
 			return
 		case http.MethodPut:
 			q := r.URL.Query()
+			action := strings.ToLower(strings.TrimSpace(q.Get("action")))
 			idStr := q.Get("id")
 			if idStr == "" {
 				http.Error(w, "id required", http.StatusBadRequest)
@@ -265,27 +403,72 @@ func EmpresasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, "invalid id", http.StatusBadRequest)
 				return
 			}
-			if q.Get("action") == "activar" {
-				activoStr := q.Get("activo")
-				if activoStr == "" {
-					http.Error(w, "activo required (0 or 1)", http.StatusBadRequest)
+
+			if action == "activar" || action == "rehabilitar" || action == "desactivar" {
+				estadoObjetivo := ""
+				if action == "desactivar" {
+					estadoObjetivo = "inactivo"
+				} else {
+					activoStr := strings.TrimSpace(q.Get("activo"))
+					if activoStr == "" {
+						estadoObjetivo = "activo"
+					} else {
+						act, err := strconv.Atoi(activoStr)
+						if err != nil || (act != 0 && act != 1) {
+							http.Error(w, "invalid activo value", http.StatusBadRequest)
+							return
+						}
+						if act == 1 {
+							estadoObjetivo = "activo"
+						} else {
+							estadoObjetivo = "inactivo"
+						}
+					}
+				}
+
+				impacto, err := buildEmpresaImpactoDesactivacion(dbEmp, dbSuper, id)
+				if err != nil {
+					if err == sql.ErrNoRows {
+						http.Error(w, "empresa not found", http.StatusNotFound)
+						return
+					}
+					log.Printf("PUT /super/api/empresas action=%s id=%d impacto error: %v", action, id, err)
+					http.Error(w, "failed to evaluate empresa impact: "+err.Error(), http.StatusInternalServerError)
 					return
 				}
-				act, err := strconv.Atoi(activoStr)
-				if err != nil || (act != 0 && act != 1) {
-					http.Error(w, "invalid activo value", http.StatusBadRequest)
+
+				force := parseBoolQueryValue(q.Get("force"))
+				if estadoObjetivo == "inactivo" && impacto.RequiereConfirmacion && !force {
+					writeJSON(w, http.StatusConflict, map[string]interface{}{
+						"ok":                    false,
+						"id":                    id,
+						"estado":                strings.TrimSpace(impacto.EstadoActual),
+						"requiere_confirmacion": true,
+						"message":               "La empresa tiene operaciones activas. Confirma force=1 para desactivar.",
+						"impacto":               impacto,
+					})
 					return
 				}
-				estado := "inactivo"
-				if act == 1 {
-					estado = "activo"
-				}
-				if err := dbpkg.SetEmpresaEstado(dbEmp, id, estado); err != nil {
-					log.Println("ACTIVAR /super/api/empresas error:", err)
+
+				if err := dbpkg.SetEmpresaEstado(dbEmp, id, estadoObjetivo); err != nil {
+					log.Printf("PUT /super/api/empresas action=%s id=%d set estado error: %v", action, id, err)
 					http.Error(w, "failed to set estado: "+err.Error(), http.StatusInternalServerError)
 					return
 				}
-				w.WriteHeader(http.StatusNoContent)
+
+				impactoPost, err := buildEmpresaImpactoDesactivacion(dbEmp, dbSuper, id)
+				if err != nil {
+					log.Printf("PUT /super/api/empresas action=%s id=%d post-impact warning: %v", action, id, err)
+					impactoPost = impacto
+					impactoPost.EstadoActual = estadoObjetivo
+				}
+
+				writeJSON(w, http.StatusOK, map[string]interface{}{
+					"ok":      true,
+					"id":      id,
+					"estado":  estadoObjetivo,
+					"impacto": impactoPost,
+				})
 				return
 			}
 			var payloadUpdate struct {

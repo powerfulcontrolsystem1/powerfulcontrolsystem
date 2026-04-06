@@ -1,6 +1,7 @@
 package db
 
 import (
+	"errors"
 	"testing"
 )
 
@@ -105,5 +106,104 @@ func TestEmpresaVehiculoRegistroCRUDFlow(t *testing.T) {
 	}
 	if len(rowsAll) != 0 {
 		t.Fatalf("expected 0 rows after delete, got %d", len(rowsAll))
+	}
+}
+
+func TestEmpresaVehiculoRegistroConfigValidacionDuplicidadYPermanencia(t *testing.T) {
+	dbConn := openCarritoInventarioTestDB(t)
+	if err := EnsureEmpresaVehiculosRegistroSchema(dbConn); err != nil {
+		t.Fatalf("ensure vehiculos registro schema: %v", err)
+	}
+
+	defaultCfg, err := GetEmpresaVehiculosRegistroConfiguracion(dbConn, 80)
+	if err != nil {
+		t.Fatalf("get default config: %v", err)
+	}
+	if defaultCfg.PaisCodigo != "CO" {
+		t.Fatalf("expected default pais_codigo CO, got %q", defaultCfg.PaisCodigo)
+	}
+
+	if _, err := UpsertEmpresaVehiculosRegistroConfiguracion(dbConn, EmpresaVehiculosRegistroConfiguracion{
+		EmpresaID:             80,
+		PaisCodigo:            "MX",
+		PatenteRegex:          "^[A-Z0-9]{6,7}$",
+		PatenteDescripcion:    "MX test",
+		EvitarDuplicadoActivo: true,
+		Estado:                "activo",
+		UsuarioCreador:        "qa@empresa.com",
+	}); err != nil {
+		t.Fatalf("upsert vehiculos config: %v", err)
+	}
+
+	id, err := CreateEmpresaVehiculoRegistro(dbConn, EmpresaVehiculoRegistro{
+		EmpresaID:       80,
+		Patente:         "ABC1234",
+		TipoVehiculo:    "automovil",
+		FechaIngreso:    "2026-04-02 08:00:00",
+		EstadoRegistro:  "en_empresa",
+		Estado:          "activo",
+		UsuarioCreador:  "qa@empresa.com",
+		ConductorNombre: "Driver 1",
+	})
+	if err != nil {
+		t.Fatalf("create vehiculo valido: %v", err)
+	}
+
+	if _, err := CreateEmpresaVehiculoRegistro(dbConn, EmpresaVehiculoRegistro{
+		EmpresaID:      80,
+		Patente:        "AB@1234",
+		TipoVehiculo:   "automovil",
+		FechaIngreso:   "2026-04-02 09:00:00",
+		EstadoRegistro: "en_empresa",
+		Estado:         "activo",
+	}); err == nil {
+		t.Fatalf("expected error for patente invalida")
+	}
+
+	if _, err := CreateEmpresaVehiculoRegistro(dbConn, EmpresaVehiculoRegistro{
+		EmpresaID:      80,
+		Patente:        "ABC-1234",
+		TipoVehiculo:   "automovil",
+		FechaIngreso:   "2026-04-02 09:00:00",
+		EstadoRegistro: "en_empresa",
+		Estado:         "activo",
+	}); !errors.Is(err, ErrEmpresaVehiculoDuplicadoActivo) {
+		t.Fatalf("expected ErrEmpresaVehiculoDuplicadoActivo, got %v", err)
+	}
+
+	if err := MarkEmpresaVehiculoSalida(dbConn, 80, id, "2026-04-02 10:00:00", "qa@empresa.com", "salida controlada"); err != nil {
+		t.Fatalf("mark salida: %v", err)
+	}
+
+	if _, err := CreateEmpresaVehiculoRegistro(dbConn, EmpresaVehiculoRegistro{
+		EmpresaID:      80,
+		Patente:        "ABC1234",
+		TipoVehiculo:   "camioneta",
+		FechaIngreso:   "2026-04-02 12:00:00",
+		EstadoRegistro: "en_empresa",
+		Estado:         "activo",
+	}); err != nil {
+		t.Fatalf("create vehiculo luego de salida: %v", err)
+	}
+
+	reporte, err := ListEmpresaVehiculosPermanenciaReporte(dbConn, 80, true, "2026-04-01", "2026-04-30", "", "", 100)
+	if err != nil {
+		t.Fatalf("list permanencia reporte: %v", err)
+	}
+	if len(reporte) != 2 {
+		t.Fatalf("expected 2 rows in permanencia reporte, got %d", len(reporte))
+	}
+
+	foundRetirado := false
+	for _, row := range reporte {
+		if row.EstadoRegistro == "retirado" {
+			foundRetirado = true
+			if row.MinutosEstadia != 120 {
+				t.Fatalf("expected retirado minutos_estadia=120, got %d", row.MinutosEstadia)
+			}
+		}
+	}
+	if !foundRetirado {
+		t.Fatalf("expected at least one retirado row in permanencia reporte")
 	}
 }

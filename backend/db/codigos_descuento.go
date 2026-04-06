@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"math/big"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -18,6 +20,13 @@ type CodigoDescuento struct {
 	Valor              float64 `json:"valor"`
 	Moneda             string  `json:"moneda,omitempty"`
 	MontoMinimoCompra  float64 `json:"monto_minimo_compra"`
+	SegmentoCliente    string  `json:"segmento_cliente,omitempty"`
+	CanalVenta         string  `json:"canal_venta,omitempty"`
+	HorarioDesde       string  `json:"horario_desde,omitempty"`
+	HorarioHasta       string  `json:"horario_hasta,omitempty"`
+	DiasSemana         string  `json:"dias_semana,omitempty"`
+	MaxUsosPorCliente  int64   `json:"max_usos_por_cliente,omitempty"`
+	VentanaHorasFraude int64   `json:"ventana_horas_fraude,omitempty"`
 	FechaVencimiento   string  `json:"fecha_vencimiento,omitempty"`
 	UsosMaximos        int64   `json:"usos_maximos"`
 	UsosActuales       int64   `json:"usos_actuales"`
@@ -37,12 +46,49 @@ type CodigoDescuentoAplicado struct {
 	ValorConfigurado float64 `json:"valor_configurado"`
 	ValorAplicado    float64 `json:"valor_aplicado"`
 	Moneda           string  `json:"moneda,omitempty"`
+	SegmentoCliente  string  `json:"segmento_cliente,omitempty"`
+	CanalVenta       string  `json:"canal_venta,omitempty"`
 	FechaVencimiento string  `json:"fecha_vencimiento,omitempty"`
 }
 
+// CodigoDescuentoContexto permite validar reglas avanzadas por canal/cliente/horario.
+type CodigoDescuentoContexto struct {
+	ClienteID      int64     `json:"cliente_id,omitempty"`
+	CanalVenta     string    `json:"canal_venta,omitempty"`
+	CarritoID      int64     `json:"carrito_id,omitempty"`
+	RequestID      string    `json:"request_id,omitempty"`
+	FechaOperacion time.Time `json:"-"`
+}
+
+// CodigoDescuentoRedencion representa la trazabilidad de uso de codigos de descuento.
+type CodigoDescuentoRedencion struct {
+	ID                  int64   `json:"id"`
+	EmpresaID           int64   `json:"empresa_id"`
+	CodigoDescuentoID   int64   `json:"codigo_descuento_id"`
+	CarritoID           int64   `json:"carrito_id,omitempty"`
+	ClienteID           int64   `json:"cliente_id,omitempty"`
+	Codigo              string  `json:"codigo"`
+	CanalVenta          string  `json:"canal_venta,omitempty"`
+	SegmentoCliente     string  `json:"segmento_cliente,omitempty"`
+	MontoBase           float64 `json:"monto_base"`
+	ValorDescuento      float64 `json:"valor_descuento"`
+	EstadoRedencion     string  `json:"estado_redencion"`
+	Motivo              string  `json:"motivo,omitempty"`
+	ReferenciaOperacion string  `json:"referencia_operacion,omitempty"`
+	FechaRedencion      string  `json:"fecha_redencion,omitempty"`
+	FechaCreacion       string  `json:"fecha_creacion,omitempty"`
+	FechaActualizacion  string  `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador      string  `json:"usuario_creador,omitempty"`
+	Estado              string  `json:"estado,omitempty"`
+	Observaciones       string  `json:"observaciones,omitempty"`
+}
+
 const (
-	defaultCodigoDescuentoTipo   = "valor_fijo"
-	defaultCodigoDescuentoMoneda = "COP"
+	defaultCodigoDescuentoTipo         = "valor_fijo"
+	defaultCodigoDescuentoMoneda       = "COP"
+	defaultCodigoDescuentoSegmento     = "todos"
+	defaultCodigoDescuentoCanalVenta   = "todos"
+	defaultCodigoDescuentoVentanaHoras = int64(24)
 )
 
 var codigoDescuentoCharset = []rune("ABCDEFGHJKLMNPQRSTUVWXYZ23456789")
@@ -58,6 +104,13 @@ func EnsureEmpresaCodigosDescuentoSchema(dbConn *sql.DB) error {
 			valor REAL DEFAULT 0,
 			moneda TEXT DEFAULT 'COP',
 			monto_minimo_compra REAL DEFAULT 0,
+			segmento_cliente TEXT DEFAULT 'todos',
+			canal_venta TEXT DEFAULT 'todos',
+			horario_desde TEXT,
+			horario_hasta TEXT,
+			dias_semana TEXT,
+			max_usos_por_cliente INTEGER DEFAULT 0,
+			ventana_horas_fraude INTEGER DEFAULT 24,
 			fecha_vencimiento TEXT,
 			usos_maximos INTEGER DEFAULT 1,
 			usos_actuales INTEGER DEFAULT 0,
@@ -67,9 +120,33 @@ func EnsureEmpresaCodigosDescuentoSchema(dbConn *sql.DB) error {
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
+		`CREATE TABLE IF NOT EXISTS codigos_descuento_redenciones (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			empresa_id INTEGER NOT NULL,
+			codigo_descuento_id INTEGER NOT NULL,
+			carrito_id INTEGER,
+			cliente_id INTEGER,
+			codigo TEXT NOT NULL,
+			canal_venta TEXT DEFAULT 'mostrador',
+			segmento_cliente TEXT DEFAULT 'desconocido',
+			monto_base REAL DEFAULT 0,
+			valor_descuento REAL DEFAULT 0,
+			estado_redencion TEXT DEFAULT 'aplicada',
+			motivo TEXT,
+			referencia_operacion TEXT,
+			fecha_redencion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			usuario_creador TEXT,
+			estado TEXT DEFAULT 'activo',
+			observaciones TEXT
+		);`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_codigos_descuento_empresa_codigo ON codigos_de_descuento(empresa_id, codigo);`,
 		`CREATE INDEX IF NOT EXISTS ix_codigos_descuento_empresa_estado ON codigos_de_descuento(empresa_id, estado);`,
 		`CREATE INDEX IF NOT EXISTS ix_codigos_descuento_empresa_vencimiento ON codigos_de_descuento(empresa_id, fecha_vencimiento);`,
+		`CREATE INDEX IF NOT EXISTS ix_codigos_descuento_redenciones_empresa_codigo_cliente_fecha ON codigos_descuento_redenciones(empresa_id, codigo_descuento_id, cliente_id, fecha_redencion DESC);`,
+		`CREATE INDEX IF NOT EXISTS ix_codigos_descuento_redenciones_empresa_carrito ON codigos_descuento_redenciones(empresa_id, carrito_id, estado_redencion);`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS ux_codigos_descuento_redenciones_aplicada ON codigos_descuento_redenciones(empresa_id, codigo_descuento_id, carrito_id, estado_redencion);`,
 	}
 	for _, stmt := range stmts {
 		if _, err := dbConn.Exec(stmt); err != nil {
@@ -95,6 +172,27 @@ func EnsureEmpresaCodigosDescuentoSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "codigos_de_descuento", "monto_minimo_compra", "REAL DEFAULT 0"); err != nil {
 		return err
 	}
+	if err := ensureColumnIfMissing(dbConn, "codigos_de_descuento", "segmento_cliente", "TEXT DEFAULT 'todos'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "codigos_de_descuento", "canal_venta", "TEXT DEFAULT 'todos'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "codigos_de_descuento", "horario_desde", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "codigos_de_descuento", "horario_hasta", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "codigos_de_descuento", "dias_semana", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "codigos_de_descuento", "max_usos_por_cliente", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "codigos_de_descuento", "ventana_horas_fraude", "INTEGER DEFAULT 24"); err != nil {
+		return err
+	}
 	if err := ensureColumnIfMissing(dbConn, "codigos_de_descuento", "fecha_vencimiento", "TEXT"); err != nil {
 		return err
 	}
@@ -114,6 +212,61 @@ func EnsureEmpresaCodigosDescuentoSchema(dbConn *sql.DB) error {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "codigos_de_descuento", "observaciones", "TEXT"); err != nil {
+		return err
+	}
+
+	if err := ensureColumnIfMissing(dbConn, "codigos_descuento_redenciones", "empresa_id", "INTEGER NOT NULL"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "codigos_descuento_redenciones", "codigo_descuento_id", "INTEGER NOT NULL"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "codigos_descuento_redenciones", "carrito_id", "INTEGER"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "codigos_descuento_redenciones", "cliente_id", "INTEGER"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "codigos_descuento_redenciones", "codigo", "TEXT NOT NULL"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "codigos_descuento_redenciones", "canal_venta", "TEXT DEFAULT 'mostrador'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "codigos_descuento_redenciones", "segmento_cliente", "TEXT DEFAULT 'desconocido'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "codigos_descuento_redenciones", "monto_base", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "codigos_descuento_redenciones", "valor_descuento", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "codigos_descuento_redenciones", "estado_redencion", "TEXT DEFAULT 'aplicada'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "codigos_descuento_redenciones", "motivo", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "codigos_descuento_redenciones", "referencia_operacion", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "codigos_descuento_redenciones", "fecha_redencion", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "codigos_descuento_redenciones", "fecha_creacion", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "codigos_descuento_redenciones", "fecha_actualizacion", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "codigos_descuento_redenciones", "usuario_creador", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "codigos_descuento_redenciones", "estado", "TEXT DEFAULT 'activo'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "codigos_descuento_redenciones", "observaciones", "TEXT"); err != nil {
 		return err
 	}
 
@@ -161,6 +314,151 @@ func normalizeCodigoDescuentoMoneda(v string) string {
 		return defaultCodigoDescuentoMoneda
 	}
 	return v
+}
+
+func normalizeCodigoDescuentoSegmento(v string) string {
+	v = strings.ToLower(strings.TrimSpace(v))
+	v = strings.ReplaceAll(v, " ", "_")
+	if v == "" || v == "all" {
+		return defaultCodigoDescuentoSegmento
+	}
+	var b strings.Builder
+	b.Grow(len(v))
+	for _, r := range v {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '_' {
+			b.WriteRune(r)
+		}
+	}
+	out := strings.TrimSpace(b.String())
+	if out == "" {
+		return defaultCodigoDescuentoSegmento
+	}
+	return out
+}
+
+func normalizeCodigoDescuentoCanal(v string) string {
+	v = strings.ToLower(strings.TrimSpace(v))
+	if v == "" || v == "all" {
+		return defaultCodigoDescuentoCanalVenta
+	}
+	v = strings.ReplaceAll(v, " ", "_")
+	if v == "todos" {
+		return defaultCodigoDescuentoCanalVenta
+	}
+	return defaultCanalVenta(v)
+}
+
+func normalizeCodigoDescuentoHorario(raw string) (string, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return "", nil
+	}
+	formats := []string{"15:04", "15:04:05"}
+	for _, format := range formats {
+		if tm, err := time.Parse(format, raw); err == nil {
+			return tm.Format("15:04"), nil
+		}
+	}
+	return "", fmt.Errorf("horario invalido; use HH:MM")
+}
+
+func parseCodigoDescuentoHorarioMin(raw string) (int, error) {
+	normalized, err := normalizeCodigoDescuentoHorario(raw)
+	if err != nil {
+		return 0, err
+	}
+	if normalized == "" {
+		return 0, fmt.Errorf("horario vacio")
+	}
+	parts := strings.Split(normalized, ":")
+	if len(parts) != 2 {
+		return 0, fmt.Errorf("horario invalido")
+	}
+	hh, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return 0, fmt.Errorf("hora invalida")
+	}
+	mm, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return 0, fmt.Errorf("minuto invalido")
+	}
+	if hh < 0 || hh > 23 || mm < 0 || mm > 59 {
+		return 0, fmt.Errorf("horario invalido")
+	}
+	return hh*60 + mm, nil
+}
+
+func normalizeCodigoDescuentoDiasSemana(raw string) (string, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return "", nil
+	}
+	replacer := strings.NewReplacer(";", ",", " ", ",", "|", ",")
+	raw = replacer.Replace(raw)
+	parts := strings.Split(raw, ",")
+	uniq := map[int]struct{}{}
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		v, err := strconv.Atoi(part)
+		if err != nil {
+			return "", fmt.Errorf("dias_semana invalido; use valores entre 1 y 7")
+		}
+		if v < 1 || v > 7 {
+			return "", fmt.Errorf("dias_semana invalido; use valores entre 1 y 7")
+		}
+		uniq[v] = struct{}{}
+	}
+	if len(uniq) == 0 {
+		return "", nil
+	}
+	keys := make([]int, 0, len(uniq))
+	for k := range uniq {
+		keys = append(keys, k)
+	}
+	sort.Ints(keys)
+	values := make([]string, 0, len(keys))
+	for _, k := range keys {
+		values = append(values, strconv.Itoa(k))
+	}
+	return strings.Join(values, ","), nil
+}
+
+func parseCodigoDescuentoDiasSemanaSet(raw string) map[int]struct{} {
+	set := map[int]struct{}{}
+	for _, part := range strings.Split(strings.TrimSpace(raw), ",") {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		if v, err := strconv.Atoi(part); err == nil && v >= 1 && v <= 7 {
+			set[v] = struct{}{}
+		}
+	}
+	return set
+}
+
+func isoWeekday(t time.Time) int {
+	wd := int(t.Weekday())
+	if wd == 0 {
+		return 7
+	}
+	return wd
+}
+
+func nowOrDefault(t time.Time) time.Time {
+	if t.IsZero() {
+		return time.Now()
+	}
+	return t
+}
+
+func resolveCodigoDescuentoContexto(ctx CodigoDescuentoContexto) CodigoDescuentoContexto {
+	ctx.CanalVenta = normalizeCodigoDescuentoCanal(ctx.CanalVenta)
+	ctx.FechaOperacion = nowOrDefault(ctx.FechaOperacion)
+	return ctx
 }
 
 func randomCodigoDescuentoChars(size int) string {
@@ -227,6 +525,8 @@ func validateCodigoDescuentoPayload(payload *CodigoDescuento, requireID bool) er
 	payload.TipoDescuento = normalizeCodigoDescuentoTipo(payload.TipoDescuento)
 	payload.Moneda = normalizeCodigoDescuentoMoneda(payload.Moneda)
 	payload.Estado = normalizeCodigoDescuentoEstado(payload.Estado)
+	payload.SegmentoCliente = normalizeCodigoDescuentoSegmento(payload.SegmentoCliente)
+	payload.CanalVenta = normalizeCodigoDescuentoCanal(payload.CanalVenta)
 
 	if payload.Valor <= 0 {
 		return fmt.Errorf("valor debe ser mayor a cero")
@@ -246,6 +546,35 @@ func validateCodigoDescuentoPayload(payload *CodigoDescuento, requireID bool) er
 	if payload.UsosActuales > payload.UsosMaximos {
 		return fmt.Errorf("usos_actuales no puede superar usos_maximos")
 	}
+	if payload.MaxUsosPorCliente < 0 {
+		return fmt.Errorf("max_usos_por_cliente no puede ser negativo")
+	}
+	if payload.VentanaHorasFraude <= 0 {
+		payload.VentanaHorasFraude = defaultCodigoDescuentoVentanaHoras
+	}
+	if payload.VentanaHorasFraude > 24*30 {
+		return fmt.Errorf("ventana_horas_fraude no puede superar 720 horas")
+	}
+
+	horarioDesde, err := normalizeCodigoDescuentoHorario(payload.HorarioDesde)
+	if err != nil {
+		return err
+	}
+	horarioHasta, err := normalizeCodigoDescuentoHorario(payload.HorarioHasta)
+	if err != nil {
+		return err
+	}
+	if (horarioDesde == "" && horarioHasta != "") || (horarioDesde != "" && horarioHasta == "") {
+		return fmt.Errorf("debe configurar horario_desde y horario_hasta juntos")
+	}
+	payload.HorarioDesde = horarioDesde
+	payload.HorarioHasta = horarioHasta
+
+	diasSemana, err := normalizeCodigoDescuentoDiasSemana(payload.DiasSemana)
+	if err != nil {
+		return err
+	}
+	payload.DiasSemana = diasSemana
 	if payload.FechaVencimiento != "" {
 		if _, err := parseCodigoDescuentoDate(payload.FechaVencimiento); err != nil {
 			return err
@@ -278,6 +607,13 @@ func CreateCodigoDescuento(dbConn *sql.DB, payload CodigoDescuento) (int64, erro
 			valor,
 			moneda,
 			monto_minimo_compra,
+			segmento_cliente,
+			canal_venta,
+			horario_desde,
+			horario_hasta,
+			dias_semana,
+			max_usos_por_cliente,
+			ventana_horas_fraude,
 			fecha_vencimiento,
 			usos_maximos,
 			usos_actuales,
@@ -286,13 +622,20 @@ func CreateCodigoDescuento(dbConn *sql.DB, payload CodigoDescuento) (int64, erro
 			usuario_creador,
 			estado,
 			observaciones
-		) VALUES (?, ?, ?, ?, ?, ?, NULLIF(?, ''), ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)`,
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULLIF(?, ''), NULLIF(?, ''), NULLIF(?, ''), ?, ?, NULLIF(?, ''), ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)`,
 			candidate.EmpresaID,
 			candidate.Codigo,
 			candidate.TipoDescuento,
 			candidate.Valor,
 			candidate.Moneda,
 			candidate.MontoMinimoCompra,
+			candidate.SegmentoCliente,
+			candidate.CanalVenta,
+			strings.TrimSpace(candidate.HorarioDesde),
+			strings.TrimSpace(candidate.HorarioHasta),
+			strings.TrimSpace(candidate.DiasSemana),
+			candidate.MaxUsosPorCliente,
+			candidate.VentanaHorasFraude,
 			strings.TrimSpace(candidate.FechaVencimiento),
 			candidate.UsosMaximos,
 			candidate.UsosActuales,
@@ -329,6 +672,13 @@ func GetCodigosDescuentoByEmpresa(dbConn *sql.DB, empresaID int64, filtro, estad
 		COALESCE(valor, 0),
 		COALESCE(moneda, 'COP'),
 		COALESCE(monto_minimo_compra, 0),
+		COALESCE(segmento_cliente, 'todos'),
+		COALESCE(canal_venta, 'todos'),
+		COALESCE(horario_desde, ''),
+		COALESCE(horario_hasta, ''),
+		COALESCE(dias_semana, ''),
+		COALESCE(max_usos_por_cliente, 0),
+		COALESCE(ventana_horas_fraude, 24),
 		COALESCE(fecha_vencimiento, ''),
 		COALESCE(usos_maximos, 1),
 		COALESCE(usos_actuales, 0),
@@ -375,6 +725,13 @@ func GetCodigosDescuentoByEmpresa(dbConn *sql.DB, empresaID int64, filtro, estad
 			&item.Valor,
 			&item.Moneda,
 			&item.MontoMinimoCompra,
+			&item.SegmentoCliente,
+			&item.CanalVenta,
+			&item.HorarioDesde,
+			&item.HorarioHasta,
+			&item.DiasSemana,
+			&item.MaxUsosPorCliente,
+			&item.VentanaHorasFraude,
 			&item.FechaVencimiento,
 			&item.UsosMaximos,
 			&item.UsosActuales,
@@ -402,6 +759,13 @@ func GetCodigoDescuentoByID(dbConn *sql.DB, empresaID, codigoID int64) (*CodigoD
 		COALESCE(valor, 0),
 		COALESCE(moneda, 'COP'),
 		COALESCE(monto_minimo_compra, 0),
+		COALESCE(segmento_cliente, 'todos'),
+		COALESCE(canal_venta, 'todos'),
+		COALESCE(horario_desde, ''),
+		COALESCE(horario_hasta, ''),
+		COALESCE(dias_semana, ''),
+		COALESCE(max_usos_por_cliente, 0),
+		COALESCE(ventana_horas_fraude, 24),
 		COALESCE(fecha_vencimiento, ''),
 		COALESCE(usos_maximos, 1),
 		COALESCE(usos_actuales, 0),
@@ -423,6 +787,13 @@ func GetCodigoDescuentoByID(dbConn *sql.DB, empresaID, codigoID int64) (*CodigoD
 		&item.Valor,
 		&item.Moneda,
 		&item.MontoMinimoCompra,
+		&item.SegmentoCliente,
+		&item.CanalVenta,
+		&item.HorarioDesde,
+		&item.HorarioHasta,
+		&item.DiasSemana,
+		&item.MaxUsosPorCliente,
+		&item.VentanaHorasFraude,
 		&item.FechaVencimiento,
 		&item.UsosMaximos,
 		&item.UsosActuales,
@@ -452,6 +823,13 @@ func getCodigoDescuentoByCode(dbConn *sql.DB, empresaID int64, codigo string) (*
 		COALESCE(valor, 0),
 		COALESCE(moneda, 'COP'),
 		COALESCE(monto_minimo_compra, 0),
+		COALESCE(segmento_cliente, 'todos'),
+		COALESCE(canal_venta, 'todos'),
+		COALESCE(horario_desde, ''),
+		COALESCE(horario_hasta, ''),
+		COALESCE(dias_semana, ''),
+		COALESCE(max_usos_por_cliente, 0),
+		COALESCE(ventana_horas_fraude, 24),
 		COALESCE(fecha_vencimiento, ''),
 		COALESCE(usos_maximos, 1),
 		COALESCE(usos_actuales, 0),
@@ -473,6 +851,13 @@ func getCodigoDescuentoByCode(dbConn *sql.DB, empresaID int64, codigo string) (*
 		&item.Valor,
 		&item.Moneda,
 		&item.MontoMinimoCompra,
+		&item.SegmentoCliente,
+		&item.CanalVenta,
+		&item.HorarioDesde,
+		&item.HorarioHasta,
+		&item.DiasSemana,
+		&item.MaxUsosPorCliente,
+		&item.VentanaHorasFraude,
 		&item.FechaVencimiento,
 		&item.UsosMaximos,
 		&item.UsosActuales,
@@ -500,6 +885,13 @@ func UpdateCodigoDescuento(dbConn *sql.DB, payload CodigoDescuento) error {
 		valor = ?,
 		moneda = ?,
 		monto_minimo_compra = ?,
+		segmento_cliente = ?,
+		canal_venta = ?,
+		horario_desde = NULLIF(?, ''),
+		horario_hasta = NULLIF(?, ''),
+		dias_semana = NULLIF(?, ''),
+		max_usos_por_cliente = ?,
+		ventana_horas_fraude = ?,
 		fecha_vencimiento = NULLIF(?, ''),
 		usos_maximos = ?,
 		usos_actuales = ?,
@@ -512,6 +904,13 @@ func UpdateCodigoDescuento(dbConn *sql.DB, payload CodigoDescuento) error {
 		payload.Valor,
 		payload.Moneda,
 		payload.MontoMinimoCompra,
+		payload.SegmentoCliente,
+		payload.CanalVenta,
+		strings.TrimSpace(payload.HorarioDesde),
+		strings.TrimSpace(payload.HorarioHasta),
+		strings.TrimSpace(payload.DiasSemana),
+		payload.MaxUsosPorCliente,
+		payload.VentanaHorasFraude,
 		strings.TrimSpace(payload.FechaVencimiento),
 		payload.UsosMaximos,
 		payload.UsosActuales,
@@ -591,6 +990,138 @@ func validateCodigoDescuentoAplicacion(item *CodigoDescuento, montoBase float64)
 	return nil
 }
 
+func codigoDescuentoHoraEnVentana(minutoActual, minutoDesde, minutoHasta int) bool {
+	if minutoDesde <= minutoHasta {
+		return minutoActual >= minutoDesde && minutoActual <= minutoHasta
+	}
+	return minutoActual >= minutoDesde || minutoActual <= minutoHasta
+}
+
+func validateCodigoDescuentoReglasContexto(dbConn *sql.DB, item *CodigoDescuento, ctx CodigoDescuentoContexto) (string, error) {
+	if item == nil {
+		return "", fmt.Errorf("codigo de descuento no encontrado")
+	}
+	ctx = resolveCodigoDescuentoContexto(ctx)
+
+	canalRegla := normalizeCodigoDescuentoCanal(item.CanalVenta)
+	if canalRegla != defaultCodigoDescuentoCanalVenta {
+		if ctx.CanalVenta == "" || ctx.CanalVenta == defaultCodigoDescuentoCanalVenta {
+			return "", fmt.Errorf("el codigo de descuento requiere un canal_venta especifico")
+		}
+		if ctx.CanalVenta != canalRegla {
+			return "", fmt.Errorf("el codigo de descuento no aplica para el canal de venta actual")
+		}
+	}
+
+	if strings.TrimSpace(item.HorarioDesde) != "" || strings.TrimSpace(item.HorarioHasta) != "" {
+		desdeMin, err := parseCodigoDescuentoHorarioMin(item.HorarioDesde)
+		if err != nil {
+			return "", err
+		}
+		hastaMin, err := parseCodigoDescuentoHorarioMin(item.HorarioHasta)
+		if err != nil {
+			return "", err
+		}
+		ahoraMin := ctx.FechaOperacion.Hour()*60 + ctx.FechaOperacion.Minute()
+		if !codigoDescuentoHoraEnVentana(ahoraMin, desdeMin, hastaMin) {
+			return "", fmt.Errorf("el codigo de descuento no aplica en el horario actual")
+		}
+	}
+
+	diasPermitidos := parseCodigoDescuentoDiasSemanaSet(item.DiasSemana)
+	if len(diasPermitidos) > 0 {
+		if _, ok := diasPermitidos[isoWeekday(ctx.FechaOperacion)]; !ok {
+			return "", fmt.Errorf("el codigo de descuento no aplica para el dia actual")
+		}
+	}
+
+	segmentoDetectado := defaultCodigoDescuentoSegmento
+	segmentoRegla := normalizeCodigoDescuentoSegmento(item.SegmentoCliente)
+	if segmentoRegla != defaultCodigoDescuentoSegmento {
+		if dbConn == nil {
+			return "", fmt.Errorf("no se pudo validar segmento del cliente")
+		}
+		if ctx.ClienteID <= 0 {
+			return "", fmt.Errorf("el codigo de descuento requiere cliente asociado para validar segmento")
+		}
+		perfil, err := GetClientePerfilComercialByEmpresa(dbConn, item.EmpresaID, ctx.ClienteID)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				return "", fmt.Errorf("cliente no encontrado para validar segmento de descuento")
+			}
+			return "", err
+		}
+		segmentoDetectado = normalizeCodigoDescuentoSegmento(perfil.Segmento)
+		if segmentoDetectado == "" {
+			segmentoDetectado = "nuevo"
+		}
+		if segmentoDetectado != segmentoRegla {
+			return "", fmt.Errorf("el codigo de descuento no aplica para el segmento del cliente")
+		}
+	}
+
+	return segmentoDetectado, nil
+}
+
+func validateCodigoDescuentoAntiFraudeContexto(dbConn *sql.DB, item *CodigoDescuento, ctx CodigoDescuentoContexto) error {
+	if item == nil || dbConn == nil {
+		return nil
+	}
+	ctx = resolveCodigoDescuentoContexto(ctx)
+
+	if ctx.CarritoID > 0 {
+		var reused int64
+		err := dbConn.QueryRow(`SELECT COUNT(1)
+			FROM codigos_descuento_redenciones
+			WHERE empresa_id = ?
+				AND codigo_descuento_id = ?
+				AND carrito_id = ?
+				AND COALESCE(estado_redencion, 'aplicada') = 'aplicada'`,
+			item.EmpresaID,
+			item.ID,
+			ctx.CarritoID,
+		).Scan(&reused)
+		if err != nil {
+			return err
+		}
+		if reused > 0 {
+			return fmt.Errorf("el codigo de descuento ya fue aplicado en este carrito")
+		}
+	}
+
+	if item.MaxUsosPorCliente > 0 {
+		if ctx.ClienteID <= 0 {
+			return fmt.Errorf("el codigo de descuento requiere cliente para control antifraude")
+		}
+		ventana := item.VentanaHorasFraude
+		if ventana <= 0 {
+			ventana = defaultCodigoDescuentoVentanaHoras
+		}
+		desde := ctx.FechaOperacion.Add(-time.Duration(ventana) * time.Hour).Format("2006-01-02 15:04:05")
+		var usosCliente int64
+		err := dbConn.QueryRow(`SELECT COUNT(1)
+			FROM codigos_descuento_redenciones
+			WHERE empresa_id = ?
+				AND codigo_descuento_id = ?
+				AND cliente_id = ?
+				AND COALESCE(estado_redencion, 'aplicada') = 'aplicada'
+				AND COALESCE(fecha_redencion, fecha_creacion, '') >= ?`,
+			item.EmpresaID,
+			item.ID,
+			ctx.ClienteID,
+			desde,
+		).Scan(&usosCliente)
+		if err != nil {
+			return err
+		}
+		if usosCliente >= item.MaxUsosPorCliente {
+			return fmt.Errorf("limite de uso por cliente alcanzado para este codigo")
+		}
+	}
+
+	return nil
+}
+
 func calcularValorDescuento(item *CodigoDescuento, montoBase float64) float64 {
 	if item == nil || montoBase <= 0 {
 		return 0
@@ -607,6 +1138,11 @@ func calcularValorDescuento(item *CodigoDescuento, montoBase float64) float64 {
 
 // ResolveCodigoDescuentoParaMonto valida un codigo y devuelve el valor aplicado para el monto dado.
 func ResolveCodigoDescuentoParaMonto(dbConn *sql.DB, empresaID int64, codigo string, montoBase float64) (*CodigoDescuentoAplicado, error) {
+	return ResolveCodigoDescuentoParaMontoConContexto(dbConn, empresaID, codigo, montoBase, CodigoDescuentoContexto{})
+}
+
+// ResolveCodigoDescuentoParaMontoConContexto valida un codigo de descuento incluyendo reglas por canal, segmento, horario y antifraude.
+func ResolveCodigoDescuentoParaMontoConContexto(dbConn *sql.DB, empresaID int64, codigo string, montoBase float64, ctx CodigoDescuentoContexto) (*CodigoDescuentoAplicado, error) {
 	item, err := getCodigoDescuentoByCode(dbConn, empresaID, codigo)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -620,6 +1156,13 @@ func ResolveCodigoDescuentoParaMonto(dbConn *sql.DB, empresaID int64, codigo str
 		montoBase = 0
 	}
 	if err := validateCodigoDescuentoAplicacion(item, montoBase); err != nil {
+		return nil, err
+	}
+	segmentoDetectado, err := validateCodigoDescuentoReglasContexto(dbConn, item, ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := validateCodigoDescuentoAntiFraudeContexto(dbConn, item, ctx); err != nil {
 		return nil, err
 	}
 
@@ -639,14 +1182,106 @@ func ResolveCodigoDescuentoParaMonto(dbConn *sql.DB, empresaID int64, codigo str
 		ValorConfigurado: item.Valor,
 		ValorAplicado:    round2(valorAplicado),
 		Moneda:           item.Moneda,
+		SegmentoCliente:  segmentoDetectado,
+		CanalVenta:       normalizeCodigoDescuentoCanal(item.CanalVenta),
 		FechaVencimiento: item.FechaVencimiento,
 	}, nil
 }
 
-func markCodigoDescuentoUsoTx(tx *sql.Tx, empresaID, codigoID int64) error {
+func resolveClienteSegmentoTx(tx *sql.Tx, empresaID, clienteID int64) string {
+	if tx == nil || clienteID <= 0 {
+		return "desconocido"
+	}
+	var compras int64
+	var ultima sql.NullString
+	err := tx.QueryRow(`SELECT
+		COALESCE(COUNT(1), 0),
+		MAX(NULLIF(pagado_en, ''))
+	FROM carritos_compras
+	WHERE empresa_id = ?
+		AND cliente_id = ?
+		AND COALESCE(estado_carrito, 'abierto') = 'cerrado'`, empresaID, clienteID).Scan(&compras, &ultima)
+	if err != nil {
+		return "desconocido"
+	}
+	if compras <= 1 {
+		return "nuevo"
+	}
+	if ultima.Valid {
+		if tm, err := time.ParseInLocation("2006-01-02 15:04:05", strings.TrimSpace(ultima.String), time.Local); err == nil {
+			dias := int(time.Since(tm).Hours() / 24)
+			if dias <= 30 {
+				return "frecuente"
+			}
+			if dias <= 90 {
+				return "recurrente"
+			}
+		}
+	}
+	return "en_riesgo"
+}
+
+func validateCodigoDescuentoAntiFraudeTx(tx *sql.Tx, item *CodigoDescuento, clienteID, carritoID int64, ahora time.Time) error {
+	if tx == nil || item == nil {
+		return nil
+	}
+	if carritoID > 0 {
+		var reused int64
+		err := tx.QueryRow(`SELECT COUNT(1)
+			FROM codigos_descuento_redenciones
+			WHERE empresa_id = ?
+				AND codigo_descuento_id = ?
+				AND carrito_id = ?
+				AND COALESCE(estado_redencion, 'aplicada') = 'aplicada'`,
+			item.EmpresaID,
+			item.ID,
+			carritoID,
+		).Scan(&reused)
+		if err != nil {
+			return err
+		}
+		if reused > 0 {
+			return fmt.Errorf("el codigo de descuento ya fue aplicado en este carrito")
+		}
+	}
+
+	if item.MaxUsosPorCliente > 0 {
+		if clienteID <= 0 {
+			return fmt.Errorf("el codigo de descuento requiere cliente para control antifraude")
+		}
+		ventana := item.VentanaHorasFraude
+		if ventana <= 0 {
+			ventana = defaultCodigoDescuentoVentanaHoras
+		}
+		desde := ahora.Add(-time.Duration(ventana) * time.Hour).Format("2006-01-02 15:04:05")
+		var usosCliente int64
+		err := tx.QueryRow(`SELECT COUNT(1)
+			FROM codigos_descuento_redenciones
+			WHERE empresa_id = ?
+				AND codigo_descuento_id = ?
+				AND cliente_id = ?
+				AND COALESCE(estado_redencion, 'aplicada') = 'aplicada'
+				AND COALESCE(fecha_redencion, fecha_creacion, '') >= ?`,
+			item.EmpresaID,
+			item.ID,
+			clienteID,
+			desde,
+		).Scan(&usosCliente)
+		if err != nil {
+			return err
+		}
+		if usosCliente >= item.MaxUsosPorCliente {
+			return fmt.Errorf("limite de uso por cliente alcanzado para este codigo")
+		}
+	}
+	return nil
+}
+
+func markCodigoDescuentoUsoTx(tx *sql.Tx, empresaID, codigoID, carritoID int64, valorAplicado float64, usuarioCreador, referenciaOperacion string) error {
 	if tx == nil || codigoID <= 0 {
 		return nil
 	}
+	ahora := time.Now()
 
 	var item CodigoDescuento
 	err := tx.QueryRow(`SELECT
@@ -657,6 +1292,13 @@ func markCodigoDescuentoUsoTx(tx *sql.Tx, empresaID, codigoID int64) error {
 		COALESCE(valor, 0),
 		COALESCE(moneda, 'COP'),
 		COALESCE(monto_minimo_compra, 0),
+		COALESCE(segmento_cliente, 'todos'),
+		COALESCE(canal_venta, 'todos'),
+		COALESCE(horario_desde, ''),
+		COALESCE(horario_hasta, ''),
+		COALESCE(dias_semana, ''),
+		COALESCE(max_usos_por_cliente, 0),
+		COALESCE(ventana_horas_fraude, 24),
 		COALESCE(fecha_vencimiento, ''),
 		COALESCE(usos_maximos, 1),
 		COALESCE(usos_actuales, 0),
@@ -675,6 +1317,13 @@ func markCodigoDescuentoUsoTx(tx *sql.Tx, empresaID, codigoID int64) error {
 		&item.Valor,
 		&item.Moneda,
 		&item.MontoMinimoCompra,
+		&item.SegmentoCliente,
+		&item.CanalVenta,
+		&item.HorarioDesde,
+		&item.HorarioHasta,
+		&item.DiasSemana,
+		&item.MaxUsosPorCliente,
+		&item.VentanaHorasFraude,
 		&item.FechaVencimiento,
 		&item.UsosMaximos,
 		&item.UsosActuales,
@@ -690,20 +1339,221 @@ func markCodigoDescuentoUsoTx(tx *sql.Tx, empresaID, codigoID int64) error {
 		}
 		return err
 	}
-	if err := validateCodigoDescuentoAplicacion(&item, item.MontoMinimoCompra); err != nil {
+
+	var clienteID int64
+	var canalVenta string
+	var montoBase float64
+	err = tx.QueryRow(`SELECT
+		COALESCE(cliente_id, 0),
+		COALESCE(canal_venta, 'mostrador'),
+		COALESCE(total, 0)
+	FROM carritos_compras
+	WHERE empresa_id = ? AND id = ?
+	LIMIT 1`, empresaID, carritoID).Scan(&clienteID, &canalVenta, &montoBase)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return fmt.Errorf("carrito no encontrado para aplicar codigo de descuento")
+		}
+		return err
+	}
+
+	if err := validateCodigoDescuentoAplicacion(&item, round2(montoBase)); err != nil {
+		return err
+	}
+	if err := validateCodigoDescuentoAntiFraudeTx(tx, &item, clienteID, carritoID, ahora); err != nil {
 		return err
 	}
 
 	res, err := tx.Exec(`UPDATE codigos_de_descuento
 	SET usos_actuales = usos_actuales + 1,
 		fecha_actualizacion = datetime('now','localtime')
-	WHERE empresa_id = ? AND id = ?`, empresaID, codigoID)
+	WHERE empresa_id = ? AND id = ?
+		AND (? <= 0 OR usos_actuales < usos_maximos)`, empresaID, codigoID, item.UsosMaximos)
 	if err != nil {
 		return err
 	}
 	affected, _ := res.RowsAffected()
 	if affected == 0 {
-		return fmt.Errorf("codigo de descuento no encontrado")
+		return fmt.Errorf("codigo de descuento sin usos disponibles")
+	}
+
+	segmentoCliente := resolveClienteSegmentoTx(tx, empresaID, clienteID)
+	if strings.TrimSpace(segmentoCliente) == "" {
+		segmentoCliente = "desconocido"
+	}
+	_, err = tx.Exec(`INSERT INTO codigos_descuento_redenciones (
+		empresa_id,
+		codigo_descuento_id,
+		carrito_id,
+		cliente_id,
+		codigo,
+		canal_venta,
+		segmento_cliente,
+		monto_base,
+		valor_descuento,
+		estado_redencion,
+		motivo,
+		referencia_operacion,
+		fecha_redencion,
+		fecha_creacion,
+		fecha_actualizacion,
+		usuario_creador,
+		estado,
+		observaciones
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'aplicada', ?, ?, datetime('now','localtime'), datetime('now','localtime'), datetime('now','localtime'), ?, 'activo', ?)`,
+		empresaID,
+		codigoID,
+		carritoID,
+		clienteID,
+		item.Codigo,
+		normalizeCodigoDescuentoCanal(canalVenta),
+		segmentoCliente,
+		round2(montoBase),
+		round2(valorAplicado),
+		"uso_aplicado_en_cierre_de_carrito",
+		strings.TrimSpace(referenciaOperacion),
+		strings.TrimSpace(usuarioCreador),
+		"redencion confirmada al cierre de carrito",
+	)
+	if err != nil {
+		lower := strings.ToLower(strings.TrimSpace(err.Error()))
+		if strings.Contains(lower, "unique") {
+			return fmt.Errorf("el codigo de descuento ya fue aplicado en este carrito")
+		}
+		return err
 	}
 	return nil
+}
+
+func revertCodigoDescuentoUsoPorCarritoTx(tx *sql.Tx, empresaID, carritoID int64, estadoDestino, motivo, usuario string) error {
+	if tx == nil || empresaID <= 0 || carritoID <= 0 {
+		return nil
+	}
+	estadoDestino = strings.ToLower(strings.TrimSpace(estadoDestino))
+	if estadoDestino != "anulada" && estadoDestino != "revertida" {
+		estadoDestino = "revertida"
+	}
+	motivo = strings.TrimSpace(motivo)
+	usuario = strings.TrimSpace(usuario)
+
+	rows, err := tx.Query(`SELECT id, codigo_descuento_id
+	FROM codigos_descuento_redenciones
+	WHERE empresa_id = ?
+		AND carrito_id = ?
+		AND COALESCE(estado_redencion, 'aplicada') = 'aplicada'`, empresaID, carritoID)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var redencionID, codigoID int64
+		if err := rows.Scan(&redencionID, &codigoID); err != nil {
+			return err
+		}
+		if _, err := tx.Exec(`UPDATE codigos_de_descuento
+		SET usos_actuales = CASE WHEN usos_actuales > 0 THEN usos_actuales - 1 ELSE 0 END,
+			fecha_actualizacion = datetime('now','localtime')
+		WHERE empresa_id = ? AND id = ?`, empresaID, codigoID); err != nil {
+			return err
+		}
+		if _, err := tx.Exec(`UPDATE codigos_descuento_redenciones
+		SET estado_redencion = ?,
+			motivo = CASE
+				WHEN trim(COALESCE(motivo, '')) = '' THEN ?
+				ELSE trim(COALESCE(motivo, '')) || ' | ' || ?
+			END,
+			fecha_actualizacion = datetime('now','localtime'),
+			usuario_creador = CASE WHEN trim(COALESCE(usuario_creador, '')) = '' THEN ? ELSE usuario_creador END
+		WHERE id = ?`, estadoDestino, motivo, motivo, usuario, redencionID); err != nil {
+			return err
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// ListCodigoDescuentoRedencionesByEmpresa lista la trazabilidad de redenciones por empresa.
+func ListCodigoDescuentoRedencionesByEmpresa(dbConn *sql.DB, empresaID, codigoID int64, estado string, limit int) ([]CodigoDescuentoRedencion, error) {
+	if empresaID <= 0 {
+		return nil, fmt.Errorf("empresa_id invalido")
+	}
+	if limit <= 0 || limit > 500 {
+		limit = 200
+	}
+	estado = strings.ToLower(strings.TrimSpace(estado))
+
+	query := `SELECT
+		id,
+		empresa_id,
+		COALESCE(codigo_descuento_id, 0),
+		COALESCE(carrito_id, 0),
+		COALESCE(cliente_id, 0),
+		COALESCE(codigo, ''),
+		COALESCE(canal_venta, ''),
+		COALESCE(segmento_cliente, ''),
+		COALESCE(monto_base, 0),
+		COALESCE(valor_descuento, 0),
+		COALESCE(estado_redencion, 'aplicada'),
+		COALESCE(motivo, ''),
+		COALESCE(referencia_operacion, ''),
+		COALESCE(fecha_redencion, ''),
+		COALESCE(fecha_creacion, ''),
+		COALESCE(fecha_actualizacion, ''),
+		COALESCE(usuario_creador, ''),
+		COALESCE(estado, 'activo'),
+		COALESCE(observaciones, '')
+	FROM codigos_descuento_redenciones
+	WHERE empresa_id = ?`
+	args := []interface{}{empresaID}
+	if codigoID > 0 {
+		query += ` AND codigo_descuento_id = ?`
+		args = append(args, codigoID)
+	}
+	if estado != "" {
+		query += ` AND COALESCE(estado_redencion, 'aplicada') = ?`
+		args = append(args, estado)
+	}
+	query += ` ORDER BY id DESC LIMIT ?`
+	args = append(args, limit)
+
+	rows, err := dbConn.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]CodigoDescuentoRedencion, 0)
+	for rows.Next() {
+		var item CodigoDescuentoRedencion
+		if err := rows.Scan(
+			&item.ID,
+			&item.EmpresaID,
+			&item.CodigoDescuentoID,
+			&item.CarritoID,
+			&item.ClienteID,
+			&item.Codigo,
+			&item.CanalVenta,
+			&item.SegmentoCliente,
+			&item.MontoBase,
+			&item.ValorDescuento,
+			&item.EstadoRedencion,
+			&item.Motivo,
+			&item.ReferenciaOperacion,
+			&item.FechaRedencion,
+			&item.FechaCreacion,
+			&item.FechaActualizacion,
+			&item.UsuarioCreador,
+			&item.Estado,
+			&item.Observaciones,
+		); err != nil {
+			return nil, err
+		}
+		out = append(out, item)
+	}
+
+	return out, rows.Err()
 }

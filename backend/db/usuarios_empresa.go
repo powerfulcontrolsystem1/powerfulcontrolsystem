@@ -17,6 +17,7 @@ type EmpresaUsuario struct {
 	PasswordHash             string `json:"-"`
 	PasswordSalt             string `json:"-"`
 	PasswordSet              int    `json:"password_set,omitempty"`
+	PasswordActualizadaEn    string `json:"password_actualizada_en,omitempty"`
 	LoginFailedAttempts      int    `json:"-"`
 	LoginFailedLastAt        string `json:"-"`
 	LoginLockedUntil         string `json:"-"`
@@ -187,6 +188,7 @@ func GetEmpresaUsuarioByEmailScoped(dbConn *sql.DB, email string, empresaID int6
 		COALESCE(password_hash, ''),
 		COALESCE(password_salt, ''),
 		COALESCE(password_set, 0),
+		COALESCE(password_actualizada_en, ''),
 		COALESCE(login_failed_attempts, 0),
 		COALESCE(login_failed_last_at, ''),
 		COALESCE(login_locked_until, ''),
@@ -223,6 +225,7 @@ func GetEmpresaUsuarioByEmailScoped(dbConn *sql.DB, email string, empresaID int6
 		&item.PasswordHash,
 		&item.PasswordSalt,
 		&item.PasswordSet,
+		&item.PasswordActualizadaEn,
 		&item.LoginFailedAttempts,
 		&item.LoginFailedLastAt,
 		&item.LoginLockedUntil,

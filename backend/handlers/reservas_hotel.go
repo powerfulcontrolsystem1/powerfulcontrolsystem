@@ -43,7 +43,24 @@ func handleReservasHotelGet(w http.ResponseWriter, r *http.Request, dbEmp *sql.D
 
 	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 	switch action {
+	case "aplicar_politicas", "sincronizar_estado", "sincronizar_politicas":
+		expiradas, noShow, err := dbpkg.ApplyReservasHotelOperationalPolicies(dbEmp, empresaID)
+		if err != nil {
+			http.Error(w, "No se pudo aplicar la politica operativa de reservas", http.StatusInternalServerError)
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]interface{}{
+			"ok":        true,
+			"expiradas": expiradas,
+			"no_show":   noShow,
+		})
+		return
+
 	case "", "listar", "list":
+		if _, _, err := dbpkg.ApplyReservasHotelOperationalPolicies(dbEmp, empresaID); err != nil {
+			http.Error(w, "No se pudo sincronizar estado de reservas", http.StatusInternalServerError)
+			return
+		}
 		limit, err := parseIntQueryOptional(r, "limit")
 		if err != nil {
 			http.Error(w, "limit invalido", http.StatusBadRequest)
@@ -101,6 +118,10 @@ func handleReservasHotelGet(w http.ResponseWriter, r *http.Request, dbEmp *sql.D
 		return
 
 	case "detalle", "get", "by_id", "by_codigo":
+		if _, _, err := dbpkg.ApplyReservasHotelOperationalPolicies(dbEmp, empresaID); err != nil {
+			http.Error(w, "No se pudo sincronizar estado de reservas", http.StatusInternalServerError)
+			return
+		}
 		id, err := parseInt64QueryOptional(r, "id")
 		if err != nil {
 			http.Error(w, "id invalido", http.StatusBadRequest)
@@ -129,6 +150,10 @@ func handleReservasHotelGet(w http.ResponseWriter, r *http.Request, dbEmp *sql.D
 		return
 
 	case "disponibilidad", "estaciones_disponibles":
+		if _, _, err := dbpkg.ApplyReservasHotelOperationalPolicies(dbEmp, empresaID); err != nil {
+			http.Error(w, "No se pudo sincronizar estado de reservas", http.StatusInternalServerError)
+			return
+		}
 		fechaEntrada := strings.TrimSpace(firstNonEmptyStr(r.URL.Query().Get("fecha_entrada"), r.URL.Query().Get("desde")))
 		fechaSalida := strings.TrimSpace(firstNonEmptyStr(r.URL.Query().Get("fecha_salida"), r.URL.Query().Get("hasta")))
 		if fechaEntrada == "" || fechaSalida == "" {
@@ -144,7 +169,7 @@ func handleReservasHotelGet(w http.ResponseWriter, r *http.Request, dbEmp *sql.D
 		writeJSON(w, http.StatusOK, rows)
 		return
 	default:
-		http.Error(w, "action invalida. Use: listar, detalle o disponibilidad", http.StatusBadRequest)
+		http.Error(w, "action invalida. Use: listar, detalle, disponibilidad o aplicar_politicas", http.StatusBadRequest)
 		return
 	}
 }
@@ -255,6 +280,16 @@ func handleReservasHotelUpdate(w http.ResponseWriter, r *http.Request, dbEmp *sq
 		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "accion": "cancelar"})
 		return
 
+	case "convertir_carrito", "reconvertir_carrito":
+		usuario := strings.TrimSpace(firstNonEmptyStr(payload.ConfirmadoPor, adminEmailFromRequest(r)))
+		carritoID, err := dbpkg.ConvertReservaHotelToCarrito(dbEmp, payload.EmpresaID, payload.ID, usuario)
+		if err != nil {
+			writeReservaHotelError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "accion": "convertir_carrito", "reserva_id": payload.ID, "carrito_id": carritoID})
+		return
+
 	default:
 		if err := dbpkg.UpdateReservaHotel(dbEmp, payload); err != nil {
 			writeReservaHotelError(w, err)
@@ -297,6 +332,8 @@ func writeReservaHotelError(w http.ResponseWriter, err error) {
 		http.Error(w, "conflicto de reserva en el rango de fechas solicitado", http.StatusConflict)
 	case errors.Is(err, dbpkg.ErrReservaHotelExpirada):
 		http.Error(w, "la reserva se encuentra expirada", http.StatusConflict)
+	case errors.Is(err, dbpkg.ErrReservaHotelNoReconvertible):
+		http.Error(w, "la reserva no esta en un estado valido para reconversion a carrito", http.StatusConflict)
 	case errors.Is(err, sql.ErrNoRows):
 		http.Error(w, "reserva no encontrada", http.StatusNotFound)
 	default:

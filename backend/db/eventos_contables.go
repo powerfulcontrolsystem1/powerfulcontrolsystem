@@ -197,6 +197,7 @@ var empresaEventoContableContrato = map[string]map[string]struct{}{
 		"movimiento_egreso_registrado":  {},
 		"periodo_contable_cerrado":      {},
 		"periodo_contable_reabierto":    {},
+		"tarifa_por_minutos_calculada":  {},
 	},
 }
 

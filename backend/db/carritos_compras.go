@@ -671,6 +671,9 @@ func DeleteCarritoCompra(dbConn *sql.DB, empresaID, carritoID int64) error {
 			return err
 		}
 	}
+	if err := revertCodigoDescuentoUsoPorCarritoTx(tx, empresaID, carritoID, "anulada", "carrito eliminado", "sistema"); err != nil {
+		return err
+	}
 
 	if _, err := tx.Exec(`DELETE FROM carrito_compra_items WHERE empresa_id = ? AND carrito_id = ?`, empresaID, carritoID); err != nil {
 		return err
@@ -690,8 +693,24 @@ func SetCarritoCompraEstado(dbConn *sql.DB, empresaID, carritoID int64, estado s
 
 // SetCarritoOperacionEstado cambia estado operativo del carrito (abierto/cerrado).
 func SetCarritoOperacionEstado(dbConn *sql.DB, empresaID, carritoID int64, estadoCarrito string) error {
-	_, err := dbConn.Exec(`UPDATE carritos_compras SET estado_carrito = ?, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND id = ?`, strings.TrimSpace(estadoCarrito), empresaID, carritoID)
-	return err
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	estadoObjetivo := strings.TrimSpace(estadoCarrito)
+	if strings.EqualFold(estadoObjetivo, "abierto") {
+		if err := revertCodigoDescuentoUsoPorCarritoTx(tx, empresaID, carritoID, "revertida", "carrito reabierto", "sistema"); err != nil {
+			return err
+		}
+	}
+
+	if _, err := tx.Exec(`UPDATE carritos_compras SET estado_carrito = ?, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND id = ?`, estadoObjetivo, empresaID, carritoID); err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 // ActivateCarritoStationSession activa un carrito de estación y opcionalmente reinicia sus items.
@@ -705,6 +724,11 @@ func ActivateCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, r
 	estadoPrevio, err := getCarritoEstadoTx(tx, empresaID, carritoID)
 	if err != nil {
 		return err
+	}
+	if isCarritoCerrado(estadoPrevio) {
+		if err := revertCodigoDescuentoUsoPorCarritoTx(tx, empresaID, carritoID, "revertida", "reactivacion de sesion de estacion", "sistema"); err != nil {
+			return err
+		}
 	}
 
 	if resetItems {
@@ -743,10 +767,14 @@ func ActivateCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, r
 }
 
 // PayCarritoStationSession marca un carrito como pagado/inactivo y guarda resumen de cobro.
-func PayCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, metodoPago, referenciaPago, descuentoTipo, descuentoCodigo string, descuentoValor, devolucionTotal, totalPagado float64, codigoDescuentoID int64) error {
+func PayCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, metodoPago, referenciaPago, descuentoTipo, descuentoCodigo string, descuentoValor, devolucionTotal, totalPagado float64, codigoDescuentoID int64, usuarioCreador string) error {
 	metodoPago = NormalizeMetodoPagoCarrito(metodoPago)
 	if metodoPago == "" {
 		return fmt.Errorf("metodo_pago invalido")
+	}
+	usuarioCreador = strings.TrimSpace(usuarioCreador)
+	if usuarioCreador == "" {
+		usuarioCreador = "sistema"
 	}
 	if descuentoValor < 0 {
 		descuentoValor = 0
@@ -765,7 +793,7 @@ func PayCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, metodo
 	defer tx.Rollback()
 
 	if codigoDescuentoID > 0 {
-		if err := markCodigoDescuentoUsoTx(tx, empresaID, codigoDescuentoID); err != nil {
+		if err := markCodigoDescuentoUsoTx(tx, empresaID, codigoDescuentoID, carritoID, descuentoValor, usuarioCreador, strings.TrimSpace(referenciaPago)); err != nil {
 			return err
 		}
 	}
@@ -1460,20 +1488,6 @@ func adjustCarritoItemStockTx(tx *sql.Tx, empresaID, carritoID int64, tipoItem s
 			CostoUnitario: costoUnitario,
 		}
 
-		if reservar {
-			var stockActual float64
-			err := tx.QueryRow(`SELECT cantidad FROM inventario_existencias WHERE empresa_id = ? AND producto_id = ? AND bodega_id = ?`, empresaID, component.ProductoID, bodegaID).Scan(&stockActual)
-			if err != nil {
-				if err == sql.ErrNoRows {
-					return ErrStockInsuficiente
-				}
-				return err
-			}
-			if stockActual < component.Cantidad {
-				return ErrStockInsuficiente
-			}
-		}
-
 		contexts = append(contexts, ctx)
 	}
 
@@ -1490,8 +1504,19 @@ func adjustCarritoItemStockTx(tx *sql.Tx, empresaID, carritoID int64, tipoItem s
 		}
 
 		if reservar {
-			if _, err := tx.Exec(`UPDATE inventario_existencias SET cantidad = cantidad - ?, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND producto_id = ? AND bodega_id = ?`, ctx.Cantidad, empresaID, ctx.ProductoID, ctx.BodegaID); err != nil {
+			res, err := tx.Exec(`UPDATE inventario_existencias
+			SET cantidad = cantidad - ?,
+				fecha_actualizacion = datetime('now','localtime')
+			WHERE empresa_id = ?
+				AND producto_id = ?
+				AND bodega_id = ?
+				AND cantidad >= ?`, ctx.Cantidad, empresaID, ctx.ProductoID, ctx.BodegaID, ctx.Cantidad)
+			if err != nil {
 				return err
+			}
+			affected, _ := res.RowsAffected()
+			if affected == 0 {
+				return ErrStockInsuficiente
 			}
 			if err := insertMovimientoTx(tx, InventarioMovimiento{
 				EmpresaID:      empresaID,

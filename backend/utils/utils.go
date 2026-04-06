@@ -397,10 +397,13 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			"/auth/confirmar_correo":      {},
 			"/auth/logout":                {},
 			"/api/empresa/usuarios/login": {},
-			"/api/empresa/usuarios/establecer_password": {},
-			"/estilos.css": {},
-			"/menu.js":     {},
-			"/favicon.ico": {},
+			"/api/empresa/usuarios/establecer_password":             {},
+			"/api/empresa/usuarios/solicitar_recuperacion_password": {},
+			"/api/empresa/usuarios/restablecer_password":            {},
+			"/api/empresa/usuarios/cambiar_password":                {},
+			"/estilos.css":                                          {},
+			"/menu.js":                                              {},
+			"/favicon.ico":                                          {},
 		}
 		if _, ok := publicExact[path]; ok {
 			next.ServeHTTP(w, r)

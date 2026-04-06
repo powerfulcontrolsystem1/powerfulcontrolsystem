@@ -78,8 +78,18 @@ func TestEmpresaTarifasPorDiaHandlerCRUDAndCalculo(t *testing.T) {
 		t.Fatalf("expected dias_cobrados 3, got %d", dias)
 	}
 	monto := calc["monto_total"].(float64)
-	if math.Abs(monto-285000) > 0.001 {
-		t.Fatalf("expected monto_total 285000, got %.2f", monto)
+	if math.Abs(monto-208095.24) > 0.02 {
+		t.Fatalf("expected monto_total 208095.24, got %.2f", monto)
+	}
+	diasEquivalentes := calc["dias_equivalentes"].(float64)
+	if math.Abs(diasEquivalentes-2.19) > 0.01 {
+		t.Fatalf("expected dias_equivalentes about 2.19, got %.2f", diasEquivalentes)
+	}
+	if int(calc["dias_completos"].(float64)) != 2 {
+		t.Fatalf("expected dias_completos 2, got %.0f", calc["dias_completos"].(float64))
+	}
+	if int(calc["minutos_prorrateo_fuera_ventana"].(float64)) != 240 {
+		t.Fatalf("expected minutos_prorrateo_fuera_ventana 240, got %.0f", calc["minutos_prorrateo_fuera_ventana"].(float64))
 	}
 
 	disableURL := "/api/empresa/tarifas_por_dia?empresa_id=9&id=" + strconv.FormatInt(created.ID, 10) + "&action=desactivar"
@@ -117,5 +127,59 @@ func TestEmpresaTarifasPorDiaHandlerCRUDAndCalculo(t *testing.T) {
 	h.ServeHTTP(detailRR, detailReq)
 	if detailRR.Code != http.StatusNotFound {
 		t.Fatalf("detail after delete expected=%d got=%d body=%s", http.StatusNotFound, detailRR.Code, detailRR.Body.String())
+	}
+}
+
+func TestEmpresaTarifasPorDiaHandlerAplicarTodasEstaciones(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_tarifas_por_dia_handler_all.db")
+	if err := dbpkg.EnsureEmpresaTarifasPorDiaSchema(dbEmp); err != nil {
+		t.Fatalf("ensure tarifas por dia schema: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaCarritosSchema(dbEmp); err != nil {
+		t.Fatalf("ensure carritos schema: %v", err)
+	}
+
+	_, err := dbEmp.Exec(`INSERT INTO carritos_compras (empresa_id, codigo, nombre, referencia_externa, estado, estado_carrito, moneda)
+	VALUES
+		(9, 'EST-9-21', 'Habitacion 21', 'ESTACION_21', 'activo', 'abierto', 'COP'),
+		(9, 'EST-9-22', 'Habitacion 22', 'ESTACION_22', 'activo', 'abierto', 'COP')`)
+	if err != nil {
+		t.Fatalf("seed carritos estaciones: %v", err)
+	}
+
+	h := EmpresaTarifasPorDiaHandler(dbEmp)
+	bodyCreate := `{"servicio_nombre":"hotel","valor_dia":70000,"hora_check_in":"15:00","hora_check_out":"12:00","moneda":"COP","prioridad":1,"aplicar_automaticamente":true}`
+	url := "/api/empresa/tarifas_por_dia?empresa_id=9&action=aplicar_todas_estaciones"
+	req := httptest.NewRequest(http.MethodPut, url, strings.NewReader(bodyCreate))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("aplicar_todas_estaciones create expected=%d got=%d body=%s", http.StatusOK, rr.Code, rr.Body.String())
+	}
+
+	var respCreate map[string]interface{}
+	if err := json.Unmarshal(rr.Body.Bytes(), &respCreate); err != nil {
+		t.Fatalf("decode aplicar_todas_estaciones create: %v", err)
+	}
+	if int(respCreate["tarifas_creadas"].(float64)) < 2 {
+		t.Fatalf("expected tarifas_creadas >= 2, got %.0f", respCreate["tarifas_creadas"].(float64))
+	}
+
+	bodyUpdate := `{"servicio_nombre":"hotel","valor_dia":73000,"hora_check_in":"15:00","hora_check_out":"12:00","moneda":"COP","prioridad":2,"aplicar_automaticamente":true}`
+	reqUpdate := httptest.NewRequest(http.MethodPut, url, strings.NewReader(bodyUpdate))
+	reqUpdate.Header.Set("Content-Type", "application/json")
+	rrUpdate := httptest.NewRecorder()
+	h.ServeHTTP(rrUpdate, reqUpdate)
+	if rrUpdate.Code != http.StatusOK {
+		t.Fatalf("aplicar_todas_estaciones update expected=%d got=%d body=%s", http.StatusOK, rrUpdate.Code, rrUpdate.Body.String())
+	}
+
+	var respUpdate map[string]interface{}
+	if err := json.Unmarshal(rrUpdate.Body.Bytes(), &respUpdate); err != nil {
+		t.Fatalf("decode aplicar_todas_estaciones update: %v", err)
+	}
+	if int(respUpdate["tarifas_actualizadas"].(float64)) < 2 {
+		t.Fatalf("expected tarifas_actualizadas >= 2, got %.0f", respUpdate["tarifas_actualizadas"].(float64))
 	}
 }

@@ -909,3 +909,121 @@ func TestEmpresaComprasPlanReposicionActualizarEstadoHandlerGestionaCiclo(t *tes
 		t.Fatalf("expected conflict status %d, got %d body=%s", http.StatusConflict, rrConflict.Code, rrConflict.Body.String())
 	}
 }
+
+func TestEmpresaInventarioConfiguracionYConteoCiclicoHandler(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_inventario_config_conteo_handler.db")
+	if err := dbpkg.EnsureEmpresaProductosSchema(dbEmp); err != nil {
+		t.Fatalf("ensure productos schema: %v", err)
+	}
+
+	bodegaID, err := dbpkg.CreateBodega(dbEmp, dbpkg.Bodega{EmpresaID: 120, Codigo: "BOD-120", Nombre: "Principal"})
+	if err != nil {
+		t.Fatalf("create bodega: %v", err)
+	}
+	productoID, err := dbpkg.CreateProducto(dbEmp, dbpkg.Producto{EmpresaID: 120, BodegaPrincipalID: bodegaID, Nombre: "Producto conteo", Costo: 12, StockMinimo: 1, StockMaximo: 20}, 0, "TEST")
+	if err != nil {
+		t.Fatalf("create producto: %v", err)
+	}
+	if err := dbpkg.RegistrarMovimientoInventario(dbEmp, 120, productoID, bodegaID, "entrada", 10, "H-CNT-ENT", "tester", "stock inicial"); err != nil {
+		t.Fatalf("entrada inicial: %v", err)
+	}
+
+	hConfig := EmpresaInventarioConfiguracionHandler(dbEmp)
+	putReq := httptest.NewRequest(http.MethodPut, "/api/empresa/inventario/configuracion", strings.NewReader(`{"empresa_id":120,"politica_costo":"peps","observaciones":"politica fase 11"}`))
+	putReq = putReq.WithContext(context.WithValue(putReq.Context(), "adminEmail", "inventario@test.com"))
+	putReq.Header.Set("Content-Type", "application/json")
+	putRR := httptest.NewRecorder()
+	hConfig.ServeHTTP(putRR, putReq)
+	if putRR.Code != http.StatusOK {
+		t.Fatalf("expected config put status %d, got %d body=%s", http.StatusOK, putRR.Code, putRR.Body.String())
+	}
+
+	var cfg dbpkg.EmpresaInventarioConfiguracion
+	if err := json.Unmarshal(putRR.Body.Bytes(), &cfg); err != nil {
+		t.Fatalf("decode config put response: %v", err)
+	}
+	if cfg.PoliticaCosto != "peps" {
+		t.Fatalf("expected politica peps, got %+v", cfg)
+	}
+
+	getReq := httptest.NewRequest(http.MethodGet, "/api/empresa/inventario/configuracion?empresa_id=120", nil)
+	getRR := httptest.NewRecorder()
+	hConfig.ServeHTTP(getRR, getReq)
+	if getRR.Code != http.StatusOK {
+		t.Fatalf("expected config get status %d, got %d body=%s", http.StatusOK, getRR.Code, getRR.Body.String())
+	}
+
+	hConteo := EmpresaInventarioConteoCiclicoHandler(dbEmp)
+	postReq := httptest.NewRequest(http.MethodPost, "/api/empresa/inventario/conteo_ciclico", strings.NewReader(`{"empresa_id":120,"producto_id":`+strconv.FormatInt(productoID, 10)+`,"bodega_id":`+strconv.FormatInt(bodegaID, 10)+`,"cantidad_contada":7,"referencia":"H-CNT-001","observaciones":"conteo semanal"}`))
+	postReq = postReq.WithContext(context.WithValue(postReq.Context(), "adminEmail", "auditor@test.com"))
+	postReq.Header.Set("Content-Type", "application/json")
+	postRR := httptest.NewRecorder()
+	hConteo.ServeHTTP(postRR, postReq)
+	if postRR.Code != http.StatusOK {
+		t.Fatalf("expected conteo post status %d, got %d body=%s", http.StatusOK, postRR.Code, postRR.Body.String())
+	}
+
+	var conteoResp struct {
+		ID        int64                         `json:"id"`
+		Resultado dbpkg.InventarioConteoCiclico `json:"resultado"`
+	}
+	if err := json.Unmarshal(postRR.Body.Bytes(), &conteoResp); err != nil {
+		t.Fatalf("decode conteo post response: %v", err)
+	}
+	if conteoResp.ID <= 0 || conteoResp.Resultado.TipoAjuste != "ajuste_negativo" {
+		t.Fatalf("unexpected conteo response: %+v", conteoResp)
+	}
+
+	listReq := httptest.NewRequest(http.MethodGet, "/api/empresa/inventario/conteo_ciclico?empresa_id=120&producto_id="+strconv.FormatInt(productoID, 10), nil)
+	listRR := httptest.NewRecorder()
+	hConteo.ServeHTTP(listRR, listReq)
+	if listRR.Code != http.StatusOK {
+		t.Fatalf("expected conteo list status %d, got %d body=%s", http.StatusOK, listRR.Code, listRR.Body.String())
+	}
+
+	var conteos []dbpkg.InventarioConteoCiclico
+	if err := json.Unmarshal(listRR.Body.Bytes(), &conteos); err != nil {
+		t.Fatalf("decode conteo list response: %v", err)
+	}
+	if len(conteos) != 1 {
+		t.Fatalf("expected 1 conteo row, got %d", len(conteos))
+	}
+}
+
+func TestEmpresaInventarioAlertasHandlerProactivasIncluyeSobrestock(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_inventario_alertas_proactivas_handler.db")
+	if err := dbpkg.EnsureEmpresaProductosSchema(dbEmp); err != nil {
+		t.Fatalf("ensure productos schema: %v", err)
+	}
+
+	bodegaID, err := dbpkg.CreateBodega(dbEmp, dbpkg.Bodega{EmpresaID: 121, Codigo: "BOD-121", Nombre: "Bodega"})
+	if err != nil {
+		t.Fatalf("create bodega: %v", err)
+	}
+	productoID, err := dbpkg.CreateProducto(dbEmp, dbpkg.Producto{EmpresaID: 121, Nombre: "Producto sobrestock", StockMinimo: 2, StockMaximo: 5}, 0, "TEST")
+	if err != nil {
+		t.Fatalf("create producto: %v", err)
+	}
+	if _, err := dbEmp.Exec(`INSERT INTO inventario_existencias (empresa_id, producto_id, bodega_id, cantidad, estado) VALUES (121, ?, ?, 8, 'activo')`, productoID, bodegaID); err != nil {
+		t.Fatalf("insert existencia sobrestock: %v", err)
+	}
+
+	h := EmpresaInventarioAlertasHandler(dbEmp)
+	req := httptest.NewRequest(http.MethodGet, "/api/empresa/inventario/alertas?empresa_id=121&action=proactivas", nil)
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected proactivas status %d, got %d body=%s", http.StatusOK, rr.Code, rr.Body.String())
+	}
+
+	var rows []dbpkg.InventarioAlertaOperativa
+	if err := json.Unmarshal(rr.Body.Bytes(), &rows); err != nil {
+		t.Fatalf("decode alertas proactivas: %v", err)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("expected 1 alerta proactiva, got %d", len(rows))
+	}
+	if rows[0].EstadoStock != "sobrestock" {
+		t.Fatalf("expected estado_stock sobrestock, got %+v", rows[0])
+	}
+}

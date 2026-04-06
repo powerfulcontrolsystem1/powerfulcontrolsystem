@@ -238,7 +238,17 @@ func EmpresaCarritosCompraHandler(dbEmp *sql.DB) http.HandlerFunc {
 						http.Error(w, "descuento_codigo es obligatorio cuando se usa codigo de descuento", http.StatusBadRequest)
 						return
 					}
-					aplicado, err := dbpkg.ResolveCodigoDescuentoParaMonto(dbEmp, empresaID, descuentoCodigo, carrito.Total)
+					aplicado, err := dbpkg.ResolveCodigoDescuentoParaMontoConContexto(
+						dbEmp,
+						empresaID,
+						descuentoCodigo,
+						carrito.Total,
+						dbpkg.CodigoDescuentoContexto{
+							CarritoID:  id,
+							ClienteID:  carrito.ClienteID,
+							CanalVenta: carrito.CanalVenta,
+						},
+					)
 					if err != nil {
 						http.Error(w, err.Error(), http.StatusBadRequest)
 						return
@@ -339,6 +349,8 @@ func EmpresaCarritosCompraHandler(dbEmp *sql.DB) http.HandlerFunc {
 					}
 				}
 
+				usuarioOperacion := strings.TrimSpace(adminEmailFromRequest(r))
+
 				if err := dbpkg.PayCarritoStationSession(
 					dbEmp,
 					empresaID,
@@ -351,6 +363,7 @@ func EmpresaCarritosCompraHandler(dbEmp *sql.DB) http.HandlerFunc {
 					devolucionTotal,
 					totalPagado,
 					codigoDescuentoID,
+					usuarioOperacion,
 				); err != nil {
 					log.Printf("[carritos] pagar_estacion empresa_id=%d id=%d error: %v", empresaID, id, err)
 					lower := strings.ToLower(strings.TrimSpace(err.Error()))
@@ -368,8 +381,6 @@ func EmpresaCarritosCompraHandler(dbEmp *sql.DB) http.HandlerFunc {
 				if montoEvento <= 0 {
 					montoEvento = totalEsperadoConPropina
 				}
-
-				usuarioOperacion := strings.TrimSpace(adminEmailFromRequest(r))
 
 				propinaRegistroID := int64(0)
 				propinaRegistrada := false
@@ -416,6 +427,7 @@ func EmpresaCarritosCompraHandler(dbEmp *sql.DB) http.HandlerFunc {
 						id,
 						strings.TrimSpace(payload.UsuarioLavador),
 						usuarioOperacion,
+						rolOperacion,
 					); errComision != nil {
 						comisionResultado.Warning = "no se pudo registrar comisiones por servicio"
 						log.Printf("[carritos] registrar comision servicio empresa_id=%d carrito_id=%d error: %v", empresaID, id, errComision)

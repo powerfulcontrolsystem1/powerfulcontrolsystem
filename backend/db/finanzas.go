@@ -77,33 +77,40 @@ type EmpresaFinanzasPeriodo struct {
 }
 
 type EmpresaCierreCaja struct {
-	ID                 int64   `json:"id"`
-	EmpresaID          int64   `json:"empresa_id"`
-	SucursalID         int64   `json:"sucursal_id"`
-	CajaCodigo         string  `json:"caja_codigo"`
-	Turno              string  `json:"turno"`
-	FechaOperacion     string  `json:"fecha_operacion"`
-	FechaApertura      string  `json:"fecha_apertura"`
-	FechaCierre        string  `json:"fecha_cierre"`
-	EstadoCierre       string  `json:"estado_cierre"`
-	AperturaMonto      float64 `json:"apertura_monto"`
-	IngresosEfectivo   float64 `json:"ingresos_efectivo"`
-	EgresosEfectivo    float64 `json:"egresos_efectivo"`
-	RetirosEfectivo    float64 `json:"retiros_efectivo"`
-	CajaTeorica        float64 `json:"caja_teorica"`
-	CajaFisica         float64 `json:"caja_fisica"`
-	DiferenciaCaja     float64 `json:"diferencia_caja"`
-	Moneda             string  `json:"moneda"`
-	CerradoPor         string  `json:"cerrado_por"`
-	AprobadoPor        string  `json:"aprobado_por"`
-	AprobadoEn         string  `json:"aprobado_en"`
-	TieneIncidencia    bool    `json:"tiene_incidencia"`
-	UmbralIncidencia   float64 `json:"umbral_incidencia"`
-	FechaCreacion      string  `json:"fecha_creacion"`
-	FechaActualizacion string  `json:"fecha_actualizacion"`
-	UsuarioCreador     string  `json:"usuario_creador"`
-	Estado             string  `json:"estado"`
-	Observaciones      string  `json:"observaciones"`
+	ID                    int64   `json:"id"`
+	EmpresaID             int64   `json:"empresa_id"`
+	SucursalID            int64   `json:"sucursal_id"`
+	CajaCodigo            string  `json:"caja_codigo"`
+	Turno                 string  `json:"turno"`
+	FechaOperacion        string  `json:"fecha_operacion"`
+	FechaApertura         string  `json:"fecha_apertura"`
+	FechaCierre           string  `json:"fecha_cierre"`
+	EstadoCierre          string  `json:"estado_cierre"`
+	AperturaMonto         float64 `json:"apertura_monto"`
+	IngresosEfectivo      float64 `json:"ingresos_efectivo"`
+	EgresosEfectivo       float64 `json:"egresos_efectivo"`
+	RetirosEfectivo       float64 `json:"retiros_efectivo"`
+	CajaTeorica           float64 `json:"caja_teorica"`
+	CajaFisica            float64 `json:"caja_fisica"`
+	DiferenciaCaja        float64 `json:"diferencia_caja"`
+	Moneda                string  `json:"moneda"`
+	CerradoPor            string  `json:"cerrado_por"`
+	AprobadoPor           string  `json:"aprobado_por"`
+	AprobadoEn            string  `json:"aprobado_en"`
+	TieneIncidencia       bool    `json:"tiene_incidencia"`
+	UmbralIncidencia      float64 `json:"umbral_incidencia"`
+	PropinasMovimientos   int64   `json:"propinas_movimientos"`
+	PropinasTotal         float64 `json:"propinas_total"`
+	PropinasAjustes       float64 `json:"propinas_ajustes"`
+	PropinasImpuesto      float64 `json:"propinas_impuesto"`
+	PropinasNeto          float64 `json:"propinas_neto"`
+	PropinasConciliadoEn  string  `json:"propinas_conciliado_en"`
+	PropinasConciliadoPor string  `json:"propinas_conciliado_por"`
+	FechaCreacion         string  `json:"fecha_creacion"`
+	FechaActualizacion    string  `json:"fecha_actualizacion"`
+	UsuarioCreador        string  `json:"usuario_creador"`
+	Estado                string  `json:"estado"`
+	Observaciones         string  `json:"observaciones"`
 }
 
 type EmpresaCierreCajaFilter struct {
@@ -250,6 +257,13 @@ func EnsureEmpresaFinanzasSchema(dbConn *sql.DB) error {
 			aprobado_en TEXT,
 			tiene_incidencia INTEGER DEFAULT 0,
 			umbral_incidencia REAL DEFAULT 0,
+			propinas_movimientos INTEGER DEFAULT 0,
+			propinas_total REAL DEFAULT 0,
+			propinas_ajustes REAL DEFAULT 0,
+			propinas_impuesto REAL DEFAULT 0,
+			propinas_neto REAL DEFAULT 0,
+			propinas_conciliado_en TEXT,
+			propinas_conciliado_por TEXT,
 			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
 			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
 			usuario_creador TEXT,
@@ -451,6 +465,27 @@ func EnsureEmpresaFinanzasSchema(dbConn *sql.DB) error {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_cierres_caja", "umbral_incidencia", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_cierres_caja", "propinas_movimientos", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_cierres_caja", "propinas_total", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_cierres_caja", "propinas_ajustes", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_cierres_caja", "propinas_impuesto", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_cierres_caja", "propinas_neto", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_cierres_caja", "propinas_conciliado_en", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_cierres_caja", "propinas_conciliado_por", "TEXT"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_cierres_caja", "fecha_actualizacion", "TEXT"); err != nil {
@@ -1131,6 +1166,8 @@ func CreateEmpresaCierreCaja(dbConn *sql.DB, cierre EmpresaCierreCaja) (int64, e
 		caja_teorica, caja_fisica, diferencia_caja,
 		moneda, cerrado_por, aprobado_por, aprobado_en,
 		tiene_incidencia, umbral_incidencia,
+		propinas_movimientos, propinas_total, propinas_ajustes, propinas_impuesto, propinas_neto,
+		propinas_conciliado_en, propinas_conciliado_por,
 		usuario_creador, estado, observaciones,
 		fecha_creacion, fecha_actualizacion
 	) VALUES (
@@ -1139,6 +1176,8 @@ func CreateEmpresaCierreCaja(dbConn *sql.DB, cierre EmpresaCierreCaja) (int64, e
 		?, ?, ?, ?,
 		?, ?, ?,
 		?, ?, ?, ?,
+		?, ?,
+		?, ?, ?, ?, ?,
 		?, ?,
 		?, ?, ?,
 		datetime('now','localtime'), datetime('now','localtime')
@@ -1149,6 +1188,8 @@ func CreateEmpresaCierreCaja(dbConn *sql.DB, cierre EmpresaCierreCaja) (int64, e
 		cierre.CajaTeorica, cierre.CajaFisica, cierre.DiferenciaCaja,
 		cierre.Moneda, cierre.CerradoPor, cierre.AprobadoPor, cierre.AprobadoEn,
 		boolToInt(cierre.TieneIncidencia), cierre.UmbralIncidencia,
+		cierre.PropinasMovimientos, cierre.PropinasTotal, cierre.PropinasAjustes, cierre.PropinasImpuesto, cierre.PropinasNeto,
+		cierre.PropinasConciliadoEn, cierre.PropinasConciliadoPor,
 		cierre.UsuarioCreador, cierre.Estado, cierre.Observaciones,
 	)
 	if err != nil {
@@ -1181,6 +1222,13 @@ func ListEmpresaCierresCaja(dbConn *sql.DB, empresaID int64, f EmpresaCierreCaja
 		COALESCE(aprobado_en, ''),
 		COALESCE(tiene_incidencia, 0),
 		COALESCE(umbral_incidencia, 0),
+		COALESCE(propinas_movimientos, 0),
+		COALESCE(propinas_total, 0),
+		COALESCE(propinas_ajustes, 0),
+		COALESCE(propinas_impuesto, 0),
+		COALESCE(propinas_neto, 0),
+		COALESCE(propinas_conciliado_en, ''),
+		COALESCE(propinas_conciliado_por, ''),
 		COALESCE(fecha_creacion, ''),
 		COALESCE(fecha_actualizacion, ''),
 		COALESCE(usuario_creador, ''),
@@ -1255,6 +1303,13 @@ func ListEmpresaCierresCaja(dbConn *sql.DB, empresaID int64, f EmpresaCierreCaja
 			&item.AprobadoEn,
 			&incidencia,
 			&item.UmbralIncidencia,
+			&item.PropinasMovimientos,
+			&item.PropinasTotal,
+			&item.PropinasAjustes,
+			&item.PropinasImpuesto,
+			&item.PropinasNeto,
+			&item.PropinasConciliadoEn,
+			&item.PropinasConciliadoPor,
 			&item.FechaCreacion,
 			&item.FechaActualizacion,
 			&item.UsuarioCreador,
@@ -1328,6 +1383,13 @@ func UpdateEmpresaCierreCaja(dbConn *sql.DB, cierre EmpresaCierreCaja) error {
 		aprobado_en = ?,
 		tiene_incidencia = ?,
 		umbral_incidencia = ?,
+		propinas_movimientos = ?,
+		propinas_total = ?,
+		propinas_ajustes = ?,
+		propinas_impuesto = ?,
+		propinas_neto = ?,
+		propinas_conciliado_en = ?,
+		propinas_conciliado_por = ?,
 		estado = ?,
 		observaciones = ?,
 		fecha_actualizacion = datetime('now','localtime')
@@ -1352,6 +1414,13 @@ func UpdateEmpresaCierreCaja(dbConn *sql.DB, cierre EmpresaCierreCaja) error {
 		cierre.AprobadoEn,
 		boolToInt(cierre.TieneIncidencia),
 		cierre.UmbralIncidencia,
+		cierre.PropinasMovimientos,
+		cierre.PropinasTotal,
+		cierre.PropinasAjustes,
+		cierre.PropinasImpuesto,
+		cierre.PropinasNeto,
+		cierre.PropinasConciliadoEn,
+		cierre.PropinasConciliadoPor,
 		cierre.Estado,
 		cierre.Observaciones,
 		cierre.EmpresaID,
@@ -1762,6 +1831,15 @@ func normalizeEmpresaCierreCaja(cierre EmpresaCierreCaja, isCreate bool) (Empres
 	cierre.CerradoPor = strings.TrimSpace(cierre.CerradoPor)
 	cierre.AprobadoPor = strings.TrimSpace(cierre.AprobadoPor)
 	cierre.AprobadoEn = strings.TrimSpace(cierre.AprobadoEn)
+	if cierre.PropinasMovimientos < 0 {
+		cierre.PropinasMovimientos = 0
+	}
+	cierre.PropinasTotal = roundReportesMoney(cierre.PropinasTotal)
+	cierre.PropinasAjustes = roundReportesMoney(cierre.PropinasAjustes)
+	cierre.PropinasImpuesto = roundReportesMoney(cierre.PropinasImpuesto)
+	cierre.PropinasNeto = roundReportesMoney(cierre.PropinasNeto)
+	cierre.PropinasConciliadoEn = strings.TrimSpace(cierre.PropinasConciliadoEn)
+	cierre.PropinasConciliadoPor = strings.TrimSpace(cierre.PropinasConciliadoPor)
 
 	if cierre.EstadoCierre == "abierto" {
 		cierre.FechaCierre = ""
@@ -1771,6 +1849,13 @@ func normalizeEmpresaCierreCaja(cierre EmpresaCierreCaja, isCreate bool) (Empres
 		cierre.CajaFisica = 0
 		cierre.DiferenciaCaja = 0
 		cierre.TieneIncidencia = false
+		cierre.PropinasMovimientos = 0
+		cierre.PropinasTotal = 0
+		cierre.PropinasAjustes = 0
+		cierre.PropinasImpuesto = 0
+		cierre.PropinasNeto = 0
+		cierre.PropinasConciliadoEn = ""
+		cierre.PropinasConciliadoPor = ""
 	}
 
 	cierre.UsuarioCreador = strings.TrimSpace(cierre.UsuarioCreador)

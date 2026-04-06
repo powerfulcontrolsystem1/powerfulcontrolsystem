@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -42,6 +43,9 @@ func ensureEmpresaReportesSchema(t *testing.T, dbEmp *sql.DB) {
 	}
 	if err := dbpkg.EnsureEmpresaNominaSchema(dbEmp); err != nil {
 		t.Fatalf("EnsureEmpresaNominaSchema: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaVehiculosRegistroSchema(dbEmp); err != nil {
+		t.Fatalf("EnsureEmpresaVehiculosRegistroSchema: %v", err)
 	}
 	if err := dbpkg.EnsureEmpresaReservasHotelSchema(dbEmp); err != nil {
 		t.Fatalf("EnsureEmpresaReservasHotelSchema: %v", err)
@@ -594,6 +598,231 @@ func TestEmpresaReportesHandlerDatasetOperativoTarifasIngresos(t *testing.T) {
 	cobertura := reporteDatasetToFloat64(ds.Summary["cobertura_modelo_tarifa_pct"])
 	if cobertura < 66.6 || cobertura > 66.7 {
 		t.Fatalf("summary cobertura_modelo_tarifa_pct esperado~66.67 obtenido=%v", ds.Summary["cobertura_modelo_tarifa_pct"])
+	}
+}
+
+func TestEmpresaReportesHandlerDatasetOperativoTarifasComparativoEstaciones(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_reportes_tarifas_comparativo_handler.db")
+	ensureEmpresaReportesSchema(t, dbEmp)
+
+	empresaID := int64(75)
+
+	if _, err := dbpkg.CreateEmpresaTarifaPorDia(dbEmp, dbpkg.EmpresaTarifaPorDia{
+		EmpresaID:              empresaID,
+		EstacionID:             1,
+		EstacionCodigo:         "EST-75-1",
+		EstacionNombre:         "Habitacion 101",
+		ServicioNombre:         "hospedaje",
+		ValorDia:               100,
+		HoraCheckIn:            "15:00",
+		HoraCheckOut:           "12:00",
+		Moneda:                 "COP",
+		Prioridad:              1,
+		AplicarAutomaticamente: true,
+		UsuarioCreador:         "qa_tarifas_cmp",
+		Estado:                 "activo",
+	}); err != nil {
+		t.Fatalf("CreateEmpresaTarifaPorDia comparativo: %v", err)
+	}
+
+	createVentaCerrada := func(codigo string, total float64, activadoEn string, pagadoEn string) {
+		t.Helper()
+		codigoUnico := codigo + "-" + strings.NewReplacer(" ", "", ":", "", "-", "").Replace(activadoEn)
+		carritoID, err := dbpkg.CreateCarritoCompra(dbEmp, dbpkg.CarritoCompra{
+			EmpresaID:         empresaID,
+			Codigo:            codigoUnico,
+			Nombre:            codigo + "-" + strings.ReplaceAll(activadoEn, " ", "T"),
+			EstadoCarrito:     "abierto",
+			ReferenciaExterna: "ESTACION_1",
+			UsuarioCreador:    "qa_tarifas_cmp",
+			Estado:            "activo",
+		})
+		if err != nil {
+			t.Fatalf("CreateCarritoCompra %s: %v", codigo, err)
+		}
+
+		if _, err := dbEmp.Exec(`
+			UPDATE carritos_compras
+			SET estado_carrito = 'cerrado', total = ?, total_pagado = ?, activado_en = ?, pagado_en = ?, fecha_actualizacion = ?, estado = 'activo'
+			WHERE empresa_id = ? AND id = ?
+		`, total, total, activadoEn, pagadoEn, pagadoEn, empresaID, carritoID); err != nil {
+			t.Fatalf("update carrito cerrado %s: %v", codigo, err)
+		}
+	}
+
+	createVentaCerrada("EST-75-1", 350, "2026-04-01 16:00:00", "2026-04-03 13:00:00")
+	createVentaCerrada("EST-75-1", 100, "2026-04-05 18:00:00", "2026-04-06 10:00:00")
+
+	handler := EmpresaReportesHandler(dbEmp)
+	req := httptest.NewRequest(http.MethodGet, "/api/empresa/reportes?action=dataset&empresa_id=75&dataset=operativo_tarifas_comparativo_estaciones&desde=2026-04-01&hasta=2026-04-30", nil)
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("dataset operativo_tarifas_comparativo_estaciones status=%d body=%s", rr.Code, rr.Body.String())
+	}
+
+	var ds empresaReporteDataset
+	if err := json.Unmarshal(rr.Body.Bytes(), &ds); err != nil {
+		t.Fatalf("unmarshal operativo_tarifas_comparativo_estaciones: %v", err)
+	}
+	if ds.Key != reporteDatasetOperativoTarifasComparativo {
+		t.Fatalf("dataset key esperado=%s obtenido=%s", reporteDatasetOperativoTarifasComparativo, ds.Key)
+	}
+	if ds.RowCount != 1 {
+		t.Fatalf("row_count esperado=1 obtenido=%d body=%s", ds.RowCount, rr.Body.String())
+	}
+
+	row, ok := reporteDatasetFindRowByIntField(ds.Rows, "estacion_id", 1)
+	if !ok {
+		t.Fatalf("no se encontro fila de estacion_id=1 en comparativo")
+	}
+	if got := reporteDatasetToInt64(row["ventas_cerradas"]); got != 2 {
+		t.Fatalf("ventas_cerradas esperado=2 obtenido=%d", got)
+	}
+	ingresoEsperado := reporteDatasetToFloat64(row["ingreso_esperado"])
+	if math.Abs(ingresoEsperado-319.05) > 0.02 {
+		t.Fatalf("ingreso_esperado esperado~319.05 obtenido=%v", row["ingreso_esperado"])
+	}
+	ingresoReal := reporteDatasetToFloat64(row["ingreso_real"])
+	if math.Abs(ingresoReal-450) > 0.001 {
+		t.Fatalf("ingreso_real esperado=450 obtenido=%v", row["ingreso_real"])
+	}
+	if got := reporteDatasetToInt64(row["minutos_prorrateo_fuera_ventana"]); got != 240 {
+		t.Fatalf("minutos_prorrateo_fuera_ventana esperado=240 obtenido=%d", got)
+	}
+	diasEq := reporteDatasetToFloat64(row["dias_equivalentes_esperados"])
+	if math.Abs(diasEq-3.19) > 0.02 {
+		t.Fatalf("dias_equivalentes_esperados esperado~3.19 obtenido=%v", row["dias_equivalentes_esperados"])
+	}
+
+	if got := reporteDatasetToInt64(ds.Summary["ventas_evaluadas"]); got != 2 {
+		t.Fatalf("summary ventas_evaluadas esperado=2 obtenido=%d", got)
+	}
+	if got := reporteDatasetToInt64(ds.Summary["estaciones_comparadas"]); got != 1 {
+		t.Fatalf("summary estaciones_comparadas esperado=1 obtenido=%d", got)
+	}
+	if got := reporteDatasetToInt64(ds.Summary["ventas_sin_base_calculo_total"]); got != 0 {
+		t.Fatalf("summary ventas_sin_base_calculo_total esperado=0 obtenido=%d", got)
+	}
+	if got := reporteDatasetToFloat64(ds.Summary["ingreso_real_total"]); math.Abs(got-450) > 0.001 {
+		t.Fatalf("summary ingreso_real_total esperado=450 obtenido=%v", ds.Summary["ingreso_real_total"])
+	}
+	if got := reporteDatasetToFloat64(ds.Summary["ingreso_esperado_total"]); math.Abs(got-319.05) > 0.02 {
+		t.Fatalf("summary ingreso_esperado_total esperado~319.05 obtenido=%v", ds.Summary["ingreso_esperado_total"])
+	}
+}
+
+func TestEmpresaReportesHandlerDatasetOperativoClientesSegmentacionComercial(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_reportes_clientes_segmentacion_handler.db")
+	ensureEmpresaReportesSchema(t, dbEmp)
+
+	empresaID := int64(76)
+
+	clienteFrecuenteID, err := dbpkg.CreateCliente(dbEmp, dbpkg.Cliente{
+		EmpresaID:         empresaID,
+		TipoDocumento:     "CC",
+		NumeroDocumento:   "760001",
+		NombreRazonSocial: "Cliente Frecuente",
+		Email:             "frecuente@test.com",
+		Telefono:          "3007001100",
+		UsuarioCreador:    "qa_segmentos",
+	})
+	if err != nil {
+		t.Fatalf("create cliente frecuente: %v", err)
+	}
+
+	clienteNuevoID, err := dbpkg.CreateCliente(dbEmp, dbpkg.Cliente{
+		EmpresaID:         empresaID,
+		TipoDocumento:     "CC",
+		NumeroDocumento:   "760002",
+		NombreRazonSocial: "Cliente Nuevo",
+		Email:             "nuevo@test.com",
+		Telefono:          "3007002200",
+		UsuarioCreador:    "qa_segmentos",
+	})
+	if err != nil {
+		t.Fatalf("create cliente nuevo: %v", err)
+	}
+
+	totales := []float64{120000, 90000, 150000}
+	for i, total := range totales {
+		carritoID, err := dbpkg.CreateCarritoCompra(dbEmp, dbpkg.CarritoCompra{
+			EmpresaID:      empresaID,
+			Codigo:         "SEG-76-" + strconv.Itoa(i+1),
+			Nombre:         "Segmentacion 76 " + strconv.Itoa(i+1),
+			EstadoCarrito:  "abierto",
+			UsuarioCreador: "qa_segmentos",
+			Estado:         "activo",
+		})
+		if err != nil {
+			t.Fatalf("CreateCarritoCompra segmento idx=%d: %v", i, err)
+		}
+		fechaPago := time.Now().AddDate(0, 0, -(i+1)*7).Format("2006-01-02 15:04:05")
+		if _, err := dbEmp.Exec(`
+			UPDATE carritos_compras
+			SET cliente_id = ?, estado_carrito = 'cerrado', total = ?, total_pagado = ?, pagado_en = ?, fecha_actualizacion = ?, estado = 'activo'
+			WHERE empresa_id = ? AND id = ?
+		`, clienteFrecuenteID, total, total, fechaPago, fechaPago, empresaID, carritoID); err != nil {
+			t.Fatalf("update carrito segmento idx=%d: %v", i, err)
+		}
+	}
+
+	handler := EmpresaReportesHandler(dbEmp)
+	req := httptest.NewRequest(http.MethodGet, "/api/empresa/reportes?action=dataset&empresa_id=76&dataset=operativo_clientes_segmentacion_comercial&max_rows=1000", nil)
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("dataset operativo_clientes_segmentacion_comercial status=%d body=%s", rr.Code, rr.Body.String())
+	}
+
+	var ds empresaReporteDataset
+	if err := json.Unmarshal(rr.Body.Bytes(), &ds); err != nil {
+		t.Fatalf("unmarshal operativo_clientes_segmentacion_comercial: %v", err)
+	}
+	if ds.Key != reporteDatasetOperativoClientesSegmentos {
+		t.Fatalf("dataset key esperado=%s obtenido=%s", reporteDatasetOperativoClientesSegmentos, ds.Key)
+	}
+	if ds.RowCount != 2 {
+		t.Fatalf("row_count esperado=2 obtenido=%d body=%s", ds.RowCount, rr.Body.String())
+	}
+
+	rowFrecuente, ok := reporteDatasetFindRowByIntField(ds.Rows, "cliente_id", clienteFrecuenteID)
+	if !ok {
+		t.Fatalf("no se encontro fila cliente frecuente en dataset")
+	}
+	if segmento := strings.ToLower(strings.TrimSpace(rowFrecuente["segmento"].(string))); segmento != "frecuente" {
+		t.Fatalf("segmento esperado=frecuente obtenido=%s", rowFrecuente["segmento"])
+	}
+	if accion := strings.ToLower(strings.TrimSpace(rowFrecuente["accion_comercial_sugerida"].(string))); accion != "upsell_crosssell" {
+		t.Fatalf("accion sugerida esperada=upsell_crosssell obtenida=%s", rowFrecuente["accion_comercial_sugerida"])
+	}
+	if compras := reporteDatasetToInt64(rowFrecuente["numero_compras"]); compras != 3 {
+		t.Fatalf("numero_compras esperado=3 obtenido=%d", compras)
+	}
+
+	rowNuevo, ok := reporteDatasetFindRowByIntField(ds.Rows, "cliente_id", clienteNuevoID)
+	if !ok {
+		t.Fatalf("no se encontro fila cliente nuevo en dataset")
+	}
+	if segmento := strings.ToLower(strings.TrimSpace(rowNuevo["segmento"].(string))); segmento != "nuevo" {
+		t.Fatalf("segmento esperado=nuevo obtenido=%s", rowNuevo["segmento"])
+	}
+	if got := reporteDatasetToInt64(ds.Summary["clientes_exportados"]); got != 2 {
+		t.Fatalf("summary clientes_exportados esperado=2 obtenido=%d", got)
+	}
+
+	reqExport := httptest.NewRequest(http.MethodGet, "/api/empresa/reportes?action=export&empresa_id=76&dataset=operativo_clientes_segmentacion_comercial&format=csv", nil)
+	rrExport := httptest.NewRecorder()
+	handler.ServeHTTP(rrExport, reqExport)
+	if rrExport.Code != http.StatusOK {
+		t.Fatalf("export csv segmentacion clientes status=%d body=%s", rrExport.Code, rrExport.Body.String())
+	}
+	if !strings.Contains(strings.ToLower(rrExport.Header().Get("Content-Type")), "text/csv") {
+		t.Fatalf("content-type csv esperado, obtenido=%s", rrExport.Header().Get("Content-Type"))
+	}
+	csvBody := rrExport.Body.String()
+	if !strings.Contains(csvBody, "accion_comercial_sugerida") {
+		t.Fatalf("csv export debe incluir columna accion_comercial_sugerida, body=%s", csvBody)
 	}
 }
 
@@ -1758,6 +1987,230 @@ func TestEmpresaReportesHandlerDatasetNominaLiquidaciones(t *testing.T) {
 	}
 }
 
+func TestEmpresaReportesHandlerDatasetOperativoAsistenciaNominaAuditoria(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_reportes_asistencia_nomina_auditoria.db")
+	ensureEmpresaReportesSchema(t, dbEmp)
+
+	empresaID := int64(81)
+	if _, err := dbpkg.UpsertEmpresaAsistenciaConfiguracion(dbEmp, dbpkg.EmpresaAsistenciaConfiguracion{
+		EmpresaID:             empresaID,
+		ToleranciaEntradaMin:  0,
+		HoraInicioTurnoManana: "08:00:00",
+		HoraInicioTurnoTarde:  "14:00:00",
+		HoraInicioTurnoNoche:  "22:00:00",
+		PermitirTurnoNocturno: true,
+		PermitirTurnoCruzado:  true,
+		Estado:                "activo",
+	}); err != nil {
+		t.Fatalf("UpsertEmpresaAsistenciaConfiguracion: %v", err)
+	}
+
+	seed := []dbpkg.EmpresaAsistenciaEmpleado{
+		{
+			EmpresaID:         empresaID,
+			EmpleadoID:        8101,
+			EmpleadoCodigo:    "EMP-AUD-1",
+			EmpleadoNombre:    "Laura Audit",
+			EmpleadoDocumento: "DOC-8101",
+			Cargo:             "Recepcion",
+			Turno:             "manana",
+			FechaAsistencia:   "2026-04-09",
+			HoraEntrada:       "08:00:00",
+			HoraSalida:        "17:00:00",
+			MinutosTarde:      0,
+			HorasTrabajadas:   9,
+			EstadoAsistencia:  "presente",
+			UsuarioCreador:    "qa_asistencia",
+		},
+		{
+			EmpresaID:         empresaID,
+			EmpleadoID:        8101,
+			EmpleadoCodigo:    "EMP-AUD-1",
+			EmpleadoNombre:    "Laura Audit",
+			EmpleadoDocumento: "DOC-8101",
+			Cargo:             "Recepcion",
+			Turno:             "manana",
+			FechaAsistencia:   "2026-04-10",
+			HoraEntrada:       "08:25:00",
+			HoraSalida:        "17:05:00",
+			MinutosTarde:      25,
+			HorasTrabajadas:   8.67,
+			EstadoAsistencia:  "tarde",
+			Novedad:           "trafico",
+			UsuarioCreador:    "qa_asistencia",
+		},
+		{
+			EmpresaID:         empresaID,
+			EmpleadoID:        8102,
+			EmpleadoCodigo:    "EMP-AUD-2",
+			EmpleadoNombre:    "Mario Audit",
+			EmpleadoDocumento: "DOC-8102",
+			Cargo:             "Caja",
+			Turno:             "tarde",
+			FechaAsistencia:   "2026-04-10",
+			HoraEntrada:       "14:00:00",
+			HoraSalida:        "",
+			MinutosTarde:      0,
+			HorasTrabajadas:   0,
+			EstadoAsistencia:  "presente",
+			UsuarioCreador:    "qa_asistencia",
+		},
+	}
+
+	for _, item := range seed {
+		if _, err := dbpkg.CreateEmpresaAsistenciaEmpleado(dbEmp, item); err != nil {
+			t.Fatalf("CreateEmpresaAsistenciaEmpleado seed: %v", err)
+		}
+	}
+
+	handler := EmpresaReportesHandler(dbEmp)
+	req := httptest.NewRequest(http.MethodGet, "/api/empresa/reportes?action=dataset&empresa_id=81&dataset=operativo_asistencia_nomina_auditoria&desde=2026-04-01&hasta=2026-04-30", nil)
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("dataset operativo_asistencia_nomina_auditoria status=%d body=%s", rr.Code, rr.Body.String())
+	}
+
+	var ds empresaReporteDataset
+	if err := json.Unmarshal(rr.Body.Bytes(), &ds); err != nil {
+		t.Fatalf("unmarshal operativo_asistencia_nomina_auditoria: %v", err)
+	}
+	if ds.Key != reporteDatasetOperativoAsistenciaNomina {
+		t.Fatalf("dataset key esperado=%s obtenido=%s", reporteDatasetOperativoAsistenciaNomina, ds.Key)
+	}
+	if ds.RowCount != 2 {
+		t.Fatalf("row_count esperado=2 obtenido=%d body=%s", ds.RowCount, rr.Body.String())
+	}
+
+	rowA, ok := reporteDatasetFindRowByStringField(ds.Rows, "empleado_codigo", "EMP-AUD-1")
+	if !ok {
+		t.Fatalf("no se encontro fila EMP-AUD-1")
+	}
+	if got := reporteDatasetToInt64(rowA["registros_asistencia"]); got != 2 {
+		t.Fatalf("EMP-AUD-1 registros_asistencia esperado=2 obtenido=%d", got)
+	}
+	if got := reporteDatasetToInt64(rowA["registros_completos"]); got != 2 {
+		t.Fatalf("EMP-AUD-1 registros_completos esperado=2 obtenido=%d", got)
+	}
+	if got := reporteDatasetToInt64(rowA["minutos_tarde_total"]); got != 25 {
+		t.Fatalf("EMP-AUD-1 minutos_tarde_total esperado=25 obtenido=%d", got)
+	}
+	if got := reporteDatasetToInt64(rowA["tardanzas"]); got != 1 {
+		t.Fatalf("EMP-AUD-1 tardanzas esperado=1 obtenido=%d", got)
+	}
+
+	rowB, ok := reporteDatasetFindRowByStringField(ds.Rows, "empleado_codigo", "EMP-AUD-2")
+	if !ok {
+		t.Fatalf("no se encontro fila EMP-AUD-2")
+	}
+	if got := reporteDatasetToInt64(rowB["inconsistencias"]); got != 1 {
+		t.Fatalf("EMP-AUD-2 inconsistencias esperado=1 obtenido=%d", got)
+	}
+
+	if got := reporteDatasetToInt64(ds.Summary["empleados_auditados"]); got != 2 {
+		t.Fatalf("summary empleados_auditados esperado=2 obtenido=%d", got)
+	}
+	if got := reporteDatasetToInt64(ds.Summary["registros_total"]); got != 3 {
+		t.Fatalf("summary registros_total esperado=3 obtenido=%d", got)
+	}
+	if got := reporteDatasetToInt64(ds.Summary["inconsistencias_total"]); got != 1 {
+		t.Fatalf("summary inconsistencias_total esperado=1 obtenido=%d", got)
+	}
+}
+
+func TestEmpresaReportesHandlerDatasetOperativoVehiculosPermanencia(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_reportes_vehiculos_permanencia.db")
+	ensureEmpresaReportesSchema(t, dbEmp)
+
+	empresaID := int64(82)
+	if _, err := dbpkg.UpsertEmpresaVehiculosRegistroConfiguracion(dbEmp, dbpkg.EmpresaVehiculosRegistroConfiguracion{
+		EmpresaID:             empresaID,
+		PaisCodigo:            "CO",
+		EvitarDuplicadoActivo: true,
+		PatenteRegex:          "^(?:[A-Z]{3}[0-9]{3}|[A-Z]{3}[0-9]{2}[A-Z])$",
+		PatenteDescripcion:    "CO test",
+		Estado:                "activo",
+	}); err != nil {
+		t.Fatalf("UpsertEmpresaVehiculosRegistroConfiguracion: %v", err)
+	}
+
+	retiradoID, err := dbpkg.CreateEmpresaVehiculoRegistro(dbEmp, dbpkg.EmpresaVehiculoRegistro{
+		EmpresaID:         empresaID,
+		Patente:           "abc123",
+		TipoVehiculo:      "automovil",
+		ConductorNombre:   "Carlos Ret",
+		PropietarioNombre: "Propietario Ret",
+		FechaIngreso:      "2026-04-09 08:00:00",
+		EstadoRegistro:    "en_empresa",
+		Estado:            "activo",
+		UsuarioCreador:    "qa_reportes",
+	})
+	if err != nil {
+		t.Fatalf("CreateEmpresaVehiculoRegistro retirado: %v", err)
+	}
+
+	if err := dbpkg.MarkEmpresaVehiculoSalida(dbEmp, empresaID, retiradoID, "2026-04-09 10:00:00", "qa_reportes", "salida prueba"); err != nil {
+		t.Fatalf("MarkEmpresaVehiculoSalida: %v", err)
+	}
+
+	if _, err := dbpkg.CreateEmpresaVehiculoRegistro(dbEmp, dbpkg.EmpresaVehiculoRegistro{
+		EmpresaID:         empresaID,
+		Patente:           "XYZ999",
+		TipoVehiculo:      "camioneta",
+		ConductorNombre:   "Laura Act",
+		PropietarioNombre: "Propietario Act",
+		FechaIngreso:      "2026-04-10 09:00:00",
+		EstadoRegistro:    "en_empresa",
+		Estado:            "activo",
+		UsuarioCreador:    "qa_reportes",
+	}); err != nil {
+		t.Fatalf("CreateEmpresaVehiculoRegistro activo: %v", err)
+	}
+
+	handler := EmpresaReportesHandler(dbEmp)
+	req := httptest.NewRequest(http.MethodGet, "/api/empresa/reportes?action=dataset&empresa_id=82&dataset=operativo_vehiculos_permanencia&desde=2026-04-01&hasta=2026-04-30", nil)
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("dataset operativo_vehiculos_permanencia status=%d body=%s", rr.Code, rr.Body.String())
+	}
+
+	var ds empresaReporteDataset
+	if err := json.Unmarshal(rr.Body.Bytes(), &ds); err != nil {
+		t.Fatalf("unmarshal operativo_vehiculos_permanencia: %v", err)
+	}
+	if ds.Key != reporteDatasetOperativoVehiculos {
+		t.Fatalf("dataset key esperado=%s obtenido=%s", reporteDatasetOperativoVehiculos, ds.Key)
+	}
+	if ds.RowCount != 2 {
+		t.Fatalf("row_count esperado=2 obtenido=%d body=%s", ds.RowCount, rr.Body.String())
+	}
+
+	rowRet, ok := reporteDatasetFindRowByStringField(ds.Rows, "patente", "ABC123")
+	if !ok {
+		t.Fatalf("no se encontro fila de patente ABC123")
+	}
+	if got := reporteDatasetToInt64(rowRet["minutos_estadia"]); got != 120 {
+		t.Fatalf("ABC123 minutos_estadia esperado=120 obtenido=%d", got)
+	}
+	if estadoReg, _ := rowRet["estado_registro"].(string); strings.ToLower(strings.TrimSpace(estadoReg)) != "retirado" {
+		t.Fatalf("ABC123 estado_registro esperado=retirado obtenido=%v", rowRet["estado_registro"])
+	}
+
+	if got := reporteDatasetToInt64(ds.Summary["registros_total"]); got != 2 {
+		t.Fatalf("summary registros_total esperado=2 obtenido=%d", got)
+	}
+	if got := reporteDatasetToInt64(ds.Summary["vehiculos_en_empresa"]); got != 1 {
+		t.Fatalf("summary vehiculos_en_empresa esperado=1 obtenido=%d", got)
+	}
+	if got := reporteDatasetToInt64(ds.Summary["vehiculos_retirados"]); got != 1 {
+		t.Fatalf("summary vehiculos_retirados esperado=1 obtenido=%d", got)
+	}
+	if got := reporteDatasetToInt64(ds.Summary["minutos_estadia_total"]); got < 120 {
+		t.Fatalf("summary minutos_estadia_total esperado>=120 obtenido=%d", got)
+	}
+}
+
 func TestEmpresaReportesHandlerDatasetContableFlujoCaja(t *testing.T) {
 	dbEmp := openTestSQLite(t, "empresas_reportes_flujo_caja_handler.db")
 	ensureEmpresaReportesSchema(t, dbEmp)
@@ -2036,7 +2489,7 @@ func TestEmpresaReportesHandlerDatasetReporteTurno(t *testing.T) {
 		t.Fatalf("CreateCarritoCompraItem servicio: %v", err)
 	}
 
-	if err := dbpkg.PayCarritoStationSession(dbEmp, empresaID, carritoID, "efectivo", "RCB-001", "", "", 0, 0, 35000, 0); err != nil {
+	if err := dbpkg.PayCarritoStationSession(dbEmp, empresaID, carritoID, "efectivo", "RCB-001", "", "", 0, 0, 35000, 0, "test"); err != nil {
 		t.Fatalf("PayCarritoStationSession: %v", err)
 	}
 

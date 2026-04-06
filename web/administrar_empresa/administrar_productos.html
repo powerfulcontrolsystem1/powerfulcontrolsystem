@@ -471,6 +471,17 @@
     <section class="empresa-grid-2">
       <section class="card empresa-section">
         <h2>Ajustes de inventario (devoluciones/pérdidas)</h2>
+        <div class="empresa-section-header" style="margin-bottom:12px;">
+          <h3 style="margin:0;">Política de costo por empresa</h3>
+          <div class="empresa-inline-actions" style="gap:8px;">
+            <select id="inventarioPoliticaCosto" class="form-input" style="min-width:180px;">
+              <option value="promedio">Promedio</option>
+              <option value="peps">PEPS</option>
+            </select>
+            <input id="inventarioConfigObservaciones" class="form-input" placeholder="Observaciones de la política">
+            <button id="btnGuardarInventarioConfig" class="btn secondary" type="button">Guardar política</button>
+          </div>
+        </div>
         <form id="ajusteForm" class="form">
           <div class="form-row">
             <div class="form-col">
@@ -511,6 +522,60 @@
             <button class="btn" type="submit">Registrar ajuste</button>
           </div>
         </form>
+
+        <div class="empresa-section-header" style="margin-top:16px;">
+          <h3 style="margin:0;">Conteo cíclico con ajuste auditado</h3>
+        </div>
+        <form id="conteoCiclicoForm" class="form">
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="conteoProducto">Producto</label>
+              <select id="conteoProducto" class="form-input" required></select>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="conteoBodega">Bodega</label>
+              <select id="conteoBodega" class="form-input" required></select>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="conteoCantidad">Cantidad contada</label>
+              <input id="conteoCantidad" class="form-input" type="number" step="0.01" min="0" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="conteoReferencia">Referencia</label>
+              <input id="conteoReferencia" class="form-input" placeholder="CNT-20260406-01">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="conteoObservaciones">Observaciones</label>
+              <input id="conteoObservaciones" class="form-input" placeholder="Conteo semanal por ciclo ABC">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn secondary" type="submit">Registrar conteo cíclico</button>
+          </div>
+        </form>
+
+        <div class="table-wrap" style="margin-top:10px;">
+          <table class="table" id="conteosCiclicosTable">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Producto</th>
+                <th>Bodega</th>
+                <th>Sistema</th>
+                <th>Contado</th>
+                <th>Variación</th>
+                <th>Ajuste</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td colspan="8">Sin conteos cíclicos registrados.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p id="conteoCiclicoContexto" class="form-help">Conteo cíclico: pendiente.</p>
       </section>
 
       <section class="card empresa-section">
@@ -603,7 +668,7 @@
         </div>
 
         <div class="empresa-section-header" style="margin-top:16px;">
-          <h3 style="margin:0;">Alertas de quiebre por bodega</h3>
+          <h3 style="margin:0;">Alertas operativas proactivas (quiebre/sobrestock)</h3>
           <div class="empresa-inline-actions">
             <select id="alertaBodegaFiltro" class="form-input">
               <option value="">Todas las bodegas</option>
@@ -620,8 +685,11 @@
                 <th>Bodega</th>
                 <th>Stock actual</th>
                 <th>Stock minimo</th>
+                <th>Stock maximo</th>
                 <th>Estado</th>
                 <th>Deficit</th>
+                <th>Exceso</th>
+                <th>Accion sugerida</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -865,6 +933,8 @@
       categoriasProductos: [],
       servicios: [],
       alertasInventario: [],
+      inventarioConfiguracion: null,
+      conteosCiclicos: [],
       inventarioPlanReposicionRows: [],
       planReposicionProveedorFiltro: 0,
       planReposicionBorrador: null,
@@ -988,6 +1058,7 @@
       buildOptions(document.getElementById('transferDestino'), activas, '', 'Seleccione destino');
       buildOptions(document.getElementById('ajusteBodega'), activas, '', 'Seleccione bodega');
       buildOptions(document.getElementById('cambioBodega'), activas, '', 'Seleccione bodega');
+      buildOptions(document.getElementById('conteoBodega'), activas, document.getElementById('conteoBodega').value, 'Seleccione bodega');
       buildOptions(document.getElementById('alertaBodegaFiltro'), activas, document.getElementById('alertaBodegaFiltro').value, 'Todas las bodegas');
       buildOptions(document.getElementById('kardexBodegaFiltro'), activas, document.getElementById('kardexBodegaFiltro').value, 'Todas las bodegas');
     }
@@ -1350,6 +1421,7 @@
       buildOptions(document.getElementById('ajusteProducto'), activos, '', 'Seleccione producto');
       buildOptions(document.getElementById('cambioProductoOrigen'), activos, '', 'Seleccione producto origen');
       buildOptions(document.getElementById('cambioProductoDestino'), activos, '', 'Seleccione producto destino');
+      buildOptions(document.getElementById('conteoProducto'), activos, document.getElementById('conteoProducto').value, 'Seleccione producto');
 
       const historialSelect = document.getElementById('historialProducto');
       let html = '<option value="">Todos los productos</option>';
@@ -1621,6 +1693,105 @@
         showMessage('Estado del servicio actualizado.', 'success');
       }
       await loadServicios();
+    }
+
+    async function loadInventarioConfiguracion() {
+      const cfg = await requestJSON('/api/empresa/inventario/configuracion?empresa_id=' + empresaId);
+      state.inventarioConfiguracion = cfg || null;
+
+      const politica = String((cfg && cfg.politica_costo) || 'promedio').trim().toLowerCase();
+      document.getElementById('inventarioPoliticaCosto').value = politica === 'peps' ? 'peps' : 'promedio';
+      document.getElementById('inventarioConfigObservaciones').value = String((cfg && cfg.observaciones) || '').trim();
+    }
+
+    async function saveInventarioConfiguracion() {
+      const payload = {
+        empresa_id: empresaId,
+        politica_costo: String(document.getElementById('inventarioPoliticaCosto').value || 'promedio').trim().toLowerCase(),
+        observaciones: document.getElementById('inventarioConfigObservaciones').value.trim(),
+        usuario_aplicacion: 'ui_admin_productos'
+      };
+
+      if (payload.politica_costo !== 'promedio' && payload.politica_costo !== 'peps') {
+        showMessage('La política de costo debe ser promedio o peps.', 'error');
+        return;
+      }
+
+      await requestJSON('/api/empresa/inventario/configuracion', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      await loadInventarioConfiguracion();
+      showMessage('Política de costo guardada correctamente.', 'success');
+    }
+
+    async function loadConteosCiclicos() {
+      const rows = await requestJSON('/api/empresa/inventario/conteo_ciclico?empresa_id=' + empresaId + '&limit=80');
+      state.conteosCiclicos = Array.isArray(rows) ? rows : [];
+
+      const tbody = document.querySelector('#conteosCiclicosTable tbody');
+      if (!state.conteosCiclicos.length) {
+        tbody.innerHTML = '<tr><td colspan="8">Sin conteos cíclicos registrados.</td></tr>';
+        document.getElementById('conteoCiclicoContexto').textContent = 'Conteo cíclico: sin registros recientes.';
+        return;
+      }
+
+      const top = state.conteosCiclicos.slice(0, 15);
+      let variacionAbsoluta = 0;
+      tbody.innerHTML = top.map(r => {
+        const variacion = Number(r.variacion || 0);
+        variacionAbsoluta += Math.abs(variacion);
+        const variacionStyle = variacion === 0
+          ? ''
+          : (variacion > 0 ? ' style="color:#027A48;font-weight:600;"' : ' style="color:#B42318;font-weight:600;"');
+        return '<tr>' +
+          '<td>' + sanitize(r.fecha_conteo || '') + '</td>' +
+          '<td>' + sanitize(r.producto_nombre || '') + '</td>' +
+          '<td>' + sanitize(r.bodega_nombre || '') + '</td>' +
+          '<td>' + Number(r.cantidad_sistema || 0).toFixed(2) + '</td>' +
+          '<td>' + Number(r.cantidad_contada || 0).toFixed(2) + '</td>' +
+          '<td' + variacionStyle + '>' + variacion.toFixed(2) + '</td>' +
+          '<td>' + sanitize((r.ajuste_tipo || '').replace('_', ' ')) + '</td>' +
+          '<td>' + sanitize(r.estado || 'activo') + '</td>' +
+        '</tr>';
+      }).join('');
+
+      document.getElementById('conteoCiclicoContexto').textContent =
+        'Conteos cíclicos recientes: ' + top.length + ' registros, variación absoluta acumulada ' + variacionAbsoluta.toFixed(2) + '.';
+    }
+
+    async function registrarConteoCiclico(ev) {
+      ev.preventDefault();
+      const payload = {
+        empresa_id: empresaId,
+        producto_id: Number(document.getElementById('conteoProducto').value || 0),
+        bodega_id: Number(document.getElementById('conteoBodega').value || 0),
+        cantidad_contada: num(document.getElementById('conteoCantidad').value),
+        referencia: document.getElementById('conteoReferencia').value.trim(),
+        observaciones: document.getElementById('conteoObservaciones').value.trim(),
+        usuario_aplicacion: 'ui_admin_productos'
+      };
+
+      if (!payload.producto_id || !payload.bodega_id || payload.cantidad_contada < 0) {
+        showMessage('Complete producto, bodega y cantidad contada válida para el conteo cíclico.', 'error');
+        return;
+      }
+
+      const created = await requestJSON('/api/empresa/inventario/conteo_ciclico', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      document.getElementById('conteoCiclicoForm').reset();
+      await loadExistencias();
+      await loadMovimientos();
+      await loadConteosCiclicos();
+
+      const variacion = Number((created && created.variacion) || 0);
+      showMessage('Conteo cíclico registrado. Variación: ' + variacion.toFixed(2) + '.', 'success');
     }
 
     async function loadExistencias() {
@@ -2156,7 +2327,7 @@
 
     async function loadAlertasInventario() {
       const bodegaID = Number(document.getElementById('alertaBodegaFiltro').value || 0);
-      let url = '/api/empresa/inventario/alertas?empresa_id=' + empresaId + '&limit=200';
+      let url = '/api/empresa/inventario/alertas?empresa_id=' + empresaId + '&action=proactivas&limit=200';
       if (bodegaID > 0) {
         url += '&bodega_id=' + bodegaID;
       }
@@ -2164,7 +2335,7 @@
       state.alertasInventario = Array.isArray(rows) ? rows : [];
       const tbody = document.querySelector('#alertasQuiebreTable tbody');
       if (!rows.length) {
-        tbody.innerHTML = '<tr><td colspan="6">Sin alertas de quiebre para la empresa.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9">Sin alertas operativas para la empresa.</td></tr>';
         renderInventarioCriticos([]);
         return;
       }
@@ -2173,8 +2344,11 @@
         '<td>' + sanitize(r.bodega_nombre || '') + '</td>' +
         '<td>' + Number(r.cantidad || 0).toFixed(2) + '</td>' +
         '<td>' + Number(r.stock_minimo || 0).toFixed(2) + '</td>' +
-        '<td>' + sanitize((r.estado_stock || '').replace('_', ' ')) + '</td>' +
+        '<td>' + Number(r.stock_maximo || 0).toFixed(2) + '</td>' +
+        '<td>' + sanitize(String(r.estado_stock || '').replace(/_/g, ' ')) + '</td>' +
         '<td>' + Number(r.deficit || 0).toFixed(2) + '</td>' +
+        '<td>' + Number(r.exceso || 0).toFixed(2) + '</td>' +
+        '<td>' + sanitize(r.accion_sugerida || '') + '</td>' +
       '</tr>').join('');
       renderInventarioCriticos(rows);
     }
@@ -2186,7 +2360,17 @@
         return;
       }
 
-      const top = rows.slice().sort((a, b) => {
+      const criticos = rows.filter(r => {
+        const estado = String(r.estado_stock || '').toLowerCase();
+        return estado === 'sin_stock' || estado === 'bajo_minimo' || Number(r.deficit || 0) > 0;
+      });
+
+      if (!criticos.length) {
+        tbody.innerHTML = '<tr><td colspan="5">Sin productos críticos para reposición.</td></tr>';
+        return;
+      }
+
+      const top = criticos.slice().sort((a, b) => {
         const estadoA = String(a.estado_stock || '').toLowerCase() === 'sin_stock' ? 1 : 0;
         const estadoB = String(b.estado_stock || '').toLowerCase() === 'sin_stock' ? 1 : 0;
         if (estadoA !== estadoB) {
@@ -2198,7 +2382,7 @@
       tbody.innerHTML = top.map(r => '<tr>' +
         '<td>' + sanitize(r.producto_nombre || '') + '</td>' +
         '<td>' + sanitize(r.bodega_nombre || '') + '</td>' +
-        '<td>' + sanitize((r.estado_stock || '').replace('_', ' ')) + '</td>' +
+        '<td>' + sanitize(String(r.estado_stock || '').replace(/_/g, ' ')) + '</td>' +
         '<td>' + Number(r.deficit || 0).toFixed(2) + '</td>' +
         '<td><button type="button" class="btn secondary" data-action="reponer-critico" data-producto-id="' + Number(r.producto_id || 0) + '" data-bodega-id="' + Number(r.bodega_id || 0) + '" data-deficit="' + Number(r.deficit || 0) + '" data-producto-nombre="' + sanitize(r.producto_nombre || '') + '" data-bodega-nombre="' + sanitize(r.bodega_nombre || '') + '">Preparar reposición</button></td>' +
       '</tr>').join('');
@@ -2555,6 +2739,22 @@
         }
       });
 
+      document.getElementById('btnGuardarInventarioConfig').addEventListener('click', async () => {
+        try {
+          await saveInventarioConfiguracion();
+        } catch (e) {
+          showMessage(e.message || 'No se pudo guardar la política de costo.', 'error');
+        }
+      });
+
+      document.getElementById('conteoCiclicoForm').addEventListener('submit', async ev => {
+        try {
+          await registrarConteoCiclico(ev);
+        } catch (e) {
+          showMessage(e.message || 'No se pudo registrar el conteo cíclico.', 'error');
+        }
+      });
+
       document.getElementById('ajusteForm').addEventListener('submit', async ev => {
         try {
           await registrarAjusteInventario(ev);
@@ -2583,7 +2783,7 @@
         try {
           await loadAlertasInventario();
         } catch (e) {
-          showMessage(e.message || 'No se pudieron cargar las alertas de quiebre.', 'error');
+          showMessage(e.message || 'No se pudieron cargar las alertas operativas.', 'error');
         }
       });
 
@@ -2704,8 +2904,10 @@
       await loadCategoriasProductos();
       await loadProductos();
       await loadServicios();
+      await loadInventarioConfiguracion();
       await loadExistencias();
       await loadMovimientos();
+      await loadConteosCiclicos();
       await loadPreciosHistorial();
     }
 

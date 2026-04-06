@@ -101,6 +101,7 @@
 
       <div class="form-actions">
         <button type="submit" id="saveBtn" class="btn">Guardar</button>
+        <button type="button" id="applyAllBtn" class="btn secondary">Aplicar a todas las estaciones</button>
         <button type="button" id="cancelBtn" class="btn secondary">Cancelar</button>
       </div>
       <div id="msg" class="form-help"></div>
@@ -134,6 +135,41 @@
 
     <div class="form">
       <div class="page-header">
+        <h2>Configuracion avanzada de calculo</h2>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Modo de redondeo</label>
+          <select id="cfg_redondeo_modo" class="form-input">
+            <option value="ninguno">Sin redondeo</option>
+            <option value="arriba">Hacia arriba</option>
+            <option value="abajo">Hacia abajo</option>
+            <option value="matematico">Matematico (0.5)</option>
+          </select>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Unidad de redondeo</label>
+          <input id="cfg_redondeo_unidad" class="form-input" type="number" min="0.01" step="0.01" value="100">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Monto minimo diario</label>
+          <input id="cfg_monto_minimo_diario" class="form-input" type="number" min="0" step="0.01" value="0">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Monto maximo diario (0 = sin tope)</label>
+          <input id="cfg_monto_maximo_diario" class="form-input" type="number" min="0" step="0.01" value="0">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button id="guardarConfigBtn" class="btn secondary" type="button">Guardar configuracion</button>
+      </div>
+      <div id="cfg_msg" class="form-help"></div>
+    </div>
+
+    <div class="form">
+      <div class="page-header">
         <h2>Simulador de cobro</h2>
       </div>
       <div class="form-row">
@@ -149,7 +185,7 @@
         </div>
         <div class="form-col">
           <label class="form-label">Minutos consumidos</label>
-          <input id="sim_minutos" class="form-input" type="number" min="1" value="120">
+          <input id="sim_minutos" class="form-input" type="number" min="0.01" step="0.01" value="120">
         </div>
       </div>
       <div class="form-actions">
@@ -178,7 +214,13 @@
       estaciones: [],
       filtroEstacionID: 0,
       filtroDiaSemana: 0,
-      includeInactive: false
+      includeInactive: false,
+      config: {
+        redondeo_modo: "ninguno",
+        redondeo_unidad: 100,
+        monto_minimo_diario: 0,
+        monto_maximo_diario: 0
+      }
     };
 
     function getQueryParam(name) {
@@ -257,6 +299,13 @@
 
     function setSimResult(text, isError) {
       const el = document.getElementById("sim_resultado");
+      if (!el) return;
+      el.textContent = text || "";
+      el.style.color = isError ? "#ef5350" : "";
+    }
+
+    function setConfigMessage(text, isError) {
+      const el = document.getElementById("cfg_msg");
       if (!el) return;
       el.textContent = text || "";
       el.style.color = isError ? "#ef5350" : "";
@@ -387,6 +436,30 @@
       };
     }
 
+    function buildConfigPayloadFromForm() {
+      return {
+        empresa_id: Number(state.empresaID),
+        redondeo_modo: normalize(document.getElementById("cfg_redondeo_modo").value || "ninguno"),
+        redondeo_unidad: Number(document.getElementById("cfg_redondeo_unidad").value || 100),
+        monto_minimo_diario: Number(document.getElementById("cfg_monto_minimo_diario").value || 0),
+        monto_maximo_diario: Number(document.getElementById("cfg_monto_maximo_diario").value || 0)
+      };
+    }
+
+    function applyConfigToForm(config) {
+      const cfg = config || {};
+      state.config = {
+        redondeo_modo: normalize(cfg.redondeo_modo || "ninguno") || "ninguno",
+        redondeo_unidad: toNumber(cfg.redondeo_unidad, 100),
+        monto_minimo_diario: toNumber(cfg.monto_minimo_diario, 0),
+        monto_maximo_diario: toNumber(cfg.monto_maximo_diario, 0)
+      };
+      document.getElementById("cfg_redondeo_modo").value = state.config.redondeo_modo;
+      document.getElementById("cfg_redondeo_unidad").value = String(state.config.redondeo_unidad);
+      document.getElementById("cfg_monto_minimo_diario").value = String(state.config.monto_minimo_diario);
+      document.getElementById("cfg_monto_maximo_diario").value = String(state.config.monto_maximo_diario);
+    }
+
     function resetForm() {
       document.getElementById("itemId").value = "";
       document.getElementById("estacion_selector").value = "";
@@ -426,6 +499,45 @@
       const rows = await resp.json();
       state.items = Array.isArray(rows) ? rows : [];
       renderList();
+    }
+
+    async function loadConfig() {
+      setConfigMessage("", false);
+      const params = new URLSearchParams();
+      params.set("empresa_id", String(state.empresaID));
+      params.set("action", "config");
+
+      const resp = await fetch("/api/empresa/tarifas_por_minutos?" + params.toString(), { credentials: "same-origin" });
+      await ensureOk(resp);
+      const cfg = await resp.json();
+      applyConfigToForm(cfg);
+    }
+
+    async function saveConfig() {
+      setConfigMessage("", false);
+      const payload = buildConfigPayloadFromForm();
+      if (payload.empresa_id <= 0) {
+        setConfigMessage("empresa_id es obligatorio", true);
+        return;
+      }
+
+      try {
+        const params = new URLSearchParams();
+        params.set("action", "config");
+
+        const resp = await fetch("/api/empresa/tarifas_por_minutos?" + params.toString(), {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify(payload)
+        });
+        await ensureOk(resp);
+        const cfg = await resp.json();
+        applyConfigToForm(cfg);
+        setConfigMessage("Configuracion guardada", false);
+      } catch (err) {
+        setConfigMessage(err.message || "No se pudo guardar la configuracion", true);
+      }
     }
 
     function renderList() {
@@ -569,6 +681,46 @@
       }
     }
 
+    async function applyTarifaToAllStations() {
+      setMessage("", false);
+      const payload = buildPayloadFromForm();
+      payload.id = 0;
+
+      if (payload.empresa_id <= 0) {
+        setMessage("empresa_id es obligatorio", true);
+        return;
+      }
+      if (!window.confirm("¿Aplicar esta regla a todas las estaciones detectadas de la empresa?")) {
+        return;
+      }
+
+      try {
+        const params = new URLSearchParams();
+        params.set("action", "aplicar_todas_estaciones");
+
+        const resp = await fetch("/api/empresa/tarifas_por_minutos?" + params.toString(), {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify(payload)
+        });
+        await ensureOk(resp);
+        const data = await resp.json();
+        await loadItems();
+        setMessage(
+          "Aplicacion masiva completada. Estaciones: " +
+            String(data && data.estaciones_objetivo ? data.estaciones_objetivo : 0) +
+            " | Creadas: " +
+            String(data && data.tarifas_creadas ? data.tarifas_creadas : 0) +
+            " | Actualizadas: " +
+            String(data && data.tarifas_actualizadas ? data.tarifas_actualizadas : 0),
+          false
+        );
+      } catch (err) {
+        setMessage(err.message || "No se pudo aplicar la tarifa a todas las estaciones", true);
+      }
+    }
+
     async function calcularSimulacion() {
       setSimResult("", false);
       const estacionID = Number(document.getElementById("sim_estacion_id").value || 0);
@@ -593,9 +745,21 @@
         const data = await resp.json();
 
         const bloques = Number(data && data.bloques_extra ? data.bloques_extra : 0);
+        const base = Number(data && data.monto_base ? data.monto_base : 0);
+        const extra = Number(data && data.monto_extra ? data.monto_extra : 0);
+        const ajuste = Number(data && data.ajuste_redondeo ? data.ajuste_redondeo : 0);
         const total = Number(data && data.monto_total ? data.monto_total : 0);
         const moneda = normalize(data && data.moneda) || "COP";
-        setSimResult("Total estimado: " + formatMoney(total, moneda) + " | Bloques extra: " + bloques, false);
+        const docCode = normalize(data && data.documento_codigo);
+        setSimResult(
+          "Total estimado: " + formatMoney(total, moneda) +
+          " | Base: " + formatMoney(base, moneda) +
+          " | Extra: " + formatMoney(extra, moneda) +
+          " | Ajuste redondeo: " + formatMoney(ajuste, moneda) +
+          " | Bloques extra: " + bloques +
+          (docCode ? " | Documento: " + docCode : ""),
+          false
+        );
       } catch (err) {
         setSimResult(err.message || "No se pudo calcular la simulación", true);
       }
@@ -603,8 +767,18 @@
 
     function bindEvents() {
       document.getElementById("form").addEventListener("submit", saveForm);
+      document.getElementById("applyAllBtn").addEventListener("click", function() {
+        applyTarifaToAllStations().catch(function(err) {
+          setMessage(err.message || "No se pudo aplicar la tarifa a todas las estaciones", true);
+        });
+      });
       document.getElementById("cancelBtn").addEventListener("click", resetForm);
       document.getElementById("addBtn").addEventListener("click", resetForm);
+      document.getElementById("guardarConfigBtn").addEventListener("click", function() {
+        saveConfig().catch(function(err) {
+          setConfigMessage(err.message || "No se pudo guardar la configuracion", true);
+        });
+      });
       document.getElementById("filtrarBtn").addEventListener("click", function() {
         loadItems().catch(function(err) {
           setMessage(err.message || "No se pudo filtrar", true);
@@ -657,6 +831,7 @@
       bindEvents();
       resetForm();
       await loadStations();
+      await loadConfig();
       await loadItems();
     }
 

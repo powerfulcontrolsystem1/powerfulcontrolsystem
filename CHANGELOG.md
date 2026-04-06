@@ -1,6 +1,301 @@
 # CHANGELOG
 
 ## 2026-04-06
+- Hotfix de compatibilidad de migraciones legacy en startup:
+	- Se corrige el orden de migracion en `EnsureEmpresaPropinasSchema` para crear indices despues de asegurar columnas faltantes (`cierre_caja_id` y relacionadas), evitando fallos en bases antiguas.
+	- Se corrige el orden de migracion en `EnsureEmpresaComisionesServicioSchema` para crear indices despues de asegurar columnas faltantes (`ajuste_manual` y relacionadas), evitando fallos en bases antiguas.
+	- Resultado operativo: el script `scripts/iniciar_servidor.ps1` vuelve a iniciar correctamente y el backend queda escuchando en `:8080`.
+	- Validaciones ejecutadas:
+		- `go test ./db -run "Propina|Comision" -count=1` (OK).
+		- `go test ./handlers -run "Propina|Comision" -count=1` (OK).
+		- `go test ./... -run TestDoesNotExist -count=1` (compilacion global backend OK).
+- Cierre tecnico del modulo 15 (Comisiones por servicio):
+	- Se amplía el modelo de comisiones con escalas por rol/servicio y tope por item:
+		- nueva tabla `empresa_comisiones_servicio_escalas` (`rol_operacion`, `servicio_filtro`, `porcentaje_comision`, `tope_comision`, `prioridad`).
+	- Se amplía `empresa_comisiones_servicio_movimientos` con trazabilidad operativa:
+		- `rol_operacion`, `escala_id`, `monto_comision_bruto`, `tope_comision_aplicado`,
+		- `origen_movimiento`, `ajuste_manual`, `referencia_ajuste`, `ajuste_estado`, `aprobado_por`, `aprobado_en`,
+		- `liquidacion_nomina_id`, `periodo_liquidacion_desde`, `periodo_liquidacion_hasta`, `liquidado_en`, `liquidado_por`.
+	- Se incorporan endpoints/acciones de comisiones para operacion avanzada:
+		- escalas (`escalas`, `escala`, `activar_escala`, `desactivar_escala`),
+		- ajuste manual y aprobacion (`ajuste_manual`, `aprobar_ajuste`, `rechazar_ajuste`),
+		- resumen para nomina (`resumen_liquidacion`).
+	- Se integra nomina con comisiones:
+		- `empresa_nomina_liquidaciones` incorpora `comisiones_servicio_total`, `comisiones_servicio_movimientos`, `comisiones_servicio_ajustes`.
+		- el calculo de liquidacion integra comisiones y enlaza movimientos al periodo liquidado.
+	- Se amplia `web/administrar_empresa/comisiones.html` para operacion completa del modulo 15:
+		- gestion de escalas/topes,
+		- registro de ajuste manual,
+		- aprobacion/rechazo de ajustes pendientes,
+		- filtros avanzados de reporte y consulta de `resumen_liquidacion`.
+	- Validaciones ejecutadas:
+		- `go test ./db -run "TestEmpresaComisionesServicio|TestEmpresaNominaLiquidacionIntegraComisionesServicio" -count=1` (OK).
+		- `go test ./handlers -run "TestEmpresaComisionesServicioHandler" -count=1` (OK).
+		- `go test ./... -run TestDoesNotExist -count=1` (compilacion global backend OK).
+- Avance y cierre tecnico del modulo 14 (Propinas):
+	- Se amplía la configuracion empresarial de propinas con reglas fiscales:
+		- `pais_fiscal`, `regimen_fiscal`, `tratamiento_fiscal` (`no_gravada`/`gravada`) y `porcentaje_impuesto_propina`.
+	- Se amplía el libro de movimientos de propinas con:
+		- `origen_movimiento` (`venta`/`ajuste_manual`),
+		- `ajuste_manual`, `referencia_ajuste`, `cierre_caja_id`, `conciliado_en`,
+		- snapshot fiscal por movimiento (`fiscal_*`).
+	- Se incorpora conciliacion de propinas contra cierre de caja:
+		- accion manual `action=conciliacion_cierre` en propinas,
+		- integracion automatica durante transiciones `cerrar/aprobar` de cierre de caja,
+		- persistencia de resumen en `empresa_cierres_caja` (`propinas_movimientos`, `propinas_total`, `propinas_ajustes`, `propinas_impuesto`, `propinas_neto`, `propinas_conciliado_*`).
+	- Se incorpora ajuste manual auditado de propinas:
+		- accion `action=ajuste_manual`,
+		- registro no bloqueante en `empresa_auditoria_eventos`.
+	- Se actualiza frontend `web/administrar_empresa/propinas.html` con:
+		- configuracion fiscal,
+		- formulario de ajuste manual,
+		- accion de conciliacion por cierre,
+		- filtros y columnas extendidas en el reporte.
+	- Se agrega cobertura de pruebas para flujo de ajuste y conciliacion:
+		- `backend/handlers/propinas_test.go`.
+	- Validaciones ejecutadas:
+		- `go test ./handlers -run "Propinas|Cierre" -count=1` (OK).
+		- `go test ./db -run "Propina|CierreCaja|Finanzas" -count=1` (OK).
+		- `go test ./... -run "^$" -count=1` (compilacion global backend OK).
+- Avance del modulo 13 (Codigos de descuento avanzados):
+	- Se amplía `codigos_de_descuento` con reglas contextuales:
+		- `segmento_cliente`, `canal_venta`, `horario_desde`, `horario_hasta`, `dias_semana`.
+	- Se incorpora antifraude por cliente:
+		- `max_usos_por_cliente`, `ventana_horas_fraude`.
+	- Se agrega trazabilidad de redenciones en nueva tabla `codigos_descuento_redenciones` con estados:
+		- `aplicada`, `revertida`, `anulada`.
+	- Se integra ciclo de redencion con carritos:
+		- aplica al cerrar carrito,
+		- revierte al reabrir,
+		- anula al eliminar carrito.
+	- Se extiende API de codigos:
+		- validacion contextual (`action=validar` con `carrito_id`, `cliente_id`, `canal_venta`),
+		- consulta de trazabilidad (`action=redenciones`).
+	- Se actualiza `web/administrar_empresa/codigos_de_descuento.html` para administrar reglas avanzadas y antifraude.
+	- Validaciones ejecutadas:
+		- `go test ./db -run "TestCodigoDescuento" -count=1` (OK).
+		- `go test ./handlers -run "TestNoExiste" -count=1` (OK, compilacion handlers).
+		- `go test ./db -run "TestCarritoProductoDescuentaInventarioYVentaMantieneStock|TestCarritoStockNoSeDuplicaAlReactivarSesionCerrada" -count=1` (OK).
+		- `go test ./...` (falla en prueba no relacionada: `TestEmpresaGraficosEstadisticasHandlerPanelYAcciones`).
+- Validacion final de continuidad tecnica y documental (post-ediciones recientes):
+	- Se revalida compilacion global de backend tras ajustes recientes en inventario/combos.
+	- Resultado: `go test ./... -run TestDoesNotExist -count=1` en `backend` -> OK (sin errores de compilacion).
+	- Se confirma sincronizacion de cierre de modulos 1-12 en documentacion operativa y tecnica.
+- Cierre del modulo 12 (Combos de productos):
+	- Se implementa versionado de receta por combo:
+		- nuevas columnas en `combos_productos`: `receta_version`, `costo_teorico`, `costo_real`, `variacion_costo`, `variacion_costo_porcentaje`.
+		- nueva tabla `combos_productos_versiones` para snapshots historicos de ingredientes por version.
+	- Se incorpora validacion de costo teorico vs costo real de ingredientes en create/update de combos:
+		- bloqueo si la variacion porcentual supera el umbral operativo.
+		- bloqueo si el precio del combo no cubre el costo real calculado.
+	- Se endurece concurrencia de inventario en carritos:
+		- reserva de stock con `UPDATE` atomico condicionado (`cantidad >= requerida`) para evitar sobreventa en ventas simultaneas.
+	- Se actualiza frontend `web/administrar_empresa/combos_productos.html` para mostrar version de receta y metricas de costo.
+	- Validaciones ejecutadas:
+		- `runTests` sobre `backend/db/productos_categorias_test.go` y `backend/db/carritos_inventario_test.go`.
+		- `go test ./... -run TestDoesNotExist -count=1`.
+- Verificacion final de continuidad del modulo 11 (Inventario):
+	- Se ejecuta compilacion global posterior a cambios recientes en archivos de inventario con `go test ./... -run TestDoesNotExist -count=1` (OK).
+	- Se confirma cierre operativo completo del checklist de modulo 11 (schema, costos, conteo ciclico, alertas proactivas y documentacion).
+- Cierre del modulo 11 (Inventario) de Fase 3:
+	- Se implementa configuracion de politica de costo por empresa:
+		- `GET/PUT /api/empresa/inventario/configuracion`.
+		- Politicas soportadas: `promedio` y `peps`.
+	- Se incorpora soporte de capas/lotes de costo para trazabilidad de salidas y transferencias:
+		- tabla `inventario_costos_lotes`.
+		- salida con PEPS por capas y recalculo de costo promedio por bodega/producto.
+	- Se implementa conteo ciclico con ajuste auditado:
+		- `GET/POST /api/empresa/inventario/conteo_ciclico`.
+		- tabla `inventario_conteos_ciclicos` y movimiento automatico `ajuste_positivo/ajuste_negativo` cuando hay variacion.
+	- Se cierran alertas operativas proactivas de inventario:
+		- `GET /api/empresa/inventario/alertas?action=proactivas`.
+		- incorpora `sobrestock`, `deficit`, `exceso` y `accion_sugerida`.
+	- Se actualiza frontend `web/administrar_empresa/administrar_productos.html` con:
+		- selector/guardado de politica de costo,
+		- formulario y tabla de conteo ciclico,
+		- visualizacion de alertas proactivas (quiebre/sobrestock).
+	- Validaciones ejecutadas:
+		- `go test ./db -run "TestInventarioPoliticaCostoPromedioYPEPS|TestRegistrarConteoCiclicoInventarioAjustaYAudita|TestGetAlertasOperativasByEmpresaIncluyeSobrestock" -count=1`.
+		- `go test ./handlers -run "TestEmpresaInventarioConfiguracionYConteoCiclicoHandler|TestEmpresaInventarioAlertasHandlerProactivasIncluyeSobrestock" -count=1`.
+		- `go test ./... -run TestDoesNotExist -count=1`.
+- Cierre del modulo 10 (Clientes) de Fase 3:
+	- Se implementa deduplicacion por `documento`, `correo` y `telefono` en `create/update` de clientes por `empresa_id`.
+	- El endpoint `POST/PUT /api/empresa/clientes` responde `409` cuando detecta conflicto de deduplicacion, con mensaje de campo duplicado.
+	- Se agrega dataset operativo para exportacion masiva comercial:
+		- `operativo_clientes_segmentacion_comercial` en `/api/empresa/reportes`.
+		- Incluye segmento, metricas de compra y `accion_comercial_sugerida` por cliente.
+		- Exportacion disponible en `pdf/xls/csv/json/txt`.
+	- Se actualiza frontend `web/administrar_empresa/administrar_clientes.html` con panel de exportacion masiva por segmento.
+	- Validaciones ejecutadas:
+		- `go test ./db -run "Test(CreateClienteDeduplicacionDocumentoCorreoTelefono|UpdateClienteDeduplicacionCorreoTelefono|GetClientePerfilComercialByEmpresaAndHistorial|GetClientePerfilComercialByEmpresaSinComprasSegmentoNuevo|GetClienteByID)$" -count=1`.
+		- `go test ./handlers -run "Test(EmpresaClientesHandlerPerfilHistorialSegmentacion|EmpresaClientesHandlerConflictosDeduplicacion|EmpresaReportesHandlerDatasetOperativoClientesSegmentacionComercial)$" -count=1`.
+		- `go test ./... -run "^$" -count=1`.
+- Cierre del modulo 9 (Tarifas por dia) de Fase 3:
+	- Se implementa prorrateo de tarifa diaria por ventana de `check-in/check-out` para entrada/salida fuera de ventana.
+	- Se extiende simulador de `GET /api/empresa/tarifas_por_dia?action=calcular` con detalle de:
+		- `dias_completos`, `dias_equivalentes`,
+		- `monto_dias_completos`, `monto_prorrateo_(entrada|intermedio|salida)`,
+		- `minutos_prorrateo_fuera_ventana`.
+	- Se agrega aplicacion masiva de una misma tarifa diaria a todas las estaciones detectadas:
+		- `PUT /api/empresa/tarifas_por_dia?action=aplicar_todas_estaciones`.
+	- Se agrega reporte operativo comparativo por estacion:
+		- dataset `operativo_tarifas_comparativo_estaciones` en `/api/empresa/reportes`,
+		- comparativo de ingreso esperado (motor prorrateado) vs ingreso real cobrado,
+		- exportacion en `pdf/xls/csv/json/txt`.
+	- Se actualiza frontend `web/administrar_empresa/tarifas_por_dia.html` con:
+		- boton `Aplicar a todas las estaciones`,
+		- simulador con desglose de prorrateo,
+		- panel de descarga del comparativo esperado vs real.
+	- Validaciones ejecutadas:
+		- `go test ./db -run "TarifaPorDia|ApplyEmpresaTarifaPorDiaToAllStations|EmpresaTarifasPorDia"`.
+		- `go test ./handlers -run "TarifasPorDia|CarritosCompraListIncluyeTarifaPorDiaAutomatica|OperativoTarifasIngresos|OperativoTarifasComparativoEstaciones"`.
+		- `go test ./... -run "^$"`.
+- Cierre del modulo 8 (Tarifas por minutos) de Fase 3:
+	- Se agrega configuracion empresarial avanzada de calculo:
+		- `redondeo_modo` (`ninguno`, `arriba`, `abajo`, `matematico`),
+		- `redondeo_unidad`,
+		- `monto_minimo_diario`,
+		- `monto_maximo_diario`.
+	- Se extiende simulador de cobro por minutos con detalle de:
+		- monto base, monto extra, subtotal, monto redondeado y ajuste,
+		- aplicacion de minimo/maximo diario,
+		- soporte de minutos fraccionarios (`minutos_consumidos` decimal).
+	- Se cierra trazabilidad contable del calculo por minutos:
+		- registro de evento `finanzas.tarifa_por_minutos_calculada` en `empresa_eventos_contables`,
+		- respuesta de simulacion con `trazabilidad_contable_id`, `documento_codigo` y `periodo_contable`.
+	- Se agrega aplicacion masiva de una misma regla de tarifa a todas las estaciones detectadas:
+		- `PUT /api/empresa/tarifas_por_minutos?action=aplicar_todas_estaciones`.
+	- Se actualiza frontend `web/administrar_empresa/tarifas_por_minutos.html` con:
+		- panel de configuracion avanzada de redondeo y topes,
+		- boton `Aplicar a todas las estaciones`,
+		- simulador con detalle de calculo y referencia contable.
+	- Validaciones ejecutadas:
+		- `go test ./db -run "TestEmpresaTarifasPorMinutos|TestApplyEmpresaTarifaPorMinutosToAllStations|TestRegisterTarifaPorMinutosCalculoContable|TestEmpresaEventosContables" -count=1`.
+		- `go test ./handlers -run "TestEmpresaTarifasPorMinutosHandler" -count=1`.
+		- `go test ./... -run "^$" -count=1`.
+- Cierre del modulo 7 (Reservas por estacion/habitacion) de Fase 3:
+	- Se refuerza control de concurrencia anti-overbooking por estacion en ventanas solapadas:
+		- validacion de conflicto por `estacion_id` y `carrito_id` asociado,
+		- bloqueo para estados operativos `pendiente_pago`, `confirmada` y `en_curso`.
+	- Se implementa politica automatica avanzada de reservas:
+		- expiracion de pendientes por `fecha_expiracion` y fallback por antiguedad de creacion,
+		- marcacion automatica de `no_show` sobre reservas confirmadas fuera de tolerancia operativa,
+		- accion de sincronizacion: `GET /api/empresa/reservas_hotel?action=aplicar_politicas`.
+	- Se incorpora reconversion operativa de reserva a carrito:
+		- `PUT /api/empresa/reservas_hotel?action=convertir_carrito`.
+		- transicion de reserva a estado `en_curso` y activacion de carrito asociado.
+	- Se actualiza frontend `web/administrar_empresa/reservas_hotel.html` con:
+		- accion `Aplicar politicas`,
+		- accion `Reconver. carrito`,
+		- filtros extendidos para estados `en_curso` y `no_show`.
+	- Validaciones ejecutadas:
+		- `go test ./db -run "TestReservaHotel(FlowCRUDAndDisponibilidad|MultiEstacionNoOverbookingYReconversion|PoliticaNoShowYExpiracionAvanzada)$" -count=1`.
+		- `go test ./handlers -run "TestEmpresaReservasHotelHandler(CRUDAndDisponibilidad|PoliticasYReconversion)$" -count=1`.
+		- `go test ./... -run "^$" -count=1`.
+- Cierre del modulo 6 (Registro de vehiculos) de Fase 3:
+	- Se agrega configuracion de validacion de placa/patente por empresa y pais:
+		- `GET/PUT /api/empresa/vehiculos_registro?action=config`.
+		- Tabla `empresa_vehiculos_configuracion` con `pais_codigo`, `patente_regex`, `patente_descripcion`, `evitar_duplicado_activo`.
+	- Se implementa bloqueo de duplicidad activa por patente canonica en patio/empresa:
+		- validado en crear, editar y activar registros de vehiculos.
+		- respuesta HTTP `409` ante conflicto de duplicidad activa.
+	- Se agrega reporte operativo de permanencia y tiempos de estancia:
+		- `GET /api/empresa/vehiculos_registro?action=permanencia`.
+		- dataset `operativo_vehiculos_permanencia` en `/api/empresa/reportes` con exportacion `pdf/xls/csv/json/txt`.
+	- Se integra frontend en `web/administrar_empresa/vehiculos_registro.html`:
+		- panel de configuracion de formato de placa por pais,
+		- consulta visual de permanencia,
+		- exportacion de reporte en formatos estandar.
+	- Validaciones ejecutadas:
+		- `go test ./db -run TestEmpresaVehiculoRegistroConfigValidacionDuplicidadYPermanencia -count=1`.
+		- `go test ./handlers -run TestEmpresaVehiculosRegistroHandlerConfigYReportePermanencia -count=1`.
+		- `go test ./handlers -run TestEmpresaReportesHandlerDatasetOperativoVehiculosPermanencia -count=1`.
+		- `go test ./... -run "^$" -count=1`.
+- Cierre del modulo 5 (Nomina de sueldos) de Fase 3:
+	- Se agregan operaciones nuevas en nomina:
+		- `GET /api/empresa/nomina?action=desprendible&empleado_nomina_id={id}&periodo_desde=YYYY-MM-DD&periodo_hasta=YYYY-MM-DD`.
+		- `GET /api/empresa/nomina?action=conciliacion_asistencia` (auditoria sin cambios).
+		- `POST /api/empresa/nomina?action=conciliar_asistencia` (auditoria con opcion de auto-recalculo).
+	- Se implementa desprendible estandar por empleado y periodo con detalle de horas, devengados, deducciones y neto a pagar.
+	- Se implementa conciliacion automatica entre asistencia y liquidacion final:
+		- detecta diferencias de registros/horas,
+		- identifica asistencias sin liquidacion,
+		- permite recalcular/crear liquidaciones inconsistentes cuando `auto_recalcular=true`.
+	- Se integra frontend en `web/administrar_empresa/nomina_sueldos.html`:
+		- boton de conciliacion con modo auditoria o auto-recalculo,
+		- generacion/visualizacion de desprendible por empleado-periodo,
+		- accion de desprendible desde tabla de liquidaciones.
+	- Se documentan y validan casos de formula por pais/empresa (CO/MX + override por empresa) con pruebas automatizadas.
+	- Validaciones ejecutadas:
+		- `go test ./db -run "Test(EmpresaNominaGenerateLiquidacionesFromAsistencia|EmpresaNominaCalculoPorPaisYEmpresa|EmpresaNominaDesprendibleYConciliacionAsistencia)$" -count=1`.
+		- `go test ./handlers -run "TestEmpresaNominaSueldosHandlerFlow$" -count=1`.
+		- `go test ./... -run "^$" -count=1`.
+- Cierre del modulo 4 (Asistencia de empleados) de Fase 5:
+	- Se implementa cierre de periodo con bloqueo operativo de edicion posterior:
+		- `POST /api/empresa/asistencia_empleados?action=cerrar_periodo`.
+		- `GET /api/empresa/asistencia_empleados?action=periodos_cerrados`.
+	- Se agrega configuracion por empresa para tolerancias y reglas de turno:
+		- `GET/PUT /api/empresa/asistencia_empleados?action=config`.
+		- `tolerancia_entrada_minutos`, `hora_inicio_turno_(manana|tarde|noche)`, `permitir_turno_nocturno`, `permitir_turno_cruzado`.
+	- Se incorporan validaciones de negocio en asistencia:
+		- bloqueo de create/update/delete/activar/desactivar/marcar_entrada/marcar_salida cuando la fecha pertenece a periodo cerrado,
+		- rechazo de turno nocturno o cruzado cuando la configuracion empresarial lo deshabilita,
+		- calculo de tardanza con tolerancia configurable.
+	- Se publica reporte operativo de auditoria para nomina:
+		- dataset `operativo_asistencia_nomina_auditoria` en `/api/empresa/reportes` con exportacion `pdf/xls/csv/json/txt`.
+	- Se integra frontend en `web/administrar_empresa/asistencia_empleados.html`:
+		- panel de configuracion,
+		- cierre de periodo y listado de cierres,
+		- descarga del reporte de auditoria de nomina.
+	- Validaciones ejecutadas:
+		- `go test ./handlers -run "Test(EmpresaAsistenciaEmpleadosHandlerCRUDFlow|EmpresaAsistenciaEmpleadosHandlerConfigTurnosYTolerancia|EmpresaAsistenciaEmpleadosHandlerCierrePeriodoBloqueaEdicion|EmpresaReportesHandlerDatasetOperativoAsistenciaNominaAuditoria)$" -count=1`.
+		- `go test ./... -run "^$" -count=1`.
+- Cierre del modulo 3 (Usuarios de empresa) de Fase 1:
+	- Se agrega cambio autogestionado de contraseña para usuario empresa:
+		- `POST /api/empresa/usuarios/cambiar_password`.
+	- Se implementan politicas de contraseña configurables desde `configuraciones`:
+		- `usuarios.password_min_length`
+		- `usuarios.password_require_uppercase`
+		- `usuarios.password_require_lowercase`
+		- `usuarios.password_require_digit`
+		- `usuarios.password_require_symbol`
+		- `usuarios.password_rotation_days`.
+	- El login de usuario empresa ahora devuelve `password_rotation_required` cuando aplica rotacion obligatoria.
+	- Se incorpora captura de notificaciones de confirmacion/restablecimiento en entorno de pruebas de correo:
+		- tabla `super_correo_notificaciones_prueba` en `superadministrador.db`.
+		- activacion por `PCS_MAIL_TEST_MODE=1` o `gmail.smtp_test_mode=1`.
+	- Se integra frontend de autogestion en `web/login_usuario.html` y `web/js/login_usuario.js`.
+	- Validaciones ejecutadas:
+		- `go test ./handlers -run "Test(EmpresaUsuarioChangePasswordFlow|EmpresaUsuarioChangePasswordPolicyRejectsWeakPassword|EmpresaUsuarioLoginRequiresRotationWhenPolicyEnabled|EmpresaUsuarioNotificationsCaptureInMailTestMode|EmpresaUsuarioPasswordRecoveryFlow)" -count=1`.
+		- `go test ./... -run "^$" -count=1`.
+- Cierre del modulo 2 (Administracion global super) de Fase 1:
+	- Se implementa desactivacion/rehabilitacion de empresa con validaciones de impacto operativo y confirmacion forzada cuando existen bloqueos:
+		- `GET /super/api/empresas?id={id}&action=impacto_desactivacion`.
+		- `PUT /super/api/empresas?id={id}&action=desactivar[&force=1]`.
+		- `PUT /super/api/empresas?id={id}&action=activar&activo=1`.
+	- Se agrega respaldo/restauracion de configuracion critica super:
+		- `GET /super/api/config/backup` (exporta JSON).
+		- `PUT /super/api/config/backup` (restaura JSON).
+	- Se integra operacion desde frontend:
+		- `web/js/seleccionar_empresa.js` para desactivar/reactivar con consulta de impacto.
+		- `web/super/configuracion_avanzada.html` con descarga y restauracion de respaldo.
+	- Se agregan pruebas de permisos y flujo super en `backend/handlers/system_empresas_handlers_test.go`.
+	- Validaciones ejecutadas:
+		- `go test ./handlers -run "Test(EmpresasHandlerDesactivarConImpactoYForce|EmpresasHandlerImpactoDesactivacion|SuperConfigBackupHandlerExportYRestore|SuperEndpointsPermisosPorRol)" -count=1`.
+		- `go test ./... -run "^$" -count=1`.
+- Cierre del modulo 1 (Autenticacion y sesiones) de Fase 1:
+	- Se implementa bloqueo temporal por intentos fallidos en login de usuario empresa.
+	- Se agrega recuperacion de contrasena para usuario empresa con token temporal:
+		- `POST /api/empresa/usuarios/solicitar_recuperacion_password`
+		- `POST /api/empresa/usuarios/restablecer_password`
+	- Se endurece seguridad de sesion:
+		- sesiones nuevas con `fecha_fin` por expiracion (24h),
+		- revocacion de token en logout,
+		- middleware bloquea tokens expirados o revocados.
+	- Se habilita flujo frontend de recuperacion en `web/login_usuario.html` y `web/js/login_usuario.js`.
+	- Validaciones ejecutadas:
+		- `runTests` sobre `backend/handlers/auth_users_carritos_test.go` -> 24/24.
+		- `go test ./... -run "^$" -count=1` (compilacion global OK).
 - Cierre tecnico backend de pasarela unica Wompi:
 	- Se elimina remanente de Mercado Pago en backend:
 		- `backend/handlers/payments_handlers.go`: retiro de handlers/utilidades Mercado Pago.

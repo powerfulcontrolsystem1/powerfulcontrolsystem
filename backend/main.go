@@ -468,6 +468,9 @@ func main() {
 	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-06-021-modulos-faltantes-erp", "modulos erp faltantes: cotizaciones, pedidos, cxc/cxp, plan de cuentas, lotes/series, rrhh, crm, produccion, logistica, documental, integraciones y dian"); err != nil {
 		log.Fatalf("failed to register modulos faltantes schema migration in empresas db: %v", err)
 	}
+	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-06-022-inventario-costos-conteo", "inventario modulo 11: politica de costo promedio/peps por empresa, lotes de costos y conteo ciclico auditado con ajuste"); err != nil {
+		log.Fatalf("failed to register inventario costos/conteo schema migration in empresas db: %v", err)
+	}
 	// Crear tipos_de_empresas en la base de datos de superadministrador (ubicación centralizada)
 	createTiposSuper := `CREATE TABLE IF NOT EXISTS tipos_de_empresas (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -741,6 +744,50 @@ func main() {
 		log.Fatalf("failed to create sesiones table in super db: %v", err)
 	}
 
+	ensureSesionesSchema := func(db *sql.DB) {
+		rows, err := db.Query("PRAGMA table_info(sesiones);")
+		if err != nil {
+			log.Printf("warning: unable to inspect sesiones schema: %v", err)
+			return
+		}
+		defer rows.Close()
+
+		existing := map[string]bool{}
+		for rows.Next() {
+			var cid int
+			var name string
+			var ctype string
+			var notnull int
+			var dflt sql.NullString
+			var pk int
+			if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
+				log.Printf("warning: scan pragma table_info sesiones error: %v", err)
+				return
+			}
+			existing[name] = true
+		}
+
+		addIfMissing := func(colDef string, name string) {
+			if !existing[name] {
+				q := fmt.Sprintf("ALTER TABLE sesiones ADD COLUMN %s;", colDef)
+				if _, err := db.Exec(q); err != nil {
+					log.Printf("failed to add column %s to sesiones: %v", name, err)
+				} else {
+					log.Printf("added missing column %s to sesiones", name)
+				}
+			}
+		}
+
+		addIfMissing("fecha_fin TEXT", "fecha_fin")
+		addIfMissing("activo INTEGER DEFAULT 1", "activo")
+		addIfMissing("fecha_inicio TEXT DEFAULT (datetime('now','localtime'))", "fecha_inicio")
+		addIfMissing("fecha_creacion TEXT DEFAULT (datetime('now','localtime'))", "fecha_creacion")
+	}
+	ensureSesionesSchema(dbSuper)
+	if err := dbpkg.EnsureSuperCorreoNotificacionesPruebaSchema(dbSuper); err != nil {
+		log.Fatalf("failed to ensure super_correo_notificaciones_prueba schema: %v", err)
+	}
+
 	if err := dbpkg.RegisterSchemaMigration(dbSuper, "superadministrador", "2026-04-01-001-baseline", "baseline schema snapshot: administradores, licencias, configuraciones, sesiones, pagos"); err != nil {
 		log.Fatalf("failed to register schema migration in super db: %v", err)
 	}
@@ -775,7 +822,7 @@ func main() {
 	http.HandleFunc("/super/api/roles_de_usuario", handlers.RolesDeUsuarioHandler(dbSuper))
 	http.HandleFunc("/super/api/tipos_de_usuario", handlers.TiposDeUsuarioHandler(dbSuper))
 	// Endpoint CRUD para empresas (guardadas en empresas.db)
-	http.HandleFunc("/super/api/empresas", handlers.EmpresasHandler(dbEmpresas))
+	http.HandleFunc("/super/api/empresas", handlers.EmpresasHandler(dbEmpresas, dbSuper))
 	// Módulo de productos por empresa (empresas.db)
 	http.HandleFunc("/api/empresa/bodegas", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaBodegasHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/categorias_productos", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaCategoriasProductosHandler(dbEmpresas)))
@@ -783,7 +830,9 @@ func main() {
 	http.HandleFunc("/api/empresa/combos_productos", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaCombosProductosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/productos/imagen", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaProductoImagenUploadHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/inventario/existencias", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaInventarioExistenciasHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/inventario/configuracion", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaInventarioConfiguracionHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/inventario/alertas", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaInventarioAlertasHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/inventario/conteo_ciclico", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaInventarioConteoCiclicoHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/inventario/resumen", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaInventarioResumenHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/inventario/tendencia", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaInventarioTendenciaHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/inventario/balance_bodegas", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaInventarioBalanceBodegasHandler(dbEmpresas)))
@@ -805,6 +854,7 @@ func main() {
 	http.HandleFunc("/api/empresa/usuarios/establecer_password", handlers.WithEmpresaPublicScope(handlers.EmpresaUsuarioSetPasswordHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/usuarios/solicitar_recuperacion_password", handlers.WithEmpresaPublicScope(handlers.EmpresaUsuarioRequestPasswordRecoveryHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/usuarios/restablecer_password", handlers.WithEmpresaPublicScope(handlers.EmpresaUsuarioResetPasswordHandler(dbEmpresas, dbSuper)))
+	http.HandleFunc("/api/empresa/usuarios/cambiar_password", handlers.WithEmpresaPublicScope(handlers.EmpresaUsuarioChangePasswordHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/usuarios", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaUsuariosHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/asistencia_empleados", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaAsistenciaEmpleadosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/nomina", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaNominaSueldosHandler(dbEmpresas)))
@@ -854,6 +904,8 @@ func main() {
 	http.HandleFunc("/super/api/config/gmail", handlers.GmailConfigHandler(dbSuper))
 	// Endpoint para gestionar credenciales IA de modelos populares (GET/PUT)
 	http.HandleFunc("/super/api/config/ai", handlers.AIModelsConfigHandler(dbSuper))
+	// Endpoint para respaldo/restauracion de configuracion critica del panel super
+	http.HandleFunc("/super/api/config/backup", handlers.SuperConfigBackupHandler(dbSuper))
 	// Endpoints Wompi (Nequi): crear transacción y consultar estado
 	http.HandleFunc("/wompi/terms", handlers.WompiTermsHandler(dbSuper))
 	http.HandleFunc("/wompi/create_transaction_nequi", handlers.WompiCreateNequiTransactionHandler(dbSuper))

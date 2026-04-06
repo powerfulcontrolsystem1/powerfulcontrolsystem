@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"path/filepath"
 	"testing"
 
@@ -170,5 +171,156 @@ func TestGetClientePerfilComercialByEmpresaSinComprasSegmentoNuevo(t *testing.T)
 	}
 	if perfil.Segmento != "nuevo" {
 		t.Fatalf("expected segmento nuevo, got %q", perfil.Segmento)
+	}
+}
+
+func TestCreateClienteDeduplicacionDocumentoCorreoTelefono(t *testing.T) {
+	dbConn := openClientesTestDB(t)
+	if err := EnsureEmpresaClientesSchema(dbConn); err != nil {
+		t.Fatalf("ensure clientes schema: %v", err)
+	}
+
+	if _, err := CreateCliente(dbConn, Cliente{
+		EmpresaID:         510,
+		TipoDocumento:     "CC",
+		NumeroDocumento:   "900123",
+		NombreRazonSocial: "Cliente Base",
+		Email:             "cliente.base@test.com",
+		Telefono:          "300-111-2233",
+		UsuarioCreador:    "tester",
+	}); err != nil {
+		t.Fatalf("create base cliente: %v", err)
+	}
+
+	_, err := CreateCliente(dbConn, Cliente{
+		EmpresaID:         510,
+		TipoDocumento:     "CC",
+		NumeroDocumento:   "900123",
+		NombreRazonSocial: "Cliente Documento Duplicado",
+		Email:             "otro.correo@test.com",
+		Telefono:          "3009998877",
+		UsuarioCreador:    "tester",
+	})
+	if err == nil {
+		t.Fatalf("expected duplicate documento error")
+	}
+	var dupErr *ClienteDuplicadoError
+	if !errors.As(err, &dupErr) {
+		t.Fatalf("expected ClienteDuplicadoError for documento, got %v", err)
+	}
+	if dupErr.Campo != "documento" {
+		t.Fatalf("expected campo=documento, got %q", dupErr.Campo)
+	}
+
+	_, err = CreateCliente(dbConn, Cliente{
+		EmpresaID:         510,
+		TipoDocumento:     "CC",
+		NumeroDocumento:   "900124",
+		NombreRazonSocial: "Cliente Correo Duplicado",
+		Email:             "CLIENTE.BASE@TEST.COM",
+		Telefono:          "3005551122",
+		UsuarioCreador:    "tester",
+	})
+	if err == nil {
+		t.Fatalf("expected duplicate correo error")
+	}
+	if !errors.As(err, &dupErr) {
+		t.Fatalf("expected ClienteDuplicadoError for correo, got %v", err)
+	}
+	if dupErr.Campo != "correo" {
+		t.Fatalf("expected campo=correo, got %q", dupErr.Campo)
+	}
+
+	_, err = CreateCliente(dbConn, Cliente{
+		EmpresaID:         510,
+		TipoDocumento:     "CC",
+		NumeroDocumento:   "900125",
+		NombreRazonSocial: "Cliente Telefono Duplicado",
+		Email:             "cliente.telefono@test.com",
+		Telefono:          "(300) 111 2233",
+		UsuarioCreador:    "tester",
+	})
+	if err == nil {
+		t.Fatalf("expected duplicate telefono error")
+	}
+	if !errors.As(err, &dupErr) {
+		t.Fatalf("expected ClienteDuplicadoError for telefono, got %v", err)
+	}
+	if dupErr.Campo != "telefono" {
+		t.Fatalf("expected campo=telefono, got %q", dupErr.Campo)
+	}
+}
+
+func TestUpdateClienteDeduplicacionCorreoTelefono(t *testing.T) {
+	dbConn := openClientesTestDB(t)
+	if err := EnsureEmpresaClientesSchema(dbConn); err != nil {
+		t.Fatalf("ensure clientes schema: %v", err)
+	}
+
+	clienteAID, err := CreateCliente(dbConn, Cliente{
+		EmpresaID:         511,
+		TipoDocumento:     "CC",
+		NumeroDocumento:   "910001",
+		NombreRazonSocial: "Cliente A",
+		Email:             "cliente.a@test.com",
+		Telefono:          "3017008899",
+		UsuarioCreador:    "tester",
+	})
+	if err != nil {
+		t.Fatalf("create cliente A: %v", err)
+	}
+
+	clienteBID, err := CreateCliente(dbConn, Cliente{
+		EmpresaID:         511,
+		TipoDocumento:     "CC",
+		NumeroDocumento:   "910002",
+		NombreRazonSocial: "Cliente B",
+		Email:             "cliente.b@test.com",
+		Telefono:          "3018009900",
+		UsuarioCreador:    "tester",
+	})
+	if err != nil {
+		t.Fatalf("create cliente B: %v", err)
+	}
+
+	clienteA, err := GetClienteByID(dbConn, 511, clienteAID)
+	if err != nil {
+		t.Fatalf("get cliente A: %v", err)
+	}
+	clienteB, err := GetClienteByID(dbConn, 511, clienteBID)
+	if err != nil {
+		t.Fatalf("get cliente B: %v", err)
+	}
+
+	clienteB.Email = "CLIENTE.A@TEST.COM"
+	err = UpdateCliente(dbConn, *clienteB)
+	if err == nil {
+		t.Fatalf("expected duplicate correo error on update")
+	}
+	var dupErr *ClienteDuplicadoError
+	if !errors.As(err, &dupErr) {
+		t.Fatalf("expected ClienteDuplicadoError on correo update, got %v", err)
+	}
+	if dupErr.Campo != "correo" {
+		t.Fatalf("expected campo=correo, got %q", dupErr.Campo)
+	}
+
+	clienteB.Email = "cliente.b@test.com"
+	clienteB.Telefono = "301 700 8899"
+	err = UpdateCliente(dbConn, *clienteB)
+	if err == nil {
+		t.Fatalf("expected duplicate telefono error on update")
+	}
+	if !errors.As(err, &dupErr) {
+		t.Fatalf("expected ClienteDuplicadoError on telefono update, got %v", err)
+	}
+	if dupErr.Campo != "telefono" {
+		t.Fatalf("expected campo=telefono, got %q", dupErr.Campo)
+	}
+
+	clienteA.Email = "cliente.a@test.com"
+	clienteA.Telefono = "301-700-8899"
+	if err := UpdateCliente(dbConn, *clienteA); err != nil {
+		t.Fatalf("expected update self values without duplicate conflict, got %v", err)
 	}
 }

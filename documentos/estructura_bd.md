@@ -1,7 +1,7 @@
 # Estructura de Base de Datos
 
-Version: 2026-04-05.21
-Ultima actualizacion: 2026-04-05
+Version: 2026-04-06.28
+Ultima actualizacion: 2026-04-06
 
 Este documento consolida la estructura activa de SQLite para el proyecto.
 Nota de gobernanza documental:
@@ -25,6 +25,8 @@ Todas las tablas operativas usan como base los campos estandar:
   - email, name, role, empresa_id, documento_identidad, rol_usuario_id
   - email_confirmado, email_confirm_token, email_confirm_expira, email_confirmado_en
   - password_hash, password_salt, password_set, password_actualizada_en
+  - login_failed_attempts, login_failed_last_at, login_locked_until
+  - password_reset_token, password_reset_expira, password_reset_requested_en
 - empresas:
   - nombre, nit, tipo_id, tipo_nombre
 
@@ -45,9 +47,15 @@ Todas las tablas operativas usan como base los campos estandar:
 - combos_productos:
   - empresa_id, codigo, nombre, descripcion, unidad_medida
   - precio, impuesto_porcentaje
+  - receta_version, costo_teorico, costo_real, variacion_costo, variacion_costo_porcentaje
 - combos_productos_detalle:
   - empresa_id, combo_id, producto_id
   - cantidad, unidad_medida
+- combos_productos_versiones:
+  - empresa_id, combo_id, receta_version
+  - ingredientes_json
+  - costo_teorico, costo_real, variacion_costo, variacion_costo_porcentaje
+  - motivo
 - proveedores:
   - empresa_id, codigo, nombre, documento, contacto, telefono, email, direccion
   - catalogo_referencia, precio_base_referencial, descuento_porcentaje, plazo_pago_dias, condicion_entrega
@@ -63,6 +71,16 @@ Todas las tablas operativas usan como base los campos estandar:
 - inventario_movimientos:
   - empresa_id, producto_id, bodega_origen_id, bodega_destino_id
   - tipo, cantidad, costo_unitario, referencia, fecha_movimiento
+- empresa_inventario_configuracion:
+  - empresa_id (UNIQUE)
+  - politica_costo (`promedio` o `peps`)
+- inventario_costos_lotes:
+  - empresa_id, producto_id, bodega_id
+  - referencia, cantidad, costo_unitario, fecha_movimiento
+- inventario_conteos_ciclicos:
+  - empresa_id, producto_id, bodega_id
+  - cantidad_sistema, cantidad_contada, variacion
+  - tipo_ajuste, movimiento_id, referencia, fecha_conteo, usuario_revisor
 
 ### Tablas de ventas
 - carritos_compras:
@@ -83,7 +101,7 @@ Todas las tablas operativas usan como base los campos estandar:
   - cliente_nombre, cliente_documento, cliente_email, cliente_telefono
   - cantidad_huespedes, fecha_entrada, fecha_salida
   - monto_total, moneda
-  - estado_reserva (`pendiente_pago`, `confirmada`, `cancelada`, `expirada`)
+  - estado_reserva (`pendiente_pago`, `confirmada`, `en_curso`, `cancelada`, `expirada`, `no_show`)
   - estado_pago (`pendiente`, `confirmado`, `cancelado`, `expirado`)
   - referencia_pago, pago_confirmado_en, fecha_expiracion
   - confirmado_por, canal_origen, request_id
@@ -95,6 +113,12 @@ Todas las tablas operativas usan como base los campos estandar:
   - minutos_base, valor_base
   - minutos_extra, valor_extra
   - moneda, prioridad
+- empresa_tarifas_por_minutos_configuracion:
+  - empresa_id (UNIQUE)
+  - redondeo_modo (`ninguno`, `arriba`, `abajo`, `matematico`)
+  - redondeo_unidad
+  - monto_minimo_diario
+  - monto_maximo_diario
 
 ### Tabla de tarifas por dia por estacion
 - empresa_tarifas_por_dia:
@@ -109,6 +133,15 @@ Todas las tablas operativas usan como base los campos estandar:
   - empresa_id, codigo, tipo_descuento, valor, moneda
   - monto_minimo_compra, fecha_vencimiento
   - usos_maximos, usos_actuales
+  - segmento_cliente, canal_venta
+  - horario_desde, horario_hasta, dias_semana
+  - max_usos_por_cliente, ventana_horas_fraude
+- codigos_descuento_redenciones:
+  - empresa_id, codigo_descuento_id, carrito_id, cliente_id
+  - codigo, canal_venta, segmento_cliente
+  - monto_base, valor_descuento
+  - estado_redencion (`aplicada`, `revertida`, `anulada`)
+  - motivo, referencia_operacion, fecha_redencion
 
 ### Tablas de propinas por empresa
 - empresa_propinas_configuracion:
@@ -116,11 +149,19 @@ Todas las tablas operativas usan como base los campos estandar:
   - habilitar_propina, porcentaje_propina
   - modo_distribucion (`por_usuario` o `universal`)
   - aplicar_automaticamente
+  - pais_fiscal, regimen_fiscal
+  - tratamiento_fiscal (`no_gravada` o `gravada`)
+  - porcentaje_impuesto_propina
 - empresa_propinas_movimientos:
-  - empresa_id, carrito_id, venta_referencia
+  - empresa_id, carrito_id, cierre_caja_id, venta_referencia
   - usuario_origen, usuario_asignado
-  - modo_distribucion, moneda
+  - modo_distribucion, origen_movimiento (`venta`/`ajuste_manual`)
+  - ajuste_manual (0/1), referencia_ajuste
+  - moneda
   - base_cobro, porcentaje_propina, monto_propina
+  - fiscal_pais, fiscal_regimen, fiscal_tratamiento
+  - fiscal_porcentaje_impuesto, fiscal_impuesto_monto, fiscal_total
+  - conciliado_en
   - fecha_movimiento
 
 ### Tablas de comisiones por servicio por empresa
@@ -129,12 +170,21 @@ Todas las tablas operativas usan como base los campos estandar:
   - habilitar_comisiones, porcentaje_comision
   - filtro_servicio (ej. `lavado`)
   - aplicar_automaticamente
+- empresa_comisiones_servicio_escalas:
+  - empresa_id
+  - rol_operacion, servicio_filtro
+  - porcentaje_comision, tope_comision, prioridad
 - empresa_comisiones_servicio_movimientos:
   - empresa_id, carrito_id, carrito_item_id
   - servicio_id, servicio_codigo, servicio_nombre, servicio_categoria
-  - usuario_origen, usuario_lavador
+  - usuario_origen, usuario_lavador, rol_operacion, escala_id
   - venta_referencia, moneda
-  - base_servicio, porcentaje_comision, monto_comision
+  - base_servicio, porcentaje_comision, monto_comision_bruto, tope_comision_aplicado, monto_comision
+  - origen_movimiento (`venta`/`ajuste_manual`)
+  - ajuste_manual (0/1), referencia_ajuste, ajuste_estado (`pendiente`/`aprobado`/`rechazado`)
+  - aprobado_por, aprobado_en
+  - liquidacion_nomina_id, periodo_liquidacion_desde, periodo_liquidacion_hasta
+  - liquidado_en, liquidado_por
   - fecha_movimiento
 
 ### Tablas de configuracion operativa de cobro por empresa y rol
@@ -185,6 +235,9 @@ Todas las tablas operativas usan como base los campos estandar:
   - apertura_monto, ingresos_efectivo, egresos_efectivo, retiros_efectivo
   - caja_teorica, caja_fisica, diferencia_caja
   - tiene_incidencia, umbral_incidencia
+  - propinas_movimientos, propinas_total, propinas_ajustes
+  - propinas_impuesto, propinas_neto
+  - propinas_conciliado_en, propinas_conciliado_por
   - cerrado_por, aprobado_por, aprobado_en
   - UNIQUE(empresa_id, sucursal_id, caja_codigo, fecha_operacion, turno)
 - empresa_finanzas_configuracion:
@@ -211,6 +264,7 @@ Todas las tablas operativas usan como base los campos estandar:
   - procesado, fecha_procesado
   - intentos_procesamiento, fecha_ultimo_intento
   - error_procesamiento, asiento_contable_id
+  - incluye evento de trazabilidad: `finanzas.tarifa_por_minutos_calculada`
 
 ### Tabla canonica de asientos contables empresariales
 - empresa_asientos_contables:
@@ -327,6 +381,15 @@ Todas las tablas operativas usan como base los campos estandar:
   - cargo, turno, fecha_asistencia
   - hora_entrada, hora_salida, minutos_tarde, horas_trabajadas
   - estado_asistencia, novedad
+- empresa_asistencia_configuracion:
+  - empresa_id (UNIQUE)
+  - tolerancia_entrada_minutos, tolerancia_salida_minutos
+  - hora_inicio_turno_manana, hora_inicio_turno_tarde, hora_inicio_turno_noche
+  - permitir_turno_nocturno, permitir_turno_cruzado
+- empresa_asistencia_periodos_cerrados:
+  - empresa_id, periodo_desde, periodo_hasta
+  - fecha_cierre, cerrado_por, motivo
+  - se usa para bloquear edicion de asistencia en periodos cerrados
 
 ### Tablas de nomina de sueldos por empresa
 - empresa_nomina_configuracion:
@@ -358,7 +421,9 @@ Todas las tablas operativas usan como base los campos estandar:
   - valor_recargo_nocturno, valor_dominical_diurno, valor_dominical_nocturno
   - valor_extra_diurna, valor_extra_nocturna
   - valor_extra_dominical_diurna, valor_extra_dominical_nocturna
-  - total_recargos_horas_extras, auxilio_transporte, bonificacion, devengado_total
+  - total_recargos_horas_extras, auxilio_transporte, bonificacion
+  - comisiones_servicio_total, comisiones_servicio_movimientos, comisiones_servicio_ajustes
+  - devengado_total
   - ingreso_base_cotizacion, deduccion_salud, deduccion_pension, deduccion_fondo_solidaridad
   - deduccion_fija, otras_deducciones, deduccion_total, neto_pagar
   - origen_calculo, resumen_json, fecha_generacion
@@ -367,10 +432,19 @@ Todas las tablas operativas usan como base los campos estandar:
 - empresa_vehiculos_registro:
   - empresa_id
   - patente, tipo_vehiculo
-  - conductor_nombre, conductor_documento, conductor_contacto
-  - propietario_nombre, motivo_ingreso
+  - marca, modelo, color
+  - conductor_nombre, conductor_documento
+  - propietario_nombre, propietario_documento
+  - motivo_ingreso, referencia_externa
   - fecha_ingreso, fecha_salida
   - estado_registro (`en_empresa` o `retirado`)
+  - usuario_salida
+- empresa_vehiculos_configuracion:
+  - empresa_id (UNIQUE)
+  - pais_codigo
+  - patente_regex, patente_descripcion
+  - evitar_duplicado_activo
+  - estado
 
 ### Tablas ERP extendidas por empresa (2026-04-06)
 - empresa_cotizaciones_venta:
@@ -467,8 +541,17 @@ Todas las tablas operativas usan como base los campos estandar:
   - email, name, role, photo
 - sesiones:
   - admin_email, token, ip, user_agent, fecha_inicio, fecha_fin, activo
+  - fecha_fin se usa para expiracion y revocacion de sesion
 - configuraciones:
   - config_key (PK), value, encrypted
+  - claves relevantes de seguridad de usuarios empresa:
+    - usuarios.password_min_length
+    - usuarios.password_require_uppercase
+    - usuarios.password_require_lowercase
+    - usuarios.password_require_digit
+    - usuarios.password_require_symbol
+    - usuarios.password_rotation_days
+    - gmail.smtp_test_mode
 
 ### Tablas de catalogos globales
 - tipos_de_empresas:
@@ -486,6 +569,9 @@ Todas las tablas operativas usan como base los campos estandar:
 ### Tablas de pagos y metricas
 - pagos_wompi:
   - licencia_id, empresa_id, transaction_id, reference, status, raw_payload
+- super_correo_notificaciones_prueba:
+  - tipo, empresa_id, destinatario, asunto, cuerpo, token_ref, metadata_json, fecha_evento
+  - se usa para validar notificaciones de confirmacion/restablecimiento en entorno de pruebas de correo
 - metrics:
   - timestamp, cpu_percent, mem_total, mem_used, mem_percent, net_recv, net_sent
   - fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones
@@ -493,9 +579,12 @@ Todas las tablas operativas usan como base los campos estandar:
 ## 3) Relaciones clave
 - empresas.id -> users.empresa_id
 - empresas.id -> clientes.empresa_id, categorias_productos.empresa_id, productos.empresa_id, carritos_compras.empresa_id, chat_tareas*.empresa_id
+- empresas.id -> empresa_inventario_configuracion.empresa_id, inventario_costos_lotes.empresa_id, inventario_conteos_ciclicos.empresa_id
 - empresas.id -> reservas_hotel.empresa_id
 - empresas.id -> combos_productos.empresa_id, combos_productos_detalle.empresa_id
 - empresas.id -> codigos_de_descuento.empresa_id
+- empresas.id -> codigos_descuento_redenciones.empresa_id
+- empresas.id -> empresa_comisiones_servicio_configuracion.empresa_id, empresa_comisiones_servicio_escalas.empresa_id, empresa_comisiones_servicio_movimientos.empresa_id
 - empresas.id -> empresa_finanzas_movimientos.empresa_id, empresa_finanzas_periodos.empresa_id, empresa_finanzas_configuracion.empresa_id
 - empresas.id -> empresa_cierres_caja.empresa_id
 - empresas.id -> empresa_facturacion_documentos.empresa_id, empresa_compras_documentos.empresa_id
@@ -506,8 +595,10 @@ Todas las tablas operativas usan como base los campos estandar:
 - empresas.id -> empresa_ai_modelo_preferido.empresa_id
 - empresas.id -> empresa_gps_dispositivos.empresa_id, empresa_gps_recorridos.empresa_id
 - empresas.id -> empresa_asistencia_empleados.empresa_id
+- empresas.id -> empresa_asistencia_configuracion.empresa_id, empresa_asistencia_periodos_cerrados.empresa_id
 - empresas.id -> empresa_nomina_configuracion.empresa_id, empresa_nomina_empleados.empresa_id, empresa_nomina_festivos.empresa_id, empresa_nomina_liquidaciones.empresa_id
 - empresas.id -> empresa_vehiculos_registro.empresa_id
+- empresas.id -> empresa_vehiculos_configuracion.empresa_id
 - empresas.id -> empresa_cotizaciones_venta.empresa_id, empresa_pedidos_venta.empresa_id, empresa_devoluciones_venta.empresa_id
 - empresas.id -> empresa_plan_cuentas.empresa_id, empresa_cuentas_por_cobrar.empresa_id, empresa_cuentas_por_pagar.empresa_id
 - empresas.id -> inventario_lotes_series.empresa_id, empresa_devoluciones_proveedor.empresa_id, empresa_rrhh_vacaciones_licencias.empresa_id
@@ -521,6 +612,9 @@ Todas las tablas operativas usan como base los campos estandar:
 - categorias_productos.id -> productos.categoria_id
 - combos_productos.id -> combos_productos_detalle.combo_id
 - productos.id -> combos_productos_detalle.producto_id
+- productos.id -> inventario_costos_lotes.producto_id, inventario_conteos_ciclicos.producto_id
+- bodegas.id -> inventario_existencias.bodega_id, inventario_movimientos.bodega_(origen|destino)_id, inventario_costos_lotes.bodega_id, inventario_conteos_ciclicos.bodega_id
+- inventario_movimientos.id -> inventario_conteos_ciclicos.movimiento_id
 - crm_leads.id -> crm_interacciones.lead_id
 - produccion_bom.id -> produccion_bom_detalle.bom_id, produccion_ordenes.bom_id
 - logistica_transportistas.id -> logistica_envios.transportista_id
@@ -528,13 +622,30 @@ Todas las tablas operativas usan como base los campos estandar:
 - empresa_documentos_gestion.id -> empresa_documentos_firmas.documento_gestion_id
 - carritos_compras.id -> carrito_compra_items.carrito_id
 - carritos_compras.id -> reservas_hotel.carrito_id
+- carritos_compras.id -> codigos_descuento_redenciones.carrito_id
+- carritos_compras.id -> empresa_comisiones_servicio_movimientos.carrito_id
+- carrito_compra_items.id -> empresa_comisiones_servicio_movimientos.carrito_item_id
+- servicios.id -> empresa_comisiones_servicio_movimientos.servicio_id
+- empresa_comisiones_servicio_escalas.id -> empresa_comisiones_servicio_movimientos.escala_id
+- empresa_nomina_liquidaciones.id -> empresa_comisiones_servicio_movimientos.liquidacion_nomina_id
+- codigos_de_descuento.id -> codigos_descuento_redenciones.codigo_descuento_id
+- clientes.id -> codigos_descuento_redenciones.cliente_id
 - chat_tareas_conversaciones.id -> chat_tareas_participantes.conversacion_id, chat_tareas_mensajes.conversacion_id, chat_tareas.conversacion_id
 - chat_tareas_mensajes.id -> chat_tareas_adjuntos.mensaje_id
 - empresa_gps_dispositivos.id -> empresa_gps_recorridos.dispositivo_id
 - tipos_de_empresas.id -> roles_de_usuario.tipo_empresa_id / tipos_de_usuario.tipo_empresa_id
 - roles_de_usuario.id -> tipos_de_usuario.rol_id
+- empresas.id -> super_correo_notificaciones_prueba.empresa_id (trazabilidad de notificaciones en modo pruebas)
 
 ## 4) Historial resumido
+- 2026-04-06: se amplía comisiones por servicio con tabla de escalas/topes (`empresa_comisiones_servicio_escalas`), flujo de ajustes manuales con aprobacion (`ajuste_estado`, `aprobado_por`, `aprobado_en`) y enlace a nomina (`liquidacion_nomina_id`, `periodo_liquidacion_*`, `liquidado_*`); `empresa_nomina_liquidaciones` incorpora `comisiones_servicio_total`, `comisiones_servicio_movimientos` y `comisiones_servicio_ajustes`.
+- 2026-04-06: se amplía el modulo de propinas con reglas fiscales por empresa (`pais_fiscal`, `regimen_fiscal`, `tratamiento_fiscal`, `porcentaje_impuesto_propina`), ajustes manuales auditados (`origen_movimiento`, `ajuste_manual`, `referencia_ajuste`) y conciliacion por `cierre_caja_id`; `empresa_cierres_caja` incorpora resumen persistido de propinas conciliadas (`propinas_*`).
+- 2026-04-06: se amplía `codigos_de_descuento` con reglas avanzadas por contexto (segmento/canal/horario/dias) y controles antifraude por cliente (`max_usos_por_cliente`, `ventana_horas_fraude`); se agrega `codigos_descuento_redenciones` para trazabilidad de estados `aplicada/revertida/anulada` por carrito/cliente.
+- 2026-04-06: se agregan `empresa_inventario_configuracion`, `inventario_costos_lotes` e `inventario_conteos_ciclicos` para cierre del modulo 11 de inventario (politica promedio/peps por empresa, trazabilidad por lotes de costo y conteo ciclico con ajuste auditado).
+- 2026-04-06: se fortalece `reservas_hotel` con politica automatica avanzada (expiracion + no_show) y reconversion operativa a carrito; el estado de reserva extiende valores operativos con `en_curso` y `no_show`.
+- 2026-04-06: se agrega `empresa_vehiculos_configuracion` para parametrizar validacion de placa/patente por pais y regex por `empresa_id`, junto con regla de duplicidad activa; se incorpora reporte operativo `operativo_vehiculos_permanencia` con exportacion PDF/XLS/CSV/JSON/TXT.
+- 2026-04-06: se agregan `empresa_asistencia_configuracion` y `empresa_asistencia_periodos_cerrados` para parametrizar tolerancias/turnos y bloquear ediciones por cierre de periodo en asistencia; se publica reporte operativo `operativo_asistencia_nomina_auditoria` para auditoria de nomina.
+- 2026-04-06: se agrega `super_correo_notificaciones_prueba` en `superadministrador.db` para captura de confirmacion/restablecimiento de usuarios de empresa en entorno de pruebas de correo, junto con politicas configurables `usuarios.password_*` y rotacion opcional de contraseña.
 - 2026-04-06: se retira la operacion activa de Mercado Pago en backend y se deja Wompi como pasarela unica; el registro operativo de pagos se concentra en `pagos_wompi`.
 - 2026-04-06: se agregan tablas ERP extendidas por `empresa_id` para ventas avanzadas (cotizaciones/pedidos/devoluciones), contabilidad (plan de cuentas y cartera CxC/CxP), inventario por lotes/series, RRHH (vacaciones/licencias), CRM, produccion (BOM y ordenes), logistica, gestion documental, integraciones externas y configuracion DIAN Colombia.
 - 2026-04-05: se agrega `reservas_hotel` para gestionar reservas por estacion/habitacion con control de disponibilidad por rango, expiracion de pendientes y confirmacion de pago.

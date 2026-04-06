@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -77,6 +78,173 @@ type clienteComprasMetricas struct {
 	DiasSinCompra  int
 	TicketPromedio float64
 	Segmento       string
+}
+
+var ErrClienteDuplicado = errors.New("cliente duplicado")
+
+// ClienteDuplicadoError informa un conflicto de deduplicacion por empresa.
+type ClienteDuplicadoError struct {
+	Campo     string
+	Valor     string
+	ClienteID int64
+}
+
+func (e *ClienteDuplicadoError) Error() string {
+	campo := strings.TrimSpace(e.Campo)
+	if campo == "" {
+		campo = "dato"
+	}
+	msg := fmt.Sprintf("ya existe un cliente con el mismo %s en la empresa", campo)
+	if strings.TrimSpace(e.Valor) != "" {
+		msg += fmt.Sprintf(": %s", strings.TrimSpace(e.Valor))
+	}
+	if e.ClienteID > 0 {
+		msg += fmt.Sprintf(" (cliente_id=%d)", e.ClienteID)
+	}
+	return msg
+}
+
+func (e *ClienteDuplicadoError) Unwrap() error {
+	return ErrClienteDuplicado
+}
+
+func normalizeClienteDocumentoValue(raw string) string {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return ""
+	}
+	replacer := strings.NewReplacer(" ", "", "-", "", ".", "", "/", "")
+	return strings.ToUpper(replacer.Replace(value))
+}
+
+func normalizeClienteEmailValue(raw string) string {
+	return strings.ToLower(strings.TrimSpace(raw))
+}
+
+func normalizeClienteTelefonoValue(raw string) string {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return ""
+	}
+	var b strings.Builder
+	for _, r := range value {
+		if r >= '0' && r <= '9' {
+			b.WriteRune(r)
+		}
+	}
+	if b.Len() > 0 {
+		return b.String()
+	}
+	replacer := strings.NewReplacer(" ", "", "-", "", ".", "", "(", "", ")", "", "+", "", "/", "")
+	return strings.ToLower(replacer.Replace(value))
+}
+
+func clienteDocumentoSQLExpr(column string) string {
+	return fmt.Sprintf("upper(replace(replace(replace(replace(trim(COALESCE(%s, '')), ' ', ''), '-', ''), '.', ''), '/', ''))", column)
+}
+
+func clienteTelefonoSQLExpr(column string) string {
+	return fmt.Sprintf("lower(replace(replace(replace(replace(replace(replace(replace(trim(COALESCE(%s, '')), ' ', ''), '-', ''), '.', ''), '(', ''), ')', ''), '+', ''), '/', ''))", column)
+}
+
+func findClienteDuplicateID(dbConn *sql.DB, query string, args ...interface{}) (int64, error) {
+	var id int64
+	err := dbConn.QueryRow(query, args...).Scan(&id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, nil
+		}
+		return 0, err
+	}
+	return id, nil
+}
+
+func ensureClienteNoDuplicados(dbConn *sql.DB, payload Cliente, ignoreID int64) error {
+	if payload.EmpresaID <= 0 {
+		return nil
+	}
+
+	tipoDocumento := strings.ToUpper(strings.TrimSpace(payload.TipoDocumento))
+	if tipoDocumento == "" {
+		tipoDocumento = "NIT"
+	}
+	numeroDocumentoNormalized := normalizeClienteDocumentoValue(payload.NumeroDocumento)
+	if numeroDocumentoNormalized != "" {
+		docQuery := fmt.Sprintf(`SELECT id
+			FROM clientes
+			WHERE empresa_id = ?
+				AND id <> ?
+				AND upper(trim(COALESCE(tipo_documento, 'NIT'))) = ?
+				AND %s = ?
+			LIMIT 1`, clienteDocumentoSQLExpr("numero_documento"))
+		docID, err := findClienteDuplicateID(dbConn, docQuery, payload.EmpresaID, ignoreID, tipoDocumento, numeroDocumentoNormalized)
+		if err != nil {
+			return err
+		}
+		if docID > 0 {
+			return &ClienteDuplicadoError{
+				Campo:     "documento",
+				Valor:     strings.TrimSpace(tipoDocumento + " " + strings.TrimSpace(payload.NumeroDocumento)),
+				ClienteID: docID,
+			}
+		}
+	}
+
+	correoNormalized := normalizeClienteEmailValue(payload.Email)
+	if correoNormalized != "" {
+		correoID, err := findClienteDuplicateID(dbConn, `SELECT id
+			FROM clientes
+			WHERE empresa_id = ?
+				AND id <> ?
+				AND lower(trim(COALESCE(email, ''))) = ?
+				AND trim(COALESCE(email, '')) <> ''
+			LIMIT 1`, payload.EmpresaID, ignoreID, correoNormalized)
+		if err != nil {
+			return err
+		}
+		if correoID > 0 {
+			return &ClienteDuplicadoError{
+				Campo:     "correo",
+				Valor:     strings.TrimSpace(payload.Email),
+				ClienteID: correoID,
+			}
+		}
+	}
+
+	telefonoNormalized := normalizeClienteTelefonoValue(payload.Telefono)
+	if telefonoNormalized != "" {
+		telefonoQuery := fmt.Sprintf(`SELECT id
+			FROM clientes
+			WHERE empresa_id = ?
+				AND id <> ?
+				AND %s = ?
+				AND trim(COALESCE(telefono, '')) <> ''
+			LIMIT 1`, clienteTelefonoSQLExpr("telefono"))
+		telefonoID, err := findClienteDuplicateID(dbConn, telefonoQuery, payload.EmpresaID, ignoreID, telefonoNormalized)
+		if err != nil {
+			return err
+		}
+		if telefonoID > 0 {
+			return &ClienteDuplicadoError{
+				Campo:     "telefono",
+				Valor:     strings.TrimSpace(payload.Telefono),
+				ClienteID: telefonoID,
+			}
+		}
+	}
+
+	return nil
+}
+
+func isClientesUniqueConstraintErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	if !strings.Contains(msg, "unique constraint failed") {
+		return false
+	}
+	return strings.Contains(msg, "clientes")
 }
 
 // EnsureEmpresaClientesSchema crea y migra la tabla clientes en empresas.db.
@@ -220,6 +388,9 @@ func CreateCliente(dbConn *sql.DB, payload Cliente) (int64, error) {
 	if strings.TrimSpace(payload.Pais) == "" {
 		payload.Pais = "CO"
 	}
+	if err := ensureClienteNoDuplicados(dbConn, payload, 0); err != nil {
+		return 0, err
+	}
 	res, err := dbConn.Exec(`INSERT INTO clientes (
 		empresa_id,
 		tipo_documento,
@@ -263,6 +434,12 @@ func CreateCliente(dbConn *sql.DB, payload Cliente) (int64, error) {
 		strings.TrimSpace(payload.Observaciones),
 	)
 	if err != nil {
+		if isClientesUniqueConstraintErr(err) {
+			return 0, &ClienteDuplicadoError{
+				Campo: "documento",
+				Valor: strings.TrimSpace(strings.ToUpper(strings.TrimSpace(payload.TipoDocumento)) + " " + strings.TrimSpace(payload.NumeroDocumento)),
+			}
+		}
 		return 0, err
 	}
 	return res.LastInsertId()
@@ -427,6 +604,9 @@ func UpdateCliente(dbConn *sql.DB, payload Cliente) error {
 	if strings.TrimSpace(payload.Pais) == "" {
 		payload.Pais = "CO"
 	}
+	if err := ensureClienteNoDuplicados(dbConn, payload, payload.ID); err != nil {
+		return err
+	}
 	_, err := dbConn.Exec(`UPDATE clientes SET
 		tipo_documento = ?,
 		numero_documento = ?,
@@ -465,6 +645,12 @@ func UpdateCliente(dbConn *sql.DB, payload Cliente) error {
 		payload.ID,
 		payload.EmpresaID,
 	)
+	if err != nil && isClientesUniqueConstraintErr(err) {
+		return &ClienteDuplicadoError{
+			Campo: "documento",
+			Valor: strings.TrimSpace(strings.ToUpper(strings.TrimSpace(payload.TipoDocumento)) + " " + strings.TrimSpace(payload.NumeroDocumento)),
+		}
+	}
 	return err
 }
 

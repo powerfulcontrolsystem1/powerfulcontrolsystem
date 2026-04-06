@@ -15,6 +15,87 @@
 
     <p class="form-help" style="margin:0 0 12px 0;">Registra entrada, salida, estado y novedad diaria por empleado y empresa.</p>
 
+    <section class="form" style="margin-bottom:14px;">
+      <h2 style="margin:0 0 8px 0;">Configuracion de turnos y tolerancias</h2>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="cfg_tolerancia_entrada">Tolerancia entrada (minutos)</label>
+          <input id="cfg_tolerancia_entrada" type="number" min="0" max="240" class="form-input" value="10">
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="cfg_hora_manana">Inicio turno manana</label>
+          <input id="cfg_hora_manana" type="time" step="1" class="form-input" value="06:00:00">
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="cfg_hora_tarde">Inicio turno tarde</label>
+          <input id="cfg_hora_tarde" type="time" step="1" class="form-input" value="14:00:00">
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="cfg_hora_noche">Inicio turno noche</label>
+          <input id="cfg_hora_noche" type="time" step="1" class="form-input" value="22:00:00">
+        </div>
+      </div>
+      <div class="form-row" style="margin-bottom:0;">
+        <div class="form-col" style="display:flex;align-items:center;gap:8px;max-width:320px;">
+          <input id="cfg_permitir_nocturno" type="checkbox" checked>
+          <label class="form-label" for="cfg_permitir_nocturno" style="margin:0;">Permitir turno nocturno</label>
+        </div>
+        <div class="form-col" style="display:flex;align-items:center;gap:8px;max-width:320px;">
+          <input id="cfg_permitir_cruzado" type="checkbox" checked>
+          <label class="form-label" for="cfg_permitir_cruzado" style="margin:0;">Permitir turno cruzado</label>
+        </div>
+        <div class="form-col" style="display:flex;align-items:flex-end;gap:8px;max-width:240px;">
+          <button id="saveConfigBtn" class="btn secondary" type="button" style="width:100%;">Guardar configuracion</button>
+        </div>
+      </div>
+      <div id="cfgMsg" class="form-help"></div>
+    </section>
+
+    <section class="form" style="margin-bottom:14px;">
+      <h2 style="margin:0 0 8px 0;">Cierre de periodo</h2>
+      <p class="form-help" style="margin:0 0 8px 0;">Al cerrar un periodo, sus registros quedan bloqueados para edicion, activacion/desactivacion o eliminacion.</p>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="close_periodo_desde">Periodo desde</label>
+          <input id="close_periodo_desde" type="date" class="form-input">
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="close_periodo_hasta">Periodo hasta</label>
+          <input id="close_periodo_hasta" type="date" class="form-input">
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="close_periodo_motivo">Motivo</label>
+          <input id="close_periodo_motivo" class="form-input" placeholder="Ej: cierre validado para nomina abril">
+        </div>
+      </div>
+      <div class="form-actions" style="margin-top:8px;">
+        <button id="closePeriodoBtn" class="btn" type="button">Cerrar periodo</button>
+        <button id="refreshPeriodosBtn" class="btn secondary" type="button">Actualizar cierres</button>
+      </div>
+      <div id="closePeriodoMsg" class="form-help"></div>
+      <div id="periodosCerradosList" class="form-help" style="margin-top:8px;">Sin cierres cargados.</div>
+    </section>
+
+    <section class="form" style="margin-bottom:14px;">
+      <h2 style="margin:0 0 8px 0;">Reporte operativo para auditoria de nomina</h2>
+      <div class="form-row" style="margin-bottom:0;">
+        <div class="form-col" style="max-width:220px;">
+          <label class="form-label" for="reporteFormato">Formato</label>
+          <select id="reporteFormato" class="form-input">
+            <option value="pdf">PDF</option>
+            <option value="xls">Excel (XLS)</option>
+            <option value="csv">CSV</option>
+            <option value="json">JSON</option>
+            <option value="txt">TXT</option>
+          </select>
+        </div>
+        <div class="form-col" style="display:flex;align-items:flex-end;max-width:260px;">
+          <button id="downloadReporteBtn" class="btn secondary" type="button" style="width:100%;">Descargar reporte</button>
+        </div>
+      </div>
+      <div id="reporteMsg" class="form-help"></div>
+    </section>
+
     <form id="form" class="form">
       <input type="hidden" id="itemId">
       <input type="hidden" id="empresa_id">
@@ -150,7 +231,9 @@
       q: '',
       desde: '',
       hasta: '',
-      estadoAsistencia: ''
+	  estadoAsistencia: '',
+	  config: null,
+	  periodosCerrados: []
     };
 
     function getQueryParam(name) {
@@ -197,6 +280,13 @@
       document.getElementById('filtro_hasta').value = now;
       state.desde = first;
       state.hasta = now;
+
+      if (document.getElementById('close_periodo_desde')) {
+        document.getElementById('close_periodo_desde').value = first;
+      }
+      if (document.getElementById('close_periodo_hasta')) {
+        document.getElementById('close_periodo_hasta').value = now;
+      }
     }
 
     function buildPayloadFromForm() {
@@ -244,6 +334,137 @@
       state.desde = normalize(document.getElementById('filtro_desde').value);
       state.hasta = normalize(document.getElementById('filtro_hasta').value);
       state.estadoAsistencia = normalize(document.getElementById('filtro_estado_asistencia').value);
+    }
+
+    function setSectionMessage(targetId, text, isError) {
+      const el = document.getElementById(targetId);
+      if (!el) return;
+      el.textContent = text || '';
+      el.style.color = isError ? '#ef5350' : '';
+    }
+
+    async function loadAsistenciaConfig() {
+      const resp = await fetch('/api/empresa/asistencia_empleados?action=config&empresa_id=' + encodeURIComponent(String(state.empresaID)), {
+        credentials: 'same-origin'
+      });
+      await ensureOk(resp);
+      const cfg = await resp.json();
+      state.config = cfg || null;
+
+      document.getElementById('cfg_tolerancia_entrada').value = String(Number(cfg && cfg.tolerancia_entrada_minutos || 10));
+      document.getElementById('cfg_hora_manana').value = normalize(cfg && cfg.hora_inicio_turno_manana || '06:00:00');
+      document.getElementById('cfg_hora_tarde').value = normalize(cfg && cfg.hora_inicio_turno_tarde || '14:00:00');
+      document.getElementById('cfg_hora_noche').value = normalize(cfg && cfg.hora_inicio_turno_noche || '22:00:00');
+      document.getElementById('cfg_permitir_nocturno').checked = !!(cfg && cfg.permitir_turno_nocturno);
+      document.getElementById('cfg_permitir_cruzado').checked = !!(cfg && cfg.permitir_turno_cruzado);
+    }
+
+    async function saveAsistenciaConfig() {
+      const payload = {
+        empresa_id: Number(state.empresaID),
+        tolerancia_entrada_minutos: Number(document.getElementById('cfg_tolerancia_entrada').value || 0),
+        hora_inicio_turno_manana: normalize(document.getElementById('cfg_hora_manana').value),
+        hora_inicio_turno_tarde: normalize(document.getElementById('cfg_hora_tarde').value),
+        hora_inicio_turno_noche: normalize(document.getElementById('cfg_hora_noche').value),
+        permitir_turno_nocturno: !!document.getElementById('cfg_permitir_nocturno').checked,
+        permitir_turno_cruzado: !!document.getElementById('cfg_permitir_cruzado').checked
+      };
+
+      const resp = await fetch('/api/empresa/asistencia_empleados?action=config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(payload)
+      });
+      await ensureOk(resp);
+      await loadAsistenciaConfig();
+      setSectionMessage('cfgMsg', 'Configuracion de asistencia guardada.', false);
+    }
+
+    function renderPeriodosCerrados() {
+      const root = document.getElementById('periodosCerradosList');
+      if (!root) return;
+      if (!Array.isArray(state.periodosCerrados) || state.periodosCerrados.length === 0) {
+        root.innerHTML = '<span>Sin periodos cerrados.</span>';
+        return;
+      }
+
+      const html = state.periodosCerrados.map(function(item) {
+        const desde = esc(item.periodo_desde || '-');
+        const hasta = esc(item.periodo_hasta || '-');
+        const cerradoPor = esc(item.cerrado_por || item.usuario_creador || 'sin usuario');
+        const fechaCierre = esc(item.fecha_cierre || item.fecha_creacion || '-');
+        const motivo = esc(item.motivo || item.observaciones || '');
+        return '<div class="form-help" style="margin-bottom:6px;">' +
+          '<strong>[' + desde + ' a ' + hasta + ']</strong> | Cerrado por: ' + cerradoPor + ' | Fecha: ' + fechaCierre +
+          (motivo ? ' | Motivo: ' + motivo : '') +
+        '</div>';
+      }).join('');
+      root.innerHTML = html;
+    }
+
+    async function loadPeriodosCerrados() {
+      const params = new URLSearchParams();
+      params.set('action', 'periodos_cerrados');
+      params.set('empresa_id', String(state.empresaID));
+      params.set('limit', '200');
+      params.set('desde', normalize(document.getElementById('filtro_desde').value));
+      params.set('hasta', normalize(document.getElementById('filtro_hasta').value));
+
+      const resp = await fetch('/api/empresa/asistencia_empleados?' + params.toString(), { credentials: 'same-origin' });
+      await ensureOk(resp);
+      const rows = await resp.json();
+      state.periodosCerrados = Array.isArray(rows) ? rows : [];
+      renderPeriodosCerrados();
+    }
+
+    async function cerrarPeriodoAsistencia() {
+      const desde = normalize(document.getElementById('close_periodo_desde').value);
+      const hasta = normalize(document.getElementById('close_periodo_hasta').value);
+      const motivo = normalize(document.getElementById('close_periodo_motivo').value);
+
+      if (!desde || !hasta) {
+        throw new Error('Debes definir periodo_desde y periodo_hasta.');
+      }
+      if (hasta < desde) {
+        throw new Error('periodo_hasta no puede ser menor que periodo_desde.');
+      }
+
+      const ok = window.confirm('Se bloqueara la edicion de asistencias en [' + desde + ' - ' + hasta + ']. Deseas continuar?');
+      if (!ok) {
+        return;
+      }
+
+      const payload = {
+        empresa_id: Number(state.empresaID),
+        periodo_desde: desde,
+        periodo_hasta: hasta,
+        motivo: motivo
+      };
+      const resp = await fetch('/api/empresa/asistencia_empleados?action=cerrar_periodo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(payload)
+      });
+      await ensureOk(resp);
+      setSectionMessage('closePeriodoMsg', 'Periodo cerrado correctamente.', false);
+      await loadPeriodosCerrados();
+      await loadItems();
+    }
+
+    function downloadReporteAsistenciaNomina() {
+      const formato = normalize(document.getElementById('reporteFormato').value || 'pdf').toLowerCase();
+      const params = new URLSearchParams();
+      params.set('action', 'export');
+      params.set('empresa_id', String(state.empresaID));
+      params.set('dataset', 'operativo_asistencia_nomina_auditoria');
+      params.set('format', formato);
+      params.set('desde', normalize(document.getElementById('filtro_desde').value));
+      params.set('hasta', normalize(document.getElementById('filtro_hasta').value));
+      const url = '/api/empresa/reportes?' + params.toString();
+      window.open(url, '_blank');
+      setSectionMessage('reporteMsg', 'Descargando reporte de asistencia para auditoria de nomina.', false);
     }
 
     async function loadItems() {
@@ -456,10 +677,34 @@
         resetForm();
         window.scrollTo({ top: 0, behavior: 'smooth' });
       });
+      document.getElementById('saveConfigBtn').addEventListener('click', async function() {
+        try {
+          await saveAsistenciaConfig();
+        } catch (err) {
+          setSectionMessage('cfgMsg', err.message || 'No se pudo guardar la configuracion.', true);
+        }
+      });
+      document.getElementById('closePeriodoBtn').addEventListener('click', async function() {
+        try {
+          await cerrarPeriodoAsistencia();
+        } catch (err) {
+          setSectionMessage('closePeriodoMsg', err.message || 'No se pudo cerrar el periodo.', true);
+        }
+      });
+      document.getElementById('refreshPeriodosBtn').addEventListener('click', async function() {
+        try {
+          await loadPeriodosCerrados();
+          setSectionMessage('closePeriodoMsg', 'Cierres actualizados.', false);
+        } catch (err) {
+          setSectionMessage('closePeriodoMsg', err.message || 'No se pudieron cargar los cierres.', true);
+        }
+      });
+      document.getElementById('downloadReporteBtn').addEventListener('click', downloadReporteAsistenciaNomina);
 
       document.getElementById('filtrarBtn').addEventListener('click', async function() {
         try {
           await loadItems();
+          await loadPeriodosCerrados();
           setMessage('Filtro aplicado.', false);
         } catch (err) {
           setMessage(err.message || 'No se pudo aplicar el filtro.', true);
@@ -472,6 +717,7 @@
         defaultDates();
         try {
           await loadItems();
+          await loadPeriodosCerrados();
           setMessage('Filtro limpiado.', false);
         } catch (err) {
           setMessage(err.message || 'No se pudo limpiar el filtro.', true);
@@ -524,6 +770,8 @@
       bindEvents();
 
       try {
+        await loadAsistenciaConfig();
+        await loadPeriodosCerrados();
         await loadItems();
       } catch (err) {
         setMessage(err.message || 'No se pudo cargar el modulo de asistencia.', true);

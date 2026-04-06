@@ -3,6 +3,8 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"math"
+	"sort"
 	"strings"
 	"time"
 )
@@ -37,16 +39,62 @@ type EmpresaTarifaPorDiaFilter struct {
 
 // EmpresaTarifaPorDiaCalculo representa un calculo puntual de tarifa diaria.
 type EmpresaTarifaPorDiaCalculo struct {
-	TarifaID     int64   `json:"tarifa_id"`
-	EstacionID   int64   `json:"estacion_id"`
-	DiasCobrados int     `json:"dias_cobrados"`
-	ValorDia     float64 `json:"valor_dia"`
-	MontoTotal   float64 `json:"monto_total"`
-	Moneda       string  `json:"moneda"`
-	HoraCheckIn  string  `json:"hora_check_in"`
-	HoraCheckOut string  `json:"hora_check_out"`
-	FechaInicio  string  `json:"fecha_inicio"`
-	FechaCorte   string  `json:"fecha_corte"`
+	TarifaID                    int64   `json:"tarifa_id"`
+	EstacionID                  int64   `json:"estacion_id"`
+	DiasCobrados                int     `json:"dias_cobrados"`
+	DiasCompletos               int     `json:"dias_completos"`
+	DiasEquivalentes            float64 `json:"dias_equivalentes"`
+	ValorDia                    float64 `json:"valor_dia"`
+	MontoDiasCompletos          float64 `json:"monto_dias_completos"`
+	MontoProrrateoEntrada       float64 `json:"monto_prorrateo_entrada"`
+	MontoProrrateoIntermedio    float64 `json:"monto_prorrateo_intermedio"`
+	MontoProrrateoSalida        float64 `json:"monto_prorrateo_salida"`
+	MontoTotal                  float64 `json:"monto_total"`
+	Moneda                      string  `json:"moneda"`
+	HoraCheckIn                 string  `json:"hora_check_in"`
+	HoraCheckOut                string  `json:"hora_check_out"`
+	MinutosVentanaDia           int64   `json:"minutos_ventana_dia"`
+	MinutosProrrateoEntrada     int64   `json:"minutos_prorrateo_entrada"`
+	MinutosProrrateoIntermedio  int64   `json:"minutos_prorrateo_intermedio"`
+	MinutosProrrateoSalida      int64   `json:"minutos_prorrateo_salida"`
+	MinutosProrrateoFueraWindow int64   `json:"minutos_prorrateo_fuera_ventana"`
+	ReglaProrrateo              string  `json:"regla_prorrateo"`
+	FechaInicio                 string  `json:"fecha_inicio"`
+	FechaCorte                  string  `json:"fecha_corte"`
+}
+
+// EmpresaTarifaPorDiaAplicacionMasivaResultado resume la aplicacion masiva por estaciones.
+type EmpresaTarifaPorDiaAplicacionMasivaResultado struct {
+	EmpresaID           int64   `json:"empresa_id"`
+	ValorDia            float64 `json:"valor_dia"`
+	HoraCheckIn         string  `json:"hora_check_in"`
+	HoraCheckOut        string  `json:"hora_check_out"`
+	EstacionesObjetivo  int     `json:"estaciones_objetivo"`
+	TarifasCreadas      int     `json:"tarifas_creadas"`
+	TarifasActualizadas int     `json:"tarifas_actualizadas"`
+	TarifaIDs           []int64 `json:"tarifa_ids,omitempty"`
+}
+
+type empresaTarifaPorDiaEstacionRef struct {
+	ID     int64
+	Codigo string
+	Nombre string
+}
+
+type tarifaPorDiaCalculoInterno struct {
+	diasCobrados             int
+	diasCompletos            int
+	diasEquivalentes         float64
+	windowMinutes            int64
+	outsideEntryMinutes      int64
+	outsideIntermedioMinutes int64
+	outsideSalidaMinutes     int64
+	outsideTotalMinutes      int64
+	montoDiasCompletos       float64
+	montoProrrateoEntrada    float64
+	montoProrrateoIntermedio float64
+	montoProrrateoSalida     float64
+	montoTotal               float64
 }
 
 // EnsureEmpresaTarifasPorDiaSchema crea/migra tabla de tarifas diarias por estacion.
@@ -607,50 +655,510 @@ func resolveTarifaPorDiaNextCheckoutBoundary(fechaInicio time.Time, horaCheckIn,
 	return checkoutToday.Add(24 * time.Hour)
 }
 
-// CalcularMontoTarifaPorDia calcula dias cobrados y monto total de la tarifa diaria.
-func CalcularMontoTarifaPorDia(tarifa EmpresaTarifaPorDia, fechaInicio, fechaCorte time.Time) (int, float64) {
-	if fechaInicio.IsZero() {
-		return 0, 0
+func tarifaPorDiaWindowMinutes(horaCheckIn, horaCheckOut string) int64 {
+	checkInHour, checkInMinute, errIn := parseTarifaPorDiaHora(horaCheckIn)
+	if errIn != nil {
+		checkInHour, checkInMinute = 15, 0
 	}
-	if fechaCorte.IsZero() || fechaCorte.Before(fechaInicio) {
-		fechaCorte = fechaInicio
+	checkOutHour, checkOutMinute, errOut := parseTarifaPorDiaHora(horaCheckOut)
+	if errOut != nil {
+		checkOutHour, checkOutMinute = 12, 0
 	}
 
+	checkInTotal := (checkInHour * 60) + checkInMinute
+	checkOutTotal := (checkOutHour * 60) + checkOutMinute
+
+	if checkInTotal == checkOutTotal {
+		return 24 * 60
+	}
+	if checkInTotal < checkOutTotal {
+		return int64(checkOutTotal - checkInTotal)
+	}
+	return int64((24*60 - checkInTotal) + checkOutTotal)
+}
+
+func tarifaPorDiaIsInsideWindow(t time.Time, horaCheckIn, horaCheckOut string) bool {
+	checkInHour, checkInMinute, errIn := parseTarifaPorDiaHora(horaCheckIn)
+	if errIn != nil {
+		checkInHour, checkInMinute = 15, 0
+	}
+	checkOutHour, checkOutMinute, errOut := parseTarifaPorDiaHora(horaCheckOut)
+	if errOut != nil {
+		checkOutHour, checkOutMinute = 12, 0
+	}
+
+	checkInTotal := (checkInHour * 60) + checkInMinute
+	checkOutTotal := (checkOutHour * 60) + checkOutMinute
+	total := (t.Hour() * 60) + t.Minute()
+
+	if checkInTotal == checkOutTotal {
+		return true
+	}
+	if checkInTotal < checkOutTotal {
+		return total >= checkInTotal && total < checkOutTotal
+	}
+	return total >= checkInTotal || total < checkOutTotal
+}
+
+func tarifaPorDiaWindowStartForInside(t time.Time, horaCheckIn, horaCheckOut string) time.Time {
+	location := t.Location()
+	if location == nil {
+		location = time.Local
+	}
+
+	checkInHour, checkInMinute, errIn := parseTarifaPorDiaHora(horaCheckIn)
+	if errIn != nil {
+		checkInHour, checkInMinute = 15, 0
+	}
+	checkOutHour, checkOutMinute, errOut := parseTarifaPorDiaHora(horaCheckOut)
+	if errOut != nil {
+		checkOutHour, checkOutMinute = 12, 0
+	}
+
+	baseDate := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, location)
+	checkInToday := time.Date(baseDate.Year(), baseDate.Month(), baseDate.Day(), checkInHour, checkInMinute, 0, 0, location)
+
+	checkInTotal := (checkInHour * 60) + checkInMinute
+	checkOutTotal := (checkOutHour * 60) + checkOutMinute
+	total := (t.Hour() * 60) + t.Minute()
+
+	if checkInTotal == checkOutTotal {
+		if total >= checkInTotal {
+			return checkInToday
+		}
+		return checkInToday.Add(-24 * time.Hour)
+	}
+
+	if checkInTotal > checkOutTotal {
+		if total >= checkInTotal {
+			return checkInToday
+		}
+		return checkInToday.Add(-24 * time.Hour)
+	}
+
+	return checkInToday
+}
+
+func tarifaPorDiaNextTransition(cursor time.Time, horaCheckIn, horaCheckOut string) time.Time {
+	location := cursor.Location()
+	if location == nil {
+		location = time.Local
+	}
+
+	checkInHour, checkInMinute, errIn := parseTarifaPorDiaHora(horaCheckIn)
+	if errIn != nil {
+		checkInHour, checkInMinute = 15, 0
+	}
+	checkOutHour, checkOutMinute, errOut := parseTarifaPorDiaHora(horaCheckOut)
+	if errOut != nil {
+		checkOutHour, checkOutMinute = 12, 0
+	}
+
+	baseDate := time.Date(cursor.Year(), cursor.Month(), cursor.Day(), 0, 0, 0, 0, location)
+	var next time.Time
+
+	for i := -1; i <= 2; i++ {
+		day := baseDate.AddDate(0, 0, i)
+		candidates := []time.Time{
+			time.Date(day.Year(), day.Month(), day.Day(), checkInHour, checkInMinute, 0, 0, location),
+			time.Date(day.Year(), day.Month(), day.Day(), checkOutHour, checkOutMinute, 0, 0, location),
+		}
+		for _, candidate := range candidates {
+			if !candidate.After(cursor) {
+				continue
+			}
+			if next.IsZero() || candidate.Before(next) {
+				next = candidate
+			}
+		}
+	}
+
+	if next.IsZero() {
+		return cursor.Add(24 * time.Hour)
+	}
+	return next
+}
+
+func calcularInternoTarifaPorDia(tarifa EmpresaTarifaPorDia, fechaInicio, fechaCorte time.Time) tarifaPorDiaCalculoInterno {
 	valorDia := round2(tarifa.ValorDia)
 	if valorDia < 0 {
 		valorDia = 0
 	}
 
-	dias := 1
-	boundary := resolveTarifaPorDiaNextCheckoutBoundary(fechaInicio, tarifa.HoraCheckIn, tarifa.HoraCheckOut)
-	for fechaCorte.After(boundary) {
-		dias++
-		if dias > 100000 {
-			break
-		}
-		boundary = boundary.Add(24 * time.Hour)
+	if fechaInicio.IsZero() {
+		return tarifaPorDiaCalculoInterno{}
+	}
+	if fechaCorte.IsZero() || fechaCorte.Before(fechaInicio) {
+		fechaCorte = fechaInicio
 	}
 
-	monto := round2(float64(dias) * valorDia)
-	return dias, monto
+	windowMinutes := tarifaPorDiaWindowMinutes(tarifa.HoraCheckIn, tarifa.HoraCheckOut)
+	if windowMinutes <= 0 {
+		windowMinutes = 24 * 60
+	}
+	windowSeconds := float64(windowMinutes * 60)
+
+	outsideEntrySeconds := float64(0)
+	outsideInterSeconds := float64(0)
+	outsideSalidaSeconds := float64(0)
+	pendingOutsideSeconds := float64(0)
+	windowTouched := make(map[int64]struct{})
+	seenInside := false
+
+	if !fechaCorte.After(fechaInicio) {
+		if tarifaPorDiaIsInsideWindow(fechaInicio, tarifa.HoraCheckIn, tarifa.HoraCheckOut) {
+			windowStart := tarifaPorDiaWindowStartForInside(fechaInicio, tarifa.HoraCheckIn, tarifa.HoraCheckOut)
+			windowTouched[windowStart.Unix()] = struct{}{}
+			seenInside = true
+		}
+	} else {
+		cursor := fechaInicio
+		for cursor.Before(fechaCorte) {
+			next := tarifaPorDiaNextTransition(cursor, tarifa.HoraCheckIn, tarifa.HoraCheckOut)
+			if !next.After(cursor) {
+				next = cursor.Add(time.Minute)
+			}
+			if next.After(fechaCorte) {
+				next = fechaCorte
+			}
+
+			segmentSeconds := next.Sub(cursor).Seconds()
+			if segmentSeconds < 0 {
+				segmentSeconds = 0
+			}
+
+			if tarifaPorDiaIsInsideWindow(cursor, tarifa.HoraCheckIn, tarifa.HoraCheckOut) {
+				if pendingOutsideSeconds > 0 {
+					outsideInterSeconds += pendingOutsideSeconds
+					pendingOutsideSeconds = 0
+				}
+				windowStart := tarifaPorDiaWindowStartForInside(cursor, tarifa.HoraCheckIn, tarifa.HoraCheckOut)
+				windowTouched[windowStart.Unix()] = struct{}{}
+				seenInside = true
+			} else {
+				if !seenInside {
+					outsideEntrySeconds += segmentSeconds
+				} else {
+					pendingOutsideSeconds += segmentSeconds
+				}
+			}
+
+			cursor = next
+		}
+	}
+
+	if pendingOutsideSeconds > 0 {
+		outsideSalidaSeconds += pendingOutsideSeconds
+	}
+
+	diasCompletos := len(windowTouched)
+	outsideTotalSeconds := outsideEntrySeconds + outsideInterSeconds + outsideSalidaSeconds
+
+	diasEquivalentes := float64(diasCompletos)
+	if outsideTotalSeconds > 0 {
+		diasEquivalentes += outsideTotalSeconds / windowSeconds
+	}
+
+	diasCobrados := diasCompletos
+	if diasEquivalentes > 0 {
+		if diasCobrados == 0 || diasEquivalentes > float64(diasCompletos) {
+			diasCobrados = int(math.Ceil(diasEquivalentes))
+		}
+	}
+
+	montoDiasCompletos := round2(float64(diasCompletos) * valorDia)
+	montoProrrateoEntrada := round2((outsideEntrySeconds / windowSeconds) * valorDia)
+	montoProrrateoIntermedio := round2((outsideInterSeconds / windowSeconds) * valorDia)
+	montoProrrateoSalida := round2((outsideSalidaSeconds / windowSeconds) * valorDia)
+	montoTotal := round2(montoDiasCompletos + montoProrrateoEntrada + montoProrrateoIntermedio + montoProrrateoSalida)
+
+	return tarifaPorDiaCalculoInterno{
+		diasCobrados:             diasCobrados,
+		diasCompletos:            diasCompletos,
+		diasEquivalentes:         round2(diasEquivalentes),
+		windowMinutes:            windowMinutes,
+		outsideEntryMinutes:      int64(math.Round(outsideEntrySeconds / 60.0)),
+		outsideIntermedioMinutes: int64(math.Round(outsideInterSeconds / 60.0)),
+		outsideSalidaMinutes:     int64(math.Round(outsideSalidaSeconds / 60.0)),
+		outsideTotalMinutes:      int64(math.Round(outsideTotalSeconds / 60.0)),
+		montoDiasCompletos:       montoDiasCompletos,
+		montoProrrateoEntrada:    montoProrrateoEntrada,
+		montoProrrateoIntermedio: montoProrrateoIntermedio,
+		montoProrrateoSalida:     montoProrrateoSalida,
+		montoTotal:               montoTotal,
+	}
+}
+
+// CalcularMontoTarifaPorDia calcula dias cobrados y monto total de la tarifa diaria.
+func CalcularMontoTarifaPorDia(tarifa EmpresaTarifaPorDia, fechaInicio, fechaCorte time.Time) (int, float64) {
+	calculo := calcularInternoTarifaPorDia(tarifa, fechaInicio, fechaCorte)
+	return calculo.diasCobrados, calculo.montoTotal
 }
 
 // CalcularDetalleTarifaPorDia construye el detalle completo del calculo diario.
 func CalcularDetalleTarifaPorDia(tarifa EmpresaTarifaPorDia, fechaInicio, fechaCorte time.Time) EmpresaTarifaPorDiaCalculo {
-	dias, monto := CalcularMontoTarifaPorDia(tarifa, fechaInicio, fechaCorte)
+	calculo := calcularInternoTarifaPorDia(tarifa, fechaInicio, fechaCorte)
 	if fechaCorte.IsZero() {
 		fechaCorte = fechaInicio
 	}
 	return EmpresaTarifaPorDiaCalculo{
-		TarifaID:     tarifa.ID,
-		EstacionID:   tarifa.EstacionID,
-		DiasCobrados: dias,
-		ValorDia:     round2(tarifa.ValorDia),
-		MontoTotal:   monto,
-		Moneda:       normalizeTarifaPorDiaMoneda(tarifa.Moneda),
-		HoraCheckIn:  tarifa.HoraCheckIn,
-		HoraCheckOut: tarifa.HoraCheckOut,
-		FechaInicio:  fechaInicio.Format("2006-01-02 15:04:05"),
-		FechaCorte:   fechaCorte.Format("2006-01-02 15:04:05"),
+		TarifaID:                    tarifa.ID,
+		EstacionID:                  tarifa.EstacionID,
+		DiasCobrados:                calculo.diasCobrados,
+		DiasCompletos:               calculo.diasCompletos,
+		DiasEquivalentes:            calculo.diasEquivalentes,
+		ValorDia:                    round2(tarifa.ValorDia),
+		MontoDiasCompletos:          calculo.montoDiasCompletos,
+		MontoProrrateoEntrada:       calculo.montoProrrateoEntrada,
+		MontoProrrateoIntermedio:    calculo.montoProrrateoIntermedio,
+		MontoProrrateoSalida:        calculo.montoProrrateoSalida,
+		MontoTotal:                  calculo.montoTotal,
+		Moneda:                      normalizeTarifaPorDiaMoneda(tarifa.Moneda),
+		HoraCheckIn:                 tarifa.HoraCheckIn,
+		HoraCheckOut:                tarifa.HoraCheckOut,
+		MinutosVentanaDia:           calculo.windowMinutes,
+		MinutosProrrateoEntrada:     calculo.outsideEntryMinutes,
+		MinutosProrrateoIntermedio:  calculo.outsideIntermedioMinutes,
+		MinutosProrrateoSalida:      calculo.outsideSalidaMinutes,
+		MinutosProrrateoFueraWindow: calculo.outsideTotalMinutes,
+		ReglaProrrateo:              "fuera_ventana_checkin_checkout",
+		FechaInicio:                 fechaInicio.Format("2006-01-02 15:04:05"),
+		FechaCorte:                  fechaCorte.Format("2006-01-02 15:04:05"),
 	}
+}
+
+func mergeTarifaPorDiaEstacionRef(dest map[int64]empresaTarifaPorDiaEstacionRef, ref empresaTarifaPorDiaEstacionRef, empresaID int64) {
+	if ref.ID <= 0 {
+		return
+	}
+	current, exists := dest[ref.ID]
+	if !exists {
+		current = empresaTarifaPorDiaEstacionRef{ID: ref.ID}
+	}
+	if strings.TrimSpace(current.Codigo) == "" {
+		if strings.TrimSpace(ref.Codigo) != "" {
+			current.Codigo = strings.TrimSpace(ref.Codigo)
+		} else {
+			current.Codigo = fmt.Sprintf("EST-%d-%d", empresaID, ref.ID)
+		}
+	}
+	if strings.TrimSpace(ref.Nombre) != "" {
+		current.Nombre = strings.TrimSpace(ref.Nombre)
+	}
+	if strings.TrimSpace(current.Nombre) == "" {
+		current.Nombre = fmt.Sprintf("Estacion %d", ref.ID)
+	}
+	dest[ref.ID] = current
+}
+
+func listEmpresaTarifaPorDiaStationRefs(dbConn *sql.DB, empresaID int64) ([]empresaTarifaPorDiaEstacionRef, error) {
+	refs := make(map[int64]empresaTarifaPorDiaEstacionRef)
+
+	tarifas, err := ListEmpresaTarifasPorDia(dbConn, empresaID, EmpresaTarifaPorDiaFilter{IncludeInactive: true, Limit: 2000})
+	if err != nil {
+		return nil, err
+	}
+	for _, tarifa := range tarifas {
+		mergeTarifaPorDiaEstacionRef(refs, empresaTarifaPorDiaEstacionRef{ID: tarifa.EstacionID, Codigo: tarifa.EstacionCodigo, Nombre: tarifa.EstacionNombre}, empresaID)
+	}
+
+	hasCarritos, err := tableExists(dbConn, "carritos_compras")
+	if err != nil {
+		return nil, err
+	}
+	if hasCarritos {
+		rowsCarritos, err := dbConn.Query(`SELECT DISTINCT
+			COALESCE(referencia_externa, ''),
+			COALESCE(codigo, ''),
+			COALESCE(nombre, '')
+		FROM carritos_compras
+		WHERE empresa_id = ?`, empresaID)
+		if err != nil {
+			return nil, err
+		}
+		for rowsCarritos.Next() {
+			var referenciaExterna string
+			var codigo string
+			var nombre string
+			if err := rowsCarritos.Scan(&referenciaExterna, &codigo, &nombre); err != nil {
+				rowsCarritos.Close()
+				return nil, err
+			}
+			estacionID := parseReservaHotelEstacionID(referenciaExterna, codigo, empresaID)
+			if estacionID <= 0 {
+				continue
+			}
+			mergeTarifaPorDiaEstacionRef(refs, empresaTarifaPorDiaEstacionRef{ID: estacionID, Codigo: codigo, Nombre: nombre}, empresaID)
+		}
+		if err := rowsCarritos.Err(); err != nil {
+			rowsCarritos.Close()
+			return nil, err
+		}
+		rowsCarritos.Close()
+	}
+
+	hasReservas, err := tableExists(dbConn, "reservas_hotel")
+	if err != nil {
+		return nil, err
+	}
+	if hasReservas {
+		rowsReservas, err := dbConn.Query(`SELECT DISTINCT
+			COALESCE(estacion_id, 0),
+			COALESCE(estacion_codigo, ''),
+			COALESCE(estacion_nombre, '')
+		FROM reservas_hotel
+		WHERE empresa_id = ?
+			AND COALESCE(estacion_id, 0) > 0`, empresaID)
+		if err != nil {
+			return nil, err
+		}
+		for rowsReservas.Next() {
+			var estacionID int64
+			var estacionCodigo string
+			var estacionNombre string
+			if err := rowsReservas.Scan(&estacionID, &estacionCodigo, &estacionNombre); err != nil {
+				rowsReservas.Close()
+				return nil, err
+			}
+			mergeTarifaPorDiaEstacionRef(refs, empresaTarifaPorDiaEstacionRef{ID: estacionID, Codigo: estacionCodigo, Nombre: estacionNombre}, empresaID)
+		}
+		if err := rowsReservas.Err(); err != nil {
+			rowsReservas.Close()
+			return nil, err
+		}
+		rowsReservas.Close()
+	}
+
+	out := make([]empresaTarifaPorDiaEstacionRef, 0, len(refs))
+	for _, ref := range refs {
+		out = append(out, ref)
+	}
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].ID < out[j].ID
+	})
+	return out, nil
+}
+
+func findEmpresaTarifaPorDiaByStation(dbConn *sql.DB, empresaID, estacionID int64) (*EmpresaTarifaPorDia, error) {
+	row := dbConn.QueryRow(`SELECT
+		id,
+		empresa_id,
+		estacion_id,
+		COALESCE(estacion_codigo, ''),
+		COALESCE(estacion_nombre, ''),
+		COALESCE(servicio_nombre, 'hospedaje'),
+		COALESCE(valor_dia, 0),
+		COALESCE(hora_check_in, '15:00'),
+		COALESCE(hora_check_out, '12:00'),
+		COALESCE(moneda, 'COP'),
+		COALESCE(prioridad, 1),
+		COALESCE(aplicar_automaticamente, 1),
+		COALESCE(fecha_creacion, ''),
+		COALESCE(fecha_actualizacion, ''),
+		COALESCE(usuario_creador, ''),
+		COALESCE(estado, 'activo'),
+		COALESCE(observaciones, '')
+	FROM empresa_tarifas_por_dia
+	WHERE empresa_id = ?
+		AND estacion_id = ?
+	ORDER BY prioridad ASC, id ASC
+	LIMIT 1`, empresaID, estacionID)
+
+	item, err := scanEmpresaTarifaPorDia(row)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return item, nil
+}
+
+// ApplyEmpresaTarifaPorDiaToAllStations aplica una misma regla de tarifa diaria a todas las estaciones detectadas de la empresa.
+func ApplyEmpresaTarifaPorDiaToAllStations(dbConn *sql.DB, template EmpresaTarifaPorDia) (*EmpresaTarifaPorDiaAplicacionMasivaResultado, error) {
+	if template.EmpresaID <= 0 {
+		return nil, fmt.Errorf("empresa_id es obligatorio")
+	}
+	if err := EnsureEmpresaTarifasPorDiaSchema(dbConn); err != nil {
+		return nil, err
+	}
+
+	normalized := template
+	if normalized.EstacionID <= 0 {
+		normalized.EstacionID = 1
+	}
+	if err := normalizeEmpresaTarifaPorDiaPayload(&normalized); err != nil {
+		return nil, err
+	}
+
+	refs, err := listEmpresaTarifaPorDiaStationRefs(dbConn, template.EmpresaID)
+	if err != nil {
+		return nil, err
+	}
+	if template.EstacionID > 0 {
+		base := make(map[int64]empresaTarifaPorDiaEstacionRef, len(refs)+1)
+		for _, ref := range refs {
+			base[ref.ID] = ref
+		}
+		mergeTarifaPorDiaEstacionRef(base, empresaTarifaPorDiaEstacionRef{ID: template.EstacionID, Codigo: template.EstacionCodigo, Nombre: template.EstacionNombre}, template.EmpresaID)
+		refs = refs[:0]
+		for _, ref := range base {
+			refs = append(refs, ref)
+		}
+		sort.Slice(refs, func(i, j int) bool {
+			return refs[i].ID < refs[j].ID
+		})
+	}
+	if len(refs) == 0 {
+		return nil, fmt.Errorf("no se encontraron estaciones para aplicar la tarifa")
+	}
+
+	result := &EmpresaTarifaPorDiaAplicacionMasivaResultado{
+		EmpresaID:          template.EmpresaID,
+		ValorDia:           normalized.ValorDia,
+		HoraCheckIn:        normalized.HoraCheckIn,
+		HoraCheckOut:       normalized.HoraCheckOut,
+		EstacionesObjetivo: len(refs),
+		TarifaIDs:          make([]int64, 0, len(refs)),
+	}
+
+	for _, ref := range refs {
+		payload := normalized
+		payload.ID = 0
+		payload.EmpresaID = template.EmpresaID
+		payload.EstacionID = ref.ID
+		if strings.TrimSpace(ref.Codigo) != "" {
+			payload.EstacionCodigo = strings.TrimSpace(ref.Codigo)
+		} else {
+			payload.EstacionCodigo = fmt.Sprintf("EST-%d-%d", template.EmpresaID, ref.ID)
+		}
+		if strings.TrimSpace(ref.Nombre) != "" {
+			payload.EstacionNombre = strings.TrimSpace(ref.Nombre)
+		} else {
+			payload.EstacionNombre = fmt.Sprintf("Estacion %d", ref.ID)
+		}
+
+		existing, err := findEmpresaTarifaPorDiaByStation(dbConn, template.EmpresaID, ref.ID)
+		if err != nil {
+			return nil, err
+		}
+		if existing != nil {
+			payload.ID = existing.ID
+			if err := UpdateEmpresaTarifaPorDia(dbConn, payload); err != nil {
+				return nil, err
+			}
+			result.TarifasActualizadas++
+			result.TarifaIDs = append(result.TarifaIDs, existing.ID)
+			continue
+		}
+
+		id, err := CreateEmpresaTarifaPorDia(dbConn, payload)
+		if err != nil {
+			return nil, err
+		}
+		result.TarifasCreadas++
+		result.TarifaIDs = append(result.TarifaIDs, id)
+	}
+
+	return result, nil
 }
