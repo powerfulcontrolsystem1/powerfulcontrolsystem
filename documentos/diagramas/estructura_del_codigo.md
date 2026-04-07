@@ -56,6 +56,40 @@ flowchart TD
 ## Regla de mantenimiento
 Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe reflejarse en este documento y en los diagramas relacionados dentro de documentos/diagramas/.
 
+## Actualizacion 2026-04-07 (cierre modulo 37: venta publica + Wompi por empresa)
+
+- Backend DB:
+  - `backend/db/venta_publica.go` (nuevo):
+    - agrega `EnsureEmpresaVentaPublicaSchema`.
+    - crea tablas `empresa_venta_publica_configuracion`, `empresa_venta_publica_items` y `empresa_venta_publica_ordenes`.
+    - implementa CRUD/listados de configuracion e items, resolucion por slug y ciclo de orden publica con trazabilidad de pago.
+
+- Backend handlers:
+  - `backend/handlers/venta_publica.go` (nuevo):
+    - agrega endpoint empresarial `GET/POST/PUT/PATCH/DELETE /api/empresa/venta_publica` (catalogo, configuracion, ordenes, upload de imagen).
+    - agrega endpoint publico `GET/POST /api/public/venta_publica` para catalogo, crear pago Nequi por Wompi y consultar estado de orden.
+    - resuelve credenciales sensibles por referencia segura (`env:`, `file:`, `base64:`) para llaves privadas/integridad Wompi.
+
+- Integracion en arranque/rutas:
+  - `backend/main.go`:
+    - ejecuta `EnsureEmpresaVentaPublicaSchema` durante bootstrap.
+    - registra migracion `2026-04-07-028-venta-publica-wompi`.
+    - registra rutas `/api/empresa/venta_publica` y `/api/public/venta_publica`.
+    - agrega rewrite de ruta amigable `/{slug}/venta_publica.html` hacia `venta_publica.html`.
+  - `backend/utils/utils.go`:
+    - habilita acceso publico a `venta_publica.html`, `/{slug}/venta_publica.html`, `/api/public/venta_publica` y `/uploads/`.
+
+- Frontend:
+  - `web/administrar_empresa/venta_publica.html` (nuevo):
+    - UI de administracion empresarial para configurar tienda publica, catalogo, upload de imagen y consulta de ordenes.
+  - `web/venta_publica.html` (nuevo):
+    - vitrina publica para clientes finales con carrito ligero, creacion de pago y consulta de estado.
+  - `web/administrar_empresa.html` y `web/js/administrar_empresa.js`:
+    - agregan `linkVentaPublica` con control de visibilidad por permisos del modulo ventas.
+
+- Validacion tecnica:
+  - `go test ./... -run "^$" -count=1` -> compilacion global backend OK.
+
 ## Actualizacion 2026-04-07 (cierre modulo 36: backups empresariales por empresa)
 
 - Backend DB:

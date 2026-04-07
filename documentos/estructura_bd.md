@@ -1,6 +1,6 @@
 # Estructura de Base de Datos
 
-Version: 2026-04-07.36.1
+Version: 2026-04-07.37.0
 Ultima actualizacion: 2026-04-07
 
 Este documento consolida la estructura activa de SQLite para el proyecto.
@@ -94,6 +94,24 @@ Todas las tablas operativas usan como base los campos estandar:
   - unidad_medida, cantidad, precio_unitario
   - descuento_porcentaje, impuesto_porcentaje, impuesto_codigo
   - base_gravable, valor_descuento, valor_impuesto, subtotal_linea, total_linea
+
+### Tablas de venta publica por empresa
+- empresa_venta_publica_configuracion:
+  - empresa_id (UNIQUE), empresa_slug (UNIQUE)
+  - nombre_tienda, descripcion_tienda, logo_url, banner_url, color_primario
+  - moneda, dominio_publico, mostrar_stock
+  - wompi_activo, wompi_mode, wompi_public_key
+  - wompi_private_key_ref, wompi_integrity_key_ref, wompi_event_key_ref
+- empresa_venta_publica_items:
+  - empresa_id, producto_id, codigo_publico
+  - nombre, descripcion, precio, moneda, imagen_url
+  - stock_publicado, orden_visual, destacado
+- empresa_venta_publica_ordenes:
+  - empresa_id, codigo_orden (UNIQUE por empresa)
+  - comprador_nombre, comprador_email, comprador_telefono
+  - moneda, subtotal, descuento_total, impuesto_total, total
+  - metodo_pago, estado_pago, transaction_id, referencia_externa
+  - provider_payload_json, items_json, pagado_en, error_pago
 
 ### Tabla de metricas de ventas simples por estacion
 - empresa_ventas_estacion_metricas:

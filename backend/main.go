@@ -408,6 +408,9 @@ func main() {
 	if err := dbpkg.EnsureEmpresaBackupsSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure backups empresariales schema in empresas db: %v", err)
 	}
+	if err := dbpkg.EnsureEmpresaVentaPublicaSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure venta publica schema in empresas db: %v", err)
+	}
 	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-01-001-baseline", "baseline schema snapshot: users, empresas, productos, clientes, carritos, configuracion_avanzada"); err != nil {
 		log.Fatalf("failed to register schema migration in empresas db: %v", err)
 	}
@@ -497,6 +500,9 @@ func main() {
 	}
 	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-07-027-backups-empresariales", "modulo 36: snapshots y restauraciones de datos por empresa con historial trazable"); err != nil {
 		log.Fatalf("failed to register backups empresariales schema migration in empresas db: %v", err)
+	}
+	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-07-028-venta-publica-wompi", "modulo 37: venta publica por empresa con slug, catalogo y pagos wompi/nequi por credenciales empresariales"); err != nil {
+		log.Fatalf("failed to register venta publica wompi schema migration in empresas db: %v", err)
 	}
 	// Crear tipos_de_empresas en la base de datos de superadministrador (ubicación centralizada)
 	createTiposSuper := `CREATE TABLE IF NOT EXISTS tipos_de_empresas (
@@ -889,6 +895,8 @@ func main() {
 	http.HandleFunc("/api/empresa/clientes", handlers.WithEmpresaClientesPermissions(dbEmpresas, dbSuper, handlers.EmpresaClientesHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/carritos_compra", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCarritosCompraHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/carritos_compra/items", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCarritoItemsHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/venta_publica", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaVentaPublicaHandler(dbEmpresas)))
+	http.HandleFunc("/api/public/venta_publica", handlers.PublicVentaPublicaHandler(dbEmpresas))
 	http.HandleFunc("/api/empresa/reservas_hotel", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaReservasHotelHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/tarifas_por_minutos", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaTarifasPorMinutosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/tarifas_por_dia", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaTarifasPorDiaHandler(dbEmpresas)))
@@ -1011,7 +1019,19 @@ func main() {
 	} else {
 		log.Printf("index.html encontrado en %s\n", indexPath)
 	}
-	http.Handle("/", http.FileServer(http.Dir(webDir)))
+	staticFS := http.FileServer(http.Dir(webDir))
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		path := strings.TrimSpace(r.URL.Path)
+		trimmed := strings.Trim(path, "/")
+		parts := strings.Split(trimmed, "/")
+		if len(parts) == 2 && strings.EqualFold(parts[1], "venta_publica.html") && strings.TrimSpace(parts[0]) != "" {
+			r2 := r.Clone(r.Context())
+			r2.URL.Path = "/venta_publica.html"
+			staticFS.ServeHTTP(w, r2)
+			return
+		}
+		staticFS.ServeHTTP(w, r)
+	})
 
 	// Wrap DefaultServeMux with authentication, JSON error normalization and logging middleware
 	handler := utils.LoggingMiddleware(utils.JSONErrorMiddleware(utils.AuthMiddleware(dbSuper, http.DefaultServeMux)))

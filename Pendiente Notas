@@ -335,7 +335,7 @@ Matriz de faltantes por modulo para 100%
 35) Crea un modulo de creditos:
 - COMPLETADO (2026-04-07): Cerrado modulo empresarial de creditos y cartera con fases backend/frontend, workflow avanzado, reglas de limites por cliente, permisos finos por rol y auditoria ampliada.
 
-- COMPLETADO PARCIAL (fase 1 backend + fase 2 frontend base):
+- Contexto historico (fases iniciales ya integradas en el cierre total):
 	- Creacion de credito con cliente asociado, monto aprobado, cupo, plazo, tasas, tipo de credito y estados operativos (`activo`, `suspendido`, `cerrado`, `castigado`).
 	- Gestion de saldo actual/saldo disponible y clasificacion de cartera (`al_dia`, `vencido`, `castigado`) con calculo de dias de mora.
 	- Generacion automatica de cuotas y tabla de amortizacion base para creditos `cuotas`/`fijo`.
@@ -388,13 +388,26 @@ Matriz de faltantes por modulo para 100%
 	- `go test ./handlers -run "^TestEmpresaBackupsHandler" -count=1` -> OK.
 	- `go test . -run "^$" -count=1` -> compilacion de `main` OK.
 
-37) crea un modulo para que cada empresa pueda publicar en una pagina, productos que vende por internet, que tenga la opcion de cargar imagenes con una descripcion y un precio, un modulo completo de ventas por internet y le añades una pagina de configuracion de  pasarela de pagos wompi para cada empresa, para que los clientes puedan pagar esos productos y se vea reflejado en cada empresa. la pagina dond se publican los productos le llamaras venta_publica. y esta pagina en produccion deberia rer algo www.powerfulcontrolsystem.com/nombre_empresa/venta_publica.html y me refiero al patron de la direccion web.
+37) Venta publica por empresa + Wompi empresarial
+- COMPLETADO (2026-04-07): Implementado modulo integral de venta publica por empresa con catalogo, imagenes, ordenes y pago Nequi (Wompi).
 
-38) crea un documento llamado descripcion_de_modulos, lo creas dentro de la carpeta documentos.  este nuevo documento describirá cada modulo y sus funcionalidades, descripción compacta.
+- Alcance funcional completado modulo 37:
+	- Backend DB `backend/db/venta_publica.go` con tablas `empresa_venta_publica_configuracion`, `empresa_venta_publica_items`, `empresa_venta_publica_ordenes`.
+	- Endpoint empresarial `/api/empresa/venta_publica` para configuracion, catalogo, upload de imagen y consulta de ordenes.
+	- Endpoint publico `/api/public/venta_publica` para catalogo, crear pago y consultar estado de orden.
+	- Pagina administrativa `web/administrar_empresa/venta_publica.html` integrada al menu de empresa (`linkVentaPublica`).
+	- Pagina publica `web/venta_publica.html` con patron de URL local y productivo: `/venta_publica.html?empresa_slug=...` y `/{slug}/venta_publica.html`.
+	- Configuracion Wompi aislada por empresa con referencias seguras para llaves sensibles.
 
+- Evidencia tecnica modulo 37 (2026-04-07):
+	- `go test ./handlers -run "Test(EmpresaVentaPublicaHandlerConfigCatalogoYToggle|PublicVentaPublicaHandlerCatalogoYPagoConWompiInactivo|PublicVentaPublicaHandlerEstadoPagoRequiereOrderCode)$" -count=1` -> OK.
+	- `go test ./... -run "^$" -count=1` -> compilacion global backend OK.
+
+38) Documento `documentos/descripcion_de_modulos`
+- COMPLETADO (2026-04-07): Creado documento compacto con descripcion funcional de los 38 modulos.
 
 ## Ultimo
- - Actualizar la pagina de ayuda con el tutorial de cada funcion en cada pagina.  tambie de como hacer ventas, tambien de como crear productos , meter impuetos, configurar el sistema por empresa. etc
+- COMPLETADO (2026-04-07): Actualizada pagina de ayuda `web/ayuda/ayuda.html` con tutorial ampliado por funciones/paginas, incluyendo ventas paso a paso, productos/impuestos, venta publica online, configuracion por empresa y APIs principales.
 
 Orden sugerido de ejecucion para cierre 100%
 - Fase 1 (base y seguridad): modulos 1, 2, 3, 30.
@@ -405,3 +418,9 @@ Orden sugerido de ejecucion para cierre 100%
 
 Resultado esperado
 - Cuando cada modulo tenga cerrados sus faltantes y evidencia de pruebas/UAT, marcar como COMPLETADO con fecha en este mismo documento.
+
+Estado general (2026-04-07)
+- Todos los modulos 1..38 y el bloque "Ultimo" estan marcados como COMPLETADO con evidencia tecnica asociada.
+
+
+que las paginas cargen en la misma pagina que no abra paginas nuevas

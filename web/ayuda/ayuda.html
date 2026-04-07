@@ -17,6 +17,9 @@
       <div class="empresa-inline-actions" style="margin-top:10px;flex-wrap:wrap;gap:8px;">
         <a class="btn secondary" href="#menu-rapido">Guía rápida</a>
         <a class="btn secondary" href="#menu-tutorial-modulos">Tutorial por módulos</a>
+        <a class="btn secondary" href="#menu-ventas-rapidas">Ventas paso a paso</a>
+        <a class="btn secondary" href="#menu-productos-impuestos">Productos e impuestos</a>
+        <a class="btn secondary" href="#menu-venta-publica">Venta pública online</a>
         <a class="btn secondary" href="#menu-creditos">Créditos y cartera</a>
         <a class="btn secondary" href="#menu-apis">APIs</a>
         <a class="btn secondary" href="#menu-inventario">Inventario</a>
@@ -301,6 +304,30 @@
         <li>Consulta cartera con filtros por cliente/estado/clasificación y revisa el resumen operativo (saldo, vencidos, mora).</li>
         <li>Registra abonos (total o parcial), valida la aplicación a cuotas y confirma el estado de cuenta antes del cierre diario.</li>
       </ol>
+
+      <h4 style="margin:12px 0 6px 0;">31) Venta pública por empresa</h4>
+      <p class="form-help" style="margin-top:0;">Rutas: <a href="/administrar_empresa/venta_publica.html">/administrar_empresa/venta_publica.html</a> y <a href="/venta_publica.html">/venta_publica.html</a></p>
+      <ol>
+        <li>Configura slug, branding y llaves Wompi por empresa en el módulo de administración.</li>
+        <li>Publica items con precio, imagen y descripción, y verifica la URL pública por slug.</li>
+        <li>Ejecuta pago de prueba Nequi desde la tienda pública y confirma el estado de la orden.</li>
+      </ol>
+
+      <h4 style="margin:12px 0 6px 0;">32) Ventas operativas (paso a paso)</h4>
+      <p class="form-help" style="margin-top:0;">Ruta: <a href="/administrar_empresa/carrito_de_compras.html">/administrar_empresa/carrito_de_compras.html</a></p>
+      <ol>
+        <li>Crea o activa carrito por estación/sesión y asigna cliente cuando aplique.</li>
+        <li>Agrega productos/servicios/combos, valida cantidades, descuentos e impuestos por línea.</li>
+        <li>Cierra el cobro con método permitido por rol y verifica que la venta quede en estado cerrado.</li>
+      </ol>
+
+      <h4 style="margin:12px 0 6px 0;">33) Crear productos e impuestos</h4>
+      <p class="form-help" style="margin-top:0;">Ruta: <a href="/administrar_empresa/administrar_productos.html">/administrar_empresa/administrar_productos.html</a></p>
+      <ol>
+        <li>Crea categoría y producto con SKU/código de barras, costo, precio y bodega base.</li>
+        <li>Define porcentaje de impuesto en el producto y confirma impacto en total de venta.</li>
+        <li>Publica imagen, activa el producto y valida que aparezca en carrito/catalogo según módulo.</li>
+      </ol>
     </section>
 
     <section id="menu-propinas-comisiones" class="card empresa-section">
@@ -364,6 +391,48 @@
       </ul>
     </section>
 
+    <section id="menu-ventas-rapidas" class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2 style="margin:0;">Ventas: flujo practico de punta a punta</h2>
+      </div>
+      <p class="form-help" style="margin-top:8px;">Rutas sugeridas: <a href="/administrar_empresa/carrito_de_compras.html">carrito_de_compras</a>, <a href="/administrar_empresa/estaciones.html">estaciones</a> y <a href="/administrar_empresa/reportes.html">reportes</a>.</p>
+      <ol>
+        <li>Selecciona empresa y estación operativa (mesa, habitación, caja u otro punto de atención).</li>
+        <li>Crea/activa carrito y agrega items (producto, combo o servicio) con cantidades correctas.</li>
+        <li>Verifica subtotal, descuento, impuesto y total antes de pasar a cobro.</li>
+        <li>Selecciona método de pago permitido por rol y valida referencia cuando aplique.</li>
+        <li>Cierra venta y confirma en reportes que el documento quedó trazado por empresa_id.</li>
+      </ol>
+    </section>
+
+    <section id="menu-productos-impuestos" class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2 style="margin:0;">Productos e impuestos: guia operativa</h2>
+      </div>
+      <p class="form-help" style="margin-top:8px;">Ruta principal: <a href="/administrar_empresa/administrar_productos.html">/administrar_empresa/administrar_productos.html</a>.</p>
+      <ol>
+        <li>Crea categoría y bodega antes de cargar productos masivos.</li>
+        <li>Registra producto con SKU/código de barras, costo, precio y unidad de medida.</li>
+        <li>Define porcentaje de impuesto por producto y valida impacto en carrito de prueba.</li>
+        <li>Configura stock mínimo/máximo para alertas y reposición temprana.</li>
+        <li>Sube imagen del producto y activa estado para disponibilidad comercial.</li>
+      </ol>
+    </section>
+
+    <section id="menu-venta-publica" class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2 style="margin:0;">Venta publica online por empresa</h2>
+      </div>
+      <p class="form-help" style="margin-top:8px;">Rutas: <a href="/administrar_empresa/venta_publica.html">administrar_empresa/venta_publica.html</a>, <a href="/venta_publica.html">venta_publica.html</a> y patrón productivo <strong>/{slug}/venta_publica.html</strong>.</p>
+      <ol>
+        <li>Configura slug, nombre de tienda, colores, logo/banner y moneda por empresa.</li>
+        <li>Publica items con imagen, precio, descripción y estado activo/inactivo.</li>
+        <li>Configura Wompi por empresa (public key + referencias seguras de llaves privadas).</li>
+        <li>Prueba flujo de cliente: catálogo público, carrito y pago Nequi.</li>
+        <li>Consulta ordenes y estado de pago para conciliación operativa.</li>
+      </ol>
+    </section>
+
     <section id="menu-apis" class="card empresa-section">
       <div class="empresa-section-header">
         <h2 style="margin:0;">APIs principales</h2>
@@ -407,6 +476,8 @@
             <tr><td>GET/POST/PUT/DELETE</td><td>/api/empresa/carritos_compra</td><td>CRUD de carritos por empresa</td></tr>
             <tr><td>GET/POST/PUT/DELETE</td><td>/api/empresa/carritos_compra/items</td><td>CRUD de items en carrito</td></tr>
             <tr><td>GET/POST/PUT/DELETE</td><td>/api/empresa/codigos_de_descuento</td><td>CRUD y validación de códigos de descuento por empresa</td></tr>
+            <tr><td>GET/POST/PUT/PATCH/DELETE</td><td>/api/empresa/venta_publica</td><td>Configuración de tienda pública, catálogo, imágenes y órdenes por empresa</td></tr>
+            <tr><td>GET/POST</td><td>/api/public/venta_publica</td><td>Catálogo público, creación de pago Nequi (Wompi) y estado de orden</td></tr>
             <tr><td>PUT?action=activar_estacion</td><td>/api/empresa/carritos_compra</td><td>Activación de carrito de estación</td></tr>
             <tr><td>PUT?action=pagar_estacion</td><td>/api/empresa/carritos_compra</td><td>Cierre/pago con validación de efectivo, tarjeta crédito, tarjeta débito, transferencia bancaria, pago mixto o código de descuento</td></tr>
           </tbody>

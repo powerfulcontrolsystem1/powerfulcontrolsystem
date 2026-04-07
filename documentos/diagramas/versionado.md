@@ -6,6 +6,13 @@
 
 ## Historial
 
+### Version 2026-04-07.37.1
+- Modulo 37 (venta publica + Wompi por empresa) incorporado en diagramas tecnicos y funcionales.
+- Archivos actualizados:
+  - `diagrama_entidad_relacion.md`
+  - `diagrama_flujo_procesos.md`
+  - `estructura_del_codigo.md`
+
 ### Version 2026-04-07.36.1
 - Modulo 36 (backups empresariales) incorporado en diagramas tecnicos y funcionales.
 - Archivos actualizados:

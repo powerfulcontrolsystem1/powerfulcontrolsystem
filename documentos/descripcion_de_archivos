@@ -1,5 +1,49 @@
 Descripcion de archivos del proyecto
 
+Actualizacion 2026-04-07: Cobertura de pruebas modulo 37 (venta publica)
+
+- `backend/handlers/venta_publica_test.go` (nuevo):
+	- valida endpoint empresarial `/api/empresa/venta_publica` para configuracion de tienda y ciclo basico de catalogo (crear/listar/detalle/activar/desactivar).
+	- valida endpoint publico `/api/public/venta_publica` para catalogo y creacion de orden cuando Wompi esta inactivo, asegurando respuesta controlada y persistencia de orden.
+	- valida respuesta `400` en `action=estado_pago` cuando no se envia `order_code`.
+
+Actualizacion 2026-04-07: Cierre modulo 37 (venta publica + Wompi empresarial), modulo 38 y ampliacion de ayuda
+
+- `backend/db/venta_publica.go` (nuevo):
+	- crea/migra tablas `empresa_venta_publica_configuracion`, `empresa_venta_publica_items` y `empresa_venta_publica_ordenes`.
+	- implementa CRUD/listados por empresa, resolucion por `empresa_slug` y ciclo de orden publica.
+
+- `backend/handlers/venta_publica.go` (nuevo):
+	- agrega `/api/empresa/venta_publica` (catalogo/configuracion/upload/ordenes) y `/api/public/venta_publica` (catalogo/pago/estado).
+	- integra pago Nequi por Wompi con credenciales por empresa y estado de orden trazable.
+
+- `backend/main.go` y `backend/utils/utils.go`:
+	- integran schema/rutas del modulo 37, acceso publico de `venta_publica` y rewrite de `/{slug}/venta_publica.html`.
+
+- `web/administrar_empresa/venta_publica.html` (nuevo):
+	- interfaz empresarial para configurar tienda publica, administrar items, subir imagenes y consultar ordenes.
+
+- `web/venta_publica.html` (nuevo):
+	- vitrina publica para clientes finales con carrito ligero, creacion de pago y consulta de estado.
+
+- `web/administrar_empresa.html` y `web/js/administrar_empresa.js`:
+	- agregan `linkVentaPublica` y su regla de permisos del modulo ventas.
+
+- `documentos/descripcion_de_modulos` (nuevo):
+	- catalogo compacto de los 38 modulos del sistema y su alcance funcional.
+
+- `web/ayuda/ayuda.html`:
+	- amplía tutoriales por pagina/funcion (ventas, productos/impuestos, venta publica online y configuracion por empresa) y APIs del nuevo modulo.
+
+- `documentos/diagramas/estructura_del_codigo.md`, `documentos/diagramas/diagrama_flujo_procesos.md`, `documentos/diagramas/diagrama_entidad_relacion.md` y `documentos/diagramas/versionado.md`:
+	- sincronizan arquitectura, flujo y modelo ER del modulo 37.
+
+- `documentos/estructura_bd.md` y `estructura_bd.md`:
+	- actualizan version de esquema e incorporan tablas de venta publica por empresa.
+
+- `documentos/descripcion_del_proyecto`, `Pendiente Notas`, `CHANGELOG.md` y `documentos/historial_de_cambios`:
+	- sincronizan trazabilidad funcional/tecnica del cierre de pendientes.
+
 Actualizacion 2026-04-07: Cierre modulo 36 (Backups empresariales por empresa)
 
 - `backend/db/backups_empresariales.go` (nuevo):

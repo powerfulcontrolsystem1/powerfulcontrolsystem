@@ -1,0 +1,120 @@
+Descripcion compacta de modulos (POS multiempresa)
+Actualizacion: 2026-04-07
+
+Criterio de esta guia:
+- Resumen corto por modulo (objetivo + alcance operativo principal).
+- Enfoque multiempresa con aislamiento por empresa_id.
+
+1) Autenticacion y sesiones
+- Login admin/empresa, sesiones, bloqueo temporal y recuperacion de password.
+
+2) Administracion global (super)
+- Empresas, licencias, administradores, configuraciones globales (Wompi/SMTP/IA).
+
+3) Usuarios de empresa
+- Alta/edicion, confirmacion de correo, password inicial y cambio de password.
+
+4) Asistencia de empleados
+- Registro de entrada/salida, novedades, cierres de periodo y reportes de asistencia.
+
+5) Nomina de sueldos
+- Parametros legales, liquidaciones por periodo y conciliacion con asistencia.
+
+6) Registro de vehiculos
+- Ingreso/salida por placa, control de permanencia y trazabilidad operativa.
+
+7) Reservas por estacion/habitacion
+- Disponibilidad, creacion, confirmacion/cancelacion y control anti-overbooking.
+
+8) Tarifas por minutos
+- Reglas por estacion y dia, simulacion y calculo de cobro por bloques.
+
+9) Tarifas por dia
+- Reglas diarias por estacion/servicio con horarios check-in/check-out.
+
+10) Clientes
+- CRUD, deduplicacion, perfil comercial e historial por cliente.
+
+11) Inventario
+- Productos, bodegas, existencias, movimientos, alertas y conteo ciclico.
+
+12) Combos de productos
+- Recetas versionadas, costo teorico/real y venta de combos con descuento de ingredientes.
+
+13) Codigos de descuento
+- Reglas promocionales por canal/segmento/horario y trazabilidad de redenciones.
+
+14) Propinas
+- Configuracion fiscal, movimientos, ajustes manuales y conciliacion en cierre de caja.
+
+15) Comisiones por servicio
+- Reglas por rol/servicio, topes, ajustes y vinculacion a nomina.
+
+16) Compras
+- Documentos de compra con flujo de aprobacion, recepcion y contabilizacion.
+
+17) Facturacion electronica
+- Configuracion por pais, emision/anulacion/nota credito y cola de reintentos.
+
+18) Facturacion electronica DIAN Colombia
+- Configuracion DIAN, firma XML, envio/acuse y contingencia/reconexion.
+
+19) Gestion comercial extendida
+- Cotizaciones, pedidos, devoluciones y embudo de conversion comercial.
+
+20) Contabilidad operativa extendida (CxC/CxP)
+- Plan de cuentas, cartera por cobrar/pagar y conciliacion con pagos reales.
+
+21) Inventario extendido (lotes/series)
+- Trazabilidad por lote/serie, bloqueo por vencimiento y devolucion a proveedor.
+
+22) RRHH extendido (vacaciones/licencias)
+- Solicitudes, aprobacion multinivel, saldo/acumulado y enlace con nomina.
+
+23) CRM, Produccion y Logistica
+- Leads/campanas, ordenes de produccion, envios y seguimiento por hitos/SLA.
+
+24) Documental e integraciones
+- Versionado documental, control de acceso, rotacion de credenciales y monitoreo.
+
+25) Panel ERP extendido
+- Hub por dominios con formularios guiados, validaciones dinamicas y acciones rapidas.
+
+26) Carritos de compra e items
+- Operacion de carrito, pago validado, concurrencia de stock y recuperacion de sesiones.
+
+27) Ventas simples por estacion
+- Cobro rapido por estacion, operacion offline y metricas de atencion/rendimiento.
+
+28) Finanzas y contabilidad
+- Movimientos, periodos, cierres de caja, asientos y conciliacion bancaria automatica.
+
+29) Auditoria empresarial
+- Eventos trazables por modulo/usuario, busqueda avanzada y exportacion forense.
+
+30) Seguridad y permisos
+- Permisos por rol/modulo/accion, deny-by-default y evidencia de aprobacion.
+
+31) Reportes programados y consistencia
+- Programacion automatica, versionado de plantillas y validacion multiformato.
+
+32) Graficos y estadisticas
+- Series, rankings, comparativos por periodo y filtros avanzados con cache.
+
+33) Configuracion operativa de cobro
+- Politicas por rol/canal/turno, simulador y rollback por historial.
+
+34) Calculadora por empresa
+- Operaciones persistentes, etiquetas, asociaciones y exportacion multiformato.
+
+35) Creditos y cartera
+- Creditos, cuotas, abonos, workflow, limites por cliente y alertas de morosidad.
+
+36) Backups empresariales
+- Snapshots por empresa, restauracion trazable y exportacion de evidencia.
+
+37) Venta publica y pagos Wompi por empresa
+- Tienda online por empresa con slug publico, catalogo, imagenes y pago Nequi por Wompi.
+
+38) Descripcion de modulos (este documento)
+- Catalogo compacto de alcance funcional para consulta rapida tecnica/operativa.

@@ -1,6 +1,42 @@
 # CHANGELOG
 
 ## 2026-04-07
+- Normalizacion documental del tablero de pendientes (modulo 35).
+	- Se ajusta `Pendiente Notas` para reemplazar la etiqueta `COMPLETADO PARCIAL` por contexto historico de fases.
+	- Se mantiene el estado oficial de cierre total del modulo 35 sin cambios funcionales.
+
+- Continuacion de cierre de pendientes: tablero operativo actualizado con evidencia de pruebas del modulo 37.
+	- Se actualiza `Pendiente Notas` para añadir ejecucion dirigida de pruebas de `venta_publica` en handlers.
+	- Se explicita estado general sin pendientes de modulos (`1..38` y bloque "Ultimo" en `COMPLETADO`).
+
+- Pruebas dirigidas para el modulo 37 (Venta publica por empresa + Wompi).
+	- Se agrega `backend/handlers/venta_publica_test.go` con cobertura de:
+		- flujo empresarial (`config`, `crear`, `detalle`, `catalogo`, `activar/desactivar`).
+		- flujo publico de catalogo y creacion de orden con Wompi inactivo (respuesta controlada `412`).
+		- validacion de `estado_pago` cuando no se envia `order_code`.
+	- Validacion: `runTests` en `backend/handlers/venta_publica_test.go` -> 3 passed, 0 failed.
+
+- Cierre del modulo 37 (Venta publica por empresa + Wompi) y cierre de pendientes documentales 38/Ultimo.
+	- Backend `db`:
+		- `backend/db/venta_publica.go` (nuevo) agrega tablas `empresa_venta_publica_configuracion`, `empresa_venta_publica_items` y `empresa_venta_publica_ordenes`, con operaciones CRUD/listado/ordenes y resolucion por slug.
+	- Backend `handlers`:
+		- `backend/handlers/venta_publica.go` (nuevo) agrega `/api/empresa/venta_publica` y `/api/public/venta_publica`.
+		- soporta configuracion Wompi por empresa, carga de imagen de catalogo, creacion de pago Nequi y consulta de estado de orden.
+	- Integracion:
+		- `backend/main.go` integra schema, migracion `2026-04-07-028-venta-publica-wompi`, rutas API y rewrite de `/{slug}/venta_publica.html`.
+		- `backend/utils/utils.go` habilita acceso publico a rutas/API de venta publica y recursos en `/uploads/`.
+	- Frontend:
+		- `web/administrar_empresa/venta_publica.html` (nuevo) para administracion del canal online por empresa.
+		- `web/venta_publica.html` (nuevo) para clientes finales (catalogo, carrito, pago y estado).
+		- `web/administrar_empresa.html` y `web/js/administrar_empresa.js` agregan `linkVentaPublica` con permisos de ventas.
+	- Documentacion:
+		- se crea `documentos/descripcion_de_modulos` (modulo 38).
+		- se amplia `web/ayuda/ayuda.html` con tutoriales de ventas, productos/impuestos, venta publica y configuracion por empresa (cierre del "Ultimo").
+		- se sincronizan `documentos/estructura_bd.md`, `estructura_bd.md` y diagramas (`estructura_del_codigo`, `diagrama_flujo_procesos`, `diagrama_entidad_relacion`).
+	- Validaciones ejecutadas:
+		- `go test ./... -run "^$" -count=1` -> compilacion global backend OK.
+		- `get_errors` en archivos modificados -> sin errores.
+
 - Cierre del modulo 36 (Backups empresariales): snapshots por empresa, restauracion trazable, exportacion multiformato y UI dedicada.
 	- Backend `db`:
 		- `backend/db/backups_empresariales.go` agrega tablas `empresa_backups` y `empresa_backups_restauraciones` con `EnsureEmpresaBackupsSchema`.

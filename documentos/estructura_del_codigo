@@ -24,6 +24,17 @@ Cambios estructurales incorporados en backend y frontend base para el modulo de 
 - `web/js/administrar_empresa.js`: integra `linkCreditos` al menu con control de permisos por rol del modulo finanzas.
 - `web/estilos.css`: agrega estilos `creditos-*` para layout, resumen, acciones, alertas/ranking y detalle responsive.
 
+## 2.2) Actualizacion 2026-04-07 (cierre modulo 37: venta publica + Wompi por empresa)
+
+Cambios estructurales incorporados para venta por internet por empresa:
+- `backend/db/venta_publica.go` (nuevo): esquema y logica de tienda publica por empresa (`configuracion`, `items`, `ordenes`) con resolucion por slug.
+- `backend/handlers/venta_publica.go` (nuevo): API empresarial `/api/empresa/venta_publica` y API publica `/api/public/venta_publica` para catalogo, pago y estado.
+- `backend/main.go`: integra `EnsureEmpresaVentaPublicaSchema`, migracion `2026-04-07-028-venta-publica-wompi`, rutas del modulo y rewrite de `/{slug}/venta_publica.html`.
+- `backend/utils/utils.go`: habilita rutas publicas de venta publica y recursos de imagen en `/uploads/`.
+- `web/administrar_empresa/venta_publica.html` (nuevo): gestion empresarial de slug, catalogo, imagenes y configuracion Wompi.
+- `web/venta_publica.html` (nuevo): vitrina de cliente final con carrito, pago Nequi y consulta de estado.
+- `web/administrar_empresa.html` y `web/js/administrar_empresa.js`: adicion de `linkVentaPublica` con politica de permisos del modulo ventas.
+
 ## 2) Arquitectura general
 
 Patron aplicado: separacion por capas + separacion por modulo funcional.

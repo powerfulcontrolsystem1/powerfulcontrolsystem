@@ -266,6 +266,20 @@ flowchart TD
     BK11 --> BK12[Actualizar restaurado_en/restaurado_por y publicar resumen]
     BK12 --> BK13[Activar o desactivar snapshot action=activar/desactivar]
 
+    L --> VP0[Entrar a modulo venta_publica]
+    VP0 --> VP1[Menu valida visibilidad de linkVentaPublica segun permisos de ventas]
+    VP1 --> VP2[Cargar vista venta_publica.html con contexto empresa_id]
+    VP2 --> VP3[Configurar tienda publica slug branding y modo Wompi]
+    VP3 --> VP4[Guardar configuracion en empresa_venta_publica_configuracion]
+    VP4 --> VP5[Crear items publicos con precio descripcion e imagen]
+    VP5 --> VP6[Listar catalogo interno y activar/desactivar items]
+    VP6 --> VP7[Publicar tienda en /venta_publica.html o /{slug}/venta_publica.html]
+    VP7 --> VP8[Cliente consulta /api/public/venta_publica action=catalogo]
+    VP8 --> VP9[Cliente crea pago action=crear_pago con carrito publico]
+    VP9 --> VP10[Resolver credenciales Wompi por empresa y crear transaccion Nequi]
+    VP10 --> VP11[Persistir orden en empresa_venta_publica_ordenes]
+    VP11 --> VP12[Consultar estado action=estado_pago y actualizar estado local]
+
     L --> GX0[Entrar a modulo graficos_estadisticas]
     GX0 --> GX1[Consultar action=panel en /api/empresa/graficos_estadisticas]
     GX1 --> GX11[Aplicar filtros avanzados por sucursal_id estacion_id y segmento]
@@ -505,6 +519,8 @@ Resultado esperado:
 - En `configuracion_de_estaciones`, existe accion manual para forzar inactivacion/cierre masivo de carritos de estaciones.
 - En `administrar_empresa`, `super_administrador` y `seleccionar_empresa`, al recargar con F5 se restaura la subpagina/vista que estaba abierta.
 - En `administrar_productos`, el catálogo de `categorias_productos` permite filtrar y asignar categorías de forma consistente por `empresa_id`.
+- En `administrar_empresa/venta_publica`, cada empresa administra su tienda online (slug, catalogo, imagenes y credenciales Wompi) de forma aislada por `empresa_id`.
+- La tienda publica funciona con patron local y productivo: `/venta_publica.html?empresa_slug=...` y `/{slug}/venta_publica.html`.
 - En `ubicacion_gps`, cada dispositivo puede registrar su recorrido automaticamente cada 10 segundos y visualizarse sobre mapa de codigo abierto.
 - En `asistencia_empleados`, el sistema registra entrada/salida por empleado y calcula horas trabajadas por jornada.
 - En `asistencia_empleados`, la consulta por rango/estado permite control operativo diario y trazabilidad de novedades.

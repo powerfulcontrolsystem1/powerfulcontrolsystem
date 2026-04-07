@@ -30,6 +30,9 @@ erDiagram
     EMPRESAS ||--o{ EMPRESA_CREDITOS_CUOTAS : "empresa_id"
     EMPRESAS ||--o{ EMPRESA_CREDITOS_MOVIMIENTOS : "empresa_id"
     EMPRESAS ||--o{ EMPRESA_CREDITOS_WORKFLOW : "empresa_id"
+    EMPRESAS ||--|| EMPRESA_VENTA_PUBLICA_CONFIGURACION : "empresa_id"
+    EMPRESAS ||--o{ EMPRESA_VENTA_PUBLICA_ITEMS : "empresa_id"
+    EMPRESAS ||--o{ EMPRESA_VENTA_PUBLICA_ORDENES : "empresa_id"
     EMPRESAS ||--o{ EMPRESA_BACKUPS : "empresa_id"
     EMPRESAS ||--o{ EMPRESA_BACKUPS_RESTAURACIONES : "empresa_id"
     EMPRESAS ||--o{ EMPRESA_CIERRES_CAJA : "empresa_id"
@@ -383,6 +386,45 @@ erDiagram
       string resultado
       string fecha_creacion
       string usuario_creador
+      string estado
+    }
+    EMPRESA_VENTA_PUBLICA_CONFIGURACION {
+      int id PK
+      int empresa_id FK
+      string empresa_slug
+      string nombre_tienda
+      string moneda
+      int mostrar_stock
+      int wompi_activo
+      string wompi_mode
+      string estado
+    }
+    EMPRESA_VENTA_PUBLICA_ITEMS {
+      int id PK
+      int empresa_id FK
+      int producto_id
+      string codigo_publico
+      string nombre
+      double precio
+      string moneda
+      string imagen_url
+      double stock_publicado
+      int destacado
+      string estado
+    }
+    EMPRESA_VENTA_PUBLICA_ORDENES {
+      int id PK
+      int empresa_id FK
+      string codigo_orden
+      string comprador_nombre
+      string comprador_email
+      string comprador_telefono
+      double subtotal
+      double total
+      string metodo_pago
+      string estado_pago
+      string transaction_id
+      string referencia_externa
       string estado
     }
     EMPRESA_CIERRES_CAJA {

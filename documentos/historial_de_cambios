@@ -1,5 +1,56 @@
 - Historial de cambios
 
+- 2026-04-07: Normalizacion documental de pendientes (modulo 35)
+    - Se ajusta `Pendiente Notas` en modulo 35 para reemplazar la etiqueta `COMPLETADO PARCIAL` por contexto historico de fases.
+    - Se mantiene el estado de cierre total del modulo 35 sin cambios funcionales ni tecnicos.
+
+- 2026-04-07: Continuacion de pendientes - cierre de evidencia modulo 37 en tablero operativo
+    - Se actualiza `Pendiente Notas` para incorporar evidencia automatizada del modulo 37:
+        - `go test ./handlers -run "Test(EmpresaVentaPublicaHandlerConfigCatalogoYToggle|PublicVentaPublicaHandlerCatalogoYPagoConWompiInactivo|PublicVentaPublicaHandlerEstadoPagoRequiereOrderCode)$" -count=1` -> OK.
+    - Se agrega estado general del tablero indicando modulos `1..38` y bloque "Ultimo" en estado `COMPLETADO`.
+
+- 2026-04-07: Cobertura de pruebas para modulo 37 (venta publica + Wompi empresarial)
+    - Se crea `backend/handlers/venta_publica_test.go` con pruebas dirigidas del contrato HTTP:
+        - flujo empresarial de configuracion y catalogo (`config`, `crear`, `detalle`, `catalogo`, `activar/desactivar`).
+        - flujo publico de catalogo y creacion de orden con `wompi_activo=0` (respuesta controlada `412` y orden persistida).
+        - validacion de `estado_pago` cuando falta `order_code`.
+    - Validacion ejecutada:
+        - `runTests` sobre `backend/handlers/venta_publica_test.go` -> 3 passed, 0 failed.
+
+- 2026-04-07: Cierre de pendientes 37 y 38 + cierre del "Ultimo" (ayuda ampliada)
+    - Se crea `backend/db/venta_publica.go` con esquema y operaciones del modulo 37:
+        - `empresa_venta_publica_configuracion`, `empresa_venta_publica_items`, `empresa_venta_publica_ordenes`.
+    - Se crea `backend/handlers/venta_publica.go` con:
+        - endpoint empresarial `/api/empresa/venta_publica` (configuracion, catalogo, upload de imagen, ordenes).
+        - endpoint publico `/api/public/venta_publica` (catalogo, crear pago Wompi/Nequi, estado de pago).
+    - Se actualiza `backend/main.go` para integrar:
+        - `EnsureEmpresaVentaPublicaSchema`.
+        - migracion `2026-04-07-028-venta-publica-wompi`.
+        - rutas `/api/empresa/venta_publica` y `/api/public/venta_publica`.
+        - soporte de URL amigable `/{slug}/venta_publica.html`.
+    - Se actualiza `backend/utils/utils.go` para permitir acceso publico a:
+        - `/venta_publica.html`, `/{slug}/venta_publica.html`, `/api/public/venta_publica`, `/uploads/`.
+    - Se crean frontends:
+        - `web/administrar_empresa/venta_publica.html`.
+        - `web/venta_publica.html`.
+    - Se actualiza menu de empresa en:
+        - `web/administrar_empresa.html`.
+        - `web/js/administrar_empresa.js` (`linkVentaPublica` con permisos de ventas).
+    - Se crea `documentos/descripcion_de_modulos` con descripcion compacta de 38 modulos.
+    - Se actualiza `web/ayuda/ayuda.html` con tutorial ampliado por funciones/paginas y APIs del nuevo modulo.
+    - Se sincroniza documentacion tecnica en:
+        - `documentos/diagramas/estructura_del_codigo.md`.
+        - `documentos/diagramas/diagrama_flujo_procesos.md`.
+        - `documentos/diagramas/diagrama_entidad_relacion.md`.
+        - `documentos/estructura_bd.md` y `estructura_bd.md`.
+        - `documentos/descripcion_del_proyecto`.
+        - `documentos/descripcion_de_archivos`.
+        - `Pendiente Notas`.
+        - `CHANGELOG.md`.
+    - Validaciones ejecutadas:
+        - `go test ./... -run "^$" -count=1` -> compilacion global backend OK.
+        - `get_errors` sobre archivos backend/frontend modificados -> sin errores.
+
 - 2026-04-07: Cierre modulo 36 (backups empresariales) y sincronizacion completa de diagramas/documentacion
     - Se crea `backend/db/backups_empresariales.go` para:
         - crear/migrar tablas `empresa_backups` y `empresa_backups_restauraciones`.

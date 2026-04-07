@@ -390,12 +390,14 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 		publicExact := map[string]struct{}{
 			"/":                           {},
 			"/index.html":                 {},
+			"/venta_publica.html":         {},
 			"/login.html":                 {},
 			"/login_usuario.html":         {},
 			"/auth/google/login":          {},
 			"/auth/google/callback":       {},
 			"/auth/confirmar_correo":      {},
 			"/auth/logout":                {},
+			"/api/public/venta_publica":   {},
 			"/api/empresa/usuarios/login": {},
 			"/api/empresa/usuarios/establecer_password":             {},
 			"/api/empresa/usuarios/solicitar_recuperacion_password": {},
@@ -409,9 +411,17 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
+		if strings.HasSuffix(strings.ToLower(path), "/venta_publica.html") {
+			trimmed := strings.Trim(path, "/")
+			parts := strings.Split(trimmed, "/")
+			if len(parts) == 2 && strings.TrimSpace(parts[0]) != "" {
+				next.ServeHTTP(w, r)
+				return
+			}
+		}
 
 		// Recursos estáticos públicos
-		publicPrefixes := []string{"/assets/", "/img/", "/ayuda/"}
+		publicPrefixes := []string{"/assets/", "/img/", "/ayuda/", "/uploads/"}
 		for _, p := range publicPrefixes {
 			if strings.HasPrefix(path, p) {
 				next.ServeHTTP(w, r)
