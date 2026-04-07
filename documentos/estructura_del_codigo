@@ -12,6 +12,18 @@ Objetivo practico:
 - Acelerar nuevos desarrollos.
 - Reducir errores por cambios en zonas no entendidas.
 
+## 2.1) Actualizacion 2026-04-07 (avance modulo 35: creditos)
+
+Cambios estructurales incorporados en backend y frontend base para el modulo de creditos y cartera:
+- `backend/db/creditos.go` (nuevo): esquema y logica de creditos, cuotas, movimientos y dashboard de morosidad (proximos, vencidos y ranking).
+- `backend/handlers/creditos.go` (nuevo): endpoint empresarial `/api/empresa/creditos` con acciones de cartera, abonos, estado, alertas/ranking de morosidad y reporte por tipo (`cartera`/`morosidad`).
+- `backend/main.go`: registro de `EnsureEmpresaCreditosSchema`, migracion `2026-04-07-026-creditos-cartera` y ruta protegida con permisos de finanzas.
+- `backend/db/creditos_test.go` y `backend/handlers/creditos_test.go` (nuevos): cobertura base del flujo de creacion/abono/resumen y cobertura de alertas/ranking de morosidad.
+- `web/administrar_empresa/creditos.html` (nuevo): interfaz dedicada para crear, consultar y administrar creditos en panel empresa, incluyendo alertas/ranking con exportacion de morosidad.
+- `web/administrar_empresa.html`: agrega enlace lateral `linkCreditos` para navegacion del modulo.
+- `web/js/administrar_empresa.js`: integra `linkCreditos` al menu con control de permisos por rol del modulo finanzas.
+- `web/estilos.css`: agrega estilos `creditos-*` para layout, resumen, acciones, alertas/ranking y detalle responsive.
+
 ## 2) Arquitectura general
 
 Patron aplicado: separacion por capas + separacion por modulo funcional.

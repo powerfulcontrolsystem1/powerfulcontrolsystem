@@ -1,5 +1,265 @@
 Descripcion de archivos del proyecto
 
+Actualizacion 2026-04-07: Cierre modulo 36 (Backups empresariales por empresa)
+
+- `backend/db/backups_empresariales.go` (nuevo):
+	- crea y migra tablas `empresa_backups` y `empresa_backups_restauraciones`.
+	- agrega flujo completo de snapshots/restauraciones por `empresa_id`, con hashing de contenido y metadata de respaldo.
+
+- `backend/db/backups_empresariales_test.go` (nuevo):
+	- agrega cobertura de snapshot/restauracion y de consulta de payload/listado.
+
+- `backend/handlers/backups_empresariales.go` (nuevo):
+	- agrega endpoint empresarial `/api/empresa/backups` con acciones `listar`, `crear`, `detalle`, `export`, `restaurar`, `activar` y `desactivar`.
+
+- `backend/handlers/backups_empresariales_test.go` (nuevo):
+	- agrega prueba integral del contrato HTTP del modulo de backups.
+
+- `backend/main.go`:
+	- integra `EnsureEmpresaBackupsSchema`, registra migracion `2026-04-07-027-backups-empresariales` y ruta protegida `/api/empresa/backups`.
+
+- `backend/handlers/empresa_permisos.go`:
+	- clasifica restauracion de backups como accion de aprobacion (`permActionApprove`).
+
+- `web/administrar_empresa/backups.html` (nuevo):
+	- interfaz empresarial para crear/listar/detallar/exportar/restaurar backups.
+
+- `web/administrar_empresa.html`, `web/js/administrar_empresa.js` y `web/estilos.css`:
+	- integran acceso `linkBackups`, politica de permisos y estilos del modulo.
+
+- `documentos/diagramas/README.md` (nuevo):
+	- indice funcional del directorio de diagramas y regla de mantenimiento documental.
+
+- `documentos/diagramas/versionado.md` (nuevo):
+	- historial de versiones de diagramas y cambios por modulo.
+
+- `documentos/diagramas/diagrama_arquitectura_sistema.md`, `documentos/diagramas/diagrama_casos_de_uso.md`, `documentos/diagramas/diagrama_entidad_relacion.md`, `documentos/diagramas/diagrama_flujo_procesos.md`, `documentos/diagramas/diagrama_roles_permisos.md`, `documentos/diagramas/estructura_del_codigo.md`:
+	- sincronizan arquitectura, permisos, entidades y flujo del modulo 36.
+
+- `documentos/estructura_bd.md`, `estructura_bd.md`, `documentos/descripcion_del_proyecto`, `Pendiente Notas`, `CHANGELOG.md` y `documentos/historial_de_cambios`:
+	- actualizan trazabilidad tecnica, funcional y documental del cierre de modulo.
+
+Actualizacion 2026-04-07: Cierre modulo 35 (Creditos y cartera, limites por cliente + permisos finos + auditoria ampliada)
+
+- `backend/db/creditos.go`:
+	- agrega tabla `empresa_creditos_clientes_limites` con indice unico por `empresa_id + cliente_id` y consultas de gestion (`Get/List/Upsert/SetEstado`).
+	- incorpora validacion de limites por cliente en altas/ediciones de creditos para controlar saldo total y cantidad de creditos activos.
+
+- `backend/handlers/creditos.go`:
+	- agrega acciones HTTP `limites_cliente`, `limite_cliente`, `upsert_limite_cliente` y `eliminar_limite_cliente`.
+	- agrega validacion de permiso fino por tipo de workflow (`reverso_abono` para `administrador`/`contabilidad`; `refinanciacion` solo `administrador`).
+	- amplia auditoria no bloqueante para solicitudes/decisiones de workflow, operaciones sobre limites y denegaciones por permiso fino.
+
+- `backend/db/creditos_test.go` y `backend/handlers/creditos_test.go`:
+	- agregan cobertura de limites por cliente, bloqueo por exceso, CRUD de limites y autorizacion fina en aprobacion/rechazo de workflow.
+
+- `documentos/estructura_bd.md`, `estructura_bd.md`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/diagramas/diagrama_flujo_procesos.md`, `documentos/diagramas/diagrama_entidad_relacion.md`, `documentos/descripcion_del_proyecto`, `Pendiente Notas`, `CHANGELOG.md` y `documentos/historial_de_cambios`:
+	- sincronizan esquema, flujo, arquitectura y trazabilidad del cierre total del modulo 35.
+
+Actualizacion 2026-04-07: Avance modulo 35 (Creditos y cartera, workflow avanzado de reversos/anulaciones y refinanciacion)
+
+- `backend/db/creditos.go`:
+	- agrega tabla `empresa_creditos_workflow` y operaciones de negocio para solicitud, aprobacion/rechazo y ejecucion de workflows.
+	- implementa ejecucion automatica de `reverso_abono` y `refinanciacion` con trazabilidad de resultados y aprobaciones.
+	- corrige regeneracion de cuotas en refinanciacion usando secuencia incremental para evitar colisiones del indice unico `(empresa_id, credito_id, numero_cuota)`.
+
+- `backend/handlers/creditos.go`:
+	- agrega acciones HTTP `workflows`, `solicitar_reverso`, `solicitar_refinanciacion`, `aprobar_workflow` y `rechazar_workflow`.
+	- normaliza payload/filtros de workflow y permite aprobacion/rechazo con evidencia trazable por request.
+
+- `backend/handlers/empresa_permisos.go`:
+	- clasifica acciones de aprobacion/rechazo de workflow de creditos como `permActionApprove` en el modulo finanzas.
+
+- `backend/db/creditos_test.go` y `backend/handlers/creditos_test.go`:
+	- agregan cobertura de workflow para reverso y refinanciacion, incluyendo ciclo solicitud -> aprobacion -> ejecucion.
+
+- `documentos/estructura_bd.md`, `estructura_bd.md`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/diagramas/diagrama_flujo_procesos.md`, `documentos/diagramas/diagrama_entidad_relacion.md`, `documentos/descripcion_del_proyecto`, `Pendiente Notas`, `CHANGELOG.md` y `documentos/historial_de_cambios`:
+	- sincronizan documentacion tecnica/funcional y trazabilidad del avance.
+
+Actualizacion 2026-04-07: Avance modulo 35 (Creditos y cartera, alertas proactivas y ranking de morosidad)
+
+- `backend/db/creditos.go`:
+	- agrega tipo de dashboard de morosidad y consulta operativa `GetEmpresaCreditosMoraDashboard` con bloques de proximos a vencer, vencidos y ranking.
+
+- `backend/handlers/creditos.go`:
+	- agrega acciones `alertas`, `alertas_mora`, `morosidad` y `ranking_morosidad`.
+	- amplía `action=reporte` para exportar dataset de morosidad con `tipo=morosidad` en `json/csv/txt/xls/pdf`.
+
+- `backend/db/creditos_test.go` y `backend/handlers/creditos_test.go`:
+	- agregan cobertura de dashboard de morosidad y contrato HTTP de alertas/ranking/exportacion.
+
+- `web/administrar_empresa/creditos.html`:
+	- incorpora panel operativo de alertas y ranking con filtros (`dias_proximos`, `top`, `include_inactive`), consulta dedicada y exportacion de morosidad.
+	- agrega selector de tipo de reporte (`cartera` / `morosidad`) para exportacion general.
+
+- `web/estilos.css`:
+	- agrega estilos `creditos-alertas-*` para toolbar y grilla responsive de alertas/ranking.
+
+- `documentos/diagramas/estructura_del_codigo.md` y `documentos/diagramas/diagrama_flujo_procesos.md`:
+	- actualizan la estructura tecnica y flujo funcional del modulo 35 para incluir alertas proactivas y ranking avanzado de morosidad.
+
+- `Pendiente Notas`, `CHANGELOG.md`, `documentos/historial_de_cambios`, `documentos/descripcion_del_proyecto` y `documentos/estructura_del_codigo`:
+	- sincronizan trazabilidad del avance y evidencia tecnica de pruebas.
+
+Actualizacion 2026-04-07: Avance modulo 35 (Creditos y cartera, guias operativas y manual por rol)
+
+- `web/ayuda/ayuda.html`:
+	- agrega acceso rapido al bloque de creditos desde el centro de ayuda.
+	- incorpora tutorial `30) Creditos y cartera` en la seccion de tutorial por modulos.
+	- incorpora seccion dedicada `menu-creditos` con flujo recomendado y manual por rol (administrador, caja/cobranza, auditoria/control interno).
+	- documenta endpoints operativos de `/api/empresa/creditos` en la tabla de APIs.
+
+- `Pendiente Notas`:
+	- mueve la tarea de guias operativas de creditos desde pendientes de cierre total a completado parcial del modulo 35.
+
+- `CHANGELOG.md` y `documentos/historial_de_cambios`:
+	- registran la trazabilidad de la actualizacion documental-operativa del modulo 35.
+
+Actualizacion 2026-04-07: Avance modulo 35 (Creditos y cartera, fase 2 frontend base)
+
+- `web/administrar_empresa/creditos.html` (nuevo):
+	- agrega interfaz dedicada de creditos para crear operaciones, consultar cartera, aplicar abonos, gestionar estado de creditos y revisar estado de cuenta con cuotas/movimientos.
+	- integra exportacion operativa del reporte de cartera en `json/csv/txt/xls/pdf` consumiendo `action=reporte`.
+
+- `web/administrar_empresa.html`:
+	- incorpora enlace lateral `linkCreditos` para acceso directo al modulo de creditos en panel empresa.
+
+- `web/js/administrar_empresa.js`:
+	- integra `linkCreditos` al listado de enlaces del panel.
+	- registra regla de permisos para creditos en modulo `finanzas` con accion `C`.
+
+- `web/estilos.css`:
+	- agrega estilos reutilizables de layout para creditos: filtros, resumen de cartera, acciones de tabla y panel de detalle responsive.
+
+- `Pendiente Notas`:
+	- actualiza modulo 35 a estado EN PROGRESO con fases backend + frontend base completadas y pendientes de cierre total refinados.
+
+- `documentos/descripcion_del_proyecto`, `documentos/estructura_del_codigo`, `documentos/diagramas/estructura_del_codigo.md` y `documentos/diagramas/diagrama_flujo_procesos.md`:
+	- sincronizan alcance funcional y flujo del modulo 35 incluyendo frontend dedicado, enlace en menu y control por permisos.
+
+- `CHANGELOG.md` y `documentos/historial_de_cambios`:
+	- registran trazabilidad tecnica del avance frontend del modulo 35.
+
+Actualizacion 2026-04-07: Avance modulo 35 (Creditos y cartera, fase 1 backend)
+
+- `backend/db/creditos.go` (nuevo):
+	- crea y migra tablas `empresa_creditos`, `empresa_creditos_cuotas` y `empresa_creditos_movimientos`.
+	- implementa creacion de credito, generacion automatica de cuotas, registro de abonos, gestion de estado y resumen de cartera.
+
+- `backend/db/creditos_test.go` (nuevo):
+	- agrega prueba `TestEmpresaCreditosFlowCrearCuotasAbonoYResumen` para validar flujo base de credito/cuotas/abonos/resumen.
+
+- `backend/handlers/creditos.go` (nuevo):
+	- agrega endpoint `/api/empresa/creditos` con acciones de consulta, abono, estado de cuenta, resumen de cartera y reporte.
+	- integra exportacion multiformato (`json/csv/txt/xls/pdf`) manteniendo estructura consistente del dataset.
+
+- `backend/handlers/creditos_test.go` (nuevo):
+	- agrega prueba `TestEmpresaCreditosHandlerFlujoBasico` para contrato HTTP base del modulo.
+
+- `backend/main.go`:
+	- incorpora `EnsureEmpresaCreditosSchema`.
+	- registra migracion `2026-04-07-026-creditos-cartera`.
+	- registra ruta `/api/empresa/creditos` bajo wrapper de permisos de finanzas.
+
+- `Pendiente Notas`:
+	- actualiza estado del modulo 35 a EN PROGRESO (fase 1 backend) con evidencias de pruebas y pendientes de cierre total.
+
+- `documentos/estructura_bd.md` y `estructura_bd.md`:
+	- actualizan version a `2026-04-07.35` e incorporan tablas/relaciones del modulo de creditos.
+
+- `documentos/diagramas/estructura_del_codigo.md`, `documentos/estructura_del_codigo`, `documentos/diagramas/diagrama_entidad_relacion.md` y `documentos/diagramas/diagrama_flujo_procesos.md`:
+	- sincronizan arquitectura, modelo ER y flujo funcional del modulo 35 (creditos).
+
+- `documentos/descripcion_del_proyecto`, `CHANGELOG.md` y `documentos/historial_de_cambios`:
+	- registran alcance del avance, archivos afectados y validaciones ejecutadas.
+
+Actualizacion 2026-04-07: Cierre modulo 34 (Calculadora por empresa)
+
+- `backend/db/calculadora_operativa.go`:
+	- crea y migra tablas `empresa_calculadora_configuracion` y `empresa_calculadora_operaciones`.
+	- agrega configuracion opcional de integraciones (`integrar_carritos`, `integrar_cotizaciones`).
+	- agrega CRUD operativo de historial con filtros por rango/usuario/cliente/etiqueta y limpieza logica por estado.
+
+- `backend/db/calculadora_operativa_test.go`:
+	- agrega prueba `TestEmpresaCalculadoraConfiguracionYHistorialFlow` para validar configuracion, registro, filtros y limpieza de historial.
+
+- `backend/handlers/calculadora_operativa.go`:
+	- agrega endpoint empresarial `/api/empresa/calculadora` con acciones `config`, `referencias`, `export`, `limpiar`, `activar/desactivar`.
+	- valida asociaciones opcionales con clientes, carritos y cotizaciones por `empresa_id`.
+	- reutiliza exportador multiformato (`json/csv/txt/xls/pdf`) conservando columnas clave y resumen consistente.
+
+- `backend/handlers/calculadora_operativa_test.go`:
+	- agrega prueba integral `TestEmpresaCalculadoraHandlerConfigOperacionesFiltrosYExport` para contratos HTTP, filtros por usuario/rango, exportacion y limpieza.
+
+- `backend/main.go`:
+	- incorpora `EnsureEmpresaCalculadoraSchema`.
+	- registra migracion `2026-04-07-025-calculadora-operativa`.
+	- registra ruta `/api/empresa/calculadora` bajo wrapper de permisos de finanzas.
+
+- `web/administrar_empresa/calculadora.html`:
+	- migra de historial local a historial persistente por API.
+	- agrega configuracion de integraciones, metadata de operacion (etiquetas/cliente/documento), selectores de referencias (carrito/cotizacion), filtros por rango/usuario y exportacion backend.
+
+- `web/estilos.css`:
+	- agrega estilos de layout para nuevos controles de calculadora (`calc-config-row`, `calc-meta-grid`, `calc-filter-row`) con soporte responsive.
+
+- `Pendiente Notas`, `CHANGELOG.md`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/diagramas/diagrama_flujo_procesos.md`, `estructura_bd.md`, `documentos/estructura_bd.md` y `documentos/historial_de_cambios`:
+	- sincronizan cierre funcional y trazabilidad documental del modulo 34.
+
+Actualizacion 2026-04-07: Cierre modulo 33 (Configuracion operativa de cobro)
+
+- `backend/db/configuracion_operativa.go`:
+	- extiende esquema con tablas `empresa_configuracion_operativa_politicas` y `empresa_configuracion_operativa_historial`.
+	- agrega resolucion de permisos por contexto (`rol`, `canal_venta`, `sucursal_id`, `turno`).
+	- agrega registro/listado de snapshots y funcion de rollback operativo.
+
+- `backend/db/configuracion_operativa_test.go`:
+	- agrega prueba `TestEmpresaConfiguracionOperativaPoliticaContextoYRollback` para validar politicas contextuales e integridad de rollback.
+
+- `backend/handlers/configuracion_operativa.go`:
+	- agrega acciones `action=politica`, `action=simular`, `action=historial` y `action=rollback`.
+	- integra snapshots de publicacion/simulacion y respuesta contextual de permisos.
+
+- `backend/handlers/configuracion_operativa_test.go`:
+	- agrega prueba integral `TestEmpresaConfiguracionOperativaHandlerPoliticaSimulacionHistorialYRollback`.
+
+- `web/administrar_empresa/configuracion.html`:
+	- agrega formularios de politica contextual y simulador operativo.
+	- agrega panel de historial con seleccion de `historial_id` y accion de rollback.
+
+- `web/estilos.css`:
+	- agrega estilos de layout para bloque extendido de configuracion operativa (simulador/historial).
+
+- `Pendiente Notas`, `CHANGELOG.md`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/diagramas/diagrama_flujo_procesos.md`, `estructura_bd.md`, `documentos/estructura_bd.md` y `documentos/historial_de_cambios`:
+	- sincronizan cierre funcional, trazabilidad tecnica y documentacion de esquema del modulo 33.
+
+Actualizacion 2026-04-07: Cierre modulo 32 (Graficos y estadisticas)
+
+- `backend/handlers/graficos_estadisticas.go`:
+	- incorpora cache de panel por combinacion de empresa/rango/filtros/comparativo con respuesta `cache.hit`.
+	- incorpora filtros avanzados `sucursal_id`, `estacion_id` y `segmento` con cobertura reportada en `filtros.cobertura`.
+	- incorpora comparativo de periodos (`comparar`, `comparar_desde`, `comparar_hasta`) con metricas de variacion absoluta y porcentual.
+	- incorpora compactacion de series por buckets para rangos largos (ventas, finanzas, compras y asistencia).
+
+- `backend/handlers/graficos_estadisticas_test.go`:
+	- agrega prueba integral `TestEmpresaGraficosEstadisticasHandlerFiltrosComparativoYCache` para validar filtros avanzados, comparativo y cache hit/miss.
+
+- `web/administrar_empresa/graficos_estadisticas.html`:
+	- agrega controles de filtros avanzados y comparativo en la UI.
+	- agrega render de resumen de filtros/cobertura, estado de cache y tarjetas de comparativo por metrica.
+
+- `web/estilos.css`:
+	- agrega estilos para nuevos controles de filtros, tarjetas de comparativo, tendencias y responsive del modulo de graficos.
+
+- `Pendiente Notas`:
+	- marca modulo 32 como COMPLETADO con evidencia tecnica de pruebas.
+
+- `CHANGELOG.md`:
+	- registra cierre funcional y tecnico del modulo 32.
+
+- `documentos/diagramas/estructura_del_codigo.md` y `documentos/diagramas/diagrama_flujo_procesos.md`:
+	- actualizan arquitectura y flujo funcional de graficos con cache, filtros avanzados, comparativo y compactacion de series.
+
 Actualizacion 2026-04-07: Cierre modulo 30 (seguridad y permisos)
 
 - `backend/handlers/empresa_permisos.go`:

@@ -63,11 +63,65 @@
           <div class="empresa-section-header">
             <h2 style="margin:0;">Historial por empresa</h2>
             <div class="empresa-inline-actions">
+              <button id="btnRefrescarHistorial" class="btn secondary" type="button">Actualizar</button>
               <button id="btnLimpiarHistorial" class="btn secondary" type="button">Limpiar</button>
-              <button id="btnExportarHistorial" class="btn" type="button">Exportar JSON</button>
             </div>
           </div>
-          <p class="form-help">El historial y la memoria se guardan por empresa. Cambiar de empresa no mezcla operaciones.</p>
+          <p class="form-help">La calculadora registra operaciones por empresa con etiquetas y asociación a cliente/documento.</p>
+
+          <div class="calc-config-row">
+            <label class="empresa-config-check" for="calcCfgCarritos">
+              <input id="calcCfgCarritos" type="checkbox" checked>
+              <span>Integrar carritos</span>
+            </label>
+            <label class="empresa-config-check" for="calcCfgCotizaciones">
+              <input id="calcCfgCotizaciones" type="checkbox" checked>
+              <span>Integrar cotizaciones</span>
+            </label>
+            <button id="btnGuardarConfigCalc" class="btn" type="button">Guardar config</button>
+          </div>
+
+          <div class="calc-meta-grid">
+            <div class="form-col">
+              <label class="form-label" for="calcEtiquetas">Etiquetas (coma separadas)</label>
+              <input id="calcEtiquetas" class="form-input" placeholder="cierre, mesa_2, ajuste">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="calcCliente">Cliente</label>
+              <select id="calcCliente" class="form-input"></select>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="calcDocumentoTipo">Documento tipo</label>
+              <input id="calcDocumentoTipo" class="form-input" placeholder="carrito, cotizacion, factura">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="calcDocumentoCodigo">Documento codigo</label>
+              <input id="calcDocumentoCodigo" class="form-input" placeholder="COD-001">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="calcCarrito">Carrito</label>
+              <select id="calcCarrito" class="form-input"></select>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="calcCotizacion">Cotizacion</label>
+              <select id="calcCotizacion" class="form-input"></select>
+            </div>
+          </div>
+
+          <div class="calc-filter-row">
+            <input id="calcDesde" type="date" class="form-input" title="Desde">
+            <input id="calcHasta" type="date" class="form-input" title="Hasta">
+            <input id="calcUsuarioFiltro" class="form-input" placeholder="Filtro usuario (correo)">
+            <select id="calcExportFormat" class="form-input">
+              <option value="json">JSON</option>
+              <option value="csv">CSV</option>
+              <option value="txt">TXT</option>
+              <option value="xls">XLS</option>
+              <option value="pdf">PDF</option>
+            </select>
+            <button id="btnExportarHistorial" class="btn" type="button">Exportar</button>
+          </div>
+
           <div id="calcMessage" class="form-help"></div>
           <ul id="calcHistory" class="calc-history-list"></ul>
         </article>
@@ -97,7 +151,6 @@
       }
 
       var empresaKey = empresaId || "global";
-      var historyKey = "calculator:empresa:" + empresaKey + ":history";
       var memoryKey = "calculator:empresa:" + empresaKey + ":memory";
 
       var expressionEl = document.getElementById("calcExpression");
@@ -113,55 +166,37 @@
       var pendingOperator = "";
       var waitingForOperand = false;
       var memoryValue = loadMemory();
-      var history = loadHistory();
+      var calcConfig = {
+        integrar_carritos: true,
+        integrar_cotizaciones: true
+      };
+      var references = {
+        clientes: [],
+        carritos: [],
+        cotizaciones: []
+      };
+      var carritosById = {};
+      var cotizacionesById = {};
 
       empresaContextEl.textContent = empresaId
         ? "Contexto activo: empresa_id=" + empresaId
-        : "Contexto activo: global (sin empresa seleccionada).";
+        : "Debe indicar empresa_id para registrar operaciones y exportar historial.";
 
       setActionLinks();
-      renderHistory();
+      bindUI();
+      renderHistory([]);
       updateDisplay();
 
-      document.querySelectorAll(".calc-keypad .calc-key").forEach(function (btn) {
-        btn.addEventListener("click", function () {
-          var action = btn.getAttribute("data-action") || "";
-          handleAction(action, btn);
-        });
-      });
+      if (hasEmpresaContext()) {
+        bootstrap();
+      } else {
+        setMessage("Sin empresa seleccionada: solo calculo local disponible.", true);
+        disableEmpresaActions();
+      }
 
-      document.getElementById("btnLimpiarHistorial").addEventListener("click", function () {
-        history = [];
-        persistHistory();
-        renderHistory();
-        setMessage("Historial limpiado para la empresa " + empresaKey + ".", false);
-      });
-
-      document.getElementById("btnExportarHistorial").addEventListener("click", function () {
-        if (!history.length) {
-          setMessage("No hay historial para exportar.", true);
-          return;
-        }
-
-        var payload = {
-          empresa_id: empresaId || null,
-          empresa_scope: empresaKey,
-          generado_en: new Date().toISOString(),
-          operaciones: history
-        };
-
-        var blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement("a");
-        var stamp = new Date().toISOString().slice(0, 19).replace(/[-:T]/g, "");
-        a.href = url;
-        a.download = "calculadora_" + empresaKey + "_" + stamp + ".json";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        setMessage("Historial exportado en JSON.", false);
-      });
+      function hasEmpresaContext() {
+        return !!empresaId;
+      }
 
       function setActionLinks() {
         var reportesURL = new URL("/administrar_empresa/reportes.html", window.location.origin);
@@ -172,6 +207,78 @@
         }
         linkReportes.setAttribute("href", reportesURL.pathname + reportesURL.search);
         linkPanel.setAttribute("href", panelURL.pathname + panelURL.search);
+      }
+
+      function bindUI() {
+        document.querySelectorAll(".calc-keypad .calc-key").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            var action = btn.getAttribute("data-action") || "";
+            handleAction(action, btn);
+          });
+        });
+
+        document.getElementById("btnRefrescarHistorial").addEventListener("click", function () {
+          refreshHistory().catch(function (err) {
+            setMessage(normalizeErrorMessage(err, "No se pudo actualizar historial."), true);
+          });
+        });
+
+        document.getElementById("btnLimpiarHistorial").addEventListener("click", function () {
+          clearHistory().catch(function (err) {
+            setMessage(normalizeErrorMessage(err, "No se pudo limpiar historial."), true);
+          });
+        });
+
+        document.getElementById("btnExportarHistorial").addEventListener("click", function () {
+          exportHistory().catch(function (err) {
+            setMessage(normalizeErrorMessage(err, "No se pudo exportar historial."), true);
+          });
+        });
+
+        document.getElementById("btnGuardarConfigCalc").addEventListener("click", function () {
+          saveConfig().catch(function (err) {
+            setMessage(normalizeErrorMessage(err, "No se pudo guardar configuracion."), true);
+          });
+        });
+
+        document.getElementById("calcCarrito").addEventListener("change", onCarritoSelected);
+        document.getElementById("calcCotizacion").addEventListener("change", onCotizacionSelected);
+      }
+
+      function disableEmpresaActions() {
+        [
+          "btnRefrescarHistorial",
+          "btnLimpiarHistorial",
+          "btnExportarHistorial",
+          "btnGuardarConfigCalc",
+          "calcCfgCarritos",
+          "calcCfgCotizaciones",
+          "calcEtiquetas",
+          "calcCliente",
+          "calcDocumentoTipo",
+          "calcDocumentoCodigo",
+          "calcCarrito",
+          "calcCotizacion",
+          "calcDesde",
+          "calcHasta",
+          "calcUsuarioFiltro",
+          "calcExportFormat"
+        ].forEach(function (id) {
+          var el = document.getElementById(id);
+          if (el) el.disabled = true;
+        });
+      }
+
+      async function bootstrap() {
+        await loadConfig();
+        await loadReferences();
+        await refreshHistory();
+      }
+
+      function normalizeErrorMessage(err, fallback) {
+        if (!err) return fallback;
+        var text = String(err.message || err || "").trim();
+        return text || fallback;
       }
 
       function setMessage(text, isError) {
@@ -241,7 +348,9 @@
             setOperator(btn.getAttribute("data-op") || "");
             break;
           case "equals":
-            evaluateExpression();
+            evaluateExpression().catch(function (err) {
+              setMessage(normalizeErrorMessage(err, "No se pudo registrar operacion."), true);
+            });
             break;
           case "memory-clear":
             memoryValue = 0;
@@ -348,7 +457,7 @@
         updateDisplay();
       }
 
-      function evaluateExpression() {
+      async function evaluateExpression() {
         if (!pendingOperator || accumulator === null) {
           setMessage("No hay operacion pendiente.", true);
           return;
@@ -370,8 +479,15 @@
         accumulator = null;
         pendingOperator = "";
         waitingForOperand = true;
-        addHistory(expression, currentValue);
         updateDisplay();
+
+        if (!hasEmpresaContext()) {
+          setMessage("Resultado calculado localmente (sin empresa_id).", false);
+          return;
+        }
+
+        await persistOperation(expression, currentValue);
+        setMessage("Operacion registrada en historial.", false);
       }
 
       function calculate(a, b, op) {
@@ -390,44 +506,353 @@
         }
       }
 
-      function addHistory(expression, result) {
-        history.unshift({
-          expression: expression,
-          result: result,
-          timestamp: new Date().toISOString()
-        });
-        if (history.length > 50) {
-          history = history.slice(0, 50);
+      function buildApiURL(action, extraParams) {
+        var url = new URL("/api/empresa/calculadora", window.location.origin);
+        if (empresaId) {
+          url.searchParams.set("empresa_id", empresaId);
         }
-        persistHistory();
-        renderHistory();
+        if (action) {
+          url.searchParams.set("action", action);
+        }
+        if (extraParams && typeof extraParams === "object") {
+          Object.keys(extraParams).forEach(function (key) {
+            var value = extraParams[key];
+            if (value === undefined || value === null || String(value).trim() === "") {
+              return;
+            }
+            url.searchParams.set(key, String(value));
+          });
+        }
+        return url;
       }
 
-      function renderHistory() {
+      async function requestJSON(url, options) {
+        var resp = await fetch(url.toString(), Object.assign({ credentials: "same-origin" }, options || {}));
+        if (!resp.ok) {
+          var text = "";
+          try {
+            text = await resp.text();
+          } catch (e) {
+            text = "";
+          }
+          throw new Error(text || ("HTTP " + resp.status));
+        }
+        return resp.json();
+      }
+
+      function normalizeBool(value, fallback) {
+        if (value === undefined || value === null) return fallback;
+        return Boolean(value);
+      }
+
+      async function loadConfig() {
+        var data = await requestJSON(buildApiURL("config"));
+        var cfg = data && data.configuracion ? data.configuracion : {};
+        calcConfig.integrar_carritos = normalizeBool(cfg.integrar_carritos, true);
+        calcConfig.integrar_cotizaciones = normalizeBool(cfg.integrar_cotizaciones, true);
+        document.getElementById("calcCfgCarritos").checked = calcConfig.integrar_carritos;
+        document.getElementById("calcCfgCotizaciones").checked = calcConfig.integrar_cotizaciones;
+      }
+
+      async function saveConfig() {
+        if (!hasEmpresaContext()) {
+          setMessage("No se puede guardar configuracion sin empresa_id.", true);
+          return;
+        }
+        var payload = {
+          empresa_id: Number(empresaId),
+          integrar_carritos: !!document.getElementById("calcCfgCarritos").checked,
+          integrar_cotizaciones: !!document.getElementById("calcCfgCotizaciones").checked
+        };
+        await requestJSON(buildApiURL("config"), {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        calcConfig.integrar_carritos = payload.integrar_carritos;
+        calcConfig.integrar_cotizaciones = payload.integrar_cotizaciones;
+        await loadReferences();
+        setMessage("Configuracion de integraciones actualizada.", false);
+      }
+
+      async function loadReferences() {
+        var data = await requestJSON(buildApiURL("referencias", { limit: 200 }));
+        references.clientes = Array.isArray(data.clientes) ? data.clientes : [];
+        references.carritos = Array.isArray(data.carritos) ? data.carritos : [];
+        references.cotizaciones = Array.isArray(data.cotizaciones) ? data.cotizaciones : [];
+        renderReferenceSelects();
+      }
+
+      function populateSelect(selectId, rows, valueKey, labelBuilder, placeholder) {
+        var select = document.getElementById(selectId);
+        if (!select) return;
+        var previous = String(select.value || "");
+        select.innerHTML = "";
+        var opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = placeholder;
+        select.appendChild(opt);
+        rows.forEach(function (row) {
+          var o = document.createElement("option");
+          o.value = String(row[valueKey] || "");
+          o.textContent = labelBuilder(row);
+          select.appendChild(o);
+        });
+        if (previous) {
+          select.value = previous;
+        }
+      }
+
+      function renderReferenceSelects() {
+        carritosById = {};
+        cotizacionesById = {};
+
+        references.carritos.forEach(function (row) {
+          carritosById[String(row.id || "")] = row;
+        });
+        references.cotizaciones.forEach(function (row) {
+          cotizacionesById[String(row.id || "")] = row;
+        });
+
+        populateSelect(
+          "calcCliente",
+          references.clientes,
+          "id",
+          function (row) {
+            var name = String(row.nombre_razon_social || "Cliente");
+            var doc = String(row.numero_documento || "").trim();
+            return doc ? (name + " (" + doc + ")") : name;
+          },
+          "Sin cliente"
+        );
+
+        populateSelect(
+          "calcCarrito",
+          references.carritos,
+          "id",
+          function (row) {
+            var codigo = String(row.codigo || "").trim();
+            var cliente = String(row.cliente_nombre || "").trim();
+            var tail = cliente ? (" - " + cliente) : "";
+            return "#" + String(row.id || "0") + " " + codigo + tail;
+          },
+          "Sin carrito"
+        );
+
+        populateSelect(
+          "calcCotizacion",
+          references.cotizaciones,
+          "id",
+          function (row) {
+            var codigo = String(row.codigo || "").trim();
+            var cliente = String(row.cliente_nombre || "").trim();
+            return "#" + String(row.id || "0") + " " + codigo + (cliente ? (" - " + cliente) : "");
+          },
+          "Sin cotizacion"
+        );
+
+        document.getElementById("calcCarrito").disabled = !calcConfig.integrar_carritos;
+        document.getElementById("calcCotizacion").disabled = !calcConfig.integrar_cotizaciones;
+        if (!calcConfig.integrar_carritos) {
+          document.getElementById("calcCarrito").value = "";
+        }
+        if (!calcConfig.integrar_cotizaciones) {
+          document.getElementById("calcCotizacion").value = "";
+        }
+      }
+
+      function onCarritoSelected() {
+        var select = document.getElementById("calcCarrito");
+        if (!select) return;
+        var row = carritosById[String(select.value || "")];
+        if (!row) return;
+        if (row.cliente_id) {
+          document.getElementById("calcCliente").value = String(row.cliente_id);
+        }
+        if (!String(document.getElementById("calcDocumentoTipo").value || "").trim()) {
+          document.getElementById("calcDocumentoTipo").value = "carrito";
+        }
+        if (!String(document.getElementById("calcDocumentoCodigo").value || "").trim()) {
+          document.getElementById("calcDocumentoCodigo").value = String(row.codigo || "");
+        }
+      }
+
+      function onCotizacionSelected() {
+        var select = document.getElementById("calcCotizacion");
+        if (!select) return;
+        var row = cotizacionesById[String(select.value || "")];
+        if (!row) return;
+        if (row.cliente_id) {
+          document.getElementById("calcCliente").value = String(row.cliente_id);
+        }
+        if (!String(document.getElementById("calcDocumentoTipo").value || "").trim()) {
+          document.getElementById("calcDocumentoTipo").value = "cotizacion";
+        }
+        if (!String(document.getElementById("calcDocumentoCodigo").value || "").trim()) {
+          document.getElementById("calcDocumentoCodigo").value = String(row.codigo || "");
+        }
+      }
+
+      function getHistoryFilters() {
+        return {
+          desde: String(document.getElementById("calcDesde").value || "").trim(),
+          hasta: String(document.getElementById("calcHasta").value || "").trim(),
+          usuario: String(document.getElementById("calcUsuarioFiltro").value || "").trim()
+        };
+      }
+
+      function applyFiltersToURL(url, filters) {
+        if (!filters) return;
+        if (filters.desde) url.searchParams.set("desde", filters.desde);
+        if (filters.hasta) url.searchParams.set("hasta", filters.hasta);
+        if (filters.usuario) url.searchParams.set("usuario", filters.usuario);
+      }
+
+      async function refreshHistory() {
+        if (!hasEmpresaContext()) {
+          renderHistory([]);
+          return;
+        }
+        var filters = getHistoryFilters();
+        var url = buildApiURL("", { limit: 100, offset: 0 });
+        applyFiltersToURL(url, filters);
+        var data = await requestJSON(url);
+        renderHistory(Array.isArray(data.rows) ? data.rows : []);
+      }
+
+      async function clearHistory() {
+        if (!hasEmpresaContext()) {
+          setMessage("No se puede limpiar historial sin empresa_id.", true);
+          return;
+        }
+        var filters = getHistoryFilters();
+        var payload = {
+          empresa_id: Number(empresaId),
+          desde: filters.desde,
+          hasta: filters.hasta,
+          usuario: filters.usuario
+        };
+        var response = await requestJSON(buildApiURL("limpiar"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        await refreshHistory();
+        setMessage("Historial limpiado: " + String(response.desactivados || 0) + " registros.", false);
+      }
+
+      async function exportHistory() {
+        if (!hasEmpresaContext()) {
+          setMessage("No se puede exportar sin empresa_id.", true);
+          return;
+        }
+        var format = String(document.getElementById("calcExportFormat").value || "json").trim().toLowerCase();
+        var filters = getHistoryFilters();
+        var url = buildApiURL("export", { format: format, limit: 2000, offset: 0 });
+        applyFiltersToURL(url, filters);
+
+        var resp = await fetch(url.toString(), { credentials: "same-origin" });
+        if (!resp.ok) {
+          var text = "";
+          try {
+            text = await resp.text();
+          } catch (e) {
+            text = "";
+          }
+          throw new Error(text || "No se pudo exportar historial.");
+        }
+
+        var blob = await resp.blob();
+        var stamp = new Date().toISOString().slice(0, 19).replace(/[\-:T]/g, "");
+        var a = document.createElement("a");
+        var href = URL.createObjectURL(blob);
+        a.href = href;
+        a.download = "calculadora_" + empresaKey + "_" + stamp + "." + format;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(href);
+        setMessage("Exportacion completada en formato " + format.toUpperCase() + ".", false);
+      }
+
+      async function persistOperation(expression, result) {
+        var clienteSel = document.getElementById("calcCliente");
+        var clienteID = parseInt(String(clienteSel.value || "0"), 10) || 0;
+        var clienteNombre = "";
+        if (clienteID > 0 && clienteSel.selectedIndex >= 0) {
+          clienteNombre = String(clienteSel.options[clienteSel.selectedIndex].text || "").trim();
+        }
+        var carritoID = parseInt(String(document.getElementById("calcCarrito").value || "0"), 10) || 0;
+        var cotizacionID = parseInt(String(document.getElementById("calcCotizacion").value || "0"), 10) || 0;
+        if (!calcConfig.integrar_carritos) {
+          carritoID = 0;
+        }
+        if (!calcConfig.integrar_cotizaciones) {
+          cotizacionID = 0;
+        }
+
+        var payload = {
+          empresa_id: Number(empresaId),
+          expresion: expression,
+          resultado: result,
+          etiquetas_texto: String(document.getElementById("calcEtiquetas").value || "").trim(),
+          cliente_id: clienteID,
+          cliente_nombre: clienteNombre,
+          documento_tipo: String(document.getElementById("calcDocumentoTipo").value || "").trim(),
+          documento_codigo: String(document.getElementById("calcDocumentoCodigo").value || "").trim(),
+          carrito_id: carritoID,
+          cotizacion_id: cotizacionID,
+          fecha_operacion: localDateTimeNow(),
+          metadata: {
+            origen: "web_calculadora",
+            empresa_id: Number(empresaId)
+          }
+        };
+
+        await requestJSON(buildApiURL(""), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        await refreshHistory();
+      }
+
+      function renderHistory(rows) {
         historyEl.innerHTML = "";
-        if (!history.length) {
+        if (!rows || !rows.length) {
           var empty = document.createElement("li");
           empty.className = "calc-history-empty";
-          empty.textContent = "Sin operaciones registradas para este contexto.";
+          empty.textContent = "Sin operaciones registradas para los filtros actuales.";
           historyEl.appendChild(empty);
           return;
         }
 
-        history.forEach(function (item) {
+        rows.forEach(function (item) {
           var li = document.createElement("li");
           li.className = "calc-history-item";
 
           var expr = document.createElement("div");
           expr.className = "calc-history-expression";
-          expr.textContent = item.expression || "";
+          expr.textContent = String(item.expresion || "");
 
           var res = document.createElement("div");
           res.className = "calc-history-result";
-          res.textContent = "= " + (item.result || "0");
+          res.textContent = "= " + String(item.resultado || "0");
+
+          var tags = Array.isArray(item.etiquetas) ? item.etiquetas.join(", ") : "";
+          var doc = [String(item.documento_tipo || "").trim(), String(item.documento_codigo || "").trim()].join(" ").trim();
+          var metaParts = [
+            formatTimestamp(item.fecha_operacion || item.fecha_creacion),
+            item.usuario_creador ? ("usuario: " + item.usuario_creador) : "",
+            item.cliente_nombre ? ("cliente: " + item.cliente_nombre) : "",
+            tags ? ("tags: " + tags) : "",
+            doc ? ("doc: " + doc) : ""
+          ].filter(function (v) { return !!v; });
 
           var meta = document.createElement("div");
           meta.className = "calc-history-meta";
-          meta.textContent = formatTimestamp(item.timestamp);
+          meta.textContent = metaParts.join(" | ");
 
           li.appendChild(expr);
           li.appendChild(res);
@@ -436,27 +861,21 @@
         });
       }
 
+      function localDateTimeNow() {
+        var now = new Date();
+        var yyyy = String(now.getFullYear());
+        var mm = String(now.getMonth() + 1).padStart(2, "0");
+        var dd = String(now.getDate()).padStart(2, "0");
+        var hh = String(now.getHours()).padStart(2, "0");
+        var mi = String(now.getMinutes()).padStart(2, "0");
+        var ss = String(now.getSeconds()).padStart(2, "0");
+        return yyyy + "-" + mm + "-" + dd + " " + hh + ":" + mi + ":" + ss;
+      }
+
       function formatTimestamp(raw) {
         var dt = new Date(raw || "");
         if (Number.isNaN(dt.getTime())) return "Sin fecha";
         return dt.toLocaleString("es-CO");
-      }
-
-      function loadHistory() {
-        try {
-          var raw = localStorage.getItem(historyKey);
-          if (!raw) return [];
-          var parsed = JSON.parse(raw);
-          return Array.isArray(parsed) ? parsed : [];
-        } catch (e) {
-          return [];
-        }
-      }
-
-      function persistHistory() {
-        try {
-          localStorage.setItem(historyKey, JSON.stringify(history));
-        } catch (e) {}
       }
 
       function loadMemory() {

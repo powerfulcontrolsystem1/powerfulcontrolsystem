@@ -15,13 +15,25 @@
           <input id="fechaDesde" type="date" class="form-input">
           <input id="fechaHasta" type="date" class="form-input">
           <input id="topN" type="number" min="3" max="30" step="1" value="10" class="form-input graficos-top-input" placeholder="Top N">
+          <input id="sucursalId" type="number" min="1" step="1" class="form-input graficos-id-input" placeholder="Sucursal ID">
+          <input id="estacionId" type="number" min="1" step="1" class="form-input graficos-id-input" placeholder="Estacion ID">
+          <input id="segmento" type="text" class="form-input graficos-segmento-input" placeholder="Segmento (ej: frecuente)">
+          <label class="empresa-switch graficos-switch-inline" for="compararPeriodo">
+            <input id="compararPeriodo" type="checkbox">
+            <span>Comparar periodo</span>
+          </label>
+          <input id="compararDesde" type="date" class="form-input graficos-compare-input" placeholder="Comparar desde" disabled>
+          <input id="compararHasta" type="date" class="form-input graficos-compare-input" placeholder="Comparar hasta" disabled>
           <button id="btnAplicarFiltro" class="btn secondary" type="button">Aplicar rango</button>
-          <button id="btnActualizarPanel" class="btn" type="button">Actualizar</button>
+          <button id="btnActualizarPanel" class="btn" type="button">Actualizar (sin cache)</button>
         </div>
       </div>
       <p class="form-help">Panel visual para seguimiento diario de ventas, finanzas, compras, asistencia y distribuciones operativas por empresa.</p>
       <p id="graficosMsg" class="form-help"></p>
       <p id="graficosResumen" class="form-help"></p>
+      <p id="graficosFiltroResumen" class="form-help"></p>
+
+      <div id="comparativoGrid" class="graficos-comparativo-grid"></div>
 
       <div class="kpi-grid graficos-kpi-grid">
         <div class="kpi-box"><span class="kpi-label">Ventas cerradas</span><strong id="kpiVentas">0</strong></div>
@@ -129,7 +141,8 @@
   <script>
     const graficosState = {
       empresaID: 0,
-      panel: null
+      panel: null,
+      lastRefreshForced: false
     };
 
     const donutPalette = ["#16a34a", "#0ea5e9", "#f59e0b", "#ef4444", "#14b8a6", "#f97316", "#64748b"];
@@ -213,11 +226,20 @@
       if (!Number.isFinite(top) || top <= 0) top = 10;
       if (top > 30) top = 30;
       if (top < 3) top = 3;
-      return { desde, hasta, top };
+      let sucursalId = Number(document.getElementById("sucursalId")?.value || 0);
+      if (!Number.isFinite(sucursalId) || sucursalId <= 0) sucursalId = 0;
+      let estacionId = Number(document.getElementById("estacionId")?.value || 0);
+      if (!Number.isFinite(estacionId) || estacionId <= 0) estacionId = 0;
+      const segmento = normalize(document.getElementById("segmento")?.value).toLowerCase().replace(/\s+/g, "_");
+      const comparar = !!document.getElementById("compararPeriodo")?.checked;
+      const compararDesde = normalize(document.getElementById("compararDesde")?.value);
+      const compararHasta = normalize(document.getElementById("compararHasta")?.value);
+      return { desde, hasta, top, sucursalId, estacionId, segmento, comparar, compararDesde, compararHasta };
     }
 
-    async function fetchPanel() {
-      const { desde, hasta, top } = getFilters();
+    async function fetchPanel(options) {
+      const opts = options || {};
+      const { desde, hasta, top, sucursalId, estacionId, segmento, comparar, compararDesde, compararHasta } = getFilters();
       const params = new URLSearchParams();
       params.set("action", "panel");
       params.set("empresa_id", String(graficosState.empresaID));
@@ -225,6 +247,19 @@
       params.set("top", String(top));
       if (desde) params.set("desde", desde);
       if (hasta) params.set("hasta", hasta);
+      if (sucursalId > 0) params.set("sucursal_id", String(sucursalId));
+      if (estacionId > 0) params.set("estacion_id", String(estacionId));
+      if (segmento) params.set("segmento", segmento);
+      if (comparar) {
+        params.set("comparar", "1");
+        if (compararDesde && compararHasta) {
+          params.set("comparar_desde", compararDesde);
+          params.set("comparar_hasta", compararHasta);
+        }
+      }
+      if (opts.forceRefresh) {
+        params.set("refresh", "1");
+      }
 
       const resp = await fetch("/api/empresa/graficos_estadisticas?" + params.toString(), { credentials: "same-origin" });
       if (!resp.ok) {
@@ -245,7 +280,100 @@
       const desde = normalize(panel?.desde) || "sin limite";
       const hasta = normalize(panel?.hasta) || "sin limite";
       const generado = normalize(panel?.generado_en) || "-";
-      resumen.textContent = "Rango: " + desde + " a " + hasta + " | Generado: " + generado;
+      const cacheStatus = panel?.cache?.hit ? "cache hit" : "cache miss";
+      resumen.textContent = "Rango: " + desde + " a " + hasta + " | Generado: " + generado + " | " + cacheStatus;
+    }
+
+    function applyFilterSummary(panel) {
+      const el = document.getElementById("graficosFiltroResumen");
+      if (!el) return;
+      const filtros = panel?.filtros || {};
+      const tokens = [];
+      if (num(filtros.sucursal_id) > 0) tokens.push("sucursal=" + filtros.sucursal_id);
+      if (num(filtros.estacion_id) > 0) tokens.push("estacion=" + filtros.estacion_id);
+      if (normalize(filtros.segmento)) tokens.push("segmento=" + filtros.segmento);
+
+      const cobertura = filtros.cobertura || {};
+      const coberturaTokens = [];
+      if (Array.isArray(cobertura.sucursal) && cobertura.sucursal.length > 0) {
+        coberturaTokens.push("sucursal: " + cobertura.sucursal.join(", "));
+      }
+      if (Array.isArray(cobertura.estacion) && cobertura.estacion.length > 0) {
+        coberturaTokens.push("estacion: " + cobertura.estacion.join(", "));
+      }
+      if (Array.isArray(cobertura.segmento) && cobertura.segmento.length > 0) {
+        coberturaTokens.push("segmento: " + cobertura.segmento.join(", "));
+      }
+
+      if (tokens.length === 0 && coberturaTokens.length === 0) {
+        el.textContent = "Sin filtros avanzados aplicados.";
+        return;
+      }
+
+      const filtrosTxt = tokens.length > 0 ? ("Filtros: " + tokens.join(" | ")) : "Filtros: none";
+      const coberturaTxt = coberturaTokens.length > 0 ? ("Cobertura: " + coberturaTokens.join(" || ")) : "Cobertura: no reportada";
+      el.textContent = filtrosTxt + " | " + coberturaTxt;
+    }
+
+    function formatComparativoValue(metricKey, value) {
+      const moneyMetrics = {
+        ingresos_ventas: true,
+        ticket_promedio: true,
+        compras_costo: true,
+        ingresos_financieros: true,
+        egresos_financieros: true,
+        balance_financiero: true
+      };
+      if (moneyMetrics[metricKey]) {
+        return fmtMoney(value);
+      }
+      return fmtNumber(value);
+    }
+
+    function renderComparativo(panel) {
+      const grid = document.getElementById("comparativoGrid");
+      if (!grid) return;
+      const comparativo = panel?.comparativo;
+      if (!comparativo || !comparativo.metricas) {
+        grid.innerHTML = '<article class="graficos-compare-card"><h3>Comparativo</h3><p class="form-help">Active "Comparar periodo" para ver variaciones frente al periodo anterior o personalizado.</p></article>';
+        return;
+      }
+
+      const labels = {
+        ventas_cerradas: "Ventas cerradas",
+        ingresos_ventas: "Ingresos de ventas",
+        ticket_promedio: "Ticket promedio",
+        compras_movimientos: "Movimientos de compra",
+        compras_costo: "Costo compras",
+        ingresos_financieros: "Ingresos financieros",
+        egresos_financieros: "Egresos financieros",
+        balance_financiero: "Balance financiero",
+        asistencia_registros: "Registros de asistencia"
+      };
+
+      const rows = Object.keys(comparativo.metricas).map((key) => {
+        const metric = comparativo.metricas[key] || {};
+        const variacion = num(metric.variacion);
+        const variacionPct = num(metric.variacion_pct);
+        const trendClass = variacion >= 0 ? "graficos-trend-up" : "graficos-trend-down";
+        const trendLabel = (variacion >= 0 ? "+" : "") + formatComparativoValue(key, variacion) + " (" + (variacionPct >= 0 ? "+" : "") + fmtNumber(variacionPct) + "%)";
+        return '' +
+          '<article class="graficos-compare-card">' +
+          '<h3>' + sanitize(labels[key] || key) + '</h3>' +
+          '<p class="graficos-compare-values">Actual: <strong>' + sanitize(formatComparativoValue(key, metric.actual)) + '</strong></p>' +
+          '<p class="graficos-compare-values">Referencia: <strong>' + sanitize(formatComparativoValue(key, metric.anterior)) + '</strong></p>' +
+          '<p class="graficos-compare-trend ' + trendClass + '">' + sanitize(trendLabel) + '</p>' +
+          '</article>';
+      });
+
+      const periodNote = '' +
+        '<article class="graficos-compare-card graficos-compare-period">' +
+        '<h3>Comparacion activa</h3>' +
+        '<p class="form-help">Actual: ' + sanitize(comparativo.desde || "-") + ' a ' + sanitize(comparativo.hasta || "-") + '</p>' +
+        '<p class="form-help">Referencia: ' + sanitize(comparativo.referencia_desde || "-") + ' a ' + sanitize(comparativo.referencia_hasta || "-") + '</p>' +
+        '</article>';
+
+      grid.innerHTML = periodNote + rows.join("");
     }
 
     function applyKpis(panel) {
@@ -413,7 +541,9 @@
     function renderPanel(panel) {
       graficosState.panel = panel;
       applySummary(panel);
+      applyFilterSummary(panel);
       applyKpis(panel);
+      renderComparativo(panel);
 
       const ventas = panel?.series?.ventas || [];
       const finanzas = panel?.series?.finanzas || [];
@@ -442,30 +572,62 @@
       renderTopClientes(panel?.rankings?.top_clientes || []);
     }
 
-    async function loadPanel() {
-      setMsg("Cargando graficos y estadisticas...", "");
+    async function loadPanel(forceRefresh) {
+      graficosState.lastRefreshForced = !!forceRefresh;
+      setMsg(graficosState.lastRefreshForced ? "Cargando graficos (sin cache)..." : "Cargando graficos y estadisticas...", "");
       try {
-        const panel = await fetchPanel();
+        const panel = await fetchPanel({ forceRefresh: graficosState.lastRefreshForced });
         renderPanel(panel);
-        setMsg("Panel actualizado correctamente.", "ok");
+        if (panel?.cache?.hit) {
+          setMsg("Panel actualizado desde cache.", "ok");
+        } else {
+          setMsg("Panel actualizado correctamente.", "ok");
+        }
       } catch (err) {
         console.error(err);
         setMsg(err && err.message ? err.message : "Error al cargar graficos y estadisticas.", "error");
       }
     }
 
+    function syncCompararInputs() {
+      const enabled = !!document.getElementById("compararPeriodo")?.checked;
+      const desdeInput = document.getElementById("compararDesde");
+      const hastaInput = document.getElementById("compararHasta");
+      if (desdeInput) desdeInput.disabled = !enabled;
+      if (hastaInput) hastaInput.disabled = !enabled;
+    }
+
     function bindEvents() {
       const btnAplicar = document.getElementById("btnAplicarFiltro");
       const btnActualizar = document.getElementById("btnActualizarPanel");
       if (btnAplicar) {
-        btnAplicar.addEventListener("click", loadPanel);
+        btnAplicar.addEventListener("click", function(){ loadPanel(false); });
       }
       if (btnActualizar) {
-        btnActualizar.addEventListener("click", loadPanel);
+        btnActualizar.addEventListener("click", function(){ loadPanel(true); });
       }
       const topInput = document.getElementById("topN");
       if (topInput) {
-        topInput.addEventListener("change", loadPanel);
+        topInput.addEventListener("change", function(){ loadPanel(false); });
+      }
+
+      ["fechaDesde", "fechaHasta", "sucursalId", "estacionId", "segmento", "compararDesde", "compararHasta"].forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener("change", function(){
+          if (id === "compararDesde" || id === "compararHasta") {
+            if (!document.getElementById("compararPeriodo")?.checked) return;
+          }
+          loadPanel(false);
+        });
+      });
+
+      const compararCheck = document.getElementById("compararPeriodo");
+      if (compararCheck) {
+        compararCheck.addEventListener("change", function(){
+          syncCompararInputs();
+          loadPanel(false);
+        });
       }
     }
 
@@ -478,8 +640,9 @@
       }
       graficosState.empresaID = empresaID;
       setDefaultDateRange();
+      syncCompararInputs();
       bindEvents();
-      loadPanel();
+      loadPanel(false);
     }
 
     init();

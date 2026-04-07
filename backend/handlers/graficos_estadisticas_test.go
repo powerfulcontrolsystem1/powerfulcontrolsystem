@@ -135,6 +135,151 @@ func TestEmpresaGraficosEstadisticasHandlerErrores(t *testing.T) {
 	}
 }
 
+func TestEmpresaGraficosEstadisticasHandlerFiltrosComparativoYCache(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_graficos_estadisticas_handler_filtros.db")
+	ensureEmpresaReportesSchema(t, dbEmp)
+	if err := dbpkg.EnsureEmpresaAsistenciaSchema(dbEmp); err != nil {
+		t.Fatalf("EnsureEmpresaAsistenciaSchema: %v", err)
+	}
+
+	exec := &testingDBExec{execFn: func(query string, args ...interface{}) error {
+		_, err := dbEmp.Exec(query, args...)
+		return err
+	}}
+	seedGraficosData(t, exec)
+
+	mustExec := func(query string, args ...interface{}) {
+		t.Helper()
+		if err := exec.Exec(query, args...); err != nil {
+			t.Fatalf("seed extra query failed: %v | query=%s", err, query)
+		}
+	}
+
+	mustExec(`INSERT INTO carritos_compras (
+		empresa_id, codigo, nombre, cliente_id, estado_carrito, total, total_pagado, pagado_en,
+		estado, fecha_creacion, fecha_actualizacion
+	) VALUES (
+		7, 'CRT-7002', 'Venta demo 7002', 1, 'cerrado', 220000, 220000, '2026-04-02 14:20:00',
+		'activo', datetime('now','localtime'), datetime('now','localtime')
+	);`)
+
+	mustExec(`INSERT INTO carrito_compra_items (
+		empresa_id, carrito_id, tipo_item, referencia_id, codigo_item, descripcion,
+		cantidad, precio_unitario, subtotal_linea, total_linea,
+		estado, fecha_creacion, fecha_actualizacion
+	) VALUES (
+		7, 2, 'producto', 11, 'SKU-MOUSE', 'Mouse inalambrico',
+		2, 110000, 220000, 220000,
+		'activo', datetime('now','localtime'), datetime('now','localtime')
+	);`)
+
+	mustExec(`INSERT INTO carritos_compras (
+		empresa_id, codigo, nombre, cliente_id, estado_carrito, total, total_pagado, pagado_en,
+		estado, fecha_creacion, fecha_actualizacion
+	) VALUES (
+		7, 'CRT-7003', 'Venta demo 7003', 1, 'cerrado', 150000, 150000, '2026-03-30 10:05:00',
+		'activo', datetime('now','localtime'), datetime('now','localtime')
+	);`)
+
+	mustExec(`INSERT INTO carrito_compra_items (
+		empresa_id, carrito_id, tipo_item, referencia_id, codigo_item, descripcion,
+		cantidad, precio_unitario, subtotal_linea, total_linea,
+		estado, fecha_creacion, fecha_actualizacion
+	) VALUES (
+		7, 3, 'producto', 12, 'SKU-AUDIFONOS', 'Audifonos bluetooth',
+		1, 150000, 150000, 150000,
+		'activo', datetime('now','localtime'), datetime('now','localtime')
+	);`)
+
+	mustExec(`INSERT INTO empresa_ventas_estacion_metricas (
+		empresa_id, carrito_id, estacion_id, estacion_codigo, estacion_nombre, evento_operacion,
+		fecha_evento, estado, fecha_creacion, fecha_actualizacion
+	) VALUES
+		(7, 1, 1, 'EST-1', 'Mesa 1', 'venta_pagada', '2026-04-01 11:20:00', 'activo', datetime('now','localtime'), datetime('now','localtime')),
+		(7, 2, 2, 'EST-2', 'Mesa 2', 'venta_pagada', '2026-04-02 14:20:00', 'activo', datetime('now','localtime'), datetime('now','localtime')),
+		(7, 3, 2, 'EST-2', 'Mesa 2', 'venta_pagada', '2026-03-30 10:05:00', 'activo', datetime('now','localtime'), datetime('now','localtime'));
+	`)
+
+	mustExec(`INSERT INTO empresa_cierres_caja (
+		empresa_id, sucursal_id, caja_codigo, turno, fecha_operacion, estado_cierre,
+		estado, fecha_creacion, fecha_actualizacion
+	) VALUES (
+		7, 9, 'CAJA-09', 'manana', '2026-04-02', 'cerrado',
+		'activo', datetime('now','localtime'), datetime('now','localtime')
+	);`)
+
+	handler := EmpresaGraficosEstadisticasHandler(dbEmp)
+
+	url := "/api/empresa/graficos_estadisticas?action=panel&empresa_id=7&desde=2026-04-01&hasta=2026-04-03&estacion_id=2&segmento=frecuente&comparar=true"
+	req := httptest.NewRequest(http.MethodGet, url, nil)
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("panel filtros status=%d body=%s", rr.Code, rr.Body.String())
+	}
+
+	var panel empresaGraficosPanelResponse
+	if err := json.Unmarshal(rr.Body.Bytes(), &panel); err != nil {
+		t.Fatalf("unmarshal panel filtros: %v", err)
+	}
+	if panel.Cache.Hit {
+		t.Fatalf("primer request no debe ser cache hit")
+	}
+	if panel.Filtros.EstacionID != 2 {
+		t.Fatalf("estacion_id esperado=2 obtenido=%d", panel.Filtros.EstacionID)
+	}
+	if panel.Filtros.Segmento != "frecuente" {
+		t.Fatalf("segmento esperado=frecuente obtenido=%s", panel.Filtros.Segmento)
+	}
+	if panel.Comparativo == nil {
+		t.Fatalf("comparativo no debe ser nil")
+	}
+	if len(panel.Series.Ventas) != 1 {
+		t.Fatalf("ventas filtradas esperadas=1 obtenido=%d", len(panel.Series.Ventas))
+	}
+	if panel.Tablero.Operativo.VentasCerradas != 1 {
+		t.Fatalf("ventas cerradas esperadas=1 obtenido=%d", panel.Tablero.Operativo.VentasCerradas)
+	}
+	metricaVentas, ok := panel.Comparativo.Metricas["ventas_cerradas"]
+	if !ok {
+		t.Fatalf("comparativo sin metrica ventas_cerradas")
+	}
+	if metricaVentas.Anterior != 1 {
+		t.Fatalf("comparativo ventas anterior esperado=1 obtenido=%.2f", metricaVentas.Anterior)
+	}
+
+	reqCached := httptest.NewRequest(http.MethodGet, url, nil)
+	rrCached := httptest.NewRecorder()
+	handler.ServeHTTP(rrCached, reqCached)
+	if rrCached.Code != http.StatusOK {
+		t.Fatalf("panel cache status=%d body=%s", rrCached.Code, rrCached.Body.String())
+	}
+	var panelCached empresaGraficosPanelResponse
+	if err := json.Unmarshal(rrCached.Body.Bytes(), &panelCached); err != nil {
+		t.Fatalf("unmarshal panel cache: %v", err)
+	}
+	if !panelCached.Cache.Hit {
+		t.Fatalf("segundo request debe ser cache hit")
+	}
+
+	reqSucursal := httptest.NewRequest(http.MethodGet, "/api/empresa/graficos_estadisticas?action=panel&empresa_id=7&desde=2026-04-01&hasta=2026-04-03&sucursal_id=9", nil)
+	rrSucursal := httptest.NewRecorder()
+	handler.ServeHTTP(rrSucursal, reqSucursal)
+	if rrSucursal.Code != http.StatusOK {
+		t.Fatalf("panel sucursal status=%d body=%s", rrSucursal.Code, rrSucursal.Body.String())
+	}
+	var panelSucursal empresaGraficosPanelResponse
+	if err := json.Unmarshal(rrSucursal.Body.Bytes(), &panelSucursal); err != nil {
+		t.Fatalf("unmarshal panel sucursal: %v", err)
+	}
+	if panelSucursal.Filtros.SucursalID != 9 {
+		t.Fatalf("sucursal_id esperado=9 obtenido=%d", panelSucursal.Filtros.SucursalID)
+	}
+	if panelSucursal.Tablero.Operativo.VentasCerradas != 1 {
+		t.Fatalf("ventas cerradas por sucursal esperadas=1 obtenido=%d", panelSucursal.Tablero.Operativo.VentasCerradas)
+	}
+}
+
 func seedGraficosData(t *testing.T, dbExec *testingDBExec) {
 	t.Helper()
 

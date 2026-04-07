@@ -1,6 +1,6 @@
 # Diagrama entidad-relacion
 
-Fecha: 2026-04-05
+Fecha: 2026-04-07
 
 ```mermaid
 erDiagram
@@ -25,6 +25,13 @@ erDiagram
     EMPRESAS ||--o{ EMPRESA_FINANZAS_MOVIMIENTOS : "empresa_id"
     EMPRESAS ||--o{ EMPRESA_FINANZAS_PERIODOS : "empresa_id"
     EMPRESAS ||--|| EMPRESA_FINANZAS_CONFIGURACION : "empresa_id"
+    EMPRESAS ||--o{ EMPRESA_CREDITOS : "empresa_id"
+    EMPRESAS ||--o{ EMPRESA_CREDITOS_CLIENTES_LIMITES : "empresa_id"
+    EMPRESAS ||--o{ EMPRESA_CREDITOS_CUOTAS : "empresa_id"
+    EMPRESAS ||--o{ EMPRESA_CREDITOS_MOVIMIENTOS : "empresa_id"
+    EMPRESAS ||--o{ EMPRESA_CREDITOS_WORKFLOW : "empresa_id"
+    EMPRESAS ||--o{ EMPRESA_BACKUPS : "empresa_id"
+    EMPRESAS ||--o{ EMPRESA_BACKUPS_RESTAURACIONES : "empresa_id"
     EMPRESAS ||--o{ EMPRESA_CIERRES_CAJA : "empresa_id"
     EMPRESAS ||--o{ EMPRESA_FACTURACION_DOCUMENTOS : "empresa_id"
     EMPRESAS ||--o{ EMPRESA_COMPRAS_DOCUMENTOS : "empresa_id"
@@ -42,12 +49,20 @@ erDiagram
     EMPRESAS ||--o{ EMPRESA_GPS_RECORRIDOS : "empresa_id"
 
     CLIENTES ||--o{ CARRITOS_COMPRAS : "cliente_id"
+    CLIENTES ||--o{ EMPRESA_CREDITOS : "cliente_id"
+    CLIENTES ||--o{ EMPRESA_CREDITOS_CLIENTES_LIMITES : "cliente_id"
     PROVEEDORES ||--o{ EMPRESA_COMPRAS_DOCUMENTOS : "proveedor_id"
     CARRITOS_COMPRAS ||--o{ CARRITO_COMPRA_ITEMS : "carrito_id"
     CARRITOS_COMPRAS ||--o{ EMPRESA_COMISIONES_SERVICIO_MOVIMIENTOS : "carrito_id"
     CARRITO_COMPRA_ITEMS ||--o{ EMPRESA_COMISIONES_SERVICIO_MOVIMIENTOS : "carrito_item_id"
     SERVICIOS ||--o{ EMPRESA_COMISIONES_SERVICIO_MOVIMIENTOS : "servicio_id"
     CATEGORIAS_PRODUCTOS ||--o{ PRODUCTOS : "categoria_id"
+    EMPRESA_CREDITOS ||--o{ EMPRESA_CREDITOS_CUOTAS : "credito_id"
+    EMPRESA_CREDITOS ||--o{ EMPRESA_CREDITOS_MOVIMIENTOS : "credito_id"
+    EMPRESA_CREDITOS ||--o{ EMPRESA_CREDITOS_WORKFLOW : "credito_id"
+    EMPRESA_CREDITOS_CUOTAS ||--o{ EMPRESA_CREDITOS_MOVIMIENTOS : "cuota_id"
+    EMPRESA_CREDITOS_MOVIMIENTOS ||--o{ EMPRESA_CREDITOS_WORKFLOW : "movimiento_origen_id"
+    EMPRESA_BACKUPS ||--o{ EMPRESA_BACKUPS_RESTAURACIONES : "backup_id"
     EMPRESA_EVENTOS_CONTABLES ||--o{ EMPRESA_ASIENTOS_CONTABLES : "evento_contable_id"
     CHAT_TAREAS_CONVERSACIONES ||--o{ CHAT_TAREAS_PARTICIPANTES : "conversacion_id"
     CHAT_TAREAS_CONVERSACIONES ||--o{ CHAT_TAREAS_MENSAJES : "conversacion_id"
@@ -254,6 +269,120 @@ erDiagram
       string cuenta_retenciones_pagar
       string cuentas_ingreso_categoria
       string cuentas_egreso_categoria
+      string estado
+    }
+    EMPRESA_CREDITOS {
+      int id PK
+      int empresa_id FK
+      int cliente_id FK
+      string codigo
+      string tipo_credito
+      double monto_aprobado
+      double cupo_credito
+      double saldo_actual
+      double saldo_disponible
+      double tasa_interes
+      double tasa_mora
+      int plazo_dias
+      int plazo_cuotas
+      string fecha_inicio
+      string fecha_vencimiento
+      string clasificacion_cartera
+      string estado_credito
+      string estado
+    }
+    EMPRESA_CREDITOS_CLIENTES_LIMITES {
+      int id PK
+      int empresa_id FK
+      int cliente_id FK
+      double limite_saldo_total
+      int max_creditos_activos
+      int requiere_aprobacion_exceso
+      string fecha_actualizacion
+      string usuario_creador
+      string estado
+      string observaciones
+    }
+    EMPRESA_CREDITOS_CUOTAS {
+      int id PK
+      int empresa_id FK
+      int credito_id FK
+      int numero_cuota
+      string fecha_vencimiento
+      double valor_cuota
+      double capital_cuota
+      double interes_cuota
+      double interes_mora
+      double valor_pagado
+      double saldo_cuota
+      string estado_cuota
+      string estado
+    }
+    EMPRESA_CREDITOS_MOVIMIENTOS {
+      int id PK
+      int empresa_id FK
+      int credito_id FK
+      int cuota_id FK
+      string tipo_movimiento
+      double monto
+      double capital_aplicado
+      double interes_aplicado
+      double mora_aplicada
+      string metodo_pago
+      string referencia_pago
+      string comprobante
+      string fecha_movimiento
+      string estado
+    }
+    EMPRESA_CREDITOS_WORKFLOW {
+      int id PK
+      int empresa_id FK
+      int credito_id FK
+      int movimiento_origen_id FK
+      string tipo_solicitud
+      string estado_solicitud
+      int nivel_aprobacion_actual
+      int nivel_aprobacion_requerido
+      string motivo_solicitud
+      string motivo_decision
+      string payload_json
+      string historial_aprobaciones_json
+      string resultado_json
+      string aprobado_por
+      string codigo_aprobacion
+      string rechazado_por
+      string fecha_solicitud
+      string fecha_decision
+      string fecha_ejecucion
+      int movimiento_resultado_id
+      string estado
+    }
+    EMPRESA_BACKUPS {
+      int id PK
+      int empresa_id FK
+      string codigo
+      string nombre
+      string version_schema
+      string alcance
+      string tipo_backup
+      int total_tablas
+      int total_registros
+      int tamano_bytes
+      string hash_contenido
+      string restaurado_en
+      string restaurado_por
+      string estado
+    }
+    EMPRESA_BACKUPS_RESTAURACIONES {
+      int id PK
+      int empresa_id FK
+      int backup_id FK
+      string codigo_backup
+      int tablas_restauradas
+      int registros_restaurados
+      string resultado
+      string fecha_creacion
+      string usuario_creador
       string estado
     }
     EMPRESA_CIERRES_CAJA {

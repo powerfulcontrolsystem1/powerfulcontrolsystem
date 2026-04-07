@@ -1,5 +1,255 @@
 - Historial de cambios
 
+- 2026-04-07: Cierre modulo 36 (backups empresariales) y sincronizacion completa de diagramas/documentacion
+    - Se crea `backend/db/backups_empresariales.go` para:
+        - crear/migrar tablas `empresa_backups` y `empresa_backups_restauraciones`.
+        - construir snapshots por `empresa_id`, persistir hash/metadata y restaurar datos por backup con bitacora.
+    - Se crean pruebas:
+        - `backend/db/backups_empresariales_test.go`.
+        - `backend/handlers/backups_empresariales_test.go`.
+    - Se crea `backend/handlers/backups_empresariales.go` con endpoint `/api/empresa/backups`:
+        - acciones `listar`, `crear`, `detalle`, `export`, `restaurar`, `activar/desactivar`.
+    - Se integra `backend/main.go` con:
+        - `EnsureEmpresaBackupsSchema`.
+        - migracion `2026-04-07-027-backups-empresariales`.
+        - ruta protegida `/api/empresa/backups`.
+    - Se actualiza `backend/handlers/empresa_permisos.go` para clasificar `restaurar/restore` como accion de aprobacion.
+    - Se crea frontend `web/administrar_empresa/backups.html` e integracion de menu/permisos/estilos en:
+        - `web/administrar_empresa.html`.
+        - `web/js/administrar_empresa.js`.
+        - `web/estilos.css`.
+    - Se actualizan diagramas y control documental en:
+        - `documentos/diagramas/diagrama_arquitectura_sistema.md`.
+        - `documentos/diagramas/diagrama_casos_de_uso.md`.
+        - `documentos/diagramas/diagrama_entidad_relacion.md`.
+        - `documentos/diagramas/diagrama_flujo_procesos.md`.
+        - `documentos/diagramas/diagrama_roles_permisos.md`.
+        - `documentos/diagramas/estructura_del_codigo.md`.
+        - `documentos/diagramas/README.md` (nuevo).
+        - `documentos/diagramas/versionado.md` (nuevo).
+    - Se sincroniza trazabilidad general en:
+        - `documentos/estructura_bd.md` y `estructura_bd.md`.
+        - `documentos/descripcion_del_proyecto`.
+        - `documentos/descripcion_de_archivos`.
+        - `Pendiente Notas`.
+        - `CHANGELOG.md`.
+    - Validaciones ejecutadas:
+        - `go test ./db -run "^TestEmpresaBackups" -count=1` -> OK.
+        - `go test ./handlers -run "^TestEmpresaBackupsHandler" -count=1` -> OK.
+        - `go test . -run "^$" -count=1` -> compilacion de `main` OK.
+
+- 2026-04-07: Cierre modulo 35 (creditos y cartera) - limites por cliente, permisos finos por rol y auditoria ampliada
+    - Se actualiza `backend/db/creditos.go` para:
+        - crear y migrar tabla `empresa_creditos_clientes_limites` con indice unico por `empresa_id + cliente_id`.
+        - exponer operaciones `Get/List/Upsert/SetEstado` para administrar limites de credito por cliente.
+        - validar limites en alta/edicion de credito (`CreateEmpresaCredito`, `UpdateEmpresaCredito`) bloqueando exceso de saldo y exceso de creditos activos.
+    - Se actualiza `backend/handlers/creditos.go` para:
+        - exponer acciones `limites_cliente`, `limite_cliente`, `upsert_limite_cliente` y `eliminar_limite_cliente` en `/api/empresa/creditos`.
+        - aplicar permiso fino en decisiones de workflow por `tipo_solicitud` (`reverso_abono` permitido para `administrador` y `contabilidad`; `refinanciacion` restringida a `administrador`).
+        - registrar auditoria no bloqueante ampliada para solicitud/aprobacion/rechazo de workflow, cambios de limites y denegaciones por permiso fino.
+    - Se amplian pruebas en:
+        - `backend/db/creditos_test.go` (`TestEmpresaCreditosClienteLimitesBloqueaExceso`, `TestEmpresaCreditosClienteLimitesCRUD`).
+        - `backend/handlers/creditos_test.go` (`TestEmpresaCreditosHandlerLimitesClienteYBloqueo`, `TestEmpresaCreditosHandlerWorkflowPermisoFinoPorTipo`).
+    - Se sincroniza documentacion tecnica en:
+        - `documentos/estructura_bd.md` y `estructura_bd.md`.
+        - `documentos/diagramas/estructura_del_codigo.md`.
+        - `documentos/diagramas/diagrama_flujo_procesos.md`.
+        - `documentos/diagramas/diagrama_entidad_relacion.md`.
+        - `documentos/descripcion_de_archivos`, `documentos/descripcion_del_proyecto`, `Pendiente Notas` y `CHANGELOG.md`.
+    - Validaciones ejecutadas:
+        - `go test ./db -run "TestEmpresaCreditosClienteLimites(BloqueaExceso|CRUD)$" -count=1` -> OK.
+        - `go test ./handlers -run "TestEmpresaCreditosHandler(LimitesClienteYBloqueo|WorkflowPermisoFinoPorTipo)$" -count=1` -> OK.
+        - `runTests` sobre `backend/db/creditos_test.go` y `backend/handlers/creditos_test.go` (casos nuevos) -> 6 passed, 0 failed.
+
+- 2026-04-07: Avance modulo 35 (creditos y cartera) - workflow avanzado de reversos/anulaciones y refinanciacion con aprobacion multinivel
+    - Se actualiza `backend/db/creditos.go` para:
+        - crear y migrar tabla `empresa_creditos_workflow`.
+        - implementar solicitud/listado y decision (`aprobar/rechazar`) de workflows por `empresa_id`.
+        - ejecutar automaticamente `reverso_abono` y `refinanciacion` al completar niveles requeridos, con trazabilidad de `movimiento_resultado_id`, `resultado_json` e historial de aprobaciones.
+        - corregir colisiones de `numero_cuota` en refinanciaciones regenerando cuotas desde el ultimo numero historico del credito.
+    - Se actualiza `backend/handlers/creditos.go` para:
+        - exponer acciones `workflows`, `solicitar_reverso`, `solicitar_refinanciacion`, `aprobar_workflow` y `rechazar_workflow` en `/api/empresa/creditos`.
+    - Se actualiza `backend/handlers/empresa_permisos.go` para:
+        - clasificar aprobacion/rechazo de workflow de creditos como acciones de aprobacion (`permActionApprove`) en finanzas.
+    - Se amplian pruebas en:
+        - `backend/db/creditos_test.go` (`TestEmpresaCreditosWorkflowReversoAprobadoEjecutaReversion`, `TestEmpresaCreditosWorkflowRefinanciacionAprobadaRegeneraCuotas`).
+        - `backend/handlers/creditos_test.go` (`TestEmpresaCreditosHandlerWorkflowReversoSolicitudYAprobacion`).
+    - Se sincroniza trazabilidad en:
+        - `Pendiente Notas`.
+        - `CHANGELOG.md`.
+        - `documentos/estructura_bd.md` y `estructura_bd.md`.
+        - `documentos/diagramas/estructura_del_codigo.md`, `documentos/diagramas/diagrama_flujo_procesos.md` y `documentos/diagramas/diagrama_entidad_relacion.md`.
+        - `documentos/descripcion_de_archivos` y `documentos/descripcion_del_proyecto`.
+    - Validaciones ejecutadas:
+        - `go test ./db -run "TestEmpresaCreditosWorkflow(ReversoAprobadoEjecutaReversion|RefinanciacionAprobadaRegeneraCuotas)$" -count=1` -> OK.
+        - `go test ./handlers -run "TestEmpresaCreditosHandlerWorkflowReversoSolicitudYAprobacion$" -count=1` -> OK.
+        - `go test ./... -count=1` -> compilacion/pruebas global backend OK.
+
+- 2026-04-07: Avance modulo 35 (creditos y cartera) - integracion contable/caja-bancos/pasarelas en abonos con asientos automaticos por politica
+    - Se actualiza `backend/handlers/creditos.go` para:
+        - registrar evento contable en `action=abono` con contrato `creditos.credito_abono_registrado`.
+        - ejecutar procesamiento automatico de asientos segun politica (`procesar_asientos`, `asientos_limit`, `max_reintentos`).
+        - anexar bloque `integracion_contable` en la respuesta con trazabilidad de evento/asientos.
+    - Se actualiza `backend/db/eventos_contables.go` para:
+        - extender contrato de eventos con modulo `creditos`.
+        - generar lineas de asiento para abonos de credito (caja/bancos, cartera, intereses, mora).
+    - Se amplian pruebas en:
+        - `backend/handlers/creditos_test.go` (`TestEmpresaCreditosHandlerAbonoIntegraContabilidadYAsientos`).
+        - `backend/db/eventos_contables_test.go` (`TestProcessEmpresaEventosContablesPendientesCreditoAbonoGeneraLineasCartera`).
+    - Se actualiza trazabilidad funcional en:
+        - `Pendiente Notas`.
+        - `CHANGELOG.md`.
+        - `documentos/diagramas/estructura_del_codigo.md`.
+        - `documentos/diagramas/diagrama_flujo_procesos.md`.
+        - `documentos/descripcion_del_proyecto`.
+    - Validaciones ejecutadas:
+        - `go test ./db -run "Test(EmpresaEventosContablesCreateAndList|ProcessEmpresaEventosContablesPendientesGeneraAsientosIdempotentes|ProcessEmpresaEventosContablesPendientesCreditoAbonoGeneraLineasCartera|EmpresaCreditosFlowCrearCuotasAbonoYResumen|EmpresaCreditosMoraDashboard)$" -count=1` -> OK.
+        - `go test ./handlers -run "TestEmpresaCreditosHandler(FlujoBasico|AlertasMoraYReporte|AbonoIntegraContabilidadYAsientos)$" -count=1` -> OK.
+        - `go test ./... -run "^$" -count=1` -> compilacion global backend OK.
+
+- 2026-04-07: Avance modulo 35 (creditos y cartera) - alertas proactivas de vencimiento y ranking avanzado de morosidad
+    - Se actualiza `backend/db/creditos.go` con:
+        - tipo `EmpresaCreditosMoraDashboard` y consulta `GetEmpresaCreditosMoraDashboard`.
+        - consolidado de proximos a vencer, vencidos y ranking de morosidad con totales y montos.
+    - Se actualiza `backend/handlers/creditos.go` con:
+        - acciones `alertas`, `alertas_mora`, `morosidad`, `ranking_morosidad`.
+        - extension de `action=reporte` para soportar `tipo=morosidad` en formatos `json/csv/txt/xls/pdf`.
+    - Se actualiza `web/administrar_empresa/creditos.html` para:
+        - incorporar panel de alertas/ranking con filtros (`dias_proximos`, `top`, `include_inactive`).
+        - permitir exportacion directa de morosidad y selector de tipo de reporte (`cartera`/`morosidad`).
+    - Se actualiza `web/estilos.css` con estilos `creditos-alertas-*` para layout responsive del nuevo bloque.
+    - Se amplian pruebas en:
+        - `backend/db/creditos_test.go` (`TestEmpresaCreditosMoraDashboard`).
+        - `backend/handlers/creditos_test.go` (`TestEmpresaCreditosHandlerAlertasMoraYReporte`).
+    - Se actualizan diagramas en:
+        - `documentos/diagramas/estructura_del_codigo.md`.
+        - `documentos/diagramas/diagrama_flujo_procesos.md`.
+    - Se sincroniza trazabilidad en:
+        - `Pendiente Notas`.
+        - `CHANGELOG.md`.
+        - `documentos/descripcion_de_archivos`.
+        - `documentos/descripcion_del_proyecto`.
+        - `documentos/estructura_del_codigo`.
+    - Validaciones ejecutadas:
+        - `runTests` sobre `backend/db/creditos_test.go` y `backend/handlers/creditos_test.go` -> 4 passed, 0 failed.
+        - `go test ./... -run "^TestEmpresaCreditos" -count=1` -> OK.
+
+- 2026-04-07: Avance modulo 35 (creditos y cartera) - guias operativas publicadas en centro de ayuda y manual por rol
+    - Se actualiza `web/ayuda/ayuda.html` con:
+        - acceso rapido `Créditos y cartera` en el menu del centro de ayuda.
+        - inclusion del tutorial `30) Créditos y cartera` en la seccion de tutorial por modulos.
+        - bloque dedicado `menu-creditos` con flujo recomendado y manual por rol (administrador, caja/cobranza y auditoria).
+        - endpoints principales de `/api/empresa/creditos` en la seccion de APIs.
+    - Se actualiza `Pendiente Notas` para marcar como completada (dentro de completado parcial del modulo 35) la tarea de guias operativas del modulo de creditos.
+    - Se actualiza `CHANGELOG.md`, `documentos/descripcion_de_archivos` y `documentos/descripcion_del_proyecto` para trazabilidad documental.
+    - Validaciones ejecutadas:
+        - `get_errors` sobre `web/ayuda/ayuda.html`, `Pendiente Notas`, `CHANGELOG.md`, `documentos/descripcion_de_archivos` y `documentos/descripcion_del_proyecto` -> sin errores.
+
+- 2026-04-07: Avance modulo 35 (creditos y cartera) - fase 2 frontend base implementada e integrada al menu con permisos
+    - Se crea `web/administrar_empresa/creditos.html` con flujo operativo para:
+        - crear creditos, consultar cartera y resumen, aplicar abonos, consultar estado de cuenta y exportar reporte multiformato.
+        - gestionar estado de credito (`activo/suspendido/cerrado`) y estado de fila (`activar/desactivar`) desde tabla.
+    - Se actualiza `web/administrar_empresa.html` con acceso lateral `linkCreditos`.
+    - Se actualiza `web/js/administrar_empresa.js` para:
+        - incluir `linkCreditos` en el conjunto de enlaces navegables del panel.
+        - aplicar regla de permisos del modulo finanzas para visibilidad por rol.
+    - Se actualiza `web/estilos.css` con estilos del modulo de creditos (grillas de filtros, resumen de cartera, acciones y detalle responsive).
+    - Se sincroniza trazabilidad en:
+        - `Pendiente Notas`.
+        - `documentos/descripcion_de_archivos`.
+        - `documentos/descripcion_del_proyecto`.
+        - `documentos/estructura_del_codigo`.
+        - `documentos/diagramas/estructura_del_codigo.md`.
+        - `documentos/diagramas/diagrama_flujo_procesos.md`.
+        - `CHANGELOG.md`.
+    - Validaciones ejecutadas:
+        - `get_errors` sobre `web/administrar_empresa/creditos.html`, `web/administrar_empresa.html`, `web/js/administrar_empresa.js` y `web/estilos.css` -> sin errores.
+
+- 2026-04-07: Avance modulo 35 (creditos y cartera) - fase 1 backend implementada y documentada
+    - Se crea `backend/db/creditos.go` con:
+        - esquema `empresa_creditos`, `empresa_creditos_cuotas`, `empresa_creditos_movimientos`.
+        - flujo base de negocio para crear credito, generar cuotas, aplicar abonos, recalcular saldo y clasificacion de cartera.
+    - Se crea `backend/handlers/creditos.go` con endpoint `/api/empresa/creditos`:
+        - acciones `cuotas`, `movimientos`, `estado_cuenta`, `resumen_cartera`, `reporte`, `abono`, `estado`, `activar/desactivar`.
+        - exportacion multiformato (`json/csv/txt/xls/pdf`) para reportes de cartera.
+    - Se integra `backend/main.go` con:
+        - `EnsureEmpresaCreditosSchema` en bootstrap.
+        - migracion `2026-04-07-026-creditos-cartera`.
+        - ruta protegida `/api/empresa/creditos` bajo wrapper de finanzas.
+    - Se crean pruebas:
+        - `backend/db/creditos_test.go` (`TestEmpresaCreditosFlowCrearCuotasAbonoYResumen`).
+        - `backend/handlers/creditos_test.go` (`TestEmpresaCreditosHandlerFlujoBasico`).
+    - Se actualiza documentacion/trazabilidad en:
+        - `Pendiente Notas`.
+        - `documentos/descripcion_de_archivos`.
+        - `documentos/estructura_bd.md` y `estructura_bd.md` (version `2026-04-07.35`).
+        - `documentos/estructura_del_codigo`.
+        - `documentos/diagramas/estructura_del_codigo.md`.
+        - `documentos/diagramas/diagrama_entidad_relacion.md`.
+        - `documentos/diagramas/diagrama_flujo_procesos.md`.
+        - `documentos/descripcion_del_proyecto`.
+        - `CHANGELOG.md`.
+    - Validaciones ejecutadas:
+        - `go test ./db -run TestEmpresaCreditosFlowCrearCuotasAbonoYResumen -count=1` -> OK.
+        - `go test ./handlers -run TestEmpresaCreditosHandlerFlujoBasico -count=1` -> OK.
+        - `go test ./... -run "^$" -count=1` -> compilacion global backend OK.
+
+- 2026-04-07: Cierre modulo 34 (calculadora por empresa) con historial persistente, asociaciones trazables y exportacion multiformato
+    - Se crea `backend/db/calculadora_operativa.go` con:
+        - tablas `empresa_calculadora_configuracion` y `empresa_calculadora_operaciones`.
+        - configuracion opcional de integraciones (`integrar_carritos`, `integrar_cotizaciones`) por empresa.
+        - operaciones de historial con filtros por rango/usuario/cliente/etiqueta y limpieza logica por estado.
+    - Se crea `backend/handlers/calculadora_operativa.go` con endpoint `/api/empresa/calculadora`:
+        - acciones `config`, `referencias`, `export`, `limpiar`, `activar/desactivar`.
+        - validacion de referencias `carrito_id`/`cotizacion_id` segun configuracion activa.
+        - exportacion en `json/csv/txt/xls/pdf` con estructura y resumen consistentes.
+    - Se integra `backend/main.go` con:
+        - `EnsureEmpresaCalculadoraSchema` en bootstrap.
+        - migracion `2026-04-07-025-calculadora-operativa`.
+        - ruta protegida `/api/empresa/calculadora` bajo wrapper de finanzas.
+    - Se crea `backend/db/calculadora_operativa_test.go` con `TestEmpresaCalculadoraConfiguracionYHistorialFlow`.
+    - Se crea `backend/handlers/calculadora_operativa_test.go` con `TestEmpresaCalculadoraHandlerConfigOperacionesFiltrosYExport`.
+    - Se actualiza `web/administrar_empresa/calculadora.html` para consumir API empresarial (configuracion, referencias, registro, filtros, limpieza y exportacion).
+    - Se actualiza `web/estilos.css` con estilos responsive de controles de configuracion/metadata/filtros de calculadora.
+    - Se actualizan `Pendiente Notas`, `CHANGELOG.md`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_archivos`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/diagramas/diagrama_flujo_procesos.md`, `estructura_bd.md` y `documentos/estructura_bd.md` para trazabilidad documental.
+    - Validaciones ejecutadas:
+        - `go test ./db -run TestEmpresaCalculadoraConfiguracionYHistorialFlow -count=1` -> OK.
+        - `go test ./handlers -run TestEmpresaCalculadoraHandlerConfigOperacionesFiltrosYExport -count=1` -> OK.
+
+- 2026-04-07: Cierre modulo 33 (configuracion operativa de cobro) con politicas contextuales, simulador y rollback
+    - Se actualiza `backend/db/configuracion_operativa.go` con:
+        - tablas `empresa_configuracion_operativa_politicas` y `empresa_configuracion_operativa_historial`.
+        - resolucion efectiva por contexto (`rol`, `canal_venta`, `sucursal_id`, `turno`).
+        - funciones de snapshot/listado/get por id y aplicacion de rollback operativo.
+    - Se amplía `backend/handlers/configuracion_operativa.go` con acciones HTTP:
+        - `action=politica` para publicar reglas contextuales.
+        - `action=simular` para previsualizar permisos y opcionalmente guardar evidencia.
+        - `action=historial` para consulta de snapshots.
+        - `action=rollback` para restaurar configuraciones anteriores.
+    - Se amplían pruebas:
+        - `backend/db/configuracion_operativa_test.go` con `TestEmpresaConfiguracionOperativaPoliticaContextoYRollback`.
+        - `backend/handlers/configuracion_operativa_test.go` con `TestEmpresaConfiguracionOperativaHandlerPoliticaSimulacionHistorialYRollback`.
+    - Se actualiza frontend en `web/administrar_empresa/configuracion.html` y `web/estilos.css` para gestionar politicas contextuales, simulacion e historial con rollback.
+    - Se actualizan `Pendiente Notas`, `CHANGELOG.md`, `documentos/descripcion_del_proyecto`, `estructura_bd.md`, `documentos/estructura_bd.md`, `documentos/descripcion_de_archivos`, `documentos/diagramas/estructura_del_codigo.md` y `documentos/diagramas/diagrama_flujo_procesos.md` para trazabilidad documental.
+    - Validaciones ejecutadas:
+        - `go test ./db -run TestEmpresaConfiguracionOperativa -count=1` -> OK.
+        - `go test ./handlers -run TestEmpresaConfiguracionOperativaHandler -count=1` -> OK.
+
+- 2026-04-07: Cierre modulo 32 (Graficos y estadisticas) con cache, filtros avanzados, comparativo y compactacion de series
+    - Se amplia `backend/handlers/graficos_estadisticas.go` con:
+        - cache en memoria del panel (`cache.hit`) y soporte de refresco (`refresh`/`skip_cache`).
+        - filtros avanzados por `sucursal_id`, `estacion_id`, `segmento` con cobertura de aplicacion en respuesta.
+        - comparativo entre periodos (`comparar`, `comparar_desde`, `comparar_hasta`) con variacion absoluta/porcentual por metrica.
+        - compactacion por buckets para series de rangos largos (sin recorte por cola).
+    - Se amplia `backend/handlers/graficos_estadisticas_test.go` con `TestEmpresaGraficosEstadisticasHandlerFiltrosComparativoYCache`.
+    - Se actualiza frontend en `web/administrar_empresa/graficos_estadisticas.html` y `web/estilos.css` para nuevos filtros/comparativo y estado de cache.
+    - Se actualizan `Pendiente Notas` y `CHANGELOG.md` para marcar cierre del modulo y evidencia tecnica.
+    - Se actualizan `documentos/diagramas/estructura_del_codigo.md` y `documentos/diagramas/diagrama_flujo_procesos.md` con el nuevo flujo de graficos.
+    - Se actualiza `documentos/descripcion_de_archivos` para registrar los cambios de este cierre.
+    - Validaciones ejecutadas:
+        - `go test ./handlers -run TestEmpresaGraficosEstadisticasHandler -v` -> OK.
+        - `go test ./handlers -count=1` -> OK.
+
 - 2026-04-07: Hotfix de arranque por migracion legacy en modulos faltantes (`periodo_contable`)
     - Se actualiza `backend/db/modulos_faltantes.go` para corregir el orden de DDL en bases antiguas:
         - se retiran del bloque inicial los indices que dependen de columnas agregadas por `ensureColumnIfMissing`.

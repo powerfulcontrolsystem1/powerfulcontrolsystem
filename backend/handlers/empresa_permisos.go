@@ -611,7 +611,7 @@ func resolveInventarioPermissionAction(r *http.Request) string {
 func resolveFinanzasPermissionAction(r *http.Request) string {
 	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 	switch action {
-	case "cerrar", "reabrir", "aprobar", "procesar_asientos", "procesar", "conciliar_bancaria_auto", "conciliar_bancos", "conciliar_bancaria_automatica":
+	case "cerrar", "reabrir", "aprobar", "procesar_asientos", "procesar", "conciliar_bancaria_auto", "conciliar_bancos", "conciliar_bancaria_automatica", "aprobar_workflow", "aprobar_reverso", "aprobar_refinanciacion", "rechazar_workflow", "rechazar_reverso", "rechazar_refinanciacion":
 		return permActionApprove
 	case "anular":
 		return permActionDelete
@@ -668,6 +668,8 @@ func resolveSeguridadPermissionAction(r *http.Request) string {
 	case "solicitar_aprobacion", "iniciar_aprobacion":
 		return permActionUpdate
 	case "versionar":
+		return permActionApprove
+	case "restaurar", "restore", "rollback_backup":
 		return permActionApprove
 	case "sync_manual", "rotar_credencial", "rotar_credenciales":
 		return permActionApprove

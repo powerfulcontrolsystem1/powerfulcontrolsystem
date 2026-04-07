@@ -1,6 +1,179 @@
 # CHANGELOG
 
 ## 2026-04-07
+- Cierre del modulo 36 (Backups empresariales): snapshots por empresa, restauracion trazable, exportacion multiformato y UI dedicada.
+	- Backend `db`:
+		- `backend/db/backups_empresariales.go` agrega tablas `empresa_backups` y `empresa_backups_restauraciones` con `EnsureEmpresaBackupsSchema`.
+		- implementa construccion de payload (`BuildEmpresaBackupPayload`), alta de snapshot (`CreateEmpresaBackupSnapshot`), historial/detalle (`List/Get`) y restauracion controlada (`RestoreEmpresaBackupByID`).
+		- incorpora trazabilidad de integridad (`hash_contenido`) y metadata/version de snapshot.
+		- `backend/db/backups_empresariales_test.go` agrega pruebas de flujo snapshot/restauracion y listado/payload.
+	- Backend `handlers`:
+		- `backend/handlers/backups_empresariales.go` agrega endpoint `/api/empresa/backups` con acciones `listar|crear|detalle|export|restaurar|activar|desactivar`.
+		- `backend/handlers/backups_empresariales_test.go` agrega cobertura de create/list/detail/export/restore/toggle y not-found en restore.
+		- `backend/handlers/empresa_permisos.go` clasifica `restaurar|restore` como accion de aprobacion (`permActionApprove`).
+	- Integracion y frontend:
+		- `backend/main.go` registra `EnsureEmpresaBackupsSchema`, migracion `2026-04-07-027-backups-empresariales` y ruta protegida `/api/empresa/backups`.
+		- `web/administrar_empresa/backups.html` (nuevo) implementa flujo profesional de backups por empresa.
+		- `web/administrar_empresa.html`, `web/js/administrar_empresa.js` y `web/estilos.css` integran acceso `linkBackups` y estilos del modulo.
+	- Validaciones ejecutadas:
+		- `go test ./db -run "^TestEmpresaBackups" -count=1` -> OK.
+		- `go test ./handlers -run "^TestEmpresaBackupsHandler" -count=1` -> OK.
+		- `go test . -run "^$" -count=1` -> compilacion de `main` OK.
+
+- Cierre del modulo 35 (Creditos y cartera): reglas de limites por cliente, permisos finos por rol en workflow y auditoria ampliada.
+	- Backend `db`:
+		- `backend/db/creditos.go` agrega tabla `empresa_creditos_clientes_limites` con indice unico `(empresa_id, cliente_id)` y funciones `Get/List/Upsert/SetEstado` para administrar limites por cliente.
+		- se incorpora validacion de limites por cliente en `CreateEmpresaCredito` y `UpdateEmpresaCredito` (saldo total maximo y maximo de creditos activos).
+	- Backend `handlers`:
+		- `backend/handlers/creditos.go` agrega acciones `limites_cliente`, `limite_cliente`, `upsert_limite_cliente` y `eliminar_limite_cliente` en `/api/empresa/creditos`.
+		- se incorpora validacion de permiso fino por tipo de workflow: `contabilidad` puede decidir `reverso_abono` y `refinanciacion` queda restringida a `administrador`.
+		- se amplian eventos de auditoria no bloqueante para solicitud/aprobacion/rechazo de workflow, cambios de limites y denegaciones por permiso fino.
+	- Pruebas:
+		- `backend/db/creditos_test.go` agrega `TestEmpresaCreditosClienteLimitesBloqueaExceso` y `TestEmpresaCreditosClienteLimitesCRUD`.
+		- `backend/handlers/creditos_test.go` agrega `TestEmpresaCreditosHandlerLimitesClienteYBloqueo` y `TestEmpresaCreditosHandlerWorkflowPermisoFinoPorTipo`.
+	- Validaciones ejecutadas:
+		- `go test ./db -run "TestEmpresaCreditosClienteLimites(BloqueaExceso|CRUD)$" -count=1` -> OK.
+		- `go test ./handlers -run "TestEmpresaCreditosHandler(LimitesClienteYBloqueo|WorkflowPermisoFinoPorTipo)$" -count=1` -> OK.
+		- `runTests` sobre `backend/db/creditos_test.go` y `backend/handlers/creditos_test.go` (casos nuevos) -> 6 passed, 0 failed.
+
+- Avance del modulo 35 (Creditos y cartera): workflow avanzado de reversos/anulaciones y refinanciacion con aprobacion multinivel.
+	- Backend `db`:
+		- `backend/db/creditos.go` agrega tabla `empresa_creditos_workflow`, filtros/listado por estado/tipo y funciones de negocio para `solicitud`, `aprobacion`, `rechazo` y ejecucion automatica.
+		- se implementa ejecucion de `reverso_abono` y `refinanciacion` con trazabilidad de `movimiento_resultado_id`, `resultado_json` e `historial_aprobaciones_json`.
+		- se corrige colision de `numero_cuota` en refinanciacion generando nuevas cuotas con secuencia incremental despues del ultimo numero historico.
+		- `backend/db/creditos_test.go` agrega `TestEmpresaCreditosWorkflowReversoAprobadoEjecutaReversion` y `TestEmpresaCreditosWorkflowRefinanciacionAprobadaRegeneraCuotas`.
+	- Backend `handlers`:
+		- `backend/handlers/creditos.go` agrega acciones `workflows`, `solicitar_reverso`, `solicitar_refinanciacion`, `aprobar_workflow`, `rechazar_workflow`.
+		- `backend/handlers/empresa_permisos.go` clasifica acciones de aprobacion/rechazo de workflow como `permActionApprove` en modulo finanzas.
+		- `backend/handlers/creditos_test.go` agrega `TestEmpresaCreditosHandlerWorkflowReversoSolicitudYAprobacion`.
+	- Validaciones ejecutadas:
+		- `go test ./db -run "TestEmpresaCreditosWorkflow(ReversoAprobadoEjecutaReversion|RefinanciacionAprobadaRegeneraCuotas)$" -count=1` -> OK.
+		- `go test ./handlers -run "TestEmpresaCreditosHandlerWorkflowReversoSolicitudYAprobacion$" -count=1` -> OK.
+		- `go test ./... -count=1` -> OK.
+
+- Avance del modulo 35 (Creditos y cartera): integracion contable/caja-bancos/pasarelas en abonos con asientos automaticos por politica.
+	- Backend `db`:
+		- `backend/db/eventos_contables.go` extiende contrato contable con `creditos.credito_abono_registrado`.
+		- agrega plantilla de lineas contables para abonos de credito (caja/bancos, cartera de creditos, intereses y mora).
+		- `backend/db/eventos_contables_test.go` agrega `TestProcessEmpresaEventosContablesPendientesCreditoAbonoGeneraLineasCartera`.
+	- Backend `handlers`:
+		- `backend/handlers/creditos.go` integra registro de evento contable al `action=abono` y procesamiento automatico de asientos por politica (`procesar_asientos`, `asientos_limit`, `max_reintentos`).
+		- se incorpora metrica de canal de pago (`caja`, `bancos`, `pasarela`) para trazabilidad operativa por abono.
+		- `backend/handlers/creditos_test.go` agrega `TestEmpresaCreditosHandlerAbonoIntegraContabilidadYAsientos`.
+	- Trazabilidad funcional:
+		- `Pendiente Notas` marca completada la integracion contable de modulo 35 y mantiene pendientes de reversos/refinanciacion y limites/permisos.
+	- Validaciones ejecutadas:
+		- `go test ./db -run "Test(EmpresaEventosContablesCreateAndList|ProcessEmpresaEventosContablesPendientesGeneraAsientosIdempotentes|ProcessEmpresaEventosContablesPendientesCreditoAbonoGeneraLineasCartera|EmpresaCreditosFlowCrearCuotasAbonoYResumen|EmpresaCreditosMoraDashboard)$" -count=1` -> OK.
+		- `go test ./handlers -run "TestEmpresaCreditosHandler(FlujoBasico|AlertasMoraYReporte|AbonoIntegraContabilidadYAsientos)$" -count=1` -> OK.
+		- `go test ./... -run "^$" -count=1` -> compilacion global backend OK.
+
+- Avance del modulo 35 (Creditos y cartera): alertas proactivas de vencimiento y ranking avanzado de morosidad.
+	- Backend `db`:
+		- `backend/db/creditos.go` agrega dashboard de morosidad (`GetEmpresaCreditosMoraDashboard`) con bloques de proximos a vencer, vencidos y ranking.
+		- `backend/db/creditos_test.go` agrega `TestEmpresaCreditosMoraDashboard`.
+	- Backend `handlers`:
+		- `backend/handlers/creditos.go` agrega acciones `alertas|alertas_mora|morosidad|ranking_morosidad`.
+		- `action=reporte` soporta `tipo=morosidad` para exportacion en `json/csv/txt/xls/pdf`.
+		- `backend/handlers/creditos_test.go` agrega `TestEmpresaCreditosHandlerAlertasMoraYReporte`.
+	- Frontend:
+		- `web/administrar_empresa/creditos.html` incorpora panel operativo de alertas/ranking con filtros (`dias_proximos`, `top`, `include_inactive`) y exportacion dedicada.
+		- `web/estilos.css` incorpora estilos `creditos-alertas-*` para toolbar y grilla responsive.
+	- Diagramas y trazabilidad:
+		- `documentos/diagramas/estructura_del_codigo.md` y `documentos/diagramas/diagrama_flujo_procesos.md` se actualizan con el nuevo flujo de morosidad.
+	- Validaciones ejecutadas:
+		- `go test ./db -run TestEmpresaCreditosMoraDashboard -count=1` -> OK.
+		- `go test ./handlers -run TestEmpresaCreditosHandlerAlertasMoraYReporte -count=1` -> OK.
+		- `go test ./... -run "^TestEmpresaCreditos" -count=1` -> OK.
+
+- Avance del modulo 35 (Creditos y cartera): publicadas guias operativas en centro de ayuda y manual por rol.
+	- Documentacion funcional:
+		- `web/ayuda/ayuda.html` integra acceso rapido a creditos, bloque tutorial `30) Creditos y cartera`, guia operativa dedicada por flujo y manual por rol (administrador, caja/cobranza y auditoria).
+		- Se documentan endpoints clave de `/api/empresa/creditos` en la seccion de APIs para operacion y soporte.
+	- Trazabilidad:
+		- `Pendiente Notas` retira del listado pendiente del modulo 35 la tarea de guias operativas y la marca dentro de completado parcial.
+		- `documentos/descripcion_del_proyecto` sincroniza el alcance del modulo 35 incluyendo referencia a la guia operativa por rol.
+	- Validaciones ejecutadas:
+		- validacion de editor (`get_errors`) sobre `web/ayuda/ayuda.html`, `Pendiente Notas`, `CHANGELOG.md`, `documentos/historial_de_cambios`, `documentos/descripcion_de_archivos` y `documentos/descripcion_del_proyecto` -> sin errores.
+
+- Avance del modulo 35 (Creditos y cartera): fase 2 frontend base implementada con pantalla dedicada e integracion de menu/permisos.
+	- Frontend:
+		- `web/administrar_empresa/creditos.html` (nuevo) incorpora formulario de creacion de credito, filtros de cartera, resumen, tabla de creditos, panel de abonos y estado de cuenta (cuotas/movimientos).
+		- integra exportacion de cartera en `json/csv/txt/xls/pdf` usando `action=reporte` del backend.
+		- incluye acciones de operacion diaria: prellenado de abono, cambio de estado de credito y activar/desactivar fila.
+	- Navegacion y permisos:
+		- `web/administrar_empresa.html` agrega enlace lateral `linkCreditos`.
+		- `web/js/administrar_empresa.js` agrega `linkCreditos` al catalogo de permisos como modulo `finanzas` accion `C`.
+	- Estilos:
+		- `web/estilos.css` agrega componentes `creditos-*` para grids de filtros/resumen, acciones de tabla y detalle responsive.
+	- Validaciones ejecutadas:
+		- validacion de editor (`get_errors`) sobre archivos frontend modificados -> sin errores.
+
+- Avance del modulo 35 (Creditos y cartera): fase 1 backend implementada con esquema, API y pruebas base.
+	- Backend `db`:
+		- `backend/db/creditos.go` agrega tablas `empresa_creditos`, `empresa_creditos_cuotas` y `empresa_creditos_movimientos`.
+		- implementa creacion de creditos, generacion automatica de cuotas, registro de abonos y resumen de cartera.
+		- `backend/db/creditos_test.go` agrega `TestEmpresaCreditosFlowCrearCuotasAbonoYResumen`.
+	- Backend `handlers`:
+		- `backend/handlers/creditos.go` expone `GET/POST/PUT/PATCH/DELETE /api/empresa/creditos`.
+		- incorpora acciones `estado_cuenta`, `resumen_cartera`, `movimientos`, `cuotas`, `abono` y `reporte`.
+		- soporta exportacion de reporte en `json/csv/txt/xls/pdf`.
+		- `backend/handlers/creditos_test.go` agrega `TestEmpresaCreditosHandlerFlujoBasico`.
+	- Integracion:
+		- `backend/main.go` registra `EnsureEmpresaCreditosSchema`, migracion `2026-04-07-026-creditos-cartera` y ruta protegida `/api/empresa/creditos`.
+	- Validaciones ejecutadas:
+		- `go test ./db -run TestEmpresaCreditosFlowCrearCuotasAbonoYResumen -count=1` -> OK.
+		- `go test ./handlers -run TestEmpresaCreditosHandlerFlujoBasico -count=1` -> OK.
+		- `go test ./... -run "^$" -count=1` -> compilacion global backend OK.
+
+- Cierre del modulo 34 (Calculadora por empresa): historial operativo persistente por empresa, asociaciones trazables y exportacion multiformato por rango/usuario.
+	- Backend `db`:
+		- `backend/db/calculadora_operativa.go` agrega tablas `empresa_calculadora_configuracion` y `empresa_calculadora_operaciones` con filtros por fecha/usuario/cliente/etiqueta.
+		- se incorporan operaciones de configuracion (`integrar_carritos`, `integrar_cotizaciones`), registro de operaciones etiquetadas y limpieza logica por filtros.
+		- `backend/db/calculadora_operativa_test.go` agrega `TestEmpresaCalculadoraConfiguracionYHistorialFlow`.
+	- Backend `handlers`:
+		- `backend/handlers/calculadora_operativa.go` expone `GET/POST/PUT/DELETE /api/empresa/calculadora` con acciones `config`, `referencias`, `export`, `limpiar`, `activar/desactivar`.
+		- valida referencias opcionales de `carrito_id`/`cotizacion_id` segun configuracion y conserva trazabilidad por `empresa_id`, cliente/documento, carrito/cotizacion y usuario.
+		- `backend/handlers/calculadora_operativa_test.go` agrega `TestEmpresaCalculadoraHandlerConfigOperacionesFiltrosYExport`.
+	- Frontend:
+		- `web/administrar_empresa/calculadora.html` migra de historial local a flujo API, con filtros por rango/usuario, etiquetas, asociaciones a cliente/documento y exportacion backend.
+		- `web/estilos.css` agrega estilos `calc-config-row`, `calc-meta-grid` y `calc-filter-row` para controles de configuracion/metadata/filtros en desktop y mobile.
+	- Integracion:
+		- `backend/main.go` registra `EnsureEmpresaCalculadoraSchema`, migracion `2026-04-07-025-calculadora-operativa` y ruta protegida `/api/empresa/calculadora` bajo permisos de finanzas.
+	- Validaciones ejecutadas:
+		- `go test ./db -run TestEmpresaCalculadoraConfiguracionYHistorialFlow -count=1` -> OK.
+		- `go test ./handlers -run TestEmpresaCalculadoraHandlerConfigOperacionesFiltrosYExport -count=1` -> OK.
+
+- Cierre del modulo 33 (Configuracion operativa de cobro): politicas contextuales, simulador de reglas e historial con rollback operativo.
+	- Backend `db`:
+		- `backend/db/configuracion_operativa.go` agrega tablas y modelos `empresa_configuracion_operativa_politicas` y `empresa_configuracion_operativa_historial`.
+		- se incorpora resolucion efectiva por contexto (`rol`, `canal_venta`, `sucursal_id`, `turno`) y funciones de snapshot/listado/aplicacion de rollback.
+		- `backend/db/configuracion_operativa_test.go` agrega `TestEmpresaConfiguracionOperativaPoliticaContextoYRollback`.
+	- Backend `handlers`:
+		- `backend/handlers/configuracion_operativa.go` amplía acciones HTTP con `action=politica`, `action=simular`, `action=historial` y `action=rollback`.
+		- se agrega snapshot de trazabilidad no bloqueante tras publicaciones y simulaciones guardadas.
+		- `backend/handlers/configuracion_operativa_test.go` agrega `TestEmpresaConfiguracionOperativaHandlerPoliticaSimulacionHistorialYRollback`.
+	- Frontend:
+		- `web/administrar_empresa/configuracion.html` agrega UI de politica contextual, simulador por contexto y panel de historial/rollback.
+		- `web/estilos.css` incorpora estilos para el bloque operativo extendido de simulacion e historial.
+	- Validaciones ejecutadas:
+		- `go test ./db -run TestEmpresaConfiguracionOperativa -count=1` -> OK.
+		- `go test ./handlers -run TestEmpresaConfiguracionOperativaHandler -count=1` -> OK.
+
+- Cierre del modulo 32 (Graficos y estadisticas): cache por panel, comparativos entre periodos, filtros avanzados y optimizacion de series largas.
+	- Backend `handlers`:
+		- `backend/handlers/graficos_estadisticas.go` incorpora cache en memoria con `cache.hit`, soporte de comparativo (`comparar`, `comparar_desde`, `comparar_hasta`) y filtros avanzados (`sucursal_id`, `estacion_id`, `segmento`).
+		- Se agrega cobertura de filtros en respuesta (`filtros.cobertura`) y aplicacion de snapshots para mantener KPI del tablero alineados con filtros aplicados.
+		- Se reemplaza truncamiento de cola por compactacion por buckets en series de ventas/finanzas/compras/asistencia para rangos extensos.
+	- Frontend:
+		- `web/administrar_empresa/graficos_estadisticas.html` agrega controles avanzados de filtros, comparativo, refresco sin cache y tarjetas de variacion por metrica.
+		- `web/estilos.css` agrega estilos de comparativo, tendencia y comportamiento responsive para la nueva capa de filtros.
+	- Pruebas:
+		- `backend/handlers/graficos_estadisticas_test.go` agrega `TestEmpresaGraficosEstadisticasHandlerFiltrosComparativoYCache` para validar filtros, comparativo y cache hit/miss.
+	- Validaciones ejecutadas:
+		- `go test ./handlers -run TestEmpresaGraficosEstadisticasHandler -v` -> OK.
+		- `go test ./handlers -count=1` -> OK.
+
+## 2026-04-07
 - Hotfix de arranque en migraciones ERP legacy (modulos faltantes): correccion de orden de creacion de indices dependientes de columnas nuevas.
 	- Backend `db`:
 		- `backend/db/modulos_faltantes.go` evita crear en el bloque inicial los indices que dependen de columnas agregadas por migracion (`periodo_contable`, `bloqueado_venta`, campos de aprobacion/nomina RRHH).

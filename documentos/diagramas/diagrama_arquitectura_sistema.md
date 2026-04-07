@@ -1,11 +1,12 @@
 # Diagrama de arquitectura del sistema
 
-Fecha: 2026-04-05
+Fecha: 2026-04-07
 
 ```mermaid
 flowchart LR
     U[Browser Web UI]
     AW[auditoria.html panel empresa]
+    ABP[backups.html panel empresa]
     JS[Modulos JS externos web/js]
     S[Servidor Go]
     M[Auth Middleware + JSONError + Logging]
@@ -22,11 +23,14 @@ flowchart LR
     H8[chat_con_inteligencia_artificial handlers]
     H9[ai_config handlers super]
     H10[auditoria handlers]
+    H11[backups empresariales handlers]
     DB1[(empresas.db)]
     DB2[(superadministrador.db)]
     EVC[(empresa_eventos_contables)]
     ASC[(empresa_asientos_contables)]
     AEV[(empresa_auditoria_eventos)]
+    BKP[(empresa_backups)]
+    BKR[(empresa_backups_restauraciones)]
     DTF[(empresa_facturacion_documentos)]
     DTC[(empresa_compras_documentos)]
     FS[(web/uploads/chat_tareas)]
@@ -37,8 +41,10 @@ flowchart LR
 
     U -->|HTML/CSS| JS
     U -->|Navegacion auditoria| AW
+    U -->|Navegacion backups| ABP
     U -->|HTTP/HTTPS| S
     AW -->|GET/PUT auditoria| S
+    ABP -->|GET/POST/PUT backups| S
     S --> M
     S --> WKR
     S --> WKA
@@ -51,6 +57,7 @@ flowchart LR
     P --> H6
     P --> H7
     P --> H10
+    P --> H11
     M --> H8
     M --> H9
 
@@ -77,6 +84,9 @@ flowchart LR
     H7 --> ASC
     H10 --> DB1
     H10 --> AEV
+    H11 --> DB1
+    H11 --> BKP
+    H11 --> BKR
     WKR --> AEV
     WKA --> EVC
     WKA --> ASC
@@ -90,6 +100,8 @@ flowchart LR
     EVC -.persistencia contable.- DB1
     ASC -.asientos canonicos.- DB1
     AEV -.trazabilidad acciones criticas.- DB1
+    BKP -.snapshots por empresa.- DB1
+    BKR -.historial de restauraciones.- DB1
     WKR -.purga expirados.- AEV
     WKA -.procesamiento automatico por lotes.- ASC
 
@@ -109,6 +121,7 @@ Componentes:
 - Exportacion unificada de tablero: `GET /api/empresa/finanzas/movimientos?action=tablero_export&format=csv|json` entrega descargas por rango con bloques operativos/financieros/contables, `estado_resultados` y `balance_general` para consumo directivo.
 - Auditoria empresarial: registro no bloqueante de acciones criticas (`C/U/D/A`) desde middleware de permisos hacia `empresa_auditoria_eventos`, con consulta filtrable por empresa.
 - Auditoria empresarial UI: pagina `web/administrar_empresa/auditoria.html` para filtros de consulta y ejecucion de retencion manual.
+- Backups empresariales UI/API: pagina `web/administrar_empresa/backups.html` y endpoint `/api/empresa/backups` para crear snapshots por `empresa_id`, exportar evidencia multiformato, restaurar y mantener historial de restauraciones.
 - Retencion automatica de auditoria: worker periodico en backend que elimina eventos expirados por `fecha_expiracion` (con fallback por `retencion_dias`).
 - Chat IA empresarial: modulo `chat_con_inteligencia_artificial` con alcance por `empresa_id`, limites free-tier, auditoria de consultas/respuestas y persistencia de `modelo_preferido` por cuenta Google (`empresa_id + admin_email`), usando Google Gemini.
 - Configuracion IA super: endpoint administrativo para credencial Gemini con almacenamiento seguro en `superadministrador.db`.

@@ -1,6 +1,9 @@
 package db
 
-import "testing"
+import (
+	"encoding/json"
+	"testing"
+)
 
 func TestEmpresaEventosContablesCreateAndList(t *testing.T) {
 	dbConn := openFinanzasTestDB(t)
@@ -324,5 +327,88 @@ func TestGetEmpresaConciliacionContablePorPeriodo(t *testing.T) {
 	}
 	if fila.EstadoConciliacion != "con_pendientes" {
 		t.Fatalf("expected estado_conciliacion=con_pendientes, got %q", fila.EstadoConciliacion)
+	}
+}
+
+func TestProcessEmpresaEventosContablesPendientesCreditoAbonoGeneraLineasCartera(t *testing.T) {
+	dbConn := openFinanzasTestDB(t)
+	if err := EnsureEmpresaFinanzasSchema(dbConn); err != nil {
+		t.Fatalf("ensure finanzas schema: %v", err)
+	}
+	if err := EnsureEmpresaEventosContablesSchema(dbConn); err != nil {
+		t.Fatalf("ensure eventos contables schema: %v", err)
+	}
+
+	empresaID := int64(55)
+	monto := 100000.0
+	eventoID, err := CreateEmpresaEventoContable(dbConn, EmpresaEventoContable{
+		EmpresaID:       empresaID,
+		Modulo:          "creditos",
+		Evento:          "credito_abono_registrado",
+		Entidad:         "credito_movimiento",
+		EntidadID:       5501,
+		DocumentoTipo:   "credito",
+		DocumentoCodigo: "CR-5501",
+		PeriodoContable: "2026-04",
+		MontoTotal:      monto,
+		Moneda:          "COP",
+		PayloadJSON:     `{"capital_aplicado":80000,"interes_aplicado":15000,"mora_aplicada":5000,"canal_pago":"bancos"}`,
+		UsuarioCreador:  "tester",
+	})
+	if err != nil {
+		t.Fatalf("create credito evento contable: %v", err)
+	}
+
+	resultado, err := ProcessEmpresaEventosContablesPendientes(dbConn, empresaID, "tester", 20)
+	if err != nil {
+		t.Fatalf("process eventos pendientes: %v", err)
+	}
+	if resultado.EventosProcesados != 1 || resultado.AsientosCreados != 1 {
+		t.Fatalf("expected 1 evento procesado y 1 asiento creado, got %+v", resultado)
+	}
+
+	asientos, err := ListEmpresaAsientosContables(dbConn, empresaID, EmpresaAsientoContableFilter{Modulo: "creditos", Evento: "credito_abono_registrado", Limit: 10})
+	if err != nil {
+		t.Fatalf("list asientos creditos: %v", err)
+	}
+	if len(asientos) != 1 {
+		t.Fatalf("expected 1 asiento de creditos, got %d", len(asientos))
+	}
+	asiento := asientos[0]
+	if asiento.EventoContableID != eventoID {
+		t.Fatalf("expected asiento linked to evento=%d, got %d", eventoID, asiento.EventoContableID)
+	}
+	if asiento.TotalDebito != monto || asiento.TotalCredito != monto {
+		t.Fatalf("expected totals %.2f/%.2f, got %.2f/%.2f", monto, monto, asiento.TotalDebito, asiento.TotalCredito)
+	}
+
+	var lineas []EmpresaAsientoContableLinea
+	if err := json.Unmarshal([]byte(asiento.LineasJSON), &lineas); err != nil {
+		t.Fatalf("decode lineas_json: %v", err)
+	}
+	if len(lineas) < 3 {
+		t.Fatalf("expected >=3 lineas para capital/interes/mora, got %d", len(lineas))
+	}
+
+	tieneCaja := false
+	tieneCartera := false
+	tieneInteres := false
+	tieneMora := false
+	for _, ln := range lineas {
+		if ln.Cuenta == "110505" && ln.Debito > 0 {
+			tieneCaja = true
+		}
+		if ln.Cuenta == "130505" && ln.Credito > 0 {
+			tieneCartera = true
+		}
+		if ln.Descripcion == "Ingresos por interes de credito" && ln.Credito > 0 {
+			tieneInteres = true
+		}
+		if ln.Descripcion == "Ingresos por interes de mora" && ln.Credito > 0 {
+			tieneMora = true
+		}
+	}
+	if !tieneCaja || !tieneCartera || !tieneInteres || !tieneMora {
+		t.Fatalf("expected lineas caja/cartera/interes/mora, got %+v", lineas)
 	}
 }

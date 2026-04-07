@@ -193,12 +193,91 @@ flowchart TD
     RP33 --> RP4[Consultar configuracion de impresion vigente]
     RP4 --> RP5[Visualizar vista previa de formato POS/Carta]
 
+    L --> OC0[Entrar a configuracion operativa de cobro]
+    OC0 --> OC1[Guardar regla base por empresa]
+    OC1 --> OC2[Guardar override por rol action=rol]
+    OC2 --> OC3[Guardar politica contextual action=politica]
+    OC3 --> OC4[Simular reglas por contexto action=simular]
+    OC4 --> OC5[Consultar historial y aplicar rollback action=historial/rollback]
+
+    L --> CA0[Entrar a modulo calculadora por empresa]
+    CA0 --> CA1[Consultar configuracion e integrar referencias action=config/referencias]
+    CA1 --> CA2[Registrar operacion con etiquetas y asociaciones cliente/documento]
+    CA2 --> CA3[Filtrar historial por rango y usuario]
+    CA3 --> CA4[Exportar historial action=export en JSON CSV TXT XLS PDF]
+    CA3 --> CA5[Limpiar historial por filtros action=limpiar]
+
+    L --> CR0[Entrar a modulo creditos]
+    CR0 --> CR0A[Menu valida visibilidad de linkCreditos segun permisos finanzas]
+    CR0A --> CR0B[Cargar vista creditos.html con contexto empresa_id]
+    CR0B --> CR0C[Consultar cartera y resumen inicial en panel]
+    CR0C --> CR0D[Consultar limites por cliente action=limites_cliente o limite_cliente]
+    CR0D --> CR0E[Gestionar limite por cliente action=upsert_limite_cliente o eliminar_limite_cliente]
+    CR0E --> CR0F[Registrar auditoria no bloqueante de limites]
+    CR0F --> CR1[Crear credito por cliente con cupo plazo y tasas]
+    CR1 --> CR1A[Validar limite de cliente por saldo total y creditos activos]
+    CR1A -->|No cumple| CR1B[Rechazar alta o edicion de credito por limite excedido]
+    CR1B --> CR8
+    CR1A -->|Cumple| CR2[Generar cuotas automaticas y plan de amortizacion base]
+    CR2 --> CR3[Registrar abono total o parcial action=abono]
+    CR3 --> CR4[Aplicar pago a cuotas pendientes y actualizar saldo]
+    CR4 --> CR5[Calcular dias de mora y clasificacion de cartera]
+    CR5 --> CR6[Consultar estado de cuenta action=estado_cuenta]
+    CR6 --> CR7[Consultar resumen cartera action=resumen_cartera]
+    CR7 --> CR71[Gestionar estado de credito y acciones de abono desde tabla]
+    CR71 --> CR72[Consultar alertas action=alertas_mora con dias_proximos y top]
+    CR72 --> CR73[Renderizar proximos a vencer vencidos y ranking avanzado]
+    CR73 --> CR74[Exportar reporte de morosidad action=reporte tipo=morosidad]
+    CR74 --> CR75[Registrar evento contable de abono action=abono modulo creditos]
+    CR75 --> CR76[Clasificar canal de pago caja bancos o pasarela y persistir payload contable]
+    CR76 --> CR77{Politica procesar_asientos habilitada?}
+    CR77 -->|Si| CR78[Procesar asientos pendientes por politica asientos_limit max_reintentos]
+    CR77 -->|No| CR8[Exportar reporte de cartera en JSON CSV TXT XLS PDF]
+    CR78 --> CR8[Exportar reporte de cartera en JSON CSV TXT XLS PDF]
+    CR4 --> CR79[Solicitar workflow de reverso o refinanciacion]
+    CR79 --> CR80[Registrar solicitud en empresa_creditos_workflow con estado pendiente_aprobacion]
+    CR80 --> CR80A{Rol puede decidir el tipo de workflow?}
+    CR80A -->|No| CR80B[Denegar accion y registrar auditoria por permiso fino]
+    CR80B --> CR8
+    CR80A -->|Si| CR81{Aprobacion multinivel completada?}
+    CR81 -->|No| CR82[Conservar pendiente y acumular historial de aprobaciones]
+    CR82 --> CR8
+    CR81 -->|Si| CR83[Ejecutar workflow]
+    CR83 --> CR84{Tipo workflow}
+    CR84 -->|reverso_abono| CR85[Crear movimiento reverso y recalcular saldo/cuotas]
+    CR84 -->|refinanciacion| CR86[Inactivar cuotas pendientes y regenerar nuevo plan]
+    CR85 --> CR87[Marcar workflow ejecutada y persistir resultado_json]
+    CR86 --> CR87[Marcar workflow ejecutada y persistir resultado_json]
+    CR87 --> CR87A[Registrar auditoria ampliada de solicitud y decision]
+    CR87A --> CR8
+
+    L --> BK0[Entrar a modulo backups empresariales]
+    BK0 --> BK1[Menu valida visibilidad de linkBackups segun permisos de seguridad]
+    BK1 --> BK2[Cargar vista backups.html con contexto empresa_id]
+    BK2 --> BK3[Crear snapshot action=crear con filtros include/exclude tablas]
+    BK3 --> BK4[Persistir metadata y snapshot_json en empresa_backups]
+    BK4 --> BK5[Listar historial action=listar con busqueda y paginacion]
+    BK5 --> BK6[Consultar detalle action=detalle include_snapshot]
+    BK6 --> BK7[Exportar backup action=export en JSON CSV TXT XLS PDF]
+    BK7 --> BK8{Se solicita restauracion?}
+    BK8 -->|No| BK9[Conservar estado operativo y trazabilidad del backup]
+    BK8 -->|Si| BK10[Validar accion de aprobacion para restaurar]
+    BK10 --> BK11[Restaurar filas por tabla y registrar empresa_backups_restauraciones]
+    BK11 --> BK12[Actualizar restaurado_en/restaurado_por y publicar resumen]
+    BK12 --> BK13[Activar o desactivar snapshot action=activar/desactivar]
+
     L --> GX0[Entrar a modulo graficos_estadisticas]
     GX0 --> GX1[Consultar action=panel en /api/empresa/graficos_estadisticas]
-    GX1 --> GX2[Renderizar series de ventas finanzas compras y asistencia]
+    GX1 --> GX11[Aplicar filtros avanzados por sucursal_id estacion_id y segmento]
+    GX11 --> GX12[Resolver cache de panel y estado cache_hit o cache_miss]
+    GX12 --> GX13{Comparar periodo habilitado?}
+    GX13 -->|Si| GX14[Calcular comparativo automatico o personalizado por rango]
+    GX13 -->|No| GX2
+    GX14 --> GX2
+    GX2 --> GX21[Compactar series por buckets para rangos largos]
     GX2 --> GX3[Visualizar distribuciones de stock y asistencia]
     GX3 --> GX4[Analizar rankings top productos y top clientes]
-    GX4 --> GX5[Ajustar rango y top N para seguimiento directivo]
+    GX4 --> GX5[Ajustar rango top N y refresco sin cache para seguimiento directivo]
 
     L --> F0[Entrar al modulo finanzas]
     F0 --> F1[Consultar configuracion financiera por empresa]
@@ -451,7 +530,9 @@ Resultado esperado:
 - En `carrito_de_compras`, al agregar un item `tipo_item=combo`, el sistema descuenta inventario por ingrediente y revierte correctamente en inactivacion/eliminacion del item.
 - En `codigos_de_descuento`, el usuario puede crear codigos promocionales con generacion automatica, fecha de vencimiento y limite de usos por empresa.
 - En `carrito_de_compras`, el cierre de venta valida en backend los metodos `efectivo`, `tarjeta_credito`, `tarjeta_debito`, `transferencia_bancaria`, `mixto` y `codigo_descuento`, exigiendo referencia para tarjetas y transferencias bancarias.
-- En `carrito_de_compras`, antes de cerrar la venta se resuelve la configuracion operativa de cobro por `empresa_id + rol`, bloqueando metodos no habilitados y desactivando propina/comision cuando la politica lo define.
+- En `carrito_de_compras`, antes de cerrar la venta se resuelve la configuracion operativa de cobro por `empresa_id + rol + contexto` (`canal_venta`, `sucursal_id`, `turno`), bloqueando metodos no habilitados y desactivando propina/comision cuando la politica contextual lo define.
+- En `configuracion_operativa`, el administrador puede publicar reglas base, overrides por rol y politicas contextuales; ademas puede ejecutar simulaciones previas y restaurar snapshots mediante rollback operativo.
+- En `calculadora`, la empresa puede registrar operaciones con etiquetas y asociaciones a cliente/documento/carrito/cotizacion, consultar historial por rango/usuario y exportar en `PDF`, `XLS`, `CSV`, `JSON` y `TXT` manteniendo estructura y totales consistentes.
 - En `propinas`, la empresa puede activar/desactivar porcentaje de propina, definir modo `por_usuario` o `universal` y consultar reporte de acumulados y movimientos.
 - En `carrito_de_compras`, al cerrar venta en estacion, el backend calcula el total final con propina (si aplica), valida `total_pagado` contra ese total y registra el movimiento de propina.
 - En `graficos_estadisticas`, el usuario visualiza series por dia de ventas, finanzas, compras y asistencia por `empresa_id`.

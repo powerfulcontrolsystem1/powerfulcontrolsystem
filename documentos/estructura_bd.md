@@ -1,6 +1,6 @@
 # Estructura de Base de Datos
 
-Version: 2026-04-07.34
+Version: 2026-04-07.36.1
 Ultima actualizacion: 2026-04-07
 
 Este documento consolida la estructura activa de SQLite para el proyecto.
@@ -197,7 +197,7 @@ Todas las tablas operativas usan como base los campos estandar:
   - liquidado_en, liquidado_por
   - fecha_movimiento
 
-### Tablas de configuracion operativa de cobro por empresa y rol
+### Tablas de configuracion operativa de cobro por empresa, rol y contexto operativo
 - empresa_configuracion_operativa:
   - empresa_id (UNIQUE)
   - metodo_pago_efectivo
@@ -220,6 +220,54 @@ Todas las tablas operativas usan como base los campos estandar:
   - habilitar_propinas
   - habilitar_comisiones
   - indice unico: (empresa_id, rol)
+- empresa_configuracion_operativa_politicas:
+  - empresa_id
+  - canal_venta (`''`/`mostrador`/`app`/`estacion`/`reserva`/`online`/`delivery`/`kiosko`)
+  - sucursal_id (0 = aplica a todas)
+  - turno (`''` = aplica a todos)
+  - prioridad (entero menor = mayor prioridad)
+  - metodo_pago_efectivo
+  - metodo_pago_tarjeta_credito
+  - metodo_pago_tarjeta_debito
+  - metodo_pago_transferencia_bancaria
+  - metodo_pago_mixto
+  - metodo_pago_codigo_descuento
+  - habilitar_propinas
+  - habilitar_comisiones
+  - indice unico: (empresa_id, canal_venta, sucursal_id, turno)
+- empresa_configuracion_operativa_historial:
+  - empresa_id
+  - evento (`publicar`/`simular`/`rollback`)
+  - rollback_de_historial_id
+  - snapshot_json (estado completo de configuracion para recuperacion)
+  - simulacion_json (resultado contextual opcional)
+  - usuario_creador
+  - estado
+  - observaciones
+  - indice: (empresa_id, fecha_creacion DESC, id DESC)
+
+### Tablas de calculadora operativa por empresa
+- empresa_calculadora_configuracion:
+  - empresa_id (UNIQUE)
+  - integrar_carritos (0/1)
+  - integrar_cotizaciones (0/1)
+  - usuario_creador
+  - estado
+  - observaciones
+- empresa_calculadora_operaciones:
+  - empresa_id
+  - expresion
+  - resultado
+  - etiquetas_json
+  - cliente_id, cliente_nombre
+  - documento_tipo, documento_codigo
+  - carrito_id, cotizacion_id
+  - fecha_operacion
+  - metadata_json
+  - usuario_creador
+  - estado
+  - observaciones
+  - indices: (empresa_id, fecha_operacion DESC, id DESC), (empresa_id, usuario_creador, fecha_operacion DESC), (empresa_id, carrito_id, cotizacion_id)
 
 ### Tablas de finanzas empresariales
 - empresa_finanzas_movimientos:
@@ -523,6 +571,56 @@ Todas las tablas operativas usan como base los campos estandar:
   - valor_original, valor_pagado, saldo, estado_cartera, moneda
   - periodo_contable, referencia_pagos_json, fecha_ultimo_pago
   - conciliado_en, conciliado_por
+- empresa_creditos:
+  - empresa_id, codigo, cliente_id, cliente_nombre
+  - tipo_credito (`rotativo`/`fijo`/`cuotas`)
+  - monto_aprobado, cupo_credito, saldo_actual, saldo_disponible
+  - tasa_interes, tasa_mora
+  - plazo_dias, plazo_cuotas
+  - fecha_inicio, fecha_vencimiento, fecha_ultimo_pago
+  - dias_mora, clasificacion_cartera (`al_dia`/`vencido`/`castigado`)
+  - bloqueo_automatico_mora, venta_origen_id, documento_origen, estado_credito
+- empresa_creditos_cuotas:
+  - empresa_id, credito_id, numero_cuota
+  - fecha_vencimiento
+  - valor_cuota, capital_cuota, interes_cuota, interes_mora
+  - valor_pagado, saldo_cuota, estado_cuota (`pendiente`/`parcial`/`pagada`/`vencida`/`anulada`)
+  - fecha_ultimo_pago
+- empresa_creditos_movimientos:
+  - empresa_id, credito_id, cuota_id
+  - tipo_movimiento (`abono`/`cargo_interes`/`interes`/`mora`/`reverso`/`ajuste`/`refinanciacion`)
+  - monto, capital_aplicado, interes_aplicado, mora_aplicada
+  - metodo_pago, referencia_pago, comprobante
+  - aplicado_automatico, fecha_movimiento
+- empresa_creditos_workflow:
+  - empresa_id, credito_id, movimiento_origen_id
+  - tipo_solicitud (`reverso_abono`/`anulacion_abono`/`refinanciacion`)
+  - estado_solicitud (`pendiente_aprobacion`/`aprobada`/`rechazada`/`ejecutada`/`error_ejecucion`)
+  - nivel_aprobacion_actual, nivel_aprobacion_requerido
+  - motivo_solicitud, motivo_decision
+  - payload_json, historial_aprobaciones_json, resultado_json
+  - aprobado_por, codigo_aprobacion, rechazado_por
+  - fecha_solicitud, fecha_decision, fecha_ejecucion
+  - movimiento_resultado_id
+- empresa_creditos_clientes_limites:
+  - empresa_id, cliente_id
+  - limite_saldo_total
+  - max_creditos_activos
+  - requiere_aprobacion_exceso
+  - fecha_actualizacion, usuario_creador, estado, observaciones
+  - indice unico: (empresa_id, cliente_id)
+- empresa_backups:
+  - empresa_id, codigo, nombre, descripcion
+  - version_schema, alcance, tipo_backup
+  - include_tables_json, exclude_tables_json
+  - total_tablas, total_registros, tamano_bytes
+  - hash_contenido, snapshot_json, metadata_json
+  - restaurado_en, restaurado_por
+- empresa_backups_restauraciones:
+  - empresa_id, backup_id, codigo_backup
+  - tablas_restauradas, registros_restaurados
+  - tablas_omitidas_json, resultado, detalle_json
+  - fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones
 - inventario_lotes_series:
   - empresa_id, producto_id, bodega_id, tipo_control, codigo_lote_serie
   - fecha_fabricacion, fecha_vencimiento, cantidad_inicial, cantidad_disponible
@@ -666,6 +764,8 @@ Todas las tablas operativas usan como base los campos estandar:
 - empresas.id -> empresa_vehiculos_configuracion.empresa_id
 - empresas.id -> empresa_cotizaciones_venta.empresa_id, empresa_pedidos_venta.empresa_id, empresa_devoluciones_venta.empresa_id
 - empresas.id -> empresa_plan_cuentas.empresa_id, empresa_cuentas_por_cobrar.empresa_id, empresa_cuentas_por_pagar.empresa_id
+- empresas.id -> empresa_creditos_clientes_limites.empresa_id
+- empresas.id -> empresa_backups.empresa_id, empresa_backups_restauraciones.empresa_id
 - empresas.id -> inventario_lotes_series.empresa_id, inventario_lotes_series_movimientos.empresa_id, empresa_devoluciones_proveedor.empresa_id, empresa_rrhh_vacaciones_licencias.empresa_id
 - empresas.id -> crm_leads.empresa_id, crm_interacciones.empresa_id, crm_campanas.empresa_id
 - empresas.id -> produccion_bom.empresa_id, produccion_bom_detalle.empresa_id, produccion_ordenes.empresa_id
@@ -692,6 +792,10 @@ Todas las tablas operativas usan como base los campos estandar:
 - carritos_compras.id -> codigos_descuento_redenciones.carrito_id
 - carritos_compras.id -> empresa_comisiones_servicio_movimientos.carrito_id
 - carritos_compras.id -> empresa_ventas_estacion_metricas.carrito_id
+- clientes.id -> empresa_creditos.cliente_id, empresa_creditos_clientes_limites.cliente_id
+- empresa_creditos.id -> empresa_creditos_cuotas.credito_id, empresa_creditos_movimientos.credito_id
+- empresa_creditos_cuotas.id -> empresa_creditos_movimientos.cuota_id (opcional)
+- empresa_backups.id -> empresa_backups_restauraciones.backup_id [relacion logica de restauracion]
 - carrito_compra_items.id -> empresa_comisiones_servicio_movimientos.carrito_item_id
 - servicios.id -> empresa_comisiones_servicio_movimientos.servicio_id
 - empresa_comisiones_servicio_escalas.id -> empresa_comisiones_servicio_movimientos.escala_id
@@ -706,6 +810,9 @@ Todas las tablas operativas usan como base los campos estandar:
 - empresas.id -> super_correo_notificaciones_prueba.empresa_id (trazabilidad de notificaciones en modo pruebas)
 
 ## 4) Historial resumido
+- 2026-04-07: se agregan `empresa_backups` y `empresa_backups_restauraciones` para el modulo 36 de backups empresariales, incluyendo snapshot JSON por `empresa_id`, trazabilidad de hash de contenido y bitacora de restauraciones.
+- 2026-04-07: se agrega `empresa_creditos_clientes_limites` para gobernar limites por cliente (`limite_saldo_total`, `max_creditos_activos`, `requiere_aprobacion_exceso`) y reforzar aislamiento por `empresa_id` en validaciones de alta/edicion de creditos.
+- 2026-04-07: se agregan `empresa_creditos`, `empresa_creditos_cuotas` y `empresa_creditos_movimientos` para base del modulo 35 (creditos), con trazabilidad de cupo/saldo, amortizacion por cuotas, abonos y movimientos por `empresa_id`/`credito_id`/`cliente_id`.
 - 2026-04-07: se agregan objetos de busqueda full-text para auditoria empresarial (`empresa_auditoria_eventos_fts` + triggers `ai/au/ad`) para soportar `search` con mejor rendimiento y fallback seguro.
 - 2026-04-07: se agrega `empresa_ventas_estacion_metricas` para cierre del modulo 27 de ventas simples por estacion, con trazabilidad de `venta_pagada`, `cierre_parcial_anulado` y `sesion_recuperada`, incluyendo `duracion_segundos` y montos operativos por `empresa_id`/`carrito_id`/`estacion_id`.
 - 2026-04-07: se amplía `empresa_rrhh_vacaciones_licencias` para cierre del modulo 22 de RRHH con aprobacion jerarquica (`nivel_aprobacion_*`, `aprobadores_json`, `historial_aprobaciones_json`, `fecha_aprobacion_final`), calculo de saldo/acumulado (`periodo_acumulado_*`, `saldo_dias_*`, `saldo_snapshot_json`) y enlace de novedades a nomina (`empleado_nomina_id`, `nomina_liquidacion_id`, `nomina_periodo_*`, `nomina_vinculada_*`).

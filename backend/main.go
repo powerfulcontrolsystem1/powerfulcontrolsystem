@@ -399,6 +399,15 @@ func main() {
 	if err := dbpkg.EnsureEmpresaReportesProgramacionSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure reportes programacion schema in empresas db: %v", err)
 	}
+	if err := dbpkg.EnsureEmpresaCalculadoraSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure calculadora schema in empresas db: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaCreditosSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure creditos schema in empresas db: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaBackupsSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure backups empresariales schema in empresas db: %v", err)
+	}
 	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-01-001-baseline", "baseline schema snapshot: users, empresas, productos, clientes, carritos, configuracion_avanzada"); err != nil {
 		log.Fatalf("failed to register schema migration in empresas db: %v", err)
 	}
@@ -479,6 +488,15 @@ func main() {
 	}
 	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-07-024-reportes-programacion-plantillas-consistencia", "modulo 31: programacion automatica de reportes, versionado de plantillas y validacion automatica de consistencia multiformato"); err != nil {
 		log.Fatalf("failed to register reportes programacion/plantillas/consistencia schema migration in empresas db: %v", err)
+	}
+	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-07-025-calculadora-operativa", "modulo 34: calculadora por empresa con historial etiquetado, asociaciones y exportacion multiformato por rango/usuario"); err != nil {
+		log.Fatalf("failed to register calculadora operativa schema migration in empresas db: %v", err)
+	}
+	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-07-026-creditos-cartera", "modulo 35: creditos por empresa con cuotas, abonos, cartera y reporte multiformato"); err != nil {
+		log.Fatalf("failed to register creditos cartera schema migration in empresas db: %v", err)
+	}
+	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-07-027-backups-empresariales", "modulo 36: snapshots y restauraciones de datos por empresa con historial trazable"); err != nil {
+		log.Fatalf("failed to register backups empresariales schema migration in empresas db: %v", err)
 	}
 	// Crear tipos_de_empresas en la base de datos de superadministrador (ubicación centralizada)
 	createTiposSuper := `CREATE TABLE IF NOT EXISTS tipos_de_empresas (
@@ -894,6 +912,9 @@ func main() {
 	http.HandleFunc("/api/empresa/finanzas/periodos", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasPeriodosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/finanzas/asientos_contables", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasAsientosContablesHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/finanzas/cierres_caja", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasCierresCajaHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/calculadora", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCalculadoraHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/creditos", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCreditosHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/backups", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaBackupsHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/reportes", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaReportesHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/graficos_estadisticas", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaGraficosEstadisticasHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/auditoria/eventos", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaAuditoriaEventosHandler(dbEmpresas)))

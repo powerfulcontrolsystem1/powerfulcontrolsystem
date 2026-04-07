@@ -221,6 +221,157 @@
           <div id="operativaRolMsg" class="form-help"></div>
         </div>
       </div>
+
+      <div class="empresa-config-grid empresa-operativa-extra-grid">
+        <div class="form empresa-operativa-extra-card">
+          <h3 class="empresa-operativa-subtitle">Politica contextual (canal/sucursal/turno)</h3>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="opPoliticaCanal">Canal de venta</label>
+              <select id="opPoliticaCanal" class="form-input">
+                <option value="">Todos</option>
+                <option value="mostrador">mostrador</option>
+                <option value="app">app</option>
+                <option value="estacion">estacion</option>
+                <option value="reserva">reserva</option>
+                <option value="online">online</option>
+                <option value="delivery">delivery</option>
+                <option value="kiosko">kiosko</option>
+              </select>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="opPoliticaSucursalId">Sucursal ID</label>
+              <input id="opPoliticaSucursalId" type="number" min="0" step="1" class="form-input" value="0" placeholder="0 = todas">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="opPoliticaTurno">Turno</label>
+              <input id="opPoliticaTurno" class="form-input" placeholder="Ej: dia, noche, pico">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="opPoliticaPrioridad">Prioridad</label>
+              <input id="opPoliticaPrioridad" type="number" min="1" step="1" class="form-input" value="100">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-col">
+              <label class="empresa-config-check" for="opPoliticaActivo">
+                <input id="opPoliticaActivo" type="checkbox" checked>
+                <span>Politica activa</span>
+              </label>
+              <label class="empresa-config-check" for="opPoliticaMetodoEfectivo" style="margin-top:8px;">
+                <input id="opPoliticaMetodoEfectivo" type="checkbox" checked>
+                <span>Efectivo</span>
+              </label>
+              <label class="empresa-config-check" for="opPoliticaMetodoTarjetaCredito" style="margin-top:8px;">
+                <input id="opPoliticaMetodoTarjetaCredito" type="checkbox" checked>
+                <span>Tarjeta credito</span>
+              </label>
+              <label class="empresa-config-check" for="opPoliticaMetodoTarjetaDebito" style="margin-top:8px;">
+                <input id="opPoliticaMetodoTarjetaDebito" type="checkbox" checked>
+                <span>Tarjeta debito</span>
+              </label>
+            </div>
+            <div class="form-col">
+              <label class="empresa-config-check" for="opPoliticaMetodoTransferencia">
+                <input id="opPoliticaMetodoTransferencia" type="checkbox" checked>
+                <span>Transferencia bancaria</span>
+              </label>
+              <label class="empresa-config-check" for="opPoliticaMetodoMixto" style="margin-top:8px;">
+                <input id="opPoliticaMetodoMixto" type="checkbox" checked>
+                <span>Pago mixto</span>
+              </label>
+              <label class="empresa-config-check" for="opPoliticaMetodoCodigoDescuento" style="margin-top:8px;">
+                <input id="opPoliticaMetodoCodigoDescuento" type="checkbox" checked>
+                <span>Codigo de descuento</span>
+              </label>
+            </div>
+            <div class="form-col">
+              <label class="empresa-config-check" for="opPoliticaHabilitarPropinas">
+                <input id="opPoliticaHabilitarPropinas" type="checkbox" checked>
+                <span>Permitir propinas</span>
+              </label>
+              <label class="empresa-config-check" for="opPoliticaHabilitarComisiones" style="margin-top:8px;">
+                <input id="opPoliticaHabilitarComisiones" type="checkbox" checked>
+                <span>Permitir comisiones</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-actions" style="margin-top:8px;">
+            <button id="btnGuardarConfigOperativaPolitica" type="button" class="btn secondary">Guardar politica</button>
+          </div>
+          <div id="operativaPoliticaMsg" class="form-help"></div>
+        </div>
+
+        <div class="form empresa-operativa-extra-card">
+          <h3 class="empresa-operativa-subtitle">Simulador e historial operativo</h3>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="opSimRol">Rol a simular</label>
+              <select id="opSimRol" class="form-input">
+                <option value="admin_empresa">admin_empresa</option>
+                <option value="supervisor_sucursal">supervisor_sucursal</option>
+                <option value="cajero">cajero</option>
+                <option value="inventario">inventario</option>
+                <option value="compras">compras</option>
+                <option value="contabilidad">contabilidad</option>
+                <option value="auditor">auditor</option>
+              </select>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="opSimCanal">Canal</label>
+              <input id="opSimCanal" class="form-input" placeholder="Ej: app, mostrador">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="opSimSucursalId">Sucursal ID</label>
+              <input id="opSimSucursalId" type="number" min="0" step="1" class="form-input" value="0">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="opSimTurno">Turno</label>
+              <input id="opSimTurno" class="form-input" placeholder="Ej: noche">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="opSimObservaciones">Observaciones de simulacion</label>
+              <input id="opSimObservaciones" class="form-input" placeholder="Descripcion opcional para el historial">
+            </div>
+          </div>
+          <div class="form-actions" style="margin-top:8px;">
+            <button id="btnSimularConfigOperativa" type="button" class="btn secondary">Simular</button>
+            <button id="btnSimularGuardarConfigOperativa" type="button" class="btn">Simular y guardar</button>
+          </div>
+
+          <div class="form-row empresa-operativa-historial-row">
+            <div class="form-col">
+              <label class="form-label" for="opRollbackHistorialId">Historial ID para rollback</label>
+              <input id="opRollbackHistorialId" type="number" min="1" step="1" class="form-input" placeholder="Selecciona o escribe un historial_id">
+            </div>
+            <div class="form-col empresa-operativa-historial-actions">
+              <button id="btnRefrescarOperativaHistorial" type="button" class="btn secondary">Refrescar historial</button>
+              <button id="btnRollbackConfigOperativa" type="button" class="btn danger">Aplicar rollback</button>
+            </div>
+          </div>
+
+          <div id="operativaHistorialMsg" class="form-help"></div>
+          <pre id="operativaSimOutput" class="erp-output empresa-operativa-output">Resultado de simulacion pendiente.</pre>
+          <div class="table-wrap">
+            <table class="table empresa-operativa-historial-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Evento</th>
+                  <th>Usuario</th>
+                  <th>Fecha</th>
+                  <th>Accion</th>
+                </tr>
+              </thead>
+              <tbody id="operativaHistorialBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </section>
 
     <section class="card empresa-section">
@@ -400,6 +551,18 @@
       box.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'form-help');
     }
 
+    function setOperativaPoliticaMessage(text, type) {
+      const box = document.getElementById('operativaPoliticaMsg');
+      box.textContent = text || '';
+      box.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'form-help');
+    }
+
+    function setOperativaHistorialMessage(text, type) {
+      const box = document.getElementById('operativaHistorialMsg');
+      box.textContent = text || '';
+      box.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'form-help');
+    }
+
     function normalizeRoleName(raw) {
       const role = String(raw || '').trim().toLowerCase();
       if (!role) return '';
@@ -427,11 +590,52 @@
       };
     }
 
+    function normalizeCanalVenta(raw) {
+      const value = String(raw || '').trim().toLowerCase();
+      if (!value || value === 'todos' || value === 'all' || value === '*') return '';
+      return value;
+    }
+
+    function normalizeTurno(raw) {
+      const value = String(raw || '').trim().toLowerCase();
+      if (!value || value === 'todos' || value === 'all' || value === '*') return '';
+      return value;
+    }
+
+    function parsePositiveInt(value, fallback) {
+      const n = Number(value);
+      if (!Number.isFinite(n)) return fallback;
+      return Math.max(0, Math.trunc(n));
+    }
+
+    function normalizeOperativaPolitica(raw) {
+      const src = raw && typeof raw === 'object' ? raw : {};
+      const prioridad = Number(src.prioridad);
+      return {
+        id: Number(src.id || 0),
+        empresa_id: Number(src.empresa_id || empresaId || 0),
+        canal_venta: normalizeCanalVenta(src.canal_venta),
+        sucursal_id: parsePositiveInt(src.sucursal_id, 0),
+        turno: normalizeTurno(src.turno),
+        prioridad: Number.isFinite(prioridad) && prioridad > 0 ? Math.trunc(prioridad) : 100,
+        metodo_pago_efectivo: src.metodo_pago_efectivo === undefined ? true : Boolean(src.metodo_pago_efectivo),
+        metodo_pago_tarjeta_credito: src.metodo_pago_tarjeta_credito === undefined ? true : Boolean(src.metodo_pago_tarjeta_credito),
+        metodo_pago_tarjeta_debito: src.metodo_pago_tarjeta_debito === undefined ? true : Boolean(src.metodo_pago_tarjeta_debito),
+        metodo_pago_transferencia_bancaria: src.metodo_pago_transferencia_bancaria === undefined ? true : Boolean(src.metodo_pago_transferencia_bancaria),
+        metodo_pago_mixto: src.metodo_pago_mixto === undefined ? true : Boolean(src.metodo_pago_mixto),
+        metodo_pago_codigo_descuento: src.metodo_pago_codigo_descuento === undefined ? true : Boolean(src.metodo_pago_codigo_descuento),
+        habilitar_propinas: src.habilitar_propinas === undefined ? true : Boolean(src.habilitar_propinas),
+        habilitar_comisiones: src.habilitar_comisiones === undefined ? true : Boolean(src.habilitar_comisiones),
+        estado: String(src.estado || 'activo').trim().toLowerCase() === 'inactivo' ? 'inactivo' : 'activo'
+      };
+    }
+
     function normalizeOperativaConfig(raw) {
       const src = raw && typeof raw === 'object' ? raw : {};
       const roles = Array.isArray(src.roles) ? src.roles.map(normalizeOperativaRole).filter(function(item) {
         return item.rol;
       }) : [];
+      const politicas = Array.isArray(src.politicas) ? src.politicas.map(normalizeOperativaPolitica) : [];
       return {
         empresa_id: Number(src.empresa_id || empresaId || 0),
         metodo_pago_efectivo: src.metodo_pago_efectivo === undefined ? true : Boolean(src.metodo_pago_efectivo),
@@ -442,7 +646,8 @@
         metodo_pago_codigo_descuento: src.metodo_pago_codigo_descuento === undefined ? true : Boolean(src.metodo_pago_codigo_descuento),
         habilitar_propinas: src.habilitar_propinas === undefined ? true : Boolean(src.habilitar_propinas),
         habilitar_comisiones: src.habilitar_comisiones === undefined ? true : Boolean(src.habilitar_comisiones),
-        roles: roles
+        roles: roles,
+        politicas: politicas
       };
     }
 
@@ -540,6 +745,159 @@
       }
     }
 
+    function currentOperativaPoliticaContext() {
+      return {
+        canal_venta: normalizeCanalVenta(document.getElementById('opPoliticaCanal').value),
+        sucursal_id: parsePositiveInt(document.getElementById('opPoliticaSucursalId').value, 0),
+        turno: normalizeTurno(document.getElementById('opPoliticaTurno').value)
+      };
+    }
+
+    function findOperativaPoliticaConfig(cfg, canalVenta, sucursalID, turno) {
+      const src = normalizeOperativaConfig(cfg);
+      const canal = normalizeCanalVenta(canalVenta);
+      const sucursal = parsePositiveInt(sucursalID, 0);
+      const turnoNorm = normalizeTurno(turno);
+      for (let i = 0; i < src.politicas.length; i++) {
+        const item = normalizeOperativaPolitica(src.politicas[i]);
+        if (item.canal_venta === canal && item.sucursal_id === sucursal && item.turno === turnoNorm) {
+          return item;
+        }
+      }
+      return null;
+    }
+
+    function setOperativaPoliticaFormData(policyCfg) {
+      const base = normalizeOperativaConfig(operativaConfigCache || {});
+      const ctx = currentOperativaPoliticaContext();
+      const src = policyCfg ? normalizeOperativaPolitica(policyCfg) : {
+        canal_venta: ctx.canal_venta,
+        sucursal_id: ctx.sucursal_id,
+        turno: ctx.turno,
+        prioridad: 100,
+        metodo_pago_efectivo: base.metodo_pago_efectivo,
+        metodo_pago_tarjeta_credito: base.metodo_pago_tarjeta_credito,
+        metodo_pago_tarjeta_debito: base.metodo_pago_tarjeta_debito,
+        metodo_pago_transferencia_bancaria: base.metodo_pago_transferencia_bancaria,
+        metodo_pago_mixto: base.metodo_pago_mixto,
+        metodo_pago_codigo_descuento: base.metodo_pago_codigo_descuento,
+        habilitar_propinas: base.habilitar_propinas,
+        habilitar_comisiones: base.habilitar_comisiones,
+        estado: 'activo'
+      };
+
+      document.getElementById('opPoliticaCanal').value = src.canal_venta;
+      document.getElementById('opPoliticaSucursalId').value = String(src.sucursal_id || 0);
+      document.getElementById('opPoliticaTurno').value = src.turno || '';
+      document.getElementById('opPoliticaPrioridad').value = String(src.prioridad || 100);
+      document.getElementById('opPoliticaActivo').checked = src.estado !== 'inactivo';
+      document.getElementById('opPoliticaMetodoEfectivo').checked = src.metodo_pago_efectivo;
+      document.getElementById('opPoliticaMetodoTarjetaCredito').checked = src.metodo_pago_tarjeta_credito;
+      document.getElementById('opPoliticaMetodoTarjetaDebito').checked = src.metodo_pago_tarjeta_debito;
+      document.getElementById('opPoliticaMetodoTransferencia').checked = src.metodo_pago_transferencia_bancaria;
+      document.getElementById('opPoliticaMetodoMixto').checked = src.metodo_pago_mixto;
+      document.getElementById('opPoliticaMetodoCodigoDescuento').checked = src.metodo_pago_codigo_descuento;
+      document.getElementById('opPoliticaHabilitarPropinas').checked = src.habilitar_propinas;
+      document.getElementById('opPoliticaHabilitarComisiones').checked = src.habilitar_comisiones;
+    }
+
+    function getOperativaPoliticaFormData() {
+      return {
+        empresa_id: Number(empresaId),
+        canal_venta: normalizeCanalVenta(document.getElementById('opPoliticaCanal').value),
+        sucursal_id: parsePositiveInt(document.getElementById('opPoliticaSucursalId').value, 0),
+        turno: normalizeTurno(document.getElementById('opPoliticaTurno').value),
+        prioridad: Math.max(1, parsePositiveInt(document.getElementById('opPoliticaPrioridad').value, 100)),
+        metodo_pago_efectivo: document.getElementById('opPoliticaMetodoEfectivo').checked,
+        metodo_pago_tarjeta_credito: document.getElementById('opPoliticaMetodoTarjetaCredito').checked,
+        metodo_pago_tarjeta_debito: document.getElementById('opPoliticaMetodoTarjetaDebito').checked,
+        metodo_pago_transferencia_bancaria: document.getElementById('opPoliticaMetodoTransferencia').checked,
+        metodo_pago_mixto: document.getElementById('opPoliticaMetodoMixto').checked,
+        metodo_pago_codigo_descuento: document.getElementById('opPoliticaMetodoCodigoDescuento').checked,
+        habilitar_propinas: document.getElementById('opPoliticaHabilitarPropinas').checked,
+        habilitar_comisiones: document.getElementById('opPoliticaHabilitarComisiones').checked,
+        estado: document.getElementById('opPoliticaActivo').checked ? 'activo' : 'inactivo'
+      };
+    }
+
+    function syncOperativaPoliticaFormFromCache() {
+      const ctx = currentOperativaPoliticaContext();
+      const policyCfg = findOperativaPoliticaConfig(operativaConfigCache, ctx.canal_venta, ctx.sucursal_id, ctx.turno);
+      setOperativaPoliticaFormData(policyCfg);
+      if (policyCfg) {
+        setOperativaPoliticaMessage('Se cargó la política contextual existente.', '');
+      } else {
+        setOperativaPoliticaMessage('Sin política exacta para el contexto. Se usa herencia de regla base/rol.', '');
+      }
+    }
+
+    function getOperativaSimContext() {
+      return {
+        rol: normalizeRoleName(document.getElementById('opSimRol').value),
+        canal_venta: normalizeCanalVenta(document.getElementById('opSimCanal').value),
+        sucursal_id: parsePositiveInt(document.getElementById('opSimSucursalId').value, 0),
+        turno: normalizeTurno(document.getElementById('opSimTurno').value)
+      };
+    }
+
+    function setOperativaSimOutput(payload) {
+      const box = document.getElementById('operativaSimOutput');
+      const safe = payload && typeof payload === 'object' ? payload : { ok: false, error: 'sin datos' };
+      box.textContent = JSON.stringify(safe, null, 2);
+    }
+
+    function buildOperativaHistorialRow(row) {
+      const tr = document.createElement('tr');
+
+      const tdID = document.createElement('td');
+      tdID.textContent = String(row && row.id ? row.id : '');
+      tr.appendChild(tdID);
+
+      const tdEvento = document.createElement('td');
+      tdEvento.textContent = String(row && row.evento ? row.evento : '');
+      tr.appendChild(tdEvento);
+
+      const tdUsuario = document.createElement('td');
+      tdUsuario.textContent = String(row && row.usuario_creador ? row.usuario_creador : '-');
+      tr.appendChild(tdUsuario);
+
+      const tdFecha = document.createElement('td');
+      tdFecha.textContent = String(row && row.fecha_creacion ? row.fecha_creacion : '-');
+      tr.appendChild(tdFecha);
+
+      const tdAction = document.createElement('td');
+      const btnUsar = document.createElement('button');
+      btnUsar.type = 'button';
+      btnUsar.className = 'btn secondary empresa-operativa-mini-btn';
+      btnUsar.textContent = 'Usar';
+      btnUsar.addEventListener('click', function() {
+        document.getElementById('opRollbackHistorialId').value = String(row && row.id ? row.id : '');
+        setOperativaHistorialMessage('Historial seleccionado: #' + String(row && row.id ? row.id : ''), '');
+      });
+      tdAction.appendChild(btnUsar);
+      tr.appendChild(tdAction);
+
+      return tr;
+    }
+
+    function renderOperativaHistorial(rows) {
+      const body = document.getElementById('operativaHistorialBody');
+      body.innerHTML = '';
+      const list = Array.isArray(rows) ? rows : [];
+      if (!list.length) {
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = 5;
+        td.textContent = 'Sin historial disponible.';
+        tr.appendChild(td);
+        body.appendChild(tr);
+        return;
+      }
+      for (let i = 0; i < list.length; i++) {
+        body.appendChild(buildOperativaHistorialRow(list[i]));
+      }
+    }
+
     async function fetchOperativaConfig() {
       const res = await fetch('/api/empresa/configuracion_operativa?empresa_id=' + encodeURIComponent(empresaId), {
         credentials: 'same-origin'
@@ -555,10 +913,15 @@
         operativaConfigCache = normalizeOperativaConfig(cfg || {});
         setOperativaBaseFormData(operativaConfigCache);
         syncOperativaRoleFormFromCache();
+        syncOperativaPoliticaFormFromCache();
+        await cargarOperativaHistorial();
       } catch (err) {
         operativaConfigCache = normalizeOperativaConfig({ empresa_id: empresaId });
         setOperativaBaseFormData(operativaConfigCache);
         syncOperativaRoleFormFromCache();
+        syncOperativaPoliticaFormFromCache();
+        renderOperativaHistorial([]);
+        setOperativaSimOutput({ ok: false, mensaje: 'Sin simulación ejecutada.' });
         setOperativaMessage('No se pudo cargar configuración operativa: ' + (err && err.message ? err.message : err), 'error');
       }
     }
@@ -581,6 +944,8 @@
         operativaConfigCache = normalizeOperativaConfig(out && out.configuracion ? out.configuracion : payload);
         setOperativaBaseFormData(operativaConfigCache);
         syncOperativaRoleFormFromCache();
+        syncOperativaPoliticaFormFromCache();
+        await cargarOperativaHistorial();
         setOperativaMessage('Configuración operativa de empresa guardada correctamente.', 'success');
       } catch (err) {
         setOperativaMessage('No se pudo guardar la configuración operativa: ' + (err && err.message ? err.message : err), 'error');
@@ -611,9 +976,131 @@
         operativaConfigCache = normalizeOperativaConfig(out && out.configuracion ? out.configuracion : (operativaConfigCache || {}));
         setOperativaBaseFormData(operativaConfigCache);
         syncOperativaRoleFormFromCache();
+        syncOperativaPoliticaFormFromCache();
+        await cargarOperativaHistorial();
         setOperativaRoleMessage('Configuración del rol ' + role + ' guardada correctamente.', 'success');
       } catch (err) {
         setOperativaRoleMessage('No se pudo guardar la configuración del rol: ' + (err && err.message ? err.message : err), 'error');
+      }
+    }
+
+    async function guardarOperativaPolitica() {
+      if (!empresaId) {
+        setOperativaPoliticaMessage('No se puede guardar sin empresa seleccionada.', 'error');
+        return;
+      }
+      try {
+        const payload = getOperativaPoliticaFormData();
+        const res = await fetch('/api/empresa/configuracion_operativa?empresa_id=' + encodeURIComponent(empresaId) + '&action=politica', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(await res.text());
+        const out = await res.json();
+        operativaConfigCache = normalizeOperativaConfig(out && out.configuracion ? out.configuracion : (operativaConfigCache || {}));
+        setOperativaBaseFormData(operativaConfigCache);
+        syncOperativaRoleFormFromCache();
+        syncOperativaPoliticaFormFromCache();
+        await cargarOperativaHistorial();
+        setOperativaPoliticaMessage('Política contextual guardada correctamente.', 'success');
+      } catch (err) {
+        setOperativaPoliticaMessage('No se pudo guardar la política contextual: ' + (err && err.message ? err.message : err), 'error');
+      }
+    }
+
+    async function simularOperativa(guardar) {
+      if (!empresaId) {
+        setOperativaHistorialMessage('No se puede simular sin empresa seleccionada.', 'error');
+        return;
+      }
+      const contexto = getOperativaSimContext();
+      if (!contexto.rol) {
+        setOperativaHistorialMessage('Selecciona un rol válido para simular.', 'error');
+        return;
+      }
+
+      const payload = {
+        empresa_id: Number(empresaId),
+        contexto: contexto,
+        guardar: Boolean(guardar),
+        observaciones: String(document.getElementById('opSimObservaciones').value || '').trim()
+      };
+
+      try {
+        const res = await fetch('/api/empresa/configuracion_operativa?empresa_id=' + encodeURIComponent(empresaId) + '&action=simular', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(await res.text());
+        const out = await res.json();
+        setOperativaSimOutput(out);
+        if (guardar) {
+          await cargarOperativaHistorial();
+          setOperativaHistorialMessage('Simulación guardada en historial correctamente.', 'success');
+        } else {
+          setOperativaHistorialMessage('Simulación calculada correctamente.', 'success');
+        }
+      } catch (err) {
+        setOperativaSimOutput({ ok: false, error: err && err.message ? err.message : String(err) });
+        setOperativaHistorialMessage('No se pudo simular configuración operativa: ' + (err && err.message ? err.message : err), 'error');
+      }
+    }
+
+    async function cargarOperativaHistorial() {
+      if (!empresaId) {
+        renderOperativaHistorial([]);
+        return;
+      }
+      try {
+        const res = await fetch('/api/empresa/configuracion_operativa?empresa_id=' + encodeURIComponent(empresaId) + '&action=historial&limit=20', {
+          credentials: 'same-origin'
+        });
+        if (!res.ok) throw new Error(await res.text());
+        const out = await res.json();
+        const rows = out && Array.isArray(out.historial) ? out.historial : [];
+        renderOperativaHistorial(rows);
+      } catch (err) {
+        renderOperativaHistorial([]);
+        setOperativaHistorialMessage('No se pudo cargar historial operativo: ' + (err && err.message ? err.message : err), 'error');
+      }
+    }
+
+    async function aplicarOperativaRollback() {
+      if (!empresaId) {
+        setOperativaHistorialMessage('No se puede aplicar rollback sin empresa seleccionada.', 'error');
+        return;
+      }
+      const historialID = parsePositiveInt(document.getElementById('opRollbackHistorialId').value, 0);
+      if (!historialID) {
+        setOperativaHistorialMessage('Ingresa un historial_id válido para rollback.', 'error');
+        return;
+      }
+      const payload = {
+        empresa_id: Number(empresaId),
+        historial_id: historialID,
+        observaciones: 'Rollback desde panel de configuración operativa'
+      };
+      try {
+        const res = await fetch('/api/empresa/configuracion_operativa?empresa_id=' + encodeURIComponent(empresaId) + '&action=rollback', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(await res.text());
+        const out = await res.json();
+        operativaConfigCache = normalizeOperativaConfig(out && out.configuracion ? out.configuracion : (operativaConfigCache || {}));
+        setOperativaBaseFormData(operativaConfigCache);
+        syncOperativaRoleFormFromCache();
+        syncOperativaPoliticaFormFromCache();
+        await cargarOperativaHistorial();
+        setOperativaHistorialMessage('Rollback aplicado correctamente.', 'success');
+      } catch (err) {
+        setOperativaHistorialMessage('No se pudo aplicar rollback: ' + (err && err.message ? err.message : err), 'error');
       }
     }
 
@@ -851,14 +1338,23 @@
     function bootstrap() {
       loadEmpresaInfo();
       setFormData(loadConfig());
+      setOperativaSimOutput({ ok: true, mensaje: 'Listo para simular reglas por contexto.' });
       loadFacturaConfig();
       loadOperativaConfig();
       document.getElementById('btnGuardarConfig').addEventListener('click', guardarConfiguracion);
       document.getElementById('btnGuardarConfigOperativa').addEventListener('click', guardarOperativaEmpresa);
       document.getElementById('btnGuardarConfigOperativaRol').addEventListener('click', guardarOperativaRol);
+      document.getElementById('btnGuardarConfigOperativaPolitica').addEventListener('click', guardarOperativaPolitica);
+      document.getElementById('btnSimularConfigOperativa').addEventListener('click', function() { simularOperativa(false); });
+      document.getElementById('btnSimularGuardarConfigOperativa').addEventListener('click', function() { simularOperativa(true); });
+      document.getElementById('btnRefrescarOperativaHistorial').addEventListener('click', cargarOperativaHistorial);
+      document.getElementById('btnRollbackConfigOperativa').addEventListener('click', aplicarOperativaRollback);
       document.getElementById('opRolSelect').addEventListener('change', function() {
         syncOperativaRoleFormFromCache();
       });
+      document.getElementById('opPoliticaCanal').addEventListener('change', syncOperativaPoliticaFormFromCache);
+      document.getElementById('opPoliticaSucursalId').addEventListener('change', syncOperativaPoliticaFormFromCache);
+      document.getElementById('opPoliticaTurno').addEventListener('blur', syncOperativaPoliticaFormFromCache);
       document.getElementById('btnGuardarFacturaConfig').addEventListener('click', guardarFacturaConfig);
       document.getElementById('btnGuardarEstadoCarrito').addEventListener('click', guardarEstadoCarritoConfig);
       document.getElementById('btnDescargarBackup').addEventListener('click', descargarBackup);

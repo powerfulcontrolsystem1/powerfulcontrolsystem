@@ -305,75 +305,93 @@ Matriz de faltantes por modulo para 100%
 	- `go test ./... -run "^$" -count=1` -> compilacion global backend OK.
 
 32) Graficos y estadisticas
-- Incorporar cache de series y comparativos entre periodos.
-- Cerrar filtros avanzados por sucursal/estacion/segmento.
-- Validar rendimiento en rangos largos de fechas.
+- COMPLETADO (2026-04-07): Incorporado cache en memoria por combinacion de empresa/rango/filtros para acelerar `action=panel`, con control de refresco (`refresh`/`skip_cache`) y trazabilidad de respuesta (`cache.hit`).
+- COMPLETADO (2026-04-07): Implementados comparativos entre periodos con rango de referencia automatico o personalizado (`comparar_desde`/`comparar_hasta`) y metricas de variacion por KPI operativo/financiero.
+- COMPLETADO (2026-04-07): Cerrados filtros avanzados por `sucursal_id`, `estacion_id` y `segmento`, incluyendo cobertura reportada por componente en la respuesta del panel (`filtros.cobertura`).
+- COMPLETADO (2026-04-07): Validado rendimiento para rangos largos mediante compactacion de series por buckets (sin recorte de cola), conservando tendencia global y limite de puntos visuales.
+
+- Evidencia tecnica modulo 32 (cierre 2026-04-07):
+	- `go test ./handlers -run TestEmpresaGraficosEstadisticasHandler -v` -> OK.
+	- `go test ./handlers -count=1` -> OK.
 
 33) Configuracion operativa de cobro
-- Agregar politicas por canal/sucursal/turno.
-- Cerrar simulador de reglas antes de publicar cambios.
-- Registrar auditoria de cambios con rollback operativo.
+- COMPLETADO (2026-04-07): Agregadas politicas contextuales por `canal_venta`, `sucursal_id` y `turno` con prioridad y resolucion efectiva sobre regla base/rol.
+- COMPLETADO (2026-04-07): Cerrado simulador operativo (`action=simular`) para previsualizar permisos de cobro por contexto antes de publicar.
+- COMPLETADO (2026-04-07): Registrado historial operativo de cambios (`publicar`/`simular`) y rollback funcional (`action=rollback`) con snapshot trazable por `empresa_id`.
+
+- Evidencia tecnica modulo 33 (cierre 2026-04-07):
+	- `go test ./db -run TestEmpresaConfiguracionOperativa -count=1` -> OK.
+	- `go test ./handlers -run TestEmpresaConfiguracionOperativaHandler -count=1` -> OK.
 
 34) Calculadora por empresa
-- Integrar operaciones relevantes con cotizaciones/carritos (opcional configurable).
-- Permitir etiquetar operaciones y asociarlas a cliente/documento.
-- Cerrar exportacion historica por rango y usuario.
+- COMPLETADO (2026-04-07): Integrada calculadora empresarial con configuracion opcional de integraciones (`integrar_carritos`, `integrar_cotizaciones`) y validacion backend de referencias.
+- COMPLETADO (2026-04-07): Habilitado registro de operaciones con etiquetas y asociacion trazable a `cliente_id`, `cliente_nombre`, `documento_tipo`, `documento_codigo`, `carrito_id` y `cotizacion_id`.
+- COMPLETADO (2026-04-07): Cerrada exportacion historica por `rango` y `usuario` en formatos `JSON`, `CSV`, `TXT`, `XLS` y `PDF`, conservando columnas clave y resumen consistente.
+
+- Evidencia tecnica modulo 34 (cierre 2026-04-07):
+	- `go test ./db -run TestEmpresaCalculadoraConfiguracionYHistorialFlow -count=1` -> OK.
+	- `go test ./handlers -run TestEmpresaCalculadoraHandlerConfigOperacionesFiltrosYExport -count=1` -> OK.
 
 35) Crea un modulo de creditos:
-1. Creación del crédito
-Cliente asociado
-Monto aprobado
-Cupo de crédito
-Plazo (días / cuotas)
-Tasa de interés
-Tipo de crédito (rotativo, fijo, cuotas)
-Fecha de inicio
-Fecha de vencimiento
-Estado (activo, suspendido, cerrado)
-2. Gestión del crédito
-Saldo actual
-Saldo disponible (cupo restante)
-Historial de movimientos
-Generación automática de cuotas
-Tabla de amortización
-Intereses generados
-Intereses por mora
-Ajustes manuales (refinanciación, abonos)
-3. Cobros y pagos
-Registro de abonos
-Pago total o parcial
-Métodos de pago (efectivo, transferencia, pasarela)
-Aplicación automática a cuotas
-Recibos / comprobantes
-Reversos o anulaciones
-4. Control de cartera
-Créditos vencidos
-Días de mora
-Alertas (vencimientos próximos)
-Clasificación de cartera (al día, vencido, castigado)
-Bloqueo automático por mora
-5. Reportes clave
-Estado de cuenta por cliente
-Cartera total
-Cartera vencida
-Flujo de pagos
-Intereses generados
-Ranking de clientes morosos
-6. Integraciones
-Ventas (crear crédito desde una venta)
-Clientes
-Contabilidad (asientos automáticos)
-Caja / bancos
-Pasarelas de pago
-7. Seguridad y reglas
-Límites de crédito por cliente
-Aprobación manual o automática
-Roles (quién puede aprobar, modificar, condonar)
-Auditoría (quién hizo qué y cuándo)
+- COMPLETADO (2026-04-07): Cerrado modulo empresarial de creditos y cartera con fases backend/frontend, workflow avanzado, reglas de limites por cliente, permisos finos por rol y auditoria ampliada.
+
+- COMPLETADO PARCIAL (fase 1 backend + fase 2 frontend base):
+	- Creacion de credito con cliente asociado, monto aprobado, cupo, plazo, tasas, tipo de credito y estados operativos (`activo`, `suspendido`, `cerrado`, `castigado`).
+	- Gestion de saldo actual/saldo disponible y clasificacion de cartera (`al_dia`, `vencido`, `castigado`) con calculo de dias de mora.
+	- Generacion automatica de cuotas y tabla de amortizacion base para creditos `cuotas`/`fijo`.
+	- Registro de abonos (total/parcial), aplicacion automatica a cuotas y trazabilidad de movimientos con metodo/referencia/comprobante.
+	- Integracion contable/caja-bancos/pasarelas en abonos: registro de `evento_contable` (`creditos.credito_abono_registrado`) y procesamiento automatico de asientos por politica (`procesar_asientos`, `asientos_limit`, `max_reintentos`) con salida de trazabilidad en la respuesta del endpoint.
+	- Workflow avanzado de reversos/anulaciones y refinanciacion: solicitud, aprobacion/rechazo multinivel y ejecucion automatica (`action=solicitar_reverso|solicitar_refinanciacion|aprobar_workflow|rechazar_workflow|workflows`) con trazabilidad de evidencia (`aprobado_por`, `codigo_aprobacion`, historial JSON).
+	- Estado de cuenta por credito (`action=estado_cuenta`), resumen de cartera (`action=resumen_cartera`) y reporte exportable multiformato (`action=reporte`).
+	- Alertas proactivas de vencimiento y ranking avanzado de morosidad (`action=alertas_mora|morosidad|ranking_morosidad`) con exportacion multiformato dedicada (`tipo=morosidad`).
+	- Frontend dedicado `web/administrar_empresa/creditos.html` para crear/consultar creditos, aplicar abonos, consultar estado de cuenta y exportar reporte de cartera.
+	- Integracion del menu y permisos del panel empresa para creditos (`linkCreditos`) en `web/administrar_empresa.html` y `web/js/administrar_empresa.js`.
+	- Guias operativas del modulo de creditos publicadas en centro de ayuda (`web/ayuda/ayuda.html`) con tutorial por modulo, flujo recomendado y manual por rol.
+
+- Evidencia tecnica fase 1 modulo 35:
+	- `go test ./db -run TestEmpresaCreditosFlowCrearCuotasAbonoYResumen -count=1` -> OK.
+	- `go test ./handlers -run TestEmpresaCreditosHandlerFlujoBasico -count=1` -> OK.
+
+- Evidencia tecnica avance morosidad modulo 35 (2026-04-07):
+	- `go test ./db -run TestEmpresaCreditosMoraDashboard -count=1` -> OK.
+	- `go test ./handlers -run TestEmpresaCreditosHandlerAlertasMoraYReporte -count=1` -> OK.
+	- `go test ./... -run "^TestEmpresaCreditos" -count=1` -> OK.
+
+- Evidencia tecnica avance contable modulo 35 (2026-04-07):
+	- `go test ./db -run "Test(EmpresaEventosContablesCreateAndList|ProcessEmpresaEventosContablesPendientesGeneraAsientosIdempotentes|ProcessEmpresaEventosContablesPendientesCreditoAbonoGeneraLineasCartera|EmpresaCreditosFlowCrearCuotasAbonoYResumen|EmpresaCreditosMoraDashboard)$" -count=1` -> OK.
+	- `go test ./handlers -run "TestEmpresaCreditosHandler(FlujoBasico|AlertasMoraYReporte|AbonoIntegraContabilidadYAsientos)$" -count=1` -> OK.
+	- `go test ./... -run "^$" -count=1` -> compilacion global backend OK.
+
+- Evidencia tecnica avance workflow modulo 35 (2026-04-07):
+	- `go test ./db -run "TestEmpresaCreditosWorkflow(ReversoAprobadoEjecutaReversion|RefinanciacionAprobadaRegeneraCuotas)$" -count=1` -> OK.
+	- `go test ./handlers -run "TestEmpresaCreditosHandlerWorkflowReversoSolicitudYAprobacion$" -count=1` -> OK.
+	- `go test ./... -count=1` -> compilacion/pruebas global backend OK.
+
+- Evidencia tecnica cierre total modulo 35 (2026-04-07):
+	- `go test ./db -run "TestEmpresaCreditosClienteLimites(BloqueaExceso|CRUD)$" -count=1` -> OK.
+	- `go test ./handlers -run "TestEmpresaCreditosHandler(LimitesClienteYBloqueo|WorkflowPermisoFinoPorTipo)$" -count=1` -> OK.
+	- `runTests` sobre `backend/db/creditos_test.go` y `backend/handlers/creditos_test.go` (casos nuevos) -> 6 passed, 0 failed.
 
 36) Agrega un modulo completo de Backup, por empresa, un modulo profesional empresarial.
+- COMPLETADO (2026-04-07): Modulo empresarial de backups implementado con backend, frontend, permisos, exportacion multiformato y restauracion trazable.
 
-37) crea un modulo para que cada empresa pueda publicar en una pagina, productos que vende por internet, que tenga la opcion de cargar imagenes con una descripcion y un precio, un modulo completo de ventas por internet y le añades una pagina de configuracion de  pasarela de pagos wompi para cada empresa, para que los clientes puedan pagar esos productos.
+- Alcance funcional completado modulo 36:
+	- Endpoint empresarial `/api/empresa/backups` con acciones `listar`, `crear`, `detalle`, `export`, `restaurar`, `activar` y `desactivar`.
+	- Generacion de snapshots por `empresa_id` sobre tablas elegibles con `empresa_id` y persistencia en `empresa_backups`.
+	- Restauracion por backup con bitacora en `empresa_backups_restauraciones`, actualizacion de `restaurado_en/restaurado_por` y resumen de tablas/registros restaurados.
+	- Exportacion de respaldo en `JSON` y resumen operacional en `PDF/XLS/CSV/JSON/TXT`.
+	- Frontend dedicado `web/administrar_empresa/backups.html` con flujo de crear/listar/detalle/exportar/restaurar/toggle de estado.
+	- Integracion de menu y permisos con `linkBackups` en panel empresa.
+
+- Evidencia tecnica modulo 36 (2026-04-07):
+	- `go test ./db -run "^TestEmpresaBackups" -count=1` -> OK.
+	- `go test ./handlers -run "^TestEmpresaBackupsHandler" -count=1` -> OK.
+	- `go test . -run "^$" -count=1` -> compilacion de `main` OK.
+
+37) crea un modulo para que cada empresa pueda publicar en una pagina, productos que vende por internet, que tenga la opcion de cargar imagenes con una descripcion y un precio, un modulo completo de ventas por internet y le añades una pagina de configuracion de  pasarela de pagos wompi para cada empresa, para que los clientes puedan pagar esos productos y se vea reflejado en cada empresa. la pagina dond se publican los productos le llamaras venta_publica. y esta pagina en produccion deberia rer algo www.powerfulcontrolsystem.com/nombre_empresa/venta_publica.html y me refiero al patron de la direccion web.
+
+38) crea un documento llamado descripcion_de_modulos, lo creas dentro de la carpeta documentos.  este nuevo documento describirá cada modulo y sus funcionalidades, descripción compacta.
+
 
 ## Ultimo
  - Actualizar la pagina de ayuda con el tutorial de cada funcion en cada pagina.  tambie de como hacer ventas, tambien de como crear productos , meter impuetos, configurar el sistema por empresa. etc

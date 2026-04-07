@@ -1,6 +1,6 @@
 # Diagrama de casos de uso
 
-Fecha: 2026-04-01
+Fecha: 2026-04-07
 
 ```mermaid
 flowchart LR
@@ -19,6 +19,9 @@ flowchart LR
     U8((Gestionar carritos e items))
     U9((Configurar facturacion e impresion))
     U10((Crear usuarios de empresa))
+    U15((Gestionar backups empresariales))
+    U16((Exportar snapshots y reportes de backup))
+    U17((Restaurar backup con control de aprobacion))
 
     U11((Confirmar correo))
     U12((Primer ingreso: crear contrasena))
@@ -36,6 +39,9 @@ flowchart LR
     B --> U8
     B --> U9
     B --> U10
+    B --> U15
+    B --> U16
+    B --> U17
 
     C --> U11
     C --> U12
@@ -46,3 +52,4 @@ flowchart LR
 Notas:
 - El usuario de empresa queda habilitado solo despues de confirmar correo y crear contrasena.
 - El administrador de empresa gestiona operacion comercial y configuraciones por empresa.
+- La restauracion de backup es una operacion sensible y se audita con control de permisos de aprobacion.

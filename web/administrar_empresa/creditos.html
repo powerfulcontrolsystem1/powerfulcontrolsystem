@@ -1,0 +1,1042 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Modulo de creditos</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+</head>
+<body class="empresa-subpage">
+  <div class="container">
+    <div class="page-header">
+      <h1 class="creditos-page-title">Modulo de creditos y cartera</h1>
+    </div>
+    <p id="creditosContexto" class="form-help creditos-context"></p>
+    <p class="form-help creditos-intro">
+      Registra creditos por cliente, administra cartera, aplica abonos y consulta estado de cuenta con exportacion multiformato.
+    </p>
+
+    <section class="form creditos-section creditos-section-first">
+      <div class="page-header creditos-section-header">
+        <h2 class="creditos-section-title">Crear credito</h2>
+      </div>
+      <div class="form-row">
+        <div class="form-col creditos-col-200">
+          <label class="form-label" for="crClienteId">Cliente ID</label>
+          <input id="crClienteId" class="form-input" type="number" min="0" step="1" placeholder="Opcional">
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="crClienteNombre">Cliente nombre</label>
+          <input id="crClienteNombre" class="form-input" type="text" placeholder="Nombre del cliente">
+        </div>
+        <div class="form-col creditos-col-220">
+          <label class="form-label" for="crTipo">Tipo de credito</label>
+          <select id="crTipo" class="form-input">
+            <option value="cuotas">Cuotas</option>
+            <option value="fijo">Fijo</option>
+            <option value="rotativo">Rotativo</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col creditos-col-220">
+          <label class="form-label" for="crMonto">Monto aprobado</label>
+          <input id="crMonto" class="form-input" type="number" min="0" step="0.01" placeholder="0">
+        </div>
+        <div class="form-col creditos-col-220">
+          <label class="form-label" for="crCupo">Cupo credito</label>
+          <input id="crCupo" class="form-input" type="number" min="0" step="0.01" placeholder="Opcional">
+        </div>
+        <div class="form-col creditos-col-220">
+          <label class="form-label" for="crTasaInteres">Tasa interes (%)</label>
+          <input id="crTasaInteres" class="form-input" type="number" min="0" step="0.01" value="0">
+        </div>
+        <div class="form-col creditos-col-220">
+          <label class="form-label" for="crTasaMora">Tasa mora (%)</label>
+          <input id="crTasaMora" class="form-input" type="number" min="0" step="0.01" value="0">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col creditos-col-200">
+          <label class="form-label" for="crPlazoDias">Plazo dias</label>
+          <input id="crPlazoDias" class="form-input" type="number" min="0" step="1" value="0">
+        </div>
+        <div class="form-col creditos-col-200">
+          <label class="form-label" for="crPlazoCuotas">Plazo cuotas</label>
+          <input id="crPlazoCuotas" class="form-input" type="number" min="0" step="1" value="12">
+        </div>
+        <div class="form-col creditos-col-220">
+          <label class="form-label" for="crFechaInicio">Fecha inicio</label>
+          <input id="crFechaInicio" class="form-input" type="date">
+        </div>
+        <div class="form-col creditos-col-220">
+          <label class="form-label" for="crFechaVencimiento">Fecha vencimiento</label>
+          <input id="crFechaVencimiento" class="form-input" type="date">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col creditos-col-280">
+          <label class="form-help creditos-inline-check">
+            <input id="crBloqueoMora" type="checkbox" checked>
+            Bloqueo automatico por mora
+          </label>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="crObservaciones">Observaciones</label>
+          <input id="crObservaciones" class="form-input" type="text" placeholder="Opcional">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button id="btnCrearCredito" type="button" class="btn">Crear credito</button>
+        <button id="btnLimpiarCrear" type="button" class="btn secondary">Limpiar</button>
+      </div>
+      <div id="crearMsg" class="form-help"></div>
+    </section>
+
+    <section class="form creditos-section">
+      <div class="page-header creditos-section-header">
+        <h2 class="creditos-section-title">Filtros de cartera</h2>
+      </div>
+      <div class="creditos-toolbar-grid">
+        <input id="fltQ" class="form-input" type="text" placeholder="Buscar por codigo, cliente o documento">
+        <input id="fltClienteId" class="form-input" type="number" min="0" step="1" placeholder="Cliente ID">
+        <select id="fltEstadoCredito" class="form-input">
+          <option value="">Estado credito (todos)</option>
+          <option value="activo">Activo</option>
+          <option value="suspendido">Suspendido</option>
+          <option value="cerrado">Cerrado</option>
+          <option value="castigado">Castigado</option>
+        </select>
+        <select id="fltClasificacion" class="form-input">
+          <option value="">Clasificacion (todas)</option>
+          <option value="al_dia">Al dia</option>
+          <option value="vencido">Vencido</option>
+          <option value="castigado">Castigado</option>
+        </select>
+        <input id="fltDesde" class="form-input" type="date" title="Desde">
+        <input id="fltHasta" class="form-input" type="date" title="Hasta">
+        <label class="form-help creditos-filter-check">
+          <input id="fltSoloVencidos" type="checkbox"> Solo vencidos
+        </label>
+        <label class="form-help creditos-filter-check">
+          <input id="fltIncludeInactive" type="checkbox"> Incluir inactivos
+        </label>
+        <select id="expTipo" class="form-input">
+          <option value="cartera">Reporte cartera</option>
+          <option value="morosidad">Reporte morosidad</option>
+        </select>
+        <select id="expFormat" class="form-input">
+          <option value="json">JSON</option>
+          <option value="csv">CSV</option>
+          <option value="txt">TXT</option>
+          <option value="xls">XLS</option>
+          <option value="pdf">PDF</option>
+        </select>
+      </div>
+      <div class="form-actions creditos-actions-top">
+        <button id="btnConsultar" type="button" class="btn">Consultar cartera</button>
+        <button id="btnExportar" type="button" class="btn secondary">Exportar reporte</button>
+        <button id="btnLimpiarFiltros" type="button" class="btn secondary">Limpiar filtros</button>
+      </div>
+      <div id="consultaMsg" class="form-help"></div>
+
+      <div id="resumenGrid" class="creditos-resumen-grid creditos-resumen-spacing"></div>
+
+      <div class="creditos-table-block">
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Codigo</th>
+                <th>Cliente</th>
+                <th>Tipo</th>
+                <th>Monto aprobado</th>
+                <th>Saldo actual</th>
+                <th>Disponible</th>
+                <th>Estado credito</th>
+                <th>Clasificacion</th>
+                <th>Dias mora</th>
+                <th>Vencimiento</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tablaCreditosBody">
+              <tr><td colspan="12" class="creditos-empty-cell">Sin datos</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="form creditos-section">
+      <div class="page-header creditos-section-header">
+        <h2 class="creditos-section-title">Alertas y ranking de morosidad</h2>
+      </div>
+      <div class="creditos-alertas-toolbar">
+        <div class="form-col creditos-col-200">
+          <label class="form-label" for="alDiasProximos">Dias proactivos</label>
+          <input id="alDiasProximos" class="form-input" type="number" min="1" max="365" step="1" value="7">
+        </div>
+        <div class="form-col creditos-col-200">
+          <label class="form-label" for="alTop">Top ranking</label>
+          <input id="alTop" class="form-input" type="number" min="1" max="200" step="1" value="10">
+        </div>
+        <label class="form-help creditos-filter-check creditos-alertas-check">
+          <input id="alIncludeInactive" type="checkbox"> Incluir inactivos
+        </label>
+      </div>
+      <div class="form-actions creditos-actions-top">
+        <button id="btnConsultarAlertas" type="button" class="btn secondary">Consultar alertas</button>
+        <button id="btnExportarAlertas" type="button" class="btn secondary">Exportar morosidad</button>
+      </div>
+      <div id="alertasMsg" class="form-help"></div>
+
+      <div id="alertasResumenGrid" class="creditos-resumen-grid creditos-resumen-spacing"></div>
+
+      <div class="creditos-alertas-grid creditos-section-first">
+        <div>
+          <h3 class="creditos-detail-subtitle">Proximos y vencidos</h3>
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Grupo</th>
+                  <th>ID</th>
+                  <th>Codigo</th>
+                  <th>Cliente</th>
+                  <th>Vencimiento</th>
+                  <th>Dias mora</th>
+                  <th>Saldo</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody id="tablaAlertasBody">
+                <tr><td colspan="8" class="creditos-empty-cell">Sin datos</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div>
+          <h3 class="creditos-detail-subtitle">Ranking avanzado de morosidad</h3>
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>ID</th>
+                  <th>Codigo</th>
+                  <th>Cliente</th>
+                  <th>Dias mora</th>
+                  <th>Saldo</th>
+                  <th>Clasificacion</th>
+                  <th>Accion</th>
+                </tr>
+              </thead>
+              <tbody id="tablaRankingBody">
+                <tr><td colspan="8" class="creditos-empty-cell">Sin datos</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="form creditos-section">
+      <div class="page-header creditos-section-header">
+        <h2 class="creditos-section-title">Abono</h2>
+      </div>
+      <div class="form-row">
+        <div class="form-col creditos-col-200">
+          <label class="form-label" for="abCreditoId">Credito ID</label>
+          <input id="abCreditoId" class="form-input" type="number" min="1" step="1" placeholder="Obligatorio">
+        </div>
+        <div class="form-col creditos-col-200">
+          <label class="form-label" for="abMonto">Monto abono</label>
+          <input id="abMonto" class="form-input" type="number" min="0" step="0.01" placeholder="0">
+        </div>
+        <div class="form-col creditos-col-220">
+          <label class="form-label" for="abMetodo">Metodo pago</label>
+          <select id="abMetodo" class="form-input">
+            <option value="">No especificado</option>
+            <option value="efectivo">Efectivo</option>
+            <option value="transferencia_bancaria">Transferencia bancaria</option>
+            <option value="tarjeta_credito">Tarjeta credito</option>
+            <option value="tarjeta_debito">Tarjeta debito</option>
+            <option value="pasarela">Pasarela</option>
+          </select>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="abReferencia">Referencia pago</label>
+          <input id="abReferencia" class="form-input" type="text" placeholder="Opcional">
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="abComprobante">Comprobante</label>
+          <input id="abComprobante" class="form-input" type="text" placeholder="Opcional">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="abObservaciones">Observaciones</label>
+          <input id="abObservaciones" class="form-input" type="text" placeholder="Opcional">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button id="btnAplicarAbono" type="button" class="btn">Aplicar abono</button>
+      </div>
+      <div id="abonoMsg" class="form-help"></div>
+    </section>
+
+    <section class="form creditos-section">
+      <div class="page-header creditos-section-header">
+        <h2 id="detalleTitulo" class="creditos-section-title">Estado de cuenta</h2>
+      </div>
+      <div id="detalleMeta" class="form-help creditos-detail-meta">Selecciona un credito para ver cuotas y movimientos.</div>
+      <div class="creditos-detail-grid">
+        <div>
+          <h3 class="creditos-detail-subtitle">Cuotas</h3>
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Vencimiento</th>
+                  <th>Valor cuota</th>
+                  <th>Pagado</th>
+                  <th>Saldo</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody id="tablaCuotasBody">
+                <tr><td colspan="6" class="creditos-empty-cell">Sin datos</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div>
+          <h3 class="creditos-detail-subtitle">Movimientos</h3>
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Tipo</th>
+                  <th>Monto</th>
+                  <th>Capital</th>
+                  <th>Interes</th>
+                  <th>Mora</th>
+                  <th>Metodo</th>
+                  <th>Referencia</th>
+                </tr>
+              </thead>
+              <tbody id="tablaMovimientosBody">
+                <tr><td colspan="8" class="creditos-empty-cell">Sin datos</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    (function () {
+      function getQueryParam(name) {
+        var params = new URLSearchParams(window.location.search);
+        return params.get(name);
+      }
+
+      function normalize(v) {
+        return String(v || '').trim();
+      }
+
+      function n(v) {
+        var x = Number(v);
+        return Number.isFinite(x) ? x : 0;
+      }
+
+      function i(v) {
+        return Math.trunc(n(v));
+      }
+
+      function bool(v) {
+        return !!v;
+      }
+
+      function money(v) {
+        return n(v).toFixed(2);
+      }
+
+      function esc(raw) {
+        return String(raw || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function setMessage(id, text, isError) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = text || '';
+        el.style.color = isError ? '#b00020' : '#2a7f62';
+      }
+
+      function ensureOk(res) {
+        if (res.ok) return res;
+        return res.text().then(function (t) {
+          throw new Error(t || ('HTTP ' + res.status));
+        });
+      }
+
+      function resolveEmpresaID() {
+        var id = i(getQueryParam('empresa_id') || getQueryParam('id') || 0);
+        if (id > 0) {
+          try { localStorage.setItem('active_empresa_id', String(id)); } catch (_) {}
+          return id;
+        }
+        try {
+          var cached = i(localStorage.getItem('active_empresa_id') || 0);
+          if (cached > 0) return cached;
+        } catch (_) {}
+        return 0;
+      }
+
+      var empresaID = resolveEmpresaID();
+      var contexto = document.getElementById('creditosContexto');
+      if (contexto) {
+        contexto.textContent = empresaID > 0
+          ? ('Contexto activo: empresa_id=' + String(empresaID))
+          : 'empresa_id es obligatorio para operar el modulo de creditos.';
+      }
+      if (!empresaID) {
+        setMessage('consultaMsg', 'empresa_id es obligatorio en la URL o contexto activo.', true);
+        return;
+      }
+
+      var state = {
+        rows: [],
+      selectedCreditoID: 0,
+      alertas: null
+      };
+
+      function buildApiURL(action, params) {
+        var url = new URL('/api/empresa/creditos', window.location.origin);
+        url.searchParams.set('empresa_id', String(empresaID));
+        if (normalize(action)) {
+          url.searchParams.set('action', normalize(action));
+        }
+        if (params && typeof params === 'object') {
+          Object.keys(params).forEach(function (k) {
+            var v = params[k];
+            if (v === undefined || v === null) return;
+            var text = String(v).trim();
+            if (!text) return;
+            url.searchParams.set(k, text);
+          });
+        }
+        return url;
+      }
+
+      function getFiltros() {
+        return {
+          q: normalize(document.getElementById('fltQ').value),
+          cliente_id: i(document.getElementById('fltClienteId').value || 0),
+          estado_credito: normalize(document.getElementById('fltEstadoCredito').value),
+          clasificacion: normalize(document.getElementById('fltClasificacion').value),
+          desde: normalize(document.getElementById('fltDesde').value),
+          hasta: normalize(document.getElementById('fltHasta').value),
+          solo_vencidos: bool(document.getElementById('fltSoloVencidos').checked),
+          include_inactive: bool(document.getElementById('fltIncludeInactive').checked),
+          limit: 300,
+          offset: 0
+        };
+      }
+
+      function filtrosToParams(f) {
+        var out = {};
+        if (f.q) out.q = f.q;
+        if (f.cliente_id > 0) out.cliente_id = f.cliente_id;
+        if (f.estado_credito) out.estado_credito = f.estado_credito;
+        if (f.clasificacion) out.clasificacion = f.clasificacion;
+        if (f.desde) out.desde = f.desde;
+        if (f.hasta) out.hasta = f.hasta;
+        if (f.solo_vencidos) out.solo_vencidos = '1';
+        if (f.include_inactive) out.include_inactive = '1';
+        out.limit = String(f.limit || 300);
+        out.offset = String(f.offset || 0);
+        return out;
+      }
+
+      function renderResumen(resumen) {
+        var box = document.getElementById('resumenGrid');
+        if (!box) return;
+        resumen = resumen || {};
+        var cards = [
+          { label: 'Total creditos', value: String(i(resumen.total_creditos)) },
+          { label: 'Creditos activos', value: String(i(resumen.creditos_activos)) },
+          { label: 'Creditos vencidos', value: String(i(resumen.creditos_vencidos)) },
+          { label: 'Creditos en mora', value: String(i(resumen.creditos_mora)) },
+          { label: 'Creditos cerrados', value: String(i(resumen.creditos_cerrados)) },
+          { label: 'Monto aprobado', value: money(resumen.monto_aprobado) },
+          { label: 'Saldo total', value: money(resumen.saldo_total) },
+          { label: 'Cupo disponible', value: money(resumen.cupo_disponible) }
+        ];
+        box.innerHTML = cards.map(function (item) {
+          return '' +
+            '<article class="creditos-resumen-card">' +
+              '<div class="creditos-resumen-label">' + esc(item.label) + '</div>' +
+              '<div class="creditos-resumen-value">' + esc(item.value) + '</div>' +
+            '</article>';
+        }).join('');
+      }
+
+      function getAlertasParams() {
+        var dias = i(document.getElementById('alDiasProximos').value || 7);
+        if (dias <= 0) dias = 7;
+        if (dias > 365) dias = 365;
+        var top = i(document.getElementById('alTop').value || 10);
+        if (top <= 0) top = 10;
+        if (top > 200) top = 200;
+        return {
+          dias_proximos: dias,
+          top: top,
+          include_inactive: bool(document.getElementById('alIncludeInactive').checked)
+        };
+      }
+
+      function renderAlertasResumen(alertas) {
+        var box = document.getElementById('alertasResumenGrid');
+        if (!box) return;
+        alertas = alertas || {};
+        var cards = [
+          { label: 'Dias proactivos', value: String(i(alertas.dias_proximos || 0)) },
+          { label: 'Top ranking', value: String(i(alertas.top || 0)) },
+          { label: 'Total proximos a vencer', value: String(i(alertas.total_proximos_vencer || 0)) },
+          { label: 'Total vencidos', value: String(i(alertas.total_vencidos || 0)) },
+          { label: 'Total ranking mora', value: String(i(alertas.total_ranking_morosidad || 0)) },
+          { label: 'Monto proximos', value: money(alertas.monto_proximos_vencer || 0) },
+          { label: 'Monto vencidos', value: money(alertas.monto_vencidos || 0) },
+          { label: 'Monto ranking', value: money(alertas.monto_ranking_morosidad || 0) }
+        ];
+        box.innerHTML = cards.map(function (item) {
+          return '' +
+            '<article class="creditos-resumen-card">' +
+              '<div class="creditos-resumen-label">' + esc(item.label) + '</div>' +
+              '<div class="creditos-resumen-value">' + esc(item.value) + '</div>' +
+            '</article>';
+        }).join('');
+      }
+
+      function renderTablaAlertas(alertas) {
+        var body = document.getElementById('tablaAlertasBody');
+        if (!body) return;
+        body.innerHTML = '';
+        var rows = [];
+        var prox = alertas && Array.isArray(alertas.proximos_vencer) ? alertas.proximos_vencer : [];
+        var venc = alertas && Array.isArray(alertas.vencidos) ? alertas.vencidos : [];
+        prox.forEach(function (row) {
+          rows.push({ grupo: 'proximo_vencer', row: row });
+        });
+        venc.forEach(function (row) {
+          rows.push({ grupo: 'vencido', row: row });
+        });
+        if (rows.length === 0) {
+          body.innerHTML = '<tr><td colspan="8" class="creditos-empty-cell">Sin alertas para el criterio seleccionado</td></tr>';
+          return;
+        }
+        rows.forEach(function (item) {
+          var row = item.row || {};
+          var tr = document.createElement('tr');
+          tr.innerHTML = '' +
+            '<td>' + esc(item.grupo) + '</td>' +
+            '<td>' + esc(i(row.id)) + '</td>' +
+            '<td>' + esc(row.codigo) + '</td>' +
+            '<td>' + esc(row.cliente_nombre || ('#' + i(row.cliente_id))) + '</td>' +
+            '<td>' + esc(row.fecha_vencimiento) + '</td>' +
+            '<td>' + esc(i(row.dias_mora)) + '</td>' +
+            '<td>' + esc(money(row.saldo_actual)) + '</td>' +
+            '<td>' + esc(row.estado_credito) + '</td>';
+          body.appendChild(tr);
+        });
+      }
+
+      function renderTablaRanking(alertas) {
+        var body = document.getElementById('tablaRankingBody');
+        if (!body) return;
+        body.innerHTML = '';
+        var rows = alertas && Array.isArray(alertas.ranking_morosidad) ? alertas.ranking_morosidad : [];
+        if (rows.length === 0) {
+          body.innerHTML = '<tr><td colspan="8" class="creditos-empty-cell">Sin ranking de morosidad</td></tr>';
+          return;
+        }
+        rows.forEach(function (row, idx) {
+          var id = i(row.id);
+          var tr = document.createElement('tr');
+          tr.innerHTML = '' +
+            '<td>' + esc(idx + 1) + '</td>' +
+            '<td>' + esc(id) + '</td>' +
+            '<td>' + esc(row.codigo) + '</td>' +
+            '<td>' + esc(row.cliente_nombre || ('#' + i(row.cliente_id))) + '</td>' +
+            '<td>' + esc(i(row.dias_mora)) + '</td>' +
+            '<td>' + esc(money(row.saldo_actual)) + '</td>' +
+            '<td>' + esc(row.clasificacion_cartera) + '</td>' +
+            '<td><button class="btn secondary" data-action="detalle" data-id="' + id + '">Ver</button></td>';
+          body.appendChild(tr);
+        });
+      }
+
+      function fetchAlertasMora() {
+        var params = getAlertasParams();
+        var query = {
+          dias_proximos: String(params.dias_proximos),
+          top: String(params.top)
+        };
+        if (params.include_inactive) {
+          query.include_inactive = '1';
+        }
+        return fetch(buildApiURL('alertas_mora', query).toString(), { credentials: 'same-origin' })
+          .then(ensureOk)
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            state.alertas = data && data.alertas ? data.alertas : null;
+            renderAlertasResumen(state.alertas || {});
+            renderTablaAlertas(state.alertas || {});
+            renderTablaRanking(state.alertas || {});
+            var total = i((state.alertas && state.alertas.total_vencidos) || 0) + i((state.alertas && state.alertas.total_proximos_vencer) || 0);
+            setMessage('alertasMsg', 'Alertas actualizadas. Registros relevantes: ' + String(total), false);
+            return data;
+          })
+          .catch(function (err) {
+            setMessage('alertasMsg', normalize(err && err.message), true);
+          });
+      }
+
+      function renderCreditos(rows) {
+        var body = document.getElementById('tablaCreditosBody');
+        if (!body) return;
+        body.innerHTML = '';
+
+        if (!Array.isArray(rows) || rows.length === 0) {
+          body.innerHTML = '<tr><td colspan="12" class="creditos-empty-cell">Sin datos</td></tr>';
+          return;
+        }
+
+        rows.forEach(function (row) {
+          var id = i(row.id);
+          var estadoCredito = normalize(row.estado_credito).toLowerCase();
+          var estadoFila = normalize(row.estado).toLowerCase();
+          var canClose = n(row.saldo_actual) <= 0.0001;
+          var btnCerrar = canClose
+            ? '<button class="btn secondary" data-action="estado" data-id="' + id + '" data-value="cerrado">Cerrar</button>'
+            : '<button class="btn secondary" disabled title="Primero debe tener saldo cero">Cerrar</button>';
+          var btnSuspender = estadoCredito === 'suspendido'
+            ? '<button class="btn secondary" data-action="estado" data-id="' + id + '" data-value="activo">Reactivar</button>'
+            : '<button class="btn secondary" data-action="estado" data-id="' + id + '" data-value="suspendido">Suspender</button>';
+          var btnInactivar = estadoFila === 'inactivo'
+            ? '<button class="btn secondary" data-action="row" data-id="' + id + '" data-value="activar">Activar fila</button>'
+            : '<button class="btn secondary" data-action="row" data-id="' + id + '" data-value="desactivar">Inactivar fila</button>';
+
+          var tr = document.createElement('tr');
+          tr.innerHTML = '' +
+            '<td>' + esc(id) + '</td>' +
+            '<td>' + esc(row.codigo) + '</td>' +
+            '<td>' + esc(row.cliente_nombre || ('#' + i(row.cliente_id))) + '</td>' +
+            '<td>' + esc(row.tipo_credito) + '</td>' +
+            '<td>' + esc(money(row.monto_aprobado)) + '</td>' +
+            '<td>' + esc(money(row.saldo_actual)) + '</td>' +
+            '<td>' + esc(money(row.saldo_disponible)) + '</td>' +
+            '<td>' + esc(row.estado_credito) + '</td>' +
+            '<td>' + esc(row.clasificacion_cartera) + '</td>' +
+            '<td>' + esc(i(row.dias_mora)) + '</td>' +
+            '<td>' + esc(row.fecha_vencimiento) + '</td>' +
+            '<td class="creditos-actions">' +
+              '<button class="btn" data-action="detalle" data-id="' + id + '">Estado cuenta</button>' +
+              '<button class="btn secondary" data-action="prefill_abono" data-id="' + id + '">Abono</button>' +
+              btnSuspender +
+              btnCerrar +
+              btnInactivar +
+            '</td>';
+          body.appendChild(tr);
+        });
+      }
+
+      function renderCuotas(rows) {
+        var body = document.getElementById('tablaCuotasBody');
+        if (!body) return;
+        body.innerHTML = '';
+        if (!Array.isArray(rows) || rows.length === 0) {
+          body.innerHTML = '<tr><td colspan="6" class="creditos-empty-cell">Sin datos</td></tr>';
+          return;
+        }
+        rows.forEach(function (row) {
+          var tr = document.createElement('tr');
+          tr.innerHTML = '' +
+            '<td>' + esc(i(row.numero_cuota)) + '</td>' +
+            '<td>' + esc(row.fecha_vencimiento) + '</td>' +
+            '<td>' + esc(money(row.valor_cuota)) + '</td>' +
+            '<td>' + esc(money(row.valor_pagado)) + '</td>' +
+            '<td>' + esc(money(row.saldo_cuota)) + '</td>' +
+            '<td>' + esc(row.estado_cuota) + '</td>';
+          body.appendChild(tr);
+        });
+      }
+
+      function renderMovimientos(rows) {
+        var body = document.getElementById('tablaMovimientosBody');
+        if (!body) return;
+        body.innerHTML = '';
+        if (!Array.isArray(rows) || rows.length === 0) {
+          body.innerHTML = '<tr><td colspan="8" class="creditos-empty-cell">Sin datos</td></tr>';
+          return;
+        }
+        rows.forEach(function (row) {
+          var tr = document.createElement('tr');
+          tr.innerHTML = '' +
+            '<td>' + esc(row.fecha_movimiento || row.fecha_creacion) + '</td>' +
+            '<td>' + esc(row.tipo_movimiento) + '</td>' +
+            '<td>' + esc(money(row.monto)) + '</td>' +
+            '<td>' + esc(money(row.capital_aplicado)) + '</td>' +
+            '<td>' + esc(money(row.interes_aplicado)) + '</td>' +
+            '<td>' + esc(money(row.mora_aplicada)) + '</td>' +
+            '<td>' + esc(row.metodo_pago) + '</td>' +
+            '<td>' + esc(row.referencia_pago) + '</td>';
+          body.appendChild(tr);
+        });
+      }
+
+      function setDetalleMeta(credito) {
+        var title = document.getElementById('detalleTitulo');
+        var meta = document.getElementById('detalleMeta');
+        if (title) {
+          title.textContent = credito
+            ? ('Estado de cuenta - credito #' + String(i(credito.id)) + ' (' + normalize(credito.codigo || '') + ')')
+            : 'Estado de cuenta';
+        }
+        if (meta) {
+          if (!credito) {
+            meta.textContent = 'Selecciona un credito para ver cuotas y movimientos.';
+          } else {
+            meta.textContent =
+              'Cliente: ' + normalize(credito.cliente_nombre || ('#' + i(credito.cliente_id))) +
+              ' | Saldo actual: ' + money(credito.saldo_actual) +
+              ' | Estado: ' + normalize(credito.estado_credito) +
+              ' | Clasificacion: ' + normalize(credito.clasificacion_cartera);
+          }
+        }
+      }
+
+      function fetchResumen() {
+        var filtros = getFiltros();
+        var params = {};
+        if (filtros.include_inactive) params.include_inactive = '1';
+        return fetch(buildApiURL('resumen_cartera', params).toString(), { credentials: 'same-origin' })
+          .then(ensureOk)
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            renderResumen(data.resumen || {});
+            return data;
+          });
+      }
+
+      function fetchCreditos() {
+        var filtros = getFiltros();
+        return fetch(buildApiURL('', filtrosToParams(filtros)).toString(), { credentials: 'same-origin' })
+          .then(ensureOk)
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            state.rows = Array.isArray(data.rows) ? data.rows : [];
+            renderCreditos(state.rows);
+            setMessage('consultaMsg', 'Consulta actualizada. Total: ' + String(i(data.total || 0)), false);
+            return data;
+          });
+      }
+
+      function consultarTodo() {
+        setMessage('consultaMsg', 'Consultando cartera...', false);
+        return Promise.all([fetchResumen(), fetchCreditos(), fetchAlertasMora()])
+          .then(function () {
+            if (state.selectedCreditoID > 0) {
+              return loadEstadoCuenta(state.selectedCreditoID, false);
+            }
+            return null;
+          })
+          .catch(function (err) {
+            setMessage('consultaMsg', normalize(err && err.message), true);
+          });
+      }
+
+      function loadEstadoCuenta(creditoID, focusAbono) {
+        creditoID = i(creditoID);
+        if (creditoID <= 0) return Promise.resolve();
+        state.selectedCreditoID = creditoID;
+        return fetch(buildApiURL('estado_cuenta', { id: creditoID }).toString(), { credentials: 'same-origin' })
+          .then(ensureOk)
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            setDetalleMeta(data.credito || null);
+            renderCuotas(data.cuotas || []);
+            renderMovimientos(data.movimientos || []);
+            if (focusAbono) {
+              document.getElementById('abCreditoId').value = String(creditoID);
+              var abMonto = document.getElementById('abMonto');
+              if (abMonto) abMonto.focus();
+            }
+          })
+          .catch(function (err) {
+            setMessage('consultaMsg', normalize(err && err.message), true);
+          });
+      }
+
+      function getCreatePayload() {
+        return {
+          empresa_id: empresaID,
+          cliente_id: i(document.getElementById('crClienteId').value || 0),
+          cliente_nombre: normalize(document.getElementById('crClienteNombre').value),
+          tipo_credito: normalize(document.getElementById('crTipo').value) || 'cuotas',
+          monto_aprobado: n(document.getElementById('crMonto').value || 0),
+          cupo_credito: n(document.getElementById('crCupo').value || 0),
+          tasa_interes: n(document.getElementById('crTasaInteres').value || 0),
+          tasa_mora: n(document.getElementById('crTasaMora').value || 0),
+          plazo_dias: i(document.getElementById('crPlazoDias').value || 0),
+          plazo_cuotas: i(document.getElementById('crPlazoCuotas').value || 0),
+          fecha_inicio: normalize(document.getElementById('crFechaInicio').value),
+          fecha_vencimiento: normalize(document.getElementById('crFechaVencimiento').value),
+          bloqueo_automatico_mora: bool(document.getElementById('crBloqueoMora').checked),
+          observaciones: normalize(document.getElementById('crObservaciones').value)
+        };
+      }
+
+      function clearCreateForm() {
+        document.getElementById('crClienteId').value = '';
+        document.getElementById('crClienteNombre').value = '';
+        document.getElementById('crTipo').value = 'cuotas';
+        document.getElementById('crMonto').value = '';
+        document.getElementById('crCupo').value = '';
+        document.getElementById('crTasaInteres').value = '0';
+        document.getElementById('crTasaMora').value = '0';
+        document.getElementById('crPlazoDias').value = '0';
+        document.getElementById('crPlazoCuotas').value = '12';
+        document.getElementById('crFechaInicio').value = '';
+        document.getElementById('crFechaVencimiento').value = '';
+        document.getElementById('crBloqueoMora').checked = true;
+        document.getElementById('crObservaciones').value = '';
+      }
+
+      function crearCredito() {
+        setMessage('crearMsg', 'Creando credito...', false);
+        var payload = getCreatePayload();
+        return fetch(buildApiURL('').toString(), {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
+          .then(ensureOk)
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            var credito = data && data.credito ? data.credito : {};
+            setMessage('crearMsg', 'Credito creado correctamente. ID: ' + String(i(credito.id)), false);
+            clearCreateForm();
+            return consultarTodo().then(function () {
+              if (credito && i(credito.id) > 0) {
+                return loadEstadoCuenta(i(credito.id), false);
+              }
+              return null;
+            });
+          })
+          .catch(function (err) {
+            setMessage('crearMsg', normalize(err && err.message), true);
+          });
+      }
+
+      function aplicarAbono() {
+        var creditoID = i(document.getElementById('abCreditoId').value || 0);
+        var monto = n(document.getElementById('abMonto').value || 0);
+        if (creditoID <= 0) {
+          setMessage('abonoMsg', 'Credito ID es obligatorio.', true);
+          return;
+        }
+        if (monto <= 0) {
+          setMessage('abonoMsg', 'Monto debe ser mayor a cero.', true);
+          return;
+        }
+        setMessage('abonoMsg', 'Aplicando abono...', false);
+
+        var payload = {
+          empresa_id: empresaID,
+          credito_id: creditoID,
+          monto: monto,
+          metodo_pago: normalize(document.getElementById('abMetodo').value),
+          referencia_pago: normalize(document.getElementById('abReferencia').value),
+          comprobante: normalize(document.getElementById('abComprobante').value),
+          observaciones: normalize(document.getElementById('abObservaciones').value)
+        };
+
+        return fetch(buildApiURL('abono').toString(), {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
+          .then(ensureOk)
+          .then(function (res) { return res.json(); })
+          .then(function () {
+            setMessage('abonoMsg', 'Abono aplicado correctamente.', false);
+            document.getElementById('abMonto').value = '';
+            return consultarTodo().then(function () {
+              return loadEstadoCuenta(creditoID, false);
+            });
+          })
+          .catch(function (err) {
+            setMessage('abonoMsg', normalize(err && err.message), true);
+          });
+      }
+
+      function cambiarEstadoCredito(creditoID, estado) {
+        return fetch(buildApiURL('estado', { id: creditoID }).toString(), {
+          method: 'PUT',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ estado_credito: estado })
+        })
+          .then(ensureOk)
+          .then(function () {
+            setMessage('consultaMsg', 'Estado de credito actualizado a ' + estado + '.', false);
+            return consultarTodo();
+          })
+          .catch(function (err) {
+            setMessage('consultaMsg', normalize(err && err.message), true);
+          });
+      }
+
+      function cambiarEstadoFila(creditoID, action) {
+        return fetch(buildApiURL(action, { id: creditoID }).toString(), {
+          method: 'PUT',
+          credentials: 'same-origin'
+        })
+          .then(ensureOk)
+          .then(function () {
+            setMessage('consultaMsg', 'Estado de fila actualizado (' + action + ').', false);
+            return consultarTodo();
+          })
+          .catch(function (err) {
+            setMessage('consultaMsg', normalize(err && err.message), true);
+          });
+      }
+
+      function exportarReporte(tipoForzado) {
+        var filtros = getFiltros();
+        var format = normalize(document.getElementById('expFormat').value) || 'json';
+        var tipo = normalize(tipoForzado || document.getElementById('expTipo').value) || 'cartera';
+        var params = filtrosToParams(filtros);
+        params.format = format;
+        params.limit = '2000';
+        params.offset = '0';
+        if (tipo === 'morosidad') {
+          var alertasParams = getAlertasParams();
+          params.tipo = 'morosidad';
+          params.dias_proximos = String(alertasParams.dias_proximos);
+          params.top = String(alertasParams.top);
+          if (alertasParams.include_inactive) {
+            params.include_inactive = '1';
+          }
+        }
+
+        return fetch(buildApiURL('reporte', params).toString(), { credentials: 'same-origin' })
+          .then(ensureOk)
+          .then(function (res) {
+            return Promise.all([res.blob(), Promise.resolve(res)]);
+          })
+          .then(function (pair) {
+            var blob = pair[0];
+            var stamp = new Date().toISOString().slice(0, 19).replace(/[\-:T]/g, '');
+            var a = document.createElement('a');
+            var href = URL.createObjectURL(blob);
+            a.href = href;
+            a.download = (tipo === 'morosidad' ? 'creditos_morosidad_' : 'creditos_cartera_') + String(empresaID) + '_' + stamp + '.' + format;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(href);
+            setMessage('consultaMsg', 'Reporte ' + tipo + ' exportado en formato ' + format.toUpperCase() + '.', false);
+          })
+          .catch(function (err) {
+            setMessage('consultaMsg', normalize(err && err.message), true);
+          });
+      }
+
+      function limpiarFiltros() {
+        document.getElementById('fltQ').value = '';
+        document.getElementById('fltClienteId').value = '';
+        document.getElementById('fltEstadoCredito').value = '';
+        document.getElementById('fltClasificacion').value = '';
+        document.getElementById('fltDesde').value = '';
+        document.getElementById('fltHasta').value = '';
+        document.getElementById('fltSoloVencidos').checked = false;
+        document.getElementById('fltIncludeInactive').checked = false;
+      }
+
+      function bindActions() {
+        document.getElementById('btnConsultar').addEventListener('click', function () {
+          consultarTodo();
+        });
+        document.getElementById('btnExportar').addEventListener('click', function () {
+          exportarReporte();
+        });
+        document.getElementById('btnConsultarAlertas').addEventListener('click', function () {
+          fetchAlertasMora();
+        });
+        document.getElementById('btnExportarAlertas').addEventListener('click', function () {
+          exportarReporte('morosidad');
+        });
+        document.getElementById('btnLimpiarFiltros').addEventListener('click', function () {
+          limpiarFiltros();
+          consultarTodo();
+        });
+        document.getElementById('btnCrearCredito').addEventListener('click', function () {
+          crearCredito();
+        });
+        document.getElementById('btnLimpiarCrear').addEventListener('click', function () {
+          clearCreateForm();
+        });
+        document.getElementById('btnAplicarAbono').addEventListener('click', function () {
+          aplicarAbono();
+        });
+
+        document.getElementById('tablaCreditosBody').addEventListener('click', function (ev) {
+          var btn = ev.target.closest('button[data-action]');
+          if (!btn) return;
+          var action = normalize(btn.getAttribute('data-action'));
+          var id = i(btn.getAttribute('data-id'));
+          var value = normalize(btn.getAttribute('data-value'));
+          if (id <= 0) return;
+
+          if (action === 'detalle') {
+            loadEstadoCuenta(id, false);
+            return;
+          }
+          if (action === 'prefill_abono') {
+            document.getElementById('abCreditoId').value = String(id);
+            loadEstadoCuenta(id, true);
+            return;
+          }
+          if (action === 'estado' && value) {
+            cambiarEstadoCredito(id, value);
+            return;
+          }
+          if (action === 'row' && value) {
+            cambiarEstadoFila(id, value);
+            return;
+          }
+        });
+      }
+
+      bindActions();
+      consultarTodo();
+    })();
+  </script>
+</body>
+</html>

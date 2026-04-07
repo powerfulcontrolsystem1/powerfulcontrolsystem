@@ -17,6 +17,7 @@
       <div class="empresa-inline-actions" style="margin-top:10px;flex-wrap:wrap;gap:8px;">
         <a class="btn secondary" href="#menu-rapido">Guía rápida</a>
         <a class="btn secondary" href="#menu-tutorial-modulos">Tutorial por módulos</a>
+        <a class="btn secondary" href="#menu-creditos">Créditos y cartera</a>
         <a class="btn secondary" href="#menu-apis">APIs</a>
         <a class="btn secondary" href="#menu-inventario">Inventario</a>
         <a class="btn secondary" href="#menu-carrito">Carrito y lector</a>
@@ -44,6 +45,7 @@
         <li>Módulo ERP extendido: <a href="/administrar_empresa/modulos_erp_extendido.html">/administrar_empresa/modulos_erp_extendido.html</a></li>
         <li>Módulo calculadora: <a href="/administrar_empresa/calculadora.html">/administrar_empresa/calculadora.html</a></li>
         <li>Módulo de asistencia de empleados: <a href="/administrar_empresa/asistencia_empleados.html">/administrar_empresa/asistencia_empleados.html</a></li>
+        <li>Módulo de créditos y cartera: <a href="/administrar_empresa/creditos.html">/administrar_empresa/creditos.html</a></li>
         <li>Módulo de reportes: <a href="/administrar_empresa/reportes.html">/administrar_empresa/reportes.html</a></li>
         <li>Módulo de gráficos y estadísticas: <a href="/administrar_empresa/graficos_estadisticas.html">/administrar_empresa/graficos_estadisticas.html</a></li>
         <li>Configuración de empresa: <a href="/administrar_empresa/configuracion.html">/administrar_empresa/configuracion.html</a></li>
@@ -291,6 +293,14 @@
         <li>El historial y memoria se guardan por empresa_id para no mezclar empresas.</li>
         <li>Exporta historial en JSON cuando necesites respaldo de cálculos operativos.</li>
       </ol>
+
+      <h4 style="margin:12px 0 6px 0;">30) Créditos y cartera</h4>
+      <p class="form-help" style="margin-top:0;">Ruta: <a href="/administrar_empresa/creditos.html">/administrar_empresa/creditos.html</a></p>
+      <ol>
+        <li>Crea la línea de crédito seleccionando cliente, monto aprobado, plazo, tasa y tipo de crédito.</li>
+        <li>Consulta cartera con filtros por cliente/estado/clasificación y revisa el resumen operativo (saldo, vencidos, mora).</li>
+        <li>Registra abonos (total o parcial), valida la aplicación a cuotas y confirma el estado de cuenta antes del cierre diario.</li>
+      </ol>
     </section>
 
     <section id="menu-propinas-comisiones" class="card empresa-section">
@@ -313,6 +323,44 @@
         <li>ERP extendido centraliza módulos avanzados por dominio sin cambiar contratos backend.</li>
         <li>Usa filtros, acciones de estado y trazabilidad por empresa_id en cada submódulo.</li>
         <li>La calculadora es una utilidad transversal de apoyo con almacenamiento aislado por empresa.</li>
+      </ul>
+    </section>
+
+    <section id="menu-creditos" class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2 style="margin:0;">Créditos y cartera: guía operativa por rol</h2>
+      </div>
+      <p class="form-help" style="margin-top:8px;">Ruta operativa: <a href="/administrar_empresa/creditos.html">/administrar_empresa/creditos.html</a></p>
+
+      <h3 style="margin:14px 0 8px 0;">Flujo recomendado</h3>
+      <ol>
+        <li>Registrar crédito con datos contractuales completos (cliente, monto, plazo, tasa, fecha de inicio, tipo).</li>
+        <li>Validar plan de cuotas generado y clasificación inicial de cartera.</li>
+        <li>Operar abonos diarios y confirmar actualización de saldo, cuotas y movimientos.</li>
+        <li>Monitorear cartera vencida y aplicar cambio de estado (`suspendido`/`activo`/`cerrado`) según política.</li>
+        <li>Exportar reporte multiformato para cierre operativo y trazabilidad contable.</li>
+      </ol>
+
+      <h3 style="margin:14px 0 8px 0;">Manual por rol</h3>
+      <h4 style="margin:12px 0 6px 0;">Administrador de empresa</h4>
+      <ul>
+        <li>Define políticas de otorgamiento y valida límites internos antes de crear créditos.</li>
+        <li>Supervisa cartera por clasificación (`al_dia`, `vencido`, `castigado`) y autoriza cambios críticos de estado.</li>
+        <li>Asegura consistencia de cierres con reportes exportados por período.</li>
+      </ul>
+
+      <h4 style="margin:12px 0 6px 0;">Operador de caja / cobranza</h4>
+      <ul>
+        <li>Consulta estado de cuenta por cliente y registra abonos con método y referencia verificables.</li>
+        <li>Confirma que cada abono impacte cuotas en orden y que no existan saldos inconsistentes.</li>
+        <li>Escala casos de mora o excepciones al responsable administrativo.</li>
+      </ul>
+
+      <h4 style="margin:12px 0 6px 0;">Auditoría / control interno</h4>
+      <ul>
+        <li>Revisa movimientos por crédito, usuario y periodo para validar trazabilidad completa.</li>
+        <li>Contrasta estado de cuenta vs. reporte exportado para detectar discrepancias.</li>
+        <li>Conserva evidencia operativa en formatos `PDF/XLS/CSV/JSON/TXT` para revisiones internas/externas.</li>
       </ul>
     </section>
 
@@ -395,6 +443,26 @@
           <tbody>
             <tr><td>GET</td><td>/api/empresa/reportes</td><td>Reportes por datasets y exportaciones multi-formato</td></tr>
             <tr><td>GET</td><td>/api/empresa/graficos_estadisticas</td><td>Series gráficas, rankings y distribuciones operativas por empresa</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 style="margin:14px 0 8px 0;">Créditos y cartera</h3>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Método</th>
+              <th>Endpoint</th>
+              <th>Descripción</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>GET/POST/PUT/PATCH/DELETE</td><td>/api/empresa/creditos</td><td>CRUD operativo de créditos por empresa</td></tr>
+            <tr><td>GET</td><td>/api/empresa/creditos?action=estado_cuenta</td><td>Detalle de cuotas, saldos y movimientos por crédito</td></tr>
+            <tr><td>GET</td><td>/api/empresa/creditos?action=resumen_cartera</td><td>Resumen agregado de cartera por estado y clasificación</td></tr>
+            <tr><td>POST</td><td>/api/empresa/creditos?action=abono</td><td>Registro de abonos y aplicación automática a cuotas</td></tr>
+            <tr><td>GET</td><td>/api/empresa/creditos?action=reporte&amp;format=json|csv|txt|xls|pdf</td><td>Exportación de cartera multiformato con estructura consistente</td></tr>
           </tbody>
         </table>
       </div>

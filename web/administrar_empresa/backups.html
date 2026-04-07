@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Backups empresariales</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+</head>
+<body class="empresa-subpage">
+  <div class="container">
+    <div class="page-header">
+      <h1 class="creditos-page-title">Backups empresariales</h1>
+    </div>
+    <p id="backupsContexto" class="form-help"></p>
+    <p class="form-help">Genera snapshots de datos por empresa, consulta historial, exporta evidencia y restaura cuando sea necesario.</p>
+
+    <section class="form creditos-section creditos-section-first">
+      <div class="page-header creditos-section-header">
+        <h2 class="creditos-section-title">Crear snapshot</h2>
+      </div>
+      <div class="backups-toolbar-grid">
+        <input id="bkNombre" class="form-input" type="text" placeholder="Nombre del backup (opcional)">
+        <input id="bkDescripcion" class="form-input" type="text" placeholder="Descripcion operativa (opcional)">
+        <input id="bkInclude" class="form-input" type="text" placeholder="Incluir tablas (coma), ej: clientes,productos">
+        <input id="bkExclude" class="form-input" type="text" placeholder="Excluir tablas (coma), ej: logs_tmp">
+      </div>
+      <div class="form-actions creditos-actions-top">
+        <button id="btnCrearBackup" type="button" class="btn">Crear backup</button>
+        <button id="btnRefrescarBackups" type="button" class="btn secondary">Refrescar</button>
+      </div>
+      <div id="crearBackupMsg" class="form-help"></div>
+    </section>
+
+    <section class="form creditos-section">
+      <div class="page-header creditos-section-header">
+        <h2 class="creditos-section-title">Historial de backups</h2>
+      </div>
+      <div class="backups-toolbar-grid backups-toolbar-grid-list">
+        <input id="bkQ" class="form-input" type="text" placeholder="Buscar por codigo, nombre o descripcion">
+        <label class="form-help creditos-filter-check backups-filter-check">
+          <input id="bkIncludeInactive" type="checkbox"> Incluir inactivos
+        </label>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Codigo</th>
+              <th>Nombre</th>
+              <th>Tablas</th>
+              <th>Registros</th>
+              <th>Tamano</th>
+              <th>Estado</th>
+              <th>Creacion</th>
+              <th>Restaurado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tablaBackupsBody">
+            <tr><td colspan="10" class="backups-empty-cell">Sin datos</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="listaBackupMsg" class="form-help"></div>
+    </section>
+
+    <section class="form creditos-section">
+      <div class="page-header creditos-section-header">
+        <h2 class="creditos-section-title">Detalle del backup</h2>
+      </div>
+      <div id="detalleBackupMeta" class="backups-summary-grid"></div>
+      <pre id="detalleBackupPayload" class="backups-detail-pre">Selecciona un backup para ver detalle.</pre>
+    </section>
+  </div>
+
+  <script>
+    (function () {
+      var params = new URLSearchParams(window.location.search);
+      var empresaId = parseInt(params.get('empresa_id') || params.get('id') || '0', 10);
+      var estado = {
+        rows: [],
+        detalleId: 0
+      };
+
+      var contextoEl = document.getElementById('backupsContexto');
+      var crearMsgEl = document.getElementById('crearBackupMsg');
+      var listaMsgEl = document.getElementById('listaBackupMsg');
+      var tablaBody = document.getElementById('tablaBackupsBody');
+      var detalleMetaEl = document.getElementById('detalleBackupMeta');
+      var detallePayloadEl = document.getElementById('detalleBackupPayload');
+
+      function setMsg(el, text, type) {
+        if (!el) return;
+        el.textContent = text || '';
+        el.classList.remove('error', 'success');
+        if (type) el.classList.add(type);
+      }
+
+      function formatDateTime(value) {
+        var raw = String(value || '').trim();
+        if (!raw) return '-';
+        var normalized = raw.replace(' ', 'T');
+        var dt = new Date(normalized);
+        if (isNaN(dt.getTime())) return raw;
+        return dt.toLocaleString();
+      }
+
+      function formatBytes(bytes) {
+        var n = Number(bytes || 0);
+        if (!isFinite(n) || n <= 0) return '0 B';
+        var units = ['B', 'KB', 'MB', 'GB'];
+        var i = 0;
+        while (n >= 1024 && i < units.length - 1) {
+          n = n / 1024;
+          i += 1;
+        }
+        return n.toFixed(i === 0 ? 0 : 2) + ' ' + units[i];
+      }
+
+      function parseTableList(raw) {
+        var value = String(raw || '').trim();
+        if (!value) return [];
+        return value.split(',').map(function (item) {
+          return item.trim();
+        }).filter(function (item) {
+          return item.length > 0;
+        });
+      }
+
+      function buildBaseURL(action) {
+        var url = new URL('/api/empresa/backups', window.location.origin);
+        url.searchParams.set('empresa_id', String(empresaId));
+        if (action) url.searchParams.set('action', action);
+        return url;
+      }
+
+      async function requestJSON(method, action, paramsObj, bodyObj) {
+        var url = buildBaseURL(action);
+        if (paramsObj) {
+          Object.keys(paramsObj).forEach(function (key) {
+            if (paramsObj[key] === undefined || paramsObj[key] === null || paramsObj[key] === '') return;
+            url.searchParams.set(key, String(paramsObj[key]));
+          });
+        }
+
+        var options = {
+          method: method,
+          credentials: 'same-origin'
+        };
+        if (bodyObj) {
+          options.headers = { 'Content-Type': 'application/json' };
+          options.body = JSON.stringify(bodyObj);
+        }
+
+        var resp = await fetch(url.toString(), options);
+        var text = await resp.text();
+        var data = {};
+        if (text) {
+          try {
+            data = JSON.parse(text);
+          } catch (_) {
+            data = { raw: text };
+          }
+        }
+        if (!resp.ok) {
+          throw new Error((data && (data.error || data.message)) || text || ('HTTP ' + resp.status));
+        }
+        return data;
+      }
+
+      function buildExportURL(id, format) {
+        var url = buildBaseURL('export');
+        url.searchParams.set('id', String(id));
+        url.searchParams.set('format', format || 'json');
+        return url.toString();
+      }
+
+      function renderRows(rows) {
+        if (!rows || rows.length === 0) {
+          tablaBody.innerHTML = '<tr><td colspan="10" class="backups-empty-cell">Sin datos</td></tr>';
+          return;
+        }
+
+        tablaBody.innerHTML = rows.map(function (row) {
+          var id = Number(row.id || 0);
+          var estadoRow = String(row.estado || 'activo').toLowerCase();
+          var toggleAction = estadoRow === 'inactivo' ? 'activar' : 'desactivar';
+          var toggleLabel = estadoRow === 'inactivo' ? 'Activar' : 'Desactivar';
+          return '' +
+            '<tr>' +
+              '<td>' + id + '</td>' +
+              '<td>' + (row.codigo || '-') + '</td>' +
+              '<td>' + (row.nombre || '-') + '</td>' +
+              '<td>' + Number(row.total_tablas || 0) + '</td>' +
+              '<td>' + Number(row.total_registros || 0) + '</td>' +
+              '<td>' + formatBytes(row.tamano_bytes) + '</td>' +
+              '<td>' + (row.estado || '-') + '</td>' +
+              '<td>' + formatDateTime(row.fecha_creacion) + '</td>' +
+              '<td>' + (row.restaurado_en ? (formatDateTime(row.restaurado_en) + ' / ' + (row.restaurado_por || '-')) : '-') + '</td>' +
+              '<td class="backups-actions-cell">' +
+                '<button type="button" class="btn secondary" data-action="detalle" data-id="' + id + '">Detalle</button>' +
+                '<button type="button" class="btn secondary" data-action="json" data-id="' + id + '">JSON</button>' +
+                '<button type="button" class="btn secondary" data-action="csv" data-id="' + id + '">CSV</button>' +
+                '<button type="button" class="btn secondary" data-action="restaurar" data-id="' + id + '">Restaurar</button>' +
+                '<button type="button" class="btn secondary" data-action="toggle" data-id="' + id + '" data-toggle="' + toggleAction + '">' + toggleLabel + '</button>' +
+              '</td>' +
+            '</tr>';
+        }).join('');
+      }
+
+      function renderDetailMeta(backup, payload) {
+        if (!backup || !payload) {
+          detalleMetaEl.innerHTML = '';
+          return;
+        }
+
+        var cards = [
+          { label: 'ID', value: backup.id || '-' },
+          { label: 'Codigo', value: backup.codigo || '-' },
+          { label: 'Nombre', value: backup.nombre || '-' },
+          { label: 'Version', value: payload.version || '-' },
+          { label: 'Tablas', value: payload.total_tables || 0 },
+          { label: 'Registros', value: payload.total_rows || 0 },
+          { label: 'Creado', value: formatDateTime(payload.created_at) },
+          { label: 'Usuario', value: payload.created_by || backup.usuario_creador || '-' }
+        ];
+
+        detalleMetaEl.innerHTML = cards.map(function (item) {
+          return '' +
+            '<div class="kpi-card backups-kpi-card">' +
+              '<div class="kpi-title">' + item.label + '</div>' +
+              '<div class="kpi-value">' + item.value + '</div>' +
+            '</div>';
+        }).join('');
+      }
+
+      async function cargarDetalle(id) {
+        var data = await requestJSON('GET', 'detalle', { id: id, include_snapshot: 1 }, null);
+        estado.detalleId = id;
+        renderDetailMeta(data.backup || null, data.payload || null);
+        detallePayloadEl.textContent = JSON.stringify(data.payload || {}, null, 2);
+      }
+
+      async function descargarJSON(id) {
+        var resp = await fetch(buildExportURL(id, 'json'), { credentials: 'same-origin' });
+        if (!resp.ok) {
+          var raw = await resp.text();
+          throw new Error(raw || ('HTTP ' + resp.status));
+        }
+        var blob = await resp.blob();
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'backup_empresa_' + empresaId + '_' + id + '.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+
+      async function cargarBackups() {
+        var q = document.getElementById('bkQ').value || '';
+        var includeInactive = document.getElementById('bkIncludeInactive').checked ? 1 : 0;
+        var data = await requestJSON('GET', 'listar', { q: q, include_inactive: includeInactive }, null);
+        estado.rows = Array.isArray(data.rows) ? data.rows : [];
+        renderRows(estado.rows);
+        setMsg(listaMsgEl, 'Backups cargados: ' + Number(data.total || 0), 'success');
+      }
+
+      async function crearBackup() {
+        var payload = {
+          empresa_id: empresaId,
+          nombre: document.getElementById('bkNombre').value || '',
+          descripcion: document.getElementById('bkDescripcion').value || '',
+          include_tables: parseTableList(document.getElementById('bkInclude').value || ''),
+          exclude_tables: parseTableList(document.getElementById('bkExclude').value || '')
+        };
+
+        var data = await requestJSON('POST', 'crear', null, payload);
+        var backup = data.backup || {};
+        setMsg(crearMsgEl, 'Backup creado: ' + (backup.codigo || backup.id || 'OK'), 'success');
+        await cargarBackups();
+      }
+
+      async function restaurarBackup(id) {
+        var ok = window.confirm('Se restauraran datos de la empresa desde este backup. Deseas continuar?');
+        if (!ok) return;
+        await requestJSON('POST', 'restaurar', null, { empresa_id: empresaId, backup_id: id });
+        setMsg(listaMsgEl, 'Backup restaurado correctamente.', 'success');
+        await cargarBackups();
+        await cargarDetalle(id);
+      }
+
+      async function toggleBackup(id, action) {
+        await requestJSON('PUT', action, { id: id }, null);
+        setMsg(listaMsgEl, 'Estado actualizado: ' + action, 'success');
+        await cargarBackups();
+      }
+
+      async function onTableClick(ev) {
+        var btn = ev.target.closest('button[data-action]');
+        if (!btn) return;
+        var action = btn.getAttribute('data-action') || '';
+        var id = parseInt(btn.getAttribute('data-id') || '0', 10);
+        if (!id) return;
+
+        try {
+          setMsg(listaMsgEl, '', '');
+          if (action === 'detalle') {
+            await cargarDetalle(id);
+            return;
+          }
+          if (action === 'json') {
+            await descargarJSON(id);
+            return;
+          }
+          if (action === 'csv') {
+            window.open(buildExportURL(id, 'csv'), '_blank');
+            return;
+          }
+          if (action === 'restaurar') {
+            await restaurarBackup(id);
+            return;
+          }
+          if (action === 'toggle') {
+            var toggleAction = btn.getAttribute('data-toggle') || 'desactivar';
+            await toggleBackup(id, toggleAction);
+            return;
+          }
+        } catch (err) {
+          setMsg(listaMsgEl, 'Error: ' + (err && err.message ? err.message : err), 'error');
+        }
+      }
+
+      function bindEvents() {
+        document.getElementById('btnCrearBackup').addEventListener('click', async function () {
+          try {
+            setMsg(crearMsgEl, '', '');
+            await crearBackup();
+          } catch (err) {
+            setMsg(crearMsgEl, 'Error al crear backup: ' + (err && err.message ? err.message : err), 'error');
+          }
+        });
+
+        document.getElementById('btnRefrescarBackups').addEventListener('click', async function () {
+          try {
+            await cargarBackups();
+          } catch (err) {
+            setMsg(listaMsgEl, 'Error al consultar backups: ' + (err && err.message ? err.message : err), 'error');
+          }
+        });
+
+        document.getElementById('bkQ').addEventListener('keyup', function (ev) {
+          if (ev.key === 'Enter') {
+            document.getElementById('btnRefrescarBackups').click();
+          }
+        });
+        document.getElementById('bkIncludeInactive').addEventListener('change', function () {
+          document.getElementById('btnRefrescarBackups').click();
+        });
+
+        tablaBody.addEventListener('click', function (ev) {
+          onTableClick(ev);
+        });
+      }
+
+      async function bootstrap() {
+        if (!empresaId || empresaId <= 0) {
+          contextoEl.textContent = 'empresa_id no definido en la URL.';
+          setMsg(listaMsgEl, 'No se puede operar sin empresa_id.', 'error');
+          return;
+        }
+        contextoEl.textContent = 'Empresa activa: ' + empresaId;
+
+        bindEvents();
+        try {
+          await cargarBackups();
+        } catch (err) {
+          setMsg(listaMsgEl, 'Error al cargar backups iniciales: ' + (err && err.message ? err.message : err), 'error');
+        }
+      }
+
+      bootstrap();
+    })();
+  </script>
+</body>
+</html>

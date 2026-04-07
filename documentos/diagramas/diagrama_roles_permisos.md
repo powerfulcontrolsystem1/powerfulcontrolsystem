@@ -1,6 +1,6 @@
 # Diagrama de roles y permisos
 
-Fecha: 2026-04-01
+Fecha: 2026-04-07
 
 ```mermaid
 flowchart TD
@@ -18,6 +18,8 @@ flowchart TD
     P8[Login usuario empresa]
     P9[Confirmacion correo]
     P10[Primer ingreso: crear contrasena]
+    P11[Backups empresariales: crear listar exportar]
+    P12[Restaurar backup empresarial: accion de aprobacion]
 
     R1 --> P1
     R1 --> P2
@@ -27,6 +29,8 @@ flowchart TD
     R2 --> P5
     R2 --> P6
     R2 --> P7
+    R2 --> P11
+    R2 --> P12
 
     R3 --> P8
     R3 --> P9
@@ -43,6 +47,8 @@ Matriz resumida:
 | Confirmar correo | No | No | Si |
 | Crear contrasena primer ingreso | No | No | Si |
 | Login en login_usuario | No | No | Si |
+| Backups empresariales (operacion) | No | Si | No |
+| Restaurar backup empresarial (aprobacion) | No | Si | No |
 
 ## Actualizacion 2026-04-04 (catalogo de permisos frontend en panel empresa)
 
@@ -64,3 +70,8 @@ Cobertura aplicada:
 - Archivo de catalogo: `web/js/administrar_empresa.js`.
 - Fuente de rol autenticado: endpoint `GET /me`.
 - Matriz de evaluacion frontend alineada a modulos y acciones de permisos (`ventas`, `inventario`, `finanzas`, `clientes`, `facturacion`, `seguridad`).
+
+## Actualizacion 2026-04-07 (modulo 36 backups)
+
+- Se integra `linkBackups` al catalogo de permisos del panel empresa para visibilidad por rol.
+- La accion `restaurar/restore` se clasifica como `permActionApprove` en `backend/handlers/empresa_permisos.go` para reforzar control operativo.

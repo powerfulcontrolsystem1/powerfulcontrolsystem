@@ -203,6 +203,9 @@ var empresaEventoContableContrato = map[string]map[string]struct{}{
 		"periodo_contable_reabierto":    {},
 		"tarifa_por_minutos_calculada":  {},
 	},
+	"creditos": {
+		"credito_abono_registrado": {},
+	},
 }
 
 // EnsureEmpresaEventosContablesSchema crea y migra tabla de eventos contables empresariales.
@@ -1482,6 +1485,33 @@ func buildEmpresaAsientoContableLineas(evento EmpresaEventoContable, cfg *Empres
 		case "orden_compra_emitida", "compra_recepcionada", "compra_contabilizada":
 			return nuevoEgreso()
 		}
+
+	case "creditos":
+		switch normalizeEventoContableNombre(evento.Evento) {
+		case "credito_abono_registrado":
+			capitalAplicado, interesAplicado, moraAplicada := splitCreditoAbonoAsientoComponentes(payload, monto)
+
+			cuentaCartera := sanitizeContableAccount(payloadString(payload, "cuenta_cartera", "cuenta_creditos_cartera"))
+			if cuentaCartera == "" {
+				cuentaCartera = "130505"
+			}
+			cuentaInteres := resolveEmpresaCuentaPorCategoria(cfg.CuentasIngresoCategoria, payloadString(payload, "categoria_interes", "categoria_intereses"), cfg.CuentaIngresos, "417595")
+			cuentaMora := resolveEmpresaCuentaPorCategoria(cfg.CuentasIngresoCategoria, payloadString(payload, "categoria_mora"), cfg.CuentaIngresos, "421010")
+
+			lineas := make([]EmpresaAsientoContableLinea, 0, 4)
+			lineas = append(lineas, EmpresaAsientoContableLinea{Cuenta: cuentaCaja, Descripcion: "Caja y bancos", Debito: monto, Credito: 0})
+			if capitalAplicado > 0 {
+				lineas = append(lineas, EmpresaAsientoContableLinea{Cuenta: cuentaCartera, Descripcion: "Cartera de creditos", Debito: 0, Credito: capitalAplicado})
+			}
+			if interesAplicado > 0 {
+				lineas = append(lineas, EmpresaAsientoContableLinea{Cuenta: cuentaInteres, Descripcion: "Ingresos por interes de credito", Debito: 0, Credito: interesAplicado})
+			}
+			if moraAplicada > 0 {
+				lineas = append(lineas, EmpresaAsientoContableLinea{Cuenta: cuentaMora, Descripcion: "Ingresos por interes de mora", Debito: 0, Credito: moraAplicada})
+			}
+
+			return lineas
+		}
 	}
 
 	return []EmpresaAsientoContableLinea{}
@@ -1560,6 +1590,65 @@ func payloadNumber(payload map[string]interface{}, keys ...string) float64 {
 		}
 	}
 	return 0
+}
+
+func splitCreditoAbonoAsientoComponentes(payload map[string]interface{}, monto float64) (float64, float64, float64) {
+	interes := roundReportesMoney(payloadNumber(payload, "interes_aplicado", "interes"))
+	mora := roundReportesMoney(payloadNumber(payload, "mora_aplicada", "mora"))
+	capital := roundReportesMoney(payloadNumber(payload, "capital_aplicado", "capital"))
+
+	if interes < 0 {
+		interes = 0
+	}
+	if mora < 0 {
+		mora = 0
+	}
+	if interes+mora > monto {
+		exceso := roundReportesMoney(interes + mora - monto)
+		if mora >= exceso {
+			mora = roundReportesMoney(mora - exceso)
+			exceso = 0
+		} else {
+			exceso = roundReportesMoney(exceso - mora)
+			mora = 0
+		}
+		if exceso > 0 {
+			interes = roundReportesMoney(maxFloat64(interes-exceso, 0))
+		}
+	}
+
+	if capital <= 0 {
+		capital = roundReportesMoney(maxFloat64(monto-interes-mora, 0))
+	}
+
+	total := roundReportesMoney(capital + interes + mora)
+	if total < monto {
+		capital = roundReportesMoney(capital + (monto - total))
+	}
+	if total > monto {
+		exceso := roundReportesMoney(total - monto)
+		if capital >= exceso {
+			capital = roundReportesMoney(capital - exceso)
+			exceso = 0
+		} else {
+			exceso = roundReportesMoney(exceso - capital)
+			capital = 0
+		}
+		if exceso > 0 {
+			if interes >= exceso {
+				interes = roundReportesMoney(interes - exceso)
+				exceso = 0
+			} else {
+				exceso = roundReportesMoney(exceso - interes)
+				interes = 0
+			}
+		}
+		if exceso > 0 {
+			mora = roundReportesMoney(maxFloat64(mora-exceso, 0))
+		}
+	}
+
+	return roundReportesMoney(capital), roundReportesMoney(interes), roundReportesMoney(mora)
 }
 
 func resolveMontoEventoContable(evento EmpresaEventoContable, payload map[string]interface{}) float64 {
