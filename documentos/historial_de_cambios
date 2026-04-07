@@ -7190,3 +7190,61 @@ Archivos modificados:
 - web/js/modulos_erp_extendido.js
 - web/js/ventas_simple.js
 
+
+2026-04-07: Actualización automática desde script: añadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- Pendiente Notas
+- backend/db/backups_empresariales.go
+- backend/db/backups_empresariales_test.go
+- backend/db/calculadora_operativa.go
+- backend/db/calculadora_operativa_test.go
+- backend/db/configuracion_operativa.go
+- backend/db/configuracion_operativa_test.go
+- backend/db/creditos.go
+- backend/db/creditos_test.go
+- backend/db/eventos_contables.go
+- backend/db/eventos_contables_test.go
+- backend/handlers/backups_empresariales.go
+- backend/handlers/backups_empresariales_test.go
+- backend/handlers/calculadora_operativa.go
+- backend/handlers/calculadora_operativa_test.go
+- backend/handlers/configuracion_operativa.go
+- backend/handlers/configuracion_operativa_test.go
+- backend/handlers/creditos.go
+- backend/handlers/creditos_test.go
+- backend/handlers/empresa_permisos.go
+- backend/handlers/graficos_estadisticas.go
+- backend/handlers/graficos_estadisticas_test.go
+- backend/handlers/logs/empresa_620.log
+- backend/logs/empresa_6.log
+- backend/logs/empresa_global.log
+- backend/main.go
+- backend/server.exe
+- documentos/descripcion_de_archivos
+- documentos/descripcion_del_proyecto
+- documentos/diagramas/README.md
+- documentos/diagramas/diagrama_arquitectura_sistema.md
+- documentos/diagramas/diagrama_casos_de_uso.md
+- documentos/diagramas/diagrama_entidad_relacion.md
+- documentos/diagramas/diagrama_flujo_procesos.md
+- documentos/diagramas/diagrama_roles_permisos.md
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/diagramas/versionado.md
+- documentos/estructura_bd.md
+- documentos/estructura_del_codigo
+- documentos/historial_de_cambios
+- estructura_bd.md
+- scripts/logs/actualizar_repositorio-20260407-074257.log
+- scripts/logs/actualizar_repositorio-20260407-173046.log
+- web/administrar_empresa.html
+- web/administrar_empresa/backups.html
+- web/administrar_empresa/calculadora.html
+- web/administrar_empresa/configuracion.html
+- web/administrar_empresa/creditos.html
+- web/administrar_empresa/graficos_estadisticas.html
+- web/ayuda/ayuda.html
+- web/estilos.css
+- web/js/administrar_empresa.js
+
