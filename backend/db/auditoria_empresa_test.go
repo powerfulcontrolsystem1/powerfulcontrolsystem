@@ -1,6 +1,9 @@
 package db
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestCreateAndListEmpresaAuditoriaEventos(t *testing.T) {
 	dbConn := openFinanzasTestDB(t)
@@ -290,5 +293,181 @@ func TestCountAndListEmpresaAuditoriaEventosWithPaginationAndSearch(t *testing.T
 	}
 	if bySearch[0].UsuarioCreador != "supervisor@empresa.com" {
 		t.Fatalf("expected supervisor row, got %q", bySearch[0].UsuarioCreador)
+	}
+}
+
+func TestCreateEmpresaAuditoriaEventoAplicaPoliticaRetencionPorModuloYSeveridad(t *testing.T) {
+	dbConn := openFinanzasTestDB(t)
+	if err := EnsureEmpresaAuditoriaSchema(dbConn); err != nil {
+		t.Fatalf("ensure auditoria schema: %v", err)
+	}
+
+	_, err := CreateEmpresaAuditoriaEvento(dbConn, EmpresaAuditoriaEvento{
+		EmpresaID:      155,
+		Modulo:         "seguridad",
+		Accion:         "eliminar",
+		Resultado:      "error",
+		CodigoHTTP:     403,
+		MetodoHTTP:     "DELETE",
+		Endpoint:       "/api/empresa/usuarios",
+		UsuarioCreador: "admin@empresa.com",
+	})
+	if err != nil {
+		t.Fatalf("create auditoria seguridad: %v", err)
+	}
+
+	_, err = CreateEmpresaAuditoriaEvento(dbConn, EmpresaAuditoriaEvento{
+		EmpresaID:      155,
+		Modulo:         "finanzas",
+		Accion:         "aprobar",
+		Resultado:      "error",
+		CodigoHTTP:     409,
+		MetodoHTTP:     "PUT",
+		Endpoint:       "/api/empresa/finanzas/cierres_caja",
+		UsuarioCreador: "finanzas@empresa.com",
+	})
+	if err != nil {
+		t.Fatalf("create auditoria finanzas: %v", err)
+	}
+
+	_, err = CreateEmpresaAuditoriaEvento(dbConn, EmpresaAuditoriaEvento{
+		EmpresaID:      155,
+		Modulo:         "ventas",
+		Accion:         "consultar",
+		Resultado:      "ok",
+		CodigoHTTP:     200,
+		MetodoHTTP:     "GET",
+		Endpoint:       "/api/empresa/carritos_compra",
+		UsuarioCreador: "cajero@empresa.com",
+	})
+	if err != nil {
+		t.Fatalf("create auditoria ventas: %v", err)
+	}
+
+	rowsSeguridad, err := ListEmpresaAuditoriaEventos(dbConn, 155, EmpresaAuditoriaEventoFilter{Modulo: "seguridad", Limit: 10})
+	if err != nil {
+		t.Fatalf("list auditoria seguridad: %v", err)
+	}
+	if len(rowsSeguridad) != 1 {
+		t.Fatalf("expected 1 row seguridad, got %d", len(rowsSeguridad))
+	}
+	if rowsSeguridad[0].RetencionDias != 3650 {
+		t.Fatalf("expected retencion seguridad=3650, got %d", rowsSeguridad[0].RetencionDias)
+	}
+	if !strings.Contains(rowsSeguridad[0].MetadataJSON, `"retencion_politica_modulo":"seguridad"`) {
+		t.Fatalf("expected metadata with retencion_politica_modulo seguridad, got %s", rowsSeguridad[0].MetadataJSON)
+	}
+
+	rowsFinanzas, err := ListEmpresaAuditoriaEventos(dbConn, 155, EmpresaAuditoriaEventoFilter{Modulo: "finanzas", Limit: 10})
+	if err != nil {
+		t.Fatalf("list auditoria finanzas: %v", err)
+	}
+	if len(rowsFinanzas) != 1 {
+		t.Fatalf("expected 1 row finanzas, got %d", len(rowsFinanzas))
+	}
+	if rowsFinanzas[0].RetencionDias != 1825 {
+		t.Fatalf("expected retencion finanzas=1825, got %d", rowsFinanzas[0].RetencionDias)
+	}
+
+	rowsVentas, err := ListEmpresaAuditoriaEventos(dbConn, 155, EmpresaAuditoriaEventoFilter{Modulo: "ventas", Limit: 10})
+	if err != nil {
+		t.Fatalf("list auditoria ventas: %v", err)
+	}
+	if len(rowsVentas) != 1 {
+		t.Fatalf("expected 1 row ventas, got %d", len(rowsVentas))
+	}
+	if rowsVentas[0].RetencionDias != defaultEmpresaAuditoriaRetencionDias {
+		t.Fatalf("expected retencion ventas=%d, got %d", defaultEmpresaAuditoriaRetencionDias, rowsVentas[0].RetencionDias)
+	}
+}
+
+func TestCreateEmpresaAuditoriaEventoMantieneRetencionExplicita(t *testing.T) {
+	dbConn := openFinanzasTestDB(t)
+	if err := EnsureEmpresaAuditoriaSchema(dbConn); err != nil {
+		t.Fatalf("ensure auditoria schema: %v", err)
+	}
+
+	_, err := CreateEmpresaAuditoriaEvento(dbConn, EmpresaAuditoriaEvento{
+		EmpresaID:      166,
+		Modulo:         "seguridad",
+		Accion:         "eliminar",
+		Resultado:      "error",
+		CodigoHTTP:     403,
+		MetodoHTTP:     "DELETE",
+		Endpoint:       "/api/empresa/usuarios",
+		RetencionDias:  45,
+		UsuarioCreador: "admin@empresa.com",
+	})
+	if err != nil {
+		t.Fatalf("create auditoria con retencion explicita: %v", err)
+	}
+
+	rows, err := ListEmpresaAuditoriaEventos(dbConn, 166, EmpresaAuditoriaEventoFilter{Modulo: "seguridad", Limit: 10})
+	if err != nil {
+		t.Fatalf("list auditoria seguridad: %v", err)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("expected 1 row seguridad, got %d", len(rows))
+	}
+	if rows[0].RetencionDias != 45 {
+		t.Fatalf("expected retencion explicita=45, got %d", rows[0].RetencionDias)
+	}
+}
+
+func TestListEmpresaAuditoriaEventosSearchFullTextConFiltros(t *testing.T) {
+	dbConn := openFinanzasTestDB(t)
+	if err := EnsureEmpresaAuditoriaSchema(dbConn); err != nil {
+		t.Fatalf("ensure auditoria schema: %v", err)
+	}
+	if !auditoriaFTSEnabled(dbConn) {
+		t.Skip("fts5 no disponible en sqlite del entorno")
+	}
+
+	_, err := CreateEmpresaAuditoriaEvento(dbConn, EmpresaAuditoriaEvento{
+		EmpresaID:      177,
+		Modulo:         "auditoria",
+		Accion:         "export_forense",
+		Recurso:        "auditoria/eventos",
+		MetodoHTTP:     "GET",
+		Endpoint:       "/api/empresa/auditoria/eventos",
+		Resultado:      "ok",
+		CodigoHTTP:     200,
+		MetadataJSON:   `{"motivo":"cadena de custodia forense"}`,
+		Observaciones:  "exportacion forense con hash de cadena",
+		UsuarioCreador: "auditor@empresa.com",
+	})
+	if err != nil {
+		t.Fatalf("create auditoria forense: %v", err)
+	}
+
+	_, err = CreateEmpresaAuditoriaEvento(dbConn, EmpresaAuditoriaEvento{
+		EmpresaID:      177,
+		Modulo:         "ventas",
+		Accion:         "cerrar",
+		Recurso:        "carritos_compra",
+		MetodoHTTP:     "PUT",
+		Endpoint:       "/api/empresa/carritos_compra",
+		Resultado:      "ok",
+		CodigoHTTP:     200,
+		Observaciones:  "cierre de carrito",
+		UsuarioCreador: "cajero@empresa.com",
+	})
+	if err != nil {
+		t.Fatalf("create auditoria ventas: %v", err)
+	}
+
+	rows, err := ListEmpresaAuditoriaEventos(dbConn, 177, EmpresaAuditoriaEventoFilter{
+		Modulo: "auditoria",
+		Search: "custodia forense",
+		Limit:  20,
+	})
+	if err != nil {
+		t.Fatalf("list auditoria con full text: %v", err)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("expected 1 row with full text search, got %d", len(rows))
+	}
+	if rows[0].Modulo != "auditoria" {
+		t.Fatalf("expected modulo auditoria, got %q", rows[0].Modulo)
 	}
 }

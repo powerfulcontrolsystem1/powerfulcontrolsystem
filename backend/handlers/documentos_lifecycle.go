@@ -71,6 +71,27 @@ func resolveComprasTransition(actionRaw, estadoActualRaw string) (documentoTrans
 			EstadoDefault:  "borrador",
 			EstadosPrevios: toAllowedSet("borrador", "pendiente_emision"),
 		},
+		"solicitar_aprobacion": {
+			AccionCanonica: "solicitar_aprobacion",
+			Evento:         "orden_compra_pendiente_aprobacion",
+			EstadoNuevo:    "pendiente_aprobacion",
+			EstadoDefault:  "borrador",
+			EstadosPrevios: toAllowedSet("borrador", "pendiente_emision", "rechazada"),
+		},
+		"rechazar_compra": {
+			AccionCanonica: "rechazar_compra",
+			Evento:         "orden_compra_rechazada",
+			EstadoNuevo:    "rechazada",
+			EstadoDefault:  "pendiente_aprobacion",
+			EstadosPrevios: toAllowedSet("pendiente_aprobacion"),
+		},
+		"recepcionar_parcial_compra": {
+			AccionCanonica: "recepcionar_parcial_compra",
+			Evento:         "compra_recepcion_parcial",
+			EstadoNuevo:    "recepcion_parcial",
+			EstadoDefault:  "emitida",
+			EstadosPrevios: toAllowedSet("emitida", "recepcion_parcial"),
+		},
 		"recepcionar": {
 			AccionCanonica: "recepcionar_compra",
 			Evento:         "compra_recepcionada",

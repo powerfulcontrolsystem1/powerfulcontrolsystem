@@ -223,3 +223,135 @@ func TestEmpresaComprasDocumentosTransicionInvalida(t *testing.T) {
 		t.Fatalf("expected transicion invalida message, got body=%s", rrInvalid.Body.String())
 	}
 }
+
+func TestEmpresaComprasDocumentosAprobacionMultinivel(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_compras_documentos_aprobacion_handler.db")
+	if err := dbpkg.EnsureEmpresaProductosSchema(dbEmp); err != nil {
+		t.Fatalf("ensure productos schema: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaDocumentosTransaccionalesSchema(dbEmp); err != nil {
+		t.Fatalf("ensure documentos transaccionales schema: %v", err)
+	}
+
+	proveedorID := seedProveedorComprasTest(t, dbEmp, 64, "6404")
+	h := EmpresaComprasDocumentosHandler(dbEmp)
+
+	reqCreate := httptest.NewRequest(http.MethodPost, "/api/empresa/compras/documentos", strings.NewReader(`{"empresa_id":64,"proveedor_id":`+strconv.FormatInt(proveedorID, 10)+`,"documento_codigo":"OC-6401","accion":"solicitar_aprobacion","requiere_aprobacion":true,"niveles_aprobacion_requeridos":2,"monto_total":1200000,"moneda":"COP"}`))
+	reqCreate = reqCreate.WithContext(context.WithValue(reqCreate.Context(), "adminEmail", "compras@test.com"))
+	reqCreate.Header.Set("Content-Type", "application/json")
+	rrCreate := httptest.NewRecorder()
+	h.ServeHTTP(rrCreate, reqCreate)
+	if rrCreate.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, rrCreate.Code, rrCreate.Body.String())
+	}
+	respCreate := decodeBodyMap(t, rrCreate)
+	resultadoCreate := respCreate["resultado"].(map[string]interface{})
+	if resultadoCreate["estado_documento"].(string) != "pendiente_aprobacion" {
+		t.Fatalf("expected estado_documento pendiente_aprobacion, got %v", resultadoCreate["estado_documento"])
+	}
+	if !resultadoCreate["requiere_aprobacion"].(bool) {
+		t.Fatalf("expected requiere_aprobacion=true")
+	}
+
+	reqAprobar1 := httptest.NewRequest(http.MethodPut, "/api/empresa/compras/documentos", strings.NewReader(`{"empresa_id":64,"documento_codigo":"OC-6401","accion":"aprobar_compra","observaciones":"aprobacion nivel 1"}`))
+	reqAprobar1 = reqAprobar1.WithContext(context.WithValue(reqAprobar1.Context(), "adminEmail", "aprobador.nivel1@empresa.com"))
+	reqAprobar1.Header.Set("Content-Type", "application/json")
+	rrAprobar1 := httptest.NewRecorder()
+	h.ServeHTTP(rrAprobar1, reqAprobar1)
+	if rrAprobar1.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, rrAprobar1.Code, rrAprobar1.Body.String())
+	}
+	respAprobar1 := decodeBodyMap(t, rrAprobar1)
+	resultadoAprobar1 := respAprobar1["resultado"].(map[string]interface{})
+	if resultadoAprobar1["estado_documento"].(string) != "pendiente_aprobacion" {
+		t.Fatalf("expected estado_documento pendiente_aprobacion after first approve, got %v", resultadoAprobar1["estado_documento"])
+	}
+	if int(resultadoAprobar1["nivel_aprobacion_actual"].(float64)) != 1 {
+		t.Fatalf("expected nivel_aprobacion_actual 1, got %v", resultadoAprobar1["nivel_aprobacion_actual"])
+	}
+
+	reqAprobar2 := httptest.NewRequest(http.MethodPut, "/api/empresa/compras/documentos", strings.NewReader(`{"empresa_id":64,"documento_codigo":"OC-6401","accion":"aprobar_compra","observaciones":"aprobacion nivel 2"}`))
+	reqAprobar2 = reqAprobar2.WithContext(context.WithValue(reqAprobar2.Context(), "adminEmail", "aprobador.nivel2@empresa.com"))
+	reqAprobar2.Header.Set("Content-Type", "application/json")
+	rrAprobar2 := httptest.NewRecorder()
+	h.ServeHTTP(rrAprobar2, reqAprobar2)
+	if rrAprobar2.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, rrAprobar2.Code, rrAprobar2.Body.String())
+	}
+	respAprobar2 := decodeBodyMap(t, rrAprobar2)
+	resultadoAprobar2 := respAprobar2["resultado"].(map[string]interface{})
+	if resultadoAprobar2["estado_documento"].(string) != "emitida" {
+		t.Fatalf("expected estado_documento emitida after second approve, got %v", resultadoAprobar2["estado_documento"])
+	}
+	if int(resultadoAprobar2["nivel_aprobacion_actual"].(float64)) != 2 {
+		t.Fatalf("expected nivel_aprobacion_actual 2, got %v", resultadoAprobar2["nivel_aprobacion_actual"])
+	}
+}
+
+func TestEmpresaComprasDocumentosRecepcionParcialYValidacionDocumental(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_compras_documentos_recepcion_validacion_handler.db")
+	if err := dbpkg.EnsureEmpresaProductosSchema(dbEmp); err != nil {
+		t.Fatalf("ensure productos schema: %v", err)
+	}
+	if err := dbpkg.EnsureEmpresaDocumentosTransaccionalesSchema(dbEmp); err != nil {
+		t.Fatalf("ensure documentos transaccionales schema: %v", err)
+	}
+
+	proveedorID := seedProveedorComprasTest(t, dbEmp, 65, "6505")
+	h := EmpresaComprasDocumentosHandler(dbEmp)
+
+	reqCreate := httptest.NewRequest(http.MethodPost, "/api/empresa/compras/documentos", strings.NewReader(`{"empresa_id":65,"proveedor_id":`+strconv.FormatInt(proveedorID, 10)+`,"documento_codigo":"OC-6501","accion":"emitir_orden","monto_total":980000,"moneda":"COP"}`))
+	reqCreate = reqCreate.WithContext(context.WithValue(reqCreate.Context(), "adminEmail", "compras@test.com"))
+	reqCreate.Header.Set("Content-Type", "application/json")
+	rrCreate := httptest.NewRecorder()
+	h.ServeHTTP(rrCreate, reqCreate)
+	if rrCreate.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, rrCreate.Code, rrCreate.Body.String())
+	}
+
+	reqRecepcionParcial := httptest.NewRequest(http.MethodPut, "/api/empresa/compras/documentos", strings.NewReader(`{"empresa_id":65,"documento_codigo":"OC-6501","accion":"recepcionar_parcial_compra","recepcion_items":[{"producto_id":1001,"cantidad_ordenada":10,"cantidad_recibida":7,"costo_unitario":20000,"diferencia_motivo":"faltante proveedor"},{"producto_id":1002,"cantidad_ordenada":5,"cantidad_recibida":5,"costo_unitario":15000}]}`))
+	reqRecepcionParcial = reqRecepcionParcial.WithContext(context.WithValue(reqRecepcionParcial.Context(), "adminEmail", "compras@test.com"))
+	reqRecepcionParcial.Header.Set("Content-Type", "application/json")
+	rrRecepcionParcial := httptest.NewRecorder()
+	h.ServeHTTP(rrRecepcionParcial, reqRecepcionParcial)
+	if rrRecepcionParcial.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, rrRecepcionParcial.Code, rrRecepcionParcial.Body.String())
+	}
+	respRecepcionParcial := decodeBodyMap(t, rrRecepcionParcial)
+	resultadoRecepcionParcial := respRecepcionParcial["resultado"].(map[string]interface{})
+	if resultadoRecepcionParcial["estado_documento"].(string) != "recepcion_parcial" {
+		t.Fatalf("expected estado_documento recepcion_parcial, got %v", resultadoRecepcionParcial["estado_documento"])
+	}
+	recepcionResumen := respRecepcionParcial["recepcion_resumen"].(map[string]interface{})
+	if int(recepcionResumen["items_pendientes"].(float64)) != 1 {
+		t.Fatalf("expected items_pendientes=1, got %v", recepcionResumen["items_pendientes"])
+	}
+
+	reqValidar := httptest.NewRequest(http.MethodPut, "/api/empresa/compras/documentos", strings.NewReader(`{"empresa_id":65,"documento_codigo":"OC-6501","accion":"validar_documentos","proveedor_documento_ref":"9006505","factura_documento_ref":"FAC-6501","entrada_documento_ref":"ENT-6501"}`))
+	reqValidar = reqValidar.WithContext(context.WithValue(reqValidar.Context(), "adminEmail", "compras@test.com"))
+	reqValidar.Header.Set("Content-Type", "application/json")
+	rrValidar := httptest.NewRecorder()
+	h.ServeHTTP(rrValidar, reqValidar)
+	if rrValidar.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, rrValidar.Code, rrValidar.Body.String())
+	}
+	respValidar := decodeBodyMap(t, rrValidar)
+	resultadoValidar := respValidar["resultado"].(map[string]interface{})
+	if resultadoValidar["validacion_documental_estado"].(string) != "validada" {
+		t.Fatalf("expected validacion_documental_estado=validada, got %v", resultadoValidar["validacion_documental_estado"])
+	}
+
+	reqRecepcionarCompleta := httptest.NewRequest(http.MethodPut, "/api/empresa/compras/documentos", strings.NewReader(`{"empresa_id":65,"documento_codigo":"OC-6501","accion":"recepcionar_compra","recepcion_items":[{"producto_id":1001,"cantidad_ordenada":10,"cantidad_recibida":10,"costo_unitario":20000},{"producto_id":1002,"cantidad_ordenada":5,"cantidad_recibida":5,"costo_unitario":15000}]}`))
+	reqRecepcionarCompleta = reqRecepcionarCompleta.WithContext(context.WithValue(reqRecepcionarCompleta.Context(), "adminEmail", "compras@test.com"))
+	reqRecepcionarCompleta.Header.Set("Content-Type", "application/json")
+	rrRecepcionarCompleta := httptest.NewRecorder()
+	h.ServeHTTP(rrRecepcionarCompleta, reqRecepcionarCompleta)
+	if rrRecepcionarCompleta.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, rrRecepcionarCompleta.Code, rrRecepcionarCompleta.Body.String())
+	}
+	respRecepcionarCompleta := decodeBodyMap(t, rrRecepcionarCompleta)
+	resultadoRecepcionarCompleta := respRecepcionarCompleta["resultado"].(map[string]interface{})
+	if resultadoRecepcionarCompleta["estado_documento"].(string) != "recepcionada" {
+		t.Fatalf("expected estado_documento recepcionada, got %v", resultadoRecepcionarCompleta["estado_documento"])
+	}
+}

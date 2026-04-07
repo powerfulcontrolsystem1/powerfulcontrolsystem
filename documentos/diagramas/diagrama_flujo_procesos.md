@@ -1,6 +1,6 @@
 # Diagrama de flujo de procesos
 
-Fecha: 2026-04-05
+Fecha: 2026-04-07
 
 ```mermaid
 flowchart TD
@@ -53,17 +53,29 @@ flowchart TD
     AUTHZ --> T
     AUTHZ --> G0
     AUTHZ --> Z
-    AUTHZ --> AU0[Ejecutar accion critica autorizada]
-    AUTHZ --> AUF0[Intento critico denegado por permisos o alcance]
+    AUTHZ --> AUA0{Cambio critico de permisos en modulo seguridad?}
+    AUA0 -->|No| AU0[Ejecutar accion critica autorizada]
+    AUA0 -->|Si| AUA1{Existe evidencia de aprobacion trazable?}
+    AUA1 -->|No| AUF0[Intento critico denegado por permisos o alcance]
+    AUA1 -->|Si| AU0
     AU0 --> AU1[Registrar auditoria no bloqueante]
+    AU1 --> AU10[Adjuntar metadata de aprobacion y codigo]
+    AU10 --> AU2
     AUF0 --> AUF1[Registrar auditoria de denegacion no bloqueante]
     AUF1 --> AU2
-    AU1 --> AU2[Persistir empresa_auditoria_eventos]
+    AU2[Persistir empresa_auditoria_eventos]
     AU2 --> AU3[Consultar auditoria en panel empresa]
     AU3 --> AU31[Aplicar filtros avanzados por codigo_http recurso_id metodo_http recurso endpoint y search]
-    AU31 --> AU311[Paginar resultados con limit offset y total]
+    AU31 --> AU313[Resolver busqueda full-text FTS con fallback LIKE]
+    AU313 --> AU311[Paginar resultados con limit offset y total]
     AU311 --> AU312[Inspeccionar detalle JSON por evento]
     AU312 --> AU32[Exportar trazabilidad filtrada en CSV y JSON]
+    AU312 --> AU321[Exportar forense action=export_forense en JSON o CSV]
+    AU321 --> AU322[Calcular hash_registro y hash_cadena por orden cronologico]
+    AU322 --> AU323[Emitir hash_global para cadena de custodia basica]
+    AU3 --> AU33[Resolver severidad del evento por modulo resultado y codigo_http]
+    AU33 --> AU34[Aplicar politica de retencion por modulo y severidad]
+    AU34 --> AU4
     AU3 --> AU4[Aplicar retencion manual por dias]
     AU2 --> AU5[Worker programado de retencion]
     AU5 --> AU6[Purgar eventos expirados por fecha_expiracion]
@@ -73,11 +85,31 @@ flowchart TD
     L --> CM0[Entrar al modulo compras dedicado]
     CM0 --> CM1[Registrar documento en /api/empresa/compras/documentos]
     CM1 --> CP0
-    N --> CP0[Ejecutar accion compras emitir_orden/recepcionar/contabilizar]
-    CP0 --> CP1{Transicion valida segun estado_actual?}
+    N --> CP0[Ejecutar accion compras emitir_orden/solicitar_aprobacion/aprobar/rechazar/recepcionar_parcial/recepcionar/contabilizar/validar_documentos]
+    CP0 --> CP01{Documento requiere aprobacion multinivel?}
+    CP01 -->|No| CP1
+    CP01 -->|Si| CP02[Solicitar aprobacion y mover a pendiente_aprobacion]
+    CP02 --> CP03[Aprobar por nivel o rechazar documento]
+    CP03 --> CP1
+    CP1{Transicion valida segun estado_actual?}
     CP1 -->|No| CP2[Responder 409 y no registrar evento]
     CP1 -->|Si| CP3[Persistir documento canonico de compra]
-    CP3 --> CP4[Registrar evento con entidad_id canonico]
+    CP3 --> CP31{Accion recepcionar_parcial_compra?}
+    CP31 -->|Si| CP32[Persistir recepcion_detalle_json y recepcion_resumen_json]
+    CP31 -->|No| CP33
+    CP32 --> CP33{Accion validar_documentos?}
+    CP33 -->|Si| CP34[Validar proveedor-factura-entrada y actualizar validacion_documental_estado]
+    CP33 -->|No| CP35[Registrar evento con entidad_id canonico]
+    CP34 --> CP35
+    L --> VC0[Entrar al modulo ventas extendidas]
+    VC0 --> VC1[Crear o actualizar cotizacion comercial]
+    VC1 --> VC2[Convertir cotizacion a pedido action=convertir_pedido]
+    VC2 --> VC3[Persistir pedido con referencia cotizacion_id]
+    VC3 --> VC4[Convertir a documento final action=convertir_documento_final]
+    VC4 --> VC5[Persistir documento final en empresa_facturacion_documentos]
+    VC5 --> VC6[Consultar embudo comercial action=embudo]
+    VC6 --> VC7[Monitorear SLA y alertas de vencimiento por etapa]
+    VC7 --> VC8[Exportar embudo en JSON CSV TXT XLS y PDF]
     L --> CB0[Entrar a modulo combos_productos]
     CB0 --> CB1[Definir combo con precio unico y receta de ingredientes]
     CB1 --> CB2[Guardar combo en /api/empresa/combos_productos]
@@ -171,8 +203,62 @@ flowchart TD
     L --> F0[Entrar al modulo finanzas]
     F0 --> F1[Consultar configuracion financiera por empresa]
     F1 --> F2[Definir categorias, prefijos, formato y plan de cuentas contable]
+    F2 --> F201[Consultar plantillas contables action=plantillas]
+    F201 --> F202[Aplicar plantilla por tipo de empresa action=aplicar_plantilla]
+    F202 --> F203[Persistir cuentas y metadatos de plantilla]
     F2 --> F21[Configurar destino externo: generico, SIIGO, World Office o Alegra]
     F21 --> F22[Gestionar periodo contable: abierto/cerrado]
+    F22 --> F228[Solicitar cerrar/reabrir periodo con evidencia de autorizacion]
+    F228 --> F229[Validar autorizado_por motivo_autorizacion y evidencia_autorizacion]
+    F229 --> F221
+    F229 --> F222
+    F22 --> F221[Validar estado de cierre action=validar_cierre_periodo]
+    F22 --> F222[Conciliar CxC/CxP contra pagos reales action=conciliar_pagos]
+    F222 --> F223[Cruzar cartera con empresa_finanzas_movimientos]
+    F223 --> F224[Actualizar saldo estado_cartera y trazabilidad de conciliacion]
+    F221 --> F225{Periodo cerrado?}
+    F225 -->|Si| F226[Bloquear crear editar estado o eliminar en CxC/CxP]
+    F225 -->|No| F227[Permitir operacion contable]
+    F2 --> I210[Gestionar lotes y series action=validar_disponibilidad]
+    I210 --> I211{Lote vencido en venta o reserva?}
+    I211 -->|Si| I212[Marcar lote vencido y bloquear venta/reserva automaticamente]
+    I211 -->|No| I213[Ejecutar operacion reserva venta o liberacion]
+    I213 --> I214[Registrar movimiento en inventario_lotes_series_movimientos]
+    N --> DP0[Registrar devolucion a proveedor]
+    DP0 --> DP1[Contabilizar devolucion action=contabilizar]
+    DP1 --> DP2[Crear movimiento financiero ingreso]
+    DP2 --> DP3[Registrar evento contable devolucion_proveedor_contabilizada]
+    DP3 --> DP4[Procesar asientos y marcar devolucion como contabilizada]
+    L --> RHH0[Entrar a modulo RRHH vacaciones y licencias]
+    RHH0 --> RHH1[Registrar solicitud de vacacion o licencia]
+    RHH1 --> RHH2[Calcular saldo/acumulado action=resumen_saldo]
+    RHH2 --> RHH3[Iniciar aprobacion action=solicitar_aprobacion]
+    RHH3 --> RHH4[Ejecutar aprobacion por niveles action=aprobar]
+    RHH4 --> RHH5{Aprobacion final alcanzada?}
+    RHH5 -->|No| RHH4
+    RHH5 -->|Si| RHH6[Persistir snapshot de saldo y aprobadores]
+    RHH6 --> RHH7[Vincular a nomina action=vincular_nomina]
+    RHH7 --> RHH8[Marcar novedad contabilizada con periodo y liquidacion]
+    L --> P230[Entrar al modulo produccion]
+    P230 --> P231[Consultar plan de capacidad action=plan_capacidad]
+    P231 --> P232[Consolidar cantidad programada/producida por orden y por dia]
+    P232 --> P233[Comparar contra meta diaria y calcular desviacion]
+    P233 --> P234[Generar alertas de atraso o sobrecapacidad]
+    L --> LG230[Entrar al modulo logistica]
+    LG230 --> LG231[Consultar seguimiento action=seguimiento_hitos]
+    LG231 --> LG232[Evaluar hitos fecha_programada fecha_salida fecha_entrega]
+    LG232 --> LG233[Calcular cumplimiento SLA y alertas de incumplimiento]
+    LG233 --> LG234[Priorizar envios criticos por alerta]
+    L --> DOC240[Entrar al modulo documental]
+    DOC240 --> DOC241[Consultar repositorio action=repositorio]
+    DOC241 --> DOC242[Validar acceso por rol y modulo action=acceso]
+    DOC242 --> DOC243[Versionar documento action=versionar]
+    DOC243 --> DOC244[Consultar historial versionado action=versiones]
+    L --> INT240[Entrar al modulo integraciones]
+    INT240 --> INT241[Rotar referencia segura action=rotar_credencial]
+    INT241 --> INT242[Ejecutar health_check o sync_manual]
+    INT242 --> INT243[Monitorear conectores action=monitoreo]
+    INT243 --> INT244[Generar alertas por endpoint conectividad latencia y sincronizacion]
     F22 --> C0[Gestionar cierre de caja por sucursal y caja]
     C0 --> C1[Abrir caja con base inicial de efectivo]
     C1 --> C2[Registrar ingresos, egresos y retiros del turno]
@@ -197,6 +283,13 @@ flowchart TD
     FA4 --> FA5[Comparar eventos procesados vs asientos por periodo]
     FA5 --> FA6[Clasificar estado conciliado o con alertas]
     FA6 --> F41
+    F4 --> FB0[Importar extractos bancarios action=importar_extractos_bancarios]
+    FB0 --> FB1[Persistir extractos en empresa_finanzas_bancos_movimientos por hash idempotente]
+    FB1 --> FB2[Ejecutar conciliacion automatica action=conciliar_bancaria_auto]
+    FB2 --> FB3[Emparejar extractos vs movimientos internos por referencia monto y fecha]
+    FB3 --> FB4[Clasificar extractos en pendiente conciliado o con_desviacion]
+    FB4 --> FB5[Consultar tablero action=conciliacion_bancaria]
+    FB5 --> FB6[Exportar desviaciones en JSON CSV TXT XLS y PDF]
     F4 --> F41[Navegar pestañas: Todos, Ingresos o Egresos]
     F41 --> F42[Exportar libro filtrado]
     F42 --> F421[Excel CSV y PDF]
@@ -277,7 +370,16 @@ flowchart TD
     Z5 --> Z6{Transicion valida segun estado_actual?}
     Z6 -->|No| Z7[Responder 409 y no registrar evento]
     Z6 -->|Si| Z8[Persistir documento canonico de facturacion]
-    Z8 --> Z8A{Accion emitir factura_electronica?}
+    Z8 --> Z81[Despachar integracion fiscal por pais/proveedor]
+    Z81 --> Z82{Envio fiscal exitoso?}
+    Z82 -->|Si| Z83[Actualizar cola FE a enviado y registrar referencia externa]
+    Z82 -->|No| Z84[Registrar fallo e incrementar intentos en cola FE]
+    Z84 --> Z85{Supera max_intentos?}
+    Z85 -->|Si| Z86[Activar contingencia FE estado_envio=contingencia]
+    Z85 -->|No| Z87[Programar proximo_intento para reintento automatico]
+    Z83 --> Z8A{Accion emitir factura_electronica?}
+    Z86 --> Z8A
+    Z87 --> Z8A
     Z8A -->|No| Z9
     Z8A -->|Si| Z8B[Resolver destinatario cliente por cliente_id o cliente_email]
     Z8B --> Z8C{SMTP configurado y envio exitoso?}
@@ -292,6 +394,24 @@ flowchart TD
     ZQ2 --> ZQ3[Visualizar listado y detalle documental]
     ZQ3 --> ZQ4[Reenviar correo de factura action=reenviar_correo]
     ZQ3 --> ZQ5[Imprimir factura desde vista de detalle]
+
+    L --> ZR0[Operar cola FE por empresa]
+    ZR0 --> ZR1[Consultar reintentos action=reintentos]
+    ZR1 --> ZR2[Procesar cola vencida action=procesar_reintentos]
+    ZR2 --> ZR3[Reconciliar estados action=reconciliacion/reconciliar_estados]
+
+    L --> ZD0[Entrar a modulo DIAN Colombia]
+    ZD0 --> ZD1[Configurar NIT software y credenciales ref seguras]
+    ZD1 --> ZD2[Firmar XML action=firmar_xml_real]
+    ZD2 --> ZD3[Enviar documento action=enviar_documento_real]
+    ZD3 --> ZD4{DIAN responde acuse aceptado?}
+    ZD4 -->|Si| ZD5[Actualizar estado_dian aceptado]
+    ZD4 -->|No| ZD6[Marcar contingencia y registrar observacion]
+    ZD5 --> ZD7[Consultar acuse action=consultar_acuse_real]
+    ZD6 --> ZD8[Ejecutar reconexion action=reconexion_dian]
+    ZD8 --> ZD9{Conectividad restablecida?}
+    ZD9 -->|Si| ZD10[Estado reconectado y opcion de reenvio]
+    ZD9 -->|No| ZD11[Mantener contingencia y monitoreo]
 ```
 
 Resultado esperado:
@@ -315,6 +435,17 @@ Resultado esperado:
 - En `reservas_hotel`, el flujo operativo permite editar reservas pendientes, confirmar pago, cancelar y activar/desactivar registros segun politica operativa.
 - En `reservas_hotel`, el backend evita solapamientos de rango para la misma estacion y expira reservas `pendiente_pago` fuera de vigencia.
 - En `facturacion_electronica`, la accion `emitir` intenta envio automatico al correo del cliente y reporta el resultado en `factura_email` sin bloquear la emision legal.
+- En `facturacion_electronica`, cada accion transaccional (`emitir`, `anular`, `nota_credito`) retorna `integracion_fiscal` con estado de envio, intentos, contingencia y referencia externa.
+- En `facturacion_electronica`, existe cola de reintentos por documento (`action=reintentos`, `action=procesar_reintentos`) para reenvio fiscal controlado por `proximo_intento`.
+- En `facturacion_electronica`, la reconciliacion (`action=reconciliacion`/`action=reconciliar_estados`) cruza documentos canonicos vs cola FE y permite aplicar sincronizacion.
+- En `facturacion_electronica/dian`, la accion `firmar_xml_real` aplica firma digital RSA-SHA256 sobre XML de factura usando referencia segura de llave (`certificado_clave_ref`).
+- En `facturacion_electronica/dian`, las acciones `enviar_documento_real` y `consultar_acuse_real` permiten despacho y trazabilidad de acuse DIAN por documento/cufe.
+- En `facturacion_electronica/dian`, `reconexion_dian` permite salir de contingencia al recuperar conectividad y opcionalmente ejecutar reenvio controlado.
+- En `inventario/lotes_series`, las operaciones `reservar`, `vender` y `liberar_reserva` registran trazabilidad por lote en `inventario_lotes_series_movimientos`.
+- En `inventario/lotes_series`, cuando un lote esta vencido el backend bloquea automaticamente venta/reserva y marca `estado_lote=vencido` con `bloqueado_venta=1`.
+- En `compras/devoluciones_proveedor`, la accion `contabilizar` genera movimiento financiero, evento contable y actualiza la devolucion a estado `contabilizada`.
+- En `produccion/ordenes`, la accion `action=plan_capacidad` consolida carga planificada vs producida, calcula desviacion contra meta diaria y expone alertas por atraso/sobrecapacidad.
+- En `logistica/envios`, la accion `action=seguimiento_hitos` evalua hitos de programacion/salida/entrega, mide cumplimiento SLA y publica alertas de incumplimiento.
 - En `facturas_electronicas`, la empresa puede buscar por cliente/documento/rango de fechas, ver detalle documental, reenviar factura por correo e imprimir comprobante.
 - En `combos_productos`, el usuario puede crear combos con precio unico y receta de ingredientes por empresa.
 - En `carrito_de_compras`, al agregar un item `tipo_item=combo`, el sistema descuenta inventario por ingrediente y revierte correctamente en inactivacion/eliminacion del item.
@@ -331,6 +462,7 @@ Resultado esperado:
 - En `reportes`, el tablero financiero-operativo puede exportarse en formato unificado `CSV/JSON` por rango, incluyendo `estado_resultados` y `balance_general`.
 - En `reportes`, existe un centro profesional de datasets por empresa con selector de nivel (`empresarial`, `operativo`, `contable`) y vista tabular dinamica.
 - En `reportes`, los datasets se exportan en `JSON`, `CSV`, `TXT` y `XLS`, y la suite consolidada se exporta en `JSON`.
+- En `reportes`, el dataset `operativo_cadena_cumplimiento` incorpora metas y desviaciones por dominio (`meta_cumplimiento_pct`, `desviacion_meta_pct`, `estado_meta`) y resumen global de brecha (`meta_global_pct`, `desviacion_meta_global_pct`).
 - En `ayuda`, existe un menu interno con accesos rapidos y una seccion de APIs principales para operacion diaria.
 - En `configuracion`, las opciones del lector de barras se gestionan por empresa y aplican al flujo operativo del carrito.
 - En `reportes`, se agrega tabla de inventario actual por bodega y KPI de productos bajo minimo.
@@ -343,8 +475,12 @@ Resultado esperado:
 - En backend, un worker automatico procesa eventos contables pendientes por lotes con politica configurable de intervalo, tamaño de lote y limite de reintentos.
 - En `finanzas/asientos_contables`, la API expone `GET action=conciliacion_periodo` para comparar por periodo los eventos contables vs asientos canonicos y detectar pendientes, errores y descuadres.
 - En `administrar_empresa/finanzas`, existe vista de conciliacion por periodo con filtros de rango/periodo y KPIs de estado de conciliacion.
-- En `auditoria/eventos`, la API permite consultar trazabilidad por filtros (`GET`) y aplicar retencion manual (`PUT/POST action=retener|purgar`) por `empresa_id`.
-- En `administrar_empresa/auditoria`, la UI permite consultar eventos con filtros de modulo/accion/usuario/request/rango y filtros avanzados por `codigo_http`/`recurso_id`, exportar resultados a CSV/JSON y ejecutar purga manual por dias de retencion.
+- En `finanzas/movimientos`, la API permite importar extractos bancarios (`POST action=importar_extractos_bancarios`) con idempotencia por `hash_movimiento`.
+- En `finanzas/movimientos`, la API permite conciliacion bancaria automatica (`PUT action=conciliar_bancaria_auto`) con tolerancia configurable por dias y monto.
+- En `finanzas/movimientos`, la API expone `GET action=conciliacion_bancaria` y `GET action=conciliacion_bancaria_export` para tablero de desviaciones por periodo y exportacion `JSON/CSV/TXT/XLS/PDF`.
+- En `auditoria/eventos`, la API permite consultar trazabilidad por filtros (`GET`) con `search` full-text (FTS con fallback), aplicar retencion manual (`PUT/POST action=retener|purgar`) y ejecutar exportacion forense (`action=export_forense`) en `json/csv`.
+- En `administrar_empresa/auditoria`, la UI permite consultar eventos con filtros de modulo/accion/usuario/request/rango y filtros avanzados por `codigo_http`/`recurso_id`/`search`, exportar resultados operativos a CSV/JSON y ejecutar purga manual por dias de retencion.
+- En `auditoria/eventos?action=export_forense`, la salida incluye cadena de custodia basica con `hash_registro`, `hash_cadena` y `hash_global` para validacion de integridad.
 - En backend, un worker periodico elimina eventos expirados de auditoria usando `fecha_expiracion` (con fallback por `retencion_dias` para registros legacy).
 - En `finanzas`, el JSON contable usa cuentas parametrizadas por empresa/categoria e incluye perfil de referencia para ERP destino.
 - En `finanzas`, existe plantilla dedicada SIIGO en CSV y exportaciones de `balance de prueba` y `estado de resultados` para trabajo contable/directivo.
@@ -370,6 +506,9 @@ Resultado esperado:
 - En `proveedores`, las operaciones de alta, actualizacion, activacion/desactivacion y eliminacion registran eventos del modulo `compras`.
 - En `proveedores`, acciones transaccionales (`emitir_orden`, `recepcionar_compra`, `contabilizar_compra`) registran eventos de orden y ciclo contable de compra.
 - En `administrar_empresa/compras`, el modulo dedicado permite crear, consultar y ejecutar ciclo documental de compras sobre `/api/empresa/compras/documentos`.
+- En `administrar_empresa/compras`, el ciclo documental de compras permite solicitud de aprobacion, aprobacion multinivel y rechazo por accion explicita.
+- En `administrar_empresa/compras`, la recepcion parcial por item persiste detalle/resumen (`recepcion_detalle_json`, `recepcion_resumen_json`) y consolida recepcion total cuando no quedan pendientes.
+- En `administrar_empresa/compras`, la validacion documental cruza proveedor-factura-entrada y actualiza estado documental de validacion antes de contabilizacion.
 - En acciones transaccionales de `facturacion_electronica` y `proveedores`, el backend valida `estado_actual` y responde `409` cuando la transicion no corresponde al ciclo documental.
 - En transacciones documentales validas, la API devuelve `estado_anterior` y `estado_nuevo`, y los persiste en el payload del evento contable para auditoria.
 - En transacciones de facturacion y compras, `empresa_eventos_contables.entidad_id` corresponde al ID canonico persistido en `empresa_facturacion_documentos` o `empresa_compras_documentos`.

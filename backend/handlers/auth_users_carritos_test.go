@@ -584,6 +584,97 @@ func TestEmpresaCarritosCompraAndItemsFlow(t *testing.T) {
 	}
 }
 
+func TestEmpresaCarritosCompraMetricasEstacionIncluyeCorrecciones(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_carritos_metricas_estacion.db")
+	ensureClientesSchema(t, dbEmp)
+	ensureCarritosVentasSchema(t, dbEmp)
+
+	carritosHandler := EmpresaCarritosCompraHandler(dbEmp)
+	createReq := httptest.NewRequest(http.MethodPost, "/api/empresa/carritos_compra", strings.NewReader(`{"empresa_id":1,"codigo":"EST-1-7","nombre":"Estacion 7","canal_venta":"mostrador","moneda":"COP","referencia_externa":"ESTACION_7"}`))
+	createReq.Header.Set("Content-Type", "application/json")
+	createRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(createRR, createReq)
+	if createRR.Code != http.StatusCreated {
+		t.Fatalf("expected create status %d, got %d body=%s", http.StatusCreated, createRR.Code, createRR.Body.String())
+	}
+
+	var createResp map[string]interface{}
+	if err := json.Unmarshal(createRR.Body.Bytes(), &createResp); err != nil {
+		t.Fatalf("decode create response: %v", err)
+	}
+	carritoID := int64(createResp["id"].(float64))
+
+	if _, err := dbpkg.CreateCarritoCompraItem(dbEmp, dbpkg.CarritoCompraItem{
+		EmpresaID:           1,
+		CarritoID:           carritoID,
+		TipoItem:            "otro",
+		CodigoItem:          "METRICA-ITEM-" + strconv.FormatInt(carritoID, 10),
+		Descripcion:         "Consumo base estacion",
+		UnidadMedida:        "unidad",
+		Cantidad:            1,
+		PrecioUnitario:      10000,
+		DescuentoPorcentaje: 0,
+		ImpuestoPorcentaje:  0,
+		ImpuestoCodigo:      "IVA",
+		UsuarioCreador:      "test@empresa.com",
+		Estado:              "activo",
+	}); err != nil {
+		t.Fatalf("seed carrito item: %v", err)
+	}
+
+	payReq := httptest.NewRequest(http.MethodPut, "/api/empresa/carritos_compra?empresa_id=1&id="+strconv.FormatInt(carritoID, 10)+"&action=pagar_estacion", strings.NewReader(`{"metodo_pago":"efectivo","total_pagado":10000}`))
+	payReq.Header.Set("Content-Type", "application/json")
+	payRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(payRR, payReq)
+	if payRR.Code != http.StatusOK {
+		t.Fatalf("expected pay status %d, got %d body=%s", http.StatusOK, payRR.Code, payRR.Body.String())
+	}
+
+	correctionReq := httptest.NewRequest(http.MethodPut, "/api/empresa/carritos_compra?empresa_id=1&id="+strconv.FormatInt(carritoID, 10)+"&action=anular_cierre_parcial", strings.NewReader(`{"monto_anulado":2000,"motivo":"correccion de caja"}`))
+	correctionReq.Header.Set("Content-Type", "application/json")
+	correctionRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(correctionRR, correctionReq)
+	if correctionRR.Code != http.StatusOK {
+		t.Fatalf("expected correction status %d, got %d body=%s", http.StatusOK, correctionRR.Code, correctionRR.Body.String())
+	}
+
+	metricsReq := httptest.NewRequest(http.MethodGet, "/api/empresa/carritos_compra?empresa_id=1&action=metricas_estacion&estacion_id=7&days=30&limit=5", nil)
+	metricsRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(metricsRR, metricsReq)
+	if metricsRR.Code != http.StatusOK {
+		t.Fatalf("expected metrics status %d, got %d body=%s", http.StatusOK, metricsRR.Code, metricsRR.Body.String())
+	}
+
+	var metricsResp struct {
+		Rows    []dbpkg.CarritoStationMetricSummary `json:"rows"`
+		Resumen map[string]interface{}              `json:"resumen"`
+	}
+	if err := json.Unmarshal(metricsRR.Body.Bytes(), &metricsResp); err != nil {
+		t.Fatalf("decode metrics response: %v", err)
+	}
+	if len(metricsResp.Rows) == 0 {
+		t.Fatalf("expected at least one station summary row, got %d", len(metricsResp.Rows))
+	}
+	row := metricsResp.Rows[0]
+	if row.EstacionID != 7 {
+		t.Fatalf("expected estacion_id=7, got %d", row.EstacionID)
+	}
+	if row.VentasPagadas < 1 {
+		t.Fatalf("expected ventas_pagadas >= 1, got %d", row.VentasPagadas)
+	}
+	if row.Correcciones < 1 {
+		t.Fatalf("expected correcciones >= 1, got %d", row.Correcciones)
+	}
+	if row.MontoAnulado < 2000 {
+		t.Fatalf("expected monto_anulado >= 2000, got %.2f", row.MontoAnulado)
+	}
+
+	ventasResumen, ok := metricsResp.Resumen["ventas_pagadas"].(float64)
+	if !ok || ventasResumen < 1 {
+		t.Fatalf("expected resumen ventas_pagadas >= 1, got %v", metricsResp.Resumen["ventas_pagadas"])
+	}
+}
+
 func TestEmpresaCarritosCompraEstadoVentaSuspendida(t *testing.T) {
 	dbEmp := openTestSQLite(t, "empresas_carritos_suspendida.db")
 	ensureClientesSchema(t, dbEmp)
@@ -1457,6 +1548,241 @@ func TestEmpresaCarritosCompraRespetaBloqueoPropinaYComisionPorRol(t *testing.T)
 	}
 	if len(comisionMovs) != 0 {
 		t.Fatalf("expected no comision movements, got %d", len(comisionMovs))
+	}
+}
+
+func TestEmpresaCarritosCompraRecuperarInterrumpidoConAuditoria(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_carritos_recover_interrumpido.db")
+	ensureClientesSchema(t, dbEmp)
+	ensureCarritosVentasSchema(t, dbEmp)
+
+	carritosHandler := EmpresaCarritosCompraHandler(dbEmp)
+
+	createReq := httptest.NewRequest(http.MethodPost, "/api/empresa/carritos_compra", strings.NewReader(`{"empresa_id":1,"nombre":"Caja Recover","canal_venta":"mostrador","moneda":"COP"}`))
+	createReq.Header.Set("Content-Type", "application/json")
+	createRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(createRR, createReq)
+	if createRR.Code != http.StatusCreated {
+		t.Fatalf("expected create status %d, got %d body=%s", http.StatusCreated, createRR.Code, createRR.Body.String())
+	}
+
+	var createResp map[string]interface{}
+	if err := json.Unmarshal(createRR.Body.Bytes(), &createResp); err != nil {
+		t.Fatalf("decode create response: %v", err)
+	}
+	carritoID := int64(createResp["id"].(float64))
+
+	disableReq := httptest.NewRequest(http.MethodPut, "/api/empresa/carritos_compra?empresa_id=1&id="+strconv.FormatInt(carritoID, 10)+"&action=desactivar", nil)
+	disableRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(disableRR, disableReq)
+	if disableRR.Code != http.StatusOK {
+		t.Fatalf("expected desactivar status %d, got %d body=%s", http.StatusOK, disableRR.Code, disableRR.Body.String())
+	}
+
+	recoverReq := httptest.NewRequest(http.MethodPut, "/api/empresa/carritos_compra?empresa_id=1&id="+strconv.FormatInt(carritoID, 10)+"&action=recuperar_interrumpido", nil)
+	recoverReq.Header.Set("X-Admin-Email", "cajero@empresa.com")
+	recoverRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(recoverRR, recoverReq)
+	if recoverRR.Code != http.StatusOK {
+		t.Fatalf("expected recuperar_interrumpido status %d, got %d body=%s", http.StatusOK, recoverRR.Code, recoverRR.Body.String())
+	}
+
+	var recoverResp map[string]interface{}
+	if err := json.Unmarshal(recoverRR.Body.Bytes(), &recoverResp); err != nil {
+		t.Fatalf("decode recover response: %v", err)
+	}
+	if got, _ := recoverResp["estado_venta"].(string); got != "venta_abierta" {
+		t.Fatalf("expected estado_venta=venta_abierta, got %q", got)
+	}
+
+	auditoriaRows, err := dbpkg.ListEmpresaAuditoriaEventos(dbEmp, 1, dbpkg.EmpresaAuditoriaEventoFilter{
+		Modulo: "ventas",
+		Accion: "recuperar_interrumpido",
+		Limit:  20,
+	})
+	if err != nil {
+		t.Fatalf("list auditoria eventos: %v", err)
+	}
+	if len(auditoriaRows) == 0 {
+		t.Fatal("expected auditoria event for recuperar_interrumpido")
+	}
+	if auditoriaRows[0].RecursoID != carritoID {
+		t.Fatalf("expected auditoria recurso_id=%d, got %d", carritoID, auditoriaRows[0].RecursoID)
+	}
+}
+
+func TestEmpresaCarritosCompraPagoMixtoValidaSuma(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_carritos_pago_mixto_validacion.db")
+	ensureClientesSchema(t, dbEmp)
+	ensureCarritosVentasSchema(t, dbEmp)
+
+	carritosHandler := EmpresaCarritosCompraHandler(dbEmp)
+
+	createAndSeed := func(nombre string) int64 {
+		createReq := httptest.NewRequest(http.MethodPost, "/api/empresa/carritos_compra", strings.NewReader(`{"empresa_id":1,"nombre":"`+nombre+`","canal_venta":"mostrador","moneda":"COP"}`))
+		createReq.Header.Set("Content-Type", "application/json")
+		createRR := httptest.NewRecorder()
+		carritosHandler.ServeHTTP(createRR, createReq)
+		if createRR.Code != http.StatusCreated {
+			t.Fatalf("expected create status %d, got %d body=%s", http.StatusCreated, createRR.Code, createRR.Body.String())
+		}
+
+		var createResp map[string]interface{}
+		if err := json.Unmarshal(createRR.Body.Bytes(), &createResp); err != nil {
+			t.Fatalf("decode create response: %v", err)
+		}
+		carritoID := int64(createResp["id"].(float64))
+
+		if _, err := dbpkg.CreateCarritoCompraItem(dbEmp, dbpkg.CarritoCompraItem{
+			EmpresaID:           1,
+			CarritoID:           carritoID,
+			TipoItem:            "otro",
+			CodigoItem:          "MIX-ITEM-" + strconv.FormatInt(carritoID, 10),
+			Descripcion:         "Consumo base para pago mixto",
+			UnidadMedida:        "unidad",
+			Cantidad:            1,
+			PrecioUnitario:      10000,
+			DescuentoPorcentaje: 0,
+			ImpuestoPorcentaje:  0,
+			ImpuestoCodigo:      "IVA",
+			UsuarioCreador:      "qa@empresa.com",
+			Estado:              "activo",
+		}); err != nil {
+			t.Fatalf("seed carrito item pago mixto: %v", err)
+		}
+
+		return carritoID
+	}
+
+	carritoOK := createAndSeed("Caja Mixto OK")
+	payMixedReq := httptest.NewRequest(http.MethodPut, "/api/empresa/carritos_compra?empresa_id=1&id="+strconv.FormatInt(carritoOK, 10)+"&action=pagar_estacion", strings.NewReader(`{"metodo_pago":"mixto","pagos_mixtos":[{"metodo":"efectivo","monto":4000},{"metodo":"tarjeta_debito","monto":6000,"referencia":"TD-0001"}]}`))
+	payMixedReq.Header.Set("Content-Type", "application/json")
+	payMixedRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(payMixedRR, payMixedReq)
+	if payMixedRR.Code != http.StatusOK {
+		t.Fatalf("expected mixed payment status %d, got %d body=%s", http.StatusOK, payMixedRR.Code, payMixedRR.Body.String())
+	}
+
+	carritoPaid, err := dbpkg.GetCarritoCompraByID(dbEmp, 1, carritoOK)
+	if err != nil {
+		t.Fatalf("get paid carrito: %v", err)
+	}
+	if strings.TrimSpace(carritoPaid.MetodoPago) != "mixto" {
+		t.Fatalf("expected metodo_pago=mixto, got %q", carritoPaid.MetodoPago)
+	}
+	if !strings.Contains(strings.ToLower(strings.TrimSpace(carritoPaid.ReferenciaPago)), "mixto[") {
+		t.Fatalf("expected referencia_pago to include mixed detail, got %q", carritoPaid.ReferenciaPago)
+	}
+
+	carritoInvalid := createAndSeed("Caja Mixto Error")
+	payInvalidReq := httptest.NewRequest(http.MethodPut, "/api/empresa/carritos_compra?empresa_id=1&id="+strconv.FormatInt(carritoInvalid, 10)+"&action=pagar_estacion", strings.NewReader(`{"metodo_pago":"mixto","pagos_mixtos":[{"metodo":"efectivo","monto":3000},{"metodo":"tarjeta_debito","monto":6000,"referencia":"TD-0002"}]}`))
+	payInvalidReq.Header.Set("Content-Type", "application/json")
+	payInvalidRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(payInvalidRR, payInvalidReq)
+	if payInvalidRR.Code != http.StatusBadRequest {
+		t.Fatalf("expected mixed invalid status %d, got %d body=%s", http.StatusBadRequest, payInvalidRR.Code, payInvalidRR.Body.String())
+	}
+	if !strings.Contains(strings.ToLower(payInvalidRR.Body.String()), "pagos mixtos") {
+		t.Fatalf("expected mixed sum validation message, got body=%s", payInvalidRR.Body.String())
+	}
+}
+
+func TestEmpresaCarritosCompraAnularCierreParcialConAuditoria(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_carritos_anular_cierre_parcial.db")
+	ensureClientesSchema(t, dbEmp)
+	ensureCarritosVentasSchema(t, dbEmp)
+
+	carritosHandler := EmpresaCarritosCompraHandler(dbEmp)
+
+	createReq := httptest.NewRequest(http.MethodPost, "/api/empresa/carritos_compra", strings.NewReader(`{"empresa_id":1,"nombre":"Caja Cierre Parcial","canal_venta":"mostrador","moneda":"COP"}`))
+	createReq.Header.Set("Content-Type", "application/json")
+	createRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(createRR, createReq)
+	if createRR.Code != http.StatusCreated {
+		t.Fatalf("expected create status %d, got %d body=%s", http.StatusCreated, createRR.Code, createRR.Body.String())
+	}
+
+	var createResp map[string]interface{}
+	if err := json.Unmarshal(createRR.Body.Bytes(), &createResp); err != nil {
+		t.Fatalf("decode create response: %v", err)
+	}
+	carritoID := int64(createResp["id"].(float64))
+
+	if _, err := dbpkg.CreateCarritoCompraItem(dbEmp, dbpkg.CarritoCompraItem{
+		EmpresaID:           1,
+		CarritoID:           carritoID,
+		TipoItem:            "otro",
+		CodigoItem:          "CLOSE-ITEM-" + strconv.FormatInt(carritoID, 10),
+		Descripcion:         "Consumo base para cierre parcial",
+		UnidadMedida:        "unidad",
+		Cantidad:            1,
+		PrecioUnitario:      10000,
+		DescuentoPorcentaje: 0,
+		ImpuestoPorcentaje:  0,
+		ImpuestoCodigo:      "IVA",
+		UsuarioCreador:      "qa@empresa.com",
+		Estado:              "activo",
+	}); err != nil {
+		t.Fatalf("seed carrito item: %v", err)
+	}
+
+	payReq := httptest.NewRequest(http.MethodPut, "/api/empresa/carritos_compra?empresa_id=1&id="+strconv.FormatInt(carritoID, 10)+"&action=pagar_estacion", strings.NewReader(`{"metodo_pago":"efectivo","total_pagado":10000}`))
+	payReq.Header.Set("Content-Type", "application/json")
+	payRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(payRR, payReq)
+	if payRR.Code != http.StatusOK {
+		t.Fatalf("expected pay status %d, got %d body=%s", http.StatusOK, payRR.Code, payRR.Body.String())
+	}
+
+	partialReq := httptest.NewRequest(http.MethodPut, "/api/empresa/carritos_compra?empresa_id=1&id="+strconv.FormatInt(carritoID, 10)+"&action=anular_cierre_parcial", strings.NewReader(`{"monto_anulado":2500,"motivo":"ajuste de cierre"}`))
+	partialReq.Header.Set("Content-Type", "application/json")
+	partialReq.Header.Set("X-Admin-Email", "auditor@empresa.com")
+	partialRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(partialRR, partialReq)
+	if partialRR.Code != http.StatusOK {
+		t.Fatalf("expected partial close cancel status %d, got %d body=%s", http.StatusOK, partialRR.Code, partialRR.Body.String())
+	}
+
+	var partialResp map[string]interface{}
+	if err := json.Unmarshal(partialRR.Body.Bytes(), &partialResp); err != nil {
+		t.Fatalf("decode partial response: %v", err)
+	}
+	if got, _ := partialResp["total_pagado_nuevo"].(float64); math.Abs(got-7500) > 0.001 {
+		t.Fatalf("expected total_pagado_nuevo=7500, got %.4f", got)
+	}
+	if got, _ := partialResp["devolucion_total"].(float64); math.Abs(got-2500) > 0.001 {
+		t.Fatalf("expected devolucion_total=2500, got %.4f", got)
+	}
+
+	carritoActualizado, err := dbpkg.GetCarritoCompraByID(dbEmp, 1, carritoID)
+	if err != nil {
+		t.Fatalf("get carrito actualizado: %v", err)
+	}
+	if math.Abs(carritoActualizado.TotalPagado-7500) > 0.001 {
+		t.Fatalf("expected stored total_pagado=7500, got %.4f", carritoActualizado.TotalPagado)
+	}
+	if math.Abs(carritoActualizado.DevolucionTotal-2500) > 0.001 {
+		t.Fatalf("expected stored devolucion_total=2500, got %.4f", carritoActualizado.DevolucionTotal)
+	}
+
+	invalidReq := httptest.NewRequest(http.MethodPut, "/api/empresa/carritos_compra?empresa_id=1&id="+strconv.FormatInt(carritoID, 10)+"&action=anular_cierre_parcial", strings.NewReader(`{"monto_anulado":7500}`))
+	invalidReq.Header.Set("Content-Type", "application/json")
+	invalidRR := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(invalidRR, invalidReq)
+	if invalidRR.Code != http.StatusBadRequest {
+		t.Fatalf("expected invalid partial close status %d, got %d body=%s", http.StatusBadRequest, invalidRR.Code, invalidRR.Body.String())
+	}
+
+	auditoriaRows, err := dbpkg.ListEmpresaAuditoriaEventos(dbEmp, 1, dbpkg.EmpresaAuditoriaEventoFilter{
+		Modulo: "ventas",
+		Accion: "anular_cierre_parcial",
+		Limit:  20,
+	})
+	if err != nil {
+		t.Fatalf("list auditoria rows: %v", err)
+	}
+	if len(auditoriaRows) == 0 {
+		t.Fatal("expected auditoria event for anular_cierre_parcial")
 	}
 }
 

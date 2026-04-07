@@ -46,6 +46,16 @@ type EmpresaDocumentoCompra struct {
 	Moneda               string  `json:"moneda"`
 	FechaDocumento       string  `json:"fecha_documento"`
 	EntidadRelacionadaID int64   `json:"entidad_relacionada_id"`
+	RequiereAprobacion   bool    `json:"requiere_aprobacion"`
+	NivelesAprobacion    int     `json:"niveles_aprobacion_requeridos"`
+	NivelAprobacion      int     `json:"nivel_aprobacion_actual"`
+	AprobadoresJSON      string  `json:"aprobadores_json,omitempty"`
+	RecepcionDetalleJSON string  `json:"recepcion_detalle_json,omitempty"`
+	RecepcionResumenJSON string  `json:"recepcion_resumen_json,omitempty"`
+	ValidacionEstado     string  `json:"validacion_documental_estado,omitempty"`
+	ProveedorDocRef      string  `json:"proveedor_documento_ref,omitempty"`
+	FacturaDocRef        string  `json:"factura_documento_ref,omitempty"`
+	EntradaDocRef        string  `json:"entrada_documento_ref,omitempty"`
 	FechaCreacion        string  `json:"fecha_creacion"`
 	FechaActualizacion   string  `json:"fecha_actualizacion"`
 	UsuarioCreador       string  `json:"usuario_creador"`
@@ -117,6 +127,16 @@ func EnsureEmpresaDocumentosTransaccionalesSchema(dbConn *sql.DB) error {
 			moneda TEXT DEFAULT 'COP',
 			fecha_documento TEXT,
 			entidad_relacionada_id INTEGER,
+			requiere_aprobacion INTEGER DEFAULT 0,
+			niveles_aprobacion_requeridos INTEGER DEFAULT 1,
+			nivel_aprobacion_actual INTEGER DEFAULT 0,
+			aprobadores_json TEXT,
+			recepcion_detalle_json TEXT,
+			recepcion_resumen_json TEXT,
+			validacion_documental_estado TEXT DEFAULT 'no_aplica',
+			proveedor_documento_ref TEXT,
+			factura_documento_ref TEXT,
+			entrada_documento_ref TEXT,
 			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
 			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
 			usuario_creador TEXT,
@@ -229,6 +249,36 @@ func EnsureEmpresaDocumentosTransaccionalesSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_compras_documentos", "entidad_relacionada_id", "INTEGER"); err != nil {
 		return err
 	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_compras_documentos", "requiere_aprobacion", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_compras_documentos", "niveles_aprobacion_requeridos", "INTEGER DEFAULT 1"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_compras_documentos", "nivel_aprobacion_actual", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_compras_documentos", "aprobadores_json", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_compras_documentos", "recepcion_detalle_json", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_compras_documentos", "recepcion_resumen_json", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_compras_documentos", "validacion_documental_estado", "TEXT DEFAULT 'no_aplica'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_compras_documentos", "proveedor_documento_ref", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_compras_documentos", "factura_documento_ref", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_compras_documentos", "entrada_documento_ref", "TEXT"); err != nil {
+		return err
+	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_compras_documentos", "fecha_actualizacion", "TEXT"); err != nil {
 		return err
 	}
@@ -240,6 +290,16 @@ func EnsureEmpresaDocumentosTransaccionalesSchema(dbConn *sql.DB) error {
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_compras_documentos", "observaciones", "TEXT"); err != nil {
 		return err
+	}
+
+	indexStmts := []string{
+		`CREATE INDEX IF NOT EXISTS ix_empresa_compras_documentos_aprobacion ON empresa_compras_documentos(empresa_id, estado_documento, requiere_aprobacion, nivel_aprobacion_actual, niveles_aprobacion_requeridos);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_compras_documentos_validacion ON empresa_compras_documentos(empresa_id, validacion_documental_estado, estado);`,
+	}
+	for _, stmt := range indexStmts {
+		if _, err := dbConn.Exec(stmt); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -571,6 +631,9 @@ func GetEmpresaDocumentoCompraByCodigo(dbConn *sql.DB, empresaID int64, tipoDocu
 	}
 
 	var item EmpresaDocumentoCompra
+	var requiereAprobacionRaw int64
+	var nivelesAprobacionRaw int64
+	var nivelAprobacionRaw int64
 	err := dbConn.QueryRow(`SELECT
 		id,
 		empresa_id,
@@ -585,6 +648,16 @@ func GetEmpresaDocumentoCompraByCodigo(dbConn *sql.DB, empresaID int64, tipoDocu
 		COALESCE(moneda, 'COP'),
 		COALESCE(fecha_documento, ''),
 		COALESCE(entidad_relacionada_id, 0),
+		COALESCE(requiere_aprobacion, 0),
+		COALESCE(niveles_aprobacion_requeridos, 1),
+		COALESCE(nivel_aprobacion_actual, 0),
+		COALESCE(aprobadores_json, ''),
+		COALESCE(recepcion_detalle_json, ''),
+		COALESCE(recepcion_resumen_json, ''),
+		COALESCE(validacion_documental_estado, 'no_aplica'),
+		COALESCE(proveedor_documento_ref, ''),
+		COALESCE(factura_documento_ref, ''),
+		COALESCE(entrada_documento_ref, ''),
 		COALESCE(fecha_creacion, ''),
 		COALESCE(fecha_actualizacion, ''),
 		COALESCE(usuario_creador, ''),
@@ -606,6 +679,16 @@ func GetEmpresaDocumentoCompraByCodigo(dbConn *sql.DB, empresaID int64, tipoDocu
 		&item.Moneda,
 		&item.FechaDocumento,
 		&item.EntidadRelacionadaID,
+		&requiereAprobacionRaw,
+		&nivelesAprobacionRaw,
+		&nivelAprobacionRaw,
+		&item.AprobadoresJSON,
+		&item.RecepcionDetalleJSON,
+		&item.RecepcionResumenJSON,
+		&item.ValidacionEstado,
+		&item.ProveedorDocRef,
+		&item.FacturaDocRef,
+		&item.EntradaDocRef,
 		&item.FechaCreacion,
 		&item.FechaActualizacion,
 		&item.UsuarioCreador,
@@ -615,6 +698,10 @@ func GetEmpresaDocumentoCompraByCodigo(dbConn *sql.DB, empresaID int64, tipoDocu
 	if err != nil {
 		return nil, err
 	}
+	item.RequiereAprobacion = requiresAprobacionFromSQLite(requiereAprobacionRaw)
+	item.NivelesAprobacion = normalizeComprasNivelesAprobacion(int(nivelesAprobacionRaw), 1)
+	item.NivelAprobacion = normalizeComprasNivelActual(int(nivelAprobacionRaw), item.NivelesAprobacion)
+	item.ValidacionEstado = normalizeComprasValidacionEstado(item.ValidacionEstado)
 	return &item, nil
 }
 
@@ -642,6 +729,16 @@ func UpsertEmpresaDocumentoCompra(dbConn *sql.DB, payload EmpresaDocumentoCompra
 	if payload.Estado == "" {
 		payload.Estado = "activo"
 	}
+	payload.RequiereAprobacion = requiresAprobacionFromSQLite(boolToSQLiteInt(payload.RequiereAprobacion))
+	payload.NivelesAprobacion = normalizeComprasNivelesAprobacion(payload.NivelesAprobacion, 1)
+	payload.NivelAprobacion = normalizeComprasNivelActual(payload.NivelAprobacion, payload.NivelesAprobacion)
+	payload.AprobadoresJSON = strings.TrimSpace(payload.AprobadoresJSON)
+	payload.RecepcionDetalleJSON = strings.TrimSpace(payload.RecepcionDetalleJSON)
+	payload.RecepcionResumenJSON = strings.TrimSpace(payload.RecepcionResumenJSON)
+	payload.ValidacionEstado = normalizeComprasValidacionEstado(payload.ValidacionEstado)
+	payload.ProveedorDocRef = normalizeDocumentoTransaccionalCodigo(payload.ProveedorDocRef)
+	payload.FacturaDocRef = normalizeDocumentoTransaccionalCodigo(payload.FacturaDocRef)
+	payload.EntradaDocRef = normalizeDocumentoTransaccionalCodigo(payload.EntradaDocRef)
 	payload.Observaciones = strings.TrimSpace(payload.Observaciones)
 	if payload.MontoTotal < 0 {
 		payload.MontoTotal = 0
@@ -660,12 +757,22 @@ func UpsertEmpresaDocumentoCompra(dbConn *sql.DB, payload EmpresaDocumentoCompra
 		moneda,
 		fecha_documento,
 		entidad_relacionada_id,
+		requiere_aprobacion,
+		niveles_aprobacion_requeridos,
+		nivel_aprobacion_actual,
+		aprobadores_json,
+		recepcion_detalle_json,
+		recepcion_resumen_json,
+		validacion_documental_estado,
+		proveedor_documento_ref,
+		factura_documento_ref,
+		entrada_documento_ref,
 		fecha_creacion,
 		fecha_actualizacion,
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)
 	ON CONFLICT(empresa_id, tipo_documento, documento_codigo) DO UPDATE SET
 		proveedor_id = CASE WHEN excluded.proveedor_id > 0 THEN excluded.proveedor_id ELSE empresa_compras_documentos.proveedor_id END,
 		estado_documento = excluded.estado_documento,
@@ -676,6 +783,25 @@ func UpsertEmpresaDocumentoCompra(dbConn *sql.DB, payload EmpresaDocumentoCompra
 		moneda = CASE WHEN excluded.moneda <> '' THEN excluded.moneda ELSE empresa_compras_documentos.moneda END,
 		fecha_documento = CASE WHEN excluded.fecha_documento <> '' THEN excluded.fecha_documento ELSE empresa_compras_documentos.fecha_documento END,
 		entidad_relacionada_id = CASE WHEN excluded.entidad_relacionada_id > 0 THEN excluded.entidad_relacionada_id ELSE empresa_compras_documentos.entidad_relacionada_id END,
+		requiere_aprobacion = excluded.requiere_aprobacion,
+		niveles_aprobacion_requeridos = CASE
+			WHEN excluded.niveles_aprobacion_requeridos > 0 THEN excluded.niveles_aprobacion_requeridos
+			ELSE empresa_compras_documentos.niveles_aprobacion_requeridos
+		END,
+		nivel_aprobacion_actual = CASE
+			WHEN excluded.nivel_aprobacion_actual >= 0 THEN excluded.nivel_aprobacion_actual
+			ELSE empresa_compras_documentos.nivel_aprobacion_actual
+		END,
+		aprobadores_json = CASE WHEN excluded.aprobadores_json <> '' THEN excluded.aprobadores_json ELSE empresa_compras_documentos.aprobadores_json END,
+		recepcion_detalle_json = CASE WHEN excluded.recepcion_detalle_json <> '' THEN excluded.recepcion_detalle_json ELSE empresa_compras_documentos.recepcion_detalle_json END,
+		recepcion_resumen_json = CASE WHEN excluded.recepcion_resumen_json <> '' THEN excluded.recepcion_resumen_json ELSE empresa_compras_documentos.recepcion_resumen_json END,
+		validacion_documental_estado = CASE
+			WHEN excluded.validacion_documental_estado <> '' THEN excluded.validacion_documental_estado
+			ELSE empresa_compras_documentos.validacion_documental_estado
+		END,
+		proveedor_documento_ref = CASE WHEN excluded.proveedor_documento_ref <> '' THEN excluded.proveedor_documento_ref ELSE empresa_compras_documentos.proveedor_documento_ref END,
+		factura_documento_ref = CASE WHEN excluded.factura_documento_ref <> '' THEN excluded.factura_documento_ref ELSE empresa_compras_documentos.factura_documento_ref END,
+		entrada_documento_ref = CASE WHEN excluded.entrada_documento_ref <> '' THEN excluded.entrada_documento_ref ELSE empresa_compras_documentos.entrada_documento_ref END,
 		fecha_actualizacion = datetime('now','localtime'),
 		usuario_creador = CASE WHEN excluded.usuario_creador <> '' THEN excluded.usuario_creador ELSE empresa_compras_documentos.usuario_creador END,
 		estado = excluded.estado,
@@ -692,6 +818,16 @@ func UpsertEmpresaDocumentoCompra(dbConn *sql.DB, payload EmpresaDocumentoCompra
 		payload.Moneda,
 		payload.FechaDocumento,
 		payload.EntidadRelacionadaID,
+		boolToSQLiteInt(payload.RequiereAprobacion),
+		payload.NivelesAprobacion,
+		payload.NivelAprobacion,
+		payload.AprobadoresJSON,
+		payload.RecepcionDetalleJSON,
+		payload.RecepcionResumenJSON,
+		payload.ValidacionEstado,
+		payload.ProveedorDocRef,
+		payload.FacturaDocRef,
+		payload.EntradaDocRef,
 		payload.UsuarioCreador,
 		payload.Estado,
 		payload.Observaciones,
@@ -734,6 +870,16 @@ func ListEmpresaDocumentosCompraByEmpresa(dbConn *sql.DB, empresaID int64, tipoD
 		COALESCE(moneda, 'COP'),
 		COALESCE(fecha_documento, ''),
 		COALESCE(entidad_relacionada_id, 0),
+		COALESCE(requiere_aprobacion, 0),
+		COALESCE(niveles_aprobacion_requeridos, 1),
+		COALESCE(nivel_aprobacion_actual, 0),
+		COALESCE(aprobadores_json, ''),
+		COALESCE(recepcion_detalle_json, ''),
+		COALESCE(recepcion_resumen_json, ''),
+		COALESCE(validacion_documental_estado, 'no_aplica'),
+		COALESCE(proveedor_documento_ref, ''),
+		COALESCE(factura_documento_ref, ''),
+		COALESCE(entrada_documento_ref, ''),
 		COALESCE(fecha_creacion, ''),
 		COALESCE(fecha_actualizacion, ''),
 		COALESCE(usuario_creador, ''),
@@ -778,6 +924,9 @@ func ListEmpresaDocumentosCompraByEmpresa(dbConn *sql.DB, empresaID int64, tipoD
 	out := make([]EmpresaDocumentoCompra, 0)
 	for rows.Next() {
 		var item EmpresaDocumentoCompra
+		var requiereAprobacionRaw int64
+		var nivelesAprobacionRaw int64
+		var nivelAprobacionRaw int64
 		if err := rows.Scan(
 			&item.ID,
 			&item.EmpresaID,
@@ -792,6 +941,16 @@ func ListEmpresaDocumentosCompraByEmpresa(dbConn *sql.DB, empresaID int64, tipoD
 			&item.Moneda,
 			&item.FechaDocumento,
 			&item.EntidadRelacionadaID,
+			&requiereAprobacionRaw,
+			&nivelesAprobacionRaw,
+			&nivelAprobacionRaw,
+			&item.AprobadoresJSON,
+			&item.RecepcionDetalleJSON,
+			&item.RecepcionResumenJSON,
+			&item.ValidacionEstado,
+			&item.ProveedorDocRef,
+			&item.FacturaDocRef,
+			&item.EntradaDocRef,
 			&item.FechaCreacion,
 			&item.FechaActualizacion,
 			&item.UsuarioCreador,
@@ -800,6 +959,10 @@ func ListEmpresaDocumentosCompraByEmpresa(dbConn *sql.DB, empresaID int64, tipoD
 		); err != nil {
 			return nil, err
 		}
+		item.RequiereAprobacion = requiresAprobacionFromSQLite(requiereAprobacionRaw)
+		item.NivelesAprobacion = normalizeComprasNivelesAprobacion(int(nivelesAprobacionRaw), 1)
+		item.NivelAprobacion = normalizeComprasNivelActual(int(nivelAprobacionRaw), item.NivelesAprobacion)
+		item.ValidacionEstado = normalizeComprasValidacionEstado(item.ValidacionEstado)
 		out = append(out, item)
 	}
 
@@ -832,6 +995,57 @@ func SetEmpresaDocumentoCompraEstadoByCodigo(dbConn *sql.DB, empresaID int64, ti
 		return sql.ErrNoRows
 	}
 	return nil
+}
+
+func boolToSQLiteInt(v bool) int64 {
+	if v {
+		return 1
+	}
+	return 0
+}
+
+func requiresAprobacionFromSQLite(v int64) bool {
+	return v > 0
+}
+
+func normalizeComprasNivelesAprobacion(v int, fallback int) int {
+	if fallback <= 0 {
+		fallback = 1
+	}
+	if v <= 0 {
+		v = fallback
+	}
+	if v < 1 {
+		v = 1
+	}
+	if v > 10 {
+		v = 10
+	}
+	return v
+}
+
+func normalizeComprasNivelActual(v int, niveles int) int {
+	niveles = normalizeComprasNivelesAprobacion(niveles, 1)
+	if v < 0 {
+		return 0
+	}
+	if v > niveles {
+		return niveles
+	}
+	return v
+}
+
+func normalizeComprasValidacionEstado(v string) string {
+	switch strings.ToLower(strings.TrimSpace(v)) {
+	case "pendiente":
+		return "pendiente"
+	case "validada":
+		return "validada"
+	case "inconsistente":
+		return "inconsistente"
+	default:
+		return "no_aplica"
+	}
 }
 
 func normalizeDocumentoTransaccionalTipo(v, fallback string) string {

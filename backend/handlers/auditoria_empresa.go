@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"crypto/sha256"
 	"database/sql"
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -18,6 +20,49 @@ import (
 type auditCaptureResponseWriter struct {
 	http.ResponseWriter
 	status int
+}
+
+type auditoriaForenseBase struct {
+	ID             int64  `json:"id"`
+	FechaEvento    string `json:"fecha_evento"`
+	Modulo         string `json:"modulo"`
+	Accion         string `json:"accion"`
+	Recurso        string `json:"recurso"`
+	RecursoID      int64  `json:"recurso_id"`
+	MetodoHTTP     string `json:"metodo_http"`
+	Endpoint       string `json:"endpoint"`
+	Resultado      string `json:"resultado"`
+	CodigoHTTP     int64  `json:"codigo_http"`
+	RequestID      string `json:"request_id"`
+	UsuarioCreador string `json:"usuario_creador"`
+	IPOrigen       string `json:"ip_origen"`
+	Observaciones  string `json:"observaciones"`
+	MetadataJSON   string `json:"metadata_json"`
+}
+
+type auditoriaForenseRegistro struct {
+	Indice             int                  `json:"indice"`
+	Base               auditoriaForenseBase `json:"base"`
+	HashRegistro       string               `json:"hash_registro"`
+	HashCadenaAnterior string               `json:"hash_cadena_anterior"`
+	HashCadena         string               `json:"hash_cadena"`
+}
+
+type auditoriaForenseManifest struct {
+	EmpresaID          int64                  `json:"empresa_id"`
+	GeneradoEn         string                 `json:"generado_en"`
+	AlgoritmoHash      string                 `json:"algoritmo_hash"`
+	TotalCoincidencias int64                  `json:"total_coincidencias"`
+	TotalRegistros     int                    `json:"total_registros"`
+	HashGlobal         string                 `json:"hash_global"`
+	HashCadenaFinal    string                 `json:"hash_cadena_final"`
+	Filtros            map[string]interface{} `json:"filtros"`
+}
+
+type auditoriaForenseExportPayload struct {
+	OK        bool                       `json:"ok"`
+	Manifest  auditoriaForenseManifest   `json:"manifest"`
+	Registros []auditoriaForenseRegistro `json:"registros"`
 }
 
 func (rw *auditCaptureResponseWriter) WriteHeader(code int) {
@@ -42,6 +87,7 @@ func EmpresaAuditoriaEventosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
+			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 			limit, err := parseIntQueryOptional(r, "limit")
 			if err != nil {
 				http.Error(w, "limit invalido", http.StatusBadRequest)
@@ -132,6 +178,33 @@ func EmpresaAuditoriaEventosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			w.Header().Set("X-Total-Count", strconv.FormatInt(total, 10))
 			w.Header().Set("X-Page-Limit", strconv.Itoa(pageLimit))
 			w.Header().Set("X-Page-Offset", strconv.Itoa(pageOffset))
+			if action == "export_forense" || action == "forense_export" || action == "cadena_custodia" {
+				format := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("format")))
+				if format == "" {
+					format = "json"
+				}
+				if format != "json" && format != "csv" {
+					http.Error(w, "format invalido (use json o csv)", http.StatusBadRequest)
+					return
+				}
+
+				payload, err := buildAuditoriaForenseExportPayload(empresaID, filter, total, rows)
+				if err != nil {
+					http.Error(w, "No se pudo construir la exportacion forense", http.StatusInternalServerError)
+					return
+				}
+
+				if format == "csv" {
+					if err := writeAuditoriaForenseCSV(w, payload); err != nil {
+						http.Error(w, "No se pudo generar la exportacion forense CSV", http.StatusInternalServerError)
+						return
+					}
+					return
+				}
+
+				writeJSON(w, http.StatusOK, payload)
+				return
+			}
 			writeJSON(w, http.StatusOK, rows)
 			return
 
@@ -176,6 +249,176 @@ func EmpresaAuditoriaEventosHandler(dbEmp *sql.DB) http.HandlerFunc {
 	}
 }
 
+func buildAuditoriaForenseExportPayload(empresaID int64, filter dbpkg.EmpresaAuditoriaEventoFilter, total int64, rows []dbpkg.EmpresaAuditoriaEvento) (auditoriaForenseExportPayload, error) {
+	registros := make([]auditoriaForenseRegistro, 0, len(rows))
+	chainPrev := "GENESIS"
+	chainStream := strings.Builder{}
+
+	for idx, row := range rows {
+		base := auditoriaForenseBase{
+			ID:             row.ID,
+			FechaEvento:    strings.TrimSpace(row.FechaEvento),
+			Modulo:         strings.TrimSpace(row.Modulo),
+			Accion:         strings.TrimSpace(row.Accion),
+			Recurso:        strings.TrimSpace(row.Recurso),
+			RecursoID:      row.RecursoID,
+			MetodoHTTP:     strings.TrimSpace(row.MetodoHTTP),
+			Endpoint:       strings.TrimSpace(row.Endpoint),
+			Resultado:      strings.TrimSpace(row.Resultado),
+			CodigoHTTP:     row.CodigoHTTP,
+			RequestID:      strings.TrimSpace(row.RequestID),
+			UsuarioCreador: strings.TrimSpace(row.UsuarioCreador),
+			IPOrigen:       strings.TrimSpace(row.IPOrigen),
+			Observaciones:  strings.TrimSpace(row.Observaciones),
+			MetadataJSON:   strings.TrimSpace(row.MetadataJSON),
+		}
+		baseJSON, err := json.Marshal(base)
+		if err != nil {
+			return auditoriaForenseExportPayload{}, err
+		}
+		hashRegistro := sha256Hex(baseJSON)
+		hashCadena := sha256Hex([]byte(chainPrev + "|" + hashRegistro))
+
+		registros = append(registros, auditoriaForenseRegistro{
+			Indice:             idx + 1,
+			Base:               base,
+			HashRegistro:       hashRegistro,
+			HashCadenaAnterior: chainPrev,
+			HashCadena:         hashCadena,
+		})
+
+		chainPrev = hashCadena
+		chainStream.WriteString(hashCadena)
+		chainStream.WriteString("\n")
+	}
+
+	filtros := map[string]interface{}{
+		"modulo":           strings.TrimSpace(filter.Modulo),
+		"accion":           strings.TrimSpace(filter.Accion),
+		"metodo_http":      strings.TrimSpace(filter.MetodoHTTP),
+		"recurso":          strings.TrimSpace(filter.Recurso),
+		"endpoint":         strings.TrimSpace(filter.Endpoint),
+		"search":           strings.TrimSpace(filter.Search),
+		"recurso_id":       filter.RecursoID,
+		"codigo_http":      filter.CodigoHTTP,
+		"resultado":        strings.TrimSpace(filter.Resultado),
+		"usuario":          strings.TrimSpace(filter.UsuarioCreador),
+		"request_id":       strings.TrimSpace(filter.RequestID),
+		"desde":            strings.TrimSpace(filter.Desde),
+		"hasta":            strings.TrimSpace(filter.Hasta),
+		"include_inactive": filter.IncludeInactive,
+		"limit":            filter.Limit,
+		"offset":           filter.Offset,
+	}
+
+	manifest := auditoriaForenseManifest{
+		EmpresaID:          empresaID,
+		GeneradoEn:         time.Now().Format("2006-01-02 15:04:05"),
+		AlgoritmoHash:      "sha256",
+		TotalCoincidencias: total,
+		TotalRegistros:     len(registros),
+		HashGlobal:         sha256Hex([]byte(chainStream.String())),
+		HashCadenaFinal:    chainPrev,
+		Filtros:            filtros,
+	}
+
+	return auditoriaForenseExportPayload{
+		OK:        true,
+		Manifest:  manifest,
+		Registros: registros,
+	}, nil
+}
+
+func writeAuditoriaForenseCSV(w http.ResponseWriter, payload auditoriaForenseExportPayload) error {
+	filename := fmt.Sprintf("auditoria_forense_empresa_%d_%s.csv", payload.Manifest.EmpresaID, time.Now().Format("20060102_150405"))
+	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+	w.Header().Set("Content-Disposition", "attachment; filename=\""+filename+"\"")
+	w.WriteHeader(http.StatusOK)
+
+	writer := csv.NewWriter(w)
+	if err := writer.Write([]string{"manifest_empresa_id", strconv.FormatInt(payload.Manifest.EmpresaID, 10)}); err != nil {
+		return err
+	}
+	if err := writer.Write([]string{"manifest_generado_en", payload.Manifest.GeneradoEn}); err != nil {
+		return err
+	}
+	if err := writer.Write([]string{"manifest_algoritmo_hash", payload.Manifest.AlgoritmoHash}); err != nil {
+		return err
+	}
+	if err := writer.Write([]string{"manifest_total_coincidencias", strconv.FormatInt(payload.Manifest.TotalCoincidencias, 10)}); err != nil {
+		return err
+	}
+	if err := writer.Write([]string{"manifest_total_registros", strconv.Itoa(payload.Manifest.TotalRegistros)}); err != nil {
+		return err
+	}
+	if err := writer.Write([]string{"manifest_hash_global", payload.Manifest.HashGlobal}); err != nil {
+		return err
+	}
+	if err := writer.Write([]string{"manifest_hash_cadena_final", payload.Manifest.HashCadenaFinal}); err != nil {
+		return err
+	}
+	if err := writer.Write([]string{}); err != nil {
+		return err
+	}
+	if err := writer.Write([]string{
+		"indice",
+		"id",
+		"fecha_evento",
+		"modulo",
+		"accion",
+		"recurso",
+		"recurso_id",
+		"metodo_http",
+		"endpoint",
+		"resultado",
+		"codigo_http",
+		"request_id",
+		"usuario_creador",
+		"ip_origen",
+		"observaciones",
+		"metadata_json",
+		"hash_registro",
+		"hash_cadena_anterior",
+		"hash_cadena",
+	}); err != nil {
+		return err
+	}
+
+	for _, row := range payload.Registros {
+		if err := writer.Write([]string{
+			strconv.Itoa(row.Indice),
+			strconv.FormatInt(row.Base.ID, 10),
+			row.Base.FechaEvento,
+			row.Base.Modulo,
+			row.Base.Accion,
+			row.Base.Recurso,
+			strconv.FormatInt(row.Base.RecursoID, 10),
+			row.Base.MetodoHTTP,
+			row.Base.Endpoint,
+			row.Base.Resultado,
+			strconv.FormatInt(row.Base.CodigoHTTP, 10),
+			row.Base.RequestID,
+			row.Base.UsuarioCreador,
+			row.Base.IPOrigen,
+			row.Base.Observaciones,
+			row.Base.MetadataJSON,
+			row.HashRegistro,
+			row.HashCadenaAnterior,
+			row.HashCadena,
+		}); err != nil {
+			return err
+		}
+	}
+
+	writer.Flush()
+	return writer.Error()
+}
+
+func sha256Hex(input []byte) string {
+	sum := sha256.Sum256(input)
+	return fmt.Sprintf("%x", sum[:])
+}
+
 func registrarAuditoriaOperacionNoBloqueante(dbEmp *sql.DB, r *http.Request, empresaID int64, modulo, permissionAction string, statusCode int, elapsed time.Duration) {
 	if dbEmp == nil {
 		return
@@ -190,6 +433,18 @@ func registrarAuditoriaOperacionNoBloqueante(dbEmp *sql.DB, r *http.Request, emp
 	metadata := map[string]interface{}{
 		"permission_action": strings.ToUpper(strings.TrimSpace(permissionAction)),
 		"duracion_ms":       elapsed.Milliseconds(),
+	}
+	if strings.TrimSpace(r.Header.Get(permissionApprovalHeaderRequired)) == "1" {
+		metadata["permission_approval_required"] = true
+	}
+	if approvedBy := strings.TrimSpace(r.Header.Get(permissionApprovalHeaderBy)); approvedBy != "" {
+		metadata["permission_approved_by"] = approvedBy
+	}
+	if approvalCode := strings.TrimSpace(r.Header.Get(permissionApprovalHeaderCode)); approvalCode != "" {
+		metadata["permission_approval_code"] = approvalCode
+	}
+	if approvalReason := strings.TrimSpace(r.Header.Get(permissionApprovalHeaderReason)); approvalReason != "" {
+		metadata["permission_approval_reason"] = approvalReason
 	}
 	if queryAction := strings.TrimSpace(r.URL.Query().Get("action")); queryAction != "" {
 		metadata["query_action"] = strings.ToLower(queryAction)

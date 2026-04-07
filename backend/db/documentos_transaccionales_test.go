@@ -76,17 +76,27 @@ func TestEmpresaDocumentoCompraUpsertAndGet(t *testing.T) {
 	}
 
 	created, err := UpsertEmpresaDocumentoCompra(dbConn, EmpresaDocumentoCompra{
-		EmpresaID:       12,
-		ProveedorID:     44,
-		TipoDocumento:   "orden_compra",
-		DocumentoCodigo: "oc-1001",
-		EstadoDocumento: "emitida",
-		EstadoAnterior:  "borrador",
-		EventoUltimo:    "orden_compra_emitida",
-		PeriodoContable: "2026-04",
-		MontoTotal:      500000,
-		Moneda:          "cop",
-		UsuarioCreador:  "tester",
+		EmpresaID:            12,
+		ProveedorID:          44,
+		TipoDocumento:        "orden_compra",
+		DocumentoCodigo:      "oc-1001",
+		EstadoDocumento:      "emitida",
+		EstadoAnterior:       "borrador",
+		EventoUltimo:         "orden_compra_emitida",
+		PeriodoContable:      "2026-04",
+		MontoTotal:           500000,
+		Moneda:               "cop",
+		RequiereAprobacion:   true,
+		NivelesAprobacion:    3,
+		NivelAprobacion:      1,
+		AprobadoresJSON:      `[{"nivel":1}]`,
+		RecepcionDetalleJSON: `[{"producto_id":1001,"cantidad_ordenada":5,"cantidad_recibida":3}]`,
+		RecepcionResumenJSON: `{"total_items":1,"items_pendientes":1,"estado_recepcion":"recepcion_parcial"}`,
+		ValidacionEstado:     "pendiente",
+		ProveedorDocRef:      "nit-444",
+		FacturaDocRef:        "fac-444",
+		EntradaDocRef:        "ent-444",
+		UsuarioCreador:       "tester",
 	})
 	if err != nil {
 		t.Fatalf("upsert compra document: %v", err)
@@ -104,6 +114,27 @@ func TestEmpresaDocumentoCompraUpsertAndGet(t *testing.T) {
 	}
 	if loaded.ID != created.ID {
 		t.Fatalf("expected loaded id %d, got %d", created.ID, loaded.ID)
+	}
+	if !loaded.RequiereAprobacion {
+		t.Fatalf("expected requiere_aprobacion=true")
+	}
+	if loaded.NivelesAprobacion != 3 {
+		t.Fatalf("expected niveles_aprobacion_requeridos=3, got %d", loaded.NivelesAprobacion)
+	}
+	if loaded.NivelAprobacion != 1 {
+		t.Fatalf("expected nivel_aprobacion_actual=1, got %d", loaded.NivelAprobacion)
+	}
+	if loaded.ValidacionEstado != "pendiente" {
+		t.Fatalf("expected validacion_documental_estado=pendiente, got %q", loaded.ValidacionEstado)
+	}
+	if loaded.ProveedorDocRef != "NIT-444" {
+		t.Fatalf("expected proveedor_documento_ref NIT-444, got %q", loaded.ProveedorDocRef)
+	}
+	if loaded.FacturaDocRef != "FAC-444" {
+		t.Fatalf("expected factura_documento_ref FAC-444, got %q", loaded.FacturaDocRef)
+	}
+	if loaded.EntradaDocRef != "ENT-444" {
+		t.Fatalf("expected entrada_documento_ref ENT-444, got %q", loaded.EntradaDocRef)
 	}
 
 	_, err = GetEmpresaDocumentoCompraByCodigo(dbConn, 12, "orden_compra", "OC-9999")

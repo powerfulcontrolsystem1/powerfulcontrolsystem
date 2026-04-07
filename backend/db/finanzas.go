@@ -271,11 +271,41 @@ func EnsureEmpresaFinanzasSchema(dbConn *sql.DB) error {
 			observaciones TEXT,
 			UNIQUE(empresa_id, sucursal_id, caja_codigo, fecha_operacion, turno)
 		);`,
+		`CREATE TABLE IF NOT EXISTS empresa_finanzas_bancos_movimientos (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			empresa_id INTEGER NOT NULL,
+			periodo_contable TEXT,
+			fecha_movimiento TEXT DEFAULT (datetime('now','localtime')),
+			fecha_valor TEXT,
+			cuenta_bancaria TEXT,
+			banco_nombre TEXT,
+			tipo_movimiento TEXT NOT NULL,
+			descripcion TEXT,
+			referencia_bancaria TEXT,
+			documento_codigo TEXT,
+			moneda TEXT DEFAULT 'COP',
+			monto REAL DEFAULT 0,
+			total REAL DEFAULT 0,
+			movimiento_finanzas_id INTEGER DEFAULT 0,
+			estado_conciliacion TEXT DEFAULT 'pendiente',
+			conciliado_en TEXT,
+			conciliado_por TEXT,
+			origen TEXT DEFAULT 'manual',
+			hash_movimiento TEXT NOT NULL,
+			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			usuario_creador TEXT,
+			estado TEXT DEFAULT 'activo',
+			observaciones TEXT,
+			UNIQUE(empresa_id, hash_movimiento)
+		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_finanzas_movimientos_empresa_fecha ON empresa_finanzas_movimientos(empresa_id, fecha_movimiento DESC, id DESC);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_finanzas_movimientos_empresa_tipo_estado ON empresa_finanzas_movimientos(empresa_id, tipo_movimiento, estado);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_finanzas_movimientos_empresa_comprobante ON empresa_finanzas_movimientos(empresa_id, numero_comprobante);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_cierres_caja_empresa_fecha ON empresa_cierres_caja(empresa_id, fecha_operacion DESC, id DESC);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_cierres_caja_empresa_estado ON empresa_cierres_caja(empresa_id, estado_cierre, estado);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_finanzas_bancos_movimientos_empresa_fecha ON empresa_finanzas_bancos_movimientos(empresa_id, fecha_movimiento DESC, id DESC);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_finanzas_bancos_movimientos_empresa_periodo_estado ON empresa_finanzas_bancos_movimientos(empresa_id, periodo_contable, estado_conciliacion, estado);`,
 	}
 	for _, stmt := range stmts {
 		if _, err := dbConn.Exec(stmt); err != nil {
@@ -500,6 +530,69 @@ func EnsureEmpresaFinanzasSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_cierres_caja", "observaciones", "TEXT"); err != nil {
 		return err
 	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_finanzas_bancos_movimientos", "periodo_contable", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_finanzas_bancos_movimientos", "fecha_movimiento", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_finanzas_bancos_movimientos", "fecha_valor", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_finanzas_bancos_movimientos", "cuenta_bancaria", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_finanzas_bancos_movimientos", "banco_nombre", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_finanzas_bancos_movimientos", "descripcion", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_finanzas_bancos_movimientos", "referencia_bancaria", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_finanzas_bancos_movimientos", "documento_codigo", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_finanzas_bancos_movimientos", "moneda", "TEXT DEFAULT 'COP'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_finanzas_bancos_movimientos", "monto", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_finanzas_bancos_movimientos", "total", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_finanzas_bancos_movimientos", "movimiento_finanzas_id", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_finanzas_bancos_movimientos", "estado_conciliacion", "TEXT DEFAULT 'pendiente'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_finanzas_bancos_movimientos", "conciliado_en", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_finanzas_bancos_movimientos", "conciliado_por", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_finanzas_bancos_movimientos", "origen", "TEXT DEFAULT 'manual'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_finanzas_bancos_movimientos", "hash_movimiento", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_finanzas_bancos_movimientos", "fecha_actualizacion", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_finanzas_bancos_movimientos", "usuario_creador", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_finanzas_bancos_movimientos", "estado", "TEXT DEFAULT 'activo'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_finanzas_bancos_movimientos", "observaciones", "TEXT"); err != nil {
+		return err
+	}
 
 	// Los indices que dependen de columnas agregadas en migracion se crean al final
 	// para mantener compatibilidad con bases existentes.
@@ -507,6 +600,8 @@ func EnsureEmpresaFinanzasSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_finanzas_movimientos_empresa_periodo ON empresa_finanzas_movimientos(empresa_id, periodo_contable, estado);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_finanzas_periodos_empresa_estado ON empresa_finanzas_periodos(empresa_id, estado, periodo DESC);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_cierres_caja_empresa_sucursal ON empresa_cierres_caja(empresa_id, sucursal_id, caja_codigo, fecha_operacion DESC);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_finanzas_bancos_movimientos_empresa_hash ON empresa_finanzas_bancos_movimientos(empresa_id, hash_movimiento);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_finanzas_bancos_movimientos_empresa_movimiento ON empresa_finanzas_bancos_movimientos(empresa_id, movimiento_finanzas_id, estado_conciliacion);`,
 	}
 	for _, stmt := range postMigrationIndexes {
 		if _, err := dbConn.Exec(stmt); err != nil {

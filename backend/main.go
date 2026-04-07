@@ -396,6 +396,9 @@ func main() {
 	if err := dbpkg.EnsureEmpresaModulosFaltantesSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure modulos faltantes schema in empresas db: %v", err)
 	}
+	if err := dbpkg.EnsureEmpresaReportesProgramacionSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure reportes programacion schema in empresas db: %v", err)
+	}
 	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-01-001-baseline", "baseline schema snapshot: users, empresas, productos, clientes, carritos, configuracion_avanzada"); err != nil {
 		log.Fatalf("failed to register schema migration in empresas db: %v", err)
 	}
@@ -470,6 +473,12 @@ func main() {
 	}
 	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-06-022-inventario-costos-conteo", "inventario modulo 11: politica de costo promedio/peps por empresa, lotes de costos y conteo ciclico auditado con ajuste"); err != nil {
 		log.Fatalf("failed to register inventario costos/conteo schema migration in empresas db: %v", err)
+	}
+	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-07-023-ventas-simples-estacion-metricas", "modulo 27: ventas simples por estacion con metricas operativas de tiempo de atencion, rendimiento y correcciones post-cobro"); err != nil {
+		log.Fatalf("failed to register ventas simples estacion metricas schema migration in empresas db: %v", err)
+	}
+	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-07-024-reportes-programacion-plantillas-consistencia", "modulo 31: programacion automatica de reportes, versionado de plantillas y validacion automatica de consistencia multiformato"); err != nil {
+		log.Fatalf("failed to register reportes programacion/plantillas/consistencia schema migration in empresas db: %v", err)
 	}
 	// Crear tipos_de_empresas en la base de datos de superadministrador (ubicación centralizada)
 	createTiposSuper := `CREATE TABLE IF NOT EXISTS tipos_de_empresas (

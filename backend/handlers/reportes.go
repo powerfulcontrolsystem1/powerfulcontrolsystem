@@ -79,6 +79,7 @@ const (
 	reporteDatasetOperativoTarifas            = "operativo_tarifas_ingresos"
 	reporteDatasetOperativoTarifasComparativo = "operativo_tarifas_comparativo_estaciones"
 	reporteDatasetOperativoCadena             = "operativo_cadena_cumplimiento"
+	reporteDatasetOperativoVentasEmbudo       = "operativo_ventas_embudo_conversion"
 	reporteDatasetOperativoVentasDetalle      = "operativo_ventas_detalle"
 	reporteDatasetOperativoTurno              = "reporte_de_turno"
 	reporteDatasetOperativoTopProductos       = "operativo_top_productos"
@@ -160,6 +161,13 @@ var reportesCatalogo = []empresaReporteCatalogoItem{
 		Title:       "CRM/Producción/Logística - Conversión y Cumplimiento",
 		Level:       "operativo",
 		Description: "Consolida conversión comercial y cumplimiento operativo por módulo en el rango consultado.",
+		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
+	},
+	{
+		Key:         reporteDatasetOperativoVentasEmbudo,
+		Title:       "Ventas - Embudo de Conversión Comercial",
+		Level:       "operativo",
+		Description: "Embudo cotización→pedido→documento final con SLA y alertas de vencimiento comercial.",
 		Formats:     []string{"json", "csv", "txt", "xls", "pdf"},
 	},
 	{
@@ -286,11 +294,6 @@ var reportesCatalogo = []empresaReporteCatalogoItem{
 // EmpresaReportesHandler centraliza reportes empresariales, operativos y contables por empresa.
 func EmpresaReportesHandler(dbEmp *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-
 		empresaID, err := parseEmpresaIDQuery(r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -352,8 +355,17 @@ func EmpresaReportesHandler(dbEmp *sql.DB) http.HandlerFunc {
 			itemsCache:       make(map[int64][]dbpkg.CarritoCompraItem),
 		}
 
+		if err := dbpkg.EnsureEmpresaReportesProgramacionSchema(dbEmp); err != nil {
+			http.Error(w, "No se pudo inicializar la programacion de reportes", http.StatusInternalServerError)
+			return
+		}
+
 		switch action {
 		case "catalogo", "catalog", "datasets":
+			if r.Method != http.MethodGet {
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
 			writeJSON(w, http.StatusOK, map[string]interface{}{
 				"empresa_id": empresaID,
 				"datasets":   reportesCatalogo,
@@ -361,6 +373,10 @@ func EmpresaReportesHandler(dbEmp *sql.DB) http.HandlerFunc {
 			return
 
 		case "tablero", "dashboard":
+			if r.Method != http.MethodGet {
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
 			tablero, err := builder.getTableroResumen()
 			if err != nil {
 				http.Error(w, "No se pudo construir el tablero empresarial", http.StatusInternalServerError)
@@ -370,6 +386,10 @@ func EmpresaReportesHandler(dbEmp *sql.DB) http.HandlerFunc {
 			return
 
 		case "dataset":
+			if r.Method != http.MethodGet {
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
 			datasetKey := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("dataset")))
 			if datasetKey == "" {
 				http.Error(w, "dataset es obligatorio", http.StatusBadRequest)
@@ -380,10 +400,19 @@ func EmpresaReportesHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
+			ds, err = reportesApplyTemplateFromRequest(dbEmp, empresaID, r, ds)
+			if err != nil {
+				writeReportesHTTPError(w, err)
+				return
+			}
 			writeJSON(w, http.StatusOK, ds)
 			return
 
 		case "export", "exportar":
+			if r.Method != http.MethodGet {
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
 			format := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("format")))
 			if format == "" {
 				format = "json"
@@ -411,6 +440,11 @@ func EmpresaReportesHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
+			ds, err = reportesApplyTemplateFromRequest(dbEmp, empresaID, r, ds)
+			if err != nil {
+				writeReportesHTTPError(w, err)
+				return
+			}
 
 			if err := writeReportesDatasetExport(w, ds, format); err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
@@ -419,6 +453,10 @@ func EmpresaReportesHandler(dbEmp *sql.DB) http.HandlerFunc {
 			return
 
 		case "suite", "resumen":
+			if r.Method != http.MethodGet {
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
 			suite, err := builder.buildSuite()
 			if err != nil {
 				http.Error(w, "No se pudo construir la suite de reportes", http.StatusInternalServerError)
@@ -427,8 +465,38 @@ func EmpresaReportesHandler(dbEmp *sql.DB) http.HandlerFunc {
 			writeJSON(w, http.StatusOK, suite)
 			return
 
+		case "plantillas", "plantilla":
+			if err := handleEmpresaReportesPlantillasAction(w, r, dbEmp, empresaID); err != nil {
+				writeReportesHTTPError(w, err)
+			}
+			return
+
+		case "programacion", "programaciones", "agenda", "agenda_envio":
+			if err := handleEmpresaReportesProgramacionAction(w, r, dbEmp, empresaID); err != nil {
+				writeReportesHTTPError(w, err)
+			}
+			return
+
+		case "ejecuciones", "historial_ejecuciones":
+			if err := handleEmpresaReportesEjecucionesAction(w, r, dbEmp, empresaID); err != nil {
+				writeReportesHTTPError(w, err)
+			}
+			return
+
+		case "ejecutar_programacion":
+			if err := handleEmpresaReportesExecuteProgramacionAction(w, r, dbEmp, builder); err != nil {
+				writeReportesHTTPError(w, err)
+			}
+			return
+
+		case "validar_consistencia", "consistencia", "consistency":
+			if err := handleEmpresaReportesConsistenciaAction(w, r, dbEmp, builder); err != nil {
+				writeReportesHTTPError(w, err)
+			}
+			return
+
 		default:
-			http.Error(w, "action invalida (use catalogo, suite, dataset, tablero o export)", http.StatusBadRequest)
+			http.Error(w, "action invalida (use catalogo, suite, dataset, tablero, export, plantillas, programacion, ejecutar_programacion, ejecuciones o validar_consistencia)", http.StatusBadRequest)
 			return
 		}
 	}
@@ -480,6 +548,8 @@ func (b *reportesBuilder) buildDataset(key string) (empresaReporteDataset, error
 		return b.buildOperativoTarifasComparativoEstacionesDataset()
 	case reporteDatasetOperativoCadena:
 		return b.buildOperativoCadenaCumplimientoDataset()
+	case reporteDatasetOperativoVentasEmbudo:
+		return b.buildOperativoVentasEmbudoConversionDataset()
 	case reporteDatasetOperativoVentasDetalle:
 		return b.buildOperativoVentasDetalleDataset()
 	case reporteDatasetOperativoTurno:
@@ -1929,6 +1999,7 @@ type reporteCadenaCumplimientoDef struct {
 	MontoColumna       string
 	EstadosFinalizados []string
 	EstadosProceso     []string
+	MetaCumplimiento   float64
 }
 
 var reporteCadenaCumplimientoDefs = []reporteCadenaCumplimientoDef{
@@ -1941,6 +2012,7 @@ var reporteCadenaCumplimientoDefs = []reporteCadenaCumplimientoDef{
 		MontoColumna:       "valor_potencial",
 		EstadosFinalizados: []string{"ganado"},
 		EstadosProceso:     []string{"contactado", "calificado", "propuesta", "negociacion", "reactivado"},
+		MetaCumplimiento:   60,
 	},
 	{
 		ModuloKey:          "produccion_ordenes",
@@ -1951,6 +2023,7 @@ var reporteCadenaCumplimientoDefs = []reporteCadenaCumplimientoDef{
 		MontoColumna:       "costo_real",
 		EstadosFinalizados: []string{"entregado", "cerrado", "finalizada", "aplicada"},
 		EstadosProceso:     []string{"confirmado", "en_preparacion", "despachado", "planificada", "en_proceso"},
+		MetaCumplimiento:   80,
 	},
 	{
 		ModuloKey:          "logistica_envios",
@@ -1961,6 +2034,7 @@ var reporteCadenaCumplimientoDefs = []reporteCadenaCumplimientoDef{
 		MontoColumna:       "costo_envio",
 		EstadosFinalizados: []string{"entregado", "cerrado", "aplicado"},
 		EstadosProceso:     []string{"programado", "en_ruta", "despachado", "en_preparacion"},
+		MetaCumplimiento:   90,
 	},
 }
 
@@ -1975,6 +2049,9 @@ func (b *reportesBuilder) buildOperativoCadenaCumplimientoDataset() (empresaRepo
 		"en_proceso",
 		"finalizados",
 		"cumplimiento_pct",
+		"meta_cumplimiento_pct",
+		"desviacion_meta_pct",
+		"estado_meta",
 		"monto_referencia",
 		"fecha_columna",
 		"nota",
@@ -1987,23 +2064,27 @@ func (b *reportesBuilder) buildOperativoCadenaCumplimientoDataset() (empresaRepo
 	var finalizadosTotal int64
 	var enProcesoTotal int64
 	var montoReferenciaTotal float64
+	metaCumplimientoAcumulada := 0.0
 
 	cumplimientoPorModulo := make(map[string]float64)
 
 	for _, def := range reporteCadenaCumplimientoDefs {
 		row := map[string]interface{}{
-			"modulo_key":        def.ModuloKey,
-			"modulo":            def.Modulo,
-			"tabla":             def.Tabla,
-			"registros_totales": int64(0),
-			"registros_activos": int64(0),
-			"registros_rango":   int64(0),
-			"en_proceso":        int64(0),
-			"finalizados":       int64(0),
-			"cumplimiento_pct":  float64(0),
-			"monto_referencia":  float64(0),
-			"fecha_columna":     "",
-			"nota":              "ok",
+			"modulo_key":            def.ModuloKey,
+			"modulo":                def.Modulo,
+			"tabla":                 def.Tabla,
+			"registros_totales":     int64(0),
+			"registros_activos":     int64(0),
+			"registros_rango":       int64(0),
+			"en_proceso":            int64(0),
+			"finalizados":           int64(0),
+			"cumplimiento_pct":      float64(0),
+			"meta_cumplimiento_pct": reportesRound(def.MetaCumplimiento),
+			"desviacion_meta_pct":   float64(0),
+			"estado_meta":           "sin_meta",
+			"monto_referencia":      float64(0),
+			"fecha_columna":         "",
+			"nota":                  "ok",
 		}
 
 		tablaExiste, err := b.reportesTableExists(def.Tabla)
@@ -2099,6 +2180,15 @@ func (b *reportesBuilder) buildOperativoCadenaCumplimientoDataset() (empresaRepo
 		if rango > 0 {
 			cumplimiento = reportesRound((float64(finalizados) * 100.0) / float64(rango))
 		}
+		desviacionMeta := reportesRound(cumplimiento - def.MetaCumplimiento)
+		estadoMeta := "sin_meta"
+		if def.MetaCumplimiento > 0 {
+			if desviacionMeta >= 0 {
+				estadoMeta = "en_meta"
+			} else {
+				estadoMeta = "bajo_meta"
+			}
+		}
 
 		row["registros_totales"] = total
 		row["registros_activos"] = activos
@@ -2106,6 +2196,9 @@ func (b *reportesBuilder) buildOperativoCadenaCumplimientoDataset() (empresaRepo
 		row["en_proceso"] = enProceso
 		row["finalizados"] = finalizados
 		row["cumplimiento_pct"] = cumplimiento
+		row["meta_cumplimiento_pct"] = reportesRound(def.MetaCumplimiento)
+		row["desviacion_meta_pct"] = desviacionMeta
+		row["estado_meta"] = estadoMeta
 		row["monto_referencia"] = reportesRound(montoReferencia)
 		row["fecha_columna"] = fechaColumna
 
@@ -2117,6 +2210,7 @@ func (b *reportesBuilder) buildOperativoCadenaCumplimientoDataset() (empresaRepo
 		enProcesoTotal += enProceso
 		montoReferenciaTotal += montoReferencia
 		cumplimientoPorModulo[def.ModuloKey] = cumplimiento
+		metaCumplimientoAcumulada += def.MetaCumplimiento
 	}
 
 	ds.RowCount = len(ds.Rows)
@@ -2129,6 +2223,9 @@ func (b *reportesBuilder) buildOperativoCadenaCumplimientoDataset() (empresaRepo
 	ds.Summary["crm_conversion_pct"] = cumplimientoPorModulo["crm_leads"]
 	ds.Summary["produccion_cumplimiento_pct"] = cumplimientoPorModulo["produccion_ordenes"]
 	ds.Summary["logistica_cumplimiento_pct"] = cumplimientoPorModulo["logistica_envios"]
+	ds.Summary["crm_meta_pct"] = reportesRound(reporteCadenaCumplimientoDefs[0].MetaCumplimiento)
+	ds.Summary["produccion_meta_pct"] = reportesRound(reporteCadenaCumplimientoDefs[1].MetaCumplimiento)
+	ds.Summary["logistica_meta_pct"] = reportesRound(reporteCadenaCumplimientoDefs[2].MetaCumplimiento)
 	ds.Summary["rango_desde"] = reportesFirstNonBlank(strings.TrimSpace(b.desde), "sin_desde")
 	ds.Summary["rango_hasta"] = reportesFirstNonBlank(strings.TrimSpace(b.hasta), "sin_hasta")
 
@@ -2137,6 +2234,61 @@ func (b *reportesBuilder) buildOperativoCadenaCumplimientoDataset() (empresaRepo
 		cumplimientoGlobal = reportesRound((float64(finalizadosTotal) * 100.0) / float64(registrosRango))
 	}
 	ds.Summary["cumplimiento_global_pct"] = cumplimientoGlobal
+	metaGlobal := 0.0
+	if len(reporteCadenaCumplimientoDefs) > 0 {
+		metaGlobal = reportesRound(metaCumplimientoAcumulada / float64(len(reporteCadenaCumplimientoDefs)))
+	}
+	ds.Summary["meta_global_pct"] = metaGlobal
+	ds.Summary["desviacion_meta_global_pct"] = reportesRound(cumplimientoGlobal - metaGlobal)
+
+	return ds, nil
+}
+
+func (b *reportesBuilder) buildOperativoVentasEmbudoConversionDataset() (empresaReporteDataset, error) {
+	ds := b.newDataset(reporteDatasetOperativoVentasEmbudo, []string{
+		"cotizacion_id",
+		"cotizacion_codigo",
+		"fecha_cotizacion",
+		"vigencia_hasta",
+		"estado_cotizacion",
+		"total_cotizacion",
+		"pedido_id",
+		"pedido_codigo",
+		"fecha_pedido",
+		"estado_pedido",
+		"total_pedido",
+		"documento_final_id",
+		"documento_final_codigo",
+		"documento_final_tipo",
+		"estado_documento_final",
+		"fecha_documento_final",
+		"horas_desde_cotizacion",
+		"horas_desde_pedido",
+		"conversion_etapa",
+		"alerta_tipo",
+		"alerta",
+	})
+
+	snapshot, err := buildVentasEmbudoConversionSnapshot(
+		b.db,
+		b.empresaID,
+		b.desde,
+		b.hasta,
+		48,
+		72,
+		b.includeInactive,
+		b.maxRows,
+	)
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+
+	ds.Rows = append(ds.Rows, snapshot.Rows...)
+	ds.RowCount = len(ds.Rows)
+	for key, value := range snapshot.Summary {
+		ds.Summary[key] = value
+	}
+	ds.Summary["alertas_detalle"] = snapshot.Alertas
 
 	return ds, nil
 }

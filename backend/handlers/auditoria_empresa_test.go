@@ -383,6 +383,102 @@ func TestEmpresaAuditoriaEventosHandlerFiltrosAvanzados(t *testing.T) {
 	}
 }
 
+func TestEmpresaAuditoriaEventosHandlerExportForenseJSONYCSV(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_auditoria_handler_forense.db")
+	if err := dbpkg.EnsureEmpresaAuditoriaSchema(dbEmp); err != nil {
+		t.Fatalf("ensure auditoria schema: %v", err)
+	}
+
+	seed := []dbpkg.EmpresaAuditoriaEvento{
+		{
+			EmpresaID:      109,
+			Modulo:         "auditoria",
+			Accion:         "export_forense",
+			Recurso:        "auditoria/eventos",
+			MetodoHTTP:     "GET",
+			Endpoint:       "/api/empresa/auditoria/eventos",
+			Resultado:      "ok",
+			CodigoHTTP:     200,
+			Observaciones:  "exportacion inicial",
+			UsuarioCreador: "auditor@empresa.com",
+		},
+		{
+			EmpresaID:      109,
+			Modulo:         "auditoria",
+			Accion:         "retener",
+			Recurso:        "auditoria/eventos",
+			MetodoHTTP:     "PUT",
+			Endpoint:       "/api/empresa/auditoria/eventos",
+			Resultado:      "ok",
+			CodigoHTTP:     200,
+			Observaciones:  "ajuste de retencion",
+			UsuarioCreador: "auditor@empresa.com",
+		},
+	}
+	for i, item := range seed {
+		if _, err := dbpkg.CreateEmpresaAuditoriaEvento(dbEmp, item); err != nil {
+			t.Fatalf("create auditoria seed %d: %v", i+1, err)
+		}
+	}
+
+	h := EmpresaAuditoriaEventosHandler(dbEmp)
+
+	reqJSON := httptest.NewRequest(http.MethodGet, "/api/empresa/auditoria/eventos?action=export_forense&empresa_id=109&modulo=auditoria&format=json&limit=20", nil)
+	rrJSON := httptest.NewRecorder()
+	h.ServeHTTP(rrJSON, reqJSON)
+	if rrJSON.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, rrJSON.Code, rrJSON.Body.String())
+	}
+
+	var payload struct {
+		OK       bool `json:"ok"`
+		Manifest struct {
+			HashGlobal      string `json:"hash_global"`
+			HashCadenaFinal string `json:"hash_cadena_final"`
+			TotalRegistros  int    `json:"total_registros"`
+		} `json:"manifest"`
+		Registros []struct {
+			HashRegistro string `json:"hash_registro"`
+			HashCadena   string `json:"hash_cadena"`
+		} `json:"registros"`
+	}
+	if err := json.Unmarshal(rrJSON.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode export_forense json: %v", err)
+	}
+	if !payload.OK {
+		t.Fatalf("expected ok=true in export_forense json")
+	}
+	if payload.Manifest.TotalRegistros != 2 {
+		t.Fatalf("expected total_registros=2, got %d", payload.Manifest.TotalRegistros)
+	}
+	if strings.TrimSpace(payload.Manifest.HashGlobal) == "" {
+		t.Fatalf("expected hash_global in manifest")
+	}
+	if strings.TrimSpace(payload.Manifest.HashCadenaFinal) == "" {
+		t.Fatalf("expected hash_cadena_final in manifest")
+	}
+	if len(payload.Registros) != 2 {
+		t.Fatalf("expected 2 registros in export_forense json, got %d", len(payload.Registros))
+	}
+	if strings.TrimSpace(payload.Registros[0].HashRegistro) == "" || strings.TrimSpace(payload.Registros[0].HashCadena) == "" {
+		t.Fatalf("expected hash fields in registros")
+	}
+
+	reqCSV := httptest.NewRequest(http.MethodGet, "/api/empresa/auditoria/eventos?action=export_forense&empresa_id=109&modulo=auditoria&format=csv&limit=20", nil)
+	rrCSV := httptest.NewRecorder()
+	h.ServeHTTP(rrCSV, reqCSV)
+	if rrCSV.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, rrCSV.Code, rrCSV.Body.String())
+	}
+	if !strings.Contains(strings.ToLower(rrCSV.Header().Get("Content-Type")), "text/csv") {
+		t.Fatalf("expected text/csv content-type, got %q", rrCSV.Header().Get("Content-Type"))
+	}
+	bodyCSV := rrCSV.Body.String()
+	if !strings.Contains(bodyCSV, "hash_cadena") {
+		t.Fatalf("expected csv body to include hash_cadena column, got body=%s", bodyCSV)
+	}
+}
+
 func TestWithEmpresaVentasPermissionsRegistraRequestIDDesdeMiddleware(t *testing.T) {
 	dbEmp := openTestSQLite(t, "empresas_auditoria_reqid.db")
 	dbSuper := openTestSQLite(t, "super_auditoria_reqid.db")

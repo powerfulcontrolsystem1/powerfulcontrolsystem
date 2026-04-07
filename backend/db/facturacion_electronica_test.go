@@ -159,3 +159,130 @@ func TestPrepareFacturacionDocumentoLegalRejectsConfigInactivaAndRangoAgotado(t 
 		t.Fatalf("expected agotado error, got %v", err)
 	}
 }
+
+func TestFacturacionElectronicaRetryUpsertGetAndList(t *testing.T) {
+	dbConn := openFinanzasTestDB(t)
+	if err := EnsureEmpresaFacturacionElectronicaSchema(dbConn); err != nil {
+		t.Fatalf("ensure facturacion schema: %v", err)
+	}
+
+	seedFacturacionLegalConfig(
+		t,
+		dbConn,
+		510,
+		time.Now().AddDate(0, -1, 0).Format("2006-01-02"),
+		time.Now().AddDate(1, 0, 0).Format("2006-01-02"),
+		1,
+		999999,
+		1,
+		"activo",
+	)
+
+	persistido, err := UpsertFacturacionElectronicaRetry(dbConn, FacturacionElectronicaRetryItem{
+		EmpresaID:         510,
+		TipoDocumento:     "factura_electronica",
+		DocumentoCodigo:   "FAC-RETRY-510",
+		PaisCodigo:        "CO",
+		Proveedor:         "manual",
+		Ambiente:          "produccion",
+		EstadoEnvio:       "fallido",
+		Intentos:          2,
+		MaxIntentos:       6,
+		ProximoIntento:    time.Now().Add(10 * time.Minute).Format("2006-01-02 15:04:05"),
+		UltimoError:       "timeout proveedor",
+		NumeroLegal:       "FE-510",
+		CodigoValidacion:  "VALID-510",
+		FechaEmisionLegal: "2026-04-05",
+		UsuarioCreador:    "qa@test.com",
+		Estado:            "activo",
+	})
+	if err != nil {
+		t.Fatalf("upsert retry item: %v", err)
+	}
+	if persistido == nil || persistido.ID <= 0 {
+		t.Fatalf("expected persisted retry with id > 0")
+	}
+	if persistido.EstadoEnvio != "fallido" {
+		t.Fatalf("expected estado_envio fallido, got %q", persistido.EstadoEnvio)
+	}
+	if persistido.MaxIntentos != 6 {
+		t.Fatalf("expected max_intentos 6, got %d", persistido.MaxIntentos)
+	}
+
+	consultado, err := GetFacturacionElectronicaRetryByDocumento(dbConn, 510, "factura_electronica", "FAC-RETRY-510")
+	if err != nil {
+		t.Fatalf("get retry by documento: %v", err)
+	}
+	if consultado.Intentos != 2 {
+		t.Fatalf("expected intentos 2, got %d", consultado.Intentos)
+	}
+	if strings.TrimSpace(consultado.UltimoError) == "" {
+		t.Fatalf("expected ultimo_error not empty")
+	}
+
+	items, err := ListFacturacionElectronicaRetriesByEmpresa(dbConn, 510, FacturacionElectronicaRetryFilter{
+		EstadoEnvio: "fallido",
+		Limit:       10,
+		Offset:      0,
+	})
+	if err != nil {
+		t.Fatalf("list retries by empresa: %v", err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("expected 1 retry item, got %d", len(items))
+	}
+	if items[0].DocumentoCodigo != "FAC-RETRY-510" {
+		t.Fatalf("expected documento FAC-RETRY-510, got %q", items[0].DocumentoCodigo)
+	}
+
+	actualizado, err := UpsertFacturacionElectronicaRetry(dbConn, FacturacionElectronicaRetryItem{
+		EmpresaID:         510,
+		TipoDocumento:     "factura_electronica",
+		DocumentoCodigo:   "FAC-RETRY-510",
+		PaisCodigo:        "CO",
+		Proveedor:         "manual",
+		Ambiente:          "produccion",
+		EstadoEnvio:       "enviado",
+		Intentos:          3,
+		MaxIntentos:       6,
+		ReferenciaExterna: "MANUAL-REF-510",
+		UsuarioCreador:    "qa@test.com",
+		Estado:            "activo",
+	})
+	if err != nil {
+		t.Fatalf("update retry item: %v", err)
+	}
+	if actualizado.EstadoEnvio != "enviado" {
+		t.Fatalf("expected estado_envio enviado, got %q", actualizado.EstadoEnvio)
+	}
+	if actualizado.ReferenciaExterna != "MANUAL-REF-510" {
+		t.Fatalf("expected referencia_externa MANUAL-REF-510, got %q", actualizado.ReferenciaExterna)
+	}
+}
+
+func TestFacturacionElectronicaRetryNormalizaNoAplicaEnSandbox(t *testing.T) {
+	dbConn := openFinanzasTestDB(t)
+	if err := EnsureEmpresaFacturacionElectronicaSchema(dbConn); err != nil {
+		t.Fatalf("ensure facturacion schema: %v", err)
+	}
+
+	persistido, err := UpsertFacturacionElectronicaRetry(dbConn, FacturacionElectronicaRetryItem{
+		EmpresaID:       511,
+		TipoDocumento:   "factura_electronica",
+		DocumentoCodigo: "FAC-SANDBOX-511",
+		PaisCodigo:      "CO",
+		Proveedor:       "manual",
+		Ambiente:        "sandbox",
+		EstadoEnvio:     "pendiente",
+		Intentos:        0,
+		MaxIntentos:     5,
+		UsuarioCreador:  "qa@test.com",
+		Estado:          "activo",
+	})
+	if err != nil {
+		t.Fatalf("upsert sandbox retry: %v", err)
+	}
+	if persistido.EstadoEnvio != "no_aplica" {
+		t.Fatalf("expected estado_envio no_aplica in sandbox, got %q", persistido.EstadoEnvio)
+	}
+}

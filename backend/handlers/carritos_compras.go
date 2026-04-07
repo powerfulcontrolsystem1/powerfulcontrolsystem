@@ -9,6 +9,7 @@ import (
 	"log"
 	"math"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -32,6 +33,83 @@ func EmpresaCarritosCompraHandler(dbEmp *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
+			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+			if action == "metricas_estacion" {
+				empresaID, err := parseEmpresaIDQuery(r)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				estacionID, err := parseOptionalInt64CarritoQuery(r, "estacion_id")
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				days, err := parseOptionalIntCarritoQuery(r, "days")
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				if days <= 0 {
+					days = 7
+				}
+				limit, err := parseOptionalIntCarritoQuery(r, "limit")
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				if limit <= 0 {
+					limit = 10
+				}
+
+				rows, err := dbpkg.ListCarritoStationMetricSummary(dbEmp, empresaID, estacionID, days, limit)
+				if err != nil {
+					log.Printf("[carritos] metricas_estacion empresa_id=%d estacion_id=%d error: %v", empresaID, estacionID, err)
+					http.Error(w, "No se pudieron consultar metricas de estacion", http.StatusInternalServerError)
+					return
+				}
+
+				resumen := map[string]interface{}{
+					"estaciones":               len(rows),
+					"ventas_pagadas":           int64(0),
+					"correcciones":             int64(0),
+					"monto_vendido":            0.0,
+					"monto_pagado":             0.0,
+					"monto_anulado":            0.0,
+					"devolucion_total":         0.0,
+					"tiempo_promedio_segundos": 0.0,
+				}
+				totalTiempoPonderado := 0.0
+				totalVentasPonderadas := int64(0)
+				for _, row := range rows {
+					resumen["ventas_pagadas"] = resumen["ventas_pagadas"].(int64) + row.VentasPagadas
+					resumen["correcciones"] = resumen["correcciones"].(int64) + row.Correcciones
+					resumen["monto_vendido"] = roundMoneyCarritoHandler(resumen["monto_vendido"].(float64) + row.MontoVendido)
+					resumen["monto_pagado"] = roundMoneyCarritoHandler(resumen["monto_pagado"].(float64) + row.MontoPagado)
+					resumen["monto_anulado"] = roundMoneyCarritoHandler(resumen["monto_anulado"].(float64) + row.MontoAnulado)
+					resumen["devolucion_total"] = roundMoneyCarritoHandler(resumen["devolucion_total"].(float64) + row.DevolucionTotal)
+					if row.VentasPagadas > 0 && row.TiempoPromedioSegundos > 0 {
+						totalTiempoPonderado += row.TiempoPromedioSegundos * float64(row.VentasPagadas)
+						totalVentasPonderadas += row.VentasPagadas
+					}
+				}
+				if totalVentasPonderadas > 0 {
+					resumen["tiempo_promedio_segundos"] = roundMoneyCarritoHandler(totalTiempoPonderado / float64(totalVentasPonderadas))
+				}
+
+				writeJSON(w, http.StatusOK, map[string]interface{}{
+					"rows":    rows,
+					"resumen": resumen,
+					"filtros": map[string]interface{}{
+						"empresa_id":  empresaID,
+						"estacion_id": estacionID,
+						"days":        days,
+						"limit":       limit,
+					},
+				})
+				return
+			}
+
 			empresaID, err := parseEmpresaIDQuery(r)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
@@ -474,6 +552,34 @@ func EmpresaCarritosCompraHandler(dbEmp *sql.DB) http.HandlerFunc {
 					"estado_venta_anterior": carrito.EstadoVenta,
 					"estado_venta_nuevo":    "venta_pagada",
 				}, "pago de venta en estacion")
+
+				carritoPagado, errCarritoPagado := dbpkg.GetCarritoCompraByID(dbEmp, empresaID, id)
+				if errCarritoPagado != nil {
+					log.Printf("[carritos] get after pagar_estacion empresa_id=%d id=%d error: %v", empresaID, id, errCarritoPagado)
+					carritoPagado = carrito
+				}
+				estacionID, estacionCodigo, estacionNombre := dbpkg.ResolveCarritoStationIdentity(carritoPagado)
+				if _, errMetric := dbpkg.RecordCarritoStationMetric(dbEmp, dbpkg.CarritoStationMetricInput{
+					EmpresaID:           empresaID,
+					CarritoID:           id,
+					EstacionID:          estacionID,
+					EstacionCodigo:      estacionCodigo,
+					EstacionNombre:      estacionNombre,
+					EventoOperacion:     "venta_pagada",
+					MetodoPago:          metodoPago,
+					Moneda:              carritoPagado.Moneda,
+					MontoTotal:          carritoPagado.Total,
+					MontoPagado:         montoEvento,
+					DevolucionTotal:     devolucionTotal,
+					ActivadoEn:          carritoPagado.ActivadoEn,
+					PagadoEn:            carritoPagado.PagadoEn,
+					ReferenciaOperacion: referenciaPago,
+					UsuarioCreador:      usuarioOperacion,
+					Observaciones:       "cierre de venta simple por estacion",
+				}); errMetric != nil {
+					log.Printf("[carritos] metrica venta_pagada empresa_id=%d carrito_id=%d error: %v", empresaID, id, errMetric)
+				}
+
 				writeJSON(w, http.StatusOK, map[string]interface{}{
 					"ok":                         true,
 					"estado":                     "inactivo",
@@ -515,6 +621,216 @@ func EmpresaCarritosCompraHandler(dbEmp *sql.DB) http.HandlerFunc {
 						"habilitar_propinas":                 permisosOperativos.HabilitarPropinas,
 						"habilitar_comisiones":               permisosOperativos.HabilitarComisiones,
 					},
+				})
+				return
+			}
+
+			if action == "recuperar_interrumpido" {
+				empresaID, errEmp := parseEmpresaIDQuery(r)
+				if errEmp != nil {
+					http.Error(w, errEmp.Error(), http.StatusBadRequest)
+					return
+				}
+				id, errID := parseInt64Query(r, "id")
+				if errID != nil {
+					http.Error(w, errID.Error(), http.StatusBadRequest)
+					return
+				}
+
+				carrito, errCarrito := dbpkg.GetCarritoCompraByID(dbEmp, empresaID, id)
+				if errCarrito != nil {
+					if errors.Is(errCarrito, sql.ErrNoRows) {
+						http.Error(w, "carrito no encontrado", http.StatusNotFound)
+						return
+					}
+					log.Printf("[carritos] get for recuperar_interrumpido empresa_id=%d id=%d error: %v", empresaID, id, errCarrito)
+					http.Error(w, "No se pudo validar estado del carrito", http.StatusInternalServerError)
+					return
+				}
+				if isCarritoVentaPagada(carrito) {
+					http.Error(w, "la venta ya fue pagada; para iniciar una nueva sesion use activar_estacion con reset_items=1", http.StatusConflict)
+					return
+				}
+
+				if err := dbpkg.RecoverInterruptedCarritoSession(dbEmp, empresaID, id); err != nil {
+					log.Printf("[carritos] recuperar_interrumpido empresa_id=%d id=%d error: %v", empresaID, id, err)
+					http.Error(w, "No se pudo recuperar el carrito interrumpido", http.StatusInternalServerError)
+					return
+				}
+
+				carritoActualizado, errUpdated := dbpkg.GetCarritoCompraByID(dbEmp, empresaID, id)
+				if errUpdated != nil {
+					log.Printf("[carritos] get after recuperar_interrumpido empresa_id=%d id=%d error: %v", empresaID, id, errUpdated)
+					carritoActualizado = carrito
+				}
+
+				registrarEventoContableVentaCarrito(dbEmp, r, carritoActualizado, "venta_interrumpida_recuperada", carritoActualizado.Total, map[string]interface{}{
+					"action":                  "recuperar_interrumpido",
+					"estado_registro_previo":  normalizeCarritoRegistroEstado(carrito.Estado),
+					"estado_operativo_previo": normalizeCarritoOperativoEstado(carrito.EstadoCarrito),
+					"estado_venta_anterior":   carrito.EstadoVenta,
+					"estado_venta_nuevo":      carritoActualizado.EstadoVenta,
+				}, "recuperacion de carrito interrumpido")
+
+				registrarAuditoriaCarritoOperacionNoBloqueante(dbEmp, r, empresaID, id, "recuperar_interrumpido", http.StatusOK, map[string]interface{}{
+					"estado_registro_previo":  normalizeCarritoRegistroEstado(carrito.Estado),
+					"estado_operativo_previo": normalizeCarritoOperativoEstado(carrito.EstadoCarrito),
+					"estado_registro_nuevo":   normalizeCarritoRegistroEstado(carritoActualizado.Estado),
+					"estado_operativo_nuevo":  normalizeCarritoOperativoEstado(carritoActualizado.EstadoCarrito),
+					"estado_venta_nuevo":      carritoActualizado.EstadoVenta,
+					"pagado_en":               strings.TrimSpace(carritoActualizado.PagadoEn),
+				}, "recuperacion manual de carrito interrumpido")
+
+				estacionID, estacionCodigo, estacionNombre := dbpkg.ResolveCarritoStationIdentity(carritoActualizado)
+				if _, errMetric := dbpkg.RecordCarritoStationMetric(dbEmp, dbpkg.CarritoStationMetricInput{
+					EmpresaID:       empresaID,
+					CarritoID:       id,
+					EstacionID:      estacionID,
+					EstacionCodigo:  estacionCodigo,
+					EstacionNombre:  estacionNombre,
+					EventoOperacion: "sesion_recuperada",
+					MetodoPago:      carritoActualizado.MetodoPago,
+					Moneda:          carritoActualizado.Moneda,
+					MontoTotal:      carritoActualizado.Total,
+					MontoPagado:     carritoActualizado.TotalPagado,
+					DevolucionTotal: carritoActualizado.DevolucionTotal,
+					ActivadoEn:      carritoActualizado.ActivadoEn,
+					PagadoEn:        carritoActualizado.PagadoEn,
+					UsuarioCreador:  strings.TrimSpace(adminEmailFromRequest(r)),
+					Observaciones:   "recuperacion operativa de sesion interrumpida",
+				}); errMetric != nil {
+					log.Printf("[carritos] metrica sesion_recuperada empresa_id=%d carrito_id=%d error: %v", empresaID, id, errMetric)
+				}
+
+				writeJSON(w, http.StatusOK, map[string]interface{}{
+					"ok":             true,
+					"estado":         normalizeCarritoRegistroEstado(carritoActualizado.Estado),
+					"estado_carrito": normalizeCarritoOperativoEstado(carritoActualizado.EstadoCarrito),
+					"estado_venta":   carritoActualizado.EstadoVenta,
+					"activado_en":    strings.TrimSpace(carritoActualizado.ActivadoEn),
+				})
+				return
+			}
+
+			if action == "anular_cierre_parcial" {
+				empresaID, errEmp := parseEmpresaIDQuery(r)
+				if errEmp != nil {
+					http.Error(w, errEmp.Error(), http.StatusBadRequest)
+					return
+				}
+				id, errID := parseInt64Query(r, "id")
+				if errID != nil {
+					http.Error(w, errID.Error(), http.StatusBadRequest)
+					return
+				}
+
+				carrito, errCarrito := dbpkg.GetCarritoCompraByID(dbEmp, empresaID, id)
+				if errCarrito != nil {
+					if errors.Is(errCarrito, sql.ErrNoRows) {
+						http.Error(w, "carrito no encontrado", http.StatusNotFound)
+						return
+					}
+					log.Printf("[carritos] get for anular_cierre_parcial empresa_id=%d id=%d error: %v", empresaID, id, errCarrito)
+					http.Error(w, "No se pudo validar estado del carrito", http.StatusInternalServerError)
+					return
+				}
+				if !isCarritoVentaPagada(carrito) {
+					http.Error(w, "solo se puede anular parcialmente una venta pagada", http.StatusConflict)
+					return
+				}
+
+				var payload struct {
+					MontoAnulado float64 `json:"monto_anulado"`
+					Monto        float64 `json:"monto"`
+					Motivo       string  `json:"motivo"`
+				}
+				if r.Body != nil {
+					if err := json.NewDecoder(r.Body).Decode(&payload); err != nil && err != io.EOF {
+						http.Error(w, "JSON invalido", http.StatusBadRequest)
+						return
+					}
+				}
+
+				montoAnulado := roundMoneyCarritoHandler(payload.MontoAnulado)
+				if montoAnulado <= 0 {
+					montoAnulado = roundMoneyCarritoHandler(payload.Monto)
+				}
+				if montoAnulado <= 0 {
+					http.Error(w, "monto_anulado debe ser mayor a cero", http.StatusBadRequest)
+					return
+				}
+				motivo := strings.TrimSpace(payload.Motivo)
+				if motivo == "" {
+					motivo = "anulacion parcial de cierre"
+				}
+
+				totalPagadoNuevo, devolucionTotalNueva, errCancel := dbpkg.CancelCarritoPartialClosure(dbEmp, empresaID, id, montoAnulado)
+				if errCancel != nil {
+					http.Error(w, errCancel.Error(), http.StatusBadRequest)
+					return
+				}
+
+				carritoActualizado, errUpdated := dbpkg.GetCarritoCompraByID(dbEmp, empresaID, id)
+				if errUpdated != nil {
+					log.Printf("[carritos] get after anular_cierre_parcial empresa_id=%d id=%d error: %v", empresaID, id, errUpdated)
+					carritoActualizado = carrito
+					carritoActualizado.TotalPagado = totalPagadoNuevo
+					carritoActualizado.DevolucionTotal = devolucionTotalNueva
+				}
+
+				registrarEventoContableVentaCarrito(dbEmp, r, carritoActualizado, "venta_cierre_parcial_anulada", montoAnulado, map[string]interface{}{
+					"action":                    "anular_cierre_parcial",
+					"motivo":                    motivo,
+					"monto_anulado":             montoAnulado,
+					"total_pagado_anterior":     carrito.TotalPagado,
+					"total_pagado_nuevo":        totalPagadoNuevo,
+					"devolucion_total_anterior": carrito.DevolucionTotal,
+					"devolucion_total_nueva":    devolucionTotalNueva,
+					"metodo_pago":               strings.TrimSpace(carrito.MetodoPago),
+				}, "anulacion parcial de cierre de venta")
+
+				registrarAuditoriaCarritoOperacionNoBloqueante(dbEmp, r, empresaID, id, "anular_cierre_parcial", http.StatusOK, map[string]interface{}{
+					"motivo":                    motivo,
+					"monto_anulado":             montoAnulado,
+					"total_pagado_anterior":     carrito.TotalPagado,
+					"total_pagado_nuevo":        totalPagadoNuevo,
+					"devolucion_total_anterior": carrito.DevolucionTotal,
+					"devolucion_total_nueva":    devolucionTotalNueva,
+					"estado_venta":              carritoActualizado.EstadoVenta,
+				}, "anulacion parcial de cierre en carrito pagado")
+
+				estacionID, estacionCodigo, estacionNombre := dbpkg.ResolveCarritoStationIdentity(carritoActualizado)
+				if _, errMetric := dbpkg.RecordCarritoStationMetric(dbEmp, dbpkg.CarritoStationMetricInput{
+					EmpresaID:           empresaID,
+					CarritoID:           id,
+					EstacionID:          estacionID,
+					EstacionCodigo:      estacionCodigo,
+					EstacionNombre:      estacionNombre,
+					EventoOperacion:     "cierre_parcial_anulado",
+					MetodoPago:          carritoActualizado.MetodoPago,
+					Moneda:              carritoActualizado.Moneda,
+					MontoTotal:          carritoActualizado.Total,
+					MontoPagado:         totalPagadoNuevo,
+					MontoAnulado:        montoAnulado,
+					DevolucionTotal:     devolucionTotalNueva,
+					ActivadoEn:          carritoActualizado.ActivadoEn,
+					PagadoEn:            carritoActualizado.PagadoEn,
+					ReferenciaOperacion: motivo,
+					UsuarioCreador:      strings.TrimSpace(adminEmailFromRequest(r)),
+					Observaciones:       "correccion rapida post-cobro",
+				}); errMetric != nil {
+					log.Printf("[carritos] metrica cierre_parcial_anulado empresa_id=%d carrito_id=%d error: %v", empresaID, id, errMetric)
+				}
+
+				writeJSON(w, http.StatusOK, map[string]interface{}{
+					"ok":                    true,
+					"estado":                normalizeCarritoRegistroEstado(carritoActualizado.Estado),
+					"estado_carrito":        normalizeCarritoOperativoEstado(carritoActualizado.EstadoCarrito),
+					"estado_venta":          carritoActualizado.EstadoVenta,
+					"monto_anulado":         montoAnulado,
+					"total_pagado_anterior": carrito.TotalPagado,
+					"total_pagado_nuevo":    totalPagadoNuevo,
+					"devolucion_total":      devolucionTotalNueva,
 				})
 				return
 			}
@@ -925,6 +1241,49 @@ func registrarEventoContableVentaCarrito(dbEmp *sql.DB, r *http.Request, carrito
 	}, payload)
 }
 
+func registrarAuditoriaCarritoOperacionNoBloqueante(dbEmp *sql.DB, r *http.Request, empresaID, carritoID int64, accion string, statusCode int, metadata map[string]interface{}, observaciones string) {
+	if dbEmp == nil || empresaID <= 0 || carritoID <= 0 {
+		return
+	}
+	accion = strings.TrimSpace(strings.ToLower(accion))
+	if accion == "" {
+		return
+	}
+
+	metadataJSON := "{}"
+	if metadata != nil {
+		if raw, err := json.Marshal(metadata); err != nil {
+			log.Printf("[carritos] auditoria metadata invalida empresa_id=%d carrito_id=%d accion=%s error=%v", empresaID, carritoID, accion, err)
+		} else {
+			metadataJSON = string(raw)
+		}
+	}
+
+	auditoria := dbpkg.EmpresaAuditoriaEvento{
+		EmpresaID:      empresaID,
+		Modulo:         "ventas",
+		Accion:         accion,
+		Recurso:        "carritos_compra",
+		RecursoID:      carritoID,
+		MetodoHTTP:     strings.ToUpper(strings.TrimSpace(r.Method)),
+		Endpoint:       strings.TrimSpace(r.URL.Path),
+		Resultado:      resolveAuditoriaResultado(statusCode),
+		CodigoHTTP:     int64(statusCode),
+		RequestID:      resolveAuditoriaRequestID(r),
+		IPOrigen:       resolveAuditoriaIP(r),
+		UserAgent:      strings.TrimSpace(r.UserAgent()),
+		MetadataJSON:   metadataJSON,
+		RetencionDias:  normalizeRetencionDiasForHandler(0),
+		UsuarioCreador: strings.TrimSpace(adminEmailFromRequest(r)),
+		Estado:         "activo",
+		Observaciones:  strings.TrimSpace(observaciones),
+	}
+
+	if _, err := dbpkg.CreateEmpresaAuditoriaEvento(dbEmp, auditoria); err != nil {
+		log.Printf("[carritos] auditoria omitida empresa_id=%d carrito_id=%d accion=%s error=%v", empresaID, carritoID, accion, err)
+	}
+}
+
 func validateCarritoItemPayload(payload dbpkg.CarritoCompraItem) error {
 	if payload.EmpresaID <= 0 {
 		return fmt.Errorf("empresa_id es obligatorio")
@@ -1016,4 +1375,28 @@ func pagosMixtosToEventPayload(pagos []carritoPagoMixtoNormalizado) []map[string
 		})
 	}
 	return out
+}
+
+func parseOptionalInt64CarritoQuery(r *http.Request, key string) (int64, error) {
+	raw := strings.TrimSpace(r.URL.Query().Get(key))
+	if raw == "" {
+		return 0, nil
+	}
+	v, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("%s invalido", key)
+	}
+	return v, nil
+}
+
+func parseOptionalIntCarritoQuery(r *http.Request, key string) (int, error) {
+	raw := strings.TrimSpace(r.URL.Query().Get(key))
+	if raw == "" {
+		return 0, nil
+	}
+	v, err := strconv.Atoi(raw)
+	if err != nil {
+		return 0, fmt.Errorf("%s invalido", key)
+	}
+	return v, nil
 }

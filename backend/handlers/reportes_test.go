@@ -68,6 +68,9 @@ func ensureEmpresaReportesSchema(t *testing.T, dbEmp *sql.DB) {
 	if err := dbpkg.EnsureEmpresaModulosFaltantesSchema(dbEmp); err != nil {
 		t.Fatalf("EnsureEmpresaModulosFaltantesSchema: %v", err)
 	}
+	if err := dbpkg.EnsureEmpresaReportesProgramacionSchema(dbEmp); err != nil {
+		t.Fatalf("EnsureEmpresaReportesProgramacionSchema: %v", err)
+	}
 }
 
 func reporteDatasetFindRowByModuloKey(rows []map[string]interface{}, key string) (map[string]interface{}, bool) {
@@ -897,6 +900,12 @@ func TestEmpresaReportesHandlerDatasetOperativoCadenaCumplimiento(t *testing.T) 
 	if got := reporteDatasetToInt64(crmRow["monto_referencia"]); got != 1500 {
 		t.Fatalf("crm_leads monto_referencia esperado=1500 obtenido=%d", got)
 	}
+	if got := reporteDatasetToInt64(crmRow["meta_cumplimiento_pct"]); got != 60 {
+		t.Fatalf("crm_leads meta_cumplimiento_pct esperado=60 obtenido=%d", got)
+	}
+	if got := strings.ToLower(strings.TrimSpace(genericStringValue(crmRow["estado_meta"]))); got != "bajo_meta" {
+		t.Fatalf("crm_leads estado_meta esperado=bajo_meta obtenido=%s", got)
+	}
 
 	prodRow, ok := reporteDatasetFindRowByModuloKey(ds.Rows, "produccion_ordenes")
 	if !ok {
@@ -947,6 +956,129 @@ func TestEmpresaReportesHandlerDatasetOperativoCadenaCumplimiento(t *testing.T) 
 	}
 	if got := reporteDatasetToFloat64(ds.Summary["cumplimiento_global_pct"]); got < 49.9 || got > 50.1 {
 		t.Fatalf("summary cumplimiento_global_pct esperado~50 obtenido=%v", ds.Summary["cumplimiento_global_pct"])
+	}
+	if got := reporteDatasetToFloat64(ds.Summary["meta_global_pct"]); got < 76.6 || got > 76.7 {
+		t.Fatalf("summary meta_global_pct esperado~76.67 obtenido=%v", ds.Summary["meta_global_pct"])
+	}
+	if got := reporteDatasetToFloat64(ds.Summary["desviacion_meta_global_pct"]); got > -26.6 || got < -26.7 {
+		t.Fatalf("summary desviacion_meta_global_pct esperado~-26.67 obtenido=%v", ds.Summary["desviacion_meta_global_pct"])
+	}
+}
+
+func TestEmpresaReportesHandlerDatasetOperativoVentasEmbudoConversion(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_reportes_ventas_embudo_handler.db")
+	ensureEmpresaReportesSchema(t, dbEmp)
+
+	empresaID := int64(741)
+
+	cotizacionPendienteID, err := dbpkg.CreateEmpresaGenericRow(dbEmp, cfgCotizacionesVenta.Table, empresaID, map[string]interface{}{
+		"codigo":           "COT-R741-001",
+		"cliente_nombre":   "Cliente Pendiente",
+		"estado_documento": "emitida",
+		"fecha_documento":  "2026-04-01 09:00:00",
+		"vigencia_hasta":   "2026-04-03",
+		"total":            45000,
+	}, cfgCotizacionesVenta.AllowedColumns)
+	if err != nil {
+		t.Fatalf("Create cotizacion pendiente: %v", err)
+	}
+
+	cotizacionConvertidaID, err := dbpkg.CreateEmpresaGenericRow(dbEmp, cfgCotizacionesVenta.Table, empresaID, map[string]interface{}{
+		"codigo":           "COT-R741-002",
+		"cliente_nombre":   "Cliente Convertido",
+		"estado_documento": "convertida",
+		"fecha_documento":  "2026-04-02 10:00:00",
+		"total":            90000,
+	}, cfgCotizacionesVenta.AllowedColumns)
+	if err != nil {
+		t.Fatalf("Create cotizacion convertida: %v", err)
+	}
+
+	pedidoID, err := dbpkg.CreateEmpresaGenericRow(dbEmp, cfgPedidosVenta.Table, empresaID, map[string]interface{}{
+		"codigo":         "PED-R741-002",
+		"cliente_nombre": "Cliente Convertido",
+		"cotizacion_id":  cotizacionConvertidaID,
+		"fecha_pedido":   "2026-04-02 12:00:00",
+		"estado_pedido":  "entregado",
+		"total":          90000,
+	}, cfgPedidosVenta.AllowedColumns)
+	if err != nil {
+		t.Fatalf("Create pedido convertido: %v", err)
+	}
+	if err := dbpkg.UpdateEmpresaGenericRow(dbEmp, cfgCotizacionesVenta.Table, empresaID, cotizacionConvertidaID, map[string]interface{}{
+		"convertido_pedido_id": pedidoID,
+	}, cfgCotizacionesVenta.AllowedColumns); err != nil {
+		t.Fatalf("Update cotizacion convertida: %v", err)
+	}
+
+	if _, err := dbpkg.UpsertEmpresaDocumentoFacturacion(dbEmp, dbpkg.EmpresaDocumentoFacturacion{
+		EmpresaID:            empresaID,
+		TipoDocumento:        "factura_electronica",
+		DocumentoCodigo:      "FV-R741-002",
+		EstadoDocumento:      "emitida",
+		EventoUltimo:         "emitir",
+		MontoTotal:           90000,
+		Moneda:               "COP",
+		FechaDocumento:       "2026-04-02",
+		EntidadRelacionadaID: pedidoID,
+		UsuarioCreador:       "qa_reportes_embudo",
+		Estado:               "activo",
+	}); err != nil {
+		t.Fatalf("UpsertEmpresaDocumentoFacturacion embudo reporte: %v", err)
+	}
+
+	handler := EmpresaReportesHandler(dbEmp)
+	req := httptest.NewRequest(http.MethodGet, "/api/empresa/reportes?action=dataset&empresa_id=741&dataset=operativo_ventas_embudo_conversion&desde=2026-04-01&hasta=2026-04-30", nil)
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("dataset operativo_ventas_embudo_conversion status=%d body=%s", rr.Code, rr.Body.String())
+	}
+
+	var ds empresaReporteDataset
+	if err := json.Unmarshal(rr.Body.Bytes(), &ds); err != nil {
+		t.Fatalf("unmarshal operativo_ventas_embudo_conversion: %v", err)
+	}
+	if ds.Key != reporteDatasetOperativoVentasEmbudo {
+		t.Fatalf("dataset key esperado=%s obtenido=%s", reporteDatasetOperativoVentasEmbudo, ds.Key)
+	}
+	if ds.RowCount < 2 {
+		t.Fatalf("row_count esperado>=2 obtenido=%d body=%s", ds.RowCount, rr.Body.String())
+	}
+	if got := reporteDatasetToInt64(ds.Summary["cotizaciones_total"]); got < 2 {
+		t.Fatalf("summary cotizaciones_total esperado>=2 obtenido=%d", got)
+	}
+	if got := reporteDatasetToInt64(ds.Summary["cotizaciones_documento_final"]); got < 1 {
+		t.Fatalf("summary cotizaciones_documento_final esperado>=1 obtenido=%d", got)
+	}
+
+	if row, ok := reporteDatasetFindRowByIntField(ds.Rows, "cotizacion_id", cotizacionPendienteID); !ok {
+		t.Fatalf("no se encontro fila para cotizacion pendiente %d", cotizacionPendienteID)
+	} else {
+		if !strings.Contains(strings.ToLower(genericStringValue(row["alerta_tipo"])), "cotizacion") {
+			t.Fatalf("fila cotizacion pendiente debe traer alerta de cotizacion, obtenido=%v", row["alerta_tipo"])
+		}
+	}
+
+	if row, ok := reporteDatasetFindRowByIntField(ds.Rows, "cotizacion_id", cotizacionConvertidaID); !ok {
+		t.Fatalf("no se encontro fila para cotizacion convertida %d", cotizacionConvertidaID)
+	} else {
+		if got := strings.ToLower(strings.TrimSpace(genericStringValue(row["conversion_etapa"]))); got != "documento_final" {
+			t.Fatalf("conversion_etapa esperada=documento_final obtenida=%s", got)
+		}
+	}
+
+	reqExport := httptest.NewRequest(http.MethodGet, "/api/empresa/reportes?action=export&empresa_id=741&dataset=operativo_ventas_embudo_conversion&format=csv", nil)
+	rrExport := httptest.NewRecorder()
+	handler.ServeHTTP(rrExport, reqExport)
+	if rrExport.Code != http.StatusOK {
+		t.Fatalf("export csv embudo ventas status=%d body=%s", rrExport.Code, rrExport.Body.String())
+	}
+	if !strings.Contains(strings.ToLower(rrExport.Header().Get("Content-Type")), "text/csv") {
+		t.Fatalf("content-type csv esperado, obtenido=%s", rrExport.Header().Get("Content-Type"))
+	}
+	if !strings.Contains(rrExport.Body.String(), "cotizacion_codigo") {
+		t.Fatalf("csv export debe incluir cotizacion_codigo, body=%s", rrExport.Body.String())
 	}
 }
 

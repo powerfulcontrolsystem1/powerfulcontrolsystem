@@ -45,7 +45,10 @@
     empresaID: 0,
     domain: "ventas",
     rows: [],
-    selectedModuleKey: ""
+    selectedModuleKey: "",
+    guidedFields: [],
+    quickActions: [],
+    quickActionKey: ""
   };
 
   var STATE_MACHINE_MODULE_KEYS = {
@@ -60,6 +63,152 @@
   var INTEGRATION_MODULE_KEYS = {
     integraciones_apis: true,
     integraciones_bancos: true
+  };
+
+  var DOMAIN_GUIDES = {
+    ventas: {
+      objetivo: "Convertir oportunidades en documentos comerciales validos y trazables.",
+      flujo: [
+        "Registra cotizacion con cliente y montos base.",
+        "Promueve a pedido cuando haya aceptacion.",
+        "Usa devolucion cuando debas corregir o revertir una entrega."
+      ],
+      controles: [
+        "Verifica que total no sea menor a subtotal.",
+        "Consulta transiciones para mover estado sin romper el flujo.",
+        "Exporta el embudo para seguimiento comercial."
+      ]
+    },
+    finanzas: {
+      objetivo: "Mantener cuentas contables y cartera con saldos consistentes.",
+      flujo: [
+        "Define plan de cuentas por tipo de empresa.",
+        "Registra CxC y CxP con documento de referencia.",
+        "Concilia pagos y valida cierres de periodo antes de editar."
+      ],
+      controles: [
+        "Saldo no debe superar valor original.",
+        "Usa estados activo/inactivo para control operativo.",
+        "Bloquea cambios en periodos cerrados."
+      ]
+    },
+    inventario_compras_rrhh: {
+      objetivo: "Operar lotes, devoluciones y novedades RRHH sin perder trazabilidad.",
+      flujo: [
+        "Configura lote o serie con cantidades iniciales y disponibles.",
+        "Registra devolucion al proveedor con motivo y montos.",
+        "Captura vacaciones/licencias con rango de fechas valido."
+      ],
+      controles: [
+        "No permitas cantidades negativas.",
+        "Valida fecha fin mayor o igual a fecha inicio en RRHH.",
+        "Consulta detalle antes de desactivar o eliminar."
+      ]
+    },
+    crm: {
+      objetivo: "Gestionar embudo CRM por etapas y acciones comerciales.",
+      flujo: [
+        "Crea lead con canal de origen.",
+        "Registra interacciones con resumen operativo.",
+        "Activa campanas y monitorea conversion."
+      ],
+      controles: [
+        "Usa transiciones para mover estados de leads/campanas.",
+        "Registra observaciones de contacto para auditoria.",
+        "Mantiene filtros por texto para seguimiento rapido."
+      ]
+    },
+    produccion: {
+      objetivo: "Planificar BOM y ordenes con capacidad operativa real.",
+      flujo: [
+        "Crea BOM maestro y su detalle de insumos.",
+        "Programa ordenes con cantidad objetivo.",
+        "Consulta plan de capacidad para alertas de sobrecarga."
+      ],
+      controles: [
+        "Evita cantidades en cero para ordenes clave.",
+        "Usa detalle por ID para validar insumos.",
+        "Documenta incidencias en observaciones."
+      ]
+    },
+    logistica: {
+      objetivo: "Coordinar despacho, rutas y entregas con SLA.",
+      flujo: [
+        "Registra transportistas y rutas operativas.",
+        "Crea envios con direccion y cliente.",
+        "Consulta seguimiento de hitos para SLA."
+      ],
+      controles: [
+        "Mantiene datos de origen/destino normalizados.",
+        "Verifica estado antes de transicionar.",
+        "Aplica desactivacion logica para historico."
+      ]
+    },
+    documental_integraciones_dian: {
+      objetivo: "Gestionar evidencia documental e integraciones seguras por empresa.",
+      flujo: [
+        "Registra documento/firma con entidad y modulo.",
+        "Ejecuta health y sync en conectores API/Bancos.",
+        "Usa herramientas DIAN para checklist, validar y demos de CUFE/XML."
+      ],
+      controles: [
+        "Nunca persistas secretos en texto plano.",
+        "Rota credenciales con referencias seguras.",
+        "Monitorea conectores y corrige alertas de latencia."
+      ]
+    }
+  };
+
+  var MODULE_REQUIRED_FIELDS = {
+    ventas_cotizaciones: ["cliente_nombre", "subtotal", "total"],
+    ventas_pedidos: ["cliente_nombre", "subtotal", "total"],
+    ventas_devoluciones: ["motivo", "subtotal", "total"],
+    finanzas_plan_cuentas: ["codigo", "nombre", "tipo_cuenta"],
+    finanzas_cxc: ["cliente_nombre", "documento_codigo", "valor_original", "saldo"],
+    finanzas_cxp: ["proveedor_nombre", "documento_codigo", "valor_original", "saldo"],
+    inventario_lotes_series: ["producto_id", "codigo_lote_serie", "cantidad_inicial", "cantidad_disponible"],
+    compras_devoluciones_proveedor: ["proveedor_nombre", "motivo", "total"],
+    rrhh_vacaciones_licencias: ["empleado_nombre", "tipo_novedad", "fecha_inicio", "fecha_fin"],
+    crm_leads: ["nombre", "canal_origen"],
+    crm_interacciones: ["tipo_interaccion", "resumen"],
+    crm_campanas: ["nombre", "canal"],
+    produccion_bom: ["codigo", "producto_nombre"],
+    produccion_bom_detalle: ["bom_id", "insumo_nombre", "cantidad"],
+    produccion_ordenes: ["producto_nombre", "cantidad_programada"],
+    logistica_transportistas: ["nombre"],
+    logistica_rutas: ["nombre", "origen", "destino"],
+    logistica_envios: ["cliente_nombre", "direccion_entrega"],
+    documentos_gestion: ["modulo", "entidad", "nombre_documento"],
+    documentos_firmas: ["documento_gestion_id", "tipo_firma", "firmante_nombre"],
+    integraciones_apis: ["nombre_integracion", "tipo_integracion"],
+    integraciones_bancos: ["banco_nombre", "numero_cuenta"],
+    facturacion_dian: ["nit", "razon_social", "tipo_ambiente"]
+  };
+
+  var NON_NEGATIVE_FIELDS = {
+    subtotal: true,
+    total: true,
+    saldo: true,
+    valor_original: true,
+    cantidad: true,
+    cantidad_inicial: true,
+    cantidad_disponible: true,
+    cantidad_programada: true,
+    bom_id: true,
+    producto_id: true,
+    documento_gestion_id: true
+  };
+
+  var FIELD_PRESETS = {
+    tipo_cuenta: { type: "select", options: ["activo", "pasivo", "patrimonio", "ingreso", "egreso", "costo"] },
+    tipo_novedad: { type: "select", options: ["vacacion", "licencia", "permiso", "incapacidad"] },
+    tipo_ambiente: { type: "select", options: ["habilitacion", "produccion"] },
+    tipo_integracion: { type: "select", options: ["rest", "soap", "sftp", "manual"] },
+    tipo_interaccion: { type: "select", options: ["llamada", "correo", "visita", "chat", "otro"] },
+    canal: { type: "select", options: ["email", "sms", "whatsapp", "web", "otro"] },
+    canal_origen: { type: "select", options: ["web", "telefono", "referido", "redes", "otro"] },
+    tipo_firma: { type: "select", options: ["digital", "biometrica", "manual"] },
+    estado: { type: "select", options: ["activo", "inactivo"] }
   };
 
   function getQueryParam(name) {
@@ -274,6 +423,779 @@
     }
   }
 
+  function formatFieldLabel(fieldName) {
+    var source = normalize(fieldName).replace(/_/g, " ");
+    if (!source) {
+      return "Campo";
+    }
+    return source.charAt(0).toUpperCase() + source.slice(1);
+  }
+
+  function isFieldRequired(moduleConfig, fieldName) {
+    if (!moduleConfig || !fieldName) {
+      return false;
+    }
+    var required = MODULE_REQUIRED_FIELDS[moduleConfig.key] || [];
+    for (var i = 0; i < required.length; i += 1) {
+      if (required[i] === fieldName) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function isDateFieldName(fieldName) {
+    var key = normalize(fieldName).toLowerCase();
+    return key.indexOf("fecha_") === 0 || key.indexOf("_fecha") > 0;
+  }
+
+  function isLongTextFieldName(fieldName) {
+    var key = normalize(fieldName).toLowerCase();
+    return (
+      key.indexOf("observ") >= 0 ||
+      key.indexOf("resumen") >= 0 ||
+      key.indexOf("motivo") >= 0 ||
+      key.indexOf("descripcion") >= 0 ||
+      key.indexOf("direccion") >= 0 ||
+      key.indexOf("json") >= 0
+    );
+  }
+
+  function inferFieldType(fieldName, value) {
+    var preset = FIELD_PRESETS[fieldName] || null;
+    if (preset && preset.type) {
+      return preset.type;
+    }
+    if (typeof value === "number") {
+      return "number";
+    }
+    if (typeof value === "boolean") {
+      return "checkbox";
+    }
+    if (isDateFieldName(fieldName)) {
+      return "date";
+    }
+    var key = normalize(fieldName).toLowerCase();
+    if (key.indexOf("email") >= 0) {
+      return "email";
+    }
+    if (isLongTextFieldName(fieldName)) {
+      return "textarea";
+    }
+    return "text";
+  }
+
+  function guidedFieldID(fieldName) {
+    return "guidedField_" + fieldName;
+  }
+
+  function quickFieldID(fieldName) {
+    return "quickParam_" + fieldName;
+  }
+
+  function buildGuidedFields(moduleConfig) {
+    var template = moduleTemplate(moduleConfig);
+    var keys = Object.keys(template || {}).filter(function (fieldName) {
+      return fieldName !== "empresa_id" && fieldName !== "id";
+    });
+    var fields = [];
+    for (var i = 0; i < keys.length; i += 1) {
+      var fieldName = keys[i];
+      var value = template[fieldName];
+      var preset = FIELD_PRESETS[fieldName] || null;
+      var type = inferFieldType(fieldName, value);
+      fields.push({
+        name: fieldName,
+        label: formatFieldLabel(fieldName),
+        type: type,
+        required: isFieldRequired(moduleConfig, fieldName),
+        options: preset && Array.isArray(preset.options) ? preset.options : null,
+        defaultValue: value,
+        min: NON_NEGATIVE_FIELDS[fieldName] ? 0 : null
+      });
+    }
+    return fields;
+  }
+
+  function setControlValue(control, fieldDef, value) {
+    if (!control) {
+      return;
+    }
+    if (fieldDef.type === "checkbox") {
+      control.checked = !!value;
+      return;
+    }
+    if (value == null) {
+      control.value = "";
+      return;
+    }
+    control.value = String(value);
+  }
+
+  function parseControlValue(control, fieldDef) {
+    if (!control || !fieldDef) {
+      return "";
+    }
+    if (fieldDef.type === "checkbox") {
+      return !!control.checked;
+    }
+    var raw = normalize(control.value);
+    if (fieldDef.type === "number") {
+      if (!raw) {
+        return "";
+      }
+      return Number(raw);
+    }
+    return raw;
+  }
+
+  function buildFieldWrapper(fieldDef, controlID, initialValue, asGuidedField) {
+    var wrapper = document.createElement("div");
+    wrapper.className = "form-col erp-guided-field";
+    if (asGuidedField !== false) {
+      wrapper.setAttribute("data-guided-wrapper", fieldDef.name);
+    }
+
+    var label = document.createElement("label");
+    label.className = "form-label";
+    label.setAttribute("for", controlID);
+    label.textContent = fieldDef.required ? (fieldDef.label + " *") : fieldDef.label;
+    wrapper.appendChild(label);
+
+    var control;
+    if (fieldDef.type === "textarea") {
+      control = document.createElement("textarea");
+      control.className = "form-textarea erp-guided-textarea";
+      control.rows = 3;
+    } else if (fieldDef.type === "select") {
+      control = document.createElement("select");
+      control.className = "form-input";
+      var options = fieldDef.options || [];
+      for (var i = 0; i < options.length; i += 1) {
+        var option = document.createElement("option");
+        option.value = options[i];
+        option.textContent = options[i];
+        control.appendChild(option);
+      }
+    } else {
+      control = document.createElement("input");
+      control.className = "form-input";
+      if (fieldDef.type === "number") {
+        control.type = "number";
+        control.step = "any";
+      } else if (fieldDef.type === "date") {
+        control.type = "date";
+      } else if (fieldDef.type === "email") {
+        control.type = "email";
+      } else {
+        control.type = "text";
+      }
+    }
+
+    if (fieldDef.min != null) {
+      control.setAttribute("min", String(fieldDef.min));
+    }
+    control.id = controlID;
+    control.setAttribute("data-field-name", fieldDef.name);
+    control.setAttribute("data-field-type", fieldDef.type);
+    if (fieldDef.required) {
+      control.setAttribute("data-required", "1");
+    }
+    setControlValue(control, fieldDef, initialValue);
+    wrapper.appendChild(control);
+
+    var help = document.createElement("div");
+    help.className = "form-help erp-guided-help";
+    if (fieldDef.type === "date") {
+      help.textContent = "Formato esperado: AAAA-MM-DD";
+    } else if (fieldDef.type === "number") {
+      help.textContent = "Solo valores numericos.";
+    } else {
+      help.textContent = "Campo operativo del modulo.";
+    }
+    wrapper.appendChild(help);
+
+    return wrapper;
+  }
+
+  function clearGuidedValidationUI() {
+    var validationBox = document.getElementById("guidedValidation");
+    if (validationBox) {
+      validationBox.classList.add("erp-hidden");
+      validationBox.innerHTML = "";
+    }
+    var wrappers = document.querySelectorAll("[data-guided-wrapper]");
+    for (var i = 0; i < wrappers.length; i += 1) {
+      wrappers[i].classList.remove("has-error");
+    }
+  }
+
+  function showGuidedValidation(errors) {
+    var validationBox = document.getElementById("guidedValidation");
+    if (!validationBox) {
+      return;
+    }
+    if (!Array.isArray(errors) || errors.length === 0) {
+      clearGuidedValidationUI();
+      return;
+    }
+
+    clearGuidedValidationUI();
+    var html = ["<strong>Validaciones pendientes:</strong>", "<ul>"];
+    for (var i = 0; i < errors.length; i += 1) {
+      html.push("<li>" + errors[i].message + "</li>");
+      if (errors[i].field) {
+        var wrapper = document.querySelector('[data-guided-wrapper="' + errors[i].field + '"]');
+        if (wrapper) {
+          wrapper.classList.add("has-error");
+        }
+      }
+    }
+    html.push("</ul>");
+    validationBox.innerHTML = html.join("");
+    validationBox.classList.remove("erp-hidden");
+  }
+
+  function renderGuidedFields() {
+    var box = document.getElementById("guidedFields");
+    if (!box) {
+      return;
+    }
+    var moduleConfig = currentModule();
+    if (!moduleConfig) {
+      box.innerHTML = '<div class="erp-placeholder">No hay modulo seleccionado.</div>';
+      state.guidedFields = [];
+      return;
+    }
+
+    state.guidedFields = buildGuidedFields(moduleConfig);
+    box.innerHTML = "";
+    for (var i = 0; i < state.guidedFields.length; i += 1) {
+      var fieldDef = state.guidedFields[i];
+      var controlID = guidedFieldID(fieldDef.name);
+      box.appendChild(buildFieldWrapper(fieldDef, controlID, fieldDef.defaultValue, true));
+    }
+    clearGuidedValidationUI();
+  }
+
+  function readGuidedPayload(isUpdate) {
+    var payload = { empresa_id: state.empresaID };
+    for (var i = 0; i < state.guidedFields.length; i += 1) {
+      var fieldDef = state.guidedFields[i];
+      var control = document.getElementById(guidedFieldID(fieldDef.name));
+      payload[fieldDef.name] = parseControlValue(control, fieldDef);
+    }
+    if (isUpdate) {
+      var recordID = toInt((document.getElementById("guidedRecordID") || {}).value, 0);
+      payload.id = recordID;
+    }
+    return payload;
+  }
+
+  function validateGuidedPayload(moduleConfig, payload, isUpdate) {
+    var errors = [];
+    if (!moduleConfig) {
+      errors.push({ field: "", message: "Selecciona un modulo antes de guardar." });
+      return errors;
+    }
+
+    for (var i = 0; i < state.guidedFields.length; i += 1) {
+      var fieldDef = state.guidedFields[i];
+      var value = payload[fieldDef.name];
+      if (fieldDef.required && (value === "" || value == null)) {
+        errors.push({ field: fieldDef.name, message: fieldDef.label + " es obligatorio." });
+        continue;
+      }
+
+      if (fieldDef.type === "number" && value !== "") {
+        if (!Number.isFinite(value)) {
+          errors.push({ field: fieldDef.name, message: fieldDef.label + " debe ser numerico." });
+          continue;
+        }
+        if (fieldDef.min != null && value < fieldDef.min) {
+          errors.push({ field: fieldDef.name, message: fieldDef.label + " no puede ser negativo." });
+        }
+      }
+
+      if (fieldDef.type === "email" && value) {
+        var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailPattern.test(String(value))) {
+          errors.push({ field: fieldDef.name, message: fieldDef.label + " no tiene formato de correo valido." });
+        }
+      }
+
+      if (fieldDef.type === "date" && value) {
+        var datePattern = /^\d{4}-\d{2}-\d{2}$/;
+        if (!datePattern.test(String(value))) {
+          errors.push({ field: fieldDef.name, message: fieldDef.label + " debe usar formato AAAA-MM-DD." });
+        }
+      }
+    }
+
+    if (isUpdate && (!Number.isFinite(payload.id) || payload.id <= 0)) {
+      errors.push({ field: "", message: "Debes ingresar ID valido para actualizar." });
+    }
+
+    if (payload.total !== "" && payload.subtotal !== "" && Number.isFinite(payload.total) && Number.isFinite(payload.subtotal) && payload.total < payload.subtotal) {
+      errors.push({ field: "total", message: "Total no puede ser menor que subtotal." });
+    }
+
+    if (payload.saldo !== "" && payload.valor_original !== "" && Number.isFinite(payload.saldo) && Number.isFinite(payload.valor_original) && payload.saldo > payload.valor_original) {
+      errors.push({ field: "saldo", message: "Saldo no puede superar el valor original." });
+    }
+
+    if (moduleConfig.key === "rrhh_vacaciones_licencias") {
+      var inicio = normalize(payload.fecha_inicio);
+      var fin = normalize(payload.fecha_fin);
+      if (inicio && fin && fin < inicio) {
+        errors.push({ field: "fecha_fin", message: "Fecha fin no puede ser menor a fecha inicio." });
+      }
+    }
+
+    if (moduleConfig.key === "facturacion_dian") {
+      var nit = normalize(payload.nit);
+      if (nit && !/^\d{6,15}$/.test(nit)) {
+        errors.push({ field: "nit", message: "NIT debe contener solo digitos (6 a 15)." });
+      }
+    }
+
+    return errors;
+  }
+
+  function copyGuidedToJSON(jsonAction) {
+    var payloadArea = document.getElementById("payloadArea");
+    if (!payloadArea) {
+      return;
+    }
+    var payload = readGuidedPayload(jsonAction === "update");
+    payloadArea.value = JSON.stringify(payload, null, 2);
+
+    var crudAction = document.getElementById("crudAction");
+    if (crudAction) {
+      crudAction.value = jsonAction || "create";
+    }
+    var recordID = document.getElementById("recordID");
+    if (recordID) {
+      recordID.value = Number.isFinite(payload.id) && payload.id > 0 ? String(payload.id) : "";
+    }
+  }
+
+  function fillGuidedFromRow(rowSnapshot, keepID) {
+    if (!rowSnapshot || typeof rowSnapshot !== "object") {
+      return;
+    }
+    for (var i = 0; i < state.guidedFields.length; i += 1) {
+      var fieldDef = state.guidedFields[i];
+      var control = document.getElementById(guidedFieldID(fieldDef.name));
+      if (!control) {
+        continue;
+      }
+      if (Object.prototype.hasOwnProperty.call(rowSnapshot, fieldDef.name)) {
+        setControlValue(control, fieldDef, rowSnapshot[fieldDef.name]);
+      }
+    }
+    var guidedID = document.getElementById("guidedRecordID");
+    if (guidedID) {
+      guidedID.value = keepID && Number((rowSnapshot && rowSnapshot.id) || 0) > 0 ? String(rowSnapshot.id) : "";
+    }
+    clearGuidedValidationUI();
+  }
+
+  function resetGuidedForm() {
+    renderGuidedFields();
+    copyGuidedToJSON("create");
+    setOpsMessage("Formulario guiado reiniciado.", false);
+  }
+
+  async function executeGuidedCrud(isUpdate) {
+    var moduleConfig = currentModule();
+    if (!moduleConfig) {
+      setOpsMessage("No hay modulo seleccionado.", true);
+      return;
+    }
+
+    var payload = readGuidedPayload(isUpdate);
+    var errors = validateGuidedPayload(moduleConfig, payload, isUpdate);
+    showGuidedValidation(errors);
+    if (errors.length > 0) {
+      setOpsMessage("Corrige los errores del formulario guiado.", true);
+      writeOutput({ errores: errors });
+      return;
+    }
+
+    try {
+      var data = await requestJSON(moduleConfig.endpoint, {
+        method: isUpdate ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      writeOutput(data);
+      setOpsMessage(isUpdate ? "Registro actualizado con formulario guiado." : "Registro creado con formulario guiado.", false);
+      copyGuidedToJSON(isUpdate ? "update" : "create");
+      clearGuidedValidationUI();
+      await listRows();
+    } catch (error) {
+      setOpsMessage(error.message || "No se pudo guardar con formulario guiado", true);
+      writeOutput({ error: error.message || "No se pudo guardar con formulario guiado" });
+    }
+  }
+
+  function quickActionsForModule(moduleConfig) {
+    var actions = [];
+    if (!moduleConfig) {
+      return actions;
+    }
+
+    actions.push({
+      key: "detalle",
+      label: "Consultar detalle por ID",
+      params: [{ name: "id", label: "ID", type: "number", required: true, min: 1 }],
+      execute: function (values) { return detailRecord(values.id); }
+    });
+
+    actions.push({
+      key: "activar",
+      label: "Activar registro",
+      params: [{ name: "id", label: "ID", type: "number", required: true, min: 1 }],
+      execute: function (values) { return toggleEstado(values.id, "activar"); }
+    });
+
+    actions.push({
+      key: "desactivar",
+      label: "Desactivar registro",
+      params: [{ name: "id", label: "ID", type: "number", required: true, min: 1 }],
+      execute: function (values) { return toggleEstado(values.id, "desactivar"); }
+    });
+
+    if (supportsStateMachineActions(moduleConfig)) {
+      actions.push({
+        key: "transiciones",
+        label: "Consultar transiciones por ID",
+        params: [{ name: "id", label: "ID", type: "number", required: true, min: 1 }],
+        execute: function (values) { return runModuleAction("transiciones", "GET", values.id, null); }
+      });
+
+      actions.push({
+        key: "transicionar",
+        label: "Transicionar estado",
+        params: [
+          { name: "id", label: "ID", type: "number", required: true, min: 1 },
+          { name: "nuevo_estado", label: "Nuevo estado", type: "text", required: true },
+          { name: "motivo", label: "Motivo", type: "text", required: false }
+        ],
+        execute: function (values) {
+          var payload = { nuevo_estado: values.nuevo_estado };
+          if (values.motivo) {
+            payload.motivo = values.motivo;
+          }
+          return runModuleAction("transicionar", "PUT", values.id, payload);
+        }
+      });
+    }
+
+    if (supportsIntegrationActions(moduleConfig)) {
+      actions.push({
+        key: "health",
+        label: "Health check por ID",
+        params: [{ name: "id", label: "ID", type: "number", required: true, min: 1 }],
+        execute: function (values) { return runModuleAction("health_check", "GET", values.id, null); }
+      });
+
+      actions.push({
+        key: "sync",
+        label: "Sincronizacion manual por ID",
+        params: [{ name: "id", label: "ID", type: "number", required: true, min: 1 }],
+        execute: function (values) { return runModuleAction("sync_manual", "POST", values.id, null); }
+      });
+
+      actions.push({
+        key: "estado",
+        label: "Consultar estado por ID",
+        params: [{ name: "id", label: "ID", type: "number", required: true, min: 1 }],
+        execute: function (values) { return runModuleAction("estado", "GET", values.id, null); }
+      });
+
+      actions.push({
+        key: "monitoreo",
+        label: "Monitoreo de conector por ID",
+        params: [{ name: "id", label: "ID", type: "number", required: true, min: 1 }],
+        execute: function (values) { return runModuleAction("monitoreo", "GET", values.id, null); }
+      });
+    }
+
+    if (moduleConfig.key === "ventas_cotizaciones") {
+      actions.push({
+        key: "embudo",
+        label: "Ver embudo comercial",
+        params: [],
+        execute: function () { return runModuleAction("embudo", "GET", null, null); }
+      });
+    }
+
+    if (moduleConfig.key === "finanzas_plan_cuentas") {
+      actions.push({
+        key: "plantillas",
+        label: "Consultar plantillas",
+        params: [],
+        execute: function () { return runModuleAction("plantillas", "GET", null, null); }
+      });
+
+      actions.push({
+        key: "aplicar_plantilla",
+        label: "Aplicar plantilla contable",
+        params: [{ name: "tipo_empresa", label: "Tipo empresa", type: "text", required: true }],
+        execute: function (values) { return runModuleAction("aplicar_plantilla", "POST", null, { tipo_empresa: values.tipo_empresa }); }
+      });
+    }
+
+    if (moduleConfig.key === "finanzas_cxc" || moduleConfig.key === "finanzas_cxp") {
+      actions.push({
+        key: "conciliar_pagos",
+        label: "Conciliar pagos por ID",
+        params: [{ name: "id", label: "ID", type: "number", required: true, min: 1 }],
+        execute: function (values) { return runModuleAction("conciliar_pagos", "POST", values.id, null); }
+      });
+
+      actions.push({
+        key: "validar_cierre_periodo",
+        label: "Validar cierre de periodo",
+        params: [],
+        execute: function () { return runModuleAction("validar_cierre_periodo", "GET", null, null); }
+      });
+    }
+
+    if (moduleConfig.key === "rrhh_vacaciones_licencias") {
+      actions.push({
+        key: "resumen_saldo",
+        label: "Resumen de saldo RRHH",
+        params: [{ name: "empleado_id", label: "Empleado ID", type: "number", required: false, min: 1 }],
+        execute: function (values) {
+          var payload = values.empleado_id ? { empleado_id: values.empleado_id } : null;
+          return runModuleAction("resumen_saldo", payload ? "POST" : "GET", null, payload);
+        }
+      });
+    }
+
+    if (moduleConfig.key === "produccion_ordenes") {
+      actions.push({
+        key: "plan_capacidad",
+        label: "Consultar plan de capacidad",
+        params: [],
+        execute: function () { return runModuleAction("plan_capacidad", "GET", null, null); }
+      });
+    }
+
+    if (moduleConfig.key === "logistica_envios") {
+      actions.push({
+        key: "seguimiento_hitos",
+        label: "Seguimiento de hitos",
+        params: [],
+        execute: function () { return runModuleAction("seguimiento_hitos", "GET", null, null); }
+      });
+    }
+
+    if (moduleConfig.dian) {
+      actions.push({
+        key: "dian_checklist",
+        label: "DIAN checklist",
+        params: [],
+        execute: function () { return runDianAction("checklist", "GET"); }
+      });
+      actions.push({
+        key: "dian_validar",
+        label: "DIAN validar",
+        params: [],
+        execute: function () { return runDianAction("validar", "GET"); }
+      });
+      actions.push({
+        key: "dian_cufe",
+        label: "DIAN CUFE demo",
+        params: [
+          { name: "documento_codigo", label: "Documento codigo", type: "text", required: false },
+          { name: "total", label: "Total", type: "number", required: false, min: 0 }
+        ],
+        execute: function (values) { return runDianAction("generar_cufe_demo", "POST", values); }
+      });
+      actions.push({
+        key: "dian_xml",
+        label: "DIAN XML demo",
+        params: [{ name: "documento_codigo", label: "Documento codigo", type: "text", required: false }],
+        execute: function (values) { return runDianAction("generar_xml_demo", "POST", values); }
+      });
+    }
+
+    return actions;
+  }
+
+  function currentQuickAction() {
+    for (var i = 0; i < state.quickActions.length; i += 1) {
+      if (state.quickActions[i].key === state.quickActionKey) {
+        return state.quickActions[i];
+      }
+    }
+    return state.quickActions.length > 0 ? state.quickActions[0] : null;
+  }
+
+  function renderQuickActionParams() {
+    var paramsBox = document.getElementById("quickActionParams");
+    if (!paramsBox) {
+      return;
+    }
+    paramsBox.innerHTML = "";
+
+    var actionConfig = currentQuickAction();
+    if (!actionConfig) {
+      paramsBox.innerHTML = '<div class="erp-placeholder">No hay acciones rapidas para este modulo.</div>';
+      return;
+    }
+
+    var params = actionConfig.params || [];
+    if (params.length === 0) {
+      paramsBox.innerHTML = '<div class="erp-placeholder">La accion seleccionada no requiere parametros.</div>';
+      return;
+    }
+
+    for (var i = 0; i < params.length; i += 1) {
+      var fieldDef = {
+        name: params[i].name,
+        label: params[i].label || formatFieldLabel(params[i].name),
+        type: params[i].type || "text",
+        required: !!params[i].required,
+        options: params[i].options || null,
+        defaultValue: params[i].defaultValue || "",
+        min: params[i].min == null ? null : params[i].min
+      };
+      paramsBox.appendChild(buildFieldWrapper(fieldDef, quickFieldID(fieldDef.name), fieldDef.defaultValue, false));
+    }
+  }
+
+  function renderQuickActions() {
+    var selector = document.getElementById("quickActionSelector");
+    if (!selector) {
+      return;
+    }
+
+    var moduleConfig = currentModule();
+    state.quickActions = quickActionsForModule(moduleConfig);
+    selector.innerHTML = "";
+
+    for (var i = 0; i < state.quickActions.length; i += 1) {
+      var actionConfig = state.quickActions[i];
+      var option = document.createElement("option");
+      option.value = actionConfig.key;
+      option.textContent = actionConfig.label;
+      selector.appendChild(option);
+    }
+
+    state.quickActionKey = state.quickActions.length > 0 ? state.quickActions[0].key : "";
+    selector.value = state.quickActionKey;
+    selector.onchange = function () {
+      state.quickActionKey = normalize(selector.value);
+      renderQuickActionParams();
+    };
+
+    renderQuickActionParams();
+  }
+
+  function readQuickActionValues(actionConfig) {
+    var params = (actionConfig && actionConfig.params) || [];
+    var values = {};
+    var errors = [];
+
+    for (var i = 0; i < params.length; i += 1) {
+      var param = params[i];
+      var fieldDef = {
+        name: param.name,
+        label: param.label || formatFieldLabel(param.name),
+        type: param.type || "text",
+        required: !!param.required,
+        min: param.min == null ? null : param.min
+      };
+      var control = document.getElementById(quickFieldID(param.name));
+      var value = parseControlValue(control, fieldDef);
+      values[param.name] = value;
+
+      if (fieldDef.required && (value === "" || value == null)) {
+        errors.push(fieldDef.label + " es obligatorio.");
+      }
+      if (fieldDef.type === "number" && value !== "") {
+        if (!Number.isFinite(value)) {
+          errors.push(fieldDef.label + " debe ser numerico.");
+          continue;
+        }
+        if (fieldDef.min != null && value < fieldDef.min) {
+          errors.push(fieldDef.label + " no puede ser menor a " + fieldDef.min + ".");
+        }
+      }
+    }
+
+    return { values: values, errors: errors };
+  }
+
+  async function executeQuickAction() {
+    var actionConfig = currentQuickAction();
+    if (!actionConfig) {
+      setOpsMessage("No hay accion rapida disponible para este modulo.", true);
+      return;
+    }
+
+    var parsed = readQuickActionValues(actionConfig);
+    if (parsed.errors.length > 0) {
+      setOpsMessage(parsed.errors.join(" "), true);
+      writeOutput({ errores: parsed.errors });
+      return;
+    }
+
+    try {
+      await actionConfig.execute(parsed.values);
+    } catch (error) {
+      setOpsMessage(error.message || "No se pudo ejecutar accion rapida", true);
+      writeOutput({ error: error.message || "No se pudo ejecutar accion rapida" });
+    }
+  }
+
+  function renderGuideList(items) {
+    if (!Array.isArray(items) || items.length === 0) {
+      return "";
+    }
+    var html = ["<ul>"];
+    for (var i = 0; i < items.length; i += 1) {
+      html.push("<li>" + items[i] + "</li>");
+    }
+    html.push("</ul>");
+    return html.join("");
+  }
+
+  function renderDomainGuide() {
+    var box = document.getElementById("domainGuide");
+    if (!box) {
+      return;
+    }
+    var guide = DOMAIN_GUIDES[state.domain];
+    if (!guide) {
+      box.innerHTML = '<div class="erp-placeholder">No hay guia operativa para este dominio.</div>';
+      return;
+    }
+
+    var parts = [];
+    parts.push('<div class="erp-guide-block">');
+    parts.push('<h3 class="erp-guide-title">Objetivo operativo</h3>');
+    parts.push('<p class="erp-guide-text">' + guide.objetivo + "</p>");
+    parts.push("</div>");
+
+    parts.push('<div class="erp-guide-block">');
+    parts.push('<h3 class="erp-guide-title">Flujo recomendado</h3>');
+    parts.push(renderGuideList(guide.flujo));
+    parts.push("</div>");
+
+    parts.push('<div class="erp-guide-block">');
+    parts.push('<h3 class="erp-guide-title">Controles clave</h3>');
+    parts.push(renderGuideList(guide.controles));
+    parts.push("</div>");
+
+    box.innerHTML = parts.join("");
+  }
+
   function loadTemplateToPayload() {
     var moduleConfig = currentModule();
     var payloadArea = document.getElementById("payloadArea");
@@ -483,6 +1405,7 @@
             if (payloadArea) {
               payloadArea.value = JSON.stringify(rowSnapshot, null, 2);
             }
+            fillGuidedFromRow(rowSnapshot, true);
             writeOutput({ modo: "edicion", id: safeID, row: rowSnapshot });
           };
           actionTD.appendChild(editBtn);
@@ -705,16 +1628,19 @@
     }
   }
 
-  function parseDIANPayload() {
-    var raw = normalize((document.getElementById("dianPayload") || {}).value);
-    if (!raw) {
-      return { empresa_id: state.empresaID };
-    }
-    var payload;
-    try {
-      payload = JSON.parse(raw);
-    } catch (error) {
-      throw new Error("Payload DIAN invalido");
+  function parseDIANPayload(customPayload) {
+    var payload = customPayload;
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+      var raw = normalize((document.getElementById("dianPayload") || {}).value);
+      if (!raw) {
+        payload = {};
+      } else {
+        try {
+          payload = JSON.parse(raw);
+        } catch (error) {
+          throw new Error("Payload DIAN invalido");
+        }
+      }
     }
     if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
       throw new Error("Payload DIAN debe ser objeto JSON");
@@ -723,7 +1649,7 @@
     return payload;
   }
 
-  async function runDianAction(action, method) {
+  async function runDianAction(action, method, payloadOverride) {
     var moduleConfig = currentModule();
     if (!moduleConfig || !moduleConfig.dian) {
       setOpsMessage("Selecciona el modulo de DIAN para usar estas herramientas.", true);
@@ -736,7 +1662,7 @@
       if (method === "GET") {
         data = await requestJSON(url);
       } else {
-        var payload = parseDIANPayload();
+        var payload = parseDIANPayload(payloadOverride);
         data = await requestJSON(url, {
           method: method,
           headers: { "Content-Type": "application/json" },
@@ -807,8 +1733,12 @@
     selector.onchange = function () {
       state.selectedModuleKey = normalize(selector.value);
       loadTemplateToPayload();
+      renderGuidedFields();
+      renderQuickActions();
+      renderDomainGuide();
       refreshDianToolsVisibility();
       setOpsMessage("Modulo cambiado a " + (currentModule() ? currentModule().label : "N/A") + ".", false);
+      listRows();
     };
   }
 
@@ -828,7 +1758,44 @@
 
     var btnTemplate = document.getElementById("btnTemplate");
     if (btnTemplate) {
-      btnTemplate.onclick = loadTemplateToPayload;
+      btnTemplate.onclick = function () {
+        loadTemplateToPayload();
+        renderGuidedFields();
+        copyGuidedToJSON("create");
+      };
+    }
+
+    var btnResetGuided = document.getElementById("btnResetGuided");
+    if (btnResetGuided) {
+      btnResetGuided.onclick = resetGuidedForm;
+    }
+
+    var btnGuidedToJSON = document.getElementById("btnGuiadoToJSON");
+    if (btnGuidedToJSON) {
+      btnGuidedToJSON.onclick = function () {
+        var guidedID = toInt((document.getElementById("guidedRecordID") || {}).value, 0);
+        copyGuidedToJSON(guidedID > 0 ? "update" : "create");
+        setOpsMessage("Payload avanzado actualizado desde formulario guiado.", false);
+      };
+    }
+
+    var btnCrearGuiado = document.getElementById("btnCrearGuiado");
+    if (btnCrearGuiado) {
+      btnCrearGuiado.onclick = function () {
+        executeGuidedCrud(false);
+      };
+    }
+
+    var btnActualizarGuiado = document.getElementById("btnActualizarGuiado");
+    if (btnActualizarGuiado) {
+      btnActualizarGuiado.onclick = function () {
+        executeGuidedCrud(true);
+      };
+    }
+
+    var btnRunQuickAction = document.getElementById("btnRunQuickAction");
+    if (btnRunQuickAction) {
+      btnRunQuickAction.onclick = executeQuickAction;
     }
 
     var form = document.getElementById("jsonCrudForm");
@@ -869,6 +1836,10 @@
     initModuleSelector();
     bindEvents();
     loadTemplateToPayload();
+    renderGuidedFields();
+    renderQuickActions();
+    renderDomainGuide();
+    copyGuidedToJSON("create");
     refreshDianToolsVisibility();
     await listRows();
   }

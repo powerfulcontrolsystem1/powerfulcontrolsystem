@@ -30,7 +30,18 @@ const (
 	permModuleCompras     = "compras"
 	permModuleFacturacion = "facturacion"
 	permModuleSeguridad   = "seguridad"
+
+	permissionApprovalHeaderBy       = "X-Permission-Approved-By"
+	permissionApprovalHeaderCode     = "X-Permission-Approval-Code"
+	permissionApprovalHeaderReason   = "X-Permission-Approval-Reason"
+	permissionApprovalHeaderRequired = "X-Permission-Approval-Required"
 )
+
+type permissionApprovalEvidence struct {
+	ApprovedBy   string
+	ApprovalCode string
+	Reason       string
+}
 
 var permissionModulesCatalogOrdered = []string{
 	permModuleVentas,
@@ -258,6 +269,27 @@ func withEmpresaRolePermissions(dbEmp, dbSuper *sql.DB, module string, resolveAc
 			return
 		}
 
+		if permissionChangeRequiresApproval(module, r, action) {
+			evidence, err := extractPermissionApprovalEvidence(r)
+			if err != nil {
+				http.Error(w, "no se pudo validar evidencia de aprobacion para el cambio de permisos", http.StatusBadRequest)
+				registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusBadRequest, 0)
+				return
+			}
+			if evidence.ApprovedBy == "" || evidence.ApprovalCode == "" {
+				http.Error(w, "se requiere aprobacion trazable (aprobado_por y codigo_aprobacion) para cambios de permisos", http.StatusBadRequest)
+				registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusBadRequest, 0)
+				return
+			}
+
+			r.Header.Set(permissionApprovalHeaderRequired, "1")
+			r.Header.Set(permissionApprovalHeaderBy, evidence.ApprovedBy)
+			r.Header.Set(permissionApprovalHeaderCode, evidence.ApprovalCode)
+			if evidence.Reason != "" {
+				r.Header.Set(permissionApprovalHeaderReason, evidence.Reason)
+			}
+		}
+
 		ctx := context.WithValue(r.Context(), "adminRole", role)
 		ctx = context.WithValue(ctx, "empresaID", empresaID)
 		r = r.WithContext(ctx)
@@ -378,6 +410,157 @@ func parsePositiveInt64(raw string) int64 {
 	return n
 }
 
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if trimmed := strings.TrimSpace(value); trimmed != "" {
+			return trimmed
+		}
+	}
+	return ""
+}
+
+func trimWithLimit(raw string, maxLen int) string {
+	v := strings.TrimSpace(raw)
+	if maxLen > 0 && len(v) > maxLen {
+		return v[:maxLen]
+	}
+	return v
+}
+
+func extractJSONBodyMap(r *http.Request) (map[string]interface{}, error) {
+	if r == nil || r.Body == nil {
+		return nil, nil
+	}
+	raw, err := io.ReadAll(r.Body)
+	if err != nil {
+		r.Body = io.NopCloser(bytes.NewReader(raw))
+		return nil, err
+	}
+	r.Body = io.NopCloser(bytes.NewReader(raw))
+	if len(raw) == 0 {
+		return nil, nil
+	}
+
+	var payload map[string]interface{}
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		return nil, nil
+	}
+	return payload, nil
+}
+
+func extractStringField(payload map[string]interface{}, keys ...string) string {
+	if payload == nil {
+		return ""
+	}
+	for _, key := range keys {
+		if value, ok := payload[key]; ok {
+			switch typed := value.(type) {
+			case string:
+				if trimmed := strings.TrimSpace(typed); trimmed != "" {
+					return trimmed
+				}
+			case float64:
+				if typed > 0 {
+					return strings.TrimSpace(strconv.FormatFloat(typed, 'f', -1, 64))
+				}
+			case int64:
+				if typed > 0 {
+					return strings.TrimSpace(strconv.FormatInt(typed, 10))
+				}
+			case int:
+				if typed > 0 {
+					return strings.TrimSpace(strconv.Itoa(typed))
+				}
+			}
+		}
+	}
+	return ""
+}
+
+func extractPermissionApprovalEvidence(r *http.Request) (permissionApprovalEvidence, error) {
+	evidence := permissionApprovalEvidence{
+		ApprovedBy: trimWithLimit(firstNonEmpty(
+			r.URL.Query().Get("aprobado_por"),
+			r.URL.Query().Get("approved_by"),
+			r.Header.Get(permissionApprovalHeaderBy),
+		), 160),
+		ApprovalCode: trimWithLimit(firstNonEmpty(
+			r.URL.Query().Get("codigo_aprobacion"),
+			r.URL.Query().Get("approval_code"),
+			r.Header.Get(permissionApprovalHeaderCode),
+		), 160),
+		Reason: trimWithLimit(firstNonEmpty(
+			r.URL.Query().Get("motivo_aprobacion"),
+			r.URL.Query().Get("approval_reason"),
+			r.Header.Get(permissionApprovalHeaderReason),
+		), 320),
+	}
+
+	payload, err := extractJSONBodyMap(r)
+	if err != nil {
+		return permissionApprovalEvidence{}, err
+	}
+	if payload == nil {
+		return evidence, nil
+	}
+
+	evidence.ApprovedBy = trimWithLimit(firstNonEmpty(
+		evidence.ApprovedBy,
+		extractStringField(payload, "aprobado_por", "approved_by"),
+	), 160)
+	evidence.ApprovalCode = trimWithLimit(firstNonEmpty(
+		evidence.ApprovalCode,
+		extractStringField(payload, "codigo_aprobacion", "approval_code"),
+	), 160)
+	evidence.Reason = trimWithLimit(firstNonEmpty(
+		evidence.Reason,
+		extractStringField(payload, "motivo_aprobacion", "approval_reason"),
+	), 320)
+
+	aprobacionPayload, _ := payload["aprobacion"].(map[string]interface{})
+	evidence.ApprovedBy = trimWithLimit(firstNonEmpty(
+		evidence.ApprovedBy,
+		extractStringField(aprobacionPayload, "aprobado_por", "approved_by"),
+	), 160)
+	evidence.ApprovalCode = trimWithLimit(firstNonEmpty(
+		evidence.ApprovalCode,
+		extractStringField(aprobacionPayload, "codigo_aprobacion", "approval_code"),
+	), 160)
+	evidence.Reason = trimWithLimit(firstNonEmpty(
+		evidence.Reason,
+		extractStringField(aprobacionPayload, "motivo_aprobacion", "approval_reason"),
+	), 320)
+
+	return evidence, nil
+}
+
+func permissionChangeRequiresApproval(module string, r *http.Request, action string) bool {
+	if module != permModuleSeguridad {
+		return false
+	}
+
+	switch strings.ToUpper(strings.TrimSpace(action)) {
+	case permActionCreate, permActionUpdate, permActionDelete, permActionApprove:
+	default:
+		return false
+	}
+
+	path := strings.ToLower(strings.TrimSpace(r.URL.Path))
+	if path == "/api/empresa/roles_de_usuario" {
+		return !strings.EqualFold(strings.TrimSpace(r.Method), http.MethodGet)
+	}
+	if path != "/api/empresa/usuarios" {
+		return false
+	}
+
+	queryAction := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+	if queryAction == "reenviar_confirmacion" || queryAction == "activar" {
+		return false
+	}
+
+	return true
+}
+
 func defaultPermissionActionFromMethod(method string) string {
 	switch strings.ToUpper(strings.TrimSpace(method)) {
 	case http.MethodGet, http.MethodHead, http.MethodOptions:
@@ -409,7 +592,7 @@ func normalizePermissionAction(candidate, fallback string) string {
 func resolveVentasPermissionAction(r *http.Request) string {
 	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 	switch action {
-	case "cerrar", "reabrir", "pagar_estacion", "activar_estacion", "pagar", "suspender", "suspender_venta", "reactivar", "reabrir_venta":
+	case "cerrar", "reabrir", "pagar_estacion", "activar_estacion", "pagar", "suspender", "suspender_venta", "reactivar", "reabrir_venta", "convertir_pedido", "convertir_documento_final":
 		return permActionApprove
 	case "activar", "desactivar":
 		return permActionUpdate
@@ -428,7 +611,7 @@ func resolveInventarioPermissionAction(r *http.Request) string {
 func resolveFinanzasPermissionAction(r *http.Request) string {
 	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 	switch action {
-	case "cerrar", "reabrir", "aprobar", "procesar_asientos", "procesar":
+	case "cerrar", "reabrir", "aprobar", "procesar_asientos", "procesar", "conciliar_bancaria_auto", "conciliar_bancos", "conciliar_bancaria_automatica":
 		return permActionApprove
 	case "anular":
 		return permActionDelete
@@ -454,7 +637,7 @@ func resolveComprasPermissionAction(r *http.Request) string {
 	if action == "anular" || action == "cancelar" {
 		return permActionDelete
 	}
-	if action == "aprobar" || action == "cerrar" || action == "emitir" || action == "emitir_orden" || action == "recepcionar" || action == "recepcionar_compra" || action == "contabilizar" || action == "contabilizar_compra" {
+	if action == "aprobar" || action == "cerrar" || action == "emitir" || action == "emitir_orden" || action == "recepcionar" || action == "recepcionar_compra" || action == "recepcionar_parcial_compra" || action == "contabilizar" || action == "contabilizar_compra" || action == "solicitar_aprobacion" || action == "aprobar_compra" || action == "rechazar_compra" || action == "validar_documentos" {
 		return permActionApprove
 	}
 	return defaultPermissionActionFromMethod(r.Method)
@@ -464,6 +647,9 @@ func resolveFacturacionPermissionAction(r *http.Request) string {
 	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 	if action == "activar" || action == "desactivar" {
 		return permActionUpdate
+	}
+	if (action == "procesar_reintentos" || action == "reconciliar_estados" || action == "firmar_xml_real" || action == "enviar_documento_real" || action == "reconexion_dian" || action == "consultar_acuse_real") && (r.Method == http.MethodPost || r.Method == http.MethodPut || r.Method == http.MethodPatch) {
+		return permActionApprove
 	}
 	if action == "aprobar" || action == "emitir" || action == "emitir_factura" || action == "emitir_documento" || action == "nota_credito" || action == "emitir_nota_credito" {
 		return permActionApprove
@@ -479,6 +665,14 @@ func resolveSeguridadPermissionAction(r *http.Request) string {
 	switch action {
 	case "activar", "desactivar":
 		return permActionUpdate
+	case "solicitar_aprobacion", "iniciar_aprobacion":
+		return permActionUpdate
+	case "versionar":
+		return permActionApprove
+	case "sync_manual", "rotar_credencial", "rotar_credenciales":
+		return permActionApprove
+	case "aprobar", "rechazar", "vincular_nomina", "enlazar_nomina":
+		return permActionApprove
 	case "reenviar_confirmacion":
 		return permActionApprove
 	}

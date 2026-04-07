@@ -1,7 +1,7 @@
 # Estructura de Base de Datos
 
-Version: 2026-04-06.28
-Ultima actualizacion: 2026-04-06
+Version: 2026-04-07.34
+Ultima actualizacion: 2026-04-07
 
 Este documento consolida la estructura activa de SQLite para el proyecto.
 Nota de gobernanza documental:
@@ -94,6 +94,16 @@ Todas las tablas operativas usan como base los campos estandar:
   - unidad_medida, cantidad, precio_unitario
   - descuento_porcentaje, impuesto_porcentaje, impuesto_codigo
   - base_gravable, valor_descuento, valor_impuesto, subtotal_linea, total_linea
+
+### Tabla de metricas de ventas simples por estacion
+- empresa_ventas_estacion_metricas:
+  - empresa_id, carrito_id, estacion_id, estacion_codigo, estacion_nombre
+  - evento_operacion (`venta_pagada`, `cierre_parcial_anulado`, `sesion_recuperada`, `operacion`)
+  - metodo_pago, moneda
+  - monto_total, monto_pagado, monto_anulado, devolucion_total
+  - duracion_segundos
+  - activado_en, pagado_en, referencia_operacion
+  - fecha_evento
 
 ### Tabla de reservas por estacion/habitacion
 - reservas_hotel:
@@ -251,6 +261,17 @@ Todas las tablas operativas usan como base los campos estandar:
   - cuenta_gastos, cuenta_iva_descontable
   - cuenta_retenciones_cobrar, cuenta_retenciones_pagar
   - cuentas_ingreso_categoria, cuentas_egreso_categoria
+- empresa_finanzas_bancos_movimientos:
+  - empresa_id, periodo_contable, fecha_movimiento, fecha_valor
+  - cuenta_bancaria, banco_nombre
+  - tipo_movimiento (`ingreso`/`egreso`), descripcion
+  - referencia_bancaria, documento_codigo
+  - moneda, monto, total
+  - movimiento_finanzas_id
+  - estado_conciliacion (`pendiente`/`conciliado`/`con_desviacion`)
+  - conciliado_en, conciliado_por
+  - origen, hash_movimiento
+  - UNIQUE(empresa_id, hash_movimiento)
 
 ### Tabla de eventos contables empresariales
 - empresa_eventos_contables:
@@ -291,6 +312,17 @@ Todas las tablas operativas usan como base los campos estandar:
   - metadata_json
   - retencion_dias, fecha_evento, fecha_expiracion
 
+### Objetos de busqueda full-text de auditoria (SQLite FTS)
+- empresa_auditoria_eventos_fts (tabla virtual):
+  - indexa contenido textual de `empresa_auditoria_eventos` para `search` full-text.
+  - columnas indexadas: `modulo`, `accion`, `recurso`, `endpoint`, `metadata_json`, `observaciones`.
+- Triggers de sincronizacion FTS:
+  - `empresa_auditoria_eventos_ai`: inserta en FTS cuando se crea evento.
+  - `empresa_auditoria_eventos_au`: refresca fila FTS cuando se actualiza evento.
+  - `empresa_auditoria_eventos_ad`: elimina fila FTS cuando se elimina evento.
+- Backfill inicial FTS:
+  - al crear el esquema FTS se repueblan filas existentes para consistencia historica.
+
 ### Tablas de documentos transaccionales canonicos
 - empresa_facturacion_documentos:
   - empresa_id, tipo_documento, documento_codigo
@@ -304,6 +336,9 @@ Todas las tablas operativas usan como base los campos estandar:
   - estado_documento, estado_anterior, evento_ultimo
   - periodo_contable, monto_total, moneda
   - fecha_documento, entidad_relacionada_id
+  - requiere_aprobacion, niveles_aprobacion_requeridos, nivel_aprobacion_actual, aprobadores_json
+  - recepcion_detalle_json, recepcion_resumen_json
+  - validacion_documental_estado, proveedor_documento_ref, factura_documento_ref, entrada_documento_ref
   - UNIQUE(empresa_id, tipo_documento, documento_codigo)
 
 ### Tablas de IA empresarial
@@ -343,6 +378,18 @@ Todas las tablas operativas usan como base los campos estandar:
   - razon_social, email_facturacion, telefono_facturacion, direccion_fiscal
   - prefijo_factura, resolucion_numero, api_base_url, campos_pais_json
   - UNIQUE(empresa_id, pais_codigo)
+
+### Tabla de reintentos de integracion fiscal FE
+- facturacion_electronica_reintentos:
+  - empresa_id, tipo_documento, documento_codigo
+  - pais_codigo, proveedor, ambiente
+  - estado_envio (`pendiente`, `fallido`, `enviado`, `reconciliado`, `contingencia`, `no_aplica`)
+  - intentos, max_intentos, proximo_intento, fecha_ultimo_intento
+  - ultimo_error, respuesta_proveedor_json
+  - contingencia_activa, fecha_contingencia
+  - referencia_externa
+  - numero_legal, codigo_validacion, fecha_emision_legal
+  - UNIQUE(empresa_id, tipo_documento, documento_codigo)
 
 ### Tablas de chat y tareas (nuevo modulo)
 - chat_tareas_conversaciones:
@@ -446,7 +493,7 @@ Todas las tablas operativas usan como base los campos estandar:
   - evitar_duplicado_activo
   - estado
 
-### Tablas ERP extendidas por empresa (2026-04-06)
+### Tablas ERP extendidas por empresa (2026-04-07)
 - empresa_cotizaciones_venta:
   - empresa_id, codigo, cliente_id, cliente_nombre
   - fecha_documento, vigencia_hasta, estado_documento
@@ -462,24 +509,42 @@ Todas las tablas operativas usan como base los campos estandar:
 - empresa_plan_cuentas:
   - empresa_id, codigo, nombre, tipo_cuenta, naturaleza, nivel
   - cuenta_padre_codigo, admite_movimiento, aplica_impuesto
+  - plantilla_tipo_empresa, plantilla_codigo, plantilla_version
+  - cuenta_clave, requerida, orden_plantilla
 - empresa_cuentas_por_cobrar:
   - empresa_id, codigo, cliente_id, cliente_nombre
   - documento_tipo, documento_codigo, fecha_emision, fecha_vencimiento
   - valor_original, valor_pagado, saldo, estado_cartera, moneda
+  - periodo_contable, referencia_pagos_json, fecha_ultimo_pago
+  - conciliado_en, conciliado_por
 - empresa_cuentas_por_pagar:
   - empresa_id, codigo, proveedor_id, proveedor_nombre
   - documento_tipo, documento_codigo, fecha_emision, fecha_vencimiento
   - valor_original, valor_pagado, saldo, estado_cartera, moneda
+  - periodo_contable, referencia_pagos_json, fecha_ultimo_pago
+  - conciliado_en, conciliado_por
 - inventario_lotes_series:
   - empresa_id, producto_id, bodega_id, tipo_control, codigo_lote_serie
   - fecha_fabricacion, fecha_vencimiento, cantidad_inicial, cantidad_disponible
-  - costo_unitario, estado_lote
+  - reservado_cantidad, vendido_cantidad, costo_unitario
+  - estado_lote, bloqueado_venta, bloqueo_motivo
+  - ultima_operacion_tipo, ultima_operacion_ref, ultima_operacion_en
+- inventario_lotes_series_movimientos:
+  - empresa_id, lote_serie_id, producto_id, bodega_id, codigo_lote_serie
+  - tipo_operacion, cantidad, saldo_lote
+  - referencia_tipo, referencia_codigo
+  - cliente_id, cliente_nombre, detalle_json, fecha_operacion
 - empresa_devoluciones_proveedor:
   - empresa_id, codigo, proveedor_id, proveedor_nombre, documento_compra_codigo
   - fecha_devolucion, motivo, estado_devolucion, subtotal, impuesto_total, total, moneda
+  - periodo_contable, impacto_contable_movimiento_id, impacto_contable_evento_id
+  - fecha_contabilizacion, contabilizado_por, total_reintegrado
 - empresa_rrhh_vacaciones_licencias:
-  - empresa_id, codigo, empleado_id, empleado_nombre, tipo_novedad
+  - empresa_id, codigo, empleado_id, empleado_nomina_id, empleado_nombre, tipo_novedad
   - fecha_inicio, fecha_fin, dias, remunerada, estado_novedad, soporte_url, aprobado_por
+  - nivel_aprobacion_actual, nivel_aprobacion_requerido, aprobadores_json, historial_aprobaciones_json, fecha_aprobacion_final
+  - periodo_acumulado_desde, periodo_acumulado_hasta, saldo_dias_antes, saldo_dias_despues, saldo_snapshot_json
+  - nomina_liquidacion_id, nomina_periodo_desde, nomina_periodo_hasta, nomina_vinculada_en, nomina_vinculada_por
 - crm_leads:
   - empresa_id, codigo, nombre, empresa_origen, email, telefono, canal_origen
   - estado_lead, valor_potencial, probabilidad, propietario, proximo_contacto
@@ -587,7 +652,7 @@ Todas las tablas operativas usan como base los campos estandar:
 - empresas.id -> empresa_comisiones_servicio_configuracion.empresa_id, empresa_comisiones_servicio_escalas.empresa_id, empresa_comisiones_servicio_movimientos.empresa_id
 - empresas.id -> empresa_finanzas_movimientos.empresa_id, empresa_finanzas_periodos.empresa_id, empresa_finanzas_configuracion.empresa_id
 - empresas.id -> empresa_cierres_caja.empresa_id
-- empresas.id -> empresa_facturacion_documentos.empresa_id, empresa_compras_documentos.empresa_id
+- empresas.id -> empresa_facturacion_documentos.empresa_id, empresa_compras_documentos.empresa_id, facturacion_electronica_pais.empresa_id, facturacion_electronica_reintentos.empresa_id
 - empresas.id -> empresa_eventos_contables.empresa_id
 - empresas.id -> empresa_asientos_contables.empresa_id
 - empresas.id -> empresa_auditoria_eventos.empresa_id
@@ -601,13 +666,15 @@ Todas las tablas operativas usan como base los campos estandar:
 - empresas.id -> empresa_vehiculos_configuracion.empresa_id
 - empresas.id -> empresa_cotizaciones_venta.empresa_id, empresa_pedidos_venta.empresa_id, empresa_devoluciones_venta.empresa_id
 - empresas.id -> empresa_plan_cuentas.empresa_id, empresa_cuentas_por_cobrar.empresa_id, empresa_cuentas_por_pagar.empresa_id
-- empresas.id -> inventario_lotes_series.empresa_id, empresa_devoluciones_proveedor.empresa_id, empresa_rrhh_vacaciones_licencias.empresa_id
+- empresas.id -> inventario_lotes_series.empresa_id, inventario_lotes_series_movimientos.empresa_id, empresa_devoluciones_proveedor.empresa_id, empresa_rrhh_vacaciones_licencias.empresa_id
 - empresas.id -> crm_leads.empresa_id, crm_interacciones.empresa_id, crm_campanas.empresa_id
 - empresas.id -> produccion_bom.empresa_id, produccion_bom_detalle.empresa_id, produccion_ordenes.empresa_id
 - empresas.id -> logistica_transportistas.empresa_id, logistica_rutas.empresa_id, logistica_envios.empresa_id
 - empresas.id -> empresa_documentos_gestion.empresa_id, empresa_documentos_firmas.empresa_id
 - empresas.id -> empresa_integraciones_apis.empresa_id, empresa_integraciones_bancos.empresa_id, empresa_dian_configuracion.empresa_id
+- empresas.id -> empresa_ventas_estacion_metricas.empresa_id
 - empresa_eventos_contables.id -> empresa_asientos_contables.evento_contable_id
+- empresa_facturacion_documentos.(empresa_id,tipo_documento,documento_codigo) -> facturacion_electronica_reintentos.(empresa_id,tipo_documento,documento_codigo) [relacion logica de reconciliacion FE]
 - proveedores.id -> empresa_compras_documentos.proveedor_id
 - categorias_productos.id -> productos.categoria_id
 - combos_productos.id -> combos_productos_detalle.combo_id
@@ -624,6 +691,7 @@ Todas las tablas operativas usan como base los campos estandar:
 - carritos_compras.id -> reservas_hotel.carrito_id
 - carritos_compras.id -> codigos_descuento_redenciones.carrito_id
 - carritos_compras.id -> empresa_comisiones_servicio_movimientos.carrito_id
+- carritos_compras.id -> empresa_ventas_estacion_metricas.carrito_id
 - carrito_compra_items.id -> empresa_comisiones_servicio_movimientos.carrito_item_id
 - servicios.id -> empresa_comisiones_servicio_movimientos.servicio_id
 - empresa_comisiones_servicio_escalas.id -> empresa_comisiones_servicio_movimientos.escala_id
@@ -638,6 +706,11 @@ Todas las tablas operativas usan como base los campos estandar:
 - empresas.id -> super_correo_notificaciones_prueba.empresa_id (trazabilidad de notificaciones en modo pruebas)
 
 ## 4) Historial resumido
+- 2026-04-07: se agregan objetos de busqueda full-text para auditoria empresarial (`empresa_auditoria_eventos_fts` + triggers `ai/au/ad`) para soportar `search` con mejor rendimiento y fallback seguro.
+- 2026-04-07: se agrega `empresa_ventas_estacion_metricas` para cierre del modulo 27 de ventas simples por estacion, con trazabilidad de `venta_pagada`, `cierre_parcial_anulado` y `sesion_recuperada`, incluyendo `duracion_segundos` y montos operativos por `empresa_id`/`carrito_id`/`estacion_id`.
+- 2026-04-07: se amplía `empresa_rrhh_vacaciones_licencias` para cierre del modulo 22 de RRHH con aprobacion jerarquica (`nivel_aprobacion_*`, `aprobadores_json`, `historial_aprobaciones_json`, `fecha_aprobacion_final`), calculo de saldo/acumulado (`periodo_acumulado_*`, `saldo_dias_*`, `saldo_snapshot_json`) y enlace de novedades a nomina (`empleado_nomina_id`, `nomina_liquidacion_id`, `nomina_periodo_*`, `nomina_vinculada_*`).
+- 2026-04-06: se agrega `facturacion_electronica_reintentos` para cola de integracion fiscal FE por documento (`estado_envio`, `intentos`, `max_intentos`, `proximo_intento`, `contingencia_activa`, `referencia_externa`) y soporte de reconciliacion de estados.
+- 2026-04-06: se amplía `empresa_compras_documentos` para cierre del modulo 16 de compras con aprobacion multinivel (`requiere_aprobacion`, `niveles_aprobacion_requeridos`, `nivel_aprobacion_actual`, `aprobadores_json`), recepcion parcial por item (`recepcion_detalle_json`, `recepcion_resumen_json`) y validacion documental proveedor-factura-entrada (`validacion_documental_estado`, `proveedor_documento_ref`, `factura_documento_ref`, `entrada_documento_ref`).
 - 2026-04-06: se amplía comisiones por servicio con tabla de escalas/topes (`empresa_comisiones_servicio_escalas`), flujo de ajustes manuales con aprobacion (`ajuste_estado`, `aprobado_por`, `aprobado_en`) y enlace a nomina (`liquidacion_nomina_id`, `periodo_liquidacion_*`, `liquidado_*`); `empresa_nomina_liquidaciones` incorpora `comisiones_servicio_total`, `comisiones_servicio_movimientos` y `comisiones_servicio_ajustes`.
 - 2026-04-06: se amplía el modulo de propinas con reglas fiscales por empresa (`pais_fiscal`, `regimen_fiscal`, `tratamiento_fiscal`, `porcentaje_impuesto_propina`), ajustes manuales auditados (`origen_movimiento`, `ajuste_manual`, `referencia_ajuste`) y conciliacion por `cierre_caja_id`; `empresa_cierres_caja` incorpora resumen persistido de propinas conciliadas (`propinas_*`).
 - 2026-04-06: se amplía `codigos_de_descuento` con reglas avanzadas por contexto (segmento/canal/horario/dias) y controles antifraude por cliente (`max_usos_por_cliente`, `ventana_horas_fraude`); se agrega `codigos_descuento_redenciones` para trazabilidad de estados `aplicada/revertida/anulada` por carrito/cliente.

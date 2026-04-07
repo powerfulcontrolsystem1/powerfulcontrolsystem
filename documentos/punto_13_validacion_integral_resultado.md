@@ -1,7 +1,7 @@
 ﻿# Punto 13 - Validacion integral (ultima ejecucion)
 
-Fecha: 2026-04-05 18:24:19
-Log tecnico: scripts/logs/punto13-validacion-20260405-182345.log
+Fecha: 2026-04-07 04:32:56
+Log tecnico: scripts/logs/punto13-validacion-20260407-043056.log
 
 ## Resultado de comandos
 
@@ -13,9 +13,17 @@ Log tecnico: scripts/logs/punto13-validacion-20260405-182345.log
 ## Estado final
 
 - Gate tecnico: aprobado
-- Observacion: ejecutar y registrar UAT manual antes de despliegue productivo
+- Cobertura transversal base: registrada (ver seccion de evidencia complementaria).
+- UAT formal por rol: registrada (ver seccion de evidencia complementaria).
 
-## Pendientes manuales
+## Evidencia complementaria (2026-04-07)
 
-- Ejecutar smoke/UAT en modulos criticos (auth, clientes, inventario, compras, facturacion, finanzas y auditoria).
-- Validar checklist de rollback antes de salida controlada.
+| Paso | Comando | Resultado |
+|---|---|---|
+| Cobertura por capa | `go test ./auth ./db ./handlers ./metrics ./utils -cover -count=1` | `auth 85.3%`, `db 51.4%`, `handlers 50.4%`, `metrics 78.0%`, `utils 71.1%` |
+| UAT formal por rol | `go test ./handlers -run "Test(SuperEndpointsPermisosPorRol|EmpresaPermisosContextoHandlerRetornaPermisosPorRol|EmpresaPermisosContextoHandlerIncluyeMatrizRoles|EmpresaCarritosCompraBloqueaMetodoPagoSegunRol|EmpresaCarritosCompraRespetaBloqueoPropinaYComisionPorRol|EmpresaConfiguracionOperativaHandlerConfigAndRole|EmpresaDocumentosGestionHandlerVersionadoYControlAcceso)$" -count=1` | `OK` |
+
+## Pendientes de operacion manual (release mayor)
+
+- Ejecutar smoke exploratorio en entorno candidato a produccion (navegacion, latencia y conectividad externa).
+- Validar checklist de rollback y backups en la ventana real de despliegue.

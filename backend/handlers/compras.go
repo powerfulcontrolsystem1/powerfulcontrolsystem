@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"strings"
 	"time"
@@ -54,18 +55,24 @@ func EmpresaComprasDocumentosHandler(dbEmp *sql.DB) http.HandlerFunc {
 
 		case http.MethodPost:
 			var payload struct {
-				EmpresaID       int64   `json:"empresa_id"`
-				ProveedorID     int64   `json:"proveedor_id"`
-				TipoDocumento   string  `json:"tipo_documento"`
-				DocumentoCodigo string  `json:"documento_codigo"`
-				EstadoDocumento string  `json:"estado_documento"`
-				EstadoActual    string  `json:"estado_actual"`
-				Accion          string  `json:"accion"`
-				PeriodoContable string  `json:"periodo_contable"`
-				MontoTotal      float64 `json:"monto_total"`
-				Moneda          string  `json:"moneda"`
-				FechaDocumento  string  `json:"fecha_documento"`
-				Observaciones   string  `json:"observaciones"`
+				EmpresaID            int64   `json:"empresa_id"`
+				ProveedorID          int64   `json:"proveedor_id"`
+				TipoDocumento        string  `json:"tipo_documento"`
+				DocumentoCodigo      string  `json:"documento_codigo"`
+				EstadoDocumento      string  `json:"estado_documento"`
+				EstadoActual         string  `json:"estado_actual"`
+				Accion               string  `json:"accion"`
+				PeriodoContable      string  `json:"periodo_contable"`
+				MontoTotal           float64 `json:"monto_total"`
+				Moneda               string  `json:"moneda"`
+				FechaDocumento       string  `json:"fecha_documento"`
+				RequiereAprobacion   bool    `json:"requiere_aprobacion"`
+				NivelesAprobacion    int     `json:"niveles_aprobacion_requeridos"`
+				ProveedorDocRef      string  `json:"proveedor_documento_ref"`
+				FacturaDocRef        string  `json:"factura_documento_ref"`
+				EntradaDocRef        string  `json:"entrada_documento_ref"`
+				ValidacionDocumental string  `json:"validacion_documental_estado"`
+				Observaciones        string  `json:"observaciones"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "invalid payload", http.StatusBadRequest)
@@ -99,13 +106,31 @@ func EmpresaComprasDocumentosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				payload.FechaDocumento = time.Now().Format("2006-01-02")
 			}
 
-			action := strings.ToLower(strings.TrimSpace(payload.Accion))
+			action := normalizeComprasAction(payload.Accion)
 			if action == "" {
-				action = strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+				action = normalizeComprasAction(r.URL.Query().Get("action"))
 			}
 			if action == "" {
 				action = "crear"
 			}
+
+			requiereAprobacion := payload.RequiereAprobacion || payload.NivelesAprobacion > 1
+			nivelesAprobacion := payload.NivelesAprobacion
+			if requiereAprobacion {
+				if nivelesAprobacion <= 1 {
+					nivelesAprobacion = 2
+				}
+			} else {
+				nivelesAprobacion = 1
+			}
+			nivelAprobacion := 0
+			aprobadoresJSON := "[]"
+			recepcionDetalleJSON := ""
+			recepcionResumenJSON := ""
+			validacionDocumental := comprasFirstNonBlank(payload.ValidacionDocumental, "no_aplica")
+			proveedorDocRef := normalizeComprasDocumentoRef(payload.ProveedorDocRef)
+			facturaDocRef := normalizeComprasDocumentoRef(payload.FacturaDocRef)
+			entradaDocRef := normalizeComprasDocumentoRef(payload.EntradaDocRef)
 
 			estadoDocumento := strings.TrimSpace(payload.EstadoDocumento)
 			if estadoDocumento == "" {
@@ -115,7 +140,44 @@ func EmpresaComprasDocumentosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			evento := "orden_compra_creada"
 			accionResp := "crear"
 
-			if action != "crear" && action != "guardar" {
+			switch action {
+			case "crear", "guardar":
+				// Sin transicion automatica adicional.
+			case "solicitar_aprobacion":
+				requiereAprobacion = true
+				if nivelesAprobacion <= 1 {
+					nivelesAprobacion = 2
+				}
+				estadoAnterior = comprasFirstNonBlank(payload.EstadoActual, estadoDocumento, "borrador")
+				estadoDocumento = "pendiente_aprobacion"
+				evento = "orden_compra_pendiente_aprobacion"
+				accionResp = "solicitar_aprobacion"
+			case "emitir", "emitir_orden":
+				if requiereAprobacion {
+					estadoAnterior = comprasFirstNonBlank(payload.EstadoActual, estadoDocumento, "borrador")
+					estadoDocumento = "pendiente_aprobacion"
+					evento = "orden_compra_pendiente_aprobacion"
+					accionResp = "solicitar_aprobacion"
+					break
+				}
+				transition, err := resolveComprasTransition(action, comprasFirstNonBlank(payload.EstadoActual, estadoDocumento, "borrador"))
+				if err != nil {
+					errLower := strings.ToLower(err.Error())
+					if strings.Contains(errLower, "transicion invalida") {
+						http.Error(w, err.Error(), http.StatusConflict)
+						return
+					}
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				estadoDocumento = transition.EstadoNuevo
+				estadoAnterior = transition.EstadoAnterior
+				evento = transition.Evento
+				accionResp = transition.Accion
+			case "aprobar_compra", "rechazar_compra", "validar_documentos", "recepcionar_parcial_compra":
+				http.Error(w, "action invalida para crear documento; use PUT para aprobar, validar o recepcionar", http.StatusBadRequest)
+				return
+			default:
 				transition, err := resolveComprasTransition(action, comprasFirstNonBlank(payload.EstadoActual, estadoDocumento, "borrador"))
 				if err != nil {
 					errLower := strings.ToLower(err.Error())
@@ -145,6 +207,16 @@ func EmpresaComprasDocumentosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				Moneda:               payload.Moneda,
 				FechaDocumento:       payload.FechaDocumento,
 				EntidadRelacionadaID: payload.ProveedorID,
+				RequiereAprobacion:   requiereAprobacion,
+				NivelesAprobacion:    nivelesAprobacion,
+				NivelAprobacion:      nivelAprobacion,
+				AprobadoresJSON:      aprobadoresJSON,
+				RecepcionDetalleJSON: recepcionDetalleJSON,
+				RecepcionResumenJSON: recepcionResumenJSON,
+				ValidacionEstado:     validacionDocumental,
+				ProveedorDocRef:      proveedorDocRef,
+				FacturaDocRef:        facturaDocRef,
+				EntradaDocRef:        entradaDocRef,
 				UsuarioCreador:       adminEmailFromRequest(r),
 				Estado:               "activo",
 				Observaciones:        payload.Observaciones,
@@ -188,19 +260,25 @@ func EmpresaComprasDocumentosHandler(dbEmp *sql.DB) http.HandlerFunc {
 
 		case http.MethodPut:
 			var payload struct {
-				EmpresaID       int64   `json:"empresa_id"`
-				ProveedorID     int64   `json:"proveedor_id"`
-				TipoDocumento   string  `json:"tipo_documento"`
-				DocumentoCodigo string  `json:"documento_codigo"`
-				EstadoActual    string  `json:"estado_actual"`
-				EstadoDocumento string  `json:"estado_documento"`
-				Accion          string  `json:"accion"`
-				PeriodoContable string  `json:"periodo_contable"`
-				MontoTotal      float64 `json:"monto_total"`
-				Moneda          string  `json:"moneda"`
-				FechaDocumento  string  `json:"fecha_documento"`
-				Observaciones   string  `json:"observaciones"`
-				Activo          *bool   `json:"activo"`
+				EmpresaID          int64                  `json:"empresa_id"`
+				ProveedorID        int64                  `json:"proveedor_id"`
+				TipoDocumento      string                 `json:"tipo_documento"`
+				DocumentoCodigo    string                 `json:"documento_codigo"`
+				EstadoActual       string                 `json:"estado_actual"`
+				EstadoDocumento    string                 `json:"estado_documento"`
+				Accion             string                 `json:"accion"`
+				PeriodoContable    string                 `json:"periodo_contable"`
+				MontoTotal         float64                `json:"monto_total"`
+				Moneda             string                 `json:"moneda"`
+				FechaDocumento     string                 `json:"fecha_documento"`
+				RequiereAprobacion *bool                  `json:"requiere_aprobacion"`
+				NivelesAprobacion  *int                   `json:"niveles_aprobacion_requeridos"`
+				RecepcionItems     []comprasRecepcionItem `json:"recepcion_items"`
+				ProveedorDocRef    string                 `json:"proveedor_documento_ref"`
+				FacturaDocRef      string                 `json:"factura_documento_ref"`
+				EntradaDocRef      string                 `json:"entrada_documento_ref"`
+				Observaciones      string                 `json:"observaciones"`
+				Activo             *bool                  `json:"activo"`
 			}
 			if r.Body != nil {
 				_ = json.NewDecoder(r.Body).Decode(&payload)
@@ -227,9 +305,9 @@ func EmpresaComprasDocumentosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 
-			action := strings.ToLower(strings.TrimSpace(payload.Accion))
+			action := normalizeComprasAction(payload.Accion)
 			if action == "" {
-				action = strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+				action = normalizeComprasAction(r.URL.Query().Get("action"))
 			}
 			if action == "" {
 				action = "actualizar"
@@ -300,8 +378,205 @@ func EmpresaComprasDocumentosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			estadoAnterior := docActual.EstadoAnterior
 			evento := "orden_compra_actualizada"
 			accionResp := "actualizar"
+			usuarioActual := strings.TrimSpace(adminEmailFromRequest(r))
+			if usuarioActual == "" {
+				usuarioActual = "sistema"
+			}
 
-			if action != "actualizar" {
+			requiereAprobacion := docActual.RequiereAprobacion
+			if payload.RequiereAprobacion != nil {
+				requiereAprobacion = *payload.RequiereAprobacion
+			}
+			nivelesAprobacion := docActual.NivelesAprobacion
+			if payload.NivelesAprobacion != nil && *payload.NivelesAprobacion > 0 {
+				nivelesAprobacion = *payload.NivelesAprobacion
+			}
+			if nivelesAprobacion <= 0 {
+				nivelesAprobacion = 1
+			}
+			if !requiereAprobacion {
+				nivelesAprobacion = 1
+			}
+			nivelAprobacion := docActual.NivelAprobacion
+			if nivelAprobacion < 0 {
+				nivelAprobacion = 0
+			}
+			if nivelAprobacion > nivelesAprobacion {
+				nivelAprobacion = nivelesAprobacion
+			}
+
+			aprobadoresJSON := strings.TrimSpace(docActual.AprobadoresJSON)
+			if aprobadoresJSON == "" {
+				aprobadoresJSON = "[]"
+			}
+			recepcionDetalleJSON := strings.TrimSpace(docActual.RecepcionDetalleJSON)
+			recepcionResumenJSON := strings.TrimSpace(docActual.RecepcionResumenJSON)
+			validacionEstado := comprasFirstNonBlank(docActual.ValidacionEstado, "no_aplica")
+			proveedorDocRef := normalizeComprasDocumentoRef(comprasFirstNonBlank(payload.ProveedorDocRef, docActual.ProveedorDocRef))
+			facturaDocRef := normalizeComprasDocumentoRef(comprasFirstNonBlank(payload.FacturaDocRef, docActual.FacturaDocRef))
+			entradaDocRef := normalizeComprasDocumentoRef(comprasFirstNonBlank(payload.EntradaDocRef, docActual.EntradaDocRef))
+
+			validationStatus := 0
+			var validationErr error
+			hasRecepcionResumen := false
+			recepcionResumen := comprasRecepcionResumen{}
+
+			switch action {
+			case "actualizar":
+				// Actualizacion simple sin transicion.
+
+			case "solicitar_aprobacion":
+				estadoActualNorm := normalizeComprasAction(payload.EstadoActual)
+				if estadoActualNorm != "borrador" && estadoActualNorm != "pendiente_emision" && estadoActualNorm != "rechazada" {
+					http.Error(w, "transicion invalida: solicitar_aprobacion requiere estado borrador, pendiente_emision o rechazada", http.StatusConflict)
+					return
+				}
+				requiereAprobacion = true
+				if nivelesAprobacion <= 1 {
+					nivelesAprobacion = 2
+				}
+				nivelAprobacion = 0
+				aprobadoresJSON = "[]"
+				estadoDocumento = "pendiente_aprobacion"
+				estadoAnterior = payload.EstadoActual
+				evento = "orden_compra_pendiente_aprobacion"
+				accionResp = "solicitar_aprobacion"
+
+			case "aprobar_compra":
+				estadoActualNorm := normalizeComprasAction(payload.EstadoActual)
+				if estadoActualNorm != "pendiente_aprobacion" {
+					http.Error(w, "transicion invalida: aprobar_compra requiere estado pendiente_aprobacion", http.StatusConflict)
+					return
+				}
+				requiereAprobacion = true
+				if nivelesAprobacion <= 1 {
+					nivelesAprobacion = 2
+				}
+				if nivelAprobacion >= nivelesAprobacion {
+					http.Error(w, "la orden ya completo todos los niveles de aprobacion", http.StatusConflict)
+					return
+				}
+				nivelAprobacion++
+				aprobadoresJSON = appendComprasAprobador(aprobadoresJSON, usuarioActual, payload.Observaciones, nivelAprobacion)
+				estadoAnterior = payload.EstadoActual
+				if nivelAprobacion >= nivelesAprobacion {
+					estadoDocumento = "emitida"
+					evento = "orden_compra_aprobada"
+				} else {
+					estadoDocumento = "pendiente_aprobacion"
+					evento = "orden_compra_aprobacion_parcial"
+				}
+				accionResp = "aprobar_compra"
+
+			case "rechazar_compra":
+				estadoActualNorm := normalizeComprasAction(payload.EstadoActual)
+				if estadoActualNorm != "pendiente_aprobacion" {
+					http.Error(w, "transicion invalida: rechazar_compra requiere estado pendiente_aprobacion", http.StatusConflict)
+					return
+				}
+				estadoDocumento = "rechazada"
+				estadoAnterior = payload.EstadoActual
+				evento = "orden_compra_rechazada"
+				accionResp = "rechazar_compra"
+
+			case "recepcionar_parcial_compra":
+				resumen, err := buildComprasRecepcionResumen(payload.RecepcionItems)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				detalleBytes, _ := json.Marshal(resumen.Items)
+				resumenBytes, _ := json.Marshal(resumen)
+				recepcionDetalleJSON = string(detalleBytes)
+				recepcionResumenJSON = string(resumenBytes)
+				hasRecepcionResumen = true
+				recepcionResumen = resumen
+				estadoDocumento = "recepcion_parcial"
+				estadoAnterior = payload.EstadoActual
+				evento = "compra_recepcion_parcial"
+				accionResp = "recepcionar_parcial_compra"
+
+			case "recepcionar_compra":
+				if len(payload.RecepcionItems) > 0 {
+					resumen, err := buildComprasRecepcionResumen(payload.RecepcionItems)
+					if err != nil {
+						http.Error(w, err.Error(), http.StatusBadRequest)
+						return
+					}
+					detalleBytes, _ := json.Marshal(resumen.Items)
+					resumenBytes, _ := json.Marshal(resumen)
+					recepcionDetalleJSON = string(detalleBytes)
+					recepcionResumenJSON = string(resumenBytes)
+					hasRecepcionResumen = true
+					recepcionResumen = resumen
+					if resumen.ItemsPendientes > 0 {
+						estadoDocumento = "recepcion_parcial"
+						estadoAnterior = payload.EstadoActual
+						evento = "compra_recepcion_parcial"
+						accionResp = "recepcionar_parcial_compra"
+						break
+					}
+				} else if resumenExistente, ok := parseComprasRecepcionResumen(recepcionResumenJSON); ok {
+					if resumenExistente.ItemsPendientes > 0 {
+						http.Error(w, "la recepcion aun tiene items pendientes; use recepcionar_parcial_compra con diferencias por item", http.StatusConflict)
+						return
+					}
+				}
+
+				transition, err := resolveComprasTransition(action, payload.EstadoActual)
+				if err != nil {
+					errLower := strings.ToLower(err.Error())
+					switch {
+					case strings.Contains(errLower, "transicion invalida"):
+						http.Error(w, err.Error(), http.StatusConflict)
+						return
+					case strings.Contains(errLower, "accion no soportada"):
+						http.Error(w, err.Error(), http.StatusBadRequest)
+						return
+					default:
+						http.Error(w, err.Error(), http.StatusBadRequest)
+						return
+					}
+				}
+				estadoDocumento = transition.EstadoNuevo
+				estadoAnterior = transition.EstadoAnterior
+				evento = transition.Evento
+				accionResp = transition.Accion
+
+			case "validar_documentos":
+				normalizadoProveedorRef, normalizadoFacturaRef, normalizadoEntradaRef, statusErr, err := validarComprasDocumentos(
+					dbEmp,
+					payload.EmpresaID,
+					payload.ProveedorID,
+					proveedorDocRef,
+					facturaDocRef,
+					entradaDocRef,
+				)
+				proveedorDocRef = normalizadoProveedorRef
+				facturaDocRef = normalizadoFacturaRef
+				entradaDocRef = normalizadoEntradaRef
+				estadoAnterior = payload.EstadoActual
+				accionResp = "validar_documentos"
+				if err != nil {
+					if statusErr == http.StatusInternalServerError {
+						http.Error(w, "No se pudo validar documentos de compra", http.StatusInternalServerError)
+						return
+					}
+					validacionEstado = "inconsistente"
+					evento = "compra_documentos_inconsistentes"
+					validationStatus = statusErr
+					validationErr = err
+				} else {
+					validacionEstado = "validada"
+					evento = "compra_documentos_validados"
+				}
+
+			default:
+				if (action == "emitir" || action == "emitir_orden") && requiereAprobacion && nivelAprobacion < nivelesAprobacion {
+					http.Error(w, "la orden requiere aprobacion multinivel antes de emitir", http.StatusConflict)
+					return
+				}
+
 				transition, err := resolveComprasTransition(action, payload.EstadoActual)
 				if err != nil {
 					errLower := strings.ToLower(err.Error())
@@ -336,7 +611,17 @@ func EmpresaComprasDocumentosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				Moneda:               comprasFirstNonBlank(payload.Moneda, docActual.Moneda),
 				FechaDocumento:       comprasFirstNonBlank(payload.FechaDocumento, docActual.FechaDocumento),
 				EntidadRelacionadaID: payload.ProveedorID,
-				UsuarioCreador:       adminEmailFromRequest(r),
+				RequiereAprobacion:   requiereAprobacion,
+				NivelesAprobacion:    nivelesAprobacion,
+				NivelAprobacion:      nivelAprobacion,
+				AprobadoresJSON:      aprobadoresJSON,
+				RecepcionDetalleJSON: recepcionDetalleJSON,
+				RecepcionResumenJSON: recepcionResumenJSON,
+				ValidacionEstado:     validacionEstado,
+				ProveedorDocRef:      proveedorDocRef,
+				FacturaDocRef:        facturaDocRef,
+				EntradaDocRef:        entradaDocRef,
+				UsuarioCreador:       usuarioActual,
 				Estado:               docActual.Estado,
 				Observaciones:        comprasFirstNonBlank(payload.Observaciones, docActual.Observaciones),
 			})
@@ -366,15 +651,25 @@ func EmpresaComprasDocumentosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				"documento_codigo": docPersistido.DocumentoCodigo,
 				"proveedor_id":     docPersistido.ProveedorID,
 				"empresa_id":       docPersistido.EmpresaID,
+				"nivel_aprobacion": docPersistido.NivelAprobacion,
 			})
 
+			if validationErr != nil {
+				http.Error(w, validationErr.Error(), validationStatus)
+				return
+			}
+
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			response := map[string]interface{}{
 				"ok":        true,
 				"accion":    accionResp,
 				"evento":    evento,
 				"resultado": docPersistido,
-			})
+			}
+			if hasRecepcionResumen {
+				response["recepcion_resumen"] = recepcionResumen
+			}
+			json.NewEncoder(w).Encode(response)
 			return
 
 		case http.MethodDelete:
@@ -432,6 +727,185 @@ func parseBoolQuery(r *http.Request, key string) bool {
 	default:
 		return false
 	}
+}
+
+type comprasRecepcionItem struct {
+	ProductoID       int64   `json:"producto_id"`
+	CantidadOrdenada float64 `json:"cantidad_ordenada"`
+	CantidadRecibida float64 `json:"cantidad_recibida"`
+	CostoUnitario    float64 `json:"costo_unitario"`
+	Diferencia       float64 `json:"diferencia"`
+	DiferenciaTipo   string  `json:"diferencia_tipo"`
+	DiferenciaMotivo string  `json:"diferencia_motivo,omitempty"`
+}
+
+type comprasRecepcionResumen struct {
+	TotalItems         int                    `json:"total_items"`
+	ItemsConDiferencia int                    `json:"items_con_diferencia"`
+	ItemsPendientes    int                    `json:"items_pendientes"`
+	CantidadOrdenada   float64                `json:"cantidad_ordenada"`
+	CantidadRecibida   float64                `json:"cantidad_recibida"`
+	MontoOrdenado      float64                `json:"monto_ordenado"`
+	MontoRecibido      float64                `json:"monto_recibido"`
+	EstadoRecepcion    string                 `json:"estado_recepcion"`
+	Items              []comprasRecepcionItem `json:"items"`
+}
+
+type comprasAprobacionPaso struct {
+	Nivel         int    `json:"nivel"`
+	Usuario       string `json:"usuario"`
+	FechaAprobado string `json:"fecha_aprobado"`
+	Observaciones string `json:"observaciones,omitempty"`
+}
+
+func normalizeComprasAction(raw string) string {
+	v := strings.ToLower(strings.TrimSpace(raw))
+	v = strings.ReplaceAll(v, "-", "_")
+	v = strings.ReplaceAll(v, " ", "_")
+	return v
+}
+
+func normalizeComprasDocumentoRef(raw string) string {
+	return strings.ToUpper(strings.TrimSpace(raw))
+}
+
+func roundCompras(v float64) float64 {
+	return math.Round(v*100) / 100
+}
+
+func buildComprasRecepcionResumen(items []comprasRecepcionItem) (comprasRecepcionResumen, error) {
+	if len(items) == 0 {
+		return comprasRecepcionResumen{}, fmt.Errorf("recepcion_items es obligatorio")
+	}
+
+	resumen := comprasRecepcionResumen{
+		EstadoRecepcion: "recepcionada",
+		Items:           make([]comprasRecepcionItem, 0, len(items)),
+	}
+
+	for _, item := range items {
+		if item.ProductoID <= 0 {
+			return comprasRecepcionResumen{}, fmt.Errorf("producto_id invalido en recepcion_items")
+		}
+		if item.CantidadOrdenada < 0 || item.CantidadRecibida < 0 {
+			return comprasRecepcionResumen{}, fmt.Errorf("cantidades invalidas en recepcion_items")
+		}
+		if item.CostoUnitario < 0 {
+			return comprasRecepcionResumen{}, fmt.Errorf("costo_unitario invalido en recepcion_items")
+		}
+
+		item.CantidadOrdenada = roundCompras(item.CantidadOrdenada)
+		item.CantidadRecibida = roundCompras(item.CantidadRecibida)
+		item.CostoUnitario = roundCompras(item.CostoUnitario)
+		item.Diferencia = roundCompras(item.CantidadRecibida - item.CantidadOrdenada)
+
+		if strings.TrimSpace(item.DiferenciaTipo) == "" {
+			switch {
+			case item.Diferencia == 0:
+				item.DiferenciaTipo = "sin_diferencia"
+			case item.Diferencia < 0:
+				item.DiferenciaTipo = "faltante"
+			default:
+				item.DiferenciaTipo = "excedente"
+			}
+		} else {
+			item.DiferenciaTipo = normalizeComprasAction(item.DiferenciaTipo)
+		}
+
+		resumen.TotalItems++
+		if item.Diferencia != 0 {
+			resumen.ItemsConDiferencia++
+		}
+		if item.CantidadRecibida < item.CantidadOrdenada {
+			resumen.ItemsPendientes++
+		}
+		resumen.CantidadOrdenada = roundCompras(resumen.CantidadOrdenada + item.CantidadOrdenada)
+		resumen.CantidadRecibida = roundCompras(resumen.CantidadRecibida + item.CantidadRecibida)
+		resumen.MontoOrdenado = roundCompras(resumen.MontoOrdenado + (item.CantidadOrdenada * item.CostoUnitario))
+		resumen.MontoRecibido = roundCompras(resumen.MontoRecibido + (item.CantidadRecibida * item.CostoUnitario))
+		resumen.Items = append(resumen.Items, item)
+	}
+
+	if resumen.ItemsPendientes > 0 {
+		resumen.EstadoRecepcion = "recepcion_parcial"
+	}
+
+	return resumen, nil
+}
+
+func parseComprasRecepcionResumen(raw string) (comprasRecepcionResumen, bool) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return comprasRecepcionResumen{}, false
+	}
+	var resumen comprasRecepcionResumen
+	if err := json.Unmarshal([]byte(raw), &resumen); err != nil {
+		return comprasRecepcionResumen{}, false
+	}
+	return resumen, true
+}
+
+func appendComprasAprobador(aprobadoresJSON, usuario, observaciones string, nivel int) string {
+	usuario = strings.TrimSpace(usuario)
+	if usuario == "" {
+		usuario = "sistema"
+	}
+	steps := make([]comprasAprobacionPaso, 0)
+	if strings.TrimSpace(aprobadoresJSON) != "" {
+		_ = json.Unmarshal([]byte(aprobadoresJSON), &steps)
+	}
+	steps = append(steps, comprasAprobacionPaso{
+		Nivel:         nivel,
+		Usuario:       usuario,
+		FechaAprobado: time.Now().Format("2006-01-02 15:04:05"),
+		Observaciones: strings.TrimSpace(observaciones),
+	})
+	encoded, err := json.Marshal(steps)
+	if err != nil {
+		return "[]"
+	}
+	return string(encoded)
+}
+
+func validarComprasDocumentos(dbEmp *sql.DB, empresaID, proveedorID int64, proveedorRefRaw, facturaRefRaw, entradaRefRaw string) (string, string, string, int, error) {
+	proveedorRef := normalizeComprasDocumentoRef(proveedorRefRaw)
+	facturaRef := normalizeComprasDocumentoRef(facturaRefRaw)
+	entradaRef := normalizeComprasDocumentoRef(entradaRefRaw)
+
+	if proveedorID <= 0 {
+		return proveedorRef, facturaRef, entradaRef, http.StatusBadRequest, fmt.Errorf("proveedor_id es obligatorio")
+	}
+	if facturaRef == "" {
+		return proveedorRef, facturaRef, entradaRef, http.StatusBadRequest, fmt.Errorf("factura_documento_ref es obligatorio")
+	}
+	if entradaRef == "" {
+		return proveedorRef, facturaRef, entradaRef, http.StatusBadRequest, fmt.Errorf("entrada_documento_ref es obligatorio")
+	}
+	if facturaRef == entradaRef {
+		return proveedorRef, facturaRef, entradaRef, http.StatusConflict, fmt.Errorf("factura_documento_ref y entrada_documento_ref no pueden ser iguales")
+	}
+
+	var proveedorDocumento string
+	err := dbEmp.QueryRow(`SELECT COALESCE(documento, '') FROM proveedores WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, proveedorID).Scan(&proveedorDocumento)
+	if errors.Is(err, sql.ErrNoRows) {
+		return proveedorRef, facturaRef, entradaRef, http.StatusConflict, fmt.Errorf("proveedor no encontrado para validacion documental")
+	}
+	if err != nil {
+		return proveedorRef, facturaRef, entradaRef, http.StatusInternalServerError, err
+	}
+
+	proveedorDocumento = normalizeComprasDocumentoRef(proveedorDocumento)
+	if proveedorRef == "" {
+		proveedorRef = proveedorDocumento
+	}
+	if proveedorRef == "" {
+		return proveedorRef, facturaRef, entradaRef, http.StatusBadRequest, fmt.Errorf("proveedor_documento_ref es obligatorio")
+	}
+	if proveedorDocumento != "" && proveedorRef != proveedorDocumento {
+		return proveedorRef, facturaRef, entradaRef, http.StatusConflict, fmt.Errorf("proveedor_documento_ref no coincide con el documento registrado del proveedor")
+	}
+
+	return proveedorRef, facturaRef, entradaRef, 0, nil
 }
 
 func comprasFirstNonBlank(values ...string) string {

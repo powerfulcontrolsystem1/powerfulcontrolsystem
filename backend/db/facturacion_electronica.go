@@ -64,6 +64,46 @@ type FacturacionDocumentoLegal struct {
 	ResolucionFechaHasta string `json:"resolucion_fecha_hasta,omitempty"`
 }
 
+// FacturacionElectronicaRetryItem representa un registro de cola para reintentos de integracion fiscal.
+type FacturacionElectronicaRetryItem struct {
+	ID                 int64  `json:"id"`
+	EmpresaID          int64  `json:"empresa_id"`
+	TipoDocumento      string `json:"tipo_documento"`
+	DocumentoCodigo    string `json:"documento_codigo"`
+	PaisCodigo         string `json:"pais_codigo"`
+	Proveedor          string `json:"proveedor"`
+	Ambiente           string `json:"ambiente"`
+	EstadoEnvio        string `json:"estado_envio"`
+	Intentos           int64  `json:"intentos"`
+	MaxIntentos        int64  `json:"max_intentos"`
+	ProximoIntento     string `json:"proximo_intento,omitempty"`
+	FechaUltimoIntento string `json:"fecha_ultimo_intento,omitempty"`
+	UltimoError        string `json:"ultimo_error,omitempty"`
+	RespuestaProveedor string `json:"respuesta_proveedor_json,omitempty"`
+	ContingenciaActiva bool   `json:"contingencia_activa"`
+	FechaContingencia  string `json:"fecha_contingencia,omitempty"`
+	ReferenciaExterna  string `json:"referencia_externa,omitempty"`
+	NumeroLegal        string `json:"numero_legal,omitempty"`
+	CodigoValidacion   string `json:"codigo_validacion,omitempty"`
+	FechaEmisionLegal  string `json:"fecha_emision_legal,omitempty"`
+	FechaCreacion      string `json:"fecha_creacion,omitempty"`
+	FechaActualizacion string `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador     string `json:"usuario_creador,omitempty"`
+	Estado             string `json:"estado"`
+	Observaciones      string `json:"observaciones,omitempty"`
+}
+
+// FacturacionElectronicaRetryFilter define filtros para consultar cola de reintentos FE.
+type FacturacionElectronicaRetryFilter struct {
+	TipoDocumento   string
+	EstadoEnvio     string
+	DocumentoQuery  string
+	SoloVencidos    bool
+	IncludeInactive bool
+	Limit           int
+	Offset          int
+}
+
 func supportedPaisesFacturacionMap() map[string]PaisFacturacion {
 	return map[string]PaisFacturacion{
 		"CO": {Codigo: "CO", Nombre: "Colombia", Bandera: "🇨🇴", Moneda: "COP"},
@@ -125,6 +165,37 @@ func EnsureEmpresaFacturacionElectronicaSchema(dbConn *sql.DB) error {
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_fe_pais_empresa ON facturacion_electronica_pais(empresa_id, pais_codigo);`,
 		`CREATE INDEX IF NOT EXISTS ix_fe_pais_estado ON facturacion_electronica_pais(empresa_id, estado);`,
+		`CREATE TABLE IF NOT EXISTS facturacion_electronica_reintentos (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			empresa_id INTEGER NOT NULL,
+			tipo_documento TEXT NOT NULL,
+			documento_codigo TEXT NOT NULL,
+			pais_codigo TEXT NOT NULL,
+			proveedor TEXT,
+			ambiente TEXT DEFAULT 'sandbox',
+			estado_envio TEXT DEFAULT 'pendiente',
+			intentos INTEGER DEFAULT 0,
+			max_intentos INTEGER DEFAULT 5,
+			proximo_intento TEXT,
+			fecha_ultimo_intento TEXT,
+			ultimo_error TEXT,
+			respuesta_proveedor_json TEXT,
+			contingencia_activa INTEGER DEFAULT 0,
+			fecha_contingencia TEXT,
+			referencia_externa TEXT,
+			numero_legal TEXT,
+			codigo_validacion TEXT,
+			fecha_emision_legal TEXT,
+			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			usuario_creador TEXT,
+			estado TEXT DEFAULT 'activo',
+			observaciones TEXT,
+			UNIQUE(empresa_id, tipo_documento, documento_codigo)
+		);`,
+		`CREATE INDEX IF NOT EXISTS ix_fe_reintentos_empresa_estado ON facturacion_electronica_reintentos(empresa_id, estado_envio, estado);`,
+		`CREATE INDEX IF NOT EXISTS ix_fe_reintentos_proximo_intento ON facturacion_electronica_reintentos(empresa_id, proximo_intento, estado_envio);`,
+		`CREATE INDEX IF NOT EXISTS ix_fe_reintentos_documento ON facturacion_electronica_reintentos(empresa_id, tipo_documento, documento_codigo);`,
 	}
 	for _, stmt := range stmts {
 		if _, err := dbConn.Exec(stmt); err != nil {
@@ -190,6 +261,85 @@ func EnsureEmpresaFacturacionElectronicaSchema(dbConn *sql.DB) error {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "facturacion_electronica_pais", "observaciones", "TEXT"); err != nil {
+		return err
+	}
+
+	if err := ensureColumnIfMissing(dbConn, "facturacion_electronica_reintentos", "empresa_id", "INTEGER NOT NULL"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "facturacion_electronica_reintentos", "tipo_documento", "TEXT NOT NULL"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "facturacion_electronica_reintentos", "documento_codigo", "TEXT NOT NULL"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "facturacion_electronica_reintentos", "pais_codigo", "TEXT NOT NULL"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "facturacion_electronica_reintentos", "proveedor", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "facturacion_electronica_reintentos", "ambiente", "TEXT DEFAULT 'sandbox'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "facturacion_electronica_reintentos", "estado_envio", "TEXT DEFAULT 'pendiente'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "facturacion_electronica_reintentos", "intentos", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "facturacion_electronica_reintentos", "max_intentos", "INTEGER DEFAULT 5"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "facturacion_electronica_reintentos", "proximo_intento", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "facturacion_electronica_reintentos", "fecha_ultimo_intento", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "facturacion_electronica_reintentos", "ultimo_error", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "facturacion_electronica_reintentos", "respuesta_proveedor_json", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "facturacion_electronica_reintentos", "contingencia_activa", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "facturacion_electronica_reintentos", "fecha_contingencia", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "facturacion_electronica_reintentos", "referencia_externa", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "facturacion_electronica_reintentos", "numero_legal", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "facturacion_electronica_reintentos", "codigo_validacion", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "facturacion_electronica_reintentos", "fecha_emision_legal", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "facturacion_electronica_reintentos", "fecha_actualizacion", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "facturacion_electronica_reintentos", "usuario_creador", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "facturacion_electronica_reintentos", "estado", "TEXT DEFAULT 'activo'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "facturacion_electronica_reintentos", "observaciones", "TEXT"); err != nil {
+		return err
+	}
+	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_fe_reintentos_empresa_estado ON facturacion_electronica_reintentos(empresa_id, estado_envio, estado);`); err != nil {
+		return err
+	}
+	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_fe_reintentos_proximo_intento ON facturacion_electronica_reintentos(empresa_id, proximo_intento, estado_envio);`); err != nil {
+		return err
+	}
+	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_fe_reintentos_documento ON facturacion_electronica_reintentos(empresa_id, tipo_documento, documento_codigo);`); err != nil {
 		return err
 	}
 
@@ -869,4 +1019,381 @@ func PrepareFacturacionDocumentoLegal(dbConn *sql.DB, empresaID int64, paisCodig
 		ResolucionFechaDesde: strings.TrimSpace(resolucionFechaDesde),
 		ResolucionFechaHasta: strings.TrimSpace(resolucionFechaHasta),
 	}, nil
+}
+
+func normalizeFacturacionRetryEstado(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "pendiente":
+		return "pendiente"
+	case "fallido":
+		return "fallido"
+	case "enviado":
+		return "enviado"
+	case "reconciliado":
+		return "reconciliado"
+	case "contingencia":
+		return "contingencia"
+	case "no_aplica":
+		return "no_aplica"
+	default:
+		return "pendiente"
+	}
+}
+
+func normalizeFacturacionRetryItem(payload *FacturacionElectronicaRetryItem) {
+	if payload == nil {
+		return
+	}
+	payload.TipoDocumento = normalizeDocumentoTransaccionalTipo(payload.TipoDocumento, "factura_electronica")
+	payload.DocumentoCodigo = normalizeDocumentoTransaccionalCodigo(payload.DocumentoCodigo)
+	payload.PaisCodigo = normalizePaisCodigo(payload.PaisCodigo)
+	payload.Proveedor = strings.TrimSpace(payload.Proveedor)
+	if payload.Proveedor == "" {
+		payload.Proveedor = "manual"
+	}
+	payload.Ambiente = normalizeAmbienteFEFromConfig(payload.Ambiente)
+	payload.EstadoEnvio = normalizeFacturacionRetryEstado(payload.EstadoEnvio)
+	if payload.Ambiente != "produccion" && payload.EstadoEnvio == "pendiente" {
+		payload.EstadoEnvio = "no_aplica"
+	}
+	if payload.Intentos < 0 {
+		payload.Intentos = 0
+	}
+	if payload.MaxIntentos <= 0 {
+		payload.MaxIntentos = 5
+	}
+	if payload.MaxIntentos > 25 {
+		payload.MaxIntentos = 25
+	}
+	payload.UltimoError = strings.TrimSpace(payload.UltimoError)
+	payload.RespuestaProveedor = strings.TrimSpace(payload.RespuestaProveedor)
+	payload.ReferenciaExterna = strings.TrimSpace(payload.ReferenciaExterna)
+	payload.NumeroLegal = strings.TrimSpace(payload.NumeroLegal)
+	payload.CodigoValidacion = strings.TrimSpace(payload.CodigoValidacion)
+	payload.FechaEmisionLegal = strings.TrimSpace(payload.FechaEmisionLegal)
+	payload.ProximoIntento = strings.TrimSpace(payload.ProximoIntento)
+	payload.FechaUltimoIntento = strings.TrimSpace(payload.FechaUltimoIntento)
+	payload.FechaContingencia = strings.TrimSpace(payload.FechaContingencia)
+	payload.UsuarioCreador = strings.TrimSpace(payload.UsuarioCreador)
+	payload.Estado = strings.ToLower(strings.TrimSpace(payload.Estado))
+	if payload.Estado != "inactivo" {
+		payload.Estado = "activo"
+	}
+	payload.Observaciones = strings.TrimSpace(payload.Observaciones)
+
+	if payload.ProximoIntento == "" && (payload.EstadoEnvio == "pendiente" || payload.EstadoEnvio == "fallido") {
+		payload.ProximoIntento = time.Now().In(time.Local).Format("2006-01-02 15:04:05")
+	}
+
+	payload.ContingenciaActiva = payload.ContingenciaActiva || payload.EstadoEnvio == "contingencia"
+	if !payload.ContingenciaActiva {
+		payload.FechaContingencia = ""
+	}
+}
+
+func sqliteInt64ToBool(v int64) bool {
+	return v > 0
+}
+
+// GetFacturacionElectronicaRetryByDocumento consulta el estado de integracion fiscal por documento FE.
+func GetFacturacionElectronicaRetryByDocumento(dbConn *sql.DB, empresaID int64, tipoDocumento, documentoCodigo string) (*FacturacionElectronicaRetryItem, error) {
+	if empresaID <= 0 {
+		return nil, fmt.Errorf("empresa_id es obligatorio")
+	}
+	tipoDocumento = normalizeDocumentoTransaccionalTipo(tipoDocumento, "factura_electronica")
+	documentoCodigo = normalizeDocumentoTransaccionalCodigo(documentoCodigo)
+	if documentoCodigo == "" {
+		return nil, fmt.Errorf("documento_codigo es obligatorio")
+	}
+
+	item := FacturacionElectronicaRetryItem{}
+	var contingenciaActivaRaw int64
+	err := dbConn.QueryRow(`SELECT
+		id,
+		empresa_id,
+		COALESCE(tipo_documento, ''),
+		COALESCE(documento_codigo, ''),
+		COALESCE(pais_codigo, ''),
+		COALESCE(proveedor, ''),
+		COALESCE(ambiente, 'sandbox'),
+		COALESCE(estado_envio, 'pendiente'),
+		COALESCE(intentos, 0),
+		COALESCE(max_intentos, 5),
+		COALESCE(proximo_intento, ''),
+		COALESCE(fecha_ultimo_intento, ''),
+		COALESCE(ultimo_error, ''),
+		COALESCE(respuesta_proveedor_json, ''),
+		COALESCE(contingencia_activa, 0),
+		COALESCE(fecha_contingencia, ''),
+		COALESCE(referencia_externa, ''),
+		COALESCE(numero_legal, ''),
+		COALESCE(codigo_validacion, ''),
+		COALESCE(fecha_emision_legal, ''),
+		COALESCE(fecha_creacion, ''),
+		COALESCE(fecha_actualizacion, ''),
+		COALESCE(usuario_creador, ''),
+		COALESCE(estado, 'activo'),
+		COALESCE(observaciones, '')
+	FROM facturacion_electronica_reintentos
+	WHERE empresa_id = ? AND tipo_documento = ? AND documento_codigo = ?
+	LIMIT 1`, empresaID, tipoDocumento, documentoCodigo).Scan(
+		&item.ID,
+		&item.EmpresaID,
+		&item.TipoDocumento,
+		&item.DocumentoCodigo,
+		&item.PaisCodigo,
+		&item.Proveedor,
+		&item.Ambiente,
+		&item.EstadoEnvio,
+		&item.Intentos,
+		&item.MaxIntentos,
+		&item.ProximoIntento,
+		&item.FechaUltimoIntento,
+		&item.UltimoError,
+		&item.RespuestaProveedor,
+		&contingenciaActivaRaw,
+		&item.FechaContingencia,
+		&item.ReferenciaExterna,
+		&item.NumeroLegal,
+		&item.CodigoValidacion,
+		&item.FechaEmisionLegal,
+		&item.FechaCreacion,
+		&item.FechaActualizacion,
+		&item.UsuarioCreador,
+		&item.Estado,
+		&item.Observaciones,
+	)
+	if err != nil {
+		return nil, err
+	}
+	item.ContingenciaActiva = sqliteInt64ToBool(contingenciaActivaRaw)
+	normalizeFacturacionRetryItem(&item)
+	return &item, nil
+}
+
+// UpsertFacturacionElectronicaRetry crea/actualiza un registro de cola de reintentos FE por documento.
+func UpsertFacturacionElectronicaRetry(dbConn *sql.DB, payload FacturacionElectronicaRetryItem) (*FacturacionElectronicaRetryItem, error) {
+	if payload.EmpresaID <= 0 {
+		return nil, fmt.Errorf("empresa_id es obligatorio")
+	}
+	normalizeFacturacionRetryItem(&payload)
+	if payload.DocumentoCodigo == "" {
+		return nil, fmt.Errorf("documento_codigo es obligatorio")
+	}
+	if payload.PaisCodigo == "" {
+		return nil, fmt.Errorf("pais_codigo es obligatorio")
+	}
+
+	stmt := `INSERT INTO facturacion_electronica_reintentos (
+		empresa_id,
+		tipo_documento,
+		documento_codigo,
+		pais_codigo,
+		proveedor,
+		ambiente,
+		estado_envio,
+		intentos,
+		max_intentos,
+		proximo_intento,
+		fecha_ultimo_intento,
+		ultimo_error,
+		respuesta_proveedor_json,
+		contingencia_activa,
+		fecha_contingencia,
+		referencia_externa,
+		numero_legal,
+		codigo_validacion,
+		fecha_emision_legal,
+		fecha_creacion,
+		fecha_actualizacion,
+		usuario_creador,
+		estado,
+		observaciones
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)
+	ON CONFLICT(empresa_id, tipo_documento, documento_codigo) DO UPDATE SET
+		pais_codigo = excluded.pais_codigo,
+		proveedor = excluded.proveedor,
+		ambiente = excluded.ambiente,
+		estado_envio = excluded.estado_envio,
+		intentos = excluded.intentos,
+		max_intentos = excluded.max_intentos,
+		proximo_intento = excluded.proximo_intento,
+		fecha_ultimo_intento = excluded.fecha_ultimo_intento,
+		ultimo_error = excluded.ultimo_error,
+		respuesta_proveedor_json = excluded.respuesta_proveedor_json,
+		contingencia_activa = excluded.contingencia_activa,
+		fecha_contingencia = excluded.fecha_contingencia,
+		referencia_externa = excluded.referencia_externa,
+		numero_legal = CASE WHEN excluded.numero_legal <> '' THEN excluded.numero_legal ELSE facturacion_electronica_reintentos.numero_legal END,
+		codigo_validacion = CASE WHEN excluded.codigo_validacion <> '' THEN excluded.codigo_validacion ELSE facturacion_electronica_reintentos.codigo_validacion END,
+		fecha_emision_legal = CASE WHEN excluded.fecha_emision_legal <> '' THEN excluded.fecha_emision_legal ELSE facturacion_electronica_reintentos.fecha_emision_legal END,
+		fecha_actualizacion = datetime('now','localtime'),
+		usuario_creador = CASE WHEN excluded.usuario_creador <> '' THEN excluded.usuario_creador ELSE facturacion_electronica_reintentos.usuario_creador END,
+		estado = excluded.estado,
+		observaciones = excluded.observaciones`
+
+	if _, err := dbConn.Exec(stmt,
+		payload.EmpresaID,
+		payload.TipoDocumento,
+		payload.DocumentoCodigo,
+		payload.PaisCodigo,
+		payload.Proveedor,
+		payload.Ambiente,
+		payload.EstadoEnvio,
+		payload.Intentos,
+		payload.MaxIntentos,
+		payload.ProximoIntento,
+		payload.FechaUltimoIntento,
+		payload.UltimoError,
+		payload.RespuestaProveedor,
+		boolToSQLiteInt(payload.ContingenciaActiva),
+		payload.FechaContingencia,
+		payload.ReferenciaExterna,
+		payload.NumeroLegal,
+		payload.CodigoValidacion,
+		payload.FechaEmisionLegal,
+		payload.UsuarioCreador,
+		payload.Estado,
+		payload.Observaciones,
+	); err != nil {
+		return nil, err
+	}
+
+	return GetFacturacionElectronicaRetryByDocumento(dbConn, payload.EmpresaID, payload.TipoDocumento, payload.DocumentoCodigo)
+}
+
+func buildFacturacionRetryQueryPattern(raw string) string {
+	raw = strings.ToUpper(strings.TrimSpace(raw))
+	raw = strings.ReplaceAll(raw, "%", "")
+	raw = strings.ReplaceAll(raw, "_", "")
+	if raw == "" {
+		return "%"
+	}
+	return "%" + raw + "%"
+}
+
+// ListFacturacionElectronicaRetriesByEmpresa lista la cola de reintentos FE por empresa.
+func ListFacturacionElectronicaRetriesByEmpresa(dbConn *sql.DB, empresaID int64, filter FacturacionElectronicaRetryFilter) ([]FacturacionElectronicaRetryItem, error) {
+	if empresaID <= 0 {
+		return nil, fmt.Errorf("empresa_id es obligatorio")
+	}
+
+	query := `SELECT
+		id,
+		empresa_id,
+		COALESCE(tipo_documento, ''),
+		COALESCE(documento_codigo, ''),
+		COALESCE(pais_codigo, ''),
+		COALESCE(proveedor, ''),
+		COALESCE(ambiente, 'sandbox'),
+		COALESCE(estado_envio, 'pendiente'),
+		COALESCE(intentos, 0),
+		COALESCE(max_intentos, 5),
+		COALESCE(proximo_intento, ''),
+		COALESCE(fecha_ultimo_intento, ''),
+		COALESCE(ultimo_error, ''),
+		COALESCE(respuesta_proveedor_json, ''),
+		COALESCE(contingencia_activa, 0),
+		COALESCE(fecha_contingencia, ''),
+		COALESCE(referencia_externa, ''),
+		COALESCE(numero_legal, ''),
+		COALESCE(codigo_validacion, ''),
+		COALESCE(fecha_emision_legal, ''),
+		COALESCE(fecha_creacion, ''),
+		COALESCE(fecha_actualizacion, ''),
+		COALESCE(usuario_creador, ''),
+		COALESCE(estado, 'activo'),
+		COALESCE(observaciones, '')
+	FROM facturacion_electronica_reintentos
+	WHERE empresa_id = ?`
+
+	args := make([]interface{}, 0, 8)
+	args = append(args, empresaID)
+
+	tipoDocumento := normalizeDocumentoTransaccionalTipo(filter.TipoDocumento, "")
+	if tipoDocumento != "" {
+		query += " AND tipo_documento = ?"
+		args = append(args, tipoDocumento)
+	}
+
+	estadoEnvio := normalizeFacturacionRetryEstado(filter.EstadoEnvio)
+	if strings.TrimSpace(filter.EstadoEnvio) != "" {
+		query += " AND estado_envio = ?"
+		args = append(args, estadoEnvio)
+	}
+
+	if q := strings.TrimSpace(filter.DocumentoQuery); q != "" {
+		pattern := buildFacturacionRetryQueryPattern(q)
+		query += " AND (UPPER(documento_codigo) LIKE ? OR UPPER(COALESCE(numero_legal, '')) LIKE ? OR UPPER(COALESCE(codigo_validacion, '')) LIKE ?)"
+		args = append(args, pattern, pattern, pattern)
+	}
+
+	if filter.SoloVencidos {
+		query += " AND estado_envio IN ('pendiente','fallido','contingencia') AND (COALESCE(proximo_intento, '') = '' OR proximo_intento <= datetime('now','localtime'))"
+	}
+
+	if !filter.IncludeInactive {
+		query += " AND estado = 'activo'"
+	}
+
+	limit := filter.Limit
+	if limit <= 0 {
+		limit = 200
+	}
+	if limit > 500 {
+		limit = 500
+	}
+	offset := filter.Offset
+	if offset < 0 {
+		offset = 0
+	}
+
+	query += " ORDER BY CASE estado_envio WHEN 'pendiente' THEN 0 WHEN 'fallido' THEN 1 WHEN 'contingencia' THEN 2 WHEN 'enviado' THEN 3 ELSE 4 END, COALESCE(proximo_intento, ''), id DESC LIMIT ? OFFSET ?"
+	args = append(args, limit, offset)
+
+	rows, err := dbConn.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	items := make([]FacturacionElectronicaRetryItem, 0)
+	for rows.Next() {
+		it := FacturacionElectronicaRetryItem{}
+		var contingenciaRaw int64
+		if err := rows.Scan(
+			&it.ID,
+			&it.EmpresaID,
+			&it.TipoDocumento,
+			&it.DocumentoCodigo,
+			&it.PaisCodigo,
+			&it.Proveedor,
+			&it.Ambiente,
+			&it.EstadoEnvio,
+			&it.Intentos,
+			&it.MaxIntentos,
+			&it.ProximoIntento,
+			&it.FechaUltimoIntento,
+			&it.UltimoError,
+			&it.RespuestaProveedor,
+			&contingenciaRaw,
+			&it.FechaContingencia,
+			&it.ReferenciaExterna,
+			&it.NumeroLegal,
+			&it.CodigoValidacion,
+			&it.FechaEmisionLegal,
+			&it.FechaCreacion,
+			&it.FechaActualizacion,
+			&it.UsuarioCreador,
+			&it.Estado,
+			&it.Observaciones,
+		); err != nil {
+			return nil, err
+		}
+		it.ContingenciaActiva = sqliteInt64ToBool(contingenciaRaw)
+		normalizeFacturacionRetryItem(&it)
+		items = append(items, it)
+	}
+
+	return items, nil
 }

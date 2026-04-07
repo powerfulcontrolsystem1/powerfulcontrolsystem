@@ -273,6 +273,9 @@ func buildEmpresaGraficosPanel(dbEmp *sql.DB, builder *reportesBuilder, maxPoint
 	panel.Series.Ventas = buildGraficoVentasSerie(ventasDataset.Rows, maxPoints)
 	panel.Series.Finanzas = buildGraficoFinanzasSerie(finanzasDataset.Rows, maxPoints)
 	panel.Series.Compras = buildGraficoComprasSerie(comprasDataset.Rows, maxPoints)
+	if len(panel.Series.Compras) == 0 {
+		panel.Series.Compras = buildGraficoComprasSerieDesdeFinanzas(finanzasDataset.Rows, maxPoints)
+	}
 	panel.Series.Asistencia = buildGraficoAsistenciaSerie(asistencias, maxPoints)
 
 	panel.Rankings.TopProductos = buildGraficoTopProductos(topProductosDataset.Rows, topN)
@@ -373,7 +376,12 @@ func buildGraficoFinanzasSerie(rows []map[string]interface{}, maxPoints int) []e
 func buildGraficoComprasSerie(rows []map[string]interface{}, maxPoints int) []empresaGraficoSerieCompras {
 	byDate := make(map[string]*empresaGraficoSerieCompras)
 	for _, row := range rows {
-		fecha := reportesNormalizeDatePart(graficoString(row["fecha"]))
+		fecha := reportesNormalizeDatePart(reportesFirstNonBlank(
+			graficoString(row["fecha"]),
+			graficoString(row["fecha_documento"]),
+			graficoString(row["ultima_fecha_documento"]),
+			graficoString(row["fecha_movimiento"]),
+		))
 		if fecha == "" {
 			continue
 		}
@@ -382,8 +390,92 @@ func buildGraficoComprasSerie(rows []map[string]interface{}, maxPoints int) []em
 			entry = &empresaGraficoSerieCompras{Fecha: fecha}
 			byDate[fecha] = entry
 		}
-		entry.Movimientos++
-		entry.Costo = reportesRound(entry.Costo + graficoFloat(row["costo_total"]))
+
+		movimientos := int64(graficoFloat(row["movimientos"]))
+		if movimientos <= 0 {
+			movimientos = int64(graficoFloat(row["documentos"]))
+		}
+		if movimientos <= 0 {
+			movimientos = int64(graficoFloat(row["ordenes_emitidas"]))
+		}
+		if movimientos <= 0 {
+			movimientos = 1
+		}
+		entry.Movimientos += movimientos
+
+		costo := graficoFloat(row["costo_total"])
+		if costo == 0 {
+			costo = graficoFloat(row["monto_ordenado"])
+		}
+		if costo == 0 {
+			costo = graficoFloat(row["monto_recepcionado"])
+		}
+		if costo == 0 {
+			costo = graficoFloat(row["monto_contabilizado"])
+		}
+		if costo == 0 {
+			costo = graficoFloat(row["total_neto"])
+		}
+		if costo == 0 {
+			costo = graficoFloat(row["monto"])
+		}
+		entry.Costo = reportesRound(entry.Costo + costo)
+	}
+
+	dates := make([]string, 0, len(byDate))
+	for date := range byDate {
+		dates = append(dates, date)
+	}
+	sort.Strings(dates)
+
+	series := make([]empresaGraficoSerieCompras, 0, len(dates))
+	for _, date := range dates {
+		item := byDate[date]
+		series = append(series, empresaGraficoSerieCompras{
+			Fecha:       item.Fecha,
+			Movimientos: item.Movimientos,
+			Costo:       reportesRound(item.Costo),
+		})
+	}
+	if len(series) > maxPoints {
+		series = series[len(series)-maxPoints:]
+	}
+	return series
+}
+
+func buildGraficoComprasSerieDesdeFinanzas(rows []map[string]interface{}, maxPoints int) []empresaGraficoSerieCompras {
+	byDate := make(map[string]*empresaGraficoSerieCompras)
+	for _, row := range rows {
+		tipo := strings.ToLower(strings.TrimSpace(graficoString(row["tipo_movimiento"])))
+		categoria := strings.ToLower(strings.TrimSpace(graficoString(row["categoria"])))
+		concepto := strings.ToLower(strings.TrimSpace(graficoString(row["concepto"])))
+		if tipo != "egreso" && !strings.Contains(categoria, "compra") && !strings.Contains(concepto, "compra") {
+			continue
+		}
+
+		fecha := reportesNormalizeDatePart(reportesFirstNonBlank(
+			graficoString(row["fecha_movimiento"]),
+			graficoString(row["fecha"]),
+		))
+		if fecha == "" {
+			continue
+		}
+
+		entry, ok := byDate[fecha]
+		if !ok {
+			entry = &empresaGraficoSerieCompras{Fecha: fecha}
+			byDate[fecha] = entry
+		}
+
+		entry.Movimientos += 1
+		monto := graficoFloat(row["total_neto"])
+		if monto == 0 {
+			monto = graficoFloat(row["monto"])
+		}
+		if monto == 0 {
+			monto = graficoFloat(row["total"])
+		}
+		entry.Costo = reportesRound(entry.Costo + monto)
 	}
 
 	dates := make([]string, 0, len(byDate))

@@ -181,16 +181,20 @@ var empresaEventoContableContrato = map[string]map[string]struct{}{
 		"factura_anulada":                       {},
 		"nota_credito_emitida":                  {},
 		"configuracion_facturacion_actualizada": {},
+		"factura_integracion_enviada":           {},
+		"factura_integracion_fallida":           {},
+		"factura_contingencia_activada":         {},
 	},
 	"compras": {
-		"orden_compra_emitida":  {},
-		"compra_recepcionada":   {},
-		"compra_contabilizada":  {},
-		"proveedor_registrado":  {},
-		"proveedor_actualizado": {},
-		"proveedor_activado":    {},
-		"proveedor_desactivado": {},
-		"proveedor_eliminado":   {},
+		"orden_compra_emitida":               {},
+		"compra_recepcionada":                {},
+		"compra_contabilizada":               {},
+		"devolucion_proveedor_contabilizada": {},
+		"proveedor_registrado":               {},
+		"proveedor_actualizado":              {},
+		"proveedor_activado":                 {},
+		"proveedor_desactivado":              {},
+		"proveedor_eliminado":                {},
 	},
 	"finanzas": {
 		"movimiento_ingreso_registrado": {},
@@ -1473,6 +1477,8 @@ func buildEmpresaAsientoContableLineas(evento EmpresaEventoContable, cfg *Empres
 
 	case "compras":
 		switch normalizeEventoContableNombre(evento.Evento) {
+		case "devolucion_proveedor_contabilizada":
+			return nuevoIngreso()
 		case "orden_compra_emitida", "compra_recepcionada", "compra_contabilizada":
 			return nuevoEgreso()
 		}

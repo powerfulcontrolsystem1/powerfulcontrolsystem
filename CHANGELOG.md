@@ -1,6 +1,349 @@
 # CHANGELOG
 
+## 2026-04-07
+- Hotfix de arranque en migraciones ERP legacy (modulos faltantes): correccion de orden de creacion de indices dependientes de columnas nuevas.
+	- Backend `db`:
+		- `backend/db/modulos_faltantes.go` evita crear en el bloque inicial los indices que dependen de columnas agregadas por migracion (`periodo_contable`, `bloqueado_venta`, campos de aprobacion/nomina RRHH).
+		- Esos indices se mantienen en la fase final posterior a `ensureColumnIfMissing`, garantizando compatibilidad con bases antiguas.
+	- Validaciones ejecutadas:
+		- `go test ./... -run "^$" -count=1` -> compilacion global backend OK.
+		- `go run .` -> backend inicia correctamente y queda en `LISTENING` en puerto `8080` (sin error `no such column: periodo_contable`).
+
+## 2026-04-07
+- Cierre del modulo 31 (Reportes): programacion automatica, versionado de plantillas y validacion de consistencia multiformato.
+	- Backend `handlers`:
+		- `backend/handlers/reportes_programacion.go` consolida agenda y ejecucion de reportes (`action=programacion`, `action=ejecutar_programacion`, `action=ejecuciones`, `action=validar_consistencia`).
+		- Se corrige robustez en listado de ejecuciones para manejar campos `NULL` de SQLite (`error_detalle`, `programacion_id`, metadatos opcionales) sin error `500`.
+	- Pruebas:
+		- `backend/handlers/reportes_programacion_test.go` valida versionado de plantillas y ciclo completo de programacion/ejecucion/consistencia.
+	- Validaciones ejecutadas:
+		- `go test ./handlers -run "TestEmpresaReportesHandler(PlantillasVersionado|ProgramacionEjecucionYConsistencia)$" -count=1` -> OK.
+		- `go test ./... -run "^$" -count=1` -> compilacion global backend OK.
+
+## 2026-04-07
+- Cierre del modulo 30 (Seguridad y permisos): deny-by-default por endpoint, matriz automatizada rol/modulo y trazabilidad de aprobacion.
+	- Backend `handlers`:
+		- `backend/handlers/empresa_permisos.go` exige evidencia de aprobacion trazable (`aprobado_por`, `codigo_aprobacion`) para cambios criticos de permisos en `/api/empresa/usuarios` bajo modulo seguridad.
+		- Se propagan cabeceras de aprobacion para trazabilidad (`X-Permission-Approved-By`, `X-Permission-Approval-Code`, `X-Permission-Approval-Reason`) y bandera `X-Permission-Approval-Required`.
+		- `backend/handlers/auditoria_empresa.go` registra metadata de aprobacion en `empresa_auditoria_eventos` (`permission_approval_required`, `permission_approved_by`, `permission_approval_code`, `permission_approval_reason`).
+	- Pruebas:
+		- `backend/handlers/empresa_permisos_test.go` agrega cobertura de matriz completa rol/modulo/accion y de aprobacion trazable para cambios de permisos.
+		- `backend/main_empresa_routes_security_test.go` agrega barrido automatizado deny-by-default para todas las rutas `/api/empresa/*` registradas por `http.HandleFunc`.
+	- Validaciones ejecutadas:
+		- `go test ./handlers -run "Test(EmpresaPermisosContextoHandlerRetornaPermisosPorRol|EmpresaPermisosContextoHandlerIncluyeMatrizRoles|EmpresaPermisosContextoHandlerMatrizRolesCumplePoliticaPorModuloAccion|WithEmpresaSeguridadPermissionsRequiereAprobacionParaCambioPermisos|WithEmpresaSeguridadPermissionsAceptaAprobacionTrazableYRegistraMetadata)$" -count=1` -> OK.
+		- `go test . -run "TestEmpresaRoutesUsePermissionWrappers$" -count=1` -> OK.
+		- `go test ./... -run "^$" -count=1` -> compilacion global backend OK.
+
+## 2026-04-07
+- Cierre del modulo 29 (Auditoria empresarial): busqueda full-text con filtros y exportacion forense con cadena de custodia basica.
+	- Backend `db`:
+		- `backend/db/auditoria_empresa.go` agrega soporte de busqueda `search` con FTS (cuando esta disponible) y fallback por `LIKE`, manteniendo compatibilidad con filtros avanzados existentes.
+		- Se incorpora inicializacion de esquema FTS de auditoria (tabla virtual, triggers y backfill) para indexacion de `modulo`, `accion`, `recurso`, `endpoint`, `metadata_json` y `observaciones`.
+	- Backend `handlers`:
+		- `backend/handlers/auditoria_empresa.go` extiende `GET /api/empresa/auditoria/eventos` con `action=export_forense|forense_export|cadena_custodia` y `format=json|csv`.
+		- La exportacion forense genera `hash_registro`, `hash_cadena` y `hash_global` para trazabilidad basica de cadena de custodia.
+	- Pruebas:
+		- `backend/db/auditoria_empresa_test.go`: `TestListEmpresaAuditoriaEventosSearchFullTextConFiltros`.
+		- `backend/handlers/auditoria_empresa_test.go`: `TestEmpresaAuditoriaEventosHandlerExportForenseJSONYCSV`.
+	- Validaciones ejecutadas:
+		- `go test ./db -run "Test(CreateAndListEmpresaAuditoriaEventos|PurgeEmpresaAuditoriaEventos|PurgeExpiredEmpresaAuditoriaEventos|CountAndListEmpresaAuditoriaEventosWithPaginationAndSearch|CreateEmpresaAuditoriaEventoAplicaPoliticaRetencionPorModuloYSeveridad|CreateEmpresaAuditoriaEventoMantieneRetencionExplicita|ListEmpresaAuditoriaEventosSearchFullTextConFiltros)$" -count=1` -> OK.
+		- `go test ./handlers -run "TestEmpresaAuditoriaEventosHandler(ConsultaYPurga|FiltrosAvanzados|ExportForenseJSONYCSV)$" -count=1` -> OK.
+		- `go test ./... -run "^$" -count=1` -> compilacion global backend OK.
+
+## 2026-04-07
+- Avance del modulo 29 (Auditoria empresarial): politicas de retencion por modulo y severidad.
+	- Backend `db`:
+		- `backend/db/auditoria_empresa.go` ahora resuelve `retencion_dias` automaticamente por combinacion de `modulo` + `severidad` inferida (resultado/codigo HTTP/metadatos), manteniendo prioridad para `retencion_dias` explicita.
+		- Se enriquece `metadata_json` con trazabilidad de politica aplicada (`retencion_politica_modulo`, `retencion_politica_severidad`, `retencion_dias_resuelto`).
+	- Pruebas:
+		- `backend/db/auditoria_empresa_test.go` agrega:
+			- `TestCreateEmpresaAuditoriaEventoAplicaPoliticaRetencionPorModuloYSeveridad`.
+			- `TestCreateEmpresaAuditoriaEventoMantieneRetencionExplicita`.
+	- Validaciones ejecutadas:
+		- `go test ./db -run "TestCreateEmpresaAuditoriaEventoAplicaPoliticaRetencionPorModuloYSeveridad|TestCreateEmpresaAuditoriaEventoMantieneRetencionExplicita" -count=1 -v` -> OK.
+		- `go test ./db -run "Test(CreateAndListEmpresaAuditoriaEventos|PurgeEmpresaAuditoriaEventos|PurgeExpiredEmpresaAuditoriaEventos|CountAndListEmpresaAuditoriaEventosWithPaginationAndSearch|CreateEmpresaAuditoriaEventoAplicaPoliticaRetencionPorModuloYSeveridad|CreateEmpresaAuditoriaEventoMantieneRetencionExplicita)$" -count=1` -> OK.
+		- `go test ./handlers -run "TestEmpresaAuditoriaEventosHandlerConsultaYPurga|TestEmpresaAuditoriaEventosHandlerFiltrosAvanzados" -count=1` -> OK.
+		- `go test ./... -run "^$" -count=1` -> compilacion global backend OK.
+
+## 2026-04-07
+- Cierre del pendiente de modulo 28 (Finanzas y contabilidad): politicas de cierre/reapertura de periodos con evidencia de autorizacion.
+	- Backend `handlers`:
+		- `backend/handlers/finanzas.go` exige en `PUT /api/empresa/finanzas/periodos?action=cerrar|reabrir` los campos `autorizado_por`, `motivo_autorizacion` y `evidencia_autorizacion`.
+		- Se incorpora trazabilidad explicita en observaciones y payload de evento contable (`policy_autorizacion`, `autorizado_por`, `motivo_autorizacion`, `evidencia_autorizacion`, `codigo_autorizacion`, `ejecutado_por`).
+		- La respuesta HTTP del cierre/reapertura retorna bloque `autorizacion` para auditoria operativa.
+	- Pruebas:
+		- `backend/handlers/eventos_contables_modulos_test.go` actualiza `TestEmpresaFinanzasEmiteEventosContables` para validar evidencia en payload.
+		- Se agrega `TestEmpresaFinanzasPeriodosRequiereEvidenciaAutorizacion` para rechazar cierre sin evidencia.
+	- Validaciones ejecutadas:
+		- `go test ./handlers -run "TestEmpresaFinanzasEmiteEventosContables|TestEmpresaFinanzasPeriodosRequiereEvidenciaAutorizacion" -count=1 -v` -> OK.
+		- `go test ./handlers -run "TestEmpresaFinanzas" -count=1` -> OK.
+
+## 2026-04-07
+- Avance del modulo 28 (Finanzas y contabilidad): conciliacion bancaria automatica y tablero de desviaciones por periodo.
+	- Backend `db`:
+		- Se agrega tabla `empresa_finanzas_bancos_movimientos` (extractos bancarios por `empresa_id`) en `EnsureEmpresaFinanzasSchema`.
+		- Se agrega `backend/db/finanzas_conciliacion_bancaria.go` con:
+			- importacion idempotente de extractos por `hash_movimiento`.
+			- conciliacion bancaria automatica contra `empresa_finanzas_movimientos` con tolerancia de monto/dias.
+			- resumen de conciliacion/desviaciones por periodo.
+	- Backend `handlers`:
+		- Se amplia `EmpresaFinanzasMovimientosHandler` con acciones:
+			- `GET action=conciliacion_bancaria` y `GET action=conciliacion_bancaria_export`.
+			- `GET action=extractos_bancarios`.
+			- `POST action=importar_extractos_bancarios` (opcional `auto_conciliar`).
+			- `PUT action=conciliar_bancaria_auto`.
+		- Se actualiza `resolveFinanzasPermissionAction` para clasificar conciliacion bancaria automatica como `permActionApprove`.
+	- Pruebas:
+		- `backend/db/finanzas_test.go`: `TestEmpresaFinanzasConciliacionBancariaAutomatica`.
+		- `backend/handlers/eventos_contables_modulos_test.go`: `TestEmpresaFinanzasMovimientosHandlerConciliacionBancariaAutomatica`.
+	- Validaciones ejecutadas:
+		- `runTests` sobre pruebas nuevas de db/handlers -> OK.
+		- `go test ./... -run "^$" -count=1` -> compilacion global backend OK.
+
+## 2026-04-07
+- Refuerzo de cobertura en capas `auth`, `metrics` y `utils`:
+	- Se agregan y amplian pruebas unitarias:
+		- `backend/auth/auth_test.go`
+		- `backend/metrics/collector_test.go`
+		- `backend/utils/utils_test.go` (incluye pruebas de middleware, contexto y manejo de errores JSON)
+	- Cobertura actualizada por paquete (corte de ejecucion):
+		- `auth`: `85.3%`
+		- `db`: `51.4%`
+		- `handlers`: `50.4%`
+		- `metrics`: `78.0%`
+		- `utils`: `71.1%`
+	- Se actualiza evidencia en `Pendiente Notas`, `documentos/punto_13_calidad_uat_despliegue.md` y `documentos/punto_13_validacion_integral_resultado.md`.
+	- Validaciones ejecutadas:
+		- `runTests` sobre `backend/utils/utils_test.go` -> 16 pruebas OK.
+		- `go test ./auth ./db ./handlers ./metrics ./utils -cover -count=1` (OK).
+		- `go test ./... -run "^$" -count=1` (compilacion global backend OK).
+
+## 2026-04-07
+- Cierre transversal de calidad y salida controlada:
+	- Se actualiza `documentos/punto_13_calidad_uat_despliegue.md` con:
+		- objetivo minimo de cobertura por capa,
+		- acta UAT formal por rol (`super_admin`, `admin_empresa`, `usuario_empresa`),
+		- matriz UAT por modulo en estado aprobado.
+	- Se amplía `documentos/release_checklist.md` con checklist estandar "listo para produccion" por modulo (seguridad, rendimiento, trazabilidad, exportacion y pruebas).
+	- Se amplía `documentos/punto_13_validacion_integral_resultado.md` con evidencia complementaria de cobertura y UAT por rol.
+	- Se actualiza `Pendiente Notas` para marcar completados los 3 pendientes transversales.
+	- Validaciones ejecutadas:
+		- `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\validar_punto_13.ps1` (OK).
+		- `go test ./auth ./db ./handlers ./metrics ./utils -cover -count=1` (db `51.4%`, handlers `50.4%`).
+		- `go test ./handlers -run "Test(SuperEndpointsPermisosPorRol|EmpresaPermisosContextoHandlerRetornaPermisosPorRol|EmpresaPermisosContextoHandlerIncluyeMatrizRoles|EmpresaCarritosCompraBloqueaMetodoPagoSegunRol|EmpresaCarritosCompraRespetaBloqueoPropinaYComisionPorRol|EmpresaConfiguracionOperativaHandlerConfigAndRole|EmpresaDocumentosGestionHandlerVersionadoYControlAcceso)$" -count=1` (OK).
+
+## 2026-04-07
+- Cierre tecnico del modulo 27 (Ventas simples por estacion):
+	- Se amplía `backend/db/carritos_compras.go` para:
+		- agregar tabla `empresa_ventas_estacion_metricas` y funciones de registro/resumen de rendimiento por estacion.
+		- calcular duracion de atencion por venta y resolver identidad de estacion desde carrito (`referencia_externa`/`codigo`).
+	- Se amplía `backend/handlers/carritos_compras.go` para:
+		- exponer `GET action=metricas_estacion` en `/api/empresa/carritos_compra`.
+		- registrar metricas en `pagar_estacion`, `anular_cierre_parcial` y `recuperar_interrumpido`.
+	- Se actualiza frontend de ventas simples:
+		- `web/administrar_empresa/ventas_simple.html` incorpora panel de sincronizacion offline, metricas de estacion y correccion rapida post-cobro.
+		- `web/js/ventas_simple.js` (nuevo) implementa cola offline por estacion con checksum SHA-256 y sincronizacion segura al reconectar.
+		- `web/estilos.css` agrega estilos de estado de sincronizacion (`en linea`, `offline`, `sincronizando`).
+	- Se amplía `backend/handlers/auth_users_carritos_test.go` con `TestEmpresaCarritosCompraMetricasEstacionIncluyeCorrecciones`.
+	- Validaciones ejecutadas:
+		- `go test ./handlers -run "TestEmpresaCarritosCompraMetricasEstacionIncluyeCorrecciones|TestEmpresaCarritosCompraAndItemsFlow" -count=1` (OK).
+		- `go test ./... -run "^$" -count=1` (compilacion global backend OK).
+
+## 2026-04-07
+- Cierre tecnico del modulo 26 (Carritos de compra e items):
+	- Se amplía `backend/db/carritos_compras.go` para:
+		- agregar reintentos transaccionales en operaciones de items frente a bloqueos SQLite (`database is locked/busy`) para fortalecer concurrencia multiestacion.
+		- incorporar `RecoverInterruptedCarritoSession` para recuperar carritos interrumpidos sin perdida de items.
+		- incorporar `CancelCarritoPartialClosure` para anulacion parcial de cierre en ventas pagadas con validacion estricta de monto.
+	- Se amplía `backend/handlers/carritos_compras.go` para:
+		- exponer `PUT action=recuperar_interrumpido` con trazabilidad en eventos contables y auditoria empresarial.
+		- exponer `PUT action=anular_cierre_parcial` con validacion de negocio y auditoria por `empresa_id` y carrito.
+	- Se ajusta `web/administrar_empresa/carrito_de_compras.html` para recuperar sesiones interrumpidas sin reset de items y reservar `reset_items=1` solo para sesiones ya pagadas.
+	- Se amplía cobertura en:
+		- `backend/db/carritos_inventario_test.go` (concurrencia de producto, recuperacion interrumpida, anulacion parcial).
+		- `backend/handlers/auth_users_carritos_test.go` (recuperacion con auditoria, reglas de pago mixto y anulacion parcial de cierre).
+	- Validaciones ejecutadas:
+		- `runTests` sobre `backend/db/carritos_inventario_test.go` y `backend/handlers/auth_users_carritos_test.go` -> 36 pruebas OK, 0 fallidas.
+		- `go test ./... -run "^$" -count=1` (compilacion global backend OK).
+
+## 2026-04-07
+- Cierre tecnico del modulo 25 (Panel ERP extendido):
+	- Se amplía `web/js/modulos_erp_extendido.js` para incorporar:
+		- formulario guiado dinamico por modulo (sin dependencia obligatoria de JSON libre),
+		- validaciones dinamicas por campo y reglas cruzadas (requeridos, tipos, fechas, rangos y consistencia de montos),
+		- acciones rapidas parametrizadas por modulo,
+		- guia operativa por dominio con flujo recomendado y controles clave.
+	- Se ajusta `web/estilos.css` para reforzar UX del panel ERP:
+		- grilla guiada responsive,
+		- resaltado de errores en linea,
+		- panel visual de validaciones,
+		- tarjetas de guia operativa.
+	- Validaciones ejecutadas:
+		- `go test ./... -run "^$" -count=1` (compilacion global backend OK).
+		- validacion manual de flujo frontend en `administrar_empresa/modulos_erp_dominio.html` (guiado, validaciones, acciones rapidas y sincronizacion a JSON avanzado).
+
+## 2026-04-07
+- Cierre tecnico del modulo 24 (Documental e Integraciones):
+	- Se amplía `backend/handlers/modulos_faltantes.go` para:
+		- reemplazar la ruta generica de documentos por handlers especializados (`EmpresaDocumentosGestionHandler`, `EmpresaDocumentosFirmasHandler`).
+		- incorporar versionado documental (`action=versionar`, `action=versiones`) y repositorio con control de acceso por rol/modulo (`action=acceso`, `action=repositorio`).
+		- incorporar endurecimiento de integraciones con `action=rotar_credencial` (referencias seguras) y `action=monitoreo`/`action=alertas` (salud de conectores y SLA operativo).
+	- Se amplía `backend/handlers/empresa_permisos.go` para clasificar `sync_manual`, `rotar_credencial` y `versionar` como acciones criticas de aprobacion en seguridad.
+	- Se amplía cobertura de pruebas en `backend/handlers/modulos_faltantes_test.go` con:
+		- `TestEmpresaIntegracionesAPIsHandlerRotarCredencialYMonitoreo`.
+		- `TestEmpresaIntegracionesBancosHandlerRotarCredencial`.
+		- `TestEmpresaDocumentosGestionHandlerVersionadoYControlAcceso`.
+	- Validaciones ejecutadas:
+		- `go test ./handlers -run "TestEmpresa(IntegracionesAPIsHandlerRotarCredencialYMonitoreo|IntegracionesBancosHandlerRotarCredencial|DocumentosGestionHandlerVersionadoYControlAcceso)" -count=1` (OK).
+		- `go test ./handlers -count=1` (OK).
+		- `go test ./... -count=1` (OK).
+
+## 2026-04-07
+- Cierre tecnico del modulo 23 (CRM/Produccion/Logistica):
+	- Se amplía `backend/handlers/modulos_faltantes.go` para incorporar handlers especializados:
+		- `EmpresaProduccionOrdenesHandler` con `action=plan_capacidad` (meta diaria, desviaciones y alertas por atraso/sobrecapacidad).
+		- `EmpresaLogisticaEnviosHandler` con `action=seguimiento_hitos` (hitos programacion/salida/entrega, SLA y alertas de incumplimiento).
+	- Se extiende `backend/handlers/reportes.go` en `operativo_cadena_cumplimiento` con metas y desviaciones por dominio:
+		- `meta_cumplimiento_pct`, `desviacion_meta_pct`, `estado_meta`.
+		- resumen global `meta_global_pct` y `desviacion_meta_global_pct`.
+	- Se amplía cobertura de pruebas en:
+		- `backend/handlers/modulos_faltantes_test.go` (`TestEmpresaProduccionOrdenesPlanCapacidad`, `TestEmpresaLogisticaEnviosSeguimientoHitos`).
+		- `backend/handlers/reportes_test.go` (validaciones de metas/desviaciones en cadena).
+	- Validaciones ejecutadas:
+		- `go test ./handlers -run "TestEmpresaProduccionOrdenesPlanCapacidad|TestEmpresaLogisticaEnviosSeguimientoHitos|TestEmpresaReportesHandlerDatasetOperativoCadenaCumplimiento" -count=1` (OK).
+		- `go test ./handlers -count=1` (OK).
+		- `go test ./... -count=1` (OK).
+
+## 2026-04-07
+- Cierre tecnico del modulo 22 (RRHH extendido: vacaciones/licencias):
+	- Se amplía `backend/db/modulos_faltantes.go` con nuevos campos de RRHH en `empresa_rrhh_vacaciones_licencias` para:
+		- aprobacion jerarquica (`nivel_aprobacion_actual`, `nivel_aprobacion_requerido`, `aprobadores_json`, `historial_aprobaciones_json`, `fecha_aprobacion_final`),
+		- acumulado y saldo (`periodo_acumulado_*`, `saldo_dias_*`, `saldo_snapshot_json`),
+		- enlace a nomina (`empleado_nomina_id`, `nomina_liquidacion_id`, `nomina_periodo_*`, `nomina_vinculada_*`).
+	- Se amplía `backend/handlers/modulos_faltantes.go` con handler especializado `EmpresaRRHHVacacionesLicenciasHandler` y acciones:
+		- `action=resumen_saldo` para acumulado/saldo de vacaciones,
+		- `action=solicitar_aprobacion`, `action=aprobar`, `action=rechazar` para flujo jerarquico,
+		- `action=vincular_nomina` para enlazar novedades aprobadas a liquidacion/periodo de nomina.
+	- Se actualiza `backend/handlers/empresa_permisos.go` para mapear acciones RRHH criticas a permisos de aprobacion/actualizacion.
+	- Se amplía `backend/handlers/modulos_faltantes_test.go` con pruebas de:
+		- saldo y aprobacion jerarquica multinivel,
+		- vinculacion de novedades RRHH a nomina por periodo.
+	- Validaciones ejecutadas:
+		- `go test ./handlers -run RRHH -count=1` (OK).
+		- `go test ./handlers -count=1` (OK).
+		- `go test ./... -count=1` (OK).
+
+## 2026-04-07
+- Cierre tecnico del modulo 21 (Inventario extendido: lotes/series y devolucion proveedor):
+	- Se amplía `backend/db/modulos_faltantes.go` con:
+		- trazabilidad completa de lotes/series mediante tabla `inventario_lotes_series_movimientos`.
+		- campos operativos de bloqueo/estado en `inventario_lotes_series` (`reservado_cantidad`, `vendido_cantidad`, `bloqueado_venta`, `bloqueo_motivo`, `ultima_operacion_*`).
+		- campos contables de devolucion en `empresa_devoluciones_proveedor` (`periodo_contable`, `impacto_contable_*`, `fecha_contabilizacion`, `contabilizado_por`, `total_reintegrado`).
+	- Se amplía `backend/handlers/modulos_faltantes.go` con handlers especializados:
+		- `EmpresaInventarioLotesSeriesHandler` con acciones `trazabilidad`, `validar_disponibilidad`, `reservar`, `vender`, `liberar_reserva`, `ajuste_entrada`, `ajuste_salida`, `devolucion_proveedor`.
+		- bloqueo automatico por vencimiento en venta/reserva y actualizacion de estado de lote.
+		- `EmpresaComprasDevolucionesProveedorHandler` con `action=contabilizar`/`action=impacto_contable` para generar movimiento financiero, evento contable y actualizar la devolucion a `contabilizada`.
+	- Se amplía `backend/db/eventos_contables.go` para soportar `devolucion_proveedor_contabilizada` en contrato y asiento contable (flujo de ingreso).
+	- Se amplía `backend/handlers/modulos_faltantes_test.go` con pruebas de:
+		- bloqueo automatico de lote vencido en reserva,
+		- trazabilidad de ciclo reserva/venta/liberacion,
+		- contabilizacion completa de devolucion proveedor con impacto contable.
+	- Validaciones ejecutadas:
+		- `go test ./handlers -run "TestEmpresaInventarioLotesSeriesBloqueoAutomaticoVencido|TestEmpresaInventarioLotesSeriesTrazabilidadCicloVenta|TestEmpresaComprasDevolucionesProveedorContabilizarImpactoCompleto" -count=1` (OK).
+		- `go test ./handlers -count=1` (OK).
+		- `go test ./... -count=1` (OK).
+
 ## 2026-04-06
+- Cierre tecnico del modulo 20 (Contabilidad operativa extendida: plan de cuentas, CxC y CxP):
+	- Se amplía `backend/handlers/modulos_faltantes.go` con handlers especializados de finanzas:
+		- `EmpresaFinanzasPlanCuentasHandler` con `action=plantillas`, `action=aplicar_plantilla` y `action=validar_cierre_periodo`.
+		- `EmpresaFinanzasCuentasCobrarHandler` y `EmpresaFinanzasCuentasPagarHandler` con `action=conciliar_pagos` y validacion de periodo cerrado.
+	- Se amplía `backend/db/modulos_faltantes.go` con:
+		- nuevos metadatos de plantilla en `empresa_plan_cuentas`.
+		- campos de conciliacion en `empresa_cuentas_por_cobrar` y `empresa_cuentas_por_pagar`.
+		- bloqueo retroactivo por periodo contable cerrado en crear/editar/cambiar estado/eliminar de CxC/CxP.
+	- Se amplía `backend/handlers/modulos_faltantes_test.go` con pruebas de:
+		- plantillas y aplicacion de plan de cuentas por tipo de empresa.
+		- conciliacion automatica CxC contra pagos reales.
+		- bloqueo de operaciones CxP cuando el periodo esta cerrado.
+	- Validaciones ejecutadas:
+		- `go test ./handlers -run "TestEmpresaFinanzasPlanCuentasPlantillasYAplicacion|TestEmpresaFinanzasCuentasCobrarConciliacionPagosReales|TestEmpresaFinanzasCarteraBloqueoPeriodoCerrado" -count=1` (OK).
+		- `go test ./handlers -count=1` (OK).
+		- `go test ./... -count=1` (OK).
+- Cierre tecnico del modulo 19 (Gestion comercial extendida: cotizaciones/pedidos/devoluciones):
+	- Se amplía `backend/handlers/modulos_faltantes.go` con automatizacion comercial en ventas:
+		- `POST/PUT action=convertir_pedido` en cotizaciones para convertir cotizacion aprobada/emitida a pedido trazable (`cotizacion_id`, `convertido_pedido_id`).
+		- `POST/PUT action=convertir_documento_final` en cotizaciones y pedidos para generar documento final en `empresa_facturacion_documentos`.
+		- `GET action=embudo` en cotizaciones para monitoreo operativo con SLA y alertas de vencimiento.
+	- Se incorpora snapshot de embudo comercial cotizacion→pedido→documento final con trazabilidad por `empresa_id`.
+	- Se agrega dataset exportable `operativo_ventas_embudo_conversion` en `backend/handlers/reportes.go` con formatos `json/csv/txt/xls/pdf`.
+	- Se actualiza `backend/handlers/empresa_permisos.go` para clasificar `convertir_pedido` y `convertir_documento_final` como acciones de aprobacion en ventas.
+	- Se agregan pruebas en `backend/handlers/modulos_faltantes_test.go` y `backend/handlers/reportes_test.go` para:
+		- conversion cotizacion→pedido→documento final,
+		- alertas SLA del embudo,
+		- dataset/export CSV del nuevo reporte de conversion.
+	- Validaciones ejecutadas:
+		- `go test ./handlers -run "TestEmpresaVentasCotizacionesConversionPedidoYDocumentoFinal|TestEmpresaVentasCotizacionesEmbudoYAlertasSLA|TestEmpresaReportesHandlerDatasetOperativoVentasEmbudoConversion" -count=1` (OK).
+		- `go test ./handlers -run "DIAN|ModulosFaltantes|OperativoCadenaCumplimiento|OperativoVentasEmbudoConversion" -count=1` (OK).
+		- `go test ./handlers -count=1` (OK).
+		- `go test ./... -count=1` (OK).
+- Cierre tecnico del modulo 18 (Facturacion electronica DIAN Colombia):
+	- Se amplía `backend/handlers/modulos_faltantes.go` en `EmpresaDIANColombiaHandler` con acciones operativas reales:
+		- `action=firmar_xml_real` (firma RSA-SHA256).
+		- `action=enviar_documento_real` (envio productivo/habilitacion por `url_dian`).
+		- `action=consultar_acuse_real` (consulta de acuse y normalizacion de estado).
+		- `action=reconexion_dian` (sondeo de conectividad y salida de contingencia).
+	- Se implementa gestion segura de credenciales/certificados por referencia:
+		- `token_emisor_ref` y `certificado_clave_ref` soportan `env:`, `file:` y `base64:`.
+	- Se integra transicion de estado DIAN (`pendiente/enviado/aceptado/rechazado/contingencia/reconectado`) con trazabilidad en `observaciones` y `ultimo_envio`.
+	- Se ajusta `backend/handlers/empresa_permisos.go` para clasificar las nuevas acciones DIAN de escritura como `permActionApprove`.
+	- Se agregan pruebas en `backend/handlers/modulos_faltantes_test.go` para:
+		- flujo firma + envio + acuse exitoso,
+		- contingencia por falla de transporte y recuperacion por reconexion.
+	- Validaciones ejecutadas:
+		- `go test ./handlers -run "DIAN|ModulosFaltantes" -count=1 -v` (OK).
+		- `go test ./handlers -count=1` (OK).
+		- `go test ./... -count=1` (suite backend completa OK).
+- Estabilizacion del panel de graficos y estadisticas (compras):
+	- Se ajusta `backend/handlers/graficos_estadisticas.go` para soportar la nueva estructura del dataset `operativo_compras_movimientos` (agregado por proveedor) sin perder compatibilidad con la forma anterior.
+	- Se agrega fallback para construir la serie de compras desde movimientos financieros (`egresos` de compras) cuando no existen documentos en `empresa_compras_documentos`.
+	- Validaciones ejecutadas:
+		- `go test ./handlers -run TestEmpresaGraficosEstadisticasHandlerPanelYAcciones -count=1 -v` (OK tras ajuste).
+		- `runTests` en `backend/handlers/graficos_estadisticas_test.go` (2 pruebas OK).
+		- `go test ./handlers -run GraficosEstadisticas -count=1` (OK).
+		- `go test ./... -count=1` (suite backend completa OK).
+- Cierre tecnico del modulo 17 (Facturacion electronica):
+	- Se integra despacho fiscal por pais/proveedor en `backend/handlers/facturacion_electronica.go`:
+		- proveedor `manual` (productivo local), `mock://` para pruebas y despacho HTTP contra `api_base_url` cuando aplica.
+		- respuesta operativa `integracion_fiscal` en acciones transaccionales (`emitir`, `anular`, `nota_credito`).
+	- Se implementa cola de reintentos FE en `backend/db/facturacion_electronica.go`:
+		- nueva tabla `facturacion_electronica_reintentos` con estado de envio, intentos, proximo intento, contingencia y referencia externa.
+		- nuevas operaciones de consulta/actualizacion y listados filtrados por estado.
+	- Se agregan endpoints operativos FE:
+		- `GET action=reintentos`.
+		- `POST/PUT action=procesar_reintentos`.
+		- `GET action=reconciliacion` y `POST/PUT action=reconciliar_estados`.
+	- Se activa contingencia automatica al superar `max_intentos` y se conserva numeracion legal por resolucion en emision.
+	- Se actualiza contrato contable del modulo `facturacion` con eventos de integracion (`factura_integracion_enviada`, `factura_integracion_fallida`, `factura_contingencia_activada`).
+	- Validaciones ejecutadas:
+		- `go test ./db -run Facturacion -count=1` (OK).
+		- `go test ./handlers -run FacturacionElectronica -count=1` (OK).
+		- `go test ./handlers -run Facturacion -count=1` (OK).
+		- `go test ./... -count=1` (falla no relacionada en `TestEmpresaGraficosEstadisticasHandlerPanelYAcciones`).
+- Cierre tecnico del modulo 16 (Compras):
+	- Se amplía el ciclo documental de compras con aprobacion multinivel:
+		- `requiere_aprobacion`, `niveles_aprobacion_requeridos`, `nivel_aprobacion_actual`, `aprobadores_json`.
+		- Nuevas acciones: `solicitar_aprobacion`, `aprobar_compra`, `rechazar_compra`.
+	- Se cierra recepcion parcial avanzada por item:
+		- `recepcion_detalle_json` y `recepcion_resumen_json` para registrar cantidades solicitadas/recibidas, pendientes y diferencias.
+		- Nueva accion: `recepcionar_parcial_compra`, consolidada con `recepcionar_compra` al completar recepcion total.
+	- Se integra validacion documental proveedor-factura-entrada:
+		- `validacion_documental_estado`, `proveedor_documento_ref`, `factura_documento_ref`, `entrada_documento_ref`.
+		- Nueva accion: `validar_documentos` con verificacion de proveedor y referencias documentales.
+	- Se amplía UI en `web/administrar_empresa/compras.html` con campos, filtros/KPI y acciones operativas del nuevo flujo.
+	- Validaciones ejecutadas:
+		- `runTests` en `backend/db/documentos_transaccionales_test.go`, `backend/handlers/compras_documentos_test.go`, `backend/handlers/empresa_permisos_test.go` (21 pruebas OK).
+		- `go test ./... -run TestDoesNotExist -count=1` (compilacion global backend OK).
 - Hotfix de compatibilidad de migraciones legacy en startup:
 	- Se corrige el orden de migracion en `EnsureEmpresaPropinasSchema` para crear indices despues de asegurar columnas faltantes (`cierre_caja_id` y relacionadas), evitando fallos en bases antiguas.
 	- Se corrige el orden de migracion en `EnsureEmpresaComisionesServicioSchema` para crear indices despues de asegurar columnas faltantes (`ajuste_manual` y relacionadas), evitando fallos en bases antiguas.

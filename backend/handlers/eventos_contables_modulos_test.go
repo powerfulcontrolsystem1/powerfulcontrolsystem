@@ -214,8 +214,9 @@ func TestEmpresaFinanzasEmiteEventosContables(t *testing.T) {
 		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, perCreateRR.Code, perCreateRR.Body.String())
 	}
 
-	perCloseReq := httptest.NewRequest(http.MethodPut, "/api/empresa/finanzas/periodos?action=cerrar&empresa_id=44&periodo=2026-04", nil)
+	perCloseReq := httptest.NewRequest(http.MethodPut, "/api/empresa/finanzas/periodos?action=cerrar&empresa_id=44&periodo=2026-04", strings.NewReader(`{"autorizado_por":"director.finanzas@test.com","motivo_autorizacion":"cierre contable mensual con bloqueo de cambios","evidencia_autorizacion":"ACTA-CIERRE-2026-04","codigo_autorizacion":"APR-2026-04-001"}`))
 	perCloseReq = perCloseReq.WithContext(context.WithValue(perCloseReq.Context(), "adminEmail", "finanzas@test.com"))
+	perCloseReq.Header.Set("Content-Type", "application/json")
 	perCloseRR := httptest.NewRecorder()
 	hPer.ServeHTTP(perCloseRR, perCloseReq)
 	if perCloseRR.Code != http.StatusOK {
@@ -234,6 +235,45 @@ func TestEmpresaFinanzasEmiteEventosContables(t *testing.T) {
 	}
 	if !hasEventoContable(eventos, "periodo_contable_cerrado") {
 		t.Fatalf("expected periodo_contable_cerrado event")
+	}
+	periodoCerradoEvt, ok := findEventoContable(eventos, "periodo_contable_cerrado")
+	if !ok {
+		t.Fatalf("expected periodo_contable_cerrado event payload")
+	}
+	if !strings.Contains(periodoCerradoEvt.PayloadJSON, `"evidencia_autorizacion":"ACTA-CIERRE-2026-04"`) {
+		t.Fatalf("expected evidencia_autorizacion in payload, got %s", periodoCerradoEvt.PayloadJSON)
+	}
+	if !strings.Contains(periodoCerradoEvt.PayloadJSON, `"autorizado_por":"director.finanzas@test.com"`) {
+		t.Fatalf("expected autorizado_por in payload, got %s", periodoCerradoEvt.PayloadJSON)
+	}
+}
+
+func TestEmpresaFinanzasPeriodosRequiereEvidenciaAutorizacion(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_eventos_finanzas_periodo_autorizacion_handler.db")
+	if err := dbpkg.EnsureEmpresaFinanzasSchema(dbEmp); err != nil {
+		t.Fatalf("ensure finanzas schema: %v", err)
+	}
+
+	hPer := EmpresaFinanzasPeriodosHandler(dbEmp)
+	perCreateReq := httptest.NewRequest(http.MethodPost, "/api/empresa/finanzas/periodos", strings.NewReader(`{"empresa_id":77,"periodo":"2026-04","fecha_inicio":"2026-04-01","fecha_fin":"2026-04-30"}`))
+	perCreateReq = perCreateReq.WithContext(context.WithValue(perCreateReq.Context(), "adminEmail", "finanzas@test.com"))
+	perCreateReq.Header.Set("Content-Type", "application/json")
+	perCreateRR := httptest.NewRecorder()
+	hPer.ServeHTTP(perCreateRR, perCreateReq)
+	if perCreateRR.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, perCreateRR.Code, perCreateRR.Body.String())
+	}
+
+	reqCloseSinEvidencia := httptest.NewRequest(http.MethodPut, "/api/empresa/finanzas/periodos?action=cerrar&empresa_id=77&periodo=2026-04", strings.NewReader(`{"autorizado_por":"director.finanzas@test.com","motivo_autorizacion":"cierre contable mensual"}`))
+	reqCloseSinEvidencia = reqCloseSinEvidencia.WithContext(context.WithValue(reqCloseSinEvidencia.Context(), "adminEmail", "finanzas@test.com"))
+	reqCloseSinEvidencia.Header.Set("Content-Type", "application/json")
+	rrCloseSinEvidencia := httptest.NewRecorder()
+	hPer.ServeHTTP(rrCloseSinEvidencia, reqCloseSinEvidencia)
+	if rrCloseSinEvidencia.Code != http.StatusBadRequest {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusBadRequest, rrCloseSinEvidencia.Code, rrCloseSinEvidencia.Body.String())
+	}
+	if !strings.Contains(strings.ToLower(rrCloseSinEvidencia.Body.String()), "evidencia_autorizacion") {
+		t.Fatalf("expected evidencia_autorizacion validation error, got body=%s", rrCloseSinEvidencia.Body.String())
 	}
 }
 
@@ -789,6 +829,141 @@ func TestEmpresaFinanzasTableroResumenExportHandler(t *testing.T) {
 	h.ServeHTTP(rrInvalid, reqInvalid)
 	if rrInvalid.Code != http.StatusBadRequest {
 		t.Fatalf("expected status %d, got %d body=%s", http.StatusBadRequest, rrInvalid.Code, rrInvalid.Body.String())
+	}
+}
+
+func TestEmpresaFinanzasMovimientosHandlerConciliacionBancariaAutomatica(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_finanzas_conciliacion_bancaria_handler.db")
+	if err := dbpkg.EnsureEmpresaFinanzasSchema(dbEmp); err != nil {
+		t.Fatalf("ensure finanzas schema: %v", err)
+	}
+
+	empresaID := int64(120)
+	fechaMov := "2026-04-15 11:30:00"
+	movID, err := dbpkg.CreateEmpresaFinanzasMovimiento(dbEmp, dbpkg.EmpresaFinanzasMovimiento{
+		EmpresaID:         empresaID,
+		TipoMovimiento:    "ingreso",
+		Concepto:          "Ingreso por transferencia",
+		Categoria:         "ventas",
+		MetodoPago:        "transferencia_bancaria",
+		Moneda:            "COP",
+		Monto:             200000,
+		Total:             200000,
+		ReferenciaExterna: "TRX-H-120",
+		FechaMovimiento:   fechaMov,
+		UsuarioCreador:    "tester",
+	})
+	if err != nil {
+		t.Fatalf("create movimiento financiero: %v", err)
+	}
+
+	h := EmpresaFinanzasMovimientosHandler(dbEmp)
+	importBody := `{
+		"empresa_id":120,
+		"auto_conciliar":true,
+		"tolerancia_dias":2,
+		"tolerancia_monto":10,
+		"movimientos":[
+			{
+				"tipo_movimiento":"ingreso",
+				"periodo_contable":"2026-04",
+				"fecha_movimiento":"2026-04-15 11:35:00",
+				"referencia_bancaria":"TRX-H-120",
+				"monto":200000,
+				"total":200000,
+				"moneda":"COP"
+			},
+			{
+				"tipo_movimiento":"egreso",
+				"periodo_contable":"2026-04",
+				"fecha_movimiento":"2026-04-16 09:00:00",
+				"referencia_bancaria":"TRX-NO-MATCH-120",
+				"monto":75000,
+				"total":75000,
+				"moneda":"COP"
+			}
+		]
+	}`
+	reqImport := httptest.NewRequest(http.MethodPost, "/api/empresa/finanzas/movimientos?action=importar_extractos_bancarios&empresa_id=120", strings.NewReader(importBody))
+	reqImport = reqImport.WithContext(context.WithValue(reqImport.Context(), "adminEmail", "finanzas@test.com"))
+	reqImport.Header.Set("Content-Type", "application/json")
+	rrImport := httptest.NewRecorder()
+	h.ServeHTTP(rrImport, reqImport)
+	if rrImport.Code != http.StatusCreated {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusCreated, rrImport.Code, rrImport.Body.String())
+	}
+
+	var importResp map[string]interface{}
+	if err := json.Unmarshal(rrImport.Body.Bytes(), &importResp); err != nil {
+		t.Fatalf("decode import response: %v", err)
+	}
+	conciliacionAuto, _ := importResp["conciliacion_automatica"].(map[string]interface{})
+	if conciliacionAuto == nil {
+		t.Fatalf("expected conciliacion_automatica block in import response")
+	}
+	if int64(conciliacionAuto["conciliados"].(float64)) != 1 {
+		t.Fatalf("expected conciliados=1, got %v", conciliacionAuto["conciliados"])
+	}
+
+	reqResumen := httptest.NewRequest(http.MethodGet, "/api/empresa/finanzas/movimientos?action=conciliacion_bancaria&empresa_id=120&periodo=2026-04", nil)
+	reqResumen = reqResumen.WithContext(context.WithValue(reqResumen.Context(), "adminEmail", "finanzas@test.com"))
+	rrResumen := httptest.NewRecorder()
+	h.ServeHTTP(rrResumen, reqResumen)
+	if rrResumen.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, rrResumen.Code, rrResumen.Body.String())
+	}
+
+	var resumen map[string]interface{}
+	if err := json.Unmarshal(rrResumen.Body.Bytes(), &resumen); err != nil {
+		t.Fatalf("decode resumen response: %v", err)
+	}
+	if int64(resumen["total_periodos"].(float64)) != 1 {
+		t.Fatalf("expected total_periodos=1, got %v", resumen["total_periodos"])
+	}
+	filas, _ := resumen["filas"].([]interface{})
+	if len(filas) != 1 {
+		t.Fatalf("expected 1 fila de conciliacion bancaria, got %d", len(filas))
+	}
+	fila, _ := filas[0].(map[string]interface{})
+	if int64(fila["extractos_total"].(float64)) != 2 {
+		t.Fatalf("expected extractos_total=2, got %v", fila["extractos_total"])
+	}
+	if int64(fila["extractos_conciliados"].(float64)) != 1 {
+		t.Fatalf("expected extractos_conciliados=1, got %v", fila["extractos_conciliados"])
+	}
+	if strings.TrimSpace(fila["estado_conciliacion"].(string)) != "con_pendientes" {
+		t.Fatalf("expected estado_conciliacion=con_pendientes, got %v", fila["estado_conciliacion"])
+	}
+
+	extractos, err := dbpkg.ListEmpresaFinanzasMovimientosBancarios(dbEmp, empresaID, dbpkg.EmpresaFinanzasMovimientoBancarioFilter{PeriodoContable: "2026-04", Limit: 20})
+	if err != nil {
+		t.Fatalf("list extractos bancarios: %v", err)
+	}
+	if len(extractos) != 2 {
+		t.Fatalf("expected 2 extractos, got %d", len(extractos))
+	}
+	matched := false
+	for _, it := range extractos {
+		if strings.TrimSpace(it.ReferenciaBancaria) == "TRX-H-120" {
+			if it.MovimientoFinanzasID != movID {
+				t.Fatalf("expected movimiento_finanzas_id=%d for matched extracto, got %d", movID, it.MovimientoFinanzasID)
+			}
+			matched = true
+		}
+	}
+	if !matched {
+		t.Fatalf("expected matched bank extract with referencia TRX-H-120")
+	}
+
+	reqExport := httptest.NewRequest(http.MethodGet, "/api/empresa/finanzas/movimientos?action=conciliacion_bancaria_export&format=csv&empresa_id=120&periodo=2026-04", nil)
+	reqExport = reqExport.WithContext(context.WithValue(reqExport.Context(), "adminEmail", "finanzas@test.com"))
+	rrExport := httptest.NewRecorder()
+	h.ServeHTTP(rrExport, reqExport)
+	if rrExport.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, rrExport.Code, rrExport.Body.String())
+	}
+	if ct := strings.ToLower(rrExport.Header().Get("Content-Type")); !strings.Contains(ct, "text/csv") {
+		t.Fatalf("expected csv content-type, got %q", rrExport.Header().Get("Content-Type"))
 	}
 }
 

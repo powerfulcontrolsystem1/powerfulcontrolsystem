@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -70,6 +71,46 @@ type CarritoCompraItem struct {
 	Observaciones       string  `json:"observaciones,omitempty"`
 }
 
+// CarritoStationMetricInput representa una medicion operativa por estacion.
+type CarritoStationMetricInput struct {
+	EmpresaID           int64
+	CarritoID           int64
+	EstacionID          int64
+	EstacionCodigo      string
+	EstacionNombre      string
+	EventoOperacion     string
+	MetodoPago          string
+	Moneda              string
+	MontoTotal          float64
+	MontoPagado         float64
+	MontoAnulado        float64
+	DevolucionTotal     float64
+	DuracionSegundos    int64
+	ActivadoEn          string
+	PagadoEn            string
+	ReferenciaOperacion string
+	FechaEvento         string
+	UsuarioCreador      string
+	Observaciones       string
+}
+
+// CarritoStationMetricSummary consolida rendimiento de ventas simples por estacion.
+type CarritoStationMetricSummary struct {
+	EstacionID             int64   `json:"estacion_id"`
+	EstacionCodigo         string  `json:"estacion_codigo"`
+	EstacionNombre         string  `json:"estacion_nombre"`
+	VentasPagadas          int64   `json:"ventas_pagadas"`
+	Correcciones           int64   `json:"correcciones"`
+	MontoVendido           float64 `json:"monto_vendido"`
+	MontoPagado            float64 `json:"monto_pagado"`
+	MontoAnulado           float64 `json:"monto_anulado"`
+	DevolucionTotal        float64 `json:"devolucion_total"`
+	TiempoPromedioSegundos float64 `json:"tiempo_promedio_segundos"`
+	TiempoMinSegundos      int64   `json:"tiempo_min_segundos"`
+	TiempoMaxSegundos      int64   `json:"tiempo_max_segundos"`
+	UltimaOperacion        string  `json:"ultima_operacion"`
+}
+
 // EnsureEmpresaCarritosSchema crea y migra tablas de carritos de compra en empresas.db.
 func EnsureEmpresaCarritosSchema(dbConn *sql.DB) error {
 	stmts := []string{
@@ -127,11 +168,39 @@ func EnsureEmpresaCarritosSchema(dbConn *sql.DB) error {
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
+		`CREATE TABLE IF NOT EXISTS empresa_ventas_estacion_metricas (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			empresa_id INTEGER NOT NULL,
+			carrito_id INTEGER NOT NULL,
+			estacion_id INTEGER DEFAULT 0,
+			estacion_codigo TEXT,
+			estacion_nombre TEXT,
+			evento_operacion TEXT NOT NULL DEFAULT 'venta_pagada',
+			metodo_pago TEXT DEFAULT 'efectivo',
+			moneda TEXT DEFAULT 'COP',
+			monto_total REAL DEFAULT 0,
+			monto_pagado REAL DEFAULT 0,
+			monto_anulado REAL DEFAULT 0,
+			devolucion_total REAL DEFAULT 0,
+			duracion_segundos INTEGER DEFAULT 0,
+			activado_en TEXT,
+			pagado_en TEXT,
+			referencia_operacion TEXT,
+			fecha_evento TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			usuario_creador TEXT,
+			estado TEXT DEFAULT 'activo',
+			observaciones TEXT
+		);`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_carritos_empresa_codigo ON carritos_compras(empresa_id, codigo);`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_carritos_empresa_nombre ON carritos_compras(empresa_id, nombre);`,
 		`CREATE INDEX IF NOT EXISTS ix_carritos_empresa_estado ON carritos_compras(empresa_id, estado, estado_carrito);`,
 		`CREATE INDEX IF NOT EXISTS ix_carrito_items_empresa_carrito ON carrito_compra_items(empresa_id, carrito_id);`,
 		`CREATE INDEX IF NOT EXISTS ix_carrito_items_empresa_referencia ON carrito_compra_items(empresa_id, referencia_id);`,
+		`CREATE INDEX IF NOT EXISTS ix_ventas_estacion_metricas_empresa_estacion_fecha ON empresa_ventas_estacion_metricas(empresa_id, estacion_id, fecha_evento DESC);`,
+		`CREATE INDEX IF NOT EXISTS ix_ventas_estacion_metricas_empresa_evento ON empresa_ventas_estacion_metricas(empresa_id, evento_operacion, fecha_evento DESC);`,
+		`CREATE INDEX IF NOT EXISTS ix_ventas_estacion_metricas_carrito ON empresa_ventas_estacion_metricas(empresa_id, carrito_id, fecha_evento DESC);`,
 	}
 	for _, stmt := range stmts {
 		if _, err := dbConn.Exec(stmt); err != nil {
@@ -258,6 +327,77 @@ func EnsureEmpresaCarritosSchema(dbConn *sql.DB) error {
 		return err
 	}
 
+	if err := ensureColumnIfMissing(dbConn, "empresa_ventas_estacion_metricas", "empresa_id", "INTEGER NOT NULL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_ventas_estacion_metricas", "carrito_id", "INTEGER NOT NULL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_ventas_estacion_metricas", "estacion_id", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_ventas_estacion_metricas", "estacion_codigo", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_ventas_estacion_metricas", "estacion_nombre", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_ventas_estacion_metricas", "evento_operacion", "TEXT DEFAULT 'venta_pagada'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_ventas_estacion_metricas", "metodo_pago", "TEXT DEFAULT 'efectivo'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_ventas_estacion_metricas", "moneda", "TEXT DEFAULT 'COP'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_ventas_estacion_metricas", "monto_total", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_ventas_estacion_metricas", "monto_pagado", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_ventas_estacion_metricas", "monto_anulado", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_ventas_estacion_metricas", "devolucion_total", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_ventas_estacion_metricas", "duracion_segundos", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_ventas_estacion_metricas", "activado_en", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_ventas_estacion_metricas", "pagado_en", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_ventas_estacion_metricas", "referencia_operacion", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_ventas_estacion_metricas", "fecha_evento", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_ventas_estacion_metricas", "fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_ventas_estacion_metricas", "fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_ventas_estacion_metricas", "usuario_creador", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_ventas_estacion_metricas", "estado", "TEXT DEFAULT 'activo'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_ventas_estacion_metricas", "observaciones", "TEXT"); err != nil {
+		return err
+	}
+
+	if _, err := dbConn.Exec(`PRAGMA busy_timeout = 5000`); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -366,6 +506,92 @@ func round2(v float64) float64 {
 	return math.Round(v*100) / 100
 }
 
+func normalizeCarritoStationMetricEvent(v string) string {
+	event := strings.TrimSpace(strings.ToLower(v))
+	switch event {
+	case "", "venta_pagada":
+		return "venta_pagada"
+	case "cierre_parcial_anulado", "sesion_recuperada":
+		return event
+	default:
+		return "operacion"
+	}
+}
+
+func parseCarritoStationID(referenciaExterna, codigo string, empresaID int64) int64 {
+	ref := strings.ToUpper(strings.TrimSpace(referenciaExterna))
+	if strings.HasPrefix(ref, "ESTACION_") {
+		n, err := strconv.ParseInt(strings.TrimPrefix(ref, "ESTACION_"), 10, 64)
+		if err == nil && n > 0 {
+			return n
+		}
+	}
+	prefix := strings.ToUpper(fmt.Sprintf("EST-%d-", empresaID))
+	code := strings.ToUpper(strings.TrimSpace(codigo))
+	if strings.HasPrefix(code, prefix) {
+		n, err := strconv.ParseInt(strings.TrimPrefix(code, prefix), 10, 64)
+		if err == nil && n > 0 {
+			return n
+		}
+	}
+	return 0
+}
+
+// ResolveCarritoStationIdentity obtiene metadatos de estacion desde un carrito de ventas.
+func ResolveCarritoStationIdentity(carrito *CarritoCompra) (int64, string, string) {
+	if carrito == nil {
+		return 0, "", ""
+	}
+	estacionID := parseCarritoStationID(carrito.ReferenciaExterna, carrito.Codigo, carrito.EmpresaID)
+	estacionCodigo := strings.TrimSpace(carrito.Codigo)
+	if estacionCodigo == "" && estacionID > 0 {
+		estacionCodigo = fmt.Sprintf("EST-%d-%d", carrito.EmpresaID, estacionID)
+	}
+	estacionNombre := strings.TrimSpace(carrito.Nombre)
+	if estacionNombre == "" && estacionID > 0 {
+		estacionNombre = fmt.Sprintf("Estacion %d", estacionID)
+	}
+	if estacionNombre == "" {
+		estacionNombre = "Estacion"
+	}
+	return estacionID, estacionCodigo, estacionNombre
+}
+
+func parseCarritoDateTime(raw string) (time.Time, bool) {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return time.Time{}, false
+	}
+	layouts := []string{
+		"2006-01-02 15:04:05",
+		"2006-01-02T15:04:05",
+		"2006-01-02 15:04",
+		"2006-01-02T15:04",
+		"2006-01-02",
+	}
+	for _, layout := range layouts {
+		ts, err := time.ParseInLocation(layout, value, time.Local)
+		if err == nil {
+			return ts, true
+		}
+	}
+	return time.Time{}, false
+}
+
+// ResolveCarritoAttentionDurationSeconds calcula tiempo de atencion entre activacion y pago.
+func ResolveCarritoAttentionDurationSeconds(activadoEn, pagadoEn string) int64 {
+	activadoTS, okActivado := parseCarritoDateTime(activadoEn)
+	pagadoTS, okPagado := parseCarritoDateTime(pagadoEn)
+	if !okActivado || !okPagado {
+		return 0
+	}
+	delta := pagadoTS.Sub(activadoTS)
+	if delta <= 0 {
+		return 0
+	}
+	return int64(delta.Seconds())
+}
+
 func calcItemTotals(item *CarritoCompraItem) {
 	if item.Cantidad <= 0 {
 		item.Cantidad = 1
@@ -397,6 +623,62 @@ func calcItemTotals(item *CarritoCompraItem) {
 	item.ValorImpuesto = round2(impuesto)
 	item.SubtotalLinea = round2(baseGravable)
 	item.TotalLinea = round2(total)
+}
+
+const (
+	carritoTxRetryMaxAttempts = 5
+	carritoTxRetryBaseDelay   = 20 * time.Millisecond
+)
+
+func isSQLiteBusyOrLockedError(err error) bool {
+	if err == nil {
+		return false
+	}
+	lower := strings.ToLower(strings.TrimSpace(err.Error()))
+	return strings.Contains(lower, "database is locked") || strings.Contains(lower, "database is busy")
+}
+
+func withCarritoTxRetry(dbConn *sql.DB, run func(tx *sql.Tx) error) error {
+	var lastRetryErr error
+	for attempt := 0; attempt < carritoTxRetryMaxAttempts; attempt++ {
+		tx, err := dbConn.Begin()
+		if err != nil {
+			if isSQLiteBusyOrLockedError(err) {
+				lastRetryErr = err
+				time.Sleep(time.Duration(attempt+1) * carritoTxRetryBaseDelay)
+				continue
+			}
+			return err
+		}
+
+		err = run(tx)
+		if err != nil {
+			_ = tx.Rollback()
+			if isSQLiteBusyOrLockedError(err) && attempt+1 < carritoTxRetryMaxAttempts {
+				lastRetryErr = err
+				time.Sleep(time.Duration(attempt+1) * carritoTxRetryBaseDelay)
+				continue
+			}
+			return err
+		}
+
+		if err := tx.Commit(); err != nil {
+			_ = tx.Rollback()
+			if isSQLiteBusyOrLockedError(err) && attempt+1 < carritoTxRetryMaxAttempts {
+				lastRetryErr = err
+				time.Sleep(time.Duration(attempt+1) * carritoTxRetryBaseDelay)
+				continue
+			}
+			return err
+		}
+
+		return nil
+	}
+
+	if lastRetryErr != nil {
+		return lastRetryErr
+	}
+	return fmt.Errorf("no se pudo completar transaccion de carrito")
 }
 
 // CreateCarritoCompra crea un carrito por empresa.
@@ -766,6 +1048,100 @@ func ActivateCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, r
 	return tx.Commit()
 }
 
+// RecoverInterruptedCarritoSession recupera una sesion interrumpida sin perder items reservados.
+func RecoverInterruptedCarritoSession(dbConn *sql.DB, empresaID, carritoID int64) error {
+	return withCarritoTxRetry(dbConn, func(tx *sql.Tx) error {
+		var estado string
+		var estadoCarrito string
+		var pagadoEn string
+		err := tx.QueryRow(`SELECT
+			COALESCE(estado, 'activo'),
+			COALESCE(estado_carrito, 'abierto'),
+			COALESCE(pagado_en, '')
+		FROM carritos_compras
+		WHERE empresa_id = ? AND id = ?
+		LIMIT 1`, empresaID, carritoID).Scan(&estado, &estadoCarrito, &pagadoEn)
+		if err != nil {
+			return err
+		}
+
+		if strings.TrimSpace(pagadoEn) != "" {
+			return fmt.Errorf("la venta ya fue pagada y no puede recuperarse como interrumpida")
+		}
+
+		estado = strings.TrimSpace(strings.ToLower(estado))
+		estadoCarrito = strings.TrimSpace(strings.ToLower(estadoCarrito))
+		if estado == "activo" && estadoCarrito == "abierto" {
+			if _, err := tx.Exec(`UPDATE carritos_compras SET fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND id = ?`, empresaID, carritoID); err != nil {
+				return err
+			}
+			return nil
+		}
+
+		if _, err := tx.Exec(`UPDATE carritos_compras SET
+			estado = 'activo',
+			estado_carrito = 'abierto',
+			activado_en = datetime('now','localtime'),
+			fecha_actualizacion = datetime('now','localtime')
+		WHERE empresa_id = ? AND id = ?`, empresaID, carritoID); err != nil {
+			return err
+		}
+
+		return recalculateCarritoTotalsTx(tx, empresaID, carritoID)
+	})
+}
+
+// CancelCarritoPartialClosure registra una anulacion parcial de cierre sobre una venta ya pagada.
+func CancelCarritoPartialClosure(dbConn *sql.DB, empresaID, carritoID int64, montoAnulado float64) (float64, float64, error) {
+	montoAnulado = round2(montoAnulado)
+	if montoAnulado <= 0 {
+		return 0, 0, fmt.Errorf("monto_anulado debe ser mayor a cero")
+	}
+
+	totalPagadoNuevo := 0.0
+	devolucionTotalNueva := 0.0
+
+	err := withCarritoTxRetry(dbConn, func(tx *sql.Tx) error {
+		var pagadoEn string
+		var totalPagadoActual float64
+		var devolucionActual float64
+		err := tx.QueryRow(`SELECT
+			COALESCE(pagado_en, ''),
+			COALESCE(total_pagado, 0),
+			COALESCE(devolucion_total, 0)
+		FROM carritos_compras
+		WHERE empresa_id = ? AND id = ?
+		LIMIT 1`, empresaID, carritoID).Scan(&pagadoEn, &totalPagadoActual, &devolucionActual)
+		if err != nil {
+			return err
+		}
+
+		if strings.TrimSpace(pagadoEn) == "" {
+			return fmt.Errorf("solo se puede anular parcialmente una venta pagada")
+		}
+
+		totalPagadoActual = round2(totalPagadoActual)
+		if montoAnulado >= totalPagadoActual {
+			return fmt.Errorf("monto_anulado debe ser menor al total_pagado actual para mantener anulacion parcial")
+		}
+
+		totalPagadoNuevo = round2(totalPagadoActual - montoAnulado)
+		devolucionTotalNueva = round2(devolucionActual + montoAnulado)
+
+		_, err = tx.Exec(`UPDATE carritos_compras SET
+			total_pagado = ?,
+			devolucion_total = ?,
+			fecha_actualizacion = datetime('now','localtime')
+		WHERE empresa_id = ? AND id = ?`, totalPagadoNuevo, devolucionTotalNueva, empresaID, carritoID)
+		return err
+	})
+	if err != nil {
+		return 0, 0, err
+	}
+
+	return totalPagadoNuevo, devolucionTotalNueva, nil
+}
+
 // PayCarritoStationSession marca un carrito como pagado/inactivo y guarda resumen de cobro.
 func PayCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, metodoPago, referenciaPago, descuentoTipo, descuentoCodigo string, descuentoValor, devolucionTotal, totalPagado float64, codigoDescuentoID int64, usuarioCreador string) error {
 	metodoPago = NormalizeMetodoPagoCarrito(metodoPago)
@@ -828,6 +1204,191 @@ func PayCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, metodo
 	return tx.Commit()
 }
 
+// RecordCarritoStationMetric persiste una metrica operativa de ventas simples por estacion.
+func RecordCarritoStationMetric(dbConn *sql.DB, input CarritoStationMetricInput) (int64, error) {
+	if dbConn == nil {
+		return 0, fmt.Errorf("conexion de base de datos no disponible")
+	}
+	if input.EmpresaID <= 0 {
+		return 0, fmt.Errorf("empresa_id invalido")
+	}
+	if input.CarritoID <= 0 {
+		return 0, fmt.Errorf("carrito_id invalido")
+	}
+
+	evento := normalizeCarritoStationMetricEvent(input.EventoOperacion)
+	metodoPago := NormalizeMetodoPagoCarrito(input.MetodoPago)
+	if metodoPago == "" {
+		metodoPago = "efectivo"
+	}
+	moneda := strings.TrimSpace(strings.ToUpper(input.Moneda))
+	if moneda == "" {
+		moneda = "COP"
+	}
+	estacionCodigo := strings.TrimSpace(input.EstacionCodigo)
+	if estacionCodigo == "" && input.EstacionID > 0 {
+		estacionCodigo = fmt.Sprintf("EST-%d-%d", input.EmpresaID, input.EstacionID)
+	}
+	estacionNombre := strings.TrimSpace(input.EstacionNombre)
+	if estacionNombre == "" && input.EstacionID > 0 {
+		estacionNombre = fmt.Sprintf("Estacion %d", input.EstacionID)
+	}
+	duracionSegundos := input.DuracionSegundos
+	if duracionSegundos <= 0 {
+		duracionSegundos = ResolveCarritoAttentionDurationSeconds(input.ActivadoEn, input.PagadoEn)
+	}
+	if duracionSegundos < 0 {
+		duracionSegundos = 0
+	}
+	fechaEvento := strings.TrimSpace(input.FechaEvento)
+	if fechaEvento == "" {
+		fechaEvento = strings.TrimSpace(input.PagadoEn)
+	}
+	if fechaEvento == "" {
+		fechaEvento = strings.TrimSpace(input.ActivadoEn)
+	}
+
+	res, err := dbConn.Exec(`INSERT INTO empresa_ventas_estacion_metricas (
+		empresa_id,
+		carrito_id,
+		estacion_id,
+		estacion_codigo,
+		estacion_nombre,
+		evento_operacion,
+		metodo_pago,
+		moneda,
+		monto_total,
+		monto_pagado,
+		monto_anulado,
+		devolucion_total,
+		duracion_segundos,
+		activado_en,
+		pagado_en,
+		referencia_operacion,
+		fecha_evento,
+		fecha_creacion,
+		fecha_actualizacion,
+		usuario_creador,
+		estado,
+		observaciones
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), datetime('now','localtime')), datetime('now','localtime'), datetime('now','localtime'), ?, 'activo', ?)`,
+		input.EmpresaID,
+		input.CarritoID,
+		input.EstacionID,
+		estacionCodigo,
+		estacionNombre,
+		evento,
+		metodoPago,
+		moneda,
+		round2(input.MontoTotal),
+		round2(input.MontoPagado),
+		round2(input.MontoAnulado),
+		round2(input.DevolucionTotal),
+		duracionSegundos,
+		strings.TrimSpace(input.ActivadoEn),
+		strings.TrimSpace(input.PagadoEn),
+		strings.TrimSpace(input.ReferenciaOperacion),
+		fechaEvento,
+		strings.TrimSpace(input.UsuarioCreador),
+		strings.TrimSpace(input.Observaciones),
+	)
+	if err != nil {
+		return 0, err
+	}
+	return res.LastInsertId()
+}
+
+// ListCarritoStationMetricSummary resume ventas, correcciones y tiempos por estacion.
+func ListCarritoStationMetricSummary(dbConn *sql.DB, empresaID, estacionID int64, days, limit int) ([]CarritoStationMetricSummary, error) {
+	if empresaID <= 0 {
+		return nil, fmt.Errorf("empresa_id invalido")
+	}
+	if days <= 0 {
+		days = 7
+	}
+	if days > 365 {
+		days = 365
+	}
+	if limit <= 0 {
+		limit = 10
+	}
+	if limit > 200 {
+		limit = 200
+	}
+
+	query := `SELECT
+		COALESCE(estacion_id, 0) AS estacion_id,
+		COALESCE(MAX(NULLIF(estacion_codigo, '')), '') AS estacion_codigo,
+		COALESCE(MAX(NULLIF(estacion_nombre, '')), '') AS estacion_nombre,
+		SUM(CASE WHEN evento_operacion = 'venta_pagada' THEN 1 ELSE 0 END) AS ventas_pagadas,
+		SUM(CASE WHEN evento_operacion = 'cierre_parcial_anulado' THEN 1 ELSE 0 END) AS correcciones,
+		ROUND(SUM(CASE WHEN evento_operacion = 'venta_pagada' THEN COALESCE(monto_total, 0) ELSE 0 END), 2) AS monto_vendido,
+		ROUND(SUM(CASE WHEN evento_operacion = 'venta_pagada' THEN COALESCE(monto_pagado, 0) ELSE 0 END), 2) AS monto_pagado,
+		ROUND(SUM(COALESCE(monto_anulado, 0)), 2) AS monto_anulado,
+		ROUND(SUM(COALESCE(devolucion_total, 0)), 2) AS devolucion_total,
+		ROUND(COALESCE(AVG(CASE WHEN evento_operacion = 'venta_pagada' AND COALESCE(duracion_segundos, 0) > 0 THEN duracion_segundos END), 0), 2) AS tiempo_promedio_segundos,
+		COALESCE(MIN(CASE WHEN evento_operacion = 'venta_pagada' AND COALESCE(duracion_segundos, 0) > 0 THEN duracion_segundos END), 0) AS tiempo_min_segundos,
+		COALESCE(MAX(CASE WHEN evento_operacion = 'venta_pagada' AND COALESCE(duracion_segundos, 0) > 0 THEN duracion_segundos END), 0) AS tiempo_max_segundos,
+		COALESCE(MAX(COALESCE(fecha_evento, fecha_creacion, '')), '') AS ultima_operacion
+	FROM empresa_ventas_estacion_metricas
+	WHERE empresa_id = ?
+		AND COALESCE(estado, 'activo') = 'activo'
+		AND datetime(COALESCE(fecha_evento, fecha_creacion, datetime('now','localtime'))) >= datetime('now','localtime', ?)`
+	args := []interface{}{empresaID, fmt.Sprintf("-%d day", days)}
+
+	if estacionID > 0 {
+		query += ` AND estacion_id = ?`
+		args = append(args, estacionID)
+	}
+
+	query += `
+	GROUP BY COALESCE(estacion_id, 0)
+	ORDER BY ventas_pagadas DESC, monto_pagado DESC, estacion_id ASC
+	LIMIT ?`
+	args = append(args, limit)
+
+	rows, err := dbConn.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]CarritoStationMetricSummary, 0)
+	for rows.Next() {
+		var row CarritoStationMetricSummary
+		if err := rows.Scan(
+			&row.EstacionID,
+			&row.EstacionCodigo,
+			&row.EstacionNombre,
+			&row.VentasPagadas,
+			&row.Correcciones,
+			&row.MontoVendido,
+			&row.MontoPagado,
+			&row.MontoAnulado,
+			&row.DevolucionTotal,
+			&row.TiempoPromedioSegundos,
+			&row.TiempoMinSegundos,
+			&row.TiempoMaxSegundos,
+			&row.UltimaOperacion,
+		); err != nil {
+			return nil, err
+		}
+		if strings.TrimSpace(row.EstacionNombre) == "" {
+			if row.EstacionID > 0 {
+				row.EstacionNombre = fmt.Sprintf("Estacion %d", row.EstacionID)
+			} else {
+				row.EstacionNombre = "Estacion"
+			}
+		}
+		out = append(out, row)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return out, nil
+}
+
 // CreateCarritoCompraItem crea un item y recalcula totales del carrito.
 func CreateCarritoCompraItem(dbConn *sql.DB, payload CarritoCompraItem) (int64, error) {
 	payload.TipoItem = defaultTipoItem(payload.TipoItem)
@@ -839,93 +1400,88 @@ func CreateCarritoCompraItem(dbConn *sql.DB, payload CarritoCompraItem) (int64, 
 	}
 	calcItemTotals(&payload)
 
-	tx, err := dbConn.Begin()
-	if err != nil {
-		return 0, err
-	}
-	defer tx.Rollback()
+	id := int64(0)
+	err := withCarritoTxRetry(dbConn, func(tx *sql.Tx) error {
+		if err := validateCarritoEnEmpresaTx(tx, payload.EmpresaID, payload.CarritoID); err != nil {
+			return err
+		}
 
-	if err := validateCarritoEnEmpresaTx(tx, payload.EmpresaID, payload.CarritoID); err != nil {
-		return 0, err
-	}
-
-	res, err := tx.Exec(`INSERT INTO carrito_compra_items (
-		empresa_id,
-		carrito_id,
-		tipo_item,
-		referencia_id,
-		codigo_item,
-		descripcion,
-		unidad_medida,
-		cantidad,
-		precio_unitario,
-		descuento_porcentaje,
-		impuesto_porcentaje,
-		impuesto_codigo,
-		base_gravable,
-		valor_descuento,
-		valor_impuesto,
-		subtotal_linea,
-		total_linea,
-		usuario_creador,
-		estado,
-		observaciones,
-		fecha_creacion,
-		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'activo', ?, datetime('now','localtime'), datetime('now','localtime'))`,
-		payload.EmpresaID,
-		payload.CarritoID,
-		payload.TipoItem,
-		nullableInt64(payload.ReferenciaID),
-		strings.TrimSpace(payload.CodigoItem),
-		strings.TrimSpace(payload.Descripcion),
-		payload.UnidadMedida,
-		payload.Cantidad,
-		payload.PrecioUnitario,
-		payload.DescuentoPorcentaje,
-		payload.ImpuestoPorcentaje,
-		payload.ImpuestoCodigo,
-		payload.BaseGravable,
-		payload.ValorDescuento,
-		payload.ValorImpuesto,
-		payload.SubtotalLinea,
-		payload.TotalLinea,
-		strings.TrimSpace(payload.UsuarioCreador),
-		strings.TrimSpace(payload.Observaciones),
-	)
-	if err != nil {
-		return 0, err
-	}
-	id, err := res.LastInsertId()
-	if err != nil {
-		return 0, err
-	}
-
-	if isItemActivo(payload.Estado) {
-		referencia := fmt.Sprintf("carrito:%d:item:%d", payload.CarritoID, id)
-		if err := adjustCarritoItemStockTx(
-			tx,
+		res, err := tx.Exec(`INSERT INTO carrito_compra_items (
+			empresa_id,
+			carrito_id,
+			tipo_item,
+			referencia_id,
+			codigo_item,
+			descripcion,
+			unidad_medida,
+			cantidad,
+			precio_unitario,
+			descuento_porcentaje,
+			impuesto_porcentaje,
+			impuesto_codigo,
+			base_gravable,
+			valor_descuento,
+			valor_impuesto,
+			subtotal_linea,
+			total_linea,
+			usuario_creador,
+			estado,
+			observaciones,
+			fecha_creacion,
+			fecha_actualizacion
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'activo', ?, datetime('now','localtime'), datetime('now','localtime'))`,
 			payload.EmpresaID,
 			payload.CarritoID,
 			payload.TipoItem,
-			payload.ReferenciaID,
+			nullableInt64(payload.ReferenciaID),
+			strings.TrimSpace(payload.CodigoItem),
+			strings.TrimSpace(payload.Descripcion),
+			payload.UnidadMedida,
 			payload.Cantidad,
-			true,
-			referencia,
-			payload.UsuarioCreador,
-			"reserva por adicion al carrito",
-		); err != nil {
-			return 0, err
+			payload.PrecioUnitario,
+			payload.DescuentoPorcentaje,
+			payload.ImpuestoPorcentaje,
+			payload.ImpuestoCodigo,
+			payload.BaseGravable,
+			payload.ValorDescuento,
+			payload.ValorImpuesto,
+			payload.SubtotalLinea,
+			payload.TotalLinea,
+			strings.TrimSpace(payload.UsuarioCreador),
+			strings.TrimSpace(payload.Observaciones),
+		)
+		if err != nil {
+			return err
 		}
-	}
+		id, err = res.LastInsertId()
+		if err != nil {
+			return err
+		}
 
-	if err := recalculateCarritoTotalsTx(tx, payload.EmpresaID, payload.CarritoID); err != nil {
+		if isItemActivo(payload.Estado) {
+			referencia := fmt.Sprintf("carrito:%d:item:%d", payload.CarritoID, id)
+			if err := adjustCarritoItemStockTx(
+				tx,
+				payload.EmpresaID,
+				payload.CarritoID,
+				payload.TipoItem,
+				payload.ReferenciaID,
+				payload.Cantidad,
+				true,
+				referencia,
+				payload.UsuarioCreador,
+				"reserva por adicion al carrito",
+			); err != nil {
+				return err
+			}
+		}
+
+		return recalculateCarritoTotalsTx(tx, payload.EmpresaID, payload.CarritoID)
+	})
+	if err != nil {
 		return 0, err
 	}
 
-	if err := tx.Commit(); err != nil {
-		return 0, err
-	}
 	return id, nil
 }
 
@@ -1011,213 +1567,145 @@ func UpdateCarritoCompraItem(dbConn *sql.DB, payload CarritoCompraItem) error {
 	payload.ImpuestoCodigo = defaultImpuestoCodigo(payload.ImpuestoCodigo)
 	calcItemTotals(&payload)
 
-	tx, err := dbConn.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
+	return withCarritoTxRetry(dbConn, func(tx *sql.Tx) error {
+		prev, err := getCarritoItemSnapshotTx(tx, payload.EmpresaID, payload.CarritoID, payload.ID)
+		if err != nil {
+			return err
+		}
 
-	prev, err := getCarritoItemSnapshotTx(tx, payload.EmpresaID, payload.CarritoID, payload.ID)
-	if err != nil {
-		return err
-	}
-
-	if isItemActivo(prev.Estado) {
-		if isTrackableProduct(prev.TipoItem, prev.ReferenciaID) && isTrackableProduct(payload.TipoItem, payload.ReferenciaID) && prev.ReferenciaID == payload.ReferenciaID {
-			delta := payload.Cantidad - prev.Cantidad
-			if delta > 0 {
-				referencia := fmt.Sprintf("carrito:%d:item:%d", payload.CarritoID, payload.ID)
-				if err := adjustCarritoItemStockTx(
-					tx,
-					payload.EmpresaID,
-					payload.CarritoID,
-					payload.TipoItem,
-					payload.ReferenciaID,
-					delta,
-					true,
-					referencia,
-					payload.UsuarioCreador,
-					"reserva adicional por actualizacion de item",
-				); err != nil {
-					return err
+		if isItemActivo(prev.Estado) {
+			if isTrackableProduct(prev.TipoItem, prev.ReferenciaID) && isTrackableProduct(payload.TipoItem, payload.ReferenciaID) && prev.ReferenciaID == payload.ReferenciaID {
+				delta := payload.Cantidad - prev.Cantidad
+				if delta > 0 {
+					referencia := fmt.Sprintf("carrito:%d:item:%d", payload.CarritoID, payload.ID)
+					if err := adjustCarritoItemStockTx(
+						tx,
+						payload.EmpresaID,
+						payload.CarritoID,
+						payload.TipoItem,
+						payload.ReferenciaID,
+						delta,
+						true,
+						referencia,
+						payload.UsuarioCreador,
+						"reserva adicional por actualizacion de item",
+					); err != nil {
+						return err
+					}
 				}
-			}
-			if delta < 0 {
-				referencia := fmt.Sprintf("carrito:%d:item:%d", payload.CarritoID, payload.ID)
-				if err := adjustCarritoItemStockTx(
-					tx,
-					payload.EmpresaID,
-					payload.CarritoID,
-					payload.TipoItem,
-					payload.ReferenciaID,
-					-delta,
-					false,
-					referencia,
-					payload.UsuarioCreador,
-					"liberacion por disminucion de item",
-				); err != nil {
-					return err
+				if delta < 0 {
+					referencia := fmt.Sprintf("carrito:%d:item:%d", payload.CarritoID, payload.ID)
+					if err := adjustCarritoItemStockTx(
+						tx,
+						payload.EmpresaID,
+						payload.CarritoID,
+						payload.TipoItem,
+						payload.ReferenciaID,
+						-delta,
+						false,
+						referencia,
+						payload.UsuarioCreador,
+						"liberacion por disminucion de item",
+					); err != nil {
+						return err
+					}
 				}
-			}
-		} else {
-			if isTrackableProduct(prev.TipoItem, prev.ReferenciaID) {
-				referencia := fmt.Sprintf("carrito:%d:item:%d", payload.CarritoID, payload.ID)
-				if err := adjustCarritoItemStockTx(
-					tx,
-					payload.EmpresaID,
-					payload.CarritoID,
-					prev.TipoItem,
-					prev.ReferenciaID,
-					prev.Cantidad,
-					false,
-					referencia,
-					payload.UsuarioCreador,
-					"liberacion por cambio de referencia de item",
-				); err != nil {
-					return err
+			} else {
+				if isTrackableProduct(prev.TipoItem, prev.ReferenciaID) {
+					referencia := fmt.Sprintf("carrito:%d:item:%d", payload.CarritoID, payload.ID)
+					if err := adjustCarritoItemStockTx(
+						tx,
+						payload.EmpresaID,
+						payload.CarritoID,
+						prev.TipoItem,
+						prev.ReferenciaID,
+						prev.Cantidad,
+						false,
+						referencia,
+						payload.UsuarioCreador,
+						"liberacion por cambio de referencia de item",
+					); err != nil {
+						return err
+					}
 				}
-			}
-			if isTrackableProduct(payload.TipoItem, payload.ReferenciaID) {
-				referencia := fmt.Sprintf("carrito:%d:item:%d", payload.CarritoID, payload.ID)
-				if err := adjustCarritoItemStockTx(
-					tx,
-					payload.EmpresaID,
-					payload.CarritoID,
-					payload.TipoItem,
-					payload.ReferenciaID,
-					payload.Cantidad,
-					true,
-					referencia,
-					payload.UsuarioCreador,
-					"reserva por cambio de referencia de item",
-				); err != nil {
-					return err
+				if isTrackableProduct(payload.TipoItem, payload.ReferenciaID) {
+					referencia := fmt.Sprintf("carrito:%d:item:%d", payload.CarritoID, payload.ID)
+					if err := adjustCarritoItemStockTx(
+						tx,
+						payload.EmpresaID,
+						payload.CarritoID,
+						payload.TipoItem,
+						payload.ReferenciaID,
+						payload.Cantidad,
+						true,
+						referencia,
+						payload.UsuarioCreador,
+						"reserva por cambio de referencia de item",
+					); err != nil {
+						return err
+					}
 				}
 			}
 		}
-	}
 
-	if _, err := tx.Exec(`UPDATE carrito_compra_items SET
-		tipo_item = ?,
-		referencia_id = ?,
-		codigo_item = ?,
-		descripcion = ?,
-		unidad_medida = ?,
-		cantidad = ?,
-		precio_unitario = ?,
-		descuento_porcentaje = ?,
-		impuesto_porcentaje = ?,
-		impuesto_codigo = ?,
-		base_gravable = ?,
-		valor_descuento = ?,
-		valor_impuesto = ?,
-		subtotal_linea = ?,
-		total_linea = ?,
-		observaciones = ?,
-		fecha_actualizacion = datetime('now','localtime')
-	WHERE id = ? AND empresa_id = ? AND carrito_id = ?`,
-		payload.TipoItem,
-		nullableInt64(payload.ReferenciaID),
-		strings.TrimSpace(payload.CodigoItem),
-		strings.TrimSpace(payload.Descripcion),
-		payload.UnidadMedida,
-		payload.Cantidad,
-		payload.PrecioUnitario,
-		payload.DescuentoPorcentaje,
-		payload.ImpuestoPorcentaje,
-		payload.ImpuestoCodigo,
-		payload.BaseGravable,
-		payload.ValorDescuento,
-		payload.ValorImpuesto,
-		payload.SubtotalLinea,
-		payload.TotalLinea,
-		strings.TrimSpace(payload.Observaciones),
-		payload.ID,
-		payload.EmpresaID,
-		payload.CarritoID,
-	); err != nil {
-		return err
-	}
+		if _, err := tx.Exec(`UPDATE carrito_compra_items SET
+			tipo_item = ?,
+			referencia_id = ?,
+			codigo_item = ?,
+			descripcion = ?,
+			unidad_medida = ?,
+			cantidad = ?,
+			precio_unitario = ?,
+			descuento_porcentaje = ?,
+			impuesto_porcentaje = ?,
+			impuesto_codigo = ?,
+			base_gravable = ?,
+			valor_descuento = ?,
+			valor_impuesto = ?,
+			subtotal_linea = ?,
+			total_linea = ?,
+			observaciones = ?,
+			fecha_actualizacion = datetime('now','localtime')
+		WHERE id = ? AND empresa_id = ? AND carrito_id = ?`,
+			payload.TipoItem,
+			nullableInt64(payload.ReferenciaID),
+			strings.TrimSpace(payload.CodigoItem),
+			strings.TrimSpace(payload.Descripcion),
+			payload.UnidadMedida,
+			payload.Cantidad,
+			payload.PrecioUnitario,
+			payload.DescuentoPorcentaje,
+			payload.ImpuestoPorcentaje,
+			payload.ImpuestoCodigo,
+			payload.BaseGravable,
+			payload.ValorDescuento,
+			payload.ValorImpuesto,
+			payload.SubtotalLinea,
+			payload.TotalLinea,
+			strings.TrimSpace(payload.Observaciones),
+			payload.ID,
+			payload.EmpresaID,
+			payload.CarritoID,
+		); err != nil {
+			return err
+		}
 
-	if err := recalculateCarritoTotalsTx(tx, payload.EmpresaID, payload.CarritoID); err != nil {
-		return err
-	}
-	return tx.Commit()
+		return recalculateCarritoTotalsTx(tx, payload.EmpresaID, payload.CarritoID)
+	})
 }
 
 // DeleteCarritoCompraItem elimina item y recalcula totales.
 func DeleteCarritoCompraItem(dbConn *sql.DB, empresaID, carritoID, itemID int64) error {
-	tx, err := dbConn.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	estadoCarrito, err := getCarritoEstadoTx(tx, empresaID, carritoID)
-	if err != nil {
-		return err
-	}
-	item, err := getCarritoItemSnapshotTx(tx, empresaID, carritoID, itemID)
-	if err != nil {
-		return err
-	}
-	if isItemActivo(item.Estado) && !isCarritoCerrado(estadoCarrito) {
-		referencia := fmt.Sprintf("carrito:%d:item:%d", carritoID, itemID)
-		if err := adjustCarritoItemStockTx(
-			tx,
-			empresaID,
-			carritoID,
-			item.TipoItem,
-			item.ReferenciaID,
-			item.Cantidad,
-			false,
-			referencia,
-			item.UsuarioCreador,
-			"liberacion por eliminacion de item",
-		); err != nil {
+	return withCarritoTxRetry(dbConn, func(tx *sql.Tx) error {
+		estadoCarrito, err := getCarritoEstadoTx(tx, empresaID, carritoID)
+		if err != nil {
 			return err
 		}
-	}
-
-	if _, err := tx.Exec(`DELETE FROM carrito_compra_items WHERE empresa_id = ? AND carrito_id = ? AND id = ?`, empresaID, carritoID, itemID); err != nil {
-		return err
-	}
-	if err := recalculateCarritoTotalsTx(tx, empresaID, carritoID); err != nil {
-		return err
-	}
-	return tx.Commit()
-}
-
-// SetCarritoCompraItemEstado activa/desactiva item y recalcula totales.
-func SetCarritoCompraItemEstado(dbConn *sql.DB, empresaID, carritoID, itemID int64, estado string) error {
-	tx, err := dbConn.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	nuevoEstado := strings.TrimSpace(estado)
-	if nuevoEstado == "" {
-		nuevoEstado = "activo"
-	}
-
-	estadoCarrito, err := getCarritoEstadoTx(tx, empresaID, carritoID)
-	if err != nil {
-		return err
-	}
-
-	item, err := getCarritoItemSnapshotTx(tx, empresaID, carritoID, itemID)
-	if err != nil {
-		return err
-	}
-
-	estadoActual := strings.TrimSpace(item.Estado)
-	if estadoActual == "" {
-		estadoActual = "activo"
-	}
-
-	if !isCarritoCerrado(estadoCarrito) && isTrackableProduct(item.TipoItem, item.ReferenciaID) {
-		if isItemActivo(estadoActual) && !isItemActivo(nuevoEstado) {
+		item, err := getCarritoItemSnapshotTx(tx, empresaID, carritoID, itemID)
+		if err != nil {
+			return err
+		}
+		if isItemActivo(item.Estado) && !isCarritoCerrado(estadoCarrito) {
 			referencia := fmt.Sprintf("carrito:%d:item:%d", carritoID, itemID)
 			if err := adjustCarritoItemStockTx(
 				tx,
@@ -1229,37 +1717,84 @@ func SetCarritoCompraItemEstado(dbConn *sql.DB, empresaID, carritoID, itemID int
 				false,
 				referencia,
 				item.UsuarioCreador,
-				"liberacion por desactivacion de item",
+				"liberacion por eliminacion de item",
 			); err != nil {
 				return err
 			}
 		}
-		if !isItemActivo(estadoActual) && isItemActivo(nuevoEstado) {
-			referencia := fmt.Sprintf("carrito:%d:item:%d", carritoID, itemID)
-			if err := adjustCarritoItemStockTx(
-				tx,
-				empresaID,
-				carritoID,
-				item.TipoItem,
-				item.ReferenciaID,
-				item.Cantidad,
-				true,
-				referencia,
-				item.UsuarioCreador,
-				"reserva por activacion de item",
-			); err != nil {
-				return err
-			}
+
+		if _, err := tx.Exec(`DELETE FROM carrito_compra_items WHERE empresa_id = ? AND carrito_id = ? AND id = ?`, empresaID, carritoID, itemID); err != nil {
+			return err
 		}
+		return recalculateCarritoTotalsTx(tx, empresaID, carritoID)
+	})
+}
+
+// SetCarritoCompraItemEstado activa/desactiva item y recalcula totales.
+func SetCarritoCompraItemEstado(dbConn *sql.DB, empresaID, carritoID, itemID int64, estado string) error {
+	nuevoEstado := strings.TrimSpace(estado)
+	if nuevoEstado == "" {
+		nuevoEstado = "activo"
 	}
 
-	if _, err := tx.Exec(`UPDATE carrito_compra_items SET estado = ?, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND carrito_id = ? AND id = ?`, nuevoEstado, empresaID, carritoID, itemID); err != nil {
-		return err
-	}
-	if err := recalculateCarritoTotalsTx(tx, empresaID, carritoID); err != nil {
-		return err
-	}
-	return tx.Commit()
+	return withCarritoTxRetry(dbConn, func(tx *sql.Tx) error {
+		estadoCarrito, err := getCarritoEstadoTx(tx, empresaID, carritoID)
+		if err != nil {
+			return err
+		}
+
+		item, err := getCarritoItemSnapshotTx(tx, empresaID, carritoID, itemID)
+		if err != nil {
+			return err
+		}
+
+		estadoActual := strings.TrimSpace(item.Estado)
+		if estadoActual == "" {
+			estadoActual = "activo"
+		}
+
+		if !isCarritoCerrado(estadoCarrito) && isTrackableProduct(item.TipoItem, item.ReferenciaID) {
+			if isItemActivo(estadoActual) && !isItemActivo(nuevoEstado) {
+				referencia := fmt.Sprintf("carrito:%d:item:%d", carritoID, itemID)
+				if err := adjustCarritoItemStockTx(
+					tx,
+					empresaID,
+					carritoID,
+					item.TipoItem,
+					item.ReferenciaID,
+					item.Cantidad,
+					false,
+					referencia,
+					item.UsuarioCreador,
+					"liberacion por desactivacion de item",
+				); err != nil {
+					return err
+				}
+			}
+			if !isItemActivo(estadoActual) && isItemActivo(nuevoEstado) {
+				referencia := fmt.Sprintf("carrito:%d:item:%d", carritoID, itemID)
+				if err := adjustCarritoItemStockTx(
+					tx,
+					empresaID,
+					carritoID,
+					item.TipoItem,
+					item.ReferenciaID,
+					item.Cantidad,
+					true,
+					referencia,
+					item.UsuarioCreador,
+					"reserva por activacion de item",
+				); err != nil {
+					return err
+				}
+			}
+		}
+
+		if _, err := tx.Exec(`UPDATE carrito_compra_items SET estado = ?, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND carrito_id = ? AND id = ?`, nuevoEstado, empresaID, carritoID, itemID); err != nil {
+			return err
+		}
+		return recalculateCarritoTotalsTx(tx, empresaID, carritoID)
+	})
 }
 
 // RecalculateCarritoCompraTotals recalcula totales del carrito basado en items activos.

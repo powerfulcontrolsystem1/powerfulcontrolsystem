@@ -12,6 +12,10 @@ import (
 const (
 	defaultEmpresaAuditoriaRetencionDias = int64(180)
 	maxEmpresaAuditoriaRetencionDias     = int64(3650)
+	auditoriaSeveridadCritica            = "critica"
+	auditoriaSeveridadAlta               = "alta"
+	auditoriaSeveridadMedia              = "media"
+	auditoriaSeveridadBaja               = "baja"
 )
 
 // EmpresaAuditoriaEvento representa un evento de auditoria por empresa.
@@ -158,6 +162,9 @@ func EnsureEmpresaAuditoriaSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_auditoria_eventos", "observaciones", "TEXT"); err != nil {
 		return err
 	}
+	if err := ensureEmpresaAuditoriaFTSSchema(dbConn); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -207,7 +214,13 @@ func CreateEmpresaAuditoriaEvento(dbConn *sql.DB, in EmpresaAuditoriaEvento) (in
 		return 0, fmt.Errorf("metadata_json invalido")
 	}
 
-	retencionDias := normalizeAuditoriaRetencionDias(in.RetencionDias)
+	severidad := resolveAuditoriaSeveridad(in.Modulo, in.Accion, in.Resultado, in.CodigoHTTP, metadata)
+	retencionDias := in.RetencionDias
+	if retencionDias <= 0 {
+		retencionDias = resolveAuditoriaPoliticaRetencionDias(in.Modulo, severidad)
+	}
+	retencionDias = normalizeAuditoriaRetencionDias(retencionDias)
+	metadata = enrichAuditoriaRetentionMetadata(metadata, in.Modulo, severidad, retencionDias)
 	ttlExpr := fmt.Sprintf("+%d days", retencionDias)
 
 	res, err := dbConn.Exec(`INSERT INTO empresa_auditoria_eventos (
@@ -276,7 +289,7 @@ func ListEmpresaAuditoriaEventos(dbConn *sql.DB, empresaID int64, f EmpresaAudit
 		return nil, err
 	}
 
-	where, args := buildEmpresaAuditoriaWhereClause(empresaID, f)
+	where, args := buildEmpresaAuditoriaWhereClause(dbConn, empresaID, f)
 
 	query := `SELECT
 		id,
@@ -355,7 +368,7 @@ func CountEmpresaAuditoriaEventos(dbConn *sql.DB, empresaID int64, f EmpresaAudi
 		return 0, err
 	}
 
-	where, args := buildEmpresaAuditoriaWhereClause(empresaID, f)
+	where, args := buildEmpresaAuditoriaWhereClause(dbConn, empresaID, f)
 	query := `SELECT COUNT(1) FROM empresa_auditoria_eventos` + where
 
 	var total int64
@@ -365,7 +378,7 @@ func CountEmpresaAuditoriaEventos(dbConn *sql.DB, empresaID int64, f EmpresaAudi
 	return total, nil
 }
 
-func buildEmpresaAuditoriaWhereClause(empresaID int64, f EmpresaAuditoriaEventoFilter) (string, []interface{}) {
+func buildEmpresaAuditoriaWhereClause(dbConn *sql.DB, empresaID int64, f EmpresaAuditoriaEventoFilter) (string, []interface{}) {
 	where := ` WHERE empresa_id = ?`
 	args := []interface{}{empresaID}
 
@@ -420,8 +433,33 @@ func buildEmpresaAuditoriaWhereClause(empresaID int64, f EmpresaAuditoriaEventoF
 		where += ` AND datetime(COALESCE(fecha_evento, fecha_creacion, '')) <= datetime(?)`
 		args = append(args, hasta)
 	}
-	if searchLike := normalizeAuditoriaContains(f.Search, 180); searchLike != "" {
-		where += ` AND (
+	if searchClause, searchArgs := buildAuditoriaSearchClause(dbConn, empresaID, f.Search); searchClause != "" {
+		where += searchClause
+		args = append(args, searchArgs...)
+	}
+
+	return where, args
+}
+
+func buildAuditoriaSearchClause(dbConn *sql.DB, empresaID int64, rawSearch string) (string, []interface{}) {
+	search := strings.TrimSpace(rawSearch)
+	if search == "" {
+		return "", nil
+	}
+
+	if auditoriaFTSEnabled(dbConn) {
+		if ftsQuery := buildAuditoriaFTSQuery(search); ftsQuery != "" {
+			return ` AND id IN (
+				SELECT rowid
+				FROM empresa_auditoria_eventos_fts
+				WHERE empresa_auditoria_eventos_fts MATCH ?
+					AND empresa_id = ?
+			)`, []interface{}{ftsQuery, empresaID}
+		}
+	}
+
+	if searchLike := normalizeAuditoriaContains(search, 180); searchLike != "" {
+		return ` AND (
 			LOWER(COALESCE(modulo, '')) LIKE ? ESCAPE '!'
 			OR LOWER(COALESCE(accion, '')) LIKE ? ESCAPE '!'
 			OR LOWER(COALESCE(recurso, '')) LIKE ? ESCAPE '!'
@@ -429,11 +467,197 @@ func buildEmpresaAuditoriaWhereClause(empresaID int64, f EmpresaAuditoriaEventoF
 			OR LOWER(COALESCE(usuario_creador, '')) LIKE ? ESCAPE '!'
 			OR LOWER(COALESCE(request_id, '')) LIKE ? ESCAPE '!'
 			OR LOWER(COALESCE(ip_origen, '')) LIKE ? ESCAPE '!'
-		)`
-		args = append(args, searchLike, searchLike, searchLike, searchLike, searchLike, searchLike, searchLike)
+			OR LOWER(COALESCE(observaciones, '')) LIKE ? ESCAPE '!'
+			OR LOWER(COALESCE(metadata_json, '')) LIKE ? ESCAPE '!'
+		)`, []interface{}{searchLike, searchLike, searchLike, searchLike, searchLike, searchLike, searchLike, searchLike, searchLike}
 	}
 
-	return where, args
+	return "", nil
+}
+
+func buildAuditoriaFTSQuery(raw string) string {
+	tokens := tokenizeAuditoriaSearch(raw)
+	if len(tokens) == 0 {
+		return ""
+	}
+	parts := make([]string, 0, len(tokens))
+	for _, token := range tokens {
+		parts = append(parts, token+"*")
+	}
+	return strings.Join(parts, " AND ")
+}
+
+func tokenizeAuditoriaSearch(raw string) []string {
+	parts := strings.Fields(strings.ToLower(strings.TrimSpace(raw)))
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
+		token := sanitizeAuditoriaFTSToken(part)
+		if token == "" {
+			continue
+		}
+		out = append(out, token)
+	}
+	return out
+}
+
+func sanitizeAuditoriaFTSToken(raw string) string {
+	var builder strings.Builder
+	for _, r := range raw {
+		switch {
+		case r >= 'a' && r <= 'z':
+			builder.WriteRune(r)
+		case r >= '0' && r <= '9':
+			builder.WriteRune(r)
+		case r == '_' || r == '-' || r == '.' || r == '@':
+			builder.WriteRune(r)
+		}
+	}
+	v := strings.Trim(builder.String(), "._-@")
+	if len(v) > 64 {
+		v = v[:64]
+	}
+	return v
+}
+
+func auditoriaFTSEnabled(dbConn *sql.DB) bool {
+	if dbConn == nil {
+		return false
+	}
+	var count int
+	if err := dbConn.QueryRow(`SELECT COUNT(1) FROM sqlite_master WHERE type = 'table' AND name = 'empresa_auditoria_eventos_fts'`).Scan(&count); err != nil {
+		return false
+	}
+	return count > 0
+}
+
+func ensureEmpresaAuditoriaFTSSchema(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return nil
+	}
+	if _, err := dbConn.Exec(`CREATE VIRTUAL TABLE IF NOT EXISTS empresa_auditoria_eventos_fts USING fts5(
+		empresa_id UNINDEXED,
+		modulo,
+		accion,
+		recurso,
+		endpoint,
+		usuario_creador,
+		request_id,
+		ip_origen,
+		observaciones,
+		metadata_json,
+		tokenize = 'unicode61 remove_diacritics 2'
+	)`); err != nil {
+		if isAuditoriaFTSUnsupported(err) {
+			return nil
+		}
+		return err
+	}
+
+	triggers := []string{
+		`CREATE TRIGGER IF NOT EXISTS trg_empresa_auditoria_eventos_ai AFTER INSERT ON empresa_auditoria_eventos BEGIN
+			INSERT INTO empresa_auditoria_eventos_fts(
+				rowid,
+				empresa_id,
+				modulo,
+				accion,
+				recurso,
+				endpoint,
+				usuario_creador,
+				request_id,
+				ip_origen,
+				observaciones,
+				metadata_json
+			) VALUES (
+				new.id,
+				new.empresa_id,
+				COALESCE(new.modulo, ''),
+				COALESCE(new.accion, ''),
+				COALESCE(new.recurso, ''),
+				COALESCE(new.endpoint, ''),
+				COALESCE(new.usuario_creador, ''),
+				COALESCE(new.request_id, ''),
+				COALESCE(new.ip_origen, ''),
+				COALESCE(new.observaciones, ''),
+				COALESCE(new.metadata_json, '{}')
+			);
+		END;`,
+		`CREATE TRIGGER IF NOT EXISTS trg_empresa_auditoria_eventos_ad AFTER DELETE ON empresa_auditoria_eventos BEGIN
+			DELETE FROM empresa_auditoria_eventos_fts WHERE rowid = old.id;
+		END;`,
+		`CREATE TRIGGER IF NOT EXISTS trg_empresa_auditoria_eventos_au AFTER UPDATE ON empresa_auditoria_eventos BEGIN
+			DELETE FROM empresa_auditoria_eventos_fts WHERE rowid = old.id;
+			INSERT INTO empresa_auditoria_eventos_fts(
+				rowid,
+				empresa_id,
+				modulo,
+				accion,
+				recurso,
+				endpoint,
+				usuario_creador,
+				request_id,
+				ip_origen,
+				observaciones,
+				metadata_json
+			) VALUES (
+				new.id,
+				new.empresa_id,
+				COALESCE(new.modulo, ''),
+				COALESCE(new.accion, ''),
+				COALESCE(new.recurso, ''),
+				COALESCE(new.endpoint, ''),
+				COALESCE(new.usuario_creador, ''),
+				COALESCE(new.request_id, ''),
+				COALESCE(new.ip_origen, ''),
+				COALESCE(new.observaciones, ''),
+				COALESCE(new.metadata_json, '{}')
+			);
+		END;`,
+	}
+	for _, stmt := range triggers {
+		if _, err := dbConn.Exec(stmt); err != nil {
+			return err
+		}
+	}
+
+	if _, err := dbConn.Exec(`INSERT INTO empresa_auditoria_eventos_fts(
+		rowid,
+		empresa_id,
+		modulo,
+		accion,
+		recurso,
+		endpoint,
+		usuario_creador,
+		request_id,
+		ip_origen,
+		observaciones,
+		metadata_json
+	)
+	SELECT
+		e.id,
+		e.empresa_id,
+		COALESCE(e.modulo, ''),
+		COALESCE(e.accion, ''),
+		COALESCE(e.recurso, ''),
+		COALESCE(e.endpoint, ''),
+		COALESCE(e.usuario_creador, ''),
+		COALESCE(e.request_id, ''),
+		COALESCE(e.ip_origen, ''),
+		COALESCE(e.observaciones, ''),
+		COALESCE(e.metadata_json, '{}')
+	FROM empresa_auditoria_eventos e
+	WHERE e.id NOT IN (SELECT rowid FROM empresa_auditoria_eventos_fts)`); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func isAuditoriaFTSUnsupported(err error) bool {
+	if err == nil {
+		return false
+	}
+	v := strings.ToLower(err.Error())
+	return strings.Contains(v, "no such module: fts5")
 }
 
 // PurgeEmpresaAuditoriaEventos elimina eventos que superan la politica de retencion.
@@ -555,6 +779,155 @@ func normalizeAuditoriaRetencionDias(days int64) int64 {
 		return maxEmpresaAuditoriaRetencionDias
 	}
 	return days
+}
+
+func normalizeAuditoriaSeveridad(raw string) string {
+	v := normalizeAuditoriaValue(raw)
+	switch v {
+	case "critica", "critical", "critico":
+		return auditoriaSeveridadCritica
+	case "alta", "high":
+		return auditoriaSeveridadAlta
+	case "media", "medium":
+		return auditoriaSeveridadMedia
+	case "baja", "low":
+		return auditoriaSeveridadBaja
+	default:
+		return ""
+	}
+}
+
+func resolveAuditoriaSeveridad(modulo, accion, resultado string, codigoHTTP int64, metadataJSON string) string {
+	if metadataSeverity := extractAuditoriaSeverityFromMetadata(metadataJSON); metadataSeverity != "" {
+		return metadataSeverity
+	}
+
+	modulo = normalizeAuditoriaValue(modulo)
+	accion = normalizeAuditoriaValue(accion)
+	resultado = normalizeAuditoriaResultado(resultado)
+
+	switch {
+	case codigoHTTP >= 500:
+		return auditoriaSeveridadCritica
+	case modulo == "seguridad" && (accion == "eliminar" || accion == "rotar_credencial" || accion == "desactivar"):
+		return auditoriaSeveridadCritica
+	case resultado == "error" && codigoHTTP >= 400:
+		return auditoriaSeveridadAlta
+	case modulo == "seguridad" || modulo == "auditoria":
+		return auditoriaSeveridadAlta
+	case modulo == "finanzas" || modulo == "facturacion" || modulo == "compras" || modulo == "nomina":
+		return auditoriaSeveridadMedia
+	default:
+		return auditoriaSeveridadBaja
+	}
+}
+
+func extractAuditoriaSeverityFromMetadata(metadataJSON string) string {
+	metadataJSON = strings.TrimSpace(metadataJSON)
+	if metadataJSON == "" || !json.Valid([]byte(metadataJSON)) {
+		return ""
+	}
+
+	var payload map[string]interface{}
+	if err := json.Unmarshal([]byte(metadataJSON), &payload); err != nil {
+		return ""
+	}
+	if len(payload) == 0 {
+		return ""
+	}
+
+	for _, key := range []string{"severidad", "severity", "nivel_severidad"} {
+		if raw, ok := payload[key]; ok {
+			if sev := normalizeAuditoriaSeveridad(fmt.Sprint(raw)); sev != "" {
+				return sev
+			}
+		}
+	}
+
+	return ""
+}
+
+func resolveAuditoriaPoliticaRetencionDias(modulo, severidad string) int64 {
+	modulo = normalizeAuditoriaValue(modulo)
+	severidad = normalizeAuditoriaSeveridad(severidad)
+	if severidad == "" {
+		severidad = auditoriaSeveridadBaja
+	}
+
+	switch modulo {
+	case "seguridad", "auditoria":
+		switch severidad {
+		case auditoriaSeveridadCritica:
+			return 3650
+		case auditoriaSeveridadAlta:
+			return 1825
+		case auditoriaSeveridadMedia:
+			return 1095
+		default:
+			return 365
+		}
+	case "finanzas":
+		switch severidad {
+		case auditoriaSeveridadCritica:
+			return 3650
+		case auditoriaSeveridadAlta:
+			return 1825
+		case auditoriaSeveridadMedia:
+			return 730
+		default:
+			return 365
+		}
+	case "facturacion", "compras", "nomina":
+		switch severidad {
+		case auditoriaSeveridadCritica:
+			return 1825
+		case auditoriaSeveridadAlta:
+			return 1095
+		case auditoriaSeveridadMedia:
+			return 730
+		default:
+			return 365
+		}
+	default:
+		switch severidad {
+		case auditoriaSeveridadCritica:
+			return 1825
+		case auditoriaSeveridadAlta:
+			return 1095
+		case auditoriaSeveridadMedia:
+			return 365
+		default:
+			return defaultEmpresaAuditoriaRetencionDias
+		}
+	}
+}
+
+func enrichAuditoriaRetentionMetadata(metadataJSON, modulo, severidad string, retencionDias int64) string {
+	metadataJSON = strings.TrimSpace(metadataJSON)
+	if metadataJSON == "" || !json.Valid([]byte(metadataJSON)) {
+		return metadataJSON
+	}
+
+	var payload map[string]interface{}
+	if err := json.Unmarshal([]byte(metadataJSON), &payload); err != nil {
+		return metadataJSON
+	}
+	if payload == nil {
+		payload = map[string]interface{}{}
+	}
+
+	if _, exists := payload["severidad"]; !exists {
+		payload["severidad"] = severidad
+	}
+	payload["retencion_politica_modulo"] = normalizeAuditoriaValue(modulo)
+	payload["retencion_politica_severidad"] = severidad
+	payload["retencion_dias_resuelto"] = retencionDias
+
+	encoded, err := json.Marshal(payload)
+	if err != nil {
+		return metadataJSON
+	}
+	return string(encoded)
 }
 
 func normalizeAuditoriaLimit(limit int) int {

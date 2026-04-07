@@ -4,7 +4,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
+	"time"
 )
 
 // EmpresaGenericListFilter define filtros de listado para tablas genericas por empresa.
@@ -17,29 +19,30 @@ type EmpresaGenericListFilter struct {
 }
 
 var empresaGenericAllowedTables = map[string]struct{}{
-	"empresa_cotizaciones_venta":        {},
-	"empresa_pedidos_venta":             {},
-	"empresa_devoluciones_venta":        {},
-	"empresa_plan_cuentas":              {},
-	"empresa_cuentas_por_cobrar":        {},
-	"empresa_cuentas_por_pagar":         {},
-	"inventario_lotes_series":           {},
-	"empresa_devoluciones_proveedor":    {},
-	"empresa_rrhh_vacaciones_licencias": {},
-	"crm_leads":                         {},
-	"crm_interacciones":                 {},
-	"crm_campanas":                      {},
-	"produccion_bom":                    {},
-	"produccion_bom_detalle":            {},
-	"produccion_ordenes":                {},
-	"logistica_transportistas":          {},
-	"logistica_rutas":                   {},
-	"logistica_envios":                  {},
-	"empresa_documentos_gestion":        {},
-	"empresa_documentos_firmas":         {},
-	"empresa_integraciones_apis":        {},
-	"empresa_integraciones_bancos":      {},
-	"empresa_dian_configuracion":        {},
+	"empresa_cotizaciones_venta":          {},
+	"empresa_pedidos_venta":               {},
+	"empresa_devoluciones_venta":          {},
+	"empresa_plan_cuentas":                {},
+	"empresa_cuentas_por_cobrar":          {},
+	"empresa_cuentas_por_pagar":           {},
+	"inventario_lotes_series":             {},
+	"inventario_lotes_series_movimientos": {},
+	"empresa_devoluciones_proveedor":      {},
+	"empresa_rrhh_vacaciones_licencias":   {},
+	"crm_leads":                           {},
+	"crm_interacciones":                   {},
+	"crm_campanas":                        {},
+	"produccion_bom":                      {},
+	"produccion_bom_detalle":              {},
+	"produccion_ordenes":                  {},
+	"logistica_transportistas":            {},
+	"logistica_rutas":                     {},
+	"logistica_envios":                    {},
+	"empresa_documentos_gestion":          {},
+	"empresa_documentos_firmas":           {},
+	"empresa_integraciones_apis":          {},
+	"empresa_integraciones_bancos":        {},
+	"empresa_dian_configuracion":          {},
 }
 
 // EnsureEmpresaModulosFaltantesSchema crea tablas base para los modulos ERP faltantes.
@@ -133,6 +136,12 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 			cuenta_padre_codigo TEXT,
 			admite_movimiento INTEGER DEFAULT 1,
 			aplica_impuesto INTEGER DEFAULT 0,
+			plantilla_tipo_empresa TEXT DEFAULT 'general',
+			plantilla_codigo TEXT,
+			plantilla_version TEXT DEFAULT '1',
+			cuenta_clave TEXT,
+			requerida INTEGER DEFAULT 0,
+			orden_plantilla INTEGER DEFAULT 0,
 			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
 			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
 			usuario_creador TEXT,
@@ -158,6 +167,11 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 			saldo REAL DEFAULT 0,
 			estado_cartera TEXT DEFAULT 'pendiente',
 			moneda TEXT DEFAULT 'COP',
+			periodo_contable TEXT,
+			referencia_pagos_json TEXT,
+			fecha_ultimo_pago TEXT,
+			conciliado_en TEXT,
+			conciliado_por TEXT,
 			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
 			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
 			usuario_creador TEXT,
@@ -183,6 +197,11 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 			saldo REAL DEFAULT 0,
 			estado_cartera TEXT DEFAULT 'pendiente',
 			moneda TEXT DEFAULT 'COP',
+			periodo_contable TEXT,
+			referencia_pagos_json TEXT,
+			fecha_ultimo_pago TEXT,
+			conciliado_en TEXT,
+			conciliado_por TEXT,
 			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
 			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
 			usuario_creador TEXT,
@@ -203,8 +222,15 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 			fecha_vencimiento TEXT,
 			cantidad_inicial REAL DEFAULT 0,
 			cantidad_disponible REAL DEFAULT 0,
+			reservado_cantidad REAL DEFAULT 0,
+			vendido_cantidad REAL DEFAULT 0,
 			costo_unitario REAL DEFAULT 0,
 			estado_lote TEXT DEFAULT 'activo',
+			bloqueado_venta INTEGER DEFAULT 0,
+			bloqueo_motivo TEXT,
+			ultima_operacion_tipo TEXT,
+			ultima_operacion_ref TEXT,
+			ultima_operacion_en TEXT,
 			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
 			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
 			usuario_creador TEXT,
@@ -213,6 +239,31 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 			UNIQUE(empresa_id, producto_id, bodega_id, codigo_lote_serie)
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_lotes_empresa_vencimiento ON inventario_lotes_series(empresa_id, fecha_vencimiento, producto_id);`,
+
+		`CREATE TABLE IF NOT EXISTS inventario_lotes_series_movimientos (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			empresa_id INTEGER NOT NULL,
+			lote_serie_id INTEGER NOT NULL,
+			producto_id INTEGER NOT NULL,
+			bodega_id INTEGER DEFAULT 0,
+			codigo_lote_serie TEXT NOT NULL,
+			tipo_operacion TEXT NOT NULL,
+			cantidad REAL DEFAULT 0,
+			saldo_lote REAL DEFAULT 0,
+			referencia_tipo TEXT,
+			referencia_codigo TEXT,
+			cliente_id INTEGER DEFAULT 0,
+			cliente_nombre TEXT,
+			detalle_json TEXT,
+			fecha_operacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			usuario_creador TEXT,
+			estado TEXT DEFAULT 'activo',
+			observaciones TEXT
+		);`,
+		`CREATE INDEX IF NOT EXISTS ix_lotes_mov_empresa_lote_fecha ON inventario_lotes_series_movimientos(empresa_id, lote_serie_id, fecha_operacion DESC, id DESC);`,
+		`CREATE INDEX IF NOT EXISTS ix_lotes_mov_empresa_referencia ON inventario_lotes_series_movimientos(empresa_id, referencia_tipo, referencia_codigo);`,
 
 		`CREATE TABLE IF NOT EXISTS empresa_devoluciones_proveedor (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -228,6 +279,12 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 			impuesto_total REAL DEFAULT 0,
 			total REAL DEFAULT 0,
 			moneda TEXT DEFAULT 'COP',
+			periodo_contable TEXT,
+			impacto_contable_movimiento_id INTEGER DEFAULT 0,
+			impacto_contable_evento_id INTEGER DEFAULT 0,
+			fecha_contabilizacion TEXT,
+			contabilizado_por TEXT,
+			total_reintegrado REAL DEFAULT 0,
 			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
 			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
 			usuario_creador TEXT,
@@ -242,6 +299,7 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT NOT NULL,
 			empleado_id INTEGER DEFAULT 0,
+			empleado_nomina_id INTEGER DEFAULT 0,
 			empleado_nombre TEXT,
 			tipo_novedad TEXT DEFAULT 'vacacion',
 			fecha_inicio TEXT,
@@ -251,6 +309,21 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 			estado_novedad TEXT DEFAULT 'solicitada',
 			soporte_url TEXT,
 			aprobado_por TEXT,
+			nivel_aprobacion_actual INTEGER DEFAULT 0,
+			nivel_aprobacion_requerido INTEGER DEFAULT 1,
+			aprobadores_json TEXT,
+			historial_aprobaciones_json TEXT,
+			fecha_aprobacion_final TEXT,
+			periodo_acumulado_desde TEXT,
+			periodo_acumulado_hasta TEXT,
+			saldo_dias_antes REAL DEFAULT 0,
+			saldo_dias_despues REAL DEFAULT 0,
+			saldo_snapshot_json TEXT,
+			nomina_liquidacion_id INTEGER DEFAULT 0,
+			nomina_periodo_desde TEXT,
+			nomina_periodo_hasta TEXT,
+			nomina_vinculada_en TEXT,
+			nomina_vinculada_por TEXT,
 			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
 			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
 			usuario_creador TEXT,
@@ -594,6 +667,166 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 		}
 	}
 
+	if err := ensureColumnIfMissing(dbConn, "empresa_plan_cuentas", "plantilla_tipo_empresa", "TEXT DEFAULT 'general'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_plan_cuentas", "plantilla_codigo", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_plan_cuentas", "plantilla_version", "TEXT DEFAULT '1'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_plan_cuentas", "cuenta_clave", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_plan_cuentas", "requerida", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_plan_cuentas", "orden_plantilla", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+
+	if err := ensureColumnIfMissing(dbConn, "empresa_cuentas_por_cobrar", "periodo_contable", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_cuentas_por_cobrar", "referencia_pagos_json", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_cuentas_por_cobrar", "fecha_ultimo_pago", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_cuentas_por_cobrar", "conciliado_en", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_cuentas_por_cobrar", "conciliado_por", "TEXT"); err != nil {
+		return err
+	}
+
+	if err := ensureColumnIfMissing(dbConn, "empresa_cuentas_por_pagar", "periodo_contable", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_cuentas_por_pagar", "referencia_pagos_json", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_cuentas_por_pagar", "fecha_ultimo_pago", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_cuentas_por_pagar", "conciliado_en", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_cuentas_por_pagar", "conciliado_por", "TEXT"); err != nil {
+		return err
+	}
+
+	if err := ensureColumnIfMissing(dbConn, "inventario_lotes_series", "reservado_cantidad", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "inventario_lotes_series", "vendido_cantidad", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "inventario_lotes_series", "bloqueado_venta", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "inventario_lotes_series", "bloqueo_motivo", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "inventario_lotes_series", "ultima_operacion_tipo", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "inventario_lotes_series", "ultima_operacion_ref", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "inventario_lotes_series", "ultima_operacion_en", "TEXT"); err != nil {
+		return err
+	}
+
+	if err := ensureColumnIfMissing(dbConn, "empresa_devoluciones_proveedor", "periodo_contable", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_devoluciones_proveedor", "impacto_contable_movimiento_id", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_devoluciones_proveedor", "impacto_contable_evento_id", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_devoluciones_proveedor", "fecha_contabilizacion", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_devoluciones_proveedor", "contabilizado_por", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_devoluciones_proveedor", "total_reintegrado", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+
+	if err := ensureColumnIfMissing(dbConn, "empresa_rrhh_vacaciones_licencias", "empleado_nomina_id", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_rrhh_vacaciones_licencias", "nivel_aprobacion_actual", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_rrhh_vacaciones_licencias", "nivel_aprobacion_requerido", "INTEGER DEFAULT 1"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_rrhh_vacaciones_licencias", "aprobadores_json", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_rrhh_vacaciones_licencias", "historial_aprobaciones_json", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_rrhh_vacaciones_licencias", "fecha_aprobacion_final", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_rrhh_vacaciones_licencias", "periodo_acumulado_desde", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_rrhh_vacaciones_licencias", "periodo_acumulado_hasta", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_rrhh_vacaciones_licencias", "saldo_dias_antes", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_rrhh_vacaciones_licencias", "saldo_dias_despues", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_rrhh_vacaciones_licencias", "saldo_snapshot_json", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_rrhh_vacaciones_licencias", "nomina_liquidacion_id", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_rrhh_vacaciones_licencias", "nomina_periodo_desde", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_rrhh_vacaciones_licencias", "nomina_periodo_hasta", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_rrhh_vacaciones_licencias", "nomina_vinculada_en", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_rrhh_vacaciones_licencias", "nomina_vinculada_por", "TEXT"); err != nil {
+		return err
+	}
+
+	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_cxc_empresa_periodo ON empresa_cuentas_por_cobrar(empresa_id, periodo_contable, estado_cartera);`); err != nil {
+		return err
+	}
+	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_cxp_empresa_periodo ON empresa_cuentas_por_pagar(empresa_id, periodo_contable, estado_cartera);`); err != nil {
+		return err
+	}
+	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_lotes_empresa_estado_bloqueo ON inventario_lotes_series(empresa_id, estado_lote, bloqueado_venta);`); err != nil {
+		return err
+	}
+	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_dev_prov_empresa_estado_contable ON empresa_devoluciones_proveedor(empresa_id, estado_devolucion, periodo_contable);`); err != nil {
+		return err
+	}
+	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_rrhh_vac_lic_empresa_estado_nivel ON empresa_rrhh_vacaciones_licencias(empresa_id, estado_novedad, nivel_aprobacion_actual, nivel_aprobacion_requerido, id DESC);`); err != nil {
+		return err
+	}
+	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_rrhh_vac_lic_empresa_nomina_periodo ON empresa_rrhh_vacaciones_licencias(empresa_id, empleado_nomina_id, nomina_liquidacion_id, nomina_periodo_desde, nomina_periodo_hasta);`); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -702,6 +935,201 @@ func normalizeGenericValue(v interface{}) interface{} {
 	}
 }
 
+func isEmpresaCarteraTable(table string) bool {
+	switch strings.TrimSpace(table) {
+	case "empresa_cuentas_por_cobrar", "empresa_cuentas_por_pagar":
+		return true
+	default:
+		return false
+	}
+}
+
+func floatFromGenericValue(v interface{}) float64 {
+	switch t := v.(type) {
+	case float64:
+		return t
+	case float32:
+		return float64(t)
+	case int:
+		return float64(t)
+	case int32:
+		return float64(t)
+	case int64:
+		return float64(t)
+	case string:
+		f, _ := strconv.ParseFloat(strings.TrimSpace(t), 64)
+		return f
+	default:
+		return 0
+	}
+}
+
+func firstNonBlankString(values ...string) string {
+	for _, value := range values {
+		trimmed := strings.TrimSpace(value)
+		if trimmed != "" {
+			return trimmed
+		}
+	}
+	return ""
+}
+
+func carteraPeriodoFromPayload(payload map[string]interface{}) string {
+	if payload == nil {
+		return ""
+	}
+	periodo := normalizePeriodoContable(fmt.Sprintf("%v", payload["periodo_contable"]))
+	if periodo != "" {
+		return periodo
+	}
+	periodo = normalizePeriodoContable(fmt.Sprintf("%v", payload["fecha_emision"]))
+	if periodo != "" {
+		return periodo
+	}
+	return ""
+}
+
+func carteraEstadoFromValues(saldo, valorPagado float64, fechaVencimiento string) string {
+	if saldo <= 0.009 {
+		return "pagada"
+	}
+	if valorPagado > 0 {
+		return "parcial"
+	}
+	if dueDate := normalizeDateOnly(fechaVencimiento); dueDate != "" {
+		if parsed, err := time.Parse("2006-01-02", dueDate); err == nil {
+			nowDate := time.Now().In(time.Local).Format("2006-01-02")
+			nowParsed, _ := time.Parse("2006-01-02", nowDate)
+			if parsed.Before(nowParsed) {
+				return "vencida"
+			}
+		}
+	}
+	return "pendiente"
+}
+
+func carteraDiasMora(fechaVencimiento string, saldo float64) int64 {
+	if saldo <= 0.009 {
+		return 0
+	}
+	dueDate := normalizeDateOnly(fechaVencimiento)
+	if dueDate == "" {
+		return 0
+	}
+	parsed, err := time.Parse("2006-01-02", dueDate)
+	if err != nil {
+		return 0
+	}
+	nowDate := time.Now().In(time.Local).Format("2006-01-02")
+	nowParsed, err := time.Parse("2006-01-02", nowDate)
+	if err != nil || !nowParsed.After(parsed) {
+		return 0
+	}
+	return int64(nowParsed.Sub(parsed).Hours() / 24)
+}
+
+func normalizeCarteraPayloadValues(payload map[string]interface{}, current map[string]interface{}) {
+	if payload == nil {
+		return
+	}
+
+	valorOriginal := floatFromGenericValue(payload["valor_original"])
+	valorPagado := floatFromGenericValue(payload["valor_pagado"])
+	saldo := floatFromGenericValue(payload["saldo"])
+	fechaVencimiento := strings.TrimSpace(fmt.Sprintf("%v", payload["fecha_vencimiento"]))
+
+	if current != nil {
+		if _, ok := payload["valor_original"]; !ok {
+			valorOriginal = floatFromGenericValue(current["valor_original"])
+		}
+		if _, ok := payload["valor_pagado"]; !ok {
+			valorPagado = floatFromGenericValue(current["valor_pagado"])
+		}
+		if _, ok := payload["saldo"]; !ok {
+			saldo = floatFromGenericValue(current["saldo"])
+		}
+		if strings.TrimSpace(fechaVencimiento) == "" {
+			fechaVencimiento = strings.TrimSpace(fmt.Sprintf("%v", current["fecha_vencimiento"]))
+		}
+	}
+
+	if valorOriginal < 0 {
+		valorOriginal = 0
+	}
+	if valorPagado < 0 {
+		valorPagado = 0
+	}
+
+	if valorOriginal <= 0 && (saldo > 0 || valorPagado > 0) {
+		valorOriginal = saldo + valorPagado
+	}
+	if valorOriginal > 0 && valorPagado > valorOriginal {
+		valorPagado = valorOriginal
+	}
+
+	if saldo < 0 || (current == nil && saldo == 0 && valorOriginal > 0 && valorPagado >= 0) {
+		saldo = valorOriginal - valorPagado
+	}
+	if saldo < 0 {
+		saldo = 0
+	}
+
+	periodo := carteraPeriodoFromPayload(payload)
+	if periodo == "" && current != nil {
+		periodo = normalizePeriodoContable(firstNonBlankString(fmt.Sprintf("%v", current["periodo_contable"]), fmt.Sprintf("%v", current["fecha_emision"])))
+	}
+	if periodo == "" {
+		periodo = time.Now().In(time.Local).Format("2006-01")
+	}
+
+	if strings.TrimSpace(fmt.Sprintf("%v", payload["moneda"])) == "" {
+		if current == nil || strings.TrimSpace(fmt.Sprintf("%v", current["moneda"])) == "" {
+			payload["moneda"] = "COP"
+		}
+	}
+
+	payload["valor_original"] = valorOriginal
+	payload["valor_pagado"] = valorPagado
+	payload["saldo"] = saldo
+	payload["periodo_contable"] = periodo
+	payload["dias_mora"] = carteraDiasMora(fechaVencimiento, saldo)
+
+	estadoPayload := strings.ToLower(strings.TrimSpace(fmt.Sprintf("%v", payload["estado_cartera"])))
+	if estadoPayload == "" {
+		estadoPayload = carteraEstadoFromValues(saldo, valorPagado, fechaVencimiento)
+	}
+	payload["estado_cartera"] = estadoPayload
+}
+
+func carteraPeriodoByID(dbConn *sql.DB, table string, empresaID, id int64) (string, error) {
+	var periodo string
+	var fechaEmision string
+	err := dbConn.QueryRow(`SELECT COALESCE(periodo_contable, ''), COALESCE(fecha_emision, '') FROM `+table+` WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, id).Scan(&periodo, &fechaEmision)
+	if err != nil {
+		return "", err
+	}
+	periodo = normalizePeriodoContable(periodo)
+	if periodo == "" {
+		periodo = normalizePeriodoContable(fechaEmision)
+	}
+	return periodo, nil
+}
+
+func ensureCarteraPeriodoEditable(dbConn *sql.DB, empresaID int64, periodo string) error {
+	periodo = normalizePeriodoContable(periodo)
+	if periodo == "" {
+		return nil
+	}
+	cerrado, err := IsEmpresaFinanzasPeriodoCerrado(dbConn, empresaID, periodo)
+	if err != nil {
+		return err
+	}
+	if cerrado {
+		return ErrPeriodoFinancieroCerrado
+	}
+	return nil
+}
+
 // ListEmpresaGenericRows lista registros de una tabla generica por empresa.
 func ListEmpresaGenericRows(dbConn *sql.DB, table string, empresaID int64, filter EmpresaGenericListFilter) ([]map[string]interface{}, error) {
 	if dbConn == nil {
@@ -787,6 +1215,12 @@ func CreateEmpresaGenericRow(dbConn *sql.DB, table string, empresaID int64, payl
 	if !isAllowedGenericTable(table) {
 		return 0, fmt.Errorf("tabla no permitida: %s", table)
 	}
+	if isEmpresaCarteraTable(table) {
+		normalizeCarteraPayloadValues(payload, nil)
+		if err := ensureCarteraPeriodoEditable(dbConn, empresaID, carteraPeriodoFromPayload(payload)); err != nil {
+			return 0, err
+		}
+	}
 
 	allowed := sanitizeGenericColumns(allowedColumns)
 	columns := []string{"empresa_id"}
@@ -827,6 +1261,24 @@ func UpdateEmpresaGenericRow(dbConn *sql.DB, table string, empresaID, id int64, 
 		return fmt.Errorf("tabla no permitida: %s", table)
 	}
 
+	if isEmpresaCarteraTable(table) {
+		current, err := GetEmpresaGenericRowByID(dbConn, table, empresaID, id)
+		if err != nil {
+			return err
+		}
+		periodoActual := normalizePeriodoContable(firstNonBlankString(fmt.Sprintf("%v", current["periodo_contable"]), fmt.Sprintf("%v", current["fecha_emision"])))
+		if err := ensureCarteraPeriodoEditable(dbConn, empresaID, periodoActual); err != nil {
+			return err
+		}
+		normalizeCarteraPayloadValues(payload, current)
+		periodoNuevo := carteraPeriodoFromPayload(payload)
+		if periodoNuevo != "" && periodoNuevo != periodoActual {
+			if err := ensureCarteraPeriodoEditable(dbConn, empresaID, periodoNuevo); err != nil {
+				return err
+			}
+		}
+	}
+
 	allowed := sanitizeGenericColumns(allowedColumns)
 	setParts := make([]string, 0, len(allowed)+1)
 	args := make([]interface{}, 0, len(allowed)+2)
@@ -863,6 +1315,15 @@ func SetEmpresaGenericRowEstado(dbConn *sql.DB, table string, empresaID, id int6
 	}
 	if !isAllowedGenericTable(table) {
 		return fmt.Errorf("tabla no permitida: %s", table)
+	}
+	if isEmpresaCarteraTable(table) {
+		periodo, err := carteraPeriodoByID(dbConn, table, empresaID, id)
+		if err != nil {
+			return err
+		}
+		if err := ensureCarteraPeriodoEditable(dbConn, empresaID, periodo); err != nil {
+			return err
+		}
 	}
 
 	estado = strings.ToLower(strings.TrimSpace(estado))

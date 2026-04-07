@@ -23,6 +23,10 @@
           <strong id="kpiBorrador">0</strong>
         </div>
         <div class="kpi-box">
+          <span class="kpi-label">Pend. aprobacion</span>
+          <strong id="kpiPendienteAprobacion">0</strong>
+        </div>
+        <div class="kpi-box">
           <span class="kpi-label">Emitidas</span>
           <strong id="kpiEmitidas">0</strong>
         </div>
@@ -56,6 +60,7 @@
             <label class="form-label" for="accionCreate">Acción inicial</label>
             <select id="accionCreate" class="form-input">
               <option value="crear">Guardar como borrador</option>
+              <option value="solicitar_aprobacion">Enviar a aprobacion</option>
               <option value="emitir_orden">Emitir orden de compra</option>
             </select>
           </div>
@@ -82,6 +87,35 @@
 
         <div class="form-row">
           <div class="form-col">
+            <label class="empresa-config-check" for="requiereAprobacion">
+              <input id="requiereAprobacion" type="checkbox">
+              <span>Requiere aprobacion multinivel</span>
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="nivelesAprobacion">Niveles de aprobacion</label>
+            <input id="nivelesAprobacion" class="form-input" type="number" min="1" max="10" value="2">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="proveedorDocRef">Documento proveedor</label>
+            <input id="proveedorDocRef" class="form-input" placeholder="NIT / Documento">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="facturaDocRef">Factura proveedor</label>
+            <input id="facturaDocRef" class="form-input" placeholder="FAC-2026-0001">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="entradaDocRef">Documento entrada</label>
+            <input id="entradaDocRef" class="form-input" placeholder="ENT-2026-0001">
+          </div>
+          <div class="form-col"></div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
             <label class="form-label" for="observaciones">Observaciones</label>
             <textarea id="observaciones" class="form-textarea" placeholder="Notas de negociación, condiciones de entrega, prioridad..."></textarea>
           </div>
@@ -101,9 +135,12 @@
           <select id="filtroEstado" class="form-input">
             <option value="">Todos los estados</option>
             <option value="borrador">Borrador</option>
+            <option value="pendiente_aprobacion">Pendiente aprobacion</option>
             <option value="emitida">Emitida</option>
+            <option value="recepcion_parcial">Recepcion parcial</option>
             <option value="recepcionada">Recepcionada</option>
             <option value="contabilizada">Contabilizada</option>
+            <option value="rechazada">Rechazada</option>
           </select>
           <input id="filtroBusqueda" class="form-input" placeholder="Buscar por código u observaciones">
           <label class="empresa-config-check" for="filtroInactivos">
@@ -173,6 +210,7 @@
 
     var kpiDocumentos = document.getElementById("kpiDocumentos");
     var kpiBorrador = document.getElementById("kpiBorrador");
+    var kpiPendienteAprobacion = document.getElementById("kpiPendienteAprobacion");
     var kpiEmitidas = document.getElementById("kpiEmitidas");
     var kpiRecepcionadas = document.getElementById("kpiRecepcionadas");
     var kpiContabilizadas = document.getElementById("kpiContabilizadas");
@@ -223,9 +261,12 @@
 
     function estadoBadge(estadoDocumento) {
       var estado = String(estadoDocumento || "").toLowerCase();
+      if (estado === "pendiente_aprobacion") return '<span class="badge high">pendiente_aprobacion</span>';
       if (estado === "emitida") return '<span class="badge mid">emitida</span>';
+      if (estado === "recepcion_parcial") return '<span class="badge mid">recepcion_parcial</span>';
       if (estado === "recepcionada") return '<span class="badge low">recepcionada</span>';
       if (estado === "contabilizada") return '<span class="badge low">contabilizada</span>';
+      if (estado === "rechazada") return '<span class="badge high">rechazada</span>';
       return '<span class="badge high">' + escapeHtml(estado || "borrador") + "</span>";
     }
 
@@ -237,14 +278,22 @@
       var tipo = escapeHtml(doc.tipo_documento || "orden_compra");
 
       if (estado === "activo") {
-        if (estadoDoc === "borrador" || estadoDoc === "pendiente_emision") {
+        if (estadoDoc === "borrador" || estadoDoc === "pendiente_emision" || estadoDoc === "rechazada") {
+          acciones.push('<button type="button" class="btn secondary" data-action="solicitar_aprobacion" data-codigo="' + codigo + '" data-tipo="' + tipo + '">Solicitar aprob.</button>');
           acciones.push('<button type="button" class="btn secondary" data-action="emitir_orden" data-codigo="' + codigo + '" data-tipo="' + tipo + '">Emitir</button>');
         }
+        if (estadoDoc === "pendiente_aprobacion") {
+          acciones.push('<button type="button" class="btn secondary" data-action="aprobar_compra" data-codigo="' + codigo + '" data-tipo="' + tipo + '">Aprobar nivel</button>');
+          acciones.push('<button type="button" class="btn secondary" data-action="rechazar_compra" data-codigo="' + codigo + '" data-tipo="' + tipo + '">Rechazar</button>');
+        }
         if (estadoDoc === "emitida" || estadoDoc === "recepcion_parcial") {
+          acciones.push('<button type="button" class="btn secondary" data-action="recepcionar_parcial_compra" data-codigo="' + codigo + '" data-tipo="' + tipo + '">Recep. parcial</button>');
           acciones.push('<button type="button" class="btn secondary" data-action="recepcionar_compra" data-codigo="' + codigo + '" data-tipo="' + tipo + '">Recepcionar</button>');
+          acciones.push('<button type="button" class="btn secondary" data-action="validar_documentos" data-codigo="' + codigo + '" data-tipo="' + tipo + '">Validar docs</button>');
         }
         if (estadoDoc === "recepcionada") {
           acciones.push('<button type="button" class="btn secondary" data-action="contabilizar_compra" data-codigo="' + codigo + '" data-tipo="' + tipo + '">Contabilizar</button>');
+          acciones.push('<button type="button" class="btn secondary" data-action="validar_documentos" data-codigo="' + codigo + '" data-tipo="' + tipo + '">Validar docs</button>');
         }
         acciones.push('<button type="button" class="btn secondary" data-action="desactivar" data-codigo="' + codigo + '" data-tipo="' + tipo + '">Desactivar</button>');
       } else {
@@ -256,20 +305,23 @@
 
     function renderKPIs() {
       var borrador = 0;
+      var pendientesAprobacion = 0;
       var emitidas = 0;
       var recepcionadas = 0;
       var contabilizadas = 0;
 
       state.documentos.forEach(function (doc) {
         var estado = String(doc.estado_documento || "").toLowerCase();
-        if (estado === "emitida") emitidas += 1;
-        else if (estado === "recepcionada") recepcionadas += 1;
+        if (estado === "pendiente_aprobacion") pendientesAprobacion += 1;
+        else if (estado === "emitida") emitidas += 1;
+        else if (estado === "recepcionada" || estado === "recepcion_parcial") recepcionadas += 1;
         else if (estado === "contabilizada") contabilizadas += 1;
         else borrador += 1;
       });
 
       kpiDocumentos.textContent = String(state.documentos.length);
       kpiBorrador.textContent = String(borrador);
+      kpiPendienteAprobacion.textContent = String(pendientesAprobacion);
       kpiEmitidas.textContent = String(emitidas);
       kpiRecepcionadas.textContent = String(recepcionadas);
       kpiContabilizadas.textContent = String(contabilizadas);
@@ -332,6 +384,14 @@
     }
 
     async function ejecutarAccion(codigoDocumento, tipoDocumento, accion) {
+      var documento = null;
+      for (var i = 0; i < state.documentos.length; i += 1) {
+        if (String(state.documentos[i].documento_codigo || "").toUpperCase() === String(codigoDocumento || "").toUpperCase()) {
+          documento = state.documentos[i];
+          break;
+        }
+      }
+
       var payload = {
         empresa_id: empresaID,
         documento_codigo: codigoDocumento,
@@ -341,11 +401,65 @@
       if (accion === 'desactivar' || accion === 'activar') {
         payload.accion = 'activar';
         payload.activo = accion === 'activar';
+      } else if (accion === 'solicitar_aprobacion') {
+        var nivelesRaw = window.prompt('Niveles de aprobacion requeridos (1-10):', '2');
+        if (nivelesRaw === null) {
+          return;
+        }
+        var niveles = Number(nivelesRaw || 0);
+        if (!Number.isFinite(niveles) || niveles < 1 || niveles > 10) {
+          throw new Error('Niveles de aprobacion invalidos.');
+        }
+        payload.accion = 'solicitar_aprobacion';
+        payload.requiere_aprobacion = true;
+        payload.niveles_aprobacion_requeridos = Math.floor(niveles);
+    } else if (accion === 'validar_documentos') {
+      var proveedorDefault = String((documento && documento.proveedor_documento_ref) || '').trim();
+      var facturaDefault = String((documento && documento.factura_documento_ref) || '').trim();
+      var entradaDefault = String((documento && documento.entrada_documento_ref) || '').trim();
+      var proveedorDoc = window.prompt('Documento del proveedor:', proveedorDefault);
+      if (proveedorDoc === null) {
+        return;
+      }
+      var facturaDoc = window.prompt('Factura de proveedor:', facturaDefault);
+      if (facturaDoc === null) {
+        return;
+      }
+      var entradaDoc = window.prompt('Documento de entrada de mercancia:', entradaDefault);
+      if (entradaDoc === null) {
+        return;
+      }
+      payload.accion = 'validar_documentos';
+      payload.proveedor_documento_ref = String(proveedorDoc || '').trim();
+      payload.factura_documento_ref = String(facturaDoc || '').trim();
+      payload.entrada_documento_ref = String(entradaDoc || '').trim();
+    } else if (accion === 'recepcionar_parcial_compra' || accion === 'recepcionar_compra') {
+      var ejemplo = '[{"producto_id":101,"cantidad_ordenada":10,"cantidad_recibida":8,"costo_unitario":5000,"diferencia_motivo":"faltante proveedor"}]';
+      var detalleDefault = String((documento && documento.recepcion_detalle_json) || '').trim();
+      if (!detalleDefault) {
+        detalleDefault = ejemplo;
+      }
+      var detalleRaw = window.prompt('Recepcion por item (JSON):', detalleDefault);
+      if (detalleRaw === null) {
+        return;
+      }
+      var recepcionItems = [];
+      try {
+        recepcionItems = JSON.parse(detalleRaw);
+      } catch (error) {
+        throw new Error('JSON invalido para recepcion por item.');
+      }
+      if (!Array.isArray(recepcionItems) || !recepcionItems.length) {
+        throw new Error('Debe incluir al menos un item en recepcion_items.');
+      }
+      payload.accion = accion;
+      payload.recepcion_items = recepcionItems;
       } else {
         payload.accion = accion;
       }
 
-      await apiRequest('/api/empresa/compras/documentos', {
+      var targetAction = String(payload.accion || '').trim();
+      await apiRequest('/api/empresa/compras/documentos?action=' + encodeURIComponent(targetAction), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -373,10 +487,23 @@
         monto_total: Number(document.getElementById('montoTotal').value || 0),
         moneda: String(document.getElementById('moneda').value || 'COP').trim().toUpperCase(),
         periodo_contable: String(document.getElementById('periodoContable').value || '').trim(),
+        requiere_aprobacion: !!document.getElementById('requiereAprobacion').checked,
+        niveles_aprobacion_requeridos: Math.floor(Number(document.getElementById('nivelesAprobacion').value || 1)),
+        proveedor_documento_ref: String(document.getElementById('proveedorDocRef').value || '').trim(),
+        factura_documento_ref: String(document.getElementById('facturaDocRef').value || '').trim(),
+        entrada_documento_ref: String(document.getElementById('entradaDocRef').value || '').trim(),
         observaciones: String(document.getElementById('observaciones').value || '').trim()
       };
 
-      var resp = await apiRequest('/api/empresa/compras/documentos', {
+      if (!Number.isFinite(payload.niveles_aprobacion_requeridos) || payload.niveles_aprobacion_requeridos < 1) {
+        payload.niveles_aprobacion_requeridos = 1;
+      }
+      if (payload.niveles_aprobacion_requeridos > 10) {
+        payload.niveles_aprobacion_requeridos = 10;
+      }
+
+      var targetAction = String(payload.accion || '').trim();
+      var resp = await apiRequest('/api/empresa/compras/documentos?action=' + encodeURIComponent(targetAction), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -417,6 +544,11 @@
       document.getElementById('montoTotal').value = '0';
       document.getElementById('moneda').value = 'COP';
       document.getElementById('periodoContable').value = toPeriodoActual();
+      document.getElementById('requiereAprobacion').checked = false;
+      document.getElementById('nivelesAprobacion').value = '2';
+      document.getElementById('proveedorDocRef').value = '';
+      document.getElementById('facturaDocRef').value = '';
+      document.getElementById('entradaDocRef').value = '';
       document.getElementById('observaciones').value = '';
       document.getElementById('accionCreate').value = 'crear';
       showMessage('Formulario limpio.');

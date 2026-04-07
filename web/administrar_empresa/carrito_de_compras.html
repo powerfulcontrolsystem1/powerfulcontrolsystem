@@ -963,6 +963,13 @@
       return estado === 'activo' && estadoCarrito !== 'cerrado';
     }
 
+    function isCarritoPagado(carrito) {
+      if (!carrito) return false;
+      const estadoVenta = normalize(carrito.estado_venta);
+      if (estadoVenta === 'venta_pagada') return true;
+      return !!normalize(carrito.pagado_en);
+    }
+
     function getStationPaymentBreakdown(carrito) {
       const totalBase = Number((carrito && carrito.total) || 0);
       const caps = getDiscountCapabilities();
@@ -1320,19 +1327,28 @@
       renderScannerPanel();
     }
 
-    async function activateStationSession(resetItems) {
+    async function activateStationSession(resetItems, actionName) {
       const selected = getSelectedCarrito();
       if (!selected) return;
       try {
-        const res = await fetch('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(selected.id) + '&action=activar_estacion&reset_items=' + (resetItems ? '1' : '0'), {
+        const action = normalize(actionName) || 'activar_estacion';
+        let endpoint = '/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(selected.id) + '&action=' + encodeURIComponent(action);
+        if (action === 'activar_estacion') {
+          endpoint += '&reset_items=' + (resetItems ? '1' : '0');
+        }
+        const res = await fetch(endpoint, {
           method: 'PUT'
         });
         await ensureOk(res);
-        setStationPaymentMessage('Carrito de estación activado.', false);
+        if (action === 'recuperar_interrumpido') {
+          setStationPaymentMessage('Carrito interrumpido recuperado sin perder items.', false);
+        } else {
+          setStationPaymentMessage('Carrito de estación activado.', false);
+        }
         await loadCarritos();
         await loadItems();
       } catch (err) {
-        setStationPaymentMessage(err.message || 'No se pudo activar el carrito de estación.', true);
+        setStationPaymentMessage(err.message || 'No se pudo activar o recuperar el carrito de estación.', true);
       }
     }
 
@@ -2351,12 +2367,16 @@
       const hasActivationStamp = !!normalize(selected.activado_en);
 
       if (!isActive) {
-        await activateStationSession(true);
+        if (isCarritoPagado(selected)) {
+          await activateStationSession(true, 'activar_estacion');
+        } else {
+          await activateStationSession(false, 'recuperar_interrumpido');
+        }
         return;
       }
 
       if (!hasActivationStamp) {
-        await activateStationSession(false);
+        await activateStationSession(false, 'activar_estacion');
       }
     }
 
@@ -2628,7 +2648,18 @@
     });
 
     document.getElementById('btnActivarSesionCarrito').addEventListener('click', async function() {
-      await activateStationSession(true);
+      const selected = getSelectedCarrito();
+      if (!selected) return;
+
+      if (isCarritoPagado(selected)) {
+        if (!confirm('Esta venta ya fue pagada. ¿Deseas reiniciar la estación y limpiar items para una nueva sesión?')) {
+          return;
+        }
+        await activateStationSession(true, 'activar_estacion');
+        return;
+      }
+
+      await activateStationSession(false, 'recuperar_interrumpido');
     });
 
     (async function init() {

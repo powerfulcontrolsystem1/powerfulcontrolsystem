@@ -5,6 +5,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -12,6 +13,156 @@ import (
 
 	dbpkg "github.com/you/pos-backend/db"
 )
+
+type empresaFinanzasImportacionBancariaPayload struct {
+	EmpresaID       int64                                     `json:"empresa_id"`
+	CuentaBancaria  string                                    `json:"cuenta_bancaria"`
+	BancoNombre     string                                    `json:"banco_nombre"`
+	Origen          string                                    `json:"origen"`
+	AutoConciliar   bool                                      `json:"auto_conciliar"`
+	ToleranciaDias  int                                       `json:"tolerancia_dias"`
+	ToleranciaMonto float64                                   `json:"tolerancia_monto"`
+	Limit           int                                       `json:"limit"`
+	Movimientos     []dbpkg.EmpresaFinanzasMovimientoBancario `json:"movimientos"`
+}
+
+type empresaFinanzasPeriodoAutorizacionPayload struct {
+	AutorizadoPor         string `json:"autorizado_por"`
+	MotivoAutorizacion    string `json:"motivo_autorizacion"`
+	Motivo                string `json:"motivo"`
+	EvidenciaAutorizacion string `json:"evidencia_autorizacion"`
+	CodigoAutorizacion    string `json:"codigo_autorizacion"`
+}
+
+func sanitizeFinanzasPeriodoAutorizacionValue(v string) string {
+	v = strings.TrimSpace(v)
+	v = strings.ReplaceAll(v, "|", "/")
+	v = strings.ReplaceAll(v, "\n", " ")
+	v = strings.ReplaceAll(v, "\r", " ")
+	return strings.Join(strings.Fields(v), " ")
+}
+
+func parseEmpresaFinanzasPeriodoAutorizacionPayload(r *http.Request, fallbackUsuario string) (empresaFinanzasPeriodoAutorizacionPayload, error) {
+	var payload empresaFinanzasPeriodoAutorizacionPayload
+	if r.Body != nil {
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil && err != io.EOF {
+			return payload, errors.New("JSON invalido para autorizacion de periodo")
+		}
+	}
+
+	if strings.TrimSpace(payload.AutorizadoPor) == "" {
+		payload.AutorizadoPor = strings.TrimSpace(r.URL.Query().Get("autorizado_por"))
+	}
+	if strings.TrimSpace(payload.MotivoAutorizacion) == "" {
+		payload.MotivoAutorizacion = strings.TrimSpace(r.URL.Query().Get("motivo_autorizacion"))
+	}
+	if strings.TrimSpace(payload.MotivoAutorizacion) == "" {
+		payload.MotivoAutorizacion = strings.TrimSpace(payload.Motivo)
+	}
+	if strings.TrimSpace(payload.MotivoAutorizacion) == "" {
+		payload.MotivoAutorizacion = strings.TrimSpace(r.URL.Query().Get("motivo"))
+	}
+	if strings.TrimSpace(payload.EvidenciaAutorizacion) == "" {
+		payload.EvidenciaAutorizacion = strings.TrimSpace(r.URL.Query().Get("evidencia_autorizacion"))
+	}
+	if strings.TrimSpace(payload.CodigoAutorizacion) == "" {
+		payload.CodigoAutorizacion = strings.TrimSpace(r.URL.Query().Get("codigo_autorizacion"))
+	}
+
+	payload.AutorizadoPor = sanitizeFinanzasPeriodoAutorizacionValue(payload.AutorizadoPor)
+	payload.MotivoAutorizacion = sanitizeFinanzasPeriodoAutorizacionValue(payload.MotivoAutorizacion)
+	payload.EvidenciaAutorizacion = sanitizeFinanzasPeriodoAutorizacionValue(payload.EvidenciaAutorizacion)
+	payload.CodigoAutorizacion = sanitizeFinanzasPeriodoAutorizacionValue(payload.CodigoAutorizacion)
+
+	if payload.AutorizadoPor == "" {
+		payload.AutorizadoPor = sanitizeFinanzasPeriodoAutorizacionValue(fallbackUsuario)
+	}
+	if payload.AutorizadoPor == "" {
+		return payload, errors.New("autorizado_por es obligatorio para cerrar o reabrir periodos")
+	}
+	if payload.MotivoAutorizacion == "" {
+		return payload, errors.New("motivo_autorizacion es obligatorio para cerrar o reabrir periodos")
+	}
+	if payload.EvidenciaAutorizacion == "" {
+		return payload, errors.New("evidencia_autorizacion es obligatoria para cerrar o reabrir periodos")
+	}
+
+	return payload, nil
+}
+
+func buildEmpresaFinanzasPeriodoAutorizacionObservaciones(action string, autorizacion empresaFinanzasPeriodoAutorizacionPayload, ejecutadoPor string) string {
+	parts := []string{
+		"accion=" + sanitizeFinanzasPeriodoAutorizacionValue(action),
+		"autorizado_por=" + sanitizeFinanzasPeriodoAutorizacionValue(autorizacion.AutorizadoPor),
+		"motivo=" + sanitizeFinanzasPeriodoAutorizacionValue(autorizacion.MotivoAutorizacion),
+		"evidencia=" + sanitizeFinanzasPeriodoAutorizacionValue(autorizacion.EvidenciaAutorizacion),
+	}
+	if strings.TrimSpace(autorizacion.CodigoAutorizacion) != "" {
+		parts = append(parts, "codigo_autorizacion="+sanitizeFinanzasPeriodoAutorizacionValue(autorizacion.CodigoAutorizacion))
+	}
+	if strings.TrimSpace(ejecutadoPor) != "" {
+		parts = append(parts, "ejecutado_por="+sanitizeFinanzasPeriodoAutorizacionValue(ejecutadoPor))
+	}
+	return strings.Join(parts, " | ")
+}
+
+func buildEmpresaConciliacionBancariaDataset(resumen dbpkg.EmpresaConciliacionBancariaResumen) empresaReporteDataset {
+	ds := empresaReporteDataset{
+		Key:         "contable_conciliacion_bancaria",
+		Title:       "Conciliacion bancaria por periodo",
+		Level:       "contable",
+		Description: "Resumen de extractos bancarios, emparejamiento automatico y desviaciones financieras por periodo",
+		EmpresaID:   resumen.EmpresaID,
+		Desde:       resumen.Desde,
+		Hasta:       resumen.Hasta,
+		GeneratedAt: time.Now().Format("2006-01-02 15:04:05"),
+		Columns: []string{
+			"periodo_contable",
+			"extractos_total",
+			"extractos_conciliados",
+			"extractos_pendientes",
+			"extractos_con_desviacion",
+			"extractos_monto_total",
+			"extractos_monto_conciliado",
+			"movimientos_internos_total",
+			"movimientos_internos_monto",
+			"desfase_registros",
+			"desfase_monto",
+			"estado_conciliacion",
+			"ultimo_extracto",
+			"ultima_conciliacion",
+		},
+		Rows:    make([]map[string]interface{}, 0, len(resumen.Filas)),
+		Summary: make(map[string]interface{}),
+	}
+
+	for _, row := range resumen.Filas {
+		ds.Rows = append(ds.Rows, map[string]interface{}{
+			"periodo_contable":           row.PeriodoContable,
+			"extractos_total":            row.ExtractosTotal,
+			"extractos_conciliados":      row.ExtractosConciliados,
+			"extractos_pendientes":       row.ExtractosPendientes,
+			"extractos_con_desviacion":   row.ExtractosConDesviacion,
+			"extractos_monto_total":      row.ExtractosMontoTotal,
+			"extractos_monto_conciliado": row.ExtractosMontoConciliado,
+			"movimientos_internos_total": row.MovimientosInternosTotal,
+			"movimientos_internos_monto": row.MovimientosInternosMonto,
+			"desfase_registros":          row.DesfaseRegistros,
+			"desfase_monto":              row.DesfaseMonto,
+			"estado_conciliacion":        row.EstadoConciliacion,
+			"ultimo_extracto":            row.UltimoExtracto,
+			"ultima_conciliacion":        row.UltimaConciliacion,
+		})
+	}
+	ds.RowCount = len(ds.Rows)
+	ds.Summary["total_periodos"] = resumen.TotalPeriodos
+	ds.Summary["periodos_conciliados"] = resumen.PeriodosConciliados
+	ds.Summary["periodos_con_pendientes"] = resumen.PeriodosConPendientes
+	ds.Summary["periodos_con_descuadre"] = resumen.PeriodosConDescuadre
+	ds.Summary["periodos_sin_movimientos"] = resumen.PeriodosSinMovimientos
+
+	return ds
+}
 
 func buildTableroResumenExportPayload(resumen *dbpkg.EmpresaReportesTableroResumen) map[string]interface{} {
 	if resumen == nil {
@@ -114,6 +265,67 @@ func EmpresaFinanzasMovimientosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+			if action == "conciliacion_bancaria" || action == "desviaciones_financieras" || action == "desviaciones_periodo" || action == "conciliacion_bancaria_export" || action == "desviaciones_financieras_export" {
+				limit, err := parseIntQueryOptional(r, "limit")
+				if err != nil {
+					http.Error(w, "limit invalido", http.StatusBadRequest)
+					return
+				}
+				resumen, err := dbpkg.GetEmpresaConciliacionBancariaPorPeriodo(dbEmp, empresaID, dbpkg.EmpresaConciliacionBancariaFilter{
+					Desde:           strings.TrimSpace(r.URL.Query().Get("desde")),
+					Hasta:           strings.TrimSpace(r.URL.Query().Get("hasta")),
+					PeriodoContable: strings.TrimSpace(r.URL.Query().Get("periodo")),
+					IncludeInactive: queryBool(r, "include_inactive"),
+					Limit:           limit,
+				})
+				if err != nil {
+					http.Error(w, "No se pudo construir la conciliacion bancaria", http.StatusInternalServerError)
+					return
+				}
+
+				if action == "conciliacion_bancaria_export" || action == "desviaciones_financieras_export" {
+					format := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("format")))
+					if format == "" {
+						format = "json"
+					}
+					if format == "json" {
+						fileName := "conciliacion_bancaria_empresa_" + strconv.FormatInt(empresaID, 10) + "_" + time.Now().Format("20060102_150405") + ".json"
+						w.Header().Set("Content-Disposition", "attachment; filename=\""+fileName+"\"")
+						writeJSON(w, http.StatusOK, resumen)
+						return
+					}
+					ds := buildEmpresaConciliacionBancariaDataset(resumen)
+					if err := writeReportesDatasetExport(w, ds, format); err != nil {
+						http.Error(w, err.Error(), http.StatusBadRequest)
+						return
+					}
+					return
+				}
+
+				writeJSON(w, http.StatusOK, resumen)
+				return
+			}
+			if action == "extractos_bancarios" || action == "movimientos_bancarios" {
+				limit, err := parseIntQueryOptional(r, "limit")
+				if err != nil {
+					http.Error(w, "limit invalido", http.StatusBadRequest)
+					return
+				}
+				rows, err := dbpkg.ListEmpresaFinanzasMovimientosBancarios(dbEmp, empresaID, dbpkg.EmpresaFinanzasMovimientoBancarioFilter{
+					Desde:              strings.TrimSpace(r.URL.Query().Get("desde")),
+					Hasta:              strings.TrimSpace(r.URL.Query().Get("hasta")),
+					PeriodoContable:    strings.TrimSpace(r.URL.Query().Get("periodo")),
+					EstadoConciliacion: strings.TrimSpace(r.URL.Query().Get("estado_conciliacion")),
+					IncludeInactive:    queryBool(r, "include_inactive"),
+					Limit:              limit,
+				})
+				if err != nil {
+					http.Error(w, "No se pudieron listar los extractos bancarios", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, rows)
+				return
+			}
 			if action == "tablero_export" || action == "tablero_exportar" || action == "export_tablero" {
 				desde := strings.TrimSpace(r.URL.Query().Get("desde"))
 				hasta := strings.TrimSpace(r.URL.Query().Get("hasta"))
@@ -189,6 +401,108 @@ func EmpresaFinanzasMovimientosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			return
 
 		case http.MethodPost:
+			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+			if action == "importar_extractos_bancarios" || action == "importar_bancario" || action == "conciliacion_bancaria_importar" {
+				var payload empresaFinanzasImportacionBancariaPayload
+				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+					http.Error(w, "JSON invalido", http.StatusBadRequest)
+					return
+				}
+				if payload.EmpresaID <= 0 {
+					if empresaID, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && empresaID > 0 {
+						payload.EmpresaID = empresaID
+					}
+				}
+				if payload.EmpresaID <= 0 {
+					http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+					return
+				}
+				if len(payload.Movimientos) == 0 {
+					http.Error(w, "movimientos es obligatorio", http.StatusBadRequest)
+					return
+				}
+
+				usuarioOperacion := strings.TrimSpace(adminEmailFromRequest(r))
+				if usuarioOperacion == "" {
+					usuarioOperacion = "sistema"
+				}
+				for i := range payload.Movimientos {
+					if payload.Movimientos[i].EmpresaID <= 0 {
+						payload.Movimientos[i].EmpresaID = payload.EmpresaID
+					}
+					if strings.TrimSpace(payload.Movimientos[i].CuentaBancaria) == "" {
+						payload.Movimientos[i].CuentaBancaria = strings.TrimSpace(payload.CuentaBancaria)
+					}
+					if strings.TrimSpace(payload.Movimientos[i].BancoNombre) == "" {
+						payload.Movimientos[i].BancoNombre = strings.TrimSpace(payload.BancoNombre)
+					}
+					if strings.TrimSpace(payload.Movimientos[i].Origen) == "" {
+						payload.Movimientos[i].Origen = strings.TrimSpace(payload.Origen)
+					}
+					payload.Movimientos[i].UsuarioCreador = usuarioOperacion
+				}
+
+				importacion, err := dbpkg.UpsertEmpresaFinanzasMovimientosBancarios(dbEmp, payload.EmpresaID, payload.Movimientos)
+				if err != nil {
+					http.Error(w, "No se pudieron importar los extractos bancarios", http.StatusBadRequest)
+					return
+				}
+
+				response := map[string]interface{}{
+					"ok":          true,
+					"importacion": importacion,
+				}
+
+				autoConciliar := payload.AutoConciliar || queryBool(r, "auto_conciliar")
+				if autoConciliar {
+					limit := payload.Limit
+					if qLimit, qErr := parseIntQueryOptional(r, "limit"); qErr == nil && qLimit > 0 {
+						limit = qLimit
+					} else if qErr != nil {
+						http.Error(w, "limit invalido", http.StatusBadRequest)
+						return
+					}
+
+					toleranciaDias := payload.ToleranciaDias
+					if raw := strings.TrimSpace(r.URL.Query().Get("tolerancia_dias")); raw != "" {
+						v, err := strconv.Atoi(raw)
+						if err != nil {
+							http.Error(w, "tolerancia_dias invalido", http.StatusBadRequest)
+							return
+						}
+						toleranciaDias = v
+					}
+
+					toleranciaMonto := payload.ToleranciaMonto
+					if raw := strings.TrimSpace(r.URL.Query().Get("tolerancia_monto")); raw != "" {
+						v, err := strconv.ParseFloat(raw, 64)
+						if err != nil {
+							http.Error(w, "tolerancia_monto invalido", http.StatusBadRequest)
+							return
+						}
+						toleranciaMonto = v
+					}
+
+					resultado, err := dbpkg.ConciliarEmpresaMovimientosBancariosAutomatico(dbEmp, payload.EmpresaID, dbpkg.EmpresaConciliacionBancariaAutoConfig{
+						Desde:           strings.TrimSpace(r.URL.Query().Get("desde")),
+						Hasta:           strings.TrimSpace(r.URL.Query().Get("hasta")),
+						PeriodoContable: strings.TrimSpace(r.URL.Query().Get("periodo")),
+						ToleranciaDias:  toleranciaDias,
+						ToleranciaMonto: toleranciaMonto,
+						Limit:           limit,
+						Usuario:         usuarioOperacion,
+					})
+					if err != nil {
+						http.Error(w, "Importacion realizada, pero la conciliacion automatica fallo", http.StatusInternalServerError)
+						return
+					}
+					response["conciliacion_automatica"] = resultado
+				}
+
+				writeJSON(w, http.StatusCreated, response)
+				return
+			}
+
 			var payload dbpkg.EmpresaFinanzasMovimiento
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "JSON invalido", http.StatusBadRequest)
@@ -242,6 +556,47 @@ func EmpresaFinanzasMovimientosHandler(dbEmp *sql.DB) http.HandlerFunc {
 
 		case http.MethodPut:
 			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+			if action == "conciliar_bancaria_auto" || action == "conciliar_bancos" || action == "conciliar_bancaria_automatica" {
+				empresaID, err := parseEmpresaIDQuery(r)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+
+				limit, err := parseIntQueryOptional(r, "limit")
+				if err != nil {
+					http.Error(w, "limit invalido", http.StatusBadRequest)
+					return
+				}
+
+				toleranciaDias, err := parseIntQueryOptional(r, "tolerancia_dias")
+				if err != nil {
+					http.Error(w, "tolerancia_dias invalido", http.StatusBadRequest)
+					return
+				}
+
+				toleranciaMonto, err := parseFloat64QueryOptional(r, "tolerancia_monto")
+				if err != nil {
+					http.Error(w, "tolerancia_monto invalido", http.StatusBadRequest)
+					return
+				}
+
+				resultado, err := dbpkg.ConciliarEmpresaMovimientosBancariosAutomatico(dbEmp, empresaID, dbpkg.EmpresaConciliacionBancariaAutoConfig{
+					Desde:           strings.TrimSpace(r.URL.Query().Get("desde")),
+					Hasta:           strings.TrimSpace(r.URL.Query().Get("hasta")),
+					PeriodoContable: strings.TrimSpace(r.URL.Query().Get("periodo")),
+					ToleranciaDias:  toleranciaDias,
+					ToleranciaMonto: toleranciaMonto,
+					Limit:           limit,
+					Usuario:         strings.TrimSpace(adminEmailFromRequest(r)),
+				})
+				if err != nil {
+					http.Error(w, "No se pudo ejecutar la conciliacion bancaria automatica", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, resultado)
+				return
+			}
 			if action == "activar" || action == "desactivar" || action == "anular" {
 				empresaID, err := parseEmpresaIDQuery(r)
 				if err != nil {
@@ -441,7 +796,18 @@ func EmpresaFinanzasPeriodosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				if action == "reabrir" {
 					estado = "abierto"
 				}
-				if err := dbpkg.SetEmpresaFinanzasPeriodoEstado(dbEmp, empresaID, periodo, estado, strings.TrimSpace(adminEmailFromRequest(r)), "actualizacion desde API"); err != nil {
+				ejecutadoPor := strings.TrimSpace(adminEmailFromRequest(r))
+				autorizacion, err := parseEmpresaFinanzasPeriodoAutorizacionPayload(r, ejecutadoPor)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				if strings.TrimSpace(ejecutadoPor) == "" {
+					ejecutadoPor = autorizacion.AutorizadoPor
+				}
+				observaciones := buildEmpresaFinanzasPeriodoAutorizacionObservaciones(action, autorizacion, ejecutadoPor)
+
+				if err := dbpkg.SetEmpresaFinanzasPeriodoEstado(dbEmp, empresaID, periodo, estado, ejecutadoPor, observaciones); err != nil {
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
 				}
@@ -458,13 +824,30 @@ func EmpresaFinanzasPeriodosHandler(dbEmp *sql.DB) http.HandlerFunc {
 					DocumentoCodigo: periodo,
 					PeriodoContable: periodo,
 					Origen:          "api_finanzas_periodos",
-					Observaciones:   "actualizacion de estado de periodo contable",
+					Observaciones:   "actualizacion de estado de periodo contable con evidencia de autorizacion",
 				}, map[string]interface{}{
-					"periodo":    periodo,
-					"estado":     estado,
-					"empresa_id": empresaID,
+					"periodo":                periodo,
+					"estado":                 estado,
+					"empresa_id":             empresaID,
+					"policy_autorizacion":    true,
+					"autorizado_por":         autorizacion.AutorizadoPor,
+					"motivo_autorizacion":    autorizacion.MotivoAutorizacion,
+					"evidencia_autorizacion": autorizacion.EvidenciaAutorizacion,
+					"codigo_autorizacion":    autorizacion.CodigoAutorizacion,
+					"ejecutado_por":          ejecutadoPor,
 				})
-				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "periodo": periodo, "estado": estado})
+				writeJSON(w, http.StatusOK, map[string]interface{}{
+					"ok":      true,
+					"periodo": periodo,
+					"estado":  estado,
+					"autorizacion": map[string]interface{}{
+						"autorizado_por":         autorizacion.AutorizadoPor,
+						"motivo_autorizacion":    autorizacion.MotivoAutorizacion,
+						"evidencia_autorizacion": autorizacion.EvidenciaAutorizacion,
+						"codigo_autorizacion":    autorizacion.CodigoAutorizacion,
+						"ejecutado_por":          ejecutadoPor,
+					},
+				})
 				return
 			}
 

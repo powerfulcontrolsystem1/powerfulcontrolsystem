@@ -621,3 +621,170 @@ func TestEmpresaCierresCajaFlow(t *testing.T) {
 		t.Fatalf("expected 0 cierres activos after inactivar, got %d", len(activos))
 	}
 }
+
+func TestEmpresaFinanzasConciliacionBancariaAutomatica(t *testing.T) {
+	dbConn := openFinanzasTestDB(t)
+	if err := EnsureEmpresaFinanzasSchema(dbConn); err != nil {
+		t.Fatalf("ensure finanzas schema: %v", err)
+	}
+
+	empresaID := int64(300)
+	fechaA := "2026-04-15 10:20:00"
+	fechaB := "2026-04-16 09:10:00"
+
+	movID, err := CreateEmpresaFinanzasMovimiento(dbConn, EmpresaFinanzasMovimiento{
+		EmpresaID:         empresaID,
+		TipoMovimiento:    "ingreso",
+		Concepto:          "Ingreso transferencia banco",
+		Categoria:         "ventas",
+		MetodoPago:        "transferencia_bancaria",
+		Moneda:            "COP",
+		Monto:             150000,
+		Total:             150000,
+		ReferenciaExterna: "TRX-9001",
+		FechaMovimiento:   fechaA,
+		UsuarioCreador:    "tester",
+	})
+	if err != nil {
+		t.Fatalf("create movimiento interno bancario: %v", err)
+	}
+
+	if _, err := CreateEmpresaFinanzasMovimiento(dbConn, EmpresaFinanzasMovimiento{
+		EmpresaID:         empresaID,
+		TipoMovimiento:    "egreso",
+		Concepto:          "Pago proveedor por transferencia",
+		Categoria:         "compras",
+		MetodoPago:        "transferencia",
+		Moneda:            "COP",
+		Monto:             35000,
+		Total:             35000,
+		ReferenciaExterna: "TRX-9002",
+		FechaMovimiento:   fechaB,
+		UsuarioCreador:    "tester",
+	}); err != nil {
+		t.Fatalf("create segundo movimiento interno bancario: %v", err)
+	}
+
+	importacion, err := UpsertEmpresaFinanzasMovimientosBancarios(dbConn, empresaID, []EmpresaFinanzasMovimientoBancario{
+		{
+			EmpresaID:          empresaID,
+			TipoMovimiento:     "ingreso",
+			FechaMovimiento:    fechaA,
+			PeriodoContable:    "2026-04",
+			CuentaBancaria:     "123-456",
+			BancoNombre:        "Banco QA",
+			ReferenciaBancaria: "TRX-9001",
+			Moneda:             "COP",
+			Monto:              150000,
+			Total:              150000,
+			UsuarioCreador:     "tester",
+		},
+		{
+			EmpresaID:          empresaID,
+			TipoMovimiento:     "egreso",
+			FechaMovimiento:    "2026-04-17 08:00:00",
+			PeriodoContable:    "2026-04",
+			CuentaBancaria:     "123-456",
+			BancoNombre:        "Banco QA",
+			ReferenciaBancaria: "TRX-NO-MATCH",
+			Moneda:             "COP",
+			Monto:              99000,
+			Total:              99000,
+			UsuarioCreador:     "tester",
+		},
+	})
+	if err != nil {
+		t.Fatalf("import extractos bancarios: %v", err)
+	}
+	if importacion.Creados != 2 {
+		t.Fatalf("expected creados=2, got %d", importacion.Creados)
+	}
+
+	resultado, err := ConciliarEmpresaMovimientosBancariosAutomatico(dbConn, empresaID, EmpresaConciliacionBancariaAutoConfig{
+		PeriodoContable: "2026-04",
+		ToleranciaDias:  2,
+		ToleranciaMonto: 10,
+		Limit:           200,
+		Usuario:         "contabilidad@test.com",
+	})
+	if err != nil {
+		t.Fatalf("conciliar automatico: %v", err)
+	}
+	if resultado.Revisados != 2 {
+		t.Fatalf("expected revisados=2, got %d", resultado.Revisados)
+	}
+	if resultado.Conciliados != 1 {
+		t.Fatalf("expected conciliados=1, got %d", resultado.Conciliados)
+	}
+	if resultado.ConDesviacion != 1 {
+		t.Fatalf("expected con_desviacion=1, got %d", resultado.ConDesviacion)
+	}
+
+	items, err := ListEmpresaFinanzasMovimientosBancarios(dbConn, empresaID, EmpresaFinanzasMovimientoBancarioFilter{PeriodoContable: "2026-04", Limit: 50})
+	if err != nil {
+		t.Fatalf("list extractos bancarios: %v", err)
+	}
+	if len(items) != 2 {
+		t.Fatalf("expected 2 extractos bancarios, got %d", len(items))
+	}
+
+	var matched EmpresaFinanzasMovimientoBancario
+	for _, it := range items {
+		if it.ReferenciaBancaria == "TRX-9001" {
+			matched = it
+			break
+		}
+	}
+	if matched.ID <= 0 {
+		t.Fatalf("expected to find matched bank extract")
+	}
+	if matched.MovimientoFinanzasID != movID {
+		t.Fatalf("expected movimiento_finanzas_id=%d, got %d", movID, matched.MovimientoFinanzasID)
+	}
+	if matched.EstadoConciliacion != "conciliado" {
+		t.Fatalf("expected estado_conciliacion=conciliado, got %q", matched.EstadoConciliacion)
+	}
+
+	resumen, err := GetEmpresaConciliacionBancariaPorPeriodo(dbConn, empresaID, EmpresaConciliacionBancariaFilter{PeriodoContable: "2026-04", Limit: 12})
+	if err != nil {
+		t.Fatalf("get conciliacion bancaria por periodo: %v", err)
+	}
+	if resumen.TotalPeriodos != 1 {
+		t.Fatalf("expected total_periodos=1, got %d", resumen.TotalPeriodos)
+	}
+	if len(resumen.Filas) != 1 {
+		t.Fatalf("expected 1 fila, got %d", len(resumen.Filas))
+	}
+	fila := resumen.Filas[0]
+	if fila.ExtractosTotal != 2 {
+		t.Fatalf("expected extractos_total=2, got %d", fila.ExtractosTotal)
+	}
+	if fila.ExtractosConciliados != 1 {
+		t.Fatalf("expected extractos_conciliados=1, got %d", fila.ExtractosConciliados)
+	}
+	if fila.EstadoConciliacion != "con_pendientes" {
+		t.Fatalf("expected estado_conciliacion=con_pendientes, got %q", fila.EstadoConciliacion)
+	}
+
+	importacion2, err := UpsertEmpresaFinanzasMovimientosBancarios(dbConn, empresaID, []EmpresaFinanzasMovimientoBancario{
+		{
+			EmpresaID:          empresaID,
+			TipoMovimiento:     "ingreso",
+			FechaMovimiento:    fechaA,
+			PeriodoContable:    "2026-04",
+			CuentaBancaria:     "123-456",
+			BancoNombre:        "Banco QA",
+			ReferenciaBancaria: "TRX-9001",
+			Moneda:             "COP",
+			Monto:              150000,
+			Total:              150000,
+			UsuarioCreador:     "tester",
+		},
+	})
+	if err != nil {
+		t.Fatalf("reimport extractos bancarios: %v", err)
+	}
+	if importacion2.Actualizados != 1 {
+		t.Fatalf("expected actualizados=1 on reimport, got %d", importacion2.Actualizados)
+	}
+}

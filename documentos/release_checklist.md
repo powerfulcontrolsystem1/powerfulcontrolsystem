@@ -1,6 +1,6 @@
 # Checklist de release (pre-despliegue)
 
-Fecha de referencia: 2026-04-01
+Fecha de referencia: 2026-04-07
 
 ## 1) Respaldo y estado del entorno
 
@@ -17,6 +17,12 @@ Fecha de referencia: 2026-04-01
 	- `documentos/punto_13_validacion_integral_resultado.md`
 - [ ] Ejecutar pruebas backend productivas:
 	- `go test ./auth ./db ./handlers ./metrics ./utils`
+- [ ] Ejecutar corrida de cobertura por capa:
+	- `go test ./auth ./db ./handlers ./metrics ./utils -cover -count=1`
+- [ ] Verificar metas minimas de cobertura transversal:
+	- `db >= 50%`
+	- `handlers >= 50%`
+	- `auth/metrics/utils`: suite productiva en verde y plan de incremento progresivo de cobertura dedicada.
 - [ ] Verificar compilacion del backend sin errores.
 - [ ] Confirmar que no hay lecturas de secretos desde documentos en el arranque.
 
@@ -36,6 +42,10 @@ Fecha de referencia: 2026-04-01
 	- crear carrito,
 	- agregar item,
 	- validar recálculo de totales.
+- [ ] UAT formal por rol completada y documentada:
+	- `super_admin` (acceso total en endpoints super),
+	- `admin_empresa` (permisos por modulo/contexto),
+	- `usuario_empresa` (restricciones operativas por rol).
 
 ## 4) Pagos y webhooks (si aplica en la iteracion)
 
@@ -64,3 +74,23 @@ Fecha de referencia: 2026-04-01
 - [ ] Tener backups DB listos para restauracion inmediata.
 - [ ] Tener hash/commit de referencia previo al release.
 - [ ] Definir comando/paso de reversión para cambios críticos.
+
+## 8) Checklist "listo para produccion" por modulo (estandar transversal)
+
+Aplicar por cada modulo en alcance del release:
+
+- [ ] Seguridad:
+	- permisos por rol validados,
+	- aislamiento por `empresa_id` validado,
+	- sin secretos en texto plano en codigo/docs/logs.
+- [ ] Rendimiento:
+	- endpoints criticos del modulo responden en tiempos operativos esperados,
+	- sin degradaciones relevantes en pruebas de humo.
+- [ ] Trazabilidad:
+	- auditoria empresarial activa para acciones criticas,
+	- evidencia en `CHANGELOG.md` y `documentos/historial_de_cambios`.
+- [ ] Reporteria/exportacion (si aplica):
+	- exportaciones del modulo consistentes en `PDF`, `XLS`, `CSV`, `JSON` y `TXT`.
+- [ ] Pruebas:
+	- pruebas automatizadas del modulo en verde,
+	- UAT por rol documentada para el alcance afectado.

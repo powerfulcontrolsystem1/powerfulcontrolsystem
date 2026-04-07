@@ -1,5 +1,426 @@
 Descripcion de archivos del proyecto
 
+Actualizacion 2026-04-07: Cierre modulo 30 (seguridad y permisos)
+
+- `backend/handlers/empresa_permisos.go`:
+	- refuerza trazabilidad de cambios criticos de permisos en modulo seguridad.
+	- exige evidencia de aprobacion (`aprobado_por`, `codigo_aprobacion`) para cambios de permisos en `/api/empresa/usuarios`.
+	- propaga evidencia de aprobacion en cabeceras de solicitud para auditoria no bloqueante.
+
+- `backend/handlers/auditoria_empresa.go`:
+	- incorpora en `metadata_json` campos de aprobacion trazable (`permission_approval_required`, `permission_approved_by`, `permission_approval_code`, `permission_approval_reason`) cuando aplica.
+
+- `backend/handlers/empresa_permisos_test.go`:
+	- agrega prueba de matriz completa rol/modulo/accion validando `include_matrix=1` en `/api/empresa/permisos_contexto`.
+	- agrega pruebas de bloqueo sin evidencia de aprobacion y exito con evidencia trazable, incluyendo verificacion de metadata de auditoria.
+
+- `backend/main_empresa_routes_security_test.go` (nuevo):
+	- agrega barrido automatizado deny-by-default para todas las rutas `/api/empresa/*` registradas por `http.HandleFunc`.
+	- valida uso obligatorio de wrappers de permisos y restringe `WithEmpresaPublicScope` a endpoints publicos permitidos.
+
+Actualizacion 2026-04-07: Cierre modulo 29 (auditoria empresarial: full-text + exportacion forense)
+
+- `backend/db/auditoria_empresa.go`:
+	- Agrega soporte de busqueda full-text (`search`) con FTS en SQLite y fallback por `LIKE` cuando FTS5 no esta disponible.
+	- Inicializa objetos de indexacion de auditoria (`empresa_auditoria_eventos_fts`, triggers de sincronizacion y backfill) para mantener busqueda consistente.
+
+- `backend/handlers/auditoria_empresa.go`:
+	- Amplia `GET /api/empresa/auditoria/eventos` con `action=export_forense|forense_export|cadena_custodia`.
+	- Implementa salida forense en `json/csv` con `hash_registro`, `hash_cadena` y `hash_global` para cadena de custodia basica.
+
+- `backend/db/auditoria_empresa_test.go`:
+	- Agrega cobertura de busqueda avanzada full-text + filtros (`TestListEmpresaAuditoriaEventosSearchFullTextConFiltros`).
+
+- `backend/handlers/auditoria_empresa_test.go`:
+	- Agrega cobertura de exportacion forense JSON/CSV y verificacion de hashes de cadena (`TestEmpresaAuditoriaEventosHandlerExportForenseJSONYCSV`).
+
+- `documentos/estructura_bd.md` y `estructura_bd.md`:
+	- Documentan los objetos de busqueda full-text de auditoria (tabla virtual FTS y triggers de sincronizacion).
+
+- `Pendiente Notas`, `CHANGELOG.md`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/diagramas/diagrama_flujo_procesos.md` y `documentos/historial_de_cambios`:
+	- Sincronizan cierre funcional y trazabilidad tecnica del modulo 29.
+
+Actualizacion 2026-04-07: Avance modulo 29 (politicas de retencion por modulo y severidad)
+
+- `backend/db/auditoria_empresa.go`:
+	- Implementa resolucion automatica de `retencion_dias` por politica de `modulo` + `severidad` al crear eventos de auditoria.
+	- Mantiene compatibilidad con `retencion_dias` explicita cuando el flujo la define manualmente.
+	- Enriquece `metadata_json` con campos de trazabilidad de politica aplicada (`retencion_politica_modulo`, `retencion_politica_severidad`, `retencion_dias_resuelto`).
+
+- `backend/db/auditoria_empresa_test.go`:
+	- Agrega pruebas para validar la politica por modulo/severidad y la prioridad de retencion explicita sobre la politica automatica.
+
+- `Pendiente Notas`, `CHANGELOG.md`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/diagramas/diagrama_flujo_procesos.md` y `documentos/historial_de_cambios`:
+	- Sincronizan el avance del modulo 29 y la evidencia tecnica ejecutada.
+
+Actualizacion 2026-04-07: Avance modulo 28 (conciliacion bancaria automatica)
+
+- `backend/db/finanzas_conciliacion_bancaria.go` (nuevo):
+	- Implementa importacion idempotente de extractos bancarios por empresa (`hash_movimiento`).
+	- Implementa conciliacion bancaria automatica por tolerancia de fecha/monto contra `empresa_finanzas_movimientos`.
+	- Implementa tablero de desviaciones financieras por periodo (`extractos vs movimientos internos`) para consulta y exportacion.
+
+- `backend/db/finanzas.go`:
+	- Extiende `EnsureEmpresaFinanzasSchema` con tabla `empresa_finanzas_bancos_movimientos`, migraciones de columnas e indices de conciliacion.
+
+- `backend/handlers/finanzas.go`:
+	- Amplia `/api/empresa/finanzas/movimientos` con acciones:
+		- `GET action=extractos_bancarios`.
+		- `GET action=conciliacion_bancaria`.
+		- `GET action=conciliacion_bancaria_export` (`json/csv/txt/xls/pdf`).
+		- `POST action=importar_extractos_bancarios`.
+		- `PUT action=conciliar_bancaria_auto`.
+	- Refuerza `PUT /api/empresa/finanzas/periodos?action=cerrar|reabrir` con evidencia de autorizacion obligatoria (`autorizado_por`, `motivo_autorizacion`, `evidencia_autorizacion`) y trazabilidad en payload/respuesta.
+
+- `backend/handlers/empresa_permisos.go`:
+	- Clasifica acciones de conciliacion bancaria automatica como `permActionApprove` en modulo finanzas.
+
+- `backend/db/finanzas_test.go` y `backend/handlers/eventos_contables_modulos_test.go`:
+	- Agregan pruebas de importacion + conciliacion bancaria automatica y validacion del tablero por periodo.
+	- Agregan cobertura de politicas de cierre/reapertura con evidencia obligatoria (`TestEmpresaFinanzasEmiteEventosContables`, `TestEmpresaFinanzasPeriodosRequiereEvidenciaAutorizacion`).
+
+- `documentos/estructura_bd.md` y `estructura_bd.md`:
+	- Actualizan version a `2026-04-07.33` e incluyen `empresa_finanzas_bancos_movimientos`.
+
+- `documentos/diagramas/estructura_del_codigo.md` y `documentos/diagramas/diagrama_flujo_procesos.md`:
+	- Documentan arquitectura y flujo funcional del nuevo submodulo de conciliacion bancaria.
+
+- `Pendiente Notas`, `documentos/descripcion_del_proyecto`, `CHANGELOG.md` y `documentos/historial_de_cambios`:
+	- Sincronizan alcance funcional, estado del modulo 28 y trazabilidad de validaciones.
+
+Actualizacion 2026-04-07: Refuerzo de cobertura en auth/metrics/utils
+
+- `backend/auth/auth_test.go` (nuevo):
+	- Cubre flujos de exito y error de `ExchangeCodeForToken` y `FetchUserInfo` con transporte HTTP simulado.
+
+- `backend/metrics/collector_test.go` (nuevo):
+	- Cubre configuracion de intervalo por entorno (`DefaultIntervalSeconds`) y ciclo de recoleccion/guardado de metricas (`collectAndStore`, `StartCollector`).
+
+- `backend/utils/utils_test.go` (nuevo):
+	- Cubre utilidades de token seguro, cifrado/descifrado AES-GCM, disponibilidad de cifrado, helpers de parseo/inferencia de `empresa_id` y pruebas de middleware (`LoggingMiddleware`, `JSONErrorMiddleware`) con contexto y red.
+
+- `Pendiente Notas`, `documentos/punto_13_calidad_uat_despliegue.md` y `documentos/punto_13_validacion_integral_resultado.md`:
+	- Actualizan evidencia de cobertura transversal con resultados reales post-refuerzo (`auth 85.3%`, `metrics 78.0%`, `utils 71.1%`).
+
+- `CHANGELOG.md` y `documentos/historial_de_cambios`:
+	- Registran trazabilidad del incremento de cobertura y validaciones ejecutadas.
+
+Actualizacion 2026-04-07: Cierre transversal de calidad/UAT/checklist
+
+- `Pendiente Notas`:
+	- Marca como completados los tres pendientes transversales (cobertura minima, UAT por rol y checklist listo para produccion).
+
+- `documentos/punto_13_calidad_uat_despliegue.md`:
+	- Define objetivo minimo de cobertura por capa.
+	- Documenta acta UAT formal por rol y matriz UAT por modulo en estado aprobado.
+
+- `documentos/punto_13_validacion_integral_resultado.md`:
+	- Agrega evidencia complementaria de cobertura y pruebas UAT por rol.
+
+- `documentos/release_checklist.md`:
+	- Estandariza checklist de "listo para produccion" por modulo (seguridad, rendimiento, trazabilidad, exportacion y pruebas).
+
+- `CHANGELOG.md` y `documentos/historial_de_cambios`:
+	- Registran la trazabilidad integral del cierre transversal y comandos de validacion ejecutados.
+
+Actualizacion 2026-04-07: Cierre modulo 27 (Ventas simples por estacion)
+
+- `web/js/ventas_simple.js` (nuevo):
+	- Centraliza la logica operativa de ventas simples por estacion.
+	- Implementa operacion offline por estacion con cola local y checksum SHA-256 para integridad.
+	- Implementa sincronizacion segura de items al reconectar, con reconciliacion contra carrito servidor.
+	- Implementa consulta/render de metricas de estacion y flujo de correccion rapida post-cobro.
+
+- `web/administrar_empresa/ventas_simple.html`:
+	- Integra barra de estado de sincronizacion, panel de metricas y bloque de correccion post-cobro.
+	- Migra script inline a `web/js/ventas_simple.js`.
+
+- `backend/db/carritos_compras.go`:
+	- Agrega tabla `empresa_ventas_estacion_metricas` y funciones de registro/resumen de metricas por estacion.
+
+- `backend/handlers/carritos_compras.go`:
+	- Agrega accion `action=metricas_estacion` en GET y registra metricas en pago, recuperacion y correccion de cierre.
+
+- `backend/handlers/auth_users_carritos_test.go`:
+	- Agrega prueba de integracion de metricas con correccion post-cobro.
+
+- `web/estilos.css`:
+	- Agrega estilos para estados de sincronizacion y visualizacion de metricas en ventas simples.
+
+Actualizacion 2026-04-07: Cierre modulo 26 (Carritos de compra e items)
+
+- `backend/db/carritos_compras.go`:
+	- Agrega timeout SQLite y reintentos transaccionales para operaciones de items bajo concurrencia multiestacion.
+	- Agrega `RecoverInterruptedCarritoSession` para recuperar sesiones interrumpidas sin reset de items.
+	- Agrega `CancelCarritoPartialClosure` para anulacion parcial de cierre en carritos pagados.
+
+- `backend/handlers/carritos_compras.go`:
+	- Agrega acciones `action=recuperar_interrumpido` y `action=anular_cierre_parcial`.
+	- Registra trazabilidad contable y auditoria empresarial especifica por carrito en ambos flujos.
+
+- `web/administrar_empresa/carrito_de_compras.html`:
+	- Ajusta activacion de estacion para recuperar carritos interrumpidos sin limpiar items.
+	- Conserva `reset_items=1` para reinicio de sesiones pagadas con confirmacion explicita.
+
+- `backend/db/carritos_inventario_test.go`:
+	- Agrega pruebas de concurrencia de producto, recuperacion de carrito interrumpido y anulacion parcial de cierre.
+
+- `backend/handlers/auth_users_carritos_test.go`:
+	- Agrega pruebas HTTP de recuperacion interrumpida con auditoria, validacion de pago mixto y anulacion parcial con auditoria.
+
+- `Pendiente Notas`:
+	- Marca modulo 26 como COMPLETADO con evidencia tecnica.
+
+- `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `CHANGELOG.md` y `documentos/historial_de_cambios`:
+	- Sincronizan alcance funcional, arquitectura y trazabilidad del cierre del modulo 26.
+
+Actualizacion 2026-04-07: Cierre modulo 25 (Panel ERP extendido)
+
+- `web/js/modulos_erp_extendido.js`:
+	- Incorpora formulario guiado dinamico por modulo ERP para reducir dependencia de JSON libre.
+	- Agrega validaciones dinamicas por tipo de campo y reglas cruzadas por modulo.
+	- Agrega acciones rapidas parametrizadas por modulo y utilidades DIAN.
+	- Agrega guia operativa por dominio y sincronizacion guiado->JSON avanzado.
+
+- `web/estilos.css`:
+	- Agrega estilos de UX para formulario guiado (grilla, ayudas de campo, errores en linea, panel de validacion).
+	- Agrega estilos para guia operativa por dominio con tarjetas y comportamiento responsive.
+
+- `Pendiente Notas`:
+	- Marca modulo 25 como COMPLETADO con evidencia tecnica y validacion operativa frontend.
+
+- `documentos/diagramas/estructura_del_codigo.md`:
+	- Actualiza flujo funcional del modulo 25 y documenta los nuevos componentes frontend del panel ERP.
+
+- `CHANGELOG.md`:
+	- Registra hito de cierre tecnico del modulo 25 con cambios y validaciones.
+
+Actualizacion 2026-04-07: Cierre modulo 24 (Documental e Integraciones)
+
+- `backend/handlers/modulos_faltantes.go`:
+	- Reemplaza rutas genericas de `documentos/gestion` y `documentos/firmas` por handlers especializados.
+	- Agrega versionado documental (`action=versionar`, `action=versiones`) con nueva version activa y version anterior historica.
+	- Agrega repositorio documental con control de acceso por rol/modulo (`action=repositorio`, `action=acceso`).
+	- Agrega rotacion segura de referencias de credencial en integraciones (`action=rotar_credencial`).
+	- Agrega monitoreo y alertas operativas de conectores (`action=monitoreo`, `action=alertas`) por endpoint, conectividad, latencia y sincronizacion.
+
+- `backend/handlers/empresa_permisos.go`:
+	- Clasifica `sync_manual`, `rotar_credencial`/`rotar_credenciales` y `versionar` como acciones criticas de aprobacion en modulo seguridad.
+
+- `backend/handlers/modulos_faltantes_test.go`:
+	- Agrega pruebas de rotacion/monitoreo para integraciones API.
+	- Agrega pruebas de rotacion de credencial para integraciones bancarias.
+	- Agrega pruebas de versionado documental y control de acceso por rol.
+
+- `documentos/descripcion_del_proyecto`:
+	- Actualiza alcance de modulo 24 con acciones de versionado documental, control de acceso, rotacion segura y monitoreo de conectores.
+
+- `Pendiente Notas`:
+	- Marca modulo 24 como COMPLETADO con evidencia de pruebas.
+
+- `documentos/diagramas/estructura_del_codigo.md` y `documentos/diagramas/diagrama_flujo_procesos.md`:
+	- Actualizan arquitectura y flujo funcional del modulo 24 para repositorio documental versionado y operacion segura de integraciones.
+
+Actualizacion 2026-04-07: Cierre modulo 23 (CRM/Produccion/Logistica)
+
+- `backend/handlers/modulos_faltantes.go`:
+	- Reemplaza rutas genericas de `produccion/ordenes` y `logistica/envios` por handlers especializados.
+	- Agrega `EmpresaProduccionOrdenesHandler` con `action=plan_capacidad` para planificacion operativa por meta diaria, desviaciones y alertas de atraso/sobrecapacidad.
+	- Agrega `EmpresaLogisticaEnviosHandler` con `action=seguimiento_hitos` para monitoreo de hitos (programacion/salida/entrega), SLA y alertas de incumplimiento.
+
+- `backend/handlers/modulos_faltantes_test.go`:
+	- Agrega pruebas de planificacion de capacidad en produccion.
+	- Agrega pruebas de seguimiento logistico por hitos con alertas de incumplimiento.
+
+- `backend/handlers/reportes.go`:
+	- Extiende dataset `operativo_cadena_cumplimiento` con metas por dominio y desviaciones (`meta_cumplimiento_pct`, `desviacion_meta_pct`, `estado_meta`, `meta_global_pct`, `desviacion_meta_global_pct`).
+
+- `backend/handlers/reportes_test.go`:
+	- Amplia validaciones del dataset de cadena para metas/desviaciones por modulo y global.
+
+- `documentos/descripcion_del_proyecto`:
+	- Actualiza alcance de CRM/Produccion/Logistica con acciones `action=plan_capacidad` y `action=seguimiento_hitos`.
+
+- `Pendiente Notas`:
+	- Marca modulo 23 como COMPLETADO con evidencia de pruebas.
+
+- `documentos/diagramas/estructura_del_codigo.md` y `documentos/diagramas/diagrama_flujo_procesos.md`:
+	- Actualizan arquitectura y flujo funcional del modulo 23 para capacidad de produccion y seguimiento logistico por hitos/SLA.
+
+Actualizacion 2026-04-07: Cierre modulo 22 (RRHH extendido)
+
+- `backend/db/modulos_faltantes.go`:
+	- Amplia `empresa_rrhh_vacaciones_licencias` con campos de aprobacion jerarquica (`nivel_aprobacion_*`, `aprobadores_json`, `historial_aprobaciones_json`).
+	- Agrega campos de saldo/acumulado (`periodo_acumulado_*`, `saldo_dias_*`, `saldo_snapshot_json`) y de enlace a nomina (`empleado_nomina_id`, `nomina_*`).
+
+- `backend/handlers/modulos_faltantes.go`:
+	- Reemplaza ruta CRUD generica RRHH por `EmpresaRRHHVacacionesLicenciasHandler`.
+	- Agrega acciones `resumen_saldo`, `solicitar_aprobacion`, `aprobar`, `rechazar`, `vincular_nomina`.
+	- Implementa calculo de saldo de vacaciones, flujo jerarquico de aprobacion y vinculacion por periodo/liquidacion de nomina.
+
+- `backend/handlers/empresa_permisos.go`:
+	- Mapea acciones RRHH de aprobacion/vinculacion a permisos de aprobacion y acciones de inicio a permisos de actualizacion.
+
+- `backend/handlers/modulos_faltantes_test.go`:
+	- Agrega pruebas de saldo + aprobacion jerarquica y de vinculacion RRHH a nomina por periodo.
+
+- `estructura_bd.md` y `documentos/estructura_bd.md`:
+	- Sincronizan estructura de modulo 22 y actualizan version a `2026-04-07.31`.
+
+- `documentos/diagramas/estructura_del_codigo.md` y `documentos/diagramas/diagrama_flujo_procesos.md`:
+	- Actualizan arquitectura y flujo funcional del modulo 22 (saldo, aprobacion multinivel y enlace a nomina).
+
+Actualizacion 2026-04-07: Cierre modulo 21 (Inventario extendido)
+
+- `backend/db/modulos_faltantes.go`:
+	- Amplia `inventario_lotes_series` con campos de reserva/venta/bloqueo y ultima operacion (`reservado_cantidad`, `vendido_cantidad`, `bloqueado_venta`, `bloqueo_motivo`, `ultima_operacion_*`).
+	- Crea `inventario_lotes_series_movimientos` para trazabilidad completa del ciclo lote/serie.
+	- Amplia `empresa_devoluciones_proveedor` con metadatos de impacto contable (`periodo_contable`, `impacto_contable_*`, `fecha_contabilizacion`, `contabilizado_por`, `total_reintegrado`).
+
+- `backend/handlers/modulos_faltantes.go`:
+	- Reemplaza rutas CRUD genericas de modulo 21 por handlers especializados.
+	- Agrega acciones de lotes/series para validar disponibilidad, operar reservas/ventas/liberaciones y consultar trazabilidad.
+	- Agrega accion `contabilizar`/`impacto_contable` en devoluciones a proveedor para generar movimiento financiero + evento contable + actualizacion de estado.
+
+- `backend/db/eventos_contables.go`:
+	- Incorpora evento `devolucion_proveedor_contabilizada` al contrato del modulo `compras` y su mapeo a asiento de ingreso.
+
+- `backend/handlers/modulos_faltantes_test.go`:
+	- Agrega pruebas de bloqueo automatico por vencimiento en lotes.
+	- Agrega pruebas de trazabilidad del ciclo reserva/venta/liberacion por lote.
+	- Agrega pruebas de contabilizacion completa de devolucion proveedor.
+
+- `estructura_bd.md` y `documentos/estructura_bd.md`:
+	- Sincronizan estructura de modulo 21 y actualizan version a `2026-04-07.30`.
+
+- `documentos/diagramas/estructura_del_codigo.md` y `documentos/diagramas/diagrama_flujo_procesos.md`:
+	- Actualizan arquitectura y flujo funcional del modulo 21 (trazabilidad de lotes, bloqueo por vencimiento e impacto contable de devolucion proveedor).
+
+Actualizacion 2026-04-07: Cierre modulo 20 (Contabilidad operativa extendida)
+
+- `backend/db/modulos_faltantes.go`:
+	- Amplia esquema de `empresa_plan_cuentas` con metadatos de plantilla (`plantilla_tipo_empresa`, `plantilla_codigo`, `plantilla_version`, `cuenta_clave`, `requerida`, `orden_plantilla`).
+	- Amplia `empresa_cuentas_por_cobrar` y `empresa_cuentas_por_pagar` con trazabilidad de conciliacion (`periodo_contable`, `referencia_pagos_json`, `fecha_ultimo_pago`, `conciliado_en`, `conciliado_por`).
+	- Aplica bloqueo retroactivo por periodo cerrado en crear/editar/cambiar estado/eliminar para CxC/CxP.
+
+- `backend/handlers/modulos_faltantes.go`:
+	- Incorpora handlers especializados para `plan_cuentas`, `cuentas_cobrar` y `cuentas_pagar`.
+	- Agrega acciones `plantillas`, `aplicar_plantilla`, `conciliar_pagos` y `validar_cierre_periodo`.
+	- Mapea bloqueos de periodo cerrado a respuesta HTTP `409` para operaciones CRUD de cartera.
+
+- `backend/handlers/modulos_faltantes_test.go`:
+	- Agrega cobertura de plantillas contables por tipo de empresa.
+	- Agrega cobertura de conciliacion automatica CxC contra pagos reales.
+	- Agrega cobertura de bloqueo de operaciones CxP en periodo cerrado.
+
+- `estructura_bd.md` y `documentos/estructura_bd.md`:
+	- Sincronizan definicion de campos nuevos del modulo 20 y actualizan version a `2026-04-07.29`.
+
+- `documentos/diagramas/estructura_del_codigo.md` y `documentos/diagramas/diagrama_flujo_procesos.md`:
+	- Actualizan arquitectura y flujo funcional de finanzas para plantillas, conciliacion y bloqueo retroactivo por cierre contable.
+
+Actualizacion 2026-04-06: Cierre modulo 19 (Gestion comercial extendida)
+
+- `backend/handlers/modulos_faltantes.go`:
+	- Amplia handlers de ventas con acciones de conversion comercial:
+		- `action=convertir_pedido`.
+		- `action=convertir_documento_final`.
+		- `action=embudo` / `action=reporte_conversion`.
+	- Implementa snapshot de embudo cotizacion→pedido→documento final con SLA configurable y alertas de vencimiento.
+
+- `backend/handlers/reportes.go`:
+	- Agrega dataset `operativo_ventas_embudo_conversion` al catalogo/suite/export de reportes empresariales.
+	- Mantiene interoperabilidad de exportaciones en `json/csv/txt/xls/pdf`.
+
+- `backend/handlers/empresa_permisos.go`:
+	- Clasifica `convertir_pedido` y `convertir_documento_final` como acciones de aprobacion para modulo ventas.
+
+- `backend/handlers/modulos_faltantes_test.go`:
+	- Agrega cobertura de conversion cotizacion→pedido→documento final y embudo con alertas SLA.
+
+- `backend/handlers/reportes_test.go`:
+	- Agrega cobertura del dataset `operativo_ventas_embudo_conversion` y export CSV.
+
+- `documentos/diagramas/estructura_del_codigo.md` y `documentos/diagramas/diagrama_flujo_procesos.md`:
+	- Actualizan arquitectura y flujo funcional del modulo 19 con conversion automatica y monitoreo de embudo comercial.
+
+- `documentos/descripcion_del_proyecto`:
+	- Sincroniza la seccion de gestion comercial extendida con las nuevas acciones `convertir_pedido`, `convertir_documento_final` y `embudo`.
+
+Actualizacion 2026-04-06: Cierre modulo 18 (Facturacion electronica DIAN Colombia)
+
+- `backend/handlers/modulos_faltantes.go`:
+	- Amplia `EmpresaDIANColombiaHandler` con acciones reales de firma, envio, consulta de acuse y reconexion DIAN.
+	- Incorpora resolucion segura de secretos/certificados por referencias `env:`, `file:` y `base64:`.
+	- Normaliza acuses DIAN y actualiza estado operativo (`aceptado`, `rechazado`, `contingencia`, `reconectado`) en `empresa_dian_configuracion`.
+
+- `backend/handlers/modulos_faltantes_test.go`:
+	- Agrega pruebas de extremo a extremo para firma+envio+acuse y contingencia+reconexion de DIAN.
+
+- `backend/handlers/empresa_permisos.go`:
+	- Clasifica acciones DIAN de escritura (`firmar_xml_real`, `enviar_documento_real`, `reconexion_dian`) como flujo de aprobacion.
+
+- `documentos/diagramas/estructura_del_codigo.md` y `documentos/diagramas/diagrama_flujo_procesos.md`:
+	- Actualizan arquitectura y flujo funcional del modulo DIAN con firma real, envio/acuse y reconexion de contingencia.
+
+Actualizacion 2026-04-06: Cierre modulo 17 (Facturacion electronica)
+
+- `backend/db/facturacion_electronica.go`:
+	- Agrega la tabla `facturacion_electronica_reintentos` para cola de integracion fiscal por documento.
+	- Incorpora funciones `Get/Upsert/ListFacturacionElectronicaRetry*` con filtros por estado, vencimiento e inactivos.
+
+- `backend/handlers/facturacion_electronica.go`:
+	- Agrega acciones API `reintentos`, `procesar_reintentos`, `reconciliacion` y `reconciliar_estados`.
+	- Integra despacho fiscal por proveedor en acciones transaccionales y respuesta `integracion_fiscal` + `cola_reintentos`.
+	- Agrega logica de contingencia y programacion de `proximo_intento` en fallos de integracion.
+
+- `backend/handlers/empresa_permisos.go`:
+	- Clasifica `procesar_reintentos` y `reconciliar_estados` como acciones de aprobacion en operaciones de escritura.
+
+- `backend/db/eventos_contables.go`:
+	- Amplia contrato de eventos del modulo `facturacion` para trazabilidad de integracion/contingencia.
+
+- `backend/db/facturacion_electronica_test.go`:
+	- Amplia cobertura de DB para cola FE (upsert/get/list y normalizacion de estados).
+
+- `backend/handlers/facturacion_electronica_reintentos_test.go`:
+	- Nuevo archivo de pruebas para endpoints de reintentos y reconciliacion FE.
+
+- `estructura_bd.md` y `documentos/estructura_bd.md`:
+	- Sincronizan definicion de la tabla `facturacion_electronica_reintentos` y sus relaciones logicas.
+
+- `documentos/diagramas/estructura_del_codigo.md` y `documentos/diagramas/diagrama_flujo_procesos.md`:
+	- Actualizan arquitectura y flujo funcional de facturacion con cola FE, reintentos y contingencia.
+
+Actualizacion 2026-04-06: Cierre modulo 16 (Compras)
+
+- `backend/db/documentos_transaccionales.go`:
+	- Amplia `empresa_compras_documentos` con aprobacion multinivel (`requiere_aprobacion`, niveles, nivel actual y `aprobadores_json`).
+	- Agrega persistencia de recepcion parcial por item (`recepcion_detalle_json`) y resumen consolidado (`recepcion_resumen_json`).
+	- Agrega campos de validacion documental (`validacion_documental_estado`, referencias de proveedor/factura/entrada).
+
+- `backend/handlers/compras.go`:
+	- Incorpora acciones del nuevo flujo documental de compras: `solicitar_aprobacion`, `aprobar_compra`, `rechazar_compra`, `recepcionar_parcial_compra` y `validar_documentos`.
+	- Consolida transicion a recepcion total cuando no quedan pendientes por item.
+
+- `backend/handlers/documentos_lifecycle.go`:
+	- Extiende transiciones validas de compras para estados de aprobacion multinivel, rechazo y recepcion parcial.
+
+- `backend/handlers/empresa_permisos.go`:
+	- Clasifica nuevas acciones criticas de compras dentro del flujo de permiso de aprobacion.
+
+- `backend/handlers/compras_documentos_test.go` y `backend/db/documentos_transaccionales_test.go`:
+	- Amplian cobertura para aprobacion multinivel, recepcion parcial con diferencias y validacion documental.
+
+- `web/administrar_empresa/compras.html`:
+	- Amplia formulario, filtros/KPI y acciones UI para operar el flujo documental de compras avanzado.
+
+- `estructura_bd.md` y `documentos/estructura_bd.md`:
+	- Sincronizan definicion de `empresa_compras_documentos` con campos nuevos del modulo 16.
+
+- `documentos/diagramas/estructura_del_codigo.md` y `documentos/diagramas/diagrama_flujo_procesos.md`:
+	- Actualizan arquitectura y flujo funcional del ciclo documental de compras con aprobacion multinivel, recepcion parcial y validacion documental.
+
 Actualizacion 2026-04-06: Avance modulo 14 (Propinas fiscales, ajuste manual y conciliacion)
 
 - `backend/db/propinas.go`:

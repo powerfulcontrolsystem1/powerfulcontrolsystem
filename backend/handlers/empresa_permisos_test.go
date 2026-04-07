@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -766,6 +767,243 @@ func TestEmpresaPermisosContextoHandlerIncluyeMatrizRoles(t *testing.T) {
 	}
 	if superAdmin.Resumen.AccionesHabilitadas == 0 {
 		t.Fatalf("summary for super_administrador must expose enabled actions")
+	}
+}
+
+func TestEmpresaPermisosContextoHandlerMatrizRolesCumplePoliticaPorModuloAccion(t *testing.T) {
+	dbEmp := openPermsTestDB(t, "empresas.db")
+	dbSuper := openPermsTestDB(t, "super.db")
+	ensurePermsEmpresasSchema(t, dbEmp)
+	ensurePermsAdminSchema(t, dbSuper)
+	seedPermsEmpresa(t, dbEmp, 74, "admin@matriz.com")
+	seedPermsAdmin(t, dbSuper, "admin@matriz.com", "administrador")
+
+	h := WithEmpresaSeguridadPermissions(dbEmp, dbSuper, EmpresaPermisosContextoHandler(dbSuper))
+	req := httptest.NewRequest(http.MethodGet, "/api/empresa/permisos_contexto?empresa_id=74&include_matrix=1", nil)
+	req = req.WithContext(context.WithValue(req.Context(), "adminEmail", "admin@matriz.com"))
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200 for include_matrix policy test, got %d body=%s", rr.Code, rr.Body.String())
+	}
+
+	var resp empresaPermisosContextResponse
+	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode include_matrix policy response: %v body=%s", err, rr.Body.String())
+	}
+
+	if got, want := len(resp.MatrizRoles), len(permissionRolesCatalogOrdered); got != want {
+		t.Fatalf("expected %d roles in matrix, got %d", want, got)
+	}
+
+	for _, role := range permissionRolesCatalogOrdered {
+		roleRow, ok := findPermissionRoleRow(resp.MatrizRoles, role)
+		if !ok {
+			t.Fatalf("role %q must be present in matriz_roles", role)
+		}
+		for _, modulo := range permissionModulesCatalogOrdered {
+			moduleRow, ok := findPermissionModuleRow(roleRow.Modulos, modulo)
+			if !ok {
+				t.Fatalf("module %q must be present for role %q", modulo, role)
+			}
+			for _, accion := range permissionActionsCatalogOrdered {
+				expected := expectedPolicyPermission(role, modulo, accion)
+				actual := moduleRow.Acciones[accion]
+				if actual != expected {
+					t.Fatalf("unexpected permission role=%s modulo=%s accion=%s expected=%v got=%v", role, modulo, accion, expected, actual)
+				}
+			}
+		}
+	}
+}
+
+func TestWithEmpresaSeguridadPermissionsRequiereAprobacionParaCambioPermisos(t *testing.T) {
+	dbEmp := openPermsTestDB(t, "empresas.db")
+	dbSuper := openPermsTestDB(t, "super.db")
+	ensurePermsEmpresasSchema(t, dbEmp)
+	ensurePermsAdminSchema(t, dbSuper)
+	seedPermsEmpresa(t, dbEmp, 80, "admin@seguridad.com")
+	seedPermsAdmin(t, dbSuper, "admin@seguridad.com", "administrador")
+
+	nextCalled := false
+	h := WithEmpresaSeguridadPermissions(dbEmp, dbSuper, func(w http.ResponseWriter, r *http.Request) {
+		nextCalled = true
+		w.WriteHeader(http.StatusOK)
+	})
+
+	req := httptest.NewRequest(http.MethodPost, "/api/empresa/usuarios", strings.NewReader(`{"empresa_id":80,"email":"nuevo@empresa.com","nombre":"Nuevo","rol_usuario_id":1}`))
+	req.Header.Set("Content-Type", "application/json")
+	req = req.WithContext(context.WithValue(req.Context(), "adminEmail", "admin@seguridad.com"))
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 when approval evidence is missing, got %d body=%s", rr.Code, rr.Body.String())
+	}
+	if nextCalled {
+		t.Fatalf("next handler must not be called without approval evidence")
+	}
+}
+
+func TestWithEmpresaSeguridadPermissionsAceptaAprobacionTrazableYRegistraMetadata(t *testing.T) {
+	dbEmp := openPermsTestDB(t, "empresas.db")
+	dbSuper := openPermsTestDB(t, "super.db")
+	ensurePermsEmpresasSchema(t, dbEmp)
+	ensurePermsAdminSchema(t, dbSuper)
+	seedPermsEmpresa(t, dbEmp, 81, "admin@seguridad.com")
+	seedPermsAdmin(t, dbSuper, "admin@seguridad.com", "administrador")
+
+	nextCalled := false
+	capturedApprovedBy := ""
+	capturedApprovalCode := ""
+	h := WithEmpresaSeguridadPermissions(dbEmp, dbSuper, func(w http.ResponseWriter, r *http.Request) {
+		nextCalled = true
+		capturedApprovedBy = r.Header.Get(permissionApprovalHeaderBy)
+		capturedApprovalCode = r.Header.Get(permissionApprovalHeaderCode)
+		w.WriteHeader(http.StatusOK)
+	})
+
+	req := httptest.NewRequest(
+		http.MethodPost,
+		"/api/empresa/usuarios?aprobado_por=director.seguridad%40empresa.com&codigo_aprobacion=APR-SEG-001&motivo_aprobacion=ajuste_rol",
+		strings.NewReader(`{"empresa_id":81,"email":"nuevo@empresa.com","nombre":"Nuevo","rol_usuario_id":1}`),
+	)
+	req.Header.Set("Content-Type", "application/json")
+	req = req.WithContext(context.WithValue(req.Context(), "adminEmail", "admin@seguridad.com"))
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200 when approval evidence is present, got %d body=%s", rr.Code, rr.Body.String())
+	}
+	if !nextCalled {
+		t.Fatalf("next handler must be called with valid approval evidence")
+	}
+	if capturedApprovedBy != "director.seguridad@empresa.com" {
+		t.Fatalf("expected approved_by header in request context, got %q", capturedApprovedBy)
+	}
+	if capturedApprovalCode != "APR-SEG-001" {
+		t.Fatalf("expected approval_code header in request context, got %q", capturedApprovalCode)
+	}
+
+	var metadataJSON string
+	err := dbEmp.QueryRow(`SELECT metadata_json FROM empresa_auditoria_eventos WHERE empresa_id = ? ORDER BY id DESC LIMIT 1`, 81).Scan(&metadataJSON)
+	if err != nil {
+		t.Fatalf("expected audit metadata for permission change, query error: %v", err)
+	}
+
+	metadata := map[string]interface{}{}
+	if err := json.Unmarshal([]byte(metadataJSON), &metadata); err != nil {
+		t.Fatalf("decode audit metadata: %v metadata=%s", err, metadataJSON)
+	}
+
+	if required, ok := metadata["permission_approval_required"].(bool); !ok || !required {
+		t.Fatalf("expected permission_approval_required=true in metadata, got %v", metadata["permission_approval_required"])
+	}
+	if got := strings.TrimSpace(toStringForTest(metadata["permission_approved_by"])); got != "director.seguridad@empresa.com" {
+		t.Fatalf("expected permission_approved_by in metadata, got %q", got)
+	}
+	if got := strings.TrimSpace(toStringForTest(metadata["permission_approval_code"])); got != "APR-SEG-001" {
+		t.Fatalf("expected permission_approval_code in metadata, got %q", got)
+	}
+}
+
+func expectedPolicyPermission(role, modulo, accion string) bool {
+	role = normalizePermissionRole(role)
+	if role == "super_administrador" {
+		return true
+	}
+
+	allReadRoles := map[string]bool{
+		"admin_empresa":       true,
+		"supervisor_sucursal": true,
+		"cajero":              true,
+		"inventario":          true,
+		"compras":             true,
+		"contabilidad":        true,
+		"auditor":             true,
+	}
+	if accion == permActionRead {
+		return allReadRoles[role]
+	}
+
+	allowedByModule := map[string]map[string]map[string]bool{
+		permModuleVentas: {
+			permActionCreate:  {"admin_empresa": true, "supervisor_sucursal": true, "cajero": true},
+			permActionUpdate:  {"admin_empresa": true, "supervisor_sucursal": true, "cajero": true},
+			permActionDelete:  {"admin_empresa": true, "supervisor_sucursal": true, "cajero": true},
+			permActionApprove: {"admin_empresa": true, "supervisor_sucursal": true, "cajero": true},
+		},
+		permModuleInventario: {
+			permActionCreate:  {"admin_empresa": true, "supervisor_sucursal": true, "inventario": true},
+			permActionUpdate:  {"admin_empresa": true, "supervisor_sucursal": true, "inventario": true},
+			permActionDelete:  {"admin_empresa": true, "supervisor_sucursal": true, "inventario": true},
+			permActionApprove: {"admin_empresa": true, "supervisor_sucursal": true, "inventario": true},
+		},
+		permModuleFinanzas: {
+			permActionCreate:  {"admin_empresa": true, "contabilidad": true},
+			permActionUpdate:  {"admin_empresa": true, "contabilidad": true},
+			permActionDelete:  {"contabilidad": true},
+			permActionApprove: {"admin_empresa": true, "contabilidad": true},
+		},
+		permModuleClientes: {
+			permActionCreate:  {"admin_empresa": true, "supervisor_sucursal": true, "cajero": true},
+			permActionUpdate:  {"admin_empresa": true, "supervisor_sucursal": true, "cajero": true},
+			permActionDelete:  {},
+			permActionApprove: {"admin_empresa": true, "supervisor_sucursal": true, "cajero": true},
+		},
+		permModuleCompras: {
+			permActionCreate:  {"admin_empresa": true, "supervisor_sucursal": true, "compras": true},
+			permActionUpdate:  {"admin_empresa": true, "supervisor_sucursal": true, "compras": true},
+			permActionDelete:  {},
+			permActionApprove: {"admin_empresa": true, "supervisor_sucursal": true, "compras": true},
+		},
+		permModuleFacturacion: {
+			permActionCreate:  {"admin_empresa": true, "cajero": true},
+			permActionUpdate:  {"admin_empresa": true, "cajero": true},
+			permActionDelete:  {},
+			permActionApprove: {"admin_empresa": true, "cajero": true},
+		},
+		permModuleSeguridad: {
+			permActionCreate:  {"admin_empresa": true},
+			permActionUpdate:  {"admin_empresa": true},
+			permActionDelete:  {"admin_empresa": true},
+			permActionApprove: {"admin_empresa": true},
+		},
+	}
+
+	moduleMap, ok := allowedByModule[modulo]
+	if !ok {
+		return false
+	}
+	actionMap, ok := moduleMap[accion]
+	if !ok {
+		return false
+	}
+	return actionMap[role]
+}
+
+func toStringForTest(v interface{}) string {
+	switch typed := v.(type) {
+	case string:
+		return typed
+	case float64:
+		return strconv.FormatFloat(typed, 'f', -1, 64)
+	case int64:
+		return strconv.FormatInt(typed, 10)
+	case int:
+		return strconv.Itoa(typed)
+	case bool:
+		if typed {
+			return "true"
+		}
+		return "false"
+	default:
+		return ""
 	}
 }
 
