@@ -81,27 +81,31 @@ type ChatMensaje struct {
 
 // ChatTarea representa una tarea asociada a una empresa y opcionalmente a una conversacion.
 type ChatTarea struct {
-	ID                 int64  `json:"id"`
-	EmpresaID          int64  `json:"empresa_id"`
-	ConversacionID     int64  `json:"conversacion_id,omitempty"`
-	Titulo             string `json:"titulo"`
-	Descripcion        string `json:"descripcion,omitempty"`
-	Prioridad          string `json:"prioridad,omitempty"`
-	FechaLimite        string `json:"fecha_limite,omitempty"`
-	AsignadoTipo       string `json:"asignado_tipo,omitempty"`
-	AsignadoRefID      int64  `json:"asignado_ref_id,omitempty"`
-	AsignadoNombre     string `json:"asignado_nombre,omitempty"`
-	AsignadoEmail      string `json:"asignado_email,omitempty"`
-	CreadoPorTipo      string `json:"creado_por_tipo,omitempty"`
-	CreadoPorEmail     string `json:"creado_por_email,omitempty"`
-	EstadoTarea        string `json:"estado_tarea,omitempty"`
-	PorcentajeAvance   int    `json:"porcentaje_avance,omitempty"`
-	CompletadaEn       string `json:"completada_en,omitempty"`
-	FechaCreacion      string `json:"fecha_creacion,omitempty"`
-	FechaActualizacion string `json:"fecha_actualizacion,omitempty"`
-	UsuarioCreador     string `json:"usuario_creador,omitempty"`
-	Estado             string `json:"estado,omitempty"`
-	Observaciones      string `json:"observaciones,omitempty"`
+	ID                 int64   `json:"id"`
+	EmpresaID          int64   `json:"empresa_id"`
+	ConversacionID     int64   `json:"conversacion_id,omitempty"`
+	Titulo             string  `json:"titulo"`
+	Descripcion        string  `json:"descripcion,omitempty"`
+	Prioridad          string  `json:"prioridad,omitempty"`
+	FechaLimite        string  `json:"fecha_limite,omitempty"`
+	AsignadoTipo       string  `json:"asignado_tipo,omitempty"`
+	AsignadoRefID      int64   `json:"asignado_ref_id,omitempty"`
+	AsignadoNombre     string  `json:"asignado_nombre,omitempty"`
+	AsignadoEmail      string  `json:"asignado_email,omitempty"`
+	CreadoPorTipo      string  `json:"creado_por_tipo,omitempty"`
+	CreadoPorEmail     string  `json:"creado_por_email,omitempty"`
+	EstadoTarea        string  `json:"estado_tarea,omitempty"`
+	PorcentajeAvance   int     `json:"porcentaje_avance,omitempty"`
+	CompletadaEn       string  `json:"completada_en,omitempty"`
+	NotaVozURL         string  `json:"nota_voz_url,omitempty"`
+	NotaVozMimeType    string  `json:"nota_voz_mime_type,omitempty"`
+	NotaVozTamanoBytes int64   `json:"nota_voz_tamano_bytes,omitempty"`
+	NotaVozDuracionSeg float64 `json:"nota_voz_duracion_segundos,omitempty"`
+	FechaCreacion      string  `json:"fecha_creacion,omitempty"`
+	FechaActualizacion string  `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador     string  `json:"usuario_creador,omitempty"`
+	Estado             string  `json:"estado,omitempty"`
+	Observaciones      string  `json:"observaciones,omitempty"`
 }
 
 // EnsureEmpresaChatTareasSchema crea y migra las tablas del modulo chat/tareas en empresas.db.
@@ -187,6 +191,10 @@ func EnsureEmpresaChatTareasSchema(dbConn *sql.DB) error {
 			estado_tarea TEXT DEFAULT 'pendiente',
 			porcentaje_avance INTEGER DEFAULT 0,
 			completada_en TEXT,
+			nota_voz_url TEXT,
+			nota_voz_mime_type TEXT,
+			nota_voz_tamano_bytes INTEGER DEFAULT 0,
+			nota_voz_duracion_segundos REAL DEFAULT 0,
 			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
 			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
 			usuario_creador TEXT,
@@ -358,6 +366,18 @@ func EnsureEmpresaChatTareasSchema(dbConn *sql.DB) error {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "chat_tareas", "completada_en", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "chat_tareas", "nota_voz_url", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "chat_tareas", "nota_voz_mime_type", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "chat_tareas", "nota_voz_tamano_bytes", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "chat_tareas", "nota_voz_duracion_segundos", "REAL DEFAULT 0"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "chat_tareas", "fecha_actualizacion", "TEXT"); err != nil {
@@ -1189,12 +1209,16 @@ func CreateChatTarea(dbConn *sql.DB, payload ChatTarea) (int64, error) {
 		estado_tarea,
 		porcentaje_avance,
 		completada_en,
+		nota_voz_url,
+		nota_voz_mime_type,
+		nota_voz_tamano_bytes,
+		nota_voz_duracion_segundos,
 		usuario_creador,
 		estado,
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CASE WHEN ? = 'completada' THEN datetime('now','localtime') ELSE NULL END, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CASE WHEN ? = 'completada' THEN datetime('now','localtime') ELSE NULL END, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
 		payload.EmpresaID,
 		nullableInt64(payload.ConversacionID),
 		strings.TrimSpace(payload.Titulo),
@@ -1210,6 +1234,10 @@ func CreateChatTarea(dbConn *sql.DB, payload ChatTarea) (int64, error) {
 		estadoTarea,
 		porcentaje,
 		estadoTarea,
+		strings.TrimSpace(payload.NotaVozURL),
+		strings.TrimSpace(payload.NotaVozMimeType),
+		payload.NotaVozTamanoBytes,
+		payload.NotaVozDuracionSeg,
 		strings.TrimSpace(payload.UsuarioCreador),
 		normalizeChatEstado(payload.Estado),
 		strings.TrimSpace(payload.Observaciones),
@@ -1239,6 +1267,10 @@ func GetChatTareas(dbConn *sql.DB, empresaID, conversacionID int64, includeInact
 		COALESCE(estado_tarea, 'pendiente'),
 		COALESCE(porcentaje_avance, 0),
 		COALESCE(completada_en, ''),
+		COALESCE(nota_voz_url, ''),
+		COALESCE(nota_voz_mime_type, ''),
+		COALESCE(nota_voz_tamano_bytes, 0),
+		COALESCE(nota_voz_duracion_segundos, 0),
 		COALESCE(fecha_creacion, ''),
 		COALESCE(fecha_actualizacion, ''),
 		COALESCE(usuario_creador, ''),
@@ -1311,6 +1343,10 @@ func GetChatTareas(dbConn *sql.DB, empresaID, conversacionID int64, includeInact
 			&item.EstadoTarea,
 			&item.PorcentajeAvance,
 			&item.CompletadaEn,
+			&item.NotaVozURL,
+			&item.NotaVozMimeType,
+			&item.NotaVozTamanoBytes,
+			&item.NotaVozDuracionSeg,
 			&item.FechaCreacion,
 			&item.FechaActualizacion,
 			&item.UsuarioCreador,
@@ -1348,6 +1384,10 @@ func UpdateChatTarea(dbConn *sql.DB, payload ChatTarea) error {
 			WHEN ? = 'completada' THEN COALESCE(completada_en, datetime('now','localtime'))
 			ELSE NULL
 		END,
+		nota_voz_url = ?,
+		nota_voz_mime_type = ?,
+		nota_voz_tamano_bytes = ?,
+		nota_voz_duracion_segundos = ?,
 		observaciones = ?,
 		fecha_actualizacion = datetime('now','localtime')
 	WHERE id = ? AND empresa_id = ?`,
@@ -1363,9 +1403,32 @@ func UpdateChatTarea(dbConn *sql.DB, payload ChatTarea) error {
 		estadoTarea,
 		porcentaje,
 		estadoTarea,
+		strings.TrimSpace(payload.NotaVozURL),
+		strings.TrimSpace(payload.NotaVozMimeType),
+		payload.NotaVozTamanoBytes,
+		payload.NotaVozDuracionSeg,
 		strings.TrimSpace(payload.Observaciones),
 		payload.ID,
 		payload.EmpresaID,
+	)
+	return err
+}
+
+// SetChatTareaNotaVoz registra o reemplaza la nota de voz de una tarea.
+func SetChatTareaNotaVoz(dbConn *sql.DB, empresaID, id int64, fileURL, mimeType string, tamanoBytes int64, duracionSegundos float64) error {
+	_, err := dbConn.Exec(`UPDATE chat_tareas
+	SET nota_voz_url = ?,
+		nota_voz_mime_type = ?,
+		nota_voz_tamano_bytes = ?,
+		nota_voz_duracion_segundos = ?,
+		fecha_actualizacion = datetime('now','localtime')
+	WHERE empresa_id = ? AND id = ?`,
+		strings.TrimSpace(fileURL),
+		strings.TrimSpace(mimeType),
+		tamanoBytes,
+		duracionSegundos,
+		empresaID,
+		id,
 	)
 	return err
 }

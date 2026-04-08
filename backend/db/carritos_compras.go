@@ -421,6 +421,20 @@ func defaultMoneda(v string) string {
 	return v
 }
 
+func defaultMonedaEmpresa(dbConn *sql.DB, empresaID int64, payloadMoneda string) string {
+	if strings.TrimSpace(payloadMoneda) != "" {
+		return defaultMoneda(payloadMoneda)
+	}
+	if empresaID <= 0 {
+		return defaultMoneda("")
+	}
+	cfg, err := GetEmpresaConfiguracionAvanzada(dbConn, empresaID)
+	if err != nil || cfg == nil {
+		return defaultMoneda("")
+	}
+	return defaultMoneda(cfg.MonedaCodigo)
+}
+
 func defaultEstadoCarrito(v string) string {
 	v = strings.TrimSpace(strings.ToLower(v))
 	if v == "" {
@@ -690,6 +704,7 @@ func CreateCarritoCompra(dbConn *sql.DB, payload CarritoCompra) (int64, error) {
 	if metodoPago == "" {
 		metodoPago = "efectivo"
 	}
+	moneda := defaultMonedaEmpresa(dbConn, payload.EmpresaID, payload.Moneda)
 	res, err := dbConn.Exec(`INSERT INTO carritos_compras (
 		empresa_id,
 		codigo,
@@ -724,7 +739,7 @@ func CreateCarritoCompra(dbConn *sql.DB, payload CarritoCompra) (int64, error) {
 		defaultCanalVenta(payload.CanalVenta),
 		nullableInt64(payload.ClienteID),
 		defaultEstadoCarrito(payload.EstadoCarrito),
-		defaultMoneda(payload.Moneda),
+		moneda,
 		strings.TrimSpace(payload.ReferenciaExterna),
 		strings.TrimSpace(payload.UsuarioCreador),
 		strings.TrimSpace(payload.Observaciones),

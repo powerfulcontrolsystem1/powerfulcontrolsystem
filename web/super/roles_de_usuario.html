@@ -95,6 +95,7 @@
           '<td>' + (item.descripcion || '') + '</td>' +
           '<td>' + (item.estado || '') + '</td>' +
           '<td class="actions">' +
+          '<button data-id="' + item.id + '" class="perms btn">Permisos</button> ' +
           '<button data-id="' + item.id + '" class="edit btn secondary">Editar</button> ' +
           '<button data-id="' + item.id + '" class="del btn danger">Eliminar</button> ' +
           '<button data-id="' + item.id + '" data-activo="' + activo + '" class="toggle btn">' + toggleLabel + '</button>' +
@@ -123,6 +124,14 @@
           document.getElementById('cancelBtn').style.display = '';
           setMessage('', false);
           window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+      });
+
+      document.querySelectorAll('.perms').forEach(function(btn) {
+        btn.onclick = function() {
+          const id = Number(btn.getAttribute('data-id') || 0);
+          if (!id) return;
+          window.location.href = '/super/permisos_rol.html?rol_id=' + encodeURIComponent(id);
         };
       });
 

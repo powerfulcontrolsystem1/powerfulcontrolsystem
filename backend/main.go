@@ -411,6 +411,9 @@ func main() {
 	if err := dbpkg.EnsureEmpresaVentaPublicaSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure venta publica schema in empresas db: %v", err)
 	}
+	if err := dbpkg.EnsureEmpresaSoporteRemotoSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure soporte remoto schema in empresas db: %v", err)
+	}
 	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-01-001-baseline", "baseline schema snapshot: users, empresas, productos, clientes, carritos, configuracion_avanzada"); err != nil {
 		log.Fatalf("failed to register schema migration in empresas db: %v", err)
 	}
@@ -504,6 +507,12 @@ func main() {
 	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-07-028-venta-publica-wompi", "modulo 37: venta publica por empresa con slug, catalogo y pagos wompi/nequi por credenciales empresariales"); err != nil {
 		log.Fatalf("failed to register venta publica wompi schema migration in empresas db: %v", err)
 	}
+	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-08-029-soporte-remoto-empresa", "modulo de soporte remoto por empresa con dispositivos, sesiones y visor embebible para operacion asistida"); err != nil {
+		log.Fatalf("failed to register soporte remoto schema migration in empresas db: %v", err)
+	}
+	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-08-030-configuracion-monetaria-numerica", "configuracion avanzada por empresa para moneda operativa, sistema numerico y precision decimal"); err != nil {
+		log.Fatalf("failed to register configuracion monetaria/numerica schema migration in empresas db: %v", err)
+	}
 	// Crear tipos_de_empresas en la base de datos de superadministrador (ubicación centralizada)
 	createTiposSuper := `CREATE TABLE IF NOT EXISTS tipos_de_empresas (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -547,6 +556,9 @@ func main() {
 	);`
 	if _, err := dbSuper.Exec(createTiposDeUsuario); err != nil {
 		log.Fatalf("failed to create tipos_de_usuario table in super db: %v", err)
+	}
+	if err := dbpkg.EnsureRolesPermisosSchema(dbSuper); err != nil {
+		log.Fatalf("failed to ensure roles permisos schema in super db: %v", err)
 	}
 
 	// Crear tablas en dbSuper (superadministrador)
@@ -626,10 +638,16 @@ func main() {
 		descripcion TEXT,
 		valor REAL DEFAULT 0,
 		duracion_dias INTEGER DEFAULT 0,
+		modulos_habilitados TEXT,
+		super_rol_habilitado INTEGER DEFAULT 0,
 		fecha_inicio TEXT,
 		fecha_fin TEXT,
 		activo INTEGER DEFAULT 1,
-		fecha_creacion TEXT DEFAULT (datetime('now','localtime'))
+		fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+		fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+		usuario_creador TEXT,
+		estado TEXT DEFAULT 'activo',
+		observaciones TEXT
 	);`
 	if _, err := dbSuper.Exec(createLic); err != nil {
 		log.Fatalf("failed to create licencias table in super db: %v", err)
@@ -676,10 +694,16 @@ func main() {
 		addIfMissing("descripcion TEXT", "descripcion")
 		addIfMissing("valor REAL DEFAULT 0", "valor")
 		addIfMissing("duracion_dias INTEGER DEFAULT 0", "duracion_dias")
+		addIfMissing("modulos_habilitados TEXT", "modulos_habilitados")
+		addIfMissing("super_rol_habilitado INTEGER DEFAULT 0", "super_rol_habilitado")
 		addIfMissing("fecha_inicio TEXT", "fecha_inicio")
 		addIfMissing("fecha_fin TEXT", "fecha_fin")
 		addIfMissing("activo INTEGER DEFAULT 1", "activo")
 		addIfMissing("fecha_creacion TEXT DEFAULT (datetime('now','localtime'))", "fecha_creacion")
+		addIfMissing("fecha_actualizacion TEXT DEFAULT (datetime('now','localtime'))", "fecha_actualizacion")
+		addIfMissing("usuario_creador TEXT", "usuario_creador")
+		addIfMissing("estado TEXT DEFAULT 'activo'", "estado")
+		addIfMissing("observaciones TEXT", "observaciones")
 	}
 	ensureLicenciasSchema(dbSuper)
 
@@ -820,9 +844,21 @@ func main() {
 	if err := dbpkg.EnsureSuperCorreoNotificacionesPruebaSchema(dbSuper); err != nil {
 		log.Fatalf("failed to ensure super_correo_notificaciones_prueba schema: %v", err)
 	}
+	if err := dbpkg.EnsureSuperVentaDigitalSchema(dbSuper); err != nil {
+		log.Fatalf("failed to ensure super venta digital schema: %v", err)
+	}
 
 	if err := dbpkg.RegisterSchemaMigration(dbSuper, "superadministrador", "2026-04-01-001-baseline", "baseline schema snapshot: administradores, licencias, configuraciones, sesiones, pagos"); err != nil {
 		log.Fatalf("failed to register schema migration in super db: %v", err)
+	}
+	if err := dbpkg.RegisterSchemaMigration(dbSuper, "superadministrador", "2026-04-08-002-roles-permisos-dinamicos", "configuracion dinamica de permisos por rol para modulos y paginas del panel empresa"); err != nil {
+		log.Fatalf("failed to register roles permisos schema migration in super db: %v", err)
+	}
+	if err := dbpkg.RegisterSchemaMigration(dbSuper, "superadministrador", "2026-04-08-003-venta-digital-super", "modulo de venta digital global administrado por super con catalogo, ordenes y entrega por correo tras pago wompi"); err != nil {
+		log.Fatalf("failed to register venta digital super schema migration in super db: %v", err)
+	}
+	if err := dbpkg.RegisterSchemaMigration(dbSuper, "superadministrador", "2026-04-08-004-licencias-permisos-superrol", "licencias con modulos habilitados y bandera super_rol_habilitado para aplicar permisos efectivos por empresa"); err != nil {
+		log.Fatalf("failed to register licencias permisos superrol schema migration in super db: %v", err)
 	}
 
 	// Inicializar tabla de métricas y arrancar collector periódico
@@ -853,6 +889,7 @@ func main() {
 	// Endpoints CRUD para tipos de empresas
 	http.HandleFunc("/super/api/tipos_empresas", handlers.TiposEmpresasHandler(dbSuper))
 	http.HandleFunc("/super/api/roles_de_usuario", handlers.RolesDeUsuarioHandler(dbSuper))
+	http.HandleFunc("/super/api/roles_de_usuario/permisos", handlers.RolesDeUsuarioPermisosHandler(dbSuper))
 	http.HandleFunc("/super/api/tipos_de_usuario", handlers.TiposDeUsuarioHandler(dbSuper))
 	// Endpoint CRUD para empresas (guardadas en empresas.db)
 	http.HandleFunc("/super/api/empresas", handlers.EmpresasHandler(dbEmpresas, dbSuper))
@@ -897,6 +934,8 @@ func main() {
 	http.HandleFunc("/api/empresa/carritos_compra/items", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCarritoItemsHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/venta_publica", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaVentaPublicaHandler(dbEmpresas)))
 	http.HandleFunc("/api/public/venta_publica", handlers.PublicVentaPublicaHandler(dbEmpresas))
+	http.HandleFunc("/api/public/soporte_remoto", handlers.PublicEmpresaSoporteRemotoAgentHandler(dbEmpresas))
+	http.HandleFunc("/api/public/venta_digital", handlers.PublicVentaDigitalHandler(dbSuper))
 	http.HandleFunc("/api/empresa/reservas_hotel", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaReservasHotelHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/tarifas_por_minutos", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaTarifasPorMinutosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/tarifas_por_dia", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaTarifasPorDiaHandler(dbEmpresas)))
@@ -913,6 +952,7 @@ func main() {
 	http.HandleFunc("/api/empresa/chat_tareas/mensajes", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaChatTareasMensajesHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/chat_tareas/mensajes/adjunto", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaChatTareasAdjuntoUploadHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/chat_tareas/tareas", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaChatTareasTareasHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/chat_tareas/tareas/nota_voz", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaChatTareasTareaNotaVozUploadHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/ubicacion_gps/dispositivos", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaUbicacionGPSDispositivosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/ubicacion_gps/recorridos", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaUbicacionGPSRecorridosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/finanzas/movimientos", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasMovimientosHandler(dbEmpresas)))
@@ -923,6 +963,7 @@ func main() {
 	http.HandleFunc("/api/empresa/calculadora", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCalculadoraHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/creditos", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCreditosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/backups", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaBackupsHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/soporte_remoto", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaSoporteRemotoHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/reportes", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaReportesHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/graficos_estadisticas", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaGraficosEstadisticasHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/auditoria/eventos", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaAuditoriaEventosHandler(dbEmpresas)))
@@ -940,6 +981,8 @@ func main() {
 	http.HandleFunc("/super/api/config/wompi", handlers.WompiConfigHandler(dbSuper))
 	// Endpoint para gestionar SMTP Gmail (GET/PUT)
 	http.HandleFunc("/super/api/config/gmail", handlers.GmailConfigHandler(dbSuper))
+	// Endpoint super para administrar venta digital global
+	http.HandleFunc("/super/api/venta_digital", handlers.SuperVentaDigitalHandler(dbSuper))
 	// Endpoint para gestionar credenciales IA de modelos populares (GET/PUT)
 	http.HandleFunc("/super/api/config/ai", handlers.AIModelsConfigHandler(dbSuper))
 	// Endpoint para respaldo/restauracion de configuracion critica del panel super

@@ -1,6 +1,6 @@
 # Estructura del codigo
 
-Fecha de actualizacion: 2026-04-07
+Fecha de actualizacion: 2026-04-08
 
 ## Objetivo
 Este documento resume la estructura tecnica principal del sistema y sirve como referencia para mantenimiento y evolucion.
@@ -55,6 +55,193 @@ flowchart TD
 
 ## Regla de mantenimiento
 Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe reflejarse en este documento y en los diagramas relacionados dentro de documentos/diagramas/.
+
+## Actualizacion 2026-04-08 (chat/tareas: documentos/fotos y actor usuario-admin)
+
+- Backend handlers:
+  - `backend/handlers/chat_tareas.go`:
+    - resuelve actor autenticado por empresa (`usuario`, `admin` o `sistema`) para mensajes, adjuntos y tareas.
+    - evita suplantacion de autor (`autor_tipo`, `autor_ref_id`, `autor_nombre`, `autor_email`) usando identidad de sesion.
+    - auto-registra al emisor como participante de la conversacion para mantener trazabilidad colaborativa.
+    - al crear conversaciones desde usuario, agrega automaticamente al administrador propietario de la empresa (`empresas.usuario_creador`) como participante `admin`.
+    - amplía whitelist de adjuntos con formatos documentales de oficina (`doc/docx/xls/xlsx/ppt/pptx/rtf/odt/ods/odp`).
+
+- Frontend:
+  - `web/administrar_empresa/chat_y_tareas.html`:
+    - amplía `accept` de archivos para documentos y fotos.
+    - deriva actor de sesion y envía metadata de autor coherente para mensajes/adjuntos.
+    - clasifica burbuja propia por actor efectivo en sesion.
+
+- QA:
+  - `backend/handlers/chat_tareas_test.go` (nuevo):
+    - cubre autor `usuario` derivado en mensajes.
+    - cubre upload de adjunto `.docx`.
+    - cubre inclusion automatica de participantes usuario-admin en creacion de conversacion.
+
+## Actualizacion 2026-04-08 (configuracion monetaria y numerica por empresa)
+
+- Backend DB:
+  - `backend/db/empresa_configuracion_avanzada.go`:
+    - amplía `empresa_configuracion_avanzada` con `moneda_codigo`, `sistema_numerico`, `usar_decimales`, `cantidad_decimales`.
+    - agrega normalizacion de moneda, sistema numerico y precision decimal en `Get/UpsertEmpresaConfiguracionAvanzada`.
+  - `backend/db/carritos_compras.go`:
+    - al crear carrito, hereda `moneda_codigo` configurada por empresa cuando el payload no envia moneda explicita.
+
+- Integracion de arranque/migraciones:
+  - `backend/main.go`:
+    - registra migracion `2026-04-08-030-configuracion-monetaria-numerica`.
+
+- Frontend:
+  - `web/administrar_empresa/configuracion.html`:
+    - agrega tarjeta de configuracion para moneda operativa, sistema numerico, uso de decimales y cantidad de digitos.
+    - integra guardado/carga sobre `/api/empresa/configuracion_avanzada`.
+
+## Actualizacion 2026-04-08 (chat/tareas con notas de voz + permisos por licencia)
+
+- Backend DB:
+  - `backend/db/chat_tareas.go`:
+    - amplía tabla `chat_tareas` con `nota_voz_url`, `nota_voz_mime_type`, `nota_voz_tamano_bytes`, `nota_voz_duracion_segundos`.
+    - agrega `SetChatTareaNotaVoz` para actualizar nota de voz por tarea y `empresa_id`.
+  - `backend/db/db.go`:
+    - amplía modelo/CRUD de `licencias` con `modulos_habilitados` y `super_rol_habilitado`.
+    - agrega `GetLicenciaPermisoPolicyByEmpresa` para resolver política activa de licencia por empresa.
+
+- Backend handlers/rutas:
+  - `backend/handlers/chat_tareas.go`:
+    - agrega endpoint `POST /api/empresa/chat_tareas/tareas/nota_voz` para upload de nota de voz por tarea.
+  - `backend/handlers/empresa_permisos.go`:
+    - aplica restricciones por licencia en middleware (módulos habilitados).
+    - calcula `rol_efectivo` (supervisor con `super_rol_habilitado` => capacidades de `admin_empresa`).
+    - amplía respuesta de `/api/empresa/permisos_contexto` con bloque `licencia` y `rol_efectivo`.
+  - `backend/main.go`:
+    - registra ruta `/api/empresa/chat_tareas/tareas/nota_voz`.
+    - actualiza bootstrap de `licencias` y registra migración `2026-04-08-004-licencias-permisos-superrol`.
+
+- Frontend:
+  - `web/administrar_empresa/chat_y_tareas.html`:
+    - agrega grabación de voz (MediaRecorder) para mensajes y tareas.
+    - integra upload de nota de voz de tarea y reproducción en lista de tareas.
+  - `web/super/licencias.html`:
+    - agrega configuración de módulos por licencia y bandera de super rol.
+  - `web/administrar_empresa/inicio.html`:
+    - agrega accesos directos dinámicos por permisos efectivos/licencia.
+  - `web/estilos.css`:
+    - agrega estilos de notas de voz, configuración de licencia por módulos y accesos directos de inicio.
+
+## Actualizacion 2026-04-08 (modulo soporte remoto empresarial)
+
+- Backend DB:
+  - `backend/db/soporte_remoto.go` (nuevo):
+    - agrega `EnsureEmpresaSoporteRemotoSchema`.
+    - crea tablas `empresa_soporte_remoto_configuracion`, `empresa_soporte_remoto_dispositivos` y `empresa_soporte_remoto_sesiones`.
+    - implementa flujo de dispositivos por empresa, validacion de acceso por PIN hash, heartbeat de agente y sesiones con token temporal de visualizacion.
+
+- Backend handlers:
+  - `backend/handlers/soporte_remoto.go` (nuevo):
+    - expone endpoint empresarial `/api/empresa/soporte_remoto` para configuracion, dispositivos, sesiones, aprobacion/finalizacion y resolver visualizacion.
+    - expone endpoint publico `/api/public/soporte_remoto` para heartbeat y actualizacion de estado de sesion por agente/plugin.
+
+- Integracion de arranque/rutas:
+  - `backend/main.go`:
+    - ejecuta `EnsureEmpresaSoporteRemotoSchema` en bootstrap.
+    - registra migracion `2026-04-08-029-soporte-remoto-empresa`.
+    - registra rutas `/api/empresa/soporte_remoto` y `/api/public/soporte_remoto`.
+  - `backend/utils/utils.go`:
+    - habilita acceso publico a `/api/public/soporte_remoto`.
+
+- Seguridad y menu empresa:
+  - `backend/handlers/empresa_permisos.go`:
+    - agrega `linkSoporteRemoto` al catalogo de paginas con modulo `seguridad` y accion `A`.
+  - `web/administrar_empresa.html` y `web/js/administrar_empresa.js`:
+    - agregan el enlace lateral `Soporte remoto` y su control de visibilidad por permisos.
+
+- Frontend:
+  - `web/administrar_empresa/soporte_remoto.html` (nuevo):
+    - panel operativo para configuracion, dispositivos, sesiones y exportes multiformato.
+  - `web/administrar_empresa/soporte_remoto_view.html` (nuevo):
+    - visor embebido con resolucion por `empresa_id + codigo_sesion + token`.
+
+## Actualizacion 2026-04-08 (modulo venta digital global: super + publico)
+
+- Backend DB:
+  - `backend/db/venta_digital.go` (nuevo):
+    - agrega `EnsureSuperVentaDigitalSchema` en `superadministrador.db`.
+    - crea tablas `super_venta_digital_configuracion`, `super_venta_digital_items` y `super_venta_digital_ordenes`.
+    - implementa ciclo de orden digital con estado de pago, referencia externa, transaction id y trazabilidad de entrega por correo.
+
+- Backend handlers:
+  - `backend/handlers/venta_digital.go` (nuevo):
+    - expone endpoint super `/super/api/venta_digital` para configuracion de tienda, CRUD de catalogo, uploads y consulta de ordenes.
+    - expone endpoint publico `/api/public/venta_digital` para catalogo, creacion de pago Wompi/Nequi y consulta de estado.
+    - implementa entrega por correo de licencia e instrucciones cuando el pago pasa a `aprobado`.
+  - `backend/handlers/payments_handlers.go`:
+    - extiende `WompiWebhookHandler` para sincronizar ordenes del modulo digital y disparar la entrega automatica.
+
+- Integracion de arranque/rutas:
+  - `backend/main.go`:
+    - ejecuta `EnsureSuperVentaDigitalSchema` en bootstrap.
+    - registra migracion `2026-04-08-003-venta-digital-super`.
+    - registra rutas `/super/api/venta_digital` y `/api/public/venta_digital`.
+  - `backend/utils/utils.go`:
+    - habilita acceso publico a `/venta_digital.html` y `/api/public/venta_digital`.
+
+- Frontend:
+  - `web/super/venta_digital.html` (nuevo):
+    - panel super para configuracion, publicacion de productos digitales y seguimiento de ordenes.
+  - `web/venta_digital.html` (nuevo):
+    - tienda publica para compra directa con Wompi, correo obligatorio antes de pagar y consulta de estado de orden.
+  - `web/menu.js`, `web/super_administrador.html`, `web/super/configuracion_avanzada.html`:
+    - incorporan enlaces operativos al modulo de venta digital.
+
+## Actualizacion 2026-04-08 (inicio de implementacion: permisos dinamicos por rol)
+
+- Backend DB:
+  - `backend/db/roles_permisos_usuario.go` (nuevo):
+    - agrega `EnsureRolesPermisosSchema` para crear tablas `roles_de_usuario_permisos` y `roles_de_usuario_paginas_permisos` en `superadministrador.db`.
+    - agrega consultas para resolver overrides por `rol_id` y por nombre de rol, con fallback seguro cuando la tabla aun no existe.
+    - agrega reemplazo transaccional de matriz de permisos por rol (`ReplaceRolPermisosDeUsuario`).
+
+- Backend handlers:
+  - `backend/handlers/empresa_permisos.go`:
+    - extiende `GET /api/empresa/permisos_contexto` para devolver `paginas` (mapa de visibilidad por clave de pagina).
+    - agrega aplicacion de overrides dinamicos por rol en middleware (`roleAllowsModuleActionWithOverrides`).
+    - mantiene politica base hardcodeada como fallback de seguridad (deny-by-default por accion no definida).
+  - `backend/handlers/roles_tipos_usuario.go`:
+    - agrega endpoint `GET/PUT /super/api/roles_de_usuario/permisos` para consultar/guardar matriz de permisos por rol.
+
+- Integracion de arranque/rutas:
+  - `backend/main.go`:
+    - inicializa esquema de permisos dinamicos de roles al arranque.
+    - registra migracion `2026-04-08-002-roles-permisos-dinamicos`.
+    - registra ruta super `/super/api/roles_de_usuario/permisos`.
+
+- Frontend:
+  - `web/super/permisos_rol.html` (nuevo):
+    - nueva pantalla para configurar permisos de modulo/accion y visibilidad de paginas por rol.
+  - `web/super_administrador.html`:
+    - agrega acceso de menu a `Permisos por rol`.
+  - `web/super/roles_de_usuario.html`:
+    - agrega accion directa `Permisos` por cada rol del listado.
+  - `web/js/administrar_empresa.js`:
+    - aplica prioridad a `permissionContext.paginas` para mostrar/ocultar enlaces del menu empresa por pagina.
+
+## Actualizacion 2026-04-08 (backups empresariales: depuracion por fecha)
+
+- Backend DB:
+  - `backend/db/backups_empresariales.go`:
+    - agrega `PurgeEmpresaDataByDateCorte` para eliminar registros por `empresa_id` con fecha <= `fecha_corte` (inclusive), usando tablas elegibles del modulo de backups.
+    - incorpora resolucion de columna de fecha por tabla y resumen detallado de registros eliminados por tabla.
+
+- Backend handlers:
+  - `backend/handlers/backups_empresariales.go`:
+    - agrega accion `depurar_fecha` en `/api/empresa/backups`.
+    - valida `fecha_corte`, soporta `include_tables`/`exclude_tables` y crea backup previo opcional antes de ejecutar la depuracion.
+  - `backend/handlers/empresa_permisos.go`:
+    - clasifica `depurar_fecha|purgar_fecha|eliminar_hasta_fecha|depurar_hasta_fecha` como `permActionApprove` en modulo seguridad.
+
+- Frontend:
+  - `web/administrar_empresa/backups.html`:
+    - agrega seccion "Depurar informacion por fecha" con selector de fecha de corte, filtros de tablas y confirmacion de ejecucion.
 
 ## Actualizacion 2026-04-07 (cierre modulo 37: venta publica + Wompi por empresa)
 

@@ -41,6 +41,25 @@
           <textarea id="descripcion" class="form-textarea"></textarea>
         </div>
       </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Módulos habilitados</label>
+          <div id="modulosLicenciaBox" class="lic-modulos-grid">
+            <label class="lic-modulo-item"><input type="checkbox" name="lic_modulo" value="ventas"> Ventas</label>
+            <label class="lic-modulo-item"><input type="checkbox" name="lic_modulo" value="inventario"> Inventario</label>
+            <label class="lic-modulo-item"><input type="checkbox" name="lic_modulo" value="finanzas"> Finanzas</label>
+            <label class="lic-modulo-item"><input type="checkbox" name="lic_modulo" value="clientes"> Clientes</label>
+            <label class="lic-modulo-item"><input type="checkbox" name="lic_modulo" value="compras"> Compras</label>
+            <label class="lic-modulo-item"><input type="checkbox" name="lic_modulo" value="facturacion"> Facturación</label>
+            <label class="lic-modulo-item"><input type="checkbox" name="lic_modulo" value="seguridad"> Seguridad</label>
+          </div>
+          <div class="form-help">Si no seleccionas módulos, la licencia no restringe el catálogo por módulo.</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Super rol por licencia</label>
+          <label class="lic-superrol-item"><input id="super_rol_habilitado" type="checkbox"> Habilitar super rol para supervisor de sucursal</label>
+        </div>
+      </div>
       <div class="form-actions">
         <button type="submit" id="saveBtn" class="btn">Guardar</button>
         <button type="button" id="cancelBtn" class="btn secondary">Cancelar</button>
@@ -63,6 +82,46 @@
       return '/super/api/licencias' + (query ? ('?' + query) : '');
     }
 
+    function normalizeCSV(raw) {
+      return String(raw || '')
+        .split(',')
+        .map(v => v.trim().toLowerCase())
+        .filter(Boolean)
+        .filter((v, idx, arr) => arr.indexOf(v) === idx)
+        .join(',');
+    }
+
+    function getSelectedLicenciaModulos(){
+      return normalizeCSV(Array.from(document.querySelectorAll('input[name="lic_modulo"]:checked')).map(el => el.value).join(','));
+    }
+
+    function setSelectedLicenciaModulos(rawCSV){
+      const selected = new Set(normalizeCSV(rawCSV).split(',').filter(Boolean));
+      document.querySelectorAll('input[name="lic_modulo"]').forEach(function(el){
+        el.checked = selected.has(String(el.value || '').trim().toLowerCase());
+      });
+    }
+
+    function modulosToLabel(rawCSV){
+      const normalized = normalizeCSV(rawCSV);
+      if (!normalized) return 'Todos';
+      return normalized;
+    }
+
+    function resetLicenciaForm(){
+      document.getElementById('itemId').value='';
+      document.getElementById('nombre').value='';
+      document.getElementById('descripcion').value='';
+      document.getElementById('valor').value='';
+      document.getElementById('duracion_dias').value='';
+      document.getElementById('tipo_id').value='';
+      document.getElementById('super_rol_habilitado').checked = false;
+      setSelectedLicenciaModulos('');
+      document.getElementById('saveBtn').innerText='Guardar';
+      document.getElementById('cancelBtn').style.display='none';
+      document.getElementById('msg').innerText='';
+    }
+
     async function load(){
       // cargar tipos para el select
       try{
@@ -80,13 +139,15 @@
       const data = await res.json();
       const table = document.createElement('table');
       table.className = 'table';
-      table.innerHTML = '<thead><tr><th>ID</th><th>Tipo</th><th>Nombre</th><th>Valor</th><th>Duración (días)</th><th>Acciones</th></thead>';
+      table.innerHTML = '<thead><tr><th>ID</th><th>Tipo</th><th>Nombre</th><th>Valor</th><th>Duración (días)</th><th>Módulos</th><th>Super rol</th><th>Acciones</th></thead>';
       const tbody = document.createElement('tbody');
       data.forEach(i=>{
         const tr = document.createElement('tr');
         const activo = (i.activo === 'activo' || i.activo==1) ? 1 : (i.activo||0);
         const toggleLabel = (activo==1) ? 'Desactivar' : 'Activar';
-        tr.innerHTML = `<td>${i.id}</td><td>${i.tipo_nombre||''}</td><td>${i.nombre}</td><td>${i.valor||''}</td><td>${i.duracion_dias||''}</td><td class="actions"><button data-id="${i.id}" class="edit btn secondary">Editar</button> <button data-id="${i.id}" class="del btn danger">Eliminar</button> <button data-id="${i.id}" data-activo="${activo}" class="toggle btn">${toggleLabel}</button></td>`;
+        const modulos = modulosToLabel(i.modulos_habilitados || '');
+        const superRol = Number(i.super_rol_habilitado || 0) === 1 ? 'Sí' : 'No';
+        tr.innerHTML = `<td>${i.id}</td><td>${i.tipo_nombre||''}</td><td>${i.nombre}</td><td>${i.valor||''}</td><td>${i.duracion_dias||''}</td><td>${modulos}</td><td>${superRol}</td><td class="actions"><button data-id="${i.id}" class="edit btn secondary">Editar</button> <button data-id="${i.id}" class="del btn danger">Eliminar</button> <button data-id="${i.id}" data-activo="${activo}" class="toggle btn">${toggleLabel}</button></td>`;
         tbody.appendChild(tr);
       });
       table.appendChild(tbody);
@@ -105,6 +166,8 @@
         document.getElementById('valor').value = item.valor || '';
         document.getElementById('duracion_dias').value = item.duracion_dias || '';
         document.getElementById('descripcion').value = item.descripcion || '';
+        setSelectedLicenciaModulos(item.modulos_habilitados || '');
+        document.getElementById('super_rol_habilitado').checked = Number(item.super_rol_habilitado || 0) === 1;
         document.getElementById('saveBtn').innerText = 'Actualizar';
         document.getElementById('cancelBtn').style.display = '';
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -132,7 +195,9 @@
         nombre: document.getElementById('nombre').value.trim(),
         descripcion: document.getElementById('descripcion').value.trim(),
         valor: parseFloat(document.getElementById('valor').value||0),
-        duracion_dias: parseInt(document.getElementById('duracion_dias').value||0)
+        duracion_dias: parseInt(document.getElementById('duracion_dias').value||0),
+        modulos_habilitados: getSelectedLicenciaModulos(),
+        super_rol_habilitado: document.getElementById('super_rol_habilitado').checked ? 1 : 0
       };
       try{
         if(!payload.nombre){ document.getElementById('msg').innerText='Nombre requerido'; return }
@@ -141,19 +206,19 @@
         } else {
           await fetch('/super/api/licencias', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
         }
-        document.getElementById('itemId').value=''; document.getElementById('nombre').value=''; document.getElementById('descripcion').value=''; document.getElementById('valor').value=''; document.getElementById('duracion_dias').value=''; document.getElementById('tipo_id').value=''; document.getElementById('saveBtn').innerText='Guardar'; document.getElementById('cancelBtn').style.display='none'; document.getElementById('msg').innerText='';
+        resetLicenciaForm();
         // ocultar formulario y mostrar botón agregar
         document.getElementById('form').style.display = 'none';
         document.getElementById('addBtn').style.display = '';
         load();
       }catch(err){ document.getElementById('msg').innerText = err.message }
     }
-    document.getElementById('cancelBtn').onclick = ()=>{ document.getElementById('itemId').value=''; document.getElementById('nombre').value=''; document.getElementById('descripcion').value=''; document.getElementById('valor').value=''; document.getElementById('duracion_dias').value=''; document.getElementById('tipo_id').value=''; document.getElementById('saveBtn').innerText='Guardar'; document.getElementById('cancelBtn').style.display='none'; document.getElementById('form').style.display='none'; document.getElementById('addBtn').style.display=''; }
+    document.getElementById('cancelBtn').onclick = ()=>{ resetLicenciaForm(); document.getElementById('form').style.display='none'; document.getElementById('addBtn').style.display=''; }
 
     document.getElementById('addBtn').onclick = ()=>{
       document.getElementById('form').style.display = '';
       document.getElementById('addBtn').style.display = 'none';
-      document.getElementById('itemId').value=''; document.getElementById('nombre').value=''; document.getElementById('descripcion').value=''; document.getElementById('valor').value=''; document.getElementById('duracion_dias').value=''; document.getElementById('tipo_id').value=''; document.getElementById('saveBtn').innerText='Guardar'; document.getElementById('cancelBtn').style.display='none';
+      resetLicenciaForm();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 

@@ -6,6 +6,33 @@
 
 ## Historial
 
+### Version 2026-04-08.42.2
+- Chat/tareas: se documenta el flujo de actor autenticado usuario/admin y soporte de adjuntos documentales/fotos entre participantes de empresa.
+- Archivos actualizados:
+  - `estructura_del_codigo.md`
+  - `diagrama_flujo_procesos.md`
+
+### Version 2026-04-08.42.1
+- Configuracion monetaria y numerica por empresa integrada en backend/frontend y reflejada en diagramas.
+- Archivos actualizados:
+  - `diagrama_entidad_relacion.md`
+  - `diagrama_flujo_procesos.md`
+  - `estructura_del_codigo.md`
+
+### Version 2026-04-08.41.1
+- Cierre documental de pasos 1, 2 y 3: accesos directos por permisos/licencia, notas de voz en chat/tareas y permisos efectivos por licencia con super rol.
+- Archivos actualizados:
+  - `diagrama_entidad_relacion.md`
+  - `diagrama_flujo_procesos.md`
+  - `estructura_del_codigo.md`
+
+### Version 2026-04-08.40.1
+- Modulo de soporte remoto empresarial incorporado en diagramas tecnicos y funcionales.
+- Archivos actualizados:
+  - `diagrama_entidad_relacion.md`
+  - `diagrama_flujo_procesos.md`
+  - `estructura_del_codigo.md`
+
 ### Version 2026-04-07.37.1
 - Modulo 37 (venta publica + Wompi por empresa) incorporado en diagramas tecnicos y funcionales.
 - Archivos actualizados:

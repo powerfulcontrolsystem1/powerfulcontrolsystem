@@ -722,6 +722,16 @@ html.theme-light .floating-menu #themeToggle{color:var(--accent-2)}
 .kpi-box strong{font-size:1.2rem;color:var(--text)}
 
 .empresa-section{margin-top:16px}
+.inicio-links-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:10px;
+  margin-top:8px;
+}
+.inicio-link-btn{
+  justify-content:center;
+  text-align:center;
+}
 .empresa-section-header{
   display:flex;
   align-items:center;
@@ -1807,6 +1817,13 @@ html.theme-light .floating-menu #themeToggle{color:var(--accent-2)}
   align-items:center;
 }
 
+.chat-voice-row{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+
 .chat-messages-list{
   flex:1;
   min-height:260px;
@@ -1888,6 +1905,24 @@ html.theme-light .floating-menu #themeToggle{color:var(--accent-2)}
   margin-top:6px;
   white-space:pre-wrap;
   color:var(--text);
+}
+
+.task-voice-audio{
+  margin-top:8px;
+}
+
+.lic-modulos-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:6px 10px;
+}
+
+.lic-modulo-item,
+.lic-superrol-item{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:.92rem;
 }
 
 .task-status.pending{color:#e7f1ff}
@@ -2124,9 +2159,14 @@ html.theme-light .floating-menu #themeToggle{color:var(--accent-2)}
   }
   .chat-add-participant-row,
   .chat-attach-row,
+  .chat-voice-row,
   .chat-search-row{
     flex-direction:column;
     align-items:stretch;
+  }
+
+  .lic-modulos-grid{
+    grid-template-columns:1fr;
   }
 
   .ai-gemini-context{

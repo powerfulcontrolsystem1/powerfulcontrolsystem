@@ -1,7 +1,12 @@
 # Matriz base de roles y permisos POS multiempresa
 
-Fecha de actualizacion: 2026-04-05
+Fecha de actualizacion: 2026-04-08
 Alcance: punto 3 del plan maestro (permisos y seguridad)
+
+## Regla de mantenimiento por modulo
+
+- Cuando se cree un modulo nuevo o se modifique uno existente, esta matriz debe actualizarse en la misma iteracion para reflejar permisos por rol/modulo/accion y el impacto en paginas del panel.
+- Esta actualizacion debe quedar sincronizada con `documentos/descripcion_de_modulos`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios` y `CHANGELOG.md`.
 
 ## Roles base
 
@@ -39,6 +44,20 @@ Leyenda:
 | Seguridad y permisos | CRUDA | CRUA | R | R | R | R | R | R |
 
 ## Estado de implementacion tecnica inicial (2026-04-04)
+
+- Actualizacion 2026-04-08 (chat/tareas usuario-admin con adjuntos documentales):
+	- Se mantiene el control de acceso del modulo ventas para `/api/empresa/chat_tareas/*` (sin cambios de rol/accion respecto a la matriz vigente).
+	- El backend de chat/tareas deriva actor desde sesion autenticada para distinguir `usuario` y `admin`, evitando suplantacion de autor en mensajes/adjuntos.
+	- Se habilita colaboracion directa usuario-admin al autoagregar admin propietario de la empresa cuando una conversacion es creada por usuario.
+	- Se amplian adjuntos permitidos para colaboracion operativa con documentos de oficina (`doc/docx/xls/xlsx/ppt/pptx/rtf/odt/ods/odp`).
+
+- Actualizacion 2026-04-08 (configuracion monetaria y numerica empresarial):
+	- Se agrega en `administrar_empresa/configuracion.html` la seccion de formato monetario/numerico por empresa (`moneda_codigo`, `sistema_numerico`, `usar_decimales`, `cantidad_decimales`).
+	- Se mantiene el mismo control de acceso del modulo seguridad para `/api/empresa/configuracion_avanzada` (sin cambios de rol/accion respecto a la matriz actual).
+
+- Actualizacion 2026-04-08 (chat IA empresarial):
+	- Se alinea la configuracion avanzada de super para gestionar credencial `deepseek:deepseek-chat`.
+	- La pagina `chat_con_inteligencia_artificial` de empresa se actualiza a mensajes/modelo IA generico con ejecucion operativa en DeepSeek, manteniendo control de alcance por `empresa_id`.
 
 - Se implementa middleware en `backend/handlers/empresa_permisos.go` para validar:
 	- identidad administrativa activa,
@@ -164,6 +183,7 @@ Regla de lectura comun (R):
 | `/api/empresa/roles_de_usuario` | `WithEmpresaSeguridadPermissions` | SA, AE | SA, AE | consulta catalogo de roles con control de alcance |
 | `/api/empresa/permisos_contexto` | `WithEmpresaSeguridadPermissions` | - | - | endpoint `GET` para visualizar permisos efectivos por modulo/accion; `include_matrix=1` retorna matriz comparativa por rol |
 | `/api/empresa/auditoria/eventos` | `WithEmpresaSeguridadPermissions` | SA, AE | SA, AE | consulta y retencion (`action=retener|purgar`) |
+| `/api/empresa/backups` | `WithEmpresaSeguridadPermissions` | SA, AE | SA, AE | snapshots/restauracion y depuracion por fecha (`action=restaurar|depurar_fecha` requiere `A`) |
 
 ### Endpoints fuera de wrapper (control alterno)
 

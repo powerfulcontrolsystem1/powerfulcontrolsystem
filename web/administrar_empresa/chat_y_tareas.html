@@ -69,9 +69,15 @@
           <label class="form-label" for="messageText">Mensaje</label>
           <textarea id="messageText" class="form-textarea" placeholder="Escribe tu mensaje"></textarea>
           <div class="chat-attach-row">
-            <input id="messageFile" class="form-input" type="file" accept="image/*,audio/*,.pdf,.txt,.csv,.json">
+            <input id="messageFile" class="form-input" type="file" accept="image/*,audio/*,.pdf,.txt,.csv,.json,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.rtf,.odt,.ods,.odp">
             <button id="sendMessageBtn" class="btn" type="submit">Enviar</button>
           </div>
+          <div class="chat-voice-row">
+            <button id="recordMessageVoiceBtn" class="btn secondary" type="button">Grabar voz</button>
+            <button id="stopMessageVoiceBtn" class="btn secondary" type="button" disabled>Detener</button>
+            <button id="clearMessageVoiceBtn" class="btn secondary" type="button" disabled>Limpiar voz</button>
+          </div>
+          <div id="messageVoiceStatus" class="form-help"></div>
         </form>
         <div id="messageMsg" class="form-help"></div>
       </section>
@@ -113,6 +119,14 @@
               <button id="saveTaskBtn" class="btn" type="submit">Guardar</button>
             </div>
           </div>
+
+          <div class="chat-voice-row">
+            <button id="recordTaskVoiceBtn" class="btn secondary" type="button">Grabar voz tarea</button>
+            <button id="stopTaskVoiceBtn" class="btn secondary" type="button" disabled>Detener</button>
+            <button id="clearTaskVoiceBtn" class="btn secondary" type="button" disabled>Limpiar voz</button>
+          </div>
+          <audio id="taskVoicePreview" controls preload="none" style="display:none"></audio>
+          <div id="taskVoiceStatus" class="form-help"></div>
         </form>
 
         <div class="chat-search-row">
@@ -139,6 +153,11 @@
       empresaID: 0,
       empresaNombre: "",
       adminEmail: "",
+      adminName: "",
+      currentUserType: "admin",
+      currentUserRefID: 0,
+      currentUserName: "Administrador",
+      currentUserEmail: "",
       users: [],
       conversaciones: [],
       conversacionID: 0,
@@ -147,8 +166,227 @@
       tareas: [],
       convSearch: "",
       taskSearch: "",
-      taskEstadoFilter: ""
+	  taskEstadoFilter: "",
+	  pendingMessageVoice: null,
+	  pendingTaskVoice: null
     };
+
+    const messageVoiceRuntime = { recorder: null, stream: null, chunks: [], startedAt: 0, timer: 0 };
+    const taskVoiceRuntime = { recorder: null, stream: null, chunks: [], startedAt: 0, timer: 0 };
+
+    function pickVoiceMimeType() {
+      const candidates = ["audio/webm;codecs=opus", "audio/webm", "audio/ogg", "audio/mp4"];
+      if (!window.MediaRecorder || typeof window.MediaRecorder.isTypeSupported !== "function") {
+        return "";
+      }
+      for (let i = 0; i < candidates.length; i += 1) {
+        if (window.MediaRecorder.isTypeSupported(candidates[i])) return candidates[i];
+      }
+      return "";
+    }
+
+    function voiceExtensionByMime(mimeType) {
+      const mime = normalize(mimeType).toLowerCase();
+      if (mime.indexOf("ogg") >= 0) return ".ogg";
+      if (mime.indexOf("mp4") >= 0) return ".m4a";
+      if (mime.indexOf("webm") >= 0) return ".webm";
+      return ".webm";
+    }
+
+    function stopVoiceStream(runtime) {
+      if (!runtime || !runtime.stream) return;
+      runtime.stream.getTracks().forEach(function (track) { track.stop(); });
+      runtime.stream = null;
+    }
+
+    function clearVoiceTimer(runtime) {
+      if (!runtime || !runtime.timer) return;
+      window.clearInterval(runtime.timer);
+      runtime.timer = 0;
+    }
+
+    function updateMessageVoiceUI() {
+      const hasVoice = !!state.pendingMessageVoice;
+      const recording = !!(messageVoiceRuntime.recorder && messageVoiceRuntime.recorder.state === "recording");
+      document.getElementById("recordMessageVoiceBtn").disabled = recording;
+      document.getElementById("stopMessageVoiceBtn").disabled = !recording;
+      document.getElementById("clearMessageVoiceBtn").disabled = recording || !hasVoice;
+      if (!hasVoice && !recording) {
+        document.getElementById("messageVoiceStatus").textContent = "";
+      }
+    }
+
+    function updateTaskVoiceUI() {
+      const hasVoice = !!state.pendingTaskVoice;
+      const recording = !!(taskVoiceRuntime.recorder && taskVoiceRuntime.recorder.state === "recording");
+      document.getElementById("recordTaskVoiceBtn").disabled = recording;
+      document.getElementById("stopTaskVoiceBtn").disabled = !recording;
+      document.getElementById("clearTaskVoiceBtn").disabled = recording || !hasVoice;
+      const preview = document.getElementById("taskVoicePreview");
+      if (!hasVoice) {
+        preview.pause();
+        preview.removeAttribute("src");
+        preview.style.display = "none";
+      }
+      if (!hasVoice && !recording) {
+        document.getElementById("taskVoiceStatus").textContent = "";
+      }
+    }
+
+    async function startVoiceRecording(kind) {
+      const isMessage = kind === "message";
+      const runtime = isMessage ? messageVoiceRuntime : taskVoiceRuntime;
+      const statusId = isMessage ? "messageVoiceStatus" : "taskVoiceStatus";
+
+      if (!window.MediaRecorder || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setHelp(statusId, "Tu navegador no soporta grabación de voz", true);
+        return;
+      }
+      if (runtime.recorder && runtime.recorder.state === "recording") {
+        return;
+      }
+
+      if (isMessage && state.pendingMessageVoice && state.pendingMessageVoice.url) {
+        URL.revokeObjectURL(state.pendingMessageVoice.url);
+        state.pendingMessageVoice = null;
+      }
+      if (!isMessage && state.pendingTaskVoice && state.pendingTaskVoice.url) {
+        URL.revokeObjectURL(state.pendingTaskVoice.url);
+        state.pendingTaskVoice = null;
+      }
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mimeType = pickVoiceMimeType();
+        const recorder = mimeType ? new MediaRecorder(stream, { mimeType: mimeType }) : new MediaRecorder(stream);
+
+        runtime.recorder = recorder;
+        runtime.stream = stream;
+        runtime.chunks = [];
+        runtime.startedAt = Date.now();
+
+        recorder.ondataavailable = function (ev) {
+          if (ev.data && ev.data.size > 0) runtime.chunks.push(ev.data);
+        };
+
+        recorder.onstop = function () {
+          clearVoiceTimer(runtime);
+          stopVoiceStream(runtime);
+
+          const duration = Math.max(1, Math.round((Date.now() - runtime.startedAt) / 1000));
+          const finalMime = normalize(recorder.mimeType) || mimeType || "audio/webm";
+          const blob = new Blob(runtime.chunks, { type: finalMime });
+          runtime.recorder = null;
+          runtime.chunks = [];
+
+          if (!blob || !blob.size) {
+            setHelp(statusId, "No se capturó audio. Intenta de nuevo.", true);
+            if (isMessage) {
+              state.pendingMessageVoice = null;
+              updateMessageVoiceUI();
+            } else {
+              state.pendingTaskVoice = null;
+              updateTaskVoiceUI();
+            }
+            return;
+          }
+
+          const fileName = (isMessage ? "mensaje" : "tarea") + "_" + Date.now() + voiceExtensionByMime(finalMime);
+          const previewURL = URL.createObjectURL(blob);
+          const payload = {
+            blob: blob,
+            mimeType: finalMime,
+            durationSeg: duration,
+            fileName: fileName,
+            url: previewURL,
+          };
+
+          if (isMessage) {
+            state.pendingMessageVoice = payload;
+            setHelp(statusId, "Nota de voz lista (" + duration + "s)", false);
+            updateMessageVoiceUI();
+            return;
+          }
+
+          state.pendingTaskVoice = payload;
+          const preview = document.getElementById("taskVoicePreview");
+          preview.src = previewURL;
+          preview.style.display = "";
+          setHelp(statusId, "Nota de voz de tarea lista (" + duration + "s)", false);
+          updateTaskVoiceUI();
+        };
+
+        recorder.onerror = function () {
+          setHelp(statusId, "Error grabando nota de voz", true);
+          clearVoiceTimer(runtime);
+          stopVoiceStream(runtime);
+          runtime.recorder = null;
+          runtime.chunks = [];
+          if (isMessage) updateMessageVoiceUI();
+          else updateTaskVoiceUI();
+        };
+
+        recorder.start(250);
+        setHelp(statusId, "Grabando... 0s", false);
+        runtime.timer = window.setInterval(function () {
+          if (!runtime.recorder || runtime.recorder.state !== "recording") return;
+          const elapsed = Math.max(0, Math.round((Date.now() - runtime.startedAt) / 1000));
+          setHelp(statusId, "Grabando... " + elapsed + "s", false);
+        }, 1000);
+
+        if (isMessage) updateMessageVoiceUI();
+        else updateTaskVoiceUI();
+      } catch (err) {
+        setHelp(statusId, err.message || "No se pudo iniciar la grabación", true);
+      }
+    }
+
+    function stopVoiceRecording(kind) {
+      const runtime = kind === "message" ? messageVoiceRuntime : taskVoiceRuntime;
+      if (!runtime.recorder || runtime.recorder.state !== "recording") return;
+      runtime.recorder.stop();
+      if (kind === "message") updateMessageVoiceUI();
+      else updateTaskVoiceUI();
+    }
+
+    function clearVoiceRecording(kind) {
+      const isMessage = kind === "message";
+      const runtime = isMessage ? messageVoiceRuntime : taskVoiceRuntime;
+      if (runtime.recorder && runtime.recorder.state === "recording") {
+        return;
+      }
+
+      if (isMessage && state.pendingMessageVoice && state.pendingMessageVoice.url) {
+        URL.revokeObjectURL(state.pendingMessageVoice.url);
+        state.pendingMessageVoice = null;
+        setHelp("messageVoiceStatus", "", false);
+        updateMessageVoiceUI();
+        return;
+      }
+      if (!isMessage && state.pendingTaskVoice && state.pendingTaskVoice.url) {
+        URL.revokeObjectURL(state.pendingTaskVoice.url);
+      }
+      if (!isMessage) {
+        state.pendingTaskVoice = null;
+        setHelp("taskVoiceStatus", "", false);
+        updateTaskVoiceUI();
+      }
+    }
+
+    async function uploadTaskVoiceNote(tareaID, voicePayload) {
+      if (!voicePayload || !voicePayload.blob || !tareaID) return;
+      const fd = new FormData();
+      fd.append("empresa_id", String(state.empresaID));
+      fd.append("tarea_id", String(tareaID));
+      fd.append("duracion_segundos", String(Number(voicePayload.durationSeg || 0)));
+      fd.append("archivo", voicePayload.blob, voicePayload.fileName || ("tarea_" + tareaID + ".webm"));
+
+      const resp = await fetch("/api/empresa/chat_tareas/tareas/nota_voz", {
+        method: "POST",
+        body: fd
+      });
+      await ensureOk(resp);
+    }
 
     function getQueryParam(name) {
       const p = new URLSearchParams(window.location.search);
@@ -217,6 +455,36 @@
       return "pending";
     }
 
+    function resolveCurrentActorContext() {
+      const sessionEmail = normalize(state.adminEmail).toLowerCase();
+      const sessionName = normalize(state.adminName);
+
+      const actor = {
+        tipo: "admin",
+        refID: 0,
+        nombre: sessionName || state.adminEmail || "Administrador",
+        email: normalize(state.adminEmail)
+      };
+
+      if (sessionEmail) {
+        const match = state.users.find(function (u) {
+          return normalize(u.email).toLowerCase() === sessionEmail;
+        });
+        if (match) {
+          actor.tipo = "usuario";
+          actor.refID = Number(match.id || 0);
+          actor.nombre = normalize(match.nombre || match.name || match.email || actor.nombre);
+          actor.email = normalize(match.email || actor.email);
+        }
+      }
+
+      state.currentUserType = actor.tipo;
+      state.currentUserRefID = actor.refID;
+      state.currentUserName = actor.nombre;
+      state.currentUserEmail = actor.email;
+      return actor;
+    }
+
     async function loadEmpresa() {
       const resp = await fetch("/super/api/empresas?id=" + encodeURIComponent(state.empresaID));
       if (!resp.ok) return;
@@ -233,6 +501,8 @@
       if (!resp.ok) return;
       const data = await resp.json();
       state.adminEmail = normalize(data && data.email);
+      state.adminName = normalize(data && (data.name || data.nombre));
+      resolveCurrentActorContext();
       renderAssignOptions();
     }
 
@@ -244,6 +514,7 @@
       await ensureOk(resp);
       const rows = await resp.json();
       state.users = Array.isArray(rows) ? rows : [];
+      resolveCurrentActorContext();
       renderAssignOptions();
       renderParticipantOptions();
     }
@@ -252,7 +523,7 @@
       const select = document.getElementById("taskAsignado");
       if (!select) return;
       let html = "";
-      const adminLabel = state.adminEmail || "Administrador";
+      const adminLabel = normalize(state.adminName || state.adminEmail || "Administrador");
       html += '<option value="admin|0|' + escapeHtml(adminLabel) + '|' + escapeHtml(state.adminEmail || "") + '">Admin empresa (' + escapeHtml(adminLabel) + ')</option>';
       state.users.forEach(function (u) {
         if (normalize(u.estado || "activo").toLowerCase() !== "activo") return;
@@ -463,7 +734,8 @@
       let html = "";
       state.mensajes.forEach(function (m) {
         const email = normalize(m.autor_email);
-        const own = state.adminEmail && normalize(state.adminEmail).toLowerCase() === email.toLowerCase();
+        const ownEmail = normalize(state.currentUserEmail || state.adminEmail).toLowerCase();
+        const own = ownEmail && ownEmail === email.toLowerCase();
         html += '<article class="chat-bubble ' + (own ? "self" : "other") + '">';
         html += '<header><strong>' + escapeHtml(normalize(m.autor_nombre || email || "Usuario")) + '</strong> <span>' + escapeHtml(formatDate(m.fecha_envio || m.fecha_creacion)) + '</span></header>';
         html += '<div class="chat-content">' + escapeHtml(normalize(m.contenido)) + '</div>';
@@ -530,6 +802,9 @@
         html += '<div class="task-meta">Estado: <span class="task-status ' + getTaskStatusClass(t.estado_tarea) + '">' + escapeHtml(getTaskStatusLabel(t.estado_tarea)) + '</span> | Avance: ' + Number(t.porcentaje_avance || 0) + '%</div>';
         if (normalize(t.descripcion)) {
           html += '<div class="task-desc">' + escapeHtml(t.descripcion) + '</div>';
+        }
+        if (normalize(t.nota_voz_url)) {
+          html += '<div class="chat-attachment-audio task-voice-audio"><audio controls preload="none" src="' + escapeHtml(t.nota_voz_url) + '"></audio></div>';
         }
         html += '<div class="task-meta">Asignado: ' + escapeHtml(normalize(t.asignado_nombre || t.asignado_email || "Sin asignar")) + '</div>';
         html += '<div class="task-meta">Límite: ' + escapeHtml(formatDate(t.fecha_limite)) + '</div>';
@@ -682,22 +957,32 @@
       const contenido = normalize(document.getElementById("messageText").value);
       const fileInput = document.getElementById("messageFile");
       const file = fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
+      const voicePayload = state.pendingMessageVoice;
 
-      if (!contenido && !file) {
+      if (!contenido && !file && !voicePayload) {
         setHelp("messageMsg", "Escribe un mensaje o adjunta un archivo", true);
         return;
       }
 
       try {
-        if (file) {
+        const actor = resolveCurrentActorContext();
+        if (file || voicePayload) {
           const fd = new FormData();
           fd.append("empresa_id", String(state.empresaID));
           fd.append("conversacion_id", String(state.conversacionID));
           fd.append("contenido", contenido);
-          fd.append("autor_tipo", "admin");
-          fd.append("autor_nombre", state.adminEmail || "Administrador");
-          fd.append("autor_email", state.adminEmail || "");
-          fd.append("archivo", file);
+          fd.append("autor_tipo", actor.tipo || "admin");
+          if (Number(actor.refID || 0) > 0) {
+            fd.append("autor_ref_id", String(Number(actor.refID)));
+          }
+          fd.append("autor_nombre", actor.nombre || "Usuario");
+          fd.append("autor_email", actor.email || "");
+          if (file) {
+            fd.append("archivo", file);
+          } else {
+            fd.append("archivo", voicePayload.blob, voicePayload.fileName || ("mensaje_" + Date.now() + ".webm"));
+            fd.append("duracion_segundos", String(Number(voicePayload.durationSeg || 0)));
+          }
 
           const resp = await fetch("/api/empresa/chat_tareas/mensajes/adjunto", {
             method: "POST",
@@ -711,9 +996,10 @@
             body: JSON.stringify({
               empresa_id: state.empresaID,
               conversacion_id: state.conversacionID,
-              autor_tipo: "admin",
-              autor_nombre: state.adminEmail || "Administrador",
-              autor_email: state.adminEmail || "",
+              autor_tipo: actor.tipo || "admin",
+              autor_ref_id: Number(actor.refID || 0),
+              autor_nombre: actor.nombre || "Usuario",
+              autor_email: actor.email || "",
               contenido: contenido,
               tipo_mensaje: "texto"
             })
@@ -723,6 +1009,7 @@
 
         document.getElementById("messageText").value = "";
         fileInput.value = "";
+        clearVoiceRecording("message");
         await loadMensajes();
         await loadConversaciones();
         setHelp("messageMsg", "Mensaje enviado", false);
@@ -761,6 +1048,8 @@
         porcentaje_avance: 0
       };
 
+      const taskVoicePayload = state.pendingTaskVoice;
+
       try {
         const resp = await fetch("/api/empresa/chat_tareas/tareas", {
           method: "POST",
@@ -768,11 +1057,17 @@
           body: JSON.stringify(payload)
         });
         await ensureOk(resp);
+        const body = await resp.json();
+        const tareaID = Number(body && body.id || 0);
+        if (taskVoicePayload && tareaID > 0) {
+          await uploadTaskVoiceNote(tareaID, taskVoicePayload);
+        }
         document.getElementById("taskForm").reset();
         renderAssignOptions();
+        clearVoiceRecording("task");
         await loadTareas();
         await loadConversaciones();
-        setHelp("taskMsg", "Tarea creada", false);
+        setHelp("taskMsg", taskVoicePayload ? "Tarea creada con nota de voz" : "Tarea creada", false);
       } catch (err) {
         setHelp("taskMsg", err.message || "No se pudo crear la tarea", true);
       }
@@ -788,6 +1083,32 @@
       }
     };
 
+    document.getElementById("recordMessageVoiceBtn").onclick = async function () {
+      await startVoiceRecording("message");
+    };
+    document.getElementById("stopMessageVoiceBtn").onclick = function () {
+      stopVoiceRecording("message");
+    };
+    document.getElementById("clearMessageVoiceBtn").onclick = function () {
+      clearVoiceRecording("message");
+    };
+
+    document.getElementById("recordTaskVoiceBtn").onclick = async function () {
+      await startVoiceRecording("task");
+    };
+    document.getElementById("stopTaskVoiceBtn").onclick = function () {
+      stopVoiceRecording("task");
+    };
+    document.getElementById("clearTaskVoiceBtn").onclick = function () {
+      clearVoiceRecording("task");
+    };
+
+    document.getElementById("messageFile").addEventListener("change", function () {
+      if (this.files && this.files.length > 0) {
+        clearVoiceRecording("message");
+      }
+    });
+
     (async function init() {
       state.empresaID = Number(getQueryParam("empresa_id") || 0);
       if (!state.empresaID) {
@@ -798,6 +1119,8 @@
       }
 
       try {
+        updateMessageVoiceUI();
+        updateTaskVoiceUI();
         await Promise.all([loadEmpresa(), loadMe(), loadUsers()]);
         await loadConversaciones();
         await loadCurrentConversationData();

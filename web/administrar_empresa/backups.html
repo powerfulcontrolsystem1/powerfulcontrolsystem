@@ -34,6 +34,25 @@
 
     <section class="form creditos-section">
       <div class="page-header creditos-section-header">
+        <h2 class="creditos-section-title">Depurar información por fecha</h2>
+      </div>
+      <p class="form-help">Elimina registros de la empresa desde el origen hasta la fecha de corte (inclusive). Recomendado: generar backup previo automático.</p>
+      <div class="backups-toolbar-grid">
+        <input id="bkPurgeFechaCorte" class="form-input" type="date" placeholder="Fecha de corte">
+        <label class="form-help creditos-filter-check backups-filter-check">
+          <input id="bkPurgeCrearBackupPrevio" type="checkbox" checked> Crear backup previo automático
+        </label>
+        <input id="bkPurgeInclude" class="form-input" type="text" placeholder="Incluir tablas (coma), ej: carritos_compras,clientes">
+        <input id="bkPurgeExclude" class="form-input" type="text" placeholder="Excluir tablas (coma), ej: users,empresa_configuracion">
+      </div>
+      <div class="form-actions creditos-actions-top">
+        <button id="btnPurgarFecha" type="button" class="btn danger">Eliminar información hasta la fecha</button>
+      </div>
+      <div id="purgaBackupMsg" class="form-help"></div>
+    </section>
+
+    <section class="form creditos-section">
+      <div class="page-header creditos-section-header">
         <h2 class="creditos-section-title">Historial de backups</h2>
       </div>
       <div class="backups-toolbar-grid backups-toolbar-grid-list">
@@ -86,6 +105,7 @@
 
       var contextoEl = document.getElementById('backupsContexto');
       var crearMsgEl = document.getElementById('crearBackupMsg');
+      var purgaMsgEl = document.getElementById('purgaBackupMsg');
       var listaMsgEl = document.getElementById('listaBackupMsg');
       var tablaBody = document.getElementById('tablaBackupsBody');
       var detalleMetaEl = document.getElementById('detalleBackupMeta');
@@ -284,6 +304,48 @@
         await cargarBackups();
       }
 
+      async function purgarPorFecha() {
+        var fechaCorte = (document.getElementById('bkPurgeFechaCorte').value || '').trim();
+        if (!fechaCorte) {
+          throw new Error('Selecciona una fecha de corte.');
+        }
+
+        var includeTables = parseTableList(document.getElementById('bkPurgeInclude').value || '');
+        var excludeTables = parseTableList(document.getElementById('bkPurgeExclude').value || '');
+        var crearBackupPrevio = !!document.getElementById('bkPurgeCrearBackupPrevio').checked;
+
+        var resumenTablas = includeTables.length > 0 ? includeTables.join(', ') : 'todas las tablas elegibles';
+        var confirmar = window.confirm(
+          'Esta acción eliminará información de la empresa con fecha <= ' + fechaCorte + '.\n' +
+          'Tablas objetivo: ' + resumenTablas + '.\n' +
+          '¿Deseas continuar?'
+        );
+        if (!confirmar) {
+          return;
+        }
+
+        var payload = {
+          empresa_id: empresaId,
+          fecha_corte: fechaCorte,
+          include_tables: includeTables,
+          exclude_tables: excludeTables,
+          crear_backup_previo: crearBackupPrevio,
+          observaciones: 'depuracion por fecha ejecutada desde modulo backups'
+        };
+
+        var data = await requestJSON('POST', 'depurar_fecha', null, payload);
+        var resultado = data.resultado || {};
+        var backupPrevio = data.backup_previo || null;
+        var msg = 'Depuración completada. Registros eliminados: ' + Number(resultado.registros_eliminados || 0) +
+          ' | Tablas depuradas: ' + Number(resultado.tablas_depuradas || 0);
+        if (backupPrevio && backupPrevio.codigo) {
+          msg += ' | Backup previo: ' + backupPrevio.codigo;
+        }
+        setMsg(purgaMsgEl, msg, 'success');
+
+        await cargarBackups();
+      }
+
       async function restaurarBackup(id) {
         var ok = window.confirm('Se restauraran datos de la empresa desde este backup. Deseas continuar?');
         if (!ok) return;
@@ -349,6 +411,15 @@
             await cargarBackups();
           } catch (err) {
             setMsg(listaMsgEl, 'Error al consultar backups: ' + (err && err.message ? err.message : err), 'error');
+          }
+        });
+
+        document.getElementById('btnPurgarFecha').addEventListener('click', async function () {
+          try {
+            setMsg(purgaMsgEl, '', '');
+            await purgarPorFecha();
+          } catch (err) {
+            setMsg(purgaMsgEl, 'Error en depuración por fecha: ' + (err && err.message ? err.message : err), 'error');
           }
         });
 

@@ -1,5 +1,120 @@
 # CHANGELOG
 
+## 2026-04-08
+- Script de despliegue local a GitHub mejorado en `scripts/actualizar_repositorio.ps1`.
+	- Se corrige el armado de argumentos de `git push` para evitar enviar parametros vacios en PowerShell y reducir fallos intermitentes al subir cambios.
+	- Se incorporan mensajes por etapas (`1/8` a `8/8`) con resumen final de commit, rama, remoto y estado de push.
+	- Se centraliza el manejo de reintentos con `-ForcePush` y confirmacion explicita (`SI`) para mantener seguridad operacional.
+	- Se refuerza el flujo de bitacoras automaticas para reportar mejor cuando falla el push documental.
+
+- Backups empresariales: nueva opción para eliminar información por fecha de corte.
+	- `backend/handlers/backups_empresariales.go` agrega `action=depurar_fecha` en `/api/empresa/backups`, con validación de `fecha_corte` y filtros opcionales `include_tables`/`exclude_tables`.
+	- `backend/db/backups_empresariales.go` incorpora `PurgeEmpresaDataByDateCorte` para eliminar registros por `empresa_id` con fecha <= corte (inclusive), con detalle de eliminaciones por tabla.
+	- La depuración permite generar backup previo automático antes de ejecutar borrado para trazabilidad y recuperación.
+	- `backend/handlers/empresa_permisos.go` clasifica esta acción como `permActionApprove` en módulo seguridad.
+	- `web/administrar_empresa/backups.html` incorpora UI de depuración por fecha con confirmación explícita y resumen de resultados.
+	- Se agregan pruebas: `TestEmpresaBackupsPurgeByDateCorte` (DB) y `TestEmpresaBackupsHandlerPurgeByDate` (handler).
+	- Validaciones: pruebas de backups en verde y compilación dirigida de paquetes backend críticos OK.
+
+- Chat y tareas: documentos/fotos entre usuarios de empresa y administrador.
+	- `backend/handlers/chat_tareas.go` deriva autor desde sesion autenticada (usuario/admin), evita suplantacion de `autor_*` y auto-registra participantes emisores en conversaciones.
+	- Al crear conversacion desde usuario, se agrega automaticamente el admin propietario de la empresa como participante para habilitar intercambio usuario-admin.
+	- Se amplian extensiones permitidas de adjuntos en backend y UI: `doc/docx/xls/xlsx/ppt/pptx/rtf/odt/ods/odp` (ademas de imagen/audio/pdf/txt/csv/json).
+	- `web/administrar_empresa/chat_y_tareas.html` ahora envía metadata de actor efectiva (`autor_tipo`, `autor_ref_id`, `autor_nombre`, `autor_email`) segun sesion.
+	- Se agrega `backend/handlers/chat_tareas_test.go` con pruebas para actor usuario derivado, upload `.docx` y auto-participacion usuario/admin.
+	- Validaciones: pruebas dirigidas de handlers chat/tareas y compilacion de paquetes backend criticos en verde.
+
+- Chat y tareas: higiene de pruebas y limpieza de artefactos temporales.
+	- `backend/handlers/chat_tareas_test.go` incorpora limpieza automatica (`t.Cleanup`) de uploads temporales por empresa para mantener el workspace limpio tras las pruebas.
+	- Se retiran artefactos locales residuales de validacion (`.docx` y binarios `.test.exe`) para evitar ruido en el arbol de cambios.
+	- Validaciones: `go test ./handlers -run "TestEmpresaChatTareas" -count=1` y compilacion dirigida de paquetes backend (`./auth ./db ./handlers ./metrics ./utils`) en verde.
+
+- Configuración monetaria y numérica por empresa en panel de configuración.
+	- `backend/db/empresa_configuracion_avanzada.go` amplía `empresa_configuracion_avanzada` con `moneda_codigo`, `sistema_numerico`, `usar_decimales` y `cantidad_decimales`.
+	- `web/administrar_empresa/configuracion.html` agrega tarjeta para configurar moneda operativa, sistema numérico y precisión decimal por empresa.
+	- `backend/db/carritos_compras.go` aplica la moneda configurada por empresa como fallback al crear carritos sin moneda explícita.
+	- `backend/main.go` registra la migración `2026-04-08-030-configuracion-monetaria-numerica`.
+	- Validaciones: compilación de `db`, `handlers` y `main` en backend OK.
+
+- Configuración IA migrada de Gemini a DeepSeek en super administrador y chat empresarial corregido.
+	- `web/super/configuracion_avanzada.html` ahora gestiona credencial `deepseek:deepseek-chat` y corrige flujo de guardado de credenciales IA.
+	- `backend/handlers/ai_credentials_catalog.go` registra `DEEPSEEK_API_KEY` como credencial IA activa en panel super.
+	- `backend/handlers/chat_con_inteligencia_artificial_controller.go` usa DeepSeek como proveedor del chat IA por empresa.
+	- `web/administrar_empresa/chat_con_inteligencia_artificial.html` actualiza etiquetas/mensajes para modelo IA genérico (sin acoplamiento a Gemini).
+	- Validaciones: compilación de `handlers` y `main` en backend OK.
+
+- Gobernanza documental reforzada para Agente Go y limpieza de documentos obsoletos.
+	- Se actualiza `copilot-instructions.md` con regla obligatoria: si un modulo se crea o modifica, deben actualizarse `documentos/descripcion_de_modulos` y `documentos/matriz_roles_permisos_pos_multiempresa.md` en la misma iteracion.
+	- Se refuerza la regla de sincronizacion de documentacion tecnica relacionada y trazabilidad en `documentos/descripcion_de_archivos` y `documentos/historial_de_cambios`.
+	- Se elimina `documentos/modulos del proyecto.md` por duplicidad frente al documento canonico `documentos/descripcion_de_modulos`.
+	- Se actualizan `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos` y `documentos/matriz_roles_permisos_pos_multiempresa.md` con la politica nueva.
+
+- Cierre de pasos operativos 1, 2 y 3 solicitados en pendientes.
+	- Paso 1: revisión/ajuste de accesos directos de módulos.
+		- validación de consistencia de enlaces del panel empresa.
+		- se agrega panel de accesos directos dinámico en `web/administrar_empresa/inicio.html` con visibilidad por permisos/licencia.
+	- Paso 2: notas de voz en chat y tareas.
+		- backend: `chat_tareas` incorpora campos `nota_voz_*` y endpoint `POST /api/empresa/chat_tareas/tareas/nota_voz`.
+		- frontend: `chat_y_tareas.html` incorpora grabación con MediaRecorder para mensajes/tareas, envío y reproducción de audio.
+	- Paso 3: super rol/permisos por licencia.
+		- `licencias` incorpora `modulos_habilitados` y `super_rol_habilitado`.
+		- middleware de permisos aplica restricciones por licencia y rol efectivo por empresa.
+		- UI super de licencias permite configurar módulos habilitados y super rol por plan.
+	- Validaciones:
+		- `go test ./handlers -run "Test(EmpresaPermisosContextoHandlerRestringeModulosPorLicencia|WithEmpresaFinanzasPermissionsSupervisorConSuperRolLicencia|WithEmpresaVentasPermissionsBloqueaModuloNoHabilitadoPorLicencia|EmpresaPermisosContextoHandlerRetornaPermisosPorRol)$" -count=1` -> OK.
+		- `go test ./db ./handlers -run "^$" -count=1` -> OK.
+		- `go test . -run "^$" -count=1` -> OK.
+
+- Sincronizacion documental de pendientes operativos en `Pendiente Notas`.
+	- Se actualiza fecha de corte a 2026-04-08 y se consolida estado real de avance.
+	- Se registran como completados en pendientes: soporte remoto empresarial y venta digital global.
+	- Se deja explicito el bloque pendiente de siguiente iteracion: notas de voz en chat/tareas, super rol por licencia y sensor de puertas para motel.
+
+- Cierre de validacion final del modulo de soporte remoto empresarial.
+	- Validaciones ejecutadas al cierre:
+		- `go test ./db -run "TestSoporteRemoto" -count=1` -> OK.
+		- `go test ./handlers -run "Test(EmpresaSoporteRemotoHandlerFlow|PublicSoporteRemotoAgentHeartbeatAndStateUpdate)$" -count=1` -> OK.
+		- `go test ./... -run "^$" -count=1` -> compilacion global backend OK.
+	- Estado: modulo soporte remoto listo para cierre tecnico con pruebas dirigidas y validacion global en verde.
+
+- Implementacion del modulo de soporte remoto empresarial (estilo AnyDesk/TeamViewer simplificado) con aislamiento por `empresa_id`.
+	- Backend DB: se crea `backend/db/soporte_remoto.go` con tablas `empresa_soporte_remoto_configuracion`, `empresa_soporte_remoto_dispositivos` y `empresa_soporte_remoto_sesiones`, incluyendo validacion de PIN hash, heartbeat de agente y token temporal de visualizacion.
+	- Backend handlers: se crea `backend/handlers/soporte_remoto.go` con endpoints:
+		- empresarial: `GET/POST/PUT/PATCH /api/empresa/soporte_remoto` (configuracion, CRUD dispositivos, sesiones, aprobacion/finalizacion, resolver visualizacion y exportes en `pdf/xls/csv/json/txt`).
+		- publico agente/plugin: `POST /api/public/soporte_remoto` (heartbeat, aprobar/finalizar sesion desde agente).
+	- Integracion backend: `backend/main.go` registra `EnsureEmpresaSoporteRemotoSchema`, migracion `2026-04-08-029-soporte-remoto-empresa`, rutas protegida/publica; `backend/utils/utils.go` habilita la ruta publica del agente.
+	- Seguridad y menu: `backend/handlers/empresa_permisos.go`, `web/administrar_empresa.html` y `web/js/administrar_empresa.js` agregan `linkSoporteRemoto` con control de permisos por modulo seguridad (`A`).
+	- Frontend: se crean `web/administrar_empresa/soporte_remoto.html` y `web/administrar_empresa/soporte_remoto_view.html` para gestion de dispositivos/sesiones y visor embebido por token.
+	- QA: se crean `backend/db/soporte_remoto_test.go` y `backend/handlers/soporte_remoto_test.go`.
+	- Validaciones ejecutadas: `go test ./db -run "TestSoporteRemoto" -count=1` y `go test ./handlers -run "Test(EmpresaSoporteRemotoHandlerFlow|PublicSoporteRemotoAgentHeartbeatAndStateUpdate)$" -count=1` en verde (con incidencia local de lock temporal de `handlers.test.exe` al limpiar artefacto en Windows).
+
+- Implementacion del modulo de venta digital global (super administrador + compra publica Wompi).
+	- Backend DB: se crea `backend/db/venta_digital.go` con tablas `super_venta_digital_configuracion`, `super_venta_digital_items` y `super_venta_digital_ordenes`, incluyendo indices y flujo de orden/pago/entrega.
+	- Backend handlers: se crea `backend/handlers/venta_digital.go` con endpoints:
+		- super: `GET/POST/PUT/PATCH/DELETE /super/api/venta_digital` (configuracion, CRUD catalogo, uploads y ordenes).
+		- publico: `GET/POST /api/public/venta_digital` (catalogo, crear pago Nequi por Wompi, consulta de estado y entrega por correo).
+	- Integracion backend: `backend/main.go`, `backend/utils/utils.go` y `backend/handlers/payments_handlers.go` integran schema/rutas/middleware publico y sincronizacion por webhook Wompi para entrega de licencia.
+	- Frontend: se crean `web/super/venta_digital.html` y `web/venta_digital.html`, y se agregan accesos en `web/menu.js`, `web/super_administrador.html` y `web/super/configuracion_avanzada.html`.
+	- Validacion tecnica: `go test ./... -run "^$" -count=1` en `backend` -> compilacion global OK.
+
+- Refuerzo de QA para permisos dinamicos por rol.
+	- Testing DB: se crea `backend/db/roles_permisos_usuario_test.go` para validar replace/list/lookup y fallback sin tablas en el esquema de permisos de rol.
+	- Testing Handler: se crea `backend/handlers/roles_tipos_usuario_permisos_test.go` con cobertura de `GET/PUT /super/api/roles_de_usuario/permisos` y caso `rol_id` inexistente.
+	- Ajuste de fiabilidad en pruebas: `backend/handlers/empresa_permisos_test.go` alinea el helper de schema con columna `observaciones` requerida por consultas reales.
+	- Validacion ejecutada: `go test ./db -run "TestRolesPermisos" -count=1` y `go test ./handlers -run "TestRolesDeUsuarioPermisosHandler|TestEmpresaPermisosContextoHandler|TestWithEmpresaSeguridadPermissionsRequiereAprobacionParaCambioPermisos|TestSuperEndpointsPermisosPorRol" -count=1` en verde.
+
+- Inicio de implementacion del modulo de permisos dinamicos por rol.
+	- Backend: nuevas tablas y capa DB para overrides por `rol` en modulo/accion y pagina (`roles_de_usuario_permisos`, `roles_de_usuario_paginas_permisos`).
+	- Backend: middleware de permisos empresariales ahora aplica overrides dinamicos y `/api/empresa/permisos_contexto` incluye mapa `paginas`.
+	- Backend: nuevo endpoint super `GET/PUT /super/api/roles_de_usuario/permisos` para gestionar matriz de permisos por rol.
+	- Frontend: nueva pantalla `/super/permisos_rol.html`, acceso desde menu super y boton directo en listado de roles.
+	- Frontend: menu empresa aplica visibilidad por pagina desde contexto de permisos.
+	- Validacion tecnica: pruebas dirigidas de permisos en handlers y compilacion de `main` en verde.
+
+- Plan profesional agregado al tablero de pendientes para completar e integrar el modulo de roles y permisos por usuario de empresa.
+	- Se actualiza `Pendiente Notas` al final del documento con fases de implementacion (1..10), cronograma sugerido y criterios de aceptacion.
+	- Se mantiene enfoque de integracion multiempresa con aislamiento por `empresa_id`, trazabilidad y UAT por rol.
+
 ## 2026-04-07
 - Normalizacion documental del tablero de pendientes (modulo 35).
 	- Se ajusta `Pendiente Notas` para reemplazar la etiqueta `COMPLETADO PARCIAL` por contexto historico de fases.

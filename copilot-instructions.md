@@ -25,6 +25,13 @@ Comportamiento del agente:
 
 - Regla de diagramas y estructura del código: Antes de cambios estructurales, el agente debe revisar `documentos/diagramas/estructura_del_codigo.md` y usar `documentos/diagramas/` como carpeta oficial para diagramas técnicos. Si cambia arquitectura, flujos o integraciones, debe actualizar esos diagramas y registrar la trazabilidad en `documentos/descripcion_de_archivos` y `documentos/historial_de_cambios`.
 
+- Regla de gobernanza modular (obligatoria): Cuando se cree un módulo nuevo o se modifique uno existente, el agente debe actualizar en la misma iteración:
+  - `documentos/descripcion_de_modulos` (objetivo, alcance y estado del módulo).
+  - `documentos/matriz_roles_permisos_pos_multiempresa.md` (roles y permisos por módulo/acción, incluyendo páginas afectadas del panel).
+  - la documentación técnica relacionada (por ejemplo `documentos/descripcion_del_proyecto`, `documentos/diagramas/*`, `documentos/estructura_bd.md` y `estructura_bd.md` si aplica).
+
+- Regla de higiene documental: El agente debe depurar documentos obsoletos o duplicados dentro de `documentos/` cuando no sean de uso operativo actual, verificando antes que no sean requeridos por scripts/checklists/manuales vigentes. Toda eliminación debe quedar registrada en `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios` y `CHANGELOG.md`.
+
 Implementación práctica:
 
 - Si el agente detecta una dependencia externa en el código (por ejemplo, import fuera de la stdlib o `require` en `go.mod`), debe detenerse y preguntar: "¿Autorizas añadir la dependencia X?".

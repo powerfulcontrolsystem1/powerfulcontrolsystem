@@ -38,6 +38,7 @@ function getQueryParam(name) {
     document.getElementById("linkFinanzas"),
     document.getElementById("linkCreditos"),
     document.getElementById("linkBackups"),
+    document.getElementById("linkSoporteRemoto"),
     document.getElementById("linkPropinas"),
     document.getElementById("linkComisiones"),
     document.getElementById("linkUbicacionGPS"),
@@ -88,6 +89,7 @@ function getQueryParam(name) {
     linkFinanzas: { module: permModuleFinanzas, action: permActionCreate },
     linkCreditos: { module: permModuleFinanzas, action: permActionCreate },
     linkBackups: { module: permModuleSeguridad, action: permActionApprove },
+    linkSoporteRemoto: { module: permModuleSeguridad, action: permActionApprove },
     linkPropinas: { module: permModuleFinanzas, action: permActionCreate },
     linkComisiones: { module: permModuleFinanzas, action: permActionCreate },
     linkUbicacionGPS: { module: permModuleInventario, action: permActionCreate },
@@ -370,6 +372,11 @@ function getQueryParam(name) {
 
   function canPermissionContextAccessLink(permissionContext, link) {
     if (!link) return false;
+    var pageKey = link.id || "";
+    var pages = permissionContext && permissionContext.paginas;
+    if (pageKey && pages && typeof pages === "object" && Object.prototype.hasOwnProperty.call(pages, pageKey)) {
+      return !!pages[pageKey];
+    }
     var rule = menuPermissionCatalog[link.id || ""];
     if (!rule || rule.alwaysVisible) {
       return true;

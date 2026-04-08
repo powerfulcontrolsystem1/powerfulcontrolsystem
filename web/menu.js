@@ -9,6 +9,7 @@
       '<div class="fm-panel" role="menu">' +
         '<a class="fm-item" href="/index.html">Portal</a>' +
         '<a class="fm-item" href="/ayuda/ayuda.html">Ayuda</a>' +
+        '<a class="fm-item" href="/venta_digital.html">Venta digital</a>' +
         '<a id="calculatorLink" class="fm-item" href="/administrar_empresa/calculadora.html">Calculadora</a>' +
         '<button id="themeToggle" class="fm-item" type="button" aria-label="Cambiar tema"></button>' +
         '<div id="countryFlagItem" class="fm-item fm-country" style="display:none"></div>' +

@@ -72,6 +72,51 @@ var permissionRolesCatalogOrdered = []string{
 	"auditor",
 }
 
+type permissionPageRule struct {
+	PaginaClave   string `json:"pagina_clave"`
+	Modulo        string `json:"modulo,omitempty"`
+	Accion        string `json:"accion,omitempty"`
+	AlwaysVisible bool   `json:"always_visible,omitempty"`
+}
+
+var permissionPagesCatalogOrdered = []permissionPageRule{
+	{PaginaClave: "linkInicio", AlwaysVisible: true},
+	{PaginaClave: "linkVentas", Modulo: permModuleVentas, Accion: permActionRead},
+	{PaginaClave: "linkCarritoCompras", Modulo: permModuleVentas, Accion: permActionCreate},
+	{PaginaClave: "linkVentaPublica", Modulo: permModuleVentas, Accion: permActionCreate},
+	{PaginaClave: "linkProductos", Modulo: permModuleInventario, Accion: permActionCreate},
+	{PaginaClave: "linkCombosProductos", Modulo: permModuleInventario, Accion: permActionCreate},
+	{PaginaClave: "linkCodigosDescuento", Modulo: permModuleVentas, Accion: permActionCreate},
+	{PaginaClave: "linkCompras", Modulo: permModuleCompras, Accion: permActionCreate},
+	{PaginaClave: "linkConfiguracion", Modulo: permModuleSeguridad, Accion: permActionUpdate},
+	{PaginaClave: "linkUsuarios", Modulo: permModuleSeguridad, Accion: permActionUpdate},
+	{PaginaClave: "linkAsistenciaEmpleados", Modulo: permModuleSeguridad, Accion: permActionUpdate},
+	{PaginaClave: "linkNominaSueldos", Modulo: permModuleFinanzas, Accion: permActionCreate},
+	{PaginaClave: "linkVehiculosRegistro", Modulo: permModuleSeguridad, Accion: permActionCreate},
+	{PaginaClave: "linkAuditoria", Modulo: permModuleSeguridad, Accion: permActionRead},
+	{PaginaClave: "linkChatTareas", Modulo: permModuleVentas, Accion: permActionCreate},
+	{PaginaClave: "linkClientes", Modulo: permModuleClientes, Accion: permActionCreate},
+	{PaginaClave: "linkFacturacionElectronica", Modulo: permModuleFacturacion, Accion: permActionCreate},
+	{PaginaClave: "linkFacturasElectronicas", Modulo: permModuleFacturacion, Accion: permActionRead},
+	{PaginaClave: "linkERPExtendido", Modulo: permModuleSeguridad, Accion: permActionUpdate},
+	{PaginaClave: "linkChatIA", Modulo: permModuleVentas, Accion: permActionRead},
+	{PaginaClave: "linkFinanzas", Modulo: permModuleFinanzas, Accion: permActionCreate},
+	{PaginaClave: "linkCreditos", Modulo: permModuleFinanzas, Accion: permActionCreate},
+	{PaginaClave: "linkBackups", Modulo: permModuleSeguridad, Accion: permActionApprove},
+	{PaginaClave: "linkSoporteRemoto", Modulo: permModuleSeguridad, Accion: permActionApprove},
+	{PaginaClave: "linkPropinas", Modulo: permModuleFinanzas, Accion: permActionCreate},
+	{PaginaClave: "linkComisiones", Modulo: permModuleFinanzas, Accion: permActionCreate},
+	{PaginaClave: "linkUbicacionGPS", Modulo: permModuleInventario, Accion: permActionCreate},
+	{PaginaClave: "linkConfigEstaciones", Modulo: permModuleVentas, Accion: permActionApprove},
+	{PaginaClave: "linkTarifasPorMinutos", Modulo: permModuleVentas, Accion: permActionCreate},
+	{PaginaClave: "linkTarifasPorDia", Modulo: permModuleVentas, Accion: permActionCreate},
+	{PaginaClave: "linkEstaciones", Modulo: permModuleVentas, Accion: permActionUpdate},
+	{PaginaClave: "linkReservasHotel", Modulo: permModuleVentas, Accion: permActionCreate},
+	{PaginaClave: "linkReportes", Modulo: permModuleFinanzas, Accion: permActionRead},
+	{PaginaClave: "linkCalculadora", Modulo: permModuleFinanzas, Accion: permActionRead},
+	{PaginaClave: "linkGraficosEstadisticas", Modulo: permModuleFinanzas, Accion: permActionRead},
+}
+
 type permissionModuleMatrixRow struct {
 	Modulo   string          `json:"modulo"`
 	Read     bool            `json:"read"`
@@ -80,6 +125,14 @@ type permissionModuleMatrixRow struct {
 	Delete   bool            `json:"delete"`
 	Approve  bool            `json:"approve"`
 	Acciones map[string]bool `json:"acciones"`
+}
+
+type permissionPageAccessRow struct {
+	PaginaClave   string `json:"pagina_clave"`
+	Modulo        string `json:"modulo,omitempty"`
+	Accion        string `json:"accion,omitempty"`
+	Permitido     bool   `json:"permitido"`
+	AlwaysVisible bool   `json:"always_visible,omitempty"`
 }
 
 type permissionSummary struct {
@@ -99,11 +152,22 @@ type empresaPermisosContextResponse struct {
 	EmpresaID        int64                       `json:"empresa_id"`
 	AdminEmail       string                      `json:"admin_email"`
 	Rol              string                      `json:"rol"`
+	RolEfectivo      string                      `json:"rol_efectivo,omitempty"`
 	AccionesCatalogo []string                    `json:"acciones_catalogo"`
 	Modulos          []permissionModuleMatrixRow `json:"modulos"`
+	Paginas          map[string]bool             `json:"paginas,omitempty"`
 	Resumen          permissionSummary           `json:"resumen"`
+	Licencia         *empresaPermisosLicenciaCtx `json:"licencia,omitempty"`
 	IncluyeMatriz    bool                        `json:"incluye_matriz"`
 	MatrizRoles      []empresaPermisosRolMatriz  `json:"matriz_roles,omitempty"`
+}
+
+type empresaPermisosLicenciaCtx struct {
+	LicenciaID         int64    `json:"licencia_id,omitempty"`
+	Nombre             string   `json:"nombre,omitempty"`
+	ModulosHabilitados []string `json:"modulos_habilitados,omitempty"`
+	SuperRolHabilitado bool     `json:"super_rol_habilitado"`
+	RestringeModulos   bool     `json:"restringe_modulos"`
 }
 
 // EmpresaPermisosContextoHandler expone el contexto de permisos efectivo por rol/modulo.
@@ -135,14 +199,42 @@ func EmpresaPermisosContextoHandler(dbSuper *sql.DB) http.HandlerFunc {
 			role = "sin_rol"
 		}
 
-		modulos := buildPermissionModuleMatrixForRole(role)
+		licenciaPolicy, err := dbpkg.GetLicenciaPermisoPolicyByEmpresa(dbSuper, empresaID)
+		if err != nil {
+			log.Printf("[authz] permisos_contexto licencia empresa=%d error: %v", empresaID, err)
+		}
+
+		allowedModules, allowedModulesList := parseLicenciaModulosCSV("")
+		if licenciaPolicy != nil {
+			allowedModules, allowedModulesList = parseLicenciaModulosCSV(licenciaPolicy.ModulosHabilitados)
+		}
+		effectiveRole := resolveEffectiveRoleByLicencia(role, licenciaPolicy)
+
+		modulos := buildPermissionModuleMatrixForRoleDynamic(dbSuper, effectiveRole)
+		modulos = applyLicenciaRestriccionesToModuleRows(modulos, allowedModules)
+		paginas := buildPermissionPagesMapForRoleDynamic(dbSuper, effectiveRole, modulos)
+
+		var licenciaCtx *empresaPermisosLicenciaCtx
+		if licenciaPolicy != nil {
+			licenciaCtx = &empresaPermisosLicenciaCtx{
+				LicenciaID:         licenciaPolicy.LicenciaID,
+				Nombre:             strings.TrimSpace(licenciaPolicy.Nombre),
+				ModulosHabilitados: append([]string{}, allowedModulesList...),
+				SuperRolHabilitado: licenciaPolicy.SuperRolHabilitado,
+				RestringeModulos:   len(allowedModules) > 0,
+			}
+		}
+
 		resp := empresaPermisosContextResponse{
 			EmpresaID:        empresaID,
 			AdminEmail:       adminEmail,
 			Rol:              role,
+			RolEfectivo:      effectiveRole,
 			AccionesCatalogo: append([]string{}, permissionActionsCatalogOrdered...),
 			Modulos:          modulos,
+			Paginas:          paginas,
 			Resumen:          summarizePermissionModules(modulos),
+			Licencia:         licenciaCtx,
 			IncluyeMatriz:    false,
 		}
 
@@ -150,7 +242,8 @@ func EmpresaPermisosContextoHandler(dbSuper *sql.DB) http.HandlerFunc {
 			resp.IncluyeMatriz = true
 			resp.MatrizRoles = make([]empresaPermisosRolMatriz, 0, len(permissionRolesCatalogOrdered))
 			for _, catalogRole := range permissionRolesCatalogOrdered {
-				rows := buildPermissionModuleMatrixForRole(catalogRole)
+				rows := buildPermissionModuleMatrixForRoleDynamic(dbSuper, catalogRole)
+				rows = applyLicenciaRestriccionesToModuleRows(rows, allowedModules)
 				resp.MatrizRoles = append(resp.MatrizRoles, empresaPermisosRolMatriz{
 					Rol:     catalogRole,
 					Modulos: rows,
@@ -263,7 +356,27 @@ func withEmpresaRolePermissions(dbEmp, dbSuper *sql.DB, module string, resolveAc
 		}
 
 		role := normalizePermissionRole(admin.Role)
-		if !roleAllowsModuleAction(role, module, action) {
+		licenciaPolicy, licErr := dbpkg.GetLicenciaPermisoPolicyByEmpresa(dbSuper, empresaID)
+		if licErr != nil {
+			log.Printf("[authz] licencia permisos module=%s email=%s empresa_id=%d error: %v", module, adminEmail, empresaID, licErr)
+			http.Error(w, "No se pudo validar permisos de licencia", http.StatusInternalServerError)
+			registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusInternalServerError, 0)
+			return
+		}
+
+		allowedModules, _ := parseLicenciaModulosCSV("")
+		if licenciaPolicy != nil {
+			allowedModules, _ = parseLicenciaModulosCSV(licenciaPolicy.ModulosHabilitados)
+		}
+		skipLicenciaModuloCheck := module == permModuleSeguridad && strings.HasPrefix(strings.TrimSpace(r.URL.Path), "/api/empresa/permisos_contexto")
+		if !skipLicenciaModuloCheck && !isModuloPermitidoByLicencia(module, allowedModules) {
+			http.Error(w, "forbidden: modulo no habilitado por licencia activa", http.StatusForbidden)
+			registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusForbidden, 0)
+			return
+		}
+
+		effectiveRole := resolveEffectiveRoleByLicencia(role, licenciaPolicy)
+		if !roleAllowsModuleActionWithOverrides(dbSuper, effectiveRole, module, action) {
 			http.Error(w, "forbidden: rol sin permiso para la accion solicitada", http.StatusForbidden)
 			registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusForbidden, 0)
 			return
@@ -291,11 +404,13 @@ func withEmpresaRolePermissions(dbEmp, dbSuper *sql.DB, module string, resolveAc
 		}
 
 		ctx := context.WithValue(r.Context(), "adminRole", role)
+		ctx = context.WithValue(ctx, "adminRoleEfectivo", effectiveRole)
 		ctx = context.WithValue(ctx, "empresaID", empresaID)
 		r = r.WithContext(ctx)
 
 		w.Header().Set("X-Empresa-ID", strconv.FormatInt(empresaID, 10))
 		r.Header.Set("X-Admin-Role", role)
+		r.Header.Set("X-Admin-Role-Efectivo", effectiveRole)
 
 		auditStart := time.Now()
 		auditRW := &auditCaptureResponseWriter{ResponseWriter: w, status: http.StatusOK}
@@ -671,6 +786,8 @@ func resolveSeguridadPermissionAction(r *http.Request) string {
 		return permActionApprove
 	case "restaurar", "restore", "rollback_backup":
 		return permActionApprove
+	case "depurar_fecha", "purgar_fecha", "eliminar_hasta_fecha", "depurar_hasta_fecha":
+		return permActionApprove
 	case "sync_manual", "rotar_credencial", "rotar_credenciales":
 		return permActionApprove
 	case "aprobar", "rechazar", "vincular_nomina", "enlazar_nomina":
@@ -780,6 +897,107 @@ func roleAllowsModuleAction(role, module, action string) bool {
 	return false
 }
 
+func roleAllowsModuleActionWithOverrides(dbSuper *sql.DB, role, module, action string) bool {
+	normalizedRole := normalizePermissionRole(role)
+	normalizedModule := strings.ToLower(strings.TrimSpace(module))
+	normalizedAction := strings.ToUpper(strings.TrimSpace(action))
+
+	allowed := roleAllowsModuleAction(normalizedRole, normalizedModule, normalizedAction)
+	if dbSuper == nil || normalizedRole == "" || normalizedRole == "sin_rol" {
+		return allowed
+	}
+
+	found, permitido, err := dbpkg.LookupRolPermisoModuloByRoleName(dbSuper, normalizedRole, normalizedModule, normalizedAction)
+	if err != nil {
+		if isPermissionMissingTableError(err) {
+			return allowed
+		}
+		log.Printf("[authz] modulo override lookup role=%s modulo=%s accion=%s error: %v", normalizedRole, normalizedModule, normalizedAction, err)
+		return allowed
+	}
+	if found {
+		return permitido
+	}
+
+	return allowed
+}
+
+func loadPermissionOverridesByRoleName(dbSuper *sql.DB, role string) (map[string]bool, map[string]bool, error) {
+	moduleOverrides := map[string]bool{}
+	pageOverrides := map[string]bool{}
+	if dbSuper == nil {
+		return moduleOverrides, pageOverrides, nil
+	}
+
+	normalizedRole := normalizePermissionRole(role)
+	if normalizedRole == "" || normalizedRole == "sin_rol" {
+		return moduleOverrides, pageOverrides, nil
+	}
+
+	rolID, err := dbpkg.ResolveRolDeUsuarioIDByNombre(dbSuper, normalizedRole)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) || isPermissionMissingTableError(err) {
+			return moduleOverrides, pageOverrides, nil
+		}
+		return nil, nil, err
+	}
+
+	modulos, err := dbpkg.ListRolPermisosModuloByRolID(dbSuper, rolID)
+	if err != nil {
+		if isPermissionMissingTableError(err) {
+			return moduleOverrides, pageOverrides, nil
+		}
+		return nil, nil, err
+	}
+	for _, item := range modulos {
+		moduleOverrides[permissionModuleActionKey(item.Modulo, item.Accion)] = item.Permitido
+	}
+
+	paginas, err := dbpkg.ListRolPermisosPaginaByRolID(dbSuper, rolID)
+	if err != nil {
+		if isPermissionMissingTableError(err) {
+			return moduleOverrides, pageOverrides, nil
+		}
+		return nil, nil, err
+	}
+	for _, item := range paginas {
+		pageOverrides[strings.TrimSpace(item.PaginaClave)] = item.Permitido
+	}
+
+	return moduleOverrides, pageOverrides, nil
+}
+
+func permissionModuleActionKey(modulo, accion string) string {
+	return strings.ToLower(strings.TrimSpace(modulo)) + "|" + strings.ToUpper(strings.TrimSpace(accion))
+}
+
+func setPermissionActionOnModuleRow(row *permissionModuleMatrixRow, action string, permitido bool) {
+	normalizedAction := strings.ToUpper(strings.TrimSpace(action))
+	switch normalizedAction {
+	case permActionRead:
+		row.Read = permitido
+	case permActionCreate:
+		row.Create = permitido
+	case permActionUpdate:
+		row.Update = permitido
+	case permActionDelete:
+		row.Delete = permitido
+	case permActionApprove:
+		row.Approve = permitido
+	}
+	if row.Acciones == nil {
+		row.Acciones = map[string]bool{}
+	}
+	row.Acciones[normalizedAction] = permitido
+}
+
+func isPermissionMissingTableError(err error) bool {
+	if err == nil {
+		return false
+	}
+	return strings.Contains(strings.ToLower(strings.TrimSpace(err.Error())), "no such table")
+}
+
 func roleIn(role string, allowed ...string) bool {
 	role = strings.TrimSpace(strings.ToLower(role))
 	if role == "" {
@@ -820,6 +1038,162 @@ func buildPermissionModuleMatrixForRole(role string) []permissionModuleMatrixRow
 		})
 	}
 	return out
+}
+
+func buildPermissionModuleMatrixForRoleDynamic(dbSuper *sql.DB, role string) []permissionModuleMatrixRow {
+	rows := buildPermissionModuleMatrixForRole(role)
+	moduleOverrides, _, err := loadPermissionOverridesByRoleName(dbSuper, role)
+	if err != nil {
+		log.Printf("[authz] load permission overrides role=%s error: %v", role, err)
+		return rows
+	}
+	if len(moduleOverrides) == 0 {
+		return rows
+	}
+
+	for idx := range rows {
+		row := &rows[idx]
+		for _, action := range permissionActionsCatalogOrdered {
+			if permitido, ok := moduleOverrides[permissionModuleActionKey(row.Modulo, action)]; ok {
+				setPermissionActionOnModuleRow(row, action, permitido)
+			}
+		}
+	}
+
+	return rows
+}
+
+func buildPermissionPagesMapForRoleDynamic(dbSuper *sql.DB, role string, modulos []permissionModuleMatrixRow) map[string]bool {
+	_, pageOverrides, err := loadPermissionOverridesByRoleName(dbSuper, role)
+	if err != nil {
+		log.Printf("[authz] load page overrides role=%s error: %v", role, err)
+		pageOverrides = map[string]bool{}
+	}
+	return buildPermissionPagesMapFromModuleRows(modulos, pageOverrides)
+}
+
+func buildPermissionPagesCatalogForRoleDynamic(dbSuper *sql.DB, role string, modulos []permissionModuleMatrixRow) []permissionPageAccessRow {
+	_, pageOverrides, err := loadPermissionOverridesByRoleName(dbSuper, role)
+	if err != nil {
+		log.Printf("[authz] load page catalog overrides role=%s error: %v", role, err)
+		pageOverrides = map[string]bool{}
+	}
+	return buildPermissionPagesCatalogFromModuleRows(modulos, pageOverrides)
+}
+
+func buildPermissionPagesMapFromModuleRows(modulos []permissionModuleMatrixRow, pageOverrides map[string]bool) map[string]bool {
+	rows := buildPermissionPagesCatalogFromModuleRows(modulos, pageOverrides)
+	out := make(map[string]bool, len(rows))
+	for _, row := range rows {
+		out[row.PaginaClave] = row.Permitido
+	}
+	return out
+}
+
+func buildPermissionPagesCatalogFromModuleRows(modulos []permissionModuleMatrixRow, pageOverrides map[string]bool) []permissionPageAccessRow {
+	moduleRows := make(map[string]permissionModuleMatrixRow, len(modulos))
+	for _, row := range modulos {
+		moduleRows[strings.ToLower(strings.TrimSpace(row.Modulo))] = row
+	}
+
+	out := make([]permissionPageAccessRow, 0, len(permissionPagesCatalogOrdered))
+	for _, rule := range permissionPagesCatalogOrdered {
+		permitido := true
+		if !rule.AlwaysVisible {
+			permitido = false
+			if moduleRow, ok := moduleRows[strings.ToLower(strings.TrimSpace(rule.Modulo))]; ok {
+				permitido = moduleRow.Acciones[strings.ToUpper(strings.TrimSpace(rule.Accion))]
+			}
+		}
+		if override, ok := pageOverrides[rule.PaginaClave]; ok {
+			permitido = override
+		}
+
+		out = append(out, permissionPageAccessRow{
+			PaginaClave:   rule.PaginaClave,
+			Modulo:        rule.Modulo,
+			Accion:        rule.Accion,
+			Permitido:     permitido,
+			AlwaysVisible: rule.AlwaysVisible,
+		})
+	}
+
+	return out
+}
+
+func parseLicenciaModulosCSV(raw string) (map[string]bool, []string) {
+	allowed := map[string]bool{}
+	ordered := make([]string, 0)
+	for _, chunk := range strings.Split(raw, ",") {
+		modulo := strings.ToLower(strings.TrimSpace(chunk))
+		if modulo == "" || !isPermissionModuleKnown(modulo) {
+			continue
+		}
+		if allowed[modulo] {
+			continue
+		}
+		allowed[modulo] = true
+		ordered = append(ordered, modulo)
+	}
+	return allowed, ordered
+}
+
+func isPermissionModuleKnown(modulo string) bool {
+	target := strings.ToLower(strings.TrimSpace(modulo))
+	if target == "" {
+		return false
+	}
+	for _, known := range permissionModulesCatalogOrdered {
+		if target == strings.ToLower(strings.TrimSpace(known)) {
+			return true
+		}
+	}
+	return false
+}
+
+func isModuloPermitidoByLicencia(modulo string, allowed map[string]bool) bool {
+	if len(allowed) == 0 {
+		return true
+	}
+	key := strings.ToLower(strings.TrimSpace(modulo))
+	if key == "" {
+		return false
+	}
+	return allowed[key]
+}
+
+func applyLicenciaRestriccionesToModuleRows(rows []permissionModuleMatrixRow, allowed map[string]bool) []permissionModuleMatrixRow {
+	if len(allowed) == 0 {
+		return rows
+	}
+	out := make([]permissionModuleMatrixRow, 0, len(rows))
+	for _, row := range rows {
+		next := row
+		next.Acciones = map[string]bool{}
+		for _, action := range permissionActionsCatalogOrdered {
+			next.Acciones[action] = row.Acciones[action]
+		}
+		if !isModuloPermitidoByLicencia(next.Modulo, allowed) {
+			setPermissionActionOnModuleRow(&next, permActionRead, false)
+			setPermissionActionOnModuleRow(&next, permActionCreate, false)
+			setPermissionActionOnModuleRow(&next, permActionUpdate, false)
+			setPermissionActionOnModuleRow(&next, permActionDelete, false)
+			setPermissionActionOnModuleRow(&next, permActionApprove, false)
+		}
+		out = append(out, next)
+	}
+	return out
+}
+
+func resolveEffectiveRoleByLicencia(role string, licenciaPolicy *dbpkg.LicenciaPermisoPolicy) string {
+	resolved := normalizePermissionRole(role)
+	if licenciaPolicy == nil || !licenciaPolicy.SuperRolHabilitado {
+		return resolved
+	}
+	if resolved == "supervisor_sucursal" {
+		return "admin_empresa"
+	}
+	return resolved
 }
 
 func summarizePermissionModules(rows []permissionModuleMatrixRow) permissionSummary {

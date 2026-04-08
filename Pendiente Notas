@@ -1,6 +1,6 @@
 Pendiente Notas
 
-Fecha de actualizacion: 2026-04-07
+Fecha de actualizacion: 2026-04-08
 Objetivo: cerrar cada modulo al 100% funcional, tecnico y operativo.
 
 Definicion de modulo al 100%
@@ -422,5 +422,183 @@ Resultado esperado
 Estado general (2026-04-07)
 - Todos los modulos 1..38 y el bloque "Ultimo" estan marcados como COMPLETADO con evidencia tecnica asociada.
 
+Actualizacion general (2026-04-08)
+- COMPLETADO: modulo de venta digital global (super + publico) con catalogo, ordenes, pago Wompi y entrega por correo.
+- COMPLETADO: modulo de soporte remoto empresarial (tipo AnyDesk/TeamViewer simplificado) con aislamiento por `empresa_id`, dispositivos, sesiones, token de visualizacion y exportacion multiformato.
+- EN AVANCE: plan de permisos dinamicos por rol con backend, UI y pruebas implementadas; pendiente activacion por feature flag y monitoreo piloto controlado.
 
-que las paginas cargen en la misma pagina que no abra paginas nuevas
+
+## plan de roles
+Plan profesional de tareas para completar e integrar modulo de roles y permisos por usuario de empresa
+Fecha: 2026-04-08
+Estado: EN IMPLEMENTACION AVANZADA (fases 1..9 implementadas; fase 10 en cierre operativo)
+
+Objetivo funcional del plan
+- Permitir que cada usuario de empresa vea solo las paginas/modulos autorizados y ejecute solo las acciones permitidas por su rol.
+- Gestionar roles y tipos de usuario desde super administrador, con configuracion granular de permisos por modulo, pagina y accion.
+- Mantener aislamiento estricto por `empresa_id`, trazabilidad completa de cambios y compatibilidad operativa multiempresa.
+
+Diagnostico actual (base existente)
+- Ya existe CRUD de `roles_de_usuario` y `tipos_de_usuario` en panel super.
+- Ya existe asignacion de `rol_usuario_id` al crear/editar usuarios de empresa.
+- Ya existe middleware de permisos por modulo/accion y endpoint de contexto (`/api/empresa/permisos_contexto`).
+- Ya existe ocultamiento de enlaces en menu empresa segun contexto de permisos.
+- Brecha principal: la matriz de permisos esta fija en codigo; no existe pagina para configurar permisos granulares por rol en forma dinamica.
+
+Fase 1: Definicion funcional y de seguridad (RBAC empresarial)
+- Definir catalogo oficial de modulos, paginas y acciones (R/C/U/D/A + ver pagina).
+- Definir reglas de herencia entre rol, tipo de usuario y usuario final.
+- Definir reglas de aprobacion para cambios criticos de seguridad.
+Entregable:
+- Matriz maestra validada (rol x modulo x pagina x accion).
+
+Estado fase 1: COMPLETADO (2026-04-08)
+
+Fase 2: Modelo de datos y migraciones
+- Crear tablas de permisos configurables por rol (con versionamiento y estado).
+- Agregar trazabilidad de cambios de permisos (quien, cuando, que cambio, motivo, aprobacion).
+- Migrar matriz hardcodeada actual a datos iniciales en BD.
+Entregable:
+- Esquema implementado y migracion idempotente en `empresas.db/superadministrador.db` segun alcance.
+
+Estado fase 2: COMPLETADO (2026-04-08)
+
+Fase 3: Backend de administracion de permisos (super)
+- Implementar endpoints CRUD para permisos por rol y por tipo de usuario.
+- Implementar operaciones masivas: activar/desactivar por modulo, por pagina y por accion.
+- Implementar endpoint de previsualizacion de impacto por rol antes de publicar cambios.
+Entregable:
+- API de configuracion de permisos lista para UI y con auditoria obligatoria.
+
+Estado fase 3: COMPLETADO (2026-04-08)
+
+Fase 4: Correccion de autenticacion/sesion de usuario empresa
+- Asegurar que la sesion use el rol real del usuario de empresa y no un rol fijo de administrador.
+- Propagar rol efectivo a middleware y contexto de permisos por `empresa_id`.
+- Ajustar login/refresh/session para no romper compatibilidad con flujo actual.
+Entregable:
+- Sesion empresarial con rol efectivo consistente en backend y frontend.
+
+Estado fase 4: COMPLETADO (2026-04-08)
+
+Fase 5: Motor de autorizacion dinamico
+- Reemplazar validacion hardcodeada por consulta dinamica de permisos configurados.
+- Mantener fallback de seguridad deny-by-default cuando no exista configuracion.
+- Agregar cache controlado con invalidacion al publicar cambios de permisos.
+Entregable:
+- Middleware RBAC dinamico estable en rutas empresariales.
+
+Estado fase 5: COMPLETADO (2026-04-08)
+
+Fase 6: Nueva pagina de configuracion de rol (super)
+- Crear UI de matriz de permisos por rol con toggles por modulo/pagina/accion.
+- Incluir buscador, filtros, seleccion masiva y guardado transaccional.
+- Incluir modo comparativo (rol actual vs rol objetivo) para soporte UAT.
+Entregable:
+- Pantalla operativa de configuracion de rol integrada al panel super.
+
+Estado fase 6: COMPLETADO (2026-04-08)
+
+Fase 7: Integracion con panel empresa
+- Sincronizar menu y acceso de paginas con el nuevo contexto de permisos.
+- Bloquear acciones en pagina cuando el rol no tenga permiso, con mensaje claro al usuario.
+- Evitar apertura de paginas fuera del flujo del iframe del panel empresa.
+Entregable:
+- Navegacion y acciones empresariales alineadas a permisos configurados.
+
+Estado fase 7: COMPLETADO (2026-04-08)
+
+Fase 8: QA tecnico y UAT por rol
+- Pruebas unitarias de DB/handlers del nuevo RBAC.
+- Pruebas de integracion por rol en endpoints criticos (ventas, inventario, finanzas, seguridad).
+- UAT formal por rol con evidencia de casos permitidos/denegados.
+Entregable:
+- Evidencia de pruebas en verde y acta UAT de permisos.
+
+Estado fase 8: COMPLETADO (2026-04-08)
+
+Fase 9: Documentacion y trazabilidad
+- Actualizar `documentos/estructura_bd.md` y `estructura_bd.md` con nuevas tablas/relaciones.
+- Actualizar `documentos/diagramas/estructura_del_codigo.md` con flujo de autorizacion dinamica.
+- Actualizar `documentos/descripcion_de_archivos`, `documentos/descripcion_del_proyecto` y `CHANGELOG.md`.
+Entregable:
+- Documentacion tecnica y operativa consistente con implementacion.
+
+Estado fase 9: COMPLETADO (2026-04-08)
+
+Fase 10: Despliegue controlado y monitoreo
+- Activar por feature flag y habilitar por empresas piloto.
+- Monitorear denegaciones, errores y tiempos de respuesta de permisos.
+- Definir rollback rapido a configuracion anterior ante incidente.
+Entregable:
+- Salida a produccion estable con observabilidad y plan de contingencia.
+
+Estado fase 10: EN PROGRESO (2026-04-08)
+- Pendiente de cierre: activar por feature flag en empresas piloto y consolidar monitoreo operativo continuo de denegaciones/latencia.
+
+Cronograma sugerido
+- Sprint 1 (3-5 dias): fases 1, 2 y 3.
+- Sprint 2 (4-6 dias): fases 4, 5 y 6.
+- Sprint 3 (3-4 dias): fases 7, 8, 9 y 10.
+
+Criterios de aceptacion
+- Todo usuario de empresa solo ve paginas autorizadas por su rol.
+- Todo usuario de empresa solo ejecuta acciones autorizadas por su rol.
+- Super administrador puede configurar permisos por rol/pagina/accion sin tocar codigo.
+- Toda denegacion y todo cambio de permiso queda auditado por `empresa_id`, usuario y timestamp.
+- El sistema mantiene operacion concurrente multiempresa sin fuga de permisos entre empresas.
+
+#ultimo paso
+- COMPLETADO (2026-04-08): revisados links y accesos directos de módulos en panel empresa/super.
+	- Se valida consistencia entre menú de `administrar_empresa.html` y catálogo de permisos en `web/js/administrar_empresa.js`.
+	- Se agregan accesos directos dinámicos por permisos/licencia en `web/administrar_empresa/inicio.html`.
+
+- COMPLETADO (2026-04-08): configuración por empresa de moneda, sistema numérico y decimales.
+	- Se agrega en `web/administrar_empresa/configuracion.html` la tarjeta de formato monetario/numerico.
+	- Se amplía `empresa_configuracion_avanzada` con `moneda_codigo`, `sistema_numerico`, `usar_decimales` y `cantidad_decimales`.
+	- La creación de carritos usa `moneda_codigo` como fallback cuando no llega moneda en el payload.
+
+
+sistema de anydesk , o como el teamviewer
+- COMPLETADO (2026-04-08): implementado modulo de soporte remoto por empresa.
+	- API empresarial: `/api/empresa/soporte_remoto` (configuracion, dispositivos, sesiones, aprobacion/finalizacion, resolver visor, exportes).
+	- API publica de agente/plugin: `/api/public/soporte_remoto` (heartbeat y cambios de estado de sesion).
+	- UI: `web/administrar_empresa/soporte_remoto.html` y `web/administrar_empresa/soporte_remoto_view.html`.
+	- Evidencia tecnica:
+		- `go test ./db -run "TestSoporteRemoto" -count=1` -> OK.
+		- `go test ./handlers -run "Test(EmpresaSoporteRemotoHandlerFlow|PublicSoporteRemotoAgentHeartbeatAndStateUpdate)$" -count=1` -> OK.
+		- `go test ./... -run "^$" -count=1` -> compilacion global backend OK.
+
+en el chat y tareas, que permita enviar notaz de voz. 
+- COMPLETADO (2026-04-08): implementadas notas de voz en chat y tareas.
+	- Chat: grabación de voz en UI (MediaRecorder) y envío por endpoint de adjuntos.
+	- Tareas: grabación de voz en UI, persistencia por tarea y reproducción desde listado.
+
+la licencias son superiores a los roles de usuarios,  coloca la opcion para asisgnar un super rol , a los diferentes tipos de licencia,  cada licencia podrar activar y bloquear ciertos modulos.
+- COMPLETADO (2026-04-08): licencias aplican módulos habilitados y opción de super rol.
+	- Se agrega configuración `modulos_habilitados` y `super_rol_habilitado` en CRUD de licencias.
+	- El middleware de permisos por empresa aplica restricciones de licencia y rol efectivo.
+
+modifica que al crear una licencia en super_administrador esta tambien asigne roles o permisos de moduloso bloqueos de modulos
+- COMPLETADO (2026-04-08): al crear/editar licencia en super administrador se guardan módulos permitidos y bandera de super rol para calcular permisos efectivos por empresa.
+
+## modulo de sensor de puertas para motel
+- crea  en estacionesun pequeño cuadro pequeño en la esquina de cada estacion. este cuadro , cambiara decolor. de acuerdo al dato que se leera desde una raspberry. que sera un sensor en cada habitacion de hotel. 
+
+- este cuadro podra ser habilitado o desgabilitado en la configuracion de estaciones. 
+el cuadro se pondra verde si el dato recibido de la raspberry indica que la puerta de la habitacion o estacion se cerro, y color negro cuando este abierta.
+
+en configuracion de estacion, agrega para configurar el ancho y alto de las estaciones, y que el texto de adentro se auto adapte.
+- crea unmodulo que funcionara por empresa que va a rcibir los datos que va a enviar una raspberry pi conectada a una empresa. el sistema debe detectar una numeracion unica en cada raspberry relacionada con una empresa y asi cuando el servidor reciba el dato de la raspberry que puede ser enviado por ejemplo cada 10 segundos, el servidor detectara a que empresa pertenece y cargara los datos.  en este caso por estacion. 
+
+- PENDIENTE (2026-04-08): modulo de sensor de puertas no implementado en esta iteracion.
+
+
+- implementar la IA deepseek para el chat con IA de administrar_empresa
+
+
+
+apikey deepseek
+sk-c75bc2c9e04f4c5ea21f4714320e1489
+
+

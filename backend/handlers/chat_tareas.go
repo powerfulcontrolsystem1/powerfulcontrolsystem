@@ -45,6 +45,87 @@ func parseFloat64FormOptional(r *http.Request, key string) (float64, error) {
 	return strconv.ParseFloat(raw, 64)
 }
 
+type chatActor struct {
+	Tipo           string
+	RefID          int64
+	Nombre         string
+	Email          string
+	UsuarioCreador string
+}
+
+func normalizeChatActorEmail(raw string) string {
+	v := strings.ToLower(strings.TrimSpace(raw))
+	if v == "" {
+		return ""
+	}
+	return v
+}
+
+func getEmpresaOwnerEmail(dbEmp *sql.DB, empresaID int64) string {
+	if dbEmp == nil || empresaID <= 0 {
+		return ""
+	}
+
+	var owner string
+	if err := dbEmp.QueryRow(`SELECT COALESCE(usuario_creador, '') FROM empresas WHERE id = ? LIMIT 1`, empresaID).Scan(&owner); err != nil {
+		return ""
+	}
+	return normalizeChatActorEmail(owner)
+}
+
+func resolveChatActor(dbEmp *sql.DB, r *http.Request, empresaID int64) chatActor {
+	email := normalizeChatActorEmail(adminEmailFromRequest(r))
+	if email == "" || email == "sistema" {
+		return chatActor{
+			Tipo:           "sistema",
+			RefID:          0,
+			Nombre:         "Sistema",
+			Email:          "sistema",
+			UsuarioCreador: "sistema",
+		}
+	}
+
+	actor := chatActor{
+		Tipo:           "admin",
+		RefID:          0,
+		Nombre:         safeAuthorName("", email),
+		Email:          email,
+		UsuarioCreador: email,
+	}
+
+	if dbEmp != nil && empresaID > 0 {
+		if user, err := dbpkg.GetEmpresaUsuarioByEmailScoped(dbEmp, email, empresaID); err == nil && user != nil {
+			actor.Tipo = "usuario"
+			actor.RefID = user.ID
+			actor.Email = normalizeChatActorEmail(user.Email)
+			actor.Nombre = safeAuthorName(user.Nombre, actor.Email)
+			actor.UsuarioCreador = actor.Email
+		}
+	}
+
+	return actor
+}
+
+func ensureChatActorParticipant(dbEmp *sql.DB, empresaID, conversacionID int64, actor chatActor) {
+	if dbEmp == nil || empresaID <= 0 || conversacionID <= 0 {
+		return
+	}
+	email := normalizeChatActorEmail(actor.Email)
+	if email == "" || email == "sistema" {
+		return
+	}
+	_, _ = dbpkg.CreateChatParticipante(dbEmp, dbpkg.ChatParticipante{
+		EmpresaID:         empresaID,
+		ConversacionID:    conversacionID,
+		ParticipanteTipo:  actor.Tipo,
+		ParticipanteRefID: actor.RefID,
+		Nombre:            safeAuthorName(actor.Nombre, email),
+		Email:             email,
+		UsuarioCreador:    actor.UsuarioCreador,
+		Estado:            "activo",
+	})
+}
+
 func inferAttachmentType(requested, contentType, ext string) string {
 	req := strings.ToLower(strings.TrimSpace(requested))
 	if req == "imagen" || req == "audio" || req == "archivo" || req == "otro" {
@@ -96,6 +177,16 @@ func isAllowedAttachmentExt(ext string) bool {
 		".txt":  true,
 		".csv":  true,
 		".json": true,
+		".doc":  true,
+		".docx": true,
+		".xls":  true,
+		".xlsx": true,
+		".ppt":  true,
+		".pptx": true,
+		".rtf":  true,
+		".odt":  true,
+		".ods":  true,
+		".odp":  true,
 	}
 	return allowed[strings.ToLower(strings.TrimSpace(ext))]
 }
@@ -139,8 +230,8 @@ func EmpresaChatTareasConversacionesHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 
-			adminEmail := strings.TrimSpace(adminEmailFromRequest(r))
-			payload.UsuarioCreador = adminEmail
+			actor := resolveChatActor(dbEmp, r, payload.EmpresaID)
+			payload.UsuarioCreador = actor.UsuarioCreador
 			if strings.TrimSpace(payload.EstadoConversacion) == "" {
 				payload.EstadoConversacion = "abierta"
 			}
@@ -151,21 +242,26 @@ func EmpresaChatTareasConversacionesHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 
-			_, _ = dbpkg.CreateChatParticipante(dbEmp, dbpkg.ChatParticipante{
-				EmpresaID:         payload.EmpresaID,
-				ConversacionID:    newID,
-				ParticipanteTipo:  "admin",
-				ParticipanteRefID: 0,
-				Nombre:            adminEmail,
-				Email:             adminEmail,
-				UsuarioCreador:    adminEmail,
-				Estado:            "activo",
-			})
+			ensureChatActorParticipant(dbEmp, payload.EmpresaID, newID, actor)
+
+			empresaOwnerEmail := getEmpresaOwnerEmail(dbEmp, payload.EmpresaID)
+			if empresaOwnerEmail != "" && !strings.EqualFold(empresaOwnerEmail, actor.Email) {
+				_, _ = dbpkg.CreateChatParticipante(dbEmp, dbpkg.ChatParticipante{
+					EmpresaID:         payload.EmpresaID,
+					ConversacionID:    newID,
+					ParticipanteTipo:  "admin",
+					ParticipanteRefID: 0,
+					Nombre:            empresaOwnerEmail,
+					Email:             empresaOwnerEmail,
+					UsuarioCreador:    actor.UsuarioCreador,
+					Estado:            "activo",
+				})
+			}
 
 			for _, p := range payload.Participantes {
 				p.EmpresaID = payload.EmpresaID
 				p.ConversacionID = newID
-				p.UsuarioCreador = adminEmail
+				p.UsuarioCreador = actor.UsuarioCreador
 				if _, err := dbpkg.CreateChatParticipante(dbEmp, p); err != nil {
 					http.Error(w, "Conversacion creada, pero fallo al registrar participantes", http.StatusInternalServerError)
 					return
@@ -307,7 +403,7 @@ func EmpresaChatTareasParticipantesHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, "email o participante_ref_id es obligatorio", http.StatusBadRequest)
 				return
 			}
-			payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
+			payload.UsuarioCreador = resolveChatActor(dbEmp, r, payload.EmpresaID).UsuarioCreador
 			id, err := dbpkg.CreateChatParticipante(dbEmp, payload)
 			if err != nil {
 				http.Error(w, "No se pudo crear el participante", http.StatusBadRequest)
@@ -430,16 +526,19 @@ func EmpresaChatTareasMensajesHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, "contenido es obligatorio", http.StatusBadRequest)
 				return
 			}
-			adminEmail := strings.TrimSpace(adminEmailFromRequest(r))
-			payload.UsuarioCreador = adminEmail
-			payload.AutorEmail = strings.TrimSpace(payload.AutorEmail)
-			if payload.AutorEmail == "" {
-				payload.AutorEmail = adminEmail
+			actor := resolveChatActor(dbEmp, r, payload.EmpresaID)
+			payload.UsuarioCreador = actor.UsuarioCreador
+			payload.AutorTipo = actor.Tipo
+			payload.AutorRefID = actor.RefID
+			payload.AutorEmail = actor.Email
+			payload.AutorNombre = safeAuthorName("", actor.Nombre)
+			if strings.TrimSpace(payload.AutorNombre) == "" {
+				payload.AutorNombre = safeAuthorName(payload.AutorNombre, payload.AutorEmail)
 			}
-			payload.AutorNombre = safeAuthorName(payload.AutorNombre, payload.AutorEmail)
 			if strings.TrimSpace(payload.TipoMensaje) == "" {
 				payload.TipoMensaje = "texto"
 			}
+			ensureChatActorParticipant(dbEmp, payload.EmpresaID, payload.ConversacionID, actor)
 			id, err := dbpkg.CreateChatMensaje(dbEmp, payload)
 			if err != nil {
 				http.Error(w, "No se pudo crear el mensaje", http.StatusBadRequest)
@@ -599,28 +698,28 @@ func EmpresaChatTareasAdjuntoUploadHandler(dbEmp *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		adminEmail := strings.TrimSpace(adminEmailFromRequest(r))
-		autorNombre := safeAuthorName(r.FormValue("autor_nombre"), adminEmail)
-		autorEmail := strings.TrimSpace(r.FormValue("autor_email"))
-		if autorEmail == "" {
-			autorEmail = adminEmail
+		actor := resolveChatActor(dbEmp, r, empresaID)
+		autorNombre := safeAuthorName("", actor.Nombre)
+		if strings.TrimSpace(autorNombre) == "" {
+			autorNombre = safeAuthorName(autorNombre, actor.Email)
 		}
-		autorRefID, _ := parseInt64FormOptional(r, "autor_ref_id")
 		contenido := strings.TrimSpace(r.FormValue("contenido"))
 		if contenido == "" {
 			contenido = "Adjunto: " + strings.TrimSpace(header.Filename)
 		}
 
+		ensureChatActorParticipant(dbEmp, empresaID, conversacionID, actor)
+
 		msgID, err := dbpkg.CreateChatMensaje(dbEmp, dbpkg.ChatMensaje{
 			EmpresaID:      empresaID,
 			ConversacionID: conversacionID,
-			AutorTipo:      strings.TrimSpace(r.FormValue("autor_tipo")),
-			AutorRefID:     autorRefID,
+			AutorTipo:      actor.Tipo,
+			AutorRefID:     actor.RefID,
 			AutorNombre:    autorNombre,
-			AutorEmail:     autorEmail,
+			AutorEmail:     actor.Email,
 			Contenido:      contenido,
 			TipoMensaje:    "texto",
-			UsuarioCreador: adminEmail,
+			UsuarioCreador: actor.UsuarioCreador,
 			Estado:         "activo",
 		})
 		if err != nil {
@@ -641,7 +740,7 @@ func EmpresaChatTareasAdjuntoUploadHandler(dbEmp *sql.DB) http.HandlerFunc {
 			FileURL:          fileURL,
 			TamanoBytes:      size,
 			DuracionSegundos: duracion,
-			UsuarioCreador:   adminEmail,
+			UsuarioCreador:   actor.UsuarioCreador,
 			Estado:           "activo",
 		})
 		if err != nil {
@@ -656,6 +755,102 @@ func EmpresaChatTareasAdjuntoUploadHandler(dbEmp *sql.DB) http.HandlerFunc {
 			"file_url":      fileURL,
 			"tipo_archivo":  tipoAdjunto,
 			"tamano_bytes":  size,
+		})
+	}
+}
+
+// EmpresaChatTareasTareaNotaVozUploadHandler sube una nota de voz y la asocia a una tarea.
+func EmpresaChatTareasTareaNotaVozUploadHandler(dbEmp *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		if err := r.ParseMultipartForm(20 << 20); err != nil {
+			http.Error(w, "invalid multipart payload", http.StatusBadRequest)
+			return
+		}
+
+		empresaID, err := parseInt64Form(r, "empresa_id")
+		if err != nil || empresaID <= 0 {
+			http.Error(w, "empresa_id required", http.StatusBadRequest)
+			return
+		}
+		w.Header().Set("X-Empresa-ID", strconv.FormatInt(empresaID, 10))
+
+		tareaID, err := parseInt64Form(r, "tarea_id")
+		if err != nil || tareaID <= 0 {
+			http.Error(w, "tarea_id required", http.StatusBadRequest)
+			return
+		}
+
+		file, header, err := r.FormFile("archivo")
+		if err != nil {
+			file, header, err = r.FormFile("audio")
+		}
+		if err != nil {
+			http.Error(w, "archivo required", http.StatusBadRequest)
+			return
+		}
+		defer file.Close()
+
+		ext := strings.ToLower(filepath.Ext(header.Filename))
+		contentType := strings.TrimSpace(header.Header.Get("Content-Type"))
+		if contentType == "" {
+			contentType = mime.TypeByExtension(ext)
+		}
+		if ext == "" {
+			ext = inferExtension(contentType)
+		}
+		if ext == "" {
+			ext = ".webm"
+		}
+		if !isAllowedAttachmentExt(ext) {
+			http.Error(w, "attachment extension not allowed", http.StatusBadRequest)
+			return
+		}
+		if inferAttachmentType("", contentType, ext) != "audio" {
+			http.Error(w, "only audio files are allowed for nota_voz", http.StatusBadRequest)
+			return
+		}
+
+		webRoot := resolveWebRootDir()
+		dir := filepath.Join(webRoot, "uploads", "chat_tareas", fmt.Sprintf("empresa_%d", empresaID), "tareas")
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			http.Error(w, "failed to prepare upload directory", http.StatusInternalServerError)
+			return
+		}
+
+		fileName := fmt.Sprintf("tarea_%d_%d%s", tareaID, time.Now().UnixNano(), ext)
+		absPath := filepath.Join(dir, fileName)
+		out, err := os.Create(absPath)
+		if err != nil {
+			http.Error(w, "failed to create attachment file", http.StatusInternalServerError)
+			return
+		}
+		defer out.Close()
+
+		size, err := io.Copy(out, file)
+		if err != nil {
+			http.Error(w, "failed to save attachment", http.StatusInternalServerError)
+			return
+		}
+
+		duracion, _ := parseFloat64FormOptional(r, "duracion_segundos")
+		fileURL := "/uploads/chat_tareas/empresa_" + strconv.FormatInt(empresaID, 10) + "/tareas/" + fileName
+		if err := dbpkg.SetChatTareaNotaVoz(dbEmp, empresaID, tareaID, fileURL, contentType, size, duracion); err != nil {
+			http.Error(w, "failed to update tarea nota_voz", http.StatusInternalServerError)
+			return
+		}
+
+		writeJSON(w, http.StatusCreated, map[string]interface{}{
+			"ok":                         true,
+			"tarea_id":                   tareaID,
+			"nota_voz_url":               fileURL,
+			"nota_voz_mime_type":         contentType,
+			"nota_voz_tamano_bytes":      size,
+			"nota_voz_duracion_segundos": duracion,
 		})
 	}
 }
@@ -697,12 +892,15 @@ func EmpresaChatTareasTareasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 
-			adminEmail := strings.TrimSpace(adminEmailFromRequest(r))
-			payload.UsuarioCreador = adminEmail
-			payload.CreadoPorTipo = "admin"
-			payload.CreadoPorEmail = adminEmail
+			actor := resolveChatActor(dbEmp, r, payload.EmpresaID)
+			payload.UsuarioCreador = actor.UsuarioCreador
+			payload.CreadoPorTipo = actor.Tipo
+			payload.CreadoPorEmail = actor.Email
 			if strings.TrimSpace(payload.EstadoTarea) == "" {
 				payload.EstadoTarea = "pendiente"
+			}
+			if payload.ConversacionID > 0 {
+				ensureChatActorParticipant(dbEmp, payload.EmpresaID, payload.ConversacionID, actor)
 			}
 
 			id, err := dbpkg.CreateChatTarea(dbEmp, payload)

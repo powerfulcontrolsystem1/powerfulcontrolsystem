@@ -1,6 +1,32 @@
 # Diagrama de flujo de procesos
 
-Fecha: 2026-04-07
+Fecha: 2026-04-08
+
+## Actualizacion 2026-04-08 (chat/tareas: documentos/fotos entre usuario y administrador)
+
+- Mensajes y adjuntos en `/api/empresa/chat_tareas/*` derivan el autor desde la sesion autenticada (usuario/admin), no desde los campos enviados por el cliente.
+- Al enviar mensaje/adjunto o crear tarea asociada a una conversacion, el backend asegura la participacion activa del emisor en esa conversacion.
+- Al crear una conversacion desde un usuario de empresa, el sistema agrega automaticamente al admin propietario de la empresa como participante tipo `admin`.
+- Se amplian tipos de archivo operativos para adjuntos con documentos comunes de oficina (`doc/docx/xls/xlsx/ppt/pptx/rtf/odt/ods/odp`) ademas de fotos/audio y formatos tabulares.
+
+## Actualizacion 2026-04-08 (pasos 1, 2 y 3)
+
+- Chat y tareas:
+    - se agrega flujo de grabacion de nota de voz (MediaRecorder) para mensajes y tareas.
+    - tareas incorpora upload dedicado de audio por `POST /api/empresa/chat_tareas/tareas/nota_voz`.
+- Permisos por licencia:
+    - antes de autorizar una accion por modulo, el middleware valida modulo habilitado por licencia activa de la empresa.
+    - si la licencia habilita `super_rol_habilitado`, `supervisor_sucursal` opera con rol efectivo `admin_empresa`.
+- Accesos directos:
+    - inicio de panel empresa consume `/api/empresa/permisos_contexto` para mostrar solo módulos habilitados por rol/licencia.
+
+## Actualizacion 2026-04-08 (formato monetario y numerico por empresa)
+
+- Se agrega flujo de configuracion empresarial para definir:
+    - `moneda_codigo` por empresa.
+    - `sistema_numerico` (`latino` o `internacional`).
+    - uso de decimales y cantidad de digitos decimales.
+- Al crear un carrito sin moneda explicita, backend aplica la `moneda_codigo` de `empresa_configuracion_avanzada`.
 
 ```mermaid
 flowchart TD
@@ -280,6 +306,24 @@ flowchart TD
     VP10 --> VP11[Persistir orden en empresa_venta_publica_ordenes]
     VP11 --> VP12[Consultar estado action=estado_pago y actualizar estado local]
 
+    L --> SR0[Entrar a modulo soporte_remoto]
+    SR0 --> SR1[Menu valida visibilidad de linkSoporteRemoto en modulo seguridad]
+    SR1 --> SR2[Cargar soporte_remoto.html con empresa_id]
+    SR2 --> SR3[Configurar proveedor modo y politica de aprobacion]
+    SR3 --> SR4[Registrar dispositivo remoto con stream_url y PIN]
+    SR4 --> SR5[Agente local envia heartbeat a /api/public/soporte_remoto action=heartbeat]
+    SR5 --> SR6[Actualizar estado de conexion y ultimo_heartbeat]
+    SR6 --> SR7[Solicitar sesion remota desde panel]
+    SR7 --> SR8[Generar codigo_sesion y token de visualizacion temporal]
+    SR8 --> SR9{Requiere aprobacion del operador?}
+    SR9 -->|Si| SR10[Agente u operador aprueba sesion]
+    SR9 -->|No| SR11[Sesion activa de forma inmediata]
+    SR10 --> SR11
+    SR11 --> SR12[Abrir soporte_remoto_view.html con codigo_sesion y token]
+    SR12 --> SR13[Resolver visualizacion segura action=resolver_visualizacion]
+    SR13 --> SR14[Embeder URL remota del dispositivo si acceso_permitido]
+    SR14 --> SR15[Finalizar sesion desde panel o agente]
+
     L --> GX0[Entrar a modulo graficos_estadisticas]
     GX0 --> GX1[Consultar action=panel en /api/empresa/graficos_estadisticas]
     GX1 --> GX11[Aplicar filtros avanzados por sucursal_id estacion_id y segmento]
@@ -521,6 +565,7 @@ Resultado esperado:
 - En `administrar_productos`, el catálogo de `categorias_productos` permite filtrar y asignar categorías de forma consistente por `empresa_id`.
 - En `administrar_empresa/venta_publica`, cada empresa administra su tienda online (slug, catalogo, imagenes y credenciales Wompi) de forma aislada por `empresa_id`.
 - La tienda publica funciona con patron local y productivo: `/venta_publica.html?empresa_slug=...` y `/{slug}/venta_publica.html`.
+- En `administrar_empresa/soporte_remoto`, cada empresa gestiona dispositivos y sesiones remotas de forma aislada por `empresa_id`, con token temporal para visualizacion embebida y aprobacion opcional por operador/agente.
 - En `ubicacion_gps`, cada dispositivo puede registrar su recorrido automaticamente cada 10 segundos y visualizarse sobre mapa de codigo abierto.
 - En `asistencia_empleados`, el sistema registra entrada/salida por empleado y calcula horas trabajadas por jornada.
 - En `asistencia_empleados`, la consulta por rango/estado permite control operativo diario y trazabilidad de novedades.

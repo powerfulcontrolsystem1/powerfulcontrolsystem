@@ -132,13 +132,15 @@ type Licencia struct {
 	Descripcion   string  `json:"descripcion"`
 	Valor         float64 `json:"valor"`
 	DuracionDias  int     `json:"duracion_dias"`
+	ModulosHab    string  `json:"modulos_habilitados,omitempty"`
+	SuperRol      int     `json:"super_rol_habilitado"`
 	FechaCreacion string  `json:"fecha_creacion"`
 	Activo        int     `json:"activo"`
 }
 
 // CreateLicencia inserta una nueva licencia en dbSuper
-func CreateLicencia(dbConn *sql.DB, tipoID int64, nombre, descripcion string, valor float64, duracionDias int) (int64, error) {
-	res, err := dbConn.Exec("INSERT INTO licencias (tipo_id, nombre, descripcion, valor, duracion_dias, fecha_creacion, activo) VALUES (?, ?, ?, ?, ?, datetime('now','localtime'), 1)", tipoID, nombre, descripcion, valor, duracionDias)
+func CreateLicencia(dbConn *sql.DB, tipoID int64, nombre, descripcion string, valor float64, duracionDias int, modulosHabilitados string, superRolHabilitado int) (int64, error) {
+	res, err := dbConn.Exec("INSERT INTO licencias (tipo_id, nombre, descripcion, valor, duracion_dias, modulos_habilitados, super_rol_habilitado, fecha_creacion, fecha_actualizacion, activo, estado) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), 1, 'activo')", tipoID, nombre, descripcion, valor, duracionDias, strings.TrimSpace(modulosHabilitados), superRolHabilitado)
 	if err != nil {
 		return 0, err
 	}
@@ -152,7 +154,7 @@ func GetLicencias(dbConn *sql.DB) ([]Licencia, error) {
 
 // GetLicenciasFiltered obtiene licencias con filtros opcionales.
 func GetLicenciasFiltered(dbConn *sql.DB, soloActivas bool, usuarioCreador string, conEmpresa bool) ([]Licencia, error) {
-	q := `SELECT l.id, l.empresa_id, l.tipo_id, t.nombre, l.nombre, l.descripcion, l.valor, l.duracion_dias, l.fecha_creacion, l.activo
+	q := `SELECT l.id, l.empresa_id, l.tipo_id, t.nombre, l.nombre, l.descripcion, l.valor, l.duracion_dias, COALESCE(l.modulos_habilitados, ''), COALESCE(l.super_rol_habilitado, 0), l.fecha_creacion, l.activo
 		FROM licencias l LEFT JOIN tipos_de_empresas t ON l.tipo_id = t.id`
 
 	usuarioCreador = strings.TrimSpace(usuarioCreador)
@@ -196,8 +198,9 @@ func GetLicenciasFiltered(dbConn *sql.DB, soloActivas bool, usuarioCreador strin
 		var empresaID sql.NullInt64
 		var tipoNombre sql.NullString
 		var descripcion sql.NullString
+		var modulosHab sql.NullString
 		var fechaCreacion sql.NullString
-		if err := rows.Scan(&lic.ID, &empresaID, &lic.TipoID, &tipoNombre, &lic.Nombre, &descripcion, &lic.Valor, &lic.DuracionDias, &fechaCreacion, &lic.Activo); err != nil {
+		if err := rows.Scan(&lic.ID, &empresaID, &lic.TipoID, &tipoNombre, &lic.Nombre, &descripcion, &lic.Valor, &lic.DuracionDias, &modulosHab, &lic.SuperRol, &fechaCreacion, &lic.Activo); err != nil {
 			return nil, err
 		}
 		if empresaID.Valid {
@@ -209,6 +212,9 @@ func GetLicenciasFiltered(dbConn *sql.DB, soloActivas bool, usuarioCreador strin
 		if descripcion.Valid {
 			lic.Descripcion = descripcion.String
 		}
+		if modulosHab.Valid {
+			lic.ModulosHab = modulosHab.String
+		}
 		if fechaCreacion.Valid {
 			lic.FechaCreacion = fechaCreacion.String
 		}
@@ -219,13 +225,14 @@ func GetLicenciasFiltered(dbConn *sql.DB, soloActivas bool, usuarioCreador strin
 
 // GetLicenciaByID devuelve una licencia por id
 func GetLicenciaByID(dbConn *sql.DB, id int64) (*Licencia, error) {
-	q := `SELECT id, empresa_id, tipo_id, nombre, descripcion, valor, duracion_dias, fecha_creacion, activo FROM licencias WHERE id = ? LIMIT 1`
+	q := `SELECT id, empresa_id, tipo_id, nombre, descripcion, valor, duracion_dias, COALESCE(modulos_habilitados, ''), COALESCE(super_rol_habilitado, 0), fecha_creacion, activo FROM licencias WHERE id = ? LIMIT 1`
 	row := dbConn.QueryRow(q, id)
 	var lic Licencia
 	var empresaID sql.NullInt64
 	var descripcion sql.NullString
+	var modulosHab sql.NullString
 	var fechaCreacion sql.NullString
-	if err := row.Scan(&lic.ID, &empresaID, &lic.TipoID, &lic.Nombre, &descripcion, &lic.Valor, &lic.DuracionDias, &fechaCreacion, &lic.Activo); err != nil {
+	if err := row.Scan(&lic.ID, &empresaID, &lic.TipoID, &lic.Nombre, &descripcion, &lic.Valor, &lic.DuracionDias, &modulosHab, &lic.SuperRol, &fechaCreacion, &lic.Activo); err != nil {
 		return nil, err
 	}
 	if empresaID.Valid {
@@ -234,6 +241,9 @@ func GetLicenciaByID(dbConn *sql.DB, id int64) (*Licencia, error) {
 	if descripcion.Valid {
 		lic.Descripcion = descripcion.String
 	}
+	if modulosHab.Valid {
+		lic.ModulosHab = modulosHab.String
+	}
 	if fechaCreacion.Valid {
 		lic.FechaCreacion = fechaCreacion.String
 	}
@@ -241,9 +251,54 @@ func GetLicenciaByID(dbConn *sql.DB, id int64) (*Licencia, error) {
 }
 
 // UpdateLicencia actualiza campos editables de una licencia
-func UpdateLicencia(dbConn *sql.DB, id, tipoID int64, nombre, descripcion string, valor float64, duracionDias int) error {
-	_, err := dbConn.Exec("UPDATE licencias SET tipo_id = ?, nombre = ?, descripcion = ?, valor = ?, duracion_dias = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ?", tipoID, nombre, descripcion, valor, duracionDias, id)
+func UpdateLicencia(dbConn *sql.DB, id, tipoID int64, nombre, descripcion string, valor float64, duracionDias int, modulosHabilitados string, superRolHabilitado int) error {
+	_, err := dbConn.Exec("UPDATE licencias SET tipo_id = ?, nombre = ?, descripcion = ?, valor = ?, duracion_dias = ?, modulos_habilitados = ?, super_rol_habilitado = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ?", tipoID, nombre, descripcion, valor, duracionDias, strings.TrimSpace(modulosHabilitados), superRolHabilitado, id)
 	return err
+}
+
+// LicenciaPermisoPolicy describe las capacidades de acceso habilitadas por licencia activa para una empresa.
+type LicenciaPermisoPolicy struct {
+	LicenciaID         int64
+	Nombre             string
+	ModulosHabilitados string
+	SuperRolHabilitado bool
+}
+
+// GetLicenciaPermisoPolicyByEmpresa resuelve la licencia activa vigente para permisos de una empresa.
+func GetLicenciaPermisoPolicyByEmpresa(dbConn *sql.DB, empresaID int64) (*LicenciaPermisoPolicy, error) {
+	if dbConn == nil || empresaID <= 0 {
+		return nil, nil
+	}
+
+	row := dbConn.QueryRow(`SELECT id,
+		COALESCE(nombre, ''),
+		COALESCE(modulos_habilitados, ''),
+		COALESCE(super_rol_habilitado, 0)
+	FROM licencias
+	WHERE empresa_id = ?
+		AND COALESCE(activo, 1) = 1
+		AND (COALESCE(fecha_inicio, '') = '' OR datetime(fecha_inicio) <= datetime('now','localtime'))
+		AND (COALESCE(fecha_fin, '') = '' OR datetime(fecha_fin) >= datetime('now','localtime'))
+	ORDER BY
+		CASE WHEN COALESCE(fecha_fin, '') = '' THEN 1 ELSE 0 END DESC,
+		datetime(COALESCE(fecha_fin, '9999-12-31 23:59:59')) DESC,
+		id DESC
+	LIMIT 1`, empresaID)
+
+	var item LicenciaPermisoPolicy
+	var superRolRaw int
+	if err := row.Scan(&item.LicenciaID, &item.Nombre, &item.ModulosHabilitados, &superRolRaw); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		low := strings.ToLower(strings.TrimSpace(err.Error()))
+		if strings.Contains(low, "no such table") || strings.Contains(low, "no such column") {
+			return nil, nil
+		}
+		return nil, err
+	}
+	item.SuperRolHabilitado = superRolRaw == 1
+	return &item, nil
 }
 
 // DeleteLicencia elimina una licencia por id

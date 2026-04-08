@@ -444,6 +444,50 @@
 
     <section class="card empresa-section">
       <div class="empresa-section-header">
+        <h2>Formato monetario y numerico</h2>
+        <button id="btnGuardarFormatoNumerico" type="button" class="btn">Guardar formato</button>
+      </div>
+      <p class="form-help">Configura por empresa la moneda operativa, el sistema numerico y la precision decimal.</p>
+
+      <div class="empresa-config-grid">
+        <div class="form">
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="formatoMonedaCodigo">Codigo de moneda</label>
+              <input id="formatoMonedaCodigo" class="form-input" maxlength="10" placeholder="COP, USD, EUR">
+              <p class="form-help">Se usa como valor por defecto en nuevos carritos cuando no se envia una moneda explicita.</p>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="formatoSistemaNumerico">Sistema numerico</label>
+              <select id="formatoSistemaNumerico" class="form-input">
+                <option value="latino">Latino (1.234,56)</option>
+                <option value="internacional">Internacional (1,234.56)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="form">
+          <div class="form-row">
+            <div class="form-col">
+              <label class="empresa-config-check" for="formatoUsarDecimales" style="margin-top:30px;display:block;">
+                <input id="formatoUsarDecimales" type="checkbox" checked>
+                <span>Usar decimales en montos</span>
+              </label>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="formatoCantidadDecimales">Cantidad de digitos decimales</label>
+              <input id="formatoCantidadDecimales" type="number" min="0" max="6" step="1" class="form-input" value="2">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="formatoNumericoMsg" class="form-help"></div>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
         <h2>Backup</h2>
       </div>
       <p class="form-help">Exporta o restaura un respaldo JSON de esta configuración para reutilizarla rápidamente.</p>
@@ -535,6 +579,12 @@
 
     function setEstadoCarritoMessage(text, type) {
       const box = document.getElementById('estadoCarritoMsg');
+      box.textContent = text || '';
+      box.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'form-help');
+    }
+
+    function setFormatoNumericoMessage(text, type) {
+      const box = document.getElementById('formatoNumericoMsg');
       box.textContent = text || '';
       box.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'form-help');
     }
@@ -1127,6 +1177,38 @@
       return raw === 'pos' ? 'pos' : 'carta';
     }
 
+    function normalizeMonedaCodigo(v) {
+      const value = String(v || '').trim().toUpperCase();
+      if (!value || value.length > 10) return 'COP';
+      return value;
+    }
+
+    function normalizeSistemaNumerico(v) {
+      const value = String(v || '').trim().toLowerCase();
+      return value === 'internacional' ? 'internacional' : 'latino';
+    }
+
+    function normalizeCantidadDecimales(v, usarDecimales) {
+      if (!usarDecimales) return 0;
+      const n = Number(v);
+      if (!Number.isFinite(n)) return 2;
+      const intValue = Math.trunc(n);
+      if (intValue < 1) return 2;
+      if (intValue > 6) return 6;
+      return intValue;
+    }
+
+    function syncFormatoDecimalesUI() {
+      const usarDecimales = document.getElementById('formatoUsarDecimales').checked;
+      const input = document.getElementById('formatoCantidadDecimales');
+      input.disabled = !usarDecimales;
+      if (!usarDecimales) {
+        input.value = '0';
+        return;
+      }
+      input.value = String(normalizeCantidadDecimales(input.value, true));
+    }
+
     function setFacturaFormData(cfg) {
       const src = cfg && typeof cfg === 'object' ? cfg : {};
       document.getElementById('facturaFormatoImpresion').value = normalizeFormatoImpresion(src.formato_impresion);
@@ -1139,6 +1221,16 @@
       const src = cfg && typeof cfg === 'object' ? cfg : {};
       document.getElementById('carritoColorActivo').value = normalizeColorHex(src.color_carrito_activo, '#d9fbe8');
       document.getElementById('carritoColorInactivo').value = normalizeColorHex(src.color_carrito_inactivo, '#fff9ef');
+    }
+
+    function setFormatoNumericoFormData(cfg) {
+      const src = cfg && typeof cfg === 'object' ? cfg : {};
+      const usarDecimales = src.usar_decimales !== false;
+      document.getElementById('formatoMonedaCodigo').value = normalizeMonedaCodigo(src.moneda_codigo);
+      document.getElementById('formatoSistemaNumerico').value = normalizeSistemaNumerico(src.sistema_numerico);
+      document.getElementById('formatoUsarDecimales').checked = usarDecimales;
+      document.getElementById('formatoCantidadDecimales').value = String(normalizeCantidadDecimales(src.cantidad_decimales, usarDecimales));
+      syncFormatoDecimalesUI();
     }
 
     function getFacturaFormData() {
@@ -1156,6 +1248,17 @@
         empresa_id: Number(empresaId),
         color_carrito_activo: normalizeColorHex(document.getElementById('carritoColorActivo').value, '#d9fbe8'),
         color_carrito_inactivo: normalizeColorHex(document.getElementById('carritoColorInactivo').value, '#fff9ef')
+      };
+    }
+
+    function getFormatoNumericoFormData() {
+      const usarDecimales = document.getElementById('formatoUsarDecimales').checked;
+      return {
+        empresa_id: Number(empresaId),
+        moneda_codigo: normalizeMonedaCodigo(document.getElementById('formatoMonedaCodigo').value),
+        sistema_numerico: normalizeSistemaNumerico(document.getElementById('formatoSistemaNumerico').value),
+        usar_decimales: usarDecimales,
+        cantidad_decimales: normalizeCantidadDecimales(document.getElementById('formatoCantidadDecimales').value, usarDecimales)
       };
     }
 
@@ -1189,9 +1292,11 @@
         const cfg = await fetchEmpresaConfigAvanzada();
         setFacturaFormData(cfg || {});
         setEstadoCarritoFormData(cfg || {});
+        setFormatoNumericoFormData(cfg || {});
       } catch (err) {
         setFacturaMessage('No se pudo cargar configuración de facturas: ' + (err && err.message ? err.message : err), 'error');
         setEstadoCarritoMessage('No se pudo cargar configuración de estados del carrito: ' + (err && err.message ? err.message : err), 'error');
+        setFormatoNumericoMessage('No se pudo cargar configuración monetaria: ' + (err && err.message ? err.message : err), 'error');
       }
     }
 
@@ -1223,6 +1328,21 @@
         setEstadoCarritoMessage('Colores de estado del carrito guardados correctamente.', 'success');
       } catch (err) {
         setEstadoCarritoMessage('No se pudo guardar colores de estado: ' + (err && err.message ? err.message : err), 'error');
+      }
+    }
+
+    async function guardarFormatoNumericoConfig() {
+      if (!empresaId) {
+        setFormatoNumericoMessage('No se puede guardar sin empresa seleccionada.', 'error');
+        return;
+      }
+      try {
+        const payload = getFormatoNumericoFormData();
+        const cfg = await upsertEmpresaConfigAvanzada(payload);
+        setFormatoNumericoFormData(cfg || {});
+        setFormatoNumericoMessage('Formato monetario y numerico guardado correctamente.', 'success');
+      } catch (err) {
+        setFormatoNumericoMessage('No se pudo guardar formato monetario y numerico: ' + (err && err.message ? err.message : err), 'error');
       }
     }
 
@@ -1357,6 +1477,9 @@
       document.getElementById('opPoliticaTurno').addEventListener('blur', syncOperativaPoliticaFormFromCache);
       document.getElementById('btnGuardarFacturaConfig').addEventListener('click', guardarFacturaConfig);
       document.getElementById('btnGuardarEstadoCarrito').addEventListener('click', guardarEstadoCarritoConfig);
+      document.getElementById('btnGuardarFormatoNumerico').addEventListener('click', guardarFormatoNumericoConfig);
+      document.getElementById('formatoUsarDecimales').addEventListener('change', syncFormatoDecimalesUI);
+      document.getElementById('formatoCantidadDecimales').addEventListener('blur', syncFormatoDecimalesUI);
       document.getElementById('btnDescargarBackup').addEventListener('click', descargarBackup);
       document.getElementById('btnRestaurarBackup').addEventListener('click', restaurarBackup);
     }

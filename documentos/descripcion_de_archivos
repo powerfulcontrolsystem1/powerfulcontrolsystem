@@ -1,5 +1,219 @@
 Descripcion de archivos del proyecto
 
+Actualizacion 2026-04-08: Chat y tareas con documentos/fotos entre usuarios de empresa y administrador
+
+- `backend/handlers/chat_tareas.go`:
+	- resuelve el actor autenticado por empresa (`usuario`, `admin` o `sistema`) para conversaciones, mensajes, adjuntos y tareas.
+	- evita suplantacion de autor en mensajes/adjuntos al tomar `autor_tipo`, `autor_ref_id`, `autor_nombre` y `autor_email` desde la sesion autenticada.
+	- auto-registra al emisor como participante activo de la conversacion al enviar mensajes/adjuntos o crear tareas asociadas.
+	- al crear conversacion desde un usuario de empresa, agrega automaticamente al administrador propietario de la empresa (`empresas.usuario_creador`) como participante tipo `admin`.
+	- amplía extensiones permitidas para adjuntos con formatos documentales comunes: `.doc`, `.docx`, `.xls`, `.xlsx`, `.ppt`, `.pptx`, `.rtf`, `.odt`, `.ods`, `.odp`.
+
+- `web/administrar_empresa/chat_y_tareas.html`:
+	- amplía `accept` del selector de archivos para documentos de oficina y fotos.
+	- determina actor efectivo de sesion (usuario/admin) y usa ese contexto al enviar mensajes/adjuntos (`autor_tipo`, `autor_ref_id`, `autor_nombre`, `autor_email`).
+	- ajusta render de burbuja propia con base en actor efectivo de sesion.
+
+- `backend/handlers/chat_tareas_test.go` (nuevo):
+	- agrega pruebas para:
+		- derivacion de autor `usuario` en mensajes aunque el payload intente suplantar `admin`.
+		- upload de adjunto `.docx` permitido y persistido en chat.
+		- alta automatica de participantes `usuario` + `admin propietario` al crear conversaciones.
+
+- `documentos/diagramas/estructura_del_codigo.md`, `documentos/diagramas/diagrama_flujo_procesos.md` y `documentos/diagramas/versionado.md`:
+	- sincronizan el flujo tecnico/funcional de chat/tareas para colaboracion usuario-admin con adjuntos documentales.
+
+- `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_del_proyecto`, `documentos/historial_de_cambios` y `CHANGELOG.md`:
+	- registran alcance funcional, matriz de permisos vigente y trazabilidad de la iteracion.
+
+Actualizacion 2026-04-08: Configuracion monetaria y numerica por empresa
+
+- `backend/db/empresa_configuracion_avanzada.go`:
+	- amplía modelo/esquema `empresa_configuracion_avanzada` con `moneda_codigo`, `sistema_numerico`, `usar_decimales`, `cantidad_decimales`.
+	- agrega normalizacion de defaults para moneda, sistema numerico y precision decimal.
+
+- `backend/db/carritos_compras.go`:
+	- al crear carrito, aplica `moneda_codigo` de configuracion avanzada de la empresa cuando no llega moneda en el payload.
+
+- `backend/main.go`:
+	- registra migracion `2026-04-08-030-configuracion-monetaria-numerica`.
+
+- `web/administrar_empresa/configuracion.html`:
+	- agrega tarjeta de configuracion para moneda operativa, sistema numerico y manejo de decimales por empresa.
+	- integra carga/guardado en `/api/empresa/configuracion_avanzada`.
+
+- `documentos/estructura_bd.md` y `estructura_bd.md`:
+	- actualizan version de esquema a `2026-04-08.42.0` e incorporan nuevos campos de formato monetario/numerico en `empresa_configuracion_avanzada`.
+
+- `documentos/diagramas/estructura_del_codigo.md`, `documentos/diagramas/diagrama_entidad_relacion.md`, `documentos/diagramas/diagrama_flujo_procesos.md`, `documentos/diagramas/versionado.md`:
+	- sincronizan estructura, ER, flujo y versionado documental con el cambio.
+
+- `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos` y `documentos/matriz_roles_permisos_pos_multiempresa.md`:
+	- reflejan alcance funcional y de permisos del ajuste.
+
+Actualizacion 2026-04-08: Gobernanza documental de modulos y depuracion de documentos
+
+- `copilot-instructions.md`:
+	- agrega regla obligatoria para actualizar `documentos/descripcion_de_modulos` y `documentos/matriz_roles_permisos_pos_multiempresa.md` cuando se cree o modifique un modulo.
+	- agrega regla de higiene documental para depurar archivos obsoletos/duplicados con trazabilidad completa.
+
+- `documentos/descripcion_de_modulos`:
+	- incorpora seccion de gobernanza para obligar sincronizacion modular y de permisos por rol.
+
+- `documentos/matriz_roles_permisos_pos_multiempresa.md`:
+	- incorpora regla de mantenimiento por modulo para mantener vigente la matriz de roles/permisos al crear o modificar modulos.
+
+- `documentos/descripcion_del_proyecto`:
+	- refuerza en estado documental la politica de actualizacion obligatoria de modulos/permisos y depuracion documental.
+
+- `documentos/modulos del proyecto.md` (eliminado):
+	- se elimina por duplicidad/obsolescencia frente al documento canonico `documentos/descripcion_de_modulos`.
+
+Actualizacion 2026-04-08: Cierre de pasos 1, 2 y 3 (accesos directos, notas de voz, permisos por licencia)
+
+- `backend/db/chat_tareas.go`:
+	- amplía `chat_tareas` con campos de nota de voz (`nota_voz_*`) y agrega operación `SetChatTareaNotaVoz`.
+
+- `backend/handlers/chat_tareas.go`:
+	- agrega endpoint `POST /api/empresa/chat_tareas/tareas/nota_voz` para upload de nota de voz por tarea.
+
+- `backend/main.go`:
+	- registra ruta `/api/empresa/chat_tareas/tareas/nota_voz`.
+	- amplía esquema bootstrap de `licencias` y registra migración `2026-04-08-004-licencias-permisos-superrol`.
+
+- `backend/db/db.go`:
+	- amplía modelo y CRUD de licencias con `modulos_habilitados` y `super_rol_habilitado`.
+	- agrega `GetLicenciaPermisoPolicyByEmpresa` para resolver política activa por empresa.
+
+- `backend/handlers/payments_handlers.go`:
+	- actualiza `LicenciasHandler` para recibir/guardar módulos habilitados y super rol en crear/editar licencia.
+
+- `backend/handlers/empresa_permisos.go`:
+	- aplica restricciones por licencia en middleware por módulo.
+	- incorpora `rol_efectivo` por licencia (supervisor con super rol habilitado).
+	- amplía `/api/empresa/permisos_contexto` con bloque `licencia` y rol efectivo.
+
+- `backend/handlers/empresa_permisos_test.go`:
+	- agrega pruebas de licencia para restricción de módulos y super rol efectivo.
+
+- `web/administrar_empresa/chat_y_tareas.html`:
+	- agrega grabación de voz en chat y tareas (MediaRecorder), envío y reproducción de notas de voz.
+
+- `web/administrar_empresa/inicio.html`:
+	- agrega accesos directos dinámicos de módulos según permisos/licencia.
+
+- `web/super/licencias.html`:
+	- agrega UI para configurar módulos habilitados y bandera de super rol por licencia.
+
+- `web/estilos.css`:
+	- agrega estilos para controles de voz, configuración de módulos en licencias y accesos directos en inicio.
+
+- `documentos/diagramas/estructura_del_codigo.md`, `documentos/diagramas/diagrama_flujo_procesos.md`, `documentos/diagramas/diagrama_entidad_relacion.md`, `documentos/diagramas/versionado.md`, `documentos/estructura_bd.md` y `estructura_bd.md`:
+	- sincronizan arquitectura, flujo, ER, versionado de diagramas y esquema de datos con los cambios de chat/tareas y permisos por licencia.
+
+Actualizacion 2026-04-08: Modulo de soporte remoto empresarial (AnyDesk/TeamViewer simplificado)
+
+- `backend/db/soporte_remoto.go` (nuevo):
+	- crea/migra tablas `empresa_soporte_remoto_configuracion`, `empresa_soporte_remoto_dispositivos` y `empresa_soporte_remoto_sesiones`.
+	- implementa configuracion por empresa, alta/edicion de dispositivos, validacion de acceso por PIN hash, heartbeat de agente y ciclo de sesiones con token temporal de visualizacion.
+
+- `backend/handlers/soporte_remoto.go` (nuevo):
+	- agrega endpoint empresarial `/api/empresa/soporte_remoto` para config, dispositivos, sesiones, aprobacion/finalizacion, resolver visualizacion y exportes multiformato.
+	- agrega endpoint publico `/api/public/soporte_remoto` para heartbeat y cambios de estado de sesion desde agente/plugin.
+
+- `backend/db/soporte_remoto_test.go` (nuevo):
+	- valida flujo DB de configuracion/dispositivo/sesion, resolucion de token, heartbeat y aislamiento por `empresa_id`.
+
+- `backend/handlers/soporte_remoto_test.go` (nuevo):
+	- valida contrato HTTP del handler empresarial y del handler publico de agente (heartbeat, aprobar/finalizar sesion).
+
+- `backend/main.go` y `backend/utils/utils.go`:
+	- integran schema, migracion y rutas del modulo, incluyendo whitelist publica para `/api/public/soporte_remoto`.
+
+- `backend/handlers/empresa_permisos.go`:
+	- incorpora `linkSoporteRemoto` al catalogo de paginas con control de permisos del modulo seguridad.
+
+- `web/administrar_empresa.html` y `web/js/administrar_empresa.js`:
+	- agregan enlace `Soporte remoto` y mapeo de permisos en menu lateral del panel empresa.
+
+- `web/administrar_empresa/soporte_remoto.html` (nuevo):
+	- interfaz de gestion de configuracion, dispositivos y sesiones remotas por empresa; integra exportacion de sesiones y visor embebido.
+
+- `web/administrar_empresa/soporte_remoto_view.html` (nuevo):
+	- visor dedicado que resuelve `empresa_id + codigo_sesion + token` y embebe `stream_url` solo cuando la sesion esta permitida.
+
+- `documentos/diagramas/estructura_del_codigo.md`, `documentos/diagramas/diagrama_flujo_procesos.md`, `documentos/diagramas/diagrama_entidad_relacion.md` y `documentos/diagramas/versionado.md`:
+	- actualizan la traza tecnica del modulo de soporte remoto en arquitectura, flujo funcional, modelo ER y versionado documental.
+
+- `documentos/estructura_bd.md` y `estructura_bd.md`:
+	- actualizan version de esquema a `2026-04-08.40.0` e incorporan las tablas `empresa_soporte_remoto_*`.
+
+Actualizacion 2026-04-08: Modulo de venta digital global (super + publico)
+
+- `backend/db/venta_digital.go` (nuevo):
+	- crea/migra tablas de `super_venta_digital_*` para configuracion, catalogo y ordenes de productos digitales.
+	- implementa CRUD de catalogo, consultas publicas y trazabilidad de pago/entrega por codigo de orden.
+
+- `backend/handlers/venta_digital.go` (nuevo):
+	- agrega endpoint super `/super/api/venta_digital` para configuracion, CRUD de items, uploads de imagen/instrucciones y consulta de ordenes.
+	- agrega endpoint publico `/api/public/venta_digital` para catalogo, creacion de pago Nequi/Wompi, estado de pago y entrega por correo de licencia.
+
+- `backend/main.go`, `backend/utils/utils.go` y `backend/handlers/payments_handlers.go`:
+	- integran bootstrap de schema, rutas del modulo, acceso publico controlado y sincronizacion por webhook Wompi para entrega automatica.
+
+- `web/super/venta_digital.html` (nuevo):
+	- interfaz de super administrador para configurar tienda digital, publicar productos, subir archivos e inspeccionar ordenes.
+
+- `web/venta_digital.html` (nuevo):
+	- vitrina publica para comprar licencias/software con correo obligatorio previo al pago y consulta de estado de orden.
+
+- `web/menu.js`, `web/super_administrador.html` y `web/super/configuracion_avanzada.html`:
+	- agregan enlaces de navegacion al modulo de venta digital desde menu flotante y panel super.
+
+- `documentos/diagramas/estructura_del_codigo.md`, `documentos/estructura_bd.md` y `estructura_bd.md`:
+	- sincronizan arquitectura y estructura de datos con el nuevo modulo `venta_digital`.
+
+Actualizacion 2026-04-08: Refuerzo QA de permisos dinamicos por rol
+
+- `backend/db/roles_permisos_usuario_test.go` (nuevo):
+	- agrega pruebas de capa DB para reemplazo transaccional, listado y lookups de permisos por modulo/accion y pagina.
+	- valida fallback seguro cuando las tablas de permisos aun no existen en entornos legacy.
+
+- `backend/handlers/roles_tipos_usuario_permisos_test.go` (nuevo):
+	- valida contrato HTTP del endpoint `GET/PUT /super/api/roles_de_usuario/permisos`, incluyendo casos de exito, persistencia y `rol` no encontrado.
+
+- `backend/handlers/empresa_permisos_test.go`:
+	- alinea helper de esquema de pruebas de roles/tipos con columnas reales (`observaciones`) para evitar falsos negativos en consultas de rol por ID.
+
+Actualizacion 2026-04-08: Inicio de implementacion de permisos dinamicos por rol
+
+- `backend/db/roles_permisos_usuario.go` (nuevo):
+	- define esquema y operaciones de permisos dinamicos por rol para modulo/accion y pagina en `superadministrador.db`.
+
+- `backend/handlers/empresa_permisos.go`:
+	- aplica overrides de permisos por rol en middleware y expone `paginas` en `/api/empresa/permisos_contexto`.
+
+- `backend/handlers/roles_tipos_usuario.go`:
+	- agrega endpoint super `GET/PUT /super/api/roles_de_usuario/permisos` para administrar la matriz de permisos por rol.
+
+- `backend/main.go`:
+	- integra inicializacion de esquema `EnsureRolesPermisosSchema`, registro de migracion y ruta del endpoint de permisos por rol.
+
+- `backend/handlers/empresa_permisos_test.go`:
+	- agrega pruebas de override dinamico para contexto de permisos y bloqueo efectivo en middleware de finanzas.
+
+- `web/super/permisos_rol.html` (nuevo):
+	- nueva pantalla de configuracion granular de permisos por rol (modulos/acciones y paginas).
+
+- `web/super_administrador.html` y `web/super/roles_de_usuario.html`:
+	- agregan enlaces de acceso a la configuracion de permisos por rol.
+
+- `web/js/administrar_empresa.js`:
+	- prioriza reglas por pagina (`paginas`) sobre la regla base por modulo para visibilidad del menu empresa.
+
+- `documentos/diagramas/estructura_del_codigo.md`, `documentos/estructura_bd.md` y `estructura_bd.md`:
+	- sincronizan arquitectura y esquema de datos con las nuevas tablas/flujos de permisos dinamicos.
+
 Actualizacion 2026-04-07: Cobertura de pruebas modulo 37 (venta publica)
 
 - `backend/handlers/venta_publica_test.go` (nuevo):

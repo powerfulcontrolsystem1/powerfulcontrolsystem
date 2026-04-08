@@ -196,3 +196,62 @@ func TestEmpresaBackupsHandlerRestoreNotFound(t *testing.T) {
 		t.Fatalf("expected status=%d, got=%d body=%s", http.StatusNotFound, rr.Code, rr.Body.String())
 	}
 }
+
+func TestEmpresaBackupsHandlerPurgeByDate(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresa_backups_handler_purge_date.db")
+	if err := dbpkg.EnsureEmpresaBackupsSchema(dbEmp); err != nil {
+		t.Fatalf("EnsureEmpresaBackupsSchema: %v", err)
+	}
+	ensureEmpresaBackupsHandlerTestTable(t, dbEmp)
+
+	if _, err := dbEmp.Exec(`INSERT INTO empresa_backup_items_test (
+		empresa_id, codigo, valor, fecha_creacion, fecha_actualizacion, usuario_creador, estado
+	) VALUES
+		(77, 'OLD', 1, '2026-01-01 10:00:00', '2026-01-01 10:00:00', 'seed', 'activo'),
+		(77, 'NEW', 2, '2026-04-08 10:00:00', '2026-04-08 10:00:00', 'seed', 'activo'),
+		(78, 'EXT', 3, '2026-01-01 10:00:00', '2026-01-01 10:00:00', 'seed', 'activo')`); err != nil {
+		t.Fatalf("seed rows for purge handler: %v", err)
+	}
+
+	h := EmpresaBackupsHandler(dbEmp)
+	req := httptest.NewRequest(http.MethodPost, "/api/empresa/backups?empresa_id=77&action=depurar_fecha", strings.NewReader(`{
+		"empresa_id":77,
+		"fecha_corte":"2026-03-01",
+		"include_tables":["empresa_backup_items_test"],
+		"crear_backup_previo":false
+	}`))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("purge by date status=%d body=%s", rr.Code, rr.Body.String())
+	}
+
+	var resp struct {
+		Resultado struct {
+			RegistrosEliminados int64 `json:"registros_eliminados"`
+		} `json:"resultado"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode purge response: %v", err)
+	}
+	if resp.Resultado.RegistrosEliminados != 1 {
+		t.Fatalf("expected registros_eliminados=1, got %d", resp.Resultado.RegistrosEliminados)
+	}
+
+	var empresa77Count int64
+	if err := dbEmp.QueryRow(`SELECT COUNT(1) FROM empresa_backup_items_test WHERE empresa_id = 77`).Scan(&empresa77Count); err != nil {
+		t.Fatalf("count empresa 77 after purge: %v", err)
+	}
+	if empresa77Count != 1 {
+		t.Fatalf("expected one remaining row for empresa 77, got %d", empresa77Count)
+	}
+
+	var empresa78Count int64
+	if err := dbEmp.QueryRow(`SELECT COUNT(1) FROM empresa_backup_items_test WHERE empresa_id = 78`).Scan(&empresa78Count); err != nil {
+		t.Fatalf("count empresa 78 after purge: %v", err)
+	}
+	if empresa78Count != 1 {
+		t.Fatalf("expected empresa 78 untouched, got %d", empresa78Count)
+	}
+}

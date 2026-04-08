@@ -82,6 +82,8 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				Descripcion  string  `json:"descripcion"`
 				Valor        float64 `json:"valor"`
 				DuracionDias int     `json:"duracion_dias"`
+				ModulosHab   string  `json:"modulos_habilitados"`
+				SuperRol     int     `json:"super_rol_habilitado"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "invalid payload", http.StatusBadRequest)
@@ -93,7 +95,7 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "nombre required", http.StatusBadRequest)
 				return
 			}
-			id, err := dbpkg.CreateLicencia(dbSuper, payload.TipoID, payload.Nombre, payload.Descripcion, payload.Valor, payload.DuracionDias)
+			id, err := dbpkg.CreateLicencia(dbSuper, payload.TipoID, payload.Nombre, payload.Descripcion, payload.Valor, payload.DuracionDias, payload.ModulosHab, payload.SuperRol)
 			if err != nil {
 				log.Println("POST /super/api/licencias error:", err)
 				http.Error(w, "failed to create licencia: "+err.Error(), http.StatusInternalServerError)
@@ -141,12 +143,14 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				Descripcion  string  `json:"descripcion"`
 				Valor        float64 `json:"valor"`
 				DuracionDias int     `json:"duracion_dias"`
+				ModulosHab   string  `json:"modulos_habilitados"`
+				SuperRol     int     `json:"super_rol_habilitado"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payloadUpdate); err != nil {
 				http.Error(w, "invalid payload", http.StatusBadRequest)
 				return
 			}
-			if err := dbpkg.UpdateLicencia(dbSuper, id, payloadUpdate.TipoID, payloadUpdate.Nombre, payloadUpdate.Descripcion, payloadUpdate.Valor, payloadUpdate.DuracionDias); err != nil {
+			if err := dbpkg.UpdateLicencia(dbSuper, id, payloadUpdate.TipoID, payloadUpdate.Nombre, payloadUpdate.Descripcion, payloadUpdate.Valor, payloadUpdate.DuracionDias, payloadUpdate.ModulosHab, payloadUpdate.SuperRol); err != nil {
 				log.Println("PUT /super/api/licencias error:", err)
 				http.Error(w, "failed to update licencia: "+err.Error(), http.StatusInternalServerError)
 				return
@@ -1011,17 +1015,36 @@ func WompiWebhookHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 		}
 
+		ventaDigitalContextFound := false
+		ventaDigitalDeliverySent := false
+		ventaDigitalDeliveryStage := "not_processed"
+		if strings.TrimSpace(status) != "" {
+			foundVD, deliveredVD, deliveryStageVD, vdErr := processVentaDigitalPaymentStatusUpdate(r, dbSuper, transactionID, reference, status, string(body))
+			ventaDigitalContextFound = foundVD
+			if strings.TrimSpace(deliveryStageVD) != "" {
+				ventaDigitalDeliveryStage = deliveryStageVD
+			}
+			if vdErr != nil {
+				log.Println("warning: failed to process venta_digital webhook update:", vdErr)
+			} else {
+				ventaDigitalDeliverySent = deliveredVD
+			}
+		}
+
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"ok":             true,
-			"provider":       "wompi",
-			"transaction_id": transactionID,
-			"reference":      reference,
-			"status":         status,
-			"context_found":  hasContext,
-			"licencia_id":    licenciaID,
-			"empresa_id":     empresaID,
-			"activated":      activated,
+			"ok":                           true,
+			"provider":                     "wompi",
+			"transaction_id":               transactionID,
+			"reference":                    reference,
+			"status":                       status,
+			"context_found":                hasContext,
+			"licencia_id":                  licenciaID,
+			"empresa_id":                   empresaID,
+			"activated":                    activated,
+			"venta_digital_context_found":  ventaDigitalContextFound,
+			"venta_digital_delivery_sent":  ventaDigitalDeliverySent,
+			"venta_digital_delivery_stage": ventaDigitalDeliveryStage,
 		})
 	}
 }

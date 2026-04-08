@@ -13,6 +13,7 @@ import (
 	"strings"
 	"testing"
 
+	dbpkg "github.com/you/pos-backend/db"
 	_ "modernc.org/sqlite"
 )
 
@@ -73,6 +74,97 @@ func seedPermsEmpresa(t *testing.T, dbEmp *sql.DB, id int64, creador string) {
 	if err != nil {
 		t.Fatalf("insert empresa: %v", err)
 	}
+}
+
+func ensurePermsRoleConfigSchema(t *testing.T, dbSuper *sql.DB) {
+	t.Helper()
+	_, err := dbSuper.Exec(`CREATE TABLE IF NOT EXISTS tipos_de_empresas (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		nombre TEXT NOT NULL,
+		fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+		fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+		usuario_creador TEXT,
+		estado TEXT DEFAULT 'activo',
+		observaciones TEXT
+	)`)
+	if err != nil {
+		t.Fatalf("create tipos_de_empresas table: %v", err)
+	}
+	_, err = dbSuper.Exec(`CREATE TABLE IF NOT EXISTS roles_de_usuario (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		tipo_empresa_id INTEGER NOT NULL,
+		nombre TEXT NOT NULL,
+		descripcion TEXT,
+		fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+		fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+		usuario_creador TEXT,
+		estado TEXT DEFAULT 'activo',
+		observaciones TEXT
+	)`)
+	if err != nil {
+		t.Fatalf("create roles_de_usuario table: %v", err)
+	}
+	if err := dbpkg.EnsureRolesPermisosSchema(dbSuper); err != nil {
+		t.Fatalf("ensure roles permisos schema: %v", err)
+	}
+}
+
+func ensurePermsLicenciasSchema(t *testing.T, dbSuper *sql.DB) {
+	t.Helper()
+	_, err := dbSuper.Exec(`CREATE TABLE IF NOT EXISTS licencias (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		empresa_id INTEGER,
+		nombre TEXT,
+		modulos_habilitados TEXT,
+		super_rol_habilitado INTEGER DEFAULT 0,
+		fecha_inicio TEXT,
+		fecha_fin TEXT,
+		activo INTEGER DEFAULT 1
+	)`)
+	if err != nil {
+		t.Fatalf("create licencias table: %v", err)
+	}
+}
+
+func seedPermsLicencia(t *testing.T, dbSuper *sql.DB, empresaID int64, nombre, modulos string, superRol bool) {
+	t.Helper()
+	superRolInt := 0
+	if superRol {
+		superRolInt = 1
+	}
+	_, err := dbSuper.Exec(`INSERT INTO licencias (
+		empresa_id,
+		nombre,
+		modulos_habilitados,
+		super_rol_habilitado,
+		fecha_inicio,
+		fecha_fin,
+		activo
+	) VALUES (?, ?, ?, ?, datetime('now','-1 day','localtime'), datetime('now','+30 day','localtime'), 1)`, empresaID, nombre, modulos, superRolInt)
+	if err != nil {
+		t.Fatalf("insert licencia: %v", err)
+	}
+}
+
+func seedPermsRolDeUsuario(t *testing.T, dbSuper *sql.DB, nombreRol string) int64 {
+	t.Helper()
+	res, err := dbSuper.Exec(`INSERT INTO tipos_de_empresas (nombre, estado) VALUES ('Tipo Test', 'activo')`)
+	if err != nil {
+		t.Fatalf("insert tipos_de_empresas: %v", err)
+	}
+	tipoID, err := res.LastInsertId()
+	if err != nil {
+		t.Fatalf("tipo last insert id: %v", err)
+	}
+	res, err = dbSuper.Exec(`INSERT INTO roles_de_usuario (tipo_empresa_id, nombre, descripcion, estado) VALUES (?, ?, ?, 'activo')`, tipoID, nombreRol, "rol de prueba")
+	if err != nil {
+		t.Fatalf("insert roles_de_usuario: %v", err)
+	}
+	rolID, err := res.LastInsertId()
+	if err != nil {
+		t.Fatalf("rol last insert id: %v", err)
+	}
+	return rolID
 }
 
 func TestWithEmpresaFinanzasPermissionsDeniesInventarioWrite(t *testing.T) {
@@ -723,6 +815,90 @@ func TestEmpresaPermisosContextoHandlerRetornaPermisosPorRol(t *testing.T) {
 	}
 }
 
+func TestEmpresaPermisosContextoHandlerAplicaOverridesPorRol(t *testing.T) {
+	dbEmp := openPermsTestDB(t, "empresas.db")
+	dbSuper := openPermsTestDB(t, "super.db")
+	ensurePermsEmpresasSchema(t, dbEmp)
+	ensurePermsAdminSchema(t, dbSuper)
+	ensurePermsRoleConfigSchema(t, dbSuper)
+	seedPermsEmpresa(t, dbEmp, 48, "conta@override.com")
+	seedPermsAdmin(t, dbSuper, "conta@override.com", "contabilidad")
+	rolID := seedPermsRolDeUsuario(t, dbSuper, "contabilidad")
+
+	if err := dbpkg.ReplaceRolPermisosDeUsuario(dbSuper, rolID,
+		[]dbpkg.RolPermisoModulo{{RolID: rolID, Modulo: permModuleFinanzas, Accion: permActionApprove, Permitido: false}},
+		[]dbpkg.RolPermisoPagina{{RolID: rolID, PaginaClave: "linkFinanzas", Permitido: false}},
+		"tester",
+	); err != nil {
+		t.Fatalf("seed role overrides: %v", err)
+	}
+
+	h := WithEmpresaSeguridadPermissions(dbEmp, dbSuper, EmpresaPermisosContextoHandler(dbSuper))
+	req := httptest.NewRequest(http.MethodGet, "/api/empresa/permisos_contexto?empresa_id=48", nil)
+	req = req.WithContext(context.WithValue(req.Context(), "adminEmail", "conta@override.com"))
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200 for permisos_contexto with overrides, got %d body=%s", rr.Code, rr.Body.String())
+	}
+
+	var resp empresaPermisosContextResponse
+	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode permisos_contexto response: %v body=%s", err, rr.Body.String())
+	}
+
+	finanzas, ok := findPermissionModuleRow(resp.Modulos, permModuleFinanzas)
+	if !ok {
+		t.Fatalf("finanzas module must exist in response")
+	}
+	if finanzas.Approve {
+		t.Fatalf("override must remove approve on finanzas for contabilidad")
+	}
+	if visible, ok := resp.Paginas["linkFinanzas"]; !ok || visible {
+		t.Fatalf("override must hide linkFinanzas in paginas map, got exists=%v visible=%v", ok, visible)
+	}
+}
+
+func TestWithEmpresaFinanzasPermissionsRespetaOverrideDenegado(t *testing.T) {
+	dbEmp := openPermsTestDB(t, "empresas.db")
+	dbSuper := openPermsTestDB(t, "super.db")
+	ensurePermsEmpresasSchema(t, dbEmp)
+	ensurePermsAdminSchema(t, dbSuper)
+	ensurePermsRoleConfigSchema(t, dbSuper)
+	seedPermsEmpresa(t, dbEmp, 49, "conta@override.com")
+	seedPermsAdmin(t, dbSuper, "conta@override.com", "contabilidad")
+	rolID := seedPermsRolDeUsuario(t, dbSuper, "contabilidad")
+
+	if err := dbpkg.ReplaceRolPermisosDeUsuario(dbSuper, rolID,
+		[]dbpkg.RolPermisoModulo{{RolID: rolID, Modulo: permModuleFinanzas, Accion: permActionApprove, Permitido: false}},
+		nil,
+		"tester",
+	); err != nil {
+		t.Fatalf("seed role module override: %v", err)
+	}
+
+	nextCalled := false
+	h := WithEmpresaFinanzasPermissions(dbEmp, dbSuper, func(w http.ResponseWriter, r *http.Request) {
+		nextCalled = true
+		w.WriteHeader(http.StatusOK)
+	})
+
+	req := httptest.NewRequest(http.MethodPut, "/api/empresa/finanzas/periodos?empresa_id=49&action=cerrar", nil)
+	req = req.WithContext(context.WithValue(req.Context(), "adminEmail", "conta@override.com"))
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusForbidden {
+		t.Fatalf("expected 403 when override denies approve, got %d body=%s", rr.Code, rr.Body.String())
+	}
+	if nextCalled {
+		t.Fatalf("next handler must not be called when override denies permission")
+	}
+}
+
 func TestEmpresaPermisosContextoHandlerIncluyeMatrizRoles(t *testing.T) {
 	dbEmp := openPermsTestDB(t, "empresas.db")
 	dbSuper := openPermsTestDB(t, "super.db")
@@ -985,6 +1161,132 @@ func expectedPolicyPermission(role, modulo, accion string) bool {
 		return false
 	}
 	return actionMap[role]
+}
+
+func TestEmpresaPermisosContextoHandlerRestringeModulosPorLicencia(t *testing.T) {
+	dbEmp := openPermsTestDB(t, "empresas.db")
+	dbSuper := openPermsTestDB(t, "super.db")
+	ensurePermsEmpresasSchema(t, dbEmp)
+	ensurePermsAdminSchema(t, dbSuper)
+	ensurePermsLicenciasSchema(t, dbSuper)
+
+	seedPermsEmpresa(t, dbEmp, 81, "admin.licencia@test.com")
+	seedPermsAdmin(t, dbSuper, "admin.licencia@test.com", "administrador")
+	seedPermsLicencia(t, dbSuper, 81, "Plan Ventas+Clientes", "ventas,clientes", false)
+
+	h := WithEmpresaSeguridadPermissions(dbEmp, dbSuper, EmpresaPermisosContextoHandler(dbSuper))
+	req := httptest.NewRequest(http.MethodGet, "/api/empresa/permisos_contexto?empresa_id=81", nil)
+	req = req.WithContext(context.WithValue(req.Context(), "adminEmail", "admin.licencia@test.com"))
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200 for permisos_contexto with licencia restriction, got %d body=%s", rr.Code, rr.Body.String())
+	}
+
+	var resp empresaPermisosContextResponse
+	if err := json.NewDecoder(rr.Body).Decode(&resp); err != nil {
+		t.Fatalf("decode permisos_contexto response: %v body=%s", err, rr.Body.String())
+	}
+
+	if resp.RolEfectivo != "admin_empresa" {
+		t.Fatalf("expected rol_efectivo admin_empresa, got %q", resp.RolEfectivo)
+	}
+	if resp.Licencia == nil {
+		t.Fatalf("expected licencia context in response")
+	}
+	if !resp.Licencia.RestringeModulos {
+		t.Fatalf("expected licencia to restrict modules")
+	}
+
+	ventas, ok := findPermissionModuleRow(resp.Modulos, permModuleVentas)
+	if !ok {
+		t.Fatalf("ventas module not found")
+	}
+	if !ventas.Read {
+		t.Fatalf("expected ventas.read true when module enabled by licencia")
+	}
+
+	seguridad, ok := findPermissionModuleRow(resp.Modulos, permModuleSeguridad)
+	if !ok {
+		t.Fatalf("seguridad module not found")
+	}
+	if seguridad.Read || seguridad.Create || seguridad.Update || seguridad.Delete || seguridad.Approve {
+		t.Fatalf("expected seguridad module fully blocked by licencia restriction")
+	}
+
+	if resp.Paginas["linkCreditos"] {
+		t.Fatalf("expected linkCreditos to be hidden when finanzas is not enabled by licencia")
+	}
+}
+
+func TestWithEmpresaFinanzasPermissionsSupervisorConSuperRolLicencia(t *testing.T) {
+	dbEmp := openPermsTestDB(t, "empresas.db")
+	dbSuper := openPermsTestDB(t, "super.db")
+	ensurePermsEmpresasSchema(t, dbEmp)
+	ensurePermsAdminSchema(t, dbSuper)
+	ensurePermsLicenciasSchema(t, dbSuper)
+
+	seedPermsEmpresa(t, dbEmp, 82, "supervisor.licencia@test.com")
+	seedPermsAdmin(t, dbSuper, "supervisor.licencia@test.com", "supervisor")
+	seedPermsLicencia(t, dbSuper, 82, "Plan Finanzas SuperRol", "finanzas", true)
+
+	nextCalled := false
+	effectiveRole := ""
+	h := WithEmpresaFinanzasPermissions(dbEmp, dbSuper, func(w http.ResponseWriter, r *http.Request) {
+		nextCalled = true
+		effectiveRole = r.Header.Get("X-Admin-Role-Efectivo")
+		w.WriteHeader(http.StatusOK)
+	})
+
+	req := httptest.NewRequest(http.MethodPost, "/api/empresa/finanzas/movimientos", strings.NewReader(`{"empresa_id":82,"tipo_movimiento":"ingreso","concepto":"test","total":120}`))
+	req.Header.Set("Content-Type", "application/json")
+	req = req.WithContext(context.WithValue(req.Context(), "adminEmail", "supervisor.licencia@test.com"))
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200 for supervisor with super_rol license in finanzas, got %d body=%s", rr.Code, rr.Body.String())
+	}
+	if !nextCalled {
+		t.Fatalf("next handler must be called for supervisor with super_rol enabled")
+	}
+	if effectiveRole != "admin_empresa" {
+		t.Fatalf("expected effective role admin_empresa, got %q", effectiveRole)
+	}
+}
+
+func TestWithEmpresaVentasPermissionsBloqueaModuloNoHabilitadoPorLicencia(t *testing.T) {
+	dbEmp := openPermsTestDB(t, "empresas.db")
+	dbSuper := openPermsTestDB(t, "super.db")
+	ensurePermsEmpresasSchema(t, dbEmp)
+	ensurePermsAdminSchema(t, dbSuper)
+	ensurePermsLicenciasSchema(t, dbSuper)
+
+	seedPermsEmpresa(t, dbEmp, 83, "admin.finanzas@test.com")
+	seedPermsAdmin(t, dbSuper, "admin.finanzas@test.com", "administrador")
+	seedPermsLicencia(t, dbSuper, 83, "Plan Solo Finanzas", "finanzas", false)
+
+	nextCalled := false
+	h := WithEmpresaVentasPermissions(dbEmp, dbSuper, func(w http.ResponseWriter, r *http.Request) {
+		nextCalled = true
+		w.WriteHeader(http.StatusOK)
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/api/empresa/carritos_compra?empresa_id=83", nil)
+	req = req.WithContext(context.WithValue(req.Context(), "adminEmail", "admin.finanzas@test.com"))
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusForbidden {
+		t.Fatalf("expected 403 when modulo ventas is not enabled by licencia, got %d body=%s", rr.Code, rr.Body.String())
+	}
+	if nextCalled {
+		t.Fatalf("next handler must not be called when modulo is blocked by licencia")
+	}
 }
 
 func toStringForTest(v interface{}) string {

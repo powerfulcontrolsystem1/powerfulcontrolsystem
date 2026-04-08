@@ -42,6 +42,10 @@ type EmpresaConfiguracionAvanzada struct {
 	NotasLegales              string `json:"notas_legales,omitempty"`
 	ColorCarritoActivo        string `json:"color_carrito_activo,omitempty"`
 	ColorCarritoInactivo      string `json:"color_carrito_inactivo,omitempty"`
+	MonedaCodigo              string `json:"moneda_codigo,omitempty"`
+	SistemaNumerico           string `json:"sistema_numerico,omitempty"`
+	UsarDecimales             bool   `json:"usar_decimales"`
+	CantidadDecimales         int64  `json:"cantidad_decimales,omitempty"`
 	FechaCreacion             string `json:"fecha_creacion,omitempty"`
 	FechaActualizacion        string `json:"fecha_actualizacion,omitempty"`
 	UsuarioCreador            string `json:"usuario_creador,omitempty"`
@@ -52,6 +56,9 @@ type EmpresaConfiguracionAvanzada struct {
 const (
 	defaultColorCarritoActivo   = "#d9fbe8"
 	defaultColorCarritoInactivo = "#fff9ef"
+	defaultMonedaCodigo         = "COP"
+	defaultSistemaNumericoValue = "latino"
+	defaultCantidadDecimales    = int64(2)
 )
 
 // EnsureEmpresaConfiguracionAvanzadaSchema crea/migra el esquema de configuración avanzada
@@ -92,6 +99,10 @@ func EnsureEmpresaConfiguracionAvanzadaSchema(dbConn *sql.DB) error {
 			notas_legales TEXT,
 			color_carrito_activo TEXT DEFAULT '#d9fbe8',
 			color_carrito_inactivo TEXT DEFAULT '#fff9ef',
+			moneda_codigo TEXT DEFAULT 'COP',
+			sistema_numerico TEXT DEFAULT 'latino',
+			usar_decimales INTEGER DEFAULT 1,
+			cantidad_decimales INTEGER DEFAULT 2,
 			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
 			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
 			usuario_creador TEXT,
@@ -200,6 +211,18 @@ func EnsureEmpresaConfiguracionAvanzadaSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "color_carrito_inactivo", "TEXT DEFAULT '#fff9ef'"); err != nil {
 		return err
 	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "moneda_codigo", "TEXT DEFAULT 'COP'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "sistema_numerico", "TEXT DEFAULT 'latino'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "usar_decimales", "INTEGER DEFAULT 1"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "cantidad_decimales", "INTEGER DEFAULT 2"); err != nil {
+		return err
+	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "fecha_actualizacion", "TEXT"); err != nil {
 		return err
 	}
@@ -229,6 +252,10 @@ func defaultConfigAvanzada(empresaID int64) EmpresaConfiguracionAvanzada {
 		MostrarLogo:          true,
 		ColorCarritoActivo:   defaultColorCarritoActivo,
 		ColorCarritoInactivo: defaultColorCarritoInactivo,
+		MonedaCodigo:         defaultMonedaCodigo,
+		SistemaNumerico:      defaultSistemaNumericoValue,
+		UsarDecimales:        true,
+		CantidadDecimales:    defaultCantidadDecimales,
 		Estado:               "activo",
 	}
 }
@@ -283,6 +310,32 @@ func defaultTipoOperacion(v string) string {
 	return v
 }
 
+func normalizeMonedaCodigo(v string) string {
+	v = strings.TrimSpace(strings.ToUpper(v))
+	if v == "" {
+		return defaultMonedaCodigo
+	}
+	if len(v) > 10 {
+		return defaultMonedaCodigo
+	}
+	return v
+}
+
+func defaultSistemaNumerico(v string) string {
+	v = strings.TrimSpace(strings.ToLower(v))
+	if v == "internacional" {
+		return "internacional"
+	}
+	return defaultSistemaNumericoValue
+}
+
+func normalizeCantidadDecimales(v int64) int64 {
+	if v < 0 || v > 6 {
+		return defaultCantidadDecimales
+	}
+	return v
+}
+
 // GetEmpresaConfiguracionAvanzada obtiene la configuración avanzada por empresa.
 // Si no existe registro, retorna valores por defecto para facilitar captura inicial.
 func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaConfiguracionAvanzada, error) {
@@ -320,6 +373,10 @@ func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaC
 		COALESCE(notas_legales, ''),
 		COALESCE(color_carrito_activo, '#d9fbe8'),
 		COALESCE(color_carrito_inactivo, '#fff9ef'),
+		COALESCE(moneda_codigo, 'COP'),
+		COALESCE(sistema_numerico, 'latino'),
+		COALESCE(usar_decimales, 1),
+		COALESCE(cantidad_decimales, 2),
 		COALESCE(fecha_creacion, ''),
 		COALESCE(fecha_actualizacion, ''),
 		COALESCE(usuario_creador, ''),
@@ -332,6 +389,7 @@ func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaC
 	cfg := defaultConfigAvanzada(empresaID)
 	var imprimirCopiaFacturaInt int
 	var mostrarLogoInt int
+	var usarDecimalesInt int
 	if err := row.Scan(
 		&cfg.ID,
 		&cfg.EmpresaID,
@@ -366,6 +424,10 @@ func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaC
 		&cfg.NotasLegales,
 		&cfg.ColorCarritoActivo,
 		&cfg.ColorCarritoInactivo,
+		&cfg.MonedaCodigo,
+		&cfg.SistemaNumerico,
+		&usarDecimalesInt,
+		&cfg.CantidadDecimales,
 		&cfg.FechaCreacion,
 		&cfg.FechaActualizacion,
 		&cfg.UsuarioCreador,
@@ -381,6 +443,17 @@ func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaC
 	cfg.MostrarLogo = mostrarLogoInt == 1
 	cfg.ColorCarritoActivo = normalizeHexColor(cfg.ColorCarritoActivo, defaultColorCarritoActivo)
 	cfg.ColorCarritoInactivo = normalizeHexColor(cfg.ColorCarritoInactivo, defaultColorCarritoInactivo)
+	cfg.MonedaCodigo = normalizeMonedaCodigo(cfg.MonedaCodigo)
+	cfg.SistemaNumerico = defaultSistemaNumerico(cfg.SistemaNumerico)
+	cfg.UsarDecimales = usarDecimalesInt == 1
+	cfg.CantidadDecimales = normalizeCantidadDecimales(cfg.CantidadDecimales)
+	if cfg.UsarDecimales {
+		if cfg.CantidadDecimales <= 0 {
+			cfg.CantidadDecimales = defaultCantidadDecimales
+		}
+	} else {
+		cfg.CantidadDecimales = 0
+	}
 	return &cfg, nil
 }
 
@@ -403,6 +476,16 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 	payload.FormatoImpresion = defaultFormatoImpresion(payload.FormatoImpresion)
 	payload.ColorCarritoActivo = normalizeHexColor(payload.ColorCarritoActivo, defaultColorCarritoActivo)
 	payload.ColorCarritoInactivo = normalizeHexColor(payload.ColorCarritoInactivo, defaultColorCarritoInactivo)
+	payload.MonedaCodigo = normalizeMonedaCodigo(payload.MonedaCodigo)
+	payload.SistemaNumerico = defaultSistemaNumerico(payload.SistemaNumerico)
+	payload.CantidadDecimales = normalizeCantidadDecimales(payload.CantidadDecimales)
+	if payload.UsarDecimales {
+		if payload.CantidadDecimales <= 0 {
+			payload.CantidadDecimales = defaultCantidadDecimales
+		}
+	} else {
+		payload.CantidadDecimales = 0
+	}
 	if payload.ConsecutivoDesde <= 0 {
 		payload.ConsecutivoDesde = 1
 	}
@@ -424,6 +507,11 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 	imprimirCopiaFacturaInt := 0
 	if payload.ImprimirCopiaFactura {
 		imprimirCopiaFacturaInt = 1
+	}
+
+	usarDecimalesInt := 0
+	if payload.UsarDecimales {
+		usarDecimalesInt = 1
 	}
 
 	_, err := dbConn.Exec(`INSERT INTO empresa_configuracion_avanzada (
@@ -459,12 +547,16 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 		notas_legales,
 		color_carrito_activo,
 		color_carrito_inactivo,
+		moneda_codigo,
+		sistema_numerico,
+		usar_decimales,
+		cantidad_decimales,
 		fecha_creacion,
 		fecha_actualizacion,
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)
 	ON CONFLICT(empresa_id) DO UPDATE SET
 		tipo_documento_emisor = excluded.tipo_documento_emisor,
 		nit = excluded.nit,
@@ -497,6 +589,10 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 		notas_legales = excluded.notas_legales,
 		color_carrito_activo = excluded.color_carrito_activo,
 		color_carrito_inactivo = excluded.color_carrito_inactivo,
+		moneda_codigo = excluded.moneda_codigo,
+		sistema_numerico = excluded.sistema_numerico,
+		usar_decimales = excluded.usar_decimales,
+		cantidad_decimales = excluded.cantidad_decimales,
 		fecha_actualizacion = datetime('now','localtime'),
 		usuario_creador = CASE
 			WHEN trim(excluded.usuario_creador) <> '' THEN excluded.usuario_creador
@@ -536,6 +632,10 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 		strings.TrimSpace(payload.NotasLegales),
 		payload.ColorCarritoActivo,
 		payload.ColorCarritoInactivo,
+		payload.MonedaCodigo,
+		payload.SistemaNumerico,
+		usarDecimalesInt,
+		payload.CantidadDecimales,
 		strings.TrimSpace(payload.UsuarioCreador),
 		strings.TrimSpace(payload.Estado),
 		strings.TrimSpace(payload.Observaciones),

@@ -13,6 +13,15 @@
       <p class="form-help">Ajustes avanzados del sistema. Pasarela activa de pagos: Wompi.</p>
     </div>
 
+    <section class="card form mp-card" id="ventaDigitalConfigShortcut">
+      <h2>Configuración de venta digital</h2>
+      <p class="form-help">Administra catálogo de licencias/software, carga archivos de instalación e inspecciona órdenes de compra.</p>
+      <div class="form-actions">
+        <a class="btn" href="/super/venta_digital.html">Abrir panel de venta digital</a>
+        <a class="btn secondary" href="/venta_digital.html" target="_blank" rel="noopener noreferrer">Ver tienda pública</a>
+      </div>
+    </section>
+
     <!-- Sección de parámetros avanzados eliminada por ahora -->
 
     <section class="card form nequi-card" id="wompiConfig">
@@ -125,26 +134,26 @@
     </section>
 
     <section class="card form mp-card" id="aiConfigCard">
-      <h2>Inteligencia Artificial — Google Gemini</h2>
-      <p class="form-help">Esta credencial habilita el chat empresarial con Gemini, con trazabilidad por cuenta Google autenticada y alcance por empresa_id.</p>
+      <h2>Inteligencia Artificial — DeepSeek</h2>
+      <p class="form-help">Esta credencial habilita el chat empresarial con DeepSeek, con trazabilidad por cuenta Google autenticada y alcance por empresa_id.</p>
       <div id="aiLoggedAccount" class="form-help">Cuenta Google logueada: Cargando...</div>
 
       <div class="form-row">
         <div class="form-col">
-          <label class="form-label">Google Gemini 2.0 Flash</label>
-          <input id="aiKeyGemini" class="form-input" type="password" placeholder="API key para google:gemini-2.0-flash">
-          <div id="aiStatusGemini" class="form-help">Cargando estado...</div>
-          <div class="form-help">Plan gratuito limitado según cuota diaria de Google AI Studio.</div>
+          <label class="form-label">DeepSeek Chat</label>
+          <input id="aiKeyDeepSeek" class="form-input" type="password" placeholder="API key para deepseek:deepseek-chat">
+          <div id="aiStatusDeepSeek" class="form-help">Cargando estado...</div>
+          <div class="form-help">Plan gratuito sujeto a límites y políticas del proveedor DeepSeek.</div>
         </div>
         <div class="form-col">
           <label class="form-label">Opciones</label>
-          <div class="form-help">La credencial Gemini se guarda cifrada obligatoriamente en backend.</div>
+          <div class="form-help">La credencial DeepSeek se guarda cifrada obligatoriamente en backend.</div>
           <div class="form-help">La llave se guarda en backend y se registra la cuenta Google que realizó el cambio.</div>
         </div>
       </div>
 
       <div class="form-actions">
-        <button id="saveAiConfigBtn" class="btn">Guardar credencial Gemini</button>
+        <button id="saveAiConfigBtn" class="btn">Guardar credencial DeepSeek</button>
         <button id="editAiConfigBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Editar</button>
         <button id="cancelAiConfigBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Cancelar</button>
       </div>
@@ -173,7 +182,7 @@
   <script>
     (function(){
       const aiCredentialBindings = [
-        { model_id: 'google:gemini-2.0-flash', inputId: 'aiKeyGemini', statusId: 'aiStatusGemini' }
+		{ model_id: 'deepseek:deepseek-chat', inputId: 'aiKeyDeepSeek', statusId: 'aiStatusDeepSeek' }
       ];
 
       async function load(){
@@ -388,8 +397,8 @@
           document.getElementById('cancelAiConfigBtn').style.display = 'none';
           if (!msg.innerText || msg.innerText.indexOf('Error') === -1) {
             msg.innerText = hasAIConfig
-              ? 'Credencial Gemini disponible. Usa Editar para actualizarla.'
-              : 'Aún no hay credencial Gemini guardada en este panel.';
+			  ? 'Credencial DeepSeek disponible. Usa Editar para actualizarla.'
+			  : 'Aún no hay credencial DeepSeek guardada en este panel.';
           }
         } catch (err) {
           msg.innerText = 'Error cargando configuración IA: ' + (err.message || err);
@@ -399,6 +408,9 @@
 
       async function saveAIConfig(e){
         if (e && e.preventDefault) e.preventDefault();
+
+        const btn = document.getElementById('saveAiConfigBtn');
+        const msg = document.getElementById('aiConfigMsg');
 
         const credentials = [];
         aiCredentialBindings.forEach(function(binding){
@@ -410,7 +422,7 @@
         });
 
         if (!credentials.length) {
-          alert('Ingrese la credencial de Google Gemini para guardar.');
+          alert('Ingrese la credencial de DeepSeek para guardar.');
           return;
         }
 
@@ -418,6 +430,9 @@
           encrypt: true,
           credentials: credentials
         };
+
+        btn.disabled = true;
+        btn.innerText = 'Guardando...';
 
         try {
           const res = await fetch('/super/api/config/ai', {
@@ -427,18 +442,18 @@
           });
           const raw = await res.text();
           if (!res.ok) {
-            msg.innerText = 'Error guardando credencial Gemini: ' + raw;
+			msg.innerText = 'Error guardando credencial DeepSeek: ' + raw;
             return;
           }
 
-          msg.innerText = 'Credencial Gemini guardada correctamente para la cuenta Google logueada.';
+		  msg.innerText = 'Credencial DeepSeek guardada correctamente para la cuenta Google logueada.';
           await loadAIConfig();
         } catch (err) {
-          msg.innerText = 'Error guardando credencial Gemini: ' + (err.message || err);
+		  msg.innerText = 'Error guardando credencial DeepSeek: ' + (err.message || err);
+        } finally {
+		  btn.disabled = false;
+		  btn.innerText = 'Guardar credencial DeepSeek';
         }
-
-        btn.disabled = false;
-        btn.innerText = 'Guardar credencial Gemini';
       }
 
       function enableEditAIConfig(){
@@ -449,12 +464,12 @@
         document.getElementById('saveAiConfigBtn').disabled = false;
         document.getElementById('editAiConfigBtn').style.display = 'none';
         document.getElementById('cancelAiConfigBtn').style.display = '';
-        document.getElementById('aiConfigMsg').innerText = 'Modo edición activo: ingrese la nueva credencial Gemini y guarde.';
+    		document.getElementById('aiConfigMsg').innerText = 'Modo edición activo: ingrese la nueva credencial DeepSeek y guarde.';
       }
 
       function cancelEditAIConfig(){
         loadAIConfig();
-        document.getElementById('aiConfigMsg').innerText = 'Edición de credencial Gemini cancelada.';
+  		document.getElementById('aiConfigMsg').innerText = 'Edición de credencial DeepSeek cancelada.';
       }
 
       async function saveGmail(e){

@@ -31,6 +31,17 @@ type empresaBackupRestorePayload struct {
 	Observaciones  string `json:"observaciones"`
 }
 
+type empresaBackupPurgePayload struct {
+	EmpresaID          int64    `json:"empresa_id"`
+	FechaCorte         string   `json:"fecha_corte"`
+	IncludeTables      []string `json:"include_tables"`
+	ExcludeTables      []string `json:"exclude_tables"`
+	UsuarioCreador     string   `json:"usuario_creador"`
+	Observaciones      string   `json:"observaciones"`
+	CrearBackupPrevio  *bool    `json:"crear_backup_previo"`
+	NombreBackupPrevio string   `json:"nombre_backup_previo"`
+}
+
 func empresaBackupsNormalizeAction(raw string) string {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
 	case "", "listar", "list":
@@ -43,6 +54,8 @@ func empresaBackupsNormalizeAction(raw string) string {
 		return "export"
 	case "restaurar", "restore":
 		return "restaurar"
+	case "depurar_fecha", "purgar_fecha", "eliminar_hasta_fecha", "depurar_hasta_fecha":
+		return "depurar_fecha"
 	case "activar":
 		return "activar"
 	case "desactivar", "eliminar", "delete":
@@ -92,6 +105,44 @@ func empresaBackupsUsuarioFromRequest(r *http.Request, fallback string) string {
 	return "sistema"
 }
 
+func empresaBackupsNormalizeFechaCorte(raw string) (string, error) {
+	v := strings.TrimSpace(raw)
+	if v == "" {
+		return "", fmt.Errorf("fecha_corte es obligatoria")
+	}
+	if t, err := time.ParseInLocation("2006-01-02", v, time.Local); err == nil {
+		return t.Format("2006-01-02") + " 23:59:59", nil
+	}
+	layouts := []string{
+		"2006-01-02 15:04:05",
+		"2006-01-02T15:04:05",
+		time.RFC3339,
+	}
+	for _, layout := range layouts {
+		if t, err := time.ParseInLocation(layout, v, time.Local); err == nil {
+			return t.Format("2006-01-02 15:04:05"), nil
+		}
+	}
+	return "", fmt.Errorf("fecha_corte invalida")
+}
+
+func parseCSVStrings(raw string) []string {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return []string{}
+	}
+	parts := strings.Split(value, ",")
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
+		clean := strings.TrimSpace(part)
+		if clean == "" {
+			continue
+		}
+		out = append(out, clean)
+	}
+	return out
+}
+
 // EmpresaBackupsHandler gestiona snapshots y restauraciones de datos empresariales.
 func EmpresaBackupsHandler(dbEmp *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -124,6 +175,9 @@ func EmpresaBackupsHandler(dbEmp *sql.DB) http.HandlerFunc {
 			case "restaurar":
 				empresaBackupsHandleRestore(w, r, dbEmp)
 				return
+			case "depurar_fecha":
+				empresaBackupsHandlePurgeByDate(w, r, dbEmp)
+				return
 			default:
 				http.Error(w, "action invalida", http.StatusBadRequest)
 				return
@@ -132,6 +186,9 @@ func EmpresaBackupsHandler(dbEmp *sql.DB) http.HandlerFunc {
 			switch action {
 			case "restaurar":
 				empresaBackupsHandleRestore(w, r, dbEmp)
+				return
+			case "depurar_fecha":
+				empresaBackupsHandlePurgeByDate(w, r, dbEmp)
 				return
 			case "activar", "desactivar":
 				empresaBackupsHandleToggle(w, r, dbEmp, action)
@@ -396,6 +453,85 @@ func empresaBackupsHandleRestore(w http.ResponseWriter, r *http.Request, dbEmp *
 		"empresa_id": empresaID,
 		"resultado":  result,
 		"backup":     updated,
+	})
+}
+
+func empresaBackupsHandlePurgeByDate(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB) {
+	empresaID, err := parseEmpresaIDQuery(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	var payload empresaBackupPurgePayload
+	if err := empresaBackupsDecodeBodyJSON(r, &payload); err != nil && err != io.EOF {
+		http.Error(w, "payload JSON invalido", http.StatusBadRequest)
+		return
+	}
+	if payload.EmpresaID > 0 && payload.EmpresaID != empresaID {
+		http.Error(w, "empresa_id no coincide con el contexto", http.StatusBadRequest)
+		return
+	}
+
+	fechaCorteRaw := strings.TrimSpace(payload.FechaCorte)
+	if fechaCorteRaw == "" {
+		fechaCorteRaw = strings.TrimSpace(r.URL.Query().Get("fecha_corte"))
+	}
+	fechaCorte, err := empresaBackupsNormalizeFechaCorte(fechaCorteRaw)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if len(payload.IncludeTables) == 0 {
+		payload.IncludeTables = parseCSVStrings(r.URL.Query().Get("include_tables"))
+	}
+	if len(payload.ExcludeTables) == 0 {
+		payload.ExcludeTables = parseCSVStrings(r.URL.Query().Get("exclude_tables"))
+	}
+
+	usuario := empresaBackupsUsuarioFromRequest(r, payload.UsuarioCreador)
+	crearBackupPrevio := true
+	if payload.CrearBackupPrevio != nil {
+		crearBackupPrevio = *payload.CrearBackupPrevio
+	}
+
+	var backupPrevio *dbpkg.EmpresaBackup
+	if crearBackupPrevio {
+		nombreBackup := strings.TrimSpace(payload.NombreBackupPrevio)
+		if nombreBackup == "" {
+			nombreBackup = "Backup previo depuracion hasta " + fechaCorte
+		}
+		obsBackup := strings.TrimSpace(payload.Observaciones)
+		if obsBackup == "" {
+			obsBackup = "backup previo antes de depuracion por fecha"
+		}
+		backupID, backupErr := dbpkg.CreateEmpresaBackupSnapshot(dbEmp, empresaID, nombreBackup, obsBackup, usuario, dbpkg.EmpresaBackupBuildOptions{
+			IncludeTables: payload.IncludeTables,
+			ExcludeTables: payload.ExcludeTables,
+			CreatedBy:     usuario,
+		})
+		if backupErr != nil {
+			http.Error(w, "No se pudo crear backup previo a la depuracion", http.StatusInternalServerError)
+			return
+		}
+		backupPrevio, _ = dbpkg.GetEmpresaBackupByID(dbEmp, empresaID, backupID, false)
+	}
+
+	result, err := dbpkg.PurgeEmpresaDataByDateCorte(dbEmp, empresaID, fechaCorte, payload.IncludeTables, payload.ExcludeTables)
+	if err != nil {
+		http.Error(w, "No se pudo depurar informacion por fecha", http.StatusInternalServerError)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"ok":                   true,
+		"empresa_id":           empresaID,
+		"action":               "depurar_fecha",
+		"fecha_corte":          fechaCorte,
+		"resultado":            result,
+		"backup_previo":        backupPrevio,
+		"backup_previo_creado": backupPrevio != nil,
 	})
 }
 

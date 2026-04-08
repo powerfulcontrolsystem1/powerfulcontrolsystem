@@ -1,5 +1,24 @@
 Descripcion compacta de modulos (POS multiempresa)
-Actualizacion: 2026-04-07
+Actualizacion: 2026-04-08
+
+Gobernanza obligatoria (agente_go):
+- Si se crea un modulo nuevo o se modifica un modulo existente, este documento debe actualizarse en la misma iteracion de trabajo.
+- En el mismo cambio, tambien debe actualizarse `documentos/matriz_roles_permisos_pos_multiempresa.md` para reflejar permisos por rol/modulo/accion y visibilidad de paginas afectadas.
+- La actualizacion modular debe mantener trazabilidad en `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios` y `CHANGELOG.md`.
+
+Actualizacion 2026-04-08 (chat IA empresarial):
+- Se retira la configuracion visual de Google Gemini en super administrador y se estandariza la credencial IA a DeepSeek (`deepseek:deepseek-chat`).
+- El chat IA de empresa se alinea al proveedor configurado en super, manteniendo alcance por `empresa_id` y trazabilidad por cuenta Google autenticada.
+
+Actualizacion 2026-04-08 (chat y tareas colaborativo usuario-admin con adjuntos documentales):
+- El modulo de chat/tareas deriva el actor desde sesion autenticada para distinguir `usuario` y `admin` por `empresa_id`.
+- Se evita suplantacion de autor en mensajes/adjuntos y se auto-registra al emisor como participante activo de la conversacion.
+- Al crear conversacion desde usuario, se agrega automaticamente al administrador propietario de la empresa como participante `admin`.
+- Adjuntos de chat amplian soporte a documentos de oficina (`doc/docx/xls/xlsx/ppt/pptx/rtf/odt/ods/odp`) ademas de fotos/audio y formatos tabulares.
+
+Actualizacion 2026-04-08 (configuracion monetaria y numerica empresarial):
+- En `administrar_empresa/configuracion.html` se agrega configuracion por `empresa_id` para `moneda_codigo`, `sistema_numerico`, uso de decimales y precision decimal.
+- La configuracion se persiste en `empresa_configuracion_avanzada` y la moneda configurada se usa como valor por defecto al crear carritos cuando la solicitud no envía moneda.
 
 Criterio de esta guia:
 - Resumen corto por modulo (objetivo + alcance operativo principal).
@@ -111,7 +130,7 @@ Criterio de esta guia:
 - Creditos, cuotas, abonos, workflow, limites por cliente y alertas de morosidad.
 
 36) Backups empresariales
-- Snapshots por empresa, restauracion trazable y exportacion de evidencia.
+- Snapshots por empresa, restauracion trazable, depuracion de informacion por fecha de corte (con backup previo opcional) y exportacion de evidencia.
 
 37) Venta publica y pagos Wompi por empresa
 - Tienda online por empresa con slug publico, catalogo, imagenes y pago Nequi por Wompi.

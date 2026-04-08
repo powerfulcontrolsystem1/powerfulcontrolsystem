@@ -87,6 +87,24 @@ type EmpresaBackupRestoreResult struct {
 	EjecutadoPor         string   `json:"ejecutado_por,omitempty"`
 }
 
+// EmpresaBackupPurgeTableResult resume eliminacion por tabla en una depuracion por fecha.
+type EmpresaBackupPurgeTableResult struct {
+	Table      string `json:"table"`
+	DateColumn string `json:"date_column"`
+	Deleted    int64  `json:"deleted"`
+}
+
+// EmpresaBackupPurgeResult resume una depuracion de datos empresariales por fecha de corte.
+type EmpresaBackupPurgeResult struct {
+	EmpresaID           int64                           `json:"empresa_id"`
+	FechaCorte          string                          `json:"fecha_corte"`
+	TablasEvaluadas     int                             `json:"tablas_evaluadas"`
+	TablasDepuradas     int                             `json:"tablas_depuradas"`
+	RegistrosEliminados int64                           `json:"registros_eliminados"`
+	TablasSinFecha      []string                        `json:"tablas_sin_fecha,omitempty"`
+	Detalle             []EmpresaBackupPurgeTableResult `json:"detalle,omitempty"`
+}
+
 func normalizeEmpresaBackupEstado(raw string) string {
 	if strings.EqualFold(strings.TrimSpace(raw), "inactivo") {
 		return "inactivo"
@@ -202,6 +220,23 @@ func empresaBackupExcludedInternalTable(table string) bool {
 	default:
 		return false
 	}
+}
+
+func empresaBackupResolveDateColumn(columns []string) string {
+	candidates := []string{
+		"fecha_creacion",
+		"fecha_evento",
+		"fecha_movimiento",
+		"pagado_en",
+		"activado_en",
+		"fecha",
+	}
+	for _, candidate := range candidates {
+		if empresaBackupHasColumn(columns, candidate) {
+			return candidate
+		}
+	}
+	return ""
 }
 
 type empresaBackupQueryer interface {
@@ -1037,6 +1072,90 @@ func RestoreEmpresaBackupByID(dbConn *sql.DB, empresaID, backupID int64, usuario
 		EjecutadoEn:          now,
 		EjecutadoPor:         executor,
 	}, nil
+}
+
+// PurgeEmpresaDataByDateCorte elimina informacion de la empresa desde el origen hasta la fecha de corte (inclusive).
+// Solo depura tablas que tengan `empresa_id` y alguna columna de fecha soportada.
+func PurgeEmpresaDataByDateCorte(dbConn *sql.DB, empresaID int64, fechaCorte string, includeTables, excludeTables []string) (*EmpresaBackupPurgeResult, error) {
+	if dbConn == nil {
+		return nil, errors.New("db connection is nil")
+	}
+	if empresaID <= 0 {
+		return nil, errors.New("empresa_id invalido")
+	}
+	fechaCorte = strings.TrimSpace(fechaCorte)
+	if fechaCorte == "" {
+		return nil, errors.New("fecha_corte es obligatoria")
+	}
+
+	tables, err := empresaBackupListCandidateTables(dbConn, includeTables, excludeTables)
+	if err != nil {
+		return nil, err
+	}
+	if len(tables) == 0 {
+		return &EmpresaBackupPurgeResult{
+			EmpresaID:       empresaID,
+			FechaCorte:      fechaCorte,
+			TablasEvaluadas: 0,
+			TablasDepuradas: 0,
+		}, nil
+	}
+
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if tx != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	result := &EmpresaBackupPurgeResult{
+		EmpresaID:       empresaID,
+		FechaCorte:      fechaCorte,
+		TablasEvaluadas: len(tables),
+		TablasDepuradas: 0,
+		TablasSinFecha:  make([]string, 0),
+		Detalle:         make([]EmpresaBackupPurgeTableResult, 0, len(tables)),
+	}
+
+	for _, table := range tables {
+		columns, colErr := empresaBackupGetTableColumns(tx, table)
+		if colErr != nil {
+			result.TablasSinFecha = append(result.TablasSinFecha, table)
+			continue
+		}
+		dateColumn := empresaBackupResolveDateColumn(columns)
+		if dateColumn == "" {
+			result.TablasSinFecha = append(result.TablasSinFecha, table)
+			continue
+		}
+
+		query := "DELETE FROM " + table + " WHERE empresa_id = ? AND COALESCE(" + dateColumn + ", '') <> '' AND datetime(" + dateColumn + ") <= datetime(?)"
+		execResult, execErr := tx.Exec(query, empresaID, fechaCorte)
+		if execErr != nil {
+			return nil, execErr
+		}
+		affected, affErr := execResult.RowsAffected()
+		if affErr != nil {
+			return nil, affErr
+		}
+		result.RegistrosEliminados += affected
+		result.TablasDepuradas++
+		result.Detalle = append(result.Detalle, EmpresaBackupPurgeTableResult{
+			Table:      table,
+			DateColumn: dateColumn,
+			Deleted:    affected,
+		})
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	tx = nil
+
+	return result, nil
 }
 
 // SetEmpresaBackupEstadoByID aplica estado activo/inactivo al backup.

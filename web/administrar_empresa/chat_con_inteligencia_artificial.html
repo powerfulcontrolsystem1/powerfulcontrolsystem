@@ -3,15 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Gemini Empresarial</title>
+  <title>Chat IA Empresarial</title>
   <link rel="stylesheet" href="/estilos.css">
 </head>
 <body class="super-page form-bg-dark ai-gemini-body">
   <div class="container ai-chat-page ai-gemini-page">
     <header class="page-header ai-gemini-header">
       <div>
-        <h1 id="pageTitle">Gemini Empresarial</h1>
-        <p class="form-help">Tus preguntas y respuestas se construyen con contexto de la base de datos de la empresa seleccionada y acceso restringido por empresa_id.</p>
+        <h1 id="pageTitle">Chat IA Empresarial</h1>
+        <p class="form-help">Tus preguntas y respuestas se construyen con contexto de la base de datos de la empresa seleccionada y acceso restringido por empresa_id, usando el modelo IA configurado en super administrador.</p>
       </div>
       <div class="ai-gemini-toolbar">
         <button id="reloadBtn" class="btn secondary" type="button">Actualizar</button>
@@ -31,7 +31,7 @@
       </div>
       <div class="ai-gemini-chip">
         <span class="ai-gemini-chip-label">Modelo</span>
-        <strong id="chipModel">Google Gemini</strong>
+        <strong id="chipModel">DeepSeek Chat</strong>
       </div>
       <div class="ai-gemini-chip">
         <span class="ai-gemini-chip-label">Uso diario</span>
@@ -62,7 +62,7 @@
         <textarea id="promptInput" class="form-textarea ai-gemini-input" maxlength="2500" placeholder="Ejemplo: ¿Qué productos se están vendiendo más y cuáles debo reabastecer primero?"></textarea>
 
         <div class="ai-chat-actions">
-          <button id="sendBtn" class="btn" type="submit">Preguntar a Gemini</button>
+          <button id="sendBtn" class="btn" type="submit">Preguntar a la IA</button>
           <a id="upgradeLink" class="btn dark" href="#" hidden target="_blank" rel="noopener">Adquirir plan</a>
         </div>
         <div id="chatMsg" class="form-help"></div>
@@ -83,7 +83,7 @@
       empresaID: 0,
       empresaNombre: "",
       modelID: "",
-      modelDisplay: "Google Gemini",
+      modelDisplay: "DeepSeek Chat",
       googleAccount: "",
       usage: null,
       loading: false,
@@ -159,7 +159,7 @@
       const empresaText = state.empresaNombre ? (state.empresaNombre + " (#" + state.empresaID + ")") : ("Empresa #" + state.empresaID);
       document.getElementById("chipEmpresa").textContent = empresaText;
       document.getElementById("chipGoogle").textContent = state.googleAccount || "No detectada";
-      document.getElementById("chipModel").textContent = state.modelDisplay || "Google Gemini";
+      document.getElementById("chipModel").textContent = state.modelDisplay || "Modelo IA";
 
       if (!state.usage) {
         document.getElementById("chipUsage").textContent = "Sin consumo";
@@ -175,14 +175,14 @@
     function renderMessages() {
       const list = document.getElementById("messagesList");
       if (!state.messages.length) {
-        list.innerHTML = '<div class="ai-chat-empty">Inicia una consulta. Gemini responderá con contexto estricto de la empresa seleccionada.</div>';
+        list.innerHTML = '<div class="ai-chat-empty">Inicia una consulta. La IA responderá con contexto estricto de la empresa seleccionada.</div>';
         return;
       }
 
       list.innerHTML = state.messages.map(function(item) {
         const role = normalize(item.role).toLowerCase();
         const cls = role === "assistant" ? "assistant" : (role === "user" ? "user" : "system");
-        const label = role === "assistant" ? "Gemini" : (role === "user" ? "Tú" : "Sistema");
+        const label = role === "assistant" ? "Asistente IA" : (role === "user" ? "Tú" : "Sistema");
         return '<article class="ai-chat-bubble ' + cls + '">' +
           '<header><strong>' + escapeHtml(label) + '</strong><span>' + escapeHtml(normalize(item.at)) + '</span></header>' +
           '<div class="ai-chat-content">' + escapeHtml(normalize(item.content)) + '</div>' +
@@ -241,14 +241,14 @@
       }
 
       if (state.empresaNombre) {
-        document.getElementById("pageTitle").textContent = "Gemini Empresarial - " + state.empresaNombre;
+  		document.getElementById("pageTitle").textContent = "Chat IA Empresarial - " + state.empresaNombre;
       } else {
-        document.getElementById("pageTitle").textContent = "Gemini Empresarial - Empresa #" + state.empresaID;
+  		document.getElementById("pageTitle").textContent = "Chat IA Empresarial - Empresa #" + state.empresaID;
       }
       renderContext();
     }
 
-    async function loadGeminiModel() {
+     async function loadChatModel() {
       const data = await apiFetch("/api/empresa/chat_con_inteligencia_artificial/modelos?empresa_id=" + encodeURIComponent(state.empresaID));
       const modelos = Array.isArray(data.modelos) ? data.modelos : [];
       if (!modelos.length) {
@@ -257,7 +257,7 @@
 
       const model = modelos[0];
       state.modelID = normalize(model.id);
-      state.modelDisplay = normalize(model.display_name) || "Google Gemini";
+      state.modelDisplay = normalize(model.display_name) || "DeepSeek Chat";
       state.googleAccount = normalize(data.google_account || state.googleAccount);
 
       renderContext();
@@ -292,7 +292,7 @@
           const respuesta = normalize(item.respuesta);
           const fecha = normalize(item.fecha_consulta);
           return '<article class="ai-history-item">' +
-            '<header><strong>Gemini</strong><span>' + escapeHtml(fecha) + '</span></header>' +
+            '<header><strong>IA</strong><span>' + escapeHtml(fecha) + '</span></header>' +
             '<div><b>Q:</b> ' + escapeHtml(pregunta.length > 200 ? (pregunta.slice(0, 200) + "...") : pregunta) + '</div>' +
             '<div><b>A:</b> ' + escapeHtml(respuesta.length > 260 ? (respuesta.slice(0, 260) + "...") : respuesta) + '</div>' +
             '</article>';
@@ -319,12 +319,12 @@
         return;
       }
       if (!state.modelID) {
-        setMsg("chatMsg", "No hay modelo Gemini disponible.", true);
+		setMsg("chatMsg", "No hay modelo IA disponible.", true);
         return;
       }
 
       state.loading = true;
-      setMsg("chatMsg", "Consultando a Gemini con contexto de empresa...", false);
+	  setMsg("chatMsg", "Consultando al asistente IA con contexto de empresa...", false);
       appendMessage("user", pregunta);
       document.getElementById("promptInput").value = "";
 
@@ -357,7 +357,7 @@
           appendMessage("system", normalize(payload.error || "Límite gratuito alcanzado."));
           setMsg("chatMsg", normalize(payload.upgrade_message || "Se alcanzó el límite del plan gratuito."), true);
         } else {
-          appendMessage("system", "Error al consultar Gemini: " + normalize(err.message));
+		  appendMessage("system", "Error al consultar la IA: " + normalize(err.message));
           setMsg("chatMsg", err.message || "No se pudo procesar la consulta.", true);
         }
       } finally {
@@ -377,7 +377,7 @@
     function bindEvents() {
       document.getElementById("reloadBtn").addEventListener("click", async function() {
         setMsg("chatMsg", "Actualizando contexto y estado...", false);
-        await Promise.all([loadGeminiModel(), loadHistorial(), loadEmpresaNameBestEffort()]);
+  		await Promise.all([loadChatModel(), loadHistorial(), loadEmpresaNameBestEffort()]);
       });
 
       document.getElementById("loadHistoryBtn").addEventListener("click", loadHistorial);
@@ -403,17 +403,17 @@
       }
 
       bindEvents();
-      appendMessage("system", "Hola. Soy Gemini Empresarial. Responderé usando solo el contexto de la empresa seleccionada.");
+	  appendMessage("system", "Hola. Soy tu asistente IA empresarial. Responderé usando solo el contexto de la empresa seleccionada.");
 
       await loadEmpresaNameBestEffort();
       try {
-        await loadGeminiModel();
+		await loadChatModel();
         hideAuthPanel();
       } catch (err) {
         if (err && err.status === 401) {
           showAuthPanel("Para usar el chat empresarial debes iniciar sesión con Google.");
         } else {
-          setMsg("chatMsg", err.message || "No se pudo cargar el modelo Gemini.", true);
+		  setMsg("chatMsg", err.message || "No se pudo cargar el modelo IA.", true);
         }
       }
 

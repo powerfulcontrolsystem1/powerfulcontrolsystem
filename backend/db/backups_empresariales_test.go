@@ -186,3 +186,47 @@ func TestEmpresaBackupsListYPayload(t *testing.T) {
 		t.Fatalf("unexpected payload tables: %+v", payload.Tables)
 	}
 }
+
+func TestEmpresaBackupsPurgeByDateCorte(t *testing.T) {
+	dbConn := openCarritoInventarioTestDB(t)
+	if err := EnsureEmpresaBackupsSchema(dbConn); err != nil {
+		t.Fatalf("EnsureEmpresaBackupsSchema: %v", err)
+	}
+	ensureEmpresaBackupItemsTestTable(t, dbConn)
+
+	if _, err := dbConn.Exec(`INSERT INTO empresa_backup_items_test (
+		empresa_id, codigo, valor, fecha_creacion, fecha_actualizacion, usuario_creador, estado
+	) VALUES
+		(730, 'OLD-1', 10, '2026-01-01 10:00:00', '2026-01-01 10:00:00', 'qa_seed', 'activo'),
+		(730, 'NEW-1', 20, '2026-04-08 10:00:00', '2026-04-08 10:00:00', 'qa_seed', 'activo'),
+		(731, 'EXT-1', 30, '2026-01-01 10:00:00', '2026-01-01 10:00:00', 'qa_seed', 'activo')`); err != nil {
+		t.Fatalf("seed rows for purge: %v", err)
+	}
+
+	result, err := PurgeEmpresaDataByDateCorte(dbConn, 730, "2026-03-01 23:59:59", []string{"empresa_backup_items_test"}, nil)
+	if err != nil {
+		t.Fatalf("PurgeEmpresaDataByDateCorte: %v", err)
+	}
+	if result.RegistrosEliminados != 1 {
+		t.Fatalf("expected 1 deleted row, got %d", result.RegistrosEliminados)
+	}
+	if result.TablasDepuradas != 1 {
+		t.Fatalf("expected 1 table purged, got %d", result.TablasDepuradas)
+	}
+
+	var empresa730Count int64
+	if err := dbConn.QueryRow(`SELECT COUNT(1) FROM empresa_backup_items_test WHERE empresa_id = 730`).Scan(&empresa730Count); err != nil {
+		t.Fatalf("count empresa 730 after purge: %v", err)
+	}
+	if empresa730Count != 1 {
+		t.Fatalf("expected 1 remaining row for empresa 730, got %d", empresa730Count)
+	}
+
+	var empresa731Count int64
+	if err := dbConn.QueryRow(`SELECT COUNT(1) FROM empresa_backup_items_test WHERE empresa_id = 731`).Scan(&empresa731Count); err != nil {
+		t.Fatalf("count empresa 731 after purge: %v", err)
+	}
+	if empresa731Count != 1 {
+		t.Fatalf("expected empresa 731 untouched with 1 row, got %d", empresa731Count)
+	}
+}

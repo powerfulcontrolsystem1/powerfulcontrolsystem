@@ -1,0 +1,614 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Soporte remoto</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="empresa-subpage">
+  <div class="container">
+    <section class="card empresa-section">
+      <div class="page-header">
+        <h1>Soporte remoto por empresa</h1>
+        <div class="form-actions">
+          <button id="srBtnReload" type="button" class="btn secondary">Recargar módulo</button>
+        </div>
+      </div>
+      <p class="form-help">Este módulo permite visualizar un escritorio remoto dentro del panel usando una URL web embebible (por ejemplo noVNC/Guacamole/RustDesk Web) aislada por empresa.</p>
+      <div id="srTopMsg" class="form-help"></div>
+    </section>
+
+    <section class="card form">
+      <h2>Configuración operativa</h2>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="srCfgHabilitado">Módulo habilitado</label>
+          <select id="srCfgHabilitado" class="form-input">
+            <option value="1">Sí</option>
+            <option value="0">No</option>
+          </select>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="srCfgAprobacion">Requiere aprobación de operador</label>
+          <select id="srCfgAprobacion" class="form-input">
+            <option value="1">Sí</option>
+            <option value="0">No</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="srCfgProveedor">Proveedor sugerido</label>
+          <select id="srCfgProveedor" class="form-input">
+            <option value="novnc">noVNC</option>
+            <option value="guacamole">Guacamole</option>
+            <option value="rustdesk_web">RustDesk Web</option>
+            <option value="custom_url">URL personalizada</option>
+          </select>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="srCfgModo">Modo operación</label>
+          <select id="srCfgModo" class="form-input">
+            <option value="agente_web">Agente web</option>
+            <option value="agente_local">Agente local</option>
+            <option value="hibrido">Híbrido</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="srCfgAutoCerrar">Auto cierre de sesión (minutos)</label>
+          <input id="srCfgAutoCerrar" class="form-input" type="number" min="5" max="480" value="30">
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="srCfgObs">Observaciones</label>
+          <input id="srCfgObs" class="form-input" type="text" placeholder="Notas de seguridad o procedimiento interno">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button id="srBtnSaveConfig" type="button" class="btn">Guardar configuración</button>
+      </div>
+      <div id="srConfigMsg" class="form-help"></div>
+    </section>
+
+    <section class="card form">
+      <h2>Dispositivos remotos</h2>
+      <form id="srDeviceForm" class="form">
+        <input id="srDeviceId" type="hidden">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="srDeviceCode">Código dispositivo</label>
+            <input id="srDeviceCode" class="form-input" type="text" placeholder="Opcional, se autogenera">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="srDeviceName">Nombre equipo</label>
+            <input id="srDeviceName" class="form-input" type="text" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="srDeviceAlias">Alias operativo</label>
+            <input id="srDeviceAlias" class="form-input" type="text" placeholder="Caja principal, recepción, etc.">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="srDeviceUbicacion">Ubicación</label>
+            <input id="srDeviceUbicacion" class="form-input" type="text" placeholder="Sucursal norte - punto 1">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="srDeviceSO">Sistema operativo</label>
+            <input id="srDeviceSO" class="form-input" type="text" placeholder="Windows 11 / Ubuntu 24.04">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="srDeviceAgentVersion">Versión agente</label>
+            <input id="srDeviceAgentVersion" class="form-input" type="text" placeholder="1.0.0">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="srDeviceStreamURL">URL embebible de escritorio remoto</label>
+            <input id="srDeviceStreamURL" class="form-input" type="text" placeholder="https://tu-servidor-remoto/novnc/vnc.html?path=websockify" required>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="srDevicePIN">PIN de agente/plugin (opcional pero recomendado)</label>
+            <input id="srDevicePIN" class="form-input" type="password" placeholder="PIN solo para registrar heartbeat y aprobar sesiones">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="srDeviceObs">Observaciones</label>
+            <input id="srDeviceObs" class="form-input" type="text" placeholder="Notas técnicas del dispositivo">
+          </div>
+        </div>
+        <div class="form-actions">
+          <button id="srBtnSaveDevice" type="submit" class="btn">Guardar dispositivo</button>
+          <button id="srBtnResetDevice" type="button" class="btn secondary">Limpiar formulario</button>
+        </div>
+      </form>
+      <div id="srDeviceMsg" class="form-help"></div>
+
+      <div class="form-actions" style="margin-top:12px">
+        <button id="srBtnReloadDevices" type="button" class="btn secondary">Actualizar dispositivos</button>
+      </div>
+      <div id="srDeviceTableWrap">Cargando dispositivos...</div>
+    </section>
+
+    <section class="card form">
+      <h2>Sesiones remotas</h2>
+      <form id="srSessionForm" class="form">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="srSessionDevice">Dispositivo</label>
+            <select id="srSessionDevice" class="form-input"></select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="srSessionDuracion">Duración (minutos)</label>
+            <input id="srSessionDuracion" class="form-input" type="number" min="5" max="480" value="30">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="srSessionOperador">Operador local (opcional)</label>
+            <input id="srSessionOperador" class="form-input" type="text" placeholder="Nombre de quien opera en la empresa">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="srSessionOperadorEmail">Correo operador (opcional)</label>
+            <input id="srSessionOperadorEmail" class="form-input" type="email" placeholder="operador@empresa.com">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="srSessionMotivo">Motivo de acceso remoto</label>
+            <input id="srSessionMotivo" class="form-input" type="text" placeholder="Soporte POS, validación de cierre, capacitación" required>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button id="srBtnCreateSession" type="submit" class="btn">Solicitar sesión</button>
+          <button id="srBtnReloadSessions" type="button" class="btn secondary">Actualizar sesiones</button>
+          <button id="srBtnExportJSON" type="button" class="btn secondary">Exportar JSON</button>
+          <button id="srBtnExportCSV" type="button" class="btn secondary">Exportar CSV</button>
+          <button id="srBtnExportTXT" type="button" class="btn secondary">Exportar TXT</button>
+          <button id="srBtnExportXLS" type="button" class="btn secondary">Exportar XLS</button>
+          <button id="srBtnExportPDF" type="button" class="btn secondary">Exportar PDF</button>
+        </div>
+      </form>
+      <div id="srSessionMsg" class="form-help"></div>
+      <div id="srSessionTableWrap">Cargando sesiones...</div>
+    </section>
+
+    <section class="card form">
+      <h2>Visor remoto embebido</h2>
+      <p class="form-help">Selecciona “Abrir visor” en una sesión activa para cargar el escritorio remoto en el panel.</p>
+      <div id="srViewerMsg" class="form-help">Sin sesión cargada.</div>
+      <iframe id="srViewerFrame" title="Visor remoto" style="width:100%;min-height:520px;border:1px solid #ddd;border-radius:10px;" src="about:blank"></iframe>
+    </section>
+
+    <section class="card form">
+      <h2>Recomendación técnica (plugin/agente)</h2>
+      <p class="form-help">Para operación tipo AnyDesk/TeamViewer simplificada y segura, usa un agente local en cada empresa que publique <strong>stream_url embebible</strong> (noVNC/Guacamole/RustDesk Web) y envíe heartbeat a <code>/api/public/soporte_remoto?action=heartbeat</code> con <code>empresa_id</code>, <code>codigo_dispositivo</code> y PIN.</p>
+      <p class="form-help">El módulo ya soporta aislamiento por <code>empresa_id</code>, token temporal de visualización por sesión y trazabilidad de estado.</p>
+    </section>
+  </div>
+
+  <script>
+    (function () {
+      var params = new URLSearchParams(window.location.search || '');
+      var empresaID = Number(params.get('empresa_id') || params.get('id') || 0);
+
+      var state = {
+        config: null,
+        devices: [],
+        sessions: [],
+        sessionTokens: {}
+      };
+
+      var topMsgEl = document.getElementById('srTopMsg');
+      var configMsgEl = document.getElementById('srConfigMsg');
+      var deviceMsgEl = document.getElementById('srDeviceMsg');
+      var sessionMsgEl = document.getElementById('srSessionMsg');
+      var viewerMsgEl = document.getElementById('srViewerMsg');
+      var deviceTableWrapEl = document.getElementById('srDeviceTableWrap');
+      var sessionTableWrapEl = document.getElementById('srSessionTableWrap');
+      var viewerFrameEl = document.getElementById('srViewerFrame');
+
+      function setMsg(el, text, type) {
+        if (!el) return;
+        el.textContent = text || '';
+        el.classList.remove('error', 'success');
+        if (type) el.classList.add(type);
+      }
+
+      function escapeHTML(value) {
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function apiURL(action, extra) {
+        var url = new URL('/api/empresa/soporte_remoto', window.location.origin);
+        url.searchParams.set('empresa_id', String(empresaID || 0));
+        if (action) url.searchParams.set('action', action);
+        if (extra && typeof extra === 'object') {
+          Object.keys(extra).forEach(function (key) {
+            var value = extra[key];
+            if (value === undefined || value === null || value === '') return;
+            url.searchParams.set(key, String(value));
+          });
+        }
+        return url;
+      }
+
+      async function requestJSON(method, action, extra, bodyObj) {
+        var options = { method: method, credentials: 'same-origin' };
+        if (bodyObj) {
+          options.headers = { 'Content-Type': 'application/json' };
+          options.body = JSON.stringify(bodyObj);
+        }
+        var response = await fetch(apiURL(action, extra).toString(), options);
+        var text = await response.text();
+        var data = {};
+        if (text) {
+          try { data = JSON.parse(text); } catch (_) { data = { raw: text }; }
+        }
+        if (!response.ok) {
+          throw new Error((data && (data.error || data.message)) || text || ('HTTP ' + response.status));
+        }
+        return data;
+      }
+
+      function loadConfigIntoForm(cfg) {
+        var item = cfg || {};
+        document.getElementById('srCfgHabilitado').value = item.habilitado ? '1' : '0';
+        document.getElementById('srCfgAprobacion').value = item.requiere_aprobacion_operador ? '1' : '0';
+        document.getElementById('srCfgProveedor').value = item.proveedor_preferido || 'novnc';
+        document.getElementById('srCfgModo').value = item.modo_operacion || 'agente_web';
+        document.getElementById('srCfgAutoCerrar').value = Number(item.auto_cerrar_minutos || 30);
+        document.getElementById('srCfgObs').value = item.observaciones || '';
+      }
+
+      function resetDeviceForm() {
+        document.getElementById('srDeviceId').value = '';
+        document.getElementById('srDeviceCode').value = '';
+        document.getElementById('srDeviceName').value = '';
+        document.getElementById('srDeviceAlias').value = '';
+        document.getElementById('srDeviceUbicacion').value = '';
+        document.getElementById('srDeviceSO').value = '';
+        document.getElementById('srDeviceAgentVersion').value = '';
+        document.getElementById('srDeviceStreamURL').value = '';
+        document.getElementById('srDevicePIN').value = '';
+        document.getElementById('srDeviceObs').value = '';
+      }
+
+      function fillDeviceForm(item) {
+        document.getElementById('srDeviceId').value = Number(item.id || 0);
+        document.getElementById('srDeviceCode').value = item.codigo_dispositivo || '';
+        document.getElementById('srDeviceName').value = item.nombre_equipo || '';
+        document.getElementById('srDeviceAlias').value = item.alias_operativo || '';
+        document.getElementById('srDeviceUbicacion').value = item.ubicacion || '';
+        document.getElementById('srDeviceSO').value = item.sistema_operativo || '';
+        document.getElementById('srDeviceAgentVersion').value = item.agente_version || '';
+        document.getElementById('srDeviceStreamURL').value = item.stream_url || '';
+        document.getElementById('srDevicePIN').value = '';
+        document.getElementById('srDeviceObs').value = item.observaciones || '';
+      }
+
+      function updateDeviceSelector() {
+        var select = document.getElementById('srSessionDevice');
+        var rows = state.devices || [];
+        select.innerHTML = '';
+        if (!rows.length) {
+          var empty = document.createElement('option');
+          empty.value = '';
+          empty.textContent = 'Sin dispositivos';
+          select.appendChild(empty);
+          return;
+        }
+        rows.forEach(function (row) {
+          var opt = document.createElement('option');
+          opt.value = Number(row.id || 0);
+          opt.textContent = (row.nombre_equipo || 'Dispositivo') + ' [' + (row.codigo_dispositivo || '-') + ']';
+          select.appendChild(opt);
+        });
+      }
+
+      function renderDeviceTable() {
+        var rows = Array.isArray(state.devices) ? state.devices : [];
+        if (!rows.length) {
+          deviceTableWrapEl.innerHTML = '<p class="form-help">No hay dispositivos registrados.</p>';
+          return;
+        }
+        var html = '';
+        html += '<table class="table">';
+        html += '<thead><tr><th>ID</th><th>Código</th><th>Equipo</th><th>Conexión</th><th>Heartbeat</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>';
+        rows.forEach(function (row) {
+          var active = String(row.estado || '').toLowerCase() !== 'inactivo';
+          html += '<tr>';
+          html += '<td>' + Number(row.id || 0) + '</td>';
+          html += '<td>' + escapeHTML(row.codigo_dispositivo || '') + '</td>';
+          html += '<td>' + escapeHTML(row.nombre_equipo || '') + '<br><span class="form-help">' + escapeHTML(row.alias_operativo || '') + '</span></td>';
+          html += '<td>' + escapeHTML(row.estado_conexion || '') + '</td>';
+          html += '<td>' + escapeHTML(row.ultimo_heartbeat || '-') + '</td>';
+          html += '<td>' + escapeHTML(row.estado || '') + '</td>';
+          html += '<td class="actions">';
+          html += '<button type="button" class="btn secondary sr-device-edit" data-id="' + Number(row.id || 0) + '">Editar</button> ';
+          html += '<button type="button" class="btn ' + (active ? 'danger' : '') + ' sr-device-toggle" data-id="' + Number(row.id || 0) + '" data-active="' + (active ? '1' : '0') + '">' + (active ? 'Desactivar' : 'Activar') + '</button>';
+          html += '</td>';
+          html += '</tr>';
+        });
+        html += '</tbody></table>';
+        deviceTableWrapEl.innerHTML = html;
+      }
+
+      function renderSessionTable() {
+        var rows = Array.isArray(state.sessions) ? state.sessions : [];
+        if (!rows.length) {
+          sessionTableWrapEl.innerHTML = '<p class="form-help">No hay sesiones registradas.</p>';
+          return;
+        }
+        var html = '';
+        html += '<table class="table">';
+        html += '<thead><tr><th>Código sesión</th><th>Dispositivo</th><th>Solicitó</th><th>Estado</th><th>Expira</th><th>Acciones</th></tr></thead><tbody>';
+        rows.forEach(function (row) {
+          html += '<tr>';
+          html += '<td>' + escapeHTML(row.codigo_sesion || '') + '</td>';
+          html += '<td>' + escapeHTML(row.dispositivo_nombre || '') + '<br><span class="form-help">' + escapeHTML(row.dispositivo_codigo || '') + '</span></td>';
+          html += '<td>' + escapeHTML(row.solicitada_por || '-') + '</td>';
+          html += '<td>' + escapeHTML(row.estado_sesion || '') + '</td>';
+          html += '<td>' + escapeHTML(row.expira_en || '-') + '</td>';
+          html += '<td class="actions">';
+          html += '<button type="button" class="btn secondary sr-session-open" data-code="' + escapeHTML(row.codigo_sesion || '') + '">Abrir visor</button> ';
+          html += '<button type="button" class="btn sr-session-approve" data-code="' + escapeHTML(row.codigo_sesion || '') + '">Aprobar</button> ';
+          html += '<button type="button" class="btn danger sr-session-close" data-code="' + escapeHTML(row.codigo_sesion || '') + '">Finalizar</button>';
+          html += '</td>';
+          html += '</tr>';
+        });
+        html += '</tbody></table>';
+        sessionTableWrapEl.innerHTML = html;
+      }
+
+      async function loadConfig() {
+        var data = await requestJSON('GET', 'config', null, null);
+        state.config = data.config || {};
+        loadConfigIntoForm(state.config);
+      }
+
+      async function loadDevices() {
+        var data = await requestJSON('GET', 'dispositivos', { include_inactive: 1, limit: 200 }, null);
+        state.devices = Array.isArray(data.rows) ? data.rows : [];
+        renderDeviceTable();
+        updateDeviceSelector();
+      }
+
+      async function loadSessions() {
+        var data = await requestJSON('GET', 'sesiones', { include_inactive: 1, limit: 200 }, null);
+        state.sessions = Array.isArray(data.rows) ? data.rows : [];
+        renderSessionTable();
+      }
+
+      async function loadAll() {
+        if (!empresaID) {
+          setMsg(topMsgEl, 'empresa_id es obligatorio en la URL.', 'error');
+          return;
+        }
+        setMsg(topMsgEl, 'Cargando módulo...');
+        try {
+          await loadConfig();
+          await loadDevices();
+          await loadSessions();
+          setMsg(topMsgEl, 'Módulo cargado correctamente.', 'success');
+        } catch (err) {
+          setMsg(topMsgEl, 'No se pudo cargar el módulo: ' + err.message, 'error');
+        }
+      }
+
+      async function saveConfig() {
+        setMsg(configMsgEl, 'Guardando configuración...');
+        try {
+          var payload = {
+            habilitado: document.getElementById('srCfgHabilitado').value === '1',
+            requiere_aprobacion_operador: document.getElementById('srCfgAprobacion').value === '1',
+            proveedor_preferido: document.getElementById('srCfgProveedor').value,
+            modo_operacion: document.getElementById('srCfgModo').value,
+            auto_cerrar_minutos: Number(document.getElementById('srCfgAutoCerrar').value || 30),
+            observaciones: document.getElementById('srCfgObs').value.trim()
+          };
+          var data = await requestJSON('POST', 'config', null, payload);
+          state.config = data.config || payload;
+          loadConfigIntoForm(state.config);
+          setMsg(configMsgEl, 'Configuración guardada.', 'success');
+        } catch (err) {
+          setMsg(configMsgEl, 'No se pudo guardar configuración: ' + err.message, 'error');
+        }
+      }
+
+      async function saveDevice(evt) {
+        evt.preventDefault();
+        setMsg(deviceMsgEl, 'Guardando dispositivo...');
+        try {
+          var payload = {
+            id: Number(document.getElementById('srDeviceId').value || 0),
+            codigo_dispositivo: document.getElementById('srDeviceCode').value.trim(),
+            nombre_equipo: document.getElementById('srDeviceName').value.trim(),
+            alias_operativo: document.getElementById('srDeviceAlias').value.trim(),
+            ubicacion: document.getElementById('srDeviceUbicacion').value.trim(),
+            sistema_operativo: document.getElementById('srDeviceSO').value.trim(),
+            agente_version: document.getElementById('srDeviceAgentVersion').value.trim(),
+            stream_url: document.getElementById('srDeviceStreamURL').value.trim(),
+            acceso_pin: document.getElementById('srDevicePIN').value,
+            observaciones: document.getElementById('srDeviceObs').value.trim()
+          };
+          if (!payload.nombre_equipo) throw new Error('Nombre de equipo obligatorio');
+          if (!payload.stream_url) throw new Error('URL embebible obligatoria');
+
+          if (payload.id > 0) {
+            await requestJSON('PUT', 'actualizar_dispositivo', null, payload);
+          } else {
+            await requestJSON('POST', 'crear_dispositivo', null, payload);
+          }
+
+          await loadDevices();
+          resetDeviceForm();
+          setMsg(deviceMsgEl, 'Dispositivo guardado.', 'success');
+        } catch (err) {
+          setMsg(deviceMsgEl, 'No se pudo guardar dispositivo: ' + err.message, 'error');
+        }
+      }
+
+      async function toggleDevice(deviceID, active) {
+        var action = active ? 'desactivar_dispositivo' : 'activar_dispositivo';
+        if (!window.confirm(active ? '¿Desactivar dispositivo?' : '¿Activar dispositivo?')) return;
+        try {
+          await requestJSON('PATCH', action, { id: deviceID }, null);
+          await loadDevices();
+          setMsg(deviceMsgEl, 'Estado de dispositivo actualizado.', 'success');
+        } catch (err) {
+          setMsg(deviceMsgEl, 'No se pudo actualizar estado: ' + err.message, 'error');
+        }
+      }
+
+      async function editDevice(deviceID) {
+        try {
+          var data = await requestJSON('GET', 'detalle_dispositivo', { id: deviceID }, null);
+          fillDeviceForm(data.dispositivo || {});
+          setMsg(deviceMsgEl, 'Dispositivo cargado para edición.', 'success');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } catch (err) {
+          setMsg(deviceMsgEl, 'No se pudo cargar dispositivo: ' + err.message, 'error');
+        }
+      }
+
+      async function createSession(evt) {
+        evt.preventDefault();
+        setMsg(sessionMsgEl, 'Solicitando sesión remota...');
+        try {
+          var payload = {
+            dispositivo_id: Number(document.getElementById('srSessionDevice').value || 0),
+            operador_nombre: document.getElementById('srSessionOperador').value.trim(),
+            operador_email: document.getElementById('srSessionOperadorEmail').value.trim(),
+            motivo: document.getElementById('srSessionMotivo').value.trim(),
+            duracion_min: Number(document.getElementById('srSessionDuracion').value || 30)
+          };
+          if (!(payload.dispositivo_id > 0)) throw new Error('Selecciona un dispositivo');
+          if (!payload.motivo) throw new Error('Motivo obligatorio');
+
+          var data = await requestJSON('POST', 'solicitar_sesion', null, payload);
+          var viewerURL = String(data.viewer_url || '').trim();
+          var sessionInfo = data.session || {};
+          var sessionCode = String(sessionInfo.codigo_sesion || '').trim();
+          var token = String(sessionInfo.token_visualizacion || '').trim();
+          if (sessionCode && token) {
+            state.sessionTokens[sessionCode] = token;
+          }
+          await loadSessions();
+          if (sessionCode && token) {
+            setMsg(sessionMsgEl, 'Sesión creada. Código: ' + sessionCode + ' | Token: ' + token + '. Guarda este token para reabrir el visor.', 'success');
+          } else {
+            setMsg(sessionMsgEl, 'Sesión creada correctamente.', 'success');
+          }
+          if (viewerURL) {
+            viewerFrameEl.src = viewerURL;
+            setMsg(viewerMsgEl, 'Visor cargado para sesión nueva. Si está en pendiente, espera aprobación del operador.', 'success');
+          }
+        } catch (err) {
+          setMsg(sessionMsgEl, 'No se pudo crear sesión: ' + err.message, 'error');
+        }
+      }
+
+      async function approveSession(code) {
+        if (!code) return;
+        try {
+          await requestJSON('PATCH', 'aprobar_sesion', null, { codigo_sesion: code, estado_sesion: 'aprobada' });
+          await loadSessions();
+          setMsg(sessionMsgEl, 'Sesión aprobada.', 'success');
+        } catch (err) {
+          setMsg(sessionMsgEl, 'No se pudo aprobar sesión: ' + err.message, 'error');
+        }
+      }
+
+      async function closeSession(code) {
+        if (!code) return;
+        if (!window.confirm('¿Finalizar esta sesión remota?')) return;
+        try {
+          await requestJSON('PATCH', 'finalizar_sesion', null, { codigo_sesion: code });
+          await loadSessions();
+          setMsg(sessionMsgEl, 'Sesión finalizada.', 'success');
+        } catch (err) {
+          setMsg(sessionMsgEl, 'No se pudo finalizar sesión: ' + err.message, 'error');
+        }
+      }
+
+      function openSessionViewer(code) {
+        if (!code) return;
+        var token = state.sessionTokens[code] || '';
+        if (!token) {
+          token = window.prompt('Ingresa el token de visualización generado al crear la sesión:');
+        }
+        if (!token) return;
+        state.sessionTokens[code] = token;
+        var viewerURL = '/administrar_empresa/soporte_remoto_view.html?empresa_id=' + encodeURIComponent(String(empresaID)) + '&codigo_sesion=' + encodeURIComponent(code) + '&token=' + encodeURIComponent(token);
+        viewerFrameEl.src = viewerURL;
+        setMsg(viewerMsgEl, 'Visor solicitado para la sesión ' + code + '.', null);
+      }
+
+      function exportSessions(format) {
+        var url = apiURL('export_sesiones', { format: format, include_inactive: 1 });
+        window.open(url.toString(), '_blank', 'noopener');
+      }
+
+      document.getElementById('srBtnSaveConfig').addEventListener('click', saveConfig);
+      document.getElementById('srDeviceForm').addEventListener('submit', saveDevice);
+      document.getElementById('srBtnResetDevice').addEventListener('click', function () {
+        resetDeviceForm();
+        setMsg(deviceMsgEl, 'Formulario de dispositivo limpiado.');
+      });
+      document.getElementById('srSessionForm').addEventListener('submit', createSession);
+
+      document.getElementById('srBtnReload').addEventListener('click', loadAll);
+      document.getElementById('srBtnReloadDevices').addEventListener('click', loadDevices);
+      document.getElementById('srBtnReloadSessions').addEventListener('click', loadSessions);
+
+      document.getElementById('srBtnExportJSON').addEventListener('click', function () { exportSessions('json'); });
+      document.getElementById('srBtnExportCSV').addEventListener('click', function () { exportSessions('csv'); });
+      document.getElementById('srBtnExportTXT').addEventListener('click', function () { exportSessions('txt'); });
+      document.getElementById('srBtnExportXLS').addEventListener('click', function () { exportSessions('xls'); });
+      document.getElementById('srBtnExportPDF').addEventListener('click', function () { exportSessions('pdf'); });
+
+      deviceTableWrapEl.addEventListener('click', function (evt) {
+        var editBtn = evt.target && evt.target.closest ? evt.target.closest('.sr-device-edit') : null;
+        if (editBtn) {
+          editDevice(Number(editBtn.getAttribute('data-id') || 0));
+          return;
+        }
+        var toggleBtn = evt.target && evt.target.closest ? evt.target.closest('.sr-device-toggle') : null;
+        if (toggleBtn) {
+          toggleDevice(Number(toggleBtn.getAttribute('data-id') || 0), String(toggleBtn.getAttribute('data-active') || '0') === '1');
+        }
+      });
+
+      sessionTableWrapEl.addEventListener('click', function (evt) {
+        var openBtn = evt.target && evt.target.closest ? evt.target.closest('.sr-session-open') : null;
+        if (openBtn) {
+          openSessionViewer(String(openBtn.getAttribute('data-code') || '').trim());
+          return;
+        }
+        var approveBtn = evt.target && evt.target.closest ? evt.target.closest('.sr-session-approve') : null;
+        if (approveBtn) {
+          approveSession(String(approveBtn.getAttribute('data-code') || '').trim());
+          return;
+        }
+        var closeBtn = evt.target && evt.target.closest ? evt.target.closest('.sr-session-close') : null;
+        if (closeBtn) {
+          closeSession(String(closeBtn.getAttribute('data-code') || '').trim());
+        }
+      });
+
+      loadAll();
+    })();
+  </script>
+</body>
+</html>

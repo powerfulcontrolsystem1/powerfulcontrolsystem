@@ -1,6 +1,22 @@
 # Diagrama entidad-relacion
 
-Fecha: 2026-04-07
+Fecha: 2026-04-08
+
+## Actualizacion 2026-04-08 (pasos 1, 2 y 3)
+
+- `LICENCIAS` amplía atributos funcionales para permisos efectivos por empresa:
+  - `modulos_habilitados`.
+  - `super_rol_habilitado`.
+- `CHAT_TAREAS` amplía atributos para nota de voz por tarea:
+  - `nota_voz_url`, `nota_voz_mime_type`, `nota_voz_tamano_bytes`, `nota_voz_duracion_segundos`.
+
+## Actualizacion 2026-04-08 (configuracion monetaria y numerica)
+
+- `EMPRESA_CONFIG_AVANZADA` amplía atributos de formato operativo por empresa:
+  - `moneda_codigo`.
+  - `sistema_numerico`.
+  - `usar_decimales`.
+  - `cantidad_decimales`.
 
 ```mermaid
 erDiagram
@@ -33,6 +49,9 @@ erDiagram
     EMPRESAS ||--|| EMPRESA_VENTA_PUBLICA_CONFIGURACION : "empresa_id"
     EMPRESAS ||--o{ EMPRESA_VENTA_PUBLICA_ITEMS : "empresa_id"
     EMPRESAS ||--o{ EMPRESA_VENTA_PUBLICA_ORDENES : "empresa_id"
+    EMPRESAS ||--|| EMPRESA_SOPORTE_REMOTO_CONFIGURACION : "empresa_id"
+    EMPRESAS ||--o{ EMPRESA_SOPORTE_REMOTO_DISPOSITIVOS : "empresa_id"
+    EMPRESAS ||--o{ EMPRESA_SOPORTE_REMOTO_SESIONES : "empresa_id"
     EMPRESAS ||--o{ EMPRESA_BACKUPS : "empresa_id"
     EMPRESAS ||--o{ EMPRESA_BACKUPS_RESTAURACIONES : "empresa_id"
     EMPRESAS ||--o{ EMPRESA_CIERRES_CAJA : "empresa_id"
@@ -65,6 +84,7 @@ erDiagram
     EMPRESA_CREDITOS ||--o{ EMPRESA_CREDITOS_WORKFLOW : "credito_id"
     EMPRESA_CREDITOS_CUOTAS ||--o{ EMPRESA_CREDITOS_MOVIMIENTOS : "cuota_id"
     EMPRESA_CREDITOS_MOVIMIENTOS ||--o{ EMPRESA_CREDITOS_WORKFLOW : "movimiento_origen_id"
+    EMPRESA_SOPORTE_REMOTO_DISPOSITIVOS ||--o{ EMPRESA_SOPORTE_REMOTO_SESIONES : "dispositivo_id"
     EMPRESA_BACKUPS ||--o{ EMPRESA_BACKUPS_RESTAURACIONES : "backup_id"
     EMPRESA_EVENTOS_CONTABLES ||--o{ EMPRESA_ASIENTOS_CONTABLES : "evento_contable_id"
     CHAT_TAREAS_CONVERSACIONES ||--o{ CHAT_TAREAS_PARTICIPANTES : "conversacion_id"
@@ -425,6 +445,48 @@ erDiagram
       string estado_pago
       string transaction_id
       string referencia_externa
+      string estado
+    }
+    EMPRESA_SOPORTE_REMOTO_CONFIGURACION {
+      int id PK
+      int empresa_id FK
+      int habilitado
+      string proveedor_preferido
+      string modo_operacion
+      int requiere_aprobacion_operador
+      int auto_cerrar_minutos
+      string estado
+    }
+    EMPRESA_SOPORTE_REMOTO_DISPOSITIVOS {
+      int id PK
+      int empresa_id FK
+      string codigo_dispositivo
+      string nombre_equipo
+      string alias_operativo
+      string ubicacion
+      string sistema_operativo
+      string agente_version
+      string stream_url
+      string estado_conexion
+      string ultimo_heartbeat
+      string acceso_pin_hash
+      string estado
+    }
+    EMPRESA_SOPORTE_REMOTO_SESIONES {
+      int id PK
+      int empresa_id FK
+      int dispositivo_id FK
+      string codigo_sesion
+      string solicitada_por
+      string operador_nombre
+      string operador_email
+      string motivo
+      string estado_sesion
+      string token_visualizacion_hash
+      string url_visualizacion
+      string iniciada_en
+      string expira_en
+      string finalizada_en
       string estado
     }
     EMPRESA_CIERRES_CAJA {

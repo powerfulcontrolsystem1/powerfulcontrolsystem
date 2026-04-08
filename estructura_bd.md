@@ -1,7 +1,7 @@
 # Estructura de Base de Datos
 
-Version: 2026-04-07.37.0
-Ultima actualizacion: 2026-04-07
+Version: 2026-04-08.42.0
+Ultima actualizacion: 2026-04-08
 
 Este documento consolida la estructura activa de SQLite para el proyecto.
 Nota de gobernanza documental:
@@ -112,6 +112,30 @@ Todas las tablas operativas usan como base los campos estandar:
   - moneda, subtotal, descuento_total, impuesto_total, total
   - metodo_pago, estado_pago, transaction_id, referencia_externa
   - provider_payload_json, items_json, pagado_en, error_pago
+
+### Tablas de soporte remoto por empresa
+- empresa_soporte_remoto_configuracion:
+  - empresa_id (UNIQUE)
+  - habilitado
+  - proveedor_preferido (`novnc`, `guacamole`, `rustdesk_web`, `custom_url`)
+  - modo_operacion (`agente_web`, `agente_local`, `hibrido`)
+  - requiere_aprobacion_operador
+  - auto_cerrar_minutos
+- empresa_soporte_remoto_dispositivos:
+  - empresa_id, codigo_dispositivo (UNIQUE por empresa)
+  - nombre_equipo, alias_operativo, ubicacion
+  - sistema_operativo, agente_version
+  - stream_url
+  - estado_conexion (`online`, `offline`, `ocupado`)
+  - ultimo_heartbeat
+  - acceso_pin_hash
+- empresa_soporte_remoto_sesiones:
+  - empresa_id, dispositivo_id, codigo_sesion (UNIQUE por empresa)
+  - solicitada_por, operador_nombre, operador_email
+  - motivo, estado_sesion (`pendiente`, `aprobada`, `activa`, `finalizada`, `rechazada`, `expirada`)
+  - token_visualizacion_hash
+  - url_visualizacion
+  - iniciada_en, expira_en, finalizada_en
 
 ### Tabla de metricas de ventas simples por estacion
 - empresa_ventas_estacion_metricas:
@@ -436,6 +460,7 @@ Todas las tablas operativas usan como base los campos estandar:
   - formato_impresion, imprimir_copia_factura, mostrar_logo, logo_url
   - pie_factura, notas_legales
   - color_carrito_activo, color_carrito_inactivo
+  - moneda_codigo, sistema_numerico, usar_decimales, cantidad_decimales
 
 ### Tabla de facturacion electronica por pais
 - facturacion_electronica_pais:
@@ -741,11 +766,35 @@ Todas las tablas operativas usan como base los campos estandar:
   - tipo_empresa_id, nombre, descripcion
 - tipos_de_usuario:
   - tipo_empresa_id, rol_id, nombre, descripcion
+- roles_de_usuario_permisos:
+  - rol_id, modulo, accion, permitido
+  - indice unico: (rol_id, modulo, accion)
+- roles_de_usuario_paginas_permisos:
+  - rol_id, pagina_clave, permitido
+  - indice unico: (rol_id, pagina_clave)
 - tipos_de_licencia:
   - nombre
 - licencias:
   - empresa_id, tipo_id, nombre, descripcion, valor, duracion_dias
+  - modulos_habilitados, super_rol_habilitado
   - fecha_inicio, fecha_fin, activo
+  - fecha_actualizacion, usuario_creador, estado, observaciones
+- super_venta_digital_configuracion:
+  - nombre_tienda, descripcion_tienda, logo_url, banner_url, color_primario
+  - moneda, wompi_activo
+- super_venta_digital_items:
+  - codigo_publico, nombre, descripcion, precio, moneda, imagen_url
+  - licencia_codigo, instrucciones_archivo_url
+  - orden_visual, destacado
+- super_venta_digital_ordenes:
+  - codigo_orden
+  - item_id, item_nombre, item_precio, item_moneda
+  - comprador_nombre, comprador_email, comprador_telefono
+  - metodo_pago, estado_pago
+  - transaction_id, referencia_externa
+  - provider_payload_json, pagado_en, error_pago
+  - correo_entregado, correo_entregado_en, correo_error
+  - licencia_codigo_enviado, instrucciones_archivo_url
 
 ### Tablas de pagos y metricas
 - pagos_wompi:
@@ -825,9 +874,15 @@ Todas las tablas operativas usan como base los campos estandar:
 - empresa_gps_dispositivos.id -> empresa_gps_recorridos.dispositivo_id
 - tipos_de_empresas.id -> roles_de_usuario.tipo_empresa_id / tipos_de_usuario.tipo_empresa_id
 - roles_de_usuario.id -> tipos_de_usuario.rol_id
+- roles_de_usuario.id -> roles_de_usuario_permisos.rol_id
+- roles_de_usuario.id -> roles_de_usuario_paginas_permisos.rol_id
 - empresas.id -> super_correo_notificaciones_prueba.empresa_id (trazabilidad de notificaciones en modo pruebas)
+- super_venta_digital_items.id -> super_venta_digital_ordenes.item_id
 
 ## 4) Historial resumido
+- 2026-04-08: se amplía `licencias` en `superadministrador.db` con `modulos_habilitados` y `super_rol_habilitado` para gobernar permisos efectivos por empresa desde la licencia activa, junto con columnas de trazabilidad (`fecha_actualizacion`, `usuario_creador`, `estado`, `observaciones`).
+- 2026-04-08: se agregan `super_venta_digital_configuracion`, `super_venta_digital_items` y `super_venta_digital_ordenes` en `superadministrador.db` para venta de licencias/software administrada por super, con pago Wompi y entrega por correo posterior a aprobacion.
+- 2026-04-08: se agregan `roles_de_usuario_permisos` y `roles_de_usuario_paginas_permisos` en `superadministrador.db` para configuracion dinamica de permisos por rol (modulo/accion y pagina), con indices unicos por rol para garantizar consistencia de matriz.
 - 2026-04-07: se agregan `empresa_backups` y `empresa_backups_restauraciones` para el modulo 36 de backups empresariales, incluyendo snapshot JSON por `empresa_id`, trazabilidad de hash de contenido y bitacora de restauraciones.
 - 2026-04-07: se agrega `empresa_creditos_clientes_limites` para gobernar limites por cliente (`limite_saldo_total`, `max_creditos_activos`, `requiere_aprobacion_exceso`) y reforzar aislamiento por `empresa_id` en validaciones de alta/edicion de creditos.
 - 2026-04-07: se agregan `empresa_creditos`, `empresa_creditos_cuotas` y `empresa_creditos_movimientos` para base del modulo 35 (creditos), con trazabilidad de cupo/saldo, amortizacion por cuotas, abonos y movimientos por `empresa_id`/`credito_id`/`cliente_id`.

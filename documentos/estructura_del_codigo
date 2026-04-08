@@ -1,7 +1,7 @@
 # Estructura del codigo
 
-Fecha: 2026-04-01
-Version: 1.0
+Fecha: 2026-04-08
+Version: 1.1
 
 ## 1) Objetivo de este documento
 
@@ -34,6 +34,18 @@ Cambios estructurales incorporados para venta por internet por empresa:
 - `web/administrar_empresa/venta_publica.html` (nuevo): gestion empresarial de slug, catalogo, imagenes y configuracion Wompi.
 - `web/venta_publica.html` (nuevo): vitrina de cliente final con carrito, pago Nequi y consulta de estado.
 - `web/administrar_empresa.html` y `web/js/administrar_empresa.js`: adicion de `linkVentaPublica` con politica de permisos del modulo ventas.
+
+## 2.3) Actualizacion 2026-04-08 (modulo soporte remoto empresarial)
+
+Cambios estructurales incorporados para control remoto simplificado por empresa:
+- `backend/db/soporte_remoto.go` (nuevo): esquema y logica de configuracion, dispositivos, sesiones y heartbeat del agente, aislado por `empresa_id`.
+- `backend/handlers/soporte_remoto.go` (nuevo): endpoint empresarial `/api/empresa/soporte_remoto` y endpoint publico `/api/public/soporte_remoto`.
+- `backend/main.go`: registro de `EnsureEmpresaSoporteRemotoSchema`, migracion `2026-04-08-029-soporte-remoto-empresa` y rutas del modulo.
+- `backend/utils/utils.go`: habilita endpoint publico del agente/plugin en whitelist.
+- `backend/handlers/empresa_permisos.go`: integra `linkSoporteRemoto` al catalogo de permisos del menu empresa.
+- `web/administrar_empresa/soporte_remoto.html` (nuevo): panel de configuracion, dispositivos y sesiones.
+- `web/administrar_empresa/soporte_remoto_view.html` (nuevo): visor embebido por token temporal.
+- `web/administrar_empresa.html` y `web/js/administrar_empresa.js`: adicion de `linkSoporteRemoto` con politica de permisos del modulo seguridad.
 
 ## 2) Arquitectura general
 

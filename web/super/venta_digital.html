@@ -1,0 +1,559 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Venta digital</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container">
+    <div class="page-header">
+      <h1>Venta digital (super)</h1>
+      <div class="form-actions">
+        <a href="/venta_digital.html" class="btn secondary" target="_blank" rel="noopener noreferrer">Ver tienda pública</a>
+        <button id="vdBtnRecargarTodo" type="button" class="btn">Recargar datos</button>
+      </div>
+    </div>
+
+    <section class="card form mp-card">
+      <h2>Configuración de tienda digital</h2>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="cfgNombre">Nombre de tienda</label>
+          <input id="cfgNombre" class="form-input" type="text" placeholder="Powerful Store">
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="cfgMoneda">Moneda</label>
+          <input id="cfgMoneda" class="form-input" type="text" placeholder="COP" maxlength="5">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="cfgDescripcion">Descripción</label>
+          <textarea id="cfgDescripcion" class="form-textarea" placeholder="Catálogo digital de licencias y software"></textarea>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="cfgLogoURL">Logo URL</label>
+          <input id="cfgLogoURL" class="form-input" type="text" placeholder="/img/logo.png">
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="cfgBannerURL">Banner URL</label>
+          <input id="cfgBannerURL" class="form-input" type="text" placeholder="/img/banner.jpg">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="cfgColor">Color primario</label>
+          <input id="cfgColor" class="form-input" type="text" placeholder="#0d6efd">
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="cfgWompiActivo">Wompi activo</label>
+          <select id="cfgWompiActivo" class="form-input">
+            <option value="1">Sí</option>
+            <option value="0">No</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button id="vdBtnGuardarConfig" type="button" class="btn">Guardar configuración</button>
+      </div>
+      <div id="vdConfigMsg" class="form-help"></div>
+    </section>
+
+    <section class="card form mp-card">
+      <h2>Publicar producto digital (licencia / software)</h2>
+      <form id="vdItemForm" class="form">
+        <input id="itemId" type="hidden">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="itemNombre">Nombre</label>
+            <input id="itemNombre" class="form-input" type="text" required>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="itemCodigoPublico">Código público</label>
+            <input id="itemCodigoPublico" class="form-input" type="text" placeholder="licencia-pro-1">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="itemPrecio">Precio</label>
+            <input id="itemPrecio" class="form-input" type="number" min="0" step="0.01" required>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="itemMoneda">Moneda</label>
+            <input id="itemMoneda" class="form-input" type="text" placeholder="COP" maxlength="5">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="itemDescripcion">Descripción</label>
+            <textarea id="itemDescripcion" class="form-textarea" required></textarea>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="itemLicenciaCodigo">Código de licencia a enviar</label>
+            <input id="itemLicenciaCodigo" class="form-input" type="text" placeholder="ABC1-DEF2-GHI3-JKL4" required>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="itemObservaciones">Observaciones</label>
+            <input id="itemObservaciones" class="form-input" type="text" placeholder="Notas internas del producto">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="itemImagenURL">Imagen URL (opcional)</label>
+            <input id="itemImagenURL" class="form-input" type="text" placeholder="/uploads/venta_digital/imagenes/...">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="itemInstruccionesURL">Archivo de instrucciones URL (opcional)</label>
+            <input id="itemInstruccionesURL" class="form-input" type="text" placeholder="/uploads/venta_digital/instrucciones/...">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="itemOrden">Orden visual</label>
+            <input id="itemOrden" class="form-input" type="number" min="0" step="1" value="0">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="itemDestacado">Destacado</label>
+            <select id="itemDestacado" class="form-input">
+              <option value="0">No</option>
+              <option value="1">Sí</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="itemImagenArchivo">Subir imagen</label>
+            <input id="itemImagenArchivo" class="form-input" type="file" accept=".png,.jpg,.jpeg,.gif,.webp,.svg">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="itemInstruccionesArchivo">Subir archivo de instrucciones</label>
+            <input id="itemInstruccionesArchivo" class="form-input" type="file" accept=".txt,.pdf,.md,.json,.zip,.rar,.7z,.doc,.docx">
+          </div>
+        </div>
+        <div class="form-actions">
+          <button id="vdBtnGuardarItem" type="submit" class="btn">Guardar producto</button>
+          <button id="vdBtnLimpiarItem" type="button" class="btn secondary">Limpiar formulario</button>
+        </div>
+      </form>
+      <div id="vdItemMsg" class="form-help"></div>
+    </section>
+
+    <section class="card form mp-card">
+      <h2>Catálogo digital</h2>
+      <div class="form-actions">
+        <button id="vdBtnRefrescarItems" type="button" class="btn secondary">Refrescar catálogo</button>
+      </div>
+      <div id="vdItemsMsg" class="form-help"></div>
+      <div id="vdItemsTableWrap">Cargando catálogo...</div>
+    </section>
+
+    <section class="card form mp-card">
+      <h2>Órdenes de venta digital</h2>
+      <div class="form-actions">
+        <button id="vdBtnRefrescarOrdenes" type="button" class="btn secondary">Refrescar órdenes</button>
+      </div>
+      <div id="vdOrdersMsg" class="form-help"></div>
+      <div id="vdOrdersTableWrap">Cargando órdenes...</div>
+    </section>
+  </div>
+
+  <script>
+    (function () {
+      var state = {
+        config: null,
+        items: [],
+        orders: []
+      };
+
+      var cfgMsgEl = document.getElementById('vdConfigMsg');
+      var itemMsgEl = document.getElementById('vdItemMsg');
+      var itemsMsgEl = document.getElementById('vdItemsMsg');
+      var ordersMsgEl = document.getElementById('vdOrdersMsg');
+      var itemsTableWrapEl = document.getElementById('vdItemsTableWrap');
+      var ordersTableWrapEl = document.getElementById('vdOrdersTableWrap');
+
+      function setMsg(el, text, type) {
+        if (!el) return;
+        el.textContent = text || '';
+        el.classList.remove('error', 'success');
+        if (type) el.classList.add(type);
+      }
+
+      function escapeHTML(value) {
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function formatMoney(value, currency) {
+        var amount = Number(value || 0);
+        var curr = String(currency || 'COP').trim().toUpperCase() || 'COP';
+        try {
+          return new Intl.NumberFormat('es-CO', { style: 'currency', currency: curr, maximumFractionDigits: 2 }).format(amount);
+        } catch (_) {
+          return amount.toFixed(2) + ' ' + curr;
+        }
+      }
+
+      function apiURL(action, extraParams) {
+        var url = new URL('/super/api/venta_digital', window.location.origin);
+        if (action) url.searchParams.set('action', action);
+        if (extraParams && typeof extraParams === 'object') {
+          Object.keys(extraParams).forEach(function (key) {
+            var value = extraParams[key];
+            if (value === undefined || value === null || value === '') return;
+            url.searchParams.set(key, String(value));
+          });
+        }
+        return url;
+      }
+
+      async function requestJSON(method, action, extraParams, bodyObj) {
+        var url = apiURL(action, extraParams);
+        var options = {
+          method: method,
+          credentials: 'same-origin'
+        };
+        if (bodyObj) {
+          options.headers = { 'Content-Type': 'application/json' };
+          options.body = JSON.stringify(bodyObj);
+        }
+        var resp = await fetch(url.toString(), options);
+        var text = await resp.text();
+        var data = {};
+        if (text) {
+          try {
+            data = JSON.parse(text);
+          } catch (_) {
+            data = { raw: text };
+          }
+        }
+        if (!resp.ok) {
+          throw new Error((data && (data.error || data.message)) || text || ('HTTP ' + resp.status));
+        }
+        return data;
+      }
+
+      function getConfigPayloadFromForm() {
+        return {
+          nombre_tienda: document.getElementById('cfgNombre').value.trim(),
+          descripcion_tienda: document.getElementById('cfgDescripcion').value.trim(),
+          logo_url: document.getElementById('cfgLogoURL').value.trim(),
+          banner_url: document.getElementById('cfgBannerURL').value.trim(),
+          color_primario: document.getElementById('cfgColor').value.trim(),
+          moneda: document.getElementById('cfgMoneda').value.trim() || 'COP',
+          wompi_activo: document.getElementById('cfgWompiActivo').value === '1'
+        };
+      }
+
+      function renderConfig(config) {
+        var cfg = config || {};
+        document.getElementById('cfgNombre').value = cfg.nombre_tienda || '';
+        document.getElementById('cfgDescripcion').value = cfg.descripcion_tienda || '';
+        document.getElementById('cfgLogoURL').value = cfg.logo_url || '';
+        document.getElementById('cfgBannerURL').value = cfg.banner_url || '';
+        document.getElementById('cfgColor').value = cfg.color_primario || '';
+        document.getElementById('cfgMoneda').value = cfg.moneda || 'COP';
+        document.getElementById('cfgWompiActivo').value = cfg.wompi_activo ? '1' : '0';
+      }
+
+      function getItemPayloadFromForm() {
+        return {
+          id: Number(document.getElementById('itemId').value || 0),
+          codigo_publico: document.getElementById('itemCodigoPublico').value.trim(),
+          nombre: document.getElementById('itemNombre').value.trim(),
+          descripcion: document.getElementById('itemDescripcion').value.trim(),
+          precio: Number(document.getElementById('itemPrecio').value || 0),
+          moneda: document.getElementById('itemMoneda').value.trim() || 'COP',
+          imagen_url: document.getElementById('itemImagenURL').value.trim(),
+          licencia_codigo: document.getElementById('itemLicenciaCodigo').value.trim(),
+          instrucciones_archivo_url: document.getElementById('itemInstruccionesURL').value.trim(),
+          orden_visual: Number(document.getElementById('itemOrden').value || 0),
+          destacado: document.getElementById('itemDestacado').value === '1',
+          observaciones: document.getElementById('itemObservaciones').value.trim()
+        };
+      }
+
+      function fillItemForm(item) {
+        var row = item || {};
+        document.getElementById('itemId').value = Number(row.id || 0);
+        document.getElementById('itemCodigoPublico').value = row.codigo_publico || '';
+        document.getElementById('itemNombre').value = row.nombre || '';
+        document.getElementById('itemDescripcion').value = row.descripcion || '';
+        document.getElementById('itemPrecio').value = Number(row.precio || 0);
+        document.getElementById('itemMoneda').value = row.moneda || 'COP';
+        document.getElementById('itemImagenURL').value = row.imagen_url || '';
+        document.getElementById('itemLicenciaCodigo').value = row.licencia_codigo || '';
+        document.getElementById('itemInstruccionesURL').value = row.instrucciones_archivo_url || '';
+        document.getElementById('itemOrden').value = Number(row.orden_visual || 0);
+        document.getElementById('itemDestacado').value = row.destacado ? '1' : '0';
+        document.getElementById('itemObservaciones').value = row.observaciones || '';
+      }
+
+      function resetItemForm() {
+        fillItemForm({});
+        document.getElementById('itemMoneda').value = (state.config && state.config.moneda) ? state.config.moneda : 'COP';
+        document.getElementById('itemImagenArchivo').value = '';
+        document.getElementById('itemInstruccionesArchivo').value = '';
+      }
+
+      async function uploadImageIfNeeded(itemId) {
+        var fileInput = document.getElementById('itemImagenArchivo');
+        if (!fileInput || !fileInput.files || !fileInput.files[0]) return null;
+        var fd = new FormData();
+        fd.append('item_id', String(itemId));
+        fd.append('imagen', fileInput.files[0]);
+        var resp = await fetch(apiURL('subir_imagen').toString(), {
+          method: 'POST',
+          credentials: 'same-origin',
+          body: fd
+        });
+        var text = await resp.text();
+        var data = {};
+        if (text) {
+          try { data = JSON.parse(text); } catch (_) { data = { raw: text }; }
+        }
+        if (!resp.ok) {
+          throw new Error((data && (data.error || data.message)) || text || ('HTTP ' + resp.status));
+        }
+        return data.image_url || '';
+      }
+
+      async function uploadInstructionsIfNeeded(itemId) {
+        var fileInput = document.getElementById('itemInstruccionesArchivo');
+        if (!fileInput || !fileInput.files || !fileInput.files[0]) return null;
+        var fd = new FormData();
+        fd.append('item_id', String(itemId));
+        fd.append('archivo', fileInput.files[0]);
+        var resp = await fetch(apiURL('subir_instrucciones').toString(), {
+          method: 'POST',
+          credentials: 'same-origin',
+          body: fd
+        });
+        var text = await resp.text();
+        var data = {};
+        if (text) {
+          try { data = JSON.parse(text); } catch (_) { data = { raw: text }; }
+        }
+        if (!resp.ok) {
+          throw new Error((data && (data.error || data.message)) || text || ('HTTP ' + resp.status));
+        }
+        return data.instrucciones_archivo_url || '';
+      }
+
+      function renderItemsTable() {
+        var rows = Array.isArray(state.items) ? state.items : [];
+        if (rows.length === 0) {
+          itemsTableWrapEl.innerHTML = '<p class="form-help">No hay productos digitales cargados.</p>';
+          return;
+        }
+        var html = '';
+        html += '<table class="table">';
+        html += '<thead><tr>';
+        html += '<th>ID</th><th>Nombre</th><th>Precio</th><th>Estado</th><th>Destacado</th><th>Orden</th><th>Acciones</th>';
+        html += '</tr></thead><tbody>';
+
+        rows.forEach(function (row) {
+          var activo = String(row.estado || '').toLowerCase() !== 'inactivo';
+          html += '<tr>';
+          html += '<td>' + Number(row.id || 0) + '</td>';
+          html += '<td>' + escapeHTML(row.nombre || '') + '</td>';
+          html += '<td>' + escapeHTML(formatMoney(row.precio || 0, row.moneda || 'COP')) + '</td>';
+          html += '<td>' + escapeHTML(row.estado || 'activo') + '</td>';
+          html += '<td>' + (row.destacado ? 'Sí' : 'No') + '</td>';
+          html += '<td>' + Number(row.orden_visual || 0) + '</td>';
+          html += '<td class="actions">';
+          html += '<button type="button" class="btn secondary vd-edit" data-id="' + Number(row.id || 0) + '">Editar</button> ';
+          html += '<button type="button" class="btn ' + (activo ? 'danger' : '') + ' vd-toggle" data-id="' + Number(row.id || 0) + '" data-active="' + (activo ? '1' : '0') + '">' + (activo ? 'Desactivar' : 'Activar') + '</button>';
+          html += '</td>';
+          html += '</tr>';
+        });
+
+        html += '</tbody></table>';
+        itemsTableWrapEl.innerHTML = html;
+      }
+
+      function renderOrdersTable() {
+        var rows = Array.isArray(state.orders) ? state.orders : [];
+        if (rows.length === 0) {
+          ordersTableWrapEl.innerHTML = '<p class="form-help">No hay órdenes registradas.</p>';
+          return;
+        }
+        var html = '';
+        html += '<table class="table">';
+        html += '<thead><tr>';
+        html += '<th>Orden</th><th>Producto</th><th>Comprador</th><th>Pago</th><th>Transacción</th><th>Correo entregado</th><th>Fecha</th>';
+        html += '</tr></thead><tbody>';
+
+        rows.forEach(function (row) {
+          html += '<tr>';
+          html += '<td>' + escapeHTML(row.codigo_orden || '') + '</td>';
+          html += '<td>' + escapeHTML(row.item_nombre || '') + '</td>';
+          html += '<td>' + escapeHTML(row.comprador_nombre || '') + '<br><span class="form-help">' + escapeHTML(row.comprador_email || '') + '</span></td>';
+          html += '<td>' + escapeHTML(row.estado_pago || '') + '</td>';
+          html += '<td>' + escapeHTML(row.transaction_id || '-') + '</td>';
+          html += '<td>' + (row.correo_entregado ? 'Sí' : 'No') + '</td>';
+          html += '<td>' + escapeHTML(row.fecha_creacion || '') + '</td>';
+          html += '</tr>';
+        });
+
+        html += '</tbody></table>';
+        ordersTableWrapEl.innerHTML = html;
+      }
+
+      async function loadConfig() {
+        try {
+          var data = await requestJSON('GET', 'config', null, null);
+          state.config = data.config || {};
+          renderConfig(state.config);
+          setMsg(cfgMsgEl, 'Configuración cargada.', 'success');
+        } catch (err) {
+          setMsg(cfgMsgEl, 'No se pudo cargar configuración: ' + err.message, 'error');
+        }
+      }
+
+      async function loadItems() {
+        setMsg(itemsMsgEl, 'Cargando catálogo...');
+        try {
+          var data = await requestJSON('GET', 'catalogo', { include_inactive: 1, limit: 200 }, null);
+          state.items = Array.isArray(data.rows) ? data.rows : [];
+          renderItemsTable();
+          setMsg(itemsMsgEl, 'Catálogo cargado: ' + state.items.length + ' producto(s).', 'success');
+        } catch (err) {
+          setMsg(itemsMsgEl, 'No se pudo cargar catálogo: ' + err.message, 'error');
+          itemsTableWrapEl.innerHTML = '<p class="form-help">Error al cargar catálogo.</p>';
+        }
+      }
+
+      async function loadOrders() {
+        setMsg(ordersMsgEl, 'Cargando órdenes...');
+        try {
+          var data = await requestJSON('GET', 'ordenes', { include_inactive: 1, limit: 200 }, null);
+          state.orders = Array.isArray(data.rows) ? data.rows : [];
+          renderOrdersTable();
+          setMsg(ordersMsgEl, 'Órdenes cargadas: ' + state.orders.length + '.', 'success');
+        } catch (err) {
+          setMsg(ordersMsgEl, 'No se pudo cargar órdenes: ' + err.message, 'error');
+          ordersTableWrapEl.innerHTML = '<p class="form-help">Error al cargar órdenes.</p>';
+        }
+      }
+
+      async function saveConfig() {
+        setMsg(cfgMsgEl, 'Guardando configuración...');
+        try {
+          var payload = getConfigPayloadFromForm();
+          var data = await requestJSON('POST', 'config', null, payload);
+          state.config = data.config || payload;
+          renderConfig(state.config);
+          setMsg(cfgMsgEl, 'Configuración guardada.', 'success');
+        } catch (err) {
+          setMsg(cfgMsgEl, 'No se pudo guardar configuración: ' + err.message, 'error');
+        }
+      }
+
+      async function saveItem(ev) {
+        ev.preventDefault();
+        setMsg(itemMsgEl, 'Guardando producto digital...');
+
+        try {
+          var payload = getItemPayloadFromForm();
+          if (!payload.nombre) throw new Error('El nombre es obligatorio');
+          if (!payload.descripcion) throw new Error('La descripción es obligatoria');
+          if (!(payload.precio > 0)) throw new Error('El precio debe ser mayor que 0');
+          if (!payload.licencia_codigo) throw new Error('El código de licencia es obligatorio');
+
+          var method = payload.id > 0 ? 'PUT' : 'POST';
+          var action = payload.id > 0 ? 'actualizar' : 'crear';
+          var data = await requestJSON(method, action, null, payload);
+          var item = data.item || {};
+          var itemId = Number(item.id || payload.id || 0);
+          if (!(itemId > 0)) {
+            throw new Error('No se pudo resolver ID del producto guardado');
+          }
+
+          var imageURL = await uploadImageIfNeeded(itemId);
+          var instructionsURL = await uploadInstructionsIfNeeded(itemId);
+          if (imageURL || instructionsURL) {
+            var refresh = await requestJSON('GET', 'detalle', { id: itemId }, null);
+            item = refresh.item || item;
+          }
+
+          fillItemForm(item);
+          await loadItems();
+          setMsg(itemMsgEl, 'Producto guardado correctamente.', 'success');
+        } catch (err) {
+          setMsg(itemMsgEl, 'No se pudo guardar el producto: ' + err.message, 'error');
+        }
+      }
+
+      async function toggleItem(itemId, active) {
+        var action = active ? 'desactivar' : 'activar';
+        var confirmText = active ? '¿Desactivar este producto digital?' : '¿Activar este producto digital?';
+        if (!window.confirm(confirmText)) return;
+
+        try {
+          await requestJSON('PUT', action, { id: itemId }, null);
+          await loadItems();
+          setMsg(itemsMsgEl, 'Estado actualizado.', 'success');
+        } catch (err) {
+          setMsg(itemsMsgEl, 'No se pudo actualizar estado: ' + err.message, 'error');
+        }
+      }
+
+      async function editItem(itemId) {
+        try {
+          var data = await requestJSON('GET', 'detalle', { id: itemId }, null);
+          fillItemForm(data.item || {});
+          setMsg(itemMsgEl, 'Producto cargado en formulario para edición.', 'success');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } catch (err) {
+          setMsg(itemMsgEl, 'No se pudo cargar producto: ' + err.message, 'error');
+        }
+      }
+
+      itemsTableWrapEl.addEventListener('click', function (ev) {
+        var editBtn = ev.target && ev.target.closest ? ev.target.closest('.vd-edit') : null;
+        if (editBtn) {
+          var id = Number(editBtn.getAttribute('data-id') || 0);
+          if (id > 0) editItem(id);
+          return;
+        }
+
+        var toggleBtn = ev.target && ev.target.closest ? ev.target.closest('.vd-toggle') : null;
+        if (!toggleBtn) return;
+        var itemId = Number(toggleBtn.getAttribute('data-id') || 0);
+        var isActive = String(toggleBtn.getAttribute('data-active') || '0') === '1';
+        if (itemId > 0) toggleItem(itemId, isActive);
+      });
+
+      document.getElementById('vdBtnGuardarConfig').addEventListener('click', saveConfig);
+      document.getElementById('vdItemForm').addEventListener('submit', saveItem);
+      document.getElementById('vdBtnLimpiarItem').addEventListener('click', function () {
+        resetItemForm();
+        setMsg(itemMsgEl, 'Formulario limpiado.');
+      });
+      document.getElementById('vdBtnRefrescarItems').addEventListener('click', loadItems);
+      document.getElementById('vdBtnRefrescarOrdenes').addEventListener('click', loadOrders);
+      document.getElementById('vdBtnRecargarTodo').addEventListener('click', function () {
+        loadConfig();
+        loadItems();
+        loadOrders();
+      });
+
+      loadConfig();
+      loadItems();
+      loadOrders();
+      resetItemForm();
+    })();
+  </script>
+</body>
+</html>

@@ -64,15 +64,15 @@ func NewEmpresaAIChatController(dbEmp, dbSuper *sql.DB) *EmpresaAIChatController
 func empresaAIModelCatalog() []empresaAIModelDef {
 	return []empresaAIModelDef{
 		{
-			ID:             "google:gemini-2.0-flash",
-			Provider:       "google",
-			DisplayName:    "Google Gemini 2.0 Flash",
-			UpstreamModel:  "gemini-2.0-flash",
-			Endpoint:       "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
-			ApiKeyEnv:      "GEMINI_API_KEY",
+			ID:             "deepseek:deepseek-chat",
+			Provider:       "deepseek",
+			DisplayName:    "DeepSeek Chat",
+			UpstreamModel:  "deepseek-chat",
+			Endpoint:       "https://api.deepseek.com/chat/completions",
+			ApiKeyEnv:      "DEEPSEEK_API_KEY",
 			Famous:         true,
-			FreeDailyLimit: 80,
-			Description:    "Chat empresarial con Google Gemini, limitado por cuota diaria del plan gratuito.",
+			FreeDailyLimit: 120,
+			Description:    "Chat empresarial con DeepSeek, limitado por cuota diaria del plan gratuito.",
 		},
 	}
 }
@@ -459,10 +459,104 @@ func (c *EmpresaAIChatController) writeLimitReached(w http.ResponseWriter, empre
 }
 
 func (c *EmpresaAIChatController) generateResponse(model empresaAIModelDef, pregunta string, historial []empresaAIChatMensaje, contexto string) (string, int64, int64, error) {
+	if strings.EqualFold(model.Provider, "deepseek") {
+		return c.callDeepSeek(model, pregunta, historial, contexto)
+	}
 	if strings.EqualFold(model.Provider, "google") {
 		return c.callGoogleGemini(model, pregunta, historial, contexto)
 	}
 	return "", 0, 0, fmt.Errorf("proveedor no soportado")
+}
+
+func (c *EmpresaAIChatController) callDeepSeek(model empresaAIModelDef, pregunta string, historial []empresaAIChatMensaje, contexto string) (string, int64, int64, error) {
+	apiKey, err := c.resolveModelAPIKey(model)
+	if err != nil {
+		return "", 0, 0, err
+	}
+
+	systemPrompt := "Eres un asistente empresarial para el sistema POS multiempresa. " +
+		"Responde en espanol claro y accionable. Usa solo el contexto validado por empresa_id. " +
+		"Si faltan datos, dilo explicitamente y sugiere que dato consultar.\n\nCONTEXTO_EMPRESA_VALIDADO:\n" + contexto
+
+	messages := buildDeepSeekMessages(systemPrompt, pregunta, historial)
+	body := map[string]interface{}{
+		"model":       model.UpstreamModel,
+		"messages":    messages,
+		"temperature": 0.2,
+		"max_tokens":  700,
+		"stream":      false,
+	}
+	payload, _ := json.Marshal(body)
+
+	req, err := http.NewRequest(http.MethodPost, model.Endpoint, bytes.NewReader(payload))
+	if err != nil {
+		return "", 0, 0, fmt.Errorf("no se pudo crear solicitud al proveedor")
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+apiKey)
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return "", 0, 0, fmt.Errorf("no se pudo contactar proveedor: %v", err)
+	}
+	defer resp.Body.Close()
+
+	raw, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode >= 400 {
+		return "", 0, 0, fmt.Errorf("error proveedor (%d): %s", resp.StatusCode, truncateText(string(raw), 600))
+	}
+
+	var parsed struct {
+		Choices []struct {
+			Message struct {
+				Content string `json:"content"`
+			} `json:"message"`
+		} `json:"choices"`
+		Usage struct {
+			PromptTokens     int64 `json:"prompt_tokens"`
+			CompletionTokens int64 `json:"completion_tokens"`
+		} `json:"usage"`
+	}
+	if err := json.Unmarshal(raw, &parsed); err != nil {
+		return "", 0, 0, fmt.Errorf("respuesta del proveedor no es JSON valido")
+	}
+
+	if len(parsed.Choices) == 0 {
+		return "", 0, 0, fmt.Errorf("el proveedor devolvio respuesta vacia")
+	}
+	text := strings.TrimSpace(parsed.Choices[0].Message.Content)
+	if text == "" {
+		return "", 0, 0, fmt.Errorf("el proveedor devolvio respuesta vacia")
+	}
+
+	return text, parsed.Usage.PromptTokens, parsed.Usage.CompletionTokens, nil
+}
+
+func buildDeepSeekMessages(systemPrompt, pregunta string, historial []empresaAIChatMensaje) []map[string]string {
+	clean := sanitizeHistorial(historial, 8)
+	out := make([]map[string]string, 0, len(clean)+2)
+
+	out = append(out, map[string]string{
+		"role":    "system",
+		"content": strings.TrimSpace(systemPrompt),
+	})
+
+	for _, h := range clean {
+		role := "user"
+		if h.Rol == "assistant" {
+			role = "assistant"
+		}
+		out = append(out, map[string]string{
+			"role":    role,
+			"content": strings.TrimSpace(h.Contenido),
+		})
+	}
+
+	out = append(out, map[string]string{
+		"role":    "user",
+		"content": strings.TrimSpace(pregunta),
+	})
+	return out
 }
 
 func (c *EmpresaAIChatController) callGoogleGemini(model empresaAIModelDef, pregunta string, historial []empresaAIChatMensaje, contexto string) (string, int64, int64, error) {
