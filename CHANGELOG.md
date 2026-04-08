@@ -7,6 +7,13 @@
 	- Se centraliza el manejo de reintentos con `-ForcePush` y confirmacion explicita (`SI`) para mantener seguridad operacional.
 	- Se refuerza el flujo de bitacoras automaticas para reportar mejor cuando falla el push documental.
 
+- Arranque local y estáticos web: mejoras en `scripts/iniciar_servidor.ps1` y corrección de raíz `/`.
+	- `scripts/iniciar_servidor.ps1` ahora muestra progreso por etapas (`1/8` a `8/8`), mensajes `[INFO]/[OK]/[AVISO]/[ERROR]` y salida explícita para `-Background` sin abrir navegador.
+	- `backend/main.go` corrige la resolución de carpeta web para priorizar candidatos con `index.html`, evitando servir accidentalmente `backend/web` (solo `uploads/`).
+	- `backend/main.go` agrega manejo de `/favicon.ico` con fallback a `web/img/punto_venta.png` para evitar 404 en consola.
+	- `web/index.html` declara favicon explícito con `link rel="icon"`.
+	- Validaciones: compilación de `backend/main.go` (`go test . -run "^$"`) y parseo de PowerShell de `scripts/iniciar_servidor.ps1` OK.
+
 - Backups empresariales: nueva opción para eliminar información por fecha de corte.
 	- `backend/handlers/backups_empresariales.go` agrega `action=depurar_fecha` en `/api/empresa/backups`, con validación de `fecha_corte` y filtros opcionales `include_tables`/`exclude_tables`.
 	- `backend/db/backups_empresariales.go` incorpora `PurgeEmpresaDataByDateCorte` para eliminar registros por `empresa_id` con fecha <= corte (inclusive), con detalle de eliminaciones por tabla.

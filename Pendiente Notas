@@ -596,6 +596,8 @@ en configuracion de estacion, agrega para configurar el ancho y alto de las esta
 
 - implementar la IA deepseek para el chat con IA de administrar_empresa
 
+- que me envie un correo cuando el servidor inicia, que el servidor guarde un log con el error omotivo por sisereinicio el vps oservidor virtual
+
 
 
 apikey deepseek

@@ -7617,3 +7617,12 @@ Archivos modificados:
 - web/super/venta_digital.html
 - web/super_administrador.html
 - web/venta_digital.html
+
+2026-04-08: Mejora de script iniciar_servidor y correccion de raiz index/favIcon
+PushStatus: N/A
+Archivos modificados:
+- scripts/iniciar_servidor.ps1
+- backend/main.go
+- web/index.html
+- CHANGELOG.md
+- documentos/historial_de_cambios

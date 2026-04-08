@@ -2,11 +2,43 @@ param(
     [switch]$Background
 )
 
-$clearMsg = "Limpiando la terminal..."
-Write-Host $clearMsg -ForegroundColor DarkGray
+function Write-Step {
+    param([string]$Text)
+    Write-Host "`n==> $Text" -ForegroundColor Cyan
+}
+
+function Write-Info {
+    param([string]$Text)
+    Write-Host "[INFO] $Text" -ForegroundColor Gray
+}
+
+function Write-Ok {
+    param([string]$Text)
+    Write-Host "[OK] $Text" -ForegroundColor Green
+}
+
+function Write-WarnMsg {
+    param([string]$Text)
+    Write-Host "[AVISO] $Text" -ForegroundColor Yellow
+}
+
+function Write-ErrMsg {
+    param([string]$Text)
+    Write-Host "[ERROR] $Text" -ForegroundColor Red
+}
+
+Write-Step "1/8 Preparando entorno"
 Clear-Host
 
 $backend = Join-Path $PSScriptRoot "..\backend"
+if (-not (Test-Path $backend)) {
+    Write-ErrMsg "No se encontro la carpeta backend en: $backend"
+    exit 1
+}
+Write-Info "Directorio backend detectado: $backend"
+if ($Background) {
+    Write-Info "Modo background activo: no se abrira navegador automaticamente."
+}
 Push-Location $backend
 
 function Import-DotEnvValues {
@@ -112,7 +144,8 @@ function Test-GoogleOAuthCredentials {
 }
 
 # Asegurar carpeta backend\db y mover .db existentes a esa carpeta
-Write-Host "Asegurando carpeta de bases de datos: $backend\db" -ForegroundColor DarkGray
+Write-Step "2/8 Preparando rutas de base de datos"
+Write-Info "Asegurando carpeta de bases de datos: $backend\db"
 New-Item -ItemType Directory -Path (Join-Path $backend 'db') -Force | Out-Null
 
 $dbFolder = Join-Path $backend 'db'
@@ -123,17 +156,17 @@ if ($dbFiles) {
         try {
             $dest = Join-Path $dbFolder $f.Name
             if (-not (Test-Path $dest)) {
-                Write-Host ("Moviendo {0} -> {1}" -f $f.FullName, $dest)
+                Write-Info ("Moviendo {0} -> {1}" -f $f.FullName, $dest)
                 Move-Item -Path $f.FullName -Destination $dest -ErrorAction Stop
             } else {
-                Write-Host ("Ya existe {0}, omitiendo movimiento." -f $dest) -ForegroundColor Yellow
+                Write-WarnMsg ("Ya existe {0}, se omite movimiento." -f $dest)
             }
         } catch {
-            Write-Host ("No se pudo mover $($f.Name): $_") -ForegroundColor Yellow
+            Write-WarnMsg ("No se pudo mover $($f.Name): $_")
         }
     }
 } else {
-    Write-Host "No se encontraron archivos .db en $backend" -ForegroundColor DarkGray
+    Write-Info "No se encontraron archivos .db en la raiz de backend."
 }
 
 # Establecer variables de entorno para rutas de DB si no están definidas
@@ -141,11 +174,14 @@ if (-not $env:DB_EMPRESAS_PATH) { $env:DB_EMPRESAS_PATH = Join-Path $dbFolder 'e
 if (-not $env:DB_SUPERADMIN_PATH) { $env:DB_SUPERADMIN_PATH = Join-Path $dbFolder 'superadministrador.db' }
 if (-not $env:DB_POS_PATH) { $env:DB_POS_PATH = Join-Path $dbFolder 'pos.db' }
 
-Write-Host "Rutas DB: $env:DB_EMPRESAS_PATH, $env:DB_SUPERADMIN_PATH, $env:DB_POS_PATH" -ForegroundColor Cyan
+Write-Ok "Rutas de DB preparadas."
+Write-Info "DB_EMPRESAS_PATH=$env:DB_EMPRESAS_PATH"
+Write-Info "DB_SUPERADMIN_PATH=$env:DB_SUPERADMIN_PATH"
+Write-Info "DB_POS_PATH=$env:DB_POS_PATH"
 
 function Stop-ProcessesOnPort {
     param([int]$port)
-    Write-Host ("Comprobando puerto {0}..." -f $port)
+    Write-Info ("Comprobando puerto {0}..." -f $port)
     $netstatOut = netstat -ano | findstr ":$port" 2>$null
     if (-not [string]::IsNullOrWhiteSpace($netstatOut)) {
         $pids = ($netstatOut -split "\r?\n" | ForEach-Object {
@@ -154,21 +190,21 @@ function Stop-ProcessesOnPort {
         $pids = @($pids)
         if ($pids.Count -gt 0) {
             $joined = $pids -join ', '
-            Write-Host ("Procesos detectados en puerto {0}: {1}" -f $port, $joined)
+            Write-WarnMsg ("Procesos detectados en puerto {0}: {1}" -f $port, $joined)
             foreach ($killPid in $pids) {
                 try {
-                    Write-Host (("Terminando proceso PID {0}..." -f $killPid))
+                    Write-Info ("Terminando proceso PID {0}..." -f $killPid)
                     taskkill /PID $killPid /F | Out-Null
-                    Write-Host (("PID {0} terminado." -f $killPid)) -ForegroundColor Green
+                    Write-Ok ("PID {0} terminado." -f $killPid)
                 } catch {
                     $msg = if ($_.Exception) { $_.Exception.Message } else { $_ }
-                    Write-Host (("No se pudo terminar PID {0}: {1}" -f $killPid, $msg)) -ForegroundColor Yellow
+                    Write-WarnMsg ("No se pudo terminar PID {0}: {1}" -f $killPid, $msg)
                 }
             }
             Start-Sleep -Seconds 1
         }
     } else {
-        Write-Host "No hay procesos detectados en el puerto $port"
+        Write-Info "No hay procesos detectados en el puerto $port"
     }
 
     # Además intentar cerrar procesos por nombre comunes del servidor
@@ -180,11 +216,11 @@ function Stop-ProcessesOnPort {
             if ($procs) {
                 foreach ($p in $procs) {
                     try {
-                        Write-Host (("Terminando proceso por nombre {0} (PID {1})..." -f $p.ProcessName, $p.Id))
+                        Write-Info ("Terminando proceso por nombre {0} (PID {1})..." -f $p.ProcessName, $p.Id)
                         Stop-Process -Id $p.Id -Force -ErrorAction Stop
-                        Write-Host ("Proceso terminado.") -ForegroundColor Green
+                        Write-Ok "Proceso terminado."
                     } catch {
-                        Write-Host (("No se pudo terminar proceso {0}: {1}" -f $p.Id, $_)) -ForegroundColor Yellow
+                        Write-WarnMsg ("No se pudo terminar proceso {0}: {1}" -f $p.Id, $_)
                     }
                 }
             }
@@ -194,29 +230,28 @@ function Stop-ProcessesOnPort {
     }
 }
 
-Write-Host "Buscando procesos que usan el puerto 8080..."
+Write-Step "3/8 Liberando puerto 8080"
 Stop-ProcessesOnPort -port 8080
 
-Write-Host "Ejecutando: go mod tidy"
+Write-Step "4/8 Verificando dependencias Go"
+Write-Info "Ejecutando: go mod tidy"
 go mod tidy
 if ($LASTEXITCODE -ne 0) {
-    Write-Error "Fallo en 'go mod tidy' (código $LASTEXITCODE)"
+    Write-ErrMsg "Fallo en 'go mod tidy' (codigo $LASTEXITCODE)."
     Pop-Location
     exit $LASTEXITCODE
 }
 
-Write-Host "Iniciando servidor (carpeta: $backend)"
+Write-Ok "Dependencias verificadas."
 
-# Start server in a separate process so the script can continue and open the browser
-$goArgs = @('run', '.')
-Write-Host "Arrancando proceso: go $($goArgs -join ' ')"
+Write-Step "5/8 Resolviendo credenciales OAuth y variables de entorno"
 # Resolver credenciales desde entorno o backend/.env(.local)
 $oauthCreds = Resolve-GoogleOAuthCredentials -BackendDir $backend
 $clientId = $oauthCreds.ClientId
 $clientSecret = $oauthCreds.ClientSecret
 
 if ([string]::IsNullOrWhiteSpace($clientId) -or [string]::IsNullOrWhiteSpace($clientSecret)) {
-    Write-Host "No se encontraron GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET en entorno o .env; el backend intentará resolverlos desde la DB." -ForegroundColor Yellow
+    Write-WarnMsg "No se encontraron GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET en entorno o .env; el backend intentara resolverlos desde la DB."
 }
 
 $env:GOOGLE_REDIRECT_URL = "http://localhost:8080/auth/google/callback"
@@ -232,28 +267,31 @@ if (-not [string]::IsNullOrWhiteSpace($clientSecret)) {
 $env:PORT = "8080"
 
 if (-not [string]::IsNullOrWhiteSpace($clientId) -and -not [string]::IsNullOrWhiteSpace($clientSecret)) {
-    Write-Host ("Credenciales OAuth cargadas desde: {0}" -f $oauthCreds.Source) -ForegroundColor Cyan
+    Write-Info ("Credenciales OAuth cargadas desde: {0}" -f $oauthCreds.Source)
     if (-not (Test-GoogleOAuthCredentials -ClientId $clientId -ClientSecret $clientSecret -RedirectURL $env:GOOGLE_REDIRECT_URL)) {
-        Write-Host "OAuth de entorno/.env no valido; se omitirá para que el backend intente resolver credenciales desde DB." -ForegroundColor Yellow
+        Write-WarnMsg "OAuth de entorno/.env no valido; se omitira para que el backend intente resolver credenciales desde DB."
         $clientId = ""
         $clientSecret = ""
         Remove-Item Env:GOOGLE_CLIENT_ID -ErrorAction SilentlyContinue
         Remove-Item Env:GOOGLE_CLIENT_SECRET -ErrorAction SilentlyContinue
     }
 } else {
-    Write-Host "Se continúa sin credenciales OAuth de entorno; backend resolverá desde DB si existen." -ForegroundColor Yellow
+    Write-WarnMsg "Se continua sin credenciales OAuth de entorno; backend resolvera desde DB si existen."
 }
 
 # Compilar el binario para ejecutar con un entorno controlado
-Write-Host "Compilando el servidor (go build -o server.exe .)" -ForegroundColor DarkGray
+Write-Step "6/8 Compilando backend"
+Write-Info "Compilando el servidor (go build -o server.exe .)"
 & go build -o server.exe .
 if ($LASTEXITCODE -ne 0) {
-    Write-Error "Fallo en go build (código $LASTEXITCODE)"
+    Write-ErrMsg "Fallo en go build (codigo $LASTEXITCODE)."
     Pop-Location
     exit $LASTEXITCODE
 }
+Write-Ok "Compilacion completada."
 
-Write-Host "Lanzando servidor.exe con entorno controlado (logs en backend/server.log, backend/server.err)..."
+Write-Step "7/8 Lanzando servidor"
+Write-Info "Lanzando server.exe con entorno controlado (logs en backend/server.log y backend/server.err)."
 $serverPath = Join-Path $backend "server.exe"
 # Asegurar que las variables de entorno estén en el proceso actual (Start-Process heredará estas en Windows PowerShell)
 if ($env:PORT) { $env:PORT = $env:PORT }
@@ -264,25 +302,35 @@ if ($env:GOOGLE_REDIRECT_URL) { $env:GOOGLE_REDIRECT_URL = $env:GOOGLE_REDIRECT_
 # Iniciar sin -Environment para compatibilidad con Windows PowerShell 5.1
 $serverProc = Start-Process -FilePath $serverPath -WorkingDirectory $backend -RedirectStandardOutput (Join-Path $backend "server.log") -RedirectStandardError (Join-Path $backend "server.err") -PassThru
 if (-not $serverProc) {
-    Write-Error "No se pudo iniciar server.exe"
+    Write-ErrMsg "No se pudo iniciar server.exe"
     Pop-Location
     exit 1
 }
-Write-Host ("Proceso del servidor lanzado. PID={0}" -f $serverProc.Id) -ForegroundColor Green
+Write-Ok ("Proceso del servidor lanzado. PID={0}" -f $serverProc.Id)
+
+if ($Background) {
+    Write-Ok "Servidor iniciado en modo background."
+    Write-Info ("URL esperada: http://localhost:{0}" -f $env:PORT)
+    Write-Info ("Log stdout: {0}" -f (Join-Path $backend "server.log"))
+    Write-Info ("Log stderr: {0}" -f (Join-Path $backend "server.err"))
+    Pop-Location
+    exit 0
+}
 
 # Esperar a que el puerto 8080 esté en LISTENING
 $maxWait = 30  # segundos
 $waited = 0
-Write-Host "Esperando a que http://localhost:8080 responda (timeout ${maxWait}s)..."
+Write-Step "8/8 Esperando disponibilidad del servidor"
+Write-Info "Esperando a que http://localhost:8080 responda (timeout ${maxWait}s)..."
 while ($waited -lt $maxWait) {
     Start-Sleep -Seconds 1
     $waited++
 
     if ($serverProc.HasExited) {
-        Write-Host ("ERROR: server.exe finalizo antes de abrir el puerto 8080 (ExitCode={0})." -f $serverProc.ExitCode) -ForegroundColor Red
+        Write-ErrMsg ("server.exe finalizo antes de abrir el puerto 8080 (ExitCode={0})." -f $serverProc.ExitCode)
         $errPath = Join-Path $backend "server.err"
         if (Test-Path $errPath) {
-            Write-Host "Ultimas lineas de backend/server.err:" -ForegroundColor Yellow
+            Write-WarnMsg "Ultimas lineas de backend/server.err:"
             Get-Content -Path $errPath -Tail 40 | ForEach-Object { Write-Host $_ }
         }
         Pop-Location
@@ -294,19 +342,22 @@ while ($waited -lt $maxWait) {
 }
 
 if ($listening) {
-    Write-Host "Servidor escuchando en puerto 8080." -ForegroundColor Green
-    Write-Host "Dirección: http://localhost:8080" -ForegroundColor Cyan
+    Write-Ok "Servidor escuchando en puerto 8080."
+    Write-Info "Direccion: http://localhost:8080"
     # Abrir en navegador por defecto
     try {
+        Write-Info "Abriendo navegador por defecto..."
         Start-Process "http://localhost:8080"
     } catch {
-        Write-Host "No se pudo abrir el navegador automáticamente: $_" -ForegroundColor Yellow
+        Write-WarnMsg "No se pudo abrir el navegador automaticamente: $_"
     }
+    Write-Info ("Log stdout: {0}" -f (Join-Path $backend "server.log"))
+    Write-Info ("Log stderr: {0}" -f (Join-Path $backend "server.err"))
 } else {
-    Write-Host "AVISO: el servidor no respondió en ${maxWait}s. Verifica logs." -ForegroundColor Yellow
+    Write-WarnMsg "El servidor no respondio en ${maxWait}s. Verifica logs."
     $errPath = Join-Path $backend "server.err"
     if (Test-Path $errPath) {
-        Write-Host "Ultimas lineas de backend/server.err:" -ForegroundColor Yellow
+        Write-WarnMsg "Ultimas lineas de backend/server.err:"
         Get-Content -Path $errPath -Tail 40 | ForEach-Object { Write-Host $_ }
     }
 }

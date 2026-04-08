@@ -153,6 +153,59 @@ func loadGoogleOAuthFromDB(dbConn *sql.DB) {
 	}
 }
 
+func resolveWebDir() string {
+	candidates := []string{
+		"web",
+		"../web",
+	}
+
+	if exePath, err := os.Executable(); err == nil {
+		exeDir := filepath.Dir(exePath)
+		candidates = append(candidates,
+			filepath.Join(exeDir, "web"),
+			filepath.Join(exeDir, "..", "web"),
+		)
+	}
+
+	seen := map[string]bool{}
+	fallback := ""
+	for _, cand := range candidates {
+		cand = strings.TrimSpace(cand)
+		if cand == "" {
+			continue
+		}
+
+		absCand, err := filepath.Abs(cand)
+		if err != nil {
+			absCand = cand
+		}
+		if seen[absCand] {
+			continue
+		}
+		seen[absCand] = true
+
+		info, statErr := os.Stat(absCand)
+		if statErr != nil || !info.IsDir() {
+			continue
+		}
+
+		if fallback == "" {
+			fallback = absCand
+		}
+
+		indexPath := filepath.Join(absCand, "index.html")
+		if idxInfo, idxErr := os.Stat(indexPath); idxErr == nil && !idxInfo.IsDir() {
+			return absCand
+		}
+	}
+
+	if fallback != "" {
+		return fallback
+	}
+
+	return "web"
+}
+
 func main() {
 	if dbEmpresasPath == "" {
 		dbEmpresasPath = "empresas.db"
@@ -1035,19 +1088,8 @@ func main() {
 		http.Redirect(w, r, "/login.html", http.StatusFound)
 	})
 
-	// Determinar carpeta `web` (probar ./web, ../web, y relativo al ejecutable)
-	webDir := "web"
-	if _, err := os.Stat(webDir); os.IsNotExist(err) {
-		alt := "../web"
-		if _, err2 := os.Stat(alt); err2 == nil {
-			webDir = alt
-		} else if exe, err3 := os.Executable(); err3 == nil {
-			cand := filepath.Join(filepath.Dir(exe), "..", "web")
-			if _, err4 := os.Stat(cand); err4 == nil {
-				webDir = cand
-			}
-		}
-	}
+	// Determinar carpeta web priorizando candidatos que tengan index.html.
+	webDir := resolveWebDir()
 
 	// Servir assets centralizados (CSS, JS)
 	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(webDir))))
@@ -1062,7 +1104,20 @@ func main() {
 	} else {
 		log.Printf("index.html encontrado en %s\n", indexPath)
 	}
+	faviconPath := filepath.Join(webDir, "favicon.ico")
+	fallbackFaviconPath := filepath.Join(webDir, "img", "punto_venta.png")
 	staticFS := http.FileServer(http.Dir(webDir))
+	http.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+		if info, err := os.Stat(faviconPath); err == nil && !info.IsDir() {
+			http.ServeFile(w, r, faviconPath)
+			return
+		}
+		if info, err := os.Stat(fallbackFaviconPath); err == nil && !info.IsDir() {
+			http.ServeFile(w, r, fallbackFaviconPath)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	})
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		path := strings.TrimSpace(r.URL.Path)
 		trimmed := strings.Trim(path, "/")
