@@ -45,6 +45,11 @@ Leyenda:
 
 ## Estado de implementacion tecnica inicial (2026-04-04)
 
+- Actualizacion 2026-04-08 (super: alertas de inicio/reinicio de servidor):
+	- Se agrega en configuracion avanzada super la clave `gmail.restart_alert_to` para correo destino de alertas operativas de arranque/reinicio.
+	- El cambio no altera permisos de roles empresariales en wrappers `/api/empresa/*`; aplica al ambito global de `super_administrador`.
+	- Se mantiene aislamiento multiempresa en operacion: los eventos runtime se registran en contexto super y no exponen datos de empresas fuera de su alcance.
+
 - Actualizacion 2026-04-08 (chat/tareas usuario-admin con adjuntos documentales):
 	- Se mantiene el control de acceso del modulo ventas para `/api/empresa/chat_tareas/*` (sin cambios de rol/accion respecto a la matriz vigente).
 	- El backend de chat/tareas deriva actor desde sesion autenticada para distinguir `usuario` y `admin`, evitando suplantacion de autor en mensajes/adjuntos.

@@ -1,6 +1,28 @@
 # CHANGELOG
 
 ## 2026-04-08
+- Panel `administrar_empresa`: menu izquierdo desacoplado del contenido derecho.
+	- `web/administrar_empresa.html` activa shell dedicado (`admin-empresa-shell`).
+	- `web/estilos.css` separa scroll de sidebar e iframe para que navegar/desplazar el menu no afecte movimiento ni visibilidad de la subpagina cargada.
+	- Incluye ajuste responsive para mantener usabilidad en pantallas moviles.
+
+- Configuracion avanzada (DeepSeek/Gmail/Wompi): cifrado obligatorio robustecido y corrección de guardado cuando faltaba `CONFIG_ENC_KEY`.
+	- `backend/main.go` ahora carga `.env.local/.env`, asegura `CONFIG_ENC_KEY` (autogenera y persiste en desarrollo cuando no existe) y normaliza secretos legacy para dejarlos cifrados.
+	- `backend/handlers/super_config_backup_handlers.go` fuerza cifrado en restore de secretos y rechaza restore plano sin clave de cifrado.
+	- `scripts/iniciar_servidor.ps1` valida/carga/autogenera `CONFIG_ENC_KEY` antes del arranque para evitar errores `400` en `/super/api/config/ai`.
+	- `web/super/configuracion_avanzada.html` muestra en DeepSeek solo fecha/hora de ultima actualización, sin exponer fragmentos de credencial.
+	- Enmascarado de secretos reforzado en backend (`ai_config_handlers.go`, `usuarios_empresa.go`, `payments_handlers.go`) con `********`.
+	- Pruebas nuevas para restore cifrado y guardado cifrado DeepSeek en `backend/handlers/system_empresas_handlers_test.go`.
+
+- Monitoreo operativo de arranque/reinicio de servidor con alerta por correo configurable.
+	- `backend/db/super_servidor_eventos.go` agrega tabla de auditoria `super_servidor_eventos` para registrar inicio/reinicio, motivo, estado previo y resultado de notificacion.
+	- `backend/handlers/server_runtime_notifications.go` implementa registro de arranque, deteccion de reinicio inesperado, escritura de estado runtime y bitacora local (`backend/logs/server_runtime_state.json`, `backend/logs/server_reinicio.log`).
+	- `backend/main.go` integra registro de evento al arrancar, cierre controlado por seniales (`SIGINT/SIGTERM`) y trazabilidad de motivo de apagado.
+	- `backend/handlers/usuarios_empresa.go` y `web/super/configuracion_avanzada.html` incorporan `gmail.restart_alert_to` en configuracion avanzada para correo destino de alertas de reinicio.
+	- `backend/handlers/super_config_backup_handlers.go` incluye `gmail.restart_alert_to` dentro de claves criticas de backup/restore.
+	- `scripts/iniciar_servidor.ps1` propaga `PCS_SERVER_START_REASON=inicio_script_iniciar_servidor` para enriquecer el motivo de arranque.
+	- Pruebas nuevas/actualizadas en `backend/handlers/server_runtime_notifications_test.go` y `backend/handlers/system_empresas_handlers_test.go`.
+
 - Script de despliegue local a GitHub mejorado en `scripts/actualizar_repositorio.ps1`.
 	- Se corrige el armado de argumentos de `git push` para evitar enviar parametros vacios en PowerShell y reducir fallos intermitentes al subir cambios.
 	- Se incorporan mensajes por etapas (`1/8` a `8/8`) con resumen final de commit, rama, remoto y estado de push.

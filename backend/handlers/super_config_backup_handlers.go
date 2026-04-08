@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"sort"
@@ -10,9 +11,68 @@ import (
 	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
+	"github.com/you/pos-backend/utils"
 )
 
 const superConfigBackupVersion = "super-config-backup.v1"
+
+func superConfigSensitiveSecretKeys() map[string]struct{} {
+	keys := map[string]struct{}{
+		"wompi.private_key":       {},
+		"wompi.integrity_key":     {},
+		"gmail.smtp_app_password": {},
+	}
+	for _, def := range aiCredentialCatalogModels() {
+		if key := strings.TrimSpace(def.ConfigKey); key != "" {
+			keys[key] = struct{}{}
+		}
+		if providerKey := strings.TrimSpace(aiProviderConfigKey(def.Provider)); providerKey != "" {
+			keys[providerKey] = struct{}{}
+		}
+	}
+	return keys
+}
+
+func superConfigKeyRequiresEncryption(key string) bool {
+	key = strings.TrimSpace(key)
+	if key == "" {
+		return false
+	}
+	_, ok := superConfigSensitiveSecretKeys()[key]
+	return ok
+}
+
+// EnsureSensitiveSuperConfigEncrypted normaliza credenciales secretas legacy para que queden cifradas.
+func EnsureSensitiveSuperConfigEncrypted(dbSuper *sql.DB) error {
+	sensitiveKeys := superConfigSensitiveSecretKeys()
+	if len(sensitiveKeys) == 0 {
+		return nil
+	}
+
+	for key := range sensitiveKeys {
+		value, encrypted, _, _, err := dbpkg.GetConfigEntry(dbSuper, key)
+		if err != nil {
+			return fmt.Errorf("read config key %s: %w", key, err)
+		}
+		if strings.TrimSpace(value) == "" || encrypted {
+			continue
+		}
+
+		if !utils.EncryptionAvailable() {
+			return fmt.Errorf("sensitive key %s is plaintext and CONFIG_ENC_KEY is not available", key)
+		}
+
+		encVal, encErr := utils.EncryptString(value)
+		if encErr != nil {
+			return fmt.Errorf("encrypt sensitive key %s: %w", key, encErr)
+		}
+		if err := dbpkg.SetConfigValue(dbSuper, key, encVal, true); err != nil {
+			return fmt.Errorf("persist encrypted sensitive key %s: %w", key, err)
+		}
+	}
+
+	return nil
+}
 
 type superConfigBackupItem struct {
 	Key        string `json:"key"`
@@ -42,6 +102,7 @@ func superConfigCriticalKeys() []string {
 		"gmail.smtp_host",
 		"gmail.smtp_port",
 		"gmail.confirm_base_url",
+		"gmail.restart_alert_to",
 		"gmail.smtp_test_mode",
 		"usuarios.password_min_length",
 		"usuarios.password_require_uppercase",
@@ -85,6 +146,22 @@ func buildSuperConfigBackupPayload(dbSuper *sql.DB, adminEmail string) (*superCo
 		if err != nil {
 			return nil, err
 		}
+
+		if superConfigKeyRequiresEncryption(key) && strings.TrimSpace(value) != "" && !encrypted {
+			if !utils.EncryptionAvailable() {
+				return nil, fmt.Errorf("sensitive key %s is plaintext and CONFIG_ENC_KEY is not available", key)
+			}
+			encVal, encErr := utils.EncryptString(value)
+			if encErr != nil {
+				return nil, fmt.Errorf("encrypt sensitive key %s for backup: %w", key, encErr)
+			}
+			if saveErr := dbpkg.SetConfigValue(dbSuper, key, encVal, true); saveErr != nil {
+				return nil, fmt.Errorf("persist encrypted sensitive key %s for backup: %w", key, saveErr)
+			}
+			value = encVal
+			encrypted = true
+		}
+
 		items = append(items, superConfigBackupItem{
 			Key:        key,
 			Value:      value,
@@ -155,7 +232,26 @@ func SuperConfigBackupHandler(dbSuper *sql.DB) http.HandlerFunc {
 					skipped = append(skipped, key)
 					continue
 				}
-				if err := dbpkg.SetConfigValue(dbSuper, key, item.Value, item.Encrypted); err != nil {
+
+				valueToSave := item.Value
+				encryptedToSave := item.Encrypted
+				if superConfigKeyRequiresEncryption(key) && strings.TrimSpace(valueToSave) != "" {
+					if !encryptedToSave {
+						if !utils.EncryptionAvailable() {
+							http.Error(w, "No se puede restaurar secreto en texto plano: CONFIG_ENC_KEY no disponible", http.StatusBadRequest)
+							return
+						}
+						encVal, encErr := utils.EncryptString(valueToSave)
+						if encErr != nil {
+							http.Error(w, "No se pudo cifrar la clave "+key+": "+encErr.Error(), http.StatusInternalServerError)
+							return
+						}
+						valueToSave = encVal
+						encryptedToSave = true
+					}
+				}
+
+				if err := dbpkg.SetConfigValue(dbSuper, key, valueToSave, encryptedToSave); err != nil {
 					log.Printf("PUT /super/api/config/backup restore key=%s error: %v", key, err)
 					http.Error(w, "No se pudo restaurar la clave "+key, http.StatusInternalServerError)
 					return

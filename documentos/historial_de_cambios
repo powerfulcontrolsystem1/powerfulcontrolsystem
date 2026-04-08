@@ -1,5 +1,59 @@
 - Historial de cambios
 
+- 2026-04-08: Menu izquierdo independiente en panel `administrar_empresa`
+    - Se actualiza `web/administrar_empresa.html` para declarar shell dedicado (`admin-empresa-shell`).
+    - Se actualiza `web/estilos.css` para desacoplar scroll entre sidebar e iframe:
+        - sidebar con scroll propio (`overflow-y:auto`, `overscroll-behavior:contain`).
+        - contenido derecho/iframe con altura acotada al viewport y sin arrastre de scroll del contenedor principal.
+    - Se ajusta fallback responsive en moviles para conservar navegacion usable.
+    - Se actualiza `Pendiente Notas` marcando el requerimiento como `COMPLETADO (2026-04-08)`.
+
+- 2026-04-08: Alertas de inicio/reinicio de servidor con correo configurable en configuracion avanzada
+    - Se crea `backend/db/super_servidor_eventos.go` con tabla `super_servidor_eventos` para auditoria de arranque/reinicio en `superadministrador.db`.
+    - Se crea `backend/handlers/server_runtime_notifications.go` para:
+        - detectar arranque normal o reinicio inesperado segun estado runtime previo,
+        - registrar evidencia en DB + bitacora local (`backend/logs/server_reinicio.log`),
+        - mantener estado persistente en `backend/logs/server_runtime_state.json`,
+        - enviar correo de notificacion o capturar notificacion en modo pruebas.
+    - Se actualiza `backend/main.go` para registrar evento de inicio, manejar apagado controlado por seniales y guardar motivo de parada.
+    - Se actualiza `backend/handlers/usuarios_empresa.go` y `web/super/configuracion_avanzada.html` para soportar `gmail.restart_alert_to` (correo destino de alertas) en configuracion avanzada.
+    - Se actualiza `backend/handlers/super_config_backup_handlers.go` para incluir `gmail.restart_alert_to` en backup/restore de configuracion critica.
+    - Se actualiza `scripts/iniciar_servidor.ps1` para propagar `PCS_SERVER_START_REASON=inicio_script_iniciar_servidor`.
+    - Se actualiza `backend/db/correo_notificaciones_prueba.go` con tipo `inicio_servidor` para modo pruebas.
+    - Se agregan pruebas en `backend/handlers/server_runtime_notifications_test.go` y `backend/handlers/system_empresas_handlers_test.go`.
+    - Validaciones ejecutadas:
+        - `runTests` en `backend/handlers/server_runtime_notifications_test.go` + `backend/handlers/system_empresas_handlers_test.go` -> 10 passed, 0 failed.
+        - `go test ./... -run "^$" -count=1` en `backend` -> compilacion global OK.
+        - Parseo de `scripts/iniciar_servidor.ps1` con parser de PowerShell -> `parse_ok`.
+
+- 2026-04-08: Endurecimiento de cifrado obligatorio para credenciales secretas en configuracion avanzada (DeepSeek/Gmail/Wompi)
+    - Se actualiza `backend/main.go` para:
+        - cargar variables desde `backend/.env.local` y `backend/.env` cuando el proceso no las trae.
+        - asegurar `CONFIG_ENC_KEY` en arranque (autogeneracion base64 de 32 bytes + persistencia en `backend/.env.local` cuando falta).
+        - ejecutar normalizacion de secretos legacy en `configuraciones` para mantener cifrado obligatorio.
+    - Se actualiza `backend/handlers/super_config_backup_handlers.go` para:
+        - clasificar claves sensibles de configuracion (`wompi.private_key`, `wompi.integrity_key`, `gmail.smtp_app_password`, claves IA por modelo/proveedor).
+        - forzar cifrado en restore cuando un respaldo traiga secreto en texto plano.
+        - rechazar restore de secretos planos si `CONFIG_ENC_KEY` no esta disponible.
+    - Se actualiza enmascarado de secretos en:
+        - `backend/handlers/ai_config_handlers.go`.
+        - `backend/handlers/usuarios_empresa.go`.
+        - `backend/handlers/payments_handlers.go`.
+      para responder siempre `********` en credenciales secretas.
+    - Se actualiza `web/super/configuracion_avanzada.html` para mostrar en DeepSeek solo metadato de ultima actualizacion (fecha/hora), sin exponer fragmentos de llave.
+    - Se actualiza `scripts/iniciar_servidor.ps1` para validar/cargar/autogenerar `CONFIG_ENC_KEY` antes de iniciar backend.
+    - Se actualizan `backend/.env.example` y `.gitignore` para documentar `CONFIG_ENC_KEY` y excluir `.env.local` de versionado.
+    - Se agregan pruebas en `backend/handlers/system_empresas_handlers_test.go`:
+        - `TestSuperConfigBackupHandlerRestoreEncryptsSensitivePlaintext`.
+        - `TestSuperConfigBackupHandlerRestoreSensitivePlaintextRequiresEncryptionKey`.
+        - `TestAIModelsConfigHandlerSaveDeepSeekEncrypted`.
+    - Se actualiza `documentos/diagramas/estructura_del_codigo.md` y `documentos/descripcion_de_archivos` para sincronizacion documental.
+    - Validaciones ejecutadas:
+        - `runTests` en `backend/handlers/system_empresas_handlers_test.go` (4 pruebas dirigidas) -> OK.
+        - `go test ./auth ./db ./handlers ./metrics ./utils -run "^$" -count=1` -> compilacion OK.
+        - `go test . -run "^$" -count=1` -> compilacion `main` OK.
+        - Parseo de `scripts/iniciar_servidor.ps1` con parser PowerShell -> `parse_ok`.
+
 - 2026-04-08: Backups empresariales agrega depuracion de informacion por fecha de corte
     - Se actualiza `backend/db/backups_empresariales.go` con `PurgeEmpresaDataByDateCorte` para eliminar registros por `empresa_id` con fecha <= `fecha_corte` (inclusive), usando tablas elegibles del snapshot y con detalle por tabla.
     - Se actualiza `backend/handlers/backups_empresariales.go` para exponer `action=depurar_fecha` en `/api/empresa/backups`, validando fecha de corte y permitiendo `include_tables`/`exclude_tables`.

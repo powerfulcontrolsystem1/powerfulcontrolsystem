@@ -596,8 +596,11 @@ en configuracion de estacion, agrega para configurar el ancho y alto de las esta
 
 - implementar la IA deepseek para el chat con IA de administrar_empresa
 
-- que me envie un correo cuando el servidor inicia, que el servidor guarde un log con el error omotivo por sisereinicio el vps oservidor virtual
+- que me envie un correo cuando el servidor inicia, que el servidor guarde un log con el error omotivo por sisereinicio el vps oservidor virtual, al correo que envia debe estar en la configuracion avanzada, para registrarlo. es decir el correo al que se le vaa enviar la informacion del reinicio del servidor.
 
+- COMPLETADO (2026-04-08): menu izquierdo de `administrar_empresa` independiente del contenido derecho.
+	- Se ajusta layout en `web/estilos.css` con shell dedicado (`admin-empresa-shell`) para aislar scroll del menu e iframe.
+	- Se actualiza `web/administrar_empresa.html` para activar el shell y evitar que la navegacion lateral afecte movimiento/visibilidad de la subpagina cargada.
 
 
 apikey deepseek

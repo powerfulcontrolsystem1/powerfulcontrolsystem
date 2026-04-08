@@ -6,6 +6,8 @@ backend/*.exe~
 backend/pos.db
 *.sqlite
 *.db
+backend/.env.local
+.env.local
 # VSCode
 .vscode/
 # Archivos compilados

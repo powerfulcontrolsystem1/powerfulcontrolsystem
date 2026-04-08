@@ -465,8 +465,8 @@ func WompiConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 		switch r.Method {
 		case http.MethodGet:
 			pub, _, _, pubUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "wompi.public_key")
-			prv, prvEnc, _, prvUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "wompi.private_key")
-			integrity, intEnc, _, intUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "wompi.integrity_key")
+			prv, _, _, prvUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "wompi.private_key")
+			integrity, _, _, intUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "wompi.integrity_key")
 			modeRaw, _, _, modeUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "wompi.mode")
 
 			pubSet := pub != ""
@@ -484,24 +484,12 @@ func WompiConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 
 			prvMasked := ""
 			if prvSet {
-				if prvEnc {
-					prvMasked = "********"
-				} else if len(prv) > 10 {
-					prvMasked = prv[:4] + "****" + prv[len(prv)-4:]
-				} else {
-					prvMasked = "****"
-				}
+				prvMasked = "********"
 			}
 
 			integrityMasked := ""
 			if intSet {
-				if intEnc {
-					integrityMasked = "********"
-				} else if len(integrity) > 10 {
-					integrityMasked = integrity[:4] + "****" + integrity[len(integrity)-4:]
-				} else {
-					integrityMasked = "****"
-				}
+				integrityMasked = "********"
 			}
 
 			configuredMode := normalizeWompiMode(modeRaw)

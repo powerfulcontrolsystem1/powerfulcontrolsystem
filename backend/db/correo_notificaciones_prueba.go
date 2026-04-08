@@ -8,8 +8,9 @@ import (
 )
 
 const (
-	SuperCorreoNotificacionTipoConfirmacion = "confirmacion_correo_usuario_empresa"
-	SuperCorreoNotificacionTipoRecuperacion = "recuperacion_password_usuario_empresa"
+	SuperCorreoNotificacionTipoConfirmacion   = "confirmacion_correo_usuario_empresa"
+	SuperCorreoNotificacionTipoRecuperacion   = "recuperacion_password_usuario_empresa"
+	SuperCorreoNotificacionTipoInicioServidor = "inicio_servidor"
 )
 
 // SuperCorreoNotificacionPrueba representa una notificacion de correo capturada en entorno de pruebas.

@@ -68,6 +68,118 @@ function Import-DotEnvValues {
     return $map
 }
 
+function Test-ConfigEncKeyFormat {
+    param([string]$KeyValue)
+
+    if ([string]::IsNullOrWhiteSpace($KeyValue)) {
+        return $false
+    }
+
+    $candidate = [string]$KeyValue
+    try {
+        $decoded = [Convert]::FromBase64String($candidate)
+        if ($decoded.Length -ge 16) {
+            return $true
+        }
+    } catch {
+        # Si no es base64 válido, evaluar modo literal.
+    }
+
+    return ($candidate.Length -ge 32)
+}
+
+function Save-ConfigEncKeyToEnvLocal {
+    param(
+        [string]$BackendDir,
+        [string]$ConfigEncKey
+    )
+
+    $envLocalPath = Join-Path $BackendDir '.env.local'
+    $prefix = 'CONFIG_ENC_KEY='
+
+    if (Test-Path $envLocalPath) {
+        $lines = @(Get-Content -Path $envLocalPath -ErrorAction SilentlyContinue)
+        $updated = $false
+        for ($i = 0; $i -lt $lines.Count; $i++) {
+            $trimmed = [string]$lines[$i]
+            if ($trimmed.Trim().StartsWith($prefix)) {
+                $lines[$i] = "$prefix$ConfigEncKey"
+                $updated = $true
+                break
+            }
+        }
+        if (-not $updated) {
+            $lines += "$prefix$ConfigEncKey"
+        }
+        Set-Content -Path $envLocalPath -Value $lines -Encoding UTF8
+        return $envLocalPath
+    }
+
+    @(
+        '# Archivo local de entorno (secrets de desarrollo; no versionar)'
+        "$prefix$ConfigEncKey"
+    ) | Set-Content -Path $envLocalPath -Encoding UTF8
+
+    return $envLocalPath
+}
+
+function Resolve-ConfigEncryptionKey {
+    param([string]$BackendDir)
+
+    $processValue = [Environment]::GetEnvironmentVariable('CONFIG_ENC_KEY', 'Process')
+    if (-not [string]::IsNullOrWhiteSpace($processValue)) {
+        if (-not (Test-ConfigEncKeyFormat -KeyValue $processValue)) {
+            throw 'CONFIG_ENC_KEY en entorno del proceso es inválida. Use base64 válido o >=32 caracteres.'
+        }
+        return @{
+            Value = $processValue
+            Source = 'variable de entorno del proceso'
+            Generated = $false
+        }
+    }
+
+    $envCandidates = @(
+        (Join-Path -Path $BackendDir -ChildPath '.env.local')
+        (Join-Path -Path $BackendDir -ChildPath '.env')
+    )
+
+    foreach ($envPath in $envCandidates) {
+        if (-not (Test-Path $envPath)) { continue }
+        $vals = Import-DotEnvValues -Path $envPath
+        if (-not $vals.ContainsKey('CONFIG_ENC_KEY')) { continue }
+
+        $candidate = [string]$vals['CONFIG_ENC_KEY']
+        if (-not (Test-ConfigEncKeyFormat -KeyValue $candidate)) {
+            throw ("CONFIG_ENC_KEY inválida en {0}. Corrija el valor o elimínelo para autogenerar una nueva." -f $envPath)
+        }
+
+        return @{
+            Value = $candidate
+            Source = $envPath
+            Generated = $false
+        }
+    }
+
+    $bytes = New-Object byte[] 32
+    $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    try {
+        $rng.GetBytes($bytes)
+    } finally {
+        if ($null -ne $rng) {
+            $rng.Dispose()
+        }
+    }
+
+    $generated = [Convert]::ToBase64String($bytes)
+    $savedPath = Save-ConfigEncKeyToEnvLocal -BackendDir $BackendDir -ConfigEncKey $generated
+
+    return @{
+        Value = $generated
+        Source = $savedPath
+        Generated = $true
+    }
+}
+
 function Resolve-GoogleOAuthCredentials {
     param([string]$BackendDir)
 
@@ -266,6 +378,21 @@ if (-not [string]::IsNullOrWhiteSpace($clientSecret)) {
 # Forzar puerto 8080 (usuario solicitó usar solo 8080)
 $env:PORT = "8080"
 
+try {
+    $encKeyResult = Resolve-ConfigEncryptionKey -BackendDir $backend
+    $env:CONFIG_ENC_KEY = [string]$encKeyResult.Value
+    if ($encKeyResult.Generated) {
+        Write-Ok ("CONFIG_ENC_KEY autogenerada y persistida en: {0}" -f $encKeyResult.Source)
+    } else {
+        Write-Info ("CONFIG_ENC_KEY cargada desde: {0}" -f $encKeyResult.Source)
+    }
+} catch {
+    $msg = if ($_.Exception) { $_.Exception.Message } else { $_ }
+    Write-ErrMsg $msg
+    Pop-Location
+    exit 1
+}
+
 if (-not [string]::IsNullOrWhiteSpace($clientId) -and -not [string]::IsNullOrWhiteSpace($clientSecret)) {
     Write-Info ("Credenciales OAuth cargadas desde: {0}" -f $oauthCreds.Source)
     if (-not (Test-GoogleOAuthCredentials -ClientId $clientId -ClientSecret $clientSecret -RedirectURL $env:GOOGLE_REDIRECT_URL)) {
@@ -298,6 +425,9 @@ if ($env:PORT) { $env:PORT = $env:PORT }
 if ($clientId) { $env:GOOGLE_CLIENT_ID = $clientId }
 if ($clientSecret) { $env:GOOGLE_CLIENT_SECRET = $clientSecret }
 if ($env:GOOGLE_REDIRECT_URL) { $env:GOOGLE_REDIRECT_URL = $env:GOOGLE_REDIRECT_URL }
+if ($env:CONFIG_ENC_KEY) { $env:CONFIG_ENC_KEY = $env:CONFIG_ENC_KEY }
+$env:PCS_SERVER_START_REASON = "inicio_script_iniciar_servidor"
+Write-Info "Motivo de arranque enviado al backend: $env:PCS_SERVER_START_REASON"
 
 # Iniciar sin -Environment para compatibilidad con Windows PowerShell 5.1
 $serverProc = Start-Process -FilePath $serverPath -WorkingDirectory $backend -RedirectStandardOutput (Join-Path $backend "server.log") -RedirectStandardError (Join-Path $backend "server.err") -PassThru

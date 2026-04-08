@@ -968,11 +968,12 @@ func GmailConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 		switch r.Method {
 		case http.MethodGet:
 			smtpEmail, _, _, smtpEmailUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "gmail.smtp_email")
-			appPass, appPassEnc, _, appPassUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "gmail.smtp_app_password")
+			appPass, _, _, appPassUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "gmail.smtp_app_password")
 			fromName, _, _, fromNameUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "gmail.smtp_from_name")
 			host, _, _, hostUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "gmail.smtp_host")
 			port, _, _, portUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "gmail.smtp_port")
 			baseURL, _, _, baseURLUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "gmail.confirm_base_url")
+			restartAlertTo, _, _, restartAlertUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "gmail.restart_alert_to")
 
 			if host == "" {
 				host = "smtp.gmail.com"
@@ -986,13 +987,7 @@ func GmailConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 
 			masked := ""
 			if appPass != "" {
-				if appPassEnc {
-					masked = "********"
-				} else if len(appPass) > 8 {
-					masked = appPass[:2] + "****" + appPass[len(appPass)-2:]
-				} else {
-					masked = "****"
-				}
+				masked = "********"
 			}
 
 			w.Header().Set("Content-Type", "application/json")
@@ -1011,6 +1006,9 @@ func GmailConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				"smtp_port_updated":         portUpdated,
 				"confirm_base_url":          baseURL,
 				"confirm_base_url_updated":  baseURLUpdated,
+				"restart_alert_to_set":      strings.TrimSpace(restartAlertTo) != "",
+				"restart_alert_to":          restartAlertTo,
+				"restart_alert_to_updated":  restartAlertUpdated,
 				"encryption_available":      utils.EncryptionAvailable(),
 			})
 			return
@@ -1023,6 +1021,7 @@ func GmailConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				SMTPHost       string `json:"smtp_host"`
 				SMTPPort       string `json:"smtp_port"`
 				ConfirmBaseURL string `json:"confirm_base_url"`
+				RestartAlertTo string `json:"restart_alert_to"`
 				Encrypt        bool   `json:"encrypt"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
@@ -1096,6 +1095,18 @@ func GmailConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				}
 				if err := dbpkg.SetConfigValue(dbSuper, "gmail.confirm_base_url", confirmBaseURL, false); err != nil {
 					http.Error(w, "failed to save gmail.confirm_base_url: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
+
+			restartAlertTo := strings.TrimSpace(payload.RestartAlertTo)
+			if restartAlertTo != "" {
+				if _, err := mail.ParseAddress(restartAlertTo); err != nil {
+					http.Error(w, "restart_alert_to inválido", http.StatusBadRequest)
+					return
+				}
+				if err := dbpkg.SetConfigValue(dbSuper, "gmail.restart_alert_to", restartAlertTo, false); err != nil {
+					http.Error(w, "failed to save gmail.restart_alert_to: "+err.Error(), http.StatusInternalServerError)
 					return
 				}
 			}

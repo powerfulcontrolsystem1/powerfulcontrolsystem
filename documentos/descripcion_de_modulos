@@ -20,6 +20,11 @@ Actualizacion 2026-04-08 (configuracion monetaria y numerica empresarial):
 - En `administrar_empresa/configuracion.html` se agrega configuracion por `empresa_id` para `moneda_codigo`, `sistema_numerico`, uso de decimales y precision decimal.
 - La configuracion se persiste en `empresa_configuracion_avanzada` y la moneda configurada se usa como valor por defecto al crear carritos cuando la solicitud no envía moneda.
 
+Actualizacion 2026-04-08 (administracion global: alertas de inicio/reinicio de servidor):
+- En super administrador se agrega configuracion avanzada `gmail.restart_alert_to` para definir el correo destino de alertas operativas.
+- El backend registra cada inicio/reinicio en bitacora operativa (`super_servidor_eventos` + log local runtime) y notifica por correo cuando aplica.
+- La deteccion de reinicio inesperado se basa en estado runtime previo y evidencia reciente de `server.err`, manteniendo trazabilidad administrativa central.
+
 Criterio de esta guia:
 - Resumen corto por modulo (objetivo + alcance operativo principal).
 - Enfoque multiempresa con aislamiento por empresa_id.

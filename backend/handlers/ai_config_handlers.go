@@ -161,16 +161,10 @@ func readDecryptedConfigOrEmpty(dbSuper *sql.DB, key string) (string, error) {
 	return dec, nil
 }
 
-func maskSecretValue(raw string, encrypted bool) string {
+func maskSecretValue(raw string, _ bool) string {
 	v := strings.TrimSpace(raw)
 	if v == "" {
 		return ""
 	}
-	if encrypted {
-		return "********"
-	}
-	if len(v) <= 8 {
-		return "****"
-	}
-	return v[:2] + "****" + v[len(v)-2:]
+	return "********"
 }

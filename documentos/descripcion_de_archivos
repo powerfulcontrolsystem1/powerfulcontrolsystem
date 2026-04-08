@@ -1,5 +1,76 @@
 Descripcion de archivos del proyecto
 
+Actualizacion 2026-04-08: Independencia visual/scroll entre menu izquierdo y subpagina derecha en administrar_empresa
+
+- `web/administrar_empresa.html`:
+	- activa clase de shell `admin-empresa-shell` para aplicar reglas de desacople entre panel lateral e iframe.
+
+- `web/estilos.css`:
+	- incorpora reglas del shell para separar scroll de sidebar y contenido derecho (iframe), evitando que la navegacion/desplazamiento del menu altere la visibilidad o movimiento de la subpagina cargada.
+	- incluye comportamiento responsive para conservar usabilidad en moviles.
+
+Actualizacion 2026-04-08: Alertas de inicio/reinicio de servidor con trazabilidad operativa
+
+- `backend/db/super_servidor_eventos.go` (nuevo):
+	- crea/migra la tabla `super_servidor_eventos` en `superadministrador.db` para registrar inicio/reinicio del backend, motivo, estado previo, envio de correo y metadata operativa.
+
+- `backend/handlers/server_runtime_notifications.go` (nuevo):
+	- centraliza el registro de arranque del servidor, deteccion de reinicio inesperado y composicion/envio de notificacion por correo.
+	- mantiene estado runtime en `backend/logs/server_runtime_state.json` y bitacora append-only en `backend/logs/server_reinicio.log`.
+	- soporta modo pruebas de correo usando captura en `super_correo_notificaciones_prueba`.
+
+- `backend/main.go`:
+	- integra `RegisterServerStartupEvent` al inicio del servidor.
+	- incorpora apagado controlado por seniales (`SIGINT/SIGTERM`) y persistencia del motivo de parada.
+
+- `backend/handlers/usuarios_empresa.go`:
+	- amplía `GET/PUT /super/api/config/gmail` para manejar `gmail.restart_alert_to` con validacion de correo destino.
+
+- `web/super/configuracion_avanzada.html`:
+	- agrega campo visual para configurar correo de alertas de reinicio (`restart_alert_to`) en panel super.
+
+- `backend/handlers/super_config_backup_handlers.go`:
+	- incluye `gmail.restart_alert_to` en la lista de claves criticas de backup/restore.
+
+- `scripts/iniciar_servidor.ps1`:
+	- agrega variable de entorno `PCS_SERVER_START_REASON` para informar motivo de arranque al backend.
+
+- `backend/db/correo_notificaciones_prueba.go`:
+	- agrega tipo de notificacion `inicio_servidor` para capturas de pruebas de correo.
+
+- `backend/handlers/server_runtime_notifications_test.go` (nuevo) y `backend/handlers/system_empresas_handlers_test.go`:
+	- añaden cobertura para registro de inicio/reinicio inesperado y guardado/lectura de `gmail.restart_alert_to`.
+
+Actualizacion 2026-04-08: Cifrado obligatorio de credenciales secretas en configuracion avanzada
+
+- `backend/main.go`:
+	- carga variables de entorno desde `backend/.env.local` y `backend/.env` cuando faltan en el proceso.
+	- asegura `CONFIG_ENC_KEY` al arranque; si no existe, la autogenera (base64 32 bytes) y la persiste en `backend/.env.local`.
+	- aplica normalizacion de claves sensibles existentes para garantizar almacenamiento cifrado.
+
+- `backend/handlers/super_config_backup_handlers.go`:
+	- agrega politica de claves sensibles y fuerza cifrado en restore de respaldos cuando lleguen secretos en texto plano.
+	- rechaza restore de secretos sin `CONFIG_ENC_KEY` disponible.
+
+- `backend/handlers/ai_config_handlers.go`, `backend/handlers/usuarios_empresa.go` y `backend/handlers/payments_handlers.go`:
+	- endurecen enmascarado de secretos para responder siempre con `********`.
+
+- `web/super/configuracion_avanzada.html`:
+	- ajusta estado de DeepSeek para mostrar solo fecha/hora de ultima actualizacion, sin exponer fragmentos de la credencial.
+
+- `scripts/iniciar_servidor.ps1`:
+	- valida/carga `CONFIG_ENC_KEY` desde entorno o `.env.local/.env` y la autogenera/persiste si no existe.
+	- detiene arranque con mensaje claro si detecta una clave invalida.
+
+- `backend/handlers/system_empresas_handlers_test.go`:
+	- agrega pruebas para restore cifrado de secretos y guardado cifrado de DeepSeek en `/super/api/config/ai`.
+
+- `backend/.env.example` y `.gitignore`:
+	- documentan variable `CONFIG_ENC_KEY` y evitan versionar `.env.local` con secretos locales.
+
+- `documentos/diagramas/estructura_del_codigo.md`:
+	- sincroniza el flujo tecnico del endurecimiento de cifrado obligatorio en configuracion avanzada.
+
 Actualizacion 2026-04-08: Chat y tareas con documentos/fotos entre usuarios de empresa y administrador
 
 - `backend/handlers/chat_tareas.go`:

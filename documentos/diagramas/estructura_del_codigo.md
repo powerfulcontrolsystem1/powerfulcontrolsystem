@@ -56,6 +56,53 @@ flowchart TD
 ## Regla de mantenimiento
 Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe reflejarse en este documento y en los diagramas relacionados dentro de documentos/diagramas/.
 
+## Actualizacion 2026-04-08 (alerta de inicio/reinicio de servidor)
+
+- Backend arranque y cierre controlado:
+  - `backend/main.go`:
+    - registra evento operativo al iniciar (`RegisterServerStartupEvent`) usando motivo de arranque desde `PCS_SERVER_START_REASON`.
+    - implementa apagado controlado por seniales (`SIGINT/SIGTERM`) y persiste motivo de parada para diferenciar cierre limpio de reinicio inesperado.
+
+- Backend orquestacion de notificaciones runtime:
+  - `backend/handlers/server_runtime_notifications.go`:
+    - calcula motivo de inicio/reinicio desde estado previo (`server_runtime_state.json`) y pista de error reciente (`server.err`).
+    - registra evento en DB (`super_servidor_eventos`) y en log local append-only (`server_reinicio.log`).
+    - envia correo al destino configurado en `gmail.restart_alert_to` o captura notificacion en modo pruebas.
+
+- Backend datos superadministrador:
+  - `backend/db/super_servidor_eventos.go`:
+    - agrega tabla `super_servidor_eventos` para trazabilidad de arranque, reinicio inesperado, correo enviado/error y metadata de runtime.
+
+- Configuracion avanzada super:
+  - `backend/handlers/usuarios_empresa.go` y `web/super/configuracion_avanzada.html`:
+    - incorporan `gmail.restart_alert_to` para registrar correo destino de alertas operativas de reinicio.
+
+- Scripts operativos:
+  - `scripts/iniciar_servidor.ps1`:
+    - propaga `PCS_SERVER_START_REASON=inicio_script_iniciar_servidor` para enriquecer el motivo registrado al iniciar el backend.
+
+## Actualizacion 2026-04-08 (cifrado obligatorio de credenciales secretas en configuracion avanzada)
+
+- Backend arranque y entorno:
+  - `backend/main.go`:
+    - carga variables de entorno desde `backend/.env.local` y `backend/.env` cuando no existen en el proceso.
+    - asegura `CONFIG_ENC_KEY` al inicio; si no existe, la genera (32 bytes base64), la carga al proceso y la persiste en `backend/.env.local`.
+    - ejecuta normalizacion de secretos para forzar cifrado en credenciales sensibles legacy almacenadas en `configuraciones`.
+
+- Backend seguridad de respaldo/restauracion:
+  - `backend/handlers/super_config_backup_handlers.go`:
+    - clasifica claves sensibles (`wompi.private_key`, `wompi.integrity_key`, `gmail.smtp_app_password`, claves IA por modelo/proveedor).
+    - fuerza cifrado al restaurar respaldos que traigan secretos en texto plano.
+    - bloquea restauracion de secretos en texto plano si `CONFIG_ENC_KEY` no esta disponible.
+
+- Backend exposicion segura de estado:
+  - `backend/handlers/ai_config_handlers.go`, `backend/handlers/usuarios_empresa.go`, `backend/handlers/payments_handlers.go`:
+    - el estado de credenciales secretas siempre se enmascara completamente (`********`), sin exponer fragmentos.
+
+- Frontend super administrador:
+  - `web/super/configuracion_avanzada.html`:
+    - en el estado de DeepSeek muestra solo metadato de ultima actualizacion (fecha/hora), sin revelar fragmentos de la clave ni autor en esa linea de estado.
+
 ## Actualizacion 2026-04-08 (chat/tareas: documentos/fotos y actor usuario-admin)
 
 - Backend handlers:

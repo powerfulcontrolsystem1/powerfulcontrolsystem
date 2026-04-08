@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -265,6 +266,223 @@ func TestSuperConfigBackupHandlerExportYRestore(t *testing.T) {
 	}
 	if strings.TrimSpace(modeValue) != "production" {
 		t.Fatalf("expected wompi.mode restored to production, got %q", modeValue)
+	}
+}
+
+func TestSuperConfigBackupHandlerRestoreEncryptsSensitivePlaintext(t *testing.T) {
+	rawKey := make([]byte, 32)
+	for i := range rawKey {
+		rawKey[i] = byte(i + 11)
+	}
+	t.Setenv("CONFIG_ENC_KEY", base64.StdEncoding.EncodeToString(rawKey))
+
+	dbSuper := openTestSQLite(t, "super_config_backup_encrypt_sensitive.db")
+	ensureSuperConfigSchemaForSuper(t, dbSuper)
+
+	payload := superConfigBackupPayload{
+		Version:   superConfigBackupVersion,
+		Scope:     "super_config_critica",
+		CreatedAt: "2026-04-08T00:00:00Z",
+		Items: []superConfigBackupItem{
+			{
+				Key:        "ai.model.deepseek.deepseek_chat.api_key",
+				Value:      "deepseek_test_secret",
+				Encrypted:  false,
+				Configured: true,
+			},
+		},
+	}
+	raw, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatalf("marshal restore payload: %v", err)
+	}
+
+	h := SuperConfigBackupHandler(dbSuper)
+	req := httptest.NewRequest(http.MethodPut, "/super/api/config/backup", strings.NewReader(string(raw)))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status %d on restore, got %d body=%s", http.StatusOK, rr.Code, rr.Body.String())
+	}
+
+	stored, encrypted, err := dbpkg.GetConfigValue(dbSuper, "ai.model.deepseek.deepseek_chat.api_key")
+	if err != nil {
+		t.Fatalf("read restored sensitive key: %v", err)
+	}
+	if !encrypted {
+		t.Fatal("expected restored sensitive key to be marked as encrypted")
+	}
+	if strings.TrimSpace(stored) == "deepseek_test_secret" {
+		t.Fatal("expected stored sensitive key to be encrypted payload, got plaintext")
+	}
+
+	decrypted, decErr := utils.DecryptString(stored)
+	if decErr != nil {
+		t.Fatalf("decrypt restored sensitive key: %v", decErr)
+	}
+	if decrypted != "deepseek_test_secret" {
+		t.Fatalf("expected decrypted sensitive value %q, got %q", "deepseek_test_secret", decrypted)
+	}
+}
+
+func TestSuperConfigBackupHandlerRestoreSensitivePlaintextRequiresEncryptionKey(t *testing.T) {
+	t.Setenv("CONFIG_ENC_KEY", "")
+
+	dbSuper := openTestSQLite(t, "super_config_backup_encrypt_required.db")
+	ensureSuperConfigSchemaForSuper(t, dbSuper)
+
+	payload := superConfigBackupPayload{
+		Version:   superConfigBackupVersion,
+		Scope:     "super_config_critica",
+		CreatedAt: "2026-04-08T00:00:00Z",
+		Items: []superConfigBackupItem{
+			{
+				Key:        "gmail.smtp_app_password",
+				Value:      "app-password-demo",
+				Encrypted:  false,
+				Configured: true,
+			},
+		},
+	}
+	raw, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatalf("marshal restore payload: %v", err)
+	}
+
+	h := SuperConfigBackupHandler(dbSuper)
+	req := httptest.NewRequest(http.MethodPut, "/super/api/config/backup", strings.NewReader(string(raw)))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("expected status %d when CONFIG_ENC_KEY is missing, got %d body=%s", http.StatusBadRequest, rr.Code, rr.Body.String())
+	}
+}
+
+func TestAIModelsConfigHandlerSaveDeepSeekEncrypted(t *testing.T) {
+	rawKey := make([]byte, 32)
+	for i := range rawKey {
+		rawKey[i] = byte(77 + i)
+	}
+	t.Setenv("CONFIG_ENC_KEY", base64.StdEncoding.EncodeToString(rawKey))
+
+	dbSuper := openTestSQLite(t, "super_ai_config_handler.db")
+	ensureSuperConfigSchemaForSuper(t, dbSuper)
+
+	h := AIModelsConfigHandler(dbSuper)
+	body := `{"credentials":[{"model_id":"deepseek:deepseek-chat","api_key":"sk_deepseek_prueba"}]}`
+	req := httptest.NewRequest(http.MethodPut, "/super/api/config/ai", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Admin-Email", "super@empresa.com")
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status %d on ai save, got %d body=%s", http.StatusOK, rr.Code, rr.Body.String())
+	}
+
+	stored, encrypted, err := dbpkg.GetConfigValue(dbSuper, "ai.model.deepseek.deepseek_chat.api_key")
+	if err != nil {
+		t.Fatalf("read ai.model.deepseek.deepseek_chat.api_key: %v", err)
+	}
+	if !encrypted {
+		t.Fatal("expected DeepSeek model key to be encrypted")
+	}
+
+	decrypted, decErr := utils.DecryptString(stored)
+	if decErr != nil {
+		t.Fatalf("decrypt DeepSeek model key: %v", decErr)
+	}
+	if decrypted != "sk_deepseek_prueba" {
+		t.Fatalf("expected decrypted DeepSeek key %q, got %q", "sk_deepseek_prueba", decrypted)
+	}
+
+	providerStored, providerEncrypted, err := dbpkg.GetConfigValue(dbSuper, "ai.provider.deepseek.api_key")
+	if err != nil {
+		t.Fatalf("read ai.provider.deepseek.api_key: %v", err)
+	}
+	if !providerEncrypted {
+		t.Fatal("expected provider DeepSeek key to be encrypted")
+	}
+	providerDecrypted, providerDecErr := utils.DecryptString(providerStored)
+	if providerDecErr != nil {
+		t.Fatalf("decrypt provider DeepSeek key: %v", providerDecErr)
+	}
+	if providerDecrypted != "sk_deepseek_prueba" {
+		t.Fatalf("expected decrypted provider DeepSeek key %q, got %q", "sk_deepseek_prueba", providerDecrypted)
+	}
+
+	getReq := httptest.NewRequest(http.MethodGet, "/super/api/config/ai", nil)
+	getReq.Header.Set("X-Admin-Email", "super@empresa.com")
+	getRR := httptest.NewRecorder()
+	h.ServeHTTP(getRR, getReq)
+	if getRR.Code != http.StatusOK {
+		t.Fatalf("expected status %d on ai get, got %d body=%s", http.StatusOK, getRR.Code, getRR.Body.String())
+	}
+
+	var getBody map[string]interface{}
+	if err := json.Unmarshal(getRR.Body.Bytes(), &getBody); err != nil {
+		t.Fatalf("decode ai get response: %v body=%s", err, getRR.Body.String())
+	}
+	modelos, ok := getBody["modelos"].([]interface{})
+	if !ok || len(modelos) == 0 {
+		t.Fatalf("expected modelos in ai get response, got %T", getBody["modelos"])
+	}
+	first, ok := modelos[0].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected first modelo object, got %T", modelos[0])
+	}
+	if masked, _ := first["masked"].(string); masked != "********" {
+		t.Fatalf("expected masked value ********, got %q", masked)
+	}
+}
+
+func TestGmailConfigHandlerSaveRestartAlertTo(t *testing.T) {
+	dbSuper := openTestSQLite(t, "super_gmail_restart_alert.db")
+	ensureSuperConfigSchemaForSuper(t, dbSuper)
+
+	h := GmailConfigHandler(dbSuper)
+	body := `{"restart_alert_to":"ops@empresa.com"}`
+	req := httptest.NewRequest(http.MethodPut, "/super/api/config/gmail", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status %d on gmail save, got %d body=%s", http.StatusOK, rr.Code, rr.Body.String())
+	}
+
+	stored, encrypted, err := dbpkg.GetConfigValue(dbSuper, "gmail.restart_alert_to")
+	if err != nil {
+		t.Fatalf("read gmail.restart_alert_to: %v", err)
+	}
+	if strings.TrimSpace(stored) != "ops@empresa.com" {
+		t.Fatalf("expected gmail.restart_alert_to %q, got %q", "ops@empresa.com", stored)
+	}
+	if encrypted {
+		t.Fatal("expected gmail.restart_alert_to to be non-encrypted")
+	}
+
+	getReq := httptest.NewRequest(http.MethodGet, "/super/api/config/gmail", nil)
+	getRR := httptest.NewRecorder()
+	h.ServeHTTP(getRR, getReq)
+
+	if getRR.Code != http.StatusOK {
+		t.Fatalf("expected status %d on gmail get, got %d body=%s", http.StatusOK, getRR.Code, getRR.Body.String())
+	}
+
+	var getBody map[string]interface{}
+	if err := json.Unmarshal(getRR.Body.Bytes(), &getBody); err != nil {
+		t.Fatalf("decode gmail get response: %v body=%s", err, getRR.Body.String())
+	}
+	if got := strings.TrimSpace(fmt.Sprint(getBody["restart_alert_to"])); got != "ops@empresa.com" {
+		t.Fatalf("expected restart_alert_to in response %q, got %q", "ops@empresa.com", got)
+	}
+	if setFlag, _ := getBody["restart_alert_to_set"].(bool); !setFlag {
+		t.Fatalf("expected restart_alert_to_set=true, got %v", getBody["restart_alert_to_set"])
 	}
 }
 

@@ -135,6 +135,26 @@ html.theme-light .admin-sidebar .nav a img.icon{filter:none}
 /* Hacer que el iframe de administrar_empresa ocupe el espacio restante y evitar doble scrollbar */
 .admin-empresa-frame{flex:1 1 auto;width:100%;min-height:0;border:0;display:block;background:transparent}
 
+/* Shell dedicado: desacopla el scroll del menu izquierdo del contenido cargado en iframe */
+.admin-empresa-shell{overflow:hidden}
+.admin-empresa-shell .admin-layout{height:100vh;min-height:100vh;overflow:hidden}
+.admin-empresa-shell .admin-sidebar{
+  height:100vh;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  scrollbar-gutter:stable;
+}
+.admin-empresa-shell .admin-content{
+  height:100vh;
+  min-height:0;
+  overflow:hidden;
+  overscroll-behavior:contain;
+}
+.admin-empresa-shell .admin-empresa-frame{
+  height:100%;
+  min-height:0;
+}
+
 /* Responsive: colapsar sidebar */
 @media (max-width:900px){
   .admin-layout{flex-direction:column}
@@ -142,6 +162,11 @@ html.theme-light .admin-sidebar .nav a img.icon{filter:none}
   .admin-sidebar .nav{display:flex;gap:8px;overflow:auto}
   .admin-sidebar .nav a{white-space:nowrap}
   .admin-content{padding:8px}
+
+  .admin-empresa-shell{overflow:auto}
+  .admin-empresa-shell .admin-layout{height:auto;min-height:100vh;overflow:visible}
+  .admin-empresa-shell .admin-sidebar{height:auto;overflow:visible}
+  .admin-empresa-shell .admin-content{height:auto;min-height:60vh}
 }
 
 ul{padding-left:18px}

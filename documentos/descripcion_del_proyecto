@@ -39,6 +39,7 @@ Sistema POS multiempresa con backend en Go y persistencia SQLite, orientado a op
 - Empresas, tipos de empresa, licencias, administradores.
 - Configuracion de pasarela de pago Wompi y correo.
 - Configuracion avanzada de credenciales IA para modelos populares con trazabilidad de cuenta Google administradora.
+- Monitoreo operativo de inicio/reinicio del backend con bitacora central (`super_servidor_eventos`), log local runtime y notificacion por correo configurable (`gmail.restart_alert_to`).
 
 3) Operacion por empresa
 - Usuarios de empresa (alta, confirmacion, estado, primer ingreso).

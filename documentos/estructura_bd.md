@@ -1,6 +1,6 @@
 # Estructura de Base de Datos
 
-Version: 2026-04-08.42.0
+Version: 2026-04-08.43.0
 Ultima actualizacion: 2026-04-08
 
 Este documento consolida la estructura activa de SQLite para el proyecto.
@@ -802,6 +802,13 @@ Todas las tablas operativas usan como base los campos estandar:
 - super_correo_notificaciones_prueba:
   - tipo, empresa_id, destinatario, asunto, cuerpo, token_ref, metadata_json, fecha_evento
   - se usa para validar notificaciones de confirmacion/restablecimiento en entorno de pruebas de correo
+- super_servidor_eventos:
+  - tipo_evento, motivo, motivo_detalle, origen_arranque
+  - hostname, process_id, listen_addr
+  - reinicio_inesperado, previo_estado, previo_process_id, previo_inicio_en, previo_fin_en
+  - correo_destino, correo_enviado, correo_error
+  - metadata_json, fecha_evento
+  - fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones
 - metrics:
   - timestamp, cpu_percent, mem_total, mem_used, mem_percent, net_recv, net_sent
   - fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones
@@ -880,6 +887,7 @@ Todas las tablas operativas usan como base los campos estandar:
 - super_venta_digital_items.id -> super_venta_digital_ordenes.item_id
 
 ## 4) Historial resumido
+- 2026-04-08: se agrega `super_servidor_eventos` en `superadministrador.db` para auditoria de inicio/reinicio del servidor (incluye estado previo, motivo, resultado de envio de correo y metadata operativa); ademas se incorpora clave de configuracion `gmail.restart_alert_to` para correo destino de alertas.
 - 2026-04-08: se amplía `licencias` en `superadministrador.db` con `modulos_habilitados` y `super_rol_habilitado` para gobernar permisos efectivos por empresa desde la licencia activa, junto con columnas de trazabilidad (`fecha_actualizacion`, `usuario_creador`, `estado`, `observaciones`).
 - 2026-04-08: se agregan `super_venta_digital_configuracion`, `super_venta_digital_items` y `super_venta_digital_ordenes` en `superadministrador.db` para venta de licencias/software administrada por super, con pago Wompi y entrega por correo posterior a aprobacion.
 - 2026-04-08: se agregan `roles_de_usuario_permisos` y `roles_de_usuario_paginas_permisos` en `superadministrador.db` para configuracion dinamica de permisos por rol (modulo/accion y pagina), con indices unicos por rol para garantizar consistencia de matriz.

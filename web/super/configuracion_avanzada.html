@@ -120,6 +120,18 @@
 
       <div class="form-row">
         <div class="form-col">
+          <label class="form-label">Correo destino alertas de reinicio</label>
+          <input id="gmailRestartAlertTo" class="form-input" type="email" placeholder="operaciones@tu-dominio.com">
+          <div id="gmailStatusRestartAlert" class="form-help">Cargando estado...</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Uso de la alerta</label>
+          <div class="form-help">Este correo recibirá notificación automática cuando el servidor inicie o detecte reinicio inesperado.</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
           <label class="form-label">Opciones</label>
           <div class="form-help">La contraseña de aplicación se guarda cifrada obligatoriamente.</div>
         </div>
@@ -148,7 +160,7 @@
         <div class="form-col">
           <label class="form-label">Opciones</label>
           <div class="form-help">La credencial DeepSeek se guarda cifrada obligatoriamente en backend.</div>
-          <div class="form-help">La llave se guarda en backend y se registra la cuenta Google que realizó el cambio.</div>
+          <div class="form-help">En pantalla solo se muestra fecha y hora de actualización; la llave nunca se expone.</div>
         </div>
       </div>
 
@@ -283,12 +295,14 @@
       async function loadGmailConfig(){
         const statusEmail = document.getElementById('gmailStatusEmail');
         const statusPass = document.getElementById('gmailStatusPass');
+        const statusRestart = document.getElementById('gmailStatusRestartAlert');
         const msg = document.getElementById('gmailMsg');
         try {
           const rg = await fetch('/super/api/config/gmail');
           if (!rg.ok) {
             statusEmail.innerText = 'Error al leer configuración Gmail';
             statusPass.innerText = 'Error al leer configuración Gmail';
+            statusRestart.innerText = 'Error al leer configuración Gmail';
             return;
           }
           const cfg = await rg.json();
@@ -303,6 +317,7 @@
           document.getElementById('gmailHost').value = cfg.smtp_host || 'smtp.gmail.com';
           document.getElementById('gmailPort').value = cfg.smtp_port || '587';
           document.getElementById('gmailBaseURL').value = cfg.confirm_base_url || '';
+          document.getElementById('gmailRestartAlertTo').value = cfg.restart_alert_to || '';
 
           if (cfg.smtp_email_set) {
             const ts = cfg.smtp_email_updated ? (' — Última actualización: ' + cfg.smtp_email_updated) : '';
@@ -318,13 +333,21 @@
             statusPass.innerText = 'No configurada';
           }
 
+          if (cfg.restart_alert_to_set) {
+            const ts3 = cfg.restart_alert_to_updated ? (' — Última actualización: ' + cfg.restart_alert_to_updated) : '';
+            statusRestart.innerText = 'Correo de alertas configurado' + ts3;
+          } else {
+            statusRestart.innerText = 'No configurado';
+          }
+
           const hasGmailConfig = !!(
             cfg.smtp_email_set ||
             cfg.smtp_app_password_set ||
             (cfg.smtp_from_name && cfg.smtp_from_name.trim() !== '') ||
             (cfg.smtp_host && cfg.smtp_host.trim() !== '') ||
             (cfg.smtp_port && cfg.smtp_port.trim() !== '') ||
-            (cfg.confirm_base_url && cfg.confirm_base_url.trim() !== '')
+            (cfg.confirm_base_url && cfg.confirm_base_url.trim() !== '') ||
+            (cfg.restart_alert_to && cfg.restart_alert_to.trim() !== '')
           );
 
           const readOnly = hasGmailConfig;
@@ -334,6 +357,7 @@
           document.getElementById('gmailHost').disabled = readOnly;
           document.getElementById('gmailPort').disabled = readOnly;
           document.getElementById('gmailBaseURL').disabled = readOnly;
+          document.getElementById('gmailRestartAlertTo').disabled = readOnly;
 
           document.getElementById('saveGmailBtn').disabled = readOnly;
           document.getElementById('editGmailBtn').style.display = hasGmailConfig ? '' : 'none';
@@ -341,6 +365,7 @@
         } catch (err) {
           statusEmail.innerText = 'Error cargando configuración Gmail';
           statusPass.innerText = 'Error cargando configuración Gmail';
+          statusRestart.innerText = 'Error cargando configuración Gmail';
         }
       }
 
@@ -377,10 +402,8 @@
             const item = byModel[binding.model_id] || {};
             if (item.configured) {
               hasAIConfig = true;
-              const sourceTxt = item.source === 'env' ? ' (origen: variable de entorno)' : '';
               const ts = item.updated_at ? (' — Última actualización: ' + item.updated_at) : '';
-              const by = item.updated_by ? (' — Actualizó: ' + item.updated_by) : '';
-              statusEl.innerText = 'Credencial configurada (' + (item.masked || '****') + ')' + sourceTxt + ts + by;
+              statusEl.innerText = 'Credencial configurada' + ts;
             } else {
               statusEl.innerText = 'No configurada';
             }
@@ -482,10 +505,11 @@
           smtp_host: document.getElementById('gmailHost').value.trim(),
           smtp_port: document.getElementById('gmailPort').value.trim(),
           confirm_base_url: document.getElementById('gmailBaseURL').value.trim(),
+          restart_alert_to: document.getElementById('gmailRestartAlertTo').value.trim(),
           encrypt: true
         };
 
-        if (!payload.smtp_email && !payload.smtp_app_password && !payload.smtp_from_name && !payload.smtp_host && !payload.smtp_port && !payload.confirm_base_url) {
+        if (!payload.smtp_email && !payload.smtp_app_password && !payload.smtp_from_name && !payload.smtp_host && !payload.smtp_port && !payload.confirm_base_url && !payload.restart_alert_to) {
           alert('Ingrese al menos un valor para guardar en Gmail SMTP');
           return;
         }
@@ -523,6 +547,7 @@
         document.getElementById('gmailHost').disabled = false;
         document.getElementById('gmailPort').disabled = false;
         document.getElementById('gmailBaseURL').disabled = false;
+        document.getElementById('gmailRestartAlertTo').disabled = false;
         document.getElementById('saveGmailBtn').disabled = false;
         document.getElementById('editGmailBtn').style.display = 'none';
         document.getElementById('cancelGmailBtn').style.display = '';

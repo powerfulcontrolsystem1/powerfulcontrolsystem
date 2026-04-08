@@ -1,15 +1,20 @@
 package main
 
 import (
+	"context"
+	"crypto/rand"
 	"database/sql"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	_ "modernc.org/sqlite"
@@ -29,6 +34,207 @@ var (
 	dbEmpresas     *sql.DB
 	dbSuper        *sql.DB
 )
+
+func resolveBackendRuntimeDir() string {
+	candidates := []string{".", "backend"}
+
+	if wd, err := os.Getwd(); err == nil {
+		candidates = append(candidates, wd, filepath.Join(wd, "backend"))
+	}
+
+	if exePath, err := os.Executable(); err == nil {
+		exeDir := filepath.Dir(exePath)
+		candidates = append(candidates,
+			exeDir,
+			filepath.Join(exeDir, "backend"),
+			filepath.Join(exeDir, ".."),
+			filepath.Join(exeDir, "..", "backend"),
+		)
+	}
+
+	seen := map[string]bool{}
+	for _, cand := range candidates {
+		cand = strings.TrimSpace(cand)
+		if cand == "" {
+			continue
+		}
+		absCand, err := filepath.Abs(cand)
+		if err != nil {
+			absCand = cand
+		}
+		if seen[absCand] {
+			continue
+		}
+		seen[absCand] = true
+
+		goModPath := filepath.Join(absCand, "go.mod")
+		if info, statErr := os.Stat(goModPath); statErr == nil && !info.IsDir() {
+			return absCand
+		}
+	}
+
+	if wd, err := os.Getwd(); err == nil {
+		return wd
+	}
+	return "."
+}
+
+func loadEnvDefaultsFromFile(path string) (int, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return 0, nil
+		}
+		return 0, err
+	}
+
+	added := 0
+	lines := strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n")
+	for _, line := range lines {
+		raw := strings.TrimSpace(line)
+		if raw == "" || strings.HasPrefix(raw, "#") {
+			continue
+		}
+
+		idx := strings.Index(raw, "=")
+		if idx <= 0 {
+			continue
+		}
+
+		key := strings.TrimSpace(raw[:idx])
+		if key == "" {
+			continue
+		}
+		value := strings.TrimSpace(raw[idx+1:])
+
+		if strings.HasPrefix(value, "\"") && strings.HasSuffix(value, "\"") && len(value) >= 2 {
+			value = value[1 : len(value)-1]
+		}
+		if strings.HasPrefix(value, "'") && strings.HasSuffix(value, "'") && len(value) >= 2 {
+			value = value[1 : len(value)-1]
+		}
+
+		if os.Getenv(key) == "" && value != "" {
+			if setErr := os.Setenv(key, value); setErr != nil {
+				return added, setErr
+			}
+			added++
+		}
+	}
+
+	return added, nil
+}
+
+func loadRuntimeEnvDefaults(backendDir string) {
+	candidates := []string{
+		filepath.Join(backendDir, ".env.local"),
+		filepath.Join(backendDir, ".env"),
+	}
+	for _, candidate := range candidates {
+		added, err := loadEnvDefaultsFromFile(candidate)
+		if err != nil {
+			log.Printf("warning: no se pudieron cargar variables desde %s: %v", candidate, err)
+			continue
+		}
+		if added > 0 {
+			log.Printf("INFO: variables de entorno cargadas desde %s (%d nuevas)", candidate, added)
+		}
+	}
+}
+
+func refreshRuntimeGlobalsFromEnv() {
+	if v := strings.TrimSpace(os.Getenv("GOOGLE_CLIENT_ID")); v != "" {
+		clientID = v
+	}
+	if v := strings.TrimSpace(os.Getenv("GOOGLE_CLIENT_SECRET")); v != "" {
+		clientSecret = v
+	}
+	if v := strings.TrimSpace(os.Getenv("GOOGLE_REDIRECT_URL")); v != "" {
+		redirectURL = v
+	}
+	if v := strings.TrimSpace(os.Getenv("DB_EMPRESAS_PATH")); v != "" {
+		dbEmpresasPath = v
+	}
+	if v := strings.TrimSpace(os.Getenv("DB_SUPERADMIN_PATH")); v != "" {
+		dbSuperPath = v
+	}
+}
+
+func persistConfigEncKey(backendDir, value string) (string, error) {
+	envLocalPath := filepath.Join(backendDir, ".env.local")
+	prefix := "CONFIG_ENC_KEY="
+
+	data, err := os.ReadFile(envLocalPath)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return "", err
+	}
+
+	if err == nil {
+		lines := strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n")
+		replaced := false
+		for i := range lines {
+			trimmed := strings.TrimSpace(lines[i])
+			if strings.HasPrefix(trimmed, prefix) {
+				lines[i] = prefix + value
+				replaced = true
+				break
+			}
+		}
+		if !replaced {
+			if len(lines) == 1 && strings.TrimSpace(lines[0]) == "" {
+				lines[0] = prefix + value
+			} else {
+				lines = append(lines, prefix+value)
+			}
+		}
+		content := strings.Join(lines, "\n")
+		if !strings.HasSuffix(content, "\n") {
+			content += "\n"
+		}
+		if writeErr := os.WriteFile(envLocalPath, []byte(content), 0600); writeErr != nil {
+			return "", writeErr
+		}
+		return envLocalPath, nil
+	}
+
+	content := "# Archivo local de entorno (secrets de desarrollo; no versionar)\n" + prefix + value + "\n"
+	if writeErr := os.WriteFile(envLocalPath, []byte(content), 0600); writeErr != nil {
+		return "", writeErr
+	}
+	return envLocalPath, nil
+}
+
+func ensureRuntimeConfigEncKey(backendDir string) error {
+	raw := strings.TrimSpace(os.Getenv("CONFIG_ENC_KEY"))
+	if raw != "" {
+		if !utils.EncryptionAvailable() {
+			return fmt.Errorf("CONFIG_ENC_KEY invalid; use base64 valido o >=32 bytes")
+		}
+		return nil
+	}
+
+	key := make([]byte, 32)
+	if _, err := rand.Read(key); err != nil {
+		return fmt.Errorf("no se pudo generar CONFIG_ENC_KEY: %w", err)
+	}
+
+	generated := base64.StdEncoding.EncodeToString(key)
+	if err := os.Setenv("CONFIG_ENC_KEY", generated); err != nil {
+		return fmt.Errorf("no se pudo cargar CONFIG_ENC_KEY en entorno: %w", err)
+	}
+
+	envLocalPath, err := persistConfigEncKey(backendDir, generated)
+	if err != nil {
+		return fmt.Errorf("no se pudo persistir CONFIG_ENC_KEY en .env.local: %w", err)
+	}
+
+	if !utils.EncryptionAvailable() {
+		return fmt.Errorf("CONFIG_ENC_KEY generada pero invalida")
+	}
+
+	log.Printf("INFO: CONFIG_ENC_KEY autogenerada para desarrollo y persistida en %s", envLocalPath)
+	return nil
+}
 
 func getenvIntRange(key string, defaultVal, minVal, maxVal int) int {
 	raw := strings.TrimSpace(os.Getenv(key))
@@ -207,6 +413,13 @@ func resolveWebDir() string {
 }
 
 func main() {
+	backendDir := resolveBackendRuntimeDir()
+	loadRuntimeEnvDefaults(backendDir)
+	refreshRuntimeGlobalsFromEnv()
+	if err := ensureRuntimeConfigEncKey(backendDir); err != nil {
+		log.Fatalf("failed to ensure CONFIG_ENC_KEY: %v", err)
+	}
+
 	if dbEmpresasPath == "" {
 		dbEmpresasPath = "empresas.db"
 	}
@@ -833,6 +1046,9 @@ func main() {
 	if _, err := dbSuper.Exec(createConfiguraciones); err != nil {
 		log.Fatalf("failed to create configuraciones table in super db: %v", err)
 	}
+	if err := handlers.EnsureSensitiveSuperConfigEncrypted(dbSuper); err != nil {
+		log.Fatalf("failed to enforce sensitive config encryption in super db: %v", err)
+	}
 	loadGoogleOAuthFromDB(dbSuper)
 	if clientID == "" || clientSecret == "" {
 		log.Println("Warning: GOOGLE_CLIENT_ID o GOOGLE_CLIENT_SECRET no configurados (entorno/DB)")
@@ -1140,6 +1356,47 @@ func main() {
 		port = "8080"
 	}
 	addr := ":" + port
+	markServerStopped, startupEventErr := handlers.RegisterServerStartupEvent(dbSuper, handlers.ServerStartupRegistration{
+		BackendDir:  backendDir,
+		ListenAddr:  addr,
+		StartReason: strings.TrimSpace(os.Getenv("PCS_SERVER_START_REASON")),
+	})
+	if startupEventErr != nil {
+		log.Printf("warning: no se pudo registrar evento de inicio de servidor: %v", startupEventErr)
+	}
+
+	server := &http.Server{
+		Addr:    addr,
+		Handler: handler,
+	}
+
+	signalCh := make(chan os.Signal, 1)
+	signal.Notify(signalCh, os.Interrupt, syscall.SIGTERM)
+	defer signal.Stop(signalCh)
+
+	go func() {
+		sig := <-signalCh
+		reason := "signal_" + strings.ToLower(strings.TrimSpace(sig.String()))
+		if markServerStopped != nil {
+			markServerStopped(reason)
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := server.Shutdown(ctx); err != nil {
+			log.Printf("warning: shutdown con error: %v", err)
+		}
+	}()
+
 	log.Println("Servidor arrancado en", addr)
-	log.Fatal(http.ListenAndServe(addr, handler))
+	err = server.ListenAndServe()
+	if err != nil && !errors.Is(err, http.ErrServerClosed) {
+		if markServerStopped != nil {
+			markServerStopped("listen_and_serve_error: " + err.Error())
+		}
+		log.Fatal(err)
+	}
+	if markServerStopped != nil {
+		markServerStopped("apagado_controlado")
+	}
 }
