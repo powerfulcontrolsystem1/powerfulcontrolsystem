@@ -1,5 +1,26 @@
 # CHANGELOG
 
+## 2026-04-09
+- Facturacion electronica DIAN (Colombia): modo SaaS multiempresa con software compartido y credenciales por empresa.
+	- `backend/db/modulos_faltantes.go` amplia `empresa_dian_configuracion` con `usar_software_compartido`, `software_id_compartido_ref`, `software_pin_compartido_ref` e indice `ix_dian_empresa_shared_mode`.
+	- `backend/handlers/modulos_faltantes.go` agrega resolucion de software efectivo (`resolveDIANSoftwareCredentials`) con fallback global `DIAN_SHARED_SOFTWARE_ID/DIAN_SHARED_SOFTWARE_PIN`.
+	- `sendDIANDocumentoReal` y `runDIANSetPruebasEnvio` reportan `software_modo` y `software_id` efectivo, manteniendo `NIT/token/certificado` por empresa.
+	- `backend/handlers/modulos_faltantes_test.go` agrega `TestEmpresaDIANColombiaHandlerSoftwareCompartidoMultiempresa` (validado).
+	- Documentacion sincronizada en `documentos/informacion_para_pruebas_plataforma_DIAN`, `documentos/estructura_bd.md`, `estructura_bd.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_archivos` y `documentos/historial_de_cambios`.
+- Facturacion electronica DIAN (Colombia): se completa flujo de envio automatizado del set de habilitacion.
+	- `backend/handlers/modulos_faltantes.go` agrega `action=enviar_set_pruebas` en `/api/empresa/facturacion_electronica/dian` para distribuir y enviar lotes de facturas/notas con resumen operacional por estado.
+	- `sendDIANDocumentoReal` incorpora `documento_tipo` y override de `test_set_id` para interoperabilidad en el envio del lote.
+	- `backend/handlers/modulos_faltantes_test.go` agrega `TestEmpresaDIANColombiaHandlerEnviarSetPruebas` y se valida junto con pruebas DIAN existentes (3 passed, 0 failed).
+	- Se actualiza `documentos/informacion_para_pruebas_plataforma_DIAN` con aclaracion de configuracion de URL WSDL, resultados de pruebas y payload recomendado para los 50 documentos requeridos por DIAN.
+	- Se sincroniza gobernanza documental en `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md` y `documentos/historial_de_cambios`.
+- Documentacion DIAN: se crea `documentos/informacion_para_pruebas_plataforma_DIAN` para organizar en una sola referencia los datos de pruebas extraidos de `documentos/DATOS DIAN.mhtml`.
+- Facturacion electronica DIAN (Colombia): carga de datos de prueba para Motel malibu con licencia activa.
+	- Se registra configuracion DIAN en `backend/db/empresas.db` para `empresa_id=6` usando los datos de `documentos/DATOS DIAN.mhtml` (Software ID/PIN, TestSetId, prefijo, resolucion y rango).
+	- Se valida tecnicamente el modulo DIAN con `handlers.EmpresaDIANColombiaHandler` ejecutando:
+		- `checklist` y `validar` sin faltantes (`ok=true`).
+		- `generar_cufe_demo` y `generar_xml_demo` con resultados correctos para documento de prueba.
+	- En esta iteracion no fue necesario crear credenciales API adicionales en configuracion avanzada de super administrador para las pruebas internas de habilitacion.
+
 ## 2026-04-08
 - Panel `administrar_empresa`: menu izquierdo desacoplado del contenido derecho.
 	- `web/administrar_empresa.html` activa shell dedicado (`admin-empresa-shell`).

@@ -603,6 +603,7 @@
         <li>Elegir modalidad tecnológica:
           <ul>
             <li>Software propio.</li>
+            <li>Software compartido tipo SaaS (recomendado para multiples empresas).</li>
             <li>Proveedor tecnológico autorizado.</li>
           </ul>
         </li>
@@ -644,9 +645,16 @@
         </li>
         <li>Registrar credenciales DIAN:
           <ul>
-            <li>Software ID.</li>
-            <li>Software PIN.</li>
+            <li>Si usas SaaS: activar <code>usar_software_compartido=1</code> y definir referencias seguras de Software ID/PIN compartidos.</li>
+            <li>Si usas modo por empresa: guardar Software ID/PIN de la empresa.</li>
             <li>TestSetID (cuando aplique).</li>
+          </ul>
+        </li>
+        <li>Registrar credenciales por empresa (obligatorias para emision real):
+          <ul>
+            <li><code>token_emisor_ref</code> por empresa (referencia segura).</li>
+            <li><code>certificado_clave_ref</code> por empresa para firma XML.</li>
+            <li>Opcional: subir firma PEM con <code>action=subir_firma</code> para guardar referencia <code>file:</code> automaticamente.</li>
           </ul>
         </li>
         <li>Registrar resolución de numeración:
@@ -662,6 +670,8 @@
           <ul>
             <li>Endpoint: <code>/api/empresa/facturacion_electronica/dian?action=validar</code></li>
             <li>Checklist: <code>/api/empresa/facturacion_electronica/dian?action=checklist</code></li>
+            <li>Credenciales: <code>/api/empresa/facturacion_electronica/dian?action=validar_credenciales</code></li>
+            <li>Guía por empresa: <code>/api/empresa/facturacion_electronica/dian?action=guia_onboarding</code></li>
           </ul>
         </li>
       </ol>
@@ -680,9 +690,11 @@
         <li>NIT del emisor.</li>
         <li>Razón social del emisor.</li>
         <li>Tipo de ambiente.</li>
-        <li>Software ID y Software PIN.</li>
+        <li>Software ID/PIN (compartidos o por empresa, según modelo).</li>
         <li>Prefijo y resolución de numeración.</li>
         <li>Rango desde y rango hasta.</li>
+        <li>token_emisor_ref por empresa.</li>
+        <li>certificado_clave_ref por empresa (firma digital).</li>
       </ul>
 
       <h3 style="margin:14px 0 8px 0;">6) Endpoints de apoyo técnico DIAN</h3>
@@ -699,8 +711,12 @@
             <tr><td>GET/POST/PUT/DELETE</td><td>/api/empresa/facturacion_electronica/dian</td><td>CRUD de configuración DIAN por empresa</td></tr>
             <tr><td>GET</td><td>/api/empresa/facturacion_electronica/dian?action=checklist</td><td>Lista de campos faltantes para habilitar DIAN</td></tr>
             <tr><td>GET</td><td>/api/empresa/facturacion_electronica/dian?action=validar</td><td>Validación operativa de configuración DIAN</td></tr>
+            <tr><td>GET</td><td>/api/empresa/facturacion_electronica/dian?action=guia_onboarding</td><td>Guía profesional de onboarding DIAN por empresa</td></tr>
+            <tr><td>POST/PUT</td><td>/api/empresa/facturacion_electronica/dian?action=validar_credenciales</td><td>Valida token, firma y modo de software sin exponer secretos</td></tr>
+            <tr><td>POST/PUT multipart</td><td>/api/empresa/facturacion_electronica/dian?action=subir_firma</td><td>Sube firma PEM y actualiza certificado_clave_ref por empresa</td></tr>
             <tr><td>POST/PUT</td><td>/api/empresa/facturacion_electronica/dian?action=generar_cufe_demo</td><td>Genera CUFE de prueba para validación técnica</td></tr>
             <tr><td>POST/PUT</td><td>/api/empresa/facturacion_electronica/dian?action=generar_xml_demo</td><td>Genera XML de referencia para validación interna</td></tr>
+            <tr><td>POST/PUT</td><td>/api/empresa/facturacion_electronica/dian?action=enviar_set_pruebas</td><td>Envía (o simula) set de habilitación DIAN por empresa</td></tr>
           </tbody>
         </table>
       </div>
@@ -708,7 +724,8 @@
       <h3 style="margin:14px 0 8px 0;">7) Errores frecuentes y cómo evitarlos</h3>
       <ul>
         <li>Consecutivo fuera de rango: validar que consecutivo actual esté entre rango desde/hasta.</li>
-        <li>Credenciales inválidas: confirmar Software ID/PIN en DIAN y en sistema sin espacios extra.</li>
+        <li>Credenciales inválidas: confirmar Software ID/PIN (compartido o por empresa) y ejecutar <code>validar_credenciales</code>.</li>
+        <li>Firma inválida: subir nuevamente el PEM RSA por empresa con <code>action=subir_firma</code>.</li>
         <li>Resolución vencida: revisar fecha hasta de resolución y gestionar renovación.</li>
         <li>Datos fiscales inconsistentes: NIT, DV y razón social deben coincidir con RUT y DIAN.</li>
         <li>Mezcla de ambientes: evitar emitir en producción con credenciales de habilitación.</li>

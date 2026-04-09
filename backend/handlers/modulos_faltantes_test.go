@@ -1,14 +1,18 @@
 package handlers
 
 import (
+	"bytes"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"database/sql"
 	"encoding/json"
 	"encoding/pem"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -1295,6 +1299,398 @@ func TestEmpresaDIANColombiaHandlerContingenciaYReconexion(t *testing.T) {
 	}
 	if got := strings.ToLower(strings.TrimSpace(genericStringValue(respRecon["estado_dian"]))); got != "reconectado" {
 		t.Fatalf("estado_dian esperado=reconectado obtenido=%s body=%s", got, rrRecon.Body.String())
+	}
+}
+
+func TestEmpresaDIANColombiaHandlerEnviarSetPruebas(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_modulos_faltantes_dian_set_pruebas_handler.db")
+	ensureModulosFaltantesHandlerSchema(t, dbEmp)
+
+	empresaID := int64(61)
+	enviados := make([]string, 0)
+
+	dianServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			_, _ = w.Write([]byte(`{"ok":false,"estado":"rechazado","message":"metodo no permitido"}`))
+			return
+		}
+
+		payload := map[string]interface{}{}
+		_ = json.NewDecoder(r.Body).Decode(&payload)
+		documento := strings.TrimSpace(genericStringValue(payload["documento_codigo"]))
+		tipoDocumento := strings.TrimSpace(genericStringValue(payload["documento_tipo"]))
+		if documento == "" || tipoDocumento == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write([]byte(`{"ok":false,"estado":"rechazado","message":"documento o tipo faltante"}`))
+			return
+		}
+		enviados = append(enviados, documento+"|"+tipoDocumento)
+
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"ok":true,"acuse":"aceptado","message":"ok"}`))
+	}))
+	defer dianServer.Close()
+
+	_, err := dbpkg.CreateEmpresaGenericRow(dbEmp, cfgDIAN.Table, empresaID, map[string]interface{}{
+		"codigo":             "DIAN-SET-61",
+		"nit":                "900610001",
+		"razon_social":       "Empresa Set QA 61",
+		"tipo_ambiente":      "habilitacion",
+		"software_id":        "SW-61",
+		"software_pin":       "PIN-61",
+		"test_set_id":        "TESTSET-61",
+		"prefijo":            "SETP",
+		"resolucion_numero":  "187600000610",
+		"rango_desde":        100,
+		"rango_hasta":        999,
+		"consecutivo_actual": 100,
+		"url_dian":           dianServer.URL,
+		"estado_dian":        "pendiente",
+	}, cfgDIAN.AllowedColumns)
+	if err != nil {
+		t.Fatalf("CreateEmpresaGenericRow dian set: %v", err)
+	}
+
+	handler := EmpresaDIANColombiaHandler(dbEmp)
+	req := httptest.NewRequest(http.MethodPost, "/api/empresa/facturacion_electronica/dian?action=enviar_set_pruebas", strings.NewReader(`{"empresa_id":61,"facturas_electronicas":3,"notas_debito":1,"notas_credito":1,"total_documentos":5,"total_por_documento":"2500"}`))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("enviar_set_pruebas status=%d body=%s", rr.Code, rr.Body.String())
+	}
+
+	resp := decodeBodyAsMap(t, rr)
+	if ok, _ := resp["ok"].(bool); !ok {
+		t.Fatalf("respuesta no ok: %s", rr.Body.String())
+	}
+	if got := int(anyToInt64(resp["procesados"])); got != 5 {
+		t.Fatalf("procesados esperado=5 obtenido=%d body=%s", got, rr.Body.String())
+	}
+
+	resumen, _ := resp["resumen"].(map[string]interface{})
+	if got := int(anyToInt64(resumen["aceptado"])); got != 5 {
+		t.Fatalf("aceptados esperados=5 obtenido=%d body=%s", got, rr.Body.String())
+	}
+
+	detalles, _ := resp["detalles"].([]interface{})
+	if len(detalles) != 5 {
+		t.Fatalf("detalles esperados=5 obtenido=%d body=%s", len(detalles), rr.Body.String())
+	}
+
+	if len(enviados) != 5 {
+		t.Fatalf("envios recibidos esperados=5 obtenido=%d", len(enviados))
+	}
+
+	cfgActualizada, err := getEmpresaDIANConfig(dbEmp, empresaID)
+	if err != nil {
+		t.Fatalf("getEmpresaDIANConfig set: %v", err)
+	}
+	if got := anyToInt64(cfgActualizada["consecutivo_actual"]); got != 105 {
+		t.Fatalf("consecutivo_actual esperado=105 obtenido=%d", got)
+	}
+}
+
+func TestEmpresaDIANColombiaHandlerSoftwareCompartidoMultiempresa(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_modulos_faltantes_dian_software_compartido_handler.db")
+	ensureModulosFaltantesHandlerSchema(t, dbEmp)
+
+	t.Setenv("DIAN_SHARED_SOFTWARE_ID", "SW-SHARED-01")
+	t.Setenv("DIAN_SHARED_SOFTWARE_PIN", "PIN-SHARED-01")
+	t.Setenv("DIAN_TOKEN_EMP_62", "token-emp-62")
+	t.Setenv("DIAN_TOKEN_EMP_63", "token-emp-63")
+
+	receivedSoftware := make([]string, 0)
+	receivedNIT := make([]string, 0)
+	receivedTokens := make([]string, 0)
+
+	dianServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			_, _ = w.Write([]byte(`{"ok":false,"estado":"rechazado","message":"metodo no permitido"}`))
+			return
+		}
+
+		payload := map[string]interface{}{}
+		_ = json.NewDecoder(r.Body).Decode(&payload)
+
+		nit := strings.TrimSpace(genericStringValue(payload["nit"]))
+		softwareID := strings.TrimSpace(genericStringValue(payload["software_id"]))
+		token := strings.TrimSpace(strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer "))
+
+		receivedNIT = append(receivedNIT, nit)
+		receivedSoftware = append(receivedSoftware, softwareID)
+		receivedTokens = append(receivedTokens, token)
+
+		expectedToken := ""
+		switch nit {
+		case "900620001":
+			expectedToken = "token-emp-62"
+		case "900630001":
+			expectedToken = "token-emp-63"
+		default:
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write([]byte(`{"ok":false,"estado":"rechazado","message":"nit inesperado"}`))
+			return
+		}
+
+		if softwareID != "SW-SHARED-01" {
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write([]byte(`{"ok":false,"estado":"rechazado","message":"software_id invalido"}`))
+			return
+		}
+		if token != expectedToken {
+			w.WriteHeader(http.StatusUnauthorized)
+			_, _ = w.Write([]byte(`{"ok":false,"estado":"rechazado","message":"token invalido"}`))
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"ok":true,"acuse":"aceptado","message":"ok"}`))
+	}))
+	defer dianServer.Close()
+
+	_, err := dbpkg.CreateEmpresaGenericRow(dbEmp, cfgDIAN.Table, 62, map[string]interface{}{
+		"codigo":                      "DIAN-SH-62",
+		"nit":                         "900620001",
+		"razon_social":                "Empresa SaaS 62",
+		"tipo_ambiente":               "habilitacion",
+		"usar_software_compartido":    1,
+		"software_id":                 "SW-LOCAL-62",
+		"software_pin":                "PIN-LOCAL-62",
+		"software_id_compartido_ref":  "env:DIAN_SHARED_SOFTWARE_ID",
+		"software_pin_compartido_ref": "env:DIAN_SHARED_SOFTWARE_PIN",
+		"prefijo":                     "SETP",
+		"resolucion_numero":           "187600000620",
+		"rango_desde":                 1,
+		"rango_hasta":                 99999,
+		"consecutivo_actual":          1,
+		"url_dian":                    dianServer.URL,
+		"token_emisor_ref":            "env:DIAN_TOKEN_EMP_62",
+		"estado_dian":                 "pendiente",
+	}, cfgDIAN.AllowedColumns)
+	if err != nil {
+		t.Fatalf("CreateEmpresaGenericRow empresa 62: %v", err)
+	}
+
+	_, err = dbpkg.CreateEmpresaGenericRow(dbEmp, cfgDIAN.Table, 63, map[string]interface{}{
+		"codigo":                      "DIAN-SH-63",
+		"nit":                         "900630001",
+		"razon_social":                "Empresa SaaS 63",
+		"tipo_ambiente":               "habilitacion",
+		"usar_software_compartido":    1,
+		"software_id":                 "SW-LOCAL-63",
+		"software_pin":                "PIN-LOCAL-63",
+		"software_id_compartido_ref":  "env:DIAN_SHARED_SOFTWARE_ID",
+		"software_pin_compartido_ref": "env:DIAN_SHARED_SOFTWARE_PIN",
+		"prefijo":                     "SETP",
+		"resolucion_numero":           "187600000630",
+		"rango_desde":                 1,
+		"rango_hasta":                 99999,
+		"consecutivo_actual":          1,
+		"url_dian":                    dianServer.URL,
+		"token_emisor_ref":            "env:DIAN_TOKEN_EMP_63",
+		"estado_dian":                 "pendiente",
+	}, cfgDIAN.AllowedColumns)
+	if err != nil {
+		t.Fatalf("CreateEmpresaGenericRow empresa 63: %v", err)
+	}
+
+	handler := EmpresaDIANColombiaHandler(dbEmp)
+
+	req62 := httptest.NewRequest(http.MethodPost, "/api/empresa/facturacion_electronica/dian?action=enviar_documento_real", strings.NewReader(`{"empresa_id":62,"documento_codigo":"FV-6201","xml_firmado":"<Invoice><ID>FV-6201</ID></Invoice>","total":"20000"}`))
+	req62.Header.Set("Content-Type", "application/json")
+	rr62 := httptest.NewRecorder()
+	handler.ServeHTTP(rr62, req62)
+	if rr62.Code != http.StatusOK {
+		t.Fatalf("envio empresa 62 status=%d body=%s", rr62.Code, rr62.Body.String())
+	}
+	resp62 := decodeBodyAsMap(t, rr62)
+	if got := strings.ToLower(strings.TrimSpace(genericStringValue(resp62["software_modo"]))); got != "compartido" {
+		t.Fatalf("software_modo esperado=compartido obtenido=%s body=%s", got, rr62.Body.String())
+	}
+	if got := strings.TrimSpace(genericStringValue(resp62["software_id"])); got != "SW-SHARED-01" {
+		t.Fatalf("software_id esperado=SW-SHARED-01 obtenido=%s", got)
+	}
+
+	req63 := httptest.NewRequest(http.MethodPost, "/api/empresa/facturacion_electronica/dian?action=enviar_documento_real", strings.NewReader(`{"empresa_id":63,"documento_codigo":"FV-6301","xml_firmado":"<Invoice><ID>FV-6301</ID></Invoice>","total":"30000"}`))
+	req63.Header.Set("Content-Type", "application/json")
+	rr63 := httptest.NewRecorder()
+	handler.ServeHTTP(rr63, req63)
+	if rr63.Code != http.StatusOK {
+		t.Fatalf("envio empresa 63 status=%d body=%s", rr63.Code, rr63.Body.String())
+	}
+	resp63 := decodeBodyAsMap(t, rr63)
+	if got := strings.ToLower(strings.TrimSpace(genericStringValue(resp63["software_modo"]))); got != "compartido" {
+		t.Fatalf("software_modo esperado=compartido obtenido=%s body=%s", got, rr63.Body.String())
+	}
+	if got := strings.TrimSpace(genericStringValue(resp63["software_id"])); got != "SW-SHARED-01" {
+		t.Fatalf("software_id esperado=SW-SHARED-01 obtenido=%s", got)
+	}
+
+	if len(receivedSoftware) != 2 || len(receivedNIT) != 2 || len(receivedTokens) != 2 {
+		t.Fatalf("captura de requests incompleta software=%d nit=%d token=%d", len(receivedSoftware), len(receivedNIT), len(receivedTokens))
+	}
+	if receivedSoftware[0] != "SW-SHARED-01" || receivedSoftware[1] != "SW-SHARED-01" {
+		t.Fatalf("software compartido no aplicado en ambos envios: %v", receivedSoftware)
+	}
+	if !(receivedNIT[0] != receivedNIT[1]) {
+		t.Fatalf("se esperaban NIT distintos por empresa, obtenido=%v", receivedNIT)
+	}
+}
+
+func TestEmpresaDIANColombiaHandlerGuiaOnboardingYValidarCredenciales(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_modulos_faltantes_dian_onboarding_handler.db")
+	ensureModulosFaltantesHandlerSchema(t, dbEmp)
+
+	t.Setenv("DIAN_SHARED_SOFTWARE_ID", "SW-SHARED-ONBOARD")
+	t.Setenv("DIAN_SHARED_SOFTWARE_PIN", "PIN-SHARED-ONBOARD")
+	t.Setenv("DIAN_TOKEN_EMP_64", "token-emp-64")
+
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatalf("rsa.GenerateKey: %v", err)
+	}
+	privateKeyPEM := marshalRSAPrivateKeyPEM(t, privateKey)
+
+	_, err = dbpkg.CreateEmpresaGenericRow(dbEmp, cfgDIAN.Table, 64, map[string]interface{}{
+		"codigo":                      "DIAN-ONBOARD-64",
+		"nit":                         "900640001",
+		"razon_social":                "Empresa Onboarding 64",
+		"tipo_ambiente":               "habilitacion",
+		"usar_software_compartido":    1,
+		"software_id_compartido_ref":  "env:DIAN_SHARED_SOFTWARE_ID",
+		"software_pin_compartido_ref": "env:DIAN_SHARED_SOFTWARE_PIN",
+		"prefijo":                     "SETP",
+		"resolucion_numero":           "187600000640",
+		"rango_desde":                 1,
+		"rango_hasta":                 99999,
+		"consecutivo_actual":          1,
+		"url_dian":                    "https://vpfe-hab.dian.gov.co/WcfDianCustomerServices.svc?wsdl",
+		"token_emisor_ref":            "env:DIAN_TOKEN_EMP_64",
+		"certificado_clave_ref":       privateKeyPEM,
+		"estado_dian":                 "pendiente",
+	}, cfgDIAN.AllowedColumns)
+	if err != nil {
+		t.Fatalf("CreateEmpresaGenericRow empresa 64: %v", err)
+	}
+
+	handler := EmpresaDIANColombiaHandler(dbEmp)
+
+	reqGuia := httptest.NewRequest(http.MethodGet, "/api/empresa/facturacion_electronica/dian?action=guia_onboarding&empresa_id=64", nil)
+	rrGuia := httptest.NewRecorder()
+	handler.ServeHTTP(rrGuia, reqGuia)
+	if rrGuia.Code != http.StatusOK {
+		t.Fatalf("guia_onboarding status=%d body=%s", rrGuia.Code, rrGuia.Body.String())
+	}
+	respGuia := decodeBodyAsMap(t, rrGuia)
+	if got := strings.ToLower(strings.TrimSpace(genericStringValue(respGuia["software_modo"]))); got != "compartido" {
+		t.Fatalf("software_modo esperado=compartido obtenido=%s", got)
+	}
+	pasos, _ := respGuia["pasos"].([]interface{})
+	if len(pasos) < 5 {
+		t.Fatalf("guia_onboarding debe devolver pasos operativos, obtenido=%d", len(pasos))
+	}
+
+	reqValidar := httptest.NewRequest(http.MethodPost, "/api/empresa/facturacion_electronica/dian?action=validar_credenciales", strings.NewReader(`{"empresa_id":64}`))
+	reqValidar.Header.Set("Content-Type", "application/json")
+	rrValidar := httptest.NewRecorder()
+	handler.ServeHTTP(rrValidar, reqValidar)
+	if rrValidar.Code != http.StatusOK {
+		t.Fatalf("validar_credenciales status=%d body=%s", rrValidar.Code, rrValidar.Body.String())
+	}
+	respValidar := decodeBodyAsMap(t, rrValidar)
+	if ok, _ := respValidar["ok"].(bool); !ok {
+		t.Fatalf("validar_credenciales debe retornar ok=true body=%s", rrValidar.Body.String())
+	}
+	checks, _ := respValidar["checks"].(map[string]interface{})
+	firma, _ := checks["firma_digital"].(map[string]interface{})
+	if okFirma, _ := firma["ok"].(bool); !okFirma {
+		t.Fatalf("firma_digital debe ser valida body=%s", rrValidar.Body.String())
+	}
+}
+
+func TestEmpresaDIANColombiaHandlerSubirFirma(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_modulos_faltantes_dian_subir_firma_handler.db")
+	ensureModulosFaltantesHandlerSchema(t, dbEmp)
+
+	_, err := dbpkg.CreateEmpresaGenericRow(dbEmp, cfgDIAN.Table, 65, map[string]interface{}{
+		"codigo":             "DIAN-UP-65",
+		"nit":                "900650001",
+		"razon_social":       "Empresa Upload 65",
+		"tipo_ambiente":      "habilitacion",
+		"software_id":        "SW-65",
+		"software_pin":       "PIN-65",
+		"prefijo":            "SETP",
+		"resolucion_numero":  "187600000650",
+		"rango_desde":        1,
+		"rango_hasta":        99999,
+		"consecutivo_actual": 1,
+		"url_dian":           "https://vpfe-hab.dian.gov.co/WcfDianCustomerServices.svc?wsdl",
+		"estado_dian":        "pendiente",
+	}, cfgDIAN.AllowedColumns)
+	if err != nil {
+		t.Fatalf("CreateEmpresaGenericRow empresa 65: %v", err)
+	}
+
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatalf("rsa.GenerateKey: %v", err)
+	}
+	privateKeyPEM := marshalRSAPrivateKeyPEM(t, privateKey)
+
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	if err := writer.WriteField("empresa_id", "65"); err != nil {
+		t.Fatalf("writer.WriteField empresa_id: %v", err)
+	}
+	part, err := writer.CreateFormFile("archivo_firma", "empresa65.pem")
+	if err != nil {
+		t.Fatalf("writer.CreateFormFile: %v", err)
+	}
+	if _, err := part.Write([]byte(privateKeyPEM)); err != nil {
+		t.Fatalf("part.Write: %v", err)
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatalf("writer.Close: %v", err)
+	}
+
+	handler := EmpresaDIANColombiaHandler(dbEmp)
+	req := httptest.NewRequest(http.MethodPost, "/api/empresa/facturacion_electronica/dian?action=subir_firma", &body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("subir_firma status=%d body=%s", rr.Code, rr.Body.String())
+	}
+
+	resp := decodeBodyAsMap(t, rr)
+	if ok, _ := resp["ok"].(bool); !ok {
+		t.Fatalf("subir_firma debe retornar ok=true body=%s", rr.Body.String())
+	}
+	ref := strings.TrimSpace(genericStringValue(resp["certificado_clave_ref"]))
+	if !strings.HasPrefix(strings.ToLower(ref), "file:") {
+		t.Fatalf("certificado_clave_ref debe guardarse como file:, obtenido=%s", ref)
+	}
+	absPath := strings.TrimSpace(ref[5:])
+	if absPath == "" {
+		t.Fatalf("ruta file: vacia en certificado_clave_ref")
+	}
+	if _, err := os.Stat(absPath); err != nil {
+		t.Fatalf("archivo de firma no existe en ruta guardada: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = os.Remove(absPath)
+		_ = os.Remove(filepath.Dir(absPath))
+	})
+
+	cfg, err := getEmpresaDIANConfig(dbEmp, 65)
+	if err != nil {
+		t.Fatalf("getEmpresaDIANConfig empresa 65: %v", err)
+	}
+	if got := strings.TrimSpace(genericStringValue(cfg["certificado_clave_ref"])); got != ref {
+		t.Fatalf("certificado_clave_ref en DB no coincide, esperado=%s obtenido=%s", ref, got)
 	}
 }
 

@@ -636,6 +636,9 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 			tipo_ambiente TEXT DEFAULT 'habilitacion',
 			software_id TEXT,
 			software_pin TEXT,
+			usar_software_compartido INTEGER DEFAULT 0,
+			software_id_compartido_ref TEXT,
+			software_pin_compartido_ref TEXT,
 			test_set_id TEXT,
 			certificado_url TEXT,
 			certificado_clave_ref TEXT,
@@ -808,6 +811,16 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 		return err
 	}
 
+	if err := ensureColumnIfMissing(dbConn, "empresa_dian_configuracion", "usar_software_compartido", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_dian_configuracion", "software_id_compartido_ref", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_dian_configuracion", "software_pin_compartido_ref", "TEXT"); err != nil {
+		return err
+	}
+
 	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_cxc_empresa_periodo ON empresa_cuentas_por_cobrar(empresa_id, periodo_contable, estado_cartera);`); err != nil {
 		return err
 	}
@@ -824,6 +837,9 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 		return err
 	}
 	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_rrhh_vac_lic_empresa_nomina_periodo ON empresa_rrhh_vacaciones_licencias(empresa_id, empleado_nomina_id, nomina_liquidacion_id, nomina_periodo_desde, nomina_periodo_hasta);`); err != nil {
+		return err
+	}
+	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_dian_empresa_shared_mode ON empresa_dian_configuracion(empresa_id, usar_software_compartido);`); err != nil {
 		return err
 	}
 

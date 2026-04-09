@@ -1,7 +1,7 @@
 # Estructura de Base de Datos
 
-Version: 2026-04-08.43.0
-Ultima actualizacion: 2026-04-08
+Version: 2026-04-09.44.0
+Ultima actualizacion: 2026-04-09
 
 Este documento consolida la estructura activa de SQLite para el proyecto.
 Nota de gobernanza documental:
@@ -732,7 +732,9 @@ Todas las tablas operativas usan como base los campos estandar:
 - empresa_dian_configuracion:
   - empresa_id (UNIQUE), codigo
   - nit, digito_verificacion, razon_social, tipo_ambiente
-  - software_id, software_pin, test_set_id
+  - software_id, software_pin
+  - usar_software_compartido, software_id_compartido_ref, software_pin_compartido_ref
+  - test_set_id
   - certificado_url, certificado_clave_ref
   - prefijo, resolucion_numero, resolucion_fecha_desde, resolucion_fecha_hasta
   - rango_desde, rango_hasta, consecutivo_actual

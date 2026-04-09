@@ -56,6 +56,38 @@ flowchart TD
 ## Regla de mantenimiento
 Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe reflejarse en este documento y en los diagramas relacionados dentro de documentos/diagramas/.
 
+## Actualizacion 2026-04-09 (facturacion DIAN multiempresa SaaS: software compartido + credenciales por empresa)
+
+- Backend DB:
+  - `backend/db/modulos_faltantes.go`:
+    - amplía `empresa_dian_configuracion` con `usar_software_compartido`, `software_id_compartido_ref` y `software_pin_compartido_ref`.
+    - agrega indice `ix_dian_empresa_shared_mode` para consultas operativas del modo DIAN por empresa.
+
+- Backend handlers:
+  - `backend/handlers/modulos_faltantes.go`:
+    - incorpora resolucion de software DIAN efectivo por empresa (`resolveDIANSoftwareCredentials`) con soporte a referencias seguras y fallback global por entorno (`DIAN_SHARED_SOFTWARE_ID`, `DIAN_SHARED_SOFTWARE_PIN`).
+    - mantiene aislamiento multiempresa: `NIT`, `token_emisor_ref` y `certificado_clave_ref` por `empresa_id`.
+    - agrega onboarding profesional por empresa con `action=guia_onboarding` y `action=validar_credenciales`.
+    - agrega `action=subir_firma` para carga multipart de firma PEM y actualizacion automatica de `certificado_clave_ref` por empresa.
+    - expone en respuestas `software_modo` y `software_id` efectivo para trazabilidad operacional.
+
+- QA:
+  - `backend/handlers/modulos_faltantes_test.go`:
+    - agrega `TestEmpresaDIANColombiaHandlerSoftwareCompartidoMultiempresa` para validar mismo software compartido con `NIT`/token distintos por empresa.
+    - agrega `TestEmpresaDIANColombiaHandlerGuiaOnboardingYValidarCredenciales` y `TestEmpresaDIANColombiaHandlerSubirFirma` para validar soporte operativo por empresa.
+
+## Actualizacion 2026-04-09 (facturacion DIAN: envio automatizado de set de habilitacion)
+
+- Backend handlers:
+  - `backend/handlers/modulos_faltantes.go`:
+    - agrega `action=enviar_set_pruebas` en `/api/empresa/facturacion_electronica/dian`.
+    - automatiza distribucion por tipo documental (factura, nota debito, nota credito) y envio por lote con resumen por estado (`aceptado`, `rechazado`, `contingencia`, `pendiente`, `error`).
+    - incorpora modo `simular` para validar estructura sin envio real.
+
+- QA:
+  - `backend/handlers/modulos_faltantes_test.go`:
+    - agrega `TestEmpresaDIANColombiaHandlerEnviarSetPruebas` para validar envio por lote, conteo de resultados y avance de consecutivo.
+
 ## Actualizacion 2026-04-08 (alerta de inicio/reinicio de servidor)
 
 - Backend arranque y cierre controlado:

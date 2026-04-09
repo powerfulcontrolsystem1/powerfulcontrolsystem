@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -435,6 +436,7 @@ var (
 		SearchColumns: []string{"nit", "razon_social", "tipo_ambiente", "estado_dian", "prefijo", "resolucion_numero"},
 		AllowedColumns: []string{
 			"codigo", "nit", "digito_verificacion", "razon_social", "tipo_ambiente", "software_id", "software_pin",
+			"usar_software_compartido", "software_id_compartido_ref", "software_pin_compartido_ref",
 			"test_set_id", "certificado_url", "certificado_clave_ref", "prefijo", "resolucion_numero",
 			"resolucion_fecha_desde", "resolucion_fecha_hasta", "rango_desde", "rango_hasta", "consecutivo_actual",
 			"url_dian", "token_emisor_ref", "ultimo_envio", "estado_dian", "usuario_creador", "estado", "observaciones",
@@ -443,9 +445,10 @@ var (
 		CodeColumn:       "codigo",
 		CodePrefix:       "DIAN",
 		DefaultValues: map[string]interface{}{
-			"tipo_ambiente": "habilitacion",
-			"estado_dian":   "pendiente",
-			"url_dian":      "https://vpfe-hab.dian.gov.co",
+			"tipo_ambiente":            "habilitacion",
+			"estado_dian":              "pendiente",
+			"url_dian":                 "https://vpfe-hab.dian.gov.co",
+			"usar_software_compartido": 0,
 		},
 	}
 
@@ -6654,6 +6657,51 @@ func EmpresaDIANColombiaHandler(dbEmp *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 		switch action {
+		case "guia_onboarding", "ayuda_configuracion", "onboarding_empresa":
+			empresaID, _ := parseInt64QueryOptional(r, "empresa_id")
+			if empresaID <= 0 {
+				empresaID = parseEmpresaIDFromContext(r)
+			}
+			cfg := map[string]interface{}{}
+			if empresaID > 0 {
+				cfg, _ = getEmpresaDIANConfig(dbEmp, empresaID)
+			}
+			writeJSON(w, http.StatusOK, buildDIANOnboardingGuide(cfg, empresaID))
+			return
+
+		case "validar_credenciales", "validar_secretos":
+			payload, err := decodeGenericBodyMapOptional(r)
+			if err != nil {
+				http.Error(w, "JSON invalido", http.StatusBadRequest)
+				return
+			}
+			empresaID, err := resolveEmpresaIDFromPayloadOrRequest(r, payload)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			cfg, _ := getEmpresaDIANConfig(dbEmp, empresaID)
+			response, status, err := validateDIANCredentialRefs(cfg, empresaID, payload)
+			if err != nil {
+				http.Error(w, err.Error(), status)
+				return
+			}
+			writeJSON(w, status, response)
+			return
+
+		case "subir_firma", "upload_firma":
+			if r.Method != http.MethodPost && r.Method != http.MethodPut {
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+			response, status, err := uploadDIANCompanySignature(dbEmp, r)
+			if err != nil {
+				http.Error(w, err.Error(), status)
+				return
+			}
+			writeJSON(w, status, response)
+			return
+
 		case "checklist", "validar":
 			empresaID, err := parseEmpresaIDQuery(r)
 			if err != nil {
@@ -6662,18 +6710,26 @@ func EmpresaDIANColombiaHandler(dbEmp *sql.DB) http.HandlerFunc {
 			}
 			cfg, _ := getEmpresaDIANConfig(dbEmp, empresaID)
 			missing := missingDIANFields(cfg)
+			effectiveSoftwareID, _, useSharedSoftware, softwareErr := resolveDIANSoftwareCredentials(cfg, nil)
 			response := map[string]interface{}{
 				"ok":                len(missing) == 0,
 				"empresa_id":        empresaID,
 				"faltantes":         missing,
 				"pasos_minimos":     dianChecklistSteps(),
 				"ambiente_sugerido": chooseDIANAmbiente(cfg),
+				"software_modo":     map[bool]string{true: "compartido", false: "empresa"}[useSharedSoftware],
+				"software_id":       effectiveSoftwareID,
+			}
+			if softwareErr != nil {
+				response["software_error"] = softwareErr.Error()
 			}
 			if action == "validar" {
 				response["recomendaciones"] = []string{
-					"Validar que software_id/software_pin coincidan con la plataforma DIAN.",
+					"Definir modo DIAN por empresa: software compartido (SaaS) o software propio por empresa.",
+					"Si usa software compartido, configurar software_id_compartido_ref/software_pin_compartido_ref o variables DIAN_SHARED_SOFTWARE_ID/DIAN_SHARED_SOFTWARE_PIN.",
+					"Si no usa software compartido, validar que software_id/software_pin de la empresa coincidan con la plataforma DIAN.",
 					"Confirmar rango de numeracion vigente y consecutivo dentro del rango.",
-					"Mantener certificado y claves fuera del codigo fuente (referencias seguras).",
+					"Mantener certificado, token y PIN fuera del codigo fuente (referencias seguras por empresa).",
 				}
 			}
 			writeJSON(w, http.StatusOK, response)
@@ -6708,8 +6764,11 @@ func EmpresaDIANColombiaHandler(dbEmp *sql.DB) http.HandlerFunc {
 				fecha = time.Now().Format("2006-01-02T15:04:05-07:00")
 			}
 			nit := genericStringValue(cfg["nit"])
-			softwareID := genericStringValue(cfg["software_id"])
-			softwarePIN := genericStringValue(cfg["software_pin"])
+			softwareID, softwarePIN, useSharedSoftware, err := resolveDIANSoftwareCredentials(cfg, payload)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
 			seed := nit + "|" + documento + "|" + fecha + "|" + total + "|" + softwareID + "|" + softwarePIN
 			sum := sha256.Sum256([]byte(seed))
 			cufe := strings.ToUpper(hex.EncodeToString(sum[:]))
@@ -6720,6 +6779,8 @@ func EmpresaDIANColombiaHandler(dbEmp *sql.DB) http.HandlerFunc {
 				"documento_codigo": documento,
 				"fecha_emision":    fecha,
 				"total":            total,
+				"software_modo":    map[bool]string{true: "compartido", false: "empresa"}[useSharedSoftware],
+				"software_id":      softwareID,
 				"cufe_demo":        cufe,
 				"algoritmo":        "SHA-256",
 			})
@@ -6850,6 +6911,30 @@ func EmpresaDIANColombiaHandler(dbEmp *sql.DB) http.HandlerFunc {
 			}
 			cfg, _ := getEmpresaDIANConfig(dbEmp, empresaID)
 			response, status, err := runDIANReconexion(dbEmp, cfg, empresaID, payload)
+			if err != nil {
+				http.Error(w, err.Error(), status)
+				return
+			}
+			writeJSON(w, status, response)
+			return
+
+		case "enviar_set_pruebas", "enviar_set_habilitacion":
+			if r.Method != http.MethodPost && r.Method != http.MethodPut {
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+			payload, err := decodeGenericBodyMapOptional(r)
+			if err != nil {
+				http.Error(w, "JSON invalido", http.StatusBadRequest)
+				return
+			}
+			empresaID, err := resolveEmpresaIDFromPayloadOrRequest(r, payload)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			cfg, _ := getEmpresaDIANConfig(dbEmp, empresaID)
+			response, status, err := runDIANSetPruebasEnvio(dbEmp, cfg, empresaID, payload)
 			if err != nil {
 				http.Error(w, err.Error(), status)
 				return
@@ -7132,25 +7217,33 @@ func sendDIANDocumentoReal(dbEmp *sql.DB, cfg map[string]interface{}, empresaID 
 		}
 	}
 
-	softwarePIN := strings.TrimSpace(genericStringValue(payload["software_pin"]))
+	softwareID, softwarePIN, useSharedSoftware, err := resolveDIANSoftwareCredentials(cfg, payload)
+	if err != nil {
+		return nil, http.StatusBadRequest, err
+	}
+	if softwareID == "" {
+		return nil, http.StatusBadRequest, fmt.Errorf("software_id no configurado para el modo DIAN actual")
+	}
 	if softwarePIN == "" {
-		softwarePIN = strings.TrimSpace(genericStringValue(cfg["software_pin"]))
+		return nil, http.StatusBadRequest, fmt.Errorf("software_pin no configurado para el modo DIAN actual")
 	}
 
 	fechaEmision := dianFirstNonBlank(genericStringValue(payload["fecha_emision"]), time.Now().Format("2006-01-02T15:04:05-07:00"))
 	total := dianFirstNonBlank(genericStringValue(payload["total"]), "0")
-	cufe := dianFirstNonBlank(genericStringValue(payload["cufe"]), buildDIANCUFE(genericStringValue(cfg["nit"]), documentoCodigo, fechaEmision, total, genericStringValue(cfg["software_id"]), softwarePIN))
+	cufe := dianFirstNonBlank(genericStringValue(payload["cufe"]), buildDIANCUFE(genericStringValue(cfg["nit"]), documentoCodigo, fechaEmision, total, softwareID, softwarePIN))
+	documentoTipo := genericStringDefault(payload["documento_tipo"], "factura")
 
 	requestBody := map[string]interface{}{
 		"empresa_id":       empresaID,
 		"documento_codigo": documentoCodigo,
+		"documento_tipo":   documentoTipo,
 		"fecha_emision":    fechaEmision,
 		"total":            total,
 		"cufe":             cufe,
 		"ambiente":         genericStringDefault(cfg["tipo_ambiente"], "habilitacion"),
 		"nit":              genericStringValue(cfg["nit"]),
-		"software_id":      genericStringValue(cfg["software_id"]),
-		"test_set_id":      genericStringValue(cfg["test_set_id"]),
+		"software_id":      softwareID,
+		"test_set_id":      dianFirstNonBlank(genericStringValue(payload["test_set_id"]), genericStringValue(cfg["test_set_id"])),
 		"xml_firmado":      xmlFirmado,
 	}
 
@@ -7241,6 +7334,9 @@ func sendDIANDocumentoReal(dbEmp *sql.DB, cfg map[string]interface{}, empresaID 
 		"ok":                  estadoDIAN == "aceptado" || estadoDIAN == "enviado" || acuseEstado == "pendiente",
 		"empresa_id":          empresaID,
 		"documento_codigo":    documentoCodigo,
+		"documento_tipo":      documentoTipo,
+		"software_modo":       map[bool]string{true: "compartido", false: "empresa"}[useSharedSoftware],
+		"software_id":         softwareID,
 		"cufe":                cufe,
 		"endpoint":            endpoint,
 		"http_status":         resp.StatusCode,
@@ -7438,6 +7534,599 @@ func runDIANReconexion(dbEmp *sql.DB, cfg map[string]interface{}, empresaID int6
 	return response, http.StatusOK, nil
 }
 
+func dianPayloadString(payload map[string]interface{}, keys ...string) string {
+	for _, key := range keys {
+		if payload == nil {
+			continue
+		}
+		if value, ok := payload[strings.TrimSpace(key)]; ok {
+			if s := strings.TrimSpace(genericStringValue(value)); s != "" {
+				return s
+			}
+		}
+	}
+	return ""
+}
+
+func dianPayloadPositiveInt(payload map[string]interface{}, fallback int, keys ...string) int {
+	if fallback < 0 {
+		fallback = 0
+	}
+	for _, key := range keys {
+		if payload == nil {
+			continue
+		}
+		value, ok := payload[strings.TrimSpace(key)]
+		if !ok {
+			continue
+		}
+		if n := int(anyToInt64(value)); n > 0 {
+			return n
+		}
+		raw := strings.TrimSpace(genericStringValue(value))
+		if raw == "" {
+			continue
+		}
+		if n, err := strconv.Atoi(raw); err == nil && n > 0 {
+			return n
+		}
+	}
+	return fallback
+}
+
+func dianBuildDocumentoCodigo(prefijo string, consecutivo int64) string {
+	prefijo = strings.TrimSpace(prefijo)
+	if prefijo == "" {
+		prefijo = "SETP"
+	}
+	if consecutivo <= 0 {
+		consecutivo = 1
+	}
+	return prefijo + strconv.FormatInt(consecutivo, 10)
+}
+
+func dianBuildDocumentoXML(cfg map[string]interface{}, documentoCodigo, documentoTipo, issueDate, total string) string {
+	root := "Invoice"
+	switch strings.ToLower(strings.TrimSpace(documentoTipo)) {
+	case "nota_debito", "debit_note", "debitnote", "debito":
+		root = "DebitNote"
+	case "nota_credito", "credit_note", "creditnote", "credito":
+		root = "CreditNote"
+	}
+
+	nit := genericStringDefault(cfg["nit"], "000000000")
+	razonSocial := escapeXML(genericStringDefault(cfg["razon_social"], "EMPRESA DEMO"))
+	ambiente := escapeXML(genericStringDefault(cfg["tipo_ambiente"], "habilitacion"))
+
+	issueDateOnly := strings.TrimSpace(issueDate)
+	if issueDateOnly == "" {
+		issueDateOnly = time.Now().Format("2006-01-02")
+	} else if t, err := time.Parse(time.RFC3339, issueDateOnly); err == nil {
+		issueDateOnly = t.Format("2006-01-02")
+	} else if len(issueDateOnly) >= 10 {
+		issueDateOnly = issueDateOnly[:10]
+	}
+
+	total = strings.TrimSpace(total)
+	if total == "" {
+		total = "0"
+	}
+
+	return fmt.Sprintf("<?xml version=\"1.0\" encoding=\"UTF-8\"?><%s><ProfileExecutionID>%s</ProfileExecutionID><ID>%s</ID><IssueDate>%s</IssueDate><DocumentCurrencyCode>COP</DocumentCurrencyCode><LegalMonetaryTotal><PayableAmount>%s</PayableAmount></LegalMonetaryTotal><AccountingSupplierParty><PartyTaxScheme><CompanyID>%s</CompanyID><RegistrationName>%s</RegistrationName></PartyTaxScheme></AccountingSupplierParty></%s>",
+		root,
+		ambiente,
+		escapeXML(documentoCodigo),
+		escapeXML(issueDateOnly),
+		escapeXML(total),
+		escapeXML(nit),
+		razonSocial,
+		root,
+	)
+}
+
+func runDIANSetPruebasEnvio(dbEmp *sql.DB, cfg map[string]interface{}, empresaID int64, payload map[string]interface{}) (map[string]interface{}, int, error) {
+	if empresaID <= 0 {
+		return nil, http.StatusBadRequest, fmt.Errorf("empresa_id es obligatorio")
+	}
+	if len(cfg) == 0 {
+		return nil, http.StatusBadRequest, fmt.Errorf("no existe configuracion DIAN para la empresa")
+	}
+
+	facturas := dianPayloadPositiveInt(payload, 30, "facturas_electronicas", "facturas", "invoices_total_required")
+	notasDebito := dianPayloadPositiveInt(payload, 10, "notas_debito", "debit_notes", "total_debit_notes_required")
+	notasCredito := dianPayloadPositiveInt(payload, 10, "notas_credito", "credit_notes", "total_credit_notes_required")
+
+	sumaBase := facturas + notasDebito + notasCredito
+	totalDocumentos := dianPayloadPositiveInt(payload, sumaBase, "total_documentos", "documentos", "total_document_required")
+	if totalDocumentos < sumaBase {
+		totalDocumentos = sumaBase
+	}
+	if extra := totalDocumentos - sumaBase; extra > 0 {
+		facturas += extra
+	}
+
+	maxEnvios := dianPayloadPositiveInt(payload, totalDocumentos, "max_envios", "limit")
+	if maxEnvios <= 0 || maxEnvios > totalDocumentos {
+		maxEnvios = totalDocumentos
+	}
+
+	simular := parseTruthy(dianPayloadString(payload, "simular", "dry_run", "solo_plan"))
+	detenerEnError := parseTruthy(dianPayloadString(payload, "detener_en_error", "stop_on_error"))
+	totalPorDocumento := dianFirstNonBlank(dianPayloadString(payload, "total_por_documento", "total"), "1000")
+	prefijo := dianFirstNonBlank(dianPayloadString(payload, "prefijo"), genericStringValue(cfg["prefijo"]), "SETP")
+	softwareID, _, useSharedSoftware, err := resolveDIANSoftwareCredentials(cfg, payload)
+	if err != nil {
+		return nil, http.StatusBadRequest, err
+	}
+	if strings.TrimSpace(softwareID) == "" {
+		return nil, http.StatusBadRequest, fmt.Errorf("software_id no configurado para ejecutar el set DIAN")
+	}
+
+	rangoDesde := anyToInt64(cfg["rango_desde"])
+	if rangoDesde <= 0 {
+		rangoDesde = 1
+	}
+	rangoHasta := anyToInt64(cfg["rango_hasta"])
+
+	consecutivoInicial := anyToInt64(cfg["consecutivo_actual"])
+	if customInicio := anyToInt64(payload["consecutivo_inicial"]); customInicio > 0 {
+		consecutivoInicial = customInicio
+	}
+	if consecutivoInicial <= 0 || consecutivoInicial < rangoDesde {
+		consecutivoInicial = rangoDesde
+	}
+
+	if rangoHasta > 0 {
+		capacidad := int(rangoHasta - consecutivoInicial + 1)
+		if capacidad < maxEnvios {
+			return nil, http.StatusConflict, fmt.Errorf("rango DIAN insuficiente para el set solicitado: capacidad=%d requerido=%d", capacidad, maxEnvios)
+		}
+	}
+
+	targets := []struct {
+		Tipo     string
+		Cantidad int
+	}{
+		{Tipo: "factura", Cantidad: facturas},
+		{Tipo: "nota_debito", Cantidad: notasDebito},
+		{Tipo: "nota_credito", Cantidad: notasCredito},
+	}
+
+	resumen := map[string]int{
+		"aceptado":     0,
+		"rechazado":    0,
+		"enviado":      0,
+		"pendiente":    0,
+		"contingencia": 0,
+		"error":        0,
+		"simulado":     0,
+	}
+
+	procesados := 0
+	detenidoPorError := false
+	detalles := make([]map[string]interface{}, 0, maxEnvios)
+	siguienteConsecutivo := consecutivoInicial
+
+	for _, target := range targets {
+		for i := 0; i < target.Cantidad; i++ {
+			if procesados >= maxEnvios {
+				break
+			}
+
+			documentoCodigo := dianBuildDocumentoCodigo(prefijo, siguienteConsecutivo)
+			siguienteConsecutivo++
+			fechaEmision := time.Now().Format("2006-01-02T15:04:05-07:00")
+			xmlDocumento := dianBuildDocumentoXML(cfg, documentoCodigo, target.Tipo, fechaEmision, totalPorDocumento)
+
+			detalle := map[string]interface{}{
+				"indice":           procesados + 1,
+				"tipo_documento":   target.Tipo,
+				"documento_codigo": documentoCodigo,
+				"fecha_emision":    fechaEmision,
+				"total":            totalPorDocumento,
+			}
+
+			if simular {
+				detalle["ok"] = true
+				detalle["estado_dian"] = "simulado"
+				detalle["acuse_estado"] = "simulado"
+				detalle["software_modo"] = map[bool]string{true: "compartido", false: "empresa"}[useSharedSoftware]
+				detalle["software_id"] = softwareID
+				resumen["simulado"]++
+				detalles = append(detalles, detalle)
+				procesados++
+				continue
+			}
+
+			envioPayload := map[string]interface{}{
+				"empresa_id":       empresaID,
+				"documento_codigo": documentoCodigo,
+				"documento_tipo":   target.Tipo,
+				"xml_firmado":      xmlDocumento,
+				"total":            totalPorDocumento,
+				"fecha_emision":    fechaEmision,
+				"test_set_id":      genericStringValue(cfg["test_set_id"]),
+			}
+			if overrideURL := dianPayloadString(payload, "url_dian", "endpoint"); overrideURL != "" {
+				envioPayload["url_dian"] = overrideURL
+			}
+			if overrideToken := dianPayloadString(payload, "token"); overrideToken != "" {
+				envioPayload["token"] = overrideToken
+			}
+			if overridePIN := dianPayloadString(payload, "software_pin"); overridePIN != "" {
+				envioPayload["software_pin"] = overridePIN
+			}
+
+			envioResp, _, err := sendDIANDocumentoReal(dbEmp, cfg, empresaID, envioPayload)
+			if err != nil {
+				detalle["ok"] = false
+				detalle["estado_dian"] = "error"
+				detalle["error"] = dianTruncate(err.Error(), 240)
+				resumen["error"]++
+				detenidoPorError = detenerEnError
+				detalles = append(detalles, detalle)
+				procesados++
+				if detenidoPorError {
+					break
+				}
+				continue
+			}
+
+			detalle["ok"] = parseTruthy(genericStringValue(envioResp["ok"]))
+			detalle["estado_dian"] = genericStringDefault(envioResp["estado_dian"], "pendiente")
+			detalle["acuse_estado"] = genericStringDefault(envioResp["acuse_estado"], "pendiente")
+			detalle["http_status"] = anyToInt64(envioResp["http_status"])
+			detalle["latency_ms"] = anyToInt64(envioResp["latency_ms"])
+			detalle["contingencia_activa"] = parseTruthy(genericStringValue(envioResp["contingencia_activa"]))
+			detalle["software_modo"] = genericStringDefault(envioResp["software_modo"], map[bool]string{true: "compartido", false: "empresa"}[useSharedSoftware])
+			detalle["software_id"] = dianFirstNonBlank(genericStringValue(envioResp["software_id"]), softwareID)
+
+			estado := strings.ToLower(strings.TrimSpace(genericStringValue(envioResp["estado_dian"])))
+			switch estado {
+			case "aceptado":
+				resumen["aceptado"]++
+			case "rechazado":
+				resumen["rechazado"]++
+			case "contingencia":
+				resumen["contingencia"]++
+			case "enviado":
+				resumen["enviado"]++
+			default:
+				resumen["pendiente"]++
+			}
+
+			detalles = append(detalles, detalle)
+			procesados++
+
+			if detenerEnError && (estado == "rechazado" || estado == "contingencia") {
+				detenidoPorError = true
+				break
+			}
+		}
+
+		if procesados >= maxEnvios || detenidoPorError {
+			break
+		}
+	}
+
+	if !simular && procesados > 0 {
+		_ = updateDIANConfigFields(dbEmp, empresaID, cfg, map[string]interface{}{
+			"consecutivo_actual": siguienteConsecutivo,
+			"observaciones": appendStateMachineObservation(
+				genericStringValue(cfg["observaciones"]),
+				genericStringValue(cfg["estado_dian"]),
+				genericStringValue(cfg["estado_dian"]),
+				fmt.Sprintf("set_pruebas procesado=%d aceptado=%d rechazado=%d contingencia=%d", procesados, resumen["aceptado"], resumen["rechazado"], resumen["contingencia"]),
+				"dian_set_pruebas",
+			),
+		})
+	}
+
+	ok := resumen["error"] == 0 && resumen["rechazado"] == 0 && resumen["contingencia"] == 0
+	if simular {
+		ok = true
+	}
+
+	return map[string]interface{}{
+		"ok":                    ok,
+		"empresa_id":            empresaID,
+		"simulado":              simular,
+		"software_modo":         map[bool]string{true: "compartido", false: "empresa"}[useSharedSoftware],
+		"software_id":           softwareID,
+		"test_set_id":           genericStringValue(cfg["test_set_id"]),
+		"endpoint":              dianFirstNonBlank(dianPayloadString(payload, "url_dian", "endpoint"), genericStringValue(cfg["url_dian"])),
+		"objetivo":              map[string]interface{}{"total_documentos": totalDocumentos, "facturas_electronicas": facturas, "notas_debito": notasDebito, "notas_credito": notasCredito},
+		"procesados":            procesados,
+		"resumen":               resumen,
+		"detenido_por_error":    detenidoPorError,
+		"consecutivo_inicial":   consecutivoInicial,
+		"consecutivo_siguiente": siguienteConsecutivo,
+		"detalles":              detalles,
+	}, http.StatusOK, nil
+}
+
+func buildDIANOnboardingGuide(cfg map[string]interface{}, empresaID int64) map[string]interface{} {
+	configured := len(cfg) > 0
+	missing := []string{}
+	if configured {
+		missing = missingDIANFields(cfg)
+	}
+
+	softwareID, _, useSharedSoftware, softwareErr := resolveDIANSoftwareCredentials(cfg, nil)
+	softwareMode := map[bool]string{true: "compartido", false: "empresa"}[useSharedSoftware]
+	if !configured {
+		softwareMode = "sin_configuracion"
+	}
+
+	pasos := []map[string]interface{}{
+		{"paso": 1, "titulo": "Registrar empresa DIAN", "detalle": "Guardar NIT, razon social, ambiente, prefijo, resolucion y rango en /api/empresa/facturacion_electronica/dian (CRUD por empresa_id)."},
+		{"paso": 2, "titulo": "Definir modelo de software", "detalle": "Activar usar_software_compartido=1 para SaaS o mantener 0 para software propio por empresa."},
+		{"paso": 3, "titulo": "Configurar credenciales por empresa", "detalle": "Registrar token_emisor_ref y certificado_clave_ref por empresa; son obligatorios para envio real por NIT."},
+		{"paso": 4, "titulo": "Subir firma digital", "detalle": "Usar action=subir_firma (multipart) para adjuntar PEM y guardar referencia segura automaticamente."},
+		{"paso": 5, "titulo": "Validar antes de emitir", "detalle": "Ejecutar action=checklist, action=validar y action=validar_credenciales para detectar faltantes."},
+		{"paso": 6, "titulo": "Probar set de habilitacion", "detalle": "Ejecutar action=enviar_set_pruebas con simular=true y luego simular=false cuando credenciales esten completas."},
+	}
+
+	plantillas := map[string]interface{}{
+		"config_base_empresa": map[string]interface{}{
+			"empresa_id":               empresaID,
+			"nit":                      "900123456",
+			"razon_social":             "Empresa Demo SAS",
+			"tipo_ambiente":            "habilitacion",
+			"prefijo":                  "SETP",
+			"resolucion_numero":        "18760000000001",
+			"rango_desde":              1,
+			"rango_hasta":              999999,
+			"consecutivo_actual":       1,
+			"url_dian":                 "https://vpfe-hab.dian.gov.co/WcfDianCustomerServices.svc?wsdl",
+			"token_emisor_ref":         "env:DIAN_TOKEN_EMPRESA_XXX",
+			"certificado_clave_ref":    "file:/ruta/segura/empresa_xxx_key.pem",
+			"usar_software_compartido": 1,
+		},
+		"activar_software_compartido": map[string]interface{}{
+			"empresa_id":                  empresaID,
+			"usar_software_compartido":    1,
+			"software_id_compartido_ref":  "env:DIAN_SHARED_SOFTWARE_ID",
+			"software_pin_compartido_ref": "env:DIAN_SHARED_SOFTWARE_PIN",
+		},
+		"validar_credenciales": map[string]interface{}{
+			"endpoint": "POST /api/empresa/facturacion_electronica/dian?action=validar_credenciales",
+			"body":     map[string]interface{}{"empresa_id": empresaID},
+		},
+		"subir_firma": map[string]interface{}{
+			"endpoint": "POST /api/empresa/facturacion_electronica/dian?action=subir_firma",
+			"multipart_fields": []string{
+				"empresa_id",
+				"archivo_firma (PEM RSA)",
+			},
+		},
+		"set_pruebas_simulado": map[string]interface{}{
+			"endpoint": "POST /api/empresa/facturacion_electronica/dian?action=enviar_set_pruebas",
+			"body": map[string]interface{}{
+				"empresa_id":            empresaID,
+				"facturas_electronicas": 30,
+				"notas_debito":          10,
+				"notas_credito":         10,
+				"total_documentos":      50,
+				"simular":               true,
+			},
+		},
+	}
+
+	response := map[string]interface{}{
+		"ok":                      true,
+		"empresa_id":              empresaID,
+		"configurada":             configured,
+		"faltantes":               missing,
+		"software_modo":           softwareMode,
+		"software_id_efectivo":    softwareID,
+		"pasos":                   pasos,
+		"plantillas":              plantillas,
+		"recomendacion_operativa": "Modelo SaaS: software compartido + NIT/token/firma por empresa.",
+	}
+	if softwareErr != nil {
+		response["software_error"] = softwareErr.Error()
+	}
+	return response
+}
+
+func dianReferenceSource(raw string) string {
+	lower := strings.ToLower(strings.TrimSpace(raw))
+	switch {
+	case strings.HasPrefix(lower, "env:"):
+		return "env"
+	case strings.HasPrefix(lower, "file:"):
+		return "file"
+	case strings.HasPrefix(lower, "base64:"):
+		return "base64"
+	case lower == "":
+		return "vacio"
+	default:
+		return "inline"
+	}
+}
+
+func validateDIANCredentialRefs(cfg map[string]interface{}, empresaID int64, payload map[string]interface{}) (map[string]interface{}, int, error) {
+	if empresaID <= 0 {
+		return nil, http.StatusBadRequest, fmt.Errorf("empresa_id es obligatorio")
+	}
+	if len(cfg) == 0 {
+		return nil, http.StatusBadRequest, fmt.Errorf("no existe configuracion DIAN para la empresa")
+	}
+
+	issues := make([]string, 0)
+	checks := map[string]interface{}{}
+
+	softwareID, softwarePIN, useSharedSoftware, softwareErr := resolveDIANSoftwareCredentials(cfg, payload)
+	if softwareErr != nil {
+		issues = append(issues, softwareErr.Error())
+	}
+	checks["software"] = map[string]interface{}{
+		"ok":          softwareErr == nil && strings.TrimSpace(softwareID) != "" && strings.TrimSpace(softwarePIN) != "",
+		"modo":        map[bool]string{true: "compartido", false: "empresa"}[useSharedSoftware],
+		"software_id": softwareID,
+	}
+
+	tokenRef := dianFirstNonBlank(genericStringValue(payload["token_emisor_ref"]), genericStringValue(cfg["token_emisor_ref"]))
+	tokenPayload := strings.TrimSpace(genericStringValue(payload["token"]))
+	tokenOK := false
+	tokenMessage := ""
+	tokenSource := ""
+	if tokenPayload != "" {
+		tokenOK = true
+		tokenSource = "payload.token"
+		tokenMessage = "token entregado en payload"
+	} else if tokenRef == "" {
+		issues = append(issues, "token_emisor_ref no configurado")
+		tokenSource = "vacio"
+		tokenMessage = "faltante"
+	} else {
+		tokenSource = dianReferenceSource(tokenRef)
+		if _, err := resolveDIANSecretValue(tokenRef); err != nil {
+			issues = append(issues, "token_emisor_ref invalido")
+			tokenMessage = err.Error()
+		} else {
+			tokenOK = true
+			tokenMessage = "resuelto correctamente"
+		}
+	}
+	checks["token_emisor"] = map[string]interface{}{
+		"ok":      tokenOK,
+		"source":  tokenSource,
+		"message": dianTruncate(tokenMessage, 180),
+	}
+
+	keyRef := dianFirstNonBlank(genericStringValue(payload["certificado_clave_ref"]), genericStringValue(cfg["certificado_clave_ref"]))
+	keyOK := false
+	keyMessage := ""
+	keySource := dianReferenceSource(keyRef)
+	if keyRef == "" {
+		issues = append(issues, "certificado_clave_ref no configurado")
+		keyMessage = "faltante"
+	} else if _, err := parseDIANRSAPrivateKey(keyRef); err != nil {
+		issues = append(issues, "certificado_clave_ref invalido")
+		keyMessage = err.Error()
+	} else {
+		keyOK = true
+		keyMessage = "llave RSA valida"
+	}
+	checks["firma_digital"] = map[string]interface{}{
+		"ok":      keyOK,
+		"source":  keySource,
+		"message": dianTruncate(keyMessage, 180),
+	}
+
+	ok := len(issues) == 0
+	return map[string]interface{}{
+		"ok":            ok,
+		"empresa_id":    empresaID,
+		"software_modo": map[bool]string{true: "compartido", false: "empresa"}[useSharedSoftware],
+		"checks":        checks,
+		"issues":        issues,
+		"faltantes":     missingDIANFields(cfg),
+		"recomendaciones": []string{
+			"Mantener token_emisor_ref y certificado_clave_ref por empresa.",
+			"Usar referencias seguras env:/file:/base64: en lugar de secretos inline.",
+			"Ejecutar enviar_set_pruebas con simular=true antes de envio real.",
+		},
+	}, http.StatusOK, nil
+}
+
+func resolveEmpresaIDFromMultipartRequest(r *http.Request) (int64, error) {
+	if empresaID := parseEmpresaIDFromContext(r); empresaID > 0 {
+		return empresaID, nil
+	}
+	raw := strings.TrimSpace(r.FormValue("empresa_id"))
+	if raw == "" {
+		raw = strings.TrimSpace(r.URL.Query().Get("empresa_id"))
+	}
+	if raw == "" {
+		return 0, fmt.Errorf("empresa_id es obligatorio")
+	}
+	id, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil || id <= 0 {
+		return 0, fmt.Errorf("empresa_id invalido")
+	}
+	return id, nil
+}
+
+func uploadDIANCompanySignature(dbEmp *sql.DB, r *http.Request) (map[string]interface{}, int, error) {
+	if err := r.ParseMultipartForm(6 << 20); err != nil {
+		return nil, http.StatusBadRequest, fmt.Errorf("payload multipart invalido")
+	}
+
+	empresaID, err := resolveEmpresaIDFromMultipartRequest(r)
+	if err != nil {
+		return nil, http.StatusBadRequest, err
+	}
+
+	cfg, _ := getEmpresaDIANConfig(dbEmp, empresaID)
+	if len(cfg) == 0 {
+		return nil, http.StatusBadRequest, fmt.Errorf("configuracion DIAN no existe para la empresa; registre base DIAN primero")
+	}
+
+	file, header, err := r.FormFile("archivo_firma")
+	if err != nil {
+		file, header, err = r.FormFile("firma")
+	}
+	if err != nil {
+		file, header, err = r.FormFile("archivo")
+	}
+	if err != nil {
+		return nil, http.StatusBadRequest, fmt.Errorf("archivo_firma es obligatorio")
+	}
+	defer file.Close()
+
+	contentBytes, err := io.ReadAll(io.LimitReader(file, 512<<10))
+	if err != nil {
+		return nil, http.StatusInternalServerError, fmt.Errorf("no se pudo leer la firma")
+	}
+	keyPEM := strings.TrimSpace(string(contentBytes))
+	if keyPEM == "" {
+		return nil, http.StatusBadRequest, fmt.Errorf("archivo de firma vacio")
+	}
+	if _, err := parseDIANRSAPrivateKey(keyPEM); err != nil {
+		return nil, http.StatusBadRequest, fmt.Errorf("firma invalida: %w", err)
+	}
+
+	webRoot := resolveWebRootDir()
+	dir := filepath.Join(webRoot, "uploads", "dian", fmt.Sprintf("empresa_%d", empresaID))
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return nil, http.StatusInternalServerError, fmt.Errorf("no se pudo preparar directorio de firma")
+	}
+
+	fileName := fmt.Sprintf("firma_privada_%d.pem", time.Now().UnixNano())
+	absPath := filepath.Join(dir, fileName)
+	if err := os.WriteFile(absPath, append([]byte(keyPEM), '\n'), 0o600); err != nil {
+		return nil, http.StatusInternalServerError, fmt.Errorf("no se pudo guardar firma en servidor")
+	}
+
+	ref := "file:" + absPath
+	estadoActual := genericStringDefault(cfg["estado_dian"], "pendiente")
+	if err := updateDIANConfigFields(dbEmp, empresaID, cfg, map[string]interface{}{
+		"certificado_clave_ref": ref,
+		"observaciones": appendStateMachineObservation(
+			genericStringValue(cfg["observaciones"]),
+			estadoActual,
+			estadoActual,
+			"firma digital actualizada desde carga segura",
+			"dian_subir_firma",
+		),
+	}); err != nil {
+		return nil, http.StatusInternalServerError, fmt.Errorf("no se pudo actualizar certificado_clave_ref")
+	}
+
+	return map[string]interface{}{
+		"ok":                    true,
+		"empresa_id":            empresaID,
+		"archivo_original":      strings.TrimSpace(header.Filename),
+		"archivo_guardado":      fileName,
+		"certificado_clave_ref": ref,
+		"tamano_bytes":          len(contentBytes),
+		"siguiente_paso":        "ejecutar action=validar_credenciales y luego action=enviar_set_pruebas con simular=true",
+	}, http.StatusOK, nil
+}
+
 func decodeGenericBodyMap(r *http.Request) (map[string]interface{}, error) {
 	payload := map[string]interface{}{}
 	if r.Body == nil {
@@ -7582,13 +8271,81 @@ func getEmpresaDIANConfig(dbEmp *sql.DB, empresaID int64) (map[string]interface{
 	return items[0], nil
 }
 
+func dianResolveOptionalReference(raw string) (string, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return "", nil
+	}
+	resolved, err := resolveDIANSecretValue(raw)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(resolved), nil
+}
+
+func resolveDIANSoftwareCredentials(cfg map[string]interface{}, payload map[string]interface{}) (string, string, bool, error) {
+	useSharedSoftware := false
+	if payload != nil {
+		if _, ok := payload["usar_software_compartido"]; ok {
+			useSharedSoftware = parseTruthy(genericStringValue(payload["usar_software_compartido"]))
+		} else {
+			useSharedSoftware = parseTruthy(genericStringValue(cfg["usar_software_compartido"]))
+		}
+	} else {
+		useSharedSoftware = parseTruthy(genericStringValue(cfg["usar_software_compartido"]))
+	}
+
+	softwareID, err := dianResolveOptionalReference(genericStringValue(payload["software_id"]))
+	if err != nil {
+		return "", "", useSharedSoftware, fmt.Errorf("software_id invalido: %w", err)
+	}
+	softwarePIN, err := dianResolveOptionalReference(genericStringValue(payload["software_pin"]))
+	if err != nil {
+		return "", "", useSharedSoftware, fmt.Errorf("software_pin invalido: %w", err)
+	}
+
+	if useSharedSoftware {
+		if softwareID == "" {
+			softwareID, err = dianResolveOptionalReference(genericStringValue(cfg["software_id_compartido_ref"]))
+			if err != nil {
+				return "", "", useSharedSoftware, fmt.Errorf("software_id_compartido_ref invalido: %w", err)
+			}
+		}
+		if softwarePIN == "" {
+			softwarePIN, err = dianResolveOptionalReference(genericStringValue(cfg["software_pin_compartido_ref"]))
+			if err != nil {
+				return "", "", useSharedSoftware, fmt.Errorf("software_pin_compartido_ref invalido: %w", err)
+			}
+		}
+		if softwareID == "" {
+			softwareID = strings.TrimSpace(os.Getenv("DIAN_SHARED_SOFTWARE_ID"))
+		}
+		if softwarePIN == "" {
+			softwarePIN = strings.TrimSpace(os.Getenv("DIAN_SHARED_SOFTWARE_PIN"))
+		}
+	}
+
+	if softwareID == "" {
+		softwareID, err = dianResolveOptionalReference(genericStringValue(cfg["software_id"]))
+		if err != nil {
+			return "", "", useSharedSoftware, fmt.Errorf("software_id de empresa invalido: %w", err)
+		}
+	}
+	if softwarePIN == "" {
+		softwarePIN, err = dianResolveOptionalReference(genericStringValue(cfg["software_pin"]))
+		if err != nil {
+			return "", "", useSharedSoftware, fmt.Errorf("software_pin de empresa invalido: %w", err)
+		}
+	}
+
+	return softwareID, softwarePIN, useSharedSoftware, nil
+}
+
 func missingDIANFields(cfg map[string]interface{}) []string {
 	required := []string{
 		"nit",
 		"razon_social",
 		"tipo_ambiente",
-		"software_id",
-		"software_pin",
 		"prefijo",
 		"resolucion_numero",
 		"rango_desde",
@@ -7600,6 +8357,26 @@ func missingDIANFields(cfg map[string]interface{}) []string {
 			missing = append(missing, field)
 		}
 	}
+
+	softwareID, softwarePIN, useSharedSoftware, err := resolveDIANSoftwareCredentials(cfg, nil)
+	if err != nil {
+		missing = append(missing, "software_configuracion_invalida")
+	}
+	if strings.TrimSpace(softwareID) == "" {
+		if useSharedSoftware {
+			missing = append(missing, "software_id_compartido_ref|DIAN_SHARED_SOFTWARE_ID|software_id")
+		} else {
+			missing = append(missing, "software_id")
+		}
+	}
+	if strings.TrimSpace(softwarePIN) == "" {
+		if useSharedSoftware {
+			missing = append(missing, "software_pin_compartido_ref|DIAN_SHARED_SOFTWARE_PIN|software_pin")
+		} else {
+			missing = append(missing, "software_pin")
+		}
+	}
+
 	return missing
 }
 
@@ -7614,9 +8391,9 @@ func chooseDIANAmbiente(cfg map[string]interface{}) string {
 func dianChecklistSteps() []map[string]interface{} {
 	return []map[string]interface{}{
 		{"paso": 1, "titulo": "Habilitar facturador en portal DIAN", "detalle": "Registrar empresa como facturador electronico y elegir tipo de software."},
-		{"paso": 2, "titulo": "Obtener Software ID y Software PIN", "detalle": "Desde DIAN tomar credenciales del software de facturacion."},
+		{"paso": 2, "titulo": "Definir modelo de software", "detalle": "Elegir software compartido (SaaS) o software por empresa; configurar Software ID/PIN segun el modelo."},
 		{"paso": 3, "titulo": "Solicitar numeracion", "detalle": "Solicitar prefijo, resolucion y rango autorizado en la DIAN."},
-		{"paso": 4, "titulo": "Cargar configuracion en el sistema", "detalle": "Configurar NIT, razon social, ambiente, software, resolucion y rangos."},
+		{"paso": 4, "titulo": "Cargar configuracion por empresa", "detalle": "Configurar NIT, razon social, ambiente, certificado/token por empresa y parametros de software (compartido o propio)."},
 		{"paso": 5, "titulo": "Ejecutar set de pruebas", "detalle": "Enviar casos de habilitacion hasta obtener aprobacion DIAN."},
 		{"paso": 6, "titulo": "Pasar a produccion", "detalle": "Activar ambiente produccion, validar consecutivos y monitorear respuestas."},
 	}

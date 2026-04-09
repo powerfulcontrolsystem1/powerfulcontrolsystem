@@ -1,5 +1,68 @@
 - Historial de cambios
 
+- 2026-04-09: Facturacion DIAN multiempresa SaaS - software compartido con credenciales por empresa
+    - Se actualiza `backend/db/modulos_faltantes.go` para ampliar `empresa_dian_configuracion` con:
+        - `usar_software_compartido`
+        - `software_id_compartido_ref`
+        - `software_pin_compartido_ref`
+      e indice `ix_dian_empresa_shared_mode`.
+    - Se actualiza `backend/handlers/modulos_faltantes.go` para resolver software DIAN efectivo por empresa (`resolveDIANSoftwareCredentials`) con soporte:
+        - modo compartido por empresa,
+        - referencias seguras `env:/file:/base64:`,
+        - fallback global `DIAN_SHARED_SOFTWARE_ID` y `DIAN_SHARED_SOFTWARE_PIN`.
+    - Se mantiene operacion tributaria por empresa (`NIT`, `token_emisor_ref`, `certificado_clave_ref`) y se expone trazabilidad de software efectivo (`software_modo`, `software_id`) en respuestas DIAN.
+    - Se agrega prueba `TestEmpresaDIANColombiaHandlerSoftwareCompartidoMultiempresa` en `backend/handlers/modulos_faltantes_test.go`.
+    - Documentacion sincronizada en:
+        - `documentos/informacion_para_pruebas_plataforma_DIAN`
+        - `documentos/descripcion_de_modulos`
+        - `documentos/matriz_roles_permisos_pos_multiempresa.md`
+        - `documentos/descripcion_del_proyecto`
+        - `documentos/estructura_bd.md`
+        - `estructura_bd.md`
+        - `documentos/diagramas/estructura_del_codigo.md`
+        - `documentos/descripcion_de_archivos`
+        - `CHANGELOG.md`
+    - Validaciones ejecutadas:
+        - `runTests` sobre `backend/handlers/modulos_faltantes_test.go` (DIAN real/contingencia/set/shared) -> 4 passed, 0 failed.
+
+- 2026-04-09: Facturacion DIAN habilitacion - envio automatizado de set de pruebas y sincronizacion documental
+    - Se actualiza `backend/handlers/modulos_faltantes.go` para agregar `action=enviar_set_pruebas` en `/api/empresa/facturacion_electronica/dian`.
+    - El nuevo flujo permite procesar lote con distribucion configurable de documentos (facturas/notas) y resumen por estado (`aceptado`, `rechazado`, `contingencia`, `pendiente`, `error`) con opcion `simular`.
+    - Se actualiza `sendDIANDocumentoReal` para incluir `documento_tipo` y `test_set_id` en request/response operacional.
+    - Se agrega prueba automatizada `TestEmpresaDIANColombiaHandlerEnviarSetPruebas` en `backend/handlers/modulos_faltantes_test.go`.
+    - Se actualiza `documentos/informacion_para_pruebas_plataforma_DIAN` con:
+        - aclaracion de configuracion de URL WSDL (`url_dian` por empresa, no en super/configuracion avanzada),
+        - resultados de pruebas ejecutadas,
+        - payload recomendado para set DIAN requerido (50 documentos).
+    - Se sincronizan documentos de modulo/permisos/arquitectura:
+        - `documentos/descripcion_de_modulos`.
+        - `documentos/matriz_roles_permisos_pos_multiempresa.md`.
+        - `documentos/descripcion_del_proyecto`.
+        - `documentos/diagramas/estructura_del_codigo.md`.
+    - Validaciones ejecutadas:
+        - `runTests` sobre `backend/handlers/modulos_faltantes_test.go` (tests DIAN real/contingencia/set) -> 3 passed, 0 failed.
+        - Ejecucion operativa `action=enviar_set_pruebas` en modo `simular=true` para `empresa_id=6` con objetivo 50 documentos (30 facturas, 10 debito, 10 credito) -> `status=200`, `ok=true`, `procesados=50`.
+
+- 2026-04-09: Creacion de documento operativo con datos de pruebas DIAN
+    - Se crea `documentos/informacion_para_pruebas_plataforma_DIAN` para organizar y centralizar los datos de `documentos/DATOS DIAN.mhtml`.
+    - El documento nuevo incluye TestSetId, contribuyente, modo de operacion, rango de numeracion, datos del software, metas de pruebas, URLs y mapeo recomendado para configuracion DIAN en el sistema.
+
+- 2026-04-09: Configuracion DIAN de prueba para Motel malibu (empresa_id=6) con licencia activa
+    - Se registra/actualiza `empresa_dian_configuracion` en `backend/db/empresas.db` para `empresa_id=6` (empresa `Motel malibu`, licencia activa `id=1` en `backend/db/superadministrador.db`).
+    - Fuente de datos: `documentos/DATOS DIAN.mhtml`.
+    - Datos cargados en DIAN (habilitacion):
+        - `nit=84456779`, `razon_social=Cayon Guarnizo Ivan Francisco`.
+        - `software_id=e264e403-da98-4ede-8a1c-3445be095f84`, `software_pin=19841`.
+        - `test_set_id=93727c06-c7ff-4100-ae13-6994f8c2f553`.
+        - `prefijo=SETP`, `resolucion_numero=18760000001`.
+        - `rango_desde=990000000`, `rango_hasta=995000000`, `consecutivo_actual=990000000`.
+    - Validacion tecnica ejecutada sobre `handlers.EmpresaDIANColombiaHandler` con `empresa_id=6`:
+        - `action=checklist` -> `ok=true`, `faltantes=[]`.
+        - `action=validar` -> `ok=true`, `faltantes=[]`.
+        - `action=generar_cufe_demo` -> CUFE demo generado correctamente.
+        - `action=generar_xml_demo` -> XML demo generado correctamente.
+    - Credenciales/API DIAN adicionales no fueron necesarias para estas pruebas de habilitacion internas (no se ejecuto envio real a DIAN en esta iteracion).
+
 - 2026-04-08: Menu izquierdo independiente en panel `administrar_empresa`
     - Se actualiza `web/administrar_empresa.html` para declarar shell dedicado (`admin-empresa-shell`).
     - Se actualiza `web/estilos.css` para desacoplar scroll entre sidebar e iframe:

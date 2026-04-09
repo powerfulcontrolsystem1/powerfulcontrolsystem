@@ -996,6 +996,12 @@
 
     if (moduleConfig.dian) {
       actions.push({
+        key: "dian_guia_onboarding",
+        label: "DIAN guia onboarding",
+        params: [],
+        execute: function () { return runDianAction("guia_onboarding", "GET"); }
+      });
+      actions.push({
         key: "dian_checklist",
         label: "DIAN checklist",
         params: [],
@@ -1006,6 +1012,12 @@
         label: "DIAN validar",
         params: [],
         execute: function () { return runDianAction("validar", "GET"); }
+      });
+      actions.push({
+        key: "dian_validar_credenciales",
+        label: "DIAN validar credenciales",
+        params: [],
+        execute: function () { return runDianAction("validar_credenciales", "POST", {}); }
       });
       actions.push({
         key: "dian_cufe",

@@ -1,5 +1,39 @@
 Descripcion de archivos del proyecto
 
+Actualizacion 2026-04-09: Onboarding profesional DIAN por empresa (modelo SaaS multiempresa)
+
+- `documentos/plantillas/dian_onboarding_empresa_multiempresa_saas.md` (nuevo):
+	- plantilla operativa para configurar facturacion DIAN por empresa con checklist, payload base, endpoints y evidencia de cierre.
+
+- `backend/handlers/modulos_faltantes.go`:
+	- agrega `action=guia_onboarding`, `action=validar_credenciales` y `action=subir_firma` en el endpoint DIAN empresarial.
+	- permite carga multipart de firma PEM por empresa y actualiza `certificado_clave_ref` con referencia segura `file:`.
+
+- `backend/handlers/modulos_faltantes_test.go`:
+	- agrega cobertura para onboarding/validacion de credenciales y upload de firma por empresa.
+
+- `web/ayuda/ayuda.html` y `web/js/modulos_erp_extendido.js`:
+	- amplian guia y acciones rapidas DIAN para operacion profesional multiempresa.
+
+Actualizacion 2026-04-09: DIAN multiempresa SaaS con software compartido y credenciales por empresa
+
+- `backend/db/modulos_faltantes.go`:
+	- amplía esquema de `empresa_dian_configuracion` con modo compartido (`usar_software_compartido`) y referencias seguras de software compartido (`software_id_compartido_ref`, `software_pin_compartido_ref`).
+
+- `backend/handlers/modulos_faltantes.go`:
+	- incorpora resolucion de software DIAN efectivo por empresa con fallback compartido/global.
+	- mantiene trazabilidad por `empresa_id` en `NIT`, token y certificado de firma.
+	- agrega metadata de salida (`software_modo`, `software_id`) en flujos DIAN.
+
+- `backend/handlers/modulos_faltantes_test.go`:
+	- añade `TestEmpresaDIANColombiaHandlerSoftwareCompartidoMultiempresa` para validar un solo software compartido con credenciales propias por empresa.
+
+Actualizacion 2026-04-09: Documento organizado para pruebas de plataforma DIAN
+
+- `documentos/informacion_para_pruebas_plataforma_DIAN` (nuevo):
+	- consolida y ordena los datos del archivo fuente `documentos/DATOS DIAN.mhtml` para uso operativo en pruebas de habilitacion DIAN.
+	- incluye: TestSetId, modo de operacion, rango de numeracion, datos de software, metas de documentos requeridos/aceptados, URLs relevantes y mapeo recomendado al esquema `empresa_dian_configuracion`.
+
 Actualizacion 2026-04-08: Independencia visual/scroll entre menu izquierdo y subpagina derecha en administrar_empresa
 
 - `web/administrar_empresa.html`:

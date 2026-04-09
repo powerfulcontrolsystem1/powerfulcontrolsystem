@@ -82,6 +82,9 @@ Criterio de esta guia:
 
 18) Facturacion electronica DIAN Colombia
 - Configuracion DIAN, firma XML, envio/acuse y contingencia/reconexion.
+- Incluye envio automatizado del set de habilitacion (`action=enviar_set_pruebas`) con distribucion configurable de facturas/notas y resumen por estado (`aceptado`, `rechazado`, `contingencia`, `pendiente`).
+- Soporta modelo SaaS multiempresa con software compartido (`Software ID/PIN`) y credenciales por empresa (`NIT`, `certificado_clave_ref`, `token_emisor_ref`).
+- Agrega soporte de onboarding por empresa con `action=guia_onboarding`, validacion de secretos con `action=validar_credenciales` y carga de firma PEM con `action=subir_firma`.
 
 19) Gestion comercial extendida
 - Cotizaciones, pedidos, devoluciones y embudo de conversion comercial.

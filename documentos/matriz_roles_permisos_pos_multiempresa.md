@@ -75,7 +75,7 @@ Leyenda:
 - Cobertura ampliada (2026-04-04):
 	- Clientes: `/api/empresa/clientes`.
 	- Compras/Proveedores: `/api/empresa/proveedores`.
-	- Facturacion: `/api/empresa/facturacion_electronica`, `/api/empresa/facturacion_electronica/pais_detectado`.
+	- Facturacion: `/api/empresa/facturacion_electronica`, `/api/empresa/facturacion_electronica/pais_detectado`, `/api/empresa/facturacion_electronica/dian`.
 	- Servicios de catalogo: `/api/empresa/servicios` bajo politica de inventario.
 - Cobertura adicional (2026-04-04 - cierre de rutas pendientes):
 	- Seguridad/usuarios:
@@ -178,6 +178,7 @@ Regla de lectura comun (R):
 | `/api/empresa/proveedores` | `WithEmpresaComprasPermissions` | SA, AE, SS, CO | - | `action=emitir_orden|recepcionar_compra|contabilizar_compra|aprobar` exige `A` |
 | `/api/empresa/facturacion_electronica` | `WithEmpresaFacturacionPermissions` | SA, AE, CJ | - | `action=emitir|nota_credito|emitir_factura|emitir_documento` exige `A` |
 | `/api/empresa/facturacion_electronica/pais_detectado` | `WithEmpresaFacturacionPermissions` | SA, AE, CJ | - | consulta/actualizacion bajo politica facturacion |
+| `/api/empresa/facturacion_electronica/dian` | `WithEmpresaFacturacionPermissions` | SA, AE, CJ | - | incluye `action=guia_onboarding|validar_credenciales|subir_firma|checklist|validar|generar_cufe_demo|generar_xml_demo|firmar_xml_real|enviar_documento_real|consultar_acuse_real|reconexion_dian|enviar_set_pruebas`; opera por `empresa_id` con `NIT/token/certificado` por empresa y software compartido opcional |
 | `/api/empresa/finanzas/movimientos` | `WithEmpresaFinanzasPermissions` | SA, AE, CT | SA, CT | `action=cerrar|reabrir|aprobar|procesar_asientos|procesar` exige `A` |
 | `/api/empresa/finanzas/configuracion` | `WithEmpresaFinanzasPermissions` | SA, AE, CT | SA, CT | configuracion financiera |
 | `/api/empresa/finanzas/periodos` | `WithEmpresaFinanzasPermissions` | SA, AE, CT | SA, CT | cierre/reapertura de periodos en `A` |
