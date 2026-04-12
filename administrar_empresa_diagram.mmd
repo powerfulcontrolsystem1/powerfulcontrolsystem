@@ -1,0 +1,67 @@
+graph TD
+  AE[Administrar Empresa]
+  AE --> Inicio[Inicio]
+  AE --> Ventas[Ventas]
+  AE --> Carrito[Carrito de compras]
+  AE --> VentaPublica[Venta pública y pagos]
+  AE --> ProductosMenu[Productos (MENÚ)]
+  subgraph ProductosMenuSub [Productos (MENÚ)]
+    PM1[Administrar productos]
+    PM2[Bodegas]
+    PM3[Categorías]
+    PM4[Precios]
+  end
+  ProductosMenu --> PM1
+  ProductosMenu --> PM2
+  ProductosMenu --> PM3
+  ProductosMenu --> PM4
+  AE --> Combos[Combos de productos]
+  AE --> CodigosDescuento[Códigos de descuento]
+  AE --> Compras[Compras]
+  AE --> ConfigMenu[Configuración (MENÚ)]
+  subgraph ConfigMenuSub [Configuración (MENÚ)]
+    CM1[General]
+    CM2[Permisos]
+    CM3[Avanzada]
+    CM4[Integraciones]
+  end
+  ConfigMenu --> CM1
+  ConfigMenu --> CM2
+  ConfigMenu --> CM3
+  ConfigMenu --> CM4
+  AE --> Usuarios[Usuarios]
+  AE --> Asistencia[Asistencia de empleados]
+  AE --> Nomina[Nómina de sueldos]
+  AE --> Vehiculos[Registro de vehículos]
+  AE --> Auditoria[Auditoría]
+  AE --> ChatTareas[Chat y tareas]
+  AE --> Clientes[Clientes]
+  AE --> FacturacionElectronica[Facturación electrónica]
+  AE --> FacturasElectronicas[Facturas electrónicas]
+  AE --> ERPextendido[ERP extendido]
+  AE --> ChatIA[Chat con IA]
+  AE --> Finanzas[Finanzas]
+  AE --> Creditos[Créditos y cartera]
+  AE --> Backups[Backups empresariales]
+  AE --> SoporteRemoto[Soporte remoto]
+  AE --> Propinas[Propinas]
+  AE --> Comisiones[Comisiones]
+  AE --> UbicacionGPS[Ubicación GPS]
+  AE --> ConfigEstaciones[Configuración de estaciones]
+  AE --> TarifasMin[Tarifas por minutos]
+  AE --> TarifasDia[Tarifas por día]
+  AE --> Estaciones[Estaciones]
+  AE --> Reservas[Reservas]
+  AE --> ReportesMenu[Reportes (MENÚ)]
+  subgraph ReportesMenuSub [Reportes (MENÚ)]
+    R1[Reportes generales]
+    R2[Inventario]
+    R3[Finanzas]
+    R4[Gráficos y estadísticas]
+  end
+  ReportesMenu --> R1
+  ReportesMenu --> R2
+  ReportesMenu --> R3
+  ReportesMenu --> R4
+  AE --> Calculadora[Calculadora]
+  AE --> VolverEmpresas[Volver a empresas]

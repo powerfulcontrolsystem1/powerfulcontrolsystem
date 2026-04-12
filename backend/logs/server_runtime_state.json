@@ -1,12 +1,12 @@
 {
   "status": "running",
   "hostname": "NITRO",
-  "process_id": 12388,
+  "process_id": 7112,
   "listen_addr": ":8080",
-  "last_start_at": "2026-04-11 17:39:05",
-  "last_start_reason": "reinicio_inesperado_detectado",
-  "last_start_reason_detail": "Se detecto estado previo en ejecucion sin cierre limpio. previo_pid=8484 previo_inicio=2026-04-11 17:23:39 previo_host=NITRO previo_motivo_cierre=. Motivo reportado por entorno: inicio_script_iniciar_servidor. Ultimo indicio en server.err: 2026/04/11 17:39:03 failed to add column fecha_actualizacion to licencias: SQL logic error: Cannot add a column with non-constant default (1)",
-  "last_unexpected_restart": true,
-  "last_known_server_err": "2026/04/11 17:39:03 failed to add column fecha_actualizacion to licencias: SQL logic error: Cannot add a column with non-constant default (1)",
-  "last_event_id": 4
+  "last_start_at": "2026-04-11 22:51:03",
+  "last_start_reason": "inicio_script_iniciar_servidor",
+  "last_start_reason_detail": "Motivo reportado por entorno/sistema de arranque. Ultimo indicio en server.err: 2026/04/11 22:51:03 failed to add column fecha_actualizacion to licencias: SQL logic error: Cannot add a column with non-constant default (1)",
+  "last_unexpected_restart": false,
+  "last_known_server_err": "2026/04/11 22:51:03 failed to add column fecha_actualizacion to licencias: SQL logic error: Cannot add a column with non-constant default (1)",
+  "last_event_id": 8
 }

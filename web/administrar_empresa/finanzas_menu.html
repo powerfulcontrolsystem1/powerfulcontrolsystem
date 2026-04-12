@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Finanzas - Menú</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+</head>
+<body class="admin-empresa-shell">
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <h2>Finanzas</h2>
+      <p id="menuPermsEvidence" class="form-help">Permisos de menú: cargando contexto...</p>
+      <ul class="nav">
+        <li><a id="linkFinanzasMain" href="/administrar_empresa/finanzas.html" target="finanzasContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Finanzas</a></li>
+        <li><a id="linkCreditosMenu" href="/administrar_empresa/creditos.html" target="finanzasContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Créditos y cartera</a></li>
+        <li><a id="linkNominaMenu" href="/administrar_empresa/nomina_sueldos.html" target="finanzasContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Nómina de sueldos</a></li>
+        <li><a id="linkERPExtendidoMenu" href="/administrar_empresa/modulos_erp_extendido.html" target="finanzasContentFrame"><img class="icon" src="/img/network-color.svg" alt="">ERP extendido</a></li>
+      </ul>
+    </aside>
+
+    <main class="admin-content">
+      <div class="admin-toolbar page-header">
+        <h1 id="empresaTitle">Finanzas</h1>
+        <a id="btnAyudaModulo" class="btn secondary" href="/ayuda/ayuda.html" target="_blank" rel="noopener">Ayuda del módulo</a>
+      </div>
+      <iframe name="finanzasContentFrame" id="finanzasContentFrame" src="/administrar_empresa/finanzas.html" title="Contenido de finanzas" class="admin-empresa-frame"></iframe>
+    </main>
+  </div>
+  <script src="/js/administrar_empresa.js"></script>
+</body>
+</html>

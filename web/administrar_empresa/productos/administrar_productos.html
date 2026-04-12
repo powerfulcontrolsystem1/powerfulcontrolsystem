@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Administrar Productos</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="empresa-subpage">
+  <div class="container empresa-module">
+    <section class="card empresa-module-header">
+      <div>
+        <h1>Administrar Productos</h1>
+        <p id="empresaInfo">Empresa: cargando...</p>
+      </div>
+      <div class="empresa-module-kpis">
+        <div class="kpi-box">
+          <span class="kpi-label">Productos</span>
+          <strong id="kpiProductos">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Bodegas</span>
+          <strong id="kpiBodegas">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Servicios</span>
+          <strong id="kpiServicios">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Categorías</span>
+          <strong id="kpiCategoriasProductos">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Alertas inventario</span>
+          <strong id="kpiInventarioAlertas">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Sin stock</span>
+          <strong id="kpiInventarioSinStock">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Mov. periodo</span>
+          <strong id="kpiInventarioMovPeriodo">0</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Déficit total</span>
+          <strong id="kpiInventarioDeficit">0.00</strong>
+        </div>
+      </div>
+    </section>
+
+    <div id="messageBox" class="form-help"></div>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Bodegas</h2>
+        <button id="btnNuevaBodega" type="button" class="btn secondary">Nueva</button>
+      </div>
+
+      <form id="bodegaForm" class="form" style="display:none;">
+        <input type="hidden" id="bodegaId">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="bodegaCodigo">Código</label>
+            <input id="bodegaCodigo" class="form-input" placeholder="BOD-001">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="bodegaNombre">Nombre</label>
+            <input id="bodegaNombre" class="form-input" required placeholder="Bodega principal">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="bodegaUbicacion">Ubicación</label>
+            <input id="bodegaUbicacion" class="form-input" placeholder="Piso 1 - pasillo A">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="bodegaResponsable">Responsable</label>
+            <input id="bodegaResponsable" class="form-input" placeholder="Nombre del responsable">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="bodegaObservaciones">Observaciones</label>
+            <textarea id="bodegaObservaciones" class="form-textarea"></textarea>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn" type="submit">Guardar bodega</button>
+        </div>
+      </form>
+
+      <div class="table-wrap">
+        <table class="table" id="bodegasTable">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Código</th>
+              <th>Nombre</th>
+              <th>Ubicación</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Proveedores</h2>
+        <button id="btnNuevoProveedor" type="button" class="btn secondary">Nuevo</button>
+      </div>
+
+      <form id="proveedorForm" class="form" style="display:none;">
+        <input type="hidden" id="proveedorId">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="proveedorNombre">Nombre</label>
+            <input id="proveedorNombre" class="form-input" required placeholder="Proveedor principal S.A.S.">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="proveedorContacto">Contacto</label>
+            <input id="proveedorContacto" class="form-input" placeholder="Nombre contacto">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="proveedorTelefono">Teléfono</label>
+            <input id="proveedorTelefono" class="form-input" placeholder="3001234567">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="proveedorEmail">Email</label>
+            <input id="proveedorEmail" class="form-input" type="email" placeholder="compras@proveedor.com">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="proveedorCatalogoReferencia">Catálogo referencia</label>
+            <input id="proveedorCatalogoReferencia" class="form-input" placeholder="URL, código o documento de catálogo">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="proveedorCondicionEntrega">Condición de entrega</label>
+            <input id="proveedorCondicionEntrega" class="form-input" placeholder="Entrega 24h, CIF bodega principal, etc.">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="proveedorPrecioBaseReferencial">Precio base referencial</label>
+            <input id="proveedorPrecioBaseReferencial" class="form-input" type="number" min="0" step="0.01" value="0">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="proveedorDescuentoPorcentaje">Descuento (%)</label>
+            <input id="proveedorDescuentoPorcentaje" class="form-input" type="number" min="0" max="100" step="0.01" value="0">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="proveedorPlazoPagoDias">Plazo pago (días)</label>
+            <input id="proveedorPlazoPagoDias" class="form-input" type="number" min="0" step="1" value="0">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="proveedorObservaciones">Observaciones</label>
+            <input id="proveedorObservaciones" class="form-input" placeholder="Horario de entregas y condiciones">
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn" type="submit">Guardar proveedor</button>
+        </div>
+      </form>
+
+      <div class="table-wrap">
+        <table class="table" id="proveedoresTable">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nombre</th>
+              <th>Contacto</th>
+              <th>Email</th>
+	      <th>Precio base</th>
+	      <th>Condiciones</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Categorías de productos</h2>
+        <div class="empresa-inline-actions">
+          <input id="filtroCategoriasProducto" class="form-input" placeholder="Buscar por nombre/código">
+          <button id="btnBuscarCategoriasProducto" type="button" class="btn secondary">Buscar</button>
+          <button id="btnNuevaCategoriaProducto" type="button" class="btn secondary">Nueva</button>
+        </div>
+      </div>
+
+      <form id="categoriaProductoForm" class="form" style="display:none;">
+        <input type="hidden" id="categoriaProductoId">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="categoriaProductoCodigo">Código</label>
+            <input id="categoriaProductoCodigo" class="form-input" placeholder="CAT-001">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="categoriaProductoNombre">Nombre</label>
+            <input id="categoriaProductoNombre" class="form-input" required placeholder="Bebidas">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="categoriaProductoColor">Color</label>
+            <input id="categoriaProductoColor" class="form-input" placeholder="#0EA5E9">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="categoriaProductoOrden">Orden</label>
+            <input id="categoriaProductoOrden" class="form-input" type="number" step="1" min="0" value="0">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="categoriaProductoDescripcion">Descripción</label>
+            <input id="categoriaProductoDescripcion" class="form-input" placeholder="Grupo comercial para reportes y filtros">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="categoriaProductoObservaciones">Observaciones</label>
+            <input id="categoriaProductoObservaciones" class="form-input" placeholder="Notas internas">
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn" type="submit">Guardar categoría</button>
+        </div>
+      </form>
+
+      <div class="table-wrap">
+        <table class="table" id="categoriasProductosTable">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Código</th>
+              <th>Nombre</th>
+              <th>Color</th>
+              <th>Orden</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Productos</h2>
+        <div class="empresa-inline-actions">
+          <select id="filtroCategoriaProducto" class="form-input">
+            <option value="">Todas las categorías</option>
+          </select>
+          <input id="filtroProductos" class="form-input" placeholder="Buscar por nombre/SKU/código de barras">
+          <button id="btnBuscarProductos" class="btn secondary" type="button">Buscar</button>
+          <button id="btnNuevoProducto" class="btn secondary" type="button">Nuevo</button>
+        </div>
+      </div>
+
+      <form id="productoForm" class="form" style="display:none;">
+        <input type="hidden" id="productoId">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="productoNombre">Nombre</label>
+            <input id="productoNombre" class="form-input" required placeholder="Producto premium">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="productoSKU">SKU</label>
+            <input id="productoSKU" class="form-input" placeholder="SKU-0001">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="productoCodigoBarras">Código de barras</label>
+            <input id="productoCodigoBarras" class="form-input" placeholder="7701234567890">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="productoCategoria">Categoría</label>
+            <select id="productoCategoria" class="form-input">
+              <option value="">Sin categoría</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="productoMarca">Marca</label>
+            <input id="productoMarca" class="form-input" placeholder="Marca X">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="productoUnidad">Unidad de medida</label>
+            <input id="productoUnidad" class="form-input" placeholder="unidad / caja / kg">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="productoCosto">Costo</label>
+            <input id="productoCosto" class="form-input" type="number" step="0.01" min="0" value="0">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="productoPrecio">Precio</label>
+            <input id="productoPrecio" class="form-input" type="number" step="0.01" min="0" value="0">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="productoImpuesto">Impuesto %</label>
+            <input id="productoImpuesto" class="form-input" type="number" step="0.01" min="0" value="0">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="productoStockMin">Stock mínimo</label>
+            <input id="productoStockMin" class="form-input" type="number" step="0.01" min="0" value="0">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="productoStockMax">Stock máximo</label>
+            <input id="productoStockMax" class="form-input" type="number" step="0.01" min="0" value="0">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="productoStockInicial">Stock inicial (solo creación)</label>
+            <input id="productoStockInicial" class="form-input" type="number" step="0.01" min="0" value="0">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="productoBodegaPrincipal">Bodega principal</label>
+            <select id="productoBodegaPrincipal" class="form-input"></select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="productoProveedorPrincipal">Proveedor principal</label>
+            <select id="productoProveedorPrincipal" class="form-input"></select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="productoImagen">Imagen / logo</label>
+            <input id="productoImagen" class="form-input" type="file" accept=".png,.jpg,.jpeg,.gif,.webp,.svg">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="productoImagenURL">URL imagen (opcional)</label>
+            <input id="productoImagenURL" class="form-input" placeholder="/uploads/productos/...">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="productoMotivoPrecio">Motivo de cambio de precio (edición)</label>
+            <input id="productoMotivoPrecio" class="form-input" placeholder="Actualización por proveedor / inflación / promoción">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="productoReferenciaPrecio">Referencia de cambio (edición)</label>
+            <input id="productoReferenciaPrecio" class="form-input" placeholder="ACTA-PRC-2026-04">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="productoDescripcion">Descripción</label>
+            <textarea id="productoDescripcion" class="form-textarea"></textarea>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="productoObservaciones">Observaciones</label>
+            <textarea id="productoObservaciones" class="form-textarea"></textarea>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn" type="submit">Guardar producto</button>
+        </div>
+      </form>
+
+      <div class="table-wrap">
+        <table class="table" id="productosTable">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Imagen</th>
+              <th>SKU</th>
+              <th>Nombre</th>
+              <th>Categoría</th>
+              <th>Precio</th>
+              <th>Stock total</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Servicios Vendibles</h2>
+        <button id="btnNuevoServicio" class="btn secondary" type="button">Nuevo</button>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

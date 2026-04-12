@@ -607,3 +607,14 @@ apikey deepseek
 sk-c75bc2c9e04f4c5ea21f4714320e1489
 
 llamemosle al proceso se crear una pagina nueva con menu y dividir la pagina principal en subpaginas, llamemosle al proceso : independizar pagina, agrega esta regla al agente_go 
+
+- crear una pagina que se llame juegos 
+
+
+el sistema debe estar separado en dos: ingresos y egresos.
+ingresos: 
+- venta de productos
+- venta de servicio
+
+Egresos: 
+ - pagos

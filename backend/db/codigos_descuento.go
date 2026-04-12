@@ -485,8 +485,8 @@ func GenerateCodigoDescuentoAutomatico(prefix string) string {
 	if base == "" {
 		base = "DSCT"
 	}
-	fecha := time.Now().Format("060102")
-	return base + fecha + randomCodigoDescuentoChars(4)
+	// Formato moderno y sencillo: PREFIJO-XXXX-XXXX (dos grupos de 4 caracteres)
+	return base + "-" + randomCodigoDescuentoChars(4) + "-" + randomCodigoDescuentoChars(4)
 }
 
 func parseCodigoDescuentoDate(raw string) (time.Time, error) {

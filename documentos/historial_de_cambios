@@ -1,11 +1,79 @@
 - Historial de cambios
 
+ - 2026-04-11: Actualizar `arbol_administrar_empresa.md` — eliminar entradas duplicadas movidas a MENÚ
+     - Archivos modificados:
+         - documentos/arbol_administrar_empresa.md (modificado: se eliminaron entradas top-level duplicadas y se normalizaron rutas)
+     - Descripcion: Se corrigió el árbol de navegación para reflejar la estructura por MENÚs. Se removieron enlaces que ahora son subpáginas (ej.: Estaciones, Propinas, Comisiones, Tarifas, Facturas, Créditos, ERP, Gráficos) del listado top-level.
+     - Verificacion: Revisión estática realizada; comprobar navegación en `http://localhost:8080/administrar_empresa.html?id=6` para validar que la UI y el árbol coinciden.
+
+ - 2026-04-11: Eliminar botón 'Volver a empresas' en menús Productos/Reportes/Configuración/Finanzas
+
+ - 2026-04-11: Eliminar enlaces duplicados del shell `web/administrar_empresa.html`
+     - Archivos modificados:
+         - web/administrar_empresa.html (modificado: se eliminaron entradas duplicadas movidas a sus respectivos menús)
+     - Descripcion: Se depuró el listado principal de navegación para eliminar enlaces que ya existen dentro de `*_menu.html` (ej.: Estaciones, Propinas, Comisiones, Tarifas, Facturas, Créditos, Nómina, ERP, Gráficos). Ahora el shell lista sólo entradas top-level y MENÚs.
+     - Verificacion: Revisión estática realizada; probar en `http://localhost:8080/administrar_empresa.html?id=6` para validar la navegación y que las páginas siguen accesibles desde sus menús.
+     - Archivos modificados:
+         - web/administrar_empresa/administrar_productos_menu.html (modificado: se eliminó el enlace 'Volver a empresas')
+         - web/administrar_empresa/reportes_menu.html (modificado: se eliminó el enlace 'Volver a empresas')
+         - web/administrar_empresa/configuracion_menu.html (modificado: se eliminó el enlace 'Volver a empresas')
+         - web/administrar_empresa/finanzas_menu.html (modificado: se eliminó el enlace 'Volver a empresas')
+     - Descripcion: Se eliminó el botón de navegación rápida hacia la selección de empresa en los menús indicados, simplificando la navegación dentro del panel `Administrar Empresa`. IDs y demás enlaces internos no fueron modificados.
+     - Verificacion: Revisión estática realizada; verificación visual en navegador pendiente.
+
+ - 2026-04-11: Restaurado enlace 'Estaciones' en `web/administrar_empresa.html`
+     - Archivos modificados:
+         - web/administrar_empresa.html (modificado: `Estaciones` restaurado como segundo enlace bajo `Inicio`)
+     - Descripcion: Se restauró el acceso directo a `Estaciones` en el menú principal por petición del usuario; anteriormente se había retirado temporalmente durante la depuración de enlaces duplicados al mover elementos a sus `*_menu.html`.
+     - Verificacion: Revisión estática realizada; probar en `http://localhost:8080/administrar_empresa.html?id=6` para confirmar posición y funcionalidad.
+
+ - 2026-04-11: Agregar accesos directos ausentes en menú `Administrar Empresa`
+     - Archivos modificados:
+         - web/administrar_empresa.html (modificado: se añadieron enlaces a páginas que no tenían link directo)
+     - Descripcion: Se detectaron múltiples archivos HTML en `web/administrar_empresa/` que no estaban enlazados desde el menú principal. Para facilitar el acceso se añadieron enlaces a todas esas páginas (listadas en el commit/PR asociado) en la parte inferior del menú, arriba de 'Volver a empresas'.
+     - Verificacion: Revisión estática realizada; probar en `http://localhost:8080/administrar_empresa.html?id=6` y abrir varias entradas para verificar que cargan en el iframe `contentFrame`.
+
+ - 2026-04-11: Iconos de menú a color
+    - Archivos añadidos/modificados:
+        - web/img/company-briefcase-color.svg (nuevo)
+        - web/img/network-color.svg (nuevo)
+        - web/img/shield-license-color.svg (nuevo)
+        - web/img/shield-security-color.svg (nuevo)
+        - web/img/user-avatar-color.svg (nuevo)
+        - web/administrar_empresa.html (modificado: referencias a iconos actualizadas a variantes '-color')
+        - web/super_administrador.html (modificado: iconos a color)
+        - web/seleccionar_empresa.html (modificado: iconos a color)
+        - web/administrar_empresa/administrar_productos_menu.html (modificado: iconos a color)
+        - web/administrar_empresa/configuracion_menu.html (modificado: iconos a color)
+        - web/administrar_empresa/reportes_menu.html (modificado: iconos a color)
+        - web/administrar_empresa/facturacion_electronica_menu.html (modificado: iconos a color)
+        - web/administrar_empresa/finanzas_menu.html (modificado: iconos a color)
+        - web/elegir_licencia.html (modificado: iconos a color)
+        - web/pagar_licencia.html (modificado: iconos a color)
+    - Descripcion: Se crearon variantes coloreadas de iconos usados en menús (nuevos archivos `*-color.svg`) y se actualizaron las referencias en los menús del panel para usar las versiones a color, mejorando la coherencia visual.
+    - Verificacion: Revisión estática de archivos y visual check pendiente en navegador; las rutas ahora apuntan a `/img/*-color.svg` cuando disponible.
+
+- 2026-04-11: Reorganización menú Configuración y limpieza del shell
+    - Archivos añadidos/modificados:
+        - web/administrar_empresa/configuracion_menu.html (modificado: añadidas subpáginas Carrito/Propinas/Comisiones/Configuración de estaciones/Tarifas)
+        - web/administrar_empresa/administrar_empresa.html (modificado: eliminados enlaces duplicados a Carrito, Combos, Compras, Propinas, Comisiones, Tarifas; reordenado menú)
+    - Descripcion: Se actualizó la estructura real para que el árbol jerárquico coincida con `documentos/arbol_administrar_empresa.md`. Las páginas de Carrito, Propinas, Comisiones y tarifas ahora son subpáginas del menú Configuración; Combos y Compras fueron movidos al menú Productos. Se conservaron los `id` de enlace para mantener compatibilidad con el sistema de permisos y scripts.
+    - Verificacion: Revisión estática de archivos y consistencia de `id` en los menús (compatibilidad JS/permiso verificada). Navegación física pendiente de verificación en entorno web.
+
 - 2026-04-11: Regla agente_go — "Todo se construye como real"
     - Archivos añadidos/modificados:
         - documentos/regla_agente_go.md (nuevo)
         - documentos/descripcion_de_archivos (modificado)
     - Descripcion: Se incorpora una regla operativa para que nuevas páginas, subpáginas y componentes se implementen con endpoints backend reales, persistencia en DB, cifrado de secretos cuando aplique y pruebas mínimas. Evita dejar artefactos como mocks indefinidos en el repo.
     - Verificacion: Documento `documentos/regla_agente_go.md` creado y referencia añadida en `documentos/descripcion_de_archivos`.
+
+- 2026-04-11: Menús Facturación y Finanzas creados
+    - Archivos añadidos/modificados:
+        - web/administrar_empresa/facturacion_electronica_menu.html (nuevo)
+        - web/administrar_empresa/finanzas_menu.html (nuevo)
+        - web/administrar_empresa/administrar_empresa.html (modificado: `linkFacturacionElectronica` y `linkFinanzas` apuntan a nuevos `*_menu.html`)
+    - Descripcion: Se añadieron shells tipo menú (menu izquierdo + iframe derecho) para Facturación electrónica y para Finanzas, y se actualizó el shell principal para apuntar a estos menús. Cada menú carga por defecto la subpágina principal del módulo.
+    - Verificacion: Navegación manual: al abrir el panel principal, los enlaces de Facturación y Finanzas cargan sus respectivos menús y muestran la subpágina por defecto en el iframe.
 
 - 2026-04-11: Panel Productos — subpáginas y Bodegas
     - Archivos añadidos/modificados:

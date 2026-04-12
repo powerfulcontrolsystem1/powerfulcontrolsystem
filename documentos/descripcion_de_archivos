@@ -147,6 +147,15 @@ Actualizacion 2026-04-08: Configuracion monetaria y numerica por empresa
 	- agrega tarjeta de configuracion para moneda operativa, sistema numerico y manejo de decimales por empresa.
 	- integra carga/guardado en `/api/empresa/configuracion_avanzada`.
 
+Actualizacion 2026-04-11: Menús Facturación y Finanzas
+
+- `web/administrar_empresa/facturacion_electronica_menu.html` (nuevo):
+	- Shell de menú para Facturación electrónica con menú izquierdo y `iframe` derecho que carga por defecto `facturacion_electronica.html`. Incluye enlace a `facturas_electronicas.html`.
+
+- `web/administrar_empresa/finanzas_menu.html` (nuevo):
+	- Shell de menú para Finanzas con menú izquierdo y `iframe` derecho que carga por defecto `finanzas.html`. Incluye accesos a `creditos.html`, `nomina_sueldos.html` y `modulos_erp_extendido.html`.
+
+
 - `documentos/estructura_bd.md` y `estructura_bd.md`:
 	- actualizan version de esquema a `2026-04-08.42.0` e incorporan nuevos campos de formato monetario/numerico en `empresa_configuracion_avanzada`.
 
@@ -5422,7 +5431,19 @@ Adicional:
 	- web/img/user-avatar.svg: Placeholder SVG para avatar de usuario en listados y paneles.
 	- web/img/analytics.svg: Placeholder SVG para la tarjeta de métricas/analytics.
 	- web/img/network.svg: Placeholder SVG representando conectividad/red.
+	- web/img/network.svg: Placeholder SVG representando conectividad/red.
 		- web/img/shield-security.svg: Placeholder SVG para la página de seguridad/monitoreo de puertos.
+
+	- Versiones a color (nuevas):
+		- web/img/company-briefcase-color.svg: Variante en color del icono company-briefcase.
+		- web/img/shield-license-color.svg: Variante en color del icono shield-license.
+		- web/img/user-avatar-color.svg: Variante en color del icono user-avatar.
+		- web/img/analytics-color.svg: Variante en color del icono analytics.
+		- web/img/network-color.svg: Variante en color del icono network.
+		- web/img/shield-security-color.svg: Variante en color del icono shield-security.
+		- web/img/price-tag-color.svg: Variante en color del icono price-tag.
+		- web/img/tags-color.svg: Variante en color del icono tags.
+		- web/img/warehouse-color.svg: Variante en color del icono warehouse.
 
 Nota: Estos archivos fueron generados localmente como placeholders SVG para entornos offline o cuando no se dispone de logos oficiales. Reemplazarlos por logos reales es recomendado en producción.
 
