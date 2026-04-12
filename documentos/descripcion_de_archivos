@@ -519,6 +519,13 @@ Actualizacion 2026-04-07: Avance modulo 35 (Creditos y cartera, fase 1 backend)
 - `backend/handlers/creditos_test.go` (nuevo):
 	- agrega prueba `TestEmpresaCreditosHandlerFlujoBasico` para contrato HTTP base del modulo.
 
+Actualizacion 2026-04-11: Regla agente_go — "Todo se construye como real"
+
+- `documentos/regla_agente_go.md` (nuevo):
+	- Regla operativa para que nuevas páginas y componentes se implementen con endpoints backend reales, persistencia, cifrado de secretos cuando aplique y pruebas mínimas.
+	- Referencia para implementadores: describir en `documentos/descripcion_de_modulos` y registrar el cambio en `documentos/historial_de_cambios`.
+
+
 - `backend/main.go`:
 	- incorpora `EnsureEmpresaCreditosSchema`.
 	- registra migracion `2026-04-07-026-creditos-cartera`.

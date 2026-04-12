@@ -11,6 +11,13 @@ Reglas obligatorias:
 
 - Regla de aplicación automática: Siempre que el agente vaya a ejecutar una acción que implique añadir/importar una librería externa (modificar `go.mod`, agregar paquetes importados, o instalar binarios), debe primero confirmar con el usuario y registrar la autorización en `documentos/historial_de_cambios`.
 
+- Regla oficial DIAN SaaS multiempresa (facturacion electronica Colombia):
+  - Modelo recomendado: un solo software DIAN para toda la plataforma (registro unico en DIAN con un `Software ID`/`Software PIN` compartido).
+  - Todas las empresas deben operar con `usar_software_compartido=1` cuando se aplique este modelo.
+  - Cada empresa conserva identidad tributaria propia y obligatoria para emision real: `nit`, `token_emisor_ref` y `certificado_clave_ref`.
+  - En cada envio real/documento se debe mantener trazabilidad por empresa (NIT y credenciales por `empresa_id`), aun cuando el software sea compartido.
+  - No reutilizar token ni firma entre empresas; las referencias deben ser seguras (`env:`, `file:`, `base64:`).
+
 Comportamiento del agente:
 
 - Leer `documentos/descripcion_del_proyecto` antes de comenzar tareas relacionadas con el proyecto y alinearse con sus restricciones.

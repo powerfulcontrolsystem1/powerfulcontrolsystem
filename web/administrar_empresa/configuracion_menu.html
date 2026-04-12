@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Configuración - Menú</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+</head>
+<body class="admin-empresa-shell">
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <h2>Configuración</h2>
+      <p id="menuPermsEvidence" class="form-help">Permisos de menú: cargando contexto...</p>
+      <ul class="nav">
+        <li><a id="linkConfiguracionMain" href="/administrar_empresa/configuracion.html" target="configuracionContentFrame"><img class="icon" src="/img/settings-color.svg" alt="">General</a></li>
+        <li><a id="linkConfiguracionPermisos" href="/administrar_empresa/configuracion_permisos.html" target="configuracionContentFrame"><img class="icon" src="/img/shield-license.svg" alt="">Permisos</a></li>
+        <li><a id="linkConfiguracionAvanzada" href="/super/configuracion_avanzada.html" target="configuracionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Avanzada</a></li>
+        <li><a id="linkConfiguracionIntegraciones" href="/administrar_empresa/configuracion_integraciones.html" target="configuracionContentFrame"><img class="icon" src="/img/network.svg" alt="">Integraciones</a></li>
+        <li><a href="/seleccionar_empresa.html" class="select-company"><img class="icon" src="/img/company-briefcase.svg" alt="">Volver a empresas</a></li>
+      </ul>
+    </aside>
+
+    <main class="admin-content">
+      <div class="admin-toolbar page-header">
+        <h1 id="empresaTitle">Configuración</h1>
+        <a id="btnAyudaModulo" class="btn secondary" href="/ayuda/ayuda.html" target="_blank" rel="noopener">Ayuda del módulo</a>
+      </div>
+      <iframe name="configuracionContentFrame" id="configuracionContentFrame" src="/administrar_empresa/configuracion.html" title="Contenido de configuración" class="admin-empresa-frame"></iframe>
+    </main>
+  </div>
+  <script src="/js/administrar_empresa.js"></script>
+</body>
+</html>

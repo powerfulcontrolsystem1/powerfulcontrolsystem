@@ -184,3 +184,6 @@ Usted debe proporcionar el identificador del set de pruebas (TestSetId) 93727c06
   - valida software efectivo, token y firma por empresa sin exponer secretos.
 - `action=subir_firma`:
   - recibe multipart (`empresa_id`, `archivo_firma`) y guarda `certificado_clave_ref` como referencia `file:`.
+
+
+  https://micrositios.dian.gov.co/sistema-de-facturacion-electronica/

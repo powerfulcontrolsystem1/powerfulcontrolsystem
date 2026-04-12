@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Reportes - Menú</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+</head>
+<body class="admin-empresa-shell">
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <h2>Reportes</h2>
+      <p id="menuPermsEvidence" class="form-help">Permisos de menú: cargando contexto...</p>
+      <ul class="nav">
+        <li><a id="linkReportesMain" href="/administrar_empresa/reportes.html" target="reportesContentFrame"><img class="icon" src="/img/network.svg" alt="">Reportes generales</a></li>
+        <li><a id="linkReportesInventario" href="/administrar_empresa/reportes_inventario.html" target="reportesContentFrame"><img class="icon" src="/img/warehouse-color.svg" alt="">Inventario</a></li>
+        <li><a id="linkReportesFinanzas" href="/administrar_empresa/reportes_finanzas.html" target="reportesContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Finanzas</a></li>
+        <li><a href="/seleccionar_empresa.html" class="select-company"><img class="icon" src="/img/company-briefcase.svg" alt="">Volver a empresas</a></li>
+      </ul>
+    </aside>
+
+    <main class="admin-content">
+      <div class="admin-toolbar page-header">
+        <h1 id="empresaTitle">Reportes</h1>
+        <a id="btnAyudaModulo" class="btn secondary" href="/ayuda/ayuda.html" target="_blank" rel="noopener">Ayuda del módulo</a>
+      </div>
+      <iframe name="reportesContentFrame" id="reportesContentFrame" src="/administrar_empresa/reportes.html" title="Contenido de reportes" class="admin-empresa-frame"></iframe>
+    </main>
+  </div>
+      <script src="/js/administrar_empresa.js"></script>
+      <script>
+        (function(){
+          try {
+            const params = new URLSearchParams(window.location.search);
+            const sub = params.get('subpage');
+            if (sub) {
+              const iframe = document.getElementById('reportesContentFrame');
+              if (iframe) {
+                const src = sub.startsWith('/') ? sub : ('/administrar_empresa/' + sub);
+                iframe.src = src;
+              }
+            }
+          } catch (e) {
+            // no-op
+          }
+        })();
+      </script>
+</body>
+</html>

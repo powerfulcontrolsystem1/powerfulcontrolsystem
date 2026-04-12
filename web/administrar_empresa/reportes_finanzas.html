@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Reportes - Finanzas</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="empresa-subpage">
+  <div class="container">
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h1 style="margin:0;">Reportes Financieros</h1>
+        <div class="empresa-inline-actions">
+          <input type="date" id="desde" class="form-input">
+          <input type="date" id="hasta" class="form-input">
+          <button id="btnAplicarFiltroFin" class="btn secondary" type="button">Aplicar</button>
+          <button id="btnExportarFin" class="btn secondary" type="button">Exportar</button>
+        </div>
+      </div>
+      <p class="form-help">Resumen de ingresos, egresos y movimientos por periodo.</p>
+
+      <div class="kpi-row">
+        <div class="kpi">Ingresos: <strong id="kpiIngresos">--</strong></div>
+        <div class="kpi">Egresos: <strong id="kpiEgresos">--</strong></div>
+        <div class="kpi">Balance: <strong id="kpiBalance">--</strong></div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="table" id="tablaFinanzas">
+          <thead>
+            <tr><th>Fecha</th><th>Concepto</th><th>Tipo</th><th>Monto</th><th>Referencia</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    (function(){
+      var b = document.getElementById('btnAplicarFiltroFin');
+      var e = document.getElementById('btnExportarFin');
+      if (b) b.addEventListener('click', function(){ alert('Aplicar filtro financiero (placeholder)'); });
+      if (e) e.addEventListener('click', function(){ alert('Exportar reporte financiero (placeholder)'); });
+    })();
+  </script>
+</body>
+</html>

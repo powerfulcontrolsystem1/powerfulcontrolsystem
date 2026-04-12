@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Configuración — Permisos</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="empresa-subpage">
+  <div class="container">
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h1 class="empresa-title">Permisos y Roles</h1>
+        <div class="empresa-inline-actions">
+          <button id="btnAddRole" class="btn add" type="button">Agregar rol</button>
+          <button id="btnSaveRoles" class="btn secondary" type="button">Guardar cambios</button>
+        </div>
+      </div>
+      <p class="form-help">Cree y gestione roles y permisos por empresa. Esta es una interfaz placeholder con ejemplos básicos.</p>
+
+      <div class="table-wrap">
+        <table class="table" id="rolesTable">
+          <thead>
+            <tr><th>Rol</th><th>Descripción</th><th>Permisos</th><th>Acciones</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Administrador</td>
+              <td>Acceso total al panel</td>
+              <td><label><input type="checkbox" checked> Ver</label> <label><input type="checkbox" checked> Editar</label></td>
+              <td><button class="btn secondary" onclick="this.closest('tr').remove()">Eliminar</button></td>
+            </tr>
+            <tr>
+              <td>Supervisor</td>
+              <td>Acceso a reportes y configuraciones limitadas</td>
+              <td><label><input type="checkbox" checked> Ver</label> <label><input type="checkbox"> Editar</label></td>
+              <td><button class="btn secondary" onclick="this.closest('tr').remove()">Eliminar</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    function escapeHtml(str){ return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+    document.getElementById('btnAddRole')?.addEventListener('click', function(){
+      var name = prompt('Nombre del rol:');
+      if(!name) return;
+      var tbody = document.querySelector('#rolesTable tbody');
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td>'+escapeHtml(name)+'</td><td>-</td><td><label><input type="checkbox" checked> Ver</label> <label><input type="checkbox"> Editar</label></td><td><button class="btn secondary" onclick="this.closest(\'tr\').remove()">Eliminar</button></td>';
+      tbody.appendChild(tr);
+    });
+
+    document.getElementById('btnSaveRoles')?.addEventListener('click', function(){
+      alert('Guardar roles (placeholder)');
+    });
+  </script>
+</body>
+</html>

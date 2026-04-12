@@ -756,6 +756,11 @@ func isProviderLimitError(err error) bool {
 		"insufficient_quota",
 		"resource_exhausted",
 		"quota exceeded",
+		"insufficient balance",
+		"insufficient_balance",
+		"invalid_request_error",
+		"payment required",
+		"insufficient_funds",
 		"free tier",
 	}
 	for _, n := range needles {

@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Reportes - Inventario</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="empresa-subpage">
+  <div class="container">
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h1 style="margin:0;">Reportes de Inventario</h1>
+        <div class="empresa-inline-actions">
+          <select id="bodegaSelect" class="form-input"><option value="">Todas las bodegas</option></select>
+          <select id="categoriaSelect" class="form-input"><option value="">Todas las categorías</option></select>
+          <button id="btnAplicarFiltroInv" class="btn secondary" type="button">Aplicar filtro</button>
+          <button id="btnExportarInvCSV" class="btn secondary" type="button">Exportar CSV</button>
+        </div>
+      </div>
+      <p class="form-help">Reporte de stock por bodega y producto.</p>
+      <div class="table-wrap">
+        <table class="table" id="tablaInventario">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>SKU</th>
+              <th>Bodega</th>
+              <th>Existencia</th>
+              <th>Stock mínimo</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    (function(){
+      var btnFiltro = document.getElementById('btnAplicarFiltroInv');
+      var btnExport = document.getElementById('btnExportarInvCSV');
+      if (btnFiltro) btnFiltro.addEventListener('click', function(){ alert('Filtrar inventario (placeholder)'); });
+      if (btnExport) btnExport.addEventListener('click', function(){ alert('Exportar inventario CSV (placeholder)'); });
+    })();
+  </script>
+</body>
+</html>

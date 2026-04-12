@@ -1,5 +1,101 @@
 - Historial de cambios
 
+- 2026-04-11: Regla agente_go — "Todo se construye como real"
+    - Archivos añadidos/modificados:
+        - documentos/regla_agente_go.md (nuevo)
+        - documentos/descripcion_de_archivos (modificado)
+    - Descripcion: Se incorpora una regla operativa para que nuevas páginas, subpáginas y componentes se implementen con endpoints backend reales, persistencia en DB, cifrado de secretos cuando aplique y pruebas mínimas. Evita dejar artefactos como mocks indefinidos en el repo.
+    - Verificacion: Documento `documentos/regla_agente_go.md` creado y referencia añadida en `documentos/descripcion_de_archivos`.
+
+- 2026-04-11: Panel Productos — subpáginas y Bodegas
+    - Archivos añadidos/modificados:
+        - web/administrar_empresa/bodegas.html (nuevo)
+        - web/administrar_empresa/administrar_productos_menu.html (modificado: enlace a subpáginas)
+    - Descripcion: Se convirtió `administrar_productos` en subpágina dentro de `administrar_productos_menu.html` y se agregó la subpágina `bodegas.html` cargada en el iframe derecho (`productosContentFrame`).
+    - Verificacion: Navegación manual en panel; la subpágina `bodegas.html` carga correctamente en el iframe del menú de productos.
+ 
+ - 2026-04-11: Independizar Reportes
+     - Archivos añadidos/modificados:
+          - web/administrar_empresa/reportes_menu.html (nuevo)
+          - web/administrar_empresa/reportes.html (ahora subpágina cargada en iframe)
+          - web/administrar_empresa/administrar_empresa.html (modificado: `linkReportes` apunta a `reportes_menu.html`)
+     - Descripcion: Se separó la página de reportes en una página menú (`reportes_menu.html`) con menú izquierdo y un iframe derecho. La página original `reportes.html` fue convertida en subpágina que se carga por defecto en el iframe.
+    - Verificacion: Navegación manual en panel; `reportes_menu.html` carga y `reportes.html` se muestra dentro del iframe correctamente.
+    - Subpáginas añadidas:
+        - web/administrar_empresa/reportes_inventario.html (nuevo)
+        - web/administrar_empresa/reportes_finanzas.html (nuevo)
+    - Nota: La página `web/administrar_empresa/graficos_estadisticas.html` se convirtió en subpágina accesible desde `reportes_menu.html` (ej. `reportes_menu.html?subpage=graficos_estadisticas.html`).
+
+    - Iconos añadidos para subpáginas nuevas:
+        - web/img/warehouse.svg (nuevo)
+        - web/img/tags.svg (nuevo)
+        - web/img/price-tag.svg (nuevo)
+        - Descripción: Se agregaron iconos faltantes referenciados por los menús de Productos y Reportes para que las subpáginas muestren su icono en el menú izquierdo.
+    - Versiones coloreadas creadas para iconos:
+        - web/img/warehouse-color.svg (nuevo)
+        - web/img/tags-color.svg (nuevo)
+        - web/img/price-tag-color.svg (nuevo)
+        - web/img/analytics-color.svg (nuevo)
+        - Descripción: Se añadieron variantes coloreadas para consistencia visual; los menús de Productos y Reportes fueron actualizados para usarlas.
+    
+ - 2026-04-11: Independizar Configuración
+     - Archivos añadidos/modificados:
+         - web/administrar_empresa/configuracion_menu.html (nuevo)
+         - web/administrar_empresa/configuracion.html (ahora subpágina cargada en iframe)
+         - web/administrar_empresa/administrar_empresa.html (modificado: `linkConfiguracion` apunta a `configuracion_menu.html`)
+         - web/img/settings-color.svg (nuevo)
+     - Descripción: Se separó la página de configuración en una página menú (`configuracion_menu.html`) con menú izquierdo y un iframe derecho. La página original `configuracion.html` se mantiene como subpágina cargada por defecto.
+     - Verificación: Navegación manual: `configuracion_menu.html` carga y `configuracion.html` se muestra dentro del iframe por defecto. Todos los enlaces del menú incluyen un icono.
+
+ - 2026-04-11: Subpáginas de Configuración (permisos e integraciones)
+     - Archivos añadidos:
+         - web/administrar_empresa/configuracion_permisos.html (nuevo)
+         - web/administrar_empresa/configuracion_integraciones.html (nuevo)
+     - Descripción: Se añadieron subpáginas placeholder para gestión de roles/permisos e integraciones externas (Wompi, Gmail, DeepSeek). Incluyen formularios y acciones básicas como punto de partida para implementación completa.
+     - Verificación: Navegación manual: ambas subpáginas cargan correctamente dentro de `configuracion_menu.html`.
+    - Mejora: Fallback de iconos en despliegue dinámico
+        - Archivo: web/menu.js (modificado)
+        - Descripción: Se añadió un manejador que garantiza que cualquier `img.icon` sin `src` o con error de carga reciba un icono por defecto (`/img/analytics-color.svg`). Esto asegura que todas las subpáginas muestran un icono incluso si el recurso original falta.
+
+ - 2026-04-11: Panel Productos — subpáginas: Categorías y Precios
+    - Archivos añadidos/modificados:
+        - web/administrar_empresa/categorias.html (nuevo)
+        - web/administrar_empresa/precios.html (nuevo)
+        - web/administrar_empresa/administrar_productos_menu.html (modificado: enlaces a subpáginas)
+    - Descripcion: Se añadieron las subpáginas `categorias.html` y `precios.html` como parte del menú de productos; ambas se cargan en el iframe `productosContentFrame` del panel de Productos.
+    - Verificacion: Navegación manual en panel; las páginas cargan correctamente en el iframe.
+
+- 2026-04-11: Mejora manejo errores IA (DeepSeek)
+        - Archivos modificados:
+                - backend/handlers/chat_con_inteligencia_artificial_controller.go
+        - Descripcion: Se amplió la detección de errores de límite del proveedor para incluir mensajes
+            como "Insufficient Balance" e "invalid_request_error". Ahora las respuestas 402 por saldo
+            insuficiente se mapean a respuesta de límite del plan (JSON amigable con `upgrade_url`).
+        - Resultado: Evita que el frontend reciba 502 genérico; se devuelve un JSON con `code: free_tier_limit_reached` y `upgrade_url`.
+        - Verificacion: Compilacion de backend ejecutada (`go test ./... -run "^$" -count=1`) -> OK.
+
+- 2026-04-09: Regla oficial DIAN SaaS multiempresa incorporada a instrucciones del agente
+    - Se actualiza `copilot-instructions.md` para declarar como flujo oficial del agente:
+        - software DIAN compartido para toda la plataforma (`Software ID`/`Software PIN` unicos).
+        - operacion por empresa con identidad tributaria propia (`nit`) y credenciales sensibles por `empresa_id` (`token_emisor_ref`, `certificado_clave_ref`).
+        - obligatoriedad de trazabilidad por empresa en cada envio real y prohibicion de reutilizar token/firma entre empresas.
+    - Se mantiene alineacion con el flujo backend ya implementado en `/api/empresa/facturacion_electronica/dian`.
+
+- 2026-04-09: Registro operativo de datos DIAN de habilitacion en empresa_id=6
+    - Se aplica carga/actualizacion directa en `backend/db/empresas.db` sobre `empresa_dian_configuracion` para `empresa_id=6` usando los valores del documento `documentos/informacion_para_pruebas_plataforma_DIAN`.
+    - Campos registrados/actualizados:
+        - `nit=84456779`
+        - `razon_social=Cayon Guarnizo Ivan Francisco`
+        - `tipo_ambiente=habilitacion`
+        - `software_id=e264e403-da98-4ede-8a1c-3445be095f84`
+        - `software_pin=19841`
+        - `test_set_id=93727c06-c7ff-4100-ae13-6994f8c2f553`
+        - `prefijo=SETP`, `resolucion_numero=18760000001`
+        - `rango_desde=990000000`, `rango_hasta=995000000`, `consecutivo_actual=990000000`
+        - `url_dian=https://vpfe-hab.dian.gov.co/WcfDianCustomerServices.svc?wsdl`
+        - `estado_dian=pendiente`
+    - Verificacion posterior ejecutada en la misma operacion con lectura directa de `empresa_dian_configuracion` para `empresa_id=6`.
+
 - 2026-04-09: Facturacion DIAN multiempresa SaaS - software compartido con credenciales por empresa
     - Se actualiza `backend/db/modulos_faltantes.go` para ampliar `empresa_dian_configuracion` con:
         - `usar_software_compartido`

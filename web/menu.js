@@ -9,6 +9,7 @@
       '<div class="fm-panel" role="menu">' +
         '<a class="fm-item" href="/index.html">Portal</a>' +
         '<a class="fm-item" href="/ayuda/ayuda.html">Ayuda</a>' +
+        '<a class="fm-item" href="/ultimas_mejoras.html">Últimas mejoras</a>' +
         '<a class="fm-item" href="/venta_digital.html">Venta digital</a>' +
         '<a id="calculatorLink" class="fm-item" href="/administrar_empresa/calculadora.html">Calculadora</a>' +
         '<button id="themeToggle" class="fm-item" type="button" aria-label="Cambiar tema"></button>' +
@@ -150,6 +151,32 @@
 
     updateCalculatorLink();
     loadCountryItem();
+
+    // Icon fallback: asegurar que todo img.icon tenga una fuente válida
+    (function ensureIconFallback(){
+      var defaultIcon = '/img/analytics-color.svg';
+      function setFallback(img){
+        try{
+          if(!img) return;
+          if(!img.getAttribute('src') || img.getAttribute('src').trim() === '') img.src = defaultIcon;
+          img.addEventListener('error', function(){ if(img.src !== defaultIcon) img.src = defaultIcon; });
+        }catch(e){}
+      }
+      // aplicar inicialmente
+      document.querySelectorAll && document.querySelectorAll('.admin-sidebar .nav a img.icon').forEach(setFallback);
+      // observar cambios dinámicos en caso de que menús se modifiquen
+      try{
+        var obs = new MutationObserver(function(mutations){
+          mutations.forEach(function(m){
+            m.addedNodes && m.addedNodes.forEach(function(node){
+              if(node && node.querySelectorAll){ node.querySelectorAll('.admin-sidebar .nav a img.icon').forEach(setFallback); }
+              if(node && node.matches && node.matches('.admin-sidebar .nav a img.icon')) setFallback(node);
+            });
+          });
+        });
+        obs.observe(document.body, { childList:true, subtree:true });
+      }catch(e){}
+    })();
 
     // Nota: no mostramos avatar/usuario en el menú flotante por simplicidad.
   }

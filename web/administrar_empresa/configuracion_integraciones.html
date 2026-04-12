@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Configuración — Integraciones</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="empresa-subpage">
+  <div class="container">
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h1 class="empresa-title">Integraciones</h1>
+        <div class="empresa-inline-actions">
+          <button id="btnSaveIntegrations" class="btn secondary" type="button">Guardar</button>
+        </div>
+      </div>
+      <p class="form-help">Configure integraciones externas (Wompi, Gmail, DeepSeek). Los campos son placeholders y no muestran claves en texto plano.</p>
+
+      <div class="form" style="margin-top:10px;">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Wompi (pagos)</label>
+            <select id="wompiMode" class="form-input"><option value="test">Test</option><option value="prod">Producción</option></select>
+            <div class="form-help">Clave privada: (*** oculto )</div>
+            <button class="btn secondary" type="button" onclick="alert('Abrir configuración Wompi (placeholder)')">Configurar</button>
+          </div>
+          <div class="form-col">
+            <label class="form-label">Gmail (notificaciones)</label>
+            <div class="form-help">Cuenta: ejemplo@gmail.com (configuración gestionada en super)</div>
+            <button class="btn secondary" type="button" onclick="alert('Abrir configuración Gmail (placeholder)')">Configurar</button>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">DeepSeek (Chat IA)</label>
+            <div class="form-help">API Key: (oculto). Guarde la clave en Super → Configuración avanzada.</div>
+            <button class="btn secondary" type="button" onclick="alert('Validar clave DeepSeek (placeholder)')">Validar clave</button>
+          </div>
+          <div class="form-col">
+            <label class="form-label">Integración adicional</label>
+            <input class="form-input" placeholder="URL / webhook" id="integrationUrl">
+            <div class="form-help">Ejemplo: https://hooks.example.com/mi-servicio</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    document.getElementById('btnSaveIntegrations')?.addEventListener('click', function(){
+      alert('Guardar integraciones (placeholder). No se almacenan claves en texto plano desde UI.');
+    });
+  </script>
+</body>
+</html>

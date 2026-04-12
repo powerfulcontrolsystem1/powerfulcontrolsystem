@@ -6,7 +6,7 @@ function getQueryParam(name) {
 (function () {
   var id = getQueryParam("id") || getQueryParam("empresa_id");
   var title = document.getElementById("empresaTitle");
-  var frame = document.getElementById("contentFrame");
+  var frame = document.getElementById("contentFrame") || document.querySelector("iframe.admin-empresa-frame");
   var permsEvidence = document.getElementById("menuPermsEvidence");
   var storage = null;
   try {

@@ -1,6 +1,10 @@
 # CHANGELOG
 
 ## 2026-04-09
+- Gobernanza de agente: se oficializa flujo DIAN SaaS multiempresa en instrucciones del repositorio.
+	- `copilot-instructions.md` incorpora regla oficial: software DIAN compartido (un `Software ID`/`Software PIN` para la plataforma) con credenciales tributarias obligatorias por empresa (`nit`, `token_emisor_ref`, `certificado_clave_ref`).
+	- Se explicita trazabilidad por `empresa_id` en cada envio real y prohibicion de reutilizar token/firma entre empresas.
+	- Trazabilidad sincronizada en `documentos/historial_de_cambios`.
 - Facturacion electronica DIAN (Colombia): modo SaaS multiempresa con software compartido y credenciales por empresa.
 	- `backend/db/modulos_faltantes.go` amplia `empresa_dian_configuracion` con `usar_software_compartido`, `software_id_compartido_ref`, `software_pin_compartido_ref` e indice `ix_dian_empresa_shared_mode`.
 	- `backend/handlers/modulos_faltantes.go` agrega resolucion de software efectivo (`resolveDIANSoftwareCredentials`) con fallback global `DIAN_SHARED_SOFTWARE_ID/DIAN_SHARED_SOFTWARE_PIN`.
