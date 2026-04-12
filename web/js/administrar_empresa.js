@@ -16,6 +16,7 @@ function getQueryParam(name) {
   }
   var links = [
     document.getElementById("linkInicio"),
+    document.getElementById("linkEstaciones"),
     document.getElementById("linkVentas"),
     document.getElementById("linkVentaPublica"),
     document.getElementById("linkProductos"),
@@ -82,7 +83,8 @@ function getQueryParam(name) {
     linkConfigEstaciones: { module: permModuleVentas, action: permActionApprove },
     linkTarifasPorMinutos: { module: permModuleVentas, action: permActionCreate },
     linkTarifasPorDia: { module: permModuleVentas, action: permActionCreate },
-    linkEstaciones: { module: permModuleVentas, action: permActionUpdate },
+    linkEstaciones: { alwaysVisible: true },
+    
     linkReservasHotel: { module: permModuleVentas, action: permActionCreate },
     linkReportes: { module: permModuleFinanzas, action: permActionRead },
     linkCalculadora: { module: permModuleFinanzas, action: permActionRead },

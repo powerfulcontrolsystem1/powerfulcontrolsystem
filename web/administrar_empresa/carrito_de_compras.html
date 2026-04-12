@@ -435,6 +435,43 @@
       }
     }
 
+    // Preferencias de estaciones (localStorage)
+    function getEstacionesStorageKey(empresaID) {
+      return 'estaciones_config_empresa_' + empresaID;
+    }
+
+    function readEstacionesConfig(empresaID) {
+      try {
+        const raw = localStorage.getItem(getEstacionesStorageKey(empresaID));
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object') return null;
+        return parsed;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function getMostrarTotalForStation(empresaID, estacionID) {
+      try {
+        if (!empresaID || !estacionID) return true;
+        const cfg = readEstacionesConfig(empresaID);
+        if (!cfg) return true;
+        const estaciones = Array.isArray(cfg.estaciones) ? cfg.estaciones : [];
+        const found = estaciones.find(s => Number(s.id) === Number(estacionID));
+        if (!found) return true;
+        return found.mostrar_total === undefined ? true : Boolean(found.mostrar_total);
+      } catch (_) {
+        return true;
+      }
+    }
+
+    function getMostrarTotalCurrent() {
+      const empresaID = state.empresaID || Number(getQueryParam('empresa_id') || 0);
+      const estacionID = state.stationID || Number(getQueryParam('estacion_id') || 0);
+      return getMostrarTotalForStation(empresaID, estacionID);
+    }
+
     function getDiscountCapabilities() {
       const cfg = loadEmpresaGeneralConfig();
       const productos = cfg && cfg.productos && typeof cfg.productos === 'object' ? cfg.productos : {};
@@ -2065,16 +2102,18 @@
         renderScannerPanel();
         return;
       }
-
       title.textContent = (state.stationMode ? 'Items de estación: ' : 'Items del carrito: ') + (normalize(selected.nombre) || 'sin nombre');
-      target.textContent = 'Código: ' + (normalize(selected.codigo) || '-') +
-        ' | Estado: ' + (normalize(selected.estado_carrito) || 'abierto') +
-        ' | Subtotal: ' + formatAmount(selected.subtotal, selected.moneda) +
-        ' | Descuento: ' + formatAmount(selected.descuento_total, selected.moneda) +
-        ' | Impuesto: ' + formatAmount(selected.impuesto_total, selected.moneda) +
-        ' | Total: ' + formatAmount(selected.total, selected.moneda) +
-        (normalize(selected.pagado_en) ? (' | Pagado: ' + formatAmount(selected.total_pagado, selected.moneda)) : '');
 
+      const showTotal = !(state.stationMode && !getMostrarTotalCurrent());
+      const parts = [];
+      parts.push('Código: ' + (normalize(selected.codigo) || '-'));
+      parts.push('Estado: ' + (normalize(selected.estado_carrito) || 'abierto'));
+      parts.push('Subtotal: ' + formatAmount(selected.subtotal, selected.moneda));
+      parts.push('Descuento: ' + formatAmount(selected.descuento_total, selected.moneda));
+      parts.push('Impuesto: ' + formatAmount(selected.impuesto_total, selected.moneda));
+      if (showTotal) parts.push('Total: ' + formatAmount(selected.total, selected.moneda));
+      if (normalize(selected.pagado_en)) parts.push('Pagado: ' + formatAmount(selected.total_pagado, selected.moneda));
+      target.textContent = parts.join(' | ');
       syncBuscarProductosButton();
       renderScannerPanel();
     }
@@ -2086,7 +2125,6 @@
         box.textContent = 'Selecciona un carrito para visualizar sus productos.';
         return;
       }
-
       const productos = state.items.filter(function(item) {
         const tipo = normalize(item.tipo_item);
         return tipo === 'producto' || tipo === 'combo';
@@ -2097,30 +2135,34 @@
         return;
       }
 
+      const showTotal = !(state.stationMode && !getMostrarTotalCurrent());
+
       const table = document.createElement('table');
       table.className = 'table';
-      table.innerHTML = '<thead><tr>' +
+      let header = '<thead><tr>' +
         '<th>ID item</th>' +
         '<th>Tipo</th>' +
         '<th>Código</th>' +
         '<th>Item</th>' +
         '<th>Cantidad</th>' +
-        '<th>Precio</th>' +
-        '<th>Total línea</th>' +
-        '<th>Estado</th>' +
+        '<th>Precio</th>' ;
+      if (showTotal) header += '<th>Total línea</th>';
+      header += '<th>Estado</th>' +
         '</tr></thead>';
+      table.innerHTML = header;
 
       const tbody = document.createElement('tbody');
       productos.forEach(function(item) {
         const tr = document.createElement('tr');
-        tr.innerHTML = '<td>' + Number(item.id || 0) + '</td>' +
+        let row = '<td>' + Number(item.id || 0) + '</td>' +
           '<td>' + escapeHtml(normalize(item.tipo_item) || '-') + '</td>' +
           '<td>' + escapeHtml(normalize(item.codigo_item) || '-') + '</td>' +
           '<td>' + escapeHtml(normalize(item.descripcion) || '-') + '</td>' +
           '<td>' + Number(item.cantidad || 0).toFixed(2) + '</td>' +
-          '<td>' + Number(item.precio_unitario || 0).toFixed(2) + '</td>' +
-          '<td>' + Number(item.total_linea || 0).toFixed(2) + '</td>' +
-          '<td>' + escapeHtml(normalize(item.estado) || 'activo') + '</td>';
+          '<td>' + Number(item.precio_unitario || 0).toFixed(2) + '</td>';
+        if (showTotal) row += '<td>' + Number(item.total_linea || 0).toFixed(2) + '</td>';
+        row += '<td>' + escapeHtml(normalize(item.estado) || 'activo') + '</td>';
+        tr.innerHTML = row;
         tbody.appendChild(tr);
       });
 
@@ -2150,7 +2192,8 @@
 
       const table = document.createElement('table');
       table.className = 'table';
-      table.innerHTML = '<thead><tr>' +
+      const showTotal = !(state.stationMode && !getMostrarTotalCurrent());
+      let thead = '<thead><tr>' +
         '<th>ID</th>' +
         '<th>Tipo</th>' +
         '<th>Descripción</th>' +
@@ -2158,25 +2201,26 @@
         '<th>Precio</th>' +
         '<th>Desc %</th>' +
         '<th>Imp %</th>' +
-        '<th>Total línea</th>' +
+        (showTotal ? '<th>Total línea</th>' : '') +
         '<th>Estado</th>' +
         '<th>Acciones</th>' +
         '</tr></thead>';
+      table.innerHTML = thead;
 
       const tbody = document.createElement('tbody');
       state.items.forEach(function(item) {
         const estado = normalize(item.estado) || 'activo';
         const toggleLabel = estado === 'activo' ? 'Desactivar' : 'Activar';
         const tr = document.createElement('tr');
-        tr.innerHTML = '<td>' + item.id + '</td>' +
+        let row = '<td>' + item.id + '</td>' +
           '<td>' + (normalize(item.tipo_item) || '') + '</td>' +
           '<td>' + (normalize(item.descripcion) || '') + '</td>' +
           '<td>' + Number(item.cantidad || 0).toFixed(2) + '</td>' +
           '<td>' + Number(item.precio_unitario || 0).toFixed(2) + '</td>' +
           '<td>' + Number(item.descuento_porcentaje || 0).toFixed(2) + '</td>' +
-          '<td>' + Number(item.impuesto_porcentaje || 0).toFixed(2) + '</td>' +
-          '<td>' + Number(item.total_linea || 0).toFixed(2) + '</td>' +
-          '<td>' + estado + '</td>' +
+          '<td>' + Number(item.impuesto_porcentaje || 0).toFixed(2) + '</td>';
+        if (showTotal) row += '<td>' + Number(item.total_linea || 0).toFixed(2) + '</td>';
+        row += '<td>' + estado + '</td>' +
           '<td class="actions">' +
             (readOnlyMode
               ? '<span class="form-help">Solo lectura</span>'
@@ -2184,6 +2228,7 @@
                 '<button data-id="' + item.id + '" class="delItem btn danger">Eliminar</button> ' +
                 '<button data-id="' + item.id + '" data-estado="' + estado + '" class="toggleItem btn">' + toggleLabel + '</button>')) +
           '</td>';
+        tr.innerHTML = row;
         tbody.appendChild(tr);
       });
       table.appendChild(tbody);

@@ -102,32 +102,20 @@
       '" type="button" aria-hidden="true">' +
       (hasLicense ? "Licencia activa" : "Sin licencia") +
       "</button>" +
-      '<button class="btn secondary empresa-estado-btn" type="button">' +
-      (empresaActiva ? "Desactivar empresa" : "Reactivar empresa") +
-      "</button>" +
-      "</div>" +
-      '<div class="form-help">Estado: ' +
-      (empresaActiva ? "Activa" : "Inactiva") +
       "</div>" +
       "</div>";
 
-    var toggleBtn = div.querySelector(".empresa-estado-btn");
-    if (toggleBtn) {
-      toggleBtn.addEventListener("click", async function (evt) {
-        evt.preventDefault();
-        evt.stopPropagation();
-        toggleBtn.disabled = true;
-        try {
-          if (empresaActiva) {
-            await setEmpresaEstado(empresa, "inactivo");
-          } else {
-            await setEmpresaEstado(empresa, "activo");
-          }
-        } catch (err) {
-          alert("No se pudo actualizar el estado de la empresa: " + (err && err.message ? err.message : String(err)));
-        }
-        toggleBtn.disabled = false;
-      });
+    if (!hasLicense) {
+      var dlDiv = document.createElement('div');
+      dlDiv.className = 'card-download';
+      var dlBtn = document.createElement('button');
+      dlBtn.type = 'button';
+      dlBtn.className = 'btn secondary download-data';
+      dlBtn.setAttribute('data-empresa-id', String(empresa.id || ''));
+      dlBtn.setAttribute('data-empresa-name', String(empresa.nombre || ''));
+      dlBtn.textContent = 'Descargar datos';
+      dlDiv.appendChild(dlBtn);
+      div.appendChild(dlDiv);
     }
 
     a.appendChild(div);
@@ -320,6 +308,7 @@
           var msgEl = document.getElementById("msg");
           if (msgEl) msgEl.textContent = "";
         } catch (e) {}
+        try { hideForm(); } catch (e) {}
       }
 
       var conLicenciaActiva = list.filter(function (e) {
@@ -425,7 +414,7 @@
     if (linkAgregar) {
       linkAgregar.addEventListener("click", function (ev) {
         ev.preventDefault();
-        showForm();
+        showEmpresasPanel();
         setActiveNav(linkAgregar);
       });
     }
@@ -492,6 +481,137 @@
       }[m];
     });
   }
+
+  function sanitizeFilename(name) {
+    if (!name) return '';
+    return String(name).replace(/[^a-z0-9\-\_\.]/gi, '_');
+  }
+
+  function downloadBlob(blob, filename) {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  async function performEmpresaDownload(empresa, format) {
+    if (!empresa || !empresa.id) throw new Error('empresa inválida');
+    var payload = {
+      empresa_id: empresa.id,
+      nombre: 'Backup export ' + (empresa.nombre || ''),
+      descripcion: 'Exportado desde UI',
+      include_tables: [],
+      exclude_tables: []
+    };
+
+    var createUrl = '/api/empresa/backups?empresa_id=' + encodeURIComponent(empresa.id) + '&action=crear';
+    var createRes = await fetch(createUrl, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    var createText = await createRes.text();
+    var createData = {};
+    if (createText) {
+      try { createData = JSON.parse(createText); } catch (e) { /* ignore */ }
+    }
+    if (!createRes.ok) {
+      throw new Error((createData && (createData.error || createData.message)) || createText || ('HTTP ' + createRes.status));
+    }
+    var backup = createData.backup || {};
+    var backupId = backup.id || 0;
+    if (!backupId) throw new Error('No se pudo crear backup');
+
+    var exportFormat = format;
+    var needGzip = false;
+    if (format === 'json.gz') { exportFormat = 'json'; needGzip = true; }
+
+    var exportUrl = '/api/empresa/backups?action=export&id=' + encodeURIComponent(backupId) + '&empresa_id=' + encodeURIComponent(empresa.id) + '&format=' + encodeURIComponent(exportFormat);
+    var expRes = await fetch(exportUrl, { credentials: 'same-origin' });
+    if (!expRes.ok) {
+      var tx = await expRes.text().catch(function(){return '';});
+      throw new Error(tx || ('HTTP ' + expRes.status));
+    }
+
+    var blob = await expRes.blob();
+    var ext = exportFormat === 'json' ? 'json' : (exportFormat === 'csv' ? 'csv' : (exportFormat === 'xls' ? 'xls' : exportFormat));
+    var nameSafe = sanitizeFilename(empresa.nombre || ('empresa_' + String(empresa.id)));
+    var now = new Date();
+    var stamp = now.getFullYear().toString() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0') + '_' + String(now.getHours()).padStart(2,'0') + String(now.getMinutes()).padStart(2,'0') + String(now.getSeconds()).padStart(2,'0');
+    var filename = nameSafe + '_' + stamp + '.' + ext;
+
+    if (needGzip) {
+      if (typeof CompressionStream === 'function') {
+        try {
+          var cs = new CompressionStream('gzip');
+          var compressedStream = blob.stream().pipeThrough(cs);
+          var compressedBlob = await new Response(compressedStream).blob();
+          downloadBlob(compressedBlob, nameSafe + '_' + stamp + '.json.gz');
+          return;
+        } catch (e) {
+          // fallback to plain json
+        }
+      }
+      // fallback: download original json
+      downloadBlob(blob, filename);
+      return;
+    }
+
+    downloadBlob(blob, filename);
+  }
+
+  function showDownloadDialog(empresa) {
+    var overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = '' +
+      '<div class="modal" role="dialog" aria-modal="true" style="max-width:420px;margin:60px auto;padding:18px;background:var(--card);border-radius:10px;box-shadow:0 20px 50px rgba(0,0,0,0.6);">' +
+        '<h3 style="margin-top:0;margin-bottom:8px;color:var(--text)">Descargar datos — ' + escapeHtml(empresa.nombre || '') + '</h3>' +
+        '<p class="form-help">Selecciona el formato para descargar los datos completos de la empresa.</p>' +
+        '<div style="margin-top:12px;display:flex;gap:8px">' +
+          '<select class="format" style="flex:1;padding:8px;border-radius:8px">' +
+            '<option value="json">JSON (snapshot completo)</option>' +
+            '<option value="json.gz">JSON (comprimido .gz)</option>' +
+            '<option value="csv">CSV (resumen)</option>' +
+            '<option value="xls">Excel (resumen)</option>' +
+          '</select>' +
+        '</div>' +
+        '<div style="margin-top:14px;display:flex;justify-content:flex-end;gap:8px">' +
+          '<button class="btn secondary cancel">Cancelar</button>' +
+          '<button class="btn confirm">Descargar</button>' +
+        '</div>' +
+      '</div>';
+    overlay.addEventListener('click', function(ev){ if (ev.target === overlay) overlay.remove(); });
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('.cancel').addEventListener('click', function(){ overlay.remove(); });
+    overlay.querySelector('.confirm').addEventListener('click', async function(){
+      try {
+        var fmt = overlay.querySelector('select.format').value || 'json';
+        overlay.querySelector('.confirm').disabled = true;
+        overlay.querySelector('.cancel').disabled = true;
+        await performEmpresaDownload(empresa, fmt);
+      } catch (err) {
+        alert('Error: ' + (err && err.message ? err.message : err));
+      } finally {
+        overlay.remove();
+      }
+    });
+  }
+
+  document.addEventListener('click', function(ev){
+    var btn = ev.target.closest && ev.target.closest('button.download-data');
+    if (!btn) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    var id = parseInt(btn.getAttribute('data-empresa-id') || '0', 10);
+    var name = btn.getAttribute('data-empresa-name') || '';
+    showDownloadDialog({ id: id, nombre: name });
+  });
 
   render();
 })();

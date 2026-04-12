@@ -163,8 +163,8 @@ func TestHandleGoogleLoginRedirectIncludesLoginHint(t *testing.T) {
 	if q.Get("login_hint") != "usuario@example.com" {
 		t.Fatalf("unexpected login_hint: %q", q.Get("login_hint"))
 	}
-	if q.Get("prompt") != "" {
-		t.Fatalf("prompt must be empty when login_hint is set, got %q", q.Get("prompt"))
+	if q.Get("prompt") != "select_account consent" {
+		t.Fatalf("unexpected prompt: %q", q.Get("prompt"))
 	}
 }
 

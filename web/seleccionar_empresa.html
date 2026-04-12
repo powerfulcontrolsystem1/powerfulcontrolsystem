@@ -12,8 +12,8 @@
   <div class="admin-layout">
     <aside class="admin-sidebar">
       <h2>Seleccionar Empresa</h2>
-      <ul class="nav">
-        <li><a id="linkAgregarEmpresa" href="#"><img class="icon" src="/img/company-briefcase-color.svg" alt="">Mis Empresas</a></li>
+        <ul class="nav">
+        <li><a id="linkAgregarEmpresa" href="#"><img class="icon" src="/img/company-briefcase-color.svg" alt="">Inicio</a></li>
         <li><a id="linkLicencias" href="/super/licencias.html?scope=mine&con_empresa=1" target="contentFrame"><img class="icon" src="/img/shield-license-color.svg" alt="">Licencias</a></li>
         <li><a id="linkAdministradores" href="/super/administradores.html" target="contentFrame"><img class="icon" src="/img/user-avatar-color.svg" alt="">Administradores</a></li>
         <li><a id="linkReportesGlobales" href="/super/reportes_globales.html" target="contentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Reportes globales</a></li>
@@ -24,8 +24,11 @@
       <section id="empresasPanel">
         <div class="container">
         <div class="page-header">
-          <h1 style="display:inline-block;margin-right:12px">Seleccionar Empresa</h1>
-          <button id="addBtn" class="btn add" style="vertical-align:middle">Mis Empresas</button>
+          <h1 style="display:inline-block;margin-right:12px">Inicio</h1>
+          <button id="addBtn" class="btn add" style="vertical-align:middle">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 1v14M1 8h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>Agregar Empresa</span>
+          </button>
         </div>
 
         <form id="form" class="form" style="margin-bottom:18px;display:none">

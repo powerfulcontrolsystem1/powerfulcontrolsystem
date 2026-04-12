@@ -181,5 +181,11 @@
     // Nota: no mostramos avatar/usuario en el menú flotante por simplicidad.
   }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', injectMenu); else injectMenu();
+  function initAcceptModalFromQuery(){
+    // La aceptación de contrato se gestiona ahora en /accept.html.
+    // Esta función se mantiene como no-op para compatibilidad con versiones antiguas.
+    return;
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ injectMenu(); initAcceptModalFromQuery(); }); else { injectMenu(); initAcceptModalFromQuery(); }
 })();

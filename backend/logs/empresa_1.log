@@ -1,0 +1,6 @@
+2026-04-12T15:08:47-05:00 [INFO] req_id=req-1776024527992911900-c8c613d23a20 event=request_start method=POST path=/api/empresa/backups?empresa_id=1&action=crear ip=::1 ua="curl/8.18.0"
+2026-04-12T15:08:47-05:00 [WARN] req_id=req-1776024527992911900-c8c613d23a20 event=api_error method=POST path=/api/empresa/backups status=401 error="unauthorized"
+2026-04-12T15:08:47-05:00 [WARN] req_id=req-1776024527992911900-c8c613d23a20 event=request_end method=POST path=/api/empresa/backups?empresa_id=1&action=crear status=401 dur_ms=1
+2026-04-12T15:09:02-05:00 [INFO] req_id=req-1776024542327292000-bb8bf3f5f2ca event=request_start method=POST path=/api/empresa/backups?empresa_id=1&action=crear ip=::1 ua="curl/8.18.0"
+2026-04-12T15:09:02-05:00 [WARN] req_id=req-1776024542327292000-bb8bf3f5f2ca event=api_error method=POST path=/api/empresa/backups status=401 error="unauthorized"
+2026-04-12T15:09:02-05:00 [WARN] req_id=req-1776024542327292000-bb8bf3f5f2ca event=request_end method=POST path=/api/empresa/backups?empresa_id=1&action=crear status=401 dur_ms=2

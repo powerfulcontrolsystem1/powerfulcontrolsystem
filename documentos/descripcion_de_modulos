@@ -1,10 +1,16 @@
 Descripcion compacta de modulos (POS multiempresa)
-Actualizacion: 2026-04-08
+Actualizacion: 2026-04-12
 
 Gobernanza obligatoria (agente_go):
 - Si se crea un modulo nuevo o se modifica un modulo existente, este documento debe actualizarse en la misma iteracion de trabajo.
 - En el mismo cambio, tambien debe actualizarse `documentos/matriz_roles_permisos_pos_multiempresa.md` para reflejar permisos por rol/modulo/accion y visibilidad de paginas afectadas.
 - La actualizacion modular debe mantener trazabilidad en `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios` y `CHANGELOG.md`.
+
+Actualizacion 2026-04-12 (autenticacion administrativa: contrato y verificacion humana):
+- Se unifica el flujo de login de administradores en `login.html -> OAuth Google -> /accept.html -> /accept/complete`.
+- La aceptación de contrato queda trazable y persistente por administrador (`acepta_contrato`) y solo se exige una vez por cuenta.
+- La validación humana se realiza con reCAPTCHA real verificado en backend antes de crear sesión.
+- Se elimina la dependencia funcional del modal legacy en `login.html`/`menu.js` para evitar rutas de autenticación duplicadas.
 
 Actualizacion 2026-04-08 (chat IA empresarial):
 - Se retira la configuracion visual de Google Gemini en super administrador y se estandariza la credencial IA a DeepSeek (`deepseek:deepseek-chat`).
@@ -31,6 +37,8 @@ Criterio de esta guia:
 
 1) Autenticacion y sesiones
 - Login admin/empresa, sesiones, bloqueo temporal y recuperacion de password.
+- Login administrativo con selección obligatoria de cuenta Google (`select_account consent`) para evitar mezcla de identidades en navegador.
+- Aceptación de contrato y verificación humana como prerrequisito de primera sesión administrativa.
 
 2) Administracion global (super)
 - Empresas, licencias, administradores, configuraciones globales (Wompi/SMTP/IA).

@@ -36,8 +36,92 @@
         .replace(/'/g, '&#39;');
     }
 
-    function storageKey() {
-      return 'estaciones_config_empresa_' + empresaId;
+    // Server-backed config helpers (use empresa_estacion_prefs clave=estaciones_config, estacion_id=0)
+    async function requestJSON(url, options) {
+      const resp = await fetch(url, Object.assign({ credentials: 'same-origin' }, options || {}));
+      const contentType = resp.headers.get('content-type') || '';
+      let data = null;
+      if (contentType.includes('application/json')) {
+        data = await resp.json();
+      } else {
+        data = await resp.text();
+      }
+      if (!resp.ok) {
+        const msg = typeof data === 'string' ? data : (data && data.error ? data.error : 'error de servidor');
+        throw new Error(msg || ('HTTP ' + resp.status));
+      }
+      return data;
+    }
+
+    function normalizeConfig(cfg) {
+      const cantidad = Math.max(1, Math.min(500, Number(cfg.cantidad || 1)));
+      const estaciones = Array.isArray(cfg.estaciones) ? cfg.estaciones : [];
+      const out = [];
+      for (let i = 0; i < cantidad; i++) {
+        const current = estaciones[i] || {};
+        const nombre = String(current.nombre || '').trim();
+        const ventaSimpleHabilitada = toBool(current.venta_simple_habilitada) || toBool(current.modo_venta_simple);
+        out.push({
+          id: i + 1,
+          nombre: nombre || ('Estación ' + (i + 1)),
+          venta_simple_habilitada: ventaSimpleHabilitada,
+          mostrar_total: current.mostrar_total === undefined ? true : toBool(current.mostrar_total)
+        });
+      }
+      const validSizes = ['small', 'medium', 'large'];
+      const requested = String(cfg.card_size || cfg.cardSize || '').trim().toLowerCase();
+      const card_size = validSizes.indexOf(requested) !== -1 ? requested : (cfg.card_size || 'medium');
+      return { cantidad, estaciones: out, card_size };
+    }
+
+    async function getConfigFromServer() {
+      if (!empresaId) return null;
+      try {
+        const data = await requestJSON('/api/empresa/estacion_prefs?empresa_id=' + encodeURIComponent(empresaId));
+        const prefs = data && data.prefs ? data.prefs : [];
+        if (!Array.isArray(prefs) || prefs.length === 0) return null;
+        const pref = prefs.find(p => p && String(p.clave) === 'estaciones_config' && Number(p.estacion_id) === 0);
+        if (!pref || !pref.valor) return null;
+        try {
+          const parsed = JSON.parse(pref.valor);
+          return normalizeConfig(parsed);
+        } catch (err) {
+          console.error('parse estaciones_config:', err);
+          return null;
+        }
+      } catch (err) {
+        console.warn('getConfigFromServer error:', err);
+        return null;
+      }
+    }
+
+    async function saveConfigToServer(cfg) {
+      if (!empresaId) throw new Error('empresa_id missing');
+      const existing = await getConfigFromServer().catch(() => null);
+      const normalized = normalizeConfig(cfg || {});
+      if ((cfg == null || !('card_size' in cfg)) && existing && existing.card_size) {
+        normalized.card_size = existing.card_size;
+      }
+      normalized.card_size = normalized.card_size || 'medium';
+      const payload = { estacion_id: 0, clave: 'estaciones_config', valor: JSON.stringify(normalized) };
+      const res = await requestJSON('/api/empresa/estacion_prefs', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      return res;
+    }
+
+    function applyCardSize(cfg) {
+      try {
+        const grid = document.getElementById('estacionesGrid');
+        if (!grid) return;
+        grid.classList.remove('station-size-small', 'station-size-medium', 'station-size-large');
+        const size = (cfg && cfg.card_size) || 'medium';
+        grid.classList.add('station-size-' + size);
+      } catch (err) {
+        console.warn('applyCardSize error', err);
+      }
     }
 
     function normalizeText(v) {
@@ -149,27 +233,7 @@
       }
     }
 
-    function readConfig() {
-      if (!empresaId) return null;
-      try {
-        const raw = localStorage.getItem(storageKey());
-        if (!raw) return null;
-        const parsed = JSON.parse(raw);
-        if (!parsed || typeof parsed !== 'object') return null;
-        const cantidad = Math.max(1, Math.min(500, Number(parsed.cantidad || 1)));
-        const estacionesRaw = Array.isArray(parsed.estaciones) ? parsed.estaciones : [];
-        const estaciones = [];
-        for (let i = 0; i < cantidad; i++) {
-          const est = estacionesRaw[i] || {};
-          const nombre = String(est.nombre || '').trim();
-          const ventaSimpleHabilitada = toBool(est.venta_simple_habilitada) || toBool(est.modo_venta_simple);
-          estaciones.push({ id: i + 1, nombre: nombre || ('Estación ' + (i + 1)), venta_simple_habilitada: ventaSimpleHabilitada });
-        }
-        return { cantidad, estaciones };
-      } catch (_) {
-        return null;
-      }
-    }
+    // readConfig replaced by server-backed getConfigFromServer
 
     function renderEstaciones(cfg) {
       const grid = document.getElementById('estacionesGrid');
@@ -180,6 +244,7 @@
       grid.innerHTML = cfg.estaciones.map(est => {
         const stationID = Number(est.id || 0);
         const useSimpleSales = !!est.venta_simple_habilitada;
+        const useMostrarTotal = est.mostrar_total === undefined ? true : !!est.mostrar_total;
         const carritoCode = getCarritoCodeForStation(stationID);
         const info = state.carritosPorCodigo[normalizeCode(carritoCode)] || null;
         const carritoActivo = !!(info && info.activo);
@@ -213,7 +278,7 @@
           }
         }
 
-        return '<article class="portal-card ' + stationClass + '" style="--station-state-bg:' + sanitize(stationColor) + ';" data-estacion-id="' + stationID + '" data-estacion-nombre="' + sanitize(est.nombre) + '" data-venta-simple="' + (useSimpleSales ? '1' : '0') + '" tabindex="0" role="button" aria-label="Abrir estación ' + sanitize(est.nombre) + '">' +
+        return '<article class="portal-card ' + stationClass + '" style="--station-state-bg:' + sanitize(stationColor) + ';" data-estacion-id="' + stationID + '" data-estacion-nombre="' + sanitize(est.nombre) + '" data-venta-simple="' + (useSimpleSales ? '1' : '0') + '" data-mostrar-total="' + (useMostrarTotal ? '1' : '0') + '" tabindex="0" role="button" aria-label="Abrir estación ' + sanitize(est.nombre) + '">' +
           '<div class="station-sensor-indicator" style="background-color:' + sanitize(sensorColor) + '"></div>' +
           '<h3>' + sanitize(est.nombre) + '</h3>' +
           '<p>Estación #' + stationID + '</p>' +
@@ -243,7 +308,17 @@
     }
 
     async function bootstrap() {
-      const cfg = readConfig();
+      let cfg = null;
+      try {
+        cfg = await getConfigFromServer();
+      } catch (err) {
+        console.warn('Error cargando config desde servidor', err);
+      }
+      if (!cfg) {
+        cfg = normalizeConfig({ cantidad: 1, estaciones: [] });
+        try { await saveConfigToServer(cfg); } catch (err) { console.warn('No se pudo guardar config por defecto', err); }
+      }
+      applyCardSize(cfg);
       await Promise.all([
         loadColoresEstadoCarrito(),
         loadEstadoCarritosEstacion(),

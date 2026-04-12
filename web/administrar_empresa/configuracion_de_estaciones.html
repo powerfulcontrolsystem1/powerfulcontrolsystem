@@ -124,6 +124,26 @@
       <p class="form-help">Define cuántas estaciones quieres, el nombre de cada una y si usará venta simple tipo supermercado.</p>
     </section>
 
+    <section class="card empresa-section">
+      <h2>Apariencia de tarjetas</h2>
+      <div class="form">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Tamaño de las tarjetas</label>
+            <select id="cardSizeSelect" class="form-input">
+              <option value="small">Pequeño</option>
+              <option value="medium" selected>Medio</option>
+              <option value="large">Grande</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button id="btnGuardarApariencia" class="btn" type="button">Guardar apariencia</button>
+        </div>
+        <p class="form-help">Ajusta el tamaño de las tarjetas de estación; la opción se guarda en la configuración global de estaciones.</p>
+      </div>
+    </section>
+
     <div id="messageBox" class="form-help"></div>
 
     <section class="card empresa-section">
@@ -154,7 +174,8 @@
             <tr>
               <th>#</th>
               <th>Nombre de estación</th>
-              <th>Venta simple</th>
+              <th>Venta simple<br><label><input id="masterVentaSimple" type="checkbox" title="Marcar/desmarcar venta simple para todas"></label></th>
+              <th>Mostrar total<br><label><input id="masterMostrarTotal" type="checkbox" title="Marcar/desmarcar mostrar total para todas"></label></th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -218,21 +239,44 @@
       return !!code && code.startsWith(expectedPrefix);
     }
 
-    function storageKey() {
-      return 'estaciones_config_empresa_' + empresaId;
-    }
-
-    function readConfig() {
+    // --- DB-backed config: always use server persistence (empresa_estacion_prefs, clave=estaciones_config, estacion_id=0)
+    async function getConfigFromServer() {
       if (!empresaId) return null;
       try {
-        const raw = localStorage.getItem(storageKey());
-        if (!raw) return null;
-        const parsed = JSON.parse(raw);
-        if (!parsed || typeof parsed !== 'object') return null;
-        return normalizeConfig(parsed);
-      } catch (_) {
+        const data = await requestJSON('/api/empresa/estacion_prefs?empresa_id=' + encodeURIComponent(empresaId));
+        const prefs = data && data.prefs ? data.prefs : [];
+        if (!Array.isArray(prefs) || prefs.length === 0) return null;
+        const pref = prefs.find(p => p && String(p.clave) === 'estaciones_config' && Number(p.estacion_id) === 0);
+        if (!pref || !pref.valor) return null;
+        try {
+          const parsed = JSON.parse(pref.valor);
+          return normalizeConfig(parsed);
+        } catch (err) {
+          console.error('parse estaciones_config:', err);
+          return null;
+        }
+      } catch (err) {
+        console.error('getConfigFromServer error:', err);
         return null;
       }
+    }
+
+    async function saveConfigToServer(cfg) {
+      if (!empresaId) throw new Error('empresa_id missing');
+      const existing = await getConfigFromServer().catch(() => null);
+      const normalized = normalizeConfig(cfg || {});
+      // Preserve existing card_size when caller did not provide it
+      if ((cfg == null || !('card_size' in cfg)) && existing && existing.card_size) {
+        normalized.card_size = existing.card_size;
+      }
+      normalized.card_size = normalized.card_size || 'medium';
+      const payload = { estacion_id: 0, clave: 'estaciones_config', valor: JSON.stringify(normalized) };
+      const res = await requestJSON('/api/empresa/estacion_prefs', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      return res;
     }
 
     function normalizeConfig(cfg) {
@@ -246,22 +290,21 @@
         out.push({
           id: i + 1,
           nombre: nombre || ('Estación ' + (i + 1)),
-          venta_simple_habilitada: ventaSimpleHabilitada
+          venta_simple_habilitada: ventaSimpleHabilitada,
+          mostrar_total: current.mostrar_total === undefined ? true : toBool(current.mostrar_total)
         });
       }
-      return { cantidad, estaciones: out };
-    }
-
-    function saveConfig(cfg) {
-      if (!empresaId) return;
-      const normalized = normalizeConfig(cfg);
-      localStorage.setItem(storageKey(), JSON.stringify(normalized));
+      // card_size: small | medium | large
+      const validSizes = ['small', 'medium', 'large'];
+      const requested = String(cfg.card_size || cfg.cardSize || '').trim().toLowerCase();
+      const card_size = validSizes.indexOf(requested) !== -1 ? requested : (cfg.card_size || 'medium');
+      return { cantidad, estaciones: out, card_size };
     }
 
     function renderRows(cfg) {
       const tbody = document.querySelector('#estacionesTable tbody');
       if (!cfg.estaciones.length) {
-        tbody.innerHTML = '<tr><td colspan="3">No hay estaciones configuradas.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4">No hay estaciones configuradas.</td></tr>';
         return;
       }
       tbody.innerHTML = cfg.estaciones.map((est, idx) => {
@@ -269,14 +312,65 @@
           '<td>' + (idx + 1) + '</td>' +
           '<td><input class="form-input" data-idx="' + idx + '" value="' + sanitize(est.nombre) + '"></td>' +
           '<td><label><input type="checkbox" data-simple-idx="' + idx + '" ' + (est.venta_simple_habilitada ? 'checked' : '') + '> Activar ventas_simple</label></td>' +
+          '<td><label><input type="checkbox" data-mostrar-total-idx="' + idx + '" ' + (est.mostrar_total !== false ? 'checked' : '') + '> Mostrar total</label></td>' +
           '</tr>';
       }).join('');
+
+      // enlazar escuchas para actualizar los checkboxes maestros cuando cambien filas
+      const simpleInputs = tbody.querySelectorAll('input[data-simple-idx]');
+      const totalInputs = tbody.querySelectorAll('input[data-mostrar-total-idx]');
+      simpleInputs.forEach(function(el) { el.addEventListener('change', updateMasterCheckboxes); });
+      totalInputs.forEach(function(el) { el.addEventListener('change', updateMasterCheckboxes); });
+      updateMasterCheckboxes();
     }
 
-    function applyCantidad(cantidad) {
-      const current = readConfig() || { cantidad: 1, estaciones: [{ id: 1, nombre: 'Estación 1', venta_simple_habilitada: false }] };
+    function setAllVentaSimple(checked) {
+      document.querySelectorAll('#estacionesTable tbody input[data-simple-idx]').forEach(function(el) { el.checked = !!checked; });
+    }
+
+    function setAllMostrarTotal(checked) {
+      document.querySelectorAll('#estacionesTable tbody input[data-mostrar-total-idx]').forEach(function(el) { el.checked = !!checked; });
+    }
+
+    function updateMasterCheckboxes() {
+      const masterSimple = document.getElementById('masterVentaSimple');
+      const masterMostrar = document.getElementById('masterMostrarTotal');
+      const simpleInputs = Array.from(document.querySelectorAll('#estacionesTable tbody input[data-simple-idx]'));
+      const totalInputs = Array.from(document.querySelectorAll('#estacionesTable tbody input[data-mostrar-total-idx]'));
+
+      if (masterSimple) {
+        if (!simpleInputs.length) {
+          masterSimple.checked = false;
+          masterSimple.indeterminate = false;
+          masterSimple.disabled = true;
+        } else {
+          masterSimple.disabled = false;
+          const all = simpleInputs.every(i => i.checked);
+          const none = simpleInputs.every(i => !i.checked);
+          masterSimple.checked = all;
+          masterSimple.indeterminate = !all && !none;
+        }
+      }
+
+      if (masterMostrar) {
+        if (!totalInputs.length) {
+          masterMostrar.checked = false;
+          masterMostrar.indeterminate = false;
+          masterMostrar.disabled = true;
+        } else {
+          masterMostrar.disabled = false;
+          const all = totalInputs.every(i => i.checked);
+          const none = totalInputs.every(i => !i.checked);
+          masterMostrar.checked = all;
+          masterMostrar.indeterminate = !all && !none;
+        }
+      }
+    }
+
+    async function applyCantidad(cantidad) {
+      const current = await getConfigFromServer() || { cantidad: 1, estaciones: [{ id: 1, nombre: 'Estación 1', venta_simple_habilitada: false }] };
       const cfg = normalizeConfig({ cantidad, estaciones: current.estaciones });
-      saveConfig(cfg);
+      await saveConfigToServer(cfg);
       document.getElementById('cantidadEstaciones').value = String(cfg.cantidad);
       renderRows(cfg);
       return cfg;
@@ -443,23 +537,32 @@
       showMessage('Carritos de estaciones inactivados correctamente. Procesados: ' + procesados + ' | Actualizados: ' + actualizados + ' | Ya inactivos: ' + yaInactivos + '.', 'success');
     }
 
-    function guardarNombres() {
-      const current = readConfig() || { cantidad: 1, estaciones: [{ id: 1, nombre: 'Estación 1', venta_simple_habilitada: false }] };
+    async function guardarNombres() {
+      const current = await getConfigFromServer() || { cantidad: 1, estaciones: [{ id: 1, nombre: 'Estación 1', venta_simple_habilitada: false }] };
       const inputs = document.querySelectorAll('#estacionesTable tbody input[data-idx]');
       const simpleInputs = document.querySelectorAll('#estacionesTable tbody input[data-simple-idx]');
+      const totalInputs = document.querySelectorAll('#estacionesTable tbody input[data-mostrar-total-idx]');
       const estaciones = current.estaciones.map((est, idx) => {
         const input = Array.from(inputs).find(x => Number(x.dataset.idx) === idx);
         const simpleInput = Array.from(simpleInputs).find(x => Number(x.dataset.simpleIdx) === idx);
+        const totalInput = Array.from(totalInputs).find(x => Number(x.dataset.mostrarTotalIdx) === idx);
         const nombre = input ? String(input.value || '').trim() : '';
         return {
           id: est.id,
           nombre: nombre || ('Estación ' + est.id),
-          venta_simple_habilitada: simpleInput ? !!simpleInput.checked : !!est.venta_simple_habilitada
+          venta_simple_habilitada: simpleInput ? !!simpleInput.checked : !!est.venta_simple_habilitada,
+          mostrar_total: totalInput ? !!totalInput.checked : (est.mostrar_total !== false)
         };
       });
-      saveConfig({ cantidad: current.cantidad, estaciones });
-      renderRows(readConfig());
-      showMessage('Configuración de estaciones guardada (nombre + modo de venta simple).', 'success');
+      try {
+        await saveConfigToServer({ cantidad: current.cantidad, estaciones });
+        const cfg = normalizeConfig({ cantidad: current.cantidad, estaciones });
+        renderRows(cfg);
+        showMessage('Configuración de estaciones guardada (nombre + modo de venta simple).', 'success');
+      } catch (err) {
+        console.error('guardarNombres error', err);
+        showMessage('No se pudo guardar la configuración en servidor.', 'error');
+      }
     }
 
     async function cargarEmpresa() {
@@ -487,34 +590,74 @@
           return;
         }
         try {
-          const cfg = applyCantidad(cantidad);
+          const cfg = await applyCantidad(cantidad);
           const sync = await syncCarritosFromStations(cfg);
           showMessage('Estaciones generadas y carritos sincronizados. Creados: ' + sync.created + ' | Actualizados: ' + sync.updated + '.', 'success');
         } catch (err) {
           showMessage(err.message || 'No se pudieron sincronizar los carritos de estaciones.', 'error');
         }
       });
-      document.getElementById('btnGuardarNombres').addEventListener('click', guardarNombres);
+      document.getElementById('btnGuardarNombres').addEventListener('click', ev => { ev.preventDefault(); guardarNombres().catch(e => showMessage(e.message || 'No se pudo guardar', 'error')); });
       document.getElementById('btnInactivarCarritos').addEventListener('click', () => {
         inactivarTodosLosCarritosEstacion().catch(err => {
           showMessage(err.message || 'No se pudo completar la inactivación de carritos.', 'error');
         });
       });
+      // master checkboxes para aplicar a todas las filas
+      const masterSimple = document.getElementById('masterVentaSimple');
+      if (masterSimple) {
+        masterSimple.addEventListener('change', function() {
+          setAllVentaSimple(this.checked);
+          updateMasterCheckboxes();
+        });
+      }
+      const masterMostrar = document.getElementById('masterMostrarTotal');
+      if (masterMostrar) {
+        masterMostrar.addEventListener('change', function() {
+          setAllMostrarTotal(this.checked);
+          updateMasterCheckboxes();
+        });
+      }
+
+      // apariencia: tamaño de tarjetas
+      const btnGuardarApariencia = document.getElementById('btnGuardarApariencia');
+      if (btnGuardarApariencia) {
+        btnGuardarApariencia.addEventListener('click', async ev => {
+          ev.preventDefault();
+          try {
+            const sel = document.getElementById('cardSizeSelect');
+            const size = (sel && String(sel.value)) || 'medium';
+            const current = await getConfigFromServer() || { cantidad: 1, estaciones: [] };
+            current.card_size = size;
+            await saveConfigToServer(current);
+            showMessage('Apariencia guardada.', 'success');
+          } catch (err) {
+            console.error('guardar apariencia error', err);
+            showMessage('No se pudo guardar la apariencia.', 'error');
+          }
+        });
+      }
     }
 
-    function bootstrap() {
+    async function bootstrap() {
       if (!empresaId) {
         showMessage('No se encontró empresa_id en la URL.', 'error');
       }
       wireEvents();
-      cargarEmpresa();
-      const cfg = readConfig() || normalizeConfig({ cantidad: 1, estaciones: [] });
-      saveConfig(cfg);
+      await cargarEmpresa();
+      let cfg = await getConfigFromServer();
+      if (!cfg) {
+        cfg = normalizeConfig({ cantidad: 1, estaciones: [] });
+        try { await saveConfigToServer(cfg); } catch (err) { console.error('No se pudo guardar config por defecto', err); }
+      }
       document.getElementById('cantidadEstaciones').value = String(cfg.cantidad);
+      // set appearance select if present
+      const sel = document.getElementById('cardSizeSelect');
+      if (sel && cfg.card_size) sel.value = cfg.card_size;
       renderRows(cfg);
     }
 
-    bootstrap();
+    bootstrap().catch(err => console.error('bootstrap error', err));
   </script>
 </body>
 </html>

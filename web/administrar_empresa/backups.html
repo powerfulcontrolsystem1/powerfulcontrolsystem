@@ -27,6 +27,13 @@
       </div>
       <div class="form-actions creditos-actions-top">
         <button id="btnCrearBackup" type="button" class="btn">Crear backup</button>
+        <select id="bkDownloadFormat" class="form-input" style="width:160px;max-width:40%;margin-left:8px">
+          <option value="json">JSON (completo)</option>
+          <option value="json.gz">JSON (.gz)</option>
+          <option value="csv">CSV (resumen)</option>
+          <option value="xls">Excel (resumen)</option>
+        </select>
+        <button id="btnDescargarDatosEmpresa" type="button" class="btn" style="margin-left:8px">Descargar datos</button>
         <button id="btnRefrescarBackups" type="button" class="btn secondary">Refrescar</button>
       </div>
       <div id="crearBackupMsg" class="form-help"></div>
@@ -297,11 +304,11 @@
           include_tables: parseTableList(document.getElementById('bkInclude').value || ''),
           exclude_tables: parseTableList(document.getElementById('bkExclude').value || '')
         };
-
         var data = await requestJSON('POST', 'crear', null, payload);
         var backup = data.backup || {};
         setMsg(crearMsgEl, 'Backup creado: ' + (backup.codigo || backup.id || 'OK'), 'success');
         await cargarBackups();
+        return backup;
       }
 
       async function purgarPorFecha() {
@@ -420,6 +427,59 @@
             await purgarPorFecha();
           } catch (err) {
             setMsg(purgaMsgEl, 'Error en depuración por fecha: ' + (err && err.message ? err.message : err), 'error');
+          }
+        });
+
+        document.getElementById('btnDescargarDatosEmpresa').addEventListener('click', async function () {
+          try {
+            setMsg(crearMsgEl, '', '');
+            var format = document.getElementById('bkDownloadFormat').value || 'json';
+            var backup = await crearBackup();
+            var backupId = backup && backup.id ? backup.id : 0;
+            if (!backupId) throw new Error('No se generó backup');
+
+            var exportFormat = (format === 'json.gz') ? 'json' : format;
+            var url = buildExportURL(backupId, exportFormat);
+            var resp = await fetch(url, { credentials: 'same-origin' });
+            if (!resp.ok) {
+              var raw = await resp.text().catch(function(){return '';});
+              throw new Error(raw || ('HTTP ' + resp.status));
+            }
+            var blob = await resp.blob();
+
+            var nameSafe = 'empresa_' + String(empresaId);
+            var now = new Date();
+            var stamp = now.getFullYear().toString() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0') + '_' + String(now.getHours()).padStart(2,'0') + String(now.getMinutes()).padStart(2,'0') + String(now.getSeconds()).padStart(2,'0');
+            var ext = exportFormat === 'json' ? 'json' : (exportFormat === 'csv' ? 'csv' : (exportFormat === 'xls' ? 'xls' : exportFormat));
+
+            if (format === 'json.gz') {
+              if (typeof CompressionStream === 'function') {
+                try {
+                  var cs = new CompressionStream('gzip');
+                  var compressedStream = blob.stream().pipeThrough(cs);
+                  var compressedBlob = await new Response(compressedStream).blob();
+                  var filename = nameSafe + '_' + stamp + '.json.gz';
+                  var a = document.createElement('a');
+                  a.href = URL.createObjectURL(compressedBlob);
+                  a.download = filename;
+                  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                  URL.revokeObjectURL(a.href);
+                  return;
+                } catch (e) {
+                  // fallback
+                }
+              }
+            }
+
+            var filename = nameSafe + '_' + stamp + '.' + ext;
+            var a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = filename;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            URL.revokeObjectURL(a.href);
+
+          } catch (err) {
+            setMsg(crearMsgEl, 'Error: ' + (err && err.message ? err.message : err), 'error');
           }
         });
 

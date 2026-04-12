@@ -196,6 +196,69 @@ func handleTarifasPorDiaCreate(w http.ResponseWriter, r *http.Request, dbEmp *sq
 		payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
 	}
 
+	// Si la preferencia global indica aplicar tarifas a todas las estaciones,
+	// usar la ruta masiva en lugar de actualizar solo la estacion indicada.
+	if pref, _ := dbpkg.GetEmpresaEstacionPref(dbEmp, payload.EmpresaID, 0, "estaciones_config"); pref != nil && strings.TrimSpace(pref.Valor) != "" {
+		var cfg map[string]interface{}
+		if err := json.Unmarshal([]byte(pref.Valor), &cfg); err == nil {
+			if v, ok := cfg["aplicar_tarifas_a_todas"]; ok {
+				aplicar := false
+				switch vv := v.(type) {
+				case bool:
+					aplicar = vv
+				case float64:
+					aplicar = vv != 0
+				case string:
+					s := strings.ToLower(strings.TrimSpace(vv))
+					if s == "1" || s == "true" || s == "si" || s == "sí" {
+						aplicar = true
+					}
+				}
+				if aplicar {
+					// Usar la plantilla recibida para aplicar a todas
+					result, err := dbpkg.ApplyEmpresaTarifaPorDiaToAllStations(dbEmp, payload)
+					if err != nil {
+						writeTarifasPorDiaError(w, err)
+						return
+					}
+					writeJSON(w, http.StatusOK, result)
+					return
+				}
+			}
+		}
+	}
+
+	// Si la preferencia global indica aplicar tarifas a todas las estaciones,
+	// usar la ruta masiva en lugar de crear solo para la estacion indicada.
+	if pref, _ := dbpkg.GetEmpresaEstacionPref(dbEmp, payload.EmpresaID, 0, "estaciones_config"); pref != nil && strings.TrimSpace(pref.Valor) != "" {
+		var cfg map[string]interface{}
+		if err := json.Unmarshal([]byte(pref.Valor), &cfg); err == nil {
+			if v, ok := cfg["aplicar_tarifas_a_todas"]; ok {
+				aplicar := false
+				switch vv := v.(type) {
+				case bool:
+					aplicar = vv
+				case float64:
+					aplicar = vv != 0
+				case string:
+					s := strings.ToLower(strings.TrimSpace(vv))
+					if s == "1" || s == "true" || s == "si" || s == "sí" {
+						aplicar = true
+					}
+				}
+				if aplicar {
+					result, err := dbpkg.ApplyEmpresaTarifaPorDiaToAllStations(dbEmp, payload)
+					if err != nil {
+						writeTarifasPorDiaError(w, err)
+						return
+					}
+					writeJSON(w, http.StatusCreated, result)
+					return
+				}
+			}
+		}
+	}
+
 	id, err := dbpkg.CreateEmpresaTarifaPorDia(dbEmp, payload)
 	if err != nil {
 		writeTarifasPorDiaError(w, err)

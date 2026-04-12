@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"time"
 
 	"github.com/you/pos-backend/auth"
 	dbpkg "github.com/you/pos-backend/db"
@@ -32,13 +33,11 @@ func HandleGoogleLogin(clientID, redirectURL string) http.HandlerFunc {
 			"include_granted_scopes": {"true"},
 			"access_type":            {"offline"},
 			"state":                  {state},
+			// Forzar selección explícita de cuenta para evitar reutilizar sesión previa equivocada.
+			"prompt": {"select_account consent"},
 		}
 		if loginHint != "" {
 			vals.Set("login_hint", loginHint)
-			// Do not force account chooser when we have a login_hint; allow Google to select the hinted account if possible.
-		} else {
-			// Default: show account selector and consent to allow choosing among accounts.
-			vals.Set("prompt", "select_account consent")
 		}
 		authURL := "https://accounts.google.com/o/oauth2/v2/auth?" + vals.Encode()
 		log.Printf("handleGoogleLogin: redirecting to OAuth provider")
@@ -74,11 +73,11 @@ func HandleGoogleCallback(dbEmpresas *sql.DB, dbSuper *sql.DB, clientID, clientS
 			return
 		}
 
+		// Determinar rol existente (si aplica) para preservarlo
+		existingAdmin, _ := dbpkg.GetAdminByEmail(dbSuper, userinfo.Email)
 		roleToSet := "administrador"
-		if existingAdmin, err := dbpkg.GetAdminByEmail(dbSuper, userinfo.Email); err == nil && existingAdmin != nil {
-			if existingAdmin.Role != "" {
-				roleToSet = existingAdmin.Role
-			}
+		if existingAdmin != nil && existingAdmin.Role != "" {
+			roleToSet = existingAdmin.Role
 		}
 		if err := dbpkg.UpsertAdministrador(dbSuper, userinfo.Email, userinfo.Name, roleToSet, userinfo.Picture); err != nil {
 			log.Println("db upsert administradores error:", err)
@@ -92,38 +91,77 @@ func HandleGoogleCallback(dbEmpresas *sql.DB, dbSuper *sql.DB, clientID, clientS
 			log.Println("db ensure empresa error:", err)
 		}
 
-		token, err := utils.GenerateSecureToken(32)
-		if err != nil {
-			log.Println("failed to generate session token:", err)
-			token = userinfo.Sub
+		// La aceptación se decide únicamente por registro persistido por administrador.
+		accepted := false
+		if adminNow, err := dbpkg.GetAdminByEmail(dbSuper, userinfo.Email); err == nil && adminNow != nil {
+			if adminNow.AceptaContrato == 1 {
+				accepted = true
+			}
 		}
-		ip := r.RemoteAddr
-		ua := r.UserAgent()
-		if err := dbpkg.CreateSession(dbSuper, userinfo.Email, ip, ua, token); err != nil {
-			log.Println("create session error:", err)
-		}
-		cookie := &http.Cookie{
-			Name:     "session_token",
-			Value:    token,
-			Path:     "/",
-			HttpOnly: true,
-			MaxAge:   86400,
-			Secure:   (r.TLS != nil),
-			SameSite: http.SameSiteLaxMode,
-		}
-		http.SetCookie(w, cookie)
 
-		admin, err := dbpkg.GetAdminByEmail(dbSuper, userinfo.Email)
-		if err != nil || admin == nil {
-			log.Println("warning: no admin found, redirecting to seleccionar_empresa:", err)
+		if accepted {
+			// Persistir marca de aceptación y crear sesión
+			if err := dbpkg.SetAdministradorAceptaContrato(dbSuper, userinfo.Email, true); err != nil {
+				log.Println("warning: failed to persist acepta_contrato:", err)
+			}
+			token, err := utils.GenerateSecureToken(32)
+			if err != nil {
+				log.Println("failed to generate session token:", err)
+				token = userinfo.Sub
+			}
+			ip := r.RemoteAddr
+			ua := r.UserAgent()
+			if err := dbpkg.CreateSession(dbSuper, userinfo.Email, ip, ua, token); err != nil {
+				log.Println("create session error:", err)
+			}
+			cookie := &http.Cookie{
+				Name:     "session_token",
+				Value:    token,
+				Path:     "/",
+				HttpOnly: true,
+				MaxAge:   86400,
+				Secure:   (r.TLS != nil),
+				SameSite: http.SameSiteLaxMode,
+			}
+			http.SetCookie(w, cookie)
+
+			admin, err := dbpkg.GetAdminByEmail(dbSuper, userinfo.Email)
+			if err != nil || admin == nil {
+				log.Println("warning: no admin found, redirecting to seleccionar_empresa:", err)
+				http.Redirect(w, r, "/seleccionar_empresa.html", http.StatusFound)
+				return
+			}
+			if admin.Role == "super_administrador" {
+				http.Redirect(w, r, "/super_administrador.html", http.StatusFound)
+				return
+			}
 			http.Redirect(w, r, "/seleccionar_empresa.html", http.StatusFound)
 			return
 		}
-		if admin.Role == "super_administrador" {
-			http.Redirect(w, r, "/super_administrador.html", http.StatusFound)
-			return
+
+		// Si no aceptó, redirigir a página de aceptación server-side con payload cifrado.
+		if userinfo.Email != "" {
+			next := "/seleccionar_empresa.html"
+			if roleToSet == "super_administrador" {
+				next = "/super_administrador.html"
+			}
+			payload := map[string]interface{}{
+				"email": userinfo.Email,
+				"exp":   time.Now().Add(10 * time.Minute).Unix(),
+				"next":  next,
+			}
+			pb, _ := json.Marshal(payload)
+			enc, err := utils.EncryptString(string(pb))
+			if err != nil {
+				log.Printf("failed to encrypt accept payload: %v", err)
+				http.Error(w, "failed to prepare contract acceptance", http.StatusInternalServerError)
+				return
+			}
+			http.Redirect(w, r, "/accept.html?payload="+url.QueryEscape(enc), http.StatusFound)
+		} else {
+			http.Redirect(w, r, "/login.html", http.StatusFound)
 		}
-		http.Redirect(w, r, "/seleccionar_empresa.html", http.StatusFound)
+		return
 	}
 }
 

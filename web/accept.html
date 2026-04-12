@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Aceptar contrato</title>
+  <link rel="stylesheet" href="/estilos.css" />
+  <script src="/config.js"></script>
+  <style>
+    .accept-card { text-align:center; padding:22px; border-radius:12px; }
+    .accept-actions { display:flex; gap:12px; justify-content:center; margin-top:18px; }
+    .accept-help { color:var(--muted); margin-top:8px; }
+    .accept-link { color:var(--accent); font-weight:800; text-decoration:underline; }
+  </style>
+</head>
+<body class="login-page">
+  <!-- Título eliminado por petición del producto -->
+  <main class="container">
+    <div class="card accept-card">
+      <h2>Antes de continuar</h2>
+      <p class="accept-help">Por favor, confirma tu aceptación del contrato para completar el registro</p>
+      <p><a href="/contrato.html" target="_blank" class="accept-link">Ver contrato completo</a></p>
+
+      <div style="margin:14px 0;">
+        <label class="remember-label" style="display:inline-flex;align-items:center;gap:10px;">
+          <input id="acceptCheckbox" type="checkbox" /> <span>He leído y acepto el contrato</span>
+        </label>
+      </div>
+
+      <div class="accept-actions">
+        <button id="acceptBtn" class="btn" disabled>Aceptar y continuar</button>
+        <a href="/login.html" class="btn secondary">Cancelar</a>
+      </div>
+
+      <p id="statusEl" class="accept-help" style="min-height:20px;margin-top:12px"></p>
+    </div>
+  </main>
+
+  <script>
+  (function(){
+    var acceptBtn = document.getElementById('acceptBtn');
+    var checkbox = document.getElementById('acceptCheckbox');
+    var statusEl = document.getElementById('statusEl');
+
+    function qs(name){
+      var params = new URLSearchParams(window.location.search);
+      return params.get(name) || '';
+    }
+    var payload = qs('payload') || '';
+
+    function updateState(){
+      acceptBtn.disabled = !checkbox.checked || !payload;
+    }
+
+    checkbox.addEventListener('change', updateState);
+
+    acceptBtn.addEventListener('click', function(){
+      if (!checkbox.checked) {
+        alert('Debe aceptar el contrato antes de continuar.');
+        return;
+      }
+      if (!payload) {
+        alert('Falta información de sesión. Vuelva a iniciar el proceso.');
+        return;
+      }
+      acceptBtn.disabled = true;
+      statusEl.textContent = 'Procesando...';
+
+      fetch('/accept/complete', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        credentials: 'same-origin',
+        body: JSON.stringify({ payload: payload })
+      }).then(function(resp){
+        if (!resp.ok) throw resp;
+        return resp.json();
+      }).then(function(js){
+        if (js && js.redirect) {
+          window.location.href = js.redirect;
+          return;
+        }
+        statusEl.textContent = 'Aceptado. Redirigiendo...';
+      }).catch(function(err){
+        acceptBtn.disabled = false;
+        statusEl.textContent = 'No se pudo completar la aceptación.';
+        console.error(err);
+      });
+    });
+
+    updateState();
+  })();
+  </script>
+</body>
+</html>

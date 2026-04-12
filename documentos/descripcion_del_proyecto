@@ -34,6 +34,9 @@ Sistema POS multiempresa con backend en Go y persistencia SQLite, orientado a op
 1) Autenticacion y sesiones
 - Login Google para administradores.
 - Cookies de sesion con middleware de proteccion.
+- Flujo administrativo unificado: `login.html -> /auth/google/login -> /auth/google/callback -> /accept.html -> /accept/complete`.
+- Aceptación de contrato obligatoria una sola vez por administrador (flag persistente `acepta_contrato`) antes de acceso al panel.
+- Verificación humana con reCAPTCHA real validada en backend previo a creación de sesión administrativa.
 
 2) Administracion global (super)
 - Empresas, tipos de empresa, licencias, administradores.

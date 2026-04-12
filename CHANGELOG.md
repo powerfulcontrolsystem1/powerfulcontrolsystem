@@ -1,6 +1,11 @@
 # CHANGELOG
 
 ## 2026-04-12
+- Flujo final de login administrativo: cuenta Google correcta + aceptación única de contrato + reCAPTCHA real.
+	- Archivos modificados: `backend/handlers/auth_admin_handlers.go`, `backend/handlers/accept_handlers.go`, `backend/handlers/e2e_login_acceptance_test.go`, `backend/handlers/auth_users_carritos_test.go`, `web/login.html`, `web/js/login.js`, `web/accept.html`, `web/menu.js`, `web/estilos.css`.
+	- Descripción: se unificó el flujo en `login.html -> OAuth -> /accept.html -> /accept/complete -> panel`, usando `administradores.acepta_contrato` como fuente canonica de aceptación (sin depender de cookie global), validación server-side de reCAPTCHA y prompt OAuth `select_account consent` para evitar reutilización silenciosa de cuenta incorrecta.
+	- Verificación: pruebas dirigidas en verde (`TestE2E_AcceptContractCreatesSession` y `TestHandleGoogleLoginRedirectIncludesLoginHint`).
+
 - Módulo sensor de puertas (Raspberry Pi): backend, handlers, UI y tests.
 	- Archivos agregados/modificados:
 		- backend/db/sensor_puertas.go (nuevo módulo DB: dispositivos y heartbeats)

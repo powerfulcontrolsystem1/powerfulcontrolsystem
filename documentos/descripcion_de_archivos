@@ -1,5 +1,19 @@
 Descripcion de archivos del proyecto
 
+Nota 2026-04-12: Se eliminó la validación reCAPTCHA del flujo de aceptación de contrato. El archivo `web/accept.html` fue actualizado para mostrar una tarjeta centrada y botones centralizados; el backend ya no valida tokens reCAPTCHA en `/accept/complete`.
+
+Actualizacion 2026-04-12: Flujo final de login administrativo con aceptación única y reCAPTCHA real
+ - Archivos modificados:
+		- backend/handlers/auth_admin_handlers.go (redirección controlada a `/accept.html` y selección de cuenta OAuth)
+		- backend/handlers/accept_handlers.go (validación de payload, reCAPTCHA server-side y creación de sesión)
+		- web/login.html (entrada exclusiva de login admin, sin modal de contrato embebido)
+		- web/js/login.js (elimina auto-login y centraliza inicio OAuth)
+		- web/accept.html (pantalla dedicada de aceptación de contrato + reCAPTCHA)
+		- web/menu.js (desactiva inicialización del modal legacy de aceptación)
+		- web/estilos.css (layout en columna para título y tarjeta de login)
+		- backend/handlers/e2e_login_acceptance_test.go y backend/handlers/auth_users_carritos_test.go (pruebas del flujo actualizado)
+ - Descripción: Se consolida el flujo de autenticación administrativa para evitar mezcla de cuentas Google y garantizar que el contrato se acepte una sola vez por administrador. La decisión de acceso depende del flag persistente `acepta_contrato` en base de datos y no de cookies globales de navegador.
+
 Actualizacion 2026-04-12: Módulo sensor de puertas (Raspberry Pi)
  - Archivos añadidos/modificados:
 		- backend/db/sensor_puertas.go (nuevo módulo DB: dispositivos, upsert, heartbeat)
@@ -173,6 +187,13 @@ Actualizacion 2026-04-08: Configuracion monetaria y numerica por empresa
 - `web/administrar_empresa/configuracion.html`:
 	- agrega tarjeta de configuracion para moneda operativa, sistema numerico y manejo de decimales por empresa.
 	- integra carga/guardado en `/api/empresa/configuracion_avanzada`.
+
+Actualizacion 2026-04-12: Preferencias por estación (persistencia en DB y API)
+ - Archivos añadidos:
+    - backend/db/empresa_estacion_prefs.go (nuevo: tabla `empresa_estacion_prefs`, funciones List/Get/Upsert)
+    - backend/handlers/empresa_estacion_prefs.go (nuevo: handler HTTP `/api/empresa/estacion_prefs` GET/PUT)
+ - Descripción: Se introduce persistencia server-side para preferencias por estación por empresa (clave/valor) con upsert y listado. Permite sincronizar opciones como `venta_simple` y `mostrar_total` desde el frontend de estaciones. La API está protegida por permisos empresariales y soporta fallback en frontend a `localStorage` si el endpoint no está disponible.
+	- Nota de configuración: Se agrega la preferencia `aplicar_tarifas_a_todas` (booleano) dentro de la clave JSON `estaciones_config` (guardada con `estacion_id=0`) en la tabla `empresa_estacion_prefs`. Si se establece en `true`, los handlers de tarifas (`tarifas_por_dia` y `tarifas_por_minutos`) aplican la tarifa recibida a todas las estaciones utilizando las funciones `ApplyEmpresaTarifaPorDiaToAllStations` y `ApplyEmpresaTarifaPorMinutosToAllStations`. Valor por defecto: `false`. Archivos relacionados: `backend/handlers/tarifas_por_dia.go`, `backend/handlers/tarifas_por_minutos.go`.
 
 Actualizacion 2026-04-11: Menús Facturación y Finanzas
 

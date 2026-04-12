@@ -96,6 +96,16 @@ func SetAdministradorEstado(dbConn *sql.DB, id int64, estado string) error {
 	return err
 }
 
+// SetAdministradorAceptaContrato marca si el administrador aceptó el contrato/registro.
+func SetAdministradorAceptaContrato(dbConn *sql.DB, email string, acepta bool) error {
+	v := 0
+	if acepta {
+		v = 1
+	}
+	_, err := dbConn.Exec("UPDATE administradores SET acepta_contrato = ?, fecha_actualizacion = datetime('now','localtime') WHERE LOWER(COALESCE(email,'')) = LOWER(?)", v, strings.TrimSpace(email))
+	return err
+}
+
 // CreateSession registra una sesión en la tabla sesiones de superadministrador
 func CreateSession(dbConn *sql.DB, adminEmail, ip, userAgent, token string) error {
 	_, err := dbConn.Exec("INSERT INTO sesiones (admin_email, token, ip, user_agent, fecha_inicio, fecha_fin, activo, fecha_creacion) VALUES (?, ?, ?, ?, datetime('now','localtime'), datetime('now','+24 hours','localtime'), 1, datetime('now','localtime'))", adminEmail, token, ip, userAgent)
@@ -118,6 +128,7 @@ type Admin struct {
 	FechaCreacion      string `json:"fecha_creacion"`
 	FechaActualizacion string `json:"fecha_actualizacion"`
 	Estado             string `json:"estado"`
+	AceptaContrato     int    `json:"acepta_contrato"`
 }
 
 // NOTE: tipos_de_licencia CRUD removed per project decision (frontend/page/link removed).
@@ -350,22 +361,65 @@ func GetSessionByToken(dbConn *sql.DB, token string) (*Session, error) {
 
 // GetAdminByEmail devuelve el administrador por email
 func GetAdminByEmail(dbConn *sql.DB, email string) (*Admin, error) {
-	row := dbConn.QueryRow("SELECT id, email, name, role, photo, fecha_creacion, fecha_actualizacion, estado FROM administradores WHERE email = ? LIMIT 1", email)
+	// Intentar obtener con la columna 'acepta_contrato' (para bases actualizadas).
+	row := dbConn.QueryRow("SELECT id, email, name, role, photo, fecha_creacion, fecha_actualizacion, estado, COALESCE(acepta_contrato, 0) FROM administradores WHERE email = ? LIMIT 1", email)
 	var a Admin
 	var photo sql.NullString
-	if err := row.Scan(&a.ID, &a.Email, &a.Name, &a.Role, &photo, &a.FechaCreacion, &a.FechaActualizacion, &a.Estado); err != nil {
+	var acepta sql.NullInt64
+	if err := row.Scan(&a.ID, &a.Email, &a.Name, &a.Role, &photo, &a.FechaCreacion, &a.FechaActualizacion, &a.Estado, &acepta); err != nil {
+		// Fallback: si la columna no existe en este esquema, consultar sin ella.
+		if strings.Contains(strings.ToLower(err.Error()), "no such column") {
+			row2 := dbConn.QueryRow("SELECT id, email, name, role, photo, fecha_creacion, fecha_actualizacion, estado FROM administradores WHERE email = ? LIMIT 1", email)
+			var photo2 sql.NullString
+			if err2 := row2.Scan(&a.ID, &a.Email, &a.Name, &a.Role, &photo2, &a.FechaCreacion, &a.FechaActualizacion, &a.Estado); err2 != nil {
+				return nil, err2
+			}
+			if photo2.Valid {
+				a.Photo = photo2.String
+			}
+			a.AceptaContrato = 0
+			return &a, nil
+		}
 		return nil, err
 	}
 	if photo.Valid {
 		a.Photo = photo.String
+	}
+	if acepta.Valid {
+		a.AceptaContrato = int(acepta.Int64)
+	} else {
+		a.AceptaContrato = 0
 	}
 	return &a, nil
 }
 
 // GetAdministradores lista todos los administradores
 func GetAdministradores(dbConn *sql.DB) ([]Admin, error) {
-	rows, err := dbConn.Query("SELECT id, email, name, role, photo, fecha_creacion, fecha_actualizacion, estado FROM administradores ORDER BY id DESC")
+	// Intentar consulta que incluya la columna acepta_contrato cuando exista
+	rows, err := dbConn.Query("SELECT id, email, name, role, photo, fecha_creacion, fecha_actualizacion, estado, COALESCE(acepta_contrato, 0) FROM administradores ORDER BY id DESC")
 	if err != nil {
+		// Fallback si la columna no existe en esquemas antiguos
+		if strings.Contains(strings.ToLower(err.Error()), "no such column") {
+			rows2, err2 := dbConn.Query("SELECT id, email, name, role, photo, fecha_creacion, fecha_actualizacion, estado FROM administradores ORDER BY id DESC")
+			if err2 != nil {
+				return nil, err2
+			}
+			defer rows2.Close()
+			var out2 []Admin
+			for rows2.Next() {
+				var a Admin
+				var photo sql.NullString
+				if err := rows2.Scan(&a.ID, &a.Email, &a.Name, &a.Role, &photo, &a.FechaCreacion, &a.FechaActualizacion, &a.Estado); err != nil {
+					return nil, err
+				}
+				if photo.Valid {
+					a.Photo = photo.String
+				}
+				a.AceptaContrato = 0
+				out2 = append(out2, a)
+			}
+			return out2, nil
+		}
 		return nil, err
 	}
 	defer rows.Close()
@@ -373,11 +427,17 @@ func GetAdministradores(dbConn *sql.DB) ([]Admin, error) {
 	for rows.Next() {
 		var a Admin
 		var photo sql.NullString
-		if err := rows.Scan(&a.ID, &a.Email, &a.Name, &a.Role, &photo, &a.FechaCreacion, &a.FechaActualizacion, &a.Estado); err != nil {
+		var acepta sql.NullInt64
+		if err := rows.Scan(&a.ID, &a.Email, &a.Name, &a.Role, &photo, &a.FechaCreacion, &a.FechaActualizacion, &a.Estado, &acepta); err != nil {
 			return nil, err
 		}
 		if photo.Valid {
 			a.Photo = photo.String
+		}
+		if acepta.Valid {
+			a.AceptaContrato = int(acepta.Int64)
+		} else {
+			a.AceptaContrato = 0
 		}
 		out = append(out, a)
 	}

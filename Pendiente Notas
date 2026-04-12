@@ -618,3 +618,16 @@ ingresos:
 
 Egresos: 
  - pagos
+
+
+- todos los errores que maneja el sistema deben ser manejado de manera profesional, en lo posible evitar que un error detenga el servidor. por eso todos los errores de todo el proyecto debe manejarse de manera profesional , con log y todo lo necesario. es mas crea un modulo de errores, el cual capturara o registrara todos los errores del sistema, y los mostrara de manera profesional, esto lo haces para la pagina de super administrador, los errores pueden ser de cualquier empresa,  serial de todo el proyecto en general.
+
+ - hacer la pagina de contrato y politicas, el cual el usuario administrador cuando se loguea o registra por primera vez, debe aceptar para poder registrarse. simplemente que le de al check de aceptar cntrato y de aso le añadimos una validacion de comprobar si es humano.
+
+ - crear el modulo de vendedor de licencias o de asesor comercial. 
+
+ - crear  en la pagina de super administrador una pagina nueva llamada asesor_comercial, en esta se debe configurar el plan de trabajo con el asesor comercial, es decir aqui configurare la comision por venta de una licencia y el % que se gana del pago de la licenciam  y por cuantos meses puede recibir el % de dinero si el cliente renueva por ejemplo la licencia por un mes mas y asi.
+ luego en la ventana de pagar licencia agregar una casilla para codigo de descuento y una para  el id del asesor comerciall. ademas crear otra pagina en donde agregue un ususrio o correo para ectivarlo como asesor comercial o comisionista o vendendor de licencias. por que la idea es que el reciba un % del pago de licencia de sus clientes.
+
+ en estaciones a gregar la posibilidad de agregar otro tipo de tarjeta nueva llamada ultimos_movimientos. esta tarjeta o estacion de otro tipo, que se puede activar o descativar en configuracion de estaciones
+ la idea es que esta estacion o tarjeta muestre los ultimos pedidos de productos, las ultimas facturas o ventas etc.  cada linea de texto debe tener un chect como para llevar una guia de los products que se han enviado

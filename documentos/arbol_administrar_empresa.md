@@ -8,6 +8,7 @@ Este documento muestra la estructura actual de la página `Administrar Empresa` 
 
 - [Administrar Empresa (shell)](web/administrar_empresa.html)
   - [Inicio](web/administrar_empresa/inicio.html)
+  - [Estaciones](web/administrar_empresa/estaciones.html)
   - [Ventas](web/administrar_empresa/ventas.html)
   - [Venta pública y pagos](web/administrar_empresa/venta_publica.html)
 

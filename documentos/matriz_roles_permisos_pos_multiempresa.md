@@ -1,6 +1,6 @@
 # Matriz base de roles y permisos POS multiempresa
 
-Fecha de actualizacion: 2026-04-08
+Fecha de actualizacion: 2026-04-12
 Alcance: punto 3 del plan maestro (permisos y seguridad)
 
 ## Regla de mantenimiento por modulo
@@ -44,6 +44,11 @@ Leyenda:
 | Seguridad y permisos | CRUDA | CRUA | R | R | R | R | R | R |
 
 ## Estado de implementacion tecnica inicial (2026-04-04)
+
+- Actualizacion 2026-04-12 (login admin: contrato + reCAPTCHA real):
+	- Se consolida la ruta administrativa `login.html -> /auth/google/* -> /accept.html -> /accept/complete` con persistencia de aceptación por cuenta en `administradores.acepta_contrato`.
+	- No cambia la matriz CRUD por rol/modulo para rutas empresariales; el ajuste aplica al acceso administrativo global y al endurecimiento de autenticación.
+	- Se mantiene aislamiento por `empresa_id` en acceso posterior, ya dentro de wrappers `/api/empresa/*` existentes.
 
 - Actualizacion 2026-04-08 (super: alertas de inicio/reinicio de servidor):
 	- Se agrega en configuracion avanzada super la clave `gmail.restart_alert_to` para correo destino de alertas operativas de arranque/reinicio.

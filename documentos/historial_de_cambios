@@ -1,5 +1,72 @@
  - Historial de cambios
 
+ - 2026-04-12: Eliminada validación reCAPTCHA en flujo de aceptación
+     - Archivos modificados:
+         - backend/handlers/accept_handlers.go (se eliminó la verificación server-side de reCAPTCHA)
+         - web/accept.html (UI actualizada: tarjeta centrada y botones centralizados; reCAPTCHA eliminado)
+         - documentos/descripcion_de_archivos (registro de la modificación en la documentación)
+     - Descripción: Se eliminó la dependencia de reCAPTCHA en el paso de aceptación de contrato. El frontend ya no carga ni requiere el widget y el backend no solicita ni valida tokens reCAPTCHA; la aceptación continúa usando el `payload` cifrado y persiste `acepta_contrato` creando la sesión como antes.
+
+ - 2026-04-12: Corrección integral final del login administrativo (cuenta correcta + contrato + reCAPTCHA)
+     - Archivos modificados:
+         - backend/handlers/auth_admin_handlers.go (OAuth con `prompt=select_account consent`; redirección a `/accept.html` con payload cifrado; control por `acepta_contrato` en DB)
+         - backend/handlers/accept_handlers.go (`/accept/complete` con validación de payload, reCAPTCHA server-side y creación de sesión)
+         - web/login.html y web/js/login.js (login administrativo limpio, sin modal embebido ni auto-login)
+         - web/accept.html (pantalla obligatoria de aceptación y verificación humana)
+         - web/menu.js (desactivación del modal legacy de aceptación en querystring)
+         - web/estilos.css (alineación en columna del bloque de título y tarjeta de login)
+         - backend/handlers/e2e_login_acceptance_test.go y backend/handlers/auth_users_carritos_test.go (ajustes de pruebas al flujo final)
+         - CHANGELOG.md, documentos/descripcion_de_archivos, documentos/diagramas/estructura_del_codigo.md, documentos/descripcion_de_modulos, documentos/matriz_roles_permisos_pos_multiempresa.md, documentos/descripcion_del_proyecto, documentos/historial_de_cambios (sincronización documental)
+     - Descripción: se eliminó la dependencia funcional de la cookie global `accepted_contract` para decidir acceso, dejando como canon `administradores.acepta_contrato`; el contrato se acepta una sola vez por administrador y la validación reCAPTCHA se ejecuta en backend antes de crear sesión.
+     - Verificación ejecutada:
+         - `go test ./handlers -run TestE2E_AcceptContractCreatesSession -count=1` -> PASADO
+         - `go test ./handlers -run TestHandleGoogleLoginRedirectIncludesLoginHint -count=1` -> PASADO
+
+ - 2026-04-12: Pruebas E2E — flujo login con correo de prueba
+     - Archivos verificados/ejecutados:
+         - backend/handlers/e2e_login_acceptance_test.go (test E2E que simula OAuth + userinfo)
+         - backend/handlers/auth_admin_handlers.go (callback OAuth / redirección)
+         - backend/db/db.go (helpers: persistencia `acepta_contrato`, gestión de sesiones)
+     - Descripción: Ejecutadas pruebas E2E locales que simulan el flujo de OAuth y aceptación de contrato. El test `TestE2E_AcceptContractCreatesSession` validó que al aceptar el contrato se crea una cookie de sesión y se persiste `acepta_contrato=1` para `test@example.com`.
+     - Resultado: PASADO.
+
+ - 2026-04-12: Paso de aceptación de contrato en login de administradores
+     - Archivos modificados:
+         - web/login.html (modificado: modal de aceptación)
+         - web/js/login.js (modificado: lógica para mostrar modal, verificación humana y cookie `accepted_contract`)
+         - backend/db/db.go (modificado: `Admin` incluye `acepta_contrato` y selecciones actualizadas)
+         - backend/handlers/auth_admin_handlers.go (modificado: creación de sesión solo si existe cookie/flag de aceptación; persistencia de `acepta_contrato`)
+     - Descripción: Se implementa un paso intermedio en el flujo de login para administradores que obliga a aceptar el contrato y confirmar verificación humana antes de crear la sesión. El frontend muestra un modal que establece la cookie `accepted_contract=1`; el backend verificará dicha cookie o el flag en DB y persistirá la aceptación usando `SetAdministradorAceptaContrato` antes de crear la sesión.
+     - Verificación: Iniciar `http://localhost:8080/login.html`, realizar flujo de aceptación y completar login con Google; comprobar que la cookie `accepted_contract=1` existe y que la fila en `superadministrador.db` para el administrador tiene `acepta_contrato=1`. Luego intentar `POST /api/empresa/backups?action=crear` con sesión válida.
+
+ - 2026-04-12: Corrección — modal no mostrado tras callback OAuth (bugfix)
+     - Archivos modificados:
+         - web/js/login.js (modificado: detecta `require_accept` en querystring y muestra modal automáticamente; utiliza `login_hint` si se provee)
+         - backend/handlers/auth_admin_handlers.go (modificado: corrige concatenación de query al redirigir a `login.html`, evitando doble '?')
+     - Descripción: Se solucionó un problema donde, tras el callback OAuth, administradores ya registrados pero sin aceptar el contrato eran redirigidos a `login.html` sin que se mostrara el modal de aceptación, dejando la página en estado de recarga. Ahora `login.html` detecta `?require_accept=1` y muestra el modal; al aceptar se lanza de nuevo OAuth con `login_hint` para completar el flujo y crear la sesión.
+     - Verificación recomendada: Reiniciar servidor y abrir `http://localhost:8080/login.html`, iniciar login con cuenta que no haya aceptado aún; en la redirección desde OAuth deberá aparecer automáticamente el modal; al aceptar se realizará OAuth de nuevo y la sesión quedará creada.
+
+ - 2026-04-12: UI: Modal oscuro y reCAPTCHA integrado en login
+     - Archivos modificados/agregados:
+         - web/login.html (modificado: modal en modo oscuro, contenedor `recaptchaWidget`, enlace a `/contrato.html`, carga de `/config.js` y script reCAPTCHA de Google)
+         - web/js/login.js (modificado: renderizado de widget reCAPTCHA, verificación por servidor en `/api/recaptcha/verify` y flujo de aceptación)
+         - web/contrato.html (nuevo: página con términos y condiciones accesible desde el modal)
+         - backend/handlers/recaptcha.go (nuevo: handler server-side que verifica token con Google)
+         - backend/main.go (modificado: añade ruta `/config.js` para exponer `RECAPTCHA_SITE_KEY` y registra `/api/recaptcha/verify`)
+     - Descripción: Se añadió un modal oscuro en la página de login que contiene la casilla de aceptación y el widget reCAPTCHA real de Google. El cliente envía el token al servidor (`/api/recaptcha/verify`) que valida con la API de Google usando la clave secreta (`RECAPTCHA_SECRET_KEY`) tomada desde `env` o `configuraciones` en la DB. Al verificarse correctamente, se establece la cookie `accepted_contract=1` y el flujo OAuth se relanza.
+     - Verificación recomendada: Configurar variables `RECAPTCHA_SITE_KEY` y `RECAPTCHA_SECRET_KEY` en `backend/.env.local` o en la tabla `configuraciones` bajo `recaptcha.site_key` y `recaptcha.secret_key`. Reiniciar servidor y seguir este flujo:
+         1. Acceder a `http://localhost:8080/login.html` y comenzar login con Google.
+         2. Tras el callback verás `login.html?require_accept=1&login_hint=...` con el modal en modo oscuro.
+         3. Aceptar el contrato y completar el reCAPTCHA. El backend verificará el token; al ser válido se establecerá la cookie y se relanzará OAuth.
+
+ - 2026-04-12: Preferencia de tamaño de tarjetas de estaciones (persistente)
+     - Archivos modificados:
+         - web/estilos.css (modificado: variables y clases para `station-size-*` y unidades escalables en `.portal-card`)
+         - web/administrar_empresa/configuracion_de_estaciones.html (modificado: selector de tamaño de tarjeta y guardado en `estaciones_config`)
+         - web/administrar_empresa/estaciones.html (modificado: lectura desde `/api/empresa/estacion_prefs`, aplicación de la clase `station-size-*` y uso de configuración server-side)
+     - Descripción: Se añadió la opción `card_size` (valores: `small|medium|large`) dentro de la preferencia global `estaciones_config` (almacenada con `estacion_id=0` en `empresa_estacion_prefs`). Las páginas de administración permiten seleccionar y persistir el tamaño; la vista de estaciones aplica la clase correspondiente para escalar el contenido interno de las tarjetas usando unidades relativas (`em`) y la variable CSS `--station-card-scale`.
+     - Verificación: Abrir `web/administrar_empresa/configuracion_de_estaciones.html?empresa_id={ID}` para seleccionar tamaño y luego `web/administrar_empresa/estaciones.html?empresa_id={ID}` para verificar que las tarjetas reflejan el tamaño elegido.
+
  - 2026-04-12: Módulo sensor de puertas (Raspberry Pi)
      - Archivos agregados/modificados:
          - backend/db/sensor_puertas.go (nuevo: tabla empresa_sensor_puertas_devices y operaciones Upsert/Get/Heartbeat)
@@ -58,6 +125,17 @@
      - Verificacion: Revisión estática realizada; probar en `http://localhost:8080/administrar_empresa.html?id=6` para confirmar posición y funcionalidad.
 
  - 2026-04-11: Agregar accesos directos ausentes en menú `Administrar Empresa`
+
+ - 2026-04-12: Persistencia de preferencias por estación (empresa_estacion_prefs)
+    - Archivos añadidos:
+        - backend/db/empresa_estacion_prefs.go (nuevo: esquema y funciones List/Get/Upsert para preferencias por estación)
+        - backend/handlers/empresa_estacion_prefs.go (nuevo: handler protegido `/api/empresa/estacion_prefs` expone GET y PUT)
+    - Descripción: Se crea la tabla `empresa_estacion_prefs` para almacenar pares clave/valor por `empresa_id` y `estacion_id` con índice único `(empresa_id, estacion_id, clave)`. Se agrega handler y ruta protegida para listar y persistir preferencias desde el frontend. Esto permite que toggles como `venta_simple` y `mostrar_total` se mantengan persistentes y compartidas entre sesiones.
+    - Verificación recomendada: Reiniciar backend para aplicar migración automática y probar endpoints:
+        - GET `/api/empresa/estacion_prefs?empresa_id={ID}`
+        - PUT `/api/empresa/estacion_prefs` con payload `{ "estacion_id": 1, "clave": "mostrar_total", "valor": "1" }`
+    - Nota: Se introduce la preferencia `aplicar_tarifas_a_todas` dentro de la clave JSON `estaciones_config` (almacenada con `estacion_id=0` en `empresa_estacion_prefs`). Tipo: booleano (false por defecto). Cuando se activa (`true`), los handlers de tarifas impactados (`backend/handlers/tarifas_por_dia.go` y `backend/handlers/tarifas_por_minutos.go`) aplican la tarifa recibida a todas las estaciones usando `ApplyEmpresaTarifaPorDiaToAllStations` y `ApplyEmpresaTarifaPorMinutosToAllStations`. Archivos modificados/relacionados: `backend/handlers/tarifas_por_dia.go`, `backend/handlers/tarifas_por_minutos.go`, `backend/db/empresa_estacion_prefs.go`, `backend/db/empresa_estacion_prefs_test.go`.
+    - Verificación: Ejecutar `go test ./...` (tests backend) y validar comportamiento creando/actualizando una tarifa con la preferencia activa; verificar que las funciones `ApplyEmpresaTarifaPorDiaToAllStations` / `ApplyEmpresaTarifaPorMinutosToAllStations` generan/actualizan tarifas por estación según lo esperado.
      - Archivos modificados:
          - web/administrar_empresa.html (modificado: se añadieron enlaces a páginas que no tenían link directo)
      - Descripcion: Se detectaron múltiples archivos HTML en `web/administrar_empresa/` que no estaban enlazados desde el menú principal. Para facilitar el acceso se añadieron enlaces a todas esas páginas (listadas en el commit/PR asociado) en la parte inferior del menú, arriba de 'Volver a empresas'.

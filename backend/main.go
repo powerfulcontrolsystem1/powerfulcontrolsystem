@@ -684,6 +684,9 @@ func main() {
 	if err := dbpkg.EnsureEmpresaSensorPuertasSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure sensor_puertas schema in empresas db: %v", err)
 	}
+	if err := dbpkg.EnsureEmpresaEstacionPrefsSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure empresa_estacion_prefs schema in empresas db: %v", err)
+	}
 	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-01-001-baseline", "baseline schema snapshot: users, empresas, productos, clientes, carritos, configuracion_avanzada"); err != nil {
 		log.Fatalf("failed to register schema migration in empresas db: %v", err)
 	}
@@ -883,6 +886,8 @@ func main() {
 		}
 
 		addIfMissing("photo TEXT", "photo")
+		// Columna para indicar si el administrador aceptó el contrato/registro
+		addIfMissing("acepta_contrato INTEGER DEFAULT 0", "acepta_contrato")
 	}
 	ensureAdminsSchema(dbSuper)
 
@@ -1155,6 +1160,16 @@ func main() {
 	// Pasar tanto la conexión de empresas como la de superadministrador al callback
 	http.HandleFunc("/auth/google/callback", handlers.HandleGoogleCallback(dbEmpresas, dbSuper, clientID, clientSecret, redirectURL))
 
+	// Endpoint que expone configuración pública simple en JS.
+	// Nota: reCAPTCHA eliminado; mantenemos la ruta para compatibilidad y exponemos valores vacíos.
+	http.HandleFunc("/config.js", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/javascript")
+		fmt.Fprintf(w, "window.RECAPTCHA_SITE_KEY = %q; window.RECAPTCHA_DEV_BYPASS = %t;", "", false)
+	})
+
+	// Endpoint para procesar la aceptación del contrato desde la página /accept.html
+	http.HandleFunc("/accept/complete", handlers.AcceptCompleteHandler(dbSuper))
+
 	// Endpoints para administración y auditoría (listar administradores y sesiones)
 	http.HandleFunc("/super/administradores", handlers.ListAdministradoresHandler(dbSuper))
 	http.HandleFunc("/super/sesiones", handlers.ListSesionesHandler(dbSuper))
@@ -1217,6 +1232,7 @@ func main() {
 	http.HandleFunc("/api/empresa/comisiones", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaComisionesServicioHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/configuracion_operativa", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaConfiguracionOperativaHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/configuracion_avanzada", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaConfiguracionAvanzadaHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/estacion_prefs", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaEstacionPrefsHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/facturacion_electronica", handlers.WithEmpresaFacturacionPermissions(dbEmpresas, dbSuper, handlers.EmpresaFacturacionElectronicaHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/facturacion_electronica/pais_detectado", handlers.WithEmpresaFacturacionPermissions(dbEmpresas, dbSuper, handlers.EmpresaFacturacionElectronicaPaisDetectadoHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/facturacion_electronica/paises_disponibles", handlers.WithEmpresaFacturacionPermissions(dbEmpresas, dbSuper, handlers.EmpresaFacturacionElectronicaPaisesDisponiblesHandler()))

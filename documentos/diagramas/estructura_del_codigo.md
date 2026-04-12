@@ -1,6 +1,6 @@
 # Estructura del codigo
 
-Fecha de actualizacion: 2026-04-08
+Fecha de actualizacion: 2026-04-12
 
 ## Objetivo
 Este documento resume la estructura tecnica principal del sistema y sirve como referencia para mantenimiento y evolucion.
@@ -55,6 +55,41 @@ flowchart TD
 
 ## Regla de mantenimiento
 Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe reflejarse en este documento y en los diagramas relacionados dentro de documentos/diagramas/.
+
+## Actualizacion 2026-04-12 (login administrativo: OAuth + contrato + reCAPTCHA)
+
+- Backend handlers:
+  - `backend/handlers/auth_admin_handlers.go`:
+    - `HandleGoogleLogin` fuerza `prompt=select_account consent` para evitar reutilización silenciosa de sesión Google.
+    - `HandleGoogleCallback` usa `administradores.acepta_contrato` como criterio canonico y redirige a `/accept.html?payload=...` cuando falta aceptación.
+  - `backend/handlers/accept_handlers.go`:
+    - `AcceptCompleteHandler` valida payload cifrado, verifica reCAPTCHA en backend y solo entonces persiste aceptación + crea cookie `session_token`.
+    - limpia cookie legacy `accepted_contract` para evitar señal compartida entre cuentas.
+
+- Frontend:
+  - `web/login.html` + `web/js/login.js`:
+    - página exclusiva de entrada administrativa, sin modal de contrato ni auto-login.
+  - `web/accept.html`:
+    - pantalla dedicada para aceptar contrato y completar verificación humana.
+  - `web/menu.js`:
+    - se desactiva el flujo legacy de modal por querystring (no-op) para evitar doble implementación.
+
+- QA:
+  - `backend/handlers/e2e_login_acceptance_test.go` valida el flujo completo callback -> accept -> sesión -> segundo login sin contrato.
+  - `backend/handlers/auth_users_carritos_test.go` valida prompt OAuth esperado.
+
+### Diagrama de flujo (login administrativo)
+
+```mermaid
+flowchart TD
+    A[login.html] --> B[/auth/google/login]
+    B --> C[/auth/google/callback]
+    C -->|acepta_contrato = 0| D[/accept.html?payload=...]
+    D --> E[POST /accept/complete + reCAPTCHA]
+    E --> F[Set acepta_contrato=1 + session_token]
+    F --> G[/seleccionar_empresa.html o /super_administrador.html]
+    C -->|acepta_contrato = 1| G
+```
 
 ## Actualizacion 2026-04-09 (facturacion DIAN multiempresa SaaS: software compartido + credenciales por empresa)
 
