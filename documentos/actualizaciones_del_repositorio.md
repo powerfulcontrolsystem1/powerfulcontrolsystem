@@ -1453,3 +1453,45 @@ Archivos modificados:
 - scripts/logs/actualizar_repositorio-20260409-051334.log
 - web/ayuda/ayuda.html
 - web/js/modulos_erp_extendido.js
+
+2026-04-11 19:32:27 - Mensaje: Actualizacion automatica desde script: anadir/actualizar archivos; Commit: 2e9fc8b; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- Pendiente Notas
+- backend/handlers/chat_con_inteligencia_artificial_controller.go
+- backend/logs/empresa_6.log
+- backend/logs/empresa_global.log
+- backend/logs/server_reinicio.log
+- backend/logs/server_runtime_state.json
+- backend/server.exe
+- backend/tools/check_deepseek_key/main.go
+- copilot-instructions.md
+- documentos/arbol_administrar_empresa.md
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
+- documentos/informacion_para_pruebas_plataforma_DIAN
+- documentos/regla_agente_go.md
+- scripts/logs/actualizar_repositorio-20260409-051334.log
+- scripts/logs/actualizar_repositorio-20260411-193215.log
+- web/administrar_empresa.html
+- web/administrar_empresa/administrar_productos_menu.html
+- web/administrar_empresa/bodegas.html
+- web/administrar_empresa/categorias.html
+- web/administrar_empresa/configuracion_integraciones.html
+- web/administrar_empresa/configuracion_menu.html
+- web/administrar_empresa/configuracion_permisos.html
+- web/administrar_empresa/precios.html
+- web/administrar_empresa/reportes_finanzas.html
+- web/administrar_empresa/reportes_inventario.html
+- web/administrar_empresa/reportes_menu.html
+- web/img/analytics-color.svg
+- web/img/price-tag-color.svg
+- web/img/price-tag.svg
+- web/img/settings-color.svg
+- web/img/tags-color.svg
+- web/img/tags.svg
+- web/img/warehouse-color.svg
+- web/img/warehouse.svg
+- web/js/administrar_empresa.js
+- web/menu.js
+- web/ultimas_mejoras.html
