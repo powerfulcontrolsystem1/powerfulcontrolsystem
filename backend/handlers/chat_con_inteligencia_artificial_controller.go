@@ -193,11 +193,6 @@ func (c *EmpresaAIChatController) ModeloPreferidoHandler(w http.ResponseWriter, 
 		if payload.ModelID == "" {
 			payload.ModelID = empresaAIModelCatalog()[0].ID
 		}
-		catalog := empresaAIModelMap()
-		if _, ok := catalog[payload.ModelID]; !ok {
-			http.Error(w, "model_id no soportado", http.StatusBadRequest)
-			return
-		}
 
 		googleAccount := googleAccountFromRequest(r)
 		if googleAccount == "" {
@@ -206,6 +201,12 @@ func (c *EmpresaAIChatController) ModeloPreferidoHandler(w http.ResponseWriter, 
 		}
 		if err := c.ensureEmpresaAccessByAccount(googleAccount, payload.EmpresaID); err != nil {
 			http.Error(w, err.Error(), http.StatusForbidden)
+			return
+		}
+
+		catalog := empresaAIModelMap()
+		if _, ok := catalog[payload.ModelID]; !ok {
+			http.Error(w, "model_id no soportado", http.StatusBadRequest)
 			return
 		}
 

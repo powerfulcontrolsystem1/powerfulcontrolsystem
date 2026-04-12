@@ -680,6 +680,10 @@ func main() {
 	if err := dbpkg.EnsureEmpresaSoporteRemotoSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure soporte remoto schema in empresas db: %v", err)
 	}
+	// Asegurar esquema para módulo de sensores de puertas (Raspberry Pi)
+	if err := dbpkg.EnsureEmpresaSensorPuertasSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure sensor_puertas schema in empresas db: %v", err)
+	}
 	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-01-001-baseline", "baseline schema snapshot: users, empresas, productos, clientes, carritos, configuracion_avanzada"); err != nil {
 		log.Fatalf("failed to register schema migration in empresas db: %v", err)
 	}
@@ -1238,6 +1242,10 @@ func main() {
 	http.HandleFunc("/api/empresa/auditoria/eventos", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaAuditoriaEventosHandler(dbEmpresas)))
 	handlers.RegisterEmpresaChatIARoutes(dbEmpresas, dbSuper)
 	handlers.RegisterEmpresaModulosFaltantesRoutes(dbEmpresas, dbSuper)
+	// Rutas del módulo sensor de puertas: configuración protegida y endpoint público para heartbeats
+	http.HandleFunc("/api/empresa/sensor_puertas", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaSensorConfigHandler(dbEmpresas)))
+	http.HandleFunc("/api/public/sensor_puertas", handlers.PublicSensorPuertasHandler(dbEmpresas))
+	http.HandleFunc("/api/empresa/sensor_puertas/messages", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaSensorMessagesHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/roles_de_usuario", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaRolesDeUsuarioHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/permisos_contexto", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaPermisosContextoHandler(dbSuper)))
 	// Endpoint para obtener admin actual desde la cookie de sesión

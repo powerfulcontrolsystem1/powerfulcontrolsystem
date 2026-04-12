@@ -3,6 +3,116 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Configuración de estaciones y sensores</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="empresa-subpage">
+  <div class="container empresa-module">
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Configuración de sensores por estación</h2>
+      </div>
+
+      <div class="form">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Identificador del dispositivo (Raspberry Pi)</label>
+            <input id="deviceId" class="form-input" placeholder="ej: RPI-ABC-1234">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Estación asociada (ID)</label>
+            <input id="estacionId" class="form-input" type="number" placeholder="Número de estación (ej. 1)">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Token del dispositivo (opcional)</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input id="deviceToken" class="form-input" placeholder="Token para autenticación">
+              <button id="generateToken" class="btn secondary" type="button">Generar</button>
+            </div>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn add" id="saveBtn">Guardar</button>
+        </div>
+        <p class="form-help">Registra el identificador único que traen las Raspberry Pi y asócialo a la estación que debe mostrar el indicador.</p>
+      </div>
+
+      <div id="devicesList" class="form" style="margin-top:12px">
+        <h3>Dispositivos registrados</h3>
+        <div id="devicesTable" class="table-block">Cargando...</div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const empresaId = Number(new URLSearchParams(window.location.search).get('empresa_id') || 0);
+
+    async function loadDevices() {
+      const container = document.getElementById('devicesTable');
+      container.innerHTML = 'Cargando...';
+      if (!empresaId) { container.innerHTML = 'Falta empresa_id en la URL'; return; }
+      try {
+        const res = await fetch('/api/empresa/sensor_puertas?empresa_id=' + encodeURIComponent(empresaId), { credentials: 'same-origin' });
+        if (!res.ok) { container.innerHTML = 'Error al cargar dispositivos'; return; }
+        const devices = await res.json();
+        if (!Array.isArray(devices) || devices.length === 0) { container.innerHTML = '<p class="form-help">No hay dispositivos registrados.</p>'; return; }
+        const rows = devices.map(d => '<div class="table" style="margin-bottom:8px;padding:8px;border-radius:8px;border:1px solid var(--border)"><strong>' + (d.device_id || '') + '</strong> — Estación: ' + (d.estacion_id || 'no asociada') + ' — Estado: ' + (d.last_state || '') + ' — Última señal: ' + (d.last_seen || '') + '</div>').join('');
+        container.innerHTML = rows;
+      } catch (err) {
+        container.innerHTML = 'Error: ' + String(err);
+      }
+    }
+
+    async function saveDevice() {
+      const deviceId = String((document.getElementById('deviceId')).value || '').trim();
+      const estacionId = Number((document.getElementById('estacionId')).value || 0);
+      const deviceToken = String((document.getElementById('deviceToken')).value || '').trim();
+      if (!deviceId) { alert('Ingrese device_id'); return; }
+      if (!empresaId) { alert('Falta empresa_id en la URL'); return; }
+      try {
+        const res = await fetch('/api/empresa/sensor_puertas?empresa_id=' + encodeURIComponent(empresaId), {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ device_id: deviceId, estacion_id: estacionId, device_token: deviceToken })
+        });
+        if (!res.ok) { alert('Error guardando dispositivo'); return; }
+        const body = await res.json();
+        if (body && body.ok) {
+          alert('Guardado');
+          document.getElementById('deviceId').value = '';
+          document.getElementById('estacionId').value = '';
+          loadDevices();
+        } else {
+          alert('No se pudo guardar');
+        }
+      } catch (err) {
+        alert('Error: ' + String(err));
+      }
+    }
+
+    document.getElementById('saveBtn').addEventListener('click', ev => { ev.preventDefault(); saveDevice(); });
+    document.getElementById('generateToken').addEventListener('click', ev => { ev.preventDefault();
+      // generar token hex de 24 bytes
+      try {
+        const arr = new Uint8Array(24);
+        window.crypto.getRandomValues(arr);
+        const token = Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
+        document.getElementById('deviceToken').value = token;
+      } catch (e) {
+        alert('No se pudo generar token: ' + String(e));
+      }
+    });
+
+    loadDevices();
+  </script>
+</body>
+</html>
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Configuración de estaciones</title>
   <link rel="stylesheet" href="/estilos.css">
 </head>

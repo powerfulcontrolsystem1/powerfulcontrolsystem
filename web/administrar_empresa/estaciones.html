@@ -23,7 +23,8 @@
         activo: '#d9fbe8',
         inactivo: '#fff9ef'
       },
-      carritosPorCodigo: {}
+      carritosPorCodigo: {},
+      sensorsByEstacion: {}
     };
 
     function sanitize(v) {
@@ -192,7 +193,28 @@
         const stationClass = carritoActivo ? 'station-card-active' : 'station-card-inactive';
         const stationColor = carritoActivo ? state.colores.activo : state.colores.inactivo;
 
+        // Estado del sensor asociado a la estación (negro = no conectado/inactivo, verde = sensor activo)
+        const sensor = (state.sensorsByEstacion && state.sensorsByEstacion[stationID]) ? state.sensorsByEstacion[stationID] : null;
+        let sensorColor = '#000000';
+        if (sensor && sensor.device_id) {
+          const lastStateNormalized = normalizeText(sensor.last_state || '');
+          const activeStates = ['1','true','si','on','active','open'];
+          const isActive = activeStates.indexOf(lastStateNormalized) !== -1;
+          sensorColor = isActive ? '#00c853' : '#000000';
+          if (sensor.last_seen) {
+            try {
+              const parsed = new Date((sensor.last_seen || '').replace(' ', 'T'));
+              if (!isNaN(parsed.getTime()) && (Date.now() - parsed.getTime()) > 120000) {
+                sensorColor = '#000000';
+              }
+            } catch (err) {
+              // ignore parse errors
+            }
+          }
+        }
+
         return '<article class="portal-card ' + stationClass + '" style="--station-state-bg:' + sanitize(stationColor) + ';" data-estacion-id="' + stationID + '" data-estacion-nombre="' + sanitize(est.nombre) + '" data-venta-simple="' + (useSimpleSales ? '1' : '0') + '" tabindex="0" role="button" aria-label="Abrir estación ' + sanitize(est.nombre) + '">' +
+          '<div class="station-sensor-indicator" style="background-color:' + sanitize(sensorColor) + '"></div>' +
           '<h3>' + sanitize(est.nombre) + '</h3>' +
           '<p>Estación #' + stationID + '</p>' +
           '<p class="station-mode-label">' + modeText + '</p>' +
@@ -224,9 +246,32 @@
       const cfg = readConfig();
       await Promise.all([
         loadColoresEstadoCarrito(),
-        loadEstadoCarritosEstacion()
+        loadEstadoCarritosEstacion(),
+        loadSensorStates()
       ]);
       renderEstaciones(cfg);
+    }
+
+    // Cargar estado de sensores desde el backend (dispositivos registrados para la empresa)
+    async function loadSensorStates() {
+      state.sensorsByEstacion = {};
+      if (!empresaId) return;
+      try {
+        const res = await fetch('/api/empresa/sensor_puertas?empresa_id=' + encodeURIComponent(empresaId), { credentials: 'same-origin' });
+        if (!res.ok) return;
+        const devices = await res.json();
+        if (!Array.isArray(devices)) return;
+        devices.forEach(d => {
+          const estId = Number(d && (d.estacion_id || 0)) || 0;
+          state.sensorsByEstacion[estId] = {
+            device_id: d.device_id,
+            last_state: d.last_state,
+            last_seen: d.last_seen
+          };
+        });
+      } catch (err) {
+        console.warn('No se pudo cargar estado de sensores:', err);
+      }
     }
 
     bootstrap();

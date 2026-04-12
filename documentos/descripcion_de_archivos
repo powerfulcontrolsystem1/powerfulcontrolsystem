@@ -1,5 +1,32 @@
 Descripcion de archivos del proyecto
 
+Actualizacion 2026-04-12: Módulo sensor de puertas (Raspberry Pi)
+ - Archivos añadidos/modificados:
+		- backend/db/sensor_puertas.go (nuevo módulo DB: dispositivos, upsert, heartbeat)
+		- backend/handlers/sensor_puertas.go (handlers: endpoint público y configuración protegida)
+		- web/administrar_empresa/configuracion_de_estaciones.html (UI: registrar device -> estación)
+		- web/administrar_empresa/estaciones.html (indicador visual sensor añadido)
+		- web/estilos.css (estilos para indicador de sensor)
+		- backend/db/sensor_puertas_test.go (pruebas unitarias DB)
+		- backend/handlers/sensor_puertas_test.go (pruebas handlers)
+	- Descripción: Añade soporte para registrar dispositivos Raspberry Pi por empresa/estación, endpoint público para recibir heartbeats y página de configuración empresarial. Se agregó indicador visual en las tarjetas de estaciones y pruebas automatizadas.
+
+Actualizacion 2026-04-12: Mensajes de sensores (persistencia y UI)
+ - Archivos añadidos/modificados:
+ 	- backend/db/sensor_puertas.go (se añadió tabla `empresa_sensor_puertas_messages` y funciones para insertar/listar mensajes)
+ 	- backend/handlers/sensor_puertas.go (se añadió ingest `action=message` en endpoint público y handler protegido para listar mensajes)
+ 	- web/administrar_empresa/sensor_puertas_mensajes.html (nueva UI para ver mensajes por empresa)
+ - Descripción: Se agrega la funcionalidad para recibir cadenas de texto desde las Raspberry Pi registradas, persistirlas por `empresa_id` y mostrar una vista administrativa que lista los mensajes asociados a la empresa.
+
+Actualizacion 2026-04-11: Generador y formato de códigos de descuento
+ - Archivos modificados:
+	 - backend/db/codigos_descuento.go
+	 - web/administrar_empresa/codigos_de_descuento.html
+	 - documentos/estructura_bd.md
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: Se actualiza el generador automatico de códigos de descuento para usar un formato moderno y legible `PREFIJO-XXXX-XXXX` (ej. `DSCT-AB12-CD34`). El backend (`GenerateCodigoDescuentoAutomatico`) genera por defecto códigos con prefijo `DSCT` y dos grupos de 4 caracteres; la tabla `codigos_de_descuento` mantiene un índice único por `(empresa_id, codigo)` para garantizar unicidad. El frontend `web/administrar_empresa/codigos_de_descuento.html` incorpora el placeholder y el boton `Generar automático` adaptados al formato. Se ejecutaron pruebas unitarias de DB asociadas y pasan.
+
 Actualizacion 2026-04-09: Onboarding profesional DIAN por empresa (modelo SaaS multiempresa)
 
 - `documentos/plantillas/dian_onboarding_empresa_multiempresa_saas.md` (nuevo):

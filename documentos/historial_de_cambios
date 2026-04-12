@@ -1,4 +1,34 @@
-- Historial de cambios
+ - Historial de cambios
+
+ - 2026-04-12: Módulo sensor de puertas (Raspberry Pi)
+     - Archivos agregados/modificados:
+         - backend/db/sensor_puertas.go (nuevo: tabla empresa_sensor_puertas_devices y operaciones Upsert/Get/Heartbeat)
+         - backend/handlers/sensor_puertas.go (handlers: público `/api/public/sensor_puertas?action=heartbeat` y protegido `/api/empresa/sensor_puertas`)
+         - web/administrar_empresa/configuracion_de_estaciones.html (UI para registrar device->estación)
+         - web/administrar_empresa/estaciones.html (agregado indicador visual por estación)
+         - web/estilos.css (estilos para indicador)
+         - backend/db/sensor_puertas_test.go (pruebas DB)
+         - backend/handlers/sensor_puertas_test.go (pruebas handlers)
+     - Descripción: Implementa registro de dispositivos por empresa, endpoint público para heartbeats y página de configuración empresarial. La vista de estaciones muestra un pequeño cuadro negro/verde indicando estado del sensor. Se agregaron pruebas unitarias de DB y handlers.
+     - Verificación: `go test ./...` ejecutado y tests verdes.
+
+ - 2026-04-12: Persistencia y visualización de mensajes de sensores
+     - Archivos agregados/modificados:
+         - backend/db/sensor_puertas.go (añade tabla empresa_sensor_puertas_messages y funciones Insert/Get)
+         - backend/handlers/sensor_puertas.go (soporte para `action=message` y nuevo handler protegido `/api/empresa/sensor_puertas/messages`)
+         - web/administrar_empresa/sensor_puertas_mensajes.html (nuevo: página para visualizar mensajes por empresa)
+     - Descripción: Se implementa un endpoint público para recibir cadenas de texto desde dispositivos Raspberry Pi registrados (por `device_id`), se persisten los mensajes asociados a la empresa correspondiente y se añade una página administrativa para revisar los mensajes por empresa.
+     - Verificación: Ajustes de DB y handlers; ejecutar `go test ./...` y revisar la vista en `http://localhost:8080/administrar_empresa/sensor_puertas_mensajes.html?empresa_id={ID}`.
+
+ - 2026-04-11: Formato moderno de códigos de descuento (PREFIJO-XXXX-XXXX)
+    - Archivos modificados:
+        - backend/db/codigos_descuento.go (GenerateCodigoDescuentoAutomatico actualizado)
+        - web/administrar_empresa/codigos_de_descuento.html (UI: placeholder y `generarCodigoCliente()` adaptados)
+        - documentos/estructura_bd.md (documenta formato e índice único)
+        - documentos/descripcion_de_archivos (registro de archivos afectados)
+        - CHANGELOG.md (entrada 2026-04-11 añadida)
+    - Descripcion: Se implementó formato moderno y sencillo `PREFIJO-XXXX-XXXX` para códigos de descuento. El backend genera por defecto códigos con prefijo `DSCT-XXXX-XXXX`; la tabla `codigos_de_descuento` incluye índice único `(empresa_id, codigo)` para garantizar unicidad. El frontend ofrece botón "Generar automático" que produce el mismo patrón. Las pruebas DB relevantes se ejecutaron y pasan.
+    - Verificacion: `go test ./db -run TestCodigoDescuentoCreateAndResolve -count=1` -> passed.
 
  - 2026-04-11: Actualizar `arbol_administrar_empresa.md` — eliminar entradas duplicadas movidas a MENÚ
      - Archivos modificados:

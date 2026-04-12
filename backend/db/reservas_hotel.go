@@ -884,6 +884,114 @@ func ListReservasHotelByEmpresa(dbConn *sql.DB, empresaID int64, filter ReservaH
 	return out, nil
 }
 
+// ListReservasHotelByEmpresaRaw lista reservas de hotel por empresa SIN aplicar
+// las políticas operativas automáticas (expiracion/no_show). Esta función es
+// útil para reports y consultas históricas que requieren el estado tal cual se
+// encuentra en la base de datos sin mutaciones automáticas.
+func ListReservasHotelByEmpresaRaw(dbConn *sql.DB, empresaID int64, filter ReservaHotelFilter) ([]ReservaHotel, error) {
+	if empresaID <= 0 {
+		return nil, fmt.Errorf("empresa_id es obligatorio")
+	}
+
+	if filter.Limit <= 0 {
+		filter.Limit = 80
+	}
+	if filter.Limit > 500 {
+		filter.Limit = 500
+	}
+	if filter.Offset < 0 {
+		filter.Offset = 0
+	}
+
+	where, args := buildReservaHotelFilterClause(empresaID, filter)
+	args = append(args, filter.Limit, filter.Offset)
+
+	query := `SELECT
+		r.id,
+		r.empresa_id,
+		r.carrito_id,
+		r.estacion_id,
+		COALESCE(c.codigo, ''),
+		COALESCE(c.nombre, ''),
+		COALESCE(r.codigo_reserva, ''),
+		COALESCE(r.cliente_nombre, ''),
+		COALESCE(r.cliente_documento, ''),
+		COALESCE(r.cliente_email, ''),
+		COALESCE(r.cliente_telefono, ''),
+		COALESCE(r.cantidad_huespedes, 1),
+		COALESCE(r.fecha_entrada, ''),
+		COALESCE(r.fecha_salida, ''),
+		COALESCE(r.monto_total, 0),
+		COALESCE(r.moneda, 'COP'),
+		COALESCE(r.estado_reserva, 'pendiente_pago'),
+		COALESCE(r.estado_pago, 'pendiente'),
+		COALESCE(r.referencia_pago, ''),
+		COALESCE(r.pago_confirmado_en, ''),
+		COALESCE(r.fecha_expiracion, ''),
+		COALESCE(r.confirmado_por, ''),
+		COALESCE(r.canal_origen, ''),
+		COALESCE(r.request_id, ''),
+		COALESCE(r.fecha_creacion, ''),
+		COALESCE(r.fecha_actualizacion, ''),
+		COALESCE(r.usuario_creador, ''),
+		COALESCE(r.estado, 'activo'),
+		COALESCE(r.observaciones, '')
+	FROM reservas_hotel r
+	LEFT JOIN carritos_compras c ON c.empresa_id = r.empresa_id AND c.id = r.carrito_id
+	WHERE ` + where + `
+	ORDER BY r.id DESC
+	LIMIT ? OFFSET ?`
+
+	rows, err := dbConn.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]ReservaHotel, 0)
+	for rows.Next() {
+		var item ReservaHotel
+		if err := rows.Scan(
+			&item.ID,
+			&item.EmpresaID,
+			&item.CarritoID,
+			&item.EstacionID,
+			&item.EstacionCodigo,
+			&item.EstacionNombre,
+			&item.CodigoReserva,
+			&item.ClienteNombre,
+			&item.ClienteDocumento,
+			&item.ClienteEmail,
+			&item.ClienteTelefono,
+			&item.CantidadHuespedes,
+			&item.FechaEntrada,
+			&item.FechaSalida,
+			&item.MontoTotal,
+			&item.Moneda,
+			&item.EstadoReserva,
+			&item.EstadoPago,
+			&item.ReferenciaPago,
+			&item.PagoConfirmadoEn,
+			&item.FechaExpiracion,
+			&item.ConfirmadoPor,
+			&item.CanalOrigen,
+			&item.RequestID,
+			&item.FechaCreacion,
+			&item.FechaActualizacion,
+			&item.UsuarioCreador,
+			&item.Estado,
+			&item.Observaciones,
+		); err != nil {
+			return nil, err
+		}
+		out = append(out, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func buildReservaHotelFilterClause(empresaID int64, filter ReservaHotelFilter) (string, []interface{}) {
 	where := []string{"r.empresa_id = ?", "COALESCE(r.estado, 'activo') = 'activo'"}
 	args := []interface{}{empresaID}

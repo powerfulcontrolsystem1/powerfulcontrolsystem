@@ -1521,7 +1521,7 @@ func (b *reportesBuilder) buildOperativoReservasOcupacionDataset() (empresaRepor
 		return ds, nil
 	}
 
-	reservas, err := dbpkg.ListReservasHotelByEmpresa(b.db, b.empresaID, dbpkg.ReservaHotelFilter{
+	reservas, err := dbpkg.ListReservasHotelByEmpresaRaw(b.db, b.empresaID, dbpkg.ReservaHotelFilter{
 		FechaDesde: b.desde,
 		FechaHasta: b.hasta,
 		Limit:      1000,

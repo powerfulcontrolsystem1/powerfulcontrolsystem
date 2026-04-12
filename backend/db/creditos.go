@@ -814,6 +814,11 @@ func EnsureEmpresaCreditosSchema(dbConn *sql.DB) error {
 		return err
 	}
 
+	// Ensure related tables used by credit flows exist (clientes schema required by some handlers/tests)
+	if err := EnsureEmpresaClientesSchema(dbConn); err != nil {
+		return err
+	}
+
 	return nil
 }
 

@@ -3,11 +3,8 @@ package utils
 import (
 	"bytes"
 	"context"
-	"crypto/aes"
-	"crypto/cipher"
 	"crypto/rand"
 	"database/sql"
-	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -23,13 +20,13 @@ import (
 	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
+	secure "github.com/you/pos-backend/secure"
 )
 
 type loggingResponseWriter struct {
 	http.ResponseWriter
 	status int
 }
-
 type apiCaptureResponseWriter struct {
 	headers http.Header
 	body    bytes.Buffer
@@ -474,86 +471,17 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 
 // getEncKeyFromEnv intenta obtener la clave de cifrado desde la variable `CONFIG_ENC_KEY`.
 // Se admite una cadena Base64 (preferida) o una cadena de al menos 32 bytes.
-func getEncKeyFromEnv() ([]byte, error) {
-	s := os.Getenv("CONFIG_ENC_KEY")
-	if s == "" {
-		return nil, fmt.Errorf("CONFIG_ENC_KEY not set")
-	}
-	// intentar decodificar base64
-	if decoded, err := base64.StdEncoding.DecodeString(s); err == nil {
-		if len(decoded) >= 16 {
-			// normalizar a 32 bytes (AES-256) si es necesario
-			if len(decoded) >= 32 {
-				return decoded[:32], nil
-			}
-			key := make([]byte, 32)
-			copy(key, decoded)
-			return key, nil
-		}
-	}
-	// usar bytes directos si la longitud es suficiente
-	if len(s) >= 32 {
-		return []byte(s)[:32], nil
-	}
-	return nil, fmt.Errorf("CONFIG_ENC_KEY invalid length; provide base64 or >=32 bytes")
-}
-
-// EncryptString cifra texto plano usando AES-GCM y devuelve Base64(nonce|ciphertext)
+// EncryptString cifra texto plano usando AES-GCM delegando al paquete secure.
 func EncryptString(plain string) (string, error) {
-	key, err := getEncKeyFromEnv()
-	if err != nil {
-		return "", err
-	}
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return "", err
-	}
-	gcm, err := cipher.NewGCM(block)
-	if err != nil {
-		return "", err
-	}
-	nonce := make([]byte, gcm.NonceSize())
-	if _, err := rand.Read(nonce); err != nil {
-		return "", err
-	}
-	ct := gcm.Seal(nil, nonce, []byte(plain), nil)
-	out := append(nonce, ct...)
-	return base64.StdEncoding.EncodeToString(out), nil
+	return secure.EncryptString(plain)
 }
 
-// DecryptString descifra un payload Base64(nonce|ciphertext) usando AES-GCM
+// DecryptString descifra un payload cifrado delegando al paquete secure.
 func DecryptString(payload string) (string, error) {
-	key, err := getEncKeyFromEnv()
-	if err != nil {
-		return "", err
-	}
-	raw, err := base64.StdEncoding.DecodeString(payload)
-	if err != nil {
-		return "", err
-	}
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return "", err
-	}
-	gcm, err := cipher.NewGCM(block)
-	if err != nil {
-		return "", err
-	}
-	ns := gcm.NonceSize()
-	if len(raw) < ns {
-		return "", fmt.Errorf("invalid payload")
-	}
-	nonce := raw[:ns]
-	ct := raw[ns:]
-	pt, err := gcm.Open(nil, nonce, ct, nil)
-	if err != nil {
-		return "", err
-	}
-	return string(pt), nil
+	return secure.DecryptString(payload)
 }
 
 // EncryptionAvailable devuelve true si la variable de entorno CONFIG_ENC_KEY está disponible y válida.
 func EncryptionAvailable() bool {
-	_, err := getEncKeyFromEnv()
-	return err == nil
+	return secure.EncryptionAvailable()
 }

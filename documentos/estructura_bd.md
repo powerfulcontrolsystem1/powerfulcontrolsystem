@@ -1,7 +1,7 @@
-# Estructura de Base de Datos
+# Estructura del Base de Datos
 
-Version: 2026-04-09.44.0
-Ultima actualizacion: 2026-04-09
+Version: 2026-04-11.45.0
+Ultima actualizacion: 2026-04-11
 
 Este documento consolida la estructura activa de SQLite para el proyecto.
 Nota de gobernanza documental:
@@ -183,6 +183,7 @@ Todas las tablas operativas usan como base los campos estandar:
 ### Tabla de codigos de descuento por empresa
 - codigos_de_descuento:
   - empresa_id, codigo, tipo_descuento, valor, moneda
+  - codigo: formato moderno `PREFIJO-XXXX-XXXX` (ej. DSCT-AB12-CD34). Unicidad garantizada por el índice `ux_codigos_descuento_empresa_codigo` (empresa_id, codigo).
   - monto_minimo_compra, fecha_vencimiento
   - usos_maximos, usos_actuales
   - segmento_cliente, canal_venta

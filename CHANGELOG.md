@@ -1,5 +1,25 @@
 # CHANGELOG
 
+## 2026-04-12
+- Módulo sensor de puertas (Raspberry Pi): backend, handlers, UI y tests.
+	- Archivos agregados/modificados:
+		- backend/db/sensor_puertas.go (nuevo módulo DB: dispositivos y heartbeats)
+		- backend/handlers/sensor_puertas.go (handlers: endpoint público `action=heartbeat` y configuración protegida)
+		- backend/db/sensor_puertas_test.go (pruebas unitarias DB)
+		- backend/handlers/sensor_puertas_test.go (pruebas handlers: heartbeat y configuración)
+		- web/administrar_empresa/configuracion_de_estaciones.html (UI: registrar device → estación)
+		- web/administrar_empresa/estaciones.html (indicador visual sensor añadido)
+		- web/estilos.css (estilos del indicador)
+	- Descripción: Se implementó un módulo ligero para registrar dispositivos Raspberry Pi por empresa y estación, recibir heartbeats públicos y reflejar el estado (negro/verde) en las tarjetas de estaciones. Incluye pruebas unitarias para DB y handlers.
+	- Verificación: `go test ./...` ejecutado y tests verdes.
+
+## 2026-04-11
+- Generador automático de códigos de descuento: formato moderno `PREFIJO-XXXX-XXXX` (`DSCT-AB12-CD34`).
+	- Archivos modificados: `backend/db/codigos_descuento.go`, `web/administrar_empresa/codigos_de_descuento.html`.
+	- Se mantiene índice único por `(empresa_id, codigo)` y se implementó reintentos en inserción para manejar colisiones raras.
+	- Se actualizaron `documentos/estructura_bd.md`, `documentos/descripcion_de_archivos` y `documentos/historial_de_cambios`.
+	- Pruebas unitarias de DB asociadas: todas en verde.
+
 ## 2026-04-09
 - Gobernanza de agente: se oficializa flujo DIAN SaaS multiempresa en instrucciones del repositorio.
 	- `copilot-instructions.md` incorpora regla oficial: software DIAN compartido (un `Software ID`/`Software PIN` para la plataforma) con credenciales tributarias obligatorias por empresa (`nit`, `token_emisor_ref`, `certificado_clave_ref`).
