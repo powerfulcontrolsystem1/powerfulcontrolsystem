@@ -34,6 +34,71 @@ func EmpresaCarritosCompraHandler(dbEmp *sql.DB) http.HandlerFunc {
 		switch r.Method {
 		case http.MethodGet:
 			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+			if action == "totales_pago" {
+				empresaID, err := parseEmpresaIDQuery(r)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				estacionID, err := parseOptionalInt64CarritoQuery(r, "estacion_id")
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				days, err := parseOptionalIntCarritoQuery(r, "days")
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				if days <= 0 {
+					days = 7
+				}
+
+				query := `SELECT COALESCE(LOWER(TRIM(metodo_pago)),'efectivo') AS metodo_pago, ROUND(SUM(COALESCE(monto_pagado,0)),2) AS total_pagado
+					FROM empresa_ventas_estacion_metricas
+					WHERE empresa_id = ?
+						AND COALESCE(estado,'activo') = 'activo'
+						AND evento_operacion = 'venta_pagada'
+						AND datetime(COALESCE(fecha_evento, fecha_creacion, datetime('now','localtime'))) >= datetime('now','localtime', ?)`
+				args := []interface{}{empresaID, fmt.Sprintf("-%d day", days)}
+				if estacionID > 0 {
+					query += " AND estacion_id = ?"
+					args = append(args, estacionID)
+				}
+				query += " GROUP BY metodo_pago"
+
+				rows, err := dbEmp.Query(query, args...)
+				if err != nil {
+					log.Printf("[carritos] totales_pago empresa_id=%d estacion_id=%d error: %v", empresaID, estacionID, err)
+					http.Error(w, "No se pudieron consultar totales de pago", http.StatusInternalServerError)
+					return
+				}
+				defer rows.Close()
+
+				totals := map[string]float64{
+					"efectivo":               0.0,
+					"tarjeta_debito":        0.0,
+					"tarjeta_credito":       0.0,
+					"transferencia_bancaria": 0.0,
+				}
+				for rows.Next() {
+					var metodo string
+					var total float64
+					if err := rows.Scan(&metodo, &total); err != nil {
+						continue
+					}
+					metodo = strings.TrimSpace(strings.ToLower(metodo))
+					totals[metodo] = total
+				}
+				if err := rows.Err(); err != nil {
+					log.Printf("[carritos] totales_pago rows error empresa_id=%d estacion_id=%d error: %v", empresaID, estacionID, err)
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{
+					"totales": totals,
+					"filtros": map[string]interface{}{"empresa_id": empresaID, "estacion_id": estacionID, "days": days},
+				})
+				return
+			}
 			if action == "metricas_estacion" {
 				empresaID, err := parseEmpresaIDQuery(r)
 				if err != nil {

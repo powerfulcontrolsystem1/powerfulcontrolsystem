@@ -93,7 +93,8 @@ try {
   if (!id) {
     id = resolveEmpresaIdContext();
   }
-  var title = document.getElementById("empresaTitle");
+  var titleMenu = document.getElementById("empresaTitleMenu");
+  var title = titleMenu || document.getElementById("empresaTitle");
   var frame = document.getElementById("contentFrame") || document.querySelector("iframe.admin-empresa-frame");
   var permsEvidence = document.getElementById("menuPermsEvidence");
   var storage = null;
@@ -651,7 +652,8 @@ try {
     return fetch("/super/api/empresas?id=" + encodeURIComponent(empresaId), { credentials: "same-origin" })
       .then(function (resp) {
         if (!resp.ok) {
-          title.textContent = "Administrar Empresa";
+          if (titleMenu) titleMenu.textContent = "Administrar Empresa";
+          else if (title) title.textContent = "Administrar Empresa";
           throw new Error("empresa no encontrada");
         }
         return resp.json();
@@ -659,15 +661,36 @@ try {
       .then(function (data) {
         var nombre = data && (data.nombre || data.Nombre);
         if (nombre) {
-          title.textContent = "Administrar Empresa - " + nombre;
-          document.title = title.textContent;
+          if (titleMenu) {
+            titleMenu.textContent = "Administrar Empresa - " + nombre;
+            document.title = titleMenu.textContent;
+          } else if (title) {
+            var cur = String(title.textContent || "").trim();
+            // Only override if the current title is the generic placeholder
+            if (!cur || cur === "Administrar Empresa" || cur.indexOf("Administrar Empresa -") === 0) {
+              title.textContent = "Administrar Empresa - " + nombre;
+              document.title = title.textContent;
+            }
+          }
         } else {
-          title.textContent = "Administrar Empresa";
+          if (titleMenu) titleMenu.textContent = "Administrar Empresa";
+          else if (title) {
+            var cur2 = String(title.textContent || "").trim();
+            if (!cur2 || cur2.indexOf("Administrar Empresa -") === 0) {
+              title.textContent = "Administrar Empresa";
+            }
+          }
         }
       })
       .catch(function (err) {
         console.warn("No se pudo cargar empresa:", err);
-        title.textContent = "Administrar Empresa";
+        if (titleMenu) titleMenu.textContent = "Administrar Empresa";
+        else if (title) {
+          var cur3 = String(title.textContent || "").trim();
+          if (!cur3 || cur3.indexOf("Administrar Empresa -") === 0 || cur3 === "Administrar Empresa") {
+            title.textContent = "Administrar Empresa";
+          }
+        }
       });
   }
 

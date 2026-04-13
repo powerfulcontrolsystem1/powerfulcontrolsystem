@@ -9,7 +9,7 @@
 <body class="empresa-subpage">
   <div class="container empresa-module">
     <section class="card empresa-section">
-      <div class="empresa-section-header">
+      <div class="empresa-section-header" style="display:flex;align-items:center;gap:12px;">
         <h2>Tarjetas de estaciones</h2>
       </div>
       <div id="estacionesGrid" class="portal-grid"></div>
@@ -57,6 +57,7 @@
     }
 
     const empresaId = resolveEmpresaId();
+    let stationConfig = null;
     const state = {
       colores: {
         activo: '#d9fbe8',
@@ -110,7 +111,9 @@
       const validSizes = ['small', 'medium', 'large'];
       const requested = String(cfg.card_size || cfg.cardSize || '').trim().toLowerCase();
       const card_size = validSizes.indexOf(requested) !== -1 ? requested : (cfg.card_size || 'medium');
-      return { cantidad, estaciones: out, card_size };
+      const cajaEnabledRaw = (cfg && (cfg.caja_enabled !== undefined ? cfg.caja_enabled : cfg.cajaEnabled)) || false;
+      const caja_enabled = toBool(cajaEnabledRaw);
+      return { cantidad, estaciones: out, card_size, caja_enabled };
     }
 
     function parseStationConfigValue(raw) {
@@ -232,7 +235,7 @@
     }
 
     function openStationCarrito(stationID, stationName, useSimpleSales) {
-      if (!empresaId || !stationID) return;
+      if (!empresaId || stationID == null) return;
       const carritoCode = getCarritoCodeForStation(stationID);
       const page = useSimpleSales ? '/administrar_empresa/ventas_simple.html' : '/administrar_empresa/carrito_de_compras.html';
       const url = page + '?empresa_id=' + encodeURIComponent(empresaId) +
@@ -257,6 +260,16 @@
         const cfg = await res.json();
         state.colores.activo = normalizeColor(cfg && cfg.color_carrito_activo, '#d9fbe8');
         state.colores.inactivo = normalizeColor(cfg && cfg.color_carrito_inactivo, '#fff9ef');
+        // Leer configuración de formato monetario (usar_decimales, cantidad_decimales)
+        try {
+          var usar = true;
+          var cantidad = 2;
+          if (cfg && typeof cfg.usar_decimales !== 'undefined') usar = !!cfg.usar_decimales;
+          if (cfg && typeof cfg.cantidad_decimales !== 'undefined') cantidad = Number(cfg.cantidad_decimales) || 0;
+          state.formato = { usarDecimales: usar, cantidadDecimales: Math.max(0, Math.trunc(cantidad)) };
+        } catch (e) {
+          state.formato = { usarDecimales: true, cantidadDecimales: 2 };
+        }
       } catch (err) {
         console.warn('No se pudieron cargar colores de estado de carrito:', err);
       }
@@ -286,13 +299,88 @@
 
     // readConfig replaced by server-backed getConfigFromServer
 
+    function formatMoney(v) {
+      try {
+        const n = Number(v || 0);
+        var digits = 2;
+        if (state && state.formato) {
+          if (state.formato.usarDecimales === false) digits = 0;
+          else if (typeof state.formato.cantidadDecimales === 'number') digits = Math.max(0, Math.trunc(state.formato.cantidadDecimales));
+        }
+        return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: digits, maximumFractionDigits: digits }).format(n);
+      } catch (e) {
+        if (state && state.formato && state.formato.usarDecimales === false) {
+          return 'COP ' + String(Math.round(Number(v || 0)));
+        }
+        return 'COP ' + (Number(v || 0).toFixed(2));
+      }
+    }
+
+    function generateCajaCardHtml() {
+      return '<article class="portal-card station-card-inactive caja-card" id="cajaCard" data-estacion-id="0" data-estacion-nombre="Caja" data-venta-simple="1" tabindex="0" role="button" aria-label="Caja">' +
+        '<div class="station-sensor-indicator" style="background-color:#000000"></div>' +
+        '<h3 class="caja-title">Caja</h3>' +
+        '<div class="caja-totals">' +
+          '<div class="caja-row">Efectivo: <span id="cajaEfectivoVal">' + formatMoney(0) + '</span></div>' +
+          '<div class="caja-row">Débito: <span id="cajaDebitoVal">' + formatMoney(0) + '</span></div>' +
+          '<div class="caja-row">Crédito: <span id="cajaCreditoVal">' + formatMoney(0) + '</span></div>' +
+        '</div>' +
+      '</article>';
+    }
+
+    async function loadCajaTotals(cfg) {
+      if (!empresaId) return;
+      try {
+        // Asegurar que tenemos la configuración de formato monetario antes de formatear
+        if (!state.formato) {
+          try {
+            const cfgResp = await fetch('/api/empresa/configuracion_avanzada?empresa_id=' + encodeURIComponent(empresaId), { credentials: 'same-origin' });
+            if (cfgResp && cfgResp.ok) {
+              const cfgData = await cfgResp.json();
+              var usar = true;
+              var cantidad = 2;
+              if (cfgData && typeof cfgData.usar_decimales !== 'undefined') usar = !!cfgData.usar_decimales;
+              if (cfgData && typeof cfgData.cantidad_decimales !== 'undefined') cantidad = Number(cfgData.cantidad_decimales) || 0;
+              state.formato = { usarDecimales: usar, cantidadDecimales: Math.max(0, Math.trunc(cantidad)) };
+            }
+          } catch (e) {
+            // ignore and fall back to defaults in formatMoney
+          }
+        }
+        const params = new URLSearchParams();
+        params.set('empresa_id', String(empresaId));
+        params.set('action', 'totales_pago');
+        params.set('days', '7');
+        if (cfg && cfg.estacion_id) params.set('estacion_id', String(cfg.estacion_id));
+        const res = await fetch('/api/empresa/carritos_compra?' + params.toString(), { credentials: 'same-origin' });
+        if (!res.ok) return;
+        const payload = await res.json();
+        const totals = payload && payload.totales ? payload.totales : {};
+        const ef = Number(totals.efectivo || 0);
+        const td = Number(totals.tarjeta_debito || 0);
+        const tc = Number(totals.tarjeta_credito || 0);
+        const elEf = document.getElementById('cajaEfectivoVal');
+        const elTd = document.getElementById('cajaDebitoVal');
+        const elTc = document.getElementById('cajaCreditoVal');
+        if (elEf) elEf.textContent = formatMoney(ef);
+        if (elTd) elTd.textContent = formatMoney(td);
+        if (elTc) elTc.textContent = formatMoney(tc);
+      } catch (err) {
+        console.warn('No se pudieron cargar totales de Caja', err);
+      }
+    }
+
     function renderEstaciones(cfg) {
       const grid = document.getElementById('estacionesGrid');
       if (!cfg || !cfg.estaciones || !cfg.estaciones.length) {
         grid.innerHTML = '<p class="form-help">No hay estaciones configuradas. Ve a Configuración de estaciones para crearlas.</p>';
         return;
       }
-      grid.innerHTML = cfg.estaciones.map(est => {
+      let html = '';
+      if (cfg && cfg.caja_enabled) {
+        html += generateCajaCardHtml();
+      }
+      html += cfg.estaciones.map(est => {
         const stationID = Number(est.id || 0);
         const useSimpleSales = !!est.venta_simple_habilitada;
         const useMostrarTotal = est.mostrar_total === undefined ? true : !!est.mostrar_total;
@@ -336,6 +424,7 @@
             '<span class="station-status-badge ' + badgeClass + '" aria-label="' + sanitize(badgeText) + '"></span>' +
             '</article>';
       }).join('');
+      grid.innerHTML = html;
 
       grid.querySelectorAll('.portal-card').forEach(card => {
         card.style.cursor = 'pointer';
@@ -354,6 +443,17 @@
           openStationCarrito(stationID, stationName, useSimpleSales);
         });
       });
+
+      // Si Caja está habilitada, adjuntar manejadores y cargar totales
+      if (cfg && cfg.caja_enabled) {
+        const cajaEl = document.getElementById('cajaCard');
+        if (cajaEl) {
+          cajaEl.style.cursor = 'pointer';
+          cajaEl.addEventListener('click', () => { openStationCarrito(0, 'Caja', true); });
+          cajaEl.addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); openStationCarrito(0, 'Caja', true); } });
+        }
+        loadCajaTotals(cfg).catch(() => {});
+      }
     }
 
     async function bootstrap() {
@@ -367,13 +467,16 @@
         cfg = normalizeConfig({ cantidad: 1, estaciones: [] });
         try { await saveConfigToServer(cfg); } catch (err) { console.warn('No se pudo guardar config por defecto', err); }
       }
-      applyCardSize(cfg);
+      stationConfig = cfg;
+      applyCardSize(stationConfig);
       await Promise.all([
         loadColoresEstadoCarrito(),
         loadEstadoCarritosEstacion(),
         loadSensorStates()
       ]);
-      renderEstaciones(cfg);
+      renderEstaciones(stationConfig);
+
+      
     }
 
     // Cargar estado de sensores desde el backend (dispositivos registrados para la empresa)
