@@ -136,10 +136,12 @@
       dlDiv.className = 'card-download';
       var dlBtn = document.createElement('button');
       dlBtn.type = 'button';
-      dlBtn.className = 'btn secondary download-data';
+      // Reuse license visual style so download button coincides with 'Licencia activa'
+      dlBtn.className = 'license-indicator active download-data';
       dlBtn.setAttribute('data-empresa-id', String(empresa.id || ''));
       dlBtn.setAttribute('data-empresa-name', String(empresa.nombre || ''));
-      dlBtn.textContent = 'Descargar datos';
+      dlBtn.setAttribute('aria-label', 'Descargar datos de ' + String(empresa.nombre || ''));
+      dlBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 3v10l4-4-1.4-1.4L13 9.2V3h-2zM5 18v2h14v-2H5z"/></svg><span class="download-label">Descargar</span>';
       dlDiv.appendChild(dlBtn);
       div.appendChild(dlDiv);
     }

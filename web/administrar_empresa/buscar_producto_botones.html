@@ -254,7 +254,7 @@
 
     async function resolveCarrito() {
       if (state.carritoID > 0) {
-        const res = await fetch('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(state.carritoID));
+        const res = await fetch('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(state.carritoID), { credentials: 'same-origin' });
         await ensureOk(res);
         state.carrito = await res.json();
         if (state.carrito && state.carrito.codigo) {
@@ -267,7 +267,7 @@
         throw new Error('carrito_id o carrito_codigo es obligatorio para buscar productos.');
       }
 
-      const res = await fetch('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(state.empresaID) + '&include_inactive=1');
+      const res = await fetch('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(state.empresaID) + '&include_inactive=1', { credentials: 'same-origin' });
       await ensureOk(res);
       const rows = await res.json();
       const match = Array.isArray(rows) ? rows.find(function(c) {
@@ -284,7 +284,7 @@
     }
 
     async function loadProducts() {
-      const res = await fetch('/api/empresa/productos?empresa_id=' + encodeURIComponent(state.empresaID));
+      const res = await fetch('/api/empresa/productos?empresa_id=' + encodeURIComponent(state.empresaID), { credentials: 'same-origin' });
       await ensureOk(res);
       const rows = await res.json();
       state.productos = Array.isArray(rows) ? rows : [];
@@ -294,7 +294,7 @@
     }
 
     async function getCurrentCarritoItems() {
-      const res = await fetch('/api/empresa/carritos_compra/items?empresa_id=' + encodeURIComponent(state.empresaID) + '&carrito_id=' + encodeURIComponent(state.carritoID) + '&include_inactive=1');
+      const res = await fetch('/api/empresa/carritos_compra/items?empresa_id=' + encodeURIComponent(state.empresaID) + '&carrito_id=' + encodeURIComponent(state.carritoID) + '&include_inactive=1', { credentials: 'same-origin' });
       await ensureOk(res);
       const rows = await res.json();
       return Array.isArray(rows) ? rows : [];
@@ -348,6 +348,7 @@
           const method = currentItem ? 'PUT' : 'POST';
           const res = await fetch('/api/empresa/carritos_compra/items', {
             method: method,
+            credentials: 'same-origin',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
           });

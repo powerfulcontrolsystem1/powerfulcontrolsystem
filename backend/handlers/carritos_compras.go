@@ -1025,8 +1025,25 @@ func EmpresaCarritoItemsHandler(dbEmp *sql.DB) http.HandlerFunc {
 			id, err := dbpkg.CreateCarritoCompraItem(dbEmp, payload)
 			if err != nil {
 				log.Printf("[carritos_items] create empresa_id=%d carrito_id=%d error: %v", payload.EmpresaID, payload.CarritoID, err)
+				// Errores de stock conocidos
 				if errors.Is(err, dbpkg.ErrStockInsuficiente) {
 					http.Error(w, "Stock insuficiente para agregar el item al carrito", http.StatusBadRequest)
+					return
+				}
+				// Mensaje específico cuando falta bodega de inventario para el producto
+				lowerErr := strings.ToLower(strings.TrimSpace(err.Error()))
+				if strings.Contains(lowerErr, "sin bodega") || strings.Contains(lowerErr, "sin bodega de inventario") {
+					userMsg := `No fue posible agregar el producto al carrito porque no se encontró una bodega de inventario asociada al producto.
+Pasos sugeridos:
+1) Cree al menos una bodega para la empresa (tabla 'bodegas').
+2) Asigne existencia para el producto en la bodega (tabla 'inventario_existencias'), por ejemplo:
+   INSERT INTO inventario_existencias (empresa_id, producto_id, bodega_id, cantidad, estado, fecha_creacion, fecha_actualizacion, usuario_creador) VALUES (6, 2, <BODEGA_ID>, 10, 'activo', datetime('now','localtime'), datetime('now','localtime'), 'admin@example.com');
+3) Alternativamente, establezca 'bodega_principal_id' en la tabla 'productos':
+   UPDATE productos SET bodega_principal_id = <BODEGA_ID> WHERE empresa_id = 6 AND id = 2;
+4) Reintente agregar el producto al carrito.
+
+Si necesita ayuda, consulte la sección de Inventario o contacte al administrador.`
+					http.Error(w, userMsg, http.StatusBadRequest)
 					return
 				}
 				http.Error(w, "No se pudo crear el item del carrito", http.StatusBadRequest)

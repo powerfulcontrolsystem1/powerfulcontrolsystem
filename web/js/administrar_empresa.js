@@ -711,6 +711,43 @@ try {
       persistFrameSrc(currentHref, id);
       setActiveByHref(currentHref);
     });
+    // Interceptar F5 / Ctrl+R para recargar solo el iframe y mantener la subpágina activa.
+    // Si el foco está en un campo editable (input/textarea/contentEditable) se respeta el comportamiento por defecto.
+    document.addEventListener('keydown', function (ev) {
+      try {
+        var isF5 = ev.key === 'F5' || ev.keyCode === 116;
+        var isCtrlR = (ev.ctrlKey || ev.metaKey) && (ev.key === 'r' || ev.keyCode === 82);
+        if (!isF5 && !isCtrlR) return;
+
+        var active = document.activeElement;
+        var tag = (active && active.tagName) ? active.tagName.toLowerCase() : '';
+        var isEditable = tag === 'input' || tag === 'textarea' || (active && active.isContentEditable);
+        if (isEditable && !active.readOnly) {
+          // permitir refresco normal cuando el usuario está editando
+          return;
+        }
+
+        ev.preventDefault();
+        if (frame && frame.contentWindow) {
+          try {
+            frame.contentWindow.location.reload();
+            return;
+          } catch (e) {
+            // si por alguna razón no es posible acceder al contentWindow, forzamos reload asignando src
+            try {
+              var src = frame.getAttribute('src') || frame.src;
+              frame.setAttribute('src', src);
+              return;
+            } catch (e2) {
+              // fallback al reload global
+            }
+          }
+        }
+        window.location.reload();
+      } catch (e) {
+        // no-op
+      }
+    });
   }
 
   fetchCurrentAdminRole()

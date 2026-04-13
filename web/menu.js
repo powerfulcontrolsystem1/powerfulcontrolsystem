@@ -1,6 +1,13 @@
 // menu.js - inyecta y gestiona el menú flotante centralizado
 (function(){
   function injectMenu(){
+    try {
+      var path = (window.location && window.location.pathname) ? window.location.pathname : '';
+      var bodyCls = (document.body && document.body.classList) ? document.body.classList : null;
+      // No inyectar el menú flotante en subpáginas de administración de empresa
+      if (path.indexOf('/administrar_empresa/') === 0 || path === '/administrar_empresa.html') return;
+      if (bodyCls && (bodyCls.contains('admin-empresa-shell') || bodyCls.contains('empresa-subpage'))) return;
+    } catch (e) {}
     if (document.querySelector('.floating-menu')) return;
     const wrapper = document.createElement('div');
     wrapper.className = 'floating-menu';
