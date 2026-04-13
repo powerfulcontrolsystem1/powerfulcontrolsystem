@@ -10,7 +10,6 @@
   <div class="container empresa-module">
     <section class="card empresa-section">
       <div class="empresa-section-header" style="display:flex;align-items:center;gap:12px;">
-        <h2>Tarjetas de estaciones</h2>
       </div>
       <div id="estacionesGrid" class="portal-grid"></div>
     </section>
@@ -321,10 +320,11 @@
         '<div class="station-sensor-indicator" style="background-color:#000000"></div>' +
         '<h3 class="caja-title">Caja</h3>' +
         '<div class="caja-totals">' +
-          '<div class="caja-row">Efectivo: <span id="cajaEfectivoVal">' + formatMoney(0) + '</span></div>' +
-          '<div class="caja-row">Débito: <span id="cajaDebitoVal">' + formatMoney(0) + '</span></div>' +
-          '<div class="caja-row">Crédito: <span id="cajaCreditoVal">' + formatMoney(0) + '</span></div>' +
+          '<div class="caja-row"><span class="caja-label">Efectivo</span><span class="caja-value" id="cajaEfectivoVal">' + formatMoney(0) + '</span></div>' +
+          '<div class="caja-row"><span class="caja-label">Débito</span><span class="caja-value" id="cajaDebitoVal">' + formatMoney(0) + '</span></div>' +
+          '<div class="caja-row"><span class="caja-label">Crédito</span><span class="caja-value" id="cajaCreditoVal">' + formatMoney(0) + '</span></div>' +
         '</div>' +
+        '<div class="caja-actions"><button type="button" class="btn secondary ver-ultimos-movimientos">Ver últimos movimientos</button></div>' +
       '</article>';
     }
 

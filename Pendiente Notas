@@ -631,3 +631,6 @@ Egresos:
 
  en estaciones a gregar la posibilidad de agregar otro tipo de tarjeta nueva llamada ultimos_movimientos. esta tarjeta o estacion de otro tipo, que se puede activar o descativar en configuracion de estaciones
  la idea es que esta estacion o tarjeta muestre los ultimos pedidos de productos, las ultimas facturas o ventas etc.  cada linea de texto debe tener un chect como para llevar una guia de los products que se han enviado
+
+
+ Agregale al modulo de backup que cada empresa pueda añadir la nube de google para las copias de seguridad. es decir que con el correo de login de administrador, esta misma cuenta se use para guardar copias de seguridad. en una carpeta especial de google drive creada para la copia de seguridad de la empresa. el sistema debe crear automaticamente la carpeta para el backup que llamara: "Bakup_powerfulcontrolsystem" + nombre de la empresa, nose si en la mism pagina del backup se coloca la opcion para forzar a crear esta carpeta, y la pagina debe mostrar los archivos que se han guardado en la carpeta nueva.

@@ -1,5 +1,12 @@
  - Historial de cambios
 
+ - 2026-04-13: UI — tarjetas en index: iconos x2, fondo blanco, tipografía mejorada
+     - Archivos modificados:
+         - web/index.html
+         - web/estilos.css
+     - Descripción: Se actualizaron las tarjetas de la página principal (`index.html`): los iconos se aumentaron al doble, las tarjetas usan fondo blanco con texto oscuro, los títulos y textos son más grandes y gruesos, la tarjeta "Configuración" fue renombrada a "Hotel", se añadieron descripciones breves a cada tarjeta y se unificó la acción a un único botón "Ver más" con nuevo estilo.
+     - Verificación: Abrir `http://localhost:8080/index.html` y comprobar que las tarjetas muestran iconos grandes, fondo blanco, texto oscuro legible y un botón "Ver más" con estilo prominente.
+
  - 2026-04-13: Correccion de persistencia en estaciones (no desaparicion tras guardar) y validacion integral
      - Archivos modificados:
          - backend/db/empresa_estacion_prefs.go
