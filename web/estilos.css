@@ -507,6 +507,7 @@ html.theme-light .floating-menu #themeToggle{color:var(--accent-2)}
 #estacionesGrid{
   --station-card-scale: 1;
   --station-card-min: 10.5em;
+  --station-card-height: 8.4em;
   --station-gap: 8px;
   /* font-size here controls scaling of card internals (use em in children) */
   font-size: calc(1rem * var(--station-card-scale));
@@ -517,9 +518,9 @@ html.theme-light .floating-menu #themeToggle{color:var(--accent-2)}
   justify-items: center;
   width: 100%;
 }
-#estacionesGrid.station-size-small{ --station-card-scale: 0.85; --station-card-min: 9.5em; }
-#estacionesGrid.station-size-medium{ --station-card-scale: 1; --station-card-min: 10.5em; }
-#estacionesGrid.station-size-large{ --station-card-scale: 1.25; --station-card-min: 12.5em; }
+#estacionesGrid.station-size-small{ --station-card-scale: 0.85; --station-card-min: 9.5em; --station-card-height: 7.2em; }
+#estacionesGrid.station-size-medium{ --station-card-scale: 1; --station-card-min: 10.5em; --station-card-height: 8.4em; }
+#estacionesGrid.station-size-large{ --station-card-scale: 1.25; --station-card-min: 12.5em; --station-card-height: 10.0em; }
 
 #estacionesGrid .portal-card{
   background: var(--station-state-bg, #fff9ef);
@@ -528,12 +529,14 @@ html.theme-light .floating-menu #themeToggle{color:var(--accent-2)}
   align-items: center;
   text-align: center;
   width: 100%;
-  min-height: 6.6em;
+  height: var(--station-card-height);
   padding: 0.7em;
   border-radius: 0.5em;
   display:flex;
   flex-direction:column;
   justify-content:space-between;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 #estacionesGrid .portal-card.station-card-active{

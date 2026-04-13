@@ -329,14 +329,12 @@
           }
         }
 
-        return '<article class="portal-card ' + stationClass + '" style="--station-state-bg:' + sanitize(stationColor) + ';" data-estacion-id="' + stationID + '" data-estacion-nombre="' + sanitize(est.nombre) + '" data-venta-simple="' + (useSimpleSales ? '1' : '0') + '" data-mostrar-total="' + (useMostrarTotal ? '1' : '0') + '" tabindex="0" role="button" aria-label="Abrir estación ' + sanitize(est.nombre) + '">' +
-          '<div class="station-sensor-indicator" style="background-color:' + sanitize(sensorColor) + '"></div>' +
-          '<h3>' + sanitize(est.nombre) + '</h3>' +
-          '<p>Estación #' + stationID + '</p>' +
-          '<p class="station-mode-label">' + modeText + '</p>' +
-          entradaHtml +
-          '<span class="station-status-badge ' + badgeClass + '">' + badgeText + '</span>' +
-          '</article>';
+          return '<article class="portal-card ' + stationClass + '" style="--station-state-bg:' + sanitize(stationColor) + ';" data-estacion-id="' + stationID + '" data-estacion-nombre="' + sanitize(est.nombre) + '" data-venta-simple="' + (useSimpleSales ? '1' : '0') + '" data-mostrar-total="' + (useMostrarTotal ? '1' : '0') + '" tabindex="0" role="button" aria-label="Abrir estación ' + sanitize(est.nombre) + '">' +
+            '<div class="station-sensor-indicator" style="background-color:' + sanitize(sensorColor) + '"></div>' +
+            '<h3>' + sanitize(est.nombre) + '</h3>' +
+            entradaHtml +
+            '<span class="station-status-badge ' + badgeClass + '" aria-label="' + sanitize(badgeText) + '"></span>' +
+            '</article>';
       }).join('');
 
       grid.querySelectorAll('.portal-card').forEach(card => {
