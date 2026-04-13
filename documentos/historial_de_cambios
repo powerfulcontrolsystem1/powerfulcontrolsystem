@@ -8530,3 +8530,38 @@ Archivos modificados:
 - web/administrar_empresa/estaciones.html
 - web/estilos.css
 - web/index.html
+
+2026-04-13: Actualizacion automatica desde script: anadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- Pendiente Notas
+- backend/db/db.go
+- backend/handlers/payments_handlers.go
+- backend/handlers/vendedor_config_handlers.go
+- backend/handlers/vendedores_handlers.go
+- backend/logs/empresa_1.log
+- backend/logs/empresa_6.log
+- backend/logs/empresa_global.log
+- backend/logs/server_reinicio.log
+- backend/logs/server_runtime_state.json
+- backend/main.go
+- backend/server.exe
+- backend/tools/create_session.go
+- backend/tools/insert_asesor.go
+- backend/tools/insert_licencia.go
+- backend/tools/insert_plan.go
+- backend/tools/query_pagos_comisiones.go
+- documentos/descripcion_de_archivos
+- documentos/estructura_bd.md
+- documentos/historial_de_cambios
+- scripts/logs/actualizar_repositorio-20260413-134117.log
+- scripts/logs/actualizar_repositorio-20260413-184545.log
+- web/administrar_empresa/estaciones.html
+- web/administrar_empresa/ultimos_movimientos_de_caja.html
+- web/estilos.css
+- web/index.html
+- web/pagar_licencia.html
+- web/super/activar_asesor.html
+- web/super/asesor_comercial.html
+- web/super/vendedor_config_avanzado.html
