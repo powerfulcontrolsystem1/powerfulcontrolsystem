@@ -9,7 +9,75 @@ function getQueryParam(name) {
   return params.get(name);
 }
 
-var empresaID = Number(getQueryParam("empresa_id") || getQueryParam("id") || 0);
+function parsePositiveInt(value) {
+  var n = Number(String(value == null ? "" : value).trim());
+  if (!Number.isFinite(n)) return 0;
+  n = Math.trunc(n);
+  return n > 0 ? n : 0;
+}
+
+function readEmpresaIDFromStorage() {
+  var keys = ["active_empresa_id", "empresa_id", "admin_empresa_id", "rememberEmpresaID"];
+  var stores = [];
+  try {
+    stores.push(window.sessionStorage);
+  } catch (e) {}
+  try {
+    stores.push(window.localStorage);
+  } catch (e) {}
+
+  for (var s = 0; s < stores.length; s += 1) {
+    var store = stores[s];
+    if (!store) continue;
+    for (var i = 0; i < keys.length; i += 1) {
+      var raw = "";
+      try {
+        raw = store.getItem(keys[i]) || "";
+      } catch (e) {
+        raw = "";
+      }
+      var parsed = parsePositiveInt(raw);
+      if (parsed > 0) return parsed;
+    }
+  }
+  return 0;
+}
+
+function resolveEmpresaID() {
+  var queryID = parsePositiveInt(getQueryParam("empresa_id") || getQueryParam("id"));
+  if (queryID > 0) return queryID;
+  return readEmpresaIDFromStorage();
+}
+
+var rememberKey = "rememberUsuarioEmpresa";
+var rememberedEmailKey = "rememberedUsuarioEmail";
+var rememberedEmpresaIDKey = "rememberEmpresaID";
+
+function clearRememberedUsuario() {
+  try {
+    localStorage.removeItem(rememberKey);
+    localStorage.removeItem(rememberedEmailKey);
+    localStorage.removeItem(rememberedEmpresaIDKey);
+  } catch (e) {}
+}
+
+function persistRememberedUsuario(email) {
+  var rememberCheckbox = document.getElementById("rememberUsuario");
+  var shouldRemember = !!(rememberCheckbox && rememberCheckbox.checked);
+  if (!shouldRemember) {
+    clearRememberedUsuario();
+    return;
+  }
+  try {
+    localStorage.setItem(rememberKey, "1");
+    localStorage.setItem(rememberedEmailKey, String(email || "").trim());
+    if (empresaID > 0) {
+      localStorage.setItem(rememberedEmpresaIDKey, String(empresaID));
+    }
+  } catch (e) {}
+}
+
+var empresaID = resolveEmpresaID();
 var tokenRecuperacionPrefill = (getQueryParam("token_recuperacion") || "").trim();
 var emailRecuperacionPrefill = (getQueryParam("email") || "").trim();
 
@@ -124,10 +192,12 @@ document.getElementById("loginUsuarioForm").addEventListener("submit", async fun
 
     var body = await res.json();
     if (body && body.password_setup_required) {
+      persistRememberedUsuario(email);
       showSetupForm(email, body.message || "Primer ingreso detectado. Define tu contrasena para continuar.");
       return;
     }
     if (body && body.password_rotation_required) {
+      persistRememberedUsuario((body.email || email || "").trim());
       showChangePasswordForm(
         (body.email || email || "").trim(),
         body.message || "Debes actualizar tu contrasena para continuar."
@@ -135,6 +205,7 @@ document.getElementById("loginUsuarioForm").addEventListener("submit", async fun
       return;
     }
 
+    persistRememberedUsuario(email);
     var redirectURL = body && body.redirect_url ? String(body.redirect_url) : "/administrar_empresa.html";
     window.location.href = redirectURL;
   } catch (err) {
@@ -191,6 +262,7 @@ document.getElementById("setupPasswordForm").addEventListener("submit", async fu
     }
 
     var body = await res.json();
+    persistRememberedUsuario(email);
     var redirectURL = body && body.redirect_url ? String(body.redirect_url) : "/administrar_empresa.html";
     window.location.href = redirectURL;
   } catch (err) {
@@ -294,6 +366,7 @@ document.getElementById("resetPasswordForm").addEventListener("submit", async fu
     }
 
     var body = await res.json();
+    persistRememberedUsuario(email);
     var redirectURL = body && body.redirect_url ? String(body.redirect_url) : "/administrar_empresa.html";
     window.location.href = redirectURL;
   } catch (err) {
@@ -350,6 +423,7 @@ document.getElementById("changePasswordForm").addEventListener("submit", async f
     }
 
     var body = await res.json();
+    persistRememberedUsuario(email);
     var redirectURL = body && body.redirect_url ? String(body.redirect_url) : "/administrar_empresa.html";
     window.location.href = redirectURL;
   } catch (err) {
@@ -385,6 +459,42 @@ document.getElementById("btnVolverDesdeReset").addEventListener("click", functio
 document.getElementById("btnVolverDesdeCambio").addEventListener("click", function () {
   showLoginForm();
 });
+
+(function bootstrapRememberedUsuario() {
+  var emailInput = document.getElementById("email");
+  var rememberCheckbox = document.getElementById("rememberUsuario");
+
+  if (!emailInput || !rememberCheckbox) {
+    return;
+  }
+
+  try {
+    if (localStorage.getItem(rememberKey) === "1") {
+      rememberCheckbox.checked = true;
+      if (!emailInput.value) {
+        emailInput.value = String(localStorage.getItem(rememberedEmailKey) || "").trim();
+      }
+    }
+  } catch (e) {}
+
+  if (emailRecuperacionPrefill) {
+    emailInput.value = emailRecuperacionPrefill;
+  }
+
+  rememberCheckbox.addEventListener("change", function () {
+    if (!rememberCheckbox.checked) {
+      clearRememberedUsuario();
+      return;
+    }
+    persistRememberedUsuario((emailInput.value || "").trim());
+  });
+
+  emailInput.addEventListener("blur", function () {
+    if (rememberCheckbox.checked) {
+      persistRememberedUsuario((emailInput.value || "").trim());
+    }
+  });
+})();
 
 if (tokenRecuperacionPrefill) {
   showResetForm(emailRecuperacionPrefill, tokenRecuperacionPrefill, "Token detectado en la URL. Completa tu nueva contrasena para continuar.");

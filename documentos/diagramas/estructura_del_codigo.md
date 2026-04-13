@@ -56,6 +56,41 @@ flowchart TD
 ## Regla de mantenimiento
 Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe reflejarse en este documento y en los diagramas relacionados dentro de documentos/diagramas/.
 
+## Actualizacion 2026-04-12 (propagacion robusta de `empresa_id` en panel administrar_empresa)
+
+- Frontend shell:
+  - `web/js/administrar_empresa.js`:
+    - agrega resolucion de `empresa_id` desde URL actual, URL del parent y storage (`sessionStorage`/`localStorage`).
+    - persiste contexto de empresa activa (`active_empresa_id`, `empresa_id`, `admin_empresa_id`) para iframes anidados.
+    - corrige navegaciones internas de iframe que pierden `empresa_id`, reescribiendo `src` con el parámetro obligatorio.
+
+- Frontend subpaginas operativas:
+  - `web/administrar_empresa/configuracion.html`
+  - `web/administrar_empresa/estaciones.html`
+  - `web/administrar_empresa/configuracion_de_estaciones.html`
+  - `web/administrar_empresa/inicio.html`
+  - `web/administrar_empresa/auditoria.html`
+  - `web/administrar_empresa/administrar_productos.html`
+  - `web/administrar_empresa/sensor_puertas_mensajes.html`
+    - ahora resuelven `empresa_id` desde contexto activo (URL, parent y storage), evitando falsos negativos de "empresa no seleccionada" cuando la empresa ya está abierta en el shell principal.
+
+### Diagrama de flujo (resolucion de empresa en iframes)
+
+```mermaid
+flowchart TD
+    A[Subpagina cargar] --> B{empresa_id en URL actual?}
+    B -->|Si| C[Usar empresa_id]
+    B -->|No| D{Parent expone contexto?}
+    D -->|Si| E[Tomar empresa_id del parent]
+    D -->|No| F{Storage tiene empresa activa?}
+    F -->|Si| G[Tomar empresa_id de storage]
+    F -->|No| H[Mostrar validacion de empresa faltante]
+    C --> I[Persistir empresa activa en storage]
+    E --> I
+    G --> I
+    I --> J[Consumir APIs /api/empresa/* con empresa_id]
+```
+
 ## Actualizacion 2026-04-12 (login administrativo: OAuth + contrato + reCAPTCHA)
 
 - Backend handlers:

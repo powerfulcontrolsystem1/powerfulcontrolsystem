@@ -1,5 +1,28 @@
 Descripcion de archivos del proyecto
 
+Actualizacion 2026-04-13: Reparacion integral de acceso empresa y configuracion de estaciones
+ - Archivos modificados:
+		- web/login_usuario.html (checkbox `Recordar usuario` en login de empresa)
+		- web/js/login_usuario.js (persistencia de correo recordado por empresa y resolucion robusta de `empresa_id`)
+		- web/js/seleccionar_empresa.js (persistencia de contexto empresarial y navegacion con `id` + `empresa_id`)
+		- web/administrar_empresa/configuracion_de_estaciones.html (reconstruccion completa y flujo estable de estaciones/sensores)
+		- documentos/diagramas/diagrama_flujo_procesos.md (flujo actualizado para login/seleccion/estaciones)
+		- documentos/diagramas/versionado.md (nuevo registro de version documental)
+ - Descripcion: Se corrigen fallas de continuidad de contexto en login y seleccion de empresa, y se normaliza la pagina de configuracion de estaciones para soportar generacion/visualizacion de multiples estaciones y sincronizacion de carritos sin bloquearse por conflictos idempotentes.
+
+Actualizacion 2026-04-12: Contexto robusto de empresa en panel administrar_empresa (evita falsos "sin empresa seleccionada")
+ - Archivos modificados:
+		- web/js/administrar_empresa.js (resolucion y persistencia de `empresa_id`; autocorreccion de iframes sin parametro)
+		- web/administrar_empresa/configuracion.html (resolucion de `empresa_id` por URL/parent/storage)
+		- web/administrar_empresa/estaciones.html (resolucion de `empresa_id` por URL/parent/storage)
+		- web/administrar_empresa/configuracion_de_estaciones.html (resolucion de `empresa_id` por URL/parent/storage en ambos bloques script)
+		- web/administrar_empresa/inicio.html (resolucion de `empresa_id` por URL/parent/storage)
+		- web/administrar_empresa/auditoria.html (resolucion de `empresa_id` por URL/parent/storage)
+		- web/administrar_empresa/administrar_productos.html (resolucion de `empresa_id` por URL/parent/storage)
+		- web/administrar_empresa/sensor_puertas_mensajes.html (resolucion de `empresa_id` por URL/parent/storage)
+		- documentos/diagramas/estructura_del_codigo.md (diagrama y notas de flujo actualizadas)
+ - Descripcion: Se corrige el manejo de contexto empresarial en vistas anidadas (iframe/submenu), garantizando herencia de `empresa_id` desde el shell principal y storage para que las operaciones no fallen cuando la empresa ya está seleccionada.
+
 Nota 2026-04-12: Se eliminó la validación reCAPTCHA del flujo de aceptación de contrato. El archivo `web/accept.html` fue actualizado para mostrar una tarjeta centrada y botones centralizados; el backend ya no valida tokens reCAPTCHA en `/accept/complete`.
 
 Actualizacion 2026-04-12: Flujo final de login administrativo con aceptación única y reCAPTCHA real

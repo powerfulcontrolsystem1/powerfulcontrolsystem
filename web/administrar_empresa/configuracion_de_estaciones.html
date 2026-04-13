@@ -25,103 +25,28 @@
           </div>
           <div class="form-col">
             <label class="form-label">Token del dispositivo (opcional)</label>
-            <div style="display:flex;gap:8px;align-items:center">
-              <input id="deviceToken" class="form-input" placeholder="Token para autenticación">
+            <input id="deviceToken" class="form-input" placeholder="Token para autenticación">
+            <div class="form-actions">
               <button id="generateToken" class="btn secondary" type="button">Generar</button>
             </div>
           </div>
         </div>
         <div class="form-actions">
-          <button class="btn add" id="saveBtn">Guardar</button>
+          <button class="btn add" id="saveBtn" type="button">Guardar</button>
         </div>
-        <p class="form-help">Registra el identificador único que traen las Raspberry Pi y asócialo a la estación que debe mostrar el indicador.</p>
+        <p class="form-help">Registra el identificador único de cada Raspberry Pi y asócialo a la estación correspondiente.</p>
       </div>
 
-      <div id="devicesList" class="form" style="margin-top:12px">
+      <div id="devicesList" class="form">
         <h3>Dispositivos registrados</h3>
         <div id="devicesTable" class="table-block">Cargando...</div>
       </div>
     </section>
-  </div>
 
-  <script>
-    const empresaId = Number(new URLSearchParams(window.location.search).get('empresa_id') || 0);
-
-    async function loadDevices() {
-      const container = document.getElementById('devicesTable');
-      container.innerHTML = 'Cargando...';
-      if (!empresaId) { container.innerHTML = 'Falta empresa_id en la URL'; return; }
-      try {
-        const res = await fetch('/api/empresa/sensor_puertas?empresa_id=' + encodeURIComponent(empresaId), { credentials: 'same-origin' });
-        if (!res.ok) { container.innerHTML = 'Error al cargar dispositivos'; return; }
-        const devices = await res.json();
-        if (!Array.isArray(devices) || devices.length === 0) { container.innerHTML = '<p class="form-help">No hay dispositivos registrados.</p>'; return; }
-        const rows = devices.map(d => '<div class="table" style="margin-bottom:8px;padding:8px;border-radius:8px;border:1px solid var(--border)"><strong>' + (d.device_id || '') + '</strong> — Estación: ' + (d.estacion_id || 'no asociada') + ' — Estado: ' + (d.last_state || '') + ' — Última señal: ' + (d.last_seen || '') + '</div>').join('');
-        container.innerHTML = rows;
-      } catch (err) {
-        container.innerHTML = 'Error: ' + String(err);
-      }
-    }
-
-    async function saveDevice() {
-      const deviceId = String((document.getElementById('deviceId')).value || '').trim();
-      const estacionId = Number((document.getElementById('estacionId')).value || 0);
-      const deviceToken = String((document.getElementById('deviceToken')).value || '').trim();
-      if (!deviceId) { alert('Ingrese device_id'); return; }
-      if (!empresaId) { alert('Falta empresa_id en la URL'); return; }
-      try {
-        const res = await fetch('/api/empresa/sensor_puertas?empresa_id=' + encodeURIComponent(empresaId), {
-          method: 'POST',
-          credentials: 'same-origin',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ device_id: deviceId, estacion_id: estacionId, device_token: deviceToken })
-        });
-        if (!res.ok) { alert('Error guardando dispositivo'); return; }
-        const body = await res.json();
-        if (body && body.ok) {
-          alert('Guardado');
-          document.getElementById('deviceId').value = '';
-          document.getElementById('estacionId').value = '';
-          loadDevices();
-        } else {
-          alert('No se pudo guardar');
-        }
-      } catch (err) {
-        alert('Error: ' + String(err));
-      }
-    }
-
-    document.getElementById('saveBtn').addEventListener('click', ev => { ev.preventDefault(); saveDevice(); });
-    document.getElementById('generateToken').addEventListener('click', ev => { ev.preventDefault();
-      // generar token hex de 24 bytes
-      try {
-        const arr = new Uint8Array(24);
-        window.crypto.getRandomValues(arr);
-        const token = Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
-        document.getElementById('deviceToken').value = token;
-      } catch (e) {
-        alert('No se pudo generar token: ' + String(e));
-      }
-    });
-
-    loadDevices();
-  </script>
-</body>
-</html>
-<!doctype html>
-<html lang="es">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Configuración de estaciones</title>
-  <link rel="stylesheet" href="/estilos.css">
-</head>
-<body class="empresa-subpage">
-  <div class="container empresa-module">
     <section class="card empresa-section">
       <h1>Configuración de estaciones</h1>
       <p id="empresaInfo">Empresa: cargando...</p>
-      <p class="form-help">Define cuántas estaciones quieres, el nombre de cada una y si usará venta simple tipo supermercado.</p>
+      <p class="form-help">Define cuántas estaciones deseas, su nombre y si usarán venta simple.</p>
     </section>
 
     <section class="card empresa-section">
@@ -140,7 +65,6 @@
         <div class="form-actions">
           <button id="btnGuardarApariencia" class="btn" type="button">Guardar apariencia</button>
         </div>
-        <p class="form-help">Ajusta el tamaño de las tarjetas de estación; la opción se guarda en la configuración global de estaciones.</p>
       </div>
     </section>
 
@@ -174,8 +98,16 @@
             <tr>
               <th>#</th>
               <th>Nombre de estación</th>
-              <th>Venta simple<br><label><input id="masterVentaSimple" type="checkbox" title="Marcar/desmarcar venta simple para todas"></label></th>
-              <th>Mostrar total<br><label><input id="masterMostrarTotal" type="checkbox" title="Marcar/desmarcar mostrar total para todas"></label></th>
+              <th>
+                Venta simple
+                <br>
+                <label><input id="masterVentaSimple" type="checkbox" title="Marcar/desmarcar venta simple para todas"></label>
+              </th>
+              <th>
+                Mostrar total
+                <br>
+                <label><input id="masterMostrarTotal" type="checkbox" title="Marcar/desmarcar mostrar total para todas"></label>
+              </th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -185,8 +117,50 @@
   </div>
 
   <script>
-    const empresaId = Number(new URLSearchParams(window.location.search).get('empresa_id') || 0);
-    const messageBox = document.getElementById('messageBox');
+    function parsePositiveInt(raw) {
+      var n = Number(String(raw == null ? '' : raw).trim());
+      if (!Number.isFinite(n)) return 0;
+      n = Math.trunc(n);
+      return n > 0 ? n : 0;
+    }
+
+    function resolveEmpresaIdFromContext() {
+      try {
+        var params = new URLSearchParams(window.location.search || '');
+        var own = parsePositiveInt(params.get('empresa_id') || params.get('id'));
+        if (own > 0) return own;
+      } catch (e) {}
+
+      try {
+        if (window.parent && window.parent !== window) {
+          if (typeof window.parent.__resolveEmpresaIdContext === 'function') {
+            var parentResolved = parsePositiveInt(window.parent.__resolveEmpresaIdContext());
+            if (parentResolved > 0) return parentResolved;
+          }
+          var parentParams = new URLSearchParams(window.parent.location.search || '');
+          var fromParent = parsePositiveInt(parentParams.get('empresa_id') || parentParams.get('id'));
+          if (fromParent > 0) return fromParent;
+        }
+      } catch (e) {}
+
+      try {
+        var candidates = [
+          sessionStorage.getItem('active_empresa_id'),
+          sessionStorage.getItem('empresa_id'),
+          localStorage.getItem('active_empresa_id'),
+          localStorage.getItem('empresa_id')
+        ];
+        for (var i = 0; i < candidates.length; i += 1) {
+          var parsed = parsePositiveInt(candidates[i]);
+          if (parsed > 0) return parsed;
+        }
+      } catch (e) {}
+
+      return 0;
+    }
+
+    var empresaId = resolveEmpresaIdFromContext();
+    var messageBox = document.getElementById('messageBox');
 
     function showMessage(text, type) {
       messageBox.textContent = text || '';
@@ -198,29 +172,39 @@
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
+        .replace(/\"/g, '&quot;')
         .replace(/'/g, '&#39;');
     }
 
     function toBool(v) {
       if (typeof v === 'boolean') return v;
       if (typeof v === 'number') return v === 1;
-      const raw = String(v == null ? '' : v).trim().toLowerCase();
+      var raw = String(v == null ? '' : v).trim().toLowerCase();
       return raw === '1' || raw === 'true' || raw === 'si' || raw === 'sí';
     }
 
+    function normalizeText(v) {
+      return String(v == null ? '' : v).trim().toLowerCase();
+    }
+
+    function normalizedCode(value) {
+      return String(value == null ? '' : value).trim().toUpperCase();
+    }
+
     async function requestJSON(url, options) {
-      const resp = await fetch(url, Object.assign({ credentials: 'same-origin' }, options || {}));
-      const contentType = resp.headers.get('content-type') || '';
-      let data = null;
-      if (contentType.includes('application/json')) {
-        data = await resp.json();
+      var response = await fetch(url, Object.assign({ credentials: 'same-origin' }, options || {}));
+      var contentType = response.headers.get('content-type') || '';
+      var data = null;
+
+      if (contentType.indexOf('application/json') !== -1) {
+        data = await response.json();
       } else {
-        data = await resp.text();
+        data = await response.text();
       }
-      if (!resp.ok) {
-        const msg = typeof data === 'string' ? data : (data && data.error ? data.error : 'error de servidor');
-        throw new Error(msg || ('HTTP ' + resp.status));
+
+      if (!response.ok) {
+        var msg = typeof data === 'string' ? data : (data && data.error ? data.error : 'error de servidor');
+        throw new Error(msg || ('HTTP ' + response.status));
       }
       return data;
     }
@@ -229,114 +213,143 @@
       return 'EST-' + empresaId + '-' + stationID;
     }
 
-    function normalizedCode(value) {
-      return String(value || '').trim().toUpperCase();
-    }
-
     function isStationCarrito(item) {
-      const code = normalizedCode(item && item.codigo);
-      const expectedPrefix = normalizedCode('EST-' + empresaId + '-');
-      return !!code && code.startsWith(expectedPrefix);
+      var code = normalizedCode(item && item.codigo);
+      var expectedPrefix = normalizedCode('EST-' + empresaId + '-');
+      return !!code && code.indexOf(expectedPrefix) === 0;
     }
 
-    // --- DB-backed config: always use server persistence (empresa_estacion_prefs, clave=estaciones_config, estacion_id=0)
+    async function loadDevices() {
+      var container = document.getElementById('devicesTable');
+      container.innerHTML = 'Cargando...';
+
+      if (!empresaId) {
+        container.innerHTML = 'Falta empresa_id en la URL';
+        return;
+      }
+
+      try {
+        var res = await fetch('/api/empresa/sensor_puertas?empresa_id=' + encodeURIComponent(empresaId), { credentials: 'same-origin' });
+        if (!res.ok) {
+          container.innerHTML = 'Error al cargar dispositivos';
+          return;
+        }
+
+        var devices = await res.json();
+        if (!Array.isArray(devices) || !devices.length) {
+          container.innerHTML = '<p class="form-help">No hay dispositivos registrados.</p>';
+          return;
+        }
+
+        var rows = devices.map(function (d) {
+          return '<tr>' +
+            '<td><strong>' + sanitize(d.device_id || '') + '</strong></td>' +
+            '<td>' + sanitize(d.estacion_id || 'no asociada') + '</td>' +
+            '<td>' + sanitize(d.last_state || '') + '</td>' +
+            '<td>' + sanitize(d.last_seen || '') + '</td>' +
+            '</tr>';
+        }).join('');
+
+        container.innerHTML = '<div class="table-wrap">' +
+          '<table class="table">' +
+          '<thead><tr><th>Dispositivo</th><th>Estación</th><th>Estado</th><th>Última señal</th></tr></thead>' +
+          '<tbody>' + rows + '</tbody>' +
+          '</table>' +
+          '</div>';
+      } catch (err) {
+        container.innerHTML = 'Error: ' + sanitize(String(err && err.message ? err.message : err));
+      }
+    }
+
+    async function saveDevice() {
+      var deviceId = String(document.getElementById('deviceId').value || '').trim();
+      var estacionId = Number(document.getElementById('estacionId').value || 0);
+      var deviceToken = String(document.getElementById('deviceToken').value || '').trim();
+
+      if (!deviceId) {
+        showMessage('Ingresa el identificador del dispositivo.', 'error');
+        return;
+      }
+      if (!empresaId) {
+        showMessage('Falta empresa_id en la URL.', 'error');
+        return;
+      }
+
+      try {
+        var result = await requestJSON('/api/empresa/sensor_puertas?empresa_id=' + encodeURIComponent(empresaId), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ device_id: deviceId, estacion_id: estacionId, device_token: deviceToken })
+        });
+        if (result && result.ok) {
+          document.getElementById('deviceId').value = '';
+          document.getElementById('estacionId').value = '';
+          showMessage('Dispositivo guardado correctamente.', 'success');
+          await loadDevices();
+          return;
+        }
+        showMessage('No se pudo guardar el dispositivo.', 'error');
+      } catch (err) {
+        showMessage(err.message || 'No se pudo guardar el dispositivo.', 'error');
+      }
+    }
+
+    function normalizeConfig(cfg) {
+      var cantidad = Math.max(1, Math.min(500, Number(cfg && cfg.cantidad ? cfg.cantidad : 1)));
+      var estaciones = cfg && Array.isArray(cfg.estaciones) ? cfg.estaciones : [];
+      var out = [];
+
+      for (var i = 0; i < cantidad; i += 1) {
+        var current = estaciones[i] || {};
+        var nombre = String(current.nombre || '').trim();
+        out.push({
+          id: i + 1,
+          nombre: nombre || ('Estación ' + (i + 1)),
+          venta_simple_habilitada: toBool(current.venta_simple_habilitada) || toBool(current.modo_venta_simple),
+          mostrar_total: current.mostrar_total === undefined ? true : toBool(current.mostrar_total)
+        });
+      }
+
+      var validSizes = ['small', 'medium', 'large'];
+      var requested = String((cfg && (cfg.card_size || cfg.cardSize)) || '').trim().toLowerCase();
+      var cardSize = validSizes.indexOf(requested) !== -1 ? requested : 'medium';
+      return { cantidad: cantidad, estaciones: out, card_size: cardSize };
+    }
+
     async function getConfigFromServer() {
       if (!empresaId) return null;
       try {
-        const data = await requestJSON('/api/empresa/estacion_prefs?empresa_id=' + encodeURIComponent(empresaId));
-        const prefs = data && data.prefs ? data.prefs : [];
-        if (!Array.isArray(prefs) || prefs.length === 0) return null;
-        const pref = prefs.find(p => p && String(p.clave) === 'estaciones_config' && Number(p.estacion_id) === 0);
+        var data = await requestJSON('/api/empresa/estacion_prefs?empresa_id=' + encodeURIComponent(empresaId));
+        var prefs = data && data.prefs ? data.prefs : [];
+        if (!Array.isArray(prefs) || !prefs.length) return null;
+
+        var pref = prefs.find(function (p) {
+          return p && String(p.clave) === 'estaciones_config' && Number(p.estacion_id) === 0;
+        });
         if (!pref || !pref.valor) return null;
-        try {
-          const parsed = JSON.parse(pref.valor);
-          return normalizeConfig(parsed);
-        } catch (err) {
-          console.error('parse estaciones_config:', err);
-          return null;
-        }
+
+        return normalizeConfig(JSON.parse(pref.valor));
       } catch (err) {
-        console.error('getConfigFromServer error:', err);
+        console.warn('getConfigFromServer:', err);
         return null;
       }
     }
 
     async function saveConfigToServer(cfg) {
       if (!empresaId) throw new Error('empresa_id missing');
-      const existing = await getConfigFromServer().catch(() => null);
-      const normalized = normalizeConfig(cfg || {});
-      // Preserve existing card_size when caller did not provide it
-      if ((cfg == null || !('card_size' in cfg)) && existing && existing.card_size) {
-        normalized.card_size = existing.card_size;
-      }
-      normalized.card_size = normalized.card_size || 'medium';
-      const payload = { estacion_id: 0, clave: 'estaciones_config', valor: JSON.stringify(normalized) };
-      const res = await requestJSON('/api/empresa/estacion_prefs', {
+      var normalized = normalizeConfig(cfg || {});
+      await requestJSON('/api/empresa/estacion_prefs?empresa_id=' + encodeURIComponent(empresaId), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({ estacion_id: 0, clave: 'estaciones_config', valor: JSON.stringify(normalized) })
       });
-      return res;
-    }
-
-    function normalizeConfig(cfg) {
-      const cantidad = Math.max(1, Math.min(500, Number(cfg.cantidad || 1)));
-      const estaciones = Array.isArray(cfg.estaciones) ? cfg.estaciones : [];
-      const out = [];
-      for (let i = 0; i < cantidad; i++) {
-        const current = estaciones[i] || {};
-        const nombre = String(current.nombre || '').trim();
-        const ventaSimpleHabilitada = toBool(current.venta_simple_habilitada) || toBool(current.modo_venta_simple);
-        out.push({
-          id: i + 1,
-          nombre: nombre || ('Estación ' + (i + 1)),
-          venta_simple_habilitada: ventaSimpleHabilitada,
-          mostrar_total: current.mostrar_total === undefined ? true : toBool(current.mostrar_total)
-        });
-      }
-      // card_size: small | medium | large
-      const validSizes = ['small', 'medium', 'large'];
-      const requested = String(cfg.card_size || cfg.cardSize || '').trim().toLowerCase();
-      const card_size = validSizes.indexOf(requested) !== -1 ? requested : (cfg.card_size || 'medium');
-      return { cantidad, estaciones: out, card_size };
-    }
-
-    function renderRows(cfg) {
-      const tbody = document.querySelector('#estacionesTable tbody');
-      if (!cfg.estaciones.length) {
-        tbody.innerHTML = '<tr><td colspan="4">No hay estaciones configuradas.</td></tr>';
-        return;
-      }
-      tbody.innerHTML = cfg.estaciones.map((est, idx) => {
-        return '<tr>' +
-          '<td>' + (idx + 1) + '</td>' +
-          '<td><input class="form-input" data-idx="' + idx + '" value="' + sanitize(est.nombre) + '"></td>' +
-          '<td><label><input type="checkbox" data-simple-idx="' + idx + '" ' + (est.venta_simple_habilitada ? 'checked' : '') + '> Activar ventas_simple</label></td>' +
-          '<td><label><input type="checkbox" data-mostrar-total-idx="' + idx + '" ' + (est.mostrar_total !== false ? 'checked' : '') + '> Mostrar total</label></td>' +
-          '</tr>';
-      }).join('');
-
-      // enlazar escuchas para actualizar los checkboxes maestros cuando cambien filas
-      const simpleInputs = tbody.querySelectorAll('input[data-simple-idx]');
-      const totalInputs = tbody.querySelectorAll('input[data-mostrar-total-idx]');
-      simpleInputs.forEach(function(el) { el.addEventListener('change', updateMasterCheckboxes); });
-      totalInputs.forEach(function(el) { el.addEventListener('change', updateMasterCheckboxes); });
-      updateMasterCheckboxes();
-    }
-
-    function setAllVentaSimple(checked) {
-      document.querySelectorAll('#estacionesTable tbody input[data-simple-idx]').forEach(function(el) { el.checked = !!checked; });
-    }
-
-    function setAllMostrarTotal(checked) {
-      document.querySelectorAll('#estacionesTable tbody input[data-mostrar-total-idx]').forEach(function(el) { el.checked = !!checked; });
     }
 
     function updateMasterCheckboxes() {
-      const masterSimple = document.getElementById('masterVentaSimple');
-      const masterMostrar = document.getElementById('masterMostrarTotal');
-      const simpleInputs = Array.from(document.querySelectorAll('#estacionesTable tbody input[data-simple-idx]'));
-      const totalInputs = Array.from(document.querySelectorAll('#estacionesTable tbody input[data-mostrar-total-idx]'));
+      var masterSimple = document.getElementById('masterVentaSimple');
+      var masterMostrar = document.getElementById('masterMostrarTotal');
+      var simpleInputs = Array.prototype.slice.call(document.querySelectorAll('#estacionesTable tbody input[data-simple-idx]'));
+      var totalInputs = Array.prototype.slice.call(document.querySelectorAll('#estacionesTable tbody input[data-mostrar-total-idx]'));
 
       if (masterSimple) {
         if (!simpleInputs.length) {
@@ -344,11 +357,11 @@
           masterSimple.indeterminate = false;
           masterSimple.disabled = true;
         } else {
+          var allSimple = simpleInputs.every(function (i) { return i.checked; });
+          var noneSimple = simpleInputs.every(function (i) { return !i.checked; });
           masterSimple.disabled = false;
-          const all = simpleInputs.every(i => i.checked);
-          const none = simpleInputs.every(i => !i.checked);
-          masterSimple.checked = all;
-          masterSimple.indeterminate = !all && !none;
+          masterSimple.checked = allSimple;
+          masterSimple.indeterminate = !allSimple && !noneSimple;
         }
       }
 
@@ -358,49 +371,162 @@
           masterMostrar.indeterminate = false;
           masterMostrar.disabled = true;
         } else {
+          var allTotal = totalInputs.every(function (i) { return i.checked; });
+          var noneTotal = totalInputs.every(function (i) { return !i.checked; });
           masterMostrar.disabled = false;
-          const all = totalInputs.every(i => i.checked);
-          const none = totalInputs.every(i => !i.checked);
-          masterMostrar.checked = all;
-          masterMostrar.indeterminate = !all && !none;
+          masterMostrar.checked = allTotal;
+          masterMostrar.indeterminate = !allTotal && !noneTotal;
         }
       }
     }
 
+    function setAllVentaSimple(checked) {
+      var inputs = document.querySelectorAll('#estacionesTable tbody input[data-simple-idx]');
+      for (var i = 0; i < inputs.length; i += 1) {
+        inputs[i].checked = !!checked;
+      }
+      updateMasterCheckboxes();
+    }
+
+    function setAllMostrarTotal(checked) {
+      var inputs = document.querySelectorAll('#estacionesTable tbody input[data-mostrar-total-idx]');
+      for (var i = 0; i < inputs.length; i += 1) {
+        inputs[i].checked = !!checked;
+      }
+      updateMasterCheckboxes();
+    }
+
+    function renderRows(cfg) {
+      var tbody = document.querySelector('#estacionesTable tbody');
+      if (!cfg || !cfg.estaciones || !cfg.estaciones.length) {
+        tbody.innerHTML = '<tr><td colspan="4">No hay estaciones configuradas.</td></tr>';
+        updateMasterCheckboxes();
+        return;
+      }
+
+      tbody.innerHTML = cfg.estaciones.map(function (est, idx) {
+        return '<tr>' +
+          '<td>' + (idx + 1) + '</td>' +
+          '<td><input class="form-input" data-idx="' + idx + '" value="' + sanitize(est.nombre) + '"></td>' +
+          '<td><label><input type="checkbox" data-simple-idx="' + idx + '" ' + (est.venta_simple_habilitada ? 'checked' : '') + '> Activar ventas_simple</label></td>' +
+          '<td><label><input type="checkbox" data-mostrar-total-idx="' + idx + '" ' + (est.mostrar_total !== false ? 'checked' : '') + '> Mostrar total</label></td>' +
+          '</tr>';
+      }).join('');
+
+      var simple = tbody.querySelectorAll('input[data-simple-idx]');
+      var total = tbody.querySelectorAll('input[data-mostrar-total-idx]');
+      for (var i = 0; i < simple.length; i += 1) simple[i].addEventListener('change', updateMasterCheckboxes);
+      for (var j = 0; j < total.length; j += 1) total[j].addEventListener('change', updateMasterCheckboxes);
+      updateMasterCheckboxes();
+    }
+
+    function collectRowsConfig(current) {
+      var inputs = document.querySelectorAll('#estacionesTable tbody input[data-idx]');
+      var simpleInputs = document.querySelectorAll('#estacionesTable tbody input[data-simple-idx]');
+      var totalInputs = document.querySelectorAll('#estacionesTable tbody input[data-mostrar-total-idx]');
+
+      return current.estaciones.map(function (est, idx) {
+        var input = Array.prototype.find.call(inputs, function (x) { return Number(x.dataset.idx) === idx; });
+        var simpleInput = Array.prototype.find.call(simpleInputs, function (x) { return Number(x.dataset.simpleIdx) === idx; });
+        var totalInput = Array.prototype.find.call(totalInputs, function (x) { return Number(x.dataset.mostrarTotalIdx) === idx; });
+        var nombre = input ? String(input.value || '').trim() : '';
+        return {
+          id: est.id,
+          nombre: nombre || ('Estación ' + est.id),
+          venta_simple_habilitada: simpleInput ? !!simpleInput.checked : !!est.venta_simple_habilitada,
+          mostrar_total: totalInput ? !!totalInput.checked : (est.mostrar_total !== false)
+        };
+      });
+    }
+
     async function applyCantidad(cantidad) {
-      const current = await getConfigFromServer() || { cantidad: 1, estaciones: [{ id: 1, nombre: 'Estación 1', venta_simple_habilitada: false }] };
-      const cfg = normalizeConfig({ cantidad, estaciones: current.estaciones });
+      var current = await getConfigFromServer();
+      if (!current) current = { cantidad: 1, estaciones: [{ id: 1, nombre: 'Estación 1', venta_simple_habilitada: false, mostrar_total: true }] };
+      var cfg = normalizeConfig({ cantidad: cantidad, estaciones: current.estaciones, card_size: current.card_size });
       await saveConfigToServer(cfg);
       document.getElementById('cantidadEstaciones').value = String(cfg.cantidad);
       renderRows(cfg);
       return cfg;
     }
 
-    async function syncCarritosFromStations(cfg) {
-      if (!empresaId || !cfg || !Array.isArray(cfg.estaciones) || !cfg.estaciones.length) {
-        return { created: 0, updated: 0 };
+    function isNoopConflictForAction(action, errorMessage) {
+      var msg = normalizeText(errorMessage);
+      if (!msg) return false;
+      if (action === 'cerrar') {
+        return msg.indexOf('la venta ya se encuentra cerrada') !== -1 ||
+          msg.indexOf('solo se puede cerrar una venta activa') !== -1 ||
+          msg.indexOf('la venta ya fue pagada') !== -1;
+      }
+      if (action === 'desactivar') {
+        return msg.indexOf('la venta ya se encuentra inactiva') !== -1 ||
+          msg.indexOf('la venta pagada ya se encuentra inactiva') !== -1;
+      }
+      return false;
+    }
+
+    async function tryCarritoAction(carritoID, action) {
+      try {
+        await requestJSON('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(empresaId) + '&id=' + encodeURIComponent(carritoID) + '&action=' + encodeURIComponent(action), {
+          method: 'PUT'
+        });
+        return { applied: true, ignored: false };
+      } catch (err) {
+        if (isNoopConflictForAction(action, err && err.message ? err.message : String(err))) {
+          return { applied: false, ignored: true };
+        }
+        throw err;
+      }
+    }
+
+    async function ensureCarritoClosedAndInactive(carritoID, current) {
+      var applied = 0;
+      var ignored = 0;
+
+      var estadoRegistro = normalizeText(current && current.estado) || 'activo';
+      var estadoOperativo = normalizeText(current && current.estado_carrito) || 'abierto';
+      var pagado = String(current && current.pagado_en ? current.pagado_en : '').trim() !== '';
+
+      if (!pagado && estadoOperativo !== 'cerrado') {
+        var closeResult = await tryCarritoAction(carritoID, 'cerrar');
+        if (closeResult.applied) applied += 1;
+        if (closeResult.ignored) ignored += 1;
       }
 
-      const rows = await requestJSON('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(empresaId) + '&include_inactive=1');
-      const existing = Array.isArray(rows) ? rows : [];
-      const byCode = new Map();
-      existing.forEach(item => {
+      if (estadoRegistro !== 'inactivo') {
+        var disableResult = await tryCarritoAction(carritoID, 'desactivar');
+        if (disableResult.applied) applied += 1;
+        if (disableResult.ignored) ignored += 1;
+      }
+
+      return { applied: applied, ignored: ignored };
+    }
+
+    async function syncCarritosFromStations(cfg) {
+      if (!empresaId || !cfg || !Array.isArray(cfg.estaciones) || !cfg.estaciones.length) {
+        return { created: 0, updated: 0, ignored: 0 };
+      }
+
+      var rows = await requestJSON('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(empresaId) + '&include_inactive=1');
+      var existing = Array.isArray(rows) ? rows : [];
+      var byCode = new Map();
+      existing.forEach(function (item) {
         byCode.set(normalizedCode(item.codigo), item);
       });
 
-      let created = 0;
-      let updated = 0;
+      var counters = { created: 0, updated: 0, ignored: 0 };
 
-      for (const station of cfg.estaciones) {
-        const stationID = Number(station.id || 0);
+      for (var i = 0; i < cfg.estaciones.length; i += 1) {
+        var station = cfg.estaciones[i];
+        var stationID = Number(station.id || 0);
         if (!stationID) continue;
-        const stationName = String(station.nombre || '').trim() || ('Estación ' + stationID);
-        const code = getCarritoCodeForStation(stationID);
-        const ref = 'ESTACION_' + stationID;
-        const current = byCode.get(normalizedCode(code));
+
+        var stationName = String(station.nombre || '').trim() || ('Estación ' + stationID);
+        var code = getCarritoCodeForStation(stationID);
+        var ref = 'ESTACION_' + stationID;
+        var current = byCode.get(normalizedCode(code));
 
         if (!current) {
-          const createdBody = await requestJSON('/api/empresa/carritos_compra', {
+          var createdBody = await requestJSON('/api/empresa/carritos_compra', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -415,21 +541,19 @@
             })
           });
 
-          const createdID = Number((createdBody && createdBody.id) || 0);
+          var createdID = Number(createdBody && createdBody.id ? createdBody.id : 0);
           if (createdID > 0) {
-            await requestJSON('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(empresaId) + '&id=' + encodeURIComponent(createdID) + '&action=desactivar', {
-              method: 'PUT'
-            });
-            updated += 1;
+            var createTransition = await ensureCarritoClosedAndInactive(createdID, { estado: 'activo', estado_carrito: 'abierto', pagado_en: '' });
+            counters.updated += createTransition.applied;
+            counters.ignored += createTransition.ignored;
           }
-
-          created += 1;
+          counters.created += 1;
           continue;
         }
 
-        const requiresNameUpdate = String(current.nombre || '').trim() !== stationName;
-        const requiresCodeUpdate = normalizedCode(current.codigo) !== normalizedCode(code);
-        const requiresRefUpdate = !String(current.referencia_externa || '').trim();
+        var requiresNameUpdate = String(current.nombre || '').trim() !== stationName;
+        var requiresCodeUpdate = normalizedCode(current.codigo) !== normalizedCode(code);
+        var requiresRefUpdate = !String(current.referencia_externa || '').trim();
 
         if (requiresNameUpdate || requiresCodeUpdate || requiresRefUpdate) {
           await requestJSON('/api/empresa/carritos_compra', {
@@ -448,25 +572,15 @@
               observaciones: String(current.observaciones || '')
             })
           });
-          updated += 1;
+          counters.updated += 1;
         }
 
-        if (String(current.estado || 'inactivo').toLowerCase() !== 'inactivo') {
-          await requestJSON('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(empresaId) + '&id=' + encodeURIComponent(current.id) + '&action=desactivar', {
-            method: 'PUT'
-          });
-          updated += 1;
-        }
-
-        if (String(current.estado_carrito || 'cerrado').toLowerCase() !== 'cerrado') {
-          await requestJSON('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(empresaId) + '&id=' + encodeURIComponent(current.id) + '&action=cerrar', {
-            method: 'PUT'
-          });
-          updated += 1;
-        }
+        var transition = await ensureCarritoClosedAndInactive(Number(current.id || 0), current);
+        counters.updated += transition.applied;
+        counters.ignored += transition.ignored;
       }
 
-      return { created, updated };
+      return counters;
     }
 
     async function inactivarTodosLosCarritosEstacion() {
@@ -480,49 +594,30 @@
       }
 
       showMessage('Inactivando carritos de estaciones...', 'help');
-      const rows = await requestJSON('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(empresaId) + '&include_inactive=1');
-      const allCarritos = Array.isArray(rows) ? rows : [];
-      const stationCarritos = allCarritos.filter(isStationCarrito);
+      var rows = await requestJSON('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(empresaId) + '&include_inactive=1');
+      var allCarritos = Array.isArray(rows) ? rows : [];
+      var stationCarritos = allCarritos.filter(isStationCarrito);
 
       if (!stationCarritos.length) {
         showMessage('No se encontraron carritos de estaciones para esta empresa.', 'success');
         return;
       }
 
-      let procesados = 0;
-      let actualizados = 0;
-      let yaInactivos = 0;
-      let errores = 0;
+      var procesados = 0;
+      var actualizados = 0;
+      var ignorados = 0;
+      var errores = 0;
 
-      for (const item of stationCarritos) {
-        const carritoID = Number(item && item.id ? item.id : 0);
-        if (!carritoID) {
-          continue;
-        }
-
+      for (var i = 0; i < stationCarritos.length; i += 1) {
+        var item = stationCarritos[i];
+        var carritoID = Number(item && item.id ? item.id : 0);
+        if (!carritoID) continue;
         procesados += 1;
-        let cambioAplicado = false;
 
         try {
-          if (String(item.estado || 'inactivo').toLowerCase() !== 'inactivo') {
-            await requestJSON('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(empresaId) + '&id=' + encodeURIComponent(carritoID) + '&action=desactivar', {
-              method: 'PUT'
-            });
-            cambioAplicado = true;
-          }
-
-          if (String(item.estado_carrito || 'cerrado').toLowerCase() !== 'cerrado') {
-            await requestJSON('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(empresaId) + '&id=' + encodeURIComponent(carritoID) + '&action=cerrar', {
-              method: 'PUT'
-            });
-            cambioAplicado = true;
-          }
-
-          if (cambioAplicado) {
-            actualizados += 1;
-          } else {
-            yaInactivos += 1;
-          }
+          var result = await ensureCarritoClosedAndInactive(carritoID, item);
+          actualizados += result.applied;
+          ignorados += result.ignored;
         } catch (err) {
           errores += 1;
           console.error('No se pudo inactivar carrito de estación', carritoID, err);
@@ -530,109 +625,118 @@
       }
 
       if (errores > 0) {
-        showMessage('Proceso finalizado con errores. Procesados: ' + procesados + ' | Actualizados: ' + actualizados + ' | Ya inactivos: ' + yaInactivos + ' | Errores: ' + errores + '.', 'error');
+        showMessage('Proceso finalizado con errores. Procesados: ' + procesados + ' | Actualizados: ' + actualizados + ' | Ignorados: ' + ignorados + ' | Errores: ' + errores + '.', 'error');
         return;
       }
 
-      showMessage('Carritos de estaciones inactivados correctamente. Procesados: ' + procesados + ' | Actualizados: ' + actualizados + ' | Ya inactivos: ' + yaInactivos + '.', 'success');
+      showMessage('Carritos de estaciones sincronizados. Procesados: ' + procesados + ' | Actualizados: ' + actualizados + ' | Ignorados: ' + ignorados + '.', 'success');
     }
 
     async function guardarNombres() {
-      const current = await getConfigFromServer() || { cantidad: 1, estaciones: [{ id: 1, nombre: 'Estación 1', venta_simple_habilitada: false }] };
-      const inputs = document.querySelectorAll('#estacionesTable tbody input[data-idx]');
-      const simpleInputs = document.querySelectorAll('#estacionesTable tbody input[data-simple-idx]');
-      const totalInputs = document.querySelectorAll('#estacionesTable tbody input[data-mostrar-total-idx]');
-      const estaciones = current.estaciones.map((est, idx) => {
-        const input = Array.from(inputs).find(x => Number(x.dataset.idx) === idx);
-        const simpleInput = Array.from(simpleInputs).find(x => Number(x.dataset.simpleIdx) === idx);
-        const totalInput = Array.from(totalInputs).find(x => Number(x.dataset.mostrarTotalIdx) === idx);
-        const nombre = input ? String(input.value || '').trim() : '';
-        return {
-          id: est.id,
-          nombre: nombre || ('Estación ' + est.id),
-          venta_simple_habilitada: simpleInput ? !!simpleInput.checked : !!est.venta_simple_habilitada,
-          mostrar_total: totalInput ? !!totalInput.checked : (est.mostrar_total !== false)
-        };
-      });
-      try {
-        await saveConfigToServer({ cantidad: current.cantidad, estaciones });
-        const cfg = normalizeConfig({ cantidad: current.cantidad, estaciones });
-        renderRows(cfg);
-        showMessage('Configuración de estaciones guardada (nombre + modo de venta simple).', 'success');
-      } catch (err) {
-        console.error('guardarNombres error', err);
-        showMessage('No se pudo guardar la configuración en servidor.', 'error');
+      var current = await getConfigFromServer();
+      if (!current) {
+        current = normalizeConfig({ cantidad: 1, estaciones: [{ id: 1, nombre: 'Estación 1', venta_simple_habilitada: false, mostrar_total: true }] });
       }
+
+      var estaciones = collectRowsConfig(current);
+      var cfg = normalizeConfig({ cantidad: current.cantidad, estaciones: estaciones, card_size: current.card_size });
+      await saveConfigToServer(cfg);
+      renderRows(cfg);
+
+      var sync = await syncCarritosFromStations(cfg);
+      showMessage('Configuración guardada. Creados: ' + sync.created + ' | Actualizados: ' + sync.updated + ' | Ignorados: ' + sync.ignored + '.', 'success');
     }
 
     async function cargarEmpresa() {
-      const label = document.getElementById('empresaInfo');
+      var label = document.getElementById('empresaInfo');
       if (!empresaId) {
         label.textContent = 'Empresa no definida';
         return;
       }
+
       try {
-        const resp = await fetch('/super/api/empresas?id=' + encodeURIComponent(empresaId), { credentials: 'same-origin' });
+        var resp = await fetch('/super/api/empresas?id=' + encodeURIComponent(empresaId), { credentials: 'same-origin' });
         if (!resp.ok) throw new Error('No encontrada');
-        const data = await resp.json();
+        var data = await resp.json();
         label.textContent = 'Empresa: ' + (data.nombre || 'Sin nombre');
-      } catch (_) {
+      } catch (e) {
         label.textContent = 'Empresa no disponible';
       }
     }
 
     function wireEvents() {
-      document.getElementById('cantidadForm').addEventListener('submit', async ev => {
+      document.getElementById('saveBtn').addEventListener('click', function (ev) {
         ev.preventDefault();
-        const cantidad = Number(document.getElementById('cantidadEstaciones').value || 0);
+        saveDevice();
+      });
+
+      document.getElementById('generateToken').addEventListener('click', function (ev) {
+        ev.preventDefault();
+        try {
+          var arr = new Uint8Array(24);
+          window.crypto.getRandomValues(arr);
+          document.getElementById('deviceToken').value = Array.from(arr).map(function (b) {
+            return b.toString(16).padStart(2, '0');
+          }).join('');
+        } catch (e) {
+          showMessage('No se pudo generar token: ' + String(e), 'error');
+        }
+      });
+
+      document.getElementById('cantidadForm').addEventListener('submit', async function (ev) {
+        ev.preventDefault();
+        var cantidad = Number(document.getElementById('cantidadEstaciones').value || 0);
         if (!cantidad || cantidad < 1) {
           showMessage('La cantidad debe ser mayor a 0.', 'error');
           return;
         }
         try {
-          const cfg = await applyCantidad(cantidad);
-          const sync = await syncCarritosFromStations(cfg);
-          showMessage('Estaciones generadas y carritos sincronizados. Creados: ' + sync.created + ' | Actualizados: ' + sync.updated + '.', 'success');
+          var cfg = await applyCantidad(cantidad);
+          var sync = await syncCarritosFromStations(cfg);
+          showMessage('Estaciones generadas y carritos sincronizados. Creados: ' + sync.created + ' | Actualizados: ' + sync.updated + ' | Ignorados: ' + sync.ignored + '.', 'success');
         } catch (err) {
           showMessage(err.message || 'No se pudieron sincronizar los carritos de estaciones.', 'error');
         }
       });
-      document.getElementById('btnGuardarNombres').addEventListener('click', ev => { ev.preventDefault(); guardarNombres().catch(e => showMessage(e.message || 'No se pudo guardar', 'error')); });
-      document.getElementById('btnInactivarCarritos').addEventListener('click', () => {
-        inactivarTodosLosCarritosEstacion().catch(err => {
+
+      document.getElementById('btnGuardarNombres').addEventListener('click', function (ev) {
+        ev.preventDefault();
+        guardarNombres().catch(function (err) {
+          showMessage(err.message || 'No se pudo guardar la configuración.', 'error');
+        });
+      });
+
+      document.getElementById('btnInactivarCarritos').addEventListener('click', function () {
+        inactivarTodosLosCarritosEstacion().catch(function (err) {
           showMessage(err.message || 'No se pudo completar la inactivación de carritos.', 'error');
         });
       });
-      // master checkboxes para aplicar a todas las filas
-      const masterSimple = document.getElementById('masterVentaSimple');
+
+      var masterSimple = document.getElementById('masterVentaSimple');
       if (masterSimple) {
-        masterSimple.addEventListener('change', function() {
+        masterSimple.addEventListener('change', function () {
           setAllVentaSimple(this.checked);
-          updateMasterCheckboxes();
-        });
-      }
-      const masterMostrar = document.getElementById('masterMostrarTotal');
-      if (masterMostrar) {
-        masterMostrar.addEventListener('change', function() {
-          setAllMostrarTotal(this.checked);
-          updateMasterCheckboxes();
         });
       }
 
-      // apariencia: tamaño de tarjetas
-      const btnGuardarApariencia = document.getElementById('btnGuardarApariencia');
+      var masterMostrar = document.getElementById('masterMostrarTotal');
+      if (masterMostrar) {
+        masterMostrar.addEventListener('change', function () {
+          setAllMostrarTotal(this.checked);
+        });
+      }
+
+      var btnGuardarApariencia = document.getElementById('btnGuardarApariencia');
       if (btnGuardarApariencia) {
-        btnGuardarApariencia.addEventListener('click', async ev => {
+        btnGuardarApariencia.addEventListener('click', async function (ev) {
           ev.preventDefault();
           try {
-            const sel = document.getElementById('cardSizeSelect');
-            const size = (sel && String(sel.value)) || 'medium';
-            const current = await getConfigFromServer() || { cantidad: 1, estaciones: [] };
-            current.card_size = size;
+            var current = await getConfigFromServer();
+            if (!current) current = normalizeConfig({ cantidad: 1, estaciones: [] });
+            current.card_size = String((document.getElementById('cardSizeSelect').value || 'medium')).trim().toLowerCase();
             await saveConfigToServer(current);
             showMessage('Apariencia guardada.', 'success');
           } catch (err) {
-            console.error('guardar apariencia error', err);
             showMessage('No se pudo guardar la apariencia.', 'error');
           }
         });
@@ -643,21 +747,31 @@
       if (!empresaId) {
         showMessage('No se encontró empresa_id en la URL.', 'error');
       }
+
       wireEvents();
-      await cargarEmpresa();
-      let cfg = await getConfigFromServer();
+      await Promise.all([cargarEmpresa(), loadDevices()]);
+
+      var cfg = await getConfigFromServer();
       if (!cfg) {
         cfg = normalizeConfig({ cantidad: 1, estaciones: [] });
-        try { await saveConfigToServer(cfg); } catch (err) { console.error('No se pudo guardar config por defecto', err); }
+        try {
+          await saveConfigToServer(cfg);
+        } catch (err) {
+          console.error('No se pudo guardar config por defecto', err);
+        }
       }
+
       document.getElementById('cantidadEstaciones').value = String(cfg.cantidad);
-      // set appearance select if present
-      const sel = document.getElementById('cardSizeSelect');
-      if (sel && cfg.card_size) sel.value = cfg.card_size;
+      if (cfg.card_size) {
+        document.getElementById('cardSizeSelect').value = cfg.card_size;
+      }
       renderRows(cfg);
     }
 
-    bootstrap().catch(err => console.error('bootstrap error', err));
+    bootstrap().catch(function (err) {
+      console.error('bootstrap error', err);
+      showMessage('No se pudo inicializar la configuración de estaciones.', 'error');
+    });
   </script>
 </body>
 </html>

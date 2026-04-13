@@ -6,6 +6,11 @@
 
 ## Historial
 
+### Version 2026-04-13.43.1
+- Flujo de login empresa, seleccion de empresa y configuracion de estaciones reforzado para continuidad de contexto empresarial y sincronizacion masiva de estaciones.
+- Archivos actualizados:
+  - `diagrama_flujo_procesos.md`
+
 ### Version 2026-04-08.42.2
 - Chat/tareas: se documenta el flujo de actor autenticado usuario/admin y soporte de adjuntos documentales/fotos entre participantes de empresa.
 - Archivos actualizados:

@@ -1,6 +1,6 @@
 # Matriz base de roles y permisos POS multiempresa
 
-Fecha de actualizacion: 2026-04-12
+Fecha de actualizacion: 2026-04-13
 Alcance: punto 3 del plan maestro (permisos y seguridad)
 
 ## Regla de mantenimiento por modulo
@@ -44,6 +44,11 @@ Leyenda:
 | Seguridad y permisos | CRUDA | CRUA | R | R | R | R | R | R |
 
 ## Estado de implementacion tecnica inicial (2026-04-04)
+
+- Actualizacion 2026-04-13 (login empresa, seleccion y estaciones):
+	- Se mantiene el mismo esquema de permisos por rol/modulo para endpoints empresariales (`/api/empresa/usuarios/*`, `/api/empresa/estacion_prefs`, `/api/empresa/carritos_compra`).
+	- Los cambios son de robustez de flujo y contexto (`empresa_id`) en frontend, sin ampliacion de privilegios ni cambio de matriz CRUD/A.
+	- Se preserva aislamiento por `empresa_id` para operacion concurrente de multiples estaciones y carritos por empresa.
 
 - Actualizacion 2026-04-12 (login admin: contrato + reCAPTCHA real):
 	- Se consolida la ruta administrativa `login.html -> /auth/google/* -> /accept.html -> /accept/complete` con persistencia de aceptación por cuenta en `administradores.acepta_contrato`.

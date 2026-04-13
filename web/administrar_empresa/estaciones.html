@@ -17,7 +17,46 @@
   </div>
 
   <script>
-    const empresaId = Number(new URLSearchParams(window.location.search).get('empresa_id') || 0);
+    function parsePositiveInt(raw) {
+      const n = Number(String(raw || '').trim());
+      if (!Number.isFinite(n)) return 0;
+      const v = Math.trunc(n);
+      return v > 0 ? v : 0;
+    }
+
+    function resolveEmpresaId() {
+      try {
+        const params = new URLSearchParams(window.location.search || '');
+        const own = parsePositiveInt(params.get('empresa_id') || params.get('id'));
+        if (own > 0) return own;
+      } catch (_) {}
+      try {
+        if (window.parent && window.parent !== window) {
+          if (typeof window.parent.__resolveEmpresaIdContext === 'function') {
+            const parentResolved = parsePositiveInt(window.parent.__resolveEmpresaIdContext());
+            if (parentResolved > 0) return parentResolved;
+          }
+          const parentParams = new URLSearchParams(window.parent.location.search || '');
+          const fromParent = parsePositiveInt(parentParams.get('empresa_id') || parentParams.get('id'));
+          if (fromParent > 0) return fromParent;
+        }
+      } catch (_) {}
+      try {
+        const candidates = [
+          sessionStorage.getItem('active_empresa_id'),
+          sessionStorage.getItem('empresa_id'),
+          localStorage.getItem('active_empresa_id'),
+          localStorage.getItem('empresa_id')
+        ];
+        for (let i = 0; i < candidates.length; i++) {
+          const parsed = parsePositiveInt(candidates[i]);
+          if (parsed > 0) return parsed;
+        }
+      } catch (_) {}
+      return 0;
+    }
+
+    const empresaId = resolveEmpresaId();
     const state = {
       colores: {
         activo: '#d9fbe8',
@@ -104,7 +143,7 @@
       }
       normalized.card_size = normalized.card_size || 'medium';
       const payload = { estacion_id: 0, clave: 'estaciones_config', valor: JSON.stringify(normalized) };
-      const res = await requestJSON('/api/empresa/estacion_prefs', {
+      const res = await requestJSON('/api/empresa/estacion_prefs?empresa_id=' + encodeURIComponent(empresaId), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

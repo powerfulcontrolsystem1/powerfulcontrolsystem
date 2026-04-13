@@ -1,10 +1,15 @@
 Descripcion compacta de modulos (POS multiempresa)
-Actualizacion: 2026-04-12
+Actualizacion: 2026-04-13
 
 Gobernanza obligatoria (agente_go):
 - Si se crea un modulo nuevo o se modifica un modulo existente, este documento debe actualizarse en la misma iteracion de trabajo.
 - En el mismo cambio, tambien debe actualizarse `documentos/matriz_roles_permisos_pos_multiempresa.md` para reflejar permisos por rol/modulo/accion y visibilidad de paginas afectadas.
 - La actualizacion modular debe mantener trazabilidad en `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios` y `CHANGELOG.md`.
+
+Actualizacion 2026-04-13 (acceso empresa y estaciones):
+- Se refuerza el modulo de acceso de usuario empresa con opcion de recordar correo por empresa y recuperacion robusta de `empresa_id`.
+- Se ajusta el modulo de seleccion de empresa para persistir contexto empresarial y abrir administracion con parametros `id` + `empresa_id`.
+- Se estabiliza configuracion de estaciones para generar y mostrar multiples estaciones (incluyendo 10 o mas) con sincronizacion de carritos tolerante a conflictos idempotentes de cierre/inactivacion.
 
 Actualizacion 2026-04-12 (autenticacion administrativa: contrato y verificacion humana):
 - Se unifica el flujo de login de administradores en `login.html -> OAuth Google -> /accept.html -> /accept/complete`.

@@ -1,6 +1,14 @@
 # Diagrama de flujo de procesos
 
-Fecha: 2026-04-08
+Fecha: 2026-04-13
+
+## Actualizacion 2026-04-13 (login empresa, seleccion de empresa y estaciones masivas)
+
+- `login_usuario` incorpora recordatorio de usuario por empresa (`rememberUsuario`) para prellenar correo y mantener continuidad operativa.
+- `seleccionar_empresa` persiste contexto empresarial (`active_empresa_id`, `empresa_id`) y abre administracion con `id` y `empresa_id` para evitar perdida de contexto entre ventanas/iframes.
+- `configuracion_de_estaciones` resuelve `empresa_id` por URL + parent + storage, permitiendo guardar configuracion y sincronizar estaciones aun cuando el iframe cambie de contexto.
+- La sincronizacion de carritos por estacion ahora tolera conflictos idempotentes en `cerrar`/`desactivar`, evitando bloqueos al generar 10 o mas estaciones.
+- Se mantiene operacion concurrente multiestacion por `empresa_id`, con trazabilidad por carrito codigo `EST-{empresa}-{estacion}`.
 
 ## Actualizacion 2026-04-08 (chat/tareas: documentos/fotos entre usuario y administrador)
 

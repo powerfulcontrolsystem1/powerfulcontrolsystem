@@ -227,7 +227,9 @@ func EmpresaCarritosCompraHandler(dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, "No se pudo validar estado del carrito", http.StatusInternalServerError)
 					return
 				}
+				log.Printf("[carritos] debug intentar %s empresa_id=%d id=%d estado=%q estado_carrito=%q pagado_en=%q", action, empresaID, id, carrito.Estado, carrito.EstadoCarrito, carrito.PagadoEn)
 				if err := validateCarritoTransitionForAction(carrito, action); err != nil {
+					log.Printf("[carritos] validate failed action=%s empresa_id=%d id=%d estado=%q estado_carrito=%q pagado_en=%q err=%v", action, empresaID, id, carrito.Estado, carrito.EstadoCarrito, carrito.PagadoEn, err)
 					http.Error(w, err.Error(), http.StatusConflict)
 					return
 				}
@@ -1180,9 +1182,10 @@ func validateCarritoTransitionForAction(carrito *dbpkg.CarritoCompra, action str
 		if pagada {
 			return fmt.Errorf("la venta ya fue pagada")
 		}
-		if estadoRegistro != "activo" {
-			return fmt.Errorf("solo se puede cerrar una venta activa")
-		}
+		// Permitir cerrar la operación aunque el registro esté marcado como inactivo.
+		// Esto evita un conflicto 409 cuando el cliente primero desactiva el registro
+		// y luego intenta cerrar la sesión operativa. Seguimos impidiendo cerrar
+		// si la sesión operativa ya está cerrada.
 		if estadoOperativo == "cerrado" {
 			return fmt.Errorf("la venta ya se encuentra cerrada")
 		}

@@ -1,5 +1,37 @@
  - Historial de cambios
 
+ - 2026-04-13: Reparacion de seleccion de empresa, recordar usuario y estaciones masivas
+     - Archivos modificados:
+         - web/login_usuario.html
+         - web/js/login_usuario.js
+         - web/js/seleccionar_empresa.js
+         - web/administrar_empresa/configuracion_de_estaciones.html
+         - documentos/diagramas/diagrama_flujo_procesos.md
+         - documentos/diagramas/versionado.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - CHANGELOG.md
+     - Descripción: Se corrige el flujo de acceso empresarial de extremo a extremo. `login_usuario` ahora permite recordar correo por empresa; `seleccionar_empresa` persiste contexto y navega con `id` + `empresa_id`; `configuracion_de_estaciones` se reconstruye en un solo documento valido y sincroniza carritos por estacion tolerando conflictos idempotentes al cerrar/inactivar. Esto habilita generar y mostrar varias estaciones (incluyendo 10 o más) con mayor estabilidad.
+     - Verificación técnica:
+         - `go test ./...` en `backend` falla por estado preexistente del paquete `tools` (múltiples `main` en el mismo paquete).
+         - `go test ./ ./auth ./db ./handlers ./metrics ./utils` en `backend` -> PASADO.
+
+ - 2026-04-12: Corrección de contexto `empresa_id` en `administrar_empresa` (iframes/submenús)
+     - Archivos modificados:
+         - web/js/administrar_empresa.js
+         - web/administrar_empresa/configuracion.html
+         - web/administrar_empresa/estaciones.html
+         - web/administrar_empresa/configuracion_de_estaciones.html
+         - web/administrar_empresa/inicio.html
+         - web/administrar_empresa/auditoria.html
+         - web/administrar_empresa/administrar_productos.html
+         - web/administrar_empresa/sensor_puertas_mensajes.html
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_archivos
+     - Descripción: Se eliminan falsos mensajes de "No se puede guardar sin empresa seleccionada" al heredar `empresa_id` desde URL, parent iframe y storage. El shell ahora corrige automáticamente navegaciones internas que pierden `empresa_id`.
+     - Verificación técnica: validación de errores en archivos modificados sin incidencias y revisión de rutas de guardado que dependen de `empresa_id`.
+
  - 2026-04-12: Eliminada validación reCAPTCHA en flujo de aceptación
      - Archivos modificados:
          - backend/handlers/accept_handlers.go (se eliminó la verificación server-side de reCAPTCHA)
@@ -104,6 +136,14 @@
      - Verificacion: Revisión estática realizada; comprobar navegación en `http://localhost:8080/administrar_empresa.html?id=6` para validar que la UI y el árbol coinciden.
 
  - 2026-04-11: Eliminar botón 'Volver a empresas' en menús Productos/Reportes/Configuración/Finanzas
+
+ - 2026-04-12: Corrección permanente — guardar colores de estado del carrito
+     - Archivos modificados:
+         - backend/handlers/empresa_configuracion_avanzada.go (fusiona patches parciales con la configuración existente; valida `empresa_id` y normaliza colores)
+         - web/administrar_empresa/configuracion.html (eliminado logging temporal y restaurado flujo de guardado limpio)
+         - backend/tools/set_color_test/main.go (herramienta auxiliar para probar y aplicar colores en la base de datos local)
+     - Descripción: El endpoint de configuración avanzada ahora aplica una fusión segura entre la configuración existente y los campos enviados por el cliente, evitando sobrescribir valores no proporcionados. Esto permite que la UI guarde únicamente los colores (`color_carrito_activo`, `color_carrito_inactivo`) sin necesidad de enviar todo el objeto. Se eliminó el código de logging temporal en el frontend.
+     - Verificación: Se ejecutó `backend/tools/set_color_test/set_color_test.exe` localmente y verificó que los valores `color_carrito_activo` y `color_carrito_inactivo` quedaron persistidos en `backend/empresas.db`.
 
  - 2026-04-11: Eliminar enlaces duplicados del shell `web/administrar_empresa.html`
      - Archivos modificados:

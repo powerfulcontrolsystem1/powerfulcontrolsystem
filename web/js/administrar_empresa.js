@@ -1,10 +1,98 @@
 function getQueryParam(name) {
   var params = new URLSearchParams(window.location.search);
-  return params.get(name);
+  var value = params.get(name);
+  if (value) {
+    return value;
+  }
+  try {
+    if (window.parent && window.parent !== window && window.parent.location) {
+      var parentParams = new URLSearchParams(window.parent.location.search || "");
+      var parentValue = parentParams.get(name);
+      if (parentValue) {
+        return parentValue;
+      }
+    }
+  } catch (e) {
+    // no-op: acceso a parent puede fallar en algunos contextos
+  }
+  return "";
+}
+
+function parsePositiveInt(raw) {
+  var n = Number(String(raw || "").trim());
+  if (!Number.isFinite(n)) return 0;
+  n = Math.trunc(n);
+  return n > 0 ? n : 0;
+}
+
+function readEmpresaIdFromStorage() {
+  var keys = ["active_empresa_id", "empresa_id", "admin_empresa_id"];
+  var stores = [];
+  try { stores.push(window.sessionStorage); } catch (e) {}
+  try { stores.push(window.localStorage); } catch (e) {}
+
+  for (var s = 0; s < stores.length; s += 1) {
+    var store = stores[s];
+    if (!store) continue;
+    for (var i = 0; i < keys.length; i += 1) {
+      var key = keys[i];
+      var raw = "";
+      try {
+        raw = store.getItem(key) || "";
+      } catch (e) {
+        raw = "";
+      }
+      var id = parsePositiveInt(raw);
+      if (id > 0) {
+        return String(id);
+      }
+    }
+  }
+  return "";
+}
+
+function persistEmpresaIdInStorage(rawEmpresaId) {
+  var id = parsePositiveInt(rawEmpresaId);
+  if (!id) return "";
+  var value = String(id);
+  try {
+    window.sessionStorage.setItem("active_empresa_id", value);
+    window.sessionStorage.setItem("empresa_id", value);
+    window.sessionStorage.setItem("admin_empresa_id", value);
+  } catch (e) {}
+  try {
+    window.localStorage.setItem("active_empresa_id", value);
+    window.localStorage.setItem("empresa_id", value);
+    window.localStorage.setItem("admin_empresa_id", value);
+  } catch (e) {}
+  return value;
+}
+
+function resolveEmpresaIdContext() {
+  var fromUrl = parsePositiveInt(getQueryParam("empresa_id") || getQueryParam("id"));
+  if (fromUrl > 0) {
+    return persistEmpresaIdInStorage(fromUrl);
+  }
+  var fromStorage = readEmpresaIdFromStorage();
+  if (fromStorage) {
+    return persistEmpresaIdInStorage(fromStorage);
+  }
+  return "";
+}
+
+try {
+  window.__resolveEmpresaIdContext = function () {
+    return resolveEmpresaIdContext();
+  };
+} catch (e) {
+  // no-op
 }
 
 (function () {
-  var id = getQueryParam("id") || getQueryParam("empresa_id");
+  var id = persistEmpresaIdInStorage(getQueryParam("id") || getQueryParam("empresa_id"));
+  if (!id) {
+    id = resolveEmpresaIdContext();
+  }
   var title = document.getElementById("empresaTitle");
   var frame = document.getElementById("contentFrame") || document.querySelector("iframe.admin-empresa-frame");
   var permsEvidence = document.getElementById("menuPermsEvidence");
@@ -600,6 +688,26 @@ function getQueryParam(name) {
         currentHref = frame.getAttribute("src") || "";
       }
       if (!currentHref) return;
+
+      // Si una navegación interna del iframe pierde empresa_id,
+      // se corrige automáticamente usando el contexto activo.
+      if (id) {
+        try {
+          var normalizedCurrent = normalizeHref(currentHref);
+          var currentURL = new URL(normalizedCurrent || currentHref, window.location.origin);
+          var hasEmpresaID = parsePositiveInt(currentURL.searchParams.get("empresa_id")) > 0;
+          if (!hasEmpresaID) {
+            var correctedHref = withEmpresaParam(currentURL.pathname + currentURL.search, id);
+            if (correctedHref && correctedHref !== normalizedCurrent) {
+              frame.setAttribute("src", correctedHref);
+              return;
+            }
+          }
+        } catch (e) {
+          // no-op
+        }
+      }
+
       persistFrameSrc(currentHref, id);
       setActiveByHref(currentHref);
     });

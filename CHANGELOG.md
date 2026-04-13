@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 2026-04-13
+- Reparación integral de acceso empresarial y estaciones.
+	- Archivos modificados: `web/login_usuario.html`, `web/js/login_usuario.js`, `web/js/seleccionar_empresa.js`, `web/administrar_empresa/configuracion_de_estaciones.html`.
+	- Descripción: se corrige la continuidad del flujo `login usuario empresa -> seleccionar empresa -> administrar empresa` con persistencia de `empresa_id` y opción de recordar correo. La página de configuración de estaciones se reconstruye y soporta generación/sincronización masiva de estaciones (incluyendo 10+) con manejo tolerante de conflictos idempotentes al cerrar/inactivar carritos.
+	- Verificación: pruebas backend de paquetes principales en verde (`go test ./ ./auth ./db ./handlers ./metrics ./utils`).
+
 ## 2026-04-12
 - Flujo final de login administrativo: cuenta Google correcta + aceptación única de contrato + reCAPTCHA real.
 	- Archivos modificados: `backend/handlers/auth_admin_handlers.go`, `backend/handlers/accept_handlers.go`, `backend/handlers/e2e_login_acceptance_test.go`, `backend/handlers/auth_users_carritos_test.go`, `web/login.html`, `web/js/login.js`, `web/accept.html`, `web/menu.js`, `web/estilos.css`.

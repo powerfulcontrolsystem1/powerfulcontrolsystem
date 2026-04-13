@@ -40,6 +40,24 @@
     }
   }
 
+  function persistEmpresaContext(empresaID) {
+    var id = Number(empresaID || 0);
+    if (!Number.isFinite(id) || id <= 0) {
+      return;
+    }
+    var value = String(Math.trunc(id));
+    try {
+      sessionStorage.setItem("active_empresa_id", value);
+      sessionStorage.setItem("empresa_id", value);
+      sessionStorage.setItem("admin_empresa_id", value);
+    } catch (e) {}
+    try {
+      localStorage.setItem("active_empresa_id", value);
+      localStorage.setItem("empresa_id", value);
+      localStorage.setItem("admin_empresa_id", value);
+    } catch (e) {}
+  }
+
   function setActiveNav(activeLink) {
     navLinks.forEach(function (link) {
       link.classList.remove("active");
@@ -71,12 +89,20 @@
     a.className = "card-link";
     a.addEventListener("click", function (evt) {
       evt.preventDefault();
+      persistEmpresaContext(empresa.id);
       try {
         if (hasLicense) {
-          window.open("/administrar_empresa.html?id=" + encodeURIComponent(empresa.id), "_blank");
+          var adminURL =
+            "/administrar_empresa.html?id=" + encodeURIComponent(empresa.id) +
+            "&empresa_id=" + encodeURIComponent(empresa.id);
+          var opened = window.open(adminURL, "_blank");
+          if (!opened) {
+            window.location.href = adminURL;
+          }
         } else {
           var params = new URLSearchParams();
           params.set("empresa_id", empresa.id);
+          params.set("id", empresa.id);
           if (empresa.tipo_id) params.set("tipo_id", empresa.tipo_id);
           if (empresa.tipo_nombre) params.set("tipo_nombre", empresa.tipo_nombre);
           window.location.href = "/elegir_licencia.html?" + params.toString();
@@ -455,11 +481,17 @@
           document.getElementById("msg").innerText = "Nombre requerido";
           return;
         }
-        await fetch("/super/api/empresas", {
+        var createRes = await fetch("/super/api/empresas", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
+        if (!createRes.ok) {
+          var errorText = await createRes.text().catch(function () {
+            return "";
+          });
+          throw new Error(errorText || "No se pudo crear la empresa");
+        }
         hideForm();
         render();
       } catch (err) {
