@@ -8,6 +8,8 @@ Fecha: 2026-04-13
 - `seleccionar_empresa` persiste contexto empresarial (`active_empresa_id`, `empresa_id`) y abre administracion con `id` y `empresa_id` para evitar perdida de contexto entre ventanas/iframes.
 - `configuracion_de_estaciones` resuelve `empresa_id` por URL + parent + storage, permitiendo guardar configuracion y sincronizar estaciones aun cuando el iframe cambie de contexto.
 - La sincronizacion de carritos por estacion ahora tolera conflictos idempotentes en `cerrar`/`desactivar`, evitando bloqueos al generar 10 o mas estaciones.
+- La configuracion de colores de estado del carrito se centraliza en `configuracion_de_estaciones`, eliminando duplicidad en configuracion general.
+- La configuracion de sensores valida que la estacion destino este dentro del rango operativo definido por `cantidad`.
 - Se mantiene operacion concurrente multiestacion por `empresa_id`, con trazabilidad por carrito codigo `EST-{empresa}-{estacion}`.
 
 ## Actualizacion 2026-04-08 (chat/tareas: documentos/fotos entre usuario y administrador)
@@ -65,8 +67,8 @@ flowchart TD
     L11 --> L12[Guardar subpagina actual en sessionStorage]
     L12 --> L13[Al presionar F5, restaurar la misma subpagina]
 
-    L --> S0[Configurar colores de estado del carrito en Facturación electrónica]
-    S0 --> S1[Guardar color activo/inactivo en la sección Configuración avanzada integrada]
+    L --> S0[Configurar colores de estado del carrito en Configuracion de estaciones]
+    S0 --> S1[Guardar color activo/inactivo en configuracion avanzada desde el modulo de estaciones]
     S1 --> S2[Sincronizar estaciones con carritos en estado inactivo/cerrado]
     S2 --> S3[Abrir módulo estaciones]
     S3 --> S3A[Opcional: usar boton Inactivar carritos de estaciones]

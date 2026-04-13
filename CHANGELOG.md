@@ -1,6 +1,16 @@
 # CHANGELOG
 
 ## 2026-04-13
+- Estaciones: fix de persistencia de `estaciones_config` cuando el frontend no envía `estado`.
+	- Archivos modificados: `backend/db/empresa_estacion_prefs.go`, `backend/db/empresa_estacion_prefs_test.go`, `backend/handlers/empresa_estacion_prefs_test.go`.
+	- Descripcion: se normaliza `estado` vacio como `activo` en upsert/list/get de preferencias por estacion, evitando que las estaciones desaparezcan despues de guardarse.
+	- Verificacion: pruebas en verde de estaciones, sensores, ventas y facturacion documental.
+
+- Estaciones: correccion de flujo 10+, colores movidos a configuracion de estaciones y hardening sensor/carrito.
+	- Archivos modificados: `web/administrar_empresa/configuracion_de_estaciones.html`, `web/administrar_empresa/configuracion.html`, `web/administrar_empresa/estaciones.html`, `backend/handlers/empresa_estacion_prefs_test.go`.
+	- Descripcion: se consolida la gestion de colores de estado de carrito en la configuracion de estaciones, se fortalece el parseo de `estaciones_config` para tolerar payloads legacy anidados, se mejora la sincronizacion de carritos por estacion ante colisiones idempotentes y se valida el rango de estacion en configuracion de sensores.
+	- Verificacion: pruebas dirigidas en verde para handlers y DB en estaciones/sensores/carritos/facturacion, incluyendo `TestEmpresaEstacionPrefsHandler_UpsertAndIsolationByEmpresa`.
+
 - Reparación integral de acceso empresarial y estaciones.
 	- Archivos modificados: `web/login_usuario.html`, `web/js/login_usuario.js`, `web/js/seleccionar_empresa.js`, `web/administrar_empresa/configuracion_de_estaciones.html`.
 	- Descripción: se corrige la continuidad del flujo `login usuario empresa -> seleccionar empresa -> administrar empresa` con persistencia de `empresa_id` y opción de recordar correo. La página de configuración de estaciones se reconstruye y soporta generación/sincronización masiva de estaciones (incluyendo 10+) con manejo tolerante de conflictos idempotentes al cerrar/inactivar carritos.

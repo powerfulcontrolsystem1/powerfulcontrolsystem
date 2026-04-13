@@ -1,5 +1,23 @@
 Descripcion de archivos del proyecto
 
+Actualizacion 2026-04-13: Correccion de persistencia de estaciones en backend
+ - Archivos modificados:
+		- backend/db/empresa_estacion_prefs.go (normaliza `estado` vacio como `activo` en upsert/list/get para evitar desaparicion de configuracion de estaciones)
+		- backend/db/empresa_estacion_prefs_test.go (nueva prueba de no regresion cuando el payload se guarda sin `estado`)
+		- backend/handlers/empresa_estacion_prefs_test.go (ajuste para reflejar payload real del frontend sin `estado`)
+ - Descripcion: Se corrige el comportamiento de guardado de `estaciones_config` para que el listado activo no excluya registros con estado vacio heredado y las 10 estaciones permanezcan visibles tras recarga.
+
+Actualizacion 2026-04-13: Estaciones 10+, colores de carrito en configuracion de estaciones y prueba de aislamiento por empresa
+ - Archivos modificados/agregados:
+		- web/administrar_empresa/configuracion_de_estaciones.html (agrega bloque de colores activo/inactivo, parseo robusto de `estaciones_config` y sincronizacion tolerante de carritos por estacion)
+		- web/administrar_empresa/configuracion.html (retira bloque/flujo de colores para centralizarlo en configuracion de estaciones)
+		- web/administrar_empresa/estaciones.html (parseo robusto de configuracion y mejora de deteccion de estado de sensores por `last_seen`)
+		- backend/handlers/empresa_estacion_prefs_test.go (nuevo: valida upsert/listado de `estaciones_config` con 10 estaciones y aislamiento estricto por `empresa_id`)
+		- documentos/diagramas/estructura_del_codigo.md (sincronizacion de estructura y flujo tecnico)
+		- documentos/diagramas/diagrama_flujo_procesos.md (actualiza ubicacion del flujo de colores al modulo de estaciones)
+		- documentos/diagramas/versionado.md (registro de nueva version documental)
+ - Descripcion: Se completa la correccion integral del modulo de estaciones para escenarios de 10+ estaciones, con configuracion visual unificada en una sola pagina y robustez ante estados heredados. Se añade cobertura automatizada backend para garantizar aislamiento multiempresa en `empresa_estacion_prefs`.
+
 Actualizacion 2026-04-13: Reparacion integral de acceso empresa y configuracion de estaciones
  - Archivos modificados:
 		- web/login_usuario.html (checkbox `Recordar usuario` en login de empresa)

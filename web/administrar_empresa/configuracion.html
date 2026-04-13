@@ -419,31 +419,6 @@
 
     <section class="card empresa-section">
       <div class="empresa-section-header">
-        <h2>Estados del carrito de compra</h2>
-        <button id="btnGuardarEstadoCarrito" type="button" class="btn">Guardar colores</button>
-      </div>
-      <p class="form-help">Personaliza el color de las tarjetas de estaciones según el estado operativo del carrito.</p>
-
-      <div class="empresa-config-grid">
-        <div class="form">
-          <div class="form-row">
-            <div class="form-col">
-              <label class="form-label" for="carritoColorActivo">Color cuando el carrito está activo</label>
-              <input id="carritoColorActivo" type="color" class="form-input" value="#d9fbe8">
-            </div>
-            <div class="form-col">
-              <label class="form-label" for="carritoColorInactivo">Color cuando el carrito está inactivo</label>
-              <input id="carritoColorInactivo" type="color" class="form-input" value="#fff9ef">
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div id="estadoCarritoMsg" class="form-help"></div>
-    </section>
-
-    <section class="card empresa-section">
-      <div class="empresa-section-header">
         <h2>Formato monetario y numerico</h2>
         <button id="btnGuardarFormatoNumerico" type="button" class="btn">Guardar formato</button>
       </div>
@@ -623,12 +598,6 @@
 
     function setFacturaMessage(text, type) {
       const box = document.getElementById('facturaMsg');
-      box.textContent = text || '';
-      box.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'form-help');
-    }
-
-    function setEstadoCarritoMessage(text, type) {
-      const box = document.getElementById('estadoCarritoMsg');
       box.textContent = text || '';
       box.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'form-help');
     }
@@ -1267,12 +1236,6 @@
       document.getElementById('facturaLogoURL').value = String(src.logo_url || '').trim();
     }
 
-    function setEstadoCarritoFormData(cfg) {
-      const src = cfg && typeof cfg === 'object' ? cfg : {};
-      document.getElementById('carritoColorActivo').value = normalizeColorHex(src.color_carrito_activo, '#d9fbe8');
-      document.getElementById('carritoColorInactivo').value = normalizeColorHex(src.color_carrito_inactivo, '#fff9ef');
-    }
-
     function setFormatoNumericoFormData(cfg) {
       const src = cfg && typeof cfg === 'object' ? cfg : {};
       const usarDecimales = src.usar_decimales !== false;
@@ -1290,14 +1253,6 @@
         imprimir_copia_factura: document.getElementById('facturaImprimirCopia').checked,
         mostrar_logo: document.getElementById('facturaMostrarLogo').checked,
         logo_url: String(document.getElementById('facturaLogoURL').value || '').trim()
-      };
-    }
-
-    function getEstadoCarritoFormData() {
-      return {
-        empresa_id: Number(empresaId),
-        color_carrito_activo: normalizeColorHex(document.getElementById('carritoColorActivo').value, '#d9fbe8'),
-        color_carrito_inactivo: normalizeColorHex(document.getElementById('carritoColorInactivo').value, '#fff9ef')
       };
     }
 
@@ -1341,11 +1296,9 @@
       try {
         const cfg = await fetchEmpresaConfigAvanzada();
         setFacturaFormData(cfg || {});
-        setEstadoCarritoFormData(cfg || {});
         setFormatoNumericoFormData(cfg || {});
       } catch (err) {
         setFacturaMessage('No se pudo cargar configuración de facturas: ' + (err && err.message ? err.message : err), 'error');
-        setEstadoCarritoMessage('No se pudo cargar configuración de estados del carrito: ' + (err && err.message ? err.message : err), 'error');
         setFormatoNumericoMessage('No se pudo cargar configuración monetaria: ' + (err && err.message ? err.message : err), 'error');
       }
     }
@@ -1359,25 +1312,9 @@
         const payload = getFacturaFormData();
         const cfg = await upsertEmpresaConfigAvanzada(payload);
         setFacturaFormData(cfg || {});
-        setEstadoCarritoFormData(cfg || {});
         setFacturaMessage('Configuración de facturas guardada correctamente.', 'success');
       } catch (err) {
         setFacturaMessage('No se pudo guardar configuración de facturas: ' + (err && err.message ? err.message : err), 'error');
-      }
-    }
-
-    async function guardarEstadoCarritoConfig() {
-      if (!empresaId) {
-        setEstadoCarritoMessage('No se puede guardar sin empresa seleccionada.', 'error');
-        return;
-      }
-      try {
-        const payload = getEstadoCarritoFormData();
-        const cfg = await upsertEmpresaConfigAvanzada(payload);
-        setEstadoCarritoFormData(cfg || {});
-        setEstadoCarritoMessage('Colores de estado del carrito guardados correctamente.', 'success');
-      } catch (err) {
-        setEstadoCarritoMessage('No se pudo guardar colores de estado: ' + (err && err.message ? err.message : err), 'error');
       }
     }
 
@@ -1526,33 +1463,11 @@
       document.getElementById('opPoliticaSucursalId').addEventListener('change', syncOperativaPoliticaFormFromCache);
       document.getElementById('opPoliticaTurno').addEventListener('blur', syncOperativaPoliticaFormFromCache);
       document.getElementById('btnGuardarFacturaConfig').addEventListener('click', guardarFacturaConfig);
-      document.getElementById('btnGuardarEstadoCarrito').addEventListener('click', guardarEstadoCarritoConfig);
       document.getElementById('btnGuardarFormatoNumerico').addEventListener('click', guardarFormatoNumericoConfig);
       document.getElementById('formatoUsarDecimales').addEventListener('change', syncFormatoDecimalesUI);
       document.getElementById('formatoCantidadDecimales').addEventListener('blur', syncFormatoDecimalesUI);
       document.getElementById('btnDescargarBackup').addEventListener('click', descargarBackup);
       document.getElementById('btnRestaurarBackup').addEventListener('click', restaurarBackup);
-
-      // UX: si no hay empresa seleccionada, deshabilitar botón de guardar colores
-      try {
-        const estadoBox = document.getElementById('estadoCarritoMsg');
-        const btnGuardarEstado = document.getElementById('btnGuardarEstadoCarrito');
-        if (!Number(empresaId) || Number(empresaId) <= 0) {
-          if (estadoBox) {
-            estadoBox.innerHTML = 'No se puede guardar sin empresa seleccionada. <a href="/seleccionar_empresa.html">Seleccionar empresa</a>';
-            estadoBox.className = 'error';
-          }
-          if (btnGuardarEstado) btnGuardarEstado.disabled = true;
-        } else {
-          if (estadoBox && estadoBox.className === 'error') {
-            estadoBox.textContent = '';
-            estadoBox.className = 'form-help';
-          }
-          if (btnGuardarEstado) btnGuardarEstado.disabled = false;
-        }
-      } catch (e) {
-        console.warn('No se pudo ajustar estado del botón de colores:', e);
-      }
     }
 
     bootstrap();

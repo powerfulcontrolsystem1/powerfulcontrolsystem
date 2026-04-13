@@ -1,6 +1,6 @@
 # Estructura del codigo
 
-Fecha de actualizacion: 2026-04-12
+Fecha de actualizacion: 2026-04-13
 
 ## Objetivo
 Este documento resume la estructura tecnica principal del sistema y sirve como referencia para mantenimiento y evolucion.
@@ -55,6 +55,24 @@ flowchart TD
 
 ## Regla de mantenimiento
 Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe reflejarse en este documento y en los diagramas relacionados dentro de documentos/diagramas/.
+
+## Actualizacion 2026-04-13 (estaciones: configuracion robusta, colores centralizados y sensores)
+
+- Frontend estaciones:
+  - `web/administrar_empresa/configuracion_de_estaciones.html`:
+    - centraliza la gestion de colores de estado del carrito (`color_carrito_activo`/`color_carrito_inactivo`) en esta pagina.
+    - agrega parseo robusto de `estaciones_config` para tolerar configuraciones legacy serializadas.
+    - mejora sincronizacion de carritos por estacion para continuar ante colisiones idempotentes por codigo/referencia/nombre.
+    - valida que el `estacion_id` configurado para sensores exista dentro del rango `1..cantidad`.
+  - `web/administrar_empresa/configuracion.html`:
+    - retira bloque de colores de carrito para evitar duplicidad de configuracion y dejar una unica fuente operativa en estaciones.
+  - `web/administrar_empresa/estaciones.html`:
+    - aplica parseo robusto de configuracion y selecciona el estado mas reciente de sensor por estacion usando `last_seen`.
+
+- QA backend de aislamiento multiempresa:
+  - `backend/handlers/empresa_estacion_prefs_test.go`:
+    - valida persistencia de `estaciones_config` con 10 estaciones.
+    - valida aislamiento estricto por `empresa_id` en listado de preferencias.
 
 ## Actualizacion 2026-04-12 (propagacion robusta de `empresa_id` en panel administrar_empresa)
 

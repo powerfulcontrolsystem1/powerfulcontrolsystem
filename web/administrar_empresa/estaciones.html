@@ -113,6 +113,22 @@
       return { cantidad, estaciones: out, card_size };
     }
 
+    function parseStationConfigValue(raw) {
+      let current = raw;
+      for (let i = 0; i < 3; i += 1) {
+        if (typeof current !== 'string') break;
+        const trimmed = current.trim();
+        if (!trimmed) return null;
+        try {
+          current = JSON.parse(trimmed);
+        } catch (_) {
+          return null;
+        }
+      }
+      if (!current || typeof current !== 'object') return null;
+      return current;
+    }
+
     async function getConfigFromServer() {
       if (!empresaId) return null;
       try {
@@ -121,13 +137,9 @@
         if (!Array.isArray(prefs) || prefs.length === 0) return null;
         const pref = prefs.find(p => p && String(p.clave) === 'estaciones_config' && Number(p.estacion_id) === 0);
         if (!pref || !pref.valor) return null;
-        try {
-          const parsed = JSON.parse(pref.valor);
-          return normalizeConfig(parsed);
-        } catch (err) {
-          console.error('parse estaciones_config:', err);
-          return null;
-        }
+        const parsed = parseStationConfigValue(pref.valor);
+        if (!parsed) return null;
+        return normalizeConfig(parsed);
       } catch (err) {
         console.warn('getConfigFromServer error:', err);
         return null;
@@ -302,7 +314,7 @@
         let sensorColor = '#000000';
         if (sensor && sensor.device_id) {
           const lastStateNormalized = normalizeText(sensor.last_state || '');
-          const activeStates = ['1','true','si','on','active','open'];
+          const activeStates = ['1', 'true', 'si', 'sí', 'on', 'active', 'open', 'abierto', 'encendido', 'activo'];
           const isActive = activeStates.indexOf(lastStateNormalized) !== -1;
           sensorColor = isActive ? '#00c853' : '#000000';
           if (sensor.last_seen) {
@@ -377,11 +389,23 @@
         if (!Array.isArray(devices)) return;
         devices.forEach(d => {
           const estId = Number(d && (d.estacion_id || 0)) || 0;
-          state.sensorsByEstacion[estId] = {
+          const current = state.sensorsByEstacion[estId];
+          const candidate = {
             device_id: d.device_id,
             last_state: d.last_state,
             last_seen: d.last_seen
           };
+
+          if (!current) {
+            state.sensorsByEstacion[estId] = candidate;
+            return;
+          }
+
+          const currentTime = Date.parse(String(current.last_seen || '').replace(' ', 'T')) || 0;
+          const candidateTime = Date.parse(String(candidate.last_seen || '').replace(' ', 'T')) || 0;
+          if (candidateTime >= currentTime) {
+            state.sensorsByEstacion[estId] = candidate;
+          }
         });
       } catch (err) {
         console.warn('No se pudo cargar estado de sensores:', err);

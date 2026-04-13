@@ -68,6 +68,27 @@
       </div>
     </section>
 
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Estados visuales de estaciones</h2>
+        <button id="btnGuardarEstadoCarrito" type="button" class="btn">Guardar colores</button>
+      </div>
+      <p class="form-help">Personaliza el color de las tarjetas según el estado operativo del carrito de cada estación.</p>
+      <div class="form">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="carritoColorActivo">Color cuando el carrito está activo</label>
+            <input id="carritoColorActivo" type="color" class="form-input" value="#d9fbe8">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="carritoColorInactivo">Color cuando el carrito está inactivo</label>
+            <input id="carritoColorInactivo" type="color" class="form-input" value="#fff9ef">
+          </div>
+        </div>
+      </div>
+      <div id="estadoCarritoMsg" class="form-help"></div>
+    </section>
+
     <div id="messageBox" class="form-help"></div>
 
     <section class="card empresa-section">
@@ -187,6 +208,86 @@
       return String(v == null ? '' : v).trim().toLowerCase();
     }
 
+    function normalizeColorHex(v, fallback) {
+      var raw = String(v == null ? '' : v).trim().toLowerCase();
+      var base = String(fallback == null ? '' : fallback).trim().toLowerCase();
+      var hex = raw || base;
+      if (!hex || hex.length !== 7 || hex.charAt(0) !== '#') {
+        return base || '#fff9ef';
+      }
+      for (var i = 1; i < hex.length; i += 1) {
+        var code = hex.charCodeAt(i);
+        var isDigit = code >= 48 && code <= 57;
+        var isHexAlpha = code >= 97 && code <= 102;
+        if (!isDigit && !isHexAlpha) {
+          return base || '#fff9ef';
+        }
+      }
+      return hex;
+    }
+
+    function setEstadoCarritoMessage(text, type) {
+      var box = document.getElementById('estadoCarritoMsg');
+      if (!box) return;
+      box.textContent = text || '';
+      box.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'form-help');
+    }
+
+    function setEstadoCarritoFormData(cfg) {
+      var src = cfg && typeof cfg === 'object' ? cfg : {};
+      var activo = document.getElementById('carritoColorActivo');
+      var inactivo = document.getElementById('carritoColorInactivo');
+      if (activo) activo.value = normalizeColorHex(src.color_carrito_activo, '#d9fbe8');
+      if (inactivo) inactivo.value = normalizeColorHex(src.color_carrito_inactivo, '#fff9ef');
+    }
+
+    async function fetchEmpresaConfigAvanzada() {
+      if (!empresaId) throw new Error('empresa_id missing');
+      return requestJSON('/api/empresa/configuracion_avanzada?empresa_id=' + encodeURIComponent(empresaId));
+    }
+
+    async function loadEstadoCarritoConfig() {
+      if (!empresaId) {
+        setEstadoCarritoMessage('No se puede cargar colores sin empresa seleccionada.', 'error');
+        return;
+      }
+      try {
+        var cfg = await fetchEmpresaConfigAvanzada();
+        setEstadoCarritoFormData(cfg || {});
+        setEstadoCarritoMessage('', 'help');
+      } catch (err) {
+        setEstadoCarritoMessage('No se pudo cargar colores de estaciones: ' + (err && err.message ? err.message : err), 'error');
+      }
+    }
+
+    async function guardarEstadoCarritoConfig() {
+      if (!empresaId) {
+        setEstadoCarritoMessage('No se puede guardar sin empresa seleccionada.', 'error');
+        return;
+      }
+
+      try {
+        var current = await fetchEmpresaConfigAvanzada();
+        var payload = Object.assign({}, current || {}, {
+          empresa_id: Number(empresaId),
+          color_carrito_activo: normalizeColorHex(document.getElementById('carritoColorActivo').value, '#d9fbe8'),
+          color_carrito_inactivo: normalizeColorHex(document.getElementById('carritoColorInactivo').value, '#fff9ef')
+        });
+
+        var out = await requestJSON('/api/empresa/configuracion_avanzada?empresa_id=' + encodeURIComponent(empresaId), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        var updated = out && out.configuracion ? out.configuracion : payload;
+        setEstadoCarritoFormData(updated);
+        setEstadoCarritoMessage('Colores de estaciones guardados correctamente.', 'success');
+      } catch (err) {
+        setEstadoCarritoMessage('No se pudo guardar colores de estaciones: ' + (err && err.message ? err.message : err), 'error');
+      }
+    }
+
     function normalizedCode(value) {
       return String(value == null ? '' : value).trim().toUpperCase();
     }
@@ -270,8 +371,18 @@
         showMessage('Ingresa el identificador del dispositivo.', 'error');
         return;
       }
+      if (!estacionId || estacionId < 1) {
+        showMessage('Ingresa una estación válida (mayor a 0).', 'error');
+        return;
+      }
       if (!empresaId) {
         showMessage('Falta empresa_id en la URL.', 'error');
+        return;
+      }
+
+      var cfg = await getConfigFromServer();
+      if (cfg && Number(cfg.cantidad || 0) > 0 && estacionId > Number(cfg.cantidad || 0)) {
+        showMessage('La estación indicada no existe en la configuración actual. Ajusta primero la cantidad de estaciones.', 'error');
         return;
       }
 
@@ -316,6 +427,22 @@
       return { cantidad: cantidad, estaciones: out, card_size: cardSize };
     }
 
+    function parseStationConfigValue(raw) {
+      var current = raw;
+      for (var i = 0; i < 3; i += 1) {
+        if (typeof current !== 'string') break;
+        var trimmed = current.trim();
+        if (!trimmed) return null;
+        try {
+          current = JSON.parse(trimmed);
+        } catch (err) {
+          return null;
+        }
+      }
+      if (!current || typeof current !== 'object') return null;
+      return current;
+    }
+
     async function getConfigFromServer() {
       if (!empresaId) return null;
       try {
@@ -328,7 +455,9 @@
         });
         if (!pref || !pref.valor) return null;
 
-        return normalizeConfig(JSON.parse(pref.valor));
+        var parsed = parseStationConfigValue(pref.valor);
+        if (!parsed) return null;
+        return normalizeConfig(parsed);
       } catch (err) {
         console.warn('getConfigFromServer:', err);
         return null;
@@ -503,17 +632,36 @@
 
     async function syncCarritosFromStations(cfg) {
       if (!empresaId || !cfg || !Array.isArray(cfg.estaciones) || !cfg.estaciones.length) {
-        return { created: 0, updated: 0, ignored: 0 };
+        return { created: 0, updated: 0, ignored: 0, errors: 0 };
       }
 
       var rows = await requestJSON('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(empresaId) + '&include_inactive=1');
       var existing = Array.isArray(rows) ? rows : [];
       var byCode = new Map();
-      existing.forEach(function (item) {
-        byCode.set(normalizedCode(item.codigo), item);
-      });
+      var byReference = new Map();
+      var byName = new Map();
 
-      var counters = { created: 0, updated: 0, ignored: 0 };
+      function indexCarrito(item) {
+        var code = normalizedCode(item && item.codigo);
+        if (code) byCode.set(code, item);
+
+        var ref = normalizedCode(item && item.referencia_externa);
+        if (ref) byReference.set(ref, item);
+
+        var name = normalizeText(item && item.nombre);
+        if (name) byName.set(name, item);
+      }
+
+      function resolveStationCarrito(code, ref, stationName) {
+        return byCode.get(normalizedCode(code)) ||
+          byReference.get(normalizedCode(ref)) ||
+          byName.get(normalizeText(stationName)) ||
+          null;
+      }
+
+      existing.forEach(indexCarrito);
+
+      var counters = { created: 0, updated: 0, ignored: 0, errors: 0 };
 
       for (var i = 0; i < cfg.estaciones.length; i += 1) {
         var station = cfg.estaciones[i];
@@ -523,61 +671,110 @@
         var stationName = String(station.nombre || '').trim() || ('Estación ' + stationID);
         var code = getCarritoCodeForStation(stationID);
         var ref = 'ESTACION_' + stationID;
-        var current = byCode.get(normalizedCode(code));
 
-        if (!current) {
-          var createdBody = await requestJSON('/api/empresa/carritos_compra', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              empresa_id: empresaId,
-              codigo: code,
-              nombre: stationName,
-              canal_venta: 'mostrador',
-              estado_carrito: 'cerrado',
-              moneda: 'COP',
-              referencia_externa: ref,
-              observaciones: 'Carrito generado automáticamente para estación #' + stationID
-            })
-          });
+        try {
+          var current = resolveStationCarrito(code, ref, stationName);
 
-          var createdID = Number(createdBody && createdBody.id ? createdBody.id : 0);
-          if (createdID > 0) {
-            var createTransition = await ensureCarritoClosedAndInactive(createdID, { estado: 'activo', estado_carrito: 'abierto', pagado_en: '' });
-            counters.updated += createTransition.applied;
-            counters.ignored += createTransition.ignored;
+          if (!current) {
+            try {
+              var createdBody = await requestJSON('/api/empresa/carritos_compra', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  empresa_id: empresaId,
+                  codigo: code,
+                  nombre: stationName,
+                  canal_venta: 'mostrador',
+                  estado_carrito: 'cerrado',
+                  moneda: 'COP',
+                  referencia_externa: ref,
+                  observaciones: 'Carrito generado automáticamente para estación #' + stationID
+                })
+              });
+
+              var createdID = Number(createdBody && createdBody.id ? createdBody.id : 0);
+              var createdItem = {
+                id: createdID,
+                empresa_id: empresaId,
+                codigo: code,
+                nombre: stationName,
+                canal_venta: 'mostrador',
+                estado_carrito: 'abierto',
+                moneda: 'COP',
+                referencia_externa: ref,
+                estado: 'activo',
+                pagado_en: ''
+              };
+              indexCarrito(createdItem);
+              counters.created += 1;
+
+              if (createdID > 0) {
+                var createTransition = await ensureCarritoClosedAndInactive(createdID, createdItem);
+                counters.updated += createTransition.applied;
+                counters.ignored += createTransition.ignored;
+              }
+              continue;
+            } catch (createErr) {
+              var msg = normalizeText(createErr && createErr.message ? createErr.message : createErr);
+              var duplicate = msg.indexOf('unique') !== -1 ||
+                msg.indexOf('constraint') !== -1 ||
+                msg.indexOf('duplicado') !== -1 ||
+                msg.indexOf('duplicados') !== -1;
+              if (!duplicate) throw createErr;
+
+              // En escenarios legacy/concurrentes puede existir un carrito previo con el mismo nombre o referencia.
+              // Recargamos índices y resolvemos por código/referencia/nombre para continuar.
+              rows = await requestJSON('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(empresaId) + '&include_inactive=1');
+              existing = Array.isArray(rows) ? rows : [];
+              byCode.clear();
+              byReference.clear();
+              byName.clear();
+              existing.forEach(indexCarrito);
+              current = resolveStationCarrito(code, ref, stationName);
+              if (!current) throw createErr;
+            }
           }
-          counters.created += 1;
-          continue;
+
+          var currentID = Number(current && current.id ? current.id : 0);
+          if (!currentID) {
+            throw new Error('No se pudo resolver el carrito asociado a la estación ' + stationID);
+          }
+
+          var requiresNameUpdate = String(current.nombre || '').trim() !== stationName;
+          var requiresCodeUpdate = normalizedCode(current.codigo) !== normalizedCode(code);
+          var requiresRefUpdate = normalizedCode(current.referencia_externa) !== normalizedCode(ref);
+
+          if (requiresNameUpdate || requiresCodeUpdate || requiresRefUpdate) {
+            await requestJSON('/api/empresa/carritos_compra', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                id: currentID,
+                empresa_id: empresaId,
+                codigo: code,
+                nombre: stationName,
+                canal_venta: String(current.canal_venta || 'mostrador'),
+                cliente_id: Number(current.cliente_id || 0),
+                estado_carrito: String(current.estado_carrito || 'abierto'),
+                moneda: String(current.moneda || 'COP'),
+                referencia_externa: ref,
+                observaciones: String(current.observaciones || '')
+              })
+            });
+            current.codigo = code;
+            current.nombre = stationName;
+            current.referencia_externa = ref;
+            indexCarrito(current);
+            counters.updated += 1;
+          }
+
+          var transition = await ensureCarritoClosedAndInactive(currentID, current);
+          counters.updated += transition.applied;
+          counters.ignored += transition.ignored;
+        } catch (err) {
+          counters.errors += 1;
+          console.error('No se pudo sincronizar carrito para estación', stationID, err);
         }
-
-        var requiresNameUpdate = String(current.nombre || '').trim() !== stationName;
-        var requiresCodeUpdate = normalizedCode(current.codigo) !== normalizedCode(code);
-        var requiresRefUpdate = !String(current.referencia_externa || '').trim();
-
-        if (requiresNameUpdate || requiresCodeUpdate || requiresRefUpdate) {
-          await requestJSON('/api/empresa/carritos_compra', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              id: Number(current.id || 0),
-              empresa_id: empresaId,
-              codigo: code,
-              nombre: stationName,
-              canal_venta: String(current.canal_venta || 'mostrador'),
-              cliente_id: Number(current.cliente_id || 0),
-              estado_carrito: String(current.estado_carrito || 'abierto'),
-              moneda: String(current.moneda || 'COP'),
-              referencia_externa: String(current.referencia_externa || ref),
-              observaciones: String(current.observaciones || '')
-            })
-          });
-          counters.updated += 1;
-        }
-
-        var transition = await ensureCarritoClosedAndInactive(Number(current.id || 0), current);
-        counters.updated += transition.applied;
-        counters.ignored += transition.ignored;
       }
 
       return counters;
@@ -644,7 +841,12 @@
       renderRows(cfg);
 
       var sync = await syncCarritosFromStations(cfg);
-      showMessage('Configuración guardada. Creados: ' + sync.created + ' | Actualizados: ' + sync.updated + ' | Ignorados: ' + sync.ignored + '.', 'success');
+      var msg = 'Configuración guardada. Creados: ' + sync.created + ' | Actualizados: ' + sync.updated + ' | Ignorados: ' + sync.ignored;
+      if (sync.errors > 0) {
+        showMessage(msg + ' | Errores: ' + sync.errors + '.', 'error');
+        return;
+      }
+      showMessage(msg + '.', 'success');
     }
 
     async function cargarEmpresa() {
@@ -693,7 +895,12 @@
         try {
           var cfg = await applyCantidad(cantidad);
           var sync = await syncCarritosFromStations(cfg);
-          showMessage('Estaciones generadas y carritos sincronizados. Creados: ' + sync.created + ' | Actualizados: ' + sync.updated + ' | Ignorados: ' + sync.ignored + '.', 'success');
+          var msg = 'Estaciones generadas y carritos sincronizados. Creados: ' + sync.created + ' | Actualizados: ' + sync.updated + ' | Ignorados: ' + sync.ignored;
+          if (sync.errors > 0) {
+            showMessage(msg + ' | Errores: ' + sync.errors + '.', 'error');
+            return;
+          }
+          showMessage(msg + '.', 'success');
         } catch (err) {
           showMessage(err.message || 'No se pudieron sincronizar los carritos de estaciones.', 'error');
         }
@@ -711,6 +918,14 @@
           showMessage(err.message || 'No se pudo completar la inactivación de carritos.', 'error');
         });
       });
+
+      var btnGuardarEstadoCarrito = document.getElementById('btnGuardarEstadoCarrito');
+      if (btnGuardarEstadoCarrito) {
+        btnGuardarEstadoCarrito.addEventListener('click', function (ev) {
+          ev.preventDefault();
+          guardarEstadoCarritoConfig();
+        });
+      }
 
       var masterSimple = document.getElementById('masterVentaSimple');
       if (masterSimple) {
@@ -746,10 +961,11 @@
     async function bootstrap() {
       if (!empresaId) {
         showMessage('No se encontró empresa_id en la URL.', 'error');
+        setEstadoCarritoMessage('No se puede editar colores sin empresa seleccionada.', 'error');
       }
 
       wireEvents();
-      await Promise.all([cargarEmpresa(), loadDevices()]);
+      await Promise.all([cargarEmpresa(), loadDevices(), loadEstadoCarritoConfig()]);
 
       var cfg = await getConfigFromServer();
       if (!cfg) {

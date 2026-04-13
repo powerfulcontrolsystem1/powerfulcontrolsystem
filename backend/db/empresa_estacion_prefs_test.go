@@ -88,3 +88,34 @@ func TestEmpresaEstacionPrefs_UpsertGetList(t *testing.T) {
 		t.Fatalf("valor mismatch after update: expected %v, got %v", d, c)
 	}
 }
+
+func TestEmpresaEstacionPrefs_UpsertSinEstadoSigueActivoEnListado(t *testing.T) {
+	dbConn := openCarritoInventarioTestDB(t)
+	if err := EnsureEmpresaEstacionPrefsSchema(dbConn); err != nil {
+		t.Fatalf("ensure prefs schema: %v", err)
+	}
+
+	payload := EmpresaEstacionPref{
+		EmpresaID:      88,
+		EstacionID:     0,
+		Clave:          "estaciones_config",
+		Valor:          `{"cantidad":10,"estaciones":[{"id":1,"nombre":"E1"}]}`,
+		UsuarioCreador: "test",
+		Estado:         "",
+	}
+
+	if _, err := UpsertEmpresaEstacionPref(dbConn, payload); err != nil {
+		t.Fatalf("upsert sin estado: %v", err)
+	}
+
+	rows, err := ListEmpresaEstacionPrefs(dbConn, 88, 0, false)
+	if err != nil {
+		t.Fatalf("list prefs activas: %v", err)
+	}
+	if len(rows) == 0 {
+		t.Fatalf("expected estaciones_config visible as activo when estado is empty")
+	}
+	if rows[0].Estado != "activo" {
+		t.Fatalf("expected estado activo normalizado, got %q", rows[0].Estado)
+	}
+}

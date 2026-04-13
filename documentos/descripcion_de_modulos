@@ -11,6 +11,16 @@ Actualizacion 2026-04-13 (acceso empresa y estaciones):
 - Se ajusta el modulo de seleccion de empresa para persistir contexto empresarial y abrir administracion con parametros `id` + `empresa_id`.
 - Se estabiliza configuracion de estaciones para generar y mostrar multiples estaciones (incluyendo 10 o mas) con sincronizacion de carritos tolerante a conflictos idempotentes de cierre/inactivacion.
 
+Actualizacion 2026-04-13 (estaciones, sensores y facturacion visual por estacion):
+- Se centraliza la configuracion de colores de estado de carrito en `configuracion_de_estaciones`, retirando duplicidad en `configuracion.html`.
+- El modulo de estaciones mejora compatibilidad con configuraciones legacy de `estaciones_config` y mantiene comportamiento estable para 10+ estaciones.
+- El modulo sensor de puertas valida rango de estacion antes de registrar dispositivos y la vista de estaciones usa el estado mas reciente por `last_seen`.
+- Se valida aislamiento por `empresa_id` en preferencias de estaciones con prueba automatizada en backend (`empresa_estacion_prefs_test.go`).
+
+Actualizacion 2026-04-13 (persistencia backend de estaciones):
+- Se corrige la capa DB de `empresa_estacion_prefs` para normalizar `estado` vacio como `activo`, evitando que la configuracion de estaciones desaparezca al recargar cuando el frontend guarda sin enviar `estado`.
+- Se agrega prueba de no regresion en DB y se ajusta prueba de handler para reflejar el payload real del frontend.
+
 Actualizacion 2026-04-12 (autenticacion administrativa: contrato y verificacion humana):
 - Se unifica el flujo de login de administradores en `login.html -> OAuth Google -> /accept.html -> /accept/complete`.
 - La aceptación de contrato queda trazable y persistente por administrador (`acepta_contrato`) y solo se exige una vez por cuenta.

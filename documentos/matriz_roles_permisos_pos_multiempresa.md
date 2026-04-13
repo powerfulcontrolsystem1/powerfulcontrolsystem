@@ -45,6 +45,15 @@ Leyenda:
 
 ## Estado de implementacion tecnica inicial (2026-04-04)
 
+- Actualizacion 2026-04-13 (estaciones, sensores y facturacion visual por estacion):
+	- No hay ampliacion de privilegios ni cambios en matriz CRUD/A; se mantiene el mismo control para `/api/empresa/estacion_prefs`, `/api/empresa/configuracion_avanzada`, `/api/empresa/carritos_compra` y endpoints de sensores empresariales.
+	- La reubicacion de colores de carrito a `configuracion_de_estaciones` es un cambio de UX/flujo, no de autorizacion.
+	- Se valida aislamiento por `empresa_id` con prueba de handler en `empresa_estacion_prefs`, reforzando separacion de datos entre empresas.
+
+- Actualizacion 2026-04-13 (fix persistencia `empresa_estacion_prefs`):
+	- Se corrige normalizacion de estado en capa DB (`estado` vacio => `activo`) sin alterar permisos ni wrappers de autorizacion.
+	- El alcance de seguridad permanece igual: controles por `empresa_id` y permisos vigentes en rutas `/api/empresa/estacion_prefs`.
+
 - Actualizacion 2026-04-13 (login empresa, seleccion y estaciones):
 	- Se mantiene el mismo esquema de permisos por rol/modulo para endpoints empresariales (`/api/empresa/usuarios/*`, `/api/empresa/estacion_prefs`, `/api/empresa/carritos_compra`).
 	- Los cambios son de robustez de flujo y contexto (`empresa_id`) en frontend, sin ampliacion de privilegios ni cambio de matriz CRUD/A.

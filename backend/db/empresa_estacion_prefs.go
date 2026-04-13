@@ -83,10 +83,10 @@ func ListEmpresaEstacionPrefs(dbConn *sql.DB, empresaID int64, estacionID int64,
 		args = append(args, estacionID)
 	}
 	if !includeInactive {
-		where += " AND LOWER(COALESCE(estado, 'activo')) = 'activo'"
+		where += " AND LOWER(COALESCE(NULLIF(TRIM(estado), ''), 'activo')) = 'activo'"
 	}
 
-	q := "SELECT id, empresa_id, estacion_id, COALESCE(clave, ''), COALESCE(valor, ''), COALESCE(fecha_creacion, ''), COALESCE(fecha_actualizacion, ''), COALESCE(usuario_creador, ''), COALESCE(estado, 'activo'), COALESCE(observaciones, '') FROM empresa_estacion_prefs " + where + " ORDER BY estacion_id, clave"
+	q := "SELECT id, empresa_id, estacion_id, COALESCE(clave, ''), COALESCE(valor, ''), COALESCE(fecha_creacion, ''), COALESCE(fecha_actualizacion, ''), COALESCE(usuario_creador, ''), COALESCE(NULLIF(TRIM(estado), ''), 'activo'), COALESCE(observaciones, '') FROM empresa_estacion_prefs " + where + " ORDER BY estacion_id, clave"
 
 	rows, err := dbConn.Query(q, args...)
 	if err != nil {
@@ -118,7 +118,7 @@ func GetEmpresaEstacionPref(dbConn *sql.DB, empresaID int64, estacionID int64, c
 		return nil, errors.New("clave es obligatoria")
 	}
 
-	row := dbConn.QueryRow(`SELECT id, empresa_id, estacion_id, COALESCE(clave,''), COALESCE(valor,''), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,''), COALESCE(estado,'activo'), COALESCE(observaciones,'') FROM empresa_estacion_prefs WHERE empresa_id = ? AND estacion_id = ? AND clave = ? LIMIT 1`, empresaID, estacionID, clave)
+	row := dbConn.QueryRow(`SELECT id, empresa_id, estacion_id, COALESCE(clave,''), COALESCE(valor,''), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,''), COALESCE(NULLIF(TRIM(estado), ''),'activo'), COALESCE(observaciones,'') FROM empresa_estacion_prefs WHERE empresa_id = ? AND estacion_id = ? AND clave = ? LIMIT 1`, empresaID, estacionID, clave)
 	var p EmpresaEstacionPref
 	if err := row.Scan(&p.ID, &p.EmpresaID, &p.EstacionID, &p.Clave, &p.Valor, &p.FechaCreacion, &p.FechaActualizacion, &p.UsuarioCreador, &p.Estado, &p.Observaciones); err != nil {
 		if err == sql.ErrNoRows {
@@ -144,6 +144,10 @@ func UpsertEmpresaEstacionPref(dbConn *sql.DB, p EmpresaEstacionPref) (int64, er
 	if p.Clave == "" {
 		return 0, errors.New("clave es obligatoria")
 	}
+	p.Estado = strings.ToLower(strings.TrimSpace(p.Estado))
+	if p.Estado == "" {
+		p.Estado = "activo"
+	}
 
 	// Use upsert via ON CONFLICT on unique index
 	res, err := dbConn.Exec(`INSERT INTO empresa_estacion_prefs (
@@ -154,7 +158,7 @@ func UpsertEmpresaEstacionPref(dbConn *sql.DB, p EmpresaEstacionPref) (int64, er
         valor = excluded.valor,
         fecha_actualizacion = datetime('now','localtime'),
         usuario_creador = CASE WHEN trim(excluded.usuario_creador) <> '' THEN excluded.usuario_creador ELSE empresa_estacion_prefs.usuario_creador END,
-        estado = excluded.estado,
+		estado = COALESCE(NULLIF(TRIM(excluded.estado), ''), 'activo'),
         observaciones = excluded.observaciones`,
 		p.EmpresaID, p.EstacionID, p.Clave, strings.TrimSpace(p.Valor), strings.TrimSpace(p.UsuarioCreador), p.Estado, strings.TrimSpace(p.Observaciones))
 	if err != nil {

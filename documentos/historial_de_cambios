@@ -1,5 +1,42 @@
  - Historial de cambios
 
+ - 2026-04-13: Correccion de persistencia en estaciones (no desaparicion tras guardar) y validacion integral
+     - Archivos modificados:
+         - backend/db/empresa_estacion_prefs.go
+         - backend/db/empresa_estacion_prefs_test.go
+         - backend/handlers/empresa_estacion_prefs_test.go
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - CHANGELOG.md
+         - documentos/historial_de_cambios
+     - Descripción: Se corrige la causa raiz por la que las estaciones desaparecian luego de guardarse: `empresa_estacion_prefs` ahora normaliza `estado` vacio como `activo` en upsert, listado y lectura; se agrega prueba de no regresion para el flujo real del frontend (payload sin `estado`).
+     - Verificación técnica:
+         - `go test ./db -run EmpresaEstacionPrefs -count=1` -> PASADO.
+         - `go test ./handlers -run EmpresaEstacionPrefsHandler -count=1` -> PASADO.
+         - `go test ./handlers -run "PublicSensorHeartbeat|EmpresaSensorConfigHandler_CreateAndList|EmpresaCarritosCompraAndItemsFlow|EmpresaCarritosCompraRejectsDoublePago|EmpresaFacturacionTransaccionalEmiteEventosContables" -count=1` -> PASADO.
+         - `go test ./db -run "SensorPuertasSchemaUpsertAndHeartbeat|EmpresaDocumentoFacturacionUpsertAndGet|EmpresaDocumentoFacturacionListByEmpresaFiltrosClienteFecha|PrepareFacturacionDocumentoLegal" -count=1` -> PASADO.
+
+ - 2026-04-13: Estaciones 10+, colores reubicados y validacion transversal estaciones-sensores-facturacion
+     - Archivos modificados:
+         - web/administrar_empresa/configuracion_de_estaciones.html
+         - web/administrar_empresa/configuracion.html
+         - web/administrar_empresa/estaciones.html
+         - backend/handlers/empresa_estacion_prefs_test.go (nuevo)
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/diagramas/diagrama_flujo_procesos.md
+         - documentos/diagramas/versionado.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - CHANGELOG.md
+         - documentos/historial_de_cambios
+     - Descripción: Se corrige el flujo para que la configuracion de estaciones soporte carga/lectura estable de 10 estaciones (incluyendo payloads legacy serializados), se mueve la gestion de colores de estado de carrito desde configuracion general hacia configuracion de estaciones, se fortalece la validacion sensor-estacion por rango y se mejora la resiliencia de sincronizacion de carritos por estacion ante colisiones idempotentes.
+     - Verificación técnica:
+         - `go test ./handlers -run EmpresaEstacionPrefsHandler -count=1` -> PASADO.
+         - `go test ./handlers -run "EmpresaEstacionPrefsHandler|EmpresaCarritosCompraAndItemsFlow|EmpresaCarritosCompraRejectsDoublePago|EmpresaSensorConfigHandler_CreateAndList|PublicSensorHeartbeat|EmpresaFacturacionElectronicaReintentosYReconciliacion|EmpresaFacturacionTransaccional" -count=1` -> PASADO.
+         - `go test ./db -run "EmpresaEstacionPrefs_UpsertGetList|SensorPuertasSchemaUpsertAndHeartbeat|PrepareFacturacionDocumentoLegal|EmpresaDocumentoFacturacionUpsertAndGet|EmpresaDocumentoFacturacionListByEmpresaFiltrosClienteFecha" -count=1` -> PASADO.
+
  - 2026-04-13: Reparacion de seleccion de empresa, recordar usuario y estaciones masivas
      - Archivos modificados:
          - web/login_usuario.html
