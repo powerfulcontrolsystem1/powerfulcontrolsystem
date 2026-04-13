@@ -209,7 +209,7 @@ ul{padding-left:18px}
 /* Reducir margen superior solo en la página del portal para subir el título */
 .portal-main.container{margin-top:12px}
 .portal-intro{max-width:1100px;margin:0 auto 18px auto;display:flex;align-items:center;justify-content:center;gap:18px;text-align:center}
-.portal-intro h1{margin:0;font-size:2rem;color:var(--accent);font-family:'Playfair Display', Georgia,'Segoe UI',Roboto,Arial,sans-serif;font-weight:800;letter-spacing:0.6px}
+.portal-intro h1{margin:0;font-size:2rem;color:#F5F5DC;font-family:'Playfair Display', Georgia,'Segoe UI',Roboto,Arial,sans-serif;font-weight:800;letter-spacing:0.6px}
 .portal-intro .muted{display:none}
 @media (max-width:720px){.portal-intro{flex-direction:column;align-items:center;text-align:center}.portal-intro .muted{margin-top:8px;display:none}}
 
@@ -222,7 +222,7 @@ ul{padding-left:18px}
 .btn.dark:hover{background:linear-gradient(180deg,#26517f,#1d3d63);}
 
 .portal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;max-width:1100px;margin:0 auto}
-.portal-card{background:linear-gradient(180deg,var(--surface-soft),var(--surface));border:1px solid var(--border);padding:18px;border-radius:12px;box-shadow:0 14px 30px rgba(5,12,24,0.44);display:flex;flex-direction:column;justify-content:space-between}
+.portal-card{background:linear-gradient(180deg,var(--surface-soft),var(--surface));border:1px solid var(--border);padding:14px;border-radius:12px;box-shadow:0 14px 30px rgba(5,12,24,0.44);display:flex;flex-direction:column;justify-content:space-between}
 .portal-card h3{margin:0 0 8px 0}
 .portal-card p{color:var(--muted);flex:1;margin-bottom:12px}
 .portal-card .btn.secondary{align-self:flex-start}
@@ -235,25 +235,25 @@ ul{padding-left:18px}
   box-shadow:0 8px 20px rgba(16,32,48,0.08);
   align-items:center;
   text-align:center;
-  padding:22px;
+  padding:18px;
 }
 .portal-card.dark-mode .card-logo{margin:0 auto;display:block;width:144px;height:auto;margin-bottom:12px;opacity:0.98;filter:none}
 .portal-card.dark-mode .card-actions{display:flex;justify-content:center;gap:8px;margin-top:14px}
-.portal-card .card-title, .portal-card h3{font-family: 'Segoe UI', Roboto, Arial, sans-serif; font-weight:900; font-size:1.28rem}
-.portal-card p{color:#2a3b45; font-size:1.05rem; margin-bottom:12px}
-.portal-card .card-actions .vermas{display:inline-block;padding:10px 18px;border-radius:12px;background:linear-gradient(180deg,var(--accent),#1475cc);color:#fff;font-weight:900;border:none;text-decoration:none;box-shadow:0 10px 24px rgba(20,95,162,0.18);font-size:1rem}
+.portal-card .card-title, .portal-card h3{font-family: 'Segoe UI', Roboto, Arial, sans-serif; font-weight:900; font-size:calc(1.28rem + 3px)}
+.portal-card p{color:#2a3b45; font-size:calc(1.05rem + 3px); margin-bottom:12px}
+.portal-card .card-actions .vermas{display:inline-block;padding:10px 18px;border-radius:12px;background:linear-gradient(180deg,var(--accent),#1475cc);color:#fff;font-weight:900;border:none;text-decoration:none;box-shadow:0 10px 24px rgba(20,95,162,0.18);font-size:calc(1rem + 3px)}
 .portal-card .card-actions .vermas:hover{filter:brightness(0.98)}
 .portal-card .card-actions{margin-top:12px}
 .portal-card .more-btn{display:inline-block;padding:8px 12px;border-radius:8px;background:rgba(255,255,255,0.03);color:var(--text);font-weight:700;border:1px solid rgba(255,255,255,0.04);text-decoration:none;margin-left:8px}
 
 /* Caja card: left-align totals, each value on its own row, all bold and black */
-.caja-card .caja-totals { text-align: left; padding: 4px 6px; font-size: calc(0.95rem + 2px); display:flex; flex-direction:column; gap:6px; align-items:flex-start; }
-.caja-card .caja-totals .caja-row { margin: 0; font-weight:800; color:#000; width:100%; display:flex; justify-content:space-between; align-items:center; }
-.caja-card .caja-totals .caja-row .caja-label{ font-weight:700; color:#111; }
+.caja-card .caja-totals { text-align: left; padding: 3px 6px; font-size: calc(0.95rem + 2px); display:flex; flex-direction:column; gap:2px; align-items:flex-start; }
+.caja-card .caja-totals .caja-row { margin: 0; font-weight:800; color:#000; width:100%; display:flex; justify-content:space-between; align-items:center; line-height:1; }
+.caja-card .caja-totals .caja-row .caja-label{ font-weight:700; color:#111; margin-right:6px; }
 .caja-card .caja-totals .caja-row .caja-value{ font-weight:900; color:#000; }
-.caja-card .caja-title { text-align: center; margin-bottom: 4px; color: #000; font-weight:800; }
-.caja-card .caja-actions{ margin-top:6px; display:block; width:100%; }
-.caja-card .caja-actions .btn{ width:100%; padding:8px 10px; font-size:0.98rem; border-radius:8px }
+.caja-card .caja-title { text-align: center; margin-bottom: 2px; color: #000; font-weight:800; }
+.caja-card .caja-actions{ margin-top:4px; display:block; width:100%; }
+.caja-card .caja-actions .btn{ width:100%; padding:6px 8px; font-size:0.92rem; border-radius:8px; line-height:1; }
 
 /* Logo dentro de tarjetas */
 .portal-card .card-logo{width:72px;height:auto;margin-bottom:12px;opacity:0.95;filter:drop-shadow(0 6px 18px rgba(0,0,0,0.5))}

@@ -725,8 +725,8 @@ func InitMetricsTable(dbConn *sql.DB) error {
 }
 
 // CreateWompiPaymentRecord registra una transacción inicial de Wompi en la tabla pagos_wompi.
-func CreateWompiPaymentRecord(dbConn *sql.DB, licenciaID, empresaID int64, transactionID, reference, status, rawPayload string) (int64, error) {
-	res, err := dbConn.Exec("INSERT INTO pagos_wompi (licencia_id, empresa_id, transaction_id, reference, status, raw_payload, fecha_creacion) VALUES (?, ?, ?, ?, ?, ?, datetime('now','localtime'))", licenciaID, empresaID, transactionID, reference, status, rawPayload)
+func CreateWompiPaymentRecord(dbConn *sql.DB, licenciaID, empresaID int64, transactionID, reference, status, rawPayload, discountCode, asesorID string) (int64, error) {
+	res, err := dbConn.Exec("INSERT INTO pagos_wompi (licencia_id, empresa_id, transaction_id, reference, status, raw_payload, discount_code, asesor_id, fecha_creacion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'))", licenciaID, empresaID, transactionID, reference, status, rawPayload, discountCode, asesorID)
 	if err != nil {
 		return 0, err
 	}
@@ -758,6 +758,171 @@ func UpdateWompiPaymentRecordByReference(dbConn *sql.DB, reference, status, rawP
 		return nil
 	}
 	return fallbackErr
+}
+
+// WompiPaymentRecord representa una fila de pagos_wompi
+type WompiPaymentRecord struct {
+	ID           int64
+	LicenciaID   sql.NullInt64
+	EmpresaID    sql.NullInt64
+	TransactionID sql.NullString
+	Reference    sql.NullString
+	Status       sql.NullString
+	RawPayload   sql.NullString
+	DiscountCode sql.NullString
+	AsesorID     sql.NullString
+	FechaCreacion sql.NullString
+}
+
+// GetWompiPaymentByTransaction obtiene una fila de pagos_wompi por transaction_id
+func GetWompiPaymentByTransaction(dbConn *sql.DB, transactionID string) (*WompiPaymentRecord, error) {
+	row := dbConn.QueryRow(`SELECT id, licencia_id, empresa_id, transaction_id, reference, status, raw_payload, discount_code, asesor_id, fecha_creacion FROM pagos_wompi WHERE transaction_id = ? LIMIT 1`, transactionID)
+	var r WompiPaymentRecord
+	if err := row.Scan(&r.ID, &r.LicenciaID, &r.EmpresaID, &r.TransactionID, &r.Reference, &r.Status, &r.RawPayload, &r.DiscountCode, &r.AsesorID, &r.FechaCreacion); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &r, nil
+}
+
+// GetWompiPaymentByReference obtiene una fila de pagos_wompi por reference
+func GetWompiPaymentByReference(dbConn *sql.DB, reference string) (*WompiPaymentRecord, error) {
+	row := dbConn.QueryRow(`SELECT id, licencia_id, empresa_id, transaction_id, reference, status, raw_payload, discount_code, asesor_id, fecha_creacion FROM pagos_wompi WHERE reference = ? LIMIT 1`, reference)
+	var r WompiPaymentRecord
+	if err := row.Scan(&r.ID, &r.LicenciaID, &r.EmpresaID, &r.TransactionID, &r.Reference, &r.Status, &r.RawPayload, &r.DiscountCode, &r.AsesorID, &r.FechaCreacion); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &r, nil
+}
+
+// CRUD básicos para tabla asesores
+func CreateAsesor(dbConn *sql.DB, email, nombre, rol, notas string) (int64, error) {
+	res, err := dbConn.Exec("INSERT INTO asesores (email, nombre, rol, notas, fecha_creacion) VALUES (?, ?, ?, ?, datetime('now','localtime'))", email, nombre, rol, notas)
+	if err != nil {
+		return 0, err
+	}
+	return res.LastInsertId()
+}
+
+type Asesor struct {
+	ID int64 `json:"id"`
+	Email string `json:"email"`
+	Nombre string `json:"nombre"`
+	Rol string `json:"rol"`
+	Notas string `json:"notas"`
+	FechaCreacion string `json:"fecha_creacion"`
+	FechaActualizacion string `json:"fecha_actualizacion"`
+	Estado string `json:"estado"`
+}
+
+func ListAsesores(dbConn *sql.DB) ([]Asesor, error) {
+	rows, err := dbConn.Query("SELECT id, email, nombre, rol, notas, fecha_creacion, fecha_actualizacion, estado FROM asesores WHERE estado IS NULL OR estado <> 'inactivo' ORDER BY id DESC")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Asesor
+	for rows.Next() {
+		var a Asesor
+		var fc, fa sql.NullString
+		if err := rows.Scan(&a.ID, &a.Email, &a.Nombre, &a.Rol, &a.Notas, &fc, &fa, &a.Estado); err != nil {
+			return nil, err
+		}
+		if fc.Valid { a.FechaCreacion = fc.String }
+		if fa.Valid { a.FechaActualizacion = fa.String }
+		out = append(out, a)
+	}
+	return out, nil
+}
+
+func UpdateAsesor(dbConn *sql.DB, id int64, email, nombre, rol, notas string) error {
+	_, err := dbConn.Exec("UPDATE asesores SET email = ?, nombre = ?, rol = ?, notas = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ?", email, nombre, rol, notas, id)
+	return err
+}
+
+func DeleteAsesor(dbConn *sql.DB, id int64) error {
+	_, err := dbConn.Exec("UPDATE asesores SET estado = 'inactivo', fecha_actualizacion = datetime('now','localtime') WHERE id = ?", id)
+	return err
+}
+
+// CRUD para planes de asesor comercial
+type AsesorComercialPlan struct {
+	ID int64 `json:"id"`
+	AsesorID string `json:"asesor_id"`
+	AsesorEmail string `json:"asesor_email"`
+	EmpresaID sql.NullInt64 `json:"empresa_id"`
+	ComisionVentaPct float64 `json:"comision_venta_pct"`
+	ComisionPagoPct float64 `json:"comision_pago_pct"`
+	MesesRenovacion int `json:"meses_renovacion"`
+	Notas string `json:"notas"`
+	FechaCreacion string `json:"fecha_creacion"`
+}
+
+func CreateAsesorComercialPlan(dbConn *sql.DB, asesorID, asesorEmail string, empresaID int64, comisionVentaPct, comisionPagoPct float64, mesesRenovacion int, notas string) (int64, error) {
+	res, err := dbConn.Exec("INSERT INTO asesor_comercial (asesor_id, asesor_email, empresa_id, comision_venta_pct, comision_pago_pct, meses_renovacion, notas, fecha_creacion) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'))", asesorID, asesorEmail, empresaID, comisionVentaPct, comisionPagoPct, mesesRenovacion, notas)
+	if err != nil {
+		return 0, err
+	}
+	return res.LastInsertId()
+}
+
+func ListAsesorComercialPlans(dbConn *sql.DB) ([]AsesorComercialPlan, error) {
+	rows, err := dbConn.Query("SELECT id, asesor_id, asesor_email, empresa_id, comision_venta_pct, comision_pago_pct, meses_renovacion, notas, fecha_creacion FROM asesor_comercial WHERE estado IS NULL OR estado <> 'inactivo' ORDER BY id DESC")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []AsesorComercialPlan
+	for rows.Next() {
+		var p AsesorComercialPlan
+		var empresaID sql.NullInt64
+		var fc sql.NullString
+		if err := rows.Scan(&p.ID, &p.AsesorID, &p.AsesorEmail, &empresaID, &p.ComisionVentaPct, &p.ComisionPagoPct, &p.MesesRenovacion, &p.Notas, &fc); err != nil {
+			return nil, err
+		}
+		p.EmpresaID = empresaID
+		if fc.Valid { p.FechaCreacion = fc.String }
+		out = append(out, p)
+	}
+	return out, nil
+}
+
+func GetAsesorComercialPlanByAsesorID(dbConn *sql.DB, asesorID string) (*AsesorComercialPlan, error) {
+	row := dbConn.QueryRow("SELECT id, asesor_id, asesor_email, empresa_id, comision_venta_pct, comision_pago_pct, meses_renovacion, notas, fecha_creacion FROM asesor_comercial WHERE asesor_id = ? AND (estado IS NULL OR estado <> 'inactivo') ORDER BY id DESC LIMIT 1", asesorID)
+	var p AsesorComercialPlan
+	var empresaID sql.NullInt64
+	var fc sql.NullString
+	if err := row.Scan(&p.ID, &p.AsesorID, &p.AsesorEmail, &empresaID, &p.ComisionVentaPct, &p.ComisionPagoPct, &p.MesesRenovacion, &p.Notas, &fc); err != nil {
+		if err == sql.ErrNoRows { return nil, nil }
+		return nil, err
+	}
+	p.EmpresaID = empresaID
+	if fc.Valid { p.FechaCreacion = fc.String }
+	return &p, nil
+}
+
+func UpdateAsesorComercialPlan(dbConn *sql.DB, id int64, comisionVentaPct, comisionPagoPct float64, mesesRenovacion int, notas string) error {
+	_, err := dbConn.Exec("UPDATE asesor_comercial SET comision_venta_pct = ?, comision_pago_pct = ?, meses_renovacion = ?, notas = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ?", comisionVentaPct, comisionPagoPct, mesesRenovacion, notas, id)
+	return err
+}
+
+func DeleteAsesorComercialPlan(dbConn *sql.DB, id int64) error {
+	_, err := dbConn.Exec("UPDATE asesor_comercial SET estado = 'inactivo', fecha_actualizacion = datetime('now','localtime') WHERE id = ?", id)
+	return err
+}
+
+// Registrar comisiones generadas por pagos/activaciones
+func CreateAsesorComisionRecord(dbConn *sql.DB, asesorID string, empresaID, licenciaID, pagoID int64, transactionID string, montoTotal, porcentaje, montoComision float64, referencia, observaciones, programadoPara string, pagado int) (int64, error) {
+	res, err := dbConn.Exec("INSERT INTO asesor_comisiones (asesor_id, empresa_id, licencia_id, pago_id, transaction_id, monto_total, porcentaje, monto_comision, referencia, observaciones, programado_para, pagado, fecha_creacion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'))", asesorID, empresaID, licenciaID, pagoID, transactionID, montoTotal, porcentaje, montoComision, referencia, observaciones, programadoPara, pagado)
+	if err != nil {
+		return 0, err
+	}
+	return res.LastInsertId()
 }
 
 // GetWompiPaymentContext devuelve licencia_id y empresa_id para una transaccion/referencia Wompi.

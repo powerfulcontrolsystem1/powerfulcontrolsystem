@@ -991,6 +991,8 @@ func main() {
 		reference TEXT,
 		status TEXT,
 		raw_payload TEXT,
+		discount_code TEXT,
+		asesor_id TEXT,
 		fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
 		fecha_actualizacion TEXT,
 		usuario_creador TEXT,
@@ -1038,6 +1040,8 @@ func main() {
 		addIfMissing("usuario_creador TEXT", "usuario_creador")
 		addIfMissing("estado TEXT DEFAULT 'activo'", "estado")
 		addIfMissing("observaciones TEXT", "observaciones")
+		addIfMissing("discount_code TEXT", "discount_code")
+		addIfMissing("asesor_id TEXT", "asesor_id")
 	}
 	ensurePagosWompiSchema(dbSuper)
 
@@ -1119,6 +1123,178 @@ func main() {
 		addIfMissing("fecha_creacion TEXT DEFAULT (datetime('now','localtime'))", "fecha_creacion")
 	}
 	ensureSesionesSchema(dbSuper)
+	// Tabla para asesores (registro básico de asesores/comisionistas)
+	createAsesores := `CREATE TABLE IF NOT EXISTS asesores (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		email TEXT,
+		nombre TEXT,
+		rol TEXT,
+		notas TEXT,
+		fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+		fecha_actualizacion TEXT,
+		usuario_creador TEXT,
+		estado TEXT DEFAULT 'activo',
+		observaciones TEXT
+	);`
+	if _, err := dbSuper.Exec(createAsesores); err != nil {
+		log.Fatalf("failed to create asesores table in super db: %v", err)
+	}
+	ensureAsesoresSchema := func(db *sql.DB) {
+		rows, err := db.Query("PRAGMA table_info(asesores);")
+		if err != nil {
+			log.Printf("warning: unable to inspect asesores schema: %v", err)
+			return
+		}
+		defer rows.Close()
+		existing := map[string]bool{}
+		for rows.Next() {
+			var cid int
+			var name string
+			var ctype string
+			var notnull int
+			var dflt sql.NullString
+			var pk int
+			if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
+				log.Printf("warning: scan pragma table_info asesores error: %v", err)
+				return
+			}
+			existing[name] = true
+		}
+		addIfMissing := func(colDef string, name string) {
+			if !existing[name] {
+				q := fmt.Sprintf("ALTER TABLE asesores ADD COLUMN %s;", colDef)
+				if _, err := db.Exec(q); err != nil {
+					log.Printf("failed to add column %s to asesores: %v", name, err)
+				} else {
+					log.Printf("added missing column %s to asesores", name)
+				}
+			}
+		}
+		addIfMissing("fecha_actualizacion TEXT", "fecha_actualizacion")
+		addIfMissing("usuario_creador TEXT", "usuario_creador")
+		addIfMissing("estado TEXT DEFAULT 'activo'", "estado")
+		addIfMissing("observaciones TEXT", "observaciones")
+	}
+	ensureAsesoresSchema(dbSuper)
+
+	// Tabla para planes de asesor comercial (configuración de comisiones)
+	createAsesorComercial := `CREATE TABLE IF NOT EXISTS asesor_comercial (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		asesor_id TEXT,
+		asesor_email TEXT,
+		empresa_id INTEGER,
+		comision_venta_pct REAL DEFAULT 0,
+		comision_pago_pct REAL DEFAULT 0,
+		meses_renovacion INTEGER DEFAULT 0,
+		notas TEXT,
+		fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+		fecha_actualizacion TEXT,
+		usuario_creador TEXT,
+		estado TEXT DEFAULT 'activo',
+		observaciones TEXT
+	);`
+	if _, err := dbSuper.Exec(createAsesorComercial); err != nil {
+		log.Fatalf("failed to create asesor_comercial table in super db: %v", err)
+	}
+	ensureAsesorComercialSchema := func(db *sql.DB) {
+		rows, err := db.Query("PRAGMA table_info(asesor_comercial);")
+		if err != nil {
+			log.Printf("warning: unable to inspect asesor_comercial schema: %v", err)
+			return
+		}
+		defer rows.Close()
+		existing := map[string]bool{}
+		for rows.Next() {
+			var cid int
+			var name string
+			var ctype string
+			var notnull int
+			var dflt sql.NullString
+			var pk int
+			if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
+				log.Printf("warning: scan pragma table_info asesor_comercial error: %v", err)
+				return
+			}
+			existing[name] = true
+		}
+		addIfMissing := func(colDef string, name string) {
+			if !existing[name] {
+				q := fmt.Sprintf("ALTER TABLE asesor_comercial ADD COLUMN %s;", colDef)
+				if _, err := db.Exec(q); err != nil {
+					log.Printf("failed to add column %s to asesor_comercial: %v", name, err)
+				} else {
+					log.Printf("added missing column %s to asesor_comercial", name)
+				}
+			}
+		}
+		addIfMissing("fecha_actualizacion TEXT", "fecha_actualizacion")
+		addIfMissing("usuario_creador TEXT", "usuario_creador")
+		addIfMissing("estado TEXT DEFAULT 'activo'", "estado")
+		addIfMissing("observaciones TEXT", "observaciones")
+	}
+	ensureAsesorComercialSchema(dbSuper)
+
+	// Tabla para registrar comisiones generadas por pagos/activaciones
+	createAsesorComisiones := `CREATE TABLE IF NOT EXISTS asesor_comisiones (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		asesor_id TEXT,
+		empresa_id INTEGER,
+		licencia_id INTEGER,
+		pago_id INTEGER,
+		transaction_id TEXT,
+		monto_total REAL,
+		porcentaje REAL,
+		monto_comision REAL,
+		referencia TEXT,
+		observaciones TEXT,
+		programado_para TEXT,
+		pagado INTEGER DEFAULT 0,
+		fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+		fecha_actualizacion TEXT,
+		usuario_creador TEXT,
+		estado TEXT DEFAULT 'activo'
+	);`
+	if _, err := dbSuper.Exec(createAsesorComisiones); err != nil {
+		log.Fatalf("failed to create asesor_comisiones table in super db: %v", err)
+	}
+	ensureAsesorComisionesSchema := func(db *sql.DB) {
+		rows, err := db.Query("PRAGMA table_info(asesor_comisiones);")
+		if err != nil {
+			log.Printf("warning: unable to inspect asesor_comisiones schema: %v", err)
+			return
+		}
+		defer rows.Close()
+		existing := map[string]bool{}
+		for rows.Next() {
+			var cid int
+			var name string
+			var ctype string
+			var notnull int
+			var dflt sql.NullString
+			var pk int
+			if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
+				log.Printf("warning: scan pragma table_info asesor_comisiones error: %v", err)
+				return
+			}
+			existing[name] = true
+		}
+		addIfMissing := func(colDef string, name string) {
+			if !existing[name] {
+				q := fmt.Sprintf("ALTER TABLE asesor_comisiones ADD COLUMN %s;", colDef)
+				if _, err := db.Exec(q); err != nil {
+					log.Printf("failed to add column %s to asesor_comisiones: %v", name, err)
+				} else {
+					log.Printf("added missing column %s to asesor_comisiones", name)
+				}
+			}
+		}
+		addIfMissing("fecha_actualizacion TEXT", "fecha_actualizacion")
+		addIfMissing("usuario_creador TEXT", "usuario_creador")
+		addIfMissing("estado TEXT DEFAULT 'activo'", "estado")
+		addIfMissing("programado_para TEXT", "programado_para")
+		addIfMissing("pagado INTEGER DEFAULT 0", "pagado")
+	}
+	ensureAsesorComisionesSchema(dbSuper)
 	if err := dbpkg.EnsureSuperCorreoNotificacionesPruebaSchema(dbSuper); err != nil {
 		log.Fatalf("failed to ensure super_correo_notificaciones_prueba schema: %v", err)
 	}
@@ -1181,6 +1357,12 @@ func main() {
 	http.HandleFunc("/super/api/tipos_de_usuario", handlers.TiposDeUsuarioHandler(dbSuper))
 	// Endpoint CRUD para empresas (guardadas en empresas.db)
 	http.HandleFunc("/super/api/empresas", handlers.EmpresasHandler(dbEmpresas, dbSuper))
+	// Endpoints para gestión de vendedores (vendedor_de_licencia) y sus planes
+	http.HandleFunc("/super/api/asesores", handlers.AsesoresHandler(dbSuper))
+	http.HandleFunc("/super/api/vendedores", handlers.AsesoresHandler(dbSuper))
+	http.HandleFunc("/super/api/asesor_comercial", handlers.AsesorComercialHandler(dbSuper))
+	http.HandleFunc("/super/api/vendedor_de_licencia", handlers.AsesorComercialHandler(dbSuper))
+	http.HandleFunc("/super/api/vendedor_config", handlers.VendedorConfigHandler(dbSuper))
 	// Módulo de productos por empresa (empresas.db)
 	http.HandleFunc("/api/empresa/bodegas", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaBodegasHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/categorias_productos", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaCategoriasProductosHandler(dbEmpresas)))

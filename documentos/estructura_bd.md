@@ -802,6 +802,11 @@ Todas las tablas operativas usan como base los campos estandar:
 ### Tablas de pagos y metricas
 - pagos_wompi:
   - licencia_id, empresa_id, transaction_id, reference, status, raw_payload
+  - discount_code (TEXT) : código de descuento aplicado por cliente (opcional)
+  - asesor_id (TEXT) : referencia al asesor/vendedor que generó la venta (email o id externo, opcional)
+  - payment_method, provider_payload_json (opcional): metadatos del proveedor/método de pago
+
+  - Descripción: tabla canonica para registrar pagos/operaciones de Wompi/Nequi y activaciones manuales. Se registran metadatos de descuento y referencia de asesor para habilitar cálculo y trazabilidad de comisiones.
 - super_correo_notificaciones_prueba:
   - tipo, empresa_id, destinatario, asunto, cuerpo, token_ref, metadata_json, fecha_evento
   - se usa para validar notificaciones de confirmacion/restablecimiento en entorno de pruebas de correo
@@ -815,6 +820,60 @@ Todas las tablas operativas usan como base los campos estandar:
 - metrics:
   - timestamp, cpu_percent, mem_total, mem_used, mem_percent, net_recv, net_sent
   - fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones
+
+### Tablas de vendedores / asesores comerciales (superadministrador)
+- asesores:
+  - id INTEGER PRIMARY KEY AUTOINCREMENT
+  - email TEXT UNIQUE NOT NULL
+  - nombre TEXT
+  - telefono TEXT
+  - notas TEXT
+  - activo INTEGER DEFAULT 1
+  - fecha_creacion TEXT DEFAULT (datetime('now','localtime'))
+  - fecha_actualizacion TEXT DEFAULT (datetime('now','localtime'))
+  - usuario_creador TEXT
+  - estado TEXT DEFAULT 'activo'
+  - observaciones TEXT
+  - Descripción: repositorio de vendedores/asesores comerciales que pueden recibir comisiones por venta de licencias. El campo `email` se usa como referencia principal al recibir `asesor_id` desde el frontend si no existe id numérico.
+
+- asesor_comercial (planes):
+  - id INTEGER PRIMARY KEY AUTOINCREMENT
+  - asesor_id INTEGER NOT NULL -- FK a asesores.id
+  - comision_venta_pct REAL DEFAULT 0 -- porcentaje aplicado sobre el valor de venta de la licencia al momento de venta
+  - comision_pago_pct REAL DEFAULT 0 -- porcentaje aplicado sobre pagos recurrentes si aplica (opcional)
+  - meses_renovacion INTEGER DEFAULT 0 -- número de meses adicionales durante los cuales se programan comisiones recurrentes
+  - notas TEXT
+  - fecha_creacion TEXT DEFAULT (datetime('now','localtime'))
+  - fecha_actualizacion TEXT DEFAULT (datetime('now','localtime'))
+  - usuario_creador TEXT
+  - estado TEXT DEFAULT 'activo'
+  - observaciones TEXT
+  - Descripción: configuración por asesor/vendedor para definir porcentajes de comisión y duración en meses para comisiones programadas en renovaciones.
+
+- asesor_comisiones:
+  - id INTEGER PRIMARY KEY AUTOINCREMENT
+  - asesor_id INTEGER NOT NULL -- FK a asesores.id
+  - empresa_id INTEGER NOT NULL
+  - licencia_id INTEGER -- referencia a la licencia vendida
+  - pago_id INTEGER NULL -- referencia a `pagos_wompi.id` cuando aplica
+  - transaction_id TEXT NULL -- transaction_id del proveedor (o referencia manual)
+  - monto_total REAL -- monto total de la venta o periodo
+  - porcentaje REAL -- porcentaje aplicado para esta comision
+  - monto_comision REAL -- monto calculado a pagar al asesor
+  - referencia TEXT -- referencia humana (ej. "Comisión por venta licencia 123")
+  - observaciones TEXT
+  - programado_para TEXT NULL -- fecha programada para el pago (datetime)
+  - pagado INTEGER DEFAULT 0 -- flag booleano (0/1)
+  - fecha_creacion TEXT DEFAULT (datetime('now','localtime'))
+  - fecha_actualizacion TEXT DEFAULT (datetime('now','localtime'))
+  - Descripción: registro de comisiones generadas por ventas o programadas para meses posteriores. Se crea una entrada inmediata al procesar el pago/activación y, cuando el plan lo indica, entradas programadas para los meses siguientes.
+
+## Relaciones adicionales
+- asesores.id -> asesor_comercial.asesor_id
+- asesores.id -> asesor_comisiones.asesor_id
+- empresas.id -> asesor_comisiones.empresa_id
+- licencias.id -> asesor_comisiones.licencia_id
+
 
 ## 3) Relaciones clave
 - empresas.id -> users.empresa_id

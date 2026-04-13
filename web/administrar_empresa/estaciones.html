@@ -451,6 +451,28 @@
           cajaEl.style.cursor = 'pointer';
           cajaEl.addEventListener('click', () => { openStationCarrito(0, 'Caja', true); });
           cajaEl.addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); openStationCarrito(0, 'Caja', true); } });
+          // Botón para ver últimos movimientos: evitar propagación y abrir página dedicada
+          try {
+            const movBtn = cajaEl.querySelector('.ver-ultimos-movimientos');
+            if (movBtn) {
+              movBtn.addEventListener('click', ev => {
+                ev.stopPropagation();
+                ev.preventDefault();
+                const target = '/administrar_empresa/ultimos_movimientos_de_caja.html?empresa_id=' + encodeURIComponent(empresaId);
+                window.location.href = target;
+              });
+              movBtn.addEventListener('keydown', ev => {
+                if (ev.key === 'Enter' || ev.key === ' ') {
+                  ev.stopPropagation();
+                  ev.preventDefault();
+                  const target = '/administrar_empresa/ultimos_movimientos_de_caja.html?empresa_id=' + encodeURIComponent(empresaId);
+                  window.location.href = target;
+                }
+              });
+            }
+          } catch (e) {
+            // silencioso
+          }
         }
         loadCajaTotals(cfg).catch(() => {});
       }

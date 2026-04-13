@@ -75,6 +75,16 @@
               '</div>'+
               '<div class="payment-licencia-price">$ '+escapeHtml(String(lic.valor||lic.Valor||0))+'</div>'+
             '</div>'+
+            '<div class="form-row" style="margin-top:12px;">'+
+              '<div class="form-col">'+
+                '<label class="form-label" for="discountCode">Código de descuento (opcional)</label>'+
+                '<input id="discountCode" class="form-input" type="text" placeholder="Código de descuento">'+
+              '</div>'+
+                '<div class="form-col">'+
+                '<label class="form-label" for="asesorId">Código vendedor (opcional)</label>'+
+                '<input id="asesorId" class="form-input" type="text" placeholder="Código del vendedor">'+
+              '</div>'+
+            '</div>'+
             '<h3 class="payment-method-title">Selecciona el método de pago</h3>'+
             '<div class="payment-method-selector">'+
               '<button id="selectNequiCard" type="button" class="payment-method-card payment-method-nequi">'+
@@ -129,6 +139,8 @@
           const nequiBtn = document.getElementById('payNequiBtn');
           const nequiPhoneInput = document.getElementById('nequiPhone');
           const nequiTermsChk = document.getElementById('nequiTermsChk');
+          const discountCodeInput = document.getElementById('discountCode');
+          const asesorIdInput = document.getElementById('asesorId');
           const nequiStatus = document.getElementById('nequiStatus');
           const nequiTermsLinks = document.getElementById('nequiTermsLinks');
           const nequiSandboxHint = document.getElementById('nequiSandboxHint');
@@ -149,6 +161,8 @@
                 empresa_id: Number(empresaId),
                 motivo: 'avance_proyecto'
               };
+              try { const code = String((discountCodeInput && discountCodeInput.value) || '').trim(); if (code) payload.discount_code = code; } catch(e){}
+              try { const aId = String((asesorIdInput && asesorIdInput.value) || '').trim(); if (aId) { payload.asesor_id = aId; payload.vendedor_id = aId; } } catch(e){}
               const activateRes = await fetch('/licencias/activar_sin_pago', {
                 method: 'POST',
                 headers: {'Content-Type':'application/json'},
@@ -218,6 +232,8 @@
               };
               if (empresaId) payload.empresa_id = Number(empresaId);
               if (adminEmail) payload.customer_email = adminEmail;
+              try { const code = String((discountCodeInput && discountCodeInput.value) || '').trim(); if (code) payload.discount_code = code; } catch(e){}
+              try { const aId = String((asesorIdInput && asesorIdInput.value) || '').trim(); if (aId) { payload.asesor_id = aId; payload.vendedor_id = aId; } } catch(e){}
 
               const wompiRes = await fetch('/wompi/create_transaction_nequi', {
                 method: 'POST',

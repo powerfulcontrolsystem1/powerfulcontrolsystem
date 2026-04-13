@@ -1,4 +1,12 @@
  - Historial de cambios
+ - Historial de cambios
+
+ - 2026-04-13: Módulo Vendedores — configuración avanzada y UI de registro
+     - Archivos añadidos/modificados:
+         - web/super/vendedor_config_avanzado.html (nuevo)
+         - backend/handlers/vendedor_config_handlers.go (nuevo)
+         - backend/main.go (registro ruta /super/api/vendedor_config)
+     - Descripción: Se añade página de configuración avanzada para el módulo de vendedores y el handler correspondiente para persistir valores globales (porcentaje de comisión por defecto, meses de vigencia por defecto, fecha final de vigencia) en la tabla `configuraciones` del `superadministrador.db`.
 
  - 2026-04-13: UI — tarjetas en index: iconos x2, fondo blanco, tipografía mejorada
      - Archivos modificados:

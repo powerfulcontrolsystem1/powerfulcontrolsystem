@@ -1,5 +1,13 @@
 Descripcion de archivos del proyecto
 
+Actualizacion 2026-04-13: Módulo Vendedores - Configuración avanzada y página de registro
+ - Archivos añadidos/modificados:
+	- web/super/vendedor_config_avanzado.html (nuevo: UI para configurar parámetros globales del módulo vendedor)
+	- backend/handlers/vendedor_config_handlers.go (nuevo: handler GET/PUT para /super/api/vendedor_config)
+	- backend/main.go (registro ruta /super/api/vendedor_config)
+	- backend/db/db.go (nuevas claves de configuración usadas: vendedor.default_comision_pct, vendedor.default_meses_renovacion, vendedor.comision_fecha_fin)
+ - Descripción: Se incorpora la página de administración avanzada para el módulo de vendedores donde el superadministrador puede definir el porcentaje de comisión por defecto, la duración en meses de la vigencia de las comisiones y una fecha final opcional. Los valores se persisten en la tabla `configuraciones` del `superadministrador.db` mediante el handler protegido.
+
 Actualizacion 2026-04-13: Correccion de persistencia de estaciones en backend
  - Archivos modificados:
 		- backend/db/empresa_estacion_prefs.go (normaliza `estado` vacio como `activo` en upsert/list/get para evitar desaparicion de configuracion de estaciones)

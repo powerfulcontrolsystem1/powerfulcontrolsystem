@@ -1,6 +1,21 @@
 # CHANGELOG
 
 ## 2026-04-13
+- Módulo Vendedores / Asesores comerciales: integración de código de descuento y registro de asesor/vendedor en pagos
+	- Archivos añadidos/modificados:
+		- backend/handlers/payments_handlers.go (extiende payload y persistencia de `pagos_wompi` con `discount_code` y `asesor_id`/`vendedor_id`)
+		- backend/db/db.go (helpers para `asesores`, `asesor_comercial` y `asesor_comisiones`, y claves de configuración `vendedor.*`)
+		- backend/handlers/vendedores_handlers.go (nuevo: CRUD de asesores / vendedores)
+		- backend/handlers/vendedor_config_handlers.go (nuevo: GET/PUT /super/api/vendedor_config)
+		- backend/main.go (migraciones: tablas `asesores`, `asesor_comercial`, `asesor_comisiones`; registro de rutas `/super/api/vendedores`, `/super/api/asesor_comercial`, `/super/api/vendedor_config`)
+		- backend/tools/insert_asesor.go, backend/tools/insert_plan.go, backend/tools/insert_licencia.go, backend/tools/create_session.go, backend/tools/query_pagos_comisiones.go (herramientas para pruebas locales)
+		- web/pagar_licencia.html (nuevo campo `discount_code` y `asesor_id`/`vendedor_id` en el formulario de pago)
+		- web/super/activar_asesor.html, web/super/asesor_comercial.html, web/super/vendedor_config_avanzado.html (UI super-administrador para activar vendedores, configurar planes y ajustes globales)
+		- documentos/estructura_bd.md (documenta las nuevas tablas y columnas de pagos/comisiones)
+		- documentos/descripcion_de_archivos (registro de los nuevos archivos del módulo)
+	- Descripción: Se añade soporte opcional para incluir un código de descuento y una referencia al asesor/vendedor en el pago de licencias. Se introduce la entidad de `asesores` (vendedores), planes comerciales (`asesor_comercial`) y el registro de comisiones (`asesor_comisiones`) que crea una comisión inmediata y entradas programadas por meses de renovación según el plan.
+	- Verificación: Prueba manual de activación sin pago (`/licencias/activar_sin_pago`) usando sesión administrativa de prueba; se confirmó la creación de una fila en `pagos_wompi` con `discount_code` y `asesor_id` y la creación de registros en `asesor_comisiones` (comisión inmediata + programadas). Tests automatizados pendientes.
+
 - Estaciones: fix de persistencia de `estaciones_config` cuando el frontend no envía `estado`.
 	- Archivos modificados: `backend/db/empresa_estacion_prefs.go`, `backend/db/empresa_estacion_prefs_test.go`, `backend/handlers/empresa_estacion_prefs_test.go`.
 	- Descripcion: se normaliza `estado` vacio como `activo` en upsert/list/get de preferencias por estacion, evitando que las estaciones desaparezcan despues de guardarse.

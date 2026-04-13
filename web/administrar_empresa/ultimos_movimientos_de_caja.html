@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Últimos movimientos de caja</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="admin-empresa-shell">
+  <div class="container">
+    <section class="card">
+      <div class="header">
+        <h1>Últimos movimientos de caja</h1>
+        <div>
+          <button id="reloadBtn" class="btn secondary">Actualizar</button>
+        </div>
+      </div>
+
+      <div id="productosSection">
+        <h2>Últimos productos vendidos</h2>
+        <div id="productosLoading" class="form-help">Cargando...</div>
+        <table id="productosTable" class="table" style="display:none; width:100%;">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Producto</th>
+              <th>Cantidad</th>
+              <th>Tipo</th>
+              <th>Bodega origen / destino</th>
+              <th>Referencia</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div id="facturasSection" style="margin-top:18px">
+        <h2>Últimas facturas</h2>
+        <div id="facturasLoading" class="form-help">Cargando...</div>
+        <table id="facturasTable" class="table" style="display:none; width:100%;">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Tipo</th>
+              <th>Código</th>
+              <th>Cliente</th>
+              <th>Total</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+    </section>
+  </div>
+
+<script>
+  function parsePositiveInt(raw) {
+    const n = Number(String(raw || '').trim());
+    if (!Number.isFinite(n)) return 0;
+    const v = Math.trunc(n);
+    return v > 0 ? v : 0;
+  }
+
+  function resolveEmpresaId() {
+    try {
+      const params = new URLSearchParams(window.location.search || '');
+      const own = parsePositiveInt(params.get('empresa_id') || params.get('id'));
+      if (own > 0) return own;
+    } catch (_) {}
+    try {
+      if (window.parent && window.parent !== window) {
+        if (typeof window.parent.__resolveEmpresaIdContext === 'function') {
+          const parentResolved = parsePositiveInt(window.parent.__resolveEmpresaIdContext());
+          if (parentResolved > 0) return parentResolved;
+        }
+        const parentParams = new URLSearchParams(window.parent.location.search || '');
+        const fromParent = parsePositiveInt(parentParams.get('empresa_id') || parentParams.get('id'));
+        if (fromParent > 0) return fromParent;
+      }
+    } catch (_){ }
+    try {
+      const candidates = [
+        sessionStorage.getItem('active_empresa_id'),
+        sessionStorage.getItem('empresa_id'),
+        localStorage.getItem('active_empresa_id'),
+        localStorage.getItem('empresa_id')
+      ];
+      for (let i = 0; i < candidates.length; i++) {
+        const parsed = parsePositiveInt(candidates[i]);
+        if (parsed > 0) return parsed;
+      }
+    } catch (_) {}
+    return 0;
+  }
+
+  const empresaId = resolveEmpresaId();
+
+  function sanitize(v) {
+    return String(v == null ? '' : v)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  async function requestJSON(url, options) {
+    const resp = await fetch(url, Object.assign({ credentials: 'same-origin' }, options || {}));
+    const ct = resp.headers.get('content-type') || '';
+    let data = null;
+    if (ct.includes('application/json')) data = await resp.json(); else data = await resp.text();
+    if (!resp.ok) {
+      const msg = typeof data === 'string' ? data : (data && data.error ? data.error : 'error de servidor');
+      throw new Error(msg || ('HTTP ' + resp.status));
+    }
+    return data;
+  }
+
+  function formatDateTime(raw) {
+    const r = String(raw || '');
+    if (!r) return '';
+    const iso = r.includes('T') ? r : r.replace(' ', 'T');
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return r;
+    return d.toLocaleString('es-CO', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+  }
+
+  function formatMoney(v) {
+    try {
+      const n = Number(v || 0);
+      return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 2 }).format(n);
+    } catch (e) {
+      return 'COP ' + String(Number(v || 0).toFixed(2));
+    }
+  }
+
+  async function loadProductos() {
+    const loading = document.getElementById('productosLoading');
+    const table = document.getElementById('productosTable');
+    const tbody = table.querySelector('tbody');
+    loading.textContent = 'Cargando...';
+    table.style.display = 'none';
+    tbody.innerHTML = '';
+    if (!empresaId) {
+      loading.textContent = 'empresa_id no encontrado.';
+      return;
+    }
+    try {
+      const limit = 20;
+      const url = '/api/empresa/inventario/movimientos?empresa_id=' + encodeURIComponent(empresaId) + '&limit=' + encodeURIComponent(limit);
+      const rows = await requestJSON(url);
+      if (!Array.isArray(rows) || rows.length === 0) {
+        loading.textContent = 'No hay movimientos recientes.';
+        return;
+      }
+      // Preferir movimientos de salida/venta: filtrar tipos distintos a 'entrada'
+      const filtered = rows.filter(r => {
+        try {
+          const t = String(r.tipo || '').trim().toLowerCase();
+          return t === '' || t !== 'entrada';
+        } catch (e) { return true; }
+      }).slice(0, limit);
+      if (filtered.length === 0) {
+        loading.textContent = 'No se encontraron movimientos de venta recientes.';
+        return;
+      }
+      filtered.forEach(m => {
+        const tr = document.createElement('tr');
+        const fecha = m.fecha_movimiento || m.fecha_creacion || '';
+        const bodega = (m.bodega_origen_nombre || '') + (m.bodega_destino_nombre ? (' / ' + m.bodega_destino_nombre) : '');
+        tr.innerHTML = '<td>' + sanitize(formatDateTime(fecha)) + '</td>' +
+                       '<td>' + sanitize(m.producto_nombre || m.producto_nombre || '') + '</td>' +
+                       '<td>' + sanitize(String(m.cantidad || '')) + '</td>' +
+                       '<td>' + sanitize(String(m.tipo || '')) + '</td>' +
+                       '<td>' + sanitize(bodega) + '</td>' +
+                       '<td>' + sanitize(m.referencia || '') + '</td>';
+        tbody.appendChild(tr);
+      });
+      loading.textContent = '';
+      table.style.display = '';
+    } catch (err) {
+      loading.textContent = 'Error al cargar movimientos: ' + (err && err.message ? err.message : String(err));
+    }
+  }
+
+  async function loadFacturas() {
+    const loading = document.getElementById('facturasLoading');
+    const table = document.getElementById('facturasTable');
+    const tbody = table.querySelector('tbody');
+    loading.textContent = 'Cargando...';
+    table.style.display = 'none';
+    tbody.innerHTML = '';
+    if (!empresaId) {
+      loading.textContent = 'empresa_id no encontrado.';
+      return;
+    }
+    try {
+      const limit = 20;
+      const url = '/api/empresa/facturacion_electronica?action=documentos&empresa_id=' + encodeURIComponent(empresaId) + '&limit=' + encodeURIComponent(limit);
+      const payload = await requestJSON(url);
+      const items = payload && payload.items ? payload.items : [];
+      if (!Array.isArray(items) || items.length === 0) {
+        loading.textContent = 'No hay facturas recientes.';
+        return;
+      }
+      items.forEach(it => {
+        const tr = document.createElement('tr');
+        const fecha = it.fecha_documento || it.fecha_creacion || '';
+        const cliente = (it.cliente_nombre || '') + (it.cliente_documento ? (' · ' + it.cliente_documento) : '');
+        tr.innerHTML = '<td>' + sanitize(formatDateTime(fecha)) + '</td>' +
+                       '<td>' + sanitize(it.tipo_documento || '') + '</td>' +
+                       '<td>' + sanitize(it.documento_codigo || '') + '</td>' +
+                       '<td>' + sanitize(cliente) + '</td>' +
+                       '<td>' + sanitize(formatMoney(it.monto_total || 0)) + '</td>' +
+                       '<td>' + sanitize(it.estado_documento || '') + '</td>';
+        tbody.appendChild(tr);
+      });
+      loading.textContent = '';
+      table.style.display = '';
+    } catch (err) {
+      loading.textContent = 'Error al cargar facturas: ' + (err && err.message ? err.message : String(err));
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const reload = document.getElementById('reloadBtn');
+    if (reload) reload.addEventListener('click', () => { loadProductos(); loadFacturas(); });
+    loadProductos();
+    loadFacturas();
+  });
+</script>
+</body>
+</html>

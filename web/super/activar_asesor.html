@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Activar Vendedor de licencia</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container">
+    <div class="page-header">
+      <h1>Activar Vendedor de licencia</h1>
+    </div>
+
+    <form id="activarForm" class="form">
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Correo electrónico</label>
+          <input id="asesorEmail" class="form-input" placeholder="correo@ejemplo.com" required />
+        </div>
+        <div class="form-col">
+          <label class="form-label">Nombre completo</label>
+          <input id="asesorNombre" class="form-input" placeholder="Nombre vendedor" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Rol (opcional)</label>
+          <input id="asesorRol" class="form-input" placeholder="vendedor / comisionista" />
+        </div>
+        <div class="form-col">
+          <label class="form-label">Notas</label>
+          <input id="asesorNotas" class="form-input" />
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" id="activarBtn" class="btn">Activar vendedor</button>
+      </div>
+      <div id="activarMsg" class="form-help"></div>
+    </form>
+
+    <div id="existingAsesores" style="margin-top:18px">Cargando vendedores...</div>
+  </div>
+
+<script>
+  function sanitize(v){ return String(v||'').replace(/[&<>"']/g, function(m){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"})[m]); }
+
+  async function loadAsesores(){
+    try{
+      // intentar endpoint nuevo /super/api/vendedores, fallback a /super/api/asesores
+      let r;
+      try { r = await fetch('/super/api/vendedores'); } catch(e) { r = null }
+      if (!r || !r.ok) {
+        try { r = await fetch('/super/api/asesores'); } catch(e) { r = null }
+      }
+      if (!r || !r.ok) { document.getElementById('existingAsesores').innerText='No hay endpoint de vendedores disponible.'; return; }
+      const rows = await r.json();
+      const table = document.createElement('table'); table.className='table';
+      table.innerHTML = '<thead><tr><th>ID</th><th>Email</th><th>Nombre</th><th>Rol</th><th>Acciones</th></thead>';
+      const tbody = document.createElement('tbody');
+      (rows||[]).forEach(a=>{ const tr = document.createElement('tr'); tr.innerHTML = '<td>'+sanitize(a.id||'')+'</td><td>'+sanitize(a.email||'')+'</td><td>'+sanitize(a.nombre||'')+'</td><td>'+sanitize(a.rol||'')+'</td><td class="actions"><button data-id="'+(a.id||'')+'" class="btn secondary assign">Asignar ID</button></td>'; tbody.appendChild(tr); });
+      table.appendChild(tbody); document.getElementById('existingAsesores').innerHTML=''; document.getElementById('existingAsesores').appendChild(table);
+      document.querySelectorAll('.assign').forEach(b=>b.onclick = function(){ const id = b.getAttribute('data-id'); prompt('Código vendedor a copiar (usar en pagar licencia):', id); });
+    }catch(e){ document.getElementById('existingAsesores').innerText = 'Error cargando asesores: ' + (e && e.message ? e.message : String(e)); }
+  }
+
+  document.getElementById('activarForm').onsubmit = async function(e){
+    e.preventDefault();
+    const email = (document.getElementById('asesorEmail').value||'').trim();
+    const nombre = (document.getElementById('asesorNombre').value||'').trim();
+    const rol = (document.getElementById('asesorRol').value||'').trim() || 'asesor';
+    const notas = (document.getElementById('asesorNotas').value||'').trim();
+    if (!email) { document.getElementById('activarMsg').innerText = 'Email es obligatorio.'; return; }
+    document.getElementById('activarBtn').disabled = true; document.getElementById('activarBtn').innerText = 'Activando...';
+    try{
+      // Intentar crear en endpoint específico
+      // intentar crear vendedor
+      let res = await fetch('/super/api/vendedores', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email: email, nombre: nombre, rol: rol, notas: notas }) });
+      if (!res || !res.ok) {
+        // fallback a /super/api/asesores
+        res = await fetch('/super/api/asesores', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email: email, nombre: nombre, rol: rol, notas: notas }) });
+      }
+      if (!res || !res.ok) { const txt = await (res ? res.text() : Promise.resolve('no response')); document.getElementById('activarMsg').innerText = 'Error creando vendedor: '+txt; document.getElementById('activarBtn').disabled = false; document.getElementById('activarBtn').innerText='Activar vendedor'; return; }
+      document.getElementById('activarMsg').innerText = 'Vendedor activado correctamente.';
+      document.getElementById('activarForm').reset();
+      loadAsesores();
+    }catch(err){ document.getElementById('activarMsg').innerText = 'Error: '+(err && err.message ? err.message : String(err)); }
+    document.getElementById('activarBtn').disabled = false; document.getElementById('activarBtn').innerText='Activar vendedor';
+  };
+
+  loadAsesores();
+</script>
+</body>
+</html>
