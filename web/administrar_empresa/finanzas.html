@@ -1490,8 +1490,29 @@
       return dt.toLocaleString('es-CO');
     }
 
-    function buildPrintHTML(item) {
+    async function resolvePrinterForFinanzas() {
+      if (!state.empresaID) return null;
+      const params = new URLSearchParams();
+      params.set('empresa_id', String(state.empresaID));
+      params.set('funcionalidad', 'factura_caja');
+      try {
+        const res = await fetch('/api/empresa/impresoras/resolver?' + params.toString(), {
+          credentials: 'same-origin'
+        });
+        if (!res.ok) return null;
+        const out = await res.json();
+        if (!out || out.ok !== true) return null;
+        return out.resolucion || null;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function buildPrintHTML(item, printerResolution) {
       const formato = normalize((state.config && state.config.formato_impresion) || 'carta').toLowerCase();
+      const printerTarget = printerResolution && printerResolution.impresora ? printerResolution.impresora : null;
+      const printerName = printerTarget ? (normalize(printerTarget.nombre) || normalize(printerTarget.codigo) || ('Impresora #' + Number(printerTarget.id || 0))) : 'Sin impresora configurada';
+      const printerSource = printerResolution && normalize(printerResolution.fuente) ? printerResolution.fuente : '';
       if (formato === 'pos') {
         return '<!doctype html><html><head><meta charset="utf-8"><title>Comprobante POS</title><style>body{font-family:monospace;padding:10px;color:#111}h1{font-size:16px;margin:0 0 8px}hr{border:none;border-top:1px dashed #888}small{color:#666}</style></head><body>' +
           '<h1>Comprobante ' + sanitize(normalize(item.tipo_movimiento).toUpperCase()) + '</h1>' +
@@ -1505,6 +1526,7 @@
           '<div>Monto base: ' + sanitize(fmtMoney(item.monto)) + '</div>' +
           '<div>Impuesto: ' + sanitize(fmtMoney(item.impuesto)) + '</div>' +
           '<div><strong>Total: ' + sanitize(fmtMoney(item.total)) + '</strong></div>' +
+          '<div>Impresora objetivo: ' + sanitize(printerName) + (printerSource ? (' (' + sanitize(printerSource) + ')') : '') + '</div>' +
           '<hr>' +
           '<small>Tercero: ' + sanitize(item.tercero_nombre || '-') + '</small><br>' +
           '<small>Metodo pago: ' + sanitize(item.metodo_pago || '-') + '</small><br>' +
@@ -1518,7 +1540,8 @@
         '<strong>Tipo:</strong> ' + sanitize(normalize(item.tipo_movimiento).toUpperCase()) + '<br>' +
         '<strong>Codigo:</strong> ' + sanitize(item.codigo) + '<br>' +
         '<strong>Numero comprobante:</strong> ' + sanitize(item.numero_comprobante || item.codigo) + '<br>' +
-        '<strong>Fecha:</strong> ' + sanitize(formatDateTime(item.fecha_movimiento)) + '</p>' +
+        '<strong>Fecha:</strong> ' + sanitize(formatDateTime(item.fecha_movimiento)) + '<br>' +
+        '<strong>Impresora objetivo:</strong> ' + sanitize(printerName) + (printerSource ? (' (' + sanitize(printerSource) + ')') : '') + '</p>' +
         '<table><tbody>' +
         '<tr><th>Categoria</th><td>' + sanitize(item.categoria || '-') + '</td></tr>' +
         '<tr><th>Subcategoria</th><td>' + sanitize(item.subcategoria || '-') + '</td></tr>' +
@@ -1536,8 +1559,9 @@
         '</body></html>';
     }
 
-    function openPrint(item) {
-      const html = buildPrintHTML(item);
+    async function openPrint(item) {
+      const printerResolution = await resolvePrinterForFinanzas();
+      const html = buildPrintHTML(item, printerResolution);
       const w = window.open('', '_blank', 'width=900,height=700');
       if (!w) {
         setMsg('listMsg', 'El navegador bloqueó la ventana de impresión.', true);

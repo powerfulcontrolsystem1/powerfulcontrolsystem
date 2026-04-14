@@ -6,6 +6,23 @@ Gobernanza obligatoria (agente_go):
 - En el mismo cambio, tambien debe actualizarse `documentos/matriz_roles_permisos_pos_multiempresa.md` para reflejar permisos por rol/modulo/accion y visibilidad de paginas afectadas.
 - La actualizacion modular debe mantener trazabilidad en `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios` y `CHANGELOG.md`.
 
+Actualizacion 2026-04-14 (venta publica por subdominio empresarial):
+- Se amplía el modulo de venta publica para resolver `empresa_slug` automaticamente desde subdominio (`{slug}.powerfulcontrolsystem.com`) ademas de query/path.
+- La ruta raiz del subdominio empresarial abre directamente `venta_publica.html` para experiencia de tienda publica sin parametros manuales.
+- En `administrar_empresa/venta_publica.html` se agrega enlace operativo sugerido por subdominio para publicacion automatizada por empresa.
+- No hay cambios de permisos por rol; se mantiene alcance publico en `/api/public/venta_publica` y aislamiento por `empresa_id` en el backend.
+
+Actualizacion 2026-04-14 (super: administracion de base de datos PostgreSQL):
+- Se agrega el submodulo de administracion profesional de base de datos en `web/super/administrar_base_de_datos.html`.
+- El backend incorpora el endpoint protegido `/super/api/postgres/performance` para exponer salud del cluster, metricas por base, consultas activas prolongadas y recomendaciones automaticas.
+- El alcance de permisos se mantiene exclusivo para `super_administrador`; no hay cambios en CRUD/A de modulos empresariales ni en aislamiento por `empresa_id`.
+
+Actualizacion 2026-04-14 (impresoras operativas por empresa):
+- Se agrega el modulo de impresoras del sistema con gestion completa en `administrar_empresa/configuracion.html`.
+- El backend incorpora `/api/empresa/impresoras` para CRUD, predeterminada, activacion/inactivacion, asignacion por funcionalidad y por producto.
+- Se incorpora `/api/empresa/impresoras/resolver` para determinar impresora objetivo en flujos operativos de impresion.
+- La resolucion opera con prioridad `producto -> funcionalidad -> predeterminada` y mantiene aislamiento estricto por `empresa_id`.
+
 Actualizacion 2026-04-14 (migracion SQLite -> PostgreSQL en VPS):
 - Se completa el bloque core de conmutacion runtime para operar con PostgreSQL en VPS mediante `DB_DIALECT=postgres` y DSN separados para `pcs_superadministrador` y `pcs_empresas`.
 - Se amplian validaciones de compatibilidad SQL en backend para mantener transicion controlada con SQLite legado solo para migracion/contingencia.
@@ -178,3 +195,6 @@ Criterio de esta guia:
 
 38) Descripcion de modulos (este documento)
 - Catalogo compacto de alcance funcional para consulta rapida tecnica/operativa.
+
+39) Impresoras operativas por empresa
+- Gestiona multiples impresoras, predeterminada, asignacion por funcionalidad/producto y resolucion de destino de impresion por contexto.

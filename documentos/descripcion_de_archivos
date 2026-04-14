@@ -1,5 +1,131 @@
 Descripcion de archivos del proyecto
 
+Actualizacion 2026-04-14: Reparacion de arranque local PostgreSQL en `scripts/iniciar_servidor.ps1`
+ - Archivos modificados:
+	- scripts/iniciar_servidor.ps1
+	- documentos/descripcion_de_archivos
+	- documentos/historial_de_cambios
+	- CHANGELOG.md
+ - Archivos locales de entorno actualizados (no versionados):
+	- backend/.env.local
+ - Descripcion: Se corrige la carga de configuracion DB para leer `DB_DIALECT`, `DB_EMPRESAS_DSN` y `DB_SUPERADMIN_DSN` desde `.env.local/.env` antes de validar; ademas se agrega soporte opcional de tunel SSH a PostgreSQL en VPS (`DB_VPS_TUNNEL_*`) y reescritura temporal de DSN a puerto local de tunel para evitar colision con PostgreSQL local.
+ - Verificacion: `scripts/iniciar_servidor.ps1 -Background` valida DSN en verde, inicia backend en `:8080` y responde `HTTP 200` en `http://127.0.0.1:8080`.
+
+Actualizacion 2026-04-14: Venta publica por subdominio empresarial automatizado
+ - Archivos modificados:
+	- backend/main.go
+	- backend/handlers/venta_publica.go
+	- backend/handlers/venta_publica_test.go
+	- web/venta_publica.html
+	- web/administrar_empresa/venta_publica.html
+	- documentos/deploy_nginx_reverse_proxy_vps.md
+	- documentos/diagramas/estructura_del_codigo.md
+	- documentos/descripcion_del_proyecto
+	- documentos/descripcion_de_modulos
+	- documentos/matriz_roles_permisos_pos_multiempresa.md
+	- documentos/descripcion_de_archivos
+	- documentos/historial_de_cambios
+	- CHANGELOG.md
+ - Descripcion: Se habilita resolucion automatica de `empresa_slug` por subdominio (`{slug}.powerfulcontrolsystem.com`) en backend y frontend de venta publica; ademas, la raiz de subdominios empresariales abre directamente `venta_publica.html` y se documenta la configuracion Nginx/DNS wildcard para operacion productiva.
+ - Verificacion: `go test ./handlers -run "VentaPublica|ResolveVentaPublicaSlugFromHost" -count=1` en verde.
+ - Evidencia VPS: se aplico bloque wildcard en `/etc/nginx/sites-available/powerfulcontrolsystem` con captura de slug en `server_name`; la raiz de subdominio responde `302` hacia `/venta_publica.html?empresa_slug=<slug>` y la pagina publica responde `200 OK` con `Host: empresa1.powerfulcontrolsystem.com`; queda pendiente crear DNS wildcard `*.powerfulcontrolsystem.com` (actualmente `NXDOMAIN`).
+
+Actualizacion 2026-04-14: Guia operativa de Nginx reverse proxy para VPS
+ - Archivo creado:
+	- documentos/deploy_nginx_reverse_proxy_vps.md
+ - Archivos modificados:
+	- documentos/descripcion_de_archivos
+	- documentos/historial_de_cambios
+	- documentos/descripcion_del_proyecto
+	- CHANGELOG.md
+ - Descripcion: Se agrega una guia directa de comandos para Ubuntu VPS que instala Nginx, publica `powerfulcontrolsystem.com` y `www.powerfulcontrolsystem.com` como reverse proxy de `127.0.0.1:8080`, habilita puertos UFW y documenta opcion de HTTPS automatico con Certbot.
+
+Actualizacion 2026-04-14: Modulo de impresoras operativas por empresa
+ - Archivos creados:
+	- backend/db/empresa_impresoras.go
+	- backend/db/empresa_impresoras_test.go
+	- backend/handlers/empresa_impresoras.go
+ - Archivos modificados:
+	- backend/main.go
+	- web/administrar_empresa/configuracion.html
+	- web/administrar_empresa/carrito_de_compras.html
+	- web/administrar_empresa/finanzas.html
+	- web/administrar_empresa/reportes.html
+	- documentos/estructura_bd.md
+	- documentos/diagramas/estructura_del_codigo.md
+	- documentos/descripcion_del_proyecto
+	- documentos/descripcion_de_modulos
+	- documentos/matriz_roles_permisos_pos_multiempresa.md
+	- documentos/descripcion_de_archivos
+	- documentos/historial_de_cambios
+	- CHANGELOG.md
+ - Descripcion: Se incorpora la gestion de impresoras del sistema por empresa (predeterminada, activacion/inactivacion, asignacion por funcionalidad y por producto) y la resolucion operativa de destino de impresion con prioridad `producto -> funcionalidad -> predeterminada`, integrada en configuracion, carrito, finanzas y reportes.
+
+Actualizacion 2026-04-14: Panel super para administracion profesional de PostgreSQL
+ - Archivos creados:
+	- backend/handlers/postgres_performance.go
+	- backend/handlers/postgres_performance_test.go
+	- web/super/administrar_base_de_datos.html
+ - Archivos modificados:
+	- backend/main.go
+	- web/super_administrador.html
+	- documentos/diagramas/estructura_del_codigo.md
+	- documentos/descripcion_del_proyecto
+	- documentos/descripcion_de_modulos
+	- documentos/matriz_roles_permisos_pos_multiempresa.md
+	- documentos/descripcion_de_archivos
+	- documentos/historial_de_cambios
+	- CHANGELOG.md
+ - Descripcion: Se agrega una nueva vista para `super_administrador` con monitoreo de rendimiento de PostgreSQL (salud del cluster, metricas por base, consultas activas largas y recomendaciones), junto con su endpoint protegido en backend y cobertura de pruebas del handler.
+
+Actualizacion 2026-04-14: Cierre de migracion a PostgreSQL-only y retiro de rastros SQLite operativos
+ - Archivos modificados:
+	- backend/main.go
+	- backend/db/sql_compat.go
+	- scripts/iniciar_servidor.ps1
+	- scripts/sync_to_vps.ps1
+	- scripts/sync_to_vps.sh
+	- scripts/README_sync.md
+	- scripts/actualizar_repositorio.ps1
+	- documentos/descripcion_del_proyecto
+	- documentos/diagramas/estructura_del_codigo.md
+	- documentos/estructura_bd.md
+	- documentos/descripcion_de_las_bases_De_datos
+ - Archivos eliminados:
+	- backend/db/empresas.db
+	- backend/db/superadministrador.db
+ - Descripcion: Se fuerza el runtime del backend a PostgreSQL-only (sin fallback SQLite), se depuran los archivos `.db` legado del repositorio y se actualiza la documentacion/scripting operativo para trabajar exclusivamente con `DB_EMPRESAS_DSN` y `DB_SUPERADMIN_DSN`.
+
+Actualizacion 2026-04-14: Estandarizacion documental ERP multiempresa
+ - Archivos creados:
+	- documentos/erp_multiempresa/README.md
+	- documentos/erp_multiempresa/01_alcance_erp_multiempresa.md
+	- documentos/erp_multiempresa/02_diseno_tecnico_erp_multiempresa.md
+	- documentos/erp_multiempresa/03_especificaciones_funcionales_erp_multiempresa.md
+	- documentos/erp_multiempresa/04_guia_implementacion_erp_multiempresa.md
+ - Archivos modificados:
+	- documentos/README.md
+ - Descripcion: Se crea un paquete documental estandar para ERP multiempresa con cuatro entregables formales (alcance, diseno tecnico, especificaciones funcionales y guia de implementacion), alineados con procesos empresariales, reglas de negocio e integraciones del sistema.
+
+Actualizacion 2026-04-14: Eliminación de `estructura_bd.md`
+ - Archivo eliminado: `estructura_bd.md` (raíz del repositorio).
+ - Respaldo: `documentos/backups/estructura_bd.deleted_2026-04-14.md`.
+ - Motivo: Consolidación documental — `documentos/estructura_bd.md` era una copia de compatibilidad; la fuente canónica es `documentos/estructura_bd.md`.
+ - Acciones: Se registró la eliminación en `documentos/historial_de_cambios` y en `CHANGELOG.md`.
+Actualizacion 2026-04-14: Reorganizacion documental profesional y depuracion de artefactos no usados
+ - Archivos creados/modificados:
+	- documentos/README.md (nuevo indice documental canonico por dominios)
+	- documentos/descripcion_del_proyecto (actualiza referencias a fuente canonica de arquitectura)
+	- documentos/estructura_del_codigo (queda como alias de compatibilidad, sin duplicar mapa tecnico)
+	- .gitignore (higiene para logs tecnicos y reportes temporales)
+ - Archivos eliminados:
+	- documentos/historial_de_cambios_addendum_2026-04-04.md (fusionado en historial principal)
+	- backend/tmp/server.exe (binario temporal duplicado)
+	- backend/server.err, backend/server.log, backend/server.run.log (logs runtime no fuente)
+	- backend/logs/*.log, logs/test_runs/*.log, scripts/logs/*.log (bitacoras operativas temporales)
+	- tmp/doc_audit_report.txt, tmp/doc_hash_duplicates.txt (reportes temporales de auditoria)
+ - Descripcion: Se organiza la documentacion como proyecto profesional con fuentes canonicas por tema, se elimina duplicidad documental de arquitectura y se limpia el repositorio de artefactos no usados para mantenerlo auditable y mantenible.
+
 Actualizacion 2026-04-14: Hardening OAuth Google en runtime VPS (prioridad entorno + redirect explícito)
  - Archivos modificados:
 	- backend/main.go (ajuste en `loadGoogleOAuthFromDB`: entorno tiene prioridad y la DB solo completa faltantes)

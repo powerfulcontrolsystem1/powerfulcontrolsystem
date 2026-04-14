@@ -255,41 +255,202 @@ function Test-GoogleOAuthCredentials {
     }
 }
 
-# Asegurar carpeta backend\db y mover .db existentes a esa carpeta
-Write-Step "2/8 Preparando rutas de base de datos"
-Write-Info "Asegurando carpeta de bases de datos: $backend\db"
-New-Item -ItemType Directory -Path (Join-Path $backend 'db') -Force | Out-Null
+function Load-PostgresEnvFromFiles {
+    param([string]$BackendDir)
 
-$dbFolder = Join-Path $backend 'db'
-# Mover archivos .db que estén en backend a backend\db (si existen)
-$dbFiles = Get-ChildItem -Path $backend -Filter '*.db' -File -ErrorAction SilentlyContinue
-if ($dbFiles) {
-    foreach ($f in $dbFiles) {
-        try {
-            $dest = Join-Path $dbFolder $f.Name
-            if (-not (Test-Path $dest)) {
-                Write-Info ("Moviendo {0} -> {1}" -f $f.FullName, $dest)
-                Move-Item -Path $f.FullName -Destination $dest -ErrorAction Stop
-            } else {
-                Write-WarnMsg ("Ya existe {0}, se omite movimiento." -f $dest)
+    $envCandidates = @(
+        (Join-Path -Path $BackendDir -ChildPath '.env.local')
+        (Join-Path -Path $BackendDir -ChildPath '.env')
+    )
+
+    foreach ($envPath in $envCandidates) {
+        if (-not (Test-Path $envPath)) { continue }
+        $vals = Import-DotEnvValues -Path $envPath
+
+        foreach ($key in @(
+            'DB_DIALECT',
+            'DB_EMPRESAS_DSN',
+            'DB_SUPERADMIN_DSN',
+            'DB_VPS_TUNNEL_ENABLED',
+            'DB_VPS_SSH_HOST',
+            'DB_VPS_SSH_USER',
+            'DB_VPS_SSH_KEY_PATH',
+            'DB_VPS_LOCAL_PORT',
+            'DB_VPS_REMOTE_HOST',
+            'DB_VPS_REMOTE_PORT'
+        )) {
+            if (-not $vals.ContainsKey($key)) { continue }
+            $candidate = [string]$vals[$key]
+            if ([string]::IsNullOrWhiteSpace($candidate)) { continue }
+
+            $current = [Environment]::GetEnvironmentVariable($key, 'Process')
+            if ([string]::IsNullOrWhiteSpace($current)) {
+                [Environment]::SetEnvironmentVariable($key, $candidate, 'Process')
+                Set-Item -Path ("Env:" + $key) -Value $candidate
             }
-        } catch {
-            Write-WarnMsg ("No se pudo mover $($f.Name): $_")
         }
     }
-} else {
-    Write-Info "No se encontraron archivos .db en la raiz de backend."
 }
 
-# Establecer variables de entorno para rutas de DB si no están definidas
-if (-not $env:DB_EMPRESAS_PATH) { $env:DB_EMPRESAS_PATH = Join-Path $dbFolder 'empresas.db' }
-if (-not $env:DB_SUPERADMIN_PATH) { $env:DB_SUPERADMIN_PATH = Join-Path $dbFolder 'superadministrador.db' }
-if (-not $env:DB_POS_PATH) { $env:DB_POS_PATH = Join-Path $dbFolder 'pos.db' }
+function Test-TruthyValue {
+    param([string]$Value)
 
-Write-Ok "Rutas de DB preparadas."
-Write-Info "DB_EMPRESAS_PATH=$env:DB_EMPRESAS_PATH"
-Write-Info "DB_SUPERADMIN_PATH=$env:DB_SUPERADMIN_PATH"
-Write-Info "DB_POS_PATH=$env:DB_POS_PATH"
+    $normalized = ''
+    if (-not [string]::IsNullOrWhiteSpace($Value)) {
+        $normalized = $Value.Trim().ToLowerInvariant()
+    }
+    return ($normalized -in @('1', 'true', 'yes', 'si', 'on'))
+}
+
+function Rewrite-PostgresDSNForTunnel {
+    param(
+        [string]$Dsn,
+        [int]$LocalPort
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Dsn)) {
+        return $Dsn
+    }
+
+    $rewritten = $Dsn
+    $rewritten = $rewritten -replace '@127\.0\.0\.1:5432/', ("@127.0.0.1:{0}/" -f $LocalPort)
+    $rewritten = $rewritten -replace '@localhost:5432/', ("@127.0.0.1:{0}/" -f $LocalPort)
+    return $rewritten
+}
+
+function Ensure-VpsPostgresTunnel {
+    param(
+        [string]$BackendDir,
+        [string]$SshHost,
+        [string]$SshUser,
+        [string]$SshKeyPath,
+        [int]$LocalPort,
+        [string]$RemoteHost,
+        [int]$RemotePort
+    )
+
+    if ([string]::IsNullOrWhiteSpace($SshHost)) {
+        throw 'DB_VPS_SSH_HOST es obligatorio cuando DB_VPS_TUNNEL_ENABLED=1.'
+    }
+
+    if ([string]::IsNullOrWhiteSpace($SshUser)) {
+        throw 'DB_VPS_SSH_USER es obligatorio cuando DB_VPS_TUNNEL_ENABLED=1.'
+    }
+
+    if ([string]::IsNullOrWhiteSpace($SshKeyPath)) {
+        $SshKeyPath = '..\clave privada ssh.ppk'
+    }
+
+    if ([System.IO.Path]::IsPathRooted($SshKeyPath)) {
+        $resolvedKeyPath = $SshKeyPath
+    } else {
+        $resolvedKeyPath = Join-Path $BackendDir $SshKeyPath
+    }
+
+    $resolvedKeyPath = [System.IO.Path]::GetFullPath($resolvedKeyPath)
+    if (-not (Test-Path $resolvedKeyPath)) {
+        throw ("No se encontro la llave SSH para tunel DB: {0}" -f $resolvedKeyPath)
+    }
+
+    $plink = Get-Command plink.exe -ErrorAction SilentlyContinue
+    if ($null -eq $plink) {
+        throw 'No se encontro plink.exe. Instala PuTTY para habilitar tunel DB hacia VPS.'
+    }
+
+    $listening = Get-NetTCPConnection -LocalPort $LocalPort -State Listen -ErrorAction SilentlyContinue
+    if ($listening) {
+        Write-Info ("Tunel DB detectado en localhost:{0}. Se reutiliza." -f $LocalPort)
+        return
+    }
+
+    $forwardSpec = "{0}:{1}:{2}" -f $LocalPort, $RemoteHost, $RemotePort
+    $target = "{0}@{1}" -f $SshUser, $SshHost
+    $args = @('-batch', '-N', '-i', $resolvedKeyPath, '-L', $forwardSpec, $target)
+
+    $proc = Start-Process -FilePath $plink.Source -ArgumentList $args -WindowStyle Hidden -PassThru
+    if ($null -eq $proc -or $proc.HasExited) {
+        throw ("No se pudo iniciar tunel SSH DB a {0} ({1})." -f $target, $forwardSpec)
+    }
+
+    $listenerReady = Get-NetTCPConnection -LocalPort $LocalPort -State Listen -ErrorAction SilentlyContinue
+    if (-not $listenerReady) {
+        try {
+            Wait-Process -Id $proc.Id -Timeout 2 -ErrorAction SilentlyContinue
+        } catch {
+            # Ignorar timeout; solo se vuelve a validar listener.
+        }
+        $listenerReady = Get-NetTCPConnection -LocalPort $LocalPort -State Listen -ErrorAction SilentlyContinue
+    }
+
+    if (-not $listenerReady) {
+        if ($proc.HasExited) {
+            throw ("El tunel SSH DB se cerró al iniciar (PID={0}). Verifica llave/host/usuario para {1}." -f $proc.Id, $target)
+        }
+        throw ("No se detectó listener en localhost:{0} tras iniciar túnel DB (PID={1})." -f $LocalPort, $proc.Id)
+    }
+
+    Write-Info ("Tunel DB iniciado: localhost:{0} -> {1}:{2} (PID={3})" -f $LocalPort, $RemoteHost, $RemotePort, $proc.Id)
+}
+
+Load-PostgresEnvFromFiles -BackendDir $backend
+
+# Validar modo de base de datos PostgreSQL-only
+Write-Step "2/8 Validando configuracion de base de datos (PostgreSQL)"
+
+if (-not $env:DB_DIALECT) {
+    $env:DB_DIALECT = 'postgres'
+}
+
+$tunnelEnabled = Test-TruthyValue -Value ([Environment]::GetEnvironmentVariable('DB_VPS_TUNNEL_ENABLED', 'Process'))
+if ($tunnelEnabled) {
+    $sshHost = [Environment]::GetEnvironmentVariable('DB_VPS_SSH_HOST', 'Process')
+    $sshUser = [Environment]::GetEnvironmentVariable('DB_VPS_SSH_USER', 'Process')
+    $sshKeyPath = [Environment]::GetEnvironmentVariable('DB_VPS_SSH_KEY_PATH', 'Process')
+    $remoteHost = [Environment]::GetEnvironmentVariable('DB_VPS_REMOTE_HOST', 'Process')
+    if ([string]::IsNullOrWhiteSpace($remoteHost)) {
+        $remoteHost = '127.0.0.1'
+    }
+
+    $localPort = 15432
+    $rawLocalPort = [Environment]::GetEnvironmentVariable('DB_VPS_LOCAL_PORT', 'Process')
+    if (-not [string]::IsNullOrWhiteSpace($rawLocalPort)) {
+        $parsedLocal = 0
+        if ([int]::TryParse($rawLocalPort, [ref]$parsedLocal) -and $parsedLocal -gt 0) {
+            $localPort = $parsedLocal
+        }
+    }
+
+    $remotePort = 5432
+    $rawRemotePort = [Environment]::GetEnvironmentVariable('DB_VPS_REMOTE_PORT', 'Process')
+    if (-not [string]::IsNullOrWhiteSpace($rawRemotePort)) {
+        $parsedRemote = 0
+        if ([int]::TryParse($rawRemotePort, [ref]$parsedRemote) -and $parsedRemote -gt 0) {
+            $remotePort = $parsedRemote
+        }
+    }
+
+    Ensure-VpsPostgresTunnel -BackendDir $backend -SshHost $sshHost -SshUser $sshUser -SshKeyPath $sshKeyPath -LocalPort $localPort -RemoteHost $remoteHost -RemotePort $remotePort
+
+    $env:DB_EMPRESAS_DSN = Rewrite-PostgresDSNForTunnel -Dsn $env:DB_EMPRESAS_DSN -LocalPort $localPort
+    $env:DB_SUPERADMIN_DSN = Rewrite-PostgresDSNForTunnel -Dsn $env:DB_SUPERADMIN_DSN -LocalPort $localPort
+    [Environment]::SetEnvironmentVariable('DB_EMPRESAS_DSN', $env:DB_EMPRESAS_DSN, 'Process')
+    [Environment]::SetEnvironmentVariable('DB_SUPERADMIN_DSN', $env:DB_SUPERADMIN_DSN, 'Process')
+}
+
+if ($env:DB_DIALECT -ne 'postgres') {
+    Write-Host "DB_DIALECT=$($env:DB_DIALECT) no es valido. Este proyecto opera solo con PostgreSQL." -ForegroundColor Red
+    exit 1
+}
+
+if (-not $env:DB_EMPRESAS_DSN -or -not $env:DB_SUPERADMIN_DSN) {
+    Write-Host "Faltan DSN de PostgreSQL. Define DB_EMPRESAS_DSN y DB_SUPERADMIN_DSN en backend/.env.local o en el entorno." -ForegroundColor Red
+    exit 1
+}
+
+Write-Ok "Configuracion PostgreSQL validada."
+Write-Info "DB_DIALECT=$env:DB_DIALECT"
+Write-Info "DB_EMPRESAS_DSN configurado: $([string]::IsNullOrWhiteSpace($env:DB_EMPRESAS_DSN) -eq $false)"
+Write-Info "DB_SUPERADMIN_DSN configurado: $([string]::IsNullOrWhiteSpace($env:DB_SUPERADMIN_DSN) -eq $false)"
 
 function Stop-ProcessesOnPort {
     param([int]$port)
@@ -310,6 +471,8 @@ function Stop-ProcessesOnPort {
             # Fallback a netstat para entornos donde Get-NetTCPConnection no este disponible.
         }
 
+        $detected = @($detected)
+
         if ($detected.Count -eq 0) {
             $netstatOut = netstat -ano -p tcp | findstr "LISTENING" 2>$null
             if (-not [string]::IsNullOrWhiteSpace($netstatOut)) {
@@ -326,6 +489,8 @@ function Stop-ProcessesOnPort {
                 }) | Where-Object { $_ } | Select-Object -Unique
             }
         }
+
+        $detected = @($detected)
 
         return @($detected | Where-Object {
             $pidCandidate = 0

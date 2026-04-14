@@ -1121,13 +1121,35 @@
       return { sale, items };
     }
 
-    function buildPreviewHtml(format) {
+    async function resolvePrinterForReportes(format) {
+      if (!state.empresaID) return null;
+      const funcionalidad = format === 'pos' ? 'reporte_caja' : 'factura_caja';
+      const params = new URLSearchParams();
+      params.set('empresa_id', String(state.empresaID));
+      params.set('funcionalidad', funcionalidad);
+      try {
+        const res = await fetch('/api/empresa/impresoras/resolver?' + params.toString(), {
+          credentials: 'same-origin'
+        });
+        if (!res.ok) return null;
+        const out = await res.json();
+        if (!out || out.ok !== true) return null;
+        return out.resolucion || null;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function buildPreviewHtml(format, printerResolution) {
       const sample = getSampleSale();
       if (!sample) return '';
       const cfg = state.config || {};
       const venta = sample.sale;
       const items = sample.items.filter(it => normalize(it.estado || 'activo').toLowerCase() === 'activo');
       const empresa = 'Empresa #' + state.empresaID;
+      const printerTarget = printerResolution && printerResolution.impresora ? printerResolution.impresora : null;
+      const printerName = printerTarget ? (normalize(printerTarget.nombre) || normalize(printerTarget.codigo) || ('Impresora #' + Number(printerTarget.id || 0))) : 'Sin impresora configurada';
+      const printerSource = printerResolution && normalize(printerResolution.fuente) ? printerResolution.fuente : '';
 
       if (format === 'pos') {
         const itemsHtml = items.map(it =>
@@ -1138,6 +1160,7 @@
           '<p><strong>' + sanitize(empresa) + '</strong><br>Carrito: ' + sanitize(venta.codigo || venta.id) + '<br>Cliente: ' + sanitize(venta.cliente_nombre || 'Sin cliente') + '</p>' +
           '<table><tbody>' + itemsHtml + '</tbody></table>' +
           '<p><strong>Total: ' + fmtMoney(getVentaTotal(venta)) + '</strong></p>' +
+            '<small>Impresora objetivo: ' + sanitize(printerName) + (printerSource ? (' (' + sanitize(printerSource) + ')') : '') + '</small><br>' +
           '<small>Formato configurado: ' + sanitize(normalize(cfg.formato_impresion) || 'carta') + ' | Copia: ' + (cfg.imprimir_copia_factura === true ? 'Sí' : 'No') + '</small>' +
           (normalize(cfg.pie_factura) ? ('<p><small>' + sanitize(cfg.pie_factura) + '</small></p>') : '') +
           '</body></html>';
@@ -1149,14 +1172,16 @@
       return '<!doctype html><html><head><meta charset="utf-8"><title>Vista previa Carta</title><style>body{font-family:Arial,sans-serif;padding:20px;color:#111}h1{margin:0 0 8px}table{width:100%;border-collapse:collapse;margin-top:8px}th,td{border:1px solid #bbb;padding:6px;text-align:left}small{color:#666}</style></head><body>' +
         '<h1>Factura (vista carta)</h1>' +
         '<p><strong>' + sanitize(empresa) + '</strong><br>Fecha pago: ' + sanitize(formatDate(getFechaPago(venta))) + '<br>Cliente: ' + sanitize(venta.cliente_nombre || 'Sin cliente') + '</p>' +
+        '<p><small>Impresora objetivo: ' + sanitize(printerName) + (printerSource ? (' (' + sanitize(printerSource) + ')') : '') + '</small></p>' +
         '<table><thead><tr><th>Descripción</th><th>Cant</th><th>Vlr unitario</th><th>Total</th></tr></thead><tbody>' + rowsCarta + '</tbody></table>' +
         '<p><strong>Total pagado: ' + fmtMoney(getVentaTotal(venta)) + '</strong></p>' +
         (normalize(cfg.notas_legales) ? ('<p><small>' + sanitize(cfg.notas_legales) + '</small></p>') : '') +
         '</body></html>';
     }
 
-    function openPreview(format) {
-      const html = buildPreviewHtml(format);
+    async function openPreview(format) {
+      const printerResolution = await resolvePrinterForReportes(format);
+      const html = buildPreviewHtml(format, printerResolution);
       if (!html) {
         setImpresionMsg('No hay ventas cerradas para generar vista previa de impresión.', 'error');
         return;

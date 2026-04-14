@@ -1185,7 +1185,31 @@
       return Math.round(Number(value || 0) * 100) / 100;
     }
 
-    function printServiceOrderIfEnabled(itemPayload) {
+    async function resolvePrinterForServiceOrder(itemPayload) {
+      if (!state.empresaID) return null;
+      const params = new URLSearchParams();
+      params.set('empresa_id', String(state.empresaID));
+      params.set('funcionalidad', 'orden_servicio');
+      const tipoItem = normalize(itemPayload && itemPayload.tipo_item).toLowerCase();
+      const productoID = Number((itemPayload && itemPayload.referencia_id) || 0);
+      if (tipoItem === 'producto' && Number.isFinite(productoID) && productoID > 0) {
+        params.set('producto_id', String(Math.trunc(productoID)));
+      }
+
+      try {
+        const res = await fetch('/api/empresa/impresoras/resolver?' + params.toString(), {
+          credentials: 'same-origin'
+        });
+        if (!res.ok) return null;
+        const out = await res.json();
+        if (!out || out.ok !== true) return null;
+        return out.resolucion || null;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    async function printServiceOrderIfEnabled(itemPayload) {
       const cfg = loadEmpresaGeneralConfig();
       const productos = cfg && cfg.productos && typeof cfg.productos === 'object' ? cfg.productos : {};
       if (!Boolean(productos.imprimir_orden_servicio)) return;
@@ -1198,6 +1222,10 @@
       const precio = Number(itemPayload.precio_unitario || 0);
       const totalLinea = cantidad * precio;
       const now = new Date();
+      const printerResolution = await resolvePrinterForServiceOrder(itemPayload);
+      const printerTarget = printerResolution && printerResolution.impresora ? printerResolution.impresora : null;
+      const printerName = printerTarget ? (normalize(printerTarget.nombre) || normalize(printerTarget.codigo) || ('Impresora #' + Number(printerTarget.id || 0))) : 'Sin impresora configurada';
+      const printerSource = printerResolution && normalize(printerResolution.fuente) ? printerResolution.fuente : '';
 
       const html = '<!doctype html><html><head><meta charset="utf-8"><title>Orden de servicio</title>' +
         '<style>body{font-family:Arial,sans-serif;padding:14px;color:#111}h1{font-size:18px;margin:0 0 8px}p{margin:4px 0}hr{margin:10px 0}.muted{color:#666;font-size:12px}</style>' +
@@ -1207,6 +1235,7 @@
         '<p><strong>Carrito:</strong> ' + escapeHtml((carrito && carrito.nombre) || 'Sin nombre') + '</p>' +
         '<p><strong>Código:</strong> ' + escapeHtml((carrito && carrito.codigo) || '') + '</p>' +
         '<p><strong>Destino:</strong> ' + escapeHtml(area) + '</p>' +
+        '<p><strong>Impresora objetivo:</strong> ' + escapeHtml(printerName) + (printerSource ? (' <span class="muted">(' + escapeHtml(printerSource) + ')</span>') : '') + '</p>' +
         '<hr>' +
         '<p><strong>Item:</strong> ' + escapeHtml(itemPayload.descripcion) + '</p>' +
         '<p><strong>Cantidad:</strong> ' + escapeHtml(cantidad) + ' ' + escapeHtml(itemPayload.unidad_medida || 'unidad') + '</p>' +
@@ -2583,7 +2612,7 @@
         await Promise.all([loadItems(), loadCarritos()]);
         setMessage('itemMsg', id > 0 ? 'Item actualizado' : 'Item agregado', false);
         if (isNewItem) {
-          printServiceOrderIfEnabled(payload);
+          await printServiceOrderIfEnabled(payload);
         }
       } catch (err) {
         setMessage('itemMsg', err.message || 'Error guardando item', true);

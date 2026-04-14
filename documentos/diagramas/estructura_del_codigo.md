@@ -22,13 +22,10 @@ Este documento resume la estructura tecnica principal del sistema y sirve como r
   - Modulos por contexto (super y administrar_empresa).
   - Estilos centralizados en web/estilos.css.
 
-3. Datos (PostgreSQL en VPS + SQLite legado)
+3. Datos (PostgreSQL en VPS)
 - Bases operativas (PostgreSQL):
   - pcs_superadministrador
   - pcs_empresas
-- Bases legado (SQLite de migración/contingencia):
-  - backend/db/superadministrador.db
-  - backend/db/empresas.db
 - Criterio:
   - Superadministrador: configuraciones globales, sesiones, administradores.
   - Empresas: entidades operativas por empresa (usuarios, clientes, productos, carritos, etc.).
@@ -58,6 +55,56 @@ flowchart TD
 
 ## Regla de mantenimiento
 Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe reflejarse en este documento y en los diagramas relacionados dentro de documentos/diagramas/.
+
+## Actualizacion 2026-04-14 (venta publica por subdominio empresarial)
+
+- Backend:
+  - `backend/handlers/venta_publica.go` incorpora resolucion de `empresa_slug` por `Host`/`X-Forwarded-Host` para subdominios tipo `{slug}.powerfulcontrolsystem.com`, manteniendo compatibilidad con query/path.
+  - `backend/main.go` enruta automaticamente `GET /` en subdominios de empresa hacia `venta_publica.html` para apertura directa de tienda.
+- Frontend:
+  - `web/venta_publica.html` agrega fallback de deteccion de slug por hostname cuando no viene `empresa_slug` ni patron en path.
+  - `web/administrar_empresa/venta_publica.html` muestra enlace sugerido de subdominio para publicacion operativa por empresa.
+- Operacion:
+  - sin cambios de permisos por rol ni wrappers de seguridad; se conserva endpoint publico `/api/public/venta_publica`.
+
+## Actualizacion 2026-04-14 (modulo de impresoras operativas por empresa)
+
+- Backend DB:
+  - nuevo modulo `backend/db/empresa_impresoras.go` con esquema y operaciones de impresoras por empresa.
+  - nuevas tablas: `empresa_impresoras`, `empresa_impresoras_funcionalidades`, `empresa_impresoras_productos`.
+  - logica de resolucion operativa por prioridad: `producto` -> `funcionalidad` -> `predeterminada`.
+- Backend handlers:
+  - nuevo archivo `backend/handlers/empresa_impresoras.go`.
+  - rutas registradas en `backend/main.go`:
+    - `/api/empresa/impresoras` (gestion y asignaciones; wrapper de seguridad empresa).
+    - `/api/empresa/impresoras/resolver` (resolucion operativa de destino de impresion; wrapper de ventas).
+  - nueva migracion de esquema: `2026-04-14-031-impresoras-operativas`.
+- Frontend empresa:
+  - `web/administrar_empresa/configuracion.html` incorpora tarjeta de impresoras del sistema.
+  - integra CRUD de impresoras, impresora predeterminada, activacion/inactivacion, asignacion por funcionalidad y por producto.
+  - `web/administrar_empresa/carrito_de_compras.html`, `web/administrar_empresa/finanzas.html` y `web/administrar_empresa/reportes.html` consumen el resolver para mostrar impresora objetivo en flujos de impresion.
+
+## Actualizacion 2026-04-14 (super: administracion de base de datos PostgreSQL)
+
+- Backend:
+  - nuevo handler `backend/handlers/postgres_performance.go` con endpoint `GET /super/api/postgres/performance`.
+  - el endpoint consolida estado de cluster, metricas por base (`pcs_superadministrador` y `pcs_empresas`), `pg_stat_bgwriter`, consultas activas prolongadas y recomendaciones automáticas para operacion.
+  - el acceso queda protegido por el flujo existente de `super_administrador` para rutas `/super/*` y `/super/api/*`.
+- Frontend:
+  - nueva pagina `web/super/administrar_base_de_datos.html` con tablero de KPIs, tendencias, tablas operativas y exportacion JSON.
+  - `web/super_administrador.html` incorpora acceso directo desde menu lateral y barra superior.
+- Flujo:
+  - `super_administrador.html` -> `administrar_base_de_datos.html` -> `fetch /super/api/postgres/performance` -> render de estado/recomendaciones en tiempo real.
+
+## Actualizacion 2026-04-14 (cierre de migracion: PostgreSQL-only)
+
+- Backend runtime:
+  - `backend/main.go` queda en modo PostgreSQL-only para operacion de servidor.
+  - se deshabilita explicitamente el runtime SQLite y se exige `DB_EMPRESAS_DSN` + `DB_SUPERADMIN_DSN`.
+- Higiene de datos legado:
+  - se eliminan los archivos `backend/db/empresas.db` y `backend/db/superadministrador.db` del repositorio.
+- Operacion local:
+  - `scripts/iniciar_servidor.ps1` valida `DB_DIALECT=postgres` y bloquea arranques sin DSN.
 
 ## Actualizacion 2026-04-14 (OAuth callback robusto en VPS)
 

@@ -42,8 +42,25 @@ Leyenda:
 | Reportes financieros | CRUA | CRUA | R | R | R | R | CRUA | R |
 | Cierres de caja | CRUDA | CRUA | CRUA | CRUA | R | R | R | R |
 | Seguridad y permisos | CRUDA | CRUA | R | R | R | R | R | R |
+| Impresoras operativas | CRUDA | CRUA | R | R | R | R | R | R |
+| Administracion DB PostgreSQL (super) | R | - | - | - | - | - | - | - |
 
 ## Estado de implementacion tecnica inicial (2026-04-04)
+
+- Actualizacion 2026-04-14 (venta publica por subdominio empresarial):
+	- Se habilita resolucion automatica de `empresa_slug` por `Host`/`X-Forwarded-Host` en `backend/handlers/venta_publica.go` para subdominios tipo `{slug}.powerfulcontrolsystem.com`.
+	- La raiz de subdominio empresarial (`/`) redirige internamente a `venta_publica.html` en `backend/main.go` para consumo publico sin query manual.
+	- No hay cambios en privilegios CRUD/A por rol: se mantiene endpoint publico `/api/public/venta_publica` y wrappers existentes de seguridad empresarial.
+
+- Actualizacion 2026-04-14 (impresoras operativas por empresa):
+	- Se incorpora `backend/handlers/empresa_impresoras.go` y `backend/db/empresa_impresoras.go` para administrar impresoras empresariales y resolver destino de impresion.
+	- Se registran rutas `GET/POST/PUT/DELETE /api/empresa/impresoras` (wrapper de seguridad) y `GET /api/empresa/impresoras/resolver` (wrapper de ventas).
+	- Sin cambios de privilegios globales: se mantiene politica de lectura comun para rutas con wrapper y mutacion restringida por modulo de seguridad/ventas segun rol.
+
+- Actualizacion 2026-04-14 (super: administracion de base de datos PostgreSQL):
+	- Se incorpora endpoint global `/super/api/postgres/performance` para lectura de salud y rendimiento del motor PostgreSQL.
+	- Se agrega la vista `web/super/administrar_base_de_datos.html` en el panel de superadministrador para monitoreo y accion operativa.
+	- No hay cambios en permisos empresariales ni wrappers de `/api/empresa/*`; el acceso permanece exclusivo para `super_administrador`.
 
 - Actualizacion 2026-04-14 (fase 4 PostgreSQL - estabilizacion worker contable):
 	- Se ajusta tecnicamente el procesamiento de eventos/asientos en backend (`backend/db/eventos_contables.go`) para compatibilidad SQL portable en PostgreSQL durante salida controlada.
@@ -215,6 +232,8 @@ Regla de lectura comun (R):
 | `/api/empresa/finanzas/cierres_caja` | `WithEmpresaFinanzasPermissions` | SA, AE, CT | SA, CT | `action=aprobar` restringido por permiso `A` |
 | `/api/empresa/usuarios` | `WithEmpresaSeguridadPermissions` | SA, AE | SA, AE | seguridad/usuarios solo administracion empresa |
 | `/api/empresa/configuracion_avanzada` | `WithEmpresaSeguridadPermissions` | SA, AE | SA, AE | seguridad/configuracion sensible |
+| `/api/empresa/impresoras` | `WithEmpresaSeguridadPermissions` | SA, AE | SA, AE | CRUD impresoras y acciones `predeterminada|activar|desactivar|funcionalidad|producto` por empresa |
+| `/api/empresa/impresoras/resolver` | `WithEmpresaVentasPermissions` | - | - | endpoint operativo de solo lectura para resolver impresora objetivo por `funcionalidad`/`producto_id` |
 | `/api/empresa/roles_de_usuario` | `WithEmpresaSeguridadPermissions` | SA, AE | SA, AE | consulta catalogo de roles con control de alcance |
 | `/api/empresa/permisos_contexto` | `WithEmpresaSeguridadPermissions` | - | - | endpoint `GET` para visualizar permisos efectivos por modulo/accion; `include_matrix=1` retorna matriz comparativa por rol |
 | `/api/empresa/auditoria/eventos` | `WithEmpresaSeguridadPermissions` | SA, AE | SA, AE | consulta y retencion (`action=retener|purgar`) |

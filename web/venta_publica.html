@@ -141,12 +141,50 @@
         return '';
       }
 
+      function parseSlugFromHost() {
+        var host = String(window.location.hostname || '').trim().toLowerCase();
+        if (!host || host === 'localhost' || host === '127.0.0.1' || host === '::1') {
+          return '';
+        }
+        var rawDomains = String(window.VENTA_PUBLICA_BASE_DOMAINS || 'powerfulcontrolsystem.com');
+        var baseDomains = rawDomains
+          .split(',')
+          .map(function (value) { return String(value || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*/, ''); })
+          .filter(function (value) { return value; });
+        if (!baseDomains.length) {
+          baseDomains = ['powerfulcontrolsystem.com'];
+        }
+
+        for (var i = 0; i < baseDomains.length; i++) {
+          var base = baseDomains[i];
+          if (host === base || host === 'www.' + base) {
+            continue;
+          }
+          var suffix = '.' + base;
+          if (host.length <= suffix.length || host.slice(-suffix.length) !== suffix) {
+            continue;
+          }
+          var label = host.slice(0, host.length - suffix.length).trim().replace(/^\.+|\.+$/g, '');
+          if (!label || label.indexOf('.') >= 0) {
+            continue;
+          }
+          label = label.replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '');
+          if (label) {
+            return label;
+          }
+        }
+        return '';
+      }
+
       function resolveContext() {
         var params = new URLSearchParams(window.location.search);
         state.empresaId = parseInt(params.get('empresa_id') || '0', 10) || 0;
         state.empresaSlug = String(params.get('empresa_slug') || '').trim();
         if (!state.empresaSlug) {
           state.empresaSlug = parseSlugFromPath();
+        }
+        if (!state.empresaSlug) {
+          state.empresaSlug = parseSlugFromHost();
         }
         var orderCode = String(params.get('order_code') || params.get('codigo_orden') || '').trim();
         if (orderCode) {

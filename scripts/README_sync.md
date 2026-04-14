@@ -103,7 +103,7 @@ Por defecto, antes de sincronizar, el script compila en local un binario Linux d
 
 Además, al terminar la sincronización (modo WSL y fallback), ejecuta bootstrap remoto para servidor nuevo:
 
-- Instala dependencias base (`ca-certificates`, `curl`, `sqlite3`) si el host usa `apt-get`.
+- Instala dependencias base (`ca-certificates`, `curl`) si el host usa `apt-get`.
 - Garantiza `backend/.env.local` y `SERVER_PORT`.
 - Conserva configuración DB remota existente y permite inyectar/actualizar `DB_DIALECT`, `DB_EMPRESAS_DSN` y `DB_SUPERADMIN_DSN`.
 - Si el modo efectivo queda en `postgres` y falta alguno de los DSN, el bootstrap falla con `BOOTSTRAP_ERROR:POSTGRES_MISSING_DSN` antes del redeploy (evita tumbar el proceso por arranque inválido).
@@ -162,7 +162,7 @@ Además, al terminar la sincronización (modo WSL y fallback), ejecuta bootstrap
 Nota sobre `-DryRun` en fallback PuTTY:
 
 - El script genera un paquete temporal y muestra el listado de archivos que se transferirían (sin cambiar el VPS).
-- Se excluyen por defecto `.git`, `node_modules`, `logs`, `test_runs`, `*.db`, `*.sqlite`, `*.exe`, `backend/.env.local`, `*.ppk`, `*.pem`, `*.key`.
+- Se excluyen por defecto `.git`, `node_modules`, `logs`, `test_runs`, `*.db`, `*.exe`, `backend/.env.local`, `*.ppk`, `*.pem`, `*.key`.
 - Ante errores de red tipo timeout, el script reintenta automáticamente (`-RetryCount`) y muestra diagnósticos claros por etapa.
 
 Advertencias y buenas prácticas

@@ -152,3 +152,15 @@
 2026-04-14T04:56:35-05:00 [INFO] req_id=req-1776160595854829400-747aebad36bf event=request_end method=PUT path=/api/empresa/carritos_compra?action=cerrar&empresa_id=620&id=77 status=204 dur_ms=14
 2026-04-14T07:16:24-05:00 [INFO] req_id=req-1776168984199231800-a9f578977c99 event=request_start method=PUT path=/api/empresa/carritos_compra?action=cerrar&empresa_id=620&id=77 ip=192.0.2.1 ua=""
 2026-04-14T07:16:24-05:00 [INFO] req_id=req-1776168984199231800-a9f578977c99 event=request_end method=PUT path=/api/empresa/carritos_compra?action=cerrar&empresa_id=620&id=77 status=204 dur_ms=14
+2026-04-14T13:39:22-05:00 [INFO] req_id=req-1776191962344042600-02daad2a4c0e event=request_start method=PUT path=/api/empresa/carritos_compra?action=cerrar&empresa_id=620&id=77 ip=192.0.2.1 ua=""
+2026-04-14T13:39:22-05:00 [INFO] req_id=req-1776191962344042600-02daad2a4c0e event=request_end method=PUT path=/api/empresa/carritos_compra?action=cerrar&empresa_id=620&id=77 status=204 dur_ms=73
+2026-04-14T13:43:26-05:00 [INFO] req_id=req-1776192206013079200-60999754d73d event=request_start method=PUT path=/api/empresa/carritos_compra?action=cerrar&empresa_id=620&id=77 ip=192.0.2.1 ua=""
+2026-04-14T13:43:26-05:00 [INFO] req_id=req-1776192206013079200-60999754d73d event=request_end method=PUT path=/api/empresa/carritos_compra?action=cerrar&empresa_id=620&id=77 status=204 dur_ms=14
+2026-04-14T13:58:59-05:00 [INFO] req_id=req-1776193139342467200-6e722299ba4f event=request_start method=PUT path=/api/empresa/carritos_compra?action=cerrar&empresa_id=620&id=77 ip=192.0.2.1 ua=""
+2026-04-14T13:58:59-05:00 [INFO] req_id=req-1776193139342467200-6e722299ba4f event=request_end method=PUT path=/api/empresa/carritos_compra?action=cerrar&empresa_id=620&id=77 status=204 dur_ms=20
+2026-04-14T14:02:47-05:00 [INFO] req_id=req-1776193367571985000-ca21a4a3d8a0 event=request_start method=PUT path=/api/empresa/carritos_compra?action=cerrar&empresa_id=620&id=77 ip=192.0.2.1 ua=""
+2026-04-14T14:02:47-05:00 [INFO] req_id=req-1776193367571985000-ca21a4a3d8a0 event=request_end method=PUT path=/api/empresa/carritos_compra?action=cerrar&empresa_id=620&id=77 status=204 dur_ms=12
+2026-04-14T14:36:16-05:00 [INFO] req_id=req-1776195376389207300-75fb2405311c event=request_start method=PUT path=/api/empresa/carritos_compra?action=cerrar&empresa_id=620&id=77 ip=192.0.2.1 ua=""
+2026-04-14T14:36:16-05:00 [INFO] req_id=req-1776195376389207300-75fb2405311c event=request_end method=PUT path=/api/empresa/carritos_compra?action=cerrar&empresa_id=620&id=77 status=204 dur_ms=114
+2026-04-14T14:43:15-05:00 [INFO] req_id=req-1776195795431829400-084034c71021 event=request_start method=PUT path=/api/empresa/carritos_compra?action=cerrar&empresa_id=620&id=77 ip=192.0.2.1 ua=""
+2026-04-14T14:43:15-05:00 [INFO] req_id=req-1776195795431829400-084034c71021 event=request_end method=PUT path=/api/empresa/carritos_compra?action=cerrar&empresa_id=620&id=77 status=204 dur_ms=30

@@ -18,7 +18,6 @@ import (
 	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
-	_ "modernc.org/sqlite"
 
 	dbpkg "github.com/you/pos-backend/db"
 	"github.com/you/pos-backend/handlers"
@@ -27,15 +26,13 @@ import (
 )
 
 var (
-	clientID       = os.Getenv("GOOGLE_CLIENT_ID")
-	clientSecret   = os.Getenv("GOOGLE_CLIENT_SECRET")
-	redirectURL    = os.Getenv("GOOGLE_REDIRECT_URL") // e.g. http://localhost:8080/auth/google/callback
-	dbEmpresasPath = os.Getenv("DB_EMPRESAS_PATH")
-	dbSuperPath    = os.Getenv("DB_SUPERADMIN_PATH")
-	dbEmpresasDSN  = os.Getenv("DB_EMPRESAS_DSN")
-	dbSuperDSN     = os.Getenv("DB_SUPERADMIN_DSN")
-	dbEmpresas     *sql.DB
-	dbSuper        *sql.DB
+	clientID      = os.Getenv("GOOGLE_CLIENT_ID")
+	clientSecret  = os.Getenv("GOOGLE_CLIENT_SECRET")
+	redirectURL   = os.Getenv("GOOGLE_REDIRECT_URL") // e.g. http://localhost:8080/auth/google/callback
+	dbEmpresasDSN = os.Getenv("DB_EMPRESAS_DSN")
+	dbSuperDSN    = os.Getenv("DB_SUPERADMIN_DSN")
+	dbEmpresas    *sql.DB
+	dbSuper       *sql.DB
 )
 
 func resolveBackendRuntimeDir() string {
@@ -155,12 +152,6 @@ func refreshRuntimeGlobalsFromEnv() {
 	if v := strings.TrimSpace(os.Getenv("GOOGLE_REDIRECT_URL")); v != "" {
 		redirectURL = v
 	}
-	if v := strings.TrimSpace(os.Getenv("DB_EMPRESAS_PATH")); v != "" {
-		dbEmpresasPath = v
-	}
-	if v := strings.TrimSpace(os.Getenv("DB_SUPERADMIN_PATH")); v != "" {
-		dbSuperPath = v
-	}
 	if v := strings.TrimSpace(os.Getenv("DB_EMPRESAS_DSN")); v != "" {
 		dbEmpresasDSN = v
 	}
@@ -190,9 +181,6 @@ func normalizeRuntimeDBDialect(raw string) string {
 	if strings.Contains(v, "postgres") {
 		return "postgres"
 	}
-	if strings.Contains(v, "sqlite") {
-		return "sqlite"
-	}
 	return ""
 }
 
@@ -207,7 +195,7 @@ func resolveRuntimeDBDialect() string {
 			return dialect
 		}
 	}
-	return "sqlite"
+	return "postgres"
 }
 
 func resolveRuntimePostgresDSN(primary string, fallbackKeys ...string) string {
@@ -497,6 +485,9 @@ func main() {
 	}
 	runtimeDBDialect := resolveRuntimeDBDialect()
 	runtimePostgres := runtimeDBDialect == "postgres"
+	if !runtimePostgres {
+		log.Fatalf("DB_DIALECT=%q no soportado. La migracion fue cerrada a PostgreSQL-only", runtimeDBDialect)
+	}
 
 	if redirectURL == "" {
 		log.Println("INFO: GOOGLE_REDIRECT_URL no configurado; se resolvera dinamicamente segun host de la solicitud")
@@ -513,14 +504,12 @@ func main() {
 			"DATABASE_EMPRESAS_URL",
 			"DB_EMPRESAS_URL",
 			"PCS_DB_EMPRESAS_DSN",
-			"DB_EMPRESAS_PATH",
 		)
 		dbSuperDSN = resolveRuntimePostgresDSN(
 			dbSuperDSN,
 			"DATABASE_SUPERADMIN_URL",
 			"DB_SUPERADMIN_URL",
 			"PCS_DB_SUPERADMIN_DSN",
-			"DB_SUPERADMIN_PATH",
 		)
 
 		if strings.TrimSpace(dbEmpresasDSN) == "" || strings.TrimSpace(dbSuperDSN) == "" {
@@ -544,25 +533,7 @@ func main() {
 		}
 		log.Println("INFO: runtime DB dialect=postgres (VPS)")
 	} else {
-		dbEmpresasPath = resolveRuntimeDBPath(dbEmpresasPath, "empresas.db", backendDir)
-		dbSuperPath = resolveRuntimeDBPath(dbSuperPath, "superadministrador.db", backendDir)
-		if err := ensureRuntimeDBDir(dbEmpresasPath); err != nil {
-			log.Fatalf("failed to ensure empresas db directory: %v", err)
-		}
-		if err := ensureRuntimeDBDir(dbSuperPath); err != nil {
-			log.Fatalf("failed to ensure superadministrador db directory: %v", err)
-		}
-		log.Printf("INFO: usando DB empresas en %s", dbEmpresasPath)
-		log.Printf("INFO: usando DB superadministrador en %s", dbSuperPath)
-
-		dbEmpresas, err = openAndPingRuntimeDB("sqlite", dbEmpresasPath, "empresas")
-		if err != nil {
-			log.Fatal(err)
-		}
-		dbSuper, err = openAndPingRuntimeDB("sqlite", dbSuperPath, "superadministrador")
-		if err != nil {
-			log.Fatal(err)
-		}
+		log.Fatalf("SQLite runtime deshabilitado: configure DB_DIALECT=postgres y DSN de PostgreSQL")
 	}
 
 	if !runtimePostgres {
@@ -807,6 +778,9 @@ func main() {
 		if err := dbpkg.EnsureEmpresaSensorPuertasSchema(dbEmpresas); err != nil {
 			log.Fatalf("failed to ensure sensor_puertas schema in empresas db: %v", err)
 		}
+		if err := dbpkg.EnsureEmpresaImpresorasSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure empresa_impresoras schema in empresas db: %v", err)
+		}
 		if err := dbpkg.EnsureEmpresaEstacionPrefsSchema(dbEmpresas); err != nil {
 			log.Fatalf("failed to ensure empresa_estacion_prefs schema in empresas db: %v", err)
 		}
@@ -908,6 +882,9 @@ func main() {
 		}
 		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-08-030-configuracion-monetaria-numerica", "configuracion avanzada por empresa para moneda operativa, sistema numerico y precision decimal"); err != nil {
 			log.Fatalf("failed to register configuracion monetaria/numerica schema migration in empresas db: %v", err)
+		}
+		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-14-031-impresoras-operativas", "modulo de impresoras por empresa con impresora predeterminada, asignacion por funcionalidad y por producto"); err != nil {
+			log.Fatalf("failed to register impresoras operativas schema migration in empresas db: %v", err)
 		}
 		// Crear tipos_de_empresas en la base de datos de superadministrador (ubicación centralizada)
 		createTiposSuper := `CREATE TABLE IF NOT EXISTS tipos_de_empresas (
@@ -1445,7 +1422,7 @@ func main() {
 		if clientID == "" || clientSecret == "" {
 			log.Println("Warning: GOOGLE_CLIENT_ID o GOOGLE_CLIENT_SECRET no configurados (entorno/DB)")
 		}
-		log.Println("INFO: modo PostgreSQL activo; se omite bootstrap SQLite en runtime.")
+		log.Println("INFO: modo PostgreSQL activo; bootstrap legacy de SQLite desactivado.")
 	}
 
 	// Inicializar tabla de métricas y arrancar collector periódico
@@ -1547,6 +1524,8 @@ func main() {
 	http.HandleFunc("/api/empresa/comisiones", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaComisionesServicioHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/configuracion_operativa", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaConfiguracionOperativaHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/configuracion_avanzada", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaConfiguracionAvanzadaHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/impresoras", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaImpresorasHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/impresoras/resolver", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaImpresorasResolverHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/estacion_prefs", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaEstacionPrefsHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/facturacion_electronica", handlers.WithEmpresaFacturacionPermissions(dbEmpresas, dbSuper, handlers.EmpresaFacturacionElectronicaHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/facturacion_electronica/pais_detectado", handlers.WithEmpresaFacturacionPermissions(dbEmpresas, dbSuper, handlers.EmpresaFacturacionElectronicaPaisDetectadoHandler(dbEmpresas)))
@@ -1608,6 +1587,7 @@ func main() {
 	// Endpoints de métricas (actual y histórico)
 	http.HandleFunc("/super/api/metrics/current", handlers.MetricsCurrentHandler(dbSuper))
 	http.HandleFunc("/super/api/metrics/history", handlers.MetricsHistoryHandler(dbSuper))
+	http.HandleFunc("/super/api/postgres/performance", handlers.PostgresPerformanceHandler(dbEmpresas, dbSuper))
 	// Endpoint de seguridad: escaneo de puertos
 	http.HandleFunc("/super/api/security/ports", handlers.SecurityPortsHandler(dbSuper))
 	// Endpoint de seguridad: listado de procesos en memoria RAM
@@ -1678,6 +1658,12 @@ func main() {
 		trimmed := strings.Trim(path, "/")
 		parts := strings.Split(trimmed, "/")
 		if len(parts) == 2 && strings.EqualFold(parts[1], "venta_publica.html") && strings.TrimSpace(parts[0]) != "" {
+			r2 := r.Clone(r.Context())
+			r2.URL.Path = "/venta_publica.html"
+			staticFS.ServeHTTP(w, r2)
+			return
+		}
+		if (path == "/" || path == "") && handlers.ResolveVentaPublicaSlugFromHost(r) != "" {
 			r2 := r.Clone(r.Context())
 			r2.URL.Path = "/venta_publica.html"
 			staticFS.ServeHTTP(w, r2)

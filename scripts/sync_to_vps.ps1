@@ -276,7 +276,7 @@ set -e;
 if command -v apt-get >/dev/null 2>&1; then
   export DEBIAN_FRONTEND=noninteractive;
   apt-get update -y >/dev/null 2>&1 || true;
-  apt-get install -y ca-certificates curl sqlite3 >/dev/null 2>&1 || true;
+  apt-get install -y ca-certificates curl >/dev/null 2>&1 || true;
 fi;
 backend_dir=__BACKEND_DIR__;
 env_file="$backend_dir/.env.local";
@@ -645,7 +645,6 @@ function Get-SyncExcludePatterns {
     "logs",
     "test_runs",
     "*.db",
-    "*.sqlite",
     "*.exe",
     "backend/.env.local",
     "backend/server.err",

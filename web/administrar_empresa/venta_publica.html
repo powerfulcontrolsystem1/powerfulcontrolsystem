@@ -109,7 +109,8 @@
       <div id="vpMsgConfig" class="form-help"></div>
       <div class="form-help">
         URL local: <a id="vpLinkLocal" href="#" target="_blank" rel="noopener">-</a><br>
-        URL patron: <a id="vpLinkSlug" href="#" target="_blank" rel="noopener">-</a>
+        URL patron: <a id="vpLinkSlug" href="#" target="_blank" rel="noopener">-</a><br>
+        URL subdominio: <a id="vpLinkSubdominio" href="#" target="_blank" rel="noopener">-</a>
       </div>
     </section>
 
@@ -276,6 +277,7 @@
       var ordersBodyEl = document.getElementById('vpOrdersBody');
       var linkLocalEl = document.getElementById('vpLinkLocal');
       var linkSlugEl = document.getElementById('vpLinkSlug');
+      var linkSubdominioEl = document.getElementById('vpLinkSubdominio');
 
       function setMsg(el, text, type) {
         if (!el) return;
@@ -421,6 +423,8 @@
           linkLocalEl.href = '#';
           linkSlugEl.textContent = '-';
           linkSlugEl.href = '#';
+          linkSubdominioEl.textContent = '-';
+          linkSubdominioEl.href = '#';
           return;
         }
         var localPath = '/venta_publica.html?empresa_slug=' + encodeURIComponent(slug);
@@ -429,6 +433,32 @@
         linkLocalEl.textContent = localPath;
         linkSlugEl.href = slugPath;
         linkSlugEl.textContent = slugPath;
+
+        var baseDomain = '';
+        var dominioPublico = document.getElementById('vpDominio').value.trim();
+        if (dominioPublico) {
+          baseDomain = String(dominioPublico)
+            .toLowerCase()
+            .replace(/^https?:\/\//, '')
+            .replace(/\/.*/, '')
+            .replace(/:\d+$/, '')
+            .replace(/^www\./, '');
+        }
+        if (!baseDomain) {
+          var host = String(window.location.hostname || '').toLowerCase().replace(/^www\./, '');
+          var parts = host.split('.').filter(Boolean);
+          if (parts.length >= 2) {
+            baseDomain = parts.slice(-2).join('.');
+          }
+        }
+        if (baseDomain && baseDomain !== 'localhost' && baseDomain !== '127.0.0.1') {
+          var subdomainURL = window.location.protocol + '//' + slug + '.' + baseDomain + '/';
+          linkSubdominioEl.href = subdomainURL;
+          linkSubdominioEl.textContent = subdomainURL;
+        } else {
+          linkSubdominioEl.href = '#';
+          linkSubdominioEl.textContent = '-';
+        }
       }
 
       function getItemPayload() {

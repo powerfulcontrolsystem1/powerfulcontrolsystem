@@ -2,10 +2,14 @@
 backend/server.exe
 backend/*.log
 backend/*.err
+backend/logs/*.log
 backend/*.exe~
 backend/pos.db
 *.sqlite
 *.db
+logs/test_runs/*.log
+scripts/logs/*.log
+tmp/*.txt
 backend/.env.local
 .env.local
 # VSCode

@@ -1,30 +1,26 @@
 # Estructura del Base de Datos
 
-Version: 2026-04-13.47.0
-Ultima actualizacion: 2026-04-13
+Version: 2026-04-14.49.0
+Ultima actualizacion: 2026-04-14
 
 Este documento consolida la estructura relacional activa del proyecto.
 Nota de gobernanza documental:
 - `documentos/estructura_bd.md` es la fuente canonica del esquema fisico.
-- `estructura_bd.md` (raiz) se mantiene como copia de compatibilidad y debe mantenerse sincronizada.
 - `documentos/descripcion_de_las_bases_De_datos` es documento complementario funcional (sin duplicar detalle tabla-por-tabla).
 Bases operativas PostgreSQL en VPS:
 - `pcs_empresas`
 - `pcs_superadministrador`
-Ubicacion canonica de archivos SQLite legado (solo migracion/contingencia):
-- `backend/db/empresas.db`
-- `backend/db/superadministrador.db`
-Regla operativa de unicidad:
-- Solo deben existir estos dos archivos `.db` de legado para evitar divergencias por rutas duplicadas durante la migracion.
+Estado de legado SQLite:
+- Retirado del runtime y depurado del repositorio tras cierre de migracion.
 Todas las tablas operativas usan como base los campos estandar:
-- id INTEGER PRIMARY KEY AUTOINCREMENT
-- fecha_creacion TEXT DEFAULT (datetime('now','localtime'))
-- fecha_actualizacion TEXT DEFAULT (datetime('now','localtime'))
+- id (clave primaria)
+- fecha_creacion
+- fecha_actualizacion
 - usuario_creador TEXT
 - estado TEXT DEFAULT 'activo'
 - observaciones TEXT
 
-## 1) Base: empresas.db
+## 1) Base: pcs_empresas
 
 ### Tablas de control y core
 - schema_migrations:
@@ -297,6 +293,24 @@ Todas las tablas operativas usan como base los campos estandar:
   - observaciones
   - indice: (empresa_id, fecha_creacion DESC, id DESC)
 
+### Tablas de impresoras operativas por empresa
+- empresa_impresoras:
+  - empresa_id, codigo, nombre
+  - tipo_conexion (`red`/`usb`/`windows`/`bluetooth`)
+  - direccion, area_operativa
+  - formato_impresion (`pos`/`carta`)
+  - es_predeterminada (0/1)
+  - indices: unico `(empresa_id, codigo)`, por estado y predeterminada
+- empresa_impresoras_funcionalidades:
+  - empresa_id, funcionalidad, impresora_id
+  - prioridad
+  - indice unico: `(empresa_id, funcionalidad)`
+- empresa_impresoras_productos:
+  - empresa_id, producto_id, impresora_id
+  - indice unico: `(empresa_id, producto_id)`
+- Regla de resolucion operativa:
+  - prioridad de asignacion: `producto` -> `funcionalidad` -> `predeterminada`.
+
 ### Tablas de calculadora operativa por empresa
 - empresa_calculadora_configuracion:
   - empresa_id (UNIQUE)
@@ -411,7 +425,7 @@ Todas las tablas operativas usan como base los campos estandar:
   - metadata_json
   - retencion_dias, fecha_evento, fecha_expiracion
 
-### Objetos de busqueda full-text de auditoria (SQLite FTS)
+### Objetos de busqueda full-text de auditoria (FTS operativa)
 - empresa_auditoria_eventos_fts (tabla virtual):
   - indexa contenido textual de `empresa_auditoria_eventos` para `search` full-text.
   - columnas indexadas: `modulo`, `accion`, `recurso`, `endpoint`, `metadata_json`, `observaciones`.
@@ -749,7 +763,7 @@ Todas las tablas operativas usan como base los campos estandar:
   - rango_desde, rango_hasta, consecutivo_actual
   - url_dian, token_emisor_ref, ultimo_envio, estado_dian
 
-## 2) Base: superadministrador.db
+## 2) Base: pcs_superadministrador
 
 ### Tablas de control y administracion
 - schema_migrations:

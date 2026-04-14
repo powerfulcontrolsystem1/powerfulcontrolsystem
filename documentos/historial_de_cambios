@@ -1,6 +1,200 @@
  - Historial de cambios
  - Historial de cambios
 
+ - 2026-04-14: Eliminacion global de barra superior en layouts super/empresa
+     - Archivos modificados:
+         - web/super_administrador.html
+         - web/administrar_empresa.html
+         - web/administrar_empresa/finanzas_menu.html
+         - web/administrar_empresa/facturacion_electronica_menu.html
+         - web/administrar_empresa/administrar_productos_menu.html
+         - web/administrar_empresa/configuracion_menu.html
+         - web/administrar_empresa/reportes_menu.html
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se elimina la barra superior de titulo/acciones (`admin-toolbar page-header`) en todas las paginas de layout administrativo para dejar solo sidebar + contenido (iframe) en el area principal.
+     - Verificacion tecnica:
+         - Busqueda en frontend `class="admin-toolbar"` sin coincidencias en `web/**/*.html`.
+         - `web/super_administrador.html` queda sin bloque "Super Administrador / Administrar base de datos / Metricas de trafico" en la parte superior derecha.
+
+ - 2026-04-14: Correccion StrictMode en liberacion de puerto 8080
+     - Archivos modificados:
+         - scripts/iniciar_servidor.ps1
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se normaliza a arreglo la variable de deteccion de PIDs en `Get-ListeningPidsOnPort` para evitar la excepcion `PropertyNotFoundStrict` cuando se detecta un solo proceso escuchando en el puerto 8080.
+     - Verificacion tecnica:
+         - Ejecucion real en consola: `. 'D:\powerfulcontrolsystem\scripts\iniciar_servidor.ps1'`.
+         - Resultado: paso `3/8 Liberando puerto 8080` completado sin error y arranque final del backend en `:8080`.
+
+ - 2026-04-14: Reparacion de inicio local por DSN PostgreSQL faltantes
+     - Archivos modificados:
+         - scripts/iniciar_servidor.ps1
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Archivo local de entorno actualizado (no versionado):
+         - backend/.env.local
+     - Descripcion: Se corrige `scripts/iniciar_servidor.ps1` para cargar variables de base de datos desde `.env.local/.env` antes de validar `DB_DIALECT`, `DB_EMPRESAS_DSN` y `DB_SUPERADMIN_DSN`; adicionalmente se incorpora soporte de tunel SSH opcional hacia PostgreSQL en VPS (`DB_VPS_TUNNEL_*`) con validacion de listener y reescritura temporal de DSN al puerto local del tunel cuando aplica.
+     - Verificacion tecnica:
+         - `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\iniciar_servidor.ps1 -Background` -> pasos de validacion en verde e inicio de backend en `:8080`.
+         - `curl -I http://127.0.0.1:8080` -> `HTTP/1.1 200 OK`.
+
+ - 2026-04-14: Venta publica por subdominio empresarial automatizado
+     - Archivos modificados:
+         - backend/main.go
+         - backend/handlers/venta_publica.go
+         - backend/handlers/venta_publica_test.go
+         - web/venta_publica.html
+         - web/administrar_empresa/venta_publica.html
+         - documentos/deploy_nginx_reverse_proxy_vps.md
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_del_proyecto
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se habilita venta publica por subdominio de empresa (`{slug}.powerfulcontrolsystem.com`) con resolucion de slug por `Host`/`X-Forwarded-Host`, manteniendo compatibilidad con query/path y apertura directa de tienda en la raiz del subdominio.
+     - Verificacion tecnica:
+         - `go test ./handlers -run "VentaPublica|ResolveVentaPublicaSlugFromHost" -count=1` -> PASADO.
+         - VPS: `nginx -t` + `systemctl reload nginx` con bloque wildcard para `*.powerfulcontrolsystem.com` y captura de slug por host; prueba local en VPS `GET /` con host de subdominio -> `302 /venta_publica.html?empresa_slug=<slug>` y `GET /venta_publica.html?empresa_slug=<slug>` -> `200 OK`.
+         - DNS: `empresa1.powerfulcontrolsystem.com` aun no resuelve publicamente (`NXDOMAIN`), pendiente crear registro wildcard `*.powerfulcontrolsystem.com` en el proveedor DNS.
+
+ - 2026-04-14: Guia operativa de dominio con Nginx reverse proxy en VPS
+     - Archivo creado:
+         - documentos/deploy_nginx_reverse_proxy_vps.md
+     - Archivos modificados:
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - documentos/descripcion_del_proyecto
+         - CHANGELOG.md
+     - Descripcion: Se documenta el procedimiento de despliegue para publicar la aplicacion backend en `powerfulcontrolsystem.com` usando Nginx como reverse proxy a `127.0.0.1:8080`, incluyendo activacion de sitio, validacion `nginx -t`, reinicio de servicio, apertura de puertos UFW y opcion de HTTPS con Certbot.
+     - Verificacion tecnica:
+         - Guia generada con comandos listos para ejecucion en Ubuntu VPS.
+
+ - 2026-04-14: Modulo de impresoras operativas por empresa
+     - Archivos creados:
+         - backend/db/empresa_impresoras.go
+         - backend/db/empresa_impresoras_test.go
+         - backend/handlers/empresa_impresoras.go
+     - Archivos modificados:
+         - backend/main.go
+         - web/administrar_empresa/configuracion.html
+         - web/administrar_empresa/carrito_de_compras.html
+         - web/administrar_empresa/finanzas.html
+         - web/administrar_empresa/reportes.html
+         - documentos/estructura_bd.md
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_del_proyecto
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se incorpora el modulo de impresoras del sistema por `empresa_id` con CRUD, impresora predeterminada, activacion/inactivacion, asignacion por funcionalidad y por producto, y resolver operativo de impresion con prioridad `producto -> funcionalidad -> predeterminada`; se integra en configuracion de empresa y en flujos de impresion de carrito, finanzas y reportes.
+     - Verificacion tecnica:
+         - `go test ./ ./auth ./db ./handlers ./metrics ./utils -count=1` -> PASADO.
+
+ - 2026-04-14: Panel super de administracion de base de datos PostgreSQL
+     - Archivos creados:
+         - backend/handlers/postgres_performance.go
+         - backend/handlers/postgres_performance_test.go
+         - web/super/administrar_base_de_datos.html
+     - Archivos modificados:
+         - backend/main.go
+         - web/super_administrador.html
+         - documentos/descripcion_del_proyecto
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se incorpora un modulo de monitoreo profesional de PostgreSQL para superadministrador con KPIs de conexiones/cache, estado por base (`pcs_superadministrador` y `pcs_empresas`), consultas activas largas, lectura de `pg_stat_bgwriter` y recomendaciones automaticas.
+     - Verificacion tecnica:
+         - `go test ./handlers -run "PostgresPerformance" -count=1` -> PASADO.
+         - `go test ./ ./auth ./db ./handlers ./metrics ./utils -count=1` -> PASADO.
+
+ - 2026-04-14: Cierre de migracion PostgreSQL-only y retiro de SQLite operativo
+     - Archivos modificados:
+         - backend/main.go
+         - backend/db/sql_compat.go
+         - scripts/iniciar_servidor.ps1
+         - scripts/sync_to_vps.ps1
+         - scripts/sync_to_vps.sh
+         - scripts/README_sync.md
+         - scripts/actualizar_repositorio.ps1
+         - documentos/descripcion_del_proyecto
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/estructura_bd.md
+         - documentos/descripcion_de_las_bases_De_datos
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Archivos eliminados:
+         - backend/db/empresas.db
+         - backend/db/superadministrador.db
+     - Descripcion: Se completa el cierre de migracion dejando el backend en modo PostgreSQL-only, sin arranque SQLite, con depuracion de `.db` legado en el repositorio y actualizacion de documentacion canonica/scripting operativo.
+     - Verificacion tecnica: se valida ausencia de archivos `.db` en `backend/db` y arranque condicionado a DSN PostgreSQL obligatorios.
+
+ - 2026-04-14: Estandarizacion documental ERP multiempresa
+     - Archivos creados:
+         - documentos/erp_multiempresa/README.md
+         - documentos/erp_multiempresa/01_alcance_erp_multiempresa.md
+         - documentos/erp_multiempresa/02_diseno_tecnico_erp_multiempresa.md
+         - documentos/erp_multiempresa/03_especificaciones_funcionales_erp_multiempresa.md
+         - documentos/erp_multiempresa/04_guia_implementacion_erp_multiempresa.md
+     - Archivos modificados:
+         - documentos/README.md
+     - Descripcion: Se consolida una estructura documental estandar ERP multiempresa con entregables formales para alcance, arquitectura tecnica, especificaciones funcionales y guia de implementacion, preservando claridad en procesos empresariales, reglas de negocio e integraciones.
+     - Verificacion tecnica: Paquete documental creado y registrado en indice canonico de `documentos/README.md`.
+
+ - 2026-04-14: Eliminación de `estructura_bd.md`
+     - Archivo eliminado: `estructura_bd.md` (raíz del repositorio).
+     - Respaldo: `documentos/backups/estructura_bd.deleted_2026-04-14.md`.
+     - Motivo: Consolidación documental — `documentos/estructura_bd.md` era una copia de compatibilidad; la fuente canónica es `documentos/estructura_bd.md`.
+     - Acciones: Entrada registrada en `documentos/descripcion_de_archivos` y `CHANGELOG.md`.
+
+ - 2026-04-14: Reorganizacion documental profesional + depuracion de archivos no usados en local
+     - Archivos creados/modificados:
+         - documentos/README.md
+         - documentos/descripcion_del_proyecto
+         - documentos/estructura_del_codigo
+         - .gitignore
+         - CHANGELOG.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+     - Archivos eliminados por higiene:
+         - documentos/historial_de_cambios_addendum_2026-04-04.md (contenido consolidado en historial principal)
+         - backend/tmp/server.exe
+         - backend/server.err
+         - backend/server.log
+         - backend/server.run.log
+         - logs/test_runs/*.log
+         - scripts/logs/*.log
+         - backend/logs/*.log
+         - tmp/doc_audit_report.txt
+         - tmp/doc_hash_duplicates.txt
+     - Descripcion: Se define indice canonico de documentacion en `documentos/README.md`, se consolida `documentos/estructura_del_codigo` como alias de compatibilidad para evitar duplicidad con `documentos/diagramas/estructura_del_codigo.md`, se actualiza el proyecto para apuntar a fuentes canonicas y se depuran artefactos operativos (logs/temporales/binario duplicado) no requeridos en el repositorio.
+     - Fusion documental aplicada (desde addendum depurado):
+         - Registro 2026-04-04 de herramientas de soporte Gemini integrado en historial principal.
+         - Se conserva trazabilidad funcional de `backend/tools/register_gemini_key/main.go` y `backend/tools/test_gemini_key/main.go` como utilitarios locales temporales para registrar/probar clave cifrada sin exponer secretos en texto plano.
+     - Verificacion tecnica:
+         - Validado que `documentos/historial_de_cambios_addendum_2026-04-04.md` ya no existe.
+         - Validado que `scripts/logs/` y `logs/test_runs/` quedan sin archivos.
+         - Validado que `backend/logs/` conserva solo `server_runtime_state.json`.
+
+ - 2026-04-14: Validacion final OAuth Google en VPS (HTTPS operativo, bloqueo externo por URI autorizada)
+     - Archivos modificados:
+         - CHANGELOG.md
+         - documentos/historial_de_cambios
+     - Descripcion: Se valida en VPS el flujo real de Google OAuth con callback seguro `https://2.24.197.58.nip.io/auth/google/callback` sobre TLS activo (`:443` via Caddy). El backend y la infraestructura responden correctamente, pero Google mantiene `redirect_uri_mismatch` para la URI publica actual.
+     - Verificacion tecnica:
+         - Flujo E2E en VPS: `/auth/google/login` genera `redirect_uri` HTTPS correcto y Google responde con error de mismatch.
+         - Matriz de URIs: solo `http://localhost:8080/auth/google/callback` aparece aceptada por el cliente OAuth actual.
+     - Pendiente: Registrar en Google Cloud Console la URI exacta `https://2.24.197.58.nip.io/auth/google/callback` en Authorized redirect URIs y revalidar login en VPS.
+
  - 2026-04-14: Corrección de inicio local - falso positivo PID 0 en puerto 8080
      - Archivos modificados:
          - scripts/iniciar_servidor.ps1

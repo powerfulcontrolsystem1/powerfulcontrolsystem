@@ -1,7 +1,7 @@
 
 ## Descripcion del proyecto (version compacta)
 
-Sistema POS multiempresa con backend en Go y persistencia SQLite, orientado a operacion comercial por empresa (usuarios, clientes, inventario, carritos, pagos y configuracion de facturacion).
+Sistema POS multiempresa con backend en Go y persistencia PostgreSQL, orientado a operacion comercial por empresa (usuarios, clientes, inventario, carritos, pagos y configuracion de facturacion).
 
 ## Objetivo funcional
 
@@ -14,7 +14,7 @@ Sistema POS multiempresa con backend en Go y persistencia SQLite, orientado a op
 
 - Backend: Go.
 - Frontend: HTML + JavaScript + CSS.
-- Base de datos: SQLite (dos archivos separados por contexto).
+- Base de datos: PostgreSQL (dos bases separadas por contexto en VPS).
 - Integraciones: Google OAuth, SMTP (correo) y Wompi.
 
 ## Arquitectura por capas
@@ -43,6 +43,7 @@ Sistema POS multiempresa con backend en Go y persistencia SQLite, orientado a op
 - Configuracion de pasarela de pago Wompi y correo.
 - Configuracion avanzada de credenciales IA para modelos populares con trazabilidad de cuenta Google administradora.
 - Monitoreo operativo de inicio/reinicio del backend con bitacora central (`super_servidor_eventos`), log local runtime y notificacion por correo configurable (`gmail.restart_alert_to`).
+- Administracion profesional de PostgreSQL desde super con vista dedicada de rendimiento (`/super/administrar_base_de_datos.html`) y API protegida de telemetria (`/super/api/postgres/performance`).
 
 3) Operacion por empresa
 - Usuarios de empresa (alta, confirmacion, estado, primer ingreso).
@@ -61,11 +62,12 @@ Sistema POS multiempresa con backend en Go y persistencia SQLite, orientado a op
 - Comisiones por servicio: modulo por empresa para activar/desactivar porcentaje de comision de servicios de lavado, registrar movimientos automaticos al cerrar carrito y consultar reporte por lavador.
 - Compras: modulo dedicado con endpoint `/api/empresa/compras/documentos` y vista `administrar_empresa/compras.html` para crear, consultar y transicionar documentos (`emitir_orden`, `recepcionar_compra`, `contabilizar_compra`) con trazabilidad contable.
 - Facturacion electronica: configuracion por pais y ciclo documental (`emitir`, `anular`, `nota_credito`) con validacion normativa inicial de emision (prefijo/resolucion/consecutivo), trazabilidad por `numero_legal` + `codigo_validacion`, envio automatico del resumen de factura al correo del cliente cuando se dispone de destinatario y modulo de consulta de facturas para busqueda por cliente/documento/fecha, reenvio manual por correo e impresion.
+- Impresoras del sistema: modulo empresarial en `/api/empresa/impresoras` para administrar multiples impresoras por `empresa_id`, definir impresora predeterminada, activar/inactivar, asignar por funcionalidad operativa o por producto y resolver destino de impresion con `/api/empresa/impresoras/resolver` bajo prioridad `producto -> funcionalidad -> predeterminada`; incluye gestion en `administrar_empresa/configuracion.html` e integracion de resolucion en flujos de carrito, finanzas y reportes.
 - Facturacion electronica DIAN Colombia (base operativa): endpoint `/api/empresa/facturacion_electronica/dian` con CRUD por `empresa_id`, onboarding guiado (`action=guia_onboarding`), checklist de habilitacion (`action=checklist`), validacion (`action=validar`), validacion de secretos (`action=validar_credenciales`), carga de firma por empresa (`action=subir_firma`), utilidades de prueba (`action=generar_cufe_demo`, `action=generar_xml_demo`) y envio automatizado del set de habilitacion (`action=enviar_set_pruebas`) para distribuir y procesar lotes de facturas/notas con resumen por estado; soporta modelo SaaS multiempresa con software compartido (`Software ID/PIN`) y credenciales tributarias por empresa (`NIT`, token y certificado de firma).
 - Gestion comercial extendida: cotizaciones, pedidos de venta y devoluciones de venta con CRUD empresarial en `/api/empresa/ventas/cotizaciones`, `/api/empresa/ventas/pedidos` y `/api/empresa/ventas/devoluciones`, incluyendo maquina de estados documental (`action=estado`, `action=transiciones`, `action=transicionar`), conversion automatica (`action=convertir_pedido`, `action=convertir_documento_final`) y monitoreo de embudo comercial con SLA (`action=embudo`).
 - Contabilidad operativa extendida: plan de cuentas y cartera empresarial (CxC/CxP) en `/api/empresa/finanzas/plan_cuentas`, `/api/empresa/finanzas/cuentas_cobrar` y `/api/empresa/finanzas/cuentas_pagar`.
 - Creditos y cartera operativa (cierre funcional): modulo empresarial en `/api/empresa/creditos` para crear lineas de credito por cliente, generar cuotas automaticas, registrar abonos, consultar estado de cuenta y resumen de cartera; incorpora alertas proactivas de vencimiento y ranking avanzado de morosidad (`action=alertas_mora|morosidad|ranking_morosidad`) con exportacion dedicada (`action=reporte&tipo=morosidad`) y reporte general multiformato en `PDF`, `XLS`, `CSV`, `JSON` y `TXT`; integra trazabilidad contable del abono con evento `creditos.credito_abono_registrado`, clasificacion de canal de pago (`caja`, `bancos`, `pasarela`) y procesamiento automatico de asientos por politica (`procesar_asientos`, `asientos_limit`, `max_reintentos`); incorpora workflow avanzado para reversos/anulaciones y refinanciacion (`action=workflows|solicitar_reverso|solicitar_refinanciacion|aprobar_workflow|rechazar_workflow`) con aprobacion multinivel y evidencia trazable (`aprobado_por`, `codigo_aprobacion`); agrega gestion de limites por cliente (`action=limites_cliente|limite_cliente|upsert_limite_cliente|eliminar_limite_cliente`) con bloqueo de exceso de saldo/creditos activos; aplica permisos finos por rol para decision de workflow segun `tipo_solicitud` y amplía auditoria no bloqueante para workflow, limites y denegaciones por permiso fino; incluye vista dedicada `administrar_empresa/creditos.html`, integracion en menu con control de permisos por rol y guia operativa en `web/ayuda/ayuda.html` (tutorial + manual por rol).
-- Venta publica por empresa con pagos Wompi (cierre funcional): modulo empresarial en `/api/empresa/venta_publica` para configurar tienda online por `empresa_id` (`slug`, branding, stock visible, modo Wompi y referencias seguras de credenciales), administrar catalogo publico con imagen/precio/descripcion y consultar ordenes; expone API publica `/api/public/venta_publica` para catalogo (`action=catalogo`), creacion de pago Nequi (`action=crear_pago`) y consulta de estado (`action=estado_pago`), con persistencia en `empresa_venta_publica_ordenes`; incluye vista administrativa `administrar_empresa/venta_publica.html`, pagina publica `venta_publica.html` y patron productivo `/{slug}/venta_publica.html`.
+- Venta publica por empresa con pagos Wompi (cierre funcional): modulo empresarial en `/api/empresa/venta_publica` para configurar tienda online por `empresa_id` (`slug`, branding, stock visible, modo Wompi y referencias seguras de credenciales), administrar catalogo publico con imagen/precio/descripcion y consultar ordenes; expone API publica `/api/public/venta_publica` para catalogo (`action=catalogo`), creacion de pago Nequi (`action=crear_pago`) y consulta de estado (`action=estado_pago`), con persistencia en `empresa_venta_publica_ordenes`; incluye vista administrativa `administrar_empresa/venta_publica.html`, pagina publica `venta_publica.html`, patron productivo `/{slug}/venta_publica.html` y soporte de subdominio por empresa (`{slug}.powerfulcontrolsystem.com`) con resolucion automatica de slug por host.
 - Soporte remoto por empresa (nuevo modulo operativo): endpoint empresarial `/api/empresa/soporte_remoto` para configurar proveedor/modo, administrar dispositivos remotos, solicitar/aprobar/finalizar sesiones y resolver visualizacion por token temporal; endpoint publico `/api/public/soporte_remoto` para heartbeat y actualizacion de estado desde agente/plugin local; incluye vistas `administrar_empresa/soporte_remoto.html` y `administrar_empresa/soporte_remoto_view.html`; mantiene aislamiento por `empresa_id`, trazabilidad por `codigo_dispositivo`/`codigo_sesion` y exportacion de sesiones en `PDF`, `XLS`, `CSV`, `JSON` y `TXT`.
 - Backups empresariales (cierre funcional): modulo empresarial en `/api/empresa/backups` para crear snapshots por `empresa_id`, listar historial con filtros, consultar detalle con payload, exportar respaldo en `JSON` y resumen en `PDF`, `XLS`, `CSV` y `TXT`, restaurar datos con trazabilidad en bitacora de restauraciones, activar/desactivar snapshots y depurar informacion de la empresa por fecha de corte (con backup previo opcional); incluye vista dedicada `administrar_empresa/backups.html` e integracion de menu `linkBackups` con control de permisos en modulo seguridad, donde `action=restaurar|restore` y `action=depurar_fecha` se manejan como acciones de aprobacion.
 - Inventario extendido: lotes/series y devoluciones a proveedor con CRUD por empresa en `/api/empresa/inventario/lotes_series` y `/api/empresa/compras/devoluciones_proveedor`.
@@ -97,10 +99,10 @@ Sistema POS multiempresa con backend en Go y persistencia SQLite, orientado a op
 
 ## Base de datos
 
-1) `superadministrador.db`
+1) `pcs_superadministrador` (PostgreSQL)
 - Configuracion global, administradores, sesiones, licencias, tipos.
 
-2) `empresas.db`
+2) `pcs_empresas` (PostgreSQL)
 - Datos operativos por empresa: usuarios, clientes, inventario, carritos, configuraciones.
 
 Regla general de tablas:
@@ -115,6 +117,10 @@ Regla general de tablas:
 - Login admin: `/login.html`.
 - Login usuario empresa: `/login_usuario.html`.
 - Panel super: `/super_administrador.html`.
+- Administracion DB super: `/super/administrar_base_de_datos.html`.
+- API de rendimiento PostgreSQL (super): `/super/api/postgres/performance`.
+- API de impresoras por empresa: `/api/empresa/impresoras`.
+- API de resolucion de impresora: `/api/empresa/impresoras/resolver`.
 - Panel empresa: `/administrar_empresa.html` y subpaginas de modulo.
 
 ## Scripts operativos
@@ -129,12 +135,15 @@ Regla general de tablas:
 
 ## Estado de documentacion
 
-- El detalle tecnico de arquitectura y mapa de funciones esta en `documentos/estructura_del_codigo`.
+- El detalle tecnico de arquitectura y mapa de funciones esta en `documentos/diagramas/estructura_del_codigo.md` (fuente canonica).
+- El archivo `documentos/estructura_del_codigo` se mantiene solo como alias de compatibilidad historica.
+- El indice profesional de documentacion esta en `documentos/README.md`.
 - El plan maestro de implementacion POS multiempresa (15 puntos) esta en `documentos/plan_maestro_pos_multiempresa_14_puntos.md`.
 - La matriz de KPI operativos y financieros esta en `documentos/matriz_kpi_pos_multiempresa.md`.
 - La matriz de entidades y aislamiento por endpoint esta en `documentos/matriz_entidades_multiempresa_aislamiento.md`.
 - La matriz base de roles y permisos esta en `documentos/matriz_roles_permisos_pos_multiempresa.md`.
 - La descripcion compacta de funcionalidades por modulo esta en `documentos/descripcion_de_modulos`.
+- La guia operativa para publicar el dominio en VPS con Nginx reverse proxy (backend en `127.0.0.1:8080`) esta en `documentos/deploy_nginx_reverse_proxy_vps.md`.
 - Regla de mantenimiento documental por modulo: cuando se crea o modifica un modulo, se deben actualizar en la misma iteracion `documentos/descripcion_de_modulos` y `documentos/matriz_roles_permisos_pos_multiempresa.md`, junto con la documentacion tecnica relacionada.
 - Regla de higiene documental: los documentos obsoletos o duplicados en `documentos/` deben depurarse de forma controlada y con trazabilidad en `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios` y `CHANGELOG.md`.
    

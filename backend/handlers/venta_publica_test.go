@@ -311,3 +311,42 @@ func TestPublicVentaPublicaHandlerEstadoPagoRequiereOrderCode(t *testing.T) {
 		t.Fatalf("expected status=%d got=%d body=%s", http.StatusBadRequest, rr.Code, rr.Body.String())
 	}
 }
+
+func TestResolveVentaPublicaSlugFromHost(t *testing.T) {
+	t.Setenv("VENTA_PUBLICA_BASE_DOMAINS", "powerfulcontrolsystem.com")
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Host = "empresa1.powerfulcontrolsystem.com"
+	if got := ResolveVentaPublicaSlugFromHost(req); got != "empresa1" {
+		t.Fatalf("expected empresa1 got=%q", got)
+	}
+
+	reqApex := httptest.NewRequest(http.MethodGet, "/", nil)
+	reqApex.Host = "powerfulcontrolsystem.com"
+	if got := ResolveVentaPublicaSlugFromHost(reqApex); got != "" {
+		t.Fatalf("expected empty slug for apex host, got=%q", got)
+	}
+
+	reqForwarded := httptest.NewRequest(http.MethodGet, "/", nil)
+	reqForwarded.Host = "127.0.0.1:8080"
+	reqForwarded.Header.Set("X-Forwarded-Host", "empresa2.powerfulcontrolsystem.com")
+	if got := ResolveVentaPublicaSlugFromHost(reqForwarded); got != "empresa2" {
+		t.Fatalf("expected empresa2 from forwarded host, got=%q", got)
+	}
+
+	reqNested := httptest.NewRequest(http.MethodGet, "/", nil)
+	reqNested.Host = "a.b.powerfulcontrolsystem.com"
+	if got := ResolveVentaPublicaSlugFromHost(reqNested); got != "" {
+		t.Fatalf("expected empty slug for nested subdomain, got=%q", got)
+	}
+}
+
+func TestVentaPublicaSlugFromRequestFallsBackToSubdomainHost(t *testing.T) {
+	t.Setenv("VENTA_PUBLICA_BASE_DOMAINS", "powerfulcontrolsystem.com")
+	req := httptest.NewRequest(http.MethodGet, "/api/public/venta_publica?action=catalogo", nil)
+	req.Host = "empresa3.powerfulcontrolsystem.com"
+
+	if got := ventaPublicaSlugFromRequest(req); got != "empresa3" {
+		t.Fatalf("expected empresa3, got=%q", got)
+	}
+}

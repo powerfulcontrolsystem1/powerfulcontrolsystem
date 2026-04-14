@@ -1,3 +1,0 @@
-Fecha,TipoComprobante,NumeroComprobante,CuentaContable,Debito,Credito,TerceroDocumento,TerceroNombre,Descripcion,CentroCosto,Referencia,Moneda,EmpresaID,EmpresaNombre
-2026-04-03,nota_contable,NC-0001,110505,100000.00,0.00,900123456,Cliente Demo,Ingreso operativo de prueba,,REF-001,COP,1,Empresa Demo
-2026-04-03,nota_contable,NC-0001,413595,0.00,100000.00,900123456,Cliente Demo,Ingreso operativo de prueba,,REF-001,COP,1,Empresa Demo

@@ -190,7 +190,6 @@ if (-not (Test-Path $gitignorePath)) {
         "backend/*.err"
         "backend/*.exe~"
         "backend/pos.db"
-        "*.sqlite"
         "*.db"
         "# VSCode"
         ".vscode/"

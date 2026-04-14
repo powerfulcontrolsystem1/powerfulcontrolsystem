@@ -132,5 +132,21 @@ crear un agente que se encargue de la documentacion y que ademas pregunte, para 
 
 la firma electronica  o certificado esta en la raiz del proyecto: certificado.crt
 
+crear una pagina de modo mantenimiento. 
+
 
 despues de  migrar a postgre, hacer la limpieza de archivos y documentacion.
+
+En el backup se debepoder elegir entre guardar en local o pc o celular, en la nube propia de google de cada usuario administrador en una carpeta que ya esta establecida.
+
+Para tu proyecto multiempresa:
+Subdominios por Empresa:
+empresa1.powerfulcontrolsystem.com
+empresa2.powerfulcontrolsystem.com
+ este subdominio lo quiero usar para la pagina de venta publica automatizada por empresa. 
+
+ - al modulo de chat y tareas agregale un agenta de citas caon calendario grande,  que s epuedan programar citas y que halla notificaciones antes para que le recuerde.
+
+ - nose si hostiguer tiene apis para hacer en el super_administrador una pagina para el estado del servidor, con todo lo que permita la api. a esta pagina nueva le llamaremos.  vps_hostinger
+
+-  cpmpactar verticalmente las tarjetas en la pagina index.

@@ -41,7 +41,6 @@ EXCLUDES=(
   "logs"
   "test_runs"
   "*.db"
-  "*.sqlite"
   "*.exe"
   "backend/.env.local"
   "backend/server.err"
@@ -75,7 +74,7 @@ Variables opcionales:
   PLINK_EXE                Ruta a plink.exe (requerido si SSH_CLIENT=plink)
   PLINK_KEY_WIN            Ruta Windows a .ppk (requerido si SSH_CLIENT=plink)
   BOOTSTRAP_SERVER         1 ejecuta bootstrap remoto de .env.local (default: 1)
-  DB_DIALECT               sqlite | postgres (opcional; si no se envía, conserva el remoto)
+  DB_DIALECT               postgres (opcional; si no se envía, conserva el remoto)
   DB_EMPRESAS_DSN          DSN PostgreSQL para base pcs_empresas
   DB_SUPERADMIN_DSN        DSN PostgreSQL para base pcs_superadministrador
   GOOGLE_CLIENT_ID         Valor opcional para escribir en backend/.env.local

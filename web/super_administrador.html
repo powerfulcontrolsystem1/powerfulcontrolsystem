@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="/estilos.css">
   <script src="/menu.js"></script>
 </head>
-<body>
+<body class="admin-empresa-shell">
   
   <div class="admin-layout">
     <aside class="admin-sidebar">
@@ -21,6 +21,7 @@
         <li><a href="/super/venta_digital.html" target="contentFrame"><img class="icon" src="/img/network-color.svg" alt="">Venta digital</a></li>
         <li><a href="/super/configuracion_avanzada.html" target="contentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Configuración avanzada</a></li>
         <li><a href="/super/metricas_de_trafico_general.html" target="contentFrame"><img class="icon" src="/img/network-color.svg" alt="">Métricas de tráfico</a></li>
+        <li><a href="/super/administrar_base_de_datos.html" target="contentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Administrar base de datos</a></li>
         <li><a href="/super/seguridad.html" target="contentFrame"><img class="icon" src="/img/shield-security-color.svg" alt="">Seguridad</a></li>
         <li><a href="/super/administradores.html" target="contentFrame"><img class="icon" src="/img/user-avatar-color.svg" alt="">Administradores</a></li>
         <li><a href="/seleccionar_empresa.html" target="_blank" rel="noopener noreferrer" class="select-company"><img class="icon" src="/img/company-briefcase-color.svg" alt="">Seleccionar empresa</a></li>
@@ -28,13 +29,7 @@
     </aside>
 
     <main class="admin-content">
-      <div class="admin-toolbar page-header">
-        <h1>Super Administrador</h1>
-        <div class="nav-actions">
-          <a href="/super/metricas_de_trafico_general.html" target="contentFrame" class="btn add" id="openMetricsBtn">Métricas de tráfico</a>
-        </div>
-      </div>
-      <iframe name="contentFrame" id="contentFrame" src="/super/licencias_resumen.html" title="Contenido" style="width:100%;height:calc(100vh - 120px);border:0;background:transparent"></iframe>
+      <iframe name="contentFrame" id="contentFrame" src="/super/licencias_resumen.html" title="Contenido" class="admin-empresa-frame"></iframe>
     </main>
   </div>
   

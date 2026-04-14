@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -153,6 +154,97 @@ func ventaPublicaSlugFromRequest(r *http.Request) string {
 			return dbpkg.NormalizeEmpresaPublicSlug(candidate)
 		}
 	}
+	return ResolveVentaPublicaSlugFromHost(r)
+}
+
+func ventaPublicaFirstHeaderValue(raw string) string {
+	parts := strings.Split(raw, ",")
+	if len(parts) == 0 {
+		return strings.TrimSpace(raw)
+	}
+	return strings.TrimSpace(parts[0])
+}
+
+func ventaPublicaHostWithoutPort(raw string) string {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return ""
+	}
+	host, _, err := net.SplitHostPort(trimmed)
+	if err == nil {
+		return strings.Trim(host, "[]")
+	}
+	return strings.Trim(trimmed, "[]")
+}
+
+func ventaPublicaNormalizeBaseDomain(raw string) string {
+	candidate := strings.ToLower(strings.TrimSpace(raw))
+	candidate = strings.TrimPrefix(candidate, "http://")
+	candidate = strings.TrimPrefix(candidate, "https://")
+	if idx := strings.Index(candidate, "/"); idx >= 0 {
+		candidate = candidate[:idx]
+	}
+	candidate = ventaPublicaHostWithoutPort(candidate)
+	candidate = strings.Trim(candidate, ".")
+	return candidate
+}
+
+func ventaPublicaBaseDomains() []string {
+	seen := map[string]bool{}
+	out := make([]string, 0, 4)
+	raw := strings.TrimSpace(os.Getenv("VENTA_PUBLICA_BASE_DOMAINS"))
+	for _, part := range strings.Split(raw, ",") {
+		base := ventaPublicaNormalizeBaseDomain(part)
+		if base == "" || seen[base] {
+			continue
+		}
+		seen[base] = true
+		out = append(out, base)
+	}
+	if len(out) == 0 {
+		out = append(out, "powerfulcontrolsystem.com")
+	}
+	return out
+}
+
+// ResolveVentaPublicaSlugFromHost resuelve slug desde Host/X-Forwarded-Host en subdominios tipo empresa1.midominio.com.
+func ResolveVentaPublicaSlugFromHost(r *http.Request) string {
+	rawHost := ventaPublicaFirstHeaderValue(r.Header.Get("X-Forwarded-Host"))
+	if rawHost == "" {
+		rawHost = strings.TrimSpace(r.Host)
+	}
+	host := strings.ToLower(strings.Trim(ventaPublicaHostWithoutPort(rawHost), "."))
+	if host == "" {
+		return ""
+	}
+	if host == "localhost" || host == "127.0.0.1" || host == "::1" {
+		return ""
+	}
+	if net.ParseIP(host) != nil {
+		return ""
+	}
+
+	for _, baseDomain := range ventaPublicaBaseDomains() {
+		if host == baseDomain || host == "www."+baseDomain {
+			continue
+		}
+		suffix := "." + baseDomain
+		if !strings.HasSuffix(host, suffix) {
+			continue
+		}
+		label := strings.Trim(strings.TrimSuffix(host, suffix), ".")
+		if label == "" || strings.Contains(label, ".") {
+			continue
+		}
+		if ok, _ := regexp.MatchString(`^[a-z0-9-]+$`, label); !ok {
+			continue
+		}
+		normalized := dbpkg.NormalizeEmpresaPublicSlug(label)
+		if normalized != "" {
+			return normalized
+		}
+	}
+
 	return ""
 }
 
