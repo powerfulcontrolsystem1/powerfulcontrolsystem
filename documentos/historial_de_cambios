@@ -8651,3 +8651,32 @@ Archivos modificados:
 - web/super/activar_asesor.html
 - web/super/asesor_comercial.html
 - web/super/vendedor_config_avanzado.html
+
+2026-04-13: Actualizacion automatica desde script: anadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- Pendiente Notas
+- backend/handlers/logs/empresa_620.log
+- backend/logs/empresa_6.log
+- backend/logs/empresa_global.log
+- backend/logs/server_reinicio.log
+- backend/logs/server_runtime_state.json
+- backend/main.go
+- backend/server.exe
+- clave privada ssh.ppk
+- documentos/descripcion_de_archivos
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/estructura_bd.md
+- documentos/historial_de_cambios
+- estructura_bd.md
+- scripts/README_sync.md
+- scripts/iniciar_servidor.ps1
+- scripts/instalar_clave_publica_vps.ps1
+- scripts/logs/actualizar_repositorio-20260413-184545.log
+- scripts/logs/actualizar_repositorio-20260413-231233.log
+- scripts/sync_to_vps.ps1
+- scripts/sync_to_vps.sh
+- web/index.html
+- web/js/login.js
+- web/login.html
