@@ -1,10 +1,20 @@
 Descripcion compacta de modulos (POS multiempresa)
-Actualizacion: 2026-04-13
+Actualizacion: 2026-04-14
 
 Gobernanza obligatoria (agente_go):
 - Si se crea un modulo nuevo o se modifica un modulo existente, este documento debe actualizarse en la misma iteracion de trabajo.
 - En el mismo cambio, tambien debe actualizarse `documentos/matriz_roles_permisos_pos_multiempresa.md` para reflejar permisos por rol/modulo/accion y visibilidad de paginas afectadas.
 - La actualizacion modular debe mantener trazabilidad en `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios` y `CHANGELOG.md`.
+
+Actualizacion 2026-04-14 (migracion SQLite -> PostgreSQL en VPS):
+- Se completa el bloque core de conmutacion runtime para operar con PostgreSQL en VPS mediante `DB_DIALECT=postgres` y DSN separados para `pcs_superadministrador` y `pcs_empresas`.
+- Se amplian validaciones de compatibilidad SQL en backend para mantener transicion controlada con SQLite legado solo para migracion/contingencia.
+- El alcance de permisos por rol no cambia; se mantiene matriz vigente y aislamiento obligatorio por `empresa_id`.
+
+Actualizacion 2026-04-14 (fase 4: estabilizacion contable en PostgreSQL):
+- Se endurece el modulo de finanzas/contabilidad para procesamiento de eventos y asientos (`asientos_worker`) usando operaciones SQL portables entre SQLite y PostgreSQL.
+- Se restablece operacion de salida controlada en VPS con `DB_DIALECT=postgres` y DSN activos, validando arranque y salud del backend en entorno productivo.
+- No hay cambios funcionales de permisos por rol ni de aislamiento por `empresa_id`; se mantiene matriz vigente.
 
 Actualizacion 2026-04-13 (acceso empresa y estaciones):
 - Se refuerza el modulo de acceso de usuario empresa con opcion de recordar correo por empresa y recuperacion robusta de `empresa_id`.
@@ -52,7 +62,7 @@ Criterio de esta guia:
 
 1) Autenticacion y sesiones
 - Login admin/empresa, sesiones, bloqueo temporal y recuperacion de password.
-- Login administrativo con selección obligatoria de cuenta Google (`select_account consent`) para evitar mezcla de identidades en navegador.
+- Login administrativo con selección obligatoria de cuenta Google (`select_account`) para evitar mezcla de identidades en navegador.
 - Aceptación de contrato y verificación humana como prerrequisito de primera sesión administrativa.
 
 2) Administracion global (super)

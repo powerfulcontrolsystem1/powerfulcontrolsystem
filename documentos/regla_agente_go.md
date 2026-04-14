@@ -37,3 +37,29 @@ Referencias:
 - `backend/handlers` — ubicación objetivo para nuevos handlers.
 
 Responsable: agente_go / equipo de desarrollo (según contexto de la tarea)
+
+
+Regla: "Base de datos operativa en VPS con PostgreSQL"
+========================================================
+
+Fecha: 2026-04-13
+
+Descripción:
+
+A partir de esta fecha, la base de datos operativa del sistema deja de ejecutarse en local y pasa a operar en el servidor virtual (VPS) usando PostgreSQL como motor relacional principal.
+
+Reglas obligatorias:
+
+1. Fuente de verdad de datos: toda operación productiva debe usar PostgreSQL en VPS.
+2. Las bases SQLite locales quedan como legado para migración, respaldo controlado o pruebas puntuales, pero no como runtime productivo.
+3. Toda migración se ejecuta por etapas y con validación por base:
+	- Etapa 1: `superadministrador`.
+	- Etapa 2: `empresas`.
+	- Cada etapa debe validar consistencia mínima (conteo por tabla) antes de continuar.
+4. Toda intervención en esquema/datos debe dejar trazabilidad en:
+	- `CHANGELOG.md`
+	- `documentos/historial_de_cambios`
+	- documentación técnica asociada (`documentos/estructura_bd.md`, `estructura_bd.md`, `documentos/diagramas/estructura_del_codigo.md`).
+5. Si se requiere rollback, debe realizarse desde respaldo previo y quedar documentado con fecha, motivo y alcance.
+
+Responsable: agente_go / equipo de desarrollo (según contexto de la tarea)

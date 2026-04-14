@@ -36,12 +36,20 @@
 
     function getCookie(name){ const v = document.cookie.match('(^|;)\\s*'+name+'\\s*=\\s*([^;]+)'); return v ? v.pop() : ''; }
 
+    function clearRememberOnLogoutIfNeeded(){
+      try {
+        if (localStorage.getItem('rememberAccount') === '1') return;
+        localStorage.removeItem('rememberAccount');
+        localStorage.removeItem('rememberedEmail');
+      } catch(e) {}
+    }
+
     const sessionLink = wrapper.querySelector('#sessionLink');
     if (sessionLink){
       if (getCookie('session_token')){
         sessionLink.textContent = 'Cerrar sesión';
         sessionLink.href = '/auth/logout';
-        sessionLink.addEventListener('click', function(){ try { localStorage.removeItem('rememberAccount'); localStorage.removeItem('rememberedEmail'); } catch(e){} });
+        sessionLink.addEventListener('click', function(){ clearRememberOnLogoutIfNeeded(); });
       } else {
         sessionLink.textContent = 'Iniciar sesión';
         sessionLink.href = '/login.html';
@@ -52,7 +60,7 @@
     document.addEventListener('click', function(e){
       try{
         var a = e.target.closest && e.target.closest('.fm-item[href="/auth/logout"]');
-        if (a) { try { localStorage.removeItem('rememberAccount'); localStorage.removeItem('rememberedEmail'); } catch(e){} }
+        if (a) { clearRememberOnLogoutIfNeeded(); }
       }catch(ee){}
     });
 

@@ -77,10 +77,22 @@ Windows (PowerShell)
 El wrapper funciona en dos modos:
 
 - Modo WSL: usa `sync_to_vps.sh` + `rsync` dentro de una distro Linux.
-- Fallback sin WSL: empaqueta el proyecto en `.tar` (con exclusiones), sube por `pscp.exe` y aplica en VPS con `plink.exe`.
+- Fallback sin WSL: empaqueta el proyecto en `.tar` (con exclusiones) y selecciona transporte según clave:
+	- Clave OpenSSH (por ejemplo `id_rsa`): usa `ssh.exe` + `scp.exe`.
+	- Clave PuTTY `.ppk`: usa `plink.exe` + `pscp.exe`.
 - En fallback, al finalizar se aplica `chmod +x` al binario configurado en `BuildOutput`.
+- Al finalizar la sincronización (WSL y fallback), el script hace redeploy remoto del backend:
+	- Detiene proceso previo del binario.
+	- Inicia la nueva versión.
+	- Ejecuta healthcheck HTTP en `SERVER_PORT` (acepta códigos HTTP distintos de `000` como señal de proceso disponible).
+- Por defecto abre automáticamente la URL pública del despliegue (`http://<host>:<puerto>/`) al terminar sin errores (`-OpenPublicUrlAfterDeploy:$true`).
 
-Si no hay distribuciones WSL instaladas, el script cambia automáticamente a fallback PuTTY.
+Si no hay distribuciones WSL instaladas, el script cambia automáticamente a fallback nativo de Windows.
+
+Si no se especifica `-IdentityFile`, el script usa este orden automático:
+
+1. `D:\powerfulcontrolsystem\clave privada ssh.ppk` (si existe en la raíz del proyecto).
+2. `$env:USERPROFILE\.ssh\id_rsa`.
 
 Por defecto, antes de sincronizar, el script compila en local un binario Linux de Go:
 
@@ -89,11 +101,16 @@ Por defecto, antes de sincronizar, el script compila en local un binario Linux d
 - Output: `backend/bin/server_linux_amd64`
 - Entorno: `GOOS=linux`, `GOARCH=amd64`, `CGO_ENABLED=0`
 
-Además, al terminar la sincronización (modo sin WSL), ejecuta bootstrap remoto para servidor nuevo:
+Además, al terminar la sincronización (modo WSL y fallback), ejecuta bootstrap remoto para servidor nuevo:
 
 - Instala dependencias base (`ca-certificates`, `curl`, `sqlite3`) si el host usa `apt-get`.
 - Garantiza `backend/.env.local` y `SERVER_PORT`.
-- Reporta estado de variables críticas (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `CONFIG_ENC_KEY`).
+- Conserva configuración DB remota existente y permite inyectar/actualizar `DB_DIALECT`, `DB_EMPRESAS_DSN` y `DB_SUPERADMIN_DSN`.
+- Si el modo efectivo queda en `postgres` y falta alguno de los DSN, el bootstrap falla con `BOOTSTRAP_ERROR:POSTGRES_MISSING_DSN` antes del redeploy (evita tumbar el proceso por arranque inválido).
+- Reporta estado de variables críticas (`DB_DIALECT`, `DB_SUPERADMIN_DSN`, `DB_EMPRESAS_DSN`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `CONFIG_ENC_KEY`).
+- La sincronización excluye por defecto `backend/.env.local` para no sobrescribir secretos/DSN existentes del VPS.
+
+`sync_to_vps.ps1` también intenta completar variables DB desde el entorno local (`DB_*`, `PCS_DB_*`) y desde `backend/.env.local` local cuando no se pasan por parámetro.
 
 ```powershell
 # dry run desde PowerShell
@@ -126,14 +143,26 @@ Además, al terminar la sincronización (modo sin WSL), ejecuta bootstrap remoto
 # bootstrap remoto desactivado (si no lo quieres en una corrida específica)
 .\scripts\sync_to_vps.ps1 -BootstrapServer:$false
 
+# desactivar reinicio remoto automático del backend (solo sincronizar archivos)
+.\scripts\sync_to_vps.ps1 -RestartRemoteServer:$false
+
+# desactivar apertura automática de la URL pública al finalizar
+.\scripts\sync_to_vps.ps1 -OpenPublicUrlAfterDeploy:$false
+
+# personalizar binario/logs/timeout del redeploy remoto
+.\scripts\sync_to_vps.ps1 -RemoteBinaryPath "backend/bin/server_linux_amd64" -RemoteStdoutLogPath "backend/server.log" -RemoteStderrLogPath "backend/server.err" -RestartHealthTimeoutSeconds 60
+
 # configurar Google OAuth desde el deploy (opcional)
 .\scripts\sync_to_vps.ps1 -GoogleClientId "TU_CLIENT_ID" -GoogleClientSecret "TU_CLIENT_SECRET"
+
+# forzar runtime PostgreSQL en VPS e inyectar DSN (recomendado para migración)
+.\scripts\sync_to_vps.ps1 -DbDialect "postgres" -DbEmpresasDsn "postgres://USUARIO:PASS@HOST:5432/pcs_empresas?sslmode=disable" -DbSuperadminDsn "postgres://USUARIO:PASS@HOST:5432/pcs_superadministrador?sslmode=disable"
 ```
 
 Nota sobre `-DryRun` en fallback PuTTY:
 
 - El script genera un paquete temporal y muestra el listado de archivos que se transferirían (sin cambiar el VPS).
-- Se excluyen por defecto `.git`, `node_modules`, `logs`, `test_runs`, `*.db`, `*.sqlite`, `*.exe`, `*.ppk`, `*.pem`, `*.key`.
+- Se excluyen por defecto `.git`, `node_modules`, `logs`, `test_runs`, `*.db`, `*.sqlite`, `*.exe`, `backend/.env.local`, `*.ppk`, `*.pem`, `*.key`.
 - Ante errores de red tipo timeout, el script reintenta automáticamente (`-RetryCount`) y muestra diagnósticos claros por etapa.
 
 Advertencias y buenas prácticas

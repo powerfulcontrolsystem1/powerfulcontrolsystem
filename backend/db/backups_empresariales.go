@@ -247,6 +247,38 @@ func empresaBackupGetTableColumns(q empresaBackupQueryer, table string) ([]strin
 	if !isSafeSQLIdentifier(table) {
 		return nil, fmt.Errorf("tabla invalida: %s", table)
 	}
+
+	if isPostgresDialect() {
+		rows, err := q.Query(`
+			SELECT column_name
+			FROM information_schema.columns
+			WHERE table_schema = ANY (current_schemas(false))
+			  AND table_name = $1
+			ORDER BY ordinal_position
+		`, table)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+
+		cols := make([]string, 0)
+		for rows.Next() {
+			var name string
+			if err := rows.Scan(&name); err != nil {
+				return nil, err
+			}
+			clean := strings.TrimSpace(strings.ToLower(name))
+			if clean == "" || !isSafeSQLIdentifier(clean) {
+				continue
+			}
+			cols = append(cols, clean)
+		}
+		if err := rows.Err(); err != nil {
+			return nil, err
+		}
+		return cols, nil
+	}
+
 	rows, err := q.Query("PRAGMA table_info(" + table + ")")
 	if err != nil {
 		return nil, err
@@ -303,7 +335,18 @@ func empresaBackupListCandidateTables(dbConn *sql.DB, includeTables, excludeTabl
 		excludeSet[item] = true
 	}
 
-	rows, err := dbConn.Query(`SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name`)
+	tablesQuery := `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name`
+	if isPostgresDialect() {
+		tablesQuery = `
+			SELECT table_name AS name
+			FROM information_schema.tables
+			WHERE table_schema = ANY (current_schemas(false))
+			  AND table_type = 'BASE TABLE'
+			ORDER BY table_name
+		`
+	}
+
+	rows, err := dbConn.Query(tablesQuery)
 	if err != nil {
 		return nil, err
 	}

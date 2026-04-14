@@ -13,10 +13,8 @@ func UpsertUser(dbConn *sql.DB, email, name string) error {
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.Exec("INSERT OR IGNORE INTO users (email, name) VALUES (?, ?)", email, name); err != nil {
-		return err
-	}
-	if _, err := tx.Exec("UPDATE users SET name = ? WHERE email = ?", name, email); err != nil {
+	upsertSQL := "INSERT INTO users (email, name) VALUES (?, ?) ON CONFLICT(email) DO UPDATE SET name = EXCLUDED.name"
+	if _, err := execTxSQLCompat(tx, upsertSQL, email, name); err != nil {
 		return err
 	}
 	return tx.Commit()
@@ -32,7 +30,7 @@ func EnsureUserEmpresa(dbConn *sql.DB, email, empresaNombre string) error {
 
 	var userID int64
 	var empresaID sql.NullInt64
-	row := tx.QueryRow("SELECT id, empresa_id FROM users WHERE email = ?", email)
+	row := queryRowTxSQLCompat(tx, "SELECT id, empresa_id FROM users WHERE email = ?", email)
 	if err := row.Scan(&userID, &empresaID); err != nil {
 		return err
 	}
@@ -42,16 +40,23 @@ func EnsureUserEmpresa(dbConn *sql.DB, email, empresaNombre string) error {
 		return tx.Commit()
 	}
 
-	res, err := tx.Exec("INSERT INTO empresas (nombre, usuario_creador) VALUES (?, ?)", empresaNombre, email)
-	if err != nil {
-		return err
-	}
-	newEmpresaID, err := res.LastInsertId()
-	if err != nil {
-		return err
+	var newEmpresaID int64
+	if isPostgresDialect() {
+		if err := queryRowTxSQLCompat(tx, "INSERT INTO empresas (nombre, usuario_creador) VALUES (?, ?) RETURNING id", empresaNombre, email).Scan(&newEmpresaID); err != nil {
+			return err
+		}
+	} else {
+		res, err := execTxSQLCompat(tx, "INSERT INTO empresas (nombre, usuario_creador) VALUES (?, ?)", empresaNombre, email)
+		if err != nil {
+			return err
+		}
+		newEmpresaID, err = res.LastInsertId()
+		if err != nil {
+			return err
+		}
 	}
 
-	if _, err := tx.Exec("UPDATE users SET empresa_id = ? WHERE id = ?", newEmpresaID, userID); err != nil {
+	if _, err := execTxSQLCompat(tx, "UPDATE users SET empresa_id = ? WHERE id = ?", newEmpresaID, userID); err != nil {
 		return err
 	}
 
@@ -68,10 +73,9 @@ func UpsertAdministrador(dbConn *sql.DB, email, name, role, photo string) error 
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.Exec("INSERT OR IGNORE INTO administradores (email, name, role, photo, fecha_creacion, fecha_actualizacion, estado) VALUES (?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), 'activo')", email, name, role, photo); err != nil {
-		return err
-	}
-	if _, err := tx.Exec("UPDATE administradores SET name = ?, role = ?, photo = ?, fecha_actualizacion = datetime('now','localtime') WHERE email = ?", name, role, photo, email); err != nil {
+	nowExpr := sqlNowExpr()
+	upsertSQL := "INSERT INTO administradores (email, name, role, photo, fecha_creacion, fecha_actualizacion, estado) VALUES (?, ?, ?, ?, " + nowExpr + ", " + nowExpr + ", 'activo') ON CONFLICT(email) DO UPDATE SET name = EXCLUDED.name, role = EXCLUDED.role, photo = EXCLUDED.photo, fecha_actualizacion = " + nowExpr
+	if _, err := execTxSQLCompat(tx, upsertSQL, email, name, role, photo); err != nil {
 		return err
 	}
 
@@ -80,19 +84,21 @@ func UpsertAdministrador(dbConn *sql.DB, email, name, role, photo string) error 
 
 // UpdateAdministrador actualiza el nombre y rol de un administrador por id
 func UpdateAdministrador(dbConn *sql.DB, id int64, name, role string) error {
-	_, err := dbConn.Exec("UPDATE administradores SET name = ?, role = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ?", name, role, id)
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE administradores SET name = ?, role = ?, fecha_actualizacion = "+nowExpr+" WHERE id = ?", name, role, id)
 	return err
 }
 
 // DeleteAdministrador elimina un administrador por id
 func DeleteAdministrador(dbConn *sql.DB, id int64) error {
-	_, err := dbConn.Exec("DELETE FROM administradores WHERE id = ?", id)
+	_, err := execSQLCompat(dbConn, "DELETE FROM administradores WHERE id = ?", id)
 	return err
 }
 
 // SetAdministradorEstado activa/desactiva un administrador (estado: 'activo'/'inactivo')
 func SetAdministradorEstado(dbConn *sql.DB, id int64, estado string) error {
-	_, err := dbConn.Exec("UPDATE administradores SET estado = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ?", estado, id)
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE administradores SET estado = ?, fecha_actualizacion = "+nowExpr+" WHERE id = ?", estado, id)
 	return err
 }
 
@@ -102,19 +108,24 @@ func SetAdministradorAceptaContrato(dbConn *sql.DB, email string, acepta bool) e
 	if acepta {
 		v = 1
 	}
-	_, err := dbConn.Exec("UPDATE administradores SET acepta_contrato = ?, fecha_actualizacion = datetime('now','localtime') WHERE LOWER(COALESCE(email,'')) = LOWER(?)", v, strings.TrimSpace(email))
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE administradores SET acepta_contrato = ?, fecha_actualizacion = "+nowExpr+" WHERE LOWER(COALESCE(email,'')) = LOWER(?)", v, strings.TrimSpace(email))
 	return err
 }
 
 // CreateSession registra una sesión en la tabla sesiones de superadministrador
 func CreateSession(dbConn *sql.DB, adminEmail, ip, userAgent, token string) error {
-	_, err := dbConn.Exec("INSERT INTO sesiones (admin_email, token, ip, user_agent, fecha_inicio, fecha_fin, activo, fecha_creacion) VALUES (?, ?, ?, ?, datetime('now','localtime'), datetime('now','+24 hours','localtime'), 1, datetime('now','localtime'))", adminEmail, token, ip, userAgent)
+	nowExpr := sqlNowExpr()
+	expiresExpr := sqlPlusHoursExpr(24)
+	query := "INSERT INTO sesiones (admin_email, token, ip, user_agent, fecha_inicio, fecha_fin, activo, fecha_creacion) VALUES (?, ?, ?, ?, " + nowExpr + ", " + expiresExpr + ", 1, " + nowExpr + ")"
+	_, err := execSQLCompat(dbConn, query, adminEmail, token, ip, userAgent)
 	return err
 }
 
 // RevokeSessionByToken invalida una sesión activa por token.
 func RevokeSessionByToken(dbConn *sql.DB, token string) error {
-	_, err := dbConn.Exec("UPDATE sesiones SET activo = 0, fecha_fin = datetime('now','localtime') WHERE token = ? AND activo = 1", token)
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE sesiones SET activo = 0, fecha_fin = "+nowExpr+" WHERE token = ? AND activo = 1", token)
 	return err
 }
 
@@ -151,11 +162,9 @@ type Licencia struct {
 
 // CreateLicencia inserta una nueva licencia en dbSuper
 func CreateLicencia(dbConn *sql.DB, tipoID int64, nombre, descripcion string, valor float64, duracionDias int, modulosHabilitados string, superRolHabilitado int) (int64, error) {
-	res, err := dbConn.Exec("INSERT INTO licencias (tipo_id, nombre, descripcion, valor, duracion_dias, modulos_habilitados, super_rol_habilitado, fecha_creacion, fecha_actualizacion, activo, estado) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), 1, 'activo')", tipoID, nombre, descripcion, valor, duracionDias, strings.TrimSpace(modulosHabilitados), superRolHabilitado)
-	if err != nil {
-		return 0, err
-	}
-	return res.LastInsertId()
+	nowExpr := sqlNowExpr()
+	query := "INSERT INTO licencias (tipo_id, nombre, descripcion, valor, duracion_dias, modulos_habilitados, super_rol_habilitado, fecha_creacion, fecha_actualizacion, activo, estado) VALUES (?, ?, ?, ?, ?, ?, ?, " + nowExpr + ", " + nowExpr + ", 1, 'activo')"
+	return insertSQLCompat(dbConn, query, tipoID, nombre, descripcion, valor, duracionDias, strings.TrimSpace(modulosHabilitados), superRolHabilitado)
 }
 
 // GetLicencias obtiene todas las licencias (comportamiento legado sin filtros)
@@ -198,7 +207,7 @@ func GetLicenciasFiltered(dbConn *sql.DB, soloActivas bool, usuarioCreador strin
 	}
 	q += " ORDER BY l.id DESC"
 
-	rows, err := dbConn.Query(q, args...)
+	rows, err := querySQLCompat(dbConn, q, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -237,7 +246,7 @@ func GetLicenciasFiltered(dbConn *sql.DB, soloActivas bool, usuarioCreador strin
 // GetLicenciaByID devuelve una licencia por id
 func GetLicenciaByID(dbConn *sql.DB, id int64) (*Licencia, error) {
 	q := `SELECT id, empresa_id, tipo_id, nombre, descripcion, valor, duracion_dias, COALESCE(modulos_habilitados, ''), COALESCE(super_rol_habilitado, 0), fecha_creacion, activo FROM licencias WHERE id = ? LIMIT 1`
-	row := dbConn.QueryRow(q, id)
+	row := queryRowSQLCompat(dbConn, q, id)
 	var lic Licencia
 	var empresaID sql.NullInt64
 	var descripcion sql.NullString
@@ -263,7 +272,8 @@ func GetLicenciaByID(dbConn *sql.DB, id int64) (*Licencia, error) {
 
 // UpdateLicencia actualiza campos editables de una licencia
 func UpdateLicencia(dbConn *sql.DB, id, tipoID int64, nombre, descripcion string, valor float64, duracionDias int, modulosHabilitados string, superRolHabilitado int) error {
-	_, err := dbConn.Exec("UPDATE licencias SET tipo_id = ?, nombre = ?, descripcion = ?, valor = ?, duracion_dias = ?, modulos_habilitados = ?, super_rol_habilitado = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ?", tipoID, nombre, descripcion, valor, duracionDias, strings.TrimSpace(modulosHabilitados), superRolHabilitado, id)
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE licencias SET tipo_id = ?, nombre = ?, descripcion = ?, valor = ?, duracion_dias = ?, modulos_habilitados = ?, super_rol_habilitado = ?, fecha_actualizacion = "+nowExpr+" WHERE id = ?", tipoID, nombre, descripcion, valor, duracionDias, strings.TrimSpace(modulosHabilitados), superRolHabilitado, id)
 	return err
 }
 
@@ -281,7 +291,7 @@ func GetLicenciaPermisoPolicyByEmpresa(dbConn *sql.DB, empresaID int64) (*Licenc
 		return nil, nil
 	}
 
-	row := dbConn.QueryRow(`SELECT id,
+	query := `SELECT id,
 		COALESCE(nombre, ''),
 		COALESCE(modulos_habilitados, ''),
 		COALESCE(super_rol_habilitado, 0)
@@ -294,7 +304,24 @@ func GetLicenciaPermisoPolicyByEmpresa(dbConn *sql.DB, empresaID int64) (*Licenc
 		CASE WHEN COALESCE(fecha_fin, '') = '' THEN 1 ELSE 0 END DESC,
 		datetime(COALESCE(fecha_fin, '9999-12-31 23:59:59')) DESC,
 		id DESC
-	LIMIT 1`, empresaID)
+	LIMIT 1`
+	if isPostgresDialect() {
+		query = `SELECT id,
+			COALESCE(nombre, ''),
+			COALESCE(modulos_habilitados, ''),
+			COALESCE(super_rol_habilitado, 0)
+		FROM licencias
+		WHERE empresa_id = ?
+			AND COALESCE(activo, 1) = 1
+			AND (COALESCE(CAST(fecha_inicio AS TEXT), '') = '' OR CAST(fecha_inicio AS TIMESTAMP) <= CURRENT_TIMESTAMP)
+			AND (COALESCE(CAST(fecha_fin AS TEXT), '') = '' OR CAST(fecha_fin AS TIMESTAMP) >= CURRENT_TIMESTAMP)
+		ORDER BY
+			CASE WHEN COALESCE(CAST(fecha_fin AS TEXT), '') = '' THEN 1 ELSE 0 END DESC,
+			COALESCE(CAST(fecha_fin AS TIMESTAMP), TIMESTAMP '9999-12-31 23:59:59') DESC,
+			id DESC
+		LIMIT 1`
+	}
+	row := queryRowSQLCompat(dbConn, query, empresaID)
 
 	var item LicenciaPermisoPolicy
 	var superRolRaw int
@@ -302,8 +329,7 @@ func GetLicenciaPermisoPolicyByEmpresa(dbConn *sql.DB, empresaID int64) (*Licenc
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
-		low := strings.ToLower(strings.TrimSpace(err.Error()))
-		if strings.Contains(low, "no such table") || strings.Contains(low, "no such column") {
+		if isMissingTableError(err) || isMissingColumnError(err) {
 			return nil, nil
 		}
 		return nil, err
@@ -314,13 +340,14 @@ func GetLicenciaPermisoPolicyByEmpresa(dbConn *sql.DB, empresaID int64) (*Licenc
 
 // DeleteLicencia elimina una licencia por id
 func DeleteLicencia(dbConn *sql.DB, id int64) error {
-	_, err := dbConn.Exec("DELETE FROM licencias WHERE id = ?", id)
+	_, err := execSQLCompat(dbConn, "DELETE FROM licencias WHERE id = ?", id)
 	return err
 }
 
 // SetLicenciaActivo activa/desactiva una licencia (activo: 1 o 0)
 func SetLicenciaActivo(dbConn *sql.DB, id int64, activo int) error {
-	_, err := dbConn.Exec("UPDATE licencias SET activo = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ?", activo, id)
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE licencias SET activo = ?, fecha_actualizacion = "+nowExpr+" WHERE id = ?", activo, id)
 	return err
 }
 
@@ -339,7 +366,9 @@ type Session struct {
 
 // GetSessionByToken devuelve una sesión activa por token
 func GetSessionByToken(dbConn *sql.DB, token string) (*Session, error) {
-	row := dbConn.QueryRow("SELECT id, admin_email, token, ip, user_agent, fecha_inicio, fecha_fin, fecha_creacion, activo FROM sesiones WHERE token = ? AND activo = 1 AND (COALESCE(fecha_fin, '') = '' OR datetime(fecha_fin) > datetime('now','localtime')) LIMIT 1", token)
+	condition := sessionNotExpiredCondition("fecha_fin")
+	query := "SELECT id, admin_email, token, ip, user_agent, fecha_inicio, fecha_fin, fecha_creacion, activo FROM sesiones WHERE token = ? AND activo = 1 AND " + condition + " LIMIT 1"
+	row := queryRowSQLCompat(dbConn, query, token)
 	var s Session
 	var fechaInicio sql.NullString
 	var fechaFin sql.NullString
@@ -362,14 +391,14 @@ func GetSessionByToken(dbConn *sql.DB, token string) (*Session, error) {
 // GetAdminByEmail devuelve el administrador por email
 func GetAdminByEmail(dbConn *sql.DB, email string) (*Admin, error) {
 	// Intentar obtener con la columna 'acepta_contrato' (para bases actualizadas).
-	row := dbConn.QueryRow("SELECT id, email, name, role, photo, fecha_creacion, fecha_actualizacion, estado, COALESCE(acepta_contrato, 0) FROM administradores WHERE email = ? LIMIT 1", email)
+	row := queryRowSQLCompat(dbConn, "SELECT id, email, name, role, photo, fecha_creacion, fecha_actualizacion, estado, COALESCE(acepta_contrato, 0) FROM administradores WHERE email = ? LIMIT 1", email)
 	var a Admin
 	var photo sql.NullString
 	var acepta sql.NullInt64
 	if err := row.Scan(&a.ID, &a.Email, &a.Name, &a.Role, &photo, &a.FechaCreacion, &a.FechaActualizacion, &a.Estado, &acepta); err != nil {
 		// Fallback: si la columna no existe en este esquema, consultar sin ella.
-		if strings.Contains(strings.ToLower(err.Error()), "no such column") {
-			row2 := dbConn.QueryRow("SELECT id, email, name, role, photo, fecha_creacion, fecha_actualizacion, estado FROM administradores WHERE email = ? LIMIT 1", email)
+		if isMissingColumnError(err) {
+			row2 := queryRowSQLCompat(dbConn, "SELECT id, email, name, role, photo, fecha_creacion, fecha_actualizacion, estado FROM administradores WHERE email = ? LIMIT 1", email)
 			var photo2 sql.NullString
 			if err2 := row2.Scan(&a.ID, &a.Email, &a.Name, &a.Role, &photo2, &a.FechaCreacion, &a.FechaActualizacion, &a.Estado); err2 != nil {
 				return nil, err2
@@ -396,11 +425,11 @@ func GetAdminByEmail(dbConn *sql.DB, email string) (*Admin, error) {
 // GetAdministradores lista todos los administradores
 func GetAdministradores(dbConn *sql.DB) ([]Admin, error) {
 	// Intentar consulta que incluya la columna acepta_contrato cuando exista
-	rows, err := dbConn.Query("SELECT id, email, name, role, photo, fecha_creacion, fecha_actualizacion, estado, COALESCE(acepta_contrato, 0) FROM administradores ORDER BY id DESC")
+	rows, err := querySQLCompat(dbConn, "SELECT id, email, name, role, photo, fecha_creacion, fecha_actualizacion, estado, COALESCE(acepta_contrato, 0) FROM administradores ORDER BY id DESC")
 	if err != nil {
 		// Fallback si la columna no existe en esquemas antiguos
-		if strings.Contains(strings.ToLower(err.Error()), "no such column") {
-			rows2, err2 := dbConn.Query("SELECT id, email, name, role, photo, fecha_creacion, fecha_actualizacion, estado FROM administradores ORDER BY id DESC")
+		if isMissingColumnError(err) {
+			rows2, err2 := querySQLCompat(dbConn, "SELECT id, email, name, role, photo, fecha_creacion, fecha_actualizacion, estado FROM administradores ORDER BY id DESC")
 			if err2 != nil {
 				return nil, err2
 			}
@@ -446,7 +475,7 @@ func GetAdministradores(dbConn *sql.DB) ([]Admin, error) {
 
 // GetSesiones lista las sesiones registradas
 func GetSesiones(dbConn *sql.DB) ([]Session, error) {
-	rows, err := dbConn.Query("SELECT id, admin_email, token, ip, user_agent, fecha_inicio, fecha_fin, fecha_creacion, activo FROM sesiones ORDER BY id DESC")
+	rows, err := querySQLCompat(dbConn, "SELECT id, admin_email, token, ip, user_agent, fecha_inicio, fecha_fin, fecha_creacion, activo FROM sesiones ORDER BY id DESC")
 	if err != nil {
 		return nil, err
 	}
@@ -485,16 +514,14 @@ type TipoEmpresa struct {
 
 // CreateTipoEmpresa inserta un nuevo tipo de empresa
 func CreateTipoEmpresa(dbConn *sql.DB, nombre, observaciones string) (int64, error) {
-	res, err := dbConn.Exec("INSERT INTO tipos_de_empresas (nombre, observaciones, fecha_creacion) VALUES (?, ?, datetime('now','localtime'))", nombre, observaciones)
-	if err != nil {
-		return 0, err
-	}
-	return res.LastInsertId()
+	nowExpr := sqlNowExpr()
+	query := "INSERT INTO tipos_de_empresas (nombre, observaciones, fecha_creacion) VALUES (?, ?, " + nowExpr + ")"
+	return insertSQLCompat(dbConn, query, nombre, observaciones)
 }
 
 // GetTiposEmpresas obtiene todos los tipos de empresa
 func GetTiposEmpresas(dbConn *sql.DB) ([]TipoEmpresa, error) {
-	rows, err := dbConn.Query("SELECT id, nombre, observaciones, fecha_creacion, estado FROM tipos_de_empresas ORDER BY id DESC")
+	rows, err := querySQLCompat(dbConn, "SELECT id, nombre, observaciones, fecha_creacion, estado FROM tipos_de_empresas ORDER BY id DESC")
 	if err != nil {
 		return nil, err
 	}
@@ -512,19 +539,21 @@ func GetTiposEmpresas(dbConn *sql.DB) ([]TipoEmpresa, error) {
 
 // UpdateTipoEmpresa actualiza un tipo de empresa por id
 func UpdateTipoEmpresa(dbConn *sql.DB, id int64, nombre, observaciones string) error {
-	_, err := dbConn.Exec("UPDATE tipos_de_empresas SET nombre = ?, observaciones = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ?", nombre, observaciones, id)
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE tipos_de_empresas SET nombre = ?, observaciones = ?, fecha_actualizacion = "+nowExpr+" WHERE id = ?", nombre, observaciones, id)
 	return err
 }
 
 // DeleteTipoEmpresa elimina un tipo de empresa por id
 func DeleteTipoEmpresa(dbConn *sql.DB, id int64) error {
-	_, err := dbConn.Exec("DELETE FROM tipos_de_empresas WHERE id = ?", id)
+	_, err := execSQLCompat(dbConn, "DELETE FROM tipos_de_empresas WHERE id = ?", id)
 	return err
 }
 
 // SetTipoEmpresaActivo activa/desactiva un tipo de empresa (activo: 'activo'/'inactivo' o 1/0)
 func SetTipoEmpresaActivo(dbConn *sql.DB, id int64, estado string) error {
-	_, err := dbConn.Exec("UPDATE tipos_de_empresas SET estado = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ?", estado, id)
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE tipos_de_empresas SET estado = ?, fecha_actualizacion = "+nowExpr+" WHERE id = ?", estado, id)
 	return err
 }
 
@@ -550,16 +579,13 @@ func CreateEmpresa(dbConn *sql.DB, tipoID int64, tipoNombre, nombre, nit, observ
 		return 0, err
 	}
 	defer tx.Rollback()
+	nowExpr := sqlNowExpr()
 
-	res, err := tx.Exec("INSERT INTO empresas (tipo_id, tipo_nombre, nombre, nit, observaciones, usuario_creador, fecha_creacion, estado) VALUES (?, ?, ?, ?, ?, ?, datetime('now','localtime'), 'activo')", tipoID, tipoNombre, nombre, nit, observaciones, usuarioCreador)
+	id, err := insertTxSQLCompat(tx, "INSERT INTO empresas (tipo_id, tipo_nombre, nombre, nit, observaciones, usuario_creador, fecha_creacion, estado) VALUES (?, ?, ?, ?, ?, ?, "+nowExpr+", 'activo')", tipoID, tipoNombre, nombre, nit, observaciones, usuarioCreador)
 	if err != nil {
 		return 0, err
 	}
-	id, err := res.LastInsertId()
-	if err != nil {
-		return 0, err
-	}
-	if _, err := tx.Exec("UPDATE empresas SET empresa_id = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ? AND (empresa_id IS NULL OR empresa_id <= 0)", id, id); err != nil {
+	if _, err := execTxSQLCompat(tx, "UPDATE empresas SET empresa_id = ?, fecha_actualizacion = "+nowExpr+" WHERE id = ? AND (empresa_id IS NULL OR empresa_id <= 0)", id, id); err != nil {
 		return 0, err
 	}
 	if err := tx.Commit(); err != nil {
@@ -570,7 +596,7 @@ func CreateEmpresa(dbConn *sql.DB, tipoID int64, tipoNombre, nombre, nit, observ
 
 // GetEmpresas obtiene todas las empresas
 func GetEmpresas(dbConn *sql.DB) ([]Empresa, error) {
-	rows, err := dbConn.Query("SELECT id, COALESCE(empresa_id, id), nombre, nit, tipo_id, tipo_nombre, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones FROM empresas ORDER BY id DESC")
+	rows, err := querySQLCompat(dbConn, "SELECT id, COALESCE(empresa_id, id), nombre, nit, tipo_id, tipo_nombre, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones FROM empresas ORDER BY id DESC")
 	if err != nil {
 		return nil, err
 	}
@@ -626,7 +652,7 @@ func GetEmpresas(dbConn *sql.DB) ([]Empresa, error) {
 
 // GetEmpresaByID devuelve una empresa por id
 func GetEmpresaByID(dbConn *sql.DB, id int64) (*Empresa, error) {
-	row := dbConn.QueryRow("SELECT id, COALESCE(empresa_id, id), nombre, nit, tipo_id, tipo_nombre, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones FROM empresas WHERE id = ? LIMIT 1", id)
+	row := queryRowSQLCompat(dbConn, "SELECT id, COALESCE(empresa_id, id), nombre, nit, tipo_id, tipo_nombre, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones FROM empresas WHERE id = ? LIMIT 1", id)
 	var e Empresa
 	var empresaID sql.NullInt64
 	var nit sql.NullString
@@ -674,19 +700,21 @@ func GetEmpresaByID(dbConn *sql.DB, id int64) (*Empresa, error) {
 
 // UpdateEmpresa actualiza campos editables de una empresa
 func UpdateEmpresa(dbConn *sql.DB, id, tipoID int64, tipoNombre, nombre, nit, observaciones string) error {
-	_, err := dbConn.Exec("UPDATE empresas SET tipo_id = ?, tipo_nombre = ?, nombre = ?, nit = ?, observaciones = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ?", tipoID, tipoNombre, nombre, nit, observaciones, id)
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE empresas SET tipo_id = ?, tipo_nombre = ?, nombre = ?, nit = ?, observaciones = ?, fecha_actualizacion = "+nowExpr+" WHERE id = ?", tipoID, tipoNombre, nombre, nit, observaciones, id)
 	return err
 }
 
 // DeleteEmpresa elimina una empresa por id
 func DeleteEmpresa(dbConn *sql.DB, id int64) error {
-	_, err := dbConn.Exec("DELETE FROM empresas WHERE id = ?", id)
+	_, err := execSQLCompat(dbConn, "DELETE FROM empresas WHERE id = ?", id)
 	return err
 }
 
 // SetEmpresaEstado activa/desactiva una empresa (estado: 'activo'/'inactivo')
 func SetEmpresaEstado(dbConn *sql.DB, id int64, estado string) error {
-	_, err := dbConn.Exec("UPDATE empresas SET estado = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ?", estado, id)
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE empresas SET estado = ?, fecha_actualizacion = "+nowExpr+" WHERE id = ?", estado, id)
 	return err
 }
 
@@ -705,6 +733,26 @@ type Metric struct {
 
 // InitMetricsTable crea la tabla metrics en la base de datos si no existe
 func InitMetricsTable(dbConn *sql.DB) error {
+	if isPostgresDialect() {
+		create := `CREATE TABLE IF NOT EXISTS metrics (
+			id BIGSERIAL PRIMARY KEY,
+			timestamp TEXT DEFAULT (CAST(CURRENT_TIMESTAMP AS TEXT)),
+			cpu_percent DOUBLE PRECISION,
+			mem_total BIGINT,
+			mem_used BIGINT,
+			mem_percent DOUBLE PRECISION,
+			net_recv BIGINT,
+			net_sent BIGINT,
+			fecha_creacion TEXT DEFAULT (CAST(CURRENT_TIMESTAMP AS TEXT)),
+			fecha_actualizacion TEXT,
+			usuario_creador TEXT,
+			estado TEXT DEFAULT 'activo',
+			observaciones TEXT
+		);`
+		_, err := execSQLCompat(dbConn, create)
+		return err
+	}
+
 	create := `CREATE TABLE IF NOT EXISTS metrics (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		timestamp TEXT DEFAULT (datetime('now','localtime')),
@@ -720,27 +768,26 @@ func InitMetricsTable(dbConn *sql.DB) error {
 		estado TEXT DEFAULT 'activo',
 		observaciones TEXT
 	);`
-	_, err := dbConn.Exec(create)
+	_, err := execSQLCompat(dbConn, create)
 	return err
 }
 
 // CreateWompiPaymentRecord registra una transacción inicial de Wompi en la tabla pagos_wompi.
 func CreateWompiPaymentRecord(dbConn *sql.DB, licenciaID, empresaID int64, transactionID, reference, status, rawPayload, discountCode, asesorID string) (int64, error) {
-	res, err := dbConn.Exec("INSERT INTO pagos_wompi (licencia_id, empresa_id, transaction_id, reference, status, raw_payload, discount_code, asesor_id, fecha_creacion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'))", licenciaID, empresaID, transactionID, reference, status, rawPayload, discountCode, asesorID)
-	if err != nil {
-		return 0, err
-	}
-	return res.LastInsertId()
+	nowExpr := sqlNowExpr()
+	query := "INSERT INTO pagos_wompi (licencia_id, empresa_id, transaction_id, reference, status, raw_payload, discount_code, asesor_id, fecha_creacion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, " + nowExpr + ")"
+	return insertSQLCompat(dbConn, query, licenciaID, empresaID, transactionID, reference, status, rawPayload, discountCode, asesorID)
 }
 
 // UpdateWompiPaymentRecordByTransaction actualiza una transacción de Wompi usando su transaction_id.
 func UpdateWompiPaymentRecordByTransaction(dbConn *sql.DB, transactionID, status, rawPayload string) error {
-	_, err := dbConn.Exec("UPDATE pagos_wompi SET status = ?, raw_payload = ?, fecha_actualizacion = datetime('now','localtime') WHERE transaction_id = ?", status, rawPayload, transactionID)
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE pagos_wompi SET status = ?, raw_payload = ?, fecha_actualizacion = "+nowExpr+" WHERE transaction_id = ?", status, rawPayload, transactionID)
 	if err == nil {
 		return nil
 	}
 	// Compatibilidad con bases antiguas que aún no tienen la columna fecha_actualizacion.
-	_, fallbackErr := dbConn.Exec("UPDATE pagos_wompi SET status = ?, raw_payload = ? WHERE transaction_id = ?", status, rawPayload, transactionID)
+	_, fallbackErr := execSQLCompat(dbConn, "UPDATE pagos_wompi SET status = ?, raw_payload = ? WHERE transaction_id = ?", status, rawPayload, transactionID)
 	if fallbackErr == nil {
 		return nil
 	}
@@ -749,11 +796,12 @@ func UpdateWompiPaymentRecordByTransaction(dbConn *sql.DB, transactionID, status
 
 // UpdateWompiPaymentRecordByReference actualiza una transaccion de Wompi usando su referencia.
 func UpdateWompiPaymentRecordByReference(dbConn *sql.DB, reference, status, rawPayload string) error {
-	_, err := dbConn.Exec("UPDATE pagos_wompi SET status = ?, raw_payload = ?, fecha_actualizacion = datetime('now','localtime') WHERE reference = ?", status, rawPayload, reference)
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE pagos_wompi SET status = ?, raw_payload = ?, fecha_actualizacion = "+nowExpr+" WHERE reference = ?", status, rawPayload, reference)
 	if err == nil {
 		return nil
 	}
-	_, fallbackErr := dbConn.Exec("UPDATE pagos_wompi SET status = ?, raw_payload = ? WHERE reference = ?", status, rawPayload, reference)
+	_, fallbackErr := execSQLCompat(dbConn, "UPDATE pagos_wompi SET status = ?, raw_payload = ? WHERE reference = ?", status, rawPayload, reference)
 	if fallbackErr == nil {
 		return nil
 	}
@@ -762,21 +810,21 @@ func UpdateWompiPaymentRecordByReference(dbConn *sql.DB, reference, status, rawP
 
 // WompiPaymentRecord representa una fila de pagos_wompi
 type WompiPaymentRecord struct {
-	ID           int64
-	LicenciaID   sql.NullInt64
-	EmpresaID    sql.NullInt64
+	ID            int64
+	LicenciaID    sql.NullInt64
+	EmpresaID     sql.NullInt64
 	TransactionID sql.NullString
-	Reference    sql.NullString
-	Status       sql.NullString
-	RawPayload   sql.NullString
-	DiscountCode sql.NullString
-	AsesorID     sql.NullString
+	Reference     sql.NullString
+	Status        sql.NullString
+	RawPayload    sql.NullString
+	DiscountCode  sql.NullString
+	AsesorID      sql.NullString
 	FechaCreacion sql.NullString
 }
 
 // GetWompiPaymentByTransaction obtiene una fila de pagos_wompi por transaction_id
 func GetWompiPaymentByTransaction(dbConn *sql.DB, transactionID string) (*WompiPaymentRecord, error) {
-	row := dbConn.QueryRow(`SELECT id, licencia_id, empresa_id, transaction_id, reference, status, raw_payload, discount_code, asesor_id, fecha_creacion FROM pagos_wompi WHERE transaction_id = ? LIMIT 1`, transactionID)
+	row := queryRowSQLCompat(dbConn, `SELECT id, licencia_id, empresa_id, transaction_id, reference, status, raw_payload, discount_code, asesor_id, fecha_creacion FROM pagos_wompi WHERE transaction_id = ? LIMIT 1`, transactionID)
 	var r WompiPaymentRecord
 	if err := row.Scan(&r.ID, &r.LicenciaID, &r.EmpresaID, &r.TransactionID, &r.Reference, &r.Status, &r.RawPayload, &r.DiscountCode, &r.AsesorID, &r.FechaCreacion); err != nil {
 		if err == sql.ErrNoRows {
@@ -789,7 +837,7 @@ func GetWompiPaymentByTransaction(dbConn *sql.DB, transactionID string) (*WompiP
 
 // GetWompiPaymentByReference obtiene una fila de pagos_wompi por reference
 func GetWompiPaymentByReference(dbConn *sql.DB, reference string) (*WompiPaymentRecord, error) {
-	row := dbConn.QueryRow(`SELECT id, licencia_id, empresa_id, transaction_id, reference, status, raw_payload, discount_code, asesor_id, fecha_creacion FROM pagos_wompi WHERE reference = ? LIMIT 1`, reference)
+	row := queryRowSQLCompat(dbConn, `SELECT id, licencia_id, empresa_id, transaction_id, reference, status, raw_payload, discount_code, asesor_id, fecha_creacion FROM pagos_wompi WHERE reference = ? LIMIT 1`, reference)
 	var r WompiPaymentRecord
 	if err := row.Scan(&r.ID, &r.LicenciaID, &r.EmpresaID, &r.TransactionID, &r.Reference, &r.Status, &r.RawPayload, &r.DiscountCode, &r.AsesorID, &r.FechaCreacion); err != nil {
 		if err == sql.ErrNoRows {
@@ -802,26 +850,24 @@ func GetWompiPaymentByReference(dbConn *sql.DB, reference string) (*WompiPayment
 
 // CRUD básicos para tabla asesores
 func CreateAsesor(dbConn *sql.DB, email, nombre, rol, notas string) (int64, error) {
-	res, err := dbConn.Exec("INSERT INTO asesores (email, nombre, rol, notas, fecha_creacion) VALUES (?, ?, ?, ?, datetime('now','localtime'))", email, nombre, rol, notas)
-	if err != nil {
-		return 0, err
-	}
-	return res.LastInsertId()
+	nowExpr := sqlNowExpr()
+	query := "INSERT INTO asesores (email, nombre, rol, notas, fecha_creacion) VALUES (?, ?, ?, ?, " + nowExpr + ")"
+	return insertSQLCompat(dbConn, query, email, nombre, rol, notas)
 }
 
 type Asesor struct {
-	ID int64 `json:"id"`
-	Email string `json:"email"`
-	Nombre string `json:"nombre"`
-	Rol string `json:"rol"`
-	Notas string `json:"notas"`
-	FechaCreacion string `json:"fecha_creacion"`
+	ID                 int64  `json:"id"`
+	Email              string `json:"email"`
+	Nombre             string `json:"nombre"`
+	Rol                string `json:"rol"`
+	Notas              string `json:"notas"`
+	FechaCreacion      string `json:"fecha_creacion"`
 	FechaActualizacion string `json:"fecha_actualizacion"`
-	Estado string `json:"estado"`
+	Estado             string `json:"estado"`
 }
 
 func ListAsesores(dbConn *sql.DB) ([]Asesor, error) {
-	rows, err := dbConn.Query("SELECT id, email, nombre, rol, notas, fecha_creacion, fecha_actualizacion, estado FROM asesores WHERE estado IS NULL OR estado <> 'inactivo' ORDER BY id DESC")
+	rows, err := querySQLCompat(dbConn, "SELECT id, email, nombre, rol, notas, fecha_creacion, fecha_actualizacion, estado FROM asesores WHERE estado IS NULL OR estado <> 'inactivo' ORDER BY id DESC")
 	if err != nil {
 		return nil, err
 	}
@@ -833,46 +879,50 @@ func ListAsesores(dbConn *sql.DB) ([]Asesor, error) {
 		if err := rows.Scan(&a.ID, &a.Email, &a.Nombre, &a.Rol, &a.Notas, &fc, &fa, &a.Estado); err != nil {
 			return nil, err
 		}
-		if fc.Valid { a.FechaCreacion = fc.String }
-		if fa.Valid { a.FechaActualizacion = fa.String }
+		if fc.Valid {
+			a.FechaCreacion = fc.String
+		}
+		if fa.Valid {
+			a.FechaActualizacion = fa.String
+		}
 		out = append(out, a)
 	}
 	return out, nil
 }
 
 func UpdateAsesor(dbConn *sql.DB, id int64, email, nombre, rol, notas string) error {
-	_, err := dbConn.Exec("UPDATE asesores SET email = ?, nombre = ?, rol = ?, notas = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ?", email, nombre, rol, notas, id)
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE asesores SET email = ?, nombre = ?, rol = ?, notas = ?, fecha_actualizacion = "+nowExpr+" WHERE id = ?", email, nombre, rol, notas, id)
 	return err
 }
 
 func DeleteAsesor(dbConn *sql.DB, id int64) error {
-	_, err := dbConn.Exec("UPDATE asesores SET estado = 'inactivo', fecha_actualizacion = datetime('now','localtime') WHERE id = ?", id)
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE asesores SET estado = 'inactivo', fecha_actualizacion = "+nowExpr+" WHERE id = ?", id)
 	return err
 }
 
 // CRUD para planes de asesor comercial
 type AsesorComercialPlan struct {
-	ID int64 `json:"id"`
-	AsesorID string `json:"asesor_id"`
-	AsesorEmail string `json:"asesor_email"`
-	EmpresaID sql.NullInt64 `json:"empresa_id"`
-	ComisionVentaPct float64 `json:"comision_venta_pct"`
-	ComisionPagoPct float64 `json:"comision_pago_pct"`
-	MesesRenovacion int `json:"meses_renovacion"`
-	Notas string `json:"notas"`
-	FechaCreacion string `json:"fecha_creacion"`
+	ID               int64         `json:"id"`
+	AsesorID         string        `json:"asesor_id"`
+	AsesorEmail      string        `json:"asesor_email"`
+	EmpresaID        sql.NullInt64 `json:"empresa_id"`
+	ComisionVentaPct float64       `json:"comision_venta_pct"`
+	ComisionPagoPct  float64       `json:"comision_pago_pct"`
+	MesesRenovacion  int           `json:"meses_renovacion"`
+	Notas            string        `json:"notas"`
+	FechaCreacion    string        `json:"fecha_creacion"`
 }
 
 func CreateAsesorComercialPlan(dbConn *sql.DB, asesorID, asesorEmail string, empresaID int64, comisionVentaPct, comisionPagoPct float64, mesesRenovacion int, notas string) (int64, error) {
-	res, err := dbConn.Exec("INSERT INTO asesor_comercial (asesor_id, asesor_email, empresa_id, comision_venta_pct, comision_pago_pct, meses_renovacion, notas, fecha_creacion) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'))", asesorID, asesorEmail, empresaID, comisionVentaPct, comisionPagoPct, mesesRenovacion, notas)
-	if err != nil {
-		return 0, err
-	}
-	return res.LastInsertId()
+	nowExpr := sqlNowExpr()
+	query := "INSERT INTO asesor_comercial (asesor_id, asesor_email, empresa_id, comision_venta_pct, comision_pago_pct, meses_renovacion, notas, fecha_creacion) VALUES (?, ?, ?, ?, ?, ?, ?, " + nowExpr + ")"
+	return insertSQLCompat(dbConn, query, asesorID, asesorEmail, empresaID, comisionVentaPct, comisionPagoPct, mesesRenovacion, notas)
 }
 
 func ListAsesorComercialPlans(dbConn *sql.DB) ([]AsesorComercialPlan, error) {
-	rows, err := dbConn.Query("SELECT id, asesor_id, asesor_email, empresa_id, comision_venta_pct, comision_pago_pct, meses_renovacion, notas, fecha_creacion FROM asesor_comercial WHERE estado IS NULL OR estado <> 'inactivo' ORDER BY id DESC")
+	rows, err := querySQLCompat(dbConn, "SELECT id, asesor_id, asesor_email, empresa_id, comision_venta_pct, comision_pago_pct, meses_renovacion, notas, fecha_creacion FROM asesor_comercial WHERE estado IS NULL OR estado <> 'inactivo' ORDER BY id DESC")
 	if err != nil {
 		return nil, err
 	}
@@ -886,48 +936,54 @@ func ListAsesorComercialPlans(dbConn *sql.DB) ([]AsesorComercialPlan, error) {
 			return nil, err
 		}
 		p.EmpresaID = empresaID
-		if fc.Valid { p.FechaCreacion = fc.String }
+		if fc.Valid {
+			p.FechaCreacion = fc.String
+		}
 		out = append(out, p)
 	}
 	return out, nil
 }
 
 func GetAsesorComercialPlanByAsesorID(dbConn *sql.DB, asesorID string) (*AsesorComercialPlan, error) {
-	row := dbConn.QueryRow("SELECT id, asesor_id, asesor_email, empresa_id, comision_venta_pct, comision_pago_pct, meses_renovacion, notas, fecha_creacion FROM asesor_comercial WHERE asesor_id = ? AND (estado IS NULL OR estado <> 'inactivo') ORDER BY id DESC LIMIT 1", asesorID)
+	row := queryRowSQLCompat(dbConn, "SELECT id, asesor_id, asesor_email, empresa_id, comision_venta_pct, comision_pago_pct, meses_renovacion, notas, fecha_creacion FROM asesor_comercial WHERE asesor_id = ? AND (estado IS NULL OR estado <> 'inactivo') ORDER BY id DESC LIMIT 1", asesorID)
 	var p AsesorComercialPlan
 	var empresaID sql.NullInt64
 	var fc sql.NullString
 	if err := row.Scan(&p.ID, &p.AsesorID, &p.AsesorEmail, &empresaID, &p.ComisionVentaPct, &p.ComisionPagoPct, &p.MesesRenovacion, &p.Notas, &fc); err != nil {
-		if err == sql.ErrNoRows { return nil, nil }
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
 		return nil, err
 	}
 	p.EmpresaID = empresaID
-	if fc.Valid { p.FechaCreacion = fc.String }
+	if fc.Valid {
+		p.FechaCreacion = fc.String
+	}
 	return &p, nil
 }
 
 func UpdateAsesorComercialPlan(dbConn *sql.DB, id int64, comisionVentaPct, comisionPagoPct float64, mesesRenovacion int, notas string) error {
-	_, err := dbConn.Exec("UPDATE asesor_comercial SET comision_venta_pct = ?, comision_pago_pct = ?, meses_renovacion = ?, notas = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ?", comisionVentaPct, comisionPagoPct, mesesRenovacion, notas, id)
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE asesor_comercial SET comision_venta_pct = ?, comision_pago_pct = ?, meses_renovacion = ?, notas = ?, fecha_actualizacion = "+nowExpr+" WHERE id = ?", comisionVentaPct, comisionPagoPct, mesesRenovacion, notas, id)
 	return err
 }
 
 func DeleteAsesorComercialPlan(dbConn *sql.DB, id int64) error {
-	_, err := dbConn.Exec("UPDATE asesor_comercial SET estado = 'inactivo', fecha_actualizacion = datetime('now','localtime') WHERE id = ?", id)
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE asesor_comercial SET estado = 'inactivo', fecha_actualizacion = "+nowExpr+" WHERE id = ?", id)
 	return err
 }
 
 // Registrar comisiones generadas por pagos/activaciones
 func CreateAsesorComisionRecord(dbConn *sql.DB, asesorID string, empresaID, licenciaID, pagoID int64, transactionID string, montoTotal, porcentaje, montoComision float64, referencia, observaciones, programadoPara string, pagado int) (int64, error) {
-	res, err := dbConn.Exec("INSERT INTO asesor_comisiones (asesor_id, empresa_id, licencia_id, pago_id, transaction_id, monto_total, porcentaje, monto_comision, referencia, observaciones, programado_para, pagado, fecha_creacion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'))", asesorID, empresaID, licenciaID, pagoID, transactionID, montoTotal, porcentaje, montoComision, referencia, observaciones, programadoPara, pagado)
-	if err != nil {
-		return 0, err
-	}
-	return res.LastInsertId()
+	nowExpr := sqlNowExpr()
+	query := "INSERT INTO asesor_comisiones (asesor_id, empresa_id, licencia_id, pago_id, transaction_id, monto_total, porcentaje, monto_comision, referencia, observaciones, programado_para, pagado, fecha_creacion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " + nowExpr + ")"
+	return insertSQLCompat(dbConn, query, asesorID, empresaID, licenciaID, pagoID, transactionID, montoTotal, porcentaje, montoComision, referencia, observaciones, programadoPara, pagado)
 }
 
 // GetWompiPaymentContext devuelve licencia_id y empresa_id para una transaccion/referencia Wompi.
 func GetWompiPaymentContext(dbConn *sql.DB, transactionID, reference string) (int64, int64, bool, error) {
-	row := dbConn.QueryRow(`
+	row := queryRowSQLCompat(dbConn, `
 		SELECT licencia_id, empresa_id
 		FROM pagos_wompi
 		WHERE (transaction_id = ? AND ? <> '') OR (reference = ? AND ? <> '')
@@ -953,12 +1009,13 @@ func GetWompiPaymentContext(dbConn *sql.DB, transactionID, reference string) (in
 
 // ActivateLicenciaForEmpresa asigna y activa una licencia para una empresa, estableciendo fechas de inicio y fin
 func ActivateLicenciaForEmpresa(dbConn *sql.DB, licenciaID, empresaID int64, fechaInicio, fechaFin string) error {
-	_, err := dbConn.Exec("UPDATE licencias SET empresa_id = ?, activo = 1, fecha_inicio = ?, fecha_fin = ?, fecha_actualizacion = datetime('now','localtime') WHERE id = ?", empresaID, fechaInicio, fechaFin, licenciaID)
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE licencias SET empresa_id = ?, activo = 1, fecha_inicio = ?, fecha_fin = ?, fecha_actualizacion = "+nowExpr+" WHERE id = ?", empresaID, fechaInicio, fechaFin, licenciaID)
 	if err == nil {
 		return nil
 	}
 	// Compatibilidad con bases antiguas que no tienen fecha_actualizacion.
-	_, fallbackErr := dbConn.Exec("UPDATE licencias SET empresa_id = ?, activo = 1, fecha_inicio = ?, fecha_fin = ? WHERE id = ?", empresaID, fechaInicio, fechaFin, licenciaID)
+	_, fallbackErr := execSQLCompat(dbConn, "UPDATE licencias SET empresa_id = ?, activo = 1, fecha_inicio = ?, fecha_fin = ? WHERE id = ?", empresaID, fechaInicio, fechaFin, licenciaID)
 	if fallbackErr == nil {
 		return nil
 	}
@@ -979,12 +1036,13 @@ func SetConfigValue(dbConn *sql.DB, key, value string, encrypted bool) error {
 		return err
 	}
 	defer tx.Rollback()
+	nowExpr := sqlNowExpr()
 
 	var existing string
-	err = tx.QueryRow("SELECT config_key FROM configuraciones WHERE config_key = ? LIMIT 1", key).Scan(&existing)
+	err = queryRowTxSQLCompat(tx, "SELECT config_key FROM configuraciones WHERE config_key = ? LIMIT 1", key).Scan(&existing)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			_, err = tx.Exec("INSERT INTO configuraciones (config_key, value, encrypted, fecha_creacion, fecha_actualizacion) VALUES (?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))", key, value, enc)
+			_, err = execTxSQLCompat(tx, "INSERT INTO configuraciones (config_key, value, encrypted, fecha_creacion, fecha_actualizacion) VALUES (?, ?, ?, "+nowExpr+", "+nowExpr+")", key, value, enc)
 			if err != nil {
 				return err
 			}
@@ -993,7 +1051,7 @@ func SetConfigValue(dbConn *sql.DB, key, value string, encrypted bool) error {
 		return err
 	}
 
-	_, err = tx.Exec("UPDATE configuraciones SET value = ?, encrypted = ?, fecha_actualizacion = datetime('now','localtime') WHERE config_key = ?", value, enc, key)
+	_, err = execTxSQLCompat(tx, "UPDATE configuraciones SET value = ?, encrypted = ?, fecha_actualizacion = "+nowExpr+" WHERE config_key = ?", value, enc, key)
 	if err != nil {
 		return err
 	}
@@ -1003,7 +1061,7 @@ func SetConfigValue(dbConn *sql.DB, key, value string, encrypted bool) error {
 // GetConfigEntry devuelve el valor almacenado, si está cifrado, la fecha de creación y la fecha de última actualización.
 // Si la clave no existe devuelve valores vacíos y nil error.
 func GetConfigEntry(dbConn *sql.DB, key string) (string, bool, string, string, error) {
-	row := dbConn.QueryRow("SELECT value, encrypted, fecha_creacion, fecha_actualizacion FROM configuraciones WHERE config_key = ? LIMIT 1", key)
+	row := queryRowSQLCompat(dbConn, "SELECT value, encrypted, fecha_creacion, fecha_actualizacion FROM configuraciones WHERE config_key = ? LIMIT 1", key)
 	var val sql.NullString
 	var enc sql.NullInt64
 	var fechaCre sql.NullString
@@ -1035,7 +1093,7 @@ func GetConfigEntry(dbConn *sql.DB, key string) (string, bool, string, string, e
 
 // GetConfigValue devuelve el valor almacenado y si estaba cifrado
 func GetConfigValue(dbConn *sql.DB, key string) (string, bool, error) {
-	row := dbConn.QueryRow("SELECT value, encrypted FROM configuraciones WHERE config_key = ? LIMIT 1", key)
+	row := queryRowSQLCompat(dbConn, "SELECT value, encrypted FROM configuraciones WHERE config_key = ? LIMIT 1", key)
 	var val sql.NullString
 	var enc sql.NullInt64
 	if err := row.Scan(&val, &enc); err != nil {
@@ -1054,14 +1112,14 @@ func GetConfigValue(dbConn *sql.DB, key string) (string, bool, error) {
 
 // InsertMetric inserta una muestra de métricas en la tabla metrics
 func InsertMetric(dbConn *sql.DB, cpuPercent float64, memTotal, memUsed uint64, memPercent float64, netRecv, netSent uint64) error {
-	_, err := dbConn.Exec("INSERT INTO metrics (cpu_percent, mem_total, mem_used, mem_percent, net_recv, net_sent) VALUES (?, ?, ?, ?, ?, ?)",
+	_, err := execSQLCompat(dbConn, "INSERT INTO metrics (cpu_percent, mem_total, mem_used, mem_percent, net_recv, net_sent) VALUES (?, ?, ?, ?, ?, ?)",
 		cpuPercent, memTotal, memUsed, memPercent, netRecv, netSent)
 	return err
 }
 
 // GetLatestMetric obtiene la última muestra registrada
 func GetLatestMetric(dbConn *sql.DB) (*Metric, error) {
-	row := dbConn.QueryRow("SELECT id, timestamp, cpu_percent, mem_total, mem_used, mem_percent, net_recv, net_sent, fecha_creacion FROM metrics ORDER BY id DESC LIMIT 1")
+	row := queryRowSQLCompat(dbConn, "SELECT id, timestamp, cpu_percent, mem_total, mem_used, mem_percent, net_recv, net_sent, fecha_creacion FROM metrics ORDER BY id DESC LIMIT 1")
 	var m Metric
 	var timestamp sql.NullString
 	var fechaCre sql.NullString
@@ -1080,7 +1138,7 @@ func GetLatestMetric(dbConn *sql.DB) (*Metric, error) {
 // GetMetricsHistory devuelve las últimas 'limit' muestras (ordenadas de más antiguo a más reciente)
 func GetMetricsHistory(dbConn *sql.DB, limit int) ([]Metric, error) {
 	q := "SELECT id, timestamp, cpu_percent, mem_total, mem_used, mem_percent, net_recv, net_sent, fecha_creacion FROM metrics ORDER BY id DESC LIMIT ?"
-	rows, err := dbConn.Query(q, limit)
+	rows, err := querySQLCompat(dbConn, q, limit)
 	if err != nil {
 		return nil, err
 	}

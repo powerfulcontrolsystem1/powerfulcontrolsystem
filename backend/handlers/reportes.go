@@ -893,7 +893,16 @@ func (b *reportesBuilder) reportesTableExists(table string) (bool, error) {
 		return false, fmt.Errorf("tabla invalida")
 	}
 	var count int
-	err := b.db.QueryRow("SELECT COUNT(1) FROM sqlite_master WHERE type = 'table' AND name = ?", table).Scan(&count)
+	query := "SELECT COUNT(1) FROM sqlite_master WHERE type = 'table' AND name = ?"
+	if dbpkg.IsPostgresDialect() {
+		query = `
+			SELECT COUNT(1)
+			FROM information_schema.tables
+			WHERE table_schema = ANY (current_schemas(false))
+			  AND table_name = ?
+		`
+	}
+	err := b.db.QueryRow(query, table).Scan(&count)
 	if err != nil {
 		return false, err
 	}
@@ -905,13 +914,39 @@ func (b *reportesBuilder) reportesTableColumns(table string) (map[string]bool, e
 		return nil, fmt.Errorf("tabla invalida")
 	}
 
+	cols := make(map[string]bool)
+
+	if dbpkg.IsPostgresDialect() {
+		rows, err := b.db.Query(`
+			SELECT column_name
+			FROM information_schema.columns
+			WHERE table_schema = ANY (current_schemas(false))
+			  AND table_name = ?
+			ORDER BY ordinal_position
+		`, table)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var name string
+			if err := rows.Scan(&name); err != nil {
+				return nil, err
+			}
+			cols[strings.ToLower(strings.TrimSpace(name))] = true
+		}
+		if err := rows.Err(); err != nil {
+			return nil, err
+		}
+		return cols, nil
+	}
+
 	rows, err := b.db.Query("PRAGMA table_info(" + table + ")")
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	cols := make(map[string]bool)
 	for rows.Next() {
 		var cid int
 		var name string

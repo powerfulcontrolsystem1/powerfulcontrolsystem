@@ -1,5 +1,90 @@
 Descripcion de archivos del proyecto
 
+Actualizacion 2026-04-14: Hardening OAuth Google en runtime VPS (prioridad entorno + redirect explícito)
+ - Archivos modificados:
+	- backend/main.go (ajuste en `loadGoogleOAuthFromDB`: entorno tiene prioridad y la DB solo completa faltantes)
+	- scripts/sync_to_vps.ps1 (nuevo parámetro `GoogleRedirectUrl` y bootstrap remoto de `GOOGLE_REDIRECT_URL`)
+	- scripts/sync_to_vps.sh (soporte de variable `GOOGLE_REDIRECT_URL` y escritura en `backend/.env.local` remoto)
+ - Descripción: Se evita que valores legacy en tabla `configuraciones` sobreescriban credenciales/callback definidos para VPS, y se habilita propagación explícita del callback OAuth en despliegues.
+
+Actualizacion 2026-04-14: Correccion del flujo de login de usuario empresarial (frontend)
+ - Archivos modificados:
+	 - web/login_usuario.html
+	 - web/js/login_usuario.js
+ - Descripcion: Se agrega campo `Empresa ID` en `login_usuario.html` y se implementa persistencia de `empresa_id` en `web/js/login_usuario.js` (session/local storage). La logica cliente asegura que `empresa_id` se incluya en peticiones y `redirect_url`. Verificado: sintaxis JS sin errores y pruebas manuales locales.
+
+Actualizacion 2026-04-14: Correccion de callback OAuth Google en entorno VPS
+ - Archivos modificados:
+	- backend/handlers/auth_admin_handlers.go (redirect OAuth dinámico por host/proto real, cookie técnica temporal `oauth_redirect_url`, y reescritura segura de configuraciones loopback en host público)
+	- backend/handlers/auth_users_carritos_test.go (pruebas para host/proto reenviado y reescritura de localhost)
+	- backend/main.go (elimina fallback fijo de `GOOGLE_REDIRECT_URL` a localhost y registra resolución dinámica)
+	- documentos/diagramas/estructura_del_codigo.md (registro técnico de ajuste en flujo de autenticación)
+ - Descripción: Se corrige el escenario donde, tras elegir cuenta Google, el navegador intentaba cargar callback en `http://localhost:8080` desde entorno público, causando `Unsafe attempt to load URL ... chrome-error://chromewebdata`. Ahora el callback se genera con la URL real del VPS y se mantiene consistente durante el intercambio OAuth.
+
+Actualizacion 2026-04-14: Guard de DSN en bootstrap PostgreSQL para despliegue VPS
+ - Archivos modificados:
+	- scripts/sync_to_vps.ps1 (bootstrap remoto preserva valores DB, usa último valor de clave y aborta si postgres no tiene ambos DSN)
+	- scripts/sync_to_vps.sh (misma validación en modo WSL/Linux)
+	- scripts/README_sync.md (guía actualizada con comportamiento `BOOTSTRAP_ERROR:POSTGRES_MISSING_DSN`)
+	- documentos/diagramas/estructura_del_codigo.md (registro técnico del nuevo guard en flujo de despliegue)
+ - Descripción: Se evita que el despliegue avance a redeploy con configuración DB inválida en PostgreSQL. El flujo ahora falla temprano con mensaje explícito de DSN faltantes y conserva variables remotas existentes cuando no se envían parámetros.
+
+Actualizacion 2026-04-14: Correccion de ruta web en runtime VPS (index/login)
+ - Archivos modificados:
+	- backend/main.go (ajuste de `resolveWebDir` para priorizar `web/` desde ejecución en `backend/bin`)
+	- scripts/sync_to_vps.ps1 (despliegue de nueva versión al VPS con validación de arranque)
+	- documentos/diagramas/estructura_del_codigo.md (registro del ajuste de flujo web)
+	- CHANGELOG.md y documentos/historial_de_cambios (trazabilidad de corrección y validación)
+ - Descripción: Se evita que el backend sirva `backend/web/uploads` como raíz cuando corre como binario en VPS; ahora detecta correctamente `index.html` y `login.html` en `web/` de la raíz del proyecto.
+
+Actualizacion 2026-04-14: Estabilizacion de salida PostgreSQL (fase 4) en contabilidad y entorno VPS
+ - Archivos modificados:
+	- backend/db/eventos_contables.go (worker de asientos y operaciones de eventos/asientos migradas a wrappers SQL portables y retorno de id compatible PostgreSQL)
+	- documentos/diagramas/estructura_del_codigo.md (registro de estabilizacion tecnica de fase 4)
+	- documentos/descripcion_de_modulos (sincronizacion de estado modular en contabilidad/finanzas)
+	- documentos/matriz_roles_permisos_pos_multiempresa.md (confirmacion de no cambios CRUD/A por rol)
+	- Pendiente Notas (estado del plan de migracion fase 4 actualizado)
+	- CHANGELOG.md y documentos/historial_de_cambios (trazabilidad de ejecucion, pruebas y validacion VPS)
+ - Descripción: Se corrige la compatibilidad SQL del worker contable durante la salida controlada a PostgreSQL, se restablecen DSN de runtime en VPS y se valida operacion del backend en modo postgres con healthcheck exitoso.
+
+Actualizacion 2026-04-14: Runtime PostgreSQL en VPS y bootstrap de DSN en scripts de sincronizacion
+ - Archivos modificados:
+	- backend/main.go (seleccion de motor por entorno y apertura `pgx` con DSN para `pcs_empresas`/`pcs_superadministrador`)
+	- backend/go.mod y backend/go.sum (registro de dependencia `github.com/jackc/pgx/v5/stdlib`)
+	- scripts/sync_to_vps.ps1 (parametros de despliegue para `DbDialect`, `DbEmpresasDsn`, `DbSuperadminDsn` y propagacion a bootstrap remoto)
+	- scripts/sync_to_vps.sh (bootstrap remoto de `DB_DIALECT`, `DB_EMPRESAS_DSN`, `DB_SUPERADMIN_DSN` en `backend/.env.local`)
+	- scripts/README_sync.md (documentacion de nuevos parametros/variables para runtime PostgreSQL)
+	- documentos/diagramas/estructura_del_codigo.md (actualizacion de flujo tecnico runtime dual)
+ - Descripción: Se completa el tramo de conmutación de runtime para que el backend pueda correr en VPS con PostgreSQL como motor operativo, manteniendo SQLite solo como camino legado/contingencia en local.
+
+Actualizacion 2026-04-14: Fase 3 PostgreSQL - compatibilidad ampliada en core DB
+ - Archivos modificados:
+	- backend/db/sql_compat.go (nuevos wrappers `query/exec`, insercion portable con id y normalizacion de definiciones de columnas por dialecto)
+	- backend/db/empresa_scope.go (deteccion de tablas compatible con PostgreSQL via `information_schema`)
+	- backend/db/productos.go (funcion `ensureColumnIfMissing` compatible con SQLite/PostgreSQL)
+	- backend/db/db.go (migracion de CRUD core para usar placeholders/fechas compatibles en licencias, tipos, empresas, Wompi, asesores, configuraciones y metricas)
+ - Descripción: Se extiende la base de compatibilidad SQL para continuar la conmutación gradual del runtime a PostgreSQL en VPS sin romper soporte SQLite legado durante la transición.
+
+Actualizacion 2026-04-14: Redeploy remoto en sincronizacion VPS + avance fase 3 PostgreSQL (autenticacion/sesiones)
+ - Archivos añadidos/modificados:
+	- scripts/sync_to_vps.ps1 (redeploy remoto automatico: detiene proceso previo, inicia nueva version y valida healthcheck)
+	- scripts/sync_to_vps.sh (mismas capacidades de redeploy para modo WSL)
+	- scripts/README_sync.md (nuevos parametros y comportamiento de reinicio remoto)
+	- backend/db/sql_compat.go (nuevo: compatibilidad SQL inicial SQLite/PostgreSQL)
+	- backend/db/db.go (ajustes de funciones criticas de autenticacion/sesiones para usar capa de compatibilidad)
+	- documentos/diagramas/estructura_del_codigo.md (registro de avance tecnico)
+ - Descripción: Se garantiza que cada sincronización remota cargue la nueva versión del backend reemplazando el proceso anterior en VPS. En paralelo, se inicia la fase 3 de migración a PostgreSQL con una capa de compatibilidad SQL aplicada al flujo de autenticación y sesiones.
+
+Actualizacion 2026-04-13: Inicio de migracion de datos a PostgreSQL en VPS
+ - Archivos modificados:
+	- Pendiente Notas (plan de trabajo por etapas para migración SQLite -> PostgreSQL)
+	- documentos/regla_agente_go.md (regla oficial: BD productiva en VPS con PostgreSQL)
+	- copilot-instructions.md (alineación de regla operativa de datos)
+	- documentos/descripcion_de_las_bases_De_datos (estrategia operativa PostgreSQL + SQLite legado)
+	- documentos/estructura_bd.md y estructura_bd.md (sincronización de estado relacional operativo)
+	- documentos/diagramas/estructura_del_codigo.md (actualización de arquitectura y flujo de migración)
+ - Descripción: Se formaliza la política de operación de datos en VPS con PostgreSQL y se documenta el arranque real de migración por etapas para `superadministrador` y `empresas`, incluyendo validación de consistencia por conteo de tablas.
+
 Actualizacion 2026-04-13: Estabilidad de inicio local en scripts/iniciar_servidor.ps1
  - Archivo modificado:
 	- scripts/iniciar_servidor.ps1

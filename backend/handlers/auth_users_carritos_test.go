@@ -138,6 +138,7 @@ func ensureCarritosVentasSchema(t *testing.T, dbEmp *sql.DB) {
 func TestHandleGoogleLoginRedirectIncludesLoginHint(t *testing.T) {
 	h := HandleGoogleLogin("client-123", "http://localhost:8080/auth/google/callback")
 	req := httptest.NewRequest(http.MethodGet, "/auth/google/login?login_hint=usuario@example.com", nil)
+	req.Host = "localhost:8080"
 	rr := httptest.NewRecorder()
 
 	h.ServeHTTP(rr, req)
@@ -163,8 +164,69 @@ func TestHandleGoogleLoginRedirectIncludesLoginHint(t *testing.T) {
 	if q.Get("login_hint") != "usuario@example.com" {
 		t.Fatalf("unexpected login_hint: %q", q.Get("login_hint"))
 	}
-	if q.Get("prompt") != "select_account consent" {
+	if q.Get("prompt") != "select_account" {
 		t.Fatalf("unexpected prompt: %q", q.Get("prompt"))
+	}
+}
+
+func TestHandleGoogleLoginRedirectRewritesConfiguredLocalhostForPublicHost(t *testing.T) {
+	h := HandleGoogleLogin("client-123", "http://localhost:8080/auth/google/callback")
+	req := httptest.NewRequest(http.MethodGet, "/auth/google/login", nil)
+	req.Header.Set("X-Forwarded-Proto", "https")
+	req.Header.Set("X-Forwarded-Host", "pos.example.com")
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusFound {
+		t.Fatalf("expected status %d, got %d", http.StatusFound, rr.Code)
+	}
+	loc := rr.Header().Get("Location")
+	if loc == "" {
+		t.Fatal("expected redirect location")
+	}
+	parsed, err := url.Parse(loc)
+	if err != nil {
+		t.Fatalf("parse redirect url: %v", err)
+	}
+	if got := parsed.Query().Get("redirect_uri"); got != "https://pos.example.com/auth/google/callback" {
+		t.Fatalf("unexpected redirect_uri: %q", got)
+	}
+}
+
+func TestHandleGoogleLoginRedirectUsesForwardedHostWhenRedirectNotConfigured(t *testing.T) {
+	h := HandleGoogleLogin("client-123", "")
+	req := httptest.NewRequest(http.MethodGet, "/auth/google/login", nil)
+	req.Header.Set("X-Forwarded-Proto", "https")
+	req.Header.Set("X-Forwarded-Host", "pos.example.com")
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusFound {
+		t.Fatalf("expected status %d, got %d", http.StatusFound, rr.Code)
+	}
+	loc := rr.Header().Get("Location")
+	if loc == "" {
+		t.Fatal("expected redirect location")
+	}
+	parsed, err := url.Parse(loc)
+	if err != nil {
+		t.Fatalf("parse redirect url: %v", err)
+	}
+	if got := parsed.Query().Get("redirect_uri"); got != "https://pos.example.com/auth/google/callback" {
+		t.Fatalf("unexpected redirect_uri: %q", got)
+	}
+
+	hasRedirectCookie := false
+	for _, ck := range rr.Result().Cookies() {
+		if ck.Name == "oauth_redirect_url" {
+			hasRedirectCookie = true
+			break
+		}
+	}
+	if !hasRedirectCookie {
+		t.Fatal("expected oauth_redirect_url cookie")
 	}
 }
 

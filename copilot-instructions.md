@@ -18,6 +18,12 @@ Reglas obligatorias:
   - En cada envio real/documento se debe mantener trazabilidad por empresa (NIT y credenciales por `empresa_id`), aun cuando el software sea compartido.
   - No reutilizar token ni firma entre empresas; las referencias deben ser seguras (`env:`, `file:`, `base64:`).
 
+- Regla oficial de datos en VPS con PostgreSQL:
+  - La base de datos operativa del sistema debe ejecutarse en el servidor virtual (VPS), no en la máquina local del desarrollador.
+  - PostgreSQL es el motor relacional objetivo y obligatorio para operación productiva.
+  - Las bases SQLite locales se consideran legado de migración o respaldo técnico, pero no fuente de verdad productiva.
+  - La migración debe ejecutarse por etapas (`superadministrador` y luego `empresas`) validando consistencia por base antes de continuar.
+
 Comportamiento del agente:
 
 - Leer `documentos/descripcion_del_proyecto` antes de comenzar tareas relacionadas con el proyecto y alinearse con sus restricciones.

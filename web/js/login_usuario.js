@@ -49,6 +49,60 @@ function resolveEmpresaID() {
   return readEmpresaIDFromStorage();
 }
 
+function persistEmpresaIDContext(value) {
+  var parsed = parsePositiveInt(value);
+  if (parsed <= 0) {
+    return;
+  }
+
+  var asText = String(parsed);
+  var stores = [];
+  try {
+    stores.push(window.sessionStorage);
+  } catch (e) {}
+  try {
+    stores.push(window.localStorage);
+  } catch (e) {}
+
+  for (var i = 0; i < stores.length; i += 1) {
+    var store = stores[i];
+    if (!store) continue;
+    try {
+      store.setItem("active_empresa_id", asText);
+      store.setItem("empresa_id", asText);
+      store.setItem("admin_empresa_id", asText);
+      store.setItem("rememberEmpresaID", asText);
+    } catch (e) {}
+  }
+}
+
+function readEmpresaIDFromInput() {
+  var input = document.getElementById("empresaID");
+  if (!input) {
+    return 0;
+  }
+  return parsePositiveInt(input.value);
+}
+
+function refreshEmpresaIDInput() {
+  var input = document.getElementById("empresaID");
+  if (!input) {
+    return;
+  }
+  input.value = empresaID > 0 ? String(empresaID) : "";
+}
+
+function setEmpresaID(value) {
+  var parsed = parsePositiveInt(value);
+  if (parsed <= 0) {
+    return 0;
+  }
+  empresaID = parsed;
+  persistEmpresaIDContext(empresaID);
+  refreshEmpresaIDInput();
+  return empresaID;
+}
+
 var rememberKey = "rememberUsuarioEmpresa";
 var rememberedEmailKey = "rememberedUsuarioEmail";
 var rememberedEmpresaIDKey = "rememberEmpresaID";
@@ -82,11 +136,40 @@ var tokenRecuperacionPrefill = (getQueryParam("token_recuperacion") || "").trim(
 var emailRecuperacionPrefill = (getQueryParam("email") || "").trim();
 
 function ensureEmpresaScope(targetId) {
+  if (empresaID <= 0) {
+    var typedEmpresaID = readEmpresaIDFromInput();
+    if (typedEmpresaID > 0) {
+      setEmpresaID(typedEmpresaID);
+    }
+  }
   if (empresaID > 0) {
+    persistEmpresaIDContext(empresaID);
     return true;
   }
-  setMessage(targetId, "Falta empresa_id en la URL para iniciar sesion de empresa.", true);
+  setMessage(targetId, "Falta empresa_id. Ingresa el Empresa ID para iniciar sesion de empresa.", true);
   return false;
+}
+
+function resolveRedirectURLForEmpresa(rawURL) {
+  var fallback = "/administrar_empresa.html";
+  var candidate = String(rawURL || "").trim();
+  if (!candidate) {
+    candidate = fallback;
+  }
+
+  try {
+    var parsed = new URL(candidate, window.location.origin);
+    var existingEmpresa = parsePositiveInt(parsed.searchParams.get("empresa_id") || parsed.searchParams.get("id"));
+    if (empresaID > 0 && existingEmpresa <= 0) {
+      parsed.searchParams.set("empresa_id", String(empresaID));
+      if (!parsed.searchParams.get("id")) {
+        parsed.searchParams.set("id", String(empresaID));
+      }
+    }
+    return parsed.pathname + parsed.search + parsed.hash;
+  } catch (e) {
+    return candidate;
+  }
 }
 
 async function getErrorMessage(res) {
@@ -207,7 +290,7 @@ document.getElementById("loginUsuarioForm").addEventListener("submit", async fun
 
     persistRememberedUsuario(email);
     var redirectURL = body && body.redirect_url ? String(body.redirect_url) : "/administrar_empresa.html";
-    window.location.href = redirectURL;
+    window.location.href = resolveRedirectURLForEmpresa(redirectURL);
   } catch (err) {
     setMessage("msg", err.message || "No se pudo iniciar sesion.", true);
   } finally {
@@ -264,7 +347,7 @@ document.getElementById("setupPasswordForm").addEventListener("submit", async fu
     var body = await res.json();
     persistRememberedUsuario(email);
     var redirectURL = body && body.redirect_url ? String(body.redirect_url) : "/administrar_empresa.html";
-    window.location.href = redirectURL;
+    window.location.href = resolveRedirectURLForEmpresa(redirectURL);
   } catch (err) {
     setMessage("setupMsg", err.message || "No se pudo crear la contrasena.", true);
   } finally {
@@ -368,7 +451,7 @@ document.getElementById("resetPasswordForm").addEventListener("submit", async fu
     var body = await res.json();
     persistRememberedUsuario(email);
     var redirectURL = body && body.redirect_url ? String(body.redirect_url) : "/administrar_empresa.html";
-    window.location.href = redirectURL;
+    window.location.href = resolveRedirectURLForEmpresa(redirectURL);
   } catch (err) {
     setMessage("resetMsg", err.message || "No se pudo restablecer la contrasena.", true);
   } finally {
@@ -425,7 +508,7 @@ document.getElementById("changePasswordForm").addEventListener("submit", async f
     var body = await res.json();
     persistRememberedUsuario(email);
     var redirectURL = body && body.redirect_url ? String(body.redirect_url) : "/administrar_empresa.html";
-    window.location.href = redirectURL;
+    window.location.href = resolveRedirectURLForEmpresa(redirectURL);
   } catch (err) {
     setMessage("changePasswordMsg", err.message || "No se pudo cambiar la contrasena.", true);
   } finally {
@@ -463,10 +546,25 @@ document.getElementById("btnVolverDesdeCambio").addEventListener("click", functi
 (function bootstrapRememberedUsuario() {
   var emailInput = document.getElementById("email");
   var rememberCheckbox = document.getElementById("rememberUsuario");
+  var empresaInput = document.getElementById("empresaID");
 
-  if (!emailInput || !rememberCheckbox) {
+  if (!emailInput || !rememberCheckbox || !empresaInput) {
     return;
   }
+
+  if (empresaID <= 0) {
+    var rememberedEmpresaID = 0;
+    try {
+      rememberedEmpresaID = parsePositiveInt(localStorage.getItem(rememberedEmpresaIDKey) || "");
+    } catch (e) {
+      rememberedEmpresaID = 0;
+    }
+    if (rememberedEmpresaID > 0) {
+      setEmpresaID(rememberedEmpresaID);
+    }
+  }
+
+  refreshEmpresaIDInput();
 
   try {
     if (localStorage.getItem(rememberKey) === "1") {
@@ -494,6 +592,26 @@ document.getElementById("btnVolverDesdeCambio").addEventListener("click", functi
       persistRememberedUsuario((emailInput.value || "").trim());
     }
   });
+
+  var syncEmpresaFromInput = function () {
+    var raw = String(empresaInput.value || "").trim();
+    if (!raw) {
+      return;
+    }
+    var parsed = parsePositiveInt(raw);
+    if (parsed <= 0) {
+      setMessage("msg", "Empresa ID invalido.", true);
+      return;
+    }
+    setEmpresaID(parsed);
+    setMessage("msg", "", false);
+    if (rememberCheckbox.checked) {
+      persistRememberedUsuario((emailInput.value || "").trim());
+    }
+  };
+
+  empresaInput.addEventListener("change", syncEmpresaFromInput);
+  empresaInput.addEventListener("blur", syncEmpresaFromInput);
 })();
 
 if (tokenRecuperacionPrefill) {

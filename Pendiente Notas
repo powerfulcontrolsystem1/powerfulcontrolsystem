@@ -47,6 +47,8 @@ añadir la herramienta de  word a pdf la pagina para la ayuda de la DIAN
 IP VPS : ssh root@2.24.197.58
 usuario
 
+vnc clave: G1H9dv45QyP3
+
 
 limpia el proyecto con los archivos que no se uses,  actualiza la documentacion y eliminas planes de tareas antiguos que ya se hicieron. solo deja la documentacion necesario,  elimina archivos que ya no se usasn, que alfuna vez se usaron  en pruebas automaticas
 
@@ -58,3 +60,77 @@ la base de datos dede ser una base de datos relacional. empresas
 ver si facturar por un proveedor tecnologico es una opcion.
 
 migrar a PostgreSQL
+
+Crea un plan de trabajo para migrar las dos base de datos: superadministrador y empresas de mysqlite a PostgreSQL,  se hara paso a paso probando cada base de datos.  y de ahora en adelante la base de datos no etara en local sino en el servidor virtual o vps. agrega esa regla al agente_go.   por medio de ssh instala PostgreSQL en el vps .  
+
+
+PLAN DE TRABAJO - MIGRACION SQLITE A POSTGRESQL EN VPS (INICIO 2026-04-13)
+
+Regla operativa acordada:
+- La base de datos productiva deja de operar en local.
+- La base de datos productiva opera en VPS con PostgreSQL.
+- SQLite local queda solo para respaldo/migracion controlada.
+
+Fase 0 - Preparacion de infraestructura (COMPLETADA)
+1. Validar acceso SSH al VPS.
+2. Instalar PostgreSQL en VPS.
+3. Instalar herramientas de migracion en VPS (`sqlite3` y `pgloader`).
+4. Crear bases destino en PostgreSQL:
+	- `pcs_superadministrador`
+	- `pcs_empresas`
+
+Fase 1 - Migracion de superadministrador (COMPLETADA)
+1. Copiar `superadministrador.db` al VPS.
+2. Ejecutar migracion SQLite -> PostgreSQL.
+3. Probar consistencia por tabla (conteo SQLite vs PostgreSQL).
+4. Resultado: `VALIDACION_SUPER_OK`.
+
+Fase 2 - Migracion de empresas (COMPLETADA)
+1. Copiar `empresas.db` al VPS.
+2. Ejecutar migracion SQLite -> PostgreSQL.
+3. Probar consistencia por tabla (conteo SQLite vs PostgreSQL).
+4. Resultado: `VALIDACION_EMPRESAS_OK`.
+
+Fase 3 - Conmutacion del backend a PostgreSQL (COMPLETADA)
+1. Inventariar sentencias SQL no compatibles con PostgreSQL (funciones/DDL SQLite especifico).
+2. Ajustar capa de conexion y consultas por modulo critico:
+	- autenticacion/sesiones
+	- configuraciones globales
+	- usuarios de empresa
+	- carritos/ventas
+3. Ejecutar pruebas por modulo despues de cada ajuste.
+4. Definir bandera de activacion por entorno para salida controlada a produccion.
+
+Evidencia tecnica Fase 3:
+- Compatibilidad SQL ampliada para runtime SQLite/PostgreSQL en `backend/db`.
+- Conmutacion por entorno en `backend/main.go` con `DB_DIALECT=postgres`, `DB_EMPRESAS_DSN` y `DB_SUPERADMIN_DSN`.
+- Validacion automatizada en verde: `go test ./ ./auth ./db ./handlers ./metrics ./utils`.
+
+Fase 4 - Salida controlada y rollback (EN ESTABILIZACION 2026-04-14)
+1. Congelar escrituras en SQLite local.
+2. Ejecutar delta final y validacion de conteos.
+3. Activar backend contra PostgreSQL VPS.
+4. Monitorear y dejar plan de rollback documentado.
+
+Avance tecnico 2026-04-14:
+- Backend operativo en VPS con `DB_DIALECT=postgres` y healthcheck `HTTP 200`.
+- Corregido error del worker contable en PostgreSQL (`syntax error at or near "ORDER"`) mediante ajuste de compatibilidad SQL en `backend/db/eventos_contables.go`.
+- Restablecidos DSN de runtime en `backend/.env.local` del VPS y validado reinicio del servicio.
+
+Siguiente paso inmediato:
+- Completar validacion final de conteos/delta en ventana controlada y documentar procedimiento de rollback operacional posterior al corte definitivo.
+
+
+
+
+hacer  un sistema que detecto o que evites demasiadas consultas de una empresa a la base de datoas , para evitar que la base de datos colapse, o para evitar ataques como de hacker.
+
+el vnc quedo en puerto 5901
+
+
+crear un agente que se encargue de la documentacion y que ademas pregunte, para tener un plan de trabao siempre
+
+la firma electronica  o certificado esta en la raiz del proyecto: certificado.crt
+
+
+despues de  migrar a postgre, hacer la limpieza de archivos y documentacion.

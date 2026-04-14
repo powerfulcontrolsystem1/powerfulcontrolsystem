@@ -273,7 +273,7 @@ func EnsureEmpresaEventosContablesSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_asientos_contables_empresa_periodo ON empresa_asientos_contables(empresa_id, periodo_contable, estado);`,
 	}
 	for _, stmt := range stmts {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}
@@ -335,10 +335,10 @@ func EnsureEmpresaEventosContablesSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_eventos_contables", "observaciones", "TEXT"); err != nil {
 		return err
 	}
-	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_empresa_eventos_contables_empresa_periodo ON empresa_eventos_contables(empresa_id, periodo_contable, estado);`); err != nil {
+	if _, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS ix_empresa_eventos_contables_empresa_periodo ON empresa_eventos_contables(empresa_id, periodo_contable, estado);`); err != nil {
 		return err
 	}
-	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_empresa_eventos_contables_reintentos ON empresa_eventos_contables(empresa_id, procesado, intentos_procesamiento, fecha_evento);`); err != nil {
+	if _, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS ix_empresa_eventos_contables_reintentos ON empresa_eventos_contables(empresa_id, procesado, intentos_procesamiento, fecha_evento);`); err != nil {
 		return err
 	}
 
@@ -454,7 +454,7 @@ func CreateEmpresaEventoContable(dbConn *sql.DB, e EmpresaEventoContable) (int64
 		entidadID = e.EntidadID
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_eventos_contables (
+	query := `INSERT INTO empresa_eventos_contables (
 		empresa_id,
 		modulo,
 		evento,
@@ -475,7 +475,9 @@ func CreateEmpresaEventoContable(dbConn *sql.DB, e EmpresaEventoContable) (int64
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NULL, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NULL, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)`
+
+	id, err := insertSQLCompat(dbConn, query,
 		e.EmpresaID,
 		e.Modulo,
 		e.Evento,
@@ -496,7 +498,7 @@ func CreateEmpresaEventoContable(dbConn *sql.DB, e EmpresaEventoContable) (int64
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
 // ListEmpresaEventosContables lista eventos contables por empresa y filtros opcionales.
@@ -560,7 +562,7 @@ func ListEmpresaEventosContables(dbConn *sql.DB, empresaID int64, f EmpresaEvent
 	query += ` ORDER BY COALESCE(fecha_evento, '') DESC, id DESC LIMIT ?`
 	args = append(args, limit)
 
-	rows, err := dbConn.Query(query, args...)
+	rows, err := querySQLCompat(dbConn, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -673,7 +675,7 @@ func ListEmpresaAsientosContables(dbConn *sql.DB, empresaID int64, f EmpresaAsie
 	query += ` ORDER BY COALESCE(fecha_asiento, '') DESC, id DESC LIMIT ?`
 	args = append(args, limit)
 
-	rows, err := dbConn.Query(query, args...)
+	rows, err := querySQLCompat(dbConn, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -758,7 +760,7 @@ func GetEmpresaConciliacionContablePorPeriodo(dbConn *sql.DB, empresaID int64, f
 	}
 	queryEventos += ` GROUP BY ` + periodoEventoExpr
 
-	rowsEventos, err := dbConn.Query(queryEventos, argsEventos...)
+	rowsEventos, err := querySQLCompat(dbConn, queryEventos, argsEventos...)
 	if err != nil {
 		return resumen, err
 	}
@@ -817,7 +819,7 @@ func GetEmpresaConciliacionContablePorPeriodo(dbConn *sql.DB, empresaID int64, f
 	}
 	queryAsientos += ` GROUP BY ` + periodoAsientoExpr
 
-	rowsAsientos, err := dbConn.Query(queryAsientos, argsAsientos...)
+	rowsAsientos, err := querySQLCompat(dbConn, queryAsientos, argsAsientos...)
 	if err != nil {
 		return resumen, err
 	}
@@ -1076,7 +1078,7 @@ func listEmpresaEventosContablesPendientes(dbConn *sql.DB, empresaID int64, limi
 	query += ` ORDER BY COALESCE(fecha_evento, '') ASC, id ASC LIMIT ?`
 	args = append(args, limit)
 
-	rows, err := dbConn.Query(query, args...)
+	rows, err := querySQLCompat(dbConn, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -1138,7 +1140,7 @@ func listEmpresaIDsConEventosPendientes(dbConn *sql.DB, maxRetries int, limitEmp
 	query += ` ORDER BY empresa_id ASC LIMIT ?`
 	args = append(args, limitEmpresas)
 
-	rows, err := dbConn.Query(query, args...)
+	rows, err := querySQLCompat(dbConn, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -1291,7 +1293,8 @@ func ensureEmpresaAsientoContableFromEvento(dbConn *sql.DB, evento EmpresaEvento
 	}
 
 	hash := buildAsientoIdempotenciaHash(evento)
-	res, err := dbConn.Exec(`INSERT INTO empresa_asientos_contables (
+	nowExpr := sqlNowExpr()
+	query := `INSERT INTO empresa_asientos_contables (
 		empresa_id,
 		evento_contable_id,
 		modulo,
@@ -1315,8 +1318,9 @@ func ensureEmpresaAsientoContableFromEvento(dbConn *sql.DB, evento EmpresaEvento
 		estado,
 		observaciones
 	) VALUES (
-		?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), ?, datetime('now','localtime'), datetime('now','localtime'), ?, 'activo', ?
-	)`,
+		?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ` + nowExpr + `, ?, ` + nowExpr + `, ` + nowExpr + `, ?, 'activo', ?
+	)`
+	id, err := insertSQLCompat(dbConn, query,
 		evento.EmpresaID,
 		evento.ID,
 		evento.Modulo,
@@ -1337,7 +1341,7 @@ func ensureEmpresaAsientoContableFromEvento(dbConn *sql.DB, evento EmpresaEvento
 		strings.TrimSpace(evento.Observaciones),
 	)
 	if err != nil {
-		if isSQLiteUniqueConstraint(err) {
+		if isUniqueConstraintError(err) {
 			existingID, findErr := findEmpresaAsientoByEventoOrHash(dbConn, evento.EmpresaID, evento.ID, hash)
 			if findErr != nil {
 				return 0, false, findErr
@@ -1348,10 +1352,6 @@ func ensureEmpresaAsientoContableFromEvento(dbConn *sql.DB, evento EmpresaEvento
 		}
 		return 0, false, err
 	}
-	id, err := res.LastInsertId()
-	if err != nil {
-		return 0, false, err
-	}
 	return id, true, nil
 }
 
@@ -1359,14 +1359,15 @@ func markEmpresaEventoContableProcessed(dbConn *sql.DB, eventoID, asientoID int6
 	if eventoID <= 0 {
 		return fmt.Errorf("evento_id invalido")
 	}
-	_, err := dbConn.Exec(`UPDATE empresa_eventos_contables
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, `UPDATE empresa_eventos_contables
 	SET procesado = 1,
-		fecha_procesado = datetime('now','localtime'),
-		fecha_ultimo_intento = datetime('now','localtime'),
+		fecha_procesado = `+nowExpr+`,
+		fecha_ultimo_intento = `+nowExpr+`,
 		intentos_procesamiento = COALESCE(intentos_procesamiento, 0) + 1,
 		error_procesamiento = '',
 		asiento_contable_id = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = `+nowExpr+`
 	WHERE id = ?`, asientoID, eventoID)
 	return err
 }
@@ -1375,12 +1376,13 @@ func markEmpresaEventoContableFailed(dbConn *sql.DB, eventoID int64, processErr 
 	if eventoID <= 0 {
 		return fmt.Errorf("evento_id invalido")
 	}
-	_, err := dbConn.Exec(`UPDATE empresa_eventos_contables
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, `UPDATE empresa_eventos_contables
 	SET procesado = 0,
-		fecha_ultimo_intento = datetime('now','localtime'),
+		fecha_ultimo_intento = `+nowExpr+`,
 		intentos_procesamiento = COALESCE(intentos_procesamiento, 0) + 1,
 		error_procesamiento = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = `+nowExpr+`
 	WHERE id = ?`, trimProcessingError(processErr), eventoID)
 	return err
 }
@@ -1391,7 +1393,7 @@ func findEmpresaAsientoByEventoOrHash(dbConn *sql.DB, empresaID, eventoID int64,
 	}
 	if eventoID > 0 {
 		var id int64
-		err := dbConn.QueryRow(`SELECT id FROM empresa_asientos_contables WHERE empresa_id = ? AND evento_contable_id = ? LIMIT 1`, empresaID, eventoID).Scan(&id)
+		err := queryRowSQLCompat(dbConn, `SELECT id FROM empresa_asientos_contables WHERE empresa_id = ? AND evento_contable_id = ? LIMIT 1`, empresaID, eventoID).Scan(&id)
 		if err == nil {
 			return id, nil
 		}
@@ -1402,7 +1404,7 @@ func findEmpresaAsientoByEventoOrHash(dbConn *sql.DB, empresaID, eventoID int64,
 	hash = strings.TrimSpace(hash)
 	if hash != "" {
 		var id int64
-		err := dbConn.QueryRow(`SELECT id FROM empresa_asientos_contables WHERE empresa_id = ? AND hash_idempotencia = ? LIMIT 1`, empresaID, hash).Scan(&id)
+		err := queryRowSQLCompat(dbConn, `SELECT id FROM empresa_asientos_contables WHERE empresa_id = ? AND hash_idempotencia = ? LIMIT 1`, empresaID, hash).Scan(&id)
 		if err == nil {
 			return id, nil
 		}
@@ -1683,6 +1685,17 @@ func isSQLiteUniqueConstraint(err error) bool {
 	}
 	msg := strings.ToLower(err.Error())
 	return strings.Contains(msg, "unique constraint failed")
+}
+
+func isUniqueConstraintError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(strings.TrimSpace(err.Error()))
+	if strings.Contains(msg, "unique constraint failed") {
+		return true
+	}
+	return strings.Contains(msg, "duplicate key value violates unique constraint")
 }
 
 func trimProcessingError(err error) string {

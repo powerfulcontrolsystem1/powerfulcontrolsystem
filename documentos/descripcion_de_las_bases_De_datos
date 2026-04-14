@@ -1,7 +1,7 @@
 Descripcion de las Bases de Datos (documento complementario)
 
 Estado: vigente
-Fecha de normalizacion: 2026-04-05
+Fecha de normalizacion: 2026-04-13
 
 ## Objetivo
 
@@ -17,7 +17,18 @@ Regla practica:
 - Si se agrega/modifica/elimina una tabla, columna, indice o restriccion, se actualiza primero `estructura_bd.md`.
 - Este archivo solo se actualiza cuando cambia la estrategia de datos, el alcance funcional o las reglas de operacion.
 
-## Mapa de bases SQLite
+## Mapa de bases operativas PostgreSQL (VPS)
+
+1) `pcs_empresas` (PostgreSQL en VPS)
+- Datos operativos por empresa.
+- Abarca usuarios de empresa, clientes, inventario, carritos, ventas, compras, finanzas, facturacion, auditoria y modulos operativos.
+- Debe mantener aislamiento por `empresa_id` en entidades y consultas de negocio.
+
+2) `pcs_superadministrador` (PostgreSQL en VPS)
+- Datos globales y de plataforma.
+- Abarca administradores globales, sesiones globales, configuraciones transversales y catalogos de control central.
+
+## Mapa legado SQLite (solo migracion/contingencia)
 
 1) `backend/db/empresas.db`
 - Datos operativos por empresa.
@@ -37,7 +48,8 @@ Regla practica:
   - `usuario_creador`
   - `estado`
   - `observaciones`
-- Timestamps en SQLite con `datetime('now','localtime')`.
+- Timestamps de referencia heredados en SQLite con `datetime('now','localtime')`.
+- En PostgreSQL, el estandar operativo usa `timestamp` con zona horaria y funciones nativas (`CURRENT_TIMESTAMP` o equivalente segun politica del modulo).
 - Estados normalizados por dominio (`activo/inactivo` y estados de flujo especificos por modulo).
 - Restricciones unicas y indices segun criticidad funcional y busquedas frecuentes.
 
@@ -49,8 +61,8 @@ Regla practica:
 
 ## Relaciones logicas entre bases
 
-- `superadministrador.db` centraliza control global.
-- `empresas.db` concentra la operacion transaccional diaria.
+- `pcs_superadministrador` centraliza control global.
+- `pcs_empresas` concentra la operacion transaccional diaria.
 - Los enlaces entre catalogos globales y operacion empresa se resuelven por referencias logicas (por ejemplo IDs de catalogo) sin romper aislamiento de datos operativos.
 
 ## Flujo de mantenimiento documental

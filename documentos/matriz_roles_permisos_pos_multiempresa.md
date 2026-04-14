@@ -1,6 +1,6 @@
 # Matriz base de roles y permisos POS multiempresa
 
-Fecha de actualizacion: 2026-04-13
+Fecha de actualizacion: 2026-04-14
 Alcance: punto 3 del plan maestro (permisos y seguridad)
 
 ## Regla de mantenimiento por modulo
@@ -44,6 +44,16 @@ Leyenda:
 | Seguridad y permisos | CRUDA | CRUA | R | R | R | R | R | R |
 
 ## Estado de implementacion tecnica inicial (2026-04-04)
+
+- Actualizacion 2026-04-14 (fase 4 PostgreSQL - estabilizacion worker contable):
+	- Se ajusta tecnicamente el procesamiento de eventos/asientos en backend (`backend/db/eventos_contables.go`) para compatibilidad SQL portable en PostgreSQL durante salida controlada.
+	- Se restablece runtime VPS con DSN PostgreSQL activos y validacion de salud operativa.
+	- No hay cambios en permisos por rol, matrices CRUD/A ni wrappers de autorizacion por modulo.
+
+- Actualizacion 2026-04-14 (migracion PostgreSQL runtime en VPS):
+	- Se completa la conmutacion de runtime backend para operar con `DB_DIALECT=postgres` y DSN por base (`DB_SUPERADMIN_DSN`, `DB_EMPRESAS_DSN`).
+	- Se agregan capas de compatibilidad SQL para transicion SQLite/PostgreSQL en modulos core sin ampliar privilegios por rol.
+	- No hay cambios en la matriz CRUD/A ni en wrappers de autorizacion: se preserva el mismo control por modulo y aislamiento por `empresa_id`.
 
 - Actualizacion 2026-04-13 (estaciones, sensores y facturacion visual por estacion):
 	- No hay ampliacion de privilegios ni cambios en matriz CRUD/A; se mantiene el mismo control para `/api/empresa/estacion_prefs`, `/api/empresa/configuracion_avanzada`, `/api/empresa/carritos_compra` y endpoints de sensores empresariales.

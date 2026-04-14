@@ -394,8 +394,10 @@ func EnsureEmpresaCarritosSchema(dbConn *sql.DB) error {
 		return err
 	}
 
-	if _, err := dbConn.Exec(`PRAGMA busy_timeout = 5000`); err != nil {
-		return err
+	if !isPostgresDialect() {
+		if _, err := dbConn.Exec(`PRAGMA busy_timeout = 5000`); err != nil {
+			return err
+		}
 	}
 
 	return nil

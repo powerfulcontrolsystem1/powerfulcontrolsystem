@@ -42,17 +42,28 @@ type carritoTarifaPorDiaSnapshot struct {
 }
 
 func empresaTarifaPorDiaTableExists(dbConn *sql.DB) (bool, error) {
-	var count int64
-	err := dbConn.QueryRow(`SELECT COUNT(1) FROM sqlite_master WHERE type = 'table' AND name = 'empresa_tarifas_por_dia'`).Scan(&count)
-	if err != nil {
-		return false, err
-	}
-	return count > 0, nil
+	return tableExists(dbConn, "empresa_tarifas_por_dia")
 }
 
 func empresaTarifaPorDiaTableExistsTx(tx *sql.Tx) (bool, error) {
+	if isPostgresDialect() {
+		var exists bool
+		err := queryRowTxSQLCompat(tx, `
+			SELECT EXISTS (
+				SELECT 1
+				FROM information_schema.tables
+				WHERE table_schema = ANY (current_schemas(false))
+				  AND table_name = ?
+			)
+		`, "empresa_tarifas_por_dia").Scan(&exists)
+		if err != nil {
+			return false, err
+		}
+		return exists, nil
+	}
+
 	var count int64
-	err := tx.QueryRow(`SELECT COUNT(1) FROM sqlite_master WHERE type = 'table' AND name = 'empresa_tarifas_por_dia'`).Scan(&count)
+	err := queryRowTxSQLCompat(tx, `SELECT COUNT(1) FROM sqlite_master WHERE type = 'table' AND name = ?`, "empresa_tarifas_por_dia").Scan(&count)
 	if err != nil {
 		return false, err
 	}

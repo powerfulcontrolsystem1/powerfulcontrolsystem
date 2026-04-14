@@ -523,6 +523,9 @@ func auditoriaFTSEnabled(dbConn *sql.DB) bool {
 	if dbConn == nil {
 		return false
 	}
+	if isPostgresDialect() {
+		return false
+	}
 	var count int
 	if err := dbConn.QueryRow(`SELECT COUNT(1) FROM sqlite_master WHERE type = 'table' AND name = 'empresa_auditoria_eventos_fts'`).Scan(&count); err != nil {
 		return false
@@ -532,6 +535,9 @@ func auditoriaFTSEnabled(dbConn *sql.DB) bool {
 
 func ensureEmpresaAuditoriaFTSSchema(dbConn *sql.DB) error {
 	if dbConn == nil {
+		return nil
+	}
+	if isPostgresDialect() {
 		return nil
 	}
 	if _, err := dbConn.Exec(`CREATE VIRTUAL TABLE IF NOT EXISTS empresa_auditoria_eventos_fts USING fts5(

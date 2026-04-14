@@ -291,90 +291,61 @@ func EnsureEmpresaClientesSchema(dbConn *sql.DB) error {
 }
 
 func ensureClientesColumns(dbConn *sql.DB) error {
-	rows, err := dbConn.Query(`PRAGMA table_info(clientes);`)
-	if err != nil {
+	if err := ensureColumnIfMissing(dbConn, "clientes", "tipo_documento", "TEXT DEFAULT 'NIT'"); err != nil {
 		return err
 	}
-	defer rows.Close()
-
-	existing := map[string]bool{}
-	for rows.Next() {
-		var cid int
-		var name string
-		var ctype string
-		var notnull int
-		var dflt sql.NullString
-		var pk int
-		if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
-			return err
-		}
-		existing[name] = true
-	}
-
-	addIfMissing := func(colDef, name string) error {
-		if existing[name] {
-			return nil
-		}
-		q := fmt.Sprintf("ALTER TABLE clientes ADD COLUMN %s;", colDef)
-		_, err := dbConn.Exec(q)
+	if err := ensureColumnIfMissing(dbConn, "clientes", "numero_documento", "TEXT"); err != nil {
 		return err
 	}
-
-	if err := addIfMissing("tipo_documento TEXT DEFAULT 'NIT'", "tipo_documento"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "clientes", "digito_verificacion", "TEXT"); err != nil {
 		return err
 	}
-	if err := addIfMissing("numero_documento TEXT", "numero_documento"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "clientes", "tipo_persona", "TEXT DEFAULT 'juridica'"); err != nil {
 		return err
 	}
-	if err := addIfMissing("digito_verificacion TEXT", "digito_verificacion"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "clientes", "nombre_razon_social", "TEXT"); err != nil {
 		return err
 	}
-	if err := addIfMissing("tipo_persona TEXT DEFAULT 'juridica'", "tipo_persona"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "clientes", "nombre_comercial", "TEXT"); err != nil {
 		return err
 	}
-	if err := addIfMissing("nombre_razon_social TEXT", "nombre_razon_social"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "clientes", "regimen_fiscal", "TEXT"); err != nil {
 		return err
 	}
-	if err := addIfMissing("nombre_comercial TEXT", "nombre_comercial"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "clientes", "responsabilidad_tributaria", "TEXT"); err != nil {
 		return err
 	}
-	if err := addIfMissing("regimen_fiscal TEXT", "regimen_fiscal"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "clientes", "email", "TEXT"); err != nil {
 		return err
 	}
-	if err := addIfMissing("responsabilidad_tributaria TEXT", "responsabilidad_tributaria"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "clientes", "telefono", "TEXT"); err != nil {
 		return err
 	}
-	if err := addIfMissing("email TEXT", "email"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "clientes", "direccion", "TEXT"); err != nil {
 		return err
 	}
-	if err := addIfMissing("telefono TEXT", "telefono"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "clientes", "pais", "TEXT DEFAULT 'CO'"); err != nil {
 		return err
 	}
-	if err := addIfMissing("direccion TEXT", "direccion"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "clientes", "departamento", "TEXT"); err != nil {
 		return err
 	}
-	if err := addIfMissing("pais TEXT DEFAULT 'CO'", "pais"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "clientes", "municipio", "TEXT"); err != nil {
 		return err
 	}
-	if err := addIfMissing("departamento TEXT", "departamento"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "clientes", "codigo_postal", "TEXT"); err != nil {
 		return err
 	}
-	if err := addIfMissing("municipio TEXT", "municipio"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "clientes", "fecha_actualizacion", "TEXT"); err != nil {
 		return err
 	}
-	if err := addIfMissing("codigo_postal TEXT", "codigo_postal"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "clientes", "usuario_creador", "TEXT"); err != nil {
 		return err
 	}
-	if err := addIfMissing("fecha_actualizacion TEXT", "fecha_actualizacion"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "clientes", "estado", "TEXT DEFAULT 'activo'"); err != nil {
 		return err
 	}
-	if err := addIfMissing("usuario_creador TEXT", "usuario_creador"); err != nil {
-		return err
-	}
-	if err := addIfMissing("estado TEXT DEFAULT 'activo'", "estado"); err != nil {
-		return err
-	}
-	if err := addIfMissing("observaciones TEXT", "observaciones"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "clientes", "observaciones", "TEXT"); err != nil {
 		return err
 	}
 	return nil

@@ -17,6 +17,7 @@ import (
 	"syscall"
 	"time"
 
+	_ "github.com/jackc/pgx/v5/stdlib"
 	_ "modernc.org/sqlite"
 
 	dbpkg "github.com/you/pos-backend/db"
@@ -31,6 +32,8 @@ var (
 	redirectURL    = os.Getenv("GOOGLE_REDIRECT_URL") // e.g. http://localhost:8080/auth/google/callback
 	dbEmpresasPath = os.Getenv("DB_EMPRESAS_PATH")
 	dbSuperPath    = os.Getenv("DB_SUPERADMIN_PATH")
+	dbEmpresasDSN  = os.Getenv("DB_EMPRESAS_DSN")
+	dbSuperDSN     = os.Getenv("DB_SUPERADMIN_DSN")
 	dbEmpresas     *sql.DB
 	dbSuper        *sql.DB
 )
@@ -158,6 +161,12 @@ func refreshRuntimeGlobalsFromEnv() {
 	if v := strings.TrimSpace(os.Getenv("DB_SUPERADMIN_PATH")); v != "" {
 		dbSuperPath = v
 	}
+	if v := strings.TrimSpace(os.Getenv("DB_EMPRESAS_DSN")); v != "" {
+		dbEmpresasDSN = v
+	}
+	if v := strings.TrimSpace(os.Getenv("DB_SUPERADMIN_DSN")); v != "" {
+		dbSuperDSN = v
+	}
 }
 
 func resolveRuntimeDBPath(rawPath, defaultFileName, backendDir string) string {
@@ -171,6 +180,58 @@ func resolveRuntimeDBPath(rawPath, defaultFileName, backendDir string) string {
 	}
 
 	return filepath.Join(backendDir, trimmed)
+}
+
+func normalizeRuntimeDBDialect(raw string) string {
+	v := strings.ToLower(strings.TrimSpace(raw))
+	if v == "" {
+		return ""
+	}
+	if strings.Contains(v, "postgres") {
+		return "postgres"
+	}
+	if strings.Contains(v, "sqlite") {
+		return "sqlite"
+	}
+	return ""
+}
+
+func resolveRuntimeDBDialect() string {
+	candidates := []string{
+		strings.TrimSpace(os.Getenv("DB_DIALECT")),
+		strings.TrimSpace(os.Getenv("DB_ENGINE")),
+		strings.TrimSpace(os.Getenv("PCS_DB_DIALECT")),
+	}
+	for _, candidate := range candidates {
+		if dialect := normalizeRuntimeDBDialect(candidate); dialect != "" {
+			return dialect
+		}
+	}
+	return "sqlite"
+}
+
+func resolveRuntimePostgresDSN(primary string, fallbackKeys ...string) string {
+	if v := strings.TrimSpace(primary); v != "" {
+		return v
+	}
+	for _, key := range fallbackKeys {
+		if v := strings.TrimSpace(os.Getenv(key)); v != "" {
+			return v
+		}
+	}
+	return ""
+}
+
+func openAndPingRuntimeDB(driverName, dsn, label string) (*sql.DB, error) {
+	dbConn, err := sql.Open(driverName, dsn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open %s db with driver %s: %w", label, driverName, err)
+	}
+	if err := dbConn.Ping(); err != nil {
+		_ = dbConn.Close()
+		return nil, fmt.Errorf("failed to ping %s db with driver %s: %w", label, driverName, err)
+	}
+	return dbConn, nil
 }
 
 func ensureRuntimeDBDir(dbPath string) error {
@@ -352,20 +413,8 @@ func loadGoogleOAuthFromDB(dbConn *sql.DB) {
 		log.Printf("warning: no se pudo leer GOOGLE_REDIRECT_URL desde DB: %v", err)
 	}
 
-	// Si la DB tiene client_id + client_secret, tomarlos como fuente de verdad.
-	if dbClientID != "" && dbClientSecret != "" {
-		clientID = dbClientID
-		clientSecret = dbClientSecret
-		if dbRedirectURL != "" {
-			redirectURL = dbRedirectURL
-		}
-		log.Printf("INFO: OAuth Google cargado desde DB (%s, %s)", clientIDKey, clientSecretKey)
-		if dbRedirectURL != "" {
-			log.Printf("INFO: redirect OAuth cargado desde DB (%s)", redirectURLKey)
-		}
-		return
-	}
-
+	// Prioridad: variables de entorno > configuración en DB.
+	// La DB solo completa faltantes para evitar sobreescrituras inesperadas en VPS.
 	if clientID == "" && dbClientID != "" {
 		clientID = dbClientID
 		log.Printf("INFO: GOOGLE_CLIENT_ID completado desde DB (%s)", clientIDKey)
@@ -377,6 +426,10 @@ func loadGoogleOAuthFromDB(dbConn *sql.DB) {
 	if redirectURL == "" && dbRedirectURL != "" {
 		redirectURL = dbRedirectURL
 		log.Printf("INFO: GOOGLE_REDIRECT_URL completado desde DB (%s)", redirectURLKey)
+	}
+
+	if clientID != "" && clientSecret != "" {
+		log.Printf("INFO: OAuth Google listo (client_id/config secret activos)")
 	}
 }
 
@@ -391,6 +444,8 @@ func resolveWebDir() string {
 		candidates = append(candidates,
 			filepath.Join(exeDir, "web"),
 			filepath.Join(exeDir, "..", "web"),
+			filepath.Join(exeDir, "..", "..", "web"),
+			filepath.Join(exeDir, "..", "..", "..", "web"),
 		)
 	}
 
@@ -440,43 +495,86 @@ func main() {
 	if err := ensureRuntimeConfigEncKey(backendDir); err != nil {
 		log.Fatalf("failed to ensure CONFIG_ENC_KEY: %v", err)
 	}
+	runtimeDBDialect := resolveRuntimeDBDialect()
+	runtimePostgres := runtimeDBDialect == "postgres"
 
-	dbEmpresasPath = resolveRuntimeDBPath(dbEmpresasPath, "empresas.db", backendDir)
-	dbSuperPath = resolveRuntimeDBPath(dbSuperPath, "superadministrador.db", backendDir)
-	if err := ensureRuntimeDBDir(dbEmpresasPath); err != nil {
-		log.Fatalf("failed to ensure empresas db directory: %v", err)
-	}
-	if err := ensureRuntimeDBDir(dbSuperPath); err != nil {
-		log.Fatalf("failed to ensure superadministrador db directory: %v", err)
-	}
-	log.Printf("INFO: usando DB empresas en %s", dbEmpresasPath)
-	log.Printf("INFO: usando DB superadministrador en %s", dbSuperPath)
 	if redirectURL == "" {
-		redirectURL = "http://localhost:8080/auth/google/callback"
-		log.Println("INFO: usando redirectURL por defecto:", redirectURL)
+		log.Println("INFO: GOOGLE_REDIRECT_URL no configurado; se resolvera dinamicamente segun host de la solicitud")
 	}
 
 	var err error
-	// Abrir base de datos para empresas
-	dbEmpresas, err = sql.Open("sqlite", dbEmpresasPath)
-	if err != nil {
-		log.Fatalf("failed to open empresas sqlite db: %v", err)
-	}
-	// Abrir base de datos para superadministrador
-	dbSuper, err = sql.Open("sqlite", dbSuperPath)
-	if err != nil {
-		log.Fatalf("failed to open superadministrador sqlite db: %v", err)
+	if runtimePostgres {
+		if strings.TrimSpace(os.Getenv("DB_DIALECT")) == "" {
+			_ = os.Setenv("DB_DIALECT", "postgres")
+		}
+
+		dbEmpresasDSN = resolveRuntimePostgresDSN(
+			dbEmpresasDSN,
+			"DATABASE_EMPRESAS_URL",
+			"DB_EMPRESAS_URL",
+			"PCS_DB_EMPRESAS_DSN",
+			"DB_EMPRESAS_PATH",
+		)
+		dbSuperDSN = resolveRuntimePostgresDSN(
+			dbSuperDSN,
+			"DATABASE_SUPERADMIN_URL",
+			"DB_SUPERADMIN_URL",
+			"PCS_DB_SUPERADMIN_DSN",
+			"DB_SUPERADMIN_PATH",
+		)
+
+		if strings.TrimSpace(dbEmpresasDSN) == "" || strings.TrimSpace(dbSuperDSN) == "" {
+			log.Fatalf("modo postgres activo pero faltan DSN: define DB_EMPRESAS_DSN y DB_SUPERADMIN_DSN en backend/.env.local del VPS")
+		}
+
+		postgresDriverName := dbpkg.PostgresCompatDriverName()
+		dbEmpresas, err = openAndPingRuntimeDB(postgresDriverName, dbEmpresasDSN, "empresas")
+		if err != nil {
+			log.Fatal(err)
+		}
+		dbSuper, err = openAndPingRuntimeDB(postgresDriverName, dbSuperDSN, "superadministrador")
+		if err != nil {
+			log.Fatal(err)
+		}
+		if err := dbpkg.EnsurePostgresRuntimeCompat(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure postgres compat functions in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsurePostgresRuntimeCompat(dbSuper); err != nil {
+			log.Fatalf("failed to ensure postgres compat functions in superadministrador db: %v", err)
+		}
+		log.Println("INFO: runtime DB dialect=postgres (VPS)")
+	} else {
+		dbEmpresasPath = resolveRuntimeDBPath(dbEmpresasPath, "empresas.db", backendDir)
+		dbSuperPath = resolveRuntimeDBPath(dbSuperPath, "superadministrador.db", backendDir)
+		if err := ensureRuntimeDBDir(dbEmpresasPath); err != nil {
+			log.Fatalf("failed to ensure empresas db directory: %v", err)
+		}
+		if err := ensureRuntimeDBDir(dbSuperPath); err != nil {
+			log.Fatalf("failed to ensure superadministrador db directory: %v", err)
+		}
+		log.Printf("INFO: usando DB empresas en %s", dbEmpresasPath)
+		log.Printf("INFO: usando DB superadministrador en %s", dbSuperPath)
+
+		dbEmpresas, err = openAndPingRuntimeDB("sqlite", dbEmpresasPath, "empresas")
+		if err != nil {
+			log.Fatal(err)
+		}
+		dbSuper, err = openAndPingRuntimeDB("sqlite", dbSuperPath, "superadministrador")
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
-	if err := dbpkg.EnsureSchemaMigrationsTable(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure schema_migrations in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureSchemaMigrationsTable(dbSuper); err != nil {
-		log.Fatalf("failed to ensure schema_migrations in super db: %v", err)
-	}
+	if !runtimePostgres {
+		if err := dbpkg.EnsureSchemaMigrationsTable(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure schema_migrations in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureSchemaMigrationsTable(dbSuper); err != nil {
+			log.Fatalf("failed to ensure schema_migrations in super db: %v", err)
+		}
 
-	// Crear tablas en dbEmpresas
-	createUsers := `CREATE TABLE IF NOT EXISTS users (
+		// Crear tablas en dbEmpresas
+		createUsers := `CREATE TABLE IF NOT EXISTS users (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		email TEXT UNIQUE,
 		name TEXT,
@@ -488,68 +586,68 @@ func main() {
 		estado TEXT DEFAULT 'activo',
 		observaciones TEXT
 	);`
-	if _, err := dbEmpresas.Exec(createUsers); err != nil {
-		log.Fatalf("failed to create users table in empresas db: %v", err)
-	}
-
-	// Asegurar esquema mínimo de users para gestión de usuarios por empresa y confirmación por correo.
-	ensureUsersSchema := func(db *sql.DB) {
-		rows, err := db.Query("PRAGMA table_info(users);")
-		if err != nil {
-			log.Printf("warning: unable to inspect users schema: %v", err)
-			return
+		if _, err := dbEmpresas.Exec(createUsers); err != nil {
+			log.Fatalf("failed to create users table in empresas db: %v", err)
 		}
-		defer rows.Close()
-		existing := map[string]bool{}
-		for rows.Next() {
-			var cid int
-			var name string
-			var ctype string
-			var notnull int
-			var dflt sql.NullString
-			var pk int
-			if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
-				log.Printf("warning: scan pragma table_info users error: %v", err)
+
+		// Asegurar esquema mínimo de users para gestión de usuarios por empresa y confirmación por correo.
+		ensureUsersSchema := func(db *sql.DB) {
+			rows, err := db.Query("PRAGMA table_info(users);")
+			if err != nil {
+				log.Printf("warning: unable to inspect users schema: %v", err)
 				return
 			}
-			existing[name] = true
-		}
+			defer rows.Close()
+			existing := map[string]bool{}
+			for rows.Next() {
+				var cid int
+				var name string
+				var ctype string
+				var notnull int
+				var dflt sql.NullString
+				var pk int
+				if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
+					log.Printf("warning: scan pragma table_info users error: %v", err)
+					return
+				}
+				existing[name] = true
+			}
 
-		addIfMissing := func(colDef string, name string) {
-			if !existing[name] {
-				q := fmt.Sprintf("ALTER TABLE users ADD COLUMN %s;", colDef)
-				if _, err := db.Exec(q); err != nil {
-					log.Printf("failed to add column %s to users: %v", name, err)
-				} else {
-					log.Printf("added missing column %s to users", name)
+			addIfMissing := func(colDef string, name string) {
+				if !existing[name] {
+					q := fmt.Sprintf("ALTER TABLE users ADD COLUMN %s;", colDef)
+					if _, err := db.Exec(q); err != nil {
+						log.Printf("failed to add column %s to users: %v", name, err)
+					} else {
+						log.Printf("added missing column %s to users", name)
+					}
 				}
 			}
+
+			addIfMissing("documento_identidad TEXT", "documento_identidad")
+			addIfMissing("rol_usuario_id INTEGER", "rol_usuario_id")
+			addIfMissing("email_confirmado INTEGER DEFAULT 0", "email_confirmado")
+			addIfMissing("email_confirm_token TEXT", "email_confirm_token")
+			addIfMissing("email_confirm_expira TEXT", "email_confirm_expira")
+			addIfMissing("email_confirmado_en TEXT", "email_confirmado_en")
+			addIfMissing("password_hash TEXT", "password_hash")
+			addIfMissing("password_salt TEXT", "password_salt")
+			addIfMissing("password_set INTEGER DEFAULT 0", "password_set")
+			addIfMissing("password_actualizada_en TEXT", "password_actualizada_en")
+			addIfMissing("login_failed_attempts INTEGER DEFAULT 0", "login_failed_attempts")
+			addIfMissing("login_failed_last_at TEXT", "login_failed_last_at")
+			addIfMissing("login_locked_until TEXT", "login_locked_until")
+			addIfMissing("password_reset_token TEXT", "password_reset_token")
+			addIfMissing("password_reset_expira TEXT", "password_reset_expira")
+			addIfMissing("password_reset_requested_en TEXT", "password_reset_requested_en")
+			addIfMissing("fecha_actualizacion TEXT", "fecha_actualizacion")
+			addIfMissing("usuario_creador TEXT", "usuario_creador")
+			addIfMissing("estado TEXT DEFAULT 'activo'", "estado")
+			addIfMissing("observaciones TEXT", "observaciones")
 		}
+		ensureUsersSchema(dbEmpresas)
 
-		addIfMissing("documento_identidad TEXT", "documento_identidad")
-		addIfMissing("rol_usuario_id INTEGER", "rol_usuario_id")
-		addIfMissing("email_confirmado INTEGER DEFAULT 0", "email_confirmado")
-		addIfMissing("email_confirm_token TEXT", "email_confirm_token")
-		addIfMissing("email_confirm_expira TEXT", "email_confirm_expira")
-		addIfMissing("email_confirmado_en TEXT", "email_confirmado_en")
-		addIfMissing("password_hash TEXT", "password_hash")
-		addIfMissing("password_salt TEXT", "password_salt")
-		addIfMissing("password_set INTEGER DEFAULT 0", "password_set")
-		addIfMissing("password_actualizada_en TEXT", "password_actualizada_en")
-		addIfMissing("login_failed_attempts INTEGER DEFAULT 0", "login_failed_attempts")
-		addIfMissing("login_failed_last_at TEXT", "login_failed_last_at")
-		addIfMissing("login_locked_until TEXT", "login_locked_until")
-		addIfMissing("password_reset_token TEXT", "password_reset_token")
-		addIfMissing("password_reset_expira TEXT", "password_reset_expira")
-		addIfMissing("password_reset_requested_en TEXT", "password_reset_requested_en")
-		addIfMissing("fecha_actualizacion TEXT", "fecha_actualizacion")
-		addIfMissing("usuario_creador TEXT", "usuario_creador")
-		addIfMissing("estado TEXT DEFAULT 'activo'", "estado")
-		addIfMissing("observaciones TEXT", "observaciones")
-	}
-	ensureUsersSchema(dbEmpresas)
-
-	createEmpresas := `CREATE TABLE IF NOT EXISTS empresas (
+		createEmpresas := `CREATE TABLE IF NOT EXISTS empresas (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		empresa_id INTEGER,
 		nombre TEXT NOT NULL,
@@ -561,258 +659,258 @@ func main() {
 		estado TEXT DEFAULT 'activo',
 		observaciones TEXT
 	);`
-	if _, err := dbEmpresas.Exec(createEmpresas); err != nil {
-		log.Fatalf("failed to create empresas table in empresas db: %v", err)
-	}
-
-	// Asegurar esquema mínimo de la tabla empresas (migraciones simples)
-	ensureEmpresasSchema := func(db *sql.DB) {
-		rows, err := db.Query("PRAGMA table_info(empresas);")
-		if err != nil {
-			log.Printf("warning: unable to inspect empresas schema: %v", err)
-			return
+		if _, err := dbEmpresas.Exec(createEmpresas); err != nil {
+			log.Fatalf("failed to create empresas table in empresas db: %v", err)
 		}
-		defer rows.Close()
-		existing := map[string]bool{}
-		for rows.Next() {
-			var cid int
-			var name string
-			var ctype string
-			var notnull int
-			var dflt sql.NullString
-			var pk int
-			if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
-				log.Printf("warning: scan pragma table_info error: %v", err)
+
+		// Asegurar esquema mínimo de la tabla empresas (migraciones simples)
+		ensureEmpresasSchema := func(db *sql.DB) {
+			rows, err := db.Query("PRAGMA table_info(empresas);")
+			if err != nil {
+				log.Printf("warning: unable to inspect empresas schema: %v", err)
 				return
 			}
-			existing[name] = true
-		}
+			defer rows.Close()
+			existing := map[string]bool{}
+			for rows.Next() {
+				var cid int
+				var name string
+				var ctype string
+				var notnull int
+				var dflt sql.NullString
+				var pk int
+				if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
+					log.Printf("warning: scan pragma table_info error: %v", err)
+					return
+				}
+				existing[name] = true
+			}
 
-		addIfMissing := func(colDef string, name string) {
-			if !existing[name] {
-				q := fmt.Sprintf("ALTER TABLE empresas ADD COLUMN %s;", colDef)
-				if _, err := db.Exec(q); err != nil {
-					log.Printf("failed to add column %s to empresas: %v", name, err)
-				} else {
-					log.Printf("added missing column %s to empresas", name)
+			addIfMissing := func(colDef string, name string) {
+				if !existing[name] {
+					q := fmt.Sprintf("ALTER TABLE empresas ADD COLUMN %s;", colDef)
+					if _, err := db.Exec(q); err != nil {
+						log.Printf("failed to add column %s to empresas: %v", name, err)
+					} else {
+						log.Printf("added missing column %s to empresas", name)
+					}
 				}
 			}
-		}
 
-		addIfMissing("tipo_id INTEGER", "tipo_id")
-		addIfMissing("tipo_nombre TEXT", "tipo_nombre")
-		addIfMissing("empresa_id INTEGER", "empresa_id")
-		addIfMissing("fecha_actualizacion TEXT", "fecha_actualizacion")
-		addIfMissing("usuario_creador TEXT", "usuario_creador")
-		addIfMissing("estado TEXT DEFAULT 'activo'", "estado")
-		addIfMissing("observaciones TEXT", "observaciones")
+			addIfMissing("tipo_id INTEGER", "tipo_id")
+			addIfMissing("tipo_nombre TEXT", "tipo_nombre")
+			addIfMissing("empresa_id INTEGER", "empresa_id")
+			addIfMissing("fecha_actualizacion TEXT", "fecha_actualizacion")
+			addIfMissing("usuario_creador TEXT", "usuario_creador")
+			addIfMissing("estado TEXT DEFAULT 'activo'", "estado")
+			addIfMissing("observaciones TEXT", "observaciones")
 
-		if _, err := db.Exec("UPDATE empresas SET empresa_id = id WHERE empresa_id IS NULL OR empresa_id <= 0"); err != nil {
-			log.Printf("warning: unable to backfill empresa_id in empresas table: %v", err)
+			if _, err := db.Exec("UPDATE empresas SET empresa_id = id WHERE empresa_id IS NULL OR empresa_id <= 0"); err != nil {
+				log.Printf("warning: unable to backfill empresa_id in empresas table: %v", err)
+			}
+			if _, err := db.Exec("CREATE UNIQUE INDEX IF NOT EXISTS ux_empresas_empresa_id ON empresas(empresa_id)"); err != nil {
+				log.Printf("warning: unable to create ux_empresas_empresa_id: %v", err)
+			}
 		}
-		if _, err := db.Exec("CREATE UNIQUE INDEX IF NOT EXISTS ux_empresas_empresa_id ON empresas(empresa_id)"); err != nil {
-			log.Printf("warning: unable to create ux_empresas_empresa_id: %v", err)
+		ensureEmpresasSchema(dbEmpresas)
+		if err := dbpkg.EnsureEmpresasScopeReferences(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure scope references in empresas db: %v", err)
 		}
-	}
-	ensureEmpresasSchema(dbEmpresas)
-	if err := dbpkg.EnsureEmpresasScopeReferences(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure scope references in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaProductosSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure productos schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaClientesSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure clientes schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaCarritosSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure carritos schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaCodigosDescuentoSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure codigos de descuento schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaPropinasSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure propinas schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaComisionesServicioSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure comisiones servicio schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaConfiguracionOperativaSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure configuracion operativa schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaConfiguracionAvanzadaSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure empresa_configuracion_avanzada schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaFacturacionElectronicaSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure facturacion_electronica schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaChatTareasSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure chat_tareas schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaUbicacionGPSSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure ubicacion_gps schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaFinanzasSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure finanzas schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaEventosContablesSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure eventos contables schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaDocumentosTransaccionalesSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure documentos transaccionales schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaAIChatSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure chat IA schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaAuditoriaSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure auditoria schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaAsistenciaSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure asistencia schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaNominaSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure nomina schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaVehiculosRegistroSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure vehiculos registro schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaReservasHotelSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure reservas hotel schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaTarifasPorMinutosSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure tarifas por minutos schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaTarifasPorDiaSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure tarifas por dia schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaModulosFaltantesSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure modulos faltantes schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaReportesProgramacionSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure reportes programacion schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaCalculadoraSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure calculadora schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaCreditosSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure creditos schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaBackupsSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure backups empresariales schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaVentaPublicaSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure venta publica schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaSoporteRemotoSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure soporte remoto schema in empresas db: %v", err)
-	}
-	// Asegurar esquema para módulo de sensores de puertas (Raspberry Pi)
-	if err := dbpkg.EnsureEmpresaSensorPuertasSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure sensor_puertas schema in empresas db: %v", err)
-	}
-	if err := dbpkg.EnsureEmpresaEstacionPrefsSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure empresa_estacion_prefs schema in empresas db: %v", err)
-	}
-	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-01-001-baseline", "baseline schema snapshot: users, empresas, productos, clientes, carritos, configuracion_avanzada"); err != nil {
-		log.Fatalf("failed to register schema migration in empresas db: %v", err)
-	}
-	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-02-001-chat-tareas", "chat y tareas por empresa: conversaciones, participantes, mensajes, adjuntos y tareas"); err != nil {
-		log.Fatalf("failed to register chat_tareas schema migration in empresas db: %v", err)
-	}
-	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-01-002-empresa-scope-and-fe", "asegura referencia empresa_id en tablas base y agrega modulo de facturacion electronica por pais"); err != nil {
-		log.Fatalf("failed to register empresas scope/fe schema migration in empresas db: %v", err)
-	}
-	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-02-002-ubicacion-gps", "modulo de ubicacion gps por empresa: dispositivos y recorridos con tracking periodico"); err != nil {
-		log.Fatalf("failed to register ubicacion_gps schema migration in empresas db: %v", err)
-	}
-	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-03-003-finanzas", "modulo financiero por empresa: ingresos, egresos, comprobantes y configuracion"); err != nil {
-		log.Fatalf("failed to register finanzas schema migration in empresas db: %v", err)
-	}
-	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-03-004-finanzas-periodos-retenciones", "periodos contables, bloqueo por cierre, retenciones y reportes contables avanzados"); err != nil {
-		log.Fatalf("failed to register finanzas periodos schema migration in empresas db: %v", err)
-	}
-	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-03-005-chat-ia-empresa", "chat con inteligencia artificial por empresa, modelos externos y control de uso diario"); err != nil {
-		log.Fatalf("failed to register chat ia schema migration in empresas db: %v", err)
-	}
-	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-04-006-chat-ia-modelo-preferido", "persistencia de modelo preferido por empresa y cuenta Google autenticada"); err != nil {
-		log.Fatalf("failed to register chat ia preferred model schema migration in empresas db: %v", err)
-	}
-	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-04-007-eventos-contables", "contrato de eventos contables por modulo y trazabilidad de ventas"); err != nil {
-		log.Fatalf("failed to register eventos contables schema migration in empresas db: %v", err)
-	}
-	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-04-008-documentos-transaccionales", "persistencia canonica de documentos transaccionales de facturacion y compras"); err != nil {
-		log.Fatalf("failed to register documentos transaccionales schema migration in empresas db: %v", err)
-	}
-	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-04-009-cierres-caja", "flujo operativo de cierre de caja por sucursal y arqueo de efectivo"); err != nil {
-		log.Fatalf("failed to register cierres caja schema migration in empresas db: %v", err)
-	}
-	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-05-010-asistencia-empleados", "modulo de control de asistencia de empleados por empresa con entrada, salida y estado diario"); err != nil {
-		log.Fatalf("failed to register asistencia empleados schema migration in empresas db: %v", err)
-	}
-	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-04-010-asientos-canonicos", "persistencia canonica de asientos por evento procesado con control de idempotencia y reintentos"); err != nil {
-		log.Fatalf("failed to register asientos canonicos schema migration in empresas db: %v", err)
-	}
-	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-04-011-auditoria-empresa", "registro de auditoria por empresa para acciones criticas con consulta filtrable y politica de retencion"); err != nil {
-		log.Fatalf("failed to register auditoria empresa schema migration in empresas db: %v", err)
-	}
-	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-05-012-codigos-descuento-pagos", "modulo de codigos de descuento por empresa y validacion de metodos de pago en carritos"); err != nil {
-		log.Fatalf("failed to register codigos descuento/pagos schema migration in empresas db: %v", err)
-	}
-	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-05-013-propinas", "modulo de propinas por empresa con configuracion y reporte por usuario/universal"); err != nil {
-		log.Fatalf("failed to register propinas schema migration in empresas db: %v", err)
-	}
-	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-05-014-vehiculos-registro", "modulo de registro de vehiculos por empresa con control de ingreso y salida"); err != nil {
-		log.Fatalf("failed to register vehiculos registro schema migration in empresas db: %v", err)
-	}
-	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-05-015-reservas-hotel", "modulo de reservas por empresa para control de disponibilidad por estacion y confirmacion de pago"); err != nil {
-		log.Fatalf("failed to register reservas hotel schema migration in empresas db: %v", err)
-	}
-	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-05-016-comisiones-servicio", "modulo de comisiones por servicio por empresa con configuracion, movimientos y reporte por lavador"); err != nil {
-		log.Fatalf("failed to register comisiones servicio schema migration in empresas db: %v", err)
-	}
-	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-05-017-configuracion-operativa-cobro", "configuracion operativa de metodos de pago, propinas y comisiones por empresa y rol"); err != nil {
-		log.Fatalf("failed to register configuracion operativa schema migration in empresas db: %v", err)
-	}
-	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-05-018-tarifas-por-minutos", "modulo de tarifas por minutos por estacion y rango de dias con calculo de bloques extra"); err != nil {
-		log.Fatalf("failed to register tarifas por minutos schema migration in empresas db: %v", err)
-	}
-	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-05-019-tarifas-por-dia", "modulo de tarifas por dia por estacion con horario configurable de check-in/check-out y cobro automatico"); err != nil {
-		log.Fatalf("failed to register tarifas por dia schema migration in empresas db: %v", err)
-	}
-	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-05-020-nomina-sueldos", "modulo de nomina de sueldos por empresa integrado con asistencia, horas extras y parametros legales"); err != nil {
-		log.Fatalf("failed to register nomina sueldos schema migration in empresas db: %v", err)
-	}
-	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-06-021-modulos-faltantes-erp", "modulos erp faltantes: cotizaciones, pedidos, cxc/cxp, plan de cuentas, lotes/series, rrhh, crm, produccion, logistica, documental, integraciones y dian"); err != nil {
-		log.Fatalf("failed to register modulos faltantes schema migration in empresas db: %v", err)
-	}
-	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-06-022-inventario-costos-conteo", "inventario modulo 11: politica de costo promedio/peps por empresa, lotes de costos y conteo ciclico auditado con ajuste"); err != nil {
-		log.Fatalf("failed to register inventario costos/conteo schema migration in empresas db: %v", err)
-	}
-	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-07-023-ventas-simples-estacion-metricas", "modulo 27: ventas simples por estacion con metricas operativas de tiempo de atencion, rendimiento y correcciones post-cobro"); err != nil {
-		log.Fatalf("failed to register ventas simples estacion metricas schema migration in empresas db: %v", err)
-	}
-	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-07-024-reportes-programacion-plantillas-consistencia", "modulo 31: programacion automatica de reportes, versionado de plantillas y validacion automatica de consistencia multiformato"); err != nil {
-		log.Fatalf("failed to register reportes programacion/plantillas/consistencia schema migration in empresas db: %v", err)
-	}
-	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-07-025-calculadora-operativa", "modulo 34: calculadora por empresa con historial etiquetado, asociaciones y exportacion multiformato por rango/usuario"); err != nil {
-		log.Fatalf("failed to register calculadora operativa schema migration in empresas db: %v", err)
-	}
-	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-07-026-creditos-cartera", "modulo 35: creditos por empresa con cuotas, abonos, cartera y reporte multiformato"); err != nil {
-		log.Fatalf("failed to register creditos cartera schema migration in empresas db: %v", err)
-	}
-	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-07-027-backups-empresariales", "modulo 36: snapshots y restauraciones de datos por empresa con historial trazable"); err != nil {
-		log.Fatalf("failed to register backups empresariales schema migration in empresas db: %v", err)
-	}
-	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-07-028-venta-publica-wompi", "modulo 37: venta publica por empresa con slug, catalogo y pagos wompi/nequi por credenciales empresariales"); err != nil {
-		log.Fatalf("failed to register venta publica wompi schema migration in empresas db: %v", err)
-	}
-	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-08-029-soporte-remoto-empresa", "modulo de soporte remoto por empresa con dispositivos, sesiones y visor embebible para operacion asistida"); err != nil {
-		log.Fatalf("failed to register soporte remoto schema migration in empresas db: %v", err)
-	}
-	if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-08-030-configuracion-monetaria-numerica", "configuracion avanzada por empresa para moneda operativa, sistema numerico y precision decimal"); err != nil {
-		log.Fatalf("failed to register configuracion monetaria/numerica schema migration in empresas db: %v", err)
-	}
-	// Crear tipos_de_empresas en la base de datos de superadministrador (ubicación centralizada)
-	createTiposSuper := `CREATE TABLE IF NOT EXISTS tipos_de_empresas (
+		if err := dbpkg.EnsureEmpresaProductosSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure productos schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaClientesSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure clientes schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaCarritosSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure carritos schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaCodigosDescuentoSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure codigos de descuento schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaPropinasSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure propinas schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaComisionesServicioSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure comisiones servicio schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaConfiguracionOperativaSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure configuracion operativa schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaConfiguracionAvanzadaSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure empresa_configuracion_avanzada schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaFacturacionElectronicaSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure facturacion_electronica schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaChatTareasSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure chat_tareas schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaUbicacionGPSSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure ubicacion_gps schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaFinanzasSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure finanzas schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaEventosContablesSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure eventos contables schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaDocumentosTransaccionalesSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure documentos transaccionales schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaAIChatSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure chat IA schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaAuditoriaSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure auditoria schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaAsistenciaSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure asistencia schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaNominaSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure nomina schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaVehiculosRegistroSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure vehiculos registro schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaReservasHotelSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure reservas hotel schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaTarifasPorMinutosSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure tarifas por minutos schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaTarifasPorDiaSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure tarifas por dia schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaModulosFaltantesSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure modulos faltantes schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaReportesProgramacionSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure reportes programacion schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaCalculadoraSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure calculadora schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaCreditosSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure creditos schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaBackupsSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure backups empresariales schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaVentaPublicaSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure venta publica schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaSoporteRemotoSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure soporte remoto schema in empresas db: %v", err)
+		}
+		// Asegurar esquema para módulo de sensores de puertas (Raspberry Pi)
+		if err := dbpkg.EnsureEmpresaSensorPuertasSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure sensor_puertas schema in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsureEmpresaEstacionPrefsSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure empresa_estacion_prefs schema in empresas db: %v", err)
+		}
+		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-01-001-baseline", "baseline schema snapshot: users, empresas, productos, clientes, carritos, configuracion_avanzada"); err != nil {
+			log.Fatalf("failed to register schema migration in empresas db: %v", err)
+		}
+		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-02-001-chat-tareas", "chat y tareas por empresa: conversaciones, participantes, mensajes, adjuntos y tareas"); err != nil {
+			log.Fatalf("failed to register chat_tareas schema migration in empresas db: %v", err)
+		}
+		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-01-002-empresa-scope-and-fe", "asegura referencia empresa_id en tablas base y agrega modulo de facturacion electronica por pais"); err != nil {
+			log.Fatalf("failed to register empresas scope/fe schema migration in empresas db: %v", err)
+		}
+		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-02-002-ubicacion-gps", "modulo de ubicacion gps por empresa: dispositivos y recorridos con tracking periodico"); err != nil {
+			log.Fatalf("failed to register ubicacion_gps schema migration in empresas db: %v", err)
+		}
+		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-03-003-finanzas", "modulo financiero por empresa: ingresos, egresos, comprobantes y configuracion"); err != nil {
+			log.Fatalf("failed to register finanzas schema migration in empresas db: %v", err)
+		}
+		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-03-004-finanzas-periodos-retenciones", "periodos contables, bloqueo por cierre, retenciones y reportes contables avanzados"); err != nil {
+			log.Fatalf("failed to register finanzas periodos schema migration in empresas db: %v", err)
+		}
+		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-03-005-chat-ia-empresa", "chat con inteligencia artificial por empresa, modelos externos y control de uso diario"); err != nil {
+			log.Fatalf("failed to register chat ia schema migration in empresas db: %v", err)
+		}
+		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-04-006-chat-ia-modelo-preferido", "persistencia de modelo preferido por empresa y cuenta Google autenticada"); err != nil {
+			log.Fatalf("failed to register chat ia preferred model schema migration in empresas db: %v", err)
+		}
+		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-04-007-eventos-contables", "contrato de eventos contables por modulo y trazabilidad de ventas"); err != nil {
+			log.Fatalf("failed to register eventos contables schema migration in empresas db: %v", err)
+		}
+		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-04-008-documentos-transaccionales", "persistencia canonica de documentos transaccionales de facturacion y compras"); err != nil {
+			log.Fatalf("failed to register documentos transaccionales schema migration in empresas db: %v", err)
+		}
+		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-04-009-cierres-caja", "flujo operativo de cierre de caja por sucursal y arqueo de efectivo"); err != nil {
+			log.Fatalf("failed to register cierres caja schema migration in empresas db: %v", err)
+		}
+		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-05-010-asistencia-empleados", "modulo de control de asistencia de empleados por empresa con entrada, salida y estado diario"); err != nil {
+			log.Fatalf("failed to register asistencia empleados schema migration in empresas db: %v", err)
+		}
+		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-04-010-asientos-canonicos", "persistencia canonica de asientos por evento procesado con control de idempotencia y reintentos"); err != nil {
+			log.Fatalf("failed to register asientos canonicos schema migration in empresas db: %v", err)
+		}
+		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-04-011-auditoria-empresa", "registro de auditoria por empresa para acciones criticas con consulta filtrable y politica de retencion"); err != nil {
+			log.Fatalf("failed to register auditoria empresa schema migration in empresas db: %v", err)
+		}
+		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-05-012-codigos-descuento-pagos", "modulo de codigos de descuento por empresa y validacion de metodos de pago en carritos"); err != nil {
+			log.Fatalf("failed to register codigos descuento/pagos schema migration in empresas db: %v", err)
+		}
+		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-05-013-propinas", "modulo de propinas por empresa con configuracion y reporte por usuario/universal"); err != nil {
+			log.Fatalf("failed to register propinas schema migration in empresas db: %v", err)
+		}
+		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-05-014-vehiculos-registro", "modulo de registro de vehiculos por empresa con control de ingreso y salida"); err != nil {
+			log.Fatalf("failed to register vehiculos registro schema migration in empresas db: %v", err)
+		}
+		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-05-015-reservas-hotel", "modulo de reservas por empresa para control de disponibilidad por estacion y confirmacion de pago"); err != nil {
+			log.Fatalf("failed to register reservas hotel schema migration in empresas db: %v", err)
+		}
+		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-05-016-comisiones-servicio", "modulo de comisiones por servicio por empresa con configuracion, movimientos y reporte por lavador"); err != nil {
+			log.Fatalf("failed to register comisiones servicio schema migration in empresas db: %v", err)
+		}
+		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-05-017-configuracion-operativa-cobro", "configuracion operativa de metodos de pago, propinas y comisiones por empresa y rol"); err != nil {
+			log.Fatalf("failed to register configuracion operativa schema migration in empresas db: %v", err)
+		}
+		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-05-018-tarifas-por-minutos", "modulo de tarifas por minutos por estacion y rango de dias con calculo de bloques extra"); err != nil {
+			log.Fatalf("failed to register tarifas por minutos schema migration in empresas db: %v", err)
+		}
+		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-05-019-tarifas-por-dia", "modulo de tarifas por dia por estacion con horario configurable de check-in/check-out y cobro automatico"); err != nil {
+			log.Fatalf("failed to register tarifas por dia schema migration in empresas db: %v", err)
+		}
+		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-05-020-nomina-sueldos", "modulo de nomina de sueldos por empresa integrado con asistencia, horas extras y parametros legales"); err != nil {
+			log.Fatalf("failed to register nomina sueldos schema migration in empresas db: %v", err)
+		}
+		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-06-021-modulos-faltantes-erp", "modulos erp faltantes: cotizaciones, pedidos, cxc/cxp, plan de cuentas, lotes/series, rrhh, crm, produccion, logistica, documental, integraciones y dian"); err != nil {
+			log.Fatalf("failed to register modulos faltantes schema migration in empresas db: %v", err)
+		}
+		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-06-022-inventario-costos-conteo", "inventario modulo 11: politica de costo promedio/peps por empresa, lotes de costos y conteo ciclico auditado con ajuste"); err != nil {
+			log.Fatalf("failed to register inventario costos/conteo schema migration in empresas db: %v", err)
+		}
+		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-07-023-ventas-simples-estacion-metricas", "modulo 27: ventas simples por estacion con metricas operativas de tiempo de atencion, rendimiento y correcciones post-cobro"); err != nil {
+			log.Fatalf("failed to register ventas simples estacion metricas schema migration in empresas db: %v", err)
+		}
+		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-07-024-reportes-programacion-plantillas-consistencia", "modulo 31: programacion automatica de reportes, versionado de plantillas y validacion automatica de consistencia multiformato"); err != nil {
+			log.Fatalf("failed to register reportes programacion/plantillas/consistencia schema migration in empresas db: %v", err)
+		}
+		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-07-025-calculadora-operativa", "modulo 34: calculadora por empresa con historial etiquetado, asociaciones y exportacion multiformato por rango/usuario"); err != nil {
+			log.Fatalf("failed to register calculadora operativa schema migration in empresas db: %v", err)
+		}
+		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-07-026-creditos-cartera", "modulo 35: creditos por empresa con cuotas, abonos, cartera y reporte multiformato"); err != nil {
+			log.Fatalf("failed to register creditos cartera schema migration in empresas db: %v", err)
+		}
+		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-07-027-backups-empresariales", "modulo 36: snapshots y restauraciones de datos por empresa con historial trazable"); err != nil {
+			log.Fatalf("failed to register backups empresariales schema migration in empresas db: %v", err)
+		}
+		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-07-028-venta-publica-wompi", "modulo 37: venta publica por empresa con slug, catalogo y pagos wompi/nequi por credenciales empresariales"); err != nil {
+			log.Fatalf("failed to register venta publica wompi schema migration in empresas db: %v", err)
+		}
+		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-08-029-soporte-remoto-empresa", "modulo de soporte remoto por empresa con dispositivos, sesiones y visor embebible para operacion asistida"); err != nil {
+			log.Fatalf("failed to register soporte remoto schema migration in empresas db: %v", err)
+		}
+		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-08-030-configuracion-monetaria-numerica", "configuracion avanzada por empresa para moneda operativa, sistema numerico y precision decimal"); err != nil {
+			log.Fatalf("failed to register configuracion monetaria/numerica schema migration in empresas db: %v", err)
+		}
+		// Crear tipos_de_empresas en la base de datos de superadministrador (ubicación centralizada)
+		createTiposSuper := `CREATE TABLE IF NOT EXISTS tipos_de_empresas (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		nombre TEXT NOT NULL UNIQUE,
 		fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
@@ -821,11 +919,11 @@ func main() {
 		estado TEXT DEFAULT 'activo',
 		observaciones TEXT
 	);`
-	if _, err := dbSuper.Exec(createTiposSuper); err != nil {
-		log.Fatalf("failed to create tipos_de_empresas table in superadministrador db: %v", err)
-	}
+		if _, err := dbSuper.Exec(createTiposSuper); err != nil {
+			log.Fatalf("failed to create tipos_de_empresas table in superadministrador db: %v", err)
+		}
 
-	createRolesDeUsuario := `CREATE TABLE IF NOT EXISTS roles_de_usuario (
+		createRolesDeUsuario := `CREATE TABLE IF NOT EXISTS roles_de_usuario (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		tipo_empresa_id INTEGER NOT NULL,
 		nombre TEXT NOT NULL,
@@ -836,11 +934,11 @@ func main() {
 		estado TEXT DEFAULT 'activo',
 		observaciones TEXT
 	);`
-	if _, err := dbSuper.Exec(createRolesDeUsuario); err != nil {
-		log.Fatalf("failed to create roles_de_usuario table in super db: %v", err)
-	}
+		if _, err := dbSuper.Exec(createRolesDeUsuario); err != nil {
+			log.Fatalf("failed to create roles_de_usuario table in super db: %v", err)
+		}
 
-	createTiposDeUsuario := `CREATE TABLE IF NOT EXISTS tipos_de_usuario (
+		createTiposDeUsuario := `CREATE TABLE IF NOT EXISTS tipos_de_usuario (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		tipo_empresa_id INTEGER NOT NULL,
 		rol_id INTEGER NOT NULL,
@@ -852,15 +950,15 @@ func main() {
 		estado TEXT DEFAULT 'activo',
 		observaciones TEXT
 	);`
-	if _, err := dbSuper.Exec(createTiposDeUsuario); err != nil {
-		log.Fatalf("failed to create tipos_de_usuario table in super db: %v", err)
-	}
-	if err := dbpkg.EnsureRolesPermisosSchema(dbSuper); err != nil {
-		log.Fatalf("failed to ensure roles permisos schema in super db: %v", err)
-	}
+		if _, err := dbSuper.Exec(createTiposDeUsuario); err != nil {
+			log.Fatalf("failed to create tipos_de_usuario table in super db: %v", err)
+		}
+		if err := dbpkg.EnsureRolesPermisosSchema(dbSuper); err != nil {
+			log.Fatalf("failed to ensure roles permisos schema in super db: %v", err)
+		}
 
-	// Crear tablas en dbSuper (superadministrador)
-	createAdmins := `CREATE TABLE IF NOT EXISTS administradores (
+		// Crear tablas en dbSuper (superadministrador)
+		createAdmins := `CREATE TABLE IF NOT EXISTS administradores (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		email TEXT UNIQUE,
 		name TEXT,
@@ -872,51 +970,51 @@ func main() {
 		estado TEXT DEFAULT 'activo',
 		observaciones TEXT
 	);`
-	if _, err := dbSuper.Exec(createAdmins); err != nil {
-		log.Fatalf("failed to create administradores table in super db: %v", err)
-	}
-
-	// Asegurar columna 'photo' en administradores para almacenar URL de avatar
-	ensureAdminsSchema := func(db *sql.DB) {
-		rows, err := db.Query("PRAGMA table_info(administradores);")
-		if err != nil {
-			log.Printf("warning: unable to inspect administradores schema: %v", err)
-			return
+		if _, err := dbSuper.Exec(createAdmins); err != nil {
+			log.Fatalf("failed to create administradores table in super db: %v", err)
 		}
-		defer rows.Close()
-		existing := map[string]bool{}
-		for rows.Next() {
-			var cid int
-			var name string
-			var ctype string
-			var notnull int
-			var dflt sql.NullString
-			var pk int
-			if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
-				log.Printf("warning: scan pragma table_info error: %v", err)
+
+		// Asegurar columna 'photo' en administradores para almacenar URL de avatar
+		ensureAdminsSchema := func(db *sql.DB) {
+			rows, err := db.Query("PRAGMA table_info(administradores);")
+			if err != nil {
+				log.Printf("warning: unable to inspect administradores schema: %v", err)
 				return
 			}
-			existing[name] = true
-		}
+			defer rows.Close()
+			existing := map[string]bool{}
+			for rows.Next() {
+				var cid int
+				var name string
+				var ctype string
+				var notnull int
+				var dflt sql.NullString
+				var pk int
+				if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
+					log.Printf("warning: scan pragma table_info error: %v", err)
+					return
+				}
+				existing[name] = true
+			}
 
-		addIfMissing := func(colDef string, name string) {
-			if !existing[name] {
-				q := fmt.Sprintf("ALTER TABLE administradores ADD COLUMN %s;", colDef)
-				if _, err := db.Exec(q); err != nil {
-					log.Printf("failed to add column %s to administradores: %v", name, err)
-				} else {
-					log.Printf("added missing column %s to administradores", name)
+			addIfMissing := func(colDef string, name string) {
+				if !existing[name] {
+					q := fmt.Sprintf("ALTER TABLE administradores ADD COLUMN %s;", colDef)
+					if _, err := db.Exec(q); err != nil {
+						log.Printf("failed to add column %s to administradores: %v", name, err)
+					} else {
+						log.Printf("added missing column %s to administradores", name)
+					}
 				}
 			}
+
+			addIfMissing("photo TEXT", "photo")
+			// Columna para indicar si el administrador aceptó el contrato/registro
+			addIfMissing("acepta_contrato INTEGER DEFAULT 0", "acepta_contrato")
 		}
+		ensureAdminsSchema(dbSuper)
 
-		addIfMissing("photo TEXT", "photo")
-		// Columna para indicar si el administrador aceptó el contrato/registro
-		addIfMissing("acepta_contrato INTEGER DEFAULT 0", "acepta_contrato")
-	}
-	ensureAdminsSchema(dbSuper)
-
-	createTiposLic := `CREATE TABLE IF NOT EXISTS tipos_de_licencia (
+		createTiposLic := `CREATE TABLE IF NOT EXISTS tipos_de_licencia (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		nombre TEXT NOT NULL UNIQUE,
 		fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
@@ -925,12 +1023,12 @@ func main() {
 		estado TEXT DEFAULT 'activo',
 		observaciones TEXT
 	);`
-	if _, err := dbSuper.Exec(createTiposLic); err != nil {
-		log.Fatalf("failed to create tipos_de_licencia table in super db: %v", err)
-	}
+		if _, err := dbSuper.Exec(createTiposLic); err != nil {
+			log.Fatalf("failed to create tipos_de_licencia table in super db: %v", err)
+		}
 
-	// licencias, configuracion, sesiones (super)
-	createLic := `CREATE TABLE IF NOT EXISTS licencias (
+		// licencias, configuracion, sesiones (super)
+		createLic := `CREATE TABLE IF NOT EXISTS licencias (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		empresa_id INTEGER,
 		tipo_id INTEGER,
@@ -949,66 +1047,66 @@ func main() {
 		estado TEXT DEFAULT 'activo',
 		observaciones TEXT
 	);`
-	if _, err := dbSuper.Exec(createLic); err != nil {
-		log.Fatalf("failed to create licencias table in super db: %v", err)
-	}
-
-	// Asegurar esquema mínimo de la tabla licencias (migraciones simples)
-	ensureLicenciasSchema := func(db *sql.DB) {
-		// Obtener columnas actuales
-		rows, err := db.Query("PRAGMA table_info(licencias);")
-		if err != nil {
-			log.Printf("warning: unable to inspect licencias schema: %v", err)
-			return
+		if _, err := dbSuper.Exec(createLic); err != nil {
+			log.Fatalf("failed to create licencias table in super db: %v", err)
 		}
-		defer rows.Close()
-		existing := map[string]bool{}
-		for rows.Next() {
-			var cid int
-			var name string
-			var ctype string
-			var notnull int
-			var dflt sql.NullString
-			var pk int
-			if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
-				log.Printf("warning: scan pragma table_info error: %v", err)
+
+		// Asegurar esquema mínimo de la tabla licencias (migraciones simples)
+		ensureLicenciasSchema := func(db *sql.DB) {
+			// Obtener columnas actuales
+			rows, err := db.Query("PRAGMA table_info(licencias);")
+			if err != nil {
+				log.Printf("warning: unable to inspect licencias schema: %v", err)
 				return
 			}
-			existing[name] = true
-		}
+			defer rows.Close()
+			existing := map[string]bool{}
+			for rows.Next() {
+				var cid int
+				var name string
+				var ctype string
+				var notnull int
+				var dflt sql.NullString
+				var pk int
+				if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
+					log.Printf("warning: scan pragma table_info error: %v", err)
+					return
+				}
+				existing[name] = true
+			}
 
-		addIfMissing := func(colDef string, name string) {
-			if !existing[name] {
-				q := fmt.Sprintf("ALTER TABLE licencias ADD COLUMN %s;", colDef)
-				if _, err := db.Exec(q); err != nil {
-					log.Printf("failed to add column %s to licencias: %v", name, err)
-				} else {
-					log.Printf("added missing column %s to licencias", name)
+			addIfMissing := func(colDef string, name string) {
+				if !existing[name] {
+					q := fmt.Sprintf("ALTER TABLE licencias ADD COLUMN %s;", colDef)
+					if _, err := db.Exec(q); err != nil {
+						log.Printf("failed to add column %s to licencias: %v", name, err)
+					} else {
+						log.Printf("added missing column %s to licencias", name)
+					}
 				}
 			}
+
+			addIfMissing("empresa_id INTEGER", "empresa_id")
+			addIfMissing("tipo_id INTEGER", "tipo_id")
+			addIfMissing("nombre TEXT", "nombre")
+			addIfMissing("descripcion TEXT", "descripcion")
+			addIfMissing("valor REAL DEFAULT 0", "valor")
+			addIfMissing("duracion_dias INTEGER DEFAULT 0", "duracion_dias")
+			addIfMissing("modulos_habilitados TEXT", "modulos_habilitados")
+			addIfMissing("super_rol_habilitado INTEGER DEFAULT 0", "super_rol_habilitado")
+			addIfMissing("fecha_inicio TEXT", "fecha_inicio")
+			addIfMissing("fecha_fin TEXT", "fecha_fin")
+			addIfMissing("activo INTEGER DEFAULT 1", "activo")
+			addIfMissing("fecha_creacion TEXT DEFAULT (datetime('now','localtime'))", "fecha_creacion")
+			addIfMissing("fecha_actualizacion TEXT DEFAULT (datetime('now','localtime'))", "fecha_actualizacion")
+			addIfMissing("usuario_creador TEXT", "usuario_creador")
+			addIfMissing("estado TEXT DEFAULT 'activo'", "estado")
+			addIfMissing("observaciones TEXT", "observaciones")
 		}
+		ensureLicenciasSchema(dbSuper)
 
-		addIfMissing("empresa_id INTEGER", "empresa_id")
-		addIfMissing("tipo_id INTEGER", "tipo_id")
-		addIfMissing("nombre TEXT", "nombre")
-		addIfMissing("descripcion TEXT", "descripcion")
-		addIfMissing("valor REAL DEFAULT 0", "valor")
-		addIfMissing("duracion_dias INTEGER DEFAULT 0", "duracion_dias")
-		addIfMissing("modulos_habilitados TEXT", "modulos_habilitados")
-		addIfMissing("super_rol_habilitado INTEGER DEFAULT 0", "super_rol_habilitado")
-		addIfMissing("fecha_inicio TEXT", "fecha_inicio")
-		addIfMissing("fecha_fin TEXT", "fecha_fin")
-		addIfMissing("activo INTEGER DEFAULT 1", "activo")
-		addIfMissing("fecha_creacion TEXT DEFAULT (datetime('now','localtime'))", "fecha_creacion")
-		addIfMissing("fecha_actualizacion TEXT DEFAULT (datetime('now','localtime'))", "fecha_actualizacion")
-		addIfMissing("usuario_creador TEXT", "usuario_creador")
-		addIfMissing("estado TEXT DEFAULT 'activo'", "estado")
-		addIfMissing("observaciones TEXT", "observaciones")
-	}
-	ensureLicenciasSchema(dbSuper)
-
-	// Tabla para registrar transacciones/pagos de Wompi (Nequi)
-	createPagosWompi := `CREATE TABLE IF NOT EXISTS pagos_wompi (
+		// Tabla para registrar transacciones/pagos de Wompi (Nequi)
+		createPagosWompi := `CREATE TABLE IF NOT EXISTS pagos_wompi (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		licencia_id INTEGER,
 		empresa_id INTEGER,
@@ -1024,54 +1122,54 @@ func main() {
 		estado TEXT DEFAULT 'activo',
 		observaciones TEXT
 	);`
-	if _, err := dbSuper.Exec(createPagosWompi); err != nil {
-		log.Fatalf("failed to create pagos_wompi table in super db: %v", err)
-	}
-
-	ensurePagosWompiSchema := func(db *sql.DB) {
-		rows, err := db.Query("PRAGMA table_info(pagos_wompi);")
-		if err != nil {
-			log.Printf("warning: unable to inspect pagos_wompi schema: %v", err)
-			return
+		if _, err := dbSuper.Exec(createPagosWompi); err != nil {
+			log.Fatalf("failed to create pagos_wompi table in super db: %v", err)
 		}
-		defer rows.Close()
-		existing := map[string]bool{}
-		for rows.Next() {
-			var cid int
-			var name string
-			var ctype string
-			var notnull int
-			var dflt sql.NullString
-			var pk int
-			if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
-				log.Printf("warning: scan pragma table_info pagos_wompi error: %v", err)
+
+		ensurePagosWompiSchema := func(db *sql.DB) {
+			rows, err := db.Query("PRAGMA table_info(pagos_wompi);")
+			if err != nil {
+				log.Printf("warning: unable to inspect pagos_wompi schema: %v", err)
 				return
 			}
-			existing[name] = true
-		}
+			defer rows.Close()
+			existing := map[string]bool{}
+			for rows.Next() {
+				var cid int
+				var name string
+				var ctype string
+				var notnull int
+				var dflt sql.NullString
+				var pk int
+				if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
+					log.Printf("warning: scan pragma table_info pagos_wompi error: %v", err)
+					return
+				}
+				existing[name] = true
+			}
 
-		addIfMissing := func(colDef string, name string) {
-			if !existing[name] {
-				q := fmt.Sprintf("ALTER TABLE pagos_wompi ADD COLUMN %s;", colDef)
-				if _, err := db.Exec(q); err != nil {
-					log.Printf("failed to add column %s to pagos_wompi: %v", name, err)
-				} else {
-					log.Printf("added missing column %s to pagos_wompi", name)
+			addIfMissing := func(colDef string, name string) {
+				if !existing[name] {
+					q := fmt.Sprintf("ALTER TABLE pagos_wompi ADD COLUMN %s;", colDef)
+					if _, err := db.Exec(q); err != nil {
+						log.Printf("failed to add column %s to pagos_wompi: %v", name, err)
+					} else {
+						log.Printf("added missing column %s to pagos_wompi", name)
+					}
 				}
 			}
+
+			addIfMissing("fecha_actualizacion TEXT", "fecha_actualizacion")
+			addIfMissing("usuario_creador TEXT", "usuario_creador")
+			addIfMissing("estado TEXT DEFAULT 'activo'", "estado")
+			addIfMissing("observaciones TEXT", "observaciones")
+			addIfMissing("discount_code TEXT", "discount_code")
+			addIfMissing("asesor_id TEXT", "asesor_id")
 		}
+		ensurePagosWompiSchema(dbSuper)
 
-		addIfMissing("fecha_actualizacion TEXT", "fecha_actualizacion")
-		addIfMissing("usuario_creador TEXT", "usuario_creador")
-		addIfMissing("estado TEXT DEFAULT 'activo'", "estado")
-		addIfMissing("observaciones TEXT", "observaciones")
-		addIfMissing("discount_code TEXT", "discount_code")
-		addIfMissing("asesor_id TEXT", "asesor_id")
-	}
-	ensurePagosWompiSchema(dbSuper)
-
-	// Tabla para almacenar configuraciones/k-v (ej. credenciales cifradas)
-	createConfiguraciones := `CREATE TABLE IF NOT EXISTS configuraciones (
+		// Tabla para almacenar configuraciones/k-v (ej. credenciales cifradas)
+		createConfiguraciones := `CREATE TABLE IF NOT EXISTS configuraciones (
 		config_key TEXT PRIMARY KEY,
 		value TEXT,
 		encrypted INTEGER DEFAULT 0,
@@ -1081,19 +1179,19 @@ func main() {
 		estado TEXT DEFAULT 'activo',
 		observaciones TEXT
 	);`
-	if _, err := dbSuper.Exec(createConfiguraciones); err != nil {
-		log.Fatalf("failed to create configuraciones table in super db: %v", err)
-	}
-	if err := handlers.EnsureSensitiveSuperConfigEncrypted(dbSuper); err != nil {
-		log.Fatalf("failed to enforce sensitive config encryption in super db: %v", err)
-	}
-	loadGoogleOAuthFromDB(dbSuper)
-	if clientID == "" || clientSecret == "" {
-		log.Println("Warning: GOOGLE_CLIENT_ID o GOOGLE_CLIENT_SECRET no configurados (entorno/DB)")
-	}
+		if _, err := dbSuper.Exec(createConfiguraciones); err != nil {
+			log.Fatalf("failed to create configuraciones table in super db: %v", err)
+		}
+		if err := handlers.EnsureSensitiveSuperConfigEncrypted(dbSuper); err != nil {
+			log.Fatalf("failed to enforce sensitive config encryption in super db: %v", err)
+		}
+		loadGoogleOAuthFromDB(dbSuper)
+		if clientID == "" || clientSecret == "" {
+			log.Println("Warning: GOOGLE_CLIENT_ID o GOOGLE_CLIENT_SECRET no configurados (entorno/DB)")
+		}
 
-	// Crear tabla de sesiones en la base superadministrador
-	createSesiones := `CREATE TABLE IF NOT EXISTS sesiones (
+		// Crear tabla de sesiones en la base superadministrador
+		createSesiones := `CREATE TABLE IF NOT EXISTS sesiones (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		admin_email TEXT,
 		token TEXT,
@@ -1104,52 +1202,52 @@ func main() {
 		activo INTEGER DEFAULT 1,
 		fecha_creacion TEXT DEFAULT (datetime('now','localtime'))
 	);`
-	if _, err := dbSuper.Exec(createSesiones); err != nil {
-		log.Fatalf("failed to create sesiones table in super db: %v", err)
-	}
-
-	ensureSesionesSchema := func(db *sql.DB) {
-		rows, err := db.Query("PRAGMA table_info(sesiones);")
-		if err != nil {
-			log.Printf("warning: unable to inspect sesiones schema: %v", err)
-			return
+		if _, err := dbSuper.Exec(createSesiones); err != nil {
+			log.Fatalf("failed to create sesiones table in super db: %v", err)
 		}
-		defer rows.Close()
 
-		existing := map[string]bool{}
-		for rows.Next() {
-			var cid int
-			var name string
-			var ctype string
-			var notnull int
-			var dflt sql.NullString
-			var pk int
-			if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
-				log.Printf("warning: scan pragma table_info sesiones error: %v", err)
+		ensureSesionesSchema := func(db *sql.DB) {
+			rows, err := db.Query("PRAGMA table_info(sesiones);")
+			if err != nil {
+				log.Printf("warning: unable to inspect sesiones schema: %v", err)
 				return
 			}
-			existing[name] = true
-		}
+			defer rows.Close()
 
-		addIfMissing := func(colDef string, name string) {
-			if !existing[name] {
-				q := fmt.Sprintf("ALTER TABLE sesiones ADD COLUMN %s;", colDef)
-				if _, err := db.Exec(q); err != nil {
-					log.Printf("failed to add column %s to sesiones: %v", name, err)
-				} else {
-					log.Printf("added missing column %s to sesiones", name)
+			existing := map[string]bool{}
+			for rows.Next() {
+				var cid int
+				var name string
+				var ctype string
+				var notnull int
+				var dflt sql.NullString
+				var pk int
+				if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
+					log.Printf("warning: scan pragma table_info sesiones error: %v", err)
+					return
+				}
+				existing[name] = true
+			}
+
+			addIfMissing := func(colDef string, name string) {
+				if !existing[name] {
+					q := fmt.Sprintf("ALTER TABLE sesiones ADD COLUMN %s;", colDef)
+					if _, err := db.Exec(q); err != nil {
+						log.Printf("failed to add column %s to sesiones: %v", name, err)
+					} else {
+						log.Printf("added missing column %s to sesiones", name)
+					}
 				}
 			}
-		}
 
-		addIfMissing("fecha_fin TEXT", "fecha_fin")
-		addIfMissing("activo INTEGER DEFAULT 1", "activo")
-		addIfMissing("fecha_inicio TEXT DEFAULT (datetime('now','localtime'))", "fecha_inicio")
-		addIfMissing("fecha_creacion TEXT DEFAULT (datetime('now','localtime'))", "fecha_creacion")
-	}
-	ensureSesionesSchema(dbSuper)
-	// Tabla para asesores (registro básico de asesores/comisionistas)
-	createAsesores := `CREATE TABLE IF NOT EXISTS asesores (
+			addIfMissing("fecha_fin TEXT", "fecha_fin")
+			addIfMissing("activo INTEGER DEFAULT 1", "activo")
+			addIfMissing("fecha_inicio TEXT DEFAULT (datetime('now','localtime'))", "fecha_inicio")
+			addIfMissing("fecha_creacion TEXT DEFAULT (datetime('now','localtime'))", "fecha_creacion")
+		}
+		ensureSesionesSchema(dbSuper)
+		// Tabla para asesores (registro básico de asesores/comisionistas)
+		createAsesores := `CREATE TABLE IF NOT EXISTS asesores (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		email TEXT,
 		nombre TEXT,
@@ -1161,49 +1259,49 @@ func main() {
 		estado TEXT DEFAULT 'activo',
 		observaciones TEXT
 	);`
-	if _, err := dbSuper.Exec(createAsesores); err != nil {
-		log.Fatalf("failed to create asesores table in super db: %v", err)
-	}
-	ensureAsesoresSchema := func(db *sql.DB) {
-		rows, err := db.Query("PRAGMA table_info(asesores);")
-		if err != nil {
-			log.Printf("warning: unable to inspect asesores schema: %v", err)
-			return
+		if _, err := dbSuper.Exec(createAsesores); err != nil {
+			log.Fatalf("failed to create asesores table in super db: %v", err)
 		}
-		defer rows.Close()
-		existing := map[string]bool{}
-		for rows.Next() {
-			var cid int
-			var name string
-			var ctype string
-			var notnull int
-			var dflt sql.NullString
-			var pk int
-			if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
-				log.Printf("warning: scan pragma table_info asesores error: %v", err)
+		ensureAsesoresSchema := func(db *sql.DB) {
+			rows, err := db.Query("PRAGMA table_info(asesores);")
+			if err != nil {
+				log.Printf("warning: unable to inspect asesores schema: %v", err)
 				return
 			}
-			existing[name] = true
-		}
-		addIfMissing := func(colDef string, name string) {
-			if !existing[name] {
-				q := fmt.Sprintf("ALTER TABLE asesores ADD COLUMN %s;", colDef)
-				if _, err := db.Exec(q); err != nil {
-					log.Printf("failed to add column %s to asesores: %v", name, err)
-				} else {
-					log.Printf("added missing column %s to asesores", name)
+			defer rows.Close()
+			existing := map[string]bool{}
+			for rows.Next() {
+				var cid int
+				var name string
+				var ctype string
+				var notnull int
+				var dflt sql.NullString
+				var pk int
+				if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
+					log.Printf("warning: scan pragma table_info asesores error: %v", err)
+					return
+				}
+				existing[name] = true
+			}
+			addIfMissing := func(colDef string, name string) {
+				if !existing[name] {
+					q := fmt.Sprintf("ALTER TABLE asesores ADD COLUMN %s;", colDef)
+					if _, err := db.Exec(q); err != nil {
+						log.Printf("failed to add column %s to asesores: %v", name, err)
+					} else {
+						log.Printf("added missing column %s to asesores", name)
+					}
 				}
 			}
+			addIfMissing("fecha_actualizacion TEXT", "fecha_actualizacion")
+			addIfMissing("usuario_creador TEXT", "usuario_creador")
+			addIfMissing("estado TEXT DEFAULT 'activo'", "estado")
+			addIfMissing("observaciones TEXT", "observaciones")
 		}
-		addIfMissing("fecha_actualizacion TEXT", "fecha_actualizacion")
-		addIfMissing("usuario_creador TEXT", "usuario_creador")
-		addIfMissing("estado TEXT DEFAULT 'activo'", "estado")
-		addIfMissing("observaciones TEXT", "observaciones")
-	}
-	ensureAsesoresSchema(dbSuper)
+		ensureAsesoresSchema(dbSuper)
 
-	// Tabla para planes de asesor comercial (configuración de comisiones)
-	createAsesorComercial := `CREATE TABLE IF NOT EXISTS asesor_comercial (
+		// Tabla para planes de asesor comercial (configuración de comisiones)
+		createAsesorComercial := `CREATE TABLE IF NOT EXISTS asesor_comercial (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		asesor_id TEXT,
 		asesor_email TEXT,
@@ -1218,49 +1316,49 @@ func main() {
 		estado TEXT DEFAULT 'activo',
 		observaciones TEXT
 	);`
-	if _, err := dbSuper.Exec(createAsesorComercial); err != nil {
-		log.Fatalf("failed to create asesor_comercial table in super db: %v", err)
-	}
-	ensureAsesorComercialSchema := func(db *sql.DB) {
-		rows, err := db.Query("PRAGMA table_info(asesor_comercial);")
-		if err != nil {
-			log.Printf("warning: unable to inspect asesor_comercial schema: %v", err)
-			return
+		if _, err := dbSuper.Exec(createAsesorComercial); err != nil {
+			log.Fatalf("failed to create asesor_comercial table in super db: %v", err)
 		}
-		defer rows.Close()
-		existing := map[string]bool{}
-		for rows.Next() {
-			var cid int
-			var name string
-			var ctype string
-			var notnull int
-			var dflt sql.NullString
-			var pk int
-			if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
-				log.Printf("warning: scan pragma table_info asesor_comercial error: %v", err)
+		ensureAsesorComercialSchema := func(db *sql.DB) {
+			rows, err := db.Query("PRAGMA table_info(asesor_comercial);")
+			if err != nil {
+				log.Printf("warning: unable to inspect asesor_comercial schema: %v", err)
 				return
 			}
-			existing[name] = true
-		}
-		addIfMissing := func(colDef string, name string) {
-			if !existing[name] {
-				q := fmt.Sprintf("ALTER TABLE asesor_comercial ADD COLUMN %s;", colDef)
-				if _, err := db.Exec(q); err != nil {
-					log.Printf("failed to add column %s to asesor_comercial: %v", name, err)
-				} else {
-					log.Printf("added missing column %s to asesor_comercial", name)
+			defer rows.Close()
+			existing := map[string]bool{}
+			for rows.Next() {
+				var cid int
+				var name string
+				var ctype string
+				var notnull int
+				var dflt sql.NullString
+				var pk int
+				if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
+					log.Printf("warning: scan pragma table_info asesor_comercial error: %v", err)
+					return
+				}
+				existing[name] = true
+			}
+			addIfMissing := func(colDef string, name string) {
+				if !existing[name] {
+					q := fmt.Sprintf("ALTER TABLE asesor_comercial ADD COLUMN %s;", colDef)
+					if _, err := db.Exec(q); err != nil {
+						log.Printf("failed to add column %s to asesor_comercial: %v", name, err)
+					} else {
+						log.Printf("added missing column %s to asesor_comercial", name)
+					}
 				}
 			}
+			addIfMissing("fecha_actualizacion TEXT", "fecha_actualizacion")
+			addIfMissing("usuario_creador TEXT", "usuario_creador")
+			addIfMissing("estado TEXT DEFAULT 'activo'", "estado")
+			addIfMissing("observaciones TEXT", "observaciones")
 		}
-		addIfMissing("fecha_actualizacion TEXT", "fecha_actualizacion")
-		addIfMissing("usuario_creador TEXT", "usuario_creador")
-		addIfMissing("estado TEXT DEFAULT 'activo'", "estado")
-		addIfMissing("observaciones TEXT", "observaciones")
-	}
-	ensureAsesorComercialSchema(dbSuper)
+		ensureAsesorComercialSchema(dbSuper)
 
-	// Tabla para registrar comisiones generadas por pagos/activaciones
-	createAsesorComisiones := `CREATE TABLE IF NOT EXISTS asesor_comisiones (
+		// Tabla para registrar comisiones generadas por pagos/activaciones
+		createAsesorComisiones := `CREATE TABLE IF NOT EXISTS asesor_comisiones (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		asesor_id TEXT,
 		empresa_id INTEGER,
@@ -1279,65 +1377,75 @@ func main() {
 		usuario_creador TEXT,
 		estado TEXT DEFAULT 'activo'
 	);`
-	if _, err := dbSuper.Exec(createAsesorComisiones); err != nil {
-		log.Fatalf("failed to create asesor_comisiones table in super db: %v", err)
-	}
-	ensureAsesorComisionesSchema := func(db *sql.DB) {
-		rows, err := db.Query("PRAGMA table_info(asesor_comisiones);")
-		if err != nil {
-			log.Printf("warning: unable to inspect asesor_comisiones schema: %v", err)
-			return
+		if _, err := dbSuper.Exec(createAsesorComisiones); err != nil {
+			log.Fatalf("failed to create asesor_comisiones table in super db: %v", err)
 		}
-		defer rows.Close()
-		existing := map[string]bool{}
-		for rows.Next() {
-			var cid int
-			var name string
-			var ctype string
-			var notnull int
-			var dflt sql.NullString
-			var pk int
-			if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
-				log.Printf("warning: scan pragma table_info asesor_comisiones error: %v", err)
+		ensureAsesorComisionesSchema := func(db *sql.DB) {
+			rows, err := db.Query("PRAGMA table_info(asesor_comisiones);")
+			if err != nil {
+				log.Printf("warning: unable to inspect asesor_comisiones schema: %v", err)
 				return
 			}
-			existing[name] = true
-		}
-		addIfMissing := func(colDef string, name string) {
-			if !existing[name] {
-				q := fmt.Sprintf("ALTER TABLE asesor_comisiones ADD COLUMN %s;", colDef)
-				if _, err := db.Exec(q); err != nil {
-					log.Printf("failed to add column %s to asesor_comisiones: %v", name, err)
-				} else {
-					log.Printf("added missing column %s to asesor_comisiones", name)
+			defer rows.Close()
+			existing := map[string]bool{}
+			for rows.Next() {
+				var cid int
+				var name string
+				var ctype string
+				var notnull int
+				var dflt sql.NullString
+				var pk int
+				if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
+					log.Printf("warning: scan pragma table_info asesor_comisiones error: %v", err)
+					return
+				}
+				existing[name] = true
+			}
+			addIfMissing := func(colDef string, name string) {
+				if !existing[name] {
+					q := fmt.Sprintf("ALTER TABLE asesor_comisiones ADD COLUMN %s;", colDef)
+					if _, err := db.Exec(q); err != nil {
+						log.Printf("failed to add column %s to asesor_comisiones: %v", name, err)
+					} else {
+						log.Printf("added missing column %s to asesor_comisiones", name)
+					}
 				}
 			}
+			addIfMissing("fecha_actualizacion TEXT", "fecha_actualizacion")
+			addIfMissing("usuario_creador TEXT", "usuario_creador")
+			addIfMissing("estado TEXT DEFAULT 'activo'", "estado")
+			addIfMissing("programado_para TEXT", "programado_para")
+			addIfMissing("pagado INTEGER DEFAULT 0", "pagado")
 		}
-		addIfMissing("fecha_actualizacion TEXT", "fecha_actualizacion")
-		addIfMissing("usuario_creador TEXT", "usuario_creador")
-		addIfMissing("estado TEXT DEFAULT 'activo'", "estado")
-		addIfMissing("programado_para TEXT", "programado_para")
-		addIfMissing("pagado INTEGER DEFAULT 0", "pagado")
-	}
-	ensureAsesorComisionesSchema(dbSuper)
-	if err := dbpkg.EnsureSuperCorreoNotificacionesPruebaSchema(dbSuper); err != nil {
-		log.Fatalf("failed to ensure super_correo_notificaciones_prueba schema: %v", err)
-	}
-	if err := dbpkg.EnsureSuperVentaDigitalSchema(dbSuper); err != nil {
-		log.Fatalf("failed to ensure super venta digital schema: %v", err)
-	}
+		ensureAsesorComisionesSchema(dbSuper)
+		if err := dbpkg.EnsureSuperCorreoNotificacionesPruebaSchema(dbSuper); err != nil {
+			log.Fatalf("failed to ensure super_correo_notificaciones_prueba schema: %v", err)
+		}
+		if err := dbpkg.EnsureSuperVentaDigitalSchema(dbSuper); err != nil {
+			log.Fatalf("failed to ensure super venta digital schema: %v", err)
+		}
 
-	if err := dbpkg.RegisterSchemaMigration(dbSuper, "superadministrador", "2026-04-01-001-baseline", "baseline schema snapshot: administradores, licencias, configuraciones, sesiones, pagos"); err != nil {
-		log.Fatalf("failed to register schema migration in super db: %v", err)
-	}
-	if err := dbpkg.RegisterSchemaMigration(dbSuper, "superadministrador", "2026-04-08-002-roles-permisos-dinamicos", "configuracion dinamica de permisos por rol para modulos y paginas del panel empresa"); err != nil {
-		log.Fatalf("failed to register roles permisos schema migration in super db: %v", err)
-	}
-	if err := dbpkg.RegisterSchemaMigration(dbSuper, "superadministrador", "2026-04-08-003-venta-digital-super", "modulo de venta digital global administrado por super con catalogo, ordenes y entrega por correo tras pago wompi"); err != nil {
-		log.Fatalf("failed to register venta digital super schema migration in super db: %v", err)
-	}
-	if err := dbpkg.RegisterSchemaMigration(dbSuper, "superadministrador", "2026-04-08-004-licencias-permisos-superrol", "licencias con modulos habilitados y bandera super_rol_habilitado para aplicar permisos efectivos por empresa"); err != nil {
-		log.Fatalf("failed to register licencias permisos superrol schema migration in super db: %v", err)
+		if err := dbpkg.RegisterSchemaMigration(dbSuper, "superadministrador", "2026-04-01-001-baseline", "baseline schema snapshot: administradores, licencias, configuraciones, sesiones, pagos"); err != nil {
+			log.Fatalf("failed to register schema migration in super db: %v", err)
+		}
+		if err := dbpkg.RegisterSchemaMigration(dbSuper, "superadministrador", "2026-04-08-002-roles-permisos-dinamicos", "configuracion dinamica de permisos por rol para modulos y paginas del panel empresa"); err != nil {
+			log.Fatalf("failed to register roles permisos schema migration in super db: %v", err)
+		}
+		if err := dbpkg.RegisterSchemaMigration(dbSuper, "superadministrador", "2026-04-08-003-venta-digital-super", "modulo de venta digital global administrado por super con catalogo, ordenes y entrega por correo tras pago wompi"); err != nil {
+			log.Fatalf("failed to register venta digital super schema migration in super db: %v", err)
+		}
+		if err := dbpkg.RegisterSchemaMigration(dbSuper, "superadministrador", "2026-04-08-004-licencias-permisos-superrol", "licencias con modulos habilitados y bandera super_rol_habilitado para aplicar permisos efectivos por empresa"); err != nil {
+			log.Fatalf("failed to register licencias permisos superrol schema migration in super db: %v", err)
+		}
+	} else {
+		if err := handlers.EnsureSensitiveSuperConfigEncrypted(dbSuper); err != nil {
+			log.Fatalf("failed to enforce sensitive config encryption in super db: %v", err)
+		}
+		loadGoogleOAuthFromDB(dbSuper)
+		if clientID == "" || clientSecret == "" {
+			log.Println("Warning: GOOGLE_CLIENT_ID o GOOGLE_CLIENT_SECRET no configurados (entorno/DB)")
+		}
+		log.Println("INFO: modo PostgreSQL activo; se omite bootstrap SQLite en runtime.")
 	}
 
 	// Inicializar tabla de métricas y arrancar collector periódico

@@ -294,6 +294,45 @@ Write-Info "DB_POS_PATH=$env:DB_POS_PATH"
 function Stop-ProcessesOnPort {
     param([int]$port)
 
+    function Get-ListeningPidsOnPort {
+        param([int]$TargetPort)
+
+        $detected = @()
+
+        # Preferir API nativa cuando este disponible (mas confiable que parsear netstat).
+        try {
+            $connections = Get-NetTCPConnection -LocalPort $TargetPort -ErrorAction Stop |
+                Where-Object { $_.State -eq 'Listen' }
+            if ($connections) {
+                $detected = $connections | Select-Object -ExpandProperty OwningProcess -Unique
+            }
+        } catch {
+            # Fallback a netstat para entornos donde Get-NetTCPConnection no este disponible.
+        }
+
+        if ($detected.Count -eq 0) {
+            $netstatOut = netstat -ano -p tcp | findstr "LISTENING" 2>$null
+            if (-not [string]::IsNullOrWhiteSpace($netstatOut)) {
+                $detected = ($netstatOut -split "\r?\n" | ForEach-Object {
+                    $line = [string]$_
+                    if ([string]::IsNullOrWhiteSpace($line)) { return }
+
+                    if ($line -match '^\s*TCP\s+(\S+):(\d+)\s+\S+\s+LISTENING\s+(\d+)\s*$') {
+                        $localPort = 0
+                        if ([int]::TryParse($matches[2], [ref]$localPort) -and $localPort -eq $TargetPort) {
+                            $matches[3]
+                        }
+                    }
+                }) | Where-Object { $_ } | Select-Object -Unique
+            }
+        }
+
+        return @($detected | Where-Object {
+            $pidCandidate = 0
+            [int]::TryParse([string]$_, [ref]$pidCandidate) -and $pidCandidate -gt 0
+        })
+    }
+
     function Get-ProcessMetadata {
         param([int]$TargetPid)
 
@@ -357,55 +396,50 @@ function Stop-ProcessesOnPort {
     }
 
     Write-Info ("Comprobando puerto {0}..." -f $port)
-    $netstatOut = netstat -ano | findstr ":$port" 2>$null
-    if (-not [string]::IsNullOrWhiteSpace($netstatOut)) {
-        $pids = ($netstatOut -split "\r?\n" | ForEach-Object {
-            if ($_ -match '\s+(\d+)$') { $matches[1] }
-        }) | Where-Object { $_ } | Select-Object -Unique
-        $pids = @($pids)
+    $pids = Get-ListeningPidsOnPort -TargetPort $port
+    $pids = @($pids)
 
-        $blockedPids = @()
-        if ($pids.Count -gt 0) {
-            $joined = $pids -join ', '
-            Write-WarnMsg ("Procesos detectados en puerto {0}: {1}" -f $port, $joined)
-            foreach ($killPid in $pids) {
-                $pidNum = 0
-                if (-not [int]::TryParse([string]$killPid, [ref]$pidNum)) {
-                    Write-WarnMsg ("PID inválido detectado en puerto {0}: {1}" -f $port, $killPid)
-                    continue
-                }
-
-                if ($pidNum -eq $PID) {
-                    Write-WarnMsg ("Se omite el proceso actual (PID {0}) para evitar cortar la terminal." -f $pidNum)
-                    continue
-                }
-
-                $meta = Get-ProcessMetadata -TargetPid $pidNum
-                if (-not (Is-ManagedServerProcess -Meta $meta)) {
-                    Write-WarnMsg ("PID {0} ({1}) usa el puerto {2}, pero no es un proceso gestionado del backend. No se finalizará automáticamente." -f $pidNum, $meta.Name, $port)
-                    $blockedPids += $meta
-                    continue
-                }
-
-                try {
-                    Write-Info ("Terminando proceso backend PID {0} ({1})..." -f $pidNum, $meta.Name)
-                    Stop-Process -Id $pidNum -Force -ErrorAction Stop
-                    Write-Ok ("PID {0} terminado." -f $pidNum)
-                } catch {
-                    $msg = if ($_.Exception) { $_.Exception.Message } else { $_ }
-                    Write-WarnMsg ("No se pudo terminar PID {0}: {1}" -f $pidNum, $msg)
-                }
+    $blockedPids = @()
+    if ($pids.Count -gt 0) {
+        $joined = $pids -join ', '
+        Write-WarnMsg ("Procesos detectados en puerto {0}: {1}" -f $port, $joined)
+        foreach ($killPid in $pids) {
+            $pidNum = 0
+            if (-not [int]::TryParse([string]$killPid, [ref]$pidNum)) {
+                Write-WarnMsg ("PID inválido detectado en puerto {0}: {1}" -f $port, $killPid)
+                continue
             }
 
-            if ($blockedPids.Count -gt 0) {
-                $blockedSummary = ($blockedPids | ForEach-Object { "{0}({1})" -f $_.PID, $_.Name }) -join ', '
-                throw ("Puerto {0} ocupado por procesos no gestionados: {1}. Cierra esos procesos manualmente y vuelve a ejecutar el script." -f $port, $blockedSummary)
+            if ($pidNum -eq $PID) {
+                Write-WarnMsg ("Se omite el proceso actual (PID {0}) para evitar cortar la terminal." -f $pidNum)
+                continue
             }
 
-            Start-Sleep -Seconds 1
+            $meta = Get-ProcessMetadata -TargetPid $pidNum
+            if (-not (Is-ManagedServerProcess -Meta $meta)) {
+                Write-WarnMsg ("PID {0} ({1}) usa el puerto {2}, pero no es un proceso gestionado del backend. No se finalizara automaticamente." -f $pidNum, $meta.Name, $port)
+                $blockedPids += $meta
+                continue
+            }
+
+            try {
+                Write-Info ("Terminando proceso backend PID {0} ({1})..." -f $pidNum, $meta.Name)
+                Stop-Process -Id $pidNum -Force -ErrorAction Stop
+                Write-Ok ("PID {0} terminado." -f $pidNum)
+            } catch {
+                $msg = if ($_.Exception) { $_.Exception.Message } else { $_ }
+                Write-WarnMsg ("No se pudo terminar PID {0}: {1}" -f $pidNum, $msg)
+            }
         }
+
+        if ($blockedPids.Count -gt 0) {
+            $blockedSummary = ($blockedPids | ForEach-Object { "{0}({1})" -f $_.PID, $_.Name }) -join ', '
+            throw ("Puerto {0} ocupado por procesos no gestionados: {1}. Cierra esos procesos manualmente y vuelve a ejecutar el script." -f $port, $blockedSummary)
+        }
+
+        Start-Sleep -Seconds 1
     } else {
-        Write-Info "No hay procesos detectados en el puerto $port"
+        Write-Info "No hay procesos escuchando en el puerto $port"
     }
 
     # Además intentar cerrar procesos por nombre comunes del servidor

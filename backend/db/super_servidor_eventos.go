@@ -74,7 +74,7 @@ func EnsureSuperServidorEventosSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_super_servidor_eventos_reinicio_fecha ON super_servidor_eventos(reinicio_inesperado, fecha_evento DESC);`,
 	}
 	for _, stmt := range stmts {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}
@@ -197,7 +197,8 @@ func CreateSuperServidorEvento(dbConn *sql.DB, payload SuperServidorEvento) (int
 		correoEnviado = 1
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO super_servidor_eventos (
+	nowExpr := sqlNowExpr()
+	query := `INSERT INTO super_servidor_eventos (
 		tipo_evento,
 		motivo,
 		motivo_detalle,
@@ -220,7 +221,9 @@ func CreateSuperServidorEvento(dbConn *sql.DB, payload SuperServidorEvento) (int
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ` + nowExpr + `, ` + nowExpr + `, ?, ?, ?)`
+
+	return insertSQLCompat(dbConn, query,
 		payload.TipoEvento,
 		payload.Motivo,
 		payload.MotivoDetalle,
@@ -242,9 +245,4 @@ func CreateSuperServidorEvento(dbConn *sql.DB, payload SuperServidorEvento) (int
 		payload.Estado,
 		payload.Observaciones,
 	)
-	if err != nil {
-		return 0, err
-	}
-
-	return res.LastInsertId()
 }

@@ -1,6 +1,6 @@
 # Estructura del codigo
 
-Fecha de actualizacion: 2026-04-13
+Fecha de actualizacion: 2026-04-14
 
 ## Objetivo
 Este documento resume la estructura tecnica principal del sistema y sirve como referencia para mantenimiento y evolucion.
@@ -22,8 +22,11 @@ Este documento resume la estructura tecnica principal del sistema y sirve como r
   - Modulos por contexto (super y administrar_empresa).
   - Estilos centralizados en web/estilos.css.
 
-3. Datos (SQLite)
-- Bases:
+3. Datos (PostgreSQL en VPS + SQLite legado)
+- Bases operativas (PostgreSQL):
+  - pcs_superadministrador
+  - pcs_empresas
+- Bases legado (SQLite de migración/contingencia):
   - backend/db/superadministrador.db
   - backend/db/empresas.db
 - Criterio:
@@ -56,6 +59,81 @@ flowchart TD
 ## Regla de mantenimiento
 Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe reflejarse en este documento y en los diagramas relacionados dentro de documentos/diagramas/.
 
+## Actualizacion 2026-04-14 (OAuth callback robusto en VPS)
+
+- Backend autenticacion Google:
+  - `backend/handlers/auth_admin_handlers.go` ahora resuelve `redirect_uri` con host/protocolo de la solicitud (`X-Forwarded-Host`, `X-Forwarded-Proto`, `Host`) cuando el valor configurado no existe o apunta a loopback.
+  - si la configuración heredada usa `localhost` pero la solicitud entra por host público, se reescribe automáticamente a `http(s)://<host-publico>/auth/google/callback` para evitar callbacks rotos.
+  - se persiste temporalmente la URL de callback efectiva en cookie técnica (`oauth_redirect_url`) para garantizar consistencia entre `/auth/google/login` y `/auth/google/callback`.
+- Resultado operativo:
+  - se elimina el error de navegador `Unsafe attempt to load URL ... localhost ... from frame chrome-error://chromewebdata` en flujo OAuth desde VPS.
+  - validación HTTP en producción muestra `redirect_uri=http://2.24.197.58:8080/auth/google/callback`.
+
+## Actualizacion 2026-04-14 (OAuth runtime: prioridad entorno sobre DB)
+
+- Backend runtime (`backend/main.go`):
+  - `loadGoogleOAuthFromDB` deja de sobreescribir valores ya definidos por entorno.
+  - prioridad efectiva: entorno (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URL`) -> DB (`configuraciones`) solo para completar faltantes.
+- Scripts de despliegue:
+  - `scripts/sync_to_vps.ps1` y `scripts/sync_to_vps.sh` incorporan propagación opcional de `GOOGLE_REDIRECT_URL` en bootstrap remoto (`backend/.env.local`).
+- Resultado operativo:
+  - se reduce riesgo de usar callbacks heredados no válidos en VPS por sobrescritura desde DB.
+  - el bloqueo OAuth actual observado en VPS queda aislado a política/registro de `redirect_uri` en Google Cloud Console (no a salud de DB/backend).
+
+## Actualizacion 2026-04-14 (correccion web root en VPS)
+
+- Backend runtime (estaticos web):
+  - `backend/main.go` actualiza `resolveWebDir()` para incluir rutas candidatas adicionales desde `backend/bin` hacia la raíz del proyecto (`../../web` y `../../../web`).
+  - Se evita fallback indeseado a `backend/web/uploads`, que mostraba solo listado de archivos en `/`.
+- Resultado operativo:
+  - `index.html` y `login.html` vuelven a servirse desde `/root/powerfulcontrolsystem/web` en VPS.
+  - La URL pública `http://2.24.197.58:8080/` carga el portal correctamente.
+
+## Actualizacion 2026-04-14 (hardening deploy VPS: guard DSN postgres)
+
+- Scripts de despliegue:
+  - `scripts/sync_to_vps.ps1` y `scripts/sync_to_vps.sh` preservan configuración DB remota existente y validan el modo efectivo antes del redeploy.
+  - si el modo efectivo es `postgres` y falta `DB_EMPRESAS_DSN` o `DB_SUPERADMIN_DSN`, el bootstrap aborta con `BOOTSTRAP_ERROR:POSTGRES_MISSING_DSN`.
+- Resultado operativo:
+  - se evita el fallo tardío `DEPLOY_ERROR:process_not_running` causado por arranque con DSN vacíos.
+  - el error pasa a ser temprano, explícito y trazable en etapa de bootstrap.
+
+## Actualizacion 2026-04-14 (fase 4 PostgreSQL - estabilizacion de salida operativa)
+
+- Backend DB (contabilidad):
+  - `backend/db/eventos_contables.go` migra consultas del worker y operaciones de asientos/eventos a wrappers SQL portables (`querySQLCompat`, `execSQLCompat`, `insertSQLCompat`) para compatibilidad real SQLite/PostgreSQL.
+  - se unifica insercion con retorno de `id` en PostgreSQL y manejo de colisiones de idempotencia por restriccion unica.
+- Operacion VPS:
+  - se reestablece `backend/.env.local` con `DB_DIALECT=postgres` y DSN no vacios para `pcs_empresas` y `pcs_superadministrador`.
+  - se valida reinicio de backend en VPS y respuesta de salud `HTTP 200`.
+- Resultado funcional:
+  - se elimina el error operativo del worker contable en PostgreSQL (`syntax error at or near "ORDER"`) observado durante la salida controlada.
+
+## Actualizacion 2026-04-13 (inicio de migracion SQLite -> PostgreSQL en VPS)
+
+- Infraestructura de datos en VPS:
+  - se instala PostgreSQL 16 y herramienta `pgloader` en servidor remoto.
+  - se aprovisionan bases `pcs_superadministrador` y `pcs_empresas`.
+- Migracion por etapas con validacion:
+  - Etapa 1: `superadministrador.db` migrada a `pcs_superadministrador`.
+  - Etapa 2: `empresas.db` migrada a `pcs_empresas`.
+  - ambas etapas con validacion de conteo por tabla (`VALIDACION_SUPER_OK`, `VALIDACION_EMPRESAS_OK`).
+- Alcance de esta fase:
+  - migracion de estructura + datos en VPS completada.
+  - pendiente en siguiente iteracion: adaptacion de consultas del backend para conmutacion completa de runtime a PostgreSQL.
+
+### Diagrama de flujo (migracion por etapas)
+
+```mermaid
+flowchart TD
+    A[SQLite local legado] --> B[Transferencia a VPS por SSH]
+    B --> C[pgloader superadministrador]
+    C --> D[Validacion conteos superadministrador]
+    D --> E[pgloader empresas]
+    E --> F[Validacion conteos empresas]
+    F --> G[Conmutacion backend a PostgreSQL por fases]
+```
+
 ## Actualizacion 2026-04-13 (unificacion de rutas DB runtime)
 
 - Backend runtime:
@@ -65,6 +143,63 @@ Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe re
   - Si el servidor se ejecuta desde un directorio distinto, ya no crea copias en raíz o en `backend/`; mantiene una sola ubicación operativa.
 - Higiene de datos locales:
   - se depuraron copias duplicadas de `.db` fuera de `backend/db/` para reducir riesgo de desalineación entre entornos local y VPS.
+
+## Actualizacion 2026-04-14 (fase 3 PostgreSQL - autenticacion/sesiones + redeploy VPS)
+
+- Capa DB (avance de migracion):
+  - se agrega `backend/db/sql_compat.go` con compatibilidad inicial SQLite/PostgreSQL para:
+    - rebindeo de placeholders (`?` -> `$1..$n`) bajo dialecto PostgreSQL.
+    - expresiones temporales portables (`CURRENT_TIMESTAMP` vs `datetime('now','localtime')`).
+    - condicion de expiracion de sesiones portable.
+  - se ajustan funciones criticas de autenticacion/sesiones en `backend/db/db.go` (`UpsertUser`, `UpsertAdministrador`, `CreateSession`, `RevokeSessionByToken`, `GetSessionByToken`, `GetAdminByEmail`) para usar la capa de compatibilidad.
+
+- Operacion de despliegue:
+  - `scripts/sync_to_vps.ps1` y `scripts/sync_to_vps.sh` ahora realizan redeploy remoto automatico despues de sincronizar:
+    - detienen proceso backend previo,
+    - inician nueva version,
+    - validan healthcheck en el puerto configurado.
+
+## Actualizacion 2026-04-14 (fase 3 PostgreSQL - core DB de empresas/super)
+
+- Capa DB (ampliacion de compatibilidad):
+  - `backend/db/sql_compat.go` incorpora:
+    - wrappers portables `querySQLCompat` y `queryTxSQLCompat`.
+    - insercion portable con id (`insertSQLCompat`/`insertTxSQLCompat`) para SQLite y PostgreSQL.
+    - utilidades de deteccion de errores de esquema y normalizacion de definiciones de columna por dialecto.
+  - `backend/db/empresa_scope.go` migra `tableExists` para PostgreSQL usando `information_schema.tables`.
+  - `backend/db/productos.go` adapta `ensureColumnIfMissing` para consultar columnas por `information_schema.columns` en PostgreSQL y mantener `PRAGMA` en SQLite.
+
+- Dominio funcional migrado en `backend/db/db.go`:
+  - CRUD y consultas de `licencias`, `tipos_de_empresas`, `empresas`.
+  - operaciones de `pagos_wompi`, `asesores`, `asesor_comercial`, `asesor_comisiones`.
+  - `configuraciones` y `metrics`.
+  - todas estas rutas usan ahora placeholders y timestamps compatibles con ambos motores.
+
+## Actualizacion 2026-04-14 (fase 3 PostgreSQL - conmutacion de runtime en VPS)
+
+- Backend runtime:
+  - `backend/main.go` incorpora seleccion de motor por entorno (`DB_DIALECT`/`DB_ENGINE`/`PCS_DB_DIALECT`).
+  - en modo `postgres`, abre conexiones con driver `pgx` usando `DB_EMPRESAS_DSN` y `DB_SUPERADMIN_DSN`.
+  - en modo `postgres`, omite el bootstrap SQLite en arranque para evitar ejecuciones `PRAGMA`/DDL legacy no compatibles.
+- Operacion de despliegue:
+  - `scripts/sync_to_vps.ps1` y `scripts/sync_to_vps.sh` amplian bootstrap remoto para persistir en `backend/.env.local`:
+    - `DB_DIALECT`
+    - `DB_EMPRESAS_DSN`
+    - `DB_SUPERADMIN_DSN`
+  - el bootstrap reporta estado de variables DB criticas con `BOOTSTRAP_OK/BOOTSTRAP_WARN`.
+
+### Diagrama de flujo (runtime dual SQLite/PostgreSQL)
+
+```mermaid
+flowchart TD
+    A[Arranque backend] --> B{DB_DIALECT = postgres?}
+    B -->|Si| C[Abrir pgx: DB_EMPRESAS_DSN + DB_SUPERADMIN_DSN]
+    C --> D[Omitir bootstrap SQLite runtime]
+    D --> E[Registrar rutas y levantar servidor]
+    B -->|No| F[Abrir SQLite en backend/db/*.db]
+    F --> G[Aplicar bootstrap/migraciones SQLite]
+    G --> E
+```
 
 ## Actualizacion 2026-04-13 (estaciones: configuracion robusta, colores centralizados y sensores)
 

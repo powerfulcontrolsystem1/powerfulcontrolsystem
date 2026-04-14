@@ -1,6 +1,97 @@
 # CHANGELOG
 
+## 2026-04-14
+- Inicio local: corrección de detección de puerto 8080 para evitar falso bloqueo por PID 0.
+	- Archivos modificados: `scripts/iniciar_servidor.ps1`.
+	- Descripción: se reemplaza la detección basada en `netstat | findstr ":8080"` por una resolución de listeners locales reales (primero `Get-NetTCPConnection`, con fallback parseado de `netstat` en estado `LISTENING`). Se filtran PID inválidos/no gestionables (`<= 0`) y se evita abortar cuando aparece `System Idle Process` sin listener real del backend.
+	- Verificación: ejecución local `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\iniciar_servidor.ps1 -Background` completa en verde; paso 3 muestra `No hay procesos escuchando en el puerto 8080` y el servidor inicia correctamente.
+
+- OAuth Google VPS: prioridad de entorno sobre DB + soporte de `GOOGLE_REDIRECT_URL` en despliegue.
+	- Archivos modificados: `backend/main.go`, `scripts/sync_to_vps.ps1`, `scripts/sync_to_vps.sh`.
+	- Descripción: se ajusta la carga OAuth para que `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` y `GOOGLE_REDIRECT_URL` del entorno tengan prioridad sobre valores almacenados en tabla `configuraciones` (la DB solo completa faltantes). Se añade además propagación de `GOOGLE_REDIRECT_URL` en bootstrap remoto de scripts de sincronización.
+	- Verificación: `go test ./handlers -run "TestHandleGoogleLoginRedirect" -count=1` y `go test ./ -count=1` en verde. Diagnóstico en VPS confirma que el bloqueo actual es de política OAuth en Google (`secure-response-handling` / `redirect_uri_mismatch`) y no de base de datos.
+
+- OAuth Google: corrección de callback para evitar `localhost` en entorno VPS.
+	- Archivos modificados: `backend/handlers/auth_admin_handlers.go`, `backend/handlers/auth_users_carritos_test.go`, `backend/main.go`.
+	- Descripción: se implementa resolución dinámica del `redirect_uri` por host/protocolo de la solicitud y una regla de reescritura segura cuando la configuración existente apunta a loopback (`localhost/127.0.0.1`) pero el acceso real es público (VPS). El callback reutiliza la URL efectiva mediante cookie técnica de corta duración para mantener consistencia en intercambio de token.
+	- Verificación: despliegue real a VPS con `DEPLOY_OK:pid=53618 port=8080`; validación HTTP de `/auth/google/login` devuelve `redirect_uri=http://2.24.197.58:8080/auth/google/callback`.
+
+- Sync VPS: guard estricto de DSN para PostgreSQL y recuperación de despliegue estable.
+	- Archivos modificados: `scripts/sync_to_vps.ps1`, `scripts/sync_to_vps.sh`, `scripts/README_sync.md`, `documentos/diagramas/estructura_del_codigo.md`, `CHANGELOG.md`, `documentos/historial_de_cambios`, `documentos/descripcion_de_archivos`.
+	- Descripción: el bootstrap remoto ahora conserva valores DB existentes, valida el modo efectivo y bloquea el despliegue con `BOOTSTRAP_ERROR:POSTGRES_MISSING_DSN` cuando `postgres` no tiene ambos DSN; además usa el último valor de cada clave (`tail -n1`) y evita llegar a `DEPLOY_ERROR:process_not_running` por arranque inválido. En paralelo se restableció configuración DSN operativa en VPS para retomar despliegues en modo PostgreSQL.
+	- Verificación: ejecución real `./scripts/sync_to_vps.ps1 -SkipBuild -RetryCount 1` primero falla en bootstrap con mensaje explícito de DSN faltantes, luego (tras restablecer DSN en VPS) finaliza con `DEPLOY_OK:pid=... port=8080` y `GET /` = `200`.
+
+- VPS web root: corrección de resolución de estáticos para index/login.
+	- Archivos modificados: `backend/main.go`, `scripts/sync_to_vps.ps1`, `CHANGELOG.md`, `documentos/historial_de_cambios`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_archivos`.
+	- Descripción: se ajusta `resolveWebDir()` para priorizar correctamente `.../web` cuando el binario corre desde `backend/bin`, evitando que el servidor sirva `backend/web/uploads/` como raíz. Se redepliega en VPS y se valida apertura automática de la URL pública.
+	- Verificación: `GET /` = `200` con HTML de portal, `GET /index.html` = `200`, `GET /login.html` = `200`, proceso remoto activo en `:8080` y runtime PostgreSQL operativo.
+
+- Sync VPS: hardening para preservar DSN remotos y apertura automática de URL pública.
+	- Archivos modificados: `scripts/sync_to_vps.ps1`, `scripts/sync_to_vps.sh`, `scripts/README_sync.md`.
+	- Descripción: se excluye `backend/.env.local` de la sincronización para evitar sobrescribir secretos/DSN del VPS, se robustece el healthcheck de redeploy (detecta proceso caído y valida respuesta HTTP distinta de `000`) y se añade apertura automática de `http://<host>:<puerto>/` al finalizar despliegues exitosos.
+	- Verificación: ejecución real `./scripts/sync_to_vps.ps1 -RemoteHost 2.24.197.58 -RemoteUser root -RemotePath /root/powerfulcontrolsystem -DbDialect postgres -DbEmpresasDsn ... -DbSuperadminDsn ...` con `DEPLOY_OK:pid=... port=8080`, `GET / => 200` y backend en modo PostgreSQL con DSN activos.
+
+- Migración PostgreSQL (fase 4): estabilización de salida operativa en contabilidad y runtime VPS.
+	- Archivos modificados: `backend/db/eventos_contables.go`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `Pendiente Notas`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`.
+	- Descripción: se corrige el flujo del worker de asientos/eventos para PostgreSQL usando wrappers SQL portables y retorno de `id` compatible, eliminando el error `syntax error at or near "ORDER"` en runtime. Se restaura además el entorno VPS con DSN PostgreSQL válidos en `backend/.env.local` y se valida arranque estable.
+	- Verificación: `go test ./ ./auth ./db ./handlers ./metrics ./utils` en verde; validación remota en VPS con proceso activo, sin errores recientes de `asientos_worker` y healthcheck `HTTP=200`.
+
+- Migración PostgreSQL (fase 3): cierre documental del plan y sincronización de gobernanza por módulos.
+	- Archivos modificados: `Pendiente Notas`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`.
+	- Descripción: se marca Fase 3 como completada en el plan operativo, se agrega evidencia técnica de conmutación a PostgreSQL y se alinea la documentación de módulos/permisos sin cambios de privilegios en la matriz CRUD/A.
+	- Verificación: se mantiene evidencia de pruebas del bloque core en verde (`go test ./ ./auth ./db ./handlers ./metrics ./utils -count=1`).
+
+- Migración PostgreSQL (fase 3): conmutación de runtime backend a motor PostgreSQL en VPS.
+	- Archivos modificados: `backend/main.go`, `backend/go.mod`, `backend/go.sum`, `scripts/sync_to_vps.ps1`, `scripts/sync_to_vps.sh`, `scripts/README_sync.md`, `documentos/diagramas/estructura_del_codigo.md`.
+	- Descripción: el backend ahora selecciona motor por entorno (`DB_DIALECT`), abre conexiones con `pgx` usando `DB_EMPRESAS_DSN` y `DB_SUPERADMIN_DSN`, y omite el bootstrap SQLite cuando el runtime es PostgreSQL. Los scripts de sincronización ahora propagan y verifican estas variables en `backend/.env.local` del VPS durante bootstrap remoto.
+	- Verificación: `go test ./ ./auth ./db ./handlers ./metrics ./utils -count=1` en verde.
+
+- Migración PostgreSQL (fase 3): compatibilidad ampliada en núcleo `backend/db`.
+	- Archivos modificados: `backend/db/sql_compat.go`, `backend/db/empresa_scope.go`, `backend/db/productos.go`, `backend/db/db.go`.
+	- Descripción: se amplía la capa de compatibilidad SQLite/PostgreSQL con wrappers `query/exec` portables, inserciones con `RETURNING id` para PostgreSQL, detección de tablas por `information_schema` y ajuste de `ensureColumnIfMissing` por dialecto con normalización de defaults de fecha. Además, se migra el bloque core de `db.go` (licencias, tipos de empresa, empresas, Wompi, asesores, configuraciones y métricas) para usar placeholders/fechas compatibles con ambos motores.
+	- Verificación: `go test ./db -run "Session|Admin|User|Licencia|TipoEmpresa|Empresa|Config|Metric|Wompi|Asesor" -count=1` y `go test ./handlers -run "TestHandleGoogleLoginRedirectIncludesLoginHint|TestE2E_AcceptContractCreatesSession" -count=1` en verde.
+
+- Sync VPS: selección automática de clave de identidad al no pasar `-IdentityFile`.
+	- Archivos modificados: `scripts/sync_to_vps.ps1`, `scripts/README_sync.md`.
+	- Descripción: cuando no se especifica `-IdentityFile`, el script ahora prioriza la clave del proyecto `clave privada ssh.ppk` y, si no existe, usa `~/.ssh/id_rsa`. Además, mejora el mensaje de error cuando el VPS rechaza autenticación.
+	- Verificación: ejecución real `./scripts/sync_to_vps.ps1 -SkipBuild -RemoteHost 2.24.197.58 -RemoteUser root -RemotePath /root/powerfulcontrolsystem -RetryCount 1` completada con `Sincronización completada por fallback sin WSL (PuTTY)`.
+
+- Sync VPS: redeploy remoto automático de backend tras sincronización.
+	- Archivos modificados: `scripts/sync_to_vps.ps1`, `scripts/sync_to_vps.sh`, `scripts/README_sync.md`.
+	- Descripción: la sincronización ahora detiene el proceso viejo del backend en VPS, inicia la nueva versión del binario y valida salud HTTP en el puerto configurado (`SERVER_PORT`), evitando que quede corriendo una versión antigua.
+	- Verificación: ejecución real `./scripts/sync_to_vps.ps1 -SkipBuild -RemoteHost 2.24.197.58 -RemoteUser root -RemotePath /root/powerfulcontrolsystem -RetryCount 1` con salida `DEPLOY_OK:pid=... port=8080`.
+
+- Migración PostgreSQL (fase 3): avance inicial en autenticación y sesiones.
+	- Archivos añadidos/modificados: `backend/db/sql_compat.go`, `backend/db/db.go`, `documentos/diagramas/estructura_del_codigo.md`.
+	- Descripción: se incorpora capa de compatibilidad SQL SQLite/PostgreSQL (rebindeo de placeholders y expresiones de fecha) y se aplica a funciones críticas del flujo de autenticación/sesiones (`UpsertUser`, `UpsertAdministrador`, `CreateSession`, `RevokeSessionByToken`, `GetSessionByToken`, `GetAdminByEmail`).
+	- Verificación: `go test ./db -run "Session|Admin|User|Licencia" -count=1` y `go test ./handlers -run "TestHandleGoogleLoginRedirectIncludesLoginHint|TestE2E_AcceptContractCreatesSession" -count=1` en verde.
+
 ## 2026-04-13
+ - Reparación de login de usuario empresarial: permitir entrada manual de `empresa_id` y persistencia de contexto.
+	- Archivos modificados:
+		- web/login_usuario.html
+		- web/js/login_usuario.js
+	- Descripción: se agrega un campo `Empresa ID` en la página de login de usuario de empresa para aceptar el parámetro cuando no viene en la URL. La lógica JS persiste `empresa_id` en session/local storage, asegura que `redirect_url` incluya `empresa_id` y mejora la funcionalidad de "recordar usuario" por empresa.
+	- Verificación: validación de sintaxis JS sin errores y flujo de login manual verificado localmente.
+	- Archivos modificados: `scripts/sync_to_vps.ps1`, `scripts/README_sync.md`.
+	- Descripción: en fallback sin WSL, el script ahora selecciona transporte por tipo de clave: `ssh.exe` + `scp.exe` para claves OpenSSH (ej. `id_rsa`) y `plink.exe` + `pscp.exe` para `.ppk`. Con esto se evita el error `Unable to use key file ... OpenSSH SSH-2 private key (new format)` al usar la identidad por defecto.
+	- Verificación: `.\scripts\sync_to_vps.ps1 -SkipBuild -PreviewOnly -IdentityFile "$env:USERPROFILE\.ssh\id_rsa"` muestra `Fallback sin WSL (OpenSSH)` y comandos con `ssh.exe`/`scp.exe`.
+
+- Migración de datos a PostgreSQL en VPS: instalación, ejecución por etapas y validación inicial.
+	- Archivos modificados: `Pendiente Notas`, `documentos/regla_agente_go.md`, `copilot-instructions.md`, `documentos/descripcion_de_las_bases_De_datos`, `documentos/estructura_bd.md`, `estructura_bd.md`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`.
+	- Descripción: se instala PostgreSQL en VPS por SSH, se crean las bases `pcs_superadministrador` y `pcs_empresas`, y se inicia la migración desde SQLite con `pgloader` en dos etapas (superadministrador y empresas), validando consistencia por conteo de tablas en cada base. Se formaliza además la regla operativa: base productiva en VPS con PostgreSQL y SQLite local como legado de migración/contingencia.
+	- Verificación: `VALIDACION_SUPER_OK` y `VALIDACION_EMPRESAS_OK` tras comparación SQLite vs PostgreSQL por tabla.
+
+- Login administrativo: eliminación del mensaje visual de cuenta recordada y ajuste de OAuth.
+	- Archivos modificados: `web/login.html`, `backend/handlers/auth_admin_handlers.go`, `backend/handlers/auth_users_carritos_test.go`.
+	- Descripción: se elimina el texto en pantalla `Cuenta recordada ...` del login admin y se ajusta el parámetro OAuth `prompt` a `select_account` para evitar re-consentimiento de Google en cada inicio.
+	- Verificación: `go test ./handlers -run TestHandleGoogleLoginRedirectIncludesLoginHint -count=1` en verde.
+
+- Login administrativo: corrección de "Recordar cuenta" para evitar sesión parcial.
+	- Archivos modificados: `web/js/login.js`, `web/menu.js`.
+	- Descripción: se corrige el flujo para que cerrar sesión no elimine la preferencia cuando `rememberAccount=1`, se mantiene el correo recordado hasta que el usuario pulse "Olvidar" y se agrega sincronización de `rememberedEmail` desde `/me` cuando existe sesión activa.
+	- Verificación: revisión de errores en frontend sin incidencias (`get_errors` en ambos archivos).
+
 - Inicio local: hardening de scripts/iniciar_servidor para evitar caídas del host de PowerShell/VS Code.
 	- Archivo modificado: `scripts/iniciar_servidor.ps1`.
 	- Descripción: se refuerza la liberación de puerto 8080 para terminar únicamente procesos del backend (`server.exe`, `pos-backend`, `go run` del proyecto) y no procesos ajenos. Cuando el puerto está ocupado por un proceso no gestionado, el script ahora informa el PID/nombre y aborta con mensaje claro en lugar de forzar `taskkill` indiscriminado. También se elimina el `Clear-Host` inicial para evitar efectos colaterales en consolas integradas.

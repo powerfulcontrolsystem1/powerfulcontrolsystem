@@ -16,11 +16,26 @@
     try { localStorage.setItem(key, value); } catch (e) {}
   }
 
+  function setRememberedEmail(email) {
+    var normalized = String(email || "").trim();
+    if (!normalized) {
+      return;
+    }
+    safeSetItem(KEY_REMEMBER_EMAIL, normalized);
+  }
+
   function clearRememberState() {
     try {
       localStorage.removeItem(KEY_REMEMBER_FLAG);
       localStorage.removeItem(KEY_REMEMBER_EMAIL);
     } catch (e) {}
+  }
+
+  function clearRememberOnLogoutIfNeeded() {
+    if (isRememberEnabled()) {
+      return;
+    }
+    clearRememberState();
   }
 
   function isRememberEnabled() {
@@ -38,6 +53,32 @@
       url += "?login_hint=" + encodeURIComponent(rememberedEmail);
     }
     return url;
+  }
+
+  function syncRememberedEmailFromSession() {
+    if (!isRememberEnabled()) {
+      return;
+    }
+    if (getRememberedEmail()) {
+      return;
+    }
+
+    fetch("/me", { credentials: "same-origin" })
+      .then(function (res) {
+        if (!res.ok) {
+          throw new Error("unauth");
+        }
+        return res.json();
+      })
+      .then(function (admin) {
+        var email = admin && admin.email ? String(admin.email).trim() : "";
+        if (!email) {
+          return;
+        }
+        setRememberedEmail(email);
+        refreshRememberUI();
+      })
+      .catch(function () {});
   }
 
   function refreshRememberUI() {
@@ -67,6 +108,7 @@
     rememberCheckbox.addEventListener("change", function () {
       if (rememberCheckbox.checked) {
         safeSetItem(KEY_REMEMBER_FLAG, "1");
+        syncRememberedEmailFromSession();
       } else {
         clearRememberState();
       }
@@ -102,9 +144,10 @@
   var logoutLink = document.querySelector('.fm-item[href="/auth/logout"]');
   if (logoutLink) {
     logoutLink.addEventListener("click", function () {
-      clearRememberState();
+      clearRememberOnLogoutIfNeeded();
     });
   }
 
   refreshRememberUI();
+  syncRememberedEmailFromSession();
 })();

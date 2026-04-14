@@ -7,14 +7,25 @@ import (
 
 // EnsureSchemaMigrationsTable crea la tabla de control de migraciones versionadas.
 func EnsureSchemaMigrationsTable(dbConn *sql.DB) error {
-	_, err := dbConn.Exec(`CREATE TABLE IF NOT EXISTS schema_migrations (
+	createStmt := `CREATE TABLE IF NOT EXISTS schema_migrations (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		scope TEXT NOT NULL,
 		version TEXT NOT NULL,
 		description TEXT,
 		applied_at TEXT DEFAULT (datetime('now','localtime')),
 		UNIQUE(scope, version)
-	);`)
+	);`
+	if isPostgresDialect() {
+		createStmt = `CREATE TABLE IF NOT EXISTS schema_migrations (
+			id BIGSERIAL PRIMARY KEY,
+			scope TEXT NOT NULL,
+			version TEXT NOT NULL,
+			description TEXT,
+			applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			UNIQUE(scope, version)
+		);`
+	}
+	_, err := execSQLCompat(dbConn, createStmt)
 	return err
 }
 
@@ -26,7 +37,11 @@ func RegisterSchemaMigration(dbConn *sql.DB, scope, version, description string)
 	if err := EnsureSchemaMigrationsTable(dbConn); err != nil {
 		return err
 	}
-	_, err := dbConn.Exec(`INSERT OR IGNORE INTO schema_migrations (scope, version, description) VALUES (?, ?, ?)`, scope, version, description)
+	insertStmt := `INSERT OR IGNORE INTO schema_migrations (scope, version, description) VALUES (?, ?, ?)`
+	if isPostgresDialect() {
+		insertStmt = `INSERT INTO schema_migrations (scope, version, description) VALUES (?, ?, ?) ON CONFLICT(scope, version) DO NOTHING`
+	}
+	_, err := execSQLCompat(dbConn, insertStmt, scope, version, description)
 	return err
 }
 
@@ -40,7 +55,7 @@ func ApplySchemaMigration(dbConn *sql.DB, scope, version, description string, ap
 	}
 
 	var exists int
-	err := dbConn.QueryRow(`SELECT 1 FROM schema_migrations WHERE scope = ? AND version = ? LIMIT 1`, scope, version).Scan(&exists)
+	err := queryRowSQLCompat(dbConn, `SELECT 1 FROM schema_migrations WHERE scope = ? AND version = ? LIMIT 1`, scope, version).Scan(&exists)
 	if err == nil {
 		return nil
 	}
@@ -54,6 +69,6 @@ func ApplySchemaMigration(dbConn *sql.DB, scope, version, description string, ap
 		}
 	}
 
-	_, err = dbConn.Exec(`INSERT INTO schema_migrations (scope, version, description) VALUES (?, ?, ?)`, scope, version, description)
+	_, err = execSQLCompat(dbConn, `INSERT INTO schema_migrations (scope, version, description) VALUES (?, ?, ?)`, scope, version, description)
 	return err
 }
