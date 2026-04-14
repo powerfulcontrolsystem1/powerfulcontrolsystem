@@ -160,6 +160,27 @@ func refreshRuntimeGlobalsFromEnv() {
 	}
 }
 
+func resolveRuntimeDBPath(rawPath, defaultFileName, backendDir string) string {
+	trimmed := strings.TrimSpace(rawPath)
+	if trimmed == "" {
+		return filepath.Join(backendDir, "db", defaultFileName)
+	}
+
+	if filepath.IsAbs(trimmed) {
+		return trimmed
+	}
+
+	return filepath.Join(backendDir, trimmed)
+}
+
+func ensureRuntimeDBDir(dbPath string) error {
+	dir := strings.TrimSpace(filepath.Dir(dbPath))
+	if dir == "" || dir == "." {
+		return nil
+	}
+	return os.MkdirAll(dir, 0755)
+}
+
 func persistConfigEncKey(backendDir, value string) (string, error) {
 	envLocalPath := filepath.Join(backendDir, ".env.local")
 	prefix := "CONFIG_ENC_KEY="
@@ -420,12 +441,16 @@ func main() {
 		log.Fatalf("failed to ensure CONFIG_ENC_KEY: %v", err)
 	}
 
-	if dbEmpresasPath == "" {
-		dbEmpresasPath = "empresas.db"
+	dbEmpresasPath = resolveRuntimeDBPath(dbEmpresasPath, "empresas.db", backendDir)
+	dbSuperPath = resolveRuntimeDBPath(dbSuperPath, "superadministrador.db", backendDir)
+	if err := ensureRuntimeDBDir(dbEmpresasPath); err != nil {
+		log.Fatalf("failed to ensure empresas db directory: %v", err)
 	}
-	if dbSuperPath == "" {
-		dbSuperPath = "superadministrador.db"
+	if err := ensureRuntimeDBDir(dbSuperPath); err != nil {
+		log.Fatalf("failed to ensure superadministrador db directory: %v", err)
 	}
+	log.Printf("INFO: usando DB empresas en %s", dbEmpresasPath)
+	log.Printf("INFO: usando DB superadministrador en %s", dbSuperPath)
 	if redirectURL == "" {
 		redirectURL = "http://localhost:8080/auth/google/callback"
 		log.Println("INFO: usando redirectURL por defecto:", redirectURL)

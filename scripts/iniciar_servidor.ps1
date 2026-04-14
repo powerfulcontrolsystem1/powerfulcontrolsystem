@@ -28,7 +28,7 @@ function Write-ErrMsg {
 }
 
 Write-Step "1/8 Preparando entorno"
-Clear-Host
+
 
 $backend = Join-Path $PSScriptRoot "..\backend"
 if (-not (Test-Path $backend)) {
@@ -293,6 +293,69 @@ Write-Info "DB_POS_PATH=$env:DB_POS_PATH"
 
 function Stop-ProcessesOnPort {
     param([int]$port)
+
+    function Get-ProcessMetadata {
+        param([int]$TargetPid)
+
+        $meta = @{
+            PID = $TargetPid
+            Name = 'desconocido'
+            CommandLine = ''
+        }
+
+        try {
+            $proc = Get-CimInstance Win32_Process -Filter ("ProcessId = {0}" -f $TargetPid) -ErrorAction Stop
+            if ($proc) {
+                $meta.Name = [string]$proc.Name
+                $meta.CommandLine = [string]$proc.CommandLine
+                return $meta
+            }
+        } catch {
+            # fallback a Get-Process
+        }
+
+        try {
+            $p = Get-Process -Id $TargetPid -ErrorAction Stop
+            if ($p) {
+                $meta.Name = [string]$p.ProcessName
+            }
+        } catch {
+            # conservar valores por defecto
+        }
+
+        return $meta
+    }
+
+    function Is-ManagedServerProcess {
+        param([hashtable]$Meta)
+
+        $name = ([string]$Meta.Name).ToLowerInvariant()
+        $cmd = [string]$Meta.CommandLine
+
+        $managedNames = @('server', 'server.exe', 'pos-backend', 'pos-backend.exe')
+        if ($managedNames -contains $name) {
+            return $true
+        }
+
+        if (($name -eq 'go' -or $name -eq 'go.exe') -and -not [string]::IsNullOrWhiteSpace($cmd)) {
+            $cmdLower = $cmd.ToLowerInvariant()
+            if ($cmdLower.Contains(' go run ') -or $cmdLower.Contains('go.exe run')) {
+                if ($cmdLower.Contains('powerfulcontrolsystem') -or $cmdLower.Contains('backend')) {
+                    return $true
+                }
+            }
+        }
+
+        if (-not [string]::IsNullOrWhiteSpace($cmd)) {
+            $cmdLower = $cmd.ToLowerInvariant()
+            if ($cmdLower.Contains('server.exe') -or $cmdLower.Contains('pos-backend')) {
+                return $true
+            }
+        }
+
+        return $false
+    }
+
     Write-Info ("Comprobando puerto {0}..." -f $port)
     $netstatOut = netstat -ano | findstr ":$port" 2>$null
     if (-not [string]::IsNullOrWhiteSpace($netstatOut)) {
@@ -300,19 +363,45 @@ function Stop-ProcessesOnPort {
             if ($_ -match '\s+(\d+)$') { $matches[1] }
         }) | Where-Object { $_ } | Select-Object -Unique
         $pids = @($pids)
+
+        $blockedPids = @()
         if ($pids.Count -gt 0) {
             $joined = $pids -join ', '
             Write-WarnMsg ("Procesos detectados en puerto {0}: {1}" -f $port, $joined)
             foreach ($killPid in $pids) {
+                $pidNum = 0
+                if (-not [int]::TryParse([string]$killPid, [ref]$pidNum)) {
+                    Write-WarnMsg ("PID inválido detectado en puerto {0}: {1}" -f $port, $killPid)
+                    continue
+                }
+
+                if ($pidNum -eq $PID) {
+                    Write-WarnMsg ("Se omite el proceso actual (PID {0}) para evitar cortar la terminal." -f $pidNum)
+                    continue
+                }
+
+                $meta = Get-ProcessMetadata -TargetPid $pidNum
+                if (-not (Is-ManagedServerProcess -Meta $meta)) {
+                    Write-WarnMsg ("PID {0} ({1}) usa el puerto {2}, pero no es un proceso gestionado del backend. No se finalizará automáticamente." -f $pidNum, $meta.Name, $port)
+                    $blockedPids += $meta
+                    continue
+                }
+
                 try {
-                    Write-Info ("Terminando proceso PID {0}..." -f $killPid)
-                    taskkill /PID $killPid /F | Out-Null
-                    Write-Ok ("PID {0} terminado." -f $killPid)
+                    Write-Info ("Terminando proceso backend PID {0} ({1})..." -f $pidNum, $meta.Name)
+                    Stop-Process -Id $pidNum -Force -ErrorAction Stop
+                    Write-Ok ("PID {0} terminado." -f $pidNum)
                 } catch {
                     $msg = if ($_.Exception) { $_.Exception.Message } else { $_ }
-                    Write-WarnMsg ("No se pudo terminar PID {0}: {1}" -f $killPid, $msg)
+                    Write-WarnMsg ("No se pudo terminar PID {0}: {1}" -f $pidNum, $msg)
                 }
             }
+
+            if ($blockedPids.Count -gt 0) {
+                $blockedSummary = ($blockedPids | ForEach-Object { "{0}({1})" -f $_.PID, $_.Name }) -join ', '
+                throw ("Puerto {0} ocupado por procesos no gestionados: {1}. Cierra esos procesos manualmente y vuelve a ejecutar el script." -f $port, $blockedSummary)
+            }
+
             Start-Sleep -Seconds 1
         }
     } else {

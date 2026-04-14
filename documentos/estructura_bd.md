@@ -1,13 +1,18 @@
 # Estructura del Base de Datos
 
-Version: 2026-04-11.45.0
-Ultima actualizacion: 2026-04-11
+Version: 2026-04-13.46.0
+Ultima actualizacion: 2026-04-13
 
 Este documento consolida la estructura activa de SQLite para el proyecto.
 Nota de gobernanza documental:
 - `documentos/estructura_bd.md` es la fuente canonica del esquema fisico.
 - `estructura_bd.md` (raiz) se mantiene como copia de compatibilidad y debe mantenerse sincronizada.
 - `documentos/descripcion_de_las_bases_De_datos` es documento complementario funcional (sin duplicar detalle tabla-por-tabla).
+Ubicacion canonica de archivos SQLite operativos:
+- `backend/db/empresas.db`
+- `backend/db/superadministrador.db`
+Regla operativa de unicidad:
+- Solo deben existir estos dos archivos `.db` activos para evitar divergencias por rutas duplicadas.
 Todas las tablas operativas usan como base los campos estandar:
 - id INTEGER PRIMARY KEY AUTOINCREMENT
 - fecha_creacion TEXT DEFAULT (datetime('now','localtime'))

@@ -1,6 +1,36 @@
 # CHANGELOG
 
 ## 2026-04-13
+- Inicio local: hardening de scripts/iniciar_servidor para evitar caídas del host de PowerShell/VS Code.
+	- Archivo modificado: `scripts/iniciar_servidor.ps1`.
+	- Descripción: se refuerza la liberación de puerto 8080 para terminar únicamente procesos del backend (`server.exe`, `pos-backend`, `go run` del proyecto) y no procesos ajenos. Cuando el puerto está ocupado por un proceso no gestionado, el script ahora informa el PID/nombre y aborta con mensaje claro en lugar de forzar `taskkill` indiscriminado. También se elimina el `Clear-Host` inicial para evitar efectos colaterales en consolas integradas.
+	- Verificación: ejecución local `./scripts/iniciar_servidor.ps1 -Background` con `SCRIPT_EXIT=0` y comprobación HTTP local `HTTP_STATUS=200`.
+
+- Unificación de bases SQLite: solo dos archivos canónicos del sistema.
+	- Archivos modificados: `backend/main.go`, `documentos/estructura_bd.md`, `estructura_bd.md`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`.
+	- Descripción: se normaliza la resolución de rutas en runtime para que el backend use por defecto `backend/db/empresas.db` y `backend/db/superadministrador.db` aunque se ejecute desde otro directorio. Se depuran copias operativas duplicadas en raíz y en `backend/`, dejando únicamente dos archivos `.db` activos.
+	- Verificación: inventario local posterior muestra exactamente dos DB (`backend/db/empresas.db` y `backend/db/superadministrador.db`) y pruebas backend en verde con `go test ./ ./auth ./db ./handlers ./metrics ./utils`.
+
+- Sync VPS: bootstrap automático para servidor nuevo y diagnóstico de OAuth.
+	- Archivos modificados: `scripts/sync_to_vps.ps1`, `scripts/README_sync.md`.
+	- Descripción: se añade bootstrap post-sync en modo sin WSL para instalar dependencias base (`ca-certificates`, `curl`, `sqlite3`), asegurar `backend/.env.local` y reportar estado de variables críticas (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `SERVER_PORT`, `CONFIG_ENC_KEY`) con salida `BOOTSTRAP_WARN/BOOTSTRAP_OK`. Se incorporan parámetros opcionales `-GoogleClientId` y `-GoogleClientSecret`.
+	- Verificación: ejecución real con `SYNC_EXIT=0` y diagnóstico remoto mostrando faltantes OAuth (`GOOGLE_CLIENT_ID/SECRET` vacíos).
+
+- Instalador de clave pública en Windows: corrección de errores de ejecución.
+	- Archivo modificado: `scripts/instalar_clave_publica_vps.ps1`.
+	- Descripción: se corrige el flujo para evitar errores remotos tipo `invalid option namepefail` y se adapta a PowerShell 5.1 eliminando sintaxis no soportada (`??`). Ahora usa comando remoto en una sola línea, validación de formato de clave OpenSSH y reintentos por timeout.
+	- Verificación: `scripts/instalar_clave_publica_vps.ps1 -PreviewOnly -RemoteHost 2.24.197.58 -User root -Port 22` en verde (exit 0).
+
+- Despliegue VPS: instalación automatizada de clave pública PuTTYgen + robustecimiento de scripts de sincronización
+	- Archivos añadidos/modificados:
+		- scripts/instalar_clave_publica_vps.ps1 (nuevo: instala clave pública RFC4716 en `~/.ssh/authorized_keys` de VPS Linux)
+		- scripts/sync_to_vps.sh (hardening para Linux: validaciones, eliminación de `eval`, chequeo remoto de SO)
+		- scripts/sync_to_vps.ps1 (manejo de errores sin cerrar terminal de VS Code, build Linux local previo y fallback PuTTY sin WSL con empaquetado tar)
+		- scripts/README_sync.md (guía de ejecución en un comando)
+		- web/login.html y web/js/login.js (completa UX de "Recordar cuenta" para login admin)
+	- Descripción: se habilita un flujo operativo de un solo comando para preparar acceso por clave pública al VPS y se corrige la causa de cierres de terminal por `exit` en script PowerShell. `sync_to_vps.ps1` ahora compila en local un binario Linux (`backend/bin/server_linux_amd64`) antes de sincronizar y, sin Ubuntu/WSL, opera empaquetando el proyecto en `.tar`, subiéndolo por `pscp.exe` y extrayéndolo en VPS por `plink.exe`, con trazas detalladas y exclusión de archivos sensibles/locales (`*.ppk`, `*.pem`, `*.key`, DB, logs, temporales); además aplica `chmod +x` al binario remoto configurado. Se añadió manejo de `Connection timed out` con prechequeo TCP y reintentos automáticos configurables (`-RetryCount`) por etapa de conexión/subida/extracción.
+	- Verificación: `scripts/instalar_clave_publica_vps.ps1 -PreviewOnly -RemoteHost 2.24.197.58` ejecuta correctamente; `scripts/sync_to_vps.ps1 -BuildOnly`, `-DryRun` y ejecución real con `-IdentityFile "D:\powerfulcontrolsystem\clave privada ssh.ppk"` completan con `exit code 0`; en VPS el artefacto quedó como ELF Linux en `/root/powerfulcontrolsystem/backend/bin/server_linux_amd64`.
+
 - Módulo Vendedores / Asesores comerciales: integración de código de descuento y registro de asesor/vendedor en pagos
 	- Archivos añadidos/modificados:
 		- backend/handlers/payments_handlers.go (extiende payload y persistencia de `pagos_wompi` con `discount_code` y `asesor_id`/`vendedor_id`)

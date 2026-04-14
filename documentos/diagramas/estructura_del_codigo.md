@@ -56,6 +56,16 @@ flowchart TD
 ## Regla de mantenimiento
 Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe reflejarse en este documento y en los diagramas relacionados dentro de documentos/diagramas/.
 
+## Actualizacion 2026-04-13 (unificacion de rutas DB runtime)
+
+- Backend runtime:
+  - `backend/main.go` ahora resuelve por defecto las bases SQLite en rutas canónicas dentro de `backend/db/`:
+    - `backend/db/empresas.db`
+    - `backend/db/superadministrador.db`
+  - Si el servidor se ejecuta desde un directorio distinto, ya no crea copias en raíz o en `backend/`; mantiene una sola ubicación operativa.
+- Higiene de datos locales:
+  - se depuraron copias duplicadas de `.db` fuera de `backend/db/` para reducir riesgo de desalineación entre entornos local y VPS.
+
 ## Actualizacion 2026-04-13 (estaciones: configuracion robusta, colores centralizados y sensores)
 
 - Frontend estaciones:

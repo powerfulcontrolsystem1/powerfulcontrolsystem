@@ -1,5 +1,31 @@
 Descripcion de archivos del proyecto
 
+Actualizacion 2026-04-13: Estabilidad de inicio local en scripts/iniciar_servidor.ps1
+ - Archivo modificado:
+	- scripts/iniciar_servidor.ps1
+ - Descripción: Se ajusta la liberación del puerto 8080 para detener únicamente procesos del backend y evitar cierres de procesos no relacionados. Cuando el puerto está ocupado por procesos ajenos, el script ahora lo reporta con detalle (PID/nombre) y corta con mensaje accionable. También se removió la limpieza agresiva de pantalla al inicio (`Clear-Host`) para evitar problemas en consolas integradas.
+
+Actualizacion 2026-04-13: Unificación de bases de datos SQLite y depuración de copias
+ - Archivos modificados:
+	- backend/main.go (runtime DB canónico: resolución de rutas por defecto a `backend/db/empresas.db` y `backend/db/superadministrador.db`, con creación de directorio padre cuando aplica)
+	- documentos/estructura_bd.md y estructura_bd.md (se explicita ubicación canónica de los archivos DB operativos)
+	- documentos/diagramas/estructura_del_codigo.md (se registra la unificación de rutas DB en la arquitectura de backend)
+ - Archivos depurados (eliminados por duplicidad operativa):
+	- empresas.db (raíz)
+	- superadministrador.db (raíz)
+	- backend/empresas.db
+	- backend/superadministrador.db
+ - Descripción: Se normaliza el uso de base de datos para que el sistema opere con solo dos archivos SQLite activos, evitando divergencia de datos por ejecuciones desde directorios distintos.
+
+Actualizacion 2026-04-13: Script de instalación de clave pública VPS y endurecimiento de sincronización
+ - Archivos añadidos/modificados:
+	- scripts/instalar_clave_publica_vps.ps1 (nuevo: instala clave pública RFC4716 de PuTTYgen en `authorized_keys` de VPS Linux)
+	- scripts/sync_to_vps.sh (validaciones robustas, detección Linux remoto, eliminación de `eval`)
+	- scripts/sync_to_vps.ps1 (manejo de errores no destructivo para evitar cierre de terminal, validación robusta de rutas WSL, detección explícita de WSL sin distro y modo `-PreviewOnly`)
+	- scripts/README_sync.md (documentación de ejecución en un comando)
+	- web/login.html y web/js/login.js (bloque visual + lógica completa de "Recordar cuenta" en login admin)
+ - Descripción: Se añadió un script de instalación idempotente para clave pública en VPS y se robustecieron los scripts de sincronización para operación estable en Windows/WSL y Linux. También se completó la funcionalidad de recordar cuenta en login administrativo.
+
 Actualizacion 2026-04-13: Módulo Vendedores - Configuración avanzada y página de registro
  - Archivos añadidos/modificados:
 	- web/super/vendedor_config_avanzado.html (nuevo: UI para configurar parámetros globales del módulo vendedor)

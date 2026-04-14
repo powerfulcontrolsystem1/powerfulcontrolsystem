@@ -1,6 +1,92 @@
  - Historial de cambios
  - Historial de cambios
 
+ - 2026-04-13: Corrección de inicio local para evitar ETIMEOUT en host PSES
+     - Archivo modificado:
+         - scripts/iniciar_servidor.ps1
+     - Descripcion: Se endurece la función de liberación de puerto 8080 para finalizar solo procesos gestionados del backend y evitar terminación de procesos ajenos (por ejemplo, procesos del entorno VS Code/PowerShell). Si el puerto está ocupado por un proceso no gestionado, el script reporta PID/nombre y solicita liberarlo manualmente. También se elimina `Clear-Host` del inicio para reducir efectos colaterales en consolas integradas.
+     - Verificacion tecnica:
+         - `./scripts/iniciar_servidor.ps1 -Background` -> `SCRIPT_EXIT=0`.
+         - Verificación local de servicio: `Invoke-WebRequest http://localhost:8080/` -> `HTTP_STATUS=200`.
+
+ - 2026-04-13: Unificación de bases SQLite (solo dos archivos operativos)
+     - Archivos modificados:
+         - backend/main.go
+         - documentos/estructura_bd.md
+         - estructura_bd.md
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_archivos
+         - CHANGELOG.md
+         - documentos/historial_de_cambios
+     - Archivos depurados:
+         - empresas.db (raíz del repositorio)
+         - superadministrador.db (raíz del repositorio)
+         - backend/empresas.db
+         - backend/superadministrador.db
+     - Descripcion: Se ajusta el arranque para resolver rutas DB por defecto en `backend/db/` y se evita la creación de copias cuando el servidor se ejecuta desde diferentes directorios. Se limpia el workspace para mantener únicamente `backend/db/empresas.db` y `backend/db/superadministrador.db` como bases activas.
+     - Verificacion tecnica:
+         - Inventario post-limpieza: `Get-ChildItem -Recurse *.db` devuelve solo dos archivos en `backend/db/`.
+         - `go test ./ ./auth ./db ./handlers ./metrics ./utils` en `backend/` -> OK (todos los paquetes en verde).
+
+ - 2026-04-13: Sync VPS - bootstrap automático para servidor nuevo y diagnóstico OAuth
+     - Archivos modificados:
+         - scripts/sync_to_vps.ps1
+         - scripts/README_sync.md
+     - Descripcion: Se agrega bootstrap post-sync en `sync_to_vps.ps1` (modo sin WSL) para preparar servidores nuevos: instalación de dependencias base por `apt-get`, validación de `backend/.env.local`, chequeo de claves críticas (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `SERVER_PORT`, `CONFIG_ENC_KEY`) y reporte explícito `BOOTSTRAP_WARN/BOOTSTRAP_OK`. También se añaden parámetros opcionales para inyectar credenciales OAuth en el despliegue (`-GoogleClientId`, `-GoogleClientSecret`).
+     - Verificacion tecnica:
+         - `./scripts/sync_to_vps.ps1 ... -BootstrapServer $true` -> EXIT 0.
+         - Salida observada en VPS: `BOOTSTRAP_WARN:GOOGLE_CLIENT_ID=EMPTY` y `BOOTSTRAP_WARN:GOOGLE_CLIENT_SECRET=EMPTY`.
+
+ - 2026-04-13: Instalador de clave pública - corrección de ejecución en Windows
+     - Archivos modificados:
+         - scripts/instalar_clave_publica_vps.ps1
+     - Descripcion: Se restaura y corrige el script de instalación de clave pública para evitar errores de shell remoto tipo `invalid option namepefail` (causados por inyección multilinea) y errores de parser en PowerShell 5.1 (operador `??`). El script ahora ejecuta un comando remoto en una sola línea, soporta `-PreviewOnly`, valida formato OpenSSH y agrega reintentos por timeout.
+     - Verificacion tecnica:
+         - `./scripts/instalar_clave_publica_vps.ps1 -PreviewOnly -RemoteHost 2.24.197.58 -User root -Port 22` -> EXIT 0.
+
+ - 2026-04-13: Sync VPS - compilación Linux local obligatoria antes de sincronizar
+     - Archivos modificados:
+         - scripts/sync_to_vps.ps1
+         - scripts/README_sync.md
+     - Descripcion: `sync_to_vps.ps1` ahora compila en local un binario Linux (`backend/bin/server_linux_amd64`) antes de sincronizar al VPS, con parámetros de build configurables (`BuildWorkingDir`, `BuildPackage`, `BuildOutput`, `BuildGoOS`, `BuildGoArch`, `BuildCgoEnabled`) y modos `BuildOnly`/`SkipBuild`. En modo sin WSL aplica `chmod +x` automático al binario remoto configurado en `BuildOutput` y agrega manejo profesional de red con prechequeo TCP, reintentos automáticos por timeout (`RetryCount`) y auto-instalación opcional de dependencias PuTTY (`AutoInstallDependencies`).
+     - Verificacion tecnica:
+         - `./scripts/sync_to_vps.ps1 -BuildOnly ...` -> EXIT 0, binario generado localmente.
+         - `./scripts/sync_to_vps.ps1 -DryRun ...` -> EXIT 0, listado de archivos a transferir.
+         - `./scripts/sync_to_vps.ps1 ...` -> EXIT 0, sincronizacion real completada.
+         - Validacion remota: `file /root/powerfulcontrolsystem/backend/bin/server_linux_amd64` -> ELF 64-bit Linux.
+
+ - 2026-04-13: Sync VPS sin Ubuntu local - fallback profesional con trazas y exclusiones
+     - Archivos modificados:
+         - scripts/sync_to_vps.ps1
+         - scripts/README_sync.md
+     - Descripcion: Se mejora el modo sin WSL para sincronizar manualmente desde Windows empaquetando el proyecto en `.tar`, subiendo por `pscp` y extrayendo en VPS por `plink`, con logs por etapa (`empaquetando`, `subiendo`, `extrayendo`), manejo de errores por paso y exclusiones de seguridad (`*.ppk`, `*.pem`, `*.key`, DB locales, logs y temporales).
+     - Verificacion tecnica:
+         - `./scripts/sync_to_vps.ps1 -PreviewOnly -RemoteHost 2.24.197.58 -IdentityFile 'D:\powerfulcontrolsystem\clave privada ssh.ppk'` -> EXIT 0.
+         - `./scripts/sync_to_vps.ps1 -DryRun -RemoteHost 2.24.197.58 -IdentityFile 'D:\powerfulcontrolsystem\clave privada ssh.ppk'` -> EXIT 0 (listado de archivos).
+         - `./scripts/sync_to_vps.ps1 -RemoteHost 2.24.197.58 -IdentityFile 'D:\powerfulcontrolsystem\clave privada ssh.ppk'` -> EXIT 0 (sincronizacion real completada).
+
+ - 2026-04-13: Sync VPS Windows/WSL - correccion de rutas y soporte .ppk
+     - Archivos modificados:
+         - scripts/sync_to_vps.ps1
+         - scripts/sync_to_vps.sh
+     - Descripcion: Se corrige el fallo de `wslpath` con rutas Windows (`\\` -> `/`) en `sync_to_vps.ps1` y se agrega compatibilidad con llaves PuTTY `.ppk` usando fallback automatico a `plink` cuando no es posible convertir con `puttygen`. En `sync_to_vps.sh` se incorpora selector de cliente SSH (`ssh|plink`) para que `rsync` funcione con `-IdentityFile` `.ppk` desde Windows.
+     - Verificacion tecnica:
+         - `./scripts/sync_to_vps.ps1 -PreviewOnly -RemoteHost 2.24.197.58 -IdentityFile 'D:\powerfulcontrolsystem\clave privada ssh.ppk'` -> EXIT 0.
+         - `./scripts/sync_to_vps.ps1 -DryRun -RemoteHost 2.24.197.58 -IdentityFile 'D:\powerfulcontrolsystem\clave privada ssh.ppk'` -> EXIT 0 y `[OK] Sincronizacion completada correctamente.`
+
+ - 2026-04-13: VPS/SSH — instalación de clave pública en un comando y correcciones de scripts
+     - Archivos añadidos/modificados:
+         - scripts/instalar_clave_publica_vps.ps1 (nuevo)
+         - scripts/sync_to_vps.sh
+         - scripts/sync_to_vps.ps1
+         - scripts/README_sync.md
+         - web/login.html
+         - web/js/login.js
+    - Descripción: Se incorpora script para instalar clave pública PuTTYgen (RFC4716) en `~/.ssh/authorized_keys` de VPS Linux de forma idempotente. Se corrige `sync_to_vps.ps1` para no cerrar terminal por `exit`, se endurece la validación de `wslpath` (evitando error por valor nulo en `Convert-ToBashLiteral`), se agrega modo `-PreviewOnly` y detección explícita de "WSL sin distribuciones Linux" con mensaje accionable. Además, se termina el flujo de "Recordar cuenta" en login admin.
+     - Verificación técnica:
+         - `get_errors` en scripts y login actualizados -> sin errores.
+         - `./scripts/instalar_clave_publica_vps.ps1 -PreviewOnly -RemoteHost 2.24.197.58` -> ejecuta y genera comando remoto sin cerrar terminal.
+
  - 2026-04-13: Módulo Vendedores — configuración avanzada y UI de registro
      - Archivos añadidos/modificados:
          - web/super/vendedor_config_avanzado.html (nuevo)
