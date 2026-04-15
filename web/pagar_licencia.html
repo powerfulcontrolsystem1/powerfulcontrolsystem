@@ -30,25 +30,151 @@
 
   <script>
     (function(){
+      const pendingPaymentKey = 'pcs_licencia_payment_pending_v1';
+
       function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m] }) }
+      function normalizeProvider(raw){
+        const value = String(raw || '').trim().toLowerCase();
+        if (value === 'nequi' || value === 'wompi') return 'wompi';
+        if (value === 'epayco') return 'epayco';
+        return '';
+      }
+      function normalizeStatus(raw){
+        const value = String(raw || '').trim().toUpperCase();
+        if (!value) return '';
+        if (value === 'SUCCESS') return 'APPROVED';
+        if (value === 'FAILURE') return 'DECLINED';
+        return value;
+      }
+      function providerLabel(provider){
+        if (provider === 'epayco') return 'Epayco';
+        if (provider === 'wompi') return 'Wompi';
+        return 'la pasarela';
+      }
+      function originalButtonLabel(provider){
+        return provider === 'epayco' ? 'Pagar con Epayco' : 'Pagar con Wompi (Nequi)';
+      }
+      function isSuccessStatus(status){ return normalizeStatus(status) === 'APPROVED'; }
+      function isFinalStatus(status){
+        const value = normalizeStatus(status);
+        return ['APPROVED','DECLINED','ERROR','VOIDED','CANCELED','FAILED'].indexOf(value) >= 0;
+      }
+      function readPendingPayment(){
+        try {
+          const raw = localStorage.getItem(pendingPaymentKey);
+          if (!raw) return null;
+          const parsed = JSON.parse(raw);
+          const createdAt = Number(parsed && parsed.createdAt || 0);
+          if (createdAt > 0 && (Date.now() - createdAt) > (6 * 60 * 60 * 1000)) {
+            localStorage.removeItem(pendingPaymentKey);
+            return null;
+          }
+          return parsed;
+        } catch (err) {
+          return null;
+        }
+      }
+      function savePendingPayment(payment){
+        try {
+          localStorage.setItem(pendingPaymentKey, JSON.stringify(payment || {}));
+        } catch (err) {}
+      }
+      function clearPendingPayment(){
+        try {
+          localStorage.removeItem(pendingPaymentKey);
+        } catch (err) {}
+      }
+      function matchesPendingContext(pending, licenciaId, empresaId){
+        if (!pending) return false;
+        if (licenciaId && String(pending.licenciaId || '') !== String(licenciaId)) return false;
+        return String(pending.empresaId || '') === String(empresaId || '');
+      }
+      function buildReturnContext(params, licenciaId, empresaId){
+        const pending = readPendingPayment();
+        let provider = normalizeProvider(params.get('provider') || params.get('metodo') || params.get('method'));
+        let status = normalizeStatus(params.get('status') || params.get('x_response') || params.get('response'));
+        let transactionId = String(params.get('transaction_id') || params.get('id') || params.get('x_transaction_id') || '').trim();
+        let reference = String(params.get('reference') || params.get('ref') || params.get('ref_payco') || params.get('x_ref_payco') || params.get('invoice') || '').trim();
+
+        if ((!provider || (!transactionId && !reference)) && matchesPendingContext(pending, licenciaId, empresaId)) {
+          if (!provider) provider = normalizeProvider(pending.provider);
+          if (!status) status = normalizeStatus(pending.status);
+          if (!transactionId) transactionId = String(pending.transactionId || '').trim();
+          if (!reference) reference = String(pending.reference || '').trim();
+        }
+
+        return {
+          provider: provider,
+          status: status,
+          transactionId: transactionId,
+          reference: reference,
+          hasReturn: !!(provider || status || transactionId || reference)
+        };
+      }
+      function renderFeedback(target, kind, title, body){
+        if (!target) return;
+        const className = kind === 'success' ? 'success' : (kind === 'error' ? 'error' : 'muted');
+        target.innerHTML = '<div class="' + className + '"><strong>' + escapeHtml(title) + '</strong><div>' + escapeHtml(body) + '</div></div>';
+      }
+      function syncStatusText(target, text){ if (target) target.textContent = text || ''; }
+      function extractResponseContext(data, fallback){
+        const payload = data && data.data && typeof data.data === 'object' ? data.data : null;
+        const context = fallback || {};
+        return {
+          provider: normalizeProvider((data && data.provider) || context.provider),
+          status: normalizeStatus((data && data.status) || (payload && payload.status) || context.status),
+          transactionId: String((data && (data.transaction_id || data.id)) || (payload && (payload.id || payload.transaction_id)) || context.transactionId || '').trim(),
+          reference: String((data && (data.reference || data.ref)) || (payload && (payload.reference || payload.invoice || payload.x_ref_payco)) || context.reference || '').trim()
+        };
+      }
+      async function fetchProviderStatus(provider, context){
+        const normalizedProvider = normalizeProvider(provider);
+        if (!normalizedProvider) throw new Error('No se pudo determinar la pasarela del pago.');
+        let endpoint = '';
+        if (normalizedProvider === 'epayco') {
+          endpoint = context.transactionId ? ('/epayco/transaction_status?id=' + encodeURIComponent(context.transactionId)) : ('/epayco/transaction_status?reference=' + encodeURIComponent(context.reference || ''));
+        } else {
+          endpoint = context.transactionId ? ('/wompi/transaction_status?id=' + encodeURIComponent(context.transactionId)) : ('/wompi/transaction_status?reference=' + encodeURIComponent(context.reference || ''));
+        }
+        const response = await fetch(endpoint, { credentials: 'same-origin' });
+        const raw = await response.text();
+        let data = null;
+        try { data = JSON.parse(raw); } catch (err) { data = null; }
+        if (!response.ok) {
+          throw new Error((data && data.error) ? data.error : (raw || 'No se pudo consultar el estado del pago.'));
+        }
+        return data || {};
+      }
+
       async function run(){
         const params = new URLSearchParams(window.location.search);
-        const licenciaId = params.get('licencia_id');
-        const empresaId = params.get('empresa_id');
-        const status = params.get('status');
+        const pendingSeed = readPendingPayment();
+        let licenciaId = params.get('licencia_id');
+        let empresaId = params.get('empresa_id');
+        if (!licenciaId && pendingSeed && pendingSeed.licenciaId) licenciaId = String(pendingSeed.licenciaId);
+        if (!empresaId && pendingSeed && pendingSeed.empresaId) empresaId = String(pendingSeed.empresaId);
 
+        const returnContext = buildReturnContext(params, licenciaId, empresaId);
         const container = document.getElementById('payment');
-        if (status){
-          if (status === 'success') container.innerHTML = '<div class="success">Pago completado correctamente. Gracias.</div>';
-          else if (status === 'failure') container.innerHTML = '<div class="error">El pago fue rechazado o cancelado.</div>';
-          else container.innerHTML = '<div class="muted">Estado de pago: '+escapeHtml(status)+'</div>';
+
+        if (!licenciaId) {
+          if (returnContext.hasReturn) {
+            if (isSuccessStatus(returnContext.status)) {
+              clearPendingPayment();
+              container.innerHTML = '<div class="success"><strong>Pago aprobado</strong><div>La pasarela confirmó tu pago. Si no ves la licencia activa todavía, vuelve a empresas y recarga el listado.</div></div>';
+            } else if (isFinalStatus(returnContext.status)) {
+              clearPendingPayment();
+              container.innerHTML = '<div class="error"><strong>Pago no completado</strong><div>La pasarela reportó el estado ' + escapeHtml(returnContext.status || 'DESCONOCIDO') + '. Puedes volver a intentar el pago.</div></div>';
+            } else {
+              container.innerHTML = '<div class="muted"><strong>Pago en verificación</strong><div>Estamos recuperando el estado del pago. Si no ves cambios en unos segundos, vuelve a la selección de empresas.</div></div>';
+            }
+            return;
+          }
+          container.innerText = 'ID de licencia no proporcionado.';
           return;
         }
 
-        if (!licenciaId){ container.innerText = 'ID de licencia no proporcionado.'; return }
-
         try{
-          // obtener info del usuario para correo de Wompi
           let adminEmail = '';
           try{
             const meRes = await fetch('/me');
@@ -56,15 +182,16 @@
               const me = await meRes.json();
               adminEmail = me.email || me.Email || '';
             }
-          }catch(e){ /* no auth info */ }
+          }catch(e){}
 
           const [res, empRes, methodsRes] = await Promise.all([
-          fetch('/super/api/licencias'),
-          fetch('/super/api/empresas'),
-          fetch('/api/public/licencias/payment_methods')
+            fetch('/super/api/licencias'),
+            fetch('/super/api/empresas'),
+            fetch('/api/public/licencias/payment_methods')
           ]);
           if (!res.ok) { container.innerText = 'Error al obtener licencias'; return }
           if (!methodsRes.ok) { container.innerText = 'Error al obtener métodos de pago disponibles'; return }
+
           const licencias = await res.json();
           const empresas = empRes.ok ? await empRes.json() : [];
           const methodsPayload = await methodsRes.json();
@@ -74,26 +201,28 @@
           const availableMethods = [];
           if (epaycoProvider && epaycoProvider.available) availableMethods.push('epayco');
           if (wompiProvider && wompiProvider.available) availableMethods.push('wompi');
+
           const paymentCards = [];
           if (epaycoProvider && epaycoProvider.available) {
-          paymentCards.push(''+
-            '<button id="selectEpaycoCard" type="button" class="payment-method-card payment-method-card-licenses payment-method-epayco">'+
-            '<span class="payment-method-badge">Epayco</span>'+
-            '<span class="method-name">Epayco</span>'+
-            '<span class="method-desc">Tarjeta, PSE y otros</span>'+
-            '</button>'
-          );
+            paymentCards.push(''+
+              '<button id="selectEpaycoCard" type="button" class="payment-method-card payment-method-card-licenses payment-method-epayco">'+
+              '<span class="payment-method-badge">Epayco</span>'+
+              '<span class="method-name">Epayco</span>'+
+              '<span class="method-desc">Tarjeta, PSE y otros</span>'+
+              '</button>'
+            );
           }
           if (wompiProvider && wompiProvider.available) {
-          paymentCards.push(''+
-            '<button id="selectWompiCard" type="button" class="payment-method-card payment-method-card-licenses payment-method-wompi">'+
-            '<span class="payment-method-badge">Wompi</span>'+
-            '<span class="method-name">Wompi</span>'+
-            '<span class="method-desc">Nequi / Tarjeta</span>'+
-            '</button>'
-          );
+            paymentCards.push(''+
+              '<button id="selectWompiCard" type="button" class="payment-method-card payment-method-card-licenses payment-method-wompi">'+
+              '<span class="payment-method-badge">Wompi</span>'+
+              '<span class="method-name">Wompi</span>'+
+              '<span class="method-desc">Nequi / Tarjeta</span>'+
+              '</button>'
+            );
           }
-          const lic = (licencias||[]).find(function(x){ return String(x.id) === String(licenciaId) });
+
+          const lic = (licencias || []).find(function(x){ return String(x.id) === String(licenciaId) });
           if (!lic){ container.innerText = 'Licencia no encontrada.'; return }
 
           container.innerHTML = ''+
@@ -106,6 +235,7 @@
               '</div>'+
               '<div class="payment-licencia-price">$ '+escapeHtml(String(lic.valor||lic.Valor||0))+'</div>'+
             '</div>'+
+            '<div id="paymentFeedback" class="form-help" style="margin-top:12px;"></div>'+
             '<div class="form-row" style="margin-top:12px;">'+
               '<div class="form-col">'+
                 '<label class="form-label" for="discountCode">Código de descuento (opcional)</label>'+
@@ -116,11 +246,11 @@
                 '<input id="asesorId" class="form-input" type="text" placeholder="Código del vendedor">'+
               '</div>'+
             '</div>'+
-              '<h3 class="payment-method-title">Selecciona el método de pago</h3>'+
-              (paymentCards.length
+            '<h3 class="payment-method-title">Selecciona el método de pago</h3>'+
+            (paymentCards.length
               ? '<div class="payment-method-selector payment-method-selector-licenses">' + paymentCards.join('') + '</div>'
               : '<div class="form-help error">Actualmente no hay métodos de pago activos. Activa Epayco o Wompi desde configuración avanzada.</div>')+
-              ((epaycoProvider && epaycoProvider.available)
+            ((epaycoProvider && epaycoProvider.available)
               ? '<div id="epaycoPanel" class="payment-method-panel payment-method-panel-epayco">'+
                 '<div class="method-panel-heading">Epayco</div>'+
                 '<label for="epaycoEmail" class="muted small">Correo del cliente (recomendado):</label>'+
@@ -131,7 +261,7 @@
                 '<div id="epaycoStatus" class="small payment-method-status"></div>'+
                 '</div>'
               : '')+
-              ((wompiProvider && wompiProvider.available)
+            ((wompiProvider && wompiProvider.available)
               ? '<div id="wompiPanel" class="payment-method-panel payment-method-panel-wompi" style="display:none;">'+
                 '<div class="method-panel-heading">Wompi</div>'+
                 '<label for="wompiPhone" class="muted small">Celular Nequi (10 dígitos):</label>'+
@@ -144,85 +274,216 @@
                 '</div>'
               : '');
 
-          const selectWompiCard = document.getElementById('selectWompiCard');
-          const selectEpaycoCard = document.getElementById('selectEpaycoCard');
-          const wompiPanel = document.getElementById('wompiPanel');
-          const epaycoPanel = document.getElementById('epaycoPanel');
+          const ui = {
+            feedback: document.getElementById('paymentFeedback'),
+            selectWompiCard: document.getElementById('selectWompiCard'),
+            selectEpaycoCard: document.getElementById('selectEpaycoCard'),
+            wompiPanel: document.getElementById('wompiPanel'),
+            epaycoPanel: document.getElementById('epaycoPanel'),
+            payWompiBtn: document.getElementById('payWompiBtn'),
+            wompiPhoneInput: document.getElementById('wompiPhone'),
+            wompiTermsChk: document.getElementById('wompiTermsChk'),
+            wompiStatus: document.getElementById('wompiStatus'),
+            wompiTermsLinks: document.getElementById('wompiTermsLinks'),
+            wompiSandboxHint: document.getElementById('wompiSandboxHint'),
+            payEpaycoBtn: document.getElementById('payEpaycoBtn'),
+            epaycoEmailInput: document.getElementById('epaycoEmail'),
+            epaycoTermsChk: document.getElementById('epaycoTermsChk'),
+            epaycoStatus: document.getElementById('epaycoStatus'),
+            discountCodeInput: document.getElementById('discountCode'),
+            asesorIdInput: document.getElementById('asesorId')
+          };
 
+          function updateUrlState(updates){
+            const nextParams = new URLSearchParams(window.location.search);
+            Object.keys(updates || {}).forEach(function(key){
+              const value = updates[key];
+              if (value === undefined || value === null || value === '') nextParams.delete(key);
+              else nextParams.set(key, String(value));
+            });
+            const query = nextParams.toString();
+            history.replaceState(null, '', window.location.pathname + (query ? ('?' + query) : ''));
+          }
+          function getStatusElement(provider){
+            const normalized = normalizeProvider(provider);
+            if (normalized === 'epayco') return ui.epaycoStatus;
+            if (normalized === 'wompi') return ui.wompiStatus;
+            return null;
+          }
+          function getButton(provider){
+            const normalized = normalizeProvider(provider);
+            if (normalized === 'epayco') return ui.payEpaycoBtn;
+            if (normalized === 'wompi') return ui.payWompiBtn;
+            return null;
+          }
           function setPaymentMethod(method){
-          if (!availableMethods.length) return;
-          const normalizedInput = String(method || '').toLowerCase();
-          const normalized = availableMethods.indexOf(normalizedInput) >= 0 ? normalizedInput : availableMethods[0];
+            if (!availableMethods.length) return;
+            const normalizedInput = normalizeProvider(method);
+            const normalized = availableMethods.indexOf(normalizedInput) >= 0 ? normalizedInput : availableMethods[0];
             const isWompi = normalized === 'wompi';
             const isEpayco = normalized === 'epayco';
-            if (selectWompiCard) selectWompiCard.classList.toggle('active', isWompi);
-            if (selectEpaycoCard) selectEpaycoCard.classList.toggle('active', isEpayco);
-            if (wompiPanel) { wompiPanel.classList.toggle('active', isWompi); wompiPanel.style.display = isWompi ? '' : 'none'; }
-            if (epaycoPanel) { epaycoPanel.classList.toggle('active', isEpayco); epaycoPanel.style.display = isEpayco ? '' : 'none'; }
+            if (ui.selectWompiCard) ui.selectWompiCard.classList.toggle('active', isWompi);
+            if (ui.selectEpaycoCard) ui.selectEpaycoCard.classList.toggle('active', isEpayco);
+            if (ui.wompiPanel) { ui.wompiPanel.classList.toggle('active', isWompi); ui.wompiPanel.style.display = isWompi ? '' : 'none'; }
+            if (ui.epaycoPanel) { ui.epaycoPanel.classList.toggle('active', isEpayco); ui.epaycoPanel.style.display = isEpayco ? '' : 'none'; }
+          }
+          function setProviderBusy(provider, label){
+            const button = getButton(provider);
+            if (!button) return;
+            button.disabled = true;
+            button.textContent = label || 'Verificando...';
+          }
+          function resetProvider(provider){
+            const button = getButton(provider);
+            if (!button) return;
+            button.disabled = false;
+            button.textContent = originalButtonLabel(provider);
+          }
+          function disableAllPayments(){
+            if (ui.payWompiBtn) ui.payWompiBtn.disabled = true;
+            if (ui.payEpaycoBtn) ui.payEpaycoBtn.disabled = true;
+          }
+          function applyResolvedResult(provider, statusData, fallbackContext){
+            const resolved = extractResponseContext(statusData, fallbackContext);
+            const normalizedProvider = normalizeProvider(provider || resolved.provider);
+            const normalizedStatus = normalizeStatus(resolved.status);
+            const statusElement = getStatusElement(normalizedProvider);
+            const label = providerLabel(normalizedProvider);
+            const referenceText = resolved.reference ? ('Referencia: ' + resolved.reference + '.') : 'Aun no tenemos una referencia confirmada por la pasarela.';
+
+            if (resolved.reference || resolved.transactionId) {
+              savePendingPayment({
+                provider: normalizedProvider,
+                licenciaId: licenciaId,
+                empresaId: empresaId || '',
+                transactionId: resolved.transactionId || '',
+                reference: resolved.reference || '',
+                status: normalizedStatus || 'PENDING',
+                createdAt: Date.now()
+              });
+            }
+
+            if (isSuccessStatus(normalizedStatus)) {
+              clearPendingPayment();
+              updateUrlState({
+                provider: normalizedProvider,
+                status: normalizedStatus.toLowerCase(),
+                transaction_id: resolved.transactionId || null,
+                reference: resolved.reference || null,
+                licencia_id: licenciaId,
+                empresa_id: empresaId || null
+              });
+              renderFeedback(ui.feedback, 'success', 'Pago aprobado', label + ' confirmó el pago y la licencia quedó activa. ' + referenceText);
+              syncStatusText(statusElement, 'Estado ' + label + ': ' + normalizedStatus);
+              disableAllPayments();
+              return { done: true, context: resolved };
+            }
+
+            if (isFinalStatus(normalizedStatus)) {
+              clearPendingPayment();
+              updateUrlState({
+                provider: normalizedProvider,
+                status: normalizedStatus.toLowerCase(),
+                transaction_id: resolved.transactionId || null,
+                reference: resolved.reference || null,
+                licencia_id: licenciaId,
+                empresa_id: empresaId || null
+              });
+              renderFeedback(ui.feedback, 'error', 'Pago no completado', label + ' reportó el estado ' + normalizedStatus + '. Puedes intentarlo de nuevo. ' + referenceText);
+              syncStatusText(statusElement, 'Estado ' + label + ': ' + normalizedStatus);
+              resetProvider(normalizedProvider);
+              return { done: true, context: resolved };
+            }
+
+            updateUrlState({
+              provider: normalizedProvider,
+              status: 'pending',
+              transaction_id: resolved.transactionId || null,
+              reference: resolved.reference || null,
+              licencia_id: licenciaId,
+              empresa_id: empresaId || null
+            });
+            renderFeedback(ui.feedback, 'muted', 'Pago en verificación', 'Estamos consultando el estado final con ' + label + '. ' + referenceText);
+            syncStatusText(statusElement, 'Estado ' + label + ': ' + (normalizedStatus || 'PENDING'));
+            return { done: false, context: resolved };
+          }
+          function startPolling(provider, context, maxTries){
+            const normalizedProvider = normalizeProvider(provider);
+            if (!normalizedProvider) return;
+            if (!context || (!context.transactionId && !context.reference)) return;
+
+            let tries = 0;
+            setPaymentMethod(normalizedProvider);
+            setProviderBusy(normalizedProvider, 'Verificando...');
+
+            const poll = async function(){
+              tries++;
+              try {
+                const statusData = await fetchProviderStatus(normalizedProvider, context);
+                const outcome = applyResolvedResult(normalizedProvider, statusData, context);
+                context = outcome.context;
+                if (outcome.done) return;
+              } catch (err) {
+                if (tries >= maxTries) {
+                  renderFeedback(ui.feedback, 'error', 'No se pudo confirmar el pago', 'Se agotó el tiempo de verificación automática. Verifica el estado de la transacción en unos segundos o intenta recargar la página.');
+                  syncStatusText(getStatusElement(normalizedProvider), 'Error consultando estado: ' + (err && err.message ? err.message : String(err)));
+                  resetProvider(normalizedProvider);
+                  return;
+                }
+                syncStatusText(getStatusElement(normalizedProvider), 'Reintentando verificación con ' + providerLabel(normalizedProvider) + '...');
+              }
+              setTimeout(poll, 3000);
+            };
+
+            poll();
           }
 
-          if (selectWompiCard) selectWompiCard.addEventListener('click', function(){ setPaymentMethod('wompi'); });
-          if (selectEpaycoCard) selectEpaycoCard.addEventListener('click', function(){ setPaymentMethod('epayco'); });
+          if (ui.selectWompiCard) ui.selectWompiCard.addEventListener('click', function(){ setPaymentMethod('wompi'); });
+          if (ui.selectEpaycoCard) ui.selectEpaycoCard.addEventListener('click', function(){ setPaymentMethod('epayco'); });
 
-          const preferredProvider = String(params.get('provider') || params.get('metodo') || params.get('method') || '').toLowerCase();
+          const preferredProvider = normalizeProvider(params.get('provider') || params.get('metodo') || params.get('method'));
           if (availableMethods.length) {
-          if (availableMethods.indexOf(preferredProvider) >= 0) setPaymentMethod(preferredProvider);
-          else setPaymentMethod(methodsPayload.default_method || availableMethods[0]);
+            if (availableMethods.indexOf(preferredProvider) >= 0) setPaymentMethod(preferredProvider);
+            else setPaymentMethod(methodsPayload.default_method || availableMethods[0]);
           }
-
-          const payWompiBtn = document.getElementById('payWompiBtn');
-          const wompiPhoneInput = document.getElementById('wompiPhone');
-          const wompiTermsChk = document.getElementById('wompiTermsChk');
-          const discountCodeInput = document.getElementById('discountCode');
-          const asesorIdInput = document.getElementById('asesorId');
-          const wompiStatus = document.getElementById('wompiStatus');
-          const wompiTermsLinks = document.getElementById('wompiTermsLinks');
-          const wompiSandboxHint = document.getElementById('wompiSandboxHint');
-
-          const payEpaycoBtn = document.getElementById('payEpaycoBtn');
-          const epaycoEmailInput = document.getElementById('epaycoEmail');
-          const epaycoTermsChk = document.getElementById('epaycoTermsChk');
-          const epaycoStatus = document.getElementById('epaycoStatus');
 
           if (wompiProvider && wompiProvider.available) {
-          try{
-            const termsRes = await fetch('/wompi/terms');
-            if (termsRes.ok) {
-            const terms = await termsRes.json();
-            const linkA = terms.acceptance_permalink ? ('<a href="'+escapeHtml(terms.acceptance_permalink)+'" target="_blank" rel="noopener">Términos</a>') : 'Términos';
-            const linkB = terms.personal_data_permalink ? ('<a href="'+escapeHtml(terms.personal_data_permalink)+'" target="_blank" rel="noopener">Datos personales</a>') : 'Datos personales';
-            if (wompiTermsLinks) wompiTermsLinks.innerHTML = linkA + ' · ' + linkB;
-            const wompiMode = String(terms.mode || '').toLowerCase();
-            if (wompiMode.includes('sandbox')) {
-              if (terms.sandbox_phone_approved && terms.sandbox_phone_declined) {
-              if (wompiSandboxHint) wompiSandboxHint.textContent = 'Sandbox activo: ' + terms.sandbox_phone_approved + ' aprueba, ' + terms.sandbox_phone_declined + ' declina.';
+            try{
+              const termsRes = await fetch('/wompi/terms');
+              if (termsRes.ok) {
+                const terms = await termsRes.json();
+                const linkA = terms.acceptance_permalink ? ('<a href="'+escapeHtml(terms.acceptance_permalink)+'" target="_blank" rel="noopener">Términos</a>') : 'Términos';
+                const linkB = terms.personal_data_permalink ? ('<a href="'+escapeHtml(terms.personal_data_permalink)+'" target="_blank" rel="noopener">Datos personales</a>') : 'Datos personales';
+                if (ui.wompiTermsLinks) ui.wompiTermsLinks.innerHTML = linkA + ' · ' + linkB;
+                const wompiMode = String(terms.mode || '').toLowerCase();
+                if (wompiMode.indexOf('sandbox') >= 0) {
+                  if (terms.sandbox_phone_approved && terms.sandbox_phone_declined && ui.wompiSandboxHint) {
+                    ui.wompiSandboxHint.textContent = 'Sandbox activo: ' + terms.sandbox_phone_approved + ' aprueba, ' + terms.sandbox_phone_declined + ' declina.';
+                  }
+                } else if (ui.wompiSandboxHint) {
+                  ui.wompiSandboxHint.textContent = 'Modo producción activo para Nequi.';
+                }
+              } else if (ui.wompiTermsLinks) {
+                ui.wompiTermsLinks.textContent = 'No se pudieron cargar los términos de Wompi.';
               }
-            } else {
-              if (wompiSandboxHint) wompiSandboxHint.textContent = 'Modo producción activo para Nequi.';
+            } catch(e){
+              if (ui.wompiTermsLinks) ui.wompiTermsLinks.textContent = 'No se pudieron cargar los términos de Wompi.';
             }
-            } else {
-            if (wompiTermsLinks) wompiTermsLinks.textContent = 'No se pudieron cargar los términos de Wompi.';
-            }
-          }catch(e){
-            if (wompiTermsLinks) wompiTermsLinks.textContent = 'No se pudieron cargar los términos de Wompi.';
-          }
           }
 
-          // Wompi (Nequi) payment handler
-          if (payWompiBtn) payWompiBtn.addEventListener('click', async function(){
-            const phone = String((wompiPhoneInput && wompiPhoneInput.value) || '').trim();
+          if (ui.payWompiBtn) ui.payWompiBtn.addEventListener('click', async function(){
+            const phone = String((ui.wompiPhoneInput && ui.wompiPhoneInput.value) || '').trim();
             if (!/^3\d{9}$/.test(phone)) {
-              wompiStatus.textContent = 'Ingresa un celular válido de Nequi (10 dígitos, inicia por 3).';
+              syncStatusText(ui.wompiStatus, 'Ingresa un celular válido de Nequi (10 dígitos, inicia por 3).');
               return;
             }
-            if (!wompiTermsChk.checked) {
-              wompiStatus.textContent = 'Debes aceptar términos y autorización de datos para pagar con Nequi.';
+            if (!ui.wompiTermsChk || !ui.wompiTermsChk.checked) {
+              syncStatusText(ui.wompiStatus, 'Debes aceptar términos y autorización de datos para pagar con Nequi.');
               return;
             }
 
-            payWompiBtn.disabled = true;
-            payWompiBtn.textContent = 'Enviando a Wompi...';
-            wompiStatus.textContent = '';
+            setProviderBusy('wompi', 'Enviando a Wompi...');
+            syncStatusText(ui.wompiStatus, '');
             try {
               const payload = {
                 licencia_id: Number(licenciaId),
@@ -231,8 +492,8 @@
               };
               if (empresaId) payload.empresa_id = Number(empresaId);
               if (adminEmail) payload.customer_email = adminEmail;
-              try { const code = String((discountCodeInput && discountCodeInput.value) || '').trim(); if (code) payload.discount_code = code; } catch(e){}
-              try { const aId = String((asesorIdInput && asesorIdInput.value) || '').trim(); if (aId) { payload.asesor_id = aId; payload.vendedor_id = aId; } } catch(e){}
+              try { const code = String((ui.discountCodeInput && ui.discountCodeInput.value) || '').trim(); if (code) payload.discount_code = code; } catch(e){}
+              try { const aId = String((ui.asesorIdInput && ui.asesorIdInput.value) || '').trim(); if (aId) { payload.asesor_id = aId; payload.vendedor_id = aId; } } catch(e){}
 
               const wompiRes = await fetch('/wompi/create_transaction_nequi', {
                 method: 'POST',
@@ -245,88 +506,61 @@
               try { data = JSON.parse(raw); } catch(e) { data = null; }
               if (!wompiRes.ok) {
                 const msg = data && data.error ? data.error : raw;
-                wompiStatus.textContent = 'Error Wompi: ' + msg;
-                if (data && data.acceptance_permalink && data.personal_data_permalink) {
-                  wompiTermsLinks.innerHTML = '<a href="'+escapeHtml(data.acceptance_permalink)+'" target="_blank" rel="noopener">Términos</a> · <a href="'+escapeHtml(data.personal_data_permalink)+'" target="_blank" rel="noopener">Datos personales</a>';
+                syncStatusText(ui.wompiStatus, 'Error Wompi: ' + msg);
+                if (data && data.acceptance_permalink && data.personal_data_permalink && ui.wompiTermsLinks) {
+                  ui.wompiTermsLinks.innerHTML = '<a href="'+escapeHtml(data.acceptance_permalink)+'" target="_blank" rel="noopener">Términos</a> · <a href="'+escapeHtml(data.personal_data_permalink)+'" target="_blank" rel="noopener">Datos personales</a>';
                 }
-                payWompiBtn.disabled = false;
-                payWompiBtn.textContent = 'Pagar con Wompi (Nequi)';
+                resetProvider('wompi');
                 return;
               }
 
-              const txId = data && (data.transaction_id || (data.data && data.data.id));
-              if (!txId) {
-                wompiStatus.textContent = 'No se recibió transaction_id de Wompi.';
-                payWompiBtn.disabled = false;
-                payWompiBtn.textContent = 'Pagar con Wompi (Nequi)';
+              const context = extractResponseContext(data, { provider: 'wompi' });
+              if (!context.transactionId) {
+                syncStatusText(ui.wompiStatus, 'No se recibió transaction_id de Wompi.');
+                resetProvider('wompi');
                 return;
               }
 
-              wompiStatus.textContent = 'Solicitud enviada. Revisa y acepta en tu app Nequi. Estado: ' + (data.status || 'PENDING');
-
-              let tries = 0;
-              const maxTries = 30;
-              const finalStates = ['APPROVED','DECLINED','ERROR','VOIDED','CANCELED'];
-              const poll = async function(){
-                tries++;
-                try {
-                  const stRes = await fetch('/wompi/transaction_status?id=' + encodeURIComponent(txId));
-                  if (stRes.ok) {
-                    const stData = await stRes.json();
-                    const st = String(stData.status || '').toUpperCase();
-                    wompiStatus.textContent = 'Estado Wompi: ' + (st || 'PENDING');
-                    if (st === 'APPROVED') {
-                      window.location.href = '/pagar_licencia.html?status=success&provider=wompi';
-                      return;
-                    }
-                    if (finalStates.indexOf(st) >= 0) {
-                      payWompiBtn.disabled = false;
-                      payWompiBtn.textContent = 'Pagar con Wompi (Nequi)';
-                      return;
-                    }
-                  }
-                } catch (errPoll) {
-                  // continuar polling temporalmente
-                }
-                if (tries < maxTries) {
-                  setTimeout(poll, 3000);
-                } else {
-                  wompiStatus.textContent = 'Tiempo de espera agotado. Verifica el estado en unos segundos.';
-                  payWompiBtn.disabled = false;
-                  payWompiBtn.textContent = 'Pagar con Wompi (Nequi)';
-                }
-              };
-              setTimeout(poll, 2500);
+              savePendingPayment({
+                provider: 'wompi',
+                licenciaId: licenciaId,
+                empresaId: empresaId || '',
+                transactionId: context.transactionId,
+                reference: context.reference,
+                status: context.status || 'PENDING',
+                createdAt: Date.now()
+              });
+              updateUrlState({ provider: 'wompi', status: 'pending', transaction_id: context.transactionId, reference: context.reference || null, licencia_id: licenciaId, empresa_id: empresaId || null });
+              renderFeedback(ui.feedback, 'muted', 'Solicitud enviada a Wompi', 'Revisa tu app de Nequi y confirma el pago. Mantendremos esta pantalla verificando el estado automáticamente.');
+              syncStatusText(ui.wompiStatus, 'Estado Wompi: ' + (context.status || 'PENDING'));
+              startPolling('wompi', context, 30);
             } catch (err) {
-              wompiStatus.textContent = 'Error enviando pago Wompi: ' + (err && err.message ? err.message : String(err));
-              payWompiBtn.disabled = false;
-              payWompiBtn.textContent = 'Pagar con Wompi (Nequi)';
+              syncStatusText(ui.wompiStatus, 'Error enviando pago Wompi: ' + (err && err.message ? err.message : String(err)));
+              resetProvider('wompi');
             }
           });
 
-          // Epayco payment handler (checkout + polling de estado)
-          if (payEpaycoBtn) payEpaycoBtn.addEventListener('click', async function(){
-            const email = String((epaycoEmailInput && epaycoEmailInput.value) || '').trim();
+          if (ui.payEpaycoBtn) ui.payEpaycoBtn.addEventListener('click', async function(){
+            const email = String((ui.epaycoEmailInput && ui.epaycoEmailInput.value) || '').trim();
             if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-              epaycoStatus.textContent = 'Ingresa un correo válido para Epayco.';
+              syncStatusText(ui.epaycoStatus, 'Ingresa un correo válido para Epayco.');
               return;
             }
-            if (!epaycoTermsChk.checked) {
-              epaycoStatus.textContent = 'Debes aceptar términos y autorización de datos para pagar con Epayco.';
+            if (!ui.epaycoTermsChk || !ui.epaycoTermsChk.checked) {
+              syncStatusText(ui.epaycoStatus, 'Debes aceptar términos y autorización de datos para pagar con Epayco.');
               return;
             }
 
-            payEpaycoBtn.disabled = true;
-            payEpaycoBtn.textContent = 'Enviando a Epayco...';
-            epaycoStatus.textContent = '';
+            setProviderBusy('epayco', 'Enviando a Epayco...');
+            syncStatusText(ui.epaycoStatus, '');
             try {
               const payload = {
                 licencia_id: Number(licenciaId),
                 customer_email: email
               };
               if (empresaId) payload.empresa_id = Number(empresaId);
-              try { const code = String((discountCodeInput && discountCodeInput.value) || '').trim(); if (code) payload.discount_code = code; } catch(e){}
-              try { const aId = String((asesorIdInput && asesorIdInput.value) || '').trim(); if (aId) { payload.asesor_id = aId; payload.vendedor_id = aId; } } catch(e){}
+              try { const code = String((ui.discountCodeInput && ui.discountCodeInput.value) || '').trim(); if (code) payload.discount_code = code; } catch(e){}
+              try { const aId = String((ui.asesorIdInput && ui.asesorIdInput.value) || '').trim(); if (aId) { payload.asesor_id = aId; payload.vendedor_id = aId; } } catch(e){}
 
               const epayRes = await fetch('/epayco/create_transaction', {
                 method: 'POST',
@@ -338,71 +572,63 @@
               try { data = JSON.parse(raw); } catch(e) { data = null; }
               if (!epayRes.ok) {
                 const msg = data && data.error ? data.error : raw;
-                epaycoStatus.textContent = 'Error Epayco: ' + msg;
-                payEpaycoBtn.disabled = false;
-                payEpaycoBtn.textContent = 'Pagar con Epayco';
+                syncStatusText(ui.epaycoStatus, 'Error Epayco: ' + msg);
+                resetProvider('epayco');
                 return;
               }
 
-              const txId = data && (data.transaction_id || (data.data && data.data.id));
-              if (!txId) {
-                epaycoStatus.textContent = 'No se recibió transaction_id de Epayco.';
-                payEpaycoBtn.disabled = false;
-                payEpaycoBtn.textContent = 'Pagar con Epayco';
+              const context = extractResponseContext(data, { provider: 'epayco' });
+              if (!context.transactionId && !context.reference) {
+                syncStatusText(ui.epaycoStatus, 'No se recibió una referencia válida de Epayco.');
+                resetProvider('epayco');
                 return;
               }
+
+              savePendingPayment({
+                provider: 'epayco',
+                licenciaId: licenciaId,
+                empresaId: empresaId || '',
+                transactionId: context.transactionId,
+                reference: context.reference,
+                status: context.status || 'PENDING',
+                createdAt: Date.now()
+              });
+              updateUrlState({ provider: 'epayco', status: 'pending', transaction_id: context.transactionId || null, reference: context.reference || null, licencia_id: licenciaId, empresa_id: empresaId || null });
 
               const checkoutUrl = data && (data.checkout_url || (data.data && data.data.checkout_url));
               if (checkoutUrl) {
                 const popup = window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
                 if (!popup) {
-                  epaycoStatus.innerHTML = 'Solicitud enviada. Abre la pasarela de Epayco aquí: <a href="' + escapeHtml(checkoutUrl) + '" target="_blank" rel="noopener">Abrir Epayco</a>.';
+                  syncStatusText(ui.epaycoStatus, 'Solicitud enviada. Abre la pasarela desde el enlace mostrado en pantalla.');
+                  renderFeedback(ui.feedback, 'muted', 'Abre Epayco para completar el pago', 'Tu navegador bloqueó la pestaña emergente. Usa el enlace visible en el mensaje del panel para continuar el checkout.');
+                  ui.epaycoStatus.innerHTML = 'Solicitud enviada. Abre la pasarela de Epayco aquí: <a href="' + escapeHtml(checkoutUrl) + '" target="_blank" rel="noopener">Abrir Epayco</a>.';
                 } else {
-                  epaycoStatus.textContent = 'Solicitud enviada. Se abrió Epayco en una pestaña nueva. Estado: ' + (data.status || 'PENDING');
+                  renderFeedback(ui.feedback, 'muted', 'Checkout Epayco abierto', 'Se abrió Epayco en una pestaña nueva. Esta pantalla seguirá verificando el estado del pago automáticamente.');
+                  syncStatusText(ui.epaycoStatus, 'Estado Epayco: ' + (context.status || 'PENDING'));
                 }
               } else {
-                epaycoStatus.textContent = 'Solicitud enviada. Completa el pago en la pasarela. Estado: ' + (data.status || 'PENDING');
+                renderFeedback(ui.feedback, 'muted', 'Checkout Epayco iniciado', 'Completa el pago en la pasarela y mantén esta pantalla abierta para ver la confirmación automática.');
+                syncStatusText(ui.epaycoStatus, 'Estado Epayco: ' + (context.status || 'PENDING'));
               }
 
-              let tries = 0;
-              const maxTries = 30;
-              const finalStates = ['APPROVED','DECLINED','ERROR','VOIDED','CANCELED'];
-              const poll = async function(){
-                tries++;
-                try {
-                  const stRes = await fetch('/epayco/transaction_status?id=' + encodeURIComponent(txId));
-                  if (stRes.ok) {
-                    const stData = await stRes.json();
-                    const st = String(stData.status || '').toUpperCase();
-                    epaycoStatus.textContent = 'Estado Epayco: ' + (st || 'PENDING');
-                    if (st === 'APPROVED') {
-                      window.location.href = '/pagar_licencia.html?status=success&provider=epayco';
-                      return;
-                    }
-                    if (finalStates.indexOf(st) >= 0) {
-                      payEpaycoBtn.disabled = false;
-                      payEpaycoBtn.textContent = 'Pagar con Epayco';
-                      return;
-                    }
-                  }
-                } catch (errPoll) {
-                  // continuar polling temporalmente
-                }
-                if (tries < maxTries) {
-                  setTimeout(poll, 3000);
-                } else {
-                  epaycoStatus.textContent = 'Tiempo de espera agotado. Verifica el estado en unos segundos.';
-                  payEpaycoBtn.disabled = false;
-                  payEpaycoBtn.textContent = 'Pagar con Epayco';
-                }
-              };
-              setTimeout(poll, 2500);
+              startPolling('epayco', context, 30);
             } catch (err) {
-              epaycoStatus.textContent = 'Error enviando pago Epayco: ' + (err && err.message ? err.message : String(err));
-              payEpaycoBtn.disabled = false;
-              payEpaycoBtn.textContent = 'Pagar con Epayco';
+              syncStatusText(ui.epaycoStatus, 'Error enviando pago Epayco: ' + (err && err.message ? err.message : String(err)));
+              resetProvider('epayco');
             }
           });
+
+          if (returnContext.hasReturn) {
+            const providerForReturn = normalizeProvider(returnContext.provider) || availableMethods[0] || '';
+            if (providerForReturn) setPaymentMethod(providerForReturn);
+
+            if ((returnContext.transactionId || returnContext.reference) && providerForReturn) {
+              applyResolvedResult(providerForReturn, returnContext, returnContext);
+              startPolling(providerForReturn, returnContext, 20);
+            } else if (returnContext.status) {
+              applyResolvedResult(providerForReturn, returnContext, returnContext);
+            }
+          }
 
         }catch(err){ console.error(err); container.innerText = 'Error: ' + (err && err.message ? err.message : String(err)); }
       }

@@ -33,7 +33,7 @@
           </div>
         </div>
       </div>
-      <p class="form-help">Cada tarjeta define imagen, titulo, descripcion breve y el destino del boton "Probar Gratis" dentro de la pagina descriptiva unica.</p>
+      <p class="form-help">Cada tarjeta define imagen, titulo, descripcion breve, destino de Probar Gratis y el contenido ampliado que se mostrara en la landing descriptiva.</p>
       <div id="ppCardsEditor" class="pp-cards-editor"></div>
       <div class="form-actions pp-bottom-actions">
         <button id="ppBtnSaveBottom" type="button" class="btn">Guardar cambios</button>
@@ -82,7 +82,17 @@
           titulo: 'Tarjeta ' + (index + 1),
           descripcion: 'Describe aqui la oferta principal de esta tarjeta.',
           imagen_url: image,
-          enlace: '/login.html'
+          enlace: '/login.html',
+          detalle_etiqueta: 'Solucion especializada',
+          detalle_titular: 'Explica aqui el principal valor de esta solucion.',
+          detalle_parrafo_uno: 'Describe el primer bloque de la experiencia o alcance funcional de esta tarjeta.',
+          detalle_parrafo_dos: 'Describe el segundo bloque de valor, resultados o componentes principales.',
+          detalle_puntos: [
+            'Capacidad clave 1.',
+            'Capacidad clave 2.',
+            'Capacidad clave 3.',
+            'Capacidad clave 4.'
+          ]
         };
       }
 
@@ -131,6 +141,11 @@
           var title = String(card.titulo || '').trim();
           var description = String(card.descripcion || '').trim();
           var link = String(card.enlace || '').trim();
+          var detailTag = String(card.detalle_etiqueta || '').trim();
+          var detailHeadline = String(card.detalle_titular || '').trim();
+          var detailParagraphOne = String(card.detalle_parrafo_uno || '').trim();
+          var detailParagraphTwo = String(card.detalle_parrafo_dos || '').trim();
+          var detailPoints = Array.isArray(card.detalle_puntos) ? card.detalle_puntos.join('\n') : '';
 
           html += '<article class="card pp-card-item" data-index="' + idx + '">';
           html += '<h3>Tarjeta ' + (idx + 1) + '</h3>';
@@ -162,6 +177,32 @@
           html += '    </div>';
           html += '  </div>';
           html += '</div>';
+          html += '<div class="form-row">';
+          html += '  <div class="form-col">';
+          html += '    <label class="form-label" for="ppDetailTag' + idx + '">Etiqueta en landing</label>';
+          html += '    <input id="ppDetailTag' + idx + '" class="form-input pp-field" data-field="detalle_etiqueta" type="text" value="' + escapeHTML(detailTag) + '" maxlength="80">';
+          html += '  </div>';
+          html += '  <div class="form-col">';
+          html += '    <label class="form-label" for="ppDetailHeadline' + idx + '">Titular ampliado</label>';
+          html += '    <input id="ppDetailHeadline' + idx + '" class="form-input pp-field" data-field="detalle_titular" type="text" value="' + escapeHTML(detailHeadline) + '" maxlength="180">';
+          html += '  </div>';
+          html += '</div>';
+          html += '<div class="form-row">';
+          html += '  <div class="form-col">';
+          html += '    <label class="form-label" for="ppDetailParagraphOne' + idx + '">Parrafo 1 de landing</label>';
+          html += '    <textarea id="ppDetailParagraphOne' + idx + '" class="form-textarea pp-field" data-field="detalle_parrafo_uno" maxlength="900">' + escapeHTML(detailParagraphOne) + '</textarea>';
+          html += '  </div>';
+          html += '  <div class="form-col">';
+          html += '    <label class="form-label" for="ppDetailParagraphTwo' + idx + '">Parrafo 2 de landing</label>';
+          html += '    <textarea id="ppDetailParagraphTwo' + idx + '" class="form-textarea pp-field" data-field="detalle_parrafo_dos" maxlength="900">' + escapeHTML(detailParagraphTwo) + '</textarea>';
+          html += '  </div>';
+          html += '</div>';
+          html += '<div class="form-row">';
+          html += '  <div class="form-col">';
+          html += '    <label class="form-label" for="ppDetailPoints' + idx + '">Capacidades clave (una por linea)</label>';
+          html += '    <textarea id="ppDetailPoints' + idx + '" class="form-textarea pp-field" data-field="detalle_puntos" maxlength="1200">' + escapeHTML(detailPoints) + '</textarea>';
+          html += '  </div>';
+          html += '</div>';
           html += '</article>';
         });
 
@@ -183,6 +224,12 @@
         if (idx < 0 || idx >= state.config.tarjetas.length) return;
         var field = target.getAttribute('data-field');
         if (!field) return;
+      if (field === 'detalle_puntos') {
+        state.config.tarjetas[idx][field] = String(target.value || '').split(/\r?\n/).map(function (item) {
+          return String(item || '').trim();
+        }).filter(Boolean);
+        return;
+      }
         state.config.tarjetas[idx][field] = target.value;
       });
 
@@ -240,7 +287,14 @@
               titulo: String(card.titulo || '').trim(),
               descripcion: String(card.descripcion || '').trim(),
               imagen_url: String(card.imagen_url || '').trim(),
-              enlace: String(card.enlace || '').trim()
+              enlace: String(card.enlace || '').trim(),
+              detalle_etiqueta: String(card.detalle_etiqueta || '').trim(),
+              detalle_titular: String(card.detalle_titular || '').trim(),
+              detalle_parrafo_uno: String(card.detalle_parrafo_uno || '').trim(),
+              detalle_parrafo_dos: String(card.detalle_parrafo_dos || '').trim(),
+              detalle_puntos: Array.isArray(card.detalle_puntos)
+                ? card.detalle_puntos.map(function (item) { return String(item || '').trim(); }).filter(Boolean)
+                : []
             };
           })
         };

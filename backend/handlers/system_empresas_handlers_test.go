@@ -496,15 +496,18 @@ func TestPublicLicenciasPaymentMethodsHandlerOrdersAndAvailability(t *testing.T)
 	dbSuper := openTestSQLite(t, "super_payment_methods_status.db")
 	ensureSuperConfigSchemaForSuper(t, dbSuper)
 
-	if err := dbpkg.SetConfigValue(dbSuper, "epayco.cust_id", "cust_demo", false); err != nil {
-		t.Fatalf("seed epayco.cust_id: %v", err)
+	if err := dbpkg.SetConfigValue(dbSuper, "epayco.public_key", "pub_test_demo", false); err != nil {
+		t.Fatalf("seed epayco.public_key: %v", err)
+	}
+	if err := dbpkg.SetConfigValue(dbSuper, "epayco.customer_id", "1579238", false); err != nil {
+		t.Fatalf("seed epayco.customer_id: %v", err)
 	}
 	encEpaycoKey, err := utils.EncryptString("epayco_secret_demo")
 	if err != nil {
-		t.Fatalf("encrypt epayco.key: %v", err)
+		t.Fatalf("encrypt epayco.private_key: %v", err)
 	}
-	if err := dbpkg.SetConfigValue(dbSuper, "epayco.key", encEpaycoKey, true); err != nil {
-		t.Fatalf("seed epayco.key: %v", err)
+	if err := dbpkg.SetConfigValue(dbSuper, "epayco.private_key", encEpaycoKey, true); err != nil {
+		t.Fatalf("seed epayco.private_key: %v", err)
 	}
 	if err := dbpkg.SetConfigValue(dbSuper, "epayco.enabled", "1", false); err != nil {
 		t.Fatalf("seed epayco.enabled: %v", err)

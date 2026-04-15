@@ -6,6 +6,27 @@ Gobernanza obligatoria (agente_go):
 - En el mismo cambio, tambien debe actualizarse `documentos/matriz_roles_permisos_pos_multiempresa.md` para reflejar permisos por rol/modulo/accion y visibilidad de paginas afectadas.
 - La actualizacion modular debe mantener trazabilidad en `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios` y `CHANGELOG.md`.
 
+Actualizacion 2026-04-15 (portal publico: landing descriptiva configurable desde pagina_principal):
+- Se refuerza el submodulo `pagina principal dinamica (super)` para que la configuracion de tarjetas no gobierne solo `index.html`, sino tambien el contenido extendido de `/descripcion_de_los_sistemas.ht`.
+- `backend/handlers/pagina_principal_handlers.go` amplía el contrato de cada tarjeta con etiqueta, titular ampliado, dos parrafos y capacidades clave, manteniendo la misma API publica `/api/public/pagina_principal` para home y landing.
+- `web/super/pagina_principal.html` incorpora esos campos en el editor super y `web/descripcion_de_los_sistemas.ht` deja de usar una libreria estatica por nombre de sistema.
+- `backend/handlers/pagina_principal_handlers_test.go` valida que los campos ampliados se normalicen y se publiquen correctamente.
+- No hay cambios en wrappers, CRUD/A ni privilegios por rol: la administracion sigue reservada a `super_administrador` y la landing continua como pagina publica de solo lectura.
+
+Actualizacion 2026-04-15 (checkout de licencias: retorno recuperable post-pasarela):
+- Se refuerza el submodulo `pasarelas de licencias` para que el retorno de Epayco y Wompi no dependa de un mensaje estatico en la URL; el checkout vuelve con contexto suficiente (`provider`, `reference`, `licencia_id`, `empresa_id`) y la pantalla reanuda la verificacion real del cobro.
+- `backend/handlers/payments_handlers.go` centraliza la URL de retorno para ambas pasarelas y permite a Wompi consultar el estado por `reference` cuando el navegador no trae `transaction_id`.
+- `web/pagar_licencia.html` guarda el pago pendiente, recupera la sesion de cobro despues del redirect y muestra feedback consistente de aprobado, rechazado o pendiente mientras reintenta polling.
+- `backend/handlers/payments_handlers_test.go` agrega cobertura para lookup Wompi por referencia y para los parametros de retorno del checkout Epayco.
+- No hay cambios en wrappers, CRUD/A ni privilegios por rol: la configuracion sigue siendo exclusiva de `super_administrador` y el checkout publico mantiene alcance de solo consumo.
+
+Actualizacion 2026-04-15 (checkout de licencias: fix Epayco para clave pública real y callbacks públicos):
+- Se refuerza el submodulo `pasarelas de licencias` para que Epayco use el contrato correcto de credenciales en super: `public_key`, `private_key` cifrada y `customer_id` opcional, manteniendo lectura compatible de configuraciones legacy mientras se normaliza la instalación.
+- `backend/handlers/payments_handlers.go` deja de construir `response`, `confirmation` y `redirect_url` desde `localhost`; ahora exige una base pública válida (`gmail.confirm_base_url` o dominio publicado) para Epayco y Wompi en el checkout de licencias.
+- `web/super/configuracion_avanzada.html` diferencia visualmente `Public Key` de `Customer ID`, evitando volver a guardar una llave pública en el campo histórico equivocado.
+- Se agregan pruebas focalizadas en `backend/handlers/payments_handlers_test.go` para validar dominio canónico de pagos y generación correcta de checkout Epayco.
+- No hay cambios en wrappers, CRUD/A ni privilegios por rol: la configuración sigue siendo exclusiva de `super_administrador` y el checkout público mantiene alcance de solo consumo.
+
 Actualizacion 2026-04-15 (login Google con host canónico y estaciones con carga visible):
 - Se refuerza el modulo `autenticacion y sesiones` para canonicalizar el acceso público al dominio raíz: `backend/utils/utils.go` redirige `www.powerfulcontrolsystem.com` hacia `powerfulcontrolsystem.com` antes de entrar a `AuthMiddleware` y al flujo `/auth/google/*`, estabilizando `redirect_uri`, cookies y sesión administrativa.
 - `backend/main.go` encadena ese middleware de host canónico en la pila HTTP y los defaults de `backend/.env.example` y `scripts/sync_to_vps.ps1` quedan alineados al callback `https://powerfulcontrolsystem.com/auth/google/callback`.

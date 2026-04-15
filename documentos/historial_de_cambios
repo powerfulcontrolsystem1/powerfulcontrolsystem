@@ -1,5 +1,63 @@
  - Historial de cambios
 
+ - 2026-04-15: Landing descriptiva configurable desde pagina_principal
+     - Archivos creados:
+         - backend/handlers/pagina_principal_handlers_test.go
+     - Archivos modificados:
+         - backend/handlers/pagina_principal_handlers.go
+         - web/super/pagina_principal.html
+         - web/descripcion_de_los_sistemas.ht
+         - documentos/descripcion_del_proyecto
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se amplia el editor super de `pagina_principal` para que cada tarjeta del portal tambien defina el contenido ampliado de `/descripcion_de_los_sistemas.ht`. La landing descriptiva deja de depender de textos estaticos por nombre de sistema y ahora consume la misma API publica de tarjetas que usa `index.html`.
+     - Verificacion tecnica:
+         - `go test ./handlers -run "Test(PaginaPrincipal|AuthMiddlewareAllowsPublicPortalPagesAssetsAndHomeCardsAPI)" -count=1`.
+         - `go test ./ ./auth ./db ./handlers ./metrics ./utils -run "^$" -count=1`.
+         - Diagnostico del editor sin errores en `backend/handlers/pagina_principal_handlers.go`, `backend/handlers/pagina_principal_handlers_test.go`, `web/super/pagina_principal.html` y `web/descripcion_de_los_sistemas.ht`.
+
+ - 2026-04-15: Retorno recuperable del checkout de licencias tras volver de Epayco/Wompi
+     - Archivos modificados:
+         - backend/handlers/payments_handlers.go
+         - backend/handlers/payments_handlers_test.go
+         - web/pagar_licencia.html
+         - documentos/descripcion_del_proyecto
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se ajusta el checkout de licencias para que, al volver desde Epayco o Wompi, la pagina `web/pagar_licencia.html` recupere el contexto pendiente del pago, reanude la consulta real del estado y no dependa solo del `status` textual de la URL. El backend agrega una URL de retorno comun con `provider`, `reference`, `licencia_id` y `empresa_id`, y Wompi permite resolver el estado por `reference` cuando el navegador no conserva `transaction_id`.
+     - Verificacion tecnica:
+         - `go test ./handlers -run "Test(EpaycoCreateTransactionHandlerUsesConfiguredPublicBaseURLAndKeys|WompiTransactionStatusHandlerAllowsReferenceLookup|ResolvePaymentBaseURLRejectsLocalhostWithoutPublicConfig|ResolvePaymentBaseURLUsesConfiguredCanonicalDomain|PublicLicenciasPaymentMethodsHandlerOrdersAndAvailability)" -count=1`.
+         - `go test ./ ./auth ./db ./handlers ./metrics ./utils -run "^$" -count=1`.
+         - Diagnostico del editor sin errores en `web/pagar_licencia.html`, `backend/handlers/payments_handlers.go` y `backend/handlers/payments_handlers_test.go`.
+
+ - 2026-04-15: Fix de checkout Epayco con dominio público y credenciales coherentes
+     - Archivos creados:
+         - backend/handlers/payments_handlers_test.go
+     - Archivos modificados:
+         - backend/handlers/payments_handlers.go
+         - backend/handlers/system_empresas_handlers_test.go
+         - web/super/configuracion_avanzada.html
+         - documentos/descripcion_del_proyecto
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se corrige el checkout de licencias con Epayco para dejar de enviar `localhost` en `response` y `confirmation`, separar `public_key` de `customer_id` en la configuración avanzada y reutilizar una base pública válida también en el flujo Nequi/Wompi. El backend mantiene lectura compatible de claves legacy mientras la UI super ya refleja el contrato correcto de Epayco.
+     - Verificacion tecnica:
+         - `go test ./handlers -run "TestResolvePaymentBaseURL|TestEpaycoCreateTransactionHandlerUsesConfiguredPublicBaseURLAndKeys|TestPublicLicenciasPaymentMethodsHandlerOrdersAndAvailability" -count=1`.
+         - `go test ./ ./auth ./db ./handlers ./metrics ./utils -run "^$" -count=1`.
+         - Diagnostico del editor sin errores en `backend/handlers/payments_handlers.go`, `backend/handlers/payments_handlers_test.go`, `backend/handlers/system_empresas_handlers_test.go` y `web/super/configuracion_avanzada.html`.
+
  - 2026-04-15: Host canónico para login Google y carga visible en estaciones
      - Archivos modificados:
          - backend/utils/utils.go

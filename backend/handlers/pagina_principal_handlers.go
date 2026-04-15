@@ -21,10 +21,15 @@ const (
 )
 
 type paginaPrincipalCard struct {
-	Titulo      string `json:"titulo"`
-	Descripcion string `json:"descripcion"`
-	ImagenURL   string `json:"imagen_url"`
-	Enlace      string `json:"enlace"`
+	Titulo            string   `json:"titulo"`
+	Descripcion       string   `json:"descripcion"`
+	ImagenURL         string   `json:"imagen_url"`
+	Enlace            string   `json:"enlace"`
+	DetalleEtiqueta   string   `json:"detalle_etiqueta"`
+	DetalleTitular    string   `json:"detalle_titular"`
+	DetalleParrafoUno string   `json:"detalle_parrafo_uno"`
+	DetalleParrafoDos string   `json:"detalle_parrafo_dos"`
+	DetallePuntos     []string `json:"detalle_puntos"`
 }
 
 type paginaPrincipalConfig struct {
@@ -35,34 +40,84 @@ type paginaPrincipalConfig struct {
 func paginaPrincipalDefaultConfig() paginaPrincipalConfig {
 	cards := []paginaPrincipalCard{
 		{
-			Titulo:      "Punto de venta",
-			Descripcion: "Solucion completa para ventas rapidas y facturacion electronica.",
-			ImagenURL:   "/img/punto_venta.png",
-			Enlace:      "/administrar_empresa.html?module=punto_venta",
+			Titulo:            "Punto de venta",
+			Descripcion:       "Solucion completa para ventas rapidas y facturacion electronica.",
+			ImagenURL:         "/img/punto_venta.png",
+			Enlace:            "/administrar_empresa.html?module=punto_venta",
+			DetalleEtiqueta:   "Retail y mostrador",
+			DetalleTitular:    "Vende rapido, factura mejor y controla la caja desde una sola pantalla.",
+			DetalleParrafoUno: "La solucion de Punto de Venta esta pensada para negocios que necesitan registrar ventas agiles sin perder trazabilidad. Cada movimiento puede quedar asociado a empresa, usuario, estacion, cliente, metodo de pago y documento emitido, lo que facilita operar mostrador, caja rapida o atencion general desde una misma interfaz.",
+			DetalleParrafoDos: "Ademas de cobrar, el sistema ayuda a controlar inventario, descuentos, precios, clientes frecuentes, cierres de caja y reportes operativos. Esto permite que el comercio no solo venda mas rapido, sino que tambien mantenga orden financiero y visibilidad real sobre lo que esta ocurriendo en el negocio.",
+			DetallePuntos: []string{
+				"Facturacion electronica y documentos de venta con trazabilidad por empresa.",
+				"Carritos de compra rapidos con productos, servicios, combos y descuentos controlados.",
+				"Cierres de caja, metodos de pago y conciliacion operativa para supervision diaria.",
+				"Inventario sincronizado, historial de ventas y reportes para decisiones comerciales.",
+			},
 		},
 		{
-			Titulo:      "Motel",
-			Descripcion: "Gestion por tiempo de servicio y facturacion tarifada por estancia.",
-			ImagenURL:   "/img/motel.png",
-			Enlace:      "/administrar_empresa.html?module=motel",
+			Titulo:            "Motel",
+			Descripcion:       "Gestion por tiempo de servicio y facturacion tarifada por estancia.",
+			ImagenURL:         "/img/motel.png",
+			Enlace:            "/administrar_empresa.html?module=motel",
+			DetalleEtiqueta:   "Operacion por estancias",
+			DetalleTitular:    "Controla habitaciones, tiempos de ocupacion y consumos sin perder detalle.",
+			DetalleParrafoUno: "El sistema para Motel esta orientado a negocios donde el cobro depende del tiempo de uso, la disponibilidad de habitaciones y los consumos agregados durante la estancia. Permite conocer que habitaciones estan libres, ocupadas, reservadas o listas para limpieza, facilitando la operacion en tiempo real.",
+			DetalleParrafoDos: "La plataforma combina tarifas por minutos, tarifas por bloques, cargos adicionales, consumos de minibar o servicios y seguimiento de pagos por habitacion. Esto mejora la rotacion, reduce errores de cobro y entrega una trazabilidad clara para auditoria interna y control administrativo.",
+			DetallePuntos: []string{
+				"Tarifas por tiempo, reglas por bloques y calculo automatico del valor a cobrar.",
+				"Control de habitaciones con estados operativos y consumos asociados a la estancia.",
+				"Carritos simultaneos por estacion o habitacion con aislamiento por empresa.",
+				"Reportes de ocupacion, ingresos por turno y seguimiento detallado de servicios.",
+			},
 		},
 		{
-			Titulo:      "Restaurante",
-			Descripcion: "Gestion de mesas, pedidos y facturacion para restaurantes.",
-			ImagenURL:   "/img/restaurante.png",
-			Enlace:      "/administrar_empresa.html?module=restaurante",
+			Titulo:            "Restaurante",
+			Descripcion:       "Gestion de mesas, pedidos y facturacion para restaurantes.",
+			ImagenURL:         "/img/restaurante.png",
+			Enlace:            "/administrar_empresa.html?module=restaurante",
+			DetalleEtiqueta:   "Mesas y cocina",
+			DetalleTitular:    "Administra mesas, pedidos, cocina y cobro final con flujo continuo.",
+			DetalleParrafoUno: "La solucion para Restaurante ayuda a organizar la atencion desde que el cliente se sienta hasta que se factura la cuenta. El personal puede trabajar por mesas, estaciones o usuarios, tomar pedidos rapidamente y mantener control sobre productos, tiempos de despacho y consumos acumulados.",
+			DetalleParrafoDos: "Tambien facilita dividir cuentas, manejar propinas, emitir facturas, enviar ordenes a cocina o barra y consultar reportes por turno. Con esto, el restaurante gana velocidad en servicio, reduce reprocesos y mejora la coordinacion entre salon, caja y produccion.",
+			DetallePuntos: []string{
+				"Gestion de mesas, pedidos abiertos y consumos acumulados por cliente o grupo.",
+				"Impresion o resolucion de comandos para cocina, barra o puntos de preparacion.",
+				"Propinas, descuentos y metodos de pago integrados al cierre de la cuenta.",
+				"Indicadores de ventas, rotacion de mesas y control operativo por turno.",
+			},
 		},
 		{
-			Titulo:      "Control por sensor",
-			Descripcion: "Integracion y alertas con sensores para control de accesos.",
-			ImagenURL:   "/img/sensor.png",
-			Enlace:      "/administrar_empresa.html?module=sensor",
+			Titulo:            "Control por sensor",
+			Descripcion:       "Integracion y alertas con sensores para control de accesos.",
+			ImagenURL:         "/img/sensor.png",
+			Enlace:            "/administrar_empresa.html?module=sensor",
+			DetalleEtiqueta:   "Monitoreo y automatizacion",
+			DetalleTitular:    "Conecta eventos fisicos con alertas, estados y control operativo centralizado.",
+			DetalleParrafoUno: "La solucion de Control por Sensor esta diseñada para operaciones donde un evento fisico debe producir una accion o una evidencia digital. Puede servir para accesos, aperturas, cierres, confirmaciones de paso, sensores de puerta o estados que deban registrarse automaticamente para soporte operativo o seguridad.",
+			DetalleParrafoDos: "En lugar de depender solo de verificaciones manuales, el sistema centraliza senales, alertas y trazabilidad para que supervisores y administradores sepan que ocurrio, cuando ocurrio y en que punto operativo sucedio. Esto mejora la reaccion, la auditoria y la consistencia de la operacion diaria.",
+			DetallePuntos: []string{
+				"Registro de eventos de sensores con relacion a estaciones o puntos de control.",
+				"Alertas operativas y visibilidad de estados recientes para soporte inmediato.",
+				"Trazabilidad de accesos, aperturas o incidencias con evidencia temporal.",
+				"Integracion con flujos operativos que requieren validacion fisica o automatizada.",
+			},
 		},
 		{
-			Titulo:      "Hotel",
-			Descripcion: "Administracion de empresas, roles y permisos para operacion hotelera.",
-			ImagenURL:   "/img/settings-color.svg",
-			Enlace:      "/administrar_empresa.html?module=configuracion",
+			Titulo:            "Hotel",
+			Descripcion:       "Administracion de empresas, roles y permisos para operacion hotelera.",
+			ImagenURL:         "/img/settings-color.svg",
+			Enlace:            "/administrar_empresa.html?module=configuracion",
+			DetalleEtiqueta:   "Reservas y hospedaje",
+			DetalleTitular:    "Gestiona reservas, check-in, check-out y facturacion hotelera en un mismo flujo.",
+			DetalleParrafoUno: "La solucion para Hotel permite administrar habitaciones, reservas futuras, ocupacion actual y cargos adicionales dentro de una operacion unificada. De esta forma, recepcion y administracion pueden trabajar con informacion consistente sobre disponibilidad, tiempos de entrada y salida y consumos por huesped.",
+			DetalleParrafoDos: "El sistema ayuda a estructurar el ciclo completo del hospedaje: reserva, confirmacion, asignacion de habitacion, facturacion, cargos por servicios y control posterior. Esto lo convierte en una herramienta util tanto para pequeños hoteles como para operaciones que necesitan mayor orden en caja, reportes y servicio al cliente.",
+			DetallePuntos: []string{
+				"Control de reservas por rango de fechas y disponibilidad real de habitaciones.",
+				"Check-in y check-out con cargos diarios, servicios adicionales y seguimiento por huesped.",
+				"Facturacion, reportes de ocupacion y trazabilidad por empresa y periodo.",
+				"Soporte para operaciones multiusuario con historial claro de movimientos y cobros.",
+			},
 		},
 	}
 	return paginaPrincipalConfig{
@@ -106,6 +161,36 @@ func paginaPrincipalNormalizeLink(raw, fallback string) string {
 	return "/" + strings.TrimLeft(value, "/")
 }
 
+func paginaPrincipalNormalizeText(raw, fallback string) string {
+	value := strings.TrimSpace(raw)
+	if value != "" {
+		return value
+	}
+	return strings.TrimSpace(fallback)
+}
+
+func paginaPrincipalNormalizePoints(raw, fallback []string) []string {
+	normalized := make([]string, 0, len(raw))
+	for _, item := range raw {
+		trimmed := strings.TrimSpace(item)
+		if trimmed == "" {
+			continue
+		}
+		normalized = append(normalized, trimmed)
+	}
+	if len(normalized) > 0 {
+		return normalized
+	}
+	for _, item := range fallback {
+		trimmed := strings.TrimSpace(item)
+		if trimmed == "" {
+			continue
+		}
+		normalized = append(normalized, trimmed)
+	}
+	return normalized
+}
+
 func paginaPrincipalNormalizeConfig(cfg paginaPrincipalConfig) paginaPrincipalConfig {
 	defaults := paginaPrincipalDefaultConfig()
 	if cfg.Cantidad <= 0 {
@@ -134,10 +219,15 @@ func paginaPrincipalNormalizeConfig(cfg paginaPrincipalConfig) paginaPrincipalCo
 			description = base.Descripcion
 		}
 		normalized = append(normalized, paginaPrincipalCard{
-			Titulo:      title,
-			Descripcion: description,
-			ImagenURL:   paginaPrincipalNormalizeImageURL(current.ImagenURL, base.ImagenURL),
-			Enlace:      paginaPrincipalNormalizeLink(current.Enlace, base.Enlace),
+			Titulo:            title,
+			Descripcion:       description,
+			ImagenURL:         paginaPrincipalNormalizeImageURL(current.ImagenURL, base.ImagenURL),
+			Enlace:            paginaPrincipalNormalizeLink(current.Enlace, base.Enlace),
+			DetalleEtiqueta:   paginaPrincipalNormalizeText(current.DetalleEtiqueta, base.DetalleEtiqueta),
+			DetalleTitular:    paginaPrincipalNormalizeText(current.DetalleTitular, base.DetalleTitular),
+			DetalleParrafoUno: paginaPrincipalNormalizeText(current.DetalleParrafoUno, base.DetalleParrafoUno),
+			DetalleParrafoDos: paginaPrincipalNormalizeText(current.DetalleParrafoDos, base.DetalleParrafoDos),
+			DetallePuntos:     paginaPrincipalNormalizePoints(current.DetallePuntos, base.DetallePuntos),
 		})
 	}
 
@@ -245,7 +335,7 @@ func paginaPrincipalRequireSuperAdmin(w http.ResponseWriter, r *http.Request, db
 	return strings.TrimSpace(admin.Email), true
 }
 
-// SuperPaginaPrincipalHandler administra las tarjetas configurables del index para el panel super.
+// SuperPaginaPrincipalHandler administra las tarjetas configurables del portal principal y su landing descriptiva.
 func SuperPaginaPrincipalHandler(dbSuper *sql.DB, webDir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		adminEmail, ok := paginaPrincipalRequireSuperAdmin(w, r, dbSuper)
@@ -325,7 +415,7 @@ func SuperPaginaPrincipalHandler(dbSuper *sql.DB, webDir string) http.HandlerFun
 	}
 }
 
-// PublicPaginaPrincipalHandler expone tarjetas del index para visualizacion publica.
+// PublicPaginaPrincipalHandler expone tarjetas del portal para visualizacion publica del index y la landing descriptiva.
 func PublicPaginaPrincipalHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {

@@ -53,8 +53,13 @@
 
       <div class="form-row">
         <div class="form-col">
+          <label class="form-label">Customer ID (opcional)</label>
+          <input id="epaycoCustomerId" class="form-input" type="text" placeholder="Solo si Epayco te exige p_cust_id_cliente">
+          <div id="epaycoCustomerIdSet" class="form-help">Cargando estado...</div>
+        </div>
+        <div class="form-col">
           <label class="form-label">Opciones</label>
-          <div class="form-help">Las llaves secretas se guardan cifradas obligatoriamente.</div>
+          <div class="form-help">Las llaves secretas se guardan cifradas obligatoriamente. La Public Key no debe reemplazarse por el Customer ID.</div>
         </div>
       </div>
 
@@ -699,14 +704,16 @@
       }
 
       async function loadEpaycoConfig(){
-        const statusCust = document.getElementById('epaycoPublicSet');
-        const statusKey = document.getElementById('epaycoPrivateSet');
+        const statusPublic = document.getElementById('epaycoPublicSet');
+        const statusPrivate = document.getElementById('epaycoPrivateSet');
+        const statusCustomerId = document.getElementById('epaycoCustomerIdSet');
         const msg = document.getElementById('epaycoMsg');
         try {
           const res = await fetch('/super/api/config/epayco');
           if (!res.ok) {
-            statusCust.innerText = 'Error al leer configuración Epayco';
-            statusKey.innerText = 'Error al leer configuración Epayco';
+            statusPublic.innerText = 'Error al leer configuración Epayco';
+            statusPrivate.innerText = 'Error al leer configuración Epayco';
+            statusCustomerId.innerText = 'Error al leer configuración Epayco';
             return;
           }
           const cfg = await res.json();
@@ -714,30 +721,41 @@
           if (enabledEl) enabledEl.checked = !!cfg.enabled;
           refreshEpaycoEnabledHint();
 
-          if (cfg.cust_id_set) {
-            statusCust.innerText = 'Customer ID guardado (' + (cfg.cust_id_masked || '') + ')';
-            document.getElementById('epaycoPublicKey').disabled = true;
-          } else {
-            statusCust.innerText = 'No configurada';
-            document.getElementById('epaycoPublicKey').disabled = false;
-          }
+        if (cfg.public_key_set) {
+          const tsPublic = cfg.public_key_updated ? (' — Última actualización: ' + cfg.public_key_updated) : '';
+          statusPublic.innerText = 'Public Key guardada (' + (cfg.public_key_masked || '') + ')' + tsPublic;
+          document.getElementById('epaycoPublicKey').disabled = true;
+        } else {
+          statusPublic.innerText = 'No configurada';
+          document.getElementById('epaycoPublicKey').disabled = false;
+        }
 
-          if (cfg.key_set) {
-            const ts = cfg.key_updated ? (' — Última actualización: ' + cfg.key_updated) : '';
-            statusKey.innerText = 'Key guardada (' + (cfg.key_masked || '****') + ')' + ts;
-            document.getElementById('epaycoPrivateKey').disabled = true;
-          } else {
-            statusKey.innerText = 'No configurada';
-            document.getElementById('epaycoPrivateKey').disabled = false;
-          }
+        if (cfg.customer_id_set) {
+          const tsCustomer = cfg.customer_id_updated ? (' — Última actualización: ' + cfg.customer_id_updated) : '';
+          statusCustomerId.innerText = 'Customer ID guardado (' + (cfg.customer_id_masked || '') + ')' + tsCustomer;
+          document.getElementById('epaycoCustomerId').disabled = true;
+        } else {
+          statusCustomerId.innerText = 'No configurado';
+          document.getElementById('epaycoCustomerId').disabled = false;
+        }
 
-          const hasEpaycoConfig = !!(cfg.cust_id_set || cfg.key_set);
+        if (cfg.private_key_set) {
+          const tsPrivate = cfg.private_key_updated ? (' — Última actualización: ' + cfg.private_key_updated) : '';
+          statusPrivate.innerText = 'Private Key guardada (' + (cfg.private_key_masked || '****') + ')' + tsPrivate;
+          document.getElementById('epaycoPrivateKey').disabled = true;
+        } else {
+          statusPrivate.innerText = 'No configurada';
+          document.getElementById('epaycoPrivateKey').disabled = false;
+        }
+
+        const hasEpaycoConfig = !!(cfg.public_key_set || cfg.private_key_set || cfg.customer_id_set);
           document.getElementById('editEpaycoBtn').style.display = hasEpaycoConfig ? '' : 'none';
           document.getElementById('cancelEpaycoBtn').style.display = 'none';
           document.getElementById('saveEpaycoBtn').disabled = false;
         } catch (err) {
-          statusCust.innerText = 'Error cargando Epayco: ' + (err.message || err);
-          statusKey.innerText = statusCust.innerText;
+          statusPublic.innerText = 'Error cargando Epayco: ' + (err.message || err);
+          statusPrivate.innerText = statusPublic.innerText;
+          statusCustomerId.innerText = statusPublic.innerText;
           refreshEpaycoEnabledHint();
         }
       }
@@ -746,17 +764,19 @@
         if (e && e.preventDefault) e.preventDefault();
         const btn = document.getElementById('saveEpaycoBtn');
         const msg = document.getElementById('epaycoMsg');
-        const cust = (document.getElementById('epaycoPublicKey').value || '').trim();
-        const key = (document.getElementById('epaycoPrivateKey').value || '').trim();
+        const publicKey = (document.getElementById('epaycoPublicKey').value || '').trim();
+        const customerId = (document.getElementById('epaycoCustomerId').value || '').trim();
+        const privateKey = (document.getElementById('epaycoPrivateKey').value || '').trim();
         const enabled = !!document.getElementById('epaycoEnabledToggle').checked;
 
-        if (!cust && !key) {
+	      if (!publicKey && !customerId && !privateKey) {
           if (!confirm('No ingresaste llaves. ¿Deseas actualizar solo el estado de activación?')) return;
         }
 
         const payload = { encrypt: true, enabled: enabled };
-        if (cust) payload.cust_id = cust;
-        if (key) payload.key = key;
+	      if (publicKey) payload.public_key = publicKey;
+	      if (customerId) payload.customer_id = customerId;
+	      if (privateKey) payload.private_key = privateKey;
 
         btn.disabled = true; btn.innerText = 'Guardando...'; msg.innerText = '';
         try {
@@ -769,6 +789,7 @@
           msg.innerText = 'Epayco guardado correctamente.';
           document.getElementById('epaycoPrivateKey').value = '';
           document.getElementById('epaycoPublicKey').value = '';
+          document.getElementById('epaycoCustomerId').value = '';
           await loadEpaycoConfig();
         } catch (err) {
           msg.innerText = 'Error guardando Epayco: ' + (err.message || err);
@@ -779,6 +800,7 @@
 
       function enableEditEpayco(){
         document.getElementById('epaycoPublicKey').disabled = false;
+        document.getElementById('epaycoCustomerId').disabled = false;
         document.getElementById('epaycoPrivateKey').disabled = false;
         document.getElementById('saveEpaycoBtn').disabled = false;
         document.getElementById('editEpaycoBtn').style.display = 'none';

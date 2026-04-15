@@ -56,106 +56,83 @@
           titulo: 'Punto de venta',
           descripcion: 'Solucion completa para ventas rapidas y facturacion electronica.',
           imagen_url: '/img/punto_venta.png',
-          enlace: '/administrar_empresa.html?module=punto_venta'
+	          enlace: '/administrar_empresa.html?module=punto_venta',
+	          detalle_etiqueta: 'Retail y mostrador',
+	          detalle_titular: 'Vende rapido, factura mejor y controla la caja desde una sola pantalla.',
+	          detalle_parrafo_uno: 'La solucion de Punto de Venta esta pensada para negocios que necesitan registrar ventas agiles sin perder trazabilidad. Cada movimiento puede quedar asociado a empresa, usuario, estacion, cliente, metodo de pago y documento emitido, lo que facilita operar mostrador, caja rapida o atencion general desde una misma interfaz.',
+	          detalle_parrafo_dos: 'Ademas de cobrar, el sistema ayuda a controlar inventario, descuentos, precios, clientes frecuentes, cierres de caja y reportes operativos. Esto permite que el comercio no solo venda mas rapido, sino que tambien mantenga orden financiero y visibilidad real sobre lo que esta ocurriendo en el negocio.',
+	          detalle_puntos: [
+	            'Facturacion electronica y documentos de venta con trazabilidad por empresa.',
+	            'Carritos de compra rapidos con productos, servicios, combos y descuentos controlados.',
+	            'Cierres de caja, metodos de pago y conciliacion operativa para supervision diaria.',
+	            'Inventario sincronizado, historial de ventas y reportes para decisiones comerciales.'
+	          ]
         },
         {
           titulo: 'Motel',
           descripcion: 'Gestion por tiempo de servicio y facturacion tarifada por estancia.',
           imagen_url: '/img/motel.png',
-          enlace: '/administrar_empresa.html?module=motel'
+	          enlace: '/administrar_empresa.html?module=motel',
+	          detalle_etiqueta: 'Operacion por estancias',
+	          detalle_titular: 'Controla habitaciones, tiempos de ocupacion y consumos sin perder detalle.',
+	          detalle_parrafo_uno: 'El sistema para Motel esta orientado a negocios donde el cobro depende del tiempo de uso, la disponibilidad de habitaciones y los consumos agregados durante la estancia. Permite conocer que habitaciones estan libres, ocupadas, reservadas o listas para limpieza, facilitando la operacion en tiempo real.',
+	          detalle_parrafo_dos: 'La plataforma combina tarifas por minutos, tarifas por bloques, cargos adicionales, consumos de minibar o servicios y seguimiento de pagos por habitacion. Esto mejora la rotacion, reduce errores de cobro y entrega una trazabilidad clara para auditoria interna y control administrativo.',
+	          detalle_puntos: [
+	            'Tarifas por tiempo, reglas por bloques y calculo automatico del valor a cobrar.',
+	            'Control de habitaciones con estados operativos y consumos asociados a la estancia.',
+	            'Carritos simultaneos por estacion o habitacion con aislamiento por empresa.',
+	            'Reportes de ocupacion, ingresos por turno y seguimiento detallado de servicios.'
+	          ]
         },
         {
           titulo: 'Restaurante',
           descripcion: 'Gestion de mesas, pedidos y facturacion para restaurantes.',
           imagen_url: '/img/restaurante.png',
-          enlace: '/administrar_empresa.html?module=restaurante'
+	          enlace: '/administrar_empresa.html?module=restaurante',
+	          detalle_etiqueta: 'Mesas y cocina',
+	          detalle_titular: 'Administra mesas, pedidos, cocina y cobro final con flujo continuo.',
+	          detalle_parrafo_uno: 'La solucion para Restaurante ayuda a organizar la atencion desde que el cliente se sienta hasta que se factura la cuenta. El personal puede trabajar por mesas, estaciones o usuarios, tomar pedidos rapidamente y mantener control sobre productos, tiempos de despacho y consumos acumulados.',
+	          detalle_parrafo_dos: 'Tambien facilita dividir cuentas, manejar propinas, emitir facturas, enviar ordenes a cocina o barra y consultar reportes por turno. Con esto, el restaurante gana velocidad en servicio, reduce reprocesos y mejora la coordinacion entre salon, caja y produccion.',
+	          detalle_puntos: [
+	            'Gestion de mesas, pedidos abiertos y consumos acumulados por cliente o grupo.',
+	            'Impresion o resolucion de comandos para cocina, barra o puntos de preparacion.',
+	            'Propinas, descuentos y metodos de pago integrados al cierre de la cuenta.',
+	            'Indicadores de ventas, rotacion de mesas y control operativo por turno.'
+	          ]
         },
         {
           titulo: 'Control por sensor',
           descripcion: 'Integracion y alertas con sensores para control de accesos.',
           imagen_url: '/img/sensor.png',
-          enlace: '/administrar_empresa.html?module=sensor'
+	          enlace: '/administrar_empresa.html?module=sensor',
+	          detalle_etiqueta: 'Monitoreo y automatizacion',
+	          detalle_titular: 'Conecta eventos fisicos con alertas, estados y control operativo centralizado.',
+	          detalle_parrafo_uno: 'La solucion de Control por Sensor esta diseñada para operaciones donde un evento fisico debe producir una accion o una evidencia digital. Puede servir para accesos, aperturas, cierres, confirmaciones de paso, sensores de puerta o estados que deban registrarse automaticamente para soporte operativo o seguridad.',
+            detalle_parrafo_dos: 'En lugar de depender solo de verificaciones manuales, el sistema centraliza senales, alertas y trazabilidad para que supervisores y administradores sepan que ocurrio, cuando ocurrio y en que punto operativo sucedio. Esto mejora la reaccion, la auditoria y la consistencia de la operacion diaria.',
+	          detalle_puntos: [
+	            'Registro de eventos de sensores con relacion a estaciones o puntos de control.',
+	            'Alertas operativas y visibilidad de estados recientes para soporte inmediato.',
+	            'Trazabilidad de accesos, aperturas o incidencias con evidencia temporal.',
+	            'Integracion con flujos operativos que requieren validacion fisica o automatizada.'
+	          ]
         },
         {
           titulo: 'Hotel',
           descripcion: 'Administracion de empresas, roles y permisos para operacion hotelera.',
           imagen_url: '/img/settings-color.svg',
-          enlace: '/administrar_empresa.html?module=configuracion'
+	          enlace: '/administrar_empresa.html?module=configuracion',
+	          detalle_etiqueta: 'Reservas y hospedaje',
+	          detalle_titular: 'Gestiona reservas, check-in, check-out y facturacion hotelera en un mismo flujo.',
+	          detalle_parrafo_uno: 'La solucion para Hotel permite administrar habitaciones, reservas futuras, ocupacion actual y cargos adicionales dentro de una operacion unificada. De esta forma, recepcion y administracion pueden trabajar con informacion consistente sobre disponibilidad, tiempos de entrada y salida y consumos por huesped.',
+	          detalle_parrafo_dos: 'El sistema ayuda a estructurar el ciclo completo del hospedaje: reserva, confirmacion, asignacion de habitacion, facturacion, cargos por servicios y control posterior. Esto lo convierte en una herramienta util tanto para pequeños hoteles como para operaciones que necesitan mayor orden en caja, reportes y servicio al cliente.',
+	          detalle_puntos: [
+	            'Control de reservas por rango de fechas y disponibilidad real de habitaciones.',
+	            'Check-in y check-out con cargos diarios, servicios adicionales y seguimiento por huesped.',
+	            'Facturacion, reportes de ocupacion y trazabilidad por empresa y periodo.',
+	            'Soporte para operaciones multiusuario con historial claro de movimientos y cobros.'
+	          ]
         }
       ];
-
-      var detailLibrary = {
-        punto_venta: {
-          etiqueta: 'Retail y mostrador',
-          titular: 'Vende rapido, factura mejor y controla la caja desde una sola pantalla.',
-          parrafos: [
-            'La solucion de Punto de Venta esta pensada para negocios que necesitan registrar ventas agiles sin perder trazabilidad. Cada movimiento puede quedar asociado a empresa, usuario, estacion, cliente, metodo de pago y documento emitido, lo que facilita operar mostrador, caja rapida o atencion general desde una misma interfaz.',
-            'Ademas de cobrar, el sistema ayuda a controlar inventario, descuentos, precios, clientes frecuentes, cierres de caja y reportes operativos. Esto permite que el comercio no solo venda mas rapido, sino que tambien mantenga orden financiero y visibilidad real sobre lo que esta ocurriendo en el negocio.'
-          ],
-          puntos: [
-            'Facturacion electronica y documentos de venta con trazabilidad por empresa.',
-            'Carritos de compra rapidos con productos, servicios, combos y descuentos controlados.',
-            'Cierres de caja, metodos de pago y conciliacion operativa para supervision diaria.',
-            'Inventario sincronizado, historial de ventas y reportes para decisiones comerciales.'
-          ]
-        },
-        motel: {
-          etiqueta: 'Operacion por estancias',
-          titular: 'Controla habitaciones, tiempos de ocupacion y consumos sin perder detalle.',
-          parrafos: [
-            'El sistema para Motel esta orientado a negocios donde el cobro depende del tiempo de uso, la disponibilidad de habitaciones y los consumos agregados durante la estancia. Permite conocer que habitaciones estan libres, ocupadas, reservadas o listas para limpieza, facilitando la operacion en tiempo real.',
-            'La plataforma combina tarifas por minutos, tarifas por bloques, cargos adicionales, consumos de minibar o servicios y seguimiento de pagos por habitacion. Esto mejora la rotacion, reduce errores de cobro y entrega una trazabilidad clara para auditoria interna y control administrativo.'
-          ],
-          puntos: [
-            'Tarifas por tiempo, reglas por bloques y calculo automatico del valor a cobrar.',
-            'Control de habitaciones con estados operativos y consumos asociados a la estancia.',
-            'Carritos simultaneos por estacion o habitacion con aislamiento por empresa.',
-            'Reportes de ocupacion, ingresos por turno y seguimiento detallado de servicios.'
-          ]
-        },
-        restaurante: {
-          etiqueta: 'Mesas y cocina',
-          titular: 'Administra mesas, pedidos, cocina y cobro final con flujo continuo.',
-          parrafos: [
-            'La solucion para Restaurante ayuda a organizar la atencion desde que el cliente se sienta hasta que se factura la cuenta. El personal puede trabajar por mesas, estaciones o usuarios, tomar pedidos rapidamente y mantener control sobre productos, tiempos de despacho y consumos acumulados.',
-            'Tambien facilita dividir cuentas, manejar propinas, emitir facturas, enviar ordenes a cocina o barra y consultar reportes por turno. Con esto, el restaurante gana velocidad en servicio, reduce reprocesos y mejora la coordinacion entre salon, caja y produccion.'
-          ],
-          puntos: [
-            'Gestion de mesas, pedidos abiertos y consumos acumulados por cliente o grupo.',
-            'Impresion o resolucion de comandos para cocina, barra o puntos de preparacion.',
-            'Propinas, descuentos y metodos de pago integrados al cierre de la cuenta.',
-            'Indicadores de ventas, rotacion de mesas y control operativo por turno.'
-          ]
-        },
-        sensor: {
-          etiqueta: 'Monitoreo y automatizacion',
-          titular: 'Conecta eventos fisicos con alertas, estados y control operativo centralizado.',
-          parrafos: [
-            'La solucion de Control por Sensor esta diseñada para operaciones donde un evento fisico debe producir una accion o una evidencia digital. Puede servir para accesos, aperturas, cierres, confirmaciones de paso, sensores de puerta o estados que deban registrarse automaticamente para soporte operativo o seguridad.',
-            'En lugar de depender solo de verificaciones manuales, el sistema centraliza senales, alertas y trazabilidad para que supervisores y administradores sepan que ocurrio, cuando ocurrio y en que punto operativo sucedio. Esto mejora la reaccion, la auditoria y la consistencia de la operacion diaria.'
-          ],
-          puntos: [
-            'Registro de eventos de sensores con relacion a estaciones o puntos de control.',
-            'Alertas operativas y visibilidad de estados recientes para soporte inmediato.',
-            'Trazabilidad de accesos, aperturas o incidencias con evidencia temporal.',
-            'Integracion con flujos operativos que requieren validacion fisica o automatizada.'
-          ]
-        },
-        hotel: {
-          etiqueta: 'Reservas y hospedaje',
-          titular: 'Gestiona reservas, check-in, check-out y facturacion hotelera en un mismo flujo.',
-          parrafos: [
-            'La solucion para Hotel permite administrar habitaciones, reservas futuras, ocupacion actual y cargos adicionales dentro de una operacion unificada. De esta forma, recepcion y administracion pueden trabajar con informacion consistente sobre disponibilidad, tiempos de entrada y salida y consumos por huesped.',
-            'El sistema ayuda a estructurar el ciclo completo del hospedaje: reserva, confirmacion, asignacion de habitacion, facturacion, cargos por servicios y control posterior. Esto lo convierte en una herramienta util tanto para pequeños hoteles como para operaciones que necesitan mayor orden en caja, reportes y servicio al cliente.'
-          ],
-          puntos: [
-            'Control de reservas por rango de fechas y disponibilidad real de habitaciones.',
-            'Check-in y check-out con cargos diarios, servicios adicionales y seguimiento por huesped.',
-            'Facturacion, reportes de ocupacion y trazabilidad por empresa y periodo.',
-            'Soporte para operaciones multiusuario con historial claro de movimientos y cobros.'
-          ]
-        }
-      };
 
       function escapeHTML(value) {
         return String(value == null ? '' : value)
@@ -210,48 +187,16 @@
             descripcion: descripcion,
             imagen_url: imagen,
             enlace: enlace,
-            detalle_id: detalleId
+            detalle_id: detalleId,
+            detalle_etiqueta: String((card && card.detalle_etiqueta) || fallback.detalle_etiqueta || '').trim(),
+            detalle_titular: String((card && card.detalle_titular) || fallback.detalle_titular || '').trim(),
+            detalle_parrafo_uno: String((card && card.detalle_parrafo_uno) || fallback.detalle_parrafo_uno || '').trim(),
+            detalle_parrafo_dos: String((card && card.detalle_parrafo_dos) || fallback.detalle_parrafo_dos || '').trim(),
+            detalle_puntos: Array.isArray(card && card.detalle_puntos) && card.detalle_puntos.length
+              ? card.detalle_puntos
+              : (Array.isArray(fallback.detalle_puntos) ? fallback.detalle_puntos.slice() : [])
           };
         });
-      }
-
-      function resolveDetail(card, idx) {
-        var title = String(card.titulo || '').toLowerCase();
-        var compact = title;
-        if (compact.normalize) {
-          compact = compact.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-        }
-
-        if (compact.indexOf('punto de venta') >= 0 || compact.indexOf('venta') >= 0 || idx === 0) {
-          return detailLibrary.punto_venta;
-        }
-        if (compact.indexOf('motel') >= 0 || idx === 1) {
-          return detailLibrary.motel;
-        }
-        if (compact.indexOf('restaurante') >= 0 || compact.indexOf('mesa') >= 0 || idx === 2) {
-          return detailLibrary.restaurante;
-        }
-        if (compact.indexOf('sensor') >= 0 || compact.indexOf('control') >= 0 || idx === 3) {
-          return detailLibrary.sensor;
-        }
-        if (compact.indexOf('hotel') >= 0 || compact.indexOf('habitacion') >= 0 || idx === 4) {
-          return detailLibrary.hotel;
-        }
-
-        return {
-          etiqueta: 'Solucion especializada',
-          titular: 'Una plataforma flexible para operar ' + card.titulo.toLowerCase() + ' con mas control y trazabilidad.',
-          parrafos: [
-            'Esta solucion se adapta a negocios que necesitan centralizar operacion, trazabilidad y control administrativo alrededor de ' + card.titulo.toLowerCase() + '. La idea es reducir tareas dispersas, consolidar datos y facilitar que cada area trabaje con la misma fuente de informacion.',
-            'A partir de la configuracion del portal, el sistema puede combinar procesos comerciales, reportes, usuarios, cobros y seguimiento por empresa, permitiendo una salida mas ordenada para atencion al cliente, supervision y analisis operativo.'
-          ],
-          puntos: [
-            'Configuracion flexible segun el tipo de negocio y punto operativo.',
-            'Trazabilidad por empresa, usuarios, documentos y periodos de operacion.',
-            'Capacidad para crecer con nuevos flujos, reportes y reglas comerciales.',
-            'Base preparada para pruebas, despliegue comercial y adopcion por etapas.'
-          ]
-        };
       }
 
       function renderQuickNav(cards) {
@@ -262,25 +207,24 @@
 
       function renderSections(cards) {
         sectionsEl.innerHTML = cards.map(function (card, idx) {
-          var detail = resolveDetail(card, idx);
-          var pointsHTML = detail.puntos.map(function (point) {
+          var pointsHTML = card.detalle_puntos.map(function (point) {
             return '<li>' + escapeHTML(point) + '</li>';
           }).join('');
 
           return '' +
             '<article id="' + escapeHTML(card.detalle_id) + '" class="system-detail-card" tabindex="-1">' +
             '  <div class="system-detail-media">' +
-            '    <span class="system-detail-tag">' + escapeHTML(detail.etiqueta) + '</span>' +
+            '    <span class="system-detail-tag">' + escapeHTML(card.detalle_etiqueta) + '</span>' +
             '    <img src="' + escapeHTML(card.imagen_url) + '" alt="Icono ' + escapeHTML(card.titulo) + '">' +
             '    <p class="system-detail-caption">Llegaste a esta seccion desde la tarjeta del portal principal.</p>' +
             '  </div>' +
             '  <div class="system-detail-body">' +
             '    <p class="system-detail-kicker">' + escapeHTML(card.titulo) + '</p>' +
-            '    <h2 class="system-detail-title">' + escapeHTML(detail.titular) + '</h2>' +
+            '    <h2 class="system-detail-title">' + escapeHTML(card.detalle_titular) + '</h2>' +
             '    <p class="system-detail-short">' + escapeHTML(card.descripcion) + '</p>' +
             '    <div class="system-detail-copy">' +
-            '      <p>' + escapeHTML(detail.parrafos[0]) + '</p>' +
-            '      <p>' + escapeHTML(detail.parrafos[1]) + '</p>' +
+            '      <p>' + escapeHTML(card.detalle_parrafo_uno) + '</p>' +
+            '      <p>' + escapeHTML(card.detalle_parrafo_dos) + '</p>' +
             '    </div>' +
             '    <div class="system-detail-points-wrap">' +
             '      <h3>Capacidades clave</h3>' +

@@ -73,12 +73,13 @@ Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe re
 - Frontend:
   - `web/index.html` deja de abrir el enlace configurado directamente en `Explorar oferta` y ahora navega a `/descripcion_de_los_sistemas.ht#<tarjeta>` usando una ancla estable por tarjeta.
   - `web/descripcion_de_los_sistemas.ht` concentra la descripcion ampliada de todas las tarjetas del portal en una sola pagina y posiciona al usuario en la seccion correspondiente segun la tarjeta presionada.
-  - `web/super/pagina_principal.html` aclara que el enlace configurado en cada tarjeta ya no alimenta `Explorar oferta` sino el boton `Probar Gratis` mostrado dentro de la landing descriptiva.
+  - `web/super/pagina_principal.html` ya no configura solo el home: ahora tambien edita la etiqueta, el titular ampliado, los dos parrafos y las capacidades clave usadas por cada tarjeta en la landing descriptiva.
   - `web/estilos.css` agrega el layout visual del catalogo descriptivo, navegacion rapida por secciones y CTA publico por sistema.
 - Backend/seguridad:
   - `backend/utils/utils.go` deja la landing `/descripcion_de_los_sistemas.ht` como ruta publica exacta en `AuthMiddleware`, alineando seguridad con el flujo comercial del home.
+  - `backend/handlers/pagina_principal_handlers.go` expone por `/api/public/pagina_principal` tanto las tarjetas del home como el contenido ampliado consumido por la landing.
 - Flujo:
-  - `super/pagina_principal.html` define tarjetas + destino de `Probar Gratis` -> `index.html` muestra cards dinamicas -> `Explorar oferta` abre `/descripcion_de_los_sistemas.ht#<seccion>` -> el usuario revisa la descripcion extendida -> `Probar Gratis` usa el enlace configurado para continuar el flujo comercial o de prueba.
+  - `super/pagina_principal.html` define tarjetas + contenido ampliado + destino de `Probar Gratis` -> `index.html` muestra cards dinamicas -> `Explorar oferta` abre `/descripcion_de_los_sistemas.ht#<seccion>` -> la landing renderiza el texto extendido desde `/api/public/pagina_principal` -> `Probar Gratis` usa el enlace configurado para continuar el flujo comercial o de prueba.
 
 ## Actualizacion 2026-04-15 (checkout de licencias: disponibilidad publica ordenada)
 
@@ -92,6 +93,32 @@ Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe re
   - `web/estilos.css` agrega estilo vertical dedicado para el selector de metodos de licencia y clases explicitas para Epayco/Wompi.
 - Flujo:
   - `configuracion avanzada super` -> guarda estado `enabled`/credenciales -> `GET /api/public/licencias/payment_methods` -> `pagar_licencia.html` muestra solo pasarelas disponibles -> `WompiTermsHandler` y `WompiCreateNequiTransactionHandler` revalidan disponibilidad antes de continuar.
+
+## Actualizacion 2026-04-15 (checkout de licencias: Epayco con dominio público y contrato de credenciales coherente)
+
+- Backend:
+  - `backend/handlers/payments_handlers.go` separa `epayco.public_key`, `epayco.private_key` y `epayco.customer_id`, manteniendo compatibilidad de lectura con `epayco.cust_id` y `epayco.key` para instalaciones previas.
+  - El builder de checkout de Epayco deja de derivar `response` y `confirmation` desde `localhost`; ahora reutiliza `gmail.confirm_base_url` o el host público efectivo mediante `resolvePaymentBaseURL(...)`, y rechaza explícitamente hosts loopback para pagos externos.
+  - `WompiCreateNequiTransactionHandler` usa la misma resolución de base pública para `redirect_url`, evitando callbacks locales en entornos publicados.
+- Frontend:
+  - `web/super/configuracion_avanzada.html` muestra y guarda `Public Key`, `Private Key` y `Customer ID (opcional)` de Epayco con etiquetas consistentes, sin confundir la llave pública con el identificador del comercio.
+- Pruebas:
+  - `backend/handlers/payments_handlers_test.go` valida la resolución de base pública, la canonicalización del dominio configurado y que el checkout Epayco salga con `public_key` correcta y sin `localhost`.
+- Flujo:
+  - `configuracion avanzada super` -> guarda llaves Epayco coherentes -> `POST /epayco/create_transaction` resuelve dominio público válido -> Epayco recibe `public_key`, `p_cust_id_cliente` opcional y callbacks HTTPS públicos -> el checkout deja de fallar por `AccessDenied` asociado a llaves/callbacks mal armados.
+
+## Actualizacion 2026-04-15 (checkout de licencias: retorno recuperable tras volver de la pasarela)
+
+- Backend:
+  - `backend/handlers/payments_handlers.go` incorpora `buildLicenciaReturnURL(...)` para que Epayco y Wompi devuelvan a `web/pagar_licencia.html` con `provider`, `status=pending`, `reference`, `licencia_id` y `empresa_id` consistentes.
+  - `WompiTransactionStatusHandler` admite `reference`/`ref` ademas de `transaction_id`; si el navegador vuelve sin identificador directo, resuelve el `transaction_id` desde `pagos_wompi` y luego consulta el estado real a la pasarela.
+- Frontend:
+  - `web/pagar_licencia.html` persiste el contexto pendiente en almacenamiento local, recupera el pago al regresar desde la pasarela o al recargar y reanuda el polling real en lugar de confiar solo en un `status` textual de la query string.
+  - La misma vista muestra feedback claro de `aprobado`, `rechazado` o `en verificacion` y conserva `reference`/`transaction_id` en la URL para facilitar reintentos o soporte operativo.
+- Pruebas:
+  - `backend/handlers/payments_handlers_test.go` valida que la URL de retorno Epayco incluya el contexto esperado y que Wompi pueda resolver estado por `reference`.
+- Flujo:
+  - `POST /epayco/create_transaction` o `POST /wompi/create_transaction_nequi` -> pasarela externa -> retorno a `/pagar_licencia.html?provider=...&status=pending&reference=...&licencia_id=...&empresa_id=...` -> `web/pagar_licencia.html` recupera contexto guardado -> consulta `/epayco/transaction_status` o `/wompi/transaction_status` por `transaction_id` o `reference` -> la pagina confirma `APPROVED`/`DECLINED` con feedback consistente.
 
 ## Actualizacion 2026-04-15 (hardening login Google y cuenta recordada)
 

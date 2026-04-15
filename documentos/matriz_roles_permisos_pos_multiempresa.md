@@ -49,6 +49,24 @@ Leyenda:
 
 ## Estado de implementacion tecnica inicial (2026-04-04)
 
+- Actualizacion 2026-04-15 (portal publico: landing descriptiva configurable desde pagina_principal):
+	- `backend/handlers/pagina_principal_handlers.go` amplía la configuracion de tarjetas del portal para incluir el contenido extendido consumido por `/descripcion_de_los_sistemas.ht`.
+	- `web/super/pagina_principal.html` agrega campos de edicion para etiqueta, titular ampliado, parrafos y capacidades clave; `web/descripcion_de_los_sistemas.ht` renderiza ese contenido desde la API publica y deja de depender de textos fijos por nombre de tarjeta.
+	- `backend/handlers/pagina_principal_handlers_test.go` cubre la normalizacion y exposicion de esos campos ampliados.
+	- Impacto de matriz: sin cambios en roles, CRUD/A, wrappers o visibilidad por rol; `Pagina principal (tarjetas index)` mantiene CRUA exclusivo de `super_administrador` y la landing descriptiva sigue siendo publica de solo lectura.
+
+- Actualizacion 2026-04-15 (checkout de licencias: retorno recuperable tras Epayco/Wompi):
+	- `backend/handlers/payments_handlers.go` devuelve a `web/pagar_licencia.html` con contexto operativo del cobro y permite lookup Wompi por `reference` para reconsultar el estado real despues del redirect.
+	- `web/pagar_licencia.html` solo endurece el flujo publico de licencias: guarda el pago pendiente, reanuda polling al volver y muestra feedback claro sin crear pantallas administrativas ni acciones nuevas.
+	- `backend/handlers/payments_handlers_test.go` cubre la recuperacion por referencia y la URL de retorno enriquecida del checkout.
+	- Impacto de matriz: sin cambios en roles, CRUD/A, wrappers o visibilidad por rol; `Pasarelas de licencias (Wompi/Epayco)` sigue siendo CRUA exclusivo de `super_administrador` y el checkout continua siendo publico de solo consumo.
+
+- Actualizacion 2026-04-15 (fix Epayco: llave pública correcta y callbacks con dominio público):
+	- `backend/handlers/payments_handlers.go` corrige el contrato de Epayco para separar `public_key`, `private_key` y `customer_id`, además de reutilizar una base pública válida en los callbacks de Epayco/Wompi para licencias.
+	- `web/super/configuracion_avanzada.html` ajusta únicamente la semántica y persistencia de la configuración global de pasarelas; no crea nuevas acciones empresariales ni altera wrappers de autorización.
+	- `backend/handlers/payments_handlers_test.go` cubre el escenario de checkout público con dominio canónico y credenciales coherentes.
+	- Impacto de matriz: sin cambios en roles, CRUD/A ni visibilidad por rol; `Pasarelas de licencias (Wompi/Epayco)` permanece como CRUA exclusivo de `super_administrador`.
+
 - Actualizacion 2026-04-15 (host canónico para login Google y carga visible en estaciones):
 	- `backend/utils/utils.go` incorpora un middleware de host canónico que redirige `www.powerfulcontrolsystem.com` al dominio raíz antes de autenticación, evitando mezclar cookies y `redirect_uri` entre dos hosts públicos.
 	- `backend/main.go` integra ese middleware sin crear rutas nuevas ni ampliar privilegios; el acceso administrativo conserva el mismo modelo de sesión y rol existente.
