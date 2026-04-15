@@ -459,6 +459,301 @@ func fetchWompiAcceptanceInfo(baseURL, publicKey string) (string, string, string
 	return acceptanceToken, personalToken, acceptancePermalink, personalPermalink, nil
 }
 
+func normalizeEpaycoMode(raw string) string {
+	v := strings.ToLower(strings.TrimSpace(raw))
+	switch v {
+	case "sandbox", "test", "testing", "pruebas":
+		return "sandbox"
+	case "production", "prod", "live", "real":
+		return "production"
+	default:
+		return ""
+	}
+}
+
+func epaycoModeFromKeys(custID, key string) string {
+	combined := strings.ToLower(strings.TrimSpace(custID) + " " + strings.TrimSpace(key))
+	if strings.Contains(combined, "test") || strings.Contains(combined, "sandbox") || strings.HasPrefix(strings.ToLower(strings.TrimSpace(custID)), "pub_test_") {
+		return "sandbox"
+	}
+	if strings.TrimSpace(custID) != "" || strings.TrimSpace(key) != "" {
+		return "production"
+	}
+	return ""
+}
+
+func resolveEpaycoMode(dbSuper *sql.DB, custID, key string) (string, string) {
+	if configuredMode, _, err := dbpkg.GetConfigValue(dbSuper, "epayco.mode"); err == nil {
+		if normalized := normalizeEpaycoMode(configuredMode); normalized != "" {
+			return normalized, "manual"
+		}
+	}
+	if inferred := epaycoModeFromKeys(custID, key); inferred != "" {
+		return inferred, "keys"
+	}
+	return "sandbox", "default"
+}
+
+func parseBoolConfigValue(raw string) bool {
+	v := strings.ToLower(strings.TrimSpace(raw))
+	return v == "1" || v == "true" || v == "si" || v == "yes" || v == "on" || v == "activo"
+}
+
+func getConfigEntryTrimmed(dbSuper *sql.DB, key string) (string, error) {
+	value, _, _, _, err := dbpkg.GetConfigEntry(dbSuper, key)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", nil
+		}
+		return "", err
+	}
+	return strings.TrimSpace(value), nil
+}
+
+func resolveEnabledConfigValue(dbSuper *sql.DB, key string, defaultValue bool) (bool, error) {
+	raw, _, err := dbpkg.GetConfigValue(dbSuper, key)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return defaultValue, nil
+		}
+		return false, err
+	}
+	if strings.TrimSpace(raw) == "" {
+		return defaultValue, nil
+	}
+	return parseBoolConfigValue(raw), nil
+}
+
+type licenciaPaymentMethodStatus struct {
+	ID          string `json:"id"`
+	Nombre      string `json:"nombre"`
+	Descripcion string `json:"descripcion"`
+	Enabled     bool   `json:"enabled"`
+	Configured  bool   `json:"configured"`
+	Available   bool   `json:"available"`
+	SortOrder   int    `json:"sort_order"`
+}
+
+func loadLicenciaPaymentMethodStatuses(dbSuper *sql.DB) ([]licenciaPaymentMethodStatus, error) {
+	epaycoCustID, err := getConfigEntryTrimmed(dbSuper, "epayco.cust_id")
+	if err != nil {
+		return nil, err
+	}
+	epaycoKey, err := getConfigEntryTrimmed(dbSuper, "epayco.key")
+	if err != nil {
+		return nil, err
+	}
+	epaycoConfigured := epaycoCustID != "" && epaycoKey != ""
+	epaycoEnabled, err := resolveEnabledConfigValue(dbSuper, "epayco.enabled", false)
+	if err != nil {
+		return nil, err
+	}
+
+	wompiPublicKey, err := getConfigEntryTrimmed(dbSuper, "wompi.public_key")
+	if err != nil {
+		return nil, err
+	}
+	wompiPrivateKey, err := getConfigEntryTrimmed(dbSuper, "wompi.private_key")
+	if err != nil {
+		return nil, err
+	}
+	wompiIntegrityKey, err := getConfigEntryTrimmed(dbSuper, "wompi.integrity_key")
+	if err != nil {
+		return nil, err
+	}
+	wompiConfigured := wompiPublicKey != "" && wompiPrivateKey != "" && wompiIntegrityKey != ""
+	wompiEnabled, err := resolveEnabledConfigValue(dbSuper, "wompi.enabled", wompiConfigured)
+	if err != nil {
+		return nil, err
+	}
+
+	return []licenciaPaymentMethodStatus{
+		{
+			ID:          "epayco",
+			Nombre:      "Epayco",
+			Descripcion: "Tarjeta, PSE y otros",
+			Enabled:     epaycoEnabled,
+			Configured:  epaycoConfigured,
+			Available:   epaycoEnabled && epaycoConfigured,
+			SortOrder:   1,
+		},
+		{
+			ID:          "wompi",
+			Nombre:      "Wompi",
+			Descripcion: "Nequi / Tarjeta",
+			Enabled:     wompiEnabled,
+			Configured:  wompiConfigured,
+			Available:   wompiEnabled && wompiConfigured,
+			SortOrder:   2,
+		},
+	}, nil
+}
+
+func getLicenciaPaymentMethodStatus(dbSuper *sql.DB, methodID string) (licenciaPaymentMethodStatus, error) {
+	statuses, err := loadLicenciaPaymentMethodStatuses(dbSuper)
+	if err != nil {
+		return licenciaPaymentMethodStatus{}, err
+	}
+	for _, status := range statuses {
+		if status.ID == methodID {
+			return status, nil
+		}
+	}
+	return licenciaPaymentMethodStatus{}, fmt.Errorf("payment method not found: %s", methodID)
+}
+
+func PublicLicenciasPaymentMethodsHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		statuses, err := loadLicenciaPaymentMethodStatuses(dbSuper)
+		if err != nil {
+			http.Error(w, "failed to load payment methods: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		defaultMethod := ""
+		for _, status := range statuses {
+			if status.Available {
+				defaultMethod = status.ID
+				break
+			}
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"providers":      statuses,
+			"default_method": defaultMethod,
+		})
+	}
+}
+
+func resolveRequestScheme(r *http.Request) string {
+	if xfp := strings.TrimSpace(r.Header.Get("X-Forwarded-Proto")); xfp != "" {
+		parts := strings.Split(xfp, ",")
+		if len(parts) > 0 {
+			proto := strings.ToLower(strings.TrimSpace(parts[0]))
+			if proto == "http" || proto == "https" {
+				return proto
+			}
+		}
+	}
+	if r.TLS != nil {
+		return "https"
+	}
+	return "http"
+}
+
+func resolveRequestHost(r *http.Request) string {
+	if xfh := strings.TrimSpace(r.Header.Get("X-Forwarded-Host")); xfh != "" {
+		parts := strings.Split(xfh, ",")
+		if len(parts) > 0 && strings.TrimSpace(parts[0]) != "" {
+			return strings.TrimSpace(parts[0])
+		}
+	}
+	return r.Host
+}
+
+func buildEpaycoCheckoutURL(r *http.Request, custID, reference, licenciaNombre string, amount float64, customerEmail, mode string) string {
+	title := strings.TrimSpace(licenciaNombre)
+	if title == "" {
+		title = "Licencia"
+	}
+	scheme := resolveRequestScheme(r)
+	host := resolveRequestHost(r)
+	responseURL := fmt.Sprintf("%s://%s/pagar_licencia.html?provider=epayco", scheme, host)
+	confirmationURL := fmt.Sprintf("%s://%s/epayco/webhook", scheme, host)
+
+	v := url.Values{}
+	v.Set("public_key", custID)
+	v.Set("p_cust_id_cliente", custID)
+	v.Set("name", "Licencia "+title)
+	v.Set("description", "Pago de licencia "+title)
+	v.Set("invoice", reference)
+	v.Set("currency", "cop")
+	v.Set("amount", strconv.FormatFloat(amount, 'f', 2, 64))
+	v.Set("tax", "0")
+	v.Set("tax_base", "0")
+	v.Set("country", "co")
+	v.Set("lang", "es")
+	v.Set("external", "false")
+	v.Set("response", responseURL)
+	v.Set("confirmation", confirmationURL)
+	v.Set("test", strconv.FormatBool(normalizeEpaycoMode(mode) == "sandbox"))
+	if strings.TrimSpace(customerEmail) != "" {
+		v.Set("email_billing", strings.TrimSpace(customerEmail))
+	}
+
+	return "https://checkout.epayco.co/checkout.php?" + v.Encode()
+}
+
+func pickEpaycoField(payload map[string]interface{}, keys ...string) string {
+	if payload == nil {
+		return ""
+	}
+	sources := make([]map[string]interface{}, 0, 2)
+	if data, ok := payload["data"].(map[string]interface{}); ok && len(data) > 0 {
+		sources = append(sources, data)
+	}
+	sources = append(sources, payload)
+
+	for _, source := range sources {
+		for _, key := range keys {
+			value, ok := source[key]
+			if !ok {
+				continue
+			}
+			s := strings.TrimSpace(fmt.Sprint(value))
+			if s != "" && s != "<nil>" {
+				return s
+			}
+		}
+	}
+
+	return ""
+}
+
+func parseEpaycoPaymentStatus(payload map[string]interface{}) string {
+	cod := strings.ToUpper(strings.TrimSpace(pickEpaycoField(payload, "x_cod_response", "cod_response", "status_code")))
+	switch cod {
+	case "1", "APPROVED", "ACCEPTED", "ACEPTADA", "APROBADA":
+		return "APPROVED"
+	case "2", "DECLINED", "REJECTED", "RECHAZADA":
+		return "DECLINED"
+	case "3", "PENDING":
+		return "PENDING"
+	case "4", "ERROR", "FAILED":
+		return "ERROR"
+	}
+
+	raw := strings.ToLower(strings.TrimSpace(pickEpaycoField(payload, "x_response", "x_transaction_state", "x_respuesta", "status", "state")))
+	switch {
+	case strings.Contains(raw, "acept"), strings.Contains(raw, "aprobad"), strings.Contains(raw, "approved"), strings.Contains(raw, "accredited"):
+		return "APPROVED"
+	case strings.Contains(raw, "declin"), strings.Contains(raw, "rechaz"), strings.Contains(raw, "cancel"), strings.Contains(raw, "anulad"):
+		return "DECLINED"
+	case strings.Contains(raw, "pend"):
+		return "PENDING"
+	case strings.Contains(raw, "error"), strings.Contains(raw, "fall"), strings.Contains(raw, "failed"):
+		return "ERROR"
+	default:
+		return ""
+	}
+}
+
+func extractEpaycoPaymentInfo(payload map[string]interface{}) (string, string, string) {
+	transactionID := strings.TrimSpace(pickEpaycoField(payload, "transaction_id", "x_transaction_id", "id", "tx_id"))
+	reference := strings.TrimSpace(pickEpaycoField(payload, "reference", "x_ref_payco", "invoice", "ref_payco"))
+	status := strings.ToUpper(strings.TrimSpace(parseEpaycoPaymentStatus(payload)))
+	if status == "" {
+		status = "PENDING"
+	}
+	return transactionID, reference, status
+}
+
 // WompiConfigHandler gestiona credenciales de Wompi para pagos alternativos con Nequi.
 func WompiConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -505,6 +800,12 @@ func WompiConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				}
 			}
 
+			enabled, err := resolveEnabledConfigValue(dbSuper, "wompi.enabled", pubSet && prvSet && intSet)
+			if err != nil {
+				http.Error(w, "failed to read wompi.enabled: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(map[string]interface{}{
 				"public_key_set":        pubSet,
@@ -517,6 +818,7 @@ func WompiConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				"integrity_key_masked":  integrityMasked,
 				"integrity_key_updated": intUpdated,
 				"encryption_available":  utils.EncryptionAvailable(),
+				"enabled":               enabled,
 				"mode":                  mode,
 				"mode_set":              configuredMode != "",
 				"mode_source":           modeSource,
@@ -529,6 +831,7 @@ func WompiConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				PublicKey    string `json:"public_key"`
 				PrivateKey   string `json:"private_key"`
 				IntegrityKey string `json:"integrity_key"`
+				Enabled      *bool  `json:"enabled"`
 				Mode         string `json:"mode"`
 				Encrypt      bool   `json:"encrypt"`
 			}
@@ -542,8 +845,8 @@ func WompiConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "mode inválido: usa sandbox o real", http.StatusBadRequest)
 				return
 			}
-			if strings.TrimSpace(payload.PublicKey) == "" && strings.TrimSpace(payload.PrivateKey) == "" && strings.TrimSpace(payload.IntegrityKey) == "" && normalizedMode == "" {
-				http.Error(w, "at least one value is required (mode o llaves)", http.StatusBadRequest)
+			if strings.TrimSpace(payload.PublicKey) == "" && strings.TrimSpace(payload.PrivateKey) == "" && strings.TrimSpace(payload.IntegrityKey) == "" && normalizedMode == "" && payload.Enabled == nil {
+				http.Error(w, "at least one value is required (enabled, mode o llaves)", http.StatusBadRequest)
 				return
 			}
 
@@ -595,6 +898,157 @@ func WompiConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 					return
 				}
 			}
+			if payload.Enabled != nil {
+				v := "0"
+				if *payload.Enabled {
+					v = "1"
+				}
+				if err := dbpkg.SetConfigValue(dbSuper, "wompi.enabled", v, false); err != nil {
+					http.Error(w, "failed to save wompi.enabled: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]interface{}{"saved": true, "mode": normalizedMode, "enabled": payload.Enabled})
+			return
+
+		default:
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+	}
+}
+
+// EpaycoConfigHandler gestiona credenciales de Epayco (cust_id y key) y flag de activación.
+func EpaycoConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			cust, _, _, custUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "epayco.cust_id")
+			key, keyEnc, _, keyUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "epayco.key")
+			enabledVal, _, _, _, _ := dbpkg.GetConfigEntry(dbSuper, "epayco.enabled")
+			modeRaw, _, _, modeUpdated, _ := dbpkg.GetConfigEntry(dbSuper, "epayco.mode")
+
+			custSet := strings.TrimSpace(cust) != ""
+			keySet := strings.TrimSpace(key) != ""
+
+			custMasked := ""
+			if custSet {
+				if len(cust) > 6 {
+					custMasked = cust[:2] + "..." + cust[len(cust)-3:]
+				} else {
+					custMasked = cust
+				}
+			}
+
+			keyMasked := ""
+			if keySet {
+				keyMasked = "********"
+			}
+
+			enabled := parseBoolConfigValue(enabledVal)
+
+			configuredMode := normalizeEpaycoMode(modeRaw)
+			mode := configuredMode
+			modeSource := "manual"
+			if mode == "" {
+				mode = epaycoModeFromKeys(cust, key)
+				if mode != "" {
+					modeSource = "keys"
+				} else {
+					mode = "sandbox"
+					modeSource = "default"
+				}
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"cust_id_set":          custSet,
+				"cust_id_masked":       custMasked,
+				"cust_id_updated":      custUpdated,
+				"key_set":              keySet,
+				"key_masked":           keyMasked,
+				"key_encrypted":        keyEnc,
+				"key_updated":          keyUpdated,
+				"encryption_available": utils.EncryptionAvailable(),
+				"enabled":              enabled,
+				"mode":                 mode,
+				"mode_set":             configuredMode != "",
+				"mode_source":          modeSource,
+				"mode_updated":         modeUpdated,
+			})
+			return
+
+		case http.MethodPost, http.MethodPut:
+			var payload struct {
+				CustID  string `json:"cust_id"`
+				Key     string `json:"key"`
+				Enabled *bool  `json:"enabled"`
+				Mode    string `json:"mode"`
+				Encrypt bool   `json:"encrypt"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "invalid payload: "+err.Error(), http.StatusBadRequest)
+				return
+			}
+
+			normalizedMode := normalizeEpaycoMode(payload.Mode)
+			if strings.TrimSpace(payload.Mode) != "" && normalizedMode == "" {
+				http.Error(w, "mode invalido: usa sandbox o production", http.StatusBadRequest)
+				return
+			}
+
+			if strings.TrimSpace(payload.CustID) == "" && strings.TrimSpace(payload.Key) == "" && payload.Enabled == nil && normalizedMode == "" {
+				http.Error(w, "at least one of cust_id, key, enabled or mode is required", http.StatusBadRequest)
+				return
+			}
+
+			if payload.CustID != "" {
+				cust := strings.TrimSpace(payload.CustID)
+				if strings.ContainsAny(cust, " \t\r\n") {
+					http.Error(w, "cust_id invalido: no puede contener espacios", http.StatusBadRequest)
+					return
+				}
+				if err := dbpkg.SetConfigValue(dbSuper, "epayco.cust_id", cust, false); err != nil {
+					http.Error(w, "failed to save epayco.cust_id: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
+
+			if payload.Key != "" {
+				if !utils.EncryptionAvailable() {
+					http.Error(w, "encryption required: CONFIG_ENC_KEY not set", http.StatusInternalServerError)
+					return
+				}
+				encVal, err := utils.EncryptString(payload.Key)
+				if err != nil {
+					http.Error(w, "failed to encrypt epayco.key: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				if err := dbpkg.SetConfigValue(dbSuper, "epayco.key", encVal, true); err != nil {
+					http.Error(w, "failed to save epayco.key: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
+
+			if payload.Enabled != nil {
+				v := "0"
+				if *payload.Enabled {
+					v = "1"
+				}
+				if err := dbpkg.SetConfigValue(dbSuper, "epayco.enabled", v, false); err != nil {
+					http.Error(w, "failed to save epayco.enabled: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
+
+			if normalizedMode != "" {
+				if err := dbpkg.SetConfigValue(dbSuper, "epayco.mode", normalizedMode, false); err != nil {
+					http.Error(w, "failed to save epayco.mode: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
 
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(map[string]interface{}{"saved": true, "mode": normalizedMode})
@@ -612,6 +1066,29 @@ func WompiTermsHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		status, err := getLicenciaPaymentMethodStatus(dbSuper, "wompi")
+		if err != nil {
+			http.Error(w, "failed to read wompi availability: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if !status.Enabled {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusPreconditionFailed)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"error":    "Wompi no esta activo en configuracion avanzada",
+				"provider": "wompi",
+			})
+			return
+		}
+		if !status.Configured {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusPreconditionFailed)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"error":    "Wompi no esta configurado completamente",
+				"provider": "wompi",
+			})
 			return
 		}
 		publicKey, err := getDecryptedConfigValue(dbSuper, "wompi.public_key")
@@ -677,6 +1154,29 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		phone := strings.TrimSpace(payload.PhoneNumber)
 		if ok, _ := regexp.MatchString(`^3\d{9}$`, phone); !ok {
 			http.Error(w, "phone_number inválido: usa 10 dígitos colombianos (ej. 3991111111 en sandbox)", http.StatusBadRequest)
+			return
+		}
+		status, err := getLicenciaPaymentMethodStatus(dbSuper, "wompi")
+		if err != nil {
+			http.Error(w, "failed to read wompi availability: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if !status.Enabled {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusPreconditionFailed)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"error":    "Wompi no esta activo en configuracion avanzada",
+				"provider": "wompi",
+			})
+			return
+		}
+		if !status.Configured {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusPreconditionFailed)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"error":    "Wompi no esta configurado completamente",
+				"provider": "wompi",
+			})
 			return
 		}
 
@@ -803,14 +1303,14 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 
 		data, _ := wompiResp["data"].(map[string]interface{})
 		transactionID := strings.TrimSpace(fmt.Sprint(data["id"]))
-		status := strings.ToUpper(strings.TrimSpace(fmt.Sprint(data["status"])))
+		transactionStatus := strings.ToUpper(strings.TrimSpace(fmt.Sprint(data["status"])))
 		respReference := strings.TrimSpace(fmt.Sprint(data["reference"]))
 		if transactionID == "" || transactionID == "<nil>" {
 			http.Error(w, "wompi response sin transaction id", http.StatusBadGateway)
 			return
 		}
-		if status == "" || status == "<nil>" {
-			status = "PENDING"
+		if transactionStatus == "" || transactionStatus == "<nil>" {
+			transactionStatus = "PENDING"
 		}
 		if respReference == "" || respReference == "<nil>" {
 			respReference = reference
@@ -821,7 +1321,7 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			payload.AsesorID = payload.VendedorID
 		}
 
-		if _, err := dbpkg.CreateWompiPaymentRecord(dbSuper, payload.LicenciaID, payload.EmpresaID, transactionID, respReference, status, string(respBody), payload.DiscountCode, payload.AsesorID); err != nil {
+		if _, err := dbpkg.CreateWompiPaymentRecord(dbSuper, payload.LicenciaID, payload.EmpresaID, transactionID, respReference, transactionStatus, string(respBody), payload.DiscountCode, payload.AsesorID); err != nil {
 			log.Println("warning: failed to record Wompi transaction in DB:", err)
 		}
 
@@ -832,7 +1332,7 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			"mode":                    mode,
 			"transaction_id":          transactionID,
 			"reference":               respReference,
-			"status":                  status,
+			"status":                  transactionStatus,
 			"acceptance_permalink":    acceptancePermalink,
 			"personal_data_permalink": personalPermalink,
 			"data":                    data,
@@ -917,6 +1417,83 @@ func recordVendedorComisiones(db *sql.DB, transactionID, reference string, licen
 			obs2 := fmt.Sprintf("Comisión programada %d/%d para vendedor %s", i+1, meses, asesorID)
 			if _, err := dbpkg.CreateAsesorComisionRecord(db, asesorID, empresaID, licenciaID, 0, "", montoTotal, porcentaje, montoComision, referenciaStr, obs2, scheduledDate, 0); err != nil {
 				log.Println("warning: failed to create scheduled asesor_comisiones record:", err)
+			}
+		}
+	}
+}
+
+func recordVendedorComisionesEpayco(db *sql.DB, transactionID, reference string, licenciaID, empresaID int64) {
+	var payRec *dbpkg.EpaycoPaymentRecord
+	var err error
+	if strings.TrimSpace(transactionID) != "" {
+		payRec, err = dbpkg.GetEpaycoPaymentByTransaction(db, transactionID)
+		if err != nil {
+			log.Println("warning: failed to get pagos_epayco by transaction:", err)
+			return
+		}
+	}
+	if payRec == nil && strings.TrimSpace(reference) != "" {
+		payRec, err = dbpkg.GetEpaycoPaymentByReference(db, reference)
+		if err != nil {
+			log.Println("warning: failed to get pagos_epayco by reference:", err)
+			return
+		}
+	}
+	if payRec == nil {
+		return
+	}
+
+	asesorID := ""
+	if payRec.AsesorID.Valid {
+		asesorID = payRec.AsesorID.String
+	}
+	if strings.TrimSpace(asesorID) == "" {
+		return
+	}
+
+	plan, err := dbpkg.GetAsesorComercialPlanByAsesorID(db, asesorID)
+	if err != nil {
+		log.Println("warning: failed to load vendedor plan (epayco):", err)
+		return
+	}
+	if plan == nil {
+		return
+	}
+
+	lic, err := dbpkg.GetLicenciaByID(db, licenciaID)
+	if err != nil || lic == nil {
+		log.Println("warning: licencia not found when recording comision epayco:", err)
+		return
+	}
+
+	montoTotal := lic.Valor
+	porcentaje := plan.ComisionVentaPct
+	montoComision := montoTotal * porcentaje / 100.0
+
+	pagoID := int64(0)
+	if payRec.ID > 0 {
+		pagoID = payRec.ID
+	}
+	referenciaStr := ""
+	if payRec.Reference.Valid {
+		referenciaStr = payRec.Reference.String
+	}
+
+	obs := fmt.Sprintf("Comision por venta licencia %d (epayco tx=%s ref=%s)", licenciaID, transactionID, referenciaStr)
+	if _, err := dbpkg.CreateAsesorComisionRecord(db, asesorID, empresaID, licenciaID, pagoID, transactionID, montoTotal, porcentaje, montoComision, referenciaStr, obs, "", 0); err != nil {
+		log.Println("warning: failed to create asesor_comisiones record (epayco):", err)
+	}
+
+	meses := 0
+	if plan.MesesRenovacion > 0 {
+		meses = plan.MesesRenovacion
+	}
+	if meses > 1 {
+		for i := 1; i < meses; i++ {
+			scheduledDate := time.Now().AddDate(0, i, 0).Format("2006-01-02")
+			obs2 := fmt.Sprintf("Comision programada %d/%d para vendedor %s", i+1, meses, asesorID)
+			if _, err := dbpkg.CreateAsesorComisionRecord(db, asesorID, empresaID, licenciaID, 0, "", montoTotal, porcentaje, montoComision, referenciaStr, obs2, scheduledDate, 0); err != nil {
+				log.Println("warning: failed to create scheduled asesor_comisiones record (epayco):", err)
 			}
 		}
 	}
@@ -1140,6 +1717,383 @@ func WompiWebhookHandler(dbSuper *sql.DB) http.HandlerFunc {
 	}
 }
 
+// EpaycoCreateTransactionHandler prepara checkout de Epayco y registra transaccion pendiente.
+func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		var payload struct {
+			LicenciaID    int64  `json:"licencia_id"`
+			EmpresaID     int64  `json:"empresa_id,omitempty"`
+			CustomerEmail string `json:"customer_email,omitempty"`
+			DiscountCode  string `json:"discount_code,omitempty"`
+			AsesorID      string `json:"asesor_id,omitempty"`
+			VendedorID    string `json:"vendedor_id,omitempty"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			http.Error(w, "invalid payload: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		if payload.LicenciaID <= 0 {
+			http.Error(w, "licencia_id invalido", http.StatusBadRequest)
+			return
+		}
+
+		enabledRaw, _, err := dbpkg.GetConfigValue(dbSuper, "epayco.enabled")
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "failed to read epayco.enabled: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if !parseBoolConfigValue(enabledRaw) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusPreconditionFailed)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"error":    "Epayco no esta activo en configuracion avanzada",
+				"provider": "epayco",
+			})
+			return
+		}
+
+		custID, err := getDecryptedConfigValue(dbSuper, "epayco.cust_id")
+		if err != nil {
+			http.Error(w, "failed to read epayco.cust_id: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		key, err := getDecryptedConfigValue(dbSuper, "epayco.key")
+		if err != nil {
+			http.Error(w, "failed to read epayco.key: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		custID = strings.TrimSpace(custID)
+		if custID == "" {
+			http.Error(w, "epayco.cust_id no configurado", http.StatusInternalServerError)
+			return
+		}
+		if strings.TrimSpace(key) == "" {
+			http.Error(w, "epayco.key no configurado", http.StatusInternalServerError)
+			return
+		}
+
+		lic, err := dbpkg.GetLicenciaByID(dbSuper, payload.LicenciaID)
+		if err != nil || lic == nil {
+			http.Error(w, "licencia not found", http.StatusBadRequest)
+			return
+		}
+
+		email := strings.TrimSpace(payload.CustomerEmail)
+		if email == "" {
+			email = strings.TrimSpace(r.Header.Get("X-Admin-Email"))
+		}
+
+		mode, modeSource := resolveEpaycoMode(dbSuper, custID, key)
+		reference := fmt.Sprintf("EPAYCO-LIC-%d-EMP-%d-%d", payload.LicenciaID, payload.EmpresaID, time.Now().UnixNano())
+		checkoutURL := buildEpaycoCheckoutURL(r, custID, reference, lic.Nombre, lic.Valor, email, mode)
+
+		if strings.TrimSpace(payload.AsesorID) == "" && strings.TrimSpace(payload.VendedorID) != "" {
+			payload.AsesorID = payload.VendedorID
+		}
+
+		rawMap := map[string]interface{}{
+			"provider":         "epayco",
+			"mode":             mode,
+			"mode_source":      modeSource,
+			"checkout_url":     checkoutURL,
+			"license_id":       payload.LicenciaID,
+			"empresa_id":       payload.EmpresaID,
+			"customer_email":   email,
+			"discount_code":    payload.DiscountCode,
+			"asesor_id":        payload.AsesorID,
+			"created_at":       time.Now().Format(time.RFC3339),
+			"integration_flow": "checkout",
+		}
+		rawBytes, _ := json.Marshal(rawMap)
+		if _, err := dbpkg.CreateEpaycoPaymentRecord(dbSuper, payload.LicenciaID, payload.EmpresaID, reference, reference, "PENDING", string(rawBytes), payload.DiscountCode, payload.AsesorID); err != nil {
+			log.Println("warning: failed to record Epayco transaction in DB:", err)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"provider":       "epayco",
+			"payment_method": "CHECKOUT",
+			"mode":           mode,
+			"mode_source":    modeSource,
+			"transaction_id": reference,
+			"reference":      reference,
+			"status":         "PENDING",
+			"checkout_url":   checkoutURL,
+			"customer_email": email,
+			"data": map[string]interface{}{
+				"id":           reference,
+				"reference":    reference,
+				"checkout_url": checkoutURL,
+			},
+		})
+	}
+}
+
+// EpaycoTransactionStatusHandler consulta estado por referencia y activa licencia si aplica.
+func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		transactionID := strings.TrimSpace(r.URL.Query().Get("id"))
+		if transactionID == "" {
+			transactionID = strings.TrimSpace(r.URL.Query().Get("transaction_id"))
+		}
+		reference := strings.TrimSpace(r.URL.Query().Get("reference"))
+		if reference == "" {
+			reference = strings.TrimSpace(r.URL.Query().Get("ref"))
+		}
+		if transactionID == "" && reference == "" {
+			http.Error(w, "id o reference requerido", http.StatusBadRequest)
+			return
+		}
+
+		var rec *dbpkg.EpaycoPaymentRecord
+		var err error
+		if transactionID != "" {
+			rec, err = dbpkg.GetEpaycoPaymentByTransaction(dbSuper, transactionID)
+			if err != nil {
+				http.Error(w, "failed to read pagos_epayco: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+		if rec == nil && reference != "" {
+			rec, err = dbpkg.GetEpaycoPaymentByReference(dbSuper, reference)
+			if err != nil {
+				http.Error(w, "failed to read pagos_epayco: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+
+		storedStatus := ""
+		if rec != nil {
+			if reference == "" && rec.Reference.Valid {
+				reference = strings.TrimSpace(rec.Reference.String)
+			}
+			if transactionID == "" && rec.TransactionID.Valid {
+				transactionID = strings.TrimSpace(rec.TransactionID.String)
+			}
+			if rec.Status.Valid {
+				storedStatus = strings.ToUpper(strings.TrimSpace(rec.Status.String))
+			}
+		}
+		if reference == "" {
+			reference = transactionID
+		}
+		if transactionID == "" {
+			transactionID = reference
+		}
+
+		status := ""
+		validationPayload := map[string]interface{}{}
+		rawValidation := ""
+		if reference != "" {
+			validationURL := "https://secure.epayco.co/validation/v1/reference/" + url.PathEscape(reference)
+			req, err := http.NewRequest("GET", validationURL, nil)
+			if err == nil {
+				client := &http.Client{Timeout: 15 * time.Second}
+				resp, reqErr := client.Do(req)
+				if reqErr == nil {
+					defer resp.Body.Close()
+					body, _ := io.ReadAll(resp.Body)
+					rawValidation = string(body)
+					if resp.StatusCode < 400 {
+						if err := json.Unmarshal(body, &validationPayload); err == nil {
+							status = parseEpaycoPaymentStatus(validationPayload)
+							if txFromGateway := strings.TrimSpace(pickEpaycoField(validationPayload, "x_transaction_id", "transaction_id", "id")); txFromGateway != "" {
+								transactionID = txFromGateway
+							}
+							if refFromGateway := strings.TrimSpace(pickEpaycoField(validationPayload, "x_ref_payco", "reference", "invoice")); refFromGateway != "" {
+								reference = refFromGateway
+							}
+						}
+					} else {
+						log.Printf("warning: epayco validation API returned %s for reference %s: %s", resp.Status, reference, string(body))
+					}
+				} else {
+					log.Printf("warning: epayco validation request failed for reference %s: %v", reference, reqErr)
+				}
+			}
+		}
+
+		if strings.TrimSpace(status) == "" {
+			status = strings.TrimSpace(storedStatus)
+		}
+		if strings.TrimSpace(status) == "" {
+			status = "PENDING"
+		}
+		status = strings.ToUpper(status)
+
+		payloadToSave := rawValidation
+		if strings.TrimSpace(payloadToSave) == "" {
+			fallbackPayload, _ := json.Marshal(map[string]interface{}{
+				"provider":       "epayco",
+				"transaction_id": transactionID,
+				"reference":      reference,
+				"status":         status,
+			})
+			payloadToSave = string(fallbackPayload)
+		}
+
+		if transactionID != "" {
+			if err := dbpkg.UpdateEpaycoPaymentRecordByTransaction(dbSuper, transactionID, status, payloadToSave); err != nil {
+				log.Println("warning: failed to update Epayco payment by transaction:", err)
+			}
+		}
+		if reference != "" {
+			if err := dbpkg.UpdateEpaycoPaymentRecordByReference(dbSuper, reference, status, payloadToSave); err != nil {
+				log.Println("warning: failed to update Epayco payment by reference:", err)
+			}
+		}
+
+		licenciaID, empresaID, hasContext, ctxErr := dbpkg.GetEpaycoPaymentContext(dbSuper, transactionID, reference)
+		if ctxErr != nil {
+			log.Println("warning: failed to resolve Epayco payment context:", ctxErr)
+		}
+
+		activated := false
+		if isApprovedPaymentStatus(status) && hasContext {
+			act, actErr := activateLicenciaByIDs(dbSuper, licenciaID, empresaID)
+			if actErr != nil {
+				log.Println("warning: failed to activate licencia from Epayco status:", actErr)
+			} else {
+				activated = act
+			}
+			go func(txID, ref string, licID, empID int64) {
+				recordVendedorComisionesEpayco(dbSuper, txID, ref, licID, empID)
+			}(transactionID, reference, licenciaID, empresaID)
+		}
+
+		custID, _ := getDecryptedConfigValue(dbSuper, "epayco.cust_id")
+		key, _ := getDecryptedConfigValue(dbSuper, "epayco.key")
+		mode, modeSource := resolveEpaycoMode(dbSuper, custID, key)
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"provider":       "epayco",
+			"mode":           mode,
+			"mode_source":    modeSource,
+			"transaction_id": transactionID,
+			"reference":      reference,
+			"status":         status,
+			"context_found":  hasContext,
+			"licencia_id":    licenciaID,
+			"empresa_id":     empresaID,
+			"activated":      activated,
+			"data":           validationPayload,
+		})
+	}
+}
+
+// EpaycoWebhookHandler procesa confirmaciones de Epayco por formulario o JSON.
+func EpaycoWebhookHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost && r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		payload := map[string]interface{}{}
+		rawPayload := ""
+		contentType := strings.ToLower(strings.TrimSpace(r.Header.Get("Content-Type")))
+
+		if strings.Contains(contentType, "application/json") {
+			body, err := io.ReadAll(r.Body)
+			if err != nil {
+				http.Error(w, "failed to read body", http.StatusBadRequest)
+				return
+			}
+			rawPayload = string(body)
+			if len(body) > 0 {
+				if err := json.Unmarshal(body, &payload); err != nil {
+					http.Error(w, "invalid payload", http.StatusBadRequest)
+					return
+				}
+			}
+		} else {
+			if err := r.ParseForm(); err == nil {
+				for key, values := range r.Form {
+					if len(values) == 0 {
+						continue
+					}
+					payload[key] = values[0]
+				}
+			}
+		}
+
+		if len(payload) == 0 {
+			q := r.URL.Query()
+			for key, values := range q {
+				if len(values) == 0 {
+					continue
+				}
+				payload[key] = values[0]
+			}
+		}
+
+		if strings.TrimSpace(rawPayload) == "" {
+			if rawBytes, err := json.Marshal(payload); err == nil {
+				rawPayload = string(rawBytes)
+			}
+		}
+
+		transactionID, reference, status := extractEpaycoPaymentInfo(payload)
+		if transactionID == "" && reference == "" {
+			http.Error(w, "transaction_id o reference requerido", http.StatusBadRequest)
+			return
+		}
+
+		if transactionID != "" {
+			if err := dbpkg.UpdateEpaycoPaymentRecordByTransaction(dbSuper, transactionID, status, rawPayload); err != nil {
+				log.Println("warning: failed to update Epayco webhook by transaction:", err)
+			}
+		}
+		if reference != "" {
+			if err := dbpkg.UpdateEpaycoPaymentRecordByReference(dbSuper, reference, status, rawPayload); err != nil {
+				log.Println("warning: failed to update Epayco webhook by reference:", err)
+			}
+		}
+
+		licenciaID, empresaID, hasContext, ctxErr := dbpkg.GetEpaycoPaymentContext(dbSuper, transactionID, reference)
+		if ctxErr != nil {
+			log.Println("warning: failed to resolve Epayco webhook context:", ctxErr)
+		}
+
+		activated := false
+		if isApprovedPaymentStatus(status) && hasContext {
+			act, actErr := activateLicenciaByIDs(dbSuper, licenciaID, empresaID)
+			if actErr != nil {
+				log.Println("warning: failed to activate licencia from Epayco webhook:", actErr)
+			} else {
+				activated = act
+			}
+			go func(txID, ref string, licID, empID int64) {
+				recordVendedorComisionesEpayco(dbSuper, txID, ref, licID, empID)
+			}(transactionID, reference, licenciaID, empresaID)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"ok":             true,
+			"provider":       "epayco",
+			"transaction_id": transactionID,
+			"reference":      reference,
+			"status":         status,
+			"context_found":  hasContext,
+			"licencia_id":    licenciaID,
+			"empresa_id":     empresaID,
+			"activated":      activated,
+		})
+	}
+}
+
 // ActivateLicenciaSinPagoHandler activa una licencia manualmente para avanzar en pruebas internas.
 func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -1186,23 +2140,23 @@ func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB) http.HandlerFunc {
 		log.Printf("Licencia activada sin pago: licencia=%d empresa=%d motivo=%q", payload.LicenciaID, payload.EmpresaID, payload.Motivo)
 
 		// Registrar la activación en pagos_wompi para trazabilidad (provider=MANUAL)
-			go func() {
-				reference := fmt.Sprintf("MANUAL-LIC-%d-EMP-%d-%d", payload.LicenciaID, payload.EmpresaID, time.Now().UnixNano())
+		go func() {
+			reference := fmt.Sprintf("MANUAL-LIC-%d-EMP-%d-%d", payload.LicenciaID, payload.EmpresaID, time.Now().UnixNano())
 
-				// compatibilidad: si se envió `vendedor_id` usarlo como `asesor_id` si este último está vacío
-				if strings.TrimSpace(payload.AsesorID) == "" && strings.TrimSpace(payload.VendedorID) != "" {
-					payload.AsesorID = payload.VendedorID
-				}
+			// compatibilidad: si se envió `vendedor_id` usarlo como `asesor_id` si este último está vacío
+			if strings.TrimSpace(payload.AsesorID) == "" && strings.TrimSpace(payload.VendedorID) != "" {
+				payload.AsesorID = payload.VendedorID
+			}
 
-				rawMap := map[string]interface{}{"motivo": payload.Motivo, "discount_code": payload.DiscountCode, "asesor_id": payload.AsesorID, "vendedor_id": payload.VendedorID}
-				rawBytes, _ := json.Marshal(rawMap)
-				if _, err := dbpkg.CreateWompiPaymentRecord(dbSuper, payload.LicenciaID, payload.EmpresaID, "", reference, "MANUAL", string(rawBytes), payload.DiscountCode, payload.AsesorID); err != nil {
-					log.Println("warning: failed to record manual activation in pagos_wompi:", err)
-				}
+			rawMap := map[string]interface{}{"motivo": payload.Motivo, "discount_code": payload.DiscountCode, "asesor_id": payload.AsesorID, "vendedor_id": payload.VendedorID}
+			rawBytes, _ := json.Marshal(rawMap)
+			if _, err := dbpkg.CreateWompiPaymentRecord(dbSuper, payload.LicenciaID, payload.EmpresaID, "", reference, "MANUAL", string(rawBytes), payload.DiscountCode, payload.AsesorID); err != nil {
+				log.Println("warning: failed to record manual activation in pagos_wompi:", err)
+			}
 
-				// Registrar comisiones si el payload contiene codigo de vendedor
-				recordVendedorComisiones(dbSuper, "", reference, payload.LicenciaID, payload.EmpresaID)
-			}()
+			// Registrar comisiones si el payload contiene codigo de vendedor
+			recordVendedorComisiones(dbSuper, "", reference, payload.LicenciaID, payload.EmpresaID)
+		}()
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"activated":      true,

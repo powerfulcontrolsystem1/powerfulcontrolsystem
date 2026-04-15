@@ -1,0 +1,1 @@
+PGPASSWORD=Ndog45CrAMJOpfa58JaqdFWj psql -U pcs_app -d pcs_superadministrador -h 127.0.0.1 -t -A -c "SELECT config_key || '=' || COALESCE(value,'NULL') FROM configuraciones WHERE config_key LIKE '%google%' OR config_key LIKE '%redirect%' ORDER BY config_key;"

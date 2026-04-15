@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"net"
+	"net/mail"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -17,6 +18,38 @@ import (
 )
 
 const googleOAuthRedirectCookieName = "oauth_redirect_url"
+const browserSessionStateCookieName = "browser_session_active"
+
+// SessionCookieSecure resuelve si una cookie de sesión debe emitirse como Secure
+// considerando terminación TLS local o por proxy inverso.
+func SessionCookieSecure(r *http.Request) bool {
+	return resolveOAuthScheme(r) == "https"
+}
+
+// SetBrowserSessionStateCookie emite una señal visible para el cliente que indica
+// si existe una sesión autenticada activa sin exponer el token real HttpOnly.
+func SetBrowserSessionStateCookie(w http.ResponseWriter, r *http.Request, active bool) {
+	if w == nil {
+		return
+	}
+
+	value := ""
+	maxAge := -1
+	if active {
+		value = "1"
+		maxAge = 86400
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     browserSessionStateCookieName,
+		Value:    value,
+		Path:     "/",
+		HttpOnly: false,
+		MaxAge:   maxAge,
+		Secure:   SessionCookieSecure(r),
+		SameSite: http.SameSiteLaxMode,
+	})
+}
 
 func firstForwardedValue(raw string) string {
 	parts := strings.Split(strings.TrimSpace(raw), ",")
@@ -98,16 +131,26 @@ func adaptConfiguredLoopbackRedirect(r *http.Request, configured string) string 
 		return trimmed
 	}
 
-	if !isLoopbackHost(parsed.Host) {
-		return trimmed
-	}
-
 	requestHost := resolveOAuthHost(r)
-	if requestHost == "" || isLoopbackHost(requestHost) {
+	if requestHost == "" {
 		return trimmed
 	}
 
-	parsed.Scheme = resolveOAuthScheme(r)
+	desiredScheme := resolveOAuthScheme(r)
+	if !isLoopbackHost(requestHost) {
+		desiredScheme = "https"
+	}
+
+	// Si host y esquema ya coinciden con el entorno actual, conservar configuración.
+	configHost := splitHostPortSafe(parsed.Host)
+	reqHost := splitHostPortSafe(requestHost)
+	if strings.EqualFold(configHost, reqHost) && strings.EqualFold(parsed.Scheme, desiredScheme) && parsed.Path == "/auth/google/callback" {
+		return trimmed
+	}
+
+	// Adaptar la URL al host/esquema real de la petición para que funcione
+	// tanto en local (localhost) como en VPS (dominio real).
+	parsed.Scheme = desiredScheme
 	parsed.Host = requestHost
 	parsed.Path = "/auth/google/callback"
 	parsed.RawQuery = ""
@@ -125,8 +168,12 @@ func resolveOAuthRedirectURL(r *http.Request, configuredRedirectURL string) stri
 	if host == "" {
 		host = "localhost:8080"
 	}
+	scheme := resolveOAuthScheme(r)
+	if !isLoopbackHost(host) {
+		scheme = "https"
+	}
 
-	return resolveOAuthScheme(r) + "://" + host + "/auth/google/callback"
+	return scheme + "://" + host + "/auth/google/callback"
 }
 
 func isValidOAuthRedirectURL(raw string) bool {
@@ -143,6 +190,21 @@ func isValidOAuthRedirectURL(raw string) bool {
 	return parsed.Path == "/auth/google/callback"
 }
 
+func normalizeGoogleLoginHint(raw string) string {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return ""
+	}
+	parsed, err := mail.ParseAddress(trimmed)
+	if err != nil {
+		return ""
+	}
+	if !strings.EqualFold(strings.TrimSpace(parsed.Address), trimmed) {
+		return ""
+	}
+	return trimmed
+}
+
 // HandleGoogleLogin devuelve un http.HandlerFunc configurado con clientID y redirectURL
 func HandleGoogleLogin(clientID, redirectURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -154,7 +216,7 @@ func HandleGoogleLogin(clientID, redirectURL string) http.HandlerFunc {
 		log.Printf("handleGoogleLogin: oauth redirect requested (client configured=%t)", clientID != "")
 		effectiveRedirectURL := resolveOAuthRedirectURL(r, redirectURL)
 		q := r.URL.Query()
-		loginHint := q.Get("login_hint")
+		loginHint := normalizeGoogleLoginHint(q.Get("login_hint"))
 		vals := url.Values{
 			"client_id":              {clientID},
 			"redirect_uri":           {effectiveRedirectURL},
@@ -175,7 +237,7 @@ func HandleGoogleLogin(clientID, redirectURL string) http.HandlerFunc {
 			Path:     "/auth/google",
 			HttpOnly: true,
 			MaxAge:   600,
-			Secure:   resolveOAuthScheme(r) == "https",
+			Secure:   SessionCookieSecure(r),
 			SameSite: http.SameSiteLaxMode,
 		})
 		authURL := "https://accounts.google.com/o/oauth2/v2/auth?" + vals.Encode()
@@ -210,7 +272,7 @@ func HandleGoogleCallback(dbEmpresas *sql.DB, dbSuper *sql.DB, clientID, clientS
 				Path:     "/auth/google",
 				HttpOnly: true,
 				MaxAge:   -1,
-				Secure:   resolveOAuthScheme(r) == "https",
+				Secure:   SessionCookieSecure(r),
 				SameSite: http.SameSiteLaxMode,
 			})
 		}
@@ -276,10 +338,11 @@ func HandleGoogleCallback(dbEmpresas *sql.DB, dbSuper *sql.DB, clientID, clientS
 				Path:     "/",
 				HttpOnly: true,
 				MaxAge:   86400,
-				Secure:   (r.TLS != nil),
+				Secure:   SessionCookieSecure(r),
 				SameSite: http.SameSiteLaxMode,
 			}
 			http.SetCookie(w, cookie)
+			SetBrowserSessionStateCookie(w, r, true)
 
 			admin, err := dbpkg.GetAdminByEmail(dbSuper, userinfo.Email)
 			if err != nil || admin == nil {

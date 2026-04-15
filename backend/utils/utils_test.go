@@ -194,6 +194,56 @@ func TestRequestClientIP(t *testing.T) {
 	}
 }
 
+func TestCanonicalPublicHostMiddlewareRedirectsWWWToApex(t *testing.T) {
+	nextCalled := false
+	h := CanonicalPublicHostMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		nextCalled = true
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	req := httptest.NewRequest(http.MethodGet, "https://www.powerfulcontrolsystem.com/auth/google/login?login_hint=admin%40example.com", nil)
+	req.Host = "www.powerfulcontrolsystem.com"
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if nextCalled {
+		t.Fatal("expected middleware to redirect before calling next handler")
+	}
+	if rr.Code != http.StatusPermanentRedirect {
+		t.Fatalf("expected status %d, got %d", http.StatusPermanentRedirect, rr.Code)
+	}
+	expected := "https://powerfulcontrolsystem.com/auth/google/login?login_hint=admin%40example.com"
+	if got := rr.Header().Get("Location"); got != expected {
+		t.Fatalf("expected Location=%q, got %q", expected, got)
+	}
+}
+
+func TestCanonicalPublicHostMiddlewareAllowsApexAndSubdomains(t *testing.T) {
+	for _, host := range []string{"powerfulcontrolsystem.com", "empresa1.powerfulcontrolsystem.com"} {
+		t.Run(host, func(t *testing.T) {
+			nextCalled := false
+			h := CanonicalPublicHostMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				nextCalled = true
+				w.WriteHeader(http.StatusAccepted)
+			}))
+
+			req := httptest.NewRequest(http.MethodGet, "https://"+host+"/", nil)
+			req.Host = host
+			rr := httptest.NewRecorder()
+
+			h.ServeHTTP(rr, req)
+
+			if !nextCalled {
+				t.Fatal("expected request to continue to next handler")
+			}
+			if rr.Code != http.StatusAccepted {
+				t.Fatalf("expected status %d, got %d", http.StatusAccepted, rr.Code)
+			}
+		})
+	}
+}
+
 func TestLoggingMiddlewareSetsContextAndWritesLogs(t *testing.T) {
 	tmpDir := withTempWorkingDir(t)
 

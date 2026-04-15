@@ -524,6 +524,15 @@ Todas las tablas operativas usan como base los campos estandar:
   - asignado_tipo, asignado_ref_id, asignado_nombre, asignado_email
   - creado_por_tipo, creado_por_email
   - estado_tarea, porcentaje_avance, completada_en
+- chat_tareas_citas:
+  - empresa_id, conversacion_id
+  - titulo, descripcion, tipo_cita
+  - fecha_inicio, fecha_fin, ubicacion
+  - notificar_minutos_antes
+  - creado_por_tipo, creado_por_ref_id, creado_por_nombre, creado_por_email
+  - estado_cita (`programada`/`completada`/`cancelada`)
+  - recordatorio_enviado, recordatorio_enviado_en
+  - visibilidad (`empresa`/`privada`)
 
 ### Tablas de ubicacion GPS por empresa
 - empresa_gps_dispositivos:
@@ -829,6 +838,13 @@ Todas las tablas operativas usan como base los campos estandar:
   - payment_method, provider_payload_json (opcional): metadatos del proveedor/método de pago
 
   - Descripción: tabla canonica para registrar pagos/operaciones de Wompi/Nequi y activaciones manuales. Se registran metadatos de descuento y referencia de asesor para habilitar cálculo y trazabilidad de comisiones.
+- pagos_epayco:
+  - licencia_id, empresa_id, transaction_id, reference, status, raw_payload
+  - discount_code (TEXT) : codigo de descuento aplicado por cliente (opcional)
+  - asesor_id (TEXT) : referencia al asesor/vendedor que genero la venta (email o id externo, opcional)
+  - payment_method, provider_payload_json (opcional): metadatos del proveedor/metodo de pago
+
+  - Descripcion: tabla canonica para registrar operaciones de checkout/confirmacion de Epayco, incluyendo estado por referencia y soporte de activacion automatica de licencia tras aprobacion.
 - super_correo_notificaciones_prueba:
   - tipo, empresa_id, destinatario, asunto, cuerpo, token_ref, metadata_json, fecha_evento
   - se usa para validar notificaciones de confirmacion/restablecimiento en entorno de pruebas de correo
@@ -877,7 +893,7 @@ Todas las tablas operativas usan como base los campos estandar:
   - asesor_id INTEGER NOT NULL -- FK a asesores.id
   - empresa_id INTEGER NOT NULL
   - licencia_id INTEGER -- referencia a la licencia vendida
-  - pago_id INTEGER NULL -- referencia a `pagos_wompi.id` cuando aplica
+  - pago_id INTEGER NULL -- referencia a `pagos_wompi.id` o `pagos_epayco.id` cuando aplica
   - transaction_id TEXT NULL -- transaction_id del proveedor (o referencia manual)
   - monto_total REAL -- monto total de la venta o periodo
   - porcentaje REAL -- porcentaje aplicado para esta comision

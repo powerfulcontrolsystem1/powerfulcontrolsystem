@@ -108,6 +108,33 @@ type ChatTarea struct {
 	Observaciones      string  `json:"observaciones,omitempty"`
 }
 
+// ChatCita representa una cita/reunion de agenda compartida por empresa.
+type ChatCita struct {
+	ID                    int64  `json:"id"`
+	EmpresaID             int64  `json:"empresa_id"`
+	ConversacionID        int64  `json:"conversacion_id,omitempty"`
+	Titulo                string `json:"titulo"`
+	Descripcion           string `json:"descripcion,omitempty"`
+	TipoCita              string `json:"tipo_cita,omitempty"`
+	FechaInicio           string `json:"fecha_inicio"`
+	FechaFin              string `json:"fecha_fin,omitempty"`
+	Ubicacion             string `json:"ubicacion,omitempty"`
+	NotificarMinutosAntes int    `json:"notificar_minutos_antes,omitempty"`
+	CreadoPorTipo         string `json:"creado_por_tipo,omitempty"`
+	CreadoPorRefID        int64  `json:"creado_por_ref_id,omitempty"`
+	CreadoPorNombre       string `json:"creado_por_nombre,omitempty"`
+	CreadoPorEmail        string `json:"creado_por_email,omitempty"`
+	EstadoCita            string `json:"estado_cita,omitempty"`
+	RecordatorioEnviado   int    `json:"recordatorio_enviado,omitempty"`
+	RecordatorioEnviadoEn string `json:"recordatorio_enviado_en,omitempty"`
+	Visibilidad           string `json:"visibilidad,omitempty"`
+	FechaCreacion         string `json:"fecha_creacion,omitempty"`
+	FechaActualizacion    string `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador        string `json:"usuario_creador,omitempty"`
+	Estado                string `json:"estado,omitempty"`
+	Observaciones         string `json:"observaciones,omitempty"`
+}
+
 // EnsureEmpresaChatTareasSchema crea y migra las tablas del modulo chat/tareas en empresas.db.
 func EnsureEmpresaChatTareasSchema(dbConn *sql.DB) error {
 	stmts := []string{
@@ -201,12 +228,39 @@ func EnsureEmpresaChatTareasSchema(dbConn *sql.DB) error {
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
+		`CREATE TABLE IF NOT EXISTS chat_tareas_citas (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			empresa_id INTEGER NOT NULL,
+			conversacion_id INTEGER,
+			titulo TEXT NOT NULL,
+			descripcion TEXT,
+			tipo_cita TEXT DEFAULT 'reunion',
+			fecha_inicio TEXT NOT NULL,
+			fecha_fin TEXT,
+			ubicacion TEXT,
+			notificar_minutos_antes INTEGER DEFAULT 30,
+			creado_por_tipo TEXT DEFAULT 'admin',
+			creado_por_ref_id INTEGER,
+			creado_por_nombre TEXT,
+			creado_por_email TEXT,
+			estado_cita TEXT DEFAULT 'programada',
+			recordatorio_enviado INTEGER DEFAULT 0,
+			recordatorio_enviado_en TEXT,
+			visibilidad TEXT DEFAULT 'empresa',
+			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			usuario_creador TEXT,
+			estado TEXT DEFAULT 'activo',
+			observaciones TEXT
+		);`,
 		`CREATE INDEX IF NOT EXISTS ix_chat_conv_empresa_estado ON chat_tareas_conversaciones(empresa_id, estado, estado_conversacion);`,
 		`CREATE INDEX IF NOT EXISTS ix_chat_participantes_empresa_conv ON chat_tareas_participantes(empresa_id, conversacion_id, estado);`,
 		`CREATE INDEX IF NOT EXISTS ix_chat_msg_empresa_conv ON chat_tareas_mensajes(empresa_id, conversacion_id, estado, fecha_envio);`,
 		`CREATE INDEX IF NOT EXISTS ix_chat_adj_empresa_mensaje ON chat_tareas_adjuntos(empresa_id, mensaje_id, estado);`,
 		`CREATE INDEX IF NOT EXISTS ix_chat_tareas_empresa_estado ON chat_tareas(empresa_id, estado, estado_tarea);`,
 		`CREATE INDEX IF NOT EXISTS ix_chat_tareas_empresa_conv ON chat_tareas(empresa_id, conversacion_id);`,
+		`CREATE INDEX IF NOT EXISTS ix_chat_citas_empresa_fecha ON chat_tareas_citas(empresa_id, fecha_inicio, estado, estado_cita);`,
+		`CREATE INDEX IF NOT EXISTS ix_chat_citas_empresa_conv ON chat_tareas_citas(empresa_id, conversacion_id);`,
 	}
 	for _, stmt := range stmts {
 		if _, err := dbConn.Exec(stmt); err != nil {
@@ -393,6 +447,64 @@ func EnsureEmpresaChatTareasSchema(dbConn *sql.DB) error {
 		return err
 	}
 
+	if err := ensureColumnIfMissing(dbConn, "chat_tareas_citas", "conversacion_id", "INTEGER"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "chat_tareas_citas", "descripcion", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "chat_tareas_citas", "tipo_cita", "TEXT DEFAULT 'reunion'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "chat_tareas_citas", "fecha_inicio", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "chat_tareas_citas", "fecha_fin", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "chat_tareas_citas", "ubicacion", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "chat_tareas_citas", "notificar_minutos_antes", "INTEGER DEFAULT 30"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "chat_tareas_citas", "creado_por_tipo", "TEXT DEFAULT 'admin'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "chat_tareas_citas", "creado_por_ref_id", "INTEGER"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "chat_tareas_citas", "creado_por_nombre", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "chat_tareas_citas", "creado_por_email", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "chat_tareas_citas", "estado_cita", "TEXT DEFAULT 'programada'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "chat_tareas_citas", "recordatorio_enviado", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "chat_tareas_citas", "recordatorio_enviado_en", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "chat_tareas_citas", "visibilidad", "TEXT DEFAULT 'empresa'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "chat_tareas_citas", "fecha_actualizacion", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "chat_tareas_citas", "usuario_creador", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "chat_tareas_citas", "estado", "TEXT DEFAULT 'activo'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "chat_tareas_citas", "observaciones", "TEXT"); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -471,6 +583,43 @@ func normalizeAsignadoTipo(v string) string {
 	default:
 		return "usuario"
 	}
+}
+
+func normalizeEstadoCita(v string) string {
+	switch strings.ToLower(strings.TrimSpace(v)) {
+	case "programada", "completada", "cancelada":
+		return strings.ToLower(strings.TrimSpace(v))
+	default:
+		return "programada"
+	}
+}
+
+func normalizeTipoCita(v string) string {
+	v = strings.ToLower(strings.TrimSpace(v))
+	if v == "" {
+		return "reunion"
+	}
+	if len(v) > 40 {
+		return v[:40]
+	}
+	return v
+}
+
+func normalizeVisibilidadCita(v string) string {
+	if strings.EqualFold(strings.TrimSpace(v), "privada") {
+		return "privada"
+	}
+	return "empresa"
+}
+
+func normalizeReminderMinutes(v int) int {
+	if v <= 0 {
+		return 30
+	}
+	if v > 10080 {
+		return 10080
+	}
+	return v
 }
 
 func clampPercent(v int) int {
@@ -1461,5 +1610,275 @@ func SetChatTareaWorkflowEstado(dbConn *sql.DB, empresaID, id int64, estadoTarea
 // DeleteChatTarea elimina una tarea.
 func DeleteChatTarea(dbConn *sql.DB, empresaID, id int64) error {
 	_, err := dbConn.Exec(`DELETE FROM chat_tareas WHERE empresa_id = ? AND id = ?`, empresaID, id)
+	return err
+}
+
+// CreateChatCita crea una cita de agenda compartida por empresa.
+func CreateChatCita(dbConn *sql.DB, payload ChatCita) (int64, error) {
+	fechaInicio := strings.TrimSpace(payload.FechaInicio)
+	if fechaInicio == "" {
+		return 0, fmt.Errorf("fecha_inicio es obligatoria")
+	}
+	fechaFin := strings.TrimSpace(payload.FechaFin)
+	if fechaFin == "" {
+		fechaFin = fechaInicio
+	}
+
+	recordatorioEnviado := 0
+	if payload.RecordatorioEnviado > 0 {
+		recordatorioEnviado = 1
+	}
+
+	res, err := dbConn.Exec(`INSERT INTO chat_tareas_citas (
+		empresa_id,
+		conversacion_id,
+		titulo,
+		descripcion,
+		tipo_cita,
+		fecha_inicio,
+		fecha_fin,
+		ubicacion,
+		notificar_minutos_antes,
+		creado_por_tipo,
+		creado_por_ref_id,
+		creado_por_nombre,
+		creado_por_email,
+		estado_cita,
+		recordatorio_enviado,
+		recordatorio_enviado_en,
+		visibilidad,
+		usuario_creador,
+		estado,
+		observaciones,
+		fecha_creacion,
+		fecha_actualizacion
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CASE WHEN ? = 1 THEN datetime('now','localtime') ELSE NULL END, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
+		payload.EmpresaID,
+		nullableInt64(payload.ConversacionID),
+		strings.TrimSpace(payload.Titulo),
+		strings.TrimSpace(payload.Descripcion),
+		normalizeTipoCita(payload.TipoCita),
+		fechaInicio,
+		fechaFin,
+		strings.TrimSpace(payload.Ubicacion),
+		normalizeReminderMinutes(payload.NotificarMinutosAntes),
+		normalizeAutorTipo(payload.CreadoPorTipo),
+		nullableInt64(payload.CreadoPorRefID),
+		strings.TrimSpace(payload.CreadoPorNombre),
+		strings.ToLower(strings.TrimSpace(payload.CreadoPorEmail)),
+		normalizeEstadoCita(payload.EstadoCita),
+		recordatorioEnviado,
+		recordatorioEnviado,
+		normalizeVisibilidadCita(payload.Visibilidad),
+		strings.TrimSpace(payload.UsuarioCreador),
+		normalizeChatEstado(payload.Estado),
+		strings.TrimSpace(payload.Observaciones),
+	)
+	if err != nil {
+		return 0, err
+	}
+	return res.LastInsertId()
+}
+
+// GetChatCitas lista citas de agenda por empresa con filtros opcionales.
+func GetChatCitas(dbConn *sql.DB, empresaID int64, desde, hasta string, includeInactive bool, estadoCita, q string) ([]ChatCita, error) {
+	query := `SELECT
+		id,
+		empresa_id,
+		COALESCE(conversacion_id, 0),
+		COALESCE(titulo, ''),
+		COALESCE(descripcion, ''),
+		COALESCE(tipo_cita, 'reunion'),
+		COALESCE(fecha_inicio, ''),
+		COALESCE(fecha_fin, ''),
+		COALESCE(ubicacion, ''),
+		COALESCE(notificar_minutos_antes, 30),
+		COALESCE(creado_por_tipo, 'admin'),
+		COALESCE(creado_por_ref_id, 0),
+		COALESCE(creado_por_nombre, ''),
+		COALESCE(creado_por_email, ''),
+		COALESCE(estado_cita, 'programada'),
+		COALESCE(recordatorio_enviado, 0),
+		COALESCE(recordatorio_enviado_en, ''),
+		COALESCE(visibilidad, 'empresa'),
+		COALESCE(fecha_creacion, ''),
+		COALESCE(fecha_actualizacion, ''),
+		COALESCE(usuario_creador, ''),
+		COALESCE(estado, 'activo'),
+		COALESCE(observaciones, '')
+	FROM chat_tareas_citas
+	WHERE empresa_id = ?`
+	args := []interface{}{empresaID}
+
+	if !includeInactive {
+		query += ` AND COALESCE(estado, 'activo') = 'activo'`
+	}
+
+	desde = strings.TrimSpace(desde)
+	if desde != "" {
+		query += ` AND COALESCE(fecha_inicio, '') >= ?`
+		args = append(args, desde)
+	}
+	hasta = strings.TrimSpace(hasta)
+	if hasta != "" {
+		query += ` AND COALESCE(fecha_inicio, '') <= ?`
+		args = append(args, hasta)
+	}
+
+	if e := normalizeEstadoCita(estadoCita); strings.TrimSpace(estadoCita) != "" {
+		query += ` AND COALESCE(estado_cita, 'programada') = ?`
+		args = append(args, e)
+	}
+
+	if q = strings.TrimSpace(q); q != "" {
+		query += ` AND (
+			lower(COALESCE(titulo, '')) LIKE lower(?)
+			OR lower(COALESCE(descripcion, '')) LIKE lower(?)
+			OR lower(COALESCE(ubicacion, '')) LIKE lower(?)
+			OR lower(COALESCE(creado_por_nombre, '')) LIKE lower(?)
+		)`
+		pat := "%" + q + "%"
+		args = append(args, pat, pat, pat, pat)
+	}
+
+	query += ` ORDER BY
+		COALESCE(fecha_inicio, '') ASC,
+		id ASC`
+
+	rows, err := dbConn.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]ChatCita, 0)
+	for rows.Next() {
+		var item ChatCita
+		if err := rows.Scan(
+			&item.ID,
+			&item.EmpresaID,
+			&item.ConversacionID,
+			&item.Titulo,
+			&item.Descripcion,
+			&item.TipoCita,
+			&item.FechaInicio,
+			&item.FechaFin,
+			&item.Ubicacion,
+			&item.NotificarMinutosAntes,
+			&item.CreadoPorTipo,
+			&item.CreadoPorRefID,
+			&item.CreadoPorNombre,
+			&item.CreadoPorEmail,
+			&item.EstadoCita,
+			&item.RecordatorioEnviado,
+			&item.RecordatorioEnviadoEn,
+			&item.Visibilidad,
+			&item.FechaCreacion,
+			&item.FechaActualizacion,
+			&item.UsuarioCreador,
+			&item.Estado,
+			&item.Observaciones,
+		); err != nil {
+			return nil, err
+		}
+		out = append(out, item)
+	}
+	return out, nil
+}
+
+// UpdateChatCita actualiza una cita existente.
+func UpdateChatCita(dbConn *sql.DB, payload ChatCita) error {
+	fechaInicio := strings.TrimSpace(payload.FechaInicio)
+	if fechaInicio == "" {
+		return fmt.Errorf("fecha_inicio es obligatoria")
+	}
+	fechaFin := strings.TrimSpace(payload.FechaFin)
+	if fechaFin == "" {
+		fechaFin = fechaInicio
+	}
+
+	_, err := dbConn.Exec(`UPDATE chat_tareas_citas
+	SET conversacion_id = ?,
+		titulo = ?,
+		descripcion = ?,
+		tipo_cita = ?,
+		fecha_inicio = ?,
+		fecha_fin = ?,
+		ubicacion = ?,
+		notificar_minutos_antes = ?,
+		estado_cita = ?,
+		recordatorio_enviado = ?,
+		recordatorio_enviado_en = CASE WHEN ? = 1 THEN COALESCE(recordatorio_enviado_en, datetime('now','localtime')) ELSE NULL END,
+		visibilidad = ?,
+		observaciones = ?,
+		fecha_actualizacion = datetime('now','localtime')
+	WHERE id = ? AND empresa_id = ?`,
+		nullableInt64(payload.ConversacionID),
+		strings.TrimSpace(payload.Titulo),
+		strings.TrimSpace(payload.Descripcion),
+		normalizeTipoCita(payload.TipoCita),
+		fechaInicio,
+		fechaFin,
+		strings.TrimSpace(payload.Ubicacion),
+		normalizeReminderMinutes(payload.NotificarMinutosAntes),
+		normalizeEstadoCita(payload.EstadoCita),
+		func() int {
+			if payload.RecordatorioEnviado > 0 {
+				return 1
+			}
+			return 0
+		}(),
+		func() int {
+			if payload.RecordatorioEnviado > 0 {
+				return 1
+			}
+			return 0
+		}(),
+		normalizeVisibilidadCita(payload.Visibilidad),
+		strings.TrimSpace(payload.Observaciones),
+		payload.ID,
+		payload.EmpresaID,
+	)
+	return err
+}
+
+// SetChatCitaEstado activa/desactiva una cita.
+func SetChatCitaEstado(dbConn *sql.DB, empresaID, id int64, estado string) error {
+	_, err := dbConn.Exec(`UPDATE chat_tareas_citas
+	SET estado = ?,
+		fecha_actualizacion = datetime('now','localtime')
+	WHERE empresa_id = ? AND id = ?`, normalizeChatEstado(estado), empresaID, id)
+	return err
+}
+
+// SetChatCitaWorkflowEstado cambia el estado operativo de la cita.
+func SetChatCitaWorkflowEstado(dbConn *sql.DB, empresaID, id int64, estadoCita string) error {
+	estado := normalizeEstadoCita(estadoCita)
+	_, err := dbConn.Exec(`UPDATE chat_tareas_citas
+	SET estado_cita = ?,
+		recordatorio_enviado = CASE WHEN ? = 'programada' THEN 0 ELSE recordatorio_enviado END,
+		recordatorio_enviado_en = CASE WHEN ? = 'programada' THEN NULL ELSE recordatorio_enviado_en END,
+		fecha_actualizacion = datetime('now','localtime')
+	WHERE empresa_id = ? AND id = ?`, estado, estado, estado, empresaID, id)
+	return err
+}
+
+// SetChatCitaReminderSent marca el recordatorio de una cita como enviado/no enviado.
+func SetChatCitaReminderSent(dbConn *sql.DB, empresaID, id int64, sent bool) error {
+	recordatorio := 0
+	if sent {
+		recordatorio = 1
+	}
+	_, err := dbConn.Exec(`UPDATE chat_tareas_citas
+	SET recordatorio_enviado = ?,
+		recordatorio_enviado_en = CASE WHEN ? = 1 THEN datetime('now','localtime') ELSE NULL END,
+		fecha_actualizacion = datetime('now','localtime')
+	WHERE empresa_id = ? AND id = ?`, recordatorio, recordatorio, empresaID, id)
+	return err
+}
+
+// DeleteChatCita elimina una cita.
+func DeleteChatCita(dbConn *sql.DB, empresaID, id int64) error {
+	_, err := dbConn.Exec(`DELETE FROM chat_tareas_citas WHERE empresa_id = ? AND id = ?`, empresaID, id)
 	return err
 }

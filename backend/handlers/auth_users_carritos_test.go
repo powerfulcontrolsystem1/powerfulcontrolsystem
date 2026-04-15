@@ -169,6 +169,30 @@ func TestHandleGoogleLoginRedirectIncludesLoginHint(t *testing.T) {
 	}
 }
 
+func TestHandleGoogleLoginRedirectIgnoresInvalidLoginHint(t *testing.T) {
+	h := HandleGoogleLogin("client-123", "http://localhost:8080/auth/google/callback")
+	req := httptest.NewRequest(http.MethodGet, "/auth/google/login?login_hint=powerfulconrolsyste.com", nil)
+	req.Host = "localhost:8080"
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusFound {
+		t.Fatalf("expected status %d, got %d", http.StatusFound, rr.Code)
+	}
+	loc := rr.Header().Get("Location")
+	if loc == "" {
+		t.Fatal("expected redirect location")
+	}
+	parsed, err := url.Parse(loc)
+	if err != nil {
+		t.Fatalf("parse redirect url: %v", err)
+	}
+	if got := parsed.Query().Get("login_hint"); got != "" {
+		t.Fatalf("expected login_hint to be omitted, got %q", got)
+	}
+}
+
 func TestHandleGoogleLoginRedirectRewritesConfiguredLocalhostForPublicHost(t *testing.T) {
 	h := HandleGoogleLogin("client-123", "http://localhost:8080/auth/google/callback")
 	req := httptest.NewRequest(http.MethodGet, "/auth/google/login", nil)
@@ -230,6 +254,30 @@ func TestHandleGoogleLoginRedirectUsesForwardedHostWhenRedirectNotConfigured(t *
 	}
 }
 
+func TestHandleGoogleLoginRedirectAdaptsNonLoopbackToRequestHost(t *testing.T) {
+	// Simula un redirect configurado con un dominio VPS (nip.io) pero acceso desde otro dominio.
+	h := HandleGoogleLogin("client-123", "https://2.24.197.58.nip.io/auth/google/callback")
+	req := httptest.NewRequest(http.MethodGet, "/auth/google/login", nil)
+	req.Host = "powerfulcontrolsystem.com"
+	req.Header.Set("X-Forwarded-Proto", "http")
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusFound {
+		t.Fatalf("expected status %d, got %d", http.StatusFound, rr.Code)
+	}
+	loc := rr.Header().Get("Location")
+	parsed, err := url.Parse(loc)
+	if err != nil {
+		t.Fatalf("parse redirect url: %v", err)
+	}
+	expected := "https://powerfulcontrolsystem.com/auth/google/callback"
+	if got := parsed.Query().Get("redirect_uri"); got != expected {
+		t.Fatalf("expected redirect_uri=%q, got %q", expected, got)
+	}
+}
+
 func TestEmpresaUsuarioLoginHandlerSuccess(t *testing.T) {
 	dbEmp := openTestSQLite(t, "empresas_login.db")
 	dbSuper := openTestSQLite(t, "super_login.db")
@@ -270,14 +318,20 @@ func TestEmpresaUsuarioLoginHandlerSuccess(t *testing.T) {
 	}
 
 	hasSessionCookie := false
+	hasBrowserSessionCookie := false
 	for _, c := range rr.Result().Cookies() {
 		if c.Name == "session_token" && strings.TrimSpace(c.Value) != "" {
 			hasSessionCookie = true
-			break
+		}
+		if c.Name == browserSessionStateCookieName && strings.TrimSpace(c.Value) == "1" {
+			hasBrowserSessionCookie = true
 		}
 	}
 	if !hasSessionCookie {
 		t.Fatal("expected session_token cookie")
+	}
+	if !hasBrowserSessionCookie {
+		t.Fatal("expected browser session cookie")
 	}
 
 	var sesionesCount int
@@ -327,6 +381,9 @@ func TestEmpresaUsuarioLoginHandlerRejectsWrongEmpresaScope(t *testing.T) {
 		if c.Name == "session_token" && strings.TrimSpace(c.Value) != "" {
 			t.Fatal("session_token must not be issued when empresa scope is invalid")
 		}
+		if c.Name == browserSessionStateCookieName && strings.TrimSpace(c.Value) != "" {
+			t.Fatal("browser session cookie must not be issued when empresa scope is invalid")
+		}
 	}
 
 	var sesionesCount int
@@ -375,6 +432,9 @@ func TestEmpresaUsuarioLoginHandlerRejectsWrongEmpresaScopeFromQuery(t *testing.
 	for _, c := range rr.Result().Cookies() {
 		if c.Name == "session_token" && strings.TrimSpace(c.Value) != "" {
 			t.Fatal("session_token must not be issued when empresa scope from query is invalid")
+		}
+		if c.Name == browserSessionStateCookieName && strings.TrimSpace(c.Value) != "" {
+			t.Fatal("browser session cookie must not be issued when empresa scope from query is invalid")
 		}
 	}
 
@@ -431,14 +491,20 @@ func TestEmpresaUsuarioSetPasswordHandlerSuccess(t *testing.T) {
 	}
 
 	hasSessionCookie := false
+	hasBrowserSessionCookie := false
 	for _, c := range rr.Result().Cookies() {
 		if c.Name == "session_token" && strings.TrimSpace(c.Value) != "" {
 			hasSessionCookie = true
-			break
+		}
+		if c.Name == browserSessionStateCookieName && strings.TrimSpace(c.Value) == "1" {
+			hasBrowserSessionCookie = true
 		}
 	}
 	if !hasSessionCookie {
 		t.Fatal("expected session_token cookie")
+	}
+	if !hasBrowserSessionCookie {
+		t.Fatal("expected browser session cookie")
 	}
 }
 
@@ -2009,6 +2075,39 @@ func TestAuthMiddlewareRejectsReusedRevokedSessionToken(t *testing.T) {
 	h.ServeHTTP(secondRR, secondReq)
 	if secondRR.Code != http.StatusUnauthorized {
 		t.Fatalf("expected revoked token status %d, got %d body=%s", http.StatusUnauthorized, secondRR.Code, secondRR.Body.String())
+	}
+}
+
+func TestAuthMiddlewareAllowsPublicPortalPagesAssetsAndHomeCardsAPI(t *testing.T) {
+	dbSuper := openTestSQLite(t, "super_auth_public_assets.db")
+	ensureSuperSchema(t, dbSuper)
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/index.html", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+	mux.HandleFunc("/descripcion_de_los_sistemas.ht", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+	mux.HandleFunc("/Informacion_de_contacto.html", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+	mux.HandleFunc("/js/login.js", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+	mux.HandleFunc("/api/public/pagina_principal", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+
+	h := utils.AuthMiddleware(dbSuper, mux)
+
+	for _, path := range []string{"/index.html", "/descripcion_de_los_sistemas.ht", "/Informacion_de_contacto.html", "/js/login.js", "/api/public/pagina_principal"} {
+		req := httptest.NewRequest(http.MethodGet, path, nil)
+		rr := httptest.NewRecorder()
+		h.ServeHTTP(rr, req)
+		if rr.Code != http.StatusNoContent {
+			t.Fatalf("path %s expected status %d, got %d body=%s", path, http.StatusNoContent, rr.Code, rr.Body.String())
+		}
 	}
 }
 

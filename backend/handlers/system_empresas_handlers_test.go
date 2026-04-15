@@ -486,6 +486,157 @@ func TestGmailConfigHandlerSaveRestartAlertTo(t *testing.T) {
 	}
 }
 
+func TestPublicLicenciasPaymentMethodsHandlerOrdersAndAvailability(t *testing.T) {
+	rawKey := make([]byte, 32)
+	for i := range rawKey {
+		rawKey[i] = byte(31 + i)
+	}
+	t.Setenv("CONFIG_ENC_KEY", base64.StdEncoding.EncodeToString(rawKey))
+
+	dbSuper := openTestSQLite(t, "super_payment_methods_status.db")
+	ensureSuperConfigSchemaForSuper(t, dbSuper)
+
+	if err := dbpkg.SetConfigValue(dbSuper, "epayco.cust_id", "cust_demo", false); err != nil {
+		t.Fatalf("seed epayco.cust_id: %v", err)
+	}
+	encEpaycoKey, err := utils.EncryptString("epayco_secret_demo")
+	if err != nil {
+		t.Fatalf("encrypt epayco.key: %v", err)
+	}
+	if err := dbpkg.SetConfigValue(dbSuper, "epayco.key", encEpaycoKey, true); err != nil {
+		t.Fatalf("seed epayco.key: %v", err)
+	}
+	if err := dbpkg.SetConfigValue(dbSuper, "epayco.enabled", "1", false); err != nil {
+		t.Fatalf("seed epayco.enabled: %v", err)
+	}
+
+	if err := dbpkg.SetConfigValue(dbSuper, "wompi.public_key", "pub_test_demo", false); err != nil {
+		t.Fatalf("seed wompi.public_key: %v", err)
+	}
+	encWompiPrivate, err := utils.EncryptString("prv_test_demo")
+	if err != nil {
+		t.Fatalf("encrypt wompi.private_key: %v", err)
+	}
+	if err := dbpkg.SetConfigValue(dbSuper, "wompi.private_key", encWompiPrivate, true); err != nil {
+		t.Fatalf("seed wompi.private_key: %v", err)
+	}
+	encWompiIntegrity, err := utils.EncryptString("test_integrity_demo")
+	if err != nil {
+		t.Fatalf("encrypt wompi.integrity_key: %v", err)
+	}
+	if err := dbpkg.SetConfigValue(dbSuper, "wompi.integrity_key", encWompiIntegrity, true); err != nil {
+		t.Fatalf("seed wompi.integrity_key: %v", err)
+	}
+	if err := dbpkg.SetConfigValue(dbSuper, "wompi.enabled", "0", false); err != nil {
+		t.Fatalf("seed wompi.enabled: %v", err)
+	}
+
+	h := PublicLicenciasPaymentMethodsHandler(dbSuper)
+	req := httptest.NewRequest(http.MethodGet, "/api/public/licencias/payment_methods", nil)
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, rr.Code, rr.Body.String())
+	}
+
+	var body struct {
+		Providers []struct {
+			ID         string `json:"id"`
+			Enabled    bool   `json:"enabled"`
+			Configured bool   `json:"configured"`
+			Available  bool   `json:"available"`
+		} `json:"providers"`
+		DefaultMethod string `json:"default_method"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode payment methods response: %v body=%s", err, rr.Body.String())
+	}
+	if len(body.Providers) != 2 {
+		t.Fatalf("expected 2 providers, got %d", len(body.Providers))
+	}
+	if body.Providers[0].ID != "epayco" || body.Providers[1].ID != "wompi" {
+		t.Fatalf("expected order epayco,wompi got %+v", body.Providers)
+	}
+	if !body.Providers[0].Enabled || !body.Providers[0].Configured || !body.Providers[0].Available {
+		t.Fatalf("expected epayco available, got %+v", body.Providers[0])
+	}
+	if !body.Providers[1].Configured || body.Providers[1].Available || body.Providers[1].Enabled {
+		t.Fatalf("expected wompi configured but disabled, got %+v", body.Providers[1])
+	}
+	if body.DefaultMethod != "epayco" {
+		t.Fatalf("expected default_method epayco, got %q", body.DefaultMethod)
+	}
+}
+
+func TestWompiConfigHandlerPersistsEnabledFlag(t *testing.T) {
+	dbSuper := openTestSQLite(t, "super_wompi_enabled_toggle.db")
+	ensureSuperConfigSchemaForSuper(t, dbSuper)
+
+	h := WompiConfigHandler(dbSuper)
+	req := httptest.NewRequest(http.MethodPut, "/super/api/config/wompi", strings.NewReader(`{"enabled":true}`))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status %d on wompi enabled save, got %d body=%s", http.StatusOK, rr.Code, rr.Body.String())
+	}
+
+	stored, encrypted, err := dbpkg.GetConfigValue(dbSuper, "wompi.enabled")
+	if err != nil {
+		t.Fatalf("read wompi.enabled: %v", err)
+	}
+	if encrypted {
+		t.Fatal("expected wompi.enabled to be non-encrypted")
+	}
+	if strings.TrimSpace(stored) != "1" {
+		t.Fatalf("expected wompi.enabled stored as 1, got %q", stored)
+	}
+
+	getReq := httptest.NewRequest(http.MethodGet, "/super/api/config/wompi", nil)
+	getRR := httptest.NewRecorder()
+	h.ServeHTTP(getRR, getReq)
+
+	if getRR.Code != http.StatusOK {
+		t.Fatalf("expected status %d on wompi get, got %d body=%s", http.StatusOK, getRR.Code, getRR.Body.String())
+	}
+
+	var body map[string]interface{}
+	if err := json.Unmarshal(getRR.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode wompi get response: %v body=%s", err, getRR.Body.String())
+	}
+	if enabled, _ := body["enabled"].(bool); !enabled {
+		t.Fatalf("expected enabled=true in wompi get response, got %v", body["enabled"])
+	}
+}
+
+func TestWompiTermsHandlerRejectsWhenDisabled(t *testing.T) {
+	dbSuper := openTestSQLite(t, "super_wompi_terms_disabled.db")
+	ensureSuperConfigSchemaForSuper(t, dbSuper)
+
+	if err := dbpkg.SetConfigValue(dbSuper, "wompi.enabled", "0", false); err != nil {
+		t.Fatalf("seed wompi.enabled: %v", err)
+	}
+
+	h := WompiTermsHandler(dbSuper)
+	req := httptest.NewRequest(http.MethodGet, "/wompi/terms", nil)
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusPreconditionFailed {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusPreconditionFailed, rr.Code, rr.Body.String())
+	}
+
+	var body map[string]interface{}
+	if err := json.Unmarshal(rr.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode wompi disabled response: %v body=%s", err, rr.Body.String())
+	}
+	if got := strings.TrimSpace(fmt.Sprint(body["provider"])); got != "wompi" {
+		t.Fatalf("expected provider wompi, got %q", got)
+	}
+}
+
 func TestSuperEndpointsPermisosPorRol(t *testing.T) {
 	dbEmp := openTestSQLite(t, "empresas_super_roles.db")
 	dbSuper := openTestSQLite(t, "super_super_roles.db")

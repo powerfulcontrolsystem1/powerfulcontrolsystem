@@ -1,10 +1,78 @@
 Descripcion compacta de modulos (POS multiempresa)
-Actualizacion: 2026-04-14
+Actualizacion: 2026-04-15
 
 Gobernanza obligatoria (agente_go):
 - Si se crea un modulo nuevo o se modifica un modulo existente, este documento debe actualizarse en la misma iteracion de trabajo.
 - En el mismo cambio, tambien debe actualizarse `documentos/matriz_roles_permisos_pos_multiempresa.md` para reflejar permisos por rol/modulo/accion y visibilidad de paginas afectadas.
 - La actualizacion modular debe mantener trazabilidad en `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios` y `CHANGELOG.md`.
+
+Actualizacion 2026-04-15 (login Google con host canónico y estaciones con carga visible):
+- Se refuerza el modulo `autenticacion y sesiones` para canonicalizar el acceso público al dominio raíz: `backend/utils/utils.go` redirige `www.powerfulcontrolsystem.com` hacia `powerfulcontrolsystem.com` antes de entrar a `AuthMiddleware` y al flujo `/auth/google/*`, estabilizando `redirect_uri`, cookies y sesión administrativa.
+- `backend/main.go` encadena ese middleware de host canónico en la pila HTTP y los defaults de `backend/.env.example` y `scripts/sync_to_vps.ps1` quedan alineados al callback `https://powerfulcontrolsystem.com/auth/google/callback`.
+- Se refuerza el submodulo `estaciones` para mostrar `Cargando estaciones...` mientras la vista `web/administrar_empresa/estaciones.html` obtiene configuración, carritos y sensores, además de exponer un mensaje claro cuando falla la carga.
+- No hay cambios en wrappers, CRUD/A ni privilegios por rol; el ajuste corrige estabilidad operativa del acceso y mejora UX en una vista empresarial existente.
+
+Actualizacion 2026-04-15 (portal publico: contacto visible y pagina de informacion):
+- Se refuerza el submodulo `pagina principal dinamica (super)` para que el portal publico muestre un acceso directo a `Informacion_de_contacto.html` y un CTA flotante `Contactenos` enlazado a WhatsApp.
+- El encabezado de `web/index.html` presenta juntos los accesos `Registrarse o iniciar sesión` e `Informacion de contacto` para concentrar el ingreso comercial en una sola zona visible.
+- Se agrega la pagina publica `web/Informacion_de_contacto.html` con descripcion general del sistema y centralizacion de los canales `powerfulcontrolsystem@hmail.com` y `3043306506`.
+- `backend/utils/utils.go` mantiene esa pagina junto con `index.html` en el conjunto de rutas publicas exactas del middleware, evitando exigir sesion administrativa en el portal comercial.
+- `web/estilos.css` incorpora el tratamiento visual del boton flotante de WhatsApp y del nuevo layout de contacto sin introducir cambios en permisos por rol.
+- No hay cambios en wrappers, CRUD/A ni privilegios: la administracion de tarjetas y del portal sigue reservada a `super_administrador` y la nueva pagina es solo de lectura publica.
+
+Actualizacion 2026-04-15 (portal publico: landing descriptiva unica por tarjetas):
+- Se refuerza el submodulo `pagina principal dinamica (super)` para que el portal use una sola landing descriptiva (`/descripcion_de_los_sistemas.ht`) con todas las soluciones publicadas.
+- `web/index.html` ahora dirige `Explorar oferta` a una ancla interna de esa landing segun la tarjeta elegida, manteniendo una experiencia mas consistente y sin dispersar el catalogo publico en multiples paginas.
+- `web/descripcion_de_los_sistemas.ht` toma las tarjetas de `/api/public/pagina_principal`, genera descripciones ampliadas por solucion y muestra un boton `Probar Gratis` por seccion usando el enlace configurado en super.
+- `backend/utils/utils.go` libera explicitamente la landing descriptiva en `AuthMiddleware` para que el recorrido comercial del home no dependa de sesion.
+- `web/super/pagina_principal.html` deja explicito que el campo `enlace` controla el destino de `Probar Gratis`; no hay cambios en permisos por rol y la administracion sigue reservada a `super_administrador`.
+
+Actualizacion 2026-04-15 (checkout de licencias: disponibilidad gobernada de Epayco/Wompi):
+- Se refuerza el submodulo `pasarelas de licencias` para que `web/pagar_licencia.html` renderice unicamente Epayco y Wompi segun disponibilidad real del backend, con orden fijo Epayco primero y Wompi debajo.
+- El backend expone `GET /api/public/licencias/payment_methods` para publicar el estado ordenado de las pasarelas y endurece Wompi para rechazar terminos/creacion de transaccion cuando este desactivado o incompletamente configurado.
+- `web/super/configuracion_avanzada.html` permite activar o desactivar Epayco y Wompi desde sus toggles sin obligar a reingresar credenciales completas en cada cambio de estado.
+- No hay cambios en permisos por rol; la gestion sigue centralizada en `super_administrador` y la nueva ruta publica es solo de lectura para el checkout de licencias.
+
+Actualizacion 2026-04-15 (responsive transversal de portal y paneles administrativos):
+- Se refuerza el frontend compartido en `web/estilos.css` para adaptar mejor el portal publico, el panel super y el panel de empresa entre escritorio, tablet y movil.
+- `web/index.html` divide el titulo principal en dos segmentos flexibles para permitir salto natural en pantallas estrechas sin perder jerarquia visual.
+- Los layouts administrativos colapsan con mejor comportamiento en movil: titulo del sidebar multilínea, navegación horizontal desplazable y `iframe` con altura útil minima.
+- Formularios, tablas y CTA priorizan apilado vertical y scroll horizontal controlado en anchos reducidos.
+- No hay cambios funcionales de rutas, datos ni permisos por rol; el ajuste es visual y de usabilidad.
+
+Actualizacion 2026-04-15 (hardening login Google y recordar cuenta):
+- Se refuerza el modulo `autenticacion y sesiones` para aceptar `login_hint` solo cuando es un correo valido y para limpiar correos recordados corruptos antes de invocar `/auth/google/login`.
+- `web/js/login.js`, `web/menu.js`, `web/js/super_administrador.js` y `web/js/seleccionar_empresa.js` ya no persisten `rememberedEmail` arbitrario; solo se conserva el valor cuando coincide con una forma plausible de email.
+- No hay cambios de rutas, wrappers ni permisos por rol; el ajuste es de integridad de sesion/UX en navegador.
+
+Actualizacion 2026-04-14 (autenticacion Google VPS/local y recordar cuenta):
+- Se corrige el flujo de autenticacion administrativa para operar con callback OAuth dinamico segun host de la solicitud, forzando HTTPS en dominio publico y manteniendo `localhost` en entorno local.
+- Se ajusta el middleware global para exponer como publicos `GET /js/login.js` y `GET /api/public/pagina_principal`, eliminando bloqueos `401` que interrumpian el login y la carga del portal.
+- Se completa la UX de `recordar cuenta` en `login.html` (hint de cuenta recordada + accion olvidar) y se refuerza persistencia de `rememberedEmail` desde perfil autenticado.
+- Se agrega una señal visible de sesion (`browser_session_active`) emitida por backend junto a `session_token` para que `login.html` y `menu.js` detecten sesion activa sin intentar leer la cookie `HttpOnly` real.
+- Se mantiene la seguridad por sesion para rutas protegidas y se conserva aislamiento por `empresa_id` en modulos empresariales.
+
+Actualizacion 2026-04-14 (portal publico index - encabezado principal):
+- Se actualiza el titulo principal del portal a `Sistema de Facturación Electrónica` y se agrega subtitulo operativo `Toma el control de tu negocio con Powerful Control System`.
+- El cambio es visual/UX en home publico y no altera wrappers de seguridad ni permisos por rol.
+
+Actualizacion 2026-04-14 (pagina principal dinamica en super):
+- Se agrega el submodulo `pagina_principal` para configurar las tarjetas visibles del portal (`/index.html`) desde super administrador.
+- El backend incorpora `GET/PUT /super/api/pagina_principal` para leer/guardar cantidad de tarjetas y su contenido (imagen, titulo, descripcion, enlace), con persistencia en `configuraciones` de la base super.
+- Se habilita `GET /api/public/pagina_principal` para que el portal renderice tarjetas dinamicas y mantenga fallback local en caso de indisponibilidad temporal.
+- No hay cambios en wrappers de `/api/empresa/*`; el alcance de permisos permanece exclusivo para `super_administrador` en configuracion global.
+
+Actualizacion 2026-04-14 (checkout de licencias con Epayco):
+- Se completa la pasarela Epayco para licencias con endpoint de creacion de checkout (`POST /epayco/create_transaction`) y consulta de estado (`GET /epayco/transaction_status`).
+- Se agrega confirmacion server-to-server (`POST/GET /epayco/webhook`) para actualizar estado de pago y activar licencia aun cuando el cliente cierre la pagina.
+- `web/pagar_licencia.html` abre automaticamente el checkout de Epayco en una nueva pestaña y mantiene polling de estado para cierre del flujo.
+- No hay cambios en wrappers `/api/empresa/*`; el alcance permanece en contexto global de super para configuracion y flujo de licencias.
+
+Actualizacion 2026-04-14 (chat y tareas: agente de citas con calendario grande):
+- Se amplía el modulo `chat_y_tareas` con agenda de citas colaborativa por empresa, calendario mensual de gran formato y formulario de programacion de reuniones.
+- El backend incorpora `/api/empresa/chat_tareas/citas` (GET/POST/PUT/DELETE) bajo politica de ventas para gestionar citas con estado operativo (`programada/completada/cancelada`), activacion/inactivacion y recordatorio previo.
+- Las citas quedan compartidas por `empresa_id`: cuando un administrador agenda una reunion, todos los usuarios de esa empresa visualizan la cita en el calendario del modulo.
+- El frontend agrega recordatorios previos visibles en pantalla segun `notificar_minutos_antes` y sincronizacion periodica del calendario.
 
 Actualizacion 2026-04-14 (venta publica por subdominio empresarial):
 - Se amplía el modulo de venta publica para resolver `empresa_slug` automaticamente desde subdominio (`{slug}.powerfulcontrolsystem.com`) ademas de query/path.
@@ -81,9 +149,11 @@ Criterio de esta guia:
 - Login admin/empresa, sesiones, bloqueo temporal y recuperacion de password.
 - Login administrativo con selección obligatoria de cuenta Google (`select_account`) para evitar mezcla de identidades en navegador.
 - Aceptación de contrato y verificación humana como prerrequisito de primera sesión administrativa.
+- La UI cliente usa una cookie auxiliar visible de presencia de sesion para sincronizar `recordar cuenta`, avatar y enlace de logout, mientras el token real permanece en `session_token` con `HttpOnly`.
+- El hint de cuenta recordada hacia Google solo se envia si `rememberedEmail` pasa validacion de correo; valores locales corruptos se descartan y limpian.
 
 2) Administracion global (super)
-- Empresas, licencias, administradores, configuraciones globales (Wompi/SMTP/IA).
+- Empresas, licencias, administradores, configuraciones globales (Wompi/Epayco/SMTP/IA).
 
 3) Usuarios de empresa
 - Alta/edicion, confirmacion de correo, password inicial y cambio de password.
@@ -198,3 +268,14 @@ Criterio de esta guia:
 
 39) Impresoras operativas por empresa
 - Gestiona multiples impresoras, predeterminada, asignacion por funcionalidad/producto y resolucion de destino de impresion por contexto.
+
+40) Pagina principal dinamica (super)
+- Gestiona tarjetas del home publico (cantidad, imagen de `web/img`, titulo, descripcion y enlace) con persistencia central en base super y render dinamico en `index.html`; `Explorar oferta` abre una landing descriptiva unica por ancla y el enlace configurado se usa en el boton `Probar Gratis` de cada seccion.
+
+41) Agente de citas y calendario (chat y tareas)
+- Agenda reuniones/citas por empresa, muestra calendario grande compartido por todos los usuarios de la empresa y emite recordatorios previos configurables.
+
+42) Checkout de licencias (Wompi + Epayco)
+- `web/pagar_licencia.html` permite seleccionar pasarela para pago de licencia y mantiene trazabilidad por transaccion/referencia.
+- Wompi opera por API (`create_transaction_nequi`, `transaction_status`, `webhook`) con activacion automatica de licencia al aprobar.
+- Epayco opera con checkout hospedado, confirmacion por `webhook` y consulta por referencia para activar licencia y registrar estado en `pagos_epayco`.

@@ -164,14 +164,20 @@ func TestE2E_AcceptContractCreatesSession(t *testing.T) {
 	}
 
 	var token string
+	hasBrowserSessionCookie := false
 	for _, c := range acceptResp.Cookies() {
 		if c.Name == "session_token" && strings.TrimSpace(c.Value) != "" {
 			token = c.Value
-			break
+		}
+		if c.Name == browserSessionStateCookieName && strings.TrimSpace(c.Value) == "1" {
+			hasBrowserSessionCookie = true
 		}
 	}
 	if token == "" {
 		t.Fatalf("session_token cookie not set after acceptance")
+	}
+	if !hasBrowserSessionCookie {
+		t.Fatalf("browser session cookie not set after acceptance")
 	}
 
 	sess, err := dbpkg.GetSessionByToken(dbSuper, token)
@@ -207,5 +213,22 @@ func TestE2E_AcceptContractCreatesSession(t *testing.T) {
 	}
 	if got := secondResp.Header.Get("Location"); got != "/seleccionar_empresa.html" {
 		t.Fatalf("expected direct redirect to seleccionar_empresa, got %s", got)
+	}
+
+	hasSecondSessionCookie := false
+	hasSecondBrowserSessionCookie := false
+	for _, c := range secondResp.Cookies() {
+		if c.Name == "session_token" && strings.TrimSpace(c.Value) != "" {
+			hasSecondSessionCookie = true
+		}
+		if c.Name == browserSessionStateCookieName && strings.TrimSpace(c.Value) == "1" {
+			hasSecondBrowserSessionCookie = true
+		}
+	}
+	if !hasSecondSessionCookie {
+		t.Fatalf("expected session_token cookie on second callback")
+	}
+	if !hasSecondBrowserSessionCookie {
+		t.Fatalf("expected browser session cookie on second callback")
 	}
 }

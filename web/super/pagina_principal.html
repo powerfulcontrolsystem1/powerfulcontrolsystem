@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Pagina principal</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container">
+    <div class="page-header">
+      <h1>Configuracion de tarjetas en pagina principal</h1>
+      <div id="ppTopMessage" class="form-help" aria-live="polite" style="margin-top:8px"></div>
+      <div class="form-actions">
+        <a href="/index.html" class="btn secondary" target="_blank" rel="noopener noreferrer">Ver index publico</a>
+        <a href="/descripcion_de_los_sistemas.ht" class="btn secondary" target="_blank" rel="noopener noreferrer">Ver landing descriptiva</a>
+        <button id="ppBtnReload" type="button" class="btn">Recargar</button>
+      </div>
+    </div>
+
+    <section class="card form mp-card">
+      <h2>Editor de tarjetas</h2>
+      <div class="form-row">
+        <div class="form-col pp-col-small">
+          <label class="form-label" for="ppCantidad">Cantidad de tarjetas</label>
+          <input id="ppCantidad" class="form-input" type="number" min="1" max="12" value="5">
+        </div>
+        <div class="form-col pp-col-grow">
+          <label class="form-label">Acciones</label>
+          <div class="form-actions pp-inline-actions">
+            <button id="ppBtnApplyCount" type="button" class="btn secondary">Aplicar cantidad</button>
+            <button id="ppBtnSave" type="button" class="btn">Guardar configuracion</button>
+          </div>
+        </div>
+      </div>
+      <p class="form-help">Cada tarjeta define imagen, titulo, descripcion breve y el destino del boton "Probar Gratis" dentro de la pagina descriptiva unica.</p>
+      <div id="ppCardsEditor" class="pp-cards-editor"></div>
+      <div class="form-actions pp-bottom-actions">
+        <button id="ppBtnSaveBottom" type="button" class="btn">Guardar cambios</button>
+      </div>
+      <div id="ppMessage" class="form-help"></div>
+    </section>
+  </div>
+
+  <script>
+    (function () {
+      var state = {
+        images: [],
+        config: {
+          cantidad: 5,
+          tarjetas: []
+        }
+      };
+
+      var topMsgEl = document.getElementById('ppTopMessage');
+      var msgEl = document.getElementById('ppMessage');
+      var cardsEditorEl = document.getElementById('ppCardsEditor');
+      var cantidadEl = document.getElementById('ppCantidad');
+
+      function setMsg(text, type) {
+        var t = text || '';
+        [topMsgEl, msgEl].forEach(function (el) {
+          if (!el) return;
+          el.textContent = t;
+          el.classList.remove('error', 'success');
+          if (type) el.classList.add(type);
+        });
+      }
+
+      function escapeHTML(value) {
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function makeDefaultCard(index) {
+        var image = state.images[index % (state.images.length || 1)] || '/img/punto_venta.png';
+        return {
+          titulo: 'Tarjeta ' + (index + 1),
+          descripcion: 'Describe aqui la oferta principal de esta tarjeta.',
+          imagen_url: image,
+          enlace: '/login.html'
+        };
+      }
+
+      function normalizeCount(raw) {
+        var n = Number(raw || 0);
+        if (!Number.isFinite(n) || n < 1) n = 1;
+        if (n > 12) n = 12;
+        return Math.floor(n);
+      }
+
+      function ensureCards(count) {
+        var total = normalizeCount(count);
+        var cards = Array.isArray(state.config.tarjetas) ? state.config.tarjetas.slice() : [];
+        while (cards.length < total) {
+          cards.push(makeDefaultCard(cards.length));
+        }
+        if (cards.length > total) {
+          cards = cards.slice(0, total);
+        }
+        state.config.cantidad = total;
+        state.config.tarjetas = cards;
+      }
+
+      function imageOptionsHTML(selected) {
+        var current = String(selected || '').trim();
+        var html = '<option value="">Seleccione una imagen</option>';
+        var found = false;
+        state.images.forEach(function (url) {
+          var isSelected = url === current;
+          if (isSelected) found = true;
+          html += '<option value="' + escapeHTML(url) + '"' + (isSelected ? ' selected' : '') + '>' + escapeHTML(url) + '</option>';
+        });
+        if (current && !found) {
+          html += '<option value="' + escapeHTML(current) + '" selected>' + escapeHTML(current) + ' (personalizada)</option>';
+        }
+        return html;
+      }
+
+      function renderCardsEditor() {
+        ensureCards(cantidadEl.value);
+        cantidadEl.value = state.config.cantidad;
+
+        var html = '';
+        state.config.tarjetas.forEach(function (card, idx) {
+          var image = String(card.imagen_url || '').trim();
+          var title = String(card.titulo || '').trim();
+          var description = String(card.descripcion || '').trim();
+          var link = String(card.enlace || '').trim();
+
+          html += '<article class="card pp-card-item" data-index="' + idx + '">';
+          html += '<h3>Tarjeta ' + (idx + 1) + '</h3>';
+          html += '<div class="form-row">';
+          html += '  <div class="form-col">';
+          html += '    <label class="form-label" for="ppImage' + idx + '">Imagen (web/img)</label>';
+          html += '    <select id="ppImage' + idx + '" class="form-input pp-image-select" data-field="imagen_url">' + imageOptionsHTML(image) + '</select>';
+          html += '  </div>';
+          html += '  <div class="form-col">';
+          html += '    <label class="form-label" for="ppLink' + idx + '">Destino de Probar Gratis</label>';
+          html += '    <input id="ppLink' + idx + '" class="form-input pp-field" data-field="enlace" type="text" value="' + escapeHTML(link) + '" placeholder="/login.html">';
+          html += '  </div>';
+          html += '</div>';
+          html += '<div class="form-row">';
+          html += '  <div class="form-col">';
+          html += '    <label class="form-label" for="ppTitle' + idx + '">Titulo</label>';
+          html += '    <input id="ppTitle' + idx + '" class="form-input pp-field" data-field="titulo" type="text" value="' + escapeHTML(title) + '" maxlength="120">';
+          html += '  </div>';
+          html += '</div>';
+          html += '<div class="form-row">';
+          html += '  <div class="form-col">';
+          html += '    <label class="form-label" for="ppDesc' + idx + '">Descripcion</label>';
+          html += '    <textarea id="ppDesc' + idx + '" class="form-textarea pp-field" data-field="descripcion" maxlength="360">' + escapeHTML(description) + '</textarea>';
+          html += '  </div>';
+          html += '  <div class="form-col pp-preview-col">';
+          html += '    <label class="form-label">Vista rapida</label>';
+          html += '    <div class="pp-image-preview-wrap">';
+          html += '      <img class="pp-image-preview" src="' + escapeHTML(image || '/img/punto_venta.png') + '" alt="Vista previa tarjeta ' + (idx + 1) + '">';
+          html += '    </div>';
+          html += '  </div>';
+          html += '</div>';
+          html += '</article>';
+        });
+
+        cardsEditorEl.innerHTML = html;
+      }
+
+      function getCardIndexFromElement(el) {
+        var parent = el.closest('.pp-card-item');
+        if (!parent) return -1;
+        var idx = Number(parent.getAttribute('data-index') || -1);
+        if (!Number.isFinite(idx)) return -1;
+        return idx;
+      }
+
+      cardsEditorEl.addEventListener('input', function (event) {
+        var target = event.target;
+        if (!target.classList.contains('pp-field')) return;
+        var idx = getCardIndexFromElement(target);
+        if (idx < 0 || idx >= state.config.tarjetas.length) return;
+        var field = target.getAttribute('data-field');
+        if (!field) return;
+        state.config.tarjetas[idx][field] = target.value;
+      });
+
+      cardsEditorEl.addEventListener('change', function (event) {
+        var target = event.target;
+        if (!target.classList.contains('pp-image-select')) return;
+        var idx = getCardIndexFromElement(target);
+        if (idx < 0 || idx >= state.config.tarjetas.length) return;
+        state.config.tarjetas[idx].imagen_url = target.value;
+        var cardEl = target.closest('.pp-card-item');
+        if (!cardEl) return;
+        var previewEl = cardEl.querySelector('.pp-image-preview');
+        if (previewEl) {
+          previewEl.src = target.value || '/img/punto_venta.png';
+        }
+      });
+
+      async function requestJSON(url, options) {
+        var resp = await fetch(url, Object.assign({ credentials: 'same-origin' }, options || {}));
+        var text = await resp.text();
+        var data = {};
+        if (text) {
+          try {
+            data = JSON.parse(text);
+          } catch (_) {
+            data = { raw: text };
+          }
+        }
+        if (!resp.ok) {
+          throw new Error((data && (data.error || data.message)) || text || ('HTTP ' + resp.status));
+        }
+        return data;
+      }
+
+      async function loadImages() {
+        var data = await requestJSON('/super/api/pagina_principal?action=imagenes');
+        var images = Array.isArray(data.imagenes) ? data.imagenes : [];
+        state.images = images;
+      }
+
+      async function loadConfig() {
+        var data = await requestJSON('/super/api/pagina_principal?action=config');
+        var cfg = data && data.config ? data.config : {};
+        state.config.cantidad = normalizeCount(cfg.cantidad || 5);
+        state.config.tarjetas = Array.isArray(cfg.tarjetas) ? cfg.tarjetas : [];
+        ensureCards(state.config.cantidad);
+      }
+
+      function buildPayloadFromState() {
+        ensureCards(cantidadEl.value);
+        return {
+          cantidad: state.config.cantidad,
+          tarjetas: state.config.tarjetas.map(function (card) {
+            return {
+              titulo: String(card.titulo || '').trim(),
+              descripcion: String(card.descripcion || '').trim(),
+              imagen_url: String(card.imagen_url || '').trim(),
+              enlace: String(card.enlace || '').trim()
+            };
+          })
+        };
+      }
+
+      async function saveConfig() {
+        var payload = buildPayloadFromState();
+        await requestJSON('/super/api/pagina_principal?action=config', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      }
+
+      async function reloadAll() {
+        setMsg('Cargando configuracion...', '');
+        try {
+          await loadImages();
+          await loadConfig();
+          renderCardsEditor();
+          setMsg('Configuracion cargada correctamente.', 'success');
+        } catch (err) {
+          setMsg('No se pudo cargar la configuracion: ' + (err && err.message ? err.message : String(err)), 'error');
+        }
+      }
+
+      document.getElementById('ppBtnApplyCount').addEventListener('click', function () {
+        ensureCards(cantidadEl.value);
+        renderCardsEditor();
+      });
+
+      document.getElementById('ppBtnReload').addEventListener('click', function () {
+        reloadAll();
+      });
+
+      document.getElementById('ppBtnSave').addEventListener('click', async function () {
+        setMsg('Guardando configuracion...', '');
+        try {
+          await saveConfig();
+          await loadConfig();
+          renderCardsEditor();
+          setMsg('Configuracion guardada correctamente.', 'success');
+        } catch (err) {
+          setMsg('No se pudo guardar: ' + (err && err.message ? err.message : String(err)), 'error');
+        }
+      });
+
+      document.getElementById('ppBtnSaveBottom').addEventListener('click', async function () {
+        setMsg('Guardando configuracion...', '');
+        try {
+          await saveConfig();
+          await loadConfig();
+          renderCardsEditor();
+          setMsg('Configuracion guardada correctamente.', 'success');
+        } catch (err) {
+          setMsg('No se pudo guardar: ' + (err && err.message ? err.message : String(err)), 'error');
+        }
+      });
+
+      reloadAll();
+    })();
+  </script>
+</body>
+</html>

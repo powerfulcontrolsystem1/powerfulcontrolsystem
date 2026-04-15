@@ -1023,3 +1023,212 @@ func EmpresaChatTareasTareasHandler(dbEmp *sql.DB) http.HandlerFunc {
 		http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
 	}
 }
+
+// EmpresaChatTareasCitasHandler gestiona agenda de citas compartidas por empresa.
+func EmpresaChatTareasCitasHandler(dbEmp *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			empresaID, err := parseEmpresaIDQuery(r)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			includeInactive := queryBool(r, "include_inactive")
+			desde := strings.TrimSpace(r.URL.Query().Get("desde"))
+			hasta := strings.TrimSpace(r.URL.Query().Get("hasta"))
+			estadoCita := strings.TrimSpace(r.URL.Query().Get("estado_cita"))
+			q := strings.TrimSpace(r.URL.Query().Get("q"))
+
+			rows, err := dbpkg.GetChatCitas(dbEmp, empresaID, desde, hasta, includeInactive, estadoCita, q)
+			if err != nil {
+				http.Error(w, "No se pudieron listar las citas", http.StatusInternalServerError)
+				return
+			}
+			writeJSON(w, http.StatusOK, rows)
+			return
+
+		case http.MethodPost:
+			var payload dbpkg.ChatCita
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "JSON invalido", http.StatusBadRequest)
+				return
+			}
+			if payload.EmpresaID <= 0 {
+				http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+				return
+			}
+			if strings.TrimSpace(payload.Titulo) == "" {
+				http.Error(w, "titulo es obligatorio", http.StatusBadRequest)
+				return
+			}
+			if strings.TrimSpace(payload.FechaInicio) == "" {
+				http.Error(w, "fecha_inicio es obligatoria", http.StatusBadRequest)
+				return
+			}
+
+			actor := resolveChatActor(dbEmp, r, payload.EmpresaID)
+			payload.UsuarioCreador = actor.UsuarioCreador
+			payload.CreadoPorTipo = actor.Tipo
+			payload.CreadoPorRefID = actor.RefID
+			payload.CreadoPorEmail = actor.Email
+			payload.CreadoPorNombre = safeAuthorName(payload.CreadoPorNombre, actor.Nombre)
+			if strings.TrimSpace(payload.EstadoCita) == "" {
+				payload.EstadoCita = "programada"
+			}
+			if strings.TrimSpace(payload.Visibilidad) == "" {
+				payload.Visibilidad = "empresa"
+			}
+			if payload.NotificarMinutosAntes <= 0 {
+				payload.NotificarMinutosAntes = 30
+			}
+			if strings.TrimSpace(payload.FechaFin) == "" {
+				payload.FechaFin = payload.FechaInicio
+			}
+
+			id, err := dbpkg.CreateChatCita(dbEmp, payload)
+			if err != nil {
+				http.Error(w, "No se pudo crear la cita", http.StatusBadRequest)
+				return
+			}
+
+			writeJSON(w, http.StatusCreated, map[string]interface{}{"ok": true, "id": id})
+			return
+
+		case http.MethodPut:
+			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+
+			if action == "activar" || action == "desactivar" {
+				empresaID, errEmp := parseEmpresaIDQuery(r)
+				if errEmp != nil {
+					http.Error(w, errEmp.Error(), http.StatusBadRequest)
+					return
+				}
+				id, errID := parseInt64Query(r, "id")
+				if errID != nil {
+					http.Error(w, "id es obligatorio", http.StatusBadRequest)
+					return
+				}
+				estado := "activo"
+				if action == "desactivar" {
+					estado = "inactivo"
+				}
+				if err := dbpkg.SetChatCitaEstado(dbEmp, empresaID, id, estado); err != nil {
+					http.Error(w, "No se pudo actualizar estado de la cita", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "estado": estado})
+				return
+			}
+
+			if action == "cancelar" || action == "completar" || action == "reprogramar" {
+				empresaID, errEmp := parseEmpresaIDQuery(r)
+				if errEmp != nil {
+					http.Error(w, errEmp.Error(), http.StatusBadRequest)
+					return
+				}
+				id, errID := parseInt64Query(r, "id")
+				if errID != nil {
+					http.Error(w, "id es obligatorio", http.StatusBadRequest)
+					return
+				}
+
+				estadoCita := "programada"
+				switch action {
+				case "cancelar":
+					estadoCita = "cancelada"
+				case "completar":
+					estadoCita = "completada"
+				case "reprogramar":
+					estadoCita = "programada"
+				}
+
+				if err := dbpkg.SetChatCitaWorkflowEstado(dbEmp, empresaID, id, estadoCita); err != nil {
+					http.Error(w, "No se pudo actualizar estado operativo de la cita", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "estado_cita": estadoCita})
+				return
+			}
+
+			if action == "marcar_recordatorio" || action == "limpiar_recordatorio" {
+				empresaID, errEmp := parseEmpresaIDQuery(r)
+				if errEmp != nil {
+					http.Error(w, errEmp.Error(), http.StatusBadRequest)
+					return
+				}
+				id, errID := parseInt64Query(r, "id")
+				if errID != nil {
+					http.Error(w, "id es obligatorio", http.StatusBadRequest)
+					return
+				}
+
+				sent := action == "marcar_recordatorio"
+				if strings.TrimSpace(r.URL.Query().Get("sent")) != "" {
+					sent = queryBool(r, "sent")
+				}
+
+				if err := dbpkg.SetChatCitaReminderSent(dbEmp, empresaID, id, sent); err != nil {
+					http.Error(w, "No se pudo actualizar estado de recordatorio", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "recordatorio_enviado": sent})
+				return
+			}
+
+			var payload dbpkg.ChatCita
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "JSON invalido", http.StatusBadRequest)
+				return
+			}
+			if payload.ID <= 0 || payload.EmpresaID <= 0 {
+				http.Error(w, "id y empresa_id son obligatorios", http.StatusBadRequest)
+				return
+			}
+			if strings.TrimSpace(payload.Titulo) == "" {
+				http.Error(w, "titulo es obligatorio", http.StatusBadRequest)
+				return
+			}
+			if strings.TrimSpace(payload.FechaInicio) == "" {
+				http.Error(w, "fecha_inicio es obligatoria", http.StatusBadRequest)
+				return
+			}
+			if strings.TrimSpace(payload.FechaFin) == "" {
+				payload.FechaFin = payload.FechaInicio
+			}
+			if payload.NotificarMinutosAntes <= 0 {
+				payload.NotificarMinutosAntes = 30
+			}
+			if strings.TrimSpace(payload.Visibilidad) == "" {
+				payload.Visibilidad = "empresa"
+			}
+
+			if err := dbpkg.UpdateChatCita(dbEmp, payload); err != nil {
+				http.Error(w, "No se pudo actualizar la cita", http.StatusBadRequest)
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
+			return
+
+		case http.MethodDelete:
+			empresaID, errEmp := parseEmpresaIDQuery(r)
+			if errEmp != nil {
+				http.Error(w, errEmp.Error(), http.StatusBadRequest)
+				return
+			}
+			id, errID := parseInt64Query(r, "id")
+			if errID != nil {
+				http.Error(w, "id es obligatorio", http.StatusBadRequest)
+				return
+			}
+			if err := dbpkg.DeleteChatCita(dbEmp, empresaID, id); err != nil {
+				http.Error(w, "No se pudo eliminar la cita", http.StatusInternalServerError)
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
+			return
+		}
+
+		http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
+	}
+}

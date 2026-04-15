@@ -33,7 +33,7 @@ param(
   [string]$ServerPort = "8080",
   [string]$GoogleClientId = "",
   [string]$GoogleClientSecret = "",
-  [string]$GoogleRedirectUrl = "",
+  [string]$GoogleRedirectUrl = "https://powerfulcontrolsystem.com/auth/google/callback",
   [string]$DbDialect = "postgres",
   [string]$DbEmpresasDsn = "",
   [string]$DbSuperadminDsn = "",
@@ -249,6 +249,155 @@ function Is-AuthDeniedMessage {
   return ($Text -match "(?i)Permission denied \(publickey,password\)|Auth fail")
 }
 
+function Write-TaggedExternalOutput {
+  param([AllowEmptyString()][string]$Line)
+
+  if ($null -eq $Line) {
+    return
+  }
+
+  $text = "$Line".TrimEnd()
+  if ([string]::IsNullOrWhiteSpace($text)) {
+    return
+  }
+
+  switch -Regex ($text) {
+    '^BOOTSTRAP_STEP:(.+)$' {
+      Write-Host ("[INFO] Bootstrap: " + $Matches[1])
+      return
+    }
+    '^BOOTSTRAP_OK:(.+)$' {
+      Write-Host ("[OK] Bootstrap: " + $Matches[1])
+      return
+    }
+    '^BOOTSTRAP_WARN:(.+)$' {
+      Write-Warning ("Bootstrap: " + $Matches[1])
+      return
+    }
+    '^BOOTSTRAP_HINT:(.+)$' {
+      Write-Host ("[INFO] Bootstrap sugerencia: " + $Matches[1])
+      return
+    }
+    '^BOOTSTRAP_ERROR:(.+)$' {
+      Write-Host ("[ERROR] Bootstrap: " + $Matches[1]) -ForegroundColor Red
+      return
+    }
+    '^DEPLOY_STEP:(.+)$' {
+      Write-Host ("[INFO] Deploy: " + $Matches[1])
+      return
+    }
+    '^DEPLOY_OK:(.+)$' {
+      Write-Host ("[OK] Deploy: " + $Matches[1])
+      return
+    }
+    '^DEPLOY_WARN:(.+)$' {
+      Write-Warning ("Deploy: " + $Matches[1])
+      return
+    }
+    '^DEPLOY_HINT:(.+)$' {
+      Write-Host ("[INFO] Deploy sugerencia: " + $Matches[1])
+      return
+    }
+    '^DEPLOY_ERROR:(.+)$' {
+      Write-Host ("[ERROR] Deploy: " + $Matches[1]) -ForegroundColor Red
+      return
+    }
+    '^DEPLOY_LOG:(.+)$' {
+      Write-Host ("[INFO] Deploy log: " + $Matches[1])
+      return
+    }
+    default {
+      Write-Host $text
+      return
+    }
+  }
+}
+
+function Get-FriendlyExternalFailureMessage {
+  param(
+    [Parameter(Mandatory=$true)][string]$Label,
+    [Parameter(Mandatory=$true)][int]$ExitCode,
+    [AllowEmptyString()][string]$Text
+  )
+
+  if (Is-NetworkTimeoutMessage -Text $Text) {
+    return ("Timeout de red durante " + $Label + ". Verifica internet, firewall, VPN y acceso al VPS remoto.")
+  }
+
+  if (Is-AuthDeniedMessage -Text $Text) {
+    return ("Autenticación SSH rechazada durante " + $Label + ". Verifica la clave configurada en IdentityFile y que su pública esté instalada en el VPS.")
+  }
+
+  $hints = New-Object System.Collections.Generic.List[string]
+
+  if ($Text -match 'BOOTSTRAP_ERROR:POSTGRES_MISSING_DSN') {
+    $hints.Add("Configura DbEmpresasDsn y DbSuperadminDsn, o deja ambos DSN válidos en backend/.env.local del VPS.")
+  }
+  if ($Text -match 'BOOTSTRAP_ERROR:INVALID_SERVER_PORT') {
+    $hints.Add("Revisa -ServerPort y confirma que sea un puerto numérico entre 1 y 65535.")
+  }
+  if ($Text -match 'BOOTSTRAP_ERROR:PRIVILEGE_REQUIRED') {
+    $hints.Add("Conéctate como root o habilita sudo sin contraseña para el usuario remoto.")
+  }
+  if ($Text -match 'BOOTSTRAP_ERROR:PACKAGE_INSTALL_FAILED') {
+    $hints.Add("Revisa el gestor de paquetes del VPS y ejecuta manualmente la instalación si el repositorio está bloqueado.")
+  }
+  if ($Text -match 'DEPLOY_ERROR:SYSTEMD_UNAVAILABLE') {
+    $hints.Add("El VPS debe ser un Linux con systemd activo para mantener el backend persistente.")
+  }
+  if ($Text -match 'DEPLOY_ERROR:BIN_NOT_FOUND') {
+    $hints.Add("Compila el backend sin -SkipBuild o revisa -RemoteBinaryPath para que apunte al binario correcto.")
+  }
+  if ($Text -match 'DEPLOY_ERROR:PRIVILEGE_REQUIRED') {
+    $hints.Add("La instalación y reinicio del servicio requieren root o sudo sin contraseña.")
+  }
+  if ($Text -match 'DEPLOY_ERROR:(SERVICE_RESTART_FAILED|SERVICE_NOT_RUNNING)') {
+    $hints.Add("Revisa backend/.env.local, DB_*_DSN, CONFIG_ENC_KEY y los logs impresos del servicio remoto.")
+  }
+  if ($Text -match 'DEPLOY_WARN:HEALTHCHECK_TIMEOUT') {
+    $hints.Add("El proceso quedó activo, pero el healthcheck no respondió a tiempo. Verifica SERVER_PORT y que GET / responda localmente en el VPS.")
+  }
+
+  $hintText = ""
+  if ($hints.Count -gt 0) {
+    $hintText = " " + (($hints | Select-Object -Unique) -join " ")
+  }
+
+  return ("Falló " + $Label + " (código " + $ExitCode + ")." + $hintText)
+}
+
+function Test-TcpPortReachable {
+  param(
+    [Parameter(Mandatory=$true)][string]$TargetHost,
+    [Parameter(Mandatory=$true)][int]$Port,
+    [int]$TimeoutMs = 8000
+  )
+
+  if ($TimeoutMs -lt 1000) {
+    $TimeoutMs = 1000
+  }
+
+  $client = $null
+  try {
+    $client = New-Object System.Net.Sockets.TcpClient
+    $async = $client.BeginConnect($TargetHost, $Port, $null, $null)
+    $connected = $async.AsyncWaitHandle.WaitOne($TimeoutMs, $false)
+    if (-not $connected) {
+      return $false
+    }
+    $client.EndConnect($async) | Out-Null
+    return $true
+  }
+  catch {
+    return $false
+  }
+  finally {
+    if ($client) {
+      try { $client.Close() } catch {}
+    }
+  }
+}
+
 function Get-RemoteBootstrapCommand {
   param(
     [Parameter(Mandatory=$true)][string]$RemotePath,
@@ -270,81 +419,212 @@ function Get-RemoteBootstrapCommand {
   $dbEmpresasDsnLit = Convert-ToBashLiteral $DbEmpresasDsn
   $dbSuperadminDsnLit = Convert-ToBashLiteral $DbSuperadminDsn
   $safePort = if ([string]::IsNullOrWhiteSpace($ServerPort)) { "8080" } else { $ServerPort }
+  $serverPortLit = Convert-ToBashLiteral $safePort
 
   $template = @'
 set -e;
-if command -v apt-get >/dev/null 2>&1; then
-  export DEBIAN_FRONTEND=noninteractive;
-  apt-get update -y >/dev/null 2>&1 || true;
-  apt-get install -y ca-certificates curl >/dev/null 2>&1 || true;
-fi;
+log(){ echo "BOOTSTRAP_STEP:$1"; };
+warn(){ echo "BOOTSTRAP_WARN:$1"; };
+ok(){ echo "BOOTSTRAP_OK:$1"; };
+hint(){ echo "BOOTSTRAP_HINT:$1"; };
+fail(){ echo "BOOTSTRAP_ERROR:$1"; exit 1; };
+can_run_root(){
+  if [ "$(id -u)" -eq 0 ]; then
+    return 0;
+  fi;
+  if command -v sudo >/dev/null 2>&1 && sudo -n true >/dev/null 2>&1; then
+    return 0;
+  fi;
+  return 1;
+};
+run_root(){
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@";
+    return $?;
+  fi;
+  sudo -n "$@";
+};
 backend_dir=__BACKEND_DIR__;
 env_file="$backend_dir/.env.local";
-mkdir -p "$backend_dir";
+server_port=__SERVER_PORT__;
+case "$server_port" in
+  ''|*[!0-9]*) fail "INVALID_SERVER_PORT SERVER_PORT debe ser numerico. Valor recibido: $server_port" ;;
+esac;
+if [ "$server_port" -lt 1 ] || [ "$server_port" -gt 65535 ]; then
+  fail "INVALID_SERVER_PORT SERVER_PORT fuera de rango (1-65535). Valor recibido: $server_port";
+fi;
+log "preparando directorio remoto y archivo de entorno";
+mkdir -p "$backend_dir" "$backend_dir/bin" "$backend_dir/tmp";
 touch "$env_file";
 chmod 600 "$env_file" || true;
-if ! grep -q '^SERVER_PORT=' "$env_file" 2>/dev/null; then echo SERVER_PORT=__SERVER_PORT__ >> "$env_file"; fi;
+ok "ENV_FILE listo en $env_file";
+log "detectando sistema y dependencias del VPS";
+os_name="$(uname -s 2>/dev/null || echo desconocido)";
+os_release="$(uname -r 2>/dev/null || echo desconocido)";
+os_arch="$(uname -m 2>/dev/null || echo desconocido)";
+ok "SYSTEM_INFO host=$os_name arch=$os_arch kernel=$os_release";
+if command -v apt-get >/dev/null 2>&1; then
+  ok "PKG_MANAGER detectado apt-get";
+  if can_run_root; then
+    export DEBIAN_FRONTEND=noninteractive;
+    run_root apt-get update -y >/dev/null 2>&1 || warn "APT_UPDATE apt-get update reporto incidencias; se intentara instalar de todos modos";
+    if run_root apt-get install -y ca-certificates curl wget procps lsof >/dev/null 2>&1; then
+      ok "PKG_INSTALL paquetes base instalados con apt-get: ca-certificates curl wget procps lsof";
+    else
+      fail "PACKAGE_INSTALL_FAILED fallo apt-get install de paquetes base";
+    fi;
+  else
+    warn "PRIVILEGE_REQUIRED sin root ni sudo -n; se omite instalacion automatica de paquetes";
+    hint "Conectate como root o habilita sudo sin contraseña si quieres que el script prepare dependencias del VPS";
+  fi;
+elif command -v dnf >/dev/null 2>&1; then
+  ok "PKG_MANAGER detectado dnf";
+  if can_run_root; then
+    if run_root dnf install -y ca-certificates curl wget procps-ng lsof >/dev/null 2>&1; then
+      ok "PKG_INSTALL paquetes base instalados con dnf: ca-certificates curl wget procps-ng lsof";
+    else
+      fail "PACKAGE_INSTALL_FAILED fallo dnf install de paquetes base";
+    fi;
+  else
+    warn "PRIVILEGE_REQUIRED sin root ni sudo -n; se omite instalacion automatica de paquetes";
+  fi;
+elif command -v yum >/dev/null 2>&1; then
+  ok "PKG_MANAGER detectado yum";
+  if can_run_root; then
+    if run_root yum install -y ca-certificates curl wget procps-ng lsof >/dev/null 2>&1; then
+      ok "PKG_INSTALL paquetes base instalados con yum: ca-certificates curl wget procps-ng lsof";
+    else
+      fail "PACKAGE_INSTALL_FAILED fallo yum install de paquetes base";
+    fi;
+  else
+    warn "PRIVILEGE_REQUIRED sin root ni sudo -n; se omite instalacion automatica de paquetes";
+  fi;
+elif command -v apk >/dev/null 2>&1; then
+  ok "PKG_MANAGER detectado apk";
+  if can_run_root; then
+    if run_root apk add --no-cache ca-certificates curl wget procps lsof >/dev/null 2>&1; then
+      ok "PKG_INSTALL paquetes base instalados con apk: ca-certificates curl wget procps lsof";
+    else
+      fail "PACKAGE_INSTALL_FAILED fallo apk add de paquetes base";
+    fi;
+  else
+    warn "PRIVILEGE_REQUIRED sin root ni sudo -n; se omite instalacion automatica de paquetes";
+  fi;
+elif command -v zypper >/dev/null 2>&1; then
+  ok "PKG_MANAGER detectado zypper";
+  if can_run_root; then
+    if run_root zypper --non-interactive install ca-certificates curl wget procps lsof >/dev/null 2>&1; then
+      ok "PKG_INSTALL paquetes base instalados con zypper: ca-certificates curl wget procps lsof";
+    else
+      fail "PACKAGE_INSTALL_FAILED fallo zypper install de paquetes base";
+    fi;
+  else
+    warn "PRIVILEGE_REQUIRED sin root ni sudo -n; se omite instalacion automatica de paquetes";
+  fi;
+else
+  warn "PKG_MANAGER_UNKNOWN no se detecto apt-get, dnf, yum, apk ni zypper";
+  hint "Verifica manualmente que el VPS tenga ca-certificates, curl o wget, lsof y utilidades base antes del reinicio";
+fi;
+if command -v systemctl >/dev/null 2>&1; then
+  ok "SYSTEMD_OK systemctl disponible";
+else
+  warn "SYSTEMD_MISSING systemctl no esta disponible; el backend persistente requiere systemd activo";
+  hint "Usa una VM Linux con systemd o ajusta manualmente el metodo de arranque del VPS";
+fi;
 gid=__GOOGLE_ID__;
 gsec=__GOOGLE_SECRET__;
 grurl=__GOOGLE_REDIRECT_URL__;
 dbdialect=__DB_DIALECT__;
 dbemp=__DB_EMPRESAS_DSN__;
 dbsuper=__DB_SUPERADMIN_DSN__;
-current_dbdialect="$(grep -E '^DB_DIALECT=' "$env_file" | tail -n1 | cut -d= -f2- || true)";
-current_dbemp="$(grep -E '^DB_EMPRESAS_DSN=' "$env_file" | tail -n1 | cut -d= -f2- || true)";
-current_dbsuper="$(grep -E '^DB_SUPERADMIN_DSN=' "$env_file" | tail -n1 | cut -d= -f2- || true)";
+get_env_value(){ grep -E "^$1=" "$env_file" | tail -n1 | cut -d= -f2- || true; };
+upsert_env(){
+  key="$1";
+  value="$2";
+  grep -v "^$key=" "$env_file" > "$env_file.tmp" 2>/dev/null || true;
+  mv "$env_file.tmp" "$env_file" 2>/dev/null || true;
+  printf '%s=%s\n' "$key" "$value" >> "$env_file";
+};
+current_dbdialect="$(get_env_value DB_DIALECT)";
+current_dbemp="$(get_env_value DB_EMPRESAS_DSN)";
+current_dbsuper="$(get_env_value DB_SUPERADMIN_DSN)";
+current_gid="$(get_env_value GOOGLE_CLIENT_ID)";
+current_gsec="$(get_env_value GOOGLE_CLIENT_SECRET)";
+current_grurl="$(get_env_value GOOGLE_REDIRECT_URL)";
 effective_dbdialect="$dbdialect";
 effective_dbemp="$dbemp";
 effective_dbsuper="$dbsuper";
+effective_gid="$gid";
+effective_gsec="$gsec";
+effective_grurl="$grurl";
 if [ -z "$effective_dbdialect" ]; then effective_dbdialect="$current_dbdialect"; fi;
 if [ -z "$effective_dbemp" ]; then effective_dbemp="$current_dbemp"; fi;
 if [ -z "$effective_dbsuper" ]; then effective_dbsuper="$current_dbsuper"; fi;
+if [ -z "$effective_gid" ]; then effective_gid="$current_gid"; fi;
+if [ -z "$effective_gsec" ]; then effective_gsec="$current_gsec"; fi;
+if [ -z "$effective_grurl" ]; then effective_grurl="$current_grurl"; fi;
 if [ -z "$effective_dbdialect" ] && { [ -n "$effective_dbemp" ] || [ -n "$effective_dbsuper" ]; }; then
   effective_dbdialect=postgres;
 fi;
 if [ "$effective_dbdialect" = "postgres" ] && { [ -z "$effective_dbemp" ] || [ -z "$effective_dbsuper" ]; }; then
-  echo "BOOTSTRAP_ERROR:POSTGRES_MISSING_DSN";
-  echo "BOOTSTRAP_HINT:Define DB_EMPRESAS_DSN and DB_SUPERADMIN_DSN";
+  echo "BOOTSTRAP_ERROR:POSTGRES_MISSING_DSN faltan DB_EMPRESAS_DSN y/o DB_SUPERADMIN_DSN para modo postgres";
+  echo "BOOTSTRAP_HINT:Define DbEmpresasDsn y DbSuperadminDsn, o deja ambos DSN validos en backend/.env.local del VPS";
   exit 1;
 fi;
-for key in DB_DIALECT DB_EMPRESAS_DSN DB_SUPERADMIN_DSN; do
-  grep -v "^$key=" "$env_file" > "$env_file.tmp" 2>/dev/null || true;
-  mv "$env_file.tmp" "$env_file" 2>/dev/null || true;
-done;
-if [ -n "$effective_dbdialect" ]; then echo "DB_DIALECT=$effective_dbdialect" >> "$env_file"; fi;
-if [ -n "$effective_dbemp" ]; then echo "DB_EMPRESAS_DSN=$effective_dbemp" >> "$env_file"; fi;
-if [ -n "$effective_dbsuper" ]; then echo "DB_SUPERADMIN_DSN=$effective_dbsuper" >> "$env_file"; fi;
-if [ -n "$gid" ]; then
-  grep -v '^GOOGLE_CLIENT_ID=' "$env_file" > "$env_file.tmp" 2>/dev/null || true;
-  mv "$env_file.tmp" "$env_file" 2>/dev/null || true;
-  echo "GOOGLE_CLIENT_ID=$gid" >> "$env_file";
+log "sincronizando backend/.env.local remoto";
+upsert_env SERVER_PORT "$server_port";
+ok "SERVER_PORT actualizado a $server_port";
+if [ -n "$effective_dbdialect" ]; then
+  upsert_env DB_DIALECT "$effective_dbdialect";
 fi;
-if [ -n "$gsec" ]; then
-  grep -v '^GOOGLE_CLIENT_SECRET=' "$env_file" > "$env_file.tmp" 2>/dev/null || true;
-  mv "$env_file.tmp" "$env_file" 2>/dev/null || true;
-  echo "GOOGLE_CLIENT_SECRET=$gsec" >> "$env_file";
+if [ -n "$effective_dbemp" ]; then
+  upsert_env DB_EMPRESAS_DSN "$effective_dbemp";
 fi;
-if [ -n "$grurl" ]; then
-  grep -v '^GOOGLE_REDIRECT_URL=' "$env_file" > "$env_file.tmp" 2>/dev/null || true;
-  mv "$env_file.tmp" "$env_file" 2>/dev/null || true;
-  echo "GOOGLE_REDIRECT_URL=$grurl" >> "$env_file";
+if [ -n "$effective_dbsuper" ]; then
+  upsert_env DB_SUPERADMIN_DSN "$effective_dbsuper";
 fi;
+if [ -n "$effective_gid" ]; then upsert_env GOOGLE_CLIENT_ID "$effective_gid"; fi;
+if [ -n "$effective_gsec" ]; then upsert_env GOOGLE_CLIENT_SECRET "$effective_gsec"; fi;
+if [ -n "$effective_grurl" ]; then upsert_env GOOGLE_REDIRECT_URL "$effective_grurl"; fi;
 for k in DB_DIALECT DB_SUPERADMIN_DSN DB_EMPRESAS_DSN GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET GOOGLE_REDIRECT_URL SERVER_PORT CONFIG_ENC_KEY; do
   line="$(grep -E "^$k=" "$env_file" | tail -n1 || true)";
   if [ -z "$line" ]; then
-    echo "BOOTSTRAP_WARN:$k=MISSING";
+    case "$k" in
+      GOOGLE_CLIENT_ID|GOOGLE_CLIENT_SECRET|GOOGLE_REDIRECT_URL)
+        echo "BOOTSTRAP_WARN:$k ausente (solo requerido para login Google)";
+        ;;
+      CONFIG_ENC_KEY)
+        echo "BOOTSTRAP_WARN:CONFIG_ENC_KEY ausente (requerida para cifrado de secretos)";
+        echo "BOOTSTRAP_HINT:Define CONFIG_ENC_KEY en backend/.env.local antes de guardar credenciales sensibles";
+        ;;
+      *)
+        echo "BOOTSTRAP_WARN:$k ausente en backend/.env.local";
+        ;;
+    esac;
   else
     val="${line#*=}";
     if [ -z "$val" ]; then
-      echo "BOOTSTRAP_WARN:$k=EMPTY";
+      case "$k" in
+        GOOGLE_CLIENT_ID|GOOGLE_CLIENT_SECRET|GOOGLE_REDIRECT_URL)
+          echo "BOOTSTRAP_WARN:$k vacio (solo requerido para login Google)";
+          ;;
+        CONFIG_ENC_KEY)
+          echo "BOOTSTRAP_WARN:CONFIG_ENC_KEY vacia (requerida para cifrado de secretos)";
+          echo "BOOTSTRAP_HINT:Define CONFIG_ENC_KEY en backend/.env.local antes de guardar credenciales sensibles";
+          ;;
+        *)
+          echo "BOOTSTRAP_WARN:$k vacio en backend/.env.local";
+          ;;
+      esac;
     else
-      echo "BOOTSTRAP_OK:$k=SET";
+      echo "BOOTSTRAP_OK:$k configurado";
     fi;
   fi;
-done
+done;
+ok "BOOTSTRAP_COMPLETE entorno remoto preparado para el redeploy"
 '@
 
-  $cmd = $template.Replace("__BACKEND_DIR__", $backendDirLit).Replace("__SERVER_PORT__", $safePort).Replace("__GOOGLE_ID__", $googleIdLit).Replace("__GOOGLE_SECRET__", $googleSecretLit).Replace("__GOOGLE_REDIRECT_URL__", $googleRedirectLit).Replace("__DB_DIALECT__", $dbDialectLit).Replace("__DB_EMPRESAS_DSN__", $dbEmpresasDsnLit).Replace("__DB_SUPERADMIN_DSN__", $dbSuperadminDsnLit)
+  $cmd = $template.Replace("__BACKEND_DIR__", $backendDirLit).Replace("__SERVER_PORT__", $serverPortLit).Replace("__GOOGLE_ID__", $googleIdLit).Replace("__GOOGLE_SECRET__", $googleSecretLit).Replace("__GOOGLE_REDIRECT_URL__", $googleRedirectLit).Replace("__DB_DIALECT__", $dbDialectLit).Replace("__DB_EMPRESAS_DSN__", $dbEmpresasDsnLit).Replace("__DB_SUPERADMIN_DSN__", $dbSuperadminDsnLit)
   $cmd = $cmd -replace "`r", "" -replace "`n", " "
   return $cmd
 }
@@ -364,59 +644,193 @@ function Get-RemoteRestartCommand {
   $stdoutRelLit = Convert-ToBashLiteral (($StdoutLogRelativePath -replace "\\", "/").TrimStart('/'))
   $stderrRelLit = Convert-ToBashLiteral (($StderrLogRelativePath -replace "\\", "/").TrimStart('/'))
   $safePort = if ([string]::IsNullOrWhiteSpace($ServerPort)) { "8080" } else { $ServerPort }
+  $portLit = Convert-ToBashLiteral $safePort
   $safeTimeout = if ($HealthTimeoutSeconds -lt 5) { 5 } elseif ($HealthTimeoutSeconds -gt 300) { 300 } else { $HealthTimeoutSeconds }
 
   $template = @'
 set -e;
+log(){ echo "DEPLOY_STEP:$1"; };
+warn(){ echo "DEPLOY_WARN:$1"; };
+hint(){ echo "DEPLOY_HINT:$1"; };
+fail(){ echo "DEPLOY_ERROR:$1"; exit 1; };
+can_run_root(){
+  if [ "$(id -u)" -eq 0 ]; then
+    return 0;
+  fi;
+  if command -v sudo >/dev/null 2>&1 && sudo -n true >/dev/null 2>&1; then
+    return 0;
+  fi;
+  return 1;
+};
+run_root(){
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@";
+    return $?;
+  fi;
+  sudo -n "$@";
+};
 repo_dir=__REPO_DIR__;
+backend_dir=$repo_dir/backend;
 bin_rel=__BIN_REL__;
-stdout_rel=__STDOUT_REL__;
-stderr_rel=__STDERR_REL__;
 port=__PORT__;
 health_timeout=__HEALTH_TIMEOUT__;
 bin_path=$repo_dir/$bin_rel;
-bin_name=$(basename $bin_rel);
+stdout_rel=__STDOUT_REL__;
+stderr_rel=__STDERR_REL__;
 stdout_log=$repo_dir/$stdout_rel;
 stderr_log=$repo_dir/$stderr_rel;
+env_file=$backend_dir/.env.local;
 pid_file=$repo_dir/backend/server.pid;
-mkdir -p $(dirname $stdout_log) $(dirname $stderr_log);
-if [ ! -f $bin_path ]; then
-  echo DEPLOY_ERROR:bin_not_found path=$bin_path;
+service_base=$(basename "$repo_dir");
+service_name=$(printf '%s' "$service_base" | tr -c 'A-Za-z0-9_.@-' '_');
+service_unit=$service_name.service;
+service_file=/etc/systemd/system/$service_unit;
+dump_diagnostics(){
+  echo "DEPLOY_LOG:systemctl status $service_unit";
+  run_root systemctl status "$service_unit" --no-pager -l || true;
+  if command -v journalctl >/dev/null 2>&1; then
+    echo "DEPLOY_LOG:journalctl -u $service_unit -n 80";
+    run_root journalctl -u "$service_unit" -n 80 --no-pager || true;
+  fi;
+  if command -v ss >/dev/null 2>&1; then
+    echo "DEPLOY_LOG:ss -ltnp (*:$port)";
+    run_root ss -ltnp 2>/dev/null | awk -v port="$port" '$4 ~ ":" port "$" { print; }' || true;
+  fi;
+  if [ -f "$stderr_log" ]; then
+    echo "DEPLOY_LOG:tail -n 80 $stderr_log";
+    tail -n 80 "$stderr_log" || true;
+  fi;
+  if [ -f "$stdout_log" ]; then
+    echo "DEPLOY_LOG:tail -n 40 $stdout_log";
+    tail -n 40 "$stdout_log" || true;
+  fi;
+};
+pids_listening_on_port(){
+  if command -v ss >/dev/null 2>&1; then
+    run_root ss -ltnp 2>/dev/null | awk -v port="$port" '
+      $4 ~ ":" port "$" {
+        line = $0;
+        while (match(line, /pid=[0-9]+/)) {
+          pid = substr(line, RSTART + 4, RLENGTH - 4);
+          print pid;
+          line = substr(line, RSTART + RLENGTH);
+        }
+      }
+    ' | sort -u;
+    return 0;
+  fi;
+  if command -v lsof >/dev/null 2>&1; then
+    run_root lsof -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null | sort -u;
+    return 0;
+  fi;
+  return 1;
+};
+skip_cleanup_pid(){
+  pid="$1";
+  case "$pid" in
+    ''|*[!0-9]*|0|1)
+      return 0;
+      ;;
+  esac;
+  if [ "$pid" = "$$" ] || [ "$pid" = "$PPID" ]; then
+    return 0;
+  fi;
+  return 1;
+};
+cleanup_port_conflicts(){
+  run_root systemctl stop "$service_unit" >/dev/null 2>&1 || true;
+  stray_pids=$(pids_listening_on_port || true);
+  if [ -z "$stray_pids" ]; then
+    return 0;
+  fi;
+  echo "DEPLOY_WARN:PORT_IN_USE se detectaron procesos fuera de systemd ocupando el puerto $port; se intentara liberarlo";
+  for pid in $stray_pids; do
+    if skip_cleanup_pid "$pid"; then
+      continue;
+    fi;
+    exe_path=$(readlink -f "/proc/$pid/exe" 2>/dev/null || true);
+    cmdline=$(tr '\0' ' ' <"/proc/$pid/cmdline" 2>/dev/null | sed 's/[[:space:]]*$//');
+    echo "DEPLOY_WARN:PORT_PID pid=$pid exe=${exe_path:-unknown} cmd=${cmdline:-unknown}";
+    run_root kill "$pid" >/dev/null 2>&1 || true;
+  done;
+  sleep 2;
+  stray_pids=$(pids_listening_on_port || true);
+  if [ -n "$stray_pids" ]; then
+    for pid in $stray_pids; do
+      if skip_cleanup_pid "$pid"; then
+        continue;
+      fi;
+      echo "DEPLOY_WARN:PORT_PID_FORCE pid=$pid";
+      run_root kill -9 "$pid" >/dev/null 2>&1 || true;
+    done;
+    sleep 1;
+  fi;
+  stray_pids=$(pids_listening_on_port || true);
+  if [ -n "$stray_pids" ]; then
+    echo "DEPLOY_ERROR:PORT_STILL_BUSY no se pudo liberar el puerto $port (pids=$(printf '%s' "$stray_pids" | tr '\n' ' ' | sed 's/[[:space:]]*$//'))";
+    echo "DEPLOY_HINT:Deten manualmente los procesos que aun escuchan en el puerto o cambia SERVER_PORT antes de reintentar";
+    dump_diagnostics;
+    exit 1;
+  fi;
+};
+log "preparando servicio systemd persistente";
+if ! can_run_root; then
+  fail "PRIVILEGE_REQUIRED se requiere root o sudo -n para instalar o reiniciar la unidad systemd";
+fi;
+if ! command -v systemctl >/dev/null 2>&1; then
+  fail "SYSTEMD_UNAVAILABLE systemctl no esta disponible en el VPS";
+fi;
+if [ ! -f "$bin_path" ]; then
+  fail "BIN_NOT_FOUND binario remoto no encontrado en $bin_path";
+fi;
+run_root mkdir -p "$(dirname "$stdout_log")" "$(dirname "$stderr_log")";
+run_root touch "$stdout_log" "$stderr_log";
+chmod +x "$bin_path" || true;
+rm -f $pid_file 2>/dev/null || true;
+tmp_service=$(mktemp "${TMPDIR:-/tmp}/pcs_sync_service.XXXXXX");
+cat > "$tmp_service" <<EOF
+[Unit]
+Description=Powerful Control System backend ($service_name)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=$backend_dir
+EnvironmentFile=-$env_file
+ExecStart=$bin_path
+Restart=always
+RestartSec=5
+StartLimitIntervalSec=0
+KillSignal=SIGTERM
+TimeoutStopSec=30
+StandardOutput=append:$stdout_log
+StandardError=append:$stderr_log
+
+[Install]
+WantedBy=multi-user.target
+EOF
+run_root cp "$tmp_service" "$service_file";
+rm -f "$tmp_service";
+echo "DEPLOY_STEP:unidad systemd actualizada en $service_file";
+run_root systemctl daemon-reload;
+run_root systemctl enable "$service_unit" >/dev/null 2>&1;
+run_root systemctl reset-failed "$service_unit" >/dev/null 2>&1 || true;
+cleanup_port_conflicts;
+log "reiniciando $service_unit y validando arranque";
+if ! run_root systemctl start "$service_unit"; then
+  echo "DEPLOY_ERROR:SERVICE_RESTART_FAILED no fue posible reiniciar $service_unit en el puerto $port";
+  echo "DEPLOY_HINT:Revisa backend/.env.local, los DSN PostgreSQL, CONFIG_ENC_KEY y el binario remoto antes de reintentar";
+  dump_diagnostics;
   exit 1;
 fi;
-chmod +x $bin_path || true;
-old_pid=0;
-if [ -f $pid_file ]; then
-  old_pid=$(cat $pid_file 2>/dev/null || echo 0);
-fi;
-if [ ${old_pid:-0} -gt 0 ] 2>/dev/null && kill -0 $old_pid 2>/dev/null; then
-  kill $old_pid 2>/dev/null || true;
-  for i in $(seq 1 15); do
-    kill -0 $old_pid 2>/dev/null || break;
-    sleep 1;
-  done;
-  if kill -0 $old_pid 2>/dev/null; then
-    kill -9 $old_pid 2>/dev/null || true;
-  fi;
-fi;
-for pid in $(pgrep -f $bin_name 2>/dev/null || true); do
-  if [ ${pid:-0} -le 0 ] 2>/dev/null; then continue; fi;
-  if [ $pid -eq $$ ] 2>/dev/null || [ $pid -eq $PPID ] 2>/dev/null; then continue; fi;
-  kill $pid 2>/dev/null || true;
-done;
-sleep 1;
-for pid in $(pgrep -f $bin_name 2>/dev/null || true); do
-  if [ ${pid:-0} -le 0 ] 2>/dev/null; then continue; fi;
-  if [ $pid -eq $$ ] 2>/dev/null || [ $pid -eq $PPID ] 2>/dev/null; then continue; fi;
-  kill -9 $pid 2>/dev/null || true;
-done;
-nohup $bin_path >> $stdout_log 2>> $stderr_log < /dev/null &
-new_pid=$!;
-echo $new_pid > $pid_file;
 healthy=0;
 for i in $(seq 1 $health_timeout); do
-  if ! kill -0 $new_pid 2>/dev/null; then
-    echo DEPLOY_ERROR:process_not_running pid=$new_pid port=$port;
+  if ! run_root systemctl is-active --quiet "$service_unit"; then
+    echo "DEPLOY_ERROR:SERVICE_NOT_RUNNING el servicio $service_unit se detuvo durante el healthcheck";
+    echo "DEPLOY_HINT:Revisa backend/.env.local, el puerto SERVER_PORT=$port y los logs mostrados abajo";
+    dump_diagnostics;
     exit 1;
   fi;
   if command -v curl >/dev/null 2>&1; then
@@ -431,22 +845,23 @@ for i in $(seq 1 $health_timeout); do
       break;
     fi;
   else
-    if kill -0 $new_pid 2>/dev/null; then
-      healthy=1;
-      break;
-    fi;
+    healthy=1;
+    break;
   fi;
   sleep 1;
 done;
+main_pid=$(run_root systemctl show -p MainPID --value "$service_unit" 2>/dev/null || echo 0);
+enabled_state=$(run_root systemctl is-enabled "$service_unit" 2>/dev/null || true);
 if [ $healthy -eq 1 ]; then
-  echo DEPLOY_OK:pid=$new_pid port=$port;
+  echo "DEPLOY_OK:SERVICE_READY servicio $service_unit activo (pid=$main_pid, puerto=$port, enabled=$enabled_state)";
 else
-  echo DEPLOY_WARN:healthcheck_timeout pid=$new_pid port=$port;
+  echo "DEPLOY_WARN:HEALTHCHECK_TIMEOUT el servicio $service_unit quedo activo (pid=$main_pid, enabled=$enabled_state) pero no respondio al healthcheck en $health_timeout s";
+  echo "DEPLOY_HINT:Verifica que SERVER_PORT=$port coincida con backend/.env.local y que GET / responda localmente en el VPS";
 fi;
 '@
 
-  $cmd = $template.Replace("__REPO_DIR__", $repoDirLit).Replace("__BIN_REL__", $binaryRelLit).Replace("__STDOUT_REL__", $stdoutRelLit).Replace("__STDERR_REL__", $stderrRelLit).Replace("__PORT__", $safePort).Replace("__HEALTH_TIMEOUT__", "$safeTimeout")
-  $cmd = $cmd -replace "`r", "" -replace "`n", " "
+  $cmd = $template.Replace("__REPO_DIR__", $repoDirLit).Replace("__BIN_REL__", $binaryRelLit).Replace("__STDOUT_REL__", $stdoutRelLit).Replace("__STDERR_REL__", $stderrRelLit).Replace("__PORT__", $portLit).Replace("__HEALTH_TIMEOUT__", "$safeTimeout")
+  $cmd = $cmd -replace "`r", ""
   return $cmd
 }
 
@@ -468,7 +883,7 @@ function Invoke-ExternalWithRetry {
     $output = & $CommandPath @Arguments 2>&1
     $exitCode = $LASTEXITCODE
     if ($output) {
-      $output | ForEach-Object { Write-Host $_ }
+      $output | ForEach-Object { Write-TaggedExternalOutput -Line "$_" }
     }
 
     if ($exitCode -eq 0) {
@@ -484,15 +899,7 @@ function Invoke-ExternalWithRetry {
       continue
     }
 
-    if ($isTimeout) {
-      throw ("Timeout de red durante " + $Label + ". Verifica internet, firewall, VPN y acceso al VPS remoto.")
-    }
-
-    if (Is-AuthDeniedMessage -Text $text) {
-      throw "Autenticación SSH rechazada durante $Label. Verifica la clave configurada en IdentityFile y que su pública esté instalada en el VPS."
-    }
-
-    throw ("Falló " + $Label + " (código " + $exitCode + ").")
+    throw (Get-FriendlyExternalFailureMessage -Label $Label -ExitCode $exitCode -Text $text)
   }
 }
 
@@ -557,6 +964,78 @@ function Get-DotEnvValue {
   }
 
   return $parts[1].Trim()
+}
+
+function Parse-BoolLike {
+  param([AllowEmptyString()][string]$Value)
+
+  if ($null -eq $Value) {
+    $Value = ""
+  }
+  $v = $Value.Trim().ToLowerInvariant()
+  return ($v -in @("1", "true", "yes", "on", "si", "sí"))
+}
+
+function Parse-IntOrDefault {
+  param(
+    [AllowEmptyString()][string]$Value,
+    [int]$DefaultValue
+  )
+
+  if ($null -eq $Value) {
+    $Value = ""
+  }
+  $n = 0
+  if ([int]::TryParse($Value.Trim(), [ref]$n)) {
+    return $n
+  }
+  return $DefaultValue
+}
+
+function Normalize-PostgresDsnForVps {
+  param(
+    [AllowEmptyString()][string]$Dsn,
+    [int]$TunnelLocalPort = 15432,
+    [int]$RemoteDbPort = 5432
+  )
+
+  if ($null -eq $Dsn) {
+    $Dsn = ""
+  }
+  $trimmed = $Dsn.Trim()
+  if ([string]::IsNullOrWhiteSpace($trimmed)) {
+    return $trimmed
+  }
+
+  $lower = $trimmed.ToLowerInvariant()
+  if (-not ($lower.StartsWith("postgres://") -or $lower.StartsWith("postgresql://"))) {
+    return $trimmed
+  }
+
+  try {
+    $uri = [System.Uri]$trimmed
+  }
+  catch {
+    return $trimmed
+  }
+
+  $parsedHost = $uri.Host
+  if ($null -eq $parsedHost) {
+    $parsedHost = ""
+  }
+  $parsedHost = $parsedHost.Trim().ToLowerInvariant()
+  $isLoopback = ($parsedHost -eq "127.0.0.1" -or $parsedHost -eq "localhost" -or $parsedHost -eq "::1")
+  if (-not $isLoopback) {
+    return $trimmed
+  }
+
+  if ($uri.Port -ne $TunnelLocalPort -or $RemoteDbPort -le 0) {
+    return $trimmed
+  }
+
+  $builder = [System.UriBuilder]::new($uri)
+  $builder.Port = $RemoteDbPort
+  return $builder.Uri.AbsoluteUri
 }
 
 function Invoke-LocalLinuxBuild {
@@ -668,6 +1147,24 @@ function Get-SyncExcludePatterns {
   return $patterns
 }
 
+function New-TempRemoteCommandFile {
+  param(
+    [Parameter(Mandatory=$true)][string]$Prefix,
+    [Parameter(Mandatory=$true)][AllowEmptyString()][string]$Content
+  )
+
+  $tmpDir = Join-Path $env:TEMP "pcs_sync_remote_cmds"
+  if (-not (Test-Path $tmpDir)) {
+    New-Item -ItemType Directory -Path $tmpDir -Force | Out-Null
+  }
+
+  $fileName = "{0}_{1}_{2}.sh" -f $Prefix, (Get-Date -Format "yyyyMMdd_HHmmss"), ([System.Guid]::NewGuid().ToString("N").Substring(0, 8))
+  $filePath = Join-Path $tmpDir $fileName
+  $encoding = [System.Text.UTF8Encoding]::new($false)
+  [System.IO.File]::WriteAllText($filePath, $Content, $encoding)
+  return $filePath
+}
+
 function Invoke-PuttySync {
   param(
     [Parameter(Mandatory=$true)][string]$LocalResolvedPath,
@@ -701,11 +1198,8 @@ function Invoke-PuttySync {
     throw "No se encontró la clave de identidad para fallback sin WSL: $IdentityPath"
   }
 
-  if (Get-Command Test-NetConnection -ErrorAction SilentlyContinue) {
-    $tnc = Test-NetConnection $RemoteHost -Port $Port -WarningAction SilentlyContinue
-    if (-not $tnc.TcpTestSucceeded) {
-      throw "No hay conectividad TCP con ${RemoteHost}:$Port desde este equipo."
-    }
+  if (-not (Test-TcpPortReachable -TargetHost $RemoteHost -Port $Port -TimeoutMs 8000)) {
+    throw "No hay conectividad TCP con ${RemoteHost}:$Port desde este equipo. Verifica red, firewall y acceso SSH al VPS."
   }
 
   $remoteTarget = "$RemoteUser@$RemoteHost"
@@ -746,6 +1240,7 @@ function Invoke-PuttySync {
   $bootstrapArgs = @()
   $restartCmd = ""
   $restartArgs = @()
+  $tempCommandFiles = @()
 
   if ($isPpkIdentity) {
     $tools = Ensure-PuttyTools -AutoInstall $AutoInstallDeps
@@ -797,7 +1292,9 @@ function Invoke-PuttySync {
   if ($RunBootstrap) {
     $bootstrapCmd = Get-RemoteBootstrapCommand -RemotePath $RemotePath -ServerPort $BootstrapServerPort -GoogleClientId $BootstrapGoogleClientId -GoogleClientSecret $BootstrapGoogleClientSecret -GoogleRedirectUrl $BootstrapGoogleRedirectUrl -DbDialect $BootstrapDbDialect -DbEmpresasDsn $BootstrapDbEmpresasDsn -DbSuperadminDsn $BootstrapDbSuperadminDsn
     if ($isPpkIdentity) {
-      $bootstrapArgs = @('-batch', '-P', "$Port", '-i', $identityResolved, $remoteTarget, $bootstrapCmd)
+      $bootstrapScriptPath = New-TempRemoteCommandFile -Prefix "bootstrap_remote" -Content $bootstrapCmd
+      $tempCommandFiles += $bootstrapScriptPath
+      $bootstrapArgs = @('-batch', '-P', "$Port", '-i', $identityResolved, '-m', $bootstrapScriptPath, $remoteTarget)
     } else {
       $bootstrapArgs = @(
         '-o', 'BatchMode=yes',
@@ -814,7 +1311,9 @@ function Invoke-PuttySync {
   if ($RestartServer) {
     $restartCmd = Get-RemoteRestartCommand -RemotePath $RemotePath -BinaryRelativePath $RestartBinaryRelativePath -ServerPort $BootstrapServerPort -StdoutLogRelativePath $RestartStdoutLogRelativePath -StderrLogRelativePath $RestartStderrLogRelativePath -HealthTimeoutSeconds $RestartHealthTimeout
     if ($isPpkIdentity) {
-      $restartArgs = @('-batch', '-P', "$Port", '-i', $identityResolved, $remoteTarget, $restartCmd)
+      $restartScriptPath = New-TempRemoteCommandFile -Prefix "restart_remote" -Content $restartCmd
+      $tempCommandFiles += $restartScriptPath
+      $restartArgs = @('-batch', '-P', "$Port", '-i', $identityResolved, '-m', $restartScriptPath, $remoteTarget)
     } else {
       $restartArgs = @(
         '-o', 'BatchMode=yes',
@@ -883,6 +1382,11 @@ function Invoke-PuttySync {
   finally {
     if (Test-Path $archivePath) {
       Remove-Item -LiteralPath $archivePath -Force -ErrorAction SilentlyContinue
+    }
+    foreach ($tempFile in $tempCommandFiles) {
+      if ($tempFile -and (Test-Path $tempFile)) {
+        Remove-Item -LiteralPath $tempFile -Force -ErrorAction SilentlyContinue
+      }
     }
   }
 }
@@ -960,35 +1464,53 @@ try {
   $localBackendEnvPath = Join-Path $LocalPath "backend\.env.local"
 
   if ([string]::IsNullOrWhiteSpace($DbDialect)) {
-    $DbDialect = [Environment]::GetEnvironmentVariable("DB_DIALECT")
+    $DbDialect = Get-DotEnvValue -EnvFilePath $localBackendEnvPath -Key "DB_DIALECT"
+    if ([string]::IsNullOrWhiteSpace($DbDialect)) {
+      $DbDialect = [Environment]::GetEnvironmentVariable("DB_DIALECT")
+    }
     if ([string]::IsNullOrWhiteSpace($DbDialect)) {
       $DbDialect = [Environment]::GetEnvironmentVariable("DB_ENGINE")
     }
     if ([string]::IsNullOrWhiteSpace($DbDialect)) {
       $DbDialect = [Environment]::GetEnvironmentVariable("PCS_DB_DIALECT")
     }
-    if ([string]::IsNullOrWhiteSpace($DbDialect)) {
-      $DbDialect = Get-DotEnvValue -EnvFilePath $localBackendEnvPath -Key "DB_DIALECT"
-    }
   }
 
   if ([string]::IsNullOrWhiteSpace($DbEmpresasDsn)) {
-    $DbEmpresasDsn = [Environment]::GetEnvironmentVariable("DB_EMPRESAS_DSN")
+    $DbEmpresasDsn = Get-DotEnvValue -EnvFilePath $localBackendEnvPath -Key "DB_EMPRESAS_DSN"
     if ([string]::IsNullOrWhiteSpace($DbEmpresasDsn)) {
-      $DbEmpresasDsn = [Environment]::GetEnvironmentVariable("PCS_DB_EMPRESAS_DSN")
+      $DbEmpresasDsn = [Environment]::GetEnvironmentVariable("DB_EMPRESAS_DSN")
     }
     if ([string]::IsNullOrWhiteSpace($DbEmpresasDsn)) {
-      $DbEmpresasDsn = Get-DotEnvValue -EnvFilePath $localBackendEnvPath -Key "DB_EMPRESAS_DSN"
+      $DbEmpresasDsn = [Environment]::GetEnvironmentVariable("PCS_DB_EMPRESAS_DSN")
     }
   }
 
   if ([string]::IsNullOrWhiteSpace($DbSuperadminDsn)) {
-    $DbSuperadminDsn = [Environment]::GetEnvironmentVariable("DB_SUPERADMIN_DSN")
+    $DbSuperadminDsn = Get-DotEnvValue -EnvFilePath $localBackendEnvPath -Key "DB_SUPERADMIN_DSN"
+    if ([string]::IsNullOrWhiteSpace($DbSuperadminDsn)) {
+      $DbSuperadminDsn = [Environment]::GetEnvironmentVariable("DB_SUPERADMIN_DSN")
+    }
     if ([string]::IsNullOrWhiteSpace($DbSuperadminDsn)) {
       $DbSuperadminDsn = [Environment]::GetEnvironmentVariable("PCS_DB_SUPERADMIN_DSN")
     }
-    if ([string]::IsNullOrWhiteSpace($DbSuperadminDsn)) {
-      $DbSuperadminDsn = Get-DotEnvValue -EnvFilePath $localBackendEnvPath -Key "DB_SUPERADMIN_DSN"
+  }
+
+  $tunnelEnabled = Parse-BoolLike (Get-DotEnvValue -EnvFilePath $localBackendEnvPath -Key "DB_VPS_TUNNEL_ENABLED")
+  if ($tunnelEnabled) {
+    $tunnelLocalPort = Parse-IntOrDefault -Value (Get-DotEnvValue -EnvFilePath $localBackendEnvPath -Key "DB_VPS_LOCAL_PORT") -DefaultValue 15432
+    $tunnelRemotePort = Parse-IntOrDefault -Value (Get-DotEnvValue -EnvFilePath $localBackendEnvPath -Key "DB_VPS_REMOTE_PORT") -DefaultValue 5432
+
+    $normalizedEmpresasDsn = Normalize-PostgresDsnForVps -Dsn $DbEmpresasDsn -TunnelLocalPort $tunnelLocalPort -RemoteDbPort $tunnelRemotePort
+    if ($normalizedEmpresasDsn -ne $DbEmpresasDsn) {
+      Write-Host ("[INFO] Normalizando DB_EMPRESAS_DSN para despliegue VPS (" + $tunnelLocalPort + " -> " + $tunnelRemotePort + ").")
+      $DbEmpresasDsn = $normalizedEmpresasDsn
+    }
+
+    $normalizedSuperDsn = Normalize-PostgresDsnForVps -Dsn $DbSuperadminDsn -TunnelLocalPort $tunnelLocalPort -RemoteDbPort $tunnelRemotePort
+    if ($normalizedSuperDsn -ne $DbSuperadminDsn) {
+      Write-Host ("[INFO] Normalizando DB_SUPERADMIN_DSN para despliegue VPS (" + $tunnelLocalPort + " -> " + $tunnelRemotePort + ").")
+      $DbSuperadminDsn = $normalizedSuperDsn
     }
   }
 
@@ -1151,11 +1673,11 @@ try {
   Write-Host $bashCmd
   $wslOutput = & wsl bash -lc $bashCmd 2>&1
   if ($wslOutput) {
-    $wslOutput | ForEach-Object { Write-Host $_ }
+    $wslOutput | ForEach-Object { Write-TaggedExternalOutput -Line "$_" }
   }
 
   if ($LASTEXITCODE -ne 0) {
-    throw "La sincronización terminó con código $LASTEXITCODE"
+    throw (Get-FriendlyExternalFailureMessage -Label "sincronización en WSL" -ExitCode $LASTEXITCODE -Text ($wslOutput -join "`n"))
   }
 
   if ($OpenPublicUrlAfterDeploy -and -not $DryRun.IsPresent -and -not $PreviewOnly.IsPresent -and $RestartRemoteServer) {
@@ -1171,7 +1693,24 @@ try {
 }
 catch {
   $script:SyncExitCode = 1
-  Write-Error $_.Exception.Message
+  $errMsg = $_.Exception.Message
+  if ([string]::IsNullOrWhiteSpace($errMsg)) {
+    $errMsg = ($_ | Out-String).Trim()
+  }
+  if ([string]::IsNullOrWhiteSpace($errMsg)) {
+    $errMsg = "Error desconocido durante la sincronizacion."
+  }
+
+  $innerMsg = ""
+  if ($_.Exception -and $_.Exception.InnerException) {
+    $innerMsg = $_.Exception.InnerException.Message
+  }
+
+  if (-not [string]::IsNullOrWhiteSpace($innerMsg)) {
+    [Console]::Error.WriteLine("[ERROR] " + $errMsg + " | Inner: " + $innerMsg)
+  } else {
+    [Console]::Error.WriteLine("[ERROR] " + $errMsg)
+  }
 }
 
 $global:LASTEXITCODE = $script:SyncExitCode

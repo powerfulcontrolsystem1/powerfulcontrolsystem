@@ -7,6 +7,7 @@
 
   var KEY_REMEMBER_FLAG = "rememberAccount";
   var KEY_REMEMBER_EMAIL = "rememberedEmail";
+  var SESSION_STATE_COOKIE = "browser_session_active";
 
   function safeGetItem(key) {
     try { return localStorage.getItem(key) || ""; } catch (e) { return ""; }
@@ -16,12 +17,25 @@
     try { localStorage.setItem(key, value); } catch (e) {}
   }
 
+  function normalizeEmail(value) {
+    return String(value || "").trim();
+  }
+
+  function isPlausibleEmail(value) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizeEmail(value));
+  }
+
+  function clearRememberedEmail() {
+    try { localStorage.removeItem(KEY_REMEMBER_EMAIL); } catch (e) {}
+  }
+
   function setRememberedEmail(email) {
-    var normalized = String(email || "").trim();
-    if (!normalized) {
-      return;
+    var normalized = normalizeEmail(email);
+    if (!isPlausibleEmail(normalized)) {
+      return false;
     }
     safeSetItem(KEY_REMEMBER_EMAIL, normalized);
+    return true;
   }
 
   function clearRememberState() {
@@ -43,7 +57,23 @@
   }
 
   function getRememberedEmail() {
-    return String(safeGetItem(KEY_REMEMBER_EMAIL) || "").trim();
+    var normalized = normalizeEmail(safeGetItem(KEY_REMEMBER_EMAIL));
+    if (!normalized) {
+      return "";
+    }
+    if (!isPlausibleEmail(normalized)) {
+      clearRememberedEmail();
+      return "";
+    }
+    return normalized;
+  }
+
+  function hasBrowserSessionCookie() {
+    try {
+      return new RegExp("(?:^|;\\s*)" + SESSION_STATE_COOKIE + "=1(?:;|$)").test(document.cookie || "");
+    } catch (e) {
+      return false;
+    }
   }
 
   function buildLoginUrl() {
@@ -57,6 +87,9 @@
 
   function syncRememberedEmailFromSession() {
     if (!isRememberEnabled()) {
+      return;
+    }
+    if (!hasBrowserSessionCookie()) {
       return;
     }
     if (getRememberedEmail()) {
@@ -75,7 +108,9 @@
         if (!email) {
           return;
         }
-        setRememberedEmail(email);
+        if (!setRememberedEmail(email)) {
+          clearRememberedEmail();
+        }
         refreshRememberUI();
       })
       .catch(function () {});

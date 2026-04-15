@@ -1,6 +1,6 @@
 # Estructura del codigo
 
-Fecha de actualizacion: 2026-04-14
+Fecha de actualizacion: 2026-04-15
 
 ## Objetivo
 Este documento resume la estructura tecnica principal del sistema y sirve como referencia para mantenimiento y evolucion.
@@ -55,6 +55,131 @@ flowchart TD
 
 ## Regla de mantenimiento
 Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe reflejarse en este documento y en los diagramas relacionados dentro de documentos/diagramas/.
+
+## Actualizacion 2026-04-15 (portal publico: contacto comercial directo)
+
+- Frontend:
+  - `web/index.html` agrega un acceso visible a `/Informacion_de_contacto.html` dentro del encabezado publico y un CTA flotante `Contactenos` que abre WhatsApp con el numero `+573043306506`.
+  - `web/Informacion_de_contacto.html` centraliza la presentacion general del sistema y los canales de contacto publico (`powerfulcontrolsystem@hmail.com` y WhatsApp `3043306506`).
+  - `web/estilos.css` incorpora el estilo del boton flotante de WhatsApp y el layout responsive de la nueva pagina de contacto.
+- Backend/seguridad:
+  - `backend/utils/utils.go` mantiene `index.html`, `/descripcion_de_los_sistemas.ht` y `/Informacion_de_contacto.html` dentro del whitelist publico de `AuthMiddleware`, evitando exigir sesion para el portal comercial y sus paginas descriptivas.
+- Flujo:
+  - `index.html` -> acceso superior `Informacion de contacto` -> `/Informacion_de_contacto.html` -> CTA de correo o WhatsApp.
+  - `index.html` -> CTA flotante `Contactenos` -> WhatsApp `wa.me/573043306506`.
+
+## Actualizacion 2026-04-15 (portal publico: landing descriptiva unica por tarjetas)
+
+- Frontend:
+  - `web/index.html` deja de abrir el enlace configurado directamente en `Explorar oferta` y ahora navega a `/descripcion_de_los_sistemas.ht#<tarjeta>` usando una ancla estable por tarjeta.
+  - `web/descripcion_de_los_sistemas.ht` concentra la descripcion ampliada de todas las tarjetas del portal en una sola pagina y posiciona al usuario en la seccion correspondiente segun la tarjeta presionada.
+  - `web/super/pagina_principal.html` aclara que el enlace configurado en cada tarjeta ya no alimenta `Explorar oferta` sino el boton `Probar Gratis` mostrado dentro de la landing descriptiva.
+  - `web/estilos.css` agrega el layout visual del catalogo descriptivo, navegacion rapida por secciones y CTA publico por sistema.
+- Backend/seguridad:
+  - `backend/utils/utils.go` deja la landing `/descripcion_de_los_sistemas.ht` como ruta publica exacta en `AuthMiddleware`, alineando seguridad con el flujo comercial del home.
+- Flujo:
+  - `super/pagina_principal.html` define tarjetas + destino de `Probar Gratis` -> `index.html` muestra cards dinamicas -> `Explorar oferta` abre `/descripcion_de_los_sistemas.ht#<seccion>` -> el usuario revisa la descripcion extendida -> `Probar Gratis` usa el enlace configurado para continuar el flujo comercial o de prueba.
+
+## Actualizacion 2026-04-15 (checkout de licencias: disponibilidad publica ordenada)
+
+- Backend:
+  - `backend/handlers/payments_handlers.go` agrega `GET /api/public/licencias/payment_methods` para exponer al checkout de licencias las pasarelas disponibles en orden operativo (`epayco` primero, `wompi` segundo).
+  - `WompiConfigHandler` ya persiste `wompi.enabled` y los handlers publicos `WompiTermsHandler` / `WompiCreateNequiTransactionHandler` bloquean uso cuando Wompi esta desactivado o sin credenciales completas.
+  - `backend/main.go` registra la nueva ruta publica de disponibilidad de metodos.
+- Frontend:
+  - `web/pagar_licencia.html` deja de depender de tarjetas fijas y renderiza solo Epayco y Wompi segun la respuesta del backend, con Epayco arriba y Wompi debajo.
+  - `web/super/configuracion_avanzada.html` permite guardar activacion/desactivacion de ambas pasarelas sin forzar reingreso de credenciales en cada ajuste.
+  - `web/estilos.css` agrega estilo vertical dedicado para el selector de metodos de licencia y clases explicitas para Epayco/Wompi.
+- Flujo:
+  - `configuracion avanzada super` -> guarda estado `enabled`/credenciales -> `GET /api/public/licencias/payment_methods` -> `pagar_licencia.html` muestra solo pasarelas disponibles -> `WompiTermsHandler` y `WompiCreateNequiTransactionHandler` revalidan disponibilidad antes de continuar.
+
+## Actualizacion 2026-04-15 (hardening login Google y cuenta recordada)
+
+- Backend:
+  - `backend/handlers/auth_admin_handlers.go` valida `login_hint` con parser de correo antes de anexarlo al redirect OAuth; si el valor no es un email valido, se omite.
+- Frontend:
+  - `web/js/login.js`, `web/menu.js`, `web/js/super_administrador.js` y `web/js/seleccionar_empresa.js` solo persisten `rememberedEmail` cuando el dato tiene forma valida de correo y limpian estados locales corruptos.
+- Resultado operativo:
+  - se evita que navegadores de escritorio con estado local contaminado envien dominios o textos arbitrarios a Google durante `/auth/google/login`.
+
+## Actualizacion 2026-04-15 (host canónico para OAuth y carga visible en estaciones)
+
+- Backend HTTP:
+  - `backend/utils/utils.go` incorpora `CanonicalPublicHostMiddleware`, que redirige `www.powerfulcontrolsystem.com` a `https://powerfulcontrolsystem.com` antes de `AuthMiddleware` y del resto del pipeline HTTP.
+  - `backend/main.go` encadena ese middleware entre logging y normalización de errores, de modo que el acceso administrativo y público ya no opere con dos hosts principales distintos en paralelo.
+  - `backend/.env.example` y `scripts/sync_to_vps.ps1` alinean el valor por defecto de `GOOGLE_REDIRECT_URL` al callback canónico `https://powerfulcontrolsystem.com/auth/google/callback`.
+- Resultado OAuth:
+  - cuando un usuario entra por `https://www.powerfulcontrolsystem.com/login.html`, la solicitud se canonicaliza primero al dominio raíz y luego `/auth/google/login` emite un único `redirect_uri` canónico.
+  - se evita mezclar `oauth_redirect_url`, `session_token` y `browser_session_active` entre `www` y el apex, que era la fuente más probable de inestabilidad tras registrar el dominio público.
+- Frontend estaciones:
+  - `web/administrar_empresa/estaciones.html` muestra `Cargando estaciones...` antes de renderizar la grilla y marca la vista con `aria-busy` mientras obtiene configuración, carritos y sensores.
+  - ante fallos de carga, la misma vista deja un mensaje explícito en pantalla en lugar de quedar en blanco.
+
+## Actualizacion 2026-04-15 (deploy VPS persistente y bootstrap endurecido)
+
+- Scripts de despliegue:
+  - `scripts/sync_to_vps.ps1` y `scripts/sync_to_vps.sh` dejan de relanzar el backend con `nohup` y pasan a instalar/actualizar una unidad `systemd` derivada del directorio remoto (en el VPS actual, `powerfulcontrolsystem.service`).
+- Operacion VPS:
+  - El servicio usa `backend/.env.local` como `EnvironmentFile`, arranca desde `backend/bin/server_linux_amd64`, registra salida en `backend/server.log` y `backend/server.err`, y queda configurado con `Restart=always` + `systemctl enable` para sobrevivir caidas del proceso y reinicios del VPS.
+- Flujo operativo:
+  - `sync_to_vps` sincroniza archivos, ejecuta bootstrap de entorno, detecta el gestor de paquetes remoto para instalar utilidades base cuando hay privilegios (`ca-certificates`, `curl`, `wget`, `procps`/`procps-ng`, `lsof`), fuerza la actualizacion de `SERVER_PORT`, hace `systemctl daemon-reload`, reinicia la unidad del backend y valida salud HTTP en `127.0.0.1:SERVER_PORT` antes de dar el despliegue por exitoso.
+  - El flujo emite etiquetas operativas `BOOTSTRAP_*` y `DEPLOY_*` para distinguir fallos de red, permisos, dependencias, variables de entorno y arranque del servicio con sugerencias de correccion.
+
+## Actualizacion 2026-04-14 (OAuth Google HTTPS + login estable en VPS/local)
+
+- Backend:
+  - `backend/handlers/auth_admin_handlers.go` endurece resolucion de callback OAuth para emitir `https://<dominio>/auth/google/callback` en host publico y conservar `http://localhost:8080/auth/google/callback` en entorno local.
+  - El backend emite una cookie auxiliar visible `browser_session_active=1` junto con la sesion real `session_token` (HttpOnly) para sincronizar UI sin exponer el token.
+  - `backend/utils/utils.go` mantiene publico `GET /js/login.js` para evitar bloqueo de script de login sin sesion.
+- Frontend:
+  - `web/menu.js` y `web/js/login.js` usan la cookie visible `browser_session_active` como señal de sesion para decidir cuando consultar `/me`, evitando leer `session_token` (HttpOnly) y reduciendo respuestas `401` esperadas en consola antes de login.
+  - `web/index.html` actualiza encabezado principal del portal a `Sistema de Facturación Electrónica` con subtitulo operativo.
+- Flujo:
+  - `/login.html` -> `/auth/google/login` (302 OAuth con callback HTTPS en VPS) -> `/auth/google/callback` -> creacion de sesion -> redireccion por rol.
+
+## Actualizacion 2026-04-14 (checkout de licencias con Epayco completo)
+
+- Backend:
+  - `backend/handlers/payments_handlers.go` incorpora implementacion operativa de Epayco para:
+    - configuracion avanzada con modo (`sandbox`/`production`) en `/super/api/config/epayco`,
+    - creacion de checkout (`POST /epayco/create_transaction`),
+    - consulta de estado por referencia (`GET /epayco/transaction_status`),
+    - confirmacion server-to-server (`POST/GET /epayco/webhook`).
+  - `backend/main.go` registra la ruta `/epayco/webhook` para confirmar pagos y activar licencias sin depender solo de polling.
+- Frontend:
+  - `web/pagar_licencia.html` abre el `checkout_url` retornado por backend al seleccionar Epayco y mantiene sondeo de estado para cierre automatico del flujo.
+- Flujo:
+  - transaccion `PENDING` -> confirmacion por webhook o polling -> estado `APPROVED` -> activacion de licencia por `licencia_id`/`empresa_id` + trazabilidad en `pagos_epayco`.
+
+## Actualizacion 2026-04-14 (pagina principal dinamica administrada por super)
+
+- Backend:
+  - nuevo handler `backend/handlers/pagina_principal_handlers.go` para administrar tarjetas del home.
+  - nueva ruta super `GET/PUT /super/api/pagina_principal` (configuracion y guardado) con listado de imagenes en `action=imagenes`.
+  - nueva ruta publica `GET /api/public/pagina_principal` para consumo del `index`.
+  - persistencia en `configuraciones` de `pcs_superadministrador` con claves `super.pagina_principal.cards.v1` y `super.pagina_principal.cards.v1.updated_by`.
+- Frontend:
+  - nueva pagina `web/super/pagina_principal.html` para configurar cantidad de tarjetas, imagen de `web/img`, titulo, descripcion y enlace.
+  - `web/super_administrador.html` incorpora acceso lateral a `pagina_principal`.
+  - `web/index.html` migra de tarjetas hardcodeadas a render dinamico desde API publica con fallback local.
+  - `web/estilos.css` agrega estilo colorido para tarjetas del home y estilo de editor para la pagina super.
+- Flujo:
+  - super administrador configura tarjetas -> backend guarda en DB super -> portal publico (`/index.html`) renderiza tarjetas y boton `Explorar oferta`.
+
+## Actualizacion 2026-04-14 (chat y tareas: agente de citas con calendario compartido)
+
+- Backend DB:
+  - `backend/db/chat_tareas.go` incorpora tabla `chat_tareas_citas` con esquema multiempresa para agenda, recordatorios y estado operativo de cita.
+  - nuevas operaciones CRUD/workflow: crear, listar, editar, activar/desactivar, cancelar/completar/reprogramar y marcar recordatorio.
+- Backend handlers:
+  - `backend/handlers/chat_tareas.go` agrega `EmpresaChatTareasCitasHandler` para exponer `/api/empresa/chat_tareas/citas`.
+  - la ruta usa `WithEmpresaVentasPermissions`, manteniendo aislamiento por `empresa_id` y visibilidad compartida para usuarios de la misma empresa.
+- Frontend empresa:
+  - `web/administrar_empresa/chat_y_tareas.html` agrega bloque `Agente de citas y calendario` con vista mensual grande, formulario de reunion y listado de citas.
+  - se implementan recordatorios previos visibles en pantalla segun `notificar_minutos_antes` y sincronizacion periodica del calendario.
+  - `web/estilos.css` incorpora estilos responsivos para calendario, tarjetas de cita y banner de recordatorio.
+- Flujo:
+  - administrador o usuario autorizado agenda cita -> backend la persiste en `chat_tareas_citas` por `empresa_id` -> todos los usuarios de la empresa visualizan la cita en el calendario y reciben aviso previo en pantalla.
 
 ## Actualizacion 2026-04-14 (venta publica por subdominio empresarial)
 
@@ -260,6 +385,7 @@ flowchart TD
     - retira bloque de colores de carrito para evitar duplicidad de configuracion y dejar una unica fuente operativa en estaciones.
   - `web/administrar_empresa/estaciones.html`:
     - aplica parseo robusto de configuracion y selecciona el estado mas reciente de sensor por estacion usando `last_seen`.
+    - muestra `Cargando estaciones...` antes del render para no dejar la vista vacía mientras se cargan configuración, carritos y sensores.
 
 - QA backend de aislamiento multiempresa:
   - `backend/handlers/empresa_estacion_prefs_test.go`:

@@ -79,6 +79,7 @@ sudo systemctl restart nginx
 sudo systemctl enable nginx
 
 sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
 sudo ufw allow 8080/tcp
 sudo ufw status
 
@@ -95,9 +96,29 @@ sudo apt update
 sudo apt install -y certbot python3-certbot-nginx
 sudo certbot --nginx -d powerfulcontrolsystem.com -d www.powerfulcontrolsystem.com --redirect -m admin@powerfulcontrolsystem.com --agree-tos --no-eff-email
 sudo certbot renew --dry-run
+curl -I https://powerfulcontrolsystem.com
+curl -I https://www.powerfulcontrolsystem.com
 ```
 
 ## Nota operativa
 No se cambia el puerto 8080 del backend. Nginx publica el dominio y reenvia trafico al backend en localhost.
 
+Si activas HTTPS con `certbot --nginx --redirect`, debes abrir `443/tcp` en UFW. Si el dominio redirige a `https://...` pero `443/tcp` queda cerrado, la aplicacion puede responder bien en `127.0.0.1:8080` y aun asi verse caída desde navegadores externos.
+
+Si publicas `www.powerfulcontrolsystem.com`, mantenlo incluido en el certificado (`-d www.powerfulcontrolsystem.com`) y verifica que `http://www...` no quede devolviendo `404`, sino redirigiendo o resolviendo por HTTPS.
+
 Para subdominios por empresa, crear un registro DNS wildcard `*.powerfulcontrolsystem.com` apuntando a `2.24.197.58`.
+
+## Servicio persistente del backend
+
+El backend del VPS no debe quedar corriendo con `nohup` manual. El flujo soportado es desplegar con `scripts/sync_to_vps.ps1` o `scripts/sync_to_vps.sh`, porque esos scripts ya crean o actualizan la unidad `systemd` del proyecto y la dejan habilitada para autoarranque.
+
+Comandos utiles de verificacion en el VPS:
+
+```bash
+sudo systemctl status powerfulcontrolsystem.service --no-pager
+sudo systemctl is-enabled powerfulcontrolsystem.service
+sudo journalctl -u powerfulcontrolsystem.service -n 80 --no-pager
+tail -n 80 /root/powerfulcontrolsystem/backend/server.err
+tail -n 80 /root/powerfulcontrolsystem/backend/server.log
+```

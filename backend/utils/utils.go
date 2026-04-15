@@ -12,6 +12,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -38,6 +39,8 @@ type requestContextKey string
 const (
 	ctxKeyRequestID requestContextKey = "request_id"
 	ctxKeyEmpresaID requestContextKey = "empresa_id"
+	canonicalPublicApexHost          = "powerfulcontrolsystem.com"
+	canonicalPublicWWWHost           = "www.powerfulcontrolsystem.com"
 )
 
 var companyLogMu sync.Mutex
@@ -205,6 +208,56 @@ func requestClientIP(r *http.Request) string {
 		return host
 	}
 	return strings.TrimSpace(r.RemoteAddr)
+}
+
+func firstForwardedHeaderValue(raw string) string {
+	parts := strings.Split(strings.TrimSpace(raw), ",")
+	if len(parts) == 0 {
+		return ""
+	}
+	return strings.TrimSpace(parts[0])
+}
+
+func requestHostWithoutPort(rawHost string) string {
+	trimmed := strings.TrimSpace(rawHost)
+	if trimmed == "" {
+		return ""
+	}
+	hostOnly, _, err := net.SplitHostPort(trimmed)
+	if err == nil {
+		return strings.TrimSpace(hostOnly)
+	}
+	if strings.HasPrefix(trimmed, "[") && strings.HasSuffix(trimmed, "]") {
+		return strings.Trim(strings.TrimSpace(trimmed), "[]")
+	}
+	return trimmed
+}
+
+func resolveRequestHost(r *http.Request) string {
+	if r == nil {
+		return ""
+	}
+	if host := firstForwardedHeaderValue(r.Header.Get("X-Forwarded-Host")); host != "" {
+		return host
+	}
+	return strings.TrimSpace(r.Host)
+}
+
+func CanonicalPublicHostMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		host := strings.ToLower(requestHostWithoutPort(resolveRequestHost(r)))
+		if host == canonicalPublicWWWHost {
+			target := &url.URL{
+				Scheme:   "https",
+				Host:     canonicalPublicApexHost,
+				Path:     r.URL.Path,
+				RawQuery: r.URL.RawQuery,
+			}
+			http.Redirect(w, r, target.String(), http.StatusPermanentRedirect)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func writeCompanyLogEntry(empresaID int64, level, msg string) {
@@ -387,6 +440,8 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 		publicExact := map[string]struct{}{
 			"/":                                         {},
 			"/index.html":                               {},
+			"/descripcion_de_los_sistemas.ht":           {},
+			"/Informacion_de_contacto.html":             {},
 			"/venta_publica.html":                       {},
 			"/venta_digital.html":                       {},
 			"/login.html":                               {},
@@ -399,6 +454,7 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			"/api/public/venta_publica":                 {},
 			"/api/public/soporte_remoto":                {},
 			"/api/public/venta_digital":                 {},
+			"/api/public/pagina_principal":               {},
 			"/api/empresa/usuarios/login":               {},
 			"/api/empresa/usuarios/establecer_password": {},
 			"/api/empresa/usuarios/solicitar_recuperacion_password": {},
@@ -426,6 +482,7 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 
 		// Recursos estáticos públicos
 		publicPrefixes := []string{"/assets/", "/img/", "/ayuda/", "/uploads/"}
+		publicPrefixes = append(publicPrefixes, "/js/")
 		for _, p := range publicPrefixes {
 			if strings.HasPrefix(path, p) {
 				next.ServeHTTP(w, r)

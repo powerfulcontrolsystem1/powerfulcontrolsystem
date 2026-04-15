@@ -121,9 +121,10 @@
           return res.json();
         })
         .then(function (admin) {
-          if (admin && admin.email) {
+          var email = admin && admin.email ? String(admin.email).trim() : "";
+          if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
             try {
-              localStorage.setItem("rememberedEmail", admin.email);
+              localStorage.setItem("rememberedEmail", email);
             } catch (e) {}
           }
         })

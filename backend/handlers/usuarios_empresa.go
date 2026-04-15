@@ -1665,10 +1665,11 @@ func createEmpresaUsuarioSessionAndRespond(w http.ResponseWriter, r *http.Reques
 		Path:     "/",
 		HttpOnly: true,
 		MaxAge:   86400,
-		Secure:   (r.TLS != nil),
+		Secure:   SessionCookieSecure(r),
 		SameSite: http.SameSiteLaxMode,
 	}
 	http.SetCookie(w, cookie)
+	SetBrowserSessionStateCookie(w, r, true)
 
 	redirectURL := "/administrar_empresa.html?id=" + strconv.FormatInt(item.EmpresaID, 10)
 	w.Header().Set("Content-Type", "application/json")

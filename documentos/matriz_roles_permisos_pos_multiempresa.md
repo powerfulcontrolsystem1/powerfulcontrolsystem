@@ -1,6 +1,6 @@
 # Matriz base de roles y permisos POS multiempresa
 
-Fecha de actualizacion: 2026-04-14
+Fecha de actualizacion: 2026-04-15
 Alcance: punto 3 del plan maestro (permisos y seguridad)
 
 ## Regla de mantenimiento por modulo
@@ -44,8 +44,64 @@ Leyenda:
 | Seguridad y permisos | CRUDA | CRUA | R | R | R | R | R | R |
 | Impresoras operativas | CRUDA | CRUA | R | R | R | R | R | R |
 | Administracion DB PostgreSQL (super) | R | - | - | - | - | - | - | - |
+| Pagina principal (tarjetas index) | CRUA | - | - | - | - | - | - | - |
+| Pasarelas de licencias (Wompi/Epayco) | CRUA | - | - | - | - | - | - | - |
 
 ## Estado de implementacion tecnica inicial (2026-04-04)
+
+- Actualizacion 2026-04-15 (host canónico para login Google y carga visible en estaciones):
+	- `backend/utils/utils.go` incorpora un middleware de host canónico que redirige `www.powerfulcontrolsystem.com` al dominio raíz antes de autenticación, evitando mezclar cookies y `redirect_uri` entre dos hosts públicos.
+	- `backend/main.go` integra ese middleware sin crear rutas nuevas ni ampliar privilegios; el acceso administrativo conserva el mismo modelo de sesión y rol existente.
+	- `web/administrar_empresa/estaciones.html` añade un estado visual `Cargando estaciones...` y mensaje de error de carga, sin modificar endpoints ni permisos del módulo estaciones.
+	- Impacto de matriz: sin cambios en roles, CRUD/A, wrappers o visibilidad administrativa por rol; solo se estabiliza el acceso y la UX operativa.
+
+- Actualizacion 2026-04-15 (portal publico: contacto visible y pagina de informacion):
+	- `web/index.html` incorpora un enlace superior a `/Informacion_de_contacto.html` y un CTA flotante `Contactenos` que abre WhatsApp con el numero publico comercial.
+	- El acceso principal del header se renombra a `Registrarse o iniciar sesión` y queda agrupado junto al enlace de contacto, sin alterar rutas protegidas ni permisos.
+	- `AuthMiddleware` trata `index.html` y `/Informacion_de_contacto.html` como rutas publicas exactas, por lo que el portal comercial no requiere sesion.
+	- `web/Informacion_de_contacto.html` expone descripcion general del sistema y datos de contacto (`powerfulcontrolsystem@hmail.com`, `3043306506`) sin requerir autenticacion.
+	- `web/estilos.css` solo agrega soporte visual para el CTA flotante y la nueva landing de contacto; no se agregan endpoints protegidos ni cambios de wrappers.
+	- Impacto de matriz: sin cambios en roles, CRUD/A ni visibilidad de paginas administrativas; la nueva experiencia es completamente publica y de solo lectura.
+
+- Actualizacion 2026-04-15 (portal publico: landing descriptiva unica por tarjetas):
+	- `web/index.html` sustituye el destino directo de `Explorar oferta` por la landing publica `/descripcion_de_los_sistemas.ht#<seccion>`, conservando el catalogo en una sola pagina y el salto a la descripcion correcta.
+	- `AuthMiddleware` incluye `/descripcion_de_los_sistemas.ht` en el whitelist publico para que la navegacion desde las tarjetas no pida login.
+	- `web/descripcion_de_los_sistemas.ht` consume `/api/public/pagina_principal` para renderizar todas las secciones del catalogo y reutiliza el `enlace` configurado en super como CTA `Probar Gratis` por tarjeta.
+	- `web/super/pagina_principal.html` solo ajusta la semantica del campo `enlace`; no hay nuevos privilegios CRUD/A ni cambios de wrappers.
+	- Impacto de matriz: `Pagina principal (tarjetas index)` sigue siendo CRUA exclusivo de `super_administrador`; la nueva landing publica es de lectura y no altera permisos empresariales.
+
+- Actualizacion 2026-04-15 (checkout de licencias: Epayco primero y Wompi gobernado por configuracion avanzada):
+	- `backend/handlers/payments_handlers.go` agrega `GET /api/public/licencias/payment_methods` para exponer al checkout publico solo las pasarelas realmente disponibles y en orden operativo (`epayco`, `wompi`).
+	- `web/pagar_licencia.html` consume ese endpoint para mostrar solo Epayco y Wompi, con Epayco primero y Wompi debajo; `web/super/configuracion_avanzada.html` ya permite activar o desactivar ambas pasarelas desde super sin alterar privilegios empresariales.
+	- `WompiTermsHandler` y `WompiCreateNequiTransactionHandler` bloquean acceso cuando Wompi esta desactivado o no tiene llaves completas.
+	- Impacto de matriz: no se agregan roles nuevos ni se amplian permisos CRUD/A; `super_administrador` conserva CRUA sobre `Pasarelas de licencias (Wompi/Epayco)` y la ruta publica nueva es exclusivamente de lectura para el portal de licencias.
+
+- Actualizacion 2026-04-15 (responsive transversal portal/admin):
+	- Se ajustan `web/index.html` y `web/estilos.css` para mejorar portabilidad entre movil y escritorio en el portal publico, panel super y panel empresa.
+	- No se agregan ni retiran permisos CRUD/A; el cambio no altera rutas protegidas, wrappers ni visibilidad por rol.
+	- Impacto de matriz: sin cambios funcionales de autorizacion; mejora exclusiva de presentacion y navegabilidad.
+
+- Actualizacion 2026-04-15 (hardening login Google y recordar cuenta):
+	- `backend/handlers/auth_admin_handlers.go` omite `login_hint` invalidos y la capa cliente limpia `rememberedEmail` corruptos en login/menu/paneles administrativos antes de construir `/auth/google/login`.
+	- No se agregan rutas nuevas ni se altera el alcance por rol para autenticacion, super o empresa.
+	- Impacto de matriz: sin cambios CRUD/A ni wrappers; mejora exclusiva de integridad del acceso administrativo.
+
+- Actualizacion 2026-04-14 (fix login Google en VPS/local y recordar cuenta):
+	- Se habilitan como rutas publicas `GET /js/login.js` y `GET /api/public/pagina_principal` dentro de `AuthMiddleware`, evitando respuestas `401` en pagina de login/portal antes de autenticacion.
+	- Se robustece el callback OAuth para adaptar `redirect_uri` al host real de la solicitud (`localhost` o dominio VPS) y forzar `https` en dominio publico, sin cambiar privilegios por rol.
+	- Se emite una cookie auxiliar visible `browser_session_active` junto a `session_token` para que login/menu detecten sesion activa sin leer la cookie `HttpOnly` real.
+	- Se evita fetch de perfil sin sesion en login/menu para reducir errores `401` visibles en cliente antes de autenticar.
+	- Impacto de matriz: no hay ampliacion de permisos CRUD/A; se mantiene el mismo modelo de acceso por sesion para rutas protegidas y contexto global para login administrativo.
+
+- Actualizacion 2026-04-14 (checkout de licencias con Epayco):
+	- Se completa `POST /epayco/create_transaction`, `GET /epayco/transaction_status` y `POST/GET /epayco/webhook` para flujo de pago/confirmacion de licencias.
+	- Se mantiene gestion global de pasarelas en contexto super (`/super/api/config/epayco`), sin cambios de privilegios en wrappers `/api/empresa/*`.
+	- Impacto de matriz: solo `super_administrador` conserva permisos CRUD/A en modulo de pasarelas de licencias.
+
+- Actualizacion 2026-04-14 (pagina principal dinamica administrada por super):
+	- Se agrega `backend/handlers/pagina_principal_handlers.go` con `GET/PUT /super/api/pagina_principal` y `GET /api/public/pagina_principal`.
+	- `web/super/pagina_principal.html` permite configurar tarjetas del home (cantidad, imagen, titulo, descripcion, enlace) y `web/index.html` las renderiza dinamicamente con CTA `Explorar oferta`.
+	- Alcance de seguridad: gestion exclusiva para `super_administrador`; sin cambios en wrappers ni privilegios de `/api/empresa/*`.
 
 - Actualizacion 2026-04-14 (venta publica por subdominio empresarial):
 	- Se habilita resolucion automatica de `empresa_slug` por `Host`/`X-Forwarded-Host` en `backend/handlers/venta_publica.go` para subdominios tipo `{slug}.powerfulcontrolsystem.com`.
@@ -139,6 +195,7 @@ Leyenda:
 		- `/api/empresa/chat_tareas/mensajes`.
 		- `/api/empresa/chat_tareas/mensajes/adjunto`.
 		- `/api/empresa/chat_tareas/tareas`.
+		- `/api/empresa/chat_tareas/citas`.
 - Cobertura adicional (2026-04-05 - contexto de permisos por rol):
 	- Seguridad:
 		- `/api/empresa/permisos_contexto` con soporte de matriz expandida (`include_matrix=1`) para consulta de permisos efectivos por modulo/accion.
@@ -207,6 +264,7 @@ Regla de lectura comun (R):
 | `/api/empresa/chat_tareas/mensajes` | `WithEmpresaVentasPermissions` | SA, AE, SS, CJ | SA, AE, SS, CJ | colaboracion operativa bajo modulo ventas |
 | `/api/empresa/chat_tareas/mensajes/adjunto` | `WithEmpresaVentasPermissions` | SA, AE, SS, CJ | SA, AE, SS, CJ | multipart con `empresa_id` obligatorio |
 | `/api/empresa/chat_tareas/tareas` | `WithEmpresaVentasPermissions` | SA, AE, SS, CJ | SA, AE, SS, CJ | colaboracion operativa bajo modulo ventas |
+| `/api/empresa/chat_tareas/citas` | `WithEmpresaVentasPermissions` | SA, AE, SS, CJ | SA, AE, SS, CJ | agenda de citas compartida por empresa con recordatorios y estado operativo |
 | `/api/empresa/bodegas` | `WithEmpresaInventarioPermissions` | SA, AE, SS, IN | SA, AE, SS, IN | CRUD inventario |
 | `/api/empresa/categorias_productos` | `WithEmpresaInventarioPermissions` | SA, AE, SS, IN | SA, AE, SS, IN | CRUD inventario |
 | `/api/empresa/productos` | `WithEmpresaInventarioPermissions` | SA, AE, SS, IN | SA, AE, SS, IN | CRUD inventario |

@@ -11,6 +11,7 @@
     <section class="card empresa-section">
       <div class="empresa-section-header" style="display:flex;align-items:center;gap:12px;">
       </div>
+      <p id="estacionesStatus" class="form-help empresa-loading-status">Cargando estaciones...</p>
       <div id="estacionesGrid" class="portal-grid"></div>
     </section>
   </div>
@@ -57,6 +58,7 @@
 
     const empresaId = resolveEmpresaId();
     let stationConfig = null;
+    const statusEl = document.getElementById('estacionesStatus');
     const state = {
       colores: {
         activo: '#d9fbe8',
@@ -73,6 +75,18 @@
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
+    }
+
+    function setStatus(message) {
+      if (statusEl) {
+        const text = String(message || '').trim();
+        statusEl.textContent = text;
+        statusEl.hidden = text === '';
+      }
+      const grid = document.getElementById('estacionesGrid');
+      if (grid) {
+        grid.setAttribute('aria-busy', statusEl && !statusEl.hidden ? 'true' : 'false');
+      }
     }
 
     // Server-backed config helpers (use empresa_estacion_prefs clave=estaciones_config, estacion_id=0)
@@ -479,24 +493,35 @@
     }
 
     async function bootstrap() {
-      let cfg = null;
+      setStatus('Cargando estaciones...');
       try {
-        cfg = await getConfigFromServer();
+        let cfg = null;
+        try {
+          cfg = await getConfigFromServer();
+        } catch (err) {
+          console.warn('Error cargando config desde servidor', err);
+        }
+        if (!cfg) {
+          cfg = normalizeConfig({ cantidad: 1, estaciones: [] });
+          try { await saveConfigToServer(cfg); } catch (err) { console.warn('No se pudo guardar config por defecto', err); }
+        }
+        stationConfig = cfg;
+        applyCardSize(stationConfig);
+        await Promise.all([
+          loadColoresEstadoCarrito(),
+          loadEstadoCarritosEstacion(),
+          loadSensorStates()
+        ]);
+        renderEstaciones(stationConfig);
+        setStatus('');
       } catch (err) {
-        console.warn('Error cargando config desde servidor', err);
+        console.error('Error cargando estaciones', err);
+        const grid = document.getElementById('estacionesGrid');
+        if (grid) {
+          grid.innerHTML = '<p class="form-help">No se pudieron cargar las estaciones.</p>';
+        }
+        setStatus('Error cargando estaciones.');
       }
-      if (!cfg) {
-        cfg = normalizeConfig({ cantidad: 1, estaciones: [] });
-        try { await saveConfigToServer(cfg); } catch (err) { console.warn('No se pudo guardar config por defecto', err); }
-      }
-      stationConfig = cfg;
-      applyCardSize(stationConfig);
-      await Promise.all([
-        loadColoresEstadoCarrito(),
-        loadEstadoCarritosEstacion(),
-        loadSensorStates()
-      ]);
-      renderEstaciones(stationConfig);
 
       
     }

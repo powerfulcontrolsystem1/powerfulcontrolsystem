@@ -848,6 +848,108 @@ func GetWompiPaymentByReference(dbConn *sql.DB, reference string) (*WompiPayment
 	return &r, nil
 }
 
+// CreateEpaycoPaymentRecord registra una transacción inicial de Epayco en la tabla pagos_epayco.
+func CreateEpaycoPaymentRecord(dbConn *sql.DB, licenciaID, empresaID int64, transactionID, reference, status, rawPayload, discountCode, asesorID string) (int64, error) {
+	nowExpr := sqlNowExpr()
+	query := "INSERT INTO pagos_epayco (licencia_id, empresa_id, transaction_id, reference, status, raw_payload, discount_code, asesor_id, fecha_creacion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, " + nowExpr + ")"
+	return insertSQLCompat(dbConn, query, licenciaID, empresaID, transactionID, reference, status, rawPayload, discountCode, asesorID)
+}
+
+// UpdateEpaycoPaymentRecordByTransaction actualiza una transacción de Epayco usando su transaction_id.
+func UpdateEpaycoPaymentRecordByTransaction(dbConn *sql.DB, transactionID, status, rawPayload string) error {
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE pagos_epayco SET status = ?, raw_payload = ?, fecha_actualizacion = "+nowExpr+" WHERE transaction_id = ?", status, rawPayload, transactionID)
+	if err == nil {
+		return nil
+	}
+	// Compatibilidad con bases antiguas que aún no tienen la columna fecha_actualizacion.
+	_, fallbackErr := execSQLCompat(dbConn, "UPDATE pagos_epayco SET status = ?, raw_payload = ? WHERE transaction_id = ?", status, rawPayload, transactionID)
+	if fallbackErr == nil {
+		return nil
+	}
+	return fallbackErr
+}
+
+// UpdateEpaycoPaymentRecordByReference actualiza una transaccion de Epayco usando su reference.
+func UpdateEpaycoPaymentRecordByReference(dbConn *sql.DB, reference, status, rawPayload string) error {
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE pagos_epayco SET status = ?, raw_payload = ?, fecha_actualizacion = "+nowExpr+" WHERE reference = ?", status, rawPayload, reference)
+	if err == nil {
+		return nil
+	}
+	_, fallbackErr := execSQLCompat(dbConn, "UPDATE pagos_epayco SET status = ?, raw_payload = ? WHERE reference = ?", status, rawPayload, reference)
+	if fallbackErr == nil {
+		return nil
+	}
+	return fallbackErr
+}
+
+// EpaycoPaymentRecord representa una fila de pagos_epayco
+type EpaycoPaymentRecord struct {
+	ID            int64
+	LicenciaID    sql.NullInt64
+	EmpresaID     sql.NullInt64
+	TransactionID sql.NullString
+	Reference     sql.NullString
+	Status        sql.NullString
+	RawPayload    sql.NullString
+	DiscountCode  sql.NullString
+	AsesorID      sql.NullString
+	FechaCreacion sql.NullString
+}
+
+// GetEpaycoPaymentByTransaction obtiene una fila de pagos_epayco por transaction_id
+func GetEpaycoPaymentByTransaction(dbConn *sql.DB, transactionID string) (*EpaycoPaymentRecord, error) {
+	row := queryRowSQLCompat(dbConn, `SELECT id, licencia_id, empresa_id, transaction_id, reference, status, raw_payload, discount_code, asesor_id, fecha_creacion FROM pagos_epayco WHERE transaction_id = ? LIMIT 1`, transactionID)
+	var r EpaycoPaymentRecord
+	if err := row.Scan(&r.ID, &r.LicenciaID, &r.EmpresaID, &r.TransactionID, &r.Reference, &r.Status, &r.RawPayload, &r.DiscountCode, &r.AsesorID, &r.FechaCreacion); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &r, nil
+}
+
+// GetEpaycoPaymentByReference obtiene una fila de pagos_epayco por reference
+func GetEpaycoPaymentByReference(dbConn *sql.DB, reference string) (*EpaycoPaymentRecord, error) {
+	row := queryRowSQLCompat(dbConn, `SELECT id, licencia_id, empresa_id, transaction_id, reference, status, raw_payload, discount_code, asesor_id, fecha_creacion FROM pagos_epayco WHERE reference = ? LIMIT 1`, reference)
+	var r EpaycoPaymentRecord
+	if err := row.Scan(&r.ID, &r.LicenciaID, &r.EmpresaID, &r.TransactionID, &r.Reference, &r.Status, &r.RawPayload, &r.DiscountCode, &r.AsesorID, &r.FechaCreacion); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &r, nil
+}
+
+// GetEpaycoPaymentContext devuelve licencia_id y empresa_id para una transaccion/referencia Epayco.
+func GetEpaycoPaymentContext(dbConn *sql.DB, transactionID, reference string) (int64, int64, bool, error) {
+	row := queryRowSQLCompat(dbConn, `
+		SELECT licencia_id, empresa_id
+		FROM pagos_epayco
+		WHERE (transaction_id = ? AND ? <> '') OR (reference = ? AND ? <> '')
+		ORDER BY id DESC
+		LIMIT 1
+	`, transactionID, transactionID, reference, reference)
+
+	var licenciaID sql.NullInt64
+	var empresaID sql.NullInt64
+	if err := row.Scan(&licenciaID, &empresaID); err != nil {
+		if err == sql.ErrNoRows {
+			return 0, 0, false, nil
+		}
+		return 0, 0, false, err
+	}
+
+	if !licenciaID.Valid || !empresaID.Valid {
+		return 0, 0, false, nil
+	}
+
+	return licenciaID.Int64, empresaID.Int64, true, nil
+}
+
 // CRUD básicos para tabla asesores
 func CreateAsesor(dbConn *sql.DB, email, nombre, rol, notas string) (int64, error) {
 	nowExpr := sqlNowExpr()

@@ -1,5 +1,350 @@
  - Historial de cambios
- - Historial de cambios
+
+ - 2026-04-15: Host canónico para login Google y carga visible en estaciones
+     - Archivos modificados:
+         - backend/utils/utils.go
+         - backend/utils/utils_test.go
+         - backend/main.go
+         - backend/.env.example
+         - scripts/sync_to_vps.ps1
+         - web/administrar_empresa/estaciones.html
+         - web/estilos.css
+         - documentos/descripcion_del_proyecto
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se corrige la inestabilidad del login Google tras la incorporación del dominio público unificando el host canónico en `powerfulcontrolsystem.com`; las peticiones que entren por `www.powerfulcontrolsystem.com` ahora se redirigen antes de autenticación para evitar mezcla de `redirect_uri`, cookies y sesiones entre hosts. Adicionalmente, la pantalla `administrar_empresa/estaciones.html` muestra `Cargando estaciones...` mientras consulta configuración, carritos y sensores, y deja un mensaje visible si la carga falla.
+     - Verificacion tecnica:
+         - `go test ./utils -run "Test(CanonicalPublicHostMiddleware|LoggingMiddlewareSetsContextAndWritesLogs|JSONErrorMiddlewareWrapsNonJSONError)" -count=1`.
+         - `go test ./handlers -run "TestHandleGoogleLogin" -count=1`.
+         - Diagnostico del editor sin errores nuevos en los archivos tocados; persisten advertencias preexistentes de verbos no aprobados en `scripts/sync_to_vps.ps1`.
+
+ - 2026-04-15: Rutas publicas explicitas para home, landing descriptiva y contacto del portal
+     - Archivos modificados:
+         - backend/utils/utils.go
+         - backend/handlers/auth_users_carritos_test.go
+         - documentos/descripcion_del_proyecto
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se ajusta `AuthMiddleware` para dejar libres sin login `index.html`, `/descripcion_de_los_sistemas.ht` y `/Informacion_de_contacto.html`, alineando seguridad con el caracter publico del portal comercial. Se amplia la prueba automatizada del middleware para cubrir home, landing descriptiva, pagina de contacto y activos/public APIs del portal.
+     - Verificacion tecnica:
+         - `go test ./handlers -run "TestAuthMiddlewareAllowsPublicPortalPagesAssetsAndHomeCardsAPI" -count=1`.
+         - Diagnostico del editor sin errores en `backend/utils/utils.go` y `backend/handlers/auth_users_carritos_test.go`.
+
+ - 2026-04-15: Contacto visible en portal publico y nueva pagina de informacion
+     - Archivos creados:
+         - web/Informacion_de_contacto.html
+     - Archivos modificados:
+         - web/index.html
+         - web/estilos.css
+         - documentos/descripcion_del_proyecto
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se agrega contacto comercial visible en el portal publico con un enlace superior a `/Informacion_de_contacto.html`, el CTA flotante `Contactenos` hacia WhatsApp y un encabezado que agrupa `Registrarse o iniciar sesión` junto a `Informacion de contacto`. La nueva pagina publica resume el sistema y concentra el correo `powerfulcontrolsystem@hmail.com` y el WhatsApp `3043306506`.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/index.html`, `web/Informacion_de_contacto.html` y `web/estilos.css`.
+
+ - 2026-04-15: Landing descriptiva unica para tarjetas del portal principal
+     - Archivos creados:
+         - web/descripcion_de_los_sistemas.ht
+     - Archivos modificados:
+         - web/index.html
+         - web/super/pagina_principal.html
+         - web/estilos.css
+         - documentos/descripcion_del_proyecto
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se concentra la descripcion de todas las tarjetas del home en una sola pagina publica (`/descripcion_de_los_sistemas.ht`) y `Explorar oferta` ahora navega por anclas a la seccion correcta segun la tarjeta elegida. En la landing se agrega un boton `Probar Gratis` por seccion usando el enlace configurado en super para cada tarjeta, y la pantalla `super/pagina_principal.html` se ajusta para reflejar esa semantica.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/index.html`, `web/descripcion_de_los_sistemas.ht`, `web/super/pagina_principal.html` y `web/estilos.css`.
+
+ - 2026-04-15: Checkout de licencias con orden fijo Epayco -> Wompi y activacion gobernada desde configuracion avanzada
+     - Archivos modificados:
+         - backend/handlers/payments_handlers.go
+         - backend/handlers/system_empresas_handlers_test.go
+         - backend/main.go
+         - web/pagar_licencia.html
+         - web/super/configuracion_avanzada.html
+         - web/estilos.css
+         - documentos/descripcion_del_proyecto
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se reorganiza el checkout publico de licencias para mostrar solo Epayco y Wompi, con Epayco primero y Wompi debajo, condicionado por disponibilidad real en backend. Se agrega `GET /api/public/licencias/payment_methods`, se persiste `wompi.enabled` desde configuracion avanzada y Wompi rechaza terminos/transacciones cuando esta desactivado o sin configuracion completa.
+     - Verificacion tecnica:
+         - `go test ./handlers -run "TestPublicLicenciasPaymentMethodsHandlerOrdersAndAvailability|TestWompiConfigHandlerPersistsEnabledFlag|TestWompiTermsHandlerRejectsWhenDisabled" -count=1`.
+         - `go test ./ -run "^$" -count=1`.
+         - Diagnostico del editor sin errores en `backend/handlers/payments_handlers.go`, `web/pagar_licencia.html`, `web/super/configuracion_avanzada.html` y `web/estilos.css`.
+
+ - 2026-04-15: Reparacion del redeploy remoto en fallback PuTTY de sync_to_vps
+     - Archivos modificados:
+         - scripts/sync_to_vps.ps1
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se corrige el flujo `fallback` con `plink/pscp` para que los bloques remotos complejos de `bootstrap` y `redeploy` se envien mediante archivos temporales UTF-8 sin BOM con `plink -m`, evitando errores de parsing de Bash al transportar comandos multilinea con `heredoc` de `systemd`. Ademas, el bloque de reinicio remoto refuerza el quoting de `bin_path` y de los directorios de logs para mantener compatibilidad con rutas que contengan caracteres especiales.
+     - Verificacion tecnica:
+         - `[System.Management.Automation.Language.Parser]::ParseFile("scripts/sync_to_vps.ps1", [ref]$null, [ref]$null)`.
+         - Diagnostico del editor sobre `scripts/sync_to_vps.ps1`: sin errores nuevos; persisten solo advertencias preexistentes por verbos no aprobados en funciones PowerShell.
+
+ - 2026-04-15: Hardening de login Google y saneamiento de cuenta recordada en escritorio
+     - Archivos modificados:
+         - backend/handlers/auth_admin_handlers.go
+         - backend/handlers/auth_users_carritos_test.go
+         - web/js/login.js
+         - web/menu.js
+         - web/js/super_administrador.js
+         - web/js/seleccionar_empresa.js
+         - documentos/descripcion_del_proyecto
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se corrige un vector de falla del login Google en escritorio donde el navegador podia reutilizar un `rememberedEmail` corrupto y enviarlo como `login_hint`. El backend ahora filtra hints que no sean correos validos y el frontend limpia/persiste el estado recordado solo cuando el dato tiene forma legitima de email.
+     - Verificacion tecnica:
+         - `go test ./handlers -run "TestHandleGoogleLogin" -count=1`.
+         - `go test ./ ./auth ./db ./handlers ./metrics ./utils -run "^$" -count=1`.
+
+ - 2026-04-15: Refuerzo responsive transversal del frontend web
+     - Archivos modificados:
+         - web/index.html
+         - web/estilos.css
+         - documentos/descripcion_del_proyecto
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se mejora la adaptación entre computador, tablet y celular en el frontend compartido. La portada publica ajusta el título y subtítulo para anchos estrechos sin perder jerarquía, el sidebar administrativo colapsa con navegación mas usable en móvil, y formularios/tablas ganan mejor apilado y scroll horizontal controlado.
+     - Verificacion tecnica:
+         - Diagnostico del editor sobre `web/index.html`: sin errores.
+         - Diagnostico del editor sobre `web/estilos.css`: sin errores.
+
+ - 2026-04-15: Reparacion de publicacion web en VPS (443/UFW + TLS de www)
+     - Archivos modificados:
+         - documentos/deploy_nginx_reverse_proxy_vps.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se revisa la configuracion real del VPS y se corrige la causa de la caida publica del sitio sin puerto: `nginx` y el backend estaban sanos, pero `443/tcp` no estaba permitido en UFW. Ademas, `www.powerfulcontrolsystem.com` resolvia por DNS pero quedaba mal cubierto operativamente. Se abre `443/tcp`, se recarga Nginx, se renueva el certificado LetsEncrypt para incluir `www`, y se actualiza la guia del repositorio para reflejar esa configuracion minima requerida.
+     - Verificacion tecnica:
+         - VPS: `systemctl is-active nginx` y `systemctl is-active powerfulcontrolsystem.service` -> `active`.
+         - VPS: `ss -ltnp` confirma listeners en `:80`, `:443` y `:8080`.
+         - VPS: `ufw status` muestra `443/tcp ALLOW`.
+         - VPS: `certbot certificates` muestra dominios `powerfulcontrolsystem.com www.powerfulcontrolsystem.com`.
+         - Externo/local: `curl -I https://powerfulcontrolsystem.com/` -> `200 OK`.
+
+ - 2026-04-15: Saneamiento de listeners huerfanos en sync_to_vps y reparacion operativa del backend VPS
+     - Archivos modificados:
+         - scripts/sync_to_vps.ps1
+         - scripts/sync_to_vps.sh
+         - scripts/README_sync.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se corrigen ambos scripts de despliegue para detener listeners ajenos a `systemd` que sigan ocupando `SERVER_PORT` antes del restart remoto, con trazas `DEPLOY_WARN:PORT_*` y aborto explícito si el puerto no queda libre. Durante el diagnostico del VPS se detectó y limpió un proceso manual huérfano (`PID 84304`, ejecutable `server_linux_amd64 (deleted)`) que mantenía `:8080` ocupado y forzaba un bucle de reinicio de `powerfulcontrolsystem.service`.
+     - Verificacion tecnica:
+         - VPS: `ss -ltnp` confirmó `PID 84304` escuchando en `:8080` fuera de `systemd`; tras detenerlo, `systemctl status powerfulcontrolsystem.service` quedó `active (running)` con `MainPID=178417`.
+         - VPS: `curl -k -I https://powerfulcontrolsystem.com/auth/google/login` responde `302 Found` con `redirect_uri=https://powerfulcontrolsystem.com/auth/google/callback` y cookie `oauth_redirect_url` segura.
+
+ - 2026-04-15: Robustecimiento de sync_to_vps con bootstrap asistido y errores accionables
+     - Archivos modificados:
+         - scripts/sync_to_vps.ps1
+         - scripts/sync_to_vps.sh
+         - scripts/README_sync.md
+         - documentos/descripcion_del_proyecto
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se endurece el despliegue al VPS en ambas variantes (`.ps1` y `.sh`) con validacion temprana de puertos/timeouts, bootstrap remoto mas completo segun gestor de paquetes, actualizacion forzada de `SERVER_PORT`, mensajes etiquetados `BOOTSTRAP_*` / `DEPLOY_*`, y errores con causa probable cuando faltan DSN PostgreSQL, `CONFIG_ENC_KEY`, privilegios `root/sudo -n` o falla el servicio `systemd`.
+     - Verificacion tecnica:
+         - `[System.Management.Automation.Language.Parser]::ParseFile("scripts/sync_to_vps.ps1", [ref]$null, [ref]$null)`.
+         - `./scripts/sync_to_vps.ps1 -PreviewOnly -SkipBuild -OpenPublicUrlAfterDeploy:$false`.
+         - Diagnostico del editor sobre `scripts/sync_to_vps.sh`: sin errores; validacion directa con `bash -n` pendiente porque `bash.exe` resuelve al lanzador WSL y este equipo no tiene distribucion instalada.
+
+ - 2026-04-15: Reparacion de recordar cuenta y sincronizacion de sesion visible en login/menu
+     - Archivos modificados:
+         - backend/handlers/auth_admin_handlers.go
+         - backend/handlers/accept_handlers.go
+         - backend/handlers/usuarios_empresa.go
+         - backend/handlers/e2e_login_acceptance_test.go
+         - backend/handlers/auth_users_carritos_test.go
+         - backend/main.go
+         - web/js/login.js
+         - web/menu.js
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se corrige el fallo de `recordar cuenta` y del estado de sesion visible en el menu flotante: el frontend dejaba de sincronizar `rememberedEmail`, avatar y logout porque intentaba detectar autenticacion leyendo `session_token`, pero esa cookie es `HttpOnly`. El backend ahora emite una cookie auxiliar `browser_session_active` junto a `session_token`, y login/menu la usan como señal segura de presencia de sesion sin exponer el token real.
+     - Verificacion tecnica:
+         - `go test ./handlers -run "TestE2E_AcceptContractCreatesSession|TestEmpresaUsuario(LoginHandlerSuccess|LoginHandlerRejectsWrongEmpresaScope|LoginHandlerRejectsWrongEmpresaScopeFromQuery|SetPasswordHandlerSuccess)|TestSuperEndpointsPermisosPorRol" -count=1`.
+         - `go test ./ ./auth ./db ./handlers ./metrics ./utils -run "^$" -count=1`.
+
+ - 2026-04-14: Persistencia del backend en VPS con systemd desde sync_to_vps
+     - Archivos modificados:
+         - scripts/sync_to_vps.ps1
+         - scripts/sync_to_vps.sh
+         - scripts/README_sync.md
+         - documentos/descripcion_del_proyecto
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/deploy_nginx_reverse_proxy_vps.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se reemplaza el redeploy remoto basado en `nohup` por un servicio `systemd` generado desde `sync_to_vps`, con `Restart=always`, `systemctl enable`, `EnvironmentFile=backend/.env.local` y logs persistentes en `backend/server.log` / `backend/server.err`; de este modo el backend queda activo en el VPS de forma continua, solo se reinicia durante el despliegue y vuelve automaticamente despues de caidas o reinicios del servidor.
+     - Verificacion tecnica:
+         - `[System.Management.Automation.Language.Parser]::ParseFile("scripts/sync_to_vps.ps1", [ref]$null, [ref]$null)`.
+         - `powershell -NoProfile -Command '& { Set-Location ''D:\powerfulcontrolsystem''; & .\scripts\sync_to_vps.ps1 -PreviewOnly -SkipBuild -BootstrapServer:$false -RestartRemoteServer:$true -OpenPublicUrlAfterDeploy:$false }'`.
+         - Diagnostico del editor sobre `scripts/sync_to_vps.sh`: sin errores; validacion directa con `bash -n` pendiente por ausencia de distro WSL y de Git Bash local.
+
+ - 2026-04-14: Reposicion del manual de instalacion y guia OAuth Google para VPS
+     - Archivos creados:
+         - documentos/manual_de_instalacion.md
+     - Archivos modificados:
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se repone el manual de instalacion eliminado del arbol actual y se documenta el ajuste necesario en Google Cloud Console para que el login Google funcione tanto en local como en VPS, registrando los `Authorized redirect URIs` y `Authorized JavaScript origins` correctos para `localhost` y `https://powerfulcontrolsystem.com`; ademas se conservan en el manual las guias operativas de ngrok, Wompi y Gmail SMTP.
+     - Verificacion tecnica:
+         - Revision estatica de `documentos/manual_de_instalacion.md` confirmando presencia de `https://powerfulcontrolsystem.com/auth/google/callback`, `http://localhost:8080/auth/google/callback` y los origins requeridos para Google Cloud Console.
+
+ - 2026-04-14: Ajuste de composición del encabezado en portal principal
+     - Archivos modificados:
+         - web/index.html
+         - web/estilos.css
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se encapsula el título y subtítulo del portal principal en una misma columna visual para que `Sistema de Facturación Electrónica` permanezca en una sola fila y `Toma el control de tu negocio con Powerful Control System` quede justo debajo, centrado en el mismo bloque; se conservan además los ajustes recientes de tamaño en tarjetas.
+     - Verificacion tecnica:
+         - Revision estatica de `web/index.html` y `web/estilos.css` confirmando contenedor `portal-intro-copy`, `white-space: nowrap` en el título y apilado vertical del subtítulo.
+
+ - 2026-04-14: Correccion integral de login Google (VPS/local) y recordar cuenta
+     - Archivos modificados:
+         - backend/handlers/auth_admin_handlers.go
+         - backend/utils/utils.go
+         - backend/handlers/auth_users_carritos_test.go
+         - web/login.html
+         - web/menu.js
+         - web/js/login.js
+         - web/index.html
+         - web/estilos.css
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_archivos
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se corrige el callback OAuth para adaptar `redirect_uri` al host real de la solicitud (local/VPS), forzando HTTPS en dominio publico; se habilitan rutas publicas faltantes (`/js/login.js` y `/api/public/pagina_principal`) que devolvian `401` y rompian login/portal; se evita consultar `/me` sin sesion desde login/menu; se ajusta cookie de sesion para proxy HTTPS via `X-Forwarded-Proto`; y se actualiza el encabezado del portal en `index` a `Sistema de Facturación Electrónica` con subtitulo operativo.
+     - Verificacion tecnica:
+         - `go test ./handlers -run "TestHandleGoogleLogin|TestAuthMiddlewareAllowsPublicLoginAssetsAndHomeCardsAPI|TestAuthMiddlewareRejects(ReusedRevokedSessionToken|ExpiredSessionToken)" -v -count=1` -> PASADO.
+         - `curl -I https://powerfulcontrolsystem.com/auth/google/login` (desde VPS) -> `redirect_uri=https://powerfulcontrolsystem.com/auth/google/callback`.
+         - `curl https://powerfulcontrolsystem.com/js/login.js` (desde VPS) -> `200`.
+         - `curl https://powerfulcontrolsystem.com/api/public/pagina_principal` (desde VPS) -> `200`.
+         - DB VPS (`pcs_superadministrador.configuraciones`): `google.redirect_url=https://powerfulcontrolsystem.com/auth/google/callback`.
+
+ - 2026-04-14: Correccion sync_to_vps.ps1 - variable $Host de solo lectura y avatar menú flotante
+     - Archivos modificados:
+         - scripts/sync_to_vps.ps1
+         - web/menu.js
+         - web/estilos.css
+         - documentos/historial_de_cambios
+     - Descripcion: Se corrige `Test-TcpPortReachable` renombrando parametro `$Host` a `$TargetHost` para evitar colision con variable automatica de PowerShell. Se corrige el bloque catch reemplazando `Write-Error` por `Write-Host -ForegroundColor Red` para evitar `WriteErrorException` bajo `ErrorActionPreference=Stop`. En frontend se modifica `menu.js` para prevenir inyeccion duplicada del menu flotante (en iframes y recargas) y cargar la foto de perfil de Google como avatar circular en el boton del menu. Se ajustan estilos en `estilos.css` para el avatar.
+     - Verificacion: Sync ejecutado correctamente - DEPLOY_OK:pid=74751 port=8080
+
+ - 2026-04-14: Diagnostico reforzado para tunel SSH de PostgreSQL en inicio local
+     - Archivos modificados:
+         - scripts/iniciar_servidor.ps1
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se mejora `Ensure-VpsPostgresTunnel` para evitar falsos negativos por tiempo de arranque de `plink`, agregando espera por reintentos del listener local, captura de `stdout/stderr` en `backend/tmp/plink_tunnel_<puerto>.*.log` y error final con detalle tecnico (`ExitCode`, destino y salida de `plink`) cuando el tunel no queda en escucha; adicionalmente se corrige la construccion del argumento `-i` de `plink` para rutas de llave SSH con espacios, evitando el error `Host does not exist`.
+     - Verificacion tecnica:
+         - `[System.Management.Automation.Language.Parser]::ParseFile("scripts/iniciar_servidor.ps1", ...)` -> PASADO.
+         - `. "D:\powerfulcontrolsystem\scripts\iniciar_servidor.ps1" -Background` -> PASADO (tunel en `localhost:15432` y backend iniciado en `:8080`).
+
+ - 2026-04-14: Cierre operativo de Epayco en checkout de licencias
+     - Archivos modificados:
+         - backend/handlers/payments_handlers.go
+         - backend/main.go
+         - web/pagar_licencia.html
+         - documentos/descripcion_del_proyecto
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/estructura_bd.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se implementan los handlers faltantes de Epayco (`create_transaction`, `transaction_status`, `webhook`) en backend, se registra la ruta de webhook en `main.go`, se corrige `EpaycoConfigHandler` para aceptar credenciales reales de pasarela sin validacion numerica forzada y se actualiza `pagar_licencia.html` para abrir checkout de Epayco y continuar polling de estado hasta activacion.
+     - Verificacion tecnica:
+         - `go test ./ -run "^$" -count=1` -> PASADO.
+         - `go test ./handlers -run "^$" -count=1` -> PASADO.
+         - `go test ./ ./auth ./db ./handlers ./metrics ./utils -run "^$" -count=1` -> PASADO.
+
+ - 2026-04-14: Chat y tareas con agente de citas, calendario grande y recordatorios
+     - Archivos modificados:
+         - backend/db/chat_tareas.go
+         - backend/handlers/chat_tareas.go
+         - backend/handlers/chat_tareas_test.go
+         - backend/main.go
+         - web/administrar_empresa/chat_y_tareas.html
+         - web/estilos.css
+         - web/super/pagina_principal.html
+         - documentos/descripcion_del_proyecto
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/estructura_bd.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se integra agenda de citas compartida por empresa en el modulo de chat y tareas, con API empresarial `/api/empresa/chat_tareas/citas`, calendario mensual de gran formato, programacion/edicion de reuniones, recordatorios previos en pantalla y visibilidad para todos los usuarios de la empresa; adicionalmente se agrega boton inferior `Guardar cambios` en la pagina super de configuracion de tarjetas del home.
+     - Verificacion tecnica:
+         - `$env:DB_DIALECT='sqlite'; go test ./handlers -run ChatTareas -count=1`.
+         - `$env:DB_DIALECT='sqlite'; go test ./db -run ChatTareas -count=1`.
+
+ - 2026-04-14: Modulo de tarjetas dinamicas para pagina principal (index)
+     - Archivos creados:
+         - backend/handlers/pagina_principal_handlers.go
+         - web/super/pagina_principal.html
+     - Archivos modificados:
+         - backend/main.go
+         - web/index.html
+         - web/estilos.css
+         - web/super_administrador.html
+         - documentos/descripcion_del_proyecto
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se agrega configuracion super de tarjetas del portal principal (`/super/pagina_principal.html`) con persistencia en base super (`configuraciones`) y render publico dinamico en `index.html` via `/api/public/pagina_principal`; incluye selector de imagenes desde `web/img`, control de cantidad y CTA fijo `Explorar oferta`.
+     - Verificacion tecnica:
+         - `go test . ./handlers -run ^$ -count=1` -> compilacion OK en paquetes modificados.
+         - `go test ./ ./auth ./db ./handlers ./metrics ./utils -count=1` -> falla por regresion preexistente del entorno de tests SQLite (`information_schema.columns`), no asociada al modulo nuevo.
 
  - 2026-04-14: Eliminacion global de barra superior en layouts super/empresa
      - Archivos modificados:

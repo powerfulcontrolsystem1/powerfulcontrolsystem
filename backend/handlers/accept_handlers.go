@@ -77,10 +77,11 @@ func AcceptCompleteHandler(dbSuper *sql.DB) http.HandlerFunc {
 			Path:     "/",
 			HttpOnly: true,
 			MaxAge:   86400,
-			Secure:   (r.TLS != nil),
+			Secure:   SessionCookieSecure(r),
 			SameSite: http.SameSiteLaxMode,
 		}
 		http.SetCookie(w, cookie)
+		SetBrowserSessionStateCookie(w, r, true)
 		// Limpiar cookie legacy para no reusar señal global de aceptación entre cuentas distintas.
 		http.SetCookie(w, &http.Cookie{
 			Name:     "accepted_contract",
@@ -88,7 +89,7 @@ func AcceptCompleteHandler(dbSuper *sql.DB) http.HandlerFunc {
 			Path:     "/",
 			HttpOnly: false,
 			MaxAge:   -1,
-			Secure:   (r.TLS != nil),
+			Secure:   SessionCookieSecure(r),
 			SameSite: http.SameSiteLaxMode,
 		})
 

@@ -10,7 +10,7 @@
   <div class="container">
     <div class="page-header">
       <h1>Configuración avanzada</h1>
-      <p class="form-help">Ajustes avanzados del sistema. Pasarela activa de pagos: Wompi.</p>
+      <p class="form-help">Ajustes avanzados del sistema. Administra la disponibilidad de Epayco y Wompi para el portal público de licencias.</p>
     </div>
 
     <section class="card form mp-card" id="ventaDigitalConfigShortcut">
@@ -20,6 +20,50 @@
         <a class="btn" href="/super/venta_digital.html">Abrir panel de venta digital</a>
         <a class="btn secondary" href="/venta_digital.html" target="_blank" rel="noopener noreferrer">Ver tienda pública</a>
       </div>
+    </section>
+
+    <section class="card form mp-card" id="epaycoConfig">
+      <h2>Epayco — Credenciales y activación</h2>
+      <p class="form-help">Configura credenciales de Epayco y activa la pasarela para aceptar tarjetas/PSE.</p>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Activar Epayco</label>
+          <label class="mode-switch-row" for="epaycoEnabledToggle">
+            <span class="mode-label">Off</span>
+            <input id="epaycoEnabledToggle" type="checkbox" role="switch" aria-label="Activar Epayco">
+            <span class="mode-label">On</span>
+          </label>
+          <div id="epaycoEnabledHelp" class="form-help">Si está desactivado, la pasarela Epayco no aparecerá como opción de pago.</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Public Key</label>
+          <input id="epaycoPublicKey" class="form-input" type="text" placeholder="pub_test_... o pub_prod_...">
+          <div id="epaycoPublicSet" class="form-help">Cargando estado...</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Private Key (secreta)</label>
+          <input id="epaycoPrivateKey" class="form-input" type="password" placeholder="prv_test_... o prv_prod_...">
+          <div id="epaycoPrivateSet" class="form-help">Cargando estado...</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Opciones</label>
+          <div class="form-help">Las llaves secretas se guardan cifradas obligatoriamente.</div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button id="saveEpaycoBtn" class="btn">Guardar Epayco</button>
+        <button id="editEpaycoBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Editar</button>
+        <button id="cancelEpaycoBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Cancelar</button>
+      </div>
+      <div id="epaycoMsg" class="form-help"></div>
     </section>
 
     <!-- Sección de parámetros avanzados eliminada por ahora -->
@@ -42,6 +86,18 @@
           <label class="form-label">Estado actual</label>
           <div id="wompiModeInfo" class="form-help">Modo: --</div>
           <div id="wompiModeSource" class="form-help">Origen: --</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Activar Wompi</label>
+          <label class="mode-switch-row" for="wompiEnabledToggle">
+            <span class="mode-label">Off</span>
+            <input id="wompiEnabledToggle" type="checkbox" role="switch" aria-label="Activar Wompi">
+            <span class="mode-label">On</span>
+          </label>
+          <div id="wompiEnabledHelp" class="form-help">Si está desactivado, la pasarela Wompi no estará disponible en el portal de pago.</div>
         </div>
       </div>
 
@@ -204,7 +260,6 @@
           if (rw.ok) {
             const wompi = await rw.json();
             if (typeof wompi.encryption_available !== 'undefined' && !wompi.encryption_available) {
-              document.getElementById('saveWompiBtn').disabled = true;
               document.getElementById('wompiMsg').innerText = 'ERROR: cifrado obligatorio no disponible en el servidor (CONFIG_ENC_KEY no definido).';
             }
 
@@ -246,19 +301,24 @@
             }
 
             const hasWompiConfig = !!(wompi.public_key_set || wompi.private_key_set || wompi.integrity_key_set || wompi.mode_set);
+            const enabledEl = document.getElementById('wompiEnabledToggle');
+            if (enabledEl) enabledEl.checked = !!wompi.enabled;
+            refreshWompiEnabledHint();
             if (hasWompiConfig) {
               document.getElementById('wompiPublicKey').disabled = true;
               document.getElementById('wompiPrivateKey').disabled = true;
               document.getElementById('wompiIntegrityKey').disabled = true;
-              if (modeToggle) modeToggle.disabled = true;
+              if (modeToggle) modeToggle.disabled = false;
               document.getElementById('editWompiBtn').style.display = '';
-              document.getElementById('saveWompiBtn').disabled = true;
+              document.getElementById('cancelWompiBtn').style.display = 'none';
+              document.getElementById('saveWompiBtn').disabled = false;
             } else {
               document.getElementById('wompiPublicKey').disabled = false;
               document.getElementById('wompiPrivateKey').disabled = false;
               document.getElementById('wompiIntegrityKey').disabled = false;
               if (modeToggle) modeToggle.disabled = false;
               document.getElementById('editWompiBtn').style.display = 'none';
+              document.getElementById('cancelWompiBtn').style.display = 'none';
               document.getElementById('saveWompiBtn').disabled = false;
             }
           } else {
@@ -274,10 +334,13 @@
           document.getElementById('wompiIntegritySet').innerText = 'Error cargando';
           document.getElementById('wompiModeInfo').innerText = 'Modo: --';
           document.getElementById('wompiModeSource').innerText = 'Origen: --';
+          refreshWompiEnabledHint();
         }
 
 		// cargar estado Gmail SMTP
 		await loadGmailConfig();
+    		// cargar estado Epayco
+    		await loadEpaycoConfig();
     // cargar estado credenciales IA
     await loadAIConfig();
       }
@@ -290,6 +353,24 @@
         modeHint.innerText = isRealMode
           ? 'Modo real activo: se usarán cobros reales con credenciales productivas.'
           : 'Modo sandbox activo: usa 3991111111 para aprobar y 3992222222 para rechazar.';
+      }
+
+      function refreshWompiEnabledHint(){
+        const enabledEl = document.getElementById('wompiEnabledToggle');
+        const helpEl = document.getElementById('wompiEnabledHelp');
+        if (!enabledEl || !helpEl) return;
+        helpEl.innerText = enabledEl.checked
+          ? 'Wompi activado: disponible en el portal de pago de licencias cuando tenga credenciales completas.'
+          : 'Wompi desactivado: no se mostrará como opción de pago en el portal público.';
+      }
+
+      function refreshEpaycoEnabledHint(){
+        const enabledEl = document.getElementById('epaycoEnabledToggle');
+        const helpEl = document.getElementById('epaycoEnabledHelp');
+        if (!enabledEl || !helpEl) return;
+        helpEl.innerText = enabledEl.checked
+          ? 'Epayco activado: disponible en el portal de pago de licencias cuando tenga credenciales completas.'
+          : 'Epayco desactivado: no se mostrará como opción de pago en el portal público.';
       }
 
       async function loadGmailConfig(){
@@ -566,8 +647,13 @@
         const integrity = document.getElementById('wompiIntegrityKey').value.trim();
         const encrypt = true; // cifrado obligatorio
         const mode = document.getElementById('wompiModeToggle').checked ? 'production' : 'sandbox';
+        const enabled = !!document.getElementById('wompiEnabledToggle').checked;
 
-        const payload = { encrypt, mode };
+        if (!pub && !prv && !integrity) {
+          if (!confirm('No ingresaste llaves nuevas. ¿Deseas guardar solo el estado de activación y/o el modo de Wompi?')) return;
+        }
+
+        const payload = { encrypt, mode, enabled };
         if (pub) payload.public_key = pub;
         if (prv) payload.private_key = prv;
         if (integrity) payload.integrity_key = integrity;
@@ -581,7 +667,8 @@
           try { body = JSON.parse(raw); } catch(err) { body = null; }
           if (res.ok) {
             const modeTxt = mode === 'production' ? 'real' : 'sandbox';
-            document.getElementById('wompiMsg').innerText = 'Configuración Wompi guardada correctamente. Modo activo: ' + modeTxt + '.';
+            const enabledTxt = enabled ? 'activado' : 'desactivado';
+            document.getElementById('wompiMsg').innerText = 'Configuración Wompi guardada correctamente. Estado: ' + enabledTxt + '. Modo activo: ' + modeTxt + '.';
             document.getElementById('wompiPublicKey').value = '';
             document.getElementById('wompiPrivateKey').value = '';
             document.getElementById('wompiIntegrityKey').value = '';
@@ -603,12 +690,105 @@
         document.getElementById('saveWompiBtn').disabled = false;
         document.getElementById('editWompiBtn').style.display = 'none';
         document.getElementById('cancelWompiBtn').style.display = '';
-        document.getElementById('wompiMsg').innerText = 'Modo edición: ajusta sandbox/real y actualiza credenciales si aplica.';
+        document.getElementById('wompiMsg').innerText = 'Modo edición: ajusta sandbox/real, el estado de activación y actualiza credenciales si aplica.';
       }
 
       function cancelEditWompi(){
         load();
         document.getElementById('wompiMsg').innerText = 'Edición cancelada.';
+      }
+
+      async function loadEpaycoConfig(){
+        const statusCust = document.getElementById('epaycoPublicSet');
+        const statusKey = document.getElementById('epaycoPrivateSet');
+        const msg = document.getElementById('epaycoMsg');
+        try {
+          const res = await fetch('/super/api/config/epayco');
+          if (!res.ok) {
+            statusCust.innerText = 'Error al leer configuración Epayco';
+            statusKey.innerText = 'Error al leer configuración Epayco';
+            return;
+          }
+          const cfg = await res.json();
+          const enabledEl = document.getElementById('epaycoEnabledToggle');
+          if (enabledEl) enabledEl.checked = !!cfg.enabled;
+          refreshEpaycoEnabledHint();
+
+          if (cfg.cust_id_set) {
+            statusCust.innerText = 'Customer ID guardado (' + (cfg.cust_id_masked || '') + ')';
+            document.getElementById('epaycoPublicKey').disabled = true;
+          } else {
+            statusCust.innerText = 'No configurada';
+            document.getElementById('epaycoPublicKey').disabled = false;
+          }
+
+          if (cfg.key_set) {
+            const ts = cfg.key_updated ? (' — Última actualización: ' + cfg.key_updated) : '';
+            statusKey.innerText = 'Key guardada (' + (cfg.key_masked || '****') + ')' + ts;
+            document.getElementById('epaycoPrivateKey').disabled = true;
+          } else {
+            statusKey.innerText = 'No configurada';
+            document.getElementById('epaycoPrivateKey').disabled = false;
+          }
+
+          const hasEpaycoConfig = !!(cfg.cust_id_set || cfg.key_set);
+          document.getElementById('editEpaycoBtn').style.display = hasEpaycoConfig ? '' : 'none';
+          document.getElementById('cancelEpaycoBtn').style.display = 'none';
+          document.getElementById('saveEpaycoBtn').disabled = false;
+        } catch (err) {
+          statusCust.innerText = 'Error cargando Epayco: ' + (err.message || err);
+          statusKey.innerText = statusCust.innerText;
+          refreshEpaycoEnabledHint();
+        }
+      }
+
+      async function saveEpayco(e){
+        if (e && e.preventDefault) e.preventDefault();
+        const btn = document.getElementById('saveEpaycoBtn');
+        const msg = document.getElementById('epaycoMsg');
+        const cust = (document.getElementById('epaycoPublicKey').value || '').trim();
+        const key = (document.getElementById('epaycoPrivateKey').value || '').trim();
+        const enabled = !!document.getElementById('epaycoEnabledToggle').checked;
+
+        if (!cust && !key) {
+          if (!confirm('No ingresaste llaves. ¿Deseas actualizar solo el estado de activación?')) return;
+        }
+
+        const payload = { encrypt: true, enabled: enabled };
+        if (cust) payload.cust_id = cust;
+        if (key) payload.key = key;
+
+        btn.disabled = true; btn.innerText = 'Guardando...'; msg.innerText = '';
+        try {
+          const res = await fetch('/super/api/config/epayco', { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+          const raw = await res.text();
+          if (!res.ok) {
+            msg.innerText = 'Error guardando Epayco: ' + raw;
+            return;
+          }
+          msg.innerText = 'Epayco guardado correctamente.';
+          document.getElementById('epaycoPrivateKey').value = '';
+          document.getElementById('epaycoPublicKey').value = '';
+          await loadEpaycoConfig();
+        } catch (err) {
+          msg.innerText = 'Error guardando Epayco: ' + (err.message || err);
+        } finally {
+          btn.disabled = false; btn.innerText = 'Guardar Epayco';
+        }
+      }
+
+      function enableEditEpayco(){
+        document.getElementById('epaycoPublicKey').disabled = false;
+        document.getElementById('epaycoPrivateKey').disabled = false;
+        document.getElementById('saveEpaycoBtn').disabled = false;
+        document.getElementById('editEpaycoBtn').style.display = 'none';
+        document.getElementById('cancelEpaycoBtn').style.display = '';
+        document.getElementById('epaycoMsg').innerText = 'Modo edición activo: ingresa las nuevas credenciales y guarda.';
+      }
+
+      function cancelEditEpayco(){
+        loadEpaycoConfig();
+        document.getElementById('epaycoMsg').innerText = 'Edición Epayco cancelada.';
       }
 
       async function downloadConfigBackup(){
@@ -692,7 +872,18 @@
       document.getElementById('saveWompiBtn').addEventListener('click', saveWompi);
       document.getElementById('editWompiBtn').addEventListener('click', enableEditWompi);
       document.getElementById('cancelWompiBtn').addEventListener('click', cancelEditWompi);
+      document.getElementById('saveEpaycoBtn').addEventListener('click', saveEpayco);
+      document.getElementById('editEpaycoBtn').addEventListener('click', enableEditEpayco);
+      document.getElementById('cancelEpaycoBtn').addEventListener('click', cancelEditEpayco);
       document.getElementById('wompiModeToggle').addEventListener('change', refreshWompiModeHint);
+      document.getElementById('wompiEnabledToggle').addEventListener('change', function(){
+        refreshWompiEnabledHint();
+        document.getElementById('saveWompiBtn').disabled = false;
+      });
+      document.getElementById('epaycoEnabledToggle').addEventListener('change', function(){
+        refreshEpaycoEnabledHint();
+        document.getElementById('saveEpaycoBtn').disabled = false;
+      });
       document.getElementById('saveGmailBtn').addEventListener('click', saveGmail);
       document.getElementById('editGmailBtn').addEventListener('click', enableEditGmail);
       document.getElementById('cancelGmailBtn').addEventListener('click', cancelEditGmail);

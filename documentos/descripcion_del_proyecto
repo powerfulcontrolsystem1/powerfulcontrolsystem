@@ -15,7 +15,7 @@ Sistema POS multiempresa con backend en Go y persistencia PostgreSQL, orientado 
 - Backend: Go.
 - Frontend: HTML + JavaScript + CSS.
 - Base de datos: PostgreSQL (dos bases separadas por contexto en VPS).
-- Integraciones: Google OAuth, SMTP (correo) y Wompi.
+- Integraciones: Google OAuth, SMTP (correo), Wompi y Epayco.
 
 ## Arquitectura por capas
 
@@ -28,6 +28,7 @@ Sistema POS multiempresa con backend en Go y persistencia PostgreSQL, orientado 
 - `backend/auth/`: intercambio OAuth y lectura de perfil Google.
 - `backend/metrics/`: recoleccion y consulta de metricas.
 - `web/`: interfaz de usuario por modulos (`super` y `administrar_empresa`).
+	- `web/estilos.css`: capa visual compartida del portal publico, login y shells administrativos, con breakpoints responsive para escritorio, tablet y movil.
 
 ## Modulos principales
 
@@ -37,13 +38,18 @@ Sistema POS multiempresa con backend en Go y persistencia PostgreSQL, orientado 
 - Flujo administrativo unificado: `login.html -> /auth/google/login -> /auth/google/callback -> /accept.html -> /accept/complete`.
 - Aceptación de contrato obligatoria una sola vez por administrador (flag persistente `acepta_contrato`) antes de acceso al panel.
 - Verificación humana con reCAPTCHA real validada en backend previo a creación de sesión administrativa.
+- Hardening de OAuth administrativo: `login_hint` solo se reenvia a Google cuando tiene formato de correo valido y la capa cliente depura `rememberedEmail` corruptos antes de invocar `/auth/google/login`.
+- Host canónico del acceso administrativo: el backend redirige `www.powerfulcontrolsystem.com` hacia `powerfulcontrolsystem.com` antes de resolver OAuth para evitar mezclar `redirect_uri`, cookies técnicas (`oauth_redirect_url`) y sesiones entre dos hosts públicos.
 
 2) Administracion global (super)
 - Empresas, tipos de empresa, licencias, administradores.
-- Configuracion de pasarela de pago Wompi y correo.
+- Configuracion de pasarelas de pago (Wompi/Epayco) y correo.
+- Configuracion avanzada de licencias con activacion independiente de Epayco y Wompi; el checkout publico consulta `GET /api/public/licencias/payment_methods` para mostrar solo pasarelas activas y configuradas.
 - Configuracion avanzada de credenciales IA para modelos populares con trazabilidad de cuenta Google administradora.
 - Monitoreo operativo de inicio/reinicio del backend con bitacora central (`super_servidor_eventos`), log local runtime y notificacion por correo configurable (`gmail.restart_alert_to`).
 - Administracion profesional de PostgreSQL desde super con vista dedicada de rendimiento (`/super/administrar_base_de_datos.html`) y API protegida de telemetria (`/super/api/postgres/performance`).
+- Gestion de tarjetas dinamicas del portal principal desde super (`/super/pagina_principal.html`) con persistencia en base super y publicacion en `index.html` via `/api/public/pagina_principal`; el CTA `Explorar oferta` del home abre la landing unica `/descripcion_de_los_sistemas.ht#<seccion>` y el enlace configurado en super se reutiliza como destino del boton `Probar Gratis` dentro de esa pagina descriptiva.
+- El portal publico incorpora contacto comercial visible en `index.html` mediante acceso superior a `/Informacion_de_contacto.html` y un CTA flotante `Contactenos` que redirige a WhatsApp (`+573043306506`). La pagina `/Informacion_de_contacto.html` resume el sistema y centraliza correo y WhatsApp de contacto. `AuthMiddleware` mantiene libres sin sesion `index.html`, `/descripcion_de_los_sistemas.ht` y `/Informacion_de_contacto.html` como paginas publicas del portal.
 
 3) Operacion por empresa
 - Usuarios de empresa (alta, confirmacion, estado, primer ingreso).
@@ -53,11 +59,12 @@ Sistema POS multiempresa con backend en Go y persistencia PostgreSQL, orientado 
 - Reservas por estacion/habitacion: modulo para consultar disponibilidad por rango, crear reservas, confirmar pagos y cancelar reservas por `empresa_id`.
 - Tarifas por minutos por estacion: modulo para definir cobro base (ej. 120 min), bloque extra (ej. cada 60 min), reglas por dia de semana y calculo operativo del monto final por minutos consumidos.
 - Tarifas por dia por estacion: modulo para definir cobro diario por servicio con horario configurable de check-in/check-out y aplicacion automatica de deuda en carritos activos de estaciones hotel.
+- Vista operativa de estaciones: `administrar_empresa/estaciones.html` muestra un estado visible de carga mientras consulta configuracion, carritos y sensores, evitando que la pantalla aparezca vacia antes del render.
 - Clientes: CRUD operativo con perfil comercial, historial de compras y segmentacion por comportamiento.
 - Inventario: bodegas, productos, proveedores (con catalogo referencia, precio base referencial y condiciones comerciales por proveedor), servicios, alertas de quiebre por bodega, kardex filtrable por bodega/tipo/rango de fechas, resumen KPI operativo por periodo, tendencia diaria por bodega/rango, balance por bodega en rango, proyeccion preventiva de quiebre por producto/bodega, plan de reposicion por proveedor con costo estimado, consolidado de compra por proveedor, borrador de orden de compra por proveedor, emision de orden de compra desde borrador, ciclo documental de la orden emitida (recepcion y contabilizacion) y reposicion guiada desde top de productos criticos.
 - Combos de productos: modulo para crear combos con receta de ingredientes y precio unico de venta, con CRUD, activacion/desactivacion y control de consistencia en carritos abiertos.
 - Codigos de descuento: modulo por empresa para crear codigos promocionales con generacion automatica, valor configurable (fijo o porcentaje), vigencia por fecha y limite de usos.
-- Chat y tareas colaborativo: modulo empresarial para conversaciones, participantes, mensajes, adjuntos y tareas; soporta intercambio entre usuarios de la empresa y administrador con aislamiento por `empresa_id`, derivacion de actor autenticado (`usuario`/`admin`) para evitar suplantacion y envio de adjuntos en fotos/audio/documentos de oficina (`doc/docx/xls/xlsx/ppt/pptx/rtf/odt/ods/odp`, ademas de `pdf/txt/csv/json`).
+- Chat y tareas colaborativo: modulo empresarial para conversaciones, participantes, mensajes, adjuntos y tareas; soporta intercambio entre usuarios de la empresa y administrador con aislamiento por `empresa_id`, derivacion de actor autenticado (`usuario`/`admin`) para evitar suplantacion y envio de adjuntos en fotos/audio/documentos de oficina (`doc/docx/xls/xlsx/ppt/pptx/rtf/odt/ods/odp`, ademas de `pdf/txt/csv/json`); integra agenda de citas con calendario mensual grande compartido por `empresa_id` y recordatorios previos configurables por cita.
 - Propinas: modulo por empresa para activar/desactivar porcentaje de propina en facturas, definir distribucion `por_usuario` o `universal`, y consultar reporte de acumulados y movimientos.
 - Comisiones por servicio: modulo por empresa para activar/desactivar porcentaje de comision de servicios de lavado, registrar movimientos automaticos al cerrar carrito y consultar reporte por lavador.
 - Compras: modulo dedicado con endpoint `/api/empresa/compras/documentos` y vista `administrar_empresa/compras.html` para crear, consultar y transicionar documentos (`emitir_orden`, `recepcionar_compra`, `contabilizar_compra`) con trazabilidad contable.
@@ -114,11 +121,20 @@ Regla general de tablas:
 ## Rutas y paginas clave
 
 - Portal: `/`, `/index.html`.
+- Landing descriptiva del portal: `/descripcion_de_los_sistemas.ht`.
+- Informacion de contacto publica: `/Informacion_de_contacto.html`.
 - Login admin: `/login.html`.
 - Login usuario empresa: `/login_usuario.html`.
+- Dominio canónico público: `https://powerfulcontrolsystem.com` (la variante `www` se redirige al host raíz antes del flujo OAuth y del resto de navegación pública).
 - Panel super: `/super_administrador.html`.
 - Administracion DB super: `/super/administrar_base_de_datos.html`.
+- Configuracion de pagina principal (super): `/super/pagina_principal.html`.
 - API de rendimiento PostgreSQL (super): `/super/api/postgres/performance`.
+- API super de pagina principal: `/super/api/pagina_principal`.
+- API publica de pagina principal: `/api/public/pagina_principal`.
+- API super de configuracion de pasarelas: `/super/api/config/wompi`, `/super/api/config/epayco`.
+- API publica de disponibilidad de pasarelas de licencias: `/api/public/licencias/payment_methods`.
+- API checkout licencias (publica): `/wompi/*`, `/epayco/*`.
 - API de impresoras por empresa: `/api/empresa/impresoras`.
 - API de resolucion de impresora: `/api/empresa/impresoras/resolver`.
 - Panel empresa: `/administrar_empresa.html` y subpaginas de modulo.
@@ -127,11 +143,13 @@ Regla general de tablas:
 
 - `scripts/iniciar_servidor.ps1`: arranque local del servidor.
 - `scripts/actualizar_repositorio.ps1`: commit/push automatizado y registro en documentos.
+- `scripts/sync_to_vps.ps1` y `scripts/sync_to_vps.sh`: despliegue al VPS con build Linux opcional, bootstrap endurecido de `backend/.env.local`, instalacion asistida de dependencias base del VPS segun gestor de paquetes y actualizacion del servicio `systemd` del backend con diagnosticos accionables para que reinicie automaticamente ante caidas y arranque solo al actualizar o al reiniciar el VPS.
 
 ## Seguridad y configuracion sensible
 
 - No documentar secretos en texto plano.
 - Variables sensibles (OAuth, SMTP, llaves de pago, cifrado) deben venir de entorno o configuracion segura.
+- En integraciones OAuth, no propagar hints de cuenta o identificadores recordados si no validan como correo electronico legitimo.
 
 ## Estado de documentacion
 

@@ -2,11 +2,17 @@
 (function(){
   function injectMenu(){
     try {
-      var path = (window.location && window.location.pathname) ? window.location.pathname : '';
-      var bodyCls = (document.body && document.body.classList) ? document.body.classList : null;
-      // No inyectar el menú flotante en subpáginas de administración de empresa
-      if (path.indexOf('/administrar_empresa/') === 0 || path === '/administrar_empresa.html') return;
-      if (bodyCls && (bodyCls.contains('admin-empresa-shell') || bodyCls.contains('empresa-subpage'))) return;
+      // Solo inyectar en la ventana top-level (evitar iframes/subframes)
+      if (window.top !== window.self) return;
+      // Evitar reinyecciones en cargas dinámicas: marca global y atributo DOM
+      if (window.__pcsFloatingMenuInjected || document.documentElement.dataset.pcsFloatingMenuInjected === '1') return;
+    } catch (e) {}
+    // Ocultar menú flotante en la página principal (index)
+    try {
+      var _p = (window.location && window.location.pathname) ? (window.location.pathname || '').toLowerCase() : '';
+      if (_p === '/' || _p === '/index.html' || _p.endsWith('/index.html')) {
+        return;
+      }
     } catch (e) {}
     if (document.querySelector('.floating-menu')) return;
     const wrapper = document.createElement('div');
@@ -34,7 +40,17 @@
       document.addEventListener('click', function(){ panel.classList.remove('open'); });
     }
 
+      var SESSION_STATE_COOKIE = 'browser_session_active';
+
     function getCookie(name){ const v = document.cookie.match('(^|;)\\s*'+name+'\\s*=\\s*([^;]+)'); return v ? v.pop() : ''; }
+
+    function isPlausibleEmail(value){
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
+    }
+
+      function hasBrowserSessionCookie(){
+        return getCookie(SESSION_STATE_COOKIE) === '1';
+      }
 
     function clearRememberOnLogoutIfNeeded(){
       try {
@@ -45,16 +61,19 @@
     }
 
     const sessionLink = wrapper.querySelector('#sessionLink');
-    if (sessionLink){
-      if (getCookie('session_token')){
-        sessionLink.textContent = 'Cerrar sesión';
-        sessionLink.href = '/auth/logout';
-        sessionLink.addEventListener('click', function(){ clearRememberOnLogoutIfNeeded(); });
-      } else {
+      function setSessionLinkAuthenticated(isAuthenticated){
+        if (!sessionLink) return;
+        sessionLink.onclick = null;
+        if (isAuthenticated) {
+          sessionLink.textContent = 'Cerrar sesión';
+          sessionLink.href = '/auth/logout';
+          sessionLink.onclick = function(){ clearRememberOnLogoutIfNeeded(); };
+          return;
+        }
         sessionLink.textContent = 'Iniciar sesión';
         sessionLink.href = '/login.html';
       }
-    }
+      setSessionLinkAuthenticated(hasBrowserSessionCookie());
 
     // Delegación: asegurarse de limpiar rememberAccount aunque otros scripts no encontraran el enlace
     document.addEventListener('click', function(e){
@@ -167,6 +186,62 @@
     updateCalculatorLink();
     loadCountryItem();
 
+    // Marcar inyección para evitar duplicados en futuras cargas dinámicas
+    try {
+      window.__pcsFloatingMenuInjected = true;
+      document.documentElement.dataset.pcsFloatingMenuInjected = '1';
+    } catch (e) {}
+
+    // Cargar foto de perfil desde /me y usarla como icono del botón (fallback a símbolo)
+    (function loadAvatar(){
+      function setAvatarUrl(url, name){
+        try {
+          if (!toggle) return;
+          toggle.innerHTML = '';
+          var img = document.createElement('img');
+          img.className = 'fm-avatar';
+          img.src = url;
+          img.alt = name || 'Perfil';
+          img.onerror = function(){ toggle.innerHTML = '<span class="fm-toggle-icon">☰</span>'; };
+          toggle.appendChild(img);
+          if (name) toggle.title = name;
+        } catch (e) {}
+      }
+
+      function fallbackIcon(){ try { if (!toggle) return; toggle.innerHTML = '<span class="fm-toggle-icon">☰</span>'; } catch(e){} }
+
+      function syncRememberedEmailFromProfile(data){
+        try {
+          if (!data) return;
+          if (localStorage.getItem('rememberAccount') !== '1') return;
+          var email = String(data.email || '').trim();
+          if (!isPlausibleEmail(email)) return;
+          var remembered = String(localStorage.getItem('rememberedEmail') || '').trim();
+          if (!remembered || !isPlausibleEmail(remembered)) {
+            localStorage.setItem('rememberedEmail', email);
+          }
+        } catch (e) {}
+      }
+
+      try {
+          if (!hasBrowserSessionCookie()) {
+            setSessionLinkAuthenticated(false);
+          fallbackIcon();
+          return;
+        }
+        fetch('/me', { credentials: 'same-origin' }).then(function(res){
+          if (!res.ok) throw new Error('no-auth');
+          return res.json();
+        }).then(function(data){
+            setSessionLinkAuthenticated(true);
+          syncRememberedEmailFromProfile(data);
+          var photo = (data && (data.photo || data.avatar)) || '';
+          var name = (data && (data.name || data.email)) || '';
+          if (photo) setAvatarUrl(photo, name); else fallbackIcon();
+          }).catch(function(){ setSessionLinkAuthenticated(false); fallbackIcon(); });
+        } catch (e) { setSessionLinkAuthenticated(false); fallbackIcon(); }
+    })();
+
     // Icon fallback: asegurar que todo img.icon tenga una fuente válida
     (function ensureIconFallback(){
       var defaultIcon = '/img/analytics-color.svg';
@@ -193,7 +268,7 @@
       }catch(e){}
     })();
 
-    // Nota: no mostramos avatar/usuario en el menú flotante por simplicidad.
+    // Ahora mostramos avatar (si está disponible) en el botón del menú flotante.
   }
 
   function initAcceptModalFromQuery(){

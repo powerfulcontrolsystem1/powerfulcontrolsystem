@@ -263,8 +263,9 @@
       }
       var me = await meRes.json();
       try {
-        if (localStorage.getItem("rememberAccount") === "1" && me && me.email) {
-          localStorage.setItem("rememberedEmail", me.email);
+        var rememberedEmail = me && me.email ? String(me.email).trim() : "";
+        if (localStorage.getItem("rememberAccount") === "1" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rememberedEmail)) {
+          localStorage.setItem("rememberedEmail", rememberedEmail);
         }
       } catch (e) {}
 

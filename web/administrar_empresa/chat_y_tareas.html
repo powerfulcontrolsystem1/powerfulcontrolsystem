@@ -146,6 +146,113 @@
         <div id="taskMsg" class="form-help"></div>
       </section>
     </div>
+
+    <section class="card chat-calendar-card">
+      <div class="chat-panel-header chat-calendar-header">
+        <h2>Agente de citas y calendario</h2>
+        <div class="chat-calendar-nav">
+          <button id="calendarPrevBtn" class="btn secondary" type="button">Mes anterior</button>
+          <div id="calendarMonthLabel" class="chat-calendar-month">-</div>
+          <button id="calendarNextBtn" class="btn secondary" type="button">Mes siguiente</button>
+          <button id="calendarTodayBtn" class="btn" type="button">Hoy</button>
+        </div>
+      </div>
+
+      <div id="calendarReminderBanner" class="chat-reminder-banner" hidden></div>
+
+      <div class="chat-calendar-layout">
+        <div class="chat-calendar-main">
+          <div class="chat-calendar-weekdays">
+            <span>Lun</span>
+            <span>Mar</span>
+            <span>Mie</span>
+            <span>Jue</span>
+            <span>Vie</span>
+            <span>Sab</span>
+            <span>Dom</span>
+          </div>
+          <div id="calendarGrid" class="chat-calendar-grid">Cargando calendario...</div>
+        </div>
+
+        <aside class="chat-calendar-side">
+          <form id="appointmentForm" class="chat-mini-form">
+            <input id="appointmentId" type="hidden">
+            <label class="form-label" for="appointmentTitle">Titulo de la cita</label>
+            <input id="appointmentTitle" class="form-input" required placeholder="Ej: Reunion de seguimiento">
+
+            <label class="form-label" for="appointmentDescription">Descripcion</label>
+            <textarea id="appointmentDescription" class="form-textarea" placeholder="Objetivo o contexto"></textarea>
+
+            <div class="form-row compact-row">
+              <div class="form-col">
+                <label class="form-label" for="appointmentType">Tipo</label>
+                <select id="appointmentType" class="form-input">
+                  <option value="reunion">Reunion</option>
+                  <option value="llamada">Llamada</option>
+                  <option value="seguimiento">Seguimiento</option>
+                  <option value="capacitacion">Capacitacion</option>
+                  <option value="otro">Otro</option>
+                </select>
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="appointmentEstado">Estado</label>
+                <select id="appointmentEstado" class="form-input">
+                  <option value="programada">Programada</option>
+                  <option value="completada">Completada</option>
+                  <option value="cancelada">Cancelada</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row compact-row">
+              <div class="form-col">
+                <label class="form-label" for="appointmentStart">Fecha y hora inicio</label>
+                <input id="appointmentStart" class="form-input" type="datetime-local" required>
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="appointmentEnd">Fecha y hora fin</label>
+                <input id="appointmentEnd" class="form-input" type="datetime-local">
+              </div>
+            </div>
+
+            <div class="form-row compact-row">
+              <div class="form-col">
+                <label class="form-label" for="appointmentReminder">Avisar antes (minutos)</label>
+                <input id="appointmentReminder" class="form-input" type="number" min="1" max="10080" value="30">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="appointmentConversation">Conversacion (opcional)</label>
+                <select id="appointmentConversation" class="form-input">
+                  <option value="0">Sin conversacion asociada</option>
+                </select>
+              </div>
+            </div>
+
+            <label class="form-label" for="appointmentLocation">Ubicacion</label>
+            <input id="appointmentLocation" class="form-input" placeholder="Sala, enlace o referencia">
+
+            <div class="form-actions">
+              <button id="saveAppointmentBtn" class="btn" type="submit">Guardar cita</button>
+              <button id="clearAppointmentBtn" class="btn secondary" type="button">Limpiar</button>
+            </div>
+          </form>
+
+          <div class="chat-search-row">
+            <select id="appointmentEstadoFilter" class="form-input">
+              <option value="">Todas</option>
+              <option value="programada">Programadas</option>
+              <option value="completada">Completadas</option>
+              <option value="cancelada">Canceladas</option>
+            </select>
+            <input id="appointmentSearch" class="form-input" placeholder="Buscar cita">
+            <button id="appointmentSearchBtn" class="btn secondary" type="button">Filtrar</button>
+          </div>
+
+          <div id="appointmentList" class="chat-appointment-list">Cargando citas...</div>
+          <div id="appointmentMsg" class="form-help"></div>
+        </aside>
+      </div>
+    </section>
   </div>
 
   <script>
@@ -167,8 +274,15 @@
       convSearch: "",
       taskSearch: "",
 	  taskEstadoFilter: "",
-	  pendingMessageVoice: null,
-	  pendingTaskVoice: null
+    pendingMessageVoice: null,
+    pendingTaskVoice: null,
+    citas: [],
+    appointmentSearch: "",
+    appointmentEstadoFilter: "",
+    calendarYear: new Date().getFullYear(),
+    calendarMonth: new Date().getMonth(),
+    calendarSelectedDate: "",
+    reminderShownKeys: {}
     };
 
     const messageVoiceRuntime = { recorder: null, stream: null, chunks: [], startedAt: 0, timer: 0 };
@@ -455,6 +569,77 @@
       return "pending";
     }
 
+    function pad2(n) {
+      return String(Number(n || 0)).padStart(2, "0");
+    }
+
+    function parseDateValue(raw) {
+      const value = normalize(raw);
+      if (!value) return null;
+      const candidate = value.replace(" ", "T");
+      const dt = new Date(candidate);
+      if (!Number.isNaN(dt.getTime())) return dt;
+      return null;
+    }
+
+    function formatDateForDB(dateObj) {
+      if (!(dateObj instanceof Date) || Number.isNaN(dateObj.getTime())) return "";
+      const year = dateObj.getFullYear();
+      const month = pad2(dateObj.getMonth() + 1);
+      const day = pad2(dateObj.getDate());
+      const hour = pad2(dateObj.getHours());
+      const min = pad2(dateObj.getMinutes());
+      const sec = pad2(dateObj.getSeconds());
+      return year + "-" + month + "-" + day + " " + hour + ":" + min + ":" + sec;
+    }
+
+    function toDBDateTime(rawInput) {
+      const value = normalize(rawInput);
+      if (!value) return "";
+      const dt = parseDateValue(value);
+      if (!dt) {
+        return value.replace("T", " ");
+      }
+      return formatDateForDB(dt);
+    }
+
+    function toDateTimeLocal(raw) {
+      const dt = parseDateValue(raw);
+      if (!dt) return "";
+      const year = dt.getFullYear();
+      const month = pad2(dt.getMonth() + 1);
+      const day = pad2(dt.getDate());
+      const hour = pad2(dt.getHours());
+      const min = pad2(dt.getMinutes());
+      return year + "-" + month + "-" + day + "T" + hour + ":" + min;
+    }
+
+    function toDateKey(raw) {
+      const dt = parseDateValue(raw);
+      if (!dt) {
+        const v = normalize(raw);
+        return v.length >= 10 ? v.slice(0, 10) : "";
+      }
+      const year = dt.getFullYear();
+      const month = pad2(dt.getMonth() + 1);
+      const day = pad2(dt.getDate());
+      return year + "-" + month + "-" + day;
+    }
+
+    function getAppointmentStatusClass(status) {
+      const v = normalize(status).toLowerCase();
+      if (v === "completada") return "done";
+      if (v === "cancelada") return "cancel";
+      return "pending";
+    }
+
+    function getAppointmentStatusLabel(status) {
+      const v = normalize(status).toLowerCase();
+      if (v === "completada") return "Completada";
+      if (v === "cancelada") return "Cancelada";
+      return "Programada";
+    }
+
     function resolveCurrentActorContext() {
       const sessionEmail = normalize(state.adminEmail).toLowerCase();
       const sessionName = normalize(state.adminName);
@@ -549,6 +734,19 @@
       select.innerHTML = html;
     }
 
+    function renderAppointmentConversationOptions() {
+      const select = document.getElementById("appointmentConversation");
+      if (!select) return;
+      let html = '<option value="0">Sin conversacion asociada</option>';
+      state.conversaciones.forEach(function (c) {
+        const id = Number(c.id || 0);
+        if (!id) return;
+        const title = normalize(c.titulo || ("Conversacion " + id));
+        html += '<option value="' + id + '">' + escapeHtml(title) + '</option>';
+      });
+      select.innerHTML = html;
+    }
+
     async function loadConversaciones() {
       const url = new URL("/api/empresa/chat_tareas/conversaciones", window.location.origin);
       url.searchParams.set("empresa_id", String(state.empresaID));
@@ -566,6 +764,7 @@
         state.conversacionID = Number(state.conversaciones[0].id);
       }
       renderConversaciones();
+      renderAppointmentConversationOptions();
     }
 
     function renderConversaciones() {
@@ -852,6 +1051,328 @@
       });
     }
 
+    function formatMonthLabel(year, month) {
+      const dt = new Date(year, month, 1);
+      return dt.toLocaleDateString("es-ES", { month: "long", year: "numeric" });
+    }
+
+    function formatHourMinute(raw) {
+      const dt = parseDateValue(raw);
+      if (!dt) return "--:--";
+      return pad2(dt.getHours()) + ":" + pad2(dt.getMinutes());
+    }
+
+    function getCalendarRange() {
+      const firstDay = new Date(state.calendarYear, state.calendarMonth, 1, 0, 0, 0, 0);
+      const lastDay = new Date(state.calendarYear, state.calendarMonth + 1, 0, 23, 59, 59, 0);
+      const rangeStart = new Date(firstDay);
+      rangeStart.setDate(rangeStart.getDate() - 8);
+      const rangeEnd = new Date(lastDay);
+      rangeEnd.setDate(rangeEnd.getDate() + 8);
+      return {
+        desde: formatDateForDB(rangeStart),
+        hasta: formatDateForDB(rangeEnd)
+      };
+    }
+
+    function citasDelDia(dateKey) {
+      return state.citas
+        .filter(function (c) {
+          const estado = normalize(c.estado || "activo").toLowerCase();
+          if (estado !== "activo") return false;
+          return toDateKey(c.fecha_inicio) === dateKey;
+        })
+        .sort(function (a, b) {
+          return normalize(a.fecha_inicio).localeCompare(normalize(b.fecha_inicio));
+        });
+    }
+
+    function renderCalendar() {
+      const grid = document.getElementById("calendarGrid");
+      const label = document.getElementById("calendarMonthLabel");
+      if (!grid || !label) return;
+
+      label.textContent = formatMonthLabel(state.calendarYear, state.calendarMonth);
+
+      const first = new Date(state.calendarYear, state.calendarMonth, 1);
+      const startWeekDay = (first.getDay() + 6) % 7;
+      const daysInMonth = new Date(state.calendarYear, state.calendarMonth + 1, 0).getDate();
+      const daysPrevMonth = new Date(state.calendarYear, state.calendarMonth, 0).getDate();
+
+      let html = "";
+      for (let i = 0; i < 42; i += 1) {
+        let dayNumber = 0;
+        let cellDate = null;
+        let inCurrentMonth = true;
+
+        if (i < startWeekDay) {
+          dayNumber = daysPrevMonth - startWeekDay + i + 1;
+          cellDate = new Date(state.calendarYear, state.calendarMonth - 1, dayNumber);
+          inCurrentMonth = false;
+        } else if (i >= startWeekDay + daysInMonth) {
+          dayNumber = i - (startWeekDay + daysInMonth) + 1;
+          cellDate = new Date(state.calendarYear, state.calendarMonth + 1, dayNumber);
+          inCurrentMonth = false;
+        } else {
+          dayNumber = i - startWeekDay + 1;
+          cellDate = new Date(state.calendarYear, state.calendarMonth, dayNumber);
+        }
+
+        const dateKey = toDateKey(formatDateForDB(cellDate));
+        const dayCitas = citasDelDia(dateKey);
+        const isToday = toDateKey(formatDateForDB(new Date())) === dateKey;
+        const isSelected = state.calendarSelectedDate === dateKey;
+
+        html += '<article class="chat-calendar-day' + (inCurrentMonth ? "" : " out-month") + (isToday ? " today" : "") + (isSelected ? " selected" : "") + '" data-date="' + dateKey + '">';
+        html += '<div class="chat-calendar-day-top"><span>' + dayNumber + '</span><small>' + dayCitas.length + ' cita(s)</small></div>';
+        html += '<div class="chat-calendar-events">';
+        dayCitas.slice(0, 3).forEach(function (cita) {
+          html += '<button type="button" class="chat-calendar-event ' + getAppointmentStatusClass(cita.estado_cita) + '" data-id="' + Number(cita.id || 0) + '">';
+          html += escapeHtml(formatHourMinute(cita.fecha_inicio) + ' ' + normalize(cita.titulo || 'Cita'));
+          html += '</button>';
+        });
+        if (dayCitas.length > 3) {
+          html += '<div class="chat-calendar-more">+' + (dayCitas.length - 3) + ' mas</div>';
+        }
+        html += '</div>';
+        html += '</article>';
+      }
+
+      grid.innerHTML = html;
+
+      Array.from(grid.querySelectorAll(".chat-calendar-day")).forEach(function (cell) {
+        cell.onclick = function () {
+          const dateKey = normalize(cell.getAttribute("data-date"));
+          state.calendarSelectedDate = dateKey;
+          renderCalendar();
+          const currentId = Number(document.getElementById("appointmentId").value || 0);
+          if (!currentId && dateKey) {
+            document.getElementById("appointmentStart").value = dateKey + "T09:00";
+            document.getElementById("appointmentEnd").value = dateKey + "T10:00";
+          }
+        };
+      });
+
+      Array.from(grid.querySelectorAll(".chat-calendar-event")).forEach(function (btn) {
+        btn.onclick = function (event) {
+          event.stopPropagation();
+          const citaID = Number(btn.getAttribute("data-id") || 0);
+          if (!citaID) return;
+          const cita = state.citas.find(function (item) { return Number(item.id || 0) === citaID; });
+          if (!cita) return;
+          fillAppointmentForm(cita);
+        };
+      });
+    }
+
+    function appointmentActionButtons(cita) {
+      const id = Number(cita.id || 0);
+      const estado = normalize(cita.estado || "activo").toLowerCase();
+      const estadoCita = normalize(cita.estado_cita || "programada").toLowerCase();
+
+      let html = '<button type="button" class="btn secondary appointment-edit" data-id="' + id + '">Editar</button>';
+      if (estadoCita === "programada") {
+        html += '<button type="button" class="btn secondary appointment-action" data-id="' + id + '" data-action="completar">Completar</button>';
+        html += '<button type="button" class="btn secondary appointment-action" data-id="' + id + '" data-action="cancelar">Cancelar</button>';
+      } else {
+        html += '<button type="button" class="btn secondary appointment-action" data-id="' + id + '" data-action="reprogramar">Reprogramar</button>';
+      }
+      html += '<button type="button" class="btn secondary appointment-action" data-id="' + id + '" data-action="' + (estado === "activo" ? "desactivar" : "activar") + '">' + (estado === "activo" ? "Desactivar" : "Activar") + '</button>';
+      html += '<button type="button" class="btn danger appointment-delete" data-id="' + id + '">Eliminar</button>';
+      return html;
+    }
+
+    function renderAppointments() {
+      const box = document.getElementById("appointmentList");
+      if (!box) return;
+      if (!state.citas.length) {
+        box.innerHTML = '<div class="chat-empty">No hay citas para el filtro actual.</div>';
+        return;
+      }
+
+      let html = "";
+      state.citas.forEach(function (cita) {
+        html += '<article class="appointment-item">';
+        html += '<div class="task-top">';
+        html += '<strong>' + escapeHtml(cita.titulo || "Sin titulo") + '</strong>';
+        html += '<span class="badge ' + getPriorityClass(cita.tipo_cita) + '">' + escapeHtml((cita.tipo_cita || "reunion").toUpperCase()) + '</span>';
+        html += '</div>';
+        html += '<div class="task-meta">Estado: <span class="task-status ' + getAppointmentStatusClass(cita.estado_cita) + '">' + escapeHtml(getAppointmentStatusLabel(cita.estado_cita)) + '</span> | Registro: ' + escapeHtml(normalize(cita.estado || "activo")) + '</div>';
+        html += '<div class="task-meta">Inicio: ' + escapeHtml(formatDate(cita.fecha_inicio)) + ' | Fin: ' + escapeHtml(formatDate(cita.fecha_fin)) + '</div>';
+        html += '<div class="task-meta">Recordatorio: ' + Number(cita.notificar_minutos_antes || 30) + ' min antes</div>';
+        if (normalize(cita.ubicacion)) {
+          html += '<div class="task-meta">Ubicacion: ' + escapeHtml(cita.ubicacion) + '</div>';
+        }
+        if (normalize(cita.descripcion)) {
+          html += '<div class="task-desc">' + escapeHtml(cita.descripcion) + '</div>';
+        }
+        html += '<div class="task-actions">' + appointmentActionButtons(cita) + '</div>';
+        html += '</article>';
+      });
+
+      box.innerHTML = html;
+
+      Array.from(box.querySelectorAll(".appointment-edit")).forEach(function (btn) {
+        btn.onclick = function () {
+          const citaID = Number(btn.getAttribute("data-id") || 0);
+          const cita = state.citas.find(function (row) { return Number(row.id || 0) === citaID; });
+          if (!cita) return;
+          fillAppointmentForm(cita);
+        };
+      });
+
+      Array.from(box.querySelectorAll(".appointment-action")).forEach(function (btn) {
+        btn.onclick = async function () {
+          const citaID = Number(btn.getAttribute("data-id") || 0);
+          const action = normalize(btn.getAttribute("data-action"));
+          if (!citaID || !action) return;
+          try {
+            const url = new URL("/api/empresa/chat_tareas/citas", window.location.origin);
+            url.searchParams.set("empresa_id", String(state.empresaID));
+            url.searchParams.set("id", String(citaID));
+            url.searchParams.set("action", action);
+            const resp = await fetch(url.pathname + url.search, { method: "PUT" });
+            await ensureOk(resp);
+            await loadAppointments();
+            setHelp("appointmentMsg", "Cita actualizada", false);
+          } catch (err) {
+            setHelp("appointmentMsg", err.message || "No se pudo actualizar la cita", true);
+          }
+        };
+      });
+
+      Array.from(box.querySelectorAll(".appointment-delete")).forEach(function (btn) {
+        btn.onclick = async function () {
+          const citaID = Number(btn.getAttribute("data-id") || 0);
+          if (!citaID) return;
+          if (!confirm("¿Eliminar esta cita?")) return;
+          try {
+            const url = new URL("/api/empresa/chat_tareas/citas", window.location.origin);
+            url.searchParams.set("empresa_id", String(state.empresaID));
+            url.searchParams.set("id", String(citaID));
+            const resp = await fetch(url.pathname + url.search, { method: "DELETE" });
+            await ensureOk(resp);
+            await loadAppointments();
+            clearAppointmentForm();
+            setHelp("appointmentMsg", "Cita eliminada", false);
+          } catch (err) {
+            setHelp("appointmentMsg", err.message || "No se pudo eliminar la cita", true);
+          }
+        };
+      });
+    }
+
+    function fillAppointmentForm(cita) {
+      if (!cita) return;
+      document.getElementById("appointmentId").value = Number(cita.id || 0);
+      document.getElementById("appointmentTitle").value = normalize(cita.titulo);
+      document.getElementById("appointmentDescription").value = normalize(cita.descripcion);
+      document.getElementById("appointmentType").value = normalize(cita.tipo_cita || "reunion") || "reunion";
+      document.getElementById("appointmentEstado").value = normalize(cita.estado_cita || "programada") || "programada";
+      document.getElementById("appointmentStart").value = toDateTimeLocal(cita.fecha_inicio);
+      document.getElementById("appointmentEnd").value = toDateTimeLocal(cita.fecha_fin || cita.fecha_inicio);
+      document.getElementById("appointmentReminder").value = Number(cita.notificar_minutos_antes || 30);
+      document.getElementById("appointmentLocation").value = normalize(cita.ubicacion);
+      document.getElementById("appointmentConversation").value = String(Number(cita.conversacion_id || 0));
+      state.calendarSelectedDate = toDateKey(cita.fecha_inicio);
+      renderCalendar();
+    }
+
+    function clearAppointmentForm() {
+      const form = document.getElementById("appointmentForm");
+      if (!form) return;
+      form.reset();
+      document.getElementById("appointmentId").value = "";
+      document.getElementById("appointmentType").value = "reunion";
+      document.getElementById("appointmentEstado").value = "programada";
+      document.getElementById("appointmentReminder").value = "30";
+      document.getElementById("appointmentConversation").value = "0";
+      const now = new Date();
+      now.setMinutes(now.getMinutes() + 30);
+      const end = new Date(now.getTime() + (60 * 60 * 1000));
+      document.getElementById("appointmentStart").value = toDateTimeLocal(now);
+      document.getElementById("appointmentEnd").value = toDateTimeLocal(end);
+    }
+
+    async function markAppointmentReminderAsSent(citaID) {
+      const url = new URL("/api/empresa/chat_tareas/citas", window.location.origin);
+      url.searchParams.set("empresa_id", String(state.empresaID));
+      url.searchParams.set("id", String(citaID));
+      url.searchParams.set("action", "marcar_recordatorio");
+      const resp = await fetch(url.pathname + url.search, { method: "PUT" });
+      await ensureOk(resp);
+    }
+
+    async function checkAppointmentReminders() {
+      const banner = document.getElementById("calendarReminderBanner");
+      if (!banner) return;
+
+      const now = new Date();
+      const reminders = [];
+      for (let i = 0; i < state.citas.length; i += 1) {
+        const cita = state.citas[i];
+        if (normalize(cita.estado || "activo").toLowerCase() !== "activo") continue;
+        if (normalize(cita.estado_cita || "programada").toLowerCase() !== "programada") continue;
+
+        const start = parseDateValue(cita.fecha_inicio);
+        if (!start) continue;
+
+        const minsBefore = Number(cita.notificar_minutos_antes || 30);
+        const diffMin = (start.getTime() - now.getTime()) / 60000;
+        if (diffMin < 0 || diffMin > minsBefore) continue;
+
+        const key = String(Number(cita.id || 0)) + "|" + String(start.getTime());
+        if (state.reminderShownKeys[key]) continue;
+        state.reminderShownKeys[key] = true;
+
+        reminders.push(cita);
+      }
+
+      if (!reminders.length) {
+        banner.hidden = true;
+        banner.textContent = "";
+        return;
+      }
+
+      const preview = reminders.slice(0, 3).map(function (cita) {
+        return normalize(cita.titulo || "Cita") + " (" + formatHourMinute(cita.fecha_inicio) + ")";
+      }).join(" | ");
+      const extra = reminders.length > 3 ? (" y " + (reminders.length - 3) + " mas") : "";
+      banner.hidden = false;
+      banner.textContent = "Recordatorio: tienes citas proximas. " + preview + extra;
+
+      for (let i = 0; i < reminders.length; i += 1) {
+        const citaID = Number(reminders[i].id || 0);
+        if (!citaID) continue;
+        if (Number(reminders[i].recordatorio_enviado || 0) > 0) continue;
+        try {
+          await markAppointmentReminderAsSent(citaID);
+          reminders[i].recordatorio_enviado = 1;
+        } catch (_) {
+          // El recordatorio visual ya se muestra; si falla el marcado se reintentará en la próxima carga.
+        }
+      }
+    }
+
+    async function loadAppointments() {
+      const url = new URL("/api/empresa/chat_tareas/citas", window.location.origin);
+      url.searchParams.set("empresa_id", String(state.empresaID));
+      url.searchParams.set("include_inactive", "1");
+      const range = getCalendarRange();
+      url.searchParams.set("desde", range.desde);
+      url.searchParams.set("hasta", range.hasta);
+      if (state.appointmentEstadoFilter) url.searchParams.set("estado_cita", state.appointmentEstadoFilter);
+      if (state.appointmentSearch) url.searchParams.set("q", state.appointmentSearch);
+
+      const resp = await fetch(url.pathname + url.search);
+      await ensureOk(resp);
+      const rows = await resp.json();
+      state.citas = Array.isArray(rows) ? rows : [];
+      renderCalendar();
+      renderAppointments();
+      await checkAppointmentReminders();
+    }
+
     async function loadCurrentConversationData() {
       await Promise.all([
         loadParticipantes(),
@@ -864,6 +1385,7 @@
       try {
         await loadConversaciones();
         await loadCurrentConversationData();
+        await loadAppointments();
         setHelp("convMsg", "Datos actualizados", false);
       } catch (err) {
         setHelp("convMsg", err.message || "No se pudo actualizar", true);
@@ -1083,6 +1605,116 @@
       }
     };
 
+    document.getElementById("calendarPrevBtn").onclick = async function () {
+      state.calendarMonth -= 1;
+      if (state.calendarMonth < 0) {
+        state.calendarMonth = 11;
+        state.calendarYear -= 1;
+      }
+      try {
+        await loadAppointments();
+      } catch (err) {
+        setHelp("appointmentMsg", err.message || "No se pudo cargar el calendario", true);
+      }
+    };
+
+    document.getElementById("calendarNextBtn").onclick = async function () {
+      state.calendarMonth += 1;
+      if (state.calendarMonth > 11) {
+        state.calendarMonth = 0;
+        state.calendarYear += 1;
+      }
+      try {
+        await loadAppointments();
+      } catch (err) {
+        setHelp("appointmentMsg", err.message || "No se pudo cargar el calendario", true);
+      }
+    };
+
+    document.getElementById("calendarTodayBtn").onclick = async function () {
+      const now = new Date();
+      state.calendarYear = now.getFullYear();
+      state.calendarMonth = now.getMonth();
+      state.calendarSelectedDate = toDateKey(formatDateForDB(now));
+      try {
+        await loadAppointments();
+      } catch (err) {
+        setHelp("appointmentMsg", err.message || "No se pudo cargar el calendario", true);
+      }
+    };
+
+    document.getElementById("appointmentSearchBtn").onclick = async function () {
+      state.appointmentSearch = normalize(document.getElementById("appointmentSearch").value);
+      state.appointmentEstadoFilter = normalize(document.getElementById("appointmentEstadoFilter").value);
+      try {
+        await loadAppointments();
+      } catch (err) {
+        setHelp("appointmentMsg", err.message || "No se pudo filtrar citas", true);
+      }
+    };
+
+    document.getElementById("clearAppointmentBtn").onclick = function () {
+      clearAppointmentForm();
+      setHelp("appointmentMsg", "Formulario de cita reiniciado", false);
+    };
+
+    document.getElementById("appointmentForm").onsubmit = async function (e) {
+      e.preventDefault();
+      const citaID = Number(document.getElementById("appointmentId").value || 0);
+      const fechaInicio = toDBDateTime(document.getElementById("appointmentStart").value);
+      const fechaFinInput = normalize(document.getElementById("appointmentEnd").value);
+      const fechaFin = toDBDateTime(fechaFinInput || document.getElementById("appointmentStart").value);
+      const reminderRaw = Number(document.getElementById("appointmentReminder").value || 30);
+
+      const payload = {
+        empresa_id: state.empresaID,
+        conversacion_id: Number(document.getElementById("appointmentConversation").value || 0),
+        titulo: normalize(document.getElementById("appointmentTitle").value),
+        descripcion: normalize(document.getElementById("appointmentDescription").value),
+        tipo_cita: normalize(document.getElementById("appointmentType").value) || "reunion",
+        fecha_inicio: fechaInicio,
+        fecha_fin: fechaFin,
+        ubicacion: normalize(document.getElementById("appointmentLocation").value),
+        notificar_minutos_antes: Number.isFinite(reminderRaw) && reminderRaw > 0 ? reminderRaw : 30,
+        estado_cita: normalize(document.getElementById("appointmentEstado").value) || "programada",
+        visibilidad: "empresa",
+        estado: "activo"
+      };
+
+      if (!payload.titulo) {
+        setHelp("appointmentMsg", "El titulo de la cita es obligatorio", true);
+        return;
+      }
+      if (!payload.fecha_inicio) {
+        setHelp("appointmentMsg", "La fecha de inicio es obligatoria", true);
+        return;
+      }
+
+      try {
+        let resp;
+        if (citaID > 0) {
+          payload.id = citaID;
+          resp = await fetch("/api/empresa/chat_tareas/citas", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+        } else {
+          resp = await fetch("/api/empresa/chat_tareas/citas", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+        }
+        await ensureOk(resp);
+        clearAppointmentForm();
+        await loadAppointments();
+        setHelp("appointmentMsg", citaID > 0 ? "Cita actualizada" : "Cita creada", false);
+      } catch (err) {
+        setHelp("appointmentMsg", err.message || "No se pudo guardar la cita", true);
+      }
+    };
+
     document.getElementById("recordMessageVoiceBtn").onclick = async function () {
       await startVoiceRecording("message");
     };
@@ -1123,11 +1755,26 @@
         updateTaskVoiceUI();
         await Promise.all([loadEmpresa(), loadMe(), loadUsers()]);
         await loadConversaciones();
+        clearAppointmentForm();
         await loadCurrentConversationData();
+        await loadAppointments();
+
+        window.setInterval(function () {
+          checkAppointmentReminders();
+        }, 60000);
+
+        window.setInterval(async function () {
+          try {
+            await loadAppointments();
+          } catch (_) {
+            // El usuario puede continuar operando chat/tareas aunque falle sincronizacion de citas.
+          }
+        }, 180000);
       } catch (err) {
         setHelp("convMsg", err.message || "Error cargando módulo", true);
         setHelp("messageMsg", err.message || "Error cargando módulo", true);
         setHelp("taskMsg", err.message || "Error cargando módulo", true);
+        setHelp("appointmentMsg", err.message || "Error cargando módulo", true);
       }
     })();
   </script>

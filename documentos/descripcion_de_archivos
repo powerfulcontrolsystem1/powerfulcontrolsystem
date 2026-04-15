@@ -1,5 +1,270 @@
 Descripcion de archivos del proyecto
 
+Actualizacion 2026-04-15: host canónico para login Google y carga visible en estaciones
+ - Archivos modificados:
+	- backend/utils/utils.go
+	- backend/utils/utils_test.go
+	- backend/main.go
+	- backend/.env.example
+	- scripts/sync_to_vps.ps1
+	- web/administrar_empresa/estaciones.html
+	- web/estilos.css
+	- documentos/descripcion_del_proyecto
+	- documentos/diagramas/estructura_del_codigo.md
+	- documentos/descripcion_de_modulos
+	- documentos/matriz_roles_permisos_pos_multiempresa.md
+	- documentos/descripcion_de_archivos
+	- documentos/historial_de_cambios
+	- CHANGELOG.md
+ - Descripcion: Se agrega un middleware HTTP para redirigir `www.powerfulcontrolsystem.com` al dominio raíz antes de procesar autenticación y recursos, estabilizando el flujo Google OAuth y evitando mezclar callbacks/cookies entre hosts públicos. Además, `web/administrar_empresa/estaciones.html` muestra `Cargando estaciones...` mientras consulta configuración, carritos y sensores, con mensaje explícito si la carga falla.
+ - Verificacion: `go test ./utils -run "Test(CanonicalPublicHostMiddleware|LoggingMiddlewareSetsContextAndWritesLogs|JSONErrorMiddlewareWrapsNonJSONError)" -count=1`; `go test ./handlers -run "TestHandleGoogleLogin" -count=1`; diagnostico del editor sin errores nuevos en los archivos tocados (persisten solo advertencias preexistentes de verbos no aprobados en `scripts/sync_to_vps.ps1`).
+
+Actualizacion 2026-04-15: whitelist publico para landing descriptiva y contacto del portal
+ - Archivos modificados:
+	- backend/utils/utils.go
+	- backend/handlers/auth_users_carritos_test.go
+	- documentos/descripcion_del_proyecto
+	- documentos/diagramas/estructura_del_codigo.md
+	- documentos/descripcion_de_modulos
+	- documentos/matriz_roles_permisos_pos_multiempresa.md
+	- documentos/descripcion_de_archivos
+	- documentos/historial_de_cambios
+	- CHANGELOG.md
+ - Descripcion: `AuthMiddleware` pasa a tratar `/descripcion_de_los_sistemas.ht` y `/Informacion_de_contacto.html` como rutas publicas exactas, manteniendo sin login el home comercial `index.html`, la landing descriptiva de sistemas y la pagina publica de contacto. La prueba de middleware se amplia para cubrir estas tres paginas del portal.
+ - Verificacion: `go test ./handlers -run "TestAuthMiddlewareAllowsPublicPortalPagesAssetsAndHomeCardsAPI" -count=1`; diagnostico del editor sin errores en `backend/utils/utils.go`, `backend/handlers/auth_users_carritos_test.go` y los documentos actualizados.
+
+Actualizacion 2026-04-15: contacto visible en portal publico y nueva pagina de informacion
+ - Archivos creados:
+	- web/Informacion_de_contacto.html
+ - Archivos modificados:
+	- web/index.html
+	- web/estilos.css
+	- documentos/descripcion_del_proyecto
+	- documentos/diagramas/estructura_del_codigo.md
+	- documentos/descripcion_de_modulos
+	- documentos/matriz_roles_permisos_pos_multiempresa.md
+	- documentos/descripcion_de_archivos
+	- documentos/historial_de_cambios
+	- CHANGELOG.md
+ - Descripcion: Se agrega en `web/index.html` un acceso superior a la pagina publica `web/Informacion_de_contacto.html`, se renombra el acceso principal a `Registrarse o iniciar sesión` y ambos botones quedan agrupados en el encabezado. Ademas se mantiene el boton flotante `Contactenos` hacia WhatsApp y `web/estilos.css` concentra el layout responsive de esta experiencia.
+ - Verificacion: Diagnostico del editor sin errores en `web/index.html`, `web/Informacion_de_contacto.html` y `web/estilos.css`.
+
+Actualizacion 2026-04-15: landing descriptiva unica para tarjetas del portal publico
+ - Archivos creados:
+	- web/descripcion_de_los_sistemas.ht
+ - Archivos modificados:
+	- web/index.html
+	- web/super/pagina_principal.html
+	- web/estilos.css
+	- documentos/descripcion_del_proyecto
+	- documentos/diagramas/estructura_del_codigo.md
+	- documentos/descripcion_de_modulos
+	- documentos/matriz_roles_permisos_pos_multiempresa.md
+	- documentos/descripcion_de_archivos
+	- documentos/historial_de_cambios
+	- CHANGELOG.md
+ - Descripcion: Se crea una landing publica unica (`web/descripcion_de_los_sistemas.ht`) que concentra la descripcion ampliada de todas las tarjetas del home. `web/index.html` ahora dirige `Explorar oferta` a la seccion correspondiente de esa pagina mediante anclas, y `web/super/pagina_principal.html` aclara que el enlace configurado en cada tarjeta alimenta el boton `Probar Gratis` mostrado dentro de la landing.
+ - Verificacion: Diagnostico del editor sin errores en `web/index.html`, `web/descripcion_de_los_sistemas.ht`, `web/super/pagina_principal.html` y `web/estilos.css`.
+
+Actualizacion 2026-04-15: checkout de licencias con Epayco primero y Wompi gobernado por configuracion avanzada
+ - Archivos modificados:
+	- backend/handlers/payments_handlers.go
+	- backend/handlers/system_empresas_handlers_test.go
+	- backend/main.go
+	- web/pagar_licencia.html
+	- web/super/configuracion_avanzada.html
+	- web/estilos.css
+	- documentos/descripcion_del_proyecto
+	- documentos/diagramas/estructura_del_codigo.md
+	- documentos/descripcion_de_modulos
+	- documentos/matriz_roles_permisos_pos_multiempresa.md
+	- documentos/descripcion_de_archivos
+	- documentos/historial_de_cambios
+	- CHANGELOG.md
+ - Descripcion: Se ordena el checkout publico de licencias para mostrar solo Epayco y Wompi con prioridad visual Epayco -> Wompi, se agrega una API publica de disponibilidad de pasarelas, Wompi ya persiste su toggle `enabled` desde configuracion avanzada y el backend bloquea sus flujos publicos cuando la pasarela esta desactivada o incompleta. La UI super tambien permite activar/desactivar ambas pasarelas sin forzar reingreso de llaves en cada cambio.
+ - Verificacion: `go test ./handlers -run "TestPublicLicenciasPaymentMethodsHandlerOrdersAndAvailability|TestWompiConfigHandlerPersistsEnabledFlag|TestWompiTermsHandlerRejectsWhenDisabled" -count=1`; `go test ./ -run "^$" -count=1`; diagnostico del editor sin errores en `web/pagar_licencia.html`, `web/super/configuracion_avanzada.html` y `web/estilos.css`.
+
+Actualizacion 2026-04-15: Hardening de login Google y recordar cuenta en escritorio
+ - Archivos modificados:
+	- backend/handlers/auth_admin_handlers.go
+	- backend/handlers/auth_users_carritos_test.go
+	- web/js/login.js
+	- web/menu.js
+	- web/js/super_administrador.js
+	- web/js/seleccionar_empresa.js
+	- documentos/descripcion_del_proyecto
+	- documentos/diagramas/estructura_del_codigo.md
+	- documentos/descripcion_de_modulos
+	- documentos/matriz_roles_permisos_pos_multiempresa.md
+	- documentos/descripcion_de_archivos
+	- documentos/historial_de_cambios
+	- CHANGELOG.md
+ - Descripcion: Se endurece el login Google para descartar `login_hint` no validos y se limpia/persiste `rememberedEmail` solo cuando el dato es un correo plausible. Con ello se evita que estados locales corruptos hagan que Google muestre un hint equivocado o rompan el flujo en escritorio.
+ - Verificacion: `go test ./handlers -run "TestHandleGoogleLogin" -count=1`; `go test ./ ./auth ./db ./handlers ./metrics ./utils -run "^$" -count=1`.
+
+Actualizacion 2026-04-15: Refuerzo responsive transversal del frontend web
+ - Archivos modificados:
+	- web/index.html
+	- web/estilos.css
+	- documentos/descripcion_del_proyecto
+	- documentos/descripcion_de_modulos
+	- documentos/matriz_roles_permisos_pos_multiempresa.md
+	- documentos/descripcion_de_archivos
+	- documentos/historial_de_cambios
+	- CHANGELOG.md
+ - Descripcion: Se mejora la adaptacion entre computador, tablet y celular en la portada publica y en layouts compartidos del sistema. El hero de `index.html` ya no depende de una sola linea rigida, los paneles administrativos colapsan con navegacion mas usable en movil, y formularios/tablas/botones ganan mejor apilado y scroll horizontal controlado.
+ - Verificacion: Diagnostico del editor sin errores en `web/index.html` y `web/estilos.css`.
+
+Actualizacion 2026-04-15: guia Nginx del VPS corregida para HTTPS publico sin puerto
+ - Archivos modificados:
+	- documentos/deploy_nginx_reverse_proxy_vps.md
+	- documentos/descripcion_de_archivos
+	- documentos/historial_de_cambios
+	- CHANGELOG.md
+ - Descripcion: Se corrige la guia operativa de Nginx para incluir la apertura de `443/tcp` en UFW, las verificaciones HTTPS posteriores a Certbot y la nota de que `www.powerfulcontrolsystem.com` debe quedar cubierto por el certificado y sin respuestas `404` en HTTP. El ajuste refleja la reparacion aplicada en el VPS productivo para que el dominio vuelva a cargar sin especificar puerto.
+ - Verificacion: VPS con `nginx -t` en verde, `ufw status` mostrando `443/tcp ALLOW`, certificado LetsEncrypt renovado para `powerfulcontrolsystem.com` y `www.powerfulcontrolsystem.com`, y `curl -I https://powerfulcontrolsystem.com/` / `curl -I https://www.powerfulcontrolsystem.com/` respondiendo `200 OK`.
+
+Actualizacion 2026-04-15: sync_to_vps sanea listeners huerfanos antes del restart remoto
+ - Archivos modificados:
+	- scripts/sync_to_vps.ps1
+	- scripts/sync_to_vps.sh
+	- scripts/README_sync.md
+	- documentos/descripcion_de_archivos
+	- documentos/historial_de_cambios
+	- CHANGELOG.md
+ - Descripcion: Los scripts de despliegue ahora detienen procesos ajenos a `systemd` que aun escuchen en `SERVER_PORT` antes de iniciar el backend remoto, registrando `DEPLOY_WARN:PORT_IN_USE`, `DEPLOY_WARN:PORT_PID` y `DEPLOY_WARN:PORT_PID_FORCE` para diagnosticar binarios huérfanos o eliminados que bloqueen el puerto y provoquen bucles de reinicio en `powerfulcontrolsystem.service`.
+ - Verificacion: saneamiento manual validado en VPS con el proceso huérfano PID `84304` (`/root/powerfulcontrolsystem/backend/bin/server_linux_amd64 (deleted)`) liberando `:8080`; `powerfulcontrolsystem.service` queda `active (running)` con PID nuevo y `curl -k -I https://powerfulcontrolsystem.com/auth/google/login` mantiene `redirect_uri=https://powerfulcontrolsystem.com/auth/google/callback`.
+
+Actualizacion 2026-04-15: sync_to_vps reforzado para preparacion del VPS y soporte operativo
+ - Archivos modificados:
+	- scripts/sync_to_vps.ps1
+	- scripts/sync_to_vps.sh
+	- scripts/README_sync.md
+	- documentos/descripcion_del_proyecto
+	- documentos/diagramas/estructura_del_codigo.md
+	- documentos/descripcion_de_archivos
+	- documentos/historial_de_cambios
+	- CHANGELOG.md
+ - Descripcion: Se endurecen los scripts de despliegue con validaciones tempranas (`REMOTE_PORT`, `SERVER_PORT`, `HEALTH_TIMEOUT`), preparacion asistida del VPS segun gestor de paquetes, actualizacion obligatoria de `SERVER_PORT` en `backend/.env.local`, mensajes etiquetados por etapa (`BOOTSTRAP_*`, `DEPLOY_*`) y diagnosticos accionables para dependencias, privilegios, DSN PostgreSQL, cifrado y arranque del servicio `systemd`.
+ - Verificacion: Parser PowerShell en verde para `scripts/sync_to_vps.ps1`; previsualizacion local con `-PreviewOnly -SkipBuild`; diagnostico del editor sobre `scripts/sync_to_vps.sh` sin errores y validacion directa con `bash -n` pendiente por ausencia de una distro WSL/Git Bash real en este equipo.
+
+Actualizacion 2026-04-15: Reparacion de recordar cuenta y estado de sesion visible en login/menu
+ - Archivos modificados:
+	- backend/handlers/auth_admin_handlers.go
+	- backend/handlers/accept_handlers.go
+	- backend/handlers/usuarios_empresa.go
+	- backend/handlers/e2e_login_acceptance_test.go
+	- backend/handlers/auth_users_carritos_test.go
+	- backend/main.go
+	- web/js/login.js
+	- web/menu.js
+	- documentos/diagramas/estructura_del_codigo.md
+	- documentos/descripcion_de_modulos
+	- documentos/matriz_roles_permisos_pos_multiempresa.md
+	- documentos/descripcion_de_archivos
+	- documentos/historial_de_cambios
+	- CHANGELOG.md
+ - Descripcion: Se corrige el fallo de `recordar cuenta` y del estado de sesion en `menu.js` provocado por intentar leer `session_token` desde JavaScript aun cuando esa cookie es `HttpOnly`; el backend ahora emite `browser_session_active` como señal visible no sensible junto con la sesion real, y el frontend la usa para sincronizar `/me`, avatar y enlace de logout sin exponer el token.
+ - Verificacion: `go test ./handlers -run "TestE2E_AcceptContractCreatesSession|TestEmpresaUsuario(LoginHandlerSuccess|LoginHandlerRejectsWrongEmpresaScope|LoginHandlerRejectsWrongEmpresaScopeFromQuery|SetPasswordHandlerSuccess)|TestSuperEndpointsPermisosPorRol" -count=1`; `go test ./ ./auth ./db ./handlers ./metrics ./utils -run "^$" -count=1`.
+
+Actualizacion 2026-04-14: Persistencia del backend en VPS con systemd desde sync_to_vps
+ - Archivos modificados:
+	- scripts/sync_to_vps.ps1
+	- scripts/sync_to_vps.sh
+	- scripts/README_sync.md
+	- documentos/descripcion_del_proyecto
+	- documentos/diagramas/estructura_del_codigo.md
+	- documentos/deploy_nginx_reverse_proxy_vps.md
+	- documentos/descripcion_de_archivos
+	- documentos/historial_de_cambios
+	- CHANGELOG.md
+ - Descripcion: Los scripts de despliegue al VPS dejan de relanzar el backend con `nohup` y pasan a crear/actualizar una unidad `systemd` del proyecto, con `Restart=always`, `systemctl enable`, `EnvironmentFile=backend/.env.local` y salida persistida en `backend/server.log` / `backend/server.err`; con esto el servidor solo se reinicia durante `sync_to_vps`, vuelve automaticamente tras caidas del proceso y arranca solo despues de reinicios del VPS.
+ - Verificacion: validacion estatica de `scripts/sync_to_vps.ps1` mediante parser PowerShell; previsualizacion local de `scripts/sync_to_vps.ps1 -PreviewOnly -SkipBuild`; diagnostico del editor sobre `scripts/sync_to_vps.sh` sin errores de sintaxis. La validacion directa con `bash -n` queda pendiente en este equipo porque `wsl.exe` no tiene distro instalada y no hay Git Bash local.
+
+Actualizacion 2026-04-14: Reposicion del manual de instalacion y guia OAuth Google para VPS
+ - Archivos creados:
+	- documentos/manual_de_instalacion.md
+ - Archivos modificados:
+	- documentos/descripcion_de_archivos
+	- documentos/historial_de_cambios
+	- CHANGELOG.md
+ - Descripcion: Se repone el manual de instalacion eliminado en `HEAD` y se consolida una version limpia con la configuracion exacta de Google OAuth para local y produccion (`powerfulcontrolsystem.com`), incluyendo `Authorized redirect URIs`, `Authorized JavaScript origins`, notas de `redirect_uri_mismatch` y la guia operativa ya existente para ngrok, Wompi y Gmail SMTP.
+ - Verificacion: Revision documental del manual recreado confirmando URLs exactas para Google Cloud Console y ausencia de secretos reales en el contenido.
+
+Actualizacion 2026-04-14: Ajuste final OAuth Google HTTPS + portada index + limpieza de 401 en login
+ - Archivos modificados:
+	- backend/handlers/auth_admin_handlers.go
+	- backend/handlers/auth_users_carritos_test.go
+	- backend/utils/utils.go
+	- web/menu.js
+	- web/js/login.js
+	- web/login.html
+	- web/index.html
+	- web/estilos.css
+	- documentos/diagramas/estructura_del_codigo.md
+	- documentos/descripcion_de_modulos
+	- documentos/matriz_roles_permisos_pos_multiempresa.md
+	- documentos/descripcion_de_archivos
+	- documentos/historial_de_cambios
+	- CHANGELOG.md
+ - Descripcion: Se endurece OAuth para emitir `redirect_uri` HTTPS en dominios publicos y mantener callback local en `localhost`; se evita ruido `401` previo a login omitiendo fetch a `/me` cuando no existe `session_token`; se mantiene publica la carga de `js/login.js` y `/api/public/pagina_principal`; y se actualiza el encabezado del portal en `index.html` a `Sistema de Facturación Electrónica` con subtitulo operativo.
+ - Verificacion: `go test ./handlers -run "TestHandleGoogleLogin|TestAuthMiddlewareAllowsPublicLoginAssetsAndHomeCardsAPI" -v -count=1`; VPS `curl -I https://powerfulcontrolsystem.com/auth/google/login` confirma `redirect_uri=https://powerfulcontrolsystem.com/auth/google/callback`; `curl https://powerfulcontrolsystem.com/js/login.js` y `curl https://powerfulcontrolsystem.com/api/public/pagina_principal` -> `200`.
+
+Actualizacion 2026-04-14: Cierre operativo de Epayco en checkout de licencias
+ - Archivos modificados:
+	- backend/handlers/payments_handlers.go
+	- backend/main.go
+	- web/pagar_licencia.html
+	- documentos/descripcion_del_proyecto
+	- documentos/diagramas/estructura_del_codigo.md
+	- documentos/estructura_bd.md
+	- documentos/descripcion_de_modulos
+	- documentos/matriz_roles_permisos_pos_multiempresa.md
+	- documentos/descripcion_de_archivos
+	- documentos/historial_de_cambios
+	- CHANGELOG.md
+ - Descripcion: Se completa la pasarela Epayco para licencias (creacion de checkout, consulta de estado y webhook de confirmacion), se corrige la configuracion avanzada para aceptar credenciales reales sin restriccion numerica de `cust_id`, se habilita activacion automatica de licencia en estado aprobado y se actualiza el frontend para abrir el checkout de Epayco en nueva pestaña.
+ - Verificacion: `go test ./ -run "^$" -count=1`, `go test ./handlers -run "^$" -count=1`, `go test ./ ./auth ./db ./handlers ./metrics ./utils -run "^$" -count=1`.
+
+Actualizacion 2026-04-14: Agente de citas con calendario grande en modulo chat y tareas
+ - Archivos modificados:
+	- backend/db/chat_tareas.go
+	- backend/handlers/chat_tareas.go
+	- backend/handlers/chat_tareas_test.go
+	- backend/main.go
+	- web/administrar_empresa/chat_y_tareas.html
+	- web/estilos.css
+	- web/super/pagina_principal.html
+	- documentos/descripcion_del_proyecto
+	- documentos/diagramas/estructura_del_codigo.md
+	- documentos/estructura_bd.md
+	- documentos/descripcion_de_modulos
+	- documentos/matriz_roles_permisos_pos_multiempresa.md
+	- documentos/descripcion_de_archivos
+	- documentos/historial_de_cambios
+	- CHANGELOG.md
+ - Descripcion: Se agrega agenda de citas en el modulo `chat_y_tareas` con calendario mensual grande, programacion de reuniones, recordatorios previos y visibilidad compartida por `empresa_id`; adicionalmente se incorpora boton inferior de guardado en `super/pagina_principal.html` para mejorar usabilidad.
+ - Verificacion: `$env:DB_DIALECT='sqlite'; go test ./handlers -run ChatTareas -count=1; go test ./db -run ChatTareas -count=1`.
+
+Actualizacion 2026-04-14: Sistema de tarjetas dinamicas para pagina principal (index)
+ - Archivos creados:
+	- backend/handlers/pagina_principal_handlers.go
+	- web/super/pagina_principal.html
+ - Archivos modificados:
+	- backend/main.go
+	- web/index.html
+	- web/estilos.css
+	- web/super_administrador.html
+	- documentos/descripcion_del_proyecto
+	- documentos/diagramas/estructura_del_codigo.md
+	- documentos/descripcion_de_modulos
+	- documentos/matriz_roles_permisos_pos_multiempresa.md
+	- documentos/descripcion_de_archivos
+	- documentos/historial_de_cambios
+	- CHANGELOG.md
+ - Descripcion: Se implementa un submodulo en super para administrar tarjetas del home publico (cantidad, imagen desde `web/img`, titulo, descripcion y enlace), con persistencia en `configuraciones` de la base super y consumo dinamico desde `index.html` mediante endpoint publico.
+ - Verificacion: `go test . ./handlers -run ^$ -count=1` en verde (compilacion de paquetes modificados).
+
 Actualizacion 2026-04-14: Reparacion de arranque local PostgreSQL en `scripts/iniciar_servidor.ps1`
  - Archivos modificados:
 	- scripts/iniciar_servidor.ps1

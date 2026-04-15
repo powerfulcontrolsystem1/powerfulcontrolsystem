@@ -790,6 +790,9 @@ func main() {
 		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-02-001-chat-tareas", "chat y tareas por empresa: conversaciones, participantes, mensajes, adjuntos y tareas"); err != nil {
 			log.Fatalf("failed to register chat_tareas schema migration in empresas db: %v", err)
 		}
+		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-14-032-chat-tareas-citas", "agenda de citas por empresa con calendario compartido y recordatorios previos"); err != nil {
+			log.Fatalf("failed to register chat_tareas citas schema migration in empresas db: %v", err)
+		}
 		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-01-002-empresa-scope-and-fe", "asegura referencia empresa_id en tablas base y agrega modulo de facturacion electronica por pais"); err != nil {
 			log.Fatalf("failed to register empresas scope/fe schema migration in empresas db: %v", err)
 		}
@@ -1145,6 +1148,69 @@ func main() {
 		}
 		ensurePagosWompiSchema(dbSuper)
 
+		// Tabla para registrar transacciones/pagos de Epayco
+		createPagosEpayco := `CREATE TABLE IF NOT EXISTS pagos_epayco (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		licencia_id INTEGER,
+		empresa_id INTEGER,
+		transaction_id TEXT,
+		reference TEXT,
+		status TEXT,
+		raw_payload TEXT,
+		discount_code TEXT,
+		asesor_id TEXT,
+		fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+		fecha_actualizacion TEXT,
+		usuario_creador TEXT,
+		estado TEXT DEFAULT 'activo',
+		observaciones TEXT
+	);`
+		if _, err := dbSuper.Exec(createPagosEpayco); err != nil {
+			log.Fatalf("failed to create pagos_epayco table in super db: %v", err)
+		}
+
+		ensurePagosEpaycoSchema := func(db *sql.DB) {
+			rows, err := db.Query("PRAGMA table_info(pagos_epayco);")
+			if err != nil {
+				log.Printf("warning: unable to inspect pagos_epayco schema: %v", err)
+				return
+			}
+			defer rows.Close()
+			existing := map[string]bool{}
+			for rows.Next() {
+				var cid int
+				var name string
+				var ctype string
+				var notnull int
+				var dflt sql.NullString
+				var pk int
+				if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
+					log.Printf("warning: scan pragma table_info pagos_epayco error: %v", err)
+					return
+				}
+				existing[name] = true
+			}
+
+			addIfMissing := func(colDef string, name string) {
+				if !existing[name] {
+					q := fmt.Sprintf("ALTER TABLE pagos_epayco ADD COLUMN %s;", colDef)
+					if _, err := db.Exec(q); err != nil {
+						log.Printf("failed to add column %s to pagos_epayco: %v", name, err)
+					} else {
+						log.Printf("added missing column %s to pagos_epayco", name)
+					}
+				}
+			}
+
+			addIfMissing("fecha_actualizacion TEXT", "fecha_actualizacion")
+			addIfMissing("usuario_creador TEXT", "usuario_creador")
+			addIfMissing("estado TEXT DEFAULT 'activo'", "estado")
+			addIfMissing("observaciones TEXT", "observaciones")
+			addIfMissing("discount_code TEXT", "discount_code")
+			addIfMissing("asesor_id TEXT", "asesor_id")
+		}
+		ensurePagosEpaycoSchema(dbSuper)
+
 		// Tabla para almacenar configuraciones/k-v (ej. credenciales cifradas)
 		createConfiguraciones := `CREATE TABLE IF NOT EXISTS configuraciones (
 		config_key TEXT PRIMARY KEY,
@@ -1441,6 +1507,9 @@ func main() {
 	stopAsientosWorker := make(chan struct{})
 	go dbpkg.StartEmpresaAsientosContablesWorker(dbEmpresas, asientosInterval, asientosBatchSize, asientosMaxRetries, stopAsientosWorker)
 
+	// Determinar carpeta web una sola vez para rutas estaticas y handlers que listan recursos.
+	webDir := resolveWebDir()
+
 	http.HandleFunc("/auth/google/login", handlers.HandleGoogleLogin(clientID, redirectURL))
 	// Pasar la conexión de la base `empresas` al callback para persistir usuarios y empresas
 	// Pasar tanto la conexión de empresas como la de superadministrador al callback
@@ -1516,6 +1585,7 @@ func main() {
 	http.HandleFunc("/api/public/venta_publica", handlers.PublicVentaPublicaHandler(dbEmpresas))
 	http.HandleFunc("/api/public/soporte_remoto", handlers.PublicEmpresaSoporteRemotoAgentHandler(dbEmpresas))
 	http.HandleFunc("/api/public/venta_digital", handlers.PublicVentaDigitalHandler(dbSuper))
+	http.HandleFunc("/api/public/pagina_principal", handlers.PublicPaginaPrincipalHandler(dbSuper))
 	http.HandleFunc("/api/empresa/reservas_hotel", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaReservasHotelHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/tarifas_por_minutos", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaTarifasPorMinutosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/tarifas_por_dia", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaTarifasPorDiaHandler(dbEmpresas)))
@@ -1535,6 +1605,7 @@ func main() {
 	http.HandleFunc("/api/empresa/chat_tareas/mensajes", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaChatTareasMensajesHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/chat_tareas/mensajes/adjunto", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaChatTareasAdjuntoUploadHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/chat_tareas/tareas", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaChatTareasTareasHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/chat_tareas/citas", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaChatTareasCitasHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/chat_tareas/tareas/nota_voz", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaChatTareasTareaNotaVozUploadHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/ubicacion_gps/dispositivos", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaUbicacionGPSDispositivosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/ubicacion_gps/recorridos", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaUbicacionGPSRecorridosHandler(dbEmpresas)))
@@ -1564,8 +1635,12 @@ func main() {
 	http.HandleFunc("/super/api/administradores", handlers.AdministradoresHandler(dbSuper))
 	// Endpoint CRUD para licencias (nuevo)
 	http.HandleFunc("/super/api/licencias", handlers.LicenciasHandler(dbSuper))
+	// Endpoint publico para exponer metodos de pago activos del checkout de licencias
+	http.HandleFunc("/api/public/licencias/payment_methods", handlers.PublicLicenciasPaymentMethodsHandler(dbSuper))
 	// Endpoint para gestionar credenciales de Wompi (GET/PUT)
 	http.HandleFunc("/super/api/config/wompi", handlers.WompiConfigHandler(dbSuper))
+	// Endpoint para gestionar credenciales de Epayco (GET/PUT)
+	http.HandleFunc("/super/api/config/epayco", handlers.EpaycoConfigHandler(dbSuper))
 	// Endpoint para gestionar SMTP Gmail (GET/PUT)
 	http.HandleFunc("/super/api/config/gmail", handlers.GmailConfigHandler(dbSuper))
 	// Endpoint super para administrar venta digital global
@@ -1574,11 +1649,17 @@ func main() {
 	http.HandleFunc("/super/api/config/ai", handlers.AIModelsConfigHandler(dbSuper))
 	// Endpoint para respaldo/restauracion de configuracion critica del panel super
 	http.HandleFunc("/super/api/config/backup", handlers.SuperConfigBackupHandler(dbSuper))
+	// Endpoint super para administrar tarjetas dinamicas de la pagina principal (index)
+	http.HandleFunc("/super/api/pagina_principal", handlers.SuperPaginaPrincipalHandler(dbSuper, webDir))
 	// Endpoints Wompi (Nequi): crear transacción y consultar estado
 	http.HandleFunc("/wompi/terms", handlers.WompiTermsHandler(dbSuper))
 	http.HandleFunc("/wompi/create_transaction_nequi", handlers.WompiCreateNequiTransactionHandler(dbSuper))
 	http.HandleFunc("/wompi/transaction_status", handlers.WompiTransactionStatusHandler(dbSuper))
 	http.HandleFunc("/wompi/webhook", handlers.WompiWebhookHandler(dbSuper))
+	// Endpoints Epayco: crear transacción y consultar estado
+	http.HandleFunc("/epayco/create_transaction", handlers.EpaycoCreateTransactionHandler(dbSuper))
+	http.HandleFunc("/epayco/transaction_status", handlers.EpaycoTransactionStatusHandler(dbSuper))
+	http.HandleFunc("/epayco/webhook", handlers.EpaycoWebhookHandler(dbSuper))
 	// Activación manual de licencia sin pago (uso interno de avance/prototipo)
 	http.HandleFunc("/licencias/activar_sin_pago", handlers.ActivateLicenciaSinPagoHandler(dbSuper))
 	// Confirmación de correo para usuarios de empresa.
@@ -1618,13 +1699,13 @@ func main() {
 			http.SetCookie(w, &http.Cookie{Name: name, Value: "", Path: "/", MaxAge: -1})
 		}
 		// also clear our session_token cookie with same attributes
-		http.SetCookie(w, &http.Cookie{Name: "session_token", Value: "", Path: "/", MaxAge: -1, HttpOnly: true, Secure: true, SameSite: http.SameSiteLaxMode})
+		http.SetCookie(w, &http.Cookie{Name: "session_token", Value: "", Path: "/", MaxAge: -1, HttpOnly: true, Secure: handlers.SessionCookieSecure(r), SameSite: http.SameSiteLaxMode})
+		handlers.SetBrowserSessionStateCookie(w, r, false)
 		// Redirigir al login
 		http.Redirect(w, r, "/login.html", http.StatusFound)
 	})
 
-	// Determinar carpeta web priorizando candidatos que tengan index.html.
-	webDir := resolveWebDir()
+	// Carpeta web determinada previamente para servir estaticos y handlers de recursos.
 
 	// Servir assets centralizados (CSS, JS)
 	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(webDir))))
@@ -1673,7 +1754,7 @@ func main() {
 	})
 
 	// Wrap DefaultServeMux with authentication, JSON error normalization and logging middleware
-	handler := utils.LoggingMiddleware(utils.JSONErrorMiddleware(utils.AuthMiddleware(dbSuper, http.DefaultServeMux)))
+	handler := utils.LoggingMiddleware(utils.CanonicalPublicHostMiddleware(utils.JSONErrorMiddleware(utils.AuthMiddleware(dbSuper, http.DefaultServeMux))))
 
 	// Respetar la variable de entorno PORT si está definida; por defecto usar 8080
 	port := os.Getenv("PORT")

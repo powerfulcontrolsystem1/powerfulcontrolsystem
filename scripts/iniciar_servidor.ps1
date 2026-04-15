@@ -365,28 +365,66 @@ function Ensure-VpsPostgresTunnel {
 
     $forwardSpec = "{0}:{1}:{2}" -f $LocalPort, $RemoteHost, $RemotePort
     $target = "{0}@{1}" -f $SshUser, $SshHost
-    $args = @('-batch', '-N', '-i', $resolvedKeyPath, '-L', $forwardSpec, $target)
 
-    $proc = Start-Process -FilePath $plink.Source -ArgumentList $args -WindowStyle Hidden -PassThru
+    $keyArg = $resolvedKeyPath
+    if ($keyArg -match '\s') {
+        $keyArg = '"' + ($keyArg -replace '"', '\"') + '"'
+    }
+    $args = @('-batch', '-N', '-i', $keyArg, '-L', $forwardSpec, $target)
+
+    $tmpDir = Join-Path $BackendDir 'tmp'
+    if (-not (Test-Path $tmpDir)) {
+        New-Item -ItemType Directory -Path $tmpDir -Force | Out-Null
+    }
+
+    $plinkStdOut = Join-Path $tmpDir ("plink_tunnel_{0}.out.log" -f $LocalPort)
+    $plinkStdErr = Join-Path $tmpDir ("plink_tunnel_{0}.err.log" -f $LocalPort)
+    Remove-Item -Path $plinkStdOut -Force -ErrorAction SilentlyContinue
+    Remove-Item -Path $plinkStdErr -Force -ErrorAction SilentlyContinue
+
+    $proc = Start-Process -FilePath $plink.Source -ArgumentList $args -WindowStyle Hidden -RedirectStandardOutput $plinkStdOut -RedirectStandardError $plinkStdErr -PassThru
     if ($null -eq $proc -or $proc.HasExited) {
         throw ("No se pudo iniciar tunel SSH DB a {0} ({1})." -f $target, $forwardSpec)
     }
 
-    $listenerReady = Get-NetTCPConnection -LocalPort $LocalPort -State Listen -ErrorAction SilentlyContinue
-    if (-not $listenerReady) {
-        try {
-            Wait-Process -Id $proc.Id -Timeout 2 -ErrorAction SilentlyContinue
-        } catch {
-            # Ignorar timeout; solo se vuelve a validar listener.
+    $listenerReady = $false
+    $maxAttempts = 16
+    for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+        $listenerCheck = Get-NetTCPConnection -LocalPort $LocalPort -State Listen -ErrorAction SilentlyContinue
+        if ($listenerCheck) {
+            $listenerReady = $true
+            break
         }
-        $listenerReady = Get-NetTCPConnection -LocalPort $LocalPort -State Listen -ErrorAction SilentlyContinue
+
+        if ($proc.HasExited) {
+            break
+        }
+
+        Start-Sleep -Milliseconds 500
+    }
+
+    $diagnosticDetail = ''
+    $stderrTail = @()
+    if (Test-Path $plinkStdErr) {
+        $stderrTail = @(Get-Content -Path $plinkStdErr -Tail 10 -ErrorAction SilentlyContinue)
+    }
+    if ($stderrTail.Count -gt 0) {
+        $diagnosticDetail = " stderr=" + (($stderrTail -join ' | ').Trim())
+    } else {
+        $stdoutTail = @()
+        if (Test-Path $plinkStdOut) {
+            $stdoutTail = @(Get-Content -Path $plinkStdOut -Tail 10 -ErrorAction SilentlyContinue)
+        }
+        if ($stdoutTail.Count -gt 0) {
+            $diagnosticDetail = " stdout=" + (($stdoutTail -join ' | ').Trim())
+        }
     }
 
     if (-not $listenerReady) {
         if ($proc.HasExited) {
-            throw ("El tunel SSH DB se cerró al iniciar (PID={0}). Verifica llave/host/usuario para {1}." -f $proc.Id, $target)
+            throw ("El tunel SSH DB se cerro al iniciar (PID={0}, ExitCode={1}) para {2} ({3}).{4}" -f $proc.Id, $proc.ExitCode, $target, $forwardSpec, $diagnosticDetail)
         }
-        throw ("No se detectó listener en localhost:{0} tras iniciar túnel DB (PID={1})." -f $LocalPort, $proc.Id)
+        throw ("No se detecto listener en localhost:{0} tras iniciar tunel DB (PID={1}) hacia {2} ({3}).{4}" -f $LocalPort, $proc.Id, $target, $forwardSpec, $diagnosticDetail)
     }
 
     Write-Info ("Tunel DB iniciado: localhost:{0} -> {1}:{2} (PID={3})" -f $LocalPort, $RemoteHost, $RemotePort, $proc.Id)

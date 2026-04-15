@@ -145,8 +145,47 @@ empresa1.powerfulcontrolsystem.com
 empresa2.powerfulcontrolsystem.com
  este subdominio lo quiero usar para la pagina de venta publica automatizada por empresa. 
 
- - al modulo de chat y tareas agregale un agenta de citas caon calendario grande,  que s epuedan programar citas y que halla notificaciones antes para que le recuerde.
+ - al modulo de chat y tareas agregale un agenta de citas caon calendario grande,  que se puedan programar citas y que halla notificaciones antes para que le recuerde.
 
  - nose si hostiguer tiene apis para hacer en el super_administrador una pagina para el estado del servidor, con todo lo que permita la api. a esta pagina nueva le llamaremos.  vps_hostinger
 
 -  cpmpactar verticalmente las tarjetas en la pagina index.
+
+ se configura un titulo, una descripcion por cada tarjeta. cambia el estilo de las tarjetas por unos mas coloridos, cada tarjeta representa un producto que vendo. y debajo debe haber un boton dentro de cada tajeta que diga: Explorar oferta. todo esto se debe almacenar en la pasede datos superusuario
+
+
+
+- toda la configuracion de una empresa se debe poder exportar, y tambien debe estar la opcion de cargar configuracion.
+
+- Todo absolutamente todo debeser configurable por empresa, cada campo, cada boton, cada pagina etc.  todo con unn check en la configuracion de cada empresa.  lo mismo para cuando se crea un rrol debe poder activar o desactivar todo en su configuracion. y esto permitiraque el sistema de adapte o configure a cada empresa. 
+
+- Pruebalo gratis por 15 dis.
+
+
+- crea un modulo de horarios, el cual debe tener un calendario grafico en donde en casa fecha o cuadro de fecha s puede  mostrar los turnos de los trabajadores, y que todos en el sistema lo puedan ver. este modulo de horarios por ahora loso lo puede editar el administrador de la empresa-
+
+-hacer un modulo de consumo de datos por empresa,  modulo de deteccion de consultas por minuto o algo asi. preguntale a chat gtp
+
+
+- Nuevo modulo de historial de un cliente, un modulo que permita llevar todo el historial de los servicios o productos que se le venden a un cliente, parecido a una historia clinica, para volverlo universal , que no solo este enfocado a clientes, sino por ejemplo a automoviles, para llevar una hoja de viade los cambios de los mantenimientos, que este modulo permita tener reportes de alerta de servicios que se hacen frecuentemente en las empresas.
+
+
+ segundo metodo para facturar electronicamente por provedores tecnologicos
+
+--
+ - que el sistema acceda por ssh al raspberry o sensor y leasigne un numero unico que lo saca de aca del mismo sistema.
+
+ - paginas adaptadas al celular tambien.
+ -roles y se le aplican a las licncias.
+ el rol es la manera de configurar una empres con infinidad de checj
+
+ - que el titulo de la pagina web se amolde a pantallas de celular. bueno eso debe ser en todo el proyecto, que todo se adapte automaticamente a moviles y a pc. ademas coloca esta regla al agente_go
+
+
+ el login tambien debe ser por correo y clave, y tambien por cuenta de google, pero si el usuario no ha creado una contraseña e intenta hacer login  por medio  de la cuenta fe google, le debe pedir le debe salir una pagina para que cree su contraseña.
+
+ en la carpeta juegos, crea una pagina llamada menu_juegos esta debe tener una tarjeta por cada juego que creemos. la pagina menu juegos la colocas en el menu flotante. y luego creas el juego del patito volando que solo hay que undir un boton pora que se eleve o baje segun los obstaculos. este juego lo debes crear como una nueva pagina estilo ventana que cargue de un pataño pequeño unos 700 x 700 pixeles. el juego debe indicar al comienzo con que tecla del teclado salta, en pc sera con la barra espaciadora y en celular seria cuando toquen la pantalla.
+
+ en login tambien debe ser por corrao y el qentra por google la prmera vez despues de aceptar el contrado le debe exigir crear una contraseña. esta para cuando entre no por google sino por correo y clave-
+
+ crear un modulo para prestamista hacer que chat gtp te haga el pron, esto con todos los modulos nuevos

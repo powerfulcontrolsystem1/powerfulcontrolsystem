@@ -1,6 +1,106 @@
 # CHANGELOG
 
+## 2026-04-15
+- Login Google: host canónico en dominio raíz y estaciones con carga visible.
+	- Archivos modificados: `backend/utils/utils.go`, `backend/utils/utils_test.go`, `backend/main.go`, `backend/.env.example`, `scripts/sync_to_vps.ps1`, `web/administrar_empresa/estaciones.html`, `web/estilos.css`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: se corrige la inestabilidad del acceso administrativo tras registrar el dominio público, redirigiendo `www.powerfulcontrolsystem.com` al host canónico `powerfulcontrolsystem.com` antes de procesar OAuth y alineando los defaults de `GOOGLE_REDIRECT_URL` al callback del dominio raíz. Además, la página de estaciones ahora muestra `Cargando estaciones...` mientras consulta configuración, carritos y sensores, con mensaje visible en caso de error.
+	- Verificacion: `go test ./utils -run "Test(CanonicalPublicHostMiddleware|LoggingMiddlewareSetsContextAndWritesLogs|JSONErrorMiddlewareWrapsNonJSONError)" -count=1`; `go test ./handlers -run "TestHandleGoogleLogin" -count=1`; diagnóstico del editor sin errores nuevos en los archivos tocados.
+
+- Portal publico: home, landing descriptiva y contacto liberados sin sesion.
+	- Archivos modificados: `backend/utils/utils.go`, `backend/handlers/auth_users_carritos_test.go`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: `AuthMiddleware` incorpora `/descripcion_de_los_sistemas.ht` y `/Informacion_de_contacto.html` al whitelist publico y mantiene `index.html` dentro del mismo conjunto, para que las tres paginas comerciales del portal sean accesibles sin login. La prueba de middleware se amplia para cubrir esas rutas junto con `menu.js` y `/api/public/pagina_principal`.
+	- Verificacion: `go test ./handlers -run "TestAuthMiddlewareAllowsPublicPortalPagesAssetsAndHomeCardsAPI" -count=1`; diagnostico del editor sin errores en Go y documentos modificados.
+
+- Portal publico: contacto visible por WhatsApp y pagina dedicada de informacion.
+	- Archivos creados: `web/Informacion_de_contacto.html`.
+	- Archivos modificados: `web/index.html`, `web/estilos.css`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: se agrega un CTA flotante `Contactenos` en `index.html` que abre WhatsApp con el numero comercial del sistema, un acceso visible a `Informacion_de_contacto.html` desde el encabezado del portal y una nueva pagina publica con descripcion general del sistema, correo `powerfulcontrolsystem@hmail.com` y WhatsApp `3043306506`. Ademas, el acceso principal del header pasa a llamarse `Registrarse o iniciar sesión` y queda junto al boton de contacto.
+	- Verificacion: diagnostico del editor sin errores en `web/index.html`, `web/Informacion_de_contacto.html` y `web/estilos.css`.
+
+- Portal publico: landing descriptiva unica para todas las tarjetas del home.
+	- Archivos creados: `web/descripcion_de_los_sistemas.ht`.
+	- Archivos modificados: `web/index.html`, `web/super/pagina_principal.html`, `web/estilos.css`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: el boton `Explorar oferta` del home deja de abrir enlaces directos y pasa a una sola landing publica (`/descripcion_de_los_sistemas.ht`) con anclas por tarjeta, descripciones ampliadas por seccion y un CTA `Probar Gratis` por cada solucion. El enlace configurado desde `super/pagina_principal.html` ahora alimenta ese CTA final.
+	- Verificacion: diagnostico del editor sin errores en los archivos HTML/CSS modificados.
+
+- Checkout de licencias: Epayco primero, Wompi debajo y activacion real desde configuracion avanzada.
+	- Archivos modificados: `backend/handlers/payments_handlers.go`, `backend/handlers/system_empresas_handlers_test.go`, `backend/main.go`, `web/pagar_licencia.html`, `web/super/configuracion_avanzada.html`, `web/estilos.css`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: se agrega la ruta publica `GET /api/public/licencias/payment_methods` para publicar la disponibilidad ordenada de pasarelas de licencia, `web/pagar_licencia.html` ya muestra solo Epayco y Wompi con prioridad Epayco -> Wompi, y `web/super/configuracion_avanzada.html` permite activar/desactivar ambas pasarelas manteniendo a Wompi bloqueado en backend cuando esta desactivado o incompleto.
+	- Verificacion: `go test ./handlers -run "TestPublicLicenciasPaymentMethodsHandlerOrdersAndAvailability|TestWompiConfigHandlerPersistsEnabledFlag|TestWompiTermsHandlerRejectsWhenDisabled" -count=1`; `go test ./ -run "^$" -count=1`; diagnostico del editor sin errores en HTML/CSS/Go tocados.
+
+- Sync VPS: reparacion del redeploy remoto en fallback PuTTY.
+	- Archivos modificados: `scripts/sync_to_vps.ps1`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: el wrapper PowerShell deja de pasar inline a `plink` los bloques remotos complejos de `bootstrap` y `redeploy`; ahora los escribe en archivos temporales UTF-8 sin BOM y los ejecuta con `plink -m`, estabilizando el `heredoc` de la unidad `systemd` y evitando fallos Bash como `syntax error near unexpected token '('`. Tambien se endurece el quoting del binario remoto y de los directorios de logs.
+	- Verificacion: parser PowerShell en verde para `scripts/sync_to_vps.ps1` y diagnostico del editor sin errores nuevos en el archivo.
+
+- Login Google: hardening de `login_hint` y saneamiento de cuenta recordada en escritorio.
+	- Archivos modificados: `backend/handlers/auth_admin_handlers.go`, `backend/handlers/auth_users_carritos_test.go`, `web/js/login.js`, `web/menu.js`, `web/js/super_administrador.js`, `web/js/seleccionar_empresa.js`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: se evita que el login Google herede un `login_hint` corrupto desde el navegador. El backend solo reenvia hints con formato de correo valido y el frontend limpia/persiste `rememberedEmail` unicamente cuando el dato es plausible, estabilizando el flujo especialmente en escritorio.
+	- Verificacion: `go test ./handlers -run "TestHandleGoogleLogin" -count=1` y `go test ./ ./auth ./db ./handlers ./metrics ./utils -run "^$" -count=1`.
+
+- Frontend web: refuerzo responsive transversal para portal y paneles administrativos.
+	- Archivos modificados: `web/index.html`, `web/estilos.css`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: se mejora la adaptacion entre escritorio, tablet y movil en la portada publica y en los layouts compartidos. El hero de `index.html` permite salto natural del titulo/subtitulo, el sidebar administrativo colapsa con mejor navegacion horizontal en movil y formularios/tablas/botones se reorganizan para pantallas estrechas.
+	- Verificacion: diagnostico del editor sin errores en `web/index.html` y `web/estilos.css`.
+
+- VPS web: restauracion del dominio publico sin puerto con Nginx, UFW y TLS correctos.
+	- Archivos modificados: `documentos/deploy_nginx_reverse_proxy_vps.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: se corrige la incidencia de publicacion donde `powerfulcontrolsystem.com` dejaba de cargar externamente aunque el backend y Nginx estaban activos en el VPS; la causa fue `443/tcp` ausente en UFW y cobertura incompleta de `www` en TLS. Se abre `443/tcp`, se renueva el certificado LetsEncrypt para `powerfulcontrolsystem.com` y `www.powerfulcontrolsystem.com`, y se documenta la configuracion minima correcta para Nginx/Certbot.
+	- Verificacion: `curl -I https://powerfulcontrolsystem.com/` y `curl -I https://www.powerfulcontrolsystem.com/` responden `200 OK`; `certbot certificates` muestra ambos dominios; `ufw status` incluye `443/tcp ALLOW`.
+
+- Sync VPS: limpieza automatica de procesos huerfanos antes del restart remoto.
+	- Archivos modificados: `scripts/sync_to_vps.ps1`, `scripts/sync_to_vps.sh`, `scripts/README_sync.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: se endurece el redeploy remoto para detener listeners fuera de `systemd` que sigan ocupando `SERVER_PORT`, registrar el PID/comando conflictivo y abortar con diagnostico si el puerto no se libera; adicionalmente se saneó el VPS donde un binario `server_linux_amd64 (deleted)` mantenía `:8080` ocupado y dejaba `powerfulcontrolsystem.service` en bucle de reinicio.
+	- Verificacion: en VPS `powerfulcontrolsystem.service` quedó `active (running)` tras limpiar el listener huérfano; `curl -k -I https://powerfulcontrolsystem.com/auth/google/login` sigue devolviendo `302` con `redirect_uri=https://powerfulcontrolsystem.com/auth/google/callback`.
+
+- Sync VPS: bootstrap endurecido, mensajes accionables y preparación asistida del servidor.
+	- Archivos modificados: `scripts/sync_to_vps.ps1`, `scripts/sync_to_vps.sh`, `scripts/README_sync.md`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: se robustecen ambos scripts de despliegue para validar puertos/timeout antes de conectar, detectar el gestor de paquetes remoto e instalar dependencias base del VPS cuando hay privilegios, actualizar `SERVER_PORT` en cada bootstrap, exigir mensajes etiquetados `BOOTSTRAP_*`/`DEPLOY_*` y devolver hints claros cuando fallan DSN PostgreSQL, `CONFIG_ENC_KEY`, permisos `root/sudo` o el arranque del servicio `systemd`.
+	- Verificacion: parser de PowerShell en verde para `scripts/sync_to_vps.ps1`; diagnostico del editor sin errores para `scripts/sync_to_vps.sh`; previsualizacion `./scripts/sync_to_vps.ps1 -PreviewOnly -SkipBuild -OpenPublicUrlAfterDeploy:$false` generando correctamente las etapas remotas; la validacion directa `bash -n` sigue pendiente en este equipo porque `bash.exe` apunta al lanzador de WSL y no hay distribucion instalada.
+
+- Login y menu: correccion de `recordar cuenta` y deteccion visible de sesion.
+	- Archivos modificados: `backend/handlers/auth_admin_handlers.go`, `backend/handlers/accept_handlers.go`, `backend/handlers/usuarios_empresa.go`, `backend/handlers/e2e_login_acceptance_test.go`, `backend/handlers/auth_users_carritos_test.go`, `backend/main.go`, `web/js/login.js`, `web/menu.js`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: se deja de depender de la lectura cliente de `session_token` para sincronizar `recordar cuenta`, avatar y enlace de cierre de sesion; el backend emite `browser_session_active` como señal visible no sensible, manteniendo el token real en cookie `HttpOnly` y alineando tambien la limpieza de cookies en logout.
+	- Verificacion: `go test ./handlers -run "TestE2E_AcceptContractCreatesSession|TestEmpresaUsuario(LoginHandlerSuccess|LoginHandlerRejectsWrongEmpresaScope|LoginHandlerRejectsWrongEmpresaScopeFromQuery|SetPasswordHandlerSuccess)|TestSuperEndpointsPermisosPorRol" -count=1` y `go test ./ ./auth ./db ./handlers ./metrics ./utils -run "^$" -count=1`.
+
 ## 2026-04-14
+- Sync VPS: backend persistente con `systemd` y autoarranque tras reinicio del servidor.
+	- Archivos modificados: `scripts/sync_to_vps.ps1`, `scripts/sync_to_vps.sh`, `scripts/README_sync.md`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/deploy_nginx_reverse_proxy_vps.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: el despliegue al VPS deja de usar `nohup` para reiniciar el backend y pasa a instalar/actualizar una unidad `systemd` del proyecto con `Restart=always`, `systemctl enable`, carga de entorno desde `backend/.env.local` y logs persistentes en `backend/server.log` / `backend/server.err`, garantizando que el servicio vuelva solo tras caidas del proceso o reinicios del VPS y que solo se reinicie durante `sync_to_vps`.
+	- Verificacion: parser de PowerShell para `scripts/sync_to_vps.ps1`, previsualizacion local del script con `-PreviewOnly -SkipBuild` y diagnostico del editor sin errores para `scripts/sync_to_vps.sh`; la validacion directa con `bash -n` queda pendiente en este equipo porque no hay distro WSL ni Git Bash instalados.
+
+## 2026-04-14
+- Manual de instalacion: reposicion del documento y guia Google OAuth para VPS.
+	- Archivos creados: `documentos/manual_de_instalacion.md`.
+	- Archivos modificados: `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: se repone el manual eliminado en `HEAD` y se actualiza con la configuracion exacta de Google Cloud Console para login local y produccion, incluyendo `Authorized redirect URIs` y `Authorized JavaScript origins` para `localhost` y `powerfulcontrolsystem.com`, mas notas de diagnostico para `redirect_uri_mismatch`.
+	- Verificacion: revision documental del manual recreado y comprobacion estatica de las URLs de callback/origen documentadas.
+
+- Portal principal: título en una sola línea con subtítulo debajo en la misma columna.
+	- Archivos modificados: `web/index.html`, `web/estilos.css`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: se agrega el contenedor `portal-intro-copy` para apilar verticalmente el encabezado del home, manteniendo `Sistema de Facturación Electrónica` en una sola fila y moviendo `Toma el control de tu negocio con Powerful Control System` justo debajo, centrado en el mismo bloque visual.
+	- Verificacion: revision estatica de estructura HTML/CSS confirmando el nuevo contenedor y la regla `white-space: nowrap` aplicada al título.
+
+- Login administrativo Google: correccion para VPS y local + recordar cuenta estable.
+	- Archivos modificados: `backend/handlers/auth_admin_handlers.go`, `backend/utils/utils.go`, `backend/handlers/auth_users_carritos_test.go`, `web/login.html`, `web/menu.js`, `web/js/login.js`, `web/index.html`, `web/estilos.css`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_archivos`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: se corrige el flujo OAuth para adaptar `redirect_uri` al host real de la solicitud y forzar `https` en dominio publico (`powerfulcontrolsystem.com`), se habilitan rutas publicas que bloqueaban el login (`/js/login.js` y `/api/public/pagina_principal`), se evita consulta a `/me` sin sesion para eliminar ruido `401` en F12 y se completa la experiencia de `recordar cuenta`; adicionalmente se actualiza el encabezado del home a `Sistema de Facturación Electrónica` con subtitulo operativo.
+	- Verificacion: `go test ./handlers -run "TestHandleGoogleLogin|TestAuthMiddlewareAllowsPublicLoginAssetsAndHomeCardsAPI" -v -count=1` en verde; en VPS `GET /js/login.js` y `GET /api/public/pagina_principal` responden `200`; `GET /auth/google/login` emite `redirect_uri=https://powerfulcontrolsystem.com/auth/google/callback`; `google.redirect_url` en BD super quedó en HTTPS.
+
+- Inicio local: diagnostico robusto para tunel SSH de PostgreSQL en VPS.
+	- Archivos modificados: `scripts/iniciar_servidor.ps1`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: se mejora `Ensure-VpsPostgresTunnel` para esperar el listener con reintentos (hasta ~8s), capturar `stdout/stderr` de `plink` en `backend/tmp/plink_tunnel_<puerto>.*.log` y reportar causa detallada cuando el tunel no abre el puerto local; adicionalmente se corrige el argumento `-i` de `plink` para rutas de llave SSH con espacios (comillas explicitas), evitando el fallo `Host does not exist`.
+	- Verificacion: validacion de parseo PowerShell en verde con `[System.Management.Automation.Language.Parser]::ParseFile("scripts/iniciar_servidor.ps1", ...)` y ejecucion real `. "D:\powerfulcontrolsystem\scripts\iniciar_servidor.ps1" -Background` completando arranque con tunel activo y backend en `:8080`.
+
+- Checkout de licencias: cierre operativo de Epayco.
+	- Archivos modificados: `backend/handlers/payments_handlers.go`, `backend/main.go`, `web/pagar_licencia.html`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/estructura_bd.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: se completa la implementacion de Epayco para licencias con `POST /epayco/create_transaction`, `GET /epayco/transaction_status` y `POST/GET /epayco/webhook`; se corrige la configuracion super de Epayco para aceptar credenciales reales sin validacion numerica de `cust_id`; y el frontend abre `checkout_url` de Epayco en una nueva pestaña manteniendo polling de estado y activacion automatica de licencia al aprobar.
+	- Verificacion: `go test ./ -run "^$" -count=1`, `go test ./handlers -run "^$" -count=1`, `go test ./ ./auth ./db ./handlers ./metrics ./utils -run "^$" -count=1` en verde.
+
+- Chat y tareas: nuevo agente de citas con calendario grande y recordatorios previos.
+	- Archivos modificados: `backend/db/chat_tareas.go`, `backend/handlers/chat_tareas.go`, `backend/handlers/chat_tareas_test.go`, `backend/main.go`, `web/administrar_empresa/chat_y_tareas.html`, `web/estilos.css`, `web/super/pagina_principal.html`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/estructura_bd.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: se agrega agenda de citas empresarial en el modulo de chat/tareas (`/api/empresa/chat_tareas/citas`) con calendario mensual de gran formato, programacion/edicion de reuniones, visibilidad compartida por `empresa_id` y banner de recordatorios previos; adicionalmente se incluye un boton inferior de guardado en `web/super/pagina_principal.html`.
+	- Verificacion: `$env:DB_DIALECT='sqlite'; go test ./handlers -run ChatTareas -count=1` y `$env:DB_DIALECT='sqlite'; go test ./db -run ChatTareas -count=1`.
+
 - UI administrativa: eliminacion de barra superior de titulo/acciones en todas las paginas de layout.
 	- Archivos modificados: `web/super_administrador.html`, `web/administrar_empresa.html`, `web/administrar_empresa/finanzas_menu.html`, `web/administrar_empresa/facturacion_electronica_menu.html`, `web/administrar_empresa/administrar_productos_menu.html`, `web/administrar_empresa/configuracion_menu.html`, `web/administrar_empresa/reportes_menu.html`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
 	- Descripcion: se retira por completo el bloque visual `admin-toolbar page-header` del panel super y de los menus administrativos para eliminar la barra superior de la derecha en todas las vistas del layout.
