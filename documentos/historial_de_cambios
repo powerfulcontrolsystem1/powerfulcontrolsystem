@@ -1,5 +1,22 @@
  - Historial de cambios
 
+ - 2026-04-16: Super administra PostgreSQL con tamano estimado por empresa
+     - Archivos modificados:
+         - backend/handlers/postgres_performance.go
+         - backend/handlers/postgres_performance_test.go
+         - web/super/administrar_base_de_datos.html
+         - documentos/descripcion_del_proyecto
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se agrega en `administrar_base_de_datos.html` una tarjeta con el boton `Cargar Empresas` para consultar cuanto espacio estimado consume cada empresa dentro de `pcs_empresas`. El backend amplía `/super/api/postgres/performance` con `action=empresas_storage`, que recorre las tablas con `empresa_id`, suma el peso estimado por filas y devuelve el ranking descendente por MB consumidos.
+     - Verificacion tecnica:
+         - `go test -work ./handlers -run "TestPostgresPerformanceHandler|TestHumanizeBytesBinary" -count=1`.
+         - Diagnóstico del editor sin errores en `backend/handlers/postgres_performance.go`, `backend/handlers/postgres_performance_test.go` y `web/super/administrar_base_de_datos.html`.
+
  - 2026-04-16: Manual de instalacion actualizado con Epayco respuesta, confirmacion y formulario exacto
      - Archivos modificados:
          - documentos/manual_de_instalacion.md
@@ -10022,3 +10039,39 @@ Archivos modificados:
 - web/login.html
 - web/login_usuario.html
 - web/menu.js
+
+2026-04-16: Actualizacion automatica desde script: anadir/actualizar archivos
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- Pendiente Notas
+- backend/handlers/auth_admin_handlers.go
+- backend/handlers/auth_admin_handlers_test.go
+- backend/handlers/auth_users_carritos_test.go
+- backend/handlers/payments_handlers.go
+- backend/handlers/payments_handlers_test.go
+- backend/handlers/postgres_performance.go
+- backend/handlers/postgres_performance_test.go
+- backend/logs/empresa_global.log
+- backend/logs/server_reinicio.log
+- backend/logs/server_runtime_state.json
+- backend/server.exe
+- backend/utils/utils.go
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/historial_de_cambios
+- documentos/manual_de_instalacion.md
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/ayuda/login_administradores.html
+- web/epayco/respuesta.html
+- web/estilos.css
+- web/img/logo epayco.png
+- web/js/login.js
+- web/js/registrar_nuevo_usuario_administrador.js
+- web/js/seleccionar_empresa.js
+- web/login.html
+- web/pagar_licencia.html
+- web/registrar_nuevo_usuario_administrador.html
+- web/super/administrar_base_de_datos.html
