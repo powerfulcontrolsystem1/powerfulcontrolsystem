@@ -2,6 +2,145 @@
 
 Fecha de actualizacion: 2026-04-16
 
+## Actualizacion 2026-04-16 (home publico: botones superiores compactos y centrados en movil)
+
+- Frontend:
+  - `web/estilos.css` reduce el alto y el ancho util de los botones superiores del `index.html`, manteniendo tamaño uniforme entre `Registrarse o iniciar sesión` e `Informacion de contacto`.
+  - El breakpoint movil del header centra ambos botones y elimina el empuje lateral del acceso de contacto.
+- Flujo:
+  - `index.html` -> header publico -> botones compactos de acceso/ contacto en escritorio y centrados en movil.
+
+## Actualizacion 2026-04-16 (licencias super: valor persistente y esquema autorreparable)
+
+- Backend:
+  - `backend/db/db.go` incorpora `EnsureLicenciasSchema` para regularizar la tabla `licencias` en SQLite y PostgreSQL.
+  - `backend/db/sql_compat.go` amplia la deteccion de columna faltante para cubrir errores SQLite del tipo `has no column named ...`, necesarios para disparar la autorreparacion.
+  - `CreateLicencia`, `GetLicenciasFiltered`, `GetLicenciaByID` y `UpdateLicencia` reintentan la operacion si detectan tabla/columnas faltantes como `valor`.
+  - `backend/main.go` ejecuta `EnsureLicenciasSchema(dbSuper)` durante el arranque PostgreSQL.
+- Frontend:
+  - `web/super/licencias.html` valida `fetch` con manejo explícito de respuestas HTTP para no ocultar fallos de persistencia al crear o editar.
+- Flujo:
+  - `super/licencias.html` -> `POST|PUT /super/api/licencias` -> `db.EnsureLicenciasSchema` si faltan columnas -> persistencia correcta de `valor` -> recarga del listado.
+
+## Actualizacion 2026-04-16 (seleccionar empresa: tarjetas adaptables sin contenido cortado)
+
+- Frontend:
+  - `web/js/seleccionar_empresa.js` genera las tarjetas del panel super usando la estructura `empresa-card` con icono, chips, descripcion, metadatos y acciones.
+  - `web/estilos.css` elimina el recorte del contenido interno, mantiene margenes pequenos y permite que titulos, descripciones, estados y NIT se ajusten automaticamente al espacio disponible.
+- Flujo:
+  - `seleccionar_empresa.html` -> `render()` -> `buildEmpresaCard()` -> tarjetas empresariales con layout flexible y contenido visible completo.
+
+## Actualizacion 2026-04-16 (pagina principal: editor super sincroniza la cantidad real antes de renderizar)
+
+- Frontend:
+  - `web/super/pagina_principal.html` corrige `renderCardsEditor()` para usar `state.config.cantidad` antes de tocar `ppCantidad`, evitando que una carga valida de 7 tarjetas vuelva a recortarse al valor inicial `5` del input.
+- Flujo:
+  - `GET /super/api/pagina_principal?action=config` -> `loadConfig()` -> `renderCardsEditor()` -> se respetan todas las tarjetas persistidas en configuracion.
+
+## Actualizacion 2026-04-16 (infraestructura publica: wildcard HTTPS manual y subdominio venta digital)
+
+- Infraestructura:
+  - `nginx` en el VPS usa el certificado wildcard emitido manualmente por `certbot` para `powerfulcontrolsystem.com` y `*.powerfulcontrolsystem.com`.
+  - La renovacion del wildcard sigue un flujo manual `DNS-01` dependiente de Hostinger.
+  - Se publica `venta-digital.powerfulcontrolsystem.com` como subdominio dedicado que redirige la raiz hacia `/venta_digital.html`.
+- Flujo:
+  - `https://venta-digital.powerfulcontrolsystem.com/` -> `302 /venta_digital.html` -> pagina publica global de venta digital.
+  - La raiz generica `https://{slug}.powerfulcontrolsystem.com/` se mantiene para `venta_publica.html`.
+
+## Actualizacion 2026-04-16 (registro administrativo: pais y ciudad en el alta)
+
+- Backend:
+  - `backend/handlers/auth_admin_handlers.go` extiende `AdminRegisterHandler` para exigir `pais` y `ciudad` junto con correo, nombre, celular y contrasena.
+  - `backend/db/db.go` agrega `pais` y `ciudad` al esquema evolutivo de `administradores` y los expone en `GetAdminByEmailFull` y `UpdateAdministradorProfile`.
+  - `backend/handlers/account_handlers.go` conserva compatibilidad del perfil administrativo al actualizar tambien `pais` y `ciudad`.
+  - `backend/handlers/auth_admin_handlers_test.go` y `backend/db/administradores_auth_schema_test.go` cubren el nuevo alta y la presencia de las columnas evolutivas.
+- Frontend:
+  - `web/registrar_nuevo_usuario_administrador.html` incorpora selector de pais y campo de ciudad.
+  - `web/js/registrar_nuevo_usuario_administrador.js` detecta un pais sugerido segun navegador/zona horaria, permite cambiarlo y lo envia al backend.
+  - `web/estilos.css` amplia el cuadro del registro para acomodar los nuevos campos sin comprimir el formulario.
+- Flujo:
+  - `registrar_nuevo_usuario_administrador.html` -> `POST /super/api/administradores/register` -> persistencia de `pais/ciudad` + token de confirmacion -> correo confirmado -> login -> `seleccionar_empresa.html`.
+
+## Actualizacion 2026-04-16 (autenticacion administrativa: regularizacion cross-db del esquema `administradores`)
+
+- Backend:
+  - `backend/db/db.go` incorpora `EnsureAdministradoresAuthSchema`, que regulariza columnas operativas y de seguridad de `administradores` en SQLite y PostgreSQL.
+  - `backend/main.go` sustituye el bloque inline de `PRAGMA table_info` por esa funcion reusable durante el arranque.
+  - `backend/db/administradores_auth_schema_test.go` cubre la reparacion de columnas faltantes y el caso de `SetAdministradorPassword` sobre una tabla incompleta.
+- Flujo:
+  - `startup backend` -> `db.EnsureAdministradoresAuthSchema(dbSuper)` -> columnas de contrato, confirmacion y password garantizadas.
+  - `POST /api/account/set_google_password` -> `db.SetAdministradorPassword(...)` -> si falta una columna, regulariza el esquema y reintenta antes de devolver error.
+
+## Actualizacion 2026-04-16 (super: modulo de seguridad VPS Linux con panel, CLI y cron)
+
+- Backend:
+  - `backend/vpssecurity/config/config.go` define `Settings`, herramientas activas, cron y rutas runtime (`backend/secure/vps_security_config.json`, `backend/logs/vps_security/`).
+  - `backend/vpssecurity/scanner/runner.go` orquesta Lynis, Nmap, Trivy y los chequeos propios de `backend/vpssecurity/scanner/checks.go`.
+  - `backend/vpssecurity/parser/lynis.go`, `parser/nmap.go` y `parser/trivy.go` normalizan la salida de cada herramienta hacia un modelo comun de hallazgos.
+  - `backend/vpssecurity/reports/report.go` genera resumen, comparacion y exportes `json/txt/html/csv/pdf/xls`; `backend/vpssecurity/logs/store.go` persiste historial y artefactos por `scan_id`.
+  - `backend/vpssecurity/service.go` expone el servicio asincrono central y `backend/handlers/security_vps_handlers.go` publica `/super/api/security/vps/config|run|status|history|report|compare`; `backend/main.go` registra el servicio y las rutas.
+  - `backend/tools/vps_security_scan/main.go` permite ejecutar el mismo flujo desde consola, reutilizando `vpssecurity.RunOnce(...)`.
+- Frontend:
+  - `web/super/seguridad.html` deja de ser solo un monitor rapido y pasa a integrar configuracion, ejecucion de escaneo, resumen, hallazgos, comparacion e historial.
+  - `web/js/super_seguridad.js` consume la API super del modulo VPS y mantiene abajo los monitores rapidos de puertos y procesos ya existentes.
+- Operacion:
+  - `scripts/install_vps_security_tools.sh` instala Lynis, Nmap, Trivy y prepara directorios runtime.
+  - `scripts/run_vps_security_scan.sh` ejecuta el escaneo usando binario compilado o `go run`.
+  - `scripts/install_vps_security_cron.sh` registra la ejecucion programada y deja traza en `backend/logs/vps_security/cron.log`.
+- Flujo:
+  - `super/seguridad.html` -> `POST /super/api/security/vps/run` -> `vpssecurity.Service` -> herramientas externas + chequeos propios -> historial/reportes en filesystem -> comparacion/exportes.
+  - `cron` -> `scripts/run_vps_security_scan.sh` -> `backend/tools/vps_security_scan` -> `backend/logs/vps_security/runs/<scan_id>/reports/*`.
+
+```mermaid
+flowchart TD
+    A[super/seguridad.html o cron] --> B[vpssecurity.Service / RunOnce]
+    B --> C[Lynis]
+    B --> D[Nmap]
+    B --> E[Trivy]
+    B --> F[Chequeos propios]
+    C --> G[Parsers]
+    D --> G
+    E --> G
+    F --> G
+    G --> H[ScanReport]
+    H --> I[Historial y artefactos]
+    H --> J[Comparacion contra escaneo previo]
+    H --> K[Exportes JSON TXT HTML CSV PDF XLS]
+```
+
+## Actualizacion 2026-04-16 (portal publico: boton de contacto anclado al extremo derecho)
+
+- Frontend:
+  - `web/index.html` marca la barra de acciones superior del home con `portal-header-actions-split`.
+  - `web/estilos.css` ensancha esa fila solo para el home y empuja `Informacion de contacto` al extremo derecho sin alterar la pagina `/Informacion_de_contacto.html`.
+- Flujo:
+  - `index.html` -> header publico -> `Registrarse o iniciar sesión` queda a la izquierda del bloque de acciones y `Informacion de contacto` al extremo derecho de la misma fila.
+
+## Actualizacion 2026-04-16 (login unificado sin recordar usuario/cuenta y sin login_hint)
+
+- Backend:
+  - `backend/handlers/auth_admin_handlers.go` elimina la propagacion de `login_hint` en `HandleGoogleLogin`, por lo que `/auth/google/login` inicia OAuth con parametros estables y sin depender de estado cliente por navegador/host.
+  - `backend/handlers/auth_users_carritos_test.go` ajusta cobertura para validar que `login_hint` siempre se omite aunque llegue como querystring.
+- Frontend:
+  - `web/login.html` y `web/js/login.js` eliminan la opcion `Recordar cuenta`, su almacenamiento local y la sincronizacion de correo recordado desde sesión.
+  - `web/login_usuario.html` y `web/js/login_usuario.js` eliminan `Recordar usuario` y cualquier persistencia local de correo/empresa asociada a ese comportamiento.
+  - `web/menu.js`, `web/js/super_administrador.js`, `web/js/seleccionar_empresa.js`, `web/super/licencias.html` y `web/super/tipos_empresas.html` retiran limpieza/sincronizacion de `remember*`, dejando solo la logica de sesión y navegación.
+- Flujo:
+  - `login.html` -> `Iniciar sesión con Google` -> `/auth/google/login` (sin `login_hint`) -> `/auth/google/callback`.
+  - `login_usuario.html` -> ingreso por correo/contraseña y `empresa_id` sin persistencia de usuario recordado.
+  - El comportamiento queda alineado entre entorno local y VPS al depender de sesión backend + host canónico, no de estado guardado por dominio en `localStorage`.
+
+## Actualizacion 2026-04-16 (super: tamano estimado por empresa en administracion PostgreSQL)
+
+- Backend:
+  - `backend/handlers/postgres_performance.go` extiende `/super/api/postgres/performance` con la accion `action=empresas_storage`, que recorre las tablas de `public` con columna `empresa_id` en `pcs_empresas` y suma el peso estimado por fila usando `pg_column_size(...)` para cada empresa.
+  - La respuesta ordena las empresas de mayor a menor consumo y devuelve nombre, NIT, estado, filas estimadas, tablas con datos y tabla mas pesada por empresa.
+  - `backend/handlers/postgres_performance_test.go` agrega cobertura para accion invalida y utilidades de formateo del nuevo bloque.
+- Frontend:
+  - `web/super/administrar_base_de_datos.html` agrega una tarjeta operativa con el boton `Cargar Empresas` y una tabla dedicada para listar el espacio consumido por empresa sin mezclar esta carga pesada con el auto refresco general del panel.
+- Flujo:
+  - `super/administrar_base_de_datos.html` -> `Cargar Empresas` -> `GET /super/api/postgres/performance?action=empresas_storage` -> render de tabla descendente por MB estimados.
+
 ## Actualizacion 2026-04-16 (Epayco: pagina publica fija de respuesta para panel externo)
 
 - Backend:
@@ -30,13 +169,27 @@ Fecha de actualizacion: 2026-04-16
   - `backend/handlers/auth_admin_handlers_test.go` agrega cobertura del registro administrativo, login por correo, recuperación de contraseña y creación de sesión; `backend/handlers/auth_users_carritos_test.go` amplía la prueba del middleware público con la nueva página de registro y la confirmación administrativa.
 - Frontend:
   - `web/login.html` elimina el campo `Nombre (para registro)` del acceso principal, centra el botón `Iniciar por correo` y agrega debajo las acciones `Registrarse` y `¿Olvidó su contraseña?`.
-  - `web/js/login.js` reemplaza los `prompt()` del flujo de recuperación por formularios reales para solicitar y restablecer contraseña, además de reutilizar `Recordar cuenta` en el login por correo.
+  - `web/js/login.js` reemplaza los `prompt()` del flujo de recuperación por formularios reales para solicitar y restablecer contraseña.
   - `web/registrar_nuevo_usuario_administrador.html` y `web/js/registrar_nuevo_usuario_administrador.js` crean la nueva superficie pública de registro administrativo con `email`, `nombre completo`, `telefono`, contraseña y confirmación de contraseña.
   - `web/ayuda/login_administradores.html` documenta el doble acceso administrativo: Google y correo/clave, con registro y recuperación visibles.
 - Flujo:
   - `login.html` -> `Iniciar sesión con Google` -> `/auth/google/login` -> `/auth/google/callback` -> `/accept.html` -> `/accept/complete`.
   - `login.html` -> `Registrarse` -> `registrar_nuevo_usuario_administrador.html` -> `POST /super/api/administradores/register` -> `/auth/confirmar_admin` -> `login.html`.
   - `login.html` -> `¿Olvidó su contraseña?` -> `POST /super/api/administradores/solicitar_recuperacion` -> correo con `token_recuperacion` -> `login.html?view=reset...` -> `POST /super/api/administradores/restablecer_password` -> sesión administrativa.
+
+## Actualizacion 2026-04-16 (login Google: registro obligatorio de clave local cuando falta password_set)
+
+- Backend:
+  - `backend/handlers/auth_admin_handlers.go` deja de enviar directamente al panel después del callback Google cuando la cuenta aún no tiene contraseña local y redirige a `/registrar_contrasena_usuario_de_google.html`.
+  - `backend/handlers/accept_handlers.go` aplica la misma decisión después de aceptar contrato para que el flujo Google y el flujo aceptación mantengan una sola salida consistente.
+  - `backend/handlers/account_handlers.go` agrega `/api/account/set_google_password`, endpoint autenticado que permite guardar la primera contraseña local sin exigir clave actual cuando la sesión nació por Google y `password_set` todavía está inactivo.
+  - `backend/main.go` registra la nueva ruta de API protegida para creación de clave inicial.
+- Frontend:
+  - `web/registrar_contrasena_usuario_de_google.html` presenta el formulario dedicado para crear la contraseña local de una cuenta que ya inició sesión con Google.
+  - `web/js/registrar_contrasena_usuario_de_google.js` consulta `/api/account`, valida si la cuenta ya tiene clave y envía la nueva contraseña al endpoint `/api/account/set_google_password` antes de redirigir al panel correcto.
+- Flujo:
+  - `login.html` -> `Iniciar sesión con Google` -> `/auth/google/callback` -> si falta contrato: `/accept.html` -> `/accept/complete` -> si `password_set = 0`: `/registrar_contrasena_usuario_de_google.html` -> `/api/account/set_google_password` -> panel final.
+  - `login.html` -> `Iniciar sesión con Google` -> `/auth/google/callback` -> si contrato ya estaba aceptado y `password_set = 0`: `/registrar_contrasena_usuario_de_google.html` -> `/api/account/set_google_password` -> panel final.
 
 ## Actualizacion 2026-04-16 (arcade publico: cuenta regresiva en Patito y ajuste movil de los cinco juegos)
 

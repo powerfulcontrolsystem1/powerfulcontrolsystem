@@ -122,21 +122,39 @@
       document.getElementById('msg').innerText='';
     }
 
+    async function fetchJSONOrThrow(url, options){
+      const res = await fetch(url, options);
+      if(!res.ok){
+        const raw = await res.text().catch(()=> '');
+        throw new Error(raw || ('HTTP '+res.status));
+      }
+      const text = await res.text();
+      if(!text) return null;
+      try{ return JSON.parse(text); }catch(_){ return text; }
+    }
+
+    async function fetchTextOrThrow(url, options){
+      const res = await fetch(url, options);
+      if(!res.ok){
+        const raw = await res.text().catch(()=> '');
+        throw new Error(raw || ('HTTP '+res.status));
+      }
+      return res.text();
+    }
+
     async function load(){
       // cargar tipos para el select
       try{
-        const tiposRes = await fetch('/super/api/tipos_empresas');
-        const tipos = await tiposRes.json();
+        const tipos = await fetchJSONOrThrow('/super/api/tipos_empresas');
         const tipoSelect = document.getElementById('tipo_id');
         tipoSelect.innerHTML = '<option value="">-- Seleccionar --</option>';
-        tipos.forEach(t=>{
+        (Array.isArray(tipos) ? tipos : []).forEach(t=>{
           const opt = document.createElement('option'); opt.value = t.id; opt.text = t.nombre; tipoSelect.appendChild(opt);
         });
       }catch(e){ console.warn('No se pudieron cargar tipos:', e); }
 
       // cargar licencias
-      const res = await fetch(buildLicenciasApiURL());
-      const data = await res.json();
+      const data = await fetchJSONOrThrow(buildLicenciasApiURL());
       const table = document.createElement('table');
       table.className = 'table';
       table.innerHTML = '<thead><tr><th>ID</th><th>Tipo</th><th>Nombre</th><th>Valor</th><th>Duración (días)</th><th>Módulos</th><th>Super rol</th><th>Acciones</th></thead>';
@@ -175,14 +193,14 @@
       document.querySelectorAll('.del').forEach(b=>b.onclick = async ()=>{
         if(!confirm('Eliminar licencia?')) return;
         const id = b.getAttribute('data-id');
-        await fetch('/super/api/licencias?id='+id, { method: 'DELETE' });
+        await fetchTextOrThrow('/super/api/licencias?id='+id, { method: 'DELETE' });
         load();
       });
       document.querySelectorAll('.toggle').forEach(b=>b.onclick = async ()=>{
         const id = b.getAttribute('data-id');
         const activo = b.getAttribute('data-activo') === '1' ? '0' : '1';
         if(!confirm((activo==='1' ? 'Activar' : 'Desactivar')+' licencia?')) return;
-        await fetch('/super/api/licencias?id='+id+'&action=activar&activo='+activo, { method: 'PUT' });
+        await fetchTextOrThrow('/super/api/licencias?id='+id+'&action=activar&activo='+activo, { method: 'PUT' });
         load();
       });
     }
@@ -202,15 +220,15 @@
       try{
         if(!payload.nombre){ document.getElementById('msg').innerText='Nombre requerido'; return }
         if(id){
-          await fetch('/super/api/licencias?id='+id, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+          await fetchTextOrThrow('/super/api/licencias?id='+id, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
         } else {
-          await fetch('/super/api/licencias', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+          await fetchJSONOrThrow('/super/api/licencias', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
         }
         resetLicenciaForm();
         // ocultar formulario y mostrar botón agregar
         document.getElementById('form').style.display = 'none';
         document.getElementById('addBtn').style.display = '';
-        load();
+        await load();
       }catch(err){ document.getElementById('msg').innerText = err.message }
     }
     document.getElementById('cancelBtn').onclick = ()=>{ resetLicenciaForm(); document.getElementById('form').style.display='none'; document.getElementById('addBtn').style.display=''; }
@@ -243,7 +261,6 @@
         if (getCookie('session_token')){
           sessionLink.textContent = 'Cerrar sesión';
           sessionLink.href = '/auth/logout';
-          sessionLink.addEventListener('click', function(){ try { localStorage.removeItem('rememberAccount'); localStorage.removeItem('rememberedEmail'); } catch(e){} });
         } else {
           sessionLink.textContent = 'Iniciar sesión';
           sessionLink.href = '/login.html';

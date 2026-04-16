@@ -8,7 +8,7 @@
   <script src="/menu.js"></script>
 </head>
 <body>
-  <div class="login-page">
+  <div class="login-page register-admin-page">
     <div class="login-header">
       <h1 class="login-title">Registrar nuevo usuario administrador</h1>
       <div><a class="login-help-link" href="/ayuda/login_administradores.html" target="_blank" rel="noopener">Saber más</a></div>
@@ -16,7 +16,7 @@
     <div class="container">
       <div class="card">
         <h2>Crear cuenta administrativa</h2>
-        <p class="login-subtitle">Completa tus datos. Te enviaremos un correo para confirmar la cuenta antes del primer acceso.</p>
+        <p class="login-subtitle">Completa tus datos. Te enviaremos un correo para confirmar la cuenta antes del primer acceso y luego podras continuar a seleccionar empresa.</p>
         <form class="form auth-alt-form" id="adminRegisterForm" autocomplete="on" novalidate>
           <div class="form-row">
             <div class="form-col">
@@ -32,8 +32,19 @@
           </div>
           <div class="form-row">
             <div class="form-col">
-              <label class="form-label" for="registerPhone">Teléfono</label>
-              <input id="registerPhone" class="form-input" type="tel" autocomplete="tel" placeholder="Número de contacto" required>
+              <label class="form-label" for="registerPhone">Celular</label>
+              <input id="registerPhone" class="form-input" type="tel" autocomplete="tel" placeholder="Numero de contacto" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="registerCountry">Pais</label>
+              <select id="registerCountry" class="form-input" autocomplete="country-name" required></select>
+              <div class="form-help">Se detecta automaticamente segun tu navegador y zona horaria, pero puedes cambiarlo manualmente.</div>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="registerCity">Ciudad</label>
+              <input id="registerCity" class="form-input" type="text" autocomplete="address-level2" placeholder="Ciudad o municipio" required>
             </div>
           </div>
           <div class="form-row">
@@ -54,7 +65,7 @@
           </div>
           <div id="adminRegisterMessage" class="form-help auth-message" style="display:none"></div>
         </form>
-        <p class="footer login-card-note">Después de confirmar tu correo podrás iniciar por Google o con tu correo y contraseña.</p>
+        <p class="footer login-card-note">Despues de confirmar tu correo podras iniciar por Google o con tu correo y contrasena, y continuar a seleccionar empresa.</p>
       </div>
     </div>
   </div>

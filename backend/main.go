@@ -23,6 +23,7 @@ import (
 	"github.com/you/pos-backend/handlers"
 	"github.com/you/pos-backend/metrics"
 	"github.com/you/pos-backend/utils"
+	"github.com/you/pos-backend/vpssecurity"
 )
 
 var (
@@ -534,6 +535,9 @@ func main() {
 		if err := dbpkg.EnsurePaymentGatewaySchema(dbSuper); err != nil {
 			log.Fatalf("failed to ensure payment gateway schema in superadministrador db: %v", err)
 		}
+		if err := dbpkg.EnsureLicenciasSchema(dbSuper); err != nil {
+			log.Fatalf("failed to ensure licencias schema in superadministrador db: %v", err)
+		}
 		log.Println("INFO: runtime DB dialect=postgres (VPS)")
 	} else {
 		log.Fatalf("SQLite runtime deshabilitado: configure DB_DIALECT=postgres y DSN de PostgreSQL")
@@ -957,58 +961,9 @@ func main() {
 			log.Fatalf("failed to create administradores table in super db: %v", err)
 		}
 
-		// Asegurar columna 'photo' en administradores para almacenar URL de avatar
-		ensureAdminsSchema := func(db *sql.DB) {
-			rows, err := db.Query("PRAGMA table_info(administradores);")
-			if err != nil {
-				log.Printf("warning: unable to inspect administradores schema: %v", err)
-				return
-			}
-			defer rows.Close()
-			existing := map[string]bool{}
-			for rows.Next() {
-				var cid int
-				var name string
-				var ctype string
-				var notnull int
-				var dflt sql.NullString
-				var pk int
-				if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
-					log.Printf("warning: scan pragma table_info error: %v", err)
-					return
-				}
-				existing[name] = true
-			}
-
-			addIfMissing := func(colDef string, name string) {
-				if !existing[name] {
-					q := fmt.Sprintf("ALTER TABLE administradores ADD COLUMN %s;", colDef)
-					if _, err := db.Exec(q); err != nil {
-						log.Printf("failed to add column %s to administradores: %v", name, err)
-					} else {
-						log.Printf("added missing column %s to administradores", name)
-					}
-				}
-			}
-
-			addIfMissing("photo TEXT", "photo")
-			// Columna para indicar si el administrador aceptó el contrato/registro
-			addIfMissing("acepta_contrato INTEGER DEFAULT 0", "acepta_contrato")
-		// Teléfono del administrador
-		addIfMissing("telefono TEXT", "telefono")
-
-			// Columnas de seguridad/confirmación para login por correo
-			addIfMissing("email_confirm_token TEXT", "email_confirm_token")
-			addIfMissing("email_confirm_expira TEXT", "email_confirm_expira")
-			addIfMissing("email_confirmado INTEGER DEFAULT 0", "email_confirmado")
-			addIfMissing("email_confirmado_en TEXT", "email_confirmado_en")
-			addIfMissing("password_hash TEXT", "password_hash")
-			addIfMissing("password_salt TEXT", "password_salt")
-			addIfMissing("password_set INTEGER DEFAULT 0", "password_set")
-			addIfMissing("password_reset_token TEXT", "password_reset_token")
-			addIfMissing("password_reset_expira TEXT", "password_reset_expira")
+		if err := dbpkg.EnsureAdministradoresAuthSchema(dbSuper); err != nil {
+			log.Printf("warning: failed to ensure administradores auth schema: %v", err)
 		}
-		ensureAdminsSchema(dbSuper)
 		if err := dbpkg.EnsureSuperContractSchema(dbSuper); err != nil {
 			log.Printf("warning: failed to ensure super contract schema in super db: %v", err)
 			utils.ReportProcessError("startup.super_contract_schema", "contract_schema_init", "No se pudo preparar el esquema del contrato super durante el arranque", err, utils.ErrorLevelError, nil)
@@ -1537,6 +1492,10 @@ func main() {
 
 	// Determinar carpeta web una sola vez para rutas estaticas y handlers que listan recursos.
 	webDir := resolveWebDir()
+	vpsSecurityService, err := vpssecurity.NewService(nil, nil, nil)
+	if err != nil {
+		log.Fatalf("failed to initialize VPS security service: %v", err)
+	}
 
 	http.HandleFunc("/auth/google/login", handlers.HandleGoogleLogin(clientID, redirectURL))
 	// Pasar la conexión de la base `empresas` al callback para persistir usuarios y empresas
@@ -1665,6 +1624,7 @@ func main() {
 	// Endpoints para actualizar perfil y cambiar contraseña (usuario autenticado)
 	http.HandleFunc("/api/account/update_profile", handlers.AccountUpdateProfileHandler(dbEmpresas, dbSuper))
 	http.HandleFunc("/api/account/change_password", handlers.AccountChangePasswordHandler(dbEmpresas, dbSuper))
+	http.HandleFunc("/api/account/set_google_password", handlers.AccountSetGooglePasswordHandler(dbEmpresas, dbSuper))
 	// Endpoint CRUD para administradores (API)
 	http.HandleFunc("/super/api/administradores", handlers.AdministradoresHandler(dbSuper))
 	// Endpoints adicionales para flujo de autenticación de administradores (registro, login, confirmación, recuperación)
@@ -1717,6 +1677,12 @@ func main() {
 	http.HandleFunc("/super/api/security/ports", handlers.SecurityPortsHandler(dbSuper))
 	// Endpoint de seguridad: listado de procesos en memoria RAM
 	http.HandleFunc("/super/api/security/processes", handlers.SecurityProcessesHandler(dbSuper))
+	http.HandleFunc("/super/api/security/vps/config", handlers.SecurityVPSConfigHandler(dbSuper, vpsSecurityService))
+	http.HandleFunc("/super/api/security/vps/run", handlers.SecurityVPSRunHandler(dbSuper, vpsSecurityService))
+	http.HandleFunc("/super/api/security/vps/status", handlers.SecurityVPSStatusHandler(dbSuper, vpsSecurityService))
+	http.HandleFunc("/super/api/security/vps/history", handlers.SecurityVPSHistoryHandler(dbSuper, vpsSecurityService))
+	http.HandleFunc("/super/api/security/vps/report", handlers.SecurityVPSReportHandler(dbSuper, vpsSecurityService))
+	http.HandleFunc("/super/api/security/vps/compare", handlers.SecurityVPSCompareHandler(dbSuper, vpsSecurityService))
 
 	// Logout handler: limpiar cookie de sesión (si existe) y redirigir a la página de login
 	http.HandleFunc("/auth/logout", func(w http.ResponseWriter, r *http.Request) {

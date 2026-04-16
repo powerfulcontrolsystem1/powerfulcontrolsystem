@@ -111,24 +111,3 @@
     });
   }
 })();
-
-(function () {
-  try {
-    if (localStorage.getItem("rememberAccount") === "1") {
-      fetch("/me")
-        .then(function (res) {
-          if (!res.ok) throw new Error("unauth");
-          return res.json();
-        })
-        .then(function (admin) {
-          var email = admin && admin.email ? String(admin.email).trim() : "";
-          if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            try {
-              localStorage.setItem("rememberedEmail", email);
-            } catch (e) {}
-          }
-        })
-        .catch(function () {});
-    }
-  } catch (e) {}
-})();

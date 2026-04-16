@@ -106,13 +106,13 @@ func AcceptCompleteHandler(dbSuper *sql.DB) http.HandlerFunc {
 		})
 
 		redirectTo := "/seleccionar_empresa.html"
-		next := strings.TrimSpace(data.Next)
-		if next == "/super_administrador.html" || next == "/seleccionar_empresa.html" {
-			redirectTo = next
-		} else if dbSuper != nil {
-			if admin, err := dbpkg.GetAdminByEmail(dbSuper, data.Email); err == nil && admin != nil {
-				if strings.TrimSpace(admin.Role) == "super_administrador" {
-					redirectTo = "/super_administrador.html"
+		if dbSuper != nil {
+			if admin, err := dbpkg.GetAdminByEmailFull(dbSuper, data.Email); err == nil && admin != nil {
+				redirectTo = resolveAdminPostLoginRedirect(admin)
+			} else {
+				next := strings.TrimSpace(data.Next)
+				if next == "/super_administrador.html" || next == "/seleccionar_empresa.html" {
+					redirectTo = next
 				}
 			}
 		}

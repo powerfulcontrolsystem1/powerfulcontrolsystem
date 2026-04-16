@@ -241,6 +241,9 @@ ul{padding-left:18px}
 .login-page .login-header{width:100%;max-width:420px;margin:0 auto 12px auto;text-align:center}
 .login-page .login-title{font-family:'Playfair Display', Georgia, 'Segoe UI', Roboto, Arial, sans-serif;font-weight:800;font-size:1.6rem;color:var(--accent);margin:0 0 6px 0;letter-spacing:0.4px}
 .login-page .login-help-link{color:var(--muted);text-decoration:underline;font-weight:700;font-size:0.95rem}
+.register-admin-page .container{max-width:640px}
+.register-admin-page .login-header{max-width:640px}
+.register-admin-page .card{padding:30px 32px}
 
 .google-btn{display:inline-flex;align-items:center;gap:8px;justify-content:center;background:white;color:#202124;padding:6px 10px;border-radius:8px;border:1px solid rgba(0,0,0,0.08);text-decoration:none;font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,0.06);font-size:0.95rem}
 .google-btn svg{width:18px;height:18px;flex:0 0 18px}
@@ -268,17 +271,23 @@ ul{padding-left:18px}
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  min-height:44px;
-  padding:10px 16px;
+  width:clamp(196px, 19vw, 220px);
+  min-height:36px;
+  padding:7px 12px;
   border-radius:999px;
   font-weight:800;
+  font-size:0.84rem;
+  line-height:1.1;
   letter-spacing:.01em;
+  text-align:center;
 }
 .nav-actions .portal-header-btn::before,
 .nav-actions .portal-header-btn::after{
   content:none;
 }
 .nav-actions .portal-header-btn span{position:static}
+.portal-header-actions-split{flex:1 1 auto;width:100%}
+.portal-header-actions-split .portal-header-btn-contact{margin-left:auto}
 
 .portal-main{padding:clamp(10px, 1.8vw, 18px)}
 /* Reducir margen superior solo en la página del portal para subir el título */
@@ -291,6 +300,19 @@ ul{padding-left:18px}
 .portal-intro .brand-subtitle{margin:0;font-size:clamp(1rem, 1.8vw, 1.15rem);color:var(--muted);font-weight:600;max-width:44rem;text-wrap:balance}
 .portal-intro .muted{display:none}
 @media (max-width:720px){.portal-intro{flex-direction:column;align-items:center;text-align:center}.portal-intro .muted{margin-top:8px;display:none}}
+@media (max-width:720px){
+  .portal-header-actions-split{
+    width:100%;
+    justify-content:center;
+    gap:8px;
+  }
+  .portal-header-actions-split .portal-header-btn{
+    width:min(100%, 214px);
+  }
+  .portal-header-actions-split .portal-header-btn-contact{
+    margin-left:0;
+  }
+}
 
 /* Centro del CTA de login en la página principal */
 .portal-intro .intro-cta{margin-top:18px;text-align:center}
@@ -539,13 +561,14 @@ ul{padding-left:18px}
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  padding:10px 16px;
+  padding:7px 12px;
   border-radius:999px;
   background:rgba(255,255,255,0.92);
   color:#13213b;
   text-decoration:none;
   font-weight:800;
-  font-size:.95rem;
+  font-size:.84rem;
+  line-height:1.1;
   letter-spacing:.01em;
   border:1px solid rgba(255,255,255,0.62);
   box-shadow:0 10px 18px rgba(5,11,22,0.24);
@@ -959,9 +982,9 @@ html.theme-light .floating-menu #themeToggle{color:var(--accent-2)}
 @media (max-width:560px){
   :root{--page-gutter:8px}
   .portal-header{padding:10px 8px}
-  .nav-actions{width:100%;justify-content:flex-end}
-  .nav-actions .portal-header-btn{min-height:44px;padding:9px 13px;border-radius:999px;font-size:.9rem}
-  .portal-header .brand{width:100%;display:flex;justify-content:flex-end}
+  .nav-actions{width:100%;justify-content:center}
+  .nav-actions .portal-header-btn{min-height:36px;padding:7px 12px;border-radius:999px;font-size:.84rem}
+  .portal-header .brand{width:100%;display:flex;justify-content:center}
   .home-offer-card{min-height:auto !important;padding:16px}
   .home-offer-card .card-logo{width:96px !important;height:96px !important}
   .portal-card .card-actions,
@@ -3473,51 +3496,146 @@ html.theme-light .floating-menu #themeToggle{color:var(--accent-2)}
 }
 
 .empresas-grid .portal-card.empresa-card{
-  aspect-ratio: unset !important;
-  min-height: unset !important;
-  padding: 22px 24px !important; /* ~20% más que 18/20 */
+  aspect-ratio: auto !important;
+  min-height: 0 !important;
+  height: auto !important;
+  padding: 0 !important;
   border-radius: 12px !important;
   display:flex;
   flex-direction:column;
-  align-items:center;
-  text-align:center;
-  justify-content:center;
+  align-items:stretch;
+  text-align:left;
+  justify-content:flex-start;
   background: linear-gradient(180deg, rgba(20,34,46,0.92), rgba(12,20,30,0.96)) !important;
   border:1px solid rgba(255,255,255,0.04) !important;
   color:var(--text) !important;
   box-shadow:0 16px 38px rgba(2,8,20,0.65) !important;
+  overflow: hidden;
 }
 
 .empresas-grid .portal-card.empresa-card .empresa-card-icon-shell{
-  width:86px !important; /* 72px * 1.2 */
-  height:86px !important;
-  flex:0 0 86px !important;
+  width:72px !important;
+  height:72px !important;
+  flex:0 0 72px !important;
   border-radius:22px !important;
 }
 
 .empresas-grid .portal-card.empresa-card .empresa-card-icon{
-  width:50px !important; /* 42px * 1.2 */
-  height:50px !important;
+  width:42px !important;
+  height:42px !important;
 }
 
 .empresas-grid .portal-card.empresa-card .card-title{
-  font-size: clamp(1.296rem, 2.64vw, 1.704rem) !important; /* ~1.08-1.42 * 1.2 */
+  font-size: clamp(1.05rem, 2vw, 1.32rem) !important;
+  line-height: 1.14 !important;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .empresas-grid .portal-card.empresa-card .card-desc{
-  font-size:1.14rem !important; /* ~0.95 * 1.2 */
+  font-size:0.93rem !important;
+  line-height:1.45 !important;
+  display:block !important;
+  overflow:visible !important;
+  -webkit-line-clamp:unset !important;
+  -webkit-box-orient:initial !important;
+  overflow-wrap:anywhere;
+  word-break:break-word;
 }
 
 .empresas-grid .portal-card.empresa-card .license-indicator{
-  padding:12px 16px !important; /* ~10/14 * 1.2 */
-  font-size:1rem !important;
+  padding:9px 12px !important;
+  font-size:0.82rem !important;
+  white-space:normal !important;
+  text-align:center;
+  line-height:1.2;
+}
+
+.empresas-grid .portal-card.empresa-card .empresa-card-top{
+  padding:14px 14px 0 !important;
+  gap:10px !important;
+}
+
+.empresas-grid .portal-card.empresa-card .empresa-card-badge-stack{
+  gap:6px !important;
+}
+
+.empresas-grid .portal-card.empresa-card .empresa-card-chip{
+  padding:6px 10px !important;
+  font-size:0.72rem !important;
+  max-width:100%;
+  text-align:center;
+  white-space:normal;
+  line-height:1.15;
+}
+
+.empresas-grid .portal-card.empresa-card .card-body.empresa-card-body{
+  gap:10px !important;
+  min-height:0 !important;
+  padding:12px 14px 14px !important;
+}
+
+.empresas-grid .portal-card.empresa-card .empresa-card-heading{
+  gap:4px !important;
+}
+
+.empresas-grid .portal-card.empresa-card .empresa-card-eyebrow{
+  font-size:0.68rem !important;
+  line-height:1.2;
+}
+
+.empresas-grid .portal-card.empresa-card .empresa-card-subtitle{
+  font-size:0.85rem !important;
+  line-height:1.25;
+  overflow-wrap:anywhere;
+}
+
+.empresas-grid .portal-card.empresa-card .empresa-card-meta{
+  grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  gap:8px !important;
+}
+
+.empresas-grid .portal-card.empresa-card .empresa-card-meta-item{
+  padding:8px 10px !important;
+  min-width:0;
+}
+
+.empresas-grid .portal-card.empresa-card .empresa-card-meta-item span{
+  white-space:normal !important;
+  overflow:visible !important;
+  text-overflow:clip !important;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+  line-height:1.25;
+}
+
+.empresas-grid .portal-card.empresa-card .empresa-card-actions{
+  gap:8px !important;
+  align-items:stretch !important;
+}
+
+.empresas-grid .portal-card.empresa-card .empresa-card-cta{
+  flex:1 1 140px;
+  font-size:0.88rem !important;
+  line-height:1.25;
+  overflow-wrap:anywhere;
+}
+
+.empresas-grid .portal-card.empresa-card .card-download{
+  padding:0 14px 14px !important;
+}
+
+.empresas-grid .portal-card.empresa-card .card-download .license-indicator{
+  width:100%;
 }
 
 /* Ajustes responsivos: conservar legibilidad en móvil */
 @media (max-width: 780px){
   .empresas-grid{ grid-template-columns: 1fr; }
-  .empresas-grid .portal-card.empresa-card .empresa-card-top{ padding:18px 14px 0 !important; }
-  .empresas-grid .portal-card.empresa-card .card-body.empresa-card-body{ padding:14px 16px 18px !important; }
+  .empresas-grid .portal-card.empresa-card .empresa-card-top{ padding:14px 12px 0 !important; }
+  .empresas-grid .portal-card.empresa-card .card-body.empresa-card-body{ padding:12px 12px 14px !important; }
+  .empresas-grid .portal-card.empresa-card .empresa-card-meta{ grid-template-columns:1fr !important; }
+  .empresas-grid .portal-card.empresa-card .card-download{ padding:0 12px 12px !important; }
 }
 
 .ai-chat-bubble{

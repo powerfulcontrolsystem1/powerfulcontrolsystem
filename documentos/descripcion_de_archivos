@@ -1,5 +1,208 @@
 Descripcion de archivos del proyecto
 
+Actualizacion 2026-04-16: compactacion de botones superiores en index
+ - Archivos modificados:
+	 - web/estilos.css : Reduce tamaño y altura de los botones superiores del home y centra ambos en móvil.
+	 - documentos/descripcion_del_proyecto
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: Se ajusta la cabecera pública del `index.html` para que los botones de registro e información de contacto se vean más pequeños, del mismo tamaño y centrados en celular.
+ - Verificacion: diagnostico del editor sin errores en `web/estilos.css`.
+
+Actualizacion 2026-04-16: correccion de persistencia del valor en licencias
+ - Archivos modificados:
+	 - backend/db/db.go : Agrega `EnsureLicenciasSchema` y reintentos de CRUD cuando faltan tabla/columnas en `licencias`.
+	 - backend/db/sql_compat.go : Amplia la deteccion de errores de columna faltante para activar la reparacion automatica en esquemas legacy de SQLite.
+	 - backend/db/licencias_schema_test.go : Cubre la reparacion de esquema y la persistencia/actualizacion de `valor` en licencias sobre SQLite legado.
+	 - backend/main.go : Ejecuta la regularizacion de `licencias` al arrancar en PostgreSQL.
+	 - web/super/licencias.html : Muestra errores HTTP reales al crear, editar, activar o eliminar licencias en super.
+	 - documentos/descripcion_del_proyecto
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: Se corrige un fallo donde el valor de una licencia podia no persistirse o no actualizarse en instalaciones con esquema legado, y la UI ya no oculta ese error.
+ - Verificacion: `go test ./db -run "TestEnsureLicenciasSchemaAddsValorInSQLite|TestCreateAndUpdateLicenciaRepairMissingValorColumn" -count=1`.
+
+Actualizacion 2026-04-16: tarjetas adaptables en seleccionar_empresa
+ - Archivos modificados:
+	 - web/js/seleccionar_empresa.js : Reestructura las tarjetas empresariales para usar `empresa-card` con icono, chips, metadatos y acciones visibles.
+	 - web/estilos.css : Ajusta el layout interno de las tarjetas para que el contenido envuelva correctamente sin quedar cortado y con margenes pequenos.
+	 - documentos/descripcion_del_proyecto
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: Se corrige la legibilidad de las tarjetas de `seleccionar_empresa` cuando el contenido es mas largo de lo normal.
+ - Verificacion: diagnostico del editor sin errores en `web/js/seleccionar_empresa.js` y `web/estilos.css`.
+
+Actualizacion 2026-04-16: correccion del editor super de pagina principal para cantidades mayores a 5
+ - Archivos modificados:
+	 - web/super/pagina_principal.html : Corrige el orden de render del editor para respetar `state.config.cantidad` antes de sincronizar el campo visual `ppCantidad`.
+	 - documentos/descripcion_del_proyecto
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: Se evita que el editor de `pagina_principal` recorte configuraciones validas de 7 tarjetas al valor inicial `5` definido en el HTML.
+ - Verificacion: `GET https://powerfulcontrolsystem.com/api/public/pagina_principal` devuelve `cantidad=7`; diagnostico del editor sin errores en `web/super/pagina_principal.html`.
+
+Actualizacion 2026-04-16: documentacion de wildcard HTTPS manual y subdominio venta digital
+ - Archivos modificados:
+	 - documentos/manual_de_instalacion.md : Documenta la emision manual del wildcard SSL, su renovacion manual por DNS-01 y la prueba del subdominio `venta-digital.powerfulcontrolsystem.com`.
+	 - documentos/descripcion_del_proyecto
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: Se registra en el repositorio la configuracion operativa ya aplicada en VPS para wildcard HTTPS y el subdominio publico de prueba de venta digital.
+ - Verificacion: HTTPS `200` en apex, `301` de `www`, `302` en `https://venta-digital.powerfulcontrolsystem.com/` hacia `/venta_digital.html` y `200` final en la pagina publica.
+
+Actualizacion 2026-04-16: registro administrativo con pais y ciudad
+ - Archivos modificados:
+	 - backend/db/db.go : Agrega `pais` y `ciudad` al esquema evolutivo de `administradores`, al modelo `Admin` y a la actualizacion de perfil.
+	 - backend/handlers/auth_admin_handlers.go : Amplia el alta administrativa para exigir `pais` y `ciudad` antes del correo de confirmacion.
+	 - backend/handlers/account_handlers.go : Mantiene compatibilidad del perfil administrativo al actualizar tambien `pais` y `ciudad`.
+	 - backend/handlers/auth_admin_handlers_test.go : Verifica que el registro administrativo persista `pais` y `ciudad`.
+	 - backend/db/administradores_auth_schema_test.go : Verifica que la regularizacion de `administradores` cree tambien las columnas `pais` y `ciudad`.
+	 - web/registrar_nuevo_usuario_administrador.html : Agrega selector de pais, campo de ciudad y un cuadro de registro mas amplio.
+	 - web/js/registrar_nuevo_usuario_administrador.js : Detecta un pais sugerido en frontend, permite seleccion manual y envia `pais/ciudad` al backend.
+	 - web/estilos.css : Ensancha el cuadro del registro administrativo para acomodar los nuevos campos.
+	 - documentos/descripcion_del_proyecto
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: El alta de administradores ahora conserva una ubicacion base del contacto (`pais` y `ciudad`) sin relajar la validacion obligatoria de correo antes del acceso.
+ - Verificacion: `go test ./db ./handlers -run 'Test(AdminRegisterHandlerCreatesPendingAdminAndCapturesConfirmationMail|AdminRegisterHandlerRejectsConfirmedExistingAdmin|EnsureAdministradoresAuthSchemaAddsMissingColumnsInSQLite|SetAdministradorPasswordRepairsMissingSecurityColumns)$' -count=1`.
+
+Actualizacion 2026-04-16: compatibilidad del esquema de administradores para login Google/correo entre SQLite y PostgreSQL
+ - Archivos creados:
+	 - backend/db/administradores_auth_schema_test.go : Pruebas focalizadas para asegurar la autocorreccion del esquema `administradores` y el guardado de la primera contrasena local.
+ - Archivos modificados:
+	 - backend/db/db.go : Centraliza `EnsureAdministradoresAuthSchema` y reintenta `SetAdministradorPassword` cuando faltan columnas de seguridad en `administradores`.
+	 - backend/main.go : Reemplaza la regularizacion inline basada en `PRAGMA` por la funcion reutilizable con soporte real para PostgreSQL.
+	 - documentos/descripcion_del_proyecto
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: Se corrige la incompatibilidad que impedia a cuentas administrativas autenticadas por Google registrar su primera contrasena local cuando la base super operaba en PostgreSQL con columnas de seguridad aun no materializadas.
+ - Verificacion: `go test ./db ./handlers -run 'Test(EnsureAdministradoresAuthSchemaAddsMissingColumnsInSQLite|SetAdministradorPasswordRepairsMissingSecurityColumns|AccountSetGooglePasswordHandlerCreatesInitialPassword)$' -count=1`; `go test ./ ./auth ./db ./handlers ./metrics ./utils -run '^$' -count=1`; despliegue y validacion del backend en VPS.
+
+Actualizacion 2026-04-16: modulo super de seguridad VPS Linux con CLI, cron, exportes y ajuste del header publico
+ - Archivos creados:
+	 - backend/vpssecurity/config/config.go : Gestiona la configuracion persistente del modulo de seguridad VPS, defaults y rutas runtime.
+	 - backend/vpssecurity/config/default_vps_security_config.json : Plantilla base de configuracion para el escaner VPS.
+	 - backend/vpssecurity/parser/lynis.go : Convierte la salida de Lynis en hallazgos normalizados.
+	 - backend/vpssecurity/parser/nmap.go : Convierte XML de Nmap en hallazgos y puertos expuestos.
+	 - backend/vpssecurity/parser/trivy.go : Convierte JSON de Trivy en hallazgos normalizados.
+	 - backend/vpssecurity/scanner/runner.go : Orquesta herramientas externas y recolecta artefactos por escaneo.
+	 - backend/vpssecurity/scanner/checks.go : Ejecuta chequeos propios de firewall, SSH, Nginx, permisos, servicios y actualizaciones.
+	 - backend/vpssecurity/reports/report.go : Modelo del reporte, comparacion historica y exportes JSON/TXT/HTML/CSV/PDF/XLS.
+	 - backend/vpssecurity/reports/report_test.go : Cobertura de exportes y comparacion del modulo VPS.
+	 - backend/vpssecurity/logs/store.go : Persiste historial, reportes y artefactos por `scan_id` en filesystem.
+	 - backend/vpssecurity/service.go : Servicio central asincrono del modulo de seguridad VPS.
+	 - backend/handlers/security_vps_handlers.go : API super protegida para configuracion, ejecucion, historial, reportes y comparacion del VPS.
+	 - backend/handlers/security_vps_handlers_test.go : Pruebas unitarias del API super del modulo VPS.
+	 - backend/tools/vps_security_scan/main.go : CLI Go para ejecutar el escaner VPS fuera del panel web.
+	 - web/js/super_seguridad.js : Cliente del panel super de seguridad VPS.
+	 - scripts/install_vps_security_tools.sh : Instala Lynis, Nmap, Trivy y prepara directorios/configuracion inicial en Ubuntu.
+	 - scripts/run_vps_security_scan.sh : Ejecuta el escaneo VPS usando binario compilado o `go run`.
+	 - scripts/install_vps_security_cron.sh : Registra la ejecucion periodica del escaner en cron.
+	 - documentos/manual_vps_seguridad.md : Manual operativo del modulo con instalacion, ejecucion manual, cron y ejemplo de reporte.
+ - Archivos modificados:
+	 - backend/main.go : Registra el servicio y las rutas `/super/api/security/vps/*`.
+	 - web/super/seguridad.html : Integra la interfaz completa del modulo VPS en el panel super.
+	 - web/index.html : Marca la barra superior del home para anclar `Informacion de contacto` al extremo derecho de la misma fila.
+	 - web/estilos.css : Añade el layout `portal-header-actions-split` para el home y soportes visuales del modulo super de seguridad.
+	 - .gitignore : Ignora artefactos runtime del modulo VPS y el binario dedicado del escaner.
+	 - documentos/descripcion_del_proyecto
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: Se agrega un modulo completo de seguridad VPS Linux para `super_administrador`, con escaneos Lynis/Nmap/Trivy, chequeos propios, historial/comparacion, exportes multiformato, CLI reutilizable y scripts Ubuntu para instalacion y cron. Adicionalmente, el home publico reubica `Informacion de contacto` al extremo derecho de la misma fila superior.
+ - Verificacion: `go test ./vpssecurity/... ./handlers ./tools/vps_security_scan -run "TestSecurityVPS|TestGenerateArtifacts|TestCompareDetects" -count=1`; diagnostico del editor sin errores en `web/super/seguridad.html`, `web/js/super_seguridad.js`, `backend/tools/vps_security_scan/main.go`, `scripts/install_vps_security_tools.sh`, `scripts/run_vps_security_scan.sh`, `scripts/install_vps_security_cron.sh`, `web/index.html` y `web/estilos.css`.
+
+Actualizacion 2026-04-16: login sin recordar usuario/cuenta y OAuth estable entre local/VPS
+ - Archivos modificados:
+	 - web/login.html : Elimina la opcion visual y funcional de `Recordar cuenta` en login administrativo.
+	 - web/js/login.js : Retira toda la persistencia `remember*` y el uso de `login_hint`; mantiene login Google/correo y recuperación.
+	 - web/login_usuario.html : Elimina la opcion `Recordar usuario` del login de empresa.
+	 - web/js/login_usuario.js : Retira persistencia `remember*` de usuario empresa y conserva solo contexto operativo de `empresa_id`.
+	 - web/menu.js : Elimina sincronizacion/limpieza de estado `remember*` y mantiene estado de sesión visible para navegación.
+	 - web/js/super_administrador.js : Retira sincronizacion de correo recordado desde `/me`.
+	 - web/js/seleccionar_empresa.js : Elimina escritura de correo recordado en `localStorage`.
+	 - web/super/licencias.html : Elimina limpieza de `remember*` en enlace de logout.
+	 - web/super/tipos_empresas.html : Elimina limpieza de `remember*` en enlace de logout.
+	 - backend/handlers/auth_admin_handlers.go : Elimina la propagacion de `login_hint` en `/auth/google/login`.
+	 - backend/handlers/auth_users_carritos_test.go : Ajusta pruebas para validar que `login_hint` se omite siempre.
+	 - documentos/descripcion_del_proyecto
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: Se unifica el modelo de autenticacion eliminando por completo `recordar usuario/cuenta` y cualquier dependencia de `login_hint` para OAuth. El flujo queda consistente entre `localhost:8080`, `powerfulcontrolsystem.com` y `www.powerfulcontrolsystem.com` al depender de sesión backend y host canónico.
+ - Verificacion: `go test -work ./handlers -run "TestHandleGoogleLoginRedirect|TestAccountSetGooglePasswordHandlerCreatesInitialPassword|TestE2E_AcceptContractCreatesSession|TestAdminLoginHandlerCreatesSessionForConfirmedAdmin" -count=1`; diagnostico del editor sin errores en archivos Go/HTML/JS modificados.
+
+Actualizacion 2026-04-16: login Google con registro de contrasena local obligatoria cuando falta password_set
+ - Archivos creados:
+	 - web/registrar_contrasena_usuario_de_google.html : Pantalla autenticada para que un administrador que ingresó con Google cree su primera contraseña local de acceso por correo.
+	 - web/js/registrar_contrasena_usuario_de_google.js : Lógica cliente de la página de creación de contraseña inicial para cuentas autenticadas por Google.
+ - Archivos modificados:
+	 - backend/handlers/auth_admin_handlers.go : Redirige al formulario de creación de contraseña después del callback Google cuando la cuenta aún no tiene clave local.
+	 - backend/handlers/accept_handlers.go : Reaplica la misma regla después de aceptar contrato para que el flujo Google mantenga una única salida consistente.
+	 - backend/handlers/account_handlers.go : Agrega el endpoint autenticado `/api/account/set_google_password` para registrar la primera contraseña local sin exigir clave actual.
+	 - backend/main.go : Registra la nueva ruta `/api/account/set_google_password`.
+	 - backend/handlers/auth_admin_handlers_test.go : Agrega cobertura del endpoint que registra la contraseña inicial de cuentas Google.
+	 - backend/handlers/e2e_login_acceptance_test.go : Ajusta el flujo E2E para esperar la redirección al formulario de contraseña cuando la cuenta aún no tiene `password_set`.
+	 - web/ayuda/login_administradores.html : Documenta el paso adicional de crear contraseña local tras el login con Google cuando aún no existe.
+	 - documentos/descripcion_del_proyecto
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: El login administrativo por Google ahora obliga a registrar una contraseña local antes de entrar al panel cuando la cuenta todavía no tiene `password_set`, para que luego el mismo administrador pueda acceder también por correo y contraseña.
+ - Verificacion: `go test -work ./handlers -run "Test(AccountSetGooglePasswordHandlerCreatesInitialPassword|E2E_AcceptContractCreatesSession|AdminLoginHandlerCreatesSessionForConfirmedAdmin)" -count=1`; diagnostico del editor sin errores en Go, HTML y JavaScript tocados.
+
+Actualizacion 2026-04-16: panel super de base de datos con tamano estimado por empresa
+ - Archivos modificados:
+	 - backend/handlers/postgres_performance.go : Extiende la API super de PostgreSQL con la accion `action=empresas_storage` para calcular el consumo estimado por empresa a partir de tablas con `empresa_id` en `pcs_empresas`.
+	 - backend/handlers/postgres_performance_test.go : Agrega pruebas para accion invalida del panel y para el formateo binario de tamanos usados por la nueva respuesta.
+	 - web/super/administrar_base_de_datos.html : Incorpora una tarjeta con el boton `Cargar Empresas`, estado de carga y tabla ordenada por MB estimados consumidos por empresa.
+	 - documentos/descripcion_del_proyecto
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: El panel super de PostgreSQL ya puede cargar bajo demanda una estimacion del espacio ocupado por cada empresa dentro de la base operativa compartida, mostrando orden descendente, filas estimadas, tablas con datos y la tabla mas pesada por empresa.
+ - Verificacion: `go test -work ./handlers -run "TestPostgresPerformanceHandler|TestHumanizeBytesBinary" -count=1`; diagnostico del editor sin errores en `backend/handlers/postgres_performance.go`, `backend/handlers/postgres_performance_test.go` y `web/super/administrar_base_de_datos.html`.
+
 Actualizacion 2026-04-16: manual de instalacion con respuesta, confirmacion y valores del formulario Epayco
  - Archivos modificados:
 	 - documentos/manual_de_instalacion.md : Agrega el paso operativo para registrar en Epayco la URL publica de respuesta `/epayco/respuesta.html`, la URL de confirmacion `/epayco/webhook` y los valores exactos del formulario de Epayco, con flujo y verificacion recomendada.

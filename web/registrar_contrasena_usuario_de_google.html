@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Registrar contrasena de usuario Google</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+</head>
+<body>
+  <div class="login-page">
+    <div class="login-header">
+      <h1 class="login-title">Registrar contrasena</h1>
+      <div><a class="login-help-link" href="/ayuda/login_administradores.html" target="_blank" rel="noopener">Saber más</a></div>
+    </div>
+    <div class="container">
+      <div class="card">
+        <h2>Crear clave para acceso por correo</h2>
+        <p class="login-subtitle">Ya ingresaste con Google. Define ahora una contrasena para que tambien puedas entrar con correo y clave cuando lo necesites.</p>
+        <div id="googlePasswordSetupIntro" class="form-help">Validando tu cuenta...</div>
+        <form class="form" id="googlePasswordSetupForm" autocomplete="on" novalidate style="display:none">
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="googleAccountEmail">Correo</label>
+              <input id="googleAccountEmail" class="form-input" type="email" readonly>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="googlePassword">Nueva contrasena</label>
+              <input id="googlePassword" class="form-input" type="password" autocomplete="new-password" placeholder="Minimo 8 caracteres" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="googlePasswordConfirm">Confirmar contrasena</label>
+              <input id="googlePasswordConfirm" class="form-input" type="password" autocomplete="new-password" placeholder="Repite la contrasena" required>
+            </div>
+          </div>
+          <div class="form-actions auth-alt-actions">
+            <button id="googlePasswordSetupBtn" class="btn" type="submit">Guardar contrasena</button>
+            <a id="googlePasswordSkipLink" class="btn secondary" href="/seleccionar_empresa.html" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;">Continuar</a>
+          </div>
+          <div id="googlePasswordSetupMessage" class="form-help auth-message" style="display:none"></div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <script src="/js/registrar_contrasena_usuario_de_google.js"></script>
+</body>
+</html>

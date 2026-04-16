@@ -159,7 +159,7 @@ func TestE2E_AcceptContractCreatesSession(t *testing.T) {
 	if err := json.NewDecoder(acceptResp.Body).Decode(&acceptJSON); err != nil {
 		t.Fatalf("decode accept response: %v", err)
 	}
-	if got, _ := acceptJSON["redirect"].(string); got != "/seleccionar_empresa.html" {
+	if got, _ := acceptJSON["redirect"].(string); got != googlePasswordSetupPagePath {
 		t.Fatalf("unexpected accept redirect: %q", got)
 	}
 
@@ -218,8 +218,8 @@ func TestE2E_AcceptContractCreatesSession(t *testing.T) {
 		body, _ := io.ReadAll(secondResp.Body)
 		t.Fatalf("expected redirect on second callback, got status=%d body=%s", secondResp.StatusCode, string(body))
 	}
-	if got := secondResp.Header.Get("Location"); got != "/seleccionar_empresa.html" {
-		t.Fatalf("expected direct redirect to seleccionar_empresa, got %s", got)
+	if got := secondResp.Header.Get("Location"); got != googlePasswordSetupPagePath {
+		t.Fatalf("expected direct redirect to password setup page, got %s", got)
 	}
 
 	hasSecondSessionCookie := false

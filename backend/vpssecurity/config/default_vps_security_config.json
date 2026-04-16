@@ -1,0 +1,29 @@
+{
+  "target_host": "127.0.0.1",
+  "port_list": "22,80,443,5432,8080,8443",
+  "profile": "full",
+  "max_history": 60,
+  "max_findings_per_tool": 150,
+  "data_dir": "backend/logs/vps_security",
+  "schedule": {
+    "enabled": true,
+    "cron": "0 2 * * *"
+  },
+  "lynis": {
+    "enabled": true,
+    "command": "lynis",
+    "timeout_seconds": 900
+  },
+  "nmap": {
+    "enabled": true,
+    "command": "nmap",
+    "timeout_seconds": 300
+  },
+  "vulnerability_scan": {
+    "enabled": true,
+    "provider": "trivy",
+    "command": "trivy",
+    "target_path": "/",
+    "timeout_seconds": 1200
+  }
+}

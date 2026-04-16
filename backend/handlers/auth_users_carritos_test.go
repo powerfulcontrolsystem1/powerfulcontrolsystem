@@ -135,7 +135,7 @@ func ensureCarritosVentasSchema(t *testing.T, dbEmp *sql.DB) {
 	}
 }
 
-func TestHandleGoogleLoginRedirectIncludesLoginHint(t *testing.T) {
+func TestHandleGoogleLoginRedirectOmitsProvidedLoginHint(t *testing.T) {
 	h := HandleGoogleLogin("client-123", "http://localhost:8080/auth/google/callback")
 	req := httptest.NewRequest(http.MethodGet, "/auth/google/login?login_hint=usuario@example.com", nil)
 	req.Host = "localhost:8080"
@@ -161,15 +161,15 @@ func TestHandleGoogleLoginRedirectIncludesLoginHint(t *testing.T) {
 	if q.Get("redirect_uri") != "http://localhost:8080/auth/google/callback" {
 		t.Fatalf("unexpected redirect_uri: %q", q.Get("redirect_uri"))
 	}
-	if q.Get("login_hint") != "usuario@example.com" {
-		t.Fatalf("unexpected login_hint: %q", q.Get("login_hint"))
+	if q.Get("login_hint") != "" {
+		t.Fatalf("expected login_hint to be omitted, got %q", q.Get("login_hint"))
 	}
 	if q.Get("prompt") != "select_account" {
 		t.Fatalf("unexpected prompt: %q", q.Get("prompt"))
 	}
 }
 
-func TestHandleGoogleLoginRedirectIgnoresInvalidLoginHint(t *testing.T) {
+func TestHandleGoogleLoginRedirectOmitsInvalidLoginHint(t *testing.T) {
 	h := HandleGoogleLogin("client-123", "http://localhost:8080/auth/google/callback")
 	req := httptest.NewRequest(http.MethodGet, "/auth/google/login?login_hint=powerfulconrolsyste.com", nil)
 	req.Host = "localhost:8080"

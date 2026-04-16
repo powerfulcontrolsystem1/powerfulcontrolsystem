@@ -93,21 +93,9 @@
 
     function getCookie(name){ const v = document.cookie.match('(^|;)\\s*'+name+'\\s*=\\s*([^;]+)'); return v ? v.pop() : ''; }
 
-    function isPlausibleEmail(value){
-      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
-    }
-
       function hasBrowserSessionCookie(){
         return getCookie(SESSION_STATE_COOKIE) === '1';
       }
-
-    function clearRememberOnLogoutIfNeeded(){
-      try {
-        if (localStorage.getItem('rememberAccount') === '1') return;
-        localStorage.removeItem('rememberAccount');
-        localStorage.removeItem('rememberedEmail');
-      } catch(e) {}
-    }
 
     const sessionLink = wrapper.querySelector('#sessionLink');
       function setSessionLinkAuthenticated(isAuthenticated){
@@ -116,21 +104,12 @@
         if (isAuthenticated) {
           sessionLink.textContent = 'Cerrar sesión';
           sessionLink.href = '/auth/logout';
-          sessionLink.onclick = function(){ clearRememberOnLogoutIfNeeded(); };
           return;
         }
         sessionLink.textContent = 'Iniciar sesión';
         sessionLink.href = '/login.html';
       }
       setSessionLinkAuthenticated(hasBrowserSessionCookie());
-
-    // Delegación: asegurarse de limpiar rememberAccount aunque otros scripts no encontraran el enlace
-    document.addEventListener('click', function(e){
-      try{
-        var a = e.target.closest && e.target.closest('.fm-item[href="/auth/logout"]');
-        if (a) { clearRememberOnLogoutIfNeeded(); }
-      }catch(ee){}
-    });
 
     // Theme toggle (iconos sol / luna)
     const themeToggle = wrapper.querySelector('#themeToggle');
@@ -208,19 +187,6 @@
 
       function fallbackIcon(){ try { if (!toggle) return; toggle.innerHTML = '<span class="fm-toggle-icon">☰</span>'; } catch(e){} }
 
-      function syncRememberedEmailFromProfile(data){
-        try {
-          if (!data) return;
-          if (localStorage.getItem('rememberAccount') !== '1') return;
-          var email = String(data.email || '').trim();
-          if (!isPlausibleEmail(email)) return;
-          var remembered = String(localStorage.getItem('rememberedEmail') || '').trim();
-          if (!remembered || !isPlausibleEmail(remembered)) {
-            localStorage.setItem('rememberedEmail', email);
-          }
-        } catch (e) {}
-      }
-
       try {
           if (!hasBrowserSessionCookie()) {
             setSessionLinkAuthenticated(false);
@@ -232,7 +198,6 @@
           return res.json();
         }).then(function(data){
             setSessionLinkAuthenticated(true);
-          syncRememberedEmailFromProfile(data);
           var photo = (data && (data.photo || data.avatar)) || '';
           var name = (data && (data.name || data.email)) || '';
           if (photo) setAvatarUrl(photo, name); else fallbackIcon();

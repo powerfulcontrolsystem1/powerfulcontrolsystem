@@ -17,7 +17,7 @@ function parsePositiveInt(value) {
 }
 
 function readEmpresaIDFromStorage() {
-  var keys = ["active_empresa_id", "empresa_id", "admin_empresa_id", "rememberEmpresaID"];
+  var keys = ["active_empresa_id", "empresa_id", "admin_empresa_id"];
   var stores = [];
   try {
     stores.push(window.sessionStorage);
@@ -71,7 +71,6 @@ function persistEmpresaIDContext(value) {
       store.setItem("active_empresa_id", asText);
       store.setItem("empresa_id", asText);
       store.setItem("admin_empresa_id", asText);
-      store.setItem("rememberEmpresaID", asText);
     } catch (e) {}
   }
 }
@@ -101,34 +100,6 @@ function setEmpresaID(value) {
   persistEmpresaIDContext(empresaID);
   refreshEmpresaIDInput();
   return empresaID;
-}
-
-var rememberKey = "rememberUsuarioEmpresa";
-var rememberedEmailKey = "rememberedUsuarioEmail";
-var rememberedEmpresaIDKey = "rememberEmpresaID";
-
-function clearRememberedUsuario() {
-  try {
-    localStorage.removeItem(rememberKey);
-    localStorage.removeItem(rememberedEmailKey);
-    localStorage.removeItem(rememberedEmpresaIDKey);
-  } catch (e) {}
-}
-
-function persistRememberedUsuario(email) {
-  var rememberCheckbox = document.getElementById("rememberUsuario");
-  var shouldRemember = !!(rememberCheckbox && rememberCheckbox.checked);
-  if (!shouldRemember) {
-    clearRememberedUsuario();
-    return;
-  }
-  try {
-    localStorage.setItem(rememberKey, "1");
-    localStorage.setItem(rememberedEmailKey, String(email || "").trim());
-    if (empresaID > 0) {
-      localStorage.setItem(rememberedEmpresaIDKey, String(empresaID));
-    }
-  } catch (e) {}
 }
 
 var empresaID = resolveEmpresaID();
@@ -275,12 +246,10 @@ document.getElementById("loginUsuarioForm").addEventListener("submit", async fun
 
     var body = await res.json();
     if (body && body.password_setup_required) {
-      persistRememberedUsuario(email);
       showSetupForm(email, body.message || "Primer ingreso detectado. Define tu contrasena para continuar.");
       return;
     }
     if (body && body.password_rotation_required) {
-      persistRememberedUsuario((body.email || email || "").trim());
       showChangePasswordForm(
         (body.email || email || "").trim(),
         body.message || "Debes actualizar tu contrasena para continuar."
@@ -288,7 +257,6 @@ document.getElementById("loginUsuarioForm").addEventListener("submit", async fun
       return;
     }
 
-    persistRememberedUsuario(email);
     var redirectURL = body && body.redirect_url ? String(body.redirect_url) : "/administrar_empresa.html";
     window.location.href = resolveRedirectURLForEmpresa(redirectURL);
   } catch (err) {
@@ -345,7 +313,6 @@ document.getElementById("setupPasswordForm").addEventListener("submit", async fu
     }
 
     var body = await res.json();
-    persistRememberedUsuario(email);
     var redirectURL = body && body.redirect_url ? String(body.redirect_url) : "/administrar_empresa.html";
     window.location.href = resolveRedirectURLForEmpresa(redirectURL);
   } catch (err) {
@@ -449,7 +416,6 @@ document.getElementById("resetPasswordForm").addEventListener("submit", async fu
     }
 
     var body = await res.json();
-    persistRememberedUsuario(email);
     var redirectURL = body && body.redirect_url ? String(body.redirect_url) : "/administrar_empresa.html";
     window.location.href = resolveRedirectURLForEmpresa(redirectURL);
   } catch (err) {
@@ -506,7 +472,6 @@ document.getElementById("changePasswordForm").addEventListener("submit", async f
     }
 
     var body = await res.json();
-    persistRememberedUsuario(email);
     var redirectURL = body && body.redirect_url ? String(body.redirect_url) : "/administrar_empresa.html";
     window.location.href = resolveRedirectURLForEmpresa(redirectURL);
   } catch (err) {
@@ -543,55 +508,19 @@ document.getElementById("btnVolverDesdeCambio").addEventListener("click", functi
   showLoginForm();
 });
 
-(function bootstrapRememberedUsuario() {
+(function initializeLoginUsuario() {
   var emailInput = document.getElementById("email");
-  var rememberCheckbox = document.getElementById("rememberUsuario");
   var empresaInput = document.getElementById("empresaID");
 
-  if (!emailInput || !rememberCheckbox || !empresaInput) {
+  if (!empresaInput) {
     return;
-  }
-
-  if (empresaID <= 0) {
-    var rememberedEmpresaID = 0;
-    try {
-      rememberedEmpresaID = parsePositiveInt(localStorage.getItem(rememberedEmpresaIDKey) || "");
-    } catch (e) {
-      rememberedEmpresaID = 0;
-    }
-    if (rememberedEmpresaID > 0) {
-      setEmpresaID(rememberedEmpresaID);
-    }
   }
 
   refreshEmpresaIDInput();
 
-  try {
-    if (localStorage.getItem(rememberKey) === "1") {
-      rememberCheckbox.checked = true;
-      if (!emailInput.value) {
-        emailInput.value = String(localStorage.getItem(rememberedEmailKey) || "").trim();
-      }
-    }
-  } catch (e) {}
-
-  if (emailRecuperacionPrefill) {
+  if (emailInput && emailRecuperacionPrefill) {
     emailInput.value = emailRecuperacionPrefill;
   }
-
-  rememberCheckbox.addEventListener("change", function () {
-    if (!rememberCheckbox.checked) {
-      clearRememberedUsuario();
-      return;
-    }
-    persistRememberedUsuario((emailInput.value || "").trim());
-  });
-
-  emailInput.addEventListener("blur", function () {
-    if (rememberCheckbox.checked) {
-      persistRememberedUsuario((emailInput.value || "").trim());
-    }
-  });
 
   var syncEmpresaFromInput = function () {
     var raw = String(empresaInput.value || "").trim();
@@ -605,9 +534,6 @@ document.getElementById("btnVolverDesdeCambio").addEventListener("click", functi
     }
     setEmpresaID(parsed);
     setMessage("msg", "", false);
-    if (rememberCheckbox.checked) {
-      persistRememberedUsuario((emailInput.value || "").trim());
-    }
   };
 
   empresaInput.addEventListener("change", syncEmpresaFromInput);

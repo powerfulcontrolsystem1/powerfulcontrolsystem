@@ -25,6 +25,8 @@ func ensureAdminAuthTestSchema(t *testing.T, dbSuper *sql.DB) {
 		estado TEXT DEFAULT 'activo',
 		acepta_contrato INTEGER DEFAULT 0,
 		telefono TEXT,
+		pais TEXT,
+		ciudad TEXT,
 		email_confirmado INTEGER DEFAULT 0,
 		email_confirm_token TEXT,
 		email_confirm_expira TEXT,
@@ -61,7 +63,7 @@ func TestAdminRegisterHandlerCreatesPendingAdminAndCapturesConfirmationMail(t *t
 	dbSuper := openTestSQLite(t, "admin_register_handler.db")
 	ensureAdminAuthTestSchema(t, dbSuper)
 
-	body := `{"email":"nuevo_admin@empresa.com","name":"Nuevo Administrador","telefono":"3001234567","password":"ClaveSegura99"}`
+	body := `{"email":"nuevo_admin@empresa.com","name":"Nuevo Administrador","telefono":"3001234567","pais":"Colombia","ciudad":"Bogota","password":"ClaveSegura99"}`
 	req := httptest.NewRequest(http.MethodPost, "http://localhost:8080/super/api/administradores/register", strings.NewReader(body))
 	rr := httptest.NewRecorder()
 
@@ -83,6 +85,12 @@ func TestAdminRegisterHandlerCreatesPendingAdminAndCapturesConfirmationMail(t *t
 	}
 	if admin.Telefono != "3001234567" {
 		t.Fatalf("expected telefono 3001234567, got %q", admin.Telefono)
+	}
+	if admin.Pais != "Colombia" {
+		t.Fatalf("expected pais Colombia, got %q", admin.Pais)
+	}
+	if admin.Ciudad != "Bogota" {
+		t.Fatalf("expected ciudad Bogota, got %q", admin.Ciudad)
 	}
 	if admin.PasswordSet != 1 || strings.TrimSpace(admin.PasswordHash) == "" {
 		t.Fatalf("expected password_set=1 with hash, got %+v", admin)
@@ -117,7 +125,7 @@ func TestAdminRegisterHandlerRejectsConfirmedExistingAdmin(t *testing.T) {
 		t.Fatalf("confirm existing admin: %v", err)
 	}
 
-	body := `{"email":"existente@empresa.com","name":"Administrador Existente","telefono":"3001234567","password":"ClaveSegura99"}`
+	body := `{"email":"existente@empresa.com","name":"Administrador Existente","telefono":"3001234567","pais":"Colombia","ciudad":"Bogota","password":"ClaveSegura99"}`
 	req := httptest.NewRequest(http.MethodPost, "http://localhost:8080/super/api/administradores/register", strings.NewReader(body))
 	rr := httptest.NewRecorder()
 
@@ -253,5 +261,46 @@ func TestAdminRequestAndResetPasswordHandlersUseCapturedMailAndCreateSession(t *
 	}
 	if !strings.Contains(rrReset.Header().Get("Set-Cookie"), "session_token=") {
 		t.Fatalf("expected session cookie after reset, got headers=%v", rrReset.Header())
+	}
+}
+
+func TestAccountSetGooglePasswordHandlerCreatesInitialPassword(t *testing.T) {
+	dbSuper := openTestSQLite(t, "admin_google_password_setup.db")
+	ensureAdminAuthTestSchema(t, dbSuper)
+
+	if err := dbpkg.UpsertAdministrador(dbSuper, "google_admin@empresa.com", "Google Admin", "administrador", ""); err != nil {
+		t.Fatalf("upsert admin: %v", err)
+	}
+	if _, err := dbSuper.Exec(`UPDATE administradores SET email_confirmado = 1, password_set = 0, password_hash = '', password_salt = '' WHERE lower(email) = lower(?)`, "google_admin@empresa.com"); err != nil {
+		t.Fatalf("prepare admin: %v", err)
+	}
+	if err := dbpkg.CreateSession(dbSuper, "google_admin@empresa.com", "127.0.0.1:1234", "test-agent", "token-google-setup"); err != nil {
+		t.Fatalf("create session: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "http://localhost:8080/api/account/set_google_password", strings.NewReader(`{"password":"NuevaClave99","password_confirm":"NuevaClave99"}`))
+	req.AddCookie(&http.Cookie{Name: "session_token", Value: "token-google-setup"})
+	rr := httptest.NewRecorder()
+
+	AccountSetGooglePasswordHandler(nil, dbSuper).ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, rr.Code, rr.Body.String())
+	}
+
+	admin, err := dbpkg.GetAdminByEmailFull(dbSuper, "google_admin@empresa.com")
+	if err != nil {
+		t.Fatalf("reload admin: %v", err)
+	}
+	if admin.PasswordSet != 1 || strings.TrimSpace(admin.PasswordHash) == "" || strings.TrimSpace(admin.PasswordSalt) == "" {
+		t.Fatalf("expected password configured, got %+v", admin)
+	}
+
+	var body map[string]interface{}
+	if err := json.Unmarshal(rr.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if got := body["redirect_url"]; got != "/seleccionar_empresa.html" {
+		t.Fatalf("expected seleccionar_empresa redirect, got %v", got)
 	}
 }

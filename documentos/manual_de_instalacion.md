@@ -111,6 +111,78 @@ Valor esperado para `google.redirect_url` en VPS:
 
 4. Si la redireccion es correcta pero Google rechaza la solicitud, revisa nuevamente la configuracion del cliente OAuth en Google Cloud Console.
 
+### 4.3 Wildcard HTTPS para subdominios
+
+DNS confirmado en Hostinger para produccion:
+
+- `A @ -> 2.24.197.58`
+- `A * -> 2.24.197.58`
+- `CNAME www -> powerfulcontrolsystem.com`
+
+Emision manual ejecutada en VPS:
+
+```bash
+certbot certonly --manual --preferred-challenges dns -d powerfulcontrolsystem.com -d *.powerfulcontrolsystem.com
+```
+
+Resultado operativo documentado:
+
+- Certificado emitido en `/etc/letsencrypt/live/powerfulcontrolsystem.com-0001/fullchain.pem`
+- Llave privada en `/etc/letsencrypt/live/powerfulcontrolsystem.com-0001/privkey.pem`
+- Vigencia del certificado emitido el `2026-04-16`: hasta `2026-07-15`
+
+Importante:
+
+- La emision fue por desafio manual `DNS-01`.
+- El registro `TXT _acme-challenge` usado durante la validacion puede borrarse despues de finalizar la emision.
+- `nginx` debe apuntar al certificado wildcard nuevo para cubrir `powerfulcontrolsystem.com` y `*.powerfulcontrolsystem.com`.
+
+### 4.4 Renovacion manual del wildcard
+
+La renovacion NO es automatica en este esquema porque `certbot --manual` no instala un hook de autenticacion DNS.
+
+Debe repetirse el mismo proceso de renovacion manual en cualquiera de estas situaciones:
+
+- Antes del vencimiento del certificado actual.
+- Si se migra el VPS y ya no existe el certificado en el nuevo servidor.
+- Si se elimina o reemplaza accidentalmente el certificado activo de `nginx`.
+- Si en el futuro se quieren cambiar los dominios cubiertos por el certificado.
+
+Frecuencia recomendada:
+
+- Revisar el vencimiento al menos una vez por mes.
+- Ejecutar la renovacion manual alrededor de 30 dias antes del vencimiento.
+- Para el certificado emitido el `2026-04-16`, la ventana segura de renovacion comienza aproximadamente el `2026-06-15`.
+
+Comando de renovacion manual:
+
+```bash
+certbot certonly --manual --preferred-challenges dns -d powerfulcontrolsystem.com -d *.powerfulcontrolsystem.com
+```
+
+Flujo de renovacion:
+
+1. Ejecutar el comando en el VPS.
+2. Crear el `TXT _acme-challenge` exacto que entregue `certbot` en Hostinger.
+3. Esperar propagacion DNS.
+4. Continuar la emision en consola.
+5. Confirmar rutas finales del certificado en `/etc/letsencrypt/live/powerfulcontrolsystem.com-0001/` o la version nueva que genere `certbot`.
+6. Validar `nginx -t` y recargar `nginx` si el nombre del certificado cambia.
+
+## 4.5 Subdominio publico de prueba para venta digital
+
+Se dejo publicado un subdominio dedicado de prueba para la pagina publica global `venta_digital.html`:
+
+- `https://venta-digital.powerfulcontrolsystem.com/`
+
+Comportamiento esperado:
+
+- La raiz del subdominio responde `302` hacia `/venta_digital.html`.
+- La pagina final `https://venta-digital.powerfulcontrolsystem.com/venta_digital.html` responde `200`.
+- El subdominio usa el mismo certificado wildcard del dominio principal.
+
+Este subdominio es una prueba controlada de infraestructura y no reemplaza la raiz generica de subdominios por empresa que sigue destinada a `venta_publica.html`.
+
 ## 5) Notas de depuracion OAuth
 
 - Si aparece `redirect_uri_mismatch`, compara exactamente la URL del error con la URL registrada en Google Cloud.

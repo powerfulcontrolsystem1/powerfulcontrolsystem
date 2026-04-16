@@ -189,6 +189,12 @@
   }
 
   function buildEmpresaCard(empresa, hasLicense) {
+    var visual = getEmpresaTypeVisual(empresa);
+    var descripcion = buildEmpresaCardDescription(empresa, visual, hasLicense);
+    var tipoNombre = String(visual && visual.label ? visual.label : "Empresa").trim();
+    var estadoEmpresa = String(empresa && empresa.estado ? empresa.estado : "activo").trim() || "activo";
+    var nit = String(empresa && empresa.nit ? empresa.nit : "").trim();
+
     var a = document.createElement("a");
     a.href = "#";
     a.className = "card-link";
@@ -218,17 +224,38 @@
     });
 
     var div = document.createElement("div");
-    div.className = "portal-card warm";
+    div.className = "portal-card warm empresa-card";
+    div.setAttribute("data-tone", visual.tone || "generic");
     div.innerHTML =
-      '<div class="card-body">' +
+      '<div class="empresa-card-shell">' +
+      '<div class="empresa-card-top">' +
+      '<div class="empresa-card-icon-shell">' +
+      '<img class="empresa-card-icon" src="' + escapeHtml(visual.icon || "/img/company-briefcase-color.svg") + '" alt="' + escapeHtml(visual.alt || "Icono de empresa") + '">' +
+      '</div>' +
+      '<div class="empresa-card-badge-stack">' +
+      '<span class="empresa-card-chip empresa-card-chip--type">' + escapeHtml(tipoNombre) + '</span>' +
+      '<span class="empresa-card-chip empresa-card-chip--status ' + (hasLicense ? 'is-active' : 'is-inactive') + '">' + escapeHtml(hasLicense ? 'Licencia activa' : 'Sin licencia') + '</span>' +
+      '</div>' +
+      '</div>' +
+      '<div class="card-body empresa-card-body">' +
+      '<div class="empresa-card-heading">' +
+      '<p class="empresa-card-eyebrow">' + escapeHtml(visual.eyebrow || 'Operacion empresarial') + '</p>' +
       '<h3 class="card-title">' + escapeHtml(empresa.nombre || "--") + "</h3>" +
-      '<p class="card-desc muted">' + escapeHtml(empresa.observaciones || "") + "</p>" +
-      '<div class="card-actions">' +
+      '<p class="empresa-card-subtitle">Estado de empresa: ' + escapeHtml(estadoEmpresa) + '</p>' +
+      '</div>' +
+      '<p class="card-desc muted">' + escapeHtml(descripcion || "") + "</p>" +
+      '<div class="empresa-card-meta">' +
+      '<div class="empresa-card-meta-item"><strong>ID</strong><span>' + escapeHtml(String(empresa && empresa.id ? empresa.id : '--')) + '</span></div>' +
+      '<div class="empresa-card-meta-item"><strong>NIT</strong><span>' + escapeHtml(nit || 'No definido') + '</span></div>' +
+      '</div>' +
+      '<div class="card-actions empresa-card-actions">' +
+      '<span class="empresa-card-cta">' + escapeHtml(hasLicense ? 'Entrar al panel' : 'Configurar licencia') + '</span>' +
       '<button class="license-indicator ' +
       (hasLicense ? "active" : "inactive") +
       '" type="button" aria-hidden="true">' +
       (hasLicense ? "Licencia activa" : "Sin licencia") +
       "</button>" +
+      "</div>" +
       "</div>" +
       "</div>";
 
@@ -362,12 +389,6 @@
         return;
       }
       var me = await meRes.json();
-      try {
-        var rememberedEmail = me && me.email ? String(me.email).trim() : "";
-        if (localStorage.getItem("rememberAccount") === "1" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rememberedEmail)) {
-          localStorage.setItem("rememberedEmail", rememberedEmail);
-        }
-      } catch (e) {}
 
       var licenciasURL = "/super/api/licencias?scope=mine&con_empresa=1&activo=1";
       var empPromise = fetch("/super/api/empresas");

@@ -403,7 +403,9 @@ func isMissingColumnError(err error) bool {
 		return false
 	}
 	low := strings.ToLower(strings.TrimSpace(err.Error()))
-	return strings.Contains(low, "no such column") || strings.Contains(low, "column") && strings.Contains(low, "does not exist")
+	return strings.Contains(low, "no such column") ||
+		(strings.Contains(low, "column") && strings.Contains(low, "does not exist")) ||
+		strings.Contains(low, "has no column named")
 }
 
 func isMissingTableError(err error) bool {

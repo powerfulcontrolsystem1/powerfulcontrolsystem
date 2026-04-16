@@ -8,11 +8,64 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 - Cuando se cree un modulo nuevo o se modifique uno existente, esta matriz debe actualizarse en la misma iteracion para reflejar permisos por rol/modulo/accion y el impacto en paginas del panel.
 - Esta actualizacion debe quedar sincronizada con `documentos/descripcion_de_modulos`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios` y `CHANGELOG.md`.
 
+- Actualizacion 2026-04-16 (home publico: ajuste visual de accesos superiores):
+	- `index.html` mantiene exactamente la misma visibilidad publica; el cambio solo compacta y centra los botones superiores en movil.
+	- Impacto de matriz: sin cambios en permisos o acceso por rol.
+
+- Actualizacion 2026-04-16 (licencias super: persistencia del valor):
+	- `super/licencias.html` y `/super/api/licencias` mantienen los mismos permisos y alcance, pero ahora exponen correctamente los errores de guardado al administrador.
+	- Impacto de matriz: sin cambios en permisos, roles ni visibilidad; se corrige comportamiento del CRUD super existente.
+
+- Actualizacion 2026-04-16 (seleccionar empresa: mejora visual de tarjetas):
+	- `seleccionar_empresa.html` mantiene el mismo acceso por rol y licencia, pero las tarjetas internas ahora se adaptan mejor al contenido variable.
+	- Impacto de matriz: sin cambios en permisos, CRUD/A ni visibilidad de modulo; la correccion es exclusivamente visual y de lectura.
+
+- Actualizacion 2026-04-16 (pagina principal dinamica: correccion de render en editor super):
+	- `web/super/pagina_principal.html` respeta la cantidad persistida de tarjetas al recargar el editor.
+	- Impacto de matriz: sin cambios en permisos, roles ni visibilidad de modulo; la correccion solo evita un recorte incorrecto en el panel super.
+
+- Actualizacion 2026-04-16 (infraestructura publica: wildcard HTTPS y subdominio venta digital):
+	- `venta-digital.powerfulcontrolsystem.com` queda publicado como acceso publico HTTPS hacia la pagina global `venta_digital.html`.
+	- La raiz generica de subdominios por empresa sigue en `venta_publica.html`; no cambia la matriz de permisos ni la visibilidad de modulos internos.
+	- Impacto de matriz: sin cambios en roles, CRUD/A ni permisos; la modificacion solo amplía una entrada publica servida por infraestructura.
+
+- Actualizacion 2026-04-16 (autenticacion administrativa: registro con pais y ciudad):
+	- `web/registrar_nuevo_usuario_administrador.html` y `web/js/registrar_nuevo_usuario_administrador.js` amplian el formulario de alta administrativa para capturar `pais` y `ciudad`.
+	- `backend/handlers/auth_admin_handlers.go` mantiene la regla de confirmacion obligatoria del correo antes del ingreso, y `backend/db/db.go` agrega persistencia evolutiva de esos datos en `administradores`.
+	- Impacto de matriz: sin cambios en roles, CRUD/A ni visibilidad de modulos; el ajuste afecta solo los datos del registro y la completitud del perfil administrativo.
+
+- Actualizacion 2026-04-16 (autenticacion administrativa: esquema `administradores` compatible con PostgreSQL):
+	- `backend/db/db.go` agrega una regularizacion reusable de columnas de seguridad de `administradores` y `backend/main.go` la invoca en el arranque del backend.
+	- `backend/db/administradores_auth_schema_test.go` cubre la reparacion del esquema y la escritura de password inicial sobre tablas incompletas.
+	- Impacto de matriz: sin cambios en roles, CRUD/A ni visibilidad; el ajuste es de compatibilidad de backend para el mismo flujo administrativo autenticado.
+
+- Actualizacion 2026-04-16 (super: seguridad VPS Linux):
+	- `backend/handlers/security_vps_handlers.go` expone la API protegida `/super/api/security/vps/config|run|status|history|report|compare` y `backend/main.go` registra el servicio central del modulo.
+	- `web/super/seguridad.html` y `web/js/super_seguridad.js` agregan la vista operativa para configurar, ejecutar, revisar historial, comparar y exportar reportes del VPS.
+	- `backend/tools/vps_security_scan/main.go` y los scripts Linux asociados permiten ejecutar el mismo modulo desde consola y programarlo por cron sin abrir acceso a otros roles.
+	- Impacto de matriz: se agrega `Seguridad VPS Linux (super)` como modulo `CRUA` exclusivo de `super_administrador`; no hay acceso para roles empresariales.
+
+- Actualizacion 2026-04-16 (portal publico: orden visual del header):
+	- `web/index.html` y `web/estilos.css` reordenan el header del home para dejar `Informacion de contacto` al extremo derecho de la misma fila.
+	- Impacto de matriz: sin cambios en roles, CRUD/A ni wrappers; el ajuste es visual y no altera autorizacion.
+
+- Actualizacion 2026-04-16 (autenticacion estable multi-host sin recordar usuario/cuenta):
+	- `web/login.html` y `web/login_usuario.html` eliminan los checkboxes de `Recordar cuenta` y `Recordar usuario`, reduciendo divergencias por almacenamiento local entre `localhost`, dominio raíz y `www`.
+	- `backend/handlers/auth_admin_handlers.go` deja de propagar `login_hint` en el inicio OAuth; el login Google arranca limpio y consistente.
+	- `web/menu.js`, `web/js/super_administrador.js`, `web/js/seleccionar_empresa.js`, `web/super/licencias.html` y `web/super/tipos_empresas.html` retiran lógica `remember*` y conservan solo señal de sesión para navegación/autenticación visible.
+	- Impacto de matriz: sin cambios en roles, CRUD/A ni wrappers; la modificación es operativa/UX y no amplía privilegios.
+
 - Actualizacion 2026-04-16 (autenticacion administrativa: registro separado y recuperacion guiada):
 	- `web/login.html` mantiene acceso publico por Google o correo/clave, pero mueve el registro administrativo a `/registrar_nuevo_usuario_administrador.html` y deja la recuperación en formularios propios dentro del login.
 	- `backend/handlers/auth_admin_handlers.go` endurece el alta y la recuperación de administradores, mientras `backend/utils/utils.go` libera `/registrar_nuevo_usuario_administrador.html` y `/auth/confirmar_admin` como rutas públicas reales.
 	- `backend/handlers/auth_admin_handlers_test.go` y `backend/handlers/auth_users_carritos_test.go` cubren el alta/login/reset administrativo y la nueva superficie pública del middleware.
 	- Impacto de matriz: sin cambios en roles, CRUD/A, wrappers o visibilidad por rol; el login/registro/confirmación administrativa sigue siendo público y la administración global continúa bajo `super_administrador`.
+
+- Actualizacion 2026-04-16 (autenticacion administrativa: creación de clave local tras Google):
+	- `backend/handlers/auth_admin_handlers.go` y `backend/handlers/accept_handlers.go` redirigen a `/registrar_contrasena_usuario_de_google.html` cuando la cuenta autenticada por Google todavía no tiene `password_set`.
+	- `backend/handlers/account_handlers.go` expone `/api/account/set_google_password` como endpoint autenticado de solo autoservicio para el administrador en sesión.
+	- `web/registrar_contrasena_usuario_de_google.html` completa el alta de contraseña local sin ampliar permisos ni abrir una nueva superficie pública.
+	- Impacto de matriz: sin cambios en roles, CRUD/A o wrappers; la capacidad sigue restringida al mismo administrador autenticado sobre su propia cuenta.
 
 - Actualizacion 2026-04-16 (Epayco: respuesta publica fija):
 	- `web/epayco/respuesta.html` queda disponible como pagina publica para retorno desde la pasarela.
@@ -23,6 +76,12 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 	- `web/pagar_licencia.html` preselecciona de forma visible la unica pasarela disponible y muestra el logo de Epayco en tarjeta y panel cuando corresponde.
 	- `web/js/seleccionar_empresa.js` vuelve al formato compacto previo para tarjetas de empresa, sin alterar accesos ni permisos.
 	- Impacto de matriz: sin cambios en roles, CRUD/A o visibilidad funcional; las pantallas siguen con el mismo alcance de acceso que antes.
+
+- Actualizacion 2026-04-16 (super: tamano estimado por empresa en administracion PostgreSQL):
+	- `web/super/administrar_base_de_datos.html` agrega una tarjeta operativa con el boton `Cargar Empresas` para consultar consumo estimado por empresa dentro de `pcs_empresas`.
+	- `backend/handlers/postgres_performance.go` extiende `/super/api/postgres/performance` con `action=empresas_storage`, manteniendo el endpoint protegido y de solo lectura.
+	- `backend/handlers/postgres_performance_test.go` cubre la accion invalida del panel y utilidades asociadas.
+	- Impacto de matriz: sin cambios en roles, CRUD/A, wrappers o visibilidad; `Administracion DB PostgreSQL (super)` sigue siendo lectura exclusiva de `super_administrador`.
 
 ## Roles base
 
@@ -59,6 +118,7 @@ Leyenda:
 | Cierres de caja | CRUDA | CRUA | CRUA | CRUA | R | R | R | R |
 | Seguridad y permisos | CRUDA | CRUA | R | R | R | R | R | R |
 | Impresoras operativas | CRUDA | CRUA | R | R | R | R | R | R |
+| Seguridad VPS Linux (super) | CRUA | - | - | - | - | - | - | - |
 | Administracion DB PostgreSQL (super) | R | - | - | - | - | - | - | - |
 | Pagina principal (tarjetas index) | CRUA | - | - | - | - | - | - | - |
 | Portal publico - Juegos | R | R | R | R | R | R | R | R |
@@ -68,11 +128,26 @@ Leyenda:
 
 ## Estado de implementacion tecnica inicial (2026-04-04)
 
+- Actualizacion 2026-04-16 (super: seguridad VPS Linux):
+	- `web/super/seguridad.html` amplía el monitor de seguridad del panel super para cubrir configuracion, ejecucion de escaneo, hallazgos, historial, comparacion y exportes del VPS.
+	- `backend/handlers/security_vps_handlers.go` y `backend/vpssecurity/*` mantienen el modulo encapsulado y protegido solo para `super_administrador`.
+	- `backend/tools/vps_security_scan/main.go` junto a los scripts Linux permiten operacion manual y por cron sin ampliar privilegios a otros roles.
+	- Impacto de matriz: nuevo modulo `Seguridad VPS Linux (super)` con `CRUA` exclusivo de `super_administrador`; sin cambios para roles de empresa.
+
+- Actualizacion 2026-04-16 (portal publico: boton de contacto al extremo derecho del home):
+	- `web/index.html` y `web/estilos.css` ajustan solo la composicion visual del header comercial.
+	- Impacto de matriz: sin cambios en roles, CRUD/A, wrappers o visibilidad por rol.
+
 - Actualizacion 2026-04-16 (autenticacion administrativa: registro separado y recuperacion guiada):
 	- `web/login.html` centra el acceso por correo, deja debajo `Registrarse` y `¿Olvidó su contraseña?`, y sustituye los `prompt()` por formularios reales para recuperación y restablecimiento.
 	- `web/registrar_nuevo_usuario_administrador.html` agrega una superficie pública específica para alta administrativa y `backend/utils/utils.go` la libera junto con `/auth/confirmar_admin`.
 	- `backend/handlers/auth_admin_handlers.go` evita sobrescribir cuentas confirmadas y exige `nombre`, `telefono` y contraseña mínima para el registro administrativo.
 	- Impacto de matriz: sin cambios en roles, CRUD/A ni wrappers; el ajuste corrige el flujo público de autenticación administrativa sin ampliar permisos.
+
+- Actualizacion 2026-04-16 (super: tamano estimado por empresa en administracion PostgreSQL):
+	- `web/super/administrar_base_de_datos.html` suma una lectura puntual del peso estimado por empresa en la base operativa compartida y la presenta ordenada de mayor a menor.
+	- `backend/handlers/postgres_performance.go` mantiene el mismo modulo y endpoint protegido, agregando solo una accion de solo lectura (`action=empresas_storage`).
+	- Impacto de matriz: sin cambios en roles, CRUD/A ni wrappers; la consulta sigue reservada a `super_administrador`.
 
 - Actualizacion 2026-04-16 (portal publico: arcade movil reforzado y countdown en Patito volando):
 	- `web/Juegos/arcade_shared.js` suma sonidos de cuenta regresiva reutilizables por el arcade publico.

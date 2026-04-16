@@ -3,105 +3,548 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Seguridad — Monitoreo de puertos</title>
+  <title>Seguridad VPS</title>
   <link rel="stylesheet" href="/estilos.css">
   <style>
-    .controls{display:flex;gap:8px;align-items:center;margin-bottom:12px}
-    .controls input{padding:8px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text)}
-    .badge-open{background:var(--success);color:#fff;padding:6px 8px;border-radius:6px;font-weight:700}
-    .badge-closed{background:var(--danger);color:#fff;padding:6px 8px;border-radius:6px;font-weight:700}
+    :root {
+      --sec-ink: #132238;
+      --sec-brass: #b9782a;
+      --sec-sand: #f4efe5;
+      --sec-card: #fffdf8;
+      --sec-border: rgba(19, 34, 56, 0.12);
+      --sec-soft: #eef2f7;
+      --sec-danger: #8f2d1f;
+      --sec-warning: #d98e04;
+      --sec-success: #2a7f62;
+      --sec-info: #33658a;
+    }
+    body.super-page {
+      background:
+        radial-gradient(circle at top left, rgba(185, 120, 42, 0.12), transparent 28%),
+        linear-gradient(180deg, #f8f4ec 0%, #eef2f7 48%, #f7f4ed 100%);
+      color: var(--sec-ink);
+    }
+    .security-hero {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: flex-start;
+      padding: 10px 0 6px;
+    }
+    .security-kicker {
+      margin: 0 0 8px;
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--sec-brass);
+      font-weight: 800;
+    }
+    .security-lead {
+      margin: 10px 0 0;
+      max-width: 760px;
+      color: rgba(19, 34, 56, 0.78);
+      line-height: 1.55;
+    }
+    .hero-actions,
+    .toolbar-actions,
+    .report-actions,
+    .inline-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .security-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+    .security-card {
+      background: var(--sec-card);
+      border: 1px solid var(--sec-border);
+      border-radius: 22px;
+      box-shadow: 0 18px 40px rgba(17, 25, 40, 0.06);
+      padding: 20px;
+    }
+    .security-card.muted {
+      background: rgba(255, 255, 255, 0.78);
+    }
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .card-head h2,
+    .card-head h3 {
+      margin: 0;
+    }
+    .state-pill,
+    .severity-pill,
+    .tool-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .state-pill.neutral,
+    .severity-pill.info,
+    .tool-pill.neutral {
+      background: rgba(51, 101, 138, 0.1);
+      color: var(--sec-info);
+    }
+    .state-pill.running {
+      background: rgba(217, 142, 4, 0.12);
+      color: #8a5a00;
+    }
+    .state-pill.completed,
+    .severity-pill.bajo {
+      background: rgba(42, 127, 98, 0.14);
+      color: var(--sec-success);
+    }
+    .state-pill.failed,
+    .severity-pill.critico {
+      background: rgba(143, 45, 31, 0.14);
+      color: var(--sec-danger);
+    }
+    .severity-pill.alto {
+      background: rgba(196, 80, 45, 0.14);
+      color: #b03d1e;
+    }
+    .severity-pill.medio {
+      background: rgba(217, 142, 4, 0.14);
+      color: var(--sec-warning);
+    }
+    .summary-grid,
+    .tool-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 12px;
+    }
+    .summary-tile,
+    .tool-tile {
+      padding: 14px;
+      border-radius: 18px;
+      background: var(--sec-soft);
+      border: 1px solid rgba(19, 34, 56, 0.06);
+    }
+    .summary-tile strong,
+    .tool-tile strong {
+      display: block;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: rgba(19, 34, 56, 0.6);
+      margin-bottom: 8px;
+    }
+    .summary-value {
+      font-size: 30px;
+      font-weight: 900;
+      line-height: 1;
+    }
+    .summary-note,
+    .inline-note,
+    .mini-note,
+    .empty-state,
+    .tool-tile p {
+      margin: 0;
+      color: rgba(19, 34, 56, 0.72);
+      line-height: 1.45;
+    }
+    .summary-note,
+    .inline-note,
+    .mini-note {
+      font-size: 13px;
+    }
+    .security-form {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .field-block,
+    .field-block.full {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .field-block.full {
+      grid-column: 1 / -1;
+    }
+    .field-block label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 800;
+      color: rgba(19, 34, 56, 0.72);
+    }
+    .field-block input,
+    .field-block select,
+    .field-block textarea {
+      width: 100%;
+      border-radius: 14px;
+      border: 1px solid rgba(19, 34, 56, 0.12);
+      background: rgba(255, 255, 255, 0.96);
+      color: var(--sec-ink);
+      padding: 11px 12px;
+      font: inherit;
+    }
+    .field-switch {
+      flex-direction: row;
+      align-items: center;
+      gap: 10px;
+      padding-top: 25px;
+    }
+    .field-switch input {
+      width: 18px;
+      height: 18px;
+      margin: 0;
+    }
+    .section-separator {
+      margin: 16px 0;
+      border-top: 1px dashed rgba(19, 34, 56, 0.12);
+    }
+    .findings-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 720px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+    .finding-card {
+      border: 1px solid rgba(19, 34, 56, 0.08);
+      border-left: 6px solid var(--sec-info);
+      border-radius: 16px;
+      padding: 14px 16px;
+      background: #fff;
+    }
+    .finding-card.critico { border-left-color: var(--sec-danger); }
+    .finding-card.alto { border-left-color: #b03d1e; }
+    .finding-card.medio { border-left-color: var(--sec-warning); }
+    .finding-card.bajo { border-left-color: var(--sec-success); }
+    .finding-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+    .finding-title {
+      margin: 0;
+      font-size: 17px;
+    }
+    .finding-meta {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 8px 0;
+      color: rgba(19, 34, 56, 0.72);
+      font-size: 13px;
+    }
+    .finding-body {
+      color: rgba(19, 34, 56, 0.82);
+      line-height: 1.5;
+      font-size: 14px;
+    }
+    .finding-body strong {
+      color: var(--sec-ink);
+    }
+    .table-wrap {
+      overflow: auto;
+    }
+    .table th,
+    .table td {
+      white-space: nowrap;
+    }
+    .table td.wrap {
+      white-space: normal;
+      min-width: 240px;
+    }
+    .table .actions-cell {
+      min-width: 250px;
+    }
+    .subtle-button,
+    .export-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      padding: 8px 12px;
+      text-decoration: none;
+      background: rgba(19, 34, 56, 0.08);
+      color: var(--sec-ink);
+      border: 0;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 700;
+    }
+    .subtle-button:hover,
+    .export-link:hover {
+      background: rgba(19, 34, 56, 0.14);
+    }
+    .export-link {
+      background: rgba(185, 120, 42, 0.12);
+      color: #7a4b08;
+    }
+    .stack-gap {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .status-banner {
+      margin-top: 14px;
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: rgba(51, 101, 138, 0.08);
+      border: 1px solid rgba(51, 101, 138, 0.14);
+    }
+    .mono {
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 12px;
+    }
+    @media (max-width: 1024px) {
+      .security-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+    @media (max-width: 720px) {
+      .security-hero,
+      .card-head,
+      .finding-header {
+        flex-direction: column;
+      }
+      .security-form {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .field-switch {
+        padding-top: 0;
+      }
+      .summary-grid,
+      .tool-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .hero-actions,
+      .toolbar-actions,
+      .report-actions,
+      .inline-actions {
+        width: 100%;
+      }
+      .hero-actions .btn,
+      .toolbar-actions .btn,
+      .inline-actions .btn,
+      .subtle-button,
+      .export-link {
+        width: 100%;
+      }
+    }
   </style>
 </head>
 <body class="super-page">
   <div class="container">
-    <div class="page-header">
-      <h1>Seguridad — Monitoreo de puertos</h1>
+    <div class="security-hero">
       <div>
-        <button id="scanBtn" class="btn">Escanear</button>
+        <p class="security-kicker">Super Administrador · VPS Ubuntu</p>
+        <h1>Seguridad del servidor</h1>
+        <p class="security-lead">Auditoría centralizada con Lynis, Nmap y Trivy como alternativa ligera a OpenVAS, más chequeos propios de firewall, Nginx, SSH, permisos y paquetes pendientes. El módulo guarda historial, calcula diferencias y expone reportes en JSON, TXT, HTML, CSV, PDF y Excel.</p>
       </div>
-    </div>
-
-    <div class="card">
-      <div class="controls">
-        <label style="color:var(--muted);font-weight:700">IP</label>
-        <input id="ipInput" placeholder="Dirección IP" value="127.0.0.1">
-        <label style="color:var(--muted);font-weight:700">Puertos</label>
-        <input id="portsInput" placeholder="22,80,443" value="22,80,443,3306,5432,8080,8443" style="min-width:260px">
+      <div class="hero-actions">
+        <button id="runFullScanBtn" class="btn">Ejecutar escaneo</button>
+        <button id="refreshHistoryBtn" class="btn">Actualizar historial</button>
       </div>
-
-      <table class="table" id="portsTable">
-        <thead>
-          <tr><th>Puerto</th><th>Estado</th><th>Dirección IP</th><th>Firewall</th></tr>
-        </thead>
-        <tbody></tbody>
-      </table>
     </div>
   </div>
 
-  <div class="container">
-    <div class="card">
-      <div class="page-header">
-        <h2>Procesos activos en memoria</h2>
+  <div class="container security-grid">
+    <section class="security-card">
+      <div class="card-head">
+        <h2>Configuración del módulo</h2>
+        <span id="configState" class="state-pill neutral">Cargando</span>
+      </div>
+      <form id="configForm" class="security-form">
+        <div class="field-block">
+          <label for="targetHostInput">Host objetivo</label>
+          <input id="targetHostInput" type="text" placeholder="127.0.0.1">
+        </div>
+        <div class="field-block">
+          <label for="portListInput">Puertos a revisar</label>
+          <input id="portListInput" type="text" placeholder="22,80,443,5432,8080,8443">
+        </div>
+        <div class="field-block">
+          <label for="profileSelect">Perfil</label>
+          <select id="profileSelect">
+            <option value="quick">quick</option>
+            <option value="full">full</option>
+          </select>
+        </div>
+        <div class="field-block">
+          <label for="cronInput">Cron sugerido</label>
+          <input id="cronInput" type="text" placeholder="0 2 * * *">
+        </div>
+        <div class="field-block">
+          <label for="maxHistoryInput">Historial máximo</label>
+          <input id="maxHistoryInput" type="number" min="1" step="1">
+        </div>
+        <div class="field-block">
+          <label for="maxFindingsInput">Máximo hallazgos por herramienta</label>
+          <input id="maxFindingsInput" type="number" min="1" step="1">
+        </div>
+        <div class="field-block field-switch">
+          <input id="lynisEnabledInput" type="checkbox">
+          <label for="lynisEnabledInput">Activar Lynis</label>
+        </div>
+        <div class="field-block">
+          <label for="lynisCommandInput">Comando Lynis</label>
+          <input id="lynisCommandInput" type="text" placeholder="lynis">
+        </div>
+        <div class="field-block field-switch">
+          <input id="nmapEnabledInput" type="checkbox">
+          <label for="nmapEnabledInput">Activar Nmap</label>
+        </div>
+        <div class="field-block">
+          <label for="nmapCommandInput">Comando Nmap</label>
+          <input id="nmapCommandInput" type="text" placeholder="nmap">
+        </div>
+        <div class="field-block field-switch">
+          <input id="vulnEnabledInput" type="checkbox">
+          <label for="vulnEnabledInput">Activar escáner de vulnerabilidades</label>
+        </div>
+        <div class="field-block">
+          <label for="vulnProviderInput">Proveedor</label>
+          <select id="vulnProviderInput">
+            <option value="trivy">trivy</option>
+          </select>
+        </div>
+        <div class="field-block">
+          <label for="vulnCommandInput">Comando vulnerabilidades</label>
+          <input id="vulnCommandInput" type="text" placeholder="trivy">
+        </div>
+        <div class="field-block">
+          <label for="vulnTargetInput">Ruta a escanear</label>
+          <input id="vulnTargetInput" type="text" placeholder="/">
+        </div>
+        <div class="field-block full">
+          <div class="inline-actions">
+            <button type="submit" class="btn">Guardar configuración</button>
+            <button type="button" id="runQuickScanBtn" class="btn">Ejecutar con este perfil</button>
+          </div>
+        </div>
+      </form>
+      <div class="section-separator"></div>
+      <p class="inline-note">Scripts operativos previstos para el VPS: <span class="mono">scripts/install_vps_security_tools.sh</span>, <span class="mono">scripts/install_vps_security_cron.sh</span> y <span class="mono">scripts/run_vps_security_scan.sh</span>.</p>
+    </section>
+
+    <section class="security-card muted stack-gap">
+      <div class="card-head">
+        <h2>Último resultado</h2>
+        <span id="runStateBadge" class="state-pill neutral">Sin escaneos</span>
+      </div>
+      <div id="summaryGrid" class="summary-grid"></div>
+      <div id="reportActions" class="report-actions"></div>
+      <div id="comparisonBox" class="status-banner" hidden></div>
+      <div id="statusBox" class="status-banner" hidden></div>
+    </section>
+  </div>
+
+  <div class="container security-grid">
+    <section class="security-card">
+      <div class="card-head">
         <div>
+          <h2>Hallazgos priorizados</h2>
+          <p class="mini-note">Severidades calculadas como CRÍTICO, ALTO, MEDIO y BAJO, con acciones correctivas y evidencia técnica.</p>
+        </div>
+        <span id="findingsCountBadge" class="state-pill neutral">0 hallazgos</span>
+      </div>
+      <div id="toolGrid" class="tool-grid"></div>
+      <div class="section-separator"></div>
+      <div id="findingsList" class="findings-list">
+        <p class="empty-state">Todavía no hay un reporte cargado.</p>
+      </div>
+    </section>
+
+    <section class="security-card">
+      <div class="card-head">
+        <div>
+          <h2>Historial y comparación</h2>
+          <p class="mini-note">Cada ejecución conserva sus exportes y permite comparar con el escaneo anterior.</p>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="table" id="historyTable">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Scan ID</th>
+              <th>Objetivo</th>
+              <th>Riesgo</th>
+              <th>Total</th>
+              <th>Nuevos/Resueltos</th>
+              <th class="actions-cell">Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <div class="container security-grid">
+    <section class="security-card">
+      <div class="card-head">
+        <div>
+          <h2>Monitoreo rápido de puertos</h2>
+          <p class="mini-note">Consulta inmediata para validar exposición TCP y contraste rápido con firewall.</p>
+        </div>
+        <div class="toolbar-actions">
+          <button id="scanPortsBtn" class="btn">Escanear puertos</button>
+        </div>
+      </div>
+      <div class="security-form">
+        <div class="field-block">
+          <label for="ipInput">IP</label>
+          <input id="ipInput" type="text" placeholder="127.0.0.1" value="127.0.0.1">
+        </div>
+        <div class="field-block full">
+          <label for="portsInput">Puertos</label>
+          <input id="portsInput" type="text" placeholder="22,80,443" value="22,80,443,3306,5432,8080,8443">
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="table" id="portsTable">
+          <thead>
+            <tr><th>Puerto</th><th>Estado</th><th>Dirección IP</th><th>Firewall</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="security-card">
+      <div class="card-head">
+        <div>
+          <h2>Procesos activos en memoria</h2>
+          <p class="mini-note">Vista rápida de procesos por memoria para detectar runtime no esperado o consumo anómalo.</p>
+        </div>
+        <div class="toolbar-actions">
           <button id="refreshProcessesBtn" class="btn">Actualizar procesos</button>
         </div>
       </div>
-
-      <table class="table" id="processesTable">
-        <thead>
-          <tr><th>PID</th><th>Nombre</th><th>Memoria (KB)</th></tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
+      <div class="table-wrap">
+        <table class="table" id="processesTable">
+          <thead>
+            <tr><th>PID</th><th>Nombre</th><th>Memoria (KB)</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
   </div>
 
-  <script>
-    async function scan(){
-      const ip = document.getElementById('ipInput').value || '127.0.0.1';
-      const ports = document.getElementById('portsInput').value || '22,80,443';
-      const btn = document.getElementById('scanBtn');
-      btn.disabled = true; btn.textContent = 'Escaneando...';
-      try{
-        const res = await fetch('/super/api/security/ports?ip='+encodeURIComponent(ip)+'&ports='+encodeURIComponent(ports));
-        if(!res.ok) throw new Error('Error en la consulta: '+res.status);
-        const data = await res.json();
-        const tbody = document.querySelector('#portsTable tbody'); tbody.innerHTML = '';
-        data.forEach(item => {
-          const tr = document.createElement('tr');
-          const estadoHtml = (item.estado === 'abierto') ? '<span class="badge-open">Abierto</span>' : '<span class="badge-closed">Cerrado</span>';
-          tr.innerHTML = '<td>'+item.puerto+'</td><td>'+estadoHtml+'</td><td>'+item.ip+'</td><td>'+(item.firewall||'Desconocido')+'</td>';
-          tbody.appendChild(tr);
-        });
-      }catch(e){
-        console.error(e); alert('Error escaneando puertos: '+(e && e.message? e.message : e));
-      } finally { btn.disabled = false; btn.textContent = 'Escanear'; }
-    }
-    document.addEventListener('DOMContentLoaded', function(){ document.getElementById('scanBtn').addEventListener('click', scan); scan(); });
-
-    // --- Procesos en memoria ---
-    async function loadProcesses(){
-      const btn = document.getElementById('refreshProcessesBtn');
-      btn.disabled = true; btn.textContent = 'Cargando...';
-      try{
-        const res = await fetch('/super/api/security/processes?limit=200');
-        if(!res.ok) throw new Error('Error en la consulta: '+res.status);
-        const data = await res.json();
-        const tbody = document.querySelector('#processesTable tbody'); tbody.innerHTML = '';
-        data.forEach(item => {
-          const tr = document.createElement('tr');
-          tr.innerHTML = '<td>'+item.pid+'</td><td>'+ (item.name||'') +'</td><td>'+ (item.memory_kb||0) +'</td>';
-          tbody.appendChild(tr);
-        });
-      }catch(e){
-        console.error(e); alert('Error cargando procesos: '+(e && e.message? e.message : e));
-      } finally { btn.disabled = false; btn.textContent = 'Actualizar procesos'; }
-    }
-    document.addEventListener('DOMContentLoaded', function(){
-      const b = document.getElementById('refreshProcessesBtn'); if (b) b.addEventListener('click', loadProcesses);
-      // cargar procesos al abrir la página
-      try { loadProcesses(); } catch(e) {}
-    });
-  </script>
+  <script src="/js/super_seguridad.js"></script>
 </body>
 </html>

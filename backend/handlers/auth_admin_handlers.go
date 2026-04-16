@@ -4,16 +4,16 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net"
-	"net/mail"
 	"net/http"
+	"net/mail"
+	"net/smtp"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
-	"fmt"
-	"net/smtp"
 
 	"github.com/you/pos-backend/auth"
 	dbpkg "github.com/you/pos-backend/db"
@@ -23,6 +23,7 @@ import (
 const googleOAuthRedirectCookieName = "oauth_redirect_url"
 const browserSessionStateCookieName = "browser_session_active"
 const minAdminPasswordLength = 8
+const googlePasswordSetupPagePath = "/registrar_contrasena_usuario_de_google.html"
 
 // SessionCookieSecure resuelve si una cookie de sesión debe emitirse como Secure
 // considerando terminación TLS local o por proxy inverso.
@@ -50,6 +51,19 @@ func countAdminPhoneDigits(raw string) int {
 	return total
 }
 
+func resolveAdminPostLoginRedirect(admin *dbpkg.Admin) string {
+	if admin == nil {
+		return "/seleccionar_empresa.html"
+	}
+	if admin.PasswordSet != 1 || strings.TrimSpace(admin.PasswordHash) == "" {
+		return googlePasswordSetupPagePath
+	}
+	if strings.EqualFold(strings.TrimSpace(admin.Role), "super_administrador") {
+		return "/super_administrador.html"
+	}
+	return "/seleccionar_empresa.html"
+}
+
 // AdminRegisterHandler registra un administrador (envía email de confirmación).
 func AdminRegisterHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -61,6 +75,8 @@ func AdminRegisterHandler(dbSuper *sql.DB) http.HandlerFunc {
 			Email    string `json:"email"`
 			Name     string `json:"name"`
 			Telefono string `json:"telefono"`
+			Pais     string `json:"pais"`
+			Ciudad   string `json:"ciudad"`
 			Password string `json:"password"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
@@ -70,9 +86,11 @@ func AdminRegisterHandler(dbSuper *sql.DB) http.HandlerFunc {
 		payload.Email = strings.TrimSpace(payload.Email)
 		payload.Name = strings.TrimSpace(payload.Name)
 		payload.Telefono = strings.TrimSpace(payload.Telefono)
+		payload.Pais = strings.TrimSpace(payload.Pais)
+		payload.Ciudad = strings.TrimSpace(payload.Ciudad)
 		payload.Password = strings.TrimSpace(payload.Password)
-		if payload.Email == "" || payload.Name == "" || payload.Telefono == "" || payload.Password == "" {
-			writeAdminAuthError(w, http.StatusBadRequest, "Debes completar correo, nombre completo, teléfono y contraseña.")
+		if payload.Email == "" || payload.Name == "" || payload.Telefono == "" || payload.Pais == "" || payload.Ciudad == "" || payload.Password == "" {
+			writeAdminAuthError(w, http.StatusBadRequest, "Debes completar correo, nombre completo, celular, pais, ciudad y contraseña.")
 			return
 		}
 		if _, err := mail.ParseAddress(payload.Email); err != nil {
@@ -81,6 +99,10 @@ func AdminRegisterHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 		if countAdminPhoneDigits(payload.Telefono) < 7 {
 			writeAdminAuthError(w, http.StatusBadRequest, "El teléfono debe contener al menos 7 dígitos.")
+			return
+		}
+		if len([]rune(payload.Ciudad)) < 2 {
+			writeAdminAuthError(w, http.StatusBadRequest, "Debes indicar una ciudad valida.")
 			return
 		}
 		if len(payload.Password) < minAdminPasswordLength {
@@ -112,7 +134,7 @@ func AdminRegisterHandler(dbSuper *sql.DB) http.HandlerFunc {
 			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo completar el registro de la cuenta.")
 			return
 		}
-		if err := dbpkg.UpdateAdministradorProfile(dbSuper, admin.ID, payload.Name, payload.Telefono, payload.Email); err != nil {
+		if err := dbpkg.UpdateAdministradorProfile(dbSuper, admin.ID, payload.Name, payload.Telefono, payload.Email, payload.Pais, payload.Ciudad); err != nil {
 			log.Println("AdminRegisterHandler update profile error:", err)
 			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo guardar la información de contacto.")
 			return
@@ -193,8 +215,8 @@ func AdminLoginHandler(dbSuper *sql.DB) http.HandlerFunc {
 			writeAdminAuthError(w, http.StatusMethodNotAllowed, "Método no permitido.")
 			return
 		}
-		var payload struct{
-			Email string `json:"email"`
+		var payload struct {
+			Email    string `json:"email"`
 			Password string `json:"password"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
@@ -240,12 +262,12 @@ func AdminLoginHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 		cookie := &http.Cookie{
-			Name: "session_token",
-			Value: token,
-			Path: "/",
+			Name:     "session_token",
+			Value:    token,
+			Path:     "/",
 			HttpOnly: true,
-			MaxAge: 86400,
-			Secure: SessionCookieSecure(r),
+			MaxAge:   86400,
+			Secure:   SessionCookieSecure(r),
 			SameSite: http.SameSiteLaxMode,
 		}
 		http.SetCookie(w, cookie)
@@ -266,7 +288,9 @@ func AdminRequestPasswordRecoveryHandler(dbSuper *sql.DB) http.HandlerFunc {
 			writeAdminAuthError(w, http.StatusMethodNotAllowed, "Método no permitido.")
 			return
 		}
-		var payload struct{ Email string `json:"email"` }
+		var payload struct {
+			Email string `json:"email"`
+		}
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			writeAdminAuthError(w, http.StatusBadRequest, "La solicitud de recuperación es inválida.")
 			return
@@ -318,9 +342,9 @@ func AdminResetPasswordHandler(dbSuper *sql.DB) http.HandlerFunc {
 			writeAdminAuthError(w, http.StatusMethodNotAllowed, "Método no permitido.")
 			return
 		}
-		var payload struct{
-			Email string `json:"email"`
-			Token string `json:"token"`
+		var payload struct {
+			Email    string `json:"email"`
+			Token    string `json:"token"`
 			Password string `json:"password"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
@@ -386,12 +410,12 @@ func AdminResetPasswordHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 		cookie := &http.Cookie{
-			Name: "session_token",
-			Value: tokenSession,
-			Path: "/",
+			Name:     "session_token",
+			Value:    tokenSession,
+			Path:     "/",
 			HttpOnly: true,
-			MaxAge: 86400,
-			Secure: SessionCookieSecure(r),
+			MaxAge:   86400,
+			Secure:   SessionCookieSecure(r),
 			SameSite: http.SameSiteLaxMode,
 		}
 		http.SetCookie(w, cookie)
@@ -433,23 +457,37 @@ func sendAdminConfirmationEmail(r *http.Request, dbSuper *sql.DB, toEmail, toNam
 	}
 
 	smtpEmail, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_email")
-	if err != nil { return "", err }
+	if err != nil {
+		return "", err
+	}
 	smtpEmail = strings.TrimSpace(smtpEmail)
-	if smtpEmail == "" { return "", fmt.Errorf("gmail.smtp_email no configurado") }
+	if smtpEmail == "" {
+		return "", fmt.Errorf("gmail.smtp_email no configurado")
+	}
 	smtpPass, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_app_password")
-	if err != nil { return "", err }
+	if err != nil {
+		return "", err
+	}
 	smtpPass = strings.TrimSpace(smtpPass)
-	if smtpPass == "" { return "", fmt.Errorf("gmail.smtp_app_password no configurado") }
+	if smtpPass == "" {
+		return "", fmt.Errorf("gmail.smtp_app_password no configurado")
+	}
 
 	smtpHost, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_host")
 	smtpPort, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_port")
 	fromName, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_from_name")
 	smtpHost = strings.TrimSpace(smtpHost)
-	if smtpHost == "" { smtpHost = "smtp.gmail.com" }
+	if smtpHost == "" {
+		smtpHost = "smtp.gmail.com"
+	}
 	smtpPort = strings.TrimSpace(smtpPort)
-	if smtpPort == "" { smtpPort = "587" }
+	if smtpPort == "" {
+		smtpPort = "587"
+	}
 	fromName = strings.TrimSpace(fromName)
-	if fromName == "" { fromName = "Powerful Control System" }
+	if fromName == "" {
+		fromName = "Powerful Control System"
+	}
 
 	mailHostForAuth := smtpHost
 	if strings.Contains(smtpHost, ":") {
@@ -479,7 +517,9 @@ func sendAdminPasswordRecoveryEmail(r *http.Request, dbSuper *sql.DB, toEmail, t
 	baseURL := resolveBaseURLForConfirmation(r, dbSuper)
 	resetHintURL := strings.TrimRight(baseURL, "/") + "/login.html?view=reset&email=" + url.QueryEscape(toEmail) + "&token_recuperacion=" + url.QueryEscape(token)
 	safeName := strings.TrimSpace(toName)
-	if safeName == "" { safeName = "administrador" }
+	if safeName == "" {
+		safeName = "administrador"
+	}
 	subject := "Recuperacion de contraseña - Powerful Control System"
 	body := "Hola " + safeName + ",\r\n\r\n" +
 		"Recibimos una solicitud para restablecer tu contraseña. Token de recuperación:\r\n" + token + "\r\n\r\n" +
@@ -493,28 +533,46 @@ func sendAdminPasswordRecoveryEmail(r *http.Request, dbSuper *sql.DB, toEmail, t
 		return resetHintURL, nil
 	}
 	smtpEmail, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_email")
-	if err != nil { return "", err }
+	if err != nil {
+		return "", err
+	}
 	smtpEmail = strings.TrimSpace(smtpEmail)
-	if smtpEmail == "" { return "", fmt.Errorf("gmail.smtp_email no configurado") }
+	if smtpEmail == "" {
+		return "", fmt.Errorf("gmail.smtp_email no configurado")
+	}
 	smtpPass, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_app_password")
-	if err != nil { return "", err }
+	if err != nil {
+		return "", err
+	}
 	smtpPass = strings.TrimSpace(smtpPass)
-	if smtpPass == "" { return "", fmt.Errorf("gmail.smtp_app_password no configurado") }
+	if smtpPass == "" {
+		return "", fmt.Errorf("gmail.smtp_app_password no configurado")
+	}
 	smtpHost, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_host")
 	smtpPort, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_port")
 	fromName, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_from_name")
 	smtpHost = strings.TrimSpace(smtpHost)
-	if smtpHost == "" { smtpHost = "smtp.gmail.com" }
+	if smtpHost == "" {
+		smtpHost = "smtp.gmail.com"
+	}
 	smtpPort = strings.TrimSpace(smtpPort)
-	if smtpPort == "" { smtpPort = "587" }
+	if smtpPort == "" {
+		smtpPort = "587"
+	}
 	fromName = strings.TrimSpace(fromName)
-	if fromName == "" { fromName = "Powerful Control System" }
+	if fromName == "" {
+		fromName = "Powerful Control System"
+	}
 	mailHostForAuth := smtpHost
 	if strings.Contains(smtpHost, ":") {
-		if h, _, err := net.SplitHostPort(smtpHost); err == nil { mailHostForAuth = h }
+		if h, _, err := net.SplitHostPort(smtpHost); err == nil {
+			mailHostForAuth = h
+		}
 	}
 	addr := smtpHost
-	if !strings.Contains(addr, ":") { addr = smtpHost + ":" + smtpPort }
+	if !strings.Contains(addr, ":") {
+		addr = smtpHost + ":" + smtpPort
+	}
 	auth := smtp.PlainAuth("", smtpEmail, smtpPass, mailHostForAuth)
 	msg := "From: " + fromName + " <" + smtpEmail + ">\r\n" +
 		"To: " + toEmail + "\r\n" +
@@ -692,21 +750,6 @@ func isValidOAuthRedirectURL(raw string) bool {
 	return parsed.Path == "/auth/google/callback"
 }
 
-func normalizeGoogleLoginHint(raw string) string {
-	trimmed := strings.TrimSpace(raw)
-	if trimmed == "" {
-		return ""
-	}
-	parsed, err := mail.ParseAddress(trimmed)
-	if err != nil {
-		return ""
-	}
-	if !strings.EqualFold(strings.TrimSpace(parsed.Address), trimmed) {
-		return ""
-	}
-	return trimmed
-}
-
 // HandleGoogleLogin devuelve un http.HandlerFunc configurado con clientID y redirectURL
 func HandleGoogleLogin(clientID, redirectURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -717,8 +760,6 @@ func HandleGoogleLogin(clientID, redirectURL string) http.HandlerFunc {
 		}
 		log.Printf("handleGoogleLogin: oauth redirect requested (client configured=%t)", clientID != "")
 		effectiveRedirectURL := resolveOAuthRedirectURL(r, redirectURL)
-		q := r.URL.Query()
-		loginHint := normalizeGoogleLoginHint(q.Get("login_hint"))
 		vals := url.Values{
 			"client_id":              {clientID},
 			"redirect_uri":           {effectiveRedirectURL},
@@ -729,9 +770,6 @@ func HandleGoogleLogin(clientID, redirectURL string) http.HandlerFunc {
 			"state":                  {state},
 			// Forzar selección explícita de cuenta sin pedir consentimiento extra en cada login.
 			"prompt": {"select_account"},
-		}
-		if loginHint != "" {
-			vals.Set("login_hint", loginHint)
 		}
 		http.SetCookie(w, &http.Cookie{
 			Name:     googleOAuthRedirectCookieName,
@@ -855,17 +893,13 @@ func HandleGoogleCallback(dbEmpresas *sql.DB, dbSuper *sql.DB, clientID, clientS
 			http.SetCookie(w, cookie)
 			SetBrowserSessionStateCookie(w, r, true)
 
-			admin, err := dbpkg.GetAdminByEmail(dbSuper, userinfo.Email)
+			admin, err := dbpkg.GetAdminByEmailFull(dbSuper, userinfo.Email)
 			if err != nil || admin == nil {
 				log.Println("warning: no admin found, redirecting to seleccionar_empresa:", err)
 				http.Redirect(w, r, "/seleccionar_empresa.html", http.StatusFound)
 				return
 			}
-			if admin.Role == "super_administrador" {
-				http.Redirect(w, r, "/super_administrador.html", http.StatusFound)
-				return
-			}
-			http.Redirect(w, r, "/seleccionar_empresa.html", http.StatusFound)
+			http.Redirect(w, r, resolveAdminPostLoginRedirect(admin), http.StatusFound)
 			return
 		}
 

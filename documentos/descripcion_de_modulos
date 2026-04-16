@@ -6,11 +6,76 @@ Gobernanza obligatoria (agente_go):
 - En el mismo cambio, tambien debe actualizarse `documentos/matriz_roles_permisos_pos_multiempresa.md` para reflejar permisos por rol/modulo/accion y visibilidad de paginas afectadas.
 - La actualizacion modular debe mantener trazabilidad en `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios` y `CHANGELOG.md`.
 
+Actualizacion 2026-04-16 (portal publico: botones compactos en cabecera del home):
+- Se ajusta el submodulo del portal publico para que los accesos superiores de registro/contacto ocupen menos altura, mantengan el mismo ancho visual y queden centrados en movil.
+- El cambio se concentra en `web/estilos.css`; no altera rutas, permisos ni logica del portal.
+
+Actualizacion 2026-04-16 (licencias super: correccion de persistencia del valor):
+- Se refuerza el modulo `licencias` del panel super para instalaciones con esquema legado donde faltaba la columna `valor` u otras columnas operativas.
+- `backend/db/db.go` regulariza el esquema y reintenta create/get/update; `web/super/licencias.html` ahora informa errores HTTP reales al guardar.
+- Impacto de permisos: sin cambios en roles ni endpoints expuestos; el ajuste corrige persistencia y visibilidad de error dentro del mismo CRUD super.
+
+Actualizacion 2026-04-16 (seleccionar empresa: tarjetas compactas con interior adaptable):
+- Se refuerza el submodulo `seleccionar empresa` para que las tarjetas compactas no recorten el texto cuando nombre, observaciones, NIT o estados son mas largos de lo habitual.
+- `web/js/seleccionar_empresa.js` usa la estructura `empresa-card` y `web/estilos.css` ajusta el layout interno a `flex`/`grid` con envoltura automatica y margenes pequenos.
+- Impacto de permisos: sin cambios en roles ni rutas; el ajuste es visual y de legibilidad dentro del panel super.
+
+Actualizacion 2026-04-16 (pagina principal dinamica: editor respeta cantidad persistida):
+- Se corrige el submodulo `pagina principal dinamica (super)` para que al recargar configuraciones guardadas no reutilice el valor inicial `5` del input HTML como limite del editor.
+- `web/super/pagina_principal.html` ahora renderiza primero desde `state.config.cantidad`, por lo que configuraciones de 7 tarjetas vuelven a mostrarse completas en el panel.
+- Impacto de permisos: sin cambios en roles ni rutas; el ajuste es de sincronizacion frontend del mismo modulo super existente.
+
+Actualizacion 2026-04-16 (infraestructura publica: wildcard HTTPS y prueba de venta digital):
+- Se documenta el soporte de wildcard HTTPS manual para `powerfulcontrolsystem.com` y `*.powerfulcontrolsystem.com` con validacion DNS-01 en Hostinger.
+- La pagina publica global `venta_digital.html` queda expuesta tambien mediante el subdominio dedicado `venta-digital.powerfulcontrolsystem.com` como prueba operativa del wildcard.
+- La raiz generica de subdominios empresariales no cambia: permanece orientada al flujo `venta_publica.html` por empresa.
+- Impacto de permisos: sin cambios en roles ni rutas protegidas; el ajuste es de infraestructura publica y accesibilidad HTTPS.
+
+Actualizacion 2026-04-16 (autenticacion administrativa: registro con pais y ciudad):
+- Se refuerza el modulo `autenticacion y sesiones` para capturar un perfil administrativo mas completo desde el alta inicial.
+- `web/registrar_nuevo_usuario_administrador.html` y `web/js/registrar_nuevo_usuario_administrador.js` ahora solicitan `pais` y `ciudad`, con sugerencia automatica de pais y posibilidad de correccion manual.
+- `backend/handlers/auth_admin_handlers.go` valida esos campos y `backend/db/db.go` los persiste en la tabla `administradores`.
+- El estado pendiente por confirmacion de correo se mantiene como requisito antes de iniciar sesion y seguir hacia `seleccionar_empresa.html`.
+- Impacto de permisos: sin cambios en roles ni rutas protegidas; el ajuste amplía datos de registro del mismo flujo administrativo existente.
+
+Actualizacion 2026-04-16 (autenticacion administrativa: esquema `administradores` estable entre SQLite y PostgreSQL):
+- Se refuerza el modulo `autenticacion y sesiones` para que las columnas de seguridad del administrador no dependan de un bootstrap exclusivo de SQLite.
+- `backend/db/db.go` centraliza `EnsureAdministradoresAuthSchema` y permite regularizar en PostgreSQL las columnas de contrato, confirmacion y password usando `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`.
+- `backend/main.go` deja de mantener un bloque inline basado en `PRAGMA` y reutiliza la misma funcion de base de datos al arrancar el backend.
+- `backend/db/administradores_auth_schema_test.go` cubre la autocorreccion del esquema y el caso real de `SetAdministradorPassword` sobre una tabla incompleta.
+- Impacto de permisos: sin cambios en roles, CRUD/A ni wrappers; el ajuste corrige compatibilidad de infraestructura del mismo flujo administrativo existente.
+
+Actualizacion 2026-04-16 (super: seguridad VPS Linux con panel, exportes y programacion):
+- Se crea el modulo `seguridad VPS Linux (super)` para auditar el VPS Ubuntu desde el propio sistema, sin introducir nuevas tablas y manteniendo la persistencia de reportes en filesystem.
+- `backend/vpssecurity/` concentra configuracion, orquestacion de Lynis/Nmap/Trivy, chequeos propios, comparacion historica y exportes `JSON`, `TXT`, `HTML`, `CSV`, `PDF` y `XLS`.
+- `backend/handlers/security_vps_handlers.go` y `backend/main.go` exponen y registran `/super/api/security/vps/config`, `/run`, `/status`, `/history`, `/report` y `/compare` solo para `super_administrador`.
+- `web/super/seguridad.html` y `web/js/super_seguridad.js` integran configuracion, lanzamiento de escaneos, resumen, hallazgos, historial/comparacion y conservan el monitoreo rapido de puertos/procesos.
+- `backend/tools/vps_security_scan/main.go` y los scripts `scripts/install_vps_security_tools.sh`, `scripts/run_vps_security_scan.sh` e `install_vps_security_cron.sh` cubren instalacion, ejecucion manual y cron en Ubuntu.
+- Impacto de permisos: se agrega un modulo super exclusivo para configuracion, ejecucion y lectura/exportacion de reportes de seguridad VPS; no modifica permisos empresariales ni tablas por `empresa_id`.
+
+Actualizacion 2026-04-16 (portal publico: boton de contacto al extremo derecho del home):
+- Se ajusta el submodulo `pagina principal publica` para que el acceso `Informacion de contacto` quede al extremo derecho de la misma fila superior del home.
+- `web/index.html` marca el header del portal con una variante visual propia y `web/estilos.css` empuja ese enlace a la derecha sin alterar rutas ni la pagina de contacto.
+- Impacto de permisos: sin cambios en roles, CRUD/A ni visibilidad funcional; el ajuste es exclusivamente visual dentro del portal publico.
+
+Actualizacion 2026-04-16 (autenticacion unificada: sin recordar usuario/cuenta):
+- Se refuerza el modulo `autenticacion y sesiones` para eliminar la persistencia local de identidad (`recordar cuenta` en admin y `recordar usuario` en login empresa), que generaba diferencias entre hosts y navegadores.
+- `backend/handlers/auth_admin_handlers.go` deja de reenviar `login_hint` al proveedor OAuth; el inicio Google ahora es determinista desde `/auth/google/login` sin depender de `localStorage`.
+- `web/login.html`, `web/js/login.js`, `web/login_usuario.html` y `web/js/login_usuario.js` eliminan checkbox y lógica `remember*`, manteniendo solo autenticación directa por sesión/cookies.
+- `web/menu.js`, `web/js/super_administrador.js`, `web/js/seleccionar_empresa.js`, `web/super/licencias.html` y `web/super/tipos_empresas.html` retiran sincronizaciones/limpiezas de `remember*` y operan únicamente con estado de sesión visible.
+- Impacto de permisos: sin cambios en roles, CRUD/A ni wrappers; el ajuste es de estabilidad transversal del login entre local (`localhost:8080`) y VPS (`powerfulcontrolsystem.com`, `www.powerfulcontrolsystem.com`).
+
 Actualizacion 2026-04-16 (checkout de licencias: respuesta fija de Epayco):
 - El modulo `licencias y pasarelas de pago` incorpora una pagina publica estable en `/epayco/respuesta.html` para pegarla directamente en el panel de Epayco como URL de respuesta.
 - `backend/handlers/payments_handlers.go` genera esa ruta como `response` del checkout y conserva `/epayco/webhook` como `confirmation`, de modo que el flujo externo y el flujo interno del sistema apunten a los mismos endpoints canonicos.
 - `web/epayco/respuesta.html` no procesa el pago por si sola: normaliza parametros y reenvia al resumen de licencia para que el backend confirme el estado real antes de activar la licencia.
 - Impacto de permisos: sin cambios de rol; la respuesta y confirmacion de Epayco permanecen publicas como parte del checkout externo.
+
+Actualizacion 2026-04-16 (super: administracion PostgreSQL con tamano por empresa):
+- Se refuerza el submodulo `administracion de base de datos PostgreSQL (super)` para estimar cuanto espacio consume cada empresa dentro de la base compartida `pcs_empresas`.
+- `backend/handlers/postgres_performance.go` agrega la accion `empresas_storage` sobre la API existente para sumar por `empresa_id` el tamano de filas en todas las tablas operativas que contienen esa columna.
+- `web/super/administrar_base_de_datos.html` incorpora una tarjeta con el boton `Cargar Empresas` y una tabla de resultados ordenada de mayor a menor por MB estimados, mostrando tambien filas, tablas con datos y la tabla mas pesada por empresa.
+- Impacto de permisos: sin cambios en roles ni CRUD/A; la lectura sigue siendo exclusiva de `super_administrador` dentro del modulo `Administracion DB PostgreSQL (super)`.
 
 Actualizacion 2026-04-16 (checkout publico y seleccion de empresa: ajustes visuales solicitados):
 - El submodulo `checkout publico de licencias` muestra de forma mas clara la pasarela predeterminada: si solo una esta activa, queda seleccionada automaticamente y con rotulo explicito de metodo unico disponible.
@@ -25,6 +90,12 @@ Actualizacion 2026-04-16 (autenticacion administrativa: registro separado y recu
 - `backend/handlers/auth_admin_handlers.go` exige datos mínimos del registro, evita reescribir cuentas ya confirmadas y corrige el enlace de recuperación para que vuelva a la propia `login.html` en modo `reset`.
 - `backend/utils/utils.go` deja públicas la nueva página de registro y `/auth/confirmar_admin`, alineando middleware, correo de confirmación y experiencia de usuario.
 - Impacto de permisos: no hay cambios en CRUD/A ni visibilidad por rol; el login, el registro administrativo y la confirmación/recuperación siguen siendo públicos, mientras la administración global continúa reservada a `super_administrador`.
+
+Actualizacion 2026-04-16 (autenticacion administrativa: Google exige registrar clave local cuando aún no existe):
+- Se refuerza el modulo `autenticacion y sesiones` para que una cuenta administrativa autenticada con Google no quede sin vía posterior de acceso por correo y contraseña.
+- `backend/handlers/auth_admin_handlers.go` y `backend/handlers/accept_handlers.go` redirigen al formulario `web/registrar_contrasena_usuario_de_google.html` cuando la cuenta ya tiene sesión válida pero todavía no ha definido contraseña local.
+- `backend/handlers/account_handlers.go` agrega el endpoint autenticado `/api/account/set_google_password` para registrar esa primera clave sin pedir contraseña actual, y `web/js/registrar_contrasena_usuario_de_google.js` completa el flujo en cliente.
+- Impacto de permisos: sin cambios en roles ni CRUD/A; la página nueva es una pantalla operativa del mismo flujo autenticado administrativo y no amplía privilegios.
 
 Actualizacion 2026-04-16 (portal publico: arcade movil reforzado y countdown en Patito volando):
 - Se refuerza el submodulo `juegos publicos del portal` para que los cinco juegos del arcade se adapten mejor a celular sin perder sonido compartido ni persistencia de jugador.
@@ -300,8 +371,8 @@ Criterio de esta guia:
 - Login admin/empresa, sesiones, bloqueo temporal y recuperacion de password.
 - Login administrativo con selección obligatoria de cuenta Google (`select_account`) para evitar mezcla de identidades en navegador.
 - Aceptación de contrato y verificación humana como prerrequisito de primera sesión administrativa.
-- La UI cliente usa una cookie auxiliar visible de presencia de sesion para sincronizar `recordar cuenta`, avatar y enlace de logout, mientras el token real permanece en `session_token` con `HttpOnly`.
-- El hint de cuenta recordada hacia Google solo se envia si `rememberedEmail` pasa validacion de correo; valores locales corruptos se descartan y limpian.
+- La UI cliente usa una cookie auxiliar visible de presencia de sesion para avatar y enlace de logout, mientras el token real permanece en `session_token` con `HttpOnly`.
+- El inicio OAuth administrativo se realiza sin `login_hint` ni estado local de cuenta recordada para mantener comportamiento uniforme entre hosts.
 
 2) Administracion global (super)
 - Empresas, licencias, administradores, configuraciones globales (Wompi/Epayco/SMTP/IA).

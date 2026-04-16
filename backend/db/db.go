@@ -7,6 +7,96 @@ import (
 	"time"
 )
 
+// EnsureAdministradoresAuthSchema regulariza las columnas operativas y de seguridad
+// usadas por el flujo administrativo tanto en SQLite como en PostgreSQL.
+func EnsureAdministradoresAuthSchema(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return nil
+	}
+
+	if isPostgresDialect() {
+		statements := []string{
+			`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS photo TEXT`,
+			`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS acepta_contrato INTEGER DEFAULT 0`,
+			`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS telefono TEXT`,
+			`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS pais TEXT`,
+			`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS ciudad TEXT`,
+			`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS email_confirm_token TEXT`,
+			`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS email_confirm_expira TEXT`,
+			`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS email_confirmado INTEGER DEFAULT 0`,
+			`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS email_confirmado_en TEXT`,
+			`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS password_hash TEXT`,
+			`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS password_salt TEXT`,
+			`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS password_set INTEGER DEFAULT 0`,
+			`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS password_reset_token TEXT`,
+			`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS password_reset_expira TEXT`,
+		}
+		for _, stmt := range statements {
+			if _, err := dbConn.Exec(stmt); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	rows, err := dbConn.Query("PRAGMA table_info(administradores);")
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	existing := map[string]bool{}
+	for rows.Next() {
+		var cid int
+		var name string
+		var ctype string
+		var notnull int
+		var dflt sql.NullString
+		var pk int
+		if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
+			return err
+		}
+		existing[name] = true
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+
+	addIfMissing := func(colDef string, name string) error {
+		if existing[name] {
+			return nil
+		}
+		_, err := dbConn.Exec(fmt.Sprintf("ALTER TABLE administradores ADD COLUMN %s;", colDef))
+		return err
+	}
+
+	definitions := []struct {
+		name string
+		def  string
+	}{
+		{name: "photo", def: "photo TEXT"},
+		{name: "acepta_contrato", def: "acepta_contrato INTEGER DEFAULT 0"},
+		{name: "telefono", def: "telefono TEXT"},
+		{name: "pais", def: "pais TEXT"},
+		{name: "ciudad", def: "ciudad TEXT"},
+		{name: "email_confirm_token", def: "email_confirm_token TEXT"},
+		{name: "email_confirm_expira", def: "email_confirm_expira TEXT"},
+		{name: "email_confirmado", def: "email_confirmado INTEGER DEFAULT 0"},
+		{name: "email_confirmado_en", def: "email_confirmado_en TEXT"},
+		{name: "password_hash", def: "password_hash TEXT"},
+		{name: "password_salt", def: "password_salt TEXT"},
+		{name: "password_set", def: "password_set INTEGER DEFAULT 0"},
+		{name: "password_reset_token", def: "password_reset_token TEXT"},
+		{name: "password_reset_expira", def: "password_reset_expira TEXT"},
+	}
+	for _, item := range definitions {
+		if err := addIfMissing(item.def, item.name); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // EnsurePaymentGatewaySchema prepara las tablas de checkout de licencias en PostgreSQL.
 // El runtime SQLite mantiene su propio bootstrap legado en main.go.
 func EnsurePaymentGatewaySchema(dbConn *sql.DB) error {
@@ -67,6 +157,137 @@ func EnsurePaymentGatewaySchema(dbConn *sql.DB) error {
 
 	for _, stmt := range statements {
 		if _, err := dbConn.Exec(stmt); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// EnsureLicenciasSchema regulariza la tabla licencias para SQLite y PostgreSQL.
+func EnsureLicenciasSchema(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return nil
+	}
+
+	if isPostgresDialect() {
+		statements := []string{
+			`CREATE TABLE IF NOT EXISTS licencias (
+				id BIGSERIAL PRIMARY KEY,
+				empresa_id BIGINT,
+				tipo_id BIGINT,
+				nombre TEXT,
+				descripcion TEXT,
+				valor DOUBLE PRECISION DEFAULT 0,
+				duracion_dias INTEGER DEFAULT 0,
+				modulos_habilitados TEXT,
+				super_rol_habilitado INTEGER DEFAULT 0,
+				fecha_inicio TEXT,
+				fecha_fin TEXT,
+				activo INTEGER DEFAULT 1,
+				fecha_creacion TEXT DEFAULT CAST(CURRENT_TIMESTAMP AS TEXT),
+				fecha_actualizacion TEXT DEFAULT CAST(CURRENT_TIMESTAMP AS TEXT),
+				usuario_creador TEXT,
+				estado TEXT DEFAULT 'activo',
+				observaciones TEXT
+			)`,
+			`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS empresa_id BIGINT`,
+			`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS tipo_id BIGINT`,
+			`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS nombre TEXT`,
+			`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS descripcion TEXT`,
+			`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS valor DOUBLE PRECISION DEFAULT 0`,
+			`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS duracion_dias INTEGER DEFAULT 0`,
+			`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS modulos_habilitados TEXT`,
+			`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS super_rol_habilitado INTEGER DEFAULT 0`,
+			`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS fecha_inicio TEXT`,
+			`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS fecha_fin TEXT`,
+			`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS activo INTEGER DEFAULT 1`,
+			`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS fecha_creacion TEXT DEFAULT CAST(CURRENT_TIMESTAMP AS TEXT)`,
+			`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS fecha_actualizacion TEXT DEFAULT CAST(CURRENT_TIMESTAMP AS TEXT)`,
+			`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS usuario_creador TEXT`,
+			`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS estado TEXT DEFAULT 'activo'`,
+			`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS observaciones TEXT`,
+		}
+		for _, stmt := range statements {
+			if _, err := dbConn.Exec(stmt); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	rows, err := dbConn.Query("PRAGMA table_info(licencias);")
+	if err != nil {
+		if isMissingTableError(err) {
+			_, createErr := dbConn.Exec(`CREATE TABLE IF NOT EXISTS licencias (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				empresa_id INTEGER,
+				tipo_id INTEGER,
+				nombre TEXT,
+				descripcion TEXT,
+				valor REAL DEFAULT 0,
+				duracion_dias INTEGER DEFAULT 0,
+				modulos_habilitados TEXT,
+				super_rol_habilitado INTEGER DEFAULT 0,
+				fecha_inicio TEXT,
+				fecha_fin TEXT,
+				activo INTEGER DEFAULT 1,
+				fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+				fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+				usuario_creador TEXT,
+				estado TEXT DEFAULT 'activo',
+				observaciones TEXT
+			);`)
+			return createErr
+		}
+		return err
+	}
+	defer rows.Close()
+
+	existing := map[string]bool{}
+	for rows.Next() {
+		var cid int
+		var name string
+		var ctype string
+		var notnull int
+		var dflt sql.NullString
+		var pk int
+		if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
+			return err
+		}
+		existing[name] = true
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+
+	definitions := []struct {
+		name string
+		def  string
+	}{
+		{name: "empresa_id", def: "empresa_id INTEGER"},
+		{name: "tipo_id", def: "tipo_id INTEGER"},
+		{name: "nombre", def: "nombre TEXT"},
+		{name: "descripcion", def: "descripcion TEXT"},
+		{name: "valor", def: "valor REAL DEFAULT 0"},
+		{name: "duracion_dias", def: "duracion_dias INTEGER DEFAULT 0"},
+		{name: "modulos_habilitados", def: "modulos_habilitados TEXT"},
+		{name: "super_rol_habilitado", def: "super_rol_habilitado INTEGER DEFAULT 0"},
+		{name: "fecha_inicio", def: "fecha_inicio TEXT"},
+		{name: "fecha_fin", def: "fecha_fin TEXT"},
+		{name: "activo", def: "activo INTEGER DEFAULT 1"},
+		{name: "fecha_creacion", def: "fecha_creacion TEXT DEFAULT (datetime('now','localtime'))"},
+		{name: "fecha_actualizacion", def: "fecha_actualizacion TEXT DEFAULT (datetime('now','localtime'))"},
+		{name: "usuario_creador", def: "usuario_creador TEXT"},
+		{name: "estado", def: "estado TEXT DEFAULT 'activo'"},
+		{name: "observaciones", def: "observaciones TEXT"},
+	}
+
+	for _, item := range definitions {
+		if existing[item.name] {
+			continue
+		}
+		if _, err := dbConn.Exec(fmt.Sprintf("ALTER TABLE licencias ADD COLUMN %s;", item.def)); err != nil {
 			return err
 		}
 	}
@@ -209,17 +430,19 @@ type Admin struct {
 	FechaActualizacion string `json:"fecha_actualizacion"`
 	Estado             string `json:"estado"`
 	AceptaContrato     int    `json:"acepta_contrato"`
-	Telefono             string `json:"telefono,omitempty"`
+	Telefono           string `json:"telefono,omitempty"`
+	Pais               string `json:"pais,omitempty"`
+	Ciudad             string `json:"ciudad,omitempty"`
 	// Campos de seguridad y confirmación
-	EmailConfirmado        int    `json:"email_confirmado,omitempty"`
-	EmailConfirmToken      string `json:"-"`
-	EmailConfirmExpira     string `json:"-"`
-	EmailConfirmadoEn      string `json:"email_confirmado_en,omitempty"`
-	PasswordSet            int    `json:"password_set,omitempty"`
-	PasswordHash           string `json:"-"`
-	PasswordSalt           string `json:"-"`
-	PasswordResetToken     string `json:"-"`
-	PasswordResetExpira    string `json:"-"`
+	EmailConfirmado     int    `json:"email_confirmado,omitempty"`
+	EmailConfirmToken   string `json:"-"`
+	EmailConfirmExpira  string `json:"-"`
+	EmailConfirmadoEn   string `json:"email_confirmado_en,omitempty"`
+	PasswordSet         int    `json:"password_set,omitempty"`
+	PasswordHash        string `json:"-"`
+	PasswordSalt        string `json:"-"`
+	PasswordResetToken  string `json:"-"`
+	PasswordResetExpira string `json:"-"`
 }
 
 // NOTE: tipos_de_licencia CRUD removed per project decision (frontend/page/link removed).
@@ -244,6 +467,16 @@ type Licencia struct {
 func CreateLicencia(dbConn *sql.DB, tipoID int64, nombre, descripcion string, valor float64, duracionDias int, modulosHabilitados string, superRolHabilitado int) (int64, error) {
 	nowExpr := sqlNowExpr()
 	query := "INSERT INTO licencias (tipo_id, nombre, descripcion, valor, duracion_dias, modulos_habilitados, super_rol_habilitado, fecha_creacion, fecha_actualizacion, activo, estado) VALUES (?, ?, ?, ?, ?, ?, ?, " + nowExpr + ", " + nowExpr + ", 1, 'activo')"
+	id, err := insertSQLCompat(dbConn, query, tipoID, nombre, descripcion, valor, duracionDias, strings.TrimSpace(modulosHabilitados), superRolHabilitado)
+	if err == nil {
+		return id, nil
+	}
+	if !isMissingTableError(err) && !isMissingColumnError(err) {
+		return 0, err
+	}
+	if schemaErr := EnsureLicenciasSchema(dbConn); schemaErr != nil {
+		return 0, err
+	}
 	return insertSQLCompat(dbConn, query, tipoID, nombre, descripcion, valor, duracionDias, strings.TrimSpace(modulosHabilitados), superRolHabilitado)
 }
 
@@ -289,7 +522,16 @@ func GetLicenciasFiltered(dbConn *sql.DB, soloActivas bool, usuarioCreador strin
 
 	rows, err := querySQLCompat(dbConn, q, args...)
 	if err != nil {
-		return nil, err
+		if !isMissingTableError(err) && !isMissingColumnError(err) {
+			return nil, err
+		}
+		if schemaErr := EnsureLicenciasSchema(dbConn); schemaErr != nil {
+			return nil, err
+		}
+		rows, err = querySQLCompat(dbConn, q, args...)
+		if err != nil {
+			return nil, err
+		}
 	}
 	defer rows.Close()
 	var out []Licencia
@@ -326,34 +568,59 @@ func GetLicenciasFiltered(dbConn *sql.DB, soloActivas bool, usuarioCreador strin
 // GetLicenciaByID devuelve una licencia por id
 func GetLicenciaByID(dbConn *sql.DB, id int64) (*Licencia, error) {
 	q := `SELECT id, empresa_id, tipo_id, nombre, descripcion, valor, duracion_dias, COALESCE(modulos_habilitados, ''), COALESCE(super_rol_habilitado, 0), fecha_creacion, activo FROM licencias WHERE id = ? LIMIT 1`
-	row := queryRowSQLCompat(dbConn, q, id)
-	var lic Licencia
-	var empresaID sql.NullInt64
-	var descripcion sql.NullString
-	var modulosHab sql.NullString
-	var fechaCreacion sql.NullString
-	if err := row.Scan(&lic.ID, &empresaID, &lic.TipoID, &lic.Nombre, &descripcion, &lic.Valor, &lic.DuracionDias, &modulosHab, &lic.SuperRol, &fechaCreacion, &lic.Activo); err != nil {
+	scanLicencia := func() (*Licencia, error) {
+		row := queryRowSQLCompat(dbConn, q, id)
+		var lic Licencia
+		var empresaID sql.NullInt64
+		var descripcion sql.NullString
+		var modulosHab sql.NullString
+		var fechaCreacion sql.NullString
+		if err := row.Scan(&lic.ID, &empresaID, &lic.TipoID, &lic.Nombre, &descripcion, &lic.Valor, &lic.DuracionDias, &modulosHab, &lic.SuperRol, &fechaCreacion, &lic.Activo); err != nil {
+			return nil, err
+		}
+		if empresaID.Valid {
+			lic.EmpresaID = empresaID.Int64
+		}
+		if descripcion.Valid {
+			lic.Descripcion = descripcion.String
+		}
+		if modulosHab.Valid {
+			lic.ModulosHab = modulosHab.String
+		}
+		if fechaCreacion.Valid {
+			lic.FechaCreacion = fechaCreacion.String
+		}
+		return &lic, nil
+	}
+
+	lic, err := scanLicencia()
+	if err == nil {
+		return lic, nil
+	}
+	if !isMissingTableError(err) && !isMissingColumnError(err) {
 		return nil, err
 	}
-	if empresaID.Valid {
-		lic.EmpresaID = empresaID.Int64
+	if schemaErr := EnsureLicenciasSchema(dbConn); schemaErr != nil {
+		return nil, err
 	}
-	if descripcion.Valid {
-		lic.Descripcion = descripcion.String
-	}
-	if modulosHab.Valid {
-		lic.ModulosHab = modulosHab.String
-	}
-	if fechaCreacion.Valid {
-		lic.FechaCreacion = fechaCreacion.String
-	}
-	return &lic, nil
+	return scanLicencia()
 }
 
 // UpdateLicencia actualiza campos editables de una licencia
 func UpdateLicencia(dbConn *sql.DB, id, tipoID int64, nombre, descripcion string, valor float64, duracionDias int, modulosHabilitados string, superRolHabilitado int) error {
 	nowExpr := sqlNowExpr()
-	_, err := execSQLCompat(dbConn, "UPDATE licencias SET tipo_id = ?, nombre = ?, descripcion = ?, valor = ?, duracion_dias = ?, modulos_habilitados = ?, super_rol_habilitado = ?, fecha_actualizacion = "+nowExpr+" WHERE id = ?", tipoID, nombre, descripcion, valor, duracionDias, strings.TrimSpace(modulosHabilitados), superRolHabilitado, id)
+	query := "UPDATE licencias SET tipo_id = ?, nombre = ?, descripcion = ?, valor = ?, duracion_dias = ?, modulos_habilitados = ?, super_rol_habilitado = ?, fecha_actualizacion = " + nowExpr + " WHERE id = ?"
+	_, err := execSQLCompat(dbConn, query, tipoID, nombre, descripcion, valor, duracionDias, strings.TrimSpace(modulosHabilitados), superRolHabilitado, id)
+	if err == nil {
+		return nil
+	}
+	if !isMissingTableError(err) && !isMissingColumnError(err) {
+		return err
+	}
+	if schemaErr := EnsureLicenciasSchema(dbConn); schemaErr != nil {
+		return err
+	}
+	_, err = execSQLCompat(dbConn, query, tipoID, nombre, descripcion, valor, duracionDias, strings.TrimSpace(modulosHabilitados), superRolHabilitado, id)
 	return err
 }
 
@@ -585,11 +852,13 @@ func GetSesiones(dbConn *sql.DB) ([]Session, error) {
 
 // GetAdminByEmailFull devuelve el administrador por email incluyendo campos seguridad (tokens, hash, salt)
 func GetAdminByEmailFull(dbConn *sql.DB, email string) (*Admin, error) {
-	row := queryRowSQLCompat(dbConn, `SELECT id, email, name, role, photo, fecha_creacion, fecha_actualizacion, estado, COALESCE(acepta_contrato, 0), COALESCE(telefono, ''), COALESCE(email_confirmado, 0), COALESCE(email_confirm_token, ''), COALESCE(email_confirm_expira, ''), COALESCE(email_confirmado_en, ''), COALESCE(password_set, 0), COALESCE(password_hash, ''), COALESCE(password_salt, ''), COALESCE(password_reset_token, ''), COALESCE(password_reset_expira, '') FROM administradores WHERE lower(email) = lower(?) LIMIT 1`, strings.TrimSpace(email))
+	row := queryRowSQLCompat(dbConn, `SELECT id, email, name, role, photo, fecha_creacion, fecha_actualizacion, estado, COALESCE(acepta_contrato, 0), COALESCE(telefono, ''), COALESCE(pais, ''), COALESCE(ciudad, ''), COALESCE(email_confirmado, 0), COALESCE(email_confirm_token, ''), COALESCE(email_confirm_expira, ''), COALESCE(email_confirmado_en, ''), COALESCE(password_set, 0), COALESCE(password_hash, ''), COALESCE(password_salt, ''), COALESCE(password_reset_token, ''), COALESCE(password_reset_expira, '') FROM administradores WHERE lower(email) = lower(?) LIMIT 1`, strings.TrimSpace(email))
 	var a Admin
 	var photo sql.NullString
 	var acepta sql.NullInt64
 	var telefono sql.NullString
+	var pais sql.NullString
+	var ciudad sql.NullString
 	var emailConfirmado sql.NullInt64
 	var emailConfirmToken sql.NullString
 	var emailConfirmExpira sql.NullString
@@ -599,7 +868,7 @@ func GetAdminByEmailFull(dbConn *sql.DB, email string) (*Admin, error) {
 	var passwordSalt sql.NullString
 	var passwordResetToken sql.NullString
 	var passwordResetExpira sql.NullString
-	if err := row.Scan(&a.ID, &a.Email, &a.Name, &a.Role, &photo, &a.FechaCreacion, &a.FechaActualizacion, &a.Estado, &acepta, &telefono, &emailConfirmado, &emailConfirmToken, &emailConfirmExpira, &emailConfirmadoEn, &passwordSet, &passwordHash, &passwordSalt, &passwordResetToken, &passwordResetExpira); err != nil {
+	if err := row.Scan(&a.ID, &a.Email, &a.Name, &a.Role, &photo, &a.FechaCreacion, &a.FechaActualizacion, &a.Estado, &acepta, &telefono, &pais, &ciudad, &emailConfirmado, &emailConfirmToken, &emailConfirmExpira, &emailConfirmadoEn, &passwordSet, &passwordHash, &passwordSalt, &passwordResetToken, &passwordResetExpira); err != nil {
 		if isMissingColumnError(err) {
 			// Fallback a la consulta previa
 			return GetAdminByEmail(dbConn, email)
@@ -610,7 +879,15 @@ func GetAdminByEmailFull(dbConn *sql.DB, email string) (*Admin, error) {
 		a.Photo = photo.String
 	}
 	a.AceptaContrato = int(acepta.Int64)
-	if telefono.Valid { a.Telefono = telefono.String }
+	if telefono.Valid {
+		a.Telefono = telefono.String
+	}
+	if pais.Valid {
+		a.Pais = pais.String
+	}
+	if ciudad.Valid {
+		a.Ciudad = ciudad.String
+	}
 	a.EmailConfirmado = int(emailConfirmado.Int64)
 	a.EmailConfirmToken = emailConfirmToken.String
 	a.EmailConfirmExpira = emailConfirmExpira.String
@@ -624,9 +901,9 @@ func GetAdminByEmailFull(dbConn *sql.DB, email string) (*Admin, error) {
 }
 
 // UpdateAdministradorProfile actualiza campos del perfil del administrador identificando por id.
-func UpdateAdministradorProfile(dbConn *sql.DB, id int64, name, telefono, email string) error {
+func UpdateAdministradorProfile(dbConn *sql.DB, id int64, name, telefono, email, pais, ciudad string) error {
 	nowExpr := sqlNowExpr()
-	_, err := execSQLCompat(dbConn, "UPDATE administradores SET name = ?, telefono = ?, email = ?, fecha_actualizacion = "+nowExpr+" WHERE id = ?", strings.TrimSpace(name), strings.TrimSpace(telefono), strings.TrimSpace(email), id)
+	_, err := execSQLCompat(dbConn, "UPDATE administradores SET name = ?, telefono = ?, email = ?, pais = ?, ciudad = ?, fecha_actualizacion = "+nowExpr+" WHERE id = ?", strings.TrimSpace(name), strings.TrimSpace(telefono), strings.TrimSpace(email), strings.TrimSpace(pais), strings.TrimSpace(ciudad), id)
 	return err
 }
 
@@ -669,6 +946,12 @@ func ConfirmAdministradorByToken(dbConn *sql.DB, token string) (int64, error) {
 func SetAdministradorPassword(dbConn *sql.DB, email, hash, salt string) error {
 	nowExpr := sqlNowExpr()
 	_, err := execSQLCompat(dbConn, "UPDATE administradores SET password_hash = ?, password_salt = ?, password_set = 1, fecha_actualizacion = "+nowExpr+" WHERE LOWER(COALESCE(email,'')) = LOWER(?)", strings.TrimSpace(hash), strings.TrimSpace(salt), strings.TrimSpace(email))
+	if err != nil && isMissingColumnError(err) {
+		if schemaErr := EnsureAdministradoresAuthSchema(dbConn); schemaErr != nil {
+			return schemaErr
+		}
+		_, err = execSQLCompat(dbConn, "UPDATE administradores SET password_hash = ?, password_salt = ?, password_set = 1, fecha_actualizacion = "+nowExpr+" WHERE LOWER(COALESCE(email,'')) = LOWER(?)", strings.TrimSpace(hash), strings.TrimSpace(salt), strings.TrimSpace(email))
+	}
 	return err
 }
 

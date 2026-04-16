@@ -242,92 +242,12 @@ Cada empresa tiene un plan con restricciones como:
 
 ---
 
-### BASE DE DATOS (PostgreSQL)
-
-Tablas sugeridas:
-
-empresas:
-
-* id
-* nombre
-* plan_id
-
-planes:
-
-* id
-* nombre
-* max_conexiones_mes
-* max_minutos_mes
-* max_dispositivos
-
-dispositivos:
-
-* id
-* empresa_id
-* nombre
-* remote_id
-* estado
-* ultima_conexion
-
-conexiones:
-
-* id
-* empresa_id
-* dispositivo_id
-* tecnico_id
-* fecha_inicio
-* fecha_fin
-* duracion_minutos
-
-uso_mensual:
-
-* empresa_id
-* mes
-* conexiones_usadas
-* minutos_usados
-
----
-
-### IMPLEMENTACIÓN TÉCNICA
-
-* Backend en Go (sin frameworks externos si es posible)
-* Comunicación con RustDesk server (hbbs + hbbr) o implementación propia
-* Docker para desplegar el servidor remoto
-* API REST para:
-
-  * Registrar dispositivos
-  * Iniciar conexión
-  * Validar límites
-  * Consultar historial
-
----
-
-### INTEGRACIÓN CON EL POS
-
-* Agregar módulo “Soporte Remoto”
-* Visible solo para técnicos o administradores
-* Multiempresa: cada técnico solo accede a empresas asignadas
-
----
-
-### EXTRA (OPCIONAL)
-
-* Grabación de sesiones
-* Notificación en tiempo real al cliente
-* Botón de “Solicitar soporte”
-* Integración con chat interno del sistema
-
----
-
-### RESULTADO ESPERADO
-
-Un sistema funcional donde:
-
-* El VPS actúa como servidor remoto
-* Las empresas conectan sus equipos
-* Los técnicos pueden acceder remotamente
-* Se controla y limita el uso según el plan contratado
-* Todo queda registrado y auditado
-
----
 - en super administrador en administrar base de datos agregar una tarjeta con un boton que diga "Cargar Empresas", este debe cargar en una tabla de la base de datos de cada empresa, organizada de mayor a menor, de la que mas espacio en mega bite tiene. es para saber cuanta base de datos ocupa cada empresa.
+
+
+
+- la pagina cuenta de usuario en donde el usuario pueda editar sus datos como contrasea, cambiar correo celular nombre etc,
+
+
+
+- la base ded atos debe ser relacioal

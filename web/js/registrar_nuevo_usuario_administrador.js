@@ -7,13 +7,145 @@
   var emailInput = document.getElementById('registerEmail');
   var nameInput = document.getElementById('registerName');
   var phoneInput = document.getElementById('registerPhone');
+  var countryInput = document.getElementById('registerCountry');
+  var cityInput = document.getElementById('registerCity');
   var passwordInput = document.getElementById('registerPassword');
   var passwordConfirmInput = document.getElementById('registerPasswordConfirm');
   var submitButton = document.getElementById('adminRegisterBtn');
   var messageBox = document.getElementById('adminRegisterMessage');
 
+  var countries = [
+    { code: 'AR', name: 'Argentina' },
+    { code: 'BO', name: 'Bolivia' },
+    { code: 'BR', name: 'Brasil' },
+    { code: 'CA', name: 'Canada' },
+    { code: 'CL', name: 'Chile' },
+    { code: 'CO', name: 'Colombia' },
+    { code: 'CR', name: 'Costa Rica' },
+    { code: 'CU', name: 'Cuba' },
+    { code: 'DO', name: 'Republica Dominicana' },
+    { code: 'EC', name: 'Ecuador' },
+    { code: 'SV', name: 'El Salvador' },
+    { code: 'ES', name: 'Espana' },
+    { code: 'US', name: 'Estados Unidos' },
+    { code: 'GT', name: 'Guatemala' },
+    { code: 'HN', name: 'Honduras' },
+    { code: 'MX', name: 'Mexico' },
+    { code: 'NI', name: 'Nicaragua' },
+    { code: 'PA', name: 'Panama' },
+    { code: 'PY', name: 'Paraguay' },
+    { code: 'PE', name: 'Peru' },
+    { code: 'PR', name: 'Puerto Rico' },
+    { code: 'UY', name: 'Uruguay' },
+    { code: 'VE', name: 'Venezuela' },
+    { code: 'DE', name: 'Alemania' },
+    { code: 'FR', name: 'Francia' },
+    { code: 'GB', name: 'Reino Unido' },
+    { code: 'IT', name: 'Italia' },
+    { code: 'PT', name: 'Portugal' },
+    { code: 'NL', name: 'Paises Bajos' },
+    { code: 'JP', name: 'Japon' },
+    { code: 'AU', name: 'Australia' }
+  ];
+  var timezoneCountryMap = {
+    'America/Argentina/Buenos_Aires': 'AR',
+    'America/Bogota': 'CO',
+    'America/Caracas': 'VE',
+    'America/Costa_Rica': 'CR',
+    'America/El_Salvador': 'SV',
+    'America/Guatemala': 'GT',
+    'America/Guayaquil': 'EC',
+    'America/Havana': 'CU',
+    'America/Lima': 'PE',
+    'America/Managua': 'NI',
+    'America/Mexico_City': 'MX',
+    'America/Montevideo': 'UY',
+    'America/Panama': 'PA',
+    'America/Port-au-Prince': 'DO',
+    'America/Puerto_Rico': 'PR',
+    'America/Santiago': 'CL',
+    'America/Santo_Domingo': 'DO',
+    'America/Sao_Paulo': 'BR',
+    'America/Tegucigalpa': 'HN',
+    'America/Asuncion': 'PY',
+    'Europe/Madrid': 'ES',
+    'Europe/Lisbon': 'PT',
+    'Europe/London': 'GB',
+    'Europe/Paris': 'FR',
+    'Europe/Berlin': 'DE',
+    'Europe/Rome': 'IT',
+    'Europe/Amsterdam': 'NL',
+    'Asia/Tokyo': 'JP',
+    'Australia/Sydney': 'AU'
+  };
+
   function normalize(value) {
     return String(value || '').trim();
+  }
+
+  function hasCountry(code) {
+    for (var index = 0; index < countries.length; index += 1) {
+      if (countries[index].code === code) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function populateCountryOptions() {
+    if (!countryInput) {
+      return;
+    }
+    var options = [];
+    for (var index = 0; index < countries.length; index += 1) {
+      var item = countries[index];
+      options.push('<option value="' + item.code + '">' + item.name + '</option>');
+    }
+    countryInput.innerHTML = options.join('');
+  }
+
+  function detectCountryCode() {
+    var languages = [];
+    if (navigator.languages && navigator.languages.length) {
+      languages = navigator.languages.slice(0, 5);
+    } else if (navigator.language) {
+      languages = [navigator.language];
+    }
+    for (var index = 0; index < languages.length; index += 1) {
+      var raw = String(languages[index] || '');
+      var match = raw.match(/[-_]([A-Za-z]{2})$/);
+      if (match) {
+        var candidate = match[1].toUpperCase();
+        if (hasCountry(candidate)) {
+          return candidate;
+        }
+      }
+    }
+    try {
+      var timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+      if (timezoneCountryMap[timezone]) {
+        return timezoneCountryMap[timezone];
+      }
+    } catch (error) {
+      // Sin soporte; usar default.
+    }
+    return 'CO';
+  }
+
+  function getSelectedCountryName() {
+    if (!countryInput) {
+      return '';
+    }
+    var selectedIndex = countryInput.selectedIndex;
+    if (selectedIndex >= 0 && countryInput.options[selectedIndex]) {
+      return normalize(countryInput.options[selectedIndex].textContent);
+    }
+    return normalize(countryInput.value);
+  }
+
+  populateCountryOptions();
+  if (countryInput) {
+    countryInput.value = detectCountryCode();
   }
 
   function showMessage(text, isError) {
@@ -72,10 +204,12 @@
     var email = normalize(emailInput && emailInput.value);
     var name = normalize(nameInput && nameInput.value);
     var telefono = normalize(phoneInput && phoneInput.value);
+    var pais = getSelectedCountryName();
+    var ciudad = normalize(cityInput && cityInput.value);
     var password = passwordInput && passwordInput.value ? passwordInput.value : '';
     var passwordConfirm = passwordConfirmInput && passwordConfirmInput.value ? passwordConfirmInput.value : '';
 
-    if (!email || !name || !telefono || !password || !passwordConfirm) {
+    if (!email || !name || !telefono || !pais || !ciudad || !password || !passwordConfirm) {
       showMessage('Debes completar todos los campos del registro.', true);
       return;
     }
@@ -95,6 +229,8 @@
         email: email,
         name: name,
         telefono: telefono,
+        pais: pais,
+        ciudad: ciudad,
         password: password
       });
       if (!response.ok) {
