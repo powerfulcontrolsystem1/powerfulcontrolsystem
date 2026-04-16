@@ -1,9 +1,78 @@
 # Estructura del codigo
 
-Fecha de actualizacion: 2026-04-15
+Fecha de actualizacion: 2026-04-16
+
+## Actualizacion 2026-04-16 (arcade publico: cuenta regresiva en Patito y ajuste movil de los cinco juegos)
+
+- Frontend:
+  - `web/Juegos/arcade_shared.js` amplia la libreria comun de efectos con sonidos de cuenta regresiva para reutilizar el inicio guiado del arcade.
+  - `web/Juegos/patito_volando.html` agrega una superposicion de cuenta regresiva de 5 segundos antes de iniciar la partida y bloquea la entrada hasta el despegue.
+  - `web/Juegos/pollitos_cataplum.html`, `web/Juegos/serpiente_pixel.html`, `web/Juegos/memoria_estelar.html` y `web/Juegos/rebote_bloques.html` endurecen su layout para celular con shells que permiten scroll, acciones a ancho completo y overlays mas compactos.
+  - `web/Juegos/serpiente_pixel.html` refuerza el feedback sonoro reproduciendo un efecto al girar mientras la partida esta activa.
+- Flujo:
+  - `menu_juegos.html` -> jugador abre `Patito volando` -> pantalla de instrucciones -> cuenta regresiva 5..1 -> arranque del vuelo con sonido de salida.
+  - `juegos del arcade` en movil -> shell adaptable + controles tactiles/acciones apiladas -> experiencia jugable sin recorte de overlays ni botones.
+
+## Actualizacion 2026-04-16 (frontend compartido: menu flotante y responsive movil base)
+
+- Frontend:
+  - `web/menu.js` cierra el panel del menu flotante al seleccionar una opcion navegable y tambien soporta cierre por `Escape`, evitando overlays persistentes en movil durante la navegacion.
+  - `web/estilos.css` endurece la capa responsive compartida para tablas, sidebar administrativo, panel del menu flotante y CTA fijo de WhatsApp.
+  - `web/login.html` corrige la carga del stylesheet compartido (`/estilos.css`) para que el login administrativo no quede sin estilos en movil ni en escritorio.
+- Flujo:
+  - `menu flotante` -> usuario toca opcion en movil -> panel se cierra antes de completar la navegacion -> la pagina destino queda visible sin overlay.
+  - `index.html` en movil -> CTA fijo de WhatsApp pasa a la esquina inferior derecha como icono compacto -> deja libres los accesos superiores del header.
+
+## Actualizacion 2026-04-16 (checkout de licencias: bootstrap PostgreSQL y estado pendiente estable en Epayco)
+
+- Backend:
+  - `backend/db/db.go` agrega `EnsurePaymentGatewaySchema(...)` para crear y regularizar `pagos_wompi` y `pagos_epayco` en `pcs_superadministrador` cuando el runtime es PostgreSQL.
+  - `backend/main.go` ejecuta ese bootstrap justo despues de `EnsurePostgresRuntimeCompat(dbSuper)`, evitando fallos de `transaction_status` por tablas de tracking ausentes en entornos PostgreSQL.
+  - `backend/handlers/payments_handlers.go` conserva el estado local `PENDING` cuando la validacion de Epayco responde el error transitorio de "datos o conexion" para una referencia recien creada con contexto pendiente.
+  - `backend/handlers/payments_handlers_test.go` cubre la regresion `PENDING -> ERROR` y fija el comportamiento esperado del polling publico.
+- Flujo:
+  - `POST /epayco/create_transaction` -> registra referencia en `pagos_epayco` sobre PostgreSQL -> `GET /epayco/transaction_status` consulta validacion externa -> si Epayco aun no materializa la referencia pero el contexto local sigue pendiente, el backend responde `PENDING` y mantiene trazabilidad consistente.
+
+## Actualizacion 2026-04-16 (portal publico: arcade con perfil compartido y cinco juegos)
+
+- Frontend:
+  - `web/Juegos/arcade_shared.js` agrega una capa compartida de navegador para nombre de jugador, top 5 por juego y control global de sonido.
+  - `web/Juegos/menu_juegos.html` se rehace como lobby cuadrado con portadas SVG, panel de jugador, resumen de records y una tarjeta por juego publicado.
+  - `web/Juegos/patito_volando.html` y `web/Juegos/pollitos_cataplum.html` adoptan la capa compartida para guardar marcador/usuario y habilitar sonido.
+  - `web/Juegos/serpiente_pixel.html`, `web/Juegos/memoria_estelar.html` y `web/Juegos/rebote_bloques.html` amplian el arcade con tres mecanicas nuevas.
+  - `web/img/juegos/*.svg` funciona como set de portadas cuadradas para las tarjetas del lobby.
+- Flujo:
+  - `menu flotante` -> `/Juegos/menu_juegos.html` -> panel de jugador + records -> tarjeta cuadrada con portada -> popup/pestana del juego -> `arcade_shared.js` guarda nombre, puntaje y sonido entre sesiones del navegador.
 
 ## Objetivo
 Este documento resume la estructura tecnica principal del sistema y sirve como referencia para mantenimiento y evolucion.
+
+## Actualizacion 2026-04-15 (alertas de reinicio del servidor: activacion configurable)
+
+- Backend:
+  - `backend/handlers/server_runtime_notifications.go` mantiene el registro automatico de inicio/reinicio en DB y log local, pero ahora consulta `gmail.restart_alert_enabled` antes de enviar correo.
+  - `backend/handlers/usuarios_empresa.go` amplia `GET/PUT /super/api/config/gmail` para leer y guardar el interruptor de activacion de alertas de reinicio.
+  - `backend/handlers/super_config_backup_handlers.go` incorpora `gmail.restart_alert_enabled` dentro del respaldo/restauracion de configuracion critica.
+- Frontend:
+  - `web/super/configuracion_avanzada.html` agrega un switch dedicado para activar o desactivar el correo automatico de inicio/reinicio sin borrar el destinatario configurado.
+- Flujo:
+  - `super/configuracion_avanzada.html` -> guarda `restart_alert_to` + `restart_alert_enabled` -> `backend/main.go` arranca -> `RegisterServerStartupEvent` siempre registra bitacora/log -> solo envia correo si la alerta esta habilitada.
+
+## Actualizacion 2026-04-15 (portal publico: segundo juego de resortera en el menu de Juegos)
+
+- Frontend:
+  - `web/Juegos/menu_juegos.html` deja de asumir un solo popup fijo y ahora soporta varias tarjetas con arte y dimensiones de ventana por juego.
+  - `web/Juegos/pollitos_cataplum.html` agrega un segundo juego publico, tipo resortera, con niveles cortos, puntaje, disparos limitados y control por arrastrar/soltar en mouse o tactil.
+- Flujo:
+  - `menu flotante` -> `/Juegos/menu_juegos.html` -> tarjeta `Pollitos al cataplum` -> popup/tabs segun dispositivo -> juego de derribo por resortera.
+
+## Actualizacion 2026-04-15 (checkout de licencias: fallback canonico para Epayco/Wompi desde localhost)
+
+- Backend:
+  - `backend/handlers/payments_handlers.go` endurece `normalizeConfiguredBaseURL(...)` para ignorar configuraciones loopback y hace que `resolvePaymentBaseURL(...)` use `gmail.confirm_base_url`, `Origin`/`Referer`, host publicado o el dominio canonico `https://powerfulcontrolsystem.com` como ultimo recurso.
+  - `backend/handlers/payments_handlers_test.go` valida el fallback canonico cuando la solicitud nace en `localhost` y la exclusion de `gmail.confirm_base_url` local.
+- Flujo:
+  - `checkout local/publico` -> `resolvePaymentBaseURL(...)` evita `localhost` -> `EpaycoCreateTransactionHandler` construye `response` y `confirmation` con dominio HTTPS publico valido.
 
 ## Componentes principales
 
@@ -55,6 +124,29 @@ flowchart TD
 
 ## Regla de mantenimiento
 Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe reflejarse en este documento y en los diagramas relacionados dentro de documentos/diagramas/.
+
+## Actualizacion 2026-04-15 (pagina_principal super: cantidad integrada al guardado)
+
+- Frontend:
+  - `web/super/pagina_principal.html` elimina el boton separado `Aplicar cantidad`; al cambiar `ppCantidad` el editor reconstruye de inmediato las tarjetas visibles y reutiliza un unico flujo de guardado para cantidad, contenido y estilos.
+  - El boton principal pasa a comunicar ese comportamiento como `Guardar cantidad y configuracion`, mientras el guardado inferior reutiliza exactamente la misma logica.
+- Pruebas:
+  - `backend/handlers/pagina_principal_handlers_test.go` agrega cobertura para validar que una configuracion ampliada de tarjetas se persiste y se recupera completa desde la base super.
+- Flujo:
+  - `cambiar cantidad` -> render inmediato de nuevas tarjetas en el editor -> `Guardar configuracion` -> persistencia en `/super/api/pagina_principal?action=config`.
+
+## Actualizacion 2026-04-15 (portal publico: menu de juegos y Patito volando)
+
+- Backend/seguridad:
+  - `backend/utils/utils.go` amplia el whitelist publico de `AuthMiddleware` con el prefijo `/Juegos/`, de forma que el catalogo y los juegos del portal se sirvan sin requerir sesion.
+  - `backend/handlers/auth_users_carritos_test.go` extiende `TestAuthMiddlewareAllowsPublicPortalPagesAssetsAndHomeCardsAPI` para validar explicitamente `/Juegos/menu_juegos.html` y `/Juegos/patito_volando.html`.
+- Frontend:
+  - `web/menu.js` agrega el item `Juegos` al menu flotante compartido del portal.
+  - `web/Juegos/menu_juegos.html` centraliza una tarjeta por juego creado y abre el juego en popup pequeno en escritorio o en la misma pestana en movil cuando el navegador no permite ventana nueva.
+  - `web/Juegos/patito_volando.html` implementa un minijuego tipo vuelo continuo con instrucciones iniciales, control unico (mantener barra espaciadora o tocar pantalla), marcador y reinicio rapido dentro de un contenedor visual cercano a `700 x 700`.
+- Flujo:
+  - `menu flotante` -> `/Juegos/menu_juegos.html` -> boton `Abrir ventana de juego` -> `/Juegos/patito_volando.html`.
+  - En escritorio se intenta `window.open(..., width=720, height=760)` y en movil se reutiliza la misma navegacion para mantener compatibilidad tactil.
 
 ## Actualizacion 2026-04-15 (contrato versionado en super y aceptacion por version)
 

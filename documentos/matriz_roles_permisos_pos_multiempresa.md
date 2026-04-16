@@ -1,6 +1,6 @@
 # Matriz base de roles y permisos POS multiempresa
 
-Fecha de actualizacion: 2026-04-15
+Fecha de actualizacion: 2026-04-16
 Alcance: punto 3 del plan maestro (permisos y seguridad)
 
 ## Regla de mantenimiento por modulo
@@ -45,11 +45,71 @@ Leyenda:
 | Impresoras operativas | CRUDA | CRUA | R | R | R | R | R | R |
 | Administracion DB PostgreSQL (super) | R | - | - | - | - | - | - | - |
 | Pagina principal (tarjetas index) | CRUA | - | - | - | - | - | - | - |
+| Portal publico - Juegos | R | R | R | R | R | R | R | R |
 | Contrato administrativo (super) | CRUA | - | - | - | - | - | - | - |
 | Monitor de errores del sistema (super) | R | - | - | - | - | - | - | - |
 | Pasarelas de licencias (Wompi/Epayco) | CRUA | - | - | - | - | - | - | - |
 
 ## Estado de implementacion tecnica inicial (2026-04-04)
+
+- Actualizacion 2026-04-16 (portal publico: arcade movil reforzado y countdown en Patito volando):
+	- `web/Juegos/arcade_shared.js` suma sonidos de cuenta regresiva reutilizables por el arcade publico.
+	- `web/Juegos/patito_volando.html` agrega una cuenta regresiva previa de 5 segundos y `web/Juegos/pollitos_cataplum.html`, `web/Juegos/serpiente_pixel.html`, `web/Juegos/memoria_estelar.html` y `web/Juegos/rebote_bloques.html` ajustan su layout para celular.
+	- Impacto de matriz: sin cambios en roles, CRUD/A ni wrappers; `Portal publico - Juegos` sigue siendo de lectura/uso para todos los roles y tambien sin autenticacion.
+
+- Actualizacion 2026-04-16 (frontend compartido: ajustes base para celular y menu flotante):
+	- `web/menu.js` cierra el panel del menu flotante al seleccionar una opcion para descubrir la pagina destino de inmediato en movil.
+	- `web/estilos.css` mejora el responsive compartido de tablas, navegacion administrativa, panel del menu flotante y CTA fijo de WhatsApp en `index.html`.
+	- `web/login.html` vuelve a cargar la hoja compartida correcta, recuperando estilos y comportamiento responsive del login administrativo.
+	- Impacto de matriz: sin cambios en roles, CRUD/A, wrappers o visibilidad por rol; el ajuste es transversal de frontend.
+
+- Actualizacion 2026-04-16 (portal publico: botones superiores alineados al CTA de ofertas):
+	- `web/estilos.css` hace que `Registrarse o iniciar sesión` e `Informacion de contacto` reutilicen el mismo tratamiento visual del boton `Explorar oferta` de las tarjetas del home.
+	- Impacto de matriz: sin cambios en roles, CRUD/A, wrappers o visibilidad por rol; el ajuste es visual dentro del portal publico.
+
+- Actualizacion 2026-04-16 (checkout de licencias: Epayco sandbox estable en PostgreSQL):
+	- `backend/db/db.go` agrega `EnsurePaymentGatewaySchema(...)` para asegurar `pagos_epayco` y `pagos_wompi` en `pcs_superadministrador` cuando el backend corre sobre PostgreSQL.
+	- `backend/main.go` ejecuta ese bootstrap al arrancar y `backend/handlers/payments_handlers.go` evita degradar a `ERROR` una referencia Epayco que sigue pendiente pero aun no aparece en la validacion externa.
+	- `backend/handlers/payments_handlers_test.go` cubre el nuevo criterio de polling pendiente para checkout publico de licencias.
+	- Impacto de matriz: sin cambios en roles, CRUD/A, wrappers o visibilidad por rol; `Pasarelas de licencias (Wompi/Epayco)` sigue siendo CRUA exclusivo de `super_administrador` y las rutas publicas mantienen uso de solo consumo.
+
+- Actualizacion 2026-04-16 (portal publico: arcade con perfil compartido y cinco juegos):
+	- `web/Juegos/arcade_shared.js` centraliza nombre de jugador, top local y control de sonido para todos los juegos publicos del portal sin introducir autenticacion obligatoria.
+	- `web/Juegos/menu_juegos.html` pasa a ser un lobby cuadrado con portadas SVG, resumen de records y tarjetas por juego, y ahora enlaza cinco titulos jugables.
+	- `web/Juegos/patito_volando.html` y `web/Juegos/pollitos_cataplum.html` se alinean al nuevo perfil compartido; `web/Juegos/serpiente_pixel.html`, `web/Juegos/memoria_estelar.html` y `web/Juegos/rebote_bloques.html` amplian el modulo con nuevas mecanicas.
+	- Impacto de matriz: sin cambios en roles, CRUD/A ni wrappers; `Portal publico - Juegos` sigue siendo de lectura/uso para todos los roles y tambien sin autenticacion.
+
+- Actualizacion 2026-04-15 (alertas de reinicio del servidor: activacion configurable):
+	- `web/super/configuracion_avanzada.html` agrega el switch `restart_alert_enabled` para activar o desactivar la notificacion automatica de inicio/reinicio del backend sin borrar `restart_alert_to`.
+	- `backend/handlers/server_runtime_notifications.go` mantiene la bitacora y el log local aun cuando la alerta esta apagada; solo omite el envio de correo.
+	- `backend/handlers/usuarios_empresa.go` y `backend/handlers/super_config_backup_handlers.go` incorporan el nuevo flag en la API y en el respaldo de configuracion critica.
+	- Impacto de matriz: sin cambios en roles, CRUD/A ni wrappers; la configuracion sigue siendo exclusiva de `super_administrador`.
+
+- Actualizacion 2026-04-15 (selector de empresas: iconografia por tipo y tarjetas mas profesionales):
+	- `web/js/seleccionar_empresa.js` asigna icono, tono visual y texto de apoyo a cada tarjeta usando `tipo_nombre`, mejorando la lectura rapida del negocio antes de abrir su panel o elegir licencia.
+	- `web/estilos.css` renueva el bloque visual de `seleccionar_empresa.html` con tarjetas mas coloridas, chips de estado, metadata de acceso y CTA mas claro, sin alterar rutas ni wrappers.
+	- Impacto de matriz: sin cambios en roles, CRUD/A ni privilegios; la seleccion y administracion de empresas sigue dentro del alcance de `super_administrador`.
+
+- Actualizacion 2026-04-15 (pagina_principal super: cantidad integrada al guardado):
+	- `web/super/pagina_principal.html` elimina el paso manual `Aplicar cantidad`; la cantidad ahora se refleja en el editor al cambiar el campo y se persiste con el mismo guardado de configuracion.
+	- `backend/handlers/pagina_principal_handlers_test.go` agrega cobertura para una configuracion ampliada de tarjetas y confirma que el backend conserva la cantidad solicitada al volver a cargar.
+	- Impacto de matriz: sin cambios en roles, CRUD/A, wrappers o visibilidad por rol; `Pagina principal (tarjetas index)` sigue siendo CRUA exclusivo de `super_administrador`.
+
+- Actualizacion 2026-04-15 (portal publico: segundo juego `Pollitos al cataplum`):
+	- `web/Juegos/menu_juegos.html` agrega una segunda tarjeta jugable y soporta popup por `slug`, ancho y alto por juego.
+	- `web/Juegos/pollitos_cataplum.html` añade un juego publico de resortera con control arrastrar/soltar y niveles cortos.
+	- Impacto de matriz: sin cambios en roles, CRUD/A ni wrappers; `Portal publico - Juegos` sigue siendo de lectura/uso para todos los roles y tambien sin autenticacion.
+
+- Actualizacion 2026-04-15 (checkout de licencias: fallback canonico para Epayco/Wompi):
+	- `backend/handlers/payments_handlers.go` ya no aborta el checkout solo porque la solicitud llega desde `localhost`; resuelve una base publica valida y cae al dominio canonico del sistema cuando no existe otra opcion publica.
+	- `backend/handlers/payments_handlers_test.go` cubre el nuevo fallback canonico y la exclusion de `gmail.confirm_base_url` local.
+	- Impacto de matriz: sin cambios en roles, CRUD/A ni wrappers; el ajuste afecta solo la operacion del checkout publico de licencias.
+
+- Actualizacion 2026-04-15 (portal publico: menu de juegos y Patito volando):
+	- `web/menu.js` expone la entrada publica `Juegos` dentro del menu flotante compartido y `web/Juegos/menu_juegos.html` sirve como catalogo de tarjetas por juego.
+	- `backend/utils/utils.go` deja publico el prefijo `/Juegos/` y `backend/handlers/auth_users_carritos_test.go` valida que el middleware no exija sesion para `menu_juegos.html` ni `patito_volando.html`.
+	- `web/Juegos/patito_volando.html` no agrega acciones CRUD/A ni superficies administrativas; es una experiencia publica de solo lectura/uso recreativo.
+	- Impacto de matriz: se agrega `Portal publico - Juegos` como lectura/uso accesible para todos los roles, con nota operativa de que tambien queda disponible sin autenticacion por formar parte del portal comercial.
 
 - Actualizacion 2026-04-15 (contrato versionado y editor super):
 	- `backend/handlers/super_contrato_handlers.go` incorpora `GET/PUT /super/api/contrato` como superficie exclusiva de `super_administrador` para administrar el contrato vigente y publicar nuevas versiones con trazabilidad.

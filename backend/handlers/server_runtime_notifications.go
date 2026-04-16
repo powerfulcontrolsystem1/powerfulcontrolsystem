@@ -78,14 +78,22 @@ func RegisterServerStartupEvent(dbSuper *sql.DB, opts ServerStartupRegistration)
 
 	correoDestino := ""
 	correoDestinoReadErr := ""
+	alertaReinicioHabilitada := true
+	alertaReinicioReadErr := ""
 	if dbSuper != nil {
 		if configured, readErr := getDecryptedConfigValue(dbSuper, "gmail.restart_alert_to"); readErr != nil {
 			correoDestinoReadErr = readErr.Error()
 		} else {
 			correoDestino = strings.TrimSpace(configured)
 		}
+		if configured, readErr := getDecryptedConfigValue(dbSuper, "gmail.restart_alert_enabled"); readErr != nil {
+			alertaReinicioReadErr = readErr.Error()
+		} else {
+			alertaReinicioHabilitada = parseEmpresaUsuarioBool(configured, true)
+		}
 	} else {
 		correoDestinoReadErr = "db super no disponible"
+		alertaReinicioReadErr = "db super no disponible"
 	}
 
 	asunto := fmt.Sprintf("[PCS] Inicio de servidor detectado (%s)", hostname)
@@ -93,11 +101,16 @@ func RegisterServerStartupEvent(dbSuper *sql.DB, opts ServerStartupRegistration)
 
 	correoEnviado := false
 	correoError := ""
-	if correoDestino == "" {
+	if !alertaReinicioHabilitada {
+		correoError = "alerta de reinicio desactivada en gmail.restart_alert_enabled"
+	} else if correoDestino == "" {
 		if correoDestinoReadErr != "" {
 			correoError = "no se pudo leer gmail.restart_alert_to: " + correoDestinoReadErr
 		} else {
 			correoError = "gmail.restart_alert_to no configurado"
+		}
+		if alertaReinicioReadErr != "" {
+			correoError += " | gmail.restart_alert_enabled: " + alertaReinicioReadErr
 		}
 	} else if _, addrErr := mail.ParseAddress(correoDestino); addrErr != nil {
 		correoError = "gmail.restart_alert_to invalido: " + addrErr.Error()
@@ -135,6 +148,8 @@ func RegisterServerStartupEvent(dbSuper *sql.DB, opts ServerStartupRegistration)
 		"previous_stop_at":          strings.TrimSpace(prevState.LastStopAt),
 		"previous_stop_reason":      strings.TrimSpace(prevState.LastStopReason),
 		"previous_server_err_hint":  serverErrHint,
+		"restart_alert_enabled":     alertaReinicioHabilitada,
+		"restart_alert_enabled_err": alertaReinicioReadErr,
 		"correo_destino_read_error": correoDestinoReadErr,
 	})
 
@@ -177,6 +192,7 @@ func RegisterServerStartupEvent(dbSuper *sql.DB, opts ServerStartupRegistration)
 		"correo_destino":      correoDestino,
 		"correo_enviado":      correoEnviado,
 		"correo_error":        correoError,
+		"alerta_habilitada":   alertaReinicioHabilitada,
 		"event_id":            eventID,
 	}
 	_ = appendServerRuntimeLog(logPath, appendPayload)

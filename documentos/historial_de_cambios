@@ -1,5 +1,192 @@
  - Historial de cambios
 
+ - 2026-04-16: arcade publico con countdown en Patito y refuerzo movil de los cinco juegos
+     - Archivos modificados:
+         - web/Juegos/arcade_shared.js
+         - web/Juegos/patito_volando.html
+         - web/Juegos/pollitos_cataplum.html
+         - web/Juegos/serpiente_pixel.html
+         - web/Juegos/memoria_estelar.html
+         - web/Juegos/rebote_bloques.html
+         - documentos/descripcion_del_proyecto
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: `Patito volando` ahora muestra una cuenta regresiva de 5 segundos antes del arranque y reutiliza nuevos efectos sonoros de countdown desde `arcade_shared.js`. Ademas, los cinco juegos activos del arcade reciben ajustes de layout para celular con botones y overlays mas seguros para pantallas pequenas, y `Serpiente pixel` suma feedback sonoro al cambio de direccion mientras la partida esta activa.
+     - Verificacion tecnica:
+         - Validacion sin errores de `web/Juegos/arcade_shared.js`, `web/Juegos/patito_volando.html`, `web/Juegos/pollitos_cataplum.html`, `web/Juegos/serpiente_pixel.html`, `web/Juegos/memoria_estelar.html` y `web/Juegos/rebote_bloques.html`.
+         - Revision de la cuenta regresiva `5..1` y del bloqueo de entrada previo al arranque en `Patito volando`.
+         - Revision de reglas moviles agregadas para los cinco juegos del arcade y de los nuevos efectos `countdownTick`/`countdownGo`.
+
+ - 2026-04-16: frontend compartido reforzado para celular y menu flotante
+     - Archivos modificados:
+         - web/menu.js
+         - web/estilos.css
+         - web/login.html
+         - documentos/descripcion_del_proyecto
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se corrigen patrones compartidos de adaptacion movil. El menu flotante ahora se oculta al seleccionar una opcion, el CTA de WhatsApp de la portada deja de competir con botones superiores en celular al moverse a la esquina inferior derecha como icono compacto, las tablas y la navegacion administrativa reciben reglas mas seguras para pantallas pequenas, y el login administrativo recupera la hoja de estilos correcta.
+     - Verificacion tecnica:
+         - Validacion sin errores de `web/menu.js`, `web/estilos.css` y `web/login.html`.
+         - Revision del bloque responsive del menu flotante para limitar ancho/alto del panel en pantallas estrechas.
+         - Revision de la regla movil de `.whatsapp-floating-cta` para evitar superposicion con botones del header en `index.html`.
+
+ - 2026-04-16: portada publica con botones superiores alineados al CTA de ofertas
+     - Archivos modificados:
+         - web/estilos.css
+         - documentos/descripcion_del_proyecto
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se ajusta la barra superior de `index.html` para que los accesos `Registrarse o iniciar sesión` e `Informacion de contacto` reutilicen el mismo estilo visual del boton `Explorar oferta` presente en las tarjetas del home. El cambio es solo de presentacion y conserva enlaces, textos y comportamiento responsive.
+     - Verificacion tecnica:
+         - Revision de `web/estilos.css` para confirmar que `.nav-actions .portal-header-btn` y `.home-offer-card .home-offer-btn` comparten el mismo bloque base de apariencia.
+         - Confirmacion de ajuste responsive en la regla `@media (max-width:560px)` manteniendo forma pill para los botones superiores.
+
+ - 2026-04-16: checkout de licencias Epayco estable en sandbox y PostgreSQL
+     - Archivos modificados:
+         - backend/db/db.go
+         - backend/main.go
+         - backend/handlers/payments_handlers.go
+         - backend/handlers/payments_handlers_test.go
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Ajustes operativos validados fuera del repo:
+         - configuraciones de `pcs_superadministrador` en VPS para `epayco.public_key`, `epayco.customer_id`, `epayco.cust_id`, `epayco.private_key`, `epayco.key`, `epayco.enabled`, `epayco.mode` y `gmail.confirm_base_url`
+         - creacion de la tabla `pagos_epayco` en `pcs_superadministrador` del VPS para recuperar trazabilidad de checkout ya desplegado
+     - Descripcion: Se corrige el flujo de Epayco para pago de licencias en sandbox. El backend ahora asegura las tablas de tracking de pasarelas cuando arranca sobre PostgreSQL y mantiene `PENDING` si la API de validacion de Epayco devuelve el error generico de referencia aun no materializada. Tambien se normaliza la configuracion operativa de Epayco en la base super del VPS y se fija `gmail.confirm_base_url` al dominio canonico para construir callbacks publicos validos.
+     - Verificacion tecnica:
+         - `go test ./handlers -run 'TestResolvePaymentBaseURL|TestEpayco(CreateTransactionHandlerUsesConfiguredPublicBaseURLAndKeys|CreateTransactionHandlerAllowsCheckoutWithoutPrivateKey|TransactionStatusHandlerPreservesPendingOnGenericValidationError)' -count=1`.
+         - `go test ./ ./auth ./db ./handlers ./metrics ./utils -run '^$' -count=1`.
+         - `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\iniciar_servidor.ps1 -Background`.
+         - Validacion manual local: `GET /api/public/licencias/payment_methods` => `epayco.available=true`; `POST /epayco/create_transaction` => `checkout_url` con `test=true`; `GET /epayco/transaction_status` para referencia nueva => `PENDING` con `context_found=true`.
+
+ - 2026-04-16: arcade publico con 5 juegos, perfil compartido y tarjetas cuadradas
+     - Archivos creados:
+         - web/Juegos/arcade_shared.js
+         - web/Juegos/serpiente_pixel.html
+         - web/Juegos/memoria_estelar.html
+         - web/Juegos/rebote_bloques.html
+         - web/img/juegos/patito_volando.svg
+         - web/img/juegos/pollitos_cataplum.svg
+         - web/img/juegos/serpiente_pixel.svg
+         - web/img/juegos/memoria_estelar.svg
+         - web/img/juegos/rebote_bloques.svg
+     - Archivos modificados:
+         - web/Juegos/menu_juegos.html
+         - web/Juegos/patito_volando.html
+         - web/Juegos/pollitos_cataplum.html
+         - documentos/descripcion_del_proyecto
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se rediseña `web/Juegos/menu_juegos.html` como lobby cuadrado con portadas reales por juego, resumen de records, nombre de jugador compartido y control global de sonido. Se crea `web/Juegos/arcade_shared.js` para centralizar perfil, marcadores y efectos, se adaptan `patito_volando.html` y `pollitos_cataplum.html`, y se agregan `serpiente_pixel.html`, `memoria_estelar.html` y `rebote_bloques.html` como tres juegos nuevos del portal.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/Juegos/arcade_shared.js`, `web/Juegos/menu_juegos.html`, `web/Juegos/patito_volando.html`, `web/Juegos/pollitos_cataplum.html`, `web/Juegos/serpiente_pixel.html`, `web/Juegos/memoria_estelar.html` y `web/Juegos/rebote_bloques.html`.
+
+ - 2026-04-15: nuevo juego `Pollitos al cataplum` y fallback canonico para checkout Epayco
+     - Archivos creados:
+         - web/Juegos/pollitos_cataplum.html
+     - Archivos modificados:
+         - web/Juegos/menu_juegos.html
+         - backend/handlers/payments_handlers.go
+         - backend/handlers/payments_handlers_test.go
+         - documentos/descripcion_del_proyecto
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se agrega el juego publico `Pollitos al cataplum` al catalogo de Juegos y se actualiza `menu_juegos.html` para abrir varios juegos con popup independiente. Tambien se corrige el checkout de Epayco/Wompi para que, si la solicitud nace en `localhost` o `gmail.confirm_base_url` apunta a loopback, el backend ignore esa base y use una URL publica valida, con fallback al dominio canonico del sistema.
+     - Verificacion tecnica:
+         - `go test ./handlers -run "Test(ResolvePaymentBaseURLFallsBackToCanonicalDomainOnLocalhost|ResolvePaymentBaseURLUsesConfiguredCanonicalDomain|ResolvePaymentBaseURLIgnoresConfiguredLocalhostAndFallsBackToCanonicalDomain|EpaycoCreateTransactionHandlerUsesConfiguredPublicBaseURLAndKeys|EpaycoCreateTransactionHandlerAllowsCheckoutWithoutPrivateKey)" -count=1`.
+         - Diagnostico del editor sin errores en `backend/handlers/payments_handlers.go`, `backend/handlers/payments_handlers_test.go`, `web/Juegos/menu_juegos.html` y `web/Juegos/pollitos_cataplum.html`.
+
+ - 2026-04-15: alertas de reinicio del servidor con activacion configurable
+     - Archivos modificados:
+         - backend/handlers/server_runtime_notifications.go
+         - backend/handlers/server_runtime_notifications_test.go
+         - backend/handlers/usuarios_empresa.go
+         - backend/handlers/system_empresas_handlers_test.go
+         - backend/handlers/super_config_backup_handlers.go
+         - web/super/configuracion_avanzada.html
+         - documentos/descripcion_del_proyecto
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se agrega el interruptor `restart_alert_enabled` en configuracion avanzada para activar o desactivar el correo de inicio/reinicio del servidor. La bitacora `super_servidor_eventos` y el log local siguen registrandose siempre con motivo y detalle, pero el envio de correo solo ocurre cuando la alerta esta habilitada.
+     - Verificacion tecnica:
+         - `go test ./handlers -run "Test(GmailConfigHandlerSaveRestartAlertTo|GmailConfigHandlerSaveRestartAlertToggle|RegisterServerStartupEventCapturesNotificationAndState|RegisterServerStartupEventDetectsUnexpectedRestart|RegisterServerStartupEventSkipsEmailWhenAlertsDisabled)" -count=1`.
+
+ - 2026-04-15: selector de empresas con iconos por tipo y tarjetas mas profesionales
+     - Archivos modificados:
+         - web/js/seleccionar_empresa.js
+         - web/estilos.css
+         - documentos/descripcion_del_proyecto
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se mejora `seleccionar_empresa.html` para que cada empresa use iconografia segun su `tipo_nombre` y una tarjeta mas profesional, con tonos por categoria, chips de estado y metadata de acceso. El flujo de abrir administracion o elegir licencia se mantiene intacto.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/js/seleccionar_empresa.js` y `web/estilos.css`.
+
+ - 2026-04-15: pagina_principal integra cantidad y guardado en un solo flujo
+     - Archivos modificados:
+         - web/super/pagina_principal.html
+         - backend/handlers/pagina_principal_handlers_test.go
+         - documentos/descripcion_del_proyecto
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se corrige el editor de `pagina_principal` para que la cantidad de tarjetas se aplique al cambiar el campo y se guarde junto con el resto de la configuracion, eliminando el boton intermedio `Aplicar cantidad`. Tambien se agrega una prueba que valida persistencia de configuraciones ampliadas.
+     - Verificacion tecnica:
+         - `go test ./handlers -run "TestPaginaPrincipal|TestPublicPaginaPrincipalHandlerExposesLandingFields" -count=1`.
+
+ - 2026-04-15: Menu de juegos publico y juego Patito volando
+     - Archivos creados:
+         - web/Juegos/menu_juegos.html
+         - web/Juegos/patito_volando.html
+     - Archivos modificados:
+         - backend/utils/utils.go
+         - backend/handlers/auth_users_carritos_test.go
+         - web/menu.js
+         - documentos/descripcion_del_proyecto
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se crea el modulo publico `Juegos` dentro del menu flotante del portal. La pagina `web/Juegos/menu_juegos.html` funciona como catalogo con una tarjeta por juego publicado y el primer juego disponible es `Patito volando` en `web/Juegos/patito_volando.html`, con apertura en ventana pequena para escritorio, instrucciones iniciales y control unico por barra espaciadora o toque/presion tactil. Tambien se libera `/Juegos/*` en `AuthMiddleware` y se cubre con prueba automatizada el acceso sin sesion.
+     - Verificacion tecnica:
+         - `go test ./handlers -run "TestAuthMiddlewareAllowsPublicPortalPagesAssetsAndHomeCardsAPI" -count=1`.
+
  - 2026-04-15: Restauracion de Pendiente Notas y auditoria de borrados en Git
      - Archivos modificados:
          - Pendiente Notas

@@ -478,7 +478,7 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 		}
 
 		// Recursos estáticos públicos
-		publicPrefixes := []string{"/assets/", "/img/", "/ayuda/", "/uploads/"}
+		publicPrefixes := []string{"/assets/", "/img/", "/ayuda/", "/uploads/", "/Juegos/"}
 		publicPrefixes = append(publicPrefixes, "/js/")
 		for _, p := range publicPrefixes {
 			if strings.HasPrefix(path, p) {

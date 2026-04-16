@@ -1,0 +1,767 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Memoria estelar</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <link rel="icon" type="image/png" href="/img/punto_venta.png">
+  <script src="/menu.js"></script>
+  <style>
+    :root {
+      --memory-bg-top: #171132;
+      --memory-bg-bottom: #3d1f66;
+      --memory-card: rgba(15, 12, 37, 0.92);
+      --memory-surface: rgba(255, 250, 242, 0.12);
+      --memory-border: rgba(255, 255, 255, 0.12);
+      --memory-ink: #fff8ef;
+      --memory-muted: rgba(255, 248, 239, 0.72);
+      --memory-accent: #ffc46c;
+      --memory-accent-dark: #ff8a5b;
+      --memory-success: #7cf0b0;
+    }
+
+    html,
+    body {
+      height: 100%;
+    }
+
+    body.memory-page {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 72px 12px 12px;
+      box-sizing: border-box;
+      color: var(--memory-ink);
+      background:
+        radial-gradient(circle at top left, rgba(255, 196, 108, 0.18), transparent 26%),
+        radial-gradient(circle at bottom right, rgba(139, 226, 255, 0.16), transparent 32%),
+        linear-gradient(165deg, var(--memory-bg-top), var(--memory-bg-bottom));
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .memory-shell {
+      width: min(920px, calc(100vw - 24px));
+      min-height: min(860px, calc(100vh - 84px));
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      gap: 14px;
+      padding: 20px;
+      box-sizing: border-box;
+      border-radius: 30px;
+      background: linear-gradient(180deg, rgba(10, 9, 26, 0.96), rgba(19, 13, 42, 0.95));
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 26px 64px rgba(0, 0, 0, 0.34);
+    }
+
+    .memory-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 14px;
+    }
+
+    .memory-kicker {
+      margin: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255, 196, 108, 0.12);
+      color: var(--memory-accent);
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .memory-header h1 {
+      margin: 8px 0 0;
+      font-size: clamp(2rem, 4vw, 3rem);
+      line-height: 0.98;
+    }
+
+    .memory-copy {
+      max-width: 540px;
+      margin: 12px 0 0;
+      line-height: 1.6;
+      color: var(--memory-muted);
+    }
+
+    .memory-stats {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(120px, 1fr));
+      gap: 10px;
+      min-width: min(330px, 100%);
+    }
+
+    .memory-stat {
+      padding: 12px 14px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      text-align: right;
+    }
+
+    .memory-stat-label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: rgba(255, 248, 239, 0.62);
+    }
+
+    .memory-stat-value {
+      display: block;
+      margin-top: 4px;
+      font-size: 1.38rem;
+      font-weight: 900;
+    }
+
+    .memory-chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .memory-chip,
+    .memory-chip-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 10px 15px;
+      border-radius: 999px;
+      border: 1px solid var(--memory-border);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--memory-ink);
+      font: inherit;
+      font-weight: 800;
+    }
+
+    .memory-chip strong {
+      margin-left: 8px;
+      color: var(--memory-accent);
+      font-weight: 900;
+    }
+
+    .memory-chip.note {
+      color: var(--memory-muted);
+    }
+
+    .memory-chip-btn {
+      cursor: pointer;
+    }
+
+    .memory-chip-btn.secondary {
+      background: rgba(255, 255, 255, 0.09);
+    }
+
+    .memory-stage {
+      position: relative;
+      min-height: 0;
+      border-radius: 28px;
+      overflow: hidden;
+      border: 1px solid var(--memory-border);
+      background:
+        radial-gradient(circle at top left, rgba(255, 196, 108, 0.09), transparent 30%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+      padding: 18px;
+      box-sizing: border-box;
+    }
+
+    .memory-board {
+      height: 100%;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .memory-card {
+      position: relative;
+      min-height: 126px;
+      border: none;
+      padding: 0;
+      background: none;
+      cursor: pointer;
+      perspective: 1000px;
+    }
+
+    .memory-card-face {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      border-radius: 24px;
+      backface-visibility: hidden;
+      transition: transform 220ms ease, box-shadow 220ms ease, opacity 220ms ease;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 14px 28px rgba(0, 0, 0, 0.22);
+    }
+
+    .memory-card-back {
+      background:
+        radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.16), transparent 28%),
+        linear-gradient(145deg, #2a184f, #1a1036);
+      color: var(--memory-accent);
+      font-size: 1.8rem;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+    }
+
+    .memory-card-front {
+      transform: rotateY(180deg);
+      color: #2f173f;
+      font-size: 1rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      text-align: center;
+      padding: 12px;
+      box-sizing: border-box;
+    }
+
+    .memory-card.revealed .memory-card-back,
+    .memory-card.matched .memory-card-back {
+      transform: rotateY(180deg);
+      opacity: 0;
+    }
+
+    .memory-card.revealed .memory-card-front,
+    .memory-card.matched .memory-card-front {
+      transform: rotateY(0deg);
+    }
+
+    .memory-card.matched .memory-card-front {
+      box-shadow: 0 0 0 2px rgba(124, 240, 176, 0.7), 0 18px 36px rgba(0, 0, 0, 0.24);
+    }
+
+    .memory-card-front.pair-0 { background: linear-gradient(145deg, #fff0c2, #ffb870); }
+    .memory-card-front.pair-1 { background: linear-gradient(145deg, #ffd5d5, #ff8f7d); }
+    .memory-card-front.pair-2 { background: linear-gradient(145deg, #cdf0ff, #78d4ff); }
+    .memory-card-front.pair-3 { background: linear-gradient(145deg, #d6ffd8, #8de59a); }
+    .memory-card-front.pair-4 { background: linear-gradient(145deg, #f6d8ff, #d295ff); }
+    .memory-card-front.pair-5 { background: linear-gradient(145deg, #ffe2b8, #ffc66a); }
+    .memory-card-front.pair-6 { background: linear-gradient(145deg, #ffe9f8, #ff9ad0); }
+    .memory-card-front.pair-7 { background: linear-gradient(145deg, #d3f9ff, #8be2ff); }
+
+    .memory-overlay {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 22px;
+      background: linear-gradient(180deg, rgba(9, 7, 24, 0.16), rgba(9, 7, 24, 0.74));
+      z-index: 2;
+    }
+
+    .memory-overlay[hidden] {
+      display: none;
+    }
+
+    .memory-overlay-card {
+      width: min(100%, 420px);
+      padding: 24px;
+      border-radius: 26px;
+      background: rgba(14, 10, 33, 0.97);
+      border: 1px solid rgba(255, 196, 108, 0.2);
+      box-shadow: 0 26px 58px rgba(0, 0, 0, 0.34);
+    }
+
+    .memory-overlay-card h2 {
+      margin: 0 0 12px;
+      font-size: 1.9rem;
+    }
+
+    .memory-overlay-card p,
+    .memory-overlay-card li {
+      line-height: 1.62;
+      color: var(--memory-muted);
+    }
+
+    .memory-overlay-card ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .memory-actions,
+    .memory-footer {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .memory-actions {
+      margin-top: 18px;
+    }
+
+    .memory-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 50px;
+      padding: 12px 18px;
+      border: none;
+      border-radius: 16px;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 900;
+      color: #2b1738;
+      background: linear-gradient(135deg, var(--memory-accent), var(--memory-accent-dark));
+      box-shadow: 0 18px 34px rgba(255, 138, 91, 0.24);
+    }
+
+    .memory-btn.secondary {
+      color: var(--memory-ink);
+      background: rgba(255, 255, 255, 0.09);
+      box-shadow: none;
+    }
+
+    .memory-status {
+      margin-left: auto;
+      font-weight: 800;
+      color: var(--memory-muted);
+    }
+
+    @media (max-width: 860px) {
+      body.memory-page {
+        padding-top: 66px;
+      }
+
+      .memory-shell {
+        width: min(100vw - 16px, 920px);
+        min-height: auto;
+        padding: 14px;
+        border-radius: 24px;
+      }
+
+      .memory-header {
+        display: grid;
+      }
+
+      .memory-stats {
+        min-width: 0;
+      }
+
+      .memory-board {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .memory-status {
+        margin-left: 0;
+      }
+    }
+
+    @media (max-width: 640px) {
+      body.memory-page {
+        display: block;
+        padding: 62px 8px calc(12px + env(safe-area-inset-bottom, 0px));
+      }
+
+      .memory-shell {
+        margin: 0 auto;
+        width: min(100vw - 12px, 920px);
+        min-height: auto;
+        padding: 12px;
+        border-radius: 20px;
+      }
+
+      .memory-stage {
+        padding: 12px;
+      }
+
+      .memory-board {
+        gap: 10px;
+      }
+
+      .memory-chip-row,
+      .memory-actions,
+      .memory-footer {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .memory-chip,
+      .memory-chip-btn,
+      .memory-btn {
+        width: 100%;
+      }
+
+      .memory-status {
+        text-align: center;
+      }
+
+      .memory-overlay-card {
+        padding: 18px;
+        border-radius: 20px;
+      }
+    }
+
+    @media (max-width: 420px) {
+      .memory-stats {
+        grid-template-columns: 1fr;
+      }
+
+      .memory-card {
+        min-height: 92px;
+      }
+
+      .memory-card-front {
+        font-size: 0.84rem;
+        padding: 8px;
+      }
+    }
+  </style>
+</head>
+<body class="memory-page">
+  <main class="memory-shell">
+    <section class="memory-header">
+      <div>
+        <p class="memory-kicker">Pares y reflejos</p>
+        <h1>Memoria estelar</h1>
+        <p class="memory-copy">Destapa cartas, encuentra parejas y termina el tablero con el menor numero de intentos posible. Cuanto mas rapido cierres la ronda, mejor puntaje guardas.</p>
+      </div>
+      <div class="memory-stats" aria-label="Marcadores de Memoria estelar">
+        <div class="memory-stat"><span class="memory-stat-label">Parejas</span><span id="pairsValue" class="memory-stat-value">0/8</span></div>
+        <div class="memory-stat"><span class="memory-stat-label">Intentos</span><span id="attemptsValue" class="memory-stat-value">0</span></div>
+        <div class="memory-stat"><span class="memory-stat-label">Tiempo</span><span id="timeValue" class="memory-stat-value">0s</span></div>
+        <div class="memory-stat"><span class="memory-stat-label">Puntaje</span><span id="scoreValue" class="memory-stat-value">0</span></div>
+      </div>
+    </section>
+
+    <section class="memory-chip-row">
+      <span class="memory-chip">Jugador:<strong id="playerNameValue">Invitado</strong></span>
+      <span class="memory-chip">Record:<strong id="bestValue">0</strong></span>
+      <span id="bestMeta" class="memory-chip note">Sin marcas guardadas</span>
+      <button id="changePlayerBtn" class="memory-chip-btn" type="button">Cambiar jugador</button>
+      <button id="soundToggleBtn" class="memory-chip-btn secondary" type="button" aria-pressed="true">Sonido: activado</button>
+    </section>
+
+    <section class="memory-stage" aria-label="Juego Memoria estelar">
+      <div id="memoryBoard" class="memory-board"></div>
+      <div id="overlay" class="memory-overlay">
+        <div class="memory-overlay-card">
+          <h2 id="overlayTitle">Baraja lista</h2>
+          <p id="overlayMessage">Cada ronda mezcla ocho parejas. Si emparejas con pocos intentos y poco tiempo, subes mas en el marcador.</p>
+          <ul>
+            <li>Toca una carta para revelarla y luego busca su gemela.</li>
+            <li>Cuando fallas, las cartas vuelven a cerrarse unos instantes despues.</li>
+            <li>El nombre del jugador y el mejor puntaje quedan guardados localmente.</li>
+          </ul>
+          <div class="memory-actions">
+            <button id="startBtn" class="memory-btn" type="button">Empezar</button>
+            <button id="backBtnTop" class="memory-btn secondary" type="button">Volver al menu</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="memory-footer">
+      <button id="restartBtn" class="memory-btn secondary" type="button">Mezclar otra vez</button>
+      <button id="backBtnBottom" class="memory-btn secondary" type="button">Salir al menu</button>
+      <div id="statusText" class="memory-status">Esperando inicio...</div>
+    </section>
+  </main>
+
+  <script src="/Juegos/arcade_shared.js"></script>
+  <script>
+    (function () {
+      var GAME_KEY = 'memoria_estelar';
+      var arcade = window.PCSArcade || null;
+      var boardEl = document.getElementById('memoryBoard');
+      var overlay = document.getElementById('overlay');
+      var overlayTitle = document.getElementById('overlayTitle');
+      var overlayMessage = document.getElementById('overlayMessage');
+      var startBtn = document.getElementById('startBtn');
+      var restartBtn = document.getElementById('restartBtn');
+      var backBtnTop = document.getElementById('backBtnTop');
+      var backBtnBottom = document.getElementById('backBtnBottom');
+      var pairsValue = document.getElementById('pairsValue');
+      var attemptsValue = document.getElementById('attemptsValue');
+      var timeValue = document.getElementById('timeValue');
+      var scoreValue = document.getElementById('scoreValue');
+      var bestValue = document.getElementById('bestValue');
+      var bestMeta = document.getElementById('bestMeta');
+      var playerNameValue = document.getElementById('playerNameValue');
+      var changePlayerBtn = document.getElementById('changePlayerBtn');
+      var soundToggleBtn = document.getElementById('soundToggleBtn');
+      var statusText = document.getElementById('statusText');
+
+      var baseDeck = [
+        { id: 'nova', label: 'NOVA', pairClass: 'pair-0' },
+        { id: 'pulso', label: 'PULSO', pairClass: 'pair-1' },
+        { id: 'solar', label: 'SOLAR', pairClass: 'pair-2' },
+        { id: 'lunar', label: 'LUNAR', pairClass: 'pair-3' },
+        { id: 'orbita', label: 'ORBITA', pairClass: 'pair-4' },
+        { id: 'nebula', label: 'NEBULA', pairClass: 'pair-5' },
+        { id: 'quasar', label: 'QUASAR', pairClass: 'pair-6' },
+        { id: 'cometa', label: 'COMETA', pairClass: 'pair-7' }
+      ];
+
+      var timerHandle = 0;
+      var state = {
+        running: false,
+        lock: false,
+        deck: [],
+        firstIndex: -1,
+        secondIndex: -1,
+        matches: 0,
+        attempts: 0,
+        startedAt: 0,
+        elapsedSeconds: 0
+      };
+
+      function playEffect(name) {
+        if (arcade) arcade.playEffect(name);
+      }
+
+      function shuffle(array) {
+        var copy = array.slice();
+        for (var index = copy.length - 1; index > 0; index -= 1) {
+          var swapIndex = Math.floor(Math.random() * (index + 1));
+          var current = copy[index];
+          copy[index] = copy[swapIndex];
+          copy[swapIndex] = current;
+        }
+        return copy;
+      }
+
+      function escapeHTML(value) {
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function computeScore() {
+        return Math.max(0, 1600 + state.matches * 120 - state.attempts * 25 - state.elapsedSeconds * 8);
+      }
+
+      function refreshArcadeHud() {
+        if (!arcade) return;
+        var profile = arcade.getProfile();
+        var scores = arcade.getGameScores(GAME_KEY);
+        playerNameValue.textContent = profile.playerName || 'Invitado';
+        bestValue.textContent = String(scores.best ? Number(scores.best.score || 0) : 0);
+        bestMeta.textContent = scores.best
+          ? 'Por ' + scores.best.playerName + (scores.best.detail ? ' · ' + scores.best.detail : '')
+          : 'Sin marcas guardadas';
+        soundToggleBtn.textContent = arcade.isSoundEnabled() ? 'Sonido: activado' : 'Sonido: apagado';
+        soundToggleBtn.setAttribute('aria-pressed', arcade.isSoundEnabled() ? 'true' : 'false');
+      }
+
+      function updateStats() {
+        pairsValue.textContent = String(state.matches) + '/8';
+        attemptsValue.textContent = String(state.attempts);
+        timeValue.textContent = String(state.elapsedSeconds) + 's';
+        scoreValue.textContent = String(computeScore());
+      }
+
+      function setStatus(text) {
+        statusText.textContent = text;
+      }
+
+      function stopTimer() {
+        if (timerHandle) {
+          window.clearInterval(timerHandle);
+          timerHandle = 0;
+        }
+      }
+
+      function startTimer() {
+        stopTimer();
+        timerHandle = window.setInterval(function () {
+          if (!state.running) return;
+          state.elapsedSeconds = Math.floor((Date.now() - state.startedAt) / 1000);
+          updateStats();
+        }, 250);
+      }
+
+      function buildDeck() {
+        var pairs = baseDeck.concat(baseDeck).map(function (entry, index) {
+          return {
+            uid: entry.id + '_' + index,
+            id: entry.id,
+            label: entry.label,
+            pairClass: entry.pairClass,
+            revealed: false,
+            matched: false
+          };
+        });
+        return shuffle(pairs);
+      }
+
+      function renderBoard() {
+        boardEl.innerHTML = state.deck.map(function (card, index) {
+          var cardClasses = 'memory-card';
+          if (card.revealed) cardClasses += ' revealed';
+          if (card.matched) cardClasses += ' matched';
+          return '' +
+            '<button class="' + cardClasses + '" type="button" data-index="' + index + '" aria-label="Carta ' + (index + 1) + '">' +
+              '<span class="memory-card-face memory-card-back">?</span>' +
+              '<span class="memory-card-face memory-card-front ' + escapeHTML(card.pairClass) + '">' + escapeHTML(card.label) + '</span>' +
+            '</button>';
+        }).join('');
+      }
+
+      function showOverlay(title, message, startLabel) {
+        overlayTitle.textContent = title;
+        overlayMessage.textContent = message;
+        startBtn.textContent = startLabel || 'Empezar';
+        overlay.hidden = false;
+      }
+
+      function hideOverlay() {
+        overlay.hidden = true;
+      }
+
+      function openMenu() {
+        window.location.href = '/Juegos/menu_juegos.html';
+      }
+
+      function resetGame() {
+        stopTimer();
+        state.running = false;
+        state.lock = false;
+        state.firstIndex = -1;
+        state.secondIndex = -1;
+        state.matches = 0;
+        state.attempts = 0;
+        state.startedAt = 0;
+        state.elapsedSeconds = 0;
+        state.deck = buildDeck();
+        renderBoard();
+        updateStats();
+        setStatus('Esperando inicio...');
+      }
+
+      function saveScore() {
+        if (!arcade) {
+          refreshArcadeHud();
+          return;
+        }
+        var score = computeScore();
+        arcade.recordScore(GAME_KEY, score, {
+          detail: 'Intentos ' + state.attempts + ' · Tiempo ' + state.elapsedSeconds + 's'
+        });
+        refreshArcadeHud();
+      }
+
+      function startGame() {
+        if (arcade) {
+          arcade.ensurePlayerName('Escribe el nombre que quieres usar en Memoria estelar');
+          refreshArcadeHud();
+        }
+        if (state.matches === baseDeck.length) {
+          resetGame();
+        }
+        state.running = true;
+        state.startedAt = Date.now();
+        state.elapsedSeconds = 0;
+        playEffect('start');
+        hideOverlay();
+        startTimer();
+        setStatus('Encuentra las parejas con la menor cantidad de intentos.');
+      }
+
+      function finishGame() {
+        state.running = false;
+        stopTimer();
+        playEffect('win');
+        saveScore();
+        showOverlay('Tablero despejado', 'Encontraste todas las parejas. Puedes volver a mezclar para intentar un mejor puntaje.', 'Jugar otra vez');
+        setStatus('Ronda completada. Tu puntaje quedo guardado.');
+      }
+
+      function revealCard(index) {
+        if (state.lock || !state.running) return;
+        var card = state.deck[index];
+        if (!card || card.matched || card.revealed) return;
+
+        card.revealed = true;
+        playEffect('flip');
+        renderBoard();
+
+        if (state.firstIndex === -1) {
+          state.firstIndex = index;
+          setStatus('Busca la pareja de la carta abierta.');
+          return;
+        }
+
+        state.secondIndex = index;
+        state.attempts += 1;
+        state.lock = true;
+        updateStats();
+
+        var firstCard = state.deck[state.firstIndex];
+        var secondCard = state.deck[state.secondIndex];
+        if (firstCard.id === secondCard.id) {
+          window.setTimeout(function () {
+            firstCard.matched = true;
+            secondCard.matched = true;
+            state.matches += 1;
+            state.firstIndex = -1;
+            state.secondIndex = -1;
+            state.lock = false;
+            playEffect('match');
+            renderBoard();
+            updateStats();
+            if (state.matches === baseDeck.length) {
+              finishGame();
+              return;
+            }
+            setStatus('Pareja encontrada. Sigue asi.');
+          }, 360);
+          return;
+        }
+
+        window.setTimeout(function () {
+          firstCard.revealed = false;
+          secondCard.revealed = false;
+          state.firstIndex = -1;
+          state.secondIndex = -1;
+          state.lock = false;
+          playEffect('hit');
+          renderBoard();
+          setStatus('No era pareja. Prueba con otra combinacion.');
+        }, 620);
+      }
+
+      boardEl.addEventListener('click', function (event) {
+        var button = event.target.closest('button[data-index]');
+        if (!button) return;
+        revealCard(Number(button.getAttribute('data-index')));
+      });
+
+      startBtn.addEventListener('click', startGame);
+      restartBtn.addEventListener('click', function () {
+        resetGame();
+        showOverlay('Cartas mezcladas', 'La baraja quedo lista otra vez. Cuando quieras, inicia una nueva ronda.', 'Empezar');
+      });
+      backBtnTop.addEventListener('click', openMenu);
+      backBtnBottom.addEventListener('click', openMenu);
+      changePlayerBtn.addEventListener('click', function () {
+        if (!arcade) return;
+        arcade.promptPlayerName('Actualiza el nombre del jugador para los marcadores');
+        refreshArcadeHud();
+      });
+      soundToggleBtn.addEventListener('click', function () {
+        if (!arcade) return;
+        arcade.toggleSoundEnabled();
+        refreshArcadeHud();
+      });
+      window.addEventListener('pcs-arcade-store-changed', refreshArcadeHud);
+
+      resetGame();
+      refreshArcadeHud();
+    })();
+  </script>
+</body>
+</html>

@@ -5,6 +5,73 @@ import (
 	"strings"
 )
 
+// EnsurePaymentGatewaySchema prepara las tablas de checkout de licencias en PostgreSQL.
+// El runtime SQLite mantiene su propio bootstrap legado en main.go.
+func EnsurePaymentGatewaySchema(dbConn *sql.DB) error {
+	if dbConn == nil || !isPostgresDialect() {
+		return nil
+	}
+
+	statements := []string{
+		`CREATE TABLE IF NOT EXISTS pagos_wompi (
+			id BIGSERIAL PRIMARY KEY,
+			licencia_id BIGINT,
+			empresa_id BIGINT,
+			transaction_id TEXT,
+			reference TEXT,
+			status TEXT,
+			raw_payload TEXT,
+			discount_code TEXT,
+			asesor_id TEXT,
+			fecha_creacion TEXT DEFAULT CURRENT_TIMESTAMP::text,
+			fecha_actualizacion TEXT,
+			usuario_creador TEXT,
+			estado TEXT DEFAULT 'activo',
+			observaciones TEXT
+		)`,
+		`ALTER TABLE pagos_wompi ADD COLUMN IF NOT EXISTS discount_code TEXT`,
+		`ALTER TABLE pagos_wompi ADD COLUMN IF NOT EXISTS asesor_id TEXT`,
+		`ALTER TABLE pagos_wompi ADD COLUMN IF NOT EXISTS fecha_actualizacion TEXT`,
+		`ALTER TABLE pagos_wompi ADD COLUMN IF NOT EXISTS usuario_creador TEXT`,
+		`ALTER TABLE pagos_wompi ADD COLUMN IF NOT EXISTS estado TEXT DEFAULT 'activo'`,
+		`ALTER TABLE pagos_wompi ADD COLUMN IF NOT EXISTS observaciones TEXT`,
+		`CREATE INDEX IF NOT EXISTS ix_pagos_wompi_transaction_id ON pagos_wompi (transaction_id)`,
+		`CREATE INDEX IF NOT EXISTS ix_pagos_wompi_reference ON pagos_wompi (reference)`,
+		`CREATE TABLE IF NOT EXISTS pagos_epayco (
+			id BIGSERIAL PRIMARY KEY,
+			licencia_id BIGINT,
+			empresa_id BIGINT,
+			transaction_id TEXT,
+			reference TEXT,
+			status TEXT,
+			raw_payload TEXT,
+			discount_code TEXT,
+			asesor_id TEXT,
+			fecha_creacion TEXT DEFAULT CURRENT_TIMESTAMP::text,
+			fecha_actualizacion TEXT,
+			usuario_creador TEXT,
+			estado TEXT DEFAULT 'activo',
+			observaciones TEXT
+		)`,
+		`ALTER TABLE pagos_epayco ADD COLUMN IF NOT EXISTS discount_code TEXT`,
+		`ALTER TABLE pagos_epayco ADD COLUMN IF NOT EXISTS asesor_id TEXT`,
+		`ALTER TABLE pagos_epayco ADD COLUMN IF NOT EXISTS fecha_actualizacion TEXT`,
+		`ALTER TABLE pagos_epayco ADD COLUMN IF NOT EXISTS usuario_creador TEXT`,
+		`ALTER TABLE pagos_epayco ADD COLUMN IF NOT EXISTS estado TEXT DEFAULT 'activo'`,
+		`ALTER TABLE pagos_epayco ADD COLUMN IF NOT EXISTS observaciones TEXT`,
+		`CREATE INDEX IF NOT EXISTS ix_pagos_epayco_transaction_id ON pagos_epayco (transaction_id)`,
+		`CREATE INDEX IF NOT EXISTS ix_pagos_epayco_reference ON pagos_epayco (reference)`,
+	}
+
+	for _, stmt := range statements {
+		if _, err := dbConn.Exec(stmt); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // UpsertUser inserta o actualiza un usuario en la base de datos de empresas (registro por empresa)
 func UpsertUser(dbConn *sql.DB, email, name string) error {
 	tx, err := dbConn.Begin()

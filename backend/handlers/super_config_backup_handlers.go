@@ -103,6 +103,7 @@ func superConfigCriticalKeys() []string {
 		"gmail.smtp_port",
 		"gmail.confirm_base_url",
 		"gmail.restart_alert_to",
+		"gmail.restart_alert_enabled",
 		"gmail.smtp_test_mode",
 		"usuarios.password_min_length",
 		"usuarios.password_require_uppercase",

@@ -1,0 +1,1114 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Pollitos al cataplum</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <link rel="icon" type="image/png" href="/img/punto_venta.png">
+  <script src="/menu.js"></script>
+  <style>
+    :root {
+      --sling-ink: #183148;
+      --sling-card: rgba(255, 251, 244, 0.94);
+      --sling-border: rgba(24, 49, 72, 0.14);
+      --sling-accent: #ff8c3a;
+      --sling-accent-dark: #d45a17;
+      --sling-danger: #d0462f;
+      --sling-success: #2f8a49;
+    }
+
+    html,
+    body {
+      height: 100%;
+    }
+
+    body.sling-game-page {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 72px 12px 12px;
+      box-sizing: border-box;
+      color: var(--sling-ink);
+      background:
+        radial-gradient(circle at top left, rgba(255, 221, 130, 0.72), transparent 32%),
+        radial-gradient(circle at top right, rgba(255, 255, 255, 0.92), transparent 28%),
+        linear-gradient(180deg, #eefcf7 0%, #85d9ff 58%, #8fd282 59%, #4d9b48 100%);
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+    }
+
+    .sling-window {
+      width: min(920px, calc(100vw - 24px));
+      height: min(720px, calc(100vh - 84px));
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      gap: 12px;
+      padding: 18px;
+      box-sizing: border-box;
+      border-radius: 30px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), var(--sling-card));
+      border: 1px solid var(--sling-border);
+      box-shadow: 0 28px 62px rgba(24, 49, 72, 0.2);
+      overflow: hidden;
+    }
+
+    .sling-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .sling-header h1 {
+      margin: 4px 0 0;
+      font-size: clamp(1.9rem, 4vw, 2.8rem);
+      line-height: 0.96;
+    }
+
+    .sling-kicker {
+      margin: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(24, 49, 72, 0.08);
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-size: 0.78rem;
+    }
+
+    .sling-copy {
+      max-width: 560px;
+      margin: 10px 0 0;
+      line-height: 1.6;
+      color: rgba(24, 49, 72, 0.82);
+    }
+
+    .sling-scoreboard {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(110px, 1fr));
+      gap: 10px;
+      min-width: min(440px, 100%);
+    }
+
+    .sling-score-card {
+      padding: 12px 14px;
+      border-radius: 18px;
+      background: rgba(24, 49, 72, 0.06);
+      border: 1px solid rgba(24, 49, 72, 0.08);
+      text-align: right;
+    }
+
+    .sling-score-label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: rgba(24, 49, 72, 0.68);
+    }
+
+    .sling-score-value {
+      display: block;
+      margin-top: 4px;
+      font-size: 1.38rem;
+      font-weight: 900;
+    }
+
+    .sling-chip strong {
+      margin-left: 8px;
+      font-weight: 900;
+    }
+
+    .sling-chip.note {
+      color: rgba(24, 49, 72, 0.72);
+    }
+
+    .sling-chip-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 10px 15px;
+      border-radius: 999px;
+      border: 1px solid rgba(24, 49, 72, 0.1);
+      background: rgba(255, 255, 255, 0.86);
+      color: var(--sling-ink);
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .sling-chip-btn.secondary {
+      background: rgba(24, 49, 72, 0.08);
+    }
+
+    .sling-chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .sling-chip {
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.84);
+      border: 1px solid rgba(24, 49, 72, 0.1);
+      font-weight: 700;
+      font-size: 0.94rem;
+    }
+
+    .sling-stage {
+      position: relative;
+      min-height: 0;
+      border-radius: 26px;
+      overflow: hidden;
+      border: 1px solid rgba(24, 49, 72, 0.12);
+      background: linear-gradient(180deg, #dff7ff 0%, #85d8ff 65%, #a2d885 66%, #4b9545 100%);
+    }
+
+    #slingCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      touch-action: none;
+      cursor: grab;
+    }
+
+    #slingCanvas.dragging {
+      cursor: grabbing;
+    }
+
+    .sling-overlay {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 22px;
+      background: linear-gradient(180deg, rgba(12, 32, 49, 0.1), rgba(12, 32, 49, 0.45));
+      z-index: 2;
+    }
+
+    .sling-overlay[hidden] {
+      display: none;
+    }
+
+    .sling-overlay-card {
+      width: min(100%, 460px);
+      padding: 24px;
+      border-radius: 24px;
+      background: rgba(255, 252, 247, 0.97);
+      border: 1px solid rgba(24, 49, 72, 0.1);
+      box-shadow: 0 24px 48px rgba(24, 49, 72, 0.18);
+    }
+
+    .sling-overlay-card h2 {
+      margin: 0 0 12px;
+      font-size: 1.85rem;
+    }
+
+    .sling-overlay-card p,
+    .sling-overlay-card li {
+      line-height: 1.62;
+    }
+
+    .sling-overlay-card ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    .sling-overlay-actions,
+    .sling-footer {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .sling-overlay-actions {
+      margin-top: 18px;
+    }
+
+    .sling-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 50px;
+      padding: 12px 18px;
+      border: none;
+      border-radius: 16px;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+      color: #fffdf9;
+      background: linear-gradient(135deg, var(--sling-accent), var(--sling-accent-dark));
+      box-shadow: 0 16px 32px rgba(212, 90, 23, 0.24);
+    }
+
+    .sling-btn.secondary {
+      color: var(--sling-ink);
+      background: rgba(24, 49, 72, 0.08);
+      box-shadow: none;
+    }
+
+    .sling-status {
+      margin-left: auto;
+      font-weight: 700;
+    }
+
+    .sling-status.success { color: var(--sling-success); }
+    .sling-status.error { color: var(--sling-danger); }
+
+    @media (max-width: 860px) {
+      body.sling-game-page {
+        padding-top: 66px;
+      }
+
+      .sling-window {
+        width: min(100vw - 16px, 920px);
+        height: min(100vh - 72px, 720px);
+        padding: 14px;
+        border-radius: 24px;
+      }
+
+      .sling-header {
+        display: grid;
+      }
+
+      .sling-scoreboard {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        min-width: 0;
+      }
+
+      .sling-status {
+        margin-left: 0;
+      }
+    }
+
+    @media (max-width: 640px) {
+      body.sling-game-page {
+        display: block;
+        padding: 62px 8px calc(12px + env(safe-area-inset-bottom, 0px));
+      }
+
+      .sling-window {
+        margin: 0 auto;
+        width: min(100vw - 12px, 920px);
+        height: auto;
+        padding: 12px;
+        border-radius: 20px;
+        grid-template-rows: auto auto minmax(280px, 1fr) auto;
+      }
+
+      .sling-stage {
+        min-height: clamp(280px, 48vh, 380px);
+      }
+
+      .sling-chip-row,
+      .sling-overlay-actions,
+      .sling-footer {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .sling-chip,
+      .sling-chip-btn,
+      .sling-btn {
+        width: 100%;
+      }
+
+      .sling-overlay-card {
+        padding: 18px;
+        border-radius: 20px;
+      }
+
+      .sling-status {
+        text-align: center;
+      }
+    }
+
+    @media (max-width: 420px) {
+      .sling-scoreboard {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body class="sling-game-page">
+  <main class="sling-window">
+    <section class="sling-header">
+      <div>
+        <p class="sling-kicker">Resortera arcade</p>
+        <h1>Pollitos al cataplum</h1>
+        <p class="sling-copy">Arrastra el pollito desde la resortera, calcula la parabola y derriba los objetivos escondidos entre cajas. Si limpias el nivel con menos disparos, sumas mejor puntaje.</p>
+      </div>
+      <div class="sling-scoreboard" aria-label="Marcadores del juego">
+        <div class="sling-score-card"><span class="sling-score-label">Nivel</span><span id="levelValue" class="sling-score-value">1</span></div>
+        <div class="sling-score-card"><span class="sling-score-label">Puntaje</span><span id="scoreValue" class="sling-score-value">0</span></div>
+        <div class="sling-score-card"><span class="sling-score-label">Disparos</span><span id="shotsValue" class="sling-score-value">0</span></div>
+        <div class="sling-score-card"><span class="sling-score-label">Objetivos</span><span id="targetsValue" class="sling-score-value">0</span></div>
+      </div>
+    </section>
+
+    <section class="sling-chip-row">
+      <span class="sling-chip">PC: clic, arrastra y suelta</span>
+      <span class="sling-chip">Celular: toca, arrastra y suelta</span>
+      <span class="sling-chip">Tres niveles cortos y reinicio rapido</span>
+      <span class="sling-chip">Jugador:<strong id="playerNameValue">Invitado</strong></span>
+      <span class="sling-chip">Record:<strong id="bestScoreValue">0</strong></span>
+      <span id="bestMeta" class="sling-chip note">Sin marcas guardadas</span>
+      <button id="changePlayerBtn" class="sling-chip-btn" type="button">Cambiar jugador</button>
+      <button id="soundToggleBtn" class="sling-chip-btn secondary" type="button" aria-pressed="true">Sonido: activado</button>
+    </section>
+
+    <section class="sling-stage" aria-label="Juego de pollitos con resortera">
+      <canvas id="slingCanvas" width="900" height="470"></canvas>
+      <div id="overlay" class="sling-overlay">
+        <div class="sling-overlay-card">
+          <h2 id="overlayTitle">Listo para lanzar</h2>
+          <p id="overlayMessage">Usa la resortera para derribar los objetivos rojos. Cada nivel te da pocos disparos, asi que conviene tumbar cajas y objetivos con el mismo impacto.</p>
+          <ul>
+            <li>Arrastra el pollito hacia atras para cargar la resortera.</li>
+            <li>Suelta para disparar siguiendo la linea punteada.</li>
+            <li>Rompe cajas y elimina todos los objetivos rojos para pasar al siguiente nivel.</li>
+            <li>El mejor puntaje queda guardado junto al nombre del jugador.</li>
+          </ul>
+          <div class="sling-overlay-actions">
+            <button id="startBtn" class="sling-btn" type="button">Empezar</button>
+            <button id="backBtnTop" class="sling-btn secondary" type="button">Volver al menu</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="sling-footer">
+      <button id="resetBtn" class="sling-btn secondary" type="button">Reiniciar nivel</button>
+      <button id="nextBtn" class="sling-btn" type="button" disabled>Siguiente nivel</button>
+      <button id="backBtnBottom" class="sling-btn secondary" type="button">Salir al menu</button>
+      <div id="statusText" class="sling-status">Arrastra el pollito para disparar.</div>
+    </section>
+  </main>
+
+  <script src="/Juegos/arcade_shared.js"></script>
+  <script>
+    (function () {
+      var GAME_KEY = 'pollitos_cataplum';
+      var arcade = window.PCSArcade || null;
+      var canvas = document.getElementById('slingCanvas');
+      var ctx = canvas.getContext('2d');
+      var overlay = document.getElementById('overlay');
+      var overlayTitle = document.getElementById('overlayTitle');
+      var overlayMessage = document.getElementById('overlayMessage');
+      var startBtn = document.getElementById('startBtn');
+      var nextBtn = document.getElementById('nextBtn');
+      var resetBtn = document.getElementById('resetBtn');
+      var backBtnTop = document.getElementById('backBtnTop');
+      var backBtnBottom = document.getElementById('backBtnBottom');
+      var levelValue = document.getElementById('levelValue');
+      var scoreValue = document.getElementById('scoreValue');
+      var shotsValue = document.getElementById('shotsValue');
+      var targetsValue = document.getElementById('targetsValue');
+      var statusText = document.getElementById('statusText');
+      var playerNameValue = document.getElementById('playerNameValue');
+      var bestScoreValue = document.getElementById('bestScoreValue');
+      var bestMeta = document.getElementById('bestMeta');
+      var changePlayerBtn = document.getElementById('changePlayerBtn');
+      var soundToggleBtn = document.getElementById('soundToggleBtn');
+
+      var VIEW_WIDTH = 900;
+      var VIEW_HEIGHT = 470;
+      var GROUND_Y = 412;
+      var SLING = { x: 138, y: 332 };
+      var CHICK_RADIUS = 18;
+      var MAX_STRETCH = 94;
+      var GRAVITY = 920;
+      var AIR_FRICTION = 0.997;
+      var STOP_SPEED = 48;
+
+      var levels = [
+        {
+          shots: 4,
+          blocks: [
+            { x: 564, y: 350, w: 42, h: 62, hp: 2 },
+            { x: 612, y: 350, w: 42, h: 62, hp: 2 },
+            { x: 588, y: 298, w: 42, h: 46, hp: 2 },
+            { x: 696, y: 364, w: 52, h: 48, hp: 2 }
+          ],
+          targets: [
+            { x: 609, y: 280, r: 18 },
+            { x: 720, y: 342, r: 18 }
+          ]
+        },
+        {
+          shots: 4,
+          blocks: [
+            { x: 546, y: 364, w: 38, h: 48, hp: 2 },
+            { x: 590, y: 364, w: 38, h: 48, hp: 2 },
+            { x: 634, y: 364, w: 38, h: 48, hp: 2 },
+            { x: 568, y: 316, w: 38, h: 42, hp: 2 },
+            { x: 612, y: 316, w: 38, h: 42, hp: 2 },
+            { x: 746, y: 356, w: 56, h: 56, hp: 3 },
+            { x: 812, y: 330, w: 30, h: 82, hp: 2 }
+          ],
+          targets: [
+            { x: 592, y: 292, r: 16 },
+            { x: 631, y: 292, r: 16 },
+            { x: 774, y: 332, r: 18 }
+          ]
+        },
+        {
+          shots: 5,
+          blocks: [
+            { x: 520, y: 370, w: 40, h: 42, hp: 2 },
+            { x: 566, y: 370, w: 40, h: 42, hp: 2 },
+            { x: 612, y: 370, w: 40, h: 42, hp: 2 },
+            { x: 658, y: 370, w: 40, h: 42, hp: 2 },
+            { x: 543, y: 322, w: 40, h: 42, hp: 2 },
+            { x: 589, y: 322, w: 40, h: 42, hp: 3 },
+            { x: 635, y: 322, w: 40, h: 42, hp: 2 },
+            { x: 566, y: 274, w: 40, h: 42, hp: 2 },
+            { x: 612, y: 274, w: 40, h: 42, hp: 2 },
+            { x: 778, y: 350, w: 54, h: 62, hp: 3 }
+          ],
+          targets: [
+            { x: 588, y: 251, r: 16 },
+            { x: 631, y: 251, r: 16 },
+            { x: 609, y: 300, r: 16 },
+            { x: 804, y: 328, r: 18 }
+          ]
+        }
+      ];
+
+      var game = {
+        running: false,
+        dragging: false,
+        dragPointerId: null,
+        levelIndex: 0,
+        score: 0,
+        shotsTaken: 0,
+        shotsLeft: 0,
+        cleared: false,
+        gameOver: false,
+        bird: null,
+        blocks: [],
+        targets: [],
+        lastFrameTime: 0,
+        restTimer: 0,
+        scoreSaved: false
+      };
+
+      function playEffect(name) {
+        if (arcade) arcade.playEffect(name);
+      }
+
+      function refreshArcadeHud() {
+        if (!arcade) return;
+        var profile = arcade.getProfile();
+        var scores = arcade.getGameScores(GAME_KEY);
+        playerNameValue.textContent = profile.playerName || 'Invitado';
+        bestScoreValue.textContent = String(scores.best ? Number(scores.best.score || 0) : 0);
+        bestMeta.textContent = scores.best
+          ? 'Por ' + scores.best.playerName + (scores.best.detail ? ' · ' + scores.best.detail : '')
+          : 'Sin marcas guardadas';
+        soundToggleBtn.textContent = arcade.isSoundEnabled() ? 'Sonido: activado' : 'Sonido: apagado';
+        soundToggleBtn.setAttribute('aria-pressed', arcade.isSoundEnabled() ? 'true' : 'false');
+      }
+
+      function persistRunScore(detail) {
+        if (!arcade || game.scoreSaved || game.score <= 0) {
+          refreshArcadeHud();
+          return;
+        }
+        game.scoreSaved = true;
+        arcade.recordScore(GAME_KEY, game.score, { detail: detail || '' });
+        refreshArcadeHud();
+      }
+
+      refreshArcadeHud();
+
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function distance(ax, ay, bx, by) {
+        var dx = ax - bx;
+        var dy = ay - by;
+        return Math.sqrt(dx * dx + dy * dy);
+      }
+
+      function createBird() {
+        return {
+          x: SLING.x,
+          y: SLING.y,
+          radius: CHICK_RADIUS,
+          vx: 0,
+          vy: 0,
+          launched: false,
+          active: true,
+          trail: []
+        };
+      }
+
+      function cloneBlock(block) {
+        return {
+          x: block.x,
+          y: block.y,
+          w: block.w,
+          h: block.h,
+          hp: block.hp,
+          alive: true,
+          wobble: 0
+        };
+      }
+
+      function cloneTarget(target) {
+        return {
+          x: target.x,
+          y: target.y,
+          r: target.r,
+          alive: true,
+          pulse: Math.random() * Math.PI * 2
+        };
+      }
+
+      function currentLevel() {
+        return levels[game.levelIndex];
+      }
+
+      function updateScoreboard() {
+        levelValue.textContent = String(game.levelIndex + 1);
+        scoreValue.textContent = String(game.score);
+        shotsValue.textContent = String(game.shotsLeft);
+        targetsValue.textContent = String(game.targets.filter(function (target) { return target.alive; }).length);
+      }
+
+      function setStatus(text, kind) {
+        statusText.textContent = text;
+        statusText.classList.remove('success', 'error');
+        if (kind) statusText.classList.add(kind);
+      }
+
+      function showOverlay(title, message, startLabel, allowNext) {
+        overlayTitle.textContent = title;
+        overlayMessage.textContent = message;
+        startBtn.textContent = startLabel || 'Empezar';
+        nextBtn.disabled = !allowNext;
+        overlay.hidden = false;
+      }
+
+      function hideOverlay() {
+        overlay.hidden = true;
+      }
+
+      function loadLevel(index, keepScore) {
+        var normalizedIndex = clamp(index, 0, levels.length - 1);
+        game.levelIndex = normalizedIndex;
+        if (!keepScore) game.score = 0;
+        game.scoreSaved = false;
+        game.shotsTaken = 0;
+        game.shotsLeft = currentLevel().shots;
+        game.blocks = currentLevel().blocks.map(cloneBlock);
+        game.targets = currentLevel().targets.map(cloneTarget);
+        game.bird = createBird();
+        game.dragging = false;
+        game.dragPointerId = null;
+        game.running = false;
+        game.cleared = false;
+        game.gameOver = false;
+        game.restTimer = 0;
+        updateScoreboard();
+        setStatus('Arrastra el pollito y sueltalo para disparar.', '');
+        draw();
+      }
+
+      function beginLevel() {
+        if (game.gameOver) return;
+        hideOverlay();
+        game.running = true;
+        game.lastFrameTime = 0;
+        playEffect('start');
+        setStatus('Nivel en juego. Busca el angulo que tumbe varias piezas.', '');
+      }
+
+      function nextShot() {
+        if (game.cleared || game.gameOver) return;
+        if (game.shotsLeft <= 0) {
+          handleGameOver();
+          return;
+        }
+        game.bird = createBird();
+        game.restTimer = 0;
+        setStatus('Nuevo disparo listo. Ajusta mejor el angulo.', '');
+      }
+
+      function handleLevelCleared() {
+        if (game.cleared) return;
+        game.cleared = true;
+        game.running = false;
+        game.score += Math.max(0, game.shotsLeft) * 120;
+        updateScoreboard();
+        playEffect('win');
+        if (game.levelIndex >= levels.length - 1) {
+          persistRunScore('Completo ' + levels.length + ' niveles');
+          showOverlay('Juego completado', 'Limpiaste todos los niveles de Pollitos al cataplum. Puedes reiniciar para mejorar tu puntaje.', 'Jugar de nuevo', false);
+          setStatus('Completaste todos los niveles.', 'success');
+        } else {
+          showOverlay('Nivel despejado', 'Buen disparo. Ya puedes avanzar al siguiente nivel o repetir este para mejorar el puntaje.', 'Repetir nivel', true);
+          setStatus('Nivel completado. Puedes seguir al siguiente.', 'success');
+        }
+      }
+
+      function handleGameOver() {
+        if (game.gameOver) return;
+        game.gameOver = true;
+        game.running = false;
+        playEffect('fail');
+        persistRunScore('Hasta nivel ' + (game.levelIndex + 1));
+        showOverlay('Se acabaron los disparos', 'No quedan intentos en este nivel. Reinicialo para volver a intentarlo con otra estrategia.', 'Reintentar nivel', false);
+        setStatus('Sin disparos disponibles en este nivel.', 'error');
+      }
+
+      function destroyBlock(block) {
+        if (!block || !block.alive) return;
+        block.alive = false;
+        game.score += 45;
+        playEffect('hit');
+      }
+
+      function destroyTarget(target) {
+        if (!target || !target.alive) return;
+        target.alive = false;
+        game.score += 180;
+        playEffect('point');
+        if (game.targets.every(function (item) { return !item.alive; })) {
+          handleLevelCleared();
+        }
+      }
+
+      function getCanvasPoint(event) {
+        var rect = canvas.getBoundingClientRect();
+        var scaleX = VIEW_WIDTH / rect.width;
+        var scaleY = VIEW_HEIGHT / rect.height;
+        return {
+          x: (event.clientX - rect.left) * scaleX,
+          y: (event.clientY - rect.top) * scaleY
+        };
+      }
+
+      function pointerDown(event) {
+        if (!game.bird || game.bird.launched || game.cleared || game.gameOver) return;
+        var point = getCanvasPoint(event);
+        if (distance(point.x, point.y, game.bird.x, game.bird.y) > game.bird.radius * 1.8) return;
+        game.dragging = true;
+        game.dragPointerId = event.pointerId;
+        canvas.classList.add('dragging');
+        canvas.setPointerCapture(event.pointerId);
+        event.preventDefault();
+      }
+
+      function pointerMove(event) {
+        if (!game.dragging || event.pointerId !== game.dragPointerId || !game.bird) return;
+        var point = getCanvasPoint(event);
+        var dx = point.x - SLING.x;
+        var dy = point.y - SLING.y;
+        var dist = Math.sqrt(dx * dx + dy * dy) || 1;
+        var limited = Math.min(MAX_STRETCH, dist);
+        game.bird.x = SLING.x + (dx / dist) * limited;
+        game.bird.y = SLING.y + (dy / dist) * limited;
+        game.bird.trail = [];
+        draw();
+      }
+
+      function pointerUp(event) {
+        if (!game.dragging || event.pointerId !== game.dragPointerId || !game.bird) return;
+        game.dragging = false;
+        game.dragPointerId = null;
+        canvas.classList.remove('dragging');
+        try { canvas.releasePointerCapture(event.pointerId); } catch (_) {}
+
+        var dx = SLING.x - game.bird.x;
+        var dy = SLING.y - game.bird.y;
+        var power = Math.min(MAX_STRETCH, Math.sqrt(dx * dx + dy * dy));
+        if (power < 8) {
+          game.bird.x = SLING.x;
+          game.bird.y = SLING.y;
+          draw();
+          return;
+        }
+
+        game.bird.launched = true;
+        game.bird.vx = dx * 4.7;
+        game.bird.vy = dy * 4.7;
+        game.shotsTaken += 1;
+        game.shotsLeft = Math.max(0, game.shotsLeft - 1);
+        playEffect('launch');
+        updateScoreboard();
+        hideOverlay();
+        game.running = true;
+        setStatus('Disparo en curso. Busca abrir huecos y pegarle a varios objetivos.', '');
+        event.preventDefault();
+      }
+
+      function pointInsideRect(pointX, pointY, block) {
+        return pointX >= block.x && pointX <= block.x + block.w && pointY >= block.y && pointY <= block.y + block.h;
+      }
+
+      function resolveBirdVsBlock(block) {
+        if (!block.alive || !game.bird || !game.bird.active) return;
+        var closestX = clamp(game.bird.x, block.x, block.x + block.w);
+        var closestY = clamp(game.bird.y, block.y, block.y + block.h);
+        var dx = game.bird.x - closestX;
+        var dy = game.bird.y - closestY;
+        var distSq = dx * dx + dy * dy;
+        if (distSq > game.bird.radius * game.bird.radius) return;
+
+        var impact = Math.sqrt(game.bird.vx * game.bird.vx + game.bird.vy * game.bird.vy);
+        block.hp -= impact > 420 ? 2 : 1;
+        block.wobble = 0.45;
+
+        if (Math.abs(dx) > Math.abs(dy)) {
+          game.bird.vx *= -0.56;
+          game.bird.x = dx > 0 ? block.x + block.w + game.bird.radius : block.x - game.bird.radius;
+        } else {
+          game.bird.vy *= -0.52;
+          game.bird.y = dy > 0 ? block.y + block.h + game.bird.radius : block.y - game.bird.radius;
+        }
+
+        if (block.hp <= 0) {
+          destroyBlock(block);
+        }
+      }
+
+      function resolveBirdVsTarget(target) {
+        if (!target.alive || !game.bird || !game.bird.active) return;
+        var dx = game.bird.x - target.x;
+        var dy = game.bird.y - target.y;
+        var dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist > game.bird.radius + target.r) return;
+        destroyTarget(target);
+        game.bird.vx *= 0.72;
+        game.bird.vy *= 0.72;
+      }
+
+      function resolveSplashDamage(block, target) {
+          if (!target.alive) return;
+        var cx = block.x + block.w / 2;
+        var cy = block.y + block.h / 2;
+        if (distance(cx, cy, target.x, target.y) <= target.r + Math.max(block.w, block.h) * 0.7) {
+          destroyTarget(target);
+        }
+      }
+
+      function update(delta) {
+        if (!game.running || !game.bird) return;
+
+        game.blocks.forEach(function (block) {
+          if (block.alive && block.wobble > 0) block.wobble = Math.max(0, block.wobble - delta * 1.7);
+        });
+        game.targets.forEach(function (target) {
+          if (target.alive) target.pulse += delta * 2.6;
+        });
+
+        if (!game.dragging && game.bird.active && game.bird.launched) {
+          game.bird.vy += GRAVITY * delta;
+          game.bird.vx *= AIR_FRICTION;
+          game.bird.vy *= AIR_FRICTION;
+          game.bird.x += game.bird.vx * delta;
+          game.bird.y += game.bird.vy * delta;
+
+          if (game.bird.y + game.bird.radius >= GROUND_Y) {
+            game.bird.y = GROUND_Y - game.bird.radius;
+            game.bird.vy *= -0.36;
+            game.bird.vx *= 0.8;
+            playEffect('bounce');
+          }
+
+          if (game.bird.x - game.bird.radius <= 0) {
+            game.bird.x = game.bird.radius;
+            game.bird.vx *= -0.48;
+            playEffect('bounce');
+          }
+          if (game.bird.x + game.bird.radius >= VIEW_WIDTH) {
+            game.bird.x = VIEW_WIDTH - game.bird.radius;
+            game.bird.vx *= -0.48;
+            playEffect('bounce');
+          }
+
+          if (game.bird.trail.length > 26) game.bird.trail.shift();
+          game.bird.trail.push({ x: game.bird.x, y: game.bird.y });
+
+          game.blocks.forEach(resolveBirdVsBlock);
+          game.targets.forEach(resolveBirdVsTarget);
+
+          game.blocks.forEach(function (block) {
+            if (!block.alive) {
+              game.targets.forEach(function (target) {
+                resolveSplashDamage(block, target);
+              });
+            }
+          });
+
+          var speed = Math.sqrt(game.bird.vx * game.bird.vx + game.bird.vy * game.bird.vy);
+          if (speed < STOP_SPEED && game.bird.y + game.bird.radius >= GROUND_Y - 2) {
+            game.restTimer += delta;
+          } else {
+            game.restTimer = 0;
+          }
+
+          if (game.bird.x > VIEW_WIDTH + 120 || game.bird.y > VIEW_HEIGHT + 120 || game.restTimer > 0.85) {
+            game.running = false;
+            if (!game.cleared) {
+              nextShot();
+            }
+          }
+        }
+      }
+
+      function drawBackground() {
+        ctx.clearRect(0, 0, VIEW_WIDTH, VIEW_HEIGHT);
+
+        ctx.fillStyle = '#dff6ff';
+        ctx.fillRect(0, 0, VIEW_WIDTH, VIEW_HEIGHT);
+
+        ctx.fillStyle = 'rgba(255,255,255,0.92)';
+        ctx.beginPath();
+        ctx.arc(144, 78, 36, 0, Math.PI * 2);
+        ctx.arc(182, 70, 28, 0, Math.PI * 2);
+        ctx.arc(214, 84, 34, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(718, 92, 28, 0, Math.PI * 2);
+        ctx.arc(751, 82, 24, 0, Math.PI * 2);
+        ctx.arc(782, 94, 30, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#8dcf7f';
+        ctx.beginPath();
+        ctx.moveTo(0, 330);
+        ctx.quadraticCurveTo(90, 274, 178, 320);
+        ctx.quadraticCurveTo(270, 360, 390, 330);
+        ctx.quadraticCurveTo(520, 292, 650, 336);
+        ctx.quadraticCurveTo(760, 370, 900, 318);
+        ctx.lineTo(900, VIEW_HEIGHT);
+        ctx.lineTo(0, VIEW_HEIGHT);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#4f9a45';
+        ctx.fillRect(0, GROUND_Y, VIEW_WIDTH, VIEW_HEIGHT - GROUND_Y);
+      }
+
+      function drawSlingshot() {
+        ctx.save();
+        ctx.lineCap = 'round';
+        ctx.lineWidth = 12;
+        ctx.strokeStyle = '#6f431f';
+        ctx.beginPath();
+        ctx.moveTo(SLING.x - 22, GROUND_Y + 2);
+        ctx.lineTo(SLING.x - 22, SLING.y - 16);
+        ctx.moveTo(SLING.x + 18, GROUND_Y + 2);
+        ctx.lineTo(SLING.x + 18, SLING.y - 16);
+        ctx.stroke();
+
+        var backPoint = { x: SLING.x - 10, y: SLING.y - 4 };
+        var frontPoint = { x: SLING.x + 10, y: SLING.y - 4 };
+        var pouchX = game.bird ? game.bird.x : SLING.x;
+        var pouchY = game.bird ? game.bird.y : SLING.y;
+        if (game.bird && !game.bird.launched) {
+          ctx.lineWidth = 5;
+          ctx.strokeStyle = '#4b2817';
+          ctx.beginPath();
+          ctx.moveTo(backPoint.x, backPoint.y);
+          ctx.lineTo(pouchX, pouchY);
+          ctx.lineTo(frontPoint.x, frontPoint.y);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      function drawBird() {
+        if (!game.bird || !game.bird.active) return;
+
+        if (game.bird.trail && game.bird.trail.length) {
+          game.bird.trail.forEach(function (point, index) {
+            var alpha = (index + 1) / game.bird.trail.length;
+            ctx.fillStyle = 'rgba(255, 188, 78, ' + (alpha * 0.18).toFixed(3) + ')';
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, 4 + alpha * 2, 0, Math.PI * 2);
+            ctx.fill();
+          });
+        }
+
+        ctx.save();
+        ctx.translate(game.bird.x, game.bird.y);
+        ctx.fillStyle = '#ffe678';
+        ctx.beginPath();
+        ctx.arc(0, 0, game.bird.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(255, 164, 69, 0.24)';
+        ctx.beginPath();
+        ctx.arc(-5, 6, game.bird.radius * 0.72, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#143047';
+        ctx.beginPath();
+        ctx.arc(-6, -2, 2.6, 0, Math.PI * 2);
+        ctx.arc(7, -2, 2.6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#f27d28';
+        ctx.beginPath();
+        ctx.moveTo(game.bird.radius - 2, 1);
+        ctx.lineTo(game.bird.radius + 12, -4);
+        ctx.lineTo(game.bird.radius + 12, 6);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function drawAimGuide() {
+        if (!game.dragging || !game.bird || game.bird.launched) return;
+
+        var vx = (SLING.x - game.bird.x) * 4.7;
+        var vy = (SLING.y - game.bird.y) * 4.7;
+        for (var i = 1; i <= 6; i += 1) {
+          var step = i * 0.12;
+          var px = game.bird.x + vx * step;
+          var py = game.bird.y + vy * step + 0.5 * GRAVITY * step * step;
+          ctx.fillStyle = 'rgba(255,255,255,' + (0.16 + i * 0.08).toFixed(2) + ')';
+          ctx.beginPath();
+          ctx.arc(px, py, Math.max(3, 8 - i), 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      function drawBlocks() {
+        game.blocks.forEach(function (block) {
+          if (!block.alive) return;
+          var wobbleOffset = Math.sin(block.wobble * 24) * block.wobble * 7;
+          ctx.save();
+          ctx.translate(block.x + block.w / 2, block.y + block.h / 2);
+          ctx.rotate(wobbleOffset * 0.03);
+          ctx.fillStyle = block.hp >= 3 ? '#bb7141' : '#d7a268';
+          ctx.strokeStyle = 'rgba(87, 46, 19, 0.42)';
+          ctx.lineWidth = 2;
+          ctx.fillRect(-block.w / 2, -block.h / 2, block.w, block.h);
+          ctx.strokeRect(-block.w / 2, -block.h / 2, block.w, block.h);
+          ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+          ctx.beginPath();
+          ctx.moveTo(-block.w / 2 + 6, -block.h / 2 + 6);
+          ctx.lineTo(block.w / 2 - 6, block.h / 2 - 6);
+          ctx.moveTo(block.w / 2 - 6, -block.h / 2 + 6);
+          ctx.lineTo(-block.w / 2 + 6, block.h / 2 - 6);
+          ctx.stroke();
+          ctx.restore();
+        });
+      }
+
+      function drawTargets() {
+        game.targets.forEach(function (target) {
+          if (!target.alive) return;
+          var pulse = 1 + Math.sin(target.pulse) * 0.06;
+          ctx.save();
+          ctx.translate(target.x, target.y);
+          ctx.scale(pulse, pulse);
+          ctx.fillStyle = '#ef7355';
+          ctx.beginPath();
+          ctx.arc(0, 0, target.r, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#fff7f4';
+          ctx.beginPath();
+          ctx.arc(-5, -3, 3.3, 0, Math.PI * 2);
+          ctx.arc(5, -3, 3.3, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#8b1f15';
+          ctx.fillRect(-9, 7, 18, 3);
+          ctx.restore();
+        });
+      }
+
+      function draw() {
+        drawBackground();
+        drawBlocks();
+        drawTargets();
+        drawSlingshot();
+        drawAimGuide();
+        drawBird();
+      }
+
+      function frame(timestamp) {
+        if (!game.lastFrameTime) game.lastFrameTime = timestamp;
+        var delta = Math.min(0.033, (timestamp - game.lastFrameTime) / 1000);
+        game.lastFrameTime = timestamp;
+        update(delta);
+        updateScoreboard();
+        draw();
+        requestAnimationFrame(frame);
+      }
+
+      function resetLevel() {
+        loadLevel(game.levelIndex, true);
+        showOverlay('Nivel reiniciado', 'Ajusta mejor el angulo o busca primero abrir el centro de la estructura.', 'Volver al nivel', false);
+        setStatus('Nivel reiniciado. Ajusta otro disparo.', '');
+      }
+
+      function goToMenu() {
+        window.location.href = '/Juegos/menu_juegos.html';
+      }
+
+      startBtn.addEventListener('click', function () {
+        if (arcade) {
+          arcade.ensurePlayerName('Escribe el nombre que quieres usar en Pollitos al cataplum');
+          refreshArcadeHud();
+        }
+        if (game.cleared && game.levelIndex >= levels.length - 1) {
+          loadLevel(0, false);
+          } else if (game.cleared) {
+            loadLevel(game.levelIndex, true);
+        }
+        if (game.gameOver) {
+          loadLevel(game.levelIndex, true);
+        }
+        beginLevel();
+      });
+
+      nextBtn.addEventListener('click', function () {
+        if (game.levelIndex >= levels.length - 1) {
+          loadLevel(0, false);
+        } else {
+          loadLevel(game.levelIndex + 1, true);
+        }
+        showOverlay('Siguiente nivel listo', 'El siguiente reto tiene mas cajas y menos margen de error. Cuando quieras, lanza el primer disparo.', 'Empezar siguiente nivel', false);
+        setStatus('Nuevo nivel preparado.', 'success');
+      });
+
+      resetBtn.addEventListener('click', resetLevel);
+      backBtnTop.addEventListener('click', goToMenu);
+      backBtnBottom.addEventListener('click', goToMenu);
+      changePlayerBtn.addEventListener('click', function () {
+        if (!arcade) return;
+        arcade.promptPlayerName('Actualiza el nombre del jugador para los marcadores');
+        refreshArcadeHud();
+      });
+      soundToggleBtn.addEventListener('click', function () {
+        if (!arcade) return;
+        arcade.toggleSoundEnabled();
+        refreshArcadeHud();
+      });
+      window.addEventListener('pcs-arcade-store-changed', refreshArcadeHud);
+
+      canvas.addEventListener('pointerdown', pointerDown);
+      canvas.addEventListener('pointermove', pointerMove);
+      canvas.addEventListener('pointerup', pointerUp);
+      canvas.addEventListener('pointercancel', pointerUp);
+
+      loadLevel(0, false);
+      requestAnimationFrame(frame);
+    })();
+  </script>
+</body>
+</html>

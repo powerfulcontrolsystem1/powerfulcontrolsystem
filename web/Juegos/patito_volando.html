@@ -1,0 +1,892 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Patito volando</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <link rel="icon" type="image/png" href="/img/punto_venta.png">
+  <script src="/menu.js"></script>
+  <style>
+    :root {
+      --duck-bg-top: #ecfff9;
+      --duck-bg-bottom: #76ccff;
+      --duck-ink: #133047;
+      --duck-frame: rgba(255, 251, 243, 0.9);
+      --duck-border: rgba(19, 48, 71, 0.14);
+      --duck-accent: #ff8d3b;
+      --duck-accent-dark: #d65a11;
+      --duck-success: #2f8b4a;
+    }
+
+    html,
+    body {
+      height: 100%;
+    }
+
+    body.duck-game-page {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 72px 12px 12px;
+      box-sizing: border-box;
+      color: var(--duck-ink);
+      background:
+        radial-gradient(circle at top left, rgba(255, 224, 121, 0.64), transparent 34%),
+        linear-gradient(180deg, var(--duck-bg-top), var(--duck-bg-bottom));
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .duck-window {
+      position: relative;
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      width: min(700px, calc(100vw - 24px));
+      height: min(700px, calc(100vh - 84px));
+      padding: 18px;
+      box-sizing: border-box;
+      border-radius: 28px;
+      border: 1px solid var(--duck-border);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), var(--duck-frame));
+      box-shadow: 0 28px 60px rgba(19, 48, 71, 0.2);
+      overflow: hidden;
+    }
+
+    .duck-window-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .duck-window-header h1 {
+      margin: 4px 0 0;
+      font-size: clamp(1.8rem, 3vw, 2.4rem);
+      line-height: 1;
+    }
+
+    .duck-tag {
+      margin: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: rgba(19, 48, 71, 0.08);
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-size: 0.78rem;
+    }
+
+    .duck-scoreboard {
+      display: grid;
+      gap: 8px;
+      min-width: 150px;
+    }
+
+    .duck-score-card {
+      padding: 12px 14px;
+      border-radius: 18px;
+      background: rgba(19, 48, 71, 0.06);
+      border: 1px solid rgba(19, 48, 71, 0.08);
+      text-align: right;
+    }
+
+    .duck-score-label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: rgba(19, 48, 71, 0.7);
+    }
+
+    .duck-score-value {
+      display: block;
+      margin-top: 3px;
+      font-size: 1.42rem;
+      font-weight: 900;
+    }
+
+    .duck-score-meta {
+      display: block;
+      margin-top: 4px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: rgba(19, 48, 71, 0.62);
+    }
+
+    .duck-meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .duck-pill,
+    .duck-mini-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      padding: 9px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(19, 48, 71, 0.1);
+      background: rgba(255, 255, 255, 0.86);
+      font: inherit;
+      font-weight: 800;
+      color: var(--duck-ink);
+    }
+
+    .duck-pill strong {
+      margin-left: 8px;
+      font-weight: 900;
+    }
+
+    .duck-mini-btn {
+      cursor: pointer;
+    }
+
+    .duck-mini-btn.secondary {
+      background: rgba(19, 48, 71, 0.08);
+    }
+
+    .duck-intro-banner {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 12px 0;
+    }
+
+    .duck-banner-chip {
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.84);
+      border: 1px solid rgba(19, 48, 71, 0.09);
+      font-weight: 700;
+    }
+
+    .duck-stage {
+      position: relative;
+      min-height: 0;
+      border-radius: 24px;
+      overflow: hidden;
+      background: linear-gradient(180deg, #dbf8ff 0%, #7ccfff 72%, #67c067 72%, #3f8f3c 100%);
+      border: 1px solid rgba(19, 48, 71, 0.12);
+    }
+
+    #duckCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      touch-action: none;
+    }
+
+    .duck-overlay {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 22px;
+      background: linear-gradient(180deg, rgba(11, 35, 54, 0.08), rgba(11, 35, 54, 0.44));
+      z-index: 2;
+    }
+
+    .duck-overlay-card {
+      width: min(100%, 420px);
+      padding: 22px;
+      border-radius: 24px;
+      background: rgba(255, 252, 246, 0.96);
+      border: 1px solid rgba(19, 48, 71, 0.1);
+      box-shadow: 0 22px 48px rgba(19, 48, 71, 0.18);
+    }
+
+    .duck-overlay-card h2 {
+      margin: 0 0 12px;
+      font-size: 1.8rem;
+    }
+
+    .duck-overlay-card p {
+      margin: 0 0 10px;
+      line-height: 1.6;
+    }
+
+    .duck-overlay[hidden] {
+      display: none;
+    }
+
+    .duck-overlay-card ul {
+      margin: 0;
+      padding-left: 20px;
+      line-height: 1.6;
+    }
+
+    .duck-overlay-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .duck-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 50px;
+      padding: 12px 18px;
+      border: none;
+      border-radius: 16px;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+      color: #fffdf9;
+      background: linear-gradient(135deg, var(--duck-accent), var(--duck-accent-dark));
+      box-shadow: 0 16px 32px rgba(214, 90, 17, 0.26);
+    }
+
+    .duck-btn.secondary {
+      color: var(--duck-ink);
+      background: rgba(19, 48, 71, 0.08);
+      box-shadow: none;
+    }
+
+    .duck-countdown-card {
+      text-align: center;
+      display: grid;
+      justify-items: center;
+      gap: 12px;
+    }
+
+    .duck-countdown-value {
+      font-size: clamp(4rem, 16vw, 6rem);
+      line-height: 0.9;
+      font-weight: 900;
+      color: var(--duck-accent-dark);
+      letter-spacing: 0.04em;
+    }
+
+    .duck-countdown-note {
+      margin: 0;
+      font-weight: 800;
+      color: rgba(19, 48, 71, 0.72);
+    }
+
+    .duck-controls {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .duck-control-button {
+      min-height: 62px;
+      border: none;
+      border-radius: 20px;
+      background: linear-gradient(135deg, #ffe17b, #ff9f48);
+      color: #143047;
+      font: inherit;
+      font-weight: 900;
+      font-size: 1.02rem;
+      cursor: pointer;
+      box-shadow: 0 18px 28px rgba(255, 143, 59, 0.24);
+      touch-action: none;
+    }
+
+    .duck-controls p {
+      margin: 0;
+      font-size: 0.94rem;
+      color: rgba(19, 48, 71, 0.72);
+    }
+
+    .duck-status-text {
+      font-weight: 700;
+      color: var(--duck-success);
+    }
+
+    @media (max-width: 760px) {
+      body.duck-game-page {
+        padding-top: 66px;
+      }
+
+      .duck-window {
+        width: min(100vw - 16px, 700px);
+        height: min(100vh - 72px, 700px);
+        padding: 14px;
+        border-radius: 22px;
+      }
+
+      .duck-window-header {
+        grid-template-columns: 1fr;
+        display: grid;
+      }
+
+      .duck-scoreboard {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .duck-score-card {
+        text-align: left;
+      }
+    }
+
+    @media (max-width: 560px) {
+      body.duck-game-page {
+        display: block;
+        padding: 62px 8px calc(12px + env(safe-area-inset-bottom, 0px));
+      }
+
+      .duck-window {
+        margin: 0 auto;
+        width: min(100vw - 12px, 700px);
+        height: auto;
+        padding: 12px;
+        border-radius: 20px;
+        grid-template-rows: auto auto minmax(260px, 1fr) auto;
+      }
+
+      .duck-stage {
+        min-height: clamp(260px, 44vh, 360px);
+      }
+
+      .duck-meta-row,
+      .duck-intro-banner,
+      .duck-overlay-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .duck-pill,
+      .duck-mini-btn,
+      .duck-btn,
+      .duck-control-button {
+        width: 100%;
+      }
+
+      .duck-overlay-card {
+        padding: 18px;
+        border-radius: 20px;
+      }
+
+      .duck-countdown-value {
+        font-size: clamp(3.4rem, 22vw, 5rem);
+      }
+    }
+  </style>
+</head>
+<body class="duck-game-page">
+  <main class="duck-window">
+    <header class="duck-window-header">
+      <div>
+        <p class="duck-tag">Juego rapido</p>
+        <h1>Patito volando</h1>
+        <div class="duck-meta-row">
+          <span class="duck-pill">Jugador:<strong id="playerNameValue">Invitado</strong></span>
+          <button id="changePlayerBtn" class="duck-mini-btn" type="button">Cambiar jugador</button>
+          <button id="soundToggleBtn" class="duck-mini-btn secondary" type="button" aria-pressed="true">Sonido: activado</button>
+        </div>
+      </div>
+      <div class="duck-scoreboard" aria-live="polite">
+        <div class="duck-score-card">
+          <span class="duck-score-label">Puntaje</span>
+          <span id="scoreValue" class="duck-score-value">0</span>
+        </div>
+        <div class="duck-score-card">
+          <span class="duck-score-label">Mejor marca</span>
+          <span id="bestValue" class="duck-score-value">0</span>
+          <small id="bestMeta" class="duck-score-meta">Sin marcas guardadas</small>
+        </div>
+      </div>
+    </header>
+
+    <div class="duck-intro-banner">
+      <span class="duck-banner-chip">PC: usa y mantén la barra espaciadora</span>
+      <span class="duck-banner-chip">Celular: toca la pantalla</span>
+      <span class="duck-banner-chip">Objetivo: subir, bajar y esquivar obstaculos</span>
+    </div>
+
+    <section class="duck-stage" aria-label="Juego del patito volando">
+      <canvas id="duckCanvas" width="640" height="420"></canvas>
+
+      <div id="introOverlay" class="duck-overlay">
+        <div class="duck-overlay-card">
+          <h2>Como jugar</h2>
+          <p>Este juego se controla con una sola accion: cuando presionas, el patito sube; cuando sueltas, vuelve a bajar.</p>
+          <ul>
+            <li>PC: mantén presionada la barra espaciadora.</li>
+            <li>Celular: toca la pantalla o mantén el boton inferior.</li>
+            <li>Ganas un punto por cada obstaculo que logres pasar.</li>
+            <li>La mejor marca queda guardada junto al nombre del jugador.</li>
+          </ul>
+          <div class="duck-overlay-actions">
+            <button id="startGameBtn" class="duck-btn" type="button">Comenzar partida</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="countdownOverlay" class="duck-overlay" hidden>
+        <div class="duck-overlay-card duck-countdown-card">
+          <p class="duck-tag">Cuenta regresiva</p>
+          <div id="countdownValue" class="duck-countdown-value">5</div>
+          <p id="countdownText" class="duck-countdown-note">La partida empieza en 5 segundos.</p>
+        </div>
+      </div>
+
+      <div id="gameOverOverlay" class="duck-overlay" hidden>
+        <div class="duck-overlay-card">
+          <h2>Fin del vuelo</h2>
+          <p id="gameOverText">El patito se golpeo con un obstaculo.</p>
+          <div class="duck-overlay-actions">
+            <button id="restartGameBtn" class="duck-btn" type="button">Jugar otra vez</button>
+            <button id="backLobbyBtn" class="duck-btn secondary" type="button">Volver al menu</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="duck-controls">
+      <button id="controlButton" class="duck-control-button" type="button">Mantén presionado para elevar al patito</button>
+      <p><span class="duck-status-text" id="inputStatus">Esperando inicio...</span></p>
+    </div>
+  </main>
+
+  <script src="/Juegos/arcade_shared.js"></script>
+  <script>
+    (function () {
+      var GAME_KEY = 'patito_volando';
+      var arcade = window.PCSArcade || null;
+      var canvas = document.getElementById('duckCanvas');
+      var ctx = canvas.getContext('2d');
+      var scoreEl = document.getElementById('scoreValue');
+      var bestEl = document.getElementById('bestValue');
+      var bestMetaEl = document.getElementById('bestMeta');
+      var playerNameEl = document.getElementById('playerNameValue');
+      var introOverlayEl = document.getElementById('introOverlay');
+      var countdownOverlayEl = document.getElementById('countdownOverlay');
+      var countdownValueEl = document.getElementById('countdownValue');
+      var countdownTextEl = document.getElementById('countdownText');
+      var gameOverOverlayEl = document.getElementById('gameOverOverlay');
+      var gameOverTextEl = document.getElementById('gameOverText');
+      var inputStatusEl = document.getElementById('inputStatus');
+      var controlButtonEl = document.getElementById('controlButton');
+      var changePlayerBtnEl = document.getElementById('changePlayerBtn');
+      var soundToggleBtnEl = document.getElementById('soundToggleBtn');
+      var startGameBtnEl = document.getElementById('startGameBtn');
+      var restartGameBtnEl = document.getElementById('restartGameBtn');
+      var backLobbyBtnEl = document.getElementById('backLobbyBtn');
+
+      var legacyBestScore = Number(localStorage.getItem('pcs_duck_best_score') || 0);
+      var bestScore = 0;
+      var state = {
+        running: false,
+        intro: true,
+        gameOver: false,
+        countdownActive: false,
+        countdownTimer: 0,
+        launchTimer: 0,
+        pressing: false,
+        score: 0,
+        frame: 0,
+        lastSpawnFrame: 0,
+        duck: { x: 122, y: 210, radius: 22, velocityY: 0 },
+        obstacles: [],
+        clouds: [
+          { x: 96, y: 64, width: 76 },
+          { x: 298, y: 112, width: 58 },
+          { x: 520, y: 84, width: 88 }
+        ]
+      };
+
+      function playEffect(name) {
+        if (arcade) arcade.playEffect(name);
+      }
+
+      function migrateLegacyBestScore() {
+        if (!arcade || !legacyBestScore) return;
+        var currentBest = arcade.getGameScores(GAME_KEY).best;
+        var currentBestScore = currentBest ? Number(currentBest.score || 0) : 0;
+        if (legacyBestScore > currentBestScore) {
+          arcade.recordScore(GAME_KEY, legacyBestScore, {
+            playerName: 'Historial',
+            detail: 'Record previo'
+          });
+        }
+        try {
+          localStorage.removeItem('pcs_duck_best_score');
+        } catch (_) {}
+      }
+
+      function refreshArcadeHud() {
+        if (!arcade) {
+          bestEl.textContent = String(bestScore);
+          return;
+        }
+        var profile = arcade.getProfile();
+        var scores = arcade.getGameScores(GAME_KEY);
+        bestScore = scores.best ? Number(scores.best.score || 0) : 0;
+        playerNameEl.textContent = profile.playerName || 'Invitado';
+        bestEl.textContent = String(bestScore);
+        bestMetaEl.textContent = scores.best
+          ? 'Por ' + scores.best.playerName + (scores.best.detail ? ' · ' + scores.best.detail : '')
+          : 'Sin marcas guardadas';
+        soundToggleBtnEl.textContent = arcade.isSoundEnabled() ? 'Sonido: activado' : 'Sonido: apagado';
+        soundToggleBtnEl.setAttribute('aria-pressed', arcade.isSoundEnabled() ? 'true' : 'false');
+      }
+
+      function persistRunScore() {
+        if (!arcade || state.score <= 0) {
+          refreshArcadeHud();
+          return;
+        }
+        arcade.recordScore(GAME_KEY, state.score, {
+          detail: state.score + ' obstaculos'
+        });
+        refreshArcadeHud();
+      }
+
+      migrateLegacyBestScore();
+      refreshArcadeHud();
+
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function clearCountdownTimers() {
+        if (state.countdownTimer) {
+          window.clearInterval(state.countdownTimer);
+          state.countdownTimer = 0;
+        }
+        if (state.launchTimer) {
+          window.clearTimeout(state.launchTimer);
+          state.launchTimer = 0;
+        }
+        state.countdownActive = false;
+        countdownOverlayEl.hidden = true;
+      }
+
+      function updateCountdownDisplay(secondsLeft) {
+        if (secondsLeft > 0) {
+          countdownValueEl.textContent = String(secondsLeft);
+          countdownTextEl.textContent = 'La partida empieza en ' + secondsLeft + (secondsLeft === 1 ? ' segundo.' : ' segundos.');
+          setInputStatus('Despegue en ' + secondsLeft + '...');
+          return;
+        }
+        countdownValueEl.textContent = 'YA';
+        countdownTextEl.textContent = 'Despegando...';
+        setInputStatus('Despegando...');
+      }
+
+      function setInputStatus(text) {
+        inputStatusEl.textContent = text;
+      }
+
+      function setPressing(value) {
+        var nextValue = !!value;
+        if (state.running && nextValue && !state.pressing) {
+          playEffect('lift');
+        }
+        state.pressing = nextValue;
+        if (!state.running) {
+          setInputStatus('Esperando inicio...');
+          return;
+        }
+        setInputStatus(state.pressing ? 'Subiendo...' : 'Bajando...');
+      }
+
+      function resetWorld() {
+        clearCountdownTimers();
+        state.running = true;
+        state.intro = false;
+        state.gameOver = false;
+        state.score = 0;
+        state.frame = 0;
+        state.lastSpawnFrame = 0;
+        state.obstacles = [];
+        state.duck.y = canvas.height * 0.5;
+        state.duck.velocityY = 0;
+        introOverlayEl.hidden = true;
+        gameOverOverlayEl.hidden = true;
+        scoreEl.textContent = '0';
+        setPressing(false);
+        setInputStatus('Presiona o mantén para elevar al patito.');
+      }
+
+      function queueStartGame() {
+        if (state.countdownActive) return;
+        if (arcade) {
+          arcade.ensurePlayerName('Escribe el nombre que quieres usar en Patito volando');
+          refreshArcadeHud();
+        }
+        clearCountdownTimers();
+        state.running = false;
+        state.intro = false;
+        state.gameOver = false;
+        state.pressing = false;
+        introOverlayEl.hidden = true;
+        gameOverOverlayEl.hidden = true;
+        countdownOverlayEl.hidden = false;
+        state.countdownActive = true;
+
+        var remaining = 5;
+        updateCountdownDisplay(remaining);
+        playEffect('countdownTick');
+
+        state.countdownTimer = window.setInterval(function () {
+          remaining -= 1;
+          if (remaining > 0) {
+            updateCountdownDisplay(remaining);
+            playEffect('countdownTick');
+            return;
+          }
+
+          window.clearInterval(state.countdownTimer);
+          state.countdownTimer = 0;
+          updateCountdownDisplay(0);
+          playEffect('countdownGo');
+          state.launchTimer = window.setTimeout(function () {
+            state.launchTimer = 0;
+            resetWorld();
+            playEffect('start');
+          }, 420);
+        }, 1000);
+      }
+
+      function openLobby() {
+        window.location.href = '/Juegos/menu_juegos.html';
+      }
+
+      function spawnObstacle() {
+        var gapHeight = 156;
+        var margin = 54;
+        var gapY = margin + Math.random() * (canvas.height - gapHeight - margin * 2);
+        state.obstacles.push({
+          x: canvas.width + 80,
+          width: 74,
+          gapY: gapY,
+          gapHeight: gapHeight,
+          scored: false
+        });
+      }
+
+      function endGame(reason) {
+        state.running = false;
+        state.gameOver = true;
+        state.pressing = false;
+        playEffect('fail');
+        persistRunScore();
+        gameOverTextEl.textContent = reason + ' Puntaje final: ' + state.score + '.';
+        gameOverOverlayEl.hidden = false;
+        setInputStatus('Juego terminado.');
+      }
+
+      function update() {
+        if (!state.running) return;
+
+        state.frame += 1;
+        if (state.frame - state.lastSpawnFrame > 118) {
+          spawnObstacle();
+          state.lastSpawnFrame = state.frame;
+        }
+
+        if (state.pressing) {
+          state.duck.velocityY -= 0.42;
+        }
+        state.duck.velocityY += 0.28;
+        state.duck.velocityY = clamp(state.duck.velocityY, -5.9, 6.4);
+        state.duck.y += state.duck.velocityY;
+
+        if (state.duck.y - state.duck.radius <= 8 || state.duck.y + state.duck.radius >= canvas.height - 24) {
+          endGame('El patito choco con el borde del escenario.');
+          return;
+        }
+
+        for (var i = state.obstacles.length - 1; i >= 0; i -= 1) {
+          var obstacle = state.obstacles[i];
+          obstacle.x -= 3.15;
+          if (!obstacle.scored && obstacle.x + obstacle.width < state.duck.x - state.duck.radius) {
+            obstacle.scored = true;
+            state.score += 1;
+            scoreEl.textContent = String(state.score);
+            playEffect('point');
+          }
+          if (obstacle.x + obstacle.width < -20) {
+            state.obstacles.splice(i, 1);
+            continue;
+          }
+
+          var withinX = state.duck.x + state.duck.radius > obstacle.x && state.duck.x - state.duck.radius < obstacle.x + obstacle.width;
+          var hitsTop = state.duck.y - state.duck.radius < obstacle.gapY;
+          var hitsBottom = state.duck.y + state.duck.radius > obstacle.gapY + obstacle.gapHeight;
+          if (withinX && (hitsTop || hitsBottom)) {
+            endGame('El patito golpeo un obstaculo.');
+            return;
+          }
+        }
+      }
+
+      function drawCloud(x, y, width) {
+        ctx.fillStyle = 'rgba(255,255,255,0.92)';
+        ctx.beginPath();
+        ctx.arc(x, y, width * 0.18, 0, Math.PI * 2);
+        ctx.arc(x + width * 0.18, y - 14, width * 0.22, 0, Math.PI * 2);
+        ctx.arc(x + width * 0.38, y, width * 0.18, 0, Math.PI * 2);
+        ctx.arc(x + width * 0.54, y - 10, width * 0.16, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      function drawDuck() {
+        var duck = state.duck;
+        ctx.save();
+        ctx.translate(duck.x, duck.y);
+        ctx.rotate(clamp(duck.velocityY * 0.03, -0.42, 0.42));
+
+        ctx.fillStyle = '#ffd45d';
+        ctx.beginPath();
+        ctx.arc(0, 0, duck.radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = 'rgba(255, 154, 62, 0.26)';
+        ctx.beginPath();
+        ctx.arc(-6, 6, duck.radius * 0.82, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#143047';
+        ctx.beginPath();
+        ctx.arc(-7, -5, 4, 0, Math.PI * 2);
+        ctx.arc(7, -5, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#f46c1f';
+        ctx.beginPath();
+        ctx.moveTo(duck.radius - 2, 2);
+        ctx.lineTo(duck.radius + 22, 10);
+        ctx.lineTo(duck.radius - 2, 18);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#fff4b2';
+        ctx.beginPath();
+        ctx.ellipse(-4, 4, 12, 8, -0.4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+      }
+
+      function drawObstacles() {
+        state.obstacles.forEach(function (obstacle) {
+          ctx.fillStyle = '#2f9f52';
+          ctx.fillRect(obstacle.x, 0, obstacle.width, obstacle.gapY);
+          ctx.fillRect(obstacle.x, obstacle.gapY + obstacle.gapHeight, obstacle.width, canvas.height - obstacle.gapY - obstacle.gapHeight);
+
+          ctx.fillStyle = '#1e6c37';
+          ctx.fillRect(obstacle.x + obstacle.width - 10, 0, 10, obstacle.gapY);
+          ctx.fillRect(obstacle.x + obstacle.width - 10, obstacle.gapY + obstacle.gapHeight, 10, canvas.height - obstacle.gapY - obstacle.gapHeight);
+
+          ctx.fillStyle = '#4dc06d';
+          ctx.fillRect(obstacle.x - 6, obstacle.gapY - 14, obstacle.width + 12, 14);
+          ctx.fillRect(obstacle.x - 6, obstacle.gapY + obstacle.gapHeight, obstacle.width + 12, 14);
+        });
+      }
+
+      function drawScene() {
+        var gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        gradient.addColorStop(0, '#ddf8ff');
+        gradient.addColorStop(0.72, '#74ccff');
+        gradient.addColorStop(0.72, '#68c268');
+        gradient.addColorStop(1, '#3f8e3c');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        state.clouds.forEach(function (cloud, index) {
+          drawCloud(cloud.x + (state.frame * (0.12 + index * 0.03)) % (canvas.width + 140) - 80, cloud.y, cloud.width);
+        });
+
+        drawObstacles();
+        drawDuck();
+
+        ctx.fillStyle = 'rgba(19, 48, 71, 0.86)';
+        ctx.font = '700 20px Trebuchet MS, Segoe UI, sans-serif';
+        ctx.fillText('Puntaje: ' + state.score, 16, 28);
+      }
+
+      function frameLoop() {
+        update();
+        drawScene();
+        requestAnimationFrame(frameLoop);
+      }
+
+      function preventDefault(event) {
+        if (event && typeof event.preventDefault === 'function') {
+          event.preventDefault();
+        }
+      }
+
+      document.addEventListener('keydown', function (event) {
+        if (event.code !== 'Space') return;
+        preventDefault(event);
+        if (state.intro || state.gameOver || state.countdownActive) return;
+        setPressing(true);
+      });
+
+      document.addEventListener('keyup', function (event) {
+        if (event.code !== 'Space') return;
+        preventDefault(event);
+        if (state.intro || state.gameOver || state.countdownActive) return;
+        setPressing(false);
+      });
+
+      ['pointerdown', 'touchstart', 'mousedown'].forEach(function (eventName) {
+        canvas.addEventListener(eventName, function (event) {
+          if (state.intro || state.gameOver || state.countdownActive) return;
+          preventDefault(event);
+          setPressing(true);
+        }, { passive: false });
+      });
+
+      ['pointerup', 'pointercancel', 'touchend', 'touchcancel', 'mouseup', 'mouseleave'].forEach(function (eventName) {
+        canvas.addEventListener(eventName, function (event) {
+          if (state.intro || state.gameOver || state.countdownActive) return;
+          preventDefault(event);
+          setPressing(false);
+        }, { passive: false });
+      });
+
+      ['pointerdown', 'touchstart', 'mousedown'].forEach(function (eventName) {
+        controlButtonEl.addEventListener(eventName, function (event) {
+          if (state.intro || state.gameOver || state.countdownActive) return;
+          preventDefault(event);
+          setPressing(true);
+        }, { passive: false });
+      });
+
+      ['pointerup', 'pointercancel', 'touchend', 'touchcancel', 'mouseup', 'mouseleave'].forEach(function (eventName) {
+        controlButtonEl.addEventListener(eventName, function (event) {
+          if (state.intro || state.gameOver || state.countdownActive) return;
+          preventDefault(event);
+          setPressing(false);
+        }, { passive: false });
+      });
+
+      startGameBtnEl.addEventListener('click', queueStartGame);
+      restartGameBtnEl.addEventListener('click', queueStartGame);
+      backLobbyBtnEl.addEventListener('click', openLobby);
+      changePlayerBtnEl.addEventListener('click', function () {
+        if (!arcade) return;
+        arcade.promptPlayerName('Actualiza el nombre del jugador para los marcadores');
+        refreshArcadeHud();
+      });
+      soundToggleBtnEl.addEventListener('click', function () {
+        if (!arcade) return;
+        arcade.toggleSoundEnabled();
+        refreshArcadeHud();
+      });
+      window.addEventListener('pcs-arcade-store-changed', refreshArcadeHud);
+
+      drawScene();
+      frameLoop();
+    })();
+  </script>
+</body>
+</html>

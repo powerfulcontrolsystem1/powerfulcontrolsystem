@@ -531,6 +531,9 @@ func main() {
 		if err := dbpkg.EnsurePostgresRuntimeCompat(dbSuper); err != nil {
 			log.Fatalf("failed to ensure postgres compat functions in superadministrador db: %v", err)
 		}
+		if err := dbpkg.EnsurePaymentGatewaySchema(dbSuper); err != nil {
+			log.Fatalf("failed to ensure payment gateway schema in superadministrador db: %v", err)
+		}
 		log.Println("INFO: runtime DB dialect=postgres (VPS)")
 	} else {
 		log.Fatalf("SQLite runtime deshabilitado: configure DB_DIALECT=postgres y DSN de PostgreSQL")

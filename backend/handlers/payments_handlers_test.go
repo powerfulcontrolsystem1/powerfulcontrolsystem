@@ -82,17 +82,17 @@ func ensurePaymentsHandlerTestSchema(t *testing.T, dbSuper *sql.DB) {
 	}
 }
 
-func TestResolvePaymentBaseURLRejectsLocalhostWithoutPublicConfig(t *testing.T) {
+func TestResolvePaymentBaseURLFallsBackToCanonicalDomainOnLocalhost(t *testing.T) {
 	dbSuper := openTestSQLite(t, "super_resolve_payment_base_url_localhost.db")
 	ensurePaymentsHandlerTestSchema(t, dbSuper)
 
 	req := httptest.NewRequest(http.MethodGet, "http://localhost:8080/pagar_licencia.html", nil)
 	baseURL, err := resolvePaymentBaseURL(req, dbSuper)
-	if err == nil {
-		t.Fatalf("expected error for localhost base URL, got baseURL=%q", baseURL)
+	if err != nil {
+		t.Fatalf("resolvePaymentBaseURL returned error: %v", err)
 	}
-	if !strings.Contains(err.Error(), "localhost") {
-		t.Fatalf("expected localhost error, got %v", err)
+	if baseURL != canonicalPaymentPublicBaseURL {
+		t.Fatalf("expected canonical fallback base URL %q, got %q", canonicalPaymentPublicBaseURL, baseURL)
 	}
 }
 
@@ -111,6 +111,24 @@ func TestResolvePaymentBaseURLUsesConfiguredCanonicalDomain(t *testing.T) {
 	}
 	if baseURL != "https://powerfulcontrolsystem.com" {
 		t.Fatalf("expected canonical configured base URL, got %q", baseURL)
+	}
+}
+
+func TestResolvePaymentBaseURLIgnoresConfiguredLocalhostAndFallsBackToCanonicalDomain(t *testing.T) {
+	dbSuper := openTestSQLite(t, "super_resolve_payment_base_url_configured_localhost.db")
+	ensurePaymentsHandlerTestSchema(t, dbSuper)
+
+	if err := dbpkg.SetConfigValue(dbSuper, "gmail.confirm_base_url", "http://localhost:8080", false); err != nil {
+		t.Fatalf("seed gmail.confirm_base_url: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "http://localhost:8080/pagar_licencia.html", nil)
+	baseURL, err := resolvePaymentBaseURL(req, dbSuper)
+	if err != nil {
+		t.Fatalf("resolvePaymentBaseURL returned error: %v", err)
+	}
+	if baseURL != canonicalPaymentPublicBaseURL {
+		t.Fatalf("expected canonical fallback base URL %q, got %q", canonicalPaymentPublicBaseURL, baseURL)
 	}
 }
 
@@ -280,6 +298,66 @@ func TestEpaycoCreateTransactionHandlerAllowsCheckoutWithoutPrivateKey(t *testin
 	}
 	if got := parsed.Query().Get("public_key"); got != "pub_test_checkout_only_public" {
 		t.Fatalf("expected public_key to use epayco.public_key, got %q", got)
+	}
+}
+
+func TestEpaycoTransactionStatusHandlerPreservesPendingOnGenericValidationError(t *testing.T) {
+	dbSuper := openTestSQLite(t, "super_epayco_status_pending_on_gateway_error.db")
+	ensurePaymentsHandlerTestSchema(t, dbSuper)
+
+	if _, err := dbpkg.CreateEpaycoPaymentRecord(dbSuper, 1, 44, "EPAYCO-TX-1", "EPAYCO-REF-1", "PENDING", `{}`, "", ""); err != nil {
+		t.Fatalf("seed pagos_epayco: %v", err)
+	}
+
+	originalTransport := http.DefaultTransport
+	http.DefaultTransport = roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		body := `{"data":{"description":"Error de datos o conexión verifique de nuevo.","status":"error"},"message":"Error de datos o conexión.","status":false}`
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Header:     make(http.Header),
+			Body:       io.NopCloser(strings.NewReader(body)),
+		}, nil
+	})
+	defer func() { http.DefaultTransport = originalTransport }()
+
+	h := EpaycoTransactionStatusHandler(dbSuper)
+	req := httptest.NewRequest(http.MethodGet, "/epayco/transaction_status?reference=EPAYCO-REF-1", nil)
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, rr.Code, rr.Body.String())
+	}
+
+	var resp struct {
+		Reference    string `json:"reference"`
+		Status       string `json:"status"`
+		ContextFound bool   `json:"context_found"`
+		LicenciaID   int64  `json:"licencia_id"`
+		EmpresaID    int64  `json:"empresa_id"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode epayco status response: %v body=%s", err, rr.Body.String())
+	}
+	if resp.Reference != "EPAYCO-REF-1" {
+		t.Fatalf("expected reference EPAYCO-REF-1, got %q", resp.Reference)
+	}
+	if resp.Status != "PENDING" {
+		t.Fatalf("expected status PENDING, got %q", resp.Status)
+	}
+	if !resp.ContextFound {
+		t.Fatal("expected context_found=true for stored payment record")
+	}
+	if resp.LicenciaID != 1 || resp.EmpresaID != 44 {
+		t.Fatalf("expected licencia_id=1 empresa_id=44, got licencia_id=%d empresa_id=%d", resp.LicenciaID, resp.EmpresaID)
+	}
+
+	rec, err := dbpkg.GetEpaycoPaymentByReference(dbSuper, "EPAYCO-REF-1")
+	if err != nil {
+		t.Fatalf("read epayco record: %v", err)
+	}
+	if rec == nil || !rec.Status.Valid || strings.ToUpper(strings.TrimSpace(rec.Status.String)) != "PENDING" {
+		t.Fatalf("expected stored status to remain PENDING, got %+v", rec)
 	}
 }
 

@@ -161,3 +161,59 @@ func TestPublicPaginaPrincipalHandlerExposesLandingFields(t *testing.T) {
 		}
 	}
 }
+
+func TestPaginaPrincipalSaveAndLoadPreservesExpandedCardCount(t *testing.T) {
+	dbSuper := openTestSQLite(t, "super_pagina_principal_expanded_cards.db")
+	ensureSuperConfigSchemaForSuper(t, dbSuper)
+
+	cfg := paginaPrincipalDefaultConfig()
+	cfg.Cantidad = 7
+	cfg.Tarjetas = append(cfg.Tarjetas,
+		paginaPrincipalCard{
+			Titulo:            "Lavanderia industrial",
+			Descripcion:       "Operacion ampliada para lavado y seguimiento por servicio.",
+			ImagenURL:         "/img/punto_venta.png",
+			Enlace:            "/login.html",
+			DetalleEtiqueta:   "Lavado especializado",
+			DetalleTitular:    "Amplia el catalogo publico con mas tarjetas persistentes.",
+			DetalleParrafoUno: "Tarjeta adicional para validar persistencia de cantidades mayores al set inicial.",
+			DetalleParrafoDos: "Debe conservarse despues de guardar y volver a cargar desde configuracion super.",
+			DetallePuntos:     []string{"Servicio 1", "Servicio 2"},
+		},
+		paginaPrincipalCard{
+			Titulo:            "Parqueadero inteligente",
+			Descripcion:       "Control de acceso y permanencia con trazabilidad.",
+			ImagenURL:         "/img/punto_venta.png",
+			Enlace:            "/login.html",
+			DetalleEtiqueta:   "Accesos y sensores",
+			DetalleTitular:    "Segunda tarjeta extra para verificar cantidad ampliada.",
+			DetalleParrafoUno: "La configuracion debe persistir todas las tarjetas solicitadas por el editor.",
+			DetalleParrafoDos: "Al recargar, la cantidad y el contenido de las tarjetas extra deben seguir presentes.",
+			DetallePuntos:     []string{"Acceso 1", "Acceso 2"},
+		},
+	)
+
+	if err := paginaPrincipalSaveConfig(dbSuper, cfg, "super@demo.com"); err != nil {
+		t.Fatalf("save pagina principal config: %v", err)
+	}
+
+	loaded, _, updatedBy, err := paginaPrincipalLoadConfig(dbSuper)
+	if err != nil {
+		t.Fatalf("load pagina principal config: %v", err)
+	}
+	if updatedBy != "super@demo.com" {
+		t.Fatalf("expected updated_by %q, got %q", "super@demo.com", updatedBy)
+	}
+	if loaded.Cantidad != 7 {
+		t.Fatalf("expected cantidad 7, got %d", loaded.Cantidad)
+	}
+	if len(loaded.Tarjetas) != 7 {
+		t.Fatalf("expected 7 tarjetas, got %d", len(loaded.Tarjetas))
+	}
+	if loaded.Tarjetas[5].Titulo != "Lavanderia industrial" {
+		t.Fatalf("expected tarjeta 6 titulo %q, got %q", "Lavanderia industrial", loaded.Tarjetas[5].Titulo)
+	}
+	if loaded.Tarjetas[6].Titulo != "Parqueadero inteligente" {
+		t.Fatalf("expected tarjeta 7 titulo %q, got %q", "Parqueadero inteligente", loaded.Tarjetas[6].Titulo)
+	}
+}

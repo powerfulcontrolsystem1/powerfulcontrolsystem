@@ -702,6 +702,8 @@ func resolveRequestHost(r *http.Request) string {
 	return r.Host
 }
 
+const canonicalPaymentPublicBaseURL = "https://powerfulcontrolsystem.com"
+
 func splitHostPortLoose(rawHost string) string {
 	trimmed := strings.TrimSpace(rawHost)
 	if trimmed == "" {
@@ -738,13 +740,14 @@ func normalizeConfiguredBaseURL(raw string) string {
 	if err != nil || strings.TrimSpace(parsed.Host) == "" {
 		return ""
 	}
+	if isLoopbackOrLocalHost(parsed.Host) {
+		return ""
+	}
 	hostOnly := strings.ToLower(splitHostPortLoose(parsed.Host))
 	if hostOnly == "www.powerfulcontrolsystem.com" {
 		parsed.Host = "powerfulcontrolsystem.com"
 	}
-	if !isLoopbackOrLocalHost(parsed.Host) {
-		parsed.Scheme = "https"
-	}
+	parsed.Scheme = "https"
 	parsed.RawQuery = ""
 	parsed.Fragment = ""
 	return strings.TrimRight(parsed.String(), "/")
@@ -757,27 +760,30 @@ func resolvePaymentBaseURL(r *http.Request, dbSuper *sql.DB) (string, error) {
 		}
 	}
 
-	if r == nil {
-		return "", fmt.Errorf("no hay request disponible para resolver la URL pública de pagos")
+	if r != nil {
+		for _, headerName := range []string{"Origin", "Referer"} {
+			if normalized := normalizeConfiguredBaseURL(strings.TrimSpace(r.Header.Get(headerName))); normalized != "" {
+				return normalized, nil
+			}
+		}
+
+		host := strings.TrimSpace(resolveRequestHost(r))
+		hostOnly := strings.ToLower(splitHostPortLoose(host))
+		if hostOnly != "" {
+			if hostOnly == "www.powerfulcontrolsystem.com" {
+				host = "powerfulcontrolsystem.com"
+			}
+			scheme := resolveRequestScheme(r)
+			if scheme != "https" {
+				scheme = "https"
+			}
+			if normalized := normalizeConfiguredBaseURL(scheme + "://" + host); normalized != "" {
+				return normalized, nil
+			}
+		}
 	}
 
-	host := strings.TrimSpace(resolveRequestHost(r))
-	hostOnly := strings.ToLower(splitHostPortLoose(host))
-	if hostOnly == "" {
-		return "", fmt.Errorf("host no disponible para resolver la URL pública de pagos")
-	}
-	if isLoopbackOrLocalHost(hostOnly) {
-		return "", fmt.Errorf("el host local %q no es válido para pagos externos; configura gmail.confirm_base_url con el dominio público o usa el dominio publicado", hostOnly)
-	}
-	if hostOnly == "www.powerfulcontrolsystem.com" {
-		host = "powerfulcontrolsystem.com"
-	}
-
-	scheme := resolveRequestScheme(r)
-	if scheme != "https" {
-		scheme = "https"
-	}
-	return scheme + "://" + host, nil
+	return canonicalPaymentPublicBaseURL, nil
 }
 
 func looksLikeEpaycoPublicKey(raw string) bool {
@@ -921,6 +927,22 @@ func parseEpaycoPaymentStatus(payload map[string]interface{}) string {
 	default:
 		return ""
 	}
+}
+
+func shouldPreservePendingEpaycoStatus(storedStatus string, payload map[string]interface{}) bool {
+	if strings.ToUpper(strings.TrimSpace(storedStatus)) != "PENDING" || len(payload) == 0 {
+		return false
+	}
+
+	combined := strings.ToLower(strings.TrimSpace(strings.Join([]string{
+		pickEpaycoField(payload, "status", "state", "x_response", "x_transaction_state"),
+		pickEpaycoField(payload, "description", "message", "descripcion", "mensaje"),
+	}, " ")))
+	if combined == "" || !strings.Contains(combined, "error") {
+		return false
+	}
+
+	return strings.Contains(combined, "dato") || strings.Contains(combined, "conex") || strings.Contains(combined, "verifique")
 }
 
 func extractEpaycoPaymentInfo(payload map[string]interface{}) (string, string, string) {
@@ -2187,6 +2209,9 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 					if resp.StatusCode < 400 {
 						if err := json.Unmarshal(body, &validationPayload); err == nil {
 							status = parseEpaycoPaymentStatus(validationPayload)
+							if status == "ERROR" && shouldPreservePendingEpaycoStatus(storedStatus, validationPayload) {
+								status = "PENDING"
+							}
 							if txFromGateway := strings.TrimSpace(pickEpaycoField(validationPayload, "x_transaction_id", "transaction_id", "id")); txFromGateway != "" {
 								transactionID = txFromGateway
 							}

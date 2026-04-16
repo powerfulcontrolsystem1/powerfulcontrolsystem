@@ -80,9 +80,124 @@
     setActiveNav(link);
   }
 
+  function normalizeCompanyTypeName(value) {
+    var normalized = String(value || "").trim().toLowerCase();
+    if (typeof normalized.normalize === "function") {
+      normalized = normalized.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+    return normalized;
+  }
+
+  function getEmpresaTypeVisual(empresa) {
+    var tipoNombre = String(empresa && empresa.tipo_nombre ? empresa.tipo_nombre : "").trim();
+    var normalized = normalizeCompanyTypeName(tipoNombre);
+    var visualRules = [
+      {
+        pattern: /(restaurante|restaurant|bar|cafe|cafeteria|panaderia|pasteleria|comida|pizzeria|licoreria|gastro)/,
+        tone: "food",
+        icon: "/img/restaurante.png",
+        alt: "Icono de restaurante",
+        eyebrow: "Atencion gastronomica",
+        activeCopy: "Operacion lista para atender clientes, registrar consumos y administrar cobros del negocio.",
+        pendingCopy: "Configura la licencia para activar una operacion agil de mesas, pedidos y facturacion del local."
+      },
+      {
+        pattern: /(hotel|hostal|hosped|motel|apartahotel|resort|alojamiento)/,
+        tone: "lodging",
+        icon: "/img/motel.png",
+        alt: "Icono de hotel o motel",
+        eyebrow: "Operacion de hospedaje",
+        activeCopy: "Gestion preparada para reservas, recepcion, habitaciones y seguimiento operativo por estancia.",
+        pendingCopy: "Activa la licencia para gestionar hospedaje, recepcion y trazabilidad comercial por habitacion."
+      },
+      {
+        pattern: /(tienda|almacen|supermercado|market|boutique|farmacia|drogueria|minimercado|retail|comercio|ferreteria|papeleria|pos|punto de venta)/,
+        tone: "retail",
+        icon: "/img/punto_venta.png",
+        alt: "Icono de punto de venta",
+        eyebrow: "Comercio y mostrador",
+        activeCopy: "Empresa lista para ventas de mostrador, control comercial e interaccion directa con clientes.",
+        pendingCopy: "Habilita la licencia para operar catalogo, facturacion y flujo comercial en punto de venta."
+      },
+      {
+        pattern: /(bodega|distribuidora|logistica|almacenamiento|inventario|deposito|suministros|mayorista|warehouse)/,
+        tone: "logistics",
+        icon: "/img/warehouse-color.svg",
+        alt: "Icono de bodega o logistica",
+        eyebrow: "Control de inventario",
+        activeCopy: "Preparada para movimientos de bodega, control de existencias y operacion logistica por empresa.",
+        pendingCopy: "Activa la licencia para orquestar inventario, entradas, salidas y control de almacenamiento."
+      },
+      {
+        pattern: /(agencia|marketing|publicidad|digital|red social|contenido|media|estudio creativo|creador)/,
+        tone: "digital",
+        icon: "/img/red%20social.png",
+        alt: "Icono de negocio digital",
+        eyebrow: "Canales y servicios digitales",
+        activeCopy: "Negocio listo para organizar clientes, tareas, cobros y seguimiento comercial de servicios digitales.",
+        pendingCopy: "Configura la licencia para convertir esta cuenta en un centro operativo de servicios digitales."
+      },
+      {
+        pattern: /(tecnico|tecnica|independiente|servicio|servicios|consultoria|asesoria|salud|belleza|spa|lavanderia|taller|mantenimiento|soporte|laboratorio)/,
+        tone: "services",
+        icon: "/img/tecnico%20independiente.png",
+        alt: "Icono de servicio profesional",
+        eyebrow: "Servicio profesional",
+        activeCopy: "Empresa lista para agenda, atencion al cliente, seguimiento del servicio y control de cobro.",
+        pendingCopy: "Activa la licencia para centralizar clientes, sesiones y trazabilidad del servicio profesional."
+      }
+    ];
+
+    var fallback = {
+      tone: "generic",
+      icon: "/img/company-briefcase-color.svg",
+      alt: "Icono de empresa",
+      eyebrow: "Operacion empresarial",
+      activeCopy: "Empresa disponible para continuar la gestion administrativa y operativa desde el panel principal.",
+      pendingCopy: "Configura la licencia para habilitar la operacion completa de esta empresa dentro del sistema."
+    };
+
+    for (var i = 0; i < visualRules.length; i += 1) {
+      if (visualRules[i].pattern.test(normalized)) {
+        return {
+          tone: visualRules[i].tone,
+          icon: visualRules[i].icon,
+          alt: visualRules[i].alt,
+          eyebrow: visualRules[i].eyebrow,
+          activeCopy: visualRules[i].activeCopy,
+          pendingCopy: visualRules[i].pendingCopy,
+          label: tipoNombre || "Empresa"
+        };
+      }
+    }
+
+    return {
+      tone: fallback.tone,
+      icon: fallback.icon,
+      alt: fallback.alt,
+      eyebrow: fallback.eyebrow,
+      activeCopy: fallback.activeCopy,
+      pendingCopy: fallback.pendingCopy,
+      label: tipoNombre || "Empresa general"
+    };
+  }
+
+  function buildEmpresaCardDescription(empresa, visual, hasLicense) {
+    var observaciones = String(empresa && empresa.observaciones ? empresa.observaciones : "").trim();
+    if (observaciones) return observaciones;
+    return hasLicense ? visual.activeCopy : visual.pendingCopy;
+  }
+
   function buildEmpresaCard(empresa, hasLicense) {
     var estadoRaw = String(empresa && empresa.estado ? empresa.estado : "activo").toLowerCase();
     var empresaActiva = estadoRaw !== "inactivo";
+    var visual = getEmpresaTypeVisual(empresa);
+    var nitLabel = String(empresa && empresa.nit ? empresa.nit : "").trim() || "Sin NIT registrado";
+    var accessLabel = empresaActiva ? (hasLicense ? "Panel habilitado" : "Licencia pendiente") : "Operacion pausada";
+    var subtitle = empresaActiva ? (hasLicense ? "Acceso operativo disponible" : "Preparada para activar licencia") : "Empresa en pausa administrativa";
+    var ctaLabel = hasLicense ? "Abrir administracion" : "Elegir licencia";
+    var statusLabel = empresaActiva ? "Empresa activa" : "Empresa inactiva";
+    var description = buildEmpresaCardDescription(empresa, visual, hasLicense);
 
     var a = document.createElement("a");
     a.href = "#";
@@ -112,39 +227,48 @@
       }
     });
 
-    var div = document.createElement("div");
-    div.className = "portal-card warm";
-    div.innerHTML =
-      '<div class="card-body">' +
-      '<h3 class="card-title">' +
-      escapeHtml(empresa.nombre || "--") +
-      "</h3>" +
-      '<p class="card-desc muted">' +
-      escapeHtml(empresa.observaciones || "") +
-      "</p>" +
-      '<div class="card-actions">' +
-      '<button class="license-indicator ' +
-      (hasLicense ? "active" : "inactive") +
-      '" type="button" aria-hidden="true">' +
-      (hasLicense ? "Licencia activa" : "Sin licencia") +
-      "</button>" +
-      "</div>" +
-      "</div>";
-
+    var downloadHTML = "";
     if (!hasLicense) {
-      var dlDiv = document.createElement('div');
-      dlDiv.className = 'card-download';
-      var dlBtn = document.createElement('button');
-      dlBtn.type = 'button';
-      // Reuse license visual style so download button coincides with 'Licencia activa'
-      dlBtn.className = 'license-indicator active download-data';
-      dlBtn.setAttribute('data-empresa-id', String(empresa.id || ''));
-      dlBtn.setAttribute('data-empresa-name', String(empresa.nombre || ''));
-      dlBtn.setAttribute('aria-label', 'Descargar datos de ' + String(empresa.nombre || ''));
-      dlBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 3v10l4-4-1.4-1.4L13 9.2V3h-2zM5 18v2h14v-2H5z"/></svg><span class="download-label">Descargar</span>';
-      dlDiv.appendChild(dlBtn);
-      div.appendChild(dlDiv);
+      downloadHTML =
+        '<div class="card-download">' +
+        '<button class="license-indicator active download-data" type="button" data-empresa-id="' + escapeHtml(String(empresa.id || "")) + '" data-empresa-name="' + escapeHtml(String(empresa.nombre || "")) + '" aria-label="Descargar datos de ' + escapeHtml(String(empresa.nombre || "")) + '">' +
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 3v10l4-4-1.4-1.4L13 9.2V3h-2zM5 18v2h14v-2H5z"/></svg><span class="download-label">Descargar datos</span>' +
+        "</button>" +
+        "</div>";
     }
+
+    var div = document.createElement("div");
+    div.className = "portal-card warm empresa-card";
+    div.setAttribute("data-tone", visual.tone);
+    div.innerHTML =
+      '<div class="empresa-card-shell">' +
+      '<div class="empresa-card-top">' +
+      '<div class="empresa-card-icon-shell">' +
+      '<img class="empresa-card-icon" src="' + escapeHtml(visual.icon) + '" alt="' + escapeHtml(visual.alt) + '">' +
+      "</div>" +
+      '<div class="empresa-card-badge-stack">' +
+      '<span class="empresa-card-chip empresa-card-chip--type">' + escapeHtml(visual.label) + "</span>" +
+      '<span class="empresa-card-chip empresa-card-chip--status ' + (empresaActiva ? "is-active" : "is-inactive") + '">' + escapeHtml(statusLabel) + "</span>" +
+      "</div>" +
+      "</div>" +
+      '<div class="card-body empresa-card-body">' +
+      '<div class="empresa-card-heading">' +
+      '<p class="empresa-card-eyebrow">' + escapeHtml(visual.eyebrow) + "</p>" +
+      '<h3 class="card-title">' + escapeHtml(empresa.nombre || "--") + "</h3>" +
+      '<p class="empresa-card-subtitle">' + escapeHtml(subtitle) + "</p>" +
+      "</div>" +
+      '<p class="card-desc muted">' + escapeHtml(description) + "</p>" +
+      '<div class="empresa-card-meta">' +
+      '<span class="empresa-card-meta-item"><strong>NIT</strong><span>' + escapeHtml(nitLabel) + "</span></span>" +
+      '<span class="empresa-card-meta-item"><strong>Acceso</strong><span>' + escapeHtml(accessLabel) + "</span></span>" +
+      "</div>" +
+      '<div class="card-actions empresa-card-actions">' +
+      '<span class="empresa-card-cta">' + escapeHtml(ctaLabel) + "</span>" +
+      '<span class="license-indicator ' + (hasLicense ? "active" : "inactive") + '" aria-hidden="true">' + (hasLicense ? "Licencia activa" : "Sin licencia") + "</span>" +
+      "</div>" +
+      "</div>" +
+      downloadHTML +
+      "</div>";
 
     a.appendChild(div);
     return a;

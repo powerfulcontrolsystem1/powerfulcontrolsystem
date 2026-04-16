@@ -164,3 +164,66 @@ func TestRegisterServerStartupEventDetectsUnexpectedRestart(t *testing.T) {
 		t.Fatalf("expected reinicio_inesperado=1, got %d", reinicioInesperado)
 	}
 }
+
+func TestRegisterServerStartupEventSkipsEmailWhenAlertsDisabled(t *testing.T) {
+	dbSuper := openTestSQLite(t, "super_server_alert_disabled.db")
+	ensureSuperConfigSchemaForSuper(t, dbSuper)
+
+	if err := dbpkg.SetConfigValue(dbSuper, "gmail.smtp_test_mode", "1", false); err != nil {
+		t.Fatalf("seed gmail.smtp_test_mode: %v", err)
+	}
+	if err := dbpkg.SetConfigValue(dbSuper, "gmail.restart_alert_to", "ops@empresa.com", false); err != nil {
+		t.Fatalf("seed gmail.restart_alert_to: %v", err)
+	}
+	if err := dbpkg.SetConfigValue(dbSuper, "gmail.restart_alert_enabled", "0", false); err != nil {
+		t.Fatalf("seed gmail.restart_alert_enabled: %v", err)
+	}
+
+	backendDir := t.TempDir()
+	markStopped, err := RegisterServerStartupEvent(dbSuper, ServerStartupRegistration{
+		BackendDir:  backendDir,
+		ListenAddr:  ":8080",
+		StartReason: "inicio_script_iniciar_servidor",
+	})
+	if err != nil {
+		t.Fatalf("RegisterServerStartupEvent returned error: %v", err)
+	}
+	if markStopped == nil {
+		t.Fatal("expected markStopped callback")
+	}
+
+	var correoDestino string
+	var correoEnviado int
+	var correoError string
+	if err := dbSuper.QueryRow(`
+		SELECT
+			COALESCE(correo_destino, ''),
+			COALESCE(correo_enviado, 0),
+			COALESCE(correo_error, '')
+		FROM super_servidor_eventos
+		ORDER BY id DESC
+		LIMIT 1
+	`).Scan(&correoDestino, &correoEnviado, &correoError); err != nil {
+		t.Fatalf("query super_servidor_eventos: %v", err)
+	}
+	if strings.TrimSpace(correoDestino) != "ops@empresa.com" {
+		t.Fatalf("expected correo_destino %q, got %q", "ops@empresa.com", correoDestino)
+	}
+	if correoEnviado != 0 {
+		t.Fatalf("expected correo_enviado=0 when alerts disabled, got %d", correoEnviado)
+	}
+	if !strings.Contains(strings.ToLower(correoError), "desactivada") {
+		t.Fatalf("expected correo_error to mention disabled alert, got %q", correoError)
+	}
+
+	notifications, err := dbpkg.ListSuperCorreoNotificacionesPrueba(dbSuper, dbpkg.SuperCorreoNotificacionPruebaFilter{
+		Tipo:  dbpkg.SuperCorreoNotificacionTipoInicioServidor,
+		Limit: 10,
+	})
+	if err != nil {
+		t.Fatalf("list super correo notificaciones: %v", err)
+	}
+	if len(notifications) != 0 {
+		t.Fatalf("expected no captured startup email notification when alerts are disabled, got %d", len(notifications))
+	}
+}

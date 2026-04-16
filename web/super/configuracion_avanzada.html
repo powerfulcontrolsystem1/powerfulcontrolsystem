@@ -142,7 +142,7 @@
 
     <section class="card form mp-card" id="gmailConfig">
       <h2>Correo Gmail — Confirmación de usuarios</h2>
-      <p class="form-help">Configura SMTP de Gmail para enviar el correo de confirmación a los usuarios creados desde cada empresa.</p>
+      <p class="form-help">Configura SMTP de Gmail para enviar el correo de confirmación a los usuarios creados desde cada empresa y administrar alertas automáticas cuando el servidor inicie o detecte reinicio inesperado.</p>
 
       <div class="form-row">
         <div class="form-col">
@@ -186,8 +186,14 @@
           <div id="gmailStatusRestartAlert" class="form-help">Cargando estado...</div>
         </div>
         <div class="form-col">
-          <label class="form-label">Uso de la alerta</label>
-          <div class="form-help">Este correo recibirá notificación automática cuando el servidor inicie o detecte reinicio inesperado.</div>
+          <label class="form-label">Activar alertas automáticas</label>
+          <label class="mode-switch-row" for="gmailRestartAlertEnabled">
+            <span class="mode-label">Off</span>
+            <input id="gmailRestartAlertEnabled" type="checkbox" role="switch" aria-label="Activar alertas de reinicio del servidor">
+            <span class="mode-label">On</span>
+          </label>
+          <div id="gmailRestartAlertEnabledStatus" class="form-help">Cargando estado...</div>
+          <div id="gmailRestartAlertEnabledHelp" class="form-help">Si está activado, el correo destino recibirá la notificación de arranque o reinicio inesperado.</div>
         </div>
       </div>
 
@@ -378,10 +384,20 @@
           : 'Epayco desactivado: no se mostrará como opción de pago en el portal público.';
       }
 
+      function refreshGmailRestartAlertHint(){
+        const enabledEl = document.getElementById('gmailRestartAlertEnabled');
+        const helpEl = document.getElementById('gmailRestartAlertEnabledHelp');
+        if (!enabledEl || !helpEl) return;
+        helpEl.innerText = enabledEl.checked
+          ? 'Alerta activada: se enviará correo cuando el servidor inicie o detecte reinicio inesperado, siempre que exista correo destino válido.'
+          : 'Alerta desactivada: el sistema seguirá registrando bitácora y log local, pero no enviará correo.';
+      }
+
       async function loadGmailConfig(){
         const statusEmail = document.getElementById('gmailStatusEmail');
         const statusPass = document.getElementById('gmailStatusPass');
         const statusRestart = document.getElementById('gmailStatusRestartAlert');
+        const statusRestartEnabled = document.getElementById('gmailRestartAlertEnabledStatus');
         const msg = document.getElementById('gmailMsg');
         const saveBtn = document.getElementById('saveGmailBtn');
         const editBtn = document.getElementById('editGmailBtn');
@@ -392,6 +408,7 @@
             statusEmail.innerText = 'Error al leer configuración Gmail';
             statusPass.innerText = 'Error al leer configuración Gmail';
             statusRestart.innerText = 'Error al leer configuración Gmail';
+            statusRestartEnabled.innerText = 'Error al leer configuración Gmail';
             return;
           }
           const cfg = await rg.json();
@@ -411,6 +428,8 @@
           document.getElementById('gmailPort').value = cfg.smtp_port || '587';
           document.getElementById('gmailBaseURL').value = cfg.confirm_base_url || '';
           document.getElementById('gmailRestartAlertTo').value = cfg.restart_alert_to || '';
+          document.getElementById('gmailRestartAlertEnabled').checked = typeof cfg.restart_alert_enabled === 'boolean' ? cfg.restart_alert_enabled : true;
+          refreshGmailRestartAlertHint();
 
           if (cfg.smtp_email_set) {
             const ts = cfg.smtp_email_updated ? (' — Última actualización: ' + cfg.smtp_email_updated) : '';
@@ -433,6 +452,14 @@
             statusRestart.innerText = 'No configurado';
           }
 
+          if (cfg.restart_alert_enabled) {
+            const ts4 = cfg.restart_alert_enabled_updated ? (' — Última actualización: ' + cfg.restart_alert_enabled_updated) : '';
+            statusRestartEnabled.innerText = (cfg.restart_alert_enabled_set ? 'Alerta habilitada' : 'Alerta habilitada (valor por defecto)') + ts4;
+          } else {
+            const ts5 = cfg.restart_alert_enabled_updated ? (' — Última actualización: ' + cfg.restart_alert_enabled_updated) : '';
+            statusRestartEnabled.innerText = 'Alerta desactivada' + ts5;
+          }
+
           document.getElementById('gmailSMTPEmail').disabled = !encryptionAvailable;
           document.getElementById('gmailSMTPAppPass').disabled = !encryptionAvailable;
           document.getElementById('gmailFromName').disabled = !encryptionAvailable;
@@ -440,6 +467,7 @@
           document.getElementById('gmailPort').disabled = !encryptionAvailable;
           document.getElementById('gmailBaseURL').disabled = !encryptionAvailable;
           document.getElementById('gmailRestartAlertTo').disabled = !encryptionAvailable;
+          document.getElementById('gmailRestartAlertEnabled').disabled = !encryptionAvailable;
 
           saveBtn.disabled = !encryptionAvailable;
           editBtn.style.display = 'none';
@@ -448,6 +476,7 @@
           statusEmail.innerText = 'Error cargando configuración Gmail';
           statusPass.innerText = 'Error cargando configuración Gmail';
           statusRestart.innerText = 'Error cargando configuración Gmail';
+          statusRestartEnabled.innerText = 'Error cargando configuración Gmail';
         }
       }
 
@@ -588,11 +617,12 @@
           smtp_port: document.getElementById('gmailPort').value.trim(),
           confirm_base_url: document.getElementById('gmailBaseURL').value.trim(),
           restart_alert_to: document.getElementById('gmailRestartAlertTo').value.trim(),
+          restart_alert_enabled: !!document.getElementById('gmailRestartAlertEnabled').checked,
           encrypt: true
         };
 
-        if (!payload.smtp_email && !payload.smtp_app_password && !payload.smtp_from_name && !payload.smtp_host && !payload.smtp_port && !payload.confirm_base_url && !payload.restart_alert_to) {
-          alert('Ingrese al menos un valor para guardar en Gmail SMTP');
+        if (!payload.smtp_email && !payload.smtp_app_password && !payload.smtp_from_name && !payload.smtp_host && !payload.smtp_port && !payload.confirm_base_url && !payload.restart_alert_to && payload.restart_alert_enabled) {
+          alert('Ingrese al menos un valor para guardar en Gmail SMTP o desactive la alerta de reinicio.');
           return;
         }
 
@@ -630,6 +660,7 @@
         document.getElementById('gmailPort').disabled = false;
         document.getElementById('gmailBaseURL').disabled = false;
         document.getElementById('gmailRestartAlertTo').disabled = false;
+        document.getElementById('gmailRestartAlertEnabled').disabled = false;
         document.getElementById('saveGmailBtn').disabled = false;
         document.getElementById('editGmailBtn').style.display = 'none';
         document.getElementById('cancelGmailBtn').style.display = '';
@@ -901,6 +932,10 @@
       document.getElementById('epaycoEnabledToggle').addEventListener('change', function(){
         refreshEpaycoEnabledHint();
         document.getElementById('saveEpaycoBtn').disabled = false;
+      });
+      document.getElementById('gmailRestartAlertEnabled').addEventListener('change', function(){
+        refreshGmailRestartAlertHint();
+        document.getElementById('saveGmailBtn').disabled = false;
       });
       document.getElementById('saveGmailBtn').addEventListener('click', saveGmail);
       document.getElementById('editGmailBtn').addEventListener('click', enableEditGmail);

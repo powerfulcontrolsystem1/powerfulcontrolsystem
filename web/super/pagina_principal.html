@@ -24,12 +24,12 @@
         <div class="form-col pp-col-small">
           <label class="form-label" for="ppCantidad">Cantidad de tarjetas</label>
           <input id="ppCantidad" class="form-input" type="number" min="1" max="12" value="5">
+          <p class="form-help">La cantidad se aplica al cambiar este campo y se guarda junto con toda la configuracion.</p>
         </div>
         <div class="form-col pp-col-grow">
           <label class="form-label">Acciones</label>
           <div class="form-actions pp-inline-actions">
-            <button id="ppBtnApplyCount" type="button" class="btn secondary">Aplicar cantidad</button>
-            <button id="ppBtnSave" type="button" class="btn">Guardar configuracion</button>
+            <button id="ppBtnSave" type="button" class="btn">Guardar cantidad y configuracion</button>
           </div>
         </div>
       </div>
@@ -291,6 +291,11 @@
         cardsEditorEl.innerHTML = html;
       }
 
+      function syncCardCountAndRender() {
+        ensureCards(cantidadEl.value);
+        renderCardsEditor();
+      }
+
       function getCardIndexFromElement(el) {
         var parent = el.closest('.pp-card-item');
         if (!parent) return -1;
@@ -401,6 +406,20 @@
         });
       }
 
+      async function saveCurrentConfig() {
+        syncCardCountAndRender();
+        setMsg('Guardando configuracion...', '');
+        try {
+          await saveConfig();
+          await loadConfig();
+          renderCardsEditor();
+          renderStyleControls();
+          setMsg('Configuracion guardada correctamente.', 'success');
+        } catch (err) {
+          setMsg('No se pudo guardar: ' + (err && err.message ? err.message : String(err)), 'error');
+        }
+      }
+
       async function reloadAll() {
         setMsg('Cargando configuracion...', '');
         try {
@@ -414,39 +433,21 @@
         }
       }
 
-      document.getElementById('ppBtnApplyCount').addEventListener('click', function () {
-        ensureCards(cantidadEl.value);
-        renderCardsEditor();
-      });
-
       document.getElementById('ppBtnReload').addEventListener('click', function () {
         reloadAll();
       });
 
+      cantidadEl.addEventListener('change', function () {
+        syncCardCountAndRender();
+        setMsg('Cantidad actualizada en el editor. Guarda la configuracion para publicarla.', '');
+      });
+
       document.getElementById('ppBtnSave').addEventListener('click', async function () {
-        setMsg('Guardando configuracion...', '');
-        try {
-          await saveConfig();
-          await loadConfig();
-          renderCardsEditor();
-          renderStyleControls();
-          setMsg('Configuracion guardada correctamente.', 'success');
-        } catch (err) {
-          setMsg('No se pudo guardar: ' + (err && err.message ? err.message : String(err)), 'error');
-        }
+        await saveCurrentConfig();
       });
 
       document.getElementById('ppBtnSaveBottom').addEventListener('click', async function () {
-        setMsg('Guardando configuracion...', '');
-        try {
-          await saveConfig();
-          await loadConfig();
-          renderCardsEditor();
-          renderStyleControls();
-          setMsg('Configuracion guardada correctamente.', 'success');
-        } catch (err) {
-          setMsg('No se pudo guardar: ' + (err && err.message ? err.message : String(err)), 'error');
-        }
+        await saveCurrentConfig();
       });
 
       reloadAll();

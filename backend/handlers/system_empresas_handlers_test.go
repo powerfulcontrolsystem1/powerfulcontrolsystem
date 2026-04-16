@@ -486,6 +486,52 @@ func TestGmailConfigHandlerSaveRestartAlertTo(t *testing.T) {
 	}
 }
 
+func TestGmailConfigHandlerSaveRestartAlertToggle(t *testing.T) {
+	dbSuper := openTestSQLite(t, "super_gmail_restart_alert_toggle.db")
+	ensureSuperConfigSchemaForSuper(t, dbSuper)
+
+	h := GmailConfigHandler(dbSuper)
+	body := `{"restart_alert_enabled":false}`
+	req := httptest.NewRequest(http.MethodPut, "/super/api/config/gmail", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status %d on gmail toggle save, got %d body=%s", http.StatusOK, rr.Code, rr.Body.String())
+	}
+
+	stored, encrypted, err := dbpkg.GetConfigValue(dbSuper, "gmail.restart_alert_enabled")
+	if err != nil {
+		t.Fatalf("read gmail.restart_alert_enabled: %v", err)
+	}
+	if strings.TrimSpace(stored) != "0" {
+		t.Fatalf("expected gmail.restart_alert_enabled %q, got %q", "0", stored)
+	}
+	if encrypted {
+		t.Fatal("expected gmail.restart_alert_enabled to be non-encrypted")
+	}
+
+	getReq := httptest.NewRequest(http.MethodGet, "/super/api/config/gmail", nil)
+	getRR := httptest.NewRecorder()
+	h.ServeHTTP(getRR, getReq)
+
+	if getRR.Code != http.StatusOK {
+		t.Fatalf("expected status %d on gmail get, got %d body=%s", http.StatusOK, getRR.Code, getRR.Body.String())
+	}
+
+	var getBody map[string]interface{}
+	if err := json.Unmarshal(getRR.Body.Bytes(), &getBody); err != nil {
+		t.Fatalf("decode gmail get response: %v body=%s", err, getRR.Body.String())
+	}
+	if enabled, _ := getBody["restart_alert_enabled"].(bool); enabled {
+		t.Fatalf("expected restart_alert_enabled=false, got %v", getBody["restart_alert_enabled"])
+	}
+	if setFlag, _ := getBody["restart_alert_enabled_set"].(bool); !setFlag {
+		t.Fatalf("expected restart_alert_enabled_set=true, got %v", getBody["restart_alert_enabled_set"])
+	}
+}
+
 func TestPublicLicenciasPaymentMethodsHandlerOrdersAndAvailability(t *testing.T) {
 	rawKey := make([]byte, 32)
 	for i := range rawKey {

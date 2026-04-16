@@ -1,10 +1,80 @@
 Descripcion compacta de modulos (POS multiempresa)
-Actualizacion: 2026-04-15
+Actualizacion: 2026-04-16
 
 Gobernanza obligatoria (agente_go):
 - Si se crea un modulo nuevo o se modifica un modulo existente, este documento debe actualizarse en la misma iteracion de trabajo.
 - En el mismo cambio, tambien debe actualizarse `documentos/matriz_roles_permisos_pos_multiempresa.md` para reflejar permisos por rol/modulo/accion y visibilidad de paginas afectadas.
 - La actualizacion modular debe mantener trazabilidad en `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios` y `CHANGELOG.md`.
+
+Actualizacion 2026-04-16 (portal publico: arcade movil reforzado y countdown en Patito volando):
+- Se refuerza el submodulo `juegos publicos del portal` para que los cinco juegos del arcade se adapten mejor a celular sin perder sonido compartido ni persistencia de jugador.
+- `web/Juegos/patito_volando.html` agrega una cuenta regresiva de 5 segundos antes de iniciar el vuelo y reutiliza nuevos efectos `countdownTick`/`countdownGo` desde `web/Juegos/arcade_shared.js`.
+- `web/Juegos/pollitos_cataplum.html`, `web/Juegos/serpiente_pixel.html`, `web/Juegos/memoria_estelar.html` y `web/Juegos/rebote_bloques.html` reorganizan acciones, overlays y shell visual para pantallas pequenas; `serpiente_pixel.html` suma feedback sonoro al giro activo.
+- Impacto de permisos: no hay cambios en CRUD/A ni visibilidad por rol; `Portal publico - Juegos` sigue siendo un submodulo recreativo publico y de solo uso.
+
+Actualizacion 2026-04-16 (frontend compartido: ajustes base para celular y menu flotante):
+- Se refuerza el submodulo `portal publico y shell compartido` para mejorar adaptacion en pantallas pequenas sin cambiar rutas ni permisos.
+- `web/menu.js` cierra el panel del menu flotante al seleccionar una opcion, evitando que el overlay permanezca visible mientras cambia la pagina en movil.
+- `web/estilos.css` reubica el CTA flotante de WhatsApp de `index.html` a la esquina inferior derecha en movil, compacta su presencia visual y mejora la adaptacion compartida de tablas, panel del menu flotante y navegacion administrativa.
+- `web/login.html` corrige la carga de la hoja `web/estilos.css`, recuperando el comportamiento responsive esperado en la pantalla de acceso administrativo.
+- Impacto de permisos: no hay cambios en roles ni CRUD/A; el ajuste es visual y de interaccion del frontend compartido.
+
+Actualizacion 2026-04-16 (portal publico: botones superiores alineados al CTA de ofertas):
+- Se ajusta el submodulo `pagina principal publica` para que los accesos `Registrarse o iniciar sesión` e `Informacion de contacto` usen la misma apariencia del boton `Explorar oferta` dentro de las tarjetas del home.
+- `web/estilos.css` reutiliza el estilo pill blanco del CTA comercial de tarjetas en la barra superior del portal sin alterar enlaces, textos ni el CTA flotante de WhatsApp.
+- Impacto de permisos: no hay cambios en roles ni CRUD/A; el ajuste es visual dentro del portal publico.
+
+Actualizacion 2026-04-16 (checkout de licencias: Epayco sandbox estable en PostgreSQL):
+- Se refuerza el submodulo `checkout publico de licencias` para que el runtime PostgreSQL no dependa de tablas creadas manualmente al registrar y consultar pagos de Epayco/Wompi.
+- `backend/db/db.go` incorpora `EnsurePaymentGatewaySchema(...)` para asegurar `pagos_epayco` y `pagos_wompi` en la base super cuando el backend arranca sobre PostgreSQL.
+- `backend/handlers/payments_handlers.go` conserva `PENDING` cuando la validacion de Epayco responde el error generico de referencia aun no materializada y el contexto local ya estaba pendiente, evitando falsos `ERROR` al volver del checkout.
+- `backend/handlers/payments_handlers_test.go` agrega cobertura del fallback `PENDING` y protege el polling de licencias frente a respuestas transitorias de la API de validacion.
+- Impacto de permisos: no hay cambios en roles ni CRUD/A; la configuracion de pasarelas sigue siendo exclusiva de `super_administrador` y el checkout publico mantiene alcance de solo consumo.
+
+Actualizacion 2026-04-16 (portal publico: arcade con perfil compartido y cinco juegos):
+- Se refuerza el submodulo `juegos publicos del portal` para operar como un arcade unificado con perfil de jugador, records persistentes y audio reutilizable entre titulos.
+- `web/Juegos/arcade_shared.js` centraliza nombre de jugador, top 5 local por juego y control global de sonido para todos los minijuegos del portal.
+- `web/Juegos/menu_juegos.html` se rediseña como lobby cuadrado con portadas SVG, resumen de records y boton de acceso por tarjeta.
+- `web/Juegos/patito_volando.html` y `web/Juegos/pollitos_cataplum.html` ahora muestran jugador actual, record persistente y botones de sonido/cambio de jugador.
+- Se agregan `web/Juegos/serpiente_pixel.html`, `web/Juegos/memoria_estelar.html` y `web/Juegos/rebote_bloques.html` como tres juegos nuevos con mecanicas distintas y soporte tactil/escritorio.
+- Impacto de permisos: no hay cambios en CRUD/A ni en visibilidad por rol; `Portal publico - Juegos` sigue siendo un submodulo recreativo publico y de solo uso.
+
+Actualizacion 2026-04-15 (alertas de reinicio del servidor: activacion configurable):
+- Se refuerza el submodulo `configuracion avanzada (super)` para que la alerta de inicio/reinicio del backend no dependa solo del correo destino guardado.
+- `backend/handlers/usuarios_empresa.go` expone `restart_alert_enabled` dentro de `GET/PUT /super/api/config/gmail`, conservando el correo destino por separado.
+- `backend/handlers/server_runtime_notifications.go` sigue registrando cada arranque en la bitacora `super_servidor_eventos` y en `backend/logs/server_reinicio.log`, pero solo intenta enviar el correo si la alerta esta habilitada.
+- `web/super/configuracion_avanzada.html` agrega un switch `Off/On` para activar o desactivar la notificacion automatica sin borrar el destinatario configurado.
+- Impacto de permisos: no hay cambios en CRUD/A ni en visibilidad por rol; el control sigue siendo exclusivo de `super_administrador`.
+
+Actualizacion 2026-04-15 (portal publico: segundo juego `Pollitos al cataplum`):
+- Se amplia el submodulo `juegos publicos del portal` para soportar mas de una tarjeta jugable dentro de `web/Juegos/menu_juegos.html`.
+- `web/Juegos/menu_juegos.html` ahora abre cada juego con popup y dimensiones propias segun su `slug`, evitando reutilizar una sola ventana fija.
+- `web/Juegos/pollitos_cataplum.html` incorpora un juego de resortera con niveles cortos, objetivos destructibles y control arrastrar/soltar compatible con mouse y tactil.
+- Impacto de permisos: no hay cambios en CRUD/A ni en visibilidad por rol; sigue siendo un submodulo publico y recreativo.
+
+Actualizacion 2026-04-15 (checkout de licencias: fallback canonico para Epayco desde localhost):
+- Se refuerza el submodulo `checkout publico de licencias` para que Epayco y Wompi no fallen cuando la solicitud nace en `localhost` sin `gmail.confirm_base_url` publica.
+- `backend/handlers/payments_handlers.go` ignora bases loopback configuradas y resuelve callbacks publicos usando dominio configurado, headers publicos validos, host publicado o el dominio canonico del sistema como ultimo recurso.
+- Impacto de permisos: no hay cambios en roles ni CRUD/A; el ajuste es operativo dentro del checkout publico de licencias.
+
+Actualizacion 2026-04-15 (selector de empresas: iconografia por tipo y tarjetas mas profesionales):
+- Se refuerza el submodulo `seleccion de empresa (super)` para que cada tarjeta de `web/seleccionar_empresa.html` identifique mejor el negocio antes de entrar al panel o elegir licencia.
+- `web/js/seleccionar_empresa.js` ahora interpreta `tipo_nombre` y asigna icono, tono visual, texto contextual y etiqueta sectorial a cada empresa con reglas por categoria operativa.
+- `web/estilos.css` reemplaza la tarjeta oscura generica por una superficie mas colorida y profesional, con encabezado visual, chips de estado, metadata resumida y CTA mas claro.
+- Impacto de permisos: no hay cambios en CRUD/A ni en visibilidad por rol; la mejora es visual y mantiene el mismo alcance del modulo para `super_administrador`.
+
+Actualizacion 2026-04-15 (pagina_principal super: cantidad integrada al guardado):
+- Se refuerza el submodulo `pagina principal dinamica (super)` para que la cantidad de tarjetas ya no dependa de un boton intermedio `Aplicar cantidad`.
+- `web/super/pagina_principal.html` actualiza el editor apenas cambia el campo de cantidad y reutiliza un unico guardado para cantidad, tarjetas y estilos visuales.
+- `backend/handlers/pagina_principal_handlers_test.go` agrega cobertura para persistencia de configuraciones ampliadas, asegurando que una cantidad mayor de tarjetas siga disponible al recargar.
+- Impacto de permisos: no hay cambios en CRUD/A ni en visibilidad por rol; la administracion sigue siendo exclusiva de `super_administrador`.
+
+Actualizacion 2026-04-15 (portal publico: juegos ligeros y Patito volando):
+- Se crea el submodulo `juegos publicos del portal`, accesible desde el menu flotante compartido mediante la pagina `web/Juegos/menu_juegos.html`.
+- Cada juego publicado debe mostrarse como una tarjeta independiente dentro del menu de juegos; la primera tarjeta operativa corresponde a `Patito volando`.
+- `web/Juegos/patito_volando.html` implementa un juego de control unico: al presionar, el patito sube; al soltar, baja, con soporte para barra espaciadora en PC y toque/presion de pantalla en movil.
+- `backend/utils/utils.go` deja publico `/Juegos/*` y `backend/handlers/auth_users_carritos_test.go` cubre el acceso sin sesion a las nuevas paginas.
+- Impacto de permisos: no se agregan CRUD/A ni vistas administrativas; es un submodulo publico y de solo lectura/uso recreativo, visible para cualquier visitante y tambien para todos los roles autenticados.
 
 Actualizacion 2026-04-15 (contrato versionado y editor super):
 - Se refuerza el modulo `autenticacion y sesiones` para que la aceptacion del contrato administrativo dependa de la version vigente publicada por super y no solo de un booleano historico.

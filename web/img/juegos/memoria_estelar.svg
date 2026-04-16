@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1200" role="img" aria-labelledby="title desc">
+  <title id="title">Memoria estelar</title>
+  <desc id="desc">Portada ilustrada del juego Memoria estelar.</desc>
+  <defs>
+    <linearGradient id="space" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#140f2f"/>
+      <stop offset="100%" stop-color="#3a1f63"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fff2c2"/>
+      <stop offset="100%" stop-color="#ffb870"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="1200" fill="url(#space)"/>
+  <g fill="#ffffff" opacity="0.86">
+    <circle cx="132" cy="156" r="6"/>
+    <circle cx="236" cy="92" r="8"/>
+    <circle cx="324" cy="242" r="5"/>
+    <circle cx="468" cy="118" r="8"/>
+    <circle cx="596" cy="176" r="6"/>
+    <circle cx="734" cy="120" r="7"/>
+    <circle cx="858" cy="220" r="6"/>
+    <circle cx="1024" cy="140" r="8"/>
+    <circle cx="1092" cy="250" r="6"/>
+  </g>
+  <g transform="translate(220 314)">
+    <rect x="0" y="0" width="214" height="256" rx="34" fill="url(#card)"/>
+    <rect x="244" y="0" width="214" height="256" rx="34" fill="url(#card)"/>
+    <rect x="488" y="0" width="214" height="256" rx="34" fill="url(#card)"/>
+    <rect x="122" y="288" width="214" height="256" rx="34" fill="#ff8fab"/>
+    <rect x="366" y="288" width="214" height="256" rx="34" fill="#8be2ff"/>
+    <path d="M96 98 L124 162 L194 168 L140 214 L154 286 L96 246 L38 286 L52 214 L0 168 L68 162 Z" fill="#4b2c74"/>
+    <path d="M608 62 C638 34 692 48 706 92 C720 136 698 178 640 212 C582 178 560 136 574 92 C588 48 644 34 674 62" fill="#5e327c"/>
+    <circle cx="476" cy="416" r="52" fill="#173563"/>
+    <circle cx="476" cy="416" r="20" fill="#8be2ff"/>
+    <path d="M232 404 L272 444 L232 484 L192 444 Z" fill="#ffffff" fill-opacity="0.78"/>
+  </g>
+  <g font-family="Segoe UI, Arial, sans-serif" fill="#fff7ef">
+    <text x="86" y="104" font-size="58" font-weight="700" opacity="0.8">PARES Y REFLEJOS</text>
+    <text x="82" y="976" font-size="108" font-weight="900">MEMORIA</text>
+    <text x="82" y="1076" font-size="108" font-weight="900">ESTELAR</text>
+    <text x="86" y="1144" font-size="40" font-weight="700" opacity="0.84">Encuentra parejas y termina el tablero con la mejor precision</text>
+  </g>
+</svg>

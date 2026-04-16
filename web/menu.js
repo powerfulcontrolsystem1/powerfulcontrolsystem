@@ -24,6 +24,7 @@
         '<a class="fm-item" href="/ayuda/ayuda.html">Ayuda</a>' +
         '<a class="fm-item" href="/ultimas_mejoras.html">Últimas mejoras</a>' +
         '<a class="fm-item" href="/venta_digital.html">Venta digital</a>' +
+          '<a class="fm-item" href="/Juegos/menu_juegos.html">Juegos</a>' +
         '<a id="calculatorLink" class="fm-item" href="/administrar_empresa/calculadora.html">Calculadora</a>' +
         '<button id="themeToggle" class="fm-item" type="button" aria-label="Cambiar tema"></button>' +
         '<div id="countryFlagItem" class="fm-item fm-country" style="display:none"></div>' +
@@ -36,8 +37,33 @@
     const toggle = wrapper.querySelector('.fm-toggle');
     const panel = wrapper.querySelector('.fm-panel');
     if (toggle && panel) {
-      toggle.addEventListener('click', function(e){ e.stopPropagation(); panel.classList.toggle('open'); });
-      document.addEventListener('click', function(){ panel.classList.remove('open'); });
+      function setPanelOpen(isOpen){
+        panel.classList.toggle('open', !!isOpen);
+        toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      }
+
+      function closePanel(){
+        setPanelOpen(false);
+      }
+
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.addEventListener('click', function(e){
+        e.stopPropagation();
+        setPanelOpen(!panel.classList.contains('open'));
+      });
+      panel.addEventListener('click', function(e){
+        e.stopPropagation();
+        var item = e.target.closest && e.target.closest('.fm-item');
+        if (item && !item.classList.contains('fm-country')) {
+          closePanel();
+        }
+      });
+      document.addEventListener('click', closePanel);
+      document.addEventListener('keydown', function(e){
+        if (e.key === 'Escape') {
+          closePanel();
+        }
+      });
     }
 
       var SESSION_STATE_COOKIE = 'browser_session_active';
