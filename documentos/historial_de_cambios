@@ -1,5 +1,155 @@
  - Historial de cambios
 
+ - 2026-04-15: Restauracion de Pendiente Notas y auditoria de borrados en Git
+     - Archivos modificados:
+         - Pendiente Notas
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se restaura el documento `Pendiente Notas` en la raiz del proyecto desde `HEAD` despues de verificar que Git lo tenia marcado como borrado local en el arbol de trabajo. La revision confirma que no habia otros archivos eliminados en el estado actual del repositorio. Git no registra una hora exacta para ese borrado local no confirmado; la ultima referencia confirmada del archivo sigue siendo el commit `e70884dabea1292d9c0e6d9b1a3f236e94d7c8c4` del `2026-04-15 17:37:25 -0500`, donde el archivo aun existia.
+     - Verificacion tecnica:
+         - `git status --short --untracked-files=no`.
+         - `git diff --name-status --diff-filter=D`.
+         - `git log -1 --format="%H%n%an%n%ad%n%s" -- "Pendiente Notas"`.
+         - `Get-Item -LiteralPath "d:\powerfulcontrolsystem\Pendiente Notas" | Select-Object FullName,Length,CreationTime,LastWriteTime`.
+
+ - 2026-04-15: Monitor centralizado de errores con recovery global y panel super
+     - Archivos creados:
+         - backend/db/super_errores_sistema.go
+         - backend/utils/system_errors.go
+         - backend/handlers/super_error_handlers.go
+         - backend/handlers/super_error_handlers_test.go
+         - web/super/errores.html
+     - Archivos modificados:
+         - backend/main.go
+         - backend/utils/utils.go
+         - backend/utils/utils_test.go
+         - web/super_administrador.html
+         - documentos/descripcion_del_proyecto
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/estructura_bd.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se crea un sistema profesional y centralizado de manejo de errores. El backend recupera panicos, registra errores HTTP y procesos internos con severidades `INFO/WARNING/ERROR/CRITICAL`, guarda el detalle tecnico en DB/archivo y devuelve mensajes amigables al usuario final para respuestas `5xx`. Super ahora dispone de la vista `/super/errores.html` y del endpoint `/super/api/errores` para auditar incidencias de cualquier empresa o modulo.
+     - Verificacion tecnica:
+         - `go test ./utils -run "Test(JSONErrorMiddlewareSanitizesInternalServerError|RecoveryMiddlewareRecoversPanicAndLogsIt|JSONErrorMiddlewarePreservesJSONErrorBody|JSONErrorMiddlewareWrapsNonJSONError|JSONErrorMiddlewareWrapsEpaycoNonJSONError)" -count=1`.
+         - `go test ./handlers -run "Test(SuperErroresSistemaHandlerFiltersResults|SuperErroresSistemaHandlerMethodNotAllowed)" -count=1`.
+         - `go test ./ ./auth ./db ./handlers ./metrics ./utils -run "^$" -count=1`.
+
+ - 2026-04-15: Contrato versionado editable desde super y aceptacion por version en login admin
+     - Archivos creados:
+         - backend/db/contrato_super.go
+         - backend/handlers/super_contrato_handlers.go
+         - backend/handlers/super_contrato_handlers_test.go
+         - web/super/contrato.html
+     - Archivos modificados:
+         - backend/main.go
+         - backend/handlers/accept_handlers.go
+         - backend/handlers/auth_admin_handlers.go
+         - backend/handlers/e2e_login_acceptance_test.go
+         - backend/handlers/auth_users_carritos_test.go
+         - backend/utils/utils.go
+         - web/accept.html
+         - web/contrato.html
+         - web/super_administrador.html
+         - documentos/descripcion_del_proyecto
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/estructura_bd.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se crea un modulo de contrato administrativo gestionado desde super, con versionado en la base `superadministrador`, resumen de cambio obligatorio y exposicion publica del contrato vigente. El login administrativo deja de validar solo `acepta_contrato` y ahora compara la version aceptada por la cuenta contra la ultima version publicada; si hay una version nueva, redirige otra vez a `/accept.html` hasta que el administrador la acepta.
+     - Verificacion tecnica:
+         - `go test ./handlers -run "Test(PublicContratoHandlerReturnsDefaultVersion|SuperContratoHandlerCreatesNewVersionAndHistory|E2E_AcceptContractCreatesSession|E2E_AcceptContractRequiresNewVersion|AuthMiddlewareAllowsPublicPortalPagesAssetsAndHomeCardsAPI)" -count=1`.
+         - `go test ./ ./auth ./db ./handlers ./metrics ./utils -run "^$" -count=1`.
+         - Diagnostico del editor sin errores en `web/accept.html`, `web/contrato.html`, `web/super_administrador.html`, `web/super/contrato.html`, `backend/db/contrato_super.go`, `backend/handlers/super_contrato_handlers.go` y archivos Go relacionados.
+
+ - 2026-04-15: sync_to_vps abre el dominio publico canonico tras el deploy
+     - Archivos modificados:
+         - scripts/sync_to_vps.ps1
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: El script `sync_to_vps.ps1` deja de construir la URL final desde `RemoteHost` y abre por defecto `https://powerfulcontrolsystem.com/` usando el nuevo parametro `PublicBaseUrl`, de modo que el navegador ya no se lanza contra la IP del VPS al finalizar el despliegue.
+     - Verificacion tecnica:
+         - Validacion de sintaxis PowerShell mediante parser (`[System.Management.Automation.Language.Parser]::ParseFile(...)`) sin errores.
+
+ - 2026-04-15: Checkout de licencias con Epayco visible por Public Key y rutas publicas reales
+     - Archivos modificados:
+         - backend/handlers/payments_handlers.go
+         - backend/handlers/payments_handlers_test.go
+         - backend/handlers/system_empresas_handlers_test.go
+         - backend/utils/utils.go
+         - backend/utils/utils_test.go
+         - web/pagar_licencia.html
+         - web/super/configuracion_avanzada.html
+         - documentos/descripcion_del_proyecto
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se corrige el flujo del checkout de licencias para que Epayco se publique con `epayco.enabled` + `epayco.public_key`, sin exigir `private_key` en el checkout actual. Ademas, las rutas `/api/public/licencias/payment_methods`, `/wompi/*` y `/epayco/*` quedan realmente publicas en `AuthMiddleware`, y la pagina `web/pagar_licencia.html` ahora explica si la pasarela esta desactivada o si falta configuracion minima.
+     - Verificacion tecnica:
+         - `go test ./handlers -run "Test(EpaycoCreateTransactionHandlerUsesConfiguredPublicBaseURLAndKeys|EpaycoCreateTransactionHandlerAllowsCheckoutWithoutPrivateKey|PublicLicenciasPaymentMethodsHandlerOrdersAndAvailability|PublicLicenciasPaymentMethodsHandlerAllowsEpaycoWithPublicKeyOnly)" -count=1`.
+         - `go test ./utils -run "Test(AuthMiddlewareAllowsPublicLicenciaPaymentRoutesWithoutSession|JSONErrorMiddlewareWrapsEpaycoNonJSONError)" -count=1`.
+         - Diagnostico del editor sin errores en `backend/handlers/payments_handlers.go`, `backend/handlers/payments_handlers_test.go`, `backend/handlers/system_empresas_handlers_test.go`, `backend/utils/utils.go`, `backend/utils/utils_test.go`, `web/pagar_licencia.html` y `web/super/configuracion_avanzada.html`.
+
+ - 2026-04-15: Login admin sin hint visible y Gmail SMTP editable en directo
+     - Archivos modificados:
+         - web/login.html
+         - web/super/configuracion_avanzada.html
+         - documentos/descripcion_del_proyecto
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se retira del login administrativo el bloque visual del correo recordado y se corrige la pantalla super de Gmail para que el correo remitente y los demas campos ya configurados puedan editarse de forma directa sin quedar bloqueados por la existencia de configuracion previa.
+     - Verificacion tecnica:
+         - `go test ./handlers -run "TestGmailConfigHandlerSaveRestartAlertTo" -count=1`.
+         - Diagnostico del editor sin errores en `web/login.html` y `web/super/configuracion_avanzada.html`.
+
+ - 2026-04-15: Tamanos configurables del portal desde pagina_principal
+     - Archivos modificados:
+         - backend/handlers/pagina_principal_handlers.go
+         - backend/handlers/pagina_principal_handlers_test.go
+         - web/super/pagina_principal.html
+         - web/index.html
+         - web/descripcion_de_los_sistemas.ht
+         - web/estilos.css
+         - documentos/descripcion_del_proyecto
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se extiende `pagina_principal` para que el panel super configure tamanos globales de tarjetas y de texto tanto en `index.html` como en `/descripcion_de_los_sistemas.ht`, manteniendo una unica fuente de configuracion publica para contenido y escala visual.
+     - Verificacion tecnica:
+         - `go test ./handlers -run "TestPaginaPrincipal|TestPublicPaginaPrincipalHandlerExposesLandingFields" -count=1`.
+         - Diagnostico del editor sin errores en `backend/handlers/pagina_principal_handlers.go`, `backend/handlers/pagina_principal_handlers_test.go`, `web/super/pagina_principal.html`, `web/index.html`, `web/descripcion_de_los_sistemas.ht` y `web/estilos.css`.
+
+ - 2026-04-15: Home publico con CTA superior de WhatsApp y botones mini-tarjeta
+     - Archivos modificados:
+         - web/index.html
+         - web/estilos.css
+         - documentos/descripcion_del_proyecto
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se mueve el CTA flotante `Contactenos` de `index.html` a la esquina superior derecha del portal y se rediseñan los accesos `Registrarse o iniciar sesión` e `Informacion de contacto` como mini-tarjetas compactas inspiradas en las tarjetas del home, manteniendo intacto el flujo publico existente.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/index.html` y `web/estilos.css`.
+
  - 2026-04-15: Landing descriptiva configurable desde pagina_principal
      - Archivos creados:
          - backend/handlers/pagina_principal_handlers_test.go

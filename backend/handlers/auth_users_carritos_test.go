@@ -2098,10 +2098,13 @@ func TestAuthMiddlewareAllowsPublicPortalPagesAssetsAndHomeCardsAPI(t *testing.T
 	mux.HandleFunc("/api/public/pagina_principal", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	})
+	mux.HandleFunc("/api/public/contrato", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
 
 	h := utils.AuthMiddleware(dbSuper, mux)
 
-	for _, path := range []string{"/index.html", "/descripcion_de_los_sistemas.ht", "/Informacion_de_contacto.html", "/js/login.js", "/api/public/pagina_principal"} {
+	for _, path := range []string{"/index.html", "/descripcion_de_los_sistemas.ht", "/Informacion_de_contacto.html", "/js/login.js", "/api/public/pagina_principal", "/api/public/contrato"} {
 		req := httptest.NewRequest(http.MethodGet, path, nil)
 		rr := httptest.NewRecorder()
 		h.ServeHTTP(rr, req)

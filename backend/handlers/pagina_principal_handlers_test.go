@@ -11,6 +11,12 @@ func TestPaginaPrincipalNormalizeConfigCompletesLandingFields(t *testing.T) {
 	defaults := paginaPrincipalDefaultConfig()
 	normalized := paginaPrincipalNormalizeConfig(paginaPrincipalConfig{
 		Cantidad: 1,
+		Estilos: paginaPrincipalVisualSettings{
+			IndexCardSize:   "large",
+			IndexTextSize:   "small",
+			LandingCardSize: "grande",
+			LandingTextSize: "valor-invalido",
+		},
 		Tarjetas: []paginaPrincipalCard{
 			{
 				Titulo:      "Tarjeta personalizada",
@@ -30,6 +36,18 @@ func TestPaginaPrincipalNormalizeConfigCompletesLandingFields(t *testing.T) {
 
 	card := normalized.Tarjetas[0]
 	base := defaults.Tarjetas[0]
+	if normalized.Estilos.IndexCardSize != paginaPrincipalVisualSizeLarge {
+		t.Fatalf("expected index_card_size %q, got %q", paginaPrincipalVisualSizeLarge, normalized.Estilos.IndexCardSize)
+	}
+	if normalized.Estilos.IndexTextSize != paginaPrincipalVisualSizeSmall {
+		t.Fatalf("expected index_text_size %q, got %q", paginaPrincipalVisualSizeSmall, normalized.Estilos.IndexTextSize)
+	}
+	if normalized.Estilos.LandingCardSize != paginaPrincipalVisualSizeLarge {
+		t.Fatalf("expected landing_card_size %q, got %q", paginaPrincipalVisualSizeLarge, normalized.Estilos.LandingCardSize)
+	}
+	if normalized.Estilos.LandingTextSize != defaults.Estilos.LandingTextSize {
+		t.Fatalf("expected landing_text_size %q, got %q", defaults.Estilos.LandingTextSize, normalized.Estilos.LandingTextSize)
+	}
 	if card.DetalleEtiqueta != base.DetalleEtiqueta {
 		t.Fatalf("expected detalle_etiqueta %q, got %q", base.DetalleEtiqueta, card.DetalleEtiqueta)
 	}
@@ -58,6 +76,12 @@ func TestPublicPaginaPrincipalHandlerExposesLandingFields(t *testing.T) {
 
 	cfg := paginaPrincipalConfig{
 		Cantidad: 1,
+		Estilos: paginaPrincipalVisualSettings{
+			IndexCardSize:   paginaPrincipalVisualSizeSmall,
+			IndexTextSize:   paginaPrincipalVisualSizeLarge,
+			LandingCardSize: paginaPrincipalVisualSizeLarge,
+			LandingTextSize: paginaPrincipalVisualSizeSmall,
+		},
 		Tarjetas: []paginaPrincipalCard{
 			{
 				Titulo:            "Hotel boutique",
@@ -86,8 +110,9 @@ func TestPublicPaginaPrincipalHandlerExposesLandingFields(t *testing.T) {
 	}
 
 	var resp struct {
-		Cantidad int                   `json:"cantidad"`
-		Tarjetas []paginaPrincipalCard `json:"tarjetas"`
+		Cantidad int                           `json:"cantidad"`
+		Tarjetas []paginaPrincipalCard         `json:"tarjetas"`
+		Estilos  paginaPrincipalVisualSettings `json:"estilos"`
 	}
 	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("decode response: %v body=%s", err, rr.Body.String())
@@ -100,6 +125,18 @@ func TestPublicPaginaPrincipalHandlerExposesLandingFields(t *testing.T) {
 	}
 
 	card := resp.Tarjetas[0]
+	if resp.Estilos.IndexCardSize != cfg.Estilos.IndexCardSize {
+		t.Fatalf("expected index_card_size %q, got %q", cfg.Estilos.IndexCardSize, resp.Estilos.IndexCardSize)
+	}
+	if resp.Estilos.IndexTextSize != cfg.Estilos.IndexTextSize {
+		t.Fatalf("expected index_text_size %q, got %q", cfg.Estilos.IndexTextSize, resp.Estilos.IndexTextSize)
+	}
+	if resp.Estilos.LandingCardSize != cfg.Estilos.LandingCardSize {
+		t.Fatalf("expected landing_card_size %q, got %q", cfg.Estilos.LandingCardSize, resp.Estilos.LandingCardSize)
+	}
+	if resp.Estilos.LandingTextSize != cfg.Estilos.LandingTextSize {
+		t.Fatalf("expected landing_text_size %q, got %q", cfg.Estilos.LandingTextSize, resp.Estilos.LandingTextSize)
+	}
 	if card.Titulo != cfg.Tarjetas[0].Titulo {
 		t.Fatalf("expected titulo %q, got %q", cfg.Tarjetas[0].Titulo, card.Titulo)
 	}

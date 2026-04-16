@@ -2,6 +2,7 @@ package utils
 
 import (
 	"context"
+	"database/sql"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -12,6 +13,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	_ "modernc.org/sqlite"
 )
 
 func withTempWorkingDir(t *testing.T) string {
@@ -244,6 +247,35 @@ func TestCanonicalPublicHostMiddlewareAllowsApexAndSubdomains(t *testing.T) {
 	}
 }
 
+func TestAuthMiddlewareAllowsPublicLicenciaPaymentRoutesWithoutSession(t *testing.T) {
+	paths := []struct {
+		method string
+		path   string
+	}{
+		{method: http.MethodGet, path: "/api/public/licencias/payment_methods"},
+		{method: http.MethodGet, path: "/epayco/transaction_status?reference=demo"},
+		{method: http.MethodGet, path: "/wompi/transaction_status?reference=demo"},
+		{method: http.MethodPost, path: "/epayco/webhook"},
+		{method: http.MethodPost, path: "/wompi/create_transaction_nequi"},
+	}
+
+	for _, tc := range paths {
+		t.Run(tc.path, func(t *testing.T) {
+			h := AuthMiddleware(nil, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusNoContent)
+			}))
+
+			req := httptest.NewRequest(tc.method, tc.path, nil)
+			rr := httptest.NewRecorder()
+			h.ServeHTTP(rr, req)
+
+			if rr.Code != http.StatusNoContent {
+				t.Fatalf("expected status %d for %s %s, got %d", http.StatusNoContent, tc.method, tc.path, rr.Code)
+			}
+		})
+	}
+}
+
 func TestLoggingMiddlewareSetsContextAndWritesLogs(t *testing.T) {
 	tmpDir := withTempWorkingDir(t)
 
@@ -349,6 +381,31 @@ func TestJSONErrorMiddlewareWrapsNonJSONError(t *testing.T) {
 	}
 }
 
+func TestJSONErrorMiddlewareWrapsEpaycoNonJSONError(t *testing.T) {
+	withTempWorkingDir(t)
+
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusPreconditionFailed)
+		_, _ = w.Write([]byte("epayco no disponible"))
+	})
+
+	h := JSONErrorMiddleware(next)
+	req := httptest.NewRequest(http.MethodGet, "/epayco/transaction_status?reference=demo", nil)
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusPreconditionFailed {
+		t.Fatalf("expected status 412, got %d", rr.Code)
+	}
+	if ct := strings.ToLower(rr.Header().Get("Content-Type")); !strings.Contains(ct, "application/json") {
+		t.Fatalf("expected JSON content type, got %q", ct)
+	}
+	if !strings.Contains(rr.Body.String(), "epayco no disponible") {
+		t.Fatalf("expected wrapped epayco error body, got %q", rr.Body.String())
+	}
+}
+
 func TestJSONErrorMiddlewarePreservesJSONErrorBody(t *testing.T) {
 	withTempWorkingDir(t)
 
@@ -368,5 +425,81 @@ func TestJSONErrorMiddlewarePreservesJSONErrorBody(t *testing.T) {
 	}
 	if body := strings.TrimSpace(rr.Body.String()); body != `{"error":"dato invalido"}` {
 		t.Fatalf("expected original json error body, got %q", body)
+	}
+}
+
+func TestJSONErrorMiddlewareSanitizesInternalServerError(t *testing.T) {
+	tmpDir := withTempWorkingDir(t)
+
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(`{"ok":false,"error":"dial tcp 10.0.0.8:5432: timeout"}`))
+	})
+
+	h := JSONErrorMiddleware(next)
+	req := httptest.NewRequest(http.MethodGet, "/api/demo?empresa_id=3", nil)
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusInternalServerError {
+		t.Fatalf("expected status 500, got %d", rr.Code)
+	}
+	if strings.Contains(strings.ToLower(rr.Body.String()), "dial tcp") {
+		t.Fatalf("expected sanitized body, got %q", rr.Body.String())
+	}
+	if !strings.Contains(strings.ToLower(rr.Body.String()), "problema interno") {
+		t.Fatalf("expected friendly message, got %q", rr.Body.String())
+	}
+	data, err := os.ReadFile(filepath.Join(tmpDir, "logs", "system_errors.log"))
+	if err != nil {
+		t.Fatalf("read system_errors.log: %v", err)
+	}
+	if !strings.Contains(strings.ToLower(string(data)), "dial tcp") {
+		t.Fatalf("expected internal detail in system log, got %s", string(data))
+	}
+}
+
+func TestRecoveryMiddlewareRecoversPanicAndLogsIt(t *testing.T) {
+	tmpDir := withTempWorkingDir(t)
+	dbPath := filepath.Join(tmpDir, "errors_monitor.db")
+	dbConn, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		t.Fatalf("open sqlite: %v", err)
+	}
+	defer dbConn.Close()
+	ConfigureErrorMonitor(dbConn, tmpDir)
+
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		panic("panic de prueba en middleware")
+	})
+
+	h := RecoveryMiddleware(next)
+	req := httptest.NewRequest(http.MethodGet, "/api/empresa/clientes?empresa_id=44", nil)
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusInternalServerError {
+		t.Fatalf("expected status 500, got %d", rr.Code)
+	}
+	if strings.Contains(strings.ToLower(rr.Body.String()), "panic de prueba") {
+		t.Fatalf("expected panic detail hidden from client, got %q", rr.Body.String())
+	}
+	if !strings.Contains(strings.ToLower(rr.Body.String()), "problema interno") {
+		t.Fatalf("expected friendly panic message, got %q", rr.Body.String())
+	}
+	var total int
+	if err := dbConn.QueryRow(`SELECT COUNT(*) FROM super_errores_sistema WHERE tipo_error = 'panic_recovered'`).Scan(&total); err != nil {
+		t.Fatalf("query panic rows: %v", err)
+	}
+	if total != 1 {
+		t.Fatalf("expected 1 panic row, got %d", total)
+	}
+	data, err := os.ReadFile(filepath.Join(tmpDir, "logs", "system_errors.log"))
+	if err != nil {
+		t.Fatalf("read system_errors.log: %v", err)
+	}
+	if !strings.Contains(string(data), "panic de prueba en middleware") {
+		t.Fatalf("expected panic detail in file log, got %s", string(data))
 	}
 }

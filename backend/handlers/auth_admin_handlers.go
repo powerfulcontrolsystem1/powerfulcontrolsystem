@@ -309,19 +309,28 @@ func HandleGoogleCallback(dbEmpresas *sql.DB, dbSuper *sql.DB, clientID, clientS
 			log.Println("db ensure empresa error:", err)
 		}
 
+		if err := dbpkg.EnsureSuperContractSchema(dbSuper); err != nil {
+			log.Println("contract schema error:", err)
+			http.Error(w, "failed to prepare contract metadata", http.StatusInternalServerError)
+			return
+		}
+		currentContract, err := dbpkg.GetCurrentSuperContract(dbSuper)
+		if err != nil || currentContract == nil {
+			log.Println("load current contract error:", err)
+			http.Error(w, "failed to load current contract", http.StatusInternalServerError)
+			return
+		}
+
 		// La aceptación se decide únicamente por registro persistido por administrador.
 		accepted := false
 		if adminNow, err := dbpkg.GetAdminByEmail(dbSuper, userinfo.Email); err == nil && adminNow != nil {
-			if adminNow.AceptaContrato == 1 {
+			acceptance, acceptanceErr := dbpkg.GetAdministradorContratoAceptacion(dbSuper, userinfo.Email)
+			if acceptanceErr == nil && adminNow.AceptaContrato == 1 && acceptance.Acepta && acceptance.Version >= currentContract.Version {
 				accepted = true
 			}
 		}
 
 		if accepted {
-			// Persistir marca de aceptación y crear sesión
-			if err := dbpkg.SetAdministradorAceptaContrato(dbSuper, userinfo.Email, true); err != nil {
-				log.Println("warning: failed to persist acepta_contrato:", err)
-			}
 			token, err := utils.GenerateSecureToken(32)
 			if err != nil {
 				log.Println("failed to generate session token:", err)

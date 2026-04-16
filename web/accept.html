@@ -11,6 +11,7 @@
     .accept-actions { display:flex; gap:12px; justify-content:center; margin-top:18px; }
     .accept-help { color:var(--muted); margin-top:8px; }
     .accept-link { color:var(--accent); font-weight:800; text-decoration:underline; }
+	 .accept-meta { color:var(--muted); font-size:.95rem; margin-top:10px; min-height:20px; }
   </style>
 </head>
 <body class="login-page">
@@ -19,7 +20,8 @@
     <div class="card accept-card">
       <h2>Antes de continuar</h2>
       <p class="accept-help">Por favor, confirma tu aceptación del contrato para completar el registro</p>
-      <p><a href="/contrato.html" target="_blank" class="accept-link">Ver contrato completo</a></p>
+      <p><a id="contractLink" href="/contrato.html" target="_blank" class="accept-link">Ver contrato completo</a></p>
+      <div id="contractMeta" class="accept-meta"></div>
 
       <div style="margin:14px 0;">
         <label class="remember-label" style="display:inline-flex;align-items:center;gap:10px;">
@@ -41,6 +43,8 @@
     var acceptBtn = document.getElementById('acceptBtn');
     var checkbox = document.getElementById('acceptCheckbox');
     var statusEl = document.getElementById('statusEl');
+    var contractLink = document.getElementById('contractLink');
+    var contractMeta = document.getElementById('contractMeta');
 
     function qs(name){
       var params = new URLSearchParams(window.location.search);
@@ -51,6 +55,33 @@
     function updateState(){
       acceptBtn.disabled = !checkbox.checked || !payload;
     }
+
+  function loadContractMeta(){
+    fetch('/api/public/contrato', { credentials: 'same-origin' })
+      .then(function(resp){
+        if (!resp.ok) throw resp;
+        return resp.json();
+      })
+      .then(function(js){
+        var contract = js && js.contrato ? js.contrato : null;
+        if (!contract) return;
+        var version = Number(contract.version || 0);
+        if (contractLink && version > 0) {
+          contractLink.href = '/contrato.html?version=' + encodeURIComponent(String(version));
+        }
+        if (contractMeta) {
+          var parts = [];
+          if (version > 0) parts.push('Version vigente: ' + version);
+          if (contract.fecha_actualizacion) parts.push('actualizada: ' + contract.fecha_actualizacion);
+          contractMeta.textContent = parts.join(' | ');
+        }
+      })
+      .catch(function(){
+        if (contractMeta) {
+          contractMeta.textContent = 'No se pudo cargar la metadata del contrato, pero puedes abrirlo manualmente.';
+        }
+      });
+  }
 
     checkbox.addEventListener('change', updateState);
 
@@ -87,6 +118,7 @@
       });
     });
 
+	loadContractMeta();
     updateState();
   })();
   </script>

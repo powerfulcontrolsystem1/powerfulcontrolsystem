@@ -36,23 +36,26 @@ Sistema POS multiempresa con backend en Go y persistencia PostgreSQL, orientado 
 - Login Google para administradores.
 - Cookies de sesion con middleware de proteccion.
 - Flujo administrativo unificado: `login.html -> /auth/google/login -> /auth/google/callback -> /accept.html -> /accept/complete`.
-- Aceptación de contrato obligatoria una sola vez por administrador (flag persistente `acepta_contrato`) antes de acceso al panel.
+- Aceptacion de contrato obligatoria por version vigente antes de acceso al panel. El backend conserva `acepta_contrato`, `contrato_version_aceptada` y `fecha_acepta_contrato`, y obliga a volver a aceptar cuando super publica una nueva version del contrato.
 - Verificación humana con reCAPTCHA real validada en backend previo a creación de sesión administrativa.
 - Hardening de OAuth administrativo: `login_hint` solo se reenvia a Google cuando tiene formato de correo valido y la capa cliente depura `rememberedEmail` corruptos antes de invocar `/auth/google/login`.
+- La opcion `Recordar cuenta` del login administrativo conserva el comportamiento de `login_hint`, pero sin mostrar un bloque visible con el correo recordado dentro de la pantalla de acceso.
 - Host canónico del acceso administrativo: el backend redirige `www.powerfulcontrolsystem.com` hacia `powerfulcontrolsystem.com` antes de resolver OAuth para evitar mezclar `redirect_uri`, cookies técnicas (`oauth_redirect_url`) y sesiones entre dos hosts públicos.
 
 2) Administracion global (super)
 - Empresas, tipos de empresa, licencias, administradores.
-- Configuracion de pasarelas de pago (Wompi/Epayco) y correo.
-- Configuracion avanzada de licencias con activacion independiente de Epayco y Wompi; el checkout publico consulta `GET /api/public/licencias/payment_methods` para mostrar solo pasarelas activas y configuradas.
-- Configuracion avanzada de Epayco alineada al contrato real de checkout: `public_key`, `private_key` cifrada y `customer_id` opcional; el backend conserva compatibilidad con claves legacy (`epayco.cust_id`, `epayco.key`) mientras migra instalaciones existentes.
+- Configuracion de pasarelas de pago (Wompi/Epayco) y correo, incluyendo edicion directa de Gmail SMTP para confirmacion de usuarios desde el panel super.
+- Configuracion avanzada de licencias con activacion independiente de Epayco y Wompi; el checkout publico consulta `GET /api/public/licencias/payment_methods` sin requerir sesion para mostrar solo pasarelas activas y configuradas.
+- Configuracion avanzada de Epayco alineada al contrato real de checkout: `public_key`, `private_key` cifrada opcional para el checkout actual y `customer_id` opcional; el backend conserva compatibilidad con claves legacy (`epayco.cust_id`, `epayco.key`) mientras migra instalaciones existentes. Para disponibilidad operativa del checkout de licencias, Epayco exige como minimo `public_key` valida.
 - Los flujos publicos de licencias para Epayco y Wompi resuelven `response`, `confirmation` y `redirect_url` con una base pública válida (`gmail.confirm_base_url` o el host publicado), rechazando `localhost` para evitar fallos en pasarelas externas.
 - El retorno del checkout de licencias es recuperable: Epayco y Wompi vuelven a `/pagar_licencia.html` con contexto minimo (`provider`, `status`, `reference`, `licencia_id`, `empresa_id`) y la pagina reanuda la consulta real del pago tras volver o recargar. Wompi acepta lookup por `reference` ademas de `transaction_id` para no perder trazabilidad del cobro.
 - Configuracion avanzada de credenciales IA para modelos populares con trazabilidad de cuenta Google administradora.
 - Monitoreo operativo de inicio/reinicio del backend con bitacora central (`super_servidor_eventos`), log local runtime y notificacion por correo configurable (`gmail.restart_alert_to`).
+- Monitor centralizado de errores del sistema con recuperacion de panicos, sanitizacion de respuestas `5xx`, persistencia en base super (`super_errores_sistema`) y panel dedicado para super en `/super/errores.html` consumiendo `/super/api/errores`.
 - Administracion profesional de PostgreSQL desde super con vista dedicada de rendimiento (`/super/administrar_base_de_datos.html`) y API protegida de telemetria (`/super/api/postgres/performance`).
-- Gestion de tarjetas dinamicas del portal principal desde super (`/super/pagina_principal.html`) con persistencia en base super y publicacion en `index.html` via `/api/public/pagina_principal`; el CTA `Explorar oferta` del home abre la landing unica `/descripcion_de_los_sistemas.ht#<seccion>` y la misma configuracion de tarjetas tambien controla la etiqueta, el titular ampliado, los parrafos y las capacidades clave mostradas dentro de esa pagina descriptiva, ademas del destino del boton `Probar Gratis`.
-- El portal publico incorpora contacto comercial visible en `index.html` mediante acceso superior a `/Informacion_de_contacto.html` y un CTA flotante `Contactenos` que redirige a WhatsApp (`+573043306506`). La pagina `/Informacion_de_contacto.html` resume el sistema y centraliza correo y WhatsApp de contacto. `AuthMiddleware` mantiene libres sin sesion `index.html`, `/descripcion_de_los_sistemas.ht` y `/Informacion_de_contacto.html` como paginas publicas del portal.
+- Gestion del contrato administrativo desde super (`/super/contrato.html`) con persistencia en la base `pcs_superadministrador`, historial de versiones, resumen de cambio obligatorio por publicacion y exposicion publica del contrato vigente mediante `/api/public/contrato` para el flujo de aceptacion del login administrativo.
+- Gestion de tarjetas dinamicas del portal principal desde super (`/super/pagina_principal.html`) con persistencia en base super y publicacion en `index.html` via `/api/public/pagina_principal`; el CTA `Explorar oferta` del home abre la landing unica `/descripcion_de_los_sistemas.ht#<seccion>` y la misma configuracion de tarjetas tambien controla la etiqueta, el titular ampliado, los parrafos, las capacidades clave y los ajustes visuales globales de tamano de tarjeta y tamano de texto para el home y la landing descriptiva, ademas del destino del boton `Probar Gratis`.
+- El portal publico incorpora contacto comercial visible en `index.html` mediante acceso superior a `/Informacion_de_contacto.html` y un CTA flotante `Contactenos` que redirige a WhatsApp (`+573043306506`). En el home, ese CTA flotante se fija en la esquina superior derecha y los accesos `Registrarse o iniciar sesión` e `Informacion de contacto` usan una variante compacta con acabado visual de mini-tarjeta para reforzar la jerarquia comercial. La pagina `/Informacion_de_contacto.html` resume el sistema y centraliza correo y WhatsApp de contacto. `AuthMiddleware` mantiene libres sin sesion `index.html`, `/descripcion_de_los_sistemas.ht` y `/Informacion_de_contacto.html` como paginas publicas del portal.
 
 3) Operacion por empresa
 - Usuarios de empresa (alta, confirmacion, estado, primer ingreso).
@@ -110,7 +113,7 @@ Sistema POS multiempresa con backend en Go y persistencia PostgreSQL, orientado 
 ## Base de datos
 
 1) `pcs_superadministrador` (PostgreSQL)
-- Configuracion global, administradores, sesiones, licencias, tipos.
+- Configuracion global, administradores, sesiones, licencias, tipos y contrato versionado del acceso administrativo.
 
 2) `pcs_empresas` (PostgreSQL)
 - Datos operativos por empresa: usuarios, clientes, inventario, carritos, configuraciones.
@@ -124,20 +127,27 @@ Regla general de tablas:
 ## Rutas y paginas clave
 
 - Portal: `/`, `/index.html`.
+- Contrato publico: `/contrato.html`.
 - Landing descriptiva del portal: `/descripcion_de_los_sistemas.ht`.
 - Informacion de contacto publica: `/Informacion_de_contacto.html`.
 - Login admin: `/login.html`.
 - Login usuario empresa: `/login_usuario.html`.
 - Dominio canónico público: `https://powerfulcontrolsystem.com` (la variante `www` se redirige al host raíz antes del flujo OAuth y del resto de navegación pública).
 - Panel super: `/super_administrador.html`.
+- Editor super del contrato: `/super/contrato.html`.
+- Monitor super de errores: `/super/errores.html`.
 - Administracion DB super: `/super/administrar_base_de_datos.html`.
 - Configuracion de pagina principal (super): `/super/pagina_principal.html`.
 - API de rendimiento PostgreSQL (super): `/super/api/postgres/performance`.
+- API super del contrato: `/super/api/contrato`.
+- API super de errores: `/super/api/errores`.
+- API publica del contrato: `/api/public/contrato`.
 - API super de pagina principal: `/super/api/pagina_principal`.
 - API publica de pagina principal: `/api/public/pagina_principal`.
 - API super de configuracion de pasarelas: `/super/api/config/wompi`, `/super/api/config/epayco`.
 - API publica de disponibilidad de pasarelas de licencias: `/api/public/licencias/payment_methods`.
 - API checkout licencias (publica): `/wompi/*`, `/epayco/*`.
+- `AuthMiddleware` mantiene publicas sin sesion las rutas de disponibilidad y checkout de licencias (`/api/public/licencias/payment_methods`, `/wompi/*`, `/epayco/*`) para que el portal pueda consultar estado y reanudar pagos al volver desde la pasarela.
 - API de impresoras por empresa: `/api/empresa/impresoras`.
 - API de resolucion de impresora: `/api/empresa/impresoras/resolver`.
 - Panel empresa: `/administrar_empresa.html` y subpaginas de modulo.

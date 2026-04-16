@@ -45,9 +45,43 @@ Leyenda:
 | Impresoras operativas | CRUDA | CRUA | R | R | R | R | R | R |
 | Administracion DB PostgreSQL (super) | R | - | - | - | - | - | - | - |
 | Pagina principal (tarjetas index) | CRUA | - | - | - | - | - | - | - |
+| Contrato administrativo (super) | CRUA | - | - | - | - | - | - | - |
+| Monitor de errores del sistema (super) | R | - | - | - | - | - | - | - |
 | Pasarelas de licencias (Wompi/Epayco) | CRUA | - | - | - | - | - | - | - |
 
 ## Estado de implementacion tecnica inicial (2026-04-04)
+
+- Actualizacion 2026-04-15 (contrato versionado y editor super):
+	- `backend/handlers/super_contrato_handlers.go` incorpora `GET/PUT /super/api/contrato` como superficie exclusiva de `super_administrador` para administrar el contrato vigente y publicar nuevas versiones con trazabilidad.
+	- `web/super/contrato.html` agrega una pagina visible solo dentro del panel super para editar el contrato, revisar historial y reutilizar una version previa como base de una nueva publicacion.
+	- `backend/handlers/auth_admin_handlers.go` y `backend/handlers/accept_handlers.go` hacen que el acceso administrativo dependa de la `contrato_version_aceptada` frente a la version vigente publicada por super.
+	- Impacto de matriz: se agrega el control global `Contrato administrativo (super)` como CRUA exclusivo de `super_administrador`; `/api/public/contrato` y `/contrato.html` quedan de lectura publica para sostener el flujo de aceptacion previa al panel.
+
+- Actualizacion 2026-04-15 (monitor centralizado de errores y recovery global):
+	- `backend/utils/system_errors.go` y `backend/utils/utils.go` incorporan captura transversal de errores HTTP, panicos recuperados y procesos internos protegidos, con respuesta amigable al usuario final y detalle tecnico reservado al monitor super.
+	- `backend/handlers/super_error_handlers.go` publica `GET /super/api/errores` y `web/super/errores.html` entrega la vista filtrable del sistema completo.
+	- Impacto de matriz: se agrega `Monitor de errores del sistema (super)` como lectura exclusiva de `super_administrador`; no se expone a administradores de empresa ni a otros roles.
+
+- Actualizacion 2026-04-15 (checkout de licencias: Epayco visible con Public Key y rutas publicas reales):
+	- `backend/handlers/payments_handlers.go` ajusta la disponibilidad de Epayco para el checkout de licencias: con `epayco.enabled=1`, basta `epayco.public_key` para publicar la pasarela y construir el checkout actual.
+	- `backend/utils/utils.go` deja realmente publicas `/api/public/licencias/payment_methods`, `/wompi/*` y `/epayco/*`, alineando el middleware con la matriz y con la documentacion del portal de pagos.
+	- `web/pagar_licencia.html` mejora el mensaje de indisponibilidad para distinguir entre pasarela desactivada y configuracion incompleta.
+	- Impacto de matriz: sin cambios en roles, CRUD/A ni visibilidad del panel; `Pasarelas de licencias (Wompi/Epayco)` sigue como CRUA exclusivo de `super_administrador`, mientras las rutas publicas de checkout permanecen de solo consumo para el flujo comercial.
+
+- Actualizacion 2026-04-15 (login admin sin hint visible y Gmail SMTP editable en directo):
+	- `web/login.html` elimina el bloque visible del correo recordado sin cambiar el flujo de autenticacion Google ni el alcance publico del login.
+	- `web/super/configuracion_avanzada.html` habilita edicion directa de la configuracion Gmail existente sobre la misma ruta protegida `/super/api/config/gmail`.
+	- Impacto de matriz: sin cambios en roles, CRUD/A, wrappers o visibilidad por rol; la configuracion global de correo sigue bajo `super_administrador` y el login administrativo permanece publico.
+
+- Actualizacion 2026-04-15 (portal publico: tamanos configurables en home y landing desde pagina_principal):
+	- `backend/handlers/pagina_principal_handlers.go` y `backend/handlers/pagina_principal_handlers_test.go` amplian el contrato de `pagina_principal` para publicar ajustes visuales globales de tamano de tarjeta y tamano de texto.
+	- `web/super/pagina_principal.html` permite editar esos ajustes y `web/index.html` junto con `web/descripcion_de_los_sistemas.ht` los consumen desde la API publica para escalar el portal sin rutas adicionales.
+	- Impacto de matriz: sin cambios en roles, CRUD/A, wrappers o visibilidad por rol; `Pagina principal (tarjetas index)` se mantiene como CRUA exclusivo de `super_administrador` y el portal sigue siendo publico de solo lectura.
+
+- Actualizacion 2026-04-15 (portal publico: CTA superior de WhatsApp y botones tipo mini-tarjeta):
+	- `web/index.html` mantiene las mismas rutas publicas del home, pero actualiza la presentacion del header para que los accesos comerciales principales se muestren como mini-tarjetas compactas.
+	- `web/estilos.css` reposiciona el CTA flotante `Contactenos` hacia la esquina superior derecha y preserva su comportamiento responsive sin introducir acciones nuevas.
+	- Impacto de matriz: sin cambios en roles, CRUD/A, wrappers o visibilidad por rol; `Pagina principal (tarjetas index)` se mantiene como CRUA exclusivo de `super_administrador` y el portal sigue siendo publico de solo lectura.
 
 - Actualizacion 2026-04-15 (portal publico: landing descriptiva configurable desde pagina_principal):
 	- `backend/handlers/pagina_principal_handlers.go` amplía la configuracion de tarjetas del portal para incluir el contenido extendido consumido por `/descripcion_de_los_sistemas.ht`.

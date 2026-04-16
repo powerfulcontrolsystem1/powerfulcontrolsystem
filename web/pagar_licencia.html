@@ -201,6 +201,17 @@
           const availableMethods = [];
           if (epaycoProvider && epaycoProvider.available) availableMethods.push('epayco');
           if (wompiProvider && wompiProvider.available) availableMethods.push('wompi');
+          const unavailableMessages = [];
+          if (epaycoProvider && !epaycoProvider.available) {
+            unavailableMessages.push(epaycoProvider.enabled
+              ? 'Epayco esta activado, pero falta configurar al menos la Public Key en configuracion avanzada.'
+              : 'Epayco esta desactivado en configuracion avanzada.');
+          }
+          if (wompiProvider && !wompiProvider.available) {
+            unavailableMessages.push(wompiProvider.enabled
+              ? 'Wompi esta activado, pero le faltan credenciales obligatorias (Public Key, Private Key e Integrity Key).'
+              : 'Wompi esta desactivado en configuracion avanzada.');
+          }
 
           const paymentCards = [];
           if (epaycoProvider && epaycoProvider.available) {
@@ -249,7 +260,9 @@
             '<h3 class="payment-method-title">Selecciona el método de pago</h3>'+
             (paymentCards.length
               ? '<div class="payment-method-selector payment-method-selector-licenses">' + paymentCards.join('') + '</div>'
-              : '<div class="form-help error">Actualmente no hay métodos de pago activos. Activa Epayco o Wompi desde configuración avanzada.</div>')+
+              : '<div class="form-help error">' + escapeHtml(unavailableMessages.length
+                ? unavailableMessages.join(' ')
+                : 'Actualmente no hay métodos de pago activos. Activa Epayco o Wompi desde configuración avanzada.') + '</div>')+
             ((epaycoProvider && epaycoProvider.available)
               ? '<div id="epaycoPanel" class="payment-method-panel payment-method-panel-epayco">'+
                 '<div class="method-panel-heading">Epayco</div>'+

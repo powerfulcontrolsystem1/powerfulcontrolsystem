@@ -500,6 +500,15 @@ func parseBoolConfigValue(raw string) bool {
 	return v == "1" || v == "true" || v == "si" || v == "yes" || v == "on" || v == "activo"
 }
 
+func firstNonEmptyString(values ...string) string {
+	for _, value := range values {
+		if trimmed := strings.TrimSpace(value); trimmed != "" {
+			return trimmed
+		}
+	}
+	return ""
+}
+
 func getConfigEntryTrimmed(dbSuper *sql.DB, key string) (string, error) {
 	value, _, _, _, err := dbpkg.GetConfigEntry(dbSuper, key)
 	if err != nil {
@@ -575,11 +584,11 @@ type licenciaPaymentMethodStatus struct {
 }
 
 func loadLicenciaPaymentMethodStatuses(dbSuper *sql.DB) ([]licenciaPaymentMethodStatus, error) {
-	epaycoPublicKey, _, epaycoPrivateKey, err := resolveEpaycoCredentials(dbSuper)
+	epaycoPublicKey, _, _, err := resolveEpaycoCredentials(dbSuper)
 	if err != nil {
 		return nil, err
 	}
-	epaycoConfigured := epaycoPublicKey != "" && epaycoPrivateKey != ""
+	epaycoConfigured := strings.TrimSpace(epaycoPublicKey) != ""
 	epaycoEnabled, err := resolveEnabledConfigValue(dbSuper, "epayco.enabled", false)
 	if err != nil {
 		return nil, err
@@ -2034,13 +2043,10 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 		publicKey = strings.TrimSpace(publicKey)
+		customerID = strings.TrimSpace(customerID)
 		privateKey = strings.TrimSpace(privateKey)
 		if publicKey == "" {
 			http.Error(w, "epayco.public_key no configurada", http.StatusInternalServerError)
-			return
-		}
-		if privateKey == "" {
-			http.Error(w, "epayco.private_key no configurada", http.StatusInternalServerError)
 			return
 		}
 
@@ -2061,7 +2067,7 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		mode, modeSource := resolveEpaycoMode(dbSuper, publicKey, privateKey)
+		mode, modeSource := resolveEpaycoMode(dbSuper, firstNonEmptyString(customerID, publicKey), privateKey)
 		reference := fmt.Sprintf("EPAYCO-LIC-%d-EMP-%d-%d", payload.LicenciaID, payload.EmpresaID, time.Now().UnixNano())
 		checkoutURL := buildEpaycoCheckoutURL(paymentBaseURL, publicKey, customerID, reference, lic.Nombre, payload.LicenciaID, payload.EmpresaID, lic.Valor, email, mode)
 

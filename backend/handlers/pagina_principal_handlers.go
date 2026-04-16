@@ -20,6 +20,12 @@ const (
 	paginaPrincipalDefaultCardLimit   = 12
 )
 
+const (
+	paginaPrincipalVisualSizeSmall  = "pequeno"
+	paginaPrincipalVisualSizeMedium = "mediano"
+	paginaPrincipalVisualSizeLarge  = "grande"
+)
+
 type paginaPrincipalCard struct {
 	Titulo            string   `json:"titulo"`
 	Descripcion       string   `json:"descripcion"`
@@ -32,9 +38,26 @@ type paginaPrincipalCard struct {
 	DetallePuntos     []string `json:"detalle_puntos"`
 }
 
+type paginaPrincipalVisualSettings struct {
+	IndexCardSize   string `json:"index_card_size"`
+	IndexTextSize   string `json:"index_text_size"`
+	LandingCardSize string `json:"landing_card_size"`
+	LandingTextSize string `json:"landing_text_size"`
+}
+
 type paginaPrincipalConfig struct {
-	Cantidad int                   `json:"cantidad"`
-	Tarjetas []paginaPrincipalCard `json:"tarjetas"`
+	Cantidad int                           `json:"cantidad"`
+	Tarjetas []paginaPrincipalCard         `json:"tarjetas"`
+	Estilos  paginaPrincipalVisualSettings `json:"estilos"`
+}
+
+func paginaPrincipalDefaultVisualSettings() paginaPrincipalVisualSettings {
+	return paginaPrincipalVisualSettings{
+		IndexCardSize:   paginaPrincipalVisualSizeMedium,
+		IndexTextSize:   paginaPrincipalVisualSizeMedium,
+		LandingCardSize: paginaPrincipalVisualSizeMedium,
+		LandingTextSize: paginaPrincipalVisualSizeMedium,
+	}
 }
 
 func paginaPrincipalDefaultConfig() paginaPrincipalConfig {
@@ -123,6 +146,47 @@ func paginaPrincipalDefaultConfig() paginaPrincipalConfig {
 	return paginaPrincipalConfig{
 		Cantidad: len(cards),
 		Tarjetas: cards,
+		Estilos:  paginaPrincipalDefaultVisualSettings(),
+	}
+}
+
+func paginaPrincipalNormalizeVisualSize(raw string) string {
+	value := strings.ToLower(strings.TrimSpace(raw))
+	switch value {
+	case "small", "pequeno":
+		return paginaPrincipalVisualSizeSmall
+	case "medium", "mediano":
+		return paginaPrincipalVisualSizeMedium
+	case "large", "grande":
+		return paginaPrincipalVisualSizeLarge
+	default:
+		return paginaPrincipalVisualSizeMedium
+	}
+}
+
+func paginaPrincipalNormalizeVisualSettings(raw paginaPrincipalVisualSettings) paginaPrincipalVisualSettings {
+	defaults := paginaPrincipalDefaultVisualSettings()
+	indexCardSize := paginaPrincipalNormalizeVisualSize(raw.IndexCardSize)
+	if indexCardSize == "" {
+		indexCardSize = defaults.IndexCardSize
+	}
+	indexTextSize := paginaPrincipalNormalizeVisualSize(raw.IndexTextSize)
+	if indexTextSize == "" {
+		indexTextSize = defaults.IndexTextSize
+	}
+	landingCardSize := paginaPrincipalNormalizeVisualSize(raw.LandingCardSize)
+	if landingCardSize == "" {
+		landingCardSize = defaults.LandingCardSize
+	}
+	landingTextSize := paginaPrincipalNormalizeVisualSize(raw.LandingTextSize)
+	if landingTextSize == "" {
+		landingTextSize = defaults.LandingTextSize
+	}
+	return paginaPrincipalVisualSettings{
+		IndexCardSize:   indexCardSize,
+		IndexTextSize:   indexTextSize,
+		LandingCardSize: landingCardSize,
+		LandingTextSize: landingTextSize,
 	}
 }
 
@@ -234,6 +298,7 @@ func paginaPrincipalNormalizeConfig(cfg paginaPrincipalConfig) paginaPrincipalCo
 	return paginaPrincipalConfig{
 		Cantidad: cfg.Cantidad,
 		Tarjetas: normalized,
+		Estilos:  paginaPrincipalNormalizeVisualSettings(cfg.Estilos),
 	}
 }
 
@@ -431,6 +496,7 @@ func PublicPaginaPrincipalHandler(dbSuper *sql.DB) http.HandlerFunc {
 			"ok":         true,
 			"cantidad":   cfg.Cantidad,
 			"tarjetas":   cfg.Tarjetas,
+			"estilos":    cfg.Estilos,
 			"updated_at": updatedAt,
 		})
 	}

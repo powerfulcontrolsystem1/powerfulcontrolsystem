@@ -53,12 +53,24 @@ func AcceptCompleteHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 
+		if err := dbpkg.EnsureSuperContractSchema(dbSuper); err != nil {
+			log.Printf("accept: ensure contract schema failed: %v", err)
+			http.Error(w, "contract unavailable", http.StatusInternalServerError)
+			return
+		}
+		currentContract, err := dbpkg.GetCurrentSuperContract(dbSuper)
+		if err != nil || currentContract == nil {
+			log.Printf("accept: load current contract failed: %v", err)
+			http.Error(w, "contract unavailable", http.StatusInternalServerError)
+			return
+		}
+
 		// La validación reCAPTCHA se ha eliminado por decisión del producto.
 		// Se omite cualquier token y se considera la verificación como satisfactoria.
 		// Nota: el campo `token` del payload se ignora para mantener compatibilidad.
 
 		// Persistir aceptación y crear sesión
-		if err := dbpkg.SetAdministradorAceptaContrato(dbSuper, data.Email, true); err != nil {
+		if err := dbpkg.SetAdministradorContratoAceptado(dbSuper, data.Email, currentContract.Version); err != nil {
 			log.Printf("warning: failed to persist acepta_contrato: %v", err)
 		}
 		token, err := utils.GenerateSecureToken(32)
@@ -105,6 +117,6 @@ func AcceptCompleteHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "redirect": redirectTo})
+		json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "redirect": redirectTo, "contract_version": currentContract.Version})
 	}
 }

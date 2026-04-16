@@ -328,11 +328,11 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 		}
 
 		elapsedMs := time.Since(start).Milliseconds()
-		level := "INFO"
+		level := ErrorLevelInfo
 		if lrw.status >= 500 {
-			level = "ERROR"
+			level = ErrorLevelError
 		} else if lrw.status >= 400 {
-			level = "WARN"
+			level = ErrorLevelWarning
 		}
 
 		log.Printf("<- req_id=%s empresa_id=%d status=%d %s %s dur_ms=%d", requestID, finalEmpresaID, lrw.status, r.Method, r.URL.Path, elapsedMs)
@@ -343,77 +343,68 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 // JSONErrorMiddleware unifica errores no-JSON para endpoints de API.
 func JSONErrorMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		path := r.URL.Path
-		isAPIPath := strings.HasPrefix(path, "/api/") ||
-			strings.HasPrefix(path, "/super/api/") ||
-			strings.HasPrefix(path, "/wompi/") ||
-			strings.HasPrefix(path, "/licencias/")
-
-		if !isAPIPath {
+		if !isLikelyAPIRequest(r) {
 			next.ServeHTTP(w, r)
 			return
 		}
 
 		capture := newAPICaptureResponseWriter()
 		next.ServeHTTP(capture, r)
-
-		for k, vals := range capture.Header() {
-			for _, v := range vals {
-				w.Header().Add(k, v)
-			}
-		}
+		copyResponseHeaders(w.Header(), capture.Header())
 
 		contentType := strings.ToLower(capture.Header().Get("Content-Type"))
 		isJSON := strings.Contains(contentType, "application/json")
-
-		if capture.status >= 400 && !isJSON {
-			msg := strings.TrimSpace(capture.body.String())
-			if msg == "" {
-				msg = http.StatusText(capture.status)
-			}
-			reqID := requestIDFromContext(r.Context())
-			if reqID == "" {
-				reqID = makeRequestID()
-			}
-			empresaID := inferEmpresaIDFromRequest(r)
-			if empresaID > 0 {
-				w.Header().Set("X-Empresa-ID", strconv.FormatInt(empresaID, 10))
-			}
+		path := r.URL.Path
+		loggedAlready := strings.TrimSpace(capture.Header().Get(internalErrorLoggedHeader)) == "1"
+		errorID := parsePositiveInt64(capture.Header().Get(internalErrorIDHeader))
+		reqID := requestIDFromContext(r.Context())
+		if reqID == "" {
+			reqID = makeRequestID()
+		}
+		empresaID := inferEmpresaIDFromRequest(r)
+		if reqID != "" {
 			w.Header().Set("X-Request-ID", reqID)
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(capture.status)
-			payload := map[string]interface{}{
-				"ok":         false,
-				"status":     capture.status,
-				"error":      msg,
-				"path":       path,
-				"method":     r.Method,
-				"request_id": reqID,
-			}
-			if empresaID > 0 {
-				payload["empresa_id"] = empresaID
-			}
-			_ = json.NewEncoder(w).Encode(payload)
-
-			level := "WARN"
-			if capture.status >= 500 {
-				level = "ERROR"
-			}
-			writeCompanyLogEntry(empresaID, level, fmt.Sprintf("req_id=%s event=api_error method=%s path=%s status=%d error=%q", reqID, r.Method, path, capture.status, truncateLogMessage(msg, 500)))
-			return
+		}
+		if empresaID > 0 {
+			w.Header().Set("X-Empresa-ID", strconv.FormatInt(empresaID, 10))
 		}
 
-		if capture.status >= 400 && isJSON {
-			reqID := requestIDFromContext(r.Context())
-			if reqID == "" {
-				reqID = makeRequestID()
+		if capture.status >= 400 {
+			msg, detail, errorType := extractHTTPErrorLogValues(capture.body.String(), contentType, capture.status)
+			level := statusToErrorLevel(capture.status)
+			if !loggedAlready {
+				errorID = reportRequestError(r, capture.status, level, errorType, msg, friendlyAPIErrorMessage(capture.status), detail, "", map[string]interface{}{
+					"content_type": contentType,
+					"path":         path,
+				})
 			}
-			empresaID := inferEmpresaIDFromRequest(r)
-			level := "WARN"
-			if capture.status >= 500 {
-				level = "ERROR"
+			writeCompanyLogEntry(empresaID, level, fmt.Sprintf("req_id=%s event=api_error method=%s path=%s status=%d error=%q", reqID, r.Method, path, capture.status, truncateLogMessage(msg, 500)))
+
+			if capture.status >= http.StatusInternalServerError {
+				writeFriendlyAPIErrorResponse(w, capture.status, reqID, empresaID, errorID)
+				return
 			}
-			writeCompanyLogEntry(empresaID, level, fmt.Sprintf("req_id=%s event=api_error_json method=%s path=%s status=%d body=%q", reqID, r.Method, path, capture.status, truncateLogMessage(capture.body.String(), 500)))
+
+			if !isJSON {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(capture.status)
+				payload := map[string]interface{}{
+					"ok":         false,
+					"status":     capture.status,
+					"error":      msg,
+					"path":       path,
+					"method":     r.Method,
+					"request_id": reqID,
+				}
+				if empresaID > 0 {
+					payload["empresa_id"] = empresaID
+				}
+				if errorID > 0 {
+					payload["error_id"] = errorID
+				}
+				_ = json.NewEncoder(w).Encode(payload)
+				return
+			}
 		}
 
 		w.WriteHeader(capture.status)
@@ -455,6 +446,8 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			"/api/public/soporte_remoto":                {},
 			"/api/public/venta_digital":                 {},
 			"/api/public/pagina_principal":               {},
+			"/api/public/contrato":                       {},
+			"/api/public/licencias/payment_methods":      {},
 			"/api/empresa/usuarios/login":               {},
 			"/api/empresa/usuarios/establecer_password": {},
 			"/api/empresa/usuarios/solicitar_recuperacion_password": {},
@@ -468,6 +461,10 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			"/favicon.ico":                                          {},
 		}
 		if _, ok := publicExact[path]; ok {
+			next.ServeHTTP(w, r)
+			return
+		}
+		if strings.HasPrefix(path, "/wompi/") || strings.HasPrefix(path, "/epayco/") {
 			next.ServeHTTP(w, r)
 			return
 		}

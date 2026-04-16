@@ -33,7 +33,27 @@
           </div>
         </div>
       </div>
-      <p class="form-help">Cada tarjeta define imagen, titulo, descripcion breve, destino de Probar Gratis y el contenido ampliado que se mostrara en la landing descriptiva.</p>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="ppIndexCardSize">Tamano de tarjetas en index</label>
+          <select id="ppIndexCardSize" class="form-input pp-style-field" data-field="index_card_size"></select>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="ppIndexTextSize">Tamano del texto en index</label>
+          <select id="ppIndexTextSize" class="form-input pp-style-field" data-field="index_text_size"></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="ppLandingCardSize">Tamano de tarjetas en landing</label>
+          <select id="ppLandingCardSize" class="form-input pp-style-field" data-field="landing_card_size"></select>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="ppLandingTextSize">Tamano del texto en landing</label>
+          <select id="ppLandingTextSize" class="form-input pp-style-field" data-field="landing_text_size"></select>
+        </div>
+      </div>
+      <p class="form-help">Cada tarjeta define imagen, titulo, descripcion breve, destino de Probar Gratis y el contenido ampliado que se mostrara en la landing descriptiva. Los ajustes visuales aplican de forma global al index y a la pagina descriptiva.</p>
       <div id="ppCardsEditor" class="pp-cards-editor"></div>
       <div class="form-actions pp-bottom-actions">
         <button id="ppBtnSaveBottom" type="button" class="btn">Guardar cambios</button>
@@ -48,7 +68,13 @@
         images: [],
         config: {
           cantidad: 5,
-          tarjetas: []
+          tarjetas: [],
+          estilos: {
+            index_card_size: 'mediano',
+            index_text_size: 'mediano',
+            landing_card_size: 'mediano',
+            landing_text_size: 'mediano'
+          }
         }
       };
 
@@ -56,6 +82,10 @@
       var msgEl = document.getElementById('ppMessage');
       var cardsEditorEl = document.getElementById('ppCardsEditor');
       var cantidadEl = document.getElementById('ppCantidad');
+      var indexCardSizeEl = document.getElementById('ppIndexCardSize');
+      var indexTextSizeEl = document.getElementById('ppIndexTextSize');
+      var landingCardSizeEl = document.getElementById('ppLandingCardSize');
+      var landingTextSizeEl = document.getElementById('ppLandingTextSize');
 
       function setMsg(text, type) {
         var t = text || '';
@@ -94,6 +124,58 @@
             'Capacidad clave 4.'
           ]
         };
+      }
+
+      function defaultVisualSettings() {
+        return {
+          index_card_size: 'mediano',
+          index_text_size: 'mediano',
+          landing_card_size: 'mediano',
+          landing_text_size: 'mediano'
+        };
+      }
+
+      function normalizeVisualSize(raw) {
+        var value = String(raw || '').trim().toLowerCase();
+        if (value === 'small') value = 'pequeno';
+        if (value === 'medium') value = 'mediano';
+        if (value === 'large') value = 'grande';
+        if (value !== 'pequeno' && value !== 'mediano' && value !== 'grande') {
+          value = 'mediano';
+        }
+        return value;
+      }
+
+      function normalizeVisualSettings(raw) {
+        var source = raw && typeof raw === 'object' ? raw : {};
+        var defaults = defaultVisualSettings();
+        return {
+          index_card_size: normalizeVisualSize(source.index_card_size || defaults.index_card_size),
+          index_text_size: normalizeVisualSize(source.index_text_size || defaults.index_text_size),
+          landing_card_size: normalizeVisualSize(source.landing_card_size || defaults.landing_card_size),
+          landing_text_size: normalizeVisualSize(source.landing_text_size || defaults.landing_text_size)
+        };
+      }
+
+      function sizeOptionsHTML(selected) {
+        var current = normalizeVisualSize(selected);
+        var options = [
+          { value: 'pequeno', label: 'Pequeno' },
+          { value: 'mediano', label: 'Mediano' },
+          { value: 'grande', label: 'Grande' }
+        ];
+        return options.map(function (option) {
+          return '<option value="' + option.value + '"' + (option.value === current ? ' selected' : '') + '>' + option.label + '</option>';
+        }).join('');
+      }
+
+      function renderStyleControls() {
+        var styles = normalizeVisualSettings(state.config.estilos);
+        state.config.estilos = styles;
+        indexCardSizeEl.innerHTML = sizeOptionsHTML(styles.index_card_size);
+        indexTextSizeEl.innerHTML = sizeOptionsHTML(styles.index_text_size);
+        landingCardSizeEl.innerHTML = sizeOptionsHTML(styles.landing_card_size);
+        landingTextSizeEl.innerHTML = sizeOptionsHTML(styles.landing_text_size);
       }
 
       function normalizeCount(raw) {
@@ -275,6 +357,7 @@
         var cfg = data && data.config ? data.config : {};
         state.config.cantidad = normalizeCount(cfg.cantidad || 5);
         state.config.tarjetas = Array.isArray(cfg.tarjetas) ? cfg.tarjetas : [];
+        state.config.estilos = normalizeVisualSettings(cfg.estilos);
         ensureCards(state.config.cantidad);
       }
 
@@ -282,6 +365,7 @@
         ensureCards(cantidadEl.value);
         return {
           cantidad: state.config.cantidad,
+          estilos: normalizeVisualSettings(state.config.estilos),
           tarjetas: state.config.tarjetas.map(function (card) {
             return {
               titulo: String(card.titulo || '').trim(),
@@ -300,6 +384,14 @@
         };
       }
 
+      [indexCardSizeEl, indexTextSizeEl, landingCardSizeEl, landingTextSizeEl].forEach(function (el) {
+        el.addEventListener('change', function () {
+          var field = el.getAttribute('data-field');
+          if (!field) return;
+          state.config.estilos[field] = normalizeVisualSize(el.value);
+        });
+      });
+
       async function saveConfig() {
         var payload = buildPayloadFromState();
         await requestJSON('/super/api/pagina_principal?action=config', {
@@ -315,6 +407,7 @@
           await loadImages();
           await loadConfig();
           renderCardsEditor();
+          renderStyleControls();
           setMsg('Configuracion cargada correctamente.', 'success');
         } catch (err) {
           setMsg('No se pudo cargar la configuracion: ' + (err && err.message ? err.message : String(err)), 'error');
@@ -336,6 +429,7 @@
           await saveConfig();
           await loadConfig();
           renderCardsEditor();
+          renderStyleControls();
           setMsg('Configuracion guardada correctamente.', 'success');
         } catch (err) {
           setMsg('No se pudo guardar: ' + (err && err.message ? err.message : String(err)), 'error');
@@ -348,6 +442,7 @@
           await saveConfig();
           await loadConfig();
           renderCardsEditor();
+          renderStyleControls();
           setMsg('Configuracion guardada correctamente.', 'success');
         } catch (err) {
           setMsg('No se pudo guardar: ' + (err && err.message ? err.message : String(err)), 'error');

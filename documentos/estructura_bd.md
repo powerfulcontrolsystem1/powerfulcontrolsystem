@@ -1,7 +1,7 @@
 # Estructura del Base de Datos
 
-Version: 2026-04-14.49.0
-Ultima actualizacion: 2026-04-14
+Version: 2026-04-15.51.0
+Ultima actualizacion: 2026-04-15
 
 Este documento consolida la estructura relacional activa del proyecto.
 Nota de gobernanza documental:
@@ -779,6 +779,7 @@ Todas las tablas operativas usan como base los campos estandar:
   - id, scope, version, description, applied_at
 - administradores:
   - email, name, role, photo
+  - acepta_contrato, contrato_version_aceptada, fecha_acepta_contrato
 - sesiones:
   - admin_email, token, ip, user_agent, fecha_inicio, fecha_fin, activo
   - fecha_fin se usa para expiracion y revocacion de sesion
@@ -792,6 +793,18 @@ Todas las tablas operativas usan como base los campos estandar:
     - usuarios.password_require_symbol
     - usuarios.password_rotation_days
     - gmail.smtp_test_mode
+- super_contrato_versiones:
+  - version
+  - titulo, resumen, contenido
+  - nota_aceptacion, resumen_cambio
+  - fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones
+- super_errores_sistema:
+  - nivel, tipo_error, mensaje, mensaje_publico
+  - detalle, stack_trace
+  - empresa_id, usuario_email
+  - endpoint, modulo, metodo_http, codigo_http, request_id
+  - origen, ip, user_agent, metadata_json
+  - fecha_error, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones
 
 ### Tablas de catalogos globales
 - tipos_de_empresas:
@@ -911,6 +924,10 @@ Todas las tablas operativas usan como base los campos estandar:
 - asesores.id -> asesor_comisiones.asesor_id
 - empresas.id -> asesor_comisiones.empresa_id
 - licencias.id -> asesor_comisiones.licencia_id
+- administradores.contrato_version_aceptada -> super_contrato_versiones.version (referencia logica de aceptacion)
+- super_contrato_versiones.usuario_creador -> administradores.email (referencia logica de publicacion)
+- super_errores_sistema.empresa_id -> pcs_empresas.empresas.id (referencia logica para trazabilidad de incidencias por empresa)
+- super_errores_sistema.usuario_email -> administradores.email o cuentas operativas asociadas (referencia logica de actor)
 
 
 ## 3) Relaciones clave

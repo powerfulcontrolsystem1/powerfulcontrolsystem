@@ -572,6 +572,48 @@ func TestPublicLicenciasPaymentMethodsHandlerOrdersAndAvailability(t *testing.T)
 	}
 }
 
+func TestPublicLicenciasPaymentMethodsHandlerAllowsEpaycoWithPublicKeyOnly(t *testing.T) {
+	dbSuper := openTestSQLite(t, "super_payment_methods_epayco_public_only.db")
+	ensureSuperConfigSchemaForSuper(t, dbSuper)
+
+	if err := dbpkg.SetConfigValue(dbSuper, "epayco.public_key", "pub_test_only_public", false); err != nil {
+		t.Fatalf("seed epayco.public_key: %v", err)
+	}
+	if err := dbpkg.SetConfigValue(dbSuper, "epayco.enabled", "1", false); err != nil {
+		t.Fatalf("seed epayco.enabled: %v", err)
+	}
+
+	h := PublicLicenciasPaymentMethodsHandler(dbSuper)
+	req := httptest.NewRequest(http.MethodGet, "/api/public/licencias/payment_methods", nil)
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, rr.Code, rr.Body.String())
+	}
+
+	var body struct {
+		Providers []struct {
+			ID         string `json:"id"`
+			Configured bool   `json:"configured"`
+			Available  bool   `json:"available"`
+		} `json:"providers"`
+		DefaultMethod string `json:"default_method"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode payment methods response: %v body=%s", err, rr.Body.String())
+	}
+	if len(body.Providers) == 0 {
+		t.Fatalf("expected providers in response, got %s", rr.Body.String())
+	}
+	if body.Providers[0].ID != "epayco" || !body.Providers[0].Configured || !body.Providers[0].Available {
+		t.Fatalf("expected epayco available with public key only, got %+v", body.Providers[0])
+	}
+	if body.DefaultMethod != "epayco" {
+		t.Fatalf("expected default_method epayco, got %q", body.DefaultMethod)
+	}
+}
+
 func TestWompiConfigHandlerPersistsEnabledFlag(t *testing.T) {
 	dbSuper := openTestSQLite(t, "super_wompi_enabled_toggle.db")
 	ensureSuperConfigSchemaForSuper(t, dbSuper)

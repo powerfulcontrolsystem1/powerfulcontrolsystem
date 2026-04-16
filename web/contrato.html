@@ -3,31 +3,119 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Contrato - POS Multiempresa</title>
-  <link rel="stylesheet" href="/assets/estilos.css">
+  <title>Contrato - Powerful Control System</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .contract-shell { max-width: 980px; margin: 28px auto; padding: 16px; }
+    .contract-card { padding: 24px; border-radius: 18px; }
+    .contract-meta { display:flex; flex-wrap:wrap; gap:10px; margin:14px 0 18px; color:var(--muted); font-size:.95rem; }
+    .contract-chip { padding:7px 12px; border-radius:999px; background:rgba(255,255,255,.06); border:1px solid var(--border); }
+    .contract-summary { font-size:1.05rem; color:var(--text); }
+    .contract-content { white-space:pre-wrap; line-height:1.8; color:var(--text); background:rgba(255,255,255,.03); border:1px solid var(--border); border-radius:16px; padding:18px; margin-top:18px; }
+    .contract-note { margin-top:18px; padding:14px 16px; border-radius:14px; background:rgba(37,99,235,.12); border:1px solid rgba(37,99,235,.28); }
+    .contract-actions { display:flex; flex-wrap:wrap; gap:12px; margin-top:22px; }
+  </style>
 </head>
-<body>
-  <main style="max-width:900px;margin:32px auto;padding:16px;">
-    <h1>Contrato de Términos y Condiciones</h1>
-    <p>Este documento contiene los términos y condiciones para el uso del servicio POS Multiempresa. Lee cuidadosamente antes de aceptar.</p>
-    <section>
-      <h2>1. Definiciones</h2>
-      <p>La plataforma POS Multiempresa proporciona servicios de gestión operativa y contable a empresas. "Usuario" se refiere a la persona autorizada por la empresa para usar la plataforma.</p>
+<body class="form-bg-dark">
+  <main class="contract-shell">
+    <section class="card contract-card">
+      <div class="page-header">
+        <h1 id="contractTitle">Cargando contrato...</h1>
+        <p id="contractSummary" class="contract-summary">Estamos consultando la version vigente del contrato.</p>
+      </div>
+      <div id="contractMeta" class="contract-meta"></div>
+      <div id="contractStatus" class="form-help">Cargando...</div>
+      <article id="contractContent" class="contract-content" hidden></article>
+      <div id="contractNote" class="contract-note" hidden></div>
+      <div class="contract-actions">
+        <a class="btn secondary" href="/login.html">Volver al login</a>
+        <a id="currentVersionLink" class="btn" href="/contrato.html" hidden>Ver version actual</a>
+      </div>
     </section>
-    <section>
-      <h2>2. Uso aceptable</h2>
-      <p>El usuario se compromete a usar la plataforma conforme a la ley, sin realizar actividades fraudulentas, de suplantación o distribución de malware.</p>
-    </section>
-    <section>
-      <h2>3. Privacidad</h2>
-      <p>Los datos personales y empresariales serán tratados conforme a la política de privacidad vigente. Contacta al administrador para solicitar extractos o eliminación de datos cuando corresponda.</p>
-    </section>
-    <section>
-      <h2>4. Soporte y responsabilidad</h2>
-      <p>La plataforma se ofrece "tal cual"; el proveedor no se hace responsable por daños indirectos salvo disposición legal en contrario.</p>
-    </section>
-    <p>Si deseas aceptar estos términos, vuelve al flujo de inicio de sesión y confirma la aceptación en la ventana emergente.</p>
-    <p style="margin-top:24px;"><a href="/login.html">Volver al login</a></p>
   </main>
+
+  <script>
+    (function () {
+      var titleEl = document.getElementById('contractTitle');
+      var summaryEl = document.getElementById('contractSummary');
+      var metaEl = document.getElementById('contractMeta');
+      var statusEl = document.getElementById('contractStatus');
+      var contentEl = document.getElementById('contractContent');
+      var noteEl = document.getElementById('contractNote');
+      var currentVersionLinkEl = document.getElementById('currentVersionLink');
+
+      function qs(name) {
+        var params = new URLSearchParams(window.location.search);
+        return params.get(name) || '';
+      }
+
+      function escapeHTML(value) {
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function renderContract(contract) {
+        if (!contract) {
+          statusEl.textContent = 'No se encontro informacion del contrato.';
+          return;
+        }
+
+        titleEl.textContent = contract.titulo || 'Contrato vigente';
+        summaryEl.textContent = contract.resumen || 'Contrato operativo vigente del servicio.';
+
+        var chips = [];
+        if (contract.version) chips.push('<span class="contract-chip">Version ' + escapeHTML(contract.version) + '</span>');
+        if (contract.fecha_actualizacion) chips.push('<span class="contract-chip">Actualizado: ' + escapeHTML(contract.fecha_actualizacion) + '</span>');
+        if (contract.usuario_creador) chips.push('<span class="contract-chip">Publicado por: ' + escapeHTML(contract.usuario_creador) + '</span>');
+        metaEl.innerHTML = chips.join('');
+
+        contentEl.textContent = contract.contenido || '';
+        contentEl.hidden = false;
+        statusEl.textContent = '';
+
+        if (contract.nota_aceptacion) {
+          noteEl.textContent = contract.nota_aceptacion;
+          noteEl.hidden = false;
+        } else {
+          noteEl.hidden = true;
+        }
+
+        var requestedVersion = String(qs('version') || '').trim();
+        if (requestedVersion) {
+          currentVersionLinkEl.hidden = false;
+          currentVersionLinkEl.href = '/contrato.html';
+        }
+      }
+
+      function loadContract() {
+        var version = String(qs('version') || '').trim();
+        var url = '/api/public/contrato';
+        if (version) {
+          url += '?version=' + encodeURIComponent(version);
+        }
+
+        fetch(url, { credentials: 'same-origin' })
+          .then(function (response) {
+            if (!response.ok) {
+              throw new Error('HTTP ' + response.status);
+            }
+            return response.json();
+          })
+          .then(function (payload) {
+            renderContract(payload && payload.contrato ? payload.contrato : null);
+          })
+          .catch(function (err) {
+            statusEl.textContent = 'No se pudo cargar el contrato vigente. ' + (err && err.message ? err.message : String(err));
+            summaryEl.textContent = 'Intenta de nuevo en unos segundos o abre la version actual mas tarde.';
+          });
+      }
+
+      loadContract();
+    })();
+  </script>
 </body>
 </html>

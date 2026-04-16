@@ -230,6 +230,59 @@ func TestEpaycoCreateTransactionHandlerUsesConfiguredPublicBaseURLAndKeys(t *tes
 	}
 }
 
+func TestEpaycoCreateTransactionHandlerAllowsCheckoutWithoutPrivateKey(t *testing.T) {
+	dbSuper := openTestSQLite(t, "super_epayco_checkout_without_private_key.db")
+	ensurePaymentsHandlerTestSchema(t, dbSuper)
+
+	if _, err := dbSuper.Exec(`
+		INSERT INTO licencias (id, empresa_id, tipo_id, nombre, descripcion, valor, duracion_dias, modulos_habilitados, super_rol_habilitado, fecha_creacion, activo)
+		VALUES (1, 0, 1, 'Plan Base', 'Licencia sin llave secreta', 99900, 30, '', 0, datetime('now','localtime'), 1)
+	`); err != nil {
+		t.Fatalf("seed licencia: %v", err)
+	}
+
+	if err := dbpkg.SetConfigValue(dbSuper, "epayco.enabled", "1", false); err != nil {
+		t.Fatalf("seed epayco.enabled: %v", err)
+	}
+	if err := dbpkg.SetConfigValue(dbSuper, "epayco.public_key", "pub_test_checkout_only_public", false); err != nil {
+		t.Fatalf("seed epayco.public_key: %v", err)
+	}
+	if err := dbpkg.SetConfigValue(dbSuper, "epayco.customer_id", "1579238", false); err != nil {
+		t.Fatalf("seed epayco.customer_id: %v", err)
+	}
+	if err := dbpkg.SetConfigValue(dbSuper, "gmail.confirm_base_url", "https://powerfulcontrolsystem.com", false); err != nil {
+		t.Fatalf("seed gmail.confirm_base_url: %v", err)
+	}
+
+	h := EpaycoCreateTransactionHandler(dbSuper)
+	body := strings.NewReader(`{"licencia_id":1,"empresa_id":77,"customer_email":"cliente@demo.com"}`)
+	req := httptest.NewRequest(http.MethodPost, "http://localhost:8080/api/public/licencias/payment/epayco", body)
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, rr.Code, rr.Body.String())
+	}
+
+	var resp struct {
+		CheckoutURL string `json:"checkout_url"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode response: %v body=%s", err, rr.Body.String())
+	}
+	if resp.CheckoutURL == "" {
+		t.Fatalf("expected checkout_url in response: %s", rr.Body.String())
+	}
+	parsed, err := url.Parse(resp.CheckoutURL)
+	if err != nil {
+		t.Fatalf("parse checkout URL: %v", err)
+	}
+	if got := parsed.Query().Get("public_key"); got != "pub_test_checkout_only_public" {
+		t.Fatalf("expected public_key to use epayco.public_key, got %q", got)
+	}
+}
+
 func TestWompiTransactionStatusHandlerAllowsReferenceLookup(t *testing.T) {
 	dbSuper := openTestSQLite(t, "super_wompi_reference_lookup.db")
 	ensurePaymentsHandlerTestSchema(t, dbSuper)

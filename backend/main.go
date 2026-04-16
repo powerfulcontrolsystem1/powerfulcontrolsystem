@@ -993,6 +993,10 @@ func main() {
 			addIfMissing("acepta_contrato INTEGER DEFAULT 0", "acepta_contrato")
 		}
 		ensureAdminsSchema(dbSuper)
+		if err := dbpkg.EnsureSuperContractSchema(dbSuper); err != nil {
+			log.Printf("warning: failed to ensure super contract schema in super db: %v", err)
+			utils.ReportProcessError("startup.super_contract_schema", "contract_schema_init", "No se pudo preparar el esquema del contrato super durante el arranque", err, utils.ErrorLevelError, nil)
+		}
 
 		createTiposLic := `CREATE TABLE IF NOT EXISTS tipos_de_licencia (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1490,22 +1494,30 @@ func main() {
 		}
 		log.Println("INFO: modo PostgreSQL activo; bootstrap legacy de SQLite desactivado.")
 	}
+	utils.ConfigureErrorMonitor(dbSuper, backendDir)
 
 	// Inicializar tabla de métricas y arrancar collector periódico
 	if err := dbpkg.InitMetricsTable(dbSuper); err != nil {
 		log.Printf("warning: failed to init metrics table: %v", err)
+		utils.ReportProcessError("metrics.collector", "metrics_schema_init", "No se pudo inicializar la tabla de metricas", err, utils.ErrorLevelError, nil)
 	}
 	metricsInterval := metrics.DefaultIntervalSeconds()
 	stopMetrics := make(chan struct{})
-	go metrics.StartCollector(dbSuper, metricsInterval, stopMetrics)
+	go utils.RunProtectedProcess("metrics.collector", map[string]interface{}{"interval_seconds": metricsInterval}, func() {
+		metrics.StartCollector(dbSuper, metricsInterval, stopMetrics)
+	})
 
 	stopAuditRetention := make(chan struct{})
-	go dbpkg.StartEmpresaAuditoriaRetentionWorker(dbEmpresas, 12*time.Hour, stopAuditRetention)
+	go utils.RunProtectedProcess("auditoria.retention_worker", map[string]interface{}{"interval_hours": 12}, func() {
+		dbpkg.StartEmpresaAuditoriaRetentionWorker(dbEmpresas, 12*time.Hour, stopAuditRetention)
+	})
 
 	asientosInterval, asientosBatchSize, asientosMaxRetries := resolveAsientosWorkerPolicy()
 	log.Printf("[asientos_worker] policy interval=%s batch=%d max_reintentos=%d", asientosInterval, asientosBatchSize, asientosMaxRetries)
 	stopAsientosWorker := make(chan struct{})
-	go dbpkg.StartEmpresaAsientosContablesWorker(dbEmpresas, asientosInterval, asientosBatchSize, asientosMaxRetries, stopAsientosWorker)
+	go utils.RunProtectedProcess("finanzas.asientos_worker", map[string]interface{}{"interval": asientosInterval.String(), "batch_size": asientosBatchSize, "max_retries": asientosMaxRetries}, func() {
+		dbpkg.StartEmpresaAsientosContablesWorker(dbEmpresas, asientosInterval, asientosBatchSize, asientosMaxRetries, stopAsientosWorker)
+	})
 
 	// Determinar carpeta web una sola vez para rutas estaticas y handlers que listan recursos.
 	webDir := resolveWebDir()
@@ -1586,6 +1598,7 @@ func main() {
 	http.HandleFunc("/api/public/soporte_remoto", handlers.PublicEmpresaSoporteRemotoAgentHandler(dbEmpresas))
 	http.HandleFunc("/api/public/venta_digital", handlers.PublicVentaDigitalHandler(dbSuper))
 	http.HandleFunc("/api/public/pagina_principal", handlers.PublicPaginaPrincipalHandler(dbSuper))
+	http.HandleFunc("/api/public/contrato", handlers.PublicContratoHandler(dbSuper))
 	http.HandleFunc("/api/empresa/reservas_hotel", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaReservasHotelHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/tarifas_por_minutos", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaTarifasPorMinutosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/tarifas_por_dia", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaTarifasPorDiaHandler(dbEmpresas)))
@@ -1649,6 +1662,10 @@ func main() {
 	http.HandleFunc("/super/api/config/ai", handlers.AIModelsConfigHandler(dbSuper))
 	// Endpoint para respaldo/restauracion de configuracion critica del panel super
 	http.HandleFunc("/super/api/config/backup", handlers.SuperConfigBackupHandler(dbSuper))
+	// Endpoint super para administrar contrato versionado y su historial
+	http.HandleFunc("/super/api/contrato", handlers.SuperContratoHandler(dbSuper))
+	// Endpoint super para monitoreo centralizado de errores del sistema
+	http.HandleFunc("/super/api/errores", handlers.SuperErroresSistemaHandler(dbSuper))
 	// Endpoint super para administrar tarjetas dinamicas de la pagina principal (index)
 	http.HandleFunc("/super/api/pagina_principal", handlers.SuperPaginaPrincipalHandler(dbSuper, webDir))
 	// Endpoints Wompi (Nequi): crear transacción y consultar estado
@@ -1754,7 +1771,7 @@ func main() {
 	})
 
 	// Wrap DefaultServeMux with authentication, JSON error normalization and logging middleware
-	handler := utils.LoggingMiddleware(utils.CanonicalPublicHostMiddleware(utils.JSONErrorMiddleware(utils.AuthMiddleware(dbSuper, http.DefaultServeMux))))
+	handler := utils.LoggingMiddleware(utils.CanonicalPublicHostMiddleware(utils.JSONErrorMiddleware(utils.RecoveryMiddleware(utils.AuthMiddleware(dbSuper, http.DefaultServeMux)))))
 
 	// Respetar la variable de entorno PORT si está definida; por defecto usar 8080
 	port := os.Getenv("PORT")
@@ -1769,6 +1786,7 @@ func main() {
 	})
 	if startupEventErr != nil {
 		log.Printf("warning: no se pudo registrar evento de inicio de servidor: %v", startupEventErr)
+		utils.ReportProcessError("server.runtime_notifications", "startup_event_registration", "No se pudo registrar el evento de inicio del servidor", startupEventErr, utils.ErrorLevelError, map[string]interface{}{"listen_addr": addr})
 	}
 
 	server := &http.Server{
@@ -1780,7 +1798,7 @@ func main() {
 	signal.Notify(signalCh, os.Interrupt, syscall.SIGTERM)
 	defer signal.Stop(signalCh)
 
-	go func() {
+	go utils.RunProtectedProcess("server.shutdown_signal", nil, func() {
 		sig := <-signalCh
 		reason := "signal_" + strings.ToLower(strings.TrimSpace(sig.String()))
 		if markServerStopped != nil {
@@ -1791,8 +1809,9 @@ func main() {
 		defer cancel()
 		if err := server.Shutdown(ctx); err != nil {
 			log.Printf("warning: shutdown con error: %v", err)
+			utils.ReportProcessError("server.shutdown", "shutdown_error", "Error durante el apagado controlado del servidor", err, utils.ErrorLevelError, map[string]interface{}{"reason": reason})
 		}
-	}()
+	})
 
 	log.Println("Servidor arrancado en", addr)
 	err = server.ListenAndServe()
@@ -1800,6 +1819,7 @@ func main() {
 		if markServerStopped != nil {
 			markServerStopped("listen_and_serve_error: " + err.Error())
 		}
+		utils.ReportProcessError("server.listen", "listen_and_serve_error", "El servidor HTTP termino con error en ListenAndServe", err, utils.ErrorLevelCritical, map[string]interface{}{"addr": addr})
 		log.Fatal(err)
 	}
 	if markServerStopped != nil {

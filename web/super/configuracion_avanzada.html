@@ -45,7 +45,7 @@
           <div id="epaycoPublicSet" class="form-help">Cargando estado...</div>
         </div>
         <div class="form-col">
-          <label class="form-label">Private Key (secreta)</label>
+          <label class="form-label">Private Key (secreta, opcional)</label>
           <input id="epaycoPrivateKey" class="form-input" type="password" placeholder="prv_test_... o prv_prod_...">
           <div id="epaycoPrivateSet" class="form-help">Cargando estado...</div>
         </div>
@@ -59,7 +59,7 @@
         </div>
         <div class="form-col">
           <label class="form-label">Opciones</label>
-          <div class="form-help">Las llaves secretas se guardan cifradas obligatoriamente. La Public Key no debe reemplazarse por el Customer ID.</div>
+          <div class="form-help">La Public Key es la credencial obligatoria para habilitar el checkout actual. La llave secreta se conserva como dato opcional y se guarda cifrada.</div>
         </div>
       </div>
 
@@ -374,7 +374,7 @@
         const helpEl = document.getElementById('epaycoEnabledHelp');
         if (!enabledEl || !helpEl) return;
         helpEl.innerText = enabledEl.checked
-          ? 'Epayco activado: disponible en el portal de pago de licencias cuando tenga credenciales completas.'
+          ? 'Epayco activado: disponible en el portal de pago cuando tenga al menos la Public Key configurada.'
           : 'Epayco desactivado: no se mostrará como opción de pago en el portal público.';
       }
 
@@ -383,6 +383,9 @@
         const statusPass = document.getElementById('gmailStatusPass');
         const statusRestart = document.getElementById('gmailStatusRestartAlert');
         const msg = document.getElementById('gmailMsg');
+        const saveBtn = document.getElementById('saveGmailBtn');
+        const editBtn = document.getElementById('editGmailBtn');
+        const cancelBtn = document.getElementById('cancelGmailBtn');
         try {
           const rg = await fetch('/super/api/config/gmail');
           if (!rg.ok) {
@@ -393,9 +396,13 @@
           }
           const cfg = await rg.json();
 
-          if (typeof cfg.encryption_available !== 'undefined' && !cfg.encryption_available) {
-            document.getElementById('saveGmailBtn').disabled = true;
+          const encryptionAvailable = typeof cfg.encryption_available === 'undefined' || !!cfg.encryption_available;
+
+          if (!encryptionAvailable) {
+            saveBtn.disabled = true;
             msg.innerText = 'ERROR: cifrado obligatorio no disponible en este servidor (CONFIG_ENC_KEY no definido). Configure la variable de entorno en el servidor.';
+          } else if (!msg.innerText || msg.innerText.indexOf('ERROR:') === -1) {
+            msg.innerText = 'Puede editar y guardar directamente la configuración Gmail de confirmación.';
           }
 
           document.getElementById('gmailSMTPEmail').value = cfg.smtp_email || '';
@@ -426,28 +433,17 @@
             statusRestart.innerText = 'No configurado';
           }
 
-          const hasGmailConfig = !!(
-            cfg.smtp_email_set ||
-            cfg.smtp_app_password_set ||
-            (cfg.smtp_from_name && cfg.smtp_from_name.trim() !== '') ||
-            (cfg.smtp_host && cfg.smtp_host.trim() !== '') ||
-            (cfg.smtp_port && cfg.smtp_port.trim() !== '') ||
-            (cfg.confirm_base_url && cfg.confirm_base_url.trim() !== '') ||
-            (cfg.restart_alert_to && cfg.restart_alert_to.trim() !== '')
-          );
+          document.getElementById('gmailSMTPEmail').disabled = !encryptionAvailable;
+          document.getElementById('gmailSMTPAppPass').disabled = !encryptionAvailable;
+          document.getElementById('gmailFromName').disabled = !encryptionAvailable;
+          document.getElementById('gmailHost').disabled = !encryptionAvailable;
+          document.getElementById('gmailPort').disabled = !encryptionAvailable;
+          document.getElementById('gmailBaseURL').disabled = !encryptionAvailable;
+          document.getElementById('gmailRestartAlertTo').disabled = !encryptionAvailable;
 
-          const readOnly = hasGmailConfig;
-          document.getElementById('gmailSMTPEmail').disabled = readOnly;
-          document.getElementById('gmailSMTPAppPass').disabled = readOnly;
-          document.getElementById('gmailFromName').disabled = readOnly;
-          document.getElementById('gmailHost').disabled = readOnly;
-          document.getElementById('gmailPort').disabled = readOnly;
-          document.getElementById('gmailBaseURL').disabled = readOnly;
-          document.getElementById('gmailRestartAlertTo').disabled = readOnly;
-
-          document.getElementById('saveGmailBtn').disabled = readOnly;
-          document.getElementById('editGmailBtn').style.display = hasGmailConfig ? '' : 'none';
-          document.getElementById('cancelGmailBtn').style.display = 'none';
+          saveBtn.disabled = !encryptionAvailable;
+          editBtn.style.display = 'none';
+          cancelBtn.style.display = 'none';
         } catch (err) {
           statusEmail.innerText = 'Error cargando configuración Gmail';
           statusPass.innerText = 'Error cargando configuración Gmail';

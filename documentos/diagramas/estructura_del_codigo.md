@@ -56,6 +56,76 @@ flowchart TD
 ## Regla de mantenimiento
 Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe reflejarse en este documento y en los diagramas relacionados dentro de documentos/diagramas/.
 
+## Actualizacion 2026-04-15 (contrato versionado en super y aceptacion por version)
+
+- Backend:
+  - `backend/db/contrato_super.go` crea y mantiene `super_contrato_versiones`, siembra una version inicial cuando el entorno aun no tiene contrato y encapsula la lectura de la version vigente, historial y aceptacion por version para `administradores`.
+  - `backend/handlers/super_contrato_handlers.go` expone `GET/PUT /super/api/contrato` para super administrador y `GET /api/public/contrato` para la lectura publica del contrato vigente o de una version concreta.
+  - `backend/handlers/auth_admin_handlers.go` ya no considera suficiente el booleano `acepta_contrato`; compara `contrato_version_aceptada` contra la ultima version publicada antes de decidir si crea sesion o redirige a `/accept.html`.
+  - `backend/handlers/accept_handlers.go` registra la version vigente aceptada justo antes de emitir la sesion administrativa.
+  - `backend/main.go` asegura el esquema del contrato y registra las rutas nuevas del contrato publico y del editor super.
+- Frontend:
+  - `web/contrato.html` deja de ser estatico y renderiza el contrato desde `/api/public/contrato`, con soporte para abrir versiones historicas usando `?version=`.
+  - `web/accept.html` muestra metadata de la version vigente y enlaza al contrato publicado en base de datos.
+  - `web/super/contrato.html` agrega el editor versionado para titulo, resumen, contenido, nota de aceptacion e historial de cambios.
+  - `web/super_administrador.html` incorpora el acceso al nuevo modulo `Contrato` dentro del panel super.
+- Flujo:
+  - `super/contrato.html` -> `PUT /super/api/contrato` -> inserta una nueva fila en `super_contrato_versiones` con resumen de cambio.
+  - `login.html` -> `/auth/google/callback` -> compara la version aceptada por el administrador con la version vigente.
+  - Si la version aceptada es menor: `/accept.html` -> `/api/public/contrato` -> `POST /accept/complete` -> actualiza `contrato_version_aceptada` y crea la sesion.
+
+## Actualizacion 2026-04-15 (monitor centralizado de errores y recovery global)
+
+- Backend:
+  - `backend/db/super_errores_sistema.go` agrega la tabla `super_errores_sistema`, con filtros por empresa, nivel, tipo, fecha y busqueda libre para el panel super.
+  - `backend/utils/system_errors.go` introduce el monitor global de errores, la recuperacion de panicos HTTP, la sanitizacion de respuestas `5xx` para el cliente y la ejecucion protegida de procesos internos con persistencia en DB y archivo `backend/logs/system_errors.log`.
+  - `backend/utils/utils.go` integra el monitor con `JSONErrorMiddleware` para registrar todos los errores HTTP relevantes y convertir errores tecnicos internos en mensajes amigables para el usuario final.
+  - `backend/main.go` conecta el monitor al arranque del servidor, protege workers (`metrics`, retencion de auditoria y asientos contables) y registra el endpoint super `/super/api/errores`.
+  - `backend/handlers/super_error_handlers.go` expone el monitor filtrable para `super_administrador`.
+- Frontend:
+  - `web/super/errores.html` agrega el tablero profesional de incidencias con filtros, resumen por severidad, paginacion y panel de detalle.
+  - `web/super_administrador.html` incorpora el acceso al nuevo modulo `Errores del sistema` dentro del shell super.
+- Flujo:
+  - Cualquier `4xx/5xx` de API -> `JSONErrorMiddleware` -> registro central -> respuesta controlada.
+  - Cualquier panic en HTTP o worker protegido -> `RecoveryMiddleware`/`RunProtectedProcess` -> registro `CRITICAL` -> continuidad del servidor o del proceso supervisor.
+  - `super/errores.html` -> `GET /super/api/errores` -> consulta integral del sistema con filtros por empresa, fecha, tipo y nivel.
+
+## Actualizacion 2026-04-15 (checkout de licencias: Epayco habilitado con Public Key y rutas realmente publicas)
+
+- Backend:
+  - `backend/handlers/payments_handlers.go` deja de exigir `epayco.private_key` para publicar Epayco como disponible y para construir el checkout actual; la disponibilidad operativa pasa a depender de `epayco.public_key` y del flag `epayco.enabled`.
+  - `backend/utils/utils.go` incorpora `/api/public/licencias/payment_methods` al whitelist exacto de `AuthMiddleware`, expone tambien `/wompi/*` y `/epayco/*` sin sesion y hace que `JSONErrorMiddleware` trate `/epayco/*` como rutas API para devolver errores JSON consistentes.
+  - `backend/handlers/payments_handlers_test.go`, `backend/handlers/system_empresas_handlers_test.go` y `backend/utils/utils_test.go` cubren el nuevo criterio de disponibilidad y la apertura publica de las rutas de checkout.
+- Frontend:
+  - `web/pagar_licencia.html` deja de mostrar un mensaje generico cuando no hay metodos disponibles y ahora explica si Epayco esta desactivado o si falta al menos la `Public Key`.
+  - `web/super/configuracion_avanzada.html` aclara que la `Private Key` de Epayco es opcional para el checkout actual y que la `Public Key` es el dato minimo requerido para habilitar la pasarela en licencias.
+- Flujo:
+  - `super/configuracion_avanzada.html` -> guarda `epayco.enabled` + `epayco.public_key` -> `GET /api/public/licencias/payment_methods` responde sin sesion -> `web/pagar_licencia.html` muestra Epayco cuando la `Public Key` existe -> `/epayco/*` y `/wompi/*` pueden consultar/reanudar el estado del pago aunque el navegador vuelva desde la pasarela sin una sesion administrativa activa.
+
+## Actualizacion 2026-04-15 (login admin y Gmail SMTP con edición directa)
+
+- Frontend:
+  - `web/login.html` elimina el bloque visual `Se recordará ... / Olvidar`; la opcion `Recordar cuenta` sigue operando de forma silenciosa a traves de `web/js/login.js`.
+  - `web/super/configuracion_avanzada.html` deja de poner la seccion Gmail en modo solo lectura cuando ya existe configuración previa; el correo remitente y el resto de campos quedan editables directamente mientras el cifrado obligatorio esté disponible.
+- Backend:
+  - `backend/handlers/usuarios_empresa.go` mantiene el contrato de `GET/PUT /super/api/config/gmail`, reutilizado por la UI para actualizar correo remitente, host, puerto, URL base y correo de alertas sin rutas adicionales.
+- Flujo:
+  - `login.html` -> `Recordar cuenta` persiste `login_hint` sin mostrar texto auxiliar -> `/auth/google/login`.
+  - `super/configuracion_avanzada.html` -> carga `/super/api/config/gmail` -> edición directa de campos Gmail -> guardado sobre la misma API.
+
+## Actualizacion 2026-04-15 (pagina_principal: tamanos visuales configurables para home y landing)
+
+- Backend:
+  - `backend/handlers/pagina_principal_handlers.go` amplía el contrato publico/administrativo de `pagina_principal` con `estilos.index_card_size`, `estilos.index_text_size`, `estilos.landing_card_size` y `estilos.landing_text_size`, normalizados como `pequeno|mediano|grande`.
+  - `backend/handlers/pagina_principal_handlers_test.go` valida que esos ajustes se normalicen y se expongan correctamente desde `/api/public/pagina_principal`.
+- Frontend:
+  - `web/super/pagina_principal.html` agrega selectores para controlar tamano de tarjetas y de texto tanto en `index.html` como en `/descripcion_de_los_sistemas.ht`.
+  - `web/index.html` consume `payload.estilos` y aplica atributos de datos al grid del home para cambiar tamano de tarjetas y tipografia sin tocar el contenido de cada tarjeta.
+  - `web/descripcion_de_los_sistemas.ht` consume los mismos ajustes visuales y los aplica a la landing descriptiva para redimensionar tarjetas y texto de forma global.
+  - `web/estilos.css` incorpora reglas especificas por `data-card-size` y `data-text-size`, con compatibilidad responsive para escritorio y movil.
+- Flujo:
+  - `super/pagina_principal.html` -> guarda tarjetas + contenido ampliado + ajustes visuales -> `/api/public/pagina_principal` publica `tarjetas` + `estilos` -> `index.html` y `/descripcion_de_los_sistemas.ht` renderizan contenido y escala visual coherente desde la misma fuente.
+
 ## Actualizacion 2026-04-15 (portal publico: contacto comercial directo)
 
 - Frontend:

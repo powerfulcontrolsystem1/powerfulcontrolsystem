@@ -6,6 +6,46 @@ Gobernanza obligatoria (agente_go):
 - En el mismo cambio, tambien debe actualizarse `documentos/matriz_roles_permisos_pos_multiempresa.md` para reflejar permisos por rol/modulo/accion y visibilidad de paginas afectadas.
 - La actualizacion modular debe mantener trazabilidad en `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios` y `CHANGELOG.md`.
 
+Actualizacion 2026-04-15 (contrato versionado y editor super):
+- Se refuerza el modulo `autenticacion y sesiones` para que la aceptacion del contrato administrativo dependa de la version vigente publicada por super y no solo de un booleano historico.
+- Se crea el submodulo `contrato administrativo (super)` con editor en `web/super/contrato.html`, persistencia en la base super, historial por version y resumen de cambio obligatorio en cada nueva publicacion.
+- `backend/db/contrato_super.go` concentra el esquema y los helpers de versionado/aceptacion; `backend/handlers/super_contrato_handlers.go` expone la API protegida `/super/api/contrato` y la API publica `/api/public/contrato`.
+- `web/contrato.html` consume la version publicada desde base de datos y `web/accept.html` muestra la metadata del contrato actual dentro del paso obligatorio previo al panel super.
+- Impacto de permisos: la administracion del contrato es exclusiva de `super_administrador`; la lectura publica del contrato y su consulta durante el login se mantienen sin sesion para soportar la aceptacion previa al acceso administrativo.
+
+Actualizacion 2026-04-15 (monitor centralizado de errores y recovery global):
+- Se crea el submodulo `errores del sistema (super)` para monitorear fallos de cualquier empresa o modulo desde una vista unica en `web/super/errores.html`.
+- `backend/utils/system_errors.go` centraliza severidades (`INFO`, `WARNING`, `ERROR`, `CRITICAL`), registro en archivo/DB, recuperacion de panicos y envoltura segura de procesos internos.
+- `backend/db/super_errores_sistema.go` agrega la persistencia global de errores en la base super y `backend/handlers/super_error_handlers.go` expone el endpoint protegido `/super/api/errores` con filtros por empresa, fecha, tipo y busqueda.
+- `backend/utils/utils.go` deja de exponer cuerpos tecnicos en respuestas `5xx` al cliente final; conserva el detalle completo solo para logs internos y panel super.
+- Impacto de permisos: el monitoreo de errores es exclusivo de `super_administrador`; no cambia CRUD/A de modulos empresariales, pero mejora la estabilidad transversal del backend al recuperar panicos y proteger workers principales.
+
+Actualizacion 2026-04-15 (checkout de licencias: Epayco visible con Public Key y rutas publicas reales):
+- Se refuerza el submodulo `checkout de licencias` para que Epayco quede disponible cuando el panel super tiene `epayco.enabled` activo y una `public_key` valida, sin bloquear el checkout actual por ausencia de `private_key`.
+- `backend/utils/utils.go` corrige la capa de seguridad para que `/api/public/licencias/payment_methods`, `/wompi/*` y `/epayco/*` se comporten como rutas publicas reales y no dependan de sesion administrativa para consultar disponibilidad o reanudar pagos.
+- `web/pagar_licencia.html` deja de mostrar el mensaje ambiguo de "pasarelas desactivadas" y ahora explica si Epayco esta desactivado o si falta la `Public Key`; `web/super/configuracion_avanzada.html` aclara que la `Private Key` es opcional para el checkout actual.
+- `backend/handlers/payments_handlers_test.go`, `backend/handlers/system_empresas_handlers_test.go` y `backend/utils/utils_test.go` verifican el nuevo criterio de disponibilidad y la apertura publica de las rutas del flujo.
+- No hay cambios en roles, CRUD/A ni visibilidad por rol del panel: la configuracion de pasarelas sigue siendo exclusiva de `super_administrador`, pero el consumo del checkout vuelve a ser publico y consistente con la documentacion.
+
+Actualizacion 2026-04-15 (login admin sin hint visible y Gmail SMTP editable en directo):
+- Se ajusta el modulo `autenticacion y sesiones` para que el login administrativo mantenga `Recordar cuenta` sin exponer en pantalla el bloque `Se recordará ... / Olvidar`.
+- Se refuerza el submodulo `configuracion avanzada (super)` para que la seccion `Correo Gmail — Confirmación de usuarios` permita editar directamente correo remitente, host, puerto, URL base y alertas cuando la configuración ya existe, sin depender de un modo de solo lectura.
+- `web/login.html` y `web/super/configuracion_avanzada.html` concentran el cambio de interfaz; la API `GET/PUT /super/api/config/gmail` permanece igual.
+- No hay cambios en wrappers, CRUD/A ni privilegios por rol: el login administrativo sigue publico y la configuracion Gmail sigue siendo exclusiva de `super_administrador`.
+
+Actualizacion 2026-04-15 (portal publico: tamanos configurables en home y landing desde pagina_principal):
+- Se refuerza el submodulo `pagina principal dinamica (super)` para que el mismo editor controle no solo contenido, sino tambien la escala visual del portal publico.
+- `backend/handlers/pagina_principal_handlers.go` agrega ajustes globales de tamano para tarjetas y texto en `index.html` y `/descripcion_de_los_sistemas.ht`, manteniendo un contrato unico en `/api/public/pagina_principal`.
+- `web/super/pagina_principal.html` incorpora selectores de tamano para home y landing; `web/index.html`, `web/descripcion_de_los_sistemas.ht` y `web/estilos.css` aplican esos valores como ajustes visuales responsive.
+- `backend/handlers/pagina_principal_handlers_test.go` valida la normalizacion y publicacion de esos estilos.
+- No hay cambios en wrappers, CRUD/A ni privilegios por rol: la administracion sigue siendo exclusiva de `super_administrador` y el portal continua como superficie publica de solo lectura.
+
+Actualizacion 2026-04-15 (portal publico: CTA superior de WhatsApp y botones tipo mini-tarjeta):
+- Se refuerza el submodulo `pagina principal dinamica (super)` en su capa publica para que `index.html` exponga una jerarquia comercial mas clara en el primer pliegue.
+- `web/estilos.css` mueve el CTA flotante de WhatsApp a la esquina superior derecha del home y redefine los accesos `Registrarse o iniciar sesión` e `Informacion de contacto` con un estilo compacto inspirado en las tarjetas comerciales del portal.
+- `web/index.html` conserva las mismas rutas publicas y el mismo flujo funcional; el ajuste es exclusivamente visual y responsive.
+- No hay cambios en wrappers, CRUD/A ni privilegios por rol: la administracion de `pagina_principal` sigue siendo exclusiva de `super_administrador` y el portal continua como superficie publica de solo lectura.
+
 Actualizacion 2026-04-15 (portal publico: landing descriptiva configurable desde pagina_principal):
 - Se refuerza el submodulo `pagina principal dinamica (super)` para que la configuracion de tarjetas no gobierne solo `index.html`, sino tambien el contenido extendido de `/descripcion_de_los_sistemas.ht`.
 - `backend/handlers/pagina_principal_handlers.go` amplía el contrato de cada tarjeta con etiqueta, titular ampliado, dos parrafos y capacidades clave, manteniendo la misma API publica `/api/public/pagina_principal` para home y landing.

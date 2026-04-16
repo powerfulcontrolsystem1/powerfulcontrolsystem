@@ -1,5 +1,128 @@
 Descripcion de archivos del proyecto
 
+Actualizacion 2026-04-15: monitor centralizado de errores con recovery global y panel super
+ - Archivos creados:
+	- backend/db/super_errores_sistema.go
+	- backend/utils/system_errors.go
+	- backend/handlers/super_error_handlers.go
+	- backend/handlers/super_error_handlers_test.go
+	- web/super/errores.html
+ - Archivos modificados:
+	- backend/main.go
+	- backend/utils/utils.go
+	- backend/utils/utils_test.go
+	- web/super_administrador.html
+	- documentos/descripcion_del_proyecto
+	- documentos/diagramas/estructura_del_codigo.md
+	- documentos/descripcion_de_modulos
+	- documentos/matriz_roles_permisos_pos_multiempresa.md
+	- documentos/estructura_bd.md
+	- documentos/descripcion_de_archivos
+	- documentos/historial_de_cambios
+	- CHANGELOG.md
+ - Descripcion: Se implementa un monitor global de errores para todo el POS multiempresa. El backend ahora recupera panicos, registra errores HTTP y procesos internos en la base super y en `backend/logs/system_errors.log`, oculta detalles tecnicos en respuestas `5xx` y expone un panel exclusivo para super con filtros por empresa, fecha, nivel, tipo y busqueda libre.
+ - Verificacion: `go test ./utils -run "Test(JSONErrorMiddlewareSanitizesInternalServerError|RecoveryMiddlewareRecoversPanicAndLogsIt|JSONErrorMiddlewarePreservesJSONErrorBody|JSONErrorMiddlewareWrapsNonJSONError|JSONErrorMiddlewareWrapsEpaycoNonJSONError)" -count=1`; `go test ./handlers -run "Test(SuperErroresSistemaHandlerFiltersResults|SuperErroresSistemaHandlerMethodNotAllowed)" -count=1`; `go test ./ ./auth ./db ./handlers ./metrics ./utils -run "^$" -count=1`.
+
+Actualizacion 2026-04-15: contrato versionado editable desde super y aceptacion por version en login admin
+ - Archivos creados:
+	- backend/db/contrato_super.go
+	- backend/handlers/super_contrato_handlers.go
+	- backend/handlers/super_contrato_handlers_test.go
+	- web/super/contrato.html
+ - Archivos modificados:
+	- backend/main.go
+	- backend/handlers/accept_handlers.go
+	- backend/handlers/auth_admin_handlers.go
+	- backend/handlers/e2e_login_acceptance_test.go
+	- backend/handlers/auth_users_carritos_test.go
+	- backend/utils/utils.go
+	- web/accept.html
+	- web/contrato.html
+	- web/super_administrador.html
+	- documentos/descripcion_del_proyecto
+	- documentos/diagramas/estructura_del_codigo.md
+	- documentos/descripcion_de_modulos
+	- documentos/matriz_roles_permisos_pos_multiempresa.md
+	- documentos/estructura_bd.md
+	- documentos/descripcion_de_archivos
+	- documentos/historial_de_cambios
+	- CHANGELOG.md
+ - Descripcion: Se reemplaza el contrato estatico por un contrato versionado en la base `superadministrador`, con editor en el panel super, historial de cambios por version y aceptacion administrativa asociada a la version vigente. Cuando super publica una nueva version, el siguiente login administrativo vuelve a exigir aceptacion antes de crear sesion.
+ - Verificacion: `go test ./handlers -run "Test(PublicContratoHandlerReturnsDefaultVersion|SuperContratoHandlerCreatesNewVersionAndHistory|E2E_AcceptContractCreatesSession|E2E_AcceptContractRequiresNewVersion|AuthMiddlewareAllowsPublicPortalPagesAssetsAndHomeCardsAPI)" -count=1`; `go test ./ ./auth ./db ./handlers ./metrics ./utils -run "^$" -count=1`; diagnostico del editor sin errores en los archivos Go/HTML tocados.
+
+Actualizacion 2026-04-15: sync_to_vps abre el dominio publico canonico tras el deploy
+ - Archivos modificados:
+	- scripts/sync_to_vps.ps1
+	- documentos/descripcion_de_archivos
+	- documentos/historial_de_cambios
+	- CHANGELOG.md
+ - Descripcion: El wrapper PowerShell de despliegue separa el host SSH de la URL publica final. Ahora `sync_to_vps.ps1` abre por defecto `https://powerfulcontrolsystem.com/` al terminar el deploy, usando el nuevo parametro `PublicBaseUrl`, sin depender de `RemoteHost` ni abrir la IP del VPS en el navegador.
+ - Verificacion: Validacion de sintaxis PowerShell mediante parser (`[System.Management.Automation.Language.Parser]::ParseFile(...)`) sin errores.
+
+Actualizacion 2026-04-15: checkout de licencias con Epayco visible por Public Key y rutas publicas reales
+ - Archivos modificados:
+	- backend/handlers/payments_handlers.go
+	- backend/handlers/payments_handlers_test.go
+	- backend/handlers/system_empresas_handlers_test.go
+	- backend/utils/utils.go
+	- backend/utils/utils_test.go
+	- web/pagar_licencia.html
+	- web/super/configuracion_avanzada.html
+	- documentos/descripcion_del_proyecto
+	- documentos/diagramas/estructura_del_codigo.md
+	- documentos/descripcion_de_modulos
+	- documentos/matriz_roles_permisos_pos_multiempresa.md
+	- documentos/descripcion_de_archivos
+	- documentos/historial_de_cambios
+	- CHANGELOG.md
+ - Descripcion: Se corrige el criterio de disponibilidad de Epayco para el checkout de licencias, dejando la `Public Key` como requisito minimo operativo, y se alinean `AuthMiddleware` y `JSONErrorMiddleware` para que `/api/public/licencias/payment_methods`, `/wompi/*` y `/epayco/*` funcionen como rutas publicas reales. Ademas, `web/pagar_licencia.html` explica si la pasarela esta desactivada o si falta configuracion minima.
+ - Verificacion: `go test ./handlers -run "Test(EpaycoCreateTransactionHandlerUsesConfiguredPublicBaseURLAndKeys|EpaycoCreateTransactionHandlerAllowsCheckoutWithoutPrivateKey|PublicLicenciasPaymentMethodsHandlerOrdersAndAvailability|PublicLicenciasPaymentMethodsHandlerAllowsEpaycoWithPublicKeyOnly)" -count=1`; `go test ./utils -run "Test(AuthMiddlewareAllowsPublicLicenciaPaymentRoutesWithoutSession|JSONErrorMiddlewareWrapsEpaycoNonJSONError)" -count=1`; diagnostico del editor sin errores en los archivos Go/HTML tocados.
+
+Actualizacion 2026-04-15: login admin sin hint visible y Gmail SMTP editable en directo
+ - Archivos modificados:
+	- web/login.html
+	- web/super/configuracion_avanzada.html
+	- documentos/descripcion_del_proyecto
+	- documentos/diagramas/estructura_del_codigo.md
+	- documentos/descripcion_de_modulos
+	- documentos/matriz_roles_permisos_pos_multiempresa.md
+	- documentos/descripcion_de_archivos
+	- documentos/historial_de_cambios
+	- CHANGELOG.md
+ - Descripcion: Se elimina del login administrativo el bloque visible `Se recordará ... / Olvidar` sin tocar la logica de `Recordar cuenta`, y la seccion `Correo Gmail — Confirmación de usuarios` en configuracion avanzada pasa a permitir edicion directa de los campos ya guardados mientras el cifrado obligatorio este disponible.
+ - Verificacion: `go test ./handlers -run "TestGmailConfigHandlerSaveRestartAlertTo" -count=1`; diagnostico del editor sin errores en `web/login.html` y `web/super/configuracion_avanzada.html`.
+
+Actualizacion 2026-04-15: tamanos configurables del portal desde pagina_principal
+ - Archivos modificados:
+	- backend/handlers/pagina_principal_handlers.go
+	- backend/handlers/pagina_principal_handlers_test.go
+	- web/super/pagina_principal.html
+	- web/index.html
+	- web/descripcion_de_los_sistemas.ht
+	- web/estilos.css
+	- documentos/descripcion_del_proyecto
+	- documentos/diagramas/estructura_del_codigo.md
+	- documentos/descripcion_de_modulos
+	- documentos/matriz_roles_permisos_pos_multiempresa.md
+	- documentos/descripcion_de_archivos
+	- documentos/historial_de_cambios
+	- CHANGELOG.md
+ - Descripcion: Se amplía `pagina_principal` para que super configure el tamano de las tarjetas y del texto del home `index.html` y de la landing `/descripcion_de_los_sistemas.ht`, usando un bloque comun de estilos globales publicado por `/api/public/pagina_principal`.
+ - Verificacion: `go test ./handlers -run "TestPaginaPrincipal|TestPublicPaginaPrincipalHandlerExposesLandingFields" -count=1`; diagnostico del editor sin errores en `backend/handlers/pagina_principal_handlers.go`, `backend/handlers/pagina_principal_handlers_test.go`, `web/super/pagina_principal.html`, `web/index.html`, `web/descripcion_de_los_sistemas.ht` y `web/estilos.css`.
+
+Actualizacion 2026-04-15: home publico con CTA superior de WhatsApp y botones mini-tarjeta
+ - Archivos modificados:
+	- web/index.html
+	- web/estilos.css
+	- documentos/descripcion_del_proyecto
+	- documentos/descripcion_de_modulos
+	- documentos/matriz_roles_permisos_pos_multiempresa.md
+	- documentos/descripcion_de_archivos
+	- documentos/historial_de_cambios
+	- CHANGELOG.md
+ - Descripcion: Se ajusta visualmente el home publico para mover el CTA flotante de WhatsApp a la esquina superior derecha y convertir los botones `Registrarse o iniciar sesión` e `Informacion de contacto` en mini-tarjetas compactas, reutilizando el lenguaje visual de las tarjetas comerciales sin alterar rutas ni comportamiento funcional.
+ - Verificacion: diagnostico del editor sin errores en `web/index.html` y `web/estilos.css`.
+
 Actualizacion 2026-04-15: landing descriptiva configurable desde pagina_principal
  - Archivos creados:
 	- backend/handlers/pagina_principal_handlers_test.go

@@ -50,6 +50,7 @@
       var quickNavEl = document.getElementById('systemsQuickNav');
       var sectionsEl = document.getElementById('systemsSections');
       var statusEl = document.getElementById('systemsStatus');
+      var systemsMainEl = document.querySelector('.systems-main');
 
       var fallbackCards = [
         {
@@ -173,6 +174,32 @@
         return value;
       }
 
+      function normalizeVisualSize(raw) {
+        var value = String(raw || '').trim().toLowerCase();
+        if (value === 'small') value = 'pequeno';
+        if (value === 'medium') value = 'mediano';
+        if (value === 'large') value = 'grande';
+        if (value !== 'pequeno' && value !== 'mediano' && value !== 'grande') {
+          value = 'mediano';
+        }
+        return value;
+      }
+
+      function normalizeVisualSettings(raw) {
+        var source = raw && typeof raw === 'object' ? raw : {};
+        return {
+          landing_card_size: normalizeVisualSize(source.landing_card_size),
+          landing_text_size: normalizeVisualSize(source.landing_text_size)
+        };
+      }
+
+      function applyVisualSettings(raw) {
+        var settings = normalizeVisualSettings(raw);
+        if (!systemsMainEl) return;
+        systemsMainEl.setAttribute('data-card-size', settings.landing_card_size);
+        systemsMainEl.setAttribute('data-text-size', settings.landing_text_size);
+      }
+
       function normalizeCards(rawCards) {
         var source = Array.isArray(rawCards) && rawCards.length ? rawCards : fallbackCards;
         return source.map(function (card, idx) {
@@ -272,12 +299,14 @@
             throw new Error((payload && (payload.error || payload.message)) || ('HTTP ' + response.status));
           }
 
+          applyVisualSettings(payload && payload.estilos);
           var cards = normalizeCards(payload && payload.tarjetas);
           renderQuickNav(cards);
           renderSections(cards);
           statusEl.textContent = '';
           scrollToHashIfNeeded();
         } catch (err) {
+          applyVisualSettings(null);
           var fallback = normalizeCards(fallbackCards);
           renderQuickNav(fallback);
           renderSections(fallback);

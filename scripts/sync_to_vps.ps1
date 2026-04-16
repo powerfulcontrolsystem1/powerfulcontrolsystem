@@ -34,6 +34,7 @@ param(
   [string]$GoogleClientId = "",
   [string]$GoogleClientSecret = "",
   [string]$GoogleRedirectUrl = "https://powerfulcontrolsystem.com/auth/google/callback",
+  [string]$PublicBaseUrl = "https://powerfulcontrolsystem.com/",
   [string]$DbDialect = "postgres",
   [string]$DbEmpresasDsn = "",
   [string]$DbSuperadminDsn = "",
@@ -49,6 +50,25 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 $script:SyncExitCode = 0
+
+function Resolve-PublicDeployUrl {
+  param(
+    [AllowNull()][AllowEmptyString()][string]$PublicBaseUrl = "",
+    [Parameter(Mandatory=$true)][string]$RemoteHost,
+    [Parameter(Mandatory=$true)][string]$ServerPort
+  )
+
+  $normalizedPublicBaseUrl = ""
+  if ($null -ne $PublicBaseUrl) {
+    $normalizedPublicBaseUrl = $PublicBaseUrl.Trim()
+  }
+
+  if (-not [string]::IsNullOrWhiteSpace($normalizedPublicBaseUrl)) {
+    return $normalizedPublicBaseUrl
+  }
+
+  return "http://$RemoteHost`:$ServerPort/"
+}
 
 function Convert-ToBashLiteral {
   param([AllowNull()][AllowEmptyString()][string]$Value = "")
@@ -1577,7 +1597,7 @@ try {
   if (-not (Test-WslReady)) {
     Invoke-PuttySync -LocalResolvedPath $LocalPath -RemoteUser $RemoteUser -RemoteHost $RemoteHost -RemotePath $RemotePath -Port $Port -IdentityPath $IdentityFile -IsDryRun $DryRun.IsPresent -IsPreviewOnly $PreviewOnly.IsPresent -ExcludeFile $ExcludeFile -ExecRelativePath $builtBinaryRel -Retries $RetryCount -AutoInstallDeps $AutoInstallDependencies -RunBootstrap $BootstrapServer -BootstrapServerPort $ServerPort -BootstrapGoogleClientId $GoogleClientId -BootstrapGoogleClientSecret $GoogleClientSecret -BootstrapGoogleRedirectUrl $GoogleRedirectUrl -BootstrapDbDialect $DbDialect -BootstrapDbEmpresasDsn $DbEmpresasDsn -BootstrapDbSuperadminDsn $DbSuperadminDsn -RestartServer $RestartRemoteServer -RestartBinaryRelativePath $restartBinaryRel -RestartStdoutLogRelativePath $RemoteStdoutLogPath -RestartStderrLogRelativePath $RemoteStderrLogPath -RestartHealthTimeout $RestartHealthTimeoutSeconds
     if ($OpenPublicUrlAfterDeploy -and -not $DryRun.IsPresent -and -not $PreviewOnly.IsPresent -and $RestartRemoteServer) {
-      $deployUrl = "http://$RemoteHost`:$ServerPort/"
+      $deployUrl = Resolve-PublicDeployUrl -PublicBaseUrl $PublicBaseUrl -RemoteHost $RemoteHost -ServerPort $ServerPort
       Write-Host ("[INFO] Abriendo URL pública: " + $deployUrl)
       try {
         Start-Process $deployUrl | Out-Null
@@ -1681,7 +1701,7 @@ try {
   }
 
   if ($OpenPublicUrlAfterDeploy -and -not $DryRun.IsPresent -and -not $PreviewOnly.IsPresent -and $RestartRemoteServer) {
-    $deployUrl = "http://$RemoteHost`:$ServerPort/"
+    $deployUrl = Resolve-PublicDeployUrl -PublicBaseUrl $PublicBaseUrl -RemoteHost $RemoteHost -ServerPort $ServerPort
     Write-Host ("[INFO] Abriendo URL pública: " + $deployUrl)
     try {
       Start-Process $deployUrl | Out-Null
