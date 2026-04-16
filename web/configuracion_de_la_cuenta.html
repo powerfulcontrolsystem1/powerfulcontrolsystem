@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Configuración de la cuenta</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body>
+  <div class="container">
+    <section class="card">
+      <h1>Configuración de la cuenta</h1>
+      <form id="profileForm">
+        <div class="form-row">
+          <label>Correo</label>
+          <input id="fldEmail" type="email" class="form-input" />
+        </div>
+        <div class="form-row">
+          <label>Nombre</label>
+          <input id="fldName" type="text" class="form-input" />
+        </div>
+        <div class="form-row">
+          <label>Teléfono</label>
+          <input id="fldPhone" type="text" class="form-input" />
+        </div>
+        <div class="form-row">
+          <button id="saveProfileBtn" class="btn">Guardar perfil</button>
+        </div>
+        <div id="profileMsg" class="form-help" style="display:none"></div>
+      </form>
+    </section>
+
+    <section class="card" style="margin-top:16px;">
+      <h2>Cambiar contraseña</h2>
+      <form id="pwdForm">
+        <div class="form-row">
+          <label>Contraseña actual</label>
+          <input id="fldCurrentPwd" type="password" class="form-input" />
+        </div>
+        <div class="form-row">
+          <label>Nueva contraseña</label>
+          <input id="fldNewPwd" type="password" class="form-input" />
+        </div>
+        <div class="form-row">
+          <label>Confirmar nueva contraseña</label>
+          <input id="fldNewPwdConfirm" type="password" class="form-input" />
+        </div>
+        <div class="form-row">
+          <button id="changePwdBtn" class="btn">Cambiar contraseña</button>
+        </div>
+        <div id="pwdMsg" class="form-help" style="display:none"></div>
+      </form>
+    </section>
+  </div>
+
+  <script src="/js/configuracion_de_la_cuenta.js"></script>
+</body>
+</html>

@@ -2152,6 +2152,8 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if reference == "" {
 			reference = strings.TrimSpace(r.URL.Query().Get("ref"))
 		}
+		originalTransactionID := transactionID
+		originalReference := reference
 		if transactionID == "" && reference == "" {
 			http.Error(w, "id o reference requerido", http.StatusBadRequest)
 			return
@@ -2175,6 +2177,8 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		storedStatus := ""
+		recordTransactionID := transactionID
+		recordReference := reference
 		if rec != nil {
 			if reference == "" && rec.Reference.Valid {
 				reference = strings.TrimSpace(rec.Reference.String)
@@ -2185,19 +2189,34 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 			if rec.Status.Valid {
 				storedStatus = strings.ToUpper(strings.TrimSpace(rec.Status.String))
 			}
+			if recordReference == "" && rec.Reference.Valid {
+				recordReference = strings.TrimSpace(rec.Reference.String)
+			}
+			if recordTransactionID == "" && rec.TransactionID.Valid {
+				recordTransactionID = strings.TrimSpace(rec.TransactionID.String)
+			}
+		}
+		if recordReference == "" {
+			recordReference = recordTransactionID
+		}
+		if recordTransactionID == "" {
+			recordTransactionID = recordReference
 		}
 		if reference == "" {
-			reference = transactionID
+			reference = recordReference
 		}
 		if transactionID == "" {
-			transactionID = reference
+			transactionID = recordTransactionID
 		}
 
 		status := ""
 		validationPayload := map[string]interface{}{}
 		rawValidation := ""
-		if reference != "" {
-			validationURL := "https://secure.epayco.co/validation/v1/reference/" + url.PathEscape(reference)
+		gatewayTransactionID := ""
+		gatewayReference := ""
+		invoiceReference := ""
+		if recordReference != "" {
+			validationURL := "https://secure.epayco.co/validation/v1/reference/" + url.PathEscape(recordReference)
 			req, err := http.NewRequest("GET", validationURL, nil)
 			if err == nil {
 				client := &http.Client{Timeout: 15 * time.Second}
@@ -2213,17 +2232,23 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 								status = "PENDING"
 							}
 							if txFromGateway := strings.TrimSpace(pickEpaycoField(validationPayload, "x_transaction_id", "transaction_id", "id")); txFromGateway != "" {
+								gatewayTransactionID = txFromGateway
 								transactionID = txFromGateway
 							}
-							if refFromGateway := strings.TrimSpace(pickEpaycoField(validationPayload, "x_ref_payco", "reference", "invoice")); refFromGateway != "" {
+							if invoiceFromGateway := strings.TrimSpace(pickEpaycoField(validationPayload, "invoice", "x_id_invoice")); invoiceFromGateway != "" {
+								invoiceReference = invoiceFromGateway
+								recordReference = invoiceFromGateway
+							}
+							if refFromGateway := strings.TrimSpace(pickEpaycoField(validationPayload, "x_ref_payco", "reference", "ref_payco")); refFromGateway != "" {
+								gatewayReference = refFromGateway
 								reference = refFromGateway
 							}
 						}
 					} else {
-						log.Printf("warning: epayco validation API returned %s for reference %s: %s", resp.Status, reference, string(body))
+						log.Printf("warning: epayco validation API returned %s for reference %s: %s", resp.Status, recordReference, string(body))
 					}
 				} else {
-					log.Printf("warning: epayco validation request failed for reference %s: %v", reference, reqErr)
+					log.Printf("warning: epayco validation request failed for reference %s: %v", recordReference, reqErr)
 				}
 			}
 		}
@@ -2235,6 +2260,12 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 			status = "PENDING"
 		}
 		status = strings.ToUpper(status)
+		if transactionID == "" {
+			transactionID = firstNonEmptyString(gatewayTransactionID, recordTransactionID, originalTransactionID)
+		}
+		if reference == "" {
+			reference = firstNonEmptyString(gatewayReference, invoiceReference, recordReference, originalReference)
+		}
 
 		payloadToSave := rawValidation
 		if strings.TrimSpace(payloadToSave) == "" {
@@ -2247,20 +2278,57 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 			payloadToSave = string(fallbackPayload)
 		}
 
-		if transactionID != "" {
-			if err := dbpkg.UpdateEpaycoPaymentRecordByTransaction(dbSuper, transactionID, status, payloadToSave); err != nil {
+		if recordTransactionID != "" {
+			if err := dbpkg.UpdateEpaycoPaymentRecordByTransaction(dbSuper, recordTransactionID, status, payloadToSave); err != nil {
 				log.Println("warning: failed to update Epayco payment by transaction:", err)
 			}
 		}
-		if reference != "" {
-			if err := dbpkg.UpdateEpaycoPaymentRecordByReference(dbSuper, reference, status, payloadToSave); err != nil {
+		if recordReference != "" {
+			if err := dbpkg.UpdateEpaycoPaymentRecordByReference(dbSuper, recordReference, status, payloadToSave); err != nil {
 				log.Println("warning: failed to update Epayco payment by reference:", err)
 			}
 		}
+		if invoiceReference != "" && invoiceReference != recordReference {
+			if err := dbpkg.UpdateEpaycoPaymentRecordByReference(dbSuper, invoiceReference, status, payloadToSave); err != nil {
+				log.Println("warning: failed to update Epayco payment by invoice reference:", err)
+			}
+		}
 
-		licenciaID, empresaID, hasContext, ctxErr := dbpkg.GetEpaycoPaymentContext(dbSuper, transactionID, reference)
-		if ctxErr != nil {
-			log.Println("warning: failed to resolve Epayco payment context:", ctxErr)
+		licenciaID := int64(0)
+		empresaID := int64(0)
+		hasContext := false
+		lookupCombos := [][2]string{
+			{recordTransactionID, recordReference},
+			{"", recordReference},
+			{"", invoiceReference},
+			{"", originalReference},
+			{originalTransactionID, originalReference},
+			{transactionID, reference},
+		}
+		seenCombos := make(map[string]struct{}, len(lookupCombos))
+		for _, combo := range lookupCombos {
+			txCandidate := strings.TrimSpace(combo[0])
+			refCandidate := strings.TrimSpace(combo[1])
+			if txCandidate == "" && refCandidate == "" {
+				continue
+			}
+			key := txCandidate + "|" + refCandidate
+			if _, seen := seenCombos[key]; seen {
+				continue
+			}
+			seenCombos[key] = struct{}{}
+
+			ctxLicenciaID, ctxEmpresaID, found, ctxErr := dbpkg.GetEpaycoPaymentContext(dbSuper, txCandidate, refCandidate)
+			if ctxErr != nil {
+				log.Println("warning: failed to resolve Epayco payment context:", ctxErr)
+				continue
+			}
+			if found {
+				licenciaID = ctxLicenciaID
+				empresaID = ctxEmpresaID
+				hasContext = true
+				break
+			}
 		}
 
 		activated := false
@@ -2273,7 +2341,7 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 			go func(txID, ref string, licID, empID int64) {
 				recordVendedorComisionesEpayco(dbSuper, txID, ref, licID, empID)
-			}(transactionID, reference, licenciaID, empresaID)
+			}(firstNonEmptyString(recordTransactionID, transactionID), firstNonEmptyString(recordReference, invoiceReference, reference), licenciaID, empresaID)
 		}
 
 		publicKey, _, privateKey, _ := resolveEpaycoCredentials(dbSuper)
@@ -2284,8 +2352,8 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 			"provider":       "epayco",
 			"mode":           mode,
 			"mode_source":    modeSource,
-			"transaction_id": transactionID,
-			"reference":      reference,
+			"transaction_id": firstNonEmptyString(transactionID, recordTransactionID, originalTransactionID),
+			"reference":      firstNonEmptyString(reference, recordReference, invoiceReference, originalReference),
 			"status":         status,
 			"context_found":  hasContext,
 			"licencia_id":    licenciaID,

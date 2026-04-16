@@ -3,402 +3,66 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Calculadora por empresa</title>
+  <title>Calculadora</title>
   <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .calc-window { max-width: 360px; margin: 40px auto; }
+    .calc-display { background:#222; color:#fff; padding:12px; font-size:24px; text-align:right; border-radius:6px; }
+    .calc-pad { display:grid; grid-template-columns: repeat(4,1fr); gap:8px; margin-top:12px }
+    .calc-key { padding:14px; font-size:18px; border-radius:6px; background:#f0f0f0; border:1px solid #ddd; cursor:pointer }
+    .calc-key.operator { background:#ffd47a }
+    .calc-key.util { background:#e6e6e6 }
+  </style>
 </head>
-<body class="empresa-subpage">
-  <div class="container">
-    <section class="card empresa-section">
-      <div class="empresa-section-header">
-        <h1 style="margin:0;">Calculadora operativa por empresa</h1>
-        <div class="empresa-inline-actions">
-          <a id="linkReportesEmpresa" class="btn secondary" href="#">Abrir reportes</a>
-          <a id="linkPanelEmpresa" class="btn" href="#">Ir al panel empresa</a>
-        </div>
+<body>
+  <main class="calc-window">
+    <div class="card">
+      <h2 style="margin:0 0 8px 0;">Calculadora</h2>
+      <div id="display" class="calc-display">0</div>
+      <div class="calc-pad" role="group" aria-label="Teclado de calculadora">
+        <button class="calc-key util" data-action="clear">AC</button>
+        <button class="calc-key util" data-action="back">←</button>
+        <button class="calc-key util" data-action="percent">%</button>
+        <button class="calc-key operator" data-action="op" data-op="/">÷</button>
+
+        <button class="calc-key" data-action="digit" data-val="7">7</button>
+        <button class="calc-key" data-action="digit" data-val="8">8</button>
+        <button class="calc-key" data-action="digit" data-val="9">9</button>
+        <button class="calc-key operator" data-action="op" data-op="*">×</button>
+
+        <button class="calc-key" data-action="digit" data-val="4">4</button>
+        <button class="calc-key" data-action="digit" data-val="5">5</button>
+        <button class="calc-key" data-action="digit" data-val="6">6</button>
+        <button class="calc-key operator" data-action="op" data-op="-">−</button>
+
+        <button class="calc-key" data-action="digit" data-val="1">1</button>
+        <button class="calc-key" data-action="digit" data-val="2">2</button>
+        <button class="calc-key" data-action="digit" data-val="3">3</button>
+        <button class="calc-key operator" data-action="op" data-op="+">+</button>
+
+        <button class="calc-key util" data-action="sign">+/-</button>
+        <button class="calc-key" data-action="digit" data-val="0">0</button>
+        <button class="calc-key" data-action="dot">.</button>
+        <button class="calc-key operator" data-action="equals">=</button>
       </div>
-      <p id="empresaCalcContexto" class="form-help"></p>
-
-      <div class="calc-layout">
-        <article class="card calc-card">
-          <div class="calc-display-wrap">
-            <div id="calcExpression" class="calc-expression">0</div>
-            <div id="calcResult" class="calc-result">0</div>
-          </div>
-
-          <div class="calc-keypad" role="group" aria-label="Teclado de calculadora">
-            <button type="button" class="calc-key util" data-action="clear">AC</button>
-            <button type="button" class="calc-key util" data-action="backspace">BS</button>
-            <button type="button" class="calc-key util" data-action="percent">%</button>
-            <button type="button" class="calc-key operator" data-action="op" data-op="/">/</button>
-
-            <button type="button" class="calc-key" data-action="digit" data-value="7">7</button>
-            <button type="button" class="calc-key" data-action="digit" data-value="8">8</button>
-            <button type="button" class="calc-key" data-action="digit" data-value="9">9</button>
-            <button type="button" class="calc-key operator" data-action="op" data-op="*">*</button>
-
-            <button type="button" class="calc-key" data-action="digit" data-value="4">4</button>
-            <button type="button" class="calc-key" data-action="digit" data-value="5">5</button>
-            <button type="button" class="calc-key" data-action="digit" data-value="6">6</button>
-            <button type="button" class="calc-key operator" data-action="op" data-op="-">-</button>
-
-            <button type="button" class="calc-key" data-action="digit" data-value="1">1</button>
-            <button type="button" class="calc-key" data-action="digit" data-value="2">2</button>
-            <button type="button" class="calc-key" data-action="digit" data-value="3">3</button>
-            <button type="button" class="calc-key operator" data-action="op" data-op="+">+</button>
-
-            <button type="button" class="calc-key util" data-action="toggle-sign">+/-</button>
-            <button type="button" class="calc-key" data-action="digit" data-value="0">0</button>
-            <button type="button" class="calc-key" data-action="decimal">.</button>
-            <button type="button" class="calc-key operator" data-action="equals">=</button>
-
-            <button type="button" class="calc-key mem" data-action="memory-clear">MC</button>
-            <button type="button" class="calc-key mem" data-action="memory-recall">MR</button>
-            <button type="button" class="calc-key mem" data-action="memory-plus">M+</button>
-            <button type="button" class="calc-key mem" data-action="memory-minus">M-</button>
-          </div>
-        </article>
-
-        <article class="card calc-card">
-          <div class="empresa-section-header">
-            <h2 style="margin:0;">Historial por empresa</h2>
-            <div class="empresa-inline-actions">
-              <button id="btnRefrescarHistorial" class="btn secondary" type="button">Actualizar</button>
-              <button id="btnLimpiarHistorial" class="btn secondary" type="button">Limpiar</button>
-            </div>
-          </div>
-          <p class="form-help">La calculadora registra operaciones por empresa con etiquetas y asociación a cliente/documento.</p>
-
-          <div class="calc-config-row">
-            <label class="empresa-config-check" for="calcCfgCarritos">
-              <input id="calcCfgCarritos" type="checkbox" checked>
-              <span>Integrar carritos</span>
-            </label>
-            <label class="empresa-config-check" for="calcCfgCotizaciones">
-              <input id="calcCfgCotizaciones" type="checkbox" checked>
-              <span>Integrar cotizaciones</span>
-            </label>
-            <button id="btnGuardarConfigCalc" class="btn" type="button">Guardar config</button>
-          </div>
-
-          <div class="calc-meta-grid">
-            <div class="form-col">
-              <label class="form-label" for="calcEtiquetas">Etiquetas (coma separadas)</label>
-              <input id="calcEtiquetas" class="form-input" placeholder="cierre, mesa_2, ajuste">
-            </div>
-            <div class="form-col">
-              <label class="form-label" for="calcCliente">Cliente</label>
-              <select id="calcCliente" class="form-input"></select>
-            </div>
-            <div class="form-col">
-              <label class="form-label" for="calcDocumentoTipo">Documento tipo</label>
-              <input id="calcDocumentoTipo" class="form-input" placeholder="carrito, cotizacion, factura">
-            </div>
-            <div class="form-col">
-              <label class="form-label" for="calcDocumentoCodigo">Documento codigo</label>
-              <input id="calcDocumentoCodigo" class="form-input" placeholder="COD-001">
-            </div>
-            <div class="form-col">
-              <label class="form-label" for="calcCarrito">Carrito</label>
-              <select id="calcCarrito" class="form-input"></select>
-            </div>
-            <div class="form-col">
-              <label class="form-label" for="calcCotizacion">Cotizacion</label>
-              <select id="calcCotizacion" class="form-input"></select>
-            </div>
-          </div>
-
-          <div class="calc-filter-row">
-            <input id="calcDesde" type="date" class="form-input" title="Desde">
-            <input id="calcHasta" type="date" class="form-input" title="Hasta">
-            <input id="calcUsuarioFiltro" class="form-input" placeholder="Filtro usuario (correo)">
-            <select id="calcExportFormat" class="form-input">
-              <option value="json">JSON</option>
-              <option value="csv">CSV</option>
-              <option value="txt">TXT</option>
-              <option value="xls">XLS</option>
-              <option value="pdf">PDF</option>
-            </select>
-            <button id="btnExportarHistorial" class="btn" type="button">Exportar</button>
-          </div>
-
-          <div id="calcMessage" class="form-help"></div>
-          <ul id="calcHistory" class="calc-history-list"></ul>
-        </article>
-      </div>
-    </section>
-  </div>
+    </div>
+  </main>
 
   <script>
-    (function () {
-      var params = new URLSearchParams(window.location.search || "");
-      var empresaId = String(
-        params.get("empresa_id") ||
-        params.get("id") ||
-        (function () {
-          try {
-            return localStorage.getItem("active_empresa_id") || "";
-          } catch (e) {
-            return "";
-          }
-        })()
-      ).trim();
-
-      if (empresaId) {
-        try {
-          localStorage.setItem("active_empresa_id", empresaId);
-        } catch (e) {}
-      }
-
-      var empresaKey = empresaId || "global";
-      var memoryKey = "calculator:empresa:" + empresaKey + ":memory";
-
-      var expressionEl = document.getElementById("calcExpression");
-      var resultEl = document.getElementById("calcResult");
-      var historyEl = document.getElementById("calcHistory");
-      var messageEl = document.getElementById("calcMessage");
-      var empresaContextEl = document.getElementById("empresaCalcContexto");
-      var linkReportes = document.getElementById("linkReportesEmpresa");
-      var linkPanel = document.getElementById("linkPanelEmpresa");
-
-      var currentValue = "0";
-      var accumulator = null;
-      var pendingOperator = "";
-      var waitingForOperand = false;
-      var memoryValue = loadMemory();
-      var calcConfig = {
-        integrar_carritos: true,
-        integrar_cotizaciones: true
-      };
-      var references = {
-        clientes: [],
-        carritos: [],
-        cotizaciones: []
-      };
-      var carritosById = {};
-      var cotizacionesById = {};
-
-      empresaContextEl.textContent = empresaId
-        ? "Contexto activo: empresa_id=" + empresaId
-        : "Debe indicar empresa_id para registrar operaciones y exportar historial.";
-
-      setActionLinks();
-      bindUI();
-      renderHistory([]);
-      updateDisplay();
-
-      if (hasEmpresaContext()) {
-        bootstrap();
-      } else {
-        setMessage("Sin empresa seleccionada: solo calculo local disponible.", true);
-        disableEmpresaActions();
-      }
-
-      function hasEmpresaContext() {
-        return !!empresaId;
-      }
-
-      function setActionLinks() {
-        var reportesURL = new URL("/administrar_empresa/reportes.html", window.location.origin);
-        var panelURL = new URL("/administrar_empresa.html", window.location.origin);
-        if (empresaId) {
-          reportesURL.searchParams.set("empresa_id", empresaId);
-          panelURL.searchParams.set("empresa_id", empresaId);
-        }
-        linkReportes.setAttribute("href", reportesURL.pathname + reportesURL.search);
-        linkPanel.setAttribute("href", panelURL.pathname + panelURL.search);
-      }
-
-      function bindUI() {
-        document.querySelectorAll(".calc-keypad .calc-key").forEach(function (btn) {
-          btn.addEventListener("click", function () {
-            var action = btn.getAttribute("data-action") || "";
-            handleAction(action, btn);
-          });
-        });
-
-        document.getElementById("btnRefrescarHistorial").addEventListener("click", function () {
-          refreshHistory().catch(function (err) {
-            setMessage(normalizeErrorMessage(err, "No se pudo actualizar historial."), true);
-          });
-        });
-
-        document.getElementById("btnLimpiarHistorial").addEventListener("click", function () {
-          clearHistory().catch(function (err) {
-            setMessage(normalizeErrorMessage(err, "No se pudo limpiar historial."), true);
-          });
-        });
-
-        document.getElementById("btnExportarHistorial").addEventListener("click", function () {
-          exportHistory().catch(function (err) {
-            setMessage(normalizeErrorMessage(err, "No se pudo exportar historial."), true);
-          });
-        });
-
-        document.getElementById("btnGuardarConfigCalc").addEventListener("click", function () {
-          saveConfig().catch(function (err) {
-            setMessage(normalizeErrorMessage(err, "No se pudo guardar configuracion."), true);
-          });
-        });
-
-        document.getElementById("calcCarrito").addEventListener("change", onCarritoSelected);
-        document.getElementById("calcCotizacion").addEventListener("change", onCotizacionSelected);
-      }
-
-      function disableEmpresaActions() {
-        [
-          "btnRefrescarHistorial",
-          "btnLimpiarHistorial",
-          "btnExportarHistorial",
-          "btnGuardarConfigCalc",
-          "calcCfgCarritos",
-          "calcCfgCotizaciones",
-          "calcEtiquetas",
-          "calcCliente",
-          "calcDocumentoTipo",
-          "calcDocumentoCodigo",
-          "calcCarrito",
-          "calcCotizacion",
-          "calcDesde",
-          "calcHasta",
-          "calcUsuarioFiltro",
-          "calcExportFormat"
-        ].forEach(function (id) {
-          var el = document.getElementById(id);
-          if (el) el.disabled = true;
-        });
-      }
-
-      async function bootstrap() {
-        await loadConfig();
-        await loadReferences();
-        await refreshHistory();
-      }
-
-      function normalizeErrorMessage(err, fallback) {
-        if (!err) return fallback;
-        var text = String(err.message || err || "").trim();
-        return text || fallback;
-      }
-
-      function setMessage(text, isError) {
-        messageEl.textContent = text || "";
-        messageEl.style.color = isError ? "#ef5350" : "";
-      }
-
-      function formatNumber(value) {
-        var n = Number(value);
-        if (!Number.isFinite(n)) return "0";
-        var rounded = Math.round((n + Number.EPSILON) * 1000000000) / 1000000000;
-        return String(rounded);
-      }
-
-      function safeNumber(value) {
-        var n = Number(value);
-        return Number.isFinite(n) ? n : 0;
-      }
-
-      function symbolForOperator(operator) {
-        switch (operator) {
-          case "+":
-            return "+";
-          case "-":
-            return "-";
-          case "*":
-            return "*";
-          case "/":
-            return "/";
-          default:
-            return "";
-        }
-      }
-
-      function updateDisplay() {
-        resultEl.textContent = currentValue;
-        if (pendingOperator && accumulator !== null) {
-          var right = waitingForOperand ? "..." : currentValue;
-          expressionEl.textContent = formatNumber(accumulator) + " " + symbolForOperator(pendingOperator) + " " + right;
-          return;
-        }
-        expressionEl.textContent = currentValue;
-      }
-
-      function handleAction(action, btn) {
-        setMessage("", false);
-        switch (action) {
-          case "digit":
-            inputDigit(btn.getAttribute("data-value") || "0");
-            break;
-          case "decimal":
-            inputDecimal();
-            break;
-          case "toggle-sign":
-            toggleSign();
-            break;
-          case "clear":
-            clearAll();
-            break;
-          case "backspace":
-            backspace();
-            break;
-          case "percent":
-            applyPercent();
-            break;
-          case "op":
-            setOperator(btn.getAttribute("data-op") || "");
-            break;
-          case "equals":
-            evaluateExpression().catch(function (err) {
-              setMessage(normalizeErrorMessage(err, "No se pudo registrar operacion."), true);
-            });
-            break;
-          case "memory-clear":
-            memoryValue = 0;
-            persistMemory();
-            setMessage("Memoria limpiada.", false);
-            break;
-          case "memory-recall":
-            currentValue = formatNumber(memoryValue);
-            waitingForOperand = false;
-            updateDisplay();
-            setMessage("Memoria recuperada: " + currentValue, false);
-            break;
-          case "memory-plus":
-            memoryValue = safeNumber(memoryValue) + safeNumber(currentValue);
-            persistMemory();
-            setMessage("Memoria actual: " + formatNumber(memoryValue), false);
-            break;
-          case "memory-minus":
-            memoryValue = safeNumber(memoryValue) - safeNumber(currentValue);
-            persistMemory();
-            setMessage("Memoria actual: " + formatNumber(memoryValue), false);
-            break;
-          default:
-            break;
-        }
-      }
-
-      function inputDigit(digit) {
-        if (waitingForOperand) {
-          currentValue = digit;
-          waitingForOperand = false;
-        } else {
-          currentValue = currentValue === "0" ? digit : currentValue + digit;
-        }
-        updateDisplay();
-      }
-
-      function inputDecimal() {
-        if (waitingForOperand) {
-          currentValue = "0.";
-          waitingForOperand = false;
-          updateDisplay();
-          return;
-        }
-        if (currentValue.indexOf(".") === -1) {
-          currentValue += ".";
-          updateDisplay();
-        }
-      }
+    (function(){
+      var display = document.getElementById('display');
+      var current = '0';
+      var expr = '';
+      function render(){ display.textContent = current; }
+      function pushDigit(d){ if (current === '0') current = d; else current += d; render(); }
+      function doOp(op){ if (expr === '' && current === '') return; expr += (expr === '' ? current : (' ' + current)); expr += ' ' + op + ' '; current = ''; }
+      function compute(){ try{ var safe = expr + ' ' + current; safe = String(safe).replace(/[^0-9+\-*/(). %]/g,''); if (!/^[0-9+\-*/(). %\s]+$/.test(safe)) throw 'invalid'; var res = Function('return ('+safe+')')(); current = String(res); expr = ''; render(); }catch(e){ current='0'; expr=''; render(); alert('Expresión inválida'); } }
+      document.querySelectorAll('.calc-key').forEach(function(btn){ btn.addEventListener('click', function(){ var a = btn.getAttribute('data-action'); if (a === 'digit') { pushDigit(btn.getAttribute('data-val')||'0'); return; } if (a === 'clear'){ current='0'; expr=''; render(); return; } if (a === 'back'){ current = current.slice(0,-1) || '0'; render(); return; } if (a === 'dot'){ if (current.indexOf('.')===-1) current += '.'; render(); return; } if (a === 'sign'){ if (current.charAt(0)==='-') current = current.slice(1); else current = (current==='0' ? '-0' : ('-'+current)); render(); return; } if (a === 'percent'){ var n = parseFloat(current)||0; current = String(n/100); render(); return; } if (a === 'op'){ doOp(btn.getAttribute('data-op')||'+'); return; } if (a === 'equals'){ compute(); return; } }); });
+      render();
+    })();
+  </script>
+</body>
+</html>
 
       function toggleSign() {
         if (currentValue === "0") return;

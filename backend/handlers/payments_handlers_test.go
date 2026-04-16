@@ -361,6 +361,70 @@ func TestEpaycoTransactionStatusHandlerPreservesPendingOnGenericValidationError(
 	}
 }
 
+func TestEpaycoTransactionStatusHandlerFindsContextUsingInvoiceWhenGatewayIDsDiffer(t *testing.T) {
+	dbSuper := openTestSQLite(t, "super_epayco_status_context_invoice_fallback.db")
+	ensurePaymentsHandlerTestSchema(t, dbSuper)
+
+	if _, err := dbSuper.Exec(`
+		INSERT INTO licencias (id, empresa_id, tipo_id, nombre, descripcion, valor, duracion_dias, modulos_habilitados, super_rol_habilitado, fecha_creacion, activo)
+		VALUES (1, 0, 1, 'Plan Contexto', 'Prueba de contexto epayco', 129900, 30, '', 0, datetime('now','localtime'), 1)
+	`); err != nil {
+		t.Fatalf("seed licencia: %v", err)
+	}
+
+	internalRef := "EPAYCO-LIC-1-EMP-44-INT"
+	if _, err := dbpkg.CreateEpaycoPaymentRecord(dbSuper, 1, 44, internalRef, internalRef, "PENDING", `{}`, "", ""); err != nil {
+		t.Fatalf("seed pagos_epayco: %v", err)
+	}
+
+	originalTransport := http.DefaultTransport
+	http.DefaultTransport = roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		body := `{"data":{"x_transaction_id":"ep_tx_789","x_ref_payco":"ep_ref_999","invoice":"EPAYCO-LIC-1-EMP-44-INT","x_cod_response":"1","x_response":"Aceptada"},"status":true}`
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Header:     make(http.Header),
+			Body:       io.NopCloser(strings.NewReader(body)),
+		}, nil
+	})
+	defer func() { http.DefaultTransport = originalTransport }()
+
+	h := EpaycoTransactionStatusHandler(dbSuper)
+	req := httptest.NewRequest(http.MethodGet, "/epayco/transaction_status?id=ep_tx_789&reference=ep_ref_999", nil)
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, rr.Code, rr.Body.String())
+	}
+
+	var resp struct {
+		Status       string `json:"status"`
+		ContextFound bool   `json:"context_found"`
+		LicenciaID   int64  `json:"licencia_id"`
+		EmpresaID    int64  `json:"empresa_id"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode epayco status response: %v body=%s", err, rr.Body.String())
+	}
+	if resp.Status != "APPROVED" {
+		t.Fatalf("expected status APPROVED, got %q", resp.Status)
+	}
+	if !resp.ContextFound {
+		t.Fatal("expected context_found=true when invoice matches internal reference")
+	}
+	if resp.LicenciaID != 1 || resp.EmpresaID != 44 {
+		t.Fatalf("expected licencia_id=1 empresa_id=44, got licencia_id=%d empresa_id=%d", resp.LicenciaID, resp.EmpresaID)
+	}
+
+	rec, err := dbpkg.GetEpaycoPaymentByReference(dbSuper, internalRef)
+	if err != nil {
+		t.Fatalf("read epayco record: %v", err)
+	}
+	if rec == nil || !rec.Status.Valid || strings.ToUpper(strings.TrimSpace(rec.Status.String)) != "APPROVED" {
+		t.Fatalf("expected stored status APPROVED for internal reference, got %+v", rec)
+	}
+}
+
 func TestWompiTransactionStatusHandlerAllowsReferenceLookup(t *testing.T) {
 	dbSuper := openTestSQLite(t, "super_wompi_reference_lookup.db")
 	ensurePaymentsHandlerTestSchema(t, dbSuper)

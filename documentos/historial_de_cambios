@@ -1,5 +1,46 @@
  - Historial de cambios
 
+ - 2026-04-16: Ajustes responsive - menú apilado en móvil y mejora de login admin
+     - Archivos modificados:
+         - web/estilos.css (reglas móviles para menú apilado)
+         - web/login.html (formulario de correo/contraseña refactorizado a `.form`/`.form-input`)
+         - web/Juegos/menu_juegos.html (lista móvil apilada y mejoras menores)
+     - Descripcion: Se fuerza que el menú lateral y los menús de página muestren botones apilados en una única columna en pantallas pequeñas (un botón por fila, ancho completo). Se actualiza el formulario de login para administradores para usar las clases de formulario globales (`.form`, `.form-input`) mejorando alineación y estilos. También se ajustó la página de juegos para lista móvil apilada.
+     - Verificacion tecnica:
+         - Abrir una página administrativa en dispositivo móvil o emulación y verificar que el menú muestra botones uno por fila ocupando todo el ancho.
+         - Abrir [web/login.html](web/login.html) en móvil y escritorio y confirmar que los campos `Correo` y `Contraseña` están alineados, con estilos aplicados y que los botones funcionan (Iniciar por correo / Registrarse).
+
+
+ - 2026-04-16: Página de configuración de cuenta y endpoints de perfil
+     - Archivos añadidos/modificados:
+         - web/configuracion_de_la_cuenta.html (nuevo)
+         - web/js/configuracion_de_la_cuenta.js (nuevo)
+         - backend/handlers/account_handlers.go (nuevos handlers: update_profile, change_password)
+         - backend/db/db.go (columna `telefono` y helpers UpdateAdministradorProfile, ReassignSessionsAdminEmail)
+         - backend/main.go (registro de rutas /api/account/update_profile y /api/account/change_password)
+         - web/administrar_empresa/calculadora.html (reemplazada por calculadora cliente simple sin persistencia)
+     - Descripcion: Se crea la página de `configuracion_de_la_cuenta` para que administradores vean y editen su correo, nombre y teléfono, y puedan cambiar su contraseña desde la sesión activa. Se añadieron handlers backend para actualizar perfil y cambiar contraseña, y se añadió la columna `telefono` en el esquema de `administradores` (se asegura en el arranque). Se sustituyó la calculadora operativa por una versión puramente cliente que no guarda nada en la base de datos.
+     - Verificacion tecnica:
+         - Iniciar servidor y acceder a [web/configuracion_de_la_cuenta.html](web/configuracion_de_la_cuenta.html) con sesión activa.
+         - POST /api/account/update_profile debe retornar {ok:true} y reflejar cambios en DB.
+         - POST /api/account/change_password debe validar la contraseña actual y actualizar el hash almacenado.
+
+ - 2026-04-16: Restaurado estilo de tarjetas en `seleccionar_empresa` y agrandadas 20%
+     - Archivos modificados:
+         - web/estilos.css
+         - web/seleccionar_empresa.html
+     - Descripcion: Se restauró el estilo previo (`warm`) para las tarjetas de selección de empresa y se aumentaron dimensiones (min-width, iconos, paddings y tipografías) en un 20% mediante overrides en `web/estilos.css`. La lógica de generación de tarjetas en `web/js/seleccionar_empresa.js` se mantiene sin cambios.
+     - Verificacion tecnica:
+         - Abrir la página [web/seleccionar_empresa.html](web/seleccionar_empresa.html) y verificar que las tarjetas muestran el estilo cálido/redondeado y dimensiones un 20% mayores respecto a la versión previa.
+
+ - 2026-04-16: Añadidos botones de prueba en configuración avanzada
+     - Archivos modificados:
+         - web/super/configuracion_avanzada.html
+     - Descripcion: Se agregan botones "Probar..." en cada tarjeta de la página de configuración avanzada (Venta digital, Epayco, Nequi/Wompi, Gmail SMTP, Inteligencia Artificial y Respaldo). Cada botón realiza comprobaciones no destructivas (GET) a los endpoints de configuración correspondientes y muestra el resultado en la UI sin ejecutar acciones que modifiquen estado en el servidor.
+     - Verificacion tecnica:
+         - Abrir la página [web/super/configuracion_avanzada.html](web/super/configuracion_avanzada.html) y pulsar los botones `Probar *` para observar resultados `OK` o `ERROR` en cada tarjeta.
+         - No se han añadido endpoints backend; las pruebas usan las rutas públicas/administrativas ya existentes.
+
  - 2026-04-16: arcade publico con countdown en Patito y refuerzo movil de los cinco juegos
      - Archivos modificados:
          - web/Juegos/arcade_shared.js

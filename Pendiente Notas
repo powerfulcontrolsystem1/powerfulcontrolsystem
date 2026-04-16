@@ -130,3 +130,204 @@ empresa2.powerfulcontrolsystem.com
  -  la pagina de rervas de cada empresa debe ser publica, que no sea necesario registrarse.
 
  -crear red social y un chat para todas las empresas.
+
+
+
+ asistente a distancia por medio de la herramienta de windows o nose si hay alguna herramienta que haga lo mismo de codigo libre.
+
+
+
+
+
+ ## modulo
+ Desarrolla un módulo de acceso remoto tipo AnyDesk/TeamViewer para integrarlo en un sistema POS multiempresa ya existente.
+
+### OBJETIVO
+
+Permitir que técnicos autorizados puedan conectarse remotamente a los equipos de las empresas clientes para:
+
+* Ver la pantalla en tiempo real
+* Controlar mouse y teclado
+* Brindar soporte técnico
+
+El sistema debe estar basado en un servidor VPS propio (self-hosted), utilizando preferiblemente RustDesk como base o implementando una solución compatible (cliente + servidor).
+
+---
+
+### ARQUITECTURA GENERAL
+
+1. El VPS actuará como servidor central de conexiones remotas.
+2. Cada empresa (tenant) tendrá uno o varios dispositivos registrados.
+3. Cada dispositivo tendrá un agente instalado (cliente remoto).
+4. Los técnicos se conectarán desde un panel web del sistema POS.
+5. Todas las conexiones deben pasar por el VPS (sin depender de servicios externos).
+
+---
+
+### FUNCIONALIDADES PRINCIPALES
+
+#### 1. Registro de dispositivos
+
+* Cada empresa puede registrar dispositivos (PCs)
+* Generar un ID único por dispositivo
+* Asociar dispositivo a empresa (multi-tenant)
+* Guardar:
+
+  * ID del dispositivo
+  * Nombre del equipo
+  * Última conexión
+  * Estado (activo/inactivo)
+
+#### 2. Control remoto
+
+* Conexión segura mediante ID + credenciales
+* Visualización en tiempo real
+* Control de mouse y teclado
+* Opción de solo visualización o control total
+
+#### 3. Panel de técnicos (backend + frontend)
+
+* Lista de empresas
+* Lista de dispositivos por empresa
+* Botón “Conectar”
+* Historial de conexiones:
+
+  * Técnico
+  * Empresa
+  * Fecha/hora
+  * Duración
+
+---
+
+### CONTROL DE USO POR PLAN (IMPORTANTE)
+
+Implementar sistema de limitación por empresa:
+
+Cada empresa tiene un plan con restricciones como:
+
+* Máximo número de conexiones al mes
+* Máximo tiempo de conexión (minutos)
+* Máximo número de dispositivos
+
+#### Lógica:
+
+* Antes de iniciar conexión:
+
+  * Validar si la empresa tiene acceso activo
+  * Verificar si no ha superado su límite
+* Durante la sesión:
+
+  * Medir duración en tiempo real
+* Al finalizar:
+
+  * Registrar consumo
+
+#### Bloqueo automático:
+
+* Si supera límites:
+
+  * Denegar nuevas conexiones
+  * Registrar intento
+  * Mostrar mensaje: “Límite de soporte remoto alcanzado”
+
+---
+
+### SEGURIDAD
+
+* Autenticación por usuario técnico (JWT o sesión)
+* Autorización por empresa (multi-tenant isolation)
+* Cifrado de conexión (usar protocolo seguro tipo RustDesk)
+* Logs de auditoría completos
+* Opcional: confirmación del usuario final antes de permitir control
+
+---
+
+### BASE DE DATOS (PostgreSQL)
+
+Tablas sugeridas:
+
+empresas:
+
+* id
+* nombre
+* plan_id
+
+planes:
+
+* id
+* nombre
+* max_conexiones_mes
+* max_minutos_mes
+* max_dispositivos
+
+dispositivos:
+
+* id
+* empresa_id
+* nombre
+* remote_id
+* estado
+* ultima_conexion
+
+conexiones:
+
+* id
+* empresa_id
+* dispositivo_id
+* tecnico_id
+* fecha_inicio
+* fecha_fin
+* duracion_minutos
+
+uso_mensual:
+
+* empresa_id
+* mes
+* conexiones_usadas
+* minutos_usados
+
+---
+
+### IMPLEMENTACIÓN TÉCNICA
+
+* Backend en Go (sin frameworks externos si es posible)
+* Comunicación con RustDesk server (hbbs + hbbr) o implementación propia
+* Docker para desplegar el servidor remoto
+* API REST para:
+
+  * Registrar dispositivos
+  * Iniciar conexión
+  * Validar límites
+  * Consultar historial
+
+---
+
+### INTEGRACIÓN CON EL POS
+
+* Agregar módulo “Soporte Remoto”
+* Visible solo para técnicos o administradores
+* Multiempresa: cada técnico solo accede a empresas asignadas
+
+---
+
+### EXTRA (OPCIONAL)
+
+* Grabación de sesiones
+* Notificación en tiempo real al cliente
+* Botón de “Solicitar soporte”
+* Integración con chat interno del sistema
+
+---
+
+### RESULTADO ESPERADO
+
+Un sistema funcional donde:
+
+* El VPS actúa como servidor remoto
+* Las empresas conectan sus equipos
+* Los técnicos pueden acceder remotamente
+* Se controla y limita el uso según el plan contratado
+* Todo queda registrado y auditado
+
+---
+

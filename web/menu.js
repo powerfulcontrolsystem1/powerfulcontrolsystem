@@ -7,10 +7,19 @@
       // Evitar reinyecciones en cargas dinámicas: marca global y atributo DOM
       if (window.__pcsFloatingMenuInjected || document.documentElement.dataset.pcsFloatingMenuInjected === '1') return;
     } catch (e) {}
-    // Ocultar menú flotante en la página principal (index)
+    // Ocultar menú flotante en la página principal (index) y en páginas de login.
     try {
       var _p = (window.location && window.location.pathname) ? (window.location.pathname || '').toLowerCase() : '';
       if (_p === '/' || _p === '/index.html' || _p.endsWith('/index.html')) {
+        return;
+      }
+      // No mostrar en páginas de login (login de administradores / login_usuario)
+      if (_p === '/login.html' || _p.endsWith('/login.html') || _p === '/login_usuario.html' || _p.endsWith('/login_usuario.html')) {
+        return;
+      }
+      // Solo inyectar menú flotante cuando exista cookie de sesión activa
+      var cookieStr = String(document.cookie || '');
+      if (cookieStr.indexOf('browser_session_active=1') === -1) {
         return;
       }
     } catch (e) {}
@@ -21,14 +30,13 @@
     wrapper.innerHTML = '<button class="fm-toggle" aria-label="Abrir menú">☰</button>' +
       '<div class="fm-panel" role="menu">' +
         '<a class="fm-item" href="/index.html">Portal</a>' +
-        '<a class="fm-item" href="/ayuda/ayuda.html">Ayuda</a>' +
-        '<a class="fm-item" href="/ultimas_mejoras.html">Últimas mejoras</a>' +
         '<a class="fm-item" href="/venta_digital.html">Venta digital</a>' +
-          '<a class="fm-item" href="/Juegos/menu_juegos.html">Juegos</a>' +
+        '<a class="fm-item" href="/Juegos/menu_juegos.html">Juegos</a>' +
         '<a id="calculatorLink" class="fm-item" href="/administrar_empresa/calculadora.html">Calculadora</a>' +
+        '<a class="fm-item" href="/configuracion_de_la_cuenta.html">Configuración</a>' +
         '<button id="themeToggle" class="fm-item" type="button" aria-label="Cambiar tema"></button>' +
-        '<div id="countryFlagItem" class="fm-item fm-country" style="display:none"></div>' +
         '<a id="sessionLink" class="fm-item" href="/login.html">Iniciar sesión</a>' +
+        '<a class="fm-item" href="/ayuda/ayuda.html">Ayuda</a>' +
       '</div>';
     // insertar al inicio del body
     if (document.body && document.body.firstChild) document.body.insertBefore(wrapper, document.body.firstChild);
@@ -58,6 +66,21 @@
           closePanel();
         }
       });
+      // Asegurar cierre del panel en interacción directa con cada item (touch/click)
+      try {
+        if (panel.querySelectorAll) {
+          panel.querySelectorAll('.fm-item').forEach(function(it){
+            it.addEventListener('click', function(ev){
+              try{ closePanel(); }catch(e){}
+            });
+            try {
+              it.addEventListener('touchstart', function(ev){ try{ closePanel(); }catch(e){} }, {passive:true});
+            } catch(e) {
+              // navegadores antiguos ignoran opciones del listener
+            }
+          });
+        }
+      } catch(e) {}
       document.addEventListener('click', closePanel);
       document.addEventListener('keydown', function(e){
         if (e.key === 'Escape') {
@@ -136,15 +159,6 @@
 
     // (Modo ventana eliminado por petición)
 
-    function detectCountryFromBrowserSignals(){
-      var tz = '';
-      try { tz = (Intl.DateTimeFormat().resolvedOptions().timeZone || '').toLowerCase(); } catch(e) { tz = ''; }
-      var lang = ((navigator && navigator.language) ? navigator.language : '').toLowerCase();
-      if (tz.indexOf('panama') >= 0 || lang.indexOf('es-pa') === 0) return { code:'PA', name:'Panamá', flag:'🇵🇦', source:'navegador' };
-      if (tz.indexOf('guayaquil') >= 0 || tz.indexOf('quito') >= 0 || lang.indexOf('es-ec') === 0) return { code:'EC', name:'Ecuador', flag:'🇪🇨', source:'navegador' };
-      return { code:'CO', name:'Colombia', flag:'🇨🇴', source:'navegador' };
-    }
-
     function resolveEmpresaId(){
       try {
         var p = new URLSearchParams(window.location.search || '');
@@ -158,7 +172,6 @@
         try { return localStorage.getItem('active_empresa_id') || ''; } catch(ee) { return ''; }
       }
     }
-
     function updateCalculatorLink(){
       var calcLink = wrapper.querySelector('#calculatorLink');
       if (!calcLink) return;
@@ -169,48 +182,7 @@
       }
       calcLink.setAttribute('href', url.pathname + url.search);
     }
-
-    function renderCountryItem(info){
-      var item = wrapper.querySelector('#countryFlagItem');
-      if (!item || !info) return;
-      var label = (info.flag || '🌐') + ' ' + (info.name || info.code || 'País');
-      item.textContent = 'País: ' + label;
-      item.title = 'Detección: ' + (info.source || 'desconocida');
-      item.style.display = '';
-    }
-
-    function loadCountryItem(){
-      var empresaId = resolveEmpresaId();
-      var tz = '';
-      try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch(e) { tz = ''; }
-      var lang = (navigator && navigator.language) ? navigator.language : '';
-
-      if (!empresaId) {
-        renderCountryItem(detectCountryFromBrowserSignals());
-        return;
-      }
-
-      var url = '/api/empresa/facturacion_electronica/pais_detectado?empresa_id=' + encodeURIComponent(empresaId) + '&tz=' + encodeURIComponent(tz) + '&lang=' + encodeURIComponent(lang);
-      fetch(url, { credentials: 'same-origin' })
-        .then(function(res){
-          if (!res.ok) throw new Error('HTTP ' + res.status);
-          return res.json();
-        })
-        .then(function(data){
-          renderCountryItem({
-            code: data.pais_codigo || '',
-            name: data.pais_nombre || '',
-            flag: data.bandera || '🌐',
-            source: data.source || 'api'
-          });
-        })
-        .catch(function(){
-          renderCountryItem(detectCountryFromBrowserSignals());
-        });
-    }
-
     updateCalculatorLink();
-    loadCountryItem();
 
     // Marcar inyección para evitar duplicados en futuras cargas dinámicas
     try {

@@ -20,6 +20,10 @@
         <a class="btn" href="/super/venta_digital.html">Abrir panel de venta digital</a>
         <a class="btn secondary" href="/venta_digital.html" target="_blank" rel="noopener noreferrer">Ver tienda pública</a>
       </div>
+      <div class="form-actions">
+        <button id="testVentaDigitalBtn" class="btn secondary" type="button" style="margin-left:8px;">Probar panel</button>
+      </div>
+      <div id="ventaDigitalTestMsg" class="form-help"></div>
     </section>
 
     <section class="card form mp-card" id="epaycoConfig">
@@ -67,8 +71,10 @@
         <button id="saveEpaycoBtn" class="btn">Guardar Epayco</button>
         <button id="editEpaycoBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Editar</button>
         <button id="cancelEpaycoBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Cancelar</button>
+        <button id="testEpaycoBtn" type="button" class="btn secondary" style="margin-left:8px;">Probar Epayco</button>
       </div>
       <div id="epaycoMsg" class="form-help"></div>
+      <div id="epaycoTestResult" class="form-help"></div>
     </section>
 
     <!-- Sección de parámetros avanzados eliminada por ahora -->
@@ -136,8 +142,10 @@
         <button id="saveWompiBtn" class="btn">Guardar Wompi</button>
         <button id="editWompiBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Editar</button>
         <button id="cancelWompiBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Cancelar</button>
+        <button id="testWompiBtn" type="button" class="btn secondary" style="margin-left:8px;">Probar Nequi</button>
       </div>
       <div id="wompiMsg" class="form-help"></div>
+      <div id="wompiTestResult" class="form-help"></div>
     </section>
 
     <section class="card form mp-card" id="gmailConfig">
@@ -208,8 +216,10 @@
         <button id="saveGmailBtn" class="btn">Guardar Gmail SMTP</button>
         <button id="editGmailBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Editar</button>
         <button id="cancelGmailBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Cancelar</button>
+        <button id="testGmailBtn" type="button" class="btn secondary" style="margin-left:8px;">Probar Gmail</button>
       </div>
       <div id="gmailMsg" class="form-help"></div>
+      <div id="gmailTestResult" class="form-help"></div>
     </section>
 
     <section class="card form mp-card" id="aiConfigCard">
@@ -235,8 +245,10 @@
         <button id="saveAiConfigBtn" class="btn">Guardar credencial DeepSeek</button>
         <button id="editAiConfigBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Editar</button>
         <button id="cancelAiConfigBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Cancelar</button>
+        <button id="testAiBtn" type="button" class="btn secondary" style="margin-left:8px;">Probar IA</button>
       </div>
       <div id="aiConfigMsg" class="form-help"></div>
+      <div id="aiTestResult" class="form-help"></div>
     </section>
 
     <section class="card form mp-card" id="backupConfigCard">
@@ -253,8 +265,10 @@
       </div>
       <div class="form-actions">
         <button id="restoreConfigBtn" class="btn secondary" type="button">Restaurar respaldo</button>
+        <button id="testBackupBtn" class="btn secondary" type="button" style="margin-left:8px;">Probar respaldo</button>
       </div>
       <div id="backupConfigMsg" class="form-help"></div>
+      <div id="backupTestResult" class="form-help"></div>
     </section>
   </div>
 
@@ -918,6 +932,103 @@
         }
       }
 
+      // Funciones de prueba por tarjeta / modulo
+      async function testVentaDigital(){
+        const out = document.getElementById('ventaDigitalTestMsg');
+        if (out) out.innerText = 'Probando panel de venta digital...';
+        try {
+          const res = await fetch('/super/venta_digital.html', { method: 'GET', credentials: 'same-origin' });
+          if (!out) return;
+          if (res.ok) out.innerText = 'OK: panel de venta digital accesible.';
+          else out.innerText = 'ERROR: respuesta HTTP ' + res.status;
+        } catch (err) {
+          if (out) out.innerText = 'Error: ' + (err.message || err);
+        }
+      }
+
+      async function testEpayco(){
+        const out = document.getElementById('epaycoTestResult');
+        if (out) out.innerText = 'Probando Epayco...';
+        try {
+          const res = await fetch('/super/api/config/epayco', { method: 'GET', credentials: 'same-origin' });
+          if (!res.ok) { if (out) out.innerText = 'Error al leer configuración Epayco: ' + res.status; return; }
+          const cfg = await res.json();
+          const issues = [];
+          if (!(cfg.public_key_set || cfg.private_key_set || cfg.customer_id_set)) issues.push('No hay llaves configuradas');
+          if (!cfg.enabled) issues.push('Pasarela marcada como desactivada');
+          if (typeof cfg.encryption_available !== 'undefined' && !cfg.encryption_available) issues.push('Cifrado no disponible en servidor');
+          if (!out) return;
+          if (!issues.length) out.innerText = 'OK: Epayco parece configurado y habilitado.'; else out.innerText = 'Aviso: ' + issues.join('; ');
+        } catch (err) {
+          if (out) out.innerText = 'Error: ' + (err.message || err);
+        }
+      }
+
+      async function testWompi(){
+        const out = document.getElementById('wompiTestResult');
+        if (out) out.innerText = 'Probando Nequi/Wompi...';
+        try {
+          const res = await fetch('/super/api/config/wompi', { method: 'GET', credentials: 'same-origin' });
+          if (!res.ok) { if (out) out.innerText = 'Error al leer configuración Wompi: ' + res.status; return; }
+          const cfg = await res.json();
+          const issues = [];
+          if (!(cfg.public_key_set || cfg.private_key_set || cfg.integrity_key_set)) issues.push('No hay llaves configuradas');
+          if (!cfg.enabled) issues.push('Pasarela marcada como desactivada');
+          if (typeof cfg.encryption_available !== 'undefined' && !cfg.encryption_available) issues.push('Cifrado no disponible en servidor');
+          if (!out) return;
+          if (!issues.length) out.innerText = 'OK: Wompi/Nequi parece configurado y habilitado.'; else out.innerText = 'Aviso: ' + issues.join('; ');
+        } catch (err) {
+          if (out) out.innerText = 'Error: ' + (err.message || err);
+        }
+      }
+
+      async function testGmail(){
+        const out = document.getElementById('gmailTestResult');
+        if (out) out.innerText = 'Probando Gmail...';
+        try {
+          const res = await fetch('/super/api/config/gmail', { method: 'GET', credentials: 'same-origin' });
+          if (!res.ok) { if (out) out.innerText = 'Error al leer configuración Gmail: ' + res.status; return; }
+          const cfg = await res.json();
+          const issues = [];
+          if (!cfg.smtp_email_set) issues.push('No hay correo remitente configurado');
+          if (!cfg.smtp_app_password_set) issues.push('No hay contraseña de aplicación guardada');
+          if (typeof cfg.encryption_available !== 'undefined' && !cfg.encryption_available) issues.push('Cifrado no disponible en servidor');
+          if (!out) return;
+          if (!issues.length) out.innerText = 'OK: Configuración Gmail presente (no se envió correo de prueba).'; else out.innerText = 'Aviso: ' + issues.join('; ');
+        } catch (err) {
+          if (out) out.innerText = 'Error: ' + (err.message || err);
+        }
+      }
+
+      async function testAI(){
+        const out = document.getElementById('aiTestResult');
+        if (out) out.innerText = 'Probando IA...';
+        try {
+          const res = await fetch('/super/api/config/ai', { method: 'GET', credentials: 'same-origin' });
+          if (!res.ok) { if (out) out.innerText = 'Error al leer configuración IA: ' + res.status; return; }
+          const data = await res.json();
+          const modelos = data.modelos || [];
+          const configured = modelos.filter(function(m){ return !!m.configured; });
+          if (!out) return;
+          if (configured.length) out.innerText = 'OK: Modelos configurados: ' + configured.map(function(m){return m.model_id;}).join(', ');
+          else out.innerText = 'Aviso: No hay credenciales IA configuradas.';
+        } catch (err) {
+          if (out) out.innerText = 'Error: ' + (err.message || err);
+        }
+      }
+
+      async function testBackup(){
+        const out = document.getElementById('backupTestResult');
+        if (out) out.innerText = 'Probando endpoint de respaldo...';
+        try {
+          const res = await fetch('/super/api/config/backup', { method: 'GET', credentials: 'same-origin' });
+          if (!res.ok) { if (out) out.innerText = 'Error generando respaldo: ' + res.status; return; }
+          if (out) out.innerText = 'OK: Endpoint de respaldo responde correctamente (descarga disponible).';
+        } catch (err) {
+          if (out) out.innerText = 'Error: ' + (err.message || err);
+        }
+      }
+
       document.getElementById('saveWompiBtn').addEventListener('click', saveWompi);
       document.getElementById('editWompiBtn').addEventListener('click', enableEditWompi);
       document.getElementById('cancelWompiBtn').addEventListener('click', cancelEditWompi);
@@ -943,6 +1054,12 @@
       document.getElementById('saveAiConfigBtn').addEventListener('click', saveAIConfig);
       document.getElementById('editAiConfigBtn').addEventListener('click', enableEditAIConfig);
       document.getElementById('cancelAiConfigBtn').addEventListener('click', cancelEditAIConfig);
+      document.getElementById('testVentaDigitalBtn').addEventListener('click', testVentaDigital);
+      document.getElementById('testEpaycoBtn').addEventListener('click', testEpayco);
+      document.getElementById('testWompiBtn').addEventListener('click', testWompi);
+      document.getElementById('testGmailBtn').addEventListener('click', testGmail);
+      document.getElementById('testAiBtn').addEventListener('click', testAI);
+      document.getElementById('testBackupBtn').addEventListener('click', testBackup);
       document.getElementById('downloadConfigBackupBtn').addEventListener('click', downloadConfigBackup);
       document.getElementById('restoreConfigBtn').addEventListener('click', restoreConfigBackup);
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', load); else load();

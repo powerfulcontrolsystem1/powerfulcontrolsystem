@@ -2,7 +2,9 @@ package db
 
 import (
 	"database/sql"
+	"fmt"
 	"strings"
+	"time"
 )
 
 // EnsurePaymentGatewaySchema prepara las tablas de checkout de licencias en PostgreSQL.
@@ -207,6 +209,17 @@ type Admin struct {
 	FechaActualizacion string `json:"fecha_actualizacion"`
 	Estado             string `json:"estado"`
 	AceptaContrato     int    `json:"acepta_contrato"`
+	Telefono             string `json:"telefono,omitempty"`
+	// Campos de seguridad y confirmación
+	EmailConfirmado        int    `json:"email_confirmado,omitempty"`
+	EmailConfirmToken      string `json:"-"`
+	EmailConfirmExpira     string `json:"-"`
+	EmailConfirmadoEn      string `json:"email_confirmado_en,omitempty"`
+	PasswordSet            int    `json:"password_set,omitempty"`
+	PasswordHash           string `json:"-"`
+	PasswordSalt           string `json:"-"`
+	PasswordResetToken     string `json:"-"`
+	PasswordResetExpira    string `json:"-"`
 }
 
 // NOTE: tipos_de_licencia CRUD removed per project decision (frontend/page/link removed).
@@ -568,6 +581,109 @@ func GetSesiones(dbConn *sql.DB) ([]Session, error) {
 		out = append(out, s)
 	}
 	return out, nil
+}
+
+// GetAdminByEmailFull devuelve el administrador por email incluyendo campos seguridad (tokens, hash, salt)
+func GetAdminByEmailFull(dbConn *sql.DB, email string) (*Admin, error) {
+	row := queryRowSQLCompat(dbConn, `SELECT id, email, name, role, photo, fecha_creacion, fecha_actualizacion, estado, COALESCE(acepta_contrato, 0), COALESCE(telefono, ''), COALESCE(email_confirmado, 0), COALESCE(email_confirm_token, ''), COALESCE(email_confirm_expira, ''), COALESCE(email_confirmado_en, ''), COALESCE(password_set, 0), COALESCE(password_hash, ''), COALESCE(password_salt, ''), COALESCE(password_reset_token, ''), COALESCE(password_reset_expira, '') FROM administradores WHERE lower(email) = lower(?) LIMIT 1`, strings.TrimSpace(email))
+	var a Admin
+	var photo sql.NullString
+	var acepta sql.NullInt64
+	var telefono sql.NullString
+	var emailConfirmado sql.NullInt64
+	var emailConfirmToken sql.NullString
+	var emailConfirmExpira sql.NullString
+	var emailConfirmadoEn sql.NullString
+	var passwordSet sql.NullInt64
+	var passwordHash sql.NullString
+	var passwordSalt sql.NullString
+	var passwordResetToken sql.NullString
+	var passwordResetExpira sql.NullString
+	if err := row.Scan(&a.ID, &a.Email, &a.Name, &a.Role, &photo, &a.FechaCreacion, &a.FechaActualizacion, &a.Estado, &acepta, &telefono, &emailConfirmado, &emailConfirmToken, &emailConfirmExpira, &emailConfirmadoEn, &passwordSet, &passwordHash, &passwordSalt, &passwordResetToken, &passwordResetExpira); err != nil {
+		if isMissingColumnError(err) {
+			// Fallback a la consulta previa
+			return GetAdminByEmail(dbConn, email)
+		}
+		return nil, err
+	}
+	if photo.Valid {
+		a.Photo = photo.String
+	}
+	a.AceptaContrato = int(acepta.Int64)
+	if telefono.Valid { a.Telefono = telefono.String }
+	a.EmailConfirmado = int(emailConfirmado.Int64)
+	a.EmailConfirmToken = emailConfirmToken.String
+	a.EmailConfirmExpira = emailConfirmExpira.String
+	a.EmailConfirmadoEn = emailConfirmadoEn.String
+	a.PasswordSet = int(passwordSet.Int64)
+	a.PasswordHash = passwordHash.String
+	a.PasswordSalt = passwordSalt.String
+	a.PasswordResetToken = passwordResetToken.String
+	a.PasswordResetExpira = passwordResetExpira.String
+	return &a, nil
+}
+
+// UpdateAdministradorProfile actualiza campos del perfil del administrador identificando por id.
+func UpdateAdministradorProfile(dbConn *sql.DB, id int64, name, telefono, email string) error {
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE administradores SET name = ?, telefono = ?, email = ?, fecha_actualizacion = "+nowExpr+" WHERE id = ?", strings.TrimSpace(name), strings.TrimSpace(telefono), strings.TrimSpace(email), id)
+	return err
+}
+
+// ReassignSessionsAdminEmail actualiza las sesiones activas para reflejar nuevo email de administrador.
+func ReassignSessionsAdminEmail(dbConn *sql.DB, oldEmail, newEmail string) error {
+	_, err := execSQLCompat(dbConn, "UPDATE sesiones SET admin_email = ? WHERE admin_email = ? AND activo = 1", strings.TrimSpace(newEmail), strings.TrimSpace(oldEmail))
+	return err
+}
+
+// SetAdministradorConfirmToken actualiza el token de confirmación para un administrador.
+func SetAdministradorConfirmToken(dbConn *sql.DB, email, token, expira string) error {
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE administradores SET email_confirm_token = ?, email_confirm_expira = ?, email_confirmado = 0, fecha_actualizacion = "+nowExpr+" WHERE LOWER(COALESCE(email,'')) = LOWER(?)", strings.TrimSpace(token), strings.TrimSpace(expira), strings.TrimSpace(email))
+	return err
+}
+
+// ConfirmAdministradorByToken confirma el correo de un administrador usando su token.
+func ConfirmAdministradorByToken(dbConn *sql.DB, token string) (int64, error) {
+	row := dbConn.QueryRow(`SELECT id, COALESCE(email_confirm_expira, '') FROM administradores WHERE email_confirm_token = ? LIMIT 1`, strings.TrimSpace(token))
+	var id int64
+	var expiraRaw string
+	if err := row.Scan(&id, &expiraRaw); err != nil {
+		return 0, err
+	}
+	if expiraRaw != "" {
+		if expiraAt, err := time.ParseInLocation("2006-01-02 15:04:05", expiraRaw, time.Local); err == nil {
+			if time.Now().After(expiraAt) {
+				return 0, fmt.Errorf("token de confirmacion expirado")
+			}
+		}
+	}
+	_, err := dbConn.Exec(`UPDATE administradores SET email_confirmado = 1, email_confirmado_en = datetime('now','localtime'), estado = 'activo', email_confirm_token = '', email_confirm_expira = '', fecha_actualizacion = datetime('now','localtime') WHERE id = ?`, id)
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
+}
+
+// SetAdministradorPassword guarda hash y salt y marca password_set.
+func SetAdministradorPassword(dbConn *sql.DB, email, hash, salt string) error {
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE administradores SET password_hash = ?, password_salt = ?, password_set = 1, fecha_actualizacion = "+nowExpr+" WHERE LOWER(COALESCE(email,'')) = LOWER(?)", strings.TrimSpace(hash), strings.TrimSpace(salt), strings.TrimSpace(email))
+	return err
+}
+
+// SetAdministradorPasswordResetToken guarda token de recuperación para el administrador.
+func SetAdministradorPasswordResetToken(dbConn *sql.DB, email, token, expira string) error {
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE administradores SET password_reset_token = ?, password_reset_expira = ?, fecha_actualizacion = "+nowExpr+" WHERE LOWER(COALESCE(email,'')) = LOWER(?)", strings.TrimSpace(token), strings.TrimSpace(expira), strings.TrimSpace(email))
+	return err
+}
+
+// ClearAdministradorPasswordResetToken por id limpia el token de recuperación.
+func ClearAdministradorPasswordResetToken(dbConn *sql.DB, id int64) error {
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE administradores SET password_reset_token = '', password_reset_expira = '', fecha_actualizacion = "+nowExpr+" WHERE id = ?", id)
+	return err
 }
 
 // TipoEmpresa representa un tipo de empresa

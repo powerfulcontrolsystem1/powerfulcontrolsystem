@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"fmt"
+	"net/smtp"
 
 	"github.com/you/pos-backend/auth"
 	dbpkg "github.com/you/pos-backend/db"
@@ -24,6 +26,425 @@ const browserSessionStateCookieName = "browser_session_active"
 // considerando terminación TLS local o por proxy inverso.
 func SessionCookieSecure(r *http.Request) bool {
 	return resolveOAuthScheme(r) == "https"
+}
+
+// AdminRegisterHandler registra un administrador (envía email de confirmación).
+func AdminRegisterHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		var payload struct {
+			Email    string `json:"email"`
+			Name     string `json:"name"`
+			Password string `json:"password"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			http.Error(w, "invalid payload", http.StatusBadRequest)
+			return
+		}
+		payload.Email = strings.TrimSpace(payload.Email)
+		payload.Name = strings.TrimSpace(payload.Name)
+		payload.Password = strings.TrimSpace(payload.Password)
+		if payload.Email == "" {
+			http.Error(w, "email required", http.StatusBadRequest)
+			return
+		}
+		if _, err := mail.ParseAddress(payload.Email); err != nil {
+			http.Error(w, "invalid email", http.StatusBadRequest)
+			return
+		}
+
+		// crear o actualizar administrador básico
+		if err := dbpkg.UpsertAdministrador(dbSuper, payload.Email, payload.Name, "administrador", ""); err != nil {
+			log.Println("AdminRegisterHandler upsert error:", err)
+			http.Error(w, "failed to create administrador", http.StatusInternalServerError)
+			return
+		}
+
+		// si enviaron contraseña, guardarla (hash+salt)
+		if payload.Password != "" {
+			hash, salt, err := generateEmpresaUsuarioPasswordHash(payload.Password)
+			if err != nil {
+				log.Println("AdminRegisterHandler hash error:", err)
+			} else {
+				if err := dbpkg.SetAdministradorPassword(dbSuper, payload.Email, hash, salt); err != nil {
+					log.Println("AdminRegisterHandler set password error:", err)
+				}
+			}
+		}
+
+		// generar token confirmación
+		token, expira, nerr := newEmailConfirmationTokenAndExpiration()
+		if nerr != nil {
+			log.Println("AdminRegisterHandler token gen error:", nerr)
+		} else {
+			if err := dbpkg.SetAdministradorConfirmToken(dbSuper, payload.Email, token, expira); err != nil {
+				log.Println("AdminRegisterHandler set confirm token error:", err)
+			}
+		}
+
+		// enviar correo de confirmación
+		if _, err := sendAdminConfirmationEmail(r, dbSuper, payload.Email, payload.Name, token); err != nil {
+			log.Println("AdminRegisterHandler send email error:", err)
+			// no fallamos la creación por error de email; devolver info
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "email_sent": false, "error": err.Error()})
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "email_sent": true})
+	}
+}
+
+// ConfirmarAdminHandler confirma el correo vía token y muestra una página simple.
+func ConfirmarAdminHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query()
+		token := strings.TrimSpace(q.Get("token"))
+		if token == "" {
+			http.Error(w, "token required", http.StatusBadRequest)
+			return
+		}
+		if _, err := dbpkg.ConfirmAdministradorByToken(dbSuper, token); err != nil {
+			log.Println("ConfirmarAdminHandler error:", err)
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`<html><body><h3>Token inválido o expirado</h3><p>Si ya confirmaste, intenta iniciar sesión: <a href="/login.html">Iniciar</a></p></body></html>`))
+			return
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`<html><body><h3>Correo confirmado</h3><p>Tu cuenta ha sido confirmada. Ahora puedes <a href="/login.html">iniciar sesión</a>.</p></body></html>`))
+	}
+}
+
+// AdminLoginHandler maneja login por email/contraseña para administradores.
+func AdminLoginHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		var payload struct{
+			Email string `json:"email"`
+			Password string `json:"password"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			http.Error(w, "invalid payload", http.StatusBadRequest)
+			return
+		}
+		payload.Email = strings.TrimSpace(payload.Email)
+		payload.Password = strings.TrimSpace(payload.Password)
+		if payload.Email == "" || payload.Password == "" {
+			http.Error(w, "email and password required", http.StatusBadRequest)
+			return
+		}
+		admin, err := dbpkg.GetAdminByEmailFull(dbSuper, payload.Email)
+		if err != nil {
+			log.Println("AdminLoginHandler get admin error:", err)
+			http.Error(w, "invalid credentials", http.StatusUnauthorized)
+			return
+		}
+		if admin.EmailConfirmado != 1 {
+			http.Error(w, "email not confirmed", http.StatusForbidden)
+			return
+		}
+		if admin.PasswordSet != 1 || strings.TrimSpace(admin.PasswordHash) == "" {
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "password_setup_required": true})
+			return
+		}
+		// verificar contraseña
+		expected := hashEmpresaUsuarioPassword(payload.Password, admin.PasswordSalt)
+		if expected != strings.TrimSpace(admin.PasswordHash) {
+			http.Error(w, "invalid credentials", http.StatusUnauthorized)
+			return
+		}
+		// crear sesión
+		token, terr := utils.GenerateSecureToken(32)
+		if terr != nil {
+			log.Println("AdminLoginHandler token gen error:", terr)
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+		if err := dbpkg.CreateSession(dbSuper, admin.Email, r.RemoteAddr, r.UserAgent(), token); err != nil {
+			log.Println("AdminLoginHandler create session error:", err)
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+		cookie := &http.Cookie{
+			Name: "session_token",
+			Value: token,
+			Path: "/",
+			HttpOnly: true,
+			MaxAge: 86400,
+			Secure: SessionCookieSecure(r),
+			SameSite: http.SameSiteLaxMode,
+		}
+		http.SetCookie(w, cookie)
+		SetBrowserSessionStateCookie(w, r, true)
+
+		redirectURL := "/seleccionar_empresa.html"
+		if strings.ToLower(strings.TrimSpace(admin.Role)) == "super_administrador" {
+			redirectURL = "/super_administrador.html"
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "redirect_url": redirectURL})
+	}
+}
+
+// AdminRequestPasswordRecoveryHandler solicita envío de token de recuperación.
+func AdminRequestPasswordRecoveryHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		var payload struct{ Email string `json:"email"` }
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			http.Error(w, "invalid payload", http.StatusBadRequest)
+			return
+		}
+		payload.Email = strings.TrimSpace(payload.Email)
+		if payload.Email == "" {
+			http.Error(w, "email required", http.StatusBadRequest)
+			return
+		}
+		// generar token
+		token, expira, nerr := newPasswordRecoveryTokenAndExpiration()
+		if nerr != nil {
+			log.Println("AdminRequestPasswordRecoveryHandler token gen error:", nerr)
+		} else {
+			if err := dbpkg.SetAdministradorPasswordResetToken(dbSuper, payload.Email, token, expira); err != nil {
+				log.Println("AdminRequestPasswordRecoveryHandler set token error:", err)
+			}
+		}
+		if _, err := sendAdminPasswordRecoveryEmail(r, dbSuper, payload.Email, "", token); err != nil {
+			log.Println("AdminRequestPasswordRecoveryHandler send mail error:", err)
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "email_sent": false, "error": err.Error()})
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "email_sent": true})
+	}
+}
+
+// AdminResetPasswordHandler restablece contraseña usando token.
+func AdminResetPasswordHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		var payload struct{
+			Email string `json:"email"`
+			Token string `json:"token"`
+			Password string `json:"password"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			http.Error(w, "invalid payload", http.StatusBadRequest)
+			return
+		}
+		payload.Email = strings.TrimSpace(payload.Email)
+		payload.Token = strings.TrimSpace(payload.Token)
+		payload.Password = strings.TrimSpace(payload.Password)
+		if payload.Email == "" || payload.Token == "" || payload.Password == "" {
+			http.Error(w, "email, token and password required", http.StatusBadRequest)
+			return
+		}
+		admin, err := dbpkg.GetAdminByEmailFull(dbSuper, payload.Email)
+		if err != nil {
+			log.Println("AdminResetPasswordHandler get admin error:", err)
+			http.Error(w, "invalid token or email", http.StatusBadRequest)
+			return
+		}
+		if strings.TrimSpace(admin.PasswordResetToken) == "" || strings.TrimSpace(admin.PasswordResetToken) != payload.Token {
+			http.Error(w, "invalid token", http.StatusBadRequest)
+			return
+		}
+		// verificar expiración
+		if admin.PasswordResetExpira != "" {
+			if t, ok := parseEmpresaUsuarioDateTime(admin.PasswordResetExpira); ok {
+				if time.Now().After(t) {
+					http.Error(w, "token expirado", http.StatusBadRequest)
+					return
+				}
+			}
+		}
+		// generar hash y guardar
+		hash, salt, err := generateEmpresaUsuarioPasswordHash(payload.Password)
+		if err != nil {
+			log.Println("AdminResetPasswordHandler hash error:", err)
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+		if err := dbpkg.SetAdministradorPassword(dbSuper, payload.Email, hash, salt); err != nil {
+			log.Println("AdminResetPasswordHandler set password error:", err)
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+		// limpiar token
+		if err := dbpkg.ClearAdministradorPasswordResetToken(dbSuper, admin.ID); err != nil {
+			log.Println("AdminResetPasswordHandler clear token error:", err)
+		}
+		// crear sesión y responder
+		tokenSession, terr := utils.GenerateSecureToken(32)
+		if terr != nil {
+			log.Println("AdminResetPasswordHandler token gen error:", terr)
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+		if err := dbpkg.CreateSession(dbSuper, admin.Email, r.RemoteAddr, r.UserAgent(), tokenSession); err != nil {
+			log.Println("AdminResetPasswordHandler create session error:", err)
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+		cookie := &http.Cookie{
+			Name: "session_token",
+			Value: tokenSession,
+			Path: "/",
+			HttpOnly: true,
+			MaxAge: 86400,
+			Secure: SessionCookieSecure(r),
+			SameSite: http.SameSiteLaxMode,
+		}
+		http.SetCookie(w, cookie)
+		SetBrowserSessionStateCookie(w, r, true)
+
+		redirectURL := "/seleccionar_empresa.html"
+		if strings.ToLower(strings.TrimSpace(admin.Role)) == "super_administrador" {
+			redirectURL = "/super_administrador.html"
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "redirect_url": redirectURL})
+	}
+}
+
+// sendAdminConfirmationEmail envía el correo de confirmación para administradores.
+func sendAdminConfirmationEmail(r *http.Request, dbSuper *sql.DB, toEmail, toName, token string) (string, error) {
+	baseURL := resolveBaseURLForConfirmation(r, dbSuper)
+	confirmURL := strings.TrimRight(baseURL, "/") + "/auth/confirmar_admin?token=" + url.QueryEscape(token)
+	loginURL := strings.TrimRight(baseURL, "/") + "/login.html"
+
+	safeName := strings.TrimSpace(toName)
+	if safeName == "" {
+		safeName = "administrador"
+	}
+
+	subject := "Confirma tu correo - Powerful Control System"
+	body := "Hola " + safeName + ",\r\n\r\n" +
+		"Para activar tu cuenta, haz clic en el siguiente enlace:\r\n" +
+		confirmURL + "\r\n\r\n" +
+		"Después de confirmar, inicia sesión aquí:\r\n" +
+		loginURL + "\r\n\r\n" +
+		"Si no solicitaste esta cuenta, ignora este mensaje.\r\n"
+
+	if isEmpresaUsuarioMailTestMode(dbSuper) {
+		metadataJSON := fmt.Sprintf(`{"confirm_url":%q,"login_url":%q,"mail_mode":"test"}`, confirmURL, loginURL)
+		if err := captureEmpresaUsuarioMailNotification(dbSuper, "confirmacion_correo_admin", 0, toEmail, subject, body, token, metadataJSON, adminEmailFromRequest(r)); err != nil {
+			return confirmURL, err
+		}
+		return confirmURL, nil
+	}
+
+	smtpEmail, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_email")
+	if err != nil { return "", err }
+	smtpEmail = strings.TrimSpace(smtpEmail)
+	if smtpEmail == "" { return "", fmt.Errorf("gmail.smtp_email no configurado") }
+	smtpPass, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_app_password")
+	if err != nil { return "", err }
+	smtpPass = strings.TrimSpace(smtpPass)
+	if smtpPass == "" { return "", fmt.Errorf("gmail.smtp_app_password no configurado") }
+
+	smtpHost, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_host")
+	smtpPort, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_port")
+	fromName, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_from_name")
+	smtpHost = strings.TrimSpace(smtpHost)
+	if smtpHost == "" { smtpHost = "smtp.gmail.com" }
+	smtpPort = strings.TrimSpace(smtpPort)
+	if smtpPort == "" { smtpPort = "587" }
+	fromName = strings.TrimSpace(fromName)
+	if fromName == "" { fromName = "Powerful Control System" }
+
+	mailHostForAuth := smtpHost
+	if strings.Contains(smtpHost, ":") {
+		if h, _, err := net.SplitHostPort(smtpHost); err == nil {
+			mailHostForAuth = h
+		}
+	}
+	addr := smtpHost
+	if !strings.Contains(addr, ":") {
+		addr = smtpHost + ":" + smtpPort
+	}
+	auth := smtp.PlainAuth("", smtpEmail, smtpPass, mailHostForAuth)
+	msg := "From: " + fromName + " <" + smtpEmail + ">\r\n" +
+		"To: " + toEmail + "\r\n" +
+		"Subject: " + subject + "\r\n" +
+		"MIME-Version: 1.0\r\n" +
+		"Content-Type: text/plain; charset=UTF-8\r\n\r\n" +
+		body
+	if err := smtp.SendMail(addr, auth, smtpEmail, []string{toEmail}, []byte(msg)); err != nil {
+		return confirmURL, err
+	}
+	return confirmURL, nil
+}
+
+// sendAdminPasswordRecoveryEmail envía token de recuperación para administrador.
+func sendAdminPasswordRecoveryEmail(r *http.Request, dbSuper *sql.DB, toEmail, toName, token string) (string, error) {
+	baseURL := resolveBaseURLForConfirmation(r, dbSuper)
+	resetHintURL := strings.TrimRight(baseURL, "/") + "/login.html?email=" + url.QueryEscape(toEmail) + "&token_recuperacion=" + url.QueryEscape(token)
+	safeName := strings.TrimSpace(toName)
+	if safeName == "" { safeName = "administrador" }
+	subject := "Recuperacion de contraseña - Powerful Control System"
+	body := "Hola " + safeName + ",\r\n\r\n" +
+		"Recibimos una solicitud para restablecer tu contraseña. Token de recuperación:\r\n" + token + "\r\n\r\n" +
+		"Abre el login y usa el token para completar el restablecimiento:\r\n" + resetHintURL + "\r\n\r\n" +
+		"Si no solicitaste este cambio, ignora este mensaje.\r\n"
+	if isEmpresaUsuarioMailTestMode(dbSuper) {
+		metadataJSON := fmt.Sprintf(`{"reset_hint_url":%q,"mail_mode":"test"}`, resetHintURL)
+		if err := captureEmpresaUsuarioMailNotification(dbSuper, "recuperacion_password_admin", 0, toEmail, subject, body, token, metadataJSON, adminEmailFromRequest(r)); err != nil {
+			return resetHintURL, err
+		}
+		return resetHintURL, nil
+	}
+	smtpEmail, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_email")
+	if err != nil { return "", err }
+	smtpEmail = strings.TrimSpace(smtpEmail)
+	if smtpEmail == "" { return "", fmt.Errorf("gmail.smtp_email no configurado") }
+	smtpPass, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_app_password")
+	if err != nil { return "", err }
+	smtpPass = strings.TrimSpace(smtpPass)
+	if smtpPass == "" { return "", fmt.Errorf("gmail.smtp_app_password no configurado") }
+	smtpHost, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_host")
+	smtpPort, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_port")
+	fromName, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_from_name")
+	smtpHost = strings.TrimSpace(smtpHost)
+	if smtpHost == "" { smtpHost = "smtp.gmail.com" }
+	smtpPort = strings.TrimSpace(smtpPort)
+	if smtpPort == "" { smtpPort = "587" }
+	fromName = strings.TrimSpace(fromName)
+	if fromName == "" { fromName = "Powerful Control System" }
+	mailHostForAuth := smtpHost
+	if strings.Contains(smtpHost, ":") {
+		if h, _, err := net.SplitHostPort(smtpHost); err == nil { mailHostForAuth = h }
+	}
+	addr := smtpHost
+	if !strings.Contains(addr, ":") { addr = smtpHost + ":" + smtpPort }
+	auth := smtp.PlainAuth("", smtpEmail, smtpPass, mailHostForAuth)
+	msg := "From: " + fromName + " <" + smtpEmail + ">\r\n" +
+		"To: " + toEmail + "\r\n" +
+		"Subject: " + subject + "\r\n" +
+		"MIME-Version: 1.0\r\n" +
+		"Content-Type: text/plain; charset=UTF-8\r\n\r\n" +
+		body
+	if err := smtp.SendMail(addr, auth, smtpEmail, []string{toEmail}, []byte(msg)); err != nil {
+		return resetHintURL, err
+	}
+	return resetHintURL, nil
 }
 
 // SetBrowserSessionStateCookie emite una señal visible para el cliente que indica

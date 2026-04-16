@@ -207,6 +207,12 @@ ul{padding-left:18px}
     flex:1 1 auto;
   }
 }
+/* Forzar menú apilado en móvil: un botón por fila, ancho completo */
+@media (max-width:640px){
+  .admin-sidebar .nav{display:flex;flex-direction:column;gap:8px;overflow:visible}
+  .admin-sidebar .nav li{width:100%;min-width:0}
+  .admin-sidebar .nav a{display:flex;width:100%;justify-content:flex-start;text-align:left;flex:0 0 auto;padding:12px 14px;box-sizing:border-box}
+}
 
 @media (max-width:420px){
   .admin-sidebar .nav{gap:6px}
@@ -953,6 +959,18 @@ html.theme-light .floating-menu #themeToggle{color:var(--accent-2)}
   .home-offer-card .card-actions a{width:100%;text-align:center}
   .portal-card h3,
   .home-offer-card h3{font-size:1.15rem !important}
+}
+
+/* En pantallas muy pequeñas mover el CTA de WhatsApp a la esquina inferior izquierda
+   para evitar que tape botones en la esquina inferior derecha; aumentar padding inferior
+   para dejar espacio sobre el contenido. */
+@media (max-width:420px){
+  .whatsapp-floating-cta{
+    right:auto;
+    left:12px;
+    bottom:calc(14px + env(safe-area-inset-bottom, 0px));
+  }
+  .portal-main{padding-bottom:110px}
 }
 
 /* Ajustes visuales configurables desde pagina_principal */
@@ -3405,6 +3423,63 @@ html.theme-light .floating-menu #themeToggle{color:var(--accent-2)}
   display:flex;
   flex-direction:column;
   gap:10px;
+}
+
+/* Restore: Seleccionar Empresa — usar estilo 'warm' previo y aumentar tamaño 20% */
+/* Esto anula reglas recientes de tarjetas cuadradas y ajusta dimensiones */
+.empresas-grid{
+  gap:14px;
+  grid-template-columns:repeat(auto-fill,minmax(288px,1fr)); /* 240px * 1.2 = 288px */
+  max-width:1200px;
+  margin:0 auto;
+}
+
+.empresas-grid .portal-card.empresa-card{
+  aspect-ratio: unset !important;
+  min-height: unset !important;
+  padding: 22px 24px !important; /* ~20% más que 18/20 */
+  border-radius: 12px !important;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  text-align:center;
+  justify-content:center;
+  background: linear-gradient(180deg, rgba(20,34,46,0.92), rgba(12,20,30,0.96)) !important;
+  border:1px solid rgba(255,255,255,0.04) !important;
+  color:var(--text) !important;
+  box-shadow:0 16px 38px rgba(2,8,20,0.65) !important;
+}
+
+.empresas-grid .portal-card.empresa-card .empresa-card-icon-shell{
+  width:86px !important; /* 72px * 1.2 */
+  height:86px !important;
+  flex:0 0 86px !important;
+  border-radius:22px !important;
+}
+
+.empresas-grid .portal-card.empresa-card .empresa-card-icon{
+  width:50px !important; /* 42px * 1.2 */
+  height:50px !important;
+}
+
+.empresas-grid .portal-card.empresa-card .card-title{
+  font-size: clamp(1.296rem, 2.64vw, 1.704rem) !important; /* ~1.08-1.42 * 1.2 */
+}
+
+.empresas-grid .portal-card.empresa-card .card-desc{
+  font-size:1.14rem !important; /* ~0.95 * 1.2 */
+}
+
+.empresas-grid .portal-card.empresa-card .license-indicator{
+  padding:12px 16px !important; /* ~10/14 * 1.2 */
+  font-size:1rem !important;
+}
+
+/* Ajustes responsivos: conservar legibilidad en móvil */
+@media (max-width: 780px){
+  .empresas-grid{ grid-template-columns: 1fr; }
+  .empresas-grid .portal-card.empresa-card .empresa-card-top{ padding:18px 14px 0 !important; }
+  .empresas-grid .portal-card.empresa-card .card-body.empresa-card-body{ padding:14px 16px 18px !important; }
 }
 
 .ai-chat-bubble{

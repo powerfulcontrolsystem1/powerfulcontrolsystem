@@ -32,6 +32,35 @@
             <input id="rememberAccount" type="checkbox" /> Recordar cuenta
           </label>
         </div>
+        <form class="form email-login" id="emailLoginForm" autocomplete="on" novalidate>
+          <h3>Iniciar por correo</h3>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="adminEmail">Correo</label>
+              <input id="adminEmail" class="form-input" type="email" placeholder="tu@correo.com" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="adminName">Nombre (para registro)</label>
+              <input id="adminName" class="form-input" type="text" placeholder="Tu nombre (opcional)">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="adminPassword">Contraseña</label>
+              <input id="adminPassword" class="form-input" type="password" placeholder="Contraseña" required>
+            </div>
+          </div>
+          <div class="form-actions" style="justify-content:space-between;align-items:center">
+            <button id="emailLoginBtn" class="btn" type="button">Iniciar por correo</button>
+            <button id="registerBtn" class="btn secondary" type="button">Registrarse</button>
+          </div>
+          <div class="links" style="margin-top:10px;text-align:right">
+            <a href="#" id="forgotLink">¿Olvidó su contraseña?</a>
+          </div>
+          <div id="emailLoginMessage" class="message" style="display:none"></div>
+        </form>
         <p class="footer">Si tienes problemas, contacta al administrador.</p>
       </div>
     </div>

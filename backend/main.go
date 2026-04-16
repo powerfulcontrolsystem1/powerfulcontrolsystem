@@ -994,6 +994,19 @@ func main() {
 			addIfMissing("photo TEXT", "photo")
 			// Columna para indicar si el administrador aceptó el contrato/registro
 			addIfMissing("acepta_contrato INTEGER DEFAULT 0", "acepta_contrato")
+		// Teléfono del administrador
+		addIfMissing("telefono TEXT", "telefono")
+
+			// Columnas de seguridad/confirmación para login por correo
+			addIfMissing("email_confirm_token TEXT", "email_confirm_token")
+			addIfMissing("email_confirm_expira TEXT", "email_confirm_expira")
+			addIfMissing("email_confirmado INTEGER DEFAULT 0", "email_confirmado")
+			addIfMissing("email_confirmado_en TEXT", "email_confirmado_en")
+			addIfMissing("password_hash TEXT", "password_hash")
+			addIfMissing("password_salt TEXT", "password_salt")
+			addIfMissing("password_set INTEGER DEFAULT 0", "password_set")
+			addIfMissing("password_reset_token TEXT", "password_reset_token")
+			addIfMissing("password_reset_expira TEXT", "password_reset_expira")
 		}
 		ensureAdminsSchema(dbSuper)
 		if err := dbpkg.EnsureSuperContractSchema(dbSuper); err != nil {
@@ -1647,8 +1660,19 @@ func main() {
 	http.HandleFunc("/api/empresa/permisos_contexto", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaPermisosContextoHandler(dbSuper)))
 	// Endpoint para obtener admin actual desde la cookie de sesión
 	http.HandleFunc("/me", handlers.MeHandler(dbSuper))
+	// Endpoint para obtener perfil/cuenta enriquecida (admin + usuario de empresa)
+	http.HandleFunc("/api/account", handlers.AccountHandler(dbEmpresas, dbSuper))
+	// Endpoints para actualizar perfil y cambiar contraseña (usuario autenticado)
+	http.HandleFunc("/api/account/update_profile", handlers.AccountUpdateProfileHandler(dbEmpresas, dbSuper))
+	http.HandleFunc("/api/account/change_password", handlers.AccountChangePasswordHandler(dbEmpresas, dbSuper))
 	// Endpoint CRUD para administradores (API)
 	http.HandleFunc("/super/api/administradores", handlers.AdministradoresHandler(dbSuper))
+	// Endpoints adicionales para flujo de autenticación de administradores (registro, login, confirmación, recuperación)
+	http.HandleFunc("/super/api/administradores/register", handlers.AdminRegisterHandler(dbSuper))
+	http.HandleFunc("/super/api/administradores/login", handlers.AdminLoginHandler(dbSuper))
+	http.HandleFunc("/auth/confirmar_admin", handlers.ConfirmarAdminHandler(dbSuper))
+	http.HandleFunc("/super/api/administradores/solicitar_recuperacion", handlers.AdminRequestPasswordRecoveryHandler(dbSuper))
+	http.HandleFunc("/super/api/administradores/restablecer_password", handlers.AdminResetPasswordHandler(dbSuper))
 	// Endpoint CRUD para licencias (nuevo)
 	http.HandleFunc("/super/api/licencias", handlers.LicenciasHandler(dbSuper))
 	// Endpoint publico para exponer metodos de pago activos del checkout de licencias

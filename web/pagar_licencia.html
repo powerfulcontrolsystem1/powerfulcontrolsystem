@@ -42,8 +42,10 @@
       function normalizeStatus(raw){
         const value = String(raw || '').trim().toUpperCase();
         if (!value) return '';
-        if (value === 'SUCCESS') return 'APPROVED';
-        if (value === 'FAILURE') return 'DECLINED';
+        if (['SUCCESS','APPROVED','ACCEPTED','ACREDITADA','ACREDITADO','ACEPTADA','APROBADA','1'].indexOf(value) >= 0) return 'APPROVED';
+        if (['FAILURE','DECLINED','REJECTED','RECHAZADA','RECHAZADO','CANCELADA','CANCELADO','ANULADA','ANULADO','2'].indexOf(value) >= 0) return 'DECLINED';
+        if (['PENDING','PENDIENTE','EN_PROCESO','3'].indexOf(value) >= 0) return 'PENDING';
+        if (['ERROR','FAILED','FALLIDA','FALLIDO','4'].indexOf(value) >= 0) return 'ERROR';
         return value;
       }
       function providerLabel(provider){
@@ -92,9 +94,10 @@
       function buildReturnContext(params, licenciaId, empresaId){
         const pending = readPendingPayment();
         let provider = normalizeProvider(params.get('provider') || params.get('metodo') || params.get('method'));
-        let status = normalizeStatus(params.get('status') || params.get('x_response') || params.get('response'));
+        let status = normalizeStatus(params.get('status') || params.get('x_response') || params.get('x_transaction_state') || params.get('response'));
+        if (!status) status = normalizeStatus(params.get('x_cod_response') || params.get('cod_response'));
         let transactionId = String(params.get('transaction_id') || params.get('id') || params.get('x_transaction_id') || '').trim();
-        let reference = String(params.get('reference') || params.get('ref') || params.get('ref_payco') || params.get('x_ref_payco') || params.get('invoice') || '').trim();
+        let reference = String(params.get('reference') || params.get('ref') || params.get('invoice') || params.get('x_id_invoice') || params.get('ref_payco') || params.get('x_ref_payco') || '').trim();
 
         if ((!provider || (!transactionId && !reference)) && matchesPendingContext(pending, licenciaId, empresaId)) {
           if (!provider) provider = normalizeProvider(pending.provider);

@@ -1,5 +1,22 @@
 Descripcion de archivos del proyecto
 
+Actualizacion 2026-04-16: configuracion_de_la_cuenta y endpoints de perfil
+ - Archivos añadidos:
+	 - web/configuracion_de_la_cuenta.html : Página para ver/editar correo, nombre y teléfono del administrador.
+	 - web/js/configuracion_de_la_cuenta.js : Lógica cliente para actualizar perfil y cambiar contraseña.
+ - Archivos modificados:
+	 - backend/handlers/account_handlers.go : Handlers para `update_profile` y `change_password`.
+	 - backend/db/db.go : Asegura columna `telefono` en `administradores` y nuevos helpers de actualización.
+	 - backend/main.go : Registro de rutas `/api/account/update_profile` y `/api/account/change_password`.
+ - Descripcion: Nuevos recursos frontend y backend para gestión de perfil de cuenta desde sesión activa. La implementación usa `session_token` HttpOnly para identificar la sesión y expone endpoints POST seguros.
+
+Actualizacion 2026-04-16: Restaurado estilo de tarjetas en `seleccionar_empresa` y aumento del 20%
+ - Archivos modificados:
+	- web/estilos.css
+	- web/seleccionar_empresa.html
+ - Descripcion: Se restauró el estilo anterior (`warm`) de las tarjetas de selección de empresa y se aplicaron overrides en `web/estilos.css` para aumentar dimensiones (min-width, iconos, paddings y tipografías) en un 20%. La lógica de generación de tarjetas en `web/js/seleccionar_empresa.js` permanece sin cambios funcionales.
+ - Verificacion: Abrir [web/seleccionar_empresa.html](web/seleccionar_empresa.html) y comprobar que las tarjetas usan apariencia cálida/redondeada y se muestran un 20% más grandes; verificar legibilidad en móvil y escritorio.
+
 Actualizacion 2026-04-16: arcade publico con countdown en Patito y refuerzo movil de los cinco juegos
  - Archivos modificados:
 	- web/Juegos/arcade_shared.js
@@ -17,6 +34,12 @@ Actualizacion 2026-04-16: arcade publico con countdown en Patito y refuerzo movi
 	- CHANGELOG.md
  - Descripcion: Se amplifica el arcade publico con una cuenta regresiva de 5 segundos en `Patito volando`, nuevos sonidos de countdown en la capa compartida y ajustes especificos para celular en los cinco juegos activos del portal, incluyendo acciones apiladas, overlays compactos y shells que toleran mejor pantallas pequenas.
  - Verificacion: revision sintactica de `web/Juegos/arcade_shared.js`, `web/Juegos/patito_volando.html`, `web/Juegos/pollitos_cataplum.html`, `web/Juegos/serpiente_pixel.html`, `web/Juegos/memoria_estelar.html` y `web/Juegos/rebote_bloques.html`; confirmacion de reglas moviles y de los nuevos efectos `countdownTick`/`countdownGo`.
+
+Actualizacion 2026-04-16: botones de prueba en configuración avanzada
+ - Archivos modificados:
+	- web/super/configuracion_avanzada.html
+ - Descripcion: Se agregan botones "Probar..." en cada tarjeta de la pagina de Configuración avanzada (Venta digital, Epayco, Nequi/Wompi, Gmail SMTP, Inteligencia Artificial y Respaldo). Cada boton realiza comprobaciones no destructivas (GET) a los endpoints de configuracion correspondientes y muestra el resultado en la UI.
+ - Verificacion: Abrir [web/super/configuracion_avanzada.html](web/super/configuracion_avanzada.html) y pulsar los botones de prueba para ver mensajes de estado en cada tarjeta.
 
 Actualizacion 2026-04-16: frontend compartido reforzado para celular y menu flotante
  - Archivos modificados:

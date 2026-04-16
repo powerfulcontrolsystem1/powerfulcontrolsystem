@@ -185,4 +185,92 @@
 
   refreshRememberUI();
   syncRememberedEmailFromSession();
+  // --- Admin email/password flows ---
+  var emailInput = document.getElementById('adminEmail');
+  var nameInput = document.getElementById('adminName');
+  var passInput = document.getElementById('adminPassword');
+  var loginBtn = document.getElementById('emailLoginBtn');
+  var registerBtn = document.getElementById('registerBtn');
+  var forgotLinkElem = document.getElementById('forgotLink');
+  var messageDiv = document.getElementById('emailLoginMessage');
+
+  function showMsg(text, isError) {
+    if (!messageDiv) return;
+    messageDiv.style.display = 'block';
+    messageDiv.textContent = text;
+    messageDiv.style.color = isError ? 'crimson' : 'green';
+    setTimeout(function(){ messageDiv.style.display = 'none'; }, 8000);
+  }
+
+  async function postJson(url, body) {
+    var res = await fetch(url, {
+      method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body), credentials: 'same-origin'
+    });
+    var txt = await res.text();
+    try { return {ok: res.ok, status: res.status, json: JSON.parse(txt)}; } catch (e) { return {ok: res.ok, status: res.status, text: txt}; }
+  }
+
+  if (loginBtn) {
+    loginBtn.addEventListener('click', async function(e){
+      e.preventDefault();
+      var email = (emailInput && emailInput.value) ? emailInput.value.trim() : '';
+      var password = (passInput && passInput.value) ? passInput.value : '';
+      if (!email || !password) { showMsg('Email y contraseña requeridos', true); return; }
+      var r = await postJson('/super/api/administradores/login', {email: email, password: password});
+      if (r.ok && r.json && r.json.redirect_url) {
+        window.location.href = r.json.redirect_url;
+        return;
+      }
+      if (r.status === 403) { showMsg('Debes confirmar tu correo. Revisa el email de confirmación.', true); return; }
+      if (r.json && r.json.password_setup_required) { showMsg('Tu cuenta requiere establecer contraseña. Revisa tu correo.', true); return; }
+      showMsg('Credenciales inválidas', true);
+    });
+  }
+
+  if (registerBtn) {
+    registerBtn.addEventListener('click', async function(e){
+      e.preventDefault();
+      var email = (emailInput && emailInput.value) ? emailInput.value.trim() : '';
+      var name = (nameInput && nameInput.value) ? nameInput.value.trim() : '';
+      var password = (passInput && passInput.value) ? passInput.value : '';
+      if (!email || !password) { showMsg('Email y contraseña requeridos para registrarse', true); return; }
+      var r = await postJson('/super/api/administradores/register', {email: email, name: name, password: password});
+      if (r.ok && r.json && r.json.ok) { showMsg('Registro exitoso. Revisa tu correo para confirmar.', false); return; }
+      showMsg('Error en el registro', true);
+    });
+  }
+
+  if (forgotLinkElem) {
+    forgotLinkElem.addEventListener('click', async function(e){
+      e.preventDefault();
+      var email = (emailInput && emailInput.value) ? emailInput.value.trim() : '';
+      if (!email) { email = prompt('Introduce tu correo para recuperación:'); }
+      if (!email) { return; }
+      var r = await postJson('/super/api/administradores/solicitar_recuperacion', {email: email});
+      if (r.ok && r.json && r.json.ok) { showMsg('Si existe la cuenta, recibirás un correo con instrucciones.', false); return; }
+      showMsg('Error al solicitar recuperación', true);
+    });
+  }
+
+  // Si venimos con token de recuperación en query string, lanzar flujo de restablecimiento
+  (function handleRecoveryFromQuery(){
+    try {
+      var params = new URLSearchParams(window.location.search);
+      var token = params.get('token_recuperacion');
+      var email = params.get('email');
+      if (token && email) {
+        var pwd = prompt('Token detectado. Ingresa nueva contraseña:');
+        if (!pwd) { return; }
+        var pwd2 = prompt('Confirma nueva contraseña:');
+        if (pwd !== pwd2) { alert('Las contraseñas no coinciden'); return; }
+        postJson('/super/api/administradores/restablecer_password', {email: email, token: token, password: pwd}).then(function(res){
+          if (res.ok && res.json && res.json.redirect_url) {
+            window.location.href = res.json.redirect_url;
+            return;
+          }
+          alert('Error al restablecer contraseña');
+        });
+      }
+    } catch (e) {}
+  })();
 })();

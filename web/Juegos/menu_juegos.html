@@ -215,6 +215,19 @@
       gap: 18px;
     }
 
+    /* Mobile simplified list for games: stacked items (botones uno debajo del otro) */
+    @media (max-width:720px) {
+      .arcade-grid { grid-template-columns: 1fr; }
+      .arcade-list-item { display:block; }
+      .arcade-list-item .arcade-list-link{ display:flex; align-items:center; gap:12px; text-decoration:none; padding:10px; border-radius:12px; background:var(--arcade-card); border:1px solid var(--arcade-border); color:var(--arcade-ink); }
+      .arcade-list-item .list-cover{ width:64px; height:64px; object-fit:contain; border-radius:8px; flex:0 0 64px }
+      .arcade-list-item .list-title{ font-weight:800; flex:1; text-align:left }
+      .arcade-list-item .list-btn{ min-width:96px; padding:8px 12px; border-radius:10px; background:linear-gradient(135deg,var(--arcade-accent),var(--arcade-accent-dark)); color:#fff; font-weight:900; text-align:center }
+      .game-card { aspect-ratio: auto; padding:10px; border-radius:12px }
+      .game-card-cover{ display:none }
+      .game-card-content{ padding:0 }
+    }
+
     .game-card {
       position: relative;
       aspect-ratio: 1 / 1;
@@ -569,46 +582,61 @@
 
       function renderGames() {
         var playerName = arcade ? arcade.getProfile().playerName : '';
-        gridEl.innerHTML = games.map(function (game) {
-          var gameScores = arcade ? arcade.getGameScores(game.slug) : { entries: [], best: null };
-          var playerBest = getPlayerBest(game.slug, playerName);
-          var topText = gameScores.best
-            ? gameScores.best.playerName + ' · ' + gameScores.best.score
-            : 'Sin marcas aun';
-          var ownText = playerBest ? String(playerBest.score) : 'Sin partida';
-          var ranking = gameScores.entries.length
-            ? gameScores.entries.slice(0, 2).map(function (entry, index) {
-                var label = '#' + (index + 1) + ' ' + entry.playerName + ' · ' + entry.score;
-                if (entry.detail) label += ' · ' + entry.detail;
-                return '<span class="game-card-rank">' + escapeHTML(label) + '</span>';
-              }).join('')
-            : '<span class="game-card-rank">Todavia no hay marcadores guardados.</span>';
+        var isMobileList = isTouchDevice() || (window.matchMedia && window.matchMedia('(max-width:720px)').matches);
+        if (isMobileList) {
+          gridEl.innerHTML = games.map(function(game){
+            return '' +
+              '<div class="arcade-list-item">' +
+                '<a class="arcade-list-link" href="' + escapeHTML(game.windowUrl) + '">' +
+                  '<img class="list-cover" src="' + escapeHTML(game.coverUrl) + '" alt="' + escapeHTML(game.title) + '">' +
+                  '<span class="list-title">' + escapeHTML(game.title) + '</span>' +
+                  '<span class="list-btn">Jugar</span>' +
+                '</a>' +
+              '</div>';
+          }).join('');
+          return;
+        }
 
-          return '' +
-            '<article class="game-card">' +
-              '<img class="game-card-cover" src="' + escapeHTML(game.coverUrl) + '" alt="Portada de ' + escapeHTML(game.title) + '">' +
-              '<div class="game-card-shade"></div>' +
-              '<div class="game-card-content">' +
-                '<div class="game-card-topline">' +
-                  '<span class="game-card-badge">' + escapeHTML(game.status) + '</span>' +
-                  '<span class="game-card-mode">' + escapeHTML(game.mode) + '</span>' +
-                '</div>' +
-                '<div class="game-card-body">' +
-                  '<p class="game-card-kicker">' + escapeHTML(game.theme) + '</p>' +
-                  '<h2 class="game-card-title">' + escapeHTML(game.title) + '</h2>' +
-                  '<p class="game-card-copy">' + escapeHTML(game.summary) + '</p>' +
-                  '<div class="game-card-stats">' +
-                    '<span>Tu mejor: ' + escapeHTML(ownText) + '</span>' +
-                    '<span>Top general: ' + escapeHTML(topText) + '</span>' +
+        gridEl.innerHTML = games.map(function (game) {
+            var gameScores = arcade ? arcade.getGameScores(game.slug) : { entries: [], best: null };
+            var playerBest = getPlayerBest(game.slug, playerName);
+            var topText = gameScores.best
+              ? gameScores.best.playerName + ' · ' + gameScores.best.score
+              : 'Sin marcas aun';
+            var ownText = playerBest ? String(playerBest.score) : 'Sin partida';
+            var ranking = gameScores.entries.length
+              ? gameScores.entries.slice(0, 2).map(function (entry, index) {
+                  var label = '#' + (index + 1) + ' ' + entry.playerName + ' · ' + entry.score;
+                  if (entry.detail) label += ' · ' + entry.detail;
+                  return '<span class="game-card-rank">' + escapeHTML(label) + '</span>';
+                }).join('')
+              : '<span class="game-card-rank">Todavia no hay marcadores guardados.</span>';
+
+            return '' +
+              '<article class="game-card">' +
+                '<img class="game-card-cover" src="' + escapeHTML(game.coverUrl) + '" alt="Portada de ' + escapeHTML(game.title) + '">' +
+                '<div class="game-card-shade"></div>' +
+                '<div class="game-card-content">' +
+                  '<div class="game-card-topline">' +
+                    '<span class="game-card-badge">' + escapeHTML(game.status) + '</span>' +
+                    '<span class="game-card-mode">' + escapeHTML(game.mode) + '</span>' +
                   '</div>' +
-                  '<div class="game-card-leaderboard">' + ranking + '</div>' +
-                  '<div class="game-card-actions">' +
-                    '<button class="game-card-btn" type="button" data-url="' + escapeHTML(game.windowUrl) + '" data-slug="' + escapeHTML(game.slug) + '" data-width="' + escapeHTML(game.windowWidth) + '" data-height="' + escapeHTML(game.windowHeight) + '">Jugar</button>' +
+                  '<div class="game-card-body">' +
+                    '<p class="game-card-kicker">' + escapeHTML(game.theme) + '</p>' +
+                    '<h2 class="game-card-title">' + escapeHTML(game.title) + '</h2>' +
+                    '<p class="game-card-copy">' + escapeHTML(game.summary) + '</p>' +
+                    '<div class="game-card-stats">' +
+                      '<span>Tu mejor: ' + escapeHTML(ownText) + '</span>' +
+                      '<span>Top general: ' + escapeHTML(topText) + '</span>' +
+                    '</div>' +
+                    '<div class="game-card-leaderboard">' + ranking + '</div>' +
+                    '<div class="game-card-actions">' +
+                      '<button class="game-card-btn" type="button" data-url="' + escapeHTML(game.windowUrl) + '" data-slug="' + escapeHTML(game.slug) + '" data-width="' + escapeHTML(game.windowWidth) + '" data-height="' + escapeHTML(game.windowHeight) + '">Jugar</button>' +
+                    '</div>' +
                   '</div>' +
                 '</div>' +
-              '</div>' +
-            '</article>';
-        }).join('');
+              '</article>';
+          }).join('');
       }
 
       function rerender() {
