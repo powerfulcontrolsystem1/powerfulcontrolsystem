@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Respuesta de Epayco</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body>
+  <div class="login-page">
+    <div class="container">
+      <div class="card" style="max-width:560px;margin:0 auto;text-align:center;">
+        <h1 class="login-title" style="margin-bottom:10px;">Procesando respuesta de Epayco</h1>
+        <p id="epaycoResponseMessage" class="login-subtitle">Estamos redirigiendo el resultado del pago al resumen de la licencia.</p>
+        <div class="form-help" id="epaycoResponseHint">Si la redirección no ocurre automáticamente, usa el botón inferior.</div>
+        <div class="form-actions" style="justify-content:center;margin-top:18px;">
+          <a id="epaycoContinueLink" class="btn" href="/pagar_licencia.html">Continuar al resumen del pago</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var current = new URL(window.location.href);
+      var params = current.searchParams;
+      var target = new URL('/pagar_licencia.html', window.location.origin);
+      var status = params.get('status') || params.get('x_response') || params.get('x_transaction_state') || params.get('response') || '';
+      var reference = params.get('reference') || params.get('ref_payco') || params.get('x_ref_payco') || params.get('invoice') || params.get('x_id_invoice') || '';
+      var transactionId = params.get('transaction_id') || params.get('id') || params.get('x_transaction_id') || '';
+      var licenciaId = params.get('licencia_id') || params.get('extra1') || '';
+      var empresaId = params.get('empresa_id') || params.get('extra2') || '';
+
+      target.searchParams.set('provider', 'epayco');
+      if (status) target.searchParams.set('status', String(status).toLowerCase());
+      if (reference) target.searchParams.set('reference', reference);
+      if (transactionId) target.searchParams.set('transaction_id', transactionId);
+      if (licenciaId) target.searchParams.set('licencia_id', licenciaId);
+      if (empresaId) target.searchParams.set('empresa_id', empresaId);
+
+      var continueLink = document.getElementById('epaycoContinueLink');
+      if (continueLink) {
+        continueLink.href = target.toString();
+      }
+
+      var msg = document.getElementById('epaycoResponseMessage');
+      if (msg) {
+        if (status) {
+          msg.textContent = 'Epayco respondió con estado ' + String(status).toUpperCase() + '. Te llevaremos al resumen del pago para validar el resultado real.';
+        } else {
+          msg.textContent = 'Recibimos la respuesta de Epayco. Te llevaremos al resumen del pago para validar el resultado real.';
+        }
+      }
+
+      window.setTimeout(function () {
+        window.location.replace(target.toString());
+      }, 1200);
+    })();
+  </script>
+</body>
+</html>

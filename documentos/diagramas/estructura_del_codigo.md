@@ -2,6 +2,42 @@
 
 Fecha de actualizacion: 2026-04-16
 
+## Actualizacion 2026-04-16 (Epayco: pagina publica fija de respuesta para panel externo)
+
+- Backend:
+  - `backend/handlers/payments_handlers.go` deja de enviar a Epayco directamente a `pagar_licencia.html` y ahora genera la URL publica fija `/epayco/respuesta.html` como `response`, manteniendo `/epayco/webhook` como `confirmation`.
+  - `backend/handlers/payments_handlers_test.go` ajusta la cobertura del checkout para validar la nueva URL de respuesta y el paso de `extra1`/`extra2` como respaldo de `licencia_id` y `empresa_id`.
+- Frontend:
+  - `web/epayco/respuesta.html` actua como landing publica de retorno desde Epayco, normaliza los parametros de la pasarela y redirige a `/pagar_licencia.html` para que el checkout retome la verificacion real del pago.
+- Flujo:
+  - `POST /epayco/create_transaction` -> checkout Epayco con `response=https://powerfulcontrolsystem.com/epayco/respuesta.html?...` y `confirmation=https://powerfulcontrolsystem.com/epayco/webhook`.
+  - `Epayco` -> `/epayco/respuesta.html` -> `/pagar_licencia.html` -> polling real con `/epayco/transaction_status`.
+
+## Actualizacion 2026-04-16 (frontend de licencias y seleccion de empresa: preseleccion visible y tarjetas compactas)
+
+- Frontend:
+  - `web/pagar_licencia.html` refuerza la seleccion inicial del checkout usando el unico metodo disponible cuando solo una pasarela esta activa y mantiene el `default_method` del backend cuando hay varias opciones.
+  - `web/pagar_licencia.html` incorpora el logo de Epayco en la tarjeta del selector y en el panel de pago para hacer visible la pasarela elegida antes de abrir el checkout externo.
+  - `web/js/seleccionar_empresa.js` vuelve a renderizar las empresas con el estilo compacto anterior basado en `portal-card warm`, mostrando nombre, observaciones, estado de licencia y descarga de datos cuando aplica.
+  - `web/estilos.css` agrega el soporte visual del logo de Epayco en checkout y deja de depender de la variante rica `empresa-card` para la seleccion de empresas.
+
+## Actualizacion 2026-04-16 (login administrativo: registro separado y recuperacion guiada)
+
+- Backend:
+  - `backend/handlers/auth_admin_handlers.go` endurece `AdminRegisterHandler` para exigir `nombre`, `telefono` y contraseña segura, evita sobrescribir cuentas administrativas ya confirmadas y limita la recuperación de contraseña a cuentas confirmadas.
+  - `backend/handlers/auth_admin_handlers.go` cambia el enlace de recuperación para que apunte a `/login.html?view=reset&email=...&token_recuperacion=...`, alineando backend y frontend en un flujo visible de restablecimiento.
+  - `backend/utils/utils.go` libera como rutas públicas `/registrar_nuevo_usuario_administrador.html` y `/auth/confirmar_admin`, corrigiendo el bloqueo previo del enlace de confirmación administrativa.
+  - `backend/handlers/auth_admin_handlers_test.go` agrega cobertura del registro administrativo, login por correo, recuperación de contraseña y creación de sesión; `backend/handlers/auth_users_carritos_test.go` amplía la prueba del middleware público con la nueva página de registro y la confirmación administrativa.
+- Frontend:
+  - `web/login.html` elimina el campo `Nombre (para registro)` del acceso principal, centra el botón `Iniciar por correo` y agrega debajo las acciones `Registrarse` y `¿Olvidó su contraseña?`.
+  - `web/js/login.js` reemplaza los `prompt()` del flujo de recuperación por formularios reales para solicitar y restablecer contraseña, además de reutilizar `Recordar cuenta` en el login por correo.
+  - `web/registrar_nuevo_usuario_administrador.html` y `web/js/registrar_nuevo_usuario_administrador.js` crean la nueva superficie pública de registro administrativo con `email`, `nombre completo`, `telefono`, contraseña y confirmación de contraseña.
+  - `web/ayuda/login_administradores.html` documenta el doble acceso administrativo: Google y correo/clave, con registro y recuperación visibles.
+- Flujo:
+  - `login.html` -> `Iniciar sesión con Google` -> `/auth/google/login` -> `/auth/google/callback` -> `/accept.html` -> `/accept/complete`.
+  - `login.html` -> `Registrarse` -> `registrar_nuevo_usuario_administrador.html` -> `POST /super/api/administradores/register` -> `/auth/confirmar_admin` -> `login.html`.
+  - `login.html` -> `¿Olvidó su contraseña?` -> `POST /super/api/administradores/solicitar_recuperacion` -> correo con `token_recuperacion` -> `login.html?view=reset...` -> `POST /super/api/administradores/restablecer_password` -> sesión administrativa.
+
 ## Actualizacion 2026-04-16 (arcade publico: cuenta regresiva en Patito y ajuste movil de los cinco juegos)
 
 - Frontend:

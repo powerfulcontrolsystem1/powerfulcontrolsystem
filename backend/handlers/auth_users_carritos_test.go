@@ -2092,6 +2092,9 @@ func TestAuthMiddlewareAllowsPublicPortalPagesAssetsAndHomeCardsAPI(t *testing.T
 	mux.HandleFunc("/Informacion_de_contacto.html", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	})
+	mux.HandleFunc("/registrar_nuevo_usuario_administrador.html", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
 	mux.HandleFunc("/Juegos/menu_juegos.html", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	})
@@ -2107,10 +2110,13 @@ func TestAuthMiddlewareAllowsPublicPortalPagesAssetsAndHomeCardsAPI(t *testing.T
 	mux.HandleFunc("/api/public/contrato", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	})
+	mux.HandleFunc("/auth/confirmar_admin", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
 
 	h := utils.AuthMiddleware(dbSuper, mux)
 
-	for _, path := range []string{"/index.html", "/descripcion_de_los_sistemas.ht", "/Informacion_de_contacto.html", "/Juegos/menu_juegos.html", "/Juegos/patito_volando.html", "/js/login.js", "/api/public/pagina_principal", "/api/public/contrato"} {
+	for _, path := range []string{"/index.html", "/descripcion_de_los_sistemas.ht", "/Informacion_de_contacto.html", "/registrar_nuevo_usuario_administrador.html", "/auth/confirmar_admin", "/Juegos/menu_juegos.html", "/Juegos/patito_volando.html", "/js/login.js", "/api/public/pagina_principal", "/api/public/contrato"} {
 		req := httptest.NewRequest(http.MethodGet, path, nil)
 		rr := httptest.NewRecorder()
 		h.ServeHTTP(rr, req)

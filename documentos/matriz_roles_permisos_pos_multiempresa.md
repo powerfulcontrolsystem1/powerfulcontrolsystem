@@ -8,6 +8,22 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 - Cuando se cree un modulo nuevo o se modifique uno existente, esta matriz debe actualizarse en la misma iteracion para reflejar permisos por rol/modulo/accion y el impacto en paginas del panel.
 - Esta actualizacion debe quedar sincronizada con `documentos/descripcion_de_modulos`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios` y `CHANGELOG.md`.
 
+- Actualizacion 2026-04-16 (autenticacion administrativa: registro separado y recuperacion guiada):
+	- `web/login.html` mantiene acceso publico por Google o correo/clave, pero mueve el registro administrativo a `/registrar_nuevo_usuario_administrador.html` y deja la recuperación en formularios propios dentro del login.
+	- `backend/handlers/auth_admin_handlers.go` endurece el alta y la recuperación de administradores, mientras `backend/utils/utils.go` libera `/registrar_nuevo_usuario_administrador.html` y `/auth/confirmar_admin` como rutas públicas reales.
+	- `backend/handlers/auth_admin_handlers_test.go` y `backend/handlers/auth_users_carritos_test.go` cubren el alta/login/reset administrativo y la nueva superficie pública del middleware.
+	- Impacto de matriz: sin cambios en roles, CRUD/A, wrappers o visibilidad por rol; el login/registro/confirmación administrativa sigue siendo público y la administración global continúa bajo `super_administrador`.
+
+- Actualizacion 2026-04-16 (Epayco: respuesta publica fija):
+	- `web/epayco/respuesta.html` queda disponible como pagina publica para retorno desde la pasarela.
+	- `backend/handlers/payments_handlers.go` usa `/epayco/respuesta.html` como `response` y `/epayco/webhook` como `confirmation` para licencias.
+	- Impacto de matriz: sin cambios en roles ni permisos internos; ambas rutas siguen siendo publicas por integracion de pasarela.
+
+- Actualizacion 2026-04-16 (checkout visual y seleccion de empresa):
+	- `web/pagar_licencia.html` preselecciona de forma visible la unica pasarela disponible y muestra el logo de Epayco en tarjeta y panel cuando corresponde.
+	- `web/js/seleccionar_empresa.js` vuelve al formato compacto previo para tarjetas de empresa, sin alterar accesos ni permisos.
+	- Impacto de matriz: sin cambios en roles, CRUD/A o visibilidad funcional; las pantallas siguen con el mismo alcance de acceso que antes.
+
 ## Roles base
 
 | Rol | Alcance | Descripcion |
@@ -51,6 +67,12 @@ Leyenda:
 | Pasarelas de licencias (Wompi/Epayco) | CRUA | - | - | - | - | - | - | - |
 
 ## Estado de implementacion tecnica inicial (2026-04-04)
+
+- Actualizacion 2026-04-16 (autenticacion administrativa: registro separado y recuperacion guiada):
+	- `web/login.html` centra el acceso por correo, deja debajo `Registrarse` y `¿Olvidó su contraseña?`, y sustituye los `prompt()` por formularios reales para recuperación y restablecimiento.
+	- `web/registrar_nuevo_usuario_administrador.html` agrega una superficie pública específica para alta administrativa y `backend/utils/utils.go` la libera junto con `/auth/confirmar_admin`.
+	- `backend/handlers/auth_admin_handlers.go` evita sobrescribir cuentas confirmadas y exige `nombre`, `telefono` y contraseña mínima para el registro administrativo.
+	- Impacto de matriz: sin cambios en roles, CRUD/A ni wrappers; el ajuste corrige el flujo público de autenticación administrativa sin ampliar permisos.
 
 - Actualizacion 2026-04-16 (portal publico: arcade movil reforzado y countdown en Patito volando):
 	- `web/Juegos/arcade_shared.js` suma sonidos de cuenta regresiva reutilizables por el arcade publico.

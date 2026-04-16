@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Registrar nuevo usuario administrador - POS Multiempresa</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+</head>
+<body>
+  <div class="login-page">
+    <div class="login-header">
+      <h1 class="login-title">Registrar nuevo usuario administrador</h1>
+      <div><a class="login-help-link" href="/ayuda/login_administradores.html" target="_blank" rel="noopener">Saber más</a></div>
+    </div>
+    <div class="container">
+      <div class="card">
+        <h2>Crear cuenta administrativa</h2>
+        <p class="login-subtitle">Completa tus datos. Te enviaremos un correo para confirmar la cuenta antes del primer acceso.</p>
+        <form class="form auth-alt-form" id="adminRegisterForm" autocomplete="on" novalidate>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="registerEmail">Correo</label>
+              <input id="registerEmail" class="form-input" type="email" autocomplete="email" placeholder="tu@correo.com" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="registerName">Nombre completo</label>
+              <input id="registerName" class="form-input" type="text" autocomplete="name" placeholder="Nombre y apellidos" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="registerPhone">Teléfono</label>
+              <input id="registerPhone" class="form-input" type="tel" autocomplete="tel" placeholder="Número de contacto" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="registerPassword">Contraseña</label>
+              <input id="registerPassword" class="form-input" type="password" autocomplete="new-password" placeholder="Mínimo 8 caracteres" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="registerPasswordConfirm">Confirmar contraseña</label>
+              <input id="registerPasswordConfirm" class="form-input" type="password" autocomplete="new-password" placeholder="Repite tu contraseña" required>
+            </div>
+          </div>
+          <div class="form-actions auth-alt-actions">
+            <button id="adminRegisterBtn" class="btn" type="submit">Registrar cuenta</button>
+            <a class="btn secondary" href="/login.html" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;">Volver al login</a>
+          </div>
+          <div id="adminRegisterMessage" class="form-help auth-message" style="display:none"></div>
+        </form>
+        <p class="footer login-card-note">Después de confirmar tu correo podrás iniciar por Google o con tu correo y contraseña.</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/registrar_nuevo_usuario_administrador.js"></script>
+</body>
+</html>

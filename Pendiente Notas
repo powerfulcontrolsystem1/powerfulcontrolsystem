@@ -330,4 +330,4 @@ Un sistema funcional donde:
 * Todo queda registrado y auditado
 
 ---
-
+- en super administrador en administrar base de datos agregar una tarjeta con un boton que diga "Cargar Empresas", este debe cargar en una tabla de la base de datos de cada empresa, organizada de mayor a menor, de la que mas espacio en mega bite tiene. es para saber cuanta base de datos ocupa cada empresa.

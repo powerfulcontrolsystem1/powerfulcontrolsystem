@@ -841,13 +841,45 @@ func buildLicenciaReturnURL(baseURL, provider, status, reference string, licenci
 	return parsed.String()
 }
 
+func buildEpaycoResponseURL(baseURL, status, reference string, licenciaID, empresaID int64) string {
+	trimmedBaseURL := strings.TrimSpace(baseURL)
+	query := url.Values{}
+	query.Set("provider", "epayco")
+	if strings.TrimSpace(status) != "" {
+		query.Set("status", strings.ToLower(strings.TrimSpace(status)))
+	}
+	if strings.TrimSpace(reference) != "" {
+		query.Set("reference", strings.TrimSpace(reference))
+	}
+	if licenciaID > 0 {
+		value := strconv.FormatInt(licenciaID, 10)
+		query.Set("licencia_id", value)
+		query.Set("extra1", value)
+	}
+	if empresaID > 0 {
+		value := strconv.FormatInt(empresaID, 10)
+		query.Set("empresa_id", value)
+		query.Set("extra2", value)
+	}
+
+	parsed, err := url.Parse(trimmedBaseURL)
+	if err != nil || strings.TrimSpace(parsed.Host) == "" {
+		return strings.TrimRight(trimmedBaseURL, "/") + "/epayco/respuesta.html?" + query.Encode()
+	}
+	parsed.Path = "/epayco/respuesta.html"
+	parsed.RawPath = ""
+	parsed.RawQuery = query.Encode()
+	parsed.Fragment = ""
+	return parsed.String()
+}
+
 func buildEpaycoCheckoutURL(baseURL, publicKey, customerID, reference, licenciaNombre string, licenciaID, empresaID int64, amount float64, customerEmail, mode string) string {
 	title := strings.TrimSpace(licenciaNombre)
 	if title == "" {
 		title = "Licencia"
 	}
 	trimmedBaseURL := strings.TrimRight(strings.TrimSpace(baseURL), "/")
-	responseURL := buildLicenciaReturnURL(baseURL, "epayco", "pending", reference, licenciaID, empresaID)
+	responseURL := buildEpaycoResponseURL(baseURL, "pending", reference, licenciaID, empresaID)
 	confirmationURL := trimmedBaseURL + "/epayco/webhook"
 
 	v := url.Values{}

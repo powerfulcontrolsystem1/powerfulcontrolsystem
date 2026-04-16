@@ -1,5 +1,66 @@
 Descripcion de archivos del proyecto
 
+Actualizacion 2026-04-16: manual de instalacion con respuesta, confirmacion y valores del formulario Epayco
+ - Archivos modificados:
+	 - documentos/manual_de_instalacion.md : Agrega el paso operativo para registrar en Epayco la URL publica de respuesta `/epayco/respuesta.html`, la URL de confirmacion `/epayco/webhook` y los valores exactos del formulario de Epayco, con flujo y verificacion recomendada.
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: El manual de instalacion ahora documenta explicitamente las URLs que deben copiarse en el panel de Epayco, los valores exactos del formulario y la diferencia entre retorno visual y confirmacion backend.
+
+Actualizacion 2026-04-16: respuesta publica fija para Epayco
+ - Archivos creados:
+	 - web/epayco/respuesta.html : Pagina publica de retorno desde Epayco; normaliza parametros de la pasarela y redirige al resumen de licencia en `pagar_licencia.html`.
+ - Archivos modificados:
+	 - backend/handlers/payments_handlers.go : Genera `/epayco/respuesta.html` como URL `response` del checkout y mantiene `/epayco/webhook` como URL `confirmation`.
+	 - backend/handlers/payments_handlers_test.go : Ajusta la prueba del checkout para validar la nueva URL publica de respuesta y los parametros de contexto `extra1` y `extra2`.
+	 - documentos/descripcion_del_proyecto
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: El checkout de licencias con Epayco ahora usa una pagina publica fija de respuesta, pensada tambien para pegarla manualmente en el panel de Epayco. Esa pagina redirige al resumen del pago para que el backend confirme el estado real y active la licencia si corresponde.
+ - Verificacion: `go test -work ./handlers -run "TestEpaycoCreateTransactionHandlerUsesConfiguredPublicBaseURLAndKeys|TestEpaycoCreateTransactionHandlerAllowsCheckoutWithoutPrivateKey|TestEpaycoTransactionStatusHandlerPreservesPendingOnGenericValidationError|TestResolvePaymentBaseURL" -count=1`.
+
+Actualizacion 2026-04-16: pago de licencias y seleccion de empresa, ajuste visual solicitado
+ - Archivos modificados:
+	 - web/pagar_licencia.html : Hace visible la pasarela unica disponible, mantiene la preseleccion efectiva y muestra el logo de Epayco en selector y panel.
+	 - web/js/seleccionar_empresa.js : Restaura el render compacto previo de tarjetas de empresa con estado de licencia y descarga de datos.
+	 - web/estilos.css : Agrega estilos del logo de Epayco en checkout y reutiliza la presentacion compacta base de `portal-card warm` para empresas.
+	 - documentos/descripcion_del_proyecto
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: Se refuerza la experiencia visual del checkout de licencias cuando solo hay una pasarela activa y se restaura el estilo de tarjetas de empresas preferido por el usuario en la vista super.
+
+Actualizacion 2026-04-16: login administrativo con registro separado y recuperacion guiada
+ - Archivos creados:
+	 - web/registrar_nuevo_usuario_administrador.html : Nueva página pública para registrar administradores con `email`, `nombre completo`, `telefono` y contraseña.
+	 - web/js/registrar_nuevo_usuario_administrador.js : Lógica cliente del registro administrativo, validación del formulario y redirección al login tras alta exitosa.
+	 - backend/handlers/auth_admin_handlers_test.go : Pruebas automáticas del registro, login y recuperación administrativa por correo.
+ - Archivos modificados:
+	 - backend/handlers/auth_admin_handlers.go : Endurece registro, login y recuperación administrativa; evita sobrescribir cuentas confirmadas y corrige la URL pública de restablecimiento.
+	 - backend/utils/utils.go : Libera `/registrar_nuevo_usuario_administrador.html` y `/auth/confirmar_admin` en `AuthMiddleware`.
+	 - web/login.html : Elimina el campo de nombre del formulario principal, centra el botón `Iniciar por correo` y agrega acciones visibles de registro y recuperación.
+	 - web/js/login.js : Sustituye `prompt()` por formularios de recuperación y restablecimiento dentro de `login.html`.
+	 - web/estilos.css : Añade reglas visuales para la nueva disposición del login, enlaces inferiores y formularios auxiliares de recuperación.
+	 - web/ayuda/login_administradores.html : Actualiza la ayuda con las opciones Google, correo/clave, registro y recuperación administrativa.
+	 - backend/handlers/auth_users_carritos_test.go : Amplía la prueba del middleware público para cubrir la nueva página de registro y la confirmación administrativa.
+	 - documentos/descripcion_del_proyecto
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: El acceso administrativo por correo queda separado del registro. `login.html` ahora solo autentica y muestra formularios reales de recuperación/restablecimiento, mientras `registrar_nuevo_usuario_administrador.html` concentra el alta pública de administradores. El backend valida mejor el registro, mantiene pública la confirmación correcta (`/auth/confirmar_admin`) y añade cobertura automática del flujo.
+ - Verificacion: `go test -work ./handlers -run "Test(Admin|AuthMiddlewareAllowsPublicPortalPagesAssetsAndHomeCardsAPI|HandleGoogleLogin|E2E_AcceptContractCreatesSession)" -count=1`; `go test -work ./ ./auth ./db ./handlers ./metrics ./utils -run "^$" -count=1`; diagnóstico del editor sin errores en Go, HTML, CSS y JavaScript tocados.
+
 Actualizacion 2026-04-16: configuracion_de_la_cuenta y endpoints de perfil
  - Archivos añadidos:
 	 - web/configuracion_de_la_cuenta.html : Página para ver/editar correo, nombre y teléfono del administrador.

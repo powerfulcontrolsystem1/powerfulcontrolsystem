@@ -211,7 +211,7 @@ func TestEpaycoCreateTransactionHandlerUsesConfiguredPublicBaseURLAndKeys(t *tes
 		t.Fatalf("parse response URL: %v", err)
 	}
 	responseQuery := responseURL.Query()
-	if responseURL.Scheme != "https" || responseURL.Host != "powerfulcontrolsystem.com" || responseURL.Path != "/pagar_licencia.html" {
+	if responseURL.Scheme != "https" || responseURL.Host != "powerfulcontrolsystem.com" || responseURL.Path != "/epayco/respuesta.html" {
 		t.Fatalf("unexpected response URL target: %q", query.Get("response"))
 	}
 	if responseQuery.Get("provider") != "epayco" {
@@ -226,8 +226,14 @@ func TestEpaycoCreateTransactionHandlerUsesConfiguredPublicBaseURLAndKeys(t *tes
 	if responseQuery.Get("licencia_id") != "1" {
 		t.Fatalf("expected response licencia_id 1, got %q", responseQuery.Get("licencia_id"))
 	}
+	if responseQuery.Get("extra1") != "1" {
+		t.Fatalf("expected response extra1 1, got %q", responseQuery.Get("extra1"))
+	}
 	if responseQuery.Get("empresa_id") != "44" {
 		t.Fatalf("expected response empresa_id 44, got %q", responseQuery.Get("empresa_id"))
+	}
+	if responseQuery.Get("extra2") != "44" {
+		t.Fatalf("expected response extra2 44, got %q", responseQuery.Get("extra2"))
 	}
 	if query.Get("confirmation") != "https://powerfulcontrolsystem.com/epayco/webhook" {
 		t.Fatalf("unexpected confirmation URL: %q", query.Get("confirmation"))

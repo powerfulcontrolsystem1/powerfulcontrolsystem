@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"log"
 	"net"
 	"net/mail"
@@ -21,6 +22,7 @@ import (
 
 const googleOAuthRedirectCookieName = "oauth_redirect_url"
 const browserSessionStateCookieName = "browser_session_active"
+const minAdminPasswordLength = 8
 
 // SessionCookieSecure resuelve si una cookie de sesión debe emitirse como Secure
 // considerando terminación TLS local o por proxy inverso.
@@ -28,74 +30,137 @@ func SessionCookieSecure(r *http.Request) bool {
 	return resolveOAuthScheme(r) == "https"
 }
 
+func writeAdminAuthJSON(w http.ResponseWriter, status int, payload map[string]interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(payload)
+}
+
+func writeAdminAuthError(w http.ResponseWriter, status int, message string) {
+	writeAdminAuthJSON(w, status, map[string]interface{}{"ok": false, "message": message})
+}
+
+func countAdminPhoneDigits(raw string) int {
+	total := 0
+	for _, ch := range strings.TrimSpace(raw) {
+		if ch >= '0' && ch <= '9' {
+			total++
+		}
+	}
+	return total
+}
+
 // AdminRegisterHandler registra un administrador (envía email de confirmación).
 func AdminRegisterHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
-			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			writeAdminAuthError(w, http.StatusMethodNotAllowed, "Método no permitido.")
 			return
 		}
 		var payload struct {
 			Email    string `json:"email"`
 			Name     string `json:"name"`
+			Telefono string `json:"telefono"`
 			Password string `json:"password"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-			http.Error(w, "invalid payload", http.StatusBadRequest)
+			writeAdminAuthError(w, http.StatusBadRequest, "El formulario de registro es inválido.")
 			return
 		}
 		payload.Email = strings.TrimSpace(payload.Email)
 		payload.Name = strings.TrimSpace(payload.Name)
+		payload.Telefono = strings.TrimSpace(payload.Telefono)
 		payload.Password = strings.TrimSpace(payload.Password)
-		if payload.Email == "" {
-			http.Error(w, "email required", http.StatusBadRequest)
+		if payload.Email == "" || payload.Name == "" || payload.Telefono == "" || payload.Password == "" {
+			writeAdminAuthError(w, http.StatusBadRequest, "Debes completar correo, nombre completo, teléfono y contraseña.")
 			return
 		}
 		if _, err := mail.ParseAddress(payload.Email); err != nil {
-			http.Error(w, "invalid email", http.StatusBadRequest)
+			writeAdminAuthError(w, http.StatusBadRequest, "El correo electrónico no es válido.")
+			return
+		}
+		if countAdminPhoneDigits(payload.Telefono) < 7 {
+			writeAdminAuthError(w, http.StatusBadRequest, "El teléfono debe contener al menos 7 dígitos.")
+			return
+		}
+		if len(payload.Password) < minAdminPasswordLength {
+			writeAdminAuthError(w, http.StatusBadRequest, "La contraseña debe tener mínimo 8 caracteres.")
+			return
+		}
+
+		existing, err := dbpkg.GetAdminByEmailFull(dbSuper, payload.Email)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			log.Println("AdminRegisterHandler get existing admin error:", err)
+			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo validar el estado de la cuenta.")
+			return
+		}
+		if err == nil && existing != nil && existing.EmailConfirmado == 1 {
+			writeAdminAuthError(w, http.StatusConflict, "Ya existe una cuenta administrativa confirmada con ese correo. Inicia sesión o recupera tu contraseña.")
 			return
 		}
 
 		// crear o actualizar administrador básico
 		if err := dbpkg.UpsertAdministrador(dbSuper, payload.Email, payload.Name, "administrador", ""); err != nil {
 			log.Println("AdminRegisterHandler upsert error:", err)
-			http.Error(w, "failed to create administrador", http.StatusInternalServerError)
+			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo crear la cuenta administrativa.")
 			return
 		}
 
-		// si enviaron contraseña, guardarla (hash+salt)
-		if payload.Password != "" {
-			hash, salt, err := generateEmpresaUsuarioPasswordHash(payload.Password)
-			if err != nil {
-				log.Println("AdminRegisterHandler hash error:", err)
-			} else {
-				if err := dbpkg.SetAdministradorPassword(dbSuper, payload.Email, hash, salt); err != nil {
-					log.Println("AdminRegisterHandler set password error:", err)
-				}
-			}
+		admin, err := dbpkg.GetAdminByEmailFull(dbSuper, payload.Email)
+		if err != nil || admin == nil {
+			log.Println("AdminRegisterHandler reload admin error:", err)
+			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo completar el registro de la cuenta.")
+			return
+		}
+		if err := dbpkg.UpdateAdministradorProfile(dbSuper, admin.ID, payload.Name, payload.Telefono, payload.Email); err != nil {
+			log.Println("AdminRegisterHandler update profile error:", err)
+			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo guardar la información de contacto.")
+			return
+		}
+
+		hash, salt, err := generateEmpresaUsuarioPasswordHash(payload.Password)
+		if err != nil {
+			log.Println("AdminRegisterHandler hash error:", err)
+			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo proteger la contraseña del administrador.")
+			return
+		}
+		if err := dbpkg.SetAdministradorPassword(dbSuper, payload.Email, hash, salt); err != nil {
+			log.Println("AdminRegisterHandler set password error:", err)
+			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo guardar la contraseña del administrador.")
+			return
 		}
 
 		// generar token confirmación
 		token, expira, nerr := newEmailConfirmationTokenAndExpiration()
 		if nerr != nil {
 			log.Println("AdminRegisterHandler token gen error:", nerr)
+			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo generar el enlace de confirmación.")
+			return
 		} else {
 			if err := dbpkg.SetAdministradorConfirmToken(dbSuper, payload.Email, token, expira); err != nil {
 				log.Println("AdminRegisterHandler set confirm token error:", err)
+				writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo activar la confirmación por correo.")
+				return
 			}
 		}
 
 		// enviar correo de confirmación
 		if _, err := sendAdminConfirmationEmail(r, dbSuper, payload.Email, payload.Name, token); err != nil {
 			log.Println("AdminRegisterHandler send email error:", err)
-			// no fallamos la creación por error de email; devolver info
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "email_sent": false, "error": err.Error()})
+			writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{
+				"ok":         true,
+				"email_sent": false,
+				"message":    "La cuenta fue creada, pero no se pudo enviar el correo de confirmación. Revisa la configuración SMTP.",
+				"error":      err.Error(),
+			})
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "email_sent": true})
+		writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{
+			"ok":         true,
+			"email_sent": true,
+			"message":    "Registro exitoso. Revisa tu correo para confirmar la cuenta antes de iniciar sesión.",
+		})
 	}
 }
 
@@ -125,7 +190,7 @@ func ConfirmarAdminHandler(dbSuper *sql.DB) http.HandlerFunc {
 func AdminLoginHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
-			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			writeAdminAuthError(w, http.StatusMethodNotAllowed, "Método no permitido.")
 			return
 		}
 		var payload struct{
@@ -133,46 +198,45 @@ func AdminLoginHandler(dbSuper *sql.DB) http.HandlerFunc {
 			Password string `json:"password"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-			http.Error(w, "invalid payload", http.StatusBadRequest)
+			writeAdminAuthError(w, http.StatusBadRequest, "El formulario de acceso es inválido.")
 			return
 		}
 		payload.Email = strings.TrimSpace(payload.Email)
 		payload.Password = strings.TrimSpace(payload.Password)
 		if payload.Email == "" || payload.Password == "" {
-			http.Error(w, "email and password required", http.StatusBadRequest)
+			writeAdminAuthError(w, http.StatusBadRequest, "Debes ingresar correo y contraseña.")
 			return
 		}
 		admin, err := dbpkg.GetAdminByEmailFull(dbSuper, payload.Email)
 		if err != nil {
 			log.Println("AdminLoginHandler get admin error:", err)
-			http.Error(w, "invalid credentials", http.StatusUnauthorized)
+			writeAdminAuthError(w, http.StatusUnauthorized, "Credenciales inválidas.")
 			return
 		}
 		if admin.EmailConfirmado != 1 {
-			http.Error(w, "email not confirmed", http.StatusForbidden)
+			writeAdminAuthError(w, http.StatusForbidden, "Debes confirmar tu correo antes de iniciar sesión.")
 			return
 		}
 		if admin.PasswordSet != 1 || strings.TrimSpace(admin.PasswordHash) == "" {
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "password_setup_required": true})
+			writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{"ok": false, "password_setup_required": true, "message": "Tu cuenta todavía no tiene una contraseña activa."})
 			return
 		}
 		// verificar contraseña
 		expected := hashEmpresaUsuarioPassword(payload.Password, admin.PasswordSalt)
 		if expected != strings.TrimSpace(admin.PasswordHash) {
-			http.Error(w, "invalid credentials", http.StatusUnauthorized)
+			writeAdminAuthError(w, http.StatusUnauthorized, "Credenciales inválidas.")
 			return
 		}
 		// crear sesión
 		token, terr := utils.GenerateSecureToken(32)
 		if terr != nil {
 			log.Println("AdminLoginHandler token gen error:", terr)
-			http.Error(w, "internal error", http.StatusInternalServerError)
+			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo crear la sesión administrativa.")
 			return
 		}
 		if err := dbpkg.CreateSession(dbSuper, admin.Email, r.RemoteAddr, r.UserAgent(), token); err != nil {
 			log.Println("AdminLoginHandler create session error:", err)
-			http.Error(w, "internal error", http.StatusInternalServerError)
+			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo guardar la sesión administrativa.")
 			return
 		}
 		cookie := &http.Cookie{
@@ -191,8 +255,7 @@ func AdminLoginHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if strings.ToLower(strings.TrimSpace(admin.Role)) == "super_administrador" {
 			redirectURL = "/super_administrador.html"
 		}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "redirect_url": redirectURL})
+		writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "redirect_url": redirectURL})
 	}
 }
 
@@ -200,36 +263,51 @@ func AdminLoginHandler(dbSuper *sql.DB) http.HandlerFunc {
 func AdminRequestPasswordRecoveryHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
-			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			writeAdminAuthError(w, http.StatusMethodNotAllowed, "Método no permitido.")
 			return
 		}
 		var payload struct{ Email string `json:"email"` }
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-			http.Error(w, "invalid payload", http.StatusBadRequest)
+			writeAdminAuthError(w, http.StatusBadRequest, "La solicitud de recuperación es inválida.")
 			return
 		}
 		payload.Email = strings.TrimSpace(payload.Email)
 		if payload.Email == "" {
-			http.Error(w, "email required", http.StatusBadRequest)
+			writeAdminAuthError(w, http.StatusBadRequest, "Debes indicar el correo de la cuenta.")
+			return
+		}
+		admin, err := dbpkg.GetAdminByEmailFull(dbSuper, payload.Email)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "email_sent": false, "message": "Si la cuenta existe y ya fue confirmada, enviaremos instrucciones para restablecer la contraseña."})
+				return
+			}
+			log.Println("AdminRequestPasswordRecoveryHandler get admin error:", err)
+			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo validar la cuenta administrativa.")
+			return
+		}
+		if admin == nil || admin.EmailConfirmado != 1 {
+			writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "email_sent": false, "message": "Si la cuenta existe y ya fue confirmada, enviaremos instrucciones para restablecer la contraseña."})
 			return
 		}
 		// generar token
 		token, expira, nerr := newPasswordRecoveryTokenAndExpiration()
 		if nerr != nil {
 			log.Println("AdminRequestPasswordRecoveryHandler token gen error:", nerr)
-		} else {
-			if err := dbpkg.SetAdministradorPasswordResetToken(dbSuper, payload.Email, token, expira); err != nil {
-				log.Println("AdminRequestPasswordRecoveryHandler set token error:", err)
-			}
+			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo generar el token de recuperación.")
+			return
+		}
+		if err := dbpkg.SetAdministradorPasswordResetToken(dbSuper, payload.Email, token, expira); err != nil {
+			log.Println("AdminRequestPasswordRecoveryHandler set token error:", err)
+			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo iniciar la recuperación de contraseña.")
+			return
 		}
 		if _, err := sendAdminPasswordRecoveryEmail(r, dbSuper, payload.Email, "", token); err != nil {
 			log.Println("AdminRequestPasswordRecoveryHandler send mail error:", err)
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "email_sent": false, "error": err.Error()})
+			writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "email_sent": false, "message": "No se pudo enviar el correo de recuperación. Revisa la configuración SMTP.", "error": err.Error()})
 			return
 		}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "email_sent": true})
+		writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "email_sent": true, "message": "Si la cuenta existe y ya fue confirmada, enviaremos instrucciones para restablecer la contraseña."})
 	}
 }
 
@@ -237,7 +315,7 @@ func AdminRequestPasswordRecoveryHandler(dbSuper *sql.DB) http.HandlerFunc {
 func AdminResetPasswordHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
-			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			writeAdminAuthError(w, http.StatusMethodNotAllowed, "Método no permitido.")
 			return
 		}
 		var payload struct{
@@ -246,31 +324,35 @@ func AdminResetPasswordHandler(dbSuper *sql.DB) http.HandlerFunc {
 			Password string `json:"password"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-			http.Error(w, "invalid payload", http.StatusBadRequest)
+			writeAdminAuthError(w, http.StatusBadRequest, "La solicitud para restablecer la contraseña es inválida.")
 			return
 		}
 		payload.Email = strings.TrimSpace(payload.Email)
 		payload.Token = strings.TrimSpace(payload.Token)
 		payload.Password = strings.TrimSpace(payload.Password)
 		if payload.Email == "" || payload.Token == "" || payload.Password == "" {
-			http.Error(w, "email, token and password required", http.StatusBadRequest)
+			writeAdminAuthError(w, http.StatusBadRequest, "Debes indicar correo, token y nueva contraseña.")
+			return
+		}
+		if len(payload.Password) < minAdminPasswordLength {
+			writeAdminAuthError(w, http.StatusBadRequest, "La nueva contraseña debe tener mínimo 8 caracteres.")
 			return
 		}
 		admin, err := dbpkg.GetAdminByEmailFull(dbSuper, payload.Email)
 		if err != nil {
 			log.Println("AdminResetPasswordHandler get admin error:", err)
-			http.Error(w, "invalid token or email", http.StatusBadRequest)
+			writeAdminAuthError(w, http.StatusBadRequest, "El correo o el token de recuperación no son válidos.")
 			return
 		}
 		if strings.TrimSpace(admin.PasswordResetToken) == "" || strings.TrimSpace(admin.PasswordResetToken) != payload.Token {
-			http.Error(w, "invalid token", http.StatusBadRequest)
+			writeAdminAuthError(w, http.StatusBadRequest, "El token de recuperación no es válido.")
 			return
 		}
 		// verificar expiración
 		if admin.PasswordResetExpira != "" {
 			if t, ok := parseEmpresaUsuarioDateTime(admin.PasswordResetExpira); ok {
 				if time.Now().After(t) {
-					http.Error(w, "token expirado", http.StatusBadRequest)
+					writeAdminAuthError(w, http.StatusBadRequest, "El token de recuperación ya expiró.")
 					return
 				}
 			}
@@ -279,12 +361,12 @@ func AdminResetPasswordHandler(dbSuper *sql.DB) http.HandlerFunc {
 		hash, salt, err := generateEmpresaUsuarioPasswordHash(payload.Password)
 		if err != nil {
 			log.Println("AdminResetPasswordHandler hash error:", err)
-			http.Error(w, "internal error", http.StatusInternalServerError)
+			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo proteger la nueva contraseña.")
 			return
 		}
 		if err := dbpkg.SetAdministradorPassword(dbSuper, payload.Email, hash, salt); err != nil {
 			log.Println("AdminResetPasswordHandler set password error:", err)
-			http.Error(w, "internal error", http.StatusInternalServerError)
+			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo guardar la nueva contraseña.")
 			return
 		}
 		// limpiar token
@@ -295,12 +377,12 @@ func AdminResetPasswordHandler(dbSuper *sql.DB) http.HandlerFunc {
 		tokenSession, terr := utils.GenerateSecureToken(32)
 		if terr != nil {
 			log.Println("AdminResetPasswordHandler token gen error:", terr)
-			http.Error(w, "internal error", http.StatusInternalServerError)
+			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo crear la nueva sesión administrativa.")
 			return
 		}
 		if err := dbpkg.CreateSession(dbSuper, admin.Email, r.RemoteAddr, r.UserAgent(), tokenSession); err != nil {
 			log.Println("AdminResetPasswordHandler create session error:", err)
-			http.Error(w, "internal error", http.StatusInternalServerError)
+			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo guardar la nueva sesión administrativa.")
 			return
 		}
 		cookie := &http.Cookie{
@@ -319,8 +401,7 @@ func AdminResetPasswordHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if strings.ToLower(strings.TrimSpace(admin.Role)) == "super_administrador" {
 			redirectURL = "/super_administrador.html"
 		}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "redirect_url": redirectURL})
+		writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "redirect_url": redirectURL, "message": "Contraseña restablecida correctamente."})
 	}
 }
 
@@ -396,7 +477,7 @@ func sendAdminConfirmationEmail(r *http.Request, dbSuper *sql.DB, toEmail, toNam
 // sendAdminPasswordRecoveryEmail envía token de recuperación para administrador.
 func sendAdminPasswordRecoveryEmail(r *http.Request, dbSuper *sql.DB, toEmail, toName, token string) (string, error) {
 	baseURL := resolveBaseURLForConfirmation(r, dbSuper)
-	resetHintURL := strings.TrimRight(baseURL, "/") + "/login.html?email=" + url.QueryEscape(toEmail) + "&token_recuperacion=" + url.QueryEscape(token)
+	resetHintURL := strings.TrimRight(baseURL, "/") + "/login.html?view=reset&email=" + url.QueryEscape(toEmail) + "&token_recuperacion=" + url.QueryEscape(token)
 	safeName := strings.TrimSpace(toName)
 	if safeName == "" { safeName = "administrador" }
 	subject := "Recuperacion de contraseña - Powerful Control System"

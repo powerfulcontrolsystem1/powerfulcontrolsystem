@@ -54,3 +54,27 @@ func TestPostgresPerformanceHandlerDialectGuard(t *testing.T) {
 		t.Fatalf("mensaje de error inesperado: %s", errMsg)
 	}
 }
+
+func TestPostgresPerformanceHandlerUnknownAction(t *testing.T) {
+	t.Setenv("DB_DIALECT", "postgres")
+	dbEmpresas := openTestSQLite(t, "empresas_unknown_action.db")
+	dbSuper := openTestSQLite(t, "super_unknown_action.db")
+
+	req := httptest.NewRequest(http.MethodGet, "/super/api/postgres/performance?action=desconocida", nil)
+	rr := httptest.NewRecorder()
+
+	PostgresPerformanceHandler(dbEmpresas, dbSuper).ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("status inesperado: got=%d want=%d", rr.Code, http.StatusBadRequest)
+	}
+}
+
+func TestHumanizeBytesBinary(t *testing.T) {
+	if got := humanizeBytesBinary(0); got != "0 B" {
+		t.Fatalf("humanizeBytesBinary(0) = %q", got)
+	}
+	if got := humanizeBytesBinary(1048576); got != "1.00 MB" {
+		t.Fatalf("humanizeBytesBinary(1048576) = %q", got)
+	}
+}

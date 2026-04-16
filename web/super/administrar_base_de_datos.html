@@ -112,6 +112,7 @@
     }
     .error-banner.show { display: block; }
     .muted { color: var(--muted); }
+    .inline-status { color: var(--muted); font-size: 0.88rem; font-weight: 700; }
     @media (max-width: 720px) {
       .hero-card .toolbar { justify-content: stretch; }
       .hero-card .toolbar .btn { flex: 1 1 auto; justify-content: center; }
@@ -233,6 +234,38 @@
 
     <section class="card">
       <div class="page-header">
+        <div>
+          <h2>Espacio consumido por empresa</h2>
+          <p class="muted">Carga una estimacion del espacio usado por cada empresa dentro de la base operativa compartida y ordénala de mayor a menor.</p>
+        </div>
+        <div class="toolbar">
+          <button id="loadEmpresasStorageBtn" class="btn add">Cargar Empresas</button>
+        </div>
+      </div>
+      <div id="empresaStorageStatus" class="inline-status">Pendiente de cargar.</div>
+      <div class="table-wrap" style="margin-top:10px;">
+        <table class="table table-wide" id="empresaStorageTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Empresa</th>
+              <th>NIT</th>
+              <th>Estado</th>
+              <th>Tamano total</th>
+              <th>MB</th>
+              <th>Filas estimadas</th>
+              <th>Tablas con datos</th>
+              <th>Tabla mayor</th>
+              <th>Tamano tabla mayor</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="page-header">
         <h2>Consultas activas mas largas</h2>
       </div>
       <div class="table-wrap">
@@ -262,6 +295,7 @@
 
   <script>
     const API_URL = '/super/api/postgres/performance'
+    const EMPRESAS_STORAGE_API_URL = '/super/api/postgres/performance?action=empresas_storage'
     const HISTORY_MAX_POINTS = 72
     const AUTO_REFRESH_MS = 15000
     let autoRefreshEnabled = true
@@ -462,6 +496,43 @@
       })
     }
 
+    function renderEmpresaStorageTable(payload) {
+      const tbody = document.querySelector('#empresaStorageTable tbody')
+      const status = document.getElementById('empresaStorageStatus')
+      tbody.innerHTML = ''
+
+      const rows = Array.isArray(payload && payload.empresas) ? payload.empresas : []
+      const scanned = Number(payload && payload.tables_scanned) || 0
+      const totalEmpresas = Number(payload && payload.total_empresas) || rows.length
+      const totalPretty = payload && payload.total_pretty ? payload.total_pretty : formatBytes(payload && payload.total_bytes)
+
+      status.textContent = 'Empresas cargadas: ' + formatNumber(totalEmpresas) + ' | Tablas escaneadas: ' + formatNumber(scanned) + ' | Total estimado: ' + totalPretty
+
+      if (!rows.length) {
+        const tr = document.createElement('tr')
+        tr.innerHTML = '<td colspan="10">No hay empresas para mostrar.</td>'
+        tbody.appendChild(tr)
+        return
+      }
+
+      rows.forEach(function (item, index) {
+        const tr = document.createElement('tr')
+        tr.innerHTML = [
+          '<td>' + formatNumber(index + 1) + '</td>',
+          '<td>' + escapeHtml(item.nombre || ('Empresa ' + item.empresa_id)) + '</td>',
+          '<td>' + escapeHtml(item.nit || '-') + '</td>',
+          '<td>' + escapeHtml(item.estado || '-') + '</td>',
+          '<td>' + escapeHtml(item.total_pretty || formatBytes(item.total_bytes)) + '</td>',
+          '<td>' + formatNumber(Number(item.total_mb || 0).toFixed ? Number(item.total_mb || 0).toFixed(2) : item.total_mb) + '</td>',
+          '<td>' + formatNumber(item.rows_count) + '</td>',
+          '<td>' + formatNumber(item.tables_with_data) + '</td>',
+          '<td>' + escapeHtml(item.largest_table || '-') + '</td>',
+          '<td>' + escapeHtml(item.largest_table_pretty || formatBytes(item.largest_table_bytes)) + '</td>'
+        ].join('')
+        tbody.appendChild(tr)
+      })
+    }
+
     function updateErrorBanner(message) {
       const banner = document.getElementById('errorBanner')
       if (!message) {
@@ -574,6 +645,28 @@
       }
     }
 
+    async function loadEmpresasStorage() {
+      const button = document.getElementById('loadEmpresasStorageBtn')
+      const status = document.getElementById('empresaStorageStatus')
+      button.disabled = true
+      button.textContent = 'Cargando...'
+      status.textContent = 'Calculando tamano estimado por empresa...'
+      try {
+        const response = await fetch(EMPRESAS_STORAGE_API_URL)
+        const payload = await response.json().catch(function () { return null })
+        if (!response.ok || !payload || payload.ok === false) {
+          const errText = payload && payload.error ? payload.error : ('Error HTTP ' + response.status)
+          throw new Error(errText)
+        }
+        renderEmpresaStorageTable(payload)
+      } catch (err) {
+        status.textContent = 'No fue posible cargar el tamano por empresa: ' + (err && err.message ? err.message : err)
+      } finally {
+        button.disabled = false
+        button.textContent = 'Cargar Empresas'
+      }
+    }
+
     function setAutoRefresh(enabled) {
       autoRefreshEnabled = !!enabled
       const btn = document.getElementById('toggleAutoBtn')
@@ -611,6 +704,7 @@
       initCharts()
 
       document.getElementById('refreshBtn').addEventListener('click', loadPerformance)
+      document.getElementById('loadEmpresasStorageBtn').addEventListener('click', loadEmpresasStorage)
       document.getElementById('toggleAutoBtn').addEventListener('click', function () {
         setAutoRefresh(!autoRefreshEnabled)
       })

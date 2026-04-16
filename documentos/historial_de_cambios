@@ -1,5 +1,70 @@
  - Historial de cambios
 
+ - 2026-04-16: Manual de instalacion actualizado con Epayco respuesta, confirmacion y formulario exacto
+     - Archivos modificados:
+         - documentos/manual_de_instalacion.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se agrega al manual de instalacion el paso para registrar en Epayco la URL publica de respuesta `/epayco/respuesta.html`, la URL de confirmacion `/epayco/webhook` y los valores exactos del formulario, incluyendo flujo esperado y verificacion posterior.
+
+ - 2026-04-16: Epayco con pagina publica fija de respuesta
+     - Archivos creados:
+         - web/epayco/respuesta.html
+     - Archivos modificados:
+         - backend/handlers/payments_handlers.go
+         - backend/handlers/payments_handlers_test.go
+         - documentos/descripcion_del_proyecto
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se crea una pagina publica fija de retorno para Epayco en `/epayco/respuesta.html`, pensada para configurarla directamente en el panel de la pasarela. El checkout de licencias ya la usa como `response`, mientras `/epayco/webhook` se conserva como `confirmation` para recibir notificaciones del pago.
+     - Verificacion tecnica:
+         - `go test -work ./handlers -run "TestEpaycoCreateTransactionHandlerUsesConfiguredPublicBaseURLAndKeys|TestEpaycoCreateTransactionHandlerAllowsCheckoutWithoutPrivateKey|TestEpaycoTransactionStatusHandlerPreservesPendingOnGenericValidationError|TestResolvePaymentBaseURL" -count=1`.
+
+ - 2026-04-16: Ajuste visual de checkout y restauracion de tarjetas de empresas
+     - Archivos modificados:
+         - web/pagar_licencia.html
+         - web/js/seleccionar_empresa.js
+         - web/estilos.css
+         - documentos/descripcion_del_proyecto
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se hace mas visible la pasarela de pago disponible en `pagar_licencia.html`, incluyendo el logo de Epayco y una preseleccion explicita cuando solo existe un metodo activo. Ademas, `seleccionar_empresa.html` recupera el estilo compacto anterior de tarjetas, centrado en nombre, observaciones y estado de licencia.
+
+ - 2026-04-16: Login administrativo con registro separado y recuperación guiada
+     - Archivos creados:
+         - web/registrar_nuevo_usuario_administrador.html
+         - web/js/registrar_nuevo_usuario_administrador.js
+         - backend/handlers/auth_admin_handlers_test.go
+     - Archivos modificados:
+         - backend/handlers/auth_admin_handlers.go
+         - backend/utils/utils.go
+         - web/login.html
+         - web/js/login.js
+         - web/estilos.css
+         - web/ayuda/login_administradores.html
+         - backend/handlers/auth_users_carritos_test.go
+         - documentos/descripcion_del_proyecto
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se separa el registro administrativo del login principal. `login.html` deja de mezclar alta y acceso, centra el botón `Iniciar por correo`, muestra debajo `Registrarse` y `¿Olvidó su contraseña?`, y reemplaza los `prompt()` del reset por formularios reales. El backend corrige el enlace público de confirmación (`/auth/confirmar_admin`), exige `nombre`, `telefono` y contraseña segura en el alta, evita sobrescribir cuentas confirmadas y agrega pruebas automáticas del flujo por correo y del acceso Google ya existente.
+     - Verificacion tecnica:
+         - `go test -work ./handlers -run "Test(Admin|AuthMiddlewareAllowsPublicPortalPagesAssetsAndHomeCardsAPI|HandleGoogleLogin|E2E_AcceptContractCreatesSession)" -count=1`.
+         - `go test -work ./ ./auth ./db ./handlers ./metrics ./utils -run "^$" -count=1`.
+         - Diagnóstico del editor sin errores en `backend/handlers/auth_admin_handlers.go`, `backend/utils/utils.go`, `web/login.html`, `web/js/login.js`, `web/registrar_nuevo_usuario_administrador.html`, `web/js/registrar_nuevo_usuario_administrador.js`, `web/estilos.css` y `web/ayuda/login_administradores.html`.
+
  - 2026-04-16: Ajustes responsive - menú apilado en móvil y mejora de login admin
      - Archivos modificados:
          - web/estilos.css (reglas móviles para menú apilado)

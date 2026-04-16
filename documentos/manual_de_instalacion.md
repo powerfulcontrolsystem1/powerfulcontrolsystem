@@ -224,11 +224,64 @@ En sandbox se documentaron como referencia estos telefonos:
 - El celular Nequi debe tener 10 digitos e iniciar por `3`.
 - No mezclar llaves de sandbox con entorno productivo.
 
-## 8) Confirmacion de correo para usuarios de empresa con Gmail SMTP
+## 8) Epayco: URL de respuesta y confirmacion
+
+Cuando configures Epayco para el checkout de licencias debes registrar tanto la pagina publica de respuesta como la URL de confirmacion del webhook.
+
+### 8.1 URLs que debes registrar en Epayco
+
+Produccion:
+
+- URL de respuesta: `https://powerfulcontrolsystem.com/epayco/respuesta.html`
+- URL de confirmacion: `https://powerfulcontrolsystem.com/epayco/webhook`
+
+### 8.2 Valores exactos del formulario de Epayco
+
+En el formulario `URL Respuesta y Confirmacion` de Epayco registra estos valores:
+
+- `¿URL de Respuesta?` -> `Si`
+- `URL de respuesta` -> `https://powerfulcontrolsystem.com/epayco/respuesta.html`
+- `¿URL de Confirmacion?` -> `Si`
+- `Metodo de consulta` -> `POST`
+- `URL de Confirmacion` -> `https://powerfulcontrolsystem.com/epayco/webhook`
+- `Estados a confirmar` -> `Todos`
+- `Numero Reintentos` -> `5`
+- `Hora limite para permitir reintentos` -> `23:59`
+- `Personalizar codigo de respuesta` -> `Si`
+- `Respuesta` -> `200`
+
+Si el panel de Epayco no permite `23:59`, usa la hora mas alta disponible dentro del mismo dia.
+
+Importante:
+
+- La URL de respuesta no activa la licencia por si sola; solo recibe la vuelta de Epayco y redirige a `pagar_licencia.html` para que el sistema consulte el estado real del pago.
+- La URL de confirmacion si debe permanecer apuntando al backend porque recibe la notificacion servidor a servidor de la pasarela.
+- No registres `localhost`, `127.0.0.1` ni URLs temporales de ngrok en produccion.
+
+### 8.3 Flujo esperado
+
+1. El usuario inicia el pago desde `pagar_licencia.html`.
+2. El backend crea el checkout de Epayco con:
+  - `response = https://powerfulcontrolsystem.com/epayco/respuesta.html`
+  - `confirmation = https://powerfulcontrolsystem.com/epayco/webhook`
+3. Epayco devuelve al navegador a `/epayco/respuesta.html`.
+4. Esa pagina redirige a `/pagar_licencia.html` con el contexto del pago.
+5. El frontend y el backend consultan el estado real antes de marcar la licencia como activa.
+
+### 8.4 Verificacion recomendada despues de configurar Epayco
+
+1. Abre `https://powerfulcontrolsystem.com/pagar_licencia.html` con una licencia lista para pago.
+2. Inicia un checkout con Epayco.
+3. Verifica que, al volver desde la pasarela, la navegacion pase por:
+  - `https://powerfulcontrolsystem.com/epayco/respuesta.html`
+  - y luego por `https://powerfulcontrolsystem.com/pagar_licencia.html`
+4. Confirma que el sistema muestre el resultado final del pago y no solo el retorno visual de la pasarela.
+
+## 9) Confirmacion de correo para usuarios de empresa con Gmail SMTP
 
 Cuando un administrador crea un usuario de empresa, el sistema puede enviar un enlace de confirmacion por correo.
 
-### 8.1 Configuracion en Gmail
+### 9.1 Configuracion en Gmail
 
 1. Usa una cuenta Gmail remitente.
 2. Activa verificacion en dos pasos.
@@ -244,7 +297,7 @@ Campos recomendados:
 - SMTP Port: `587`
 - URL base de confirmacion: `http://localhost:8080` en local o tu dominio HTTPS en produccion.
 
-### 8.2 Flujo de confirmacion
+### 9.2 Flujo de confirmacion
 
 1. Crear usuario desde `Administrar empresa -> Usuarios`.
 2. El backend envia un enlace:
@@ -253,7 +306,7 @@ Campos recomendados:
 
 3. El usuario abre el enlace y el sistema marca el correo como confirmado.
 
-### 8.3 Endpoints relacionados
+### 9.3 Endpoints relacionados
 
 - `GET /super/api/config/gmail`
 - `PUT /super/api/config/gmail`

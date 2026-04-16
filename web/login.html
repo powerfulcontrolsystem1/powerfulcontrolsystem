@@ -17,6 +17,7 @@
     <div class="container">
       <div class="card">
         <h2>Iniciar sesión</h2>
+        <p class="login-subtitle">Accede con Google o con tu correo y contraseña administrativa.</p>
         <a class="google-btn" href="/auth/google/login" aria-label="Iniciar sesión con Google">
           <!-- Google G logo (inline SVG) -->
           <svg viewBox="0 0 533.5 544.3" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -37,31 +38,73 @@
           <div class="form-row">
             <div class="form-col">
               <label class="form-label" for="adminEmail">Correo</label>
-              <input id="adminEmail" class="form-input" type="email" placeholder="tu@correo.com" required>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-col">
-              <label class="form-label" for="adminName">Nombre (para registro)</label>
-              <input id="adminName" class="form-input" type="text" placeholder="Tu nombre (opcional)">
+              <input id="adminEmail" class="form-input" type="email" autocomplete="email" placeholder="tu@correo.com" required>
             </div>
           </div>
           <div class="form-row">
             <div class="form-col">
               <label class="form-label" for="adminPassword">Contraseña</label>
-              <input id="adminPassword" class="form-input" type="password" placeholder="Contraseña" required>
+              <input id="adminPassword" class="form-input" type="password" autocomplete="current-password" placeholder="Contraseña" required>
             </div>
           </div>
-          <div class="form-actions" style="justify-content:space-between;align-items:center">
-            <button id="emailLoginBtn" class="btn" type="button">Iniciar por correo</button>
-            <button id="registerBtn" class="btn secondary" type="button">Registrarse</button>
+          <div class="form-actions login-form-actions">
+            <button id="emailLoginBtn" class="btn login-email-submit" type="submit">Iniciar por correo</button>
           </div>
-          <div class="links" style="margin-top:10px;text-align:right">
+          <div class="login-inline-links">
+            <a href="/registrar_nuevo_usuario_administrador.html" id="registerLink">Registrarse</a>
             <a href="#" id="forgotLink">¿Olvidó su contraseña?</a>
           </div>
-          <div id="emailLoginMessage" class="message" style="display:none"></div>
+          <div id="emailLoginMessage" class="form-help auth-message" style="display:none"></div>
         </form>
-        <p class="footer">Si tienes problemas, contacta al administrador.</p>
+        <form class="form auth-alt-form" id="forgotPasswordForm" autocomplete="on" novalidate style="display:none">
+          <h3>Recuperar contraseña</h3>
+          <p class="form-help">Ingresa tu correo y te enviaremos instrucciones para restablecer el acceso.</p>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="forgotEmail">Correo</label>
+              <input id="forgotEmail" class="form-input" type="email" autocomplete="email" placeholder="tu@correo.com" required>
+            </div>
+          </div>
+          <div class="form-actions auth-alt-actions">
+            <button id="forgotPasswordBtn" class="btn" type="submit">Enviar recuperación</button>
+            <button id="backToLoginLink" class="btn secondary" type="button">Volver al login</button>
+          </div>
+          <div id="forgotPasswordMessage" class="form-help auth-message" style="display:none"></div>
+        </form>
+        <form class="form auth-alt-form" id="resetPasswordForm" autocomplete="on" novalidate style="display:none">
+          <h3>Restablecer contraseña</h3>
+          <p class="form-help">Usa el token recibido por correo para definir una nueva contraseña segura.</p>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="resetEmail">Correo</label>
+              <input id="resetEmail" class="form-input" type="email" autocomplete="email" readonly>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="resetToken">Token de recuperación</label>
+              <input id="resetToken" class="form-input" type="text" autocomplete="one-time-code" placeholder="Token enviado a tu correo" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="resetPassword">Nueva contraseña</label>
+              <input id="resetPassword" class="form-input" type="password" autocomplete="new-password" placeholder="Mínimo 8 caracteres" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="resetPasswordConfirm">Confirmar contraseña</label>
+              <input id="resetPasswordConfirm" class="form-input" type="password" autocomplete="new-password" placeholder="Repite tu nueva contraseña" required>
+            </div>
+          </div>
+          <div class="form-actions auth-alt-actions">
+            <button id="resetPasswordBtn" class="btn" type="submit">Restablecer contraseña</button>
+            <button id="backFromResetLink" class="btn secondary" type="button">Volver al login</button>
+          </div>
+          <div id="resetPasswordMessage" class="form-help auth-message" style="display:none"></div>
+        </form>
+        <p class="footer login-card-note">Si tienes problemas con el acceso, revisa la ayuda o contacta al soporte.</p>
       </div>
     </div>
     </div>

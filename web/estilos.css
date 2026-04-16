@@ -225,6 +225,17 @@ ul{padding-left:18px}
 .login-page .card{text-align:center;padding:28px}
 .login-page h2{font-size:1.4rem;margin-bottom:6px}
 .login-page p{margin-bottom:18px}
+.login-page .login-subtitle{margin:0 0 16px 0;color:var(--muted)}
+.email-login,.auth-alt-form{text-align:left}
+.login-form-actions{justify-content:center}
+.login-email-submit{min-width:220px}
+.login-inline-links{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px;flex-wrap:wrap}
+.login-inline-links a{color:var(--accent);font-weight:700;text-decoration:none}
+.login-inline-links a:hover{text-decoration:underline}
+.auth-alt-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.auth-message{margin-top:12px}
+.login-card-note{margin-top:14px;color:var(--muted);font-size:.94rem}
+.login-page input[readonly]{background:rgba(255,255,255,0.06);opacity:.85}
 
 /* Título profesional para el login de administradores */
 .login-page .login-header{width:100%;max-width:420px;margin:0 auto 12px auto;text-align:center}
@@ -238,6 +249,7 @@ ul{padding-left:18px}
 
 /* Ajustes responsivos */
 @media (max-width:420px){.login-page .card{padding:18px}.google-btn{width:100%;justify-content:center}}
+@media (max-width:420px){.login-email-submit{width:100%}.login-inline-links,.auth-alt-actions{flex-direction:column;align-items:stretch}.login-inline-links a{text-align:center}.auth-alt-actions .btn{width:100%}}
 
 /* Recordar cuenta - login */
 .remember-row{margin-top:12px;margin-bottom:6px;text-align:left}
@@ -1452,6 +1464,15 @@ html.theme-light .floating-menu #themeToggle{color:var(--accent-2)}
 }
 .payment-method-card .method-name{display:block;font-weight:800;margin-bottom:4px}
 .payment-method-card .method-desc{display:block;font-size:.88rem;opacity:.95}
+.payment-method-logo{
+  display:block;
+  width:140px;
+  max-width:100%;
+  height:auto;
+  margin:4px 0 8px;
+  object-fit:contain;
+  filter:drop-shadow(0 8px 18px rgba(8,18,38,0.22));
+}
 .payment-method-card.payment-method-mp{
   border-color:#2f78cf;
   background:linear-gradient(135deg, rgba(9,41,86,.95), rgba(17,103,177,.85));
@@ -1510,6 +1531,18 @@ html.theme-light .floating-menu #themeToggle{color:var(--accent-2)}
   color:#fff5eb;
 }
 .method-panel-heading{font-weight:800;margin-bottom:8px}
+.payment-method-heading-with-logo{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.payment-method-panel-logo{
+  width:120px;
+  max-width:42%;
+  height:auto;
+  object-fit:contain;
+  filter:drop-shadow(0 8px 16px rgba(8,18,38,0.22));
+}
 .payment-method-hint{margin-bottom:10px}
 .payment-method-check{display:block;margin-bottom:8px}
 .payment-method-links{margin-bottom:8px}
@@ -1529,6 +1562,11 @@ html.theme-light .floating-menu #themeToggle{color:var(--accent-2)}
 .payment-btn-wompi{width:100%;background:#7ce0a6;color:#0f3521;border:none}
 .payment-btn-nequi{width:100%;background:#7ce0a6;color:#0f3521;border:none}
 .payment-btn-manual{width:100%;background:#ffcc80;color:#4a2506;border:none}
+
+@media (max-width:700px){
+  .payment-method-logo{width:116px}
+  .payment-method-panel-logo{width:96px;max-width:46%}
+}
 
 /* Subpáginas internas del módulo administrar_empresa */
 .empresa-subpage{

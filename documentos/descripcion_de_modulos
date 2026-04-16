@@ -6,6 +6,26 @@ Gobernanza obligatoria (agente_go):
 - En el mismo cambio, tambien debe actualizarse `documentos/matriz_roles_permisos_pos_multiempresa.md` para reflejar permisos por rol/modulo/accion y visibilidad de paginas afectadas.
 - La actualizacion modular debe mantener trazabilidad en `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios` y `CHANGELOG.md`.
 
+Actualizacion 2026-04-16 (checkout de licencias: respuesta fija de Epayco):
+- El modulo `licencias y pasarelas de pago` incorpora una pagina publica estable en `/epayco/respuesta.html` para pegarla directamente en el panel de Epayco como URL de respuesta.
+- `backend/handlers/payments_handlers.go` genera esa ruta como `response` del checkout y conserva `/epayco/webhook` como `confirmation`, de modo que el flujo externo y el flujo interno del sistema apunten a los mismos endpoints canonicos.
+- `web/epayco/respuesta.html` no procesa el pago por si sola: normaliza parametros y reenvia al resumen de licencia para que el backend confirme el estado real antes de activar la licencia.
+- Impacto de permisos: sin cambios de rol; la respuesta y confirmacion de Epayco permanecen publicas como parte del checkout externo.
+
+Actualizacion 2026-04-16 (checkout publico y seleccion de empresa: ajustes visuales solicitados):
+- El submodulo `checkout publico de licencias` muestra de forma mas clara la pasarela predeterminada: si solo una esta activa, queda seleccionada automaticamente y con rotulo explicito de metodo unico disponible.
+- `web/pagar_licencia.html` integra el logo de Epayco dentro del selector y del panel de pago para que la decision visual coincida con la pasarela realmente activa en configuracion avanzada.
+- El submodulo `seleccion de empresa` vuelve al estilo compacto anterior en `web/js/seleccionar_empresa.js`, centrado en nombre, observaciones y estado de licencia, manteniendo el boton de descarga cuando la empresa aun no tiene licencia.
+- Impacto de permisos: sin cambios de rol; solo hay ajustes visuales y de presentacion en vistas ya existentes.
+
+Actualizacion 2026-04-16 (autenticacion administrativa: registro separado y recuperacion guiada):
+- Se refuerza el modulo `autenticacion y sesiones` para separar el alta administrativa del formulario principal de login y dejar el acceso por correo como una superficie exclusivamente de autenticacion.
+- `web/login.html` conserva Google y correo/clave para acceso, elimina el campo de registro incrustado y agrega vistas visibles para solicitar y restablecer contraseña sin usar `prompt()` del navegador.
+- `web/registrar_nuevo_usuario_administrador.html` y `web/js/registrar_nuevo_usuario_administrador.js` crean la nueva página pública de registro administrativo con `email`, `nombre completo`, `telefono`, contraseña y confirmación de contraseña.
+- `backend/handlers/auth_admin_handlers.go` exige datos mínimos del registro, evita reescribir cuentas ya confirmadas y corrige el enlace de recuperación para que vuelva a la propia `login.html` en modo `reset`.
+- `backend/utils/utils.go` deja públicas la nueva página de registro y `/auth/confirmar_admin`, alineando middleware, correo de confirmación y experiencia de usuario.
+- Impacto de permisos: no hay cambios en CRUD/A ni visibilidad por rol; el login, el registro administrativo y la confirmación/recuperación siguen siendo públicos, mientras la administración global continúa reservada a `super_administrador`.
+
 Actualizacion 2026-04-16 (portal publico: arcade movil reforzado y countdown en Patito volando):
 - Se refuerza el submodulo `juegos publicos del portal` para que los cinco juegos del arcade se adapten mejor a celular sin perder sonido compartido ni persistencia de jugador.
 - `web/Juegos/patito_volando.html` agrega una cuenta regresiva de 5 segundos antes de iniciar el vuelo y reutiliza nuevos efectos `countdownTick`/`countdownGo` desde `web/Juegos/arcade_shared.js`.

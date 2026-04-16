@@ -103,6 +103,33 @@ type postgresPerformanceResponse struct {
 	Recommendations    []postgresRecommendation   `json:"recommendations"`
 }
 
+type postgresEmpresaStorageItem struct {
+	EmpresaID            int64   `json:"empresa_id"`
+	Nombre               string  `json:"nombre"`
+	Nit                  string  `json:"nit"`
+	Estado               string  `json:"estado"`
+	TotalBytes           int64   `json:"total_bytes"`
+	TotalPretty          string  `json:"total_pretty"`
+	TotalMB              float64 `json:"total_mb"`
+	RowsCount            int64   `json:"rows_count"`
+	TablesWithData       int64   `json:"tables_with_data"`
+	LargestTable         string  `json:"largest_table"`
+	LargestTableBytes    int64   `json:"largest_table_bytes"`
+	LargestTablePretty   string  `json:"largest_table_pretty"`
+	LargestTableMB       float64 `json:"largest_table_mb"`
+}
+
+type postgresEmpresaStorageResponse struct {
+	Ok              bool                        `json:"ok"`
+	Engine          string                      `json:"engine"`
+	GeneratedAt     string                      `json:"generated_at"`
+	TablesScanned   int                         `json:"tables_scanned"`
+	TotalEmpresas   int                         `json:"total_empresas"`
+	TotalBytes      int64                       `json:"total_bytes"`
+	TotalPretty     string                      `json:"total_pretty"`
+	Empresas        []postgresEmpresaStorageItem `json:"empresas"`
+}
+
 // PostgresPerformanceHandler expone metricas operativas del motor PostgreSQL para el panel super.
 func PostgresPerformanceHandler(dbEmpresas, dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -121,6 +148,21 @@ func PostgresPerformanceHandler(dbEmpresas, dbSuper *sql.DB) http.HandlerFunc {
 			writeJSON(w, http.StatusConflict, map[string]interface{}{
 				"ok":    false,
 				"error": "este panel solo esta disponible cuando el runtime opera con PostgreSQL",
+			})
+			return
+		}
+
+		action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+		switch action {
+		case "", "performance":
+			// continua con la ruta actual
+		case "empresas_storage":
+			handlePostgresEmpresaStorage(w, r, dbEmpresas)
+			return
+		default:
+			writeJSON(w, http.StatusBadRequest, map[string]interface{}{
+				"ok":    false,
+				"error": "accion no soportada para el panel PostgreSQL",
 			})
 			return
 		}
@@ -178,6 +220,193 @@ func PostgresPerformanceHandler(dbEmpresas, dbSuper *sql.DB) http.HandlerFunc {
 		}
 		writeJSON(w, http.StatusOK, payload)
 	}
+}
+
+func handlePostgresEmpresaStorage(w http.ResponseWriter, r *http.Request, dbEmpresas *sql.DB) {
+	ctx, cancel := context.WithTimeout(r.Context(), 25*time.Second)
+	defer cancel()
+
+	items, tablesScanned, totalBytes, err := collectPostgresEmpresaStorage(ctx, dbEmpresas)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]interface{}{
+			"ok":    false,
+			"error": "no se pudo calcular el tamano por empresa: " + err.Error(),
+		})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, postgresEmpresaStorageResponse{
+		Ok:            true,
+		Engine:        "postgresql",
+		GeneratedAt:   time.Now().Format(time.RFC3339),
+		TablesScanned: tablesScanned,
+		TotalEmpresas: len(items),
+		TotalBytes:    totalBytes,
+		TotalPretty:   humanizeBytesBinary(totalBytes),
+		Empresas:      items,
+	})
+}
+
+type postgresEmpresaStorageAccumulator struct {
+	RowsCount         int64
+	TablesWithData    int64
+	TotalBytes        int64
+	LargestTable      string
+	LargestTableBytes int64
+}
+
+func collectPostgresEmpresaStorage(ctx context.Context, dbConn *sql.DB) ([]postgresEmpresaStorageItem, int, int64, error) {
+	empresas, err := dbpkg.GetEmpresas(dbConn)
+	if err != nil {
+		return nil, 0, 0, err
+	}
+
+	tables, err := listPostgresEmpresaScopedTables(ctx, dbConn)
+	if err != nil {
+		return nil, 0, 0, err
+	}
+
+	usageByEmpresa := make(map[int64]*postgresEmpresaStorageAccumulator)
+	for _, tableName := range tables {
+		rows, err := dbConn.QueryContext(ctx, fmt.Sprintf(`
+			SELECT empresa_id::bigint, COUNT(*)::bigint, COALESCE(SUM(pg_column_size(t)),0)::bigint
+			FROM public.%s t
+			WHERE empresa_id IS NOT NULL
+			GROUP BY empresa_id
+		`, quotePostgresIdentifier(tableName)))
+		if err != nil {
+			return nil, 0, 0, err
+		}
+
+		for rows.Next() {
+			var empresaID int64
+			var rowCount int64
+			var bytes int64
+			if err := rows.Scan(&empresaID, &rowCount, &bytes); err != nil {
+				rows.Close()
+				return nil, 0, 0, err
+			}
+			acc := usageByEmpresa[empresaID]
+			if acc == nil {
+				acc = &postgresEmpresaStorageAccumulator{}
+				usageByEmpresa[empresaID] = acc
+			}
+			acc.RowsCount += rowCount
+			acc.TotalBytes += bytes
+			if rowCount > 0 || bytes > 0 {
+				acc.TablesWithData += 1
+			}
+			if bytes > acc.LargestTableBytes {
+				acc.LargestTableBytes = bytes
+				acc.LargestTable = tableName
+			}
+		}
+		if err := rows.Err(); err != nil {
+			rows.Close()
+			return nil, 0, 0, err
+		}
+		rows.Close()
+	}
+
+	items := make([]postgresEmpresaStorageItem, 0, len(empresas))
+	var totalBytes int64
+	for _, empresa := range empresas {
+		empresaKey := empresa.EmpresaID
+		if empresaKey <= 0 {
+			empresaKey = empresa.ID
+		}
+		acc := usageByEmpresa[empresaKey]
+		item := postgresEmpresaStorageItem{
+			EmpresaID: empresaKey,
+			Nombre:    strings.TrimSpace(empresa.Nombre),
+			Nit:       strings.TrimSpace(empresa.Nit),
+			Estado:    strings.TrimSpace(empresa.Estado),
+		}
+		if acc != nil {
+			item.TotalBytes = acc.TotalBytes
+			item.TotalPretty = humanizeBytesBinary(acc.TotalBytes)
+			item.TotalMB = round2(float64(acc.TotalBytes) / (1024 * 1024))
+			item.RowsCount = acc.RowsCount
+			item.TablesWithData = acc.TablesWithData
+			item.LargestTable = acc.LargestTable
+			item.LargestTableBytes = acc.LargestTableBytes
+			item.LargestTablePretty = humanizeBytesBinary(acc.LargestTableBytes)
+			item.LargestTableMB = round2(float64(acc.LargestTableBytes) / (1024 * 1024))
+			totalBytes += acc.TotalBytes
+		} else {
+			item.TotalPretty = humanizeBytesBinary(0)
+			item.LargestTablePretty = humanizeBytesBinary(0)
+		}
+		items = append(items, item)
+	}
+
+	sort.Slice(items, func(i, j int) bool {
+		if items[i].TotalBytes != items[j].TotalBytes {
+			return items[i].TotalBytes > items[j].TotalBytes
+		}
+		if items[i].RowsCount != items[j].RowsCount {
+			return items[i].RowsCount > items[j].RowsCount
+		}
+		return strings.ToLower(items[i].Nombre) < strings.ToLower(items[j].Nombre)
+	})
+
+	return items, len(tables), totalBytes, nil
+}
+
+func listPostgresEmpresaScopedTables(ctx context.Context, dbConn *sql.DB) ([]string, error) {
+	rows, err := dbConn.QueryContext(ctx, `
+		SELECT c.table_name
+		FROM information_schema.columns c
+		JOIN information_schema.tables t
+		  ON t.table_schema = c.table_schema
+		 AND t.table_name = c.table_name
+		WHERE c.table_schema = 'public'
+		  AND c.column_name = 'empresa_id'
+		  AND t.table_type = 'BASE TABLE'
+		ORDER BY c.table_name ASC
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tables []string
+	for rows.Next() {
+		var tableName string
+		if err := rows.Scan(&tableName); err != nil {
+			return nil, err
+		}
+		tableName = strings.TrimSpace(tableName)
+		if tableName == "" {
+			continue
+		}
+		tables = append(tables, tableName)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return tables, nil
+}
+
+func quotePostgresIdentifier(identifier string) string {
+	return `"` + strings.ReplaceAll(strings.TrimSpace(identifier), `"`, `""`) + `"`
+}
+
+func humanizeBytesBinary(totalBytes int64) string {
+	if totalBytes <= 0 {
+		return "0 B"
+	}
+	units := []string{"B", "KB", "MB", "GB", "TB"}
+	value := float64(totalBytes)
+	unitIdx := 0
+	for value >= 1024 && unitIdx < len(units)-1 {
+		value = value / 1024
+		unitIdx += 1
+	}
+	if unitIdx == 0 {
+		return fmt.Sprintf("%d %s", totalBytes, units[unitIdx])
+	}
+	return fmt.Sprintf("%.2f %s", value, units[unitIdx])
 }
 
 func collectPostgresClusterInfo(ctx context.Context, dbConn *sql.DB) (postgresClusterInfo, []postgresRecommendation, error) {

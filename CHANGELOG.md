@@ -1,6 +1,25 @@
 # CHANGELOG
 
 ## 2026-04-16
+- Manual de instalacion: agregado el paso de respuesta, confirmacion y formulario exacto de Epayco.
+	- Archivos modificados: `documentos/manual_de_instalacion.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: el manual ya incluye las URLs exactas que deben configurarse en Epayco para respuesta y confirmacion, ademas de los valores concretos del formulario de Epayco y una nota operativa sobre el flujo real de validacion del pago.
+
+- Checkout y seleccion de empresa: ajuste visual solicitado.
+	- Archivos modificados: `web/pagar_licencia.html`, `web/js/seleccionar_empresa.js`, `web/estilos.css`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: `pagar_licencia.html` deja mas clara la pasarela activa cuando solo hay un metodo disponible y muestra el logo de Epayco en el selector y en el panel. `seleccionar_empresa.html` vuelve al estilo compacto anterior de tarjetas para empresas.
+
+- Checkout de licencias: Epayco ahora usa una pagina publica fija de respuesta.
+	- Archivos creados: `web/epayco/respuesta.html`.
+	- Archivos modificados: `backend/handlers/payments_handlers.go`, `backend/handlers/payments_handlers_test.go`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: el retorno de Epayco ya no depende de enviar al usuario directamente a `pagar_licencia.html`; ahora existe la landing publica fija `/epayco/respuesta.html`, que puedes registrar en el panel de Epayco y que reenvia al resumen del pago con el contexto necesario para validar y activar la licencia.
+	- Verificacion: `go test -work ./handlers -run "TestEpaycoCreateTransactionHandlerUsesConfiguredPublicBaseURLAndKeys|TestEpaycoCreateTransactionHandlerAllowsCheckoutWithoutPrivateKey|TestEpaycoTransactionStatusHandlerPreservesPendingOnGenericValidationError|TestResolvePaymentBaseURL" -count=1`.
+- Login administrativo: registro separado, confirmación pública corregida y recuperación sin prompts.
+	- Archivos creados: `web/registrar_nuevo_usuario_administrador.html`, `web/js/registrar_nuevo_usuario_administrador.js`, `backend/handlers/auth_admin_handlers_test.go`.
+	- Archivos modificados: `backend/handlers/auth_admin_handlers.go`, `backend/utils/utils.go`, `web/login.html`, `web/js/login.js`, `web/estilos.css`, `web/ayuda/login_administradores.html`, `backend/handlers/auth_users_carritos_test.go`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: el login administrativo ahora deja el registro en una página pública específica, elimina el campo de nombre incrustado del acceso principal, centra `Iniciar por correo` y agrega debajo `Registrarse` y `¿Olvidó su contraseña?`. El backend valida `nombre`, `telefono` y contraseña segura, evita sobrescribir cuentas confirmadas, corrige el whitelist público para `/auth/confirmar_admin` y sustituye la recuperación por formularios reales dentro de `login.html`.
+	- Verificacion: `go test -work ./handlers -run "Test(Admin|AuthMiddlewareAllowsPublicPortalPagesAssetsAndHomeCardsAPI|HandleGoogleLogin|E2E_AcceptContractCreatesSession)" -count=1`; `go test -work ./ ./auth ./db ./handlers ./metrics ./utils -run "^$" -count=1`.
+
 - Arcade publico: Patito volando ahora inicia con cuenta regresiva y los cinco juegos refuerzan su modo celular.
 	- Archivos modificados: `web/Juegos/arcade_shared.js`, `web/Juegos/patito_volando.html`, `web/Juegos/pollitos_cataplum.html`, `web/Juegos/serpiente_pixel.html`, `web/Juegos/memoria_estelar.html`, `web/Juegos/rebote_bloques.html`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
 	- Descripcion: el arcade publico mantiene sonido compartido en los cinco juegos, `Patito volando` arranca con cuenta regresiva de 5 segundos y el resto del arcade ajusta shells, overlays y acciones para celular. Tambien se agregan sonidos de countdown en `arcade_shared.js` y `Serpiente pixel` suma feedback sonoro al giro durante la partida.

@@ -218,18 +218,21 @@
 
           const paymentCards = [];
           if (epaycoProvider && epaycoProvider.available) {
+            const epaycoBadge = availableMethods.length === 1 ? 'Único disponible' : 'Epayco';
             paymentCards.push(''+
               '<button id="selectEpaycoCard" type="button" class="payment-method-card payment-method-card-licenses payment-method-epayco">'+
-              '<span class="payment-method-badge">Epayco</span>'+
+              '<span class="payment-method-badge">' + escapeHtml(epaycoBadge) + '</span>'+
+              '<img class="payment-method-logo payment-method-logo-epayco" src="/img/logo epayco.png" alt="Logo de Epayco">'+
               '<span class="method-name">Epayco</span>'+
               '<span class="method-desc">Tarjeta, PSE y otros</span>'+
               '</button>'
             );
           }
           if (wompiProvider && wompiProvider.available) {
+            const wompiBadge = availableMethods.length === 1 ? 'Único disponible' : 'Wompi';
             paymentCards.push(''+
               '<button id="selectWompiCard" type="button" class="payment-method-card payment-method-card-licenses payment-method-wompi">'+
-              '<span class="payment-method-badge">Wompi</span>'+
+              '<span class="payment-method-badge">' + escapeHtml(wompiBadge) + '</span>'+
               '<span class="method-name">Wompi</span>'+
               '<span class="method-desc">Nequi / Tarjeta</span>'+
               '</button>'
@@ -268,7 +271,7 @@
                 : 'Actualmente no hay métodos de pago activos. Activa Epayco o Wompi desde configuración avanzada.') + '</div>')+
             ((epaycoProvider && epaycoProvider.available)
               ? '<div id="epaycoPanel" class="payment-method-panel payment-method-panel-epayco">'+
-                '<div class="method-panel-heading">Epayco</div>'+
+                '<div class="method-panel-heading payment-method-heading-with-logo"><img class="payment-method-panel-logo" src="/img/logo epayco.png" alt="Logo de Epayco"><span>Epayco</span></div>'+
                 '<label for="epaycoEmail" class="muted small">Correo del cliente (recomendado):</label>'+
                 '<input id="epaycoEmail" class="payment-method-input" type="email" placeholder="cliente@correo.com">'+
                 '<div class="small payment-method-hint">Epayco admite tarjetas y PSE según configuración.</div>'+
@@ -458,9 +461,13 @@
           if (ui.selectEpaycoCard) ui.selectEpaycoCard.addEventListener('click', function(){ setPaymentMethod('epayco'); });
 
           const preferredProvider = normalizeProvider(params.get('provider') || params.get('metodo') || params.get('method'));
+          const configuredDefaultProvider = normalizeProvider(methodsPayload.default_method);
+          const resolvedDefaultProvider = availableMethods.length === 1
+            ? availableMethods[0]
+            : (availableMethods.indexOf(configuredDefaultProvider) >= 0 ? configuredDefaultProvider : availableMethods[0]);
           if (availableMethods.length) {
             if (availableMethods.indexOf(preferredProvider) >= 0) setPaymentMethod(preferredProvider);
-            else setPaymentMethod(methodsPayload.default_method || availableMethods[0]);
+            else setPaymentMethod(resolvedDefaultProvider);
           }
 
           if (wompiProvider && wompiProvider.available) {
