@@ -12,6 +12,9 @@ import (
 
 func openFinanzasTestDB(t *testing.T) *sql.DB {
 	t.Helper()
+	t.Setenv("DB_DIALECT", "sqlite")
+	t.Setenv("DB_ENGINE", "sqlite")
+	t.Setenv("PCS_DB_DIALECT", "sqlite")
 	dbPath := filepath.Join(t.TempDir(), "finanzas_test.db")
 	dbConn, err := sql.Open("sqlite", dbPath)
 	if err != nil {

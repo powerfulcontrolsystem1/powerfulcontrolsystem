@@ -137,3 +137,90 @@ func TestSoporteRemotoDBIsolationByEmpresa(t *testing.T) {
 		t.Fatalf("expected sql.ErrNoRows creating session with device from another empresa, got: %v", err)
 	}
 }
+
+func TestSoporteRemotoDBPlanLimitsAndBlockedAttempts(t *testing.T) {
+	dbConn := openCarritoInventarioTestDB(t)
+	if err := EnsureEmpresaSoporteRemotoSchema(dbConn); err != nil {
+		t.Fatalf("ensure soporte remoto schema: %v", err)
+	}
+
+	if _, err := UpsertEmpresaSoporteRemotoConfig(dbConn, EmpresaSoporteRemotoConfig{
+		EmpresaID:                  88,
+		Habilitado:                 true,
+		ProveedorPreferido:         "rustdesk_web",
+		ModoOperacion:              "hibrido",
+		RequiereAprobacionOperador: false,
+		AutoCerrarMinutos:          30,
+		MaxConexionesMes:           1,
+		MaxMinutosMes:              1,
+		MaxDispositivos:            1,
+		UsuarioCreador:             "qa@local",
+		Estado:                     "activo",
+	}); err != nil {
+		t.Fatalf("upsert config with limits: %v", err)
+	}
+
+	deviceID, err := CreateEmpresaSoporteRemotoDispositivo(dbConn, EmpresaSoporteRemotoDispositivo{
+		EmpresaID:      88,
+		NombreEquipo:   "Caja limitada",
+		StreamURL:      "https://remote.example/limit-1",
+		UsuarioCreador: "qa@local",
+		Estado:         "activo",
+	}, "8800")
+	if err != nil {
+		t.Fatalf("create first device: %v", err)
+	}
+
+	if _, err := CreateEmpresaSoporteRemotoDispositivo(dbConn, EmpresaSoporteRemotoDispositivo{
+		EmpresaID:      88,
+		NombreEquipo:   "Caja extra",
+		StreamURL:      "https://remote.example/limit-2",
+		UsuarioCreador: "qa@local",
+		Estado:         "activo",
+	}, "8801"); !errors.Is(err, ErrSoporteRemotoPlanLimit) {
+		t.Fatalf("expected ErrSoporteRemotoPlanLimit for second device, got: %v", err)
+	}
+
+	session, err := CreateEmpresaSoporteRemotoSession(dbConn, 88, deviceID, "qa@local", "Mesa central", "mesa@local", "Sesion limitada", 1, false)
+	if err != nil {
+		t.Fatalf("create first limited session: %v", err)
+	}
+	if err := SetEmpresaSoporteRemotoSessionEstadoByCodigo(dbConn, 88, session.CodigoSesion, "finalizada", "cierre automatico test"); err != nil {
+		t.Fatalf("finish limited session: %v", err)
+	}
+
+	if _, err := CreateEmpresaSoporteRemotoSession(dbConn, 88, deviceID, "qa@local", "Mesa central", "mesa@local", "Debe bloquear por plan", 1, false); !errors.Is(err, ErrSoporteRemotoPlanLimit) {
+		t.Fatalf("expected ErrSoporteRemotoPlanLimit for second session, got: %v", err)
+	}
+
+	uso, err := GetEmpresaSoporteRemotoUso(dbConn, 88)
+	if err != nil {
+		t.Fatalf("get uso soporte remoto: %v", err)
+	}
+	if uso.SesionesMes != 1 {
+		t.Fatalf("expected sesiones_mes=1, got %d", uso.SesionesMes)
+	}
+	if uso.IntentosBloqueadosMes != 1 {
+		t.Fatalf("expected intentos_bloqueados_mes=1, got %d", uso.IntentosBloqueadosMes)
+	}
+	if uso.MinutosConsumidosMes < 1 {
+		t.Fatalf("expected minutos_consumidos_mes >= 1, got %d", uso.MinutosConsumidosMes)
+	}
+	if uso.PuedeCrearSesion {
+		t.Fatalf("expected puede_crear_sesion=false after limit")
+	}
+	if !strings.Contains(strings.ToLower(uso.BloqueoMotivo), "maximo") {
+		t.Fatalf("expected bloqueo motivo with maximo, got %q", uso.BloqueoMotivo)
+	}
+
+	rows, total, err := ListEmpresaSoporteRemotoSesiones(dbConn, 88, EmpresaSoporteRemotoSessionFilter{Limit: 20})
+	if err != nil {
+		t.Fatalf("list sessions after blocked attempt: %v", err)
+	}
+	if total != 2 || len(rows) != 2 {
+		t.Fatalf("expected 2 session rows including blocked attempt, got total=%d len=%d", total, len(rows))
+	}
+	if !rows[0].BloqueadaPorLimite && !rows[1].BloqueadaPorLimite {
+		t.Fatalf("expected at least one blocked session attempt in rows")
+	}
+}

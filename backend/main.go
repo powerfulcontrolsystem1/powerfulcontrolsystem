@@ -543,6 +543,10 @@ func main() {
 		log.Fatalf("SQLite runtime deshabilitado: configure DB_DIALECT=postgres y DSN de PostgreSQL")
 	}
 
+	if err := dbpkg.EnsureEmpresaUsuariosAuthSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure users auth schema in empresas db: %v", err)
+	}
+
 	if !runtimePostgres {
 		if err := dbpkg.EnsureSchemaMigrationsTable(dbEmpresas); err != nil {
 			log.Fatalf("failed to ensure schema_migrations in empresas db: %v", err)
@@ -1455,7 +1459,8 @@ func main() {
 		if err := dbpkg.RegisterSchemaMigration(dbSuper, "superadministrador", "2026-04-08-004-licencias-permisos-superrol", "licencias con modulos habilitados y bandera super_rol_habilitado para aplicar permisos efectivos por empresa"); err != nil {
 			log.Fatalf("failed to register licencias permisos superrol schema migration in super db: %v", err)
 		}
-	} else {
+	}
+	if runtimePostgres {
 		if err := handlers.EnsureSensitiveSuperConfigEncrypted(dbSuper); err != nil {
 			log.Fatalf("failed to enforce sensitive config encryption in super db: %v", err)
 		}
@@ -1529,6 +1534,7 @@ func main() {
 	http.HandleFunc("/super/api/asesor_comercial", handlers.AsesorComercialHandler(dbSuper))
 	http.HandleFunc("/super/api/vendedor_de_licencia", handlers.AsesorComercialHandler(dbSuper))
 	http.HandleFunc("/super/api/vendedor_config", handlers.VendedorConfigHandler(dbSuper))
+	http.HandleFunc("/super/api/soporte_remoto", handlers.SuperSoporteRemotoHandler(dbEmpresas))
 	// Módulo de productos por empresa (empresas.db)
 	http.HandleFunc("/api/empresa/bodegas", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaBodegasHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/categorias_productos", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaCategoriasProductosHandler(dbEmpresas)))
@@ -1672,6 +1678,7 @@ func main() {
 	// Endpoints de métricas (actual y histórico)
 	http.HandleFunc("/super/api/metrics/current", handlers.MetricsCurrentHandler(dbSuper))
 	http.HandleFunc("/super/api/metrics/history", handlers.MetricsHistoryHandler(dbSuper))
+	http.HandleFunc("/super/api/reportes_globales", handlers.SuperReportesGlobalesHandler(dbEmpresas, dbSuper))
 	http.HandleFunc("/super/api/postgres/performance", handlers.PostgresPerformanceHandler(dbEmpresas, dbSuper))
 	// Endpoint de seguridad: escaneo de puertos
 	http.HandleFunc("/super/api/security/ports", handlers.SecurityPortsHandler(dbSuper))
@@ -1746,6 +1753,13 @@ func main() {
 	})
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		path := strings.TrimSpace(r.URL.Path)
+		if (path == "/" || path == "") && handlers.IsEmpresaUsuarioLoginSubdomainRequest(r) {
+			r2 := r.Clone(r.Context())
+			r2.URL.Path = "/login_usuario.html"
+			staticFS.ServeHTTP(w, r2)
+			return
+		}
+
 		trimmed := strings.Trim(path, "/")
 		parts := strings.Split(trimmed, "/")
 		if len(parts) == 2 && strings.EqualFold(parts[1], "venta_publica.html") && strings.TrimSpace(parts[0]) != "" {

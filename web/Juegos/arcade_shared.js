@@ -202,6 +202,334 @@
     return entry.detail ? label + ' · ' + entry.detail : label;
   }
 
+  function formatClock(totalSeconds) {
+    var safe = Math.max(0, Math.floor(Number(totalSeconds) || 0));
+    var minutes = Math.floor(safe / 60);
+    var seconds = safe % 60;
+    return String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+  }
+
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function randomItem(list) {
+    if (!Array.isArray(list) || !list.length) return null;
+    return list[Math.floor(Math.random() * list.length)];
+  }
+
+  var POWER_LIBRARY = [
+    { id: 'shield', label: 'Escudo', detail: 'Bloquea un golpe duro.', cooldown: 16 },
+    { id: 'chrono', label: 'Crono', detail: 'Ralentiza el ritmo enemigo.', cooldown: 18 },
+    { id: 'heart', label: 'Vida', detail: 'Regala una vida adicional.', cooldown: 26 },
+    { id: 'jackpot', label: 'Jackpot', detail: 'Suma puntos y bonus.', cooldown: 18 },
+    { id: 'magnet', label: 'Magneto', detail: 'Atrae premios y bonus.', cooldown: 20 },
+    { id: 'combo', label: 'Combo', detail: 'Duplica el impulso del marcador.', cooldown: 18 },
+    { id: 'pulse', label: 'Pulso', detail: 'Limpia riesgos inmediatos.', cooldown: 22 },
+    { id: 'ghost', label: 'Fantasma', detail: 'Da unos segundos de intangibilidad.', cooldown: 24 },
+    { id: 'radar', label: 'Radar', detail: 'Entrega una ayuda tactica.', cooldown: 16 },
+    { id: 'repair', label: 'Repair', detail: 'Recarga recursos especiales.', cooldown: 18 },
+    { id: 'overdrive', label: 'Boost', detail: 'Activa un turbo ofensivo.', cooldown: 20 },
+    { id: 'storm', label: 'Storm', detail: 'Golpea varias amenazas a la vez.', cooldown: 24 }
+  ];
+
+  var PRIZE_LIBRARY = [
+    'Ficha doble',
+    'Bono relampago',
+    'Caja arcade',
+    'Ticket premium',
+    'Racha de campeon',
+    'Cofre movil'
+  ];
+
+  function createPowerSystem(options) {
+    var config = options && typeof options === 'object' ? options : {};
+    var doc = global.document;
+    var root = config.root || doc.querySelector('.arcade-window');
+    var chipRow = config.chipRow || (root ? root.querySelector('.arcade-chip-row') : null);
+    var stage = config.stage || (root ? root.querySelector('.arcade-stage') : null);
+    var onChange = typeof config.onChange === 'function' ? config.onChange : function () {};
+    var setStatus = typeof config.setStatus === 'function' ? config.setStatus : function () {};
+    var stateRef = config.state && typeof config.state === 'object' ? config.state : null;
+    var handlers = config.handlers && typeof config.handlers === 'object' ? config.handlers : {};
+    var powerState = {
+      energy: 0,
+      tickets: 0,
+      streak: 0,
+      prize: 'Sin premio',
+      charges: {},
+      cooldowns: {},
+      mounted: false,
+      hidden: false
+    };
+    var ui = {
+      wrap: null,
+      energyValue: null,
+      ticketValue: null,
+      prizeValue: null,
+      buttons: {}
+    };
+
+    POWER_LIBRARY.forEach(function (power) {
+      powerState.charges[power.id] = 0;
+      powerState.cooldowns[power.id] = 0;
+    });
+
+    function setPowerLabel(label) {
+      if (typeof handlers.setPowerLabel === 'function') {
+        handlers.setPowerLabel({ label: label });
+      } else if (stateRef && typeof stateRef.powerLabel !== 'undefined') {
+        stateRef.powerLabel = label;
+      }
+    }
+
+    function invokeHandler(name, payload) {
+      var handler = handlers[name];
+      if (typeof handler !== 'function') return false;
+      handler(payload || {});
+      return true;
+    }
+
+    function addScore(value) {
+      var safe = Math.max(0, Math.round(Number(value) || 0));
+      if (!safe) return;
+      if (!invokeHandler('addScore', { value: safe }) && stateRef && typeof stateRef.score === 'number') {
+        stateRef.score += safe;
+      }
+    }
+
+    function addBonus(value) {
+      var safe = Math.max(0, Math.round(Number(value) || 0));
+      if (!safe) return;
+      if (!invokeHandler('addBonus', { value: safe }) && stateRef && typeof stateRef.bonus === 'number') {
+        stateRef.bonus += safe;
+      }
+    }
+
+    function addLife(value) {
+      var safe = Math.max(1, Math.round(Number(value) || 1));
+      if (!invokeHandler('grantLife', { value: safe, label: 'Vida' }) && stateRef && typeof stateRef.lives === 'number') {
+        stateRef.lives += safe;
+      }
+    }
+
+    function ensureMounted() {
+      if (powerState.mounted || !root || !chipRow || !stage) return;
+      var wrap = doc.createElement('section');
+      wrap.className = 'arcade-power-rack';
+      wrap.innerHTML = '' +
+        '<div class="arcade-power-summary">' +
+          '<div class="arcade-power-heading">' +
+            '<strong>Poderes y premios</strong>' +
+            '<span>12 clases tactiles para cada juego</span>' +
+          '</div>' +
+          '<div class="arcade-power-stats">' +
+            '<span class="arcade-power-stat">Energia <strong data-arcade-energy>0%</strong></span>' +
+            '<span class="arcade-power-stat">Tickets <strong data-arcade-tickets>0</strong></span>' +
+            '<span class="arcade-power-stat arcade-power-prize">Premio <strong data-arcade-prize>Sin premio</strong></span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="arcade-power-grid" data-arcade-power-grid></div>';
+      root.insertBefore(wrap, stage);
+      var grid = wrap.querySelector('[data-arcade-power-grid]');
+      POWER_LIBRARY.forEach(function (power) {
+        var button = doc.createElement('button');
+        button.type = 'button';
+        button.className = 'arcade-power-btn';
+        button.setAttribute('data-power-id', power.id);
+        button.innerHTML = '' +
+          '<span class="arcade-power-btn-top">' +
+            '<strong>' + power.label + '</strong>' +
+            '<span data-power-count>0</span>' +
+          '</span>' +
+          '<span class="arcade-power-btn-detail">' + power.detail + '</span>' +
+          '<span class="arcade-power-btn-cd" data-power-cooldown>Listo</span>';
+        grid.appendChild(button);
+        ui.buttons[power.id] = button;
+      });
+      ui.wrap = wrap;
+      ui.energyValue = wrap.querySelector('[data-arcade-energy]');
+      ui.ticketValue = wrap.querySelector('[data-arcade-tickets]');
+      ui.prizeValue = wrap.querySelector('[data-arcade-prize]');
+      wrap.addEventListener('click', function (event) {
+        var button = event.target.closest('button[data-power-id]');
+        if (!button) return;
+        activate(button.getAttribute('data-power-id'));
+      });
+      powerState.mounted = true;
+      render();
+    }
+
+    function render() {
+      ensureMounted();
+      if (!powerState.mounted) return;
+      ui.energyValue.textContent = String(Math.round(powerState.energy)) + '%';
+      ui.ticketValue.textContent = String(powerState.tickets);
+      ui.prizeValue.textContent = powerState.prize;
+      POWER_LIBRARY.forEach(function (power) {
+        var button = ui.buttons[power.id];
+        if (!button) return;
+        var count = powerState.charges[power.id] || 0;
+        var cooldown = powerState.cooldowns[power.id] || 0;
+        button.querySelector('[data-power-count]').textContent = 'x' + String(count);
+        button.querySelector('[data-power-cooldown]').textContent = cooldown > 0 ? ('CD ' + String(Math.ceil(cooldown)) + 's') : 'Listo';
+        button.disabled = count <= 0 || cooldown > 0 || powerState.hidden;
+        button.classList.toggle('active', count > 0 && cooldown <= 0 && !powerState.hidden);
+      });
+    }
+
+    function setPrize(label, ticketGain) {
+      powerState.prize = sanitizeText(label, 40) || randomItem(PRIZE_LIBRARY) || 'Premio arcade';
+      powerState.tickets += Math.max(1, Math.round(Number(ticketGain) || 1));
+      setStatus('Premio desbloqueado: ' + powerState.prize + '.');
+      render();
+    }
+
+    function grantCharge(powerId, count, silent) {
+      if (!powerState.charges.hasOwnProperty(powerId)) return;
+      powerState.charges[powerId] += Math.max(1, Math.round(Number(count) || 1));
+      if (!silent) {
+        setStatus('Poder listo: ' + (POWER_LIBRARY.find(function (item) { return item.id === powerId; }) || {}).label + '.');
+      }
+      render();
+    }
+
+    function grantRandomPower(amount) {
+      var count = Math.max(1, Math.round(Number(amount) || 1));
+      while (count > 0) {
+        var next = randomItem(POWER_LIBRARY);
+        if (next) grantCharge(next.id, 1, true);
+        count -= 1;
+      }
+      render();
+    }
+
+    function rewardEnergy(amount, reason) {
+      var gain = clamp(Math.round(Number(amount) || 0), 0, 100);
+      if (!gain) return;
+      powerState.energy += gain;
+      while (powerState.energy >= 100) {
+        powerState.energy -= 100;
+        powerState.streak += 1;
+        grantRandomPower(powerState.streak % 3 === 0 ? 2 : 1);
+        setPrize(reason || randomItem(PRIZE_LIBRARY), powerState.streak % 2 === 0 ? 3 : 2);
+      }
+      render();
+    }
+
+    function activate(powerId) {
+      var def = POWER_LIBRARY.find(function (item) { return item.id === powerId; });
+      if (!def) return false;
+      if ((powerState.charges[powerId] || 0) <= 0 || (powerState.cooldowns[powerId] || 0) > 0 || powerState.hidden) return false;
+      powerState.charges[powerId] -= 1;
+      powerState.cooldowns[powerId] = def.cooldown;
+      setPowerLabel(def.label);
+      if (powerId === 'shield') {
+        invokeHandler('grantShield', { value: 1, label: def.label });
+      } else if (powerId === 'chrono') {
+        invokeHandler('slowTime', { duration: 12, label: def.label });
+      } else if (powerId === 'heart') {
+        addLife(1);
+        addBonus(18);
+      } else if (powerId === 'jackpot') {
+        addScore(70);
+        addBonus(40);
+        setPrize('Jackpot movil', 4);
+      } else if (powerId === 'magnet') {
+        addScore(26);
+        addBonus(26);
+        invokeHandler('magnet', { duration: 12, label: def.label });
+      } else if (powerId === 'combo') {
+        addScore(54);
+        addBonus(22);
+        invokeHandler('combo', { duration: 10, label: def.label });
+      } else if (powerId === 'pulse') {
+        invokeHandler('pulse', { strength: 1, label: def.label });
+        addBonus(18);
+      } else if (powerId === 'ghost') {
+        invokeHandler('ghost', { duration: 10, label: def.label });
+        addBonus(14);
+      } else if (powerId === 'radar') {
+        invokeHandler('radar', { charges: 1, label: def.label });
+        addBonus(10);
+      } else if (powerId === 'repair') {
+        invokeHandler('repair', { charges: 1, label: def.label });
+        addBonus(12);
+      } else if (powerId === 'overdrive') {
+        invokeHandler('overdrive', { duration: 12, label: def.label });
+        addScore(34);
+      } else if (powerId === 'storm') {
+        invokeHandler('storm', { strength: 1, label: def.label });
+        addScore(38);
+      }
+      playEffect('powerUp');
+      onChange();
+      render();
+      return true;
+    }
+
+    function setHidden(hidden) {
+      powerState.hidden = !!hidden;
+      render();
+    }
+
+    function reset() {
+      powerState.energy = 24;
+      powerState.tickets = 0;
+      powerState.streak = 0;
+      powerState.prize = 'Sin premio';
+      Object.keys(powerState.charges).forEach(function (key) {
+        powerState.charges[key] = 0;
+        powerState.cooldowns[key] = 0;
+      });
+      grantCharge('shield', 1, true);
+      grantCharge('chrono', 1, true);
+      grantCharge('jackpot', 1, true);
+      grantCharge('radar', 1, true);
+      setHidden(false);
+      render();
+      onChange();
+    }
+
+    function tick(delta) {
+      var step = Number(delta) || 0;
+      if (step > 10) step = step / 1000;
+      if (step <= 0) step = 1 / 60;
+      Object.keys(powerState.cooldowns).forEach(function (key) {
+        if (powerState.cooldowns[key] > 0) {
+          powerState.cooldowns[key] = Math.max(0, powerState.cooldowns[key] - step);
+        }
+      });
+      render();
+    }
+
+    ensureMounted();
+
+    return {
+      reset: reset,
+      tick: tick,
+      activate: activate,
+      pause: function () { setHidden(true); },
+      resume: function () { setHidden(false); },
+      finish: function () { setHidden(true); },
+      noteScore: function (amount, reason) {
+        rewardEnergy(Math.max(6, Math.round((Number(amount) || 0) / 5)), reason || 'Racha de puntos');
+      },
+      noteBonus: function (amount, reason) {
+        rewardEnergy(Math.max(4, Math.round((Number(amount) || 0) / 6)), reason || 'Bonus movil');
+      },
+      noteLevel: function (level) {
+        grantRandomPower(Math.max(1, Math.min(3, Math.round(Number(level) || 1))));
+        setPrize('Nivel ' + String(level) + ' superado', 3);
+      },
+      notePrize: function (label, tickets) {
+        setPrize(label, tickets);
+      },
+      grantPower: grantCharge,
+      render: render
+    };
+  }
+
   function getAudioContext() {
     var AudioCtor = global.AudioContext || global.webkitAudioContext;
     if (!AudioCtor) return null;
@@ -312,8 +640,29 @@
       { frequency: 660, duration: 0.06, volume: 0.05, type: 'square' },
       { frequency: 880, duration: 0.08, volume: 0.05, type: 'square' }
     ],
+    powerUp: [
+      { frequency: 392, duration: 0.06, volume: 0.04, type: 'triangle' },
+      { frequency: 523.25, duration: 0.06, volume: 0.05, type: 'triangle' },
+      { frequency: 783.99, duration: 0.12, volume: 0.06, type: 'square' }
+    ],
     move: [
       { frequency: 260, duration: 0.045, volume: 0.03, type: 'triangle' }
+    ],
+    paddle: [
+      { frequency: 180, duration: 0.04, volume: 0.04, type: 'square' },
+      { frequency: 260, duration: 0.05, volume: 0.04, type: 'square' }
+    ],
+    drop: [
+      { frequency: 420, slideTo: 180, duration: 0.11, volume: 0.05, type: 'sawtooth' }
+    ],
+    capture: [
+      { frequency: 330, duration: 0.05, volume: 0.04, type: 'triangle' },
+      { frequency: 494, duration: 0.07, volume: 0.05, type: 'triangle' },
+      { frequency: 659.25, duration: 0.09, volume: 0.06, type: 'square' }
+    ],
+    shoot: [
+      { frequency: 920, duration: 0.03, volume: 0.035, type: 'square' },
+      { frequency: 700, duration: 0.04, volume: 0.03, type: 'triangle' }
     ],
     eat: [
       { frequency: 480, duration: 0.05, volume: 0.05, type: 'square' },
@@ -325,6 +674,140 @@
     var sequence = effects[name];
     if (!sequence) return;
     playSequence(sequence);
+  }
+
+  function createGameSession(options) {
+    var config = options && typeof options === 'object' ? options : {};
+    var overlay = config.overlay || null;
+    var overlayTitle = config.overlayTitle || null;
+    var overlayText = config.overlayText || null;
+    var timerElement = config.timerElement || null;
+    var startButton = config.startButton || null;
+    var countdownSeconds = Math.max(1, Math.round(Number(config.countdownSeconds) || 5));
+    var state = {
+      elapsed: 0,
+      running: false,
+      paused: false,
+      countdownHandle: 0,
+      timerHandle: 0,
+      countdownActive: false
+    };
+
+    function renderTimer() {
+      if (timerElement) {
+        timerElement.textContent = formatClock(state.elapsed);
+      }
+    }
+
+    function clearCountdown() {
+      if (state.countdownHandle) {
+        global.clearInterval(state.countdownHandle);
+        state.countdownHandle = 0;
+      }
+      state.countdownActive = false;
+      if (overlay) {
+        overlay.classList.remove('arcade-overlay-countdown');
+      }
+      if (startButton) {
+        startButton.disabled = false;
+      }
+    }
+
+    function stopTimer() {
+      if (state.timerHandle) {
+        global.clearInterval(state.timerHandle);
+        state.timerHandle = 0;
+      }
+      state.running = false;
+      state.paused = false;
+    }
+
+    function startTimer() {
+      stopTimer();
+      state.running = true;
+      renderTimer();
+      state.timerHandle = global.setInterval(function () {
+        if (!state.running || state.paused) return;
+        state.elapsed += 1;
+        renderTimer();
+      }, 1000);
+    }
+
+    function reset() {
+      clearCountdown();
+      stopTimer();
+      state.elapsed = 0;
+      renderTimer();
+    }
+
+    function pause() {
+      state.paused = true;
+    }
+
+    function resume() {
+      if (state.running) {
+        state.paused = false;
+      }
+    }
+
+    function finish() {
+      clearCountdown();
+      stopTimer();
+    }
+
+    function startCountdown(onDone, countdownOptions) {
+      var settings = countdownOptions && typeof countdownOptions === 'object' ? countdownOptions : {};
+      var seconds = Math.max(1, Math.round(Number(settings.seconds) || countdownSeconds));
+      var label = sanitizeText(settings.label, 60) || 'Comienza en';
+      reset();
+      state.countdownActive = true;
+      if (startButton) {
+        startButton.disabled = true;
+      }
+      if (overlay) {
+        overlay.hidden = false;
+        overlay.classList.add('arcade-overlay-countdown');
+      }
+      var current = seconds;
+
+      function renderCountdown() {
+        if (overlayTitle) overlayTitle.textContent = String(current);
+        if (overlayText) overlayText.textContent = label;
+      }
+
+      renderCountdown();
+      playEffect('countdownTick');
+      state.countdownHandle = global.setInterval(function () {
+        current -= 1;
+        if (current <= 0) {
+          clearCountdown();
+          if (overlayTitle) overlayTitle.textContent = 'YA';
+          if (overlayText) overlayText.textContent = 'A jugar';
+          if (overlay) overlay.hidden = false;
+          playEffect('countdownGo');
+          global.setTimeout(function () {
+            if (overlay) overlay.hidden = true;
+            startTimer();
+            if (typeof onDone === 'function') onDone();
+          }, 520);
+          return;
+        }
+        renderCountdown();
+        playEffect('countdownTick');
+      }, 1000);
+    }
+
+    renderTimer();
+
+    return {
+      reset: reset,
+      pause: pause,
+      resume: resume,
+      finish: finish,
+      startCountdown: startCountdown,
+      getElapsedSeconds: function () { return state.elapsed; },
+      isCountdownActive: function () { return state.countdownActive; }
+    };
   }
 
   ['pointerdown', 'keydown', 'touchstart'].forEach(function (eventName) {
@@ -345,7 +828,10 @@
     recordScore: recordScore,
     getGlobalSummary: getGlobalSummary,
     formatScoreEntry: formatScoreEntry,
+    formatClock: formatClock,
+    createPowerSystem: createPowerSystem,
     unlockAudio: unlockAudio,
-    playEffect: playEffect
+    playEffect: playEffect,
+    createGameSession: createGameSession
   };
 })(window);

@@ -277,6 +277,17 @@ func CanAdminAccessEmpresaIA(dbEmp, dbSuper *sql.DB, adminEmail string, empresaI
 		}
 	}
 
+	principalEmail := adminEmail
+	if dbSuper != nil {
+		resolved, err := ResolveAdminPrincipalEmail(dbSuper, adminEmail)
+		if err != nil && err != sql.ErrNoRows {
+			return false, err
+		}
+		if strings.TrimSpace(resolved) != "" {
+			principalEmail = strings.TrimSpace(strings.ToLower(resolved))
+		}
+	}
+
 	var creador string
 	err := dbEmp.QueryRow(`SELECT COALESCE(usuario_creador, '') FROM empresas WHERE id = ? LIMIT 1`, empresaID).Scan(&creador)
 	if err != nil {
@@ -289,7 +300,19 @@ func CanAdminAccessEmpresaIA(dbEmp, dbSuper *sql.DB, adminEmail string, empresaI
 	if creador == "" {
 		return true, nil
 	}
-	return creador == adminEmail, nil
+	if creador == principalEmail || creador == adminEmail {
+		return true, nil
+	}
+	if dbSuper != nil {
+		resolvedCreator, err := ResolveAdminPrincipalEmail(dbSuper, creador)
+		if err != nil && err != sql.ErrNoRows {
+			return false, err
+		}
+		if strings.TrimSpace(strings.ToLower(resolvedCreator)) == principalEmail {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // GetEmpresaAIUsoDiario obtiene el uso diario para un modelo.

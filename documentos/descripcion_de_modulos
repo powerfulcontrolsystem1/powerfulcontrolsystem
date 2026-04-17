@@ -1,10 +1,94 @@
 Descripcion compacta de modulos (POS multiempresa)
 Actualizacion: 2026-04-16
 
+Actualizacion 2026-04-16 (reportes globales super por administrador creador):
+- Se refuerza el modulo `reportes globales (super)` para consolidar, mezclar o separar reportes solo de las empresas creadas por el administrador autenticado.
+- `backend/handlers/reportes_globales.go` reutiliza el catalogo y los datasets del modulo empresarial de reportes; `web/super/reportes_globales.html` y `web/js/super_reportes_globales.js` agregan filtros por rango, seleccion multiple y exportacion multiformato.
+- Impacto de permisos: sin cambios para roles empresariales; el acceso sigue siendo exclusivo del panel super y acotado a las empresas del mismo creador.
+
+Actualizacion 2026-04-17 (reportes globales super: graficos y lectura ejecutiva):
+- Se amplía el mismo modulo `reportes globales (super)` con un tablero ejecutivo visual para lectura rápida del portafolio de empresas del administrador.
+- `web/super/reportes_globales.html`, `web/js/super_reportes_globales.js` y `web/estilos.css` agregan tarjetas ejecutivas, narrativa automatica y graficos comparativos de ingresos, balance vs egresos y composicion activa/inactiva.
+- Impacto de permisos: sin cambios; el modulo sigue siendo de lectura exclusiva para `super_administrador`.
+
+Actualizacion 2026-04-16 (menu flotante publico: separacion de botones cercanos):
+- Se ajusta el submodulo transversal del `menu flotante publico` para que no se monte sobre botones ubicados en encabezados o barras de acciones cercanas al borde superior derecho.
+- `web/menu.js` expone el estado `has-floating-menu` en la pagina y `web/estilos.css` reserva espacio lateral en encabezados reutilizados por el portal y por vistas administrativas.
+- Impacto de permisos: sin cambios en roles ni visibilidad; el ajuste es visual y de usabilidad sobre el mismo menu compartido.
+Actualizacion 2026-04-16 (facturacion electronica: pruebas estables bajo entorno postgres activo):
+- Se refuerza el modulo `facturacion electronica` en su capa de validacion automatizada para que las pruebas de `db` no hereden accidentalmente `DB_DIALECT=postgres` desde el entorno local del backend.
+- `backend/db/finanzas_test.go` fija `DB_DIALECT`, `DB_ENGINE` y `PCS_DB_DIALECT` en `sqlite` dentro de `openFinanzasTestDB`, evitando que los helpers de esquema emitan `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` contra SQLite durante la suite de facturacion y documentos transaccionales.
+- Con este ajuste quedan verificadas de nuevo las pruebas del modulo de facturacion electronica y DIAN en `backend/db/*` y `backend/handlers/*`, incluyendo emision documental, reintentos, reconciliacion, firma XML, envio, acuse, contingencia, reconexion y set de pruebas.
+- Impacto de permisos: sin cambios en roles ni visibilidad; el ajuste solo estabiliza la suite automatizada del mismo modulo existente.
+
+Actualizacion 2026-04-16 (pagina principal dinamica: campo de cantidad sin falso 5 inicial):
+- Se ajusta nuevamente el submodulo `pagina principal dinamica (super)` para que el campo `Cantidad de tarjetas` no muestre temporalmente el valor HTML inicial `5` antes de cargar la configuracion persistida.
+- `web/super/pagina_principal.html` deshabilita el input mientras carga, muestra estado `Cargando...` y sincroniza la cantidad contra el numero real de tarjetas persistidas cuando estas superan el valor guardado en `cantidad`.
+- Impacto de permisos: sin cambios en roles ni visibilidad; la administracion del modulo sigue siendo exclusiva de `super_administrador` y la landing descriptiva publica sigue atada a la misma configuracion de tarjetas.
+
 Gobernanza obligatoria (agente_go):
 - Si se crea un modulo nuevo o se modifica un modulo existente, este documento debe actualizarse en la misma iteracion de trabajo.
 - En el mismo cambio, tambien debe actualizarse `documentos/matriz_roles_permisos_pos_multiempresa.md` para reflejar permisos por rol/modulo/accion y visibilidad de paginas afectadas.
 - La actualizacion modular debe mantener trazabilidad en `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios` y `CHANGELOG.md`.
+
+Actualizacion 2026-04-16 (portal publico: menu flotante navegable en movil):
+- Se corrige el submodulo transversal de navegacion publica para que los enlaces del menu flotante vuelvan a funcionar en celulares.
+- `web/menu.js` deja de cerrar el panel en `touchstart` sobre cada opcion y mantiene el cierre en `click`, evitando la cancelacion prematura de la navegacion tactil.
+- `web/estilos.css` agrega `touch-action: manipulation` al toggle y a cada item del menu para mejorar la respuesta en dispositivos tactiles.
+- Impacto de permisos: sin cambios en el modelo de roles o visibilidad; se restaura la navegacion de rutas publicas ya existentes.
+
+Actualizacion 2026-04-16 (seleccionar empresa: tarjetas clasicas restauradas):
+- Se ajusta nuevamente el submodulo `seleccionar empresa` para recuperar el formato de tarjeta clasico usado en el panel super dias atras.
+- `web/js/seleccionar_empresa.js` vuelve al render `portal-card warm` centrado, priorizando nombre, observaciones y estado de licencia sin el layout enriquecido por tipo/metadatos.
+- Impacto de permisos: sin cambios en roles ni visibilidad; el ajuste es visual dentro del mismo modulo super.
+
+Actualizacion 2026-04-17 (portal publico de usuarios de empresa con contrato vigente y subdominio propio):
+- Se refuerza el modulo `usuarios de empresa` para operar como portal publico de acceso por invitacion, con login por correo/contrasena, primer password, recuperacion, reset y cambio de contrasena en una sola superficie.
+- `backend/db/usuarios_empresa.go` persiste aceptacion de contrato por usuario (`acepta_contrato`, `contrato_version_aceptada`, `fecha_acepta_contrato`) y `backend/handlers/usuarios_empresa.go` obliga a aceptar la version vigente antes de crear sesion o completar credenciales.
+- `web/login_usuario.html`, `web/js/login_usuario.js` y `web/estilos.css` describen el flujo, muestran el contrato vigente y eliminan cualquier acceso de Google del portal interno.
+- `backend/handlers/usuarios_empresa.go` reutiliza la configuracion de venta publica (`empresa_slug` y `dominio_publico`) para que correos de invitacion y recuperacion apunten al subdominio propio de cada empresa.
+- `web/administrar_empresa.html` y `web/js/administrar_empresa.js` publican el enlace operativo del menu lateral hacia el subdominio o dominio publico configurado por empresa; `web/administrar_empresa/administrar_usuarios.html` elimina el acceso duplicado fuera del menu.
+- Impacto de permisos: sin cambios en el modelo de permisos por rol dentro del panel; el acceso al portal es publico, pero la experiencia final sigue limitada por `permisos_contexto` y visibilidad dinamica de menu en `administrar_empresa`.
+
+Actualizacion 2026-04-16 (estaciones: carrito enlazado por defecto desde backend):
+- Se refuerza el submodulo `estaciones` para que guardar `estaciones_config` por API no dependa de la sincronizacion frontend de `configuracion_de_estaciones.html`.
+- `backend/db/empresa_estacion_prefs.go` crea o corrige automaticamente un carrito base por estacion (`EST-empresa-estacion` / `ESTACION_<id>`) y lo deja en estado `inactivo/cerrado` hasta que la operacion lo active.
+- `backend/handlers/empresa_estacion_prefs.go` ejecuta esa sincronizacion tras el guardado de preferencias y las pruebas `backend/db/empresa_estacion_prefs_test.go` y `backend/handlers/empresa_estacion_prefs_test.go` validan creacion, renombre sin duplicados y aislamiento por `empresa_id`.
+- Impacto de permisos: sin cambios en roles ni visibilidad; la mejora asegura consistencia operativa dentro de `estaciones`, `ventas simple` y `carritos` sin ampliar privilegios.
+
+Actualizacion 2026-04-17 (soporte remoto: limites por plan y mesa tecnica central):
+- Se amplía el modulo `soporte remoto` para que cada empresa pueda operar con topes de `max_dispositivos`, `max_conexiones_mes` y `max_minutos_mes`, todos trazados dentro del mismo flujo operativo de sesiones.
+- `backend/db/soporte_remoto.go` calcula consumo mensual, registra intentos bloqueados por plan y actualiza minutos consumidos al finalizar o expirar sesiones.
+- `backend/handlers/soporte_remoto.go` devuelve `uso` junto a configuracion/listados y `backend/handlers/super_soporte_remoto.go` agrega la mesa tecnica multiempresa en `/super/api/soporte_remoto`.
+- `web/super/soporte_remoto.html` incorpora el panel super para seleccionar empresa, abrir soporte, revisar cupos/consumo y operar un visor central sin romper el aislamiento por `empresa_id`.
+- Impacto de permisos: el panel empresa mantiene `linkSoporteRemoto` bajo modulo `seguridad` con accion `A`; el panel super queda reservado a `super_administrador` mediante `/super/api/soporte_remoto` y su vista dedicada.
+
+Actualizacion 2026-04-16 (portal publico: contacto reubicado bajo las tarjetas del home):
+- Se ajusta el submodulo `pagina principal publica` para mover `Informacion de contacto` fuera de la cabecera y dejarlo centrado debajo de todas las tarjetas dinamicas del home.
+- `web/index.html` mantiene el acceso superior de login y `web/estilos.css` reutiliza el lenguaje visual del CTA comercial para el nuevo bloque de contacto inferior.
+- Impacto de permisos: sin cambios en roles, CRUD/A ni visibilidad; el ajuste es visual dentro del portal publico.
+
+Actualizacion 2026-04-16 (deploy VPS: limpieza de procesos backend huerfanos):
+- Se refuerza el submodulo operativo `deploy VPS` para que `sync_to_vps.ps1` no dependa solo de liberar el puerto, sino que tambien detenga procesos previos del mismo binario remoto antes de arrancar la unidad systemd nueva.
+- El mismo ajuste corrige la generacion de la unidad para evitar warnings repetitivos de `systemd` por `StartLimitIntervalSec` en la seccion incorrecta.
+- Impacto de permisos: sin cambios en roles ni vistas del panel; el cambio es operativo de despliegue y disponibilidad del backend.
+
+Actualizacion 2026-04-16 (checkout publico de licencias: alias `sambox` para Epayco):
+- Se refuerza el modulo `licencias y pasarelas de pago` para tolerar `epayco.mode=sambox` como equivalente de `sandbox` dentro del checkout publico de licencias.
+- `backend/handlers/payments_handlers.go` normaliza el alias y `backend/handlers/payments_handlers_test.go` valida que el checkout conserve `test=true` aun cuando la configuracion manual use esa variante.
+- Impacto de permisos: sin cambios en roles ni rutas; el ajuste mantiene el mismo alcance publico del checkout de licencias.
+
+Actualizacion 2026-04-16 (portal publico: arcade activo con ocho juegos compactos):
+- Se rehace el submodulo `juegos publicos del portal` para operar con un set activo de ocho titulos compactos, unificados por `web/Juegos/arcade_window.css` y publicados desde un lobby que abre popup fijo `700x700` en escritorio.
+- `web/Juegos/menu_juegos.html` elimina `Pollitos al cataplum` del flujo activo y enlaza `patito_volando_plus.html`, `serpiente_pixel_plus.html`, `memoria_estelar_plus.html`, `rebote_bloques_plus.html`, `pacman_plus.html`, `tetris_plus.html`, `carton_fire_plus.html` y `ajedrez_vs_ia_plus.html`.
+- Todas las vistas nuevas reutilizan `web/Juegos/arcade_shared.js` para records locales, nombre de jugador y sonido global, y añaden pausa real; cuando hay IA u oponentes, la pausa tambien congela sus temporizadores o movimientos.
+- Impacto de permisos: sin cambios en CRUD/A ni visibilidad por rol; `Portal publico - Juegos` sigue siendo un submodulo recreativo publico y de solo uso.
+
+Actualizacion 2026-04-17 (portal publico: Ajedrez 3D plus):
+- Se amplía el submodulo `juegos publicos del portal` con `Ajedrez 3D plus`, una variante separada del ajedrez existente que conserva el perfil arcade compartido y agrega un tablero en perspectiva 3D simulada.
+- `web/Juegos/ajedrez_3d_plus.html` introduce cinco niveles de dificultad (`Rookie`, `Club`, `Pro`, `Elite`, `Maestro`) variando profundidad y comportamiento de la IA, junto con cronometro, countdown y ayudas tacticas para la sesion.
+- `web/Juegos/menu_juegos.html` y `web/img/juegos/ajedrez_3d.svg` publican la nueva tarjeta del lobby sin alterar permisos del resto del arcade.
+- Impacto de permisos: sin cambios en CRUD/A ni visibilidad por rol; `Portal publico - Juegos` sigue siendo un submodulo recreativo publico y de solo uso.
 
 Actualizacion 2026-04-16 (portal publico: botones compactos en cabecera del home):
 - Se ajusta el submodulo del portal publico para que los accesos superiores de registro/contacto ocupen menos altura, mantengan el mismo ancho visual y queden centrados en movil.
@@ -70,6 +154,11 @@ Actualizacion 2026-04-16 (checkout de licencias: respuesta fija de Epayco):
 - `backend/handlers/payments_handlers.go` genera esa ruta como `response` del checkout y conserva `/epayco/webhook` como `confirmation`, de modo que el flujo externo y el flujo interno del sistema apunten a los mismos endpoints canonicos.
 - `web/epayco/respuesta.html` no procesa el pago por si sola: normaliza parametros y reenvia al resumen de licencia para que el backend confirme el estado real antes de activar la licencia.
 - Impacto de permisos: sin cambios de rol; la respuesta y confirmacion de Epayco permanecen publicas como parte del checkout externo.
+
+Actualizacion 2026-04-16 (checkout de licencias: Epayco redirige la misma pestaña):
+- Se refuerza el submodulo `checkout publico de licencias` para que el pago con Epayco no dependa de popups ni de polling antes de que el usuario llegue a la pasarela.
+- `web/pagar_licencia.html` conserva la referencia pendiente y redirige la misma pestaña a `checkout.epayco.co`, usando `/epayco/respuesta.html` para volver al resumen del pago y retomar la verificacion real.
+- Impacto de permisos: sin cambios en roles ni CRUD/A; el ajuste solo endurece el flujo publico de cobro con Epayco.
 
 Actualizacion 2026-04-16 (super: administracion PostgreSQL con tamano por empresa):
 - Se refuerza el submodulo `administracion de base de datos PostgreSQL (super)` para estimar cuanto espacio consume cada empresa dentro de la base compartida `pcs_empresas`.
@@ -251,7 +340,9 @@ Actualizacion 2026-04-15 (portal publico: landing descriptiva unica por tarjetas
 
 Actualizacion 2026-04-15 (checkout de licencias: disponibilidad gobernada de Epayco/Wompi):
 - Se refuerza el submodulo `pasarelas de licencias` para que `web/pagar_licencia.html` renderice unicamente Epayco y Wompi segun disponibilidad real del backend, con orden fijo Epayco primero y Wompi debajo.
+- Si solo una pasarela queda disponible, `web/pagar_licencia.html` omite el selector de forma de pago y muestra directamente el panel activo para reducir friccion en el checkout.
 - El backend expone `GET /api/public/licencias/payment_methods` para publicar el estado ordenado de las pasarelas y endurece Wompi para rechazar terminos/creacion de transaccion cuando este desactivado o incompletamente configurado.
+- El checkout Epayco vuelve a incluir `p_key` cuando la configuracion avanzada dispone de `private_key`, evitando respuestas remotas `AccessDenied` en cuentas que todavia operan con el contrato legacy de `checkout.php`.
 - `web/super/configuracion_avanzada.html` permite activar o desactivar Epayco y Wompi desde sus toggles sin obligar a reingresar credenciales completas en cada cambio de estado.
 - No hay cambios en permisos por rol; la gestion sigue centralizada en `super_administrador` y la nueva ruta publica es solo de lectura para el checkout de licencias.
 

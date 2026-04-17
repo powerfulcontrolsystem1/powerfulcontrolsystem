@@ -8,6 +8,78 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 - Cuando se cree un modulo nuevo o se modifique uno existente, esta matriz debe actualizarse en la misma iteracion para reflejar permisos por rol/modulo/accion y el impacto en paginas del panel.
 - Esta actualizacion debe quedar sincronizada con `documentos/descripcion_de_modulos`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios` y `CHANGELOG.md`.
 
+- Actualizacion 2026-04-16 (reportes globales super por administrador creador):
+	- `backend/handlers/reportes_globales.go` expone `/super/api/reportes_globales` filtrando empresas por `usuario_creador = admin autenticado`.
+	- `web/super/reportes_globales.html` y `web/js/super_reportes_globales.js` permiten ver datasets consolidados o separados por empresa solo dentro del panel super.
+	- Impacto de matriz: el modulo `Reportes globales (super)` queda con permiso `R` exclusivo de `super_administrador`.
+
+- Actualizacion 2026-04-17 (reportes globales super: graficos y lectura ejecutiva):
+	- `web/super/reportes_globales.html`, `web/js/super_reportes_globales.js` y `web/estilos.css` agregan visualizaciones ejecutivas sobre el mismo modulo protegido de lectura.
+	- Impacto de matriz: sin cambios en permisos; `Reportes globales (super)` se mantiene como `R` exclusivo de `super_administrador`.
+
+- Actualizacion 2026-04-16 (facturacion electronica: estabilidad de pruebas automatizadas):
+	- `backend/db/finanzas_test.go` fuerza el dialecto `sqlite` en `openFinanzasTestDB` para evitar que la suite del modulo herede configuracion `postgres` del entorno local y falle por compatibilidad SQL durante pruebas de esquema y documentos transaccionales.
+	- Impacto de matriz: sin cambios en permisos, roles, wrappers o visibilidad del modulo `facturacion electronica`; el ajuste solo endurece la validacion automatizada del backend.
+
+- Actualizacion 2026-04-16 (portal publico: menu flotante navegable en movil):
+	- `web/menu.js` conserva la navegacion tactil de las rutas publicas al cerrar el panel solo en `click`.
+	- `web/estilos.css` mejora la respuesta tactil del boton y de los items del menu.
+	- Impacto de matriz: sin cambios en permisos o roles; solo se recupera la usabilidad movil de enlaces publicos ya visibles.
+
+- Actualizacion 2026-04-16 (menu flotante publico: separacion frente a botones de cabecera):
+	- `web/menu.js` marca las paginas que reciben el menu flotante con `has-floating-menu` y `web/estilos.css` reserva espacio en encabezados y barras de acciones compartidas para que el toggle no quede encima de botones cercanos.
+	- Impacto de matriz: sin cambios en permisos, CRUD/A, wrappers o visibilidad por rol; la correccion es solo de layout compartido.
+
+- Actualizacion 2026-04-16 (seleccionar empresa: formato clasico restaurado):
+	- `web/js/seleccionar_empresa.js` recupera el render clasico de tarjetas del panel super sin alterar rutas ni acciones del modulo.
+	- Impacto de matriz: sin cambios en permisos, roles o wrappers; solo se restituye una presentacion visual previa del selector de empresas.
+
+- Actualizacion 2026-04-17 (portal publico de usuarios de empresa con contrato y subdominio propio):
+	- `backend/handlers/usuarios_empresa.go` exige aceptacion del contrato vigente antes de login, primer password, reset o cambio de contrasena; la restriccion aplica al mismo usuario autenticandose, no a un rol administrativo nuevo.
+	- `web/login_usuario.html` y `web/js/login_usuario.js` pasan a ser una puerta publica de acceso por invitacion, mientras `web/administrar_empresa.html` y `web/js/administrar_empresa.js` resuelven el enlace correcto por empresa usando `empresa_slug` o `dominio_publico` de la configuracion publica.
+	- Impacto de matriz: sin cambios en CRUD/A ni en wrappers empresariales; el portal publico no amplía privilegios y la visibilidad final del panel sigue determinada por rol/permisos_contexto ya existentes.
+
+- Actualizacion 2026-04-16 (estaciones: carrito base sincronizado desde backend):
+	- `backend/handlers/empresa_estacion_prefs.go` sincroniza automaticamente los carritos enlazados al guardar `estaciones_config`, y `backend/db/empresa_estacion_prefs.go` asegura la regla `una estacion -> un carrito base` por `empresa_id`.
+	- `backend/handlers/empresa_estacion_prefs_test.go` y `backend/db/empresa_estacion_prefs_test.go` cubren la creacion y actualizacion del enlace sin depender de la pagina de configuracion.
+	- Impacto de matriz: sin cambios en roles ni permisos; la capacidad sigue dentro del alcance actual de configuracion/ventas empresariales y no abre nuevas rutas ni acciones a otros roles.
+
+- Actualizacion 2026-04-16 (portal publico: contacto debajo del grid del home):
+	- `web/index.html` mueve `Informacion de contacto` debajo de `portalCardsGrid` y `web/estilos.css` lo centra sin alterar accesos publicos ni rutas protegidas.
+	- Impacto de matriz: sin cambios en roles, CRUD/A ni wrappers; el ajuste es visual dentro del portal publico.
+
+- Actualizacion 2026-04-17 (soporte remoto: limites por plan y mesa tecnica super):
+	- `backend/handlers/soporte_remoto.go` mantiene el alcance empresarial en modulo `seguridad`, pero ahora devuelve `uso` y bloquea sesiones/dispositivos cuando la empresa supera los topes configurados.
+	- `backend/handlers/super_soporte_remoto.go` expone `/super/api/soporte_remoto` y `web/super/soporte_remoto.html` agrega una mesa tecnica central solo para `super_administrador`.
+	- Impacto de matriz: `linkSoporteRemoto` sigue requiriendo accion `A` sobre `seguridad` en panel empresa; el nuevo panel super de soporte remoto es exclusivo de `super_administrador` y no amplía permisos de roles empresariales.
+
+- Actualizacion 2026-04-16 (deploy VPS: limpieza de procesos previos del backend):
+	- `scripts/sync_to_vps.ps1` limpia procesos previos asociados a `backend/bin/server_linux_amd64` antes del arranque y genera una unidad `systemd` sin el warning de clave invalida en `Service`.
+	- Impacto de matriz: sin cambios en roles, CRUD/A ni visibilidad; el ajuste es operativo de infraestructura.
+
+- Actualizacion 2026-04-16 (checkout publico de licencias: alias `sambox` en Epayco):
+	- `backend/handlers/payments_handlers.go` normaliza `epayco.mode=sambox` como `sandbox` antes de construir el checkout publico.
+	- Impacto de matriz: sin cambios en roles ni permisos; `/epayco/create_transaction` conserva el mismo alcance publico.
+
+- Actualizacion 2026-04-16 (portal publico: arcade activo con ocho juegos):
+	- `web/Juegos/menu_juegos.html` publica ocho juegos activos y fija popup uniforme `700x700` sin barras en escritorio, manteniendo apertura directa en movil.
+	- `web/Juegos/arcade_window.css` y los ocho juegos `*_plus.html` mantienen una experiencia publica homogénea con pausa real, records locales y nombre de jugador compartido.
+	- Impacto de matriz: sin cambios en roles, CRUD/A ni wrappers; `Portal publico - Juegos` sigue siendo de lectura/uso para todos los roles y tambien sin autenticacion.
+
+- Actualizacion 2026-04-17 (portal publico: nuevo Ajedrez 3D plus):
+	- `web/Juegos/ajedrez_3d_plus.html` agrega una nueva ruta publica del arcade con tablero en perspectiva 3D simulada y selector de cinco dificultades.
+	- `web/Juegos/menu_juegos.html` publica la nueva tarjeta del lobby y `web/img/juegos/ajedrez_3d.svg` suma la portada visual del titulo.
+	- Impacto de matriz: sin cambios en roles, CRUD/A ni wrappers; `Portal publico - Juegos` mantiene acceso publico y de solo uso.
+
+- Actualizacion 2026-04-16 (checkout publico de licencias: metodo unico y compatibilidad Epayco legacy):
+	- `web/pagar_licencia.html` omite el selector de forma de pago cuando solo hay una pasarela disponible y entra directo al panel correspondiente.
+	- `backend/handlers/payments_handlers.go` añade `p_key` al checkout de Epayco cuando existe `epayco.private_key`, manteniendo el mismo alcance publico de `/epayco/*` y `/api/public/licencias/payment_methods`.
+	- Impacto de matriz: sin cambios en roles ni permisos; el ajuste es funcional en checkout publico.
+
+- Actualizacion 2026-04-16 (checkout publico de licencias: Epayco sin popup intermedio):
+	- `web/pagar_licencia.html` ya no deja el pago en una pestaña emergente; ahora redirige la misma pestaña al checkout de Epayco y reutiliza `/epayco/respuesta.html` para volver con contexto a la pantalla de licencia.
+	- Impacto de matriz: sin cambios en roles, CRUD/A, wrappers o visibilidad por rol; `/epayco/*` sigue siendo publico y de solo consumo para el flujo comercial.
+
 - Actualizacion 2026-04-16 (home publico: ajuste visual de accesos superiores):
 	- `index.html` mantiene exactamente la misma visibilidad publica; el cambio solo compacta y centra los botones superiores en movil.
 	- Impacto de matriz: sin cambios en permisos o acceso por rol.
@@ -23,6 +95,11 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 - Actualizacion 2026-04-16 (pagina principal dinamica: correccion de render en editor super):
 	- `web/super/pagina_principal.html` respeta la cantidad persistida de tarjetas al recargar el editor.
 	- Impacto de matriz: sin cambios en permisos, roles ni visibilidad de modulo; la correccion solo evita un recorte incorrecto en el panel super.
+
+- Actualizacion 2026-04-16 (pagina principal dinamica: sin parpadeo inicial del campo cantidad):
+	- `web/super/pagina_principal.html` deja el campo `Cantidad de tarjetas` en estado de carga hasta recibir la configuracion real, evitando mostrar de forma transitoria el valor `5` que no corresponde a la configuracion activa.
+	- El mismo editor sincroniza la cantidad con el numero real de tarjetas persistidas, manteniendo alineacion con `index.html` y `/descripcion_de_los_sistemas.ht`.
+	- Impacto de matriz: sin cambios en permisos, CRUD/A, wrappers o visibilidad por rol; `Pagina principal (tarjetas index)` sigue siendo CRUA exclusivo de `super_administrador`.
 
 - Actualizacion 2026-04-16 (infraestructura publica: wildcard HTTPS y subdominio venta digital):
 	- `venta-digital.powerfulcontrolsystem.com` queda publicado como acceso publico HTTPS hacia la pagina global `venta_digital.html`.
@@ -120,6 +197,7 @@ Leyenda:
 | Impresoras operativas | CRUDA | CRUA | R | R | R | R | R | R |
 | Seguridad VPS Linux (super) | CRUA | - | - | - | - | - | - | - |
 | Administracion DB PostgreSQL (super) | R | - | - | - | - | - | - | - |
+| Reportes globales (super) | R | - | - | - | - | - | - | - |
 | Pagina principal (tarjetas index) | CRUA | - | - | - | - | - | - | - |
 | Portal publico - Juegos | R | R | R | R | R | R | R | R |
 | Contrato administrativo (super) | CRUA | - | - | - | - | - | - | - |

@@ -3,181 +3,258 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Login usuario - POS Multiempresa</title>
+  <title>Portal de usuarios de empresa</title>
   <link rel="stylesheet" href="/estilos.css">
 </head>
-<body class="super-page form-bg-dark empresa-subpage">
-  <div class="container empresa-module" style="max-width:560px;">
-    <section class="card empresa-section" style="margin-top:30px;">
-      <div class="page-header" style="margin-bottom:8px;">
-        <h1 style="margin:0;">Ingreso de usuario de empresa</h1>
-      </div>
-      <p class="form-help" style="margin-top:0;">Si es tu primer ingreso, primero confirma tu correo y luego crea tu contraseña.</p>
+<body class="login-page login-usuario-page form-bg-dark">
+  <header class="login-header login-usuario-header">
+    <p class="login-usuario-eyebrow">Portal publico de acceso operativo</p>
+    <h1 class="login-title">Ingreso de usuarios creados por administradores</h1>
+    <p class="login-subtitle">Aqui ingresan los usuarios internos de cada empresa con correo y contrasena. El acceso final depende del rol y de los permisos que haya definido el administrador.</p>
+  </header>
 
-      <div class="form" style="margin-top:10px; margin-bottom:8px;">
-        <div class="form-row">
-          <div class="form-col">
+  <main class="container login-usuario-shell">
+    <section class="card login-usuario-card">
+      <div class="login-usuario-grid">
+        <article class="login-usuario-panel login-usuario-panel-info">
+          <div class="login-usuario-intro">
+            <span class="login-usuario-badge">Roles por empresa</span>
+            <h2>Registro por invitacion, primer ingreso y recuperacion</h2>
+            <p>El administrador crea la cuenta, asigna el rol y envia la invitacion. Desde este portal el usuario confirma el correo, define la contrasena inicial, recupera acceso y acepta el contrato vigente.</p>
+          </div>
+
+          <div class="login-usuario-highlights">
+            <article class="login-usuario-highlight">
+              <h3>Registro</h3>
+              <p>No hay alta libre. Si tu empresa ya te creo el usuario, entra por la opcion Completar registro por invitacion.</p>
+              <button id="btnMostrarRegistro" type="button" class="btn secondary">Completar registro</button>
+            </article>
+            <article class="login-usuario-highlight">
+              <h3>Acceso diario</h3>
+              <p>Inicia sesion con correo y contrasena. Si tu rol tiene permisos limitados, veras solo los modulos habilitados dentro de administrar empresa.</p>
+              <button id="btnVolverALoginHero" type="button" class="btn secondary">Ir a iniciar sesion</button>
+            </article>
+            <article class="login-usuario-highlight">
+              <h3>Recuperacion</h3>
+              <p>Si olvidaste la contrasena, solicita el token de recuperacion y restablece el acceso desde este mismo portal.</p>
+              <button id="btnMostrarRecuperacionHero" type="button" class="btn secondary">Recuperar acceso</button>
+            </article>
+          </div>
+
+          <section id="contractPanel" class="login-usuario-contract" aria-live="polite">
+            <div class="login-usuario-contract-head">
+              <div>
+                <p class="login-usuario-contract-label">Contrato vigente</p>
+                <h3 id="contractTitle">Cargando contrato...</h3>
+              </div>
+              <span id="contractVersion" class="login-usuario-contract-version">Version --</span>
+            </div>
+            <p id="contractSummary" class="login-usuario-contract-summary">Estamos consultando la version activa del contrato para mostrarte el resumen antes del acceso.</p>
+            <p id="contractNote" class="login-usuario-contract-note"></p>
+            <div class="remember-row login-usuario-contract-acceptance">
+              <label class="remember-label" for="contractAcceptCheckbox">
+                <input id="contractAcceptCheckbox" type="checkbox">
+                <span>Acepto el contrato vigente para continuar con mis accesos y operaciones.</span>
+              </label>
+            </div>
+            <div class="login-inline-links login-usuario-contract-links">
+              <a id="contractLink" href="/contrato.html" target="_blank" rel="noopener">Leer contrato completo</a>
+              <span id="contractStatus" class="login-card-note">La aceptacion se registrara cuando completes el flujo de acceso.</span>
+            </div>
+          </section>
+
+          <div class="login-usuario-company-box">
             <label class="form-label" for="empresaID">Empresa ID</label>
             <input id="empresaID" type="number" class="form-input" min="1" step="1" inputmode="numeric" placeholder="Ejemplo: 6">
-            <div class="form-help">Si el enlace no trae empresa_id, ingrésalo aquí para continuar.</div>
+            <p class="form-help">Si el enlace no trae la empresa, ingresala aqui. El portal conserva este dato para los siguientes formularios.</p>
+            <p id="empresaContextHint" class="login-card-note"></p>
           </div>
-        </div>
+        </article>
+
+        <article class="login-usuario-panel login-usuario-panel-forms">
+          <form id="loginUsuarioForm" class="form login-usuario-form-card">
+            <div class="login-usuario-form-head">
+              <p class="login-usuario-form-tag">Inicio de sesion</p>
+              <h2>Entrar al panel empresarial</h2>
+              <p class="form-help">Usa el correo confirmado y la contrasena actual. Si debes crear o cambiar la contrasena, usa las opciones inferiores.</p>
+            </div>
+
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="email">Correo electronico</label>
+                <input id="email" type="email" class="form-input" autocomplete="username" required placeholder="usuario@empresa.com">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="password">Contrasena</label>
+                <input id="password" type="password" class="form-input" autocomplete="current-password" placeholder="Ingresa tu contrasena">
+              </div>
+            </div>
+
+            <div class="form-actions login-form-actions">
+              <button id="btnIngresar" type="submit" class="btn login-email-submit">Ingresar</button>
+            </div>
+            <div class="login-inline-links">
+              <a href="#" id="linkGoSetup">Completar registro</a>
+              <a href="#" id="linkGoRecovery">Olvide mi contrasena</a>
+              <a href="#" id="linkGoChangePassword">Cambiar contrasena</a>
+            </div>
+            <div id="msg" class="form-help auth-message"></div>
+          </form>
+
+          <form id="setupPasswordForm" class="form login-usuario-form-card" style="display:none;">
+            <div class="login-usuario-form-head">
+              <p class="login-usuario-form-tag">Registro por invitacion</p>
+              <h2>Crear contrasena inicial</h2>
+              <p class="form-help">Hazlo despues de confirmar el correo enviado por tu administrador.</p>
+            </div>
+
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="setupEmail">Correo electronico</label>
+                <input id="setupEmail" type="email" class="form-input" readonly>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="setupDocumento">Documento de identidad</label>
+                <input id="setupDocumento" type="password" class="form-input" required placeholder="Ingresa tu documento de identidad">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="setupPassword">Nueva contrasena</label>
+                <input id="setupPassword" type="password" class="form-input" required placeholder="Minimo 8 caracteres">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="setupPasswordConfirm">Confirmar contrasena</label>
+                <input id="setupPasswordConfirm" type="password" class="form-input" required placeholder="Repite tu nueva contrasena">
+              </div>
+            </div>
+
+            <div class="auth-alt-actions">
+              <button id="btnCrearPassword" type="submit" class="btn">Crear contrasena y entrar</button>
+              <button id="btnVolverLogin" type="button" class="btn secondary">Volver</button>
+            </div>
+            <div id="setupMsg" class="form-help auth-message"></div>
+          </form>
+
+          <form id="recoveryRequestForm" class="form login-usuario-form-card" style="display:none;">
+            <div class="login-usuario-form-head">
+              <p class="login-usuario-form-tag">Recuperacion</p>
+              <h2>Solicitar token de recuperacion</h2>
+              <p class="form-help">Si el usuario existe y esta confirmado, enviaremos instrucciones al correo registrado.</p>
+            </div>
+
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="recoveryEmail">Correo electronico</label>
+                <input id="recoveryEmail" type="email" class="form-input" required placeholder="usuario@empresa.com">
+              </div>
+            </div>
+
+            <div class="auth-alt-actions">
+              <button id="btnSolicitarRecuperacion" type="submit" class="btn">Solicitar recuperacion</button>
+              <button id="btnIrAReset" type="button" class="btn secondary">Ya tengo token</button>
+              <button id="btnVolverDesdeRecuperacion" type="button" class="btn secondary">Volver</button>
+            </div>
+            <div id="recoveryMsg" class="form-help auth-message"></div>
+          </form>
+
+          <form id="resetPasswordForm" class="form login-usuario-form-card" style="display:none;">
+            <div class="login-usuario-form-head">
+              <p class="login-usuario-form-tag">Restablecer contrasena</p>
+              <h2>Aplicar token y entrar</h2>
+              <p class="form-help">Usa el token enviado por correo y define una nueva contrasena.</p>
+            </div>
+
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="resetEmail">Correo electronico</label>
+                <input id="resetEmail" type="email" class="form-input" required placeholder="usuario@empresa.com">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="resetToken">Token de recuperacion</label>
+                <input id="resetToken" type="text" class="form-input" required placeholder="Ingresa el token recibido por correo">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="resetPassword">Nueva contrasena</label>
+                <input id="resetPassword" type="password" class="form-input" required placeholder="Minimo 8 caracteres">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="resetPasswordConfirm">Confirmar contrasena</label>
+                <input id="resetPasswordConfirm" type="password" class="form-input" required placeholder="Repite tu nueva contrasena">
+              </div>
+            </div>
+
+            <div class="auth-alt-actions">
+              <button id="btnRestablecerPassword" type="submit" class="btn">Restablecer y entrar</button>
+              <button id="btnVolverDesdeReset" type="button" class="btn secondary">Volver</button>
+            </div>
+            <div id="resetMsg" class="form-help auth-message"></div>
+          </form>
+
+          <form id="changePasswordForm" class="form login-usuario-form-card" style="display:none;">
+            <div class="login-usuario-form-head">
+              <p class="login-usuario-form-tag">Cambio autogestionado</p>
+              <h2>Actualizar contrasena actual</h2>
+              <p class="form-help">Usa tu contrasena actual para renovarla cuando tu politica de seguridad o tu operacion lo requieran.</p>
+            </div>
+
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="changeEmail">Correo electronico</label>
+                <input id="changeEmail" type="email" class="form-input" required placeholder="usuario@empresa.com">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="changeCurrentPassword">Contrasena actual</label>
+                <input id="changeCurrentPassword" type="password" class="form-input" required placeholder="Ingresa tu contrasena actual">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="changeNewPassword">Nueva contrasena</label>
+                <input id="changeNewPassword" type="password" class="form-input" required placeholder="Nueva contrasena segura">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="changeNewPasswordConfirm">Confirmar nueva contrasena</label>
+                <input id="changeNewPasswordConfirm" type="password" class="form-input" required placeholder="Repite la nueva contrasena">
+              </div>
+            </div>
+
+            <div class="auth-alt-actions">
+              <button id="btnCambiarPassword" type="submit" class="btn">Cambiar y entrar</button>
+              <button id="btnVolverDesdeCambio" type="button" class="btn secondary">Volver</button>
+            </div>
+            <div id="changePasswordMsg" class="form-help auth-message"></div>
+          </form>
+        </article>
       </div>
-
-      <form id="loginUsuarioForm" class="form" style="margin-top:10px;">
-        <div class="form-row">
-          <div class="form-col">
-            <label class="form-label" for="email">Correo electrónico</label>
-            <input id="email" type="email" class="form-input" autocomplete="username" required placeholder="usuario@empresa.com">
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-col">
-            <label class="form-label" for="password">Contraseña</label>
-            <input id="password" type="password" class="form-input" autocomplete="current-password" placeholder="Ingresa tu contraseña">
-          </div>
-        </div>
-
-        <div class="form-actions" style="margin-top:12px;">
-          <button id="btnIngresar" type="submit" class="btn">Ingresar</button>
-          <button id="btnMostrarRecuperacion" type="button" class="btn secondary">Olvide mi contraseña</button>
-          <button id="btnMostrarCambioClave" type="button" class="btn secondary">Cambiar mi contraseña</button>
-          <a href="/login.html" class="btn secondary" style="text-decoration:none;display:inline-flex;align-items:center;">Login Google</a>
-        </div>
-        <div id="msg" class="form-help"></div>
-      </form>
-
-      <form id="setupPasswordForm" class="form" style="margin-top:14px;display:none;">
-        <h3 style="margin:0 0 8px 0;">Primer ingreso: crea tu contraseña</h3>
-        <div class="form-row">
-          <div class="form-col">
-            <label class="form-label" for="setupEmail">Correo electrónico</label>
-            <input id="setupEmail" type="email" class="form-input" readonly>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-col">
-            <label class="form-label" for="setupDocumento">Documento de identidad</label>
-            <input id="setupDocumento" type="password" class="form-input" required placeholder="Ingresa tu documento de identidad">
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-col">
-            <label class="form-label" for="setupPassword">Nueva contraseña</label>
-            <input id="setupPassword" type="password" class="form-input" required placeholder="Mínimo 8 caracteres">
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-col">
-            <label class="form-label" for="setupPasswordConfirm">Confirmar contraseña</label>
-            <input id="setupPasswordConfirm" type="password" class="form-input" required placeholder="Repite tu nueva contraseña">
-          </div>
-        </div>
-
-        <div class="form-actions" style="margin-top:12px;">
-          <button id="btnCrearPassword" type="submit" class="btn">Crear contraseña y entrar</button>
-          <button id="btnVolverLogin" type="button" class="btn secondary">Volver</button>
-        </div>
-        <div id="setupMsg" class="form-help"></div>
-      </form>
-
-      <form id="recoveryRequestForm" class="form" style="margin-top:14px;display:none;">
-        <h3 style="margin:0 0 8px 0;">Recuperar contraseña</h3>
-        <div class="form-row">
-          <div class="form-col">
-            <label class="form-label" for="recoveryEmail">Correo electrónico</label>
-            <input id="recoveryEmail" type="email" class="form-input" required placeholder="usuario@empresa.com">
-          </div>
-        </div>
-
-        <div class="form-actions" style="margin-top:12px;">
-          <button id="btnSolicitarRecuperacion" type="submit" class="btn">Solicitar recuperación</button>
-          <button id="btnVolverDesdeRecuperacion" type="button" class="btn secondary">Volver</button>
-        </div>
-        <div id="recoveryMsg" class="form-help"></div>
-      </form>
-
-      <form id="resetPasswordForm" class="form" style="margin-top:14px;display:none;">
-        <h3 style="margin:0 0 8px 0;">Restablecer contraseña</h3>
-        <div class="form-row">
-          <div class="form-col">
-            <label class="form-label" for="resetEmail">Correo electrónico</label>
-            <input id="resetEmail" type="email" class="form-input" required placeholder="usuario@empresa.com">
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-col">
-            <label class="form-label" for="resetToken">Token de recuperación</label>
-            <input id="resetToken" type="text" class="form-input" required placeholder="Ingresa el token recibido por correo">
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-col">
-            <label class="form-label" for="resetPassword">Nueva contraseña</label>
-            <input id="resetPassword" type="password" class="form-input" required placeholder="Mínimo 8 caracteres">
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-col">
-            <label class="form-label" for="resetPasswordConfirm">Confirmar contraseña</label>
-            <input id="resetPasswordConfirm" type="password" class="form-input" required placeholder="Repite tu nueva contraseña">
-          </div>
-        </div>
-
-        <div class="form-actions" style="margin-top:12px;">
-          <button id="btnRestablecerPassword" type="submit" class="btn">Restablecer y entrar</button>
-          <button id="btnVolverDesdeReset" type="button" class="btn secondary">Volver</button>
-        </div>
-        <div id="resetMsg" class="form-help"></div>
-      </form>
-
-      <form id="changePasswordForm" class="form" style="margin-top:14px;display:none;">
-        <h3 style="margin:0 0 8px 0;">Cambiar contraseña</h3>
-        <p class="form-help" style="margin-top:0;">Usa tu contraseña actual para actualizarla de forma autogestionada.</p>
-
-        <div class="form-row">
-          <div class="form-col">
-            <label class="form-label" for="changeEmail">Correo electrónico</label>
-            <input id="changeEmail" type="email" class="form-input" required placeholder="usuario@empresa.com">
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-col">
-            <label class="form-label" for="changeCurrentPassword">Contraseña actual</label>
-            <input id="changeCurrentPassword" type="password" class="form-input" required placeholder="Ingresa tu contraseña actual">
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-col">
-            <label class="form-label" for="changeNewPassword">Nueva contraseña</label>
-            <input id="changeNewPassword" type="password" class="form-input" required placeholder="Nueva contraseña segura">
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-col">
-            <label class="form-label" for="changeNewPasswordConfirm">Confirmar nueva contraseña</label>
-            <input id="changeNewPasswordConfirm" type="password" class="form-input" required placeholder="Repite la nueva contraseña">
-          </div>
-        </div>
-
-        <div class="form-actions" style="margin-top:12px;">
-          <button id="btnCambiarPassword" type="submit" class="btn">Cambiar y entrar</button>
-          <button id="btnVolverDesdeCambio" type="button" class="btn secondary">Volver</button>
-        </div>
-        <div id="changePasswordMsg" class="form-help"></div>
-      </form>
     </section>
-  </div>
+  </main>
 
   <script src="/js/login_usuario.js"></script>
 </body>

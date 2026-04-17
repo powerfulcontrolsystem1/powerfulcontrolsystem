@@ -20,6 +20,15 @@ type empresaSoporteRemotoConfigPayload struct {
 	ModoOperacion              string `json:"modo_operacion"`
 	RequiereAprobacionOperador *bool  `json:"requiere_aprobacion_operador"`
 	AutoCerrarMinutos          int    `json:"auto_cerrar_minutos"`
+	MaxConexionesMes           int    `json:"max_conexiones_mes"`
+	MaxMinutosMes              int    `json:"max_minutos_mes"`
+	MaxDispositivos            int    `json:"max_dispositivos"`
+	PortalPublicoHabilitado    *bool  `json:"portal_publico_habilitado"`
+	RustDeskServerHost         string `json:"rustdesk_server_host"`
+	RustDeskServerKey          string `json:"rustdesk_server_key"`
+	ClienteWindowsURL          string `json:"cliente_windows_url"`
+	ClienteLinuxURL            string `json:"cliente_linux_url"`
+	CarpetaTransferencia       string `json:"carpeta_transferencia"`
 	Observaciones              string `json:"observaciones"`
 }
 
@@ -32,6 +41,10 @@ type empresaSoporteRemotoDispositivoPayload struct {
 	SistemaOperativo  string `json:"sistema_operativo"`
 	AgenteVersion     string `json:"agente_version"`
 	StreamURL         string `json:"stream_url"`
+	RustDeskDeviceID  string `json:"rustdesk_device_id"`
+	RustDeskPassword  string `json:"rustdesk_password"`
+	CarpetaTransferencia string `json:"carpeta_transferencia"`
+	AccesoPublicoHabilitado *bool `json:"acceso_publico_habilitado"`
 	EstadoConexion    string `json:"estado_conexion"`
 	AccesoPIN         string `json:"acceso_pin"`
 	Observaciones     string `json:"observaciones"`
@@ -46,6 +59,21 @@ type empresaSoporteRemotoSesionPayload struct {
 	DuracionMin    int    `json:"duracion_min"`
 	EstadoSesion   string `json:"estado_sesion"`
 	Observaciones  string `json:"observaciones"`
+}
+
+type empresaSoporteRemotoAccessBundle struct {
+	Proveedor            string `json:"proveedor"`
+	ModoOperacion        string `json:"modo_operacion"`
+	EmbedURL             string `json:"embed_url,omitempty"`
+	PortalPublicoURL     string `json:"portal_publico_url,omitempty"`
+	RequiereCliente      bool   `json:"requiere_cliente"`
+	RustDeskServerHost   string `json:"rustdesk_server_host,omitempty"`
+	RustDeskServerKey    string `json:"rustdesk_server_key,omitempty"`
+	RustDeskDeviceID     string `json:"rustdesk_device_id,omitempty"`
+	RustDeskPassword     string `json:"rustdesk_password,omitempty"`
+	ClienteWindowsURL    string `json:"cliente_windows_url,omitempty"`
+	ClienteLinuxURL      string `json:"cliente_linux_url,omitempty"`
+	CarpetaTransferencia string `json:"carpeta_transferencia,omitempty"`
 }
 
 type empresaSoporteRemotoHeartbeatPayload struct {
@@ -87,6 +115,8 @@ func empresaSoporteRemotoNormalizeAction(raw string) string {
 		return "export_sesiones"
 	case "heartbeat_dispositivo", "heartbeat":
 		return "heartbeat_dispositivo"
+	case "resolver_acceso_publico", "acceso_publico":
+		return "resolver_acceso_publico"
 	default:
 		return ""
 	}
@@ -97,6 +127,19 @@ func empresaSoporteRemotoBuildViewerURL(r *http.Request, empresaID int64, codigo
 		return ""
 	}
 	base := &url.URL{Path: "/administrar_empresa/soporte_remoto_view.html"}
+	q := base.Query()
+	q.Set("empresa_id", strconv.FormatInt(empresaID, 10))
+	q.Set("codigo_sesion", strings.TrimSpace(codigoSesion))
+	q.Set("token", strings.TrimSpace(token))
+	base.RawQuery = q.Encode()
+	return base.String()
+}
+
+func empresaSoporteRemotoBuildPublicPortalURL(r *http.Request, empresaID int64, codigoSesion, token string) string {
+	if r == nil {
+		return ""
+	}
+	base := &url.URL{Path: "/soporte_remoto_acceso.html"}
 	q := base.Query()
 	q.Set("empresa_id", strconv.FormatInt(empresaID, 10))
 	q.Set("codigo_sesion", strings.TrimSpace(codigoSesion))
@@ -127,6 +170,34 @@ func empresaSoporteRemotoMaskStreamURL(raw string) string {
 	return masked
 }
 
+func empresaSoporteRemotoBuildAccessBundle(r *http.Request, cfg dbpkg.EmpresaSoporteRemotoConfig, device dbpkg.EmpresaSoporteRemotoDispositivo, empresaID int64, codigoSesion, token string) empresaSoporteRemotoAccessBundle {
+	bundle := empresaSoporteRemotoAccessBundle{
+		Proveedor:            cfg.ProveedorPreferido,
+		ModoOperacion:        cfg.ModoOperacion,
+		EmbedURL:             strings.TrimSpace(device.StreamURL),
+		PortalPublicoURL:     empresaSoporteRemotoBuildPublicPortalURL(r, empresaID, codigoSesion, token),
+		RustDeskServerHost:   strings.TrimSpace(cfg.RustDeskServerHost),
+		RustDeskServerKey:    strings.TrimSpace(cfg.RustDeskServerKey),
+		RustDeskDeviceID:     strings.TrimSpace(device.RustDeskDeviceID),
+		ClienteWindowsURL:    strings.TrimSpace(cfg.ClienteWindowsURL),
+		ClienteLinuxURL:      strings.TrimSpace(cfg.ClienteLinuxURL),
+		CarpetaTransferencia: strings.TrimSpace(device.CarpetaTransferencia),
+	}
+	if bundle.CarpetaTransferencia == "" {
+		bundle.CarpetaTransferencia = strings.TrimSpace(cfg.CarpetaTransferencia)
+	}
+	if bundle.RustDeskDeviceID != "" {
+		bundle.RequiereCliente = true
+		if password, err := dbpkg.ResolveEmpresaSoporteRemotoRustDeskPassword(device); err == nil {
+			bundle.RustDeskPassword = strings.TrimSpace(password)
+		}
+	}
+	if bundle.EmbedURL != "" {
+		bundle.RequiereCliente = false
+	}
+	return bundle
+}
+
 func empresaSoporteRemotoComposeSessionsDataset(empresaID int64, rows []dbpkg.EmpresaSoporteRemotoSession, total int64) empresaReporteDataset {
 	datasetRows := make([]map[string]interface{}, 0, len(rows))
 	for _, row := range rows {
@@ -140,6 +211,9 @@ func empresaSoporteRemotoComposeSessionsDataset(empresaID int64, rows []dbpkg.Em
 			"operador_nombre":     row.OperadorNombre,
 			"operador_email":      row.OperadorEmail,
 			"estado_sesion":       row.EstadoSesion,
+			"duracion_min_solicitada": row.DuracionMinSolicitada,
+			"duracion_min_consumida":  row.DuracionMinConsumida,
+			"bloqueada_por_limite":    row.BloqueadaPorLimite,
 			"motivo":              row.Motivo,
 			"url_visualizacion":   empresaSoporteRemotoMaskStreamURL(row.URLVisualizacion),
 			"iniciada_en":         row.IniciadaEn,
@@ -168,6 +242,9 @@ func empresaSoporteRemotoComposeSessionsDataset(empresaID int64, rows []dbpkg.Em
 			"operador_nombre",
 			"operador_email",
 			"estado_sesion",
+			"duracion_min_solicitada",
+			"duracion_min_consumida",
+			"bloqueada_por_limite",
 			"motivo",
 			"url_visualizacion",
 			"iniciada_en",
@@ -181,6 +258,7 @@ func empresaSoporteRemotoComposeSessionsDataset(empresaID int64, rows []dbpkg.Em
 		Summary: map[string]interface{}{
 			"sesiones_total":         total,
 			"sesiones_exportadas":    len(datasetRows),
+			"incluye_consumo_plan":   true,
 			"modulo":                 "soporte_remoto",
 			"empresa_id":             empresaID,
 			"formato_trazable":       "json,csv,txt,xls,pdf",
@@ -267,15 +345,25 @@ func EmpresaSoporteRemotoHandler(dbEmp *sql.DB) http.HandlerFunc {
 // PublicEmpresaSoporteRemotoAgentHandler expone operaciones de heartbeat/estado para plugin de agencia remota.
 func PublicEmpresaSoporteRemotoAgentHandler(dbEmp *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
 		action := empresaSoporteRemotoNormalizeAction(r.URL.Query().Get("action"))
 		switch action {
+		case "resolver_acceso_publico":
+			if r.Method != http.MethodGet {
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+			empresaSoporteRemotoResolverAccesoPublico(w, r, dbEmp)
 		case "heartbeat_dispositivo":
+			if r.Method != http.MethodPost {
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
 			empresaSoporteRemotoHeartbeat(w, r, dbEmp)
 		case "aprobar_sesion", "finalizar_sesion":
+			if r.Method != http.MethodPost {
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
 			empresaSoporteRemotoSesionAgentUpdate(w, r, dbEmp, action)
 		default:
 			http.Error(w, "action invalida", http.StatusBadRequest)
@@ -294,7 +382,12 @@ func empresaSoporteRemotoConfigGet(w http.ResponseWriter, r *http.Request, dbEmp
 		http.Error(w, "No se pudo consultar configuracion de soporte remoto", http.StatusInternalServerError)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "config": cfg})
+	uso, err := dbpkg.GetEmpresaSoporteRemotoUso(dbEmp, empresaID)
+	if err != nil {
+		http.Error(w, "No se pudo consultar consumo de soporte remoto", http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "config": cfg, "uso": uso})
 }
 
 func empresaSoporteRemotoConfigUpsert(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB) {
@@ -328,6 +421,33 @@ func empresaSoporteRemotoConfigUpsert(w http.ResponseWriter, r *http.Request, db
 	if payload.AutoCerrarMinutos > 0 {
 		current.AutoCerrarMinutos = payload.AutoCerrarMinutos
 	}
+	if payload.MaxConexionesMes >= 0 {
+		current.MaxConexionesMes = payload.MaxConexionesMes
+	}
+	if payload.MaxMinutosMes >= 0 {
+		current.MaxMinutosMes = payload.MaxMinutosMes
+	}
+	if payload.MaxDispositivos >= 0 {
+		current.MaxDispositivos = payload.MaxDispositivos
+	}
+	if payload.PortalPublicoHabilitado != nil {
+		current.PortalPublicoHabilitado = *payload.PortalPublicoHabilitado
+	}
+	if strings.TrimSpace(payload.RustDeskServerHost) != "" {
+		current.RustDeskServerHost = payload.RustDeskServerHost
+	}
+	if strings.TrimSpace(payload.RustDeskServerKey) != "" {
+		current.RustDeskServerKey = payload.RustDeskServerKey
+	}
+	if strings.TrimSpace(payload.ClienteWindowsURL) != "" {
+		current.ClienteWindowsURL = payload.ClienteWindowsURL
+	}
+	if strings.TrimSpace(payload.ClienteLinuxURL) != "" {
+		current.ClienteLinuxURL = payload.ClienteLinuxURL
+	}
+	if strings.TrimSpace(payload.CarpetaTransferencia) != "" {
+		current.CarpetaTransferencia = payload.CarpetaTransferencia
+	}
 	current.UsuarioCreador = adminEmailFromRequest(r)
 	current.Observaciones = strings.TrimSpace(payload.Observaciones)
 	if _, err := dbpkg.UpsertEmpresaSoporteRemotoConfig(dbEmp, current); err != nil {
@@ -339,7 +459,12 @@ func empresaSoporteRemotoConfigUpsert(w http.ResponseWriter, r *http.Request, db
 		http.Error(w, "Configuracion guardada, pero no se pudo consultar", http.StatusInternalServerError)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "config": cfg})
+	uso, err := dbpkg.GetEmpresaSoporteRemotoUso(dbEmp, empresaID)
+	if err != nil {
+		http.Error(w, "Configuracion guardada, pero no se pudo consultar el consumo", http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "config": cfg, "uso": uso})
 }
 
 func empresaSoporteRemotoDispositivosGet(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB) {
@@ -414,12 +539,21 @@ func empresaSoporteRemotoDispositivoCreate(w http.ResponseWriter, r *http.Reques
 		SistemaOperativo:  payload.SistemaOperativo,
 		AgenteVersion:     payload.AgenteVersion,
 		StreamURL:         payload.StreamURL,
+		RustDeskDeviceID:  payload.RustDeskDeviceID,
+		RustDeskPasswordEnc: payload.RustDeskPassword,
+		CarpetaTransferencia: payload.CarpetaTransferencia,
+		AccesoPublicoHabilitado: payload.AccesoPublicoHabilitado == nil || *payload.AccesoPublicoHabilitado,
 		EstadoConexion:    payload.EstadoConexion,
 		UsuarioCreador:    adminEmailFromRequest(r),
 		Estado:            "activo",
 		Observaciones:     payload.Observaciones,
 	}, payload.AccesoPIN)
 	if err != nil {
+		if errors.Is(err, dbpkg.ErrSoporteRemotoPlanLimit) {
+			uso, _ := dbpkg.GetEmpresaSoporteRemotoUso(dbEmp, empresaID)
+			writeJSON(w, http.StatusPreconditionFailed, map[string]interface{}{"ok": false, "error": err.Error(), "uso": uso})
+			return
+		}
 		http.Error(w, "No se pudo crear dispositivo: "+err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -461,6 +595,10 @@ func empresaSoporteRemotoDispositivoUpdate(w http.ResponseWriter, r *http.Reques
 		SistemaOperativo:  payload.SistemaOperativo,
 		AgenteVersion:     payload.AgenteVersion,
 		StreamURL:         payload.StreamURL,
+		RustDeskDeviceID:  payload.RustDeskDeviceID,
+		RustDeskPasswordEnc: payload.RustDeskPassword,
+		CarpetaTransferencia: payload.CarpetaTransferencia,
+		AccesoPublicoHabilitado: payload.AccesoPublicoHabilitado == nil || *payload.AccesoPublicoHabilitado,
 		EstadoConexion:    payload.EstadoConexion,
 		UsuarioCreador:    adminEmailFromRequest(r),
 		Estado:            "activo",
@@ -532,7 +670,8 @@ func empresaSoporteRemotoSesionesGet(w http.ResponseWriter, r *http.Request, dbE
 		http.Error(w, "No se pudo consultar sesiones de soporte remoto", http.StatusInternalServerError)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "total": total, "rows": rows})
+	uso, _ := dbpkg.GetEmpresaSoporteRemotoUso(dbEmp, empresaID)
+	writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "total": total, "rows": rows, "uso": uso})
 }
 
 func empresaSoporteRemotoSesionCreate(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB) {
@@ -579,15 +718,22 @@ func empresaSoporteRemotoSesionCreate(w http.ResponseWriter, r *http.Request, db
 		cfg.RequiereAprobacionOperador,
 	)
 	if err != nil {
+		if errors.Is(err, dbpkg.ErrSoporteRemotoPlanLimit) {
+			uso, _ := dbpkg.GetEmpresaSoporteRemotoUso(dbEmp, empresaID)
+			writeJSON(w, http.StatusPreconditionFailed, map[string]interface{}{"ok": false, "error": err.Error(), "uso": uso})
+			return
+		}
 		http.Error(w, "No se pudo crear sesion de soporte remoto: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	viewerURL := empresaSoporteRemotoBuildViewerURL(r, empresaID, session.CodigoSesion, session.TokenVisualizacionRaw)
+	uso, _ := dbpkg.GetEmpresaSoporteRemotoUso(dbEmp, empresaID)
 	writeJSON(w, http.StatusCreated, map[string]interface{}{
 		"ok":         true,
 		"session":    session,
 		"viewer_url": viewerURL,
+		"uso":        uso,
 	})
 }
 
@@ -685,6 +831,12 @@ func empresaSoporteRemotoResolverVisualizacion(w http.ResponseWriter, r *http.Re
 	if !accesoPermitido {
 		motivoBloqueo = "sesion no activa: " + session.EstadoSesion
 	}
+	access := empresaSoporteRemotoAccessBundle{EmbedURL: session.URLVisualizacion}
+	if cfg, cfgErr := dbpkg.GetEmpresaSoporteRemotoConfig(dbEmp, empresaID); cfgErr == nil {
+		if device, deviceErr := dbpkg.GetEmpresaSoporteRemotoDispositivoByID(dbEmp, empresaID, session.DispositivoID); deviceErr == nil {
+			access = empresaSoporteRemotoBuildAccessBundle(r, cfg, device, empresaID, session.CodigoSesion, token)
+		}
+	}
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"ok":               true,
@@ -692,7 +844,62 @@ func empresaSoporteRemotoResolverVisualizacion(w http.ResponseWriter, r *http.Re
 		"acceso_permitido": accesoPermitido,
 		"motivo_bloqueo":   motivoBloqueo,
 		"embed_url":        session.URLVisualizacion,
+		"access":           access,
 		"proveedor_hint":   "Configura stream_url del dispositivo a una URL web embebible (noVNC/Guacamole/RustDesk Web)",
+	})
+}
+
+func empresaSoporteRemotoResolverAccesoPublico(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB) {
+	empresaID, err := parseEmpresaIDQuery(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	codigoSesion := strings.TrimSpace(r.URL.Query().Get("codigo_sesion"))
+	token := strings.TrimSpace(r.URL.Query().Get("token"))
+	if codigoSesion == "" || token == "" {
+		http.Error(w, "codigo_sesion y token son obligatorios", http.StatusBadRequest)
+		return
+	}
+	session, err := dbpkg.ResolveEmpresaSoporteRemotoViewerSession(dbEmp, empresaID, codigoSesion, token)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "sesion/token invalido", http.StatusUnauthorized)
+			return
+		}
+		http.Error(w, "No se pudo resolver acceso remoto", http.StatusInternalServerError)
+		return
+	}
+	cfg, cfgErr := dbpkg.GetEmpresaSoporteRemotoConfig(dbEmp, empresaID)
+	if cfgErr != nil {
+		http.Error(w, "No se pudo cargar configuracion de soporte remoto", http.StatusInternalServerError)
+		return
+	}
+	if !cfg.PortalPublicoHabilitado {
+		http.Error(w, "portal publico deshabilitado", http.StatusForbidden)
+		return
+	}
+	device, deviceErr := dbpkg.GetEmpresaSoporteRemotoDispositivoByID(dbEmp, empresaID, session.DispositivoID)
+	if deviceErr != nil {
+		http.Error(w, "No se pudo cargar el dispositivo remoto", http.StatusInternalServerError)
+		return
+	}
+	access := empresaSoporteRemotoBuildAccessBundle(r, cfg, device, empresaID, session.CodigoSesion, token)
+	accesoPermitido := session.EstadoSesion == "activa" || session.EstadoSesion == "aprobada"
+	motivoBloqueo := ""
+	if !accesoPermitido {
+		motivoBloqueo = "sesion no activa: " + session.EstadoSesion
+	}
+	if !device.AccesoPublicoHabilitado {
+		accesoPermitido = false
+		motivoBloqueo = "dispositivo con acceso publico deshabilitado"
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"ok":               true,
+		"session":          session,
+		"acceso_permitido": accesoPermitido,
+		"motivo_bloqueo":   motivoBloqueo,
+		"access":           access,
 	})
 }
 

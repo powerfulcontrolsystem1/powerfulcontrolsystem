@@ -1,0 +1,893 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Ajedrez vs IA plus</title>
+  <link rel="icon" type="image/png" href="/img/punto_venta.png">
+  <link rel="stylesheet" href="/Juegos/arcade_window.css">
+  <style>
+    :root {
+      --arc-bg: #1c1a16;
+      --arc-bg-soft: #302c25;
+      --arc-accent: #d8b98a;
+      --arc-accent-dark: #8bc7ff;
+    }
+
+    .chess-stage {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 250px;
+      gap: 14px;
+      padding: 14px;
+      box-sizing: border-box;
+      align-items: stretch;
+    }
+
+    .chess-board {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      grid-template-rows: repeat(8, 1fr);
+      aspect-ratio: 1 / 1;
+      width: 100%;
+      background: #3a2f24;
+      border-radius: 22px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
+    }
+
+    .chess-square {
+      position: relative;
+      border: none;
+      padding: 0;
+      margin: 0;
+      font: inherit;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      font-size: clamp(1.5rem, 3vw, 2.25rem);
+      transition: filter 0.14s ease, transform 0.14s ease;
+    }
+
+    .chess-square.light {
+      background: #e7d4b5;
+      color: #2d241c;
+    }
+
+    .chess-square.dark {
+      background: #937252;
+      color: #f5ede6;
+    }
+
+    .chess-square.selected {
+      box-shadow: inset 0 0 0 3px rgba(255, 233, 133, 0.9);
+    }
+
+    .chess-square.legal::after,
+    .chess-square.hint-from::after,
+    .chess-square.hint-to::after {
+      content: '';
+      position: absolute;
+      inset: 12px;
+      border-radius: 999px;
+      background: rgba(63, 223, 160, 0.28);
+    }
+
+    .chess-square.hint-from::after,
+    .chess-square.hint-to::after {
+      background: rgba(123, 199, 255, 0.4);
+      inset: 8px;
+    }
+
+    .chess-piece.white {
+      color: #fffdf8;
+      text-shadow: 0 1px 0 rgba(0,0,0,0.34);
+    }
+
+    .chess-piece.black {
+      color: #231a13;
+      text-shadow: 0 1px 0 rgba(255,255,255,0.18);
+    }
+
+    .chess-side {
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+
+    .chess-panel {
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: var(--arc-text);
+    }
+
+    .chess-panel h3 {
+      margin: 0 0 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-size: 0.96rem;
+    }
+
+    .chess-panel p,
+    .chess-panel li {
+      margin: 0;
+      color: var(--arc-muted);
+      font-size: 0.9rem;
+      line-height: 1.45;
+    }
+
+    .chess-panel ul {
+      margin: 10px 0 0;
+      padding-left: 18px;
+    }
+
+    .chess-panel .stack {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .captured-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      min-height: 24px;
+      margin-top: 8px;
+      color: #f3eadf;
+      font-size: 1.1rem;
+    }
+
+    @media (max-width: 760px) {
+      .chess-stage {
+        grid-template-columns: 1fr;
+      }
+      .chess-side {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .chess-side {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body class="arcade-window-page">
+  <main class="arcade-window">
+    <section class="arcade-header">
+      <div class="arcade-title-wrap">
+        <p class="arcade-kicker">Tablero táctico</p>
+        <h1>Ajedrez vs IA plus</h1>
+        <p class="arcade-copy">Enfréntate a una IA con varios niveles. Esta versión mantiene reglas esenciales, añade ayudas tácticas, récord local y un sistema de vidas por sesión para mantener continuidad arcade.</p>
+      </div>
+      <div class="arcade-stats">
+        <div class="arcade-stat"><span class="arcade-stat-label">Puntaje</span><span id="scoreValue" class="arcade-stat-value">0</span></div>
+        <div class="arcade-stat"><span class="arcade-stat-label">Nivel</span><span id="levelValue" class="arcade-stat-value">1</span></div>
+        <div class="arcade-stat"><span class="arcade-stat-label">Vidas</span><span id="livesValue" class="arcade-stat-value">3</span></div>
+        <div class="arcade-stat"><span class="arcade-stat-label">Poder</span><span id="powerValue" class="arcade-stat-value">Base</span></div>
+      </div>
+    </section>
+
+    <section class="arcade-chip-row">
+      <span class="arcade-chip">Jugador:<strong id="playerNameValue">Invitado</strong></span>
+      <span class="arcade-chip">Record:<strong id="bestValue">0</strong></span>
+      <span id="bestMeta" class="arcade-chip note">Sin marcas guardadas</span>
+      <span class="arcade-chip">Hint:<strong id="hintValue">3</strong></span>
+      <span class="arcade-chip">Rehacer:<strong id="undoValue">1</strong></span>
+      <span class="arcade-chip">Congelar:<strong id="freezeValue">1</strong></span>
+      <button id="changePlayerBtn" class="arcade-chip-btn" type="button">Cambiar jugador</button>
+      <button id="soundToggleBtn" class="arcade-chip-btn secondary" type="button" aria-pressed="true">Sonido: activado</button>
+      <button id="pauseBtn" class="arcade-chip-btn alert" type="button" aria-pressed="false">Pausa</button>
+    </section>
+
+    <section class="arcade-stage chess-stage" aria-label="Juego Ajedrez vs IA plus">
+      <div id="board" class="chess-board" role="grid" aria-label="Tablero de ajedrez"></div>
+      <aside class="chess-side">
+        <section class="chess-panel">
+          <h3>Ayudas</h3>
+          <p>Puedes pedir una sugerencia, deshacer el último ciclo completo o congelar el próximo turno de la IA durante unos segundos.</p>
+          <div class="stack">
+            <button id="hintBtn" class="arcade-btn secondary" type="button">Sugerencia</button>
+            <button id="undoBtn" class="arcade-btn secondary" type="button">Deshacer</button>
+            <button id="freezeBtn" class="arcade-btn secondary" type="button">Congelar IA</button>
+          </div>
+        </section>
+        <section class="chess-panel">
+          <h3>Estado</h3>
+          <p id="turnText">Turno de blancas</p>
+          <p id="statusText" class="arcade-status">Esperando inicio...</p>
+          <h3 style="margin-top:14px;">Capturas</h3>
+          <div id="capturedWhite" class="captured-row" aria-label="Piezas blancas capturadas"></div>
+          <div id="capturedBlack" class="captured-row" aria-label="Piezas negras capturadas"></div>
+        </section>
+      </aside>
+      <div id="overlay" class="arcade-overlay">
+        <div class="arcade-overlay-card">
+          <h2 id="overlayTitle">Tablero listo</h2>
+          <p id="overlayText">Juegas con blancas. La computadora controla negras con dificultad creciente. Las vidas representan intentos de partida dentro de la sesión del arcade.</p>
+          <ul>
+            <li>Ganas puntos por capturas, jaques simples y victorias.</li>
+            <li>Sugerencia marca un movimiento recomendado sin jugarlo.</li>
+            <li>La pausa detiene por completo el turno en espera de la IA.</li>
+          </ul>
+          <div class="arcade-actions">
+            <button id="startBtn" class="arcade-btn" type="button">Comenzar duelo</button>
+            <button id="backBtnTop" class="arcade-btn secondary" type="button">Volver al menu</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="arcade-footer">
+      <button id="restartBtn" class="arcade-btn secondary" type="button">Reiniciar</button>
+      <button id="backBtnBottom" class="arcade-btn secondary" type="button">Salir al menu</button>
+    </section>
+  </main>
+
+  <script src="/Juegos/arcade_shared.js"></script>
+  <script>
+    (function () {
+      var GAME_KEY = 'ajedrez_vs_ia';
+      var arcade = window.PCSArcade || null;
+      var boardEl = document.getElementById('board');
+      var scoreValue = document.getElementById('scoreValue');
+      var levelValue = document.getElementById('levelValue');
+      var livesValue = document.getElementById('livesValue');
+      var powerValue = document.getElementById('powerValue');
+      var playerNameValue = document.getElementById('playerNameValue');
+      var bestValue = document.getElementById('bestValue');
+      var bestMeta = document.getElementById('bestMeta');
+      var hintValue = document.getElementById('hintValue');
+      var undoValue = document.getElementById('undoValue');
+      var freezeValue = document.getElementById('freezeValue');
+      var capturedWhite = document.getElementById('capturedWhite');
+      var capturedBlack = document.getElementById('capturedBlack');
+      var turnText = document.getElementById('turnText');
+      var statusText = document.getElementById('statusText');
+      var changePlayerBtn = document.getElementById('changePlayerBtn');
+      var soundToggleBtn = document.getElementById('soundToggleBtn');
+      var pauseBtn = document.getElementById('pauseBtn');
+      var hintBtn = document.getElementById('hintBtn');
+      var undoBtn = document.getElementById('undoBtn');
+      var freezeBtn = document.getElementById('freezeBtn');
+      var overlay = document.getElementById('overlay');
+      var overlayTitle = document.getElementById('overlayTitle');
+      var overlayText = document.getElementById('overlayText');
+      var startBtn = document.getElementById('startBtn');
+      var restartBtn = document.getElementById('restartBtn');
+      var backBtnTop = document.getElementById('backBtnTop');
+      var backBtnBottom = document.getElementById('backBtnBottom');
+
+      var PIECE_ICONS = {
+        K: '♔', Q: '♕', R: '♖', B: '♗', N: '♘', P: '♙',
+        k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟'
+      };
+      var VALUES = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 20000 };
+      var DIRS = {
+        bishop: [[1, 1], [1, -1], [-1, 1], [-1, -1]],
+        rook: [[1, 0], [-1, 0], [0, 1], [0, -1]],
+        king: [[1, 1], [1, -1], [-1, 1], [-1, -1], [1, 0], [-1, 0], [0, 1], [0, -1]],
+        knight: [[1, 2], [2, 1], [-1, 2], [-2, 1], [1, -2], [2, -1], [-1, -2], [-2, -1]]
+      };
+
+      var state = {
+        running: false,
+        paused: false,
+        gameOver: false,
+        level: 1,
+        lives: 3,
+        score: 0,
+        powerLabel: 'Base',
+        hintCharges: 3,
+        undoCharges: 1,
+        freezeCharges: 1,
+        freezeDelay: 0,
+        board: [],
+        turn: 'white',
+        selected: null,
+        legalMoves: [],
+        hintMove: null,
+        capturedByWhite: [],
+        capturedByBlack: [],
+        history: [],
+        aiCountdown: 0,
+        aiPending: false,
+        lastFrame: 0
+      };
+
+      function initialBoard() {
+        return [
+          ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
+          ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+          ['', '', '', '', '', '', '', ''],
+          ['', '', '', '', '', '', '', ''],
+          ['', '', '', '', '', '', '', ''],
+          ['', '', '', '', '', '', '', ''],
+          ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+          ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
+        ];
+      }
+
+      function playEffect(name) {
+        if (arcade) arcade.playEffect(name);
+      }
+
+      function setStatus(text) {
+        statusText.textContent = text;
+      }
+
+      function syncProfile() {
+        if (!arcade) return;
+        var profile = arcade.getProfile();
+        var scores = arcade.getGameScores(GAME_KEY);
+        playerNameValue.textContent = profile.playerName || 'Invitado';
+        bestValue.textContent = String(scores.best ? Number(scores.best.score || 0) : 0);
+        bestMeta.textContent = scores.best ? ('Por ' + scores.best.playerName + (scores.best.detail ? ' · ' + scores.best.detail : '')) : 'Sin marcas guardadas';
+        soundToggleBtn.textContent = arcade.isSoundEnabled() ? 'Sonido: activado' : 'Sonido: apagado';
+        soundToggleBtn.setAttribute('aria-pressed', arcade.isSoundEnabled() ? 'true' : 'false');
+      }
+
+      function cloneBoard(board) {
+        return board.map(function (row) { return row.slice(); });
+      }
+
+      function pieceColor(piece) {
+        if (!piece) return '';
+        return piece === piece.toUpperCase() ? 'white' : 'black';
+      }
+
+      function isInside(x, y) {
+        return x >= 0 && x < 8 && y >= 0 && y < 8;
+      }
+
+      function getPiece(board, x, y) {
+        return board[y] && board[y][x] ? board[y][x] : '';
+      }
+
+      function toCell(cell) {
+        return { x: cell.x, y: cell.y };
+      }
+
+      function serializeMove(move) {
+        return move.from.x + ',' + move.from.y + '>' + move.to.x + ',' + move.to.y;
+      }
+
+      function boardHasKing(board, color) {
+        var target = color === 'white' ? 'K' : 'k';
+        for (var y = 0; y < 8; y += 1) {
+          for (var x = 0; x < 8; x += 1) {
+            if (board[y][x] === target) return true;
+          }
+        }
+        return false;
+      }
+
+      function addSlidingMoves(board, moves, from, color, directions) {
+        for (var i = 0; i < directions.length; i += 1) {
+          var dir = directions[i];
+          var x = from.x + dir[0];
+          var y = from.y + dir[1];
+          while (isInside(x, y)) {
+            var target = getPiece(board, x, y);
+            if (!target) {
+              moves.push({ from: toCell(from), to: { x: x, y: y } });
+            } else {
+              if (pieceColor(target) !== color) {
+                moves.push({ from: toCell(from), to: { x: x, y: y }, capture: target });
+              }
+              break;
+            }
+            x += dir[0];
+            y += dir[1];
+          }
+        }
+      }
+
+      function generatePieceMoves(board, x, y) {
+        var piece = getPiece(board, x, y);
+        if (!piece) return [];
+        var color = pieceColor(piece);
+        var type = piece.toLowerCase();
+        var from = { x: x, y: y };
+        var moves = [];
+
+        if (type === 'p') {
+          var dir = color === 'white' ? -1 : 1;
+          var startRow = color === 'white' ? 6 : 1;
+          if (isInside(x, y + dir) && !getPiece(board, x, y + dir)) {
+            moves.push({ from: toCell(from), to: { x: x, y: y + dir } });
+            if (y === startRow && !getPiece(board, x, y + dir * 2)) {
+              moves.push({ from: toCell(from), to: { x: x, y: y + dir * 2 } });
+            }
+          }
+          [-1, 1].forEach(function (offset) {
+            var tx = x + offset;
+            var ty = y + dir;
+            if (!isInside(tx, ty)) return;
+            var target = getPiece(board, tx, ty);
+            if (target && pieceColor(target) !== color) {
+              moves.push({ from: toCell(from), to: { x: tx, y: ty }, capture: target });
+            }
+          });
+        } else if (type === 'n') {
+          DIRS.knight.forEach(function (dir) {
+            var tx = x + dir[0];
+            var ty = y + dir[1];
+            if (!isInside(tx, ty)) return;
+            var target = getPiece(board, tx, ty);
+            if (!target || pieceColor(target) !== color) {
+              moves.push({ from: toCell(from), to: { x: tx, y: ty }, capture: target || '' });
+            }
+          });
+        } else if (type === 'b') {
+          addSlidingMoves(board, moves, from, color, DIRS.bishop);
+        } else if (type === 'r') {
+          addSlidingMoves(board, moves, from, color, DIRS.rook);
+        } else if (type === 'q') {
+          addSlidingMoves(board, moves, from, color, DIRS.bishop.concat(DIRS.rook));
+        } else if (type === 'k') {
+          DIRS.king.forEach(function (dir) {
+            var tx = x + dir[0];
+            var ty = y + dir[1];
+            if (!isInside(tx, ty)) return;
+            var target = getPiece(board, tx, ty);
+            if (!target || pieceColor(target) !== color) {
+              moves.push({ from: toCell(from), to: { x: tx, y: ty }, capture: target || '' });
+            }
+          });
+        }
+        return moves;
+      }
+
+      function generateMoves(board, color) {
+        var moves = [];
+        for (var y = 0; y < 8; y += 1) {
+          for (var x = 0; x < 8; x += 1) {
+            var piece = getPiece(board, x, y);
+            if (piece && pieceColor(piece) === color) {
+              moves = moves.concat(generatePieceMoves(board, x, y));
+            }
+          }
+        }
+        return moves;
+      }
+
+      function applyMove(board, move) {
+        var next = cloneBoard(board);
+        var piece = next[move.from.y][move.from.x];
+        var captured = next[move.to.y][move.to.x] || '';
+        next[move.from.y][move.from.x] = '';
+        if (piece === 'P' && move.to.y === 0) piece = 'Q';
+        if (piece === 'p' && move.to.y === 7) piece = 'q';
+        next[move.to.y][move.to.x] = piece;
+        return { board: next, captured: captured };
+      }
+
+      function evaluateBoard(board) {
+        var total = 0;
+        for (var y = 0; y < 8; y += 1) {
+          for (var x = 0; x < 8; x += 1) {
+            var piece = board[y][x];
+            if (!piece) continue;
+            var value = VALUES[piece.toLowerCase()] || 0;
+            total += pieceColor(piece) === 'black' ? value : -value;
+          }
+        }
+        return total;
+      }
+
+      function minimax(board, depth, maximizing, alpha, beta) {
+        if (!boardHasKing(board, 'white')) return { score: 999999 };
+        if (!boardHasKing(board, 'black')) return { score: -999999 };
+        if (depth <= 0) return { score: evaluateBoard(board) };
+
+        var color = maximizing ? 'black' : 'white';
+        var moves = generateMoves(board, color);
+        if (!moves.length) {
+          return { score: maximizing ? -500000 : 500000 };
+        }
+
+        var bestMove = null;
+        if (maximizing) {
+          var bestScore = -Infinity;
+          for (var i = 0; i < moves.length; i += 1) {
+            var applied = applyMove(board, moves[i]);
+            var result = minimax(applied.board, depth - 1, false, alpha, beta);
+            if (result.score > bestScore) {
+              bestScore = result.score;
+              bestMove = moves[i];
+            }
+            alpha = Math.max(alpha, bestScore);
+            if (beta <= alpha) break;
+          }
+          return { score: bestScore, move: bestMove };
+        }
+        var lowest = Infinity;
+        for (var j = 0; j < moves.length; j += 1) {
+          var next = applyMove(board, moves[j]);
+          var reply = minimax(next.board, depth - 1, true, alpha, beta);
+          if (reply.score < lowest) {
+            lowest = reply.score;
+            bestMove = moves[j];
+          }
+          beta = Math.min(beta, lowest);
+          if (beta <= alpha) break;
+        }
+        return { score: lowest, move: bestMove };
+      }
+
+      function difficultyDepth() {
+        if (state.level <= 1) return 1;
+        if (state.level <= 3) return 2;
+        return 3;
+      }
+
+      function updateHud() {
+        scoreValue.textContent = String(state.score);
+        levelValue.textContent = String(state.level);
+        livesValue.textContent = String(state.lives);
+        powerValue.textContent = state.powerLabel;
+        hintValue.textContent = String(state.hintCharges);
+        undoValue.textContent = String(state.undoCharges);
+        freezeValue.textContent = String(state.freezeCharges);
+        pauseBtn.textContent = state.paused ? 'Reanudar' : 'Pausa';
+        pauseBtn.setAttribute('aria-pressed', state.paused ? 'true' : 'false');
+        turnText.textContent = state.turn === 'white' ? 'Turno de blancas' : 'Turno de negras';
+        capturedWhite.textContent = state.capturedByWhite.join(' ');
+        capturedBlack.textContent = state.capturedByBlack.join(' ');
+      }
+
+      function saveHistorySnapshot() {
+        state.history.push({
+          board: cloneBoard(state.board),
+          turn: state.turn,
+          capturedByWhite: state.capturedByWhite.slice(),
+          capturedByBlack: state.capturedByBlack.slice(),
+          score: state.score
+        });
+        if (state.history.length > 20) state.history.shift();
+      }
+
+      function resetBoardOnly() {
+        state.board = initialBoard();
+        state.turn = 'white';
+        state.selected = null;
+        state.legalMoves = [];
+        state.hintMove = null;
+        state.capturedByWhite = [];
+        state.capturedByBlack = [];
+        state.history = [];
+        state.aiCountdown = 0;
+        state.aiPending = false;
+      }
+
+      function resetGame() {
+        state.running = false;
+        state.paused = false;
+        state.gameOver = false;
+        state.level = 1;
+        state.lives = 3;
+        state.score = 0;
+        state.powerLabel = 'Base';
+        state.hintCharges = 3;
+        state.undoCharges = 1;
+        state.freezeCharges = 1;
+        state.freezeDelay = 0;
+        state.lastFrame = 0;
+        resetBoardOnly();
+        overlay.hidden = false;
+        overlayTitle.textContent = 'Tablero listo';
+        overlayText.textContent = 'Juegas con blancas. La computadora controla negras con dificultad creciente. Las vidas representan intentos de partida dentro de la sesión del arcade.';
+        setStatus('Esperando inicio...');
+        updateHud();
+        renderBoard();
+      }
+
+      function openMenu() {
+        window.location.href = '/Juegos/menu_juegos.html';
+      }
+
+      function beginGame() {
+        if (arcade) {
+          arcade.ensurePlayerName('Escribe el nombre del jugador para Ajedrez vs IA plus');
+          syncProfile();
+        }
+        state.running = true;
+        state.paused = false;
+        state.gameOver = false;
+        overlay.hidden = true;
+        setStatus('Selecciona una pieza blanca.');
+        playEffect('start');
+        updateHud();
+      }
+
+      function togglePause(forceValue) {
+        if (!state.running || state.gameOver) return;
+        state.paused = typeof forceValue === 'boolean' ? forceValue : !state.paused;
+        if (state.paused) {
+          overlay.hidden = false;
+          overlayTitle.textContent = 'Juego en pausa';
+          overlayText.textContent = 'La pausa detiene por completo el contador de espera del turno de la IA y bloquea nuevas jugadas.';
+        } else {
+          overlay.hidden = true;
+        }
+        setStatus(state.paused ? 'Duelo en pausa.' : 'Duelo reanudado.');
+        updateHud();
+      }
+
+      function finishRound(playerWon, reason) {
+        state.running = false;
+        state.gameOver = true;
+        overlay.hidden = false;
+        if (playerWon) {
+          state.score += 500 + state.level * 100;
+          state.powerLabel = 'Victoria';
+          if (state.level < 5) state.level += 1;
+          state.hintCharges += 1;
+          state.undoCharges += 1;
+          state.freezeCharges += 1;
+          overlayTitle.textContent = 'Victoria táctica';
+          overlayText.textContent = reason + ' La IA subirá de nivel en la siguiente partida.';
+          playEffect('win');
+          setStatus('Ganaste la partida.');
+        } else {
+          state.lives -= 1;
+          playEffect('fail');
+          if (state.lives <= 0) {
+            overlayTitle.textContent = 'Sesión terminada';
+            overlayText.textContent = reason + ' Ya no quedan vidas en esta sesión.';
+            if (arcade && state.score > 0) {
+              arcade.recordScore(GAME_KEY, state.score + state.level * 40, {
+                detail: 'Nivel ' + state.level + ' · vidas agotadas'
+              });
+            }
+            syncProfile();
+            setStatus('No quedan vidas.');
+            updateHud();
+            return;
+          }
+          overlayTitle.textContent = 'Partida perdida';
+          overlayText.textContent = reason + ' Te quedan ' + state.lives + ' vidas para un nuevo intento.';
+          setStatus('Perdiste la partida.');
+        }
+        if (arcade && playerWon) {
+          arcade.recordScore(GAME_KEY, state.score + state.lives * 35, {
+            detail: 'Nivel ' + state.level + ' · victoria'
+          });
+        }
+        syncProfile();
+        updateHud();
+      }
+
+      function startNextRound() {
+        resetBoardOnly();
+        state.running = true;
+        state.gameOver = false;
+        state.powerLabel = 'Base';
+        overlay.hidden = true;
+        setStatus('Nueva partida iniciada.');
+        updateHud();
+        renderBoard();
+      }
+
+      function scheduleAI() {
+        state.aiPending = true;
+        state.aiCountdown = 700 + (state.level - 1) * 200 + state.freezeDelay;
+        state.freezeDelay = 0;
+      }
+
+      function clearSelection() {
+        state.selected = null;
+        state.legalMoves = [];
+      }
+
+      function renderBoard() {
+        var legalSet = new Set(state.legalMoves.map(serializeMove));
+        var hintFrom = state.hintMove ? state.hintMove.from.x + ',' + state.hintMove.from.y : '';
+        var hintTo = state.hintMove ? state.hintMove.to.x + ',' + state.hintMove.to.y : '';
+        var html = '';
+        for (var y = 0; y < 8; y += 1) {
+          for (var x = 0; x < 8; x += 1) {
+            var piece = state.board[y][x];
+            var classes = ['chess-square', ((x + y) % 2 === 0) ? 'light' : 'dark'];
+            if (state.selected && state.selected.x === x && state.selected.y === y) classes.push('selected');
+            if (legalSet.has((state.selected ? state.selected.x + ',' + state.selected.y : '') + '>' + x + ',' + y)) classes.push('legal');
+            if (hintFrom === x + ',' + y) classes.push('hint-from');
+            if (hintTo === x + ',' + y) classes.push('hint-to');
+            var pieceMarkup = piece ? '<span class="chess-piece ' + pieceColor(piece) + '">' + PIECE_ICONS[piece] + '</span>' : '';
+            html += '<button class="' + classes.join(' ') + '" type="button" data-x="' + x + '" data-y="' + y + '">' + pieceMarkup + '</button>';
+          }
+        }
+        boardEl.innerHTML = html;
+      }
+
+      function handleSquareClick(x, y) {
+        if (!state.running || state.paused || state.gameOver || state.turn !== 'white' || state.aiPending) return;
+        state.hintMove = null;
+        var piece = getPiece(state.board, x, y);
+        if (state.selected) {
+          var chosen = state.legalMoves.find(function (move) { return move.to.x === x && move.to.y === y; });
+          if (chosen) {
+            makePlayerMove(chosen);
+            return;
+          }
+        }
+        if (piece && pieceColor(piece) === 'white') {
+          state.selected = { x: x, y: y };
+          state.legalMoves = generatePieceMoves(state.board, x, y);
+          setStatus('Seleccionaste una pieza blanca.');
+        } else {
+          clearSelection();
+        }
+        renderBoard();
+      }
+
+      function makePlayerMove(move) {
+        saveHistorySnapshot();
+        var applied = applyMove(state.board, move);
+        state.board = applied.board;
+        clearSelection();
+        if (applied.captured) {
+          state.capturedByWhite.push(PIECE_ICONS[applied.captured]);
+          state.score += Math.round((VALUES[applied.captured.toLowerCase()] || 50) / 5);
+          playEffect('capture');
+        } else {
+          playEffect('move');
+        }
+        state.turn = 'black';
+        if (!boardHasKing(state.board, 'black')) {
+          finishRound(true, 'Capturaste el rey enemigo.');
+          return;
+        }
+        if (!generateMoves(state.board, 'black').length) {
+          finishRound(true, 'La IA se quedó sin movimientos válidos.');
+          return;
+        }
+        scheduleAI();
+        setStatus('La IA está pensando...');
+        updateHud();
+        renderBoard();
+      }
+
+      function makeAIMove() {
+        if (!state.aiPending || state.turn !== 'black' || !state.running || state.paused) return;
+        state.aiPending = false;
+        var result = minimax(state.board, difficultyDepth(), true, -Infinity, Infinity);
+        var move = result.move;
+        var moves = generateMoves(state.board, 'black');
+        if (!move && moves.length) move = moves[Math.floor(Math.random() * moves.length)];
+        if (!move) {
+          finishRound(true, 'La IA no encontró una respuesta legal.');
+          return;
+        }
+        saveHistorySnapshot();
+        var applied = applyMove(state.board, move);
+        state.board = applied.board;
+        if (applied.captured) {
+          state.capturedByBlack.push(PIECE_ICONS[applied.captured]);
+          state.score = Math.max(0, state.score - Math.round((VALUES[applied.captured.toLowerCase()] || 50) / 7));
+          playEffect('hit');
+        } else {
+          playEffect('move');
+        }
+        state.turn = 'white';
+        if (!boardHasKing(state.board, 'white')) {
+          finishRound(false, 'La IA capturó tu rey.');
+          return;
+        }
+        if (!generateMoves(state.board, 'white').length) {
+          finishRound(false, 'Te quedaste sin movimientos válidos.');
+          return;
+        }
+        state.powerLabel = 'Base';
+        setStatus('Tu turno.');
+        updateHud();
+        renderBoard();
+      }
+
+      function useHint() {
+        if (!state.running || state.paused || state.turn !== 'white' || state.hintCharges <= 0) return;
+        var result = minimax(state.board, 1, false, -Infinity, Infinity);
+        if (!result.move) return;
+        state.hintCharges -= 1;
+        state.hintMove = result.move;
+        state.powerLabel = 'Hint';
+        setStatus('Se marcó una sugerencia de jugada.');
+        playEffect('countdownGo');
+        updateHud();
+        renderBoard();
+      }
+
+      function useUndo() {
+        if (!state.undoCharges || state.history.length < 2 || !state.running || state.paused) return;
+        state.undoCharges -= 1;
+        state.history.pop();
+        var snapshot = state.history.pop();
+        if (!snapshot) return;
+        state.board = cloneBoard(snapshot.board);
+        state.turn = snapshot.turn;
+        state.capturedByWhite = snapshot.capturedByWhite.slice();
+        state.capturedByBlack = snapshot.capturedByBlack.slice();
+        state.score = snapshot.score;
+        state.aiPending = false;
+        state.aiCountdown = 0;
+        clearSelection();
+        state.hintMove = null;
+        state.powerLabel = 'Rehacer';
+        setStatus('Se deshizo el último ciclo completo.');
+        playEffect('flip');
+        updateHud();
+        renderBoard();
+      }
+
+      function useFreeze() {
+        if (!state.freezeCharges || !state.running || state.paused || state.turn !== 'black' || !state.aiPending) return;
+        state.freezeCharges -= 1;
+        state.aiCountdown += 4500;
+        state.powerLabel = 'Congelar';
+        setStatus('El turno de la IA quedó congelado unos segundos.');
+        playEffect('powerUp');
+        updateHud();
+      }
+
+      boardEl.addEventListener('click', function (event) {
+        var square = event.target.closest('button[data-x][data-y]');
+        if (!square) return;
+        handleSquareClick(Number(square.getAttribute('data-x')), Number(square.getAttribute('data-y')));
+      });
+
+      function frame(timestamp) {
+        if (!state.lastFrame) state.lastFrame = timestamp;
+        var delta = timestamp - state.lastFrame;
+        state.lastFrame = timestamp;
+        if (state.running && !state.paused && state.aiPending) {
+          state.aiCountdown -= delta;
+          if (state.aiCountdown <= 0) {
+            makeAIMove();
+          }
+        }
+        requestAnimationFrame(frame);
+      }
+
+      startBtn.addEventListener('click', function () {
+        if (state.gameOver) {
+          startNextRound();
+        } else {
+          beginGame();
+        }
+      });
+      restartBtn.addEventListener('click', function () { resetGame(); });
+      backBtnTop.addEventListener('click', openMenu);
+      backBtnBottom.addEventListener('click', openMenu);
+      pauseBtn.addEventListener('click', function () { togglePause(); });
+      hintBtn.addEventListener('click', useHint);
+      undoBtn.addEventListener('click', useUndo);
+      freezeBtn.addEventListener('click', useFreeze);
+      soundToggleBtn.addEventListener('click', function () {
+        if (!arcade) return;
+        arcade.toggleSoundEnabled();
+        syncProfile();
+      });
+      changePlayerBtn.addEventListener('click', function () {
+        if (!arcade) return;
+        arcade.promptPlayerName('Actualiza el nombre del jugador para Ajedrez vs IA plus');
+        syncProfile();
+      });
+      window.addEventListener('keydown', function (event) {
+        if (String(event.key || '').toLowerCase() === 'p') {
+          event.preventDefault();
+          togglePause();
+        }
+      });
+      window.addEventListener('pcs-arcade-store-changed', syncProfile);
+
+      resetGame();
+      syncProfile();
+      requestAnimationFrame(frame);
+    })();
+  </script>
+</body>
+</html>

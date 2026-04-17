@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
@@ -202,6 +203,89 @@ func TestEmpresasHandlerImpactoDesactivacion(t *testing.T) {
 	}
 	if got, _ := impacto["usuarios_activos"].(float64); int64(got) != 1 {
 		t.Fatalf("expected impacto.usuarios_activos=1, got %v", impacto["usuarios_activos"])
+	}
+}
+
+func TestEmpresasHandlerFiltraEmpresasPorAdministradorPrincipal(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_scope_handler.db")
+	dbSuper := openTestSQLite(t, "super_scope_handler.db")
+
+	ensureEmpresasCoreSchemaForSuper(t, dbEmp)
+	ensureAdminAuthTestSchema(t, dbSuper)
+
+	if err := dbpkg.UpsertAdministradorConCreador(dbSuper, "principal@empresa.com", "Principal", "super_administrador", "", ""); err != nil {
+		t.Fatalf("upsert principal: %v", err)
+	}
+	if err := dbpkg.UpsertAdministradorConCreador(dbSuper, "delegado@empresa.com", "Delegado", "super_administrador", "", "principal@empresa.com"); err != nil {
+		t.Fatalf("upsert delegado: %v", err)
+	}
+	if err := dbpkg.UpsertAdministradorConCreador(dbSuper, "externo@empresa.com", "Externo", "super_administrador", "", ""); err != nil {
+		t.Fatalf("upsert externo: %v", err)
+	}
+
+	if _, err := dbEmp.Exec(`
+		INSERT INTO empresas (id, empresa_id, nombre, usuario_creador, estado, fecha_creacion, fecha_actualizacion)
+		VALUES
+		(1, 1, 'Empresa Principal', 'principal@empresa.com', 'activo', datetime('now','localtime'), datetime('now','localtime')),
+		(2, 2, 'Empresa Delegada Legacy', 'delegado@empresa.com', 'activo', datetime('now','localtime'), datetime('now','localtime')),
+		(3, 3, 'Empresa Externa', 'externo@empresa.com', 'activo', datetime('now','localtime'), datetime('now','localtime'))
+	`); err != nil {
+		t.Fatalf("seed empresas: %v", err)
+	}
+
+	h := EmpresasHandler(dbEmp, dbSuper)
+	listReq := httptest.NewRequest(http.MethodGet, "/super/api/empresas", nil)
+	listReq = listReq.WithContext(context.WithValue(listReq.Context(), "adminEmail", "delegado@empresa.com"))
+	listRR := httptest.NewRecorder()
+	h.ServeHTTP(listRR, listReq)
+
+	if listRR.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, listRR.Code, listRR.Body.String())
+	}
+
+	var empresas []dbpkg.Empresa
+	if err := json.Unmarshal(listRR.Body.Bytes(), &empresas); err != nil {
+		t.Fatalf("decode empresas response: %v body=%s", err, listRR.Body.String())
+	}
+	if len(empresas) != 2 {
+		t.Fatalf("expected 2 empresas in delegated scope, got %d: %+v", len(empresas), empresas)
+	}
+	for _, empresa := range empresas {
+		if strings.EqualFold(empresa.Nombre, "Empresa Externa") {
+			t.Fatalf("empresa externa must not be visible inside delegated scope: %+v", empresas)
+		}
+	}
+
+	body := `{"nombre":"Empresa Nueva Compartida","usuario_creador":"delegado@empresa.com"}`
+	postReq := httptest.NewRequest(http.MethodPost, "/super/api/empresas", strings.NewReader(body))
+	postReq = postReq.WithContext(context.WithValue(postReq.Context(), "adminEmail", "delegado@empresa.com"))
+	postReq.Header.Set("Content-Type", "application/json")
+	postRR := httptest.NewRecorder()
+	h.ServeHTTP(postRR, postReq)
+
+	if postRR.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, postRR.Code, postRR.Body.String())
+	}
+
+	var createdID int64
+	if err := dbEmp.QueryRow(`SELECT id FROM empresas WHERE nombre = ?`, "Empresa Nueva Compartida").Scan(&createdID); err != nil {
+		t.Fatalf("query created empresa id: %v", err)
+	}
+	var creator string
+	if err := dbEmp.QueryRow(`SELECT COALESCE(usuario_creador, '') FROM empresas WHERE id = ?`, createdID).Scan(&creator); err != nil {
+		t.Fatalf("query created empresa creator: %v", err)
+	}
+	if !strings.EqualFold(creator, "principal@empresa.com") {
+		t.Fatalf("expected empresa creator principal@empresa.com, got %q", creator)
+	}
+
+	forbiddenReq := httptest.NewRequest(http.MethodGet, "/super/api/empresas?id=3", nil)
+	forbiddenReq = forbiddenReq.WithContext(context.WithValue(forbiddenReq.Context(), "adminEmail", "delegado@empresa.com"))
+	forbiddenRR := httptest.NewRecorder()
+	h.ServeHTTP(forbiddenRR, forbiddenReq)
+
+	if forbiddenRR.Code != http.StatusForbidden {
+		t.Fatalf("expected status %d for out-of-scope empresa, got %d body=%s", http.StatusForbidden, forbiddenRR.Code, forbiddenRR.Body.String())
 	}
 }
 
@@ -741,6 +825,7 @@ func TestSuperEndpointsPermisosPorRol(t *testing.T) {
 	mux.HandleFunc("/super/api/config/gmail", GmailConfigHandler(dbSuper))
 	mux.HandleFunc("/super/api/config/ai", AIModelsConfigHandler(dbSuper))
 	mux.HandleFunc("/super/api/config/backup", SuperConfigBackupHandler(dbSuper))
+	mux.HandleFunc("/super/api/soporte_remoto", SuperSoporteRemotoHandler(dbEmp))
 
 	protected := utils.AuthMiddleware(dbSuper, mux)
 
@@ -769,6 +854,7 @@ func TestSuperEndpointsPermisosPorRol(t *testing.T) {
 		"/super/api/config/gmail",
 		"/super/api/config/ai",
 		"/super/api/config/backup",
+		"/super/api/soporte_remoto",
 	}
 
 	for _, endpoint := range endpoints {

@@ -72,6 +72,91 @@ func parseBoolQueryValue(raw string) bool {
 	}
 }
 
+func resolveRequesterAdminScope(dbSuper *sql.DB, r *http.Request) (*dbpkg.Admin, string, error) {
+	requesterEmail := strings.ToLower(strings.TrimSpace(adminEmailFromRequest(r)))
+	if requesterEmail == "" || requesterEmail == "sistema" {
+		return nil, "", nil
+	}
+	admin, err := dbpkg.GetAdminByEmailFull(dbSuper, requesterEmail)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, requesterEmail, nil
+		}
+		return nil, "", err
+	}
+	principalEmail, err := dbpkg.ResolveAdminPrincipalEmail(dbSuper, requesterEmail)
+	if err != nil {
+		return nil, "", err
+	}
+	if principalEmail == "" {
+		principalEmail = requesterEmail
+	}
+	return admin, principalEmail, nil
+}
+
+func adminEmailMatchesPrincipalScope(dbSuper *sql.DB, principalEmail, targetEmail string) (bool, error) {
+	principalEmail = strings.ToLower(strings.TrimSpace(principalEmail))
+	targetEmail = strings.ToLower(strings.TrimSpace(targetEmail))
+	if principalEmail == "" || targetEmail == "" {
+		return principalEmail == "", nil
+	}
+	if principalEmail == targetEmail {
+		return true, nil
+	}
+	resolved, err := dbpkg.ResolveAdminPrincipalEmail(dbSuper, targetEmail)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil
+		}
+		return false, err
+	}
+	return strings.EqualFold(strings.TrimSpace(resolved), principalEmail), nil
+}
+
+func empresaBelongsToPrincipalScope(dbSuper *sql.DB, principalEmail, empresaCreator string) (bool, error) {
+	principalEmail = strings.ToLower(strings.TrimSpace(principalEmail))
+	creator := strings.ToLower(strings.TrimSpace(empresaCreator))
+	if principalEmail == "" || creator == "" {
+		return true, nil
+	}
+	if creator == principalEmail {
+		return true, nil
+	}
+	return adminEmailMatchesPrincipalScope(dbSuper, principalEmail, creator)
+}
+
+func filterEmpresasByPrincipalScope(dbSuper *sql.DB, principalEmail string, empresas []dbpkg.Empresa) ([]dbpkg.Empresa, error) {
+	if strings.TrimSpace(principalEmail) == "" {
+		return empresas, nil
+	}
+	filtered := make([]dbpkg.Empresa, 0, len(empresas))
+	for _, empresa := range empresas {
+		ok, err := empresaBelongsToPrincipalScope(dbSuper, principalEmail, empresa.UsuarioCreador)
+		if err != nil {
+			return nil, err
+		}
+		if ok {
+			filtered = append(filtered, empresa)
+		}
+	}
+	return filtered, nil
+}
+
+func ensureEmpresaInRequesterScope(dbEmp, dbSuper *sql.DB, r *http.Request, empresaID int64) (string, bool, error) {
+	_, principalEmail, err := resolveRequesterAdminScope(dbSuper, r)
+	if err != nil {
+		return "", false, err
+	}
+	if principalEmail == "" || empresaID <= 0 {
+		return principalEmail, true, nil
+	}
+	ok, err := dbpkg.CanAdminAccessEmpresaIA(dbEmp, dbSuper, principalEmail, empresaID)
+	if err != nil {
+		return principalEmail, false, err
+	}
+	return principalEmail, ok, nil
+}
+
 func buildEmpresaImpactoDesactivacion(dbEmp, dbSuper *sql.DB, empresaID int64) (*empresaImpactoDesactivacion, error) {
 	if empresaID <= 0 {
 		return nil, fmt.Errorf("empresa_id invalido")
@@ -324,6 +409,12 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
+			_, principalEmail, err := resolveRequesterAdminScope(dbSuper, r)
+			if err != nil {
+				log.Println("GET /super/api/empresas scope error:", err)
+				http.Error(w, "failed to resolve admin scope: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
 			// Si se pasa ?id=<id> devolver una sola empresa
 			q := r.URL.Query()
 			action := strings.ToLower(strings.TrimSpace(q.Get("action")))
@@ -332,6 +423,14 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				id, err := strconv.ParseInt(idStr, 10, 64)
 				if err != nil {
 					http.Error(w, "invalid id", http.StatusBadRequest)
+					return
+				}
+				if _, ok, err := ensureEmpresaInRequesterScope(dbEmp, dbSuper, r, id); err != nil {
+					log.Printf("GET /super/api/empresas?id=%d scope error: %v", id, err)
+					http.Error(w, "failed to validate empresa scope: "+err.Error(), http.StatusInternalServerError)
+					return
+				} else if !ok {
+					http.Error(w, "empresa fuera del alcance del administrador autenticado", http.StatusForbidden)
 					return
 				}
 
@@ -371,10 +470,22 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "failed to query empresas: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
+			empresas, err = filterEmpresasByPrincipalScope(dbSuper, principalEmail, empresas)
+			if err != nil {
+				log.Println("GET /super/api/empresas filter scope error:", err)
+				http.Error(w, "failed to filter empresas: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(empresas)
 			return
 		case http.MethodPost:
+			_, principalEmail, err := resolveRequesterAdminScope(dbSuper, r)
+			if err != nil {
+				log.Println("POST /super/api/empresas scope error:", err)
+				http.Error(w, "failed to resolve admin scope: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
 			var payload struct {
 				TipoID         int64  `json:"tipo_id"`
 				TipoNombre     string `json:"tipo_nombre"`
@@ -390,6 +501,9 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			if payload.Nombre == "" {
 				http.Error(w, "nombre required", http.StatusBadRequest)
 				return
+			}
+			if principalEmail != "" {
+				payload.UsuarioCreador = principalEmail
 			}
 			id, err := dbpkg.CreateEmpresa(dbEmp, payload.TipoID, payload.TipoNombre, payload.Nombre, payload.Nit, payload.Observaciones, payload.UsuarioCreador)
 			if err != nil {
@@ -411,6 +525,14 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			id, err := strconv.ParseInt(idStr, 10, 64)
 			if err != nil {
 				http.Error(w, "invalid id", http.StatusBadRequest)
+				return
+			}
+			if _, ok, err := ensureEmpresaInRequesterScope(dbEmp, dbSuper, r, id); err != nil {
+				log.Printf("PUT /super/api/empresas id=%d scope error: %v", id, err)
+				http.Error(w, "failed to validate empresa scope: "+err.Error(), http.StatusInternalServerError)
+				return
+			} else if !ok {
+				http.Error(w, "empresa fuera del alcance del administrador autenticado", http.StatusForbidden)
 				return
 			}
 
@@ -509,6 +631,14 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			id, err := strconv.ParseInt(idStr, 10, 64)
 			if err != nil {
 				http.Error(w, "invalid id", http.StatusBadRequest)
+				return
+			}
+			if _, ok, err := ensureEmpresaInRequesterScope(dbEmp, dbSuper, r, id); err != nil {
+				log.Printf("DELETE /super/api/empresas id=%d scope error: %v", id, err)
+				http.Error(w, "failed to validate empresa scope: "+err.Error(), http.StatusInternalServerError)
+				return
+			} else if !ok {
+				http.Error(w, "empresa fuera del alcance del administrador autenticado", http.StatusForbidden)
 				return
 			}
 			if err := dbpkg.DeleteEmpresa(dbEmp, id); err != nil {

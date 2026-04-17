@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Ajedrez 3D">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#07111c"/>
+      <stop offset="100%" stop-color="#102d4f"/>
+    </linearGradient>
+    <linearGradient id="light" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#f7e9cb"/>
+      <stop offset="100%" stop-color="#d7b288"/>
+    </linearGradient>
+    <linearGradient id="dark" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#aa7c4d"/>
+      <stop offset="100%" stop-color="#6b4526"/>
+    </linearGradient>
+    <linearGradient id="pieceWhite" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#84d4ff"/>
+    </linearGradient>
+    <linearGradient id="pieceBlack" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#30455f"/>
+      <stop offset="100%" stop-color="#09121d"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="44" fill="url(#bg)"/>
+  <ellipse cx="256" cy="432" rx="178" ry="42" fill="#5dd7ff" opacity="0.14"/>
+  <g transform="translate(256 276) skewX(-26) scale(1 0.58)">
+    <rect x="-154" y="-154" width="308" height="308" rx="18" fill="#173556" stroke="#86d7ff" stroke-opacity="0.26"/>
+    <g>
+      <rect x="-154" y="-154" width="77" height="77" fill="url(#light)"/>
+      <rect x="-77" y="-154" width="77" height="77" fill="url(#dark)"/>
+      <rect x="0" y="-154" width="77" height="77" fill="url(#light)"/>
+      <rect x="77" y="-154" width="77" height="77" fill="url(#dark)"/>
+      <rect x="-154" y="-77" width="77" height="77" fill="url(#dark)"/>
+      <rect x="-77" y="-77" width="77" height="77" fill="url(#light)"/>
+      <rect x="0" y="-77" width="77" height="77" fill="url(#dark)"/>
+      <rect x="77" y="-77" width="77" height="77" fill="url(#light)"/>
+      <rect x="-154" y="0" width="77" height="77" fill="url(#light)"/>
+      <rect x="-77" y="0" width="77" height="77" fill="url(#dark)"/>
+      <rect x="0" y="0" width="77" height="77" fill="url(#light)"/>
+      <rect x="77" y="0" width="77" height="77" fill="url(#dark)"/>
+      <rect x="-154" y="77" width="77" height="77" fill="url(#dark)"/>
+      <rect x="-77" y="77" width="77" height="77" fill="url(#light)"/>
+      <rect x="0" y="77" width="77" height="77" fill="url(#dark)"/>
+      <rect x="77" y="77" width="77" height="77" fill="url(#light)"/>
+    </g>
+  </g>
+  <g transform="translate(164 156)">
+    <ellipse cx="0" cy="164" rx="44" ry="14" fill="#000" opacity="0.22"/>
+    <path d="M-16 132h32l12 28h-56z" fill="url(#pieceWhite)"/>
+    <path d="M-26 120h52l-6 16h-40z" fill="url(#pieceWhite)"/>
+    <path d="M-10 54h20l12 22-4 48h-36l-4-48z" fill="url(#pieceWhite)"/>
+    <circle cx="0" cy="42" r="18" fill="url(#pieceWhite)"/>
+    <rect x="-6" y="0" width="12" height="24" rx="4" fill="#f4c96a"/>
+    <rect x="-22" y="10" width="44" height="10" rx="4" fill="#f4c96a"/>
+  </g>
+  <g transform="translate(334 204)">
+    <ellipse cx="0" cy="158" rx="46" ry="16" fill="#000" opacity="0.22"/>
+    <path d="M-18 126h36l14 30h-64z" fill="url(#pieceBlack)"/>
+    <path d="M-28 112h56l-7 16h-42z" fill="url(#pieceBlack)"/>
+    <path d="M-8 44h22l18 26-6 44h-46l-6-44z" fill="url(#pieceBlack)"/>
+    <path d="M-2 18c22 0 34 12 34 32 0 12-4 18-10 24-8-6-12-10-24-10s-16 4-24 10c-6-6-10-12-10-24 0-20 12-32 34-32z" fill="url(#pieceBlack)"/>
+    <circle cx="0" cy="8" r="10" fill="#f4c96a"/>
+  </g>
+  <text x="256" y="462" text-anchor="middle" font-family="Trebuchet MS, Segoe UI, sans-serif" font-size="34" font-weight="900" fill="#f7e9cb">AJEDREZ 3D</text>
+</svg>

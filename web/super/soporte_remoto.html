@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Soporte remoto multiempresa</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    body { background: #f3f6fb; }
+    .sr-shell { padding: 20px; display: grid; gap: 16px; }
+    .sr-hero { background: linear-gradient(135deg, #0f172a, #1d4ed8); color: #fff; border-radius: 18px; padding: 20px; box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16); }
+    .sr-hero h1 { margin: 0 0 8px; font-size: 28px; }
+    .sr-hero p { margin: 0; max-width: 820px; opacity: 0.92; }
+    .sr-layout { display: grid; grid-template-columns: 360px 1fr; gap: 16px; align-items: start; }
+    .sr-card { background: #fff; border-radius: 18px; padding: 18px; box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08); }
+    .sr-card h2, .sr-card h3 { margin-top: 0; }
+    .sr-search { display: grid; gap: 10px; }
+    .sr-company-list { display: grid; gap: 10px; max-height: 72vh; overflow: auto; }
+    .sr-company { width: 100%; text-align: left; border: 1px solid #dbe5f1; border-radius: 14px; background: #f8fbff; padding: 14px; cursor: pointer; }
+    .sr-company.active { border-color: #1d4ed8; background: #e9f1ff; box-shadow: inset 0 0 0 1px rgba(29, 78, 216, 0.18); }
+    .sr-company strong, .sr-grid strong { display: block; }
+    .sr-muted { color: #516173; font-size: 13px; }
+    .sr-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
+    .sr-metric { border: 1px solid #e2e8f0; border-radius: 14px; padding: 12px; background: #f8fafc; }
+    .sr-metric span { display: block; font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; }
+    .sr-metric strong { font-size: 24px; margin-top: 4px; }
+    .sr-sections { display: grid; gap: 16px; }
+    .sr-toolbar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+    .sr-table { width: 100%; border-collapse: collapse; }
+    .sr-table th, .sr-table td { padding: 10px 8px; border-bottom: 1px solid #e2e8f0; vertical-align: top; text-align: left; }
+    .sr-table th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b; }
+    .sr-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .sr-actions button, .sr-primary, .sr-secondary { border: 0; border-radius: 10px; padding: 9px 12px; cursor: pointer; font-weight: 600; }
+    .sr-primary { background: #1d4ed8; color: #fff; }
+    .sr-secondary { background: #e2e8f0; color: #0f172a; }
+    .sr-warning { padding: 12px; border-radius: 12px; background: #fff7ed; color: #9a3412; border: 1px solid #fdba74; }
+    .sr-status { min-height: 24px; font-size: 14px; }
+    .sr-viewer { width: 100%; min-height: 420px; border: 1px solid #dbe5f1; border-radius: 16px; background: #0f172a; }
+    @media (max-width: 1100px) {
+      .sr-layout { grid-template-columns: 1fr; }
+      .sr-grid, .sr-toolbar { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 720px) {
+      .sr-grid, .sr-toolbar { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="sr-shell">
+    <section class="sr-hero">
+      <h1>Soporte remoto multiempresa</h1>
+      <p>Panel tecnico central para revisar cupos por plan, dispositivos conectados, sesiones del mes y abrir asistencia remota compatible con noVNC, Guacamole o RustDesk Web segun la URL del agente registrada por cada empresa.</p>
+    </section>
+
+    <section class="sr-layout">
+      <aside class="sr-card">
+        <div class="sr-search">
+          <h2>Empresas</h2>
+          <input id="srSearch" class="form-input" type="search" placeholder="Buscar por nombre, NIT o nota">
+          <button id="srRefreshCompanies" class="sr-secondary" type="button">Actualizar listado</button>
+        </div>
+        <div id="srCompanyList" class="sr-company-list"></div>
+      </aside>
+
+      <main class="sr-sections">
+        <section class="sr-card">
+          <div id="srCompanyHeader" class="sr-muted">Seleccione una empresa para ver sus dispositivos y consumo.</div>
+          <div id="srAlert"></div>
+          <div id="srUsage" class="sr-grid"></div>
+          <div class="sr-toolbar">
+            <input id="srOperatorName" class="form-input" type="text" placeholder="Operador tecnico">
+            <input id="srOperatorEmail" class="form-input" type="email" placeholder="correo tecnico opcional">
+            <input id="srSessionReason" class="form-input" type="text" placeholder="Motivo de soporte">
+            <input id="srDuration" class="form-input" type="number" min="5" max="480" value="30" placeholder="Duracion (min)">
+          </div>
+          <div id="srStatus" class="sr-status sr-muted"></div>
+        </section>
+
+        <section class="sr-card">
+          <h3>Dispositivos</h3>
+          <table class="sr-table">
+            <thead>
+              <tr>
+                <th>Equipo</th>
+                <th>Conexion</th>
+                <th>Agente</th>
+                <th>Ubicacion</th>
+                <th>Accion</th>
+              </tr>
+            </thead>
+            <tbody id="srDevicesBody">
+              <tr><td colspan="5" class="sr-muted">Sin empresa seleccionada.</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="sr-card">
+          <h3>Sesiones</h3>
+          <table class="sr-table">
+            <thead>
+              <tr>
+                <th>Codigo</th>
+                <th>Equipo</th>
+                <th>Estado</th>
+                <th>Consumo</th>
+                <th>Accion</th>
+              </tr>
+            </thead>
+            <tbody id="srSessionsBody">
+              <tr><td colspan="5" class="sr-muted">Sin empresa seleccionada.</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="sr-card">
+          <h3>Visor</h3>
+          <iframe id="srViewer" class="sr-viewer" title="Visor de soporte remoto"></iframe>
+        </section>
+      </main>
+    </section>
+  </div>
+
+  <script>
+    const state = {
+      companies: [],
+      selectedEmpresaId: 0,
+      selectedSummary: null,
+      devices: [],
+      sessions: []
+    };
+
+    async function fetchJSON(url, options) {
+      const response = await fetch(url, Object.assign({ credentials: 'include' }, options || {}));
+      const text = await response.text();
+      let data = {};
+      if (text) {
+        try {
+          data = JSON.parse(text);
+        } catch (error) {
+          throw new Error(text || 'Respuesta invalida del servidor');
+        }
+      }
+      if (!response.ok) {
+        const message = (data && (data.error || data.message)) || text || ('HTTP ' + response.status);
+        const err = new Error(message);
+        err.payload = data;
+        throw err;
+      }
+      return data;
+    }
+
+    function setStatus(message, isError) {
+      const node = document.getElementById('srStatus');
+      node.textContent = message || '';
+      node.style.color = isError ? '#b91c1c' : '#516173';
+    }
+
+    function renderAlert(summary) {
+      const node = document.getElementById('srAlert');
+      node.innerHTML = '';
+      if (!summary || !summary.uso || !summary.uso.bloqueo_motivo) {
+        return;
+      }
+      const div = document.createElement('div');
+      div.className = 'sr-warning';
+      div.textContent = 'Alerta de plan: ' + summary.uso.bloqueo_motivo;
+      node.appendChild(div);
+    }
+
+    function renderCompanies() {
+      const container = document.getElementById('srCompanyList');
+      container.innerHTML = '';
+      if (!state.companies.length) {
+        container.innerHTML = '<div class="sr-muted">No hay empresas con soporte remoto configurado para este filtro.</div>';
+        return;
+      }
+      state.companies.forEach(function(item) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'sr-company' + (state.selectedEmpresaId === item.empresa.empresa_id ? ' active' : '');
+        button.innerHTML = '<strong>' + escapeHTML(item.empresa.nombre || 'Empresa sin nombre') + '</strong>' +
+          '<span class="sr-muted">NIT: ' + escapeHTML(item.empresa.nit || 'sin NIT') + '</span>' +
+          '<span class="sr-muted">Dispositivos: ' + (item.uso ? item.uso.dispositivos_activos : 0) + ' | Sesiones mes: ' + (item.uso ? item.uso.sesiones_mes : 0) + '</span>';
+        button.addEventListener('click', function() {
+          selectEmpresa(item.empresa.empresa_id);
+        });
+        container.appendChild(button);
+      });
+    }
+
+    function renderUsage(summary) {
+      const header = document.getElementById('srCompanyHeader');
+      const usage = document.getElementById('srUsage');
+      usage.innerHTML = '';
+      if (!summary) {
+        header.textContent = 'Seleccione una empresa para ver sus dispositivos y consumo.';
+        return;
+      }
+      header.innerHTML = '<strong>' + escapeHTML(summary.empresa.nombre || '') + '</strong> · ' +
+        'Proveedor: ' + escapeHTML(summary.config.proveedor_preferido || 'novnc') + ' · ' +
+        'Modo: ' + escapeHTML(summary.config.modo_operacion || 'agente_web');
+      const metrics = [
+        ['Dispositivos activos', summary.uso.dispositivos_activos + ' / ' + formatCap(summary.uso.max_dispositivos)],
+        ['Dispositivos online', summary.uso.dispositivos_online],
+        ['Sesiones del mes', summary.uso.sesiones_mes + ' / ' + formatCap(summary.uso.max_conexiones_mes)],
+        ['Intentos bloqueados', summary.uso.intentos_bloqueados_mes],
+        ['Minutos consumidos', summary.uso.minutos_consumidos_mes + ' / ' + formatCap(summary.uso.max_minutos_mes)],
+        ['Aprobacion operador', summary.config.requiere_aprobacion_operador ? 'Si' : 'No']
+      ];
+      metrics.forEach(function(metric) {
+        const div = document.createElement('div');
+        div.className = 'sr-metric';
+        div.innerHTML = '<span>' + escapeHTML(metric[0]) + '</span><strong>' + escapeHTML(String(metric[1])) + '</strong>';
+        usage.appendChild(div);
+      });
+      renderAlert(summary);
+    }
+
+    function renderDevices() {
+      const body = document.getElementById('srDevicesBody');
+      body.innerHTML = '';
+      if (!state.devices.length) {
+        body.innerHTML = '<tr><td colspan="5" class="sr-muted">No hay dispositivos registrados para esta empresa.</td></tr>';
+        return;
+      }
+      state.devices.forEach(function(device) {
+        const tr = document.createElement('tr');
+        const disabled = state.selectedSummary && state.selectedSummary.uso && !state.selectedSummary.uso.puede_crear_sesion;
+        tr.innerHTML = '<td><strong>' + escapeHTML(device.nombre_equipo || '') + '</strong><div class="sr-muted">' + escapeHTML(device.codigo_dispositivo || '') + '</div></td>' +
+          '<td>' + escapeHTML(device.estado_conexion || 'offline') + '</td>' +
+          '<td>' + escapeHTML(device.agente_version || 'sin version') + '<div class="sr-muted">' + escapeHTML(device.sistema_operativo || 'sin SO') + '</div></td>' +
+          '<td>' + escapeHTML(device.ubicacion || 'sin ubicacion') + '</td>' +
+          '<td><div class="sr-actions"><button class="sr-primary" type="button" ' + (disabled ? 'disabled' : '') + '>Conectar</button></div></td>';
+        tr.querySelector('button').addEventListener('click', function() {
+          createSession(device.id);
+        });
+        body.appendChild(tr);
+      });
+    }
+
+    function renderSessions() {
+      const body = document.getElementById('srSessionsBody');
+      body.innerHTML = '';
+      if (!state.sessions.length) {
+        body.innerHTML = '<tr><td colspan="5" class="sr-muted">No hay sesiones para esta empresa.</td></tr>';
+        return;
+      }
+      state.sessions.forEach(function(session) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td><strong>' + escapeHTML(session.codigo_sesion || '') + '</strong><div class="sr-muted">' + escapeHTML(session.solicitada_por || '') + '</div></td>' +
+          '<td>' + escapeHTML(session.dispositivo_nombre || '') + '</td>' +
+          '<td>' + escapeHTML(session.estado_sesion || '') + (session.bloqueada_por_limite ? '<div class="sr-muted">bloqueada por plan</div>' : '') + '</td>' +
+          '<td>' + escapeHTML(String(session.duracion_min_consumida || 0)) + ' min<div class="sr-muted">solicitada: ' + escapeHTML(String(session.duracion_min_solicitada || 0)) + ' min</div></td>' +
+          '<td><div class="sr-actions"></div></td>';
+        const actions = tr.querySelector('.sr-actions');
+        if (session.token_visualizacion) {
+          const openBtn = document.createElement('button');
+          openBtn.className = 'sr-secondary';
+          openBtn.type = 'button';
+          openBtn.textContent = 'Abrir visor';
+          openBtn.addEventListener('click', function() {
+            openViewer('/administrar_empresa/soporte_remoto_view.html?empresa_id=' + encodeURIComponent(state.selectedEmpresaId) + '&codigo_sesion=' + encodeURIComponent(session.codigo_sesion) + '&token=' + encodeURIComponent(session.token_visualizacion));
+          });
+          actions.appendChild(openBtn);
+        }
+        if (session.estado_sesion === 'pendiente') {
+          const approveBtn = document.createElement('button');
+          approveBtn.className = 'sr-secondary';
+          approveBtn.type = 'button';
+          approveBtn.textContent = 'Aprobar';
+          approveBtn.addEventListener('click', function() {
+            updateSessionState(session.codigo_sesion, 'aprobar_sesion');
+          });
+          actions.appendChild(approveBtn);
+        }
+        if (session.estado_sesion === 'pendiente' || session.estado_sesion === 'aprobada' || session.estado_sesion === 'activa') {
+          const closeBtn = document.createElement('button');
+          closeBtn.className = 'sr-secondary';
+          closeBtn.type = 'button';
+          closeBtn.textContent = 'Finalizar';
+          closeBtn.addEventListener('click', function() {
+            updateSessionState(session.codigo_sesion, 'finalizar_sesion');
+          });
+          actions.appendChild(closeBtn);
+        }
+        body.appendChild(tr);
+      });
+    }
+
+    function formatCap(value) {
+      return Number(value || 0) > 0 ? value : 'sin tope';
+    }
+
+    function escapeHTML(value) {
+      return String(value || '').replace(/[&<>"']/g, function(char) {
+        return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char];
+      });
+    }
+
+    async function loadCompanies() {
+      setStatus('Cargando empresas...', false);
+      const q = document.getElementById('srSearch').value.trim();
+      const data = await fetchJSON('/super/api/soporte_remoto?action=empresas&q=' + encodeURIComponent(q));
+      state.companies = Array.isArray(data.rows) ? data.rows : [];
+      if (state.selectedEmpresaId && !state.companies.some(function(item) { return item.empresa.empresa_id === state.selectedEmpresaId; })) {
+        state.selectedEmpresaId = 0;
+        state.selectedSummary = null;
+        state.devices = [];
+        state.sessions = [];
+      }
+      renderCompanies();
+      renderUsage(state.selectedSummary);
+      renderDevices();
+      renderSessions();
+      setStatus('Empresas actualizadas.', false);
+      if (!state.selectedEmpresaId && state.companies.length) {
+        selectEmpresa(state.companies[0].empresa.empresa_id);
+      }
+    }
+
+    async function selectEmpresa(empresaId) {
+      state.selectedEmpresaId = Number(empresaId || 0);
+      state.selectedSummary = state.companies.find(function(item) { return item.empresa.empresa_id === state.selectedEmpresaId; }) || null;
+      renderCompanies();
+      renderUsage(state.selectedSummary);
+      await Promise.all([loadDevices(), loadSessions()]);
+    }
+
+    async function loadDevices() {
+      if (!state.selectedEmpresaId) {
+        state.devices = [];
+        renderDevices();
+        return;
+      }
+      const data = await fetchJSON('/super/api/soporte_remoto?action=dispositivos&empresa_id=' + encodeURIComponent(state.selectedEmpresaId));
+      state.devices = Array.isArray(data.rows) ? data.rows : [];
+      if (data.uso && state.selectedSummary) {
+        state.selectedSummary.uso = data.uso;
+      }
+      renderUsage(state.selectedSummary);
+      renderDevices();
+    }
+
+    async function loadSessions() {
+      if (!state.selectedEmpresaId) {
+        state.sessions = [];
+        renderSessions();
+        return;
+      }
+      const data = await fetchJSON('/super/api/soporte_remoto?action=sesiones&empresa_id=' + encodeURIComponent(state.selectedEmpresaId));
+      state.sessions = Array.isArray(data.rows) ? data.rows : [];
+      if (data.uso && state.selectedSummary) {
+        state.selectedSummary.uso = data.uso;
+      }
+      renderUsage(state.selectedSummary);
+      renderSessions();
+    }
+
+    async function createSession(deviceId) {
+      if (!state.selectedEmpresaId) {
+        return;
+      }
+      const payload = {
+        empresa_id: state.selectedEmpresaId,
+        dispositivo_id: Number(deviceId || 0),
+        operador_nombre: document.getElementById('srOperatorName').value.trim(),
+        operador_email: document.getElementById('srOperatorEmail').value.trim(),
+        motivo: document.getElementById('srSessionReason').value.trim() || 'Soporte tecnico central',
+        duracion_min: Number(document.getElementById('srDuration').value || 30)
+      };
+      setStatus('Creando sesion remota...', false);
+      try {
+        const data = await fetchJSON('/super/api/soporte_remoto?action=solicitar_sesion', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (data.uso && state.selectedSummary) {
+          state.selectedSummary.uso = data.uso;
+        }
+        await loadSessions();
+        renderUsage(state.selectedSummary);
+        if (data.viewer_url) {
+          openViewer(data.viewer_url);
+        }
+        setStatus('Sesion creada correctamente.', false);
+      } catch (error) {
+        if (error.payload && error.payload.uso && state.selectedSummary) {
+          state.selectedSummary.uso = error.payload.uso;
+          renderUsage(state.selectedSummary);
+        }
+        setStatus(error.message || 'No se pudo crear la sesion.', true);
+      }
+    }
+
+    async function updateSessionState(codigoSesion, action) {
+      if (!state.selectedEmpresaId || !codigoSesion) {
+        return;
+      }
+      setStatus('Actualizando sesion...', false);
+      try {
+        const data = await fetchJSON('/super/api/soporte_remoto?action=' + encodeURIComponent(action), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ empresa_id: state.selectedEmpresaId, codigo_sesion: codigoSesion })
+        });
+        if (data.uso && state.selectedSummary) {
+          state.selectedSummary.uso = data.uso;
+        }
+        await loadSessions();
+        renderUsage(state.selectedSummary);
+        setStatus('Sesion actualizada.', false);
+      } catch (error) {
+        setStatus(error.message || 'No se pudo actualizar la sesion.', true);
+      }
+    }
+
+    function openViewer(url) {
+      document.getElementById('srViewer').src = url;
+      window.open(url, '_blank', 'noopener');
+    }
+
+    document.getElementById('srRefreshCompanies').addEventListener('click', function() {
+      loadCompanies().catch(function(error) {
+        setStatus(error.message || 'No se pudieron cargar empresas.', true);
+      });
+    });
+    document.getElementById('srSearch').addEventListener('change', function() {
+      loadCompanies().catch(function(error) {
+        setStatus(error.message || 'No se pudieron cargar empresas.', true);
+      });
+    });
+
+    loadCompanies().catch(function(error) {
+      setStatus(error.message || 'No se pudo iniciar el panel.', true);
+    });
+  </script>
+</body>
+</html>

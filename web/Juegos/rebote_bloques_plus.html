@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Rebote bloques plus</title>
+  <link rel="icon" type="image/png" href="/img/punto_venta.png">
+  <link rel="stylesheet" href="/Juegos/arcade_window.css">
+  <style>
+    :root {
+      --arc-bg: #101b32;
+      --arc-bg-soft: #1d2d53;
+      --arc-accent: #ffb85a;
+      --arc-accent-dark: #ff6f61;
+    }
+
+    .breakout-stage {
+      background: linear-gradient(180deg, rgba(9, 18, 37, 0.98), rgba(18, 35, 64, 0.98));
+    }
+
+    #breakoutCanvas {
+      height: 100%;
+      background: transparent;
+    }
+  </style>
+</head>
+<body class="arcade-window-page">
+  <main class="arcade-window">
+    <section class="arcade-header">
+      <div class="arcade-title-wrap">
+        <p class="arcade-kicker">Breakout modernizado</p>
+        <h1>Rebote bloques plus</h1>
+        <p class="arcade-copy">Rompe filas, sube niveles, recoge poderes y aguanta varias vidas. Si aparece multibola, la pausa inmoviliza todas las bolas y los objetos en caída al mismo tiempo.</p>
+      </div>
+      <div class="arcade-stats">
+        <div class="arcade-stat"><span class="arcade-stat-label">Puntaje</span><span id="scoreValue" class="arcade-stat-value">0</span></div>
+        <div class="arcade-stat"><span class="arcade-stat-label">Nivel</span><span id="levelValue" class="arcade-stat-value">1</span></div>
+        <div class="arcade-stat"><span class="arcade-stat-label">Vidas</span><span id="livesValue" class="arcade-stat-value">3</span></div>
+        <div class="arcade-stat"><span class="arcade-stat-label">Poder</span><span id="powerValue" class="arcade-stat-value">Base</span></div>
+      </div>
+    </section>
+
+    <section class="arcade-chip-row">
+      <span class="arcade-chip">Jugador:<strong id="playerNameValue">Invitado</strong></span>
+      <span class="arcade-chip">Record:<strong id="bestValue">0</strong></span>
+      <span id="bestMeta" class="arcade-chip note">Sin marcas guardadas</span>
+      <span class="arcade-chip">Bonus:<strong id="bonusValue">0</strong></span>
+      <button id="changePlayerBtn" class="arcade-chip-btn" type="button">Cambiar jugador</button>
+      <button id="soundToggleBtn" class="arcade-chip-btn secondary" type="button" aria-pressed="true">Sonido: activado</button>
+      <button id="pauseBtn" class="arcade-chip-btn alert" type="button" aria-pressed="false">Pausa</button>
+    </section>
+
+    <section class="arcade-stage breakout-stage" aria-label="Juego Rebote bloques plus">
+      <canvas id="breakoutCanvas" width="620" height="360"></canvas>
+      <div id="overlay" class="arcade-overlay">
+        <div class="arcade-overlay-card">
+          <h2 id="overlayTitle">Ronda lista</h2>
+          <p id="overlayText">Mueve la paleta con el mouse o las flechas. Rompe bloques, recoge poderes y aprovecha vidas extra, tiempo lento o multibola.</p>
+          <ul>
+            <li>La paleta puede ensancharse o generar multibola.</li>
+            <li>Si pierdes todas las bolas, consumes una vida y sigues.</li>
+            <li>La pausa inmoviliza bolas, paleta y poderes en caída.</li>
+          </ul>
+          <div class="arcade-actions">
+            <button id="startBtn" class="arcade-btn" type="button">Empezar</button>
+            <button id="backBtnTop" class="arcade-btn secondary" type="button">Volver al menu</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="arcade-footer">
+      <button id="restartBtn" class="arcade-btn secondary" type="button">Reiniciar</button>
+      <button id="backBtnBottom" class="arcade-btn secondary" type="button">Salir al menu</button>
+      <div id="statusText" class="arcade-status">Esperando inicio...</div>
+    </section>
+  </main>
+
+  <script src="/Juegos/arcade_shared.js"></script>
+  <script>
+    (function () {
+      var GAME_KEY = 'rebote_bloques';
+      var arcade = window.PCSArcade || null;
+      var canvas = document.getElementById('breakoutCanvas');
+      var ctx = canvas.getContext('2d');
+      var scoreValue = document.getElementById('scoreValue');
+      var levelValue = document.getElementById('levelValue');
+      var livesValue = document.getElementById('livesValue');
+      var powerValue = document.getElementById('powerValue');
+      var bonusValue = document.getElementById('bonusValue');
+      var playerNameValue = document.getElementById('playerNameValue');
+      var bestValue = document.getElementById('bestValue');
+      var bestMeta = document.getElementById('bestMeta');
+      var changePlayerBtn = document.getElementById('changePlayerBtn');
+      var soundToggleBtn = document.getElementById('soundToggleBtn');
+      var pauseBtn = document.getElementById('pauseBtn');
+      var overlay = document.getElementById('overlay');
+      var overlayTitle = document.getElementById('overlayTitle');
+      var overlayText = document.getElementById('overlayText');
+      var startBtn = document.getElementById('startBtn');
+      var restartBtn = document.getElementById('restartBtn');
+      var backBtnTop = document.getElementById('backBtnTop');
+      var backBtnBottom = document.getElementById('backBtnBottom');
+      var statusText = document.getElementById('statusText');
+
+      var state = {
+        running: false,
+        paused: false,
+        gameOver: false,
+        score: 0,
+        bonus: 0,
+        level: 1,
+        lives: 3,
+        powerLabel: 'Base',
+        paddleX: canvas.width / 2 - 56,
+        paddleWidth: 112,
+        paddleHeight: 16,
+        pointerX: canvas.width / 2,
+        balls: [],
+        bricks: [],
+        drops: [],
+        wideTimer: 0,
+        slowTimer: 0,
+        shieldCharges: 0,
+        leftPressed: false,
+        rightPressed: false,
+        frame: 0
+      };
+
+      function playEffect(name) {
+        if (arcade) arcade.playEffect(name);
+      }
+
+      function setStatus(text) {
+        statusText.textContent = text;
+      }
+
+      function syncProfile() {
+        if (!arcade) return;
+        var profile = arcade.getProfile();
+        var scores = arcade.getGameScores(GAME_KEY);
+        playerNameValue.textContent = profile.playerName || 'Invitado';
+        bestValue.textContent = String(scores.best ? Number(scores.best.score || 0) : 0);
+        bestMeta.textContent = scores.best ? ('Por ' + scores.best.playerName + (scores.best.detail ? ' · ' + scores.best.detail : '')) : 'Sin marcas guardadas';
+        soundToggleBtn.textContent = arcade.isSoundEnabled() ? 'Sonido: activado' : 'Sonido: apagado';
+        soundToggleBtn.setAttribute('aria-pressed', arcade.isSoundEnabled() ? 'true' : 'false');
+      }
+
+      function updateHud() {
+        scoreValue.textContent = String(state.score);
+        levelValue.textContent = String(state.level);
+        livesValue.textContent = String(state.lives);
+        powerValue.textContent = state.powerLabel;
+        bonusValue.textContent = String(state.bonus);
+        pauseBtn.textContent = state.paused ? 'Reanudar' : 'Pausa';
+        pauseBtn.setAttribute('aria-pressed', state.paused ? 'true' : 'false');
+      }
+
+      function levelRows(level) {
+        return Math.min(6, 3 + level);
+      }
+
+      function createBricks() {
+        state.bricks = [];
+        var rows = levelRows(state.level);
+        var cols = 9;
+        var brickWidth = 58;
+        var brickHeight = 18;
+        var offsetLeft = 24;
+        var offsetTop = 42;
+        var gap = 8;
+        var colors = ['#ff8e72', '#ffcb70', '#68e2ba', '#86b3ff', '#d4a4ff', '#f46de6'];
+        for (var row = 0; row < rows; row += 1) {
+          for (var col = 0; col < cols; col += 1) {
+            state.bricks.push({
+              x: offsetLeft + col * (brickWidth + gap),
+              y: offsetTop + row * (brickHeight + gap),
+              width: brickWidth,
+              height: brickHeight,
+              color: colors[row % colors.length],
+              alive: true,
+              hits: row >= 4 ? 2 : 1
+            });
+          }
+        }
+      }
+
+      function resetBalls() {
+        state.balls = [{ x: canvas.width / 2, y: 250, vx: 2.8, vy: -3.4, radius: 7 }];
+      }
+
+      function resetLevelState() {
+        state.paddleWidth = 112;
+        state.paddleX = canvas.width / 2 - state.paddleWidth / 2;
+        state.wideTimer = 0;
+        state.slowTimer = 0;
+        state.shieldCharges = 0;
+        state.powerLabel = 'Base';
+        state.drops = [];
+        createBricks();
+        resetBalls();
+      }
+
+      function resetGame() {
+        state.running = false;
+        state.paused = false;
+        state.gameOver = false;
+        state.score = 0;
+        state.bonus = 0;
+        state.level = 1;
+        state.lives = 3;
+        state.frame = 0;
+        resetLevelState();
+        overlay.hidden = false;
+        overlayTitle.textContent = 'Ronda lista';
+        overlayText.textContent = 'Mueve la paleta con el mouse o las flechas. Rompe bloques, recoge poderes y aprovecha vidas extra, tiempo lento o multibola.';
+        setStatus('Esperando inicio...');
+        updateHud();
+      }
+
+      function openMenu() {
+        window.location.href = '/Juegos/menu_juegos.html';
+      }
+
+      function beginGame() {
+        if (arcade) {
+          arcade.ensurePlayerName('Escribe el nombre del jugador para Rebote bloques plus');
+          syncProfile();
+        }
+        state.running = true;
+        state.paused = false;
+        state.gameOver = false;
+        overlay.hidden = true;
+        setStatus('Rompe bloques y recoge poderes.');
+        playEffect('start');
+        updateHud();
+      }
+
+      function togglePause(forceValue) {
+        if (!state.running || state.gameOver) return;
+        state.paused = typeof forceValue === 'boolean' ? forceValue : !state.paused;
+        if (state.paused) {
+          overlay.hidden = false;
+          overlayTitle.textContent = 'Juego en pausa';
+          overlayText.textContent = 'La pausa congela todas las bolas, la paleta y los poderes en caída, incluso si estás en multibola.';
+        } else {
+          overlay.hidden = true;
+        }
+        setStatus(state.paused ? 'Partida en pausa.' : 'Partida reanudada.');
+        updateHud();
+      }
+
+      function recordScore() {
+        if (!arcade) {
+          syncProfile();
+          return;
+        }
+        var total = state.score + state.bonus + state.level * 28 + state.lives * 20;
+        if (total > 0) {
+          arcade.recordScore(GAME_KEY, total, {
+            detail: 'Nivel ' + state.level + ' · bonus ' + state.bonus
+          });
+        }
+        syncProfile();
+      }
+
+      function spawnDrop(brick) {
+        if (Math.random() > 0.28) return;
+        var types = ['wide', 'slow', 'life', 'multi', 'shield', 'bonus'];
+        state.drops.push({
+          x: brick.x + brick.width / 2,
+          y: brick.y + brick.height / 2,
+          radius: 12,
+          type: types[Math.floor(Math.random() * types.length)]
+        });
+      }
+
+      function applyDrop(type) {
+        if (type === 'wide') {
+          state.wideTimer = 540;
+          state.paddleWidth = 152;
+          state.powerLabel = 'Ancho';
+          state.bonus += 12;
+        } else if (type === 'slow') {
+          state.slowTimer = 480;
+          state.powerLabel = 'Lento';
+          state.bonus += 10;
+        } else if (type === 'life') {
+          state.lives = Math.min(5, state.lives + 1);
+          state.powerLabel = 'Vida';
+          state.bonus += 24;
+        } else if (type === 'multi') {
+          if (state.balls.length < 3) {
+            state.balls.push({ x: state.balls[0].x, y: state.balls[0].y, vx: -state.balls[0].vx, vy: state.balls[0].vy, radius: 7 });
+            state.powerLabel = 'Multibola';
+            state.bonus += 18;
+          }
+        } else if (type === 'shield') {
+          state.shieldCharges = 1;
+          state.powerLabel = 'Escudo';
+          state.bonus += 16;
+        } else {
+          state.bonus += 30;
+          state.powerLabel = 'Bonus';
+        }
+        playEffect('win');
+        updateHud();
+      }
+
+      function loseBall() {
+        if (state.shieldCharges > 0) {
+          state.shieldCharges = 0;
+          state.powerLabel = state.wideTimer > 0 ? 'Ancho' : (state.slowTimer > 0 ? 'Lento' : 'Base');
+          resetBalls();
+          playEffect('hit');
+          setStatus('El escudo rescató la ronda.');
+          updateHud();
+          return;
+        }
+        state.lives -= 1;
+        if (state.lives <= 0) {
+          state.running = false;
+          state.gameOver = true;
+          overlay.hidden = false;
+          overlayTitle.textContent = 'Fin de partida';
+          overlayText.textContent = 'Se agotaron las vidas. El récord quedó guardado si sumaste puntos.';
+          recordScore();
+          playEffect('fail');
+          setStatus('Partida terminada.');
+          updateHud();
+          return;
+        }
+        resetBalls();
+        state.running = false;
+        overlay.hidden = false;
+        overlayTitle.textContent = 'Vida perdida';
+        overlayText.textContent = 'Perdiste la última bola. Te quedan ' + state.lives + ' vidas para limpiar el nivel.';
+        playEffect('fail');
+        setStatus('Perdiste una vida.');
+        updateHud();
+      }
+
+      function nextLevel() {
+        if (state.level >= 4) {
+          state.running = false;
+          state.gameOver = true;
+          overlay.hidden = false;
+          overlayTitle.textContent = 'Victoria total';
+          overlayText.textContent = 'Limpiaste todos los niveles de Rebote bloques plus.';
+          state.bonus += 80;
+          recordScore();
+          playEffect('match');
+          setStatus('Todos los niveles superados.');
+          updateHud();
+          return;
+        }
+        state.level += 1;
+        state.bonus += 40;
+        resetLevelState();
+        state.running = false;
+        overlay.hidden = false;
+        overlayTitle.textContent = 'Nivel despejado';
+        overlayText.textContent = 'Subes de nivel. Habrá más filas y algunos bloques exigirán más golpes.';
+        playEffect('match');
+        setStatus('Nuevo nivel preparado.');
+        updateHud();
+      }
+
+      function movePaddle() {
+        if (state.leftPressed) state.pointerX -= 8;
+        if (state.rightPressed) state.pointerX += 8;
+        state.pointerX = Math.max(state.paddleWidth / 2, Math.min(canvas.width - state.paddleWidth / 2, state.pointerX));
+        state.paddleX += (state.pointerX - (state.paddleX + state.paddleWidth / 2)) * 0.22;
+        state.paddleX = Math.max(10, Math.min(canvas.width - 10 - state.paddleWidth, state.paddleX));
+      }
+
+      function updateDrops() {
+        for (var i = state.drops.length - 1; i >= 0; i -= 1) {
+          var drop = state.drops[i];
+          drop.y += 2.1;
+          if (drop.y - drop.radius > canvas.height) {
+            state.drops.splice(i, 1);
+            continue;
+          }
+          if (drop.x > state.paddleX && drop.x < state.paddleX + state.paddleWidth && drop.y + drop.radius > canvas.height - 28) {
+            applyDrop(drop.type);
+            state.drops.splice(i, 1);
+          }
+        }
+      }
+
+      function updateBalls() {
+        var speedFactor = state.slowTimer > 0 ? 0.7 : 1;
+        for (var i = state.balls.length - 1; i >= 0; i -= 1) {
+          var ball = state.balls[i];
+          ball.x += ball.vx * speedFactor;
+          ball.y += ball.vy * speedFactor;
+          if (ball.x - ball.radius <= 8 || ball.x + ball.radius >= canvas.width - 8) {
+            ball.vx *= -1;
+            playEffect('hit');
+          }
+          if (ball.y - ball.radius <= 8) {
+            ball.vy *= -1;
+            playEffect('hit');
+          }
+          if (ball.y + ball.radius >= canvas.height - 28 && ball.x >= state.paddleX && ball.x <= state.paddleX + state.paddleWidth && ball.vy > 0) {
+            var offset = (ball.x - (state.paddleX + state.paddleWidth / 2)) / (state.paddleWidth / 2);
+            ball.vx = offset * 4.6;
+            ball.vy = -Math.abs(ball.vy) - 0.16;
+            playEffect('paddle');
+          }
+          for (var b = 0; b < state.bricks.length; b += 1) {
+            var brick = state.bricks[b];
+            if (!brick.alive) continue;
+            if (ball.x + ball.radius > brick.x && ball.x - ball.radius < brick.x + brick.width && ball.y + ball.radius > brick.y && ball.y - ball.radius < brick.y + brick.height) {
+              brick.hits -= 1;
+              ball.vy *= -1;
+              if (brick.hits <= 0) {
+                brick.alive = false;
+                state.score += 22 + state.level * 4;
+                state.bonus += 2;
+                spawnDrop(brick);
+                playEffect('point');
+              } else {
+                playEffect('hit');
+              }
+              updateHud();
+              break;
+            }
+          }
+          if (ball.y - ball.radius > canvas.height + 20) {
+            state.balls.splice(i, 1);
+          }
+        }
+        if (!state.balls.length) {
+          loseBall();
+        }
+      }
+
+      function updateGame() {
+        if (!state.running || state.paused) return;
+        state.frame += 1;
+        movePaddle();
+        updateBalls();
+        updateDrops();
+        if (state.wideTimer > 0) {
+          state.wideTimer -= 1;
+          if (state.wideTimer <= 0) {
+            state.paddleWidth = 112;
+            if (state.slowTimer <= 0 && state.shieldCharges <= 0) state.powerLabel = 'Base';
+          }
+        }
+        if (state.slowTimer > 0) {
+          state.slowTimer -= 1;
+          if (state.slowTimer <= 0 && state.wideTimer <= 0 && state.shieldCharges <= 0) state.powerLabel = 'Base';
+        }
+        if (state.bricks.every(function (brick) { return !brick.alive; })) {
+          nextLevel();
+        }
+      }
+
+      function drawBrick(brick) {
+        if (!brick.alive) return;
+        ctx.fillStyle = brick.color;
+        ctx.fillRect(brick.x, brick.y, brick.width, brick.height);
+        if (brick.hits > 1) {
+          ctx.fillStyle = 'rgba(13, 20, 33, 0.75)';
+          ctx.font = '700 12px Trebuchet MS, Segoe UI, sans-serif';
+          ctx.fillText(String(brick.hits), brick.x + brick.width / 2 - 3, brick.y + 13);
+        }
+      }
+
+      function drawDrop(drop) {
+        ctx.save();
+        ctx.translate(drop.x, drop.y);
+        if (drop.type === 'wide') {
+          ctx.fillStyle = '#ffd05f';
+          ctx.fillRect(-12, -4, 24, 8);
+        } else if (drop.type === 'slow') {
+          ctx.fillStyle = '#89b7ff';
+          ctx.beginPath();
+          ctx.arc(0, 0, 11, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (drop.type === 'life') {
+          ctx.fillStyle = '#ff6f7f';
+          ctx.beginPath();
+          ctx.moveTo(0, 11);
+          ctx.bezierCurveTo(-12, 0, -11, -10, -4, -10);
+          ctx.bezierCurveTo(0, -10, 0, -3, 0, -1);
+          ctx.bezierCurveTo(0, -3, 0, -10, 4, -10);
+          ctx.bezierCurveTo(11, -10, 12, 0, 0, 11);
+          ctx.fill();
+        } else if (drop.type === 'multi') {
+          ctx.fillStyle = '#68e2ba';
+          ctx.beginPath();
+          ctx.arc(-5, 0, 6, 0, Math.PI * 2);
+          ctx.arc(5, 0, 6, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (drop.type === 'shield') {
+          ctx.fillStyle = '#a7f2ed';
+          ctx.beginPath();
+          ctx.moveTo(0, -12);
+          ctx.lineTo(10, -5);
+          ctx.lineTo(7, 10);
+          ctx.lineTo(-7, 10);
+          ctx.lineTo(-10, -5);
+          ctx.closePath();
+          ctx.fill();
+        } else {
+          ctx.fillStyle = '#d6a5ff';
+          ctx.beginPath();
+          ctx.arc(0, 0, 10, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      function drawScene() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        var bg = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        bg.addColorStop(0, '#091426');
+        bg.addColorStop(1, '#1a3157');
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        state.bricks.forEach(drawBrick);
+        ctx.fillStyle = '#ffe3ad';
+        ctx.fillRect(state.paddleX, canvas.height - 26, state.paddleWidth, state.paddleHeight);
+        if (state.shieldCharges > 0) {
+          ctx.fillStyle = 'rgba(87, 240, 210, 0.5)';
+          ctx.fillRect(8, canvas.height - 8, canvas.width - 16, 4);
+        }
+        state.balls.forEach(function (ball) {
+          ctx.fillStyle = '#f7f7ff';
+          ctx.beginPath();
+          ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        state.drops.forEach(drawDrop);
+        ctx.fillStyle = 'rgba(241,246,255,0.78)';
+        ctx.font = '700 16px Trebuchet MS, Segoe UI, sans-serif';
+        ctx.fillText('Nivel ' + state.level + ' · Vidas ' + state.lives + ' · Bonus ' + state.bonus, 16, 24);
+      }
+
+      function loop() {
+        updateGame();
+        drawScene();
+        requestAnimationFrame(loop);
+      }
+
+      canvas.addEventListener('mousemove', function (event) {
+        var rect = canvas.getBoundingClientRect();
+        state.pointerX = ((event.clientX - rect.left) / rect.width) * canvas.width;
+      });
+      canvas.addEventListener('touchmove', function (event) {
+        var rect = canvas.getBoundingClientRect();
+        var touch = event.touches[0];
+        state.pointerX = ((touch.clientX - rect.left) / rect.width) * canvas.width;
+      }, { passive: true });
+
+      window.addEventListener('keydown', function (event) {
+        if (event.key === 'ArrowLeft') state.leftPressed = true;
+        if (event.key === 'ArrowRight') state.rightPressed = true;
+        if (String(event.key || '').toLowerCase() === 'p') {
+          event.preventDefault();
+          togglePause();
+        }
+      });
+      window.addEventListener('keyup', function (event) {
+        if (event.key === 'ArrowLeft') state.leftPressed = false;
+        if (event.key === 'ArrowRight') state.rightPressed = false;
+      });
+
+      startBtn.addEventListener('click', beginGame);
+      restartBtn.addEventListener('click', function () { resetGame(); });
+      backBtnTop.addEventListener('click', openMenu);
+      backBtnBottom.addEventListener('click', openMenu);
+      pauseBtn.addEventListener('click', function () { togglePause(); });
+      soundToggleBtn.addEventListener('click', function () {
+        if (!arcade) return;
+        arcade.toggleSoundEnabled();
+        syncProfile();
+      });
+      changePlayerBtn.addEventListener('click', function () {
+        if (!arcade) return;
+        arcade.promptPlayerName('Actualiza el nombre del jugador para Rebote bloques plus');
+        syncProfile();
+      });
+      window.addEventListener('pcs-arcade-store-changed', syncProfile);
+
+      resetGame();
+      syncProfile();
+      drawScene();
+      loop();
+    })();
+  </script>
+</body>
+</html>

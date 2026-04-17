@@ -41,6 +41,10 @@
     // insertar al inicio del body
     if (document.body && document.body.firstChild) document.body.insertBefore(wrapper, document.body.firstChild);
     else if (document.body) document.body.appendChild(wrapper);
+    try {
+      if (document.body) document.body.classList.add('has-floating-menu');
+      document.documentElement.classList.add('has-floating-menu');
+    } catch (e) {}
 
     const toggle = wrapper.querySelector('.fm-toggle');
     const panel = wrapper.querySelector('.fm-panel');
@@ -73,11 +77,6 @@
             it.addEventListener('click', function(ev){
               try{ closePanel(); }catch(e){}
             });
-            try {
-              it.addEventListener('touchstart', function(ev){ try{ closePanel(); }catch(e){} }, {passive:true});
-            } catch(e) {
-              // navegadores antiguos ignoran opciones del listener
-            }
           });
         }
       } catch(e) {}

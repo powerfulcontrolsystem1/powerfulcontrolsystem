@@ -96,6 +96,7 @@ try {
   var titleMenu = document.getElementById("empresaTitleMenu");
   var title = titleMenu || document.getElementById("empresaTitle");
   var frame = document.getElementById("contentFrame") || document.querySelector("iframe.admin-empresa-frame");
+  var portalUsuariosLink = document.getElementById("linkPortalUsuarios");
   var permsEvidence = document.getElementById("menuPermsEvidence");
   var storage = null;
   try {
@@ -222,6 +223,64 @@ try {
     }
   }
 
+  function buildPortalUsuariosURL(empresaId, config) {
+  var fallback = "/login_usuario.html";
+  if (empresaId) {
+    fallback += "?empresa_id=" + encodeURIComponent(String(empresaId));
+  }
+  var cfg = config || {};
+  var targetEmpresaId = Number(empresaId || 0);
+  var customDomain = String(cfg.dominio_publico || "").trim();
+  if (customDomain) {
+    try {
+    if (customDomain.indexOf("://") === -1) {
+      customDomain = "https://" + customDomain;
+    }
+    var customURL = new URL(customDomain);
+    customURL.pathname = "/login_usuario.html";
+    customURL.search = "";
+    if (targetEmpresaId > 0) {
+      customURL.searchParams.set("empresa_id", String(targetEmpresaId));
+    }
+    return customURL.toString();
+    } catch (e) {
+    return fallback;
+    }
+  }
+  var slug = String(cfg.empresa_slug || "").trim().toLowerCase();
+  if (!slug) return fallback;
+  try {
+    var url = new URL(window.location.origin);
+    var host = String(url.hostname || "").toLowerCase();
+    if (host === "powerfulcontrolsystem.com" || host === "www.powerfulcontrolsystem.com" || host.endsWith(".powerfulcontrolsystem.com")) {
+    url.protocol = "https:";
+    url.hostname = slug + ".powerfulcontrolsystem.com";
+    url.pathname = "/login_usuario.html";
+    url.search = "";
+    if (targetEmpresaId > 0) {
+      url.searchParams.set("empresa_id", String(targetEmpresaId));
+    }
+    return url.toString();
+    }
+  } catch (e) {
+    return fallback;
+  }
+  return fallback;
+  }
+
+  async function resolvePortalUsuariosURL(empresaId) {
+  var fallback = buildPortalUsuariosURL(empresaId, null);
+  if (!empresaId) return fallback;
+  try {
+    var res = await fetch("/api/empresa/venta_publica?empresa_id=" + encodeURIComponent(String(empresaId)) + "&action=config", { credentials: "same-origin" });
+    if (!res.ok) return fallback;
+    var body = await res.json();
+    return buildPortalUsuariosURL(empresaId, body && body.config ? body.config : null);
+  } catch (e) {
+    return fallback;
+  }
+  }
+
   function persistFrameSrc(href, empresaId) {
     if (!storage) return;
     var normalized = withEmpresaParam(href, empresaId);
@@ -260,6 +319,23 @@ try {
         link.classList.add("active");
       }
     });
+  }
+
+  if (portalUsuariosLink) {
+  resolvePortalUsuariosURL(id).then(function (url) {
+    portalUsuariosLink.href = url;
+  }).catch(function () {
+    portalUsuariosLink.href = buildPortalUsuariosURL(id, null);
+  });
+  portalUsuariosLink.addEventListener("click", function (event) {
+    event.preventDefault();
+    resolvePortalUsuariosURL(id).then(function (url) {
+    portalUsuariosLink.href = url;
+    window.open(url, "_blank", "noopener");
+    }).catch(function () {
+    window.open(buildPortalUsuariosURL(id, null), "_blank", "noopener");
+    });
+  });
   }
 
   function normalizePermissionRole(raw) {

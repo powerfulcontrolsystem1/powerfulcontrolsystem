@@ -206,6 +206,9 @@ func TestEpaycoCreateTransactionHandlerUsesConfiguredPublicBaseURLAndKeys(t *tes
 	if query.Get("p_cust_id_cliente") != "1579238" {
 		t.Fatalf("expected p_cust_id_cliente to use customer_id, got %q", query.Get("p_cust_id_cliente"))
 	}
+	if query.Get("p_key") != "prv_test_checkout_456" {
+		t.Fatalf("expected p_key to use epayco.private_key, got %q", query.Get("p_key"))
+	}
 	responseURL, err := url.Parse(query.Get("response"))
 	if err != nil {
 		t.Fatalf("parse response URL: %v", err)
@@ -304,6 +307,76 @@ func TestEpaycoCreateTransactionHandlerAllowsCheckoutWithoutPrivateKey(t *testin
 	}
 	if got := parsed.Query().Get("public_key"); got != "pub_test_checkout_only_public" {
 		t.Fatalf("expected public_key to use epayco.public_key, got %q", got)
+	}
+	if got := parsed.Query().Get("p_key"); got != "" {
+		t.Fatalf("expected p_key empty when private key is not configured, got %q", got)
+	}
+}
+
+func TestEpaycoCreateTransactionHandlerAcceptsSamboxAlias(t *testing.T) {
+	rawKey := make([]byte, 32)
+	for i := range rawKey {
+		rawKey[i] = byte(73 + i)
+	}
+	t.Setenv("CONFIG_ENC_KEY", base64.StdEncoding.EncodeToString(rawKey))
+
+	dbSuper := openTestSQLite(t, "super_epayco_checkout_sambox_alias.db")
+	ensurePaymentsHandlerTestSchema(t, dbSuper)
+
+	if _, err := dbSuper.Exec(`
+		INSERT INTO licencias (id, empresa_id, tipo_id, nombre, descripcion, valor, duracion_dias, modulos_habilitados, super_rol_habilitado, fecha_creacion, activo)
+		VALUES (1, 0, 1, 'Plan Sandbox', 'Licencia con modo sambox', 149900, 30, '', 0, datetime('now','localtime'), 1)
+	`); err != nil {
+		t.Fatalf("seed licencia: %v", err)
+	}
+
+	if err := dbpkg.SetConfigValue(dbSuper, "epayco.enabled", "1", false); err != nil {
+		t.Fatalf("seed epayco.enabled: %v", err)
+	}
+	if err := dbpkg.SetConfigValue(dbSuper, "epayco.mode", "sambox", false); err != nil {
+		t.Fatalf("seed epayco.mode: %v", err)
+	}
+	if err := dbpkg.SetConfigValue(dbSuper, "epayco.public_key", "pub_prod_like_alias_test", false); err != nil {
+		t.Fatalf("seed epayco.public_key: %v", err)
+	}
+	encPrivateKey, err := utils.EncryptString("prv_prod_like_alias_test")
+	if err != nil {
+		t.Fatalf("encrypt epayco.private_key: %v", err)
+	}
+	if err := dbpkg.SetConfigValue(dbSuper, "epayco.private_key", encPrivateKey, true); err != nil {
+		t.Fatalf("seed epayco.private_key: %v", err)
+	}
+	if err := dbpkg.SetConfigValue(dbSuper, "gmail.confirm_base_url", "https://powerfulcontrolsystem.com", false); err != nil {
+		t.Fatalf("seed gmail.confirm_base_url: %v", err)
+	}
+
+	h := EpaycoCreateTransactionHandler(dbSuper)
+	body := strings.NewReader(`{"licencia_id":1,"empresa_id":55,"customer_email":"sandbox@demo.com"}`)
+	req := httptest.NewRequest(http.MethodPost, "http://localhost:8080/epayco/create_transaction", body)
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, rr.Code, rr.Body.String())
+	}
+
+	var resp struct {
+		Mode        string `json:"mode"`
+		CheckoutURL string `json:"checkout_url"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode response: %v body=%s", err, rr.Body.String())
+	}
+	if resp.Mode != "sandbox" {
+		t.Fatalf("expected mode sandbox when epayco.mode=sambox, got %q", resp.Mode)
+	}
+	parsed, err := url.Parse(resp.CheckoutURL)
+	if err != nil {
+		t.Fatalf("parse checkout URL: %v", err)
+	}
+	if got := parsed.Query().Get("test"); got != "true" {
+		t.Fatalf("expected checkout test=true when epayco.mode=sambox, got %q", got)
 	}
 }
 

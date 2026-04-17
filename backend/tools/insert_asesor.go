@@ -1,3 +1,6 @@
+//go:build tools
+// +build tools
+
 package main
 
 import (
@@ -5,23 +8,17 @@ import (
     "flag"
     "fmt"
     "log"
-    "strings"
 
     dbpkg "github.com/you/pos-backend/db"
     _ "modernc.org/sqlite"
 )
 
 func main() {
-    email := flag.String("email", "", "email del asesor (required)")
-    nombre := flag.String("nombre", "", "nombre del asesor")
-    rol := flag.String("rol", "vendedor", "rol del asesor")
-    notas := flag.String("notas", "", "notas")
+    email := flag.String("email", "asesor_test@example.com", "email del asesor (se creará si no existe)")
+    name := flag.String("name", "Asesor Test", "nombre del asesor")
+    role := flag.String("role", "asesor", "rol del asesor")
     dbPath := flag.String("db", "superadministrador.db", "ruta a la BD superadministrador")
     flag.Parse()
-
-    if strings.TrimSpace(*email) == "" {
-        log.Fatalf("email is required")
-    }
 
     db, err := sql.Open("sqlite", *dbPath)
     if err != nil {
@@ -29,9 +26,8 @@ func main() {
     }
     defer db.Close()
 
-    id, err := dbpkg.CreateAsesor(db, *email, *nombre, *rol, *notas)
-    if err != nil {
-        log.Fatalf("failed to create asesor: %v", err)
+    if err := dbpkg.UpsertAdministrador(db, *email, *name, *role, ""); err != nil {
+        log.Fatalf("failed to upsert administrador: %v", err)
     }
-    fmt.Printf("created asesor id=%d\n", id)
+    fmt.Printf("upserted asesor email=%s name=%s role=%s\n", *email, *name, *role)
 }

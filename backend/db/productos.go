@@ -1129,29 +1129,8 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 func ensureColumnIfMissing(dbConn *sql.DB, table, column, columnDef string) error {
 	lowerColumn := strings.ToLower(column)
 	if isPostgresDialect() {
-		rows, err := querySQLCompat(dbConn, `
-			SELECT column_name
-			FROM information_schema.columns
-			WHERE table_schema = ANY (current_schemas(false))
-			  AND table_name = ?
-		`, table)
-		if err != nil {
-			return err
-		}
-		defer rows.Close()
-
-		for rows.Next() {
-			var name string
-			if err := rows.Scan(&name); err != nil {
-				return err
-			}
-			if strings.ToLower(name) == lowerColumn {
-				return nil
-			}
-		}
-
 		columnDef = normalizeColumnDefForDialect(columnDef)
-		_, err = execSQLCompat(dbConn, fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s", table, column+" "+columnDef))
+		_, err := execSQLCompat(dbConn, fmt.Sprintf("ALTER TABLE %s ADD COLUMN IF NOT EXISTS %s", table, column+" "+columnDef))
 		return err
 	}
 

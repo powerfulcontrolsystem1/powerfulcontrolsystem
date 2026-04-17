@@ -20,6 +20,9 @@ import (
 
 func openTestSQLite(t *testing.T, name string) *sql.DB {
 	t.Helper()
+	t.Setenv("DB_DIALECT", "sqlite")
+	t.Setenv("DB_ENGINE", "sqlite")
+	t.Setenv("PCS_DB_DIALECT", "sqlite")
 
 	dbPath := filepath.Join(t.TempDir(), name)
 	dbConn, err := sql.Open("sqlite", dbPath)
@@ -54,6 +57,9 @@ func ensureEmpresaUsersSchema(t *testing.T, dbEmp *sql.DB) {
 		password_reset_token TEXT,
 		password_reset_expira TEXT,
 		password_reset_requested_en TEXT,
+		acepta_contrato INTEGER DEFAULT 0,
+		contrato_version_aceptada INTEGER DEFAULT 0,
+		fecha_acepta_contrato TEXT,
 		rol_usuario_id INTEGER,
 		email_confirmado INTEGER DEFAULT 0,
 		email_confirmado_en TEXT,
@@ -106,7 +112,9 @@ func ensureClientesSchema(t *testing.T, dbEmp *sql.DB) {
 	_, err := dbEmp.Exec(`CREATE TABLE IF NOT EXISTS clientes (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		empresa_id INTEGER,
-		nombre_razon_social TEXT
+		nombre_razon_social TEXT,
+		email TEXT,
+		numero_documento TEXT
 	);`)
 	if err != nil {
 		t.Fatalf("create clientes schema: %v", err)
@@ -298,7 +306,7 @@ func TestEmpresaUsuarioLoginHandlerSuccess(t *testing.T) {
 	}
 
 	h := EmpresaUsuarioLoginHandler(dbEmp, dbSuper)
-	body := `{"email":"user@login.com","password":"PasswordSegura1"}`
+	body := `{"email":"user@login.com","password":"PasswordSegura1","accept_contract":true}`
 	req := httptest.NewRequest(http.MethodPost, "/api/empresa/usuarios/login", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	rr := httptest.NewRecorder()
@@ -340,6 +348,60 @@ func TestEmpresaUsuarioLoginHandlerSuccess(t *testing.T) {
 	}
 	if sesionesCount != 1 {
 		t.Fatalf("expected 1 session, got %d", sesionesCount)
+	}
+}
+
+func TestEmpresaUsuarioLoginHandlerRequiresContractAcceptance(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_login_contract.db")
+	dbSuper := openTestSQLite(t, "super_login_contract.db")
+	ensureEmpresaUsersSchema(t, dbEmp)
+	ensureSuperSchema(t, dbSuper)
+	if err := dbpkg.EnsureSuperContractSchema(dbSuper); err != nil {
+		t.Fatalf("ensure super contract schema: %v", err)
+	}
+
+	salt := "salt-login-contract"
+	hash := hashEmpresaUsuarioPassword("PasswordSegura1", salt)
+	_, err := dbEmp.Exec(`INSERT INTO users (
+		email, name, role, empresa_id, documento_identidad,
+		password_hash, password_salt, password_set,
+		rol_usuario_id, email_confirmado, estado
+	) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, 1, 'activo')`,
+		"contract@login.com", "Usuario Contrato", "vendedor", int64(15), "DOC-15", hash, salt, int64(2),
+	)
+	if err != nil {
+		t.Fatalf("seed user login contract: %v", err)
+	}
+
+	h := EmpresaUsuarioLoginHandler(dbEmp, dbSuper)
+	body := `{"email":"contract@login.com","password":"PasswordSegura1"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/empresa/usuarios/login", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, rr.Code, rr.Body.String())
+	}
+
+	var resp map[string]interface{}
+	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if required, _ := resp["contract_acceptance_required"].(bool); !required {
+		t.Fatalf("expected contract_acceptance_required=true, got response=%v", resp)
+	}
+	if _, ok := resp["contract"].(map[string]interface{}); !ok {
+		t.Fatalf("expected contract payload, got response=%v", resp)
+	}
+
+	var sesionesCount int
+	if err := dbSuper.QueryRow("SELECT COUNT(1) FROM sesiones").Scan(&sesionesCount); err != nil {
+		t.Fatalf("count sesiones: %v", err)
+	}
+	if sesionesCount != 0 {
+		t.Fatalf("expected 0 sessions when contract is pending, got %d", sesionesCount)
 	}
 }
 
@@ -465,7 +527,7 @@ func TestEmpresaUsuarioSetPasswordHandlerSuccess(t *testing.T) {
 	}
 
 	h := EmpresaUsuarioSetPasswordHandler(dbEmp, dbSuper)
-	body := `{"email":"nuevo@empresa.com","documento_identidad":"DOC-22","password":"ClaveNueva88","password_confirm":"ClaveNueva88"}`
+	body := `{"email":"nuevo@empresa.com","documento_identidad":"DOC-22","password":"ClaveNueva88","password_confirm":"ClaveNueva88","accept_contract":true}`
 	req := httptest.NewRequest(http.MethodPost, "/api/empresa/usuarios/establecer_password", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	rr := httptest.NewRecorder()
@@ -505,6 +567,23 @@ func TestEmpresaUsuarioSetPasswordHandlerSuccess(t *testing.T) {
 	}
 	if !hasBrowserSessionCookie {
 		t.Fatal("expected browser session cookie")
+	}
+}
+
+func TestResolveEmpresaUsuarioLoginURLUsesEmpresaSubdomain(t *testing.T) {
+	got := resolveEmpresaUsuarioLoginURLFromBase("https://powerfulcontrolsystem.com", "hotel-centro", "", 44)
+	if got != "https://hotel-centro.powerfulcontrolsystem.com/login_usuario.html?empresa_id=44" {
+		t.Fatalf("expected company subdomain URL, got %q", got)
+	}
+
+	got = resolveEmpresaUsuarioLoginURLFromBase("https://powerfulcontrolsystem.com", "hotel-centro", "portal.hotelcentro.com", 44)
+	if got != "https://portal.hotelcentro.com/login_usuario.html?empresa_id=44" {
+		t.Fatalf("expected custom public domain URL, got %q", got)
+	}
+
+	got = resolveEmpresaUsuarioLoginURLFromBase("http://localhost:8080", "hotel-centro", "", 44)
+	if got != "http://localhost:8080/login_usuario.html?empresa_id=44" {
+		t.Fatalf("expected localhost login page URL, got %q", got)
 	}
 }
 
@@ -2007,7 +2086,7 @@ func TestEmpresaUsuarioPasswordRecoveryFlow(t *testing.T) {
 	}
 
 	resetH := EmpresaUsuarioResetPasswordHandler(dbEmp, dbSuper)
-	resetBody := `{"empresa_id":31,"email":"recovery@empresa.com","token":"` + resetToken + `","password":"ClaveNueva101","password_confirm":"ClaveNueva101"}`
+	resetBody := `{"empresa_id":31,"email":"recovery@empresa.com","token":"` + resetToken + `","password":"ClaveNueva101","password_confirm":"ClaveNueva101","accept_contract":true}`
 	resetReq := httptest.NewRequest(http.MethodPost, "/api/empresa/usuarios/restablecer_password", strings.NewReader(resetBody))
 	resetReq.Header.Set("Content-Type", "application/json")
 	resetRR := httptest.NewRecorder()
@@ -2029,7 +2108,7 @@ func TestEmpresaUsuarioPasswordRecoveryFlow(t *testing.T) {
 	}
 
 	loginH := EmpresaUsuarioLoginHandler(dbEmp, dbSuper)
-	loginReq := httptest.NewRequest(http.MethodPost, "/api/empresa/usuarios/login", strings.NewReader(`{"empresa_id":31,"email":"recovery@empresa.com","password":"ClaveNueva101"}`))
+	loginReq := httptest.NewRequest(http.MethodPost, "/api/empresa/usuarios/login", strings.NewReader(`{"empresa_id":31,"email":"recovery@empresa.com","password":"ClaveNueva101","accept_contract":true}`))
 	loginReq.Header.Set("Content-Type", "application/json")
 	loginRR := httptest.NewRecorder()
 	loginH.ServeHTTP(loginRR, loginReq)

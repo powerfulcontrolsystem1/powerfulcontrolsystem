@@ -1,0 +1,671 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Tetris plus</title>
+  <link rel="icon" type="image/png" href="/img/punto_venta.png">
+  <link rel="stylesheet" href="/Juegos/arcade_window.css">
+  <style>
+    :root {
+      --arc-bg: #101428;
+      --arc-bg-soft: #202848;
+      --arc-accent: #8ce4ff;
+      --arc-accent-dark: #ffa86c;
+    }
+
+    .tetris-stage {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 14px;
+      padding: 14px;
+      box-sizing: border-box;
+      align-items: stretch;
+    }
+
+    .tetris-panel {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 18px;
+      padding: 14px;
+      color: var(--arc-text);
+    }
+
+    .tetris-panel h3 {
+      margin: 0 0 10px;
+      font-size: 1rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .tetris-panel p {
+      margin: 0 0 10px;
+      color: var(--arc-muted);
+      font-size: 0.92rem;
+      line-height: 1.45;
+    }
+
+    .tetris-power-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .tetris-power-list button {
+      width: 100%;
+    }
+
+    .tetris-mini {
+      display: grid;
+      grid-template-columns: repeat(4, 16px);
+      gap: 3px;
+      justify-content: center;
+      margin-top: 12px;
+      min-height: 76px;
+    }
+
+    .tetris-mini span {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.08);
+    }
+
+    #tetrisCanvas {
+      width: 100%;
+      height: 100%;
+      min-height: 360px;
+      background: linear-gradient(180deg, rgba(7, 14, 29, 0.98), rgba(13, 23, 46, 0.98));
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    @media (max-width: 680px) {
+      .tetris-stage {
+        grid-template-columns: 1fr;
+      }
+      #tetrisCanvas {
+        min-height: 320px;
+      }
+    }
+  </style>
+</head>
+<body class="arcade-window-page">
+  <main class="arcade-window">
+    <section class="arcade-header">
+      <div class="arcade-title-wrap">
+        <p class="arcade-kicker">Piezas y reflejos</p>
+        <h1>Tetris plus</h1>
+        <p class="arcade-copy">Añade vidas contra desbordes, niveles de caída, bonus por combos y poderes que limpian zonas o frenan el ritmo cuando el tablero se complica.</p>
+      </div>
+      <div class="arcade-stats">
+        <div class="arcade-stat"><span class="arcade-stat-label">Puntaje</span><span id="scoreValue" class="arcade-stat-value">0</span></div>
+        <div class="arcade-stat"><span class="arcade-stat-label">Nivel</span><span id="levelValue" class="arcade-stat-value">1</span></div>
+        <div class="arcade-stat"><span class="arcade-stat-label">Vidas</span><span id="livesValue" class="arcade-stat-value">3</span></div>
+        <div class="arcade-stat"><span class="arcade-stat-label">Poder</span><span id="powerValue" class="arcade-stat-value">Base</span></div>
+      </div>
+    </section>
+
+    <section class="arcade-chip-row">
+      <span class="arcade-chip">Jugador:<strong id="playerNameValue">Invitado</strong></span>
+      <span class="arcade-chip">Record:<strong id="bestValue">0</strong></span>
+      <span id="bestMeta" class="arcade-chip note">Sin marcas guardadas</span>
+      <span class="arcade-chip">Bonus:<strong id="bonusValue">0</strong></span>
+      <span class="arcade-chip">Bombas:<strong id="bombValue">1</strong></span>
+      <span class="arcade-chip">Lento:<strong id="slowValue">1</strong></span>
+      <button id="changePlayerBtn" class="arcade-chip-btn" type="button">Cambiar jugador</button>
+      <button id="soundToggleBtn" class="arcade-chip-btn secondary" type="button" aria-pressed="true">Sonido: activado</button>
+      <button id="pauseBtn" class="arcade-chip-btn alert" type="button" aria-pressed="false">Pausa</button>
+    </section>
+
+    <section class="arcade-stage tetris-stage" aria-label="Juego Tetris plus">
+      <canvas id="tetrisCanvas" width="260" height="468"></canvas>
+      <aside class="tetris-panel">
+        <h3>Control y ayudas</h3>
+        <p>Usa flechas o los botones del pie para mover, rotar y dejar caer. Cada cierto progreso ganas bombas o cargas de tiempo lento.</p>
+        <div class="tetris-power-list">
+          <button id="bombBtn" class="arcade-btn secondary" type="button">Bombazo</button>
+          <button id="slowBtn" class="arcade-btn secondary" type="button">Tiempo lento</button>
+        </div>
+        <h3 style="margin-top:16px;">Siguiente pieza</h3>
+        <div id="nextPreview" class="tetris-mini" aria-hidden="true"></div>
+        <p id="statusText" class="arcade-status" style="margin-top:16px;">Esperando inicio...</p>
+      </aside>
+      <div id="overlay" class="arcade-overlay">
+        <div class="arcade-overlay-card">
+          <h2 id="overlayTitle">Tablero listo</h2>
+          <p id="overlayText">Apila con cuidado, sube niveles y usa poderes para controlar el caos. La pausa congela por completo la caída y los movimientos del tablero.</p>
+          <ul>
+            <li>Completa líneas para puntuar y subir de nivel.</li>
+            <li>Si el tablero desborda, pierdes una vida y se limpia el área.</li>
+            <li>Bombazo limpia una zona alrededor de la pieza actual.</li>
+          </ul>
+          <div class="arcade-actions">
+            <button id="startBtn" class="arcade-btn" type="button">Empezar</button>
+            <button id="backBtnTop" class="arcade-btn secondary" type="button">Volver al menu</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="arcade-footer">
+      <button id="restartBtn" class="arcade-btn secondary" type="button">Reiniciar</button>
+      <button id="backBtnBottom" class="arcade-btn secondary" type="button">Salir al menu</button>
+      <button id="leftBtn" class="arcade-btn secondary" type="button">←</button>
+      <button id="rotateBtn" class="arcade-btn secondary" type="button">⟳</button>
+      <button id="rightBtn" class="arcade-btn secondary" type="button">→</button>
+      <button id="dropBtn" class="arcade-btn" type="button">Caer</button>
+    </section>
+  </main>
+
+  <script src="/Juegos/arcade_shared.js"></script>
+  <script>
+    (function () {
+      var GAME_KEY = 'tetris';
+      var arcade = window.PCSArcade || null;
+      var canvas = document.getElementById('tetrisCanvas');
+      var ctx = canvas.getContext('2d');
+      var nextPreview = document.getElementById('nextPreview');
+      var scoreValue = document.getElementById('scoreValue');
+      var levelValue = document.getElementById('levelValue');
+      var livesValue = document.getElementById('livesValue');
+      var powerValue = document.getElementById('powerValue');
+      var bonusValue = document.getElementById('bonusValue');
+      var bombValue = document.getElementById('bombValue');
+      var slowValue = document.getElementById('slowValue');
+      var playerNameValue = document.getElementById('playerNameValue');
+      var bestValue = document.getElementById('bestValue');
+      var bestMeta = document.getElementById('bestMeta');
+      var changePlayerBtn = document.getElementById('changePlayerBtn');
+      var soundToggleBtn = document.getElementById('soundToggleBtn');
+      var pauseBtn = document.getElementById('pauseBtn');
+      var bombBtn = document.getElementById('bombBtn');
+      var slowBtn = document.getElementById('slowBtn');
+      var overlay = document.getElementById('overlay');
+      var overlayTitle = document.getElementById('overlayTitle');
+      var overlayText = document.getElementById('overlayText');
+      var startBtn = document.getElementById('startBtn');
+      var restartBtn = document.getElementById('restartBtn');
+      var backBtnTop = document.getElementById('backBtnTop');
+      var backBtnBottom = document.getElementById('backBtnBottom');
+      var leftBtn = document.getElementById('leftBtn');
+      var rightBtn = document.getElementById('rightBtn');
+      var rotateBtn = document.getElementById('rotateBtn');
+      var dropBtn = document.getElementById('dropBtn');
+      var statusText = document.getElementById('statusText');
+
+      var COLS = 10;
+      var ROWS = 18;
+      var CELL = 26;
+      var PIECES = {
+        I: { color: '#75e7ff', matrix: [[1, 1, 1, 1]] },
+        O: { color: '#ffe570', matrix: [[1, 1], [1, 1]] },
+        T: { color: '#d59dff', matrix: [[0, 1, 0], [1, 1, 1]] },
+        S: { color: '#6be5b8', matrix: [[0, 1, 1], [1, 1, 0]] },
+        Z: { color: '#ff7b7b', matrix: [[1, 1, 0], [0, 1, 1]] },
+        J: { color: '#7ba5ff', matrix: [[1, 0, 0], [1, 1, 1]] },
+        L: { color: '#ffb065', matrix: [[0, 0, 1], [1, 1, 1]] }
+      };
+      var pieceKeys = Object.keys(PIECES);
+
+      var state = {
+        running: false,
+        paused: false,
+        gameOver: false,
+        board: [],
+        current: null,
+        next: null,
+        score: 0,
+        bonus: 0,
+        lines: 0,
+        level: 1,
+        lives: 3,
+        bombCharges: 1,
+        slowCharges: 1,
+        slowTimer: 0,
+        powerLabel: 'Base',
+        stepMs: 720,
+        accumulator: 0,
+        lastFrame: 0
+      };
+
+      function playEffect(name) {
+        if (arcade) arcade.playEffect(name);
+      }
+
+      function setStatus(text) {
+        statusText.textContent = text;
+      }
+
+      function syncProfile() {
+        if (!arcade) return;
+        var profile = arcade.getProfile();
+        var scores = arcade.getGameScores(GAME_KEY);
+        playerNameValue.textContent = profile.playerName || 'Invitado';
+        bestValue.textContent = String(scores.best ? Number(scores.best.score || 0) : 0);
+        bestMeta.textContent = scores.best ? ('Por ' + scores.best.playerName + (scores.best.detail ? ' · ' + scores.best.detail : '')) : 'Sin marcas guardadas';
+        soundToggleBtn.textContent = arcade.isSoundEnabled() ? 'Sonido: activado' : 'Sonido: apagado';
+        soundToggleBtn.setAttribute('aria-pressed', arcade.isSoundEnabled() ? 'true' : 'false');
+      }
+
+      function updateHud() {
+        scoreValue.textContent = String(state.score);
+        levelValue.textContent = String(state.level);
+        livesValue.textContent = String(state.lives);
+        powerValue.textContent = state.powerLabel;
+        bonusValue.textContent = String(state.bonus);
+        bombValue.textContent = String(state.bombCharges);
+        slowValue.textContent = String(state.slowCharges);
+        pauseBtn.textContent = state.paused ? 'Reanudar' : 'Pausa';
+        pauseBtn.setAttribute('aria-pressed', state.paused ? 'true' : 'false');
+      }
+
+      function recordScore() {
+        if (!arcade) {
+          syncProfile();
+          return;
+        }
+        var total = state.score + state.bonus + state.level * 30 + state.lives * 25;
+        if (total > 0) {
+          arcade.recordScore(GAME_KEY, total, {
+            detail: 'Nivel ' + state.level + ' · lineas ' + state.lines
+          });
+        }
+        syncProfile();
+      }
+
+      function makeBoard() {
+        state.board = Array.from({ length: ROWS }, function () {
+          return Array.from({ length: COLS }, function () { return ''; });
+        });
+      }
+
+      function cloneMatrix(matrix) {
+        return matrix.map(function (row) { return row.slice(); });
+      }
+
+      function createPiece(key) {
+        var def = PIECES[key || pieceKeys[Math.floor(Math.random() * pieceKeys.length)]];
+        return {
+          key: key,
+          color: def.color,
+          matrix: cloneMatrix(def.matrix),
+          x: Math.floor((COLS - def.matrix[0].length) / 2),
+          y: 0
+        };
+      }
+
+      function refillNext() {
+        if (!state.next) {
+          state.next = createPiece(pieceKeys[Math.floor(Math.random() * pieceKeys.length)]);
+        }
+      }
+
+      function spawnPiece() {
+        refillNext();
+        state.current = {
+          key: state.next.key,
+          color: state.next.color,
+          matrix: cloneMatrix(state.next.matrix),
+          x: Math.floor((COLS - state.next.matrix[0].length) / 2),
+          y: 0
+        };
+        state.next = createPiece(pieceKeys[Math.floor(Math.random() * pieceKeys.length)]);
+        drawPreview();
+        if (collides(state.current)) {
+          loseLife('El tablero se desbordó.');
+        }
+      }
+
+      function resetGame() {
+        state.running = false;
+        state.paused = false;
+        state.gameOver = false;
+        state.score = 0;
+        state.bonus = 0;
+        state.lines = 0;
+        state.level = 1;
+        state.lives = 3;
+        state.bombCharges = 1;
+        state.slowCharges = 1;
+        state.slowTimer = 0;
+        state.powerLabel = 'Base';
+        state.stepMs = 720;
+        state.accumulator = 0;
+        state.lastFrame = 0;
+        makeBoard();
+        state.next = null;
+        refillNext();
+        spawnPiece();
+        overlay.hidden = false;
+        overlayTitle.textContent = 'Tablero listo';
+        overlayText.textContent = 'Apila con cuidado, sube niveles y usa poderes para controlar el caos. La pausa congela por completo la caída y los movimientos del tablero.';
+        setStatus('Esperando inicio...');
+        updateHud();
+      }
+
+      function openMenu() {
+        window.location.href = '/Juegos/menu_juegos.html';
+      }
+
+      function beginGame() {
+        if (arcade) {
+          arcade.ensurePlayerName('Escribe el nombre del jugador para Tetris plus');
+          syncProfile();
+        }
+        state.running = true;
+        state.paused = false;
+        state.gameOver = false;
+        overlay.hidden = true;
+        setStatus('Apila, limpia líneas y controla el tablero.');
+        playEffect('start');
+        updateHud();
+      }
+
+      function togglePause(forceValue) {
+        if (!state.running || state.gameOver) return;
+        state.paused = typeof forceValue === 'boolean' ? forceValue : !state.paused;
+        if (state.paused) {
+          overlay.hidden = false;
+          overlayTitle.textContent = 'Juego en pausa';
+          overlayText.textContent = 'La pausa congela la gravedad de la pieza actual, la lectura de controles y cualquier poder temporal.';
+        } else {
+          overlay.hidden = true;
+        }
+        setStatus(state.paused ? 'Partida en pausa.' : 'Partida reanudada.');
+        updateHud();
+      }
+
+      function collides(piece) {
+        for (var y = 0; y < piece.matrix.length; y += 1) {
+          for (var x = 0; x < piece.matrix[y].length; x += 1) {
+            if (!piece.matrix[y][x]) continue;
+            var boardX = piece.x + x;
+            var boardY = piece.y + y;
+            if (boardX < 0 || boardX >= COLS || boardY >= ROWS) return true;
+            if (boardY >= 0 && state.board[boardY][boardX]) return true;
+          }
+        }
+        return false;
+      }
+
+      function mergePiece() {
+        for (var y = 0; y < state.current.matrix.length; y += 1) {
+          for (var x = 0; x < state.current.matrix[y].length; x += 1) {
+            if (!state.current.matrix[y][x]) continue;
+            var boardY = state.current.y + y;
+            if (boardY >= 0) {
+              state.board[boardY][state.current.x + x] = state.current.color;
+            }
+          }
+        }
+      }
+
+      function rotateMatrix(matrix) {
+        var rotated = matrix[0].map(function (_, index) {
+          return matrix.map(function (row) { return row[index]; }).reverse();
+        });
+        return rotated;
+      }
+
+      function rotatePiece() {
+        if (!state.running || state.paused || state.gameOver) return;
+        var rotated = rotateMatrix(state.current.matrix);
+        var original = state.current.matrix;
+        state.current.matrix = rotated;
+        if (collides(state.current)) {
+          state.current.x += 1;
+          if (collides(state.current)) {
+            state.current.x -= 2;
+            if (collides(state.current)) {
+              state.current.x += 1;
+              state.current.matrix = original;
+              return;
+            }
+          }
+        }
+        playEffect('flip');
+      }
+
+      function movePiece(deltaX) {
+        if (!state.running || state.paused || state.gameOver) return;
+        state.current.x += deltaX;
+        if (collides(state.current)) {
+          state.current.x -= deltaX;
+          return;
+        }
+        playEffect('move');
+      }
+
+      function clearLines() {
+        var cleared = 0;
+        for (var y = ROWS - 1; y >= 0; y -= 1) {
+          if (state.board[y].every(Boolean)) {
+            state.board.splice(y, 1);
+            state.board.unshift(Array.from({ length: COLS }, function () { return ''; }));
+            cleared += 1;
+            y += 1;
+          }
+        }
+        if (!cleared) return;
+        var points = [0, 120, 320, 600, 980][cleared] || 980;
+        state.score += points * state.level;
+        state.bonus += cleared * 12;
+        state.lines += cleared;
+        if (cleared >= 2) playEffect('match'); else playEffect('point');
+        if (state.lines > 0 && state.lines % 4 === 0) state.bombCharges += 1;
+        if (state.lines > 0 && state.lines % 5 === 0) state.slowCharges += 1;
+        if (state.lines > 0 && state.lines % 8 === 0) {
+          state.level += 1;
+          state.stepMs = Math.max(150, 720 - (state.level - 1) * 56);
+          state.bonus += 24;
+        }
+        if (state.lines > 0 && state.lines % 10 === 0) {
+          state.lives = Math.min(5, state.lives + 1);
+          state.powerLabel = 'Vida';
+        }
+        updateHud();
+      }
+
+      function placePiece() {
+        mergePiece();
+        clearLines();
+        spawnPiece();
+      }
+
+      function softDrop() {
+        if (!state.running || state.paused || state.gameOver) return;
+        state.current.y += 1;
+        if (collides(state.current)) {
+          state.current.y -= 1;
+          placePiece();
+          return;
+        }
+        state.score += 1;
+        updateHud();
+      }
+
+      function hardDrop() {
+        if (!state.running || state.paused || state.gameOver) return;
+        var dropped = 0;
+        while (!collides(state.current)) {
+          state.current.y += 1;
+          dropped += 1;
+        }
+        state.current.y -= 1;
+        state.score += Math.max(0, (dropped - 1) * 2);
+        updateHud();
+        playEffect('drop');
+        placePiece();
+      }
+
+      function loseLife(reason) {
+        state.lives -= 1;
+        if (state.lives <= 0) {
+          state.running = false;
+          state.gameOver = true;
+          overlay.hidden = false;
+          overlayTitle.textContent = 'Fin de partida';
+          overlayText.textContent = reason + ' Ya no quedan vidas disponibles.';
+          recordScore();
+          playEffect('fail');
+          setStatus('Partida terminada.');
+          updateHud();
+          return;
+        }
+        makeBoard();
+        spawnPiece();
+        state.running = false;
+        overlay.hidden = false;
+        overlayTitle.textContent = 'Vida perdida';
+        overlayText.textContent = reason + ' Se limpió el tablero para seguir jugando con ' + state.lives + ' vidas.';
+        playEffect('fail');
+        setStatus('Perdiste una vida.');
+        updateHud();
+      }
+
+      function useBomb() {
+        if (!state.running || state.paused || state.gameOver || state.bombCharges <= 0) return;
+        state.bombCharges -= 1;
+        for (var y = state.current.y - 1; y <= state.current.y + 2; y += 1) {
+          for (var x = state.current.x - 1; x <= state.current.x + 2; x += 1) {
+            if (y >= 0 && y < ROWS && x >= 0 && x < COLS) {
+              state.board[y][x] = '';
+            }
+          }
+        }
+        state.bonus += 18;
+        state.powerLabel = 'Bombazo';
+        playEffect('hit');
+        updateHud();
+        setStatus('Bombazo usado.');
+      }
+
+      function useSlow() {
+        if (!state.running || state.paused || state.gameOver || state.slowCharges <= 0) return;
+        state.slowCharges -= 1;
+        state.slowTimer = 20;
+        state.powerLabel = 'Lento';
+        state.bonus += 12;
+        playEffect('countdownGo');
+        updateHud();
+        setStatus('Tiempo lento activado.');
+      }
+
+      function drawCell(x, y, color) {
+        ctx.fillStyle = color;
+        ctx.fillRect(x * CELL + 1, y * CELL + 1, CELL - 2, CELL - 2);
+        ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+        ctx.strokeRect(x * CELL + 2, y * CELL + 2, CELL - 4, CELL - 4);
+      }
+
+      function drawBoard() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#091121';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        for (var y = 0; y < ROWS; y += 1) {
+          for (var x = 0; x < COLS; x += 1) {
+            if (state.board[y][x]) drawCell(x, y, state.board[y][x]);
+            ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+            ctx.strokeRect(x * CELL, y * CELL, CELL, CELL);
+          }
+        }
+        if (state.current) {
+          for (var py = 0; py < state.current.matrix.length; py += 1) {
+            for (var px = 0; px < state.current.matrix[py].length; px += 1) {
+              if (!state.current.matrix[py][px]) continue;
+              drawCell(state.current.x + px, state.current.y + py, state.current.color);
+            }
+          }
+        }
+      }
+
+      function drawPreview() {
+        if (!state.next) return;
+        nextPreview.innerHTML = '';
+        var previewMatrix = state.next.matrix;
+        for (var y = 0; y < 4; y += 1) {
+          for (var x = 0; x < 4; x += 1) {
+            var cell = document.createElement('span');
+            if (previewMatrix[y] && previewMatrix[y][x]) {
+              cell.style.background = state.next.color;
+            }
+            nextPreview.appendChild(cell);
+          }
+        }
+      }
+
+      function frame(timestamp) {
+        if (!state.lastFrame) state.lastFrame = timestamp;
+        var delta = timestamp - state.lastFrame;
+        state.lastFrame = timestamp;
+        if (state.running && !state.paused && !state.gameOver) {
+          state.accumulator += delta;
+          var effectiveStep = state.slowTimer > 0 ? state.stepMs + 180 : state.stepMs;
+          while (state.accumulator >= effectiveStep && state.running && !state.paused) {
+            state.accumulator -= effectiveStep;
+            softDrop();
+          }
+        }
+        if (state.slowTimer > 0 && state.running && !state.paused) {
+          state.slowTimer -= delta / 1000;
+          if (state.slowTimer <= 0) {
+            state.slowTimer = 0;
+            if (state.bombCharges <= 0) state.powerLabel = 'Base';
+            updateHud();
+          }
+        }
+        drawBoard();
+        requestAnimationFrame(frame);
+      }
+
+      function keyHandler(event) {
+        if (String(event.key || '').toLowerCase() === 'p') {
+          event.preventDefault();
+          togglePause();
+          return;
+        }
+        if (!state.running || state.paused || state.gameOver) return;
+        if (event.key === 'ArrowLeft' || String(event.key).toLowerCase() === 'a') movePiece(-1);
+        if (event.key === 'ArrowRight' || String(event.key).toLowerCase() === 'd') movePiece(1);
+        if (event.key === 'ArrowUp' || String(event.key).toLowerCase() === 'w') rotatePiece();
+        if (event.key === 'ArrowDown' || String(event.key).toLowerCase() === 's') softDrop();
+        if (event.code === 'Space') {
+          event.preventDefault();
+          hardDrop();
+        }
+      }
+
+      window.addEventListener('keydown', keyHandler);
+      leftBtn.addEventListener('click', function () { movePiece(-1); });
+      rightBtn.addEventListener('click', function () { movePiece(1); });
+      rotateBtn.addEventListener('click', rotatePiece);
+      dropBtn.addEventListener('click', hardDrop);
+      bombBtn.addEventListener('click', useBomb);
+      slowBtn.addEventListener('click', useSlow);
+      startBtn.addEventListener('click', beginGame);
+      restartBtn.addEventListener('click', function () { resetGame(); });
+      backBtnTop.addEventListener('click', openMenu);
+      backBtnBottom.addEventListener('click', openMenu);
+      pauseBtn.addEventListener('click', function () { togglePause(); });
+      soundToggleBtn.addEventListener('click', function () {
+        if (!arcade) return;
+        arcade.toggleSoundEnabled();
+        syncProfile();
+      });
+      changePlayerBtn.addEventListener('click', function () {
+        if (!arcade) return;
+        arcade.promptPlayerName('Actualiza el nombre del jugador para Tetris plus');
+        syncProfile();
+      });
+      window.addEventListener('pcs-arcade-store-changed', syncProfile);
+
+      resetGame();
+      syncProfile();
+      drawBoard();
+      drawPreview();
+      requestAnimationFrame(frame);
+    })();
+  </script>
+</body>
+</html>

@@ -2,7 +2,9 @@ package db
 
 import (
 	"encoding/json"
+	"database/sql"
 	"reflect"
+	"strings"
 	"testing"
 
 	_ "modernc.org/sqlite"
@@ -117,5 +119,79 @@ func TestEmpresaEstacionPrefs_UpsertSinEstadoSigueActivoEnListado(t *testing.T) 
 	}
 	if rows[0].Estado != "activo" {
 		t.Fatalf("expected estado activo normalizado, got %q", rows[0].Estado)
+	}
+}
+
+func TestSyncEmpresaEstacionCarritosCreatesAndUpdatesLinkedDefaults(t *testing.T) {
+	dbConn := openCarritoInventarioTestDB(t)
+	ensureClientesTableForStationSyncTest(t, dbConn)
+
+	result, err := SyncEmpresaEstacionCarritos(dbConn, 55, `{"cantidad":2,"estaciones":[{"id":1,"nombre":"Mesa 1"},{"id":2,"nombre":"Mesa 2"}]}`, "test")
+	if err != nil {
+		t.Fatalf("sync initial station carritos: %v", err)
+	}
+	if result.Created != 2 {
+		t.Fatalf("expected 2 created carritos, got %+v", result)
+	}
+
+	rows, err := GetCarritosCompraByEmpresa(dbConn, 55, true, "")
+	if err != nil {
+		t.Fatalf("list synced carritos: %v", err)
+	}
+	if len(rows) != 2 {
+		t.Fatalf("expected 2 synced carritos, got %d", len(rows))
+	}
+
+	byCode := map[string]CarritoCompra{}
+	for _, item := range rows {
+		byCode[item.Codigo] = item
+	}
+	if got := byCode["EST-55-1"]; got.ReferenciaExterna != "ESTACION_1" || got.Nombre != "Mesa 1" {
+		t.Fatalf("unexpected carrito for station 1: %+v", got)
+	}
+	if got := byCode["EST-55-2"]; got.ReferenciaExterna != "ESTACION_2" || got.Nombre != "Mesa 2" {
+		t.Fatalf("unexpected carrito for station 2: %+v", got)
+	}
+	for _, item := range rows {
+		if strings.ToLower(strings.TrimSpace(item.Estado)) != "inactivo" {
+			t.Fatalf("expected carrito estado inactivo, got %+v", item)
+		}
+		if strings.ToLower(strings.TrimSpace(item.EstadoCarrito)) != "cerrado" {
+			t.Fatalf("expected carrito estado_carrito cerrado, got %+v", item)
+		}
+	}
+
+	result, err = SyncEmpresaEstacionCarritos(dbConn, 55, `{"cantidad":2,"estaciones":[{"id":1,"nombre":"Mesa 1"},{"id":2,"nombre":"Mesa VIP 2"}]}`, "test")
+	if err != nil {
+		t.Fatalf("sync updated station carritos: %v", err)
+	}
+	if result.Created != 0 {
+		t.Fatalf("expected 0 created carritos on second sync, got %+v", result)
+	}
+
+	rows, err = GetCarritosCompraByEmpresa(dbConn, 55, true, "")
+	if err != nil {
+		t.Fatalf("list synced carritos after update: %v", err)
+	}
+	byCode = map[string]CarritoCompra{}
+	for _, item := range rows {
+		byCode[item.Codigo] = item
+	}
+	if got := byCode["EST-55-2"]; got.Nombre != "Mesa VIP 2" {
+		t.Fatalf("expected updated station name in linked carrito, got %+v", got)
+	}
+	if len(rows) != 2 {
+		t.Fatalf("expected no duplicate carritos after second sync, got %d", len(rows))
+	}
+}
+
+func ensureClientesTableForStationSyncTest(t *testing.T, dbConn *sql.DB) {
+	t.Helper()
+	if _, err := dbConn.Exec(`CREATE TABLE IF NOT EXISTS clientes (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		empresa_id INTEGER,
+		nombre_razon_social TEXT
+	)`); err != nil {
+		t.Fatalf("create clientes table for sync test: %v", err)
 	}
 }

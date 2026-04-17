@@ -18,6 +18,7 @@ type estacionPrefsResponse struct {
 
 func TestEmpresaEstacionPrefsHandler_UpsertAndIsolationByEmpresa(t *testing.T) {
 	dbEmp := openTestSQLite(t, "empresas_estacion_prefs_handler.db")
+	ensureClientesSchema(t, dbEmp)
 	if err := dbpkg.EnsureEmpresaEstacionPrefsSchema(dbEmp); err != nil {
 		t.Fatalf("ensure estacion prefs schema: %v", err)
 	}
@@ -67,6 +68,24 @@ func TestEmpresaEstacionPrefsHandler_UpsertAndIsolationByEmpresa(t *testing.T) {
 
 	putPref(701, buildConfig(10, "Estacion"))
 	putPref(702, buildConfig(3, "Mesa"))
+
+	carritos701, err := dbpkg.GetCarritosCompraByEmpresa(dbEmp, 701, true, "")
+	if err != nil {
+		t.Fatalf("list synced carritos empresa 701: %v", err)
+	}
+	if len(carritos701) != 10 {
+		t.Fatalf("expected 10 synced carritos for empresa 701, got %d", len(carritos701))
+	}
+	for _, item := range carritos701 {
+		if item.ReferenciaExterna == "ESTACION_1" {
+			if item.Codigo != "EST-701-1" {
+				t.Fatalf("expected linked carrito code EST-701-1, got %+v", item)
+			}
+			if item.Nombre != "Estacion A" {
+				t.Fatalf("expected linked carrito name Estacion A, got %+v", item)
+			}
+		}
+	}
 
 	getPrefs := func(empresaID int64) estacionPrefsResponse {
 		req := httptest.NewRequest(http.MethodGet, "/api/empresa/estacion_prefs?empresa_id="+strconv.FormatInt(empresaID, 10), nil)

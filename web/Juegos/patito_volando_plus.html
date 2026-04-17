@@ -1,0 +1,642 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Patito volando plus</title>
+  <link rel="icon" type="image/png" href="/img/punto_venta.png">
+  <link rel="stylesheet" href="/Juegos/arcade_window.css">
+  <style>
+    :root {
+      --arc-bg: #132038;
+      --arc-bg-soft: #1a3456;
+      --arc-accent: #ffe07a;
+      --arc-accent-dark: #ff9f47;
+      --arc-success: #70e8ad;
+    }
+
+    .duck-stage {
+      background:
+        linear-gradient(180deg, rgba(223, 247, 255, 0.96), rgba(118, 202, 255, 0.96) 72%, rgba(121, 202, 118, 0.96) 72%, rgba(70, 130, 66, 0.98));
+    }
+
+    #duckCanvas {
+      height: 100%;
+      background: transparent;
+    }
+
+    .duck-control-note {
+      color: var(--arc-muted);
+      font-size: 0.84rem;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body class="arcade-window-page">
+  <main class="arcade-window">
+    <section class="arcade-header">
+      <div class="arcade-title-wrap">
+        <p class="arcade-kicker">Vuelo arcade</p>
+        <h1>Patito volando plus</h1>
+        <p class="arcade-copy">Ahora vuelas con varias vidas, subes niveles, recoges bonus y activas poderes simples para alargar la partida sin perder el ritmo.</p>
+      </div>
+      <div class="arcade-stats">
+        <div class="arcade-stat"><span class="arcade-stat-label">Puntaje</span><span id="scoreValue" class="arcade-stat-value">0</span></div>
+        <div class="arcade-stat"><span class="arcade-stat-label">Nivel</span><span id="levelValue" class="arcade-stat-value">1</span></div>
+        <div class="arcade-stat"><span class="arcade-stat-label">Vidas</span><span id="livesValue" class="arcade-stat-value">3</span></div>
+        <div class="arcade-stat"><span class="arcade-stat-label">Poder</span><span id="powerValue" class="arcade-stat-value">Base</span></div>
+      </div>
+    </section>
+
+    <section class="arcade-chip-row">
+      <span class="arcade-chip">Jugador:<strong id="playerNameValue">Invitado</strong></span>
+      <span class="arcade-chip">Record:<strong id="bestValue">0</strong></span>
+      <span id="bestMeta" class="arcade-chip note">Sin marcas guardadas</span>
+      <span class="arcade-chip">Bonus:<strong id="bonusValue">0</strong></span>
+      <span class="arcade-chip">Crono:<strong id="sessionTimerValue">00:00</strong></span>
+      <button id="changePlayerBtn" class="arcade-chip-btn" type="button">Cambiar jugador</button>
+      <button id="soundToggleBtn" class="arcade-chip-btn secondary" type="button" aria-pressed="true">Sonido: activado</button>
+      <button id="pauseBtn" class="arcade-chip-btn alert" type="button" aria-pressed="false">Pausa</button>
+    </section>
+
+    <section class="arcade-stage duck-stage" aria-label="Juego Patito volando plus">
+      <canvas id="duckCanvas" width="620" height="360"></canvas>
+
+      <div id="introOverlay" class="arcade-overlay">
+        <div class="arcade-overlay-card">
+          <h2 id="introOverlayTitle">Listo</h2>
+          <p id="introOverlayText">Pulsa jugar y espera la cuenta regresiva.</p>
+          <div class="arcade-actions">
+            <button id="startBtn" class="arcade-btn" type="button">Despegar</button>
+            <button id="backBtnTop" class="arcade-btn secondary" type="button">Volver al menu</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="pauseOverlay" class="arcade-overlay" hidden>
+        <div class="arcade-overlay-card">
+          <h2>Juego en pausa</h2>
+          <p>Todo queda congelado: patito, columnas, bonus y cualquier efecto activo. Reanuda cuando quieras.</p>
+          <div class="arcade-actions">
+            <button id="resumeBtn" class="arcade-btn" type="button">Continuar</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="gameOverOverlay" class="arcade-overlay" hidden>
+        <div class="arcade-overlay-card">
+          <h2 id="gameOverTitle">Fin del vuelo</h2>
+          <p id="gameOverText">El patito agotó sus vidas.</p>
+          <div class="arcade-actions">
+            <button id="restartBtnTop" class="arcade-btn" type="button">Jugar otra vez</button>
+            <button id="backBtnPause" class="arcade-btn secondary" type="button">Volver al menu</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="arcade-footer">
+      <button id="restartBtn" class="arcade-btn secondary" type="button">Reiniciar</button>
+      <button id="backBtnBottom" class="arcade-btn secondary" type="button">Salir al menu</button>
+      <button id="flyBtn" class="arcade-btn" type="button">Mantén pulsado para elevar</button>
+      <div id="statusText" class="arcade-status">Esperando despegue...</div>
+    </section>
+  </main>
+
+  <script src="/Juegos/arcade_shared.js"></script>
+  <script>
+    (function () {
+      var GAME_KEY = 'patito_volando';
+      var arcade = window.PCSArcade || null;
+      var canvas = document.getElementById('duckCanvas');
+      var ctx = canvas.getContext('2d');
+      var scoreValue = document.getElementById('scoreValue');
+      var levelValue = document.getElementById('levelValue');
+      var livesValue = document.getElementById('livesValue');
+      var powerValue = document.getElementById('powerValue');
+      var playerNameValue = document.getElementById('playerNameValue');
+      var bestValue = document.getElementById('bestValue');
+      var bestMeta = document.getElementById('bestMeta');
+      var bonusValue = document.getElementById('bonusValue');
+      var sessionTimerValue = document.getElementById('sessionTimerValue');
+      var soundToggleBtn = document.getElementById('soundToggleBtn');
+      var pauseBtn = document.getElementById('pauseBtn');
+      var changePlayerBtn = document.getElementById('changePlayerBtn');
+      var startBtn = document.getElementById('startBtn');
+      var resumeBtn = document.getElementById('resumeBtn');
+      var restartBtn = document.getElementById('restartBtn');
+      var restartBtnTop = document.getElementById('restartBtnTop');
+      var backBtnTop = document.getElementById('backBtnTop');
+      var backBtnBottom = document.getElementById('backBtnBottom');
+      var backBtnPause = document.getElementById('backBtnPause');
+      var flyBtn = document.getElementById('flyBtn');
+      var statusText = document.getElementById('statusText');
+      var introOverlay = document.getElementById('introOverlay');
+      var introOverlayTitle = document.getElementById('introOverlayTitle');
+      var introOverlayText = document.getElementById('introOverlayText');
+      var pauseOverlay = document.getElementById('pauseOverlay');
+      var gameOverOverlay = document.getElementById('gameOverOverlay');
+      var gameOverTitle = document.getElementById('gameOverTitle');
+      var gameOverText = document.getElementById('gameOverText');
+      var sessionRuntime = arcade ? arcade.createGameSession({
+        overlay: introOverlay,
+        overlayTitle: introOverlayTitle,
+        overlayText: introOverlayText,
+        timerElement: sessionTimerValue,
+        startButton: startBtn,
+        countdownSeconds: 5
+      }) : null;
+
+      var state = {
+        running: false,
+        paused: false,
+        pressing: false,
+        gameOver: false,
+        score: 0,
+        bonus: 0,
+        level: 1,
+        lives: 3,
+        shieldHits: 0,
+        slowTimer: 0,
+        invuln: 0,
+        powerLabel: 'Base',
+        frame: 0,
+        obstacleCounter: 0,
+        duck: { x: 124, y: 180, radius: 18, velocityY: 0 },
+        obstacles: [],
+        pickups: []
+      };
+
+      function playEffect(name) {
+        if (arcade) arcade.playEffect(name);
+      }
+
+      function setStatus(text) {
+        statusText.textContent = text;
+      }
+
+      function escapeProfile() {
+        if (!arcade) return;
+        var profile = arcade.getProfile();
+        playerNameValue.textContent = profile.playerName || 'Invitado';
+        var scores = arcade.getGameScores(GAME_KEY);
+        bestValue.textContent = String(scores.best ? Number(scores.best.score || 0) : 0);
+        bestMeta.textContent = scores.best ? ('Por ' + scores.best.playerName + (scores.best.detail ? ' · ' + scores.best.detail : '')) : 'Sin marcas guardadas';
+        soundToggleBtn.textContent = arcade.isSoundEnabled() ? 'Sonido: activado' : 'Sonido: apagado';
+        soundToggleBtn.setAttribute('aria-pressed', arcade.isSoundEnabled() ? 'true' : 'false');
+      }
+
+      function updateHud() {
+        scoreValue.textContent = String(state.score);
+        levelValue.textContent = String(state.level);
+        livesValue.textContent = String(state.lives);
+        powerValue.textContent = state.powerLabel;
+        bonusValue.textContent = String(state.bonus);
+        pauseBtn.textContent = state.paused ? 'Reanudar' : 'Pausa';
+        pauseBtn.setAttribute('aria-pressed', state.paused ? 'true' : 'false');
+      }
+
+      var powerSystem = arcade ? arcade.createPowerSystem({
+        gameKey: GAME_KEY,
+        root: document.querySelector('.arcade-window'),
+        chipRow: document.querySelector('.arcade-chip-row'),
+        stage: document.querySelector('.arcade-stage'),
+        state: state,
+        setStatus: setStatus,
+        onChange: updateHud,
+        handlers: {
+          setPowerLabel: function (payload) { state.powerLabel = payload.label; updateHud(); },
+          addScore: function (payload) { state.score += payload.value; },
+          addBonus: function (payload) { state.bonus += payload.value; },
+          grantLife: function (payload) { state.lives = Math.min(5, state.lives + payload.value); state.powerLabel = payload.label; updateHud(); },
+          grantShield: function (payload) { state.shieldHits = Math.min(3, state.shieldHits + payload.value); state.powerLabel = payload.label; updateHud(); },
+          slowTime: function (payload) { state.slowTimer = Math.max(state.slowTimer, 360); state.powerLabel = payload.label; updateHud(); },
+          ghost: function (payload) { state.invuln = Math.max(state.invuln, 200); state.powerLabel = payload.label; updateHud(); },
+          radar: function () { state.pickups.push({ x: canvas.width * 0.68, y: 140, radius: 12, type: 'bonus' }); },
+          repair: function () { state.shieldHits = Math.min(3, state.shieldHits + 1); state.slowTimer = Math.max(state.slowTimer, 120); updateHud(); },
+          overdrive: function (payload) { state.invuln = Math.max(state.invuln, 120); state.bonus += 18; state.powerLabel = payload.label; updateHud(); },
+          pulse: function () { state.obstacles.splice(0, Math.min(2, state.obstacles.length)); state.pickups.splice(0, Math.min(1, state.pickups.length)); },
+          storm: function () { state.obstacles.splice(0, Math.min(3, state.obstacles.length)); }
+        }
+      }) : null;
+
+      function computeRecordScore() {
+        return state.score * 12 + state.bonus + state.level * 20 + state.lives * 15;
+      }
+
+      function saveScore() {
+        if (!arcade || computeRecordScore() <= 0) {
+          escapeProfile();
+          return;
+        }
+        arcade.recordScore(GAME_KEY, computeRecordScore(), {
+          detail: 'Nivel ' + state.level + ' · bonus ' + state.bonus
+        });
+        escapeProfile();
+      }
+
+      function resetDuck() {
+        state.duck.y = 180;
+        state.duck.velocityY = 0;
+        state.invuln = 90;
+      }
+
+      function resetGame() {
+        state.running = false;
+        state.paused = false;
+        state.pressing = false;
+        state.gameOver = false;
+        state.score = 0;
+        state.bonus = 0;
+        state.level = 1;
+        state.lives = 3;
+        state.shieldHits = 0;
+        state.slowTimer = 0;
+        state.invuln = 0;
+        state.powerLabel = 'Base';
+        state.frame = 0;
+        state.obstacleCounter = 0;
+        state.obstacles = [];
+        state.pickups = [];
+        if (powerSystem) powerSystem.reset();
+        resetDuck();
+        if (sessionRuntime) sessionRuntime.reset();
+        introOverlay.hidden = false;
+        pauseOverlay.hidden = true;
+        gameOverOverlay.hidden = true;
+        setStatus('Esperando despegue...');
+        updateHud();
+      }
+
+      function openMenu() {
+        window.location.href = '/Juegos/menu_juegos.html';
+      }
+
+      function beginGame() {
+        if (arcade) {
+          arcade.ensurePlayerName('Escribe el nombre del jugador para Patito volando plus');
+          escapeProfile();
+        }
+        if (sessionRuntime) {
+          sessionRuntime.startCountdown(function () {
+            resetDuck();
+            state.running = true;
+            state.paused = false;
+            state.gameOver = false;
+            if (powerSystem) powerSystem.resume();
+            introOverlay.hidden = true;
+            pauseOverlay.hidden = true;
+            gameOverOverlay.hidden = true;
+            setStatus('Sube, baja y recoge poderes.');
+            playEffect('start');
+            updateHud();
+          }, { label: 'Prepárate' });
+          return;
+        }
+      }
+
+      function togglePause(forceValue) {
+        if (!state.running || state.gameOver) return;
+        state.paused = typeof forceValue === 'boolean' ? forceValue : !state.paused;
+        if (sessionRuntime) {
+          if (state.paused) sessionRuntime.pause(); else sessionRuntime.resume();
+        }
+        if (powerSystem) {
+          if (state.paused) powerSystem.pause(); else powerSystem.resume();
+        }
+        pauseOverlay.hidden = true;
+        setStatus(state.paused ? 'Partida en pausa.' : 'Partida reanudada.');
+        updateHud();
+      }
+
+      function spawnObstacle() {
+        var gapSize = Math.max(112, 152 - state.level * 5);
+        var gapTop = 42 + Math.random() * (canvas.height - gapSize - 94);
+        state.obstacles.push({
+          x: canvas.width + 40,
+          width: 58,
+          gapTop: gapTop,
+          gapSize: gapSize,
+          scored: false
+        });
+        state.obstacleCounter += 1;
+        if (state.obstacleCounter % 3 === 0) {
+          var types = ['shield', 'slow', 'life', 'bonus'];
+          state.pickups.push({
+            x: canvas.width + 80,
+            y: gapTop + gapSize / 2,
+            radius: 12,
+            type: types[Math.floor(Math.random() * types.length)]
+          });
+        }
+      }
+
+      function applyPickup(type) {
+        if (type === 'shield') {
+          state.shieldHits = Math.min(2, state.shieldHits + 1);
+          state.powerLabel = 'Escudo';
+          state.bonus += 15;
+        } else if (type === 'slow') {
+          state.slowTimer = 320;
+          state.powerLabel = 'Tiempo';
+          state.bonus += 10;
+        } else if (type === 'life') {
+          state.lives = Math.min(5, state.lives + 1);
+          state.powerLabel = 'Vida';
+          state.bonus += 20;
+        } else {
+          state.bonus += 35;
+          state.powerLabel = 'Bonus';
+        }
+        if (powerSystem) powerSystem.noteBonus(18, 'Pickup tactil');
+        playEffect('win');
+        updateHud();
+      }
+
+      function consumeHit(reason) {
+        if (state.invuln > 0) return;
+        if (state.shieldHits > 0) {
+          state.shieldHits -= 1;
+          state.invuln = 70;
+          state.powerLabel = state.shieldHits > 0 ? 'Escudo' : 'Base';
+          playEffect('hit');
+          updateHud();
+          return;
+        }
+        state.lives -= 1;
+        state.powerLabel = 'Base';
+        state.slowTimer = 0;
+        playEffect('fail');
+        updateHud();
+        if (state.lives <= 0) {
+          state.running = false;
+          state.gameOver = true;
+          if (sessionRuntime) sessionRuntime.finish();
+          if (powerSystem) powerSystem.finish();
+          gameOverTitle.textContent = 'Fin del vuelo';
+          gameOverText.textContent = reason + ' El patito agotó sus vidas.';
+          gameOverOverlay.hidden = false;
+          saveScore();
+          setStatus('Fin de partida.');
+          return;
+        }
+        resetDuck();
+        setStatus('Golpe recibido. Aún te quedan ' + state.lives + ' vidas.');
+      }
+
+      function updateGame() {
+        if (!state.running || state.paused) return;
+        state.frame += 1;
+        if (state.frame % Math.max(66, 108 - state.level * 6) === 0) {
+          spawnObstacle();
+        }
+        if (state.slowTimer > 0) {
+          state.slowTimer -= 1;
+          if (state.slowTimer <= 0 && state.shieldHits <= 0) {
+            state.powerLabel = 'Base';
+          }
+        }
+        if (state.invuln > 0) state.invuln -= 1;
+
+        var lift = state.pressing ? -0.48 : 0;
+        state.duck.velocityY += 0.27 + lift;
+        state.duck.velocityY = Math.max(-5.4, Math.min(6.1, state.duck.velocityY));
+        state.duck.y += state.duck.velocityY;
+
+        if (state.duck.y - state.duck.radius <= 8 || state.duck.y + state.duck.radius >= canvas.height - 18) {
+          consumeHit('Chocaste contra el borde.');
+          state.duck.y = Math.max(state.duck.radius + 8, Math.min(canvas.height - 18 - state.duck.radius, state.duck.y));
+        }
+
+        var speed = (state.slowTimer > 0 ? 1.7 : 2.4) + state.level * 0.28;
+        for (var i = state.obstacles.length - 1; i >= 0; i -= 1) {
+          var obstacle = state.obstacles[i];
+          obstacle.x -= speed;
+          if (!obstacle.scored && obstacle.x + obstacle.width < state.duck.x - state.duck.radius) {
+            obstacle.scored = true;
+            state.score += 1;
+            if (state.score % 8 === 0) {
+              state.level += 1;
+              state.bonus += 18;
+              playEffect('match');
+            } else {
+              playEffect('point');
+            }
+            updateHud();
+          }
+          if (obstacle.x + obstacle.width < -30) {
+            state.obstacles.splice(i, 1);
+            continue;
+          }
+          var insideX = state.duck.x + state.duck.radius > obstacle.x && state.duck.x - state.duck.radius < obstacle.x + obstacle.width;
+          var hitTop = state.duck.y - state.duck.radius < obstacle.gapTop;
+          var hitBottom = state.duck.y + state.duck.radius > obstacle.gapTop + obstacle.gapSize;
+          if (insideX && (hitTop || hitBottom)) {
+            consumeHit('Golpeaste una columna.');
+          }
+        }
+
+        for (var p = state.pickups.length - 1; p >= 0; p -= 1) {
+          var pickup = state.pickups[p];
+          pickup.x -= speed;
+          if (pickup.x + pickup.radius < -20) {
+            state.pickups.splice(p, 1);
+            continue;
+          }
+          var dx = pickup.x - state.duck.x;
+          var dy = pickup.y - state.duck.y;
+          if (dx * dx + dy * dy <= Math.pow(pickup.radius + state.duck.radius, 2)) {
+            applyPickup(pickup.type);
+            state.pickups.splice(p, 1);
+          }
+        }
+      }
+
+      function drawCloud(x, y, width) {
+        ctx.fillStyle = 'rgba(255,255,255,0.92)';
+        ctx.beginPath();
+        ctx.arc(x, y, width * 0.17, 0, Math.PI * 2);
+        ctx.arc(x + width * 0.18, y - 12, width * 0.23, 0, Math.PI * 2);
+        ctx.arc(x + width * 0.42, y, width * 0.18, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      function drawDuck() {
+        ctx.save();
+        ctx.translate(state.duck.x, state.duck.y);
+        ctx.rotate(Math.max(-0.35, Math.min(0.35, state.duck.velocityY * 0.04)));
+        ctx.fillStyle = state.invuln > 0 && state.frame % 8 < 4 ? '#fff4b9' : '#ffd35b';
+        ctx.beginPath();
+        ctx.arc(0, 0, state.duck.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#143047';
+        ctx.beginPath();
+        ctx.arc(-5, -4, 3, 0, Math.PI * 2);
+        ctx.arc(6, -4, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ef712f';
+        ctx.beginPath();
+        ctx.moveTo(state.duck.radius - 1, 0);
+        ctx.lineTo(state.duck.radius + 18, 8);
+        ctx.lineTo(state.duck.radius - 1, 14);
+        ctx.closePath();
+        ctx.fill();
+        if (state.shieldHits > 0) {
+          ctx.strokeStyle = 'rgba(95, 226, 194, 0.9)';
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.arc(0, 0, state.duck.radius + 9, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      function drawObstacle(obstacle) {
+        ctx.fillStyle = '#2c9e53';
+        ctx.fillRect(obstacle.x, 0, obstacle.width, obstacle.gapTop);
+        ctx.fillRect(obstacle.x, obstacle.gapTop + obstacle.gapSize, obstacle.width, canvas.height - obstacle.gapTop - obstacle.gapSize);
+        ctx.fillStyle = '#45bb71';
+        ctx.fillRect(obstacle.x - 5, obstacle.gapTop - 14, obstacle.width + 10, 14);
+        ctx.fillRect(obstacle.x - 5, obstacle.gapTop + obstacle.gapSize, obstacle.width + 10, 14);
+      }
+
+      function drawPickup(pickup) {
+        ctx.save();
+        ctx.translate(pickup.x, pickup.y);
+        ctx.beginPath();
+        if (pickup.type === 'shield') {
+          ctx.fillStyle = '#59e3ca';
+          ctx.moveTo(0, -13);
+          ctx.lineTo(11, -6);
+          ctx.lineTo(8, 11);
+          ctx.lineTo(-8, 11);
+          ctx.lineTo(-11, -6);
+          ctx.closePath();
+        } else if (pickup.type === 'slow') {
+          ctx.fillStyle = '#8cb4ff';
+          ctx.arc(0, 0, 12, 0, Math.PI * 2);
+        } else if (pickup.type === 'life') {
+          ctx.fillStyle = '#ff6f7f';
+          ctx.moveTo(0, 12);
+          ctx.bezierCurveTo(-15, 0, -14, -10, -6, -10);
+          ctx.bezierCurveTo(-1, -10, 0, -4, 0, -2);
+          ctx.bezierCurveTo(0, -4, 1, -10, 6, -10);
+          ctx.bezierCurveTo(14, -10, 15, 0, 0, 12);
+        } else {
+          ctx.fillStyle = '#ffd95c';
+          for (var i = 0; i < 5; i += 1) {
+            var angle = (-Math.PI / 2) + i * (Math.PI * 2 / 5);
+            var next = angle + Math.PI / 5;
+            if (i === 0) ctx.moveTo(Math.cos(angle) * 12, Math.sin(angle) * 12);
+            ctx.lineTo(Math.cos(next) * 5, Math.sin(next) * 5);
+            ctx.lineTo(Math.cos(angle + Math.PI * 2 / 5) * 12, Math.sin(angle + Math.PI * 2 / 5) * 12);
+          }
+          ctx.closePath();
+        }
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function drawScene() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        var gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        gradient.addColorStop(0, '#e4f8ff');
+        gradient.addColorStop(0.72, '#77ccff');
+        gradient.addColorStop(0.72, '#86d77f');
+        gradient.addColorStop(1, '#4a9948');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        drawCloud(84 + (state.frame * 0.12) % 720 - 80, 58, 72);
+        drawCloud(240 + (state.frame * 0.18) % 760 - 90, 104, 54);
+        drawCloud(420 + (state.frame * 0.1) % 710 - 70, 76, 64);
+        state.obstacles.forEach(drawObstacle);
+        state.pickups.forEach(drawPickup);
+        drawDuck();
+        ctx.fillStyle = 'rgba(19, 48, 71, 0.84)';
+        ctx.font = '700 16px Trebuchet MS, Segoe UI, sans-serif';
+        ctx.fillText('Nivel ' + state.level + ' · Vidas ' + state.lives + ' · Bonus ' + state.bonus, 16, 26);
+      }
+
+      function loop() {
+        updateGame();
+        drawScene();
+        requestAnimationFrame(loop);
+      }
+
+      function setPressing(value) {
+        if (!state.running || state.paused || state.gameOver) return;
+        state.pressing = !!value;
+      }
+
+      window.addEventListener('keydown', function (event) {
+        if (event.code === 'Space') {
+          event.preventDefault();
+          setPressing(true);
+        }
+        if (String(event.key || '').toLowerCase() === 'p') {
+          event.preventDefault();
+          togglePause();
+        }
+      });
+
+      window.addEventListener('keyup', function (event) {
+        if (event.code === 'Space') {
+          event.preventDefault();
+          state.pressing = false;
+        }
+      });
+
+      ['pointerdown', 'touchstart', 'mousedown'].forEach(function (eventName) {
+        flyBtn.addEventListener(eventName, function (event) {
+          event.preventDefault();
+          setPressing(true);
+        }, { passive: false });
+      });
+      ['pointerup', 'pointercancel', 'touchend', 'touchcancel', 'mouseup', 'mouseleave'].forEach(function (eventName) {
+        flyBtn.addEventListener(eventName, function (event) {
+          event.preventDefault();
+          state.pressing = false;
+        }, { passive: false });
+      });
+
+      ['pointerdown', 'touchstart', 'mousedown'].forEach(function (eventName) {
+        canvas.addEventListener(eventName, function (event) {
+          event.preventDefault();
+          setPressing(true);
+        }, { passive: false });
+      });
+      ['pointerup', 'pointercancel', 'touchend', 'touchcancel', 'mouseup', 'mouseleave'].forEach(function (eventName) {
+        canvas.addEventListener(eventName, function (event) {
+          event.preventDefault();
+          state.pressing = false;
+        }, { passive: false });
+      });
+
+      startBtn.addEventListener('click', beginGame);
+      resumeBtn.addEventListener('click', function () { togglePause(false); });
+      restartBtn.addEventListener('click', function () { resetGame(); beginGame(); });
+      restartBtnTop.addEventListener('click', function () { resetGame(); beginGame(); });
+      backBtnTop.addEventListener('click', openMenu);
+      backBtnBottom.addEventListener('click', openMenu);
+      backBtnPause.addEventListener('click', openMenu);
+      soundToggleBtn.addEventListener('click', function () {
+        if (!arcade) return;
+        arcade.toggleSoundEnabled();
+        escapeProfile();
+      });
+      changePlayerBtn.addEventListener('click', function () {
+        if (!arcade) return;
+        arcade.promptPlayerName('Actualiza el nombre del jugador para Patito volando plus');
+        escapeProfile();
+      });
+      pauseBtn.addEventListener('click', function () { togglePause(); });
+      window.addEventListener('pcs-arcade-store-changed', escapeProfile);
+
+      resetGame();
+      escapeProfile();
+      drawScene();
+      loop();
+    })();
+  </script>
+</body>
+</html>

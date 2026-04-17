@@ -17,6 +17,7 @@ func EnsureAdministradoresAuthSchema(dbConn *sql.DB) error {
 	if isPostgresDialect() {
 		statements := []string{
 			`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS photo TEXT`,
+			`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS usuario_creador TEXT`,
 			`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS acepta_contrato INTEGER DEFAULT 0`,
 			`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS telefono TEXT`,
 			`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS pais TEXT`,
@@ -75,6 +76,7 @@ func EnsureAdministradoresAuthSchema(dbConn *sql.DB) error {
 		def  string
 	}{
 		{name: "photo", def: "photo TEXT"},
+		{name: "usuario_creador", def: "usuario_creador TEXT"},
 		{name: "acepta_contrato", def: "acepta_contrato INTEGER DEFAULT 0"},
 		{name: "telefono", def: "telefono TEXT"},
 		{name: "pais", def: "pais TEXT"},
@@ -357,6 +359,11 @@ func EnsureUserEmpresa(dbConn *sql.DB, email, empresaNombre string) error {
 // Si se inserta por primera vez, asigna el rol provisto (usualmente 'administrador').
 // Ahora acepta un campo `photo` con la URL de la foto del perfil.
 func UpsertAdministrador(dbConn *sql.DB, email, name, role, photo string) error {
+	return UpsertAdministradorConCreador(dbConn, email, name, role, photo, "")
+}
+
+// UpsertAdministradorConCreador inserta o actualiza un administrador conservando el administrador principal.
+func UpsertAdministradorConCreador(dbConn *sql.DB, email, name, role, photo, usuarioCreador string) error {
 	tx, err := dbConn.Begin()
 	if err != nil {
 		return err
@@ -364,8 +371,8 @@ func UpsertAdministrador(dbConn *sql.DB, email, name, role, photo string) error 
 	defer tx.Rollback()
 
 	nowExpr := sqlNowExpr()
-	upsertSQL := "INSERT INTO administradores (email, name, role, photo, fecha_creacion, fecha_actualizacion, estado) VALUES (?, ?, ?, ?, " + nowExpr + ", " + nowExpr + ", 'activo') ON CONFLICT(email) DO UPDATE SET name = EXCLUDED.name, role = EXCLUDED.role, photo = EXCLUDED.photo, fecha_actualizacion = " + nowExpr
-	if _, err := execTxSQLCompat(tx, upsertSQL, email, name, role, photo); err != nil {
+	upsertSQL := "INSERT INTO administradores (email, name, role, photo, usuario_creador, fecha_creacion, fecha_actualizacion, estado) VALUES (?, ?, ?, ?, ?, " + nowExpr + ", " + nowExpr + ", 'activo') ON CONFLICT(email) DO UPDATE SET name = EXCLUDED.name, role = EXCLUDED.role, photo = EXCLUDED.photo, usuario_creador = CASE WHEN TRIM(COALESCE(administradores.usuario_creador, '')) <> '' THEN administradores.usuario_creador ELSE EXCLUDED.usuario_creador END, fecha_actualizacion = " + nowExpr
+	if _, err := execTxSQLCompat(tx, upsertSQL, email, name, role, photo, strings.TrimSpace(usuarioCreador)); err != nil {
 		return err
 	}
 
@@ -426,6 +433,7 @@ type Admin struct {
 	Name               string `json:"name"`
 	Role               string `json:"role"`
 	Photo              string `json:"photo,omitempty"`
+	UsuarioCreador     string `json:"usuario_creador,omitempty"`
 	FechaCreacion      string `json:"fecha_creacion"`
 	FechaActualizacion string `json:"fecha_actualizacion"`
 	Estado             string `json:"estado"`
@@ -610,17 +618,30 @@ func GetLicenciaByID(dbConn *sql.DB, id int64) (*Licencia, error) {
 func UpdateLicencia(dbConn *sql.DB, id, tipoID int64, nombre, descripcion string, valor float64, duracionDias int, modulosHabilitados string, superRolHabilitado int) error {
 	nowExpr := sqlNowExpr()
 	query := "UPDATE licencias SET tipo_id = ?, nombre = ?, descripcion = ?, valor = ?, duracion_dias = ?, modulos_habilitados = ?, super_rol_habilitado = ?, fecha_actualizacion = " + nowExpr + " WHERE id = ?"
-	_, err := execSQLCompat(dbConn, query, tipoID, nombre, descripcion, valor, duracionDias, strings.TrimSpace(modulosHabilitados), superRolHabilitado, id)
+	fallbackQuery := "UPDATE licencias SET tipo_id = ?, nombre = ?, descripcion = ?, valor = ?, duracion_dias = ?, modulos_habilitados = ?, super_rol_habilitado = ? WHERE id = ?"
+	args := []interface{}{tipoID, nombre, descripcion, valor, duracionDias, strings.TrimSpace(modulosHabilitados), superRolHabilitado, id}
+
+	_, err := execSQLCompat(dbConn, query, args...)
 	if err == nil {
 		return nil
 	}
 	if !isMissingTableError(err) && !isMissingColumnError(err) {
 		return err
 	}
-	if schemaErr := EnsureLicenciasSchema(dbConn); schemaErr != nil {
-		return err
+	if schemaErr := EnsureLicenciasSchema(dbConn); schemaErr == nil {
+		_, retryErr := execSQLCompat(dbConn, query, args...)
+		if retryErr == nil {
+			return nil
+		}
+		err = retryErr
 	}
-	_, err = execSQLCompat(dbConn, query, tipoID, nombre, descripcion, valor, duracionDias, strings.TrimSpace(modulosHabilitados), superRolHabilitado, id)
+	if isMissingColumnError(err) && strings.Contains(strings.ToLower(err.Error()), "fecha_actualizacion") {
+		_, fallbackErr := execSQLCompat(dbConn, fallbackQuery, args...)
+		if fallbackErr == nil {
+			return nil
+		}
+		err = fallbackErr
+	}
 	return err
 }
 
@@ -694,7 +715,28 @@ func DeleteLicencia(dbConn *sql.DB, id int64) error {
 // SetLicenciaActivo activa/desactiva una licencia (activo: 1 o 0)
 func SetLicenciaActivo(dbConn *sql.DB, id int64, activo int) error {
 	nowExpr := sqlNowExpr()
-	_, err := execSQLCompat(dbConn, "UPDATE licencias SET activo = ?, fecha_actualizacion = "+nowExpr+" WHERE id = ?", activo, id)
+	query := "UPDATE licencias SET activo = ?, fecha_actualizacion = " + nowExpr + " WHERE id = ?"
+	_, err := execSQLCompat(dbConn, query, activo, id)
+	if err == nil {
+		return nil
+	}
+	if !isMissingTableError(err) && !isMissingColumnError(err) {
+		return err
+	}
+	if schemaErr := EnsureLicenciasSchema(dbConn); schemaErr == nil {
+		_, retryErr := execSQLCompat(dbConn, query, activo, id)
+		if retryErr == nil {
+			return nil
+		}
+		err = retryErr
+	}
+	if isMissingColumnError(err) && strings.Contains(strings.ToLower(err.Error()), "fecha_actualizacion") {
+		_, fallbackErr := execSQLCompat(dbConn, "UPDATE licencias SET activo = ? WHERE id = ?", activo, id)
+		if fallbackErr == nil {
+			return nil
+		}
+		err = fallbackErr
+	}
 	return err
 }
 
@@ -738,11 +780,12 @@ func GetSessionByToken(dbConn *sql.DB, token string) (*Session, error) {
 // GetAdminByEmail devuelve el administrador por email
 func GetAdminByEmail(dbConn *sql.DB, email string) (*Admin, error) {
 	// Intentar obtener con la columna 'acepta_contrato' (para bases actualizadas).
-	row := queryRowSQLCompat(dbConn, "SELECT id, email, name, role, photo, fecha_creacion, fecha_actualizacion, estado, COALESCE(acepta_contrato, 0) FROM administradores WHERE email = ? LIMIT 1", email)
+	row := queryRowSQLCompat(dbConn, "SELECT id, email, name, role, photo, COALESCE(usuario_creador, ''), fecha_creacion, fecha_actualizacion, estado, COALESCE(acepta_contrato, 0) FROM administradores WHERE email = ? LIMIT 1", email)
 	var a Admin
 	var photo sql.NullString
+	var usuarioCreador sql.NullString
 	var acepta sql.NullInt64
-	if err := row.Scan(&a.ID, &a.Email, &a.Name, &a.Role, &photo, &a.FechaCreacion, &a.FechaActualizacion, &a.Estado, &acepta); err != nil {
+	if err := row.Scan(&a.ID, &a.Email, &a.Name, &a.Role, &photo, &usuarioCreador, &a.FechaCreacion, &a.FechaActualizacion, &a.Estado, &acepta); err != nil {
 		// Fallback: si la columna no existe en este esquema, consultar sin ella.
 		if isMissingColumnError(err) {
 			row2 := queryRowSQLCompat(dbConn, "SELECT id, email, name, role, photo, fecha_creacion, fecha_actualizacion, estado FROM administradores WHERE email = ? LIMIT 1", email)
@@ -761,6 +804,9 @@ func GetAdminByEmail(dbConn *sql.DB, email string) (*Admin, error) {
 	if photo.Valid {
 		a.Photo = photo.String
 	}
+	if usuarioCreador.Valid {
+		a.UsuarioCreador = usuarioCreador.String
+	}
 	if acepta.Valid {
 		a.AceptaContrato = int(acepta.Int64)
 	} else {
@@ -769,10 +815,44 @@ func GetAdminByEmail(dbConn *sql.DB, email string) (*Admin, error) {
 	return &a, nil
 }
 
+// GetAdminByID devuelve el administrador por id.
+func GetAdminByID(dbConn *sql.DB, id int64) (*Admin, error) {
+	row := queryRowSQLCompat(dbConn, "SELECT id, email, name, role, photo, COALESCE(usuario_creador, ''), fecha_creacion, fecha_actualizacion, estado, COALESCE(acepta_contrato, 0) FROM administradores WHERE id = ? LIMIT 1", id)
+	var a Admin
+	var photo sql.NullString
+	var usuarioCreador sql.NullString
+	var acepta sql.NullInt64
+	if err := row.Scan(&a.ID, &a.Email, &a.Name, &a.Role, &photo, &usuarioCreador, &a.FechaCreacion, &a.FechaActualizacion, &a.Estado, &acepta); err != nil {
+		if isMissingColumnError(err) {
+			row2 := queryRowSQLCompat(dbConn, "SELECT id, email, name, role, photo, fecha_creacion, fecha_actualizacion, estado FROM administradores WHERE id = ? LIMIT 1", id)
+			var photo2 sql.NullString
+			if err2 := row2.Scan(&a.ID, &a.Email, &a.Name, &a.Role, &photo2, &a.FechaCreacion, &a.FechaActualizacion, &a.Estado); err2 != nil {
+				return nil, err2
+			}
+			if photo2.Valid {
+				a.Photo = photo2.String
+			}
+			a.AceptaContrato = 0
+			return &a, nil
+		}
+		return nil, err
+	}
+	if photo.Valid {
+		a.Photo = photo.String
+	}
+	if usuarioCreador.Valid {
+		a.UsuarioCreador = usuarioCreador.String
+	}
+	if acepta.Valid {
+		a.AceptaContrato = int(acepta.Int64)
+	}
+	return &a, nil
+}
+
 // GetAdministradores lista todos los administradores
 func GetAdministradores(dbConn *sql.DB) ([]Admin, error) {
 	// Intentar consulta que incluya la columna acepta_contrato cuando exista
-	rows, err := querySQLCompat(dbConn, "SELECT id, email, name, role, photo, fecha_creacion, fecha_actualizacion, estado, COALESCE(acepta_contrato, 0) FROM administradores ORDER BY id DESC")
+	rows, err := querySQLCompat(dbConn, "SELECT id, email, name, role, photo, COALESCE(usuario_creador, ''), fecha_creacion, fecha_actualizacion, estado, COALESCE(acepta_contrato, 0) FROM administradores ORDER BY id DESC")
 	if err != nil {
 		// Fallback si la columna no existe en esquemas antiguos
 		if isMissingColumnError(err) {
@@ -803,12 +883,16 @@ func GetAdministradores(dbConn *sql.DB) ([]Admin, error) {
 	for rows.Next() {
 		var a Admin
 		var photo sql.NullString
+		var usuarioCreador sql.NullString
 		var acepta sql.NullInt64
-		if err := rows.Scan(&a.ID, &a.Email, &a.Name, &a.Role, &photo, &a.FechaCreacion, &a.FechaActualizacion, &a.Estado, &acepta); err != nil {
+		if err := rows.Scan(&a.ID, &a.Email, &a.Name, &a.Role, &photo, &usuarioCreador, &a.FechaCreacion, &a.FechaActualizacion, &a.Estado, &acepta); err != nil {
 			return nil, err
 		}
 		if photo.Valid {
 			a.Photo = photo.String
+		}
+		if usuarioCreador.Valid {
+			a.UsuarioCreador = usuarioCreador.String
 		}
 		if acepta.Valid {
 			a.AceptaContrato = int(acepta.Int64)
@@ -852,9 +936,10 @@ func GetSesiones(dbConn *sql.DB) ([]Session, error) {
 
 // GetAdminByEmailFull devuelve el administrador por email incluyendo campos seguridad (tokens, hash, salt)
 func GetAdminByEmailFull(dbConn *sql.DB, email string) (*Admin, error) {
-	row := queryRowSQLCompat(dbConn, `SELECT id, email, name, role, photo, fecha_creacion, fecha_actualizacion, estado, COALESCE(acepta_contrato, 0), COALESCE(telefono, ''), COALESCE(pais, ''), COALESCE(ciudad, ''), COALESCE(email_confirmado, 0), COALESCE(email_confirm_token, ''), COALESCE(email_confirm_expira, ''), COALESCE(email_confirmado_en, ''), COALESCE(password_set, 0), COALESCE(password_hash, ''), COALESCE(password_salt, ''), COALESCE(password_reset_token, ''), COALESCE(password_reset_expira, '') FROM administradores WHERE lower(email) = lower(?) LIMIT 1`, strings.TrimSpace(email))
+	row := queryRowSQLCompat(dbConn, `SELECT id, email, name, role, photo, COALESCE(usuario_creador, ''), fecha_creacion, fecha_actualizacion, estado, COALESCE(acepta_contrato, 0), COALESCE(telefono, ''), COALESCE(pais, ''), COALESCE(ciudad, ''), COALESCE(email_confirmado, 0), COALESCE(email_confirm_token, ''), COALESCE(email_confirm_expira, ''), COALESCE(email_confirmado_en, ''), COALESCE(password_set, 0), COALESCE(password_hash, ''), COALESCE(password_salt, ''), COALESCE(password_reset_token, ''), COALESCE(password_reset_expira, '') FROM administradores WHERE lower(email) = lower(?) LIMIT 1`, strings.TrimSpace(email))
 	var a Admin
 	var photo sql.NullString
+	var usuarioCreador sql.NullString
 	var acepta sql.NullInt64
 	var telefono sql.NullString
 	var pais sql.NullString
@@ -868,7 +953,7 @@ func GetAdminByEmailFull(dbConn *sql.DB, email string) (*Admin, error) {
 	var passwordSalt sql.NullString
 	var passwordResetToken sql.NullString
 	var passwordResetExpira sql.NullString
-	if err := row.Scan(&a.ID, &a.Email, &a.Name, &a.Role, &photo, &a.FechaCreacion, &a.FechaActualizacion, &a.Estado, &acepta, &telefono, &pais, &ciudad, &emailConfirmado, &emailConfirmToken, &emailConfirmExpira, &emailConfirmadoEn, &passwordSet, &passwordHash, &passwordSalt, &passwordResetToken, &passwordResetExpira); err != nil {
+	if err := row.Scan(&a.ID, &a.Email, &a.Name, &a.Role, &photo, &usuarioCreador, &a.FechaCreacion, &a.FechaActualizacion, &a.Estado, &acepta, &telefono, &pais, &ciudad, &emailConfirmado, &emailConfirmToken, &emailConfirmExpira, &emailConfirmadoEn, &passwordSet, &passwordHash, &passwordSalt, &passwordResetToken, &passwordResetExpira); err != nil {
 		if isMissingColumnError(err) {
 			// Fallback a la consulta previa
 			return GetAdminByEmail(dbConn, email)
@@ -878,6 +963,7 @@ func GetAdminByEmailFull(dbConn *sql.DB, email string) (*Admin, error) {
 	if photo.Valid {
 		a.Photo = photo.String
 	}
+	a.UsuarioCreador = strings.TrimSpace(usuarioCreador.String)
 	a.AceptaContrato = int(acepta.Int64)
 	if telefono.Valid {
 		a.Telefono = telefono.String
@@ -898,6 +984,34 @@ func GetAdminByEmailFull(dbConn *sql.DB, email string) (*Admin, error) {
 	a.PasswordResetToken = passwordResetToken.String
 	a.PasswordResetExpira = passwordResetExpira.String
 	return &a, nil
+}
+
+// ResolveAdminPrincipalEmail devuelve el email del administrador principal asociado a un administrador.
+func ResolveAdminPrincipalEmail(dbConn *sql.DB, email string) (string, error) {
+	current := strings.ToLower(strings.TrimSpace(email))
+	if current == "" {
+		return "", nil
+	}
+	visited := map[string]bool{}
+	for current != "" {
+		if visited[current] {
+			break
+		}
+		visited[current] = true
+		admin, err := GetAdminByEmailFull(dbConn, current)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				break
+			}
+			return "", err
+		}
+		creator := strings.ToLower(strings.TrimSpace(admin.UsuarioCreador))
+		if creator == "" || creator == current {
+			return current, nil
+		}
+		current = creator
+	}
+	return strings.ToLower(strings.TrimSpace(email)), nil
 }
 
 // UpdateAdministradorProfile actualiza campos del perfil del administrador identificando por id.
@@ -1063,6 +1177,66 @@ func CreateEmpresa(dbConn *sql.DB, tipoID int64, tipoNombre, nombre, nit, observ
 // GetEmpresas obtiene todas las empresas
 func GetEmpresas(dbConn *sql.DB) ([]Empresa, error) {
 	rows, err := querySQLCompat(dbConn, "SELECT id, COALESCE(empresa_id, id), nombre, nit, tipo_id, tipo_nombre, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones FROM empresas ORDER BY id DESC")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Empresa
+	for rows.Next() {
+		var e Empresa
+		var empresaID sql.NullInt64
+		var nit sql.NullString
+		var tipoID sql.NullInt64
+		var tipoNombre sql.NullString
+		var fechaCre sql.NullString
+		var fechaAct sql.NullString
+		var usuario sql.NullString
+		var estado sql.NullString
+		var obs sql.NullString
+		if err := rows.Scan(&e.ID, &empresaID, &e.Nombre, &nit, &tipoID, &tipoNombre, &fechaCre, &fechaAct, &usuario, &estado, &obs); err != nil {
+			return nil, err
+		}
+		if empresaID.Valid {
+			e.EmpresaID = empresaID.Int64
+		} else {
+			e.EmpresaID = e.ID
+		}
+		if nit.Valid {
+			e.Nit = nit.String
+		}
+		if tipoID.Valid {
+			e.TipoID = tipoID.Int64
+		}
+		if tipoNombre.Valid {
+			e.TipoNombre = tipoNombre.String
+		}
+		if fechaCre.Valid {
+			e.FechaCreacion = fechaCre.String
+		}
+		if fechaAct.Valid {
+			e.FechaActualizacion = fechaAct.String
+		}
+		if usuario.Valid {
+			e.UsuarioCreador = usuario.String
+		}
+		if estado.Valid {
+			e.Estado = estado.String
+		}
+		if obs.Valid {
+			e.Observaciones = obs.String
+		}
+		out = append(out, e)
+	}
+	return out, nil
+}
+
+// GetEmpresasByUsuarioCreador obtiene las empresas creadas por un administrador.
+func GetEmpresasByUsuarioCreador(dbConn *sql.DB, usuarioCreador string) ([]Empresa, error) {
+	usuarioCreador = strings.TrimSpace(usuarioCreador)
+	if usuarioCreador == "" {
+		return []Empresa{}, nil
+	}
+	rows, err := querySQLCompat(dbConn, "SELECT id, COALESCE(empresa_id, id), nombre, nit, tipo_id, tipo_nombre, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones FROM empresas WHERE LOWER(COALESCE(usuario_creador, '')) = LOWER(?) ORDER BY id DESC", usuarioCreador)
 	if err != nil {
 		return nil, err
 	}

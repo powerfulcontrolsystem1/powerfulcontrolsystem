@@ -1,0 +1,563 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Memoria estelar plus</title>
+  <link rel="icon" type="image/png" href="/img/punto_venta.png">
+  <link rel="stylesheet" href="/Juegos/arcade_window.css">
+  <style>
+    :root {
+      --arc-bg: #1a1634;
+      --arc-bg-soft: #2c2450;
+      --arc-accent: #d4a4ff;
+      --arc-accent-dark: #7bbcff;
+    }
+
+    .memory-stage {
+      padding: 10px;
+      box-sizing: border-box;
+    }
+
+    .memory-board {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
+      gap: 8px;
+      align-content: center;
+    }
+
+    .memory-card {
+      position: relative;
+      min-height: 72px;
+      border: none;
+      border-radius: 16px;
+      background: linear-gradient(145deg, rgba(32, 29, 60, 0.96), rgba(51, 45, 94, 0.94));
+      color: #f8efff;
+      font: inherit;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+      transition: transform 0.15s ease, opacity 0.15s ease;
+      overflow: hidden;
+    }
+
+    .memory-card.revealed,
+    .memory-card.matched,
+    .memory-card.hinted {
+      background: linear-gradient(145deg, rgba(239, 230, 255, 0.98), rgba(192, 227, 255, 0.96));
+      color: #251742;
+      transform: translateY(-2px);
+    }
+
+    .memory-card.matched {
+      box-shadow: 0 0 0 2px rgba(122, 230, 176, 0.36);
+    }
+
+    .memory-card-face {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 6px;
+      text-align: center;
+    }
+
+    .memory-card-front {
+      opacity: 0;
+      transform: scale(0.92);
+      transition: opacity 0.16s ease, transform 0.16s ease;
+      font-size: 0.96rem;
+      line-height: 1.1;
+    }
+
+    .memory-card.revealed .memory-card-front,
+    .memory-card.matched .memory-card-front,
+    .memory-card.hinted .memory-card-front {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .memory-card.revealed .memory-card-back,
+    .memory-card.matched .memory-card-back,
+    .memory-card.hinted .memory-card-back {
+      opacity: 0;
+    }
+
+    .memory-card-back {
+      font-size: 1.8rem;
+      transition: opacity 0.14s ease;
+    }
+
+    @media (max-width: 560px) {
+      .memory-card {
+        min-height: 62px;
+      }
+      .memory-card-front {
+        font-size: 0.82rem;
+      }
+    }
+  </style>
+</head>
+<body class="arcade-window-page">
+  <main class="arcade-window">
+    <section class="arcade-header">
+      <div class="arcade-title-wrap">
+        <p class="arcade-kicker">Pares y poderes</p>
+        <h1>Memoria estelar plus</h1>
+        <p class="arcade-copy">La baraja ahora crece por niveles, tienes vidas, reloj, bonus por combo y poderes de ayuda para revelar parejas o congelar el tiempo cuando el tablero se pone duro.</p>
+      </div>
+      <div class="arcade-stats">
+        <div class="arcade-stat"><span class="arcade-stat-label">Puntaje</span><span id="scoreValue" class="arcade-stat-value">0</span></div>
+        <div class="arcade-stat"><span class="arcade-stat-label">Nivel</span><span id="levelValue" class="arcade-stat-value">1</span></div>
+        <div class="arcade-stat"><span class="arcade-stat-label">Vidas</span><span id="livesValue" class="arcade-stat-value">4</span></div>
+        <div class="arcade-stat"><span class="arcade-stat-label">Tiempo</span><span id="timeValue" class="arcade-stat-value">70s</span></div>
+      </div>
+    </section>
+
+    <section class="arcade-chip-row">
+      <span class="arcade-chip">Jugador:<strong id="playerNameValue">Invitado</strong></span>
+      <span class="arcade-chip">Record:<strong id="bestValue">0</strong></span>
+      <span id="bestMeta" class="arcade-chip note">Sin marcas guardadas</span>
+      <span class="arcade-chip">Hint:<strong id="hintValue">2</strong></span>
+      <span class="arcade-chip">Radar:<strong id="radarValue">1</strong></span>
+      <span class="arcade-chip">Tiempo:<strong id="freezeValue">1</strong></span>
+      <button id="hintBtn" class="arcade-chip-btn" type="button">Usar hint</button>
+      <button id="radarBtn" class="arcade-chip-btn" type="button">Revelar</button>
+      <button id="freezeBtn" class="arcade-chip-btn" type="button">Congelar</button>
+      <button id="changePlayerBtn" class="arcade-chip-btn" type="button">Cambiar jugador</button>
+      <button id="soundToggleBtn" class="arcade-chip-btn secondary" type="button" aria-pressed="true">Sonido: activado</button>
+      <button id="pauseBtn" class="arcade-chip-btn alert" type="button" aria-pressed="false">Pausa</button>
+    </section>
+
+    <section class="arcade-stage memory-stage" aria-label="Juego Memoria estelar plus">
+      <div id="memoryBoard" class="memory-board" style="--cols:4"></div>
+      <div id="overlay" class="arcade-overlay">
+        <div class="arcade-overlay-card">
+          <h2 id="overlayTitle">Baraja lista</h2>
+          <p id="overlayText">Cada nivel trae más cartas o menos tiempo. Puedes gastar ayudas para sobrevivir varias rondas y guardar un récord más alto.</p>
+          <ul>
+            <li>Encuentra parejas seguidas para sumar bonus de combo.</li>
+            <li>Si fallas demasiadas veces o se acaba el tiempo, pierdes una vida.</li>
+            <li>La pausa congela el reloj y también bloquea el tablero.</li>
+          </ul>
+          <div class="arcade-actions">
+            <button id="startBtn" class="arcade-btn" type="button">Empezar</button>
+            <button id="backBtnTop" class="arcade-btn secondary" type="button">Volver al menu</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="arcade-footer">
+      <button id="restartBtn" class="arcade-btn secondary" type="button">Reiniciar</button>
+      <button id="backBtnBottom" class="arcade-btn secondary" type="button">Salir al menu</button>
+      <div id="statusText" class="arcade-status">Esperando inicio...</div>
+    </section>
+  </main>
+
+  <script src="/Juegos/arcade_shared.js"></script>
+  <script>
+    (function () {
+      var GAME_KEY = 'memoria_estelar';
+      var arcade = window.PCSArcade || null;
+      var boardEl = document.getElementById('memoryBoard');
+      var scoreValue = document.getElementById('scoreValue');
+      var levelValue = document.getElementById('levelValue');
+      var livesValue = document.getElementById('livesValue');
+      var timeValue = document.getElementById('timeValue');
+      var hintValue = document.getElementById('hintValue');
+      var radarValue = document.getElementById('radarValue');
+      var freezeValue = document.getElementById('freezeValue');
+      var playerNameValue = document.getElementById('playerNameValue');
+      var bestValue = document.getElementById('bestValue');
+      var bestMeta = document.getElementById('bestMeta');
+      var hintBtn = document.getElementById('hintBtn');
+      var radarBtn = document.getElementById('radarBtn');
+      var freezeBtn = document.getElementById('freezeBtn');
+      var changePlayerBtn = document.getElementById('changePlayerBtn');
+      var soundToggleBtn = document.getElementById('soundToggleBtn');
+      var pauseBtn = document.getElementById('pauseBtn');
+      var overlay = document.getElementById('overlay');
+      var overlayTitle = document.getElementById('overlayTitle');
+      var overlayText = document.getElementById('overlayText');
+      var startBtn = document.getElementById('startBtn');
+      var restartBtn = document.getElementById('restartBtn');
+      var backBtnTop = document.getElementById('backBtnTop');
+      var backBtnBottom = document.getElementById('backBtnBottom');
+      var statusText = document.getElementById('statusText');
+
+      var allSymbols = ['NOVA', 'PULSO', 'SOLAR', 'LUNAR', 'ORBITA', 'NEBULA', 'COMETA', 'QUASAR', 'ASTRO', 'CENIT', 'RAYO', 'DELTA', 'FOCO', 'MAGMA', 'VORTEX'];
+      var state = {
+        running: false,
+        paused: false,
+        gameOver: false,
+        level: 1,
+        lives: 4,
+        score: 0,
+        combo: 0,
+        timerLeft: 70,
+        lock: false,
+        firstIndex: -1,
+        secondIndex: -1,
+        deck: [],
+        matchedPairs: 0,
+        targetPairs: 6,
+        tickHandle: 0,
+        hintCharges: 2,
+        radarCharges: 1,
+        freezeCharges: 1,
+        freezeTimer: 0
+      };
+
+      function playEffect(name) {
+        if (arcade) arcade.playEffect(name);
+      }
+
+      function levelConfig(level) {
+        var configs = [
+          { pairs: 6, cols: 4, time: 70 },
+          { pairs: 8, cols: 4, time: 68 },
+          { pairs: 10, cols: 5, time: 66 },
+          { pairs: 12, cols: 6, time: 62 },
+          { pairs: 15, cols: 6, time: 58 }
+        ];
+        return configs[Math.min(configs.length - 1, level - 1)];
+      }
+
+      function syncProfile() {
+        if (!arcade) return;
+        var profile = arcade.getProfile();
+        var scores = arcade.getGameScores(GAME_KEY);
+        playerNameValue.textContent = profile.playerName || 'Invitado';
+        bestValue.textContent = String(scores.best ? Number(scores.best.score || 0) : 0);
+        bestMeta.textContent = scores.best ? ('Por ' + scores.best.playerName + (scores.best.detail ? ' · ' + scores.best.detail : '')) : 'Sin marcas guardadas';
+        soundToggleBtn.textContent = arcade.isSoundEnabled() ? 'Sonido: activado' : 'Sonido: apagado';
+        soundToggleBtn.setAttribute('aria-pressed', arcade.isSoundEnabled() ? 'true' : 'false');
+      }
+
+      function setStatus(text) {
+        statusText.textContent = text;
+      }
+
+      function updateHud() {
+        scoreValue.textContent = String(state.score);
+        levelValue.textContent = String(state.level);
+        livesValue.textContent = String(state.lives);
+        timeValue.textContent = String(state.timerLeft) + 's';
+        hintValue.textContent = String(state.hintCharges);
+        radarValue.textContent = String(state.radarCharges);
+        freezeValue.textContent = String(state.freezeCharges);
+        pauseBtn.textContent = state.paused ? 'Reanudar' : 'Pausa';
+        pauseBtn.setAttribute('aria-pressed', state.paused ? 'true' : 'false');
+      }
+
+      function stopTimer() {
+        if (state.tickHandle) {
+          window.clearInterval(state.tickHandle);
+          state.tickHandle = 0;
+        }
+      }
+
+      function startTimer() {
+        stopTimer();
+        state.tickHandle = window.setInterval(function () {
+          if (!state.running || state.paused || state.gameOver) return;
+          if (state.freezeTimer > 0) {
+            state.freezeTimer -= 1;
+            return;
+          }
+          state.timerLeft -= 1;
+          updateHud();
+          if (state.timerLeft <= 0) {
+            loseLife('Se agotó el tiempo de la ronda.');
+          }
+        }, 1000);
+      }
+
+      function buildDeck() {
+        var cfg = levelConfig(state.level);
+        state.targetPairs = cfg.pairs;
+        boardEl.style.setProperty('--cols', String(cfg.cols));
+        state.timerLeft = cfg.time;
+        var entries = [];
+        for (var i = 0; i < cfg.pairs; i += 1) {
+          var label = allSymbols[i];
+          entries.push({ id: label + '_a', label: label, pair: label, revealed: false, matched: false, hinted: false });
+          entries.push({ id: label + '_b', label: label, pair: label, revealed: false, matched: false, hinted: false });
+        }
+        for (var j = entries.length - 1; j > 0; j -= 1) {
+          var swap = Math.floor(Math.random() * (j + 1));
+          var current = entries[j];
+          entries[j] = entries[swap];
+          entries[swap] = current;
+        }
+        state.deck = entries;
+        state.matchedPairs = 0;
+        state.lock = false;
+        state.firstIndex = -1;
+        state.secondIndex = -1;
+        renderBoard();
+        updateHud();
+      }
+
+      function renderBoard() {
+        boardEl.innerHTML = state.deck.map(function (card, index) {
+          var classes = 'memory-card';
+          if (card.revealed) classes += ' revealed';
+          if (card.matched) classes += ' matched';
+          if (card.hinted) classes += ' hinted';
+          return '' +
+            '<button class="' + classes + '" type="button" data-index="' + index + '">' +
+              '<span class="memory-card-face memory-card-back">✦</span>' +
+              '<span class="memory-card-face memory-card-front">' + card.label + '</span>' +
+            '</button>';
+        }).join('');
+      }
+
+      function resetProgress() {
+        state.running = false;
+        state.paused = false;
+        state.gameOver = false;
+        state.level = 1;
+        state.lives = 4;
+        state.score = 0;
+        state.combo = 0;
+        state.hintCharges = 2;
+        state.radarCharges = 1;
+        state.freezeCharges = 1;
+        state.freezeTimer = 0;
+        buildDeck();
+        overlay.hidden = false;
+        overlayTitle.textContent = 'Baraja lista';
+        overlayText.textContent = 'Cada nivel trae más cartas o menos tiempo. Puedes gastar ayudas para sobrevivir varias rondas y guardar un récord más alto.';
+        setStatus('Esperando inicio...');
+      }
+
+      function openMenu() {
+        window.location.href = '/Juegos/menu_juegos.html';
+      }
+
+      function startRound() {
+        if (arcade) {
+          arcade.ensurePlayerName('Escribe el nombre del jugador para Memoria estelar plus');
+          syncProfile();
+        }
+        state.running = true;
+        state.paused = false;
+        state.gameOver = false;
+        overlay.hidden = true;
+        setStatus('Encuentra parejas y protege tus vidas.');
+        startTimer();
+        playEffect('start');
+        updateHud();
+      }
+
+      function togglePause(forceValue) {
+        if (!state.running || state.gameOver) return;
+        state.paused = typeof forceValue === 'boolean' ? forceValue : !state.paused;
+        if (state.paused) {
+          overlay.hidden = false;
+          overlayTitle.textContent = 'Juego en pausa';
+          overlayText.textContent = 'La pausa congela el reloj, bloquea el tablero y deja quietos todos los poderes mientras decides seguir.';
+        } else {
+          overlay.hidden = true;
+        }
+        setStatus(state.paused ? 'Partida en pausa.' : 'Partida reanudada.');
+        updateHud();
+      }
+
+      function loseLife(reason) {
+        state.lives -= 1;
+        state.combo = 0;
+        playEffect('fail');
+        if (state.lives <= 0) {
+          finishGame(reason + ' Se agotaron las vidas.', false);
+          return;
+        }
+        buildDeck();
+        overlay.hidden = false;
+        overlayTitle.textContent = 'Vida perdida';
+        overlayText.textContent = reason + ' Aún te quedan ' + state.lives + ' vidas para continuar el reto.';
+        state.running = false;
+        updateHud();
+        setStatus('Perdiste una vida.');
+      }
+
+      function finishGame(message, won) {
+        state.running = false;
+        state.gameOver = true;
+        stopTimer();
+        playEffect(won ? 'win' : 'fail');
+        if (arcade && state.score > 0) {
+          arcade.recordScore(GAME_KEY, state.score + state.lives * 25, {
+            detail: 'Nivel ' + state.level + ' · vidas ' + state.lives
+          });
+        }
+        syncProfile();
+        overlay.hidden = false;
+        overlayTitle.textContent = won ? 'Victoria estelar' : 'Ronda terminada';
+        overlayText.textContent = message;
+        setStatus(won ? 'Completaste todos los niveles.' : 'Partida terminada.');
+      }
+
+      function nextLevel() {
+        if (state.level >= 5) {
+          finishGame('Superaste los cinco niveles del tablero. El récord queda guardado con tu nombre.', true);
+          return;
+        }
+        state.level += 1;
+        state.hintCharges += 1;
+        state.freezeCharges += 1;
+        state.radarCharges += 1;
+        state.score += 140 + state.level * 25;
+        buildDeck();
+        overlay.hidden = false;
+        overlayTitle.textContent = 'Nivel superado';
+        overlayText.textContent = 'La siguiente ronda trae más cartas o menos margen. También recibes nuevas ayudas.';
+        state.running = false;
+        updateHud();
+        setStatus('Nuevo nivel preparado.');
+        playEffect('match');
+      }
+
+      function useHint() {
+        if (!state.running || state.paused || state.hintCharges <= 0 || state.lock) return;
+        var pending = state.deck.filter(function (card) { return !card.matched && !card.revealed; });
+        if (pending.length < 2) return;
+        var first = pending[0];
+        var pair = pending.find(function (card) { return card.pair === first.pair && card.id !== first.id; });
+        if (!pair) return;
+        state.hintCharges -= 1;
+        state.score += 10;
+        state.deck.forEach(function (card) {
+          card.hinted = card.pair === first.pair;
+        });
+        renderBoard();
+        updateHud();
+        playEffect('flip');
+        window.setTimeout(function () {
+          state.deck.forEach(function (card) { card.hinted = false; });
+          renderBoard();
+        }, 900);
+      }
+
+      function useRadar() {
+        if (!state.running || state.paused || state.radarCharges <= 0 || state.lock) return;
+        state.radarCharges -= 1;
+        state.score += 20;
+        state.deck.forEach(function (card) {
+          if (!card.matched) card.hinted = true;
+        });
+        renderBoard();
+        updateHud();
+        playEffect('win');
+        window.setTimeout(function () {
+          state.deck.forEach(function (card) { card.hinted = false; });
+          renderBoard();
+        }, 1300);
+      }
+
+      function useFreeze() {
+        if (!state.running || state.paused || state.freezeCharges <= 0) return;
+        state.freezeCharges -= 1;
+        state.freezeTimer = 10;
+        state.score += 15;
+        updateHud();
+        setStatus('Tiempo congelado por 10 segundos.');
+        playEffect('countdownGo');
+      }
+
+      function revealCard(index) {
+        if (!state.running || state.paused || state.lock) return;
+        var card = state.deck[index];
+        if (!card || card.matched || card.revealed) return;
+        card.revealed = true;
+        playEffect('flip');
+        renderBoard();
+        if (state.firstIndex === -1) {
+          state.firstIndex = index;
+          setStatus('Busca su pareja.');
+          return;
+        }
+        state.secondIndex = index;
+        state.lock = true;
+        var firstCard = state.deck[state.firstIndex];
+        var secondCard = state.deck[state.secondIndex];
+        if (firstCard.pair === secondCard.pair) {
+          window.setTimeout(function () {
+            firstCard.matched = true;
+            secondCard.matched = true;
+            state.matchedPairs += 1;
+            state.combo += 1;
+            state.score += 80 * state.level + state.combo * 14;
+            state.firstIndex = -1;
+            state.secondIndex = -1;
+            state.lock = false;
+            renderBoard();
+            updateHud();
+            playEffect('match');
+            if (state.matchedPairs >= state.targetPairs) {
+              nextLevel();
+              return;
+            }
+            setStatus('Pareja encontrada. Combo x' + state.combo + '.');
+          }, 280);
+          return;
+        }
+        window.setTimeout(function () {
+          firstCard.revealed = false;
+          secondCard.revealed = false;
+          state.firstIndex = -1;
+          state.secondIndex = -1;
+          state.combo = 0;
+          state.lock = false;
+          renderBoard();
+          loseLife('Fallaste una combinación.');
+        }, 620);
+      }
+
+      boardEl.addEventListener('click', function (event) {
+        var button = event.target.closest('button[data-index]');
+        if (!button) return;
+        revealCard(Number(button.getAttribute('data-index')));
+      });
+
+      startBtn.addEventListener('click', startRound);
+      restartBtn.addEventListener('click', function () {
+        stopTimer();
+        resetProgress();
+      });
+      backBtnTop.addEventListener('click', openMenu);
+      backBtnBottom.addEventListener('click', openMenu);
+      hintBtn.addEventListener('click', useHint);
+      radarBtn.addEventListener('click', useRadar);
+      freezeBtn.addEventListener('click', useFreeze);
+      pauseBtn.addEventListener('click', function () { togglePause(); });
+      soundToggleBtn.addEventListener('click', function () {
+        if (!arcade) return;
+        arcade.toggleSoundEnabled();
+        syncProfile();
+      });
+      changePlayerBtn.addEventListener('click', function () {
+        if (!arcade) return;
+        arcade.promptPlayerName('Actualiza el nombre del jugador para Memoria estelar plus');
+        syncProfile();
+      });
+      window.addEventListener('keydown', function (event) {
+        if (String(event.key || '').toLowerCase() === 'p') {
+          event.preventDefault();
+          togglePause();
+        }
+      });
+      window.addEventListener('pcs-arcade-store-changed', syncProfile);
+
+      resetProgress();
+      syncProfile();
+      updateHud();
+    })();
+  </script>
+</body>
+</html>

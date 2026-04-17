@@ -263,12 +263,18 @@
                 '<input id="asesorId" class="form-input" type="text" placeholder="Código del vendedor">'+
               '</div>'+
             '</div>'+
-            '<h3 class="payment-method-title">Selecciona el método de pago</h3>'+
-            (paymentCards.length
-              ? '<div class="payment-method-selector payment-method-selector-licenses">' + paymentCards.join('') + '</div>'
-              : '<div class="form-help error">' + escapeHtml(unavailableMessages.length
+            (paymentCards.length > 1
+              ? '<h3 class="payment-method-title">Selecciona el método de pago</h3>'+
+                '<div class="payment-method-selector payment-method-selector-licenses">' + paymentCards.join('') + '</div>'
+              : '')+
+            (paymentCards.length === 1
+              ? '<div class="form-help" style="margin-top:12px;">Solo hay una forma de pago disponible en este momento. La activamos automáticamente para continuar más rápido.</div>'
+              : '')+
+            (paymentCards.length === 0
+              ? '<div class="form-help error">' + escapeHtml(unavailableMessages.length
                 ? unavailableMessages.join(' ')
-                : 'Actualmente no hay métodos de pago activos. Activa Epayco o Wompi desde configuración avanzada.') + '</div>')+
+                : 'Actualmente no hay métodos de pago activos. Activa Epayco o Wompi desde configuración avanzada.') + '</div>'
+              : '')+
             ((epaycoProvider && epaycoProvider.available)
               ? '<div id="epaycoPanel" class="payment-method-panel payment-method-panel-epayco">'+
                 '<div class="method-panel-heading payment-method-heading-with-logo"><img class="payment-method-panel-logo" src="/img/logo epayco.png" alt="Logo de Epayco"><span>Epayco</span></div>'+
@@ -432,29 +438,56 @@
             if (!context || (!context.transactionId && !context.reference)) return;
 
             let tries = 0;
+            var ctrl = { cancelled: false };
+            pollingCtrl = ctrl;
             setPaymentMethod(normalizedProvider);
             setProviderBusy(normalizedProvider, 'Verificando...');
 
+            var cancelEl = document.createElement('a');
+            cancelEl.href = '#';
+            cancelEl.textContent = 'Cancelar verificación e intentar de nuevo';
+            cancelEl.style.cssText = 'display:block;margin-top:8px;color:#c00;font-size:13px;cursor:pointer;';
+            cancelEl.addEventListener('click', function(ev){ ev.preventDefault(); doCancelPolling(); });
+            var stEl = getStatusElement(normalizedProvider);
+            if (stEl) stEl.appendChild(cancelEl);
+
             const poll = async function(){
+              if (ctrl.cancelled) return;
               tries++;
               try {
                 const statusData = await fetchProviderStatus(normalizedProvider, context);
+                if (ctrl.cancelled) return;
                 const outcome = applyResolvedResult(normalizedProvider, statusData, context);
                 context = outcome.context;
-                if (outcome.done) return;
+                if (outcome.done) { pollingCtrl = null; return; }
               } catch (err) {
-                if (tries >= maxTries) {
-                  renderFeedback(ui.feedback, 'error', 'No se pudo confirmar el pago', 'Se agotó el tiempo de verificación automática. Verifica el estado de la transacción en unos segundos o intenta recargar la página.');
-                  syncStatusText(getStatusElement(normalizedProvider), 'Error consultando estado: ' + (err && err.message ? err.message : String(err)));
-                  resetProvider(normalizedProvider);
-                  return;
-                }
+                if (ctrl.cancelled) return;
                 syncStatusText(getStatusElement(normalizedProvider), 'Reintentando verificación con ' + providerLabel(normalizedProvider) + '...');
+                if (stEl) stEl.appendChild(cancelEl);
+              }
+              if (ctrl.cancelled) return;
+              if (tries >= maxTries) {
+                clearPendingPayment();
+                renderFeedback(ui.feedback, 'error', 'No se pudo confirmar el pago', 'Se agotó el tiempo de verificación automática. Puedes intentar un nuevo pago o recargar la página.');
+                syncStatusText(getStatusElement(normalizedProvider), '');
+                resetProvider(normalizedProvider);
+                pollingCtrl = null;
+                return;
               }
               setTimeout(poll, 3000);
             };
 
             poll();
+          }
+
+          var pollingCtrl = null;
+          function doCancelPolling(){
+            if (pollingCtrl) { pollingCtrl.cancelled = true; pollingCtrl = null; }
+            clearPendingPayment();
+            renderFeedback(ui.feedback, '', '', '');
+            ['epayco','wompi'].forEach(function(p){ resetProvider(p); });
+            syncStatusText(ui.epaycoStatus, '');
+            syncStatusText(ui.wompiStatus, '');
           }
 
           if (ui.selectWompiCard) ui.selectWompiCard.addEventListener('click', function(){ setPaymentMethod('wompi'); });
@@ -620,20 +653,19 @@
 
               const checkoutUrl = data && (data.checkout_url || (data.data && data.data.checkout_url));
               if (checkoutUrl) {
-                const popup = window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
-                if (!popup) {
-                  syncStatusText(ui.epaycoStatus, 'Solicitud enviada. Abre la pasarela desde el enlace mostrado en pantalla.');
-                  renderFeedback(ui.feedback, 'muted', 'Abre Epayco para completar el pago', 'Tu navegador bloqueó la pestaña emergente. Usa el enlace visible en el mensaje del panel para continuar el checkout.');
-                  ui.epaycoStatus.innerHTML = 'Solicitud enviada. Abre la pasarela de Epayco aquí: <a href="' + escapeHtml(checkoutUrl) + '" target="_blank" rel="noopener">Abrir Epayco</a>.';
-                } else {
-                  renderFeedback(ui.feedback, 'muted', 'Checkout Epayco abierto', 'Se abrió Epayco en una pestaña nueva. Esta pantalla seguirá verificando el estado del pago automáticamente.');
-                  syncStatusText(ui.epaycoStatus, 'Estado Epayco: ' + (context.status || 'PENDING'));
+                setProviderBusy('epayco', 'Redirigiendo...');
+                renderFeedback(ui.feedback, 'muted', 'Redirigiendo a Epayco', 'Te llevaremos al checkout para completar el pago. Cuando regreses, esta pagina retomara la verificacion automatica con la referencia guardada.');
+                if (ui.epaycoStatus) {
+                  ui.epaycoStatus.innerHTML = 'Redirigiendo a la pasarela de Epayco. Si no ocurre automaticamente, usa este enlace: <a href="' + escapeHtml(checkoutUrl) + '" target="_self" rel="noopener">Abrir Epayco</a>.';
                 }
-              } else {
-                renderFeedback(ui.feedback, 'muted', 'Checkout Epayco iniciado', 'Completa el pago en la pasarela y mantén esta pantalla abierta para ver la confirmación automática.');
-                syncStatusText(ui.epaycoStatus, 'Estado Epayco: ' + (context.status || 'PENDING'));
+                window.setTimeout(function(){
+                  window.location.assign(checkoutUrl);
+                }, 120);
+                return;
               }
 
+              renderFeedback(ui.feedback, 'muted', 'Checkout Epayco iniciado', 'No se recibio una URL directa del checkout. Mantendremos esta pantalla verificando el estado del pago.');
+              syncStatusText(ui.epaycoStatus, 'Estado Epayco: ' + (context.status || 'PENDING'));
               startPolling('epayco', context, 30);
             } catch (err) {
               syncStatusText(ui.epaycoStatus, 'Error enviando pago Epayco: ' + (err && err.message ? err.message : String(err)));
@@ -641,8 +673,16 @@
             }
           });
 
-          if (returnContext.hasReturn) {
-            const providerForReturn = normalizeProvider(returnContext.provider) || availableMethods[0] || '';
+          var hasUrlReturnParams = !!(
+            params.get('provider') || params.get('metodo') || params.get('method') ||
+            params.get('status') || params.get('x_response') || params.get('x_transaction_state') || params.get('response') ||
+            params.get('x_cod_response') || params.get('cod_response') ||
+            params.get('transaction_id') || params.get('id') || params.get('x_transaction_id') ||
+            params.get('reference') || params.get('ref') || params.get('invoice') || params.get('x_id_invoice') || params.get('ref_payco') || params.get('x_ref_payco')
+          );
+
+          if (returnContext.hasReturn && hasUrlReturnParams) {
+            var providerForReturn = normalizeProvider(returnContext.provider) || availableMethods[0] || '';
             if (providerForReturn) setPaymentMethod(providerForReturn);
 
             if ((returnContext.transactionId || returnContext.reference) && providerForReturn) {
@@ -651,6 +691,11 @@
             } else if (returnContext.status) {
               applyResolvedResult(providerForReturn, returnContext, returnContext);
             }
+          } else if (returnContext.hasReturn) {
+            var providerForStale = normalizeProvider(returnContext.provider) || availableMethods[0] || '';
+            if (providerForStale) setPaymentMethod(providerForStale);
+            syncStatusText(getStatusElement(providerForStale), 'Se encontró un pago anterior sin completar. Puedes iniciar uno nuevo.');
+            clearPendingPayment();
           }
 
         }catch(err){ console.error(err); container.innerText = 'Error: ' + (err && err.message ? err.message : String(err)); }

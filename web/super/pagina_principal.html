@@ -23,7 +23,7 @@
       <div class="form-row">
         <div class="form-col pp-col-small">
           <label class="form-label" for="ppCantidad">Cantidad de tarjetas</label>
-          <input id="ppCantidad" class="form-input" type="number" min="1" max="12" value="5">
+          <input id="ppCantidad" class="form-input" type="number" min="1" max="12" value="" placeholder="Cargando..." disabled>
           <p class="form-help">La cantidad se aplica al cambiar este campo y se guarda junto con toda la configuracion.</p>
         </div>
         <div class="form-col pp-col-grow">
@@ -67,7 +67,7 @@
       var state = {
         images: [],
         config: {
-          cantidad: 5,
+          cantidad: 0,
           tarjetas: [],
           estilos: {
             index_card_size: 'mediano',
@@ -86,6 +86,16 @@
       var indexTextSizeEl = document.getElementById('ppIndexTextSize');
       var landingCardSizeEl = document.getElementById('ppLandingCardSize');
       var landingTextSizeEl = document.getElementById('ppLandingTextSize');
+
+      function setCantidadLoading(isLoading) {
+        cantidadEl.disabled = !!isLoading;
+        if (isLoading) {
+          cantidadEl.value = '';
+          cantidadEl.placeholder = 'Cargando...';
+          return;
+        }
+        cantidadEl.placeholder = '';
+      }
 
       function setMsg(text, type) {
         var t = text || '';
@@ -360,8 +370,12 @@
       async function loadConfig() {
         var data = await requestJSON('/super/api/pagina_principal?action=config');
         var cfg = data && data.config ? data.config : {};
-        state.config.cantidad = normalizeCount(cfg.cantidad || 5);
         state.config.tarjetas = Array.isArray(cfg.tarjetas) ? cfg.tarjetas : [];
+        var persistedCount = normalizeCount(cfg.cantidad || 0);
+        if (state.config.tarjetas.length > persistedCount) {
+          persistedCount = normalizeCount(state.config.tarjetas.length);
+        }
+        state.config.cantidad = persistedCount;
         state.config.estilos = normalizeVisualSettings(cfg.estilos);
         ensureCards(state.config.cantidad);
       }
@@ -422,13 +436,16 @@
 
       async function reloadAll() {
         setMsg('Cargando configuracion...', '');
+        setCantidadLoading(true);
         try {
           await loadImages();
           await loadConfig();
           renderCardsEditor();
           renderStyleControls();
+          setCantidadLoading(false);
           setMsg('Configuracion cargada correctamente.', 'success');
         } catch (err) {
+          setCantidadLoading(false);
           setMsg('No se pudo cargar la configuracion: ' + (err && err.message ? err.message : String(err)), 'error');
         }
       }

@@ -110,3 +110,56 @@ func TestCreateAndUpdateLicenciaRepairMissingValorColumn(t *testing.T) {
 		t.Fatalf("expected duracion_dias 45, got %d", updated.DuracionDias)
 	}
 }
+
+func TestUpdateLicenciaRepairsMissingFechaActualizacionColumn(t *testing.T) {
+	dbConn := openLicenciasSchemaSQLite(t, "licencias_missing_fecha_actualizacion.db")
+	if _, err := dbConn.Exec(`CREATE TABLE licencias (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		tipo_id INTEGER,
+		nombre TEXT,
+		descripcion TEXT,
+		valor REAL DEFAULT 0,
+		duracion_dias INTEGER DEFAULT 0,
+		modulos_habilitados TEXT,
+		super_rol_habilitado INTEGER DEFAULT 0,
+		fecha_creacion TEXT,
+		activo INTEGER DEFAULT 1
+	)`); err != nil {
+		t.Fatalf("create licencias legacy schema without fecha_actualizacion: %v", err)
+	}
+
+	res, err := dbConn.Exec(`INSERT INTO licencias (tipo_id, nombre, descripcion, valor, duracion_dias, modulos_habilitados, super_rol_habilitado, fecha_creacion, activo)
+		VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), 1)`, 1, "Plan Basico", "Licencia legacy", 99000.0, 30, "ventas", 0)
+	if err != nil {
+		t.Fatalf("insert legacy licencia: %v", err)
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		t.Fatalf("last insert id: %v", err)
+	}
+
+	if err := UpdateLicencia(dbConn, id, 1, "Plan Basico Ajustado", "Licencia legacy actualizada", 123456.78, 60, "ventas,finanzas", 1); err != nil {
+		t.Fatalf("update licencia legacy without fecha_actualizacion: %v", err)
+	}
+	if err := SetLicenciaActivo(dbConn, id, 0); err != nil {
+		t.Fatalf("set licencia activo on legacy schema without fecha_actualizacion: %v", err)
+	}
+
+	updated, err := GetLicenciaByID(dbConn, id)
+	if err != nil {
+		t.Fatalf("get licencia after legacy update: %v", err)
+	}
+	if updated == nil {
+		t.Fatal("expected licencia after legacy update")
+	}
+	if math.Abs(updated.Valor-123456.78) > 0.0001 {
+		t.Fatalf("expected valor actualizado 123456.78, got %v", updated.Valor)
+	}
+	if updated.DuracionDias != 60 {
+		t.Fatalf("expected duracion_dias 60, got %d", updated.DuracionDias)
+	}
+	if updated.Activo != 0 {
+		t.Fatalf("expected activo 0, got %d", updated.Activo)
+	}
+
+}

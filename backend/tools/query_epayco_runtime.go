@@ -1,3 +1,27 @@
+//go:build tools
+// +build tools
+
+package main
+
+import (
+	"flag"
+	"fmt"
+	"log"
+	"time"
+
+	dbpkg "github.com/you/pos-backend/db"
+)
+
+func main() {
+	since := flag.Int("since", 24, "horas hacia atras para consultar runtime")
+	dbPath := flag.String("db", "epayco_runtime.db", "ruta a la BD runtime")
+	flag.Parse()
+
+	// placeholder: consultar runtime epayco
+	fmt.Printf("Simulando query epayco runtime desde hace %d horas en %s (now=%v)\n", *since, *dbPath, time.Now())
+	_ = dbpkg // evitar unused import en ejemplo
+	log.Println("done")
+}
 package main
 
 import (

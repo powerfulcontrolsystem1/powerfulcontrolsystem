@@ -1,5 +1,297 @@
 Descripcion de archivos del proyecto
 
+Actualizacion 2026-04-17: arcade publico agrega Ajedrez 3D plus
+ - Archivos creados:
+	 - web/Juegos/ajedrez_3d_plus.html : Nuevo juego publico de ajedrez con tablero 3D simulado, cronometro de sesion, countdown y selector de cinco niveles de dificultad.
+	 - web/img/juegos/ajedrez_3d.svg : Portada dedicada para la nueva tarjeta del lobby del arcade.
+ - Archivos modificados:
+	 - web/Juegos/menu_juegos.html : Publica la nueva tarjeta `Ajedrez 3D plus` dentro del catalogo activo del arcade.
+	 - documentos/descripcion_del_proyecto
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: Se agrega una nueva experiencia publica de ajedrez al arcade del portal, separada del ajedrez existente y enfocada en una presentacion 3D simulada con varios niveles de dificultad.
+ - Verificacion: diagnostico del editor sin errores en `web/Juegos/ajedrez_3d_plus.html` y `web/Juegos/menu_juegos.html`.
+
+Actualizacion 2026-04-17: reportes globales super con graficos y lectura ejecutiva
+ - Archivos modificados:
+	 - web/super/reportes_globales.html : Añade tarjetas ejecutivas globales y una seccion de graficos para lectura rápida del consolidado.
+	 - web/js/super_reportes_globales.js : Calcula empresa líder, empresa bajo presión, concentración y renderiza graficos de ingresos, balance/egresos y composición del portafolio.
+	 - web/estilos.css : Incorpora estilos para tarjetas ejecutivas, barras comparativas y anillo del portafolio global.
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: Se amplía la vista de reportes globales del panel super para mostrar gráficos y una lectura ejecutiva consolidada de las empresas creadas por el administrador autenticado.
+ - Verificacion: diagnostico del editor sin errores en `web/super/reportes_globales.html` y `web/js/super_reportes_globales.js`.
+
+Actualizacion 2026-04-16: reportes globales super por administrador creador
+ - Archivos creados:
+	 - backend/handlers/reportes_globales.go : Implementa `/super/api/reportes_globales` con filtro por `usuario_creador`, tablero global, datasets mezclados o individuales y exportacion multiformato.
+	 - backend/handlers/reportes_globales_test.go : Prueba el aislamiento de empresas por administrador creador y la consolidacion de datasets en modo global o individual.
+	 - web/js/super_reportes_globales.js : Controla los filtros, la carga del tablero y los datasets globales de la vista super.
+ - Archivos modificados:
+	 - backend/db/db.go : Agrega `GetEmpresasByUsuarioCreador`.
+	 - backend/main.go : Registra `/super/api/reportes_globales`.
+	 - web/super/reportes_globales.html : Sustituye el placeholder por la vista funcional de reportes globales.
+	 - web/estilos.css : Añade estilos del modulo de reportes globales.
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: Se habilita la vista de reportes globales en `seleccionar_empresa.html` para generar reportes generales, mezclados o individuales solo con las empresas creadas por el administrador autenticado.
+ - Verificacion: `go test ./handlers -run "TestSuperReportesGlobalesHandlerFiltraYConsolidaPorAdministrador" -count=1`; diagnostico del editor sin errores en archivos nuevos.
+
+Actualizacion 2026-04-16: menu flotante compartido reserva espacio frente a botones superiores
+ - Archivos modificados:
+	 - web/menu.js : Marca el documento con `has-floating-menu` cuando el menu flotante se inyecta, permitiendo a la hoja compartida reservar espacio alrededor del toggle.
+	 - web/estilos.css : Ajusta la posicion del menu flotante y agrega reserva lateral en encabezados y barras de acciones compartidas para evitar solapamientos con botones cercanos.
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: Se corrige el solapamiento entre el menu flotante y botones ubicados en la parte superior derecha de varias paginas. El ajuste se aplica de forma global en el frontend compartido.
+ - Verificacion: diagnostico del editor sin errores en `web/menu.js` y `web/estilos.css`.
+
+Actualizacion 2026-04-16: facturacion electronica estabiliza pruebas de db bajo SQLite
+ - Archivos modificados:
+	 - backend/db/finanzas_test.go : `openFinanzasTestDB` ahora fija `DB_DIALECT`, `DB_ENGINE` y `PCS_DB_DIALECT` a `sqlite` para que la suite de facturacion electronica y documentos transaccionales no herede el dialecto postgres del entorno local.
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: Se corrige la inestabilidad de las pruebas del modulo de facturacion electronica cuando el backend local esta levantado en modo PostgreSQL. El ajuste asegura que los tests del paquete `db` ejecuten el dialecto esperado sobre SQLite.
+ - Verificacion: `go test ./db -run "Test.*(Facturacion|DIAN|DocumentoFacturacion)" -count=1`; `go test ./handlers -run "Test(VentaCarritoFacturaYResolucionImpresora|EmpresaDIANColombiaHandler.*|EmpresaFacturacionElectronicaReintentosYReconciliacion|EmpresaFacturacionElectronicaEmiteEventoContable|EmpresaFacturacionTransaccional.*)" -count=1`.
+
+Actualizacion 2026-04-16: pagina principal super evita valor inicial falso en cantidad
+ - Archivos modificados:
+	 - web/super/pagina_principal.html : El input `ppCantidad` ahora arranca deshabilitado y sin el valor inicial `5`, muestra estado de carga y sincroniza la cantidad real con las tarjetas persistidas antes de habilitar el editor.
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: Se elimina el parpadeo visual del editor de `pagina_principal` donde el campo de cantidad mostraba primero `5` y luego cambiaba al valor real. El ajuste mantiene alineadas las tarjetas del editor super con el portal publico y la landing descriptiva derivada de la misma configuracion.
+ - Verificacion: revision directa de `web/super/pagina_principal.html`; consulta local `GET /api/public/pagina_principal` con `cantidad=7`.
+
+Actualizacion 2026-04-16: script de arranque local valida disponibilidad real del backend
+ - Archivos modificados:
+	 - scripts/iniciar_servidor.ps1 : El paso final de espera ahora usa el `PORT` efectivo, comprueba listener TCP con `Get-NetTCPConnection` y fallback `netstat`, y valida tambien una respuesta HTTP del backend antes de reportar disponibilidad.
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: Se elimina el falso timeout del arranque local cuando `server.exe` ya esta operativo pero el chequeo del script no lo detecta a tiempo o no interpreta correctamente el listener.
+ - Verificacion: `. 'D:\powerfulcontrolsystem\scripts\iniciar_servidor.ps1'`; salida esperada con `Servidor disponible en puerto 8080`.
+
+Actualizacion 2026-04-17: prueba integrada de venta, factura e impresora
+ - Archivos creados:
+	 - backend/handlers/carrito_facturacion_impresion_test.go : Valida el flujo actual soportado por handlers para venta pagada en carrito, emision documental de factura y resolucion de impresora `factura_caja`.
+ - Archivos modificados:
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: Se agrega una prueba de integracion de handlers que cubre el cierre de una venta en carrito, la emision de una factura electronica en proveedor manual y la resolucion de impresora predeterminada para impresion de factura.
+ - Verificacion: `go test ./handlers -run TestVentaCarritoFacturaYResolucionImpresora -count=1`; `go test ./ ./auth ./db ./handlers ./metrics ./utils -run '^$' -count=1`.
+
+Actualizacion 2026-04-16: selector de empresas recupera el formato clasico de tarjetas
+ - Archivos modificados:
+	 - web/js/seleccionar_empresa.js : Restaura el render historico `portal-card warm` para las tarjetas de empresa del panel super.
+	 - documentos/descripcion_del_proyecto
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: Se revierte la presentacion enriquecida reciente de `seleccionar_empresa.html` y se recupera el formato simple de tarjetas que el usuario preferia.
+ - Verificacion: revision directa de `web/js/seleccionar_empresa.js`; validacion visual recomendada en `seleccionar_empresa.html`.
+
+Actualizacion 2026-04-16: menu flotante publico vuelve a navegar en celular
+ - Archivos modificados:
+	 - web/menu.js : Elimina el cierre del panel en `touchstart` para que los enlaces `.fm-item` no pierdan la navegacion en pantallas tactiles.
+	 - web/estilos.css : Agrega `touch-action: manipulation` al toggle y a los items del menu flotante para mejorar la respuesta de toque.
+	 - documentos/descripcion_del_proyecto
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: Se corrige la navegacion movil del menu flotante del portal publico. Los enlaces vuelven a responder en celular sin que el panel se cierre antes de que el navegador procese el click del enlace.
+ - Verificacion: revision directa de `web/menu.js` y `web/estilos.css`; validacion manual recomendada en movil o emulacion tactil.
+
+Actualizacion 2026-04-17: portal publico de usuarios de empresa con contrato y subdominio propio
+ - Archivos modificados:
+	 - backend/db/usuarios_empresa.go : Centraliza el esquema auth de `users` y agrega persistencia de aceptacion del contrato vigente para usuarios internos de empresa.
+	 - backend/handlers/usuarios_empresa.go : Exige contrato vigente antes de login/primer password/reset/cambio y genera enlaces publicos hacia el subdominio o dominio configurado por cada empresa.
+	 - backend/handlers/auth_users_carritos_test.go : Cubre la URL publica del login por subdominio empresarial, dominio publico y fallback local.
+	 - backend/handlers/usuarios_empresa_seguridad_test.go : Verifica que las notificaciones de confirmacion y recuperacion usen el subdominio empresarial correcto y mantiene el contrato obligatorio en cambio de contrasena.
+	 - backend/main.go : Asegura el esquema auth de `users` al arrancar y sirve `login_usuario.html` desde la raiz del subdominio `usuarios.powerfulcontrolsystem.com`.
+	 - web/login_usuario.html : Reestructura el portal publico de usuarios con registro por invitacion, contrato, recuperacion, reset y cambio de contrasena.
+	 - web/js/login_usuario.js : Reimplementa el flujo cliente del portal publico con `empresa_id`, contrato vigente y redireccion al panel empresarial.
+	 - web/estilos.css : Agrega la capa visual del nuevo portal publico de usuarios.
+	 - web/administrar_empresa.html : Mantiene en el menu lateral el enlace visible al login de usuarios.
+	 - web/js/administrar_empresa.js : Resuelve dinamicamente la URL publica del login de usuarios con `empresa_slug` o `dominio_publico` y conserva fallback local.
+	 - web/administrar_empresa/administrar_usuarios.html : Retira el boton duplicado del portal publico para concentrar el acceso en el menu lateral.
+	 - documentos/descripcion_del_proyecto
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: Se consolida un portal publico de usuarios internos por empresa, enlazado al mismo panel empresarial y protegido por contrato versionado y permisos por rol ya existentes, resolviendo ahora el acceso y los correos al subdominio o dominio publico propio de cada empresa.
+ - Verificacion: `go test ./handlers -run "TestEmpresaUsuario(LoginHandlerSuccess|LoginHandlerRequiresContractAcceptance|SetPasswordHandlerSuccess|ResolveEmpresaUsuarioLoginURLUsesEmpresaSubdomain|PasswordRecoveryFlow|ChangePasswordFlow|ChangePasswordPolicyRejectsWeakPassword|LoginRequiresRotationWhenPolicyEnabled|NotificationsCaptureInMailTestMode)" -count=1`; `go test ./ ./auth ./db ./handlers ./metrics ./utils -run "^$" -count=1`; diagnostico del editor sin errores en HTML/JS/CSS modificados.
+
+Actualizacion 2026-04-17: soporte remoto con limites por plan y panel tecnico super
+ - Archivos creados:
+	 - backend/handlers/super_soporte_remoto.go : Expone la API super `/super/api/soporte_remoto` para resumen multiempresa, consulta de dispositivos/sesiones y apertura o cierre centralizado de soporte remoto.
+	 - backend/handlers/super_soporte_remoto_test.go : Cubre el flujo basico del endpoint super de soporte remoto.
+	 - web/super/soporte_remoto.html : Panel super para mesa tecnica central con empresas, cupos por plan, dispositivos, sesiones y visor embebido.
+ - Archivos modificados:
+	 - backend/db/soporte_remoto.go : Agrega limites `max_conexiones_mes`, `max_minutos_mes`, `max_dispositivos`, calcula consumo mensual y registra intentos bloqueados por plan.
+	 - backend/db/soporte_remoto_test.go : Añade pruebas de limites de plan e intentos bloqueados.
+	 - backend/handlers/soporte_remoto.go : Devuelve consumo `uso` en configuracion/listados y propaga bloqueos por plan en respuestas HTTP.
+	 - backend/handlers/soporte_remoto_test.go : Añade prueba del bloqueo HTTP cuando la empresa alcanza su limite mensual.
+	 - backend/handlers/system_empresas_handlers_test.go : Incluye el nuevo endpoint super en la matriz de autorizacion por rol.
+	 - backend/main.go : Registra `/super/api/soporte_remoto` en el arranque.
+	 - web/super_administrador.html : Agrega acceso lateral al panel super de soporte remoto.
+	 - documentos/descripcion_del_proyecto
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/estructura_bd.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: El modulo de soporte remoto deja de ser solo operativo por empresa y pasa a gobernar cupos por plan con trazabilidad mensual, bloqueo automatico y una mesa tecnica central desde super para operar varias empresas sin perder aislamiento por `empresa_id`.
+ - Verificacion: `go test ./db ./handlers -run "Test(SoporteRemotoDB|EmpresaSoporteRemotoHandler|PublicSoporteRemotoAgentHeartbeatAndStateUpdate|SuperSoporteRemotoHandlerListsCompaniesAndCreatesSession|SuperEndpointsPermisosPorRol)" -count=1`.
+
+Actualizacion 2026-04-16: fix de compilacion en soporte remoto y bootstrap runtime
+ - Archivos modificados:
+	 - backend/db/soporte_remoto.go : Declara correctamente la variable temporal `habilitado` al leer sesiones de soporte remoto por ID y en listados, evitando el fallo `undefined: habilitado` durante `go build`.
+	 - backend/db/productos.go : Endurece `ensureColumnIfMissing` para PostgreSQL usando `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`, evitando fallos de arranque cuando la columna ya existe.
+	 - backend/main.go : Reescribe el cierre del bloque de bootstrap runtime para PostgreSQL/legacy sin `else` acoplado al final del tramo SQLite, restaurando la sintaxis valida del arranque.
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: Se corrige una regresion que impedia levantar el backend desde `scripts/iniciar_servidor.ps1`. El modulo de soporte remoto vuelve a compilar, el bootstrap principal recupera una estructura valida de control de flujo y la regularizacion de columnas en PostgreSQL pasa a ser idempotente durante el arranque.
+ - Verificacion: `go build -o server.exe .` ejecutado en `backend` -> PASADO; `.\scripts\iniciar_servidor.ps1 -Background` -> servidor iniciado correctamente.
+
+Actualizacion 2026-04-16: estaciones sincronizan carritos enlazados desde backend
+ - Archivos modificados:
+	 - backend/db/empresa_estacion_prefs.go : Agrega parseo robusto de `estaciones_config` y la sincronizacion backend de un carrito base por estacion con codigo y referencia enlazados.
+	 - backend/db/empresa_estacion_prefs_test.go : Verifica creacion inicial de carritos enlazados, renombre sin duplicados y estado base `inactivo/cerrado`.
+	 - backend/handlers/empresa_estacion_prefs.go : Ejecuta la sincronizacion de carritos automaticamente tras guardar `estaciones_config`.
+	 - backend/handlers/empresa_estacion_prefs_test.go : Valida que el handler cree los carritos enlazados por empresa al persistir la configuracion de estaciones.
+	 - documentos/descripcion_del_proyecto
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: La relacion estacion-carrito deja de depender exclusivamente del frontend. Al guardar `estaciones_config`, el backend asegura un carrito enlazado por cada estacion configurada y corrige nombre/codigo/referencia si cambian.
+ - Verificacion: `go test -work ./db -run "Test(EmpresaEstacionPrefs|SyncEmpresaEstacionCarritos)" -count=1`; `go test -work ./handlers -run "TestEmpresaEstacionPrefsHandler_UpsertAndIsolationByEmpresa|TestEmpresaCarritosCompraMetricasEstacionIncluyeCorrecciones" -count=1`; `go test ./ ./auth ./db ./handlers ./metrics ./utils -run '^$' -count=1`.
+
+Actualizacion 2026-04-16: home publico con contacto centrado abajo y deploy VPS con limpieza de procesos huerfanos
+ - Archivos modificados:
+	 - web/index.html : Mueve el acceso `Informacion de contacto` debajo de todas las tarjetas del home y deja solo el acceso de login en la cabecera.
+	 - web/estilos.css : Agrega el contenedor `portal-contact-action` y reutiliza el estilo comercial del CTA para el boton centrado de contacto.
+	 - scripts/sync_to_vps.ps1 : Corrige la ubicacion de `StartLimitIntervalSec` en la unidad systemd generada y agrega limpieza explicita de procesos previos del backend antes del arranque.
+	 - documentos/descripcion_del_proyecto
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: El home comercial deja `Informacion de contacto` como CTA centrado debajo del grid de tarjetas, y el deploy al VPS queda endurecido para detener procesos viejos del binario remoto y mantener el servicio systemd activo con el backend recién sincronizado.
+ - Verificacion: `go test ./ ./auth ./db ./handlers ./metrics ./utils -run '^$' -count=1`; validacion de sintaxis PowerShell sobre `scripts/sync_to_vps.ps1`; diagnostico remoto de `systemctl status powerfulcontrolsystem` y `ss -ltnp` en el VPS.
+
+Actualizacion 2026-04-16: checkout de licencias Epayco acepta alias sambox
+ - Archivos modificados:
+	 - backend/handlers/payments_handlers.go : Normaliza `epayco.mode=sambox` como `sandbox` para mantener `test=true` en el checkout de pruebas.
+	 - backend/handlers/payments_handlers_test.go : Agrega prueba de regresion para el alias `sambox` y confirma que la URL remota sigue en modo sandbox.
+	 - documentos/descripcion_del_proyecto
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: Se evita que una configuracion manual con la variante `sambox` saque a Epayco del ambiente de pruebas por no reconocer el alias.
+ - Verificacion: `go test ./handlers -run 'TestEpaycoCreateTransactionHandler(AcceptsSamboxAlias|UsesConfiguredPublicBaseURLAndKeys|AllowsCheckoutWithoutPrivateKey)|TestResolvePaymentBaseURL(FallsBackToCanonicalDomainOnLocalhost|UsesConfiguredCanonicalDomain|IgnoresConfiguredLocalhostAndFallsBackToCanonicalDomain)|TestEpaycoTransactionStatusHandler(PreservesPendingOnGenericValidationError|FindsContextUsingInvoiceWhenGatewayIDsDiffer)' -count=1`.
+
+Actualizacion 2026-04-16: checkout de licencias con Epayco legacy y metodo unico sin selector
+ - Archivos modificados:
+	 - backend/handlers/payments_handlers.go : Agrega `p_key` al builder de checkout Epayco cuando hay `private_key` configurada y mantiene `p_cust_id_cliente` como opcional.
+	 - backend/handlers/payments_handlers_test.go : Verifica presencia de `p_key` con llave privada y su omision cuando el checkout opera solo con `public_key`.
+	 - web/pagar_licencia.html : Oculta el selector de forma de pago si solo existe una pasarela disponible y muestra el panel directo.
+	 - documentos/descripcion_del_proyecto
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: Se corrige el checkout remoto de Epayco para cuentas que todavia requieren `p_key` en `checkout.php`, y se simplifica la pantalla publica de licencias eliminando la selección visual cuando solo hay un metodo habilitado.
+ - Verificacion: pendiente ejecutar pruebas focalizadas de handlers y revisar que la URL remota deje de responder `403 AccessDenied`.
+
+Actualizacion 2026-04-16: checkout de licencias Epayco redirige la misma pestaña al cobrar
+ - Archivos modificados:
+	 - web/pagar_licencia.html : Deja de abrir Epayco en popup, guarda la referencia pendiente y redirige la misma pestaña al checkout para retomar la verificacion solo al volver desde `/epayco/respuesta.html`.
+	 - documentos/descripcion_del_proyecto
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: Se corrige la UX del checkout publico de Epayco para que el usuario no se quede en `pagar_licencia.html` viendo `Verificando...` antes de entrar a la pasarela. El flujo ahora redirige la misma pestaña al checkout y reutiliza el retorno recuperable ya implementado para confirmar el estado real al volver.
+ - Verificacion: `GET /api/public/licencias/payment_methods` => `epayco.available=true`; `POST /epayco/create_transaction` => `checkout_url` valida con `response` y `confirmation` publicos; `GET /epayco/transaction_status?reference=<referencia_recien_creada>` => `PENDING` con `context_found=true`; diagnostico del editor sin errores en `web/pagar_licencia.html`.
+
+Actualizacion 2026-04-16: arcade activo con ocho juegos compactos, popup fijo y eliminacion de pollitos
+ - Archivos creados:
+	 - web/Juegos/arcade_window.css : Shell visual comun para los juegos activos del arcade con overlays, chips, cabecera y footer compactos.
+	 - web/Juegos/patito_volando_plus.html : Nueva version activa de Patito con vidas, niveles, poderes, bonus y pausa real.
+	 - web/Juegos/serpiente_pixel_plus.html : Nueva version activa de Serpiente con vidas, frutas especiales, ayudas y pausa real.
+	 - web/Juegos/memoria_estelar_plus.html : Nueva version activa de Memoria con reloj, ayudas, progresion por niveles y pausa real.
+	 - web/Juegos/rebote_bloques_plus.html : Nueva version activa de Breakout con multibola, drops, niveles y pausa real.
+	 - web/Juegos/pacman_plus.html : Nuevo juego de laberinto con fantasmas IA, frutas de poder, niveles y pausa real.
+	 - web/Juegos/tetris_plus.html : Nuevo juego de piezas con vidas, poderes, niveles y pausa real.
+	 - web/Juegos/carton_fire_plus.html : Nuevo shooter arcade con oleadas, poderes, niveles y pausa real.
+	 - web/Juegos/ajedrez_vs_ia_plus.html : Nuevo duelo tactico contra IA con varios niveles, ayudas y pausa que congela el turno rival.
+	 - web/img/juegos/pacman.svg : Portada SVG del lobby para Pacman plus.
+	 - web/img/juegos/tetris.svg : Portada SVG del lobby para Tetris plus.
+	 - web/img/juegos/carton_fire.svg : Portada SVG del lobby para Carton Fire plus.
+	 - web/img/juegos/ajedrez_vs_ia.svg : Portada SVG del lobby para Ajedrez vs IA plus.
+ - Archivos eliminados:
+	 - web/Juegos/pollitos_cataplum.html : Retirado del arcade activo por reemplazo del set de juegos publico.
+	 - web/img/juegos/pollitos_cataplum.svg : Retirado junto al juego obsoleto para evitar referencias residuales en el lobby.
+ - Archivos modificados:
+	 - web/Juegos/menu_juegos.html : Publica los ocho juegos activos, elimina `pollitos` y fija popup `700x700` sin barras en escritorio.
+	 - documentos/descripcion_del_proyecto
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: Se redefine el arcade publico como un set activo de ocho juegos compactos con records compartidos, sonido global y pausa real. El lobby ya no publica `Pollitos al cataplum` y abre todos los juegos en popup fijo de `700x700` cuando el dispositivo lo permite.
+ - Verificacion: diagnostico del editor sin errores en `web/Juegos/menu_juegos.html`, `web/Juegos/patito_volando_plus.html`, `web/Juegos/serpiente_pixel_plus.html`, `web/Juegos/memoria_estelar_plus.html`, `web/Juegos/rebote_bloques_plus.html`, `web/Juegos/pacman_plus.html`, `web/Juegos/tetris_plus.html`, `web/Juegos/carton_fire_plus.html` y `web/Juegos/ajedrez_vs_ia_plus.html`.
+
 Actualizacion 2026-04-16: compactacion de botones superiores en index
  - Archivos modificados:
 	 - web/estilos.css : Reduce tamaño y altura de los botones superiores del home y centra ambos en móvil.

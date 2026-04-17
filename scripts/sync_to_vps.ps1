@@ -745,6 +745,13 @@ pids_listening_on_port(){
   fi;
   return 1;
 };
+pids_matching_backend_binary(){
+  if command -v pgrep >/dev/null 2>&1; then
+    run_root pgrep -f "$bin_path" 2>/dev/null | sort -u;
+    return 0;
+  fi;
+  run_root ps -eo pid=,args= 2>/dev/null | awk -v target="$bin_path" 'index($0, target) > 0 { print $1; }' | sort -u;
+};
 skip_cleanup_pid(){
   pid="$1";
   case "$pid" in
@@ -756,6 +763,41 @@ skip_cleanup_pid(){
     return 0;
   fi;
   return 1;
+};
+cleanup_stale_backend_processes(){
+  stray_backend_pids=$(pids_matching_backend_binary || true);
+  if [ -z "$stray_backend_pids" ]; then
+    return 0;
+  fi;
+  echo "DEPLOY_WARN:STALE_BACKEND_PROCESSES se detectaron procesos previos del backend; se intentara detenerlos antes del nuevo arranque";
+  for pid in $stray_backend_pids; do
+    if skip_cleanup_pid "$pid"; then
+      continue;
+    fi;
+    exe_path=$(readlink -f "/proc/$pid/exe" 2>/dev/null || true);
+    cmdline=$(tr '\0' ' ' <"/proc/$pid/cmdline" 2>/dev/null | sed 's/[[:space:]]*$//');
+    echo "DEPLOY_WARN:STALE_BACKEND_PID pid=$pid exe=${exe_path:-unknown} cmd=${cmdline:-unknown}";
+    run_root kill "$pid" >/dev/null 2>&1 || true;
+  done;
+  sleep 2;
+  stray_backend_pids=$(pids_matching_backend_binary || true);
+  if [ -n "$stray_backend_pids" ]; then
+    for pid in $stray_backend_pids; do
+      if skip_cleanup_pid "$pid"; then
+        continue;
+      fi;
+      echo "DEPLOY_WARN:STALE_BACKEND_PID_FORCE pid=$pid";
+      run_root kill -9 "$pid" >/dev/null 2>&1 || true;
+    done;
+    sleep 1;
+  fi;
+  stray_backend_pids=$(pids_matching_backend_binary || true);
+  if [ -n "$stray_backend_pids" ]; then
+    echo "DEPLOY_ERROR:STALE_BACKEND_PID_PRESENT no se pudieron detener todos los procesos previos del backend (pids=$(printf '%s' "$stray_backend_pids" | tr '\n' ' ' | sed 's/[[:space:]]*$//'))";
+    echo "DEPLOY_HINT:Revisa procesos manuales del backend fuera de systemd antes de reintentar el deploy";
+    dump_diagnostics;
+    exit 1;
+  fi;
 };
 cleanup_port_conflicts(){
   run_root systemctl stop "$service_unit" >/dev/null 2>&1 || true;
@@ -813,6 +855,7 @@ cat > "$tmp_service" <<EOF
 Description=Powerful Control System backend ($service_name)
 After=network-online.target
 Wants=network-online.target
+StartLimitIntervalSec=0
 
 [Service]
 Type=simple
@@ -822,7 +865,6 @@ EnvironmentFile=-$env_file
 ExecStart=$bin_path
 Restart=always
 RestartSec=5
-StartLimitIntervalSec=0
 KillSignal=SIGTERM
 TimeoutStopSec=30
 StandardOutput=append:$stdout_log
@@ -837,6 +879,7 @@ echo "DEPLOY_STEP:unidad systemd actualizada en $service_file";
 run_root systemctl daemon-reload;
 run_root systemctl enable "$service_unit" >/dev/null 2>&1;
 run_root systemctl reset-failed "$service_unit" >/dev/null 2>&1 || true;
+cleanup_stale_backend_processes;
 cleanup_port_conflicts;
 log "reiniciando $service_unit y validando arranque";
 if ! run_root systemctl start "$service_unit"; then

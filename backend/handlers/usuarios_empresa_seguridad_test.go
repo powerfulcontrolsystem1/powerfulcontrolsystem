@@ -31,7 +31,7 @@ func TestEmpresaUsuarioChangePasswordFlow(t *testing.T) {
 	}
 
 	h := EmpresaUsuarioChangePasswordHandler(dbEmp, dbSuper)
-	body := `{"empresa_id":44,"email":"change@empresa.com","current_password":"ClaveActual101","new_password":"ClaveNueva202","new_password_confirm":"ClaveNueva202"}`
+	body := `{"empresa_id":44,"email":"change@empresa.com","current_password":"ClaveActual101","new_password":"ClaveNueva202","new_password_confirm":"ClaveNueva202","accept_contract":true}`
 	req := httptest.NewRequest(http.MethodPost, "/api/empresa/usuarios/cambiar_password", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	rr := httptest.NewRecorder()
@@ -99,7 +99,7 @@ func TestEmpresaUsuarioChangePasswordPolicyRejectsWeakPassword(t *testing.T) {
 	}
 
 	h := EmpresaUsuarioChangePasswordHandler(dbEmp, dbSuper)
-	body := `{"empresa_id":54,"email":"policy@empresa.com","current_password":"ClaveActual101","new_password":"ClaveNueva101","new_password_confirm":"ClaveNueva101"}`
+	body := `{"empresa_id":54,"email":"policy@empresa.com","current_password":"ClaveActual101","new_password":"ClaveNueva101","new_password_confirm":"ClaveNueva101","accept_contract":true}`
 	req := httptest.NewRequest(http.MethodPost, "/api/empresa/usuarios/cambiar_password", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	rr := httptest.NewRecorder()
@@ -168,11 +168,25 @@ func TestEmpresaUsuarioLoginRequiresRotationWhenPolicyEnabled(t *testing.T) {
 func TestEmpresaUsuarioNotificationsCaptureInMailTestMode(t *testing.T) {
 	t.Setenv("PCS_MAIL_TEST_MODE", "1")
 
+	dbEmp := openTestSQLite(t, "empresas_mail_test_mode.db")
 	dbSuper := openTestSQLite(t, "super_mail_test_mode.db")
+	ensureEmpresaUsersSchema(t, dbEmp)
 	ensureSuperSchema(t, dbSuper)
+	if err := dbpkg.EnsureEmpresaVentaPublicaSchema(dbEmp); err != nil {
+		t.Fatalf("ensure venta publica schema: %v", err)
+	}
+	if _, err := dbpkg.UpsertEmpresaVentaPublicaConfig(dbEmp, dbpkg.EmpresaVentaPublicaConfig{
+		EmpresaID:      77,
+		EmpresaSlug:    "empresa-77",
+		NombreTienda:   "Empresa 77",
+		Estado:         "activo",
+		UsuarioCreador: "test",
+	}); err != nil {
+		t.Fatalf("upsert venta publica config: %v", err)
+	}
 
-	reqConfirm := httptest.NewRequest(http.MethodPost, "http://localhost:8080/super/api/usuarios", nil)
-	confirmURL, err := sendEmpresaUsuarioConfirmationEmail(reqConfirm, dbSuper, 77, "captura@empresa.com", "Usuario Captura", "token-confirm-001")
+	reqConfirm := httptest.NewRequest(http.MethodPost, "https://powerfulcontrolsystem.com/super/api/usuarios", nil)
+	confirmURL, err := sendEmpresaUsuarioConfirmationEmail(reqConfirm, dbEmp, dbSuper, 77, "captura@empresa.com", "Usuario Captura", "token-confirm-001", "")
 	if err != nil {
 		t.Fatalf("send confirmation in test mode: %v", err)
 	}
@@ -180,12 +194,12 @@ func TestEmpresaUsuarioNotificationsCaptureInMailTestMode(t *testing.T) {
 		t.Fatalf("expected confirm URL, got %q", confirmURL)
 	}
 
-	reqRecovery := httptest.NewRequest(http.MethodPost, "http://localhost:8080/api/empresa/usuarios/solicitar_recuperacion_password", nil)
-	recoveryURL, err := sendEmpresaUsuarioPasswordRecoveryEmail(reqRecovery, dbSuper, 77, "captura@empresa.com", "Usuario Captura", "token-reset-001")
+	reqRecovery := httptest.NewRequest(http.MethodPost, "https://powerfulcontrolsystem.com/api/empresa/usuarios/solicitar_recuperacion_password", nil)
+	recoveryURL, err := sendEmpresaUsuarioPasswordRecoveryEmail(reqRecovery, dbEmp, dbSuper, 77, "captura@empresa.com", "Usuario Captura", "token-reset-001")
 	if err != nil {
 		t.Fatalf("send recovery in test mode: %v", err)
 	}
-	if !strings.Contains(recoveryURL, "login_usuario.html") {
+	if !strings.Contains(recoveryURL, "empresa-77.powerfulcontrolsystem.com/login_usuario.html") {
 		t.Fatalf("expected recovery URL, got %q", recoveryURL)
 	}
 

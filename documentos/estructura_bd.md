@@ -125,18 +125,24 @@ Todas las tablas operativas usan como base los campos estandar:
   - modo_operacion (`agente_web`, `agente_local`, `hibrido`)
   - requiere_aprobacion_operador
   - auto_cerrar_minutos
+  - max_conexiones_mes
+  - max_minutos_mes
+  - max_dispositivos
 - empresa_soporte_remoto_dispositivos:
   - empresa_id, codigo_dispositivo (UNIQUE por empresa)
   - nombre_equipo, alias_operativo, ubicacion
   - sistema_operativo, agente_version
   - stream_url
-  - estado_conexion (`online`, `offline`, `ocupado`)
+  - estado_conexion (`online`, `offline`, `intermitente`)
   - ultimo_heartbeat
   - acceso_pin_hash
 - empresa_soporte_remoto_sesiones:
   - empresa_id, dispositivo_id, codigo_sesion (UNIQUE por empresa)
   - solicitada_por, operador_nombre, operador_email
   - motivo, estado_sesion (`pendiente`, `aprobada`, `activa`, `finalizada`, `rechazada`, `expirada`)
+  - duracion_minutos_solicitada
+  - duracion_minutos_consumida
+  - bloqueada_por_limite
   - token_visualizacion_hash
   - url_visualizacion
   - iniciada_en, expira_en, finalizada_en

@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"html"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -26,10 +27,11 @@ import (
 )
 
 const (
-	empresaUsuarioMaxIntentosFallidos = 5
-	empresaUsuarioVentanaIntentos     = 15 * time.Minute
-	empresaUsuarioBloqueoDuracion     = 15 * time.Minute
-	empresaUsuarioRecuperacionTTL     = 30 * time.Minute
+	empresaUsuarioMaxIntentosFallidos  = 5
+	empresaUsuarioVentanaIntentos      = 15 * time.Minute
+	empresaUsuarioBloqueoDuracion      = 15 * time.Minute
+	empresaUsuarioRecuperacionTTL      = 30 * time.Minute
+	empresaUsuarioLoginPublicSubdomain = "usuarios"
 
 	empresaUsuarioPasswordMinLengthDefault     = 8
 	empresaUsuarioPasswordRequireUpperDefault  = true
@@ -68,6 +70,116 @@ func empresaUsuarioPasswordPolicyToMap(policy empresaUsuarioPasswordPolicy) map[
 		"require_symbol": policy.RequireSymbol,
 		"rotation_days":  policy.RotationDays,
 	}
+}
+
+func IsEmpresaUsuarioLoginSubdomainRequest(r *http.Request) bool {
+	host := strings.ToLower(splitHostPortSafe(resolveOAuthHost(r)))
+	return host == empresaUsuarioLoginPublicSubdomain+".powerfulcontrolsystem.com"
+}
+
+func resolveEmpresaUsuarioLoginURLFromBase(baseURL, empresaSlug, dominioPublico string, empresaID int64) string {
+	trimmed := strings.TrimRight(strings.TrimSpace(baseURL), "/")
+	if trimmed == "" {
+		trimmed = "https://powerfulcontrolsystem.com"
+	}
+
+	configuredDomain := strings.TrimSpace(dominioPublico)
+	if configuredDomain != "" {
+		if !strings.Contains(configuredDomain, "://") {
+			configuredDomain = "https://" + configuredDomain
+		}
+		if parsedDomain, err := url.Parse(configuredDomain); err == nil && parsedDomain.Host != "" {
+			parsedDomain.Path = "/login_usuario.html"
+			parsedDomain.RawPath = ""
+			parsedDomain.Fragment = ""
+			query := parsedDomain.Query()
+			if empresaID > 0 {
+				query.Set("empresa_id", strconv.FormatInt(empresaID, 10))
+			}
+			parsedDomain.RawQuery = query.Encode()
+			return parsedDomain.String()
+		}
+	}
+
+	parsed, err := url.Parse(trimmed)
+	if err != nil || parsed.Host == "" {
+		loginURL := trimmed + "/login_usuario.html"
+		if empresaID > 0 {
+			loginURL += "?empresa_id=" + strconv.FormatInt(empresaID, 10)
+		}
+		return loginURL
+	}
+
+	host := strings.ToLower(splitHostPortSafe(parsed.Host))
+	normalizedSlug := dbpkg.NormalizeEmpresaPublicSlug(empresaSlug)
+	if normalizedSlug != "" && (host == "powerfulcontrolsystem.com" || host == "www.powerfulcontrolsystem.com" || strings.HasSuffix(host, ".powerfulcontrolsystem.com")) {
+		parsed.Scheme = "https"
+		parsed.Host = normalizedSlug + ".powerfulcontrolsystem.com"
+	}
+	parsed.Path = "/login_usuario.html"
+	parsed.RawPath = ""
+	parsed.RawQuery = ""
+	parsed.Fragment = ""
+
+	query := parsed.Query()
+	if empresaID > 0 {
+		query.Set("empresa_id", strconv.FormatInt(empresaID, 10))
+	}
+	parsed.RawQuery = query.Encode()
+	return parsed.String()
+}
+
+func resolveEmpresaUsuarioLoginURL(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64) string {
+	baseURL := resolveBaseURLForConfirmation(r, dbSuper)
+	if dbEmp != nil && empresaID > 0 {
+		if cfg, err := dbpkg.GetEmpresaVentaPublicaConfig(dbEmp, empresaID); err == nil {
+			return resolveEmpresaUsuarioLoginURLFromBase(baseURL, cfg.EmpresaSlug, cfg.DominioPublico, empresaID)
+		}
+	}
+	return resolveEmpresaUsuarioLoginURLFromBase(baseURL, "", "", empresaID)
+}
+
+func empresaUsuarioContractAccepted(item *dbpkg.EmpresaUsuario, contract *dbpkg.SuperContractVersion) bool {
+	if item == nil || contract == nil {
+		return false
+	}
+	return item.AceptaContrato == 1 && item.ContratoVersionAceptada >= contract.Version
+}
+
+func writeEmpresaUsuarioContractRequirement(w http.ResponseWriter, item *dbpkg.EmpresaUsuario, contract *dbpkg.SuperContractVersion, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	response := map[string]interface{}{
+		"ok":                           false,
+		"contract_acceptance_required": true,
+		"message":                      message,
+	}
+	if item != nil {
+		response["empresa_id"] = item.EmpresaID
+		response["email"] = item.Email
+	}
+	if contract != nil {
+		response["contract"] = contract
+	}
+	_ = json.NewEncoder(w).Encode(response)
+}
+
+func ensureEmpresaUsuarioCurrentContractAccepted(dbEmp, dbSuper *sql.DB, item *dbpkg.EmpresaUsuario, acceptRequested bool) (*dbpkg.SuperContractVersion, bool, error) {
+	contract, err := dbpkg.GetCurrentSuperContract(dbSuper)
+	if err != nil {
+		return nil, false, err
+	}
+	if empresaUsuarioContractAccepted(item, contract) {
+		return contract, true, nil
+	}
+	if !acceptRequested {
+		return contract, false, nil
+	}
+	if err := dbpkg.SetEmpresaUsuarioContratoAceptado(dbEmp, item.EmpresaID, item.ID, contract.Version); err != nil {
+		return nil, false, err
+	}
+	item.AceptaContrato = 1
+	item.ContratoVersionAceptada = contract.Version
+	return contract, true, nil
 }
 
 // EmpresaRolesDeUsuarioHandler devuelve los roles disponibles para la empresa seleccionada.
@@ -131,6 +243,7 @@ func EmpresaUsuariosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				DocumentoIdentidad string `json:"documento_identidad"`
 				RolUsuarioID       int64  `json:"rol_usuario_id"`
 				Observaciones      string `json:"observaciones"`
+				MensajeInvitacion  string `json:"mensaje_invitacion"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "invalid payload", http.StatusBadRequest)
@@ -175,7 +288,7 @@ func EmpresaUsuariosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 
-			confirmURL, mailErr := sendEmpresaUsuarioConfirmationEmail(r, dbSuper, payload.EmpresaID, strings.TrimSpace(payload.Email), strings.TrimSpace(payload.Nombre), token)
+			confirmURL, mailErr := sendEmpresaUsuarioConfirmationEmail(r, dbEmp, dbSuper, payload.EmpresaID, strings.TrimSpace(payload.Email), strings.TrimSpace(payload.Nombre), token, strings.TrimSpace(payload.MensajeInvitacion))
 			if mailErr != nil {
 				// Regla de negocio: si no se envía correo, no se registra usuario.
 				rollbackErr := dbpkg.DeleteEmpresaUsuario(dbEmp, payload.EmpresaID, id)
@@ -271,7 +384,13 @@ func EmpresaUsuariosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					return
 				}
 
-				confirmURL, mailErr := sendEmpresaUsuarioConfirmationEmail(r, dbSuper, empresaID, item.Email, item.Nombre, token)
+				// leer optional mensaje_invitacion desde el body
+				var resendPayload struct{ MensajeInvitacion string `json:"mensaje_invitacion"` }
+				if err := json.NewDecoder(r.Body).Decode(&resendPayload); err != nil && err != io.EOF {
+					// ignore decode errors for empty body, but log others
+					log.Printf("[usuarios_empresa] warning decoding resend payload: %v", err)
+				}
+				confirmURL, mailErr := sendEmpresaUsuarioConfirmationEmail(r, dbEmp, dbSuper, empresaID, item.Email, item.Nombre, token, strings.TrimSpace(resendPayload.MensajeInvitacion))
 				w.Header().Set("Content-Type", "application/json")
 				resp := map[string]interface{}{
 					"resent":     true,
@@ -297,6 +416,7 @@ func EmpresaUsuariosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				DocumentoIdentidad string `json:"documento_identidad"`
 				RolUsuarioID       int64  `json:"rol_usuario_id"`
 				Observaciones      string `json:"observaciones"`
+				MensajeInvitacion  string `json:"mensaje_invitacion"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "invalid payload", http.StatusBadRequest)
@@ -362,14 +482,14 @@ func EmpresaUsuariosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				"updated":                     true,
 				"email_reconfirmation_needed": resetConfirm,
 			}
-			if resetConfirm {
-				confirmURL, mailErr := sendEmpresaUsuarioConfirmationEmail(r, dbSuper, payload.EmpresaID, strings.TrimSpace(payload.Email), strings.TrimSpace(payload.Nombre), confirmToken)
-				resp["email_sent"] = mailErr == nil
-				if mailErr != nil {
-					resp["email_error"] = mailErr.Error()
-					resp["confirm_url_preview"] = confirmURL
+				if resetConfirm {
+					confirmURL, mailErr := sendEmpresaUsuarioConfirmationEmail(r, dbEmp, dbSuper, payload.EmpresaID, strings.TrimSpace(payload.Email), strings.TrimSpace(payload.Nombre), confirmToken, strings.TrimSpace(payload.MensajeInvitacion))
+					resp["email_sent"] = mailErr == nil
+					if mailErr != nil {
+						resp["email_error"] = mailErr.Error()
+						resp["confirm_url_preview"] = confirmURL
+					}
 				}
-			}
 			json.NewEncoder(w).Encode(resp)
 			return
 
@@ -407,9 +527,10 @@ func EmpresaUsuarioLoginHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		var payload struct {
-			EmpresaID int64  `json:"empresa_id"`
-			Email     string `json:"email"`
-			Password  string `json:"password"`
+			EmpresaID      int64  `json:"empresa_id"`
+			Email          string `json:"email"`
+			Password       string `json:"password"`
+			AcceptContract bool   `json:"accept_contract"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			http.Error(w, "invalid payload", http.StatusBadRequest)
@@ -511,6 +632,17 @@ func EmpresaUsuarioLoginHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 
+		contract, accepted, err := ensureEmpresaUsuarioCurrentContractAccepted(dbEmp, dbSuper, item, payload.AcceptContract)
+		if err != nil {
+			log.Printf("[usuarios_empresa] failed to verify contract acceptance (login) empresa_id=%d email=%s error=%v", item.EmpresaID, item.Email, err)
+			http.Error(w, "No se pudo validar el contrato vigente", http.StatusInternalServerError)
+			return
+		}
+		if !accepted {
+			writeEmpresaUsuarioContractRequirement(w, item, contract, "Debes aceptar el contrato vigente antes de iniciar sesión.")
+			return
+		}
+
 		if err := createEmpresaUsuarioSessionAndRespond(w, r, dbSuper, item); err != nil {
 			log.Printf("[usuarios_empresa] failed to create session (login) empresa_id=%d email=%s error=%v", item.EmpresaID, item.Email, err)
 			http.Error(w, "No se pudo iniciar sesión del usuario", http.StatusInternalServerError)
@@ -533,6 +665,7 @@ func EmpresaUsuarioSetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			DocumentoIdentidad string `json:"documento_identidad"`
 			Password           string `json:"password"`
 			PasswordConfirm    string `json:"password_confirm"`
+			AcceptContract     bool   `json:"accept_contract"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			http.Error(w, "invalid payload", http.StatusBadRequest)
@@ -593,6 +726,17 @@ func EmpresaUsuarioSetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 		}
 		if item.PasswordSet == 1 && strings.TrimSpace(item.PasswordHash) != "" {
 			http.Error(w, "el usuario ya tiene contraseña configurada", http.StatusConflict)
+			return
+		}
+
+		contract, accepted, err := ensureEmpresaUsuarioCurrentContractAccepted(dbEmp, dbSuper, item, payload.AcceptContract)
+		if err != nil {
+			log.Printf("[usuarios_empresa] failed to verify contract acceptance (set_password) empresa_id=%d email=%s error=%v", item.EmpresaID, item.Email, err)
+			http.Error(w, "No se pudo validar el contrato vigente", http.StatusInternalServerError)
+			return
+		}
+		if !accepted {
+			writeEmpresaUsuarioContractRequirement(w, item, contract, "Debes aceptar el contrato vigente antes de completar tu registro.")
 			return
 		}
 
@@ -686,7 +830,7 @@ func EmpresaUsuarioRequestPasswordRecoveryHandler(dbEmp, dbSuper *sql.DB) http.H
 			return
 		}
 
-		if _, mailErr := sendEmpresaUsuarioPasswordRecoveryEmail(r, dbSuper, item.EmpresaID, item.Email, item.Nombre, token); mailErr != nil {
+		if _, mailErr := sendEmpresaUsuarioPasswordRecoveryEmail(r, dbEmp, dbSuper, item.EmpresaID, item.Email, item.Nombre, token); mailErr != nil {
 			log.Printf("[usuarios_empresa] password recovery email not sent empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, item.Email, mailErr)
 			respondAccepted("manual")
 			return
@@ -710,6 +854,7 @@ func EmpresaUsuarioResetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc
 			Token           string `json:"token"`
 			Password        string `json:"password"`
 			PasswordConfirm string `json:"password_confirm"`
+			AcceptContract  bool   `json:"accept_contract"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			http.Error(w, "invalid payload", http.StatusBadRequest)
@@ -777,6 +922,17 @@ func EmpresaUsuarioResetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc
 			return
 		}
 
+		contract, accepted, err := ensureEmpresaUsuarioCurrentContractAccepted(dbEmp, dbSuper, item, payload.AcceptContract)
+		if err != nil {
+			log.Printf("[usuarios_empresa] failed to verify contract acceptance (password_reset) empresa_id=%d email=%s error=%v", item.EmpresaID, item.Email, err)
+			http.Error(w, "No se pudo validar el contrato vigente", http.StatusInternalServerError)
+			return
+		}
+		if !accepted {
+			writeEmpresaUsuarioContractRequirement(w, item, contract, "Debes aceptar el contrato vigente antes de restablecer tu contraseña.")
+			return
+		}
+
 		hash, salt, err := generateEmpresaUsuarioPasswordHash(payload.Password)
 		if err != nil {
 			http.Error(w, "no se pudo generar password hash", http.StatusInternalServerError)
@@ -817,6 +973,7 @@ func EmpresaUsuarioChangePasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFun
 			PasswordNueva        string `json:"password_nueva"`
 			NewPasswordConfirm   string `json:"new_password_confirm"`
 			PasswordNuevaConfirm string `json:"password_nueva_confirm"`
+			AcceptContract       bool   `json:"accept_contract"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			http.Error(w, "invalid payload", http.StatusBadRequest)
@@ -894,6 +1051,17 @@ func EmpresaUsuarioChangePasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFun
 		}
 		if currentPassword == newPassword {
 			http.Error(w, "la nueva contraseña debe ser diferente a la actual", http.StatusBadRequest)
+			return
+		}
+
+		contract, accepted, err := ensureEmpresaUsuarioCurrentContractAccepted(dbEmp, dbSuper, item, payload.AcceptContract)
+		if err != nil {
+			log.Printf("[usuarios_empresa] failed to verify contract acceptance (change_password) empresa_id=%d email=%s error=%v", item.EmpresaID, item.Email, err)
+			http.Error(w, "No se pudo validar el contrato vigente", http.StatusInternalServerError)
+			return
+		}
+		if !accepted {
+			writeEmpresaUsuarioContractRequirement(w, item, contract, "Debes aceptar el contrato vigente antes de cambiar tu contraseña.")
 			return
 		}
 
@@ -1456,43 +1624,73 @@ func resolveBaseURLForConfirmation(r *http.Request, dbSuper *sql.DB) string {
 	return scheme + "://" + host
 }
 
-func sendEmpresaUsuarioConfirmationEmail(r *http.Request, dbSuper *sql.DB, empresaID int64, toEmail, toName, token string) (string, error) {
+func sendEmpresaUsuarioConfirmationEmail(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64, toEmail, toName, token string, adminMessage string) (string, error) {
 	baseURL := resolveBaseURLForConfirmation(r, dbSuper)
 	confirmURL := strings.TrimRight(baseURL, "/") + "/auth/confirmar_correo?token=" + url.QueryEscape(token)
 	if empresaID > 0 {
 		confirmURL += "&empresa_id=" + strconv.FormatInt(empresaID, 10)
 	}
-	loginURL := strings.TrimRight(baseURL, "/") + "/login_usuario.html"
-	if empresaID > 0 {
-		loginURL += "?empresa_id=" + strconv.FormatInt(empresaID, 10)
-	}
+	loginURL := resolveEmpresaUsuarioLoginURL(r, dbEmp, dbSuper, empresaID)
 
 	safeName := strings.TrimSpace(toName)
 	if safeName == "" {
 		safeName = "usuario"
 	}
 
+	// intentar obtener nombre de la empresa para el mensaje
+	empresaNombre := "la empresa"
+	if dbEmp != nil && empresaID > 0 {
+		if cfg, err := dbpkg.GetEmpresaVentaPublicaConfig(dbEmp, empresaID); err == nil {
+			if strings.TrimSpace(cfg.NombreTienda) != "" {
+				empresaNombre = strings.TrimSpace(cfg.NombreTienda)
+			}
+		}
+	}
+
+	adminEmail := adminEmailFromRequest(r)
+
 	subject := "Confirma tu correo - Powerful Control System"
-	body := "Hola " + safeName + ",\r\n\r\n" +
-		"Tu cuenta fue creada y necesita confirmar el correo para quedar habilitada.\r\n" +
-		"Haz clic en este enlace:\r\n" +
-		confirmURL + "\r\n\r\n" +
-		"Después de confirmar, inicia sesión aquí:\r\n" +
-		loginURL + "\r\n\r\n" +
-		"Si no solicitaste esta cuenta, ignora este mensaje.\r\n"
+
+	// plain text body
+	bodyPlain := "Hola " + safeName + ",\r\n\r\n"
+	bodyPlain += "El administrador de la empresa " + empresaNombre + " te ha invitado a registrarte al sistema de motel Powerful Control System.\r\n\r\n"
+	if strings.TrimSpace(adminMessage) != "" {
+		bodyPlain += "Mensaje del administrador:\r\n" + strings.TrimSpace(adminMessage) + "\r\n\r\n"
+	}
+	bodyPlain += "Tu cuenta fue creada y necesita confirmar el correo para quedar habilitada.\r\n"
+	bodyPlain += "Haz clic en este enlace:\r\n" + confirmURL + "\r\n\r\n"
+	bodyPlain += "Después de confirmar, inicia sesión aquí:\r\n" + loginURL + "\r\n\r\n"
+	bodyPlain += "Si no solicitaste esta cuenta, ignora este mensaje.\r\n"
+
+	// html body
+	safeAdminMessageHTML := html.EscapeString(strings.TrimSpace(adminMessage))
+	if safeAdminMessageHTML != "" {
+		safeAdminMessageHTML = strings.ReplaceAll(safeAdminMessageHTML, "\n", "<br/>")
+	}
+	safeNameHTML := html.EscapeString(safeName)
+	empresaNombreHTML := html.EscapeString(empresaNombre)
+	bodyHTML := "<html><body><p>Hola " + safeNameHTML + ",</p>"
+	bodyHTML += "<p>El administrador de la empresa <strong>" + empresaNombreHTML + "</strong> te ha invitado a registrarte al sistema de motel <strong>Powerful Control System</strong>.</p>"
+	if safeAdminMessageHTML != "" {
+		bodyHTML += "<p><strong>Mensaje del administrador:</strong><br/>" + safeAdminMessageHTML + "</p>"
+	}
+	bodyHTML += "<p>Tu cuenta fue creada y necesita confirmar el correo para quedar habilitada.</p>"
+	bodyHTML += "<p><a href=\"" + html.EscapeString(confirmURL) + "\">Confirmar correo</a></p>"
+	bodyHTML += "<p>Después de confirmar, inicia sesión <a href=\"" + html.EscapeString(loginURL) + "\">aquí</a>.</p>"
+	bodyHTML += "<p>Si no solicitaste esta cuenta, ignora este mensaje.</p></body></html>"
 
 	if isEmpresaUsuarioMailTestMode(dbSuper) {
-		metadataJSON := fmt.Sprintf(`{"confirm_url":%q,"login_url":%q,"mail_mode":"test"}`, confirmURL, loginURL)
+		metadataJSON := fmt.Sprintf(`{"confirm_url":%q,"login_url":%q,"mail_mode":"test","admin_message":%q,"admin_email":%q}`, confirmURL, loginURL, adminMessage, adminEmail)
 		if err := captureEmpresaUsuarioMailNotification(
 			dbSuper,
 			dbpkg.SuperCorreoNotificacionTipoConfirmacion,
 			empresaID,
 			toEmail,
 			subject,
-			body,
+			bodyPlain,
 			token,
 			metadataJSON,
-			adminEmailFromRequest(r),
+			adminEmail,
 		); err != nil {
 			return confirmURL, err
 		}
@@ -1547,12 +1745,40 @@ func sendEmpresaUsuarioConfirmationEmail(r *http.Request, dbSuper *sql.DB, empre
 
 	auth := smtp.PlainAuth("", smtpEmail, smtpPass, mailHostForAuth)
 
-	msg := "From: " + fromName + " <" + smtpEmail + ">\r\n" +
+	// build multipart/alternative message
+	boundary := "==PCS_BOUNDARY_" + strconv.FormatInt(time.Now().UnixNano(), 10)
+
+	// list-unsubscribe: use base host from baseURL
+	listUnsub := ""
+	if u, err := url.Parse(baseURL); err == nil {
+		host := u.Host
+		if strings.Contains(host, ":") {
+			host, _, _ = net.SplitHostPort(host)
+		}
+		if host != "" {
+			listUnsub = "<mailto:postmaster@" + host + ">"
+		}
+	}
+
+	headers := "From: " + fromName + " <" + smtpEmail + ">\r\n" +
 		"To: " + toEmail + "\r\n" +
-		"Subject: " + subject + "\r\n" +
-		"MIME-Version: 1.0\r\n" +
-		"Content-Type: text/plain; charset=UTF-8\r\n\r\n" +
-		body
+		"Subject: " + subject + "\r\n"
+	if listUnsub != "" {
+		headers += "List-Unsubscribe: " + listUnsub + "\r\n"
+	}
+	headers += "MIME-Version: 1.0\r\n" +
+		"Content-Type: multipart/alternative; boundary=\"" + boundary + "\"\r\n\r\n"
+
+	msg := headers +
+		"--" + boundary + "\r\n" +
+		"Content-Type: text/plain; charset=UTF-8\r\n" +
+		"Content-Transfer-Encoding: 7bit\r\n\r\n" +
+		bodyPlain + "\r\n" +
+		"--" + boundary + "\r\n" +
+		"Content-Type: text/html; charset=UTF-8\r\n" +
+		"Content-Transfer-Encoding: 7bit\r\n\r\n" +
+		bodyHTML + "\r\n" +
+		"--" + boundary + "--\r\n"
 
 	if err := smtp.SendMail(addr, auth, smtpEmail, []string{toEmail}, []byte(msg)); err != nil {
 		return confirmURL, err
@@ -1560,15 +1786,16 @@ func sendEmpresaUsuarioConfirmationEmail(r *http.Request, dbSuper *sql.DB, empre
 	return confirmURL, nil
 }
 
-func sendEmpresaUsuarioPasswordRecoveryEmail(r *http.Request, dbSuper *sql.DB, empresaID int64, toEmail, toName, token string) (string, error) {
-	baseURL := resolveBaseURLForConfirmation(r, dbSuper)
-	resetHintURL := strings.TrimRight(baseURL, "/") + "/login_usuario.html"
-	sep := "?"
-	if empresaID > 0 {
-		resetHintURL += "?empresa_id=" + strconv.FormatInt(empresaID, 10)
-		sep = "&"
+func sendEmpresaUsuarioPasswordRecoveryEmail(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64, toEmail, toName, token string) (string, error) {
+	resetURL, err := url.Parse(resolveEmpresaUsuarioLoginURL(r, dbEmp, dbSuper, empresaID))
+	if err != nil {
+		return "", err
 	}
-	resetHintURL += sep + "email=" + url.QueryEscape(toEmail) + "&token_recuperacion=" + url.QueryEscape(token)
+	query := resetURL.Query()
+	query.Set("email", toEmail)
+	query.Set("token_recuperacion", token)
+	resetURL.RawQuery = query.Encode()
+	resetHintURL := resetURL.String()
 
 	safeName := strings.TrimSpace(toName)
 	if safeName == "" {

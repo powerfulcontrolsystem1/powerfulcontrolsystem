@@ -45,6 +45,12 @@
           <textarea id="observaciones" class="form-textarea" placeholder="Opcional"></textarea>
         </div>
       </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Mensaje de invitación (opcional)</label>
+            <textarea id="mensaje_invitacion" class="form-textarea" placeholder="Mensaje personalizado que recibirá el usuario en el correo"></textarea>
+          </div>
+        </div>
 
       <div class="form-actions">
         <button type="submit" id="saveBtn" class="btn">Guardar</button>
@@ -105,6 +111,7 @@
       document.getElementById('nombre').value = '';
       document.getElementById('documento_identidad').value = '';
       document.getElementById('observaciones').value = '';
+        document.getElementById('mensaje_invitacion').value = '';
       fillRolesSelect('');
       document.getElementById('saveBtn').textContent = 'Guardar';
       document.getElementById('cancelBtn').style.display = 'none';
@@ -270,6 +277,7 @@
         documento_identidad: document.getElementById('documento_identidad').value.trim(),
         rol_usuario_id: Number(document.getElementById('rol_usuario_id').value || 0),
         observaciones: document.getElementById('observaciones').value.trim()
+          mensaje_invitacion: document.getElementById('mensaje_invitacion').value.trim()
       };
 
       if (!payload.empresa_id || !payload.email || !payload.nombre || !payload.rol_usuario_id) {

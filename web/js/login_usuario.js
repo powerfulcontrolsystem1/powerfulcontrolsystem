@@ -1,3 +1,496 @@
+(function () {
+  "use strict";
+
+  var state = {
+    empresaID: 0,
+    activeForm: "login",
+    contract: null
+  };
+
+  var forms = {
+    login: document.getElementById("loginUsuarioForm"),
+    setup: document.getElementById("setupPasswordForm"),
+    recovery: document.getElementById("recoveryRequestForm"),
+    reset: document.getElementById("resetPasswordForm"),
+    change: document.getElementById("changePasswordForm")
+  };
+
+  var messageTargets = {
+    login: document.getElementById("msg"),
+    setup: document.getElementById("setupMsg"),
+    recovery: document.getElementById("recoveryMsg"),
+    reset: document.getElementById("resetMsg"),
+    change: document.getElementById("changePasswordMsg")
+  };
+
+  var empresaInput = document.getElementById("empresaID");
+  var empresaContextHint = document.getElementById("empresaContextHint");
+  var contractPanel = document.getElementById("contractPanel");
+  var contractCheckbox = document.getElementById("contractAcceptCheckbox");
+  var contractTitle = document.getElementById("contractTitle");
+  var contractVersion = document.getElementById("contractVersion");
+  var contractSummary = document.getElementById("contractSummary");
+  var contractNote = document.getElementById("contractNote");
+  var contractStatus = document.getElementById("contractStatus");
+  var contractLink = document.getElementById("contractLink");
+
+  function parsePositiveInt(raw) {
+    var value = Number(String(raw || "").trim());
+    if (!Number.isFinite(value)) return 0;
+    value = Math.trunc(value);
+    return value > 0 ? value : 0;
+  }
+
+  function getQueryParam(name) {
+    try {
+      return new URLSearchParams(window.location.search || "").get(name) || "";
+    } catch (error) {
+      return "";
+    }
+  }
+
+  function persistEmpresaID(rawEmpresaID) {
+    var parsed = parsePositiveInt(rawEmpresaID);
+    if (!parsed) return 0;
+    var value = String(parsed);
+    try {
+      window.sessionStorage.setItem("active_empresa_id", value);
+      window.sessionStorage.setItem("empresa_id", value);
+      window.sessionStorage.setItem("admin_empresa_id", value);
+    } catch (error) {}
+    try {
+      window.localStorage.setItem("active_empresa_id", value);
+      window.localStorage.setItem("empresa_id", value);
+      window.localStorage.setItem("admin_empresa_id", value);
+    } catch (error) {}
+    return parsed;
+  }
+
+  function readEmpresaIDFromStorage() {
+    var keys = ["active_empresa_id", "empresa_id", "admin_empresa_id"];
+    var stores = [];
+    try { stores.push(window.sessionStorage); } catch (error) {}
+    try { stores.push(window.localStorage); } catch (error) {}
+
+    for (var storeIndex = 0; storeIndex < stores.length; storeIndex += 1) {
+      var store = stores[storeIndex];
+      if (!store) continue;
+      for (var keyIndex = 0; keyIndex < keys.length; keyIndex += 1) {
+        var parsed = parsePositiveInt(store.getItem(keys[keyIndex]));
+        if (parsed > 0) {
+          return parsed;
+        }
+      }
+    }
+    return 0;
+  }
+
+  function resolveEmpresaID() {
+    var fromURL = parsePositiveInt(getQueryParam("empresa_id") || getQueryParam("id"));
+    if (fromURL > 0) {
+      return persistEmpresaID(fromURL);
+    }
+    return readEmpresaIDFromStorage();
+  }
+
+  function updateEmpresaContextHint() {
+    if (empresaInput && state.empresaID > 0) {
+      empresaInput.value = String(state.empresaID);
+    }
+    if (!empresaContextHint) return;
+    if (state.empresaID > 0) {
+      empresaContextHint.textContent = "Empresa activa: " + state.empresaID + ". Este dato se enviara en todos los formularios del portal.";
+    } else {
+      empresaContextHint.textContent = "Todavia no hay empresa seleccionada. Ingresa el ID o abre este portal desde el boton publico de administrar empresa.";
+    }
+  }
+
+  function syncEmpresaIDFromInput() {
+    var parsed = parsePositiveInt(empresaInput && empresaInput.value);
+    if (!parsed) {
+      updateEmpresaContextHint();
+      return;
+    }
+    state.empresaID = persistEmpresaID(parsed);
+    clearMessages();
+    updateEmpresaContextHint();
+  }
+
+  function clearMessages() {
+    Object.keys(messageTargets).forEach(function (key) {
+      setMessage(key, "", false);
+    });
+  }
+
+  function setMessage(key, text, isError) {
+    var target = messageTargets[key];
+    if (!target) return;
+    target.textContent = text || "";
+    target.style.color = isError ? "#ef5350" : "";
+  }
+
+  function setContractStatus(text, isWarning) {
+    if (!contractStatus) return;
+    contractStatus.textContent = text || "";
+    contractStatus.style.color = isWarning ? "#f7cd7c" : "";
+  }
+
+  function setContractPanelAttention(required) {
+    if (!contractPanel) return;
+    contractPanel.classList.toggle("requires-attention", !!required);
+  }
+
+  function applyContract(contract) {
+    state.contract = contract || null;
+    if (!contract) {
+      contractTitle.textContent = "Contrato no disponible";
+      contractVersion.textContent = "Version --";
+      contractSummary.textContent = "No fue posible cargar el contrato vigente. Intenta recargar esta pagina.";
+      contractNote.textContent = "";
+      setContractStatus("Si el problema persiste, informa al administrador.", true);
+      return;
+    }
+
+    contractTitle.textContent = contract.titulo || "Contrato vigente";
+    contractVersion.textContent = "Version " + String(contract.version || "--");
+    contractSummary.textContent = contract.resumen || "Lee el contrato antes de continuar con el acceso.";
+    contractNote.textContent = contract.nota_aceptacion || "";
+    contractLink.href = "/contrato.html" + (contract.version ? "?version=" + encodeURIComponent(contract.version) : "");
+    setContractStatus("La aceptacion se registrara cuando completes el flujo de acceso.", false);
+  }
+
+  function loadContract() {
+    return fetch("/api/public/contrato", { credentials: "same-origin" })
+      .then(function (response) {
+        return response.json();
+      })
+      .then(function (payload) {
+        applyContract(payload && payload.contrato ? payload.contrato : null);
+      })
+      .catch(function () {
+        applyContract(null);
+      });
+  }
+
+  function getActiveFormKey() {
+    return state.activeForm || "login";
+  }
+
+  function showForm(name, options) {
+    var selected = name || "login";
+    Object.keys(forms).forEach(function (key) {
+      if (!forms[key]) return;
+      forms[key].style.display = key === selected ? "" : "none";
+    });
+    state.activeForm = selected;
+    clearMessages();
+
+    options = options || {};
+    if (options.email) {
+      prefillEmail(options.email);
+    }
+    if (options.token) {
+      var resetToken = document.getElementById("resetToken");
+      if (resetToken) resetToken.value = options.token;
+    }
+    if (options.message) {
+      setMessage(selected, options.message, false);
+    }
+  }
+
+  function prefillEmail(email) {
+    var normalized = String(email || "").trim();
+    if (!normalized) return;
+    ["email", "setupEmail", "recoveryEmail", "resetEmail", "changeEmail"].forEach(function (id) {
+      var input = document.getElementById(id);
+      if (input) input.value = normalized;
+    });
+  }
+
+  function withBasePayload(payload) {
+    var out = payload || {};
+    if (state.empresaID > 0) {
+      out.empresa_id = state.empresaID;
+    }
+    if (contractCheckbox && contractCheckbox.checked) {
+      out.accept_contract = true;
+    }
+    return out;
+  }
+
+  function readResponsePayload(response) {
+    var contentType = String(response.headers.get("Content-Type") || "").toLowerCase();
+    if (contentType.indexOf("application/json") >= 0) {
+      return response.json();
+    }
+    return response.text().then(function (text) {
+      return { message: text || ("HTTP " + response.status) };
+    });
+  }
+
+  function normalizeErrorMessage(payload, fallback) {
+    if (!payload) return fallback;
+    if (typeof payload === "string") return payload;
+    if (payload.message) return String(payload.message);
+    if (payload.error) return String(payload.error);
+    return fallback;
+  }
+
+  function handleContractRequirement(payload, formKey) {
+    setContractPanelAttention(true);
+    if (contractCheckbox) {
+      contractCheckbox.checked = false;
+    }
+    if (payload && payload.contract) {
+      applyContract(payload.contract);
+    }
+    setContractStatus("Debes aceptar el contrato antes de continuar.", true);
+    setMessage(formKey, normalizeErrorMessage(payload, "Debes aceptar el contrato vigente para continuar."), true);
+    if (contractPanel && typeof contractPanel.scrollIntoView === "function") {
+      contractPanel.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }
+
+  function redirectAfterAuth(payload) {
+    var redirectURL = String((payload && payload.redirect_url) || "").trim();
+    if (!redirectURL && state.empresaID > 0) {
+      redirectURL = "/administrar_empresa.html?id=" + encodeURIComponent(state.empresaID);
+    }
+    if (!redirectURL) {
+      redirectURL = "/administrar_empresa.html";
+    }
+    window.location.href = redirectURL;
+  }
+
+  function handleAuthResult(payload, formKey) {
+    if (payload && payload.ok) {
+      setContractPanelAttention(false);
+      if (payload.empresa_id) {
+        state.empresaID = persistEmpresaID(payload.empresa_id);
+        updateEmpresaContextHint();
+      }
+      redirectAfterAuth(payload);
+      return;
+    }
+
+    if (payload && payload.contract_acceptance_required) {
+      handleContractRequirement(payload, formKey);
+      return;
+    }
+
+    if (payload && payload.password_setup_required) {
+      showForm("setup", {
+        email: payload.email,
+        message: payload.message || "Completa tu contrasena inicial para continuar."
+      });
+      return;
+    }
+
+    if (payload && payload.password_rotation_required) {
+      showForm("change", {
+        email: payload.email,
+        message: payload.message || "Debes cambiar tu contrasena antes de continuar."
+      });
+      return;
+    }
+
+    throw new Error(normalizeErrorMessage(payload, "No fue posible completar el acceso."));
+  }
+
+  function submitJSON(url, payload) {
+    return fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify(payload)
+    }).then(function (response) {
+      return readResponsePayload(response).then(function (body) {
+        if (!response.ok) {
+          throw new Error(normalizeErrorMessage(body, "HTTP " + response.status));
+        }
+        return body;
+      });
+    });
+  }
+
+  function requireEmpresaIDIfNeeded(formKey) {
+    if (state.empresaID > 0) return true;
+    setMessage(formKey, "Debes indicar la empresa antes de continuar.", true);
+    if (empresaInput && typeof empresaInput.focus === "function") {
+      empresaInput.focus();
+    }
+    return false;
+  }
+
+  function onLoginSubmit(event) {
+    event.preventDefault();
+    if (!requireEmpresaIDIfNeeded("login")) return;
+
+    submitJSON("/api/empresa/usuarios/login", withBasePayload({
+      email: document.getElementById("email").value,
+      password: document.getElementById("password").value
+    }))
+      .then(function (payload) {
+        handleAuthResult(payload, "login");
+      })
+      .catch(function (error) {
+        setMessage("login", error.message || "No fue posible iniciar sesion.", true);
+      });
+  }
+
+  function onSetupSubmit(event) {
+    event.preventDefault();
+    if (!requireEmpresaIDIfNeeded("setup")) return;
+
+    submitJSON("/api/empresa/usuarios/establecer_password", withBasePayload({
+      email: document.getElementById("setupEmail").value,
+      documento_identidad: document.getElementById("setupDocumento").value,
+      password: document.getElementById("setupPassword").value,
+      password_confirm: document.getElementById("setupPasswordConfirm").value
+    }))
+      .then(function (payload) {
+        handleAuthResult(payload, "setup");
+      })
+      .catch(function (error) {
+        setMessage("setup", error.message || "No fue posible crear la contrasena.", true);
+      });
+  }
+
+  function onRecoverySubmit(event) {
+    event.preventDefault();
+    if (!requireEmpresaIDIfNeeded("recovery")) return;
+
+    submitJSON("/api/empresa/usuarios/solicitar_recuperacion_password", withBasePayload({
+      email: document.getElementById("recoveryEmail").value
+    }))
+      .then(function (payload) {
+        prefillEmail(document.getElementById("recoveryEmail").value);
+        setMessage("recovery", normalizeErrorMessage(payload, "Si el correo existe, enviaremos instrucciones para recuperar la contrasena."), false);
+      })
+      .catch(function (error) {
+        setMessage("recovery", error.message || "No fue posible iniciar la recuperacion.", true);
+      });
+  }
+
+  function onResetSubmit(event) {
+    event.preventDefault();
+    if (!requireEmpresaIDIfNeeded("reset")) return;
+
+    submitJSON("/api/empresa/usuarios/restablecer_password", withBasePayload({
+      email: document.getElementById("resetEmail").value,
+      token: document.getElementById("resetToken").value,
+      password: document.getElementById("resetPassword").value,
+      password_confirm: document.getElementById("resetPasswordConfirm").value
+    }))
+      .then(function (payload) {
+        handleAuthResult(payload, "reset");
+      })
+      .catch(function (error) {
+        setMessage("reset", error.message || "No fue posible restablecer la contrasena.", true);
+      });
+  }
+
+  function onChangePasswordSubmit(event) {
+    event.preventDefault();
+    if (!requireEmpresaIDIfNeeded("change")) return;
+
+    submitJSON("/api/empresa/usuarios/cambiar_password", withBasePayload({
+      email: document.getElementById("changeEmail").value,
+      current_password: document.getElementById("changeCurrentPassword").value,
+      new_password: document.getElementById("changeNewPassword").value,
+      new_password_confirm: document.getElementById("changeNewPasswordConfirm").value
+    }))
+      .then(function (payload) {
+        handleAuthResult(payload, "change");
+      })
+      .catch(function (error) {
+        setMessage("change", error.message || "No fue posible cambiar la contrasena.", true);
+      });
+  }
+
+  function bindButton(id, handler) {
+    var element = document.getElementById(id);
+    if (!element) return;
+    element.addEventListener("click", function (event) {
+      event.preventDefault();
+      handler();
+    });
+  }
+
+  state.empresaID = resolveEmpresaID();
+  updateEmpresaContextHint();
+  loadContract();
+
+  var urlEmail = String(getQueryParam("email") || "").trim();
+  var urlToken = String(getQueryParam("token_recuperacion") || "").trim();
+  if (urlEmail) {
+    prefillEmail(urlEmail);
+  }
+
+  if (empresaInput) {
+    empresaInput.addEventListener("change", syncEmpresaIDFromInput);
+    empresaInput.addEventListener("blur", syncEmpresaIDFromInput);
+  }
+
+  if (contractCheckbox) {
+    contractCheckbox.addEventListener("change", function () {
+      if (contractCheckbox.checked) {
+        setContractPanelAttention(false);
+        setContractStatus("La aceptacion se registrara cuando completes el flujo de acceso.", false);
+      }
+    });
+  }
+
+  if (forms.login) forms.login.addEventListener("submit", onLoginSubmit);
+  if (forms.setup) forms.setup.addEventListener("submit", onSetupSubmit);
+  if (forms.recovery) forms.recovery.addEventListener("submit", onRecoverySubmit);
+  if (forms.reset) forms.reset.addEventListener("submit", onResetSubmit);
+  if (forms.change) forms.change.addEventListener("submit", onChangePasswordSubmit);
+
+  bindButton("btnMostrarRegistro", function () {
+    showForm("setup", { email: document.getElementById("email").value || urlEmail });
+  });
+  bindButton("btnVolverALoginHero", function () {
+    showForm("login");
+  });
+  bindButton("btnMostrarRecuperacionHero", function () {
+    showForm("recovery", { email: document.getElementById("email").value || urlEmail });
+  });
+  bindButton("linkGoSetup", function () {
+    showForm("setup", { email: document.getElementById("email").value || urlEmail });
+  });
+  bindButton("linkGoRecovery", function () {
+    showForm("recovery", { email: document.getElementById("email").value || urlEmail });
+  });
+  bindButton("linkGoChangePassword", function () {
+    showForm("change", { email: document.getElementById("email").value || urlEmail });
+  });
+  bindButton("btnVolverLogin", function () {
+    showForm("login", { email: document.getElementById("setupEmail").value });
+  });
+  bindButton("btnVolverDesdeRecuperacion", function () {
+    showForm("login", { email: document.getElementById("recoveryEmail").value });
+  });
+  bindButton("btnIrAReset", function () {
+    showForm("reset", { email: document.getElementById("recoveryEmail").value });
+  });
+  bindButton("btnVolverDesdeReset", function () {
+    showForm("login", { email: document.getElementById("resetEmail").value });
+  });
+  bindButton("btnVolverDesdeCambio", function () {
+    showForm("login", { email: document.getElementById("changeEmail").value });
+  });
+
+  if (urlToken) {
+    showForm("reset", {
+      email: urlEmail,
+      token: urlToken,
+      message: "Token detectado en la URL. Define tu nueva contrasena para continuar."
+    });
+  } else {
+    showForm("login", { email: urlEmail });
+  }
+})();
 function setMessage(targetId, text, isError) {
   var el = document.getElementById(targetId);
   el.textContent = text || "";

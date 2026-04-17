@@ -937,6 +937,25 @@ func ListAdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "failed to query administradores", http.StatusInternalServerError)
 			return
 		}
+		_, principalEmail, err := resolveRequesterAdminScope(dbSuper, r)
+		if err != nil {
+			http.Error(w, "failed to resolve admin scope", http.StatusInternalServerError)
+			return
+		}
+		if principalEmail != "" {
+			filtered := make([]dbpkg.Admin, 0, len(admins))
+			for _, admin := range admins {
+				ok, err := adminEmailMatchesPrincipalScope(dbSuper, principalEmail, admin.Email)
+				if err != nil {
+					http.Error(w, "failed to filter administradores", http.StatusInternalServerError)
+					return
+				}
+				if ok {
+					filtered = append(filtered, admin)
+				}
+			}
+			admins = filtered
+		}
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(admins)
 	}
@@ -965,10 +984,34 @@ func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "failed to query administradores", http.StatusInternalServerError)
 				return
 			}
+			_, principalEmail, err := resolveRequesterAdminScope(dbSuper, r)
+			if err != nil {
+				http.Error(w, "failed to resolve admin scope", http.StatusInternalServerError)
+				return
+			}
+			if principalEmail != "" {
+				filtered := make([]dbpkg.Admin, 0, len(admins))
+				for _, admin := range admins {
+					ok, err := adminEmailMatchesPrincipalScope(dbSuper, principalEmail, admin.Email)
+					if err != nil {
+						http.Error(w, "failed to filter administradores", http.StatusInternalServerError)
+						return
+					}
+					if ok {
+						filtered = append(filtered, admin)
+					}
+				}
+				admins = filtered
+			}
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(admins)
 			return
 		case http.MethodPost:
+			requesterAdmin, principalEmail, err := resolveRequesterAdminScope(dbSuper, r)
+			if err != nil {
+				http.Error(w, "failed to resolve admin scope", http.StatusInternalServerError)
+				return
+			}
 			var payload struct{ Email, Name, Role, Photo string }
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "invalid payload", http.StatusBadRequest)
@@ -978,10 +1021,16 @@ func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "email required", http.StatusBadRequest)
 				return
 			}
-			if payload.Role == "" {
+			if requesterAdmin != nil && strings.TrimSpace(requesterAdmin.Role) != "" {
+				payload.Role = strings.TrimSpace(requesterAdmin.Role)
+			} else if payload.Role == "" {
 				payload.Role = "administrador"
 			}
-			if err := dbpkg.UpsertAdministrador(dbSuper, payload.Email, payload.Name, payload.Role, payload.Photo); err != nil {
+			creatorEmail := ""
+			if principalEmail != "" && !strings.EqualFold(strings.TrimSpace(payload.Email), principalEmail) {
+				creatorEmail = principalEmail
+			}
+			if err := dbpkg.UpsertAdministradorConCreador(dbSuper, payload.Email, payload.Name, payload.Role, payload.Photo, creatorEmail); err != nil {
 				http.Error(w, "failed to upsert administrador: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -998,6 +1047,31 @@ func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 			if err != nil {
 				http.Error(w, "invalid id", http.StatusBadRequest)
 				return
+			}
+			_, principalEmail, err := resolveRequesterAdminScope(dbSuper, r)
+			if err != nil {
+				http.Error(w, "failed to resolve admin scope", http.StatusInternalServerError)
+				return
+			}
+			if principalEmail != "" {
+				targetAdmin, err := dbpkg.GetAdminByID(dbSuper, id)
+				if err != nil {
+					if err == sql.ErrNoRows {
+						http.Error(w, "administrador not found", http.StatusNotFound)
+						return
+					}
+					http.Error(w, "failed to resolve administrador objetivo", http.StatusInternalServerError)
+					return
+				}
+				ok, err := adminEmailMatchesPrincipalScope(dbSuper, principalEmail, targetAdmin.Email)
+				if err != nil {
+					http.Error(w, "failed to validate admin scope", http.StatusInternalServerError)
+					return
+				}
+				if !ok {
+					http.Error(w, "administrador fuera del alcance del administrador autenticado", http.StatusForbidden)
+					return
+				}
 			}
 			if q.Get("action") == "activar" {
 				estado := q.Get("estado")
@@ -1038,6 +1112,31 @@ func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 			if err != nil {
 				http.Error(w, "invalid id", http.StatusBadRequest)
 				return
+			}
+			_, principalEmail, err := resolveRequesterAdminScope(dbSuper, r)
+			if err != nil {
+				http.Error(w, "failed to resolve admin scope", http.StatusInternalServerError)
+				return
+			}
+			if principalEmail != "" {
+				targetAdmin, err := dbpkg.GetAdminByID(dbSuper, id)
+				if err != nil {
+					if err == sql.ErrNoRows {
+						http.Error(w, "administrador not found", http.StatusNotFound)
+						return
+					}
+					http.Error(w, "failed to resolve administrador objetivo", http.StatusInternalServerError)
+					return
+				}
+				ok, err := adminEmailMatchesPrincipalScope(dbSuper, principalEmail, targetAdmin.Email)
+				if err != nil {
+					http.Error(w, "failed to validate admin scope", http.StatusInternalServerError)
+					return
+				}
+				if !ok {
+					http.Error(w, "administrador fuera del alcance del administrador autenticado", http.StatusForbidden)
+					return
+				}
 			}
 			if err := dbpkg.DeleteAdministrador(dbSuper, id); err != nil {
 				http.Error(w, "failed to delete administrador: "+err.Error(), http.StatusInternalServerError)

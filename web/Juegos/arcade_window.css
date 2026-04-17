@@ -20,10 +20,11 @@ body {
 body.arcade-window-page {
   margin: 0;
   min-height: 100vh;
+  min-height: 100dvh;
   overflow: hidden;
   display: grid;
   place-items: center;
-  padding: 10px;
+  padding: 0;
   box-sizing: border-box;
   color: var(--arc-ink);
   font-family: "Trebuchet MS", "Segoe UI", Tahoma, sans-serif;
@@ -36,17 +37,17 @@ body.arcade-window-page {
 }
 
 .arcade-window {
-  width: min(680px, calc(100vw - 14px));
-  height: min(680px, calc(100vh - 14px));
+  width: min(100vw, 720px);
+  height: min(100vh, 100dvh);
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr) auto;
-  gap: 10px;
-  padding: 12px;
+  gap: 8px;
+  padding: calc(env(safe-area-inset-top, 0px) + 10px) 10px calc(env(safe-area-inset-bottom, 0px) + 10px);
   box-sizing: border-box;
-  border-radius: 24px;
+  border-radius: 0;
   background: linear-gradient(180deg, rgba(8, 15, 26, 0.98), rgba(11, 23, 39, 0.96));
-  border: 1px solid var(--arc-border);
-  box-shadow: 0 24px 58px rgba(0, 0, 0, 0.34);
+  border: none;
+  box-shadow: none;
 }
 
 .arcade-header {
@@ -159,9 +160,123 @@ body.arcade-window-page {
   color: #fff4f4;
 }
 
+.arcade-power-rack {
+  display: grid;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.arcade-power-summary {
+  display: grid;
+  gap: 8px;
+}
+
+.arcade-power-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.arcade-power-heading strong {
+  font-size: 1rem;
+}
+
+.arcade-power-heading span {
+  color: var(--arc-muted);
+  font-size: 0.82rem;
+}
+
+.arcade-power-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.arcade-power-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--arc-muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.arcade-power-stat strong {
+  color: var(--arc-accent);
+}
+
+.arcade-power-prize strong {
+  color: var(--arc-success);
+}
+
+.arcade-power-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.arcade-power-btn {
+  display: grid;
+  gap: 6px;
+  min-height: 90px;
+  padding: 10px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--arc-ink);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition: transform 0.14s ease, border-color 0.14s ease, background 0.14s ease;
+}
+
+.arcade-power-btn:disabled {
+  opacity: 0.58;
+  cursor: default;
+}
+
+.arcade-power-btn.active {
+  border-color: rgba(255, 209, 92, 0.42);
+  background: linear-gradient(135deg, rgba(255, 209, 92, 0.14), rgba(255, 146, 72, 0.12));
+}
+
+.arcade-power-btn-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.arcade-power-btn-top strong {
+  font-size: 0.92rem;
+}
+
+.arcade-power-btn-top span {
+  color: var(--arc-accent);
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.arcade-power-btn-detail,
+.arcade-power-btn-cd {
+  color: var(--arc-muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
 .arcade-stage {
   position: relative;
   min-height: 0;
+  min-height: clamp(280px, 42dvh, 640px);
   overflow: hidden;
   border-radius: 20px;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -184,9 +299,10 @@ body.arcade-window-page {
   position: absolute;
   inset: 0;
   display: grid;
-  place-items: center;
-  padding: 18px;
-  background: linear-gradient(180deg, rgba(6, 14, 24, 0.16), rgba(6, 14, 24, 0.82));
+  align-content: start;
+  justify-items: center;
+  padding: calc(env(safe-area-inset-top, 0px) + 10px) 10px 10px;
+  background: linear-gradient(180deg, rgba(6, 14, 24, 0.04), rgba(6, 14, 24, 0.18));
   z-index: 3;
 }
 
@@ -195,17 +311,18 @@ body.arcade-window-page {
 }
 
 .arcade-overlay-card {
-  width: min(100%, 420px);
-  padding: 18px;
-  border-radius: 20px;
-  background: rgba(8, 18, 30, 0.96);
+  width: min(100%, 320px);
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(8, 18, 30, 0.78);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(8px);
 }
 
 .arcade-overlay-card h2 {
   margin: 0 0 10px;
-  font-size: 1.6rem;
+  font-size: 1.35rem;
 }
 
 .arcade-overlay-card p,
@@ -217,6 +334,35 @@ body.arcade-window-page {
 .arcade-overlay-card ul {
   margin: 0;
   padding-left: 18px;
+  display: none;
+}
+
+.arcade-overlay-countdown {
+  align-content: center;
+  justify-items: center;
+  background: radial-gradient(circle, rgba(6, 14, 24, 0.08), rgba(6, 14, 24, 0.36));
+}
+
+.arcade-overlay-countdown .arcade-overlay-card {
+  width: 180px;
+  min-height: 180px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  text-align: center;
+  background: rgba(8, 18, 30, 0.82);
+}
+
+.arcade-overlay-countdown .arcade-overlay-card h2 {
+  margin: 0;
+  font-size: 4rem;
+  line-height: 1;
+}
+
+.arcade-overlay-countdown .arcade-overlay-card p {
+  margin: 8px 0 0;
+  font-size: 0.92rem;
 }
 
 .arcade-actions,
@@ -225,6 +371,7 @@ body.arcade-window-page {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+  align-content: start;
   align-items: center;
 }
 
@@ -334,23 +481,36 @@ body.arcade-window-page {
 
 @media (max-width: 760px) {
   body.arcade-window-page {
-    overflow: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
     display: block;
-    padding: 8px;
+    padding: 0;
   }
 
   .arcade-window {
-    width: min(100vw - 10px, 680px);
+    width: 100vw;
+    min-height: 100vh;
+    min-height: 100vh;
     height: auto;
-    min-height: min(680px, calc(100vh - 16px));
-    margin: 0 auto;
-    border-radius: 20px;
-    grid-template-rows: auto auto minmax(320px, 1fr) auto;
+    margin: 0;
+    border-radius: 0;
+    grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+    gap: 10px;
+    padding-left: 12px;
+    padding-right: 12px;
   }
 
   .arcade-header,
   .arcade-side-layout {
     grid-template-columns: 1fr;
+  }
+
+   .arcade-power-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .arcade-stage {
+    min-height: clamp(320px, 52dvh, 620px);
   }
 
   .arcade-status {
@@ -359,11 +519,16 @@ body.arcade-window-page {
 }
 
 @media (max-width: 520px) {
+  .arcade-header {
+    gap: 8px;
+  }
+
   .arcade-stats {
     grid-template-columns: 1fr 1fr;
   }
 
   .arcade-chip-row,
+  .arcade-power-stats,
   .arcade-actions,
   .arcade-footer,
   .arcade-button-row {
@@ -371,9 +536,19 @@ body.arcade-window-page {
     grid-template-columns: 1fr;
   }
 
+  .arcade-power-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
   .arcade-chip,
   .arcade-chip-btn,
-  .arcade-btn {
+  .arcade-btn,
+  .arcade-power-btn,
+  .arcade-power-stat {
     width: 100%;
+  }
+
+  .arcade-stage {
+    border-radius: 16px;
   }
 }

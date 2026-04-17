@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" role="img" aria-labelledby="title desc">
+  <title id="title">Carton Fire plus</title>
+  <desc id="desc">Portada del juego Carton Fire plus</desc>
+  <defs>
+    <linearGradient id="bg3" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4f2e1f"/>
+      <stop offset="100%" stop-color="#180d09"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="800" rx="54" fill="url(#bg3)"/>
+  <rect x="0" y="654" width="800" height="146" fill="#6c4835"/>
+  <g transform="translate(160 520)">
+    <rect x="110" y="44" width="220" height="108" rx="24" fill="#d4a173"/>
+    <rect x="152" y="70" width="136" height="58" rx="16" fill="#8a5f43"/>
+    <rect x="212" y="0" width="18" height="62" rx="8" fill="#ffe7c4"/>
+    <circle cx="220" cy="98" r="96" fill="none" stroke="#74ead8" stroke-width="12" opacity="0.7"/>
+  </g>
+  <g fill="#ffb56d">
+    <rect x="132" y="138" width="64" height="42" rx="12"/>
+    <rect x="228" y="138" width="64" height="42" rx="12"/>
+    <rect x="324" y="138" width="64" height="42" rx="12"/>
+    <rect x="420" y="138" width="64" height="42" rx="12"/>
+    <rect x="516" y="138" width="64" height="42" rx="12"/>
+    <rect x="180" y="204" width="64" height="42" rx="12"/>
+    <rect x="276" y="204" width="64" height="42" rx="12"/>
+    <rect x="372" y="204" width="64" height="42" rx="12"/>
+    <rect x="468" y="204" width="64" height="42" rx="12"/>
+  </g>
+  <g fill="#ffe698">
+    <rect x="397" y="498" width="8" height="76" rx="4"/>
+    <rect x="404" y="338" width="8" height="60" rx="4" transform="rotate(18 408 368)"/>
+    <rect x="292" y="418" width="8" height="70" rx="4" transform="rotate(-12 296 452)"/>
+  </g>
+  <text x="70" y="690" fill="#fff3e7" font-family="Trebuchet MS, Segoe UI, sans-serif" font-size="68" font-weight="900">CARTON FIRE</text>
+  <text x="74" y="742" fill="#ffb56d" font-family="Trebuchet MS, Segoe UI, sans-serif" font-size="34" font-weight="700">Plus · oleadas · disparos · poderes</text>
+</svg>

@@ -172,6 +172,73 @@ func TestPublicSoporteRemotoAgentHeartbeatAndStateUpdate(t *testing.T) {
 	}
 }
 
+func TestEmpresaSoporteRemotoHandlerBlocksSessionWhenPlanLimitReached(t *testing.T) {
+	dbEmp := openPermsTestDB(t, "soporte_remoto_limit_handler.db")
+	if err := dbpkg.EnsureEmpresaSoporteRemotoSchema(dbEmp); err != nil {
+		t.Fatalf("EnsureEmpresaSoporteRemotoSchema: %v", err)
+	}
+
+	h := EmpresaSoporteRemotoHandler(dbEmp)
+
+	reqCfg := httptest.NewRequest(http.MethodPost, "/api/empresa/soporte_remoto?action=config&empresa_id=915", strings.NewReader(`{"habilitado":true,"requiere_aprobacion_operador":false,"auto_cerrar_minutos":30,"max_conexiones_mes":1,"max_minutos_mes":1,"max_dispositivos":1}`))
+	reqCfg.Header.Set("Content-Type", "application/json")
+	reqCfg.Header.Set("X-Admin-Email", "admin915@test.local")
+	rrCfg := httptest.NewRecorder()
+	h.ServeHTTP(rrCfg, reqCfg)
+	if rrCfg.Code != http.StatusOK {
+		t.Fatalf("expected 200 config with limits, got %d body=%s", rrCfg.Code, rrCfg.Body.String())
+	}
+
+	reqDevice := httptest.NewRequest(http.MethodPost, "/api/empresa/soporte_remoto?action=crear_dispositivo&empresa_id=915", strings.NewReader(`{"nombre_equipo":"Caja 915","stream_url":"https://remote.example/915","acceso_pin":"9150"}`))
+	reqDevice.Header.Set("Content-Type", "application/json")
+	reqDevice.Header.Set("X-Admin-Email", "admin915@test.local")
+	rrDevice := httptest.NewRecorder()
+	h.ServeHTTP(rrDevice, reqDevice)
+	if rrDevice.Code != http.StatusCreated {
+		t.Fatalf("expected 201 create device, got %d body=%s", rrDevice.Code, rrDevice.Body.String())
+	}
+	deviceResp := decodeSoporteRemotoBody(t, rrDevice)
+	deviceRaw := deviceResp["dispositivo"].(map[string]interface{})
+	deviceID := int64(numberValue(deviceRaw["id"]))
+
+	reqSession1 := httptest.NewRequest(http.MethodPost, "/api/empresa/soporte_remoto?action=solicitar_sesion&empresa_id=915", strings.NewReader(`{"dispositivo_id":`+itoa64(deviceID)+`,"motivo":"Primera sesion","duracion_min":1}`))
+	reqSession1.Header.Set("Content-Type", "application/json")
+	reqSession1.Header.Set("X-Admin-Email", "admin915@test.local")
+	rrSession1 := httptest.NewRecorder()
+	h.ServeHTTP(rrSession1, reqSession1)
+	if rrSession1.Code != http.StatusCreated {
+		t.Fatalf("expected 201 first session, got %d body=%s", rrSession1.Code, rrSession1.Body.String())
+	}
+	sessionResp := decodeSoporteRemotoBody(t, rrSession1)
+	sessionRaw := sessionResp["session"].(map[string]interface{})
+	codigoSesion := stringValue(sessionRaw["codigo_sesion"])
+
+	reqFinish := httptest.NewRequest(http.MethodPost, "/api/empresa/soporte_remoto?action=finalizar_sesion&empresa_id=915", strings.NewReader(`{"codigo_sesion":"`+codigoSesion+`"}`))
+	reqFinish.Header.Set("Content-Type", "application/json")
+	rrFinish := httptest.NewRecorder()
+	h.ServeHTTP(rrFinish, reqFinish)
+	if rrFinish.Code != http.StatusOK {
+		t.Fatalf("expected 200 finish session, got %d body=%s", rrFinish.Code, rrFinish.Body.String())
+	}
+
+	reqSession2 := httptest.NewRequest(http.MethodPost, "/api/empresa/soporte_remoto?action=solicitar_sesion&empresa_id=915", strings.NewReader(`{"dispositivo_id":`+itoa64(deviceID)+`,"motivo":"Segunda sesion bloqueada","duracion_min":1}`))
+	reqSession2.Header.Set("Content-Type", "application/json")
+	reqSession2.Header.Set("X-Admin-Email", "admin915@test.local")
+	rrSession2 := httptest.NewRecorder()
+	h.ServeHTTP(rrSession2, reqSession2)
+	if rrSession2.Code != http.StatusPreconditionFailed {
+		t.Fatalf("expected 412 blocked session, got %d body=%s", rrSession2.Code, rrSession2.Body.String())
+	}
+	body := decodeSoporteRemotoBody(t, rrSession2)
+	usoRaw, ok := body["uso"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected uso object in blocked response: %#v", body)
+	}
+	if numberValue(usoRaw["intentos_bloqueados_mes"]) < 1 {
+		t.Fatalf("expected blocked attempts >= 1, got %#v", usoRaw)
+	}
+}
+
 func stringValue(v interface{}) string {
 	s, _ := v.(string)
 	return strings.TrimSpace(s)

@@ -394,19 +394,19 @@
     <section class="arcade-hero">
       <p class="arcade-kicker">Zona de juegos</p>
       <h1>Arcade del portal</h1>
-      <p class="arcade-hero-copy">Cada juego sale ahora como una tarjeta cuadrada con portada propia, marcador local y nombre de jugador compartido. Puedes entrar desde el menu flotante del portal y alternar rapido entre juegos sin perder tus mejores marcas.</p>
+      <p class="arcade-hero-copy">El arcade activo ahora concentra ocho juegos compactos pensados para móvil, a pantalla completa, con nombre compartido, cronómetro de partida y sonido arcade sincronizado.</p>
       <div class="arcade-chip-row">
-        <span class="arcade-chip">Cinco juegos listos</span>
+        <span class="arcade-chip">Ocho juegos activos</span>
         <span class="arcade-chip">Marcadores guardados por navegador</span>
         <span class="arcade-chip">Sonido con control global</span>
-        <span class="arcade-chip">Acceso directo desde el menu flotante</span>
+        <span class="arcade-chip">A pantalla completa</span>
       </div>
     </section>
 
     <section class="arcade-toolbar">
       <article class="arcade-panel">
         <h2>Jugador actual</h2>
-        <p>El nombre que guardes aqui se reutiliza en todos los juegos nuevos y existentes del arcade.</p>
+        <p>El nombre que guardes aqui se reutiliza en todos los juegos activos del arcade y firma automaticamente los records locales.</p>
         <div class="arcade-player-form">
           <input id="playerNameInput" type="text" maxlength="28" placeholder="Escribe el nombre del jugador">
           <button id="savePlayerBtn" class="arcade-btn" type="button">Guardar jugador</button>
@@ -424,7 +424,7 @@
 
       <article class="arcade-panel arcade-sound-panel">
         <h3>Sonido</h3>
-        <p class="arcade-sound-note">Los efectos se activan en todos los juegos del arcade con el mismo interruptor.</p>
+        <p class="arcade-sound-note">Los efectos se activan en todo el arcade con el mismo interruptor, incluyendo los nuevos juegos de puzzle, accion y estrategia.</p>
         <button id="soundToggleBtn" class="arcade-btn secondary" type="button" aria-pressed="true">Sonido: activado</button>
       </article>
     </section>
@@ -441,63 +441,111 @@
       var games = [
         {
           slug: 'patito_volando',
-          title: 'Patito volando',
-          status: 'Clasico',
-          theme: 'Juego rapido',
-          summary: 'Sube o baja con un solo control y cruza obstaculos sin tocar el borde.',
-          mode: 'PC + movil',
+          title: 'Patito volando plus',
+          status: 'Activo',
+          theme: 'Vuelo arcade',
+          summary: 'Cruza columnas, sube niveles y recoge poderes de escudo, tiempo y vida extra.',
+          mode: 'Toque sostenido',
           coverUrl: '/img/juegos/patito_volando.svg',
-          windowUrl: '/Juegos/patito_volando.html',
-          windowWidth: 720,
-          windowHeight: 760
-        },
-        {
-          slug: 'pollitos_cataplum',
-          title: 'Pollitos al cataplum',
-          status: 'Nuevo',
-          theme: 'Resortera arcade',
-          summary: 'Dispara pollitos, tumba cajas y elimina objetivos con pocos lanzamientos.',
-          mode: 'Arrastra y suelta',
-          coverUrl: '/img/juegos/pollitos_cataplum.svg',
-          windowUrl: '/Juegos/pollitos_cataplum.html',
-          windowWidth: 960,
-          windowHeight: 780
+          windowUrl: '/Juegos/patito_volando_plus.html',
+          windowWidth: 700,
+          windowHeight: 700
         },
         {
           slug: 'serpiente_pixel',
-          title: 'Serpiente pixel',
-          status: 'Arcade',
+          title: 'Serpiente pixel plus',
+          status: 'Activo',
           theme: 'Retro grid',
-          summary: 'Devora frutas, crece y gira con precision para no chocar contigo mismo.',
-          mode: 'Flechas / cruceta',
+          summary: 'La serpiente ahora crece con vidas, frutas especiales y ritmo escalable por nivel.',
+          mode: 'Cruceta táctil',
           coverUrl: '/img/juegos/serpiente_pixel.svg',
-          windowUrl: '/Juegos/serpiente_pixel.html',
-          windowWidth: 840,
-          windowHeight: 880
+          windowUrl: '/Juegos/serpiente_pixel_plus.html',
+          windowWidth: 700,
+          windowHeight: 700
         },
         {
           slug: 'memoria_estelar',
-          title: 'Memoria estelar',
-          status: 'Puzzle',
-          theme: 'Pares y reflejos',
-          summary: 'Encuentra parejas, mide tus intentos y gana mas puntos si terminas rapido.',
+          title: 'Memoria estelar plus',
+          status: 'Activo',
+          theme: 'Pares y poderes',
+          summary: 'Encuentra parejas, administra el reloj y gasta ayudas tacticas para superar tableros crecientes.',
           mode: 'Toques rapidos',
           coverUrl: '/img/juegos/memoria_estelar.svg',
-          windowUrl: '/Juegos/memoria_estelar.html',
-          windowWidth: 980,
-          windowHeight: 900
+          windowUrl: '/Juegos/memoria_estelar_plus.html',
+          windowWidth: 700,
+          windowHeight: 700
         },
         {
           slug: 'rebote_bloques',
-          title: 'Rebote de bloques',
-          status: 'Clasico',
-          theme: 'Arcade clasico',
-          summary: 'Sostiene la bola, ajusta rebotes y vacia filas completas de ladrillos.',
-          mode: 'Mouse / arrastre',
+          title: 'Rebote bloques plus',
+          status: 'Activo',
+          theme: 'Breakout moderno',
+          summary: 'Rompe filas, activa multibola y recoge poderes mientras sobrevives varias vidas.',
+          mode: 'Botones táctiles',
           coverUrl: '/img/juegos/rebote_bloques.svg',
-          windowUrl: '/Juegos/rebote_bloques.html',
-          windowWidth: 980,
-          windowHeight: 860
+          windowUrl: '/Juegos/rebote_bloques_plus.html',
+          windowWidth: 700,
+          windowHeight: 700
+        },
+        {
+          slug: 'pacman',
+          title: 'Pacman plus',
+          status: 'Nuevo',
+          theme: 'Maze chase',
+          summary: 'Come pellets, esquiva fantasmas con IA y usa frutas de poder en laberintos cada vez más duros.',
+          mode: 'Cruceta táctil',
+          coverUrl: '/img/juegos/pacman.svg',
+          windowUrl: '/Juegos/pacman_plus.html',
+          windowWidth: 700,
+          windowHeight: 700
+        },
+        {
+          slug: 'tetris',
+          title: 'Tetris plus',
+          status: 'Nuevo',
+          theme: 'Piezas y reflejos',
+          summary: 'Apila, limpia lineas y usa bombazos o tiempo lento para controlar el tablero.',
+          mode: 'Botones táctiles',
+          coverUrl: '/img/juegos/tetris.svg',
+          windowUrl: '/Juegos/tetris_plus.html',
+          windowWidth: 700,
+          windowHeight: 700
+        },
+        {
+          slug: 'carton_fire',
+          title: 'Carton Fire plus',
+          status: 'Nuevo',
+          theme: 'Arena shooter',
+          summary: 'Defiende tu carton contra oleadas de drones, disparos y poderes de combate.',
+          mode: 'Mover y disparar',
+          coverUrl: '/img/juegos/carton_fire.svg',
+          windowUrl: '/Juegos/carton_fire_plus.html',
+          windowWidth: 700,
+          windowHeight: 700
+        },
+        {
+          slug: 'ajedrez_vs_ia',
+          title: 'Ajedrez vs IA plus',
+          status: 'Nuevo',
+          theme: 'Tablero tactico',
+          summary: 'Duelo contra computadora con varios niveles, sugerencias, deshacer y congelacion del turno rival.',
+          mode: 'Toque por casillas',
+          coverUrl: '/img/juegos/ajedrez_vs_ia.svg',
+          windowUrl: '/Juegos/ajedrez_vs_ia_plus.html',
+          windowWidth: 700,
+          windowHeight: 700
+        },
+        {
+          slug: 'ajedrez_3d',
+          title: 'Ajedrez 3D plus',
+          status: 'Nuevo',
+          theme: 'Holograma estrategico',
+          summary: 'Nuevo tablero en perspectiva 3D con cinco niveles de dificultad, cronometro arcade y ayudas tacticas.',
+          mode: 'Toque por casillas',
+          coverUrl: '/img/juegos/ajedrez_3d.svg',
+          windowUrl: '/Juegos/ajedrez_3d_plus.html',
+          windowWidth: 700,
+          windowHeight: 700
         }
       ];
 
@@ -537,18 +585,6 @@
       }
 
       function openGameWindow(url, slug, width, height) {
-        if (isTouchDevice()) {
-          window.location.href = url;
-          return;
-        }
-        var popupName = 'pcsGame_' + String(slug || 'arcade').replace(/[^a-z0-9_-]/gi, '_');
-        var popupWidth = Number(width) > 0 ? Number(width) : 720;
-        var popupHeight = Number(height) > 0 ? Number(height) : 760;
-        var popup = window.open(url, popupName, 'popup=yes,width=' + popupWidth + ',height=' + popupHeight + ',resizable=yes,scrollbars=no');
-        if (popup && typeof popup.focus === 'function') {
-          popup.focus();
-          return;
-        }
         window.location.href = url;
       }
 

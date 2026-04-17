@@ -463,7 +463,7 @@ func fetchWompiAcceptanceInfo(baseURL, publicKey string) (string, string, string
 func normalizeEpaycoMode(raw string) string {
 	v := strings.ToLower(strings.TrimSpace(raw))
 	switch v {
-	case "sandbox", "test", "testing", "pruebas":
+	case "sandbox", "sambox", "test", "testing", "pruebas":
 		return "sandbox"
 	case "production", "prod", "live", "real":
 		return "production"
@@ -529,10 +529,11 @@ func resolveEpaycoCredentials(dbSuper *sql.DB) (publicKey, customerID, privateKe
 	if err != nil {
 		return "", "", "", err
 	}
-	privateKey, err = getConfigEntryTrimmed(dbSuper, "epayco.private_key")
+	privateKey, err = getDecryptedConfigValue(dbSuper, "epayco.private_key")
 	if err != nil {
 		return "", "", "", err
 	}
+	privateKey = strings.TrimSpace(privateKey)
 
 	legacyCustID, err := getConfigEntryTrimmed(dbSuper, "epayco.cust_id")
 	if err != nil {
@@ -873,7 +874,7 @@ func buildEpaycoResponseURL(baseURL, status, reference string, licenciaID, empre
 	return parsed.String()
 }
 
-func buildEpaycoCheckoutURL(baseURL, publicKey, customerID, reference, licenciaNombre string, licenciaID, empresaID int64, amount float64, customerEmail, mode string) string {
+func buildEpaycoCheckoutURL(baseURL, publicKey, customerID, privateKey, reference, licenciaNombre string, licenciaID, empresaID int64, amount float64, customerEmail, mode string) string {
 	title := strings.TrimSpace(licenciaNombre)
 	if title == "" {
 		title = "Licencia"
@@ -886,6 +887,9 @@ func buildEpaycoCheckoutURL(baseURL, publicKey, customerID, reference, licenciaN
 	v.Set("public_key", strings.TrimSpace(publicKey))
 	if strings.TrimSpace(customerID) != "" {
 		v.Set("p_cust_id_cliente", strings.TrimSpace(customerID))
+	}
+	if strings.TrimSpace(privateKey) != "" {
+		v.Set("p_key", strings.TrimSpace(privateKey))
 	}
 	v.Set("name", "Licencia "+title)
 	v.Set("description", "Pago de licencia "+title)
@@ -2123,7 +2127,7 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 
 		mode, modeSource := resolveEpaycoMode(dbSuper, firstNonEmptyString(customerID, publicKey), privateKey)
 		reference := fmt.Sprintf("EPAYCO-LIC-%d-EMP-%d-%d", payload.LicenciaID, payload.EmpresaID, time.Now().UnixNano())
-		checkoutURL := buildEpaycoCheckoutURL(paymentBaseURL, publicKey, customerID, reference, lic.Nombre, payload.LicenciaID, payload.EmpresaID, lic.Valor, email, mode)
+		checkoutURL := buildEpaycoCheckoutURL(paymentBaseURL, publicKey, customerID, privateKey, reference, lic.Nombre, payload.LicenciaID, payload.EmpresaID, lic.Valor, email, mode)
 
 		if strings.TrimSpace(payload.AsesorID) == "" && strings.TrimSpace(payload.VendedorID) != "" {
 			payload.AsesorID = payload.VendedorID

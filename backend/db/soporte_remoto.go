@@ -7,9 +7,14 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"time"
+
+	"github.com/you/pos-backend/secure"
 )
+
+var ErrSoporteRemotoPlanLimit = errors.New("limite de soporte remoto alcanzado")
 
 // EmpresaSoporteRemotoConfig define configuracion operativa de soporte remoto por empresa.
 type EmpresaSoporteRemotoConfig struct {
@@ -20,6 +25,15 @@ type EmpresaSoporteRemotoConfig struct {
 	ModoOperacion              string `json:"modo_operacion"`
 	RequiereAprobacionOperador bool   `json:"requiere_aprobacion_operador"`
 	AutoCerrarMinutos          int    `json:"auto_cerrar_minutos"`
+	MaxConexionesMes           int    `json:"max_conexiones_mes"`
+	MaxMinutosMes              int    `json:"max_minutos_mes"`
+	MaxDispositivos            int    `json:"max_dispositivos"`
+	PortalPublicoHabilitado    bool   `json:"portal_publico_habilitado"`
+	RustDeskServerHost         string `json:"rustdesk_server_host,omitempty"`
+	RustDeskServerKey          string `json:"rustdesk_server_key,omitempty"`
+	ClienteWindowsURL          string `json:"cliente_windows_url,omitempty"`
+	ClienteLinuxURL            string `json:"cliente_linux_url,omitempty"`
+	CarpetaTransferencia       string `json:"carpeta_transferencia,omitempty"`
 	FechaCreacion              string `json:"fecha_creacion,omitempty"`
 	FechaActualizacion         string `json:"fecha_actualizacion,omitempty"`
 	UsuarioCreador             string `json:"usuario_creador,omitempty"`
@@ -38,9 +52,13 @@ type EmpresaSoporteRemotoDispositivo struct {
 	SistemaOperativo   string `json:"sistema_operativo,omitempty"`
 	AgenteVersion      string `json:"agente_version,omitempty"`
 	StreamURL          string `json:"stream_url"`
+	RustDeskDeviceID   string `json:"rustdesk_device_id,omitempty"`
+	CarpetaTransferencia string `json:"carpeta_transferencia,omitempty"`
+	AccesoPublicoHabilitado bool `json:"acceso_publico_habilitado"`
 	EstadoConexion     string `json:"estado_conexion"`
 	UltimoHeartbeat    string `json:"ultimo_heartbeat,omitempty"`
 	AccesoPINHash      string `json:"-"`
+	RustDeskPasswordEnc string `json:"-"`
 	FechaCreacion      string `json:"fecha_creacion,omitempty"`
 	FechaActualizacion string `json:"fecha_actualizacion,omitempty"`
 	UsuarioCreador     string `json:"usuario_creador,omitempty"`
@@ -61,6 +79,9 @@ type EmpresaSoporteRemotoSession struct {
 	OperadorEmail         string `json:"operador_email,omitempty"`
 	Motivo                string `json:"motivo,omitempty"`
 	EstadoSesion          string `json:"estado_sesion"`
+	DuracionMinSolicitada int    `json:"duracion_min_solicitada,omitempty"`
+	DuracionMinConsumida  int    `json:"duracion_min_consumida,omitempty"`
+	BloqueadaPorLimite    bool   `json:"bloqueada_por_limite,omitempty"`
 	URLVisualizacion      string `json:"url_visualizacion,omitempty"`
 	TokenVisualizacionRaw string `json:"token_visualizacion,omitempty"`
 	IniciadaEn            string `json:"iniciada_en,omitempty"`
@@ -90,6 +111,22 @@ type EmpresaSoporteRemotoSessionFilter struct {
 	Q               string
 	Limit           int
 	Offset          int
+}
+
+type EmpresaSoporteRemotoUso struct {
+	EmpresaID             int64  `json:"empresa_id"`
+	MesReferencia         string `json:"mes_referencia"`
+	DispositivosActivos   int64  `json:"dispositivos_activos"`
+	DispositivosOnline    int64  `json:"dispositivos_online"`
+	SesionesMes           int64  `json:"sesiones_mes"`
+	IntentosBloqueadosMes int64  `json:"intentos_bloqueados_mes"`
+	MinutosConsumidosMes  int64  `json:"minutos_consumidos_mes"`
+	MaxConexionesMes      int64  `json:"max_conexiones_mes"`
+	MaxMinutosMes         int64  `json:"max_minutos_mes"`
+	MaxDispositivos       int64  `json:"max_dispositivos"`
+	PuedeCrearDispositivo bool   `json:"puede_crear_dispositivo"`
+	PuedeCrearSesion      bool   `json:"puede_crear_sesion"`
+	BloqueoMotivo         string `json:"bloqueo_motivo,omitempty"`
 }
 
 func soporteRemotoNormalizeEstado(raw string) string {
@@ -122,7 +159,7 @@ func soporteRemotoNormalizeSesionEstado(raw string) string {
 func soporteRemotoNormalizeProveedor(raw string) string {
 	value := strings.ToLower(strings.TrimSpace(raw))
 	switch value {
-	case "novnc", "rustdesk_web", "guacamole", "custom_url":
+	case "novnc", "rustdesk_web", "rustdesk_oss", "guacamole", "custom_url":
 		return value
 	default:
 		return "novnc"
@@ -132,11 +169,36 @@ func soporteRemotoNormalizeProveedor(raw string) string {
 func soporteRemotoNormalizeModo(raw string) string {
 	value := strings.ToLower(strings.TrimSpace(raw))
 	switch value {
-	case "agente_web", "agente_local", "hibrido":
+	case "agente_web", "agente_local", "cliente_local", "hibrido":
 		return value
 	default:
 		return "agente_web"
 	}
+}
+
+func soporteRemotoNormalizeURL(raw string) string {
+	return strings.TrimSpace(raw)
+}
+
+func soporteRemotoEncryptSecret(raw string) (string, error) {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return "", nil
+	}
+	return secure.EncryptString(value)
+}
+
+func soporteRemotoDecryptSecret(raw string) (string, error) {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return "", nil
+	}
+	return secure.DecryptString(value)
+}
+
+// ResolveEmpresaSoporteRemotoRustDeskPassword descifra el secreto operativo del dispositivo cuando existe.
+func ResolveEmpresaSoporteRemotoRustDeskPassword(item EmpresaSoporteRemotoDispositivo) (string, error) {
+	return soporteRemotoDecryptSecret(item.RustDeskPasswordEnc)
 }
 
 func soporteRemotoNormalizeAutoCerrar(raw int) int {
@@ -145,6 +207,16 @@ func soporteRemotoNormalizeAutoCerrar(raw int) int {
 	}
 	if raw > 480 {
 		return 480
+	}
+	return raw
+}
+
+func soporteRemotoNormalizePlanLimit(raw int) int {
+	if raw < 0 {
+		return 0
+	}
+	if raw > 100000 {
+		return 100000
 	}
 	return raw
 }
@@ -213,6 +285,58 @@ func soporteRemotoGenerateSessionCode() string {
 	return strings.ToUpper("SRS-" + time.Now().In(time.Local).Format("20060102150405") + "-" + soporteRemotoGenerateToken(""))
 }
 
+func soporteRemotoParseDateTime(raw string) (time.Time, bool) {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return time.Time{}, false
+	}
+	layouts := []string{
+		"2006-01-02 15:04:05",
+		time.RFC3339,
+		"2006-01-02T15:04:05",
+	}
+	for _, layout := range layouts {
+		parsed, err := time.ParseInLocation(layout, value, time.Local)
+		if err == nil {
+			return parsed, true
+		}
+	}
+	return time.Time{}, false
+}
+
+func soporteRemotoIsCurrentMonth(raw string, now time.Time) bool {
+	parsed, ok := soporteRemotoParseDateTime(raw)
+	if !ok {
+		return false
+	}
+	return parsed.Year() == now.Year() && parsed.Month() == now.Month()
+}
+
+func soporteRemotoComputeSessionMinutes(iniciadaEn, finalizadaEn string, fallback int) int {
+	start, ok := soporteRemotoParseDateTime(iniciadaEn)
+	if !ok {
+		if fallback > 0 {
+			return fallback
+		}
+		return 0
+	}
+	end, ok := soporteRemotoParseDateTime(finalizadaEn)
+	if !ok {
+		end = time.Now().In(time.Local)
+	}
+	if end.Before(start) {
+		end = start
+	}
+	minutes := int(math.Ceil(end.Sub(start).Minutes()))
+	if minutes <= 0 {
+		minutes = 1
+	}
+	if fallback > 0 && minutes > fallback {
+		return fallback
+	}
+	return minutes
+}
+
 // EnsureEmpresaSoporteRemotoSchema crea/migra tablas de soporte remoto por empresa.
 func EnsureEmpresaSoporteRemotoSchema(dbConn *sql.DB) error {
 	if dbConn == nil {
@@ -228,6 +352,15 @@ func EnsureEmpresaSoporteRemotoSchema(dbConn *sql.DB) error {
 			modo_operacion TEXT DEFAULT 'agente_web',
 			requiere_aprobacion_operador INTEGER DEFAULT 1,
 			auto_cerrar_minutos INTEGER DEFAULT 30,
+			max_conexiones_mes INTEGER DEFAULT 0,
+			max_minutos_mes INTEGER DEFAULT 0,
+			max_dispositivos INTEGER DEFAULT 0,
+			portal_publico_habilitado INTEGER DEFAULT 1,
+			rustdesk_server_host TEXT,
+			rustdesk_server_key TEXT,
+			cliente_windows_url TEXT,
+			cliente_linux_url TEXT,
+			carpeta_transferencia TEXT,
 			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
 			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
 			usuario_creador TEXT,
@@ -246,6 +379,10 @@ func EnsureEmpresaSoporteRemotoSchema(dbConn *sql.DB) error {
 			sistema_operativo TEXT,
 			agente_version TEXT,
 			stream_url TEXT NOT NULL,
+			rustdesk_device_id TEXT,
+			rustdesk_password_enc TEXT,
+			carpeta_transferencia TEXT,
+			acceso_publico_habilitado INTEGER DEFAULT 1,
 			estado_conexion TEXT DEFAULT 'offline',
 			ultimo_heartbeat TEXT,
 			acceso_pin_hash TEXT,
@@ -269,6 +406,9 @@ func EnsureEmpresaSoporteRemotoSchema(dbConn *sql.DB) error {
 			operador_email TEXT,
 			motivo TEXT,
 			estado_sesion TEXT DEFAULT 'pendiente',
+			duracion_minutos_solicitada INTEGER DEFAULT 0,
+			duracion_minutos_consumida INTEGER DEFAULT 0,
+			bloqueada_por_limite INTEGER DEFAULT 0,
 			token_visualizacion_hash TEXT,
 			url_visualizacion TEXT,
 			iniciada_en TEXT,
@@ -298,13 +438,61 @@ func EnsureEmpresaSoporteRemotoSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_soporte_remoto_configuracion", "modo_operacion", "TEXT DEFAULT 'agente_web'"); err != nil {
 		return err
 	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_soporte_remoto_configuracion", "max_conexiones_mes", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_soporte_remoto_configuracion", "max_minutos_mes", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_soporte_remoto_configuracion", "max_dispositivos", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_soporte_remoto_configuracion", "portal_publico_habilitado", "INTEGER DEFAULT 1"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_soporte_remoto_configuracion", "rustdesk_server_host", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_soporte_remoto_configuracion", "rustdesk_server_key", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_soporte_remoto_configuracion", "cliente_windows_url", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_soporte_remoto_configuracion", "cliente_linux_url", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_soporte_remoto_configuracion", "carpeta_transferencia", "TEXT"); err != nil {
+		return err
+	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_soporte_remoto_dispositivos", "acceso_pin_hash", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_soporte_remoto_dispositivos", "rustdesk_device_id", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_soporte_remoto_dispositivos", "rustdesk_password_enc", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_soporte_remoto_dispositivos", "carpeta_transferencia", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_soporte_remoto_dispositivos", "acceso_publico_habilitado", "INTEGER DEFAULT 1"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_soporte_remoto_sesiones", "token_visualizacion_hash", "TEXT"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_soporte_remoto_sesiones", "url_visualizacion", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_soporte_remoto_sesiones", "duracion_minutos_solicitada", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_soporte_remoto_sesiones", "duracion_minutos_consumida", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_soporte_remoto_sesiones", "bloqueada_por_limite", "INTEGER DEFAULT 0"); err != nil {
 		return err
 	}
 
@@ -323,6 +511,7 @@ func GetEmpresaSoporteRemotoConfig(dbConn *sql.DB, empresaID int64) (EmpresaSopo
 	var out EmpresaSoporteRemotoConfig
 	var habilitado sql.NullInt64
 	var requiereAprobacion sql.NullInt64
+	var portalPublico sql.NullInt64
 	err := dbConn.QueryRow(`SELECT
 		id,
 		empresa_id,
@@ -331,6 +520,15 @@ func GetEmpresaSoporteRemotoConfig(dbConn *sql.DB, empresaID int64) (EmpresaSopo
 		COALESCE(modo_operacion, 'agente_web'),
 		COALESCE(requiere_aprobacion_operador, 1),
 		COALESCE(auto_cerrar_minutos, 30),
+		COALESCE(max_conexiones_mes, 0),
+		COALESCE(max_minutos_mes, 0),
+		COALESCE(max_dispositivos, 0),
+		COALESCE(portal_publico_habilitado, 1),
+		COALESCE(rustdesk_server_host, ''),
+		COALESCE(rustdesk_server_key, ''),
+		COALESCE(cliente_windows_url, ''),
+		COALESCE(cliente_linux_url, ''),
+		COALESCE(carpeta_transferencia, ''),
 		COALESCE(fecha_creacion, ''),
 		COALESCE(fecha_actualizacion, ''),
 		COALESCE(usuario_creador, ''),
@@ -346,6 +544,15 @@ func GetEmpresaSoporteRemotoConfig(dbConn *sql.DB, empresaID int64) (EmpresaSopo
 		&out.ModoOperacion,
 		&requiereAprobacion,
 		&out.AutoCerrarMinutos,
+		&out.MaxConexionesMes,
+		&out.MaxMinutosMes,
+		&out.MaxDispositivos,
+		&portalPublico,
+		&out.RustDeskServerHost,
+		&out.RustDeskServerKey,
+		&out.ClienteWindowsURL,
+		&out.ClienteLinuxURL,
+		&out.CarpetaTransferencia,
 		&out.FechaCreacion,
 		&out.FechaActualizacion,
 		&out.UsuarioCreador,
@@ -361,6 +568,10 @@ func GetEmpresaSoporteRemotoConfig(dbConn *sql.DB, empresaID int64) (EmpresaSopo
 				ModoOperacion:              "agente_web",
 				RequiereAprobacionOperador: true,
 				AutoCerrarMinutos:          30,
+				MaxConexionesMes:           0,
+				MaxMinutosMes:              0,
+				MaxDispositivos:            0,
+				PortalPublicoHabilitado:    true,
 				Estado:                     "activo",
 			}, nil
 		}
@@ -369,9 +580,18 @@ func GetEmpresaSoporteRemotoConfig(dbConn *sql.DB, empresaID int64) (EmpresaSopo
 
 	out.Habilitado = habilitado.Valid && habilitado.Int64 > 0
 	out.RequiereAprobacionOperador = requiereAprobacion.Valid && requiereAprobacion.Int64 > 0
+	out.PortalPublicoHabilitado = !portalPublico.Valid || portalPublico.Int64 > 0
 	out.ProveedorPreferido = soporteRemotoNormalizeProveedor(out.ProveedorPreferido)
 	out.ModoOperacion = soporteRemotoNormalizeModo(out.ModoOperacion)
 	out.AutoCerrarMinutos = soporteRemotoNormalizeAutoCerrar(out.AutoCerrarMinutos)
+	out.MaxConexionesMes = soporteRemotoNormalizePlanLimit(out.MaxConexionesMes)
+	out.MaxMinutosMes = soporteRemotoNormalizePlanLimit(out.MaxMinutosMes)
+	out.MaxDispositivos = soporteRemotoNormalizePlanLimit(out.MaxDispositivos)
+	out.RustDeskServerHost = strings.TrimSpace(out.RustDeskServerHost)
+	out.RustDeskServerKey = strings.TrimSpace(out.RustDeskServerKey)
+	out.ClienteWindowsURL = soporteRemotoNormalizeURL(out.ClienteWindowsURL)
+	out.ClienteLinuxURL = soporteRemotoNormalizeURL(out.ClienteLinuxURL)
+	out.CarpetaTransferencia = strings.TrimSpace(out.CarpetaTransferencia)
 	out.Estado = soporteRemotoNormalizeEstado(out.Estado)
 	return out, nil
 }
@@ -388,6 +608,14 @@ func UpsertEmpresaSoporteRemotoConfig(dbConn *sql.DB, cfg EmpresaSoporteRemotoCo
 	cfg.ProveedorPreferido = soporteRemotoNormalizeProveedor(cfg.ProveedorPreferido)
 	cfg.ModoOperacion = soporteRemotoNormalizeModo(cfg.ModoOperacion)
 	cfg.AutoCerrarMinutos = soporteRemotoNormalizeAutoCerrar(cfg.AutoCerrarMinutos)
+	cfg.MaxConexionesMes = soporteRemotoNormalizePlanLimit(cfg.MaxConexionesMes)
+	cfg.MaxMinutosMes = soporteRemotoNormalizePlanLimit(cfg.MaxMinutosMes)
+	cfg.MaxDispositivos = soporteRemotoNormalizePlanLimit(cfg.MaxDispositivos)
+	cfg.RustDeskServerHost = strings.TrimSpace(cfg.RustDeskServerHost)
+	cfg.RustDeskServerKey = strings.TrimSpace(cfg.RustDeskServerKey)
+	cfg.ClienteWindowsURL = soporteRemotoNormalizeURL(cfg.ClienteWindowsURL)
+	cfg.ClienteLinuxURL = soporteRemotoNormalizeURL(cfg.ClienteLinuxURL)
+	cfg.CarpetaTransferencia = strings.TrimSpace(cfg.CarpetaTransferencia)
 	cfg.Estado = soporteRemotoNormalizeEstado(cfg.Estado)
 	if cfg.Estado == "" {
 		cfg.Estado = "activo"
@@ -406,6 +634,15 @@ func UpsertEmpresaSoporteRemotoConfig(dbConn *sql.DB, cfg EmpresaSoporteRemotoCo
 				modo_operacion = ?,
 				requiere_aprobacion_operador = ?,
 				auto_cerrar_minutos = ?,
+				max_conexiones_mes = ?,
+				max_minutos_mes = ?,
+				max_dispositivos = ?,
+				portal_publico_habilitado = ?,
+				rustdesk_server_host = ?,
+				rustdesk_server_key = ?,
+				cliente_windows_url = ?,
+				cliente_linux_url = ?,
+				carpeta_transferencia = ?,
 				usuario_creador = ?,
 				estado = ?,
 				observaciones = ?,
@@ -416,6 +653,15 @@ func UpsertEmpresaSoporteRemotoConfig(dbConn *sql.DB, cfg EmpresaSoporteRemotoCo
 			cfg.ModoOperacion,
 			soporteRemotoBoolToInt(cfg.RequiereAprobacionOperador),
 			cfg.AutoCerrarMinutos,
+			cfg.MaxConexionesMes,
+			cfg.MaxMinutosMes,
+			cfg.MaxDispositivos,
+			soporteRemotoBoolToInt(cfg.PortalPublicoHabilitado),
+			cfg.RustDeskServerHost,
+			cfg.RustDeskServerKey,
+			cfg.ClienteWindowsURL,
+			cfg.ClienteLinuxURL,
+			cfg.CarpetaTransferencia,
 			strings.TrimSpace(cfg.UsuarioCreador),
 			cfg.Estado,
 			strings.TrimSpace(cfg.Observaciones),
@@ -434,16 +680,34 @@ func UpsertEmpresaSoporteRemotoConfig(dbConn *sql.DB, cfg EmpresaSoporteRemotoCo
 		modo_operacion,
 		requiere_aprobacion_operador,
 		auto_cerrar_minutos,
+		max_conexiones_mes,
+		max_minutos_mes,
+		max_dispositivos,
+		portal_publico_habilitado,
+		rustdesk_server_host,
+		rustdesk_server_key,
+		cliente_windows_url,
+		cliente_linux_url,
+		carpeta_transferencia,
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` ,
 		cfg.EmpresaID,
 		soporteRemotoBoolToInt(cfg.Habilitado),
 		cfg.ProveedorPreferido,
 		cfg.ModoOperacion,
 		soporteRemotoBoolToInt(cfg.RequiereAprobacionOperador),
 		cfg.AutoCerrarMinutos,
+		cfg.MaxConexionesMes,
+		cfg.MaxMinutosMes,
+		cfg.MaxDispositivos,
+		soporteRemotoBoolToInt(cfg.PortalPublicoHabilitado),
+		cfg.RustDeskServerHost,
+		cfg.RustDeskServerKey,
+		cfg.ClienteWindowsURL,
+		cfg.ClienteLinuxURL,
+		cfg.CarpetaTransferencia,
 		strings.TrimSpace(cfg.UsuarioCreador),
 		cfg.Estado,
 		strings.TrimSpace(cfg.Observaciones),
@@ -471,8 +735,10 @@ func CreateEmpresaSoporteRemotoDispositivo(dbConn *sql.DB, item EmpresaSoporteRe
 		return 0, errors.New("nombre_equipo es obligatorio")
 	}
 	item.StreamURL = strings.TrimSpace(item.StreamURL)
-	if item.StreamURL == "" {
-		return 0, errors.New("stream_url es obligatorio")
+	item.RustDeskDeviceID = strings.TrimSpace(item.RustDeskDeviceID)
+	item.CarpetaTransferencia = strings.TrimSpace(item.CarpetaTransferencia)
+	if item.StreamURL == "" && item.RustDeskDeviceID == "" {
+		return 0, errors.New("stream_url o rustdesk_device_id es obligatorio")
 	}
 	item.CodigoDispositivo = strings.TrimSpace(item.CodigoDispositivo)
 	if item.CodigoDispositivo == "" {
@@ -484,9 +750,27 @@ func CreateEmpresaSoporteRemotoDispositivo(dbConn *sql.DB, item EmpresaSoporteRe
 		item.Estado = "activo"
 	}
 
+	if cfg, err := GetEmpresaSoporteRemotoConfig(dbConn, item.EmpresaID); err == nil && cfg.MaxDispositivos > 0 {
+		activeDevices, countErr := soporteRemotoCountActiveDevices(dbConn, item.EmpresaID)
+		if countErr != nil {
+			return 0, countErr
+		}
+		if activeDevices >= int64(cfg.MaxDispositivos) {
+			return 0, fmt.Errorf("%w: maximo de dispositivos (%d) alcanzado", ErrSoporteRemotoPlanLimit, cfg.MaxDispositivos)
+		}
+	}
+
 	accesoPINHash := strings.TrimSpace(item.AccesoPINHash)
 	if accesoPINHash == "" {
 		accesoPINHash = soporteRemotoHash(accesoPINPlano)
+	}
+	rustDeskPasswordEnc := strings.TrimSpace(item.RustDeskPasswordEnc)
+	if rustDeskPasswordEnc != "" {
+		var encErr error
+		rustDeskPasswordEnc, encErr = soporteRemotoEncryptSecret(rustDeskPasswordEnc)
+		if encErr != nil {
+			return 0, encErr
+		}
 	}
 
 	res, err := dbConn.Exec(`INSERT INTO empresa_soporte_remoto_dispositivos (
@@ -498,13 +782,17 @@ func CreateEmpresaSoporteRemotoDispositivo(dbConn *sql.DB, item EmpresaSoporteRe
 		sistema_operativo,
 		agente_version,
 		stream_url,
+		rustdesk_device_id,
+		rustdesk_password_enc,
+		carpeta_transferencia,
+		acceso_publico_habilitado,
 		estado_conexion,
 		ultimo_heartbeat,
 		acceso_pin_hash,
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` ,
 		item.EmpresaID,
 		item.CodigoDispositivo,
 		item.NombreEquipo,
@@ -513,6 +801,10 @@ func CreateEmpresaSoporteRemotoDispositivo(dbConn *sql.DB, item EmpresaSoporteRe
 		strings.TrimSpace(item.SistemaOperativo),
 		strings.TrimSpace(item.AgenteVersion),
 		item.StreamURL,
+		item.RustDeskDeviceID,
+		rustDeskPasswordEnc,
+		item.CarpetaTransferencia,
+		soporteRemotoBoolToInt(item.AccesoPublicoHabilitado),
 		item.EstadoConexion,
 		strings.TrimSpace(item.UltimoHeartbeat),
 		accesoPINHash,
@@ -530,6 +822,159 @@ func CreateEmpresaSoporteRemotoDispositivo(dbConn *sql.DB, item EmpresaSoporteRe
 	return id, nil
 }
 
+func soporteRemotoCountActiveDevices(dbConn *sql.DB, empresaID int64) (int64, error) {
+	var total int64
+	err := dbConn.QueryRow(`SELECT COUNT(1)
+		FROM empresa_soporte_remoto_dispositivos
+		WHERE empresa_id = ? AND COALESCE(estado, 'activo') <> 'inactivo'`, empresaID).Scan(&total)
+	return total, err
+}
+
+func GetEmpresaSoporteRemotoUso(dbConn *sql.DB, empresaID int64) (EmpresaSoporteRemotoUso, error) {
+	if dbConn == nil {
+		return EmpresaSoporteRemotoUso{}, errors.New("db connection is nil")
+	}
+	if empresaID <= 0 {
+		return EmpresaSoporteRemotoUso{}, errors.New("empresa_id invalido")
+	}
+
+	cfg, err := GetEmpresaSoporteRemotoConfig(dbConn, empresaID)
+	if err != nil {
+		return EmpresaSoporteRemotoUso{}, err
+	}
+
+	uso := EmpresaSoporteRemotoUso{
+		EmpresaID:        empresaID,
+		MesReferencia:    time.Now().In(time.Local).Format("2006-01"),
+		MaxConexionesMes: int64(cfg.MaxConexionesMes),
+		MaxMinutosMes:    int64(cfg.MaxMinutosMes),
+		MaxDispositivos:  int64(cfg.MaxDispositivos),
+	}
+
+	err = dbConn.QueryRow(`SELECT
+		COALESCE(SUM(CASE WHEN COALESCE(estado, 'activo') <> 'inactivo' THEN 1 ELSE 0 END), 0),
+		COALESCE(SUM(CASE WHEN COALESCE(estado, 'activo') <> 'inactivo' AND COALESCE(estado_conexion, 'offline') = 'online' THEN 1 ELSE 0 END), 0)
+		FROM empresa_soporte_remoto_dispositivos
+		WHERE empresa_id = ?`, empresaID).Scan(&uso.DispositivosActivos, &uso.DispositivosOnline)
+	if err != nil {
+		return EmpresaSoporteRemotoUso{}, err
+	}
+
+	rows, err := dbConn.Query(`SELECT
+		COALESCE(fecha_creacion, ''),
+		COALESCE(estado_sesion, 'pendiente'),
+		COALESCE(iniciada_en, ''),
+		COALESCE(finalizada_en, ''),
+		COALESCE(duracion_minutos_solicitada, 0),
+		COALESCE(duracion_minutos_consumida, 0),
+		COALESCE(bloqueada_por_limite, 0)
+		FROM empresa_soporte_remoto_sesiones
+		WHERE empresa_id = ? AND COALESCE(estado, 'activo') <> 'inactivo'`, empresaID)
+	if err != nil {
+		return EmpresaSoporteRemotoUso{}, err
+	}
+	defer rows.Close()
+
+	now := time.Now().In(time.Local)
+	for rows.Next() {
+		var fechaCreacion string
+		var estadoSesion string
+		var iniciadaEn string
+		var finalizadaEn string
+		var durSolicitada int
+		var durConsumida int
+		var bloqueada int64
+		if err := rows.Scan(&fechaCreacion, &estadoSesion, &iniciadaEn, &finalizadaEn, &durSolicitada, &durConsumida, &bloqueada); err != nil {
+			return EmpresaSoporteRemotoUso{}, err
+		}
+		if !soporteRemotoIsCurrentMonth(fechaCreacion, now) {
+			continue
+		}
+		if bloqueada > 0 {
+			uso.IntentosBloqueadosMes++
+			continue
+		}
+		estadoSesion = soporteRemotoNormalizeSesionEstado(estadoSesion)
+		if estadoSesion == "rechazada" {
+			continue
+		}
+		uso.SesionesMes++
+		minutes := durConsumida
+		if minutes <= 0 {
+			minutes = soporteRemotoComputeSessionMinutes(iniciadaEn, finalizadaEn, durSolicitada)
+		}
+		uso.MinutosConsumidosMes += int64(minutes)
+	}
+	if err := rows.Err(); err != nil {
+		return EmpresaSoporteRemotoUso{}, err
+	}
+
+	uso.PuedeCrearDispositivo = uso.MaxDispositivos <= 0 || uso.DispositivosActivos < uso.MaxDispositivos
+	uso.PuedeCrearSesion = true
+	if uso.MaxConexionesMes > 0 && uso.SesionesMes >= uso.MaxConexionesMes {
+		uso.PuedeCrearSesion = false
+		uso.BloqueoMotivo = fmt.Sprintf("maximo de conexiones del mes alcanzado (%d)", uso.MaxConexionesMes)
+	}
+	if uso.PuedeCrearSesion && uso.MaxMinutosMes > 0 && uso.MinutosConsumidosMes >= uso.MaxMinutosMes {
+		uso.PuedeCrearSesion = false
+		uso.BloqueoMotivo = fmt.Sprintf("maximo de minutos del mes alcanzado (%d)", uso.MaxMinutosMes)
+	}
+	if !uso.PuedeCrearDispositivo && strings.TrimSpace(uso.BloqueoMotivo) == "" {
+		uso.BloqueoMotivo = fmt.Sprintf("maximo de dispositivos alcanzado (%d)", uso.MaxDispositivos)
+	}
+
+	return uso, nil
+}
+
+func validateEmpresaSoporteRemotoSessionPlan(dbConn *sql.DB, empresaID int64, duracionMinutos int) (EmpresaSoporteRemotoUso, EmpresaSoporteRemotoConfig, error) {
+	cfg, err := GetEmpresaSoporteRemotoConfig(dbConn, empresaID)
+	if err != nil {
+		return EmpresaSoporteRemotoUso{}, EmpresaSoporteRemotoConfig{}, err
+	}
+	uso, err := GetEmpresaSoporteRemotoUso(dbConn, empresaID)
+	if err != nil {
+		return EmpresaSoporteRemotoUso{}, EmpresaSoporteRemotoConfig{}, err
+	}
+	if cfg.MaxConexionesMes > 0 && uso.SesionesMes >= int64(cfg.MaxConexionesMes) {
+		return uso, cfg, fmt.Errorf("%w: maximo de conexiones del mes alcanzado (%d)", ErrSoporteRemotoPlanLimit, cfg.MaxConexionesMes)
+	}
+	if cfg.MaxMinutosMes > 0 && uso.MinutosConsumidosMes+int64(duracionMinutos) > int64(cfg.MaxMinutosMes) {
+		return uso, cfg, fmt.Errorf("%w: maximo de minutos del mes excedido (%d)", ErrSoporteRemotoPlanLimit, cfg.MaxMinutosMes)
+	}
+	return uso, cfg, nil
+}
+
+func createEmpresaSoporteRemotoBlockedAttempt(dbConn *sql.DB, empresaID, dispositivoID int64, solicitadaPor, operadorNombre, operadorEmail, motivo string, duracionMinutos int, observaciones string) {
+	_, _ = dbConn.Exec(`INSERT INTO empresa_soporte_remoto_sesiones (
+		empresa_id,
+		dispositivo_id,
+		codigo_sesion,
+		solicitada_por,
+		operador_nombre,
+		operador_email,
+		motivo,
+		estado_sesion,
+		duracion_minutos_solicitada,
+		duracion_minutos_consumida,
+		bloqueada_por_limite,
+		finalizada_en,
+		usuario_creador,
+		estado,
+		observaciones
+	) VALUES (?, ?, ?, ?, ?, ?, ?, 'rechazada', ?, 0, 1, datetime('now','localtime'), ?, 'activo', ?)`,
+		empresaID,
+		dispositivoID,
+		soporteRemotoGenerateSessionCode(),
+		strings.TrimSpace(solicitadaPor),
+		strings.TrimSpace(operadorNombre),
+		strings.TrimSpace(operadorEmail),
+		strings.TrimSpace(motivo),
+		duracionMinutos,
+		strings.TrimSpace(solicitadaPor),
+		strings.TrimSpace(observaciones),
+	)
+}
+
 // UpdateEmpresaSoporteRemotoDispositivo actualiza metadata de un dispositivo.
 func UpdateEmpresaSoporteRemotoDispositivo(dbConn *sql.DB, item EmpresaSoporteRemotoDispositivo, accesoPINPlano string) error {
 	if dbConn == nil {
@@ -543,8 +988,10 @@ func UpdateEmpresaSoporteRemotoDispositivo(dbConn *sql.DB, item EmpresaSoporteRe
 		return errors.New("nombre_equipo es obligatorio")
 	}
 	item.StreamURL = strings.TrimSpace(item.StreamURL)
-	if item.StreamURL == "" {
-		return errors.New("stream_url es obligatorio")
+	item.RustDeskDeviceID = strings.TrimSpace(item.RustDeskDeviceID)
+	item.CarpetaTransferencia = strings.TrimSpace(item.CarpetaTransferencia)
+	if item.StreamURL == "" && item.RustDeskDeviceID == "" {
+		return errors.New("stream_url o rustdesk_device_id es obligatorio")
 	}
 	item.CodigoDispositivo = strings.TrimSpace(item.CodigoDispositivo)
 	if item.CodigoDispositivo == "" {
@@ -560,6 +1007,14 @@ func UpdateEmpresaSoporteRemotoDispositivo(dbConn *sql.DB, item EmpresaSoporteRe
 	if accesoPINHash == "" {
 		accesoPINHash = soporteRemotoHash(accesoPINPlano)
 	}
+	rustDeskPasswordEnc := strings.TrimSpace(item.RustDeskPasswordEnc)
+	if rustDeskPasswordEnc != "" {
+		var encErr error
+		rustDeskPasswordEnc, encErr = soporteRemotoEncryptSecret(rustDeskPasswordEnc)
+		if encErr != nil {
+			return encErr
+		}
+	}
 
 	res, err := dbConn.Exec(`UPDATE empresa_soporte_remoto_dispositivos
 		SET codigo_dispositivo = ?,
@@ -569,6 +1024,10 @@ func UpdateEmpresaSoporteRemotoDispositivo(dbConn *sql.DB, item EmpresaSoporteRe
 			sistema_operativo = ?,
 			agente_version = ?,
 			stream_url = ?,
+			rustdesk_device_id = ?,
+			rustdesk_password_enc = CASE WHEN ? = '' THEN rustdesk_password_enc ELSE ? END,
+			carpeta_transferencia = ?,
+			acceso_publico_habilitado = ?,
 			estado_conexion = ?,
 			ultimo_heartbeat = ?,
 			acceso_pin_hash = CASE WHEN ? = '' THEN acceso_pin_hash ELSE ? END,
@@ -584,6 +1043,10 @@ func UpdateEmpresaSoporteRemotoDispositivo(dbConn *sql.DB, item EmpresaSoporteRe
 		strings.TrimSpace(item.SistemaOperativo),
 		strings.TrimSpace(item.AgenteVersion),
 		item.StreamURL,
+		item.RustDeskDeviceID,
+		rustDeskPasswordEnc, rustDeskPasswordEnc,
+		item.CarpetaTransferencia,
+		soporteRemotoBoolToInt(item.AccesoPublicoHabilitado),
 		item.EstadoConexion,
 		strings.TrimSpace(item.UltimoHeartbeat),
 		accesoPINHash,
@@ -641,6 +1104,7 @@ func GetEmpresaSoporteRemotoDispositivoByID(dbConn *sql.DB, empresaID, deviceID 
 	}
 
 	var out EmpresaSoporteRemotoDispositivo
+	var publico sql.NullInt64
 	err := dbConn.QueryRow(`SELECT
 		id,
 		empresa_id,
@@ -651,6 +1115,10 @@ func GetEmpresaSoporteRemotoDispositivoByID(dbConn *sql.DB, empresaID, deviceID 
 		COALESCE(sistema_operativo, ''),
 		COALESCE(agente_version, ''),
 		COALESCE(stream_url, ''),
+		COALESCE(rustdesk_device_id, ''),
+		COALESCE(rustdesk_password_enc, ''),
+		COALESCE(carpeta_transferencia, ''),
+		COALESCE(acceso_publico_habilitado, 1),
 		COALESCE(estado_conexion, 'offline'),
 		COALESCE(ultimo_heartbeat, ''),
 		COALESCE(acceso_pin_hash, ''),
@@ -671,6 +1139,10 @@ func GetEmpresaSoporteRemotoDispositivoByID(dbConn *sql.DB, empresaID, deviceID 
 		&out.SistemaOperativo,
 		&out.AgenteVersion,
 		&out.StreamURL,
+		&out.RustDeskDeviceID,
+		&out.RustDeskPasswordEnc,
+		&out.CarpetaTransferencia,
+		&publico,
 		&out.EstadoConexion,
 		&out.UltimoHeartbeat,
 		&out.AccesoPINHash,
@@ -683,6 +1155,7 @@ func GetEmpresaSoporteRemotoDispositivoByID(dbConn *sql.DB, empresaID, deviceID 
 	if err != nil {
 		return EmpresaSoporteRemotoDispositivo{}, err
 	}
+	out.AccesoPublicoHabilitado = !publico.Valid || publico.Int64 > 0
 	out.EstadoConexion = soporteRemotoNormalizeConexion(out.EstadoConexion)
 	out.Estado = soporteRemotoNormalizeEstado(out.Estado)
 	return out, nil
@@ -702,6 +1175,7 @@ func GetEmpresaSoporteRemotoDispositivoByCodigo(dbConn *sql.DB, empresaID int64,
 	}
 
 	var out EmpresaSoporteRemotoDispositivo
+	var publico sql.NullInt64
 	err := dbConn.QueryRow(`SELECT
 		id,
 		empresa_id,
@@ -712,6 +1186,10 @@ func GetEmpresaSoporteRemotoDispositivoByCodigo(dbConn *sql.DB, empresaID int64,
 		COALESCE(sistema_operativo, ''),
 		COALESCE(agente_version, ''),
 		COALESCE(stream_url, ''),
+		COALESCE(rustdesk_device_id, ''),
+		COALESCE(rustdesk_password_enc, ''),
+		COALESCE(carpeta_transferencia, ''),
+		COALESCE(acceso_publico_habilitado, 1),
 		COALESCE(estado_conexion, 'offline'),
 		COALESCE(ultimo_heartbeat, ''),
 		COALESCE(acceso_pin_hash, ''),
@@ -732,6 +1210,10 @@ func GetEmpresaSoporteRemotoDispositivoByCodigo(dbConn *sql.DB, empresaID int64,
 		&out.SistemaOperativo,
 		&out.AgenteVersion,
 		&out.StreamURL,
+		&out.RustDeskDeviceID,
+		&out.RustDeskPasswordEnc,
+		&out.CarpetaTransferencia,
+		&publico,
 		&out.EstadoConexion,
 		&out.UltimoHeartbeat,
 		&out.AccesoPINHash,
@@ -744,6 +1226,7 @@ func GetEmpresaSoporteRemotoDispositivoByCodigo(dbConn *sql.DB, empresaID int64,
 	if err != nil {
 		return EmpresaSoporteRemotoDispositivo{}, err
 	}
+	out.AccesoPublicoHabilitado = !publico.Valid || publico.Int64 > 0
 	out.EstadoConexion = soporteRemotoNormalizeConexion(out.EstadoConexion)
 	out.Estado = soporteRemotoNormalizeEstado(out.Estado)
 	return out, nil
@@ -843,6 +1326,10 @@ func ListEmpresaSoporteRemotoDispositivos(dbConn *sql.DB, empresaID int64, filte
 		COALESCE(sistema_operativo, ''),
 		COALESCE(agente_version, ''),
 		COALESCE(stream_url, ''),
+		COALESCE(rustdesk_device_id, ''),
+		COALESCE(rustdesk_password_enc, ''),
+		COALESCE(carpeta_transferencia, ''),
+		COALESCE(acceso_publico_habilitado, 1),
 		COALESCE(estado_conexion, 'offline'),
 		COALESCE(ultimo_heartbeat, ''),
 		COALESCE(acceso_pin_hash, ''),
@@ -862,6 +1349,7 @@ func ListEmpresaSoporteRemotoDispositivos(dbConn *sql.DB, empresaID int64, filte
 	out := make([]EmpresaSoporteRemotoDispositivo, 0)
 	for rows.Next() {
 		var item EmpresaSoporteRemotoDispositivo
+		var publico sql.NullInt64
 		if err := rows.Scan(
 			&item.ID,
 			&item.EmpresaID,
@@ -872,6 +1360,10 @@ func ListEmpresaSoporteRemotoDispositivos(dbConn *sql.DB, empresaID int64, filte
 			&item.SistemaOperativo,
 			&item.AgenteVersion,
 			&item.StreamURL,
+			&item.RustDeskDeviceID,
+			&item.RustDeskPasswordEnc,
+			&item.CarpetaTransferencia,
+			&publico,
 			&item.EstadoConexion,
 			&item.UltimoHeartbeat,
 			&item.AccesoPINHash,
@@ -883,6 +1375,7 @@ func ListEmpresaSoporteRemotoDispositivos(dbConn *sql.DB, empresaID int64, filte
 		); err != nil {
 			return nil, 0, err
 		}
+		item.AccesoPublicoHabilitado = !publico.Valid || publico.Int64 > 0
 		item.EstadoConexion = soporteRemotoNormalizeConexion(item.EstadoConexion)
 		item.Estado = soporteRemotoNormalizeEstado(item.Estado)
 		out = append(out, item)
@@ -909,11 +1402,17 @@ func CreateEmpresaSoporteRemotoSession(dbConn *sql.DB, empresaID, dispositivoID 
 	if strings.EqualFold(device.Estado, "inactivo") {
 		return EmpresaSoporteRemotoSession{}, errors.New("dispositivo inactivo")
 	}
-	if strings.TrimSpace(device.StreamURL) == "" {
-		return EmpresaSoporteRemotoSession{}, errors.New("dispositivo sin stream_url")
+	if strings.TrimSpace(device.StreamURL) == "" && strings.TrimSpace(device.RustDeskDeviceID) == "" {
+		return EmpresaSoporteRemotoSession{}, errors.New("dispositivo sin stream_url ni rustdesk_device_id")
 	}
 
 	duracion := soporteRemotoNormalizeAutoCerrar(duracionMinutos)
+	if _, _, err := validateEmpresaSoporteRemotoSessionPlan(dbConn, empresaID, duracion); err != nil {
+		if errors.Is(err, ErrSoporteRemotoPlanLimit) {
+			createEmpresaSoporteRemotoBlockedAttempt(dbConn, empresaID, dispositivoID, solicitadaPor, operadorNombre, operadorEmail, motivo, duracion, err.Error())
+		}
+		return EmpresaSoporteRemotoSession{}, err
+	}
 	estadoSesion := "activa"
 	iniciadaEn := time.Now().In(time.Local).Format("2006-01-02 15:04:05")
 	if requiereAprobacion {
@@ -934,6 +1433,9 @@ func CreateEmpresaSoporteRemotoSession(dbConn *sql.DB, empresaID, dispositivoID 
 		operador_email,
 		motivo,
 		estado_sesion,
+		duracion_minutos_solicitada,
+		duracion_minutos_consumida,
+		bloqueada_por_limite,
 		token_visualizacion_hash,
 		url_visualizacion,
 		iniciada_en,
@@ -941,7 +1443,7 @@ func CreateEmpresaSoporteRemotoSession(dbConn *sql.DB, empresaID, dispositivoID 
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'activo', ?)`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, 'activo', ?)` ,
 		empresaID,
 		dispositivoID,
 		codigoSesion,
@@ -950,6 +1452,7 @@ func CreateEmpresaSoporteRemotoSession(dbConn *sql.DB, empresaID, dispositivoID 
 		strings.TrimSpace(operadorEmail),
 		strings.TrimSpace(motivo),
 		estadoSesion,
+		duracion,
 		tokenHash,
 		strings.TrimSpace(device.StreamURL),
 		iniciadaEn,
@@ -983,6 +1486,7 @@ func GetEmpresaSoporteRemotoSessionByID(dbConn *sql.DB, empresaID, sessionID int
 	}
 
 	var out EmpresaSoporteRemotoSession
+	var blocked sql.NullInt64
 	err := dbConn.QueryRow(`SELECT
 		s.id,
 		s.empresa_id,
@@ -995,6 +1499,9 @@ func GetEmpresaSoporteRemotoSessionByID(dbConn *sql.DB, empresaID, sessionID int
 		COALESCE(s.operador_email, ''),
 		COALESCE(s.motivo, ''),
 		COALESCE(s.estado_sesion, 'pendiente'),
+		COALESCE(s.duracion_minutos_solicitada, 0),
+		COALESCE(s.duracion_minutos_consumida, 0),
+		COALESCE(s.bloqueada_por_limite, 0),
 		COALESCE(s.token_visualizacion_hash, ''),
 		COALESCE(s.url_visualizacion, ''),
 		COALESCE(s.iniciada_en, ''),
@@ -1020,6 +1527,9 @@ func GetEmpresaSoporteRemotoSessionByID(dbConn *sql.DB, empresaID, sessionID int
 		&out.OperadorEmail,
 		&out.Motivo,
 		&out.EstadoSesion,
+		&out.DuracionMinSolicitada,
+		&out.DuracionMinConsumida,
+		&blocked,
 		&out.tokenVisualizacionHash,
 		&out.URLVisualizacion,
 		&out.IniciadaEn,
@@ -1034,6 +1544,7 @@ func GetEmpresaSoporteRemotoSessionByID(dbConn *sql.DB, empresaID, sessionID int
 	if err != nil {
 		return EmpresaSoporteRemotoSession{}, err
 	}
+	out.BloqueadaPorLimite = blocked.Valid && blocked.Int64 > 0
 	out.EstadoSesion = soporteRemotoNormalizeSesionEstado(out.EstadoSesion)
 	out.Estado = soporteRemotoNormalizeEstado(out.Estado)
 	return out, nil
@@ -1100,25 +1611,39 @@ func SetEmpresaSoporteRemotoSessionEstadoByCodigo(dbConn *sql.DB, empresaID int6
 	}
 
 	estado := soporteRemotoNormalizeSesionEstado(estadoSesion)
+	current, err := GetEmpresaSoporteRemotoSessionByCodigo(dbConn, empresaID, codigoSesion)
+	if err != nil {
+		return err
+	}
 	iniciadaEn := ""
 	finalizadaEn := ""
-	if estado == "activa" {
+	duracionConsumida := current.DuracionMinConsumida
+	if (estado == "activa" || estado == "aprobada") && strings.TrimSpace(current.IniciadaEn) == "" {
 		iniciadaEn = time.Now().In(time.Local).Format("2006-01-02 15:04:05")
 	}
 	if estado == "finalizada" || estado == "rechazada" || estado == "expirada" {
 		finalizadaEn = time.Now().In(time.Local).Format("2006-01-02 15:04:05")
+		if !current.BloqueadaPorLimite {
+			baseInicio := current.IniciadaEn
+			if strings.TrimSpace(baseInicio) == "" {
+				baseInicio = iniciadaEn
+			}
+			duracionConsumida = soporteRemotoComputeSessionMinutes(baseInicio, finalizadaEn, current.DuracionMinSolicitada)
+		}
 	}
 
 	res, err := dbConn.Exec(`UPDATE empresa_soporte_remoto_sesiones
 		SET estado_sesion = ?,
 			iniciada_en = CASE WHEN ? = '' THEN iniciada_en ELSE ? END,
 			finalizada_en = CASE WHEN ? = '' THEN finalizada_en ELSE ? END,
+			duracion_minutos_consumida = CASE WHEN ? <= 0 THEN duracion_minutos_consumida ELSE ? END,
 			observaciones = CASE WHEN ? = '' THEN observaciones ELSE ? END,
 			fecha_actualizacion = datetime('now','localtime')
 		WHERE empresa_id = ? AND trim(codigo_sesion) = trim(?)`,
 		estado,
 		iniciadaEn, iniciadaEn,
 		finalizadaEn, finalizadaEn,
+		duracionConsumida, duracionConsumida,
 		strings.TrimSpace(observaciones), strings.TrimSpace(observaciones),
 		empresaID,
 		codigoSesion,
@@ -1187,6 +1712,9 @@ func ListEmpresaSoporteRemotoSesiones(dbConn *sql.DB, empresaID int64, filter Em
 		COALESCE(s.operador_email, ''),
 		COALESCE(s.motivo, ''),
 		COALESCE(s.estado_sesion, 'pendiente'),
+		COALESCE(s.duracion_minutos_solicitada, 0),
+		COALESCE(s.duracion_minutos_consumida, 0),
+		COALESCE(s.bloqueada_por_limite, 0),
 		COALESCE(s.token_visualizacion_hash, ''),
 		COALESCE(s.url_visualizacion, ''),
 		COALESCE(s.iniciada_en, ''),
@@ -1209,6 +1737,7 @@ func ListEmpresaSoporteRemotoSesiones(dbConn *sql.DB, empresaID int64, filter Em
 	out := make([]EmpresaSoporteRemotoSession, 0)
 	for rows.Next() {
 		var item EmpresaSoporteRemotoSession
+		var blocked sql.NullInt64
 		if err := rows.Scan(
 			&item.ID,
 			&item.EmpresaID,
@@ -1221,6 +1750,9 @@ func ListEmpresaSoporteRemotoSesiones(dbConn *sql.DB, empresaID int64, filter Em
 			&item.OperadorEmail,
 			&item.Motivo,
 			&item.EstadoSesion,
+			&item.DuracionMinSolicitada,
+			&item.DuracionMinConsumida,
+			&blocked,
 			&item.tokenVisualizacionHash,
 			&item.URLVisualizacion,
 			&item.IniciadaEn,
@@ -1234,6 +1766,7 @@ func ListEmpresaSoporteRemotoSesiones(dbConn *sql.DB, empresaID int64, filter Em
 		); err != nil {
 			return nil, 0, err
 		}
+		item.BloqueadaPorLimite = blocked.Valid && blocked.Int64 > 0
 		item.EstadoSesion = soporteRemotoNormalizeSesionEstado(item.EstadoSesion)
 		item.Estado = soporteRemotoNormalizeEstado(item.Estado)
 		out = append(out, item)

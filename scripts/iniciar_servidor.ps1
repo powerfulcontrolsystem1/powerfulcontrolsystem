@@ -370,7 +370,7 @@ function Ensure-VpsPostgresTunnel {
     if ($keyArg -match '\s') {
         $keyArg = '"' + ($keyArg -replace '"', '\"') + '"'
     }
-    $args = @('-batch', '-N', '-i', $keyArg, '-L', $forwardSpec, $target)
+    $plinkArgs = @('-batch', '-N', '-i', $keyArg, '-L', $forwardSpec, $target)
 
     $tmpDir = Join-Path $BackendDir 'tmp'
     if (-not (Test-Path $tmpDir)) {
@@ -382,7 +382,7 @@ function Ensure-VpsPostgresTunnel {
     Remove-Item -Path $plinkStdOut -Force -ErrorAction SilentlyContinue
     Remove-Item -Path $plinkStdErr -Force -ErrorAction SilentlyContinue
 
-    $proc = Start-Process -FilePath $plink.Source -ArgumentList $args -WindowStyle Hidden -RedirectStandardOutput $plinkStdOut -RedirectStandardError $plinkStdErr -PassThru
+    $proc = Start-Process -FilePath $plink.Source -ArgumentList $plinkArgs -WindowStyle Hidden -RedirectStandardOutput $plinkStdOut -RedirectStandardError $plinkStdErr -PassThru
     if ($null -eq $proc -or $proc.HasExited) {
         throw ("No se pudo iniciar tunel SSH DB a {0} ({1})." -f $target, $forwardSpec)
     }
@@ -668,6 +668,43 @@ function Stop-ProcessesOnPort {
     }
 }
 
+function Test-ServerAvailability {
+    param(
+        [int]$Port,
+        [string]$BaseUrl
+    )
+
+    $tcpListening = $false
+    try {
+        $tcpListening = @(Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction Stop).Count -gt 0
+    } catch {
+        $tcpListening = ((netstat -ano | findstr (":" + $Port) 2>$null) -match 'LISTENING').Count -gt 0
+    }
+
+    if ($tcpListening) {
+        return $true
+    }
+
+    try {
+        $response = Invoke-WebRequest -Uri $BaseUrl -Method Get -UseBasicParsing -MaximumRedirection 0 -TimeoutSec 5 -ErrorAction Stop
+        if ($null -ne $response -and $response.StatusCode -ge 200 -and $response.StatusCode -lt 500) {
+            return $true
+        }
+    } catch {
+        if ($_.Exception -and $_.Exception.Response) {
+            try {
+                $statusCode = [int]$_.Exception.Response.StatusCode
+                if ($statusCode -ge 200 -and $statusCode -lt 500) {
+                    return $true
+                }
+            } catch {
+            }
+        }
+    }
+
+    return $false
+}
+
 Write-Step "3/8 Liberando puerto 8080"
 Stop-ProcessesOnPort -port 8080
 
@@ -773,17 +810,25 @@ if ($Background) {
     exit 0
 }
 
-# Esperar a que el puerto 8080 esté en LISTENING
+# Esperar a que el backend abra el puerto y/o responda HTTP
 $maxWait = 30  # segundos
 $waited = 0
+$listenPort = 8080
+if (-not [string]::IsNullOrWhiteSpace($env:PORT)) {
+    $parsedPort = 0
+    if ([int]::TryParse($env:PORT, [ref]$parsedPort) -and $parsedPort -gt 0) {
+        $listenPort = $parsedPort
+    }
+}
+$baseUrl = "http://localhost:{0}" -f $listenPort
 Write-Step "8/8 Esperando disponibilidad del servidor"
-Write-Info "Esperando a que http://localhost:8080 responda (timeout ${maxWait}s)..."
+Write-Info ("Esperando a que {0} responda (timeout {1}s)..." -f $baseUrl, $maxWait)
 while ($waited -lt $maxWait) {
     Start-Sleep -Seconds 1
     $waited++
 
     if ($serverProc.HasExited) {
-        Write-ErrMsg ("server.exe finalizo antes de abrir el puerto 8080 (ExitCode={0})." -f $serverProc.ExitCode)
+        Write-ErrMsg ("server.exe finalizo antes de quedar disponible en el puerto {0} (ExitCode={1})." -f $listenPort, $serverProc.ExitCode)
         $errPath = Join-Path $backend "server.err"
         if (Test-Path $errPath) {
             Write-WarnMsg "Ultimas lineas de backend/server.err:"
@@ -793,17 +838,17 @@ while ($waited -lt $maxWait) {
         exit 1
     }
 
-    $listening = (netstat -ano | findstr ":8080" 2>$null) -match 'LISTENING'
+    $listening = Test-ServerAvailability -Port $listenPort -BaseUrl $baseUrl
     if ($listening) { break }
 }
 
 if ($listening) {
-    Write-Ok "Servidor escuchando en puerto 8080."
-    Write-Info "Direccion: http://localhost:8080"
+    Write-Ok ("Servidor disponible en puerto {0}." -f $listenPort)
+    Write-Info ("Direccion: {0}" -f $baseUrl)
     # Abrir en navegador por defecto
     try {
         Write-Info "Abriendo navegador por defecto..."
-        Start-Process "http://localhost:8080"
+        Start-Process $baseUrl
     } catch {
         Write-WarnMsg "No se pudo abrir el navegador automaticamente: $_"
     }

@@ -1,3 +1,6 @@
+//go:build tools
+// +build tools
+
 package main
 
 import (
@@ -11,13 +14,8 @@ import (
 )
 
 func main() {
-    tipoID := flag.Int64("tipo_id", 0, "tipo_id opcional")
-    nombre := flag.String("nombre", "LICENCIA PRUEBA", "nombre")
-    descripcion := flag.String("descripcion", "licencia para pruebas", "descripcion")
-    valor := flag.Float64("valor", 10000.0, "valor")
-    duracion := flag.Int("duracion", 30, "duracion en dias")
-    modulos := flag.String("modulos", "", "modulos habilitados")
-    superRol := flag.Int("super_rol", 0, "super rol habilitado")
+    email := flag.String("email", "licencia_test@example.com", "email del administrador propietario de la licencia")
+    plan := flag.String("plan", "free", "plan de licencia")
     dbPath := flag.String("db", "superadministrador.db", "ruta a la BD superadministrador")
     flag.Parse()
 
@@ -27,9 +25,12 @@ func main() {
     }
     defer db.Close()
 
-    id, err := dbpkg.CreateLicencia(db, *tipoID, *nombre, *descripcion, *valor, *duracion, *modulos, *superRol)
+    if err := dbpkg.EnsureLicenciasSchema(db); err != nil {
+        log.Fatalf("failed to ensure licencias schema: %v", err)
+    }
+    id, err := dbpkg.CreateLicenciaForAdmin(db, *email, *plan)
     if err != nil {
         log.Fatalf("failed to create licencia: %v", err)
     }
-    fmt.Printf("created licencia id=%d\n", id)
+    fmt.Printf("created licencia id=%d for admin=%s plan=%s\n", id, *email, *plan)
 }

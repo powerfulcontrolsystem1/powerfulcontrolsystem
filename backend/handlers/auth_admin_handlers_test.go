@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"net/http"
@@ -20,6 +21,7 @@ func ensureAdminAuthTestSchema(t *testing.T, dbSuper *sql.DB) {
 		name TEXT,
 		role TEXT DEFAULT 'administrador',
 		photo TEXT,
+		usuario_creador TEXT,
 		fecha_creacion TEXT,
 		fecha_actualizacion TEXT,
 		estado TEXT DEFAULT 'activo',
@@ -54,6 +56,66 @@ func ensureAdminAuthTestSchema(t *testing.T, dbSuper *sql.DB) {
 	);`)
 	if err != nil {
 		t.Fatalf("create sesiones schema: %v", err)
+	}
+}
+
+func TestAdministradoresHandlerFiltraPorAdministradorPrincipalYHeredaPrivilegios(t *testing.T) {
+	dbSuper := openTestSQLite(t, "administradores_scope_handler.db")
+	ensureAdminAuthTestSchema(t, dbSuper)
+
+	if err := dbpkg.UpsertAdministradorConCreador(dbSuper, "principal@empresa.com", "Principal", "super_administrador", "", ""); err != nil {
+		t.Fatalf("upsert principal: %v", err)
+	}
+	if err := dbpkg.UpsertAdministradorConCreador(dbSuper, "delegado@empresa.com", "Delegado", "super_administrador", "", "principal@empresa.com"); err != nil {
+		t.Fatalf("upsert delegado: %v", err)
+	}
+	if err := dbpkg.UpsertAdministradorConCreador(dbSuper, "externo@empresa.com", "Externo", "super_administrador", "", ""); err != nil {
+		t.Fatalf("upsert externo: %v", err)
+	}
+
+	h := AdministradoresHandler(dbSuper)
+	listReq := httptest.NewRequest(http.MethodGet, "/super/api/administradores", nil)
+	listReq = listReq.WithContext(context.WithValue(listReq.Context(), "adminEmail", "delegado@empresa.com"))
+	listRR := httptest.NewRecorder()
+	h.ServeHTTP(listRR, listReq)
+
+	if listRR.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, listRR.Code, listRR.Body.String())
+	}
+
+	var admins []dbpkg.Admin
+	if err := json.Unmarshal(listRR.Body.Bytes(), &admins); err != nil {
+		t.Fatalf("decode admins response: %v body=%s", err, listRR.Body.String())
+	}
+	if len(admins) != 2 {
+		t.Fatalf("expected 2 admins in delegated scope, got %d: %+v", len(admins), admins)
+	}
+	for _, admin := range admins {
+		if strings.EqualFold(admin.Email, "externo@empresa.com") {
+			t.Fatalf("externo admin must not be visible inside delegated scope: %+v", admins)
+		}
+	}
+
+	body := `{"email":"nuevo@empresa.com","name":"Nuevo","role":"administrador"}`
+	postReq := httptest.NewRequest(http.MethodPost, "/super/api/administradores", strings.NewReader(body))
+	postReq = postReq.WithContext(context.WithValue(postReq.Context(), "adminEmail", "delegado@empresa.com"))
+	postReq.Header.Set("Content-Type", "application/json")
+	postRR := httptest.NewRecorder()
+	h.ServeHTTP(postRR, postReq)
+
+	if postRR.Code != http.StatusNoContent {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusNoContent, postRR.Code, postRR.Body.String())
+	}
+
+	createdAdmin, err := dbpkg.GetAdminByEmailFull(dbSuper, "nuevo@empresa.com")
+	if err != nil {
+		t.Fatalf("get created admin: %v", err)
+	}
+	if !strings.EqualFold(createdAdmin.UsuarioCreador, "principal@empresa.com") {
+		t.Fatalf("expected usuario_creador principal@empresa.com, got %q", createdAdmin.UsuarioCreador)
+	}
+	if !strings.EqualFold(createdAdmin.Role, "super_administrador") {
+		t.Fatalf("expected inherited role super_administrador, got %q", createdAdmin.Role)
 	}
 }
 

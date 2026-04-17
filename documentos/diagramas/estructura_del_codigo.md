@@ -1,6 +1,128 @@
 # Estructura del codigo
 
-Fecha de actualizacion: 2026-04-16
+Fecha de actualizacion: 2026-04-17
+
+## Actualizacion 2026-04-16 (reportes globales super por administrador creador)
+
+- Backend:
+  - `backend/handlers/reportes_globales.go` agrega `/super/api/reportes_globales` para exponer catalogo, tablero, dataset y exportacion multiformato de reportes globales super.
+  - La ruta reutiliza los datasets del modulo empresarial de reportes y filtra las empresas por `usuario_creador` usando `adminEmailFromRequest`, evitando mezclar empresas de otros administradores.
+  - `backend/db/db.go` incorpora `GetEmpresasByUsuarioCreador` y `backend/handlers/reportes_globales_test.go` valida aislamiento por creador y consolidacion de datasets.
+- Frontend:
+  - `web/super/reportes_globales.html` deja de ser informativa y pasa a ser una vista operativa con filtros por rango, seleccion multiple de empresas y modo consolidado o individual.
+  - `web/js/super_reportes_globales.js` consume la API super, mezcla o separa reportes segun filtros y renderiza resumen ejecutivo, tabla consolidada y tarjetas individuales por empresa.
+  - `web/estilos.css` agrega el shell visual del modulo.
+- Flujo:
+  - `seleccionar_empresa.html` -> `Reportes globales` -> `GET /super/api/reportes_globales?action=catalogo` -> seleccion de empresas creadas por el administrador -> `tablero|dataset|export` consolidado o individual.
+
+## Actualizacion 2026-04-17 (reportes globales super: graficos y lectura ejecutiva)
+
+- Frontend:
+  - `web/super/reportes_globales.html` agrega una franja de lectura ejecutiva global y una seccion de graficos del portafolio de empresas del administrador.
+  - `web/js/super_reportes_globales.js` deriva indicadores ejecutivos desde `tablero.por_empresa`, calcula concentracion, empresa lider, empresa bajo presion y genera graficos ligeros sin dependencias externas para ingresos, balance/egresos y composicion activa/inactiva.
+  - `web/estilos.css` incorpora estilos dedicados para tarjetas ejecutivas, barras comparativas y anillo de portafolio.
+- Flujo:
+  - `Reportes globales` -> actualizacion del tablero -> resumen ejecutivo textual + graficos comparativos -> lectura inmediata del estado consolidado antes de bajar al dataset detallado.
+
+## Actualizacion 2026-04-16 (menu flotante publico: reserva de espacio frente a botones cercanos)
+
+- Frontend:
+  - `web/menu.js` marca `body` y `html` con `has-floating-menu` cuando el menu flotante se inyecta en la pagina.
+  - `web/estilos.css` usa esa marca para reservar espacio lateral en encabezados y barras de acciones compartidas (`page-header`, `empresa-section-header`, `portal-header`, `header`) y evitar que el toggle del menu quede montado sobre botones cercanos.
+- Flujo:
+  - pagina publica o administrativa con sesion -> inyeccion de `floating-menu` -> activacion de `has-floating-menu` -> encabezados superiores respetan un margen de seguridad para botones y CTA cercanos al borde superior derecho.
+
+## Actualizacion 2026-04-16 (pagina principal super: sin parpadeo inicial de cantidad falsa)
+
+- Frontend:
+  - `web/super/pagina_principal.html` deja de mostrar el valor HTML inicial `5` mientras la configuracion real aun no se ha cargado.
+  - El campo `ppCantidad` arranca deshabilitado con placeholder de carga y solo se habilita cuando la API devuelve la configuracion persistida.
+  - La carga del editor ahora sincroniza `cantidad` con el mayor valor entre `config.cantidad` y `config.tarjetas.length`, evitando desajustes visuales entre el editor super y las tarjetas/descripciones publicas.
+- Flujo:
+  - abrir `/super/pagina_principal.html` -> estado de carga del campo `Cantidad de tarjetas` -> `GET /super/api/pagina_principal?action=config` -> editor habilitado con la cantidad real persistida y tarjetas alineadas con `/index.html` y `/descripcion_de_los_sistemas.ht`.
+
+## Actualizacion 2026-04-16 (seleccionar empresa: restauracion del formato clasico de tarjetas)
+
+- Frontend:
+  - `web/js/seleccionar_empresa.js` vuelve a construir las tarjetas de empresa con el formato historico `portal-card warm`, centrado y compacto, sin el layout enriquecido `empresa-card`.
+- Flujo:
+  - `seleccionar_empresa.html` -> listado agrupado por licencia -> tarjetas clasicas de empresa con nombre, observaciones y estado de licencia -> acceso al panel o a configuracion de licencia.
+
+## Actualizacion 2026-04-16 (menu flotante publico: enlaces tactiles operativos en movil)
+
+- Frontend:
+  - `web/menu.js` elimina el cierre del panel en `touchstart` sobre `.fm-item` y mantiene el cierre en `click`, evitando que los enlaces del menu flotante pierdan la navegacion en celulares.
+  - `web/estilos.css` agrega `touch-action: manipulation` al boton del menu y a cada item para mejorar la respuesta tactil.
+- Flujo:
+  - toque en boton del menu -> apertura del panel -> toque en enlace `.fm-item` -> navegacion normal al destino -> cierre del panel sin bloquear la accion del enlace.
+
+## Actualizacion 2026-04-17 (portal publico de usuarios: contrato versionado y subdominio por empresa)
+
+- Backend:
+  - `backend/db/usuarios_empresa.go` centraliza `EnsureEmpresaUsuariosAuthSchema` y agrega persistencia de `acepta_contrato`, `contrato_version_aceptada` y `fecha_acepta_contrato` en `users` para SQLite y PostgreSQL.
+  - `backend/handlers/usuarios_empresa.go` exige contrato vigente antes de login, primer password, reset y cambio de contrasena; ademas resuelve enlaces publicos de correo hacia `https://{empresa_slug}.powerfulcontrolsystem.com/login_usuario.html` o al `dominio_publico` configurado por empresa.
+  - `backend/main.go` asegura el esquema auth de usuarios al arrancar y hace que la raiz del subdominio `usuarios.powerfulcontrolsystem.com` sirva `web/login_usuario.html`.
+  - `backend/handlers/auth_users_carritos_test.go` cubre aceptacion requerida de contrato, login exitoso con aceptacion y la construccion del enlace publico del subdominio.
+- Frontend:
+  - `web/login_usuario.html`, `web/js/login_usuario.js` y `web/estilos.css` reestructuran el portal publico de usuarios con registro por invitacion, bloque de contrato, recuperacion, reset y cambio de contrasena en una sola experiencia.
+  - `web/administrar_empresa.html` y `web/js/administrar_empresa.js` agregan el acceso visible del menu lateral al portal publico de usuarios resolviendo `empresa_slug` o `dominio_publico` desde la configuracion de venta publica; `web/administrar_empresa/administrar_usuarios.html` deja de duplicar ese acceso fuera del menu.
+- Flujo:
+  - `administrar_empresa` o correo de invitacion -> URL publica `https://{empresa_slug}.powerfulcontrolsystem.com/login_usuario.html?empresa_id=...` o dominio publico equivalente -> aceptacion de contrato vigente -> `/api/empresa/usuarios/login|establecer_password|restablecer_password|cambiar_password` -> `administrar_empresa.html?id=empresa_id` con menu filtrado por rol.
+
+## Actualizacion 2026-04-16 (estaciones: sincronizacion backend de carritos por defecto)
+
+- Backend:
+  - `backend/db/empresa_estacion_prefs.go` agrega `SyncEmpresaEstacionCarritos`, que interpreta `estaciones_config`, asegura el esquema de `carritos_compras` y crea o corrige un carrito enlazado por estacion usando `codigo=EST-empresa-estacion` y `referencia_externa=ESTACION_<id>`.
+  - La sincronizacion fija el estado base `inactivo/cerrado` del carrito enlazado para que la relacion estacion-carrito exista antes de que la operacion abra la sesion.
+  - `backend/handlers/empresa_estacion_prefs.go` ejecuta esa sincronizacion despues del `upsert` de `empresa_estacion_prefs` cuando la clave persistida es `estaciones_config` con `estacion_id=0`.
+  - `backend/db/empresa_estacion_prefs_test.go` y `backend/handlers/empresa_estacion_prefs_test.go` cubren creacion inicial, actualizacion sin duplicados y aislamiento por `empresa_id`.
+- Flujo:
+  - `configuracion_de_estaciones.html` o cualquier cliente API -> `PUT /api/empresa/estacion_prefs?empresa_id=...` con `clave=estaciones_config` -> `UpsertEmpresaEstacionPref` -> `SyncEmpresaEstacionCarritos` -> carritos base disponibles para `estaciones.html`, `carrito_de_compras.html` y `ventas_simple.html`.
+
+## Actualizacion 2026-04-16 (home publico: contacto centrado debajo de las tarjetas)
+
+- Frontend:
+  - `web/index.html` deja `Registrarse o iniciar sesión` como unica accion superior y mueve `Informacion de contacto` a un bloque centrado debajo de `portalCardsGrid`.
+  - `web/estilos.css` agrega `portal-contact-action` y reutiliza el estilo comercial del CTA del home para el acceso de contacto.
+- Flujo:
+  - `index.html` -> tarjetas dinamicas del home -> acceso `Informacion de contacto` centrado bajo el grid -> `/Informacion_de_contacto.html`.
+
+## Actualizacion 2026-04-16 (deploy VPS: limpieza de procesos huerfanos del backend)
+
+- Scripts de despliegue:
+  - `scripts/sync_to_vps.ps1` mueve `StartLimitIntervalSec=0` a la seccion `Unit` de la unidad systemd generada para evitar el warning repetitivo de `Unknown key name`.
+  - El restart remoto agrega una limpieza explicita de procesos previos que coincidan con `backend/bin/server_linux_amd64` antes de liberar el puerto y arrancar la unidad nueva.
+- Flujo operativo:
+  - `sync_to_vps` -> sincronizacion remota -> bootstrap -> `systemd daemon-reload` -> stop del servicio -> limpieza de binarios backend huerfanos -> liberacion de `SERVER_PORT` -> arranque del servicio nuevo -> healthcheck local `127.0.0.1:SERVER_PORT`.
+
+## Actualizacion 2026-04-16 (checkout Epayco: alias `sambox` normalizado a sandbox)
+
+- Backend:
+  - `backend/handlers/payments_handlers.go` amplia `normalizeEpaycoMode` para aceptar `sambox` igual que `sandbox`, `test` y `pruebas`.
+  - `backend/handlers/payments_handlers_test.go` agrega una regresion que valida `epayco.mode=sambox` y confirma que el checkout resultante expone `test=true`.
+- Flujo:
+  - `super/api/config/epayco` guarda el modo -> `POST /epayco/create_transaction` normaliza `sambox` -> `checkout.epayco.co/checkout.php?...&test=true`.
+
+## Actualizacion 2026-04-16 (arcade publico activo: ocho juegos compactos, popup fijo y pausa real)
+
+- Frontend:
+  - `web/Juegos/arcade_window.css` define la shell compacta compartida para los juegos activos del arcade, con overlays, chips, cabecera y footer unificados.
+  - `web/Juegos/patito_volando_plus.html`, `web/Juegos/serpiente_pixel_plus.html`, `web/Juegos/memoria_estelar_plus.html` y `web/Juegos/rebote_bloques_plus.html` reemplazan el set activo anterior con variantes de mas progresion, vidas, bonus y poderes.
+  - `web/Juegos/pacman_plus.html`, `web/Juegos/tetris_plus.html`, `web/Juegos/carton_fire_plus.html` y `web/Juegos/ajedrez_vs_ia_plus.html` amplian el arcade con nuevos generos manteniendo records compartidos y pausa real.
+  - `web/Juegos/menu_juegos.html` publica solo los ocho titulos activos, elimina `pollitos`, usa popup fijo `700x700` sin barras en escritorio y conserva degradacion a pestana unica en movil.
+  - `web/img/juegos/pacman.svg`, `web/img/juegos/tetris.svg`, `web/img/juegos/carton_fire.svg` y `web/img/juegos/ajedrez_vs_ia.svg` completan el nuevo set de portadas del lobby.
+- Flujo:
+  - `menu flotante` -> `/Juegos/menu_juegos.html` -> tarjeta del juego -> popup `700x700` o navegacion directa en movil -> juego activo con `arcade_shared.js` + pausa real + record persistente.
+  - `Portal publico - Juegos` -> mismo nombre de jugador y sonido global -> records independientes por slug (`patito_volando`, `serpiente_pixel`, `memoria_estelar`, `rebote_bloques`, `pacman`, `tetris`, `carton_fire`, `ajedrez_vs_ia`).
+
+## Actualizacion 2026-04-17 (arcade publico: Ajedrez 3D plus con cinco dificultades)
+
+- Frontend:
+  - `web/Juegos/ajedrez_3d_plus.html` agrega una nueva experiencia publica de ajedrez con tablero en perspectiva 3D simulada, cronometro arcade, cuenta regresiva de arranque y ayudas tacticas (`sugerencia`, `deshacer`, `congelar IA`).
+  - El juego reutiliza `web/Juegos/arcade_shared.js` para jugador global, records locales y sonido compartido, y expone cinco niveles de dificultad (`Rookie`, `Club`, `Pro`, `Elite`, `Maestro`) variando profundidad, retardo y margen de error de la IA.
+  - `web/Juegos/menu_juegos.html` publica la novena tarjeta del lobby hacia `Ajedrez 3D plus` y `web/img/juegos/ajedrez_3d.svg` añade la portada dedicada.
+- Flujo:
+  - `menu flotante` -> `/Juegos/menu_juegos.html` -> `Ajedrez 3D plus` -> `/Juegos/ajedrez_3d_plus.html` -> seleccion de dificultad -> cuenta regresiva -> duelo con IA y record local por slug `ajedrez_3d`.
 
 ## Actualizacion 2026-04-16 (home publico: botones superiores compactos y centrados en movil)
 
@@ -151,6 +273,18 @@ flowchart TD
 - Flujo:
   - `POST /epayco/create_transaction` -> checkout Epayco con `response=https://powerfulcontrolsystem.com/epayco/respuesta.html?...` y `confirmation=https://powerfulcontrolsystem.com/epayco/webhook`.
   - `Epayco` -> `/epayco/respuesta.html` -> `/pagar_licencia.html` -> polling real con `/epayco/transaction_status`.
+
+## Actualizacion 2026-04-16 (licencias: checkout Epayco con `p_key` y selector oculto si solo hay un metodo)
+
+- Backend:
+  - `backend/handlers/payments_handlers.go` agrega `p_key` al checkout de Epayco cuando `epayco.private_key` existe, manteniendo `public_key` y `p_cust_id_cliente` para compatibilidad operativa.
+  - `backend/handlers/payments_handlers_test.go` cubre la presencia de `p_key` cuando hay llave privada y su omision cuando no esta configurada.
+- Frontend:
+  - `web/pagar_licencia.html` deja de renderizar el selector visual de metodos cuando solo una pasarela esta disponible y activa automaticamente ese flujo.
+  - `web/pagar_licencia.html` redirige la misma pestaña al checkout de Epayco despues de guardar la referencia pendiente, evitando dejar el pago en una pestaña emergente con polling antes del retorno.
+- Flujo:
+  - `pagar_licencia.html` -> metodo unico disponible -> panel directo sin selector.
+  - `POST /epayco/create_transaction` -> `checkout.php` con `public_key`, `p_cust_id_cliente` opcional, `p_key` opcional y callbacks HTTPS publicos -> redirect de la misma pestaña a Epayco -> `/epayco/respuesta.html` -> `pagar_licencia.html` reanuda la verificacion.
 
 ## Actualizacion 2026-04-16 (frontend de licencias y seleccion de empresa: preseleccion visible y tarjetas compactas)
 
@@ -500,7 +634,7 @@ Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe re
 - Operacion VPS:
   - El servicio usa `backend/.env.local` como `EnvironmentFile`, arranca desde `backend/bin/server_linux_amd64`, registra salida en `backend/server.log` y `backend/server.err`, y queda configurado con `Restart=always` + `systemctl enable` para sobrevivir caidas del proceso y reinicios del VPS.
 - Flujo operativo:
-  - `sync_to_vps` sincroniza archivos, ejecuta bootstrap de entorno, detecta el gestor de paquetes remoto para instalar utilidades base cuando hay privilegios (`ca-certificates`, `curl`, `wget`, `procps`/`procps-ng`, `lsof`), fuerza la actualizacion de `SERVER_PORT`, hace `systemctl daemon-reload`, reinicia la unidad del backend y valida salud HTTP en `127.0.0.1:SERVER_PORT` antes de dar el despliegue por exitoso.
+  - `sync_to_vps` sincroniza archivos, ejecuta bootstrap de entorno, detecta el gestor de paquetes remoto para instalar utilidades base cuando hay privilegios (`ca-certificates`, `curl`, `wget`, `procps`/`procps-ng`, `lsof`), fuerza la actualizacion de `SERVER_PORT`, hace `systemctl daemon-reload`, detiene residuos del backend anterior, reinicia la unidad del backend y valida salud HTTP en `127.0.0.1:SERVER_PORT` antes de dar el despliegue por exitoso.
   - El flujo emite etiquetas operativas `BOOTSTRAP_*` y `DEPLOY_*` para distinguir fallos de red, permisos, dependencias, variables de entorno y arranque del servicio con sugerencias de correccion.
 
 ## Actualizacion 2026-04-14 (OAuth Google HTTPS + login estable en VPS/local)
@@ -997,18 +1131,21 @@ flowchart TD
   - `backend/db/soporte_remoto.go` (nuevo):
     - agrega `EnsureEmpresaSoporteRemotoSchema`.
     - crea tablas `empresa_soporte_remoto_configuracion`, `empresa_soporte_remoto_dispositivos` y `empresa_soporte_remoto_sesiones`.
-    - implementa flujo de dispositivos por empresa, validacion de acceso por PIN hash, heartbeat de agente y sesiones con token temporal de visualizacion.
+    - amplía configuracion con topes `max_conexiones_mes`, `max_minutos_mes` y `max_dispositivos`.
+    - implementa flujo de dispositivos por empresa, validacion de acceso por PIN hash, heartbeat de agente, calculo de consumo mensual, bloqueo automatico por plan y registro de intentos bloqueados dentro de `empresa_soporte_remoto_sesiones`.
 
 - Backend handlers:
   - `backend/handlers/soporte_remoto.go` (nuevo):
-    - expone endpoint empresarial `/api/empresa/soporte_remoto` para configuracion, dispositivos, sesiones, aprobacion/finalizacion y resolver visualizacion.
+    - expone endpoint empresarial `/api/empresa/soporte_remoto` para configuracion, dispositivos, sesiones, aprobacion/finalizacion, resolver visualizacion y devolucion de consumo/uso por empresa.
     - expone endpoint publico `/api/public/soporte_remoto` para heartbeat y actualizacion de estado de sesion por agente/plugin.
+  - `backend/handlers/super_soporte_remoto.go` (nuevo):
+    - expone endpoint super `/super/api/soporte_remoto` para resumen multiempresa, consulta por empresa de dispositivos/sesiones y apertura o cierre centralizado de sesiones desde la mesa tecnica.
 
 - Integracion de arranque/rutas:
   - `backend/main.go`:
     - ejecuta `EnsureEmpresaSoporteRemotoSchema` en bootstrap.
     - registra migracion `2026-04-08-029-soporte-remoto-empresa`.
-    - registra rutas `/api/empresa/soporte_remoto` y `/api/public/soporte_remoto`.
+    - registra rutas `/api/empresa/soporte_remoto`, `/api/public/soporte_remoto` y `/super/api/soporte_remoto`.
   - `backend/utils/utils.go`:
     - habilita acceso publico a `/api/public/soporte_remoto`.
 
@@ -1020,9 +1157,11 @@ flowchart TD
 
 - Frontend:
   - `web/administrar_empresa/soporte_remoto.html` (nuevo):
-    - panel operativo para configuracion, dispositivos, sesiones y exportes multiformato.
+    - panel operativo para configuracion, dispositivos, sesiones, topes por plan y exportes multiformato.
   - `web/administrar_empresa/soporte_remoto_view.html` (nuevo):
     - visor embebido con resolucion por `empresa_id + codigo_sesion + token`.
+  - `web/super/soporte_remoto.html` (nuevo):
+    - panel tecnico central con lista de empresas, consumo mensual, cupos por plan, dispositivos, sesiones y visor embebido/reapertura en nueva pestaña.
 
 ## Actualizacion 2026-04-08 (modulo venta digital global: super + publico)
 

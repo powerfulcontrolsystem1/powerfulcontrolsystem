@@ -73,7 +73,17 @@ func EmpresaEstacionPrefsHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, "No se pudieron guardar preferencias", http.StatusInternalServerError)
 				return
 			}
-			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": id})
+			response := map[string]interface{}{"ok": true, "id": id}
+			if p.EstacionID == 0 && p.Clave == "estaciones_config" {
+				syncResult, syncErr := dbpkg.SyncEmpresaEstacionCarritos(dbEmp, empresaID, p.Valor, p.UsuarioCreador)
+				if syncErr != nil {
+					log.Printf("[estacion_prefs] sync carritos empresa_id=%d clave=%s error: %v", empresaID, p.Clave, syncErr)
+					http.Error(w, "No se pudieron sincronizar los carritos de estaciones", http.StatusInternalServerError)
+					return
+				}
+				response["sync"] = syncResult
+			}
+			writeJSON(w, http.StatusOK, response)
 			return
 		}
 		http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
