@@ -1,6 +1,13 @@
 Descripcion compacta de modulos (POS multiempresa)
 Actualizacion: 2026-04-16
 
+Actualizacion 2026-04-17 (portal publico: arcade movil con runtime comun de poderes y premios):
+- Se refuerza el submodulo `juegos publicos del portal` para que los nueve juegos activos del arcade compartan una misma capa movil de poderes, premios, records, sonido y countdown, sin reescribir la mecanica base de cada titulo.
+- `web/Juegos/arcade_shared.js` centraliza el runtime `createPowerSystem(...)` con biblioteca comun de poderes/premios y `web/Juegos/arcade_window.css` consolida el shell mobile-first vertical para la experiencia tactil.
+- `web/Juegos/patito_volando_plus.html`, `serpiente_pixel_plus.html`, `memoria_estelar_plus.html`, `rebote_bloques_plus.html`, `pacman_plus.html`, `tetris_plus.html`, `carton_fire_plus.html`, `ajedrez_vs_ia_plus.html` y `ajedrez_3d_plus.html` quedan enlazados al mismo runtime con hooks minimos de pausa, score, bonus, nivel, poderes y fin de sesion.
+- `web/Juegos/menu_juegos.html` amplía el lobby para mostrar avance del jugador, mejor juego personal, ranking propio por titulo y una lista movil mas informativa; `web/Juegos/arcade_shared.js` ajusta la economia compartida para que la ganancia de energia/poderes sea menos agresiva en juegos de eventos frecuentes.
+- Impacto de permisos: sin cambios; `Portal publico - Juegos` sigue siendo un modulo recreativo publico y de solo uso.
+
 Actualizacion 2026-04-16 (reportes globales super por administrador creador):
 - Se refuerza el modulo `reportes globales (super)` para consolidar, mezclar o separar reportes solo de las empresas creadas por el administrador autenticado.
 - `backend/handlers/reportes_globales.go` reutiliza el catalogo y los datasets del modulo empresarial de reportes; `web/super/reportes_globales.html` y `web/js/super_reportes_globales.js` agregan filtros por rango, seleccion multiple y exportacion multiformato.

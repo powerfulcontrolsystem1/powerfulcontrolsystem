@@ -474,7 +474,7 @@
     }
 
     function reset() {
-      powerState.energy = 24;
+      powerState.energy = 16;
       powerState.tickets = 0;
       powerState.streak = 0;
       powerState.prize = 'Sin premio';
@@ -484,7 +484,6 @@
       });
       grantCharge('shield', 1, true);
       grantCharge('chrono', 1, true);
-      grantCharge('jackpot', 1, true);
       grantCharge('radar', 1, true);
       setHidden(false);
       render();
@@ -513,14 +512,15 @@
       resume: function () { setHidden(false); },
       finish: function () { setHidden(true); },
       noteScore: function (amount, reason) {
-        rewardEnergy(Math.max(6, Math.round((Number(amount) || 0) / 5)), reason || 'Racha de puntos');
+        rewardEnergy(Math.max(2, Math.round((Number(amount) || 0) / 12)), reason || 'Racha de puntos');
       },
       noteBonus: function (amount, reason) {
-        rewardEnergy(Math.max(4, Math.round((Number(amount) || 0) / 6)), reason || 'Bonus movil');
+        rewardEnergy(Math.max(2, Math.round((Number(amount) || 0) / 14)), reason || 'Bonus movil');
       },
       noteLevel: function (level) {
-        grantRandomPower(Math.max(1, Math.min(3, Math.round(Number(level) || 1))));
-        setPrize('Nivel ' + String(level) + ' superado', 3);
+        var safeLevel = Math.max(1, Math.round(Number(level) || 1));
+        grantRandomPower(Math.min(2, 1 + Math.floor(safeLevel / 4)));
+        setPrize('Nivel ' + String(level) + ' superado', 2);
       },
       notePrize: function (label, tickets) {
         setPrize(label, tickets);

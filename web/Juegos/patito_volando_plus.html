@@ -386,6 +386,7 @@
 
       function updateGame() {
         if (!state.running || state.paused) return;
+        if (powerSystem) powerSystem.tick(1 / 60);
         state.frame += 1;
         if (state.frame % Math.max(66, 108 - state.level * 6) === 0) {
           spawnObstacle();
@@ -415,9 +416,11 @@
           if (!obstacle.scored && obstacle.x + obstacle.width < state.duck.x - state.duck.radius) {
             obstacle.scored = true;
             state.score += 1;
+            if (powerSystem) powerSystem.noteScore(12, 'Columna superada');
             if (state.score % 8 === 0) {
               state.level += 1;
               state.bonus += 18;
+              if (powerSystem) powerSystem.noteLevel(state.level);
               playEffect('match');
             } else {
               playEffect('point');

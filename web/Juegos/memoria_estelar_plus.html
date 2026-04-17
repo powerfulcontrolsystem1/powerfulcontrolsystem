@@ -254,6 +254,67 @@
         pauseBtn.setAttribute('aria-pressed', state.paused ? 'true' : 'false');
       }
 
+      var powerSystem = arcade ? arcade.createPowerSystem({
+        gameKey: GAME_KEY,
+        root: document.querySelector('.arcade-window'),
+        chipRow: document.querySelector('.arcade-chip-row'),
+        stage: document.querySelector('.arcade-stage'),
+        setStatus: setStatus,
+        onChange: updateHud,
+        handlers: {
+          addScore: function (payload) { state.score += payload.value; },
+          addBonus: function (payload) { state.score += payload.value; },
+          grantLife: function (payload) { state.lives = Math.min(6, state.lives + payload.value); updateHud(); },
+          slowTime: function () { state.freezeTimer = Math.max(state.freezeTimer, 10); updateHud(); },
+          grantShield: function () { state.freezeCharges += 1; updateHud(); },
+          radar: function () { state.radarCharges += 1; updateHud(); },
+          repair: function () { state.hintCharges += 1; state.freezeCharges += 1; updateHud(); },
+          ghost: function () { state.freezeTimer = Math.max(state.freezeTimer, 6); updateHud(); },
+          overdrive: function () { state.combo += 2; state.score += 24; updateHud(); },
+          pulse: function () {
+            state.deck.forEach(function (card) { card.hinted = false; });
+            Object.keys(state.deck.reduce(function (acc, card) {
+              if (!card.matched) {
+                acc[card.pair] = acc[card.pair] || [];
+                acc[card.pair].push(card);
+              }
+              return acc;
+            }, {})).some(function (key) {
+              var pair = state.deck.filter(function (card) { return !card.matched && card.pair === key; });
+              if (pair.length >= 2) {
+                pair[0].hinted = true;
+                pair[1].hinted = true;
+                return true;
+              }
+              return false;
+            });
+            renderBoard();
+          },
+          storm: function () {
+            var picked = null;
+            state.deck.some(function (card) {
+              if (card.matched) return false;
+              var mate = state.deck.find(function (other) {
+                return other.id !== card.id && !other.matched && other.pair === card.pair;
+              });
+              if (mate) {
+                picked = [card, mate];
+                return true;
+              }
+              return false;
+            });
+            if (picked) {
+              picked[0].matched = true;
+              picked[1].matched = true;
+              state.matchedPairs += 1;
+              state.score += 60;
+              renderBoard();
+              updateHud();
+            }
+          }
+        }
+      }) : null;
+
       function stopTimer() {
         if (state.tickHandle) {
           window.clearInterval(state.tickHandle);
@@ -265,6 +326,7 @@
         stopTimer();
         state.tickHandle = window.setInterval(function () {
           if (!state.running || state.paused || state.gameOver) return;
+          if (powerSystem) powerSystem.tick(1);
           if (state.freezeTimer > 0) {
             state.freezeTimer -= 1;
             return;
@@ -329,6 +391,7 @@
         state.radarCharges = 1;
         state.freezeCharges = 1;
         state.freezeTimer = 0;
+        if (powerSystem) powerSystem.reset();
         buildDeck();
         overlay.hidden = false;
         overlayTitle.textContent = 'Baraja lista';
@@ -348,6 +411,7 @@
         state.running = true;
         state.paused = false;
         state.gameOver = false;
+        if (powerSystem) powerSystem.resume();
         overlay.hidden = true;
         setStatus('Encuentra parejas y protege tus vidas.');
         startTimer();
@@ -358,6 +422,9 @@
       function togglePause(forceValue) {
         if (!state.running || state.gameOver) return;
         state.paused = typeof forceValue === 'boolean' ? forceValue : !state.paused;
+        if (powerSystem) {
+          if (state.paused) powerSystem.pause(); else powerSystem.resume();
+        }
         if (state.paused) {
           overlay.hidden = false;
           overlayTitle.textContent = 'Juego en pausa';
@@ -390,6 +457,7 @@
         state.running = false;
         state.gameOver = true;
         stopTimer();
+        if (powerSystem) powerSystem.finish();
         playEffect(won ? 'win' : 'fail');
         if (arcade && state.score > 0) {
           arcade.recordScore(GAME_KEY, state.score + state.lives * 25, {
@@ -413,6 +481,7 @@
         state.freezeCharges += 1;
         state.radarCharges += 1;
         state.score += 140 + state.level * 25;
+        if (powerSystem) powerSystem.noteLevel(state.level);
         buildDeck();
         overlay.hidden = false;
         overlayTitle.textContent = 'Nivel superado';
@@ -493,6 +562,7 @@
             state.matchedPairs += 1;
             state.combo += 1;
             state.score += 80 * state.level + state.combo * 14;
+            if (powerSystem) powerSystem.noteScore(80, 'Pareja perfecta');
             state.firstIndex = -1;
             state.secondIndex = -1;
             state.lock = false;

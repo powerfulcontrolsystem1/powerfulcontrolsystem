@@ -166,6 +166,29 @@
         pauseBtn.setAttribute('aria-pressed', state.paused ? 'true' : 'false');
       }
 
+      var powerSystem = arcade ? arcade.createPowerSystem({
+        gameKey: GAME_KEY,
+        root: document.querySelector('.arcade-window'),
+        chipRow: document.querySelector('.arcade-chip-row'),
+        stage: document.querySelector('.arcade-stage'),
+        state: state,
+        setStatus: setStatus,
+        onChange: updateHud,
+        handlers: {
+          setPowerLabel: function (payload) { state.powerLabel = payload.label; updateHud(); },
+          addScore: function (payload) { state.score += payload.value; },
+          addBonus: function (payload) { state.bonus += payload.value; },
+          grantLife: function (payload) { state.lives = Math.min(5, state.lives + payload.value); state.powerLabel = payload.label; updateHud(); },
+          grantShield: function (payload) { state.shield = Math.max(state.shield, payload.value); state.powerLabel = payload.label; updateHud(); },
+          slowTime: function (payload) { state.freezeSteps = Math.max(state.freezeSteps, 24); state.powerLabel = payload.label; updateHud(); },
+          ghost: function (payload) { state.shield = 1; state.freezeSteps = Math.max(state.freezeSteps, 10); state.powerLabel = payload.label; updateHud(); },
+          radar: function () { if (state.food) state.food.type = 'life'; },
+          repair: function () { state.snake.push({ x: state.snake[state.snake.length - 1].x, y: state.snake[state.snake.length - 1].y }); state.bonus += 12; updateHud(); },
+          storm: function () { state.score += 28; state.bonus += 20; updateHud(); },
+          overdrive: function (payload) { state.stepMs = Math.max(68, state.stepMs - 10); state.powerLabel = payload.label; updateHud(); }
+        }
+      }) : null;
+
       function recordScore() {
         if (!arcade) {
           syncProfile();
@@ -242,6 +265,7 @@
         state.freezeSteps = 0;
         state.shield = 0;
         state.powerLabel = 'Base';
+        if (powerSystem) powerSystem.reset();
         resetRound();
         overlay.hidden = false;
         overlayTitle.textContent = 'Listo para crecer';
@@ -262,6 +286,7 @@
         state.running = true;
         state.paused = false;
         state.gameOver = false;
+        if (powerSystem) powerSystem.resume();
         overlay.hidden = true;
         setStatus('Recoge frutas y evita el choque.');
         playEffect('start');
@@ -271,6 +296,9 @@
       function togglePause(forceValue) {
         if (!state.running || state.gameOver) return;
         state.paused = typeof forceValue === 'boolean' ? forceValue : !state.paused;
+        if (powerSystem) {
+          if (state.paused) powerSystem.pause(); else powerSystem.resume();
+        }
         if (state.paused) {
           overlay.hidden = false;
           overlayTitle.textContent = 'Juego en pausa';
@@ -298,6 +326,7 @@
         if (state.lives <= 0) {
           state.running = false;
           state.gameOver = true;
+          if (powerSystem) powerSystem.finish();
           overlay.hidden = false;
           overlayTitle.textContent = 'Fin de partida';
           overlayText.textContent = reason + ' La serpiente se quedó sin vidas.';
@@ -335,10 +364,12 @@
         } else {
           if (state.freezeSteps <= 0 && state.shield <= 0) state.powerLabel = 'Base';
         }
+        if (powerSystem) powerSystem.noteScore(18, 'Fruta conseguida');
         if (state.foodsEaten % 6 === 0) {
           state.level += 1;
           state.stepMs = Math.max(74, 170 - (state.level - 1) * 11);
           state.bonus += 25;
+          if (powerSystem) powerSystem.noteLevel(state.level);
           playEffect('match');
         } else {
           playEffect('eat');
@@ -467,6 +498,7 @@
         var delta = timestamp - state.lastFrame;
         state.lastFrame = timestamp;
         if (state.running && !state.paused && !state.gameOver) {
+          if (powerSystem) powerSystem.tick(delta);
           state.accumulator += delta;
           var effectiveStep = state.freezeSteps > 0 ? state.stepMs + 70 : state.stepMs;
           while (state.accumulator >= effectiveStep && state.running && !state.paused) {

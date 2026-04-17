@@ -1,5 +1,28 @@
 Descripcion de archivos del proyecto
 
+Actualizacion 2026-04-17: arcade publico movil unifica poderes y premios en los 9 juegos activos
+ - Archivos modificados:
+	 - web/Juegos/arcade_shared.js : Consolida el runtime compartido del arcade con countdown, sonido, records locales y biblioteca comun de poderes y premios.
+	 - web/Juegos/arcade_window.css : Refuerza la shell mobile-first del arcade con layout vertical, rack de poderes y panel compartido de progreso/premios.
+	 - web/Juegos/patito_volando_plus.html : Engancha la sesion de vuelo al runtime comun de poderes, bonus, niveles y pausa.
+	 - web/Juegos/serpiente_pixel_plus.html : Mantiene la integracion del runtime comun para poderes tacticos y records compartidos.
+	 - web/Juegos/memoria_estelar_plus.html : Mantiene la integracion del runtime comun para ayudas, bonus y progresion por rondas.
+	 - web/Juegos/rebote_bloques_plus.html : Mantiene la integracion del runtime comun para multibola, drops, bonus y premios.
+	 - web/Juegos/pacman_plus.html : Mantiene la integracion del runtime comun y el control tactil por gestos sobre el canvas.
+	 - web/Juegos/tetris_plus.html : Integra el runtime comun de poderes/premios con hooks de lineas, vidas, pausa, tick y limpieza de filas.
+	 - web/Juegos/carton_fire_plus.html : Integra el runtime comun con hooks de oleadas, drops, vidas, bonus y eventos de combate.
+	 - web/Juegos/ajedrez_vs_ia_plus.html : Integra el runtime comun con hooks de score tactico, congelacion de IA, ayudas y reinicio por ronda.
+	 - web/Juegos/ajedrez_3d_plus.html : Integra el runtime comun con el cronometro compartido, countdown, selector de dificultad y ayudas tacticas.
+	 - web/Juegos/menu_juegos.html : Refuerza el lobby con resumen del progreso personal, ranking propio por juego y lista movil con mas contexto antes de entrar a cada titulo.
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: El arcade publico queda unificado sobre una misma capa movil de poderes, premios, sonido, records y countdown para los nueve juegos activos del lobby, con economia compartida ajustada y un lobby que ahora expone mejor el progreso personal antes de jugar.
+ - Verificacion: diagnostico del editor sin errores en `web/Juegos/arcade_shared.js`, `web/Juegos/arcade_window.css` y los nueve juegos `*_plus.html`; busqueda de `createPowerSystem` presente en los 9 juegos activos.
+
 Actualizacion 2026-04-17: arcade publico agrega Ajedrez 3D plus
  - Archivos creados:
 	 - web/Juegos/ajedrez_3d_plus.html : Nuevo juego publico de ajedrez con tablero 3D simulado, cronometro de sesion, countdown y selector de cinco niveles de dificultad.

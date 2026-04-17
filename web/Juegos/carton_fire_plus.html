@@ -136,6 +136,43 @@
         frame: 0
       };
 
+      var powerSystem = arcade ? arcade.createPowerSystem({
+        gameKey: GAME_KEY,
+        root: document.querySelector('.arcade-window'),
+        chipRow: document.querySelector('.arcade-chip-row'),
+        stage: document.querySelector('.arcade-stage'),
+        state: state,
+        setStatus: setStatus,
+        onChange: updateHud,
+        handlers: {
+          setPowerLabel: function (payload) { state.powerLabel = payload.label; updateHud(); },
+          addScore: function (payload) { state.score += payload.value; updateHud(); },
+          addBonus: function (payload) { state.bonus += payload.value; updateHud(); },
+          grantLife: function (payload) { state.lives = Math.min(6, state.lives + payload.value); state.powerLabel = payload.label; updateHud(); },
+          grantShield: function (payload) { state.shieldTimer = Math.max(state.shieldTimer, 520); state.powerLabel = payload.label; updateHud(); },
+          slowTime: function (payload) { state.slowTimer = Math.max(state.slowTimer, 420); state.powerLabel = payload.label; updateHud(); },
+          radar: function () {
+            if (!state.enemies.length) return;
+            var enemy = state.enemies[Math.floor(Math.random() * state.enemies.length)];
+            state.drops.push({ x: enemy.x + enemy.width / 2, y: enemy.y + enemy.height / 2, type: 'bonus', radius: 12 });
+          },
+          repair: function () { state.lives = Math.min(6, state.lives + 1); state.bonus += 20; updateHud(); },
+          ghost: function (payload) { state.shieldTimer = Math.max(state.shieldTimer, 260); state.powerLabel = payload.label; updateHud(); },
+          overdrive: function (payload) { state.spreadTimer = Math.max(state.spreadTimer, 620); state.powerLabel = payload.label; updateHud(); },
+          pulse: function () {
+            state.enemies.slice(0, 3).forEach(function (enemy) { enemy.hp = 0; });
+            state.score += 36;
+            updateHud();
+          },
+          storm: function () {
+            state.enemies.slice(0, 5).forEach(function (enemy) { enemy.hp = 0; });
+            state.score += 64;
+            state.bonus += 24;
+            updateHud();
+          }
+        }
+      }) : null;
+
       function playEffect(name) {
         if (arcade) arcade.playEffect(name);
       }
@@ -219,6 +256,7 @@
         state.shieldTimer = 0;
         state.slowTimer = 0;
         state.frame = 0;
+        if (powerSystem) powerSystem.reset();
         createWave();
         overlay.hidden = false;
         overlayTitle.textContent = 'Hangar listo';
@@ -239,6 +277,7 @@
         state.running = true;
         state.paused = false;
         state.gameOver = false;
+        if (powerSystem) powerSystem.resume();
         overlay.hidden = true;
         setStatus('El hangar está abierto.');
         playEffect('start');
@@ -248,6 +287,9 @@
       function togglePause(forceValue) {
         if (!state.running || state.gameOver) return;
         state.paused = typeof forceValue === 'boolean' ? forceValue : !state.paused;
+        if (powerSystem) {
+          if (state.paused) powerSystem.pause(); else powerSystem.resume();
+        }
         if (state.paused) {
           overlay.hidden = false;
           overlayTitle.textContent = 'Juego en pausa';
@@ -282,27 +324,30 @@
       }
 
       function applyDrop(type) {
+        var bonusGain = 0;
         if (type === 'spread') {
           state.spreadTimer = 620;
           state.powerLabel = 'Ráfaga';
-          state.bonus += 18;
+          bonusGain = 18;
         } else if (type === 'shield') {
           state.shieldTimer = 520;
           state.powerLabel = 'Escudo';
-          state.bonus += 16;
+          bonusGain = 16;
         } else if (type === 'slow') {
           state.slowTimer = 420;
           state.powerLabel = 'Lento';
-          state.bonus += 14;
+          bonusGain = 14;
         } else if (type === 'life') {
           state.lives = Math.min(6, state.lives + 1);
           state.powerLabel = 'Vida';
-          state.bonus += 24;
+          bonusGain = 24;
         } else {
           state.score += 60;
-          state.bonus += 28;
+          bonusGain = 28;
           state.powerLabel = 'Bonus';
         }
+        state.bonus += bonusGain;
+        if (powerSystem) powerSystem.noteBonus(bonusGain, 'Drop atrapado');
         playEffect('win');
         updateHud();
       }
@@ -320,6 +365,7 @@
         if (state.lives <= 0) {
           state.running = false;
           state.gameOver = true;
+          if (powerSystem) powerSystem.finish();
           overlay.hidden = false;
           overlayTitle.textContent = 'Fin de partida';
           overlayText.textContent = reason + ' El carton quedó fuera de combate.';
@@ -332,6 +378,7 @@
         state.player.x = 310;
         state.enemyBullets = [];
         state.running = false;
+        if (powerSystem) powerSystem.pause();
         overlay.hidden = false;
         overlayTitle.textContent = 'Vida perdida';
         overlayText.textContent = reason + ' Te quedan ' + state.lives + ' vidas para resistir la oleada.';
@@ -344,6 +391,7 @@
         if (state.level >= 5) {
           state.running = false;
           state.gameOver = true;
+          if (powerSystem) powerSystem.finish();
           overlay.hidden = false;
           overlayTitle.textContent = 'Victoria en la arena';
           overlayText.textContent = 'Destruiste todas las oleadas de Carton Fire plus.';
@@ -356,6 +404,10 @@
         }
         state.level += 1;
         state.bonus += 42;
+        if (powerSystem) {
+          powerSystem.noteLevel(state.level);
+          powerSystem.pause();
+        }
         state.enemyBullets = [];
         state.bullets = [];
         state.drops = [];
@@ -417,6 +469,7 @@
               if (enemy.hp <= 0) {
                 state.score += 34 + state.level * 6;
                 state.bonus += 3;
+                if (powerSystem) powerSystem.noteScore(34 + state.level * 6);
                 spawnDrop(enemy);
                 state.enemies.splice(e, 1);
                 playEffect('point');
@@ -461,6 +514,7 @@
 
       function updateGame() {
         if (!state.running || state.paused) return;
+        if (powerSystem) powerSystem.tick(1 / 60);
         state.frame += 1;
         updatePlayer();
         updateEnemies();

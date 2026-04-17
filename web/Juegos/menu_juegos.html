@@ -176,6 +176,7 @@
 
     .arcade-summary-grid {
       display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 10px;
       margin-top: 14px;
     }
@@ -386,6 +387,44 @@
       .arcade-player-form {
         grid-template-columns: 1fr;
       }
+
+      .arcade-summary-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .arcade-list-meta {
+      display: grid;
+      gap: 3px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .arcade-list-subtitle,
+    .arcade-list-record {
+      font-size: 0.8rem;
+      color: rgba(19, 48, 71, 0.72);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .game-card-progress {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .game-card-progress span {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      font-size: 0.8rem;
+      font-weight: 800;
     }
   </style>
 </head>
@@ -394,12 +433,12 @@
     <section class="arcade-hero">
       <p class="arcade-kicker">Zona de juegos</p>
       <h1>Arcade del portal</h1>
-      <p class="arcade-hero-copy">El arcade activo ahora concentra ocho juegos compactos pensados para móvil, a pantalla completa, con nombre compartido, cronómetro de partida y sonido arcade sincronizado.</p>
+      <p class="arcade-hero-copy">El arcade activo ahora concentra nueve juegos compactos pensados para móvil, en vertical, con nombre compartido, progreso local, cronómetro de partida y sonido arcade sincronizado.</p>
       <div class="arcade-chip-row">
-        <span class="arcade-chip">Ocho juegos activos</span>
+        <span class="arcade-chip">Nueve juegos activos</span>
         <span class="arcade-chip">Marcadores guardados por navegador</span>
         <span class="arcade-chip">Sonido con control global</span>
-        <span class="arcade-chip">A pantalla completa</span>
+        <span class="arcade-chip">Premios y poderes compartidos</span>
       </div>
     </section>
 
@@ -418,7 +457,8 @@
         <div class="arcade-summary-grid">
           <div class="arcade-summary-item"><span>Juegos con record</span><strong id="summaryGames">0</strong></div>
           <div class="arcade-summary-item"><span>Partidas guardadas</span><strong id="summaryEntries">0</strong></div>
-          <div class="arcade-summary-item"><span>Mejor global</span><strong id="summaryBest">Sin datos</strong></div>
+          <div class="arcade-summary-item"><span>Juegos tuyos</span><strong id="summaryPlayerGames">0</strong></div>
+          <div class="arcade-summary-item"><span>Tu mejor juego</span><strong id="summaryBest">Sin datos</strong></div>
         </div>
       </article>
 
@@ -555,6 +595,7 @@
       var soundToggleBtn = document.getElementById('soundToggleBtn');
       var summaryGames = document.getElementById('summaryGames');
       var summaryEntries = document.getElementById('summaryEntries');
+      var summaryPlayerGames = document.getElementById('summaryPlayerGames');
       var summaryBest = document.getElementById('summaryBest');
 
       function escapeHTML(value) {
@@ -584,6 +625,17 @@
         }) || null;
       }
 
+      function getPlayerRank(gameSlug, playerName) {
+        if (!arcade || !playerName) return null;
+        var entries = arcade.getGameScores(gameSlug).entries;
+        for (var index = 0; index < entries.length; index += 1) {
+          if (String(entries[index].playerName || '').toLowerCase() === String(playerName || '').toLowerCase()) {
+            return index + 1;
+          }
+        }
+        return null;
+      }
+
       function openGameWindow(url, slug, width, height) {
         window.location.href = url;
       }
@@ -607,10 +659,18 @@
       function renderSummary() {
         if (!arcade) return;
         var summary = arcade.getGlobalSummary();
+        var playerName = arcade.getProfile().playerName || '';
+        var personal = games.map(function (game) {
+          var best = getPlayerBest(game.slug, playerName);
+          return best ? { slug: game.slug, title: game.title, best: best } : null;
+        }).filter(Boolean).sort(function (left, right) {
+          return Number(right.best.score || 0) - Number(left.best.score || 0);
+        });
         summaryGames.textContent = String(summary.totalGamesWithScores);
         summaryEntries.textContent = String(summary.totalEntries);
-        summaryBest.textContent = summary.overallBest && summary.overallBest.best
-          ? summary.overallBest.best.playerName + ' · ' + summary.overallBest.best.score
+        summaryPlayerGames.textContent = String(personal.length);
+        summaryBest.textContent = personal.length
+          ? personal[0].title + ' · ' + personal[0].best.score
           : 'Sin datos';
         soundToggleBtn.textContent = arcade.isSoundEnabled() ? 'Sonido: activado' : 'Sonido: apagado';
         soundToggleBtn.setAttribute('aria-pressed', arcade.isSoundEnabled() ? 'true' : 'false');
@@ -621,11 +681,17 @@
         var isMobileList = isTouchDevice() || (window.matchMedia && window.matchMedia('(max-width:720px)').matches);
         if (isMobileList) {
           gridEl.innerHTML = games.map(function(game){
+            var gameScores = arcade ? arcade.getGameScores(game.slug) : { entries: [], best: null };
+            var ownBest = getPlayerBest(game.slug, playerName);
             return '' +
               '<div class="arcade-list-item">' +
                 '<a class="arcade-list-link" href="' + escapeHTML(game.windowUrl) + '">' +
                   '<img class="list-cover" src="' + escapeHTML(game.coverUrl) + '" alt="' + escapeHTML(game.title) + '">' +
-                  '<span class="list-title">' + escapeHTML(game.title) + '</span>' +
+                  '<span class="arcade-list-meta">' +
+                    '<span class="list-title">' + escapeHTML(game.title) + '</span>' +
+                    '<span class="arcade-list-subtitle">' + escapeHTML(game.theme) + ' · ' + escapeHTML(game.mode) + '</span>' +
+                    '<span class="arcade-list-record">Tu record: ' + escapeHTML(ownBest ? String(ownBest.score) : 'Sin partida') + ' · Top: ' + escapeHTML(gameScores.best ? String(gameScores.best.score) : 'Sin marcas') + '</span>' +
+                  '</span>' +
                   '<span class="list-btn">Jugar</span>' +
                 '</a>' +
               '</div>';
@@ -636,6 +702,7 @@
         gridEl.innerHTML = games.map(function (game) {
             var gameScores = arcade ? arcade.getGameScores(game.slug) : { entries: [], best: null };
             var playerBest = getPlayerBest(game.slug, playerName);
+            var playerRank = getPlayerRank(game.slug, playerName);
             var topText = gameScores.best
               ? gameScores.best.playerName + ' · ' + gameScores.best.score
               : 'Sin marcas aun';
@@ -661,6 +728,10 @@
                     '<p class="game-card-kicker">' + escapeHTML(game.theme) + '</p>' +
                     '<h2 class="game-card-title">' + escapeHTML(game.title) + '</h2>' +
                     '<p class="game-card-copy">' + escapeHTML(game.summary) + '</p>' +
+                    '<div class="game-card-progress">' +
+                      '<span>' + escapeHTML(game.mode) + '</span>' +
+                      '<span>' + (playerRank ? ('Tu puesto #' + escapeHTML(String(playerRank))) : 'Sin ranking') + '</span>' +
+                    '</div>' +
                     '<div class="game-card-stats">' +
                       '<span>Tu mejor: ' + escapeHTML(ownText) + '</span>' +
                       '<span>Top general: ' + escapeHTML(topText) + '</span>' +

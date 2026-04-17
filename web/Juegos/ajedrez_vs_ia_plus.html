@@ -298,6 +298,30 @@
         lastFrame: 0
       };
 
+      var powerSystem = arcade ? arcade.createPowerSystem({
+        gameKey: GAME_KEY,
+        root: document.querySelector('.arcade-window'),
+        chipRow: document.querySelector('.arcade-chip-row'),
+        stage: document.querySelector('.arcade-stage'),
+        state: state,
+        setStatus: setStatus,
+        onChange: updateHud,
+        handlers: {
+          setPowerLabel: function (payload) { state.powerLabel = payload.label; updateHud(); },
+          addScore: function (payload) { state.score += payload.value; updateHud(); },
+          addBonus: function (payload) { state.score += payload.value; updateHud(); },
+          grantLife: function (payload) { state.lives = Math.min(5, state.lives + payload.value); state.powerLabel = payload.label; updateHud(); },
+          grantShield: function (payload) { state.undoCharges += 1; state.powerLabel = payload.label; updateHud(); },
+          slowTime: function (payload) { state.aiCountdown += 2200; state.freezeDelay += 800; state.powerLabel = payload.label; updateHud(); },
+          radar: function () { state.hintCharges += 1; updateHud(); },
+          repair: function () { state.undoCharges += 1; state.freezeCharges += 1; updateHud(); },
+          ghost: function (payload) { state.aiCountdown += 1400; state.powerLabel = payload.label; updateHud(); },
+          overdrive: function (payload) { state.score += 90 + state.level * 10; state.powerLabel = payload.label; updateHud(); },
+          pulse: function () { state.score += 35; if (state.aiPending) state.aiCountdown += 1200; updateHud(); },
+          storm: function () { state.score += 60; state.freezeCharges += 1; if (state.aiPending) state.aiCountdown += 2200; updateHud(); }
+        }
+      }) : null;
+
       function initialBoard() {
         return [
           ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
@@ -577,6 +601,7 @@
         state.freezeCharges = 1;
         state.freezeDelay = 0;
         state.lastFrame = 0;
+        if (powerSystem) powerSystem.reset();
         resetBoardOnly();
         overlay.hidden = false;
         overlayTitle.textContent = 'Tablero listo';
@@ -598,6 +623,7 @@
         state.running = true;
         state.paused = false;
         state.gameOver = false;
+        if (powerSystem) powerSystem.resume();
         overlay.hidden = true;
         setStatus('Selecciona una pieza blanca.');
         playEffect('start');
@@ -607,6 +633,9 @@
       function togglePause(forceValue) {
         if (!state.running || state.gameOver) return;
         state.paused = typeof forceValue === 'boolean' ? forceValue : !state.paused;
+        if (powerSystem) {
+          if (state.paused) powerSystem.pause(); else powerSystem.resume();
+        }
         if (state.paused) {
           overlay.hidden = false;
           overlayTitle.textContent = 'Juego en pausa';
@@ -621,9 +650,14 @@
       function finishRound(playerWon, reason) {
         state.running = false;
         state.gameOver = true;
+        if (powerSystem) powerSystem.finish();
         overlay.hidden = false;
         if (playerWon) {
           state.score += 500 + state.level * 100;
+          if (powerSystem) {
+            powerSystem.noteScore(500 + state.level * 100);
+            powerSystem.noteLevel(state.level + (state.level < 5 ? 1 : 0));
+          }
           state.powerLabel = 'Victoria';
           if (state.level < 5) state.level += 1;
           state.hintCharges += 1;
@@ -667,6 +701,10 @@
         state.running = true;
         state.gameOver = false;
         state.powerLabel = 'Base';
+        if (powerSystem) {
+          powerSystem.reset();
+          powerSystem.resume();
+        }
         overlay.hidden = true;
         setStatus('Nueva partida iniciada.');
         updateHud();
@@ -733,6 +771,7 @@
         if (applied.captured) {
           state.capturedByWhite.push(PIECE_ICONS[applied.captured]);
           state.score += Math.round((VALUES[applied.captured.toLowerCase()] || 50) / 5);
+          if (powerSystem) powerSystem.noteScore(Math.round((VALUES[applied.captured.toLowerCase()] || 50) / 5));
           playEffect('capture');
         } else {
           playEffect('move');
@@ -843,6 +882,9 @@
         if (!state.lastFrame) state.lastFrame = timestamp;
         var delta = timestamp - state.lastFrame;
         state.lastFrame = timestamp;
+        if (powerSystem && state.running && !state.paused && !state.gameOver) {
+          powerSystem.tick(delta / 1000);
+        }
         if (state.running && !state.paused && state.aiPending) {
           state.aiCountdown -= delta;
           if (state.aiCountdown <= 0) {

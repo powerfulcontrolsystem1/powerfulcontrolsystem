@@ -229,6 +229,53 @@
         lastFrame: 0
       };
 
+      var powerSystem = arcade ? arcade.createPowerSystem({
+        gameKey: GAME_KEY,
+        root: document.querySelector('.arcade-window'),
+        chipRow: document.querySelector('.arcade-chip-row'),
+        stage: document.querySelector('.arcade-stage'),
+        state: state,
+        setStatus: setStatus,
+        onChange: updateHud,
+        handlers: {
+          setPowerLabel: function (payload) { state.powerLabel = payload.label; updateHud(); },
+          addScore: function (payload) { state.score += payload.value; updateHud(); },
+          addBonus: function (payload) { state.bonus += payload.value; updateHud(); },
+          grantLife: function (payload) { state.lives = Math.min(5, state.lives + payload.value); state.powerLabel = payload.label; updateHud(); },
+          grantShield: function (payload) { state.bombCharges = Math.max(state.bombCharges, payload.value); state.powerLabel = payload.label; updateHud(); },
+          slowTime: function (payload) { state.slowTimer = Math.max(state.slowTimer, 14); state.powerLabel = payload.label; updateHud(); },
+          radar: function () { state.slowCharges = Math.min(4, state.slowCharges + 1); updateHud(); },
+          repair: function () { state.bombCharges += 1; state.slowCharges += 1; state.bonus += 18; updateHud(); },
+          ghost: function (payload) { state.slowTimer = Math.max(state.slowTimer, 10); state.powerLabel = payload.label; updateHud(); },
+          overdrive: function (payload) { state.stepMs = Math.max(120, state.stepMs - 24); state.powerLabel = payload.label; updateHud(); },
+          pulse: function () {
+            for (var row = ROWS - 1; row >= 0; row -= 1) {
+              if (state.board[row].some(Boolean)) {
+                state.board.splice(row, 1);
+                state.board.unshift(Array.from({ length: COLS }, function () { return ''; }));
+                state.bonus += 16;
+                updateHud();
+                break;
+              }
+            }
+          },
+          storm: function () {
+            var removed = 0;
+            for (var row = ROWS - 1; row >= 0 && removed < 2; row -= 1) {
+              if (state.board[row].some(Boolean)) {
+                state.board.splice(row, 1);
+                state.board.unshift(Array.from({ length: COLS }, function () { return ''; }));
+                removed += 1;
+                row += 1;
+              }
+            }
+            state.score += removed * 40;
+            state.bonus += removed * 20;
+            updateHud();
+          }
+        }
+      }) : null;
+
       function playEffect(name) {
         if (arcade) arcade.playEffect(name);
       }
@@ -333,6 +380,7 @@
         state.stepMs = 720;
         state.accumulator = 0;
         state.lastFrame = 0;
+        if (powerSystem) powerSystem.reset();
         makeBoard();
         state.next = null;
         refillNext();
@@ -356,6 +404,7 @@
         state.running = true;
         state.paused = false;
         state.gameOver = false;
+        if (powerSystem) powerSystem.resume();
         overlay.hidden = true;
         setStatus('Apila, limpia líneas y controla el tablero.');
         playEffect('start');
@@ -365,6 +414,9 @@
       function togglePause(forceValue) {
         if (!state.running || state.gameOver) return;
         state.paused = typeof forceValue === 'boolean' ? forceValue : !state.paused;
+        if (powerSystem) {
+          if (state.paused) powerSystem.pause(); else powerSystem.resume();
+        }
         if (state.paused) {
           overlay.hidden = false;
           overlayTitle.textContent = 'Juego en pausa';
@@ -452,6 +504,10 @@
         state.score += points * state.level;
         state.bonus += cleared * 12;
         state.lines += cleared;
+        if (powerSystem) {
+          powerSystem.noteScore(points * state.level);
+          powerSystem.noteBonus(cleared * 12);
+        }
         if (cleared >= 2) playEffect('match'); else playEffect('point');
         if (state.lines > 0 && state.lines % 4 === 0) state.bombCharges += 1;
         if (state.lines > 0 && state.lines % 5 === 0) state.slowCharges += 1;
@@ -459,6 +515,7 @@
           state.level += 1;
           state.stepMs = Math.max(150, 720 - (state.level - 1) * 56);
           state.bonus += 24;
+          if (powerSystem) powerSystem.noteLevel(state.level);
         }
         if (state.lines > 0 && state.lines % 10 === 0) {
           state.lives = Math.min(5, state.lives + 1);
@@ -504,6 +561,7 @@
         if (state.lives <= 0) {
           state.running = false;
           state.gameOver = true;
+          if (powerSystem) powerSystem.finish();
           overlay.hidden = false;
           overlayTitle.textContent = 'Fin de partida';
           overlayText.textContent = reason + ' Ya no quedan vidas disponibles.';
@@ -516,6 +574,7 @@
         makeBoard();
         spawnPiece();
         state.running = false;
+        if (powerSystem) powerSystem.pause();
         overlay.hidden = false;
         overlayTitle.textContent = 'Vida perdida';
         overlayText.textContent = reason + ' Se limpió el tablero para seguir jugando con ' + state.lives + ' vidas.';
@@ -599,6 +658,9 @@
         if (!state.lastFrame) state.lastFrame = timestamp;
         var delta = timestamp - state.lastFrame;
         state.lastFrame = timestamp;
+        if (powerSystem && state.running && !state.paused && !state.gameOver) {
+          powerSystem.tick(delta / 1000);
+        }
         if (state.running && !state.paused && !state.gameOver) {
           state.accumulator += delta;
           var effectiveStep = state.slowTimer > 0 ? state.stepMs + 180 : state.stepMs;

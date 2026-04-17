@@ -1,5 +1,30 @@
  - Historial de cambios
 
+ - 2026-04-17: Arcade publico movil unifica poderes y premios en los nueve juegos activos
+     - Archivos modificados:
+         - web/Juegos/arcade_shared.js
+         - web/Juegos/arcade_window.css
+         - web/Juegos/patito_volando_plus.html
+         - web/Juegos/serpiente_pixel_plus.html
+         - web/Juegos/memoria_estelar_plus.html
+         - web/Juegos/rebote_bloques_plus.html
+         - web/Juegos/pacman_plus.html
+         - web/Juegos/tetris_plus.html
+         - web/Juegos/carton_fire_plus.html
+         - web/Juegos/ajedrez_vs_ia_plus.html
+         - web/Juegos/ajedrez_3d_plus.html
+         - web/Juegos/menu_juegos.html
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Los nueve juegos activos del arcade publico quedan integrados al mismo runtime compartido de poderes, premios, records, countdown y sonido, con una shell visual mobile-first orientada a juego tactil en vertical, una economia compartida mas controlada y un lobby que muestra mejor el progreso personal.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/Juegos/arcade_shared.js`, `web/Juegos/arcade_window.css`, `web/Juegos/menu_juegos.html`, `web/Juegos/tetris_plus.html`, `web/Juegos/carton_fire_plus.html`, `web/Juegos/ajedrez_vs_ia_plus.html` y `web/Juegos/ajedrez_3d_plus.html`.
+         - `createPowerSystem` presente en los nueve juegos activos del arcade.
+
  - 2026-04-17: Arcade publico agrega Ajedrez 3D plus con cinco dificultades
      - Archivos modificados:
          - web/Juegos/ajedrez_3d_plus.html

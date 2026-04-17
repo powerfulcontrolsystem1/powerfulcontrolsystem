@@ -156,6 +156,46 @@
         pauseBtn.setAttribute('aria-pressed', state.paused ? 'true' : 'false');
       }
 
+      var powerSystem = arcade ? arcade.createPowerSystem({
+        gameKey: GAME_KEY,
+        root: document.querySelector('.arcade-window'),
+        chipRow: document.querySelector('.arcade-chip-row'),
+        stage: document.querySelector('.arcade-stage'),
+        state: state,
+        setStatus: setStatus,
+        onChange: updateHud,
+        handlers: {
+          setPowerLabel: function (payload) { state.powerLabel = payload.label; updateHud(); },
+          addScore: function (payload) { state.score += payload.value; },
+          addBonus: function (payload) { state.bonus += payload.value; },
+          grantLife: function (payload) { state.lives = Math.min(5, state.lives + payload.value); state.powerLabel = payload.label; updateHud(); },
+          grantShield: function (payload) { state.shieldCharges = Math.max(state.shieldCharges, payload.value); state.powerLabel = payload.label; updateHud(); },
+          slowTime: function (payload) { state.slowTimer = Math.max(state.slowTimer, 480); state.powerLabel = payload.label; updateHud(); },
+          radar: function () {
+            var alive = state.bricks.find(function (brick) { return brick.alive; });
+            if (!alive) return;
+            state.drops.push({ x: alive.x + alive.width / 2, y: alive.y + alive.height / 2, radius: 12, type: 'bonus' });
+          },
+          repair: function () { state.paddleWidth = 152; state.wideTimer = Math.max(state.wideTimer, 520); updateHud(); },
+          ghost: function (payload) { state.shieldCharges = 1; state.powerLabel = payload.label; updateHud(); },
+          overdrive: function (payload) {
+            if (state.balls.length < 3 && state.balls[0]) {
+              state.balls.push({ x: state.balls[0].x, y: state.balls[0].y, vx: -state.balls[0].vx, vy: state.balls[0].vy, radius: 7 });
+            }
+            state.powerLabel = payload.label;
+            updateHud();
+          },
+          pulse: function () {
+            state.bricks.filter(function (brick) { return brick.alive; }).slice(0, 4).forEach(function (brick) { brick.alive = false; });
+          },
+          storm: function () {
+            state.bricks.filter(function (brick) { return brick.alive; }).slice(0, 6).forEach(function (brick) { brick.alive = false; });
+            state.score += 48;
+            updateHud();
+          }
+        }
+      }) : null;
+
       function levelRows(level) {
         return Math.min(6, 3 + level);
       }
@@ -210,6 +250,7 @@
         state.level = 1;
         state.lives = 3;
         state.frame = 0;
+        if (powerSystem) powerSystem.reset();
         resetLevelState();
         overlay.hidden = false;
         overlayTitle.textContent = 'Ronda lista';
@@ -230,6 +271,7 @@
         state.running = true;
         state.paused = false;
         state.gameOver = false;
+        if (powerSystem) powerSystem.resume();
         overlay.hidden = true;
         setStatus('Rompe bloques y recoge poderes.');
         playEffect('start');
@@ -239,6 +281,9 @@
       function togglePause(forceValue) {
         if (!state.running || state.gameOver) return;
         state.paused = typeof forceValue === 'boolean' ? forceValue : !state.paused;
+        if (powerSystem) {
+          if (state.paused) powerSystem.pause(); else powerSystem.resume();
+        }
         if (state.paused) {
           overlay.hidden = false;
           overlayTitle.textContent = 'Juego en pausa';
@@ -303,6 +348,7 @@
           state.bonus += 30;
           state.powerLabel = 'Bonus';
         }
+        if (powerSystem) powerSystem.noteBonus(18, 'Drop atrapado');
         playEffect('win');
         updateHud();
       }
@@ -321,6 +367,7 @@
         if (state.lives <= 0) {
           state.running = false;
           state.gameOver = true;
+          if (powerSystem) powerSystem.finish();
           overlay.hidden = false;
           overlayTitle.textContent = 'Fin de partida';
           overlayText.textContent = 'Se agotaron las vidas. El récord quedó guardado si sumaste puntos.';
@@ -356,6 +403,7 @@
         }
         state.level += 1;
         state.bonus += 40;
+        if (powerSystem) powerSystem.noteLevel(state.level);
         resetLevelState();
         state.running = false;
         overlay.hidden = false;
@@ -420,6 +468,7 @@
                 state.score += 22 + state.level * 4;
                 state.bonus += 2;
                 spawnDrop(brick);
+                if (powerSystem) powerSystem.noteScore(22 + state.level * 4, 'Bloque destruido');
                 playEffect('point');
               } else {
                 playEffect('hit');
@@ -439,6 +488,7 @@
 
       function updateGame() {
         if (!state.running || state.paused) return;
+        if (powerSystem) powerSystem.tick(1 / 60);
         state.frame += 1;
         movePaddle();
         updateBalls();

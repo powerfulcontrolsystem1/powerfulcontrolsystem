@@ -2,6 +2,20 @@
 
 Fecha de actualizacion: 2026-04-17
 
+## Actualizacion 2026-04-17 (arcade publico movil: runtime comun de poderes y premios en 9 juegos)
+
+- Frontend compartido:
+  - `web/Juegos/arcade_shared.js` centraliza el runtime `createPowerSystem(...)` para countdown, records, sonido global, premios y una biblioteca comun de poderes reutilizable por todos los juegos activos del arcade.
+  - La misma capa ajusta la economia compartida de energia y premios para que los juegos con eventos muy frecuentes no saturen demasiado rapido el rack de poderes.
+  - `web/Juegos/arcade_window.css` pasa a ser la shell visual mobile-first del arcade, con layout vertical, overlays, paneles de progreso y rack comun de poderes pensado para celular en modo vertical y control tactil.
+- Juegos del arcade:
+  - `web/Juegos/patito_volando_plus.html`, `serpiente_pixel_plus.html`, `memoria_estelar_plus.html`, `rebote_bloques_plus.html`, `pacman_plus.html`, `tetris_plus.html`, `carton_fire_plus.html`, `ajedrez_vs_ia_plus.html` y `ajedrez_3d_plus.html` enganchan su loop local al runtime comun mediante hooks de `reset`, `pause/resume`, `tick`, `noteScore`, `noteBonus`, `noteLevel` y `finish`.
+  - La integracion conserva la mecanica especifica de cada juego y superpone una capa transversal de recompensas, poderes y persistencia local del progreso.
+- Lobby del arcade:
+  - `web/Juegos/menu_juegos.html` funciona como tablero de entrada del progreso arcade, mostrando juegos con record, partidas guardadas, juegos del jugador actual, mejor titulo personal, ranking propio por juego y una lista movil mas descriptiva.
+- Flujo:
+  - `menu flotante` -> `/Juegos/menu_juegos.html` -> seleccion de cualquier juego activo -> carga del shell `arcade_window.css` + `arcade_shared.js` -> inicio de sesion arcade -> countdown/partida -> activacion de poderes y premios -> guardado local de records por slug.
+
 ## Actualizacion 2026-04-16 (reportes globales super por administrador creador)
 
 - Backend:

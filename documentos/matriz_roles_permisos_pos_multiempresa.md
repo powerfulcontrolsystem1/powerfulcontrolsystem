@@ -1,6 +1,6 @@
 # Matriz base de roles y permisos POS multiempresa
 
-Fecha de actualizacion: 2026-04-16
+Fecha de actualizacion: 2026-04-17
 Alcance: punto 3 del plan maestro (permisos y seguridad)
 
 ## Regla de mantenimiento por modulo
@@ -12,6 +12,11 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 	- `backend/handlers/reportes_globales.go` expone `/super/api/reportes_globales` filtrando empresas por `usuario_creador = admin autenticado`.
 	- `web/super/reportes_globales.html` y `web/js/super_reportes_globales.js` permiten ver datasets consolidados o separados por empresa solo dentro del panel super.
 	- Impacto de matriz: el modulo `Reportes globales (super)` queda con permiso `R` exclusivo de `super_administrador`.
+
+- Actualizacion 2026-04-17 (portal publico: arcade movil con runtime comun de poderes y premios):
+	- `web/Juegos/arcade_shared.js` y `web/Juegos/arcade_window.css` pasan a ser la base comun del arcade publico para countdown, sonido, records, poderes y premios en todos los juegos activos.
+	- Los nueve juegos `*_plus.html` del lobby reutilizan el mismo runtime sin ampliar rutas privadas ni introducir permisos nuevos.
+	- Impacto de matriz: sin cambios en roles, CRUD/A ni wrappers; `Portal publico - Juegos` mantiene acceso publico y de solo uso.
 
 - Actualizacion 2026-04-17 (reportes globales super: graficos y lectura ejecutiva):
 	- `web/super/reportes_globales.html`, `web/js/super_reportes_globales.js` y `web/estilos.css` agregan visualizaciones ejecutivas sobre el mismo modulo protegido de lectura.

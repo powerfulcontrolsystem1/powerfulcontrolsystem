@@ -290,6 +290,7 @@
         <div class="arcade-stat"><span class="arcade-stat-label">Nivel</span><span id="levelValue" class="arcade-stat-value">1</span></div>
         <div class="arcade-stat"><span class="arcade-stat-label">Vidas</span><span id="livesValue" class="arcade-stat-value">3</span></div>
         <div class="arcade-stat"><span class="arcade-stat-label">Dificultad</span><span id="difficultyValue" class="arcade-stat-value">Rookie</span></div>
+        <div class="arcade-stat"><span class="arcade-stat-label">Poder</span><span id="powerValue" class="arcade-stat-value">Base</span></div>
       </div>
     </section>
 
@@ -372,6 +373,7 @@
       var levelValue = document.getElementById('levelValue');
       var livesValue = document.getElementById('livesValue');
       var difficultyValue = document.getElementById('difficultyValue');
+      var powerValue = document.getElementById('powerValue');
       var playerNameValue = document.getElementById('playerNameValue');
       var bestValue = document.getElementById('bestValue');
       var bestMeta = document.getElementById('bestMeta');
@@ -425,6 +427,7 @@
         lives: 3,
         score: 0,
         difficulty: 1,
+        powerLabel: 'Base',
         hintCharges: 3,
         undoCharges: 1,
         freezeCharges: 1,
@@ -449,6 +452,30 @@
         timerElement: sessionTimerValue,
         startButton: startBtn,
         countdownSeconds: 5
+      }) : null;
+
+      var powerSystem = arcade ? arcade.createPowerSystem({
+        gameKey: GAME_KEY,
+        root: document.querySelector('.arcade-window'),
+        chipRow: document.querySelector('.arcade-chip-row'),
+        stage: document.querySelector('.arcade-stage'),
+        state: state,
+        setStatus: setStatus,
+        onChange: updateHud,
+        handlers: {
+          setPowerLabel: function (payload) { state.powerLabel = payload.label; updateHud(); },
+          addScore: function (payload) { state.score += payload.value; updateHud(); },
+          addBonus: function (payload) { state.score += payload.value; updateHud(); },
+          grantLife: function (payload) { state.lives = Math.min(5, state.lives + payload.value); state.powerLabel = payload.label; updateHud(); },
+          grantShield: function (payload) { state.undoCharges += 1; state.powerLabel = payload.label; updateHud(); },
+          slowTime: function (payload) { state.aiCountdown += 2400; state.freezeDelay += 900; state.powerLabel = payload.label; updateHud(); },
+          radar: function () { state.hintCharges += 1; updateHud(); },
+          repair: function () { state.undoCharges += 1; state.freezeCharges += 1; updateHud(); },
+          ghost: function (payload) { state.aiCountdown += 1600; state.powerLabel = payload.label; updateHud(); },
+          overdrive: function (payload) { state.score += 110 + currentDifficulty().bonus * 15; state.powerLabel = payload.label; updateHud(); },
+          pulse: function () { state.score += 40; if (state.aiPending) state.aiCountdown += 1300; updateHud(); },
+          storm: function () { state.score += 75; state.freezeCharges += 1; if (state.aiPending) state.aiCountdown += 2400; updateHud(); }
+        }
       }) : null;
 
       function initialBoard() {
@@ -667,6 +694,7 @@
         levelValue.textContent = String(state.level);
         livesValue.textContent = String(state.lives);
         difficultyValue.textContent = currentDifficulty().label;
+        powerValue.textContent = state.powerLabel;
         hintValue.textContent = String(state.hintCharges);
         undoValue.textContent = String(state.undoCharges);
         freezeValue.textContent = String(state.freezeCharges);
@@ -711,6 +739,7 @@
         state.level = 1;
         state.lives = 3;
         state.score = 0;
+        state.powerLabel = 'Base';
         state.hintCharges = 3;
         state.undoCharges = 1;
         state.freezeCharges = 1;
@@ -718,6 +747,7 @@
         state.lastFrame = 0;
         resetBoardOnly();
         if (sessionRuntime) sessionRuntime.reset();
+        if (powerSystem) powerSystem.reset();
         overlay.hidden = false;
         overlayTitle.textContent = 'Tablero listo';
         overlayText.textContent = 'Elige dificultad, pulsa jugar y espera la cuenta regresiva.';
@@ -740,6 +770,7 @@
             state.running = true;
             state.paused = false;
             state.gameOver = false;
+            if (powerSystem) powerSystem.resume();
             overlay.hidden = true;
             setStatus('Selecciona una pieza blanca.');
             playEffect('start');
@@ -755,6 +786,9 @@
         if (sessionRuntime) {
           if (state.paused) sessionRuntime.pause(); else sessionRuntime.resume();
         }
+        if (powerSystem) {
+          if (state.paused) powerSystem.pause(); else powerSystem.resume();
+        }
         overlay.hidden = true;
         setStatus(state.paused ? 'Duelo en pausa.' : 'Duelo reanudado.');
         updateHud();
@@ -768,13 +802,19 @@
         state.running = false;
         state.gameOver = true;
         if (sessionRuntime) sessionRuntime.finish();
+        if (powerSystem) powerSystem.finish();
         overlay.hidden = false;
         if (playerWon) {
           state.score += 450 + state.level * 120 + currentDifficulty().bonus * 80;
+          if (powerSystem) {
+            powerSystem.noteScore(450 + state.level * 120 + currentDifficulty().bonus * 80);
+            powerSystem.noteLevel(state.level + (state.level < 5 ? 1 : 0));
+          }
           if (state.level < 5) state.level += 1;
           state.hintCharges += 1;
           state.undoCharges += state.level >= 3 ? 1 : 0;
           state.freezeCharges += 1;
+          state.powerLabel = 'Victoria';
           overlayTitle.textContent = 'Victoria táctica';
           overlayText.textContent = reason + ' La siguiente ronda sube el pulso del tablero.';
           playEffect('win');
@@ -807,8 +847,13 @@
       function startNextRound() {
         resetBoardOnly();
         if (sessionRuntime) sessionRuntime.reset();
+        if (powerSystem) {
+          powerSystem.reset();
+          powerSystem.resume();
+        }
         state.running = true;
         state.gameOver = false;
+        state.powerLabel = 'Base';
         overlay.hidden = true;
         setStatus('Nueva partida iniciada.');
         updateHud();
@@ -880,6 +925,7 @@
         if (applied.captured) {
           state.capturedByWhite.push(PIECE_ICONS[applied.captured]);
           state.score += Math.round((VALUES[applied.captured.toLowerCase()] || 50) / 5) + currentDifficulty().bonus * 4;
+          if (powerSystem) powerSystem.noteScore(Math.round((VALUES[applied.captured.toLowerCase()] || 50) / 5) + currentDifficulty().bonus * 4);
           playEffect('capture');
         } else {
           playEffect('move');
@@ -954,6 +1000,7 @@
         if (!result.move) return;
         state.hintCharges -= 1;
         state.hintMove = result.move;
+        state.powerLabel = 'Hint';
         setStatus('Se marcó una sugerencia de jugada.');
         playEffect('countdownGo');
         updateHud();
@@ -975,6 +1022,7 @@
         state.aiCountdown = 0;
         clearSelection();
         state.hintMove = null;
+        state.powerLabel = 'Rehacer';
         setStatus('Se deshizo el último intercambio completo.');
         playEffect('flip');
         updateHud();
@@ -985,6 +1033,7 @@
         if (!state.freezeCharges || !state.running || state.paused || state.turn !== 'black' || !state.aiPending) return;
         state.freezeCharges -= 1;
         state.aiCountdown += 4200;
+        state.powerLabel = 'Congelar';
         setStatus('El turno de la IA quedó congelado unos segundos.');
         playEffect('powerUp');
         updateHud();
@@ -1012,6 +1061,9 @@
         if (!state.lastFrame) state.lastFrame = timestamp;
         var delta = timestamp - state.lastFrame;
         state.lastFrame = timestamp;
+        if (powerSystem && state.running && !state.paused && !state.gameOver) {
+          powerSystem.tick(delta / 1000);
+        }
         if (state.running && !state.paused && state.aiPending) {
           state.aiCountdown -= delta;
           if (state.aiCountdown <= 0) {

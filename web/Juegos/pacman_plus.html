@@ -102,6 +102,7 @@
       var backBtnTop = document.getElementById('backBtnTop');
       var backBtnBottom = document.getElementById('backBtnBottom');
       var statusText = document.getElementById('statusText');
+      var touchStart = null;
 
       var TILE = 32;
       var MAP_TEMPLATE = [
@@ -184,6 +185,30 @@
         pauseBtn.setAttribute('aria-pressed', state.paused ? 'true' : 'false');
       }
 
+      var powerSystem = arcade ? arcade.createPowerSystem({
+        gameKey: GAME_KEY,
+        root: document.querySelector('.arcade-window'),
+        chipRow: document.querySelector('.arcade-chip-row'),
+        stage: document.querySelector('.arcade-stage'),
+        state: state,
+        setStatus: setStatus,
+        onChange: updateHud,
+        handlers: {
+          setPowerLabel: function (payload) { state.powerLabel = payload.label; updateHud(); },
+          addScore: function (payload) { state.score += payload.value; },
+          addBonus: function (payload) { state.bonus += payload.value; },
+          grantLife: function (payload) { state.lives = Math.min(5, state.lives + payload.value); state.powerLabel = payload.label; updateHud(); },
+          grantShield: function (payload) { state.shieldCharges = Math.max(state.shieldCharges, payload.value); state.powerLabel = payload.label; updateHud(); },
+          slowTime: function (payload) { state.slowTimer = Math.max(state.slowTimer, 36); state.powerLabel = payload.label; updateHud(); },
+          ghost: function (payload) { state.powerTimer = Math.max(state.powerTimer, 24); state.powerLabel = payload.label; updateHud(); },
+          radar: function () { spawnFruit(); },
+          repair: function () { state.shieldCharges = Math.max(state.shieldCharges, 1); state.slowTimer = Math.max(state.slowTimer, 12); updateHud(); },
+          pulse: function () { state.ghosts.forEach(function (ghost) { ghost.x = ghost.startX; ghost.y = ghost.startY; ghost.stunned = 5; }); },
+          storm: function () { state.ghosts.forEach(function (ghost) { ghost.stunned = 8; }); state.score += 40; updateHud(); },
+          overdrive: function (payload) { state.stepMs = Math.max(78, state.stepMs - 8); state.powerLabel = payload.label; updateHud(); }
+        }
+      }) : null;
+
       function recordScore() {
         if (!arcade) {
           syncProfile();
@@ -255,6 +280,7 @@
         state.stepMs = 170;
         loadMap();
         resetEntities();
+        if (powerSystem) powerSystem.reset();
         overlay.hidden = false;
         overlayTitle.textContent = 'Laberinto listo';
         overlayText.textContent = 'Come puntos, activa bolitas de energía y evita a los fantasmas. En niveles altos te persiguen mejor y se suman más oponentes.';
@@ -274,6 +300,7 @@
         state.running = true;
         state.paused = false;
         state.gameOver = false;
+        if (powerSystem) powerSystem.resume();
         overlay.hidden = true;
         setStatus('Esquiva a los fantasmas y limpia el mapa.');
         playEffect('start');
@@ -283,6 +310,9 @@
       function togglePause(forceValue) {
         if (!state.running || state.gameOver) return;
         state.paused = typeof forceValue === 'boolean' ? forceValue : !state.paused;
+        if (powerSystem) {
+          if (state.paused) powerSystem.pause(); else powerSystem.resume();
+        }
         if (state.paused) {
           overlay.hidden = false;
           overlayTitle.textContent = 'Juego en pausa';
@@ -370,8 +400,10 @@
           }
           state.fruit = null;
           playEffect('win');
+          if (powerSystem) powerSystem.noteBonus(22, 'Fruta especial');
         }
         spawnFruit();
+        if (powerSystem && (tile === '.' || tile === 'o')) powerSystem.noteScore(tile === 'o' ? 20 : 8, 'Pellet');
         updateHud();
       }
 
@@ -438,6 +470,7 @@
         if (state.lives <= 0) {
           state.running = false;
           state.gameOver = true;
+          if (powerSystem) powerSystem.finish();
           overlay.hidden = false;
           overlayTitle.textContent = 'Fin de partida';
           overlayText.textContent = reason + ' Se agotaron las vidas.';
@@ -503,6 +536,7 @@
         state.level += 1;
         state.stepMs = Math.max(88, 170 - (state.level - 1) * 12);
         state.bonus += 45;
+        if (powerSystem) powerSystem.noteLevel(state.level);
         loadMap();
         resetEntities();
         state.running = false;
@@ -660,6 +694,7 @@
         var delta = timestamp - state.lastFrame;
         state.lastFrame = timestamp;
         if (state.running && !state.paused && !state.gameOver) {
+          if (powerSystem) powerSystem.tick(delta);
           state.accumulator += delta;
           var effectiveStep = state.slowTimer > 0 ? state.stepMs + 38 : state.stepMs;
           while (state.accumulator >= effectiveStep && state.running && !state.paused) {
@@ -686,6 +721,20 @@
         if (String(event.key || '').toLowerCase() === 'p') {
           event.preventDefault();
           togglePause();
+        }
+      });
+      canvas.addEventListener('pointerdown', function (event) {
+        touchStart = { x: event.clientX, y: event.clientY };
+      });
+      canvas.addEventListener('pointerup', function (event) {
+        if (!touchStart) return;
+        var dx = event.clientX - touchStart.x;
+        var dy = event.clientY - touchStart.y;
+        touchStart = null;
+        if (Math.abs(dx) > Math.abs(dy)) {
+          state.player.nextDir = dx > 0 ? 'right' : 'left';
+        } else if (Math.abs(dy) > 8) {
+          state.player.nextDir = dy > 0 ? 'down' : 'up';
         }
       });
 

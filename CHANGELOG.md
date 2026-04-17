@@ -1,6 +1,12 @@
 # CHANGELOG
 
 ## 2026-04-17
+- Arcade publico: runtime comun de poderes y premios en los nueve juegos activos.
+	- Archivos modificados: `web/Juegos/arcade_shared.js`, `web/Juegos/arcade_window.css`, `web/Juegos/patito_volando_plus.html`, `web/Juegos/serpiente_pixel_plus.html`, `web/Juegos/memoria_estelar_plus.html`, `web/Juegos/rebote_bloques_plus.html`, `web/Juegos/pacman_plus.html`, `web/Juegos/tetris_plus.html`, `web/Juegos/carton_fire_plus.html`, `web/Juegos/ajedrez_vs_ia_plus.html`, `web/Juegos/ajedrez_3d_plus.html`, `web/Juegos/menu_juegos.html`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: el arcade publico queda unificado con una misma capa mobile-first de countdown, sonido, records, poderes y premios para los nueve juegos activos del lobby, con economia compartida ajustada para juegos de eventos rapidos y un lobby que muestra mejor el progreso personal y el ranking por titulo.
+	- Verificacion: diagnostico del editor sin errores en `web/Juegos/arcade_shared.js`, `web/Juegos/arcade_window.css`, `web/Juegos/menu_juegos.html` y los cuatro juegos integrados en esta fase; busqueda de `createPowerSystem` presente en los 9 juegos activos.
+
+## 2026-04-17
 - Arcade publico: nuevo Ajedrez 3D plus con cinco dificultades.
 	- Archivos creados: `web/Juegos/ajedrez_3d_plus.html`, `web/img/juegos/ajedrez_3d.svg`.
 	- Archivos modificados: `web/Juegos/menu_juegos.html`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
