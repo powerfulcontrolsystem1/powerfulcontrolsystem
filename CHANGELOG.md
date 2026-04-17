@@ -1,6 +1,11 @@
 # CHANGELOG
 
 ## 2026-04-17
+- Facturacion DIAN: fase 1 base con UBL 2.1, firma XAdES y diagnostico oficial.
+	- Archivos modificados: `backend/handlers/modulos_faltantes.go`, `backend/handlers/modulos_faltantes_test.go`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: el modulo DIAN incorpora una fase 1 base para generar XML UBL 2.1 estructural, incrustar una firma XMLDSig/XAdES base y emitir un diagnostico de brechas frente al contrato oficial DIAN, manteniendo separado el transporte SOAP/WSDL definitivo.
+	- Verificacion: `go test ./handlers -run 'TestEmpresaDIANColombiaHandler(GenerarXMLUBLBase|FirmarXMLXAdESBase|DiagnosticoOficial|FirmaEnvioYAcuseReal|EnviarSetPruebas|SoftwareCompartidoMultiempresa|GuiaOnboardingYValidarCredenciales|SubirFirma)' -count=1`.
+
 - Seleccionar empresa: boton de descarga blanco, solo con icono y tooltip.
 	- Archivos modificados: `web/js/seleccionar_empresa.js`, `web/estilos.css`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
 	- Descripcion: el boton de descarga dentro de las tarjetas de `seleccionar_empresa.html` deja de mostrar el texto `Descargar`, queda como icono blanco y muestra el tooltip `Descargar informacion de la empresa` al pasar el mouse.

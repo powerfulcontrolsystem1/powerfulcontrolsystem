@@ -5,9 +5,11 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
+	"crypto/x509/pkix"
 	"database/sql"
 	"encoding/json"
 	"encoding/pem"
+	"math/big"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -16,6 +18,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
 )
@@ -1107,6 +1110,184 @@ func marshalRSAPrivateKeyPEM(t *testing.T, key *rsa.PrivateKey) string {
 	}
 	block := &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(key)}
 	return string(pem.EncodeToMemory(block))
+}
+
+func marshalSelfSignedCertificatePEM(t *testing.T, key *rsa.PrivateKey) string {
+	t.Helper()
+	if key == nil {
+		t.Fatalf("rsa key nil")
+	}
+	template := &x509.Certificate{
+		SerialNumber: big.NewInt(20260417),
+		Subject: pkix.Name{
+			CommonName:   "PCS DIAN QA",
+			Organization: []string{"Powerful Control System"},
+			Country:      []string{"CO"},
+		},
+		NotBefore:             time.Now().Add(-time.Hour),
+		NotAfter:              time.Now().Add(365 * 24 * time.Hour),
+		KeyUsage:              x509.KeyUsageDigitalSignature,
+		BasicConstraintsValid: true,
+	}
+	der, err := x509.CreateCertificate(rand.Reader, template, template, &key.PublicKey, key)
+	if err != nil {
+		t.Fatalf("x509.CreateCertificate: %v", err)
+	}
+	return string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der}))
+}
+
+func TestEmpresaDIANColombiaHandlerGenerarXMLUBLBase(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_modulos_faltantes_dian_ubl_base_handler.db")
+	ensureModulosFaltantesHandlerSchema(t, dbEmp)
+
+	_, err := dbpkg.CreateEmpresaGenericRow(dbEmp, cfgDIAN.Table, 66, map[string]interface{}{
+		"codigo":             "DIAN-UBL-66",
+		"nit":                "900660001",
+		"razon_social":       "Empresa UBL Base 66",
+		"tipo_ambiente":      "habilitacion",
+		"software_id":        "SW-66",
+		"software_pin":       "PIN-66",
+		"prefijo":            "SETP",
+		"resolucion_numero":  "187600000660",
+		"rango_desde":        1,
+		"rango_hasta":        99999,
+		"consecutivo_actual": 1,
+		"estado_dian":        "pendiente",
+	}, cfgDIAN.AllowedColumns)
+	if err != nil {
+		t.Fatalf("CreateEmpresaGenericRow empresa 66: %v", err)
+	}
+
+	handler := EmpresaDIANColombiaHandler(dbEmp)
+	req := httptest.NewRequest(http.MethodPost, "/api/empresa/facturacion_electronica/dian?action=generar_xml_ubl_base", strings.NewReader(`{"empresa_id":66,"documento_codigo":"SETP990000001","documento_tipo":"factura","cliente_nombre":"Cliente Prueba","cliente_nit":"123456789","total":"1500.00"}`))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("generar_xml_ubl_base status=%d body=%s", rr.Code, rr.Body.String())
+	}
+
+	resp := decodeBodyAsMap(t, rr)
+	if ok, _ := resp["ok"].(bool); !ok {
+		t.Fatalf("generar_xml_ubl_base debe retornar ok=true body=%s", rr.Body.String())
+	}
+	xmlUBL := strings.TrimSpace(genericStringValue(resp["xml_ubl_base"]))
+	if !strings.Contains(xmlUBL, `urn:oasis:names:specification:ubl:schema:xsd:Invoice-2`) {
+		t.Fatalf("xml_ubl_base debe contener namespace UBL Invoice, obtenido=%s", xmlUBL)
+	}
+	if !strings.Contains(xmlUBL, `<ext:UBLExtensions>`) {
+		t.Fatalf("xml_ubl_base debe contener UBLExtensions, obtenido=%s", xmlUBL)
+	}
+	if !strings.Contains(xmlUBL, `Cliente Prueba`) {
+		t.Fatalf("xml_ubl_base debe incluir cliente_nombre, obtenido=%s", xmlUBL)
+	}
+}
+
+func TestEmpresaDIANColombiaHandlerFirmarXMLXAdESBase(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_modulos_faltantes_dian_xades_base_handler.db")
+	ensureModulosFaltantesHandlerSchema(t, dbEmp)
+
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatalf("rsa.GenerateKey: %v", err)
+	}
+	privateKeyPEM := marshalRSAPrivateKeyPEM(t, privateKey)
+	certificatePEM := marshalSelfSignedCertificatePEM(t, privateKey)
+
+	_, err = dbpkg.CreateEmpresaGenericRow(dbEmp, cfgDIAN.Table, 67, map[string]interface{}{
+		"codigo":                 "DIAN-XADES-67",
+		"nit":                    "900670001",
+		"razon_social":           "Empresa XAdES Base 67",
+		"tipo_ambiente":          "habilitacion",
+		"software_id":            "SW-67",
+		"software_pin":           "PIN-67",
+		"prefijo":                "SETP",
+		"resolucion_numero":      "187600000670",
+		"rango_desde":            1,
+		"rango_hasta":            99999,
+		"consecutivo_actual":     1,
+		"certificado_clave_ref":  privateKeyPEM,
+		"certificado_url":        certificatePEM,
+		"estado_dian":            "pendiente",
+	}, cfgDIAN.AllowedColumns)
+	if err != nil {
+		t.Fatalf("CreateEmpresaGenericRow empresa 67: %v", err)
+	}
+
+	handler := EmpresaDIANColombiaHandler(dbEmp)
+	xmlBase := `<?xml version="1.0" encoding="UTF-8"?><Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2" xmlns:ext="urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2"><ext:UBLExtensions><ext:UBLExtension><ext:ExtensionContent></ext:ExtensionContent></ext:UBLExtension></ext:UBLExtensions><cbc:ID xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2">SETP990000001</cbc:ID></Invoice>`
+	req := httptest.NewRequest(http.MethodPost, "/api/empresa/facturacion_electronica/dian?action=firmar_xml_xades_base", strings.NewReader(`{"empresa_id":67,"documento_codigo":"SETP990000001","xml_ubl_base":`+strconv.Quote(xmlBase)+`,"certificado_ref":`+strconv.Quote(certificatePEM)+`}`))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("firmar_xml_xades_base status=%d body=%s", rr.Code, rr.Body.String())
+	}
+
+	resp := decodeBodyAsMap(t, rr)
+	if ok, _ := resp["ok"].(bool); !ok {
+		t.Fatalf("firmar_xml_xades_base debe retornar ok=true body=%s", rr.Body.String())
+	}
+	if included, _ := resp["certificate_included"].(bool); !included {
+		t.Fatalf("certificate_included esperado=true body=%s", rr.Body.String())
+	}
+	xmlFirmado := strings.TrimSpace(genericStringValue(resp["xml_firmado"]))
+	if !strings.Contains(xmlFirmado, `<ds:Signature`) {
+		t.Fatalf("xml_firmado debe incluir ds:Signature, obtenido=%s", xmlFirmado)
+	}
+	if !strings.Contains(xmlFirmado, `xades:QualifyingProperties`) {
+		t.Fatalf("xml_firmado debe incluir xades:QualifyingProperties, obtenido=%s", xmlFirmado)
+	}
+	if !strings.Contains(xmlFirmado, `X509Certificate`) {
+		t.Fatalf("xml_firmado debe incluir X509Certificate, obtenido=%s", xmlFirmado)
+	}
+}
+
+func TestEmpresaDIANColombiaHandlerDiagnosticoOficial(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_modulos_faltantes_dian_diagnostico_handler.db")
+	ensureModulosFaltantesHandlerSchema(t, dbEmp)
+
+	_, err := dbpkg.CreateEmpresaGenericRow(dbEmp, cfgDIAN.Table, 68, map[string]interface{}{
+		"codigo":             "DIAN-DIAG-68",
+		"nit":                "900680001",
+		"razon_social":       "Empresa Diagnostico 68",
+		"tipo_ambiente":      "habilitacion",
+		"software_id":        "SW-68",
+		"software_pin":       "PIN-68",
+		"prefijo":            "SETP",
+		"resolucion_numero":  "187600000680",
+		"rango_desde":        1,
+		"rango_hasta":        99999,
+		"consecutivo_actual": 1,
+		"estado_dian":        "pendiente",
+	}, cfgDIAN.AllowedColumns)
+	if err != nil {
+		t.Fatalf("CreateEmpresaGenericRow empresa 68: %v", err)
+	}
+
+	handler := EmpresaDIANColombiaHandler(dbEmp)
+	req := httptest.NewRequest(http.MethodGet, "/api/empresa/facturacion_electronica/dian?action=diagnostico_oficial&empresa_id=68", nil)
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("diagnostico_oficial status=%d body=%s", rr.Code, rr.Body.String())
+	}
+
+	resp := decodeBodyAsMap(t, rr)
+	if ok, _ := resp["ok"].(bool); !ok {
+		t.Fatalf("diagnostico_oficial debe retornar ok=true body=%s", rr.Body.String())
+	}
+	faltantes, _ := resp["faltantes_configuracion"].([]interface{})
+	if !containsJSONStringValue(faltantes, "token_emisor_ref") {
+		t.Fatalf("faltantes_configuracion debe incluir token_emisor_ref, obtenido=%v", faltantes)
+	}
+	if !containsJSONStringValue(faltantes, "certificado_clave_ref") {
+		t.Fatalf("faltantes_configuracion debe incluir certificado_clave_ref, obtenido=%v", faltantes)
+	}
+	brechas, _ := resp["brechas_tecnicas"].([]interface{})
+	if len(brechas) < 3 {
+		t.Fatalf("diagnostico_oficial debe reportar brechas tecnicas, obtenido=%v", brechas)
+	}
 }
 
 func TestEmpresaDIANColombiaHandlerFirmaEnvioYAcuseReal(t *testing.T) {

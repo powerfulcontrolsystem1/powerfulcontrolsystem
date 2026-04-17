@@ -1146,6 +1146,21 @@ flowchart TD
   - `backend/handlers/modulos_faltantes_test.go`:
     - agrega `TestEmpresaDIANColombiaHandlerEnviarSetPruebas` para validar envio por lote, conteo de resultados y avance de consecutivo.
 
+## Actualizacion 2026-04-17 (facturacion DIAN: fase 1 base UBL/XAdES + diagnostico oficial)
+
+- Backend handlers:
+  - `backend/handlers/modulos_faltantes.go`:
+    - agrega `action=generar_xml_ubl_base` para producir un XML UBL 2.1 base con `UBLExtensions`, emisor, cliente y total documental.
+    - agrega `action=firmar_xml_xades_base` para incrustar una firma XMLDSig/XAdES base sobre el XML generado, reutilizando `certificado_clave_ref` y certificado X.509 opcional.
+    - agrega `action=diagnostico_oficial` para reportar faltantes de configuracion y brechas tecnicas frente al contrato oficial DIAN (SOAP/WSDL, ZIP, TrackId, UBL/firma final).
+    - amplía `action=guia_onboarding` con la secuencia de preparacion tecnica previa al transporte oficial.
+
+- QA:
+  - `backend/handlers/modulos_faltantes_test.go`:
+    - agrega `TestEmpresaDIANColombiaHandlerGenerarXMLUBLBase`.
+    - agrega `TestEmpresaDIANColombiaHandlerFirmarXMLXAdESBase`.
+    - agrega `TestEmpresaDIANColombiaHandlerDiagnosticoOficial`.
+
 ## Actualizacion 2026-04-08 (alerta de inicio/reinicio de servidor)
 
 - Backend arranque y cierre controlado:

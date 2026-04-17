@@ -7239,3 +7239,12 @@ Actualizacion 2026-04-06: Modulos ERP faltantes + DIAN Colombia
 	- actualizado con la seccion `Actualizacion 2026-04-06 (modulos ERP faltantes + DIAN Colombia)` para dejar trazabilidad de arquitectura y rutas.
 - `web/ayuda/ayuda.html`:
 	- actualizado con la seccion `Configuracion DIAN Colombia` (guia desde cero para habilitacion, configuracion en sistema, paso a produccion y endpoints de soporte).
+
+Actualizacion 2026-04-17: Facturacion DIAN fase 1 base
+- `backend/handlers/modulos_faltantes.go`:
+	- amplía el handler DIAN con `action=generar_xml_ubl_base`, `action=firmar_xml_xades_base` y `action=diagnostico_oficial`.
+	- incorpora utilidades internas para construir XML UBL base, incrustar firma XMLDSig/XAdES base y exponer brechas frente al contrato oficial DIAN.
+- `backend/handlers/modulos_faltantes_test.go`:
+	- agrega cobertura para la nueva fase base DIAN (`TestEmpresaDIANColombiaHandlerGenerarXMLUBLBase`, `TestEmpresaDIANColombiaHandlerFirmarXMLXAdESBase`, `TestEmpresaDIANColombiaHandlerDiagnosticoOficial`).
+- `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_del_proyecto` y `documentos/diagramas/estructura_del_codigo.md`:
+	- sincronizados para reflejar las nuevas acciones DIAN de preparacion tecnica base y su alcance no oficial.

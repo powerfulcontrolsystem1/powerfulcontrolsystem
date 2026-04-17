@@ -596,6 +596,7 @@ Criterio de esta guia:
 - Incluye envio automatizado del set de habilitacion (`action=enviar_set_pruebas`) con distribucion configurable de facturas/notas y resumen por estado (`aceptado`, `rechazado`, `contingencia`, `pendiente`).
 - Soporta modelo SaaS multiempresa con software compartido (`Software ID/PIN`) y credenciales por empresa (`NIT`, `certificado_clave_ref`, `token_emisor_ref`).
 - Agrega soporte de onboarding por empresa con `action=guia_onboarding`, validacion de secretos con `action=validar_credenciales` y carga de firma PEM con `action=subir_firma`.
+- Amplia la fase base de preparacion tecnica con `action=generar_xml_ubl_base`, `action=firmar_xml_xades_base` y `action=diagnostico_oficial` para estructurar UBL 2.1 base, firma XMLDSig/XAdES base y reporte de brechas frente al contrato oficial DIAN antes de implementar el transporte SOAP/WSDL definitivo.
 
 19) Gestion comercial extendida
 - Cotizaciones, pedidos, devoluciones y embudo de conversion comercial.

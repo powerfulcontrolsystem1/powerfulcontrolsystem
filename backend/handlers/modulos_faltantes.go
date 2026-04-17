@@ -6826,6 +6826,30 @@ func EmpresaDIANColombiaHandler(dbEmp *sql.DB) http.HandlerFunc {
 			})
 			return
 
+		case "generar_xml_ubl_base":
+			if r.Method != http.MethodPost && r.Method != http.MethodPut {
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+			payload, err := decodeGenericBodyMap(r)
+			if err != nil {
+				http.Error(w, "JSON invalido", http.StatusBadRequest)
+				return
+			}
+			empresaID, err := resolveEmpresaIDFromPayloadOrRequest(r, payload)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			cfg, _ := getEmpresaDIANConfig(dbEmp, empresaID)
+			response, status, err := generateDIANUBLBase(cfg, empresaID, payload)
+			if err != nil {
+				http.Error(w, err.Error(), status)
+				return
+			}
+			writeJSON(w, status, response)
+			return
+
 		case "firmar_xml_real":
 			if r.Method != http.MethodPost && r.Method != http.MethodPut {
 				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -6843,6 +6867,50 @@ func EmpresaDIANColombiaHandler(dbEmp *sql.DB) http.HandlerFunc {
 			}
 			cfg, _ := getEmpresaDIANConfig(dbEmp, empresaID)
 			response, status, err := signDIANXMLReal(cfg, empresaID, payload)
+			if err != nil {
+				http.Error(w, err.Error(), status)
+				return
+			}
+			writeJSON(w, status, response)
+			return
+
+		case "firmar_xml_xades_base":
+			if r.Method != http.MethodPost && r.Method != http.MethodPut {
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+			payload, err := decodeGenericBodyMap(r)
+			if err != nil {
+				http.Error(w, "JSON invalido", http.StatusBadRequest)
+				return
+			}
+			empresaID, err := resolveEmpresaIDFromPayloadOrRequest(r, payload)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			cfg, _ := getEmpresaDIANConfig(dbEmp, empresaID)
+			response, status, err := signDIANXMLXAdESBase(cfg, empresaID, payload)
+			if err != nil {
+				http.Error(w, err.Error(), status)
+				return
+			}
+			writeJSON(w, status, response)
+			return
+
+		case "diagnostico_oficial", "diagnosticar_oficial":
+			payload, err := decodeGenericBodyMapOptional(r)
+			if err != nil {
+				http.Error(w, "JSON invalido", http.StatusBadRequest)
+				return
+			}
+			empresaID, err := resolveEmpresaIDFromPayloadOrRequest(r, payload)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			cfg, _ := getEmpresaDIANConfig(dbEmp, empresaID)
+			response, status, err := buildDIANOfficialReadinessReport(cfg, empresaID)
 			if err != nil {
 				http.Error(w, err.Error(), status)
 				return
@@ -7183,6 +7251,340 @@ func signDIANXMLReal(cfg map[string]interface{}, empresaID int64, payload map[st
 		"xml_firmado":       xmlPayload,
 		"timestamp":         dianNowLocal(),
 		"gestion_secreto":   "certificado_clave_ref via env:/file:/base64: o valor inline controlado",
+	}, http.StatusOK, nil
+}
+
+func generateDIANUBLBase(cfg map[string]interface{}, empresaID int64, payload map[string]interface{}) (map[string]interface{}, int, error) {
+	if empresaID <= 0 {
+		return nil, http.StatusBadRequest, fmt.Errorf("empresa_id es obligatorio")
+	}
+
+	documentoCodigo := dianFirstNonBlank(genericStringValue(payload["documento_codigo"]), "FV-"+time.Now().Format("20060102150405"))
+	documentoTipo := strings.ToLower(dianFirstNonBlank(genericStringValue(payload["documento_tipo"]), "factura"))
+	issueDateTime := dianFirstNonBlank(genericStringValue(payload["fecha_emision"]), time.Now().Format(time.RFC3339))
+	total := dianFirstNonBlank(genericStringValue(payload["total"]), "0")
+	impuestoTotal := dianFirstNonBlank(genericStringValue(payload["impuesto_total"]), "0")
+	moneda := strings.ToUpper(dianFirstNonBlank(genericStringValue(payload["moneda"]), "COP"))
+	clienteNombre := escapeXML(dianFirstNonBlank(genericStringValue(payload["cliente_nombre"]), "CLIENTE DEMO"))
+	clienteNIT := escapeXML(dianFirstNonBlank(genericStringValue(payload["cliente_nit"]), "222222222222"))
+	emisorNIT := escapeXML(dianFirstNonBlank(genericStringValue(cfg["nit"]), "000000000"))
+	emisorRazon := escapeXML(dianFirstNonBlank(genericStringValue(cfg["razon_social"]), "EMPRESA DEMO"))
+	prefijo := escapeXML(dianFirstNonBlank(genericStringValue(cfg["prefijo"]), "SETP"))
+	profileExecutionID := "2"
+	if chooseDIANAmbiente(cfg) == "produccion" {
+		profileExecutionID = "1"
+	}
+
+	issueDateOnly := time.Now().Format("2006-01-02")
+	if parsed, err := time.Parse(time.RFC3339, issueDateTime); err == nil {
+		issueDateOnly = parsed.Format("2006-01-02")
+	} else if len(strings.TrimSpace(issueDateTime)) >= 10 {
+		issueDateOnly = strings.TrimSpace(issueDateTime)[:10]
+	}
+
+	rootName := "Invoice"
+	customizationID := "DIAN-UBL-BASE-FACTURA"
+	signatureMethodHint := "Invoice"
+	switch documentoTipo {
+	case "nota_credito", "credit_note", "creditnote", "credito":
+		rootName = "CreditNote"
+		customizationID = "DIAN-UBL-BASE-NOTA-CREDITO"
+		signatureMethodHint = "CreditNote"
+	case "nota_debito", "debit_note", "debitnote", "debito":
+		rootName = "DebitNote"
+		customizationID = "DIAN-UBL-BASE-NOTA-DEBITO"
+		signatureMethodHint = "DebitNote"
+	}
+
+	xmlPayload := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>`+
+		`<%s xmlns="urn:oasis:names:specification:ubl:schema:xsd:%s-2" xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2" xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2" xmlns:ext="urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2">`+
+		`<ext:UBLExtensions><ext:UBLExtension><ext:ExtensionContent></ext:ExtensionContent></ext:UBLExtension></ext:UBLExtensions>`+
+		`<cbc:UBLVersionID>2.1</cbc:UBLVersionID>`+
+		`<cbc:CustomizationID>%s</cbc:CustomizationID>`+
+		`<cbc:ProfileExecutionID>%s</cbc:ProfileExecutionID>`+
+		`<cbc:ID>%s</cbc:ID>`+
+		`<cbc:UUID schemeName="CUFE-SHA384-PENDIENTE">%s</cbc:UUID>`+
+		`<cbc:IssueDate>%s</cbc:IssueDate>`+
+		`<cbc:DocumentCurrencyCode>%s</cbc:DocumentCurrencyCode>`+
+		`<cbc:LineCountNumeric>1</cbc:LineCountNumeric>`+
+		`<cac:AccountingSupplierParty><cac:Party><cac:PartyTaxScheme><cbc:CompanyID>%s</cbc:CompanyID><cbc:RegistrationName>%s</cbc:RegistrationName><cbc:TaxLevelCode>O-99</cbc:TaxLevelCode></cac:PartyTaxScheme></cac:Party></cac:AccountingSupplierParty>`+
+		`<cac:AccountingCustomerParty><cac:Party><cac:PartyTaxScheme><cbc:CompanyID>%s</cbc:CompanyID><cbc:RegistrationName>%s</cbc:RegistrationName></cac:PartyTaxScheme></cac:Party></cac:AccountingCustomerParty>`+
+		`<cac:TaxTotal><cbc:TaxAmount currencyID="%s">%s</cbc:TaxAmount></cac:TaxTotal>`+
+		`<cac:LegalMonetaryTotal><cbc:PayableAmount currencyID="%s">%s</cbc:PayableAmount></cac:LegalMonetaryTotal>`+
+		`<cac:InvoiceLine><cbc:ID>1</cbc:ID><cbc:InvoicedQuantity unitCode="EA">1</cbc:InvoicedQuantity><cbc:LineExtensionAmount currencyID="%s">%s</cbc:LineExtensionAmount><cac:Item><cbc:Description>Documento DIAN base generado para fase 1</cbc:Description></cac:Item><cac:Price><cbc:PriceAmount currencyID="%s">%s</cbc:PriceAmount></cac:Price></cac:InvoiceLine>`+
+		`<cbc:Note>Fase 1 base: XML UBL estructural para preparacion interna, pendiente de ajuste final oficial DIAN.</cbc:Note>`+
+		`<cbc:AccountingCost>%s</cbc:AccountingCost>`+
+		`</%s>`,
+		rootName,
+		signatureMethodHint,
+		escapeXML(customizationID),
+		profileExecutionID,
+		escapeXML(documentoCodigo),
+		escapeXML(buildDIANCUFE(genericStringValue(cfg["nit"]), documentoCodigo, issueDateTime, total, prefijo, genericStringValue(cfg["resolucion_numero"]))),
+		escapeXML(issueDateOnly),
+		escapeXML(moneda),
+		escapeXML(emisorNIT),
+		emisorRazon,
+		escapeXML(clienteNIT),
+		clienteNombre,
+		escapeXML(moneda),
+		escapeXML(impuestoTotal),
+		escapeXML(moneda),
+		escapeXML(total),
+		escapeXML(moneda),
+		escapeXML(total),
+		escapeXML(moneda),
+		escapeXML(total),
+		escapeXML(prefijo),
+		rootName,
+	)
+
+	return map[string]interface{}{
+		"ok":                      true,
+		"empresa_id":              empresaID,
+		"documento_codigo":        documentoCodigo,
+		"documento_tipo":          documentoTipo,
+		"ubl_version":             "2.1",
+		"profile_execution_id":    profileExecutionID,
+		"customization_id":        customizationID,
+		"xml_ubl_base":            xmlPayload,
+		"estado_preparacion":      "fase_1_base",
+		"advertencia_oficialidad": "XML UBL base interno; aun requiere ajuste final UBL/DIAN y transporte SOAP oficial.",
+	}, http.StatusOK, nil
+}
+
+func parseDIANCertificate(raw string) (*x509.Certificate, error) {
+	resolved, err := resolveDIANSecretValue(raw)
+	if err != nil {
+		return nil, err
+	}
+	remaining := []byte(resolved)
+	for len(remaining) > 0 {
+		block, rest := pem.Decode(remaining)
+		if block == nil {
+			break
+		}
+		if strings.Contains(strings.ToUpper(strings.TrimSpace(block.Type)), "CERTIFICATE") {
+			cert, certErr := x509.ParseCertificate(block.Bytes)
+			if certErr == nil {
+				return cert, nil
+			}
+		}
+		remaining = rest
+	}
+	return nil, fmt.Errorf("certificado DIAN no esta en formato PEM X.509")
+}
+
+func dianBuildSigningCertificateBlock(cert *x509.Certificate) string {
+	if cert == nil {
+		return ""
+	}
+	digest := sha256.Sum256(cert.Raw)
+	issuer := escapeXML(cert.Issuer.String())
+	serial := escapeXML(cert.SerialNumber.String())
+	return fmt.Sprintf(`<xades:SigningCertificate><xades:Cert><xades:CertDigest><ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"></ds:DigestMethod><ds:DigestValue>%s</ds:DigestValue></xades:CertDigest><xades:IssuerSerial><ds:X509IssuerName>%s</ds:X509IssuerName><ds:X509SerialNumber>%s</ds:X509SerialNumber></xades:IssuerSerial></xades:Cert></xades:SigningCertificate>`, base64.StdEncoding.EncodeToString(digest[:]), issuer, serial)
+}
+
+func dianBuildXAdESBaseSignature(xmlPayload string, privateKey *rsa.PrivateKey, cert *x509.Certificate) (map[string]string, error) {
+	documentDigest := sha256.Sum256([]byte(xmlPayload))
+	documentDigestBase64 := base64.StdEncoding.EncodeToString(documentDigest[:])
+	signingTime := time.Now().Format(time.RFC3339)
+	signedPropertiesID := "SignedPropertiesPCS"
+	signatureID := "SignaturePCS"
+
+	signedProperties := fmt.Sprintf(`<xades:SignedProperties Id="%s"><xades:SignedSignatureProperties><xades:SigningTime>%s</xades:SigningTime>%s</xades:SignedSignatureProperties></xades:SignedProperties>`, signedPropertiesID, escapeXML(signingTime), dianBuildSigningCertificateBlock(cert))
+	propsDigest := sha256.Sum256([]byte(signedProperties))
+	propsDigestBase64 := base64.StdEncoding.EncodeToString(propsDigest[:])
+
+	signedInfo := fmt.Sprintf(`<ds:SignedInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><ds:CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"></ds:CanonicalizationMethod><ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"></ds:SignatureMethod><ds:Reference URI=""><ds:Transforms><ds:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"></ds:Transform><ds:Transform Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"></ds:Transform></ds:Transforms><ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"></ds:DigestMethod><ds:DigestValue>%s</ds:DigestValue></ds:Reference><ds:Reference Type="http://uri.etsi.org/01903#SignedProperties" URI="#%s"><ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"></ds:DigestMethod><ds:DigestValue>%s</ds:DigestValue></ds:Reference></ds:SignedInfo>`, documentDigestBase64, signedPropertiesID, propsDigestBase64)
+
+	signedInfoDigest := sha256.Sum256([]byte(signedInfo))
+	signatureValue, err := rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA256, signedInfoDigest[:])
+	if err != nil {
+		return nil, fmt.Errorf("no se pudo firmar SignedInfo con RSA-SHA256")
+	}
+
+	keyInfo := ""
+	if cert != nil {
+		keyInfo = fmt.Sprintf(`<ds:KeyInfo Id="KeyInfoPCS"><ds:X509Data><ds:X509Certificate>%s</ds:X509Certificate></ds:X509Data></ds:KeyInfo>`, base64.StdEncoding.EncodeToString(cert.Raw))
+	}
+
+	signatureXML := fmt.Sprintf(`<ds:Signature Id="%s" xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><ds:SignedInfo>%s</ds:SignedInfo><ds:SignatureValue>%s</ds:SignatureValue>%s<ds:Object><xades:QualifyingProperties xmlns:xades="http://uri.etsi.org/01903/v1.3.2#" Target="#%s">%s</xades:QualifyingProperties></ds:Object></ds:Signature>`,
+		signatureID,
+		strings.TrimPrefix(strings.TrimSuffix(signedInfo, `</ds:SignedInfo>`), `<ds:SignedInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">`),
+		base64.StdEncoding.EncodeToString(signatureValue),
+		keyInfo,
+		signatureID,
+		signedProperties,
+	)
+
+	return map[string]string{
+		"document_digest_base64":          documentDigestBase64,
+		"signed_properties_digest_base64": propsDigestBase64,
+		"signature_value_base64":          base64.StdEncoding.EncodeToString(signatureValue),
+		"signature_xml":                   signatureXML,
+		"signing_time":                    signingTime,
+	}, nil
+}
+
+func dianInjectSignatureIntoXML(xmlPayload, signatureXML string) string {
+	if strings.Contains(xmlPayload, "<ext:ExtensionContent></ext:ExtensionContent>") {
+		return strings.Replace(xmlPayload, "<ext:ExtensionContent></ext:ExtensionContent>", "<ext:ExtensionContent>"+signatureXML+"</ext:ExtensionContent>", 1)
+	}
+	if strings.Contains(xmlPayload, "<ext:ExtensionContent/>") {
+		return strings.Replace(xmlPayload, "<ext:ExtensionContent/>", "<ext:ExtensionContent>"+signatureXML+"</ext:ExtensionContent>", 1)
+	}
+	rootName := dianDetectXMLRootName(xmlPayload)
+	if rootName == "" {
+		return xmlPayload + signatureXML
+	}
+	closingTag := "</" + rootName + ">"
+	idx := strings.LastIndex(xmlPayload, closingTag)
+	if idx < 0 {
+		return xmlPayload + signatureXML
+	}
+	return xmlPayload[:idx] + signatureXML + xmlPayload[idx:]
+}
+
+func dianDetectXMLRootName(xmlPayload string) string {
+	trimmed := strings.TrimSpace(xmlPayload)
+	if trimmed == "" {
+		return ""
+	}
+	if strings.HasPrefix(trimmed, "<?xml") {
+		if idx := strings.Index(trimmed, "?>"); idx >= 0 {
+			trimmed = strings.TrimSpace(trimmed[idx+2:])
+		}
+	}
+	if !strings.HasPrefix(trimmed, "<") {
+		return ""
+	}
+	trimmed = trimmed[1:]
+	end := len(trimmed)
+	for i, ch := range trimmed {
+		if ch == ' ' || ch == '>' || ch == '\t' || ch == '\n' || ch == '\r' {
+			end = i
+			break
+		}
+	}
+	return strings.TrimSpace(trimmed[:end])
+}
+
+func signDIANXMLXAdESBase(cfg map[string]interface{}, empresaID int64, payload map[string]interface{}) (map[string]interface{}, int, error) {
+	xmlPayload := dianFirstNonBlank(
+		genericStringValue(payload["xml_ubl_base"]),
+		genericStringValue(payload["xml"]),
+		genericStringValue(payload["xml_demo"]),
+		genericStringValue(payload["xml_firmado"]),
+	)
+	if xmlPayload == "" {
+		return nil, http.StatusBadRequest, fmt.Errorf("xml_ubl_base/xml es obligatorio para firma XAdES base")
+	}
+
+	keyRef := dianFirstNonBlank(
+		genericStringValue(payload["private_key_pem"]),
+		genericStringValue(payload["certificado_clave_ref"]),
+		genericStringValue(cfg["certificado_clave_ref"]),
+	)
+	if keyRef == "" {
+		return nil, http.StatusBadRequest, fmt.Errorf("certificado_clave_ref es obligatorio para firma XAdES base")
+	}
+
+	privateKey, err := parseDIANRSAPrivateKey(keyRef)
+	if err != nil {
+		return nil, http.StatusBadRequest, err
+	}
+
+	certificateRef := dianFirstNonBlank(
+		genericStringValue(payload["certificado_pem"]),
+		genericStringValue(payload["certificado_ref"]),
+		genericStringValue(payload["certificado_x509_ref"]),
+		genericStringValue(cfg["certificado_url"]),
+	)
+	var certificate *x509.Certificate
+	certificateIncluded := false
+	warnings := make([]string, 0)
+	if strings.TrimSpace(certificateRef) != "" {
+		certificate, err = parseDIANCertificate(certificateRef)
+		if err != nil {
+			warnings = append(warnings, err.Error())
+		} else {
+			certificateIncluded = true
+		}
+	} else {
+		warnings = append(warnings, "certificado X.509 no suministrado; la firma base se genera sin KeyInfo/X509Certificate")
+	}
+
+	signatureData, err := dianBuildXAdESBaseSignature(xmlPayload, privateKey, certificate)
+	if err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+	xmlFirmado := dianInjectSignatureIntoXML(xmlPayload, signatureData["signature_xml"])
+
+	return map[string]interface{}{
+		"ok":                                true,
+		"empresa_id":                        empresaID,
+		"documento_codigo":                  dianFirstNonBlank(genericStringValue(payload["documento_codigo"]), "FV-"+time.Now().Format("20060102150405")),
+		"nivel_firma":                       "xades_base_no_oficial",
+		"algoritmo":                         "RSA-SHA256",
+		"certificate_included":              certificateIncluded,
+		"warnings":                          warnings,
+		"digest_documento_base64":           signatureData["document_digest_base64"],
+		"digest_signed_properties_base64":   signatureData["signed_properties_digest_base64"],
+		"signature_value_base64":            signatureData["signature_value_base64"],
+		"xml_signature":                     signatureData["signature_xml"],
+		"xml_firmado":                       xmlFirmado,
+		"signing_time":                      signatureData["signing_time"],
+		"advertencia_oficialidad":           "Firma XAdES base interna; aun requiere ajuste de canonicalizacion/UBL/politicas para certificacion oficial DIAN.",
+		"gestion_secreto":                   "certificado_clave_ref y certificado_pem/certificado_ref admiten env:/file:/base64: o valor inline controlado",
+	}, http.StatusOK, nil
+}
+
+func buildDIANOfficialReadinessReport(cfg map[string]interface{}, empresaID int64) (map[string]interface{}, int, error) {
+	if empresaID <= 0 {
+		return nil, http.StatusBadRequest, fmt.Errorf("empresa_id es obligatorio")
+	}
+
+	configured := len(cfg) > 0
+	missingConfig := make([]string, 0)
+	if configured {
+		missingConfig = append(missingConfig, missingDIANFields(cfg)...)
+		if strings.TrimSpace(genericStringValue(cfg["token_emisor_ref"])) == "" {
+			missingConfig = append(missingConfig, "token_emisor_ref")
+		}
+		if strings.TrimSpace(genericStringValue(cfg["certificado_clave_ref"])) == "" {
+			missingConfig = append(missingConfig, "certificado_clave_ref")
+		}
+		if strings.TrimSpace(genericStringValue(cfg["url_dian"])) == "" {
+			missingConfig = append(missingConfig, "url_dian")
+		}
+	}
+
+	technicalGaps := []string{
+		"cliente SOAP/WSDL oficial DIAN aun no implementado en el flujo normal de facturacion",
+		"transporte oficial SendBillAsync/SendTestSetAsync/GetStatusZip aun no conectado",
+		"empaquetado ZIP y trazabilidad TrackId oficial aun no implementados",
+		"UBL 2.1 completo con catalogos/reglas DIAN aun pendiente",
+		"firma XMLDSig/XAdES oficial con canonicalizacion/politicas finales aun pendiente",
+		"el flujo base backend/handlers/facturacion_electronica.go aun usa integracion fiscal generica por api_base_url",
+	}
+
+	readiness := "fase_0"
+	if configured && len(missingConfig) == 0 {
+		readiness = "fase_1_base_lista"
+	}
+
+	return map[string]interface{}{
+		"ok":                     true,
+		"empresa_id":             empresaID,
+		"configurada":            configured,
+		"estado_preparacion":     readiness,
+		"ambiente":               chooseDIANAmbiente(cfg),
+		"faltantes_configuracion": missingConfig,
+		"brechas_tecnicas":       technicalGaps,
+		"wsdl_operaciones_objetivo": []string{"SendBillAsync", "SendBillSync", "SendTestSetAsync", "GetStatusZip", "GetNumberingRange"},
+		"acciones_fase_1_base":   []string{"generar_xml_ubl_base", "firmar_xml_xades_base", "diagnostico_oficial"},
+		"siguiente_fase":         "implementar cliente SOAP/WSDL DIAN y conectar el flujo normal de facturacion al transporte oficial",
 	}, http.StatusOK, nil
 }
 
@@ -7863,8 +8265,9 @@ func buildDIANOnboardingGuide(cfg map[string]interface{}, empresaID int64) map[s
 		{"paso": 2, "titulo": "Definir modelo de software", "detalle": "Activar usar_software_compartido=1 para SaaS o mantener 0 para software propio por empresa."},
 		{"paso": 3, "titulo": "Configurar credenciales por empresa", "detalle": "Registrar token_emisor_ref y certificado_clave_ref por empresa; son obligatorios para envio real por NIT."},
 		{"paso": 4, "titulo": "Subir firma digital", "detalle": "Usar action=subir_firma (multipart) para adjuntar PEM y guardar referencia segura automaticamente."},
-		{"paso": 5, "titulo": "Validar antes de emitir", "detalle": "Ejecutar action=checklist, action=validar y action=validar_credenciales para detectar faltantes."},
-		{"paso": 6, "titulo": "Probar set de habilitacion", "detalle": "Ejecutar action=enviar_set_pruebas con simular=true y luego simular=false cuando credenciales esten completas."},
+		{"paso": 5, "titulo": "Generar XML base y firma base", "detalle": "Usar action=generar_xml_ubl_base y action=firmar_xml_xades_base para preparar la estructura UBL/firma antes del transporte oficial."},
+		{"paso": 6, "titulo": "Validar antes de emitir", "detalle": "Ejecutar action=checklist, action=validar, action=validar_credenciales y action=diagnostico_oficial para detectar faltantes funcionales y brechas tecnicas."},
+		{"paso": 7, "titulo": "Probar set de habilitacion", "detalle": "Ejecutar action=enviar_set_pruebas con simular=true y luego simular=false cuando credenciales esten completas."},
 	}
 
 	plantillas := map[string]interface{}{
@@ -7892,6 +8295,29 @@ func buildDIANOnboardingGuide(cfg map[string]interface{}, empresaID int64) map[s
 		"validar_credenciales": map[string]interface{}{
 			"endpoint": "POST /api/empresa/facturacion_electronica/dian?action=validar_credenciales",
 			"body":     map[string]interface{}{"empresa_id": empresaID},
+		},
+		"generar_xml_ubl_base": map[string]interface{}{
+			"endpoint": "POST /api/empresa/facturacion_electronica/dian?action=generar_xml_ubl_base",
+			"body": map[string]interface{}{
+				"empresa_id":       empresaID,
+				"documento_codigo": "SETP990000001",
+				"documento_tipo":   "factura",
+				"cliente_nombre":   "Cliente de habilitacion",
+				"cliente_nit":      "222222222222",
+				"total":            "1000.00",
+			},
+		},
+		"firmar_xml_xades_base": map[string]interface{}{
+			"endpoint": "POST /api/empresa/facturacion_electronica/dian?action=firmar_xml_xades_base",
+			"body": map[string]interface{}{
+				"empresa_id":        empresaID,
+				"documento_codigo":  "SETP990000001",
+				"xml_ubl_base":      "<Invoice>...</Invoice>",
+				"certificado_ref":   "file:/ruta/segura/certificado_empresa.pem",
+			},
+		},
+		"diagnostico_oficial": map[string]interface{}{
+			"endpoint": "GET /api/empresa/facturacion_electronica/dian?action=diagnostico_oficial&empresa_id=" + strconv.FormatInt(empresaID, 10),
 		},
 		"subir_firma": map[string]interface{}{
 			"endpoint": "POST /api/empresa/facturacion_electronica/dian?action=subir_firma",
@@ -7922,7 +8348,7 @@ func buildDIANOnboardingGuide(cfg map[string]interface{}, empresaID int64) map[s
 		"software_id_efectivo":    softwareID,
 		"pasos":                   pasos,
 		"plantillas":              plantillas,
-		"recomendacion_operativa": "Modelo SaaS: software compartido + NIT/token/firma por empresa.",
+		"recomendacion_operativa": "Modelo SaaS: software compartido + NIT/token/firma por empresa. Para software propio oficial aun falta transporte SOAP/WSDL y UBL/firma final certificable.",
 	}
 	if softwareErr != nil {
 		response["software_error"] = softwareErr.Error()

@@ -1,5 +1,20 @@
  - Historial de cambios
 
+ - 2026-04-17: Facturacion DIAN agrega fase 1 base para UBL/XAdES y diagnostico oficial
+     - Archivos modificados:
+         - backend/handlers/modulos_faltantes.go
+         - backend/handlers/modulos_faltantes_test.go
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_del_proyecto
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se agrega una fase 1 base al modulo DIAN con generacion de XML UBL 2.1 base, firma XMLDSig/XAdES base y diagnostico de brechas frente al contrato oficial DIAN. El flujo actual de envio JSON no se reemplaza; queda explicitado como etapa preparatoria antes del cliente SOAP/WSDL oficial.
+     - Verificacion tecnica:
+         - go test ./handlers -run 'TestEmpresaDIANColombiaHandler(GenerarXMLUBLBase|FirmarXMLXAdESBase|DiagnosticoOficial|FirmaEnvioYAcuseReal|EnviarSetPruebas|SoftwareCompartidoMultiempresa|GuiaOnboardingYValidarCredenciales|SubirFirma)' -count=1
+
  - 2026-04-17: Añadido script de revisión ortográfica y configuración
      - Archivos creados:
          - scripts/spellcheck.ps1
