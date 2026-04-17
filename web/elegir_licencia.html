@@ -21,7 +21,8 @@
         <div class="page-header">
           <h1 id="pageTitle">Elegir Licencia</h1>
         </div>
-        <div id="licencias" class="portal-grid">Cargando licencias...</div>
+        <p class="form-help" id="licenciasHelp">Explora las licencias disponibles y elige la opcion que mejor encaje con la operacion de la empresa.</p>
+        <div id="licencias" class="portal-grid portal-home-grid">Cargando licencias...</div>
       </div>
     </main>
   </div>
@@ -29,6 +30,56 @@
   <script>
     (function(){
       function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m] }) }
+      function normalizeImage(raw) {
+        var value = String(raw || '').trim();
+        if (!value || value.indexOf('/img/') !== 0 || value.indexOf('..') >= 0) {
+          return '/img/punto_venta.png';
+        }
+        return value;
+      }
+
+      function getLicenciaIcon(licencia, tipoNombre) {
+        var tipo = String((licencia && (licencia.tipo_nombre || licencia.tipoNombre)) || tipoNombre || '').toLowerCase();
+        var nombre = String((licencia && (licencia.nombre || licencia.Nombre)) || '').toLowerCase();
+        if (tipo.indexOf('hotel') >= 0 || nombre.indexOf('hotel') >= 0) return '/img/settings-color.svg';
+        if (tipo.indexOf('motel') >= 0 || nombre.indexOf('motel') >= 0) return '/img/motel.png';
+        if (tipo.indexOf('restaurante') >= 0 || nombre.indexOf('restaurante') >= 0) return '/img/restaurante.png';
+        if (tipo.indexOf('sensor') >= 0 || nombre.indexOf('sensor') >= 0) return '/img/sensor.png';
+        return '/img/punto_venta.png';
+      }
+
+      function formatMoney(value) {
+        var amount = Number(value || 0);
+        if (!Number.isFinite(amount)) return '$0';
+        return '$' + amount.toLocaleString('es-CO');
+      }
+
+      function buildLicenciaCard(licencia, idx, empresaId, tipoId, tipoNombre) {
+        var activo = (licencia.activo === 1 || licencia.activo === '1' || licencia.activo === 'activo');
+        var empresaAsignada = licencia.empresa_id ? String(licencia.empresa_id) : '';
+        var valor = (typeof licencia.valor !== 'undefined' ? licencia.valor : (licencia.Valor || 0));
+        var duracion = (licencia.duracion_dias || licencia.DuracionDias || '');
+        var icono = normalizeImage(getLicenciaIcon(licencia, tipoNombre));
+        var descripcion = String(licencia.descripcion || licencia.Descripcion || '').trim();
+        var badge = activo ? 'Activa' : 'Inactiva';
+        var detalleExtra = empresaAsignada ? 'Asignada a empresa ID ' + empresaAsignada : 'Disponible para asignacion inmediata';
+        return '' +
+          '<article class="portal-card home-offer-card" style="animation-delay:' + (idx * 90) + 'ms">' +
+          '  <div class="home-offer-media">' +
+          '    <img src="' + escapeHtml(icono) + '" alt="Icono licencia ' + escapeHtml(String(licencia.nombre || licencia.Nombre || '')) + '" class="card-logo">' +
+          '  </div>' +
+          '  <h3>' + escapeHtml(String(licencia.nombre || licencia.Nombre || '--')) + '</h3>' +
+          '  <p>' + escapeHtml(descripcion || ('Licencia con duracion de ' + String(duracion || '--') + ' dias y activacion para la empresa seleccionada.')) + '</p>' +
+          '  <p><strong>Valor:</strong> ' + escapeHtml(formatMoney(valor)) + '</p>' +
+          '  <p><strong>Duracion:</strong> ' + escapeHtml(String(duracion)) + ' dias</p>' +
+          '  <p><strong>Estado:</strong> ' + escapeHtml(badge) + '</p>' +
+          '  <p>' + escapeHtml(detalleExtra) + '</p>' +
+          '  <div class="card-actions">' +
+          '    <button class="home-offer-btn js-buy-license" type="button" data-licencia="' + escapeHtml(String(licencia.id)) + '" data-empresa-id="' + escapeHtml(String(empresaId || '')) + '" data-tipo-id="' + escapeHtml(String(tipoId || '')) + '" data-tipo-nombre="' + escapeHtml(String(tipoNombre || '')) + '">Comprar licencia</button>' +
+          '  </div>' +
+          '</article>';
+      }
+
       async function run(){
         try{
           const params = new URLSearchParams(window.location.search);
@@ -66,39 +117,23 @@
 
           const container = document.getElementById('licencias'); container.innerHTML = '';
           if (!filtered || filtered.length === 0){
-            container.innerHTML = '<div class="card"><p>No se encontraron licencias disponibles para este tipo.</p><p>Contacta al administrador para más información.</p></div>';
+            container.innerHTML = '<article class="portal-card home-offer-card"><div class="home-offer-media"><img src="/img/punto_venta.png" alt="Sin licencias" class="card-logo"></div><h3>Sin licencias disponibles</h3><p>No se encontraron licencias para este tipo de empresa.</p><p>Contacta al administrador para revisar disponibilidad o configuracion comercial.</p><div class="card-actions"><a class="home-offer-btn" href="/seleccionar_empresa.html">Volver a empresas</a></div></article>';
             return;
           }
 
-          filtered.forEach(function(l, idx){
-            const div = document.createElement('div');
-            // apply an offer-like style with rotating variants
-            const variant = (idx % 4) + 1;
-            div.className = 'portal-card offer-card variant-' + variant;
-            const activo = (l.activo === 1 || l.activo === '1' || l.activo === 'activo');
-            const empresaAsignada = l.empresa_id ? String(l.empresa_id) : '';
-            const valor = (typeof l.valor !== 'undefined' ? l.valor : (l.Valor || 0));
-            const dur = (l.duracion_dias || l.DuracionDias || '');
-            div.innerHTML = '<div class="offer-header">'+
-                            '<h3 class="card-title">'+escapeHtml(l.nombre||l.Nombre||'--')+'</h3>'+
-                            '<div class="offer-price">'+
-                              '<span class="currency">$</span><span class="amount">'+escapeHtml(String(valor))+'</span>'+
-                            '</div>'+
-                            '</div>'+
-                            '<p class="card-desc">'+escapeHtml(l.descripcion||l.Descripcion||'')+'</p>'+
-                            '<p class="muted small"><strong>Duración:</strong> '+escapeHtml(String(dur))+' días &nbsp; '+(activo? '<span class="license-indicator active">Activo</span>':'<span class="license-indicator inactive">Inactivo</span>')+' '+(empresaAsignada? (' - Asignada a empresa ID '+empresaAsignada):'')+'</p>'+
-                            '<div class="card-actions"><button class="btn buy" type="button" data-licencia="'+escapeHtml(String(l.id))+'" data-valor="'+escapeHtml(String(valor))+'">Comprar</button></div>';
-            const btn = div.querySelector('.btn.buy');
-            if (btn) btn.addEventListener('click', function(){
+          container.innerHTML = filtered.map(function(l, idx){
+            return buildLicenciaCard(l, idx, empresaId, tipoId, tipoNombre);
+          }).join('');
+
+          Array.prototype.forEach.call(container.querySelectorAll('.js-buy-license'), function(btn){
+            btn.addEventListener('click', function(){
               const q = new URLSearchParams();
-              q.set('licencia_id', String(l.id));
-              if (empresaId) q.set('empresa_id', String(empresaId));
-              if (tipoId) q.set('tipo_id', String(tipoId));
-              if (tipoNombre) q.set('tipo_nombre', String(tipoNombre));
-              // redirect to payment page
+              q.set('licencia_id', String(btn.getAttribute('data-licencia') || ''));
+              if (btn.getAttribute('data-empresa-id')) q.set('empresa_id', btn.getAttribute('data-empresa-id'));
+              if (btn.getAttribute('data-tipo-id')) q.set('tipo_id', btn.getAttribute('data-tipo-id'));
+              if (btn.getAttribute('data-tipo-nombre')) q.set('tipo_nombre', btn.getAttribute('data-tipo-nombre'));
               window.location.href = '/pagar_licencia.html?' + q.toString();
             });
-            container.appendChild(div);
           });
 
         }catch(err){ console.error(err); document.getElementById('licencias').innerText = 'Error cargando licencias: ' + (err && err.message ? err.message : String(err)); }

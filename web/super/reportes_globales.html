@@ -27,11 +27,29 @@
       <div class="reportes-globales-grid" style="margin-top:14px;">
         <section class="reportes-globales-panel">
           <h2 style="margin-top:0;">Empresas del administrador</h2>
+          <div class="empresa-inline-actions reportes-globales-selection-toolbar" style="margin-bottom:10px;flex-wrap:wrap;gap:10px;align-items:flex-end;">
+            <label class="reportes-globales-selection-field">
+              <span class="form-label">Modo de elección</span>
+              <select id="rgTipoSeleccion" class="form-input">
+                <option value="multiple">Varias empresas</option>
+                <option value="single">Una empresa</option>
+              </select>
+            </label>
+            <label id="rgEmpresaUnicaWrap" class="reportes-globales-selection-field" hidden>
+              <span class="form-label">Empresa</span>
+              <select id="rgEmpresaUnica" class="form-input"></select>
+            </label>
+            <div class="reportes-globales-selection-resume">
+              <span class="form-label">Selección actual</span>
+              <strong id="rgSeleccionResumen">0 empresas</strong>
+            </div>
+          </div>
           <div class="empresa-inline-actions" style="margin-bottom:10px;flex-wrap:wrap;gap:8px;">
             <button id="rgSeleccionarTodas" class="btn secondary" type="button">Todas</button>
             <button id="rgSoloActivas" class="btn secondary" type="button">Activas</button>
             <button id="rgLimpiarEmpresas" class="btn secondary" type="button">Limpiar</button>
           </div>
+          <p id="rgSeleccionAyuda" class="form-help" style="margin:0 0 10px 0;">Marca una o varias empresas y luego aplica filtros. Si eliges una sola empresa, el reporte se refresca al cambiarla.</p>
           <div id="rgEmpresasLista" class="reportes-globales-empresas"></div>
         </section>
 

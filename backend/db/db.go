@@ -459,6 +459,7 @@ type Admin struct {
 type Licencia struct {
 	ID            int64   `json:"id"`
 	EmpresaID     int64   `json:"empresa_id"`
+	EmpresaNombre string  `json:"empresa_nombre,omitempty"`
 	TipoID        int64   `json:"tipo_id"`
 	TipoNombre    string  `json:"tipo_nombre,omitempty"`
 	Nombre        string  `json:"nombre"`
@@ -467,6 +468,8 @@ type Licencia struct {
 	DuracionDias  int     `json:"duracion_dias"`
 	ModulosHab    string  `json:"modulos_habilitados,omitempty"`
 	SuperRol      int     `json:"super_rol_habilitado"`
+	FechaInicio   string  `json:"fecha_inicio,omitempty"`
+	FechaFin      string  `json:"fecha_fin,omitempty"`
 	FechaCreacion string  `json:"fecha_creacion"`
 	Activo        int     `json:"activo"`
 }
@@ -495,18 +498,25 @@ func GetLicencias(dbConn *sql.DB) ([]Licencia, error) {
 
 // GetLicenciasFiltered obtiene licencias con filtros opcionales.
 func GetLicenciasFiltered(dbConn *sql.DB, soloActivas bool, usuarioCreador string, conEmpresa bool) ([]Licencia, error) {
-	q := `SELECT l.id, l.empresa_id, l.tipo_id, t.nombre, l.nombre, l.descripcion, l.valor, l.duracion_dias, COALESCE(l.modulos_habilitados, ''), COALESCE(l.super_rol_habilitado, 0), l.fecha_creacion, l.activo
+	q := `SELECT l.id, l.empresa_id, l.tipo_id, t.nombre, l.nombre, l.descripcion, l.valor, l.duracion_dias, COALESCE(l.modulos_habilitados, ''), COALESCE(l.super_rol_habilitado, 0), COALESCE(l.fecha_inicio, ''), COALESCE(l.fecha_fin, ''), l.fecha_creacion, l.activo`
+	baseFrom := `
 		FROM licencias l LEFT JOIN tipos_de_empresas t ON l.tipo_id = t.id`
+	q += baseFrom
 
 	usuarioCreador = strings.TrimSpace(usuarioCreador)
+	hasEmpresasTable, err := tableExists(dbConn, "empresas")
+	if err != nil {
+		return nil, err
+	}
+	if hasEmpresasTable {
+		q += " LEFT JOIN empresas e ON e.id = l.empresa_id"
+		q = strings.Replace(q, "SELECT l.id, l.empresa_id", "SELECT l.id, l.empresa_id, COALESCE(e.nombre, '')", 1)
+	} else {
+		q = strings.Replace(q, "SELECT l.id, l.empresa_id", "SELECT l.id, l.empresa_id, ''", 1)
+	}
 	canFilterByUsuarioCreador := false
 	if usuarioCreador != "" {
-		hasEmpresasTable, err := tableExists(dbConn, "empresas")
-		if err != nil {
-			return nil, err
-		}
 		if hasEmpresasTable {
-			q += " LEFT JOIN empresas e ON e.id = l.empresa_id"
 			canFilterByUsuarioCreador = true
 		}
 	}
@@ -546,15 +556,21 @@ func GetLicenciasFiltered(dbConn *sql.DB, soloActivas bool, usuarioCreador strin
 	for rows.Next() {
 		var lic Licencia
 		var empresaID sql.NullInt64
+		var empresaNombre sql.NullString
 		var tipoNombre sql.NullString
 		var descripcion sql.NullString
 		var modulosHab sql.NullString
+		var fechaInicio sql.NullString
+		var fechaFin sql.NullString
 		var fechaCreacion sql.NullString
-		if err := rows.Scan(&lic.ID, &empresaID, &lic.TipoID, &tipoNombre, &lic.Nombre, &descripcion, &lic.Valor, &lic.DuracionDias, &modulosHab, &lic.SuperRol, &fechaCreacion, &lic.Activo); err != nil {
+		if err := rows.Scan(&lic.ID, &empresaID, &empresaNombre, &lic.TipoID, &tipoNombre, &lic.Nombre, &descripcion, &lic.Valor, &lic.DuracionDias, &modulosHab, &lic.SuperRol, &fechaInicio, &fechaFin, &fechaCreacion, &lic.Activo); err != nil {
 			return nil, err
 		}
 		if empresaID.Valid {
 			lic.EmpresaID = empresaID.Int64
+		}
+		if empresaNombre.Valid {
+			lic.EmpresaNombre = empresaNombre.String
 		}
 		if tipoNombre.Valid {
 			lic.TipoNombre = tipoNombre.String
@@ -564,6 +580,12 @@ func GetLicenciasFiltered(dbConn *sql.DB, soloActivas bool, usuarioCreador strin
 		}
 		if modulosHab.Valid {
 			lic.ModulosHab = modulosHab.String
+		}
+		if fechaInicio.Valid {
+			lic.FechaInicio = fechaInicio.String
+		}
+		if fechaFin.Valid {
+			lic.FechaFin = fechaFin.String
 		}
 		if fechaCreacion.Valid {
 			lic.FechaCreacion = fechaCreacion.String
@@ -575,15 +597,17 @@ func GetLicenciasFiltered(dbConn *sql.DB, soloActivas bool, usuarioCreador strin
 
 // GetLicenciaByID devuelve una licencia por id
 func GetLicenciaByID(dbConn *sql.DB, id int64) (*Licencia, error) {
-	q := `SELECT id, empresa_id, tipo_id, nombre, descripcion, valor, duracion_dias, COALESCE(modulos_habilitados, ''), COALESCE(super_rol_habilitado, 0), fecha_creacion, activo FROM licencias WHERE id = ? LIMIT 1`
+	q := `SELECT id, empresa_id, tipo_id, nombre, descripcion, valor, duracion_dias, COALESCE(modulos_habilitados, ''), COALESCE(super_rol_habilitado, 0), COALESCE(fecha_inicio, ''), COALESCE(fecha_fin, ''), fecha_creacion, activo FROM licencias WHERE id = ? LIMIT 1`
 	scanLicencia := func() (*Licencia, error) {
 		row := queryRowSQLCompat(dbConn, q, id)
 		var lic Licencia
 		var empresaID sql.NullInt64
 		var descripcion sql.NullString
 		var modulosHab sql.NullString
+		var fechaInicio sql.NullString
+		var fechaFin sql.NullString
 		var fechaCreacion sql.NullString
-		if err := row.Scan(&lic.ID, &empresaID, &lic.TipoID, &lic.Nombre, &descripcion, &lic.Valor, &lic.DuracionDias, &modulosHab, &lic.SuperRol, &fechaCreacion, &lic.Activo); err != nil {
+		if err := row.Scan(&lic.ID, &empresaID, &lic.TipoID, &lic.Nombre, &descripcion, &lic.Valor, &lic.DuracionDias, &modulosHab, &lic.SuperRol, &fechaInicio, &fechaFin, &fechaCreacion, &lic.Activo); err != nil {
 			return nil, err
 		}
 		if empresaID.Valid {
@@ -594,6 +618,12 @@ func GetLicenciaByID(dbConn *sql.DB, id int64) (*Licencia, error) {
 		}
 		if modulosHab.Valid {
 			lic.ModulosHab = modulosHab.String
+		}
+		if fechaInicio.Valid {
+			lic.FechaInicio = fechaInicio.String
+		}
+		if fechaFin.Valid {
+			lic.FechaFin = fechaFin.String
 		}
 		if fechaCreacion.Valid {
 			lic.FechaCreacion = fechaCreacion.String

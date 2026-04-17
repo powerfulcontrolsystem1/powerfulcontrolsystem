@@ -908,7 +908,7 @@
       if (tipo === "audio") {
         return '<div class="chat-attachment-audio"><audio controls preload="none" src="' + escapeHtml(url) + '"></audio></div>';
       }
-      return '<div class="chat-attachment-file"><a href="' + escapeHtml(url) + '" target="_blank" rel="noopener">' + escapeHtml(nombre) + '</a></div>';
+      return '<div class="chat-attachment-file"><a href="' + escapeHtml(url) + '">' + escapeHtml(nombre) + '</a></div>';
     }
 
     function renderMensajes() {

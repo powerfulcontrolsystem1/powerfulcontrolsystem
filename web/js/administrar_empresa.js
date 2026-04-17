@@ -331,9 +331,9 @@ try {
     event.preventDefault();
     resolvePortalUsuariosURL(id).then(function (url) {
     portalUsuariosLink.href = url;
-    window.open(url, "_blank", "noopener");
+    window.location.href = url;
     }).catch(function () {
-    window.open(buildPortalUsuariosURL(id, null), "_blank", "noopener");
+    window.location.href = buildPortalUsuariosURL(id, null);
     });
   });
   }

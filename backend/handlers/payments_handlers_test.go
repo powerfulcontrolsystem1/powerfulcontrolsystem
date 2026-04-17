@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -40,11 +41,30 @@ func ensurePaymentsHandlerTestSchema(t *testing.T, dbSuper *sql.DB) {
 		duracion_dias INTEGER,
 		modulos_habilitados TEXT,
 		super_rol_habilitado INTEGER DEFAULT 0,
+		fecha_inicio TEXT,
+		fecha_fin TEXT,
 		fecha_creacion TEXT,
 		activo INTEGER DEFAULT 1
 	);`)
 	if err != nil {
 		t.Fatalf("create licencias schema: %v", err)
+	}
+
+	_, err = dbSuper.Exec(`CREATE TABLE IF NOT EXISTS tipos_de_empresas (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		nombre TEXT
+	);`)
+	if err != nil {
+		t.Fatalf("create tipos_de_empresas schema: %v", err)
+	}
+
+	_, err = dbSuper.Exec(`CREATE TABLE IF NOT EXISTS empresas (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		nombre TEXT,
+		usuario_creador TEXT
+	);`)
+	if err != nil {
+		t.Fatalf("create empresas schema: %v", err)
 	}
 
 	_, err = dbSuper.Exec(`CREATE TABLE IF NOT EXISTS pagos_epayco (
@@ -93,6 +113,55 @@ func TestResolvePaymentBaseURLFallsBackToCanonicalDomainOnLocalhost(t *testing.T
 	}
 	if baseURL != canonicalPaymentPublicBaseURL {
 		t.Fatalf("expected canonical fallback base URL %q, got %q", canonicalPaymentPublicBaseURL, baseURL)
+	}
+}
+
+func TestLicenciasHandlerGetReturnsHistorialFieldsForCreatorScope(t *testing.T) {
+	dbSuper := openTestSQLite(t, "super_licencias_historial_scope.db")
+	ensurePaymentsHandlerTestSchema(t, dbSuper)
+
+	if _, err := dbSuper.Exec(`INSERT INTO tipos_de_empresas (id, nombre) VALUES (1, 'Restaurante')`); err != nil {
+		t.Fatalf("seed tipo empresa: %v", err)
+	}
+	if _, err := dbSuper.Exec(`INSERT INTO empresas (id, nombre, usuario_creador) VALUES (10, 'Cafe Central', 'owner@demo.com'), (20, 'Hotel Ajeno', 'other@demo.com')`); err != nil {
+		t.Fatalf("seed empresas: %v", err)
+	}
+	if _, err := dbSuper.Exec(`
+		INSERT INTO licencias (
+			id, empresa_id, tipo_id, nombre, descripcion, valor, duracion_dias, modulos_habilitados, super_rol_habilitado, fecha_inicio, fecha_fin, fecha_creacion, activo
+		) VALUES
+			(1, 10, 1, 'Plan Oro', 'Licencia vigente', 199900, 30, 'ventas,finanzas', 0, '2026-04-01 00:00:00', '2026-05-01 00:00:00', '2026-04-01 00:00:00', 1),
+			(2, 20, 1, 'Plan Externo', 'Licencia de otra empresa', 99900, 15, 'ventas', 0, '2026-04-02 00:00:00', '2026-04-17 00:00:00', '2026-04-02 00:00:00', 1)
+	`); err != nil {
+		t.Fatalf("seed licencias: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/super/api/licencias?con_empresa=1&usuario_creador=owner@demo.com", nil)
+	rr := httptest.NewRecorder()
+	LicenciasHandler(dbSuper).ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, rr.Code, rr.Body.String())
+	}
+
+	var items []dbpkg.Licencia
+	if err := json.Unmarshal(rr.Body.Bytes(), &items); err != nil {
+		t.Fatalf("decode licencias response: %v body=%s", err, rr.Body.String())
+	}
+	if len(items) != 1 {
+		t.Fatalf("expected 1 licencia for owner scope, got %d: %+v", len(items), items)
+	}
+	if items[0].EmpresaID != 10 {
+		t.Fatalf("expected empresa_id 10, got %d", items[0].EmpresaID)
+	}
+	if items[0].EmpresaNombre != "Cafe Central" {
+		t.Fatalf("expected empresa nombre Cafe Central, got %q", items[0].EmpresaNombre)
+	}
+	if items[0].FechaInicio != "2026-04-01 00:00:00" {
+		t.Fatalf("expected fecha_inicio in response, got %q", items[0].FechaInicio)
+	}
+	if items[0].FechaFin != "2026-05-01 00:00:00" {
+		t.Fatalf("expected fecha_fin in response, got %q", items[0].FechaFin)
 	}
 }
 
@@ -169,6 +238,32 @@ func TestEpaycoCreateTransactionHandlerUsesConfiguredPublicBaseURLAndKeys(t *tes
 		t.Fatalf("seed gmail.confirm_base_url: %v", err)
 	}
 
+	var loginAuth string
+	var sessionAuth string
+	var sessionRequest map[string]interface{}
+	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/login":
+			loginAuth = r.Header.Get("Authorization")
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"token":"apify-token-demo"}`))
+		case "/payment/session/create":
+			sessionAuth = r.Header.Get("Authorization")
+			body, _ := io.ReadAll(r.Body)
+			if err := json.Unmarshal(body, &sessionRequest); err != nil {
+				t.Fatalf("decode session request: %v body=%s", err, string(body))
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"success":true,"data":{"sessionId":"sess_demo_123"}}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer testServer.Close()
+	originalApifyBaseURL := epaycoApifyBaseURL
+	epaycoApifyBaseURL = testServer.URL
+	defer func() { epaycoApifyBaseURL = originalApifyBaseURL }()
+
 	h := EpaycoCreateTransactionHandler(dbSuper)
 	body := strings.NewReader(`{"licencia_id":1,"empresa_id":44,"customer_email":"cliente@demo.com"}`)
 	req := httptest.NewRequest(http.MethodPost, "http://localhost:8080/api/public/licencias/payment/epayco", body)
@@ -181,65 +276,67 @@ func TestEpaycoCreateTransactionHandlerUsesConfiguredPublicBaseURLAndKeys(t *tes
 	}
 
 	var resp struct {
-		CheckoutURL   string `json:"checkout_url"`
-		Reference     string `json:"reference"`
-		TransactionID string `json:"transaction_id"`
+		Reference         string `json:"reference"`
+		TransactionID     string `json:"transaction_id"`
+		SessionID         string `json:"session_id"`
+		CheckoutType      string `json:"checkout_type"`
+		CheckoutScriptURL string `json:"checkout_script_url"`
+		PaymentMethod     string `json:"payment_method"`
 	}
 	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("decode response: %v body=%s", err, rr.Body.String())
 	}
-	if resp.CheckoutURL == "" {
-		t.Fatalf("expected checkout_url in response: %s", rr.Body.String())
+	if resp.SessionID != "sess_demo_123" {
+		t.Fatalf("expected session_id sess_demo_123, got %q", resp.SessionID)
 	}
-	if strings.Contains(resp.CheckoutURL, "localhost") {
-		t.Fatalf("checkout URL must not include localhost: %s", resp.CheckoutURL)
+	if resp.CheckoutType != "standard" {
+		t.Fatalf("expected checkout_type standard, got %q", resp.CheckoutType)
 	}
-
-	parsed, err := url.Parse(resp.CheckoutURL)
+	if resp.CheckoutScriptURL != "https://checkout.epayco.co/checkout-v2.js" {
+		t.Fatalf("unexpected checkout_script_url: %q", resp.CheckoutScriptURL)
+	}
+	if resp.PaymentMethod != "SMART_CHECKOUT" {
+		t.Fatalf("expected payment_method SMART_CHECKOUT, got %q", resp.PaymentMethod)
+	}
+	if loginAuth == "" || !strings.HasPrefix(loginAuth, "Basic ") {
+		t.Fatalf("expected Basic auth on apify login, got %q", loginAuth)
+	}
+	decodedLoginAuth, err := base64.StdEncoding.DecodeString(strings.TrimPrefix(loginAuth, "Basic "))
 	if err != nil {
-		t.Fatalf("parse checkout URL: %v", err)
+		t.Fatalf("decode login auth: %v", err)
 	}
-	query := parsed.Query()
-	if query.Get("public_key") != "pub_test_checkout_123" {
-		t.Fatalf("expected public_key to use epayco.public_key, got %q", query.Get("public_key"))
+	if string(decodedLoginAuth) != "pub_test_checkout_123:prv_test_checkout_456" {
+		t.Fatalf("unexpected login auth payload: %q", string(decodedLoginAuth))
 	}
-	if query.Get("p_cust_id_cliente") != "1579238" {
-		t.Fatalf("expected p_cust_id_cliente to use customer_id, got %q", query.Get("p_cust_id_cliente"))
+	if sessionAuth != "Bearer apify-token-demo" {
+		t.Fatalf("expected Bearer token on session create, got %q", sessionAuth)
 	}
-	if query.Get("p_key") != "prv_test_checkout_456" {
-		t.Fatalf("expected p_key to use epayco.private_key, got %q", query.Get("p_key"))
+	if sessionRequest["invoice"] != resp.Reference {
+		t.Fatalf("expected invoice %q, got %#v", resp.Reference, sessionRequest["invoice"])
 	}
-	responseURL, err := url.Parse(query.Get("response"))
+	if sessionRequest["currency"] != "COP" {
+		t.Fatalf("expected currency COP, got %#v", sessionRequest["currency"])
+	}
+	responseURL, err := url.Parse(strings.TrimSpace(sessionRequest["response"].(string)))
 	if err != nil {
 		t.Fatalf("parse response URL: %v", err)
 	}
 	responseQuery := responseURL.Query()
 	if responseURL.Scheme != "https" || responseURL.Host != "powerfulcontrolsystem.com" || responseURL.Path != "/epayco/respuesta.html" {
-		t.Fatalf("unexpected response URL target: %q", query.Get("response"))
+		t.Fatalf("unexpected response URL target: %q", sessionRequest["response"])
 	}
-	if responseQuery.Get("provider") != "epayco" {
-		t.Fatalf("expected response provider epayco, got %q", responseQuery.Get("provider"))
+	if responseQuery.Get("provider") != "epayco" || responseQuery.Get("status") != "pending" {
+		t.Fatalf("unexpected response query: %s", responseURL.RawQuery)
 	}
-	if responseQuery.Get("status") != "pending" {
-		t.Fatalf("expected response status pending, got %q", responseQuery.Get("status"))
+	if responseQuery.Get("reference") != resp.Reference || responseQuery.Get("licencia_id") != "1" || responseQuery.Get("empresa_id") != "44" {
+		t.Fatalf("unexpected response query values: %s", responseURL.RawQuery)
 	}
-	if responseQuery.Get("reference") != resp.Reference {
-		t.Fatalf("expected response reference %q, got %q", resp.Reference, responseQuery.Get("reference"))
+	if sessionRequest["confirmation"] != "https://powerfulcontrolsystem.com/epayco/webhook" {
+		t.Fatalf("unexpected confirmation URL: %#v", sessionRequest["confirmation"])
 	}
-	if responseQuery.Get("licencia_id") != "1" {
-		t.Fatalf("expected response licencia_id 1, got %q", responseQuery.Get("licencia_id"))
-	}
-	if responseQuery.Get("extra1") != "1" {
-		t.Fatalf("expected response extra1 1, got %q", responseQuery.Get("extra1"))
-	}
-	if responseQuery.Get("empresa_id") != "44" {
-		t.Fatalf("expected response empresa_id 44, got %q", responseQuery.Get("empresa_id"))
-	}
-	if responseQuery.Get("extra2") != "44" {
-		t.Fatalf("expected response extra2 44, got %q", responseQuery.Get("extra2"))
-	}
-	if query.Get("confirmation") != "https://powerfulcontrolsystem.com/epayco/webhook" {
-		t.Fatalf("unexpected confirmation URL: %q", query.Get("confirmation"))
+	extras, _ := sessionRequest["extras"].(map[string]interface{})
+	if fmt.Sprint(extras["extra1"]) != "1" || fmt.Sprint(extras["extra2"]) != "44" || fmt.Sprint(extras["extra3"]) != resp.Reference {
+		t.Fatalf("unexpected extras payload: %#v", extras)
 	}
 
 	rec, err := dbpkg.GetEpaycoPaymentByReference(dbSuper, resp.Reference)
@@ -252,7 +349,7 @@ func TestEpaycoCreateTransactionHandlerUsesConfiguredPublicBaseURLAndKeys(t *tes
 	if !rec.TransactionID.Valid || strings.TrimSpace(rec.TransactionID.String) != resp.TransactionID {
 		t.Fatalf("expected stored transaction_id %q, got %+v", resp.TransactionID, rec.TransactionID)
 	}
-	if !rec.RawPayload.Valid || !strings.Contains(rec.RawPayload.String, "https://powerfulcontrolsystem.com") {
+	if !rec.RawPayload.Valid || !strings.Contains(rec.RawPayload.String, "sess_demo_123") || !strings.Contains(rec.RawPayload.String, "smart_checkout_v2") {
 		t.Fatalf("expected raw payload with public base URL, got %+v", rec.RawPayload)
 	}
 }
@@ -288,28 +385,11 @@ func TestEpaycoCreateTransactionHandlerAllowsCheckoutWithoutPrivateKey(t *testin
 	rr := httptest.NewRecorder()
 	h.ServeHTTP(rr, req)
 
-	if rr.Code != http.StatusOK {
-		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, rr.Code, rr.Body.String())
+	if rr.Code != http.StatusPreconditionFailed {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusPreconditionFailed, rr.Code, rr.Body.String())
 	}
-
-	var resp struct {
-		CheckoutURL string `json:"checkout_url"`
-	}
-	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("decode response: %v body=%s", err, rr.Body.String())
-	}
-	if resp.CheckoutURL == "" {
-		t.Fatalf("expected checkout_url in response: %s", rr.Body.String())
-	}
-	parsed, err := url.Parse(resp.CheckoutURL)
-	if err != nil {
-		t.Fatalf("parse checkout URL: %v", err)
-	}
-	if got := parsed.Query().Get("public_key"); got != "pub_test_checkout_only_public" {
-		t.Fatalf("expected public_key to use epayco.public_key, got %q", got)
-	}
-	if got := parsed.Query().Get("p_key"); got != "" {
-		t.Fatalf("expected p_key empty when private key is not configured, got %q", got)
+	if !strings.Contains(rr.Body.String(), "Private Key") {
+		t.Fatalf("expected response to mention missing Private Key, got %s", rr.Body.String())
 	}
 }
 
@@ -350,6 +430,23 @@ func TestEpaycoCreateTransactionHandlerAcceptsSamboxAlias(t *testing.T) {
 		t.Fatalf("seed gmail.confirm_base_url: %v", err)
 	}
 
+	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/login":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"token":"apify-token-sandbox"}`))
+		case "/payment/session/create":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"success":true,"data":{"sessionId":"sess_sandbox_456"}}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer testServer.Close()
+	originalApifyBaseURL := epaycoApifyBaseURL
+	epaycoApifyBaseURL = testServer.URL
+	defer func() { epaycoApifyBaseURL = originalApifyBaseURL }()
+
 	h := EpaycoCreateTransactionHandler(dbSuper)
 	body := strings.NewReader(`{"licencia_id":1,"empresa_id":55,"customer_email":"sandbox@demo.com"}`)
 	req := httptest.NewRequest(http.MethodPost, "http://localhost:8080/epayco/create_transaction", body)
@@ -362,8 +459,8 @@ func TestEpaycoCreateTransactionHandlerAcceptsSamboxAlias(t *testing.T) {
 	}
 
 	var resp struct {
-		Mode        string `json:"mode"`
-		CheckoutURL string `json:"checkout_url"`
+		Mode      string `json:"mode"`
+		SessionID string `json:"session_id"`
 	}
 	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("decode response: %v body=%s", err, rr.Body.String())
@@ -371,12 +468,8 @@ func TestEpaycoCreateTransactionHandlerAcceptsSamboxAlias(t *testing.T) {
 	if resp.Mode != "sandbox" {
 		t.Fatalf("expected mode sandbox when epayco.mode=sambox, got %q", resp.Mode)
 	}
-	parsed, err := url.Parse(resp.CheckoutURL)
-	if err != nil {
-		t.Fatalf("parse checkout URL: %v", err)
-	}
-	if got := parsed.Query().Get("test"); got != "true" {
-		t.Fatalf("expected checkout test=true when epayco.mode=sambox, got %q", got)
+	if resp.SessionID != "sess_sandbox_456" {
+		t.Fatalf("expected session_id sess_sandbox_456, got %q", resp.SessionID)
 	}
 }
 

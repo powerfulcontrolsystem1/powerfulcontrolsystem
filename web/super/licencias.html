@@ -10,9 +10,19 @@
 <body class="super-page form-bg-dark">
   <div class="container">
     <div class="page-header">
-      <h1>Licencias</h1>
+      <div>
+        <h1 id="pageTitle">Licencias</h1>
+        <p id="pageLead" class="form-help" style="margin:6px 0 0 0;"></p>
+      </div>
       <button id="addBtn" class="btn add">Agregar</button>
     </div>
+    <section id="historyToolbar" class="lic-history-toolbar" hidden>
+      <div class="lic-history-toolbar-main">
+        <label class="form-label" for="historyEmpresaFilter">Empresa</label>
+        <select id="historyEmpresaFilter" class="form-input"></select>
+      </div>
+      <div id="historySummary" class="lic-history-summary"></div>
+    </section>
     <form id="form" class="form">
       <input type="hidden" id="itemId">
       <div class="form-row">
@@ -71,179 +81,442 @@
   <!-- Menú flotante eliminado en páginas del panel /super -->
 
   <script>
-    function buildLicenciasApiURL(){
+    (function(){
       const currentParams = new URLSearchParams(window.location.search || '');
-      const apiParams = new URLSearchParams();
-      ['scope','usuario_creador','con_empresa','activo'].forEach(function(key){
-        const value = currentParams.get(key);
-        if (value !== null && value !== '') apiParams.set(key, value);
-      });
-      const query = apiParams.toString();
-      return '/super/api/licencias' + (query ? ('?' + query) : '');
-    }
+      const list = document.getElementById('list');
+      const form = document.getElementById('form');
+      const addBtn = document.getElementById('addBtn');
+      const historyToolbar = document.getElementById('historyToolbar');
+      const historyEmpresaFilter = document.getElementById('historyEmpresaFilter');
+      const historySummary = document.getElementById('historySummary');
+      const pageTitle = document.getElementById('pageTitle');
+      const pageLead = document.getElementById('pageLead');
+      const historyState = { empresaID: '' };
 
-    function normalizeCSV(raw) {
-      return String(raw || '')
-        .split(',')
-        .map(v => v.trim().toLowerCase())
-        .filter(Boolean)
-        .filter((v, idx, arr) => arr.indexOf(v) === idx)
-        .join(',');
-    }
-
-    function getSelectedLicenciaModulos(){
-      return normalizeCSV(Array.from(document.querySelectorAll('input[name="lic_modulo"]:checked')).map(el => el.value).join(','));
-    }
-
-    function setSelectedLicenciaModulos(rawCSV){
-      const selected = new Set(normalizeCSV(rawCSV).split(',').filter(Boolean));
-      document.querySelectorAll('input[name="lic_modulo"]').forEach(function(el){
-        el.checked = selected.has(String(el.value || '').trim().toLowerCase());
-      });
-    }
-
-    function modulosToLabel(rawCSV){
-      const normalized = normalizeCSV(rawCSV);
-      if (!normalized) return 'Todos';
-      return normalized;
-    }
-
-    function resetLicenciaForm(){
-      document.getElementById('itemId').value='';
-      document.getElementById('nombre').value='';
-      document.getElementById('descripcion').value='';
-      document.getElementById('valor').value='';
-      document.getElementById('duracion_dias').value='';
-      document.getElementById('tipo_id').value='';
-      document.getElementById('super_rol_habilitado').checked = false;
-      setSelectedLicenciaModulos('');
-      document.getElementById('saveBtn').innerText='Guardar';
-      document.getElementById('cancelBtn').style.display='none';
-      document.getElementById('msg').innerText='';
-    }
-
-    async function fetchJSONOrThrow(url, options){
-      const res = await fetch(url, options);
-      if(!res.ok){
-        const raw = await res.text().catch(()=> '');
-        throw new Error(raw || ('HTTP '+res.status));
-      }
-      const text = await res.text();
-      if(!text) return null;
-      try{ return JSON.parse(text); }catch(_){ return text; }
-    }
-
-    async function fetchTextOrThrow(url, options){
-      const res = await fetch(url, options);
-      if(!res.ok){
-        const raw = await res.text().catch(()=> '');
-        throw new Error(raw || ('HTTP '+res.status));
-      }
-      return res.text();
-    }
-
-    async function load(){
-      // cargar tipos para el select
-      try{
-        const tipos = await fetchJSONOrThrow('/super/api/tipos_empresas');
-        const tipoSelect = document.getElementById('tipo_id');
-        tipoSelect.innerHTML = '<option value="">-- Seleccionar --</option>';
-        (Array.isArray(tipos) ? tipos : []).forEach(t=>{
-          const opt = document.createElement('option'); opt.value = t.id; opt.text = t.nombre; tipoSelect.appendChild(opt);
-        });
-      }catch(e){ console.warn('No se pudieron cargar tipos:', e); }
-
-      // cargar licencias
-      const data = await fetchJSONOrThrow(buildLicenciasApiURL());
-      const table = document.createElement('table');
-      table.className = 'table';
-      table.innerHTML = '<thead><tr><th>ID</th><th>Tipo</th><th>Nombre</th><th>Valor</th><th>Duración (días)</th><th>Módulos</th><th>Super rol</th><th>Acciones</th></thead>';
-      const tbody = document.createElement('tbody');
-      data.forEach(i=>{
-        const tr = document.createElement('tr');
-        const activo = (i.activo === 'activo' || i.activo==1) ? 1 : (i.activo||0);
-        const toggleLabel = (activo==1) ? 'Desactivar' : 'Activar';
-        const modulos = modulosToLabel(i.modulos_habilitados || '');
-        const superRol = Number(i.super_rol_habilitado || 0) === 1 ? 'Sí' : 'No';
-        tr.innerHTML = `<td>${i.id}</td><td>${i.tipo_nombre||''}</td><td>${i.nombre}</td><td>${i.valor||''}</td><td>${i.duracion_dias||''}</td><td>${modulos}</td><td>${superRol}</td><td class="actions"><button data-id="${i.id}" class="edit btn secondary">Editar</button> <button data-id="${i.id}" class="del btn danger">Eliminar</button> <button data-id="${i.id}" data-activo="${activo}" class="toggle btn">${toggleLabel}</button></td>`;
-        tbody.appendChild(tr);
-      });
-      table.appendChild(tbody);
-      const list = document.getElementById('list'); list.innerHTML=''; list.appendChild(table);
-
-      document.querySelectorAll('.edit').forEach(b=>b.onclick = async ()=>{
-        const id = b.getAttribute('data-id');
-        // mostrar formulario y cargar valores desde la lista ya cargada
-        const item = data.find(x => String(x.id) === String(id));
-        if(!item) return alert('Registro no encontrado');
-        document.getElementById('form').style.display = '';
-        document.getElementById('addBtn').style.display = 'none';
-        document.getElementById('itemId').value = item.id;
-        document.getElementById('tipo_id').value = item.tipo_id || '';
-        document.getElementById('nombre').value = item.nombre || '';
-        document.getElementById('valor').value = item.valor || '';
-        document.getElementById('duracion_dias').value = item.duracion_dias || '';
-        document.getElementById('descripcion').value = item.descripcion || '';
-        setSelectedLicenciaModulos(item.modulos_habilitados || '');
-        document.getElementById('super_rol_habilitado').checked = Number(item.super_rol_habilitado || 0) === 1;
-        document.getElementById('saveBtn').innerText = 'Actualizar';
-        document.getElementById('cancelBtn').style.display = '';
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      });
-      document.querySelectorAll('.del').forEach(b=>b.onclick = async ()=>{
-        if(!confirm('Eliminar licencia?')) return;
-        const id = b.getAttribute('data-id');
-        await fetchTextOrThrow('/super/api/licencias?id='+id, { method: 'DELETE' });
-        load();
-      });
-      document.querySelectorAll('.toggle').forEach(b=>b.onclick = async ()=>{
-        const id = b.getAttribute('data-id');
-        const activo = b.getAttribute('data-activo') === '1' ? '0' : '1';
-        if(!confirm((activo==='1' ? 'Activar' : 'Desactivar')+' licencia?')) return;
-        await fetchTextOrThrow('/super/api/licencias?id='+id+'&action=activar&activo='+activo, { method: 'PUT' });
-        load();
-      });
-    }
-
-    document.getElementById('form').onsubmit = async (e)=>{
-      e.preventDefault();
-      const id = document.getElementById('itemId').value;
-      const payload = {
-        tipo_id: parseInt(document.getElementById('tipo_id').value||0),
-        nombre: document.getElementById('nombre').value.trim(),
-        descripcion: document.getElementById('descripcion').value.trim(),
-        valor: parseFloat(document.getElementById('valor').value||0),
-        duracion_dias: parseInt(document.getElementById('duracion_dias').value||0),
-        modulos_habilitados: getSelectedLicenciaModulos(),
-        super_rol_habilitado: document.getElementById('super_rol_habilitado').checked ? 1 : 0
-      };
-      try{
-        if(!payload.nombre){ document.getElementById('msg').innerText='Nombre requerido'; return }
-        if(id){
-          await fetchTextOrThrow('/super/api/licencias?id='+id, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-        } else {
-          await fetchJSONOrThrow('/super/api/licencias', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+      function parseTruthy(v){
+        switch (String(v || '').trim().toLowerCase()) {
+          case '1':
+          case 'true':
+          case 'si':
+          case 'sí':
+          case 'yes':
+          case 'on':
+          case 'activo':
+            return true;
+          default:
+            return false;
         }
+      }
+
+      const isHistoryMode = String(currentParams.get('scope') || '').trim().toLowerCase() === 'mine' && parseTruthy(currentParams.get('con_empresa'));
+
+      function buildLicenciasApiURL(extraParams){
+        const apiParams = new URLSearchParams();
+        ['scope','usuario_creador','con_empresa','activo'].forEach(function(key){
+          const value = currentParams.get(key);
+          if (value !== null && value !== '') apiParams.set(key, value);
+        });
+        if (extraParams && typeof extraParams === 'object') {
+          Object.keys(extraParams).forEach(function(key){
+            const value = extraParams[key];
+            if (value === null || value === undefined || value === '') {
+              apiParams.delete(key);
+              return;
+            }
+            apiParams.set(key, value);
+          });
+        }
+        const query = apiParams.toString();
+        return '/super/api/licencias' + (query ? ('?' + query) : '');
+      }
+
+      function normalizeCSV(raw) {
+        return String(raw || '')
+          .split(',')
+          .map(function(v){ return v.trim().toLowerCase(); })
+          .filter(Boolean)
+          .filter(function(v, idx, arr){ return arr.indexOf(v) === idx; })
+          .join(',');
+      }
+
+      function escapeHTML(value){
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function hasValue(value){
+        return value !== null && value !== undefined && value !== '';
+      }
+
+      function fieldNumberValue(value){
+        return hasValue(value) ? String(value) : '';
+      }
+
+      function cellValue(value){
+        return hasValue(value) ? String(value) : '';
+      }
+
+      function getSelectedLicenciaModulos(){
+        return normalizeCSV(Array.from(document.querySelectorAll('input[name="lic_modulo"]:checked')).map(function(el){ return el.value; }).join(','));
+      }
+
+      function setSelectedLicenciaModulos(rawCSV){
+        const selected = new Set(normalizeCSV(rawCSV).split(',').filter(Boolean));
+        document.querySelectorAll('input[name="lic_modulo"]').forEach(function(el){
+          el.checked = selected.has(String(el.value || '').trim().toLowerCase());
+        });
+      }
+
+      function modulosToLabel(rawCSV){
+        const normalized = normalizeCSV(rawCSV);
+        return normalized || 'Todos';
+      }
+
+      function resetLicenciaForm(){
+        document.getElementById('itemId').value='';
+        document.getElementById('nombre').value='';
+        document.getElementById('descripcion').value='';
+        document.getElementById('valor').value='';
+        document.getElementById('duracion_dias').value='';
+        document.getElementById('tipo_id').value='';
+        document.getElementById('super_rol_habilitado').checked = false;
+        setSelectedLicenciaModulos('');
+        document.getElementById('saveBtn').innerText='Guardar';
+        document.getElementById('cancelBtn').style.display='none';
+        document.getElementById('msg').innerText='';
+      }
+
+      async function fetchJSONOrThrow(url, options){
+        const res = await fetch(url, options);
+        if(!res.ok){
+          const raw = await res.text().catch(function(){ return ''; });
+          throw new Error(raw || ('HTTP ' + res.status));
+        }
+        const text = await res.text();
+        if(!text) return null;
+        try { return JSON.parse(text); } catch (_) { return text; }
+      }
+
+      async function fetchTextOrThrow(url, options){
+        const res = await fetch(url, options);
+        if(!res.ok){
+          const raw = await res.text().catch(function(){ return ''; });
+          throw new Error(raw || ('HTTP ' + res.status));
+        }
+        return res.text();
+      }
+
+      function parseDateTime(value){
+        const raw = String(value || '').trim();
+        if (!raw) return null;
+        const normalized = raw.length === 10 ? (raw + 'T00:00:00') : raw.replace(' ', 'T');
+        const dt = new Date(normalized);
+        return Number.isNaN(dt.getTime()) ? null : dt;
+      }
+
+      function formatDate(value){
+        const dt = parseDateTime(value);
+        if (!dt) return value ? String(value) : 'Sin fecha';
+        return new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium' }).format(dt);
+      }
+
+      function formatMoney(value){
+        const num = Number(value || 0);
+        return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(num);
+      }
+
+      function getDaysRemaining(fechaFin){
+        const end = parseDateTime(fechaFin);
+        if (!end) return null;
+        const now = new Date();
+        const nowDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+        return Math.round((endDate.getTime() - nowDate.getTime()) / 86400000);
+      }
+
+      function buildStatusMeta(item){
+        const daysRemaining = getDaysRemaining(item.fecha_fin);
+        if (daysRemaining === null) {
+          return { tone: 'unknown', label: 'Sin vencimiento registrado', detail: 'Esta licencia no tiene una fecha de vencimiento visible.', renew: false, priority: 4 };
+        }
+        if (daysRemaining < 0) {
+          return { tone: 'expired', label: 'Vencida', detail: 'Vencio hace ' + Math.abs(daysRemaining) + ' dia' + (Math.abs(daysRemaining) === 1 ? '' : 's') + '.', renew: true, priority: 3 };
+        }
+        if (daysRemaining <= 7) {
+          return { tone: 'expiring', label: 'Por vencer', detail: 'Vence en ' + daysRemaining + ' dia' + (daysRemaining === 1 ? '' : 's') + '.', renew: true, priority: 1 };
+        }
+        return { tone: 'active', label: 'Activa', detail: 'Vigente por ' + daysRemaining + ' dia' + (daysRemaining === 1 ? '' : 's') + ' mas.', renew: false, priority: 2 };
+      }
+
+      function collectPreferredEmpresaID(){
+        const keys = ['active_empresa_id', 'empresa_id', 'admin_empresa_id'];
+        for (let i = 0; i < keys.length; i += 1) {
+          try {
+            const fromSession = window.sessionStorage.getItem(keys[i]);
+            if (fromSession) return String(fromSession);
+          } catch (e) {}
+          try {
+            const fromLocal = window.localStorage.getItem(keys[i]);
+            if (fromLocal) return String(fromLocal);
+          } catch (e) {}
+        }
+        return '';
+      }
+
+      function buildRenewURL(item){
+        const params = new URLSearchParams();
+        params.set('empresa_id', item.empresa_id);
+        params.set('id', item.empresa_id);
+        if (item.tipo_id) params.set('tipo_id', item.tipo_id);
+        if (item.tipo_nombre) params.set('tipo_nombre', item.tipo_nombre);
+        return '/elegir_licencia.html?' + params.toString();
+      }
+
+      function renderHistorySummary(items){
+        const totals = { active: 0, expiring: 0, expired: 0 };
+        items.forEach(function(item){
+          const meta = buildStatusMeta(item);
+          if (meta.tone === 'active') totals.active += 1;
+          if (meta.tone === 'expiring') totals.expiring += 1;
+          if (meta.tone === 'expired') totals.expired += 1;
+        });
+        historySummary.innerHTML = [
+          '<div class="lic-history-summary-card"><span>Activas</span><strong>' + totals.active + '</strong></div>',
+          '<div class="lic-history-summary-card lic-history-summary-card--warn"><span>Por vencer</span><strong>' + totals.expiring + '</strong></div>',
+          '<div class="lic-history-summary-card lic-history-summary-card--danger"><span>Vencidas</span><strong>' + totals.expired + '</strong></div>'
+        ].join('');
+      }
+
+      function renderHistoryFilters(empresas, licencias){
+        const empresasConHistorial = new Set(licencias.map(function(item){ return String(item.empresa_id || ''); }).filter(Boolean));
+        const preferredEmpresaID = historyState.empresaID || currentParams.get('empresa_id') || collectPreferredEmpresaID();
+        historyEmpresaFilter.innerHTML = '<option value="">Todas mis empresas con historial</option>';
+        empresas
+          .filter(function(item){ return empresasConHistorial.has(String(item.id)); })
+          .sort(function(a, b){ return String(a.nombre || '').localeCompare(String(b.nombre || ''), 'es'); })
+          .forEach(function(item){
+            const option = document.createElement('option');
+            option.value = item.id;
+            option.textContent = item.nombre || ('Empresa #' + item.id);
+            historyEmpresaFilter.appendChild(option);
+          });
+        if (preferredEmpresaID && Array.from(historyEmpresaFilter.options).some(function(option){ return option.value === String(preferredEmpresaID); })) {
+          historyEmpresaFilter.value = String(preferredEmpresaID);
+          historyState.empresaID = String(preferredEmpresaID);
+        }
+      }
+
+      function renderHistoryList(licencias, empresas){
+        const empresaByID = new Map((Array.isArray(empresas) ? empresas : []).map(function(item){ return [String(item.id), item]; }));
+        const normalized = (Array.isArray(licencias) ? licencias : []).map(function(item){
+          const empresa = empresaByID.get(String(item.empresa_id || '')) || null;
+          if (!item.empresa_nombre && empresa && empresa.nombre) item.empresa_nombre = empresa.nombre;
+          return item;
+        });
+
+        renderHistoryFilters(Array.isArray(empresas) ? empresas : [], normalized);
+
+        const selectedEmpresaID = String(historyEmpresaFilter.value || historyState.empresaID || '');
+        const filtered = normalized
+          .filter(function(item){ return !selectedEmpresaID || String(item.empresa_id || '') === selectedEmpresaID; })
+          .sort(function(a, b){
+            const metaA = buildStatusMeta(a);
+            const metaB = buildStatusMeta(b);
+            if (metaA.priority !== metaB.priority) return metaA.priority - metaB.priority;
+            const dateA = parseDateTime(a.fecha_fin);
+            const dateB = parseDateTime(b.fecha_fin);
+            const timeA = dateA ? dateA.getTime() : 0;
+            const timeB = dateB ? dateB.getTime() : 0;
+            return timeA - timeB;
+          });
+
+        renderHistorySummary(filtered);
+
+        if (!filtered.length) {
+          list.innerHTML = '<div class="lic-history-empty">No hay licencias pagadas o vencidas para mostrar en este alcance. Cuando una empresa tenga historial de pago, esta vista mostrara su estado y fecha de vencimiento.</div>';
+          return;
+        }
+
+        list.innerHTML = '<div class="lic-history-grid"></div>';
+        const grid = list.querySelector('.lic-history-grid');
+        filtered.forEach(function(item){
+          const meta = buildStatusMeta(item);
+          const card = document.createElement('article');
+          card.className = 'lic-history-card lic-history-card--' + meta.tone;
+          card.innerHTML = '' +
+            '<div class="lic-history-card-head">' +
+              '<div>' +
+                '<div class="lic-history-company">' + escapeHTML(item.empresa_nombre || ('Empresa #' + item.empresa_id)) + '</div>' +
+                '<h3>' + escapeHTML(item.nombre || 'Licencia') + '</h3>' +
+                '<p class="lic-history-type">' + escapeHTML(item.tipo_nombre || 'Tipo no especificado') + '</p>' +
+              '</div>' +
+              '<span class="lic-history-badge lic-history-badge--' + meta.tone + '">' + escapeHTML(meta.label) + '</span>' +
+            '</div>' +
+            '<p class="lic-history-detail">' + escapeHTML(meta.detail) + '</p>' +
+            '<div class="lic-history-metrics">' +
+              '<div><span>Inicio</span><strong>' + escapeHTML(formatDate(item.fecha_inicio)) + '</strong></div>' +
+              '<div><span>Vence</span><strong>' + escapeHTML(formatDate(item.fecha_fin)) + '</strong></div>' +
+              '<div><span>Valor pagado</span><strong>' + escapeHTML(formatMoney(item.valor)) + '</strong></div>' +
+              '<div><span>Duracion</span><strong>' + escapeHTML(String(item.duracion_dias || 0)) + ' dias</strong></div>' +
+            '</div>' +
+            '<div class="lic-history-foot">' +
+              '<div class="lic-history-meta">Modulos: ' + escapeHTML(modulosToLabel(item.modulos_habilitados || '')) + '</div>' +
+              '<div class="lic-history-actions">' +
+                (meta.renew ? ('<a class="btn" href="' + buildRenewURL(item) + '">Pagar nueva licencia</a>') : '') +
+                '<a class="btn secondary" href="/administrar_empresa.html?id=' + encodeURIComponent(item.empresa_id) + '&empresa_id=' + encodeURIComponent(item.empresa_id) + '">Abrir empresa</a>' +
+              '</div>' +
+            '</div>';
+          grid.appendChild(card);
+        });
+      }
+
+      async function loadHistory(){
+        pageTitle.textContent = 'Estado e historial de licencias';
+        pageLead.textContent = 'Aqui solo se muestran licencias ya pagadas o activadas para tus empresas, incluyendo las vencidas, con su fecha de vencimiento y acceso rapido a renovacion.';
+        addBtn.style.display = 'none';
+        form.style.display = 'none';
+        historyToolbar.hidden = false;
+        list.innerHTML = 'Cargando historial...';
+        const [licencias, empresas] = await Promise.all([
+          fetchJSONOrThrow(buildLicenciasApiURL({ con_empresa: '1' })),
+          fetchJSONOrThrow('/super/api/empresas')
+        ]);
+        renderHistoryList(licencias, empresas);
+      }
+
+      async function loadCrud(){
+        pageTitle.textContent = 'Licencias';
+        pageLead.textContent = '';
+        historyToolbar.hidden = true;
+
+        try{
+          const tipos = await fetchJSONOrThrow('/super/api/tipos_empresas');
+          const tipoSelect = document.getElementById('tipo_id');
+          tipoSelect.innerHTML = '<option value="">-- Seleccionar --</option>';
+          (Array.isArray(tipos) ? tipos : []).forEach(function(t){
+            const opt = document.createElement('option');
+            opt.value = t.id;
+            opt.text = t.nombre;
+            tipoSelect.appendChild(opt);
+          });
+        }catch(e){ console.warn('No se pudieron cargar tipos:', e); }
+
+        const data = await fetchJSONOrThrow(buildLicenciasApiURL());
+        const table = document.createElement('table');
+        table.className = 'table';
+        table.innerHTML = '<thead><tr><th>ID</th><th>Tipo</th><th>Nombre</th><th>Valor</th><th>Duración (días)</th><th>Módulos</th><th>Super rol</th><th>Acciones</th></thead>';
+        const tbody = document.createElement('tbody');
+        data.forEach(function(i){
+          const tr = document.createElement('tr');
+          const activo = (i.activo === 'activo' || i.activo == 1) ? 1 : (i.activo || 0);
+          const toggleLabel = (activo == 1) ? 'Desactivar' : 'Activar';
+          const modulos = modulosToLabel(i.modulos_habilitados || '');
+          const superRol = Number(i.super_rol_habilitado || 0) === 1 ? 'Sí' : 'No';
+          tr.innerHTML = '<td>' + i.id + '</td><td>' + escapeHTML(i.tipo_nombre || '') + '</td><td>' + escapeHTML(i.nombre || '') + '</td><td>' + escapeHTML(cellValue(i.valor)) + '</td><td>' + escapeHTML(cellValue(i.duracion_dias)) + '</td><td>' + escapeHTML(modulos) + '</td><td>' + superRol + '</td><td class="actions"><button data-id="' + i.id + '" class="edit btn secondary">Editar</button> <button data-id="' + i.id + '" class="del btn danger">Eliminar</button> <button data-id="' + i.id + '" data-activo="' + activo + '" class="toggle btn">' + toggleLabel + '</button></td>';
+          tbody.appendChild(tr);
+        });
+        table.appendChild(tbody);
+        list.innerHTML='';
+        list.appendChild(table);
+
+        document.querySelectorAll('.edit').forEach(function(b){
+          b.onclick = async function(){
+            const id = b.getAttribute('data-id');
+            const item = data.find(function(x){ return String(x.id) === String(id); });
+            if(!item) return alert('Registro no encontrado');
+            form.style.display = '';
+            addBtn.style.display = 'none';
+            document.getElementById('itemId').value = item.id;
+            document.getElementById('tipo_id').value = item.tipo_id || '';
+            document.getElementById('nombre').value = item.nombre || '';
+            document.getElementById('valor').value = fieldNumberValue(item.valor);
+            document.getElementById('duracion_dias').value = fieldNumberValue(item.duracion_dias);
+            document.getElementById('descripcion').value = item.descripcion || '';
+            setSelectedLicenciaModulos(item.modulos_habilitados || '');
+            document.getElementById('super_rol_habilitado').checked = Number(item.super_rol_habilitado || 0) === 1;
+            document.getElementById('saveBtn').innerText = 'Actualizar';
+            document.getElementById('cancelBtn').style.display = '';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          };
+        });
+        document.querySelectorAll('.del').forEach(function(b){
+          b.onclick = async function(){
+            if(!confirm('Eliminar licencia?')) return;
+            const id = b.getAttribute('data-id');
+            await fetchTextOrThrow('/super/api/licencias?id=' + id, { method: 'DELETE' });
+            loadCrud();
+          };
+        });
+        document.querySelectorAll('.toggle').forEach(function(b){
+          b.onclick = async function(){
+            const id = b.getAttribute('data-id');
+            const activo = b.getAttribute('data-activo') === '1' ? '0' : '1';
+            if(!confirm((activo === '1' ? 'Activar' : 'Desactivar') + ' licencia?')) return;
+            await fetchTextOrThrow('/super/api/licencias?id=' + id + '&action=activar&activo=' + activo, { method: 'PUT' });
+            loadCrud();
+          };
+        });
+      }
+
+      form.onsubmit = async function(e){
+        e.preventDefault();
+        const id = document.getElementById('itemId').value;
+        const payload = {
+          tipo_id: parseInt(document.getElementById('tipo_id').value || 0, 10),
+          nombre: document.getElementById('nombre').value.trim(),
+          descripcion: document.getElementById('descripcion').value.trim(),
+          valor: parseFloat(document.getElementById('valor').value || 0),
+          duracion_dias: parseInt(document.getElementById('duracion_dias').value || 0, 10),
+          modulos_habilitados: getSelectedLicenciaModulos(),
+          super_rol_habilitado: document.getElementById('super_rol_habilitado').checked ? 1 : 0
+        };
+        try {
+          if(!payload.nombre){ document.getElementById('msg').innerText='Nombre requerido'; return; }
+          if(id){
+            await fetchTextOrThrow('/super/api/licencias?id=' + id, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+          } else {
+            await fetchJSONOrThrow('/super/api/licencias', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+          }
+          resetLicenciaForm();
+          form.style.display = 'none';
+          addBtn.style.display = '';
+          await loadCrud();
+        } catch(err) {
+          document.getElementById('msg').innerText = err.message;
+        }
+      };
+
+      document.getElementById('cancelBtn').onclick = function(){
         resetLicenciaForm();
-        // ocultar formulario y mostrar botón agregar
-        document.getElementById('form').style.display = 'none';
-        document.getElementById('addBtn').style.display = '';
-        await load();
-      }catch(err){ document.getElementById('msg').innerText = err.message }
-    }
-    document.getElementById('cancelBtn').onclick = ()=>{ resetLicenciaForm(); document.getElementById('form').style.display='none'; document.getElementById('addBtn').style.display=''; }
+        form.style.display='none';
+        addBtn.style.display='';
+      };
 
-    document.getElementById('addBtn').onclick = ()=>{
-      document.getElementById('form').style.display = '';
-      document.getElementById('addBtn').style.display = 'none';
-      resetLicenciaForm();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+      addBtn.onclick = function(){
+        form.style.display = '';
+        addBtn.style.display = 'none';
+        resetLicenciaForm();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      };
 
-    // iniciar oculto
-    document.getElementById('form').style.display='none';
-    document.getElementById('addBtn').style.display='';
-    load();
+      historyEmpresaFilter.addEventListener('change', function(){
+        historyState.empresaID = String(historyEmpresaFilter.value || '');
+        loadHistory().catch(function(err){
+          list.innerHTML = '<div class="lic-history-empty">' + escapeHTML(err.message || 'No fue posible cargar el historial.') + '</div>';
+        });
+      });
+
+      form.style.display='none';
+      addBtn.style.display = isHistoryMode ? 'none' : '';
+
+      (isHistoryMode ? loadHistory() : loadCrud()).catch(function(err){
+        list.innerHTML = '<div class="lic-history-empty">' + escapeHTML(err.message || 'No fue posible cargar la vista de licencias.') + '</div>';
+      });
+    })();
   </script>
   <script>
     (function(){

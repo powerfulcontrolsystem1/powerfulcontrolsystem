@@ -1,5 +1,164 @@
  - Historial de cambios
 
+ - 2026-04-17: Navegacion general pasa a misma pestaña salvo contrato e impresion
+     - Archivos modificados:
+         - web/super_administrador.html
+         - web/administrar_empresa.html
+         - web/js/administrar_empresa.js
+         - web/js/seleccionar_empresa.js
+         - web/login.html
+         - web/registrar_nuevo_usuario_administrador.html
+         - web/registrar_contrasena_usuario_de_google.html
+         - web/super/venta_digital.html
+         - web/super/pagina_principal.html
+         - web/super/configuracion_avanzada.html
+         - web/administrar_empresa/venta_publica.html
+         - web/administrar_empresa/soporte_remoto.html
+         - web/super/soporte_remoto.html
+         - web/administrar_empresa/administrar_clientes.html
+         - web/administrar_empresa/asistencia_empleados.html
+         - web/administrar_empresa/backups.html
+         - web/administrar_empresa/tarifas_por_dia.html
+         - web/administrar_empresa/chat_con_inteligencia_artificial.html
+         - web/administrar_empresa/chat_y_tareas.html
+         - web/index.html
+         - web/Informacion_de_contacto.html
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se elimina la apertura automática de nuevas ventanas para la navegación normal del sistema. Los módulos y enlaces comunes ahora cargan en la misma pestaña, y solo permanecen como excepción el contrato, los términos legales de pasarela y los popups técnicos de impresión o vista previa documental.
+     - Verificacion tecnica:
+         - Busqueda final de `target="_blank"|window.open(` en `web/**/*.{html,js}` limitada a contrato, términos de pasarela e impresión/vista previa.
+         - Diagnostico del editor sin errores en los archivos modificados.
+
+ - 2026-04-17: Exportes operativos descargan sin reemplazar la vista actual
+     - Archivos modificados:
+         - web/administrar_empresa/administrar_clientes.html
+         - web/administrar_empresa/asistencia_empleados.html
+         - web/administrar_empresa/backups.html
+         - web/administrar_empresa/tarifas_por_dia.html
+         - web/administrar_empresa/soporte_remoto.html
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Los módulos con exportación operativa más usados ya no navegan la pestaña actual hacia la URL del archivo. Ahora descargan por `fetch + blob`, manteniendo al usuario dentro del módulo mientras recibe PDF, XLS, CSV, JSON o TXT.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en los archivos modificados.
+
+ - 2026-04-17: Licencias super conservan visible el valor 0
+     - Archivos modificados:
+         - web/super/licencias.html
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: El CRUD de `super/licencias.html` deja de convertir `0` a vacio al pintar la tabla y al cargar el formulario de edicion. Con esto una licencia tipo motel o cualquier otra puede quedar con valor `0` y seguir mostrandose/editandose correctamente.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/super/licencias.html`.
+
+ - 2026-04-17: Licencias del selector pasan a historial con vencimiento y renovacion
+     - Archivos modificados:
+         - backend/db/db.go
+         - backend/handlers/payments_handlers_test.go
+         - web/super/licencias.html
+         - web/estilos.css
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: La pantalla `super/licencias.html` ahora cambia de comportamiento cuando entra desde `seleccionar_empresa.html` con `scope=mine&con_empresa=1`: en lugar de mostrar acciones de CRUD, presenta un historial de licencias ya pagadas/asignadas, incluye fecha de inicio y fecha de vencimiento, marca estados `activa`, `por vencer` y `vencida`, y ofrece el acceso a pagar una nueva licencia cuando corresponde. El backend expone esos datos adicionales en el mismo endpoint filtrado.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `backend/db/db.go`, `backend/handlers/payments_handlers_test.go`, `web/super/licencias.html` y `web/estilos.css`.
+         - `go test ./handlers -run "TestLicenciasHandlerGetReturnsHistorialFieldsForCreatorScope" -count=1` -> PASADO.
+         - `go test ./ ./auth ./db ./handlers ./metrics ./utils -run '^$' -count=1` -> PASADO.
+
+ - 2026-04-17: Epayco migra a Smart Checkout v2 y deja atras checkout.php
+     - Archivos modificados:
+         - backend/handlers/payments_handlers.go
+         - backend/handlers/payments_handlers_test.go
+         - web/pagar_licencia.html
+         - web/super/configuracion_avanzada.html
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se corrige el error real de Epayco (`AccessDenied`) sustituyendo la integracion legacy basada en `checkout.php` por el flujo oficial Smart Checkout v2. El backend autentica con Apify, crea una sesion segura y devuelve `sessionId`; el frontend carga `checkout-v2.js` y abre el checkout con esa sesion, manteniendo `response`, `transaction_status` y `webhook` para conciliacion final.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `backend/handlers/payments_handlers.go`, `backend/handlers/payments_handlers_test.go`, `web/pagar_licencia.html` y `web/super/configuracion_avanzada.html`.
+         - `go test ./handlers -run 'TestEpaycoCreateTransactionHandler(UsesConfiguredPublicBaseURLAndKeys|AllowsCheckoutWithoutPrivateKey|AcceptsSamboxAlias)|TestEpaycoTransactionStatusHandler(PreservesPendingOnGenericValidationError|FindsContextUsingInvoiceWhenGatewayIDsDiffer)' -count=1` -> PASADO.
+         - `go test ./ ./auth ./db ./handlers ./metrics ./utils -run '^$' -count=1` -> PASADO.
+
+ - 2026-04-17: Crear clave por correo agrega control visual de contrasena
+     - Archivos modificados:
+         - web/registrar_contrasena_usuario_de_google.html
+         - web/js/registrar_contrasena_usuario_de_google.js
+         - web/estilos.css
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se agregan botones con icono de ojo en los campos de nueva contrasena y confirmacion dentro de la pantalla `Crear clave para acceso por correo`, permitiendo ver u ocultar el texto antes de guardar.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/registrar_contrasena_usuario_de_google.html`, `web/js/registrar_contrasena_usuario_de_google.js` y `web/estilos.css`.
+
+ - 2026-04-17: Elegir licencia adopta las tarjetas del home
+     - Archivos modificados:
+         - web/elegir_licencia.html
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: La vista `elegir_licencia.html` deja de usar tarjetas visuales propias y reutiliza la misma anatomia `portal-card home-offer-card` del home. El boton `Comprar licencia` conserva la redireccion existente hacia `pagar_licencia.html` con los mismos parametros.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/elegir_licencia.html`.
+
+ - 2026-04-17: Reportes globales permiten elegir una empresa o varias
+     - Archivos modificados:
+         - web/super/reportes_globales.html
+         - web/js/super_reportes_globales.js
+         - web/estilos.css
+         - backend/handlers/reportes_globales_test.go
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se agrega un modo explicito para trabajar con una sola empresa o con varias dentro de `reportes_globales.html`. Cuando el administrador escoge una sola empresa, la UI usa un selector puntual y refresca el tablero y los datasets de inmediato sin mezclar resultados.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/super/reportes_globales.html`, `web/js/super_reportes_globales.js`, `web/estilos.css` y `backend/handlers/reportes_globales_test.go`.
+         - `go test ./handlers -run "TestSuperReportesGlobalesHandlerFiltraYConsolidaPorAdministrador" -count=1` -> PASADO.
+
+ - 2026-04-17: Login administrativo unifica Google y correo en un solo recuadro
+     - Archivos modificados:
+         - web/login.html
+         - web/estilos.css
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se elimina el recuadro visual secundario del formulario por correo en `login.html`. El acceso por correo, la recuperacion y el reset quedan integrados dentro de la misma tarjeta principal donde ya estaba el boton `Iniciar sesión con Google`.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/login.html` y `web/estilos.css`.
+
  - 2026-04-17: Arcade publico movil unifica poderes y premios en los nueve juegos activos
      - Archivos modificados:
          - web/Juegos/arcade_shared.js

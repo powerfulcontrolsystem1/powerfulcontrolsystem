@@ -2,6 +2,87 @@
 
 Fecha de actualizacion: 2026-04-17
 
+## Actualizacion 2026-04-17 (navegacion general: misma pestaña por defecto)
+
+- Frontend:
+  - `web/super_administrador.html`, `web/administrar_empresa.html`, `web/js/seleccionar_empresa.js` y `web/js/administrar_empresa.js` dejan de abrir modulos operativos o cambios de contexto en una pestaña nueva; ahora reutilizan la misma ventana actual.
+  - `web/super/venta_digital.html`, `web/super/pagina_principal.html`, `web/super/configuracion_avanzada.html` y `web/administrar_empresa/venta_publica.html` cambian las aperturas de vista pública para navegar en la misma pestaña, usando el contexto superior cuando la acción nace dentro de un iframe.
+  - `web/administrar_empresa/administrar_clientes.html`, `web/administrar_empresa/asistencia_empleados.html`, `web/administrar_empresa/backups.html`, `web/administrar_empresa/tarifas_por_dia.html`, `web/administrar_empresa/soporte_remoto.html` y `web/super/soporte_remoto.html` eliminan aperturas innecesarias en nueva ventana para exportes, visores o navegación normal.
+  - `web/login.html`, `web/registrar_nuevo_usuario_administrador.html`, `web/registrar_contrasena_usuario_de_google.html`, `web/index.html`, `web/Informacion_de_contacto.html`, `web/administrar_empresa/chat_con_inteligencia_artificial.html` y `web/administrar_empresa/chat_y_tareas.html` dejan de forzar pestaña nueva en ayudas, CTA públicos, portal de usuarios, archivos adjuntos o accesos comerciales normales.
+- Descargas posteriores al ajuste:
+  - `web/administrar_empresa/administrar_clientes.html`, `web/administrar_empresa/asistencia_empleados.html`, `web/administrar_empresa/backups.html`, `web/administrar_empresa/tarifas_por_dia.html` y `web/administrar_empresa/soporte_remoto.html` reemplazan la redirección de exportes por descargas silenciosas con `fetch + blob`, de modo que PDF/XLS/CSV/JSON/TXT no saquen al usuario de la vista actual.
+- Excepciones conservadas:
+  - Se mantienen en nueva ventana los enlaces/documentos legales (`contrato`, términos de pasarela) y los popups técnicos de impresión o vista previa documental.
+- Flujo:
+  - navegación normal del sistema -> misma pestaña por defecto -> solo `contrato/legal` e impresión permanecen en ventana aparte cuando su función técnica lo exige.
+
+## Actualizacion 2026-04-17 (licencias super: valor 0 visible y editable)
+
+- Frontend:
+  - `web/super/licencias.html` deja de usar `valor || ''` y `duracion_dias || ''` al pintar la tabla y al cargar el formulario de edicion.
+  - El CRUD ahora conserva `0` como un valor valido visible tanto en listado como en formulario, evitando que una licencia gratuita o una licencia con valor cero parezca vacia.
+- Flujo:
+  - `super/licencias.html` -> editar licencia -> escribir o conservar `0` en `Valor` -> guardar -> la tabla vuelve a mostrar `0` y la reapertura del formulario respeta el mismo valor.
+
+## Actualizacion 2026-04-17 (licencias del selector: historial y estado con vencimiento)
+
+- Backend:
+  - `backend/db/db.go` amplía el payload de `licencias` para exponer `empresa_nombre`, `fecha_inicio` y `fecha_fin` cuando la licencia ya está asignada a una empresa, manteniendo el mismo endpoint `/super/api/licencias`.
+  - `backend/handlers/payments_handlers_test.go` valida que el handler filtre por creador y devuelva fecha de inicio, fecha de vencimiento y empresa en el historial de licencias asignadas.
+- Frontend:
+  - `web/super/licencias.html` detecta el modo `scope=mine&con_empresa=1` y deja de mostrar el CRUD: en ese alcance presenta una vista de historial/estado con licencias pagadas o vencidas, fecha de vencimiento, filtro por empresa y acceso directo a renovar.
+  - `web/estilos.css` incorpora la capa visual del historial con tarjetas de estado, resumen de activas/por vencer/vencidas y CTA de renovacion sin acciones de eliminar en esa vista.
+- Flujo:
+  - `seleccionar_empresa.html` -> enlace `Licencias` -> `/super/licencias.html?scope=mine&con_empresa=1` -> historial de licencias pagadas/asignadas por empresa -> lectura del vencimiento -> `Pagar nueva licencia` si esta por vencer o ya vencio.
+
+## Actualizacion 2026-04-17 (checkout Epayco: migracion a Smart Checkout v2)
+
+- Backend:
+  - `backend/handlers/payments_handlers.go` deja de construir `checkout.php?...` y ahora autentica contra `https://apify.epayco.co/login`, crea una sesion en `https://apify.epayco.co/payment/session/create` y devuelve `sessionId` al frontend.
+  - `backend/handlers/payments_handlers.go` marca Epayco como configurable solo cuando existen `epayco.public_key` y `epayco.private_key`, manteniendo `customer_id` como dato recomendado para validacion y conciliacion.
+  - `backend/handlers/payments_handlers_test.go` reemplaza las aserciones del checkout legacy por pruebas del flujo Smart Checkout v2 con `sessionId`, autenticacion Basic/Bearer hacia Apify y validacion de `response` y `confirmation`.
+- Frontend:
+  - `web/pagar_licencia.html` carga `https://checkout.epayco.co/checkout-v2.js` bajo demanda, abre `ePayco.checkout.configure({ sessionId, type: 'standard', test })` y conserva la trazabilidad local para retomar la verificacion al volver desde la pasarela.
+  - `web/super/configuracion_avanzada.html` actualiza la ayuda operativa para indicar que Smart Checkout requiere `Public Key` y `Private Key`, dejando `Customer ID` como recomendado para validaciones del webhook.
+- Flujo:
+  - `/pagar_licencia.html` -> `POST /epayco/create_transaction` -> backend crea sesion Smart Checkout -> frontend abre `checkout-v2.js` -> Epayco redirige a `/epayco/respuesta.html` -> `GET /epayco/transaction_status` y `/epayco/webhook` consolidan el estado real.
+
+## Actualizacion 2026-04-17 (crear clave por correo: visibilidad de contrasena)
+
+- Frontend:
+  - `web/registrar_contrasena_usuario_de_google.html` agrega un icono de ojo dentro de los campos `Nueva contrasena` y `Confirmar contrasena`.
+  - `web/js/registrar_contrasena_usuario_de_google.js` alterna entre `password` y `text` sin alterar el flujo de guardado.
+  - `web/estilos.css` incorpora el contenedor y el boton incrustado para mostrar u ocultar la contrasena.
+- Flujo:
+  - `/registrar_contrasena_usuario_de_google.html` -> escribir contrasena -> revisar visualmente con el ojo -> `Guardar contrasena`.
+
+## Actualizacion 2026-04-17 (elegir licencia reutiliza las tarjetas del home)
+
+- Frontend:
+  - `web/elegir_licencia.html` deja de renderizar tarjetas `offer-card` propias y reutiliza la misma estructura visual `portal-card home-offer-card` del portal principal.
+  - La grilla de licencias pasa a usar `portal-home-grid`, manteniendo el flujo actual de compra hacia `pagar_licencia.html`.
+- Flujo:
+  - `/elegir_licencia.html` -> consulta licencias filtradas por tipo -> muestra ofertas con la misma identidad visual de `index.html` -> boton `Comprar licencia` redirige al checkout publico.
+
+## Actualizacion 2026-04-17 (reportes globales super: eleccion explicita de una o varias empresas)
+
+- Frontend:
+  - `web/super/reportes_globales.html` agrega un selector visible de modo de eleccion (`Una empresa` o `Varias empresas`) y un resumen de la seleccion activa.
+  - `web/js/super_reportes_globales.js` oculta la lista multiple cuando se trabaja con una sola empresa, usa `empresa_id` en ese caso y refresca de inmediato el reporte al cambiar la empresa unica.
+  - `web/estilos.css` incorpora el bloque visual de modo de eleccion y estado de seleccion dentro del panel lateral del modulo.
+- Backend/pruebas:
+  - `backend/handlers/reportes_globales_test.go` cubre el filtro singular via `empresa_id` sobre `/super/api/reportes_globales`.
+- Flujo:
+  - `Reportes globales` -> elegir `Una empresa` o `Varias empresas` -> seleccionar empresa unica o bloque multiple -> `tablero|dataset|export` segun el alcance elegido.
+
+## Actualizacion 2026-04-17 (login administrativo: correo y Google comparten una sola tarjeta)
+
+- Frontend:
+  - `web/login.html` mantiene el boton `Iniciar sesion con Google` y el formulario de correo dentro de la misma `card`, sin presentar el segundo bloque como formulario encapsulado independiente.
+  - `web/estilos.css` sobreescribe el estilo base `.form` solo en `login.html`, quitando fondo, borde y sombra al acceso por correo y a los formularios alternos de recuperacion/reset para que la experiencia se lea como un unico panel.
+- Flujo:
+  - `/login.html` -> tarjeta principal unica -> acceso con Google o continuidad por correo dentro del mismo contenedor -> recuperacion/reset en la misma superficie visual.
+
 ## Actualizacion 2026-04-17 (arcade publico movil: runtime comun de poderes y premios en 9 juegos)
 
 - Frontend compartido:

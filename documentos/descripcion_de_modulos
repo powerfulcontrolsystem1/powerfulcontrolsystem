@@ -1,6 +1,50 @@
 Descripcion compacta de modulos (POS multiempresa)
 Actualizacion: 2026-04-16
 
+Actualizacion 2026-04-17 (navegacion general: misma pestaña por defecto):
+- Se ajusta transversalmente la navegacion del frontend para que los enlaces y cambios de pantalla del sistema usen la misma pestaña por defecto, evitando aperturas automáticas en ventana nueva para modulos, portales publicos, ayudas y exportes comunes.
+- En `administrar_clientes`, `asistencia_empleados`, `backups`, `tarifas_por_dia` y `soporte_remoto`, las exportaciones operativas descargan el archivo en segundo plano y mantienen abierta la misma vista del modulo.
+- Se conservan como excepcion operativa los documentos legales (`contrato` y términos de pasarela) y los popups técnicos de impresión o vista previa documental.
+- Impacto de permisos: sin cambios; solo se modifica la forma de navegación del mismo conjunto de rutas ya autorizadas.
+
+Actualizacion 2026-04-17 (licencias super: valor 0 valido en CRUD):
+- Se corrige la vista `web/super/licencias.html` para que el modulo `licencias` no oculte el valor `0` al listar o reabrir una licencia en edicion.
+- El ajuste es visual y de carga del formulario: el backend y la DB ya aceptaban `0`, pero la UI trataba ese valor como vacio al renderizar la tabla y al llenar los inputs.
+- Impacto de permisos: sin cambios; el CRUD de licencias sigue restringido al panel super.
+
+Actualizacion 2026-04-17 (licencias del selector: historial y estado con vencimiento):
+- Se ajusta el modulo `licencias` para que la vista `web/super/licencias.html` opere en dos modos: CRUD completo para el panel super general e historial/estado cuando entra desde `seleccionar_empresa.html` con `scope=mine&con_empresa=1`.
+- `backend/db/db.go` expone `empresa_nombre`, `fecha_inicio` y `fecha_fin` en el listado filtrado; `web/super/licencias.html` usa esos campos para mostrar solo licencias ya pagadas/asignadas, incluyendo vencidas, junto con la fecha en que vencen y el acceso a renovar en `elegir_licencia.html`.
+- `backend/handlers/payments_handlers_test.go` cubre la salida del handler en ese alcance filtrado por creador.
+- Impacto de permisos: sin cambios; el acceso sigue limitado al administrador autenticado sobre sus propias empresas y el CRUD super general conserva sus acciones administrativas fuera del modo historial.
+
+Actualizacion 2026-04-17 (licencias y pasarelas de pago: Epayco migra a Smart Checkout v2):
+- Se refuerza el modulo `licencias y pasarelas de pago` para abandonar el checkout legacy basado en `checkout.php`, que ya devuelve `AccessDenied`, y operar con el flujo oficial Smart Checkout v2 de Epayco.
+- `backend/handlers/payments_handlers.go` ahora crea la sesion desde backend contra Apify y `web/pagar_licencia.html` abre `checkout-v2.js` con `sessionId`, manteniendo `response` y `confirmation` hacia los endpoints publicos ya existentes del sistema.
+- `web/super/configuracion_avanzada.html` alinea la ayuda del panel super con el flujo nuevo: `Public Key` y `Private Key` pasan a ser obligatorias para habilitar Epayco en checkout publico, mientras `Customer ID` queda recomendado para validaciones del webhook.
+- Impacto de permisos: sin cambios; `/epayco/create_transaction`, `/epayco/transaction_status`, `/epayco/webhook` y `/epayco/respuesta.html` siguen siendo rutas publicas del checkout comercial, y la configuracion avanzada permanece restringida a `super_administrador`.
+
+Actualizacion 2026-04-17 (autenticacion administrativa: crear clave por correo con ojo de visibilidad):
+- Se ajusta el modulo `autenticacion y sesiones` en la pantalla `Crear clave para acceso por correo` para que el administrador pueda mostrar u ocultar la contrasena antes de guardarla.
+- `web/registrar_contrasena_usuario_de_google.html`, `web/js/registrar_contrasena_usuario_de_google.js` y `web/estilos.css` agregan el control visual sin cambiar validaciones ni endpoints.
+- Impacto de permisos: sin cambios; se mantiene el mismo flujo autenticado posterior al ingreso con Google.
+
+Actualizacion 2026-04-17 (licencias publicas: tarjetas alineadas al home):
+- Se ajusta la vista publica de seleccion de licencias para que `web/elegir_licencia.html` renderice cada licencia con el mismo lenguaje visual del home del portal.
+- La pagina conserva el mismo flujo funcional hacia `pagar_licencia.html`, pero elimina la variante visual propia `offer-card` y reutiliza `portal-home-grid` junto con `portal-card home-offer-card`.
+- Impacto de permisos: sin cambios; sigue siendo una vista publica condicionada por sesion valida del flujo administrativo que selecciona empresa y tipo.
+
+Actualizacion 2026-04-17 (reportes globales super: eleccion de una o varias empresas):
+- Se ajusta el modulo `reportes globales (super)` para que el administrador elija de forma explicita si quiere analizar una sola empresa o un bloque de varias empresas creadas por el mismo usuario.
+- `web/super/reportes_globales.html` y `web/js/super_reportes_globales.js` separan ambos modos: lista multiple para consolidado mixto y selector puntual para una sola empresa con refresco inmediato.
+- `backend/handlers/reportes_globales_test.go` valida que `/super/api/reportes_globales` soporte tambien el filtro singular con `empresa_id`.
+- Impacto de permisos: sin cambios; el modulo sigue siendo de lectura exclusiva para `super_administrador`.
+
+Actualizacion 2026-04-17 (autenticacion administrativa: login en una sola tarjeta visual):
+- Se ajusta el modulo `autenticacion y sesiones` para que `login.html` deje de mostrar el acceso por correo como una caja independiente dentro de la pantalla.
+- `web/login.html` mantiene Google y correo en la misma tarjeta principal, mientras `web/estilos.css` elimina para este flujo el fondo, borde y sombra heredados de `.form` en el bloque por correo y en los formularios alternos de recuperacion/reset.
+- Impacto de permisos: sin cambios; el login administrativo sigue siendo publico y la administracion global permanece restringida a `super_administrador`.
+
 Actualizacion 2026-04-17 (portal publico: arcade movil con runtime comun de poderes y premios):
 - Se refuerza el submodulo `juegos publicos del portal` para que los nueve juegos activos del arcade compartan una misma capa movil de poderes, premios, records, sonido y countdown, sin reescribir la mecanica base de cada titulo.
 - `web/Juegos/arcade_shared.js` centraliza el runtime `createPowerSystem(...)` con biblioteca comun de poderes/premios y `web/Juegos/arcade_window.css` consolida el shell mobile-first vertical para la experiencia tactil.

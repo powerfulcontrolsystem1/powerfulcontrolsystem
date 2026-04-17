@@ -200,10 +200,7 @@
           var adminURL =
             "/administrar_empresa.html?id=" + encodeURIComponent(empresa.id) +
             "&empresa_id=" + encodeURIComponent(empresa.id);
-          var opened = window.open(adminURL, "_blank");
-          if (!opened) {
-            window.location.href = adminURL;
-          }
+          window.location.href = adminURL;
         } else {
           var params = new URLSearchParams();
           params.set("empresa_id", empresa.id);

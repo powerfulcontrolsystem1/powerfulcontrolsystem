@@ -108,9 +108,9 @@
       </div>
       <div id="vpMsgConfig" class="form-help"></div>
       <div class="form-help">
-        URL local: <a id="vpLinkLocal" href="#" target="_blank" rel="noopener">-</a><br>
-        URL patron: <a id="vpLinkSlug" href="#" target="_blank" rel="noopener">-</a><br>
-        URL subdominio: <a id="vpLinkSubdominio" href="#" target="_blank" rel="noopener">-</a>
+        URL local: <a id="vpLinkLocal" href="#" target="_top">-</a><br>
+        URL patron: <a id="vpLinkSlug" href="#" target="_top">-</a><br>
+        URL subdominio: <a id="vpLinkSubdominio" href="#" target="_top">-</a>
       </div>
     </section>
 
@@ -522,7 +522,7 @@
           var estadoRow = String(row.estado || 'activo').toLowerCase();
           var toggleAction = estadoRow === 'inactivo' ? 'activar' : 'desactivar';
           var toggleLabel = estadoRow === 'inactivo' ? 'Activar' : 'Desactivar';
-          var imageCell = row.imagen_url ? '<a href="' + escapeHTML(row.imagen_url) + '" target="_blank" rel="noopener">Ver</a>' : '-';
+          var imageCell = row.imagen_url ? '<a href="' + escapeHTML(row.imagen_url) + '">Ver</a>' : '-';
           return '' +
             '<tr>' +
               '<td>' + id + '</td>' +
@@ -670,7 +670,7 @@
           return;
         }
         var target = '/venta_publica.html?empresa_slug=' + encodeURIComponent(slug);
-        window.open(target, '_blank', 'noopener');
+        window.top.location.href = target;
       }
 
       itemsBodyEl.addEventListener('click', function (ev) {
@@ -694,7 +694,7 @@
         if (action === 'public') {
           var slug = document.getElementById('vpSlug').value.trim();
           if (slug) {
-            window.open('/venta_publica.html?empresa_slug=' + encodeURIComponent(slug), '_blank', 'noopener');
+            window.top.location.href = '/venta_publica.html?empresa_slug=' + encodeURIComponent(slug);
           }
         }
       });

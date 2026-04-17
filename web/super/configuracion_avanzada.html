@@ -18,7 +18,7 @@
       <p class="form-help">Administra catálogo de licencias/software, carga archivos de instalación e inspecciona órdenes de compra.</p>
       <div class="form-actions">
         <a class="btn" href="/super/venta_digital.html">Abrir panel de venta digital</a>
-        <a class="btn secondary" href="/venta_digital.html" target="_blank" rel="noopener noreferrer">Ver tienda pública</a>
+        <a class="btn secondary" href="/venta_digital.html" target="_top">Ver tienda pública</a>
       </div>
       <div class="form-actions">
         <button id="testVentaDigitalBtn" class="btn secondary" type="button" style="margin-left:8px;">Probar panel</button>
@@ -49,7 +49,7 @@
           <div id="epaycoPublicSet" class="form-help">Cargando estado...</div>
         </div>
         <div class="form-col">
-          <label class="form-label">Private Key (secreta, opcional)</label>
+          <label class="form-label">Private Key (secreta)</label>
           <input id="epaycoPrivateKey" class="form-input" type="password" placeholder="prv_test_... o prv_prod_...">
           <div id="epaycoPrivateSet" class="form-help">Cargando estado...</div>
         </div>
@@ -63,7 +63,7 @@
         </div>
         <div class="form-col">
           <label class="form-label">Opciones</label>
-          <div class="form-help">La Public Key es la credencial obligatoria para habilitar el checkout actual. La llave secreta se conserva como dato opcional y se guarda cifrada.</div>
+          <div class="form-help">Smart Checkout de Epayco requiere Public Key y Private Key. Customer ID sigue siendo recomendado para validaciones y conciliacion del webhook.</div>
         </div>
       </div>
 
@@ -954,11 +954,13 @@
           if (!res.ok) { if (out) out.innerText = 'Error al leer configuración Epayco: ' + res.status; return; }
           const cfg = await res.json();
           const issues = [];
-          if (!(cfg.public_key_set || cfg.private_key_set || cfg.customer_id_set)) issues.push('No hay llaves configuradas');
+	      if (!cfg.public_key_set) issues.push('Falta la Public Key');
+	      if (!cfg.private_key_set) issues.push('Falta la Private Key');
+	      if (!cfg.customer_id_set) issues.push('Customer ID no configurado (recomendado para validaciones/webhook)');
           if (!cfg.enabled) issues.push('Pasarela marcada como desactivada');
           if (typeof cfg.encryption_available !== 'undefined' && !cfg.encryption_available) issues.push('Cifrado no disponible en servidor');
           if (!out) return;
-          if (!issues.length) out.innerText = 'OK: Epayco parece configurado y habilitado.'; else out.innerText = 'Aviso: ' + issues.join('; ');
+	      if (!issues.length) out.innerText = 'OK: Epayco parece listo para Smart Checkout.'; else out.innerText = 'Aviso: ' + issues.join('; ');
         } catch (err) {
           if (out) out.innerText = 'Error: ' + (err.message || err);
         }

@@ -8,6 +8,33 @@
   var submitBtn = document.getElementById('googlePasswordSetupBtn');
   var skipLink = document.getElementById('googlePasswordSkipLink');
 
+  function setPasswordVisibility(toggleBtn, input, isVisible) {
+    if (!toggleBtn || !input) {
+      return;
+    }
+    input.type = isVisible ? 'text' : 'password';
+    toggleBtn.setAttribute('aria-pressed', isVisible ? 'true' : 'false');
+    toggleBtn.setAttribute('aria-label', isVisible ? 'Ocultar contrasena' : 'Mostrar contrasena');
+    toggleBtn.setAttribute('title', isVisible ? 'Ocultar contrasena' : 'Mostrar contrasena');
+    toggleBtn.classList.toggle('is-visible', !!isVisible);
+  }
+
+  function initPasswordVisibilityToggles() {
+    var toggles = document.querySelectorAll('.password-visibility-toggle[data-target]');
+    Array.prototype.forEach.call(toggles, function (toggleBtn) {
+      var targetId = toggleBtn.getAttribute('data-target');
+      var input = targetId ? document.getElementById(targetId) : null;
+      setPasswordVisibility(toggleBtn, input, false);
+      toggleBtn.addEventListener('click', function () {
+        if (!input) {
+          return;
+        }
+        setPasswordVisibility(toggleBtn, input, input.type === 'password');
+        input.focus();
+      });
+    });
+  }
+
   function showMessage(text, isError) {
     if (!message) {
       return;
@@ -132,4 +159,5 @@
   }
 
   loadAccount();
+  initPasswordVisibilityToggles();
 })();

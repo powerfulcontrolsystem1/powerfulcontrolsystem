@@ -1,6 +1,51 @@
 # CHANGELOG
 
 ## 2026-04-17
+- Exportes operativos: descarga silenciosa sin sacar al usuario del módulo.
+	- Archivos modificados: `web/administrar_empresa/administrar_clientes.html`, `web/administrar_empresa/asistencia_empleados.html`, `web/administrar_empresa/backups.html`, `web/administrar_empresa/tarifas_por_dia.html`, `web/administrar_empresa/soporte_remoto.html`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: los exportes frecuentes de clientes, asistencia, backups, tarifas por día y soporte remoto dejan de reemplazar la vista actual. El archivo se descarga en segundo plano y el usuario permanece en el mismo módulo.
+	- Verificacion: diagnostico del editor sin errores en los archivos modificados.
+
+- Navegacion general: misma pestaña por defecto.
+	- Archivos modificados: `web/super_administrador.html`, `web/administrar_empresa.html`, `web/js/administrar_empresa.js`, `web/js/seleccionar_empresa.js`, `web/login.html`, `web/registrar_nuevo_usuario_administrador.html`, `web/registrar_contrasena_usuario_de_google.html`, `web/super/venta_digital.html`, `web/super/pagina_principal.html`, `web/super/configuracion_avanzada.html`, `web/administrar_empresa/venta_publica.html`, `web/administrar_empresa/soporte_remoto.html`, `web/super/soporte_remoto.html`, `web/administrar_empresa/administrar_clientes.html`, `web/administrar_empresa/asistencia_empleados.html`, `web/administrar_empresa/backups.html`, `web/administrar_empresa/tarifas_por_dia.html`, `web/administrar_empresa/chat_con_inteligencia_artificial.html`, `web/administrar_empresa/chat_y_tareas.html`, `web/index.html`, `web/Informacion_de_contacto.html`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: la navegación normal del sistema deja de abrir pestañas nuevas y reutiliza la misma ventana actual. Se mantienen como excepción solo el contrato, los términos legales de pasarela y los popups técnicos de impresión o vista previa documental.
+	- Verificacion: búsqueda final de `target="_blank"|window.open(` limitada a excepciones esperadas; diagnóstico del editor sin errores en los archivos modificados.
+
+- Licencias super: valor 0 ya no se oculta en edición ni en listado.
+	- Archivos modificados: `web/super/licencias.html`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: el CRUD de licencias en panel super conserva `0` como valor valido visible en la tabla y en el formulario de edición, evitando que una licencia parezca vacía al reabrirla.
+	- Verificacion: diagnostico del editor sin errores en `web/super/licencias.html`.
+
+- Licencias del selector: historial con vencimiento y renovacion.
+	- Archivos modificados: `backend/db/db.go`, `backend/handlers/payments_handlers_test.go`, `web/super/licencias.html`, `web/estilos.css`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: la ruta `super/licencias.html?scope=mine&con_empresa=1` deja de mostrar el CRUD y pasa a ser un historial de licencias pagadas o vencidas por empresa, con fecha de vencimiento visible, estados operativos y acceso a `Pagar nueva licencia` cuando la licencia esta por vencer o ya vencio. El backend reutiliza el mismo endpoint `/super/api/licencias` exponiendo empresa y fechas para ese flujo.
+	- Verificacion: diagnostico del editor sin errores en los archivos modificados; `go test ./handlers -run "TestLicenciasHandlerGetReturnsHistorialFieldsForCreatorScope" -count=1`; `go test ./ ./auth ./db ./handlers ./metrics ./utils -run '^$' -count=1`.
+
+- Checkout publico de licencias: Epayco migra a Smart Checkout v2.
+	- Archivos modificados: `backend/handlers/payments_handlers.go`, `backend/handlers/payments_handlers_test.go`, `web/pagar_licencia.html`, `web/super/configuracion_avanzada.html`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: el sistema deja de generar URLs manuales hacia `checkout.php`, porque ese flujo ya responde `AccessDenied`. Ahora el backend crea la sesion oficial Smart Checkout v2 en Apify y el frontend abre `checkout-v2.js` con `sessionId`, manteniendo las mismas rutas publicas de respuesta, verificacion y webhook.
+	- Verificacion: `go test ./handlers -run 'TestEpaycoCreateTransactionHandler(UsesConfiguredPublicBaseURLAndKeys|AllowsCheckoutWithoutPrivateKey|AcceptsSamboxAlias)|TestEpaycoTransactionStatusHandler(PreservesPendingOnGenericValidationError|FindsContextUsingInvoiceWhenGatewayIDsDiffer)' -count=1`; `go test ./ ./auth ./db ./handlers ./metrics ./utils -run '^$' -count=1`.
+
+- Crear clave por correo: ojo para mostrar u ocultar la contrasena.
+	- Archivos modificados: `web/registrar_contrasena_usuario_de_google.html`, `web/js/registrar_contrasena_usuario_de_google.js`, `web/estilos.css`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: la pagina `Crear clave para acceso por correo` ahora incluye un icono de ojo en ambos campos de contrasena para poder revisarla visualmente antes de guardarla.
+	- Verificacion: diagnostico del editor sin errores en los archivos modificados.
+
+- Elegir licencia: tarjetas con el mismo estilo del home.
+	- Archivos modificados: `web/elegir_licencia.html`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: la pagina `elegir_licencia.html` ahora renderiza las licencias con la misma estructura visual de tarjetas usada en `index.html`, manteniendo sin cambios el flujo de compra hacia `pagar_licencia.html`.
+	- Verificacion: diagnostico del editor sin errores en `web/elegir_licencia.html`.
+
+- Reportes globales super: eleccion explicita de una empresa o varias.
+	- Archivos modificados: `web/super/reportes_globales.html`, `web/js/super_reportes_globales.js`, `web/estilos.css`, `backend/handlers/reportes_globales_test.go`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: el modulo `Reportes globales` ahora permite escoger de forma explicita si el analisis se hace sobre una sola empresa o sobre varias. En modo singular la UI cambia a selector puntual y el frontend consulta la API usando `empresa_id`.
+	- Verificacion: diagnostico del editor sin errores en los archivos modificados; `go test ./handlers -run "TestSuperReportesGlobalesHandlerFiltraYConsolidaPorAdministrador" -count=1`.
+
+- Login administrativo: Google y correo quedan en una sola tarjeta visual.
+	- Archivos modificados: `web/login.html`, `web/estilos.css`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: el bloque de acceso por correo deja de renderizarse como un formulario en caja separado dentro de `login.html`. Google, correo, recuperación y reset ahora comparten el mismo contenedor visual principal.
+	- Verificacion: diagnostico del editor sin errores en `web/login.html` y `web/estilos.css`.
+
 - Arcade publico: runtime comun de poderes y premios en los nueve juegos activos.
 	- Archivos modificados: `web/Juegos/arcade_shared.js`, `web/Juegos/arcade_window.css`, `web/Juegos/patito_volando_plus.html`, `web/Juegos/serpiente_pixel_plus.html`, `web/Juegos/memoria_estelar_plus.html`, `web/Juegos/rebote_bloques_plus.html`, `web/Juegos/pacman_plus.html`, `web/Juegos/tetris_plus.html`, `web/Juegos/carton_fire_plus.html`, `web/Juegos/ajedrez_vs_ia_plus.html`, `web/Juegos/ajedrez_3d_plus.html`, `web/Juegos/menu_juegos.html`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
 	- Descripcion: el arcade publico queda unificado con una misma capa mobile-first de countdown, sonido, records, poderes y premios para los nueve juegos activos del lobby, con economia compartida ajustada para juegos de eventos rapidos y un lobby que muestra mejor el progreso personal y el ranking por titulo.

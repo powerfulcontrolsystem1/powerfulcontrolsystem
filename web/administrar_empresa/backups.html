@@ -203,6 +203,39 @@
         return url.toString();
       }
 
+      function getDownloadFilename(response, fallbackName) {
+        var disposition = String(response.headers.get('Content-Disposition') || '');
+        var utfMatch = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+        if (utfMatch && utfMatch[1]) {
+          try {
+            return decodeURIComponent(utfMatch[1]);
+          } catch (_) {}
+        }
+        var plainMatch = disposition.match(/filename="?([^";]+)"?/i);
+        return plainMatch && plainMatch[1] ? plainMatch[1] : fallbackName;
+      }
+
+      function saveBlob(blob, filename) {
+        var objectURL = URL.createObjectURL(blob);
+        var link = document.createElement('a');
+        link.href = objectURL;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(objectURL);
+      }
+
+      async function downloadInBackground(url, fallbackName) {
+        var resp = await fetch(url, { credentials: 'same-origin' });
+        if (!resp.ok) {
+          var raw = await resp.text().catch(function(){ return ''; });
+          throw new Error(raw || ('HTTP ' + resp.status));
+        }
+        var blob = await resp.blob();
+        saveBlob(blob, getDownloadFilename(resp, fallbackName));
+      }
+
       function renderRows(rows) {
         if (!rows || rows.length === 0) {
           tablaBody.innerHTML = '<tr><td colspan="10" class="backups-empty-cell">Sin datos</td></tr>';
@@ -385,7 +418,7 @@
             return;
           }
           if (action === 'csv') {
-            window.open(buildExportURL(id, 'csv'), '_blank');
+            await downloadInBackground(buildExportURL(id, 'csv'), 'backup_empresa_' + empresaId + '_' + id + '.csv');
             return;
           }
           if (action === 'restaurar') {

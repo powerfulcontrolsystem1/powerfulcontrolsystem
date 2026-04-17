@@ -4,6 +4,7 @@
   var state = {
     empresas: [],
     datasets: [],
+    selectionMode: 'multiple',
     selectedEmpresaIDs: [],
     tablero: null,
     dataset: null
@@ -52,16 +53,108 @@
   }
 
   function getSelectedEmpresaIDs() {
-    return state.selectedEmpresaIDs.slice().sort(function (a, b) { return a - b; });
+    var ids = state.selectedEmpresaIDs.slice().sort(function (a, b) { return a - b; });
+    if (state.selectionMode === 'single') {
+      return ids.length ? [ids[0]] : [];
+    }
+    return ids;
   }
 
   function syncSelectedFromDOM() {
+    if (state.selectionMode === 'single') {
+      syncSelectedFromSingleSelect();
+      return;
+    }
     var inputs = document.querySelectorAll('.reportes-globales-empresa-item input[type="checkbox"]');
     var next = [];
     Array.prototype.forEach.call(inputs, function (input) {
       if (input.checked) next.push(Number(input.value || 0));
     });
     state.selectedEmpresaIDs = next.filter(function (id) { return Number.isFinite(id) && id > 0; });
+  }
+
+  function syncSelectedFromSingleSelect() {
+    var select = byId('rgEmpresaUnica');
+    if (!select) {
+      state.selectedEmpresaIDs = [];
+      return;
+    }
+    var value = Number(select.value || 0);
+    state.selectedEmpresaIDs = value > 0 ? [value] : [];
+  }
+
+  function updateSelectionSummary() {
+    var resume = byId('rgSeleccionResumen');
+    var help = byId('rgSeleccionAyuda');
+    var ids = getSelectedEmpresaIDs();
+    if (resume) {
+      if (state.selectionMode === 'single') {
+        var empresa = state.empresas.find(function (item) { return Number(item.id) === Number(ids[0] || 0); });
+        resume.textContent = empresa ? (empresa.nombre || ('Empresa ' + empresa.id)) : 'Sin empresa';
+      } else {
+        resume.textContent = ids.length + ' empresa' + (ids.length === 1 ? '' : 's');
+      }
+    }
+    if (help) {
+      help.textContent = state.selectionMode === 'single'
+        ? 'Elige una empresa puntual para ver su consolidado y sus datasets sin mezclarla con las demás.'
+        : 'Marca una o varias empresas y luego aplica filtros. Puedes usar Todas o Activas para armar el bloque rápido.';
+    }
+  }
+
+  function renderSingleEmpresaOptions() {
+    var wrap = byId('rgEmpresaUnicaWrap');
+    var select = byId('rgEmpresaUnica');
+    var empresasWrap = byId('rgEmpresasLista');
+    var allBtn = byId('rgSeleccionarTodas');
+    var activeBtn = byId('rgSoloActivas');
+    var clearBtn = byId('rgLimpiarEmpresas');
+    if (!select) return;
+
+    if (!state.empresas.length) {
+      select.innerHTML = '<option value="">Sin empresas</option>';
+    } else {
+      select.innerHTML = state.empresas.map(function (empresa) {
+        return '<option value="' + escapeHtml(empresa.id) + '">' + escapeHtml(empresa.nombre || ('Empresa ' + empresa.id)) + '</option>';
+      }).join('');
+    }
+
+    if (state.selectionMode === 'single') {
+      var currentId = Number(state.selectedEmpresaIDs[0] || 0);
+      if (!currentId && state.empresas.length) {
+        currentId = Number(state.empresas[0].id);
+        state.selectedEmpresaIDs = [currentId];
+      }
+      if (currentId) {
+        select.value = String(currentId);
+      }
+      if (wrap) wrap.hidden = false;
+      if (empresasWrap) empresasWrap.hidden = true;
+      if (allBtn) allBtn.disabled = true;
+      if (activeBtn) activeBtn.disabled = true;
+      if (clearBtn) clearBtn.disabled = true;
+    } else {
+      if (wrap) wrap.hidden = true;
+      if (empresasWrap) empresasWrap.hidden = false;
+      if (allBtn) allBtn.disabled = false;
+      if (activeBtn) activeBtn.disabled = false;
+      if (clearBtn) clearBtn.disabled = false;
+    }
+
+    updateSelectionSummary();
+  }
+
+  async function refreshAfterSelectionChange() {
+    if (state.selectionMode !== 'single') {
+      updateSelectionSummary();
+      return;
+    }
+    updateSelectionSummary();
+    try {
+      await refreshAll();
+    } catch (err) {
+      setMsg(err.message || 'No se pudo refrescar la empresa seleccionada.', true);
+    }
   }
 
   function buildBaseParams(action) {
@@ -79,7 +172,10 @@
     if (hasta) params.set('hasta', hasta);
 
     var selected = getSelectedEmpresaIDs();
-    if (selected.length) params.set('empresa_ids', selected.join(','));
+    if (selected.length) {
+      if (state.selectionMode === 'single') params.set('empresa_id', String(selected[0]));
+      else params.set('empresa_ids', selected.join(','));
+    }
     return params;
   }
 
@@ -115,9 +211,16 @@
 
     Array.prototype.forEach.call(wrap.querySelectorAll('input[type="checkbox"]'), function (input) {
       input.addEventListener('change', function () {
+        if (state.selectionMode === 'single') {
+          state.selectedEmpresaIDs = [Number(input.value || 0)];
+          renderEmpresas();
+        }
         syncSelectedFromDOM();
+        updateSelectionSummary();
       });
     });
+
+    renderSingleEmpresaOptions();
   }
 
   function renderDatasetOptions() {
@@ -426,6 +529,7 @@
     state.selectedEmpresaIDs = state.empresas.map(function (empresa) { return Number(empresa.id); });
     renderEmpresas();
     renderDatasetOptions();
+    updateSelectionSummary();
   }
 
   async function refreshAll() {
@@ -495,6 +599,20 @@
 
   function selectEmpresas(mode) {
     var ids = [];
+    if (state.selectionMode === 'single') {
+      if (mode === 'active') {
+        var activeEmpresa = state.empresas.find(function (empresa) {
+          return normalize(empresa.estado || 'activo').toLowerCase() === 'activo';
+        });
+        ids = activeEmpresa ? [Number(activeEmpresa.id)] : [];
+      } else if (state.empresas.length) {
+        ids = [Number(state.empresas[0].id)];
+      }
+      state.selectedEmpresaIDs = ids;
+      renderEmpresas();
+      refreshAfterSelectionChange();
+      return;
+    }
     state.empresas.forEach(function (empresa) {
       var estado = normalize(empresa.estado || 'activo').toLowerCase();
       if (mode === 'all') {
@@ -504,6 +622,21 @@
       }
     });
     state.selectedEmpresaIDs = ids;
+    renderEmpresas();
+    updateSelectionSummary();
+  }
+
+  function applySelectionMode(mode) {
+    state.selectionMode = mode === 'single' ? 'single' : 'multiple';
+    if (state.selectionMode === 'single') {
+      if (!state.selectedEmpresaIDs.length && state.empresas.length) {
+        state.selectedEmpresaIDs = [Number(state.empresas[0].id)];
+      } else {
+        state.selectedEmpresaIDs = [Number(state.selectedEmpresaIDs[0] || 0)].filter(function (id) { return id > 0; });
+      }
+    } else if (!state.selectedEmpresaIDs.length && state.empresas.length) {
+      state.selectedEmpresaIDs = state.empresas.map(function (empresa) { return Number(empresa.id); });
+    }
     renderEmpresas();
   }
 
@@ -523,7 +656,27 @@
       byId('rgSoloActivas').addEventListener('click', function () { selectEmpresas('active'); });
     }
     if (byId('rgLimpiarEmpresas')) {
-      byId('rgLimpiarEmpresas').addEventListener('click', function () { state.selectedEmpresaIDs = []; renderEmpresas(); });
+      byId('rgLimpiarEmpresas').addEventListener('click', function () {
+        state.selectedEmpresaIDs = [];
+        renderEmpresas();
+        updateSelectionSummary();
+      });
+    }
+    if (byId('rgTipoSeleccion')) {
+      byId('rgTipoSeleccion').addEventListener('change', async function () {
+        applySelectionMode(byId('rgTipoSeleccion').value);
+        if (state.selectionMode === 'single') {
+          await refreshAfterSelectionChange();
+        } else {
+          updateSelectionSummary();
+        }
+      });
+    }
+    if (byId('rgEmpresaUnica')) {
+      byId('rgEmpresaUnica').addEventListener('change', async function () {
+        syncSelectedFromSingleSelect();
+        await refreshAfterSelectionChange();
+      });
     }
     if (byId('rgAplicar')) {
       byId('rgAplicar').addEventListener('click', async function () {

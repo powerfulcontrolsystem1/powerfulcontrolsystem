@@ -130,6 +130,33 @@
           reference: String((data && (data.reference || data.ref)) || (payload && (payload.reference || payload.invoice || payload.x_ref_payco)) || context.reference || '').trim()
         };
       }
+      let epaycoCheckoutScriptPromise = null;
+      function loadEpaycoSmartCheckoutScript(scriptURL){
+        const resolvedURL = String(scriptURL || 'https://checkout.epayco.co/checkout-v2.js').trim();
+        if (window.ePayco && window.ePayco.checkout && typeof window.ePayco.checkout.configure === 'function') {
+          return Promise.resolve(window.ePayco);
+        }
+        if (epaycoCheckoutScriptPromise) return epaycoCheckoutScriptPromise;
+        epaycoCheckoutScriptPromise = new Promise(function(resolve, reject){
+          const script = document.createElement('script');
+          script.src = resolvedURL;
+          script.async = true;
+          script.onload = function(){
+            if (window.ePayco && window.ePayco.checkout && typeof window.ePayco.checkout.configure === 'function') {
+              resolve(window.ePayco);
+              return;
+            }
+            epaycoCheckoutScriptPromise = null;
+            reject(new Error('Epayco Smart Checkout no quedó disponible en la página.'));
+          };
+          script.onerror = function(){
+            epaycoCheckoutScriptPromise = null;
+            reject(new Error('No se pudo cargar checkout-v2.js de Epayco.'));
+          };
+          document.head.appendChild(script);
+        });
+        return epaycoCheckoutScriptPromise;
+      }
       async function fetchProviderStatus(provider, context){
         const normalizedProvider = normalizeProvider(provider);
         if (!normalizedProvider) throw new Error('No se pudo determinar la pasarela del pago.');
@@ -207,7 +234,7 @@
           const unavailableMessages = [];
           if (epaycoProvider && !epaycoProvider.available) {
             unavailableMessages.push(epaycoProvider.enabled
-              ? 'Epayco esta activado, pero falta configurar al menos la Public Key en configuracion avanzada.'
+              ? 'Epayco esta activado, pero Smart Checkout requiere al menos Public Key y Private Key en configuracion avanzada.'
               : 'Epayco esta desactivado en configuracion avanzada.');
           }
           if (wompiProvider && !wompiProvider.available) {
@@ -651,7 +678,30 @@
               });
               updateUrlState({ provider: 'epayco', status: 'pending', transaction_id: context.transactionId || null, reference: context.reference || null, licencia_id: licenciaId, empresa_id: empresaId || null });
 
+              const sessionId = String(data && (data.checkout_session_id || data.session_id || (data.data && (data.data.sessionId || data.data.session_id))) || '').trim();
+              const checkoutType = String(data && (data.checkout_type || (data.data && data.data.type) || 'standard') || 'standard').trim().toLowerCase();
+              const checkoutScriptURL = String(data && (data.checkout_script_url || (data.data && data.data.script_url) || 'https://checkout.epayco.co/checkout-v2.js') || 'https://checkout.epayco.co/checkout-v2.js').trim();
               const checkoutUrl = data && (data.checkout_url || (data.data && data.data.checkout_url));
+              if (sessionId) {
+                setProviderBusy('epayco', 'Abriendo checkout seguro...');
+                renderFeedback(ui.feedback, 'muted', 'Abriendo Epayco', 'Se iniciará el Smart Checkout seguro de Epayco. Cuando regreses, esta página retomará la verificación automática con la referencia guardada.');
+                syncStatusText(ui.epaycoStatus, 'Preparando Smart Checkout de Epayco...');
+                const epaycoRuntime = await loadEpaycoSmartCheckoutScript(checkoutScriptURL);
+                const checkout = epaycoRuntime.checkout.configure({
+                  sessionId: sessionId,
+                  type: checkoutType === 'onpage' ? 'onpage' : 'standard',
+                  test: String((data && data.mode) || '').trim().toLowerCase() === 'sandbox'
+                });
+                if (checkout && typeof checkout.onErrors === 'function') {
+                  checkout.onErrors(function(errors){
+                    const detail = Array.isArray(errors) && errors.length ? JSON.stringify(errors) : String(errors || 'Error desconocido');
+                    syncStatusText(ui.epaycoStatus, 'Epayco reportó un error al abrir el checkout: ' + detail);
+                    resetProvider('epayco');
+                  });
+                }
+                checkout.open();
+                return;
+              }
               if (checkoutUrl) {
                 setProviderBusy('epayco', 'Redirigiendo...');
                 renderFeedback(ui.feedback, 'muted', 'Redirigiendo a Epayco', 'Te llevaremos al checkout para completar el pago. Cuando regreses, esta pagina retomara la verificacion automatica con la referencia guardada.');

@@ -8,6 +8,42 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 - Cuando se cree un modulo nuevo o se modifique uno existente, esta matriz debe actualizarse en la misma iteracion para reflejar permisos por rol/modulo/accion y el impacto en paginas del panel.
 - Esta actualizacion debe quedar sincronizada con `documentos/descripcion_de_modulos`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios` y `CHANGELOG.md`.
 
+- Actualizacion 2026-04-17 (navegacion general: misma pestaña por defecto):
+	- Se retiran aperturas automáticas en nueva ventana para navegación normal entre módulos, portales públicos, ayudas y exportes comunes del sistema.
+	- Los reportes/exportes de `Clientes`, `Asistencia`, `Backups`, `Tarifas por día` y `Soporte remoto` descargan el archivo sin sacar al usuario del módulo actual.
+	- Se conservan como excepción los documentos legales (`contrato`, términos de pasarela) y los popups técnicos de impresión o vista previa documental.
+	- Impacto de matriz: sin cambios en roles ni permisos; solo cambia el comportamiento de navegación de rutas ya permitidas.
+
+- Actualizacion 2026-04-17 (licencias super: valor 0 visible y editable):
+	- `web/super/licencias.html` conserva el valor `0` en listado y formulario de edicion para el CRUD de licencias.
+	- Impacto de matriz: sin cambios en permisos; solo corrige el comportamiento visual del modulo `Licencias` para `super_administrador`.
+
+- Actualizacion 2026-04-17 (licencias del selector: historial y estado con vencimiento):
+	- `backend/db/db.go` y `web/super/licencias.html` convierten la vista `scope=mine&con_empresa=1` en un historial de licencias pagadas/asignadas, con fecha de vencimiento, estados `activa/por vencer/vencida` y CTA de renovacion sin opciones de eliminar en esa pantalla.
+	- `backend/handlers/payments_handlers_test.go` valida que el endpoint protegido siga filtrando por creador y entregue empresa + fechas al frontend.
+	- Impacto de matriz: sin cambios en roles ni permisos; el modulo `Licencias` mantiene acceso de lectura/gestion para `super_administrador`, pero en el flujo del selector la misma ruta se presenta como historial restringido al alcance del administrador autenticado.
+
+- Actualizacion 2026-04-17 (checkout publico de licencias: Epayco usa Smart Checkout v2):
+	- `backend/handlers/payments_handlers.go`, `backend/handlers/payments_handlers_test.go`, `web/pagar_licencia.html` y `web/super/configuracion_avanzada.html` migran Epayco desde el flujo manual `checkout.php` al Smart Checkout oficial con `sessionId` y `checkout-v2.js`.
+	- Impacto de matriz: sin cambios en permisos; `/epayco/create_transaction`, `/epayco/transaction_status`, `/epayco/webhook` y `/epayco/respuesta.html` mantienen alcance publico dentro del checkout comercial, mientras la configuracion avanzada sigue siendo exclusiva de `super_administrador`.
+
+- Actualizacion 2026-04-17 (crear clave por correo: visibilidad de contrasena):
+	- `web/registrar_contrasena_usuario_de_google.html`, `web/js/registrar_contrasena_usuario_de_google.js` y `web/estilos.css` agregan el control visual para mostrar u ocultar la contrasena antes de guardarla.
+	- Impacto de matriz: sin cambios en permisos; sigue siendo el mismo flujo autenticado de autogestion posterior al login con Google.
+
+- Actualizacion 2026-04-17 (licencias publicas: tarjetas con estilo del home):
+	- `web/elegir_licencia.html` reutiliza la estructura visual de `index.html` para las tarjetas de licencias, sin cambiar rutas, protecciones ni acciones disponibles.
+	- Impacto de matriz: sin cambios en permisos; la vista y el flujo de compra conservan el mismo alcance previo.
+
+- Actualizacion 2026-04-17 (reportes globales super: una empresa o varias):
+	- `web/super/reportes_globales.html` y `web/js/super_reportes_globales.js` agregan un selector de alcance para alternar entre analisis de una sola empresa o de varias empresas del mismo administrador.
+	- `backend/handlers/reportes_globales_test.go` cubre el uso de `empresa_id` en la misma API protegida.
+	- Impacto de matriz: sin cambios en permisos; `Reportes globales (super)` se mantiene como permiso `R` exclusivo de `super_administrador`.
+
+- Actualizacion 2026-04-17 (autenticacion administrativa: login en una sola tarjeta visual):
+	- `web/login.html` y `web/estilos.css` integran el formulario por correo dentro de la misma tarjeta del acceso con Google, retirando el recuadro secundario del flujo publico de administradores.
+	- Impacto de matriz: sin cambios en permisos, roles, wrappers o visibilidad; el login administrativo sigue siendo publico y el panel super sigue reservado a `super_administrador`.
+
 - Actualizacion 2026-04-16 (reportes globales super por administrador creador):
 	- `backend/handlers/reportes_globales.go` expone `/super/api/reportes_globales` filtrando empresas por `usuario_creador = admin autenticado`.
 	- `web/super/reportes_globales.html` y `web/js/super_reportes_globales.js` permiten ver datasets consolidados o separados por empresa solo dentro del panel super.

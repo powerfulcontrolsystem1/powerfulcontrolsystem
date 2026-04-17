@@ -254,6 +254,36 @@
         .replace(/'/g, '&#39;');
     }
 
+    function getDownloadFilename(response, fallbackName) {
+      const disposition = String(response.headers.get('Content-Disposition') || '');
+      const utfMatch = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+      if (utfMatch && utfMatch[1]) {
+        try {
+          return decodeURIComponent(utfMatch[1]);
+        } catch (_) {}
+      }
+      const plainMatch = disposition.match(/filename="?([^";]+)"?/i);
+      return plainMatch && plainMatch[1] ? plainMatch[1] : fallbackName;
+    }
+
+    function saveBlob(blob, filename) {
+      const objectURL = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = objectURL;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(objectURL);
+    }
+
+    async function downloadInBackground(url, fallbackName) {
+      const response = await fetch(url, { credentials: 'same-origin' });
+      await ensureOk(response);
+      const blob = await response.blob();
+      saveBlob(blob, getDownloadFilename(response, fallbackName));
+    }
+
     function setMessage(text, isError) {
       const el = document.getElementById('msg');
       if (!el) return;
@@ -463,7 +493,9 @@
       params.set('desde', normalize(document.getElementById('filtro_desde').value));
       params.set('hasta', normalize(document.getElementById('filtro_hasta').value));
       const url = '/api/empresa/reportes?' + params.toString();
-      window.open(url, '_blank');
+      downloadInBackground(url, 'asistencia_nomina_empresa_' + String(state.empresaID) + '.' + formato).catch(function(err) {
+        setSectionMessage('reporteMsg', 'No se pudo descargar el reporte: ' + (err && err.message ? err.message : err), true);
+      });
       setSectionMessage('reporteMsg', 'Descargando reporte de asistencia para auditoria de nomina.', false);
     }
 

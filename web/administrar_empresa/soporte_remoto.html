@@ -243,6 +243,39 @@
         return url;
       }
 
+      function getDownloadFilename(response, fallbackName) {
+        var disposition = String(response.headers.get('Content-Disposition') || '');
+        var utfMatch = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+        if (utfMatch && utfMatch[1]) {
+          try {
+            return decodeURIComponent(utfMatch[1]);
+          } catch (_) {}
+        }
+        var plainMatch = disposition.match(/filename="?([^";]+)"?/i);
+        return plainMatch && plainMatch[1] ? plainMatch[1] : fallbackName;
+      }
+
+      function saveBlob(blob, filename) {
+        var objectURL = URL.createObjectURL(blob);
+        var link = document.createElement('a');
+        link.href = objectURL;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(objectURL);
+      }
+
+      async function downloadInBackground(url, fallbackName) {
+        var response = await fetch(url, { credentials: 'same-origin' });
+        if (!response.ok) {
+          var raw = await response.text().catch(function () { return ''; });
+          throw new Error(raw || ('HTTP ' + response.status));
+        }
+        var blob = await response.blob();
+        saveBlob(blob, getDownloadFilename(response, fallbackName));
+      }
+
       async function requestJSON(method, action, extra, bodyObj) {
         var options = { method: method, credentials: 'same-origin' };
         if (bodyObj) {
@@ -557,7 +590,13 @@
 
       function exportSessions(format) {
         var url = apiURL('export_sesiones', { format: format, include_inactive: 1 });
-        window.open(url.toString(), '_blank', 'noopener');
+        downloadInBackground(url.toString(), 'soporte_remoto_sesiones_empresa_' + String(empresaID) + '.' + String(format || 'json'))
+          .then(function () {
+            setMsg(sessionMsgEl, 'Descarga iniciada.', 'success');
+          })
+          .catch(function (err) {
+            setMsg(sessionMsgEl, 'No se pudo exportar sesiones: ' + err.message, 'error');
+          });
       }
 
       document.getElementById('srBtnSaveConfig').addEventListener('click', saveConfig);

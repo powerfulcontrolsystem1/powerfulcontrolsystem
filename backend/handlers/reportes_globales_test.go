@@ -140,4 +140,29 @@ func TestSuperReportesGlobalesHandlerFiltraYConsolidaPorAdministrador(t *testing
 			t.Fatalf("cada dataset individual debe tener 1 fila, obtenido=%d para empresa=%d", item.Dataset.RowCount, item.Empresa.ID)
 		}
 	}
+
+	reqSingle := httptest.NewRequest(http.MethodGet, "/super/api/reportes_globales?action=dataset&dataset=operativo_ventas_detalle&modo=consolidado&empresa_id="+strconv.FormatInt(empresaDos, 10), nil)
+	reqSingle = reqSingle.WithContext(context.WithValue(reqSingle.Context(), "adminEmail", "admin1@test.com"))
+	rrSingle := httptest.NewRecorder()
+	handler.ServeHTTP(rrSingle, reqSingle)
+	if rrSingle.Code != http.StatusOK {
+		t.Fatalf("single status=%d body=%s", rrSingle.Code, rrSingle.Body.String())
+	}
+	var singleResp superReportesDatasetResponse
+	if err := json.Unmarshal(rrSingle.Body.Bytes(), &singleResp); err != nil {
+		t.Fatalf("unmarshal single: %v", err)
+	}
+	if len(singleResp.Empresas) != 1 || singleResp.Empresas[0].ID != empresaDos {
+		t.Fatalf("seleccion singular inesperada: %+v", singleResp.Empresas)
+	}
+	if singleResp.Combinado.RowCount != 1 {
+		t.Fatalf("filas consolidadas singulares esperadas=1 obtenidas=%d", singleResp.Combinado.RowCount)
+	}
+	rowDos, ok := reporteDatasetFindRowByStringField(singleResp.Combinado.Rows, "empresa_nombre", "Empresa Dos")
+	if !ok {
+		t.Fatalf("no se encontro fila singular para Empresa Dos")
+	}
+	if got := reporteDatasetToFloat64(rowDos["total"]); got != 90000 {
+		t.Fatalf("total empresa dos inesperado: %.2f", got)
+	}
 }
