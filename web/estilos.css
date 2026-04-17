@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&family=Inter:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Montserrat:wght@600;800&family=Inter:wght@400;700&display=swap');
 
 :root{
   /* Tema oscuro empresarial para POS multiempresa */
@@ -250,8 +250,8 @@ ul{padding-left:18px}
 
 /* Título profesional para el login de administradores */
 .login-page .login-header{width:100%;max-width:420px;margin:0 auto 12px auto;text-align:center}
-.login-page .login-title{font-family:'Playfair Display', Georgia, 'Segoe UI', Roboto, Arial, sans-serif;font-weight:800;font-size:1.6rem;color:var(--accent);margin:0 0 6px 0;letter-spacing:0.4px}
-.login-page .login-help-link{color:var(--muted);text-decoration:underline;font-weight:700;font-size:0.95rem}
+.login-page .login-title{font-family:'Playfair Display', Georgia, 'Segoe UI', Roboto, Arial, sans-serif;font-weight:800;font-size:1.6rem;color:#F5F5DC;margin:0 0 6px 0;letter-spacing:0.6px}
+.login-page .login-help-link{color:#ffffff;text-decoration:underline;font-weight:700;font-size:0.95rem;font-family:'Playfair Display', Georgia, 'Segoe UI', Roboto, Arial, sans-serif}
 .register-admin-page .container{max-width:640px}
 .register-admin-page .login-header{max-width:640px}
 .register-admin-page .card{padding:30px 32px}
@@ -1411,6 +1411,29 @@ body.has-floating-menu .header .form-actions{
 .empresas-grid .card-actions{margin-top:auto}
 .license-indicator{border:none;color:#fff;padding:8px 12px;border-radius:8px;font-weight:700;cursor:default}
 .license-indicator.active{background:var(--success)}
+.empresas-grid .download-data{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:34px;
+  height:34px;
+  padding:0;
+  border-radius:999px;
+  background:#fff !important;
+  color:#183153;
+  cursor:pointer;
+  box-shadow:0 6px 14px rgba(0,0,0,0.18);
+}
+.empresas-grid .download-data svg{
+  width:16px;
+  height:16px;
+}
+.empresas-grid .download-data:hover,
+.empresas-grid .download-data:focus-visible{
+  background:#fff !important;
+  color:#0f2745;
+  transform:translateY(-1px);
+}
 
 /* Tarjetas de estaciones (administrar empresa): color dinámico por estado de carrito */
 #estacionesGrid{
@@ -1581,6 +1604,141 @@ body.has-floating-menu .header .form-actions{
 .mode-switch-row .mode-label{ font-size: 0.95rem; }
 
 /* ===== Pagar licencia: selector de metodos coloridos ===== */
+.checkout-licencia-page .admin-content{
+  background:
+    radial-gradient(circle at top right, rgba(255,137,79,0.12), rgba(255,137,79,0) 28%),
+    linear-gradient(180deg, rgba(17,31,49,0.34), rgba(11,22,37,0.28));
+}
+.checkout-payment-shell{
+  padding:18px;
+}
+.checkout-licencia-shell{
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+}
+.checkout-licencia-hero{
+  margin-bottom:0;
+  padding:0;
+}
+.checkout-brand-title{
+  justify-content:center;
+}
+.checkout-brand-subtitle{
+  max-width:58rem;
+}
+.checkout-eyebrow{
+  margin:0;
+  color:#f7cd7c;
+  font-size:.82rem;
+  font-weight:900;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+}
+.checkout-summary-grid{
+  max-width:1100px;
+  margin:0 auto;
+  align-items:stretch;
+}
+.checkout-home-card{
+  min-height:100%;
+}
+.checkout-card-kicker{
+  display:inline-flex;
+  align-items:center;
+  align-self:flex-start;
+  padding:6px 12px;
+  border-radius:999px;
+  background:rgba(255,255,255,0.12);
+  border:1px solid rgba(255,255,255,0.18);
+  color:#f7f3df;
+  font-size:.78rem;
+  font-weight:800;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  margin-bottom:12px;
+}
+.checkout-meta-list,
+.checkout-mini-pills{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+}
+.checkout-meta-pill,
+.checkout-mini-pill{
+  display:inline-flex;
+  align-items:center;
+  min-height:34px;
+  padding:8px 12px;
+  border-radius:999px;
+  background:rgba(8,15,26,0.28);
+  border:1px solid rgba(255,255,255,0.12);
+  color:#f5f8ff;
+  font-size:.83rem;
+  font-weight:700;
+}
+.checkout-card-actions-inline{
+  justify-content:flex-start;
+  margin-top:auto;
+}
+.checkout-price-chip{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:48px;
+  padding:10px 16px;
+  border-radius:14px;
+  background:linear-gradient(135deg, rgba(255,123,84,0.24), rgba(255,77,141,0.24));
+  border:1px solid rgba(255,255,255,0.18);
+  color:#fff6eb;
+  font-size:1.15rem;
+  font-weight:900;
+  box-shadow:0 14px 26px rgba(8,16,28,0.22);
+}
+.checkout-discount-row{
+  width:100%;
+  margin:8px 0 12px;
+}
+.checkout-discount-card .form-label{
+  color:#eaf2ff;
+}
+.checkout-discount-card .form-input{
+  background:rgba(5,11,20,0.28);
+  border-color:rgba(255,255,255,0.12);
+}
+.checkout-payment-feedback{
+  max-width:1100px;
+  width:100%;
+  margin:0 auto;
+}
+.checkout-payment-hub{
+  max-width:1100px;
+  width:100%;
+  margin:0 auto;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  padding:20px;
+  border-radius:22px;
+}
+.checkout-payment-header{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+  flex-wrap:wrap;
+}
+.checkout-payment-header .payment-method-title{
+  margin:4px 0 0;
+  font-size:1.3rem;
+}
+.checkout-payment-copy{
+  max-width:32rem;
+  margin:0;
+}
+.checkout-single-method-help{
+  margin-top:-4px;
+}
 .payment-licencia-summary{
   display:flex;
   gap:18px;
@@ -1645,8 +1803,10 @@ body.has-floating-menu .header .form-actions{
   background:linear-gradient(135deg, rgba(9,41,86,.95), rgba(17,103,177,.85));
 }
 .payment-method-card.payment-method-epayco{
-  border-color:#1f8ef1;
-  background:linear-gradient(135deg, rgba(10,38,78,.96), rgba(18,117,196,.88));
+  border-color:#ff7440;
+  background:
+    radial-gradient(circle at top right, rgba(255,158,73,0.24), rgba(255,158,73,0) 28%),
+    linear-gradient(135deg, rgba(17,19,25,0.98), rgba(37,39,49,0.94) 56%, rgba(113,33,18,0.94));
 }
 .payment-method-card.payment-method-nequi{
   border-color:#30a46c;
@@ -1663,6 +1823,44 @@ body.has-floating-menu .header .form-actions{
 .payment-method-card.active{
   box-shadow:0 0 0 2px rgba(255,255,255,.16), 0 10px 24px rgba(0,0,0,.35);
 }
+.payment-method-epayco-catalog{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  padding:16px 18px;
+  border-radius:18px;
+  border:1px solid rgba(255,116,64,0.28);
+  background:
+    radial-gradient(circle at top right, rgba(255,151,76,0.18), rgba(255,151,76,0) 34%),
+    linear-gradient(135deg, rgba(22,24,31,0.98), rgba(38,39,48,0.94) 58%, rgba(121,27,17,0.9));
+  color:#fff7f1;
+}
+.payment-method-options-title{
+  font-size:1rem;
+  font-weight:900;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+}
+.payment-method-options-grid{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+}
+.payment-method-option-pill{
+  display:inline-flex;
+  align-items:center;
+  min-height:36px;
+  padding:8px 12px;
+  border-radius:999px;
+  background:rgba(255,255,255,0.1);
+  border:1px solid rgba(255,255,255,0.14);
+  color:#fff8f0;
+  font-size:.84rem;
+  font-weight:700;
+}
+.payment-method-epayco-note{
+  color:rgba(255,244,233,0.8);
+}
 
 .payment-method-panel{
   display:none;
@@ -1678,9 +1876,11 @@ body.has-floating-menu .header .form-actions{
   color:#f2f7ff;
 }
 .payment-method-panel-epayco{
-  border-color:#1f8ef1;
-  background:linear-gradient(135deg, rgba(10,38,78,.96), rgba(18,117,196,.88));
-  color:#f2f7ff;
+  border-color:#ff7440;
+  background:
+    radial-gradient(circle at top right, rgba(255,155,77,0.2), rgba(255,155,77,0) 28%),
+    linear-gradient(135deg, rgba(17,19,25,0.98), rgba(40,41,51,0.96) 55%, rgba(109,26,18,0.92));
+  color:#fff8f1;
 }
 .payment-method-panel-nequi{
   border-color:#30a46c;
@@ -1708,7 +1908,10 @@ body.has-floating-menu .header .form-actions{
   max-width:42%;
   height:auto;
   object-fit:contain;
-  filter:drop-shadow(0 8px 16px rgba(8,18,38,0.22));
+  filter:drop-shadow(0 8px 18px rgba(0,0,0,0.34));
+}
+.payment-method-brand-copy{
+  color:rgba(255,240,228,0.86);
 }
 .payment-method-hint{margin-bottom:10px}
 .payment-method-check{display:block;margin-bottom:8px}
@@ -1720,17 +1923,19 @@ body.has-floating-menu .header .form-actions{
   margin-bottom:8px;
   padding:10px;
   border-radius:8px;
-  border:1px solid #bde8cf;
-  background:#f3fff8;
-  color:#0b2d1a;
+  border:1px solid rgba(255,255,255,0.16);
+  background:rgba(255,255,255,0.92);
+  color:#24120d;
 }
-.payment-btn-epayco{width:100%;background:#ffd166;color:#1f2a38;border:none}
+.payment-btn-epayco{width:100%;background:linear-gradient(135deg,#ff9b2f,#f34728);color:#fff;border:none;box-shadow:0 12px 24px rgba(117,31,18,0.32)}
 .payment-btn-mp{width:100%;background:#ffd166;color:#1f2a38;border:none}
 .payment-btn-wompi{width:100%;background:#7ce0a6;color:#0f3521;border:none}
 .payment-btn-nequi{width:100%;background:#7ce0a6;color:#0f3521;border:none}
 .payment-btn-manual{width:100%;background:#ffcc80;color:#4a2506;border:none}
 
 @media (max-width:700px){
+  .checkout-payment-shell{padding:12px}
+  .checkout-payment-header{flex-direction:column}
   .payment-method-logo{width:116px}
   .payment-method-panel-logo{width:96px;max-width:46%}
 }

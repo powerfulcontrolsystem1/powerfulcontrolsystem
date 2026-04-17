@@ -1,0 +1,16 @@
+# Lista de palabras del proyecto que se deben ignorar durante la revisión ortográfica
+# Añade una palabra por línea. Comentarios con #.
+
+Epayco
+Wompi
+POS
+multiempresa
+epayco
+epaycoprovider
+epayco_checkout
+epayco_checkout_v2
+epayco_session
+epayco_test
+licencia_id
+empresa_id
+apify

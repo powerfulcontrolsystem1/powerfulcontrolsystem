@@ -100,6 +100,10 @@ func ensurePaymentsHandlerTestSchema(t *testing.T, dbSuper *sql.DB) {
 	if err != nil {
 		t.Fatalf("create pagos_wompi schema: %v", err)
 	}
+
+	if err := dbpkg.EnsureSuperCorreoNotificacionesPruebaSchema(dbSuper); err != nil {
+		t.Fatalf("create super_correo_notificaciones_prueba schema: %v", err)
+	}
 }
 
 func TestResolvePaymentBaseURLFallsBackToCanonicalDomainOnLocalhost(t *testing.T) {
@@ -594,6 +598,176 @@ func TestEpaycoTransactionStatusHandlerFindsContextUsingInvoiceWhenGatewayIDsDif
 	}
 	if rec == nil || !rec.Status.Valid || strings.ToUpper(strings.TrimSpace(rec.Status.String)) != "APPROVED" {
 		t.Fatalf("expected stored status APPROVED for internal reference, got %+v", rec)
+	}
+}
+
+func TestEpaycoTransactionStatusHandlerActivatesOnceAndCapturesEmail(t *testing.T) {
+	t.Setenv("PCS_MAIL_TEST_MODE", "1")
+
+	dbSuper := openTestSQLite(t, "super_epayco_status_activation_email.db")
+	ensurePaymentsHandlerTestSchema(t, dbSuper)
+
+	if _, err := dbSuper.Exec(`
+		INSERT INTO empresas (id, nombre, usuario_creador) VALUES (44, 'Hotel Demo', 'owner@demo.com')
+	`); err != nil {
+		t.Fatalf("seed empresa: %v", err)
+	}
+	if _, err := dbSuper.Exec(`
+		INSERT INTO licencias (id, empresa_id, tipo_id, nombre, descripcion, valor, duracion_dias, modulos_habilitados, super_rol_habilitado, fecha_creacion, activo)
+		VALUES (1, 0, 1, 'Plan Correo', 'Prueba activacion con correo', 159900, 30, '', 0, datetime('now','localtime'), 1)
+	`); err != nil {
+		t.Fatalf("seed licencia: %v", err)
+	}
+
+	internalRef := "EPAYCO-LIC-1-EMP-44-EMAIL"
+	if _, err := dbpkg.CreateEpaycoPaymentRecord(dbSuper, 1, 44, internalRef, internalRef, "PENDING", `{"customer_email":"cliente@demo.com","provider":"epayco"}`, "", ""); err != nil {
+		t.Fatalf("seed pagos_epayco: %v", err)
+	}
+
+	originalTransport := http.DefaultTransport
+	http.DefaultTransport = roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		body := `{"data":{"x_transaction_id":"ep_tx_email_1","x_ref_payco":"ep_ref_email_1","invoice":"EPAYCO-LIC-1-EMP-44-EMAIL","x_cod_response":"1","x_response":"Aceptada"},"status":true}`
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Header:     make(http.Header),
+			Body:       io.NopCloser(strings.NewReader(body)),
+		}, nil
+	})
+	defer func() { http.DefaultTransport = originalTransport }()
+
+	h := EpaycoTransactionStatusHandler(dbSuper)
+	req := httptest.NewRequest(http.MethodGet, "/epayco/transaction_status?id=ep_tx_email_1&reference=ep_ref_email_1", nil)
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, rr.Code, rr.Body.String())
+	}
+
+	var resp struct {
+		Status    string `json:"status"`
+		Activated bool   `json:"activated"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode first response: %v body=%s", err, rr.Body.String())
+	}
+	if resp.Status != "APPROVED" {
+		t.Fatalf("expected status APPROVED, got %q", resp.Status)
+	}
+	if !resp.Activated {
+		t.Fatal("expected activated=true on first approval")
+	}
+
+	var notifCount int
+	if err := dbSuper.QueryRow(`SELECT COUNT(*) FROM super_correo_notificaciones_prueba WHERE tipo = 'licencia_activada_pago' AND destinatario = 'cliente@demo.com'`).Scan(&notifCount); err != nil {
+		t.Fatalf("count notifications: %v", err)
+	}
+	if notifCount != 1 {
+		t.Fatalf("expected 1 activation email capture, got %d", notifCount)
+	}
+
+	lic, err := dbpkg.GetLicenciaByID(dbSuper, 1)
+	if err != nil {
+		t.Fatalf("reload licencia: %v", err)
+	}
+	if lic == nil || lic.EmpresaID != 44 || lic.Activo != 1 {
+		t.Fatalf("expected licencia active for empresa 44, got %+v", lic)
+	}
+
+	rec, err := dbpkg.GetEpaycoPaymentByReference(dbSuper, internalRef)
+	if err != nil {
+		t.Fatalf("reload epayco record: %v", err)
+	}
+	if rec == nil || !rec.RawPayload.Valid || !strings.Contains(rec.RawPayload.String, `"customer_email":"cliente@demo.com"`) {
+		t.Fatalf("expected raw_payload to preserve customer_email, got %+v", rec)
+	}
+
+	rrSecond := httptest.NewRecorder()
+	h.ServeHTTP(rrSecond, req)
+	if rrSecond.Code != http.StatusOK {
+		t.Fatalf("expected second status %d, got %d body=%s", http.StatusOK, rrSecond.Code, rrSecond.Body.String())
+	}
+	var secondResp struct {
+		Activated bool `json:"activated"`
+	}
+	if err := json.Unmarshal(rrSecond.Body.Bytes(), &secondResp); err != nil {
+		t.Fatalf("decode second response: %v body=%s", err, rrSecond.Body.String())
+	}
+	if secondResp.Activated {
+		t.Fatal("expected activated=false on repeated approved poll")
+	}
+	if err := dbSuper.QueryRow(`SELECT COUNT(*) FROM super_correo_notificaciones_prueba WHERE tipo = 'licencia_activada_pago' AND destinatario = 'cliente@demo.com'`).Scan(&notifCount); err != nil {
+		t.Fatalf("count notifications after second poll: %v", err)
+	}
+	if notifCount != 1 {
+		t.Fatalf("expected notification count to remain 1 after repeated poll, got %d", notifCount)
+	}
+}
+
+func TestEpaycoWebhookHandlerFindsContextUsingInvoiceFallback(t *testing.T) {
+	t.Setenv("PCS_MAIL_TEST_MODE", "1")
+
+	dbSuper := openTestSQLite(t, "super_epayco_webhook_invoice_fallback.db")
+	ensurePaymentsHandlerTestSchema(t, dbSuper)
+
+	if _, err := dbSuper.Exec(`INSERT INTO empresas (id, nombre, usuario_creador) VALUES (55, 'Motel Demo', 'owner55@demo.com')`); err != nil {
+		t.Fatalf("seed empresa: %v", err)
+	}
+	if _, err := dbSuper.Exec(`
+		INSERT INTO licencias (id, empresa_id, tipo_id, nombre, descripcion, valor, duracion_dias, modulos_habilitados, super_rol_habilitado, fecha_creacion, activo)
+		VALUES (1, 0, 1, 'Plan Webhook', 'Prueba webhook epayco', 189900, 30, '', 0, datetime('now','localtime'), 1)
+	`); err != nil {
+		t.Fatalf("seed licencia: %v", err)
+	}
+
+	internalRef := "EPAYCO-LIC-1-EMP-55-INVOICE"
+	if _, err := dbpkg.CreateEpaycoPaymentRecord(dbSuper, 1, 55, internalRef, internalRef, "PENDING", `{"customer_email":"webhook@demo.com","provider":"epayco"}`, "", ""); err != nil {
+		t.Fatalf("seed pagos_epayco: %v", err)
+	}
+
+	h := EpaycoWebhookHandler(dbSuper)
+	body := strings.NewReader(`{"x_transaction_id":"ep_tx_webhook_1","x_ref_payco":"ep_ref_webhook_1","invoice":"EPAYCO-LIC-1-EMP-55-INVOICE","x_cod_response":"1","x_response":"Aceptada"}`)
+	req := httptest.NewRequest(http.MethodPost, "/epayco/webhook", body)
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, rr.Code, rr.Body.String())
+	}
+
+	var resp struct {
+		Status       string `json:"status"`
+		ContextFound bool   `json:"context_found"`
+		Activated    bool   `json:"activated"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode webhook response: %v body=%s", err, rr.Body.String())
+	}
+	if resp.Status != "APPROVED" {
+		t.Fatalf("expected status APPROVED, got %q", resp.Status)
+	}
+	if !resp.ContextFound {
+		t.Fatal("expected context_found=true using invoice fallback")
+	}
+	if !resp.Activated {
+		t.Fatal("expected activated=true on webhook approval")
+	}
+
+	lic, err := dbpkg.GetLicenciaByID(dbSuper, 1)
+	if err != nil {
+		t.Fatalf("reload licencia after webhook: %v", err)
+	}
+	if lic == nil || lic.EmpresaID != 55 || lic.Activo != 1 {
+		t.Fatalf("expected licencia active for empresa 55, got %+v", lic)
+	}
+
+	rec, err := dbpkg.GetEpaycoPaymentByReference(dbSuper, internalRef)
+	if err != nil {
+		t.Fatalf("reload record by invoice ref: %v", err)
+	}
+	if rec == nil || !rec.Status.Valid || strings.ToUpper(strings.TrimSpace(rec.Status.String)) != "APPROVED" {
+		t.Fatalf("expected internal reference record approved after webhook, got %+v", rec)
 	}
 }
 

@@ -1,6 +1,31 @@
 # CHANGELOG
 
 ## 2026-04-17
+- Seleccionar empresa: boton de descarga blanco, solo con icono y tooltip.
+	- Archivos modificados: `web/js/seleccionar_empresa.js`, `web/estilos.css`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: el boton de descarga dentro de las tarjetas de `seleccionar_empresa.html` deja de mostrar el texto `Descargar`, queda como icono blanco y muestra el tooltip `Descargar informacion de la empresa` al pasar el mouse.
+	- Verificacion: diagnostico del editor sin errores en `web/js/seleccionar_empresa.js` y `web/estilos.css`.
+
+- Checkout publico de licencias: resumen en tarjetas y medios Epayco visibles.
+	- Archivos modificados: `web/pagar_licencia.html`, `web/estilos.css`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: `pagar_licencia.html` ahora separa la licencia y los codigos de descuento en dos tarjetas con el mismo estilo comercial del home, agrega un bloque visible con las formas de pago de Epayco y recolorea su panel de checkout con branding propio.
+	- Verificacion: diagnostico del editor sin errores en `web/pagar_licencia.html` y `web/estilos.css`.
+
+- Elegir licencia: orden ascendente de menor a mayor valor.
+	- Archivos modificados: `web/elegir_licencia.html`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: el catalogo de licencias disponibles para pagar ahora se ordena en frontend desde el menor valor hasta el mayor, de modo que las opciones mas economicas aparezcan primero sin alterar el flujo hacia `pagar_licencia.html`.
+	- Verificacion: diagnostico del editor sin errores en `web/elegir_licencia.html`.
+
+- Checkout publico de licencias: Epayco ahora activa la licencia, envia correo y cierra correctamente los estados finales.
+	- Archivos modificados: `backend/handlers/payments_handlers.go`, `backend/handlers/payments_handlers_test.go`, `web/pagar_licencia.html`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: el post-pago de Epayco resuelve contexto por `invoice` cuando la pasarela devuelve IDs externos, activa la licencia solo una vez, conserva `customer_email` para enviar el correo de confirmacion y evita que el formulario vuelva a marcar `pending` cuando el retorno ya es rechazado o fallido.
+	- Verificacion: `go test ./handlers -run "TestEpayco(TransactionStatusHandlerFindsContextUsingInvoiceWhenGatewayIDsDiffer|TransactionStatusHandlerActivatesOnceAndCapturesEmail|WebhookHandlerFindsContextUsingInvoiceFallback)" -count=1`; `go test ./ ./auth ./db ./handlers ./metrics ./utils -run '^$' -count=1`.
+
+- Elegir licencia: tarjetas mas compactas y sin textos de estado.
+	- Archivos modificados: `web/elegir_licencia.html`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: las tarjetas de licencias disponibles para pagar dejan de mostrar `Estado: Activa/Inactiva` y `Disponible para asignacion inmediata` o su variante de asignacion. Ademas se compactan visualmente con menor padding, icono mas contenido y menos separacion vertical, manteniendo intacto el flujo hacia `pagar_licencia.html`.
+	- Verificacion: diagnostico del editor sin errores en `web/elegir_licencia.html`.
+
 - Exportes operativos: descarga silenciosa sin sacar al usuario del módulo.
 	- Archivos modificados: `web/administrar_empresa/administrar_clientes.html`, `web/administrar_empresa/asistencia_empleados.html`, `web/administrar_empresa/backups.html`, `web/administrar_empresa/tarifas_por_dia.html`, `web/administrar_empresa/soporte_remoto.html`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
 	- Descripcion: los exportes frecuentes de clientes, asistencia, backups, tarifas por día y soporte remoto dejan de reemplazar la vista actual. El archivo se descarga en segundo plano y el usuario permanece en el mismo módulo.

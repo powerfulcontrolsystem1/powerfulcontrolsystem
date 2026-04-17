@@ -5,9 +5,42 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Elegir Licencia</title>
   <link rel="stylesheet" href="/estilos.css">
+  <style>
+    body.elegir-licencia-page .portal-home-grid{
+      grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+      gap:14px;
+    }
+    body.elegir-licencia-page .home-offer-card{
+      min-height:unset !important;
+      padding:14px;
+    }
+    body.elegir-licencia-page .home-offer-card .home-offer-media{
+      margin-bottom:2px;
+    }
+    body.elegir-licencia-page .home-offer-card .card-logo{
+      width:104px !important;
+      height:104px !important;
+    }
+    body.elegir-licencia-page .home-offer-card h3{
+      margin:8px 0 6px;
+      font-size:1.16rem !important;
+    }
+    body.elegir-licencia-page .home-offer-card p{
+      margin:0 0 6px;
+      font-size:.92rem;
+      line-height:1.3;
+    }
+    body.elegir-licencia-page .home-offer-card .card-actions{
+      margin-top:10px;
+    }
+    body.elegir-licencia-page .home-offer-card .home-offer-btn{
+      padding:6px 11px;
+      font-size:.8rem;
+    }
+  </style>
   <script src="/menu.js"></script>
 </head>
-<body>
+<body class="elegir-licencia-page">
   <div class="admin-layout">
     <aside class="admin-sidebar">
       <h2>Elegir Licencia</h2>
@@ -54,15 +87,17 @@
         return '$' + amount.toLocaleString('es-CO');
       }
 
+      function getLicenciaValor(licencia) {
+        var amount = Number(typeof licencia.valor !== 'undefined' ? licencia.valor : licencia.Valor);
+        if (!Number.isFinite(amount)) return 0;
+        return amount;
+      }
+
       function buildLicenciaCard(licencia, idx, empresaId, tipoId, tipoNombre) {
-        var activo = (licencia.activo === 1 || licencia.activo === '1' || licencia.activo === 'activo');
-        var empresaAsignada = licencia.empresa_id ? String(licencia.empresa_id) : '';
-        var valor = (typeof licencia.valor !== 'undefined' ? licencia.valor : (licencia.Valor || 0));
+        var valor = getLicenciaValor(licencia);
         var duracion = (licencia.duracion_dias || licencia.DuracionDias || '');
         var icono = normalizeImage(getLicenciaIcon(licencia, tipoNombre));
         var descripcion = String(licencia.descripcion || licencia.Descripcion || '').trim();
-        var badge = activo ? 'Activa' : 'Inactiva';
-        var detalleExtra = empresaAsignada ? 'Asignada a empresa ID ' + empresaAsignada : 'Disponible para asignacion inmediata';
         return '' +
           '<article class="portal-card home-offer-card" style="animation-delay:' + (idx * 90) + 'ms">' +
           '  <div class="home-offer-media">' +
@@ -72,8 +107,6 @@
           '  <p>' + escapeHtml(descripcion || ('Licencia con duracion de ' + String(duracion || '--') + ' dias y activacion para la empresa seleccionada.')) + '</p>' +
           '  <p><strong>Valor:</strong> ' + escapeHtml(formatMoney(valor)) + '</p>' +
           '  <p><strong>Duracion:</strong> ' + escapeHtml(String(duracion)) + ' dias</p>' +
-          '  <p><strong>Estado:</strong> ' + escapeHtml(badge) + '</p>' +
-          '  <p>' + escapeHtml(detalleExtra) + '</p>' +
           '  <div class="card-actions">' +
           '    <button class="home-offer-btn js-buy-license" type="button" data-licencia="' + escapeHtml(String(licencia.id)) + '" data-empresa-id="' + escapeHtml(String(empresaId || '')) + '" data-tipo-id="' + escapeHtml(String(tipoId || '')) + '" data-tipo-nombre="' + escapeHtml(String(tipoNombre || '')) + '">Comprar licencia</button>' +
           '  </div>' +
@@ -113,6 +146,8 @@
               if (tipoNombre && (l.tipo_nombre || l.tipoNombre)) return String((l.tipo_nombre||l.tipoNombre)).toLowerCase() === String(tipoNombre).toLowerCase();
               return false;
             }catch(e){ return false }
+          }).sort(function(a, b){
+            return getLicenciaValor(a) - getLicenciaValor(b);
           });
 
           const container = document.getElementById('licencias'); container.innerHTML = '';

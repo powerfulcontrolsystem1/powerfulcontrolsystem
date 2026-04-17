@@ -8,11 +8,32 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 - Cuando se cree un modulo nuevo o se modifique uno existente, esta matriz debe actualizarse en la misma iteracion para reflejar permisos por rol/modulo/accion y el impacto en paginas del panel.
 - Esta actualizacion debe quedar sincronizada con `documentos/descripcion_de_modulos`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios` y `CHANGELOG.md`.
 
+- Actualizacion 2026-04-17 (checkout publico de licencias: tarjetas resumen y catalogo Epayco visible):
+	- `web/pagar_licencia.html` reorganiza la experiencia publica en tarjetas visuales para `licencia` y `codigos de descuento`, y expone en la misma pantalla un bloque descriptivo de medios de pago Epayco antes del checkout.
+	- `web/estilos.css` ajusta solo la presentacion del flujo, incluyendo branding visual de Epayco en selector y panel.
+	- Impacto de matriz: sin cambios en permisos, roles, wrappers ni visibilidad; las mismas rutas publicas de checkout conservan su alcance actual y el panel super mantiene la administracion exclusiva de configuracion/licencias.
+
 - Actualizacion 2026-04-17 (navegacion general: misma pestaña por defecto):
 	- Se retiran aperturas automáticas en nueva ventana para navegación normal entre módulos, portales públicos, ayudas y exportes comunes del sistema.
 	- Los reportes/exportes de `Clientes`, `Asistencia`, `Backups`, `Tarifas por día` y `Soporte remoto` descargan el archivo sin sacar al usuario del módulo actual.
 	- Se conservan como excepción los documentos legales (`contrato`, términos de pasarela) y los popups técnicos de impresión o vista previa documental.
 	- Impacto de matriz: sin cambios en roles ni permisos; solo cambia el comportamiento de navegación de rutas ya permitidas.
+
+- Actualizacion 2026-04-17 (checkout publico de licencias: Epayco activa licencia y limpia rechazos finales):
+	- `backend/handlers/payments_handlers.go`, `backend/handlers/payments_handlers_test.go` y `web/pagar_licencia.html` refuerzan el post-pago de Epayco para activar la licencia con fallback por `invoice`, enviar correo al cliente al quedar activa y detener el estado `pending` cuando el retorno ya es final rechazado o fallido.
+	- Impacto de matriz: sin cambios en permisos; `/epayco/create_transaction`, `/epayco/transaction_status`, `/epayco/webhook` y `/epayco/respuesta.html` conservan alcance publico del checkout comercial, mientras la gestion de licencias y configuraciones sigue restringida a `super_administrador`.
+
+- Actualizacion 2026-04-17 (licencias publicas: tarjetas compactas sin estado visible):
+	- `web/elegir_licencia.html` deja las tarjetas de licencias con una presentacion mas corta y elimina textos operativos de estado/asignacion antes del pago.
+	- Impacto de matriz: sin cambios en permisos; el modulo mantiene las mismas rutas y acciones disponibles para el flujo de compra de licencias.
+
+- Actualizacion 2026-04-17 (licencias publicas: orden ascendente por valor):
+	- `web/elegir_licencia.html` ordena las licencias visibles desde el menor valor hasta el mayor antes de renderizar el grid de compra.
+	- Impacto de matriz: sin cambios en permisos; solo se modifica el criterio visual de orden del mismo listado disponible para el flujo de compra.
+
+- Actualizacion 2026-04-17 (seleccionar empresa: boton de descarga solo con icono):
+	- `web/js/seleccionar_empresa.js` y `web/estilos.css` cambian la presentacion del boton de descarga de la tarjeta para dejarlo como icono blanco con tooltip explicativo.
+	- Impacto de matriz: sin cambios en permisos; el boton conserva la misma accion disponible dentro del flujo del panel super.
 
 - Actualizacion 2026-04-17 (licencias super: valor 0 visible y editable):
 	- `web/super/licencias.html` conserva el valor `0` en listado y formulario de edicion para el CRUD de licencias.

@@ -1,0 +1,18 @@
+{
+  "version": "0.2",
+  "language": "es",
+  "ignorePaths": [
+    "**/bin/**",
+    "**/node_modules/**",
+    "**/.git/**",
+    "**/vendor/**",
+    "**/*.min.*"
+  ],
+  "words": [
+    "Epayco",
+    "Wompi",
+    "POS",
+    "multiempresa",
+    "epayco"
+  ]
+}

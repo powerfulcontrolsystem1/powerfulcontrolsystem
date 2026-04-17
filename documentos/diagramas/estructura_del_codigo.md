@@ -2,6 +2,51 @@
 
 Fecha de actualizacion: 2026-04-17
 
+## Actualizacion 2026-04-17 (checkout de licencias: resumen en tarjetas home y catalogo visible de Epayco)
+
+- Frontend:
+  - `web/pagar_licencia.html` separa el resumen del checkout en dos tarjetas tipo `portal-card home-offer-card`: una para datos de la licencia y otra para codigos de descuento / vendedor, manteniendo intacta la logica de Wompi y Epayco.
+  - La misma vista agrega un bloque visible `Formas de pago con Epayco` dentro de la pagina para mostrar, antes de abrir el checkout, los medios digitales mas comunes publicados por esa pasarela.
+  - `web/estilos.css` incorpora la capa visual del checkout con anatomia del home, chips de metadatos y una paleta propia para Epayco basada en su branding oscuro con acentos naranja/rojo.
+- Flujo:
+  - `/pagar_licencia.html` -> tarjeta `Licencia seleccionada` + tarjeta `Codigos de descuento` -> bloque visible de medios Epayco -> apertura de la pasarela elegida -> retorno a la misma pagina para verificacion final.
+
+## Actualizacion 2026-04-17 (elegir licencia: orden ascendente por valor)
+
+- Frontend:
+  - `web/elegir_licencia.html` agrega un helper para normalizar `valor` y ordena las licencias filtradas de menor a mayor precio antes de renderizar las tarjetas.
+- Flujo:
+  - `/elegir_licencia.html` -> filtra licencias por tipo -> ordena por `valor` ascendente -> renderiza primero las opciones mas economicas y al final las de mayor costo.
+
+## Actualizacion 2026-04-17 (seleccionar empresa: boton de descarga solo con icono blanco)
+
+- Frontend:
+  - `web/js/seleccionar_empresa.js` deja el boton `download-data` sin texto visible y le asigna el tooltip nativo `Descargar informacion de la empresa`.
+  - `web/estilos.css` redefine ese control como un boton circular blanco con solo el icono de descarga dentro de las tarjetas de `seleccionar_empresa.html`.
+- Flujo:
+  - `/seleccionar_empresa.html` -> tarjetas de empresa sin licencia -> boton de descarga en modo icono -> hover del mouse muestra `Descargar informacion de la empresa`.
+
+## Actualizacion 2026-04-17 (checkout Epayco: activacion real de licencia, correo y cierre de estados finales)
+
+- Backend:
+  - `backend/handlers/payments_handlers.go` vuelve idempotente la activacion de licencia para no reprocesar el mismo pago aprobado varias veces cuando llegan polling y webhook sobre la misma transaccion.
+  - El mismo handler reutiliza un fallback comun para resolver `licencia_id` y `empresa_id` aunque Epayco entregue `x_ref_payco`/`x_transaction_id` distintos del `invoice` interno, especialmente en `/epayco/webhook`.
+  - El payload guardado en `pagos_epayco` ahora conserva datos comerciales iniciales como `customer_email` al fusionarse con la validacion final, lo que permite enviar el correo de confirmacion cuando la licencia queda activa.
+  - `backend/handlers/payments_handlers_test.go` agrega regresiones para aprobacion con correo capturado en modo prueba, activacion unica y fallback por `invoice` en webhook.
+- Frontend:
+  - `web/pagar_licencia.html` deja de reiniciar polling cuando la URL de retorno ya trae un estado final (`APPROVED`, `DECLINED`, `ERROR`, etc.), evitando que un rechazo siga viendose como `pending` al volver al formulario.
+- Flujo:
+  - `/pagar_licencia.html` -> retorno con estado final -> si el estado ya es definitivo, la vista cierra el pendiente y no vuelve a marcar verificacion.
+  - `/epayco/transaction_status` o `/epayco/webhook` -> resolucion por `transaction/reference/invoice` -> activacion idempotente de la licencia -> correo de confirmacion al cliente con la licencia ya activa.
+
+## Actualizacion 2026-04-17 (elegir licencia: tarjetas mas compactas y sin textos de estado)
+
+- Frontend:
+  - `web/elegir_licencia.html` retira de cada tarjeta los textos `Estado: Activa/Inactiva` y `Disponible para asignacion inmediata` o su variante de asignacion, dejando solo la informacion comercial necesaria antes del pago.
+  - La misma vista agrega overrides locales de layout para reducir padding, tamano del icono, separaciones y alto visual de las tarjetas sin alterar el resto del home publico.
+- Flujo:
+  - `/elegir_licencia.html` -> listado de licencias del tipo seleccionado -> tarjetas mas compactas con descripcion, valor, duracion y CTA `Comprar licencia` -> `/pagar_licencia.html`.
+
 ## Actualizacion 2026-04-17 (navegacion general: misma pestaña por defecto)
 
 - Frontend:

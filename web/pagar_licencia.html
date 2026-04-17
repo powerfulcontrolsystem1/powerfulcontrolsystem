@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="/estilos.css">
   <script src="/menu.js"></script>
 </head>
-<body>
+<body class="checkout-licencia-page">
   <div class="admin-layout">
     <aside class="admin-sidebar">
       <h2>Pagar Licencia</h2>
@@ -23,7 +23,7 @@
           <h1 id="pageTitle">Pagar Licencia</h1>
         </div>
 
-        <div id="payment" class="card">Cargando...</div>
+        <div id="payment" class="card checkout-payment-shell">Cargando...</div>
       </div>
     </main>
   </div>
@@ -33,6 +33,15 @@
       const pendingPaymentKey = 'pcs_licencia_payment_pending_v1';
 
       function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m] }) }
+      function formatCurrency(value){
+        const amount = Number(value || 0);
+        if (Number.isNaN(amount)) return '$ 0';
+        try {
+          return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(amount);
+        } catch (err) {
+          return '$ ' + String(amount);
+        }
+      }
       function normalizeProvider(raw){
         const value = String(raw || '').trim().toLowerCase();
         if (value === 'nequi' || value === 'wompi') return 'wompi';
@@ -120,6 +129,23 @@
         target.innerHTML = '<div class="' + className + '"><strong>' + escapeHtml(title) + '</strong><div>' + escapeHtml(body) + '</div></div>';
       }
       function syncStatusText(target, text){ if (target) target.textContent = text || ''; }
+      function buildEpaycoMethodsMarkup(){
+        const methods = [
+          'Tarjetas de credito',
+          'Tarjetas debito',
+          'PSE',
+          'Nequi',
+          'Daviplata',
+          'Efectivo y recaudos'
+        ];
+        return '<div class="payment-method-epayco-catalog">'+
+          '<div class="payment-method-options-title">Formas de pago con Epayco</div>'+
+          '<div class="payment-method-options-grid">' + methods.map(function(item){
+            return '<span class="payment-method-option-pill">' + escapeHtml(item) + '</span>';
+          }).join('') + '</div>'+
+          '<div class="small payment-method-hint payment-method-epayco-note">La disponibilidad final puede variar segun la cuenta y la configuracion activa en Epayco.</div>'+
+        '</div>';
+      }
       function extractResponseContext(data, fallback){
         const payload = data && data.data && typeof data.data === 'object' ? data.data : null;
         const context = fallback || {};
@@ -269,45 +295,90 @@
           const lic = (licencias || []).find(function(x){ return String(x.id) === String(licenciaId) });
           if (!lic){ container.innerText = 'Licencia no encontrada.'; return }
 
+          const selectedEmpresa = empresaId ? ((empresas || []).find(function(x){ return String(x.id) === String(empresaId) }) || null) : null;
+          const empresaNombre = selectedEmpresa ? String(selectedEmpresa.nombre || selectedEmpresa.Nombre || '').trim() : '';
+          const tipoNombre = String(params.get('tipo_nombre') || lic.tipo_nombre || lic.TipoNombre || '').trim();
+          const licenciaNombre = String(lic.nombre || lic.Nombre || '').trim();
+          const licenciaDescripcion = String(lic.descripcion || lic.Descripcion || '').trim();
+          const licenciaValor = lic.valor || lic.Valor || 0;
+          const licenciaDuracion = String(lic.duracion_dias || lic.DuracionDias || '').trim();
+          const epaycoMethodsMarkup = (epaycoProvider && epaycoProvider.available) ? buildEpaycoMethodsMarkup() : '';
+          const pageTitleEl = document.getElementById('pageTitle');
+          if (pageTitleEl) pageTitleEl.textContent = licenciaNombre || 'Pagar Licencia';
+
           container.innerHTML = ''+
-            '<div class="payment-licencia-summary">'+
-              '<div class="payment-licencia-info">'+
-                '<h2>'+escapeHtml(lic.nombre||lic.Nombre||'')+'</h2>'+
-                '<p class="muted small">' + (empresaId ? ('Empresa: ' + escapeHtml((empresas.find(function(x){ return String(x.id) === String(empresaId) })||{}).nombre || '')) : '') + '</p>'+
-                '<p class="card-desc">'+escapeHtml(lic.descripcion||lic.Descripcion||'')+'</p>'+
-                '<p><strong>Duración:</strong> '+escapeHtml(String(lic.duracion_dias||lic.DuracionDias||''))+' días</p>'+
+            '<div class="checkout-licencia-shell">'+
+              '<section class="portal-intro checkout-licencia-hero">'+
+                '<div class="portal-intro-copy">'+
+                  '<p class="checkout-eyebrow">Checkout de licencia</p>'+
+                  '<h2 class="brand-title checkout-brand-title"><span>Confirma tu licencia</span><span>y completa el pago</span></h2>'+
+                  '<p class="brand-subtitle checkout-brand-subtitle">Revisa los datos de la licencia, agrega descuentos si aplica y continúa con la pasarela disponible.</p>'+
+                '</div>'+
+              '</section>'+
+              '<div class="portal-grid portal-home-grid checkout-summary-grid">'+
+                '<article class="portal-card home-offer-card checkout-home-card checkout-license-card">'+
+                  '<div class="checkout-card-kicker">Licencia seleccionada</div>'+
+                  '<div class="home-offer-media"><img src="/img/shield-license-color.svg" alt="Licencia" class="card-logo"></div>'+
+                  '<h3>'+escapeHtml(licenciaNombre)+'</h3>'+
+                  '<p>'+escapeHtml(licenciaDescripcion || 'Licencia lista para pago y activacion al confirmar la transaccion.')+'</p>'+
+                  '<div class="checkout-meta-list">'+
+                    (empresaNombre ? '<span class="checkout-meta-pill">Empresa: ' + escapeHtml(empresaNombre) + '</span>' : '')+
+                    (tipoNombre ? '<span class="checkout-meta-pill">Tipo: ' + escapeHtml(tipoNombre) + '</span>' : '')+
+                    (licenciaDuracion ? '<span class="checkout-meta-pill">Duracion: ' + escapeHtml(licenciaDuracion) + ' dias</span>' : '')+
+                  '</div>'+
+                  '<div class="card-actions checkout-card-actions-inline">'+
+                    '<span class="checkout-price-chip">'+escapeHtml(formatCurrency(licenciaValor))+'</span>'+
+                  '</div>'+
+                '</article>'+
+                '<article class="portal-card home-offer-card checkout-home-card checkout-discount-card">'+
+                  '<div class="checkout-card-kicker">Codigos y referencias</div>'+
+                  '<div class="home-offer-media"><img src="/img/tags-color.svg" alt="Descuentos" class="card-logo"></div>'+
+                  '<h3>Codigos de descuento</h3>'+
+                  '<p>Usa este espacio para aplicar promociones o asociar la venta a un vendedor antes de abrir el checkout.</p>'+
+                  '<div class="form-row checkout-discount-row">'+
+                    '<div class="form-col">'+
+                      '<label class="form-label" for="discountCode">Codigo de descuento</label>'+
+                      '<input id="discountCode" class="form-input" type="text" placeholder="Codigo promocional">'+
+                    '</div>'+
+                    '<div class="form-col">'+
+                      '<label class="form-label" for="asesorId">Codigo vendedor</label>'+
+                      '<input id="asesorId" class="form-input" type="text" placeholder="Codigo del vendedor">'+
+                    '</div>'+
+                  '</div>'+
+                  '<div class="checkout-mini-pills">'+
+                    '<span class="checkout-mini-pill">Opcional</span>'+
+                    '<span class="checkout-mini-pill">Se valida al crear la transaccion</span>'+
+                  '</div>'+
+                '</article>'+
               '</div>'+
-              '<div class="payment-licencia-price">$ '+escapeHtml(String(lic.valor||lic.Valor||0))+'</div>'+
-            '</div>'+
-            '<div id="paymentFeedback" class="form-help" style="margin-top:12px;"></div>'+
-            '<div class="form-row" style="margin-top:12px;">'+
-              '<div class="form-col">'+
-                '<label class="form-label" for="discountCode">Código de descuento (opcional)</label>'+
-                '<input id="discountCode" class="form-input" type="text" placeholder="Código de descuento">'+
-              '</div>'+
-              '<div class="form-col">'+
-                '<label class="form-label" for="asesorId">Código vendedor (opcional)</label>'+
-                '<input id="asesorId" class="form-input" type="text" placeholder="Código del vendedor">'+
-              '</div>'+
-            '</div>'+
-            (paymentCards.length > 1
-              ? '<h3 class="payment-method-title">Selecciona el método de pago</h3>'+
-                '<div class="payment-method-selector payment-method-selector-licenses">' + paymentCards.join('') + '</div>'
-              : '')+
-            (paymentCards.length === 1
-              ? '<div class="form-help" style="margin-top:12px;">Solo hay una forma de pago disponible en este momento. La activamos automáticamente para continuar más rápido.</div>'
-              : '')+
-            (paymentCards.length === 0
-              ? '<div class="form-help error">' + escapeHtml(unavailableMessages.length
-                ? unavailableMessages.join(' ')
-                : 'Actualmente no hay métodos de pago activos. Activa Epayco o Wompi desde configuración avanzada.') + '</div>'
-              : '')+
+              '<div id="paymentFeedback" class="form-help checkout-payment-feedback"></div>'+
+              '<section class="card checkout-payment-hub">'+
+                '<div class="checkout-payment-header">'+
+                  '<div>'+
+                    '<p class="checkout-eyebrow">Pago</p>'+
+                    '<h3 class="payment-method-title">Formas de pago disponibles</h3>'+
+                  '</div>'+
+                  '<p class="checkout-payment-copy">La pasarela disponible se abre desde esta misma pagina y el estado del pago se retoma automaticamente al volver.</p>'+
+                '</div>'+
+                epaycoMethodsMarkup+
+                (paymentCards.length > 1
+                  ? '<div class="payment-method-selector payment-method-selector-licenses">' + paymentCards.join('') + '</div>'
+                  : '')+
+                (paymentCards.length === 1
+                  ? '<div class="form-help checkout-single-method-help">Solo hay una forma de pago disponible en este momento. La dejamos activa para continuar mas rapido.</div>'
+                  : '')+
+                (paymentCards.length === 0
+                  ? '<div class="form-help error">' + escapeHtml(unavailableMessages.length
+                    ? unavailableMessages.join(' ')
+                    : 'Actualmente no hay métodos de pago activos. Activa Epayco o Wompi desde configuración avanzada.') + '</div>'
+                  : '')+
             ((epaycoProvider && epaycoProvider.available)
               ? '<div id="epaycoPanel" class="payment-method-panel payment-method-panel-epayco">'+
                 '<div class="method-panel-heading payment-method-heading-with-logo"><img class="payment-method-panel-logo" src="/img/logo epayco.png" alt="Logo de Epayco"><span>Epayco</span></div>'+
+                '<div class="small payment-method-hint payment-method-brand-copy">Activa el checkout de Epayco con correo del cliente y deja visible el abanico de medios digitales disponibles.</div>'+
                 '<label for="epaycoEmail" class="muted small">Correo del cliente (recomendado):</label>'+
                 '<input id="epaycoEmail" class="payment-method-input" type="email" placeholder="cliente@correo.com">'+
-                '<div class="small payment-method-hint">Epayco admite tarjetas y PSE según configuración.</div>'+
+                '<div class="small payment-method-hint">Epayco admite multiples medios y valida la disponibilidad real segun tu comercio configurado.</div>'+
                 '<label class="small payment-method-check"><input id="epaycoTermsChk" type="checkbox"> Acepto términos y tratamiento de datos</label>'+
                 '<button id="payEpaycoBtn" class="btn secondary payment-btn-epayco" type="button">Pagar con Epayco</button>'+
                 '<div id="epaycoStatus" class="small payment-method-status"></div>'+
@@ -324,7 +395,9 @@
                 '<button id="payWompiBtn" class="btn secondary payment-btn-wompi" type="button">Pagar con Wompi (Nequi)</button>'+
                 '<div id="wompiStatus" class="small payment-method-status"></div>'+
                 '</div>'
-              : '');
+              : '')+
+              '</section>'+
+            '</div>';
 
           const ui = {
             feedback: document.getElementById('paymentFeedback'),
@@ -736,8 +809,10 @@
             if (providerForReturn) setPaymentMethod(providerForReturn);
 
             if ((returnContext.transactionId || returnContext.reference) && providerForReturn) {
-              applyResolvedResult(providerForReturn, returnContext, returnContext);
-              startPolling(providerForReturn, returnContext, 20);
+              var returnOutcome = applyResolvedResult(providerForReturn, returnContext, returnContext);
+              if (returnOutcome && !returnOutcome.done) {
+                startPolling(providerForReturn, returnOutcome.context || returnContext, 20);
+              }
             } else if (returnContext.status) {
               applyResolvedResult(providerForReturn, returnContext, returnContext);
             }

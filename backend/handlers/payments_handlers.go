@@ -14,8 +14,10 @@ import (
 	"io"
 	"log"
 	"math"
+	"net/mail"
 	"net"
 	"net/http"
+	"net/smtp"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -210,6 +212,295 @@ func isApprovedPaymentStatus(status string) bool {
 	return status == "approved" || status == "accredited"
 }
 
+func parsePaymentPayloadMap(raw string) map[string]interface{} {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil
+	}
+	var payload map[string]interface{}
+	if err := json.Unmarshal([]byte(raw), &payload); err != nil {
+		return nil
+	}
+	if len(payload) == 0 {
+		return nil
+	}
+	return payload
+}
+
+func mergePaymentPayloadMaps(base, overlay map[string]interface{}) map[string]interface{} {
+	if len(base) == 0 && len(overlay) == 0 {
+		return nil
+	}
+	merged := make(map[string]interface{}, len(base)+len(overlay))
+	for key, value := range base {
+		merged[key] = value
+	}
+	for key, value := range overlay {
+		srcMap, srcIsMap := value.(map[string]interface{})
+		dstMap, dstIsMap := merged[key].(map[string]interface{})
+		if srcIsMap && dstIsMap {
+			merged[key] = mergePaymentPayloadMaps(dstMap, srcMap)
+			continue
+		}
+		merged[key] = value
+	}
+	return merged
+}
+
+func mergePaymentPayloadJSON(existingRaw, updateRaw string) string {
+	existingRaw = strings.TrimSpace(existingRaw)
+	updateRaw = strings.TrimSpace(updateRaw)
+	if existingRaw == "" {
+		return updateRaw
+	}
+	if updateRaw == "" {
+		return existingRaw
+	}
+	existingPayload := parsePaymentPayloadMap(existingRaw)
+	updatePayload := parsePaymentPayloadMap(updateRaw)
+	if len(existingPayload) == 0 || len(updatePayload) == 0 {
+		return updateRaw
+	}
+	merged := mergePaymentPayloadMaps(existingPayload, updatePayload)
+	if len(merged) == 0 {
+		return updateRaw
+	}
+	mergedBytes, err := json.Marshal(merged)
+	if err != nil {
+		return updateRaw
+	}
+	return string(mergedBytes)
+}
+
+func parsePaymentTime(value string) (time.Time, bool) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return time.Time{}, false
+	}
+	layouts := []string{
+		"2006-01-02 15:04:05",
+		time.RFC3339,
+		"2006-01-02",
+	}
+	for _, layout := range layouts {
+		if parsed, err := time.ParseInLocation(layout, value, time.Local); err == nil {
+			return parsed, true
+		}
+	}
+	return time.Time{}, false
+}
+
+func findEpaycoPaymentRecordByCandidates(dbSuper *sql.DB, transactionCandidates []string, referenceCandidates []string) (*dbpkg.EpaycoPaymentRecord, error) {
+	seenTransactions := make(map[string]struct{}, len(transactionCandidates))
+	for _, candidate := range transactionCandidates {
+		candidate = strings.TrimSpace(candidate)
+		if candidate == "" {
+			continue
+		}
+		if _, seen := seenTransactions[candidate]; seen {
+			continue
+		}
+		seenTransactions[candidate] = struct{}{}
+		rec, err := dbpkg.GetEpaycoPaymentByTransaction(dbSuper, candidate)
+		if err != nil {
+			return nil, err
+		}
+		if rec != nil {
+			return rec, nil
+		}
+	}
+
+	seenReferences := make(map[string]struct{}, len(referenceCandidates))
+	for _, candidate := range referenceCandidates {
+		candidate = strings.TrimSpace(candidate)
+		if candidate == "" {
+			continue
+		}
+		if _, seen := seenReferences[candidate]; seen {
+			continue
+		}
+		seenReferences[candidate] = struct{}{}
+		rec, err := dbpkg.GetEpaycoPaymentByReference(dbSuper, candidate)
+		if err != nil {
+			return nil, err
+		}
+		if rec != nil {
+			return rec, nil
+		}
+	}
+
+	return nil, nil
+}
+
+func resolveEpaycoPaymentContextCandidates(dbSuper *sql.DB, lookupCombos [][2]string) (int64, int64, bool) {
+	seenCombos := make(map[string]struct{}, len(lookupCombos))
+	for _, combo := range lookupCombos {
+		txCandidate := strings.TrimSpace(combo[0])
+		refCandidate := strings.TrimSpace(combo[1])
+		if txCandidate == "" && refCandidate == "" {
+			continue
+		}
+		key := txCandidate + "|" + refCandidate
+		if _, seen := seenCombos[key]; seen {
+			continue
+		}
+		seenCombos[key] = struct{}{}
+
+		licenciaID, empresaID, found, err := dbpkg.GetEpaycoPaymentContext(dbSuper, txCandidate, refCandidate)
+		if err != nil {
+			log.Println("warning: failed to resolve Epayco payment context:", err)
+			continue
+		}
+		if found {
+			return licenciaID, empresaID, true
+		}
+	}
+	return 0, 0, false
+}
+
+func extractCustomerEmailFromPaymentPayload(payload map[string]interface{}) string {
+	if len(payload) == 0 {
+		return ""
+	}
+	if email := strings.TrimSpace(fmt.Sprint(payload["customer_email"])); email != "" && email != "<nil>" {
+		return email
+	}
+	if email := strings.TrimSpace(fmt.Sprint(payload["email"])); email != "" && email != "<nil>" {
+		return email
+	}
+	if billing, ok := payload["billing"].(map[string]interface{}); ok {
+		if email := strings.TrimSpace(fmt.Sprint(billing["email"])); email != "" && email != "<nil>" {
+			return email
+		}
+	}
+	return ""
+}
+
+func buildLicenciaActivationMailBody(empresaNombre string, lic *dbpkg.Licencia, fechaInicio, fechaFin, provider, reference string) string {
+	safeEmpresa := strings.TrimSpace(empresaNombre)
+	if safeEmpresa == "" {
+		safeEmpresa = "tu empresa"
+	}
+	safeProvider := strings.Title(strings.ToLower(strings.TrimSpace(provider)))
+	if safeProvider == "" {
+		safeProvider = "la pasarela de pago"
+	}
+	var builder strings.Builder
+	builder.WriteString("Hola,\n\n")
+	builder.WriteString("Tu pago fue confirmado correctamente y la licencia ya quedó activa en Powerful Control System.\n\n")
+	builder.WriteString("Empresa: ")
+	builder.WriteString(safeEmpresa)
+	builder.WriteString("\n")
+	if lic != nil {
+		builder.WriteString("Licencia: ")
+		builder.WriteString(strings.TrimSpace(lic.Nombre))
+		builder.WriteString("\n")
+	}
+	if fechaInicio != "" {
+		builder.WriteString("Fecha de inicio: ")
+		builder.WriteString(fechaInicio)
+		builder.WriteString("\n")
+	}
+	if fechaFin != "" {
+		builder.WriteString("Fecha de vencimiento: ")
+		builder.WriteString(fechaFin)
+		builder.WriteString("\n")
+	}
+	if reference != "" {
+		builder.WriteString("Referencia del pago: ")
+		builder.WriteString(reference)
+		builder.WriteString("\n")
+	}
+	builder.WriteString("Pasarela: ")
+	builder.WriteString(safeProvider)
+	builder.WriteString("\n\n")
+	builder.WriteString("Ya puedes ingresar al sistema y continuar con la operación normal de tu empresa.\n\n")
+	builder.WriteString("Si no reconoces este movimiento o necesitas ayuda, responde este correo.\n\n")
+	builder.WriteString("Powerful Control System\n")
+	return builder.String()
+}
+
+func sendLicenciaActivationEmail(r *http.Request, dbSuper *sql.DB, empresaID int64, lic *dbpkg.Licencia, payRec *dbpkg.EpaycoPaymentRecord, provider, reference string) error {
+	if dbSuper == nil || lic == nil || payRec == nil || !payRec.RawPayload.Valid {
+		return nil
+	}
+	payload := parsePaymentPayloadMap(payRec.RawPayload.String)
+	toEmail := strings.TrimSpace(extractCustomerEmailFromPaymentPayload(payload))
+	if toEmail == "" && empresaID > 0 {
+		empresa, err := dbpkg.GetEmpresaByID(dbSuper, empresaID)
+		if err == nil && empresa != nil {
+			toEmail = strings.TrimSpace(empresa.UsuarioCreador)
+		}
+	}
+	if toEmail == "" {
+		return fmt.Errorf("correo del cliente no disponible para notificar activacion de licencia")
+	}
+	if _, err := mail.ParseAddress(toEmail); err != nil {
+		return fmt.Errorf("correo del cliente invalido: %w", err)
+	}
+
+	empresaNombre := ""
+	if empresaID > 0 {
+		empresa, err := dbpkg.GetEmpresaByID(dbSuper, empresaID)
+		if err == nil && empresa != nil {
+			empresaNombre = strings.TrimSpace(empresa.Nombre)
+		}
+	}
+	asunto := "Tu licencia ya quedó activa"
+	cuerpo := buildLicenciaActivationMailBody(empresaNombre, lic, strings.TrimSpace(lic.FechaInicio), strings.TrimSpace(lic.FechaFin), provider, reference)
+	metadataJSON := fmt.Sprintf(`{"provider":%q,"licencia_id":%d,"empresa_id":%d,"reference":%q}`, provider, lic.ID, empresaID, reference)
+
+	if isEmpresaUsuarioMailTestMode(dbSuper) {
+		return captureEmpresaUsuarioMailNotification(dbSuper, "licencia_activada_pago", empresaID, toEmail, asunto, cuerpo, reference, metadataJSON, adminEmailFromRequest(r))
+	}
+
+	smtpEmail, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_email")
+	if err != nil {
+		return err
+	}
+	smtpEmail = strings.TrimSpace(smtpEmail)
+	if smtpEmail == "" {
+		return fmt.Errorf("gmail.smtp_email no configurado")
+	}
+	smtpPass, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_app_password")
+	if err != nil {
+		return err
+	}
+	smtpPass = strings.TrimSpace(smtpPass)
+	if smtpPass == "" {
+		return fmt.Errorf("gmail.smtp_app_password no configurado")
+	}
+	smtpHost, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_host")
+	smtpPort, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_port")
+	fromName, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_from_name")
+	smtpHost = strings.TrimSpace(smtpHost)
+	smtpPort = strings.TrimSpace(smtpPort)
+	fromName = strings.TrimSpace(fromName)
+	if smtpHost == "" {
+		smtpHost = "smtp.gmail.com"
+	}
+	if smtpPort == "" {
+		smtpPort = "587"
+	}
+	if fromName == "" {
+		fromName = "Powerful Control System"
+	}
+
+	mailHostForAuth := smtpHost
+	if h, _, splitErr := net.SplitHostPort(smtpHost); splitErr == nil && strings.TrimSpace(h) != "" {
+		mailHostForAuth = h
+	}
+	auth := smtp.PlainAuth("", smtpEmail, smtpPass, mailHostForAuth)
+	addr := net.JoinHostPort(smtpHost, smtpPort)
+	msg := "From: " + fromName + " <" + smtpEmail + ">\r\n" +
+		"To: " + toEmail + "\r\n" +
+		"Subject: " + asunto + "\r\n" +
+		"MIME-Version: 1.0\r\n" +
+		"Content-Type: text/plain; charset=UTF-8\r\n\r\n" +
+		cuerpo
+	return smtp.SendMail(addr, auth, smtpEmail, []string{toEmail}, []byte(msg))
+}
+
 func activateLicenciaByIDs(dbSuper *sql.DB, licenciaID, empresaID int64) (bool, error) {
 	if licenciaID <= 0 || empresaID <= 0 {
 		return false, nil
@@ -221,12 +512,21 @@ func activateLicenciaByIDs(dbSuper *sql.DB, licenciaID, empresaID int64) (bool, 
 	if lic == nil {
 		return false, nil
 	}
+	if lic.EmpresaID == empresaID && lic.Activo == 1 {
+		if fechaFin, ok := parsePaymentTime(lic.FechaFin); ok && fechaFin.After(time.Now().Add(-1*time.Minute)) {
+			return false, nil
+		}
+	}
 	now := time.Now()
 	fechaInicio := now.Format("2006-01-02 15:04:05")
 	fechaFin := now.AddDate(0, 0, lic.DuracionDias).Format("2006-01-02 15:04:05")
 	if err := dbpkg.ActivateLicenciaForEmpresa(dbSuper, licenciaID, empresaID, fechaInicio, fechaFin); err != nil {
 		return false, err
 	}
+	lic.EmpresaID = empresaID
+	lic.Activo = 1
+	lic.FechaInicio = fechaInicio
+	lic.FechaFin = fechaFin
 	return true, nil
 }
 
@@ -2436,6 +2736,13 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if reference == "" {
 			reference = firstNonEmptyString(gatewayReference, invoiceReference, recordReference, originalReference)
 		}
+		if rec == nil {
+			rec, err = findEpaycoPaymentRecordByCandidates(dbSuper, []string{recordTransactionID, transactionID, originalTransactionID}, []string{recordReference, invoiceReference, reference, originalReference})
+			if err != nil {
+				log.Println("warning: failed to reload Epayco payment record before payload merge:", err)
+				rec = nil
+			}
+		}
 
 		payloadToSave := rawValidation
 		if strings.TrimSpace(payloadToSave) == "" {
@@ -2446,6 +2753,9 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 				"status":         status,
 			})
 			payloadToSave = string(fallbackPayload)
+		}
+		if rec != nil && rec.RawPayload.Valid {
+			payloadToSave = mergePaymentPayloadJSON(rec.RawPayload.String, payloadToSave)
 		}
 
 		if recordTransactionID != "" {
@@ -2475,31 +2785,7 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 			{originalTransactionID, originalReference},
 			{transactionID, reference},
 		}
-		seenCombos := make(map[string]struct{}, len(lookupCombos))
-		for _, combo := range lookupCombos {
-			txCandidate := strings.TrimSpace(combo[0])
-			refCandidate := strings.TrimSpace(combo[1])
-			if txCandidate == "" && refCandidate == "" {
-				continue
-			}
-			key := txCandidate + "|" + refCandidate
-			if _, seen := seenCombos[key]; seen {
-				continue
-			}
-			seenCombos[key] = struct{}{}
-
-			ctxLicenciaID, ctxEmpresaID, found, ctxErr := dbpkg.GetEpaycoPaymentContext(dbSuper, txCandidate, refCandidate)
-			if ctxErr != nil {
-				log.Println("warning: failed to resolve Epayco payment context:", ctxErr)
-				continue
-			}
-			if found {
-				licenciaID = ctxLicenciaID
-				empresaID = ctxEmpresaID
-				hasContext = true
-				break
-			}
-		}
+		licenciaID, empresaID, hasContext = resolveEpaycoPaymentContextCandidates(dbSuper, lookupCombos)
 
 		activated := false
 		if isApprovedPaymentStatus(status) && hasContext {
@@ -2508,6 +2794,19 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 				log.Println("warning: failed to activate licencia from Epayco status:", actErr)
 			} else {
 				activated = act
+				if act {
+					lic, licErr := dbpkg.GetLicenciaByID(dbSuper, licenciaID)
+					if licErr != nil {
+						log.Println("warning: failed to reload licencia after Epayco activation:", licErr)
+					} else {
+						payRec, recErr := findEpaycoPaymentRecordByCandidates(dbSuper, []string{recordTransactionID, transactionID, originalTransactionID}, []string{recordReference, invoiceReference, reference, originalReference})
+						if recErr != nil {
+							log.Println("warning: failed to reload Epayco payment for activation email:", recErr)
+						} else if mailErr := sendLicenciaActivationEmail(r, dbSuper, empresaID, lic, payRec, "epayco", firstNonEmptyString(recordReference, invoiceReference, reference, originalReference)); mailErr != nil {
+							log.Println("warning: failed to send licencia activation email for Epayco status:", mailErr)
+						}
+					}
+				}
 			}
 			go func(txID, ref string, licID, empID int64) {
 				recordVendedorComisionesEpayco(dbSuper, txID, ref, licID, empID)
@@ -2587,26 +2886,38 @@ func EpaycoWebhookHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		transactionID, reference, status := extractEpaycoPaymentInfo(payload)
+		invoiceReference := strings.TrimSpace(pickEpaycoField(payload, "invoice", "x_id_invoice"))
 		if transactionID == "" && reference == "" {
 			http.Error(w, "transaction_id o reference requerido", http.StatusBadRequest)
 			return
 		}
 
+		rec, recErr := findEpaycoPaymentRecordByCandidates(dbSuper, []string{transactionID}, []string{reference, invoiceReference})
+		if recErr != nil {
+			log.Println("warning: failed to load Epayco webhook record before update:", recErr)
+		}
+		payloadToSave := rawPayload
+		if rec != nil && rec.RawPayload.Valid {
+			payloadToSave = mergePaymentPayloadJSON(rec.RawPayload.String, rawPayload)
+		}
+
 		if transactionID != "" {
-			if err := dbpkg.UpdateEpaycoPaymentRecordByTransaction(dbSuper, transactionID, status, rawPayload); err != nil {
+			if err := dbpkg.UpdateEpaycoPaymentRecordByTransaction(dbSuper, transactionID, status, payloadToSave); err != nil {
 				log.Println("warning: failed to update Epayco webhook by transaction:", err)
 			}
 		}
 		if reference != "" {
-			if err := dbpkg.UpdateEpaycoPaymentRecordByReference(dbSuper, reference, status, rawPayload); err != nil {
+			if err := dbpkg.UpdateEpaycoPaymentRecordByReference(dbSuper, reference, status, payloadToSave); err != nil {
 				log.Println("warning: failed to update Epayco webhook by reference:", err)
 			}
 		}
-
-		licenciaID, empresaID, hasContext, ctxErr := dbpkg.GetEpaycoPaymentContext(dbSuper, transactionID, reference)
-		if ctxErr != nil {
-			log.Println("warning: failed to resolve Epayco webhook context:", ctxErr)
+		if invoiceReference != "" && invoiceReference != reference {
+			if err := dbpkg.UpdateEpaycoPaymentRecordByReference(dbSuper, invoiceReference, status, payloadToSave); err != nil {
+				log.Println("warning: failed to update Epayco webhook by invoice reference:", err)
+			}
 		}
+
+		licenciaID, empresaID, hasContext := resolveEpaycoPaymentContextCandidates(dbSuper, [][2]string{{transactionID, reference}, {"", reference}, {"", invoiceReference}, {transactionID, invoiceReference}})
 
 		activated := false
 		if isApprovedPaymentStatus(status) && hasContext {
@@ -2615,10 +2926,23 @@ func EpaycoWebhookHandler(dbSuper *sql.DB) http.HandlerFunc {
 				log.Println("warning: failed to activate licencia from Epayco webhook:", actErr)
 			} else {
 				activated = act
+				if act {
+					lic, licErr := dbpkg.GetLicenciaByID(dbSuper, licenciaID)
+					if licErr != nil {
+						log.Println("warning: failed to reload licencia after Epayco webhook activation:", licErr)
+					} else {
+						payRec, payErr := findEpaycoPaymentRecordByCandidates(dbSuper, []string{transactionID}, []string{reference, invoiceReference})
+						if payErr != nil {
+							log.Println("warning: failed to reload Epayco payment for webhook activation email:", payErr)
+						} else if mailErr := sendLicenciaActivationEmail(r, dbSuper, empresaID, lic, payRec, "epayco", firstNonEmptyString(invoiceReference, reference)); mailErr != nil {
+							log.Println("warning: failed to send licencia activation email for Epayco webhook:", mailErr)
+						}
+					}
+				}
 			}
 			go func(txID, ref string, licID, empID int64) {
 				recordVendedorComisionesEpayco(dbSuper, txID, ref, licID, empID)
-			}(transactionID, reference, licenciaID, empresaID)
+			}(transactionID, firstNonEmptyString(invoiceReference, reference), licenciaID, empresaID)
 		}
 
 		w.Header().Set("Content-Type", "application/json")

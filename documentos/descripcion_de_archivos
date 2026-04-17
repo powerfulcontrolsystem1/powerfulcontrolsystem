@@ -1,5 +1,80 @@
 Descripcion de archivos del proyecto
 
+Actualizacion 2026-04-17: Añadido script de revisión ortográfica y configuraciones asociadas
+ - Archivos creados:
+	 - scripts/spellcheck.ps1 : Wrapper PowerShell que ejecuta `cspell` via `npx` cuando está disponible, o el fallback Python `scripts/spellcheck.py` cuando no lo está.
+	 - scripts/spellcheck.py : Script Python que extrae texto visible de `HTML` y `Markdown` y usa `pyspellchecker` para detectar posibles errores en español.
+	 - scripts/spellcheck.sh : Wrapper Bash para entornos Unix/macOS con la misma lógica de preferencia de `cspell` / Python.
+	 - .cspell.json : Configuración recomendada para `cspell` (idioma `es`, paths a ignorar y palabras de proyecto).
+	 - scripts/spell_whitelist.txt : Lista de palabras del proyecto que se deben ignorar durante la revisión ortográfica.
+	 - scripts/README-spellcheck.md : Instrucciones de uso e instalación de dependencias.
+ - Descripcion: Se agrega una herramienta ligera para revisar la ortografía en los textos visibles al usuario (HTML/MD/TXT) con dos modos: (1) preferente: `cspell` mediante `npx`; (2) fallback: script Python basado en `pyspellchecker` + `beautifulsoup4`.
+ - Verificacion: Ejecutar `scripts\spellcheck.ps1 .` en PowerShell (Windows) o `./scripts/spellcheck.sh .` en Bash tras instalar las dependencias indicadas en `scripts/README-spellcheck.md`.
+
+Actualizacion 2026-04-17: checkout de licencias usa tarjetas estilo home y muestra medios Epayco
+ - Archivos modificados:
+	 - web/pagar_licencia.html : Reorganiza el resumen del checkout en dos tarjetas tipo home para licencia y codigos de descuento, y agrega un bloque visible con las formas de pago de Epayco dentro de la misma pagina.
+	 - web/estilos.css : Añade estilos del checkout con anatomia del home, chips de resumen y branding especifico para el selector/panel de Epayco.
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: La pagina `pagar_licencia.html` deja de mostrar un resumen lineal y pasa a una composicion comercial mas clara, con dos tarjetas principales y un catalogo visible de medios Epayco en la misma vista.
+ - Verificacion: diagnostico del editor sin errores en `web/pagar_licencia.html` y `web/estilos.css`.
+
+Actualizacion 2026-04-17: elegir licencia ordena tarjetas de menor a mayor valor
+ - Archivos modificados:
+	 - web/elegir_licencia.html : Normaliza el valor numerico de la licencia y ordena el listado filtrado de menor a mayor antes de renderizar las tarjetas.
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: La pagina `elegir_licencia.html` presenta ahora primero las licencias de menor valor y deja al final las de mayor costo, manteniendo intacto el resto del flujo de compra.
+ - Verificacion: revision del helper de orden y diagnostico del editor sin errores en `web/elegir_licencia.html`.
+
+Actualizacion 2026-04-17: seleccionar empresa compacta el boton de descarga
+ - Archivos modificados:
+	 - web/js/seleccionar_empresa.js : Retira el texto visible del boton `download-data` y agrega el tooltip `Descargar informacion de la empresa`.
+	 - web/estilos.css : Convierte `download-data` en un boton circular blanco con solo el icono de descarga dentro de la tarjeta.
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: Las tarjetas de `seleccionar_empresa.html` muestran ahora el boton de descarga como icono blanco sin texto, manteniendo un tooltip explicativo al pasar el mouse.
+ - Verificacion: diagnostico del editor sin errores en `web/js/seleccionar_empresa.js` y `web/estilos.css`.
+
+Actualizacion 2026-04-17: Epayco confirma licencia activa, correo y cierre de estados finales
+ - Archivos modificados:
+	 - backend/handlers/payments_handlers.go : Reutiliza fallback por invoice/reference en Epayco, conserva metadata del pago para recuperar `customer_email`, evita reactivaciones duplicadas y dispara el correo de licencia activa.
+	 - backend/handlers/payments_handlers_test.go : Agrega pruebas de regresion para activacion idempotente con captura de correo y webhook con IDs externos resueltos por `invoice`.
+	 - web/pagar_licencia.html : Evita relanzar polling cuando el retorno de la pasarela ya trae un estado final y limpia mejor el pendiente visible tras rechazos.
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: El post-pago de Epayco ahora activa la licencia con el contexto correcto aun cuando la pasarela cambia los IDs visibles, conserva el correo del cliente para notificar la activacion y deja de mostrar pagos rechazados como pendientes al volver al formulario.
+ - Verificacion: `go test ./handlers -run "TestEpayco(TransactionStatusHandlerFindsContextUsingInvoiceWhenGatewayIDsDiffer|TransactionStatusHandlerActivatesOnceAndCapturesEmail|WebhookHandlerFindsContextUsingInvoiceFallback)" -count=1`; `go test ./ ./auth ./db ./handlers ./metrics ./utils -run '^$' -count=1`.
+
+Actualizacion 2026-04-17: elegir licencia compacta las tarjetas de pago
+ - Archivos modificados:
+	 - web/elegir_licencia.html : Elimina los textos de estado y asignacion en las tarjetas de licencia, y aplica overrides locales para reducir altura, padding, icono y separaciones del bloque de compra.
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: La pagina `elegir_licencia.html` muestra ahora tarjetas mas compactas para las licencias disponibles para pagar, dejando solo la informacion comercial esencial y el CTA de compra.
+ - Verificacion: revision del HTML/CSS inline y diagnostico del editor sin errores en `web/elegir_licencia.html`.
+
 Actualizacion 2026-04-17: navegacion general usa la misma pestaña por defecto
  - Archivos modificados:
 	 - web/super_administrador.html : El acceso a `seleccionar_empresa.html` deja de abrir una pestaña nueva.

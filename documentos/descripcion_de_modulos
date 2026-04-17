@@ -1,6 +1,33 @@
 Descripcion compacta de modulos (POS multiempresa)
 Actualizacion: 2026-04-16
 
+Actualizacion 2026-04-17 (checkout publico de licencias: tarjetas home y medios Epayco visibles):
+- Se ajusta nuevamente el modulo `licencias y pasarelas de pago` para que `web/pagar_licencia.html` presente el resumen de compra en dos tarjetas con el mismo lenguaje visual del home publico: una tarjeta para la licencia y otra para codigos de descuento / vendedor.
+- La misma pantalla agrega un bloque permanente con las formas de pago de Epayco visibles dentro del checkout, antes de que el usuario abra la pasarela, y recolorea el panel de Epayco con branding mas alineado al logo del repositorio.
+- Impacto de permisos: sin cambios; el checkout de licencias sigue siendo publico en sus endpoints `/epayco/*`, `/wompi/*` y `/api/public/licencias/payment_methods`, mientras la configuracion de pasarelas y licencias sigue restringida a `super_administrador`.
+
+Actualizacion 2026-04-17 (licencias publicas: orden de menor a mayor valor):
+- Se ajusta `web/elegir_licencia.html` para ordenar las licencias disponibles para pagar desde la opcion mas economica hasta la mas costosa.
+- La pantalla conserva el mismo flujo hacia `pagar_licencia.html`; solo cambia el criterio de presentacion del catalogo.
+- Impacto de permisos: sin cambios; el mismo flujo administrativo autenticado sigue llegando a la vista y al checkout publico de licencias.
+
+Actualizacion 2026-04-17 (seleccionar empresa: descarga compacta con tooltip):
+- Se ajusta `web/js/seleccionar_empresa.js` y `web/estilos.css` para que el boton de descarga en las tarjetas quede blanco, sin texto visible y solo con el icono.
+- El hover del mouse muestra el mensaje `Descargar informacion de la empresa` mediante tooltip nativo del navegador.
+- Impacto de permisos: sin cambios; solo se modifica la presentacion del mismo boton de descarga ya disponible en la tarjeta.
+
+Actualizacion 2026-04-17 (checkout publico de licencias: Epayco activa licencia y cierra pendientes finales):
+- Se refuerza el modulo `licencias y pasarelas de pago` para que la confirmacion de Epayco active realmente la licencia aunque la pasarela devuelva IDs externos distintos al `invoice` interno del sistema.
+- `backend/handlers/payments_handlers.go` unifica el fallback de contexto entre polling y webhook, hace idempotente la activacion para evitar reprocesos y conserva `customer_email` dentro de `pagos_epayco` para enviar el correo de confirmacion una sola vez cuando la licencia queda activa.
+- `web/pagar_licencia.html` deja de relanzar verificacion cuando el retorno ya trae un estado final rechazado o fallido, de modo que el formulario no siga mostrando el pago como pendiente despues de un rechazo.
+- `backend/handlers/payments_handlers_test.go` agrega regresiones de aprobacion con correo, activacion unica y fallback por `invoice` en webhook.
+- Impacto de permisos: sin cambios; `/epayco/transaction_status` y `/epayco/webhook` siguen publicos dentro del checkout comercial, mientras el alta de configuracion y licencias permanece en `super_administrador`.
+
+Actualizacion 2026-04-17 (licencias publicas: tarjetas mas compactas para pagar):
+- Se ajusta nuevamente la vista publica de seleccion de licencias para que `web/elegir_licencia.html` quite los textos operativos de estado/asignacion y compacte verticalmente cada tarjeta.
+- La pantalla conserva el mismo flujo hacia `pagar_licencia.html`, pero deja visible solo la informacion comercial clave: descripcion, valor, duracion y boton de compra.
+- Impacto de permisos: sin cambios; el mismo flujo administrativo autenticado sigue llegando a la vista y al checkout publico de licencias.
+
 Actualizacion 2026-04-17 (navegacion general: misma pestaña por defecto):
 - Se ajusta transversalmente la navegacion del frontend para que los enlaces y cambios de pantalla del sistema usen la misma pestaña por defecto, evitando aperturas automáticas en ventana nueva para modulos, portales publicos, ayudas y exportes comunes.
 - En `administrar_clientes`, `asistencia_empleados`, `backups`, `tarifas_por_dia` y `soporte_remoto`, las exportaciones operativas descargan el archivo en segundo plano y mantienen abierta la misma vista del modulo.
