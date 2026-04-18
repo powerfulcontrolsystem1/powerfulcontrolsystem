@@ -1,5 +1,64 @@
  - Historial de cambios
 
+ - 2026-04-18: Checkout de licencias valida contexto multiempresa y corrige el nombre de empresa en correos de activacion
+     - Archivos modificados:
+         - backend/db/db.go
+         - backend/handlers/payments_handlers.go
+         - backend/handlers/payments_handlers_test.go
+         - web/pagar_licencia.html
+         - documentos/descripcion_del_proyecto
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: El backend resuelve la empresa por alcance logico `empresa_id` al construir el correo de licencia y compara en `transaction_status` el pago encontrado contra la empresa/licencia esperadas por la pagina abierta; el frontend ahora reenvia ese contexto en cada polling y lo conserva al redirigir a la pagina de pago exitoso.
+     - Verificacion tecnica:
+         - `go test ./handlers -run 'Test(EpaycoTransactionStatusHandlerActivatesOnceAndCapturesEmail|EpaycoTransactionStatusHandlerUsesEmpresaScopeForActivationMailBody|EpaycoTransactionStatusHandlerRejectsUnexpectedEmpresaContext|EpaycoWebhookHandlerFindsContextUsingInvoiceFallback|EpaycoTransactionStatusHandlerRetriesActivationEmailAfterWebhookActivatedFirst|WompiTransactionStatusHandlerAllowsReferenceLookup)' -count=1`
+         - `go test ./ ./auth ./db ./handlers ./metrics ./utils -run '^$' -count=1`
+
+ - 2026-04-18: Selector de empresas compacta tarjetas y centra la botonera inferior
+     - Archivos modificados:
+         - web/estilos.css
+         - documentos/descripcion_del_proyecto
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Las tarjetas de `seleccionar_empresa.html` reducen su tamano visual y mantienen los botones alineados al pie y centrados dentro de cada bloque, mejorando la lectura del grid sin tocar la logica del selector.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/estilos.css`.
+
+ - 2026-04-18: Brigada burbujas 3D plus activa auto-disparo por defecto y preset facil movil
+     - Archivos modificados:
+         - web/Juegos/brigada_burbujas_3d_plus.html
+         - documentos/descripcion_del_proyecto
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: El juego completa el HUD y el panel de controles tactiles, activa auto-disparo y ayuda de mira facil por defecto en movil, y migra configuraciones guardadas antiguas para que la experiencia arranque lista para jugar.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/Juegos/brigada_burbujas_3d_plus.html`.
+
+ - 2026-04-18: Brigada burbujas 3D plus agrega boton Auto visible y ayuda de mira movil
+     - Archivos modificados:
+         - web/Juegos/brigada_burbujas_3d_plus.html
+         - documentos/descripcion_del_proyecto
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: El shooter suma un boton visible de auto-disparo dentro del HUD movil, una ayuda de mira configurable para apuntado tactil y control fino de intensidad del feedback visual/haptico.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/Juegos/brigada_burbujas_3d_plus.html`.
+
  - 2026-04-18: Brigada burbujas 3D plus agrega auto-disparo, vibracion y ajustes tactiles persistentes
      - Archivos modificados:
          - web/Juegos/brigada_burbujas_3d_plus.html

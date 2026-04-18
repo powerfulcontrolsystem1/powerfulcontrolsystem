@@ -82,9 +82,10 @@
       left: 12px;
       right: 12px;
       top: 12px;
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, max-content));
-      justify-content: space-between;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-start;
+      align-items: flex-start;
       gap: 8px;
       pointer-events: none;
       z-index: 2;
@@ -109,6 +110,17 @@
 
     .bubble-chip strong {
       color: #ff9b39;
+    }
+
+    .bubble-chip-button {
+      font: inherit;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .bubble-chip-button.active {
+      background: linear-gradient(135deg, rgba(255, 211, 106, 0.96), rgba(255, 157, 207, 0.95));
+      border-color: rgba(255, 155, 57, 0.54);
     }
 
     .bubble-stage-note {
@@ -741,6 +753,7 @@
         <span class="bubble-chip">Enemigos <strong id="enemyValue">0</strong></span>
         <span class="bubble-chip">Arma <strong id="mobileWeaponValue">Espuma</strong></span>
         <span class="bubble-chip">Sector <strong id="mobileZoneValue">Cerrado</strong></span>
+        <button id="autoFireHudBtn" class="bubble-chip bubble-chip-button" type="button">Auto <strong id="autoFireHudValue">ON</strong></button>
       </div>
       <div class="bubble-mobile-quickbar" aria-label="Accesos tacticos moviles">
         <button id="weaponBubbleMobileBtn" class="bubble-quick-btn active" type="button">Espuma</button>
@@ -764,17 +777,27 @@
           <small>Activa vibracion corta al disparar, recibir daño o soltar poderes.</small>
         </div>
         <div class="bubble-setting-row">
-          <label for="joystickSensitivityRange"><span>Joystick <strong id="joystickSensitivityValue">1.00</strong></span></label>
-          <input id="joystickSensitivityRange" type="range" min="0.6" max="1.5" step="0.05" value="1">
+          <label for="feedbackStrengthRange"><span>Impacto <strong id="feedbackStrengthValue">0.95</strong></span></label>
+          <input id="feedbackStrengthRange" type="range" min="0.7" max="1.5" step="0.05" value="0.95">
+          <small>Regula la fuerza del flash, la vibracion y el screen shake durante el combate.</small>
+        </div>
+        <div class="bubble-setting-row">
+          <label for="joystickSensitivityRange"><span>Joystick <strong id="joystickSensitivityValue">1.05</strong></span></label>
+          <input id="joystickSensitivityRange" type="range" min="0.6" max="1.5" step="0.05" value="1.05">
           <small>Aumenta o reduce la fuerza del desplazamiento lateral y frontal.</small>
         </div>
         <div class="bubble-setting-row">
-          <label for="turnSensitivityRange"><span>Giro <strong id="turnSensitivityValue">1.00</strong></span></label>
-          <input id="turnSensitivityRange" type="range" min="0.6" max="1.7" step="0.05" value="1">
+          <label for="turnSensitivityRange"><span>Giro <strong id="turnSensitivityValue">0.90</strong></span></label>
+          <input id="turnSensitivityRange" type="range" min="0.6" max="1.7" step="0.05" value="0.9">
           <small>Controla que tan rapido rota la camara al arrastrar sobre el escenario.</small>
         </div>
+        <div class="bubble-setting-row">
+          <label for="aimAssistRange"><span>Ayuda de mira <strong id="aimAssistValue">0.55</strong></span></label>
+          <input id="aimAssistRange" type="range" min="0" max="0.8" step="0.05" value="0.55">
+          <small>Acerca suavemente la mira al enemigo mas cercano para que solo tengas que apuntar y avanzar.</small>
+        </div>
       </div>
-      <div class="bubble-stage-note">Desliza el escenario para mirar alrededor. Toca el cielo de colores para lanzar una burbuja rapida y usa los botones inferiores para moverte.</div>
+      <div class="bubble-stage-note">Desliza el escenario para mirar alrededor. El auto-disparo ya viene activo: solo apunta y usa el joystick para moverte.</div>
       <div class="bubble-crosshair" aria-hidden="true"></div>
       <div id="touchIndicator" class="bubble-touch-indicator" aria-hidden="true"></div>
 
@@ -839,7 +862,7 @@
     <section class="arcade-footer">
       <button id="restartBtn" class="arcade-btn secondary" type="button">Reiniciar</button>
       <button id="backBtnBottom" class="arcade-btn secondary" type="button">Salir al menu</button>
-      <div class="bubble-mobile-tip">Movil: desliza arriba del escenario para apuntar, toca para disparar.</div>
+      <div class="bubble-mobile-tip">Movil: desliza para apuntar. El auto-disparo ya viene activo para que solo te concentres en moverte.</div>
       <div class="bubble-footer-note">En móvil usa los botones inferiores. En PC también puedes jugar con W A S D, flechas y espacio.</div>
       <div id="statusText" class="arcade-status">Lista para empezar la mision.</div>
     </section>
@@ -850,6 +873,7 @@
     (function () {
       var GAME_KEY = 'brigada_burbujas_3d';
       var MOBILE_SETTINGS_KEY = 'pcs_brigada_burbujas_mobile_settings_v1';
+      var MOBILE_EASY_PRESET_VERSION = 1;
       var arcade = window.PCSArcade || null;
       var canvas = document.getElementById('bubbleCanvas');
       var ctx = canvas.getContext('2d');
@@ -861,6 +885,8 @@
       var enemyValue = document.getElementById('enemyValue');
       var mobileWeaponValue = document.getElementById('mobileWeaponValue');
       var mobileZoneValue = document.getElementById('mobileZoneValue');
+      var autoFireHudBtn = document.getElementById('autoFireHudBtn');
+      var autoFireHudValue = document.getElementById('autoFireHudValue');
       var playerNameValue = document.getElementById('playerNameValue');
       var bestValue = document.getElementById('bestValue');
       var bestMeta = document.getElementById('bestMeta');
@@ -892,10 +918,14 @@
       var settingsCloseBtn = document.getElementById('settingsCloseBtn');
       var autoFireToggle = document.getElementById('autoFireToggle');
       var hapticsToggle = document.getElementById('hapticsToggle');
+      var feedbackStrengthRange = document.getElementById('feedbackStrengthRange');
       var joystickSensitivityRange = document.getElementById('joystickSensitivityRange');
       var turnSensitivityRange = document.getElementById('turnSensitivityRange');
+      var aimAssistRange = document.getElementById('aimAssistRange');
+      var feedbackStrengthValue = document.getElementById('feedbackStrengthValue');
       var joystickSensitivityValue = document.getElementById('joystickSensitivityValue');
       var turnSensitivityValue = document.getElementById('turnSensitivityValue');
+      var aimAssistValue = document.getElementById('aimAssistValue');
       var mobileJoystick = document.getElementById('mobileJoystick');
       var mobileJoystickKnob = document.getElementById('mobileJoystickKnob');
       var powerCometaBtn = document.getElementById('powerCometaBtn');
@@ -1188,10 +1218,13 @@
           y: 0
         },
         mobileOptions: {
-          autoFire: false,
+          autoFire: true,
           haptics: true,
-          joystickSensitivity: 1,
-          turnSensitivity: 1
+          feedbackStrength: 0.95,
+          joystickSensitivity: 1.05,
+          turnSensitivity: 0.9,
+          aimAssist: 0.55,
+          presetVersion: 0
         }
       };
 
@@ -1406,9 +1439,23 @@
           if (!parsed || typeof parsed !== 'object') return;
           if (typeof parsed.autoFire === 'boolean') state.mobileOptions.autoFire = parsed.autoFire;
           if (typeof parsed.haptics === 'boolean') state.mobileOptions.haptics = parsed.haptics;
+          if (typeof parsed.feedbackStrength === 'number') state.mobileOptions.feedbackStrength = Math.max(0.7, Math.min(1.5, parsed.feedbackStrength));
           if (typeof parsed.joystickSensitivity === 'number') state.mobileOptions.joystickSensitivity = Math.max(0.6, Math.min(1.5, parsed.joystickSensitivity));
           if (typeof parsed.turnSensitivity === 'number') state.mobileOptions.turnSensitivity = Math.max(0.6, Math.min(1.7, parsed.turnSensitivity));
+          if (typeof parsed.aimAssist === 'number') state.mobileOptions.aimAssist = Math.max(0, Math.min(0.8, parsed.aimAssist));
+          if (typeof parsed.presetVersion === 'number') state.mobileOptions.presetVersion = parsed.presetVersion;
         } catch (_) {}
+      }
+
+      function ensureEasyMobilePreset() {
+        if ((state.mobileOptions.presetVersion || 0) >= MOBILE_EASY_PRESET_VERSION) return;
+        state.mobileOptions.autoFire = true;
+        state.mobileOptions.feedbackStrength = Math.max(0.95, Math.min(1.1, state.mobileOptions.feedbackStrength || 0.95));
+        state.mobileOptions.joystickSensitivity = Math.max(1.05, state.mobileOptions.joystickSensitivity || 1.05);
+        state.mobileOptions.turnSensitivity = Math.min(state.mobileOptions.turnSensitivity || 0.9, 0.9);
+        state.mobileOptions.aimAssist = Math.max(0.55, state.mobileOptions.aimAssist || 0.55);
+        state.mobileOptions.presetVersion = MOBILE_EASY_PRESET_VERSION;
+        saveMobileOptions();
       }
 
       function saveMobileOptions() {
@@ -1420,10 +1467,16 @@
       function updateMobileSettingsUi() {
         if (autoFireToggle) autoFireToggle.checked = !!state.mobileOptions.autoFire;
         if (hapticsToggle) hapticsToggle.checked = !!state.mobileOptions.haptics;
+        if (feedbackStrengthRange) feedbackStrengthRange.value = String(state.mobileOptions.feedbackStrength);
         if (joystickSensitivityRange) joystickSensitivityRange.value = String(state.mobileOptions.joystickSensitivity);
         if (turnSensitivityRange) turnSensitivityRange.value = String(state.mobileOptions.turnSensitivity);
+        if (aimAssistRange) aimAssistRange.value = String(state.mobileOptions.aimAssist);
+        if (feedbackStrengthValue) feedbackStrengthValue.textContent = state.mobileOptions.feedbackStrength.toFixed(2);
         if (joystickSensitivityValue) joystickSensitivityValue.textContent = state.mobileOptions.joystickSensitivity.toFixed(2);
         if (turnSensitivityValue) turnSensitivityValue.textContent = state.mobileOptions.turnSensitivity.toFixed(2);
+        if (aimAssistValue) aimAssistValue.textContent = state.mobileOptions.aimAssist.toFixed(2);
+        if (autoFireHudValue) autoFireHudValue.textContent = state.mobileOptions.autoFire ? 'ON' : 'OFF';
+        if (autoFireHudBtn) autoFireHudBtn.classList.toggle('active', !!state.mobileOptions.autoFire);
         if (settingsMobileBtn) settingsMobileBtn.classList.toggle('active', mobileSettingsPanel && !mobileSettingsPanel.hidden);
       }
 
@@ -1437,7 +1490,49 @@
       function vibrateFeedback(pattern) {
         if (!state.mobileOptions.haptics) return;
         if (!navigator || typeof navigator.vibrate !== 'function') return;
-        try { navigator.vibrate(pattern); } catch (_) {}
+        var intensity = state.mobileOptions.feedbackStrength || 1;
+        var scaled = Array.isArray(pattern)
+          ? pattern.map(function (value) { return Math.max(0, Math.round(value * intensity)); })
+          : Math.max(0, Math.round(pattern * intensity));
+        try { navigator.vibrate(scaled); } catch (_) {}
+      }
+
+      function getAimAssistTarget() {
+        var best = null;
+        var bestScore = Infinity;
+        var assist = state.mobileOptions.aimAssist || 0;
+        if (assist <= 0) return null;
+        getAliveEnemies().forEach(function (enemy) {
+          var dx = enemy.x - state.player.x;
+          var dy = enemy.y - state.player.y;
+          var distance = Math.sqrt(dx * dx + dy * dy);
+          if (distance > SHOOT_RANGE + 1.1) return;
+          if (lineOfSightBlocked(state.player.x, state.player.y, enemy.x, enemy.y)) return;
+          var diff = Math.abs(normalizeAngle(Math.atan2(dy, dx) - state.player.angle));
+          var cone = 0.46 + assist * 0.22;
+          if (diff > cone) return;
+          var score = diff * 1.8 + distance * 0.07;
+          if (score < bestScore) {
+            bestScore = score;
+            best = enemy;
+          }
+        });
+        return best;
+      }
+
+      function applyTouchAimAssist(delta) {
+        if (!isSmallScreen() || !state.touchAim.active) return;
+        var assist = state.mobileOptions.aimAssist || 0;
+        if (assist <= 0) return;
+        var target = getAimAssistTarget();
+        if (!target) return;
+        var desiredAngle = Math.atan2(target.y - state.player.y, target.x - state.player.x);
+        var diff = normalizeAngle(desiredAngle - state.player.angle);
+        if (Math.abs(diff) < 0.01) return;
+        var maxStep = delta * (1.1 + assist * 2.1);
+        if (diff > maxStep) diff = maxStep;
+        if (diff < -maxStep) diff = -maxStep;
+        state.player.angle += diff;
       }
 
       function updateProfile() {
@@ -1470,6 +1565,7 @@
       }
 
       function updateHud() {
+        updateMobileSettingsUi();
         scoreValue.textContent = String(computeScore());
         levelValue.textContent = String(state.levelIndex + 1);
         livesValue.textContent = String(state.lives);
@@ -1596,8 +1692,10 @@
         state.powerEnergy -= POWER_COSTS[form];
         state.activeForm = form;
         state.transformTimer = form === 'titan' ? 10.5 : form === 'guardian' ? 12 : 9;
-        state.shotFlash = 0.16;
+        state.shotFlash = Math.max(state.shotFlash, 0.16 * (state.mobileOptions.feedbackStrength || 1));
+        state.screenShake = Math.min(0.24, state.screenShake + 0.08 * (state.mobileOptions.feedbackStrength || 1));
         playEffect('powerUp');
+        vibrateFeedback([22, 26, 22]);
         setStatus('Transformacion activada: ' + FORM_SETTINGS[form].label + '.');
         if (form === 'guardian') {
           getAliveEnemies().forEach(function (enemy) {
@@ -1992,8 +2090,8 @@
             }
             state.lives -= meleeDamage;
             state.lives = Math.max(0, state.lives);
-            state.hurtFlash = 0.22;
-            state.screenShake = Math.min(0.24, state.screenShake + 0.14);
+            state.hurtFlash = Math.max(state.hurtFlash, 0.22 * (state.mobileOptions.feedbackStrength || 1));
+            state.screenShake = Math.min(0.28, state.screenShake + 0.14 * (state.mobileOptions.feedbackStrength || 1));
             playEffect('hit');
             vibrateFeedback([18, 24, 18]);
             setStatus('Te golpeo un ' + getEnemyLabel(enemy.type) + '.');
@@ -2019,8 +2117,8 @@
             if (!getFormSettings().shield) {
               state.lives -= projectile.damage;
               state.lives = Math.max(0, state.lives);
-              state.hurtFlash = 0.2;
-              state.screenShake = Math.min(0.24, state.screenShake + 0.12);
+              state.hurtFlash = Math.max(state.hurtFlash, 0.2 * (state.mobileOptions.feedbackStrength || 1));
+              state.screenShake = Math.min(0.28, state.screenShake + 0.12 * (state.mobileOptions.feedbackStrength || 1));
             }
             playEffect('hit');
             vibrateFeedback([16, 20, 16]);
@@ -2522,6 +2620,7 @@
       function updateGame(delta) {
         if (!state.running || state.paused || state.gameOver) return;
         movePlayer(delta);
+        applyTouchAimAssist(delta);
         if (state.controls.shoot) shoot();
         if (state.touchAim.active && state.mobileOptions.autoFire && isSmallScreen()) shoot();
         state.reloadTimer = Math.max(0, state.reloadTimer - delta);
@@ -2763,14 +2862,26 @@
         toggleMobileSettings(false);
       });
 
+      autoFireHudBtn.addEventListener('click', function () {
+        state.mobileOptions.autoFire = !state.mobileOptions.autoFire;
+        saveMobileOptions();
+        updateHud();
+      });
+
       autoFireToggle.addEventListener('change', function () {
         state.mobileOptions.autoFire = !!autoFireToggle.checked;
         saveMobileOptions();
-        updateMobileSettingsUi();
+        updateHud();
       });
 
       hapticsToggle.addEventListener('change', function () {
         state.mobileOptions.haptics = !!hapticsToggle.checked;
+        saveMobileOptions();
+        updateMobileSettingsUi();
+      });
+
+      feedbackStrengthRange.addEventListener('input', function () {
+        state.mobileOptions.feedbackStrength = Number(feedbackStrengthRange.value) || 1;
         saveMobileOptions();
         updateMobileSettingsUi();
       });
@@ -2783,6 +2894,12 @@
 
       turnSensitivityRange.addEventListener('input', function () {
         state.mobileOptions.turnSensitivity = Number(turnSensitivityRange.value) || 1;
+        saveMobileOptions();
+        updateMobileSettingsUi();
+      });
+
+      aimAssistRange.addEventListener('input', function () {
+        state.mobileOptions.aimAssist = Number(aimAssistRange.value) || 0;
         saveMobileOptions();
         updateMobileSettingsUi();
       });
@@ -2830,6 +2947,7 @@
       restartBtnTop.addEventListener('click', startWithCountdown);
 
       readMobileOptions();
+      ensureEasyMobilePreset();
       updateMobileSettingsUi();
       updateProfile();
       resetGame();

@@ -396,7 +396,7 @@ func resolveLicenciaActivationRecipient(dbSuper *sql.DB, empresaID int64, payRec
 	payload := parsePaymentPayloadMap(payRec.RawPayload.String)
 	toEmail := strings.TrimSpace(extractCustomerEmailFromPaymentPayload(payload))
 	if toEmail == "" && empresaID > 0 {
-		empresa, err := dbpkg.GetEmpresaByID(dbSuper, empresaID)
+		empresa, err := dbpkg.GetEmpresaByScopeID(dbSuper, empresaID)
 		if err == nil && empresa != nil {
 			toEmail = strings.TrimSpace(empresa.UsuarioCreador)
 		}
@@ -536,7 +536,7 @@ func sendLicenciaActivationEmail(r *http.Request, dbSuper *sql.DB, empresaID int
 
 	empresaNombre := ""
 	if empresaID > 0 {
-		empresa, err := dbpkg.GetEmpresaByID(dbSuper, empresaID)
+		empresa, err := dbpkg.GetEmpresaByScopeID(dbSuper, empresaID)
 		if err == nil && empresa != nil {
 			empresaNombre = strings.TrimSpace(empresa.Nombre)
 		}
@@ -1406,6 +1406,46 @@ func pickEpaycoField(payload map[string]interface{}, keys ...string) string {
 	}
 
 	return ""
+}
+
+func paymentContextFromInternalReference(values ...string) (int64, int64, bool) {
+	for _, raw := range values {
+		candidate := strings.ToUpper(strings.TrimSpace(raw))
+		if candidate == "" {
+			continue
+		}
+		parts := strings.Split(candidate, "-")
+		for idx := 0; idx < len(parts)-3; idx++ {
+			if parts[idx] != "LIC" || parts[idx+2] != "EMP" {
+				continue
+			}
+			licenciaID, licErr := strconv.ParseInt(strings.TrimSpace(parts[idx+1]), 10, 64)
+			empresaID, empErr := strconv.ParseInt(strings.TrimSpace(parts[idx+3]), 10, 64)
+			if licErr == nil && empErr == nil && licenciaID > 0 && empresaID > 0 {
+				return licenciaID, empresaID, true
+			}
+		}
+	}
+	return 0, 0, false
+}
+
+func expectedPaymentContextFromRequest(r *http.Request) (int64, int64, bool) {
+	if r == nil || r.URL == nil {
+		return 0, 0, false
+	}
+	licenciaID, licErr := strconv.ParseInt(strings.TrimSpace(r.URL.Query().Get("licencia_id")), 10, 64)
+	empresaID, empErr := strconv.ParseInt(strings.TrimSpace(r.URL.Query().Get("empresa_id")), 10, 64)
+	if licErr != nil || empErr != nil || licenciaID <= 0 || empresaID <= 0 {
+		return 0, 0, false
+	}
+	return licenciaID, empresaID, true
+}
+
+func paymentContextMatchesExpected(licenciaID, empresaID, expectedLicenciaID, expectedEmpresaID int64) bool {
+	if expectedLicenciaID <= 0 || expectedEmpresaID <= 0 {
+		return true
+	}
+	return licenciaID == expectedLicenciaID && empresaID == expectedEmpresaID
 }
 
 func parseEpaycoPaymentStatus(payload map[string]interface{}) string {
@@ -2307,6 +2347,7 @@ func WompiTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if reference == "" {
 			reference = strings.TrimSpace(r.URL.Query().Get("ref"))
 		}
+		expectedLicenciaID, expectedEmpresaID, hasExpectedContext := expectedPaymentContextFromRequest(r)
 		if transactionID == "" && reference != "" {
 			rec, lookupErr := dbpkg.GetWompiPaymentByReference(dbSuper, reference)
 			if lookupErr != nil {
@@ -2388,21 +2429,43 @@ func WompiTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 			log.Println("warning: failed to update Wompi payment record:", err)
 		}
 
-		var licenciaID sql.NullInt64
-		var empresaID sql.NullInt64
-		row := dbSuper.QueryRow("SELECT licencia_id, empresa_id FROM pagos_wompi WHERE transaction_id = ? LIMIT 1", transactionID)
-		if err := row.Scan(&licenciaID, &empresaID); err != nil {
-			log.Println("warning: pagos_wompi record not found for tx:", transactionID, "err:", err)
+		licenciaID, empresaID, hasContext, ctxErr := dbpkg.GetWompiPaymentContext(dbSuper, transactionID, reference)
+		if ctxErr != nil {
+			log.Println("warning: failed to resolve Wompi payment context:", ctxErr)
+		}
+		if !hasContext {
+			licenciaID, empresaID, hasContext = paymentContextFromInternalReference(reference, transactionID)
+		}
+		if hasExpectedContext && hasContext && !paymentContextMatchesExpected(licenciaID, empresaID, expectedLicenciaID, expectedEmpresaID) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusConflict)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"error":               "El pago consultado no corresponde a la empresa o licencia abierta en esta página.",
+				"provider":            "wompi",
+				"transaction_id":      transactionID,
+				"reference":           reference,
+				"status":              status,
+				"context_found":       hasContext,
+				"context_mismatch":    true,
+				"licencia_id":         licenciaID,
+				"empresa_id":          empresaID,
+				"expected_licencia_id": expectedLicenciaID,
+				"expected_empresa_id":  expectedEmpresaID,
+			})
+			return
 		}
 
-		if strings.EqualFold(status, "APPROVED") && licenciaID.Valid && empresaID.Valid {
-			lic, err := dbpkg.GetLicenciaByID(dbSuper, licenciaID.Int64)
+		activated := false
+		if strings.EqualFold(status, "APPROVED") && hasContext {
+			lic, err := dbpkg.GetLicenciaByID(dbSuper, licenciaID)
 			if err == nil && lic != nil {
 				now := time.Now()
 				fechaInicio := now.Format("2006-01-02 15:04:05")
 				fechaFin := now.AddDate(0, 0, lic.DuracionDias).Format("2006-01-02 15:04:05")
-				if err := dbpkg.ActivateLicenciaForEmpresa(dbSuper, licenciaID.Int64, empresaID.Int64, fechaInicio, fechaFin); err != nil {
+				if err := dbpkg.ActivateLicenciaForEmpresa(dbSuper, licenciaID, empresaID, fechaInicio, fechaFin); err != nil {
 					log.Println("failed to activate licencia from Wompi:", err)
+				} else {
+					activated = true
 				}
 
 				// Registrar comisiones para vendedor_de_licencia si aplica
@@ -2411,7 +2474,7 @@ func WompiTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 						return
 					}
 					recordVendedorComisiones(dbSuper, txID, "", licID, empID)
-				}(transactionID, licenciaID.Int64, empresaID.Int64)
+				}(transactionID, licenciaID, empresaID)
 			}
 		}
 
@@ -2422,6 +2485,10 @@ func WompiTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 			"transaction_id": transactionID,
 			"reference":      reference,
 			"status":         status,
+			"context_found":  hasContext,
+			"licencia_id":    licenciaID,
+			"empresa_id":     empresaID,
+			"activated":      activated,
 			"data":           data,
 		})
 	}
@@ -2726,6 +2793,7 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if reference == "" {
 			reference = strings.TrimSpace(r.URL.Query().Get("ref"))
 		}
+		expectedLicenciaID, expectedEmpresaID, hasExpectedContext := expectedPaymentContextFromRequest(r)
 		originalTransactionID := transactionID
 		originalReference := reference
 		if transactionID == "" && reference == "" {
@@ -2890,6 +2958,28 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 			{transactionID, reference},
 		}
 		licenciaID, empresaID, hasContext = resolveEpaycoPaymentContextCandidates(dbSuper, lookupCombos)
+		if !hasContext {
+			licenciaID, empresaID, hasContext = paymentContextFromInternalReference(recordReference, invoiceReference, reference, transactionID, recordTransactionID, originalReference, originalTransactionID)
+		}
+		if hasExpectedContext && hasContext && !paymentContextMatchesExpected(licenciaID, empresaID, expectedLicenciaID, expectedEmpresaID) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusConflict)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"error":                "El pago consultado no corresponde a la empresa o licencia abierta en esta página.",
+				"provider":             "epayco",
+				"transaction_id":       firstNonEmptyString(transactionID, recordTransactionID, originalTransactionID),
+				"reference":            firstNonEmptyString(reference, recordReference, invoiceReference, originalReference),
+				"status":               status,
+				"context_found":        hasContext,
+				"context_mismatch":     true,
+				"licencia_id":          licenciaID,
+				"empresa_id":           empresaID,
+				"expected_licencia_id": expectedLicenciaID,
+				"expected_empresa_id":  expectedEmpresaID,
+				"data":                 validationPayload,
+			})
+			return
+		}
 
 		activated := false
 		if isApprovedPaymentStatus(status) && hasContext {

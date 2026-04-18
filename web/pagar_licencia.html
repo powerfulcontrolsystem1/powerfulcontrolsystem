@@ -128,7 +128,7 @@
         const className = kind === 'success' ? 'success' : (kind === 'error' ? 'error' : 'muted');
         target.innerHTML = '<div class="' + className + '"><strong>' + escapeHtml(title) + '</strong><div>' + escapeHtml(body) + '</div></div>';
       }
-      function buildSuccessPageURL(provider, context){
+      function buildSuccessPageURL(provider, context, licenciaId, empresaId){
         const target = new URL('/epayco/pago_exitoso.html', window.location.origin);
         const normalizedProvider = normalizeProvider(provider || (context && context.provider) || '');
         if (normalizedProvider) target.searchParams.set('provider', normalizedProvider);
@@ -138,9 +138,9 @@
         if (context && context.transactionId) target.searchParams.set('transaction_id', String(context.transactionId));
         return target.toString();
       }
-      function redirectToSuccessPage(provider, context){
+      function redirectToSuccessPage(provider, context, licenciaId, empresaId){
         if (!licenciaId || !empresaId) return false;
-        window.location.replace(buildSuccessPageURL(provider, context));
+        window.location.replace(buildSuccessPageURL(provider, context, licenciaId, empresaId));
         return true;
       }
       function syncStatusText(target, text){ if (target) target.textContent = text || ''; }
@@ -181,14 +181,19 @@
         });
         return epaycoCheckoutScriptPromise;
       }
-      async function fetchProviderStatus(provider, context){
+      async function fetchProviderStatus(provider, context, licenciaId, empresaId){
         const normalizedProvider = normalizeProvider(provider);
         if (!normalizedProvider) throw new Error('No se pudo determinar la pasarela del pago.');
+        const search = new URLSearchParams();
+        if (context && context.transactionId) search.set('id', String(context.transactionId));
+        else search.set('reference', String((context && context.reference) || ''));
+        if (licenciaId) search.set('licencia_id', String(licenciaId));
+        if (empresaId) search.set('empresa_id', String(empresaId));
         let endpoint = '';
         if (normalizedProvider === 'epayco') {
-          endpoint = context.transactionId ? ('/epayco/transaction_status?id=' + encodeURIComponent(context.transactionId)) : ('/epayco/transaction_status?reference=' + encodeURIComponent(context.reference || ''));
+          endpoint = '/epayco/transaction_status?' + search.toString();
         } else {
-          endpoint = context.transactionId ? ('/wompi/transaction_status?id=' + encodeURIComponent(context.transactionId)) : ('/wompi/transaction_status?reference=' + encodeURIComponent(context.reference || ''));
+          endpoint = '/wompi/transaction_status?' + search.toString();
         }
         const response = await fetch(endpoint, { credentials: 'same-origin' });
         const raw = await response.text();
@@ -215,7 +220,7 @@
           if (returnContext.hasReturn) {
             if (isSuccessStatus(returnContext.status)) {
               clearPendingPayment();
-              if (redirectToSuccessPage(returnContext.provider, returnContext)) return;
+              if (redirectToSuccessPage(returnContext.provider, returnContext, licenciaId, empresaId)) return;
               container.innerHTML = '<div class="success"><strong>Pago aprobado</strong><div>La pasarela confirmó tu pago. Si no ves la licencia activa todavía, vuelve a empresas y recarga el listado.</div></div>';
             } else if (isFinalStatus(returnContext.status)) {
               clearPendingPayment();
@@ -494,7 +499,7 @@
                 licencia_id: licenciaId,
                 empresa_id: empresaId || null
               });
-              if (!redirectToSuccessPage(normalizedProvider, resolved)) {
+              if (!redirectToSuccessPage(normalizedProvider, resolved, licenciaId, empresaId)) {
                 renderFeedback(ui.feedback, 'success', 'Pago aprobado', label + ' confirmó el pago y la licencia quedó activa. ' + referenceText);
                 syncStatusText(statusElement, 'Estado ' + label + ': ' + normalizedStatus);
                 disableAllPayments();
@@ -553,7 +558,7 @@
               if (ctrl.cancelled) return;
               tries++;
               try {
-                const statusData = await fetchProviderStatus(normalizedProvider, context);
+                const statusData = await fetchProviderStatus(normalizedProvider, context, licenciaId, empresaId);
                 if (ctrl.cancelled) return;
                 const outcome = applyResolvedResult(normalizedProvider, statusData, context);
                 context = outcome.context;

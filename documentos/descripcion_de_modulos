@@ -1,6 +1,11 @@
 Descripcion compacta de modulos (POS multiempresa)
 Actualizacion: 2026-04-17
 
+Actualizacion 2026-04-18 (seleccionar empresa: tarjetas mas compactas y botones alineados al pie):
+- Se ajusta visualmente el submodulo `administracion global (super) / seleccionar empresa` para reducir el tamano de las tarjetas del listado sin cambiar rutas ni acciones.
+- `web/estilos.css` compacta ancho, alto y espaciados de las tarjetas, y deja la botonera inferior siempre centrada y alineada al pie del bloque, incluso cuando la descripcion ocupa varias lineas.
+- Impacto de permisos: sin cambios; el ajuste es solo visual sobre la misma vista autenticada.
+
 Actualizacion 2026-04-18 (super configuracion avanzada: prueba real de Gmail):
 - Se amplía el submodulo `administracion global (super) / configuracion avanzada` para que el boton `Probar Gmail` ejecute un envio SMTP real usando las credenciales guardadas en PostgreSQL.
 - `backend/handlers/usuarios_empresa.go` añade `POST /super/api/config/gmail?action=test` y `web/super/configuracion_avanzada.html` consume esa accion para mostrar en la misma tarjeta si el correo de prueba fue enviado a `powerfulcontrolsystem@gmail.com`.
@@ -11,6 +16,13 @@ Actualizacion 2026-04-18 (licencias y pasarelas: correo Epayco recuperable tras 
 - `backend/handlers/payments_handlers.go` deja una marca idempotente en el `raw_payload` del pago cuando la notificacion se completa y, si el webhook aprobó primero o el primer intento de correo falló, el polling posterior puede reenviar una sola vez cuando ya exista destinatario valido.
 - `backend/handlers/payments_handlers.go` también reconoce `customer_email` dentro del bloque `data` de la validacion Epayco, que es donde algunas respuestas aprobadas entregan el correo del comprador.
 - Impacto de permisos: sin cambios; sigue siendo un flujo publico del checkout de licencias bajo `/epayco/*`.
+
+Actualizacion 2026-04-18 (licencias y pasarelas: aislamiento multiempresa en checkout y correo con empresa logica):
+- Se ajusta el modulo `licencias y pasarelas de pago` para evitar que el retorno publico reconcilie una referencia vieja o ajena a la empresa abierta en pantalla.
+- `backend/db/db.go` agrega resolucion de empresa por alcance logico `empresa_id` y endurece los accesos a `pagos_epayco` y `pagos_wompi` con `EnsurePaymentGatewaySchema` + retry para create/get/update/context.
+- `backend/handlers/payments_handlers.go` usa esa resolucion logica en el correo de activacion y compara el pago encontrado contra `licencia_id` y `empresa_id` esperados por la pagina antes de activar o confirmar el estado.
+- `web/pagar_licencia.html` reenvia `licencia_id` y `empresa_id` en cada polling y corrige el alcance del contexto de retorno para no perder la redireccion de cierre exitoso.
+- Impacto de permisos: sin cambios; el checkout sigue publico bajo `/epayco/*` y `/wompi/*`, pero ahora valida mejor el aislamiento por empresa.
 
 Actualizacion 2026-04-17 (arcade publico: Brigada burbujas 3D plus refuerza modo movil y ambiente claro):
 - Se ajusta `web/Juegos/brigada_burbujas_3d_plus.html` para cerrar el shooter 3D simulado con controles tactiles directos sobre el escenario, ayuda visual en pantalla y una composicion pastel mas caricaturesca.
@@ -41,6 +53,16 @@ Actualizacion 2026-04-18 (arcade publico: Brigada burbujas 3D plus agrega joysti
 Actualizacion 2026-04-18 (arcade publico: Brigada burbujas 3D plus agrega auto-disparo, vibracion y ajustes tactiles):
 - `web/Juegos/brigada_burbujas_3d_plus.html` incorpora un panel de opciones persistentes para celular con auto-disparo opcional, vibracion, sensibilidad de joystick y sensibilidad de giro.
 - El shooter ahora aplica feedback mas fuerte con screen shake, flash de disparo y vibracion corta al disparar o recibir daño cuando el dispositivo lo soporta.
+- Impacto de permisos: sin cambios; el modulo `Juegos` sigue siendo publico bajo `/Juegos/*`.
+
+Actualizacion 2026-04-18 (arcade publico: Brigada burbujas 3D plus agrega HUD Auto y ayuda de mira):
+- `web/Juegos/brigada_burbujas_3d_plus.html` sube el auto-disparo a un boton visible del HUD movil, manteniendo el toggle del panel para que el jugador no tenga que abrir ajustes en pleno combate.
+- El panel tactil gana control fino de impacto y ayuda de mira, y el loop movil aplica una correccion suave de camara hacia enemigos cercanos cuando el usuario apunta desde celular.
+- Impacto de permisos: sin cambios; el modulo `Juegos` sigue siendo publico bajo `/Juegos/*`.
+
+Actualizacion 2026-04-18 (arcade publico: Brigada burbujas 3D plus activa preset facil por defecto):
+- `web/Juegos/brigada_burbujas_3d_plus.html` fuerza una migracion unica de ajustes moviles para dejar auto-disparo activado, ayuda de mira mas alta y giro mas controlado incluso si el navegador tenia una configuracion vieja guardada.
+- La experiencia movil arranca lista para jugar: el HUD muestra `Auto ON`, el texto en escenario explica que basta con apuntar y moverse, y el jugador aun puede desactivar el preset desde el mismo panel.
 - Impacto de permisos: sin cambios; el modulo `Juegos` sigue siendo publico bajo `/Juegos/*`.
 
 Actualizacion 2026-04-17 (super seguridad: vista en modo oscuro):

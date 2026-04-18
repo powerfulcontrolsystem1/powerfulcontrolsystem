@@ -24,6 +24,17 @@ Fecha de actualizacion: 2026-04-17
 - Flujo:
   - `Epayco webhook aprobado` -> licencia activa sin correo confirmado -> `GET /epayco/transaction_status` con `customer_email` valido -> correo de activacion -> marca idempotente en `raw_payload`.
 
+## Actualizacion 2026-04-18 (checkout de licencias: validacion de contexto esperado y empresa logica en correo)
+
+- Backend:
+  - `backend/db/db.go` agrega `GetEmpresaByScopeID`, que resuelve empresas por `id` fisico o por `empresa_id` logico, y aplica `EnsurePaymentGatewaySchema` + retry en los helpers CRUD/contexto de `pagos_epayco` y `pagos_wompi`.
+  - `backend/handlers/payments_handlers.go` usa ese helper al construir el correo de activacion y compara el contexto resuelto del pago contra `licencia_id` y `empresa_id` esperados por la solicitud de `transaction_status`.
+  - `backend/handlers/payments_handlers_test.go` agrega regresiones para correo con empresa logica y para rechazo de conciliacion cuando la referencia pertenece a otra empresa.
+- Frontend:
+  - `web/pagar_licencia.html` envia `licencia_id` y `empresa_id` en cada consulta de estado y mantiene ese contexto explicito al redirigir a la pagina de pago exitoso.
+- Flujo:
+  - `/pagar_licencia.html?licencia_id=...&empresa_id=...` -> polling `/epayco/transaction_status` o `/wompi/transaction_status` con contexto esperado -> backend resuelve pago -> si el pago corresponde a otra empresa/licencia devuelve conflicto y el frontend deja de conciliar ese cobro.
+
 ## Actualizacion 2026-04-17 (arcade publico: Brigada burbujas 3D plus cierra experiencia movil)
 
 - Frontend:
@@ -64,6 +75,22 @@ Fecha de actualizacion: 2026-04-17
   - El render refuerza el feedback con screen shake y flash de disparo/dano, mientras la configuracion se conserva en `localStorage` para sesiones posteriores.
 - Flujo:
   - `/Juegos/brigada_burbujas_3d_plus.html` en movil -> quickbar `Ajustes` -> panel tactil -> guardar preferencias locales -> combate con auto-disparo opcional y feedback reforzado.
+
+## Actualizacion 2026-04-18 (arcade publico: Brigada burbujas 3D plus agrega HUD Auto y ayuda de mira)
+
+- Frontend:
+  - `web/Juegos/brigada_burbujas_3d_plus.html` eleva el auto-disparo a un boton visible del HUD movil y amplía el panel tactil con ajuste fino de impacto y ayuda suave de mira.
+  - El loop de juego aplica correccion angular gradual hacia el objetivo mas cercano cuando el usuario mantiene el gesto de apuntado en movil, sin convertirlo en autoaim rigido.
+- Flujo:
+  - `/Juegos/brigada_burbujas_3d_plus.html` en movil -> HUD `Auto` o panel `Ajustes` -> ayuda de mira configurable + feedback graduable -> combate tactil mas rapido dentro del mismo escenario.
+
+## Actualizacion 2026-04-18 (arcade publico: Brigada burbujas 3D plus activa preset facil por defecto)
+
+- Frontend:
+  - `web/Juegos/brigada_burbujas_3d_plus.html` agrega una migracion unica de `localStorage` para activar auto-disparo por defecto y elevar la asistencia tactil cuando existian preferencias viejas mas dificiles.
+  - El mismo archivo sincroniza textos y HUD para comunicar que en movil basta con apuntar y moverse desde el arranque.
+- Flujo:
+  - `/Juegos/brigada_burbujas_3d_plus.html` en movil -> carga opciones guardadas -> aplica preset facil inicial si es necesario -> HUD `Auto ON` -> combate simplificado desde la primera partida.
 
 ## Actualizacion 2026-04-17 (arcade publico: Brigada burbujas 3D plus amplía campaña y combate)
 

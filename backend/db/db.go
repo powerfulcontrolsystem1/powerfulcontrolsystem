@@ -1368,6 +1368,60 @@ func GetEmpresaByID(dbConn *sql.DB, id int64) (*Empresa, error) {
 	return &e, nil
 }
 
+// GetEmpresaByScopeID resuelve una empresa por id fisico o por alcance logico empresa_id.
+func GetEmpresaByScopeID(dbConn *sql.DB, empresaID int64) (*Empresa, error) {
+	if empresaID <= 0 {
+		return nil, nil
+	}
+	row := queryRowSQLCompat(dbConn, "SELECT id, COALESCE(empresa_id, id), nombre, nit, tipo_id, tipo_nombre, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones FROM empresas WHERE id = ? OR COALESCE(empresa_id, id) = ? ORDER BY CASE WHEN COALESCE(empresa_id, id) = ? THEN 0 ELSE 1 END, id ASC LIMIT 1", empresaID, empresaID, empresaID)
+	var e Empresa
+	var resolvedEmpresaID sql.NullInt64
+	var nit sql.NullString
+	var tipoID sql.NullInt64
+	var tipoNombre sql.NullString
+	var fechaCre sql.NullString
+	var fechaAct sql.NullString
+	var usuario sql.NullString
+	var estado sql.NullString
+	var obs sql.NullString
+	if err := row.Scan(&e.ID, &resolvedEmpresaID, &e.Nombre, &nit, &tipoID, &tipoNombre, &fechaCre, &fechaAct, &usuario, &estado, &obs); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	if resolvedEmpresaID.Valid {
+		e.EmpresaID = resolvedEmpresaID.Int64
+	} else {
+		e.EmpresaID = e.ID
+	}
+	if nit.Valid {
+		e.Nit = nit.String
+	}
+	if tipoID.Valid {
+		e.TipoID = tipoID.Int64
+	}
+	if tipoNombre.Valid {
+		e.TipoNombre = tipoNombre.String
+	}
+	if fechaCre.Valid {
+		e.FechaCreacion = fechaCre.String
+	}
+	if fechaAct.Valid {
+		e.FechaActualizacion = fechaAct.String
+	}
+	if usuario.Valid {
+		e.UsuarioCreador = usuario.String
+	}
+	if estado.Valid {
+		e.Estado = estado.String
+	}
+	if obs.Valid {
+		e.Observaciones = obs.String
+	}
+	return &e, nil
+}
+
 // UpdateEmpresa actualiza campos editables de una empresa
 func UpdateEmpresa(dbConn *sql.DB, id, tipoID int64, tipoNombre, nombre, nit, observaciones string) error {
 	nowExpr := sqlNowExpr()
@@ -1446,36 +1500,73 @@ func InitMetricsTable(dbConn *sql.DB) error {
 func CreateWompiPaymentRecord(dbConn *sql.DB, licenciaID, empresaID int64, transactionID, reference, status, rawPayload, discountCode, asesorID string) (int64, error) {
 	nowExpr := sqlNowExpr()
 	query := "INSERT INTO pagos_wompi (licencia_id, empresa_id, transaction_id, reference, status, raw_payload, discount_code, asesor_id, fecha_creacion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, " + nowExpr + ")"
+	id, err := insertSQLCompat(dbConn, query, licenciaID, empresaID, transactionID, reference, status, rawPayload, discountCode, asesorID)
+	if err == nil {
+		return id, nil
+	}
+	if !isMissingTableError(err) && !isMissingColumnError(err) {
+		return 0, err
+	}
+	if schemaErr := EnsurePaymentGatewaySchema(dbConn); schemaErr != nil {
+		return 0, err
+	}
 	return insertSQLCompat(dbConn, query, licenciaID, empresaID, transactionID, reference, status, rawPayload, discountCode, asesorID)
 }
 
 // UpdateWompiPaymentRecordByTransaction actualiza una transacción de Wompi usando su transaction_id.
 func UpdateWompiPaymentRecordByTransaction(dbConn *sql.DB, transactionID, status, rawPayload string) error {
 	nowExpr := sqlNowExpr()
-	_, err := execSQLCompat(dbConn, "UPDATE pagos_wompi SET status = ?, raw_payload = ?, fecha_actualizacion = "+nowExpr+" WHERE transaction_id = ?", status, rawPayload, transactionID)
+	query := "UPDATE pagos_wompi SET status = ?, raw_payload = ?, fecha_actualizacion = " + nowExpr + " WHERE transaction_id = ?"
+	fallbackQuery := "UPDATE pagos_wompi SET status = ?, raw_payload = ? WHERE transaction_id = ?"
+	_, err := execSQLCompat(dbConn, query, status, rawPayload, transactionID)
 	if err == nil {
 		return nil
 	}
-	// Compatibilidad con bases antiguas que aún no tienen la columna fecha_actualizacion.
-	_, fallbackErr := execSQLCompat(dbConn, "UPDATE pagos_wompi SET status = ?, raw_payload = ? WHERE transaction_id = ?", status, rawPayload, transactionID)
-	if fallbackErr == nil {
-		return nil
+	if isMissingTableError(err) || isMissingColumnError(err) {
+		if schemaErr := EnsurePaymentGatewaySchema(dbConn); schemaErr == nil {
+			_, retryErr := execSQLCompat(dbConn, query, status, rawPayload, transactionID)
+			if retryErr == nil {
+				return nil
+			}
+			err = retryErr
+		}
 	}
-	return fallbackErr
+	if isMissingColumnError(err) && strings.Contains(strings.ToLower(err.Error()), "fecha_actualizacion") {
+		_, fallbackErr := execSQLCompat(dbConn, fallbackQuery, status, rawPayload, transactionID)
+		if fallbackErr == nil {
+			return nil
+		}
+		err = fallbackErr
+	}
+	return err
 }
 
 // UpdateWompiPaymentRecordByReference actualiza una transaccion de Wompi usando su referencia.
 func UpdateWompiPaymentRecordByReference(dbConn *sql.DB, reference, status, rawPayload string) error {
 	nowExpr := sqlNowExpr()
-	_, err := execSQLCompat(dbConn, "UPDATE pagos_wompi SET status = ?, raw_payload = ?, fecha_actualizacion = "+nowExpr+" WHERE reference = ?", status, rawPayload, reference)
+	query := "UPDATE pagos_wompi SET status = ?, raw_payload = ?, fecha_actualizacion = " + nowExpr + " WHERE reference = ?"
+	fallbackQuery := "UPDATE pagos_wompi SET status = ?, raw_payload = ? WHERE reference = ?"
+	_, err := execSQLCompat(dbConn, query, status, rawPayload, reference)
 	if err == nil {
 		return nil
 	}
-	_, fallbackErr := execSQLCompat(dbConn, "UPDATE pagos_wompi SET status = ?, raw_payload = ? WHERE reference = ?", status, rawPayload, reference)
-	if fallbackErr == nil {
-		return nil
+	if isMissingTableError(err) || isMissingColumnError(err) {
+		if schemaErr := EnsurePaymentGatewaySchema(dbConn); schemaErr == nil {
+			_, retryErr := execSQLCompat(dbConn, query, status, rawPayload, reference)
+			if retryErr == nil {
+				return nil
+			}
+			err = retryErr
+		}
 	}
-	return fallbackErr
+	if isMissingColumnError(err) && strings.Contains(strings.ToLower(err.Error()), "fecha_actualizacion") {
+		_, fallbackErr := execSQLCompat(dbConn, fallbackQuery, status, rawPayload, reference)
+		if fallbackErr == nil {
+			return nil
+		}
+		err = fallbackErr
+	}
+	return err
 }
 
 // WompiPaymentRecord representa una fila de pagos_wompi
@@ -1494,64 +1585,127 @@ type WompiPaymentRecord struct {
 
 // GetWompiPaymentByTransaction obtiene una fila de pagos_wompi por transaction_id
 func GetWompiPaymentByTransaction(dbConn *sql.DB, transactionID string) (*WompiPaymentRecord, error) {
-	row := queryRowSQLCompat(dbConn, `SELECT id, licencia_id, empresa_id, transaction_id, reference, status, raw_payload, discount_code, asesor_id, fecha_creacion FROM pagos_wompi WHERE transaction_id = ? LIMIT 1`, transactionID)
-	var r WompiPaymentRecord
-	if err := row.Scan(&r.ID, &r.LicenciaID, &r.EmpresaID, &r.TransactionID, &r.Reference, &r.Status, &r.RawPayload, &r.DiscountCode, &r.AsesorID, &r.FechaCreacion); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
+	read := func() (*WompiPaymentRecord, error) {
+		row := queryRowSQLCompat(dbConn, `SELECT id, licencia_id, empresa_id, transaction_id, reference, status, raw_payload, discount_code, asesor_id, fecha_creacion FROM pagos_wompi WHERE transaction_id = ? LIMIT 1`, transactionID)
+		var r WompiPaymentRecord
+		if err := row.Scan(&r.ID, &r.LicenciaID, &r.EmpresaID, &r.TransactionID, &r.Reference, &r.Status, &r.RawPayload, &r.DiscountCode, &r.AsesorID, &r.FechaCreacion); err != nil {
+			if err == sql.ErrNoRows {
+				return nil, nil
+			}
+			return nil, err
 		}
+		return &r, nil
+	}
+	rec, err := read()
+	if err == nil {
+		return rec, nil
+	}
+	if !isMissingTableError(err) && !isMissingColumnError(err) {
 		return nil, err
 	}
-	return &r, nil
+	if schemaErr := EnsurePaymentGatewaySchema(dbConn); schemaErr != nil {
+		return nil, err
+	}
+	return read()
 }
 
 // GetWompiPaymentByReference obtiene una fila de pagos_wompi por reference
 func GetWompiPaymentByReference(dbConn *sql.DB, reference string) (*WompiPaymentRecord, error) {
-	row := queryRowSQLCompat(dbConn, `SELECT id, licencia_id, empresa_id, transaction_id, reference, status, raw_payload, discount_code, asesor_id, fecha_creacion FROM pagos_wompi WHERE reference = ? LIMIT 1`, reference)
-	var r WompiPaymentRecord
-	if err := row.Scan(&r.ID, &r.LicenciaID, &r.EmpresaID, &r.TransactionID, &r.Reference, &r.Status, &r.RawPayload, &r.DiscountCode, &r.AsesorID, &r.FechaCreacion); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
+	read := func() (*WompiPaymentRecord, error) {
+		row := queryRowSQLCompat(dbConn, `SELECT id, licencia_id, empresa_id, transaction_id, reference, status, raw_payload, discount_code, asesor_id, fecha_creacion FROM pagos_wompi WHERE reference = ? LIMIT 1`, reference)
+		var r WompiPaymentRecord
+		if err := row.Scan(&r.ID, &r.LicenciaID, &r.EmpresaID, &r.TransactionID, &r.Reference, &r.Status, &r.RawPayload, &r.DiscountCode, &r.AsesorID, &r.FechaCreacion); err != nil {
+			if err == sql.ErrNoRows {
+				return nil, nil
+			}
+			return nil, err
 		}
+		return &r, nil
+	}
+	rec, err := read()
+	if err == nil {
+		return rec, nil
+	}
+	if !isMissingTableError(err) && !isMissingColumnError(err) {
 		return nil, err
 	}
-	return &r, nil
+	if schemaErr := EnsurePaymentGatewaySchema(dbConn); schemaErr != nil {
+		return nil, err
+	}
+	return read()
 }
 
 // CreateEpaycoPaymentRecord registra una transacción inicial de Epayco en la tabla pagos_epayco.
 func CreateEpaycoPaymentRecord(dbConn *sql.DB, licenciaID, empresaID int64, transactionID, reference, status, rawPayload, discountCode, asesorID string) (int64, error) {
 	nowExpr := sqlNowExpr()
 	query := "INSERT INTO pagos_epayco (licencia_id, empresa_id, transaction_id, reference, status, raw_payload, discount_code, asesor_id, fecha_creacion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, " + nowExpr + ")"
+	id, err := insertSQLCompat(dbConn, query, licenciaID, empresaID, transactionID, reference, status, rawPayload, discountCode, asesorID)
+	if err == nil {
+		return id, nil
+	}
+	if !isMissingTableError(err) && !isMissingColumnError(err) {
+		return 0, err
+	}
+	if schemaErr := EnsurePaymentGatewaySchema(dbConn); schemaErr != nil {
+		return 0, err
+	}
 	return insertSQLCompat(dbConn, query, licenciaID, empresaID, transactionID, reference, status, rawPayload, discountCode, asesorID)
 }
 
 // UpdateEpaycoPaymentRecordByTransaction actualiza una transacción de Epayco usando su transaction_id.
 func UpdateEpaycoPaymentRecordByTransaction(dbConn *sql.DB, transactionID, status, rawPayload string) error {
 	nowExpr := sqlNowExpr()
-	_, err := execSQLCompat(dbConn, "UPDATE pagos_epayco SET status = ?, raw_payload = ?, fecha_actualizacion = "+nowExpr+" WHERE transaction_id = ?", status, rawPayload, transactionID)
+	query := "UPDATE pagos_epayco SET status = ?, raw_payload = ?, fecha_actualizacion = " + nowExpr + " WHERE transaction_id = ?"
+	fallbackQuery := "UPDATE pagos_epayco SET status = ?, raw_payload = ? WHERE transaction_id = ?"
+	_, err := execSQLCompat(dbConn, query, status, rawPayload, transactionID)
 	if err == nil {
 		return nil
 	}
-	// Compatibilidad con bases antiguas que aún no tienen la columna fecha_actualizacion.
-	_, fallbackErr := execSQLCompat(dbConn, "UPDATE pagos_epayco SET status = ?, raw_payload = ? WHERE transaction_id = ?", status, rawPayload, transactionID)
-	if fallbackErr == nil {
-		return nil
+	if isMissingTableError(err) || isMissingColumnError(err) {
+		if schemaErr := EnsurePaymentGatewaySchema(dbConn); schemaErr == nil {
+			_, retryErr := execSQLCompat(dbConn, query, status, rawPayload, transactionID)
+			if retryErr == nil {
+				return nil
+			}
+			err = retryErr
+		}
 	}
-	return fallbackErr
+	if isMissingColumnError(err) && strings.Contains(strings.ToLower(err.Error()), "fecha_actualizacion") {
+		_, fallbackErr := execSQLCompat(dbConn, fallbackQuery, status, rawPayload, transactionID)
+		if fallbackErr == nil {
+			return nil
+		}
+		err = fallbackErr
+	}
+	return err
 }
 
 // UpdateEpaycoPaymentRecordByReference actualiza una transaccion de Epayco usando su reference.
 func UpdateEpaycoPaymentRecordByReference(dbConn *sql.DB, reference, status, rawPayload string) error {
 	nowExpr := sqlNowExpr()
-	_, err := execSQLCompat(dbConn, "UPDATE pagos_epayco SET status = ?, raw_payload = ?, fecha_actualizacion = "+nowExpr+" WHERE reference = ?", status, rawPayload, reference)
+	query := "UPDATE pagos_epayco SET status = ?, raw_payload = ?, fecha_actualizacion = " + nowExpr + " WHERE reference = ?"
+	fallbackQuery := "UPDATE pagos_epayco SET status = ?, raw_payload = ? WHERE reference = ?"
+	_, err := execSQLCompat(dbConn, query, status, rawPayload, reference)
 	if err == nil {
 		return nil
 	}
-	_, fallbackErr := execSQLCompat(dbConn, "UPDATE pagos_epayco SET status = ?, raw_payload = ? WHERE reference = ?", status, rawPayload, reference)
-	if fallbackErr == nil {
-		return nil
+	if isMissingTableError(err) || isMissingColumnError(err) {
+		if schemaErr := EnsurePaymentGatewaySchema(dbConn); schemaErr == nil {
+			_, retryErr := execSQLCompat(dbConn, query, status, rawPayload, reference)
+			if retryErr == nil {
+				return nil
+			}
+			err = retryErr
+		}
 	}
-	return fallbackErr
+	if isMissingColumnError(err) && strings.Contains(strings.ToLower(err.Error()), "fecha_actualizacion") {
+		_, fallbackErr := execSQLCompat(dbConn, fallbackQuery, status, rawPayload, reference)
+		if fallbackErr == nil {
+			return nil
+		}
+		err = fallbackErr
+	}
+	return err
 }
 
 // EpaycoPaymentRecord representa una fila de pagos_epayco
@@ -1570,54 +1724,93 @@ type EpaycoPaymentRecord struct {
 
 // GetEpaycoPaymentByTransaction obtiene una fila de pagos_epayco por transaction_id
 func GetEpaycoPaymentByTransaction(dbConn *sql.DB, transactionID string) (*EpaycoPaymentRecord, error) {
-	row := queryRowSQLCompat(dbConn, `SELECT id, licencia_id, empresa_id, transaction_id, reference, status, raw_payload, discount_code, asesor_id, fecha_creacion FROM pagos_epayco WHERE transaction_id = ? LIMIT 1`, transactionID)
-	var r EpaycoPaymentRecord
-	if err := row.Scan(&r.ID, &r.LicenciaID, &r.EmpresaID, &r.TransactionID, &r.Reference, &r.Status, &r.RawPayload, &r.DiscountCode, &r.AsesorID, &r.FechaCreacion); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
+	read := func() (*EpaycoPaymentRecord, error) {
+		row := queryRowSQLCompat(dbConn, `SELECT id, licencia_id, empresa_id, transaction_id, reference, status, raw_payload, discount_code, asesor_id, fecha_creacion FROM pagos_epayco WHERE transaction_id = ? LIMIT 1`, transactionID)
+		var r EpaycoPaymentRecord
+		if err := row.Scan(&r.ID, &r.LicenciaID, &r.EmpresaID, &r.TransactionID, &r.Reference, &r.Status, &r.RawPayload, &r.DiscountCode, &r.AsesorID, &r.FechaCreacion); err != nil {
+			if err == sql.ErrNoRows {
+				return nil, nil
+			}
+			return nil, err
 		}
+		return &r, nil
+	}
+	rec, err := read()
+	if err == nil {
+		return rec, nil
+	}
+	if !isMissingTableError(err) && !isMissingColumnError(err) {
 		return nil, err
 	}
-	return &r, nil
+	if schemaErr := EnsurePaymentGatewaySchema(dbConn); schemaErr != nil {
+		return nil, err
+	}
+	return read()
 }
 
 // GetEpaycoPaymentByReference obtiene una fila de pagos_epayco por reference
 func GetEpaycoPaymentByReference(dbConn *sql.DB, reference string) (*EpaycoPaymentRecord, error) {
-	row := queryRowSQLCompat(dbConn, `SELECT id, licencia_id, empresa_id, transaction_id, reference, status, raw_payload, discount_code, asesor_id, fecha_creacion FROM pagos_epayco WHERE reference = ? LIMIT 1`, reference)
-	var r EpaycoPaymentRecord
-	if err := row.Scan(&r.ID, &r.LicenciaID, &r.EmpresaID, &r.TransactionID, &r.Reference, &r.Status, &r.RawPayload, &r.DiscountCode, &r.AsesorID, &r.FechaCreacion); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
+	read := func() (*EpaycoPaymentRecord, error) {
+		row := queryRowSQLCompat(dbConn, `SELECT id, licencia_id, empresa_id, transaction_id, reference, status, raw_payload, discount_code, asesor_id, fecha_creacion FROM pagos_epayco WHERE reference = ? LIMIT 1`, reference)
+		var r EpaycoPaymentRecord
+		if err := row.Scan(&r.ID, &r.LicenciaID, &r.EmpresaID, &r.TransactionID, &r.Reference, &r.Status, &r.RawPayload, &r.DiscountCode, &r.AsesorID, &r.FechaCreacion); err != nil {
+			if err == sql.ErrNoRows {
+				return nil, nil
+			}
+			return nil, err
 		}
+		return &r, nil
+	}
+	rec, err := read()
+	if err == nil {
+		return rec, nil
+	}
+	if !isMissingTableError(err) && !isMissingColumnError(err) {
 		return nil, err
 	}
-	return &r, nil
+	if schemaErr := EnsurePaymentGatewaySchema(dbConn); schemaErr != nil {
+		return nil, err
+	}
+	return read()
 }
 
 // GetEpaycoPaymentContext devuelve licencia_id y empresa_id para una transaccion/referencia Epayco.
 func GetEpaycoPaymentContext(dbConn *sql.DB, transactionID, reference string) (int64, int64, bool, error) {
-	row := queryRowSQLCompat(dbConn, `
-		SELECT licencia_id, empresa_id
-		FROM pagos_epayco
-		WHERE (transaction_id = ? AND ? <> '') OR (reference = ? AND ? <> '')
-		ORDER BY id DESC
-		LIMIT 1
-	`, transactionID, transactionID, reference, reference)
+	read := func() (int64, int64, bool, error) {
+		row := queryRowSQLCompat(dbConn, `
+			SELECT licencia_id, empresa_id
+			FROM pagos_epayco
+			WHERE (transaction_id = ? AND ? <> '') OR (reference = ? AND ? <> '')
+			ORDER BY id DESC
+			LIMIT 1
+		`, transactionID, transactionID, reference, reference)
 
-	var licenciaID sql.NullInt64
-	var empresaID sql.NullInt64
-	if err := row.Scan(&licenciaID, &empresaID); err != nil {
-		if err == sql.ErrNoRows {
+		var licenciaID sql.NullInt64
+		var empresaID sql.NullInt64
+		if err := row.Scan(&licenciaID, &empresaID); err != nil {
+			if err == sql.ErrNoRows {
+				return 0, 0, false, nil
+			}
+			return 0, 0, false, err
+		}
+
+		if !licenciaID.Valid || !empresaID.Valid {
 			return 0, 0, false, nil
 		}
+
+		return licenciaID.Int64, empresaID.Int64, true, nil
+	}
+	licenciaID, empresaID, found, err := read()
+	if err == nil {
+		return licenciaID, empresaID, found, nil
+	}
+	if !isMissingTableError(err) && !isMissingColumnError(err) {
 		return 0, 0, false, err
 	}
-
-	if !licenciaID.Valid || !empresaID.Valid {
-		return 0, 0, false, nil
+	if schemaErr := EnsurePaymentGatewaySchema(dbConn); schemaErr != nil {
+		return 0, 0, false, err
 	}
-
-	return licenciaID.Int64, empresaID.Int64, true, nil
+	return read()
 }
 
 // CRUD básicos para tabla asesores
@@ -1755,28 +1948,41 @@ func CreateAsesorComisionRecord(dbConn *sql.DB, asesorID string, empresaID, lice
 
 // GetWompiPaymentContext devuelve licencia_id y empresa_id para una transaccion/referencia Wompi.
 func GetWompiPaymentContext(dbConn *sql.DB, transactionID, reference string) (int64, int64, bool, error) {
-	row := queryRowSQLCompat(dbConn, `
-		SELECT licencia_id, empresa_id
-		FROM pagos_wompi
-		WHERE (transaction_id = ? AND ? <> '') OR (reference = ? AND ? <> '')
-		ORDER BY id DESC
-		LIMIT 1
-	`, transactionID, transactionID, reference, reference)
+	read := func() (int64, int64, bool, error) {
+		row := queryRowSQLCompat(dbConn, `
+			SELECT licencia_id, empresa_id
+			FROM pagos_wompi
+			WHERE (transaction_id = ? AND ? <> '') OR (reference = ? AND ? <> '')
+			ORDER BY id DESC
+			LIMIT 1
+		`, transactionID, transactionID, reference, reference)
 
-	var licenciaID sql.NullInt64
-	var empresaID sql.NullInt64
-	if err := row.Scan(&licenciaID, &empresaID); err != nil {
-		if err == sql.ErrNoRows {
+		var licenciaID sql.NullInt64
+		var empresaID sql.NullInt64
+		if err := row.Scan(&licenciaID, &empresaID); err != nil {
+			if err == sql.ErrNoRows {
+				return 0, 0, false, nil
+			}
+			return 0, 0, false, err
+		}
+
+		if !licenciaID.Valid || !empresaID.Valid {
 			return 0, 0, false, nil
 		}
+
+		return licenciaID.Int64, empresaID.Int64, true, nil
+	}
+	licenciaID, empresaID, found, err := read()
+	if err == nil {
+		return licenciaID, empresaID, found, nil
+	}
+	if !isMissingTableError(err) && !isMissingColumnError(err) {
 		return 0, 0, false, err
 	}
-
-	if !licenciaID.Valid || !empresaID.Valid {
-		return 0, 0, false, nil
+	if schemaErr := EnsurePaymentGatewaySchema(dbConn); schemaErr != nil {
+		return 0, 0, false, err
 	}
-
-	return licenciaID.Int64, empresaID.Int64, true, nil
+	return read()
 }
 
 // ActivateLicenciaForEmpresa asigna y activa una licencia para una empresa, estableciendo fechas de inicio y fin

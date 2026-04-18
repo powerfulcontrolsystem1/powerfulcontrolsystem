@@ -4840,6 +4840,89 @@ body.has-floating-menu .header .form-actions{
   object-fit:contain !important;
 }
 
+/* Ajuste final: selector de empresas compacto y botonera al pie */
+.empresas-grid{
+  gap:12px !important;
+  grid-template-columns:repeat(auto-fit, minmax(228px, 240px)) !important;
+  justify-content:center !important;
+  max-width:1040px !important;
+}
+
+.empresas-grid .card-link{
+  height:100% !important;
+  justify-content:center !important;
+}
+
+.empresas-grid .portal-card.empresa-card{
+  width:100% !important;
+  max-width:240px !important;
+  min-height:216px !important;
+}
+
+.empresas-grid .portal-card.empresa-card .card-body,
+.empresas-grid .portal-card.empresa-card .card-body.empresa-card-body{
+  display:flex !important;
+  flex:1 1 auto !important;
+  min-height:100% !important;
+  padding:14px 12px 12px !important;
+  gap:10px !important;
+}
+
+.empresas-grid .portal-card.empresa-card .card-title{
+  padding-top:38px !important;
+  font-size:clamp(0.98rem, 1.45vw, 1.12rem) !important;
+  margin-bottom:0 !important;
+}
+
+.empresas-grid .portal-card.empresa-card .card-desc{
+  flex:1 1 auto !important;
+  margin-bottom:0 !important;
+  font-size:0.86rem !important;
+  line-height:1.35 !important;
+  display:-webkit-box !important;
+  -webkit-box-orient:vertical !important;
+  -webkit-line-clamp:4 !important;
+  overflow:hidden !important;
+}
+
+.empresas-grid .portal-card.empresa-card .card-actions,
+.empresas-grid .portal-card.empresa-card .empresa-card-actions{
+  width:100% !important;
+  margin-top:auto !important;
+  justify-content:center !important;
+  align-items:flex-end !important;
+  gap:8px !important;
+}
+
+.empresas-grid .portal-card.empresa-card .license-indicator{
+  min-height:40px !important;
+  min-width:132px !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  line-height:1.15 !important;
+}
+
+.empresas-grid .portal-card.empresa-card .download-data,
+.empresas-grid .portal-card.empresa-card .card-download .license-indicator{
+  width:40px !important;
+  height:40px !important;
+  min-width:40px !important;
+  min-height:40px !important;
+}
+
+@media (max-width: 780px){
+  .empresas-grid{
+    grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)) !important;
+    max-width:none !important;
+  }
+
+  .empresas-grid .portal-card.empresa-card{
+    max-width:none !important;
+    min-height:208px !important;
+  }
+}
+
 .ai-chat-bubble{
   max-width:88%;
   border:1px solid var(--border);

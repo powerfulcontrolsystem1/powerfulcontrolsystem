@@ -704,6 +704,124 @@ func TestEpaycoTransactionStatusHandlerActivatesOnceAndCapturesEmail(t *testing.
 	}
 }
 
+func TestEpaycoTransactionStatusHandlerUsesEmpresaScopeForActivationMailBody(t *testing.T) {
+	t.Setenv("PCS_MAIL_TEST_MODE", "1")
+
+	dbSuper := openTestSQLite(t, "super_epayco_scope_activation_mail.db")
+	ensurePaymentsHandlerTestSchema(t, dbSuper)
+
+	if _, err := dbSuper.Exec(`ALTER TABLE empresas ADD COLUMN empresa_id INTEGER`); err != nil {
+		t.Fatalf("extend empresas with empresa_id: %v", err)
+	}
+	if _, err := dbSuper.Exec(`ALTER TABLE empresas ADD COLUMN nit TEXT`); err != nil {
+		t.Fatalf("extend empresas with nit: %v", err)
+	}
+	if _, err := dbSuper.Exec(`ALTER TABLE empresas ADD COLUMN tipo_id INTEGER`); err != nil {
+		t.Fatalf("extend empresas with tipo_id: %v", err)
+	}
+	if _, err := dbSuper.Exec(`ALTER TABLE empresas ADD COLUMN tipo_nombre TEXT`); err != nil {
+		t.Fatalf("extend empresas with tipo_nombre: %v", err)
+	}
+	if _, err := dbSuper.Exec(`ALTER TABLE empresas ADD COLUMN fecha_creacion TEXT`); err != nil {
+		t.Fatalf("extend empresas with fecha_creacion: %v", err)
+	}
+	if _, err := dbSuper.Exec(`ALTER TABLE empresas ADD COLUMN fecha_actualizacion TEXT`); err != nil {
+		t.Fatalf("extend empresas with fecha_actualizacion: %v", err)
+	}
+	if _, err := dbSuper.Exec(`ALTER TABLE empresas ADD COLUMN estado TEXT`); err != nil {
+		t.Fatalf("extend empresas with estado: %v", err)
+	}
+	if _, err := dbSuper.Exec(`ALTER TABLE empresas ADD COLUMN observaciones TEXT`); err != nil {
+		t.Fatalf("extend empresas with observaciones: %v", err)
+	}
+
+	if _, err := dbSuper.Exec(`INSERT INTO empresas (id, empresa_id, nombre, usuario_creador) VALUES (91, 77, 'Hotel Scope Demo', 'scope-owner@demo.com')`); err != nil {
+		t.Fatalf("seed scoped empresa: %v", err)
+	}
+	if _, err := dbSuper.Exec(`
+		INSERT INTO licencias (id, empresa_id, tipo_id, nombre, descripcion, valor, duracion_dias, modulos_habilitados, super_rol_habilitado, fecha_creacion, activo)
+		VALUES (1, 0, 1, 'Plan Scope Mail', 'Prueba correo por alcance logico', 159900, 30, '', 0, datetime('now','localtime'), 1)
+	`); err != nil {
+		t.Fatalf("seed licencia: %v", err)
+	}
+
+	internalRef := "EPAYCO-LIC-1-EMP-77-SCOPE"
+	if _, err := dbpkg.CreateEpaycoPaymentRecord(dbSuper, 1, 77, internalRef, internalRef, "PENDING", `{"customer_email":"scope-client@demo.com","provider":"epayco"}`, "", ""); err != nil {
+		t.Fatalf("seed pagos_epayco: %v", err)
+	}
+
+	originalTransport := http.DefaultTransport
+	http.DefaultTransport = roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		body := `{"data":{"x_transaction_id":"ep_tx_scope_1","x_ref_payco":"ep_ref_scope_1","invoice":"EPAYCO-LIC-1-EMP-77-SCOPE","x_cod_response":"1","x_response":"Aceptada"},"status":true}`
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Header:     make(http.Header),
+			Body:       io.NopCloser(strings.NewReader(body)),
+		}, nil
+	})
+	defer func() { http.DefaultTransport = originalTransport }()
+
+	h := EpaycoTransactionStatusHandler(dbSuper)
+	req := httptest.NewRequest(http.MethodGet, "/epayco/transaction_status?id=ep_tx_scope_1&reference=ep_ref_scope_1&licencia_id=1&empresa_id=77", nil)
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, rr.Code, rr.Body.String())
+	}
+
+	var cuerpo string
+	if err := dbSuper.QueryRow(`SELECT cuerpo FROM super_correo_notificaciones_prueba WHERE tipo = 'licencia_activada_pago' AND destinatario = 'scope-client@demo.com' ORDER BY id DESC LIMIT 1`).Scan(&cuerpo); err != nil {
+		t.Fatalf("load captured mail body: %v", err)
+	}
+	if !strings.Contains(cuerpo, "Empresa: Hotel Scope Demo") {
+		t.Fatalf("expected mail body to include scoped company name, got %q", cuerpo)
+	}
+}
+
+func TestEpaycoTransactionStatusHandlerRejectsUnexpectedEmpresaContext(t *testing.T) {
+	dbSuper := openTestSQLite(t, "super_epayco_context_mismatch.db")
+	ensurePaymentsHandlerTestSchema(t, dbSuper)
+
+	if _, err := dbSuper.Exec(`INSERT INTO empresas (id, nombre, usuario_creador) VALUES (7, 'Hotel Siete', 'owner7@demo.com')`); err != nil {
+		t.Fatalf("seed empresa: %v", err)
+	}
+	if _, err := dbSuper.Exec(`
+		INSERT INTO licencias (id, empresa_id, tipo_id, nombre, descripcion, valor, duracion_dias, modulos_habilitados, super_rol_habilitado, fecha_creacion, activo)
+		VALUES (1, 0, 1, 'Plan Mismatch', 'Prueba mismatch de contexto', 159900, 30, '', 0, datetime('now','localtime'), 1)
+	`); err != nil {
+		t.Fatalf("seed licencia: %v", err)
+	}
+
+	internalRef := "EPAYCO-LIC-1-EMP-7-MISMATCH"
+	if _, err := dbpkg.CreateEpaycoPaymentRecord(dbSuper, 1, 7, internalRef, internalRef, "PENDING", `{"customer_email":"mismatch@demo.com","provider":"epayco"}`, "", ""); err != nil {
+		t.Fatalf("seed pagos_epayco: %v", err)
+	}
+
+	originalTransport := http.DefaultTransport
+	http.DefaultTransport = roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		body := `{"data":{"x_transaction_id":"ep_tx_mismatch_1","x_ref_payco":"ep_ref_mismatch_1","invoice":"EPAYCO-LIC-1-EMP-7-MISMATCH","x_cod_response":"1","x_response":"Aceptada"},"status":true}`
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Header:     make(http.Header),
+			Body:       io.NopCloser(strings.NewReader(body)),
+		}, nil
+	})
+	defer func() { http.DefaultTransport = originalTransport }()
+
+	h := EpaycoTransactionStatusHandler(dbSuper)
+	req := httptest.NewRequest(http.MethodGet, "/epayco/transaction_status?id=ep_tx_mismatch_1&reference=ep_ref_mismatch_1&licencia_id=1&empresa_id=6", nil)
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusConflict {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusConflict, rr.Code, rr.Body.String())
+	}
+	if !strings.Contains(rr.Body.String(), "no corresponde a la empresa o licencia abierta") {
+		t.Fatalf("expected mismatch message, got %s", rr.Body.String())
+	}
+}
+
 func TestEpaycoWebhookHandlerFindsContextUsingInvoiceFallback(t *testing.T) {
 	t.Setenv("PCS_MAIL_TEST_MODE", "1")
 

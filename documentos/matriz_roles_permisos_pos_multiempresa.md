@@ -12,6 +12,15 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 	- `backend/handlers/payments_handlers.go` reintenta el correo de activacion en aprobados posteriores cuando la licencia ya quedó activa pero la notificacion aun no se habia confirmado, y marca el envio dentro del `raw_payload` para no duplicarlo.
 	- Impacto de matriz: sin cambios en roles ni wrappers; `/epayco/*` sigue siendo un flujo publico de checkout y la mejora solo fortalece la entrega del correo transaccional.
 
+- Actualizacion 2026-04-18 (checkout de licencias: validacion de contexto esperado por empresa/licencia):
+	- `backend/handlers/payments_handlers.go`, `backend/db/db.go`, `backend/handlers/payments_handlers_test.go` y `web/pagar_licencia.html` endurecen la conciliacion publica para que `/epayco/transaction_status` y `/wompi/transaction_status` comparen el pago resuelto contra el `empresa_id` y `licencia_id` de la pagina abierta.
+	- El correo de activacion resuelve ahora la empresa por `id` fisico o por `empresa_id` logico, manteniendo el aislamiento funcional por empresa incluso cuando la tabla `empresas` evoluciono con ids distintos del alcance operativo.
+	- Impacto de matriz: sin cambios en permisos ni wrappers; la mejora solo refuerza el aislamiento multiempresa del checkout publico.
+
+- Actualizacion 2026-04-18 (selector de empresas: tarjetas compactas con botonera al pie):
+	- `web/estilos.css` reduce el tamano visual de las tarjetas de `seleccionar_empresa.html` y fija la botonera inferior centrada al pie de cada bloque, sin tocar rutas, wrappers ni acciones disponibles.
+	- Impacto de matriz: sin cambios en permisos, roles o alcance; el selector mantiene la misma operacion autenticada.
+
 - Actualizacion 2026-04-18 (super configuracion avanzada: prueba real de Gmail):
 	- `backend/handlers/usuarios_empresa.go` agrega `POST /super/api/config/gmail?action=test` para enviar un correo de prueba real con la configuracion SMTP ya guardada, y `web/super/configuracion_avanzada.html` lo invoca desde el boton `Probar Gmail`.
 	- Impacto de matriz: sin cambios en roles ni wrappers; la accion sigue reservada al mismo modulo super protegido de configuracion avanzada.
@@ -38,6 +47,14 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 
 - Actualizacion 2026-04-18 (arcade publico: Brigada burbujas 3D plus agrega ajustes tactiles persistentes):
 	- `web/Juegos/brigada_burbujas_3d_plus.html` añade auto-disparo opcional, vibracion y ajustes de sensibilidad persistidos en `localStorage`, sin alterar el modelo de acceso del arcade.
+	- Impacto de matriz: sin cambios en roles, wrappers ni permisos; `Juegos` sigue siendo una superficie publica sin autenticacion bajo `/Juegos/*`.
+
+- Actualizacion 2026-04-18 (arcade publico: Brigada burbujas 3D plus refina HUD y ayuda de mira movil):
+	- `web/Juegos/brigada_burbujas_3d_plus.html` agrega un boton visible de auto-disparo en el HUD y una asistencia suave de apuntado configurable solo para la experiencia tactil.
+	- Impacto de matriz: sin cambios en roles, wrappers ni permisos; `Juegos` sigue siendo una superficie publica sin autenticacion bajo `/Juegos/*`.
+
+- Actualizacion 2026-04-18 (arcade publico: Brigada burbujas 3D plus activa preset facil por defecto):
+	- `web/Juegos/brigada_burbujas_3d_plus.html` migra configuraciones tactiles antiguas para arrancar con auto-disparo activo y ayuda de mira reforzada en celular.
 	- Impacto de matriz: sin cambios en roles, wrappers ni permisos; `Juegos` sigue siendo una superficie publica sin autenticacion bajo `/Juegos/*`.
 
 - Actualizacion 2026-04-17 (super seguridad: vista en modo oscuro):

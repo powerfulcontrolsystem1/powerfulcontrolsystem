@@ -1,5 +1,16 @@
 Descripcion de archivos del proyecto
 
+Actualizacion 2026-04-18: selector de empresas compacta tarjetas y fija botonera al pie
+ - Archivos modificados:
+	 - web/estilos.css : Reduce el ancho y alto visual de las tarjetas de `seleccionar_empresa.html`, limita mejor la descripcion y deja la botonera inferior centrada al pie de cada tarjeta.
+	 - documentos/descripcion_del_proyecto
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: El selector de empresas queda mas compacto en escritorio y mantiene los botones del bloque alineados abajo y centrados, sin alterar la accion principal de entrar, comprar licencia o descargar informacion.
+
 Actualizacion 2026-04-18: configuracion avanzada ejecuta prueba real de Gmail
  - Archivos modificados:
 	 - backend/handlers/usuarios_empresa.go : Agrega el action `test` en `GmailConfigHandler` para enviar un correo real de prueba a `powerfulcontrolsystem@gmail.com` usando la configuracion SMTP guardada y, en modo test, capturarlo en `super_correo_notificaciones_prueba`.
@@ -26,6 +37,21 @@ Actualizacion 2026-04-18: checkout Epayco reintenta correo de activacion sin dup
 	 - documentos/historial_de_cambios
 	 - CHANGELOG.md
  - Descripcion: El modulo de licencias con Epayco queda mas resistente ante carreras entre webhook y polling, y no pierde el correo de activacion si la aprobacion ya existia pero la notificacion aun no habia quedado registrada.
+
+Actualizacion 2026-04-18: checkout de licencias valida contexto multiempresa y corrige empresa en correo
+ - Archivos modificados:
+	 - backend/db/db.go : Agrega `GetEmpresaByScopeID` y endurece `pagos_epayco` / `pagos_wompi` con `EnsurePaymentGatewaySchema` + retry para create/get/update/context.
+	 - backend/handlers/payments_handlers.go : Resuelve la empresa por alcance logico al construir el correo de activacion y rechaza `transaction_status` cuando el pago no corresponde a la licencia o empresa abiertas.
+	 - backend/handlers/payments_handlers_test.go : Añade regresiones para correo con empresa logica y para conflicto por contexto cruzado entre empresas.
+	 - web/pagar_licencia.html : Reenvia `licencia_id` y `empresa_id` en el polling y mantiene ese contexto explicito al cerrar el checkout aprobado.
+	 - documentos/descripcion_del_proyecto
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: El checkout deja de reconciliar pagos ajenos a la empresa abierta y el correo de activacion ya no cae al fallback `tu empresa` cuando la tabla `empresas` usa un id fisico distinto del `empresa_id` logico.
 
 Actualizacion 2026-04-17: selector de empresas mueve editar al menu y renueva tarjetas
  - Archivos modificados:
@@ -99,6 +125,30 @@ Actualizacion 2026-04-18: Brigada burbujas 3D plus agrega auto-disparo y panel d
 	 - documentos/historial_de_cambios
 	 - CHANGELOG.md
  - Descripcion: El juego pasa de tener controles tactiles fijos a una capa movil configurable por jugador, manteniendo todas las preferencias en local y mejorando la respuesta sensorial durante el combate.
+
+Actualizacion 2026-04-18: Brigada burbujas 3D plus agrega boton Auto y ayuda de mira movil
+ - Archivos modificados:
+	 - web/Juegos/brigada_burbujas_3d_plus.html : Añade boton visible de auto-disparo en el HUD, slider de intensidad de impacto, slider de ayuda de mira y correccion angular suave para apuntado tactil.
+	 - documentos/descripcion_del_proyecto
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: El modo movil deja de depender por completo del panel de ajustes para el auto-disparo y gana una asistencia configurable que mejora la punteria sin quitar control manual al jugador.
+
+Actualizacion 2026-04-18: Brigada burbujas 3D plus activa auto-disparo facil desde el arranque
+ - Archivos modificados:
+	 - web/Juegos/brigada_burbujas_3d_plus.html : Completa el HUD/panel tactil que usa el script, activa un preset facil por defecto y migra configuraciones antiguas de `localStorage` para dejar `Auto ON` y ayuda de mira mas alta en movil.
+	 - documentos/descripcion_del_proyecto
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: El shooter deja listo el modo celular para jugar sin configuracion previa, incluso en navegadores que arrastraban ajustes viejos con auto-disparo apagado.
 
 Actualizacion 2026-04-17: Brigada burbujas 3D plus suma campaña larga, poderes e IA avanzada
  - Archivos modificados:

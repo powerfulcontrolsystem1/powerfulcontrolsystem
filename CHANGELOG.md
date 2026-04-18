@@ -2,6 +2,16 @@
 
 ## 2026-04-18
 
+- Checkout de licencias: valida contexto multiempresa y corrige la empresa usada en el correo de activacion.
+	- Archivos modificados: `backend/db/db.go`, `backend/handlers/payments_handlers.go`, `backend/handlers/payments_handlers_test.go`, `web/pagar_licencia.html`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: el backend ahora resuelve la empresa por `empresa_id` logico al construir el correo de activacion, endurece los helpers de `pagos_epayco` y `pagos_wompi` con autorreparacion del esquema, y rechaza conciliaciones de `transaction_status` cuando la referencia pertenece a otra empresa o licencia distinta de la pagina abierta; el frontend envia ese contexto esperado en cada polling y lo mantiene al cerrar el pago aprobado.
+	- Verificacion: `go test ./handlers -run 'Test(EpaycoTransactionStatusHandlerActivatesOnceAndCapturesEmail|EpaycoTransactionStatusHandlerUsesEmpresaScopeForActivationMailBody|EpaycoTransactionStatusHandlerRejectsUnexpectedEmpresaContext|EpaycoWebhookHandlerFindsContextUsingInvoiceFallback|EpaycoTransactionStatusHandlerRetriesActivationEmailAfterWebhookActivatedFirst|WompiTransactionStatusHandlerAllowsReferenceLookup)' -count=1`; `go test ./ ./auth ./db ./handlers ./metrics ./utils -run '^$' -count=1`.
+
+- Selector de empresas: tarjetas mas pequeñas y botones alineados al pie.
+	- Archivos modificados: `web/estilos.css`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: `seleccionar_empresa.html` mantiene su mismo flujo, pero las tarjetas del grid se compactan en escritorio y la botonera inferior queda centrada y pegada al pie de cada bloque para que la fila de acciones no quede flotando a media altura.
+	- Verificacion: diagnostico del editor sin errores en `web/estilos.css`.
+
 - Super configuracion avanzada: el boton `Probar Gmail` ahora envia un correo real de prueba.
 	- Archivos modificados: `backend/handlers/usuarios_empresa.go`, `backend/handlers/system_empresas_handlers_test.go`, `web/super/configuracion_avanzada.html`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
 	- Descripcion: la configuracion avanzada de Gmail deja de validar solo si existen credenciales y pasa a ejecutar un envio de prueba real a `powerfulcontrolsystem@gmail.com`, reutilizando la configuracion SMTP guardada en PostgreSQL; en pruebas automatizadas el flujo se captura en la tabla de notificaciones de test.
@@ -27,13 +37,22 @@
 	- Descripcion: el flujo Epayco deja de depender de una activación “recién creada” para enviar el correo; además, ahora también recupera el `customer_email` cuando la validación lo devuelve anidado en `data`, evitando perder la notificación si el webhook aprobó primero o si el primer intento falló temporalmente.
 	- Verificacion: `go test ./handlers -run 'TestEpayco(TransactionStatusHandlerActivatesOnceAndCapturesEmail|WebhookHandlerFindsContextUsingInvoiceFallback|TransactionStatusHandlerRetriesActivationEmailAfterWebhookActivatedFirst)' -count=1`; `go test ./ ./auth ./db ./handlers ./metrics ./utils -run '^$' -count=1`.
 
+- Arcade publico: Brigada burbujas 3D plus agrega boton Auto visible, ayuda de mira movil y ajuste fino de impacto.
+	- Archivos modificados: `web/Juegos/brigada_burbujas_3d_plus.html`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: El HUD movil incorpora un toggle directo de auto-disparo y el panel tactil gana intensidad de feedback y ayuda suave de mira configurable para mejorar la respuesta en celular sin quitar control manual.
+	- Verificacion: diagnostico del editor sin errores en `web/Juegos/brigada_burbujas_3d_plus.html`.
+
+- Arcade publico: Brigada burbujas 3D plus activa auto-disparo y preset facil por defecto en movil.
+	- Archivos modificados: `web/Juegos/brigada_burbujas_3d_plus.html`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: El juego completa el HUD y el panel tactil, fuerza una migracion unica de preferencias antiguas para dejar `Auto ON`, subir la ayuda de mira y suavizar el control desde el primer arranque en celular.
+	- Verificacion: diagnostico del editor sin errores en `web/Juegos/brigada_burbujas_3d_plus.html`.
+
 ## 2026-04-17
 
 - Checkout de licencias: Epayco queda en tarjeta blanca, compacta y sin correo visible.
 	- Archivos modificados: `web/pagar_licencia.html`, `web/estilos.css`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
 	- Descripcion: `pagar_licencia.html` elimina el bloque separado de formas de pago Epayco, oculta el campo de correo del panel y deja el checkout en una tarjeta blanca mas pequeña y centrada; `web/estilos.css` adapta el branding del panel para ese layout.
-- Se agrego a `web/Juegos/brigada_burbujas_3d_plus.html` un panel de ajustes tactiles persistentes con auto-disparo opcional, vibracion, sensibilidad de joystick/giro y feedback visual mas fuerte durante el combate.
-	- Verificacion: diagnostico del editor sin errores en `web/pagar_licencia.html` y `web/estilos.css`.
+
 
 ## 2026-04-17
 
