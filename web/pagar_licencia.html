@@ -352,10 +352,37 @@
                     '<span class="checkout-mini-pill">Opcional</span>'+
                     '<span class="checkout-mini-pill">Se valida al crear la transaccion</span>'+
                   '</div>'+
+                  '<div id="discountCodeStatus" class="form-help checkout-discount-status"></div>'+
                 '</article>'+
               '</div>'+
+              '<section class="card checkout-summary-card">'+
+                '<div class="checkout-payment-header">'+
+                  '<div>'+
+                    '<p class="checkout-eyebrow">Resumen</p>'+
+                    '<h3 class="payment-method-title">Total de la licencia</h3>'+
+                  '</div>'+
+                  '<p class="checkout-payment-copy">El total cambia si el código de descuento aplica. Si llega a cero, la licencia se activa sin pasarela.</p>'+
+                '</div>'+
+                '<div class="checkout-totals-grid">'+
+                  '<div class="checkout-total-item"><span>Valor base</span><strong id="summaryOriginalValue">' + escapeHtml(formatCurrency(licenciaValor)) + '</strong></div>'+
+                  '<div class="checkout-total-item"><span>Descuento</span><strong id="summaryDiscountValue">' + escapeHtml(formatCurrency(0)) + '</strong></div>'+
+                  '<div class="checkout-total-item total"><span>Total</span><strong id="summaryTotalValue">' + escapeHtml(formatCurrency(licenciaValor)) + '</strong></div>'+
+                '</div>'+
+                '<div id="checkoutSummaryMessage" class="form-help checkout-payment-feedback"></div>'+
+              '</section>'+
+              '<section id="freeActivationSection" class="card checkout-free-activation" style="display:none;">'+
+                '<div class="checkout-payment-header">'+
+                  '<div>'+
+                    '<p class="checkout-eyebrow">Activacion directa</p>'+
+                    '<h3 class="payment-method-title">No se requiere pago</h3>'+
+                  '</div>'+
+                  '<p class="checkout-payment-copy">Esta licencia quedó en total cero. Se activará una sola vez por empresa y no abrirá pasarela.</p>'+
+                '</div>'+
+                '<button id="activateFreeBtn" class="btn" type="button">Activar licencia</button>'+
+                '<div id="freeActivationStatus" class="form-help"></div>'+
+              '</section>'+
               '<div id="paymentFeedback" class="form-help checkout-payment-feedback"></div>'+
-              '<section class="card checkout-payment-hub">'+
+              '<section id="paymentHub" class="card checkout-payment-hub">'+
                 '<div class="checkout-payment-header">'+
                   '<div>'+
                     '<p class="checkout-eyebrow">Pago</p>'+
@@ -417,8 +444,88 @@
             epaycoTermsChk: document.getElementById('epaycoTermsChk'),
             epaycoStatus: document.getElementById('epaycoStatus'),
             discountCodeInput: document.getElementById('discountCode'),
-            asesorIdInput: document.getElementById('asesorId')
+	            asesorIdInput: document.getElementById('asesorId'),
+            summaryOriginalValue: document.getElementById('summaryOriginalValue'),
+            summaryDiscountValue: document.getElementById('summaryDiscountValue'),
+            summaryTotalValue: document.getElementById('summaryTotalValue'),
+            checkoutSummaryMessage: document.getElementById('checkoutSummaryMessage'),
+            discountCodeStatus: document.getElementById('discountCodeStatus'),
+            freeActivationSection: document.getElementById('freeActivationSection'),
+            freeActivationStatus: document.getElementById('freeActivationStatus'),
+            activateFreeBtn: document.getElementById('activateFreeBtn'),
+            paymentHub: document.getElementById('paymentHub')
           };
+
+          var checkoutSummaryState = null;
+          var summaryTimer = null;
+
+          async function fetchCheckoutSummary(){
+            var query = new URLSearchParams();
+            query.set('licencia_id', String(licenciaId || ''));
+            if (empresaId) query.set('empresa_id', String(empresaId));
+            var code = String((ui.discountCodeInput && ui.discountCodeInput.value) || '').trim();
+            if (code) query.set('discount_code', code);
+            var res = await fetch('/api/public/licencias/checkout_summary?' + query.toString(), { credentials: 'same-origin' });
+            var raw = await res.text();
+            var data = null;
+            try { data = raw ? JSON.parse(raw) : null; } catch(e) { data = null; }
+            if (!res.ok) throw new Error((data && data.error) || raw || 'No se pudo calcular el total de la licencia.');
+            return data && data.summary ? data.summary : null;
+          }
+
+          function togglePaymentVisibility(showPaymentHub){
+            if (ui.paymentHub) ui.paymentHub.style.display = showPaymentHub ? '' : 'none';
+            if (ui.freeActivationSection) ui.freeActivationSection.style.display = showPaymentHub ? 'none' : '';
+          }
+
+          function renderCheckoutSummary(summary){
+            checkoutSummaryState = summary || null;
+            var originalValue = summary && typeof summary.original_value === 'number' ? summary.original_value : licenciaValor;
+            var discountValue = summary && typeof summary.discount_value === 'number' ? summary.discount_value : 0;
+            var totalValue = summary && typeof summary.total_value === 'number' ? summary.total_value : licenciaValor;
+            if (ui.summaryOriginalValue) ui.summaryOriginalValue.textContent = formatCurrency(originalValue);
+            if (ui.summaryDiscountValue) ui.summaryDiscountValue.textContent = formatCurrency(discountValue);
+            if (ui.summaryTotalValue) ui.summaryTotalValue.textContent = formatCurrency(totalValue);
+            var priceChip = document.querySelector('.checkout-price-chip');
+            if (priceChip) priceChip.textContent = formatCurrency(totalValue);
+            if (ui.checkoutSummaryMessage) ui.checkoutSummaryMessage.textContent = summary && summary.message ? summary.message : '';
+            if (ui.discountCodeStatus) {
+              if (summary && summary.discount_applied) {
+                ui.discountCodeStatus.textContent = 'Código aplicado correctamente' + (summary.discount_label ? ': ' + summary.discount_label : '.');
+                ui.discountCodeStatus.classList.remove('error');
+                ui.discountCodeStatus.classList.add('success');
+              } else {
+                ui.discountCodeStatus.textContent = String((ui.discountCodeInput && ui.discountCodeInput.value) || '').trim() ? 'El código no cambió el total de esta licencia.' : '';
+                ui.discountCodeStatus.classList.remove('success');
+                ui.discountCodeStatus.classList.remove('error');
+              }
+            }
+            var zeroTotal = !!(summary && summary.is_zero_total);
+            togglePaymentVisibility(!zeroTotal);
+            if (ui.activateFreeBtn) ui.activateFreeBtn.disabled = !!(summary && summary.zero_total_blocked);
+            if (ui.freeActivationStatus) {
+              ui.freeActivationStatus.textContent = summary && summary.message ? summary.message : '';
+              ui.freeActivationStatus.classList.toggle('error', !!(summary && summary.zero_total_blocked));
+            }
+          }
+
+          async function refreshCheckoutSummary(){
+            try {
+              var summary = await fetchCheckoutSummary();
+              renderCheckoutSummary(summary);
+            } catch (err) {
+              if (ui.discountCodeStatus) {
+                ui.discountCodeStatus.textContent = err && err.message ? err.message : String(err);
+                ui.discountCodeStatus.classList.remove('success');
+                ui.discountCodeStatus.classList.add('error');
+              }
+            }
+          }
+
+          function scheduleCheckoutSummaryRefresh(){
+            if (summaryTimer) window.clearTimeout(summaryTimer);
+            summaryTimer = window.setTimeout(refreshCheckoutSummary, 220);
+          }
 
           function updateUrlState(updates){
             const nextParams = new URLSearchParams(window.location.search);
@@ -595,6 +702,51 @@
 
           if (ui.selectWompiCard) ui.selectWompiCard.addEventListener('click', function(){ setPaymentMethod('wompi'); });
           if (ui.selectEpaycoCard) ui.selectEpaycoCard.addEventListener('click', function(){ setPaymentMethod('epayco'); });
+          if (ui.discountCodeInput) {
+            ui.discountCodeInput.addEventListener('input', scheduleCheckoutSummaryRefresh);
+            ui.discountCodeInput.addEventListener('blur', refreshCheckoutSummary);
+          }
+
+          if (ui.activateFreeBtn) ui.activateFreeBtn.addEventListener('click', async function(){
+            var summary = checkoutSummaryState;
+            if (!summary || !summary.is_zero_total) {
+              if (ui.freeActivationStatus) ui.freeActivationStatus.textContent = 'Esta licencia todavía no quedó en total cero.';
+              return;
+            }
+            if (summary.zero_total_blocked) {
+              if (ui.freeActivationStatus) ui.freeActivationStatus.textContent = summary.message || 'Esta licencia gratuita ya fue usada por esta empresa.';
+              return;
+            }
+            ui.activateFreeBtn.disabled = true;
+            if (ui.freeActivationStatus) ui.freeActivationStatus.textContent = 'Activando licencia...';
+            try {
+              var payload = {
+                licencia_id: Number(licenciaId),
+                empresa_id: Number(empresaId || 0),
+                motivo: summary.discount_applied ? 'descuento_total_cero' : 'licencia_valor_cero'
+              };
+              var freeCode = String((ui.discountCodeInput && ui.discountCodeInput.value) || '').trim();
+              if (freeCode) payload.discount_code = freeCode;
+              var freeAsesor = String((ui.asesorIdInput && ui.asesorIdInput.value) || '').trim();
+              if (freeAsesor) { payload.asesor_id = freeAsesor; payload.vendedor_id = freeAsesor; }
+              var freeRes = await fetch('/licencias/activar_sin_pago', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify(payload)
+              });
+              var freeRaw = await freeRes.text();
+              var freeData = null;
+              try { freeData = freeRaw ? JSON.parse(freeRaw) : null; } catch(e) { freeData = null; }
+              if (!freeRes.ok) throw new Error((freeData && freeData.error) || freeRaw || 'No se pudo activar la licencia.');
+              if (ui.freeActivationStatus) ui.freeActivationStatus.textContent = 'Licencia activada correctamente. Redirigiendo...';
+              window.setTimeout(function(){
+                window.location.href = (freeData && freeData.redirect_url) ? freeData.redirect_url : ('/administrar_empresa.html?id=' + encodeURIComponent(String(empresaId || '')));
+              }, 500);
+            } catch (err) {
+              ui.activateFreeBtn.disabled = false;
+              if (ui.freeActivationStatus) ui.freeActivationStatus.textContent = err && err.message ? err.message : String(err);
+            }
+          });
 
           const preferredProvider = normalizeProvider(params.get('provider') || params.get('metodo') || params.get('method'));
           const configuredDefaultProvider = normalizeProvider(methodsPayload.default_method);
@@ -605,6 +757,8 @@
             if (availableMethods.indexOf(preferredProvider) >= 0) setPaymentMethod(preferredProvider);
             else setPaymentMethod(resolvedDefaultProvider);
           }
+
+          refreshCheckoutSummary();
 
           if (wompiProvider && wompiProvider.available) {
             try{

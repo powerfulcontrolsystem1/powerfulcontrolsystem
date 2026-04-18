@@ -5,6 +5,76 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Ventas simples por estación</title>
   <link rel="stylesheet" href="/estilos.css">
+  <style>
+    body.ventas-simple-compact-mode .ventas-simple-layout {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 14px;
+    }
+
+    body.ventas-simple-compact-mode .ventas-simple-kpis {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    body.ventas-simple-compact-mode .ventas-simple-kpis-metrics,
+    body.ventas-simple-compact-mode #metricasInfo {
+      display: none;
+    }
+
+    .ventas-simple-quick-actions {
+      display: none;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      padding: 12px;
+      margin-bottom: 14px;
+      border: 1px solid rgba(18, 71, 52, 0.12);
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(255, 248, 236, 0.96), rgba(239, 251, 244, 0.96));
+    }
+
+    body.ventas-simple-compact-mode .ventas-simple-quick-actions {
+      display: flex;
+      position: sticky;
+      top: 10px;
+      z-index: 5;
+    }
+
+    .ventas-simple-quick-actions .btn {
+      min-width: 132px;
+    }
+
+    .ventas-simple-compact-total {
+      margin-left: auto;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: #124734;
+      color: #fff;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .ventas-simple-compact-hint {
+      display: none;
+      margin-top: 8px;
+    }
+
+    body.ventas-simple-compact-mode .ventas-simple-compact-hint {
+      display: block;
+    }
+
+    @media (max-width: 768px) {
+      .ventas-simple-quick-actions .btn {
+        min-width: 0;
+        flex: 1 1 140px;
+      }
+
+      .ventas-simple-compact-total {
+        width: 100%;
+        margin-left: 0;
+        text-align: center;
+      }
+    }
+  </style>
 </head>
 <body class="empresa-subpage ventas-simple-page">
   <div class="container empresa-module">
@@ -14,9 +84,10 @@
           <h1 class="empresa-title" id="pageTitle">Venta simple por estación</h1>
           <p id="empresaInfo">Empresa: cargando...</p>
           <p class="form-help" id="stationInfo">Estación: cargando...</p>
+          <p class="form-help ventas-simple-compact-hint" id="compactModeHint">Modo compacto activo: el flujo conserva el mismo carrito por estación y prioriza búsqueda, carrito y cobro en un solo panel.</p>
         </div>
         <div class="form-actions">
-          <span class="ventas-simple-tag">Supermercado</span>
+          <span class="ventas-simple-tag" id="variantTag">Supermercado</span>
           <button id="btnBackToStations" class="btn secondary" type="button">Regresar a estaciones</button>
           <button id="btnRecargar" class="btn secondary" type="button">Actualizar</button>
         </div>
@@ -42,6 +113,16 @@
       </div>
 
       <div id="mainMsg" class="form-help"></div>
+
+      <div class="ventas-simple-quick-actions" id="compactActionsBar">
+        <button id="btnCompactFocusSearch" class="btn secondary" type="button">Buscar producto</button>
+        <button id="btnCompactFocusCart" class="btn secondary" type="button">Ver carrito</button>
+        <button id="btnCompactFocusPay" class="btn secondary" type="button">Cobrar</button>
+        <button id="btnCompactSync" class="btn secondary" type="button">Sincronizar</button>
+        <button id="btnCompactNuevaVenta" class="btn secondary" type="button">Nueva venta</button>
+        <button id="btnCompactCorreccion" class="btn secondary" type="button">Corrección</button>
+        <span id="compactModeTotalPill" class="ventas-simple-compact-total">Total: $0</span>
+      </div>
 
       <div class="ventas-simple-sync-bar" id="syncBar">
         <span id="syncStatusTag" class="ventas-simple-sync-tag">En línea</span>
@@ -71,7 +152,7 @@
     </section>
 
     <div class="ventas-simple-layout">
-      <section class="card empresa-section">
+      <section class="card empresa-section" id="catalogSection">
         <div class="empresa-section-header">
           <h2>Catálogo rápido</h2>
         </div>
@@ -110,7 +191,7 @@
         </div>
       </section>
 
-      <section class="card empresa-section">
+      <section class="card empresa-section" id="cartSection">
         <div class="empresa-section-header">
           <h2>Carrito de estación</h2>
         </div>
@@ -135,7 +216,7 @@
           </table>
         </div>
 
-        <div class="card empresa-section">
+        <div class="card empresa-section" id="paySection">
           <div class="empresa-section-header">
             <h3 class="ventas-simple-section-title">Cobro simple</h3>
           </div>

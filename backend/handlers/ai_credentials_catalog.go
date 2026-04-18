@@ -21,6 +21,14 @@ func aiCredentialCatalogModels() []aiCredentialModelDef {
 			ConfigKey:    "ai.model.deepseek.deepseek_chat.api_key",
 			FreePlanNote: "DeepSeek: plan gratuito sujeto a limites y politicas de uso del proveedor.",
 		},
+		{
+			ModelID:      "ollama:ambis",
+			Provider:     "ollama",
+			DisplayName:  "Ambis Local",
+			ApiKeyEnv:    "",
+			ConfigKey:    "",
+			FreePlanNote: "Ambis Local: usa Ollama en el VPS por loopback, sin exponer credenciales ni acceso publico.",
+		},
 	}
 }
 
@@ -36,6 +44,9 @@ func aiCredentialByModelID() map[string]aiCredentialModelDef {
 func aiProviderConfigKey(provider string) string {
 	v := strings.ToLower(strings.TrimSpace(provider))
 	if v == "" {
+		return ""
+	}
+	if v == "ollama" {
 		return ""
 	}
 	return "ai.provider." + v + ".api_key"

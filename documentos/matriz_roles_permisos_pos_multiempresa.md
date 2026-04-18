@@ -8,6 +8,94 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 - Cuando se cree un modulo nuevo o se modifique uno existente, esta matriz debe actualizarse en la misma iteracion para reflejar permisos por rol/modulo/accion y el impacto en paginas del panel.
 - Esta actualizacion debe quedar sincronizada con `documentos/descripcion_de_modulos`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios` y `CHANGELOG.md`.
 
+- Actualizacion 2026-04-18 (inventario/productos: vistas separadas para bodegas y categorias):
+	- `web/administrar_empresa/administrar_productos.html` concentra la experiencia del modulo y expone tres vistas por query string: `productos`, `bodegas` y `categorias`.
+	- `web/administrar_empresa/productos/administrar_productos.html`, `web/administrar_empresa/productos/bodegas.html` y `web/administrar_empresa/productos/categorias.html` quedan como wrappers de navegacion que preservan `empresa_id` sin crear rutas nuevas ni duplicar logica CRUD.
+	- Impacto de matriz: sin cambios en permisos, roles o wrappers; la segmentacion es solo de UX dentro del mismo alcance autenticado del modulo inventario/productos.
+
+- Actualizacion 2026-04-18 (licencias: activacion gratis unica por empresa y checkout con total cero):
+	- `backend/main.go` expone `GET /api/public/licencias/checkout_summary` como apoyo al checkout publico de licencias, sin abrir privilegios nuevos ni exigir sesion.
+	- `backend/handlers/payments_handlers.go` mantiene `POST /licencias/activar_sin_pago`, pero ahora solo lo permite si el total final es cero y si la empresa no habia usado ya esa licencia gratis.
+	- `web/elegir_licencia.html` y `web/pagar_licencia.html` cambian el CTA visible a `Activar licencia` cuando el valor final queda en cero, sin alterar la matriz de roles; la restriccion efectiva sigue siendo comercial y multiempresa, no de autenticacion.
+	- Impacto de matriz: sin cambios de roles o wrappers; se refuerza una regla funcional del checkout publico para impedir reutilizacion gratuita de la misma licencia por la misma empresa.
+
+- Actualizacion 2026-04-18 (chat IA super/empresa: interruptor global de servicio):
+	- `web/super/configuracion_avanzada.html` y `backend/handlers/ai_config_handlers.go` agregan el interruptor global `ai.global.enabled` sin abrir rutas nuevas ni ampliar privilegios.
+	- `/api/empresa/chat_con_inteligencia_artificial/*` y `/super/api/chat_con_ia_global/*` conservan los mismos wrappers y controles de acceso, pero ahora rechazan el uso cuando la IA global está desactivada desde super.
+	- Impacto de matriz: sin cambios en roles, wrappers ni visibilidad base; solo se añade una compuerta operativa global administrada por `super_administrador`.
+
+- Actualizacion 2026-04-18 (chat IA super/empresa: aviso visual y prueba operativa):
+	- `web/administrar_empresa/chat_con_inteligencia_artificial.html` y `web/super/chat_con_ia_global.html` comunican explícitamente el estado `IA desactivada` sin cambiar permisos efectivos.
+	- `web/super/configuracion_avanzada.html` expone el botón `Probar IA contra VPS` como acción operativa de diagnóstico para `super_administrador`.
+	- Impacto de matriz: sin cambios en roles ni wrappers; mejora solo la claridad operativa del panel y de los chats.
+
+- Actualizacion 2026-04-18 (gobernanza tecnica documental: integraciones externas y reconciliacion documental):
+	- `documentos/gobernanza_tecnica/contratos/contrato_integraciones_bancarias_y_conectores_externos.md` formaliza `estado`, `health_check`, `sync_manual`, `rotar_credencial` y `monitoreo` sin alterar wrappers ni permisos efectivos.
+	- `documentos/gobernanza_tecnica/runbooks/runbook_reconciliacion_documental_fiscal_y_contable_externa.md` fija el diagnostico operativo entre compras, facturacion, reintentos fiscales y repositorio/versionado, sin introducir cambios en roles.
+	- Impacto de matriz: sin cambios en permisos o visibilidad; el alcance es documental y operativo transversal.
+
+- Actualizacion 2026-04-18 (gobernanza tecnica documental: repositorio documental y firmas externas):
+	- `documentos/gobernanza_tecnica/contratos/contrato_repositorio_documental_y_firmas_externas.md` formaliza el comportamiento de `/api/empresa/documentos/gestion` y `/api/empresa/documentos/firmas`, incluyendo `acceso`, `repositorio`, `versiones`, `versionar` y herencia de permisos desde el modulo documental.
+	- `documentos/gobernanza_tecnica/runbooks/runbook_versionado_documental_y_firmas_externas.md` fija el procedimiento reproducible para diagnosticar accesos denegados, historial incompleto, firmas huérfanas y versiones no marcadas como historicas.
+	- Impacto de matriz: sin cambios en permisos, wrappers o visibilidad; el alcance es documental y operativo transversal sobre reglas ya existentes.
+
+- Actualizacion 2026-04-18 (gobernanza tecnica documental: reconciliacion y evidencia regulatoria endurecida):
+	- Los contratos de repositorio documental, interoperabilidad y reportes ahora exigen reconciliar exportes regulatorios con la versión documental vigente y la firma asociada cuando exista.
+	- Los runbooks documentales dejan explícito que `include_denegados=1` solo sirve para diagnóstico y que un exporte no otorga acceso ni sustituye evidencia firmada.
+	- Impacto de matriz: sin cambios en permisos, wrappers o visibilidad; el ajuste solo endurece reglas de trazabilidad y uso operativo de la evidencia.
+
+- Actualizacion 2026-04-18 (gobernanza tecnica documental: checklist rapida para QA/soporte):
+	- `documentos/gobernanza_tecnica/runbooks/checklist_evidencia_documental_para_qa_y_soporte.md` resume el orden de validacion para `empresa_id`, rol, version vigente, firma y exporte documental antes de escalar incidentes.
+	- Impacto de matriz: sin cambios en permisos, wrappers o visibilidad; la checklist solo acelera diagnostico operativo sobre reglas ya vigentes.
+
+- Actualizacion 2026-04-18 (gobernanza tecnica documental: interoperabilidad documental e integraciones externas):
+	- `documentos/gobernanza_tecnica/contratos/contrato_interoperabilidad_documental_contable_y_fiscal_externa.md` formaliza el comportamiento de compras documentales, facturacion documental, versionado/acceso del repositorio y reconciliacion fiscal, sin alterar wrappers ni roles vigentes.
+	- `documentos/gobernanza_tecnica/runbooks/runbook_contingencias_integraciones_bancarias_y_conectores.md` fija el procedimiento operativo para `/api/empresa/integraciones/apis` y `/api/empresa/integraciones/bancos`, sin introducir cambios en permisos funcionales.
+	- Impacto de matriz: sin cambios en permisos, wrappers o visibilidad de paginas; el alcance es documental y operativo transversal.
+
+- Actualizacion 2026-04-18 (gobernanza tecnica documental: cierre de periodo y conciliacion bancaria):
+	- `documentos/gobernanza_tecnica/contratos/contrato_conciliacion_bancaria_y_cierre_periodo_contable.md` formaliza el comportamiento de `/api/empresa/finanzas/periodos`, `/api/empresa/finanzas/movimientos` y la conciliacion bancaria asociada, sin alterar wrappers ni roles vigentes.
+	- `documentos/gobernanza_tecnica/runbooks/runbook_cierre_periodo_y_conciliacion_bancaria.md` fija un procedimiento operativo reproducible para bloqueos por periodo cerrado, importacion de extractos y estados de conciliacion.
+	- Impacto de matriz: sin cambios en permisos, wrappers o visibilidad de paginas; el alcance es documental y operativo transversal.
+
+- Actualizacion 2026-04-18 (gobernanza tecnica documental: soporte remoto y contingencia de reportes):
+	- `documentos/gobernanza_tecnica/contratos/contrato_soporte_remoto_por_empresa_y_mesa_tecnica_central.md` formaliza el comportamiento de `/api/empresa/soporte_remoto`, `/api/public/soporte_remoto` y `/super/api/soporte_remoto` sin cambiar wrappers ni roles vigentes.
+	- `documentos/gobernanza_tecnica/runbooks/runbook_reportes_programados_y_exportaciones_contables.md` y `documentos/gobernanza_tecnica/runbooks/runbook_soporte_remoto_sesiones_y_dispositivos.md` fijan diagnóstico operativo reproducible para exportes/reportes y para sesiones/dispositivos remotos.
+	- Impacto de matriz: sin cambios en permisos, wrappers o visibilidad de páginas; el alcance es documental y operativo transversal.
+
+- Actualizacion 2026-04-18 (estaciones: tarjeta especial YouTube):
+	- `web/administrar_empresa/configuracion_de_estaciones.html`, `web/administrar_empresa/estaciones.html`, `web/administrar_empresa/youtube_station_browser.html` y `web/estilos.css` agregan una estacion especial `YouTube` dentro del mismo modulo autenticado de estaciones.
+	- Impacto de matriz: sin cambios en permisos, roles o wrappers; la nueva tarjeta reutiliza la misma autorizacion empresarial y no abre endpoints ni acciones administrativas adicionales.
+
+- Actualizacion 2026-04-18 (gobernanza tecnica documental: DIAN, alertas de reinicio y reportes):
+	- `documentos/gobernanza_tecnica/runbooks/runbook_dian_set_pruebas_y_diagnostico_oficial.md` documenta el alcance real del soporte DIAN de empresa y evita tratar la base operativa actual como integracion oficial completa.
+	- `documentos/gobernanza_tecnica/runbooks/runbook_alertas_reinicio_y_monitoreo_gmail_smtp.md` fija la operacion de `POST /super/api/config/gmail?action=test`, `super_servidor_eventos`, `gmail.restart_alert_to` y `gmail.smtp_test_mode`.
+	- `documentos/gobernanza_tecnica/contratos/contrato_reportes_contables_financieros_y_exportacion_multiformato.md` formaliza el comportamiento del modulo de reportes empresariales y globales super sin alterar wrappers ni roles.
+	- Impacto de matriz: sin cambios en permisos, wrappers o visibilidad de paginas; el alcance es documental y operativo transversal.
+
+- Actualizacion 2026-04-18 (gobernanza tecnica documental: paquete base):
+	- `documentos/README.md` y `documentos/gobernanza_tecnica/*` agregan la capa de ADRs, contratos tecnicos, runbooks y cambio seguro para el repositorio.
+	- Impacto de matriz: sin cambios en permisos, wrappers o visibilidad de paginas; el alcance es transversal y documental.
+
+- Actualizacion 2026-04-18 (gobernanza interna: orquestacion del equipo de agentes):
+	- `.github/agents/agente_go.agent.md` pasa a definir a `agente_go` como director del equipo y entrada por defecto del repositorio, coordinando a `agente_backend_db`, `agente_frontend_ux` y `agente_qa_operacion`.
+	- `.github/agents/agente_backend_db.agent.md`, `.github/agents/agente_frontend_ux.agent.md`, `.github/agents/agente_qa_operacion.agent.md` y `.github/agents/README.md` formalizan responsabilidades internas de desarrollo, UX y validacion operativa.
+	- Impacto de matriz: sin cambios en permisos funcionales, wrappers ni visibilidad de paginas para usuarios del sistema; el alcance es interno al equipo tecnico del repositorio.
+
+- Actualizacion 2026-04-18 (gobernanza interna: protocolo de delegacion y plantilla de ejecucion):
+	- `.github/agents/protocolo_delegacion.md` y `.github/agents/plantilla_trabajo_por_modulo.md` agregan reglas internas para que `agente_go` active especialistas segun modulo e impacto tecnico.
+	- Los archivos de agentes quedan especializados por modulos como `pagos`, `licencias`, `venta_publica`, `facturacion electronica`, `DIAN`, `estaciones`, `carritos`, `autenticacion`, `reportes` y `paneles`.
+	- Impacto de matriz: sin cambios en permisos funcionales, wrappers ni visibilidad de paginas; el alcance sigue siendo interno a la disciplina del equipo tecnico.
+
+- Actualizacion 2026-04-18 (gobernanza interna: tabla rapida y cierre obligatorio en modulos criticos):
+	- `.github/agents/protocolo_delegacion.md` agrega una tabla rapida por modulo y ejemplos reales para reducir ambiguedad al activar especialistas.
+	- `.github/agents/agente_go.agent.md` exige participacion obligatoria de varios especialistas en modulos criticos antes de cerrar.
+	- Impacto de matriz: sin cambios en permisos funcionales, wrappers ni visibilidad de paginas; la mejora sigue siendo interna al equipo tecnico.
+
+- Actualizacion 2026-04-18 (gobernanza interna: semaforo y evidencia minima de cierre):
+	- `.github/agents/protocolo_delegacion.md`, `.github/agents/plantilla_trabajo_por_modulo.md` y los archivos de agentes especialistas endurecen la clasificacion rapida y rechazan cierres sin evidencia minima.
+	- Impacto de matriz: sin cambios en permisos funcionales, wrappers ni visibilidad de paginas; la mejora sigue siendo interna a la disciplina del equipo tecnico.
+
 - Actualizacion 2026-04-18 (checkout Epayco: correo de activacion recuperable e idempotente):
 	- `backend/handlers/payments_handlers.go` reintenta el correo de activacion en aprobados posteriores cuando la licencia ya quedó activa pero la notificacion aun no se habia confirmado, y marca el envio dentro del `raw_payload` para no duplicarlo.
 	- Impacto de matriz: sin cambios en roles ni wrappers; `/epayco/*` sigue siendo un flujo publico de checkout y la mejora solo fortalece la entrega del correo transaccional.
@@ -25,9 +113,18 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 	- `web/administrar_empresa/ventas_simple.html` y `web/js/ventas_simple.js` agregan un retorno explicito hacia `administrar_empresa/estaciones.html` para la operacion por estacion.
 	- Impacto de matriz: sin cambios en permisos, roles o wrappers; el submodulo conserva el mismo acceso autenticado y solo mejora la navegacion interna.
 
+- Actualizacion 2026-04-18 (ventas simples por estacion: variante `carrito_compacto`):
+	- `web/administrar_empresa/estaciones.html`, `web/administrar_empresa/ventas_simple.html` y `web/js/ventas_simple.js` agregan una presentacion compacta del mismo carrito por estacion, activada por `variant=compacto` y compatible con un flag opcional de configuracion remota si el backend lo expone.
+	- Impacto de matriz: sin cambios en permisos, roles o wrappers; la variante reutiliza la misma autorizacion empresarial, los mismos endpoints de carrito/items y el mismo aislamiento por `empresa_id`.
+
 - Actualizacion 2026-04-18 (selector de empresas: tarjetas compactas con botonera al pie):
 	- `web/estilos.css` reduce el tamano visual de las tarjetas de `seleccionar_empresa.html` y fija la botonera inferior centrada al pie de cada bloque, sin tocar rutas, wrappers ni acciones disponibles.
 	- Impacto de matriz: sin cambios en permisos, roles o alcance; el selector mantiene la misma operacion autenticada.
+
+- Actualizacion 2026-04-18 (arcade publico: N64 vertical mobile para ROM legal del usuario):
+	- `web/Juegos/n64/index.html`, `web/Juegos/n64/styles.css` y `web/Juegos/n64/n64-wrapper.js` agregan una página pública específica para móvil con controles táctiles, ROM legal persistida en IndexedDB y respaldo local de la memoria del cartucho.
+	- `web/Juegos/menu_juegos.html` publica la entrada del nuevo juego en el lobby general del arcade.
+	- Impacto de matriz: sin cambios en roles, wrappers ni permisos; `Juegos` continúa siendo una superficie pública sin autenticación bajo `/Juegos/*`.
 
 - Actualizacion 2026-04-18 (super configuracion avanzada: prueba real de Gmail):
 	- `backend/handlers/usuarios_empresa.go` agrega `POST /super/api/config/gmail?action=test` para enviar un correo de prueba real con la configuracion SMTP ya guardada, y `web/super/configuracion_avanzada.html` lo invoca desde el boton `Probar Gmail`.
@@ -628,6 +725,10 @@ Leyenda:
 	- La reubicacion de colores de carrito a `configuracion_de_estaciones` es un cambio de UX/flujo, no de autorizacion.
 	- Se valida aislamiento por `empresa_id` con prueba de handler en `empresa_estacion_prefs`, reforzando separacion de datos entre empresas.
 
+- Actualizacion 2026-04-18 (gobernanza tecnica de estaciones y venta simple):
+	- No hay ampliacion de privilegios ni cambios en la matriz CRUD/A; el alcance vigente para `/api/empresa/estacion_prefs`, `/api/empresa/sensor_puertas`, `/api/empresa/carritos_compra` y `/api/empresa/carritos_compra/items` se mantiene intacto.
+	- Se agregan artefactos documentales de gobernanza para fijar contratos, invariantes multiempresa y recuperacion operativa del flujo sin modificar wrappers ni roles efectivos.
+
 - Actualizacion 2026-04-13 (fix persistencia `empresa_estacion_prefs`):
 	- Se corrige normalizacion de estado en capa DB (`estado` vacio => `activo`) sin alterar permisos ni wrappers de autorizacion.
 	- El alcance de seguridad permanece igual: controles por `empresa_id` y permisos vigentes en rutas `/api/empresa/estacion_prefs`.
@@ -641,6 +742,22 @@ Leyenda:
 	- Se consolida la ruta administrativa `login.html -> /auth/google/* -> /accept.html -> /accept/complete` con persistencia de aceptación por cuenta en `administradores.acepta_contrato`.
 	- No cambia la matriz CRUD por rol/modulo para rutas empresariales; el ajuste aplica al acceso administrativo global y al endurecimiento de autenticación.
 	- Se mantiene aislamiento por `empresa_id` en acceso posterior, ya dentro de wrappers `/api/empresa/*` existentes.
+
+- Actualizacion 2026-04-18 (gobernanza tecnica de autenticacion y tunel PostgreSQL):
+	- No hay ampliacion de privilegios ni cambios en la matriz CRUD/A; los documentos nuevos formalizan el comportamiento de rutas ya existentes y del arranque local del backend.
+	- Se explicita que las rutas publicas de autenticacion de usuarios de empresa siguen sujetas a validacion de alcance por `empresa_id` y que el acceso administrativo super permanece restringido al rol gestionado por backend.
+
+- Actualizacion 2026-04-18 (gobernanza tecnica de venta publica empresarial):
+	- No cambia la matriz de permisos existente: la configuracion y administracion del modulo sigue bajo permisos empresariales de ventas sobre `/api/empresa/venta_publica`.
+	- Se formaliza que `/api/public/venta_publica` permanece publico solo para catalogo, creacion de pago y consulta de estado de orden dentro del alcance de la empresa resuelta por `empresa_id` o `empresa_slug`.
+
+- Actualizacion 2026-04-18 (gobernanza tecnica de permisos_contexto y wrappers):
+	- No se amplian privilegios; se documenta formalmente la politica vigente de wrappers por modulo para `/api/empresa/*` y la excepcion controlada de `WithEmpresaPublicScope` para autenticacion empresarial.
+	- Se explicita que `permisos_contexto` responde con rol efectivo, matriz por modulo y visibilidad de paginas, aplicando overrides dinamicos y restricciones por licencia sin romper el aislamiento por `empresa_id`.
+
+- Actualizacion 2026-04-18 (gobernanza tecnica de facturacion y documentos):
+	- No cambia la matriz de permisos existente; el modulo de facturacion sigue bajo `WithEmpresaFacturacionPermissions` y las acciones `emitir`, `nota_credito`, `emitir_nota_credito`, `anular`, `procesar_reintentos`, `reconciliar_estados`, `firmar_xml_real`, `enviar_documento_real`, `reconexion_dian` y `consultar_acuse_real` permanecen en el dominio de permisos de facturacion.
+	- Se documenta que los documentos de venta generados por carrito mantienen el mismo aislamiento por `empresa_id` aunque el tipo documental final varie entre `factura_electronica` y `comprobante_pago`.
 
 - Actualizacion 2026-04-08 (super: alertas de inicio/reinicio de servidor):
 	- Se agrega en configuracion avanzada super la clave `gmail.restart_alert_to` para correo destino de alertas operativas de arranque/reinicio.
@@ -660,6 +777,11 @@ Leyenda:
 - Actualizacion 2026-04-08 (chat IA empresarial):
 	- Se alinea la configuracion avanzada de super para gestionar credencial `deepseek:deepseek-chat`.
 	- La pagina `chat_con_inteligencia_artificial` de empresa se actualiza a mensajes/modelo IA generico con ejecucion operativa en DeepSeek, manteniendo control de alcance por `empresa_id`.
+
+- Actualizacion 2026-04-18 (chat IA empresarial: selector DeepSeek/Ambis):
+	- La pagina `chat_con_inteligencia_artificial` permite elegir entre `deepseek:deepseek-chat` y `ollama:ambis` sin relajar el control de acceso ni el alcance por `empresa_id`.
+	- `Ambis Local` se consume solo desde el backend por loopback del VPS (`127.0.0.1:11434`), sin acceso directo desde navegadores empresariales.
+	- Se mantienen los mismos wrappers y validaciones sobre `/api/empresa/chat_con_inteligencia_artificial/modelos`, `/modelo_preferido`, `/consultar` y `/historial`.
 
 - Se implementa middleware en `backend/handlers/empresa_permisos.go` para validar:
 	- identidad administrativa activa,
@@ -803,6 +925,10 @@ Regla de lectura comun (R):
 | `/api/empresa/chat_con_inteligencia_artificial/modelo_preferido` | `ensureEmpresaAccessByAccount` | validacion por cuenta Google + `empresa_id` |
 | `/api/empresa/chat_con_inteligencia_artificial/consultar` | `ensureEmpresaAccessByAccount` | validacion por cuenta Google + `empresa_id` |
 | `/api/empresa/chat_con_inteligencia_artificial/historial` | `ensureEmpresaAccessByAccount` | validacion por cuenta Google + `empresa_id` |
+| `/super/api/chat_con_ia_global/modelos` | `paginaPrincipalRequireSuperAdmin` | requiere sesion super valida y rol `super_administrador` |
+| `/super/api/chat_con_ia_global/modelo_preferido` | `paginaPrincipalRequireSuperAdmin` | requiere sesion super valida y rol `super_administrador` |
+| `/super/api/chat_con_ia_global/consultar` | `paginaPrincipalRequireSuperAdmin` | requiere sesion super valida y rol `super_administrador` |
+| `/super/api/chat_con_ia_global/historial` | `paginaPrincipalRequireSuperAdmin` | requiere sesion super valida y rol `super_administrador` |
 
 ## Checklist UAT de Punto 3 (permisos y seguridad)
 

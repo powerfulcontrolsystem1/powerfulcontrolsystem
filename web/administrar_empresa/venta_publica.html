@@ -51,6 +51,15 @@
           <label class="form-label" for="vpColor">Color primario (HEX)</label>
           <input id="vpColor" class="form-input" type="text" placeholder="#1f8ef1" maxlength="16">
         </div>
+        <div class="form-col creditos-col-220">
+          <label class="form-label" for="vpTema">Tema visual</label>
+          <select id="vpTema" class="form-input">
+            <option value="default">default</option>
+            <option value="light">light</option>
+            <option value="minimal">minimal</option>
+            <option value="moderno">moderno</option>
+          </select>
+        </div>
       </div>
       <div class="form-row">
         <div class="form-col">
@@ -409,6 +418,7 @@
           logo_url: document.getElementById('vpLogo').value.trim(),
           banner_url: document.getElementById('vpBanner').value.trim(),
           color_primario: document.getElementById('vpColor').value.trim(),
+          tema_visual: document.getElementById('vpTema').value.trim() || 'default',
           moneda: document.getElementById('vpMoneda').value.trim() || 'COP',
           dominio_publico: document.getElementById('vpDominio').value.trim(),
           mostrar_stock: !!document.getElementById('vpMostrarStock').checked,
@@ -435,6 +445,7 @@
         document.getElementById('vpLogo').value = String(cfg && cfg.logo_url || '');
         document.getElementById('vpBanner').value = String(cfg && cfg.banner_url || '');
         document.getElementById('vpColor').value = String(cfg && cfg.color_primario || '#1f8ef1');
+        document.getElementById('vpTema').value = String(cfg && cfg.tema_visual || 'default');
         document.getElementById('vpMoneda').value = String(cfg && cfg.moneda || 'COP');
         document.getElementById('vpDominio').value = String(cfg && cfg.dominio_publico || '');
         document.getElementById('vpMostrarStock').checked = cfg ? !!cfg.mostrar_stock : true;

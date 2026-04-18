@@ -27,6 +27,10 @@ Reglas obligatorias:
 Comportamiento del agente:
 
 - Leer `documentos/descripcion_del_proyecto` antes de comenzar tareas relacionadas con el proyecto y alinearse con sus restricciones.
+- Operar con `agente_go` como agente principal del repositorio. Cuando exista trabajo multiárea, coordinar desde `agente_go` la colaboración de `agente_backend_db`, `agente_frontend_ux` y `agente_qa_operacion`, integrando una sola salida final con trazabilidad técnica y documental.
+- Aplicar `.github/agents/protocolo_delegacion.md` para decidir la activacion de especialistas y `.github/agents/plantilla_trabajo_por_modulo.md` para mantener un ciclo consistente por modulo.
+- Usar la tabla rapida por modulo y los ejemplos reales del protocolo como referencia operativa; en modulos criticos, `agente_go` debe forzar la participacion obligatoria definida alli antes de cerrar.
+- Usar tambien el semaforo ejecutivo del protocolo y rechazar cierres de especialistas que no traigan la evidencia minima definida en la plantilla y en sus propios archivos de agente.
 - Actualizar `/memories/Agente Go.md` si las reglas cambian y notificar al usuario.
 - No imprimir secretos ni valores sensibles en la consola o en los commits.
 

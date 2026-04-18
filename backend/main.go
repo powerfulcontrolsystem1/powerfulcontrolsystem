@@ -1481,6 +1481,9 @@ func main() {
 		if err := dbpkg.EnsureSuperVentaDigitalSchema(dbSuper); err != nil {
 			log.Fatalf("failed to ensure super venta digital schema: %v", err)
 		}
+		if err := dbpkg.EnsureSuperAIChatSchema(dbSuper); err != nil {
+			log.Fatalf("failed to ensure super chat ia schema: %v", err)
+		}
 
 		if err := dbpkg.RegisterSchemaMigration(dbSuper, "superadministrador", "2026-04-01-001-baseline", "baseline schema snapshot: administradores, licencias, configuraciones, sesiones, pagos"); err != nil {
 			log.Fatalf("failed to register schema migration in super db: %v", err)
@@ -1685,6 +1688,8 @@ func main() {
 	http.HandleFunc("/super/api/licencias", handlers.LicenciasHandler(dbSuper))
 	// Endpoint publico para exponer metodos de pago activos del checkout de licencias
 	http.HandleFunc("/api/public/licencias/payment_methods", handlers.PublicLicenciasPaymentMethodsHandler(dbSuper))
+	// Endpoint publico para calcular total, descuentos y activacion sin pago del checkout de licencias
+	http.HandleFunc("/api/public/licencias/checkout_summary", handlers.LicenciaCheckoutSummaryHandler(dbSuper))
 	// Endpoint para gestionar credenciales de Wompi (GET/PUT)
 	http.HandleFunc("/super/api/config/wompi", handlers.WompiConfigHandler(dbSuper))
 	// Endpoint para gestionar credenciales de Epayco (GET/PUT)
@@ -1695,6 +1700,11 @@ func main() {
 	http.HandleFunc("/super/api/venta_digital", handlers.SuperVentaDigitalHandler(dbSuper))
 	// Endpoint para gestionar credenciales IA de modelos populares (GET/PUT)
 	http.HandleFunc("/super/api/config/ai", handlers.AIModelsConfigHandler(dbSuper))
+	superAIChatController := handlers.NewSuperAIChatController(dbEmpresas, dbSuper)
+	http.HandleFunc("/super/api/chat_con_ia_global/modelos", superAIChatController.ModelosHandler)
+	http.HandleFunc("/super/api/chat_con_ia_global/modelo_preferido", superAIChatController.ModeloPreferidoHandler)
+	http.HandleFunc("/super/api/chat_con_ia_global/consultar", superAIChatController.ConsultarHandler)
+	http.HandleFunc("/super/api/chat_con_ia_global/historial", superAIChatController.HistorialHandler)
 	// Endpoint para respaldo/restauracion de configuracion critica del panel super
 	http.HandleFunc("/super/api/config/backup", handlers.SuperConfigBackupHandler(dbSuper))
 	// Endpoint super para administrar contrato versionado y su historial

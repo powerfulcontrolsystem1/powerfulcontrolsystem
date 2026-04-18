@@ -126,7 +126,11 @@
       const card_size = validSizes.indexOf(requested) !== -1 ? requested : (cfg.card_size || 'medium');
       const cajaEnabledRaw = (cfg && (cfg.caja_enabled !== undefined ? cfg.caja_enabled : cfg.cajaEnabled)) || false;
       const caja_enabled = toBool(cajaEnabledRaw);
-      return { cantidad, estaciones: out, card_size, caja_enabled };
+      const youtubeEnabledRaw = (cfg && (cfg.youtube_enabled !== undefined ? cfg.youtube_enabled : cfg.youtubeEnabled)) || false;
+      const youtube_enabled = toBool(youtubeEnabledRaw);
+      let youtube_query = String((cfg && (cfg.youtube_query !== undefined ? cfg.youtube_query : cfg.youtubeQuery)) || 'YouTube').trim();
+      if (!youtube_query) youtube_query = 'YouTube';
+      return { cantidad, estaciones: out, card_size, caja_enabled, youtube_enabled, youtube_query };
     }
 
     function parseStationConfigValue(raw) {
@@ -254,7 +258,8 @@
       const url = page + '?empresa_id=' + encodeURIComponent(empresaId) +
         '&estacion_id=' + encodeURIComponent(stationID) +
         '&estacion_nombre=' + encodeURIComponent(stationName || ('Estación ' + stationID)) +
-        '&carrito_codigo=' + encodeURIComponent(carritoCode);
+          '&carrito_codigo=' + encodeURIComponent(carritoCode) +
+          (useSimpleSales ? '&variant=compacto' : '');
       window.location.href = url;
     }
 
@@ -329,6 +334,21 @@
       }
     }
 
+    function getYouTubeStationQuery(cfg) {
+      if (!cfg || typeof cfg !== 'object') return 'YouTube';
+      const raw = String(cfg.youtube_query || '').trim();
+      return raw || 'YouTube';
+    }
+
+    function buildYouTubeStationBrowserURL(cfg, compact) {
+      const params = new URLSearchParams();
+      params.set('query', getYouTubeStationQuery(cfg));
+      if (compact) {
+        params.set('compact', '1');
+      }
+      return '/administrar_empresa/youtube_station_browser.html?' + params.toString();
+    }
+
     function generateCajaCardHtml() {
       return '<article class="portal-card station-card-inactive caja-card" id="cajaCard" data-estacion-id="0" data-estacion-nombre="Caja" data-venta-simple="1" tabindex="0" role="button" aria-label="Caja">' +
         '<div class="station-sensor-indicator" style="background-color:#000000"></div>' +
@@ -339,6 +359,20 @@
           '<div class="caja-row"><span class="caja-label">Crédito</span><span class="caja-value" id="cajaCreditoVal">' + formatMoney(0) + '</span></div>' +
         '</div>' +
         '<div class="caja-actions"><button type="button" class="btn secondary ver-ultimos-movimientos">Ver últimos movimientos</button></div>' +
+      '</article>';
+    }
+
+    function generateYouTubeCardHtml(cfg) {
+      const browserSrc = sanitize(buildYouTubeStationBrowserURL(cfg, true));
+      return '<article class="portal-card station-card-inactive youtube-station-card" id="youtubeStationCard" data-special-station="youtube" aria-label="Estación YouTube">' +
+        '<button type="button" class="youtube-station-expand" id="youtubeStationExpand" aria-label="Maximizar estación YouTube">[]</button>' +
+        '<div class="youtube-station-head">' +
+          '<h3>YouTube</h3>' +
+          '<p>Vista embebida adaptable para esta estación.</p>' +
+        '</div>' +
+        '<div class="youtube-station-browser-preview">' +
+          '<iframe class="youtube-station-preview-frame" src="' + browserSrc + '" title="Vista previa YouTube" loading="lazy" tabindex="-1"></iframe>' +
+        '</div>' +
       '</article>';
     }
 
@@ -387,12 +421,22 @@
     function renderEstaciones(cfg) {
       const grid = document.getElementById('estacionesGrid');
       if (!cfg || !cfg.estaciones || !cfg.estaciones.length) {
-        grid.innerHTML = '<p class="form-help">No hay estaciones configuradas. Ve a Configuración de estaciones para crearlas.</p>';
-        return;
+        if (!(cfg && cfg.youtube_enabled) && !(cfg && cfg.caja_enabled)) {
+          grid.innerHTML = '<p class="form-help">No hay estaciones configuradas. Ve a Configuración de estaciones para crearlas.</p>';
+          return;
+        }
       }
       let html = '';
       if (cfg && cfg.caja_enabled) {
         html += generateCajaCardHtml();
+      }
+      if (cfg && cfg.youtube_enabled) {
+        html += generateYouTubeCardHtml(cfg);
+      }
+      if (!cfg || !cfg.estaciones || !cfg.estaciones.length) {
+        grid.innerHTML = html;
+        wireSpecialStationCards(cfg);
+        return;
       }
       html += cfg.estaciones.map(est => {
         const stationID = Number(est.id || 0);
@@ -428,7 +472,7 @@
           }
         }
 
-          return '<article class="portal-card ' + stationClass + '" style="--station-state-bg:' + sanitize(stationColor) + ';" data-estacion-id="' + stationID + '" data-estacion-nombre="' + sanitize(est.nombre) + '" data-venta-simple="' + (useSimpleSales ? '1' : '0') + '" data-mostrar-total="' + (useMostrarTotal ? '1' : '0') + '" tabindex="0" role="button" aria-label="Abrir estación ' + sanitize(est.nombre) + '">' +
+          return '<article class="portal-card station-launch-card ' + stationClass + '" style="--station-state-bg:' + sanitize(stationColor) + ';" data-estacion-id="' + stationID + '" data-estacion-nombre="' + sanitize(est.nombre) + '" data-venta-simple="' + (useSimpleSales ? '1' : '0') + '" data-mostrar-total="' + (useMostrarTotal ? '1' : '0') + '" tabindex="0" role="button" aria-label="Abrir estación ' + sanitize(est.nombre) + '">' +
             '<div class="station-sensor-indicator" style="background-color:' + sanitize(sensorColor) + '"></div>' +
             '<h3>' + sanitize(est.nombre) + '</h3>' +
             entradaHtml +
@@ -436,7 +480,7 @@
       }).join('');
       grid.innerHTML = html;
 
-      grid.querySelectorAll('.portal-card').forEach(card => {
+      grid.querySelectorAll('.station-launch-card').forEach(card => {
         card.style.cursor = 'pointer';
         card.addEventListener('click', ev => {
           const stationID = Number(card.getAttribute('data-estacion-id') || 0);
@@ -454,14 +498,16 @@
         });
       });
 
+      wireSpecialStationCards(cfg);
+
       // Si Caja está habilitada, adjuntar manejadores y cargar totales
       if (cfg && cfg.caja_enabled) {
         const cajaEl = document.getElementById('cajaCard');
         if (cajaEl) {
+          cajaEl.classList.add('station-launch-card');
           cajaEl.style.cursor = 'pointer';
           cajaEl.addEventListener('click', () => { openStationCarrito(0, 'Caja', true); });
           cajaEl.addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); openStationCarrito(0, 'Caja', true); } });
-          // Botón para ver últimos movimientos: evitar propagación y abrir página dedicada
           try {
             const movBtn = cajaEl.querySelector('.ver-ultimos-movimientos');
             if (movBtn) {
@@ -481,10 +527,92 @@
               });
             }
           } catch (e) {
-            // silencioso
           }
         }
         loadCajaTotals(cfg).catch(() => {});
+      }
+    }
+
+    function wireSpecialStationCards(cfg) {
+      const expandBtn = document.getElementById('youtubeStationExpand');
+      if (expandBtn) {
+        expandBtn.addEventListener('click', ev => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          openYouTubeStationOverlay(cfg);
+        });
+      }
+
+      const youtubeCard = document.getElementById('youtubeStationCard');
+      if (youtubeCard) {
+        youtubeCard.addEventListener('keydown', ev => {
+          if (ev.key !== 'Enter' && ev.key !== ' ') return;
+          ev.preventDefault();
+          openYouTubeStationOverlay(cfg);
+        });
+      }
+    }
+
+    function ensureYouTubeStationOverlay() {
+      let overlay = document.getElementById('youtubeStationOverlay');
+      if (overlay) return overlay;
+
+      overlay = document.createElement('div');
+      overlay.id = 'youtubeStationOverlay';
+      overlay.className = 'youtube-station-overlay';
+      overlay.hidden = true;
+      overlay.innerHTML = '' +
+        '<div class="youtube-station-overlay-card" role="dialog" aria-modal="true" aria-labelledby="youtubeStationOverlayTitle">' +
+          '<div class="youtube-station-overlay-head">' +
+            '<div>' +
+              '<strong id="youtubeStationOverlayTitle">Estación YouTube</strong>' +
+              '<span>Ventana ampliada 500 x 500</span>' +
+            '</div>' +
+            '<button type="button" class="youtube-station-overlay-close btn secondary">Cerrar</button>' +
+          '</div>' +
+          '<iframe class="youtube-station-overlay-frame" title="Estación YouTube ampliada" loading="lazy"></iframe>' +
+        '</div>';
+      document.body.appendChild(overlay);
+
+      overlay.addEventListener('click', ev => {
+        if (ev.target === overlay) {
+          closeYouTubeStationOverlay();
+        }
+      });
+
+      const closeBtn = overlay.querySelector('.youtube-station-overlay-close');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', ev => {
+          ev.preventDefault();
+          closeYouTubeStationOverlay();
+        });
+      }
+
+      document.addEventListener('keydown', ev => {
+        if (ev.key === 'Escape') {
+          closeYouTubeStationOverlay();
+        }
+      });
+
+      return overlay;
+    }
+
+    function openYouTubeStationOverlay(cfg) {
+      const overlay = ensureYouTubeStationOverlay();
+      const frame = overlay.querySelector('.youtube-station-overlay-frame');
+      if (frame) {
+        frame.src = buildYouTubeStationBrowserURL(cfg, false);
+      }
+      overlay.hidden = false;
+    }
+
+    function closeYouTubeStationOverlay() {
+      const overlay = document.getElementById('youtubeStationOverlay');
+      if (!overlay) return;
+      overlay.hidden = true;
+      const frame = overlay.querySelector('.youtube-station-overlay-frame');
+      if (frame) {
+        frame.src = 'about:blank';
       }
     }
 

@@ -51,7 +51,7 @@
 
     <div id="messageBox" class="form-help"></div>
 
-    <section class="card empresa-section">
+    <section class="card empresa-section" data-view-section="bodegas">
       <div class="empresa-section-header">
         <h2>Bodegas</h2>
         <button id="btnNuevaBodega" type="button" class="btn secondary">Nueva</button>
@@ -107,7 +107,7 @@
       </div>
     </section>
 
-    <section class="card empresa-section">
+    <section class="card empresa-section" data-view-section="productos">
       <div class="empresa-section-header">
         <h2>Proveedores</h2>
         <button id="btnNuevoProveedor" type="button" class="btn secondary">Nuevo</button>
@@ -187,7 +187,7 @@
       </div>
     </section>
 
-    <section class="card empresa-section">
+    <section class="card empresa-section" data-view-section="categorias">
       <div class="empresa-section-header">
         <h2>Categorías de productos</h2>
         <div class="empresa-inline-actions">
@@ -250,7 +250,7 @@
       </div>
     </section>
 
-    <section class="card empresa-section">
+    <section class="card empresa-section" data-view-section="productos">
       <div class="empresa-section-header">
         <h2>Productos</h2>
         <div class="empresa-inline-actions">
@@ -393,7 +393,7 @@
       </div>
     </section>
 
-    <section class="card empresa-section">
+    <section class="card empresa-section" data-view-section="productos">
       <div class="empresa-section-header">
         <h2>Servicios Vendibles</h2>
         <button id="btnNuevoServicio" class="btn secondary" type="button">Nuevo</button>
@@ -468,7 +468,7 @@
       </div>
     </section>
 
-    <section class="empresa-grid-2">
+    <section class="empresa-grid-2" data-view-section="bodegas">
       <section class="card empresa-section">
         <h2>Ajustes de inventario (devoluciones/pérdidas)</h2>
         <div class="empresa-section-header" style="margin-bottom:12px;">
@@ -616,7 +616,7 @@
       </section>
     </section>
 
-    <section class="empresa-grid-2">
+    <section class="empresa-grid-2" data-view-section="bodegas">
       <section class="card empresa-section">
         <h2>Traslado entre bodegas</h2>
         <form id="transferForm" class="form">
@@ -897,7 +897,7 @@
       </section>
     </section>
 
-    <section class="card empresa-section">
+    <section class="card empresa-section" data-view-section="productos">
       <div class="empresa-section-header">
         <h2>Historial de cambios de precio</h2>
         <div class="empresa-inline-actions">
@@ -925,6 +925,36 @@
   </div>
 
   <script>
+    // Modo de vista: permite mostrar solo 'productos', 'bodegas' o 'categorias' según ?view=
+    function resolveViewMode() {
+      try {
+        const params = new URLSearchParams(window.location.search || '');
+        const v = String(params.get('view') || '').trim().toLowerCase();
+        if (v === 'bodegas' || v === 'categorias' || v === 'productos') return v;
+      } catch (_) {}
+      return 'productos';
+    }
+
+    const viewMode = resolveViewMode();
+
+    function resolveViewTitle() {
+      if (viewMode === 'bodegas') return 'Bodegas';
+      if (viewMode === 'categorias') return 'Categorías de productos';
+      return 'Administrar Productos';
+    }
+
+    // Oculta secciones no relevantes según el modo. Ejecutar tras DOM ready.
+    function applyViewMode() {
+      const moduleTitle = document.querySelector('.empresa-module-header h1');
+      if (moduleTitle) moduleTitle.textContent = resolveViewTitle();
+      document.title = resolveViewTitle();
+
+      const allSections = Array.from(document.querySelectorAll('[data-view-section]'));
+      allSections.forEach(sec => {
+        sec.style.display = sec.getAttribute('data-view-section') === viewMode ? '' : 'none';
+      });
+    }
+
     function parsePositiveInt(raw) {
       const n = Number(String(raw || '').trim());
       if (!Number.isFinite(n)) return 0;
@@ -2937,17 +2967,29 @@
       }
       hideCRUDForms();
       wireEvents();
+      applyViewMode();
       await loadEmpresaInfo();
+      if (viewMode === 'categorias') {
+        await loadCategoriasProductos();
+        return;
+      }
+      if (viewMode === 'bodegas') {
+        await loadBodegas();
+        await loadProductos();
+        await loadInventarioConfiguracion();
+        await loadExistencias();
+        await loadMovimientos();
+        await loadConteosCiclicos();
+        return;
+      }
       await loadProveedores();
       await loadBodegas();
       await loadCategoriasProductos();
-      await loadProductos();
-      await loadServicios();
-      await loadInventarioConfiguracion();
-      await loadExistencias();
-      await loadMovimientos();
-      await loadConteosCiclicos();
-      await loadPreciosHistorial();
+      if (viewMode === 'productos') {
+        await loadProductos();
+        await loadServicios();
+        await loadPreciosHistorial();
+      }
     }
 
     bootstrap().catch(err => {

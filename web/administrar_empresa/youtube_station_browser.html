@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Estación YouTube</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="youtube-station-browser-page">
+  <section class="youtube-station-browser-shell" data-compact="0">
+    <header class="youtube-station-browser-toolbar">
+      <div>
+        <strong>YouTube</strong>
+        <span id="youtubeStationBrowserLabel" class="youtube-station-browser-label">Exploración embebida</span>
+      </div>
+      <a id="youtubeStationBrowserLink" class="btn secondary" href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer">Abrir aparte</a>
+    </header>
+    <div class="youtube-station-browser-frame-wrap">
+      <iframe id="youtubeStationBrowserFrame" class="youtube-station-browser-frame" title="Navegador YouTube" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+    </div>
+  </section>
+
+  <script>
+    function sanitizeText(value) {
+      return String(value == null ? '' : value).trim();
+    }
+
+    function getParam(name) {
+      try {
+        var params = new URLSearchParams(window.location.search || '');
+        return sanitizeText(params.get(name));
+      } catch (err) {
+        return '';
+      }
+    }
+
+    function resolveQuery() {
+      var query = getParam('query');
+      return query || 'YouTube';
+    }
+
+    function buildEmbedURL(query) {
+      return 'https://www.youtube.com/embed?listType=search&list=' + encodeURIComponent(query || 'YouTube');
+    }
+
+    function buildExternalURL(query) {
+      return 'https://www.youtube.com/results?search_query=' + encodeURIComponent(query || 'YouTube');
+    }
+
+    (function bootstrap() {
+      var query = resolveQuery();
+      var compact = getParam('compact') === '1';
+      var shell = document.querySelector('.youtube-station-browser-shell');
+      var label = document.getElementById('youtubeStationBrowserLabel');
+      var frame = document.getElementById('youtubeStationBrowserFrame');
+      var link = document.getElementById('youtubeStationBrowserLink');
+
+      if (shell) {
+        shell.dataset.compact = compact ? '1' : '0';
+      }
+      if (label) {
+        label.textContent = compact ? 'Vista rápida' : ('Búsqueda inicial: ' + query);
+      }
+      if (frame) {
+        frame.src = buildEmbedURL(query);
+      }
+      if (link) {
+        link.href = buildExternalURL(query);
+      }
+    })();
+  </script>
+</body>
+</html>

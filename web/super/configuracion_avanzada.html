@@ -223,8 +223,8 @@
     </section>
 
     <section class="card form mp-card" id="aiConfigCard">
-      <h2>Inteligencia Artificial — DeepSeek</h2>
-      <p class="form-help">Esta credencial habilita el chat empresarial con DeepSeek, con trazabilidad por cuenta Google autenticada y alcance por empresa_id.</p>
+      <h2>Inteligencia Artificial — DeepSeek y Ambis</h2>
+      <p class="form-help">Este panel deja disponible DeepSeek por API key cifrada y Ambis Local sobre Ollama en el VPS. En empresa se puede elegir entre uno u otro manteniendo alcance por empresa_id.</p>
       <div id="aiLoggedAccount" class="form-help">Cuenta Google logueada: Cargando...</div>
 
       <div class="form-row">
@@ -235,19 +235,33 @@
           <div class="form-help">Plan gratuito sujeto a límites y políticas del proveedor DeepSeek.</div>
         </div>
         <div class="form-col">
-          <label class="form-label">Opciones</label>
-          <div class="form-help">La credencial DeepSeek se guarda cifrada obligatoriamente en backend.</div>
-          <div class="form-help">En pantalla solo se muestra fecha y hora de actualización; la llave nunca se expone.</div>
+          <label class="form-label">Ambis Local</label>
+          <div id="aiStatusAmbisLocal" class="form-help">Cargando estado...</div>
+          <div class="form-help">Ambis usa Ollama dentro del VPS por loopback. No requiere API key en este panel.</div>
+          <div class="form-help">DeepSeek sí se guarda cifrada obligatoriamente en backend y nunca expone la llave en pantalla.</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Servicio global de IA</label>
+          <label class="switch" style="display:flex;align-items:center;gap:8px;">
+            <input id="aiEnabledToggle" type="checkbox" role="switch" aria-label="Activar servicio global de IA">
+            <span class="mode-label">On</span>
+          </label>
+          <div id="aiEnabledStatus" class="form-help">Cargando estado...</div>
+          <div id="aiEnabledHelp" class="form-help">Si está desactivado, el chat empresarial y el chat global super rechazarán nuevas consultas para liberar el servidor.</div>
         </div>
       </div>
 
       <div class="form-actions">
-        <button id="saveAiConfigBtn" class="btn">Guardar credencial DeepSeek</button>
+        <button id="saveAiConfigBtn" class="btn">Guardar configuración IA</button>
         <button id="editAiConfigBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Editar</button>
         <button id="cancelAiConfigBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Cancelar</button>
-        <button id="testAiBtn" type="button" class="btn secondary" style="margin-left:8px;">Probar IA</button>
+        <button id="testAiBtn" type="button" class="btn secondary" style="margin-left:8px;">Probar IA contra VPS</button>
       </div>
       <div id="aiConfigMsg" class="form-help"></div>
+      <div class="form-help">Usa Probar IA contra VPS para ejecutar una prueba real del servicio local de Ollama desde el backend.</div>
       <div id="aiTestResult" class="form-help"></div>
     </section>
 
@@ -497,11 +511,15 @@
       async function loadAIConfig(){
         const msg = document.getElementById('aiConfigMsg');
         const accountEl = document.getElementById('aiLoggedAccount');
+        const ambisStatusEl = document.getElementById('aiStatusAmbisLocal');
+        const enabledToggle = document.getElementById('aiEnabledToggle');
+        const enabledStatusEl = document.getElementById('aiEnabledStatus');
         try {
           const res = await fetch('/super/api/config/ai');
           if (!res.ok) {
             msg.innerText = 'Error al leer configuración IA.';
             accountEl.innerText = 'Cuenta Google logueada: no disponible';
+            if (ambisStatusEl) ambisStatusEl.innerText = 'Error al leer estado';
             aiCredentialBindings.forEach(function(binding){
               const statusEl = document.getElementById(binding.statusId);
               if (statusEl) statusEl.innerText = 'Error al leer estado';
@@ -511,6 +529,10 @@
 
           const data = await res.json();
           accountEl.innerText = 'Cuenta Google logueada: ' + (data.google_account || 'no disponible');
+          const serviceStatus = data.service_status || {};
+          if (enabledToggle) enabledToggle.checked = !!serviceStatus.enabled;
+          if (enabledStatusEl) enabledStatusEl.innerText = serviceStatus.enabled ? 'Servicio IA habilitado' : 'Servicio IA desactivado';
+          refreshAIEnabledHint();
 
           if (typeof data.encryption_available !== 'undefined' && !data.encryption_available) {
             document.getElementById('saveAiConfigBtn').disabled = true;
@@ -519,6 +541,15 @@
 
           const byModel = {};
           (data.modelos || []).forEach(function(item){ byModel[item.model_id] = item; });
+
+          const ambisItem = byModel['ollama:ambis'] || null;
+          if (ambisStatusEl) {
+            if (ambisItem && ambisItem.configured) {
+              ambisStatusEl.innerText = 'Disponible como modelo local del VPS (' + (ambisItem.source || 'local') + ').';
+            } else {
+              ambisStatusEl.innerText = 'No disponible.';
+            }
+          }
 
           let hasAIConfig = false;
           aiCredentialBindings.forEach(function(binding){
@@ -539,18 +570,20 @@
             const inputEl = document.getElementById(binding.inputId);
             if (inputEl) inputEl.disabled = hasAIConfig;
           });
+          if (enabledToggle) enabledToggle.disabled = false;
 
           document.getElementById('saveAiConfigBtn').disabled = hasAIConfig;
           document.getElementById('editAiConfigBtn').style.display = hasAIConfig ? '' : 'none';
           document.getElementById('cancelAiConfigBtn').style.display = 'none';
           if (!msg.innerText || msg.innerText.indexOf('Error') === -1) {
             msg.innerText = hasAIConfig
-			  ? 'Credencial DeepSeek disponible. Usa Editar para actualizarla.'
-			  : 'Aún no hay credencial DeepSeek guardada en este panel.';
+			  ? 'DeepSeek y Ambis quedaron visibles para el chat empresarial. Usa Editar si necesitas actualizar la credencial de DeepSeek.'
+			  : 'Aún no hay credencial DeepSeek guardada. Ambis local se administra desde el VPS.';
           }
         } catch (err) {
           msg.innerText = 'Error cargando configuración IA: ' + (err.message || err);
           accountEl.innerText = 'Cuenta Google logueada: no disponible';
+          if (ambisStatusEl) ambisStatusEl.innerText = 'Error cargando estado.';
         }
       }
 
@@ -569,14 +602,10 @@
           }
         });
 
-        if (!credentials.length) {
-          alert('Ingrese la credencial de DeepSeek para guardar.');
-          return;
-        }
-
         const payload = {
           encrypt: true,
-          credentials: credentials
+		  credentials: credentials,
+		  enabled: !!document.getElementById('aiEnabledToggle').checked
         };
 
         btn.disabled = true;
@@ -609,15 +638,25 @@
           const inputEl = document.getElementById(binding.inputId);
           if (inputEl) inputEl.disabled = false;
         });
+        document.getElementById('aiEnabledToggle').disabled = false;
         document.getElementById('saveAiConfigBtn').disabled = false;
         document.getElementById('editAiConfigBtn').style.display = 'none';
         document.getElementById('cancelAiConfigBtn').style.display = '';
-    		document.getElementById('aiConfigMsg').innerText = 'Modo edición activo: ingrese la nueva credencial DeepSeek y guarde.';
+		document.getElementById('aiConfigMsg').innerText = 'Modo edición activo: ajusta el interruptor global y/o ingresa la nueva credencial DeepSeek.';
       }
 
       function cancelEditAIConfig(){
         loadAIConfig();
   		document.getElementById('aiConfigMsg').innerText = 'Edición de credencial DeepSeek cancelada.';
+      }
+
+      function refreshAIEnabledHint(){
+		const enabledEl = document.getElementById('aiEnabledToggle');
+		const helpEl = document.getElementById('aiEnabledHelp');
+		if (!enabledEl || !helpEl) return;
+		helpEl.innerText = enabledEl.checked
+		  ? 'IA habilitada: el chat empresarial y el chat global super podrán consultar DeepSeek o Ambis cuando el proveedor esté disponible.'
+		  : 'IA desactivada: los chats empresariales y el chat global super quedarán bloqueados hasta volver a activarla, liberando carga del servidor.';
       }
 
       async function saveGmail(e){
@@ -1007,14 +1046,15 @@
         const out = document.getElementById('aiTestResult');
         if (out) out.innerText = 'Probando IA...';
         try {
-          const res = await fetch('/super/api/config/ai', { method: 'GET', credentials: 'same-origin' });
-          if (!res.ok) { if (out) out.innerText = 'Error al leer configuración IA: ' + res.status; return; }
+          const res = await fetch('/super/api/config/ai?action=test', { method: 'GET', credentials: 'same-origin' });
+          if (!res.ok) {
+            const raw = await res.text();
+            if (out) out.innerText = 'Error en prueba IA: ' + raw;
+            return;
+          }
           const data = await res.json();
-          const modelos = data.modelos || [];
-          const configured = modelos.filter(function(m){ return !!m.configured; });
           if (!out) return;
-          if (configured.length) out.innerText = 'OK: Modelos configurados: ' + configured.map(function(m){return m.model_id;}).join(', ');
-          else out.innerText = 'Aviso: No hay credenciales IA configuradas.';
+          out.innerText = 'OK: prueba real contra ' + (data.provider || 'ollama') + ' completada. Modelo: ' + (data.upstream_model || data.model_id || '--') + '. Respuesta: ' + (data.response || '--');
         } catch (err) {
           if (out) out.innerText = 'Error: ' + (err.message || err);
         }
@@ -1051,6 +1091,10 @@
         refreshGmailRestartAlertHint();
         document.getElementById('saveGmailBtn').disabled = false;
       });
+      document.getElementById('aiEnabledToggle').addEventListener('change', function(){
+		refreshAIEnabledHint();
+		document.getElementById('saveAiConfigBtn').disabled = false;
+	  });
       document.getElementById('saveGmailBtn').addEventListener('click', saveGmail);
       document.getElementById('editGmailBtn').addEventListener('click', enableEditGmail);
       document.getElementById('cancelGmailBtn').addEventListener('click', cancelEditGmail);

@@ -625,6 +625,182 @@ func activateLicenciaByIDs(dbSuper *sql.DB, licenciaID, empresaID int64) (bool, 
 	return true, nil
 }
 
+type licenciaCheckoutSummary struct {
+	OriginalValue             float64 `json:"original_value"`
+	DiscountValue             float64 `json:"discount_value"`
+	TotalValue                float64 `json:"total_value"`
+	DiscountCode              string  `json:"discount_code,omitempty"`
+	DiscountApplied           bool    `json:"discount_applied"`
+	DiscountLabel             string  `json:"discount_label,omitempty"`
+	IsZeroTotal               bool    `json:"is_zero_total"`
+	ZeroTotalBlocked          bool    `json:"zero_total_blocked"`
+	CanActivateWithoutPayment bool    `json:"can_activate_without_payment"`
+	Message                   string  `json:"message,omitempty"`
+}
+
+func roundLicenciaCheckoutAmount(value float64) float64 {
+	if value < 0 {
+		value = 0
+	}
+	return math.Round(value*100) / 100
+}
+
+func normalizeLicenciaDiscountCode(code string) string {
+	return strings.ToUpper(strings.TrimSpace(code))
+}
+
+func parseLicenciaDiscountSpec(spec string, originalValue float64) (float64, string, bool) {
+	spec = strings.TrimSpace(spec)
+	if spec == "" || originalValue <= 0 {
+		return 0, "", false
+	}
+	lower := strings.ToLower(spec)
+	switch lower {
+	case "gratis", "cortesia", "free", "full", "100%", "total0", "total_cero":
+		return roundLicenciaCheckoutAmount(originalValue), "Descuento total", true
+	}
+	if strings.HasSuffix(lower, "%") {
+		pctRaw := strings.TrimSpace(strings.TrimSuffix(lower, "%"))
+		pct, err := strconv.ParseFloat(strings.ReplaceAll(pctRaw, ",", "."), 64)
+		if err != nil {
+			return 0, "", false
+		}
+		if pct < 0 {
+			pct = 0
+		}
+		if pct > 100 {
+			pct = 100
+		}
+		return roundLicenciaCheckoutAmount(originalValue * (pct / 100)), strings.TrimSpace(spec), true
+	}
+	amount, err := strconv.ParseFloat(strings.ReplaceAll(strings.ReplaceAll(lower, ".", ""), ",", "."), 64)
+	if err != nil {
+		return 0, "", false
+	}
+	if amount < 0 {
+		amount = 0
+	}
+	if amount > originalValue {
+		amount = originalValue
+	}
+	return roundLicenciaCheckoutAmount(amount), strings.TrimSpace(spec), true
+}
+
+func resolveLicenciaDiscountAmount(dbSuper *sql.DB, discountCode string, originalValue float64) (float64, string, bool, error) {
+	normalizedCode := normalizeLicenciaDiscountCode(discountCode)
+	if normalizedCode == "" || originalValue <= 0 {
+		return 0, "", false, nil
+	}
+	for _, key := range []string{"licencias.discount_codes", "licencias.codigos_descuento"} {
+		raw, _, err := dbpkg.GetConfigValue(dbSuper, key)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return 0, "", false, err
+		}
+		for _, line := range strings.Split(strings.ReplaceAll(raw, "\r\n", "\n"), "\n") {
+			entry := strings.TrimSpace(line)
+			if entry == "" || strings.HasPrefix(entry, "#") {
+				continue
+			}
+			parts := strings.SplitN(entry, "=", 2)
+			if len(parts) != 2 {
+				continue
+			}
+			if normalizeLicenciaDiscountCode(parts[0]) != normalizedCode {
+				continue
+			}
+			amount, label, ok := parseLicenciaDiscountSpec(parts[1], originalValue)
+			return amount, label, ok, nil
+		}
+	}
+	amount, label, ok := parseLicenciaDiscountSpec(discountCode, originalValue)
+	return amount, label, ok, nil
+}
+
+func isLicenciaGratisActivationBlocked(dbSuper *sql.DB, lic *dbpkg.Licencia, empresaID int64) (bool, error) {
+	if lic == nil || empresaID <= 0 {
+		return false, nil
+	}
+	if lic.EmpresaID == empresaID && strings.TrimSpace(lic.FechaInicio) != "" {
+		return true, nil
+	}
+	return dbpkg.HasLicenciaGratisActivation(dbSuper, lic.ID, empresaID)
+}
+
+func resolveLicenciaCheckoutSummary(dbSuper *sql.DB, lic *dbpkg.Licencia, empresaID int64, discountCode string) (licenciaCheckoutSummary, error) {
+	summary := licenciaCheckoutSummary{}
+	if lic == nil {
+		return summary, errors.New("licencia no disponible")
+	}
+	originalValue := roundLicenciaCheckoutAmount(lic.Valor)
+	discountValue, discountLabel, discountApplied, err := resolveLicenciaDiscountAmount(dbSuper, discountCode, originalValue)
+	if err != nil {
+		return summary, err
+	}
+	if discountValue > originalValue {
+		discountValue = originalValue
+	}
+	totalValue := roundLicenciaCheckoutAmount(originalValue - discountValue)
+	isZeroTotal := totalValue <= 0
+	zeroBlocked := false
+	if isZeroTotal {
+		zeroBlocked, err = isLicenciaGratisActivationBlocked(dbSuper, lic, empresaID)
+		if err != nil {
+			return summary, err
+		}
+	}
+	summary = licenciaCheckoutSummary{
+		OriginalValue:             originalValue,
+		DiscountValue:             discountValue,
+		TotalValue:                totalValue,
+		DiscountCode:              strings.TrimSpace(discountCode),
+		DiscountApplied:           discountApplied && discountValue > 0,
+		DiscountLabel:             discountLabel,
+		IsZeroTotal:               isZeroTotal,
+		ZeroTotalBlocked:          zeroBlocked,
+		CanActivateWithoutPayment: isZeroTotal && !zeroBlocked,
+	}
+	if zeroBlocked {
+		summary.Message = "Esta licencia gratuita solo puede activarse una vez por empresa."
+	} else if isZeroTotal {
+		summary.Message = "El total quedó en cero. Puedes activar la licencia sin pasar por la pasarela."
+	} else if summary.DiscountApplied {
+		summary.Message = "Se aplicó el descuento y el total ya está actualizado para el checkout."
+	}
+	return summary, nil
+}
+
+func LicenciaCheckoutSummaryHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		licenciaID, _ := strconv.ParseInt(strings.TrimSpace(r.URL.Query().Get("licencia_id")), 10, 64)
+		empresaID, _ := strconv.ParseInt(strings.TrimSpace(r.URL.Query().Get("empresa_id")), 10, 64)
+		discountCode := strings.TrimSpace(r.URL.Query().Get("discount_code"))
+		if licenciaID <= 0 {
+			http.Error(w, "licencia_id invalido", http.StatusBadRequest)
+			return
+		}
+		lic, err := dbpkg.GetLicenciaByID(dbSuper, licenciaID)
+		if err != nil || lic == nil {
+			http.Error(w, "licencia not found", http.StatusBadRequest)
+			return
+		}
+		summary, err := resolveLicenciaCheckoutSummary(dbSuper, lic, empresaID, discountCode)
+		if err != nil {
+			http.Error(w, "failed to resolve checkout summary: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"licencia_id": licenciaID,
+			"empresa_id":  empresaID,
+			"summary":     summary,
+		})
+	}
+}
+
 func extractWompiWebhookPaymentInfo(obj map[string]interface{}) (string, string, string) {
 	get := func(v interface{}) string {
 		s := strings.TrimSpace(fmt.Sprint(v))
@@ -2038,7 +2214,28 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		amountInCents := int64(math.Round(lic.Valor * 100))
+		summary, err := resolveLicenciaCheckoutSummary(dbSuper, lic, payload.EmpresaID, payload.DiscountCode)
+		if err != nil {
+			http.Error(w, "failed to resolve licencia summary: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if summary.IsZeroTotal {
+			statusCode := http.StatusConflict
+			if !summary.ZeroTotalBlocked {
+				statusCode = http.StatusPreconditionFailed
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(statusCode)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"error":                      summary.Message,
+				"provider":                   "wompi",
+				"requires_manual_activation": true,
+				"summary":                    summary,
+			})
+			return
+		}
+
+		amountInCents := int64(math.Round(summary.TotalValue * 100))
 		if amountInCents <= 0 {
 			http.Error(w, "valor de licencia inválido para Wompi", http.StatusBadRequest)
 			return
@@ -2660,6 +2857,27 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 
+		summary, err := resolveLicenciaCheckoutSummary(dbSuper, lic, payload.EmpresaID, payload.DiscountCode)
+		if err != nil {
+			http.Error(w, "failed to resolve licencia summary: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if summary.IsZeroTotal {
+			statusCode := http.StatusConflict
+			if !summary.ZeroTotalBlocked {
+				statusCode = http.StatusPreconditionFailed
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(statusCode)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"error":                      summary.Message,
+				"provider":                   "epayco",
+				"requires_manual_activation": true,
+				"summary":                    summary,
+			})
+			return
+		}
+
 		email := strings.TrimSpace(payload.CustomerEmail)
 		if email == "" {
 			email = strings.TrimSpace(r.Header.Get("X-Admin-Email"))
@@ -2690,7 +2908,7 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			"name":             "Powerful Control System",
 			"description":      "Pago de licencia " + strings.TrimSpace(lic.Nombre),
 			"currency":         "COP",
-			"amount":           lic.Valor,
+			"amount":           summary.TotalValue,
 			"lang":             "ES",
 			"invoice":          reference,
 			"country":          "CO",
@@ -3194,10 +3412,28 @@ func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 
+		summary, err := resolveLicenciaCheckoutSummary(dbSuper, lic, payload.EmpresaID, payload.DiscountCode)
+		if err != nil {
+			http.Error(w, "failed to resolve licencia summary: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if !summary.IsZeroTotal {
+			http.Error(w, "solo se permite activar sin pago cuando el total final es cero", http.StatusBadRequest)
+			return
+		}
+		if summary.ZeroTotalBlocked {
+			http.Error(w, summary.Message, http.StatusConflict)
+			return
+		}
+
 		now := time.Now()
 		fechaInicio := now.Format("2006-01-02 15:04:05")
 		fechaFin := now.AddDate(0, 0, lic.DuracionDias).Format("2006-01-02 15:04:05")
-		if err := dbpkg.ActivateLicenciaForEmpresa(dbSuper, payload.LicenciaID, payload.EmpresaID, fechaInicio, fechaFin); err != nil {
+		if err := dbpkg.ActivateLicenciaGratisForEmpresa(dbSuper, payload.LicenciaID, payload.EmpresaID, fechaInicio, fechaFin, payload.DiscountCode, payload.Motivo); err != nil {
+			if errors.Is(err, dbpkg.ErrLicenciaGratisYaUsada) {
+				http.Error(w, "esta licencia gratuita ya fue usada por esta empresa", http.StatusConflict)
+				return
+			}
 			http.Error(w, "failed to activate licencia: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -3213,7 +3449,7 @@ func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB) http.HandlerFunc {
 				payload.AsesorID = payload.VendedorID
 			}
 
-			rawMap := map[string]interface{}{"motivo": payload.Motivo, "discount_code": payload.DiscountCode, "asesor_id": payload.AsesorID, "vendedor_id": payload.VendedorID}
+			rawMap := map[string]interface{}{"motivo": payload.Motivo, "discount_code": payload.DiscountCode, "asesor_id": payload.AsesorID, "vendedor_id": payload.VendedorID, "zero_total": true, "total_value": summary.TotalValue, "discount_value": summary.DiscountValue}
 			rawBytes, _ := json.Marshal(rawMap)
 			if _, err := dbpkg.CreateWompiPaymentRecord(dbSuper, payload.LicenciaID, payload.EmpresaID, "", reference, "MANUAL", string(rawBytes), payload.DiscountCode, payload.AsesorID); err != nil {
 				log.Println("warning: failed to record manual activation in pagos_wompi:", err)
@@ -3231,6 +3467,7 @@ func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB) http.HandlerFunc {
 			"empresa_id":     payload.EmpresaID,
 			"fecha_inicio":   fechaInicio,
 			"fecha_fin":      fechaFin,
+			"summary":        summary,
 			"redirect_url":   fmt.Sprintf("/administrar_empresa.html?id=%d", payload.EmpresaID),
 		})
 	}

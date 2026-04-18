@@ -9,6 +9,8 @@
     stationName: '',
     carritoCode: '',
     carritoID: 0,
+    viewVariant: 'supermercado',
+    empresaConfig: null,
     carrito: null,
     items: [],
     productos: [],
@@ -25,6 +27,14 @@
 
   function normalizedCode(v) {
     return normalize(v).toUpperCase();
+  }
+
+  function normalizeVariant(v) {
+    const value = normalize(v).toLowerCase();
+    if (value === 'compacto' || value === 'carrito_compacto' || value === 'compact') {
+      return 'compacto';
+    }
+    return value ? 'supermercado' : '';
   }
 
   function sanitize(v) {
@@ -485,6 +495,72 @@
     }
   }
 
+  async function resolveViewVariant(requestedVariant) {
+    const directVariant = normalizeVariant(requestedVariant);
+    if (directVariant) {
+      state.viewVariant = directVariant;
+      return;
+    }
+
+    state.viewVariant = 'supermercado';
+    if (!isOnline() || !state.empresaID) {
+      return;
+    }
+
+    try {
+      const config = await requestJSON('/api/empresa/configuracion_avanzada?empresa_id=' + encodeURIComponent(state.empresaID));
+      state.empresaConfig = config || null;
+      const remoteVariant = normalizeVariant(
+        (config && config.cart_variant) ||
+        (config && config.carrito_variant) ||
+        (config && config.ventas_simple_variant) ||
+        (config && config.cart_ui_variant)
+      );
+      if (remoteVariant) {
+        state.viewVariant = remoteVariant;
+      }
+    } catch (_) {
+      state.empresaConfig = null;
+    }
+  }
+
+  function applyViewVariant() {
+    const compact = state.viewVariant === 'compacto';
+    const body = document.body;
+    if (body) {
+      body.classList.toggle('ventas-simple-compact-mode', compact);
+      body.setAttribute('data-cart-variant', state.viewVariant || 'supermercado');
+    }
+
+    const tag = document.getElementById('variantTag');
+    if (tag) {
+      tag.textContent = compact ? 'Carrito compacto' : 'Supermercado';
+    }
+
+    const bar = document.getElementById('compactActionsBar');
+    if (bar) {
+      bar.hidden = !compact;
+    }
+  }
+
+  function scrollToSection(sectionID, focusID) {
+    const section = document.getElementById(sectionID);
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    if (focusID) {
+      window.setTimeout(function() {
+        const field = document.getElementById(focusID);
+        if (field) {
+          field.focus();
+          if (typeof field.select === 'function') {
+            field.select();
+          }
+        }
+      }, 180);
+    }
+  }
+
   async function listCarritos() {
     return await requestJSON('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(state.empresaID) + '&include_inactive=1');
   }
@@ -609,7 +685,8 @@
 
   function renderHeader() {
     const stationText = state.stationName || (state.stationID > 0 ? ('Estacion ' + state.stationID) : 'Estacion');
-    document.getElementById('pageTitle').textContent = 'Venta simple - ' + stationText;
+    const isCompact = state.viewVariant === 'compacto';
+    document.getElementById('pageTitle').textContent = (isCompact ? 'Carrito compacto - ' : 'Venta simple - ') + stationText;
 
     const carritoCode = state.carritoCode || (state.stationID > 0 ? getCarritoCodeForStation(state.stationID) : 'sin codigo');
     const estado = isCarritoOperativoActivo(state.carrito) ? 'sesion activa' : 'sesion cerrada';
@@ -637,6 +714,11 @@
       'Estado del carrito: ' + carritoEstado + ' | Items activos: ' + activeItems.length + ' | Total actual: ' + money(total, currency);
 
     document.getElementById('payTotalLabel').textContent = 'Total a cobrar: ' + money(total, currency);
+
+    const compactTotal = document.getElementById('compactModeTotalPill');
+    if (compactTotal) {
+      compactTotal.textContent = 'Total: ' + money(total, currency);
+    }
 
     const payAmount = document.getElementById('payAmount');
     const currentAmount = toNumber(payAmount.value, 0);
@@ -1454,6 +1536,48 @@
       syncOfflineQueue('manual');
     });
 
+    const compactSearch = document.getElementById('btnCompactFocusSearch');
+    if (compactSearch) {
+      compactSearch.addEventListener('click', function() {
+        scrollToSection('catalogSection', 'productoSearch');
+      });
+    }
+
+    const compactCart = document.getElementById('btnCompactFocusCart');
+    if (compactCart) {
+      compactCart.addEventListener('click', function() {
+        scrollToSection('cartSection');
+      });
+    }
+
+    const compactPay = document.getElementById('btnCompactFocusPay');
+    if (compactPay) {
+      compactPay.addEventListener('click', function() {
+        scrollToSection('paySection', 'payAmount');
+      });
+    }
+
+    const compactSync = document.getElementById('btnCompactSync');
+    if (compactSync) {
+      compactSync.addEventListener('click', function() {
+        syncOfflineQueue('manual');
+      });
+    }
+
+    const compactNuevaVenta = document.getElementById('btnCompactNuevaVenta');
+    if (compactNuevaVenta) {
+      compactNuevaVenta.addEventListener('click', function() {
+        startNewSale();
+      });
+    }
+
+    const compactCorreccion = document.getElementById('btnCompactCorreccion');
+    if (compactCorreccion) {
+      compactCorreccion.addEventListener('click', function() {
+        scrollToSection('paySection', 'correctionAmount');
+      });
+    }
+
     window.addEventListener('offline', function() {
       updateSyncStatusUI('Modo offline activo. Los cambios se guardaran localmente.');
       setMessage('mainMsg', 'Conexion perdida. Operando en modo offline con sincronizacion diferida.', 'error');
@@ -1475,6 +1599,7 @@
     state.stationName = normalize(params.get('estacion_nombre') || '');
     state.carritoCode = normalizedCode(params.get('carrito_codigo') || '');
     state.carritoID = Number(params.get('carrito_id') || 0);
+    state.viewVariant = normalizeVariant(params.get('variant')) || 'supermercado';
 
     if (!state.empresaID) {
       setMessage('mainMsg', 'Falta empresa_id en la URL.', 'error');
@@ -1495,6 +1620,8 @@
     }
 
     wireEvents();
+  await resolveViewVariant(params.get('variant'));
+  applyViewVariant();
     updateReferenceFieldVisibility();
     renderHeader();
 

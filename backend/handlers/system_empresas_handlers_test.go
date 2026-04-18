@@ -695,15 +695,83 @@ func TestAIModelsConfigHandlerSaveDeepSeekEncrypted(t *testing.T) {
 		t.Fatalf("decode ai get response: %v body=%s", err, getRR.Body.String())
 	}
 	modelos, ok := getBody["modelos"].([]interface{})
-	if !ok || len(modelos) == 0 {
+	if !ok || len(modelos) < 2 {
 		t.Fatalf("expected modelos in ai get response, got %T", getBody["modelos"])
 	}
-	first, ok := modelos[0].(map[string]interface{})
-	if !ok {
-		t.Fatalf("expected first modelo object, got %T", modelos[0])
+	seenDeepSeek := false
+	seenAmbis := false
+	for _, raw := range modelos {
+		item, ok := raw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		switch item["model_id"] {
+		case "deepseek:deepseek-chat":
+			seenDeepSeek = true
+			if masked, _ := item["masked"].(string); masked != "********" {
+				t.Fatalf("expected masked value ******** for deepseek, got %q", masked)
+			}
+		case "ollama:ambis":
+			seenAmbis = true
+			if configured, _ := item["configured"].(bool); !configured {
+				t.Fatal("expected ollama:ambis to appear configured in super AI catalog")
+			}
+		}
 	}
-	if masked, _ := first["masked"].(string); masked != "********" {
-		t.Fatalf("expected masked value ********, got %q", masked)
+	if !seenDeepSeek {
+		t.Fatal("expected deepseek model in ai get response")
+	}
+	if !seenAmbis {
+		t.Fatal("expected ollama ambis model in ai get response")
+	}
+}
+
+func TestAIModelsConfigHandlerTogglesGlobalServiceState(t *testing.T) {
+	dbSuper := openTestSQLite(t, "super_ai_toggle_handler.db")
+	ensureSuperConfigSchemaForSuper(t, dbSuper)
+
+	h := AIModelsConfigHandler(dbSuper)
+	body := `{"enabled":false}`
+	req := httptest.NewRequest(http.MethodPut, "/super/api/config/ai", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Admin-Email", "super@empresa.com")
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status %d on ai toggle save, got %d body=%s", http.StatusOK, rr.Code, rr.Body.String())
+	}
+
+	stored, encrypted, err := dbpkg.GetConfigValue(dbSuper, superAIEnabledConfigKey)
+	if err != nil {
+		t.Fatalf("read %s: %v", superAIEnabledConfigKey, err)
+	}
+	if encrypted {
+		t.Fatal("expected ai.global.enabled to be stored as plaintext flag")
+	}
+	if strings.TrimSpace(stored) != "0" {
+		t.Fatalf("expected ai.global.enabled=0, got %q", stored)
+	}
+
+	getReq := httptest.NewRequest(http.MethodGet, "/super/api/config/ai", nil)
+	getReq.Header.Set("X-Admin-Email", "super@empresa.com")
+	getRR := httptest.NewRecorder()
+	h.ServeHTTP(getRR, getReq)
+	if getRR.Code != http.StatusOK {
+		t.Fatalf("expected status %d on ai get, got %d body=%s", http.StatusOK, getRR.Code, getRR.Body.String())
+	}
+
+	var getBody map[string]interface{}
+	if err := json.Unmarshal(getRR.Body.Bytes(), &getBody); err != nil {
+		t.Fatalf("decode ai get response: %v body=%s", err, getRR.Body.String())
+	}
+	serviceStatus, ok := getBody["service_status"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected service_status object, got %#v", getBody["service_status"])
+	}
+	enabled, _ := serviceStatus["enabled"].(bool)
+	if enabled {
+		t.Fatal("expected service_status.enabled=false after toggle off")
 	}
 }
 

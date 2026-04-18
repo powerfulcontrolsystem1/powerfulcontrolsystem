@@ -1,6 +1,88 @@
 Descripcion compacta de modulos (POS multiempresa)
 Actualizacion: 2026-04-17
 
+Actualizacion 2026-04-18 (arcade publico: N64 vertical mobile con ROM legal y guardado local):
+- `web/Juegos/n64/index.html` incorpora una vista publica específica para celular con pantalla arriba, controles abajo y acciones `Guardar/Cargar` orientadas a la memoria persistente del cartucho.
+- `web/Juegos/n64/n64-wrapper.js` monta `n64js` dentro de `iframe.srcdoc` mismo-origen, guarda la última ROM legal del usuario en IndexedDB y reenvía los controles táctiles como eventos de teclado compatibles con el core.
+- `web/Juegos/menu_juegos.html` publica la nueva entrada `N64 vertical mobile` dentro del lobby del arcade, manteniendo el mismo esquema de apertura pública bajo `/Juegos/*`.
+- Impacto de permisos: sin cambios en roles, wrappers ni autenticación; `Juegos` sigue siendo una superficie pública del portal.
+
+Actualizacion 2026-04-18 (inventario/productos: subpaginas separadas para bodegas y categorias):
+- `web/administrar_empresa/administrar_productos.html` se mantiene como fuente unica del modulo y ahora admite `?view=productos`, `?view=bodegas` y `?view=categorias` para mostrar solo el bloque operativo correspondiente.
+- `web/administrar_empresa/productos/administrar_productos.html`, `web/administrar_empresa/productos/bodegas.html` y `web/administrar_empresa/productos/categorias.html` pasan a ser wrappers de navegacion que preservan `empresa_id` y redirigen a la vista central sin duplicar formularios ni bindings.
+- Impacto de permisos: sin cambios en roles, wrappers backend ni endpoints; el ajuste es de organizacion frontend dentro del mismo modulo autenticado por `empresa_id`.
+
+Actualizacion 2026-04-18 (chat IA super/empresa: interruptor global de servicio):
+- La configuracion avanzada super agrega un interruptor global para activar o desactivar la IA desde `web/super/configuracion_avanzada.html`.
+- Cuando el servicio queda desactivado, tanto `/api/empresa/chat_con_inteligencia_artificial/*` como `/super/api/chat_con_ia_global/*` responden estado de servicio no disponible y dejan de generar consultas hacia DeepSeek u Ollama.
+- Impacto de permisos: sin cambios de rol; la operacion sigue restringida a configuracion super para el control global y a los permisos ya existentes de los chats para lectura y uso.
+
+Actualizacion 2026-04-18 (chat IA super/empresa: estado visual de servicio desactivado):
+- `web/administrar_empresa/chat_con_inteligencia_artificial.html` y `web/super/chat_con_ia_global.html` ahora muestran un mensaje visible cuando la IA global está desactivada y bloquean el formulario localmente.
+- `web/super/configuracion_avanzada.html` hace explícita la acción `Probar IA contra VPS` como validación real del servicio Ollama a través del backend.
+- Impacto de permisos: sin cambios; el ajuste es de experiencia operativa y comunicación de estado.
+
+Actualizacion 2026-04-18 (gobernanza tecnica: integraciones externas y reconciliacion documental):
+- Se amplía el paquete transversal `gobernanza tecnica` con un contrato técnico de integraciones empresariales y un runbook de reconciliacion documental fiscal/contable.
+- `documentos/gobernanza_tecnica/contratos/contrato_integraciones_bancarias_y_conectores_externos.md` fija entradas, salidas, invariantes, alertas y restricciones de `/api/empresa/integraciones/apis` y `/api/empresa/integraciones/bancos`.
+- `documentos/gobernanza_tecnica/runbooks/runbook_reconciliacion_documental_fiscal_y_contable_externa.md` documenta el diagnostico operativo de compras documentales, reintentos y reconciliacion fiscal, y versionado/acceso del repositorio empresarial.
+- Impacto de permisos: sin cambios funcionales en wrappers ni roles; el alcance es documental y operativo transversal.
+
+Actualizacion 2026-04-18 (gobernanza tecnica: repositorio documental y firmas externas):
+- Se amplía el paquete transversal `gobernanza tecnica` con un contrato técnico y un runbook del repositorio documental empresarial.
+- `documentos/gobernanza_tecnica/contratos/contrato_repositorio_documental_y_firmas_externas.md` fija rutas, acciones, columnas, invariantes y reglas de acceso de `/api/empresa/documentos/gestion` y `/api/empresa/documentos/firmas`.
+- `documentos/gobernanza_tecnica/runbooks/runbook_versionado_documental_y_firmas_externas.md` documenta el diagnostico operativo de versionado, historial, firmas asociadas y acceso por rol/modulo documental.
+- Impacto de permisos: sin cambios en wrappers ni roles vigentes; la mejora es documental y operativa transversal sobre el comportamiento ya implementado.
+
+Actualizacion 2026-04-18 (gobernanza tecnica: reconciliacion documental y evidencia regulatoria endurecida):
+- Se endurece el paquete `gobernanza tecnica` para reconciliar explícitamente repositorio documental, interoperabilidad fiscal/contable y exportes multiformato.
+- Los contratos de repositorio, interoperabilidad y reportes ahora dejan explícito que un exporte no reemplaza la versión vigente ni la firma documental cuando el flujo exige evidencia reforzada.
+- Los runbooks de reconciliación y versionado ahora obligan a cruzar `documento_codigo`, versión vigente, `hash_archivo`, `hash_firma` y dataset exportado cuando aplique.
+- Impacto de permisos: sin cambios en wrappers ni roles; el ajuste fortalece trazabilidad operativa y disciplina documental.
+
+Actualizacion 2026-04-18 (gobernanza tecnica: checklist QA/soporte para evidencia documental):
+- Se agrega una checklist corta en `documentos/gobernanza_tecnica/runbooks/checklist_evidencia_documental_para_qa_y_soporte.md` para acelerar triage y UAT en flujos documentales.
+- La descripcion del proyecto y la estructura del codigo ahora remiten explícitamente a esa checklist como entrada rapida antes de escalar a runbooks completos.
+- Impacto de permisos: sin cambios en wrappers ni roles; el ajuste mejora el cierre operativo y la disciplina de soporte.
+
+Actualizacion 2026-04-18 (gobernanza tecnica: interoperabilidad documental e integraciones externas):
+- Se amplía el paquete transversal `gobernanza tecnica` con un contrato técnico del frente documental-contable/fiscal y un runbook de contingencias para conectores externos.
+- `documentos/gobernanza_tecnica/contratos/contrato_interoperabilidad_documental_contable_y_fiscal_externa.md` fija reglas de compras documentales, facturacion documental, cola de reintentos fiscales, validacion documental y versionado/control de acceso del repositorio empresarial.
+- `documentos/gobernanza_tecnica/runbooks/runbook_contingencias_integraciones_bancarias_y_conectores.md` documenta el diagnostico de `health_check`, `sync_manual`, monitoreo, latencia y rotacion segura de credenciales para `integraciones/apis` e `integraciones/bancos`.
+- Impacto de permisos: sin cambios en roles ni visibilidad; la mejora es documental y operativa transversal.
+
+Actualizacion 2026-04-18 (gobernanza tecnica: cierre de periodo y conciliacion bancaria):
+- Se amplía el paquete transversal `gobernanza tecnica` con un contrato técnico y un runbook del frente financiero-contable.
+- `documentos/gobernanza_tecnica/contratos/contrato_conciliacion_bancaria_y_cierre_periodo_contable.md` fija el comportamiento de periodos, evidencia de autorizacion, importacion idempotente de extractos, conciliacion automatica y bloqueo de movimientos en periodos cerrados.
+- `documentos/gobernanza_tecnica/runbooks/runbook_cierre_periodo_y_conciliacion_bancaria.md` documenta el diagnostico de cierres fallidos, extractos sin match, tolerancias y resumenes con pendientes o desviaciones.
+- Impacto de permisos: sin cambios en roles ni visibilidad; la mejora es documental y operativa transversal.
+
+Actualizacion 2026-04-18 (estaciones: tarjeta especial YouTube con vista maximizable):
+- Se amplía el modulo `operacion por empresa / estaciones` con una estacion especial opcional tipo `YouTube`, activable desde la configuracion global de estaciones.
+- `web/administrar_empresa/configuracion_de_estaciones.html` agrega el toggle `youtube_enabled` dentro de `estaciones_config` y `web/administrar_empresa/estaciones.html` renderiza la tarjeta embebida con boton de ampliacion.
+- `web/administrar_empresa/youtube_station_browser.html` encapsula la vista navegable/embebida de YouTube para reutilizarla tanto en modo compacto dentro de la tarjeta como en la ventana ampliada de aproximadamente `500 x 500`.
+- Impacto de permisos: sin cambios; la mejora vive dentro de la misma vista autenticada de estaciones y no modifica wrappers ni roles.
+
+Actualizacion 2026-04-18 (gobernanza tecnica: soporte remoto y contingencia de reportes):
+- Se amplía el paquete transversal `gobernanza tecnica` con un contrato técnico del módulo de soporte remoto multiempresa y dos runbooks nuevos de contingencia operativa.
+- `documentos/gobernanza_tecnica/contratos/contrato_soporte_remoto_por_empresa_y_mesa_tecnica_central.md` fija entradas, estados, invariantes y límites del flujo empresarial, público y super de soporte remoto.
+- `documentos/gobernanza_tecnica/runbooks/runbook_reportes_programados_y_exportaciones_contables.md` documenta la recuperación de plantillas, programaciones, ejecuciones, exportaciones tabulares y validaciones de consistencia.
+- `documentos/gobernanza_tecnica/runbooks/runbook_soporte_remoto_sesiones_y_dispositivos.md` documenta diagnóstico de heartbeats, PIN de dispositivo, sesión con token, portal público y bloqueos por plan.
+- Impacto de permisos: sin cambios en roles ni visibilidad; la mejora es documental y operativa transversal.
+
+Actualizacion 2026-04-18 (gobernanza tecnica: DIAN, alertas de reinicio y reportes multiformato):
+- Se extiende el paquete transversal `gobernanza tecnica` con tres artefactos nuevos orientados a diagnostico y contratos de comportamiento real.
+- `documentos/gobernanza_tecnica/runbooks/runbook_dian_set_pruebas_y_diagnostico_oficial.md` fija el procedimiento operativo de DIAN para onboarding, checklist, credenciales, firma base, set de pruebas y clasificacion de brechas entre configuracion y transporte oficial aun pendiente.
+- `documentos/gobernanza_tecnica/runbooks/runbook_alertas_reinicio_y_monitoreo_gmail_smtp.md` documenta el uso de `POST /super/api/config/gmail?action=test`, `super_servidor_eventos`, `gmail.restart_alert_to`, `gmail.restart_alert_enabled` y `gmail.smtp_test_mode`.
+- `documentos/gobernanza_tecnica/contratos/contrato_reportes_contables_financieros_y_exportacion_multiformato.md` formaliza el modulo de reportes empresariales y globales super, incluyendo datasets, exportes, plantillas, programacion, ejecuciones y consistencia multiformato.
+- Impacto de permisos: sin cambios en roles ni visibilidad; la mejora es documental, operativa y de gobernanza transversal.
+
+Actualizacion 2026-04-18 (gobernanza tecnica: paquete base de ADRs, contratos y runbooks):
+- Se crea el paquete transversal `gobernanza tecnica` para reducir errores futuros de implementacion y volver trazables las decisiones estructurales del repositorio.
+- `documentos/README.md` ordena la lectura tecnica del repo y `documentos/gobernanza_tecnica/README.md` instala el marco de trabajo con plan, estandares de cambio seguro, ADRs, contratos y runbooks.
+- Se agregan los ADRs base de `empresa_id` como frontera multiempresa y `PostgreSQL en VPS` como runtime productivo canonico, junto con el primer contrato y runbook del checkout publico de licencias.
+- Impacto de permisos: sin cambios en roles ni visibilidad; la mejora es documental y de gobernanza tecnica transversal.
+
 Actualizacion 2026-04-18 (seleccionar empresa: tarjetas mas compactas y botones alineados al pie):
 - Se ajusta visualmente el submodulo `administracion global (super) / seleccionar empresa` para reducir el tamano de las tarjetas del listado sin cambiar rutas ni acciones.
 - `web/estilos.css` compacta ancho, alto y espaciados de las tarjetas, y deja la botonera inferior siempre centrada y alineada al pie del bloque, incluso cuando la descripcion ocupa varias lineas.
@@ -10,6 +92,13 @@ Actualizacion 2026-04-18 (super configuracion avanzada: prueba real de Gmail):
 - Se amplía el submodulo `administracion global (super) / configuracion avanzada` para que el boton `Probar Gmail` ejecute un envio SMTP real usando las credenciales guardadas en PostgreSQL.
 - `backend/handlers/usuarios_empresa.go` añade `POST /super/api/config/gmail?action=test` y `web/super/configuracion_avanzada.html` consume esa accion para mostrar en la misma tarjeta si el correo de prueba fue enviado a `powerfulcontrolsystem@gmail.com`.
 - Impacto de permisos: sin cambios; la capacidad sigue restringida a `super_administrador` dentro del mismo modulo autenticado.
+
+Actualizacion 2026-04-18 (licencias y pasarelas: total cero activa sin pago y solo una vez por empresa):
+- Se endurece el modulo `licencias y pasarelas de pago` para que una licencia de valor cero, o una licencia cuyo descuento deje el total en cero, no intente abrir Epayco/Wompi y se active de forma directa solo una vez por empresa.
+- `backend/handlers/payments_handlers.go` agrega el resumen publico de checkout, recalcula descuento y total antes de abrir pasarela y bloquea la activacion gratis repetida cuando la misma empresa ya consumió esa licencia.
+- `backend/db/licencias_gratis.go` crea la persistencia `licencias_activaciones_gratis` para dejar la marca unica por `(licencia_id, empresa_id)` y mantener trazabilidad de descuentos/cortesia usados en activaciones sin cobro.
+- `web/pagar_licencia.html`, `web/elegir_licencia.html` y `web/estilos.css` muestran el total real, cambian el CTA a `Activar licencia` cuando corresponde y homogeneizan la altura visual de las tarjetas del selector de empresas.
+- Impacto de permisos: sin cambios; el checkout sigue siendo publico, pero la regla comercial de activacion gratis queda ahora validada en backend y no solo en frontend.
 
 Actualizacion 2026-04-18 (licencias y pasarelas: correo Epayco recuperable tras webhook o fallo inicial):
 - Se endurece el modulo `licencias y pasarelas de pago` para que el correo de activacion de Epayco no dependa exclusivamente de la primera activacion efectiva de la licencia.
@@ -35,6 +124,12 @@ Actualizacion 2026-04-18 (ventas simples por estacion: regreso directo a estacio
 - `web/administrar_empresa/ventas_simple.html` agrega el boton `Regresar a estaciones` en la cabecera operativa.
 - `web/js/ventas_simple.js` resuelve la URL de retorno hacia `administrar_empresa/estaciones.html` preservando `empresa_id` y conecta el nuevo boton a esa navegacion.
 - Impacto de permisos: sin cambios; el flujo sigue dentro del mismo modulo autenticado de operacion empresarial.
+
+Actualizacion 2026-04-18 (ventas simples por estacion: variante `carrito_compacto`):
+- Se materializa una variante ligera del mismo flujo operativo de carrito por estacion sin crear rutas backend nuevas ni duplicar la lógica de cobro.
+- `web/administrar_empresa/estaciones.html` abre `ventas_simple.html` con `variant=compacto` cuando la estacion usa venta simple, y `web/js/ventas_simple.js` tambien acepta una configuracion remota opcional desde `/api/empresa/configuracion_avanzada` si el backend ya publica `cart_variant` o aliases equivalentes.
+- `web/administrar_empresa/ventas_simple.html` muestra una barra de acciones rapidas para buscar producto, ver carrito, cobrar, sincronizar, iniciar nueva venta y saltar a correccion, manteniendo el mismo carrito por estacion y el mismo aislamiento por `empresa_id`.
+- Impacto de permisos: sin cambios; la variante reutiliza el mismo modulo autenticado y los mismos endpoints `/api/empresa/carritos_compra` y `/api/empresa/carritos_compra/items`.
 
 Actualizacion 2026-04-17 (arcade publico: Brigada burbujas 3D plus refuerza modo movil y ambiente claro):
 - Se ajusta `web/Juegos/brigada_burbujas_3d_plus.html` para cerrar el shooter 3D simulado con controles tactiles directos sobre el escenario, ayuda visual en pantalla y una composicion pastel mas caricaturesca.
@@ -275,6 +370,34 @@ Actualizacion 2026-04-17 (reportes globales super: graficos y lectura ejecutiva)
 - Se amplía el mismo modulo `reportes globales (super)` con un tablero ejecutivo visual para lectura rápida del portafolio de empresas del administrador.
 - `web/super/reportes_globales.html`, `web/js/super_reportes_globales.js` y `web/estilos.css` agregan tarjetas ejecutivas, narrativa automatica y graficos comparativos de ingresos, balance vs egresos y composicion activa/inactiva.
 - Impacto de permisos: sin cambios; el modulo sigue siendo de lectura exclusiva para `super_administrador`.
+
+Actualizacion 2026-04-18 (gobernanza interna: equipo de agentes coordinado por agente_go):
+- Se formaliza el modulo transversal `gobernanza de agentes internos del repositorio` para repartir trabajo entre arquitectura general, backend/DB, frontend/UX y QA/operacion.
+- `.github/agents/agente_go.agent.md` define a `agente_go` como entrada principal y director del equipo.
+- `.github/agents/agente_backend_db.agent.md`, `.github/agents/agente_frontend_ux.agent.md` y `.github/agents/agente_qa_operacion.agent.md` delimitan responsabilidades tecnicas y protocolo de devolucion hacia `agente_go`.
+- `.github/agents/README.md` concentra la regla operativa de coordinacion y mejora continua.
+- Impacto de permisos: sin cambios en roles de usuarios finales ni visibilidad de pantallas; el alcance es interno al proceso de desarrollo y mantenimiento del repositorio.
+
+Actualizacion 2026-04-18 (gobernanza interna: protocolo de delegacion y plantilla por modulo):
+- Se amplía el mismo modulo transversal `gobernanza de agentes internos del repositorio` con un protocolo formal de delegacion y una plantilla unica de ejecucion por modulo.
+- `.github/agents/protocolo_delegacion.md` define cuando `agente_go` activa backend, frontend, QA o trabajo conjunto segun el tipo de tarea y el modulo afectado.
+- `.github/agents/plantilla_trabajo_por_modulo.md` define el ciclo comun de clasificacion, analisis, implementacion, validacion y cierre.
+- Los agentes especialistas agregan prioridad explicita para `pagos`, `licencias`, `venta_publica`, `facturacion electronica`, `DIAN`, `estaciones`, `carritos`, `autenticacion`, `reportes` y `paneles administrativos`.
+- Impacto de permisos: sin cambios en roles ni visibilidad; el alcance sigue siendo interno a la organizacion tecnica del repositorio.
+
+Actualizacion 2026-04-18 (gobernanza interna: tabla rapida y participacion obligatoria en modulos criticos):
+- Se refuerza el mismo modulo transversal `gobernanza de agentes internos del repositorio` para uso rapido y cierre mas estricto.
+- `.github/agents/protocolo_delegacion.md` agrega una tabla corta por modulo y ejemplos reales de delegacion para `pagos/licencias`, `estaciones/carritos` y `autenticacion/permisos`.
+- `.github/agents/agente_go.agent.md` obliga a `agente_go` a activar a los tres especialistas en modulos criticos como `pagos`, `licencias`, `venta_publica`, `estaciones`, `ventas_simple` y `carritos`, salvo justificacion excepcional.
+- `.github/agents/plantilla_trabajo_por_modulo.md` agrega casos minimos de aplicacion para ejecutar la plantilla con menos ambiguedad.
+- Impacto de permisos: sin cambios en roles ni visibilidad; el alcance sigue siendo interno a la disciplina de trabajo del repositorio.
+
+Actualizacion 2026-04-18 (gobernanza interna: semaforo ejecutivo y evidencia minima por frente):
+- Se amplía el mismo modulo transversal `gobernanza de agentes internos del repositorio` con una capa todavia mas ejecutiva para clasificacion y cierre.
+- `.github/agents/protocolo_delegacion.md` agrega un semaforo `Rojo/Amarillo/Verde` por modulo y un ejemplo completo de delegacion extremo a extremo.
+- `.github/agents/plantilla_trabajo_por_modulo.md` agrega la evidencia minima esperada por cada frente.
+- Los tres agentes especialistas agregan una regla explicita para rechazar cierres si no hay evidencia suficiente.
+- Impacto de permisos: sin cambios en roles ni visibilidad; el alcance sigue siendo interno a la disciplina de trabajo del repositorio.
 
 Actualizacion 2026-04-16 (menu flotante publico: separacion de botones cercanos):
 - Se ajusta el submodulo transversal del `menu flotante publico` para que no se monte sobre botones ubicados en encabezados o barras de acciones cercanas al borde superior derecho.
@@ -690,9 +813,31 @@ Actualizacion 2026-04-13 (estaciones, sensores y facturacion visual por estacion
 - El modulo sensor de puertas valida rango de estacion antes de registrar dispositivos y la vista de estaciones usa el estado mas reciente por `last_seen`.
 - Se valida aislamiento por `empresa_id` en preferencias de estaciones con prueba automatizada en backend (`empresa_estacion_prefs_test.go`).
 
+Actualizacion 2026-04-18 (gobernanza tecnica sobre estaciones y venta simple):
+- Se formaliza el contrato tecnico del flujo en `documentos/gobernanza_tecnica/contratos/contrato_estaciones_sensores_ventas_simple.md`.
+- Se formaliza el runbook operativo de incidentes en `documentos/gobernanza_tecnica/runbooks/runbook_estaciones_sensores_ventas_simple.md`.
+- Ambos artefactos fijan como reglas explicitas la sincronizacion backend del carrito base por estacion, el aislamiento por `empresa_id`, la lectura del sensor por `last_seen` y la trazabilidad de metricas/documento de venta en `pagar_estacion`.
+
 Actualizacion 2026-04-13 (persistencia backend de estaciones):
 - Se corrige la capa DB de `empresa_estacion_prefs` para normalizar `estado` vacio como `activo`, evitando que la configuracion de estaciones desaparezca al recargar cuando el frontend guarda sin enviar `estado`.
 - Se agrega prueba de no regresion en DB y se ajusta prueba de handler para reflejar el payload real del frontend.
+
+Actualizacion 2026-04-18 (gobernanza tecnica de autenticacion y arranque PostgreSQL):
+- Se formaliza el contrato tecnico de autenticacion en `documentos/gobernanza_tecnica/contratos/contrato_autenticacion_administrativa_y_usuarios_empresa.md`.
+- Se formaliza el runbook de arranque local PostgreSQL en `documentos/gobernanza_tecnica/runbooks/runbook_arranque_postgresql_tunel_local.md`.
+- Ambos artefactos fijan reglas explicitas sobre rol administrado, contrato vigente, contraseña local de cuentas Google, alcance por `empresa_id`, bloqueo por intentos fallidos y reescritura del DSN hacia `DB_VPS_LOCAL_PORT` cuando hay tunel activo.
+
+Actualizacion 2026-04-18 (gobernanza tecnica de venta publica empresarial):
+- Se formaliza el contrato tecnico del modulo en `documentos/gobernanza_tecnica/contratos/contrato_venta_publica_empresarial_por_empresa.md`.
+- El artefacto fija invariantes sobre `empresa_slug`, exposicion publica sanitizada, referencias seguras de credenciales, ordenes `VP|empresa_id|codigo_orden`, consulta de estado y conciliacion por Wompi/Epayco.
+
+Actualizacion 2026-04-18 (gobernanza tecnica de permisos empresariales):
+- Se formaliza el contrato tecnico de la capa de permisos y wrappers en `documentos/gobernanza_tecnica/contratos/contrato_permisos_contexto_y_wrappers_api_empresa.md`.
+- El artefacto fija reglas sobre extraccion de `empresa_id`, politica base por rol/modulo/accion, overrides dinamicos, rol efectivo por licencia, visibilidad de paginas, auditoria de wrappers y evidencia de aprobacion para cambios criticos en seguridad.
+
+Actualizacion 2026-04-18 (gobernanza tecnica de facturacion y documentos transaccionales):
+- Se formaliza el contrato tecnico del ciclo documental en `documentos/gobernanza_tecnica/contratos/contrato_facturacion_electronica_y_documentos_transaccionales.md`.
+- El artefacto fija la maquina de estados de emision, anulacion y nota credito, la persistencia comun en `empresa_facturacion_documentos`, el comportamiento de `modo_documento_venta`, la cola de reintentos y reconciliacion fiscal, y la separacion entre la base DIAN actual y la integracion oficial aun pendiente.
 
 Actualizacion 2026-04-12 (autenticacion administrativa: contrato y verificacion humana):
 - Se unifica el flujo de login de administradores en `login.html -> OAuth Google -> /accept.html -> /accept/complete`.
@@ -703,6 +848,17 @@ Actualizacion 2026-04-12 (autenticacion administrativa: contrato y verificacion 
 Actualizacion 2026-04-08 (chat IA empresarial):
 - Se retira la configuracion visual de Google Gemini en super administrador y se estandariza la credencial IA a DeepSeek (`deepseek:deepseek-chat`).
 - El chat IA de empresa se alinea al proveedor configurado en super, manteniendo alcance por `empresa_id` y trazabilidad por cuenta Google autenticada.
+
+Actualizacion 2026-04-18 (chat IA empresarial: DeepSeek + Ambis Local):
+- El modulo `chat_con_inteligencia_artificial` de empresa expone un selector real para alternar entre `deepseek:deepseek-chat` y `ollama:ambis`.
+- `Ambis Local` opera sobre Ollama en el VPS usando `codellama:7b` por `127.0.0.1:11434`, sin exposicion publica directa del servicio.
+- La preferencia de modelo se conserva por `empresa_id` y por cuenta Google autenticada, manteniendo el mismo control de alcance y trazabilidad del modulo.
+- La configuracion avanzada de super mantiene la credencial cifrada de DeepSeek y muestra `Ambis Local` como servicio interno disponible sin API key.
+
+Actualizacion 2026-04-18 (chat IA global super):
+- El submodulo `administracion global (super) / chat con IA global` agrega una pagina dedicada en el panel super para consultar el estado consolidado de toda la base de datos operativa.
+- El backend registra historial, uso diario y modelo preferido por administrador en tablas `super_ai_*` separadas del chat por empresa.
+- El acceso queda restringido a sesiones validas de `super_administrador`, manteniendo aislamiento entre el alcance empresarial y el alcance global.
 
 Actualizacion 2026-04-08 (chat y tareas colaborativo usuario-admin con adjuntos documentales):
 - El modulo de chat/tareas deriva el actor desde sesion autenticada para distinguir `usuario` y `admin` por `empresa_id`.
@@ -731,7 +887,7 @@ Criterio de esta guia:
 - El inicio OAuth administrativo se realiza sin `login_hint` ni estado local de cuenta recordada para mantener comportamiento uniforme entre hosts.
 
 2) Administracion global (super)
-- Empresas, licencias, administradores, configuraciones globales (Wompi/Epayco/SMTP/IA).
+- Empresas, licencias, administradores, configuraciones globales (Wompi/Epayco/SMTP/IA) y chat IA global consolidado.
 
 3) Usuarios de empresa
 - Alta/edicion, confirmacion de correo, password inicial y cambio de password.

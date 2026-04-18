@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Arcade NES móvil</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="nes-emulator">
+    <header class="hero">
+      <p class="eyebrow">Arcade retro</p>
+      <h1>NES en vertical</h1>
+      <p class="hero-copy">En celular la pantalla queda arriba y los controles debajo. Las ROMs y las partidas se guardan solo en tu navegador.</p>
+      <div id="statusBar" class="status-bar">Sube una ROM a una de las cinco ranuras para empezar.</div>
+    </header>
+
+    <section class="screen-panel" aria-label="Pantalla del emulador NES">
+      <div id="nes-stage" class="nes-stage"></div>
+    </section>
+
+    <section class="quick-actions" aria-label="Acciones rápidas del emulador NES">
+      <button id="pauseBtn" type="button">Pausar</button>
+      <button id="saveStateBtn" type="button">Guardar partida</button>
+      <button id="loadStateBtn" type="button">Restaurar partida</button>
+      <button id="fullscreenBtn" type="button">Pantalla completa</button>
+    </section>
+
+    <section class="touch-controls" id="touchControls" aria-label="Controles táctiles NES">
+      <div class="control-block dpad-block" aria-label="Cruceta NES">
+        <button type="button" class="touch-key touch-key-up" data-key="ArrowUp">▲</button>
+        <div class="touch-row">
+          <button type="button" class="touch-key" data-key="ArrowLeft">◀</button>
+          <button type="button" class="touch-key touch-key-center" disabled aria-hidden="true">●</button>
+          <button type="button" class="touch-key" data-key="ArrowRight">▶</button>
+        </div>
+        <button type="button" class="touch-key touch-key-down" data-key="ArrowDown">▼</button>
+      </div>
+
+      <div class="control-block face-block" aria-label="Botones de acción NES">
+        <div class="face-buttons">
+          <button type="button" class="touch-key face-button" data-key="z">B</button>
+          <button type="button" class="touch-key face-button face-button-a" data-key="x">A</button>
+        </div>
+        <div class="meta-buttons">
+          <button type="button" class="touch-key meta-button" data-key="Control">Select</button>
+          <button type="button" class="touch-key meta-button" data-key="Enter">Start</button>
+        </div>
+      </div>
+    </section>
+
+    <details class="library-panel">
+      <summary>Biblioteca local de ROMs (5 ranuras)</summary>
+      <div class="slots">
+        <article class="slot" data-slot="1">
+          <div class="slot-head">
+            <strong>Ranura 1</strong>
+            <span class="slot-meta">Vacía</span>
+          </div>
+          <label class="slot-upload">Subir ROM
+            <input class="slot-file" type="file" accept=".nes,application/octet-stream">
+          </label>
+          <div class="slot-actions">
+            <button class="load-slot" type="button">Jugar</button>
+            <button class="clear-slot ghost" type="button">Borrar</button>
+          </div>
+        </article>
+        <article class="slot" data-slot="2">
+          <div class="slot-head">
+            <strong>Ranura 2</strong>
+            <span class="slot-meta">Vacía</span>
+          </div>
+          <label class="slot-upload">Subir ROM
+            <input class="slot-file" type="file" accept=".nes,application/octet-stream">
+          </label>
+          <div class="slot-actions">
+            <button class="load-slot" type="button">Jugar</button>
+            <button class="clear-slot ghost" type="button">Borrar</button>
+          </div>
+        </article>
+        <article class="slot" data-slot="3">
+          <div class="slot-head">
+            <strong>Ranura 3</strong>
+            <span class="slot-meta">Vacía</span>
+          </div>
+          <label class="slot-upload">Subir ROM
+            <input class="slot-file" type="file" accept=".nes,application/octet-stream">
+          </label>
+          <div class="slot-actions">
+            <button class="load-slot" type="button">Jugar</button>
+            <button class="clear-slot ghost" type="button">Borrar</button>
+          </div>
+        </article>
+        <article class="slot" data-slot="4">
+          <div class="slot-head">
+            <strong>Ranura 4</strong>
+            <span class="slot-meta">Vacía</span>
+          </div>
+          <label class="slot-upload">Subir ROM
+            <input class="slot-file" type="file" accept=".nes,application/octet-stream">
+          </label>
+          <div class="slot-actions">
+            <button class="load-slot" type="button">Jugar</button>
+            <button class="clear-slot ghost" type="button">Borrar</button>
+          </div>
+        </article>
+        <article class="slot" data-slot="5">
+          <div class="slot-head">
+            <strong>Ranura 5</strong>
+            <span class="slot-meta">Vacía</span>
+          </div>
+          <label class="slot-upload">Subir ROM
+            <input class="slot-file" type="file" accept=".nes,application/octet-stream">
+          </label>
+          <div class="slot-actions">
+            <button class="load-slot" type="button">Jugar</button>
+            <button class="clear-slot ghost" type="button">Borrar</button>
+          </div>
+        </article>
+      </div>
+    </details>
+
+    <p class="note">No incluimos ROMs comerciales ni precargamos juegos protegidos. Usa solo dumps propios o ROMs libres.</p>
+  </main>
+
+  <script src="https://unpkg.com/jsnes@2/dist/jsnes.min.js"></script>
+  <script src="nes-wrapper.js"></script>
+</body>
+</html>

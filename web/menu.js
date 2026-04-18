@@ -93,7 +93,11 @@
       '<div class="fm-panel" role="menu">' +
         '<a class="fm-item" href="/index.html">Portal</a>' +
         '<a class="fm-item" href="/venta_digital.html">Venta digital</a>' +
-        '<a class="fm-item" href="/Juegos/menu_juegos.html">Juegos</a>' +
+        '<div class="fm-games-section">' +
+          '<div class="fm-games-title" style="font-weight:800;padding:8px 12px;">Juegos</div>' +
+          '<div class="fm-quick-list" aria-hidden="false"></div>' +
+          '<a class="fm-item fm-item-all" href="/Juegos/menu_juegos.html">Ver todos</a>' +
+        '</div>' +
         '<a id="calculatorLink" class="fm-item" href="/administrar_empresa/calculadora.html">Calculadora</a>' +
         '<a class="fm-item" href="/configuracion_de_la_cuenta.html">Configuración</a>' +
         '<button id="themeToggle" class="fm-item" type="button" aria-label="Cambiar tema"></button>' +
@@ -223,7 +227,40 @@
       calcLink.setAttribute('href', url.pathname + url.search);
     }
     updateCalculatorLink();
-
+    
+    // Intentar cargar un manifiesto de juegos para mostrar accesos rápidos en el menú flotante
+    (function populateQuickGames(){
+      try {
+        var quickList = wrapper.querySelector('.fm-quick-list');
+        if (!quickList) return;
+        fetch('/Juegos/games.json', { credentials: 'same-origin' }).then(function(res){
+          if (!res.ok) throw new Error('no-manifest');
+          return res.json();
+        }).then(function(list){
+          if (!Array.isArray(list)) return;
+          var max = 6;
+          var count = 0;
+          list.slice(0, max).forEach(function(game){
+            try {
+              var a = document.createElement('a');
+              a.className = 'fm-item fm-game-item';
+              a.href = game.windowUrl || '/Juegos/menu_juegos.html';
+              a.title = game.title || game.slug || 'Juego';
+              var img = '';
+              if (game.coverUrl) {
+                img = '<img src="' + String(game.coverUrl).replace(/"/g,'&quot;') + '" style="width:28px;height:28px;object-fit:cover;border-radius:4px;margin-right:8px;vertical-align:middle" alt="">';
+              }
+              a.innerHTML = img + (game.title || game.slug || 'Juego');
+              quickList.appendChild(a);
+              count++;
+            } catch(e){}
+          });
+          if (count === 0) {
+            var p = document.createElement('div'); p.className = 'fm-item'; p.textContent = 'No hay juegos'; quickList.appendChild(p);
+          }
+        }).catch(function(){ /* silencio en fallo */ });
+      } catch(e) {}
+    })();
     // Marcar inyección para evitar duplicados en futuras cargas dinámicas
     try {
       window.__pcsFloatingMenuInjected = true;

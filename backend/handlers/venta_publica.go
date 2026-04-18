@@ -22,6 +22,172 @@ import (
 	dbpkg "github.com/you/pos-backend/db"
 )
 
+// AdminCreatePaginaHandler crea una pagina publica para la empresa (requiere autenticacion y scope de empresa)
+func AdminCreatePaginaHandler(db *sql.DB, webDir string) http.HandlerFunc {
+    type req struct {
+        EmpresaID int64  `json:"empresa_id"`
+        Slug      string `json:"slug"`
+        Titulo    string `json:"titulo"`
+        Descripcion string `json:"descripcion"`
+        VideoURL  string `json:"video_url"`
+        Activo    bool   `json:"activo"`
+    }
+    return func(w http.ResponseWriter, r *http.Request) {
+        var payload req
+        if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+            http.Error(w, "invalid payload", http.StatusBadRequest)
+            return
+        }
+        slug := strings.TrimSpace(payload.Slug)
+        if slug == "" || payload.EmpresaID <= 0 || strings.TrimSpace(payload.Titulo) == "" {
+            http.Error(w, "missing required fields", http.StatusBadRequest)
+            return
+        }
+        id, err := dbpkg.CreatePaginaPublica(db, payload.EmpresaID, slug, payload.Titulo, payload.Descripcion, payload.VideoURL, payload.Activo)
+        if err != nil {
+            http.Error(w, fmt.Sprintf("db error: %v", err), http.StatusInternalServerError)
+            return
+        }
+        w.Header().Set("Content-Type", "application/json")
+        json.NewEncoder(w).Encode(map[string]interface{}{"id": id})
+    }
+}
+
+// AdminCreateProductoHandler crea un producto en una pagina publica
+func AdminCreateProductoHandler(db *sql.DB, webDir string) http.HandlerFunc {
+    type req struct {
+        PaginaID   int64  `json:"pagina_id"`
+        Nombre     string `json:"nombre"`
+        Descripcion string `json:"descripcion"`
+        PrecioCents int64 `json:"precio_cents"`
+        Moneda     string `json:"moneda"`
+        Stock      *int  `json:"stock"`
+        SKU        string `json:"sku"`
+        YoutubeURL string `json:"youtube_url"`
+        Activo     bool   `json:"activo"`
+    }
+    return func(w http.ResponseWriter, r *http.Request) {
+        var payload req
+        if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+            http.Error(w, "invalid payload", http.StatusBadRequest)
+            return
+        }
+        if payload.PaginaID <= 0 || strings.TrimSpace(payload.Nombre) == "" {
+            http.Error(w, "missing required fields", http.StatusBadRequest)
+            return
+        }
+        stock := sql.NullInt64{}
+        if payload.Stock != nil {
+            stock.Int64 = int64(*payload.Stock)
+            stock.Valid = true
+        }
+        id, err := dbpkg.CreateProductoPublico(db, payload.PaginaID, payload.Nombre, payload.Descripcion, payload.PrecioCents, payload.Moneda, stock, payload.SKU, payload.YoutubeURL, payload.Activo)
+        if err != nil {
+            http.Error(w, fmt.Sprintf("db error: %v", err), http.StatusInternalServerError)
+            return
+        }
+        w.Header().Set("Content-Type", "application/json")
+        json.NewEncoder(w).Encode(map[string]interface{}{"id": id})
+    }
+}
+
+// UploadProductImageHandler sube una imagen para un producto y la guarda en web dir bajo empresa/productos
+func UploadProductImageHandler(db *sql.DB, webDir string) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        if err := r.ParseMultipartForm(10 << 20); err != nil { // 10MB
+            http.Error(w, "invalid multipart form", http.StatusBadRequest)
+            return
+        }
+		productoIDStr := r.FormValue("producto_id")
+        empresaIDStr := r.FormValue("empresa_id")
+        var empresaID int64
+        if empresaIDStr != "" {
+            v, err := strconv.ParseInt(empresaIDStr, 10, 64)
+            if err == nil { empresaID = v }
+        }
+
+        file, header, err := r.FormFile("file")
+        if err != nil {
+            http.Error(w, "file required", http.StatusBadRequest)
+            return
+        }
+        defer file.Close()
+
+        // Ensure path exists: web/empresa_publica/<empresa_id>/productos/
+        baseDir := filepath.Join(webDir, "empresa_publica")
+        if empresaID > 0 {
+            baseDir = filepath.Join(baseDir, strconv.FormatInt(empresaID, 10))
+        } else {
+            baseDir = filepath.Join(baseDir, "misc")
+        }
+        prodDir := filepath.Join(baseDir, "productos")
+        if err := os.MkdirAll(prodDir, 0755); err != nil {
+            http.Error(w, "failed create dir", http.StatusInternalServerError)
+            return
+        }
+
+        // sanitize filename
+        fname := filepath.Base(header.Filename)
+        dstPath := filepath.Join(prodDir, fname)
+        out, err := os.Create(dstPath)
+        if err != nil {
+            http.Error(w, "failed to create file", http.StatusInternalServerError)
+            return
+        }
+        defer out.Close()
+        if _, err := io.Copy(out, file); err != nil {
+            http.Error(w, "failed to write file", http.StatusInternalServerError)
+            return
+        }
+
+        // Save DB reference if producto_id provided
+        if productoIDStr != "" {
+            if pid, err := strconv.ParseInt(productoIDStr, 10, 64); err == nil {
+                rel := strings.TrimPrefix(dstPath, webDir)
+                rel = strings.ReplaceAll(rel, "\\", "/")
+                if !strings.HasPrefix(rel, "/") { rel = "/" + rel }
+                if err := dbpkg.AddImagenProductoPublico(db, pid, rel, 0); err != nil {
+                    // Non-fatal: log
+                }
+            }
+        }
+
+        w.Header().Set("Content-Type", "application/json")
+        json.NewEncoder(w).Encode(map[string]interface{}{"url": strings.ReplaceAll(strings.TrimPrefix(dstPath, webDir), "\\", "/")})
+    }
+}
+
+// PublicListPaginaHandler lista paginas publicas por empresa o por slug
+func PublicListPaginaHandler(db *sql.DB, webDir string) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        empresaIDStr := r.URL.Query().Get("empresa_id")
+        slug := r.URL.Query().Get("slug")
+        if empresaIDStr == "" && slug == "" {
+            http.Error(w, "empresa_id or slug required", http.StatusBadRequest)
+            return
+        }
+        var resp interface{}
+        var err error
+        if slug != "" {
+            resp, err = dbpkg.GetPaginaPublicaBySlug(db, slug)
+        } else {
+            eid, _ := strconv.ParseInt(empresaIDStr, 10, 64)
+            resp, err = dbpkg.ListPaginasPublicasByEmpresa(db, eid)
+        }
+        if err != nil {
+            if err == sql.ErrNoRows {
+                http.NotFound(w, r)
+                return
+            }
+            http.Error(w, fmt.Sprintf("db error: %v", err), http.StatusInternalServerError)
+            return
+        }
+        w.Header().Set("Content-Type", "application/json")
+        json.NewEncoder(w).Encode(resp)
+    }
+}
+
+
 type empresaVentaPublicaConfigPayload struct {
 	EmpresaID          int64  `json:"empresa_id"`
 	EmpresaSlug        string `json:"empresa_slug"`
@@ -30,6 +196,7 @@ type empresaVentaPublicaConfigPayload struct {
 	LogoURL            string `json:"logo_url"`
 	BannerURL          string `json:"banner_url"`
 	ColorPrimario      string `json:"color_primario"`
+	TemaVisual         string `json:"tema_visual"`
 	Moneda             string `json:"moneda"`
 	DominioPublico     string `json:"dominio_publico"`
 	MostrarStock       *bool  `json:"mostrar_stock"`
@@ -387,6 +554,7 @@ func sanitizeVentaPublicaConfigForPublic(cfg dbpkg.EmpresaVentaPublicaConfig) ma
 		"logo_url":           cfg.LogoURL,
 		"banner_url":         cfg.BannerURL,
 		"color_primario":     cfg.ColorPrimario,
+		"tema_visual":        cfg.TemaVisual,
 		"moneda":             cfg.Moneda,
 		"dominio_publico":    cfg.DominioPublico,
 		"mostrar_stock":      cfg.MostrarStock,
@@ -757,6 +925,7 @@ func handleEmpresaVentaPublicaConfigUpsert(w http.ResponseWriter, r *http.Reques
 		LogoURL:            payload.LogoURL,
 		BannerURL:          payload.BannerURL,
 		ColorPrimario:      payload.ColorPrimario,
+		TemaVisual:         payload.TemaVisual,
 		Moneda:             payload.Moneda,
 		DominioPublico:     payload.DominioPublico,
 		MostrarStock:       mostrarStock,

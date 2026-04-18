@@ -22,6 +22,7 @@ func TestEmpresaVentaPublicaHandlerConfigCatalogoYToggle(t *testing.T) {
 		"empresa_id":137,
 		"empresa_slug":"Tienda 137",
 		"nombre_tienda":"Tienda Principal 137",
+		"tema_visual":"moderno",
 		"moneda":"cop",
 		"mostrar_stock":true,
 		"wompi_activo":false,
@@ -52,6 +53,9 @@ func TestEmpresaVentaPublicaHandlerConfigCatalogoYToggle(t *testing.T) {
 	}
 	if configResp.Config.EpaycoMode != "production" {
 		t.Fatalf("expected epayco mode production, got=%q", configResp.Config.EpaycoMode)
+	}
+	if configResp.Config.TemaVisual != "moderno" {
+		t.Fatalf("expected tema_visual moderno, got=%q", configResp.Config.TemaVisual)
 	}
 	if !strings.Contains(configResp.PublicPath, "/tienda-137/venta_publica.html") {
 		t.Fatalf("unexpected public path: %q", configResp.PublicPath)
@@ -187,6 +191,7 @@ func TestPublicVentaPublicaHandlerCatalogoYPagoConWompiInactivo(t *testing.T) {
 		EmpresaID:    empresaID,
 		EmpresaSlug:  "restaurante-central",
 		NombreTienda: "Restaurante Central",
+		TemaVisual:   "minimal",
 		Moneda:       "COP",
 		MostrarStock: true,
 		WompiActivo:  false,
@@ -224,6 +229,7 @@ func TestPublicVentaPublicaHandlerCatalogoYPagoConWompiInactivo(t *testing.T) {
 	var catalogResp struct {
 		EmpresaID   int64                           `json:"empresa_id"`
 		EmpresaSlug string                          `json:"empresa_slug"`
+		Tienda      map[string]interface{}          `json:"tienda"`
 		Items       []dbpkg.EmpresaVentaPublicaItem `json:"items"`
 	}
 	if err := json.Unmarshal(catalogRR.Body.Bytes(), &catalogResp); err != nil {
@@ -234,6 +240,9 @@ func TestPublicVentaPublicaHandlerCatalogoYPagoConWompiInactivo(t *testing.T) {
 	}
 	if catalogResp.EmpresaSlug != "restaurante-central" {
 		t.Fatalf("expected empresa_slug=restaurante-central got=%q", catalogResp.EmpresaSlug)
+	}
+	if got := strings.TrimSpace(anyString(catalogResp.Tienda["tema_visual"])); got != "minimal" {
+		t.Fatalf("expected public tema_visual minimal, got=%q", got)
 	}
 	if len(catalogResp.Items) != 1 {
 		t.Fatalf("expected one public item, got=%d", len(catalogResp.Items))
@@ -360,4 +369,14 @@ func TestVentaPublicaSlugFromRequestFallsBackToSubdomainHost(t *testing.T) {
 	if got := ventaPublicaSlugFromRequest(req); got != "empresa3" {
 		t.Fatalf("expected empresa3, got=%q", got)
 	}
+}
+
+func anyString(value interface{}) string {
+	if value == nil {
+		return ""
+	}
+	if text, ok := value.(string); ok {
+		return text
+	}
+	return ""
 }

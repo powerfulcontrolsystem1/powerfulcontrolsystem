@@ -1,5 +1,289 @@
 Descripcion de archivos del proyecto
 
+Actualizacion 2026-04-18: Menú flotante - manifiesto de juegos
+ - Archivos creados:
+	 - web/Juegos/games.json : Manifiesto JSON con listado de juegos del arcade (slug, title, windowUrl, coverUrl). Usado por `web/menu.js` para renderizar accesos rápidos en el menú flotante y mantener paralelismo con `web/Juegos/menu_juegos.html`.
+ - Archivos modificados:
+	 - web/menu.js : Se actualiza para consumir `web/Juegos/games.json` y mostrar hasta 6 accesos rápidos en el menú flotante.
+ - Descripcion: El archivo `games.json` permite mantener una versión ligera y consumible por el menú global de los juegos disponibles en el arcade sin parsear HTML. Mantener sincronía manual entre `menu_juegos.html` y este manifiesto cuando se añadan juegos.
+
+Actualizacion 2026-04-18: Integración N64 móvil completa para arcade público
+ - Archivos creados:
+	 - web/Juegos/n64/index.html : Página pública N64 orientada a móvil, con pantalla arriba, controles táctiles abajo y botones Guardar/Cargar para respaldo local de la memoria del cartucho.
+	 - web/Juegos/n64/styles.css : Estilos responsive del shell N64 vertical, con HUD compacto y botones táctiles optimizados para una mano.
+	 - web/Juegos/n64/n64-wrapper.js : Wrapper que carga n64js en `iframe.srcdoc` mismo-origen, persiste la ROM legal del usuario en IndexedDB, reenvía controles táctiles como teclado y respalda/restaura la memoria persistente del cartucho por `rominfo.id`.
+ - Archivos modificados:
+	 - web/Juegos/menu_juegos.html : Agrega la entrada pública `N64 vertical mobile` dentro del lobby del arcade.
+ - Descripcion: La integración N64 deja de ser un scaffold remoto y pasa a funcionar desde la web pública en celular usando `n64js` cargado bajo `srcdoc`; el usuario sube su propia ROM legal, la página la recuerda en el navegador y los botones Guardar/Cargar respaldan la memoria persistente del cartucho sin distribuir ROMs ni savestates propietarios.
+
+Actualizacion 2026-04-18: checkout de licencias soporta total cero y activacion unica por empresa
+ - Archivos creados:
+	 - backend/db/licencias_gratis.go : Persistencia y bloqueo unico para activaciones gratis de licencias por empresa, con tabla de trazabilidad propia y helper transaccional.
+ - Archivos modificados:
+	 - backend/handlers/payments_handlers.go
+	 - backend/handlers/payments_handlers_test.go
+	 - backend/main.go
+	 - web/pagar_licencia.html
+	 - web/elegir_licencia.html
+	 - web/estilos.css
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: El checkout de licencias ahora calcula un resumen real con descuento, cambia a activacion sin pasarela cuando el total queda en cero y bloquea la reutilizacion de licencias gratis por la misma empresa; adicionalmente, el selector de empresas conserva tarjetas con altura uniforme.
+
+Actualizacion 2026-04-18: modulo productos separa vistas de productos, bodegas y categorias sin duplicar logica
+ - Archivos modificados:
+	 - web/administrar_empresa/administrar_productos.html
+	 - web/administrar_empresa/administrar_productos_menu.html
+	 - web/administrar_empresa/productos/administrar_productos.html
+	 - web/administrar_empresa/productos/bodegas.html
+	 - web/administrar_empresa/productos/categorias.html
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: La administracion de productos pasa a una sola fuente de verdad con modo `view=productos|bodegas|categorias`; las rutas legacy de `productos/` quedan como wrappers y el menu lateral entra a cada subpagina sin duplicar CRUD ni romper la resolucion de `empresa_id`.
+
+Actualizacion 2026-04-18: gobernanza tecnica agrega checklist documental para QA y soporte
+ - Archivos creados:
+	 - documentos/gobernanza_tecnica/runbooks/checklist_evidencia_documental_para_qa_y_soporte.md : Checklist operativa breve para validar evidencia documental, firmas y exportes regulatorios antes de escalar incidentes o cerrar UAT.
+ - Archivos modificados:
+	 - documentos/gobernanza_tecnica/runbooks/README.md
+	 - documentos/gobernanza_tecnica/README.md
+	 - documentos/descripcion_del_proyecto
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: Se agrega una entrada operativa corta para QA y soporte y se propaga a la documentacion general del proyecto la regla de que un exporte documental no sustituye la evidencia versionada o firmada cuando el flujo es sensible.
+
+Actualizacion 2026-04-18: gobernanza tecnica endurece reconciliacion documental y evidencia regulatoria
+ - Archivos modificados:
+	 - documentos/gobernanza_tecnica/contratos/contrato_repositorio_documental_y_firmas_externas.md
+	 - documentos/gobernanza_tecnica/contratos/contrato_interoperabilidad_documental_contable_y_fiscal_externa.md
+	 - documentos/gobernanza_tecnica/contratos/contrato_reportes_contables_financieros_y_exportacion_multiformato.md
+	 - documentos/gobernanza_tecnica/runbooks/runbook_reconciliacion_documental_fiscal_y_contable_externa.md
+	 - documentos/gobernanza_tecnica/runbooks/runbook_versionado_documental_y_firmas_externas.md
+	 - documentos/gobernanza_tecnica/estandares_de_cambio_seguro.md
+	 - documentos/gobernanza_tecnica/README.md
+	 - documentos/gobernanza_tecnica/plan_implementacion_gobernanza_tecnica.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: La gobernanza tecnica ahora reconcilia explícitamente repositorio documental, interoperabilidad fiscal/contable y exportes multiformato, y endurece la regla de que un exporte regulatorio no sustituye la versión documental vigente ni la firma asociada.
+
+Actualizacion 2026-04-18: gobernanza tecnica extiende repositorio documental y firmas externas
+ - Archivos creados:
+	 - documentos/gobernanza_tecnica/contratos/contrato_repositorio_documental_y_firmas_externas.md : Contrato tecnico del repositorio documental empresarial, con reglas de acceso por rol/modulo, historial de versiones, side effects de versionado y metadatos de firmas externas.
+	 - documentos/gobernanza_tecnica/runbooks/runbook_versionado_documental_y_firmas_externas.md : Runbook operativo para diagnosticar versionado, permisos de acceso, historial documental y firmas asociadas a documentos empresariales.
+ - Archivos modificados:
+	 - documentos/gobernanza_tecnica/README.md
+	 - documentos/gobernanza_tecnica/plan_implementacion_gobernanza_tecnica.md
+	 - documentos/gobernanza_tecnica/contratos/README.md
+	 - documentos/gobernanza_tecnica/runbooks/README.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: La gobernanza tecnica ahora cubre formalmente el repositorio documental empresarial, su versionado con historial, la resolucion de permisos por modulo y el ciclo de acceso para firmas documentales externas.
+
+Actualizacion 2026-04-18: gobernanza tecnica extiende integraciones externas y reconciliacion documental
+ - Archivos creados:
+	 - documentos/gobernanza_tecnica/contratos/contrato_integraciones_bancarias_y_conectores_externos.md : Contrato tecnico del comportamiento de conectores API y bancarios, incluyendo estado, health check, sync manual, monitoreo y rotacion segura de credenciales.
+	 - documentos/gobernanza_tecnica/runbooks/runbook_reconciliacion_documental_fiscal_y_contable_externa.md : Runbook operativo para diagnosticar y recuperar inconsistencias entre compras, facturacion, reintentos fiscales y repositorio/versionado documental empresarial.
+ - Archivos modificados:
+	 - documentos/gobernanza_tecnica/README.md
+	 - documentos/gobernanza_tecnica/plan_implementacion_gobernanza_tecnica.md
+	 - documentos/gobernanza_tecnica/contratos/README.md
+	 - documentos/gobernanza_tecnica/runbooks/README.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: La gobernanza tecnica ahora cubre formalmente el comportamiento de integraciones externas y agrega un procedimiento reproducible para reconciliacion documental fiscal y contable externa.
+
+Actualizacion 2026-04-18: gobernanza tecnica extiende interoperabilidad documental e integraciones externas
+ - Archivos creados:
+	 - documentos/gobernanza_tecnica/contratos/contrato_interoperabilidad_documental_contable_y_fiscal_externa.md : Contrato tecnico del frente documental empresarial que amarra compras, facturacion, reintentos fiscales, conciliacion documental y repositorio/versionado con control de acceso por rol.
+	 - documentos/gobernanza_tecnica/runbooks/runbook_contingencias_integraciones_bancarias_y_conectores.md : Runbook operativo para diagnosticar conectores API y bancarios, health checks, sincronizacion manual, monitoreo, latencia y rotacion segura de credenciales.
+ - Archivos modificados:
+	 - documentos/gobernanza_tecnica/README.md
+	 - documentos/gobernanza_tecnica/plan_implementacion_gobernanza_tecnica.md
+	 - documentos/gobernanza_tecnica/contratos/README.md
+	 - documentos/gobernanza_tecnica/runbooks/README.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: La gobernanza tecnica ahora cubre la interoperabilidad entre documentos contables y fiscales, y agrega un procedimiento operativo específico para incidentes de conectores externos e integraciones bancarias.
+
+Actualizacion 2026-04-18: gobernanza tecnica extiende cierre de periodo y conciliacion bancaria
+ - Archivos creados:
+	 - documentos/gobernanza_tecnica/contratos/contrato_conciliacion_bancaria_y_cierre_periodo_contable.md : Contrato tecnico del modulo financiero para periodos contables, evidencia obligatoria de cierre y reapertura, importacion idempotente de extractos, conciliacion bancaria automatica y restricciones por periodo cerrado.
+	 - documentos/gobernanza_tecnica/runbooks/runbook_cierre_periodo_y_conciliacion_bancaria.md : Runbook operativo para diagnosticar cierres de periodo, bloqueos por periodo cerrado, importacion de extractos y estados de conciliacion bancaria con pendientes o desviaciones.
+ - Archivos modificados:
+	 - documentos/gobernanza_tecnica/README.md
+	 - documentos/gobernanza_tecnica/plan_implementacion_gobernanza_tecnica.md
+	 - documentos/gobernanza_tecnica/contratos/README.md
+	 - documentos/gobernanza_tecnica/runbooks/README.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: La gobernanza tecnica ahora cubre el frente financiero de conciliacion bancaria y cierre de periodos contables, incluyendo evidencia obligatoria de autorizacion, matching automatico de extractos y proteccion de movimientos en periodos cerrados.
+
+Actualizacion 2026-04-18: estaciones agrega tarjeta especial YouTube con vista embebida y ampliacion
+ - Archivos creados:
+	 - web/administrar_empresa/youtube_station_browser.html : Wrapper visual reutilizable para la estacion especial `YouTube`, con iframe embebido, etiqueta contextual y boton para abrir la búsqueda aparte.
+ - Archivos modificados:
+	 - web/administrar_empresa/configuracion_de_estaciones.html
+	 - web/administrar_empresa/estaciones.html
+	 - web/estilos.css
+	 - documentos/descripcion_del_proyecto
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: El modulo de estaciones gana una tarjeta especial `YouTube` activable por empresa desde `estaciones_config`; la vista operativa ahora puede mostrar un navegador embebido responsive y una ampliacion aproximada de `500 x 500` sin alterar la persistencia principal de estaciones ni la matriz de permisos.
+
+Actualizacion 2026-04-18: gobernanza tecnica extiende soporte remoto y contingencia de reportes
+ - Archivos creados:
+	 - documentos/gobernanza_tecnica/contratos/contrato_soporte_remoto_por_empresa_y_mesa_tecnica_central.md : Contrato tecnico del modulo de soporte remoto empresarial, el portal publico del agente y la mesa tecnica central super, incluyendo configuracion, dispositivos, sesiones, heartbeat, tokens de visualizacion, limites de plan y exportes.
+	 - documentos/gobernanza_tecnica/runbooks/runbook_reportes_programados_y_exportaciones_contables.md : Runbook operativo para diagnosticar programaciones de reportes, ejecuciones, plantillas, exportaciones multiformato y alertas de consistencia contable/operativa.
+	 - documentos/gobernanza_tecnica/runbooks/runbook_soporte_remoto_sesiones_y_dispositivos.md : Runbook operativo para diagnosticar heartbeats, autorizacion por PIN, sesiones bloqueadas por plan, portal publico y mesa tecnica de soporte remoto.
+ - Archivos modificados:
+	 - documentos/gobernanza_tecnica/README.md
+	 - documentos/gobernanza_tecnica/plan_implementacion_gobernanza_tecnica.md
+	 - documentos/gobernanza_tecnica/runbooks/README.md
+	 - documentos/gobernanza_tecnica/contratos/README.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: La gobernanza tecnica ahora cubre formalmente la operación de soporte remoto multiempresa y deja procedimientos de recuperación claros para reportes programados, exportaciones contables y sesiones/dispositivos remotos, reduciendo riesgo operativo tanto en empresa como en la mesa técnica super.
+
+Actualizacion 2026-04-18: gobernanza tecnica extiende DIAN, monitoreo Gmail/reinicio y reportes multiformato
+ - Archivos creados:
+	 - documentos/gobernanza_tecnica/runbooks/runbook_dian_set_pruebas_y_diagnostico_oficial.md : Runbook operativo para onboarding DIAN, checklist, firma base, diagnostico oficial, set de pruebas y clasificacion explicita de brechas entre configuracion empresarial y transporte oficial aun no implementado.
+	 - documentos/gobernanza_tecnica/runbooks/runbook_alertas_reinicio_y_monitoreo_gmail_smtp.md : Runbook operativo para probar Gmail SMTP super, validar alertas de reinicio, revisar `super_servidor_eventos` y distinguir entre modo test, fallo SMTP y alertas deshabilitadas.
+	 - documentos/gobernanza_tecnica/contratos/contrato_reportes_contables_financieros_y_exportacion_multiformato.md : Contrato tecnico del modulo de reportes empresariales y globales super, incluyendo datasets, suite, exportacion `json/csv/txt/xls/pdf`, plantillas, programacion, ejecuciones y validacion de consistencia.
+ - Archivos modificados:
+	 - documentos/gobernanza_tecnica/README.md
+	 - documentos/gobernanza_tecnica/plan_implementacion_gobernanza_tecnica.md
+	 - documentos/gobernanza_tecnica/runbooks/README.md
+	 - documentos/gobernanza_tecnica/contratos/README.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: La gobernanza tecnica ahora cubre tres zonas adicionales de alto riesgo operativo: el alcance real del soporte DIAN, la trazabilidad del canal SMTP y alertas de reinicio del backend, y el contrato funcional del modulo de reportes contables, financieros y de exportacion multiformato sin prometer capacidades fuera del codigo actual.
+
+Actualizacion 2026-04-18: gobernanza tecnica extiende facturacion electronica y documentos transaccionales
+ - Archivos creados:
+	 - documentos/gobernanza_tecnica/contratos/contrato_facturacion_electronica_y_documentos_transaccionales.md : Contrato tecnico del ciclo documental de facturacion por empresa, incluyendo persistencia en `empresa_facturacion_documentos`, selector `modo_documento_venta`, emision, anulacion, nota credito, correo al cliente, cola de reintentos, reconciliacion fiscal y base operativa actual del endpoint DIAN Colombia.
+ - Archivos modificados:
+	 - documentos/gobernanza_tecnica/plan_implementacion_gobernanza_tecnica.md
+	 - documentos/gobernanza_tecnica/contratos/README.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: La gobernanza tecnica ahora formaliza el contrato de los documentos de venta y facturacion electronica, aclarando el ciclo de estados, el rol de la tabla documental comun, los side effects de correo e integracion fiscal, y el limite real entre la base tecnica DIAN ya implementada y el transporte oficial aun pendiente.
+
+Actualizacion 2026-04-18: gobernanza tecnica extiende permisos_contexto y wrappers de api empresa
+ - Archivos creados:
+	 - documentos/gobernanza_tecnica/contratos/contrato_permisos_contexto_y_wrappers_api_empresa.md : Contrato tecnico de la capa de autorizacion por `empresa_id` para `/api/empresa/*`, incluyendo wrappers por modulo, endpoint `permisos_contexto`, overrides dinamicos, restricciones por licencia y aprobacion trazable en seguridad.
+ - Archivos modificados:
+	 - documentos/gobernanza_tecnica/plan_implementacion_gobernanza_tecnica.md
+	 - documentos/gobernanza_tecnica/contratos/README.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: La gobernanza tecnica ahora formaliza la frontera de autorizacion de las rutas empresariales, fijando reglas explicitas para alcance por empresa, rol efectivo, visibilidad de paginas, overrides dinamicos y validacion de aprobacion trazable en operaciones sensibles de seguridad.
+
+Actualizacion 2026-04-18: gobernanza tecnica extiende venta publica empresarial por empresa
+ - Archivos creados:
+	 - documentos/gobernanza_tecnica/contratos/contrato_venta_publica_empresarial_por_empresa.md : Contrato tecnico del modulo de tienda publica por `empresa_id`, incluyendo configuracion, catalogo, orden publica, pagos Wompi/Epayco y consulta de estado de orden.
+ - Archivos modificados:
+	 - documentos/gobernanza_tecnica/plan_implementacion_gobernanza_tecnica.md
+	 - documentos/gobernanza_tecnica/contratos/README.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: La gobernanza tecnica ahora formaliza el contrato del canal de venta publica por empresa, fijando limites de entrada, exposicion segura de configuracion, conciliacion de ordenes y restricciones multiempresa para catalogo, pagos y estados.
+
+Actualizacion 2026-04-18: gobernanza tecnica extiende autenticacion y arranque PostgreSQL por tunel local
+ - Archivos creados:
+	 - documentos/gobernanza_tecnica/contratos/contrato_autenticacion_administrativa_y_usuarios_empresa.md : Contrato tecnico del flujo de autenticacion administrativa y de usuarios de empresa, incluyendo registro, confirmacion, OAuth, aceptacion contractual, login, primer password y recuperacion.
+	 - documentos/gobernanza_tecnica/runbooks/runbook_arranque_postgresql_tunel_local.md : Runbook operativo para diagnosticar y recuperar el arranque local del backend cuando PostgreSQL del VPS se consume por tunel SSH local.
+ - Archivos modificados:
+	 - documentos/gobernanza_tecnica/plan_implementacion_gobernanza_tecnica.md
+	 - documentos/gobernanza_tecnica/contratos/README.md
+	 - documentos/gobernanza_tecnica/runbooks/README.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: La gobernanza tecnica ya cubre formalmente dos piezas estructurales adicionales del sistema: el flujo completo de autenticacion multirol y el arranque local del backend sobre PostgreSQL del VPS por tunel, reduciendo errores futuros por sesiones, contrato vigente, `empresa_id` y configuracion de DSN/puerto local.
+
+Actualizacion 2026-04-18: gobernanza tecnica extiende estaciones, sensores y ventas simples con contrato y runbook
+ - Archivos creados:
+	 - documentos/gobernanza_tecnica/contratos/contrato_estaciones_sensores_ventas_simple.md : Contrato tecnico del flujo de configuracion de estaciones, asociacion de sensores, carrito base canonico y venta simple por estacion.
+	 - documentos/gobernanza_tecnica/runbooks/runbook_estaciones_sensores_ventas_simple.md : Procedimiento operativo para diagnosticar fallas de estaciones, sensores, carrito enlazado, metricas y cierre de venta por estacion.
+ - Archivos modificados:
+	 - documentos/gobernanza_tecnica/plan_implementacion_gobernanza_tecnica.md
+	 - documentos/gobernanza_tecnica/contratos/README.md
+	 - documentos/gobernanza_tecnica/runbooks/README.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: La capa de gobernanza tecnica ya cubre formalmente el flujo de estaciones y venta simple, incluyendo invariantes multiempresa, sincronizacion obligatoria del carrito base, lectura de sensores por `last_seen` y pasos de recuperacion ante incidentes operativos.
+
+Actualizacion 2026-04-18: se crea el paquete base de gobernanza tecnica documental
+ - Archivos creados:
+	 - documentos/README.md : Indice documental del repositorio con orden de lectura, fuentes canonicas y regla de uso previa a cambios.
+	 - documentos/gobernanza_tecnica/README.md : Marco general de gobernanza tecnica del proyecto.
+	 - documentos/gobernanza_tecnica/plan_implementacion_gobernanza_tecnica.md : Roadmap por fases para implantar ADRs, contratos, runbooks y disciplina de cambio seguro.
+	 - documentos/gobernanza_tecnica/estandares_de_cambio_seguro.md : Reglas obligatorias de lectura previa, validacion y trazabilidad para cambios tecnicos.
+	 - documentos/gobernanza_tecnica/adr/ADR-0001-frontera-multiempresa-empresa-id.md : Decision arquitectonica sobre `empresa_id` como frontera multiempresa obligatoria.
+	 - documentos/gobernanza_tecnica/adr/ADR-0002-postgresql-runtime-canonico-vps.md : Decision arquitectonica sobre PostgreSQL en VPS como runtime productivo canonico.
+	 - documentos/gobernanza_tecnica/contratos/README.md : Catalogo base de contratos tecnicos.
+	 - documentos/gobernanza_tecnica/contratos/contrato_checkout_licencias_publico.md : Primer contrato tecnico formal del checkout publico de licencias.
+	 - documentos/gobernanza_tecnica/runbooks/README.md : Catalogo base de runbooks operativos.
+	 - documentos/gobernanza_tecnica/runbooks/runbook_checkout_licencias.md : Primer runbook de diagnostico y recuperacion del checkout de licencias.
+ - Archivos modificados:
+	 - documentos/descripcion_del_proyecto
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: El repositorio incorpora una capa formal de gobernanza tecnica para guiar cambios seguros, registrar decisiones de arquitectura, fijar contratos de flujos criticos y convertir incidentes repetidos en procedimientos operativos reutilizables.
+
 Actualizacion 2026-04-18: arranque PostgreSQL respeta el puerto del tunel local
  - Archivos modificados:
 	 - backend/main.go : Reescribe los DSN de PostgreSQL hacia `DB_VPS_LOCAL_PORT` cuando `DB_VPS_TUNNEL_ENABLED=1`, evitando que el backend arranque contra `127.0.0.1:5432` cuando el tunel local real usa otro puerto.
@@ -48,6 +332,19 @@ Actualizacion 2026-04-18: ventas simples por estacion agrega boton de regreso a 
 	 - documentos/matriz_roles_permisos_pos_multiempresa.md
 	 - documentos/descripcion_de_archivos
 	 - documentos/historial_de_cambios
+
+Actualizacion 2026-04-18: ventas simples por estacion agrega variante carrito_compacto
+ - Archivos modificados:
+	 - web/administrar_empresa/estaciones.html : Abre `ventas_simple.html` con `variant=compacto` cuando la estacion usa venta simple para mantener una sola ruta operativa y cambiar solo la presentacion.
+	 - web/administrar_empresa/ventas_simple.html : Añade barra de acciones rapidas, etiqueta de variante y ajustes visuales locales para el modo `carrito_compacto`.
+	 - web/js/ventas_simple.js : Lee `variant=compacto` desde la URL o desde configuracion remota opcional, activa el layout compacto y conecta accesos rapidos a busqueda, carrito, cobro, sincronizacion, nueva venta y correccion.
+	 - documentos/descripcion_del_proyecto
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: La venta simple por estacion ahora puede operar como `carrito_compacto` dentro del mismo panel, conservando el mismo carrito, endpoints y permisos, pero con una navegacion mas rapida para operacion continua en pantalla unica.
 	 - CHANGELOG.md
  - Descripcion: La vista de carrito de estacion recupera una salida directa a la pantalla de estaciones para evitar que el operador quede atrapado en la venta simple cuando necesita volver al tablero operativo.
 
@@ -6216,6 +6513,19 @@ Actualizacion 2026-04-03: Chat IA empresarial Gemini-only + UX estilo Gemini
 	- Se mantiene base funcional en datos de la empresa seleccionada y cuenta Google administradora autenticada.
 	- Se agrega panel explícito para login Google cuando hay `401`, indicando registro automático en primer acceso.
 
+- backend/handlers/chat_con_ia_global_super.go:
+	- Controlador del chat IA global del panel super, con endpoints propios para modelos, preferencia, consulta e historial.
+	- Reutiliza los proveedores IA configurados en super, pero separa persistencia y control de acceso respecto al chat empresarial.
+
+- backend/handlers/chat_con_ia_global_super_test.go:
+	- Cobertura dirigida para sesion super valida, catalogo de modelos y bloqueo a roles no super en el chat global.
+
+- web/super/chat_con_ia_global.html:
+	- Nueva pagina del panel super para consultar contexto global consolidado del sistema con historial y selector de modelo.
+
+- web/super_administrador.html:
+	- Agrega el acceso lateral al nuevo submodulo `Chat con IA global` dentro del panel super.
+
 - web/estilos.css:
 	- Se reemplaza bloque visual del módulo IA por estilos específicos Gemini (fondo atmosférico, tarjetas de contexto, burbujas diferenciadas y responsive móvil).
 
@@ -6306,6 +6616,31 @@ Actualizacion 2026-04-03: Continuacion Chat IA (autorizacion Google + pruebas)
 	- Valida `401` cuando falta cuenta Google y `200` con `modelo_preferido` cuando hay cuenta autenticada con alcance válido.
 
 Actualizacion 2026-04-04: Chat IA con modelo preferido por cuenta Google
+
+- backend/handlers/ai_credentials_catalog.go:
+	- Se agrega `ollama:ambis` al catalogo super como servicio IA local del VPS sin API key en el panel.
+
+- backend/handlers/ai_config_handlers.go:
+	- Se expone `Ambis Local` como modelo disponible en `/super/api/config/ai` y se conserva el guardado cifrado solo para DeepSeek.
+
+- backend/handlers/chat_con_inteligencia_artificial_controller.go:
+	- Se agrega el proveedor `ollama` y el consumo de `codellama:7b` por `POST /api/generate` contra Ollama local.
+	- Se mantiene persistencia del modelo preferido por `empresa_id` + cuenta Google y el contexto estricto de empresa en cada respuesta.
+
+- backend/handlers/chat_con_inteligencia_artificial_controller_test.go:
+	- Se agrega cobertura para exponer `ollama:ambis` en el catalogo y aceptar ese modelo como preferido por empresa/cuenta.
+
+- backend/handlers/system_empresas_handlers_test.go:
+	- Se valida que `/super/api/config/ai` devuelva tanto DeepSeek como Ambis Local.
+
+- backend/db/chat_inteligencia_artificial_test.go:
+	- Se valida persistencia del modelo preferido `ollama:ambis`.
+
+- web/administrar_empresa/chat_con_inteligencia_artificial.html:
+	- Se agrega selector visual del modelo IA por empresa y se sincroniza la preferencia con backend antes de consultar.
+
+- web/super/configuracion_avanzada.html:
+	- Se amplía la tarjeta IA para mostrar DeepSeek y el estado operativo de `Ambis Local` sobre Ollama en el VPS.
 
 - backend/db/chat_inteligencia_artificial.go:
 	- Se agrega tabla `empresa_ai_modelo_preferido` para persistir el modelo seleccionado por `empresa_id + admin_email`.
@@ -7567,6 +7902,19 @@ Nota: La regla del agente obliga a que cada nuevo archivo creado en el repositor
 - copilot-instructions.md: Instrucciones del agente (local) que refuerzan reglas operativas del proyecto (ej. uso de Go puro, autorización para dependencias, trazabilidad).
 
 - .github/agents/agente_go.agent.md: Archivo de configuración/metadata para el agente `agente_go` (documentación y instrucciones del agente interno de la repo).
+- .github/agents/agente_backend_db.agent.md: Archivo de configuración/metadata para el agente especialista en backend Go, PostgreSQL, seguridad y reglas de negocio del repositorio.
+- .github/agents/agente_frontend_ux.agent.md: Archivo de configuración/metadata para el agente especialista en frontend, UX operativa y consistencia visual del repositorio.
+- .github/agents/agente_qa_operacion.agent.md: Archivo de configuración/metadata para el agente especialista en pruebas, validación operativa, runtime y runbooks del repositorio.
+- .github/agents/README.md: Documento guía del equipo interno de agentes; define la coordinación entre `agente_go` y los tres agentes especialistas.
+- .github/agents/protocolo_delegacion.md: Matriz operativa para que `agente_go` decida cuándo activa backend, frontend, QA o trabajo cruzado según el tipo de tarea y el modulo afectado.
+- .github/agents/plantilla_trabajo_por_modulo.md: Plantilla de ejecución por modulo para clasificar, implementar, validar y cerrar cambios con disciplina comun entre los cuatro agentes.
+- .github/agents/protocolo_delegacion.md: Incluye ademas una tabla rapida por modulo, ejemplos reales de delegacion y reglas de cierre obligatorio en modulos criticos.
+- .github/agents/plantilla_trabajo_por_modulo.md: Incluye ademas ejemplos minimos de aplicacion para pagos, estaciones y autenticacion/permisos.
+- .github/agents/protocolo_delegacion.md: Incluye ademas un semaforo ejecutivo por modulo y un ejemplo completo de delegacion extremo a extremo.
+- .github/agents/plantilla_trabajo_por_modulo.md: Incluye ademas la evidencia minima esperada por cada frente antes de que `agente_go` acepte un cierre.
+- .github/agents/agente_backend_db.agent.md: Incluye una regla para rechazar cierres sin causa tecnica y evidencia minima del frente backend/DB.
+- .github/agents/agente_frontend_ux.agent.md: Incluye una regla para rechazar cierres sin cambio visible, sin integracion real o sin evidencia minima del frente UX.
+- .github/agents/agente_qa_operacion.agent.md: Incluye una regla para rechazar validaciones sin pruebas o sin evidencia observable del frente QA/operacion.
 
 - /memories/Agente Go.md: Memoria del agente que contiene reglas, normas y restricciones operativas (leer antes de actuar). (archivo de memoria gestionado por el agente.)
 

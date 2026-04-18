@@ -978,6 +978,124 @@ func TestEpaycoTransactionStatusHandlerRetriesActivationEmailAfterWebhookActivat
 	}
 }
 
+func TestLicenciaCheckoutSummaryHandlerAllowsZeroTotalByConfiguredDiscount(t *testing.T) {
+	dbSuper := openTestSQLite(t, "super_licencia_checkout_summary_discount.db")
+	ensurePaymentsHandlerTestSchema(t, dbSuper)
+
+	if _, err := dbSuper.Exec(`
+		INSERT INTO licencias (id, empresa_id, tipo_id, nombre, descripcion, valor, duracion_dias, modulos_habilitados, super_rol_habilitado, fecha_creacion, activo)
+		VALUES (1, 0, 1, 'Plan Promo', 'Licencia con descuento total', 120000, 30, '', 0, datetime('now','localtime'), 1)
+	`); err != nil {
+		t.Fatalf("seed licencia: %v", err)
+	}
+	if err := dbpkg.SetConfigValue(dbSuper, "licencias.discount_codes", "PROMO100=100%", false); err != nil {
+		t.Fatalf("seed licencias.discount_codes: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/api/public/licencias/checkout_summary?licencia_id=1&empresa_id=77&discount_code=PROMO100", nil)
+	rr := httptest.NewRecorder()
+	LicenciaCheckoutSummaryHandler(dbSuper).ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, rr.Code, rr.Body.String())
+	}
+	var resp struct {
+		Summary struct {
+			OriginalValue             float64 `json:"original_value"`
+			DiscountValue             float64 `json:"discount_value"`
+			TotalValue                float64 `json:"total_value"`
+			DiscountApplied           bool    `json:"discount_applied"`
+			IsZeroTotal               bool    `json:"is_zero_total"`
+			CanActivateWithoutPayment bool    `json:"can_activate_without_payment"`
+		} `json:"summary"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode summary response: %v body=%s", err, rr.Body.String())
+	}
+	if resp.Summary.OriginalValue != 120000 || resp.Summary.DiscountValue != 120000 || resp.Summary.TotalValue != 0 {
+		t.Fatalf("unexpected summary values: %+v", resp.Summary)
+	}
+	if !resp.Summary.DiscountApplied || !resp.Summary.IsZeroTotal || !resp.Summary.CanActivateWithoutPayment {
+		t.Fatalf("expected zero-total summary ready for activation, got %+v", resp.Summary)
+	}
+}
+
+func TestActivateLicenciaSinPagoHandlerBlocksRepeatedFreeLicensePerEmpresa(t *testing.T) {
+	dbSuper := openTestSQLite(t, "super_activate_licencia_sin_pago_once.db")
+	ensurePaymentsHandlerTestSchema(t, dbSuper)
+
+	if _, err := dbSuper.Exec(`
+		INSERT INTO licencias (id, empresa_id, tipo_id, nombre, descripcion, valor, duracion_dias, modulos_habilitados, super_rol_habilitado, fecha_creacion, activo)
+		VALUES (1, 0, 1, 'Plan Gratis', 'Licencia sin costo', 0, 30, '', 0, datetime('now','localtime'), 1)
+	`); err != nil {
+		t.Fatalf("seed licencia: %v", err)
+	}
+
+	h := ActivateLicenciaSinPagoHandler(dbSuper)
+	firstReq := httptest.NewRequest(http.MethodPost, "/licencias/activar_sin_pago", strings.NewReader(`{"licencia_id":1,"empresa_id":15,"motivo":"licencia_valor_cero"}`))
+	firstReq.Header.Set("Content-Type", "application/json")
+	firstRR := httptest.NewRecorder()
+	h.ServeHTTP(firstRR, firstReq)
+	if firstRR.Code != http.StatusOK {
+		t.Fatalf("expected first status %d, got %d body=%s", http.StatusOK, firstRR.Code, firstRR.Body.String())
+	}
+
+	secondReq := httptest.NewRequest(http.MethodPost, "/licencias/activar_sin_pago", strings.NewReader(`{"licencia_id":1,"empresa_id":15,"motivo":"licencia_valor_cero"}`))
+	secondReq.Header.Set("Content-Type", "application/json")
+	secondRR := httptest.NewRecorder()
+	h.ServeHTTP(secondRR, secondReq)
+	if secondRR.Code != http.StatusConflict {
+		t.Fatalf("expected second status %d, got %d body=%s", http.StatusConflict, secondRR.Code, secondRR.Body.String())
+	}
+
+	var count int
+	if err := dbSuper.QueryRow(`SELECT COUNT(*) FROM licencias_activaciones_gratis WHERE licencia_id = 1 AND empresa_id = 15`).Scan(&count); err != nil {
+		t.Fatalf("count licencias_activaciones_gratis: %v", err)
+	}
+	if count != 1 {
+		t.Fatalf("expected single free activation record, got %d", count)
+	}
+}
+
+func TestWompiCreateNequiTransactionHandlerRejectsZeroTotalAndSuggestsActivation(t *testing.T) {
+	dbSuper := openTestSQLite(t, "super_wompi_zero_total_requires_activation.db")
+	ensurePaymentsHandlerTestSchema(t, dbSuper)
+
+	if _, err := dbSuper.Exec(`
+		INSERT INTO licencias (id, empresa_id, tipo_id, nombre, descripcion, valor, duracion_dias, modulos_habilitados, super_rol_habilitado, fecha_creacion, activo)
+		VALUES (1, 0, 1, 'Plan Descuento Total', 'Licencia con total cero', 95000, 30, '', 0, datetime('now','localtime'), 1)
+	`); err != nil {
+		t.Fatalf("seed licencia: %v", err)
+	}
+	if err := dbpkg.SetConfigValue(dbSuper, "wompi.public_key", "pub_test", false); err != nil {
+		t.Fatalf("seed wompi.public_key: %v", err)
+	}
+	if err := dbpkg.SetConfigValue(dbSuper, "wompi.private_key", "priv_test", false); err != nil {
+		t.Fatalf("seed wompi.private_key: %v", err)
+	}
+	if err := dbpkg.SetConfigValue(dbSuper, "wompi.integrity_key", "int_test", false); err != nil {
+		t.Fatalf("seed wompi.integrity_key: %v", err)
+	}
+	if err := dbpkg.SetConfigValue(dbSuper, "wompi.enabled", "1", false); err != nil {
+		t.Fatalf("seed wompi.enabled: %v", err)
+	}
+	if err := dbpkg.SetConfigValue(dbSuper, "licencias.discount_codes", "PROMO100=100%", false); err != nil {
+		t.Fatalf("seed licencias.discount_codes: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/wompi/create_transaction_nequi", strings.NewReader(`{"licencia_id":1,"empresa_id":33,"phone_number":"3991111111","accept_terms":true,"discount_code":"PROMO100"}`))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	WompiCreateNequiTransactionHandler(dbSuper).ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusPreconditionFailed {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusPreconditionFailed, rr.Code, rr.Body.String())
+	}
+	if !strings.Contains(strings.ToLower(rr.Body.String()), "manual_activation") && !strings.Contains(strings.ToLower(rr.Body.String()), "activar") {
+		t.Fatalf("expected zero-total response to suggest activation, got %s", rr.Body.String())
+	}
+}
+
 func TestWompiTransactionStatusHandlerAllowsReferenceLookup(t *testing.T) {
 	dbSuper := openTestSQLite(t, "super_wompi_reference_lookup.db")
 	ensurePaymentsHandlerTestSchema(t, dbSuper)

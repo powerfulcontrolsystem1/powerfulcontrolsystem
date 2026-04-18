@@ -41,6 +41,21 @@ func ensureEmpresasTableForChatIATest(t *testing.T, dbConn *sql.DB) {
 	}
 }
 
+func ensureConfigTableForChatIATest(t *testing.T, dbConn *sql.DB) {
+	t.Helper()
+	_, err := dbConn.Exec(`CREATE TABLE IF NOT EXISTS configuraciones (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		config_key TEXT UNIQUE,
+		value TEXT,
+		encrypted INTEGER DEFAULT 0,
+		fecha_creacion TEXT,
+		fecha_actualizacion TEXT
+	)`)
+	if err != nil {
+		t.Fatalf("create configuraciones table: %v", err)
+	}
+}
+
 func TestModelosHandlerRequiresGoogleAccount(t *testing.T) {
 	dbEmp := openChatIAHandlerTestDB(t)
 	if err := dbpkg.EnsureEmpresaAIChatSchema(dbEmp); err != nil {
@@ -92,6 +107,56 @@ func TestModelosHandlerReturnsPreferredModelForGoogleAccount(t *testing.T) {
 	}
 	if payload["modelo_preferido"] != "google:gemini-2.0-flash" {
 		t.Fatalf("expected modelo_preferido google:gemini-2.0-flash, got %#v", payload["modelo_preferido"])
+	}
+	modelos, ok := payload["modelos"].([]interface{})
+	if !ok || len(modelos) < 2 {
+		t.Fatalf("expected al menos 2 modelos, got %#v", payload["modelos"])
+	}
+	foundAmbis := false
+	for _, raw := range modelos {
+		item, ok := raw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if item["id"] == "ollama:ambis" {
+			foundAmbis = true
+			break
+		}
+	}
+	if !foundAmbis {
+		t.Fatal("expected ollama:ambis in modelos response")
+	}
+}
+
+func TestModeloPreferidoHandlerAcceptsAmbisLocal(t *testing.T) {
+	dbEmp := openChatIAHandlerTestDB(t)
+	if err := dbpkg.EnsureEmpresaAIChatSchema(dbEmp); err != nil {
+		t.Fatalf("ensure chat ia schema: %v", err)
+	}
+	ensureEmpresasTableForChatIATest(t, dbEmp)
+
+	_, err := dbEmp.Exec(`INSERT INTO empresas (id, nombre, nit, usuario_creador) VALUES (?, ?, ?, ?)`, 8, "Empresa Ambis", "900555", "admin@example.com")
+	if err != nil {
+		t.Fatalf("insert empresa: %v", err)
+	}
+
+	ctrl := NewEmpresaAIChatController(dbEmp, nil)
+	body := `{"empresa_id":8,"model_id":"ollama:ambis"}`
+	req := httptest.NewRequest(http.MethodPut, "/api/empresa/chat_con_inteligencia_artificial/modelo_preferido", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req = req.WithContext(context.WithValue(req.Context(), "adminEmail", "admin@example.com"))
+	rr := httptest.NewRecorder()
+
+	ctrl.ModeloPreferidoHandler(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d body=%s", rr.Code, rr.Body.String())
+	}
+	modelID, err := dbpkg.GetEmpresaAIModeloPreferido(dbEmp, 8, "admin@example.com")
+	if err != nil {
+		t.Fatalf("get modelo preferido: %v", err)
+	}
+	if modelID != "ollama:ambis" {
+		t.Fatalf("expected ollama:ambis, got %q", modelID)
 	}
 }
 
@@ -226,5 +291,32 @@ func TestHistorialHandlerRejectsEmpresaFueraDeAlcanceByGoogleAccount(t *testing.
 	}
 	if !strings.Contains(strings.ToLower(rr.Body.String()), "fuera del alcance") {
 		t.Fatalf("expected out-of-scope message, got body=%s", rr.Body.String())
+	}
+}
+
+func TestModelosHandlerRejectsWhenAIDisabled(t *testing.T) {
+	dbEmp := openChatIAHandlerTestDB(t)
+	dbSuper := openChatIAHandlerTestDB(t)
+	if err := dbpkg.EnsureEmpresaAIChatSchema(dbEmp); err != nil {
+		t.Fatalf("ensure chat ia schema: %v", err)
+	}
+	ensureEmpresasTableForChatIATest(t, dbEmp)
+	ensureConfigTableForChatIATest(t, dbSuper)
+	_, err := dbEmp.Exec(`INSERT INTO empresas (id, nombre, nit, usuario_creador) VALUES (?, ?, ?, ?)`, 41, "Empresa IA Off", "900555", "admin@example.com")
+	if err != nil {
+		t.Fatalf("insert empresa: %v", err)
+	}
+	if err := dbpkg.SetConfigValue(dbSuper, superAIEnabledConfigKey, "0", false); err != nil {
+		t.Fatalf("disable ai: %v", err)
+	}
+
+	ctrl := NewEmpresaAIChatController(dbEmp, dbSuper)
+	req := httptest.NewRequest(http.MethodGet, "/api/empresa/chat_con_inteligencia_artificial/modelos?empresa_id=41", nil)
+	req = req.WithContext(context.WithValue(req.Context(), "adminEmail", "admin@example.com"))
+	rr := httptest.NewRecorder()
+
+	ctrl.ModelosHandler(rr, req)
+	if rr.Code != http.StatusServiceUnavailable {
+		t.Fatalf("expected status 503, got %d body=%s", rr.Code, rr.Body.String())
 	}
 }

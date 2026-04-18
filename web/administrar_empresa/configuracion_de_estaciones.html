@@ -55,6 +55,12 @@
               <input type="checkbox" id="cajaToggle"> Habilitar tarjeta Caja (se mostrará primero en Estaciones)
             </label>
           </div>
+          <div class="form-col">
+            <label class="form-label">Mostrar YouTube</label>
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input type="checkbox" id="youtubeToggle"> Habilitar estación especial YouTube con vista embebida y botón de maximizar
+            </label>
+          </div>
         </div>
       </div>
     </section>
@@ -436,7 +442,18 @@
       var cardSize = validSizes.indexOf(requested) !== -1 ? requested : 'medium';
       var cajaEnabledRaw = (cfg && (cfg.caja_enabled !== undefined ? cfg.caja_enabled : cfg.cajaEnabled)) || false;
       var caja_enabled = toBool(cajaEnabledRaw);
-      return { cantidad: cantidad, estaciones: out, card_size: cardSize, caja_enabled: caja_enabled };
+      var youtubeEnabledRaw = (cfg && (cfg.youtube_enabled !== undefined ? cfg.youtube_enabled : cfg.youtubeEnabled)) || false;
+      var youtube_enabled = toBool(youtubeEnabledRaw);
+      var youtubeQuery = String((cfg && (cfg.youtube_query !== undefined ? cfg.youtube_query : cfg.youtubeQuery)) || 'YouTube').trim();
+      if (!youtubeQuery) youtubeQuery = 'YouTube';
+      return {
+        cantidad: cantidad,
+        estaciones: out,
+        card_size: cardSize,
+        caja_enabled: caja_enabled,
+        youtube_enabled: youtube_enabled,
+        youtube_query: youtubeQuery
+      };
     }
 
     function parseStationConfigValue(raw) {
@@ -583,7 +600,14 @@
     async function applyCantidad(cantidad) {
       var current = await getConfigFromServer();
       if (!current) current = { cantidad: 1, estaciones: [{ id: 1, nombre: 'Estación 1', venta_simple_habilitada: false, mostrar_total: true }] };
-      var cfg = normalizeConfig({ cantidad: cantidad, estaciones: current.estaciones, card_size: current.card_size });
+      var cfg = normalizeConfig({
+        cantidad: cantidad,
+        estaciones: current.estaciones,
+        card_size: current.card_size,
+        caja_enabled: current.caja_enabled,
+        youtube_enabled: current.youtube_enabled,
+        youtube_query: current.youtube_query
+      });
       await saveConfigToServer(cfg);
       document.getElementById('cantidadEstaciones').value = String(cfg.cantidad);
       renderRows(cfg);
@@ -848,7 +872,14 @@
       }
 
       var estaciones = collectRowsConfig(current);
-      var cfg = normalizeConfig({ cantidad: current.cantidad, estaciones: estaciones, card_size: current.card_size });
+      var cfg = normalizeConfig({
+        cantidad: current.cantidad,
+        estaciones: estaciones,
+        card_size: current.card_size,
+        caja_enabled: current.caja_enabled,
+        youtube_enabled: current.youtube_enabled,
+        youtube_query: current.youtube_query
+      });
       await saveConfigToServer(cfg);
       renderRows(cfg);
 
@@ -970,6 +1001,23 @@
         });
       }
 
+      var youtubeToggle = document.getElementById('youtubeToggle');
+      if (youtubeToggle) {
+        youtubeToggle.addEventListener('change', async function () {
+          try {
+            var current = await getConfigFromServer();
+            if (!current) current = normalizeConfig({ cantidad: 1, estaciones: [] });
+            current.youtube_enabled = !!this.checked;
+            await saveConfigToServer(current);
+            showMessage('Preferencia de YouTube guardada.', 'success');
+          } catch (err) {
+            console.error('No se pudo guardar preferencia de YouTube', err);
+            showMessage('No se pudo guardar la preferencia de YouTube.', 'error');
+            this.checked = !this.checked;
+          }
+        });
+      }
+
       var btnGuardarApariencia = document.getElementById('btnGuardarApariencia');
       if (btnGuardarApariencia) {
         btnGuardarApariencia.addEventListener('click', async function (ev) {
@@ -1014,6 +1062,10 @@
       var cajaToggleEl = document.getElementById('cajaToggle');
       if (cajaToggleEl) {
         try { cajaToggleEl.checked = !!(cfg && cfg.caja_enabled); } catch (e) { /* ignore */ }
+      }
+      var youtubeToggleEl = document.getElementById('youtubeToggle');
+      if (youtubeToggleEl) {
+        try { youtubeToggleEl.checked = !!(cfg && cfg.youtube_enabled); } catch (e) { /* ignore */ }
       }
     }
 

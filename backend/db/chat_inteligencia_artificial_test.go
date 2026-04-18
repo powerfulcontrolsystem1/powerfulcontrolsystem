@@ -66,6 +66,17 @@ func TestEmpresaAIModeloPreferidoUpsertAndGet(t *testing.T) {
 	if provider != "google" {
 		t.Fatalf("expected provider google, got %q", provider)
 	}
+
+	if err := UpsertEmpresaAIModeloPreferido(dbConn, 10, "admin@example.com", "ollama:ambis", "tester"); err != nil {
+		t.Fatalf("upsert modelo preferido ambis: %v", err)
+	}
+	modelID, err = GetEmpresaAIModeloPreferido(dbConn, 10, "admin@example.com")
+	if err != nil {
+		t.Fatalf("get modelo preferido ambis: %v", err)
+	}
+	if modelID != "ollama:ambis" {
+		t.Fatalf("expected model ollama:ambis, got %q", modelID)
+	}
 }
 
 func TestRegisterEmpresaAIConsultaAcumulaUsoDiario(t *testing.T) {
@@ -127,5 +138,116 @@ func TestRegisterEmpresaAIConsultaAcumulaUsoDiario(t *testing.T) {
 	}
 	if len(rows) != 2 {
 		t.Fatalf("expected 2 consultas recientes, got %d", len(rows))
+	}
+}
+
+func TestSuperAIModeloPreferidoUpsertAndGet(t *testing.T) {
+	dbConn := openChatIATestDB(t)
+	if err := EnsureSuperAIChatSchema(dbConn); err != nil {
+		t.Fatalf("ensure super chat ia schema: %v", err)
+	}
+
+	modelID, err := GetSuperAIModeloPreferido(dbConn, "super@example.com")
+	if err != nil {
+		t.Fatalf("get super modelo preferido vacio: %v", err)
+	}
+	if modelID != "" {
+		t.Fatalf("expected modelo preferido vacio, got %q", modelID)
+	}
+
+	if err := UpsertSuperAIModeloPreferido(dbConn, "Super@Example.com", "deepseek:deepseek-chat", "tester"); err != nil {
+		t.Fatalf("upsert super modelo preferido inicial: %v", err)
+	}
+	modelID, err = GetSuperAIModeloPreferido(dbConn, "super@example.com")
+	if err != nil {
+		t.Fatalf("get super modelo preferido inicial: %v", err)
+	}
+	if modelID != "deepseek:deepseek-chat" {
+		t.Fatalf("expected deepseek:deepseek-chat, got %q", modelID)
+	}
+
+	if err := UpsertSuperAIModeloPreferido(dbConn, "super@example.com", "ollama:ambis", "tester"); err != nil {
+		t.Fatalf("upsert super modelo preferido update: %v", err)
+	}
+	modelID, err = GetSuperAIModeloPreferido(dbConn, "super@example.com")
+	if err != nil {
+		t.Fatalf("get super modelo preferido update: %v", err)
+	}
+	if modelID != "ollama:ambis" {
+		t.Fatalf("expected ollama:ambis, got %q", modelID)
+	}
+
+	var provider string
+	err = dbConn.QueryRow(`SELECT COALESCE(provider, '') FROM super_ai_modelo_preferido WHERE admin_email = ? LIMIT 1`, "super@example.com").Scan(&provider)
+	if err != nil {
+		t.Fatalf("query provider super preferido: %v", err)
+	}
+	if provider != "ollama" {
+		t.Fatalf("expected provider ollama, got %q", provider)
+	}
+}
+
+func TestRegisterSuperAIConsultaAcumulaUsoDiario(t *testing.T) {
+	dbConn := openChatIATestDB(t)
+	if err := EnsureSuperAIChatSchema(dbConn); err != nil {
+		t.Fatalf("ensure super chat ia schema: %v", err)
+	}
+
+	_, err := RegisterSuperAIConsulta(dbConn, SuperAIConsulta{
+		AdminEmail:       "super@example.com",
+		Provider:         "deepseek",
+		ModelID:          "deepseek:deepseek-chat",
+		Pregunta:         "primera pregunta global",
+		Respuesta:        "primera respuesta global",
+		PromptTokens:     9,
+		CompletionTokens: 11,
+		TotalTokens:      20,
+		FechaConsulta:    "2026-04-18 10:00:00",
+		PlanActual:       "free",
+		UsuarioCreador:   "super@example.com",
+		Estado:           "activo",
+	})
+	if err != nil {
+		t.Fatalf("register super consulta 1: %v", err)
+	}
+
+	_, err = RegisterSuperAIConsulta(dbConn, SuperAIConsulta{
+		AdminEmail:       "super@example.com",
+		Provider:         "deepseek",
+		ModelID:          "deepseek:deepseek-chat",
+		Pregunta:         "segunda pregunta global",
+		Respuesta:        "segunda respuesta global",
+		PromptTokens:     4,
+		CompletionTokens: 6,
+		TotalTokens:      10,
+		FechaConsulta:    "2026-04-18 11:00:00",
+		PlanActual:       "free",
+		UsuarioCreador:   "super@example.com",
+		Estado:           "activo",
+	})
+	if err != nil {
+		t.Fatalf("register super consulta 2: %v", err)
+	}
+
+	uso, err := GetSuperAIUsoDiario(dbConn, "super@example.com", "deepseek", "deepseek:deepseek-chat", "2026-04-18")
+	if err != nil {
+		t.Fatalf("get super uso diario: %v", err)
+	}
+	if uso.Consultas != 2 {
+		t.Fatalf("expected 2 consultas, got %d", uso.Consultas)
+	}
+	if uso.TokensTotal != 30 {
+		t.Fatalf("expected 30 tokens acumulados, got %d", uso.TokensTotal)
+	}
+
+	rows, err := ListSuperAIConsultasRecientes(dbConn, "super@example.com", 10)
+	if err != nil {
+		t.Fatalf("list super consultas recientes: %v", err)
+	}
+	if len(rows) != 2 {
+		t.Fatalf("expected 2 consultas recientes, got %d", len(rows))
+	}
+	if rows[0].AdminEmail != "super@example.com" {
+		t.Fatalf("expected admin_email super@example.com, got %q", rows[0].AdminEmail)
 	}
 }

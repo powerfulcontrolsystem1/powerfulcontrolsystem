@@ -10,6 +10,187 @@ import (
 	"time"
 )
 
+// EnsureVentaPublicaSchema crea las tablas necesarias para el módulo de venta pública.
+// Debe ser idempotente y segura para SQLite y Postgres (usa IF NOT EXISTS cuando es soportado).
+func EnsureVentaPublicaSchema(db *sql.DB) error {
+	stmts := []string{
+		`CREATE TABLE IF NOT EXISTS paginas_publicas (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			empresa_id INTEGER NOT NULL,
+			slug TEXT NOT NULL,
+			titulo TEXT NOT NULL,
+			descripcion TEXT,
+			video_url TEXT,
+			activo INTEGER NOT NULL DEFAULT 1,
+			creado_en DATETIME DEFAULT (datetime('now')),
+			actualizado_en DATETIME DEFAULT (datetime('now'))
+		);`,
+
+		`CREATE UNIQUE INDEX IF NOT EXISTS idx_paginas_publicas_empresa_slug ON paginas_publicas(empresa_id, slug);`,
+
+		`CREATE TABLE IF NOT EXISTS productos_publicos (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			pagina_id INTEGER NOT NULL,
+			nombre TEXT NOT NULL,
+			descripcion TEXT,
+			precio_cents INTEGER NOT NULL DEFAULT 0,
+			moneda TEXT NOT NULL DEFAULT 'COP',
+			stock INTEGER,
+			sku TEXT,
+			youtube_url TEXT,
+			activo INTEGER NOT NULL DEFAULT 1,
+			creado_en DATETIME DEFAULT (datetime('now')),
+			actualizado_en DATETIME DEFAULT (datetime('now')),
+			FOREIGN KEY(pagina_id) REFERENCES paginas_publicas(id) ON DELETE CASCADE
+		);`,
+
+		`CREATE INDEX IF NOT EXISTS idx_productos_publicos_pagina_id ON productos_publicos(pagina_id);`,
+
+		`CREATE TABLE IF NOT EXISTS imagenes_productos_publicos (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			producto_id INTEGER NOT NULL,
+			url TEXT NOT NULL,
+			orden INTEGER NOT NULL DEFAULT 0,
+			FOREIGN KEY(producto_id) REFERENCES productos_publicos(id) ON DELETE CASCADE
+		);`,
+
+		`CREATE INDEX IF NOT EXISTS idx_imagenes_producto_id ON imagenes_productos_publicos(producto_id);`,
+
+		`CREATE TABLE IF NOT EXISTS empresa_payment_settings (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			empresa_id INTEGER NOT NULL,
+			provider TEXT NOT NULL,
+			config TEXT,
+			activo INTEGER NOT NULL DEFAULT 1,
+			creado_en DATETIME DEFAULT (datetime('now')),
+			actualizado_en DATETIME DEFAULT (datetime('now'))
+		);`,
+
+		`CREATE UNIQUE INDEX IF NOT EXISTS idx_empresa_payment_provider ON empresa_payment_settings(empresa_id, provider);`,
+	}
+
+	tx, err := db.Begin()
+	if err != nil {
+		return fmt.Errorf("begin transaction venta_publica schema: %w", err)
+	}
+	defer func() {
+		_ = tx.Rollback()
+	}()
+
+	for _, s := range stmts {
+		if _, err := tx.Exec(s); err != nil {
+			return fmt.Errorf("exec venta_publica schema stmt: %w; stmt=%s", err, s)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit venta_publica schema: %w", err)
+	}
+
+	return nil
+}
+
+// (Se definirá EnsureEmpresaVentaPublicaSchema más abajo con migraciones completas.)
+
+type PaginaPublica struct {
+	ID          int64  `json:"id"`
+	EmpresaID   int64  `json:"empresa_id"`
+	Slug        string `json:"slug"`
+	Titulo      string `json:"titulo"`
+	Descripcion string `json:"descripcion"`
+	VideoURL    string `json:"video_url"`
+	Activo      bool   `json:"activo"`
+}
+
+type ProductoPublico struct {
+	ID          int64          `json:"id"`
+	PaginaID    int64          `json:"pagina_id"`
+	Nombre      string         `json:"nombre"`
+	Descripcion string         `json:"descripcion"`
+	PrecioCents int64          `json:"precio_cents"`
+	Moneda      string         `json:"moneda"`
+	Stock       sql.NullInt64  `json:"-"`
+	SKU         string         `json:"sku"`
+	YoutubeURL  string         `json:"youtube_url"`
+	Activo      bool           `json:"activo"`
+}
+
+// Use ventaPublicaBoolToInt más abajo; evitar colisiones de nombre en paquete db.
+
+func CreatePaginaPublica(db *sql.DB, empresaID int64, slug, titulo, descripcion, videoURL string, activo bool) (int64, error) {
+	if empresaID <= 0 || strings.TrimSpace(slug) == "" || strings.TrimSpace(titulo) == "" {
+		return 0, fmt.Errorf("empresa_id, slug y titulo son obligatorios")
+	}
+	res, err := db.Exec(`INSERT INTO paginas_publicas (
+		empresa_id, slug, titulo, descripcion, video_url, activo, creado_en, actualizado_en
+	) VALUES (?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
+		empresaID, strings.TrimSpace(slug), strings.TrimSpace(titulo), strings.TrimSpace(descripcion), strings.TrimSpace(videoURL), ventaPublicaBoolToInt(activo))
+	if err != nil {
+		return 0, err
+	}
+	return res.LastInsertId()
+}
+
+func CreateProductoPublico(db *sql.DB, paginaID int64, nombre, descripcion string, precioCents int64, moneda string, stock sql.NullInt64, sku, youtubeURL string, activo bool) (int64, error) {
+	if paginaID <= 0 || strings.TrimSpace(nombre) == "" {
+		return 0, fmt.Errorf("pagina_id y nombre son obligatorios")
+	}
+	res, err := db.Exec(`INSERT INTO productos_publicos (
+		pagina_id, nombre, descripcion, precio_cents, moneda, stock, sku, youtube_url, activo, creado_en, actualizado_en
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
+		paginaID, strings.TrimSpace(nombre), strings.TrimSpace(descripcion), precioCents, strings.TrimSpace(moneda), nullableInt64Value(stock), strings.TrimSpace(sku), strings.TrimSpace(youtubeURL), ventaPublicaBoolToInt(activo))
+	if err != nil {
+		return 0, err
+	}
+	return res.LastInsertId()
+}
+
+func nullableInt64Value(v sql.NullInt64) interface{} {
+	if v.Valid {
+		return v.Int64
+	}
+	return nil
+}
+
+func AddImagenProductoPublico(db *sql.DB, productoID int64, url string, orden int) error {
+	if productoID <= 0 || strings.TrimSpace(url) == "" {
+		return fmt.Errorf("producto_id y url son obligatorios")
+	}
+	_, err := db.Exec(`INSERT INTO imagenes_productos_publicos (producto_id, url, orden) VALUES (?, ?, ?)`, productoID, strings.TrimSpace(url), orden)
+	return err
+}
+
+func GetPaginaPublicaBySlug(db *sql.DB, slug string) (PaginaPublica, error) {
+	var p PaginaPublica
+	row := db.QueryRow(`SELECT id, empresa_id, slug, titulo, COALESCE(descripcion,''), COALESCE(video_url,''), activo FROM paginas_publicas WHERE slug = ? AND activo = 1`, strings.TrimSpace(slug))
+	var activoInt int
+	if err := row.Scan(&p.ID, &p.EmpresaID, &p.Slug, &p.Titulo, &p.Descripcion, &p.VideoURL, &activoInt); err != nil {
+		return p, err
+	}
+	p.Activo = activoInt == 1
+	return p, nil
+}
+
+func ListPaginasPublicasByEmpresa(db *sql.DB, empresaID int64) ([]PaginaPublica, error) {
+	rows, err := db.Query(`SELECT id, empresa_id, slug, titulo, COALESCE(descripcion,''), COALESCE(video_url,''), activo FROM paginas_publicas WHERE empresa_id = ? ORDER BY id DESC`, empresaID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []PaginaPublica{}
+	for rows.Next() {
+		var p PaginaPublica
+		var activoInt int
+		if err := rows.Scan(&p.ID, &p.EmpresaID, &p.Slug, &p.Titulo, &p.Descripcion, &p.VideoURL, &activoInt); err != nil {
+			return nil, err
+		}
+		p.Activo = activoInt == 1
+		out = append(out, p)
+	}
+	return out, rows.Err()
+}
+
+
 const (
 	ventaPublicaWompiModeSandbox = "sandbox"
 	ventaPublicaWompiModeReal    = "real"
@@ -27,6 +208,7 @@ type EmpresaVentaPublicaConfig struct {
 	LogoURL            string `json:"logo_url,omitempty"`
 	BannerURL          string `json:"banner_url,omitempty"`
 	ColorPrimario      string `json:"color_primario,omitempty"`
+	TemaVisual         string `json:"tema_visual,omitempty"`
 	Moneda             string `json:"moneda"`
 	DominioPublico     string `json:"dominio_publico,omitempty"`
 	MostrarStock       bool   `json:"mostrar_stock"`
@@ -142,6 +324,18 @@ func ventaPublicaNormalizeMoneda(raw string) string {
 		moneda = moneda[:8]
 	}
 	return moneda
+}
+
+func ventaPublicaNormalizeTemaVisual(raw string) string {
+	tema := strings.ToLower(strings.TrimSpace(raw))
+	switch tema {
+	case "", "default":
+		return "default"
+	case "light", "minimal", "moderno":
+		return tema
+	default:
+		return "default"
+	}
 }
 
 func ventaPublicaNormalizeWompiMode(raw string) string {
@@ -304,6 +498,7 @@ func EnsureEmpresaVentaPublicaSchema(dbConn *sql.DB) error {
 			logo_url TEXT,
 			banner_url TEXT,
 			color_primario TEXT DEFAULT '#0f4c81',
+			tema_visual TEXT DEFAULT 'default',
 			moneda TEXT DEFAULT 'COP',
 			dominio_publico TEXT,
 			mostrar_stock INTEGER DEFAULT 1,
@@ -410,6 +605,9 @@ func EnsureEmpresaVentaPublicaSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "epayco_public_key", "TEXT"); err != nil {
 		return err
 	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "tema_visual", "TEXT DEFAULT 'default'"); err != nil {
+		return err
+	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "epayco_private_key_ref", "TEXT"); err != nil {
 		return err
 	}
@@ -442,6 +640,7 @@ func GetEmpresaVentaPublicaConfig(dbConn *sql.DB, empresaID int64) (EmpresaVenta
 		COALESCE(logo_url, ''),
 		COALESCE(banner_url, ''),
 		COALESCE(color_primario, ''),
+		COALESCE(tema_visual, ''),
 		COALESCE(moneda, 'COP'),
 		COALESCE(dominio_publico, ''),
 		COALESCE(mostrar_stock, 1),
@@ -472,6 +671,7 @@ func GetEmpresaVentaPublicaConfig(dbConn *sql.DB, empresaID int64) (EmpresaVenta
 		&out.LogoURL,
 		&out.BannerURL,
 		&out.ColorPrimario,
+		&out.TemaVisual,
 		&out.Moneda,
 		&out.DominioPublico,
 		&mostrarStock,
@@ -505,6 +705,7 @@ func GetEmpresaVentaPublicaConfig(dbConn *sql.DB, empresaID int64) (EmpresaVenta
 			EmpresaSlug:   NormalizeEmpresaPublicSlug(nombre),
 			NombreTienda:  nombre,
 			ColorPrimario: "#0f4c81",
+			TemaVisual:    "default",
 			Moneda:        "COP",
 			MostrarStock:  true,
 			WompiActivo:   false,
@@ -534,6 +735,7 @@ func GetEmpresaVentaPublicaConfig(dbConn *sql.DB, empresaID int64) (EmpresaVenta
 		out.NombreTienda = nombre
 	}
 	out.Moneda = ventaPublicaNormalizeMoneda(out.Moneda)
+	out.TemaVisual = ventaPublicaNormalizeTemaVisual(out.TemaVisual)
 	out.WompiMode = ventaPublicaNormalizeWompiMode(out.WompiMode)
 	out.EpaycoMode = ventaPublicaNormalizeEpaycoMode(out.EpaycoMode)
 	out.MostrarStock = mostrarStock.Valid && mostrarStock.Int64 > 0
@@ -572,6 +774,7 @@ func UpsertEmpresaVentaPublicaConfig(dbConn *sql.DB, cfg EmpresaVentaPublicaConf
 		cfg.EmpresaSlug = fmt.Sprintf("empresa-%d", cfg.EmpresaID)
 	}
 	cfg.Moneda = ventaPublicaNormalizeMoneda(cfg.Moneda)
+	cfg.TemaVisual = ventaPublicaNormalizeTemaVisual(cfg.TemaVisual)
 	cfg.WompiMode = ventaPublicaNormalizeWompiMode(cfg.WompiMode)
 	cfg.EpaycoMode = ventaPublicaNormalizeEpaycoMode(cfg.EpaycoMode)
 	cfg.Estado = ventaPublicaNormalizeEstado(cfg.Estado)
@@ -592,7 +795,8 @@ func UpsertEmpresaVentaPublicaConfig(dbConn *sql.DB, cfg EmpresaVentaPublicaConf
 				descripcion_tienda = ?,
 				logo_url = ?,
 				banner_url = ?,
-				color_primario = ?,
+			color_primario = ?,
+			tema_visual = ?,
 				moneda = ?,
 				dominio_publico = ?,
 				mostrar_stock = ?,
@@ -618,6 +822,7 @@ func UpsertEmpresaVentaPublicaConfig(dbConn *sql.DB, cfg EmpresaVentaPublicaConf
 			strings.TrimSpace(cfg.LogoURL),
 			strings.TrimSpace(cfg.BannerURL),
 			strings.TrimSpace(cfg.ColorPrimario),
+			strings.TrimSpace(cfg.TemaVisual),
 			cfg.Moneda,
 			strings.TrimSpace(cfg.DominioPublico),
 			ventaPublicaBoolToInt(cfg.MostrarStock),
@@ -651,6 +856,7 @@ func UpsertEmpresaVentaPublicaConfig(dbConn *sql.DB, cfg EmpresaVentaPublicaConf
 		logo_url,
 		banner_url,
 		color_primario,
+		tema_visual,
 		moneda,
 		dominio_publico,
 		mostrar_stock,
@@ -668,7 +874,7 @@ func UpsertEmpresaVentaPublicaConfig(dbConn *sql.DB, cfg EmpresaVentaPublicaConf
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		cfg.EmpresaID,
 		cfg.EmpresaSlug,
 		cfg.NombreTienda,
@@ -676,6 +882,7 @@ func UpsertEmpresaVentaPublicaConfig(dbConn *sql.DB, cfg EmpresaVentaPublicaConf
 		strings.TrimSpace(cfg.LogoURL),
 		strings.TrimSpace(cfg.BannerURL),
 		strings.TrimSpace(cfg.ColorPrimario),
+		strings.TrimSpace(cfg.TemaVisual),
 		cfg.Moneda,
 		strings.TrimSpace(cfg.DominioPublico),
 		ventaPublicaBoolToInt(cfg.MostrarStock),

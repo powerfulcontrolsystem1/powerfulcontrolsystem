@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="/estilos.css">
   <script src="/menu.js"></script>
 </head>
-<body class="empresa-subpage">
+<body class="empresa-subpage venta-publica-store">
   <div class="container">
     <section class="card empresa-section">
       <div class="page-header">
@@ -397,6 +397,29 @@
         return payloadItems;
       }
 
+      function applyStoreTheme(tienda) {
+        var doc = document.documentElement;
+        ['theme-light', 'theme-minimal', 'theme-moderno'].forEach(function (cls) {
+          doc.classList.remove(cls);
+        });
+
+        var tema = String(tienda && tienda.tema_visual || 'default').trim().toLowerCase();
+        if (tema === 'light') {
+          doc.classList.add('theme-light');
+        } else if (tema === 'minimal') {
+          doc.classList.add('theme-minimal');
+        } else if (tema === 'moderno') {
+          doc.classList.add('theme-moderno');
+        }
+
+        var color = String(tienda && tienda.color_primario || '').trim();
+        if (color) {
+          doc.style.setProperty('--accent', color);
+        } else {
+          doc.style.removeProperty('--accent');
+        }
+      }
+
       function updateStoreHeader() {
         var tienda = state.tienda || {};
         storeTitleEl.textContent = tienda.nombre_tienda || 'Tienda publica';
@@ -413,6 +436,7 @@
           state.tienda = data.tienda || {};
           state.paymentMethods = Array.isArray(state.tienda.payment_methods) ? state.tienda.payment_methods : [];
           state.items = Array.isArray(data.items) ? data.items : [];
+          applyStoreTheme(state.tienda);
           updateStoreHeader();
           renderPaymentOptions();
           renderCatalog();

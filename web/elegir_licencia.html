@@ -98,6 +98,7 @@
         var duracion = (licencia.duracion_dias || licencia.DuracionDias || '');
         var icono = normalizeImage(getLicenciaIcon(licencia, tipoNombre));
         var descripcion = String(licencia.descripcion || licencia.Descripcion || '').trim();
+        var actionLabel = valor <= 0 ? 'Activar licencia' : 'Comprar licencia';
         return '' +
           '<article class="portal-card home-offer-card" style="animation-delay:' + (idx * 90) + 'ms">' +
           '  <div class="home-offer-media">' +
@@ -108,7 +109,7 @@
           '  <p><strong>Valor:</strong> ' + escapeHtml(formatMoney(valor)) + '</p>' +
           '  <p><strong>Duracion:</strong> ' + escapeHtml(String(duracion)) + ' dias</p>' +
           '  <div class="card-actions">' +
-          '    <button class="home-offer-btn js-buy-license" type="button" data-licencia="' + escapeHtml(String(licencia.id)) + '" data-empresa-id="' + escapeHtml(String(empresaId || '')) + '" data-tipo-id="' + escapeHtml(String(tipoId || '')) + '" data-tipo-nombre="' + escapeHtml(String(tipoNombre || '')) + '">Comprar licencia</button>' +
+          '    <button class="home-offer-btn js-buy-license" type="button" data-licencia="' + escapeHtml(String(licencia.id)) + '" data-empresa-id="' + escapeHtml(String(empresaId || '')) + '" data-tipo-id="' + escapeHtml(String(tipoId || '')) + '" data-tipo-nombre="' + escapeHtml(String(tipoNombre || '')) + '">' + escapeHtml(actionLabel) + '</button>' +
           '  </div>' +
           '</article>';
       }

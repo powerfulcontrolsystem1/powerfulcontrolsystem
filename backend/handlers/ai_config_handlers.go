@@ -1,37 +1,180 @@
 package handlers
 
 import (
+	"bytes"
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
 	"github.com/you/pos-backend/utils"
 )
+
+const superAIEnabledConfigKey = "ai.global.enabled"
+
+func isSuperAIEnabled(dbSuper *sql.DB) bool {
+	if dbSuper == nil {
+		return true
+	}
+	value, err := getDecryptedConfigValue(dbSuper, superAIEnabledConfigKey)
+	if err != nil {
+		return true
+	}
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "", "1", "true", "on", "activo", "enabled":
+		return true
+	case "0", "false", "off", "inactivo", "disabled":
+		return false
+	default:
+		return true
+	}
+}
+
+func superAIServiceStatus(dbSuper *sql.DB) map[string]interface{} {
+	enabled := isSuperAIEnabled(dbSuper)
+	message := "IA global habilitada para chats empresarial y super."
+	if !enabled {
+		message = "IA global desactivada desde configuracion avanzada."
+	}
+	return map[string]interface{}{
+		"enabled":         enabled,
+		"message":         message,
+		"ollama_endpoint": resolveOllamaGenerateEndpoint(),
+	}
+}
+
+func runSuperAITest(dbSuper *sql.DB) (int, map[string]interface{}) {
+	if !isSuperAIEnabled(dbSuper) {
+		return http.StatusServiceUnavailable, map[string]interface{}{
+			"ok":             false,
+			"code":           "ai_disabled",
+			"error":          "La IA está desactivada desde configuración avanzada.",
+			"service_status": superAIServiceStatus(dbSuper),
+		}
+	}
+
+	endpoint := strings.TrimSpace(resolveOllamaGenerateEndpoint())
+	if endpoint == "" {
+		return http.StatusBadGateway, map[string]interface{}{
+			"ok":             false,
+			"code":           "ollama_endpoint_missing",
+			"error":          "No se pudo resolver el endpoint de Ollama.",
+			"service_status": superAIServiceStatus(dbSuper),
+		}
+	}
+
+	payload, _ := json.Marshal(map[string]interface{}{
+		"model":  "codellama:7b",
+		"prompt": "Responde solo OK_PANEL_TEST",
+		"stream": false,
+	})
+	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewReader(payload))
+	if err != nil {
+		return http.StatusBadGateway, map[string]interface{}{
+			"ok":             false,
+			"code":           "ollama_request_build_failed",
+			"error":          "No se pudo construir la solicitud de prueba a Ollama.",
+			"detail":         err.Error(),
+			"service_status": superAIServiceStatus(dbSuper),
+		}
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: 20 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return http.StatusBadGateway, map[string]interface{}{
+			"ok":             false,
+			"code":           "ollama_unreachable",
+			"error":          "No se pudo contactar Ollama en el endpoint configurado.",
+			"detail":         err.Error(),
+			"service_status": superAIServiceStatus(dbSuper),
+		}
+	}
+	defer resp.Body.Close()
+
+	raw, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode >= 400 {
+		return http.StatusBadGateway, map[string]interface{}{
+			"ok":             false,
+			"code":           "ollama_error",
+			"error":          "Ollama respondió con error durante la prueba.",
+			"status":         resp.StatusCode,
+			"raw":            truncateText(string(raw), 300),
+			"service_status": superAIServiceStatus(dbSuper),
+		}
+	}
+
+	var parsed struct {
+		Response string `json:"response"`
+		Model    string `json:"model"`
+		Done     bool   `json:"done"`
+	}
+	if err := json.Unmarshal(raw, &parsed); err != nil {
+		return http.StatusBadGateway, map[string]interface{}{
+			"ok":             false,
+			"code":           "ollama_invalid_json",
+			"error":          "La respuesta de Ollama no fue JSON válido.",
+			"raw":            truncateText(string(raw), 300),
+			"service_status": superAIServiceStatus(dbSuper),
+		}
+	}
+
+	return http.StatusOK, map[string]interface{}{
+		"ok":             true,
+		"provider":       "ollama",
+		"model_id":       "ollama:ambis",
+		"upstream_model": parsed.Model,
+		"response":       strings.TrimSpace(parsed.Response),
+		"done":           parsed.Done,
+		"service_status": superAIServiceStatus(dbSuper),
+	}
+}
 
 // AIModelsConfigHandler gestiona credenciales IA disponibles en el catalogo backend.
 func AIModelsConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
+			if strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("action")), "test") {
+				status, body := runSuperAITest(dbSuper)
+				writeJSON(w, status, body)
+				return
+			}
+
 			adminEmail := strings.TrimSpace(adminEmailFromRequest(r))
 			defs := aiCredentialCatalogModels()
 			items := make([]map[string]interface{}, 0, len(defs))
 			for _, def := range defs {
-				value, enc, _, updatedAt, _ := dbpkg.GetConfigEntry(dbSuper, def.ConfigKey)
-				updatedBy, _, _, _, _ := dbpkg.GetConfigEntry(dbSuper, def.ConfigKey+".updated_by")
-				configured := strings.TrimSpace(value) != ""
-				masked := maskSecretValue(value, enc)
-				source := "db"
-				if !configured {
-					envVal := strings.TrimSpace(os.Getenv(def.ApiKeyEnv))
-					if envVal != "" {
-						configured = true
-						masked = maskSecretValue(envVal, false)
-						source = "env"
+				value := ""
+				enc := false
+				updatedAt := ""
+				updatedBy := ""
+				configured := false
+				masked := ""
+				source := "local-service"
+
+				if strings.TrimSpace(def.ConfigKey) == "" {
+					configured = true
+					source = "vps-local"
+				} else {
+					value, enc, _, updatedAt, _ = dbpkg.GetConfigEntry(dbSuper, def.ConfigKey)
+					updatedBy, _, _, _, _ = dbpkg.GetConfigEntry(dbSuper, def.ConfigKey+".updated_by")
+					configured = strings.TrimSpace(value) != ""
+					masked = maskSecretValue(value, enc)
+					source = "db"
+					if !configured && strings.TrimSpace(def.ApiKeyEnv) != "" {
+						envVal := strings.TrimSpace(os.Getenv(def.ApiKeyEnv))
+						if envVal != "" {
+							configured = true
+							masked = maskSecretValue(envVal, false)
+							source = "env"
+						}
 					}
 				}
 				items = append(items, map[string]interface{}{
@@ -55,6 +198,7 @@ func AIModelsConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				"ok":                   true,
 				"google_account":       adminEmail,
 				"encryption_available": utils.EncryptionAvailable(),
+				"service_status":       superAIServiceStatus(dbSuper),
 				"modelos":              items,
 			})
 			return
@@ -65,6 +209,7 @@ func AIModelsConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 					ModelID string `json:"model_id"`
 					APIKey  string `json:"api_key"`
 				} `json:"credentials"`
+				Enabled *bool `json:"enabled"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "invalid payload: "+err.Error(), http.StatusBadRequest)
@@ -72,7 +217,7 @@ func AIModelsConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 
 			// Forzar cifrado obligatorio para todas las credenciales sensibles en configuración avanzada.
-			if !utils.EncryptionAvailable() {
+			if len(payload.Credentials) > 0 && !utils.EncryptionAvailable() {
 				http.Error(w, "encryption required: CONFIG_ENC_KEY not set", http.StatusBadRequest)
 				return
 			}
@@ -81,6 +226,21 @@ func AIModelsConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			if adminEmail == "" || adminEmail == "sistema" {
 				http.Error(w, "unauthenticated", http.StatusUnauthorized)
 				return
+			}
+
+			if payload.Enabled != nil {
+				enabledValue := "0"
+				if *payload.Enabled {
+					enabledValue = "1"
+				}
+				if err := dbpkg.SetConfigValue(dbSuper, superAIEnabledConfigKey, enabledValue, false); err != nil {
+					http.Error(w, "failed to save "+superAIEnabledConfigKey+": "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				if err := dbpkg.SetConfigValue(dbSuper, superAIEnabledConfigKey+".updated_by", adminEmail, false); err != nil {
+					http.Error(w, "failed to save updated_by for "+superAIEnabledConfigKey+": "+err.Error(), http.StatusInternalServerError)
+					return
+				}
 			}
 
 			defs := aiCredentialByModelID()
@@ -94,6 +254,10 @@ func AIModelsConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				def, ok := defs[modelID]
 				if !ok {
 					http.Error(w, "model_id no soportado: "+modelID, http.StatusBadRequest)
+					return
+				}
+				if strings.TrimSpace(def.ConfigKey) == "" {
+					http.Error(w, "el modelo "+modelID+" no requiere credencial en este panel", http.StatusBadRequest)
 					return
 				}
 
@@ -124,7 +288,7 @@ func AIModelsConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				updated = append(updated, modelID)
 			}
 
-			if len(updated) == 0 {
+			if len(updated) == 0 && payload.Enabled == nil {
 				http.Error(w, "debe enviar al menos una credencial valida", http.StatusBadRequest)
 				return
 			}
@@ -133,6 +297,7 @@ func AIModelsConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				"saved":          true,
 				"updated_models": updated,
 				"google_account": adminEmail,
+				"service_status": superAIServiceStatus(dbSuper),
 			})
 			return
 

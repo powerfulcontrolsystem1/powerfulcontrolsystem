@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Arcade N64 móvil</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="n64-shell">
+    <header class="n64-hero">
+      <p class="n64-kicker">Nintendo 64 móvil</p>
+      <h1>Mario 64 desde el celular</h1>
+      <p class="n64-copy">La pantalla queda arriba, los controles táctiles abajo y la ROM legal del usuario se recuerda en el navegador para volver a abrirla sin repetir el flujo.</p>
+      <div id="n64Status" class="n64-status">Preparando el emulador N64. No incluimos ROMs comerciales: usa tu copia legal de Super Mario 64 u otra ROM propia.</div>
+    </header>
+
+    <section class="n64-screen-card">
+      <div class="n64-toolbar">
+        <label class="n64-upload">Subir ROM N64
+          <input id="romInput" type="file" accept=".z64,.n64,.v64,application/octet-stream">
+        </label>
+        <button id="saveBtn" type="button">Guardar</button>
+        <button id="loadBtn" type="button">Cargar</button>
+        <button id="fullscreenBtn" type="button">Pantalla completa</button>
+      </div>
+      <div id="n64LoadedRom" class="n64-loaded-rom">ROM activa: ninguna</div>
+      <div class="n64-stage-wrap">
+        <iframe id="n64Frame" class="n64-frame" title="Emulador N64 móvil" loading="eager"></iframe>
+      </div>
+    </section>
+
+    <section class="n64-controls" aria-label="Guía de uso N64 en celular">
+      <article class="guide-card">
+        <h2>Cómo guardar y cargar</h2>
+        <ol>
+          <li>Sube tu ROM legal de Nintendo 64.</li>
+          <li>En Super Mario 64 guarda primero dentro del juego.</li>
+          <li>Toca Guardar para respaldar la memoria del cartucho en este navegador.</li>
+          <li>Toca Cargar para restaurar ese respaldo y reiniciar la ROM con tu progreso.</li>
+        </ol>
+      </article>
+      <article class="guide-card">
+        <h2>Controles base</h2>
+        <ul>
+          <li>Stick analógico: flechas del teclado en el core actual.</li>
+          <li>A: tecla S.</li>
+          <li>B: tecla X.</li>
+          <li>Z: tecla Z.</li>
+          <li>Start: tecla A.</li>
+          <li>C-Up/C-Down/C-Left/C-Right: I, K, J y L.</li>
+        </ul>
+      </article>
+    </section>
+
+    <section class="n64-touch-panel" id="touchGuide" aria-label="Controles táctiles N64">
+      <div class="touch-group">
+        <div class="touch-title">Stick</div>
+        <div class="touch-cross">
+          <button type="button" class="touch-key" data-key="ArrowUp">▲</button>
+          <div class="touch-row">
+            <button type="button" class="touch-key" data-key="ArrowLeft">◀</button>
+            <button type="button" class="touch-key touch-center" disabled>●</button>
+            <button type="button" class="touch-key" data-key="ArrowRight">▶</button>
+          </div>
+          <button type="button" class="touch-key" data-key="ArrowDown">▼</button>
+        </div>
+      </div>
+      <div class="touch-group right-stack">
+        <div class="touch-title">Acción</div>
+        <div class="touch-face">
+          <button type="button" class="touch-key action-b" data-key="x">B</button>
+          <button type="button" class="touch-key action-a" data-key="s">A</button>
+          <button type="button" class="touch-key action-z" data-key="z">Z</button>
+          <button type="button" class="touch-key action-start" data-key="a">Start</button>
+        </div>
+        <div class="touch-c-buttons">
+          <button type="button" class="touch-key" data-key="i">C▲</button>
+          <button type="button" class="touch-key" data-key="j">C◀</button>
+          <button type="button" class="touch-key" data-key="l">C▶</button>
+          <button type="button" class="touch-key" data-key="k">C▼</button>
+        </div>
+      </div>
+    </section>
+
+    <p class="n64-note">El núcleo es n64js. Para mejor resultado en móvil usa Chrome o Edge modernos, deja activado WebGL y mantén el teléfono en vertical si solo quieres jugar rápido o en horizontal si buscas más precisión.</p>
+  </main>
+
+  <script src="n64-wrapper.js"></script>
+</body>
+</html>

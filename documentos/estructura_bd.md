@@ -821,6 +821,19 @@ Todas las tablas operativas usan como base los campos estandar:
   - endpoint, modulo, metodo_http, codigo_http, request_id
   - origen, ip, user_agent, metadata_json
   - fecha_error, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones
+- super_ai_consultas:
+  - admin_email, provider, model_id, pregunta, respuesta
+  - prompt_tokens, completion_tokens, total_tokens, fecha_consulta, plan_actual
+  - fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones
+- super_ai_uso_diario:
+  - admin_email, provider, model_id, fecha_uso
+  - consultas_total, tokens_total, plan_actual
+  - fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones
+  - indice unico: (admin_email, provider, model_id, fecha_uso)
+- super_ai_modelo_preferido:
+  - admin_email, provider, model_id
+  - fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones
+  - indice unico: (admin_email)
 
 ### Tablas de catalogos globales
 - tipos_de_empresas:

@@ -2,6 +2,100 @@
 
 Fecha de actualizacion: 2026-04-18
 
+## Actualizacion 2026-04-18 (gobernanza documental: checklist operativa para QA y soporte)
+
+- Documentacion general:
+  - `documentos/gobernanza_tecnica/runbooks/checklist_evidencia_documental_para_qa_y_soporte.md` agrega una lista corta de validacion para incidentes o UAT sobre repositorio documental, firmas y exportes regulatorios.
+  - `documentos/descripcion_del_proyecto` incorpora la regla general de que un exporte no sustituye la version vigente ni la firma asociada cuando el flujo exige evidencia formal.
+- Flujo operativo:
+  - `incidente documental o UAT` -> checklist breve QA/soporte -> validacion de `empresa_id`, `documento_codigo`, rol y version vigente -> si falla la conciliacion, consulta de runbooks completos y contratos tecnicos -> eventual escalamiento a backend u operacion.
+
+## Actualizacion 2026-04-18 (chat IA: interruptor global y prueba real de servicio)
+
+- Backend:
+  - `backend/handlers/ai_config_handlers.go` agrega el flag `ai.global.enabled`, lo expone en `/super/api/config/ai` y permite una prueba real via `GET /super/api/config/ai?action=test` contra Ollama.
+  - `backend/handlers/chat_con_inteligencia_artificial_controller.go` y `backend/handlers/chat_con_ia_global_super.go` bloquean catalogo, preferencia, consulta e historial cuando la IA global queda apagada desde configuracion avanzada.
+- Frontend:
+  - `web/super/configuracion_avanzada.html` agrega el interruptor operativo de IA y cambia el boton `Probar IA` para invocar la prueba real del backend.
+- Flujo:
+  - `super/configuracion_avanzada.html` -> `GET /super/api/config/ai` -> muestra estado `ai.global.enabled`.
+  - `super/configuracion_avanzada.html` -> `PUT /super/api/config/ai` -> persiste encendido/apagado global.
+  - `super/configuracion_avanzada.html` -> `GET /super/api/config/ai?action=test` -> backend ejecuta prueba real contra `OLLAMA_BASE_URL` o `http://127.0.0.1:11434/api/generate`.
+
+## Actualizacion 2026-04-18 (chat IA global para super administrador)
+
+- Backend:
+  - `backend/db/chat_inteligencia_artificial.go` agrega tablas `super_ai_consultas`, `super_ai_uso_diario` y `super_ai_modelo_preferido` para persistencia global del panel super.
+  - `backend/handlers/chat_con_ia_global_super.go` expone `/super/api/chat_con_ia_global/modelos`, `/modelo_preferido`, `/consultar` y `/historial` con validacion de sesion activa y rol `super_administrador`.
+  - `backend/main.go` asegura el esquema `super_ai_*` al arranque y registra el nuevo controlador super.
+- Frontend:
+  - `web/super/chat_con_ia_global.html` agrega el chat global con selector de modelo, sugerencias rapidas, historial y consumo diario.
+  - `web/super_administrador.html` incorpora el acceso al nuevo submodulo dentro del menu lateral del panel super.
+- Flujo:
+  - `super_administrador.html` -> `super/chat_con_ia_global.html` -> `GET /super/api/chat_con_ia_global/modelos` -> `PUT /super/api/chat_con_ia_global/modelo_preferido` -> `POST /super/api/chat_con_ia_global/consultar` -> `GET /super/api/chat_con_ia_global/historial`.
+
+## Actualizacion 2026-04-18 (chat IA empresarial: DeepSeek + Ambis Local sobre Ollama)
+
+- Backend:
+  - `backend/handlers/ai_credentials_catalog.go` amplia el catalogo super para incluir `ollama:ambis` como servicio local del VPS y mantiene `deepseek:deepseek-chat` como credencial cifrada.
+  - `backend/handlers/ai_config_handlers.go` expone `Ambis Local` en `/super/api/config/ai` como modelo disponible sin API key y conserva el guardado cifrado solo para DeepSeek.
+  - `backend/handlers/chat_con_inteligencia_artificial_controller.go` amplia el catalogo de modelos empresariales y agrega consumo de Ollama via `POST /api/generate` contra `OLLAMA_BASE_URL` o `http://127.0.0.1:11434/api/generate`.
+  - El controlador mantiene validacion de cuenta Google autenticada + `empresa_id`, persistencia del modelo preferido y construccion de contexto acotado a la empresa seleccionada.
+- Frontend:
+  - `web/administrar_empresa/chat_con_inteligencia_artificial.html` agrega selector de modelo disponible para alternar entre DeepSeek y Ambis antes de cada consulta.
+  - `web/super/configuracion_avanzada.html` muestra DeepSeek y `Ambis Local` dentro del bloque IA, aclarando que Ambis corre en el VPS por loopback y no requiere credencial desde el panel.
+- Flujo:
+  - `super/configuracion_avanzada.html` -> `GET /super/api/config/ai` -> DeepSeek visible con credencial cifrada + Ambis visible como servicio local.
+  - `administrar_empresa/chat_con_inteligencia_artificial.html?empresa_id=...` -> `GET /api/empresa/chat_con_inteligencia_artificial/modelos` -> usuario elige `deepseek:deepseek-chat` u `ollama:ambis` -> `PUT /api/empresa/chat_con_inteligencia_artificial/modelo_preferido` -> `POST /api/empresa/chat_con_inteligencia_artificial/consultar` -> respuesta generada solo con contexto validado de la empresa.
+
+## Actualizacion 2026-04-18 (estaciones: tarjeta especial YouTube)
+
+- Frontend estaciones:
+  - `web/administrar_empresa/configuracion_de_estaciones.html` amplía la preferencia global `estaciones_config` con `youtube_enabled`, manteniendo el mismo almacenamiento clave/valor en `empresa_estacion_prefs`.
+  - `web/administrar_empresa/estaciones.html` interpreta esa bandera y agrega una tarjeta especial `YouTube` al tablero operativo, separada de las estaciones que abren carritos o venta simple.
+  - `web/administrar_empresa/youtube_station_browser.html` encapsula el iframe embebido para reutilizarlo en modo compacto dentro de la tarjeta y en modo ampliado dentro del overlay de aproximadamente `500 x 500`.
+  - `web/estilos.css` incorpora el layout responsive de la tarjeta YouTube, el boton cuadrado `[]` y el overlay de ampliacion.
+- Flujo:
+  - `configuracion_de_estaciones.html` -> `PUT /api/empresa/estacion_prefs?empresa_id=...` con `clave=estaciones_config` y `youtube_enabled=true` -> `estaciones.html` lee la misma preferencia -> renderiza la tarjeta embebida -> operador puede ampliar la vista en overlay sin cambiar de modulo.
+
+## Actualizacion 2026-04-18 (orquestacion interna de agentes del repositorio)
+
+- Gobernanza tecnica:
+  - `.github/agents/agente_go.agent.md` se consolida como direccion principal del equipo y define a `agente_go` como punto de entrada por defecto.
+  - `.github/agents/agente_backend_db.agent.md` cubre backend Go, PostgreSQL, seguridad, migraciones y reglas de negocio.
+  - `.github/agents/agente_frontend_ux.agent.md` cubre HTML, CSS, JavaScript, UX operativa y experiencia responsive.
+  - `.github/agents/agente_qa_operacion.agent.md` cubre pruebas, validacion end to end, runtime, despliegue y runbooks.
+  - `.github/agents/README.md` documenta el protocolo de coordinacion entre los cuatro agentes.
+- Flujo:
+  - `tarea nueva` -> `agente_go` clasifica alcance -> delega por especialidad cuando aplica -> especialistas devuelven evidencia/cambios -> `agente_go` integra arquitectura, pruebas y documentacion -> cierre unico del trabajo.
+
+## Actualizacion 2026-04-18 (orquestacion interna: protocolo de delegacion y plantilla modular)
+
+- Gobernanza tecnica:
+  - `.github/agents/protocolo_delegacion.md` define la matriz de decision de `agente_go` segun si una tarea es backend, frontend, operacion o transversal.
+  - `.github/agents/plantilla_trabajo_por_modulo.md` define el ciclo comun de clasificacion, analisis, implementacion, validacion y cierre por modulo.
+  - Los archivos de `agente_backend_db`, `agente_frontend_ux` y `agente_qa_operacion` incorporan cobertura prioritaria por modulos criticos del sistema.
+- Flujo:
+  - `cambio por modulo` -> `agente_go` consulta protocolo -> activa especialistas requeridos -> ejecuta plantilla comun -> consolida evidencia y trazabilidad -> cierre unico.
+
+## Actualizacion 2026-04-18 (orquestacion interna: tabla rapida, ejemplos y cierre obligatorio en modulos criticos)
+
+- Gobernanza tecnica:
+  - `.github/agents/protocolo_delegacion.md` agrega una tabla rapida por modulo para consulta inmediata, tres ejemplos reales de delegacion y una regla de cierre mas estricta para modulos criticos.
+  - `.github/agents/plantilla_trabajo_por_modulo.md` agrega ejemplos minimos de aplicacion para pagos, estaciones y autenticacion/permisos.
+  - `.github/agents/agente_go.agent.md` obliga participacion multiple en modulos criticos antes del cierre.
+- Flujo:
+  - `cambio critico` -> `agente_go` consulta tabla rapida -> activa frentes obligatorios -> usa ejemplo de referencia si aplica -> exige evidencia completa -> cierre integrado.
+
+## Actualizacion 2026-04-18 (orquestacion interna: semaforo ejecutivo y rechazo de cierres sin evidencia)
+
+- Gobernanza tecnica:
+  - `.github/agents/protocolo_delegacion.md` agrega un semaforo ejecutivo por modulo para clasificacion inmediata.
+  - `.github/agents/agente_backend_db.agent.md`, `.github/agents/agente_frontend_ux.agent.md` y `.github/agents/agente_qa_operacion.agent.md` agregan reglas para rechazar cierres sin evidencia minima suficiente.
+  - `.github/agents/plantilla_trabajo_por_modulo.md` incorpora la evidencia minima esperada por frente.
+- Flujo:
+  - `tarea nueva` -> `agente_go` consulta semaforo -> activa frentes -> cada especialista devuelve evidencia minima -> si falta evidencia, el frente no se considera cerrable -> `agente_go` integra y decide.
+
 ## Actualizacion 2026-04-18 (configuracion empresarial: persistencia real del bloque general)
 
 - Backend:
@@ -49,6 +143,18 @@ Fecha de actualizacion: 2026-04-18
   - `backend/handlers/payments_handlers_test.go` agrega la regresion donde el webhook activa primero sin correo util y el `transaction_status` posterior debe enviar una sola notificacion.
 - Flujo:
   - `Epayco webhook aprobado` -> licencia activa sin correo confirmado -> `GET /epayco/transaction_status` con `customer_email` valido -> correo de activacion -> marca idempotente en `raw_payload`.
+
+## Actualizacion 2026-04-18 (checkout de licencias: total cero cambia de pasarela a activacion directa)
+
+- Backend:
+  - `backend/main.go` registra `GET /api/public/licencias/checkout_summary` para que el frontend consulte valor base, descuento, total final y si la activacion gratis sigue disponible para la empresa.
+  - `backend/handlers/payments_handlers.go` centraliza el resumen de checkout, evita crear transacciones Wompi/Epayco cuando el total queda en cero y obliga a que `POST /licencias/activar_sin_pago` solo opere en ese escenario.
+  - `backend/db/licencias_gratis.go` incorpora la tabla `licencias_activaciones_gratis` y el bloqueo unico por `(licencia_id, empresa_id)` para impedir reutilizar gratis la misma licencia dentro de la misma empresa.
+- Frontend:
+  - `web/pagar_licencia.html` agrega una tarjeta de resumen con `valor base`, `descuento` y `total`, oculta la pasarela cuando el total llega a cero y muestra el CTA `Activar licencia` con mensaje de bloqueo cuando la empresa ya consumió esa cortesia.
+  - `web/elegir_licencia.html` cambia el CTA inicial a `Activar licencia` cuando el valor base ya es cero.
+- Flujo:
+  - `/pagar_licencia.html?licencia_id=...&empresa_id=...` -> `GET /api/public/licencias/checkout_summary` -> si `total_value > 0`, checkout normal por pasarela; si `total_value = 0`, `POST /licencias/activar_sin_pago` -> backend marca `licencias_activaciones_gratis` y rechaza nuevas activaciones gratis para la misma empresa/licencia.
 
 ## Actualizacion 2026-04-18 (checkout de licencias: validacion de contexto esperado y empresa logica en correo)
 
@@ -219,6 +325,13 @@ Fecha de actualizacion: 2026-04-18
   - `web/estilos.css` incorpora la capa visual del checkout con anatomia del home, chips de metadatos y una paleta propia para Epayco basada en su branding oscuro con acentos naranja/rojo.
 - Flujo:
   - `/pagar_licencia.html` -> tarjeta `Licencia seleccionada` + tarjeta `Codigos de descuento` -> bloque visible de medios Epayco -> apertura de la pasarela elegida -> retorno a la misma pagina para verificacion final.
+
+## Actualizacion 2026-04-18 (selector de empresas: tarjetas con altura uniforme)
+
+- Frontend:
+  - `web/estilos.css` fuerza `grid-auto-rows: 1fr` en el grid de empresas y sube la `min-height` de `.empresa-card`, de modo que las tarjetas del selector conserven una altura consistente entre filas.
+- Flujo:
+  - `/seleccionar_empresa.html` -> grid de empresas con tarjetas visualmente uniformes -> CTA por tarjeta sin saltos de altura entre empresas con distinto volumen de texto.
 
 ## Actualizacion 2026-04-17 (elegir licencia: orden ascendente por valor)
 

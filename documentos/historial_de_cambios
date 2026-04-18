@@ -1,5 +1,442 @@
  - Historial de cambios
 
+ - 2026-04-18: Menú flotante muestra accesos rápidos a juegos
+     - Archivos creados:
+         - web/Juegos/games.json
+     - Archivos modificados:
+         - web/menu.js
+     - Descripcion: Se agrega un manifiesto `web/Juegos/games.json` y se actualiza `web/menu.js` para mostrar accesos rápidos a juegos dentro del menú flotante (hasta 6). Mantener sincronía entre `menu_juegos.html` y `games.json` para controlar las entradas del menú.
+     - Verificacion tecnica:
+         - Carga de `/Juegos/games.json` desde `menu.js` y render de enlaces rápidos; revisión manual en móvil y escritorio recomendado.
+
+ - 2026-04-18: Arcade público suma una página N64 móvil funcional para Mario 64 con ROM legal del usuario
+     - Archivos creados:
+         - web/Juegos/n64/index.html
+         - web/Juegos/n64/styles.css
+         - web/Juegos/n64/n64-wrapper.js
+     - Archivos modificados:
+         - web/Juegos/menu_juegos.html
+         - documentos/descripcion_del_proyecto
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: La página N64 pública pasa a operar con n64js dentro de `iframe.srcdoc` mismo-origen para permitir controles táctiles reales, ROM legal persistida en IndexedDB y botones Guardar/Cargar que respaldan la memoria del cartucho por juego. El lobby del arcade ya expone la entrada directa a esta vista vertical para uso desde celular.
+     - Verificacion tecnica:
+         - `get_errors` sin errores en `web/Juegos/n64/index.html`, `web/Juegos/n64/styles.css`, `web/Juegos/n64/n64-wrapper.js` y `web/Juegos/menu_juegos.html`.
+
+
+ - 2026-04-18: Checkout de licencias activa gratis solo una vez por empresa cuando el total queda en cero
+     - Archivos creados:
+         - backend/db/licencias_gratis.go
+     - Archivos modificados:
+         - backend/handlers/payments_handlers.go
+         - backend/handlers/payments_handlers_test.go
+         - backend/main.go
+         - web/pagar_licencia.html
+         - web/elegir_licencia.html
+         - web/estilos.css
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se agrega un resumen real del checkout de licencias con descuentos, se cambia el flujo a activacion directa cuando el total queda en cero y se registra una marca unica por empresa/licencia para impedir reactivar gratis la misma licencia más de una vez; también se uniforma la altura visual de las tarjetas del selector de empresas.
+     - Verificacion tecnica:
+         - `go test ./handlers -run 'Test(LicenciaCheckoutSummaryHandlerAllowsZeroTotalByConfiguredDiscount|ActivateLicenciaSinPagoHandlerBlocksRepeatedFreeLicensePerEmpresa|WompiCreateNequiTransactionHandlerRejectsZeroTotalAndSuggestsActivation)$' -count=1`
+         - tarea `validar-permisos-selector-empresas-5`
+
+ - 2026-04-18: Modulo productos separa vistas dedicadas para productos, bodegas y categorias
+     - Archivos modificados:
+         - web/administrar_empresa/administrar_productos.html
+         - web/administrar_empresa/administrar_productos_menu.html
+         - web/administrar_empresa/productos/administrar_productos.html
+         - web/administrar_empresa/productos/bodegas.html
+         - web/administrar_empresa/productos/categorias.html
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se deja `administrar_productos.html` como fuente unica del modulo y se activan vistas por `view=productos|bodegas|categorias`; las rutas legacy de `productos/` ahora redirigen conservando `empresa_id`, por lo que bodegas y categorias salen de la subpagina principal sin duplicar CRUD ni tocar APIs backend.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en los HTML modificados y la documentacion actualizada.
+
+ - 2026-04-18: Ventas simples por estacion agrega variante carrito_compacto en un solo panel
+     - Archivos modificados:
+         - web/administrar_empresa/estaciones.html
+         - web/administrar_empresa/ventas_simple.html
+         - web/js/ventas_simple.js
+         - documentos/descripcion_del_proyecto
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se activa la apertura de `ventas_simple.html` con `variant=compacto` desde estaciones y se incorpora un layout compacto con barra de acciones rapidas, manteniendo el mismo carrito por estacion, los mismos endpoints y el mismo aislamiento multiempresa por `empresa_id`.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores sobre `web/administrar_empresa/ventas_simple.html`, `web/js/ventas_simple.js`, `web/administrar_empresa/estaciones.html` y la documentacion actualizada.
+
+ - 2026-04-18: Gobernanza tecnica agrega checklist documental para QA y soporte
+     - Archivos creados:
+         - documentos/gobernanza_tecnica/runbooks/checklist_evidencia_documental_para_qa_y_soporte.md
+     - Archivos modificados:
+         - documentos/gobernanza_tecnica/runbooks/README.md
+         - documentos/gobernanza_tecnica/README.md
+         - documentos/descripcion_del_proyecto
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se agrega una checklist breve para QA y soporte sobre evidencia documental, y se propaga a la documentacion general la regla de reconciliar exportes con version vigente y firma cuando aplique.
+     - Verificacion tecnica:
+         - Diagnostico del editor sobre la documentacion creada y modificada.
+
+ - 2026-04-18: Gobernanza tecnica endurece reconciliacion documental y evidencia regulatoria
+     - Archivos modificados:
+         - documentos/gobernanza_tecnica/contratos/contrato_repositorio_documental_y_firmas_externas.md
+         - documentos/gobernanza_tecnica/contratos/contrato_interoperabilidad_documental_contable_y_fiscal_externa.md
+         - documentos/gobernanza_tecnica/contratos/contrato_reportes_contables_financieros_y_exportacion_multiformato.md
+         - documentos/gobernanza_tecnica/runbooks/runbook_reconciliacion_documental_fiscal_y_contable_externa.md
+         - documentos/gobernanza_tecnica/runbooks/runbook_versionado_documental_y_firmas_externas.md
+         - documentos/gobernanza_tecnica/estandares_de_cambio_seguro.md
+         - documentos/gobernanza_tecnica/README.md
+         - documentos/gobernanza_tecnica/plan_implementacion_gobernanza_tecnica.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se alinean los contratos y runbooks documentales para reconciliar repositorio, firmas, interoperabilidad fiscal/contable y exportes regulatorios, dejando explícito que la evidencia formal sigue viviendo en la versión documental vigente y no en un exporte aislado.
+     - Verificacion tecnica:
+         - Diagnostico del editor sobre la documentacion modificada.
+
+ - 2026-04-18: Gobernanza tecnica documenta repositorio documental y firmas externas
+     - Archivos creados:
+         - documentos/gobernanza_tecnica/contratos/contrato_repositorio_documental_y_firmas_externas.md
+         - documentos/gobernanza_tecnica/runbooks/runbook_versionado_documental_y_firmas_externas.md
+     - Archivos modificados:
+         - documentos/gobernanza_tecnica/README.md
+         - documentos/gobernanza_tecnica/plan_implementacion_gobernanza_tecnica.md
+         - documentos/gobernanza_tecnica/contratos/README.md
+         - documentos/gobernanza_tecnica/runbooks/README.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se formaliza el contrato del repositorio documental empresarial y el runbook de versionado, control de acceso por rol/modulo y firmas externas, alineados con los handlers y pruebas actuales del backend.
+     - Verificacion tecnica:
+         - Diagnostico del editor sobre la documentacion nueva y modificada.
+
+ - 2026-04-18: Configuracion avanzada agrega interruptor global para activar o desactivar IA
+     - Archivos modificados:
+         - backend/handlers/ai_config_handlers.go
+         - backend/handlers/chat_con_inteligencia_artificial_controller.go
+         - backend/handlers/chat_con_ia_global_super.go
+         - backend/handlers/chat_con_inteligencia_artificial_controller_test.go
+         - backend/handlers/chat_con_ia_global_super_test.go
+         - backend/handlers/system_empresas_handlers_test.go
+         - web/super/configuracion_avanzada.html
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se agrega el flag global `ai.global.enabled` en configuracion super para encender o apagar la IA y liberar carga del servidor. Al desactivarlo, el chat empresarial y el chat global super devuelven estado de servicio no disponible antes de consultar DeepSeek u Ollama. El panel super tambien ejecuta una prueba real de Ollama mediante el backend.
+     - Verificacion tecnica:
+         - Validacion real en VPS: `systemctl is-active ollama`, `systemctl is-active powerfulcontrolsystem`, `curl -s http://127.0.0.1:11434/api/tags` y `curl -s http://127.0.0.1:11434/api/generate ...` con respuesta `OK_CHAT_VPS`.
+
+ - 2026-04-18: Chats IA muestran bloqueo visible cuando el servicio global está apagado
+     - Archivos modificados:
+         - web/administrar_empresa/chat_con_inteligencia_artificial.html
+         - web/super/chat_con_ia_global.html
+         - web/super/configuracion_avanzada.html
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Ambos chats ahora muestran un aviso visible y deshabilitan el formulario cuando la IA global está apagada. Configuración avanzada deja explícito el botón `Probar IA contra VPS` para validar el servicio real.
+     - Verificacion tecnica:
+         - Diagnóstico del editor sin errores en los tres HTML modificados.
+
+ - 2026-04-18: Super administrador agrega chat IA global consolidado
+     - Archivos creados:
+         - backend/handlers/chat_con_ia_global_super.go
+         - backend/handlers/chat_con_ia_global_super_test.go
+         - web/super/chat_con_ia_global.html
+     - Archivos modificados:
+         - backend/db/chat_inteligencia_artificial.go
+         - backend/db/chat_inteligencia_artificial_test.go
+         - backend/handlers/chat_con_inteligencia_artificial_controller.go
+         - backend/main.go
+         - web/super_administrador.html
+         - documentos/estructura_bd.md
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se crea el chat IA global del panel super con contexto consolidado de `pcs_empresas` y `pcs_superadministrador`, persistencia propia en tablas `super_ai_*`, selector de modelo y acceso restringido a sesiones de `super_administrador`.
+     - Verificacion tecnica:
+         - `go test ./handlers -run 'TestSuperAI|TestModelosHandler|TestModeloPreferidoHandler|TestHistorialHandler' -count=1`: ok.
+         - `go test ./db -run 'Test(EmpresaAI|SuperAI)' -count=1`: ok.
+
+ - 2026-04-18: Chat IA empresarial habilita selector DeepSeek y Ambis Local
+     - Archivos modificados:
+         - backend/handlers/ai_credentials_catalog.go
+         - backend/handlers/ai_config_handlers.go
+         - backend/handlers/chat_con_inteligencia_artificial_controller.go
+         - backend/handlers/chat_con_inteligencia_artificial_controller_test.go
+         - backend/handlers/system_empresas_handlers_test.go
+         - backend/db/chat_inteligencia_artificial_test.go
+         - web/administrar_empresa/chat_con_inteligencia_artificial.html
+         - web/super/configuracion_avanzada.html
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: El chat IA de empresa ahora permite elegir entre `deepseek:deepseek-chat` y `ollama:ambis`. Ambis consume `codellama:7b` desde Ollama en el VPS por `127.0.0.1:11434`, manteniendo el servicio cerrado al exterior y preservando el filtro de contexto por `empresa_id` y cuenta Google autenticada.
+     - Verificacion tecnica:
+         - `go test ./handlers -run 'Test(ModelosHandler|ModeloPreferidoHandler|HistorialHandler|ConsultarHandler|AIModelsConfigHandlerSaveDeepSeekEncrypted)' -count=1`: ok.
+         - `go test ./db -run 'TestEmpresaAIModeloPreferidoUpsertAndGet|TestRegisterEmpresaAIConsultaAcumulaUsoDiario' -count=1`: ok.
+
+     - 2026-04-18: Integración de emulador NES para pruebas locales (web/juegos/nes)
+         - Archivos creados:
+             - web/juegos/nes/index.html
+             - web/juegos/nes/nes-wrapper.js
+             - web/juegos/nes/styles.css
+             - web/juegos/nes/README.md
+         - Archivos modificados:
+             - documentos/historial_de_cambios
+         - Descripcion: Se integra un emulador ligero basado en `jsnes` con una UI orientada a móviles (canvas arriba y controles táctiles abajo). Se incluyen 5 ranuras para ROMs que se guardan en `localStorage`, soporte para subir ROMs desde el dispositivo y botones para guardar/restaurar partidas usando snapshots JSON si el build de emulador lo soporta. No se incluyen ROMs por razones de derechos; el usuario debe subir sus propias ROMs.
+         - Verificacion tecnica:
+             - Abrir `web/juegos/nes/index.html` en un navegador móvil y desktop para comprobar:
+                 - Canvas renderiza tras carga de ROM.
+                 - Controles táctiles y teclado mapeados.
+                 - Las 5 ranuras guardan ROMs en `localStorage` y permiten cargar/limpiar.
+                 - Guardado/restauración de partidas intenta usar `nes.toJSON()/nes.fromJSON()` cuando están disponibles.
+
+
+ - 2026-04-18: Gobernanza tecnica formaliza integraciones externas y reconciliacion documental
+     - Archivos creados:
+         - documentos/gobernanza_tecnica/contratos/contrato_integraciones_bancarias_y_conectores_externos.md
+         - documentos/gobernanza_tecnica/runbooks/runbook_reconciliacion_documental_fiscal_y_contable_externa.md
+     - Archivos modificados:
+         - documentos/gobernanza_tecnica/README.md
+         - documentos/gobernanza_tecnica/plan_implementacion_gobernanza_tecnica.md
+         - documentos/gobernanza_tecnica/contratos/README.md
+         - documentos/gobernanza_tecnica/runbooks/README.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se agrega el contrato tecnico del frente de integraciones externas y un runbook para reconciliacion documental fiscal y contable externa, alineados al backend real y a sus pruebas.
+     - Verificacion tecnica:
+         - `get_errors` ejecutado sobre la documentacion creada y modificada: sin errores.
+
+ - 2026-04-18: Gobernanza tecnica formaliza interoperabilidad documental e integraciones externas
+     - Archivos creados:
+         - documentos/gobernanza_tecnica/contratos/contrato_interoperabilidad_documental_contable_y_fiscal_externa.md
+         - documentos/gobernanza_tecnica/runbooks/runbook_contingencias_integraciones_bancarias_y_conectores.md
+     - Archivos modificados:
+         - documentos/gobernanza_tecnica/README.md
+         - documentos/gobernanza_tecnica/plan_implementacion_gobernanza_tecnica.md
+         - documentos/gobernanza_tecnica/contratos/README.md
+         - documentos/gobernanza_tecnica/runbooks/README.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se agrega el contrato tecnico del frente documental-contable/fiscal y un runbook de contingencias para integraciones bancarias y conectores externos, alineados al backend real y a sus pruebas.
+     - Verificacion tecnica:
+         - `get_errors` ejecutado sobre la documentacion creada y modificada: sin errores.
+
+ - 2026-04-18: Gobernanza tecnica formaliza cierre de periodo y conciliacion bancaria
+     - Archivos creados:
+         - documentos/gobernanza_tecnica/contratos/contrato_conciliacion_bancaria_y_cierre_periodo_contable.md
+         - documentos/gobernanza_tecnica/runbooks/runbook_cierre_periodo_y_conciliacion_bancaria.md
+     - Archivos modificados:
+         - documentos/gobernanza_tecnica/README.md
+         - documentos/gobernanza_tecnica/plan_implementacion_gobernanza_tecnica.md
+         - documentos/gobernanza_tecnica/contratos/README.md
+         - documentos/gobernanza_tecnica/runbooks/README.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se agrega el contrato tecnico del flujo de periodos contables y conciliacion bancaria, junto con el runbook operativo para cierres, bloqueos por periodo cerrado, importacion de extractos y desviaciones de matching financiero.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en la documentacion creada y modificada.
+
+ - 2026-04-18: Estaciones agrega tarjeta especial YouTube con vista embebida y ampliacion
+     - Archivos creados:
+         - web/administrar_empresa/youtube_station_browser.html
+     - Archivos modificados:
+         - web/administrar_empresa/configuracion_de_estaciones.html
+         - web/administrar_empresa/estaciones.html
+         - web/estilos.css
+         - documentos/descripcion_del_proyecto
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se agrega una estacion especial `YouTube` dentro del modulo de estaciones. La configuracion empresarial puede activarla con un toggle dedicado, la vista operativa la renderiza como tarjeta embebida responsive y un cuadrito `[]` permite abrirla en un overlay aproximado de `500 x 500`.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/administrar_empresa/configuracion_de_estaciones.html`, `web/administrar_empresa/estaciones.html`, `web/administrar_empresa/youtube_station_browser.html` y `web/estilos.css`.
+
+ - 2026-04-18: Gobernanza tecnica formaliza soporte remoto y contingencia de reportes
+     - Archivos creados:
+         - documentos/gobernanza_tecnica/contratos/contrato_soporte_remoto_por_empresa_y_mesa_tecnica_central.md
+         - documentos/gobernanza_tecnica/runbooks/runbook_reportes_programados_y_exportaciones_contables.md
+         - documentos/gobernanza_tecnica/runbooks/runbook_soporte_remoto_sesiones_y_dispositivos.md
+     - Archivos modificados:
+         - documentos/gobernanza_tecnica/README.md
+         - documentos/gobernanza_tecnica/plan_implementacion_gobernanza_tecnica.md
+         - documentos/gobernanza_tecnica/runbooks/README.md
+         - documentos/gobernanza_tecnica/contratos/README.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se agrega el contrato técnico de soporte remoto multiempresa y se incorporan runbooks de recuperación para reportes programados/exportaciones y para sesiones/dispositivos de soporte remoto, alineados al código real del backend empresarial, público y super.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en la documentacion creada y modificada.
+
+ - 2026-04-18: Gobernanza tecnica formaliza DIAN, alertas de reinicio y reportes multiformato
+     - Archivos creados:
+         - documentos/gobernanza_tecnica/runbooks/runbook_dian_set_pruebas_y_diagnostico_oficial.md
+         - documentos/gobernanza_tecnica/runbooks/runbook_alertas_reinicio_y_monitoreo_gmail_smtp.md
+         - documentos/gobernanza_tecnica/contratos/contrato_reportes_contables_financieros_y_exportacion_multiformato.md
+     - Archivos modificados:
+         - documentos/gobernanza_tecnica/README.md
+         - documentos/gobernanza_tecnica/plan_implementacion_gobernanza_tecnica.md
+         - documentos/gobernanza_tecnica/runbooks/README.md
+         - documentos/gobernanza_tecnica/contratos/README.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se agregan dos runbooks nuevos para el soporte real de DIAN y del monitoreo Gmail/reinicio, y un contrato tecnico nuevo para el modulo de reportes empresariales y globales super con exportacion multiformato, plantillas, programacion y validacion de consistencia.
+     - Verificacion tecnica:
+	        - Diagnostico del editor sin errores en la documentacion creada y modificada.
+
+ - 2026-04-18: Gobernanza tecnica formaliza facturacion electronica y documentos transaccionales
+     - Archivos creados:
+         - documentos/gobernanza_tecnica/contratos/contrato_facturacion_electronica_y_documentos_transaccionales.md
+     - Archivos modificados:
+         - documentos/gobernanza_tecnica/plan_implementacion_gobernanza_tecnica.md
+         - documentos/gobernanza_tecnica/contratos/README.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se agrega el contrato tecnico del ciclo documental de facturacion por empresa, cubriendo emision, anulacion, nota credito, documentos de venta desde carrito, correo al cliente, reintentos, reconciliacion fiscal y base operativa DIAN Colombia con sus limites vigentes.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en la documentacion creada y modificada.
+
+ - 2026-04-18: Gobernanza tecnica formaliza permisos_contexto y wrappers de api empresa
+     - Archivos creados:
+         - documentos/gobernanza_tecnica/contratos/contrato_permisos_contexto_y_wrappers_api_empresa.md
+     - Archivos modificados:
+         - documentos/gobernanza_tecnica/plan_implementacion_gobernanza_tecnica.md
+         - documentos/gobernanza_tecnica/contratos/README.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se agrega el contrato tecnico de la capa de autorizacion de `/api/empresa/*`, cubriendo wrappers por modulo, `permisos_contexto`, overrides dinamicos, restricciones de licencia, rol efectivo y aprobacion trazable para cambios criticos de seguridad.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en la documentacion creada y modificada.
+
+ - 2026-04-18: Gobernanza tecnica formaliza contrato de venta publica empresarial por empresa
+     - Archivos creados:
+         - documentos/gobernanza_tecnica/contratos/contrato_venta_publica_empresarial_por_empresa.md
+     - Archivos modificados:
+         - documentos/gobernanza_tecnica/plan_implementacion_gobernanza_tecnica.md
+         - documentos/gobernanza_tecnica/contratos/README.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se agrega el contrato tecnico del modulo de venta publica por empresa, cubriendo configuracion de tienda, catalogo, creacion de orden, apertura de pagos Wompi/Epayco, consulta de estado y conciliacion de webhooks con aislamiento por `empresa_id`.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en la documentacion creada y modificada.
+
+ - 2026-04-18: Gobernanza tecnica extiende cobertura a autenticacion y arranque PostgreSQL por tunel local
+     - Archivos creados:
+         - documentos/gobernanza_tecnica/contratos/contrato_autenticacion_administrativa_y_usuarios_empresa.md
+         - documentos/gobernanza_tecnica/runbooks/runbook_arranque_postgresql_tunel_local.md
+     - Archivos modificados:
+         - documentos/gobernanza_tecnica/plan_implementacion_gobernanza_tecnica.md
+         - documentos/gobernanza_tecnica/contratos/README.md
+         - documentos/gobernanza_tecnica/runbooks/README.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se agregan el contrato tecnico del flujo de autenticacion administrativa y de usuarios de empresa, y el runbook operativo del arranque local del backend contra PostgreSQL del VPS por tunel SSH, fijando invariantes de rol, contrato vigente, alcance por `empresa_id` y reescritura del DSN hacia `DB_VPS_LOCAL_PORT`.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en la documentacion creada y modificada.
+
+ - 2026-04-18: Gobernanza tecnica extiende cobertura a estaciones, sensores y ventas simples por estacion
+     - Archivos creados:
+         - documentos/gobernanza_tecnica/contratos/contrato_estaciones_sensores_ventas_simple.md
+         - documentos/gobernanza_tecnica/runbooks/runbook_estaciones_sensores_ventas_simple.md
+     - Archivos modificados:
+         - documentos/gobernanza_tecnica/plan_implementacion_gobernanza_tecnica.md
+         - documentos/gobernanza_tecnica/contratos/README.md
+         - documentos/gobernanza_tecnica/runbooks/README.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se agregan el contrato tecnico y el runbook operativo del flujo de estaciones, sensores y ventas simples por estacion, fijando las reglas de `estaciones_config`, la sincronizacion backend del carrito base, la lectura de sensores por `last_seen` y la recuperacion de incidentes sobre `pagar_estacion`, metricas y documento de venta.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en la documentacion creada y modificada.
+
+ - 2026-04-18: Se implanta la base de gobernanza tecnica documental del repositorio
+     - Archivos creados:
+         - documentos/README.md
+         - documentos/gobernanza_tecnica/README.md
+         - documentos/gobernanza_tecnica/plan_implementacion_gobernanza_tecnica.md
+         - documentos/gobernanza_tecnica/estandares_de_cambio_seguro.md
+         - documentos/gobernanza_tecnica/adr/ADR-0001-frontera-multiempresa-empresa-id.md
+         - documentos/gobernanza_tecnica/adr/ADR-0002-postgresql-runtime-canonico-vps.md
+         - documentos/gobernanza_tecnica/contratos/README.md
+         - documentos/gobernanza_tecnica/contratos/contrato_checkout_licencias_publico.md
+         - documentos/gobernanza_tecnica/runbooks/README.md
+         - documentos/gobernanza_tecnica/runbooks/runbook_checkout_licencias.md
+     - Archivos modificados:
+         - documentos/descripcion_del_proyecto
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se agrega una capa formal de gobernanza tecnica para el repositorio con indice documental, plan de implantacion, estandares de cambio seguro, ADRs iniciales, catalogo de contratos, primer contrato critico y primer runbook operativo del checkout de licencias.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en la documentacion creada y modificada.
+
  - 2026-04-18: Arranque PostgreSQL respeta el puerto del tunel local
      - Archivos modificados:
          - backend/main.go
@@ -10108,6 +10545,85 @@ Archivos modificados:
 PushStatus: OK
 Archivos modificados:
 - CHANGELOG.md
+
+2026-04-18: Equipo interno de cuatro agentes dirigido por agente_go
+- Se actualiza `.github/agents/agente_go.agent.md` para dejar a `agente_go` como agente principal, punto de entrada por defecto y director de `agente_backend_db`, `agente_frontend_ux` y `agente_qa_operacion`.
+- Se crean `.github/agents/agente_backend_db.agent.md`, `.github/agents/agente_frontend_ux.agent.md`, `.github/agents/agente_qa_operacion.agent.md` y `.github/agents/README.md` para formalizar responsabilidades y protocolo de coordinación del equipo.
+- Se actualizan `copilot-instructions.md`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos` y `CHANGELOG.md` para alinear la arquitectura interna y la trazabilidad documental del nuevo modelo de agentes.
+- Archivos afectados:
+    - `.github/agents/agente_go.agent.md`
+    - `.github/agents/agente_backend_db.agent.md`
+    - `.github/agents/agente_frontend_ux.agent.md`
+    - `.github/agents/agente_qa_operacion.agent.md`
+    - `.github/agents/README.md`
+    - `copilot-instructions.md`
+    - `documentos/descripcion_del_proyecto`
+    - `documentos/diagramas/estructura_del_codigo.md`
+    - `documentos/descripcion_de_modulos`
+    - `documentos/matriz_roles_permisos_pos_multiempresa.md`
+    - `documentos/descripcion_de_archivos`
+    - `documentos/historial_de_cambios`
+    - `CHANGELOG.md`
+
+2026-04-18: Protocolo formal de delegacion y plantilla de trabajo del equipo de agentes
+- Se crean `.github/agents/protocolo_delegacion.md` y `.github/agents/plantilla_trabajo_por_modulo.md` para convertir en reglas operativas los siguientes pasos del equipo dirigido por `agente_go`.
+- Se actualizan `.github/agents/README.md`, `.github/agents/agente_go.agent.md`, `.github/agents/agente_backend_db.agent.md`, `.github/agents/agente_frontend_ux.agent.md` y `.github/agents/agente_qa_operacion.agent.md` para incorporar matriz de decision, plantilla comun y especializacion por modulos criticos del sistema.
+- Se actualizan `copilot-instructions.md`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos` y `CHANGELOG.md` para dejar trazabilidad completa del protocolo y de la especializacion modular del equipo.
+- Archivos afectados:
+    - `.github/agents/protocolo_delegacion.md`
+    - `.github/agents/plantilla_trabajo_por_modulo.md`
+    - `.github/agents/README.md`
+    - `.github/agents/agente_go.agent.md`
+    - `.github/agents/agente_backend_db.agent.md`
+    - `.github/agents/agente_frontend_ux.agent.md`
+    - `.github/agents/agente_qa_operacion.agent.md`
+    - `copilot-instructions.md`
+    - `documentos/descripcion_del_proyecto`
+    - `documentos/diagramas/estructura_del_codigo.md`
+    - `documentos/descripcion_de_modulos`
+    - `documentos/matriz_roles_permisos_pos_multiempresa.md`
+    - `documentos/descripcion_de_archivos`
+    - `documentos/historial_de_cambios`
+    - `CHANGELOG.md`
+
+2026-04-18: Tabla rapida por modulo, ejemplos reales y endurecimiento de agente_go en modulos criticos
+- Se actualiza `.github/agents/protocolo_delegacion.md` con una tabla rapida por modulo, tres ejemplos reales de delegacion y una regla de cierre mas estricta para tareas criticas.
+- Se actualiza `.github/agents/plantilla_trabajo_por_modulo.md` con ejemplos minimos de aplicacion para pagos, estaciones y autenticacion/permisos.
+- Se actualizan `.github/agents/agente_go.agent.md`, `.github/agents/README.md`, `copilot-instructions.md`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos` y `CHANGELOG.md` para forzar una consulta mas rapida del protocolo y una participacion obligatoria mas clara en modulos criticos.
+- Archivos afectados:
+    - `.github/agents/protocolo_delegacion.md`
+    - `.github/agents/plantilla_trabajo_por_modulo.md`
+    - `.github/agents/agente_go.agent.md`
+    - `.github/agents/README.md`
+    - `copilot-instructions.md`
+    - `documentos/descripcion_del_proyecto`
+    - `documentos/diagramas/estructura_del_codigo.md`
+    - `documentos/descripcion_de_modulos`
+    - `documentos/matriz_roles_permisos_pos_multiempresa.md`
+    - `documentos/descripcion_de_archivos`
+    - `documentos/historial_de_cambios`
+    - `CHANGELOG.md`
+
+2026-04-18: Semaforo ejecutivo, ejemplo completo y rechazo de cierres sin evidencia por frente
+- Se actualiza `.github/agents/protocolo_delegacion.md` con un semaforo ejecutivo por modulo y un ejemplo completo extremo a extremo para un caso real de venta por estacion con documento.
+- Se actualiza `.github/agents/plantilla_trabajo_por_modulo.md` con la evidencia minima esperada para backend, frontend y QA.
+- Se actualizan `.github/agents/agente_backend_db.agent.md`, `.github/agents/agente_frontend_ux.agent.md` y `.github/agents/agente_qa_operacion.agent.md` para impedir cierres sin evidencia suficiente de cada frente.
+- Se actualizan `.github/agents/README.md`, `copilot-instructions.md`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos` y `CHANGELOG.md` para dejar trazabilidad de esta capa adicional de endurecimiento operativo.
+- Archivos afectados:
+    - `.github/agents/protocolo_delegacion.md`
+    - `.github/agents/plantilla_trabajo_por_modulo.md`
+    - `.github/agents/agente_backend_db.agent.md`
+    - `.github/agents/agente_frontend_ux.agent.md`
+    - `.github/agents/agente_qa_operacion.agent.md`
+    - `.github/agents/README.md`
+    - `copilot-instructions.md`
+    - `documentos/descripcion_del_proyecto`
+    - `documentos/diagramas/estructura_del_codigo.md`
+    - `documentos/descripcion_de_modulos`
+    - `documentos/matriz_roles_permisos_pos_multiempresa.md`
+    - `documentos/descripcion_de_archivos`
+    - `documentos/historial_de_cambios`
+    - `CHANGELOG.md`
 - backend/db/productos.go
 - backend/db/productos_categorias_test.go
 - backend/db/ubicacion_gps.go

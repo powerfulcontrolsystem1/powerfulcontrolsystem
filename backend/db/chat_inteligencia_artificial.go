@@ -58,6 +58,56 @@ type EmpresaAIModeloPreferido struct {
 	Observaciones      string `json:"observaciones"`
 }
 
+// SuperAIConsulta representa una consulta/respuesta de IA en alcance global super.
+type SuperAIConsulta struct {
+	ID               int64  `json:"id"`
+	AdminEmail       string `json:"admin_email"`
+	Provider         string `json:"provider"`
+	ModelID          string `json:"model_id"`
+	Pregunta         string `json:"pregunta"`
+	Respuesta        string `json:"respuesta"`
+	PromptTokens     int64  `json:"prompt_tokens"`
+	CompletionTokens int64  `json:"completion_tokens"`
+	TotalTokens      int64  `json:"total_tokens"`
+	FechaConsulta    string `json:"fecha_consulta"`
+	PlanActual       string `json:"plan_actual"`
+	FechaCreacion    string `json:"fecha_creacion"`
+	FechaActualiz    string `json:"fecha_actualizacion"`
+	UsuarioCreador   string `json:"usuario_creador"`
+	Estado           string `json:"estado"`
+	Observaciones    string `json:"observaciones"`
+}
+
+// SuperAIUsoDiario representa uso diario por administrador/proveedor/modelo.
+type SuperAIUsoDiario struct {
+	ID            int64  `json:"id"`
+	AdminEmail    string `json:"admin_email"`
+	Provider      string `json:"provider"`
+	ModelID       string `json:"model_id"`
+	FechaUso      string `json:"fecha_uso"`
+	Consultas     int64  `json:"consultas_total"`
+	TokensTotal   int64  `json:"tokens_total"`
+	PlanActual    string `json:"plan_actual"`
+	FechaCreacion string `json:"fecha_creacion"`
+	FechaActualiz string `json:"fecha_actualizacion"`
+	UsuarioCread  string `json:"usuario_creador"`
+	Estado        string `json:"estado"`
+	Observaciones string `json:"observaciones"`
+}
+
+// SuperAIModeloPreferido vincula el modelo IA preferido por administrador super.
+type SuperAIModeloPreferido struct {
+	ID                 int64  `json:"id"`
+	AdminEmail         string `json:"admin_email"`
+	Provider           string `json:"provider"`
+	ModelID            string `json:"model_id"`
+	FechaCreacion      string `json:"fecha_creacion"`
+	FechaActualizacion string `json:"fecha_actualizacion"`
+	UsuarioCreador     string `json:"usuario_creador"`
+	Estado             string `json:"estado"`
+	Observaciones      string `json:"observaciones"`
+}
+
 // EnsureEmpresaAIChatSchema crea/ajusta el esquema del modulo de chat con IA por empresa.
 func EnsureEmpresaAIChatSchema(dbConn *sql.DB) error {
 	stmts := []string{
@@ -189,6 +239,136 @@ func EnsureEmpresaAIChatSchema(dbConn *sql.DB) error {
 	return nil
 }
 
+// EnsureSuperAIChatSchema crea/ajusta el esquema del chat IA global para super administrador.
+func EnsureSuperAIChatSchema(dbConn *sql.DB) error {
+	stmts := []string{
+		`CREATE TABLE IF NOT EXISTS super_ai_consultas (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			admin_email TEXT NOT NULL,
+			provider TEXT NOT NULL,
+			model_id TEXT NOT NULL,
+			pregunta TEXT NOT NULL,
+			respuesta TEXT,
+			prompt_tokens INTEGER DEFAULT 0,
+			completion_tokens INTEGER DEFAULT 0,
+			total_tokens INTEGER DEFAULT 0,
+			fecha_consulta TEXT DEFAULT (datetime('now','localtime')),
+			plan_actual TEXT DEFAULT 'free',
+			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			usuario_creador TEXT,
+			estado TEXT DEFAULT 'activo',
+			observaciones TEXT
+		);`,
+		`CREATE TABLE IF NOT EXISTS super_ai_uso_diario (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			admin_email TEXT NOT NULL,
+			provider TEXT NOT NULL,
+			model_id TEXT NOT NULL,
+			fecha_uso TEXT NOT NULL,
+			consultas_total INTEGER DEFAULT 0,
+			tokens_total INTEGER DEFAULT 0,
+			plan_actual TEXT DEFAULT 'free',
+			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			usuario_creador TEXT,
+			estado TEXT DEFAULT 'activo',
+			observaciones TEXT,
+			UNIQUE(admin_email, provider, model_id, fecha_uso)
+		);`,
+		`CREATE TABLE IF NOT EXISTS super_ai_modelo_preferido (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			admin_email TEXT NOT NULL,
+			provider TEXT,
+			model_id TEXT NOT NULL,
+			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			usuario_creador TEXT,
+			estado TEXT DEFAULT 'activo',
+			observaciones TEXT,
+			UNIQUE(admin_email)
+		);`,
+		`CREATE INDEX IF NOT EXISTS ix_super_ai_consultas_admin_fecha ON super_ai_consultas(admin_email, fecha_consulta DESC, id DESC);`,
+		`CREATE INDEX IF NOT EXISTS ix_super_ai_consultas_admin_modelo ON super_ai_consultas(admin_email, provider, model_id);`,
+		`CREATE INDEX IF NOT EXISTS ix_super_ai_uso_diario_admin_fecha ON super_ai_uso_diario(admin_email, fecha_uso DESC);`,
+		`CREATE INDEX IF NOT EXISTS ix_super_ai_modelo_preferido_admin ON super_ai_modelo_preferido(admin_email, estado);`,
+	}
+	for _, stmt := range stmts {
+		if _, err := dbConn.Exec(stmt); err != nil {
+			return err
+		}
+	}
+
+	if err := ensureColumnIfMissing(dbConn, "super_ai_consultas", "prompt_tokens", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "super_ai_consultas", "completion_tokens", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "super_ai_consultas", "total_tokens", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "super_ai_consultas", "fecha_consulta", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "super_ai_consultas", "plan_actual", "TEXT DEFAULT 'free'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "super_ai_consultas", "fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "super_ai_consultas", "usuario_creador", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "super_ai_consultas", "estado", "TEXT DEFAULT 'activo'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "super_ai_consultas", "observaciones", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "super_ai_uso_diario", "consultas_total", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "super_ai_uso_diario", "tokens_total", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "super_ai_uso_diario", "plan_actual", "TEXT DEFAULT 'free'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "super_ai_uso_diario", "fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "super_ai_uso_diario", "usuario_creador", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "super_ai_uso_diario", "estado", "TEXT DEFAULT 'activo'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "super_ai_uso_diario", "observaciones", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "super_ai_modelo_preferido", "provider", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "super_ai_modelo_preferido", "model_id", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "super_ai_modelo_preferido", "fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "super_ai_modelo_preferido", "usuario_creador", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "super_ai_modelo_preferido", "estado", "TEXT DEFAULT 'activo'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "super_ai_modelo_preferido", "observaciones", "TEXT"); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // GetEmpresaAIModeloPreferido obtiene el modelo IA vinculado a la cuenta Google del admin.
 func GetEmpresaAIModeloPreferido(dbConn *sql.DB, empresaID int64, adminEmail string) (string, error) {
 	if empresaID <= 0 {
@@ -204,6 +384,27 @@ func GetEmpresaAIModeloPreferido(dbConn *sql.DB, empresaID int64, adminEmail str
 	FROM empresa_ai_modelo_preferido
 	WHERE empresa_id = ? AND admin_email = ? AND COALESCE(estado, 'activo') <> 'inactivo'
 	LIMIT 1`, empresaID, adminEmail).Scan(&modelID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return "", nil
+		}
+		return "", err
+	}
+	return strings.TrimSpace(modelID), nil
+}
+
+// GetSuperAIModeloPreferido obtiene el modelo IA preferido por administrador super.
+func GetSuperAIModeloPreferido(dbConn *sql.DB, adminEmail string) (string, error) {
+	adminEmail = aiNormalizeAdminEmail(adminEmail)
+	if adminEmail == "" {
+		return "", fmt.Errorf("admin_email es obligatorio")
+	}
+
+	var modelID string
+	err := dbConn.QueryRow(`SELECT COALESCE(model_id, '')
+	FROM super_ai_modelo_preferido
+	WHERE admin_email = ? AND COALESCE(estado, 'activo') <> 'inactivo'
+	LIMIT 1`, adminEmail).Scan(&modelID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return "", nil
@@ -250,6 +451,46 @@ func UpsertEmpresaAIModeloPreferido(dbConn *sql.DB, empresaID int64, adminEmail,
 		observaciones = excluded.observaciones,
 		fecha_actualizacion = datetime('now','localtime')`,
 		empresaID,
+		adminEmail,
+		provider,
+		modelID,
+		strings.TrimSpace(usuarioCreador),
+	)
+	return err
+}
+
+// UpsertSuperAIModeloPreferido registra/actualiza el modelo preferido por administrador super.
+func UpsertSuperAIModeloPreferido(dbConn *sql.DB, adminEmail, modelID, usuarioCreador string) error {
+	adminEmail = aiNormalizeAdminEmail(adminEmail)
+	if adminEmail == "" {
+		return fmt.Errorf("admin_email es obligatorio")
+	}
+	modelID = aiNormalizeModelID(modelID)
+	if modelID == "" {
+		return fmt.Errorf("model_id es obligatorio")
+	}
+	provider := aiProviderFromModelID(modelID)
+	if strings.TrimSpace(usuarioCreador) == "" {
+		usuarioCreador = adminEmail
+	}
+
+	_, err := dbConn.Exec(`INSERT INTO super_ai_modelo_preferido (
+		admin_email,
+		provider,
+		model_id,
+		usuario_creador,
+		estado,
+		observaciones,
+		fecha_creacion,
+		fecha_actualizacion
+	) VALUES (?, ?, ?, ?, 'activo', 'preferencia de modelo IA global super', datetime('now','localtime'), datetime('now','localtime'))
+	ON CONFLICT(admin_email) DO UPDATE SET
+		provider = excluded.provider,
+		model_id = excluded.model_id,
+		usuario_creador = excluded.usuario_creador,
+		estado = 'activo',
+		observaciones = excluded.observaciones,
+		fecha_actualizacion = datetime('now','localtime')`,
 		adminEmail,
 		provider,
 		modelID,
@@ -372,6 +613,69 @@ func GetEmpresaAIUsoDiario(dbConn *sql.DB, empresaID int64, provider, modelID, f
 		return nil, err
 	}
 	return &out, nil
+}
+
+// GetSuperAIUsoDiario obtiene el uso diario para un modelo en el alcance global super.
+func GetSuperAIUsoDiario(dbConn *sql.DB, adminEmail, provider, modelID, fechaUso string) (*SuperAIUsoDiario, error) {
+	adminEmail = aiNormalizeAdminEmail(adminEmail)
+	provider = aiNormalizeProvider(provider)
+	modelID = aiNormalizeModelID(modelID)
+	fechaUso = strings.TrimSpace(fechaUso)
+	if adminEmail == "" {
+		return &SuperAIUsoDiario{}, fmt.Errorf("admin_email es obligatorio")
+	}
+	if provider == "" || modelID == "" || fechaUso == "" {
+		return &SuperAIUsoDiario{}, fmt.Errorf("provider, model_id y fecha_uso son obligatorios")
+	}
+
+	item := &SuperAIUsoDiario{
+		AdminEmail: adminEmail,
+		Provider:   provider,
+		ModelID:    modelID,
+		FechaUso:   fechaUso,
+		PlanActual: "free",
+	}
+	err := dbConn.QueryRow(`SELECT
+		id,
+		COALESCE(admin_email, ''),
+		COALESCE(provider, ''),
+		COALESCE(model_id, ''),
+		COALESCE(fecha_uso, ''),
+		COALESCE(consultas_total, 0),
+		COALESCE(tokens_total, 0),
+		COALESCE(plan_actual, 'free'),
+		COALESCE(fecha_creacion, ''),
+		COALESCE(fecha_actualizacion, ''),
+		COALESCE(usuario_creador, ''),
+		COALESCE(estado, 'activo'),
+		COALESCE(observaciones, '')
+	FROM super_ai_uso_diario
+	WHERE admin_email = ? AND provider = ? AND model_id = ? AND fecha_uso = ?
+	LIMIT 1`, adminEmail, provider, modelID, fechaUso).Scan(
+		&item.ID,
+		&item.AdminEmail,
+		&item.Provider,
+		&item.ModelID,
+		&item.FechaUso,
+		&item.Consultas,
+		&item.TokensTotal,
+		&item.PlanActual,
+		&item.FechaCreacion,
+		&item.FechaActualiz,
+		&item.UsuarioCread,
+		&item.Estado,
+		&item.Observaciones,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return item, nil
+		}
+		return &SuperAIUsoDiario{}, err
+	}
+	if strings.TrimSpace(item.PlanActual) == "" {
+		item.PlanActual = "free"
+	}
+	return item, nil
 }
 
 // RegisterEmpresaAIConsulta inserta la consulta IA y acumula el uso diario.
@@ -503,6 +807,114 @@ func RegisterEmpresaAIConsulta(dbConn *sql.DB, in EmpresaAIConsulta) (int64, err
 	return id, nil
 }
 
+// RegisterSuperAIConsulta registra una consulta y acumula uso diario global super.
+func RegisterSuperAIConsulta(dbConn *sql.DB, input SuperAIConsulta) (int64, error) {
+	input.AdminEmail = aiNormalizeAdminEmail(input.AdminEmail)
+	input.Provider = aiNormalizeProvider(input.Provider)
+	input.ModelID = aiNormalizeModelID(input.ModelID)
+	input.Pregunta = strings.TrimSpace(input.Pregunta)
+	input.Respuesta = strings.TrimSpace(input.Respuesta)
+	if input.AdminEmail == "" {
+		return 0, fmt.Errorf("admin_email es obligatorio")
+	}
+	if input.Provider == "" || input.ModelID == "" {
+		return 0, fmt.Errorf("provider y model_id son obligatorios")
+	}
+	if input.Pregunta == "" {
+		return 0, fmt.Errorf("pregunta es obligatoria")
+	}
+	if strings.TrimSpace(input.PlanActual) == "" {
+		input.PlanActual = "free"
+	}
+	if strings.TrimSpace(input.UsuarioCreador) == "" {
+		input.UsuarioCreador = input.AdminEmail
+	}
+	if strings.TrimSpace(input.Estado) == "" {
+		input.Estado = "activo"
+	}
+	if strings.TrimSpace(input.FechaConsulta) == "" {
+		input.FechaConsulta = time.Now().Format("2006-01-02 15:04:05")
+	}
+
+	res, err := dbConn.Exec(`INSERT INTO super_ai_consultas (
+		admin_email,
+		provider,
+		model_id,
+		pregunta,
+		respuesta,
+		prompt_tokens,
+		completion_tokens,
+		total_tokens,
+		fecha_consulta,
+		plan_actual,
+		fecha_creacion,
+		fecha_actualizacion,
+		usuario_creador,
+		estado,
+		observaciones
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)`,
+		input.AdminEmail,
+		input.Provider,
+		input.ModelID,
+		input.Pregunta,
+		input.Respuesta,
+		input.PromptTokens,
+		input.CompletionTokens,
+		input.TotalTokens,
+		input.FechaConsulta,
+		input.PlanActual,
+		strings.TrimSpace(input.UsuarioCreador),
+		strings.TrimSpace(input.Estado),
+		strings.TrimSpace(input.Observaciones),
+	)
+	if err != nil {
+		return 0, err
+	}
+	id, _ := res.LastInsertId()
+
+	fechaUso := input.FechaConsulta
+	if len(fechaUso) >= 10 {
+		fechaUso = fechaUso[:10]
+	}
+	if fechaUso == "" {
+		fechaUso = time.Now().Format("2006-01-02")
+	}
+	_, err = dbConn.Exec(`INSERT INTO super_ai_uso_diario (
+		admin_email,
+		provider,
+		model_id,
+		fecha_uso,
+		consultas_total,
+		tokens_total,
+		plan_actual,
+		fecha_creacion,
+		fecha_actualizacion,
+		usuario_creador,
+		estado,
+		observaciones
+	) VALUES (?, ?, ?, ?, 1, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, 'activo', 'uso diario chat IA global super')
+	ON CONFLICT(admin_email, provider, model_id, fecha_uso) DO UPDATE SET
+		consultas_total = COALESCE(super_ai_uso_diario.consultas_total, 0) + 1,
+		tokens_total = COALESCE(super_ai_uso_diario.tokens_total, 0) + excluded.tokens_total,
+		plan_actual = excluded.plan_actual,
+		fecha_actualizacion = datetime('now','localtime'),
+		usuario_creador = excluded.usuario_creador,
+		estado = 'activo'`,
+		input.AdminEmail,
+		input.Provider,
+		input.ModelID,
+		fechaUso,
+		input.TotalTokens,
+		input.PlanActual,
+		strings.TrimSpace(input.UsuarioCreador),
+	)
+	if err != nil {
+		return id, err
+	}
+
+	return id, nil
+}
+
 // ListEmpresaAIConsultasRecientes devuelve historial de consultas por empresa.
 func ListEmpresaAIConsultasRecientes(dbConn *sql.DB, empresaID int64, limit int) ([]EmpresaAIConsulta, error) {
 	if empresaID <= 0 {
@@ -569,6 +981,76 @@ func ListEmpresaAIConsultasRecientes(dbConn *sql.DB, empresaID int64, limit int)
 	return out, rows.Err()
 }
 
+// ListSuperAIConsultasRecientes devuelve historial reciente por administrador super.
+func ListSuperAIConsultasRecientes(dbConn *sql.DB, adminEmail string, limit int) ([]SuperAIConsulta, error) {
+	adminEmail = aiNormalizeAdminEmail(adminEmail)
+	if adminEmail == "" {
+		return nil, fmt.Errorf("admin_email es obligatorio")
+	}
+	if limit <= 0 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100
+	}
+
+	rows, err := dbConn.Query(`SELECT
+		id,
+		COALESCE(admin_email, ''),
+		COALESCE(provider, ''),
+		COALESCE(model_id, ''),
+		COALESCE(pregunta, ''),
+		COALESCE(respuesta, ''),
+		COALESCE(prompt_tokens, 0),
+		COALESCE(completion_tokens, 0),
+		COALESCE(total_tokens, 0),
+		COALESCE(fecha_consulta, ''),
+		COALESCE(plan_actual, 'free'),
+		COALESCE(fecha_creacion, ''),
+		COALESCE(fecha_actualizacion, ''),
+		COALESCE(usuario_creador, ''),
+		COALESCE(estado, 'activo'),
+		COALESCE(observaciones, '')
+	FROM super_ai_consultas
+	WHERE admin_email = ? AND COALESCE(estado, 'activo') <> 'inactivo'
+	ORDER BY fecha_consulta DESC, id DESC
+	LIMIT ?`, adminEmail, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	items := make([]SuperAIConsulta, 0, limit)
+	for rows.Next() {
+		var item SuperAIConsulta
+		if err := rows.Scan(
+			&item.ID,
+			&item.AdminEmail,
+			&item.Provider,
+			&item.ModelID,
+			&item.Pregunta,
+			&item.Respuesta,
+			&item.PromptTokens,
+			&item.CompletionTokens,
+			&item.TotalTokens,
+			&item.FechaConsulta,
+			&item.PlanActual,
+			&item.FechaCreacion,
+			&item.FechaActualiz,
+			&item.UsuarioCreador,
+			&item.Estado,
+			&item.Observaciones,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 // BuildEmpresaAIContexto resume datos de la empresa para orientar la respuesta IA.
 func BuildEmpresaAIContexto(dbConn *sql.DB, empresaID int64) (string, error) {
 	if empresaID <= 0 {
@@ -621,6 +1103,77 @@ func BuildEmpresaAIContexto(dbConn *sql.DB, empresaID int64) (string, error) {
 	}
 
 	return b.String(), nil
+}
+
+// BuildSuperAIContexto resume contexto global consolidado del sistema para super administrador.
+func BuildSuperAIContexto(dbEmp, dbSuper *sql.DB, adminEmail string) (string, error) {
+	adminEmail = aiNormalizeAdminEmail(adminEmail)
+	if adminEmail == "" {
+		return "", fmt.Errorf("admin_email es obligatorio")
+	}
+
+	var totalEmpresas, empresasActivas int64
+	if err := dbEmp.QueryRow(`SELECT COUNT(1), COALESCE(SUM(CASE WHEN LOWER(COALESCE(estado,'activo')) = 'activo' THEN 1 ELSE 0 END), 0) FROM empresas`).Scan(&totalEmpresas, &empresasActivas); err != nil {
+		return "", err
+	}
+
+	var totalClientes int64
+	if err := dbEmp.QueryRow(`SELECT COUNT(1) FROM clientes`).Scan(&totalClientes); err != nil {
+		if !isMissingTableError(err) {
+			return "", err
+		}
+	}
+
+	var totalProductos int64
+	if err := dbEmp.QueryRow(`SELECT COUNT(1) FROM productos`).Scan(&totalProductos); err != nil {
+		if !isMissingTableError(err) {
+			return "", err
+		}
+	}
+
+	var totalCarritos, carritosPagados int64
+	var ventasTotal float64
+	if err := dbEmp.QueryRow(`SELECT COUNT(1), COALESCE(SUM(CASE WHEN LOWER(COALESCE(estado_carrito,'')) IN ('pagado','cerrado','finalizado') THEN 1 ELSE 0 END), 0), COALESCE(SUM(total), 0) FROM carritos_compras`).Scan(&totalCarritos, &carritosPagados, &ventasTotal); err != nil {
+		if !isMissingTableError(err) {
+			return "", err
+		}
+	}
+
+	var movimientosFinancieros int64
+	var ingresosTotal, egresosTotal float64
+	if err := dbEmp.QueryRow(`SELECT COUNT(1), COALESCE(SUM(CASE WHEN LOWER(COALESCE(tipo,'')) IN ('ingreso','entrada') THEN valor ELSE 0 END), 0), COALESCE(SUM(CASE WHEN LOWER(COALESCE(tipo,'')) IN ('egreso','salida','gasto') THEN valor ELSE 0 END), 0) FROM empresa_finanzas_movimientos`).Scan(&movimientosFinancieros, &ingresosTotal, &egresosTotal); err != nil {
+		if !isMissingTableError(err) {
+			return "", err
+		}
+	}
+
+	var totalAdministradores int64
+	if dbSuper != nil {
+		if err := dbSuper.QueryRow(`SELECT COUNT(1) FROM administradores`).Scan(&totalAdministradores); err != nil {
+			if !isMissingTableError(err) {
+				return "", err
+			}
+		}
+	}
+
+	contexto := []string{
+		fmt.Sprintf("admin_super_consultando=%s", adminEmail),
+		fmt.Sprintf("empresas_total=%d", totalEmpresas),
+		fmt.Sprintf("empresas_activas=%d", empresasActivas),
+		fmt.Sprintf("clientes_total=%d", totalClientes),
+		fmt.Sprintf("productos_total=%d", totalProductos),
+		fmt.Sprintf("carritos_total=%d", totalCarritos),
+		fmt.Sprintf("carritos_pagados=%d", carritosPagados),
+		fmt.Sprintf("ventas_total=%.2f", ventasTotal),
+		fmt.Sprintf("movimientos_financieros_total=%d", movimientosFinancieros),
+		fmt.Sprintf("ingresos_total=%.2f", ingresosTotal),
+		fmt.Sprintf("egresos_total=%.2f", egresosTotal),
+		fmt.Sprintf("administradores_total=%d", totalAdministradores),
+		"alcance=global_superadministrador",
+		"restriccion=no revelar secretos, tokens, hashes, credenciales ni datos sensibles no solicitados expresamente",
+	}
+
+	return strings.Join(contexto, "\n"), nil
 }
 
 func aiNormalizeProvider(v string) string {

@@ -74,6 +74,17 @@ func empresaAIModelCatalog() []empresaAIModelDef {
 			FreeDailyLimit: 120,
 			Description:    "Chat empresarial con DeepSeek, limitado por cuota diaria del plan gratuito.",
 		},
+		{
+			ID:             "ollama:ambis",
+			Provider:       "ollama",
+			DisplayName:    "Ambis Local",
+			UpstreamModel:  "codellama:7b",
+			Endpoint:       resolveOllamaGenerateEndpoint(),
+			ApiKeyEnv:      "",
+			Famous:         false,
+			FreeDailyLimit: 0,
+			Description:    "Modelo local Ambis sobre Ollama en el VPS, aislado por empresa_id y consumido solo por loopback.",
+		},
 	}
 }
 
@@ -90,6 +101,15 @@ func empresaAIModelMap() map[string]empresaAIModelDef {
 func (c *EmpresaAIChatController) ModelosHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
+		return
+	}
+	if !isSuperAIEnabled(c.dbSuper) {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]interface{}{
+			"ok":             false,
+			"code":           "ai_disabled",
+			"error":          "La IA está desactivada desde configuración avanzada.",
+			"service_status": superAIServiceStatus(c.dbSuper),
+		})
 		return
 	}
 
@@ -141,6 +161,15 @@ func (c *EmpresaAIChatController) ModelosHandler(w http.ResponseWriter, r *http.
 }
 
 func (c *EmpresaAIChatController) ModeloPreferidoHandler(w http.ResponseWriter, r *http.Request) {
+	if !isSuperAIEnabled(c.dbSuper) {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]interface{}{
+			"ok":             false,
+			"code":           "ai_disabled",
+			"error":          "La IA está desactivada desde configuración avanzada.",
+			"service_status": superAIServiceStatus(c.dbSuper),
+		})
+		return
+	}
 	switch r.Method {
 	case http.MethodGet:
 		empresaID, err := parseEmpresaIDQuery(r)
@@ -231,6 +260,15 @@ func (c *EmpresaAIChatController) ModeloPreferidoHandler(w http.ResponseWriter, 
 func (c *EmpresaAIChatController) ConsultarHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
+		return
+	}
+	if !isSuperAIEnabled(c.dbSuper) {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]interface{}{
+			"ok":             false,
+			"code":           "ai_disabled",
+			"error":          "La IA está desactivada desde configuración avanzada.",
+			"service_status": superAIServiceStatus(c.dbSuper),
+		})
 		return
 	}
 
@@ -384,6 +422,15 @@ func (c *EmpresaAIChatController) HistorialHandler(w http.ResponseWriter, r *htt
 		http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
 		return
 	}
+	if !isSuperAIEnabled(c.dbSuper) {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]interface{}{
+			"ok":             false,
+			"code":           "ai_disabled",
+			"error":          "La IA está desactivada desde configuración avanzada.",
+			"service_status": superAIServiceStatus(c.dbSuper),
+		})
+		return
+	}
 
 	empresaID, err := parseEmpresaIDQuery(r)
 	if err != nil {
@@ -460,24 +507,40 @@ func (c *EmpresaAIChatController) writeLimitReached(w http.ResponseWriter, empre
 }
 
 func (c *EmpresaAIChatController) generateResponse(model empresaAIModelDef, pregunta string, historial []empresaAIChatMensaje, contexto string) (string, int64, int64, error) {
+	systemPrompt := buildEmpresaAISystemPrompt(contexto)
+	return c.generateResponseWithSystemPrompt(model, pregunta, historial, systemPrompt)
+}
+
+func (c *EmpresaAIChatController) generateResponseWithSystemPrompt(model empresaAIModelDef, pregunta string, historial []empresaAIChatMensaje, systemPrompt string) (string, int64, int64, error) {
 	if strings.EqualFold(model.Provider, "deepseek") {
-		return c.callDeepSeek(model, pregunta, historial, contexto)
+		return c.callDeepSeekWithSystemPrompt(model, pregunta, historial, systemPrompt)
 	}
 	if strings.EqualFold(model.Provider, "google") {
-		return c.callGoogleGemini(model, pregunta, historial, contexto)
+		return c.callGoogleGeminiWithSystemPrompt(model, pregunta, historial, systemPrompt)
+	}
+	if strings.EqualFold(model.Provider, "ollama") {
+		return c.callOllamaWithSystemPrompt(model, pregunta, historial, systemPrompt)
 	}
 	return "", 0, 0, fmt.Errorf("proveedor no soportado")
 }
 
+func buildEmpresaAISystemPrompt(contexto string) string {
+	return "Eres un asistente empresarial para el sistema POS multiempresa. " +
+		"Responde en espanol claro y accionable. Usa solo el contexto validado por empresa_id. " +
+		"No inventes consultas SQL ni afirmes acceso a otras empresas. " +
+		"Si faltan datos, dilo explicitamente y sugiere que dato consultar.\n\nCONTEXTO_EMPRESA_VALIDADO:\n" + contexto
+}
+
 func (c *EmpresaAIChatController) callDeepSeek(model empresaAIModelDef, pregunta string, historial []empresaAIChatMensaje, contexto string) (string, int64, int64, error) {
+	systemPrompt := buildEmpresaAISystemPrompt(contexto)
+	return c.callDeepSeekWithSystemPrompt(model, pregunta, historial, systemPrompt)
+}
+
+func (c *EmpresaAIChatController) callDeepSeekWithSystemPrompt(model empresaAIModelDef, pregunta string, historial []empresaAIChatMensaje, systemPrompt string) (string, int64, int64, error) {
 	apiKey, err := c.resolveModelAPIKey(model)
 	if err != nil {
 		return "", 0, 0, err
 	}
-
-	systemPrompt := "Eres un asistente empresarial para el sistema POS multiempresa. " +
-		"Responde en espanol claro y accionable. Usa solo el contexto validado por empresa_id. " +
-		"Si faltan datos, dilo explicitamente y sugiere que dato consultar.\n\nCONTEXTO_EMPRESA_VALIDADO:\n" + contexto
 
 	messages := buildDeepSeekMessages(systemPrompt, pregunta, historial)
 	body := map[string]interface{}{
@@ -561,6 +624,11 @@ func buildDeepSeekMessages(systemPrompt, pregunta string, historial []empresaAIC
 }
 
 func (c *EmpresaAIChatController) callGoogleGemini(model empresaAIModelDef, pregunta string, historial []empresaAIChatMensaje, contexto string) (string, int64, int64, error) {
+	systemPrompt := buildEmpresaAISystemPrompt(contexto)
+	return c.callGoogleGeminiWithSystemPrompt(model, pregunta, historial, systemPrompt)
+}
+
+func (c *EmpresaAIChatController) callGoogleGeminiWithSystemPrompt(model empresaAIModelDef, pregunta string, historial []empresaAIChatMensaje, systemPrompt string) (string, int64, int64, error) {
 	apiKey, err := c.resolveModelAPIKey(model)
 	if err != nil {
 		return "", 0, 0, err
@@ -572,10 +640,6 @@ func (c *EmpresaAIChatController) callGoogleGemini(model empresaAIModelDef, preg
 		sep = "&"
 	}
 	endpoint = endpoint + sep + "key=" + url.QueryEscape(apiKey)
-
-	systemPrompt := "Eres un asistente empresarial para el sistema POS multiempresa. " +
-		"Responde en espanol claro y accionable. Usa solo el contexto validado por empresa_id. " +
-		"Si faltan datos, dilo explicitamente y sugiere que dato consultar.\n\nCONTEXTO_EMPRESA_VALIDADO:\n" + contexto
 
 	contents := buildGeminiContents(pregunta, historial)
 	body := map[string]interface{}{
@@ -628,6 +692,81 @@ func (c *EmpresaAIChatController) callGoogleGemini(model empresaAIModelDef, preg
 		return "", 0, 0, fmt.Errorf("el proveedor devolvio respuesta vacia")
 	}
 	return text, parsed.UsageMetadata.PromptTokenCount, parsed.UsageMetadata.CandidatesTokenCount, nil
+}
+
+func (c *EmpresaAIChatController) callOllama(model empresaAIModelDef, pregunta string, historial []empresaAIChatMensaje, contexto string) (string, int64, int64, error) {
+	systemPrompt := buildEmpresaAISystemPrompt(contexto)
+	return c.callOllamaWithSystemPrompt(model, pregunta, historial, systemPrompt)
+}
+
+func (c *EmpresaAIChatController) callOllamaWithSystemPrompt(model empresaAIModelDef, pregunta string, historial []empresaAIChatMensaje, systemPrompt string) (string, int64, int64, error) {
+	prompt := buildOllamaPrompt(systemPrompt, pregunta, historial)
+	body := map[string]interface{}{
+		"model":       model.UpstreamModel,
+		"prompt":      prompt,
+		"stream":      false,
+		"temperature": 0.2,
+		"options": map[string]interface{}{
+			"temperature": 0.2,
+			"num_predict": 700,
+		},
+	}
+	payload, _ := json.Marshal(body)
+
+	req, err := http.NewRequest(http.MethodPost, model.Endpoint, bytes.NewReader(payload))
+	if err != nil {
+		return "", 0, 0, fmt.Errorf("no se pudo crear solicitud al proveedor local")
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return "", 0, 0, fmt.Errorf("no se pudo contactar proveedor local: %v", err)
+	}
+	defer resp.Body.Close()
+
+	raw, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode >= 400 {
+		return "", 0, 0, fmt.Errorf("error proveedor local (%d): %s", resp.StatusCode, truncateText(string(raw), 600))
+	}
+
+	var parsed struct {
+		Response        string `json:"response"`
+		PromptEvalCount int64  `json:"prompt_eval_count"`
+		EvalCount       int64  `json:"eval_count"`
+		Done            bool   `json:"done"`
+		DoneReason      string `json:"done_reason"`
+	}
+	if err := json.Unmarshal(raw, &parsed); err != nil {
+		return "", 0, 0, fmt.Errorf("respuesta del proveedor local no es JSON valido")
+	}
+
+	text := strings.TrimSpace(parsed.Response)
+	if text == "" {
+		return "", 0, 0, fmt.Errorf("el proveedor local devolvio respuesta vacia")
+	}
+	return text, parsed.PromptEvalCount, parsed.EvalCount, nil
+}
+
+func buildOllamaPrompt(systemPrompt, pregunta string, historial []empresaAIChatMensaje) string {
+	clean := sanitizeHistorial(historial, 8)
+	var b strings.Builder
+	b.WriteString("[SYSTEM]\n")
+	b.WriteString(strings.TrimSpace(systemPrompt))
+	b.WriteString("\n\n")
+	for _, h := range clean {
+		if h.Rol == "assistant" {
+			b.WriteString("[ASSISTANT]\n")
+		} else {
+			b.WriteString("[USER]\n")
+		}
+		b.WriteString(strings.TrimSpace(h.Contenido))
+		b.WriteString("\n\n")
+	}
+	b.WriteString("[USER]\n")
+	b.WriteString(strings.TrimSpace(pregunta))
+	b.WriteString("\n\n[ASSISTANT]\n")
+	return b.String()
 }
 
 func buildGeminiContents(pregunta string, historial []empresaAIChatMensaje) []map[string]interface{} {
@@ -704,6 +843,9 @@ func sanitizeHistorial(in []empresaAIChatMensaje, max int) []empresaAIChatMensaj
 }
 
 func (c *EmpresaAIChatController) resolveModelAPIKey(model empresaAIModelDef) (string, error) {
+	if strings.TrimSpace(model.ApiKeyEnv) == "" {
+		return "", nil
+	}
 	if c.dbSuper != nil {
 		if def, ok := aiCredentialByModelID()[model.ID]; ok {
 			if key, err := getDecryptedConfigValue(c.dbSuper, def.ConfigKey); err == nil {
@@ -732,6 +874,18 @@ func (c *EmpresaAIChatController) resolveModelAPIKey(model empresaAIModelDef) (s
 		return apiKey, nil
 	}
 	return "", fmt.Errorf("la credencial %s no esta configurada en servidor", model.ApiKeyEnv)
+}
+
+func resolveOllamaGenerateEndpoint() string {
+	base := strings.TrimSpace(os.Getenv("OLLAMA_BASE_URL"))
+	if base == "" {
+		base = "http://127.0.0.1:11434"
+	}
+	base = strings.TrimRight(base, "/")
+	if strings.HasSuffix(base, "/api/generate") {
+		return base
+	}
+	return base + "/api/generate"
 }
 
 func truncateText(v string, max int) string {

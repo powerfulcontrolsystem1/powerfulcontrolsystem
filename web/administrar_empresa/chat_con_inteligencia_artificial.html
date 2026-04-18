@@ -11,7 +11,7 @@
     <header class="page-header ai-gemini-header">
       <div>
         <h1 id="pageTitle">Chat IA Empresarial</h1>
-        <p class="form-help">Tus preguntas y respuestas se construyen con contexto de la base de datos de la empresa seleccionada y acceso restringido por empresa_id, usando el modelo IA configurado en super administrador.</p>
+        <p class="form-help">Tus preguntas y respuestas se construyen con contexto de la base de datos de la empresa seleccionada y acceso restringido por empresa_id. Puedes elegir entre DeepSeek y Ambis Local segun la configuracion disponible.</p>
       </div>
       <div class="ai-gemini-toolbar">
         <button id="reloadBtn" class="btn secondary" type="button">Actualizar</button>
@@ -49,9 +49,13 @@
     </section>
 
     <section class="card ai-chat-shell ai-gemini-shell">
+      <div id="aiDisabledBanner" class="form-help" hidden>La IA está desactivada desde configuración avanzada del panel super. Este chat quedará disponible cuando vuelvan a activarla.</div>
       <div id="messagesList" class="ai-chat-messages ai-gemini-messages"></div>
 
       <form id="promptForm" class="ai-chat-form ai-gemini-form">
+        <label class="form-label" for="modelSelect">Modelo disponible para esta empresa</label>
+        <select id="modelSelect" class="form-input ai-gemini-input"></select>
+
         <div class="ai-gemini-suggestions">
           <button class="ai-gemini-pill" type="button" data-prompt="Resume ventas, clientes y balance de hoy para mi empresa.">Resumen del día</button>
           <button class="ai-gemini-pill" type="button" data-prompt="Muestra alertas de inventario bajo y productos con mayor rotación.">Alertas de inventario</button>
@@ -82,12 +86,14 @@
     const state = {
       empresaID: 0,
       empresaNombre: "",
+      models: [],
       modelID: "",
       modelDisplay: "DeepSeek Chat",
       googleAccount: "",
       usage: null,
       loading: false,
       authRequired: false,
+      aiDisabled: false,
       messages: []
     };
 
@@ -128,9 +134,36 @@
     function hideAuthPanel() {
       state.authRequired = false;
       document.getElementById("authPanel").hidden = true;
-      document.getElementById("promptInput").disabled = false;
-      document.getElementById("sendBtn").disabled = false;
+      document.getElementById("promptInput").disabled = !!state.aiDisabled;
+      document.getElementById("sendBtn").disabled = !!state.aiDisabled;
       setMsg("authMsg", "", false);
+    }
+
+    function setAIDisabledState(message) {
+      state.aiDisabled = true;
+      const banner = document.getElementById("aiDisabledBanner");
+      const text = normalize(message) || "La IA está desactivada desde configuración avanzada del panel super.";
+      if (banner) {
+        banner.hidden = false;
+        banner.textContent = text;
+        banner.style.color = "#ffd1d1";
+      }
+      document.getElementById("promptInput").disabled = true;
+      document.getElementById("sendBtn").disabled = true;
+      document.getElementById("modelSelect").disabled = true;
+      setMsg("chatMsg", text, true);
+    }
+
+    function clearAIDisabledState() {
+      state.aiDisabled = false;
+      const banner = document.getElementById("aiDisabledBanner");
+      if (banner) {
+        banner.hidden = true;
+        banner.textContent = "";
+      }
+      document.getElementById("promptInput").disabled = !!state.authRequired;
+      document.getElementById("sendBtn").disabled = !!state.authRequired;
+      document.getElementById("modelSelect").disabled = false;
     }
 
     async function apiFetch(url, options) {
@@ -170,6 +203,26 @@
       const limit = Number(state.usage.daily_limit || 0);
       const remaining = Number(state.usage.daily_remaining || 0);
       document.getElementById("chipUsage").textContent = used + " / " + limit + " (restan " + remaining + ")";
+    }
+
+    function renderModelOptions() {
+      const select = document.getElementById("modelSelect");
+      if (!select) return;
+      const items = Array.isArray(state.models) ? state.models : [];
+      if (!items.length) {
+        select.innerHTML = '<option value="">Sin modelos disponibles</option>';
+        select.disabled = true;
+        return;
+      }
+      select.innerHTML = items.map(function(item) {
+        const id = normalize(item.id);
+        const name = normalize(item.display_name) || id;
+        const description = normalize(item.description);
+        const selected = id === state.modelID ? ' selected' : '';
+        const suffix = description ? (' — ' + description) : '';
+        return '<option value="' + escapeHtml(id) + '"' + selected + '>' + escapeHtml(name + suffix) + '</option>';
+      }).join("");
+      select.disabled = false;
     }
 
     function renderMessages() {
@@ -250,19 +303,32 @@
 
      async function loadChatModel() {
       const data = await apiFetch("/api/empresa/chat_con_inteligencia_artificial/modelos?empresa_id=" + encodeURIComponent(state.empresaID));
+      clearAIDisabledState();
       const modelos = Array.isArray(data.modelos) ? data.modelos : [];
       if (!modelos.length) {
         throw new Error("No hay modelos IA disponibles para esta empresa.");
       }
 
-      const model = modelos[0];
-      state.modelID = normalize(model.id);
-      state.modelDisplay = normalize(model.display_name) || "DeepSeek Chat";
+      state.models = modelos.map(function(item) {
+        return {
+          id: normalize(item.id),
+          display_name: normalize(item.display_name),
+          description: normalize(item.description)
+        };
+      });
       state.googleAccount = normalize(data.google_account || state.googleAccount);
 
+      const modeloPreferido = normalize(data.modelo_preferido);
+      const selectedModel = state.models.find(function(item) {
+        return item.id === modeloPreferido;
+      }) || state.models[0];
+
+      state.modelID = normalize(selectedModel && selectedModel.id);
+      state.modelDisplay = normalize(selectedModel && selectedModel.display_name) || "Modelo IA";
+
+      renderModelOptions();
       renderContext();
 
-      const modeloPreferido = normalize(data.modelo_preferido);
       if (modeloPreferido !== state.modelID) {
         await apiFetch("/api/empresa/chat_con_inteligencia_artificial/modelo_preferido", {
           method: "PUT",
@@ -275,9 +341,31 @@
       }
     }
 
+    async function onModelChange(ev) {
+      const newModelID = normalize(ev && ev.target && ev.target.value);
+      if (!newModelID || newModelID === state.modelID) {
+        return;
+      }
+      await apiFetch("/api/empresa/chat_con_inteligencia_artificial/modelo_preferido", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          empresa_id: Number(state.empresaID),
+          model_id: newModelID
+        })
+      });
+      state.modelID = newModelID;
+      const selectedModel = (state.models || []).find(function(item) { return item.id === newModelID; });
+      state.modelDisplay = normalize(selectedModel && selectedModel.display_name) || newModelID;
+      renderModelOptions();
+      renderContext();
+      setMsg("chatMsg", "Modelo IA actualizado para esta empresa.", false);
+    }
+
     async function loadHistorial() {
       try {
         const data = await apiFetch("/api/empresa/chat_con_inteligencia_artificial/historial?empresa_id=" + encodeURIComponent(state.empresaID) + "&limit=20");
+        clearAIDisabledState();
         const items = Array.isArray(data.items) ? data.items : [];
         const box = document.getElementById("historyList");
 
@@ -300,8 +388,15 @@
 
         setMsg("historyMsg", "Historial actualizado: " + items.length + " registros.", false);
       } catch (err) {
+        const payload = err && err.payload ? err.payload : {};
         if (err && err.status === 401) {
           showAuthPanel("Tu sesión no es válida o expiró. Inicia sesión con Google para continuar.");
+          return;
+        }
+        if (normalize(payload.code) === "ai_disabled") {
+          setAIDisabledState(payload.error);
+          setMsg("historyMsg", normalize(payload.error || "La IA está desactivada."), true);
+          document.getElementById("historyList").innerHTML = '<div class="ai-chat-empty">Historial no disponible mientras la IA esté desactivada.</div>';
           return;
         }
         setMsg("historyMsg", err.message || "No se pudo cargar historial.", true);
@@ -310,7 +405,7 @@
 
     async function onSendPrompt(ev) {
       ev.preventDefault();
-      if (state.loading || state.authRequired) return;
+      if (state.loading || state.authRequired || state.aiDisabled) return;
 
       clearUpgradeOption();
       const pregunta = normalize(document.getElementById("promptInput").value);
@@ -352,6 +447,9 @@
         if (err && err.status === 401) {
           appendMessage("system", "Sesión expirada o no autenticada. Debes iniciar sesión con Google.");
           showAuthPanel("Inicia sesión con Google. Si es tu primer ingreso, tu cuenta administradora se registra automáticamente.");
+        } else if (normalize(payload.code) === "ai_disabled") {
+          appendMessage("system", normalize(payload.error || "La IA está desactivada desde configuración avanzada."));
+          setAIDisabledState(payload.error);
         } else if (normalize(payload.code) === "free_tier_limit_reached") {
           showUpgradeOption(payload.upgrade_url);
           appendMessage("system", normalize(payload.error || "Límite gratuito alcanzado."));
@@ -389,6 +487,16 @@
       });
 
       document.getElementById("promptForm").addEventListener("submit", onSendPrompt);
+      document.getElementById("modelSelect").addEventListener("change", function(ev) {
+        onModelChange(ev).catch(function(err) {
+          const payload = err && err.payload ? err.payload : {};
+          if (normalize(payload.code) === "ai_disabled") {
+            setAIDisabledState(payload.error);
+            return;
+          }
+          setMsg("chatMsg", err.message || "No se pudo cambiar el modelo IA.", true);
+        });
+      });
       document.querySelectorAll(".ai-gemini-pill").forEach(function(btn) {
         btn.addEventListener("click", onSuggestionClick);
       });
@@ -410,8 +518,11 @@
 		await loadChatModel();
         hideAuthPanel();
       } catch (err) {
+        const payload = err && err.payload ? err.payload : {};
         if (err && err.status === 401) {
           showAuthPanel("Para usar el chat empresarial debes iniciar sesión con Google.");
+        } else if (normalize(payload.code) === "ai_disabled") {
+          setAIDisabledState(payload.error);
         } else {
 		  setMsg("chatMsg", err.message || "No se pudo cargar el modelo IA.", true);
         }
