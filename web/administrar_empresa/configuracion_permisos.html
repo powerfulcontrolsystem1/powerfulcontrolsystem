@@ -12,50 +12,168 @@
       <div class="empresa-section-header">
         <h1 class="empresa-title">Permisos y Roles</h1>
         <div class="empresa-inline-actions">
-          <button id="btnAddRole" class="btn add" type="button">Agregar rol</button>
-          <button id="btnSaveRoles" class="btn secondary" type="button">Guardar cambios</button>
+          <button id="btnReloadPermisos" class="btn secondary" type="button">Actualizar</button>
         </div>
       </div>
-      <p class="form-help">Cree y gestione roles y permisos por empresa. Esta es una interfaz placeholder con ejemplos básicos.</p>
+      <p id="permisosEmpresaInfo" class="form-help">Empresa: cargando...</p>
+      <p id="permisosResumen" class="form-help">Consultando contexto real de permisos...</p>
 
-      <div class="table-wrap">
-        <table class="table" id="rolesTable">
+      <div class="table-wrap" style="margin-top:12px;">
+        <table class="table" id="permisosContextTable">
           <thead>
-            <tr><th>Rol</th><th>Descripción</th><th>Permisos</th><th>Acciones</th></tr>
+            <tr><th>Campo</th><th>Valor</th></tr>
           </thead>
-          <tbody>
-            <tr>
-              <td>Administrador</td>
-              <td>Acceso total al panel</td>
-              <td><label><input type="checkbox" checked> Ver</label> <label><input type="checkbox" checked> Editar</label></td>
-              <td><button class="btn secondary" onclick="this.closest('tr').remove()">Eliminar</button></td>
-            </tr>
-            <tr>
-              <td>Supervisor</td>
-              <td>Acceso a reportes y configuraciones limitadas</td>
-              <td><label><input type="checkbox" checked> Ver</label> <label><input type="checkbox"> Editar</label></td>
-              <td><button class="btn secondary" onclick="this.closest('tr').remove()">Eliminar</button></td>
-            </tr>
+          <tbody id="permisosContextBody">
+            <tr><td colspan="2" style="text-align:center;color:#777;">Sin datos</td></tr>
           </tbody>
         </table>
       </div>
+
+      <div class="table-wrap" style="margin-top:16px;">
+        <table class="table" id="permisosModulesTable">
+          <thead>
+            <tr><th>Módulo</th><th>Leer</th><th>Crear</th><th>Actualizar</th><th>Eliminar</th><th>Aprobar</th></tr>
+          </thead>
+          <tbody id="permisosModulesBody">
+            <tr><td colspan="6" style="text-align:center;color:#777;">Sin datos</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="table-wrap" style="margin-top:16px;">
+        <table class="table" id="rolesTable">
+          <thead>
+            <tr><th>Rol</th><th>Módulos con lectura</th><th>Acciones habilitadas</th><th>Aprobación</th></tr>
+          </thead>
+          <tbody id="rolesTableBody">
+            <tr><td colspan="4" style="text-align:center;color:#777;">Sin datos</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div id="permisosMsg" class="form-help" style="margin-top:12px;"></div>
     </section>
   </div>
 
   <script>
-    function escapeHtml(str){ return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
-    document.getElementById('btnAddRole')?.addEventListener('click', function(){
-      var name = prompt('Nombre del rol:');
-      if(!name) return;
-      var tbody = document.querySelector('#rolesTable tbody');
-      var tr = document.createElement('tr');
-      tr.innerHTML = '<td>'+escapeHtml(name)+'</td><td>-</td><td><label><input type="checkbox" checked> Ver</label> <label><input type="checkbox"> Editar</label></td><td><button class="btn secondary" onclick="this.closest(\'tr\').remove()">Eliminar</button></td>';
-      tbody.appendChild(tr);
-    });
-
-    document.getElementById('btnSaveRoles')?.addEventListener('click', function(){
-      alert('Guardar roles (placeholder)');
-    });
+    (function(){
+      function escapeHtml(str){ return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+      function parsePositiveInt(raw){ var n = Number(String(raw||'').trim()); if(!Number.isFinite(n)) return 0; n = Math.trunc(n); return n > 0 ? n : 0; }
+      function resolveEmpresaId(){
+        try {
+          var params = new URLSearchParams(window.location.search || '');
+          var own = parsePositiveInt(params.get('empresa_id') || params.get('id'));
+          if (own > 0) return own;
+        } catch (_) {}
+        try {
+          if (window.parent && window.parent !== window && typeof window.parent.__resolveEmpresaIdContext === 'function') {
+            var fromParent = parsePositiveInt(window.parent.__resolveEmpresaIdContext());
+            if (fromParent > 0) return fromParent;
+          }
+        } catch (_) {}
+        try {
+          var candidates = [sessionStorage.getItem('active_empresa_id'), sessionStorage.getItem('empresa_id'), localStorage.getItem('active_empresa_id'), localStorage.getItem('empresa_id')];
+          for (var i = 0; i < candidates.length; i += 1) {
+            var parsed = parsePositiveInt(candidates[i]);
+            if (parsed > 0) return parsed;
+          }
+        } catch (_) {}
+        return 0;
+      }
+      function setMessage(text, isError){
+        var box = document.getElementById('permisosMsg');
+        if (!box) return;
+        box.textContent = text || '';
+        box.className = isError ? 'error' : 'form-help';
+      }
+      function boolChip(value){ return value ? 'Sí' : 'No'; }
+      function fillContext(data){
+        var body = document.getElementById('permisosContextBody');
+        var summary = data && data.resumen ? data.resumen : {};
+        if (!body) return;
+        body.innerHTML = [
+          '<tr><td>Rol detectado</td><td>' + escapeHtml(data.rol || '-') + '</td></tr>',
+          '<tr><td>Rol efectivo</td><td>' + escapeHtml(data.rol_efectivo || '-') + '</td></tr>',
+          '<tr><td>Email admin</td><td>' + escapeHtml(data.admin_email || '-') + '</td></tr>',
+          '<tr><td>Módulos lectura</td><td>' + escapeHtml(String(summary.modulos_lectura || 0)) + '</td></tr>',
+          '<tr><td>Módulos aprobación</td><td>' + escapeHtml(String(summary.modulos_aprobacion || 0)) + '</td></tr>',
+          '<tr><td>Acciones habilitadas</td><td>' + escapeHtml(String(summary.acciones_habilitadas || 0)) + '</td></tr>'
+        ].join('');
+        var resumen = document.getElementById('permisosResumen');
+        if (resumen) {
+          resumen.textContent = 'Contexto real de permisos cargado desde /api/empresa/permisos_contexto. Esta vista es informativa para empresa y no realiza edición directa de roles.';
+        }
+      }
+      function fillModules(data){
+        var body = document.getElementById('permisosModulesBody');
+        var modules = Array.isArray(data && data.modulos) ? data.modulos : [];
+        if (!body) return;
+        if (!modules.length) {
+          body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#777;">Sin datos</td></tr>';
+          return;
+        }
+        body.innerHTML = modules.map(function(item){
+          return '<tr>' +
+            '<td>' + escapeHtml(item.modulo || '-') + '</td>' +
+            '<td>' + boolChip(!!item.read) + '</td>' +
+            '<td>' + boolChip(!!item.create) + '</td>' +
+            '<td>' + boolChip(!!item.update) + '</td>' +
+            '<td>' + boolChip(!!item.delete) + '</td>' +
+            '<td>' + boolChip(!!item.approve) + '</td>' +
+          '</tr>';
+        }).join('');
+      }
+      function fillRolesMatrix(data){
+        var body = document.getElementById('rolesTableBody');
+        var roles = Array.isArray(data && data.matriz_roles) ? data.matriz_roles : [];
+        if (!body) return;
+        if (!roles.length) {
+          body.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#777;">Sin datos</td></tr>';
+          return;
+        }
+        body.innerHTML = roles.map(function(role){
+          var resumen = role && role.resumen ? role.resumen : {};
+          return '<tr>' +
+            '<td>' + escapeHtml(role.rol || '-') + '</td>' +
+            '<td>' + escapeHtml(String(resumen.modulos_lectura || 0)) + '</td>' +
+            '<td>' + escapeHtml(String(resumen.acciones_habilitadas || 0)) + '</td>' +
+            '<td>' + escapeHtml(String(resumen.modulos_aprobacion || 0)) + '</td>' +
+          '</tr>';
+        }).join('');
+      }
+      async function loadEmpresaNombre(empresaId){
+        try {
+          var res = await fetch('/super/api/empresas?id=' + encodeURIComponent(String(empresaId)), { credentials: 'same-origin' });
+          if (!res.ok) return;
+          var data = await res.json();
+          var label = document.getElementById('permisosEmpresaInfo');
+          if (label) label.textContent = data && data.nombre ? ('Empresa: ' + data.nombre) : ('Empresa ID: ' + empresaId);
+        } catch (_) {}
+      }
+      async function loadPermisos(){
+        var empresaId = resolveEmpresaId();
+        if (!empresaId) {
+          setMessage('empresa_id es obligatorio para consultar permisos.', true);
+          return;
+        }
+        setMessage('Cargando permisos...', false);
+        try {
+          await loadEmpresaNombre(empresaId);
+          var res = await fetch('/api/empresa/permisos_contexto?empresa_id=' + encodeURIComponent(String(empresaId)) + '&include_matrix=1', { credentials: 'same-origin' });
+          var text = await res.text();
+          var data = text ? JSON.parse(text) : {};
+          if (!res.ok) throw new Error((data && (data.error || data.message)) || text || ('HTTP ' + res.status));
+          fillContext(data);
+          fillModules(data);
+          fillRolesMatrix(data);
+          setMessage('Permisos cargados correctamente.', false);
+        } catch (err) {
+          setMessage('No se pudo cargar permisos: ' + (err && err.message ? err.message : err), true);
+        }
+      }
+      document.getElementById('btnReloadPermisos')?.addEventListener('click', loadPermisos);
+      loadPermisos();
+    })();
   </script>
 </body>
 </html>

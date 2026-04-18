@@ -1,6 +1,32 @@
 # Estructura del codigo
 
-Fecha de actualizacion: 2026-04-17
+Fecha de actualizacion: 2026-04-18
+
+## Actualizacion 2026-04-18 (configuracion empresarial: persistencia real del bloque general)
+
+- Backend:
+  - `backend/db/empresa_configuracion_general.go` agrega el nuevo almacenamiento relacional por `empresa_id` para reglas de productos y pedidos (`imprimir_orden_servicio`, descuentos y lector de código de barras), con bootstrap default y escritura compatible con SQLite/PostgreSQL mediante `insertSQLCompat`.
+  - `backend/handlers/empresa_configuracion_general.go` expone `GET/PUT /api/empresa/configuracion_general` bajo el wrapper de seguridad empresarial existente.
+  - `backend/handlers/empresa_configuracion_general_test.go` valida carga default y guardado real del nuevo endpoint.
+  - `backend/main.go` registra el esquema `empresa_configuracion_general`, su migración y la nueva ruta autenticada.
+- Frontend:
+  - `web/administrar_empresa/configuracion.html` deja de persistir el bloque `Productos y pedidos` en `localStorage` y pasa a cargar/guardar por `fetch` contra `/api/empresa/configuracion_general`; la restauración de backup de ese bloque también se escribe ya en backend.
+- Flujo:
+  - `administrar_empresa/configuracion.html` -> `GET /api/empresa/configuracion_general?empresa_id=...` -> edición de reglas de productos/pedidos -> `PUT /api/empresa/configuracion_general?empresa_id=...` -> persistencia real por empresa.
+
+## Actualizacion 2026-04-18 (ventas por estacion: compatibilidad PostgreSQL en carritos, metricas y documento de venta)
+
+- Backend:
+  - `backend/main.go` reescribe `DB_EMPRESAS_DSN` y `DB_SUPERADMIN_DSN` hacia `DB_VPS_LOCAL_PORT` cuando `DB_VPS_TUNNEL_ENABLED=1`, alineando el arranque normal con los scripts operativos que acceden a PostgreSQL por tunel local.
+  - `backend/db/carritos_compras.go` migra las inserciones de `CreateCarritoCompra`, `CreateCarritoCompraItem` y `RecordCarritoStationMetric` a la capa portable `insertSQLCompat` / `insertTxSQLCompat`, eliminando la dependencia de `LastInsertId` cuando el runtime opera con PostgreSQL.
+  - `backend/db/empresa_configuracion_avanzada.go` fuerza `EnsureEmpresaConfiguracionAvanzadaSchema` al leer o guardar la configuracion por empresa para autorreparar instalaciones legacy antes de consultar `modo_documento_venta`.
+  - `backend/db/documentos_transaccionales.go` autorrepara en PostgreSQL la secuencia/default del campo `id` en `empresa_facturacion_documentos` y `empresa_compras_documentos` si la tabla fue creada desde un esquema legacy sin autoincremento real.
+  - `backend/db/sql_compat.go` incorpora `EnsurePostgresPrimaryKeySequences`, que detecta tablas base con llave primaria `id` sin `nextval(...)` y recrea secuencia/default en lote para instalaciones PostgreSQL heredadas desde SQLite.
+  - `backend/main.go` ejecuta esa regularizacion al arrancar, tanto sobre `pcs_empresas` como sobre `pcs_superadministrador`, despues del bootstrap de esquemas y antes de exponer la API.
+  - `backend/db/facturacion_electronica_test.go` agrega la regresion para una tabla legacy de `empresa_configuracion_avanzada` sin `modo_documento_venta`, verificando que la lectura regulariza el esquema y devuelve el valor por defecto.
+- Flujo:
+  - `arranque backend PostgreSQL` -> resolucion DSN con tunel local si aplica -> `EnsurePostgresRuntimeCompat` -> bootstrap de modulos -> `EnsurePostgresPrimaryKeySequences` en ambas bases -> los modulos transaccionales y operativos vuelven a insertar sin fallar por `id` legacy sin secuencia.
+  - `PUT /api/empresa/carritos_compra?action=pagar_estacion` -> insercion portable de items/metricas en PostgreSQL -> lectura segura de configuracion avanzada -> autorreparacion puntual y global del `id` de documentos transaccionales -> emision automatica de `comprobante_pago` o `factura_electronica` sin fallar por columna ausente, por `LastInsertId` ni por `id` sin secuencia.
 
 ## Actualizacion 2026-04-18 (configuracion avanzada: boton Probar Gmail con envio real)
 

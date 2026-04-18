@@ -24,6 +24,18 @@ Actualizacion 2026-04-18 (licencias y pasarelas: aislamiento multiempresa en che
 - `web/pagar_licencia.html` reenvia `licencia_id` y `empresa_id` en cada polling y corrige el alcance del contexto de retorno para no perder la redireccion de cierre exitoso.
 - Impacto de permisos: sin cambios; el checkout sigue publico bajo `/epayco/*` y `/wompi/*`, pero ahora valida mejor el aislamiento por empresa.
 
+Actualizacion 2026-04-18 (estaciones: solo queda el indicador cuadrado del sensor):
+- Se ajusta el modulo `operacion por empresa / estaciones` para simplificar la tarjeta operativa y dejar un unico estado visual de sensor.
+- `web/administrar_empresa/estaciones.html` deja de renderizar el circulo inferior centrado de estado y conserva solo el cuadrito de la esquina superior derecha.
+- `web/estilos.css` elimina los estilos del badge circular inferior ya retirado del render.
+- Impacto de permisos: sin cambios; es un ajuste visual dentro de la misma vista autenticada del modulo de estaciones.
+
+Actualizacion 2026-04-18 (ventas simples por estacion: regreso directo a estaciones):
+- Se ajusta el submodulo `operacion por empresa / ventas simples por estacion` para recuperar navegacion clara cuando la vista se abre desde una estacion.
+- `web/administrar_empresa/ventas_simple.html` agrega el boton `Regresar a estaciones` en la cabecera operativa.
+- `web/js/ventas_simple.js` resuelve la URL de retorno hacia `administrar_empresa/estaciones.html` preservando `empresa_id` y conecta el nuevo boton a esa navegacion.
+- Impacto de permisos: sin cambios; el flujo sigue dentro del mismo modulo autenticado de operacion empresarial.
+
 Actualizacion 2026-04-17 (arcade publico: Brigada burbujas 3D plus refuerza modo movil y ambiente claro):
 - Se ajusta `web/Juegos/brigada_burbujas_3d_plus.html` para cerrar el shooter 3D simulado con controles tactiles directos sobre el escenario, ayuda visual en pantalla y una composicion pastel mas caricaturesca.
 - El render del juego aclara cielo, suelo, minimapa y sprites para que el ambiente se sienta mas de dibujos animados y menos oscuro, conservando la misma historia y progresion por niveles.
@@ -81,6 +93,26 @@ Actualizacion 2026-04-17 (menus administrativos: ocultar/mostrar solo en movil):
 - `web/menu.js` coordina el estado colapsado del sidebar compartido y mantiene el menu completo sin cambios en escritorio.
 - `web/estilos.css` conserva el apilado vertical en movil y, cuando el menu se oculta, deja visible solo el boton final para volver a expandirlo.
 - Impacto de permisos: sin cambios; el ajuste es exclusivo de UX y no altera rutas, roles ni acciones disponibles.
+
+Actualizacion 2026-04-18 (submenu de configuracion: boton de ocultar menu en movil):
+- Se ajusta `web/administrar_empresa/configuracion_menu.html` para reutilizar el mismo patron responsive del sidebar plegable ya presente en los shells administrativos principales.
+- La vista carga `web/menu.js`, agrega `admin-sidebar-mobile-collapsible` y publica el boton final `Ocultar menú` / `Mostrar menú` dentro del submenú de configuracion, manteniendo intactos sus mismos accesos internos.
+- Impacto de permisos: sin cambios; es solo un ajuste de UX responsive dentro del modulo autenticado de configuracion empresarial.
+
+Actualizacion 2026-04-18 (submenu de configuracion: permisos e integraciones dejan de ser placeholders):
+- `web/administrar_empresa/configuracion_permisos.html` reemplaza los botones falsos de agregar/guardar por una consulta real al endpoint `/api/empresa/permisos_contexto?include_matrix=1`, mostrando rol detectado, rol efectivo, modulos y matriz de roles disponible para la empresa autenticada.
+- `web/administrar_empresa/configuracion_integraciones.html` deja de usar `alert()` y pasa a cargar/guardar la configuracion real de Wompi y Epayco mediante `/api/empresa/venta_publica?action=config`, incluyendo `slug`, dominio publico, moneda y enlaces de tienda publica.
+- Impacto de permisos: sin ampliacion de privilegios; `Permisos` pasa a ser una vista informativa de solo lectura sobre el contexto ya permitido y `Integraciones` reutiliza el mismo alcance autenticado de venta publica que ya existia para la empresa.
+
+Actualizacion 2026-04-18 (submenu de configuracion: bloque general ya persiste en backend):
+- `web/administrar_empresa/configuracion.html` deja de guardar el bloque `Productos y pedidos` en `localStorage` y pasa a consumir `GET/PUT /api/empresa/configuracion_general`.
+- `backend/db/empresa_configuracion_general.go` crea el almacenamiento relacional por `empresa_id` para orden de servicio, descuentos y lector de codigo de barras; `backend/handlers/empresa_configuracion_general.go` expone la API autenticada y su prueba valida carga default y guardado real.
+- Impacto de permisos: sin ampliacion de privilegios; la nueva ruta queda bajo el mismo wrapper `WithEmpresaSeguridadPermissions` del submodulo configuracion empresarial.
+
+Actualizacion 2026-04-18 (submenu de configuracion: enlace Avanzada corrige destino empresarial):
+- `web/administrar_empresa/configuracion_menu.html` deja de apuntar a `/super/configuracion_avanzada.html` desde el panel de empresa y ahora abre la seccion avanzada real dentro de `web/administrar_empresa/configuracion.html`.
+- `web/administrar_empresa/configuracion.html` publica anclas para `Documento de venta e impresion` y `Formato monetario y numerico`, de forma que el acceso `Avanzada` permanezca dentro del alcance de la empresa.
+- Impacto de permisos: reduce riesgo de navegacion a una vista super global desde el submenu empresarial; no cambia roles ni wrappers.
 
 Actualizacion 2026-04-17 (editar empresa: CTA de compra para licencias vencidas):
 - La vista `editar_empresa.html` ahora muestra el boton `Comprar licencia` solo cuando la empresa consultada tiene licencias historicas vencidas y no conserva una licencia activa vigente.

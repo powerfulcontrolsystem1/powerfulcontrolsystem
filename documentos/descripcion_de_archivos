@@ -1,5 +1,70 @@
 Descripcion de archivos del proyecto
 
+Actualizacion 2026-04-18: arranque PostgreSQL respeta el puerto del tunel local
+ - Archivos modificados:
+	 - backend/main.go : Reescribe los DSN de PostgreSQL hacia `DB_VPS_LOCAL_PORT` cuando `DB_VPS_TUNNEL_ENABLED=1`, evitando que el backend arranque contra `127.0.0.1:5432` cuando el tunel local real usa otro puerto.
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: El backend al iniciar usa la misma logica de tunel local que ya empleaban las verificaciones operativas, por lo que puede conectarse a PostgreSQL del VPS sin requerir editar manualmente `DB_EMPRESAS_DSN` y `DB_SUPERADMIN_DSN` cada vez que cambia el puerto local del tunel.
+
+Actualizacion 2026-04-18: configuracion empresarial principal pasa a persistencia real
+ - Archivos creados:
+	 - backend/db/empresa_configuracion_general.go : Agrega la tabla y helpers de persistencia para reglas generales de productos y pedidos por `empresa_id`.
+	 - backend/handlers/empresa_configuracion_general.go : Expone `GET/PUT /api/empresa/configuracion_general` para cargar y guardar esa configuracion empresarial.
+	 - backend/handlers/empresa_configuracion_general_test.go : Valida la carga default y el guardado real del nuevo endpoint.
+ - Archivos modificados:
+	 - backend/main.go : Registra esquema, migracion y ruta del nuevo modulo de configuracion general.
+	 - web/administrar_empresa/configuracion.html : Sustituye `localStorage` por carga/guardado real en backend para el bloque `Productos y pedidos` y para la restauracion de backup de ese bloque.
+	 - documentos/estructura_bd.md
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_del_proyecto
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: La pagina principal de configuracion empresarial deja de simular persistencia local en navegador y ahora guarda de forma real, aislada por `empresa_id`, las reglas de orden de servicio, descuentos y lector de codigo de barras.
+
+Actualizacion 2026-04-18: submenu configuracion empresarial corrige vistas de permisos e integraciones
+ - Archivos modificados:
+	 - web/administrar_empresa/configuracion_permisos.html : Sustituye el placeholder de roles por una vista real de solo lectura que consulta `/api/empresa/permisos_contexto?include_matrix=1` y muestra rol, resumen, modulos y matriz de roles.
+	 - web/administrar_empresa/configuracion_integraciones.html : Sustituye botones placeholder por un formulario funcional que carga y guarda la configuracion de Wompi/Epayco reutilizando `/api/empresa/venta_publica?action=config`.
+	 - documentos/descripcion_del_proyecto
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: Las dos vistas rotas del submenú `Configuración` dejan de usar `prompt()` y `alert()` falsos; `Permisos` ahora informa el contexto real permitido y `Integraciones` permite guardar credenciales/referencias de pasarelas con persistencia real en backend.
+
+Actualizacion 2026-04-18: ventas simples por estacion agrega boton de regreso a estaciones
+ - Archivos modificados:
+	 - web/administrar_empresa/ventas_simple.html : Agrega en la cabecera el boton `Regresar a estaciones` dentro de la vista de carrito por estacion.
+	 - web/js/ventas_simple.js : Añade la URL de retorno a `administrar_empresa/estaciones.html` conservando `empresa_id` y enlaza el nuevo boton.
+	 - documentos/descripcion_del_proyecto
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: La vista de carrito de estacion recupera una salida directa a la pantalla de estaciones para evitar que el operador quede atrapado en la venta simple cuando necesita volver al tablero operativo.
+
+Actualizacion 2026-04-18: ventas por estacion quedan compatibles con PostgreSQL al crear items, metricas y documento de venta
+ - Archivos modificados:
+	 - backend/db/carritos_compras.go : Sustituye `LastInsertId` por `insertSQLCompat` / `insertTxSQLCompat` en la creacion de carritos, items y metricas de estacion para que el flujo de venta funcione tambien en PostgreSQL.
+	 - backend/db/empresa_configuracion_avanzada.go : Asegura el esquema antes de leer o guardar configuracion avanzada, regularizando instalaciones legacy que aun no tienen `modo_documento_venta`.
+	 - backend/db/documentos_transaccionales.go : Autorrepara en PostgreSQL la secuencia/default del campo `id` de documentos transaccionales y fuerza esa verificacion antes de leer o grabar documentos.
+	 - backend/db/sql_compat.go : Agrega saneamiento global para tablas PostgreSQL con `id` primario sin `nextval`, recreando secuencia/default y reajustando el contador al `MAX(id)` actual.
+	 - backend/main.go : Ejecuta el saneamiento global de secuencias `id` al arrancar tanto en `pcs_empresas` como en `pcs_superadministrador`.
+	 - backend/db/facturacion_electronica_test.go : Añade regresion para una configuracion avanzada legacy sin `modo_documento_venta`, validando la autorreparacion del esquema al consultar.
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: El flujo de ventas por estacion deja de fallar en PostgreSQL al registrar items o metricas, vuelve a poder resolver el documento automatico de venta con configuracion avanzada legacy y ahora el backend sanea de forma global las tablas heredadas cuyo `id` primario no autogenera valores en ninguna de las dos bases PostgreSQL.
+
 Actualizacion 2026-04-18: selector de empresas compacta tarjetas y fija botonera al pie
  - Archivos modificados:
 	 - web/estilos.css : Reduce el ancho y alto visual de las tarjetas de `seleccionar_empresa.html`, limita mejor la descripcion y deja la botonera inferior centrada al pie de cada tarjeta.
@@ -52,6 +117,18 @@ Actualizacion 2026-04-18: checkout de licencias valida contexto multiempresa y c
 	 - documentos/historial_de_cambios
 	 - CHANGELOG.md
  - Descripcion: El checkout deja de reconciliar pagos ajenos a la empresa abierta y el correo de activacion ya no cae al fallback `tu empresa` cuando la tabla `empresas` usa un id fisico distinto del `empresa_id` logico.
+
+Actualizacion 2026-04-18: estaciones dejan solo el indicador cuadrado superior del sensor
+ - Archivos modificados:
+	 - web/administrar_empresa/estaciones.html : Retira el circulo inferior de estado de la tarjeta y conserva solo el cuadrito superior derecho asociado al sensor de la estacion.
+	 - web/estilos.css : Elimina los estilos del badge circular inferior ya retirado del render de estaciones.
+	 - documentos/descripcion_del_proyecto
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: La tarjeta operativa de estaciones queda con un unico indicador visual en la esquina superior derecha, preparado para ponerse verde cuando el modulo de sensores detecte activacion en la estacion correspondiente.
 
 Actualizacion 2026-04-17: selector de empresas mueve editar al menu y renueva tarjetas
  - Archivos modificados:

@@ -707,7 +707,7 @@ func CreateCarritoCompra(dbConn *sql.DB, payload CarritoCompra) (int64, error) {
 		metodoPago = "efectivo"
 	}
 	moneda := defaultMonedaEmpresa(dbConn, payload.EmpresaID, payload.Moneda)
-	res, err := dbConn.Exec(`INSERT INTO carritos_compras (
+	return insertSQLCompat(dbConn, `INSERT INTO carritos_compras (
 		empresa_id,
 		codigo,
 		nombre,
@@ -748,10 +748,6 @@ func CreateCarritoCompra(dbConn *sql.DB, payload CarritoCompra) (int64, error) {
 		metodoPago,
 		strings.TrimSpace(payload.ReferenciaPago),
 	)
-	if err != nil {
-		return 0, err
-	}
-	return res.LastInsertId()
 }
 
 // GetCarritosCompraByEmpresa lista carritos por empresa.
@@ -1265,7 +1261,7 @@ func RecordCarritoStationMetric(dbConn *sql.DB, input CarritoStationMetricInput)
 		fechaEvento = strings.TrimSpace(input.ActivadoEn)
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_ventas_estacion_metricas (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_ventas_estacion_metricas (
 		empresa_id,
 		carrito_id,
 		estacion_id,
@@ -1312,7 +1308,7 @@ func RecordCarritoStationMetric(dbConn *sql.DB, input CarritoStationMetricInput)
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
 // ListCarritoStationMetricSummary resume ventas, correcciones y tiempos por estacion.
@@ -1423,7 +1419,7 @@ func CreateCarritoCompraItem(dbConn *sql.DB, payload CarritoCompraItem) (int64, 
 			return err
 		}
 
-		res, err := tx.Exec(`INSERT INTO carrito_compra_items (
+		itemID, insertErr := insertTxSQLCompat(tx, `INSERT INTO carrito_compra_items (
 			empresa_id,
 			carrito_id,
 			tipo_item,
@@ -1467,13 +1463,10 @@ func CreateCarritoCompraItem(dbConn *sql.DB, payload CarritoCompraItem) (int64, 
 			strings.TrimSpace(payload.UsuarioCreador),
 			strings.TrimSpace(payload.Observaciones),
 		)
-		if err != nil {
-			return err
+		if insertErr != nil {
+			return insertErr
 		}
-		id, err = res.LastInsertId()
-		if err != nil {
-			return err
-		}
+		id = itemID
 
 		if isItemActivo(payload.Estado) {
 			referencia := fmt.Sprintf("carrito:%d:item:%d", payload.CarritoID, id)

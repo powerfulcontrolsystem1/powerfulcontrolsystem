@@ -132,6 +132,94 @@ $$;`,
 	return nil
 }
 
+// EnsurePostgresPrimaryKeySequences repara tablas legacy de PostgreSQL cuyo
+// campo id primario quedo sin secuencia/default autogenerado tras migraciones
+// antiguas derivadas del modelo SQLite.
+func EnsurePostgresPrimaryKeySequences(dbConn *sql.DB) error {
+	if dbConn == nil || !isPostgresDialect() {
+		return nil
+	}
+
+	rows, err := dbConn.Query(`SELECT c.table_name, COALESCE(c.column_default, '')
+		FROM information_schema.columns c
+		JOIN information_schema.tables t
+		  ON t.table_schema = c.table_schema
+		 AND t.table_name = c.table_name
+		JOIN information_schema.table_constraints tc
+		  ON tc.table_schema = c.table_schema
+		 AND tc.table_name = c.table_name
+		 AND tc.constraint_type = 'PRIMARY KEY'
+		JOIN information_schema.key_column_usage kcu
+		  ON kcu.table_schema = tc.table_schema
+		 AND kcu.table_name = tc.table_name
+		 AND kcu.constraint_name = tc.constraint_name
+		 AND kcu.column_name = c.column_name
+		WHERE c.table_schema = current_schema()
+		  AND t.table_type = 'BASE TABLE'
+		  AND c.column_name = 'id'
+		  AND (c.data_type IN ('integer', 'bigint') OR c.udt_name IN ('int4', 'int8'))
+		ORDER BY c.table_name`)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var tableName string
+		var columnDefault string
+		if err := rows.Scan(&tableName, &columnDefault); err != nil {
+			return err
+		}
+		if strings.Contains(strings.ToLower(columnDefault), "nextval(") {
+			continue
+		}
+		if err := ensurePostgresTableIDSequence(dbConn, tableName); err != nil {
+			return fmt.Errorf("ensure postgres id sequence for %s: %w", tableName, err)
+		}
+	}
+
+	return rows.Err()
+}
+
+func ensurePostgresTableIDSequence(dbConn *sql.DB, tableName string) error {
+	if dbConn == nil || !isPostgresDialect() {
+		return nil
+	}
+
+	quotedTable := quotePostgresIdentifier(tableName)
+	seqName := tableName + "_id_seq"
+	quotedSeq := quotePostgresIdentifier(seqName)
+
+	if _, err := dbConn.Exec(fmt.Sprintf(`CREATE SEQUENCE IF NOT EXISTS %s`, quotedSeq)); err != nil {
+		return err
+	}
+	if _, err := dbConn.Exec(fmt.Sprintf(`ALTER SEQUENCE %s OWNED BY %s.id`, quotedSeq, quotedTable)); err != nil {
+		return err
+	}
+	if _, err := dbConn.Exec(fmt.Sprintf(`ALTER TABLE %s ALTER COLUMN id SET DEFAULT nextval('%s')`, quotedTable, seqName)); err != nil {
+		return err
+	}
+
+	var maxID int64
+	if err := dbConn.QueryRow(fmt.Sprintf(`SELECT COALESCE(MAX(id), 0) FROM %s`, quotedTable)).Scan(&maxID); err != nil {
+		return err
+	}
+	if maxID > 0 {
+		if _, err := dbConn.Exec(`SELECT setval($1, $2, true)`, seqName, maxID); err != nil {
+			return err
+		}
+		return nil
+	}
+	if _, err := dbConn.Exec(`SELECT setval($1, 1, false)`, seqName); err != nil {
+		return err
+	}
+	return nil
+}
+
+func quotePostgresIdentifier(value string) string {
+	return `"` + strings.ReplaceAll(value, `"`, `""`) + `"`
+}
+
 type pgxCompatDriver struct {
 	base driver.Driver
 }

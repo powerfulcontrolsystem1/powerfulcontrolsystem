@@ -5,15 +5,16 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Configuración - Menú</title>
   <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
 </head>
 <body class="admin-empresa-shell">
   <div class="admin-layout">
-    <aside class="admin-sidebar">
+    <aside class="admin-sidebar admin-sidebar-mobile-collapsible">
       <h2>Configuración</h2>
-      <ul class="nav">
+      <ul class="nav" id="configuracionSidebarNav">
         <li><a id="linkConfiguracionMain" href="/administrar_empresa/configuracion.html" target="configuracionContentFrame"><img class="icon" src="/img/settings-color.svg" alt="">General</a></li>
         <li><a id="linkConfiguracionPermisos" href="/administrar_empresa/configuracion_permisos.html" target="configuracionContentFrame"><img class="icon" src="/img/shield-license-color.svg" alt="">Permisos</a></li>
-        <li><a id="linkConfiguracionAvanzada" href="/super/configuracion_avanzada.html" target="configuracionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Avanzada</a></li>
+        <li><a id="linkConfiguracionAvanzada" href="/administrar_empresa/configuracion.html#configuracionDocumentoVenta" target="configuracionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Avanzada</a></li>
         <li><a id="linkConfiguracionIntegraciones" href="/administrar_empresa/configuracion_integraciones.html" target="configuracionContentFrame"><img class="icon" src="/img/network-color.svg" alt="">Integraciones</a></li>
         <li><a id="linkCarritoCompras" href="/administrar_empresa/carrito_de_compras.html" target="configuracionContentFrame"><img class="icon" src="/img/shield-license-color.svg" alt="">Carrito de compras</a></li>
         <li><a id="linkPropinas" href="/administrar_empresa/propinas.html" target="configuracionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Propinas</a></li>
@@ -21,6 +22,12 @@
         <li><a id="linkConfigEstaciones" href="/administrar_empresa/configuracion_de_estaciones.html" target="configuracionContentFrame"><img class="icon" src="/img/network-color.svg" alt="">Configuración de estaciones</a></li>
         <li><a id="linkTarifasPorMinutos" href="/administrar_empresa/tarifas_por_minutos.html" target="configuracionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Tarifas por minutos</a></li>
         <li><a id="linkTarifasPorDia" href="/administrar_empresa/tarifas_por_dia.html" target="configuracionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Tarifas por día</a></li>
+        <li class="admin-menu-visibility-item">
+          <button type="button" class="admin-menu-visibility-toggle" aria-controls="configuracionSidebarNav" aria-expanded="true" data-show-label="Mostrar menú" data-hide-label="Ocultar menú">
+            <span class="admin-menu-visibility-icon" aria-hidden="true">☰</span>
+            <span class="admin-menu-visibility-label">Ocultar menú</span>
+          </button>
+        </li>
       </ul>
     </aside>
 

@@ -405,9 +405,6 @@
         const entradaHtml = carritoActivo && entradaLabel
           ? '<p class="station-entry-time">Entrada: ' + sanitize(entradaLabel) + '</p>'
           : '';
-        const badgeText = carritoActivo ? 'Carrito activo' : 'Carrito inactivo';
-        const modeText = useSimpleSales ? 'Modo: Venta simple' : 'Modo: Carrito completo';
-        const badgeClass = carritoActivo ? 'station-status-active' : 'station-status-inactive';
         const stationClass = carritoActivo ? 'station-card-active' : 'station-card-inactive';
         const stationColor = carritoActivo ? state.colores.activo : state.colores.inactivo;
 
@@ -435,7 +432,6 @@
             '<div class="station-sensor-indicator" style="background-color:' + sanitize(sensorColor) + '"></div>' +
             '<h3>' + sanitize(est.nombre) + '</h3>' +
             entradaHtml +
-            '<span class="station-status-badge ' + badgeClass + '" aria-label="' + sanitize(badgeText) + '"></span>' +
             '</article>';
       }).join('');
       grid.innerHTML = html;

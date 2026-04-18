@@ -17,6 +17,14 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 	- El correo de activacion resuelve ahora la empresa por `id` fisico o por `empresa_id` logico, manteniendo el aislamiento funcional por empresa incluso cuando la tabla `empresas` evoluciono con ids distintos del alcance operativo.
 	- Impacto de matriz: sin cambios en permisos ni wrappers; la mejora solo refuerza el aislamiento multiempresa del checkout publico.
 
+- Actualizacion 2026-04-18 (estaciones: retiro del circulo inferior de estado):
+	- `web/administrar_empresa/estaciones.html` y `web/estilos.css` simplifican la tarjeta de estaciones para dejar un solo indicador visual: el cuadrito superior derecho que luego reflejara el estado del sensor.
+	- Impacto de matriz: sin cambios en permisos, roles o wrappers; la vista de estaciones mantiene el mismo acceso autenticado y las mismas acciones.
+
+- Actualizacion 2026-04-18 (ventas simples por estacion: boton de regreso a estaciones):
+	- `web/administrar_empresa/ventas_simple.html` y `web/js/ventas_simple.js` agregan un retorno explicito hacia `administrar_empresa/estaciones.html` para la operacion por estacion.
+	- Impacto de matriz: sin cambios en permisos, roles o wrappers; el submodulo conserva el mismo acceso autenticado y solo mejora la navegacion interna.
+
 - Actualizacion 2026-04-18 (selector de empresas: tarjetas compactas con botonera al pie):
 	- `web/estilos.css` reduce el tamano visual de las tarjetas de `seleccionar_empresa.html` y fija la botonera inferior centrada al pie de cada bloque, sin tocar rutas, wrappers ni acciones disponibles.
 	- Impacto de matriz: sin cambios en permisos, roles o alcance; el selector mantiene la misma operacion autenticada.
@@ -65,6 +73,21 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 	- `web/administrar_empresa.html`, `web/super_administrador.html` y `web/seleccionar_empresa.html` agregan un boton final para contraer o expandir el menu lateral solo en movil.
 	- `web/menu.js` y `web/estilos.css` mantienen el sidebar completo en escritorio y, en moviles, dejan visible solo el boton de recuperacion cuando el usuario colapsa el menu.
 	- Impacto de matriz: sin cambios en roles, wrappers ni permisos; solo se ajusta la experiencia responsive sobre paginas ya autorizadas.
+
+- Actualizacion 2026-04-18 (submenu configuracion: ocultar/mostrar en movil):
+	- `web/administrar_empresa/configuracion_menu.html` adopta el mismo wrapper `admin-sidebar-mobile-collapsible` y el mismo boton final de `Ocultar menú` / `Mostrar menú` del shell administrativo principal.
+	- `web/menu.js` reaprovecha la misma logica de colapso sin abrir nuevas rutas ni modificar accesos del submodulo de configuracion.
+	- Impacto de matriz: sin cambios en roles, wrappers ni permisos; solo se amplía el mismo patron responsive a otra vista ya autenticada.
+
+- Actualizacion 2026-04-18 (submenu configuracion: permisos reales y guardado real de integraciones):
+	- `web/administrar_empresa/configuracion_permisos.html` deja de fingir alta/guardado de roles y pasa a consumir `GET /api/empresa/permisos_contexto?empresa_id=...&include_matrix=1`, mostrando solo informacion permitida por el wrapper de seguridad existente.
+	- `web/administrar_empresa/configuracion_integraciones.html` deja de usar placeholders y guarda Wompi/Epayco con `POST /api/empresa/venta_publica?empresa_id=...&action=config`, dentro del mismo alcance ya autorizado del modulo de venta publica por empresa.
+	- Impacto de matriz: sin cambios en roles ni wrappers; `Permisos` queda como consulta de solo lectura y `Integraciones` reaprovecha el permiso autenticado ya existente sobre `venta_publica`.
+
+- Actualizacion 2026-04-18 (submenu configuracion: persistencia real del bloque general):
+	- `web/administrar_empresa/configuracion.html` reemplaza el guardado local del bloque `Productos y pedidos` por `GET/PUT /api/empresa/configuracion_general?empresa_id=...`.
+	- `backend/handlers/empresa_configuracion_general.go` publica la ruta bajo `WithEmpresaSeguridadPermissions`, por lo que mantiene el mismo alcance autenticado de configuracion empresarial sin abrir permisos adicionales.
+	- Impacto de matriz: sin cambios en roles; solo se sustituye persistencia local por backend real dentro del wrapper de seguridad existente.
 
 - Actualizacion 2026-04-17 (ventas: selector de documento por empresa):
 	- `web/administrar_empresa/configuracion.html` agrega el selector `Documento al vender` y `backend/handlers/carritos_compras.go` lo aplica al cierre de `pagar_estacion` para emitir `factura_electronica` o `comprobante_pago`.

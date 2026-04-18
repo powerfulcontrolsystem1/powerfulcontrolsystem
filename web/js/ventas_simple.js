@@ -1390,7 +1390,19 @@
     updateSyncStatusUI();
   }
 
+  function getStationsPageURL() {
+    const params = new URLSearchParams();
+    if (state.empresaID) {
+      params.set('empresa_id', String(state.empresaID));
+    }
+    return '/administrar_empresa/estaciones.html' + (params.toString() ? ('?' + params.toString()) : '');
+  }
+
   function wireEvents() {
+    document.getElementById('btnBackToStations').addEventListener('click', function() {
+      window.location.href = getStationsPageURL();
+    });
+
     document.getElementById('btnRecargar').addEventListener('click', function() {
       refreshAndRender().catch(function(err) {
         setMessage('mainMsg', err.message || 'No se pudo actualizar la vista.', 'error');

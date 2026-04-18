@@ -1,7 +1,7 @@
 # Estructura del Base de Datos
 
-Version: 2026-04-17.53.0
-Ultima actualizacion: 2026-04-17
+Version: 2026-04-18.54.0
+Ultima actualizacion: 2026-04-18
 
 Este documento consolida la estructura relacional activa del proyecto.
 Nota de gobernanza documental:
@@ -98,6 +98,12 @@ Todas las tablas operativas usan como base los campos estandar:
   - unidad_medida, cantidad, precio_unitario
   - descuento_porcentaje, impuesto_porcentaje, impuesto_codigo
   - base_gravable, valor_descuento, valor_impuesto, subtotal_linea, total_linea
+- empresa_configuracion_general:
+  - empresa_id (UNIQUE)
+  - imprimir_orden_servicio, area_despacho, copias_orden_servicio, nota_orden_servicio
+  - descuentos_habilitados, permitir_descuento_porcentaje, permitir_descuento_codigo, permitir_descuento_valor
+  - codigos_descuento
+  - lector_codigo_barras_habilitado, lector_codigo_barras_autofoco, lector_codigo_barras_acumular
 
 ### Tablas de venta publica por empresa
 - empresa_venta_publica_configuracion:

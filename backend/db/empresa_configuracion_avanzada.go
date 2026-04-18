@@ -354,6 +354,10 @@ func normalizeCantidadDecimales(v int64) int64 {
 // GetEmpresaConfiguracionAvanzada obtiene la configuración avanzada por empresa.
 // Si no existe registro, retorna valores por defecto para facilitar captura inicial.
 func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaConfiguracionAvanzada, error) {
+	if err := EnsureEmpresaConfiguracionAvanzadaSchema(dbConn); err != nil {
+		return nil, err
+	}
+
 	row := dbConn.QueryRow(`SELECT
 		id,
 		empresa_id,
@@ -477,6 +481,10 @@ func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaC
 
 // UpsertEmpresaConfiguracionAvanzada crea o actualiza la configuración avanzada por empresa.
 func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfiguracionAvanzada) (int64, error) {
+	if err := EnsureEmpresaConfiguracionAvanzadaSchema(dbConn); err != nil {
+		return 0, err
+	}
+
 	if payload.EmpresaID <= 0 {
 		return 0, fmt.Errorf("empresa_id requerido")
 	}

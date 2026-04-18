@@ -219,7 +219,6 @@ func TestFacturacionElectronicaRetryUpsertGetAndList(t *testing.T) {
 	if strings.TrimSpace(consultado.UltimoError) == "" {
 		t.Fatalf("expected ultimo_error not empty")
 	}
-
 	items, err := ListFacturacionElectronicaRetriesByEmpresa(dbConn, 510, FacturacionElectronicaRetryFilter{
 		EstadoEnvio: "fallido",
 		Limit:       10,
@@ -257,6 +256,52 @@ func TestFacturacionElectronicaRetryUpsertGetAndList(t *testing.T) {
 	}
 	if actualizado.ReferenciaExterna != "MANUAL-REF-510" {
 		t.Fatalf("expected referencia_externa MANUAL-REF-510, got %q", actualizado.ReferenciaExterna)
+	}
+}
+
+func TestGetEmpresaConfiguracionAvanzadaRepairsMissingModoDocumentoVentaColumn(t *testing.T) {
+	dbConn := openFinanzasTestDB(t)
+
+	if _, err := dbConn.Exec(`CREATE TABLE empresa_configuracion_avanzada (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		empresa_id INTEGER NOT NULL UNIQUE,
+		tipo_documento_emisor TEXT DEFAULT 'NIT',
+		fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+		fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+		usuario_creador TEXT,
+		estado TEXT DEFAULT 'activo',
+		observaciones TEXT
+	)`); err != nil {
+		t.Fatalf("create legacy configuracion avanzada schema: %v", err)
+	}
+
+	if _, err := dbConn.Exec(`INSERT INTO empresa_configuracion_avanzada (
+		empresa_id,
+		tipo_documento_emisor,
+		usuario_creador,
+		estado,
+		observaciones
+	) VALUES (?, 'NIT', 'legacy@test.com', 'activo', 'schema legado sin modo_documento_venta')`, 777); err != nil {
+		t.Fatalf("insert legacy configuracion avanzada row: %v", err)
+	}
+
+	cfg, err := GetEmpresaConfiguracionAvanzada(dbConn, 777)
+	if err != nil {
+		t.Fatalf("get configuracion avanzada legacy: %v", err)
+	}
+	if cfg == nil {
+		t.Fatal("expected configuracion avanzada, got nil")
+	}
+	if cfg.ModoDocumentoVenta != defaultModoDocumentoVenta {
+		t.Fatalf("expected default modo_documento_venta %q, got %q", defaultModoDocumentoVenta, cfg.ModoDocumentoVenta)
+	}
+
+	var persisted string
+	if err := dbConn.QueryRow(`SELECT COALESCE(modo_documento_venta, '') FROM empresa_configuracion_avanzada WHERE empresa_id = ?`, 777).Scan(&persisted); err != nil {
+		t.Fatalf("query repaired modo_documento_venta: %v", err)
+	}
+	if persisted != defaultModoDocumentoVenta {
+		t.Fatalf("expected repaired modo_documento_venta %q, got %q", defaultModoDocumentoVenta, persisted)
 	}
 }
 

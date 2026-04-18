@@ -94,6 +94,7 @@ try {
     id = resolveEmpresaIdContext();
   }
   var titleMenu = document.getElementById("empresaTitleMenu");
+  var empresaNameMenu = document.getElementById("empresaNameMenu");
   var title = titleMenu || document.getElementById("empresaTitle");
   var frame = document.getElementById("contentFrame") || document.querySelector("iframe.admin-empresa-frame");
   var portalUsuariosLink = document.getElementById("linkPortalUsuarios");
@@ -735,28 +736,16 @@ try {
         return resp.json();
       })
       .then(function (data) {
-        var nombre = data && (data.nombre || data.Nombre);
-        if (nombre) {
-          if (titleMenu) {
-            titleMenu.textContent = "Administrar Empresa - " + nombre;
-            document.title = titleMenu.textContent;
-          } else if (title) {
-            var cur = String(title.textContent || "").trim();
-            // Only override if the current title is the generic placeholder
-            if (!cur || cur === "Administrar Empresa" || cur.indexOf("Administrar Empresa -") === 0) {
-              title.textContent = "Administrar Empresa - " + nombre;
-              document.title = title.textContent;
-            }
+          var nombre = data && (data.nombre || data.Nombre);
+          if (nombre) {
+            if (titleMenu) titleMenu.textContent = "Administrar Empresa";
+            if (empresaNameMenu) empresaNameMenu.textContent = String(nombre);
+            // Keep the browser title including the company name for clarity
+            document.title = "Administrar Empresa - " + nombre;
+          } else {
+            if (titleMenu) titleMenu.textContent = "Administrar Empresa";
+            if (empresaNameMenu) empresaNameMenu.textContent = "";
           }
-        } else {
-          if (titleMenu) titleMenu.textContent = "Administrar Empresa";
-          else if (title) {
-            var cur2 = String(title.textContent || "").trim();
-            if (!cur2 || cur2.indexOf("Administrar Empresa -") === 0) {
-              title.textContent = "Administrar Empresa";
-            }
-          }
-        }
       })
       .catch(function (err) {
         console.warn("No se pudo cargar empresa:", err);

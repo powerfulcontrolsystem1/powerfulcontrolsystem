@@ -302,11 +302,68 @@ func EnsureEmpresaDocumentosTransaccionalesSchema(dbConn *sql.DB) error {
 		}
 	}
 
+	if err := ensurePostgresDocumentTableIDSequence(dbConn, "empresa_facturacion_documentos"); err != nil {
+		return err
+	}
+	if err := ensurePostgresDocumentTableIDSequence(dbConn, "empresa_compras_documentos"); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func ensurePostgresDocumentTableIDSequence(dbConn *sql.DB, tableName string) error {
+	if dbConn == nil || !isPostgresDialect() {
+		return nil
+	}
+
+	var columnDefault string
+	err := dbConn.QueryRow(`SELECT COALESCE(column_default, '')
+		FROM information_schema.columns
+		WHERE table_schema = current_schema() AND table_name = $1 AND column_name = 'id'`, tableName).Scan(&columnDefault)
+	if err == sql.ErrNoRows {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if strings.Contains(strings.ToLower(columnDefault), "nextval(") {
+		return nil
+	}
+
+	seqName := tableName + "_id_seq"
+	if _, err := dbConn.Exec(fmt.Sprintf(`CREATE SEQUENCE IF NOT EXISTS %s`, seqName)); err != nil {
+		return err
+	}
+	if _, err := dbConn.Exec(fmt.Sprintf(`ALTER SEQUENCE %s OWNED BY %s.id`, seqName, tableName)); err != nil {
+		return err
+	}
+	if _, err := dbConn.Exec(fmt.Sprintf(`ALTER TABLE %s ALTER COLUMN id SET DEFAULT nextval('%s')`, tableName, seqName)); err != nil {
+		return err
+	}
+
+	var maxID int64
+	if err := dbConn.QueryRow(fmt.Sprintf(`SELECT COALESCE(MAX(id), 0) FROM %s`, tableName)).Scan(&maxID); err != nil {
+		return err
+	}
+	if maxID > 0 {
+		if _, err := dbConn.Exec(`SELECT setval($1, $2, true)`, seqName, maxID); err != nil {
+			return err
+		}
+		return nil
+	}
+	if _, err := dbConn.Exec(`SELECT setval($1, 1, false)`, seqName); err != nil {
+		return err
+	}
 	return nil
 }
 
 // GetEmpresaDocumentoFacturacionByCodigo obtiene un documento de facturacion por llave de negocio.
 func GetEmpresaDocumentoFacturacionByCodigo(dbConn *sql.DB, empresaID int64, tipoDocumento, documentoCodigo string) (*EmpresaDocumentoFacturacion, error) {
+	if err := EnsureEmpresaDocumentosTransaccionalesSchema(dbConn); err != nil {
+		return nil, err
+	}
+
 	if empresaID <= 0 {
 		return nil, fmt.Errorf("empresa_id es obligatorio")
 	}
@@ -372,6 +429,10 @@ func GetEmpresaDocumentoFacturacionByCodigo(dbConn *sql.DB, empresaID int64, tip
 
 // UpsertEmpresaDocumentoFacturacion registra o actualiza estado transaccional de facturacion.
 func UpsertEmpresaDocumentoFacturacion(dbConn *sql.DB, payload EmpresaDocumentoFacturacion) (*EmpresaDocumentoFacturacion, error) {
+	if err := EnsureEmpresaDocumentosTransaccionalesSchema(dbConn); err != nil {
+		return nil, err
+	}
+
 	if payload.EmpresaID <= 0 {
 		return nil, fmt.Errorf("empresa_id es obligatorio")
 	}

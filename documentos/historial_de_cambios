@@ -1,5 +1,144 @@
  - Historial de cambios
 
+ - 2026-04-18: Arranque PostgreSQL respeta el puerto del tunel local
+     - Archivos modificados:
+         - backend/main.go
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: `resolveRuntimePostgresDSN` ahora reescribe los DSN hacia `DB_VPS_LOCAL_PORT` cuando `DB_VPS_TUNNEL_ENABLED=1`, alineando el arranque normal del backend con los scripts operativos que ya usaban el tunel local a PostgreSQL del VPS.
+     - Verificacion tecnica:
+         - `go test ./ ./auth ./db ./handlers ./metrics ./utils -run '^$' -count=1`
+         - `go run .` con `.env.local` y tunel activo hacia `127.0.0.1:15432`
+
+ - 2026-04-18: Ventas simples por estacion agrega retorno directo a estaciones
+     - Archivos modificados:
+         - web/administrar_empresa/ventas_simple.html
+         - web/js/ventas_simple.js
+         - documentos/descripcion_del_proyecto
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: La vista de carrito de estacion agrega un boton `Regresar a estaciones` que devuelve al tablero `administrar_empresa/estaciones.html` conservando el `empresa_id` actual.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/administrar_empresa/ventas_simple.html` y `web/js/ventas_simple.js`.
+
+ - 2026-04-18: Configuracion empresarial principal deja de guardar solo en navegador
+     - Archivos creados:
+         - backend/db/empresa_configuracion_general.go
+         - backend/handlers/empresa_configuracion_general.go
+         - backend/handlers/empresa_configuracion_general_test.go
+     - Archivos modificados:
+         - backend/main.go
+         - web/administrar_empresa/configuracion.html
+         - documentos/estructura_bd.md
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_del_proyecto
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: El bloque `Productos y pedidos` de `Configuracion > General` deja de persistir solo en `localStorage` y pasa a usar la nueva ruta `GET/PUT /api/empresa/configuracion_general`, con almacenamiento relacional real por `empresa_id` y restauracion de backup sobre backend.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `backend/db/empresa_configuracion_general.go`, `backend/handlers/empresa_configuracion_general.go`, `backend/handlers/empresa_configuracion_general_test.go`, `backend/main.go` y `web/administrar_empresa/configuracion.html`.
+         - `go test ./handlers -run '^(TestEmpresaConfiguracionGeneralHandlerGetAndSave|TestEmpresaVentaPublicaHandlerConfigCatalogoYToggle|TestEmpresaConfiguracionOperativaHandler(ConfigAndRole|PoliticaSimulacionHistorialYRollback))$' -count=1`
+
+ - 2026-04-18: Submenu configuracion corrige enlace Avanzada dentro del panel empresa
+     - Archivos modificados:
+         - web/administrar_empresa/configuracion_menu.html
+         - web/administrar_empresa/configuracion.html
+         - documentos/descripcion_de_modulos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: La opcion `Avanzada` del submenu de configuracion empresarial deja de enlazar accidentalmente al panel super global y ahora abre la seccion avanzada real de la propia configuracion de empresa.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/administrar_empresa/configuracion_menu.html` y `web/administrar_empresa/configuracion.html`.
+
+ - 2026-04-18: Submenu configuracion corrige vistas de permisos e integraciones y valida guardado
+     - Archivos modificados:
+         - web/administrar_empresa/configuracion_permisos.html
+         - web/administrar_empresa/configuracion_integraciones.html
+         - documentos/descripcion_del_proyecto
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: `Configuracion > Permisos` deja de usar botones falsos y ahora muestra el contexto real de permisos de la empresa; `Configuracion > Integraciones` deja de ser placeholder y pasa a cargar/guardar la configuracion empresarial de Wompi y Epayco reutilizando el endpoint real de venta publica.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/administrar_empresa/configuracion_permisos.html` y `web/administrar_empresa/configuracion_integraciones.html`.
+         - `go test ./handlers -run '^TestEmpresaVentaPublicaHandlerConfigCatalogoYToggle$' -count=1`
+         - `go test ./handlers -run '^TestEmpresaConfiguracionOperativaHandler(ConfigAndRole|PoliticaSimulacionHistorialYRollback)$' -count=1`
+
+ - 2026-04-18: Ventas por estacion corrigen inserciones PostgreSQL y autorreparan configuracion avanzada legacy
+     - Archivos modificados:
+         - backend/db/carritos_compras.go
+         - backend/db/empresa_configuracion_avanzada.go
+         - backend/db/documentos_transaccionales.go
+         - backend/db/sql_compat.go
+         - backend/main.go
+         - backend/db/facturacion_electronica_test.go
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se reemplazan las inserciones del flujo de carritos que aun dependian de `LastInsertId` por helpers portables para PostgreSQL, se fuerza la regularizacion de `empresa_configuracion_avanzada` antes de leer o guardar `modo_documento_venta`, se autorreparan las tablas legacy de documentos transaccionales y se agrega un saneamiento global al arranque para cualquier tabla de PostgreSQL con llave primaria `id` sin secuencia/default.
+     - Verificacion tecnica:
+         - `go test ./db -run 'Test(GetEmpresaConfiguracionAvanzadaRepairsMissingModoDocumentoVentaColumn|PrepareFacturacionDocumentoLegal|FacturacionElectronicaRetryUpsertGetAndList)' -count=1`
+         - `go test ./handlers -run 'Test(VentaCarritoFacturaYResolucionImpresora|VentaCarritoGeneraComprobantePagoSegunConfiguracion)' -count=1`
+         - `go test ./ ./auth ./db ./handlers ./metrics ./utils -run '^$' -count=1`
+
+ - 2026-04-18: Estaciones retira el circulo inferior y conserva solo el indicador cuadrado del sensor
+     - Archivos modificados:
+         - web/administrar_empresa/estaciones.html
+         - web/estilos.css
+         - documentos/descripcion_del_proyecto
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: La vista de estaciones elimina el circulo centrado inferior de la tarjeta y mantiene solo el cuadrito superior derecho para representar el estado del sensor de la estacion.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/administrar_empresa/estaciones.html` y `web/estilos.css`.
+
+ - 2026-04-18: Selector de empresas alinea tarjetas a la izquierda
+     - Archivos modificados:
+         - web/estilos.css
+     - Descripcion: Ajuste CSS para que las tarjetas en `seleccionar_empresa.html` se alineen a la izquierda en lugar de estar centradas.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/estilos.css`.
+
+ - 2026-04-18: Submenu de configuracion empresarial agrega ocultar/mostrar menu en movil
+     - Archivos modificados:
+         - web/administrar_empresa/configuracion_menu.html
+         - documentos/descripcion_del_proyecto
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: La vista `administrar_empresa/configuracion_menu.html` ahora reutiliza el mismo boton final para ocultar o mostrar el menu lateral en celular que ya usan los shells administrativos principales, cargando `menu.js` y el wrapper plegable compartido.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/administrar_empresa/configuracion_menu.html`.
+
+ - 2026-04-18: Título de tarjetas en `seleccionar_empresa` en negrita; descripción normal
+     - Archivos modificados:
+         - web/estilos.css
+     - Descripcion: Se añadió regla CSS para que el `h3.card-title` de las tarjetas aparezca en negrita y el `p.card-desc` use peso normal, mejorando legibilidad.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/estilos.css`.
+
+ - 2026-04-18: 'Total: N' en selector de empresas en color blanco
+     - Archivos modificados:
+         - web/estilos.css
+     - Descripcion: Se añadió regla CSS para que el elemento `span.empresa-group-total` muestre el texto en color blanco (variable `--text`).
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/estilos.css`.
+
  - 2026-04-18: Checkout de licencias valida contexto multiempresa y corrige el nombre de empresa en correos de activacion
      - Archivos modificados:
          - backend/db/db.go
@@ -30,6 +169,16 @@
      - Descripcion: Las tarjetas de `seleccionar_empresa.html` reducen su tamano visual y mantienen los botones alineados al pie y centrados dentro de cada bloque, mejorando la lectura del grid sin tocar la logica del selector.
      - Verificacion tecnica:
          - Diagnostico del editor sin errores en `web/estilos.css`.
+
+ - 2026-04-18: Eliminar 'Accesos directos' en inicio de administrar_empresa y mostrar nombre debajo del título
+     - Archivos modificados:
+         - web/administrar_empresa/inicio.html
+         - web/administrar_empresa.html
+         - web/js/administrar_empresa.js
+         - web/estilos.css
+     - Descripcion: Se eliminó la tarjeta "Accesos directos" de la página de inicio de la empresa; además se agregó `empresaNameMenu` en la barra lateral para mostrar el nombre de la empresa debajo de "Administrar Empresa" y se añadió CSS para alinear ambos textos a la izquierda.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en los archivos modificados.
 
  - 2026-04-18: Brigada burbujas 3D plus activa auto-disparo por defecto y preset facil movil
      - Archivos modificados:

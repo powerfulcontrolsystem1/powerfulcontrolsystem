@@ -2,6 +2,42 @@
 
 ## 2026-04-18
 
+- Arranque PostgreSQL: el backend ahora respeta el puerto del tunel local.
+	- Archivos modificados: `backend/main.go`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: `resolveRuntimePostgresDSN` reescribe los DSN hacia `DB_VPS_LOCAL_PORT` cuando `DB_VPS_TUNNEL_ENABLED=1`, evitando que `go run .` o el binario del backend fallen por autenticacion contra `127.0.0.1:5432` cuando la conexion valida al VPS pasa por otro puerto local del tunel.
+	- Verificacion: `go test ./ ./auth ./db ./handlers ./metrics ./utils -run '^$' -count=1`; `go run .` con `.env.local` y tunel activo.
+
+- Configuracion empresarial: el bloque general `Productos y pedidos` ahora guarda en backend.
+	- Archivos creados: `backend/db/empresa_configuracion_general.go`, `backend/handlers/empresa_configuracion_general.go`, `backend/handlers/empresa_configuracion_general_test.go`.
+	- Archivos modificados: `backend/main.go`, `web/administrar_empresa/configuracion.html`, `documentos/estructura_bd.md`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: la seccion principal de configuracion empresarial deja de simular guardado local y pasa a persistir por empresa con `GET/PUT /api/empresa/configuracion_general`, incluyendo orden de servicio, descuentos y lector de codigo de barras.
+	- Verificacion: diagnostico del editor sin errores en los archivos nuevos y modificados; `go test ./handlers -run '^(TestEmpresaConfiguracionGeneralHandlerGetAndSave|TestEmpresaVentaPublicaHandlerConfigCatalogoYToggle|TestEmpresaConfiguracionOperativaHandler(ConfigAndRole|PoliticaSimulacionHistorialYRollback))$' -count=1`.
+
+- Configuracion empresarial: `Avanzada` ya no sale al panel super.
+	- Archivos modificados: `web/administrar_empresa/configuracion_menu.html`, `web/administrar_empresa/configuracion.html`, `documentos/descripcion_de_modulos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: el submenu de configuracion empresarial corrige el enlace `Avanzada` para que apunte a la seccion avanzada real dentro de la configuracion de empresa, evitando navegar por error a `/super/configuracion_avanzada.html`.
+	- Verificacion: diagnostico del editor sin errores en `web/administrar_empresa/configuracion_menu.html` y `web/administrar_empresa/configuracion.html`.
+
+- Configuracion empresarial: `Permisos` e `Integraciones` dejan de ser placeholders y se valida el guardado real.
+	- Archivos modificados: `web/administrar_empresa/configuracion_permisos.html`, `web/administrar_empresa/configuracion_integraciones.html`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: la vista `Permisos` ahora consulta el contexto real de permisos por empresa y muestra la matriz disponible en solo lectura; la vista `Integraciones` reutiliza el endpoint real de `venta_publica?action=config` para cargar y guardar la configuracion de Wompi/Epayco y la tienda publica de la empresa.
+	- Verificacion: diagnostico del editor sin errores en `web/administrar_empresa/configuracion_permisos.html` y `web/administrar_empresa/configuracion_integraciones.html`; `go test ./handlers -run '^TestEmpresaVentaPublicaHandlerConfigCatalogoYToggle$' -count=1`; `go test ./handlers -run '^TestEmpresaConfiguracionOperativaHandler(ConfigAndRole|PoliticaSimulacionHistorialYRollback)$' -count=1`.
+
+- Ventas simples por estacion: se agrega boton `Regresar a estaciones`.
+	- Archivos modificados: `web/administrar_empresa/ventas_simple.html`, `web/js/ventas_simple.js`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: la vista de carrito por estacion ahora ofrece un retorno directo a `administrar_empresa/estaciones.html`, manteniendo el `empresa_id` activo para volver al tablero de estaciones sin depender del historial del navegador.
+	- Verificacion: diagnostico del editor sin errores en `web/administrar_empresa/ventas_simple.html` y `web/js/ventas_simple.js`.
+
+- Configuracion empresarial: el submenú `Configuración` ahora puede ocultar y mostrar su menú lateral en celular.
+	- Archivos modificados: `web/administrar_empresa/configuracion_menu.html`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: la página `administrar_empresa/configuracion_menu.html` carga `menu.js`, adopta el wrapper `admin-sidebar-mobile-collapsible` y agrega el mismo botón final de `Ocultar menú` / `Mostrar menú` usado por otros shells administrativos, para que el submenú de configuración también sea plegable en móvil.
+	- Verificacion: diagnostico del editor sin errores en `web/administrar_empresa/configuracion_menu.html`.
+
+- Estaciones: se elimina el circulo inferior de la tarjeta y se conserva solo el indicador cuadrado del sensor.
+	- Archivos modificados: `web/administrar_empresa/estaciones.html`, `web/estilos.css`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: la tarjeta de estaciones deja de mostrar el circulo centrado inferior; solo queda el cuadrito superior derecho, listo para ponerse verde cuando el sensor de la estacion se active.
+	- Verificacion: diagnostico del editor sin errores en `web/administrar_empresa/estaciones.html` y `web/estilos.css`.
+
 - Checkout de licencias: valida contexto multiempresa y corrige la empresa usada en el correo de activacion.
 	- Archivos modificados: `backend/db/db.go`, `backend/handlers/payments_handlers.go`, `backend/handlers/payments_handlers_test.go`, `web/pagar_licencia.html`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
 	- Descripcion: el backend ahora resuelve la empresa por `empresa_id` logico al construir el correo de activacion, endurece los helpers de `pagos_epayco` y `pagos_wompi` con autorreparacion del esquema, y rechaza conciliaciones de `transaction_status` cuando la referencia pertenece a otra empresa o licencia distinta de la pagina abierta; el frontend envia ese contexto esperado en cada polling y lo mantiene al cerrar el pago aprobado.
@@ -48,6 +84,11 @@
 	- Verificacion: diagnostico del editor sin errores en `web/Juegos/brigada_burbujas_3d_plus.html`.
 
 ## 2026-04-17
+
+- Ventas por estacion: compatibilidad PostgreSQL restaurada en carritos, metricas y documento de venta.
+	- Archivos modificados: `backend/db/carritos_compras.go`, `backend/db/empresa_configuracion_avanzada.go`, `backend/db/documentos_transaccionales.go`, `backend/db/sql_compat.go`, `backend/main.go`, `backend/db/facturacion_electronica_test.go`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: las inserciones de carritos, items y metricas dejan de depender de `LastInsertId` y pasan a usar la capa portable SQLite/PostgreSQL; ademas, la configuracion avanzada por empresa se regulariza antes de consultar `modo_documento_venta`, las tablas legacy de documentos transaccionales recuperan un `id` autogenerado valido y el backend sanea globalmente cualquier tabla PostgreSQL heredada con llave primaria `id` sin secuencia/default.
+	- Verificacion: `go test ./db -run 'Test(GetEmpresaConfiguracionAvanzadaRepairsMissingModoDocumentoVentaColumn|PrepareFacturacionDocumentoLegal|FacturacionElectronicaRetryUpsertGetAndList)' -count=1`; `go test ./handlers -run 'Test(VentaCarritoFacturaYResolucionImpresora|VentaCarritoGeneraComprobantePagoSegunConfiguracion)' -count=1`; `go test ./ ./auth ./db ./handlers ./metrics ./utils -run '^$' -count=1`.
 
 - Checkout de licencias: Epayco queda en tarjeta blanca, compacta y sin correo visible.
 	- Archivos modificados: `web/pagar_licencia.html`, `web/estilos.css`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`, `CHANGELOG.md`.

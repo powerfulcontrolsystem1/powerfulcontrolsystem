@@ -8,7 +8,9 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -201,14 +203,41 @@ func resolveRuntimeDBDialect() string {
 
 func resolveRuntimePostgresDSN(primary string, fallbackKeys ...string) string {
 	if v := strings.TrimSpace(primary); v != "" {
-		return v
+		return rewriteRuntimePostgresDSNForTunnel(v)
 	}
 	for _, key := range fallbackKeys {
 		if v := strings.TrimSpace(os.Getenv(key)); v != "" {
-			return v
+			return rewriteRuntimePostgresDSNForTunnel(v)
 		}
 	}
 	return ""
+}
+
+func rewriteRuntimePostgresDSNForTunnel(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return raw
+	}
+	if strings.TrimSpace(os.Getenv("DB_VPS_TUNNEL_ENABLED")) != "1" {
+		return raw
+	}
+	localPort := strings.TrimSpace(os.Getenv("DB_VPS_LOCAL_PORT"))
+	if localPort == "" {
+		return raw
+	}
+	u, err := url.Parse(raw)
+	if err != nil {
+		return raw
+	}
+	hostname := u.Hostname()
+	if hostname == "" {
+		hostname = "127.0.0.1"
+	}
+	if hostname != "127.0.0.1" && hostname != "localhost" {
+		return raw
+	}
+	u.Host = net.JoinHostPort("127.0.0.1", localPort)
+	return u.String()
 }
 
 func openAndPingRuntimeDB(driverName, dsn, label string) (*sql.DB, error) {
@@ -719,6 +748,9 @@ func main() {
 		if err := dbpkg.EnsureEmpresaConfiguracionOperativaSchema(dbEmpresas); err != nil {
 			log.Fatalf("failed to ensure configuracion operativa schema in empresas db: %v", err)
 		}
+		if err := dbpkg.EnsureEmpresaConfiguracionGeneralSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure configuracion general schema in empresas db: %v", err)
+		}
 		if err := dbpkg.EnsureEmpresaConfiguracionAvanzadaSchema(dbEmpresas); err != nil {
 			log.Fatalf("failed to ensure empresa_configuracion_avanzada schema in empresas db: %v", err)
 		}
@@ -899,6 +931,9 @@ func main() {
 		}
 		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-14-031-impresoras-operativas", "modulo de impresoras por empresa con impresora predeterminada, asignacion por funcionalidad y por producto"); err != nil {
 			log.Fatalf("failed to register impresoras operativas schema migration in empresas db: %v", err)
+		}
+		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-18-032-configuracion-general-productos", "configuracion general por empresa para productos y pedidos con persistencia real en backend"); err != nil {
+			log.Fatalf("failed to register configuracion general productos schema migration in empresas db: %v", err)
 		}
 		// Crear tipos_de_empresas en la base de datos de superadministrador (ubicación centralizada)
 		createTiposSuper := `CREATE TABLE IF NOT EXISTS tipos_de_empresas (
@@ -1464,6 +1499,12 @@ func main() {
 		if err := handlers.EnsureSensitiveSuperConfigEncrypted(dbSuper); err != nil {
 			log.Fatalf("failed to enforce sensitive config encryption in super db: %v", err)
 		}
+		if err := dbpkg.EnsurePostgresPrimaryKeySequences(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure postgres primary key sequences in empresas db: %v", err)
+		}
+		if err := dbpkg.EnsurePostgresPrimaryKeySequences(dbSuper); err != nil {
+			log.Fatalf("failed to ensure postgres primary key sequences in super db: %v", err)
+		}
 		loadGoogleOAuthFromDB(dbSuper)
 		if clientID == "" || clientSecret == "" {
 			log.Println("Warning: GOOGLE_CLIENT_ID o GOOGLE_CLIENT_SECRET no configurados (entorno/DB)")
@@ -1586,6 +1627,7 @@ func main() {
 	http.HandleFunc("/api/empresa/codigos_de_descuento", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCodigosDescuentoHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/propinas", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaPropinasHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/comisiones", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaComisionesServicioHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/configuracion_general", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaConfiguracionGeneralHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/configuracion_operativa", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaConfiguracionOperativaHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/configuracion_avanzada", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaConfiguracionAvanzadaHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/impresoras", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaImpresorasHandler(dbEmpresas)))
