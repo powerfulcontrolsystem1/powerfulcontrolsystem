@@ -1,9 +1,136 @@
 Descripcion compacta de modulos (POS multiempresa)
-Actualizacion: 2026-04-16
+Actualizacion: 2026-04-17
+
+Actualizacion 2026-04-18 (super configuracion avanzada: prueba real de Gmail):
+- Se amplía el submodulo `administracion global (super) / configuracion avanzada` para que el boton `Probar Gmail` ejecute un envio SMTP real usando las credenciales guardadas en PostgreSQL.
+- `backend/handlers/usuarios_empresa.go` añade `POST /super/api/config/gmail?action=test` y `web/super/configuracion_avanzada.html` consume esa accion para mostrar en la misma tarjeta si el correo de prueba fue enviado a `powerfulcontrolsystem@gmail.com`.
+- Impacto de permisos: sin cambios; la capacidad sigue restringida a `super_administrador` dentro del mismo modulo autenticado.
+
+Actualizacion 2026-04-18 (licencias y pasarelas: correo Epayco recuperable tras webhook o fallo inicial):
+- Se endurece el modulo `licencias y pasarelas de pago` para que el correo de activacion de Epayco no dependa exclusivamente de la primera activacion efectiva de la licencia.
+- `backend/handlers/payments_handlers.go` deja una marca idempotente en el `raw_payload` del pago cuando la notificacion se completa y, si el webhook aprobó primero o el primer intento de correo falló, el polling posterior puede reenviar una sola vez cuando ya exista destinatario valido.
+- `backend/handlers/payments_handlers.go` también reconoce `customer_email` dentro del bloque `data` de la validacion Epayco, que es donde algunas respuestas aprobadas entregan el correo del comprador.
+- Impacto de permisos: sin cambios; sigue siendo un flujo publico del checkout de licencias bajo `/epayco/*`.
+
+Actualizacion 2026-04-17 (arcade publico: Brigada burbujas 3D plus refuerza modo movil y ambiente claro):
+- Se ajusta `web/Juegos/brigada_burbujas_3d_plus.html` para cerrar el shooter 3D simulado con controles tactiles directos sobre el escenario, ayuda visual en pantalla y una composicion pastel mas caricaturesca.
+- El render del juego aclara cielo, suelo, minimapa y sprites para que el ambiente se sienta mas de dibujos animados y menos oscuro, conservando la misma historia y progresion por niveles.
+- Impacto de permisos: sin cambios; el modulo `Juegos` sigue siendo publico bajo `/Juegos/*`.
+
+Actualizacion 2026-04-17 (arcade publico: Brigada burbujas 3D plus agrega campaña, poderes e IA avanzada):
+- Se amplia `web/Juegos/brigada_burbujas_3d_plus.html` con dos escenarios adicionales, tres transformaciones jugables (`Cometa Neon`, `Guardian Globo`, `Titan Prisma`) y rivales adultas estilizadas de pasarela caricaturesca como nueva variante legal de enemigos.
+- La IA enemiga ahora mezcla persecucion, orbita lateral, retirada tactica, emboscada y proyectiles remotos segun el tipo de rival, reforzando la sensacion de shooter retro moderno en movil.
+- `web/Juegos/menu_juegos.html` y `web/img/juegos/brigada_burbujas_3d.svg` actualizan el resumen y la portada del lobby para reflejar la campaña ampliada.
+- Impacto de permisos: sin cambios; el modulo `Juegos` sigue siendo publico bajo `/Juegos/*`.
+
+Actualizacion 2026-04-18 (arcade publico: Brigada burbujas 3D plus agrega arsenal y mapa abierto/cerrado):
+- Se amplía `web/Juegos/brigada_burbujas_3d_plus.html` con un arsenal de tres armas (`Espuma base`, `Prisma triple`, `Meteor pop`), pickups de salud/municion/desbloqueo y un HUD adicional para arma activa y tipo de sector.
+- El shooter ahora alterna sectores cerrados, abiertos e hibridos dentro de la campaña, refuerza la sensacion pseudo-3D con lineas de suelo en perspectiva y añade una IA enemiga que patrulla, busca al jugador tras perder vision, convoca refuerzos desde el jefe final y presiona mejor en arenas abiertas.
+- Impacto de permisos: sin cambios; el modulo `Juegos` sigue siendo publico bajo `/Juegos/*`.
+
+Actualizacion 2026-04-18 (arcade publico: Brigada burbujas 3D plus cierra UX real de celular):
+- `web/Juegos/brigada_burbujas_3d_plus.html` agrega una barra tactica dentro del escenario con cambio rapido de arma y pausa para que el combate no dependa del rack externo en pantallas pequenas.
+- En movil se oculta el arsenal grande, se compacta la vista y el flujo de combate queda concentrado en el escenario, HUD y controles inferiores sin obligar a desplazarse por la pagina.
+- Impacto de permisos: sin cambios; el modulo `Juegos` sigue siendo publico bajo `/Juegos/*`.
+
+Actualizacion 2026-04-18 (arcade publico: Brigada burbujas 3D plus agrega joystick y pantalla completa):
+- `web/Juegos/brigada_burbujas_3d_plus.html` sustituye el pad de movimiento movil por un joystick tactil real, agrega boton de pantalla completa en el quickbar y mueve arma/sector al HUD interno para uso con una mano.
+- El combate movil queda resuelto dentro del escenario: joystick para desplazamiento libre, gesto sobre canvas para apuntar, quickbar para arma/pausa/fullscreen y boton de disparo concentrado en el lado derecho.
+- Impacto de permisos: sin cambios; el modulo `Juegos` sigue siendo publico bajo `/Juegos/*`.
+
+Actualizacion 2026-04-18 (arcade publico: Brigada burbujas 3D plus agrega auto-disparo, vibracion y ajustes tactiles):
+- `web/Juegos/brigada_burbujas_3d_plus.html` incorpora un panel de opciones persistentes para celular con auto-disparo opcional, vibracion, sensibilidad de joystick y sensibilidad de giro.
+- El shooter ahora aplica feedback mas fuerte con screen shake, flash de disparo y vibracion corta al disparar o recibir daño cuando el dispositivo lo soporta.
+- Impacto de permisos: sin cambios; el modulo `Juegos` sigue siendo publico bajo `/Juegos/*`.
+
+Actualizacion 2026-04-17 (super seguridad: vista en modo oscuro):
+- Se ajusta `web/super/seguridad.html` para que el modulo de auditoria VPS del panel super use una paleta oscura consistente con el shell administrativo.
+- La vista mantiene la misma operacion y los mismos endpoints, pero oscurece hero, tarjetas, tablas, formularios, badges y banners de estado para mejorar continuidad visual con el resto del panel super.
+- Impacto de permisos: sin cambios; es un ajuste visual del mismo modulo `Seguridad VPS Linux (super)`.
+
+Actualizacion 2026-04-17 (ventas: documento automatico por empresa al pagar carrito):
+- Se amplía el modulo `carritos / ventas / facturacion` para que cada empresa elija si sus ventas generan `factura_electronica` o `comprobante_pago` sin alterar el flujo operativo de cobro.
+- `backend/db/empresa_configuracion_avanzada.go` agrega el campo `modo_documento_venta`; `backend/handlers/carritos_compras.go` crea el documento automaticamente al cerrar la venta y `web/administrar_empresa/configuracion.html` publica el selector dentro del panel empresarial.
+- `web/administrar_empresa/facturas_electronicas.html` amplía el historial documental para incluir comprobantes de pago dentro del mismo modulo de consulta.
+- Impacto de permisos: sin cambios en alcance por rol; sigue siendo configuracion propia de empresa y operacion del mismo modulo autenticado por `empresa_id`.
+
+Actualizacion 2026-04-17 (menus administrativos: ocultar/mostrar solo en movil):
+- Se ajusta la navegacion de `administrar_empresa.html`, `super_administrador.html` y `seleccionar_empresa.html` para agregar un boton final de `Ocultar menú` o `Mostrar menú` visible solo en pantallas moviles.
+- `web/menu.js` coordina el estado colapsado del sidebar compartido y mantiene el menu completo sin cambios en escritorio.
+- `web/estilos.css` conserva el apilado vertical en movil y, cuando el menu se oculta, deja visible solo el boton final para volver a expandirlo.
+- Impacto de permisos: sin cambios; el ajuste es exclusivo de UX y no altera rutas, roles ni acciones disponibles.
+
+Actualizacion 2026-04-17 (editar empresa: CTA de compra para licencias vencidas):
+- La vista `editar_empresa.html` ahora muestra el boton `Comprar licencia` solo cuando la empresa consultada tiene licencias historicas vencidas y no conserva una licencia activa vigente.
+- `web/js/editar_empresa.js` consulta `/super/api/licencias?scope=mine&con_empresa=1`, filtra por `empresa_id` y habilita el CTA hacia `elegir_licencia.html` reutilizando el `tipo_id` y `tipo_nombre` de la empresa.
+- Impacto de permisos: no cambia el alcance; la vista sigue usando solo lecturas permitidas y el CTA redirige al flujo comercial ya existente de compra de licencias.
+
+Actualizacion 2026-04-17 (editar empresa: edicion dedicada y eliminacion total confirmada):
+- Se amplía el submodulo `administracion global (super) / seleccionar empresa` con la nueva pantalla `editar_empresa.html`, destinada a actualizar el nombre visible y la descripcion operativa de la empresa seleccionada.
+- `backend/db/empresas_delete.go` agrega la purga empresarial completa por `empresa_id` en la base operativa y en la base super, eliminando datos relacionados antes de borrar la fila principal de `empresas`.
+- `backend/handlers/system_empresas_handlers.go` extiende `/super/api/empresas` con `DELETE action=eliminar_total|purge`, validando confirmacion por nombre exacto; `web/js/editar_empresa.js` consume tambien `GET id`, `action=resumen_descarga` y `action=impacto_desactivacion` para mostrar el contexto previo.
+- `web/js/seleccionar_empresa.js` incorpora el boton `Editar` en cada tarjeta para abrir la nueva vista sin alterar la accion principal de entrar a la empresa o a la licencia.
+- Impacto de permisos: el rol `administrador` mantiene el alcance acotado del selector y ahora puede usar `PUT` y `DELETE` sobre `/super/api/empresas` solo dentro de su scope; `POST` y el resto del panel super siguen restringidos.
+
+Actualizacion 2026-04-17 (seleccionar empresa: tarjetas nuevas y edicion movida al menu):
+- Se reajusta `seleccionar_empresa.html` para quitar el boton `Editar` de cada tarjeta y mover el acceso a `editar_empresa.html` al menu lateral del selector, reutilizando la empresa activa del contexto.
+- `web/js/seleccionar_empresa.js` mantiene intacto el orden del texto en cada tarjeta (`nombre`, `descripcion`, `estado de licencia`), pero aplica una presentacion nueva por tipo de negocio con sello superior e icono decorativo sin desplazar el contenido principal.
+- `web/editar_empresa.html` y `web/js/editar_empresa.js` quedan reducidos a una experiencia tipo CRUD parcial: solo editar campos principales o eliminar totalmente la empresa, sin CTA paralelos de descarga o compra de licencia dentro de esa pantalla.
+- Impacto de permisos: sin ampliacion de privilegios; el mismo alcance de `PUT/DELETE` sobre `/super/api/empresas` se mantiene, y el cambio solo reorganiza el punto de acceso dentro del selector.
+
+Actualizacion 2026-04-17 (descarga de empresa: alias sin extension, descarga real y modo oscuro):
+- Se ajusta el submodulo `administracion global (super) / descarga consolidada de empresa` para que la vista responda tanto en `/descargar_informacion_de_la_empresa.html` como en `/descargar_informacion_de_la_empresa`.
+- `web/js/descargar_informacion_de_la_empresa.js` deja de depender de enlaces ciegos y ahora descarga cada formato con `fetch + blob`, mostrando estado, errores y nombre final del archivo sin sacar al usuario de la pagina.
+- `web/estilos.css` migra esta vista a una presentacion oscura operativa con tarjetas, resumen y previews legibles sobre fondo dark.
+- Impacto de permisos: sin cambios de alcance; la pantalla sigue usando las mismas lecturas y exportaciones protegidas de `/super/api/empresas`.
+
+Actualizacion 2026-04-17 (selector de empresas: administradores recuperan operacion minima):
+- Se corrige el cruce entre la politica de roles y `seleccionar_empresa.html` para que el rol `administrador` no-super pueda volver a cargar el selector y crear su primera empresa sin recibir `403`.
+- `backend/utils/utils.go` permite a `administrador` usar `GET/POST` sobre `/super/api/empresas` y mantener `GET` sobre `/super/api/tipos_empresas` y `/super/api/licencias`, dejando el resto del panel super fuera de su alcance.
+- Impacto de permisos: `administrador` recupera el alcance minimo necesario para abrir y operar `seleccionar_empresa.html`; `PUT/DELETE` sobre empresas siguen controlados por scope y los demas endpoints globales continúan restringidos.
+
+Actualizacion 2026-04-17 (registro de contrasena Google: solo guardar centrado):
+- Se ajusta el submodulo `autenticacion y sesiones` para que `registrar_contrasena_usuario_de_google.html` muestre un unico CTA de guardado, eliminando la accion visual `Continuar`.
+- La vista deja el boton `Guardar contrasena` centrado dentro del formulario para reforzar que este paso debe completarse antes de seguir con el acceso por correo y clave.
+- Impacto de permisos: sin cambios; solo se corrige la presentacion del flujo autenticado posterior al login con Google.
+
+Actualizacion 2026-04-17 (checkout Epayco: retorno aprobado activa la licencia y sale a pantalla de exito):
+- Se ajusta el modulo `licencias y pasarelas de pago` para que el retorno web de Epayco priorice los identificadores reales de la pasarela (`x_ref_payco`, `x_transaction_id`, `x_response`) sobre los placeholders iniciales del checkout.
+- `web/epayco/respuesta.html` deja de reenviar un `pending` ambiguo cuando Epayco ya devolvio datos finales y conserva el `invoice` interno solo como respaldo de conciliacion.
+- `web/pagar_licencia.html` usa esos datos reales para reanudar la consulta del estado, y cuando el backend confirma `APPROVED` redirige a `web/epayco/pago_exitoso.html` en vez de dejar al usuario dentro del formulario de pago.
+- Impacto de permisos: sin cambios; el checkout sigue publico bajo `/epayco/*` y la activacion de licencia conserva la misma logica comercial en backend.
+
+Actualizacion 2026-04-17 (seleccionar empresa: fix de render por helper HTML ausente):
+- Se corrige el submodulo `administracion global (super) / seleccionar empresa` para que la carga inicial de tarjetas no falle con `escapeHtml is not defined` al renderizar nombre y observaciones de empresa.
+- `web/js/seleccionar_empresa.js` recupera el helper local de escape HTML usado por las tarjetas del panel y vuelve a permitir que el listado cargue completo antes de abrir formularios, licencias o descargas.
+- Impacto de permisos: sin cambios; solo se corrige un error de frontend en la misma vista protegida del panel super.
+
+Actualizacion 2026-04-17 (pagina principal publica: CTA inferior fijo y texto con mayor contraste):
+- Se ajusta el submodulo `pagina principal publica` para que el boton `Explorar oferta` permanezca siempre centrado y pegado a la parte inferior util de cada tarjeta del home, incluso cuando las descripciones tengan distinta longitud.
+- `web/estilos.css` hace que el cuerpo descriptivo ocupe el espacio flexible de la tarjeta y ahora deja titulo y descripcion en tonos casi blancos con un iluminado exterior negro suave para mejorar lectura sin paneles de fondo adicionales.
+- Impacto de permisos: sin cambios en roles, CRUD/A ni visibilidad; el ajuste es visual dentro del portal publico.
+
+Actualizacion 2026-04-17 (autenticacion administrativa: super restringido al correo reservado):
+- Se corrige el modulo `autenticacion y sesiones` para que el registro administrativo publico y el callback de Google dejen las cuentas nuevas en rol `administrador` por defecto.
+- `backend/handlers/auth_admin_handlers.go` y `backend/utils/utils.go` eliminan la promocion automatica a `super_administrador` para cuentas legacy/autoregistradas y aplican la misma politica al pasar por `AuthMiddleware`.
+- Solo `powerfulcontrolsystem@gmail.com` conserva `super_administrador` dentro del flujo publico de autenticacion administrativa.
+- Impacto de permisos: el alta administrativa publica deja de escalar privilegios al panel super; la administracion global queda reservada al correo canónico del sistema y el resto de cuentas sigue en alcance `administrador` sin acceso a `/super/*`.
+
+Actualizacion 2026-04-17 (venta publica por empresa: Wompi y Epayco por empresa):
+- Se amplía el modulo `venta publica por empresa` para que cada empresa configure y active sus credenciales de Wompi y Epayco sin compartir llaves globales entre empresas.
+- `backend/db/venta_publica.go` incorpora columnas Epayco en `empresa_venta_publica_configuracion`; `backend/handlers/venta_publica.go` reutiliza esa configuracion tanto desde `administrar_empresa/venta_publica.html` como desde la nueva sección de `administrar_empresa/configuracion.html`.
+- `web/venta_publica.html` ahora detecta `payment_methods` activos por empresa, permite elegir la pasarela y abre `Smart Checkout` de Epayco cuando corresponde; los webhooks `/wompi/webhook` y `/epayco/webhook` actualizan tambien `empresa_venta_publica_ordenes`.
+- Impacto de permisos: la administracion de credenciales sigue restringida al contexto autenticado de empresa; la tienda pública solo consume el subconjunto sanitizado de metodos activos y nunca expone secretos.
+
+Actualizacion 2026-04-17 (seleccionar empresa: descarga empresarial en pagina dedicada y multiformato):
+- Se amplía el modulo `administracion global (super) / seleccionar empresa` para que el boton de descarga de cada tarjeta abra una pagina nueva `descargar_informacion_de_la_empresa.html` en lugar del modal legado basado en backups.
+- `backend/handlers/system_empresas_export.go` construye un snapshot consolidado con informacion de la empresa seleccionada, recorriendo tablas relacionadas en la base operativa y en la base super; `/super/api/empresas` expone `action=resumen_descarga` y `action=exportar_informacion` para PDF, XLS, CSV, JSON y TXT.
+- `web/descargar_informacion_de_la_empresa.html`, `web/js/descargar_informacion_de_la_empresa.js` y `web/estilos.css` muestran resumen ejecutivo, tablas detectadas y accesos directos de exportacion profesional.
+- Impacto de permisos: sin cambio de rol; la funcionalidad sigue restringida al alcance del panel super y reutiliza el mismo control de acceso de `/super/api/empresas`.
 
 Actualizacion 2026-04-17 (checkout publico de licencias: tarjetas home y medios Epayco visibles):
 - Se ajusta nuevamente el modulo `licencias y pasarelas de pago` para que `web/pagar_licencia.html` presente el resumen de compra en dos tarjetas con el mismo lenguaje visual del home publico: una tarjeta para la licencia y otra para codigos de descuento / vendedor.
-- La misma pantalla agrega un bloque permanente con las formas de pago de Epayco visibles dentro del checkout, antes de que el usuario abra la pasarela, y recolorea el panel de Epayco con branding mas alineado al logo del repositorio.
+- La misma pantalla mantiene el checkout de Epayco dentro de una tarjeta blanca mas compacta y centrada, elimina el campo visible de correo del cliente y deja solo la confirmacion de terminos antes de abrir la pasarela.
 - Impacto de permisos: sin cambios; el checkout de licencias sigue siendo publico en sus endpoints `/epayco/*`, `/wompi/*` y `/api/public/licencias/payment_methods`, mientras la configuracion de pasarelas y licencias sigue restringida a `super_administrador`.
 
 Actualizacion 2026-04-17 (licencias publicas: orden de menor a mayor valor):
@@ -71,6 +198,12 @@ Actualizacion 2026-04-17 (autenticacion administrativa: login en una sola tarjet
 - Se ajusta el modulo `autenticacion y sesiones` para que `login.html` deje de mostrar el acceso por correo como una caja independiente dentro de la pantalla.
 - `web/login.html` mantiene Google y correo en la misma tarjeta principal, mientras `web/estilos.css` elimina para este flujo el fondo, borde y sombra heredados de `.form` en el bloque por correo y en los formularios alternos de recuperacion/reset.
 - Impacto de permisos: sin cambios; el login administrativo sigue siendo publico y la administracion global permanece restringida a `super_administrador`.
+
+Actualizacion 2026-04-18 (portal publico: Brigada burbujas 3D plus):
+- Se amplía el submodulo `juegos publicos del portal` con un nuevo shooter original en primera persona y 3D simulado, pensado para movil y orientado a partidas cortas por niveles.
+- `web/Juegos/brigada_burbujas_3d_plus.html` introduce recorrido por laberintos, enemigos caricaturescos, recoleccion de nucleos de color, guardado local de record y controles tactiles dedicados para movimiento, giro, paso lateral y disparo.
+- `web/Juegos/menu_juegos.html` y `web/img/juegos/brigada_burbujas_3d.svg` publican la decima tarjeta del lobby sin abrir permisos nuevos ni modificar el runtime compartido del arcade.
+- Impacto de permisos: sin cambios; `Portal publico - Juegos` sigue siendo un modulo recreativo publico y de solo uso.
 
 Actualizacion 2026-04-17 (portal publico: arcade movil con runtime comun de poderes y premios):
 - Se refuerza el submodulo `juegos publicos del portal` para que los nueve juegos activos del arcade compartan una misma capa movil de poderes, premios, records, sonido y countdown, sin reescribir la mecanica base de cada titulo.

@@ -1665,11 +1665,11 @@ func main() {
 	http.HandleFunc("/wompi/terms", handlers.WompiTermsHandler(dbSuper))
 	http.HandleFunc("/wompi/create_transaction_nequi", handlers.WompiCreateNequiTransactionHandler(dbSuper))
 	http.HandleFunc("/wompi/transaction_status", handlers.WompiTransactionStatusHandler(dbSuper))
-	http.HandleFunc("/wompi/webhook", handlers.WompiWebhookHandler(dbSuper))
+	http.HandleFunc("/wompi/webhook", handlers.WompiWebhookHandler(dbSuper, dbEmpresas))
 	// Endpoints Epayco: crear transacción y consultar estado
 	http.HandleFunc("/epayco/create_transaction", handlers.EpaycoCreateTransactionHandler(dbSuper))
 	http.HandleFunc("/epayco/transaction_status", handlers.EpaycoTransactionStatusHandler(dbSuper))
-	http.HandleFunc("/epayco/webhook", handlers.EpaycoWebhookHandler(dbSuper))
+	http.HandleFunc("/epayco/webhook", handlers.EpaycoWebhookHandler(dbSuper, dbEmpresas))
 	// Activación manual de licencia sin pago (uso interno de avance/prototipo)
 	http.HandleFunc("/licencias/activar_sin_pago", handlers.ActivateLicenciaSinPagoHandler(dbSuper))
 	// Confirmación de correo para usuarios de empresa.
@@ -1771,6 +1771,12 @@ func main() {
 		if (path == "/" || path == "") && handlers.ResolveVentaPublicaSlugFromHost(r) != "" {
 			r2 := r.Clone(r.Context())
 			r2.URL.Path = "/venta_publica.html"
+			staticFS.ServeHTTP(w, r2)
+			return
+		}
+		if path == "/descargar_informacion_de_la_empresa" || path == "/descargar_informacion_de_la_empresa/" {
+			r2 := r.Clone(r.Context())
+			r2.URL.Path = "/descargar_informacion_de_la_empresa.html"
 			staticFS.ServeHTTP(w, r2)
 			return
 		}

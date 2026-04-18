@@ -2,6 +2,162 @@
 
 Fecha de actualizacion: 2026-04-17
 
+## Actualizacion 2026-04-18 (configuracion avanzada: boton Probar Gmail con envio real)
+
+- Backend:
+  - `backend/handlers/usuarios_empresa.go` amplía `GmailConfigHandler` con `POST /super/api/config/gmail?action=test`, que usa la configuracion SMTP guardada en PostgreSQL para enviar un correo de prueba real al buzon operativo del sistema.
+  - En modo de pruebas de correo (`gmail.smtp_test_mode` o `PCS_MAIL_TEST_MODE`) el mismo flujo captura la notificacion en `super_correo_notificaciones_prueba` para permitir regresiones sin salir a Internet.
+  - `backend/handlers/system_empresas_handlers_test.go` agrega una regresion que valida la respuesta JSON del action y la captura de la notificacion de prueba.
+- Frontend:
+  - `web/super/configuracion_avanzada.html` deja de usar `Probar Gmail` como chequeo pasivo de presencia de claves y pasa a invocar el action de prueba, mostrando el resultado real del envio.
+- Flujo:
+  - `/super/configuracion_avanzada.html` -> boton `Probar Gmail` -> `POST /super/api/config/gmail?action=test` -> envio SMTP real a `powerfulcontrolsystem@gmail.com` o captura en modo test -> mensaje visible en la misma tarjeta.
+
+## Actualizacion 2026-04-18 (checkout Epayco: correo de activacion reintentable sin duplicados)
+
+- Backend:
+  - `backend/handlers/payments_handlers.go` separa la decision de enviar el correo de la condicion de “licencia recien activada”, de modo que un pago `APPROVED` pueda completar la notificacion despues si el webhook aprobó primero o el primer intento no se consolidó.
+  - El mismo archivo marca en `raw_payload` los campos `licencia_activation_email_sent`, `licencia_activation_email_to` y `licencia_activation_email_sent_at` para impedir duplicados en polls o webhooks posteriores.
+  - La extraccion del destinatario ahora reconoce tambien `data.customer_email` en la respuesta de validacion Epayco.
+- Testing:
+  - `backend/handlers/payments_handlers_test.go` agrega la regresion donde el webhook activa primero sin correo util y el `transaction_status` posterior debe enviar una sola notificacion.
+- Flujo:
+  - `Epayco webhook aprobado` -> licencia activa sin correo confirmado -> `GET /epayco/transaction_status` con `customer_email` valido -> correo de activacion -> marca idempotente en `raw_payload`.
+
+## Actualizacion 2026-04-17 (arcade publico: Brigada burbujas 3D plus cierra experiencia movil)
+
+- Frontend:
+  - `web/Juegos/brigada_burbujas_3d_plus.html` amplía la shell del shooter con HUD pastel, ayudas en pantalla, indicador tactil y controles responsive para orientacion vertical.
+  - El mismo archivo permite apuntar deslizando sobre el canvas y disparar con toque rapido, sin depender solo de los botones inferiores del pad.
+- Flujo:
+  - `/Juegos/menu_juegos.html` -> `/Juegos/brigada_burbujas_3d_plus.html` -> cuenta regresiva -> mision 3D simulada con desplazamiento por botones, giro por gestos tactiles y salida al lobby compartido.
+
+## Actualizacion 2026-04-18 (arcade publico: Brigada burbujas 3D plus agrega arsenal, pickups y pseudo-3D reforzado)
+
+- Frontend:
+  - `web/Juegos/brigada_burbujas_3d_plus.html` incorpora un rack de arsenal con tres armas, HUD de arma activa y sector, pickups jugables, recarga por pool de municion y cambio rapido por teclado o botones tactiles.
+  - El mismo archivo amplía la IA enemiga con busqueda cuando pierde linea de vision, patrulla, refuerzos del jefe final y presion mas fuerte en sectores abiertos o hibridos.
+  - El render refuerza la sensacion pseudo-3D con lineas de suelo en perspectiva, pickups flotantes y arma recoloreada segun el arsenal activo.
+- Flujo:
+  - `/Juegos/menu_juegos.html` -> `/Juegos/brigada_burbujas_3d_plus.html` -> countdown -> campaña 3D simulada con sectores cerrados/abiertos, desbloqueo de armas por pickups, IA de asedio y salida al lobby compartido.
+
+## Actualizacion 2026-04-18 (arcade publico: Brigada burbujas 3D plus cierra accesos tacticos moviles)
+
+- Frontend:
+  - `web/Juegos/brigada_burbujas_3d_plus.html` agrega una barra tactica movil dentro del escenario con `Espuma`, `Prisma`, `Meteor` y `Pausa`, sincronizada con el HUD del juego.
+  - En pantallas pequenas el rack de arsenal externo se oculta para que el usuario no deba desplazarse verticalmente durante el combate.
+- Flujo:
+  - `/Juegos/brigada_burbujas_3d_plus.html` en movil -> HUD superior + barra tactica interna + pad inferior -> combate continuo sin salir del area de juego.
+
+## Actualizacion 2026-04-18 (arcade publico: Brigada burbujas 3D plus agrega joystick tactil y fullscreen)
+
+- Frontend:
+  - `web/Juegos/brigada_burbujas_3d_plus.html` sustituye en movil el pad de desplazamiento por un joystick tactil real con movimiento libre sobre el plano del mapa.
+  - El mismo archivo agrega boton de pantalla completa al quickbar y sincroniza el HUD interno con `arma` y `sector` para reducir dependencia del header externo en celular.
+- Flujo:
+  - `/Juegos/brigada_burbujas_3d_plus.html` en movil -> cuenta regresiva -> intento de fullscreen -> joystick izquierdo + gesto de apuntado + quickbar tactico + disparo derecho.
+
+## Actualizacion 2026-04-18 (arcade publico: Brigada burbujas 3D plus agrega opciones tactiles persistentes)
+
+- Frontend:
+  - `web/Juegos/brigada_burbujas_3d_plus.html` agrega un panel de ajustes moviles dentro del escenario con toggles de auto-disparo y vibracion, mas sliders de sensibilidad para joystick y giro.
+  - El render refuerza el feedback con screen shake y flash de disparo/dano, mientras la configuracion se conserva en `localStorage` para sesiones posteriores.
+- Flujo:
+  - `/Juegos/brigada_burbujas_3d_plus.html` en movil -> quickbar `Ajustes` -> panel tactil -> guardar preferencias locales -> combate con auto-disparo opcional y feedback reforzado.
+
+## Actualizacion 2026-04-17 (arcade publico: Brigada burbujas 3D plus amplía campaña y combate)
+
+- Frontend:
+  - `web/Juegos/brigada_burbujas_3d_plus.html` incorpora cinco niveles, tres poderes de transformacion, proyectiles enemigos visibles y nuevos arquetipos de rival con comportamiento tactico.
+  - `web/Juegos/menu_juegos.html` y `web/img/juegos/brigada_burbujas_3d.svg` actualizan la comunicacion visual del juego para reflejar poderes, campaña larga y rivales de pasarela caricaturesca adulta.
+- Flujo:
+  - `/Juegos/menu_juegos.html` -> `/Juegos/brigada_burbujas_3d_plus.html` -> countdown -> campaña 3D simulada con habilidades especiales, IA enemiga por roles y cierre de score en el runtime comun del arcade.
+
+## Actualizacion 2026-04-17 (ventas por empresa: selector entre factura electronica y comprobante de pago)
+
+- Backend:
+  - `backend/db/empresa_configuracion_avanzada.go` agrega `modo_documento_venta` a la configuracion avanzada por empresa.
+  - `backend/handlers/carritos_compras.go` genera automaticamente el documento de venta al cerrar `action=pagar_estacion` y respeta el modo configurado.
+  - `backend/handlers/facturacion_electronica.go` ajusta el correo de reenvio para tratar `comprobante_pago` como documento comercial.
+  - `backend/handlers/carrito_facturacion_impresion_test.go` valida los dos caminos documentales en la venta: `factura_electronica` y `comprobante_pago`.
+- Frontend:
+  - `web/administrar_empresa/configuracion.html` incorpora el selector `Documento al vender` dentro de la configuracion de impresion/factura.
+  - `web/administrar_empresa/facturas_electronicas.html` amplía el historial para consultar tambien comprobantes de pago.
+- Flujo:
+  - `administrar_empresa/configuracion.html` -> `PUT /api/empresa/configuracion_avanzada` con `modo_documento_venta` -> `PUT /api/empresa/carritos_compra?action=pagar_estacion` -> persistencia automatica en `empresa_facturacion_documentos` como `factura_electronica` o `comprobante_pago`.
+
+## Actualizacion 2026-04-17 (editar empresa y purga total por empresa_id)
+
+- Backend:
+  - `backend/db/empresas_delete.go` agrega `DeleteEmpresaCascade`, que recorre tablas con `empresa_id` en las bases operativa y super para purgar registros relacionados antes de borrar la empresa principal.
+  - `backend/handlers/system_empresas_handlers.go` extiende `DELETE /super/api/empresas` con `action=eliminar_total|purge`, validando confirmacion por nombre exacto y devolviendo un resumen del borrado.
+  - `backend/utils/utils.go` permite a `administrador` usar `PUT` y `DELETE` sobre `/super/api/empresas`, conservando el resto del panel super restringido.
+  - `backend/handlers/system_empresas_handlers_test.go` agrega regresiones de purga total y de uso de `PUT/DELETE` en alcance administrativo.
+- Frontend:
+  - `web/editar_empresa.html` y `web/js/editar_empresa.js` crean la nueva vista dedicada para editar nombre/descripcion, consultar resumen operativo y ejecutar la eliminacion total confirmada.
+  - La misma vista consulta `/super/api/licencias?scope=mine&con_empresa=1` para mostrar `Comprar licencia` cuando la empresa ya no tiene licencia vigente y registra historial vencido.
+  - `web/js/seleccionar_empresa.js` agrega el CTA `Editar` en las tarjetas del selector para abrir la nueva vista.
+  - `web/estilos.css` incorpora los estilos de la nueva pagina y del boton `Editar` del selector.
+- Flujo:
+  - `/seleccionar_empresa.html` -> boton `Editar` -> `/editar_empresa.html?id=...` -> `GET /super/api/empresas?id=...` + `action=resumen_descarga|impacto_desactivacion` -> `PUT /super/api/empresas?id=...` o `DELETE /super/api/empresas?id=...&action=eliminar_total`.
+
+## Actualizacion 2026-04-17 (seleccionar empresa: estilo nuevo de tarjetas y acceso editar desde menu)
+
+- Frontend:
+  - `web/seleccionar_empresa.html` agrega la opcion lateral `Editar empresa` dentro del menu del selector.
+  - `web/js/seleccionar_empresa.js` deja de renderizar el boton `Editar` en las tarjetas, conserva la posicion del texto principal y usa la empresa activa del contexto para abrir `editar_empresa.html`.
+  - `web/estilos.css` rediseña las tarjetas del selector con fondos claros por tipo de negocio, insignia superior, icono decorativo y botones cuadrados en las acciones visibles.
+  - `web/editar_empresa.html` y `web/js/editar_empresa.js` se simplifican a un CRUD parcial enfocado solo en editar y eliminar.
+- Flujo:
+  - `/seleccionar_empresa.html` -> menu lateral `Editar empresa` -> `/editar_empresa.html?id=...` -> `GET /super/api/empresas?id=...` + `action=impacto_desactivacion` -> `PUT /super/api/empresas?id=...` o `DELETE /super/api/empresas?id=...&action=eliminar_total`.
+
+## Actualizacion 2026-04-17 (autenticacion administrativa: super restringido al correo reservado)
+
+- Backend:
+  - `backend/handlers/auth_admin_handlers.go` corrige el registro administrativo publico, el login por correo, el reset y el callback de Google para dejar las cuentas nuevas en rol `administrador` por defecto.
+  - `backend/utils/utils.go` aplica la misma politica en `AuthMiddleware`, impidiendo que cuentas legacy o autoregistradas no reservadas mantengan acceso a `/super/*` por una promocion antigua.
+  - `backend/handlers/auth_admin_handlers_test.go` y `backend/handlers/system_empresas_handlers_test.go` agregan regresiones para cuenta publica normal, cuenta Google nueva y el unico correo que conserva `super_administrador`.
+- Flujo:
+  - `/registrar_nuevo_usuario_administrador.html` -> `POST /super/api/administradores/register` -> cuenta nueva queda en `administrador`, excepto `powerfulcontrolsystem@gmail.com`.
+  - `/auth/google/callback` -> alta/reuso de administrador -> `administrador` por defecto, excepto `powerfulcontrolsystem@gmail.com`.
+  - Request a `/super/*` con cuenta no reservada -> `403`.
+
+## Actualizacion 2026-04-17 (venta publica empresarial con Wompi y Epayco por empresa)
+
+- Backend:
+  - `backend/db/venta_publica.go` amplía el esquema `empresa_venta_publica_configuracion` con activación, modo y credenciales Epayco por `empresa_id`, y agrega lookup de órdenes públicas por `transaction_id` o `referencia_externa`.
+  - `backend/handlers/venta_publica.go` reutiliza esa configuración para crear pagos públicos con `wompi_nequi` o `epayco`, publicar `payment_methods` sanitizados y consultar el estado de la orden según la pasarela elegida.
+  - `backend/handlers/payments_handlers.go` y `backend/main.go` conectan `/wompi/webhook` y `/epayco/webhook` con `dbEmpresas`, para que los eventos de pago actualicen también `empresa_venta_publica_ordenes`.
+- Frontend:
+  - `web/administrar_empresa/configuracion.html` agrega una sección `Pasarelas de pago` para activar o desactivar Wompi/Epayco y guardar sus credenciales por empresa.
+  - `web/administrar_empresa/venta_publica.html` expone la configuración completa de la tienda pública con ambos proveedores, para que guardar desde ese módulo no sobrescriba ni borre campos de la otra pasarela.
+  - `web/venta_publica.html` carga las pasarelas activas por empresa, deja escoger el método y abre `Smart Checkout` de Epayco cuando aplique.
+- Flujo:
+  - `administrar_empresa/configuracion.html` o `administrar_empresa/venta_publica.html` -> `POST /api/empresa/venta_publica?action=config` -> `GET /api/public/venta_publica?action=catalogo` con `payment_methods` -> `POST /api/public/venta_publica?action=crear_pago` -> retorno/polling -> webhook `/wompi/webhook` o `/epayco/webhook` actualiza `empresa_venta_publica_ordenes`.
+
+## Actualizacion 2026-04-17 (seleccionar empresa: pagina dedicada para descargar informacion empresarial)
+
+- Backend:
+  - `backend/handlers/system_empresas_export.go` agrega la construccion de un snapshot integral por empresa, recorriendo tablas de la base operativa y de la base super para consolidar filas relacionadas por `empresa_id`.
+  - `backend/handlers/system_empresas_handlers.go` extiende `/super/api/empresas` con `action=resumen_descarga` para vista previa y `action=exportar_informacion&format=pdf|xls|csv|json|txt` para descarga profesional multiformato.
+  - `backend/handlers/system_empresas_handlers_test.go` valida el resumen consolidado y la exportacion PDF del nuevo flujo super.
+- Frontend:
+  - `web/js/seleccionar_empresa.js` reemplaza el modal legado de backup por navegacion directa a `descargar_informacion_de_la_empresa.html` cuando el usuario pulsa el boton de descarga en una tarjeta de empresa.
+  - `web/descargar_informacion_de_la_empresa.html` y `web/js/descargar_informacion_de_la_empresa.js` crean la nueva vista de descarga con resumen ejecutivo, tablas detectadas y CTAs para PDF, Excel, CSV, JSON y TXT.
+  - `web/estilos.css` incorpora la capa visual propia de la nueva pagina, reutilizando `portal-card home-offer-card` para mantener coherencia con el home del portal.
+- Flujo:
+  - `/seleccionar_empresa.html` -> boton `download-data` -> `/descargar_informacion_de_la_empresa.html?empresa_id=...` -> `GET /super/api/empresas?action=resumen_descarga&id=...` -> descarga por `/super/api/empresas?action=exportar_informacion&id=...&format=...`.
+
+## Actualizacion 2026-04-17 (descarga de empresa: alias canonico y descarga sin salir de la vista)
+
+- Backend:
+  - `backend/main.go` resuelve tambien `/descargar_informacion_de_la_empresa` hacia la misma vista HTML para evitar fallos por omitir la extension en enlaces externos o accesos manuales.
+- Frontend:
+  - `web/js/descargar_informacion_de_la_empresa.js` ejecuta las exportaciones con `fetch + blob`, reporta errores del backend en la misma vista y conserva al usuario dentro del flujo de descarga.
+  - `web/estilos.css` aplica una capa visual oscura dedicada para esta pantalla.
+- Flujo:
+  - `/descargar_informacion_de_la_empresa?empresa_id=...` o `/descargar_informacion_de_la_empresa.html?empresa_id=...` -> `GET /super/api/empresas?action=resumen_descarga&id=...` -> boton de formato -> `GET /super/api/empresas?action=exportar_informacion&id=...&format=...` -> descarga local del archivo sin abandonar la vista.
+
 ## Actualizacion 2026-04-17 (checkout de licencias: resumen en tarjetas home y catalogo visible de Epayco)
 
 - Frontend:
@@ -38,6 +194,23 @@ Fecha de actualizacion: 2026-04-17
 - Flujo:
   - `/pagar_licencia.html` -> retorno con estado final -> si el estado ya es definitivo, la vista cierra el pendiente y no vuelve a marcar verificacion.
   - `/epayco/transaction_status` o `/epayco/webhook` -> resolucion por `transaction/reference/invoice` -> activacion idempotente de la licencia -> correo de confirmacion al cliente con la licencia ya activa.
+
+## Actualizacion 2026-04-17 (checkout Epayco: retorno web con referencia real y pantalla de pago exitoso)
+
+- Frontend:
+  - `web/epayco/respuesta.html` prioriza `x_ref_payco`, `x_transaction_id` y `x_response` para que el polling posterior consulte el pago real aprobado por Epayco y no un placeholder `pending` del response URL original.
+  - `web/pagar_licencia.html` usa esa referencia real para reanudar la conciliacion y, cuando el backend confirma `APPROVED`, redirige a `web/epayco/pago_exitoso.html`.
+  - `web/epayco/pago_exitoso.html` entrega la confirmacion comercial final y el acceso directo de vuelta a `seleccionar_empresa.html`.
+- Flujo:
+  - `Epayco` -> `/epayco/respuesta.html` con datos reales de pasarela -> `/pagar_licencia.html` valida estado real -> aprobado confirmado -> `/epayco/pago_exitoso.html` -> `/seleccionar_empresa.html`.
+
+## Actualizacion 2026-04-17 (selector de empresas: excepcion controlada de operacion minima para administrador)
+
+- Backend:
+  - `backend/utils/utils.go` deja de bloquear por completo `/super/*` para el rol `administrador` y abre `GET/POST /super/api/empresas`, mas `GET /super/api/tipos_empresas` y `GET /super/api/licencias`.
+  - La excepcion aplica unicamente a `administrador`; el resto de roles no-super siguen recibiendo `403`, y el resto de mutaciones del panel super siguen reservadas o controladas por alcance.
+- Flujo:
+  - `administrador` autenticado -> `/seleccionar_empresa.html` -> lecturas iniciales de empresas, tipos y licencias -> `POST /super/api/empresas` para alta de empresa propia -> render del selector sin error `forbidden`.
 
 ## Actualizacion 2026-04-17 (elegir licencia: tarjetas mas compactas y sin textos de estado)
 
@@ -127,6 +300,16 @@ Fecha de actualizacion: 2026-04-17
   - `web/estilos.css` sobreescribe el estilo base `.form` solo en `login.html`, quitando fondo, borde y sombra al acceso por correo y a los formularios alternos de recuperacion/reset para que la experiencia se lea como un unico panel.
 - Flujo:
   - `/login.html` -> tarjeta principal unica -> acceso con Google o continuidad por correo dentro del mismo contenedor -> recuperacion/reset en la misma superficie visual.
+
+## Actualizacion 2026-04-18 (arcade publico: Brigada burbujas 3D plus como decimo juego activo)
+
+- Frontend del juego:
+  - `web/Juegos/brigada_burbujas_3d_plus.html` agrega un shooter original con perspectiva 3D simulada por raycasting, tres mapas, enemigos caricaturescos, nucleos coleccionables, minimapa y controles tactiles apilados para movil.
+  - El juego reutiliza `web/Juegos/arcade_shared.js` para nombre del jugador, sonido global, countdown inicial, cronometro de sesion y guardado local del record por slug `brigada_burbujas_3d`.
+- Lobby del arcade:
+  - `web/Juegos/menu_juegos.html` actualiza el tablero principal a diez juegos activos y enlaza la nueva tarjeta visual usando `web/img/juegos/brigada_burbujas_3d.svg`.
+- Flujo:
+  - `menu flotante` -> `/Juegos/menu_juegos.html` -> `Brigada burbujas 3D plus` -> `/Juegos/brigada_burbujas_3d_plus.html` -> countdown -> recorrido por niveles -> guardado local del record.
 
 ## Actualizacion 2026-04-17 (arcade publico movil: runtime comun de poderes y premios en 9 juegos)
 

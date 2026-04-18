@@ -1,5 +1,488 @@
  - Historial de cambios
 
+ - 2026-04-18: Brigada burbujas 3D plus agrega auto-disparo, vibracion y ajustes tactiles persistentes
+     - Archivos modificados:
+         - web/Juegos/brigada_burbujas_3d_plus.html
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: El juego agrega un panel movil de ajustes con auto-disparo opcional, vibracion y sensibilidad de joystick/giro persistidas en local, ademas de feedback visual mas fuerte con flashes y screen shake durante el combate.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/Juegos/brigada_burbujas_3d_plus.html`.
+
+ - 2026-04-18: Configuracion avanzada ejecuta prueba real de Gmail
+     - Archivos modificados:
+         - backend/handlers/usuarios_empresa.go
+         - backend/handlers/system_empresas_handlers_test.go
+         - web/super/configuracion_avanzada.html
+         - documentos/descripcion_del_proyecto
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: El boton `Probar Gmail` de configuracion avanzada deja de ser un chequeo de presencia de llaves y ahora dispara un correo real a `powerfulcontrolsystem@gmail.com` usando la configuracion SMTP persistida en PostgreSQL; en modo test el backend captura la notificacion para validar el flujo sin usar Internet.
+     - Verificacion tecnica:
+         - `go test ./handlers -run '^TestGmailConfigHandlerTestActionCapturesNotification$' -count=1`
+
+ - 2026-04-18: Brigada burbujas 3D plus agrega joystick tactil, fullscreen y HUD de una mano
+     - Archivos modificados:
+         - web/Juegos/brigada_burbujas_3d_plus.html
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: El juego sustituye el pad movil por un joystick tactil real, agrega fullscreen desde el quickbar y mueve datos clave al HUD interno para que el combate se pueda resolver con una mano desde el propio escenario.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/Juegos/brigada_burbujas_3d_plus.html`.
+
+ - 2026-04-18: Brigada burbujas 3D plus concentra los accesos tacticos dentro del escenario
+     - Archivos modificados:
+         - web/Juegos/brigada_burbujas_3d_plus.html
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: El juego deja de depender del rack de arsenal externo en celular y agrega una barra tactica dentro del escenario para arma rapida y pausa, manteniendo el combate dentro de la misma zona tactil.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/Juegos/brigada_burbujas_3d_plus.html`.
+
+ - 2026-04-18: Brigada burbujas 3D plus agrega arsenal, pickups y sectores abiertos/cerrados
+     - Archivos modificados:
+         - web/Juegos/brigada_burbujas_3d_plus.html
+         - documentos/descripcion_del_proyecto
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: El shooter del arcade refuerza su fantasia tipo Doom caricaturesco con tres armas, pickups, sectores abiertos/cerrados, perspectiva de suelo mas marcada y una IA que patrulla, busca al jugador, dispara y convoca refuerzos sin depender de librerias externas.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/Juegos/brigada_burbujas_3d_plus.html`.
+
+ - 2026-04-18: Epayco reintenta el correo de activacion cuando el pago ya estaba aprobado
+     - Archivos modificados:
+         - backend/handlers/payments_handlers.go
+         - backend/handlers/payments_handlers_test.go
+         - documentos/descripcion_del_proyecto
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: El flujo de licencias con Epayco ahora marca en `raw_payload` si la notificacion ya fue enviada y reintenta el correo en aprobaciones posteriores cuando la licencia ya quedó activa pero el correo seguia pendiente; tambien recupera `customer_email` desde el nodo `data` del payload de validacion.
+     - Verificacion tecnica:
+         - `go test ./handlers -run 'TestEpayco(TransactionStatusHandlerActivatesOnceAndCapturesEmail|WebhookHandlerFindsContextUsingInvoiceFallback|TransactionStatusHandlerRetriesActivationEmailAfterWebhookActivatedFirst)' -count=1`
+         - `go test ./ ./auth ./db ./handlers ./metrics ./utils -run '^$' -count=1`
+
+ - 2026-04-17: Checkout de licencias compacta la tarjeta de Epayco y elimina el correo visible
+     - Archivos modificados:
+         - web/pagar_licencia.html
+         - web/estilos.css
+         - documentos/descripcion_del_proyecto
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se elimina del checkout de licencias el bloque separado de formas de pago de Epayco, se oculta el campo visible de correo y el panel de pago queda como una tarjeta blanca, mas pequeña y centrada, manteniendo el mismo flujo comercial publico.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/pagar_licencia.html`.
+         - Diagnostico del editor sin errores en `web/estilos.css`.
+
+ - 2026-04-17: Selector de empresas mueve editar al menu y rehace las tarjetas
+     - Archivos modificados:
+         - web/seleccionar_empresa.html
+         - web/js/seleccionar_empresa.js
+         - web/editar_empresa.html
+         - web/js/editar_empresa.js
+         - web/estilos.css
+         - documentos/descripcion_del_proyecto
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se quita el boton `Editar` de las tarjetas de `seleccionar_empresa.html`, se agrega la opcion `Editar empresa` al menu lateral, las tarjetas adoptan un estilo visual nuevo sin mover el orden del texto y la pagina `editar_empresa.html` queda reducida al flujo de editar o eliminar.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/seleccionar_empresa.html`.
+         - Diagnostico del editor sin errores en `web/js/seleccionar_empresa.js`.
+         - Diagnostico del editor sin errores en `web/editar_empresa.html`.
+         - Diagnostico del editor sin errores en `web/js/editar_empresa.js`.
+         - Diagnostico del editor sin errores en `web/estilos.css`.
+
+ - 2026-04-17: Brigada burbujas 3D plus amplía campaña, poderes e IA de rivales estilizadas
+     - Archivos modificados:
+         - web/Juegos/brigada_burbujas_3d_plus.html
+         - web/Juegos/menu_juegos.html
+         - web/img/juegos/brigada_burbujas_3d.svg
+         - documentos/descripcion_del_proyecto
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se amplía el shooter 3D simulado del arcade con dos niveles nuevos, tres transformaciones especiales, rivales adultas de pasarela caricaturesca sin contenido explicito y una IA mas agresiva con proyectiles y maniobras tacticas.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/Juegos/brigada_burbujas_3d_plus.html`, `web/Juegos/menu_juegos.html` y `web/img/juegos/brigada_burbujas_3d.svg`.
+
+ - 2026-04-17: Brigada burbujas 3D plus completa adaptacion movil y ambiente caricaturesco claro
+     - Archivos modificados:
+         - web/Juegos/brigada_burbujas_3d_plus.html
+         - documentos/descripcion_del_proyecto
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se refuerza el shooter 3D simulado del arcade publico con una direccion visual pastel de dibujos animados, controles tactiles directos sobre el escenario y un layout mas comodo para movil.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/Juegos/brigada_burbujas_3d_plus.html`.
+
+ - 2026-04-17: Selector de empresas vuelve a permitir crear empresa propia a administradores
+     - Archivos modificados:
+         - backend/utils/utils.go
+         - backend/handlers/system_empresas_handlers_test.go
+         - documentos/descripcion_del_proyecto
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se corrige el 403 que bloqueaba `POST /super/api/empresas` para el rol `administrador`, dejando que `seleccionar_empresa.html` pueda crear la primera empresa del usuario sin abrir el resto del panel super.
+     - Verificacion tecnica:
+         - `go test ./handlers -run '^TestNuevoAdminRegistradoPuedeCrearSuPrimeraEmpresaViaRutaSuperProtegida$' -count=1`
+         - `go test ./utils -run '^TestSuperEndpointsPermisosPorRol$' -count=1`
+
+ - 2026-04-18: Arcade publico suma Brigada burbujas 3D plus como shooter original movil
+     - Archivos creados:
+         - web/Juegos/brigada_burbujas_3d_plus.html
+         - web/img/juegos/brigada_burbujas_3d.svg
+     - Archivos modificados:
+         - web/Juegos/menu_juegos.html
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_del_proyecto
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se agrega al portal un juego nuevo y original de accion en primera persona con 3D simulado, enemigos caricaturescos, tres niveles, controles tactiles y guardado local de puntaje dentro del arcade compartido.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/Juegos/brigada_burbujas_3d_plus.html` y `web/Juegos/menu_juegos.html`.
+
+ - 2026-04-17: Seguridad VPS del panel super cambia a modo oscuro
+     - Archivos modificados:
+         - web/super/seguridad.html
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: La vista `web/super/seguridad.html` ahora usa una presentacion oscura alineada al resto del panel super, sin cambiar flujos, endpoints ni permisos del modulo de auditoria VPS.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/super/seguridad.html`.
+
+ - 2026-04-17: Ventas por empresa generan factura electronica o comprobante de pago segun configuracion
+     - Archivos modificados:
+         - backend/db/empresa_configuracion_avanzada.go
+         - backend/handlers/carritos_compras.go
+         - backend/handlers/facturacion_electronica.go
+         - backend/handlers/carrito_facturacion_impresion_test.go
+         - web/administrar_empresa/configuracion.html
+         - web/administrar_empresa/facturas_electronicas.html
+         - documentos/estructura_bd.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_del_proyecto
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se agrega `modo_documento_venta` por empresa para que `pagar_estacion` genere automaticamente `factura_electronica` o `comprobante_pago`, manteniendo el mismo flujo de venta y la trazabilidad documental por `empresa_id`.
+     - Verificacion tecnica:
+         - `go test ./handlers -run 'TestVentaCarrito(FacturaYResolucionImpresora|GeneraComprobantePagoSegunConfiguracion)' -count=1`
+         - `go test ./ ./auth ./db ./handlers ./metrics ./utils -run '^$' -count=1`
+
+ - 2026-04-17: Menus administrativos agregan ocultar y mostrar solo en movil
+     - Archivos modificados:
+         - web/administrar_empresa.html
+         - web/super_administrador.html
+         - web/seleccionar_empresa.html
+         - web/menu.js
+         - web/estilos.css
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se agrega un boton al final del menu lateral en `administrar_empresa.html`, `super_administrador.html` y `seleccionar_empresa.html` para ocultar o mostrar el panel solo en celular. En escritorio el menu conserva el comportamiento actual.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/administrar_empresa.html`.
+         - Diagnostico del editor sin errores en `web/super_administrador.html`.
+         - Diagnostico del editor sin errores en `web/seleccionar_empresa.html`.
+         - Diagnostico del editor sin errores en `web/menu.js`.
+         - Diagnostico del editor sin errores en `web/estilos.css`.
+
+ - 2026-04-17: Editar empresa muestra compra de licencia si la actual esta vencida
+     - Archivos modificados:
+         - web/editar_empresa.html
+         - web/js/editar_empresa.js
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_del_proyecto
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: La pagina `editar_empresa.html` ahora detecta licencias vencidas de la empresa y habilita un boton `Comprar licencia` que redirige al flujo comercial existente de seleccion de licencia.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/editar_empresa.html`.
+         - Diagnostico del editor sin errores en `web/js/editar_empresa.js`.
+
+ - 2026-04-17: Editar empresa agrega vista dedicada y borrado total confirmado
+     - Archivos modificados:
+         - backend/db/empresas_delete.go
+         - backend/handlers/system_empresas_handlers.go
+         - backend/handlers/system_empresas_handlers_test.go
+         - backend/utils/utils.go
+         - web/editar_empresa.html
+         - web/js/editar_empresa.js
+         - web/js/seleccionar_empresa.js
+         - web/estilos.css
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_del_proyecto
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se crea `editar_empresa.html` para actualizar nombre y descripcion de la empresa seleccionada y se incorpora una eliminacion total con confirmacion por nombre exacto que purga datos relacionados por `empresa_id` en la base operativa y en la base super.
+     - Verificacion tecnica:
+         - `go test ./handlers -run '^TestEmpresasHandlerEliminarTotalPurgaDatosRelacionados$' -count=1 -v -timeout 60s`
+         - `go test ./handlers -run '^TestAdministradorPuedeEditarYEliminarEmpresaDesdeRutaSuperProtegida$' -count=1 -v -timeout 60s`
+         - `go test ./handlers -run '^TestSuperEndpointsPermisosPorRol$' -count=1 -v -timeout 60s`
+         - `go test ./ ./auth ./db ./handlers ./metrics ./utils -run '^$' -count=1`
+
+ - 2026-04-17: Descarga consolidada de empresa funciona en ruta corta y tema oscuro
+     - Archivos modificados:
+         - backend/main.go
+         - web/descargar_informacion_de_la_empresa.html
+         - web/js/descargar_informacion_de_la_empresa.js
+         - web/estilos.css
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_del_proyecto
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se habilita la pagina de descarga consolidada tambien en `/descargar_informacion_de_la_empresa`, se dejan las exportaciones multiformato dentro de la misma vista y se cambia la interfaz a modo oscuro.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `backend/main.go`.
+         - Diagnostico del editor sin errores en `web/descargar_informacion_de_la_empresa.html`.
+         - Diagnostico del editor sin errores en `web/js/descargar_informacion_de_la_empresa.js`.
+         - Diagnostico del editor sin errores en `web/estilos.css`.
+
+ - 2026-04-17: Selector de empresas recupera lectura para administradores no-super
+     - Archivos modificados:
+         - backend/utils/utils.go
+         - backend/handlers/system_empresas_handlers_test.go
+         - backend/handlers/auth_users_carritos_test.go
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_del_proyecto
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se corrige el `403 forbidden` de `seleccionar_empresa.html` permitiendo a `administrador` solo las lecturas `GET` de empresas, tipos y licencias que necesita el selector. Las mutaciones y el resto del panel super siguen cerrados para no-super.
+     - Verificacion tecnica:
+         - `go test ./handlers -run '^TestSuperEndpointsPermisosPorRol$' -count=1`
+         - `go test ./handlers -run '^TestNuevoAdminRegistradoNoObtieneAccesoSuperParaCrearEmpresa$' -count=1`
+         - `go test ./utils -run '^TestAuthMiddlewareAllowsPublicLicenciaPaymentRoutesWithoutSession$' -count=1`
+
+ - 2026-04-17: Registro de contrasena Google deja solo el boton guardar
+     - Archivos modificados:
+         - web/registrar_contrasena_usuario_de_google.html
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se elimina el enlace `Continuar` de `registrar_contrasena_usuario_de_google.html` y el boton `Guardar contrasena` queda centrado para dejar claro que esta pantalla debe cerrarse guardando la clave.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/registrar_contrasena_usuario_de_google.html`.
+
+ - 2026-04-17: Checkout Epayco usa la referencia real del retorno y cierra en pagina de exito
+     - Archivos modificados:
+         - web/epayco/respuesta.html
+         - web/epayco/pago_exitoso.html
+         - web/pagar_licencia.html
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_del_proyecto
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se corrige el retorno web de Epayco para que el frontend conserve primero la referencia y el estado reales que entrega la pasarela, permitiendo que la conciliacion active la licencia y cierre el flujo en una pagina de pago exitoso antes de volver a `seleccionar_empresa.html`.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/epayco/respuesta.html`, `web/epayco/pago_exitoso.html` y `web/pagar_licencia.html`.
+         - `go test ./handlers -run 'TestEpayco(TransactionStatusHandlerFindsContextUsingInvoiceWhenGatewayIDsDiffer|TransactionStatusHandlerActivatesOnceAndCapturesEmail|WebhookHandlerFindsContextUsingInvoiceFallback|CreateTransactionHandlerUsesConfiguredPublicBaseURLAndKeys|TransactionStatusHandlerPreservesPendingOnGenericValidationError)' -count=1`
+
+ - 2026-04-17: Seleccionar empresa corrige el error `escapeHtml is not defined`
+     - Archivos modificados:
+         - web/js/seleccionar_empresa.js
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se restaura el helper de escape HTML usado por las tarjetas de `seleccionar_empresa.html`, evitando que la carga del listado se corte con el mensaje `Error cargando empresas: escapeHtml is not defined`.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/js/seleccionar_empresa.js`.
+
+ - 2026-04-17: Autenticacion administrativa restringe super al correo reservado
+     - Archivos modificados:
+         - backend/handlers/auth_admin_handlers.go
+         - backend/utils/utils.go
+         - backend/handlers/auth_admin_handlers_test.go
+         - backend/handlers/system_empresas_handlers_test.go
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_del_proyecto
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: El registro administrativo publico, el login por correo y el callback de Google ya no elevan cuentas nuevas o legacy a `super_administrador`. Solo `powerfulcontrolsystem@gmail.com` mantiene ese rol en el flujo publico; el resto queda como `administrador` y no entra a `/super/*`.
+     - Verificacion tecnica:
+         - `go test ./handlers -run "Test(AdminRegisterHandlerCreatesPendingAdminAndCapturesConfirmationMail|AdminLoginHandlerCreatesSessionForConfirmedAdmin|AdminLoginHandlerKeepsGenericAdminWithoutSuperPrivileges|AdminRegisterHandlerReservedEmailKeepsSuperRole|HandleGoogleCallbackNewEmailKeepsAdministradorRole|NuevoAdminRegistradoNoObtieneAccesoSuperParaCrearEmpresa)" -count=1`
+         - `go test ./ ./auth ./db ./handlers ./metrics ./utils -run '^$' -count=1`
+
+ - 2026-04-17: Accept oculta la metadata visible del contrato
+     - Archivos modificados:
+         - web/accept.html
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: La pagina `accept.html` deja de mostrar en pantalla la linea con version vigente y fecha de actualizacion del contrato. Se conserva el enlace al contrato completo y la resolucion interna de la version para abrir la ruta correcta.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/accept.html`.
+
+ - 2026-04-17: Index fija el CTA del home al pie de cada tarjeta y mejora el contraste del texto
+     - Archivos modificados:
+         - web/estilos.css
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Las tarjetas del home ahora reparten su contenido para dejar `Explorar oferta` siempre centrado en la parte inferior de la tarjeta, y el titulo/descripcion usan tipografia clara con iluminado exterior negro suave para mejorar lectura sin paneles claros adicionales sobre el texto.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/estilos.css` y `web/index.html`.
+
+ - 2026-04-17: Se valida con prueba el flujo de usuario nuevo creando su primera empresa
+     - Archivos modificados:
+         - backend/handlers/system_empresas_handlers_test.go
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se agrega una prueba end-to-end que cubre el caso exacto del usuario nuevo: registro administrativo, confirmacion manual, login, sesion valida y creacion de la primera empresa mediante la ruta protegida `/super/api/empresas`.
+     - Verificacion tecnica:
+         - `go test ./handlers -run "Test(NuevoAdminRegistradoPuedeCrearSuPrimeraEmpresaViaRutaSuperProtegida|AdminRegisterHandlerCreatesPendingAdminAndCapturesConfirmationMail|AdminLoginHandlerCreatesSessionForConfirmedAdmin|AdminLoginHandlerPromotesLegacySelfRegisteredAdminToSuper)" -count=1`
+         - `go test ./ ./auth ./db ./handlers ./metrics ./utils -run '^$' -count=1`
+
+ - 2026-04-17: Administradores autoregistrados ya pueden crear empresas desde el panel super
+     - Archivos modificados:
+         - backend/handlers/auth_admin_handlers.go
+         - backend/utils/utils.go
+         - backend/handlers/auth_admin_handlers_test.go
+         - web/js/seleccionar_empresa.js
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: El registro administrativo publico ahora crea cuentas nuevas con rol `super_administrador`, el middleware/promocion de login regulariza cuentas legacy autoregistradas que habian quedado como `administrador`, y el formulario de `seleccionar_empresa.html` envia correctamente `tipo_id` y `tipo_nombre` al crear una empresa.
+     - Verificacion tecnica:
+         - `go test ./handlers -run "TestAdmin(RegisterHandlerCreatesPendingAdminAndCapturesConfirmationMail|LoginHandlerCreatesSessionForConfirmedAdmin|LoginHandlerPromotesLegacySelfRegisteredAdminToSuper)" -count=1`
+         - `go test ./ ./auth ./db ./handlers ./metrics ./utils -run '^$' -count=1`
+         - Diagnostico del editor sin errores en `backend/handlers/auth_admin_handlers.go`, `backend/utils/utils.go`, `backend/handlers/auth_admin_handlers_test.go` y `web/js/seleccionar_empresa.js`.
+
+ - 2026-04-17: Index fija el boton Explorar oferta al pie de cada tarjeta
+     - Archivos modificados:
+         - web/estilos.css
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Las tarjetas del home ahora mantienen el boton `Explorar oferta` siempre abajo y centrado dentro de cada tarjeta, y la descripcion se muestra con color oscuro y mayor peso visual para mejorar contraste y consistencia.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/estilos.css`.
+
+ - 2026-04-17: Venta publica empresarial admite Wompi y Epayco por empresa
+     - Archivos modificados:
+         - backend/db/venta_publica.go
+         - backend/handlers/venta_publica.go
+         - backend/handlers/payments_handlers.go
+         - backend/handlers/venta_publica_test.go
+         - backend/main.go
+         - web/venta_publica.html
+         - web/administrar_empresa/venta_publica.html
+         - web/administrar_empresa/configuracion.html
+         - documentos/estructura_bd.md
+         - documentos/descripcion_del_proyecto
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Cada empresa puede configurar y activar Wompi o Epayco con sus propias credenciales para la tienda pública; el checkout público ahora elige la pasarela activa y los webhooks de ambas integraciones actualizan la orden empresarial correspondiente.
+     - Verificacion tecnica:
+         - `go test ./handlers -run "Test(EmpresaVentaPublicaHandlerConfigCatalogoYToggle|PublicVentaPublicaHandlerCatalogoYPagoConWompiInactivo|PublicVentaPublicaHandlerEstadoPagoRequiereOrderCode)" -count=1`
+         - `go test ./ ./auth ./db ./handlers ./metrics ./utils -run "^$" -count=1`
+
+ - 2026-04-17: Index compacta tarjetas para menor altura visual
+     - Archivos modificados:
+         - web/estilos.css
+     - Descripcion: Se redujo el padding de las tarjetas del home, se ajustó el gap del grid, se cambió la justificación interna de las tarjetas a `flex-start` y se redujeron márgenes de título/descripcion para que las tarjetas en la página principal se muestren más compactas verticalmente.
+     - Verificacion tecnica:
+         - Diagnostico del editor sin errores en `web/estilos.css`.
+         - Revisión visual en `/index.html`.
+
+ - 2026-04-17: Seleccionar empresa agrega pagina dedicada para descargar informacion empresarial
+     - Archivos creados:
+         - backend/handlers/system_empresas_export.go
+         - web/descargar_informacion_de_la_empresa.html
+         - web/js/descargar_informacion_de_la_empresa.js
+     - Archivos modificados:
+         - backend/handlers/system_empresas_handlers.go
+         - backend/handlers/system_empresas_handlers_test.go
+         - web/js/seleccionar_empresa.js
+         - web/estilos.css
+         - documentos/descripcion_del_proyecto
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: El boton de descarga de `seleccionar_empresa.html` ahora abre `descargar_informacion_de_la_empresa.html`, una vista dedicada que resume la empresa y permite exportar su informacion consolidada en `PDF`, `XLS`, `CSV`, `JSON` y `TXT` usando nuevas acciones protegidas en `/super/api/empresas`.
+     - Verificacion tecnica:
+         - `go test ./handlers -run "TestEmpresasHandler(ResumenDescargaYExport|ImpactoDesactivacion|DesactivarConImpactoYForce)" -count=1`
+         - `go test ./ ./auth ./db ./handlers ./metrics ./utils -run '^$' -count=1`
+
  - 2026-04-17: Facturacion DIAN agrega fase 1 base para UBL/XAdES y diagnostico oficial
      - Archivos modificados:
          - backend/handlers/modulos_faltantes.go
@@ -15,16 +498,24 @@
      - Verificacion tecnica:
          - go test ./handlers -run 'TestEmpresaDIANColombiaHandler(GenerarXMLUBLBase|FirmarXMLXAdESBase|DiagnosticoOficial|FirmaEnvioYAcuseReal|EnviarSetPruebas|SoftwareCompartidoMultiempresa|GuiaOnboardingYValidarCredenciales|SubirFirma)' -count=1
 
- - 2026-04-17: Añadido script de revisión ortográfica y configuración
-     - Archivos creados:
+ - 2026-04-17: Se depuran referencias de revision ortografica fuera del arbol actual
+     - Archivos retirados del repositorio:
          - scripts/spellcheck.ps1
          - scripts/spellcheck.py
          - scripts/spellcheck.sh
-         - .cspell.json
          - scripts/spell_whitelist.txt
          - scripts/README-spellcheck.md
-     - Descripcion: Se incorpora una herramienta de revisión ortográfica orientada a textos visibles por el usuario (HTML/MD/TXT). Prefiere `cspell` via `npx` y dispone de un fallback en Python con `pyspellchecker`.
-     - Verificacion tecnica: Ejecutar `scripts\spellcheck.ps1 .` en PowerShell o `./scripts/spellcheck.sh .` en Bash tras instalar dependencias.
+     - Archivos documentales modificados:
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - documentos/descripcion_del_proyecto
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/estructura_bd.md
+         - CHANGELOG.md
+     - Descripcion: Se actualiza la documentacion principal para reflejar el arbol real del proyecto, retirando referencias operativas a scripts `spellcheck*` que ya no existen en `scripts/`.
+     - Verificacion tecnica: listado actual de `scripts/` sin archivos `spellcheck*` ni `README-spellcheck.md`.
 
  - 2026-04-17: Seleccionar empresa cambia el boton de descarga a icono blanco con tooltip
      - Archivos modificados:

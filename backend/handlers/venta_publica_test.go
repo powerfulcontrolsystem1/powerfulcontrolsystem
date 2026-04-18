@@ -24,7 +24,11 @@ func TestEmpresaVentaPublicaHandlerConfigCatalogoYToggle(t *testing.T) {
 		"nombre_tienda":"Tienda Principal 137",
 		"moneda":"cop",
 		"mostrar_stock":true,
-		"wompi_activo":false
+		"wompi_activo":false,
+		"epayco_activo":true,
+		"epayco_mode":"production",
+		"epayco_public_key":"env:EPAYCO_PUBLIC_KEY_EMPRESA_137",
+		"epayco_private_key_ref":"env:EPAYCO_PRIVATE_KEY_EMPRESA_137"
 	}`))
 	configReq.Header.Set("Content-Type", "application/json")
 	configRR := httptest.NewRecorder()
@@ -42,6 +46,12 @@ func TestEmpresaVentaPublicaHandlerConfigCatalogoYToggle(t *testing.T) {
 	}
 	if configResp.Config.EmpresaSlug != "tienda-137" {
 		t.Fatalf("expected normalized slug tienda-137, got=%q", configResp.Config.EmpresaSlug)
+	}
+	if !configResp.Config.EpaycoActivo {
+		t.Fatalf("expected epayco active in config response")
+	}
+	if configResp.Config.EpaycoMode != "production" {
+		t.Fatalf("expected epayco mode production, got=%q", configResp.Config.EpaycoMode)
 	}
 	if !strings.Contains(configResp.PublicPath, "/tienda-137/venta_publica.html") {
 		t.Fatalf("unexpected public path: %q", configResp.PublicPath)
@@ -231,6 +241,7 @@ func TestPublicVentaPublicaHandlerCatalogoYPagoConWompiInactivo(t *testing.T) {
 
 	payReq := httptest.NewRequest(http.MethodPost, "/api/public/venta_publica?action=crear_pago", strings.NewReader(`{
 		"empresa_slug":"restaurante-central",
+		"metodo_pago":"wompi_nequi",
 		"comprador_nombre":"Cliente Publico",
 		"comprador_email":"cliente.publico@test.com",
 		"comprador_telefono":"3001234567",

@@ -39,6 +39,11 @@ type empresaVentaPublicaConfigPayload struct {
 	WompiPrivateKeyRef string `json:"wompi_private_key_ref"`
 	WompiIntegrityRef  string `json:"wompi_integrity_key_ref"`
 	WompiEventKeyRef   string `json:"wompi_event_key_ref"`
+	EpaycoActivo       *bool  `json:"epayco_activo"`
+	EpaycoMode         string `json:"epayco_mode"`
+	EpaycoPublicKey    string `json:"epayco_public_key"`
+	EpaycoPrivateKeyRef string `json:"epayco_private_key_ref"`
+	EpaycoCustomerID   string `json:"epayco_customer_id"`
 	Observaciones      string `json:"observaciones"`
 }
 
@@ -70,6 +75,7 @@ type ventaPublicaPagoItemPayload struct {
 type ventaPublicaCrearPagoPayload struct {
 	EmpresaID         int64                         `json:"empresa_id"`
 	EmpresaSlug       string                        `json:"empresa_slug"`
+	MetodoPago        string                        `json:"metodo_pago"`
 	CompradorNombre   string                        `json:"comprador_nombre"`
 	CompradorEmail    string                        `json:"comprador_email"`
 	CompradorTelefono string                        `json:"comprador_telefono"`
@@ -139,6 +145,123 @@ func ventaPublicaMapWompiStatus(raw string) string {
 	default:
 		return "pendiente"
 	}
+}
+
+func ventaPublicaMapEpaycoStatus(raw string) string {
+	status := strings.ToUpper(strings.TrimSpace(raw))
+	switch status {
+	case "APPROVED", "ACCEPTED", "SUCCESS":
+		return "aprobado"
+	case "DECLINED", "VOIDED", "ERROR", "FAILED", "REJECTED", "CANCELLED":
+		return "rechazado"
+	default:
+		return "pendiente"
+	}
+}
+
+func ventaPublicaNormalizeMetodoPago(raw string) string {
+	method := strings.ToLower(strings.TrimSpace(raw))
+	switch method {
+	case "", "wompi", "wompi_nequi", "nequi":
+		return "wompi_nequi"
+	case "epayco", "epayco_checkout", "smart_checkout":
+		return "epayco"
+	default:
+		return ""
+	}
+}
+
+func ventaPublicaProviderFromMetodo(raw string) string {
+	method := ventaPublicaNormalizeMetodoPago(raw)
+	if method == "epayco" {
+		return "epayco"
+	}
+	return "wompi"
+}
+
+func ventaPublicaResolveBaseURL(r *http.Request) string {
+	proto := strings.TrimSpace(ventaPublicaFirstHeaderValue(r.Header.Get("X-Forwarded-Proto")))
+	if proto == "" {
+		if r.TLS != nil {
+			proto = "https"
+		} else {
+			proto = "http"
+		}
+	}
+	host := strings.TrimSpace(ventaPublicaFirstHeaderValue(r.Header.Get("X-Forwarded-Host")))
+	if host == "" {
+		host = strings.TrimSpace(r.Host)
+	}
+	if host == "" {
+		host = "localhost"
+	}
+	return proto + "://" + host
+}
+
+func ventaPublicaResolveOrderContextFromReference(reference string) (int64, string) {
+	reference = strings.TrimSpace(reference)
+	if reference == "" {
+		return 0, ""
+	}
+	parts := strings.Split(reference, "|")
+	if len(parts) < 3 {
+		return 0, dbpkg.TryParseOrderCodeFromReference(reference)
+	}
+	if strings.TrimSpace(parts[0]) != "VP" {
+		return 0, dbpkg.TryParseOrderCodeFromReference(reference)
+	}
+	empresaID, _ := strconv.ParseInt(strings.TrimSpace(parts[1]), 10, 64)
+	return empresaID, strings.TrimSpace(parts[2])
+}
+
+func processVentaPublicaPaymentStatusUpdate(dbEmp *sql.DB, provider, transactionID, reference, status, rawPayload string) (bool, error) {
+	if dbEmp == nil {
+		return false, nil
+	}
+	provider = strings.ToLower(strings.TrimSpace(provider))
+	if provider == "" {
+		provider = "wompi"
+	}
+
+	resolvedEmpresaID, orderCode := ventaPublicaResolveOrderContextFromReference(reference)
+	var order dbpkg.EmpresaVentaPublicaOrder
+	var err error
+	if resolvedEmpresaID > 0 && orderCode != "" {
+		order, err = dbpkg.GetEmpresaVentaPublicaOrderByCodigo(dbEmp, resolvedEmpresaID, orderCode)
+	} else {
+		order, err = dbpkg.FindEmpresaVentaPublicaOrderByTransactionOrReference(dbEmp, transactionID, reference)
+		if err == nil {
+			resolvedEmpresaID = order.EmpresaID
+			orderCode = order.CodigoOrden
+		}
+	}
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil
+		}
+		return false, err
+	}
+
+	statusLocal := ventaPublicaMapWompiStatus(status)
+	if provider == "epayco" {
+		statusLocal = ventaPublicaMapEpaycoStatus(status)
+	}
+	pagadoEn := ""
+	if statusLocal == "aprobado" {
+		pagadoEn = time.Now().In(time.Local).Format("2006-01-02 15:04:05")
+	}
+	referenciaToSave := strings.TrimSpace(order.ReferenciaExterna)
+	if referenciaToSave == "" {
+		referenciaToSave = strings.TrimSpace(reference)
+	}
+	transactionToSave := strings.TrimSpace(transactionID)
+	if transactionToSave == "" {
+		transactionToSave = strings.TrimSpace(order.TransactionID)
+	}
+	if err := dbpkg.UpdateEmpresaVentaPublicaOrderPayment(dbEmp, resolvedEmpresaID, orderCode, statusLocal, transactionToSave, referenciaToSave, rawPayload, pagadoEn, provider+"_webhook"); err != nil {
+		return true, err
+	}
+	return true, nil
 }
 
 func ventaPublicaSlugFromRequest(r *http.Request) string {
@@ -249,6 +372,13 @@ func ResolveVentaPublicaSlugFromHost(r *http.Request) string {
 }
 
 func sanitizeVentaPublicaConfigForPublic(cfg dbpkg.EmpresaVentaPublicaConfig) map[string]interface{} {
+	paymentMethods := make([]string, 0, 2)
+	if cfg.WompiActivo {
+		paymentMethods = append(paymentMethods, "wompi_nequi")
+	}
+	if cfg.EpaycoActivo {
+		paymentMethods = append(paymentMethods, "epayco")
+	}
 	return map[string]interface{}{
 		"empresa_id":         cfg.EmpresaID,
 		"empresa_slug":       cfg.EmpresaSlug,
@@ -262,6 +392,9 @@ func sanitizeVentaPublicaConfigForPublic(cfg dbpkg.EmpresaVentaPublicaConfig) ma
 		"mostrar_stock":      cfg.MostrarStock,
 		"wompi_activo":       cfg.WompiActivo,
 		"wompi_mode":         cfg.WompiMode,
+		"epayco_activo":      cfg.EpaycoActivo,
+		"epayco_mode":        cfg.EpaycoMode,
+		"payment_methods":    paymentMethods,
 	}
 }
 
@@ -578,6 +711,10 @@ func handleEmpresaVentaPublicaConfigUpsert(w http.ResponseWriter, r *http.Reques
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	if err := validateVentaPublicaSecureRefIfProvided(payload.EpaycoPrivateKeyRef, "epayco_private_key_ref"); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	mostrarStock := true
 	if payload.MostrarStock != nil {
@@ -587,6 +724,10 @@ func handleEmpresaVentaPublicaConfigUpsert(w http.ResponseWriter, r *http.Reques
 	if payload.WompiActivo != nil {
 		wompiActivo = *payload.WompiActivo
 	}
+	epaycoActivo := false
+	if payload.EpaycoActivo != nil {
+		epaycoActivo = *payload.EpaycoActivo
+	}
 	if wompiActivo {
 		if strings.TrimSpace(payload.WompiPublicKey) == "" {
 			http.Error(w, "wompi_public_key es obligatoria cuando wompi_activo=1", http.StatusBadRequest)
@@ -594,6 +735,16 @@ func handleEmpresaVentaPublicaConfigUpsert(w http.ResponseWriter, r *http.Reques
 		}
 		if strings.TrimSpace(payload.WompiPrivateKeyRef) == "" || strings.TrimSpace(payload.WompiIntegrityRef) == "" {
 			http.Error(w, "wompi_private_key_ref y wompi_integrity_key_ref son obligatorias cuando wompi_activo=1", http.StatusBadRequest)
+			return
+		}
+	}
+	if epaycoActivo {
+		if strings.TrimSpace(payload.EpaycoPublicKey) == "" {
+			http.Error(w, "epayco_public_key es obligatoria cuando epayco_activo=1", http.StatusBadRequest)
+			return
+		}
+		if strings.TrimSpace(payload.EpaycoPrivateKeyRef) == "" {
+			http.Error(w, "epayco_private_key_ref es obligatoria cuando epayco_activo=1", http.StatusBadRequest)
 			return
 		}
 	}
@@ -615,6 +766,11 @@ func handleEmpresaVentaPublicaConfigUpsert(w http.ResponseWriter, r *http.Reques
 		WompiPrivateKeyRef: payload.WompiPrivateKeyRef,
 		WompiIntegrityRef:  payload.WompiIntegrityRef,
 		WompiEventKeyRef:   payload.WompiEventKeyRef,
+		EpaycoActivo:       epaycoActivo,
+		EpaycoMode:         payload.EpaycoMode,
+		EpaycoPublicKey:    payload.EpaycoPublicKey,
+		EpaycoPrivateKeyRef: payload.EpaycoPrivateKeyRef,
+		EpaycoCustomerID:   payload.EpaycoCustomerID,
 		UsuarioCreador:     adminEmailFromRequest(r),
 		Estado:             "activo",
 		Observaciones:      payload.Observaciones,
@@ -826,6 +982,23 @@ func handleVentaPublicaCrearPagoPublico(w http.ResponseWriter, r *http.Request, 
 		http.Error(w, "items es obligatorio", http.StatusBadRequest)
 		return
 	}
+	metodoPago := ventaPublicaNormalizeMetodoPago(payload.MetodoPago)
+	if metodoPago == "" {
+		http.Error(w, "metodo_pago invalido", http.StatusBadRequest)
+		return
+	}
+	if strings.TrimSpace(payload.CompradorNombre) == "" {
+		http.Error(w, "comprador_nombre es obligatorio", http.StatusBadRequest)
+		return
+	}
+	if strings.TrimSpace(payload.CompradorEmail) == "" {
+		http.Error(w, "comprador_email es obligatorio", http.StatusBadRequest)
+		return
+	}
+	if !payload.AcceptTerms {
+		http.Error(w, "debes aceptar terminos para continuar", http.StatusBadRequest)
+		return
+	}
 
 	rows, _, err := dbpkg.ListEmpresaVentaPublicaItems(dbEmp, resolvedEmpresaID, dbpkg.EmpresaVentaPublicaItemsFilter{IncludeInactive: false, Limit: 500})
 	if err != nil {
@@ -891,7 +1064,7 @@ func handleVentaPublicaCrearPagoPublico(w http.ResponseWriter, r *http.Request, 
 		DescuentoTotal:    0,
 		ImpuestoTotal:     0,
 		Total:             subtotal,
-		MetodoPago:        "wompi_nequi",
+		MetodoPago:        metodoPago,
 		EstadoPago:        "pendiente",
 		ItemsJSON:         dbpkg.EncodeEmpresaVentaPublicaOrderItems(persistedItems),
 		UsuarioCreador:    "publico",
@@ -902,172 +1075,277 @@ func handleVentaPublicaCrearPagoPublico(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	if !cfg.WompiActivo {
-		writeJSON(w, http.StatusPreconditionFailed, map[string]interface{}{
-			"ok":         false,
-			"empresa_id": resolvedEmpresaID,
-			"order_id":   orderID,
-			"order_code": orderCode,
-			"error":      "wompi no esta activo para esta tienda",
+	provider := ventaPublicaProviderFromMetodo(metodoPago)
+	phone := strings.TrimSpace(payload.CompradorTelefono)
+	reference := dbpkg.BuildVentaPublicaOrderReference(resolvedEmpresaID, orderCode)
+	if provider == "wompi" {
+		if !cfg.WompiActivo {
+			writeJSON(w, http.StatusPreconditionFailed, map[string]interface{}{
+				"ok":          false,
+				"empresa_id":  resolvedEmpresaID,
+				"order_id":    orderID,
+				"order_code":  orderCode,
+				"provider":    "wompi",
+				"metodo_pago": metodoPago,
+				"error":       "wompi no esta activo para esta tienda",
+			})
+			return
+		}
+
+		publicKey, err := ventaPublicaResolveCredential(cfg.WompiPublicKey)
+		if err != nil {
+			http.Error(w, "No se pudo resolver wompi_public_key", http.StatusInternalServerError)
+			return
+		}
+		privateKey, err := ventaPublicaResolveCredential(cfg.WompiPrivateKeyRef)
+		if err != nil {
+			http.Error(w, "No se pudo resolver wompi_private_key_ref", http.StatusInternalServerError)
+			return
+		}
+		integrityKey, err := ventaPublicaResolveCredential(cfg.WompiIntegrityRef)
+		if err != nil {
+			http.Error(w, "No se pudo resolver wompi_integrity_key_ref", http.StatusInternalServerError)
+			return
+		}
+		if strings.TrimSpace(publicKey) == "" || strings.TrimSpace(privateKey) == "" || strings.TrimSpace(integrityKey) == "" {
+			http.Error(w, "configuracion wompi incompleta para la tienda", http.StatusPreconditionFailed)
+			return
+		}
+		if ok, _ := regexp.MatchString(`^3\d{9}$`, phone); !ok {
+			http.Error(w, "comprador_telefono invalido (debe ser telefono Nequi 10 digitos en CO)", http.StatusBadRequest)
+			return
+		}
+
+		mode := normalizeWompiMode(cfg.WompiMode)
+		if mode == "" {
+			mode = "sandbox"
+		}
+		baseURL := wompiBaseURLFromMode(mode)
+		acceptanceToken, personalToken, acceptancePermalink, personalPermalink, ferr := fetchWompiAcceptanceInfo(baseURL, publicKey)
+		if ferr != nil {
+			http.Error(w, "No se pudo consultar terminos de Wompi: "+ferr.Error(), http.StatusBadGateway)
+			return
+		}
+		if strings.TrimSpace(acceptanceToken) == "" || strings.TrimSpace(personalToken) == "" {
+			http.Error(w, "Wompi no devolvio tokens de aceptacion", http.StatusBadGateway)
+			return
+		}
+
+		amountInCents := int64(math.Round(subtotal * 100))
+		if amountInCents <= 0 {
+			http.Error(w, "monto total invalido", http.StatusBadRequest)
+			return
+		}
+		signatureSource := fmt.Sprintf("%s%dCOP%s", reference, amountInCents, integrityKey)
+		signatureHash := sha256.Sum256([]byte(signatureSource))
+		signature := hex.EncodeToString(signatureHash[:])
+		redirectURL := fmt.Sprintf("%s/venta_publica.html?empresa_slug=%s&order_code=%s&provider=wompi&status=pending", strings.TrimRight(ventaPublicaResolveBaseURL(r), "/"), url.QueryEscape(cfg.EmpresaSlug), url.QueryEscape(orderCode))
+
+		reqBody := map[string]interface{}{
+			"acceptance_token":     acceptanceToken,
+			"accept_personal_auth": personalToken,
+			"amount_in_cents":      amountInCents,
+			"currency":             "COP",
+			"customer_email":       strings.TrimSpace(payload.CompradorEmail),
+			"reference":            reference,
+			"signature":            signature,
+			"redirect_url":         redirectURL,
+			"payment_method": map[string]interface{}{
+				"type":         "NEQUI",
+				"phone_number": phone,
+			},
+		}
+
+		bodyBytes, _ := json.Marshal(reqBody)
+		apiURL := strings.TrimRight(baseURL, "/") + "/transactions"
+		req, err := http.NewRequest(http.MethodPost, apiURL, bytes.NewBuffer(bodyBytes))
+		if err != nil {
+			http.Error(w, "No se pudo preparar solicitud Wompi", http.StatusInternalServerError)
+			return
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+privateKey)
+
+		client := &http.Client{Timeout: 25 * time.Second}
+		resp, err := client.Do(req)
+		if err != nil {
+			http.Error(w, "No se pudo crear transaccion Wompi: "+err.Error(), http.StatusBadGateway)
+			return
+		}
+		defer resp.Body.Close()
+		respBody, _ := io.ReadAll(resp.Body)
+		if resp.StatusCode >= 400 {
+			_ = dbpkg.UpdateEmpresaVentaPublicaOrderPayment(dbEmp, resolvedEmpresaID, orderCode, "error", "", reference, string(respBody), "", "wompi_error")
+			http.Error(w, "Wompi API error: "+string(respBody), http.StatusBadGateway)
+			return
+		}
+
+		var wompiResp map[string]interface{}
+		if err := json.Unmarshal(respBody, &wompiResp); err != nil {
+			http.Error(w, "respuesta Wompi invalida", http.StatusInternalServerError)
+			return
+		}
+		data, _ := wompiResp["data"].(map[string]interface{})
+		transactionID := strings.TrimSpace(fmt.Sprint(data["id"]))
+		statusWompi := strings.ToUpper(strings.TrimSpace(fmt.Sprint(data["status"])))
+		if strings.TrimSpace(transactionID) == "" || transactionID == "<nil>" {
+			http.Error(w, "Wompi no devolvio transaction id", http.StatusBadGateway)
+			return
+		}
+		if statusWompi == "" || statusWompi == "<nil>" {
+			statusWompi = "PENDING"
+		}
+		statusLocal := ventaPublicaMapWompiStatus(statusWompi)
+		pagadoEn := ""
+		if statusLocal == "aprobado" {
+			pagadoEn = time.Now().In(time.Local).Format("2006-01-02 15:04:05")
+		}
+		if err := dbpkg.UpdateEmpresaVentaPublicaOrderPayment(dbEmp, resolvedEmpresaID, orderCode, statusLocal, transactionID, reference, string(respBody), pagadoEn, ""); err != nil {
+			http.Error(w, "No se pudo actualizar orden", http.StatusInternalServerError)
+			return
+		}
+		order, _ := dbpkg.GetEmpresaVentaPublicaOrderByCodigo(dbEmp, resolvedEmpresaID, orderCode)
+
+		writeJSON(w, http.StatusOK, map[string]interface{}{
+			"ok":                      true,
+			"empresa_id":              resolvedEmpresaID,
+			"empresa_slug":            cfg.EmpresaSlug,
+			"order":                   order,
+			"items":                   responseItems,
+			"provider":                "wompi",
+			"metodo_pago":             metodoPago,
+			"payment_method":          "NEQUI",
+			"mode":                    mode,
+			"transaction_id":          transactionID,
+			"reference":               reference,
+			"status":                  statusWompi,
+			"status_local":            statusLocal,
+			"acceptance_permalink":    acceptancePermalink,
+			"personal_data_permalink": personalPermalink,
+			"data":                    data,
 		})
 		return
 	}
 
-	publicKey, err := ventaPublicaResolveCredential(cfg.WompiPublicKey)
-	if err != nil {
-		http.Error(w, "No se pudo resolver wompi_public_key", http.StatusInternalServerError)
-		return
-	}
-	privateKey, err := ventaPublicaResolveCredential(cfg.WompiPrivateKeyRef)
-	if err != nil {
-		http.Error(w, "No se pudo resolver wompi_private_key_ref", http.StatusInternalServerError)
-		return
-	}
-	integrityKey, err := ventaPublicaResolveCredential(cfg.WompiIntegrityRef)
-	if err != nil {
-		http.Error(w, "No se pudo resolver wompi_integrity_key_ref", http.StatusInternalServerError)
-		return
-	}
-	if strings.TrimSpace(publicKey) == "" || strings.TrimSpace(privateKey) == "" || strings.TrimSpace(integrityKey) == "" {
-		http.Error(w, "configuracion wompi incompleta para la tienda", http.StatusPreconditionFailed)
+	if !cfg.EpaycoActivo {
+		writeJSON(w, http.StatusPreconditionFailed, map[string]interface{}{
+			"ok":          false,
+			"empresa_id":  resolvedEmpresaID,
+			"order_id":    orderID,
+			"order_code":  orderCode,
+			"provider":    "epayco",
+			"metodo_pago": metodoPago,
+			"error":       "epayco no esta activo para esta tienda",
+		})
 		return
 	}
 
-	phone := strings.TrimSpace(payload.CompradorTelefono)
-	if ok, _ := regexp.MatchString(`^3\d{9}$`, phone); !ok {
-		http.Error(w, "comprador_telefono invalido (debe ser telefono Nequi 10 digitos en CO)", http.StatusBadRequest)
+	epaycoPublicKey, err := ventaPublicaResolveCredential(cfg.EpaycoPublicKey)
+	if err != nil {
+		http.Error(w, "No se pudo resolver epayco_public_key", http.StatusInternalServerError)
 		return
 	}
-	if strings.TrimSpace(payload.CompradorEmail) == "" {
-		http.Error(w, "comprador_email es obligatorio", http.StatusBadRequest)
+	epaycoPrivateKey, err := ventaPublicaResolveCredential(cfg.EpaycoPrivateKeyRef)
+	if err != nil {
+		http.Error(w, "No se pudo resolver epayco_private_key_ref", http.StatusInternalServerError)
 		return
 	}
-
-	mode := normalizeWompiMode(cfg.WompiMode)
+	if strings.TrimSpace(epaycoPublicKey) == "" || strings.TrimSpace(epaycoPrivateKey) == "" {
+		http.Error(w, "configuracion epayco incompleta para la tienda", http.StatusPreconditionFailed)
+		return
+	}
+	mode := normalizeEpaycoMode(cfg.EpaycoMode)
 	if mode == "" {
 		mode = "sandbox"
 	}
-	baseURL := wompiBaseURLFromMode(mode)
-	acceptanceToken, personalToken, acceptancePermalink, personalPermalink, ferr := fetchWompiAcceptanceInfo(baseURL, publicKey)
-	if ferr != nil {
-		http.Error(w, "No se pudo consultar terminos de Wompi: "+ferr.Error(), http.StatusBadGateway)
-		return
-	}
-	if !payload.AcceptTerms {
-		writeJSON(w, http.StatusBadRequest, map[string]interface{}{
-			"ok":                      false,
-			"error":                   "Debes aceptar terminos de Wompi para continuar",
-			"acceptance_permalink":    acceptancePermalink,
-			"personal_data_permalink": personalPermalink,
-			"order_id":                orderID,
-			"order_code":              orderCode,
-		})
-		return
-	}
-	if strings.TrimSpace(acceptanceToken) == "" || strings.TrimSpace(personalToken) == "" {
-		http.Error(w, "Wompi no devolvio tokens de aceptacion", http.StatusBadGateway)
-		return
-	}
-
-	total := subtotal
-	amountInCents := int64(math.Round(total * 100))
-	if amountInCents <= 0 {
-		http.Error(w, "monto total invalido", http.StatusBadRequest)
-		return
-	}
-
-	reference := dbpkg.BuildVentaPublicaOrderReference(resolvedEmpresaID, orderCode)
-	signatureSource := fmt.Sprintf("%s%dCOP%s", reference, amountInCents, integrityKey)
-	signatureHash := sha256.Sum256([]byte(signatureSource))
-	signature := hex.EncodeToString(signatureHash[:])
-
-	scheme := "http"
-	if r.TLS != nil {
-		scheme = "https"
-	}
-	redirectURL := fmt.Sprintf("%s://%s/venta_publica.html?empresa_slug=%s&order_code=%s&status=pending", scheme, r.Host, url.QueryEscape(cfg.EmpresaSlug), url.QueryEscape(orderCode))
-
-	reqBody := map[string]interface{}{
-		"acceptance_token":     acceptanceToken,
-		"accept_personal_auth": personalToken,
-		"amount_in_cents":      amountInCents,
-		"currency":             "COP",
-		"customer_email":       strings.TrimSpace(payload.CompradorEmail),
-		"reference":            reference,
-		"signature":            signature,
-		"redirect_url":         redirectURL,
-		"payment_method": map[string]interface{}{
-			"type":         "NEQUI",
-			"phone_number": phone,
+	baseURL := strings.TrimRight(ventaPublicaResolveBaseURL(r), "/")
+	responseURL := baseURL + "/venta_publica.html?empresa_slug=" + url.QueryEscape(cfg.EmpresaSlug) + "&order_code=" + url.QueryEscape(orderCode) + "&provider=epayco&status=pending&reference=" + url.QueryEscape(reference)
+	confirmationURL := baseURL + "/epayco/webhook"
+	sessionPayload := map[string]interface{}{
+		"checkout_version": "2",
+		"name":             strings.TrimSpace(cfg.NombreTienda),
+		"description":      "Compra publica " + strings.TrimSpace(orderCode),
+		"currency":         "COP",
+		"amount":           subtotal,
+		"lang":             "ES",
+		"invoice":          reference,
+		"country":          "CO",
+		"taxBase":          0,
+		"tax":              0,
+		"taxIco":           0,
+		"response":         responseURL,
+		"confirmation":     confirmationURL,
+		"method":           "POST",
+		"extras": map[string]interface{}{
+			"extra1": orderCode,
+			"extra2": strconv.FormatInt(resolvedEmpresaID, 10),
+			"extra3": reference,
+			"extra4": "venta_publica",
 		},
 	}
+	billing := map[string]interface{}{"email": strings.TrimSpace(payload.CompradorEmail)}
+	if phone != "" {
+		billing["phone"] = phone
+	}
+	sessionPayload["billing"] = billing
 
-	bodyBytes, _ := json.Marshal(reqBody)
-	apiURL := strings.TrimRight(baseURL, "/") + "/transactions"
-	req, err := http.NewRequest(http.MethodPost, apiURL, bytes.NewBuffer(bodyBytes))
+	apifyToken, loginRaw, err := fetchEpaycoApifyToken(epaycoPublicKey, epaycoPrivateKey)
 	if err != nil {
-		http.Error(w, "No se pudo preparar solicitud Wompi", http.StatusInternalServerError)
+		http.Error(w, "No se pudo autenticar con Epayco Smart Checkout: "+err.Error(), http.StatusBadGateway)
 		return
 	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+privateKey)
-
-	client := &http.Client{Timeout: 25 * time.Second}
-	resp, err := client.Do(req)
+	sessionID, sessionRaw, err := createEpaycoSmartCheckoutSession(apifyToken, sessionPayload)
 	if err != nil {
-		http.Error(w, "No se pudo crear transaccion Wompi: "+err.Error(), http.StatusBadGateway)
+		http.Error(w, "No se pudo crear sesion Smart Checkout de Epayco: "+err.Error(), http.StatusBadGateway)
 		return
 	}
-	defer resp.Body.Close()
-	respBody, _ := io.ReadAll(resp.Body)
-	if resp.StatusCode >= 400 {
-		_ = dbpkg.UpdateEmpresaVentaPublicaOrderPayment(dbEmp, resolvedEmpresaID, orderCode, "error", "", reference, string(respBody), "", "wompi_error")
-		http.Error(w, "Wompi API error: "+string(respBody), http.StatusBadGateway)
-		return
+	rawMap := map[string]interface{}{
+		"provider":         "epayco",
+		"mode":             mode,
+		"reference":        reference,
+		"order_code":       orderCode,
+		"empresa_id":       resolvedEmpresaID,
+		"customer_email":   strings.TrimSpace(payload.CompradorEmail),
+		"checkout_type":    "standard",
+		"checkout_script":  epaycoSmartCheckoutScriptURL,
+		"session_id":       sessionID,
+		"response":         responseURL,
+		"confirmation":     confirmationURL,
+		"integration_flow": "smart_checkout_v2",
+		"apify_login_raw":  loginRaw,
+		"session_raw":      sessionRaw,
 	}
-
-	var wompiResp map[string]interface{}
-	if err := json.Unmarshal(respBody, &wompiResp); err != nil {
-		http.Error(w, "respuesta Wompi invalida", http.StatusInternalServerError)
-		return
-	}
-	data, _ := wompiResp["data"].(map[string]interface{})
-	transactionID := strings.TrimSpace(fmt.Sprint(data["id"]))
-	statusWompi := strings.ToUpper(strings.TrimSpace(fmt.Sprint(data["status"])))
-	if strings.TrimSpace(transactionID) == "" || transactionID == "<nil>" {
-		http.Error(w, "Wompi no devolvio transaction id", http.StatusBadGateway)
-		return
-	}
-	if statusWompi == "" || statusWompi == "<nil>" {
-		statusWompi = "PENDING"
-	}
-	statusLocal := ventaPublicaMapWompiStatus(statusWompi)
-	pagadoEn := ""
-	if statusLocal == "aprobado" {
-		pagadoEn = time.Now().In(time.Local).Format("2006-01-02 15:04:05")
-	}
-	if err := dbpkg.UpdateEmpresaVentaPublicaOrderPayment(dbEmp, resolvedEmpresaID, orderCode, statusLocal, transactionID, reference, string(respBody), pagadoEn, ""); err != nil {
-		http.Error(w, "No se pudo actualizar orden", http.StatusInternalServerError)
+	rawBytes, _ := json.Marshal(rawMap)
+	if err := dbpkg.UpdateEmpresaVentaPublicaOrderPayment(dbEmp, resolvedEmpresaID, orderCode, "pendiente", reference, reference, string(rawBytes), "", "epayco_pending"); err != nil {
+		http.Error(w, "No se pudo actualizar orden Epayco", http.StatusInternalServerError)
 		return
 	}
 	order, _ := dbpkg.GetEmpresaVentaPublicaOrderByCodigo(dbEmp, resolvedEmpresaID, orderCode)
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"ok":                      true,
-		"empresa_id":              resolvedEmpresaID,
-		"empresa_slug":            cfg.EmpresaSlug,
-		"order":                   order,
-		"items":                   responseItems,
-		"provider":                "wompi",
-		"payment_method":          "NEQUI",
-		"mode":                    mode,
-		"transaction_id":          transactionID,
-		"reference":               reference,
-		"status":                  statusWompi,
-		"status_local":            statusLocal,
-		"acceptance_permalink":    acceptancePermalink,
-		"personal_data_permalink": personalPermalink,
-		"data":                    data,
+		"ok":                  true,
+		"empresa_id":          resolvedEmpresaID,
+		"empresa_slug":        cfg.EmpresaSlug,
+		"order":               order,
+		"items":               responseItems,
+		"provider":            "epayco",
+		"metodo_pago":         metodoPago,
+		"mode":                mode,
+		"transaction_id":      reference,
+		"reference":           reference,
+		"status":              "PENDING",
+		"status_local":        "pendiente",
+		"session_id":          sessionID,
+		"checkout_session_id": sessionID,
+		"checkout_type":       "standard",
+		"checkout_script_url": epaycoSmartCheckoutScriptURL,
+		"data": map[string]interface{}{
+			"id":         reference,
+			"reference":  reference,
+			"sessionId":  sessionID,
+			"type":       "standard",
+			"script_url": epaycoSmartCheckoutScriptURL,
+		},
 	})
 }
 
@@ -1109,10 +1387,15 @@ func handleVentaPublicaEstadoPagoPublico(w http.ResponseWriter, r *http.Request,
 	}
 
 	statusLocal := strings.TrimSpace(order.EstadoPago)
-	statusWompi := ""
+	statusGateway := ""
 	data := map[string]interface{}{}
+	metodoPago := ventaPublicaNormalizeMetodoPago(r.URL.Query().Get("metodo_pago"))
+	if metodoPago == "" {
+		metodoPago = ventaPublicaNormalizeMetodoPago(order.MetodoPago)
+	}
+	provider := ventaPublicaProviderFromMetodo(metodoPago)
 
-	if cfg.WompiActivo && transactionID != "" {
+	if provider == "wompi" && cfg.WompiActivo && transactionID != "" {
 		publicKey, _ := ventaPublicaResolveCredential(cfg.WompiPublicKey)
 		privateKey, _ := ventaPublicaResolveCredential(cfg.WompiPrivateKeyRef)
 		if strings.TrimSpace(publicKey) != "" {
@@ -1151,11 +1434,11 @@ func handleVentaPublicaEstadoPagoPublico(w http.ResponseWriter, r *http.Request,
 					var wompiResp map[string]interface{}
 					if err := json.Unmarshal(respBody, &wompiResp); err == nil {
 						data, _ = wompiResp["data"].(map[string]interface{})
-						statusWompi = strings.ToUpper(strings.TrimSpace(fmt.Sprint(data["status"])))
-						if statusWompi == "" || statusWompi == "<nil>" {
-							statusWompi = "PENDING"
+						statusGateway = strings.ToUpper(strings.TrimSpace(fmt.Sprint(data["status"])))
+						if statusGateway == "" || statusGateway == "<nil>" {
+							statusGateway = "PENDING"
 						}
-						statusLocal = ventaPublicaMapWompiStatus(statusWompi)
+						statusLocal = ventaPublicaMapWompiStatus(statusGateway)
 						pagadoEn := ""
 						if statusLocal == "aprobado" {
 							pagadoEn = time.Now().In(time.Local).Format("2006-01-02 15:04:05")
@@ -1167,13 +1450,56 @@ func handleVentaPublicaEstadoPagoPublico(w http.ResponseWriter, r *http.Request,
 			}
 		}
 	}
+	if provider == "epayco" && cfg.EpaycoActivo {
+		recordReference := strings.TrimSpace(order.ReferenciaExterna)
+		if recordReference == "" {
+			recordReference = strings.TrimSpace(r.URL.Query().Get("reference"))
+		}
+		if recordReference != "" {
+			validationURL := "https://secure.epayco.co/validation/v1/reference/" + url.PathEscape(recordReference)
+			req, err := http.NewRequest(http.MethodGet, validationURL, nil)
+			if err == nil {
+				client := &http.Client{Timeout: 15 * time.Second}
+				resp, reqErr := client.Do(req)
+				if reqErr == nil {
+					defer resp.Body.Close()
+					respBody, _ := io.ReadAll(resp.Body)
+					if resp.StatusCode < 400 {
+						if err := json.Unmarshal(respBody, &data); err == nil {
+							statusGateway = parseEpaycoPaymentStatus(data)
+							if statusGateway == "ERROR" && shouldPreservePendingEpaycoStatus(strings.ToUpper(strings.TrimSpace(order.EstadoPago)), data) {
+								statusGateway = "PENDING"
+							}
+							if strings.TrimSpace(statusGateway) == "" {
+								statusGateway = "PENDING"
+							}
+							statusLocal = ventaPublicaMapEpaycoStatus(statusGateway)
+							gatewayTx := firstNonEmptyString(
+								strings.TrimSpace(pickEpaycoField(data, "x_transaction_id", "transaction_id", "id")),
+								transactionID,
+								order.TransactionID,
+							)
+							pagadoEn := ""
+							if statusLocal == "aprobado" {
+								pagadoEn = time.Now().In(time.Local).Format("2006-01-02 15:04:05")
+							}
+							_ = dbpkg.UpdateEmpresaVentaPublicaOrderPayment(dbEmp, resolvedEmpresaID, orderCode, statusLocal, gatewayTx, recordReference, string(respBody), pagadoEn, "status_check")
+							order, _ = dbpkg.GetEmpresaVentaPublicaOrderByCodigo(dbEmp, resolvedEmpresaID, orderCode)
+						}
+					}
+				}
+			}
+		}
+	}
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"ok":           true,
 		"empresa_id":   resolvedEmpresaID,
 		"empresa_slug": cfg.EmpresaSlug,
+		"provider":     provider,
+		"metodo_pago":  metodoPago,
 		"order":        order,
-		"status":       statusWompi,
+		"status":       statusGateway,
 		"status_local": statusLocal,
 		"data":         data,
 	})

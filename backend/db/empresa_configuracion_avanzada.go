@@ -11,6 +11,7 @@ import (
 type EmpresaConfiguracionAvanzada struct {
 	ID                        int64  `json:"id"`
 	EmpresaID                 int64  `json:"empresa_id"`
+	ModoDocumentoVenta        string `json:"modo_documento_venta,omitempty"`
 	TipoDocumentoEmisor       string `json:"tipo_documento_emisor,omitempty"`
 	NIT                       string `json:"nit,omitempty"`
 	DigitoVerificacion        string `json:"digito_verificacion,omitempty"`
@@ -59,6 +60,7 @@ const (
 	defaultMonedaCodigo         = "COP"
 	defaultSistemaNumericoValue = "latino"
 	defaultCantidadDecimales    = int64(2)
+	defaultModoDocumentoVenta   = "comprobante_pago"
 )
 
 // EnsureEmpresaConfiguracionAvanzadaSchema crea/migra el esquema de configuración avanzada
@@ -68,6 +70,7 @@ func EnsureEmpresaConfiguracionAvanzadaSchema(dbConn *sql.DB) error {
 		`CREATE TABLE IF NOT EXISTS empresa_configuracion_avanzada (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			empresa_id INTEGER NOT NULL UNIQUE,
+			modo_documento_venta TEXT DEFAULT 'comprobante_pago',
 			tipo_documento_emisor TEXT DEFAULT 'NIT',
 			nit TEXT,
 			digito_verificacion TEXT,
@@ -118,6 +121,9 @@ func EnsureEmpresaConfiguracionAvanzadaSchema(dbConn *sql.DB) error {
 		}
 	}
 
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "modo_documento_venta", "TEXT DEFAULT 'comprobante_pago'"); err != nil {
+		return err
+	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "tipo_documento_emisor", "TEXT DEFAULT 'NIT'"); err != nil {
 		return err
 	}
@@ -241,6 +247,7 @@ func EnsureEmpresaConfiguracionAvanzadaSchema(dbConn *sql.DB) error {
 func defaultConfigAvanzada(empresaID int64) EmpresaConfiguracionAvanzada {
 	return EmpresaConfiguracionAvanzada{
 		EmpresaID:            empresaID,
+		ModoDocumentoVenta:   defaultModoDocumentoVenta,
 		TipoDocumentoEmisor:  "NIT",
 		PaisCodigo:           "CO",
 		AmbienteFE:           "habilitacion",
@@ -310,6 +317,14 @@ func defaultTipoOperacion(v string) string {
 	return v
 }
 
+func defaultModoDocumentoVentaValue(v string) string {
+	v = strings.TrimSpace(strings.ToLower(v))
+	if v == "factura_electronica" {
+		return "factura_electronica"
+	}
+	return defaultModoDocumentoVenta
+}
+
 func normalizeMonedaCodigo(v string) string {
 	v = strings.TrimSpace(strings.ToUpper(v))
 	if v == "" {
@@ -342,6 +357,7 @@ func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaC
 	row := dbConn.QueryRow(`SELECT
 		id,
 		empresa_id,
+		COALESCE(modo_documento_venta, 'comprobante_pago'),
 		COALESCE(tipo_documento_emisor, 'NIT'),
 		COALESCE(nit, ''),
 		COALESCE(digito_verificacion, ''),
@@ -393,6 +409,7 @@ func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaC
 	if err := row.Scan(
 		&cfg.ID,
 		&cfg.EmpresaID,
+		&cfg.ModoDocumentoVenta,
 		&cfg.TipoDocumentoEmisor,
 		&cfg.NIT,
 		&cfg.DigitoVerificacion,
@@ -439,6 +456,7 @@ func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaC
 		}
 		return nil, err
 	}
+	cfg.ModoDocumentoVenta = defaultModoDocumentoVentaValue(cfg.ModoDocumentoVenta)
 	cfg.ImprimirCopiaFactura = imprimirCopiaFacturaInt == 1
 	cfg.MostrarLogo = mostrarLogoInt == 1
 	cfg.ColorCarritoActivo = normalizeHexColor(cfg.ColorCarritoActivo, defaultColorCarritoActivo)
@@ -464,6 +482,7 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 	}
 
 	payload.TipoDocumentoEmisor = strings.TrimSpace(payload.TipoDocumentoEmisor)
+	payload.ModoDocumentoVenta = defaultModoDocumentoVentaValue(payload.ModoDocumentoVenta)
 	if payload.TipoDocumentoEmisor == "" {
 		payload.TipoDocumentoEmisor = "NIT"
 	}
@@ -516,6 +535,7 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 
 	_, err := dbConn.Exec(`INSERT INTO empresa_configuracion_avanzada (
 		empresa_id,
+		modo_documento_venta,
 		tipo_documento_emisor,
 		nit,
 		digito_verificacion,
@@ -556,8 +576,9 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)
 	ON CONFLICT(empresa_id) DO UPDATE SET
+		modo_documento_venta = excluded.modo_documento_venta,
 		tipo_documento_emisor = excluded.tipo_documento_emisor,
 		nit = excluded.nit,
 		digito_verificacion = excluded.digito_verificacion,
@@ -601,6 +622,7 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 		estado = excluded.estado,
 		observaciones = excluded.observaciones`,
 		payload.EmpresaID,
+		payload.ModoDocumentoVenta,
 		payload.TipoDocumentoEmisor,
 		strings.TrimSpace(payload.NIT),
 		strings.TrimSpace(payload.DigitoVerificacion),

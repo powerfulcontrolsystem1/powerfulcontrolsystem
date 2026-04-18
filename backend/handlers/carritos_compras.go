@@ -77,8 +77,8 @@ func EmpresaCarritosCompraHandler(dbEmp *sql.DB) http.HandlerFunc {
 
 				totals := map[string]float64{
 					"efectivo":               0.0,
-					"tarjeta_debito":        0.0,
-					"tarjeta_credito":       0.0,
+					"tarjeta_debito":         0.0,
+					"tarjeta_credito":        0.0,
 					"transferencia_bancaria": 0.0,
 				}
 				for rows.Next() {
@@ -647,6 +647,11 @@ func EmpresaCarritosCompraHandler(dbEmp *sql.DB) http.HandlerFunc {
 					log.Printf("[carritos] metrica venta_pagada empresa_id=%d carrito_id=%d error: %v", empresaID, id, errMetric)
 				}
 
+				documentoVenta, errDocumentoVenta := registrarDocumentoVentaDesdeCarritoPagado(dbEmp, carritoPagado, totalEsperadoConPropina, usuarioOperacion)
+				if errDocumentoVenta != nil {
+					log.Printf("[carritos] documento_venta empresa_id=%d carrito_id=%d error: %v", empresaID, id, errDocumentoVenta)
+				}
+
 				writeJSON(w, http.StatusOK, map[string]interface{}{
 					"ok":                         true,
 					"estado":                     "inactivo",
@@ -688,6 +693,7 @@ func EmpresaCarritosCompraHandler(dbEmp *sql.DB) http.HandlerFunc {
 						"habilitar_propinas":                 permisosOperativos.HabilitarPropinas,
 						"habilitar_comisiones":               permisosOperativos.HabilitarComisiones,
 					},
+					"documento_venta": documentoVenta,
 				})
 				return
 			}
@@ -1460,6 +1466,119 @@ func pagosMixtosToEventPayload(pagos []carritoPagoMixtoNormalizado) []map[string
 		})
 	}
 	return out
+}
+
+func normalizeVentaDocumentMode(raw string) string {
+	raw = strings.TrimSpace(strings.ToLower(raw))
+	if raw == "factura_electronica" {
+		return "factura_electronica"
+	}
+	return "comprobante_pago"
+}
+
+func buildVentaDocumentoCodigo(carrito *dbpkg.CarritoCompra, modo string) string {
+	base := ""
+	if carrito != nil {
+		base = strings.ToUpper(strings.TrimSpace(carrito.Codigo))
+		if base == "" && carrito.ID > 0 {
+			base = fmt.Sprintf("CRT-%d", carrito.ID)
+		}
+	}
+	base = strings.ReplaceAll(base, " ", "")
+	if base == "" {
+		base = "VENTA"
+	}
+	if normalizeVentaDocumentMode(modo) == "factura_electronica" {
+		return "FV-" + base
+	}
+	return "CP-" + base
+}
+
+func registrarDocumentoVentaDesdeCarritoPagado(dbEmp *sql.DB, carrito *dbpkg.CarritoCompra, montoTotal float64, usuario string) (map[string]interface{}, error) {
+	if dbEmp == nil || carrito == nil || carrito.EmpresaID <= 0 || carrito.ID <= 0 {
+		return nil, nil
+	}
+
+	cfg, err := dbpkg.GetEmpresaConfiguracionAvanzada(dbEmp, carrito.EmpresaID)
+	if err != nil {
+		return nil, err
+	}
+
+	modo := normalizeVentaDocumentMode("")
+	if cfg != nil {
+		modo = normalizeVentaDocumentMode(cfg.ModoDocumentoVenta)
+	}
+	documentoCodigo := buildVentaDocumentoCodigo(carrito, modo)
+	periodoContable := time.Now().Format("2006-01")
+	fechaDocumento := strings.TrimSpace(carrito.PagadoEn)
+	if fechaDocumento == "" {
+		fechaDocumento = time.Now().Format("2006-01-02 15:04:05")
+	}
+	if montoTotal <= 0 {
+		montoTotal = carrito.Total
+	}
+
+	docPayload := dbpkg.EmpresaDocumentoFacturacion{
+		EmpresaID:            carrito.EmpresaID,
+		TipoDocumento:        modo,
+		DocumentoCodigo:      documentoCodigo,
+		EstadoDocumento:      "emitida",
+		EstadoAnterior:       "borrador",
+		EventoUltimo:         "comprobante_pago_emitido",
+		PeriodoContable:      periodoContable,
+		MontoTotal:           montoTotal,
+		Moneda:               strings.TrimSpace(carrito.Moneda),
+		FechaDocumento:       fechaDocumento,
+		EntidadRelacionadaID: carrito.ClienteID,
+		UsuarioCreador:       strings.TrimSpace(usuario),
+		Estado:               "activo",
+		Observaciones:        "documento generado automaticamente al cerrar la venta del carrito " + strings.TrimSpace(carrito.Codigo),
+	}
+
+	warning := ""
+	requiereDIAN := modo == "factura_electronica"
+	if requiereDIAN {
+		docPayload.EventoUltimo = "factura_emitida"
+		legalDoc, legalErr := dbpkg.PrepareFacturacionDocumentoLegal(dbEmp, carrito.EmpresaID, "", documentoCodigo, montoTotal, carrito.Moneda)
+		if legalErr != nil {
+			warning = legalErr.Error()
+			docPayload.EstadoDocumento = "pendiente_emision"
+			docPayload.EventoUltimo = "factura_pendiente_emision"
+			docPayload.Observaciones = strings.TrimSpace(docPayload.Observaciones + ". Pendiente de emision legal: " + warning)
+		} else if legalDoc != nil {
+			docPayload.NumeroLegal = legalDoc.NumeroLegal
+			docPayload.CodigoValidacion = legalDoc.CodigoValidacion
+			docPayload.PaisCodigo = legalDoc.PaisCodigo
+			docPayload.AmbienteFE = legalDoc.Ambiente
+			docPayload.FechaDocumento = legalDoc.FechaEmisionLegal
+		}
+	} else {
+		docPayload.NumeroLegal = documentoCodigo
+		docPayload.AmbienteFE = "no_aplica"
+		if cfg != nil {
+			docPayload.PaisCodigo = strings.TrimSpace(cfg.PaisCodigo)
+		}
+	}
+
+	docPersistido, err := dbpkg.UpsertEmpresaDocumentoFacturacion(dbEmp, docPayload)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"ok":                true,
+		"modo":              modo,
+		"requiere_dian":     requiereDIAN,
+		"documento_id":      docPersistido.ID,
+		"tipo_documento":    docPersistido.TipoDocumento,
+		"documento_codigo":  docPersistido.DocumentoCodigo,
+		"estado_documento":  docPersistido.EstadoDocumento,
+		"numero_legal":      docPersistido.NumeroLegal,
+		"codigo_validacion": docPersistido.CodigoValidacion,
+		"pais_codigo":       docPersistido.PaisCodigo,
+		"ambiente_fe":       docPersistido.AmbienteFE,
+		"warning":           warning,
+	}, nil
 }
 
 func parseOptionalInt64CarritoQuery(r *http.Request, key string) (int64, error) {

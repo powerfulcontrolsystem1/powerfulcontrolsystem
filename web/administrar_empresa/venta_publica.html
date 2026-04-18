@@ -9,10 +9,10 @@
 <body class="empresa-subpage">
   <div class="container">
     <div class="page-header">
-      <h1 class="creditos-page-title">Venta publica y pagos Wompi</h1>
+      <h1 class="creditos-page-title">Venta publica y pasarelas de pago</h1>
     </div>
     <p id="vpContexto" class="form-help"></p>
-    <p class="form-help">Configura catalogo publico por empresa, administra items visibles y habilita pagos Nequi con credenciales Wompi empresariales.</p>
+    <p class="form-help">Configura catalogo publico por empresa, administra items visibles y habilita pagos Wompi o Epayco con credenciales propias por empresa.</p>
 
     <section class="form creditos-section creditos-section-first">
       <div class="page-header creditos-section-header">
@@ -66,6 +66,10 @@
             <input id="vpWompiActivo" type="checkbox">
             Activar pagos Wompi
           </label>
+          <label class="form-help creditos-inline-check" for="vpEpaycoActivo">
+            <input id="vpEpaycoActivo" type="checkbox">
+            Activar pagos Epayco
+          </label>
         </div>
       </div>
       <div class="form-row">
@@ -95,6 +99,29 @@
         <div class="form-col">
           <label class="form-label" for="vpWompiEventRef">Wompi event key ref (opcional)</label>
           <input id="vpWompiEventRef" class="form-input" type="text" placeholder="env:WOMPI_EVENT_KEY_EMPRESA_X">
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="vpEpaycoMode">Epayco modo</label>
+          <select id="vpEpaycoMode" class="form-input">
+            <option value="sandbox">sandbox</option>
+            <option value="production">production</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="vpEpaycoPublicKey">Epayco public key</label>
+          <input id="vpEpaycoPublicKey" class="form-input" type="text" placeholder="pub_test_xxx o env:EPAYCO_PUBLIC_KEY">
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="vpEpaycoPrivateRef">Epayco private key ref</label>
+          <input id="vpEpaycoPrivateRef" class="form-input" type="text" placeholder="env:EPAYCO_PRIVATE_KEY_EMPRESA_X o file:C:/...">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="vpEpaycoCustomerId">Epayco customer id (opcional)</label>
+          <input id="vpEpaycoCustomerId" class="form-input" type="text" placeholder="cust_id o referencia interna si aplica">
         </div>
         <div class="form-col">
           <label class="form-label" for="vpObsConfig">Observaciones</label>
@@ -391,6 +418,11 @@
           wompi_private_key_ref: document.getElementById('vpWompiPrivateRef').value.trim(),
           wompi_integrity_key_ref: document.getElementById('vpWompiIntegrityRef').value.trim(),
           wompi_event_key_ref: document.getElementById('vpWompiEventRef').value.trim(),
+          epayco_activo: !!document.getElementById('vpEpaycoActivo').checked,
+          epayco_mode: document.getElementById('vpEpaycoMode').value,
+          epayco_public_key: document.getElementById('vpEpaycoPublicKey').value.trim(),
+          epayco_private_key_ref: document.getElementById('vpEpaycoPrivateRef').value.trim(),
+          epayco_customer_id: document.getElementById('vpEpaycoCustomerId').value.trim(),
           observaciones: document.getElementById('vpObsConfig').value.trim()
         };
       }
@@ -412,6 +444,11 @@
         document.getElementById('vpWompiPrivateRef').value = String(cfg && cfg.wompi_private_key_ref || '');
         document.getElementById('vpWompiIntegrityRef').value = String(cfg && cfg.wompi_integrity_key_ref || '');
         document.getElementById('vpWompiEventRef').value = String(cfg && cfg.wompi_event_key_ref || '');
+        document.getElementById('vpEpaycoActivo').checked = cfg ? !!cfg.epayco_activo : false;
+        document.getElementById('vpEpaycoMode').value = String(cfg && cfg.epayco_mode || 'sandbox').toLowerCase() === 'production' ? 'production' : 'sandbox';
+        document.getElementById('vpEpaycoPublicKey').value = String(cfg && cfg.epayco_public_key || '');
+        document.getElementById('vpEpaycoPrivateRef').value = String(cfg && cfg.epayco_private_key_ref || '');
+        document.getElementById('vpEpaycoCustomerId').value = String(cfg && cfg.epayco_customer_id || '');
         document.getElementById('vpObsConfig').value = String(cfg && cfg.observaciones || '');
         refreshPublicLinks();
       }
@@ -715,7 +752,7 @@
         return;
       }
 
-      contextoEl.textContent = 'Empresa activa: #' + empresaId + '. Configura slug, catalogo y credenciales Wompi para publicar la tienda.';
+      contextoEl.textContent = 'Empresa activa: #' + empresaId + '. Configura slug, catalogo y credenciales Wompi o Epayco para publicar la tienda.';
       clearItemForm();
       refreshPublicLinks();
       cargarConfig();

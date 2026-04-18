@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Facturas electronicas</title>
+  <title>Facturas electronicas y comprobantes</title>
   <link rel="stylesheet" href="/estilos.css">
 </head>
 <body class="empresa-subpage">
   <div class="container empresa-module">
     <section class="card empresa-module-header">
       <div>
-        <h1 id="pageTitle">Facturas electronicas</h1>
+        <h1 id="pageTitle">Facturas electronicas y comprobantes</h1>
         <p id="empresaInfo">Empresa: cargando...</p>
       </div>
       <div class="empresa-module-kpis">
@@ -46,6 +46,7 @@
             <select id="tipoDocumento" class="form-input">
               <option value="">Todos</option>
               <option value="factura_electronica">Factura electronica</option>
+              <option value="comprobante_pago">Comprobante de pago</option>
               <option value="nota_credito">Nota credito</option>
             </select>
           </div>
@@ -95,7 +96,7 @@
         </div>
 
         <div class="form-actions">
-          <button id="btnBuscar" type="submit" class="btn">Buscar facturas</button>
+          <button id="btnBuscar" type="submit" class="btn">Buscar documentos</button>
           <button id="btnLimpiar" type="button" class="btn secondary">Limpiar filtros</button>
         </div>
       </form>
@@ -127,9 +128,16 @@
 
     <section class="card empresa-section">
       <div class="empresa-section-header">
-        <h2>Detalle de factura seleccionada</h2>
+        <h2>Detalle del documento seleccionado</h2>
       </div>
-      <div id="detalleFactura" class="form-help">Selecciona una factura para ver su detalle.</div>
+      <div id="detalleFactura" class="form-help">Selecciona un documento para ver su detalle.</div>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Vista previa de impresion</h2>
+      </div>
+      <div id="printPreview" class="factura-print-preview-empty">Selecciona un documento para ver cómo saldrá impreso.</div>
     </section>
   </div>
 
@@ -206,11 +214,13 @@
       var messageBox = document.getElementById("messageBox");
       var facturasBody = document.querySelector("#facturasTable tbody");
       var detalleFactura = document.getElementById("detalleFactura");
+      var printPreview = document.getElementById("printPreview");
 
       var state = {
         items: [],
         index: Object.create(null),
-        selectedKey: ""
+        selectedKey: "",
+        empresaNombre: ""
       };
 
       function showMessage(text, type) {
@@ -251,7 +261,8 @@
 
       function renderDetalle(item) {
         if (!item) {
-          detalleFactura.textContent = "Selecciona una factura para ver su detalle.";
+          detalleFactura.textContent = "Selecciona un documento para ver su detalle.";
+          renderPrintPreview(null);
           return;
         }
 
@@ -283,13 +294,136 @@
           '<div class="form-row">' +
             '<div class="form-col"><strong>Observaciones:</strong> ' + escapeHtml(item.observaciones || "-") + '</div>' +
           '</div>';
+
+        renderPrintPreview(item);
+      }
+
+      function getPrintableDocumentMeta(item) {
+        var tipo = normalize(item && item.tipo_documento).toLowerCase();
+        if (tipo === "comprobante_pago") {
+          return {
+            title: "Comprobante de pago",
+            subtitle: "Documento comercial interno sin envio a DIAN",
+            accentClass: "comprobante",
+            validationText: "No aplica",
+            ambienteText: "No aplica"
+          };
+        }
+        if (tipo === "nota_credito") {
+          return {
+            title: "Nota credito",
+            subtitle: "Documento de ajuste del ciclo de facturacion",
+            accentClass: "nota-credito",
+            validationText: normalize(item && item.codigo_validacion) || "Pendiente",
+            ambienteText: normalize(item && item.ambiente_fe) || "Pendiente"
+          };
+        }
+        return {
+          title: "Factura electronica",
+          subtitle: "Documento fiscal con trazabilidad de facturacion electronica",
+          accentClass: "factura",
+          validationText: normalize(item && item.codigo_validacion) || "Pendiente",
+          ambienteText: normalize(item && item.ambiente_fe) || "Pendiente"
+        };
+      }
+
+      function buildPrintableDocumentBody(item) {
+        var meta = getPrintableDocumentMeta(item);
+        var cliente = normalize(item && item.cliente_nombre) || "Consumidor final";
+        var clienteEmail = normalize(item && item.cliente_email) || "No registrado";
+        var clienteDocumento = normalize(item && item.cliente_documento) || "No registrado";
+        var numeroLegal = normalize(item && item.numero_legal) || normalize(item && item.documento_codigo) || "Pendiente";
+        var empresaLabel = normalize(state.empresaNombre) || ("Empresa #" + String(empresaID || ""));
+        var observaciones = normalize(item && item.observaciones) || "Sin observaciones registradas.";
+
+        return '' +
+          '<article class="factura-print-sheet ' + escapeHtml(meta.accentClass) + '">' +
+            '<header class="factura-print-head">' +
+              '<div>' +
+                '<span class="factura-print-kicker">Documento de venta</span>' +
+                '<h3>' + escapeHtml(meta.title) + '</h3>' +
+                '<p>' + escapeHtml(meta.subtitle) + '</p>' +
+              '</div>' +
+              '<div class="factura-print-company">' +
+                '<strong>' + escapeHtml(empresaLabel) + '</strong>' +
+                '<span>ID empresa ' + escapeHtml(String(empresaID || 0)) + '</span>' +
+              '</div>' +
+            '</header>' +
+            '<section class="factura-print-strip">' +
+              '<div><span>Codigo</span><strong>' + escapeHtml(item.documento_codigo || "") + '</strong></div>' +
+              '<div><span>Numero legal</span><strong>' + escapeHtml(numeroLegal) + '</strong></div>' +
+              '<div><span>Fecha</span><strong>' + escapeHtml(formatDate(item.fecha_documento || item.fecha_creacion)) + '</strong></div>' +
+              '<div><span>Estado</span><strong>' + escapeHtml(item.estado_documento || "borrador") + '</strong></div>' +
+            '</section>' +
+            '<div class="factura-print-grid">' +
+              '<section class="factura-print-panel">' +
+                '<h4>Cliente</h4>' +
+                '<dl>' +
+                  '<div><dt>Nombre</dt><dd>' + escapeHtml(cliente) + '</dd></div>' +
+                  '<div><dt>Correo</dt><dd>' + escapeHtml(clienteEmail) + '</dd></div>' +
+                  '<div><dt>Documento</dt><dd>' + escapeHtml(clienteDocumento) + '</dd></div>' +
+                '</dl>' +
+              '</section>' +
+              '<section class="factura-print-panel">' +
+                '<h4>Resumen financiero</h4>' +
+                '<dl>' +
+                  '<div><dt>Total</dt><dd>' + escapeHtml(formatMoney(item.monto_total, item.moneda || "COP")) + '</dd></div>' +
+                  '<div><dt>Moneda</dt><dd>' + escapeHtml(item.moneda || "COP") + '</dd></div>' +
+                  '<div><dt>Periodo</dt><dd>' + escapeHtml(item.periodo_contable || "No definido") + '</dd></div>' +
+                '</dl>' +
+              '</section>' +
+            '</div>' +
+            '<section class="factura-print-panel factura-print-panel--full">' +
+              '<h4>Control documental</h4>' +
+              '<dl class="factura-print-doc-meta">' +
+                '<div><dt>Tipo</dt><dd>' + escapeHtml(item.tipo_documento || "") + '</dd></div>' +
+                '<div><dt>Codigo validacion</dt><dd>' + escapeHtml(meta.validationText) + '</dd></div>' +
+                '<div><dt>Pais</dt><dd>' + escapeHtml(item.pais_codigo || "No aplica") + '</dd></div>' +
+                '<div><dt>Ambiente</dt><dd>' + escapeHtml(meta.ambienteText) + '</dd></div>' +
+              '</dl>' +
+            '</section>' +
+            '<section class="factura-print-note">' +
+              '<strong>Observaciones</strong>' +
+              '<p>' + escapeHtml(observaciones) + '</p>' +
+            '</section>' +
+          '</article>';
+      }
+
+      function buildPrintableDocumentPage(item) {
+        return '<!doctype html><html lang="es"><head><meta charset="utf-8">' +
+          '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+          '<title>' + escapeHtml((item && item.documento_codigo) || "Documento") + '</title>' +
+          '<link rel="stylesheet" href="/estilos.css">' +
+          '<style>' +
+            'body{margin:0;background:#eef2f7;color:#14212d;font-family:Georgia,"Times New Roman",serif;}' +
+            '.factura-print-shell{max-width:1120px;margin:0 auto;padding:28px 18px 42px;}' +
+            '.factura-print-toolbar{display:flex;justify-content:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:18px;}' +
+            '@media print{.factura-print-toolbar{display:none}body{background:#fff}.factura-print-shell{padding:0}}' +
+          '</style></head><body>' +
+          '<div class="factura-print-shell">' +
+            '<div class="factura-print-toolbar">' +
+              '<button type="button" class="btn" onclick="window.print()">Imprimir ahora</button>' +
+              '<button type="button" class="btn secondary" onclick="window.close()">Cerrar</button>' +
+            '</div>' +
+            buildPrintableDocumentBody(item) +
+          '</div></body></html>';
+      }
+
+      function renderPrintPreview(item) {
+        if (!item) {
+          printPreview.className = "factura-print-preview-empty";
+          printPreview.textContent = "Selecciona un documento para ver cómo saldrá impreso.";
+          return;
+        }
+        printPreview.className = "factura-print-preview";
+        printPreview.innerHTML = buildPrintableDocumentBody(item);
       }
 
       function renderTable() {
         state.index = Object.create(null);
 
         if (!state.items.length) {
-          facturasBody.innerHTML = '<tr><td colspan="9">No se encontraron facturas para los filtros seleccionados.</td></tr>';
+          facturasBody.innerHTML = '<tr><td colspan="9">No se encontraron documentos para los filtros seleccionados.</td></tr>';
           renderDetalle(null);
           updateKPIs();
           return;
@@ -384,37 +518,8 @@
           return;
         }
 
-        var cliente = normalize(item.cliente_nombre) || "Sin cliente asociado";
-        var html =
-          '<!doctype html><html lang="es"><head><meta charset="utf-8">' +
-          '<title>Factura ' + escapeHtml(item.documento_codigo || "") + '</title>' +
-          '<style>' +
-            'body{font-family:Arial,sans-serif;margin:24px;color:#222;}' +
-            'h1{margin:0 0 8px 0;font-size:22px;}' +
-            '.meta{margin-bottom:14px;color:#444;}' +
-            'table{width:100%;border-collapse:collapse;margin-top:12px;}' +
-            'th,td{border:1px solid #ddd;padding:10px;text-align:left;}' +
-            '.right{text-align:right;}' +
-            '.box{border:1px solid #ddd;padding:12px;border-radius:8px;margin-top:10px;}' +
-          '</style></head><body>' +
-          '<h1>Factura electronica</h1>' +
-          '<div class="meta">Documento: ' + escapeHtml(item.documento_codigo || "") + ' | Numero legal: ' + escapeHtml(item.numero_legal || "") + '</div>' +
-          '<div class="box"><strong>Cliente:</strong> ' + escapeHtml(cliente) + '<br>' +
-          '<strong>Correo:</strong> ' + escapeHtml(item.cliente_email || "") + '<br>' +
-          '<strong>Documento cliente:</strong> ' + escapeHtml(item.cliente_documento || "") + '</div>' +
-          '<table><tbody>' +
-          '<tr><th>Tipo documento</th><td>' + escapeHtml(item.tipo_documento || "") + '</td></tr>' +
-          '<tr><th>Fecha</th><td>' + escapeHtml(formatDate(item.fecha_documento || item.fecha_creacion)) + '</td></tr>' +
-          '<tr><th>Estado documento</th><td>' + escapeHtml(item.estado_documento || "") + '</td></tr>' +
-          '<tr><th>Codigo validacion</th><td>' + escapeHtml(item.codigo_validacion || "") + '</td></tr>' +
-          '<tr><th>Total</th><td class="right">' + escapeHtml(formatMoney(item.monto_total, item.moneda || "COP")) + '</td></tr>' +
-          '<tr><th>Observaciones</th><td>' + escapeHtml(item.observaciones || "-") + '</td></tr>' +
-          '</tbody></table>' +
-          '<script>window.onload=function(){window.print();};</' + 'script>' +
-          '</body></html>';
-
         win.document.open();
-        win.document.write(html);
+        win.document.write(buildPrintableDocumentPage(item));
         win.document.close();
       }
 
@@ -467,7 +572,7 @@
           .catch(function (err) {
             state.items = [];
             renderTable();
-            showMessage(err.message || "No se pudo consultar facturas", "error");
+            showMessage(err.message || "No se pudo consultar documentos", "error");
           });
       }
 
@@ -476,7 +581,8 @@
         return apiRequest("/super/api/empresas?id=" + encodeURIComponent(String(empresaID)))
           .then(function (empresa) {
             if (empresa && empresa.nombre) {
-              pageTitle.textContent = "Facturas electronicas - " + empresa.nombre;
+              state.empresaNombre = empresa.nombre;
+              pageTitle.textContent = "Facturas electronicas y comprobantes - " + empresa.nombre;
               empresaInfo.textContent = "Empresa: " + empresa.nombre + " (ID " + empresaID + ")";
             }
           })

@@ -13,6 +13,8 @@ import (
 const (
 	ventaPublicaWompiModeSandbox = "sandbox"
 	ventaPublicaWompiModeReal    = "real"
+	ventaPublicaEpaycoModeSandbox   = "sandbox"
+	ventaPublicaEpaycoModeProduction = "production"
 )
 
 // EmpresaVentaPublicaConfig define la configuracion de catalogo/pagos publicos por empresa.
@@ -34,6 +36,11 @@ type EmpresaVentaPublicaConfig struct {
 	WompiPrivateKeyRef string `json:"wompi_private_key_ref,omitempty"`
 	WompiIntegrityRef  string `json:"wompi_integrity_key_ref,omitempty"`
 	WompiEventKeyRef   string `json:"wompi_event_key_ref,omitempty"`
+	EpaycoActivo       bool   `json:"epayco_activo"`
+	EpaycoMode         string `json:"epayco_mode"`
+	EpaycoPublicKey    string `json:"epayco_public_key,omitempty"`
+	EpaycoPrivateKeyRef string `json:"epayco_private_key_ref,omitempty"`
+	EpaycoCustomerID   string `json:"epayco_customer_id,omitempty"`
 	FechaCreacion      string `json:"fecha_creacion,omitempty"`
 	FechaActualizacion string `json:"fecha_actualizacion,omitempty"`
 	UsuarioCreador     string `json:"usuario_creador,omitempty"`
@@ -144,6 +151,18 @@ func ventaPublicaNormalizeWompiMode(raw string) string {
 		return mode
 	default:
 		return ventaPublicaWompiModeSandbox
+	}
+}
+
+func ventaPublicaNormalizeEpaycoMode(raw string) string {
+	mode := strings.ToLower(strings.TrimSpace(raw))
+	switch mode {
+	case ventaPublicaEpaycoModeSandbox, ventaPublicaEpaycoModeProduction:
+		return mode
+	case "real", "prod":
+		return ventaPublicaEpaycoModeProduction
+	default:
+		return ventaPublicaEpaycoModeSandbox
 	}
 }
 
@@ -294,6 +313,11 @@ func EnsureEmpresaVentaPublicaSchema(dbConn *sql.DB) error {
 			wompi_private_key_ref TEXT,
 			wompi_integrity_key_ref TEXT,
 			wompi_event_key_ref TEXT,
+			epayco_activo INTEGER DEFAULT 0,
+			epayco_mode TEXT DEFAULT 'sandbox',
+			epayco_public_key TEXT,
+			epayco_private_key_ref TEXT,
+			epayco_customer_id TEXT,
 			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
 			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
 			usuario_creador TEXT,
@@ -377,6 +401,21 @@ func EnsureEmpresaVentaPublicaSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "wompi_event_key_ref", "TEXT"); err != nil {
 		return err
 	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "epayco_activo", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "epayco_mode", "TEXT DEFAULT 'sandbox'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "epayco_public_key", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "epayco_private_key_ref", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "epayco_customer_id", "TEXT"); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -393,6 +432,7 @@ func GetEmpresaVentaPublicaConfig(dbConn *sql.DB, empresaID int64) (EmpresaVenta
 	var out EmpresaVentaPublicaConfig
 	var mostrarStock sql.NullInt64
 	var wompiActivo sql.NullInt64
+	var epaycoActivo sql.NullInt64
 	err := dbConn.QueryRow(`SELECT
 		id,
 		empresa_id,
@@ -411,6 +451,11 @@ func GetEmpresaVentaPublicaConfig(dbConn *sql.DB, empresaID int64) (EmpresaVenta
 		COALESCE(wompi_private_key_ref, ''),
 		COALESCE(wompi_integrity_key_ref, ''),
 		COALESCE(wompi_event_key_ref, ''),
+		COALESCE(epayco_activo, 0),
+		COALESCE(epayco_mode, 'sandbox'),
+		COALESCE(epayco_public_key, ''),
+		COALESCE(epayco_private_key_ref, ''),
+		COALESCE(epayco_customer_id, ''),
 		COALESCE(fecha_creacion, ''),
 		COALESCE(fecha_actualizacion, ''),
 		COALESCE(usuario_creador, ''),
@@ -436,6 +481,11 @@ func GetEmpresaVentaPublicaConfig(dbConn *sql.DB, empresaID int64) (EmpresaVenta
 		&out.WompiPrivateKeyRef,
 		&out.WompiIntegrityRef,
 		&out.WompiEventKeyRef,
+		&epaycoActivo,
+		&out.EpaycoMode,
+		&out.EpaycoPublicKey,
+		&out.EpaycoPrivateKeyRef,
+		&out.EpaycoCustomerID,
 		&out.FechaCreacion,
 		&out.FechaActualizacion,
 		&out.UsuarioCreador,
@@ -459,6 +509,8 @@ func GetEmpresaVentaPublicaConfig(dbConn *sql.DB, empresaID int64) (EmpresaVenta
 			MostrarStock:  true,
 			WompiActivo:   false,
 			WompiMode:     ventaPublicaWompiModeSandbox,
+			EpaycoActivo:  false,
+			EpaycoMode:    ventaPublicaEpaycoModeSandbox,
 			Estado:        "activo",
 		}
 		return out, nil
@@ -483,11 +535,13 @@ func GetEmpresaVentaPublicaConfig(dbConn *sql.DB, empresaID int64) (EmpresaVenta
 	}
 	out.Moneda = ventaPublicaNormalizeMoneda(out.Moneda)
 	out.WompiMode = ventaPublicaNormalizeWompiMode(out.WompiMode)
+	out.EpaycoMode = ventaPublicaNormalizeEpaycoMode(out.EpaycoMode)
 	out.MostrarStock = mostrarStock.Valid && mostrarStock.Int64 > 0
 	if !mostrarStock.Valid {
 		out.MostrarStock = true
 	}
 	out.WompiActivo = wompiActivo.Valid && wompiActivo.Int64 > 0
+	out.EpaycoActivo = epaycoActivo.Valid && epaycoActivo.Int64 > 0
 	out.Estado = ventaPublicaNormalizeEstado(out.Estado)
 	return out, nil
 }
@@ -519,6 +573,7 @@ func UpsertEmpresaVentaPublicaConfig(dbConn *sql.DB, cfg EmpresaVentaPublicaConf
 	}
 	cfg.Moneda = ventaPublicaNormalizeMoneda(cfg.Moneda)
 	cfg.WompiMode = ventaPublicaNormalizeWompiMode(cfg.WompiMode)
+	cfg.EpaycoMode = ventaPublicaNormalizeEpaycoMode(cfg.EpaycoMode)
 	cfg.Estado = ventaPublicaNormalizeEstado(cfg.Estado)
 	if strings.TrimSpace(cfg.ColorPrimario) == "" {
 		cfg.ColorPrimario = "#0f4c81"
@@ -547,6 +602,11 @@ func UpsertEmpresaVentaPublicaConfig(dbConn *sql.DB, cfg EmpresaVentaPublicaConf
 				wompi_private_key_ref = ?,
 				wompi_integrity_key_ref = ?,
 				wompi_event_key_ref = ?,
+				epayco_activo = ?,
+				epayco_mode = ?,
+				epayco_public_key = ?,
+				epayco_private_key_ref = ?,
+				epayco_customer_id = ?,
 				usuario_creador = ?,
 				estado = ?,
 				observaciones = ?,
@@ -567,6 +627,11 @@ func UpsertEmpresaVentaPublicaConfig(dbConn *sql.DB, cfg EmpresaVentaPublicaConf
 			strings.TrimSpace(cfg.WompiPrivateKeyRef),
 			strings.TrimSpace(cfg.WompiIntegrityRef),
 			strings.TrimSpace(cfg.WompiEventKeyRef),
+			ventaPublicaBoolToInt(cfg.EpaycoActivo),
+			cfg.EpaycoMode,
+			strings.TrimSpace(cfg.EpaycoPublicKey),
+			strings.TrimSpace(cfg.EpaycoPrivateKeyRef),
+			strings.TrimSpace(cfg.EpaycoCustomerID),
 			strings.TrimSpace(cfg.UsuarioCreador),
 			cfg.Estado,
 			strings.TrimSpace(cfg.Observaciones),
@@ -595,10 +660,15 @@ func UpsertEmpresaVentaPublicaConfig(dbConn *sql.DB, cfg EmpresaVentaPublicaConf
 		wompi_private_key_ref,
 		wompi_integrity_key_ref,
 		wompi_event_key_ref,
+		epayco_activo,
+		epayco_mode,
+		epayco_public_key,
+		epayco_private_key_ref,
+		epayco_customer_id,
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		cfg.EmpresaID,
 		cfg.EmpresaSlug,
 		cfg.NombreTienda,
@@ -615,6 +685,11 @@ func UpsertEmpresaVentaPublicaConfig(dbConn *sql.DB, cfg EmpresaVentaPublicaConf
 		strings.TrimSpace(cfg.WompiPrivateKeyRef),
 		strings.TrimSpace(cfg.WompiIntegrityRef),
 		strings.TrimSpace(cfg.WompiEventKeyRef),
+		ventaPublicaBoolToInt(cfg.EpaycoActivo),
+		cfg.EpaycoMode,
+		strings.TrimSpace(cfg.EpaycoPublicKey),
+		strings.TrimSpace(cfg.EpaycoPrivateKeyRef),
+		strings.TrimSpace(cfg.EpaycoCustomerID),
 		strings.TrimSpace(cfg.UsuarioCreador),
 		cfg.Estado,
 		strings.TrimSpace(cfg.Observaciones),
@@ -1229,6 +1304,81 @@ func GetEmpresaVentaPublicaOrderByCodigo(dbConn *sql.DB, empresaID int64, codigo
 	FROM empresa_venta_publica_ordenes
 	WHERE empresa_id = ? AND codigo_orden = ?
 	LIMIT 1`, empresaID, codigoOrden).Scan(
+		&out.ID,
+		&out.EmpresaID,
+		&out.CodigoOrden,
+		&out.CompradorNombre,
+		&out.CompradorEmail,
+		&out.CompradorTelefono,
+		&out.Moneda,
+		&out.Subtotal,
+		&out.DescuentoTotal,
+		&out.ImpuestoTotal,
+		&out.Total,
+		&out.MetodoPago,
+		&out.EstadoPago,
+		&out.ReferenciaExterna,
+		&out.TransactionID,
+		&out.ItemsJSON,
+		&out.PasarelaPayloadJSON,
+		&out.PagadoEn,
+		&out.FechaCreacion,
+		&out.FechaActualizacion,
+		&out.UsuarioCreador,
+		&out.Estado,
+		&out.Observaciones,
+	)
+	if err != nil {
+		return EmpresaVentaPublicaOrder{}, err
+	}
+	out.Moneda = ventaPublicaNormalizeMoneda(out.Moneda)
+	out.Estado = ventaPublicaNormalizeEstado(out.Estado)
+	if strings.TrimSpace(out.EstadoPago) == "" {
+		out.EstadoPago = "pendiente"
+	}
+	return out, nil
+}
+
+// FindEmpresaVentaPublicaOrderByTransactionOrReference busca una orden por transaction_id o referencia externa.
+func FindEmpresaVentaPublicaOrderByTransactionOrReference(dbConn *sql.DB, transactionID, referencia string) (EmpresaVentaPublicaOrder, error) {
+	if dbConn == nil {
+		return EmpresaVentaPublicaOrder{}, errors.New("db connection is nil")
+	}
+	transactionID = strings.TrimSpace(transactionID)
+	referencia = strings.TrimSpace(referencia)
+	if transactionID == "" && referencia == "" {
+		return EmpresaVentaPublicaOrder{}, fmt.Errorf("transaction_id o referencia invalida")
+	}
+
+	var out EmpresaVentaPublicaOrder
+	err := dbConn.QueryRow(`SELECT
+		id,
+		empresa_id,
+		COALESCE(codigo_orden, ''),
+		COALESCE(comprador_nombre, ''),
+		COALESCE(comprador_email, ''),
+		COALESCE(comprador_telefono, ''),
+		COALESCE(moneda, 'COP'),
+		COALESCE(subtotal, 0),
+		COALESCE(descuento_total, 0),
+		COALESCE(impuesto_total, 0),
+		COALESCE(total, 0),
+		COALESCE(metodo_pago, ''),
+		COALESCE(estado_pago, 'pendiente'),
+		COALESCE(referencia_externa, ''),
+		COALESCE(transaction_id, ''),
+		COALESCE(items_json, ''),
+		COALESCE(pasarela_payload_json, ''),
+		COALESCE(pagado_en, ''),
+		COALESCE(fecha_creacion, ''),
+		COALESCE(fecha_actualizacion, ''),
+		COALESCE(usuario_creador, ''),
+		COALESCE(estado, 'activo'),
+		COALESCE(observaciones, '')
+	FROM empresa_venta_publica_ordenes
+	WHERE ((? <> '' AND transaction_id = ?) OR (? <> '' AND referencia_externa = ?))
+	ORDER BY id DESC
+	LIMIT 1`, transactionID, transactionID, referencia, referencia).Scan(
 		&out.ID,
 		&out.EmpresaID,
 		&out.CodigoOrden,

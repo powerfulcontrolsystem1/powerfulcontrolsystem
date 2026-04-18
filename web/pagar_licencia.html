@@ -103,10 +103,10 @@
       function buildReturnContext(params, licenciaId, empresaId){
         const pending = readPendingPayment();
         let provider = normalizeProvider(params.get('provider') || params.get('metodo') || params.get('method'));
-        let status = normalizeStatus(params.get('status') || params.get('x_response') || params.get('x_transaction_state') || params.get('response'));
+        let status = normalizeStatus(params.get('x_response') || params.get('x_transaction_state') || params.get('response') || params.get('status'));
         if (!status) status = normalizeStatus(params.get('x_cod_response') || params.get('cod_response'));
-        let transactionId = String(params.get('transaction_id') || params.get('id') || params.get('x_transaction_id') || '').trim();
-        let reference = String(params.get('reference') || params.get('ref') || params.get('invoice') || params.get('x_id_invoice') || params.get('ref_payco') || params.get('x_ref_payco') || '').trim();
+        let transactionId = String(params.get('x_transaction_id') || params.get('transaction_id') || params.get('id') || '').trim();
+        let reference = String(params.get('x_ref_payco') || params.get('ref_payco') || params.get('reference') || params.get('ref') || params.get('invoice') || params.get('x_id_invoice') || '').trim();
 
         if ((!provider || (!transactionId && !reference)) && matchesPendingContext(pending, licenciaId, empresaId)) {
           if (!provider) provider = normalizeProvider(pending.provider);
@@ -128,24 +128,22 @@
         const className = kind === 'success' ? 'success' : (kind === 'error' ? 'error' : 'muted');
         target.innerHTML = '<div class="' + className + '"><strong>' + escapeHtml(title) + '</strong><div>' + escapeHtml(body) + '</div></div>';
       }
-      function syncStatusText(target, text){ if (target) target.textContent = text || ''; }
-      function buildEpaycoMethodsMarkup(){
-        const methods = [
-          'Tarjetas de credito',
-          'Tarjetas debito',
-          'PSE',
-          'Nequi',
-          'Daviplata',
-          'Efectivo y recaudos'
-        ];
-        return '<div class="payment-method-epayco-catalog">'+
-          '<div class="payment-method-options-title">Formas de pago con Epayco</div>'+
-          '<div class="payment-method-options-grid">' + methods.map(function(item){
-            return '<span class="payment-method-option-pill">' + escapeHtml(item) + '</span>';
-          }).join('') + '</div>'+
-          '<div class="small payment-method-hint payment-method-epayco-note">La disponibilidad final puede variar segun la cuenta y la configuracion activa en Epayco.</div>'+
-        '</div>';
+      function buildSuccessPageURL(provider, context){
+        const target = new URL('/epayco/pago_exitoso.html', window.location.origin);
+        const normalizedProvider = normalizeProvider(provider || (context && context.provider) || '');
+        if (normalizedProvider) target.searchParams.set('provider', normalizedProvider);
+        if (licenciaId) target.searchParams.set('licencia_id', String(licenciaId));
+        if (empresaId) target.searchParams.set('empresa_id', String(empresaId));
+        if (context && context.reference) target.searchParams.set('reference', String(context.reference));
+        if (context && context.transactionId) target.searchParams.set('transaction_id', String(context.transactionId));
+        return target.toString();
       }
+      function redirectToSuccessPage(provider, context){
+        if (!licenciaId || !empresaId) return false;
+        window.location.replace(buildSuccessPageURL(provider, context));
+        return true;
+      }
+      function syncStatusText(target, text){ if (target) target.textContent = text || ''; }
       function extractResponseContext(data, fallback){
         const payload = data && data.data && typeof data.data === 'object' ? data.data : null;
         const context = fallback || {};
@@ -217,6 +215,7 @@
           if (returnContext.hasReturn) {
             if (isSuccessStatus(returnContext.status)) {
               clearPendingPayment();
+              if (redirectToSuccessPage(returnContext.provider, returnContext)) return;
               container.innerHTML = '<div class="success"><strong>Pago aprobado</strong><div>La pasarela confirmó tu pago. Si no ves la licencia activa todavía, vuelve a empresas y recarga el listado.</div></div>';
             } else if (isFinalStatus(returnContext.status)) {
               clearPendingPayment();
@@ -302,7 +301,6 @@
           const licenciaDescripcion = String(lic.descripcion || lic.Descripcion || '').trim();
           const licenciaValor = lic.valor || lic.Valor || 0;
           const licenciaDuracion = String(lic.duracion_dias || lic.DuracionDias || '').trim();
-          const epaycoMethodsMarkup = (epaycoProvider && epaycoProvider.available) ? buildEpaycoMethodsMarkup() : '';
           const pageTitleEl = document.getElementById('pageTitle');
           if (pageTitleEl) pageTitleEl.textContent = licenciaNombre || 'Pagar Licencia';
 
@@ -360,7 +358,6 @@
                   '</div>'+
                   '<p class="checkout-payment-copy">La pasarela disponible se abre desde esta misma pagina y el estado del pago se retoma automaticamente al volver.</p>'+
                 '</div>'+
-                epaycoMethodsMarkup+
                 (paymentCards.length > 1
                   ? '<div class="payment-method-selector payment-method-selector-licenses">' + paymentCards.join('') + '</div>'
                   : '')+
@@ -374,11 +371,11 @@
                   : '')+
             ((epaycoProvider && epaycoProvider.available)
               ? '<div id="epaycoPanel" class="payment-method-panel payment-method-panel-epayco">'+
-                '<div class="method-panel-heading payment-method-heading-with-logo"><img class="payment-method-panel-logo" src="/img/logo epayco.png" alt="Logo de Epayco"><span>Epayco</span></div>'+
-                '<div class="small payment-method-hint payment-method-brand-copy">Activa el checkout de Epayco con correo del cliente y deja visible el abanico de medios digitales disponibles.</div>'+
-                '<label for="epaycoEmail" class="muted small">Correo del cliente (recomendado):</label>'+
-                '<input id="epaycoEmail" class="payment-method-input" type="email" placeholder="cliente@correo.com">'+
-                '<div class="small payment-method-hint">Epayco admite multiples medios y valida la disponibilidad real segun tu comercio configurado.</div>'+
+                '<div class="method-panel-heading payment-method-heading-with-logo payment-method-heading-with-logo-epayco">'+
+                  '<span class="payment-method-panel-logo-shell"><img class="payment-method-panel-logo" src="/img/logo epayco.png" alt="Logo de Epayco"></span>'+
+                  '<span class="payment-method-panel-title">Epayco</span>'+
+                '</div>'+
+                '<div class="small payment-method-hint payment-method-brand-copy">Abre el checkout seguro de Epayco desde esta tarjeta y vuelve aqui para que el sistema confirme el pago.</div>'+
                 '<label class="small payment-method-check"><input id="epaycoTermsChk" type="checkbox"> Acepto términos y tratamiento de datos</label>'+
                 '<button id="payEpaycoBtn" class="btn secondary payment-btn-epayco" type="button">Pagar con Epayco</button>'+
                 '<div id="epaycoStatus" class="small payment-method-status"></div>'+
@@ -412,7 +409,6 @@
             wompiTermsLinks: document.getElementById('wompiTermsLinks'),
             wompiSandboxHint: document.getElementById('wompiSandboxHint'),
             payEpaycoBtn: document.getElementById('payEpaycoBtn'),
-            epaycoEmailInput: document.getElementById('epaycoEmail'),
             epaycoTermsChk: document.getElementById('epaycoTermsChk'),
             epaycoStatus: document.getElementById('epaycoStatus'),
             discountCodeInput: document.getElementById('discountCode'),
@@ -498,9 +494,11 @@
                 licencia_id: licenciaId,
                 empresa_id: empresaId || null
               });
-              renderFeedback(ui.feedback, 'success', 'Pago aprobado', label + ' confirmó el pago y la licencia quedó activa. ' + referenceText);
-              syncStatusText(statusElement, 'Estado ' + label + ': ' + normalizedStatus);
-              disableAllPayments();
+              if (!redirectToSuccessPage(normalizedProvider, resolved)) {
+                renderFeedback(ui.feedback, 'success', 'Pago aprobado', label + ' confirmó el pago y la licencia quedó activa. ' + referenceText);
+                syncStatusText(statusElement, 'Estado ' + label + ': ' + normalizedStatus);
+                disableAllPayments();
+              }
               return { done: true, context: resolved };
             }
 
@@ -697,11 +695,6 @@
           });
 
           if (ui.payEpaycoBtn) ui.payEpaycoBtn.addEventListener('click', async function(){
-            const email = String((ui.epaycoEmailInput && ui.epaycoEmailInput.value) || '').trim();
-            if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-              syncStatusText(ui.epaycoStatus, 'Ingresa un correo válido para Epayco.');
-              return;
-            }
             if (!ui.epaycoTermsChk || !ui.epaycoTermsChk.checked) {
               syncStatusText(ui.epaycoStatus, 'Debes aceptar términos y autorización de datos para pagar con Epayco.');
               return;
@@ -711,10 +704,10 @@
             syncStatusText(ui.epaycoStatus, '');
             try {
               const payload = {
-                licencia_id: Number(licenciaId),
-                customer_email: email
+                licencia_id: Number(licenciaId)
               };
               if (empresaId) payload.empresa_id = Number(empresaId);
+              if (adminEmail) payload.customer_email = adminEmail;
               try { const code = String((ui.discountCodeInput && ui.discountCodeInput.value) || '').trim(); if (code) payload.discount_code = code; } catch(e){}
               try { const aId = String((ui.asesorIdInput && ui.asesorIdInput.value) || '').trim(); if (aId) { payload.asesor_id = aId; payload.vendedor_id = aId; } } catch(e){}
 

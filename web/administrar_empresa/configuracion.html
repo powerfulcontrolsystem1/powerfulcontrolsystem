@@ -376,14 +376,22 @@
 
     <section class="card empresa-section">
       <div class="empresa-section-header">
-        <h2>Impresion de facturas</h2>
-        <button id="btnGuardarFacturaConfig" type="button" class="btn">Guardar impresión</button>
+        <h2>Documento de venta e impresion</h2>
+        <button id="btnGuardarFacturaConfig" type="button" class="btn">Guardar documento</button>
       </div>
-      <p class="form-help">Define tamaño de hoja, si requiere copia y manejo de logo para la factura.</p>
+      <p class="form-help">Elige si la venta genera factura electronica o comprobante de pago sin envio a DIAN. El flujo operativo de venta sigue siendo el mismo.</p>
 
       <div class="empresa-config-grid">
         <div class="form">
           <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="facturaModoDocumentoVenta">Documento al vender</label>
+              <select id="facturaModoDocumentoVenta" class="form-input">
+                <option value="comprobante_pago">Comprobante de pago</option>
+                <option value="factura_electronica">Factura electronica</option>
+              </select>
+              <p class="form-help">Si se selecciona factura electronica y falta configuracion legal, la venta se guarda y el documento queda pendiente de emision.</p>
+            </div>
             <div class="form-col">
               <label class="form-label" for="facturaFormatoImpresion">Tamaño de hoja</label>
               <select id="facturaFormatoImpresion" class="form-input">
@@ -391,6 +399,8 @@
                 <option value="pos">Pequeña POS (tirilla)</option>
               </select>
             </div>
+          </div>
+          <div class="form-row">
             <div class="form-col">
               <label class="empresa-config-check" for="facturaImprimirCopia" style="margin-top:30px;display:block;">
                 <input id="facturaImprimirCopia" type="checkbox">
@@ -648,6 +658,92 @@
 
       <div id="backupMsg" class="form-help"></div>
     </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Pasarelas de pago</h2>
+        <button id="btnGuardarPasarelasPago" type="button" class="btn">Guardar pasarelas</button>
+      </div>
+      <p class="form-help">Cada empresa puede activar Wompi y Epayco con sus propias credenciales para la venta pública. Esta sección reutiliza la misma configuración de la tienda pública para evitar inconsistencias.</p>
+
+      <div class="empresa-config-grid">
+        <div class="form">
+          <h3 style="margin:0 0 10px 0;font-size:0.95rem;">Wompi</h3>
+          <label class="empresa-config-check" for="pasarelaWompiActiva">
+            <input id="pasarelaWompiActiva" type="checkbox">
+            <span>Activar Wompi para esta empresa</span>
+          </label>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="pasarelaWompiModo">Modo</label>
+              <select id="pasarelaWompiModo" class="form-input">
+                <option value="sandbox">sandbox</option>
+                <option value="production">production</option>
+              </select>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="pasarelaWompiPublicKey">Public key</label>
+              <input id="pasarelaWompiPublicKey" class="form-input" placeholder="pub_test_xxx o env:WOMPI_PUBLIC_KEY">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="pasarelaWompiPrivateRef">Private key ref</label>
+              <input id="pasarelaWompiPrivateRef" class="form-input" placeholder="env:WOMPI_PRIVATE_KEY_EMPRESA_X">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="pasarelaWompiIntegrityRef">Integrity key ref</label>
+              <input id="pasarelaWompiIntegrityRef" class="form-input" placeholder="env:WOMPI_INTEGRITY_KEY_EMPRESA_X">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="pasarelaWompiEventRef">Event key ref (opcional)</label>
+              <input id="pasarelaWompiEventRef" class="form-input" placeholder="env:WOMPI_EVENT_KEY_EMPRESA_X">
+            </div>
+          </div>
+        </div>
+
+        <div class="form">
+          <h3 style="margin:0 0 10px 0;font-size:0.95rem;">Epayco</h3>
+          <label class="empresa-config-check" for="pasarelaEpaycoActiva">
+            <input id="pasarelaEpaycoActiva" type="checkbox">
+            <span>Activar Epayco para esta empresa</span>
+          </label>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="pasarelaEpaycoModo">Modo</label>
+              <select id="pasarelaEpaycoModo" class="form-input">
+                <option value="sandbox">sandbox</option>
+                <option value="production">production</option>
+              </select>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="pasarelaEpaycoPublicKey">Public key</label>
+              <input id="pasarelaEpaycoPublicKey" class="form-input" placeholder="pub_test_xxx o env:EPAYCO_PUBLIC_KEY">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="pasarelaEpaycoPrivateRef">Private key ref</label>
+              <input id="pasarelaEpaycoPrivateRef" class="form-input" placeholder="env:EPAYCO_PRIVATE_KEY_EMPRESA_X">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="pasarelaEpaycoCustomerId">Customer ID (opcional)</label>
+              <input id="pasarelaEpaycoCustomerId" class="form-input" placeholder="cust_id o referencia interna">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions" style="margin-top:8px;">
+        <button id="btnRefrescarPasarelasPago" type="button" class="btn secondary">Refrescar</button>
+        <button id="btnAbrirVentaPublicaConfig" type="button" class="btn secondary">Abrir módulo venta pública</button>
+        <button id="btnAbrirVentaPublicaPublica" type="button" class="btn secondary">Abrir tienda pública</button>
+      </div>
+      <div id="pasarelasPagoMsg" class="form-help"></div>
+      <div id="pasarelasPagoLinks" class="form-help">URL pública: pendiente de cargar.</div>
+    </section>
   </div>
 
   <script>
@@ -703,6 +799,7 @@
 
     const empresaId = resolveEmpresaId();
     let operativaConfigCache = null;
+    let ventaPublicaConfigCache = null;
     let impresorasState = {
       impresoras: [],
       funcionalidades: [],
@@ -799,6 +896,126 @@
       const box = document.getElementById('operativaHistorialMsg');
       box.textContent = text || '';
       box.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'form-help');
+    }
+
+    function setPasarelasMessage(text, type) {
+      const box = document.getElementById('pasarelasPagoMsg');
+      box.textContent = text || '';
+      box.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'form-help');
+    }
+
+    function refreshPasarelasLinks(cfg) {
+      const box = document.getElementById('pasarelasPagoLinks');
+      const slug = String(cfg && cfg.empresa_slug || '').trim();
+      if (!slug) {
+        box.textContent = 'URL pública: pendiente de cargar.';
+        return;
+      }
+      box.innerHTML = 'URL local: <a href="/venta_publica.html?empresa_slug=' + encodeURIComponent(slug) + '" target="_top">/venta_publica.html?empresa_slug=' + slug + '</a><br>' +
+        'URL patrón: <a href="/' + encodeURIComponent(slug) + '/venta_publica.html" target="_top">/' + slug + '/venta_publica.html</a>';
+    }
+
+    function fillPasarelasForm(cfg) {
+      ventaPublicaConfigCache = cfg && typeof cfg === 'object' ? cfg : null;
+      document.getElementById('pasarelaWompiActiva').checked = !!(cfg && cfg.wompi_activo);
+      document.getElementById('pasarelaWompiModo').value = String(cfg && cfg.wompi_mode || 'sandbox').toLowerCase() === 'production' ? 'production' : 'sandbox';
+      document.getElementById('pasarelaWompiPublicKey').value = String(cfg && cfg.wompi_public_key || '');
+      document.getElementById('pasarelaWompiPrivateRef').value = String(cfg && cfg.wompi_private_key_ref || '');
+      document.getElementById('pasarelaWompiIntegrityRef').value = String(cfg && cfg.wompi_integrity_key_ref || '');
+      document.getElementById('pasarelaWompiEventRef').value = String(cfg && cfg.wompi_event_key_ref || '');
+      document.getElementById('pasarelaEpaycoActiva').checked = !!(cfg && cfg.epayco_activo);
+      document.getElementById('pasarelaEpaycoModo').value = String(cfg && cfg.epayco_mode || 'sandbox').toLowerCase() === 'production' ? 'production' : 'sandbox';
+      document.getElementById('pasarelaEpaycoPublicKey').value = String(cfg && cfg.epayco_public_key || '');
+      document.getElementById('pasarelaEpaycoPrivateRef').value = String(cfg && cfg.epayco_private_key_ref || '');
+      document.getElementById('pasarelaEpaycoCustomerId').value = String(cfg && cfg.epayco_customer_id || '');
+      refreshPasarelasLinks(cfg || {});
+    }
+
+    function getPasarelasFormData() {
+      const base = ventaPublicaConfigCache && typeof ventaPublicaConfigCache === 'object' ? ventaPublicaConfigCache : {};
+      return {
+        empresa_id: Number(empresaId),
+        empresa_slug: String(base.empresa_slug || ''),
+        nombre_tienda: String(base.nombre_tienda || ''),
+        descripcion_tienda: String(base.descripcion_tienda || ''),
+        logo_url: String(base.logo_url || ''),
+        banner_url: String(base.banner_url || ''),
+        color_primario: String(base.color_primario || ''),
+        moneda: String(base.moneda || 'COP'),
+        dominio_publico: String(base.dominio_publico || ''),
+        mostrar_stock: base.mostrar_stock === undefined ? true : !!base.mostrar_stock,
+        observaciones: String(base.observaciones || ''),
+        wompi_activo: document.getElementById('pasarelaWompiActiva').checked,
+        wompi_mode: document.getElementById('pasarelaWompiModo').value,
+        wompi_public_key: document.getElementById('pasarelaWompiPublicKey').value.trim(),
+        wompi_private_key_ref: document.getElementById('pasarelaWompiPrivateRef').value.trim(),
+        wompi_integrity_key_ref: document.getElementById('pasarelaWompiIntegrityRef').value.trim(),
+        wompi_event_key_ref: document.getElementById('pasarelaWompiEventRef').value.trim(),
+        epayco_activo: document.getElementById('pasarelaEpaycoActiva').checked,
+        epayco_mode: document.getElementById('pasarelaEpaycoModo').value,
+        epayco_public_key: document.getElementById('pasarelaEpaycoPublicKey').value.trim(),
+        epayco_private_key_ref: document.getElementById('pasarelaEpaycoPrivateRef').value.trim(),
+        epayco_customer_id: document.getElementById('pasarelaEpaycoCustomerId').value.trim()
+      };
+    }
+
+    async function loadPasarelasConfig() {
+      if (!empresaId) return;
+      setPasarelasMessage('Cargando pasarelas...', '');
+      try {
+        const resp = await fetch('/api/empresa/venta_publica?empresa_id=' + encodeURIComponent(empresaId) + '&action=config', {
+          credentials: 'same-origin'
+        });
+        const text = await resp.text();
+        const data = text ? JSON.parse(text) : {};
+        if (!resp.ok) {
+          throw new Error((data && (data.error || data.message)) || text || ('HTTP ' + resp.status));
+        }
+        fillPasarelasForm(data.config || {});
+        setPasarelasMessage('Pasarelas cargadas.', 'success');
+      } catch (err) {
+        setPasarelasMessage('No se pudieron cargar las pasarelas: ' + (err && err.message ? err.message : err), 'error');
+      }
+    }
+
+    async function savePasarelasConfig() {
+      if (!empresaId) {
+        setPasarelasMessage('No se puede guardar sin empresa seleccionada.', 'error');
+        return;
+      }
+      setPasarelasMessage('Guardando pasarelas...', '');
+      try {
+        const payload = getPasarelasFormData();
+        const resp = await fetch('/api/empresa/venta_publica?empresa_id=' + encodeURIComponent(empresaId) + '&action=config', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const text = await resp.text();
+        const data = text ? JSON.parse(text) : {};
+        if (!resp.ok) {
+          throw new Error((data && (data.error || data.message)) || text || ('HTTP ' + resp.status));
+        }
+        fillPasarelasForm(data.config || payload);
+        setPasarelasMessage('Pasarelas guardadas correctamente.', 'success');
+      } catch (err) {
+        setPasarelasMessage('No se pudieron guardar las pasarelas: ' + (err && err.message ? err.message : err), 'error');
+      }
+    }
+
+    function openVentaPublicaModule() {
+      if (!empresaId) return;
+      window.location.href = '/administrar_empresa/venta_publica.html?empresa_id=' + encodeURIComponent(empresaId);
+    }
+
+    function openVentaPublicaPublica() {
+      const slug = String(ventaPublicaConfigCache && ventaPublicaConfigCache.empresa_slug || '').trim();
+      if (!slug) {
+        setPasarelasMessage('Guarda o carga primero la configuración de venta pública para obtener el slug.', 'error');
+        return;
+      }
+      window.top.location.href = '/venta_publica.html?empresa_slug=' + encodeURIComponent(slug);
     }
 
     function normalizeRoleName(raw) {
@@ -1854,6 +2071,7 @@
 
     function setFacturaFormData(cfg) {
       const src = cfg && typeof cfg === 'object' ? cfg : {};
+      document.getElementById('facturaModoDocumentoVenta').value = String(src.modo_documento_venta || 'comprobante_pago').trim().toLowerCase() === 'factura_electronica' ? 'factura_electronica' : 'comprobante_pago';
       document.getElementById('facturaFormatoImpresion').value = normalizeFormatoImpresion(src.formato_impresion);
       document.getElementById('facturaImprimirCopia').checked = src.imprimir_copia_factura === true;
       document.getElementById('facturaMostrarLogo').checked = src.mostrar_logo !== false;
@@ -1873,6 +2091,7 @@
     function getFacturaFormData() {
       return {
         empresa_id: Number(empresaId),
+        modo_documento_venta: String(document.getElementById('facturaModoDocumentoVenta').value || '').trim().toLowerCase() === 'factura_electronica' ? 'factura_electronica' : 'comprobante_pago',
         formato_impresion: normalizeFormatoImpresion(document.getElementById('facturaFormatoImpresion').value),
         imprimir_copia_factura: document.getElementById('facturaImprimirCopia').checked,
         mostrar_logo: document.getElementById('facturaMostrarLogo').checked,
@@ -1936,9 +2155,9 @@
         const payload = getFacturaFormData();
         const cfg = await upsertEmpresaConfigAvanzada(payload);
         setFacturaFormData(cfg || {});
-        setFacturaMessage('Configuración de facturas guardada correctamente.', 'success');
+        setFacturaMessage('Configuración de documento de venta guardada correctamente.', 'success');
       } catch (err) {
-        setFacturaMessage('No se pudo guardar configuración de facturas: ' + (err && err.message ? err.message : err), 'error');
+        setFacturaMessage('No se pudo guardar configuración de documento de venta: ' + (err && err.message ? err.message : err), 'error');
       }
     }
 
@@ -2072,6 +2291,7 @@
       setOperativaSimOutput({ ok: true, mensaje: 'Listo para simular reglas por contexto.' });
       loadFacturaConfig();
       loadOperativaConfig();
+      loadPasarelasConfig();
       loadImpresorasConfig(false);
       document.getElementById('btnGuardarConfig').addEventListener('click', guardarConfiguracion);
       document.getElementById('btnGuardarConfigOperativa').addEventListener('click', guardarOperativaEmpresa);
@@ -2101,6 +2321,10 @@
       document.getElementById('btnGuardarImpresoraProducto').addEventListener('click', guardarImpresoraProducto);
       document.getElementById('btnDescargarBackup').addEventListener('click', descargarBackup);
       document.getElementById('btnRestaurarBackup').addEventListener('click', restaurarBackup);
+      document.getElementById('btnGuardarPasarelasPago').addEventListener('click', savePasarelasConfig);
+      document.getElementById('btnRefrescarPasarelasPago').addEventListener('click', loadPasarelasConfig);
+      document.getElementById('btnAbrirVentaPublicaConfig').addEventListener('click', openVentaPublicaModule);
+      document.getElementById('btnAbrirVentaPublicaPublica').addEventListener('click', openVentaPublicaPublica);
     }
 
     bootstrap();

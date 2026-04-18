@@ -83,9 +83,23 @@ func ensureSuperSchema(t *testing.T, dbSuper *sql.DB) {
 		name TEXT,
 		role TEXT,
 		photo TEXT,
+		usuario_creador TEXT,
 		fecha_creacion TEXT,
 		fecha_actualizacion TEXT,
-		estado TEXT DEFAULT 'activo'
+		estado TEXT DEFAULT 'activo',
+		acepta_contrato INTEGER DEFAULT 0,
+		telefono TEXT,
+		pais TEXT,
+		ciudad TEXT,
+		email_confirmado INTEGER DEFAULT 0,
+		email_confirm_token TEXT,
+		email_confirm_expira TEXT,
+		email_confirmado_en TEXT,
+		password_hash TEXT,
+		password_salt TEXT,
+		password_set INTEGER DEFAULT 0,
+		password_reset_token TEXT,
+		password_reset_expira TEXT
 	);`)
 	if err != nil {
 		t.Fatalf("create administradores schema: %v", err)

@@ -4,6 +4,7 @@
   var navLinks = Array.from(document.querySelectorAll(".admin-sidebar .nav a"));
   var storage = null;
   var viewKey = "seleccionar_empresa:view";
+  var currentEmpresas = [];
 
   try {
     storage = window.sessionStorage;
@@ -20,6 +21,18 @@
     } catch (e) {
       return "";
     }
+  }
+
+  function escapeHtml(value) {
+    return String(value == null ? "" : value).replace(/[&<>"']/g, function (match) {
+      return {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      }[match];
+    });
   }
 
   function persistView(view) {
@@ -56,6 +69,32 @@
       localStorage.setItem("empresa_id", value);
       localStorage.setItem("admin_empresa_id", value);
     } catch (e) {}
+  }
+
+  function readEmpresaContext() {
+    var sources = [window.sessionStorage, window.localStorage];
+    for (var i = 0; i < sources.length; i += 1) {
+      var source = sources[i];
+      if (!source) continue;
+      try {
+        var value = parseInt(source.getItem("active_empresa_id") || source.getItem("empresa_id") || "0", 10);
+        if (Number.isFinite(value) && value > 0) {
+          return value;
+        }
+      } catch (e) {}
+    }
+    return 0;
+  }
+
+  function resolveEmpresaIdForMenu() {
+    var stored = readEmpresaContext();
+    if (stored > 0) {
+      return stored;
+    }
+    if (Array.isArray(currentEmpresas) && currentEmpresas.length) {
+      return Number(currentEmpresas[0].id || 0);
+    }
+    return 0;
   }
 
   function setActiveNav(activeLink) {
@@ -189,6 +228,8 @@
   }
 
   function buildEmpresaCard(empresa, hasLicense) {
+    var visual = getEmpresaTypeVisual(empresa);
+    var descripcion = buildEmpresaCardDescription(empresa, visual, hasLicense);
     var a = document.createElement("a");
     a.href = "#";
     a.className = "card-link";
@@ -215,14 +256,20 @@
     });
 
     var div = document.createElement("div");
-    div.className = "portal-card warm";
+    div.className = "portal-card warm empresa-card empresa-tone-" + visual.tone;
     div.innerHTML =
+      '<span class="empresa-card-badge">' +
+      escapeHtml(visual.label || "Empresa") +
+      "</span>" +
+      '<span class="empresa-card-watermark" aria-hidden="true">' +
+      '<img src="' + escapeHtml(visual.icon || "/img/company-briefcase-color.svg") + '" alt="">' +
+      "</span>" +
       '<div class="card-body">' +
       '<h3 class="card-title">' +
       escapeHtml(empresa.nombre || "--") +
       "</h3>" +
       '<p class="card-desc muted">' +
-      escapeHtml(empresa.observaciones || "") +
+      escapeHtml(descripcion || "") +
       "</p>" +
       '<div class="card-actions">' +
       '<button class="license-indicator ' +
@@ -342,7 +389,7 @@
 
     var header = document.createElement("div");
     header.className = "empresa-section-header";
-    header.innerHTML = "<h2>" + title + "</h2><span class=\"form-help\">Total: " + empresas.length + "</span>";
+    header.innerHTML = "<h2>" + title + "</h2><span class=\"form-help empresa-group-total\">Total: " + empresas.length + "</span>";
 
     var grid = document.createElement("div");
     grid.className = "portal-grid empresas-grid";
@@ -422,6 +469,10 @@
       }
 
       var list = myEmpresas.length > 0 ? myEmpresas : empresas;
+      currentEmpresas = list.slice();
+      if (!readEmpresaContext() && list.length > 0) {
+        persistEmpresaContext(list[0].id);
+      }
       if (list.length === 0) {
         showForm();
         try {
@@ -532,6 +583,7 @@
 
   function wireSidebarFrameLinks() {
     var linkAgregar = document.getElementById("linkAgregarEmpresa");
+    var linkEditarEmpresaMenu = document.getElementById("linkEditarEmpresaMenu");
     var linkLicencias = document.getElementById("linkLicencias");
     var linkAdministradores = document.getElementById("linkAdministradores");
     var linkReportes = document.getElementById("linkReportesGlobales");
@@ -541,6 +593,20 @@
         ev.preventDefault();
         showEmpresasPanel();
         setActiveNav(linkAgregar);
+      });
+    }
+
+    if (linkEditarEmpresaMenu) {
+      linkEditarEmpresaMenu.addEventListener("click", function (ev) {
+        ev.preventDefault();
+        var empresaId = resolveEmpresaIdForMenu();
+        if (!empresaId) {
+          window.alert("Primero crea o selecciona una empresa para editarla.");
+          return;
+        }
+        persistEmpresaContext(empresaId);
+        setActiveNav(linkEditarEmpresaMenu);
+        window.location.href = "/editar_empresa.html?id=" + encodeURIComponent(String(empresaId)) + "&empresa_id=" + encodeURIComponent(String(empresaId));
       });
     }
 
@@ -562,9 +628,17 @@
 
     form.onsubmit = async function (e) {
       e.preventDefault();
+      var tipoSelect = document.getElementById("tipo_id");
+      var selectedOption = tipoSelect && tipoSelect.options ? tipoSelect.options[tipoSelect.selectedIndex] : null;
+      var tipoID = 0;
+      var tipoNombre = "";
+      if (selectedOption) {
+      tipoID = parseInt(selectedOption.dataset.id || "0", 10) || 0;
+      tipoNombre = selectedOption.text || "";
+      }
       var payload = {
-        tipo_id: 0,
-        tipo_nombre: document.getElementById("tipo_id").value || "",
+      tipo_id: tipoID,
+      tipo_nombre: tipoNombre,
         nombre: document.getElementById("nombre").value.trim(),
         nit: document.getElementById("nit").value.trim(),
         observaciones: document.getElementById("observaciones").value.trim(),
@@ -601,139 +675,6 @@
     document.getElementById("cancelBtn").onclick = hideForm;
   });
 
-  function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, function (m) {
-      return {
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#39;",
-      }[m];
-    });
-  }
-
-  function sanitizeFilename(name) {
-    if (!name) return '';
-    return String(name).replace(/[^a-z0-9\-\_\.]/gi, '_');
-  }
-
-  function downloadBlob(blob, filename) {
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
-
-  async function performEmpresaDownload(empresa, format) {
-    if (!empresa || !empresa.id) throw new Error('empresa inválida');
-    var payload = {
-      empresa_id: empresa.id,
-      nombre: 'Backup export ' + (empresa.nombre || ''),
-      descripcion: 'Exportado desde UI',
-      include_tables: [],
-      exclude_tables: []
-    };
-
-    var createUrl = '/api/empresa/backups?empresa_id=' + encodeURIComponent(empresa.id) + '&action=crear';
-    var createRes = await fetch(createUrl, {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    var createText = await createRes.text();
-    var createData = {};
-    if (createText) {
-      try { createData = JSON.parse(createText); } catch (e) { /* ignore */ }
-    }
-    if (!createRes.ok) {
-      throw new Error((createData && (createData.error || createData.message)) || createText || ('HTTP ' + createRes.status));
-    }
-    var backup = createData.backup || {};
-    var backupId = backup.id || 0;
-    if (!backupId) throw new Error('No se pudo crear backup');
-
-    var exportFormat = format;
-    var needGzip = false;
-    if (format === 'json.gz') { exportFormat = 'json'; needGzip = true; }
-
-    var exportUrl = '/api/empresa/backups?action=export&id=' + encodeURIComponent(backupId) + '&empresa_id=' + encodeURIComponent(empresa.id) + '&format=' + encodeURIComponent(exportFormat);
-    var expRes = await fetch(exportUrl, { credentials: 'same-origin' });
-    if (!expRes.ok) {
-      var tx = await expRes.text().catch(function(){return '';});
-      throw new Error(tx || ('HTTP ' + expRes.status));
-    }
-
-    var blob = await expRes.blob();
-    var ext = exportFormat === 'json' ? 'json' : (exportFormat === 'csv' ? 'csv' : (exportFormat === 'xls' ? 'xls' : exportFormat));
-    var nameSafe = sanitizeFilename(empresa.nombre || ('empresa_' + String(empresa.id)));
-    var now = new Date();
-    var stamp = now.getFullYear().toString() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0') + '_' + String(now.getHours()).padStart(2,'0') + String(now.getMinutes()).padStart(2,'0') + String(now.getSeconds()).padStart(2,'0');
-    var filename = nameSafe + '_' + stamp + '.' + ext;
-
-    if (needGzip) {
-      if (typeof CompressionStream === 'function') {
-        try {
-          var cs = new CompressionStream('gzip');
-          var compressedStream = blob.stream().pipeThrough(cs);
-          var compressedBlob = await new Response(compressedStream).blob();
-          downloadBlob(compressedBlob, nameSafe + '_' + stamp + '.json.gz');
-          return;
-        } catch (e) {
-          // fallback to plain json
-        }
-      }
-      // fallback: download original json
-      downloadBlob(blob, filename);
-      return;
-    }
-
-    downloadBlob(blob, filename);
-  }
-
-  function showDownloadDialog(empresa) {
-    var overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
-    overlay.innerHTML = '' +
-      '<div class="modal" role="dialog" aria-modal="true" style="max-width:420px;margin:60px auto;padding:18px;background:var(--card);border-radius:10px;box-shadow:0 20px 50px rgba(0,0,0,0.6);">' +
-        '<h3 style="margin-top:0;margin-bottom:8px;color:var(--text)">Descargar datos — ' + escapeHtml(empresa.nombre || '') + '</h3>' +
-        '<p class="form-help">Selecciona el formato para descargar los datos completos de la empresa.</p>' +
-        '<div style="margin-top:12px;display:flex;gap:8px">' +
-          '<select class="format" style="flex:1;padding:8px;border-radius:8px">' +
-            '<option value="json">JSON (snapshot completo)</option>' +
-            '<option value="json.gz">JSON (comprimido .gz)</option>' +
-            '<option value="csv">CSV (resumen)</option>' +
-            '<option value="xls">Excel (resumen)</option>' +
-          '</select>' +
-        '</div>' +
-        '<div style="margin-top:14px;display:flex;justify-content:flex-end;gap:8px">' +
-          '<button class="btn secondary cancel">Cancelar</button>' +
-          '<button class="btn confirm">Descargar</button>' +
-        '</div>' +
-      '</div>';
-    overlay.addEventListener('click', function(ev){ if (ev.target === overlay) overlay.remove(); });
-    document.body.appendChild(overlay);
-
-    overlay.querySelector('.cancel').addEventListener('click', function(){ overlay.remove(); });
-    overlay.querySelector('.confirm').addEventListener('click', async function(){
-      try {
-        var fmt = overlay.querySelector('select.format').value || 'json';
-        overlay.querySelector('.confirm').disabled = true;
-        overlay.querySelector('.cancel').disabled = true;
-        await performEmpresaDownload(empresa, fmt);
-      } catch (err) {
-        alert('Error: ' + (err && err.message ? err.message : err));
-      } finally {
-        overlay.remove();
-      }
-    });
-  }
-
   document.addEventListener('click', function(ev){
     var btn = ev.target.closest && ev.target.closest('button.download-data');
     if (!btn) return;
@@ -741,7 +682,13 @@
     ev.stopPropagation();
     var id = parseInt(btn.getAttribute('data-empresa-id') || '0', 10);
     var name = btn.getAttribute('data-empresa-name') || '';
-    showDownloadDialog({ id: id, nombre: name });
+    if (!id) return;
+    var params = new URLSearchParams();
+    params.set('empresa_id', String(id));
+    params.set('id', String(id));
+    if (name) params.set('empresa_nombre', name);
+    persistEmpresaContext(id);
+    window.location.href = '/descargar_informacion_de_la_empresa.html?' + params.toString();
   });
 
   render();

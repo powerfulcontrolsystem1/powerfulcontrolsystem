@@ -769,6 +769,95 @@ func TestEpaycoWebhookHandlerFindsContextUsingInvoiceFallback(t *testing.T) {
 	if rec == nil || !rec.Status.Valid || strings.ToUpper(strings.TrimSpace(rec.Status.String)) != "APPROVED" {
 		t.Fatalf("expected internal reference record approved after webhook, got %+v", rec)
 	}
+	}
+
+
+func TestEpaycoTransactionStatusHandlerRetriesActivationEmailAfterWebhookActivatedFirst(t *testing.T) {
+	t.Setenv("PCS_MAIL_TEST_MODE", "1")
+
+	dbSuper := openTestSQLite(t, "super_epayco_retry_activation_mail.db")
+	ensurePaymentsHandlerTestSchema(t, dbSuper)
+
+	if _, err := dbSuper.Exec(`INSERT INTO empresas (id, nombre, usuario_creador) VALUES (66, 'Hotel Reintento', 'owner66@demo.com')`); err != nil {
+		t.Fatalf("seed empresa: %v", err)
+	}
+	if _, err := dbSuper.Exec(`
+		INSERT INTO licencias (id, empresa_id, tipo_id, nombre, descripcion, valor, duracion_dias, modulos_habilitados, super_rol_habilitado, fecha_creacion, activo)
+		VALUES (1, 0, 1, 'Plan Retry Mail', 'Prueba reintento email epayco', 199900, 30, '', 0, datetime('now','localtime'), 1)
+	`); err != nil {
+		t.Fatalf("seed licencia: %v", err)
+	}
+
+	internalRef := "EPAYCO-LIC-1-EMP-66-RETRY"
+	if _, err := dbpkg.CreateEpaycoPaymentRecord(dbSuper, 1, 66, internalRef, internalRef, "PENDING", `{"provider":"epayco"}`, "", ""); err != nil {
+		t.Fatalf("seed pagos_epayco: %v", err)
+	}
+
+	webhookHandler := EpaycoWebhookHandler(dbSuper)
+	webhookBody := strings.NewReader(`{"x_transaction_id":"ep_tx_retry_1","x_ref_payco":"ep_ref_retry_1","invoice":"EPAYCO-LIC-1-EMP-66-RETRY","x_cod_response":"1","x_response":"Aceptada"}`)
+	webhookReq := httptest.NewRequest(http.MethodPost, "/epayco/webhook", webhookBody)
+	webhookReq.Header.Set("Content-Type", "application/json")
+	webhookRR := httptest.NewRecorder()
+	webhookHandler.ServeHTTP(webhookRR, webhookReq)
+
+	if webhookRR.Code != http.StatusOK {
+		t.Fatalf("expected webhook status %d, got %d body=%s", http.StatusOK, webhookRR.Code, webhookRR.Body.String())
+	}
+
+	var notifCount int
+	if err := dbSuper.QueryRow(`SELECT COUNT(*) FROM super_correo_notificaciones_prueba WHERE tipo = 'licencia_activada_pago'`).Scan(&notifCount); err != nil {
+		t.Fatalf("count notifications after webhook: %v", err)
+	}
+	if notifCount != 0 {
+		t.Fatalf("expected 0 activation email captures after webhook without recipient, got %d", notifCount)
+	}
+
+	originalTransport := http.DefaultTransport
+	http.DefaultTransport = roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		body := `{"data":{"x_transaction_id":"ep_tx_retry_1","x_ref_payco":"ep_ref_retry_1","invoice":"EPAYCO-LIC-1-EMP-66-RETRY","customer_email":"cliente.retry@demo.com","x_cod_response":"1","x_response":"Aceptada"},"status":true}`
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Header:     make(http.Header),
+			Body:       io.NopCloser(strings.NewReader(body)),
+		}, nil
+	})
+	defer func() { http.DefaultTransport = originalTransport }()
+
+	statusHandler := EpaycoTransactionStatusHandler(dbSuper)
+	statusReq := httptest.NewRequest(http.MethodGet, "/epayco/transaction_status?id=ep_tx_retry_1&reference=ep_ref_retry_1", nil)
+	statusRR := httptest.NewRecorder()
+	statusHandler.ServeHTTP(statusRR, statusReq)
+
+	if statusRR.Code != http.StatusOK {
+		t.Fatalf("expected status poll %d, got %d body=%s", http.StatusOK, statusRR.Code, statusRR.Body.String())
+	}
+
+	if err := dbSuper.QueryRow(`SELECT COUNT(*) FROM super_correo_notificaciones_prueba WHERE tipo = 'licencia_activada_pago' AND destinatario = 'cliente.retry@demo.com'`).Scan(&notifCount); err != nil {
+		t.Fatalf("count notifications after status poll: %v", err)
+	}
+	if notifCount != 1 {
+		t.Fatalf("expected 1 activation email capture after retry poll, got %d", notifCount)
+	}
+
+	rec, err := dbpkg.GetEpaycoPaymentByReference(dbSuper, internalRef)
+	if err != nil {
+		t.Fatalf("reload epayco record: %v", err)
+	}
+	if rec == nil || !rec.RawPayload.Valid || !strings.Contains(rec.RawPayload.String, `"licencia_activation_email_sent":true`) {
+		t.Fatalf("expected raw_payload to mark activation email as sent, got %+v", rec)
+	}
+
+	statusRRSecond := httptest.NewRecorder()
+	statusHandler.ServeHTTP(statusRRSecond, statusReq)
+	if statusRRSecond.Code != http.StatusOK {
+		t.Fatalf("expected second status poll %d, got %d body=%s", http.StatusOK, statusRRSecond.Code, statusRRSecond.Body.String())
+	}
+	if err := dbSuper.QueryRow(`SELECT COUNT(*) FROM super_correo_notificaciones_prueba WHERE tipo = 'licencia_activada_pago' AND destinatario = 'cliente.retry@demo.com'`).Scan(&notifCount); err != nil {
+		t.Fatalf("count notifications after second retry poll: %v", err)
+	}
+	if notifCount != 1 {
+		t.Fatalf("expected activation email capture to remain 1 after second poll, got %d", notifCount)
+	}
 }
 
 func TestWompiTransactionStatusHandlerAllowsReferenceLookup(t *testing.T) {

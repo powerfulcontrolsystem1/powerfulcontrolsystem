@@ -10,13 +10,20 @@
 <body>
   
   <div class="admin-layout">
-    <aside class="admin-sidebar">
+    <aside class="admin-sidebar admin-sidebar-mobile-collapsible">
       <h2>Seleccionar Empresa</h2>
-        <ul class="nav">
+        <ul class="nav" id="seleccionarEmpresaSidebarNav">
         <li><a id="linkAgregarEmpresa" href="#"><img class="icon" src="/img/company-briefcase-color.svg" alt="">Inicio</a></li>
+        <li><a id="linkEditarEmpresaMenu" href="#"><img class="icon" src="/img/settings-color.svg" alt="">Editar empresa</a></li>
         <li><a id="linkLicencias" href="/super/licencias.html?scope=mine&con_empresa=1" target="contentFrame"><img class="icon" src="/img/shield-license-color.svg" alt="">Licencias</a></li>
         <li><a id="linkAdministradores" href="/super/administradores.html" target="contentFrame"><img class="icon" src="/img/user-avatar-color.svg" alt="">Administradores</a></li>
         <li><a id="linkReportesGlobales" href="/super/reportes_globales.html" target="contentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Reportes globales</a></li>
+        <li class="admin-menu-visibility-item">
+          <button type="button" class="admin-menu-visibility-toggle" aria-controls="seleccionarEmpresaSidebarNav" aria-expanded="true" data-show-label="Mostrar menú" data-hide-label="Ocultar menú">
+            <span class="admin-menu-visibility-icon" aria-hidden="true">☰</span>
+            <span class="admin-menu-visibility-label">Ocultar menú</span>
+          </button>
+        </li>
       </ul>
     </aside>
 

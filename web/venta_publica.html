@@ -39,7 +39,14 @@
 
     <section class="form creditos-section">
       <div class="page-header creditos-section-header">
-        <h2 class="creditos-section-title">Pagar con Nequi (Wompi)</h2>
+        <h2 class="creditos-section-title">Pagar en línea</h2>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="vpPaymentMethod">Pasarela disponible</label>
+          <select id="vpPaymentMethod" class="form-input"></select>
+          <p id="vpPaymentHint" class="form-help">La tienda cargará las pasarelas activas para esta empresa.</p>
+        </div>
       </div>
       <div class="form-row">
         <div class="form-col">
@@ -51,17 +58,17 @@
           <input id="vpBuyerEmail" class="form-input" type="email" placeholder="correo@dominio.com">
         </div>
       </div>
-      <div class="form-row">
+      <div id="vpBuyerPhoneRow" class="form-row">
         <div class="form-col">
-          <label class="form-label" for="vpBuyerPhone">Telefono Nequi (10 digitos CO)</label>
+          <label id="vpBuyerPhoneLabel" class="form-label" for="vpBuyerPhone">Telefono Nequi (10 digitos CO)</label>
           <input id="vpBuyerPhone" class="form-input" type="tel" placeholder="3XXXXXXXXX" maxlength="10">
         </div>
       </div>
       <div class="form-row">
         <div class="form-col">
-          <label class="form-help creditos-inline-check" for="vpAcceptTerms">
+          <label id="vpAcceptTermsLabel" class="form-help creditos-inline-check" for="vpAcceptTerms">
             <input id="vpAcceptTerms" type="checkbox">
-            Acepto terminos de Wompi y tratamiento de datos personales para procesar el pago.
+            Acepto los términos de la pasarela seleccionada y el tratamiento de datos personales para procesar el pago.
           </label>
         </div>
       </div>
@@ -83,7 +90,7 @@
         </div>
         <div class="form-col">
           <label class="form-label" for="vpTransactionId">Transaction ID (opcional)</label>
-          <input id="vpTransactionId" class="form-input" type="text" placeholder="ID Wompi">
+          <input id="vpTransactionId" class="form-input" type="text" placeholder="ID de pasarela">
         </div>
       </div>
       <div class="form-actions">
@@ -101,7 +108,9 @@
         empresaSlug: '',
         tienda: null,
         items: [],
-        cart: {}
+	        cart: {},
+	        paymentMethods: [],
+	        returnProvider: ''
       };
 
       var topMsgEl = document.getElementById('vpTopMsg');
@@ -115,6 +124,12 @@
       var storeTitleEl = document.getElementById('vpStoreTitle');
       var storeDescEl = document.getElementById('vpStoreDesc');
       var storeMetaEl = document.getElementById('vpStoreMeta');
+      var paymentMethodEl = document.getElementById('vpPaymentMethod');
+      var paymentHintEl = document.getElementById('vpPaymentHint');
+      var buyerPhoneRowEl = document.getElementById('vpBuyerPhoneRow');
+      var buyerPhoneLabelEl = document.getElementById('vpBuyerPhoneLabel');
+      var acceptTermsLabelEl = document.getElementById('vpAcceptTermsLabel');
+      var epaycoScriptPromise = null;
 
       function setMsg(el, text, type) {
         if (!el) return;
@@ -180,6 +195,7 @@
         var params = new URLSearchParams(window.location.search);
         state.empresaId = parseInt(params.get('empresa_id') || '0', 10) || 0;
         state.empresaSlug = String(params.get('empresa_slug') || '').trim();
+        state.returnProvider = String(params.get('provider') || '').trim().toLowerCase();
         if (!state.empresaSlug) {
           state.empresaSlug = parseSlugFromPath();
         }
@@ -241,6 +257,76 @@
           throw new Error((data && (data.error || data.message)) || text || ('HTTP ' + resp.status));
         }
         return data;
+      }
+
+      function selectedPaymentMethod() {
+        return String(paymentMethodEl && paymentMethodEl.value || '').trim().toLowerCase();
+      }
+
+      function renderPaymentOptions() {
+        var methods = Array.isArray(state.paymentMethods) ? state.paymentMethods.slice() : [];
+        if (!methods.length && state.tienda) {
+          if (state.tienda.wompi_activo) methods.push('wompi_nequi');
+          if (state.tienda.epayco_activo) methods.push('epayco');
+        }
+        methods = methods.filter(function (value, index, arr) { return value && arr.indexOf(value) === index; });
+        paymentMethodEl.innerHTML = methods.map(function (method) {
+          var label = method === 'epayco' ? 'Epayco Smart Checkout' : 'Wompi Nequi';
+          return '<option value="' + escapeHTML(method) + '">' + escapeHTML(label) + '</option>';
+        }).join('');
+        if (!methods.length) {
+          paymentMethodEl.innerHTML = '<option value="">Sin pasarelas activas</option>';
+          paymentMethodEl.disabled = true;
+          paymentHintEl.textContent = 'Esta tienda aún no tiene pasarelas activas. Contacta a la empresa.';
+        } else {
+          paymentMethodEl.disabled = false;
+          var desired = state.returnProvider === 'epayco' ? 'epayco' : (state.returnProvider === 'wompi' ? 'wompi_nequi' : selectedPaymentMethod());
+          if (desired && methods.indexOf(desired) >= 0) {
+            paymentMethodEl.value = desired;
+          }
+        }
+        syncPaymentForm();
+      }
+
+      function syncPaymentForm() {
+        var method = selectedPaymentMethod();
+        var isEpayco = method === 'epayco';
+        buyerPhoneRowEl.style.display = isEpayco ? '' : '';
+        buyerPhoneLabelEl.textContent = isEpayco ? 'Teléfono del comprador (opcional)' : 'Telefono Nequi (10 digitos CO)';
+        document.getElementById('vpBuyerPhone').setAttribute('placeholder', isEpayco ? '3001234567' : '3XXXXXXXXX');
+        acceptTermsLabelEl.lastChild.textContent = isEpayco
+          ? ' Acepto los términos de Epayco y el tratamiento de datos personales para procesar el pago.'
+          : ' Acepto términos de Wompi y tratamiento de datos personales para procesar el pago.';
+        paymentHintEl.textContent = isEpayco
+          ? 'Epayco abrirá un Smart Checkout seguro y luego regresará a esta página para verificar el estado.'
+          : 'Wompi creará un cobro Nequi directo para esta orden pública.';
+      }
+
+      function loadEpaycoSmartCheckoutScript(scriptURL) {
+        var resolvedURL = String(scriptURL || 'https://checkout.epayco.co/checkout-v2.js').trim();
+        if (window.ePayco && window.ePayco.checkout && typeof window.ePayco.checkout.configure === 'function') {
+          return Promise.resolve(window.ePayco);
+        }
+        if (epaycoScriptPromise) {
+          return epaycoScriptPromise;
+        }
+        epaycoScriptPromise = new Promise(function (resolve, reject) {
+          var script = document.createElement('script');
+          script.src = resolvedURL;
+          script.async = true;
+          script.onload = function () {
+            if (window.ePayco && window.ePayco.checkout && typeof window.ePayco.checkout.configure === 'function') {
+              resolve(window.ePayco);
+              return;
+            }
+            reject(new Error('No se pudo cargar checkout-v2.js de Epayco.'));
+          };
+          script.onerror = function () {
+            reject(new Error('No se pudo cargar checkout-v2.js de Epayco.'));
+          };
+          document.head.appendChild(script);
+        });
+        return epaycoScriptPromise;
       }
 
       function renderCatalog() {
@@ -315,7 +401,7 @@
         var tienda = state.tienda || {};
         storeTitleEl.textContent = tienda.nombre_tienda || 'Tienda publica';
         storeDescEl.textContent = tienda.descripcion_tienda || 'Selecciona productos del catalogo y realiza pago en linea.';
-        storeMetaEl.textContent = 'Empresa #' + Number(state.empresaId || 0) + ' | slug: ' + String(state.empresaSlug || '-') + ' | moneda: ' + String(tienda.moneda || 'COP');
+        storeMetaEl.textContent = 'Empresa #' + Number(state.empresaId || 0) + ' | slug: ' + String(state.empresaSlug || '-') + ' | moneda: ' + String(tienda.moneda || 'COP') + ' | pagos: ' + String((tienda.payment_methods || []).join(', ') || 'sin activar');
       }
 
       async function loadCatalog() {
@@ -325,8 +411,10 @@
           state.empresaId = Number(data.empresa_id || state.empresaId || 0);
           state.empresaSlug = String(data.empresa_slug || state.empresaSlug || '');
           state.tienda = data.tienda || {};
+          state.paymentMethods = Array.isArray(state.tienda.payment_methods) ? state.tienda.payment_methods : [];
           state.items = Array.isArray(data.items) ? data.items : [];
           updateStoreHeader();
+          renderPaymentOptions();
           renderCatalog();
           recomputeCart();
           setMsg(topMsgEl, 'Catalogo cargado con ' + state.items.length + ' item(s).', 'success');
@@ -350,16 +438,19 @@
           var buyerEmail = document.getElementById('vpBuyerEmail').value.trim();
           var buyerPhone = document.getElementById('vpBuyerPhone').value.trim();
           var acceptTerms = !!document.getElementById('vpAcceptTerms').checked;
+          var paymentMethod = selectedPaymentMethod();
 
           if (!buyerName) throw new Error('Nombre completo es obligatorio');
           if (!buyerEmail) throw new Error('Correo electronico es obligatorio');
-          if (!/^3\d{9}$/.test(buyerPhone)) {
+          if (!paymentMethod) throw new Error('No hay pasarelas activas para esta tienda');
+          if (paymentMethod === 'wompi_nequi' && !/^3\d{9}$/.test(buyerPhone)) {
             throw new Error('Telefono Nequi invalido. Debe iniciar en 3 y tener 10 digitos');
           }
 
           var payload = {
             empresa_id: state.empresaId,
             empresa_slug: state.empresaSlug,
+            metodo_pago: paymentMethod,
             comprador_nombre: buyerName,
             comprador_email: buyerEmail,
             comprador_telefono: buyerPhone,
@@ -384,8 +475,24 @@
           payResultEl.innerHTML = '' +
             'Orden: <strong>' + escapeHTML(orderCode || '-') + '</strong><br>' +
             'Transaccion: <strong>' + escapeHTML(txID || '-') + '</strong><br>' +
+            'Proveedor: <strong>' + escapeHTML(data.provider || '-') + '</strong><br>' +
             'Estado proveedor: <strong>' + escapeHTML(data.status || '-') + '</strong><br>' +
             'Estado local: <strong>' + escapeHTML(data.status_local || '-') + '</strong>';
+
+          if (String(data.provider || '').toLowerCase() === 'epayco') {
+            var sessionId = String(data.checkout_session_id || data.session_id || (data.data && (data.data.sessionId || data.data.session_id)) || '').trim();
+            var checkoutScriptURL = String(data.checkout_script_url || (data.data && data.data.script_url) || 'https://checkout.epayco.co/checkout-v2.js').trim();
+            if (sessionId) {
+              setMsg(payMsgEl, 'Abriendo Smart Checkout de Epayco...', 'success');
+              var epaycoRuntime = await loadEpaycoSmartCheckoutScript(checkoutScriptURL);
+              var checkout = epaycoRuntime.checkout.configure({
+                sessionId: sessionId,
+                type: 'standard',
+                test: String(data.mode || '').trim().toLowerCase() === 'sandbox'
+              });
+              checkout.open();
+            }
+          }
 
           await consultStatus();
         } catch (err) {
@@ -406,7 +513,8 @@
         try {
           var data = await requestJSON('GET', 'estado_pago', {
             order_code: orderCode,
-            transaction_id: txID || undefined
+            transaction_id: txID || undefined,
+            metodo_pago: selectedPaymentMethod() || undefined
           }, null);
           setMsg(statusMsgEl, 'Estado consultado correctamente.', 'success');
           statusPayloadEl.textContent = JSON.stringify(data, null, 2);
@@ -436,6 +544,7 @@
       document.getElementById('vpBtnPagar').addEventListener('click', createPayment);
       document.getElementById('vpBtnEstadoPago').addEventListener('click', consultStatus);
       document.getElementById('vpBtnConsultarEstado').addEventListener('click', consultStatus);
+      paymentMethodEl.addEventListener('change', syncPaymentForm);
 
       resolveContext();
       loadCatalog();

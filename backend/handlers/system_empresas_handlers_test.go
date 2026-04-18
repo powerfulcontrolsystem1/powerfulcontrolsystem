@@ -85,11 +85,33 @@ func ensureSuperConfigSchemaForSuper(t *testing.T, dbSuper *sql.DB) {
 	_, err = dbSuper.Exec(`CREATE TABLE IF NOT EXISTS licencias (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		empresa_id INTEGER,
+		tipo_id INTEGER,
+		nombre TEXT,
+		descripcion TEXT,
+		valor REAL,
+		duracion_dias INTEGER,
+		modulos_habilitados TEXT,
+		super_rol_habilitado INTEGER DEFAULT 0,
+		fecha_inicio TEXT,
 		activo INTEGER DEFAULT 1,
-		fecha_fin TEXT
+		fecha_fin TEXT,
+		fecha_creacion TEXT
 	);`)
 	if err != nil {
 		t.Fatalf("create licencias schema: %v", err)
+	}
+
+	_, err = dbSuper.Exec(`CREATE TABLE IF NOT EXISTS tipos_de_empresas (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		nombre TEXT,
+		observaciones TEXT,
+		estado TEXT DEFAULT 'activo',
+		fecha_creacion TEXT,
+		fecha_actualizacion TEXT,
+		usuario_creador TEXT
+	);`)
+	if err != nil {
+		t.Fatalf("create tipos_de_empresas schema: %v", err)
 	}
 }
 
@@ -203,6 +225,167 @@ func TestEmpresasHandlerImpactoDesactivacion(t *testing.T) {
 	}
 	if got, _ := impacto["usuarios_activos"].(float64); int64(got) != 1 {
 		t.Fatalf("expected impacto.usuarios_activos=1, got %v", impacto["usuarios_activos"])
+	}
+}
+
+func TestEmpresasHandlerResumenDescargaYExport(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_super_descarga.db")
+	dbSuper := openTestSQLite(t, "super_super_descarga.db")
+
+	ensureEmpresasCoreSchemaForSuper(t, dbEmp)
+	ensureSuperConfigSchemaForSuper(t, dbSuper)
+
+	if _, err := dbEmp.Exec(`CREATE TABLE IF NOT EXISTS clientes (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		empresa_id INTEGER,
+		nombre TEXT,
+		email TEXT
+	)`); err != nil {
+		t.Fatalf("create clientes schema: %v", err)
+	}
+
+	seedEmpresaEstadoForSuper(t, dbEmp, 7, "Empresa Exportable", "activo")
+	if _, err := dbEmp.Exec(`UPDATE empresas SET nit = '900777111', tipo_nombre = 'Motel', observaciones = 'empresa para exportes' WHERE id = 7`); err != nil {
+		t.Fatalf("update empresa seed: %v", err)
+	}
+	if _, err := dbEmp.Exec(`INSERT INTO clientes (empresa_id, nombre, email) VALUES (7, 'Cliente Uno', 'cliente1@test.com')`); err != nil {
+		t.Fatalf("insert cliente: %v", err)
+	}
+	if _, err := dbSuper.Exec(`INSERT INTO licencias (empresa_id, activo, fecha_fin) VALUES (7, 1, '2026-12-31')`); err != nil {
+		t.Fatalf("insert licencia export: %v", err)
+	}
+
+	h := EmpresasHandler(dbEmp, dbSuper)
+
+	resumenReq := httptest.NewRequest(http.MethodGet, "/super/api/empresas?id=7&action=resumen_descarga", nil)
+	resumenRR := httptest.NewRecorder()
+	h.ServeHTTP(resumenRR, resumenReq)
+
+	if resumenRR.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, resumenRR.Code, resumenRR.Body.String())
+	}
+
+	var resumenBody map[string]interface{}
+	if err := json.Unmarshal(resumenRR.Body.Bytes(), &resumenBody); err != nil {
+		t.Fatalf("decode resumen body: %v body=%s", err, resumenRR.Body.String())
+	}
+	snapshot, ok := resumenBody["snapshot"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected snapshot object, got %T", resumenBody["snapshot"])
+	}
+	if got, _ := snapshot["total_tables"].(float64); int64(got) < 2 {
+		t.Fatalf("expected at least 2 tables, got %v", snapshot["total_tables"])
+	}
+	if got, _ := snapshot["total_rows"].(float64); int64(got) < 3 {
+		t.Fatalf("expected at least 3 rows consolidated, got %v", snapshot["total_rows"])
+	}
+
+	exportReq := httptest.NewRequest(http.MethodGet, "/super/api/empresas?id=7&action=exportar_informacion&format=pdf", nil)
+	exportRR := httptest.NewRecorder()
+	h.ServeHTTP(exportRR, exportReq)
+
+	if exportRR.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, exportRR.Code, exportRR.Body.String())
+	}
+	if ct := strings.ToLower(exportRR.Header().Get("Content-Type")); !strings.Contains(ct, "application/pdf") {
+		t.Fatalf("expected content-type application/pdf, got %q", exportRR.Header().Get("Content-Type"))
+	}
+	if cd := strings.ToLower(exportRR.Header().Get("Content-Disposition")); !strings.Contains(cd, ".pdf") {
+		t.Fatalf("expected content-disposition with .pdf, got %q", exportRR.Header().Get("Content-Disposition"))
+	}
+}
+
+func TestEmpresasHandlerEliminarTotalPurgaDatosRelacionados(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_super_eliminacion_total.db")
+	dbSuper := openTestSQLite(t, "super_super_eliminacion_total.db")
+
+	ensureEmpresasCoreSchemaForSuper(t, dbEmp)
+	ensureSuperConfigSchemaForSuper(t, dbSuper)
+
+	if _, err := dbEmp.Exec(`CREATE TABLE IF NOT EXISTS clientes (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		empresa_id INTEGER,
+		nombre TEXT
+	)`); err != nil {
+		t.Fatalf("create clientes schema: %v", err)
+	}
+	if _, err := dbEmp.Exec(`CREATE TABLE IF NOT EXISTS empresa_backups (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		empresa_id INTEGER,
+		codigo TEXT
+	)`); err != nil {
+		t.Fatalf("create empresa_backups schema: %v", err)
+	}
+	if _, err := dbSuper.Exec(`CREATE TABLE IF NOT EXISTS pagos_wompi (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		empresa_id INTEGER,
+		reference TEXT
+	)`); err != nil {
+		t.Fatalf("create pagos_wompi schema: %v", err)
+	}
+
+	seedEmpresaEstadoForSuper(t, dbEmp, 10, "Empresa Purga", "activo")
+	seedEmpresaEstadoForSuper(t, dbEmp, 11, "Empresa Vecina", "activo")
+	if _, err := dbEmp.Exec(`INSERT INTO clientes (empresa_id, nombre) VALUES (10, 'Cliente Purga'), (11, 'Cliente Vecino')`); err != nil {
+		t.Fatalf("insert clientes: %v", err)
+	}
+	if _, err := dbEmp.Exec(`INSERT INTO empresa_backups (empresa_id, codigo) VALUES (10, 'BKP-10'), (11, 'BKP-11')`); err != nil {
+		t.Fatalf("insert empresa_backups: %v", err)
+	}
+	if _, err := dbSuper.Exec(`INSERT INTO licencias (empresa_id, activo) VALUES (10, 1), (11, 1)`); err != nil {
+		t.Fatalf("insert licencias: %v", err)
+	}
+	if _, err := dbSuper.Exec(`INSERT INTO pagos_wompi (empresa_id, reference) VALUES (10, 'ref-10'), (11, 'ref-11')`); err != nil {
+		t.Fatalf("insert pagos_wompi: %v", err)
+	}
+
+	h := EmpresasHandler(dbEmp, dbSuper)
+	req := httptest.NewRequest(http.MethodDelete, "/super/api/empresas?id=10&action=eliminar_total", strings.NewReader(`{"confirmacion_nombre":"Empresa Purga"}`))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, rr.Code, rr.Body.String())
+	}
+
+	var empresasCount int
+	if err := dbEmp.QueryRow(`SELECT COUNT(1) FROM empresas WHERE id = 10`).Scan(&empresasCount); err != nil {
+		t.Fatalf("count empresa purge: %v", err)
+	}
+	if empresasCount != 0 {
+		t.Fatalf("expected empresa 10 deleted, got %d rows", empresasCount)
+	}
+	if err := dbEmp.QueryRow(`SELECT COUNT(1) FROM clientes WHERE empresa_id = 10`).Scan(&empresasCount); err != nil {
+		t.Fatalf("count clientes purge: %v", err)
+	}
+	if empresasCount != 0 {
+		t.Fatalf("expected clientes purge for empresa 10, got %d rows", empresasCount)
+	}
+	if err := dbEmp.QueryRow(`SELECT COUNT(1) FROM empresa_backups WHERE empresa_id = 10`).Scan(&empresasCount); err != nil {
+		t.Fatalf("count backups purge: %v", err)
+	}
+	if empresasCount != 0 {
+		t.Fatalf("expected backups purge for empresa 10, got %d rows", empresasCount)
+	}
+	if err := dbSuper.QueryRow(`SELECT COUNT(1) FROM licencias WHERE empresa_id = 10`).Scan(&empresasCount); err != nil {
+		t.Fatalf("count licencias purge: %v", err)
+	}
+	if empresasCount != 0 {
+		t.Fatalf("expected licencias purge for empresa 10, got %d rows", empresasCount)
+	}
+	if err := dbSuper.QueryRow(`SELECT COUNT(1) FROM pagos_wompi WHERE empresa_id = 10`).Scan(&empresasCount); err != nil {
+		t.Fatalf("count pagos_wompi purge: %v", err)
+	}
+	if empresasCount != 0 {
+		t.Fatalf("expected pagos_wompi purge for empresa 10, got %d rows", empresasCount)
+	}
+
+	if err := dbEmp.QueryRow(`SELECT COUNT(1) FROM empresas WHERE id = 11`).Scan(&empresasCount); err != nil {
+		t.Fatalf("count empresa vecina: %v", err)
+	}
+	if empresasCount != 1 {
+		t.Fatalf("expected empresa 11 intacta, got %d rows", empresasCount)
 	}
 }
 
@@ -616,6 +799,75 @@ func TestGmailConfigHandlerSaveRestartAlertToggle(t *testing.T) {
 	}
 }
 
+func TestGmailConfigHandlerTestActionCapturesNotification(t *testing.T) {
+	rawKey := make([]byte, 32)
+	for i := range rawKey {
+		rawKey[i] = byte(41 + i)
+	}
+	t.Setenv("CONFIG_ENC_KEY", base64.StdEncoding.EncodeToString(rawKey))
+
+	dbSuper := openTestSQLite(t, "super_gmail_test_action.db")
+	ensureSuperConfigSchemaForSuper(t, dbSuper)
+
+	if err := dbpkg.SetConfigValue(dbSuper, "gmail.smtp_test_mode", "1", false); err != nil {
+		t.Fatalf("seed gmail.smtp_test_mode: %v", err)
+	}
+	if err := dbpkg.SetConfigValue(dbSuper, "gmail.smtp_email", "mailer@powerfulcontrolsystem.com", false); err != nil {
+		t.Fatalf("seed gmail.smtp_email: %v", err)
+	}
+	encPass, err := utils.EncryptString("app-pass-demo")
+	if err != nil {
+		t.Fatalf("encrypt gmail.smtp_app_password: %v", err)
+	}
+	if err := dbpkg.SetConfigValue(dbSuper, "gmail.smtp_app_password", encPass, true); err != nil {
+		t.Fatalf("seed gmail.smtp_app_password: %v", err)
+	}
+	if err := dbpkg.SetConfigValue(dbSuper, "gmail.smtp_host", "smtp.gmail.com", false); err != nil {
+		t.Fatalf("seed gmail.smtp_host: %v", err)
+	}
+	if err := dbpkg.SetConfigValue(dbSuper, "gmail.smtp_port", "587", false); err != nil {
+		t.Fatalf("seed gmail.smtp_port: %v", err)
+	}
+	if err := dbpkg.SetConfigValue(dbSuper, "gmail.smtp_from_name", "Powerful Control System", false); err != nil {
+		t.Fatalf("seed gmail.smtp_from_name: %v", err)
+	}
+
+	h := GmailConfigHandler(dbSuper)
+	req := httptest.NewRequest(http.MethodPost, "/super/api/config/gmail?action=test", nil)
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status %d on gmail test action, got %d body=%s", http.StatusOK, rr.Code, rr.Body.String())
+	}
+
+	var body map[string]interface{}
+	if err := json.Unmarshal(rr.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode gmail test response: %v body=%s", err, rr.Body.String())
+	}
+	if sent, _ := body["sent"].(bool); !sent {
+		t.Fatalf("expected sent=true, got %v", body["sent"])
+	}
+	if got := strings.TrimSpace(fmt.Sprint(body["recipient"])); got != superGmailTestRecipient {
+		t.Fatalf("expected recipient %q, got %q", superGmailTestRecipient, got)
+	}
+
+	notifications, err := dbpkg.ListSuperCorreoNotificacionesPrueba(dbSuper, dbpkg.SuperCorreoNotificacionPruebaFilter{
+		Tipo:         superCorreoNotificacionTipoPruebaGmail,
+		Destinatario: superGmailTestRecipient,
+		Limit:        10,
+	})
+	if err != nil {
+		t.Fatalf("list super correo notificaciones: %v", err)
+	}
+	if len(notifications) != 1 {
+		t.Fatalf("expected 1 captured notification, got %d", len(notifications))
+	}
+	if !strings.Contains(notifications[0].Cuerpo, "Prueba del boton Probar Gmail") && !strings.Contains(notifications[0].Cuerpo, "prueba del boton Probar Gmail") {
+		t.Fatalf("expected captured body to mention gmail test button, got %q", notifications[0].Cuerpo)
+	}
+}
+
 func TestPublicLicenciasPaymentMethodsHandlerOrdersAndAvailability(t *testing.T) {
 	rawKey := make([]byte, 32)
 	for i := range rawKey {
@@ -821,6 +1073,8 @@ func TestSuperEndpointsPermisosPorRol(t *testing.T) {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/super/api/empresas", EmpresasHandler(dbEmp, dbSuper))
+	mux.HandleFunc("/super/api/tipos_empresas", TiposEmpresasHandler(dbSuper))
+	mux.HandleFunc("/super/api/licencias", LicenciasHandler(dbSuper))
 	mux.HandleFunc("/super/api/config/wompi", WompiConfigHandler(dbSuper))
 	mux.HandleFunc("/super/api/config/gmail", GmailConfigHandler(dbSuper))
 	mux.HandleFunc("/super/api/config/ai", AIModelsConfigHandler(dbSuper))
@@ -829,10 +1083,10 @@ func TestSuperEndpointsPermisosPorRol(t *testing.T) {
 
 	protected := utils.AuthMiddleware(dbSuper, mux)
 
-	if err := dbpkg.UpsertAdministrador(dbSuper, "super@empresa.com", "Super", "super_administrador", ""); err != nil {
+	if err := dbpkg.UpsertAdministrador(dbSuper, "powerfulcontrolsystem@gmail.com", "Super", "super_administrador", ""); err != nil {
 		t.Fatalf("upsert super admin: %v", err)
 	}
-	if err := dbpkg.CreateSession(dbSuper, "super@empresa.com", "127.0.0.1", "test-agent", "token-super"); err != nil {
+	if err := dbpkg.CreateSession(dbSuper, "powerfulcontrolsystem@gmail.com", "127.0.0.1", "test-agent", "token-super"); err != nil {
 		t.Fatalf("create super session: %v", err)
 	}
 
@@ -848,8 +1102,7 @@ func TestSuperEndpointsPermisosPorRol(t *testing.T) {
 		}
 	}
 
-	endpoints := []string{
-		"/super/api/empresas",
+	superOnlyEndpoints := []string{
 		"/super/api/config/wompi",
 		"/super/api/config/gmail",
 		"/super/api/config/ai",
@@ -857,7 +1110,7 @@ func TestSuperEndpointsPermisosPorRol(t *testing.T) {
 		"/super/api/soporte_remoto",
 	}
 
-	for _, endpoint := range endpoints {
+	for _, endpoint := range superOnlyEndpoints {
 		reqNoAuth := httptest.NewRequest(http.MethodGet, endpoint, nil)
 		rrNoAuth := httptest.NewRecorder()
 		protected.ServeHTTP(rrNoAuth, reqNoAuth)
@@ -883,5 +1136,200 @@ func TestSuperEndpointsPermisosPorRol(t *testing.T) {
 				t.Fatalf("expected 403 for role=%s in %s, got %d body=%s", rolesBloqueados[i], endpoint, rrRole.Code, rrRole.Body.String())
 			}
 		}
+	}
+
+	adminReadableEndpoints := []string{
+		"/super/api/empresas",
+		"/super/api/tipos_empresas",
+		"/super/api/licencias",
+	}
+
+	for _, endpoint := range adminReadableEndpoints {
+		reqAdmin := httptest.NewRequest(http.MethodGet, endpoint, nil)
+		reqAdmin.AddCookie(&http.Cookie{Name: "session_token", Value: "token-1"})
+		rrAdmin := httptest.NewRecorder()
+		protected.ServeHTTP(rrAdmin, reqAdmin)
+		if rrAdmin.Code != http.StatusOK {
+			t.Fatalf("expected 200 for administrador in %s, got %d body=%s", endpoint, rrAdmin.Code, rrAdmin.Body.String())
+		}
+
+		for _, blockedToken := range []string{"token-2", "token-3", "token-4", "token-5"} {
+			reqRole := httptest.NewRequest(http.MethodGet, endpoint, nil)
+			reqRole.AddCookie(&http.Cookie{Name: "session_token", Value: blockedToken})
+			rrRole := httptest.NewRecorder()
+			protected.ServeHTTP(rrRole, reqRole)
+			if rrRole.Code != http.StatusForbidden {
+				t.Fatalf("expected 403 for non-admin reader token=%s in %s, got %d body=%s", blockedToken, endpoint, rrRole.Code, rrRole.Body.String())
+			}
+		}
+	}
+}
+
+func TestAdministradorPuedeEditarYEliminarEmpresaDesdeRutaSuperProtegida(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_super_admin_manage.db")
+	dbSuper := openTestSQLite(t, "super_super_admin_manage.db")
+	ensureEmpresasCoreSchemaForSuper(t, dbEmp)
+	ensureSuperSchema(t, dbSuper)
+	ensureSuperConfigSchemaForSuper(t, dbSuper)
+
+	if _, err := dbEmp.Exec(`CREATE TABLE IF NOT EXISTS clientes (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		empresa_id INTEGER,
+		nombre TEXT
+	)`); err != nil {
+		t.Fatalf("create clientes schema: %v", err)
+	}
+
+	if err := dbpkg.UpsertAdministrador(dbSuper, "admin_scope@empresa.com", "Admin Scope", "administrador", ""); err != nil {
+		t.Fatalf("upsert admin: %v", err)
+	}
+	if err := dbpkg.CreateSession(dbSuper, "admin_scope@empresa.com", "127.0.0.1", "test-agent", "token-admin-scope"); err != nil {
+		t.Fatalf("create session admin: %v", err)
+	}
+
+	if _, err := dbEmp.Exec(`
+		INSERT INTO empresas (id, empresa_id, nombre, nit, tipo_id, tipo_nombre, usuario_creador, estado, observaciones, fecha_creacion, fecha_actualizacion)
+		VALUES (41, 41, 'Empresa Editable', '90041', 2, 'Hotel', 'admin_scope@empresa.com', 'activo', 'descripcion original', datetime('now','localtime'), datetime('now','localtime'))
+	`); err != nil {
+		t.Fatalf("insert empresa editable: %v", err)
+	}
+	if _, err := dbEmp.Exec(`INSERT INTO clientes (empresa_id, nombre) VALUES (41, 'Cliente Interno')`); err != nil {
+		t.Fatalf("insert cliente editable: %v", err)
+	}
+	if _, err := dbSuper.Exec(`INSERT INTO licencias (empresa_id, activo) VALUES (41, 1)`); err != nil {
+		t.Fatalf("insert licencia editable: %v", err)
+	}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/super/api/empresas", EmpresasHandler(dbEmp, dbSuper))
+	protected := utils.AuthMiddleware(dbSuper, mux)
+
+	updateReq := httptest.NewRequest(http.MethodPut, "/super/api/empresas?id=41", strings.NewReader(`{"tipo_id":2,"tipo_nombre":"Hotel","nombre":"Empresa Editada","nit":"90041","observaciones":"descripcion actualizada"}`))
+	updateReq.Header.Set("Content-Type", "application/json")
+	updateReq.AddCookie(&http.Cookie{Name: "session_token", Value: "token-admin-scope"})
+	updateRR := httptest.NewRecorder()
+	protected.ServeHTTP(updateRR, updateReq)
+
+	if updateRR.Code != http.StatusNoContent {
+		t.Fatalf("expected status %d on update, got %d body=%s", http.StatusNoContent, updateRR.Code, updateRR.Body.String())
+	}
+
+	var nombre, observaciones string
+	if err := dbEmp.QueryRow(`SELECT nombre, COALESCE(observaciones, '') FROM empresas WHERE id = 41`).Scan(&nombre, &observaciones); err != nil {
+		t.Fatalf("query updated empresa: %v", err)
+	}
+	if nombre != "Empresa Editada" || observaciones != "descripcion actualizada" {
+		t.Fatalf("unexpected update result nombre=%q observaciones=%q", nombre, observaciones)
+	}
+
+	deleteReq := httptest.NewRequest(http.MethodDelete, "/super/api/empresas?id=41&action=eliminar_total", strings.NewReader(`{"confirmacion_nombre":"Empresa Editada"}`))
+	deleteReq.Header.Set("Content-Type", "application/json")
+	deleteReq.AddCookie(&http.Cookie{Name: "session_token", Value: "token-admin-scope"})
+	deleteRR := httptest.NewRecorder()
+	protected.ServeHTTP(deleteRR, deleteReq)
+
+	if deleteRR.Code != http.StatusOK {
+		t.Fatalf("expected status %d on delete, got %d body=%s", http.StatusOK, deleteRR.Code, deleteRR.Body.String())
+	}
+
+	var total int
+	if err := dbEmp.QueryRow(`SELECT COUNT(1) FROM empresas WHERE id = 41`).Scan(&total); err != nil {
+		t.Fatalf("count empresa after delete: %v", err)
+	}
+	if total != 0 {
+		t.Fatalf("expected empresa deleted, got %d rows", total)
+	}
+	if err := dbEmp.QueryRow(`SELECT COUNT(1) FROM clientes WHERE empresa_id = 41`).Scan(&total); err != nil {
+		t.Fatalf("count clientes after delete: %v", err)
+	}
+	if total != 0 {
+		t.Fatalf("expected clientes deleted, got %d rows", total)
+	}
+	if err := dbSuper.QueryRow(`SELECT COUNT(1) FROM licencias WHERE empresa_id = 41`).Scan(&total); err != nil {
+		t.Fatalf("count licencias after delete: %v", err)
+	}
+	if total != 0 {
+		t.Fatalf("expected licencias deleted, got %d rows", total)
+	}
+}
+
+func TestNuevoAdminRegistradoPuedeCrearSuPrimeraEmpresaViaRutaSuperProtegida(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_nuevo_admin_create.db")
+	dbSuper := openTestSQLite(t, "super_nuevo_admin_create.db")
+	ensureEmpresasCoreSchemaForSuper(t, dbEmp)
+	ensureAdminAuthTestSchema(t, dbSuper)
+
+	registerBody := `{"email":"nuevo_flujo@empresa.com","name":"Nuevo Flujo","telefono":"3001234567","pais":"Colombia","ciudad":"Bogota","password":"ClaveSegura99"}`
+	registerReq := httptest.NewRequest(http.MethodPost, "http://localhost:8080/super/api/administradores/register", strings.NewReader(registerBody))
+	registerRR := httptest.NewRecorder()
+	AdminRegisterHandler(dbSuper).ServeHTTP(registerRR, registerReq)
+
+	if registerRR.Code != http.StatusOK {
+		t.Fatalf("expected status %d on register, got %d body=%s", http.StatusOK, registerRR.Code, registerRR.Body.String())
+	}
+
+	if _, err := dbSuper.Exec(`UPDATE administradores SET email_confirmado = 1 WHERE lower(email) = lower(?)`, "nuevo_flujo@empresa.com"); err != nil {
+		t.Fatalf("confirm new admin: %v", err)
+	}
+
+	loginReq := httptest.NewRequest(http.MethodPost, "http://localhost:8080/super/api/administradores/login", strings.NewReader(`{"email":"nuevo_flujo@empresa.com","password":"ClaveSegura99"}`))
+	loginRR := httptest.NewRecorder()
+	AdminLoginHandler(dbSuper).ServeHTTP(loginRR, loginReq)
+
+	if loginRR.Code != http.StatusOK {
+		t.Fatalf("expected status %d on login, got %d body=%s", http.StatusOK, loginRR.Code, loginRR.Body.String())
+	}
+
+	var sessionCookie *http.Cookie
+	for _, cookie := range loginRR.Result().Cookies() {
+		if cookie.Name == "session_token" && strings.TrimSpace(cookie.Value) != "" {
+			sessionCookie = cookie
+			break
+		}
+	}
+	if sessionCookie == nil {
+		t.Fatal("expected session_token cookie for new admin login")
+	}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/super/api/empresas", EmpresasHandler(dbEmp, dbSuper))
+	protected := utils.AuthMiddleware(dbSuper, mux)
+
+	createBody := `{"tipo_id":7,"tipo_nombre":"Hotel","nombre":"Hotel Nuevo Flujo","nit":"901234567","observaciones":"Primera empresa del usuario nuevo"}`
+	createReq := httptest.NewRequest(http.MethodPost, "/super/api/empresas", strings.NewReader(createBody))
+	createReq.Header.Set("Content-Type", "application/json")
+	createReq.AddCookie(sessionCookie)
+	createRR := httptest.NewRecorder()
+	protected.ServeHTTP(createRR, createReq)
+
+	if createRR.Code != http.StatusOK {
+		t.Fatalf("expected status %d on protected super create empresa, got %d body=%s", http.StatusOK, createRR.Code, createRR.Body.String())
+	}
+
+	var totalEmpresas int
+	if err := dbEmp.QueryRow(`SELECT COUNT(1) FROM empresas`).Scan(&totalEmpresas); err != nil {
+		t.Fatalf("count empresas: %v", err)
+	}
+	if totalEmpresas != 1 {
+		t.Fatalf("expected 1 empresa created for generic admin, got %d", totalEmpresas)
+	}
+
+	var empresaNombre, empresaCreador string
+	if err := dbEmp.QueryRow(`SELECT COALESCE(nombre, ''), COALESCE(usuario_creador, '') FROM empresas LIMIT 1`).Scan(&empresaNombre, &empresaCreador); err != nil {
+		t.Fatalf("query created empresa: %v", err)
+	}
+	if !strings.EqualFold(strings.TrimSpace(empresaNombre), "Hotel Nuevo Flujo") {
+		t.Fatalf("expected created empresa name Hotel Nuevo Flujo, got %q", empresaNombre)
+	}
+	if !strings.EqualFold(strings.TrimSpace(empresaCreador), "nuevo_flujo@empresa.com") {
+		t.Fatalf("expected usuario_creador nuevo_flujo@empresa.com, got %q", empresaCreador)
+	}
+
+	admin, err := dbpkg.GetAdminByEmailFull(dbSuper, "nuevo_flujo@empresa.com")
+	if err != nil {
+		t.Fatalf("reload admin after create empresa: %v", err)
+	}
+	if !strings.EqualFold(admin.Role, "administrador") {
+		t.Fatalf("expected new admin role administrador, got %q", admin.Role)
 	}
 }

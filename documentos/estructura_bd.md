@@ -1,7 +1,7 @@
 # Estructura del Base de Datos
 
-Version: 2026-04-15.51.0
-Ultima actualizacion: 2026-04-15
+Version: 2026-04-17.53.0
+Ultima actualizacion: 2026-04-17
 
 Este documento consolida la estructura relacional activa del proyecto.
 Nota de gobernanza documental:
@@ -106,6 +106,8 @@ Todas las tablas operativas usan como base los campos estandar:
   - moneda, dominio_publico, mostrar_stock
   - wompi_activo, wompi_mode, wompi_public_key
   - wompi_private_key_ref, wompi_integrity_key_ref, wompi_event_key_ref
+  - epayco_activo, epayco_mode, epayco_public_key
+  - epayco_private_key_ref, epayco_customer_id
 - empresa_venta_publica_items:
   - empresa_id, producto_id, codigo_publico
   - nombre, descripcion, precio, moneda, imagen_url
@@ -115,7 +117,7 @@ Todas las tablas operativas usan como base los campos estandar:
   - comprador_nombre, comprador_email, comprador_telefono
   - moneda, subtotal, descuento_total, impuesto_total, total
   - metodo_pago, estado_pago, transaction_id, referencia_externa
-  - provider_payload_json, items_json, pagado_en, error_pago
+  - pasarela_payload_json, items_json, pagado_en, observaciones
 
 ### Tablas de soporte remoto por empresa
 - empresa_soporte_remoto_configuracion:
@@ -449,6 +451,7 @@ Todas las tablas operativas usan como base los campos estandar:
   - periodo_contable, monto_total, moneda
   - numero_legal, codigo_validacion, pais_codigo, ambiente_fe
   - fecha_documento, entidad_relacionada_id
+  - uso operativo actual: soporta `factura_electronica`, `nota_credito` y `comprobante_pago`
   - UNIQUE(empresa_id, tipo_documento, documento_codigo)
 - empresa_compras_documentos:
   - empresa_id, proveedor_id, tipo_documento, documento_codigo
@@ -479,6 +482,7 @@ Todas las tablas operativas usan como base los campos estandar:
 ### Tabla de configuracion empresarial
 - empresa_configuracion_avanzada:
   - empresa_id (UNIQUE)
+  - modo_documento_venta (`factura_electronica` o `comprobante_pago`)
   - tipo_documento_emisor, nit, digito_verificacion
   - razon_social, nombre_comercial, regimen_fiscal, responsabilidad_tributaria
   - email_facturacion, telefono_facturacion, direccion_fiscal, departamento, municipio
@@ -1036,6 +1040,7 @@ Todas las tablas operativas usan como base los campos estandar:
 - 2026-04-05: se agrega `empresa_vehiculos_registro` para controlar ingreso y salida de vehiculos por empresa con patente, conductor, propietario y motivo operativo.
 - 2026-04-05: se agrega `codigos_de_descuento` por empresa para promociones con vigencia, usos y validacion de pago en carrito.
 - 2026-04-05: se amplía `carritos_compras` con `metodo_pago` y `referencia_pago` para trazabilidad del cierre de venta por estacion.
+- 2026-04-17: `empresa_configuracion_avanzada` agrega `modo_documento_venta` para definir por empresa si la venta pagada genera `factura_electronica` o `comprobante_pago`, reutilizando `empresa_facturacion_documentos` como repositorio canonico de ambos documentos.
 - 2026-04-05: se agregan `combos_productos` y `combos_productos_detalle` para venta compuesta con precio unico y receta de ingredientes por empresa.
 - 2026-04-04: se amplía `proveedores` con campos comerciales (`catalogo_referencia`, `precio_base_referencial`, `descuento_porcentaje`, `plazo_pago_dias`, `condicion_entrega`) para gestionar catálogo, precios y condiciones por empresa.
 - 2026-04-04: se agrega `empresa_auditoria_eventos` para trazabilidad de acciones criticas por `empresa_id`, modulo/accion/recurso, resultado HTTP y metadatos (`request_id`, IP, user-agent), con retencion configurable y purga.

@@ -37,13 +37,29 @@ type apiCaptureResponseWriter struct {
 type requestContextKey string
 
 const (
-	ctxKeyRequestID requestContextKey = "request_id"
-	ctxKeyEmpresaID requestContextKey = "empresa_id"
-	canonicalPublicApexHost          = "powerfulcontrolsystem.com"
-	canonicalPublicWWWHost           = "www.powerfulcontrolsystem.com"
+	ctxKeyRequestID         requestContextKey = "request_id"
+	ctxKeyEmpresaID         requestContextKey = "empresa_id"
+	canonicalPublicApexHost                   = "powerfulcontrolsystem.com"
+	canonicalPublicWWWHost                    = "www.powerfulcontrolsystem.com"
+	reservedSuperAdminEmail                   = "powerfulcontrolsystem@gmail.com"
 )
 
 var companyLogMu sync.Mutex
+
+func AdminShouldUseSuperRole(email string) bool {
+	return strings.EqualFold(strings.TrimSpace(email), reservedSuperAdminEmail)
+}
+
+func ManagedAdminRole(email, currentRole string) string {
+	normalizedCurrent := strings.ToLower(strings.TrimSpace(currentRole))
+	if normalizedCurrent != "" && normalizedCurrent != "administrador" && normalizedCurrent != "super_administrador" {
+		return strings.TrimSpace(currentRole)
+	}
+	if AdminShouldUseSuperRole(email) {
+		return "super_administrador"
+	}
+	return "administrador"
+}
 
 func newAPICaptureResponseWriter() *apiCaptureResponseWriter {
 	return &apiCaptureResponseWriter{headers: make(http.Header), status: http.StatusOK}
@@ -421,6 +437,20 @@ func GenerateSecureToken(n int) (string, error) {
 	return hex.EncodeToString(b), nil
 }
 
+func allowAdminLimitedSuperRoute(path, method, role string) bool {
+	if !strings.EqualFold(strings.TrimSpace(role), "administrador") {
+		return false
+	}
+	switch strings.TrimSpace(path) {
+	case "/super/api/empresas":
+		return method == http.MethodGet || method == http.MethodPost || method == http.MethodPut || method == http.MethodDelete
+	case "/super/api/tipos_empresas", "/super/api/licencias":
+		return method == http.MethodGet
+	default:
+		return false
+	}
+}
+
 // AuthMiddleware protege rutas usando la tabla sesiones y administradores en la BD superadministrador.
 // Permite un conjunto público de rutas (login/callback/activos). Para rutas que comienzan con /super/
 // exige rol 'super_administrador'. Añade `adminEmail` en el contexto de la petición.
@@ -429,29 +459,29 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 		path := r.URL.Path
 		// Rutas públicas exactas (no usar prefijo "/" porque abriría todo el sistema).
 		publicExact := map[string]struct{}{
-			"/":                                         {},
-			"/index.html":                               {},
-			"/descripcion_de_los_sistemas.ht":           {},
-			"/Informacion_de_contacto.html":             {},
-			"/venta_publica.html":                       {},
-			"/venta_digital.html":                       {},
-			"/login.html":                               {},
-			"/registrar_nuevo_usuario_administrador.html": {},
-			"/login_usuario.html":                       {},
-			"/contrato.html":                            {},
-			"/auth/google/login":                        {},
-			"/auth/google/callback":                     {},
-			"/auth/confirmar_correo":                    {},
-			"/auth/confirmar_admin":                     {},
-			"/auth/logout":                              {},
-			"/api/public/venta_publica":                 {},
-			"/api/public/soporte_remoto":                {},
-			"/api/public/venta_digital":                 {},
-			"/api/public/pagina_principal":               {},
-			"/api/public/contrato":                       {},
-			"/api/public/licencias/payment_methods":      {},
-			"/api/empresa/usuarios/login":               {},
-			"/api/empresa/usuarios/establecer_password": {},
+			"/":                               {},
+			"/index.html":                     {},
+			"/descripcion_de_los_sistemas.ht": {},
+			"/Informacion_de_contacto.html":   {},
+			"/venta_publica.html":             {},
+			"/venta_digital.html":             {},
+			"/login.html":                     {},
+			"/registrar_nuevo_usuario_administrador.html":           {},
+			"/login_usuario.html":                                   {},
+			"/contrato.html":                                        {},
+			"/auth/google/login":                                    {},
+			"/auth/google/callback":                                 {},
+			"/auth/confirmar_correo":                                {},
+			"/auth/confirmar_admin":                                 {},
+			"/auth/logout":                                          {},
+			"/api/public/venta_publica":                             {},
+			"/api/public/soporte_remoto":                            {},
+			"/api/public/venta_digital":                             {},
+			"/api/public/pagina_principal":                          {},
+			"/api/public/contrato":                                  {},
+			"/api/public/licencias/payment_methods":                 {},
+			"/api/empresa/usuarios/login":                           {},
+			"/api/empresa/usuarios/establecer_password":             {},
 			"/api/empresa/usuarios/solicitar_recuperacion_password": {},
 			"/api/empresa/usuarios/restablecer_password":            {},
 			"/api/empresa/usuarios/cambiar_password":                {},
@@ -507,14 +537,22 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			return
 		}
 
-		admin, err := dbpkg.GetAdminByEmail(dbSuper, sess.AdminEmail)
+		admin, err := dbpkg.GetAdminByEmailFull(dbSuper, sess.AdminEmail)
 		if err != nil {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
 
-		// Rutas /super/ requieren rol super_administrador
-		if strings.HasPrefix(path, "/super/") && admin.Role != "super_administrador" {
+		desiredRole := ManagedAdminRole(admin.Email, admin.Role)
+		if admin.ID > 0 && !strings.EqualFold(strings.TrimSpace(admin.Role), desiredRole) {
+			if err := dbpkg.UpdateAdministrador(dbSuper, admin.ID, admin.Name, desiredRole); err == nil {
+				admin.Role = desiredRole
+			}
+		}
+
+		// Rutas /super/ requieren rol super_administrador, excepto lecturas puntuales
+		// necesarias para el selector de empresas del rol administrador.
+		if strings.HasPrefix(path, "/super/") && !strings.EqualFold(strings.TrimSpace(admin.Role), "super_administrador") && !allowAdminLimitedSuperRoute(path, r.Method, admin.Role) {
 			http.Error(w, "forbidden", http.StatusForbidden)
 			return
 		}

@@ -8,9 +8,110 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 - Cuando se cree un modulo nuevo o se modifique uno existente, esta matriz debe actualizarse en la misma iteracion para reflejar permisos por rol/modulo/accion y el impacto en paginas del panel.
 - Esta actualizacion debe quedar sincronizada con `documentos/descripcion_de_modulos`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios` y `CHANGELOG.md`.
 
-- Actualizacion 2026-04-17 (checkout publico de licencias: tarjetas resumen y catalogo Epayco visible):
-	- `web/pagar_licencia.html` reorganiza la experiencia publica en tarjetas visuales para `licencia` y `codigos de descuento`, y expone en la misma pantalla un bloque descriptivo de medios de pago Epayco antes del checkout.
-	- `web/estilos.css` ajusta solo la presentacion del flujo, incluyendo branding visual de Epayco en selector y panel.
+- Actualizacion 2026-04-18 (checkout Epayco: correo de activacion recuperable e idempotente):
+	- `backend/handlers/payments_handlers.go` reintenta el correo de activacion en aprobados posteriores cuando la licencia ya quedó activa pero la notificacion aun no se habia confirmado, y marca el envio dentro del `raw_payload` para no duplicarlo.
+	- Impacto de matriz: sin cambios en roles ni wrappers; `/epayco/*` sigue siendo un flujo publico de checkout y la mejora solo fortalece la entrega del correo transaccional.
+
+- Actualizacion 2026-04-18 (super configuracion avanzada: prueba real de Gmail):
+	- `backend/handlers/usuarios_empresa.go` agrega `POST /super/api/config/gmail?action=test` para enviar un correo de prueba real con la configuracion SMTP ya guardada, y `web/super/configuracion_avanzada.html` lo invoca desde el boton `Probar Gmail`.
+	- Impacto de matriz: sin cambios en roles ni wrappers; la accion sigue reservada al mismo modulo super protegido de configuracion avanzada.
+
+- Actualizacion 2026-04-17 (arcade publico: Brigada burbujas 3D plus mejora su UX movil):
+	- `web/Juegos/brigada_burbujas_3d_plus.html` incorpora apuntado tactil sobre el canvas, ayudas visuales en pantalla y un layout mas comodo en vertical para completar el flujo movil del juego.
+	- Impacto de matriz: sin cambios en roles, wrappers ni permisos; `Juegos` sigue siendo una superficie publica sin autenticacion bajo `/Juegos/*`.
+
+- Actualizacion 2026-04-17 (arcade publico: Brigada burbujas 3D plus suma campaña y rivales de pasarela caricaturesca):
+	- `web/Juegos/brigada_burbujas_3d_plus.html` amplía el juego con transformaciones especiales y rivales adultas estilizadas tipo pasarela, sin desnudez ni contenido explicito, manteniendo la experiencia dentro de un tono arcade apto para portal publico.
+	- Impacto de matriz: sin cambios en roles, wrappers ni permisos; `Juegos` sigue siendo una superficie publica sin autenticacion bajo `/Juegos/*`.
+
+- Actualizacion 2026-04-18 (arcade publico: Brigada burbujas 3D plus agrega arsenal y sectores mixtos):
+	- `web/Juegos/brigada_burbujas_3d_plus.html` incorpora arsenal con tres armas, pickups de salud/municion, HUD de arma/sector y una IA que patrulla, busca y convoca refuerzos, manteniendo el mismo acceso publico del arcade.
+	- Impacto de matriz: sin cambios en roles, wrappers ni permisos; `Juegos` sigue siendo una superficie publica sin autenticacion bajo `/Juegos/*`.
+
+- Actualizacion 2026-04-18 (arcade publico: Brigada burbujas 3D plus asegura combate movil en escenario):
+	- `web/Juegos/brigada_burbujas_3d_plus.html` mueve a una barra tactica interna del escenario el cambio rapido de arma y la pausa para que el flujo movil no dependa de scroll ni de tarjetas externas.
+	- Impacto de matriz: sin cambios en roles, wrappers ni permisos; `Juegos` sigue siendo una superficie publica sin autenticacion bajo `/Juegos/*`.
+
+- Actualizacion 2026-04-18 (arcade publico: Brigada burbujas 3D plus agrega joystick y fullscreen movil):
+	- `web/Juegos/brigada_burbujas_3d_plus.html` incorpora joystick tactil de movimiento libre, pantalla completa guiada y HUD interno reordenado para una mano, manteniendo intacto el acceso publico del juego.
+	- Impacto de matriz: sin cambios en roles, wrappers ni permisos; `Juegos` sigue siendo una superficie publica sin autenticacion bajo `/Juegos/*`.
+
+- Actualizacion 2026-04-18 (arcade publico: Brigada burbujas 3D plus agrega ajustes tactiles persistentes):
+	- `web/Juegos/brigada_burbujas_3d_plus.html` añade auto-disparo opcional, vibracion y ajustes de sensibilidad persistidos en `localStorage`, sin alterar el modelo de acceso del arcade.
+	- Impacto de matriz: sin cambios en roles, wrappers ni permisos; `Juegos` sigue siendo una superficie publica sin autenticacion bajo `/Juegos/*`.
+
+- Actualizacion 2026-04-17 (super seguridad: vista en modo oscuro):
+	- `web/super/seguridad.html` pasa a usar una paleta oscura dentro del mismo modulo de seguridad VPS Linux del panel super.
+	- Impacto de matriz: sin cambios en roles ni permisos; `Seguridad VPS Linux (super)` mantiene el mismo alcance exclusivo de `super_administrador`.
+
+- Actualizacion 2026-04-17 (menus administrativos: ocultar/mostrar en movil):
+	- `web/administrar_empresa.html`, `web/super_administrador.html` y `web/seleccionar_empresa.html` agregan un boton final para contraer o expandir el menu lateral solo en movil.
+	- `web/menu.js` y `web/estilos.css` mantienen el sidebar completo en escritorio y, en moviles, dejan visible solo el boton de recuperacion cuando el usuario colapsa el menu.
+	- Impacto de matriz: sin cambios en roles, wrappers ni permisos; solo se ajusta la experiencia responsive sobre paginas ya autorizadas.
+
+- Actualizacion 2026-04-17 (ventas: selector de documento por empresa):
+	- `web/administrar_empresa/configuracion.html` agrega el selector `Documento al vender` y `backend/handlers/carritos_compras.go` lo aplica al cierre de `pagar_estacion` para emitir `factura_electronica` o `comprobante_pago`.
+	- `web/administrar_empresa/facturas_electronicas.html` amplía la consulta del historial para incluir comprobantes dentro del mismo modulo documental empresarial.
+	- Impacto de matriz: sin ampliacion de privilegios; el cambio reutiliza permisos existentes de configuracion de empresa, carritos y consulta documental bajo el mismo `empresa_id` autenticado.
+
+- Actualizacion 2026-04-17 (editar empresa: comprar licencia si esta vencida):
+	- `web/editar_empresa.html` agrega un CTA comercial `Comprar licencia`, pero solo se expone cuando la empresa tiene licencias vencidas y ya no cuenta con una licencia activa vigente.
+	- `web/js/editar_empresa.js` resuelve esa condicion usando la lectura existente de `/super/api/licencias?scope=mine&con_empresa=1`, sin requerir nuevos permisos ni nuevas rutas super.
+	- Impacto de matriz: sin ampliacion de privilegios; el rol mantiene las mismas lecturas y el CTA solo redirige al flujo comercial permitido de `elegir_licencia.html`.
+
+- Actualizacion 2026-04-17 (editar empresa y eliminacion total confirmada):
+	- `web/editar_empresa.html` y `web/js/editar_empresa.js` habilitan una vista autenticada para editar `nombre` y `descripcion` de la empresa seleccionada y para ejecutar su cierre total solo si el usuario escribe el nombre exacto como confirmacion.
+	- `backend/utils/utils.go` amplía la excepcion del rol `administrador` sobre `/super/api/empresas` para permitir `PUT` y `DELETE`, manteniendo `GET` como unica accion disponible en `/super/api/tipos_empresas` y `/super/api/licencias`.
+	- Impacto de matriz: `administrador` pasa a tener `R/U/D` solo sobre sus empresas en el flujo del selector; `POST /super/api/empresas` y el resto de `/super/*` continúan reservados a `super_administrador`.
+
+- Actualizacion 2026-04-17 (selector de empresas: editar sale de la tarjeta y pasa al menu):
+	- `web/seleccionar_empresa.html` agrega la entrada lateral `Editar empresa` y `web/js/seleccionar_empresa.js` usa la empresa activa del contexto para abrir `editar_empresa.html` sin necesitar un boton extra dentro de cada tarjeta.
+	- Las tarjetas conservan la accion principal de entrar a la empresa o de comprar licencia, y solo mantienen el boton cuadrado de descarga como accion secundaria del bloque.
+	- Impacto de matriz: sin cambios en permisos efectivos; el cambio es de UX y no abre nuevas rutas ni nuevas mutaciones.
+
+- Actualizacion 2026-04-17 (registro de contrasena Google: CTA unico):
+	- `web/registrar_contrasena_usuario_de_google.html` elimina el enlace `Continuar` y deja solo el boton `Guardar contrasena` centrado en el formulario.
+	- Impacto de matriz: sin cambios en roles ni wrappers; el flujo sigue siendo parte de autenticacion administrativa y solo ajusta la UX del paso obligatorio posterior a Google.
+
+- Actualizacion 2026-04-17 (descarga de informacion empresarial: misma ruta funcional y dark mode):
+	- `backend/main.go` agrega el alias `/descargar_informacion_de_la_empresa` hacia la vista HTML real, y `web/js/descargar_informacion_de_la_empresa.js` mantiene la descarga en la misma pantalla con `fetch + blob` para PDF, XLS, CSV, JSON y TXT.
+	- Impacto de matriz: sin cambios de rol; sigue siendo una capacidad autenticada del flujo super/administrador dentro del alcance permitido sobre la empresa seleccionada.
+
+- Actualizacion 2026-04-17 (selector de empresas: operacion minima permitida para administrador):
+	- `backend/utils/utils.go` habilita para el rol `administrador` `GET/POST` sobre `/super/api/empresas` y mantiene `GET` sobre `/super/api/tipos_empresas` y `/super/api/licencias`, porque son los endpoints minimos que consume `seleccionar_empresa.html` para listar y crear empresas propias.
+	- Impacto de matriz: el rol `administrador` no obtiene acceso global al panel `/super/*`; solo recupera la operacion minima del selector. `super_administrador` mantiene acceso total y los demas roles siguen en `403`.
+
+- Actualizacion 2026-04-17 (checkout Epayco: pantalla de exito y retorno con referencia real):
+	- `web/epayco/respuesta.html`, `web/pagar_licencia.html` y la nueva `web/epayco/pago_exitoso.html` reorganizan solo la UX del retorno aprobado para que el usuario salga del checkout hacia una confirmacion profesional y no quede atrapado en el formulario con estados ambiguos.
+	- Impacto de matriz: sin cambios en roles ni permisos; `/epayco/*` sigue siendo superficie publica del checkout comercial y `seleccionar_empresa.html` conserva el mismo acceso autenticado posterior.
+
+- Actualizacion 2026-04-17 (seleccionar empresa: correccion de render del listado):
+	- `web/js/seleccionar_empresa.js` recupera el helper `escapeHtml` que usan las tarjetas del panel para mostrar nombre y observaciones sin romper el render inicial con `escapeHtml is not defined`.
+	- Impacto de matriz: sin cambios en roles, permisos ni wrappers; la vista `seleccionar_empresa.html` conserva el mismo alcance del panel super y solo se corrige un fallo de frontend.
+
+- Actualizacion 2026-04-17 (pagina principal publica: CTA inferior fijo y texto contrastado):
+	- `web/estilos.css` fija visualmente el CTA `Explorar oferta` al pie de cada tarjeta del home y da mayor contraste al titulo y descripcion usando tipografia clara con iluminado exterior negro suave, sin paneles de fondo sobre el contenido textual.
+	- Impacto de matriz: sin cambios en permisos, roles ni wrappers; `index.html` sigue siendo una pagina publica de solo consulta con los mismos accesos visibles.
+
+- Actualizacion 2026-04-17 (venta publica por empresa: pasarelas propias Wompi/Epayco):
+	- `web/administrar_empresa/configuracion.html` añade una seccion de `Pasarelas de pago` y `web/administrar_empresa/venta_publica.html` conserva la edición detallada de la misma configuración empresarial.
+	- `backend/handlers/venta_publica.go` y `backend/handlers/payments_handlers.go` mantienen el alcance por `empresa_id`: la empresa autenticada solo administra sus propias credenciales, mientras el checkout público solo recibe flags sanitizados y nunca secretos.
+	- Impacto de matriz: sin nuevos roles; el permiso sigue dentro del módulo de administración de empresa, y la tienda pública conserva acceso abierto solo a catálogo, creación de pago y consulta de estado.
+
+- Actualizacion 2026-04-17 (autenticacion administrativa: super restringido al correo reservado):
+	- `backend/handlers/auth_admin_handlers.go` hace que el registro administrativo publico, el login por correo y el callback Google dejen las cuentas nuevas en rol `administrador` por defecto.
+	- `backend/utils/utils.go` deja de promocionar cuentas legacy/autoregistradas a `super_administrador` y aplica la misma politica al validar acceso a `/super/*`.
+	- `powerfulcontrolsystem@gmail.com` queda como unico correo reservado para conservar `super_administrador` dentro del flujo publico de autenticacion administrativa.
+	- Impacto de matriz: el login/registro administrativo sigue siendo publico, pero la visibilidad y las acciones `CRUA` del panel super quedan restringidas al correo reservado; las cuentas nuevas ya no ganan permisos globales por autoregistro ni por OAuth.
+
+- Actualizacion 2026-04-17 (seleccionar empresa: descarga empresarial en pagina dedicada):
+	- `web/js/seleccionar_empresa.js` deja de abrir el modal de backup y navega a `descargar_informacion_de_la_empresa.html`, mientras `backend/handlers/system_empresas_handlers.go` atiende `resumen_descarga` y `exportar_informacion` sobre la misma ruta protegida `/super/api/empresas`.
+	- `web/descargar_informacion_de_la_empresa.html` y `web/js/descargar_informacion_de_la_empresa.js` habilitan exportacion ejecutiva y operativa en `PDF`, `XLS`, `CSV`, `JSON` y `TXT` para la empresa seleccionada.
+	- Impacto de matriz: sin cambios en roles; la lectura y exportacion siguen siendo alcance `R` del panel super para el administrador autenticado con filtro de empresa ya validado por `/super/api/empresas`.
+
+- Actualizacion 2026-04-17 (checkout publico de licencias: tarjetas resumen y panel Epayco compacto):
+	- `web/pagar_licencia.html` reorganiza la experiencia publica en tarjetas visuales para `licencia` y `codigos de descuento`, elimina el catalogo visual de medios Epayco y deja el panel de pago en una tarjeta mas compacta sin campo de correo visible.
+	- `web/estilos.css` ajusta solo la presentacion del flujo, incluyendo una tarjeta blanca centrada para Epayco y conservando intacto el alcance publico del checkout.
 	- Impacto de matriz: sin cambios en permisos, roles, wrappers ni visibilidad; las mismas rutas publicas de checkout conservan su alcance actual y el panel super mantiene la administracion exclusiva de configuracion/licencias.
 
 - Actualizacion 2026-04-17 (navegacion general: misma pestaña por defecto):
@@ -74,6 +175,11 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 	- `web/Juegos/arcade_shared.js` y `web/Juegos/arcade_window.css` pasan a ser la base comun del arcade publico para countdown, sonido, records, poderes y premios en todos los juegos activos.
 	- Los nueve juegos `*_plus.html` del lobby reutilizan el mismo runtime sin ampliar rutas privadas ni introducir permisos nuevos.
 	- Impacto de matriz: sin cambios en roles, CRUD/A ni wrappers; `Portal publico - Juegos` mantiene acceso publico y de solo uso.
+
+- Actualizacion 2026-04-18 (portal publico: Brigada burbujas 3D plus):
+	- `web/Juegos/brigada_burbujas_3d_plus.html` agrega una nueva ruta publica del arcade con shooter retro 3D simulado, controles tactiles y record local por slug `brigada_burbujas_3d`.
+	- `web/Juegos/menu_juegos.html` publica el decimo juego activo del lobby y `web/img/juegos/brigada_burbujas_3d.svg` incorpora la portada dedicada.
+	- Impacto de matriz: sin cambios en permisos; `Portal publico - Juegos` se mantiene publico, sin autenticacion y sin CRUD administrativo.
 
 - Actualizacion 2026-04-17 (reportes globales super: graficos y lectura ejecutiva):
 	- `web/super/reportes_globales.html`, `web/js/super_reportes_globales.js` y `web/estilos.css` agregan visualizaciones ejecutivas sobre el mismo modulo protegido de lectura.

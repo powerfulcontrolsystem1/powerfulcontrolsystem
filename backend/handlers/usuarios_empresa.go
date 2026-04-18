@@ -33,6 +33,9 @@ const (
 	empresaUsuarioRecuperacionTTL      = 30 * time.Minute
 	empresaUsuarioLoginPublicSubdomain = "usuarios"
 
+	superCorreoNotificacionTipoPruebaGmail = "prueba_gmail_super"
+	superGmailTestRecipient                = "powerfulcontrolsystem@gmail.com"
+
 	empresaUsuarioPasswordMinLengthDefault     = 8
 	empresaUsuarioPasswordRequireUpperDefault  = true
 	empresaUsuarioPasswordRequireLowerDefault  = true
@@ -1187,6 +1190,31 @@ func GmailConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 
 		case http.MethodPost, http.MethodPut:
+			if strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("action")), "test") {
+				if err := sendSuperGmailTestEmail(dbSuper, adminEmailFromRequest(r)); err != nil {
+					status := http.StatusInternalServerError
+					if strings.Contains(strings.ToLower(err.Error()), "no configurado") {
+						status = http.StatusBadRequest
+					}
+					w.Header().Set("Content-Type", "application/json")
+					w.WriteHeader(status)
+					json.NewEncoder(w).Encode(map[string]interface{}{
+						"sent":      false,
+						"recipient": superGmailTestRecipient,
+						"error":     err.Error(),
+					})
+					return
+				}
+
+				w.Header().Set("Content-Type", "application/json")
+				json.NewEncoder(w).Encode(map[string]interface{}{
+					"sent":      true,
+					"recipient": superGmailTestRecipient,
+					"message":   "Correo de prueba enviado correctamente a " + superGmailTestRecipient,
+				})
+				return
+			}
+
 			var payload struct {
 				SMTPEmail           string `json:"smtp_email"`
 				SMTPAppPass         string `json:"smtp_app_password"`
@@ -1305,6 +1333,95 @@ func GmailConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 	}
+}
+
+func sendSuperGmailTestEmail(dbSuper *sql.DB, usuarioCreador string) error {
+	if dbSuper == nil {
+		return fmt.Errorf("db super no disponible")
+	}
+
+	smtpEmail, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_email")
+	if err != nil {
+		return err
+	}
+	smtpEmail = strings.TrimSpace(smtpEmail)
+	if smtpEmail == "" {
+		return fmt.Errorf("gmail.smtp_email no configurado")
+	}
+
+	smtpPass, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_app_password")
+	if err != nil {
+		return err
+	}
+	smtpPass = strings.TrimSpace(smtpPass)
+	if smtpPass == "" {
+		return fmt.Errorf("gmail.smtp_app_password no configurado")
+	}
+
+	smtpHost, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_host")
+	smtpPort, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_port")
+	fromName, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_from_name")
+
+	smtpHost = strings.TrimSpace(smtpHost)
+	if smtpHost == "" {
+		smtpHost = "smtp.gmail.com"
+	}
+	smtpPort = strings.TrimSpace(smtpPort)
+	if smtpPort == "" {
+		smtpPort = "587"
+	}
+	fromName = strings.TrimSpace(fromName)
+	if fromName == "" {
+		fromName = "Powerful Control System"
+	}
+
+	stamp := time.Now().Format(time.RFC3339)
+	subject := "Prueba Gmail - Configuracion avanzada Powerful Control System"
+	body := "Esta es una prueba del boton Probar Gmail desde configuracion avanzada.\r\n\r\n" +
+		"Fecha: " + stamp + "\r\n" +
+		"Host SMTP: " + smtpHost + "\r\n" +
+		"Puerto SMTP: " + smtpPort + "\r\n" +
+		"Remitente: " + smtpEmail + "\r\n" +
+		"Destino: " + superGmailTestRecipient + "\r\n"
+
+	if isEmpresaUsuarioMailTestMode(dbSuper) {
+		metadataJSON := fmt.Sprintf(`{"mail_mode":%q,"smtp_host":%q,"smtp_port":%q,"from":%q}`, "test", smtpHost, smtpPort, smtpEmail)
+		return captureEmpresaUsuarioMailNotification(
+			dbSuper,
+			superCorreoNotificacionTipoPruebaGmail,
+			0,
+			superGmailTestRecipient,
+			subject,
+			body,
+			"",
+			metadataJSON,
+			usuarioCreador,
+		)
+	}
+
+	mailHostForAuth := smtpHost
+	if strings.Contains(smtpHost, ":") {
+		if host, _, err := net.SplitHostPort(smtpHost); err == nil && strings.TrimSpace(host) != "" {
+			mailHostForAuth = host
+		}
+	}
+	addr := smtpHost
+	if !strings.Contains(addr, ":") {
+		addr = net.JoinHostPort(smtpHost, smtpPort)
+	}
+
+	auth := smtp.PlainAuth("", smtpEmail, smtpPass, mailHostForAuth)
+	msg := "From: " + fromName + " <" + smtpEmail + ">\r\n" +
+		"To: " + superGmailTestRecipient + "\r\n" +
+		"Subject: " + subject + "\r\n" +
+		"MIME-Version: 1.0\r\n" +
+		"Content-Type: text/plain; charset=UTF-8\r\n\r\n" +
+		body
+
+	if err := smtp.SendMail(addr, auth, smtpEmail, []string{superGmailTestRecipient}, []byte(msg)); err != nil {
+		return err
+	}
+	return nil
 }
 
 func validateEmpresaUsuarioPayload(empresaID int64, email, nombre string, rolUsuarioID int64) error {

@@ -64,6 +64,24 @@ func resolveAdminPostLoginRedirect(admin *dbpkg.Admin) string {
 	return "/seleccionar_empresa.html"
 }
 
+func enforceManagedAdminRole(dbSuper *sql.DB, admin *dbpkg.Admin) (*dbpkg.Admin, error) {
+	if admin == nil {
+		return nil, nil
+	}
+	desiredRole := utils.ManagedAdminRole(admin.Email, admin.Role)
+	if strings.EqualFold(strings.TrimSpace(admin.Role), desiredRole) {
+		return admin, nil
+	}
+	if admin.ID <= 0 {
+		return admin, nil
+	}
+	if err := dbpkg.UpdateAdministrador(dbSuper, admin.ID, admin.Name, desiredRole); err != nil {
+		return nil, err
+	}
+	admin.Role = desiredRole
+	return admin, nil
+}
+
 // AdminRegisterHandler registra un administrador (envía email de confirmación).
 func AdminRegisterHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -121,8 +139,7 @@ func AdminRegisterHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		// crear o actualizar administrador básico
-		if err := dbpkg.UpsertAdministrador(dbSuper, payload.Email, payload.Name, "administrador", ""); err != nil {
+		if err := dbpkg.UpsertAdministrador(dbSuper, payload.Email, payload.Name, utils.ManagedAdminRole(payload.Email, "administrador"), ""); err != nil {
 			log.Println("AdminRegisterHandler upsert error:", err)
 			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo crear la cuenta administrativa.")
 			return
@@ -233,6 +250,12 @@ func AdminLoginHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if err != nil {
 			log.Println("AdminLoginHandler get admin error:", err)
 			writeAdminAuthError(w, http.StatusUnauthorized, "Credenciales inválidas.")
+			return
+		}
+		admin, err = enforceManagedAdminRole(dbSuper, admin)
+		if err != nil {
+			log.Println("AdminLoginHandler enforce managed role error:", err)
+			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo validar el rol de la cuenta administrativa.")
 			return
 		}
 		if admin.EmailConfirmado != 1 {
@@ -366,6 +389,12 @@ func AdminResetPasswordHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if err != nil {
 			log.Println("AdminResetPasswordHandler get admin error:", err)
 			writeAdminAuthError(w, http.StatusBadRequest, "El correo o el token de recuperación no son válidos.")
+			return
+		}
+		admin, err = enforceManagedAdminRole(dbSuper, admin)
+		if err != nil {
+			log.Println("AdminResetPasswordHandler enforce managed role error:", err)
+			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo validar el rol de la cuenta administrativa.")
 			return
 		}
 		if strings.TrimSpace(admin.PasswordResetToken) == "" || strings.TrimSpace(admin.PasswordResetToken) != payload.Token {
@@ -831,11 +860,11 @@ func HandleGoogleCallback(dbEmpresas *sql.DB, dbSuper *sql.DB, clientID, clientS
 			return
 		}
 
-		// Determinar rol existente (si aplica) para preservarlo
+		// El alta publica y el OAuth solo dejan rol super al correo reservado del sistema.
 		existingAdmin, _ := dbpkg.GetAdminByEmail(dbSuper, userinfo.Email)
-		roleToSet := "administrador"
+		roleToSet := utils.ManagedAdminRole(userinfo.Email, "administrador")
 		if existingAdmin != nil && existingAdmin.Role != "" {
-			roleToSet = existingAdmin.Role
+			roleToSet = utils.ManagedAdminRole(userinfo.Email, existingAdmin.Role)
 		}
 		if err := dbpkg.UpsertAdministrador(dbSuper, userinfo.Email, userinfo.Name, roleToSet, userinfo.Picture); err != nil {
 			log.Println("db upsert administradores error:", err)
@@ -898,6 +927,10 @@ func HandleGoogleCallback(dbEmpresas *sql.DB, dbSuper *sql.DB, clientID, clientS
 				log.Println("warning: no admin found, redirecting to seleccionar_empresa:", err)
 				http.Redirect(w, r, "/seleccionar_empresa.html", http.StatusFound)
 				return
+			}
+			admin, err = enforceManagedAdminRole(dbSuper, admin)
+			if err != nil {
+				log.Println("warning: failed to enforce managed role after google callback:", err)
 			}
 			http.Redirect(w, r, resolveAdminPostLoginRedirect(admin), http.StatusFound)
 			return

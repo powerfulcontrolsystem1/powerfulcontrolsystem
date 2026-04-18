@@ -776,15 +776,24 @@ func sendFacturaElectronicaEmail(dbSuper *sql.DB, toEmail, toName string, doc db
 		moneda = "COP"
 	}
 
-	subject := "Factura electronica emitida " + numeroLegal
+	documentLabel := "Factura electronica"
+	introLine := "Tu factura electronica fue emitida correctamente."
+	feDetail := "Pais FE: " + strings.ToUpper(strings.TrimSpace(doc.PaisCodigo)) + "\r\n" +
+		"Ambiente FE: " + strings.TrimSpace(doc.AmbienteFE) + "\r\n"
+	if strings.EqualFold(strings.TrimSpace(doc.TipoDocumento), "comprobante_pago") {
+		documentLabel = "Comprobante de pago"
+		introLine = "Tu comprobante de pago fue generado correctamente."
+		feDetail = ""
+	}
+
+	subject := documentLabel + " emitido " + numeroLegal
 	body := "Hola " + safeName + ",\r\n\r\n" +
-		"Tu factura electronica fue emitida correctamente.\r\n" +
+		introLine + "\r\n" +
 		"Documento: " + strings.TrimSpace(doc.DocumentoCodigo) + "\r\n" +
 		"Numero legal: " + numeroLegal + "\r\n" +
 		"Codigo de validacion: " + codigoValidacion + "\r\n" +
 		"Total: " + fmt.Sprintf("%.2f", monto) + " " + moneda + "\r\n" +
-		"Pais FE: " + strings.ToUpper(strings.TrimSpace(doc.PaisCodigo)) + "\r\n" +
-		"Ambiente FE: " + strings.TrimSpace(doc.AmbienteFE) + "\r\n\r\n" +
+		feDetail + "\r\n" +
 		"Gracias por tu compra.\r\n"
 
 	msg := "From: " + fromName + " <" + smtpEmail + ">\r\n" +

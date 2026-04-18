@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -154,6 +155,9 @@ func TestAdminRegisterHandlerCreatesPendingAdminAndCapturesConfirmationMail(t *t
 	if admin.Ciudad != "Bogota" {
 		t.Fatalf("expected ciudad Bogota, got %q", admin.Ciudad)
 	}
+	if !strings.EqualFold(admin.Role, "administrador") {
+		t.Fatalf("expected role administrador, got %q", admin.Role)
+	}
 	if admin.PasswordSet != 1 || strings.TrimSpace(admin.PasswordHash) == "" {
 		t.Fatalf("expected password_set=1 with hash, got %+v", admin)
 	}
@@ -202,21 +206,21 @@ func TestAdminLoginHandlerCreatesSessionForConfirmedAdmin(t *testing.T) {
 	dbSuper := openTestSQLite(t, "admin_login_handler.db")
 	ensureAdminAuthTestSchema(t, dbSuper)
 
-	if err := dbpkg.UpsertAdministrador(dbSuper, "login_admin@empresa.com", "Login Admin", "super_administrador", ""); err != nil {
+	if err := dbpkg.UpsertAdministrador(dbSuper, "powerfulcontrolsystem@gmail.com", "Login Admin", "super_administrador", ""); err != nil {
 		t.Fatalf("upsert admin: %v", err)
 	}
 	hash, salt, err := generateEmpresaUsuarioPasswordHash("ClaveSegura99")
 	if err != nil {
 		t.Fatalf("generate hash: %v", err)
 	}
-	if err := dbpkg.SetAdministradorPassword(dbSuper, "login_admin@empresa.com", hash, salt); err != nil {
+	if err := dbpkg.SetAdministradorPassword(dbSuper, "powerfulcontrolsystem@gmail.com", hash, salt); err != nil {
 		t.Fatalf("set admin password: %v", err)
 	}
-	if _, err := dbSuper.Exec(`UPDATE administradores SET email_confirmado = 1 WHERE lower(email) = lower(?)`, "login_admin@empresa.com"); err != nil {
+	if _, err := dbSuper.Exec(`UPDATE administradores SET email_confirmado = 1 WHERE lower(email) = lower(?)`, "powerfulcontrolsystem@gmail.com"); err != nil {
 		t.Fatalf("confirm admin: %v", err)
 	}
 
-	req := httptest.NewRequest(http.MethodPost, "http://localhost:8080/super/api/administradores/login", strings.NewReader(`{"email":"login_admin@empresa.com","password":"ClaveSegura99"}`))
+	req := httptest.NewRequest(http.MethodPost, "http://localhost:8080/super/api/administradores/login", strings.NewReader(`{"email":"powerfulcontrolsystem@gmail.com","password":"ClaveSegura99"}`))
 	rr := httptest.NewRecorder()
 
 	AdminLoginHandler(dbSuper).ServeHTTP(rr, req)
@@ -234,7 +238,7 @@ func TestAdminLoginHandlerCreatesSessionForConfirmedAdmin(t *testing.T) {
 	}
 
 	var sessionsCount int
-	if err := dbSuper.QueryRow(`SELECT COUNT(1) FROM sesiones WHERE lower(admin_email) = lower(?)`, "login_admin@empresa.com").Scan(&sessionsCount); err != nil {
+	if err := dbSuper.QueryRow(`SELECT COUNT(1) FROM sesiones WHERE lower(admin_email) = lower(?)`, "powerfulcontrolsystem@gmail.com").Scan(&sessionsCount); err != nil {
 		t.Fatalf("count sessions: %v", err)
 	}
 	if sessionsCount != 1 {
@@ -242,6 +246,129 @@ func TestAdminLoginHandlerCreatesSessionForConfirmedAdmin(t *testing.T) {
 	}
 	if !strings.Contains(rr.Header().Get("Set-Cookie"), "session_token=") {
 		t.Fatalf("expected session cookie, got headers=%v", rr.Header())
+	}
+}
+
+func TestAdminLoginHandlerKeepsGenericAdminWithoutSuperPrivileges(t *testing.T) {
+	dbSuper := openTestSQLite(t, "admin_login_generic_role.db")
+	ensureAdminAuthTestSchema(t, dbSuper)
+
+	if err := dbpkg.UpsertAdministrador(dbSuper, "legacy_admin@empresa.com", "Legacy Admin", "administrador", ""); err != nil {
+		t.Fatalf("upsert admin: %v", err)
+	}
+	hash, salt, err := generateEmpresaUsuarioPasswordHash("ClaveSegura99")
+	if err != nil {
+		t.Fatalf("generate hash: %v", err)
+	}
+	if err := dbpkg.SetAdministradorPassword(dbSuper, "legacy_admin@empresa.com", hash, salt); err != nil {
+		t.Fatalf("set admin password: %v", err)
+	}
+	if _, err := dbSuper.Exec(`UPDATE administradores SET email_confirmado = 1, usuario_creador = '' WHERE lower(email) = lower(?)`, "legacy_admin@empresa.com"); err != nil {
+		t.Fatalf("confirm admin: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "http://localhost:8080/super/api/administradores/login", strings.NewReader(`{"email":"legacy_admin@empresa.com","password":"ClaveSegura99"}`))
+	rr := httptest.NewRecorder()
+
+	AdminLoginHandler(dbSuper).ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, rr.Code, rr.Body.String())
+	}
+
+	var body map[string]interface{}
+	if err := json.Unmarshal(rr.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode login response: %v body=%s", err, rr.Body.String())
+	}
+	if got := body["redirect_url"]; got != "/seleccionar_empresa.html" {
+		t.Fatalf("expected seleccionar_empresa redirect for generic admin, got %v", got)
+	}
+
+	admin, err := dbpkg.GetAdminByEmailFull(dbSuper, "legacy_admin@empresa.com")
+	if err != nil {
+		t.Fatalf("reload admin: %v", err)
+	}
+	if !strings.EqualFold(admin.Role, "administrador") {
+		t.Fatalf("expected role administrador, got %q", admin.Role)
+	}
+	if strings.TrimSpace(admin.UsuarioCreador) != "" {
+		t.Fatalf("expected self-registered legacy admin without creator, got %q", admin.UsuarioCreador)
+	}
+	if !strings.Contains(rr.Header().Get("Set-Cookie"), "session_token=") {
+		t.Fatalf("expected session cookie, got headers=%v", rr.Header())
+	}
+}
+
+func TestAdminRegisterHandlerReservedEmailKeepsSuperRole(t *testing.T) {
+	t.Setenv("PCS_MAIL_TEST_MODE", "1")
+
+	dbSuper := openTestSQLite(t, "admin_register_reserved_super.db")
+	ensureAdminAuthTestSchema(t, dbSuper)
+
+	body := `{"email":"powerfulcontrolsystem@gmail.com","name":"Cuenta Sistema","telefono":"3001234567","pais":"Colombia","ciudad":"Bogota","password":"ClaveSegura99"}`
+	req := httptest.NewRequest(http.MethodPost, "http://localhost:8080/super/api/administradores/register", strings.NewReader(body))
+	rr := httptest.NewRecorder()
+
+	AdminRegisterHandler(dbSuper).ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, rr.Code, rr.Body.String())
+	}
+
+	admin, err := dbpkg.GetAdminByEmailFull(dbSuper, "powerfulcontrolsystem@gmail.com")
+	if err != nil {
+		t.Fatalf("get reserved admin: %v", err)
+	}
+	if !strings.EqualFold(admin.Role, "super_administrador") {
+		t.Fatalf("expected reserved email role super_administrador, got %q", admin.Role)
+	}
+}
+
+func TestHandleGoogleCallbackNewEmailKeepsAdministradorRole(t *testing.T) {
+	t.Setenv("CONFIG_ENC_KEY", "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=")
+
+	original := http.DefaultClient
+	http.DefaultClient = &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		requestURL := req.URL.String()
+		if strings.Contains(requestURL, "oauth2.googleapis.com/token") {
+			return &http.Response{StatusCode: 200, Header: make(http.Header), Body: io.NopCloser(strings.NewReader(`{"access_token":"token-abc"}`))}, nil
+		}
+		if strings.Contains(requestURL, "www.googleapis.com/oauth2/v3/userinfo") {
+			body := `{"sub":"u1","name":"Otro Admin","email":"otro_admin@empresa.com","email_verified":true,"picture":"https://example.com/p.png"}`
+			return &http.Response{StatusCode: 200, Header: make(http.Header), Body: io.NopCloser(strings.NewReader(body))}, nil
+		}
+		return &http.Response{StatusCode: 404, Header: make(http.Header), Body: io.NopCloser(strings.NewReader("not found"))}, nil
+	})}
+	defer func() { http.DefaultClient = original }()
+
+	dbSuper := openTestSQLite(t, "google_callback_generic_admin.db")
+	ensureAdminAuthTestSchema(t, dbSuper)
+	dbEmpresas := openTestSQLite(t, "google_callback_generic_admin_emp.db")
+	if _, err := dbEmpresas.Exec(`CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT UNIQUE, name TEXT, role TEXT DEFAULT 'administrador', empresa_id INTEGER, fecha_creacion TEXT, fecha_actualizacion TEXT, usuario_creador TEXT, estado TEXT DEFAULT 'activo', observaciones TEXT)`); err != nil {
+		t.Fatalf("create users: %v", err)
+	}
+	if _, err := dbEmpresas.Exec(`CREATE TABLE empresas (id INTEGER PRIMARY KEY AUTOINCREMENT, empresa_id INTEGER, nombre TEXT NOT NULL, nit TEXT, tipo_id INTEGER, fecha_creacion TEXT, fecha_actualizacion TEXT, usuario_creador TEXT, estado TEXT DEFAULT 'activo', observaciones TEXT)`); err != nil {
+		t.Fatalf("create empresas: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/auth/google/callback?code=abc123", nil)
+	req.RemoteAddr = "127.0.0.1:1234"
+	rr := httptest.NewRecorder()
+	HandleGoogleCallback(dbEmpresas, dbSuper, "client-id", "client-secret", "http://localhost/callback").ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusFound {
+		t.Fatalf("expected redirect to accept, got %d body=%s", rr.Code, rr.Body.String())
+	}
+	if location := rr.Header().Get("Location"); !strings.HasPrefix(location, "/accept.html?") {
+		t.Fatalf("expected accept redirect, got %q", location)
+	}
+
+	admin, err := dbpkg.GetAdminByEmailFull(dbSuper, "otro_admin@empresa.com")
+	if err != nil {
+		t.Fatalf("reload google admin: %v", err)
+	}
+	if !strings.EqualFold(admin.Role, "administrador") {
+		t.Fatalf("expected google signup role administrador, got %q", admin.Role)
 	}
 }
 

@@ -373,7 +373,112 @@ func extractCustomerEmailFromPaymentPayload(payload map[string]interface{}) stri
 			return email
 		}
 	}
+	if data, ok := payload["data"].(map[string]interface{}); ok {
+		if email := strings.TrimSpace(fmt.Sprint(data["customer_email"])); email != "" && email != "<nil>" {
+			return email
+		}
+		if email := strings.TrimSpace(fmt.Sprint(data["email"])); email != "" && email != "<nil>" {
+			return email
+		}
+		if billing, ok := data["billing"].(map[string]interface{}); ok {
+			if email := strings.TrimSpace(fmt.Sprint(billing["email"])); email != "" && email != "<nil>" {
+				return email
+			}
+		}
+	}
 	return ""
+}
+
+func resolveLicenciaActivationRecipient(dbSuper *sql.DB, empresaID int64, payRec *dbpkg.EpaycoPaymentRecord) (string, error) {
+	if payRec == nil || !payRec.RawPayload.Valid {
+		return "", fmt.Errorf("payload del pago no disponible para notificar activacion de licencia")
+	}
+	payload := parsePaymentPayloadMap(payRec.RawPayload.String)
+	toEmail := strings.TrimSpace(extractCustomerEmailFromPaymentPayload(payload))
+	if toEmail == "" && empresaID > 0 {
+		empresa, err := dbpkg.GetEmpresaByID(dbSuper, empresaID)
+		if err == nil && empresa != nil {
+			toEmail = strings.TrimSpace(empresa.UsuarioCreador)
+		}
+	}
+	if toEmail == "" {
+		return "", fmt.Errorf("correo del cliente no disponible para notificar activacion de licencia")
+	}
+	if _, err := mail.ParseAddress(toEmail); err != nil {
+		return "", fmt.Errorf("correo del cliente invalido: %w", err)
+	}
+	return toEmail, nil
+}
+
+func epaycoActivationEmailAlreadySent(payRec *dbpkg.EpaycoPaymentRecord) bool {
+	if payRec == nil || !payRec.RawPayload.Valid {
+		return false
+	}
+	payload := parsePaymentPayloadMap(payRec.RawPayload.String)
+	if len(payload) == 0 {
+		return false
+	}
+	raw := strings.TrimSpace(fmt.Sprint(payload["licencia_activation_email_sent"]))
+	switch strings.ToLower(raw) {
+	case "1", "true", "si", "yes":
+		return true
+	default:
+		return false
+	}
+}
+
+func markEpaycoActivationEmailSent(dbSuper *sql.DB, payRec *dbpkg.EpaycoPaymentRecord, recipient, reference string) error {
+	if dbSuper == nil || payRec == nil {
+		return nil
+	}
+	status := strings.TrimSpace(payRec.Status.String)
+	if status == "" {
+		status = "APPROVED"
+	}
+	markerRawBytes, err := json.Marshal(map[string]interface{}{
+		"licencia_activation_email_sent":    true,
+		"licencia_activation_email_to":      strings.TrimSpace(recipient),
+		"licencia_activation_email_sent_at": time.Now().Format(time.RFC3339),
+		"licencia_activation_email_ref":     strings.TrimSpace(reference),
+	})
+	if err != nil {
+		return err
+	}
+	mergedPayload := mergePaymentPayloadJSON(payRec.RawPayload.String, string(markerRawBytes))
+	transactionID := strings.TrimSpace(payRec.TransactionID.String)
+	recordReference := strings.TrimSpace(payRec.Reference.String)
+	if transactionID != "" {
+		if err := dbpkg.UpdateEpaycoPaymentRecordByTransaction(dbSuper, transactionID, status, mergedPayload); err != nil {
+			return err
+		}
+	}
+	if recordReference != "" {
+		if err := dbpkg.UpdateEpaycoPaymentRecordByReference(dbSuper, recordReference, status, mergedPayload); err != nil {
+			return err
+		}
+	}
+	payRec.RawPayload = sql.NullString{String: mergedPayload, Valid: strings.TrimSpace(mergedPayload) != ""}
+	return nil
+}
+
+func trySendLicenciaActivationEmail(r *http.Request, dbSuper *sql.DB, empresaID int64, lic *dbpkg.Licencia, payRec *dbpkg.EpaycoPaymentRecord, provider, reference string) error {
+	if payRec == nil || lic == nil {
+		return nil
+	}
+	if epaycoActivationEmailAlreadySent(payRec) {
+		return nil
+	}
+	recipient, err := resolveLicenciaActivationRecipient(dbSuper, empresaID, payRec)
+	if err != nil {
+		return err
+	}
+	if err := sendLicenciaActivationEmail(r, dbSuper, empresaID, lic, payRec, provider, reference); err != nil {
+		return err
+	}
+	if err := markEpaycoActivationEmailSent(dbSuper, payRec, recipient, reference); err != nil {
+		return err
+	}
+	return nil
 }
 
 func buildLicenciaActivationMailBody(empresaNombre string, lic *dbpkg.Licencia, fechaInicio, fechaFin, provider, reference string) string {
@@ -424,19 +529,9 @@ func sendLicenciaActivationEmail(r *http.Request, dbSuper *sql.DB, empresaID int
 	if dbSuper == nil || lic == nil || payRec == nil || !payRec.RawPayload.Valid {
 		return nil
 	}
-	payload := parsePaymentPayloadMap(payRec.RawPayload.String)
-	toEmail := strings.TrimSpace(extractCustomerEmailFromPaymentPayload(payload))
-	if toEmail == "" && empresaID > 0 {
-		empresa, err := dbpkg.GetEmpresaByID(dbSuper, empresaID)
-		if err == nil && empresa != nil {
-			toEmail = strings.TrimSpace(empresa.UsuarioCreador)
-		}
-	}
-	if toEmail == "" {
-		return fmt.Errorf("correo del cliente no disponible para notificar activacion de licencia")
-	}
-	if _, err := mail.ParseAddress(toEmail); err != nil {
-		return fmt.Errorf("correo del cliente invalido: %w", err)
+	toEmail, err := resolveLicenciaActivationRecipient(dbSuper, empresaID, payRec)
+	if err != nil {
+		return err
 	}
 
 	empresaNombre := ""
@@ -2333,7 +2428,7 @@ func WompiTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 }
 
 // WompiWebhookHandler procesa notificaciones servidor-servidor de Wompi.
-func WompiWebhookHandler(dbSuper *sql.DB) http.HandlerFunc {
+func WompiWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -2400,6 +2495,7 @@ func WompiWebhookHandler(dbSuper *sql.DB) http.HandlerFunc {
 		ventaDigitalContextFound := false
 		ventaDigitalDeliverySent := false
 		ventaDigitalDeliveryStage := "not_processed"
+		ventaPublicaContextFound := false
 		if strings.TrimSpace(status) != "" {
 			foundVD, deliveredVD, deliveryStageVD, vdErr := processVentaDigitalPaymentStatusUpdate(r, dbSuper, transactionID, reference, status, string(body))
 			ventaDigitalContextFound = foundVD
@@ -2410,6 +2506,13 @@ func WompiWebhookHandler(dbSuper *sql.DB) http.HandlerFunc {
 				log.Println("warning: failed to process venta_digital webhook update:", vdErr)
 			} else {
 				ventaDigitalDeliverySent = deliveredVD
+			}
+			if len(dbEmp) > 0 && dbEmp[0] != nil {
+				foundVP, vpErr := processVentaPublicaPaymentStatusUpdate(dbEmp[0], "wompi", transactionID, reference, status, string(body))
+				ventaPublicaContextFound = foundVP
+				if vpErr != nil {
+					log.Println("warning: failed to process venta_publica webhook update:", vpErr)
+				}
 			}
 		}
 
@@ -2427,6 +2530,7 @@ func WompiWebhookHandler(dbSuper *sql.DB) http.HandlerFunc {
 			"venta_digital_context_found":  ventaDigitalContextFound,
 			"venta_digital_delivery_sent":  ventaDigitalDeliverySent,
 			"venta_digital_delivery_stage": ventaDigitalDeliveryStage,
+			"venta_publica_context_found":  ventaPublicaContextFound,
 		})
 	}
 }
@@ -2794,17 +2898,15 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 				log.Println("warning: failed to activate licencia from Epayco status:", actErr)
 			} else {
 				activated = act
-				if act {
-					lic, licErr := dbpkg.GetLicenciaByID(dbSuper, licenciaID)
-					if licErr != nil {
-						log.Println("warning: failed to reload licencia after Epayco activation:", licErr)
-					} else {
-						payRec, recErr := findEpaycoPaymentRecordByCandidates(dbSuper, []string{recordTransactionID, transactionID, originalTransactionID}, []string{recordReference, invoiceReference, reference, originalReference})
-						if recErr != nil {
-							log.Println("warning: failed to reload Epayco payment for activation email:", recErr)
-						} else if mailErr := sendLicenciaActivationEmail(r, dbSuper, empresaID, lic, payRec, "epayco", firstNonEmptyString(recordReference, invoiceReference, reference, originalReference)); mailErr != nil {
-							log.Println("warning: failed to send licencia activation email for Epayco status:", mailErr)
-						}
+				lic, licErr := dbpkg.GetLicenciaByID(dbSuper, licenciaID)
+				if licErr != nil {
+					log.Println("warning: failed to reload licencia after Epayco activation:", licErr)
+				} else {
+					payRec, recErr := findEpaycoPaymentRecordByCandidates(dbSuper, []string{recordTransactionID, transactionID, originalTransactionID}, []string{recordReference, invoiceReference, reference, originalReference})
+					if recErr != nil {
+						log.Println("warning: failed to reload Epayco payment for activation email:", recErr)
+					} else if mailErr := trySendLicenciaActivationEmail(r, dbSuper, empresaID, lic, payRec, "epayco", firstNonEmptyString(recordReference, invoiceReference, reference, originalReference)); mailErr != nil {
+						log.Println("warning: failed to send licencia activation email for Epayco status:", mailErr)
 					}
 				}
 			}
@@ -2834,7 +2936,7 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 }
 
 // EpaycoWebhookHandler procesa confirmaciones de Epayco por formulario o JSON.
-func EpaycoWebhookHandler(dbSuper *sql.DB) http.HandlerFunc {
+func EpaycoWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost && r.Method != http.MethodGet {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -2920,29 +3022,35 @@ func EpaycoWebhookHandler(dbSuper *sql.DB) http.HandlerFunc {
 		licenciaID, empresaID, hasContext := resolveEpaycoPaymentContextCandidates(dbSuper, [][2]string{{transactionID, reference}, {"", reference}, {"", invoiceReference}, {transactionID, invoiceReference}})
 
 		activated := false
+		ventaPublicaContextFound := false
 		if isApprovedPaymentStatus(status) && hasContext {
 			act, actErr := activateLicenciaByIDs(dbSuper, licenciaID, empresaID)
 			if actErr != nil {
 				log.Println("warning: failed to activate licencia from Epayco webhook:", actErr)
 			} else {
 				activated = act
-				if act {
-					lic, licErr := dbpkg.GetLicenciaByID(dbSuper, licenciaID)
-					if licErr != nil {
-						log.Println("warning: failed to reload licencia after Epayco webhook activation:", licErr)
-					} else {
-						payRec, payErr := findEpaycoPaymentRecordByCandidates(dbSuper, []string{transactionID}, []string{reference, invoiceReference})
-						if payErr != nil {
-							log.Println("warning: failed to reload Epayco payment for webhook activation email:", payErr)
-						} else if mailErr := sendLicenciaActivationEmail(r, dbSuper, empresaID, lic, payRec, "epayco", firstNonEmptyString(invoiceReference, reference)); mailErr != nil {
-							log.Println("warning: failed to send licencia activation email for Epayco webhook:", mailErr)
-						}
+				lic, licErr := dbpkg.GetLicenciaByID(dbSuper, licenciaID)
+				if licErr != nil {
+					log.Println("warning: failed to reload licencia after Epayco webhook activation:", licErr)
+				} else {
+					payRec, payErr := findEpaycoPaymentRecordByCandidates(dbSuper, []string{transactionID}, []string{reference, invoiceReference})
+					if payErr != nil {
+						log.Println("warning: failed to reload Epayco payment for webhook activation email:", payErr)
+					} else if mailErr := trySendLicenciaActivationEmail(r, dbSuper, empresaID, lic, payRec, "epayco", firstNonEmptyString(invoiceReference, reference)); mailErr != nil {
+						log.Println("warning: failed to send licencia activation email for Epayco webhook:", mailErr)
 					}
 				}
 			}
 			go func(txID, ref string, licID, empID int64) {
 				recordVendedorComisionesEpayco(dbSuper, txID, ref, licID, empID)
 			}(transactionID, firstNonEmptyString(invoiceReference, reference), licenciaID, empresaID)
+		}
+		if len(dbEmp) > 0 && dbEmp[0] != nil {
+			foundVP, vpErr := processVentaPublicaPaymentStatusUpdate(dbEmp[0], "epayco", transactionID, firstNonEmptyString(invoiceReference, reference), status, payloadToSave)
+			ventaPublicaContextFound = foundVP
+			if vpErr != nil {
+				log.Println("warning: failed to process venta_publica Epayco webhook update:", vpErr)
+			}
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -2956,6 +3064,7 @@ func EpaycoWebhookHandler(dbSuper *sql.DB) http.HandlerFunc {
 			"licencia_id":    licenciaID,
 			"empresa_id":     empresaID,
 			"activated":      activated,
+			"venta_publica_context_found": ventaPublicaContextFound,
 		})
 	}
 }

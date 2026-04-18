@@ -449,6 +449,44 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					return
 				}
 
+				if action == "resumen_descarga" {
+					snapshot, err := buildEmpresaInfoExportSnapshot(dbEmp, dbSuper, id, 3)
+					if err != nil {
+						if err == sql.ErrNoRows {
+							http.Error(w, "empresa not found", http.StatusNotFound)
+							return
+						}
+						log.Printf("GET /super/api/empresas?action=%s&id=%d resumen descarga error: %v", action, id, err)
+						http.Error(w, "failed to build empresa export summary: "+err.Error(), http.StatusInternalServerError)
+						return
+					}
+					writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "snapshot": snapshot})
+					return
+				}
+
+				if action == "exportar_informacion" {
+					format := strings.TrimSpace(q.Get("format"))
+					if format == "" {
+						http.Error(w, "format required", http.StatusBadRequest)
+						return
+					}
+					snapshot, err := buildEmpresaInfoExportSnapshot(dbEmp, dbSuper, id, 0)
+					if err != nil {
+						if err == sql.ErrNoRows {
+							http.Error(w, "empresa not found", http.StatusNotFound)
+							return
+						}
+						log.Printf("GET /super/api/empresas?action=%s&id=%d export error: %v", action, id, err)
+						http.Error(w, "failed to build empresa export: "+err.Error(), http.StatusInternalServerError)
+						return
+					}
+					if err := writeEmpresaInfoExport(w, snapshot, format); err != nil {
+						http.Error(w, err.Error(), http.StatusBadRequest)
+						return
+					}
+					return
+				}
+
 				empresa, err := dbpkg.GetEmpresaByID(dbEmp, id)
 				if err != nil {
 					if err == sql.ErrNoRows {
@@ -623,6 +661,7 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			return
 		case http.MethodDelete:
 			q := r.URL.Query()
+			action := strings.ToLower(strings.TrimSpace(q.Get("action")))
 			idStr := q.Get("id")
 			if idStr == "" {
 				http.Error(w, "id required", http.StatusBadRequest)
@@ -639,6 +678,46 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				return
 			} else if !ok {
 				http.Error(w, "empresa fuera del alcance del administrador autenticado", http.StatusForbidden)
+				return
+			}
+			if action == "eliminar_total" || action == "purge" || action == "eliminacion_total" {
+				empresa, err := dbpkg.GetEmpresaByID(dbEmp, id)
+				if err != nil {
+					if err == sql.ErrNoRows {
+						http.Error(w, "empresa not found", http.StatusNotFound)
+						return
+					}
+					log.Printf("DELETE /super/api/empresas action=%s id=%d load error: %v", action, id, err)
+					http.Error(w, "failed to query empresa: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+
+				var payload struct {
+					ConfirmacionNombre string `json:"confirmacion_nombre"`
+				}
+				if r.Body != nil {
+					defer r.Body.Close()
+					if err := json.NewDecoder(r.Body).Decode(&payload); err != nil && err != io.EOF {
+						http.Error(w, "invalid payload", http.StatusBadRequest)
+						return
+					}
+				}
+				if strings.TrimSpace(payload.ConfirmacionNombre) == "" {
+					http.Error(w, "confirmacion_nombre required", http.StatusBadRequest)
+					return
+				}
+				if !strings.EqualFold(strings.TrimSpace(payload.ConfirmacionNombre), strings.TrimSpace(empresa.Nombre)) {
+					http.Error(w, "la confirmacion no coincide con el nombre de la empresa", http.StatusConflict)
+					return
+				}
+
+				result, err := dbpkg.DeleteEmpresaCascade(dbEmp, dbSuper, id)
+				if err != nil {
+					log.Printf("DELETE /super/api/empresas action=%s id=%d cascade error: %v", action, id, err)
+					http.Error(w, "failed to purge empresa: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "result": result})
 				return
 			}
 			if err := dbpkg.DeleteEmpresa(dbEmp, id); err != nil {

@@ -1,5 +1,67 @@
 // menu.js - inyecta y gestiona el menú flotante centralizado
 (function(){
+  function initAdminMobileSidebarToggle(){
+    var sidebars = document.querySelectorAll ? document.querySelectorAll('.admin-sidebar.admin-sidebar-mobile-collapsible') : [];
+    if (!sidebars || !sidebars.length) return;
+
+    sidebars.forEach(function(sidebar){
+      var nav = sidebar.querySelector('.nav');
+      var toggleBtn = sidebar.querySelector('.admin-menu-visibility-toggle');
+      if (!nav || !toggleBtn) return;
+
+      var mq = null;
+      try {
+        mq = window.matchMedia('(max-width: 640px)');
+      } catch (e) {
+        mq = null;
+      }
+
+      var showLabel = toggleBtn.getAttribute('data-show-label') || 'Mostrar menú';
+      var hideLabel = toggleBtn.getAttribute('data-hide-label') || 'Ocultar menú';
+      var label = toggleBtn.querySelector('.admin-menu-visibility-label');
+
+      function isMobile(){
+        return !!(mq && mq.matches);
+      }
+
+      function applySidebarState(collapsed){
+        var shouldCollapse = !!collapsed && isMobile();
+        sidebar.classList.toggle('is-collapsed', shouldCollapse);
+        toggleBtn.setAttribute('aria-expanded', shouldCollapse ? 'false' : 'true');
+        if (label) {
+          label.textContent = shouldCollapse ? showLabel : hideLabel;
+        }
+      }
+
+      function resetForViewport(){
+        applySidebarState(false);
+      }
+
+      toggleBtn.addEventListener('click', function(){
+        if (!isMobile()) return;
+        applySidebarState(!sidebar.classList.contains('is-collapsed'));
+      });
+
+      nav.addEventListener('click', function(event){
+        var target = event.target && event.target.closest ? event.target.closest('a') : null;
+        if (!target || !isMobile()) return;
+        window.setTimeout(function(){
+          applySidebarState(true);
+        }, 0);
+      });
+
+      if (mq) {
+        if (typeof mq.addEventListener === 'function') {
+          mq.addEventListener('change', resetForViewport);
+        } else if (typeof mq.addListener === 'function') {
+          mq.addListener(resetForViewport);
+        }
+      }
+
+      resetForViewport();
+    });
+  }
+
   function injectMenu(){
     try {
       // Solo inyectar en la ventana top-level (evitar iframes/subframes)
@@ -239,5 +301,5 @@
     return;
   }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ injectMenu(); initAcceptModalFromQuery(); }); else { injectMenu(); initAcceptModalFromQuery(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ injectMenu(); initAcceptModalFromQuery(); initAdminMobileSidebarToggle(); }); else { injectMenu(); initAcceptModalFromQuery(); initAdminMobileSidebarToggle(); }
 })();

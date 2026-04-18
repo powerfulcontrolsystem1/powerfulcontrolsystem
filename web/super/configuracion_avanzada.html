@@ -986,17 +986,18 @@
 
       async function testGmail(){
         const out = document.getElementById('gmailTestResult');
-        if (out) out.innerText = 'Probando Gmail...';
+        if (out) out.innerText = 'Enviando correo de prueba a powerfulcontrolsystem@gmail.com...';
         try {
-          const res = await fetch('/super/api/config/gmail', { method: 'GET', credentials: 'same-origin' });
-          if (!res.ok) { if (out) out.innerText = 'Error al leer configuración Gmail: ' + res.status; return; }
-          const cfg = await res.json();
-          const issues = [];
-          if (!cfg.smtp_email_set) issues.push('No hay correo remitente configurado');
-          if (!cfg.smtp_app_password_set) issues.push('No hay contraseña de aplicación guardada');
-          if (typeof cfg.encryption_available !== 'undefined' && !cfg.encryption_available) issues.push('Cifrado no disponible en servidor');
+          const res = await fetch('/super/api/config/gmail?action=test', { method: 'POST', credentials: 'same-origin' });
+          const raw = await res.text();
+          let body = null;
+          try { body = raw ? JSON.parse(raw) : null; } catch (err) { body = null; }
+          if (!res.ok) {
+            if (out) out.innerText = 'Error enviando prueba Gmail: ' + ((body && body.error) || raw || res.status);
+            return;
+          }
           if (!out) return;
-          if (!issues.length) out.innerText = 'OK: Configuración Gmail presente (no se envió correo de prueba).'; else out.innerText = 'Aviso: ' + issues.join('; ');
+          out.innerText = (body && body.message) || 'OK: correo de prueba enviado a powerfulcontrolsystem@gmail.com.';
         } catch (err) {
           if (out) out.innerText = 'Error: ' + (err.message || err);
         }
