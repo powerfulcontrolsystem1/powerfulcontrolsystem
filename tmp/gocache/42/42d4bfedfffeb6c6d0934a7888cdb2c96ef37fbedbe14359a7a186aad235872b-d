@@ -1,0 +1,5 @@
+./arith_decl.go
+./fermat.go
+./fft.go
+./scan.go
+./arith_amd64.s
