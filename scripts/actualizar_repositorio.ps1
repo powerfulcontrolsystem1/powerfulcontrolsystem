@@ -86,7 +86,8 @@ function Invoke-PushOrigin {
     $args += @('origin', 'HEAD')
 
     Write-Info ("[$Context] Ejecutando: git {0}" -f ($args -join ' '))
-    $output = & git @args 2>&1
+    # Convertir a cadena para evitar NativeCommandError en PowerShell al leer stderr
+    $output = (& git @args 2>&1) | ForEach-Object { $_.ToString() }
     $code = $LASTEXITCODE
 
     return [pscustomobject]@{

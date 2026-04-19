@@ -94,6 +94,7 @@
         '<a class="fm-item" href="/index.html">Portal</a>' +
         '<a class="fm-item" href="/venta_digital.html">Venta digital</a>' +
         '<a class="fm-item" href="/Juegos/n64/index.html">Emulador N64</a>' +
+        '<a class="fm-item" href="/menu_juegos.html">Menú Juegos</a>' +
         '<a class="fm-item" href="/configuracion_de_la_cuenta.html">Configuración</a>' +
         '<div class="theme-selector-item" id="themeToggleWrapper" style="position:relative;">' +
           '<button id="themeToggle" class="fm-item theme-toggle-btn" type="button" aria-expanded="false" aria-haspopup="true" aria-label="Cambiar apariencia">Apariencia</button>' +

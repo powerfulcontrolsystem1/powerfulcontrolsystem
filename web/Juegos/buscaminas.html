@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscaminas</title>
+    <link rel="stylesheet" href="../estilos.css">
+    <style>
+        body { margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; background: #222; color: #fff; font-family: sans-serif; }
+        #menu, #game-container { margin-top: 50px; text-align: center; }
+        .btn { padding: 15px 30px; margin: 10px; font-size: 18px; cursor: pointer; background: #3498db; color: white; border: none; border-radius: 5px; }
+        .btn:hover { background: #2980b9; }
+        canvas { background: #cfcfcf; border: 4px solid #777; cursor: crosshair; }
+        #instructions { display: none; margin: 20px; max-width: 600px; background: #333; padding: 20px; border-radius: 8px; text-align: left; }
+    </style>
+</head>
+<body>
+    <div id="menu">
+        <h1>Buscaminas Clásico</h1>
+        <button class="btn" id="btn-play">Jugar</button>
+        <button class="btn" id="btn-inst">Instrucciones</button>
+        <div id="instructions">
+            <p><strong>Instrucciones:</strong></p>
+            <ul>
+                <li>Haz clic izquierdo para descubrir una casilla.</li>
+                <li>Haz clic derecho para marcar una posible mina con una bandera.</li>
+                <li>Si descubres una mina, pierdes.</li>
+                <li>Usa las flechas para moverte, Espacio para destapar, F para poner/quitar bandera.</li>
+            </ul>
+        </div>
+    </div>
+    <div id="game-container" style="display:none;">
+        <h3>Buscaminas - Puntos: <span id="score">0</span> | Max: <span id="level">1</span></h3>
+        <canvas id="gameCanvas" width="400" height="400"></canvas>
+    </div>
+
+    <script src="../menu.js"></script>
+    <script>
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playBeep(freq, type, duration) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type; osc.frequency.value = freq;
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start();
+            gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        document.getElementById('btn-inst').addEventListener('click', () => {
+            const inst = document.getElementById('instructions');
+            inst.style.display = inst.style.display === 'block' ? 'none' : 'block';
+            playBeep(400, 'sine', 0.1);
+        });
+
+        document.getElementById('btn-play').addEventListener('click', () => {
+            document.getElementById('menu').style.display = 'none';
+            document.getElementById('game-container').style.display = 'block';
+            playBeep(600, 'square', 0.2);
+            startGame();
+        });
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const cols = 10, rows = 10;
+        const size = 40;
+        let grid = [], score = 0, level = 1, gameOver = false, minesCount = 10, revealedCount = 0;
+        let cursor = { c: 5, r: 5 }; // teclado
+
+        function startGame() {
+            grid = []; score = 0; level = 1; gameOver = false; minesCount = 10; revealedCount = 0;
+            document.getElementById('score').innerText = score;
+            document.getElementById('level').innerText = level;
+            
+            for(let i = 0; i < cols; i++){
+                grid[i] = [];
+                for(let j = 0; j < rows; j++){
+                    grid[i][j] = {x:i, y:j, mine:false, revealed:false, flag:false, neighborCount:0};
+                }
+            }
+            
+            // Place mines
+            let placed = 0;
+            while(placed < minesCount){
+                let i = Math.floor(Math.random() * cols);
+                let j = Math.floor(Math.random() * rows);
+                if(!grid[i][j].mine){ grid[i][j].mine = true; placed++; }
+            }
+            
+            // Calculate neighbors
+            for(let i = 0; i < cols; i++){
+                for(let j = 0; j < rows; j++){
+                    let count = 0;
+                    for(let xoff = -1; xoff <= 1; xoff++){
+                        for(let yoff = -1; yoff <= 1; yoff++){
+                            let ni = i + xoff, nj = j + yoff;
+                            if(ni > -1 && ni < cols && nj > -1 && nj < rows){
+                                if(grid[ni][nj].mine) count++;
+                            }
+                        }
+                    }
+                    grid[i][j].neighborCount = count;
+                }
+            }
+            draw();
+        }
+
+        function draw() {
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            for(let i=0; i<cols; i++){
+                for(let j=0; j<rows; j++){
+                    let cell = grid[i][j];
+                    ctx.strokeStyle = '#333';
+                    ctx.strokeRect(i*size, j*size, size, size);
+                    if(cell.revealed){
+                        ctx.fillStyle = '#eee';
+                        ctx.fillRect(i*size, j*size, size, size);
+                        if(cell.mine){
+                            ctx.fillStyle = 'black';
+                            ctx.beginPath(); ctx.arc(i*size+size/2, j*size+size/2, size*0.3, 0, Math.PI*2); ctx.fill();
+                        } else if(cell.neighborCount > 0){
+                            ctx.fillStyle = ['blue','green','red','purple','maroon','turquoise','black','gray'][cell.neighborCount-1];
+                            ctx.font = '20px Arial';
+                            ctx.fillText(cell.neighborCount, i*size+14, j*size+28);
+                        }
+                    } else {
+                        ctx.fillStyle = '#aaa';
+                        ctx.fillRect(i*size, j*size, size, size);
+                        if(cell.flag){
+                            ctx.fillStyle = 'red';
+                            ctx.fillRect(i*size+15, j*size+10, 10, 20);
+                        }
+                    }
+                    ctx.strokeRect(i*size, j*size, size, size);
+                }
+            }
+            // Draw Cursor
+            if(!gameOver) {
+                ctx.strokeStyle = 'lime';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(cursor.c*size+2, cursor.r*size+2, size-4, size-4);
+                ctx.lineWidth = 1;
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if(gameOver) return;
+            if(e.key === 'ArrowLeft' && cursor.c > 0) cursor.c--;
+            if(e.key === 'ArrowRight' && cursor.c < cols-1) cursor.c++;
+            if(e.key === 'ArrowUp' && cursor.r > 0) cursor.r--;
+            if(e.key === 'ArrowDown' && cursor.r < rows-1) cursor.r++;
+            
+            if(e.key === ' ' || e.key === 'Spacebar' || e.key === 'Enter') {
+                if(!grid[cursor.c][cursor.r].flag && !grid[cursor.c][cursor.r].revealed){
+                    reveal(cursor.c, cursor.r);
+                    checkWin();
+                }
+            }
+            if(e.key === 'f' || e.key === 'F') {
+                if(!grid[cursor.c][cursor.r].revealed){
+                    grid[cursor.c][cursor.r].flag = !grid[cursor.c][cursor.r].flag;
+                    playBeep(300, 'triangle', 0.1);
+                }
+            }
+            draw();
+        });
+
+        canvas.addEventListener('mousedown', (e) => {
+            if(gameOver) return;
+            const rect = canvas.getBoundingClientRect();
+            const i = Math.floor((e.clientX - rect.left)/size);
+            const j = Math.floor((e.clientY - rect.top)/size);
+            if(e.button === 2){
+                // Right click
+                if(!grid[i][j].revealed){
+                    grid[i][j].flag = !grid[i][j].flag;
+                    playBeep(300, 'triangle', 0.1);
+                    draw();
+                }
+            } else if(e.button === 0){
+                // Left click
+                if(!grid[i][j].flag && !grid[i][j].revealed){
+                    reveal(i, j);
+                    draw();
+                    checkWin();
+                }
+            }
+        });
+        canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+        function reveal(i, j){
+            if(i<0 || i>=cols || j<0 || j>=rows || grid[i][j].revealed || grid[i][j].flag) return;
+            grid[i][j].revealed = true;
+            revealedCount++;
+            score += 10;
+            document.getElementById('score').innerText = score;
+            
+            if(grid[i][j].mine){
+                playBeep(150, 'sawtooth', 1);
+                gameOver = true;
+                revealAll();
+                setTimeout(endGameProcess, 500);
+            } else {
+                playBeep(800, 'sine', 0.05);
+                if(grid[i][j].neighborCount === 0){
+                    for(let xoff=-1; xoff<=1; xoff++){
+                        for(let yoff=-1; yoff<=1; yoff++){
+                            reveal(i+xoff, j+yoff);
+                        }
+                    }
+                }
+            }
+        }
+
+        function checkWin(){
+            if(revealedCount === cols*rows - minesCount && !gameOver){
+                gameOver = true;
+                playBeep(1200, 'square', 0.5);
+                score += 1000;
+                draw();
+                setTimeout(endGameProcess, 500);
+            }
+        }
+
+        function revealAll(){
+            for(let i=0; i<cols; i++){
+                for(let j=0; j<rows; j++){
+                    grid[i][j].revealed = true;
+                }
+            }
+            draw();
+        }
+
+        function endGameProcess() {
+            let name = prompt("Juego Terminado. Puntaje: " + score + "\nIngresa tu nombre:");
+            if(name){
+                fetch('/api/public/juegos/records', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ juego: "Buscaminas", nombre_jugador: name, puntaje: score, nivel: level })
+                }).catch(console.error);
+            }
+            document.getElementById('menu').style.display = 'block';
+            document.getElementById('game-container').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

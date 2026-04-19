@@ -1,4 +1,4 @@
-package main
+﻿package main
 
 import (
 	"context"
@@ -380,7 +380,7 @@ func readConfigValueFromDB(dbConn *sql.DB, keys []string) (string, string, error
 		if enc {
 			dec, derr := utils.DecryptString(clean)
 			if derr != nil {
-				log.Printf("warning: no se pudo descifrar la configuración %s: %v", key, derr)
+				log.Printf("warning: no se pudo descifrar la configuraciÃ³n %s: %v", key, derr)
 				continue
 			}
 			clean = strings.TrimSpace(dec)
@@ -431,7 +431,7 @@ func loadGoogleOAuthFromDB(dbConn *sql.DB) {
 		log.Printf("warning: no se pudo leer GOOGLE_REDIRECT_URL desde DB: %v", err)
 	}
 
-	// Prioridad: variables de entorno > configuración en DB.
+	// Prioridad: variables de entorno > configuraciÃ³n en DB.
 	// La DB solo completa faltantes para evitar sobreescrituras inesperadas en VPS.
 	if clientID == "" && dbClientID != "" {
 		clientID = dbClientID
@@ -601,7 +601,7 @@ func main() {
 			log.Fatalf("failed to create users table in empresas db: %v", err)
 		}
 
-		// Asegurar esquema mínimo de users para gestión de usuarios por empresa y confirmación por correo.
+		// Asegurar esquema mÃ­nimo de users para gestiÃ³n de usuarios por empresa y confirmaciÃ³n por correo.
 		ensureUsersSchema := func(db *sql.DB) {
 			rows, err := db.Query("PRAGMA table_info(users);")
 			if err != nil {
@@ -674,7 +674,7 @@ func main() {
 			log.Fatalf("failed to create empresas table in empresas db: %v", err)
 		}
 
-		// Asegurar esquema mínimo de la tabla empresas (migraciones simples)
+		// Asegurar esquema mÃ­nimo de la tabla empresas (migraciones simples)
 		ensureEmpresasSchema := func(db *sql.DB) {
 			rows, err := db.Query("PRAGMA table_info(empresas);")
 			if err != nil {
@@ -817,7 +817,7 @@ func main() {
 		if err := dbpkg.EnsureEmpresaSoporteRemotoSchema(dbEmpresas); err != nil {
 			log.Fatalf("failed to ensure soporte remoto schema in empresas db: %v", err)
 		}
-		// Asegurar esquema para módulo de sensores de puertas (Raspberry Pi)
+		// Asegurar esquema para mÃ³dulo de sensores de puertas (Raspberry Pi)
 		if err := dbpkg.EnsureEmpresaSensorPuertasSchema(dbEmpresas); err != nil {
 			log.Fatalf("failed to ensure sensor_puertas schema in empresas db: %v", err)
 		}
@@ -935,7 +935,7 @@ func main() {
 		if err := dbpkg.RegisterSchemaMigration(dbEmpresas, "empresas", "2026-04-18-032-configuracion-general-productos", "configuracion general por empresa para productos y pedidos con persistencia real en backend"); err != nil {
 			log.Fatalf("failed to register configuracion general productos schema migration in empresas db: %v", err)
 		}
-		// Crear tipos_de_empresas en la base de datos de superadministrador (ubicación centralizada)
+		// Crear tipos_de_empresas en la base de datos de superadministrador (ubicaciÃ³n centralizada)
 		createTiposSuper := `CREATE TABLE IF NOT EXISTS tipos_de_empresas (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		nombre TEXT NOT NULL UNIQUE,
@@ -1045,7 +1045,7 @@ func main() {
 			log.Fatalf("failed to create licencias table in super db: %v", err)
 		}
 
-		// Asegurar esquema mínimo de la tabla licencias (migraciones simples)
+		// Asegurar esquema mÃ­nimo de la tabla licencias (migraciones simples)
 		ensureLicenciasSchema := func(db *sql.DB) {
 			// Obtener columnas actuales
 			rows, err := db.Query("PRAGMA table_info(licencias);")
@@ -1303,7 +1303,7 @@ func main() {
 			addIfMissing("fecha_creacion TEXT DEFAULT (datetime('now','localtime'))", "fecha_creacion")
 		}
 		ensureSesionesSchema(dbSuper)
-		// Tabla para asesores (registro básico de asesores/comisionistas)
+		// Tabla para asesores (registro bÃ¡sico de asesores/comisionistas)
 		createAsesores := `CREATE TABLE IF NOT EXISTS asesores (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		email TEXT,
@@ -1357,7 +1357,7 @@ func main() {
 		}
 		ensureAsesoresSchema(dbSuper)
 
-		// Tabla para planes de asesor comercial (configuración de comisiones)
+		// Tabla para planes de asesor comercial (configuraciÃ³n de comisiones)
 		createAsesorComercial := `CREATE TABLE IF NOT EXISTS asesor_comercial (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		asesor_id TEXT,
@@ -1516,7 +1516,7 @@ func main() {
 	}
 	utils.ConfigureErrorMonitor(dbSuper, backendDir)
 
-	// Inicializar tabla de métricas y arrancar collector periódico
+	// Inicializar tabla de mÃ©tricas y arrancar collector periÃ³dico
 	if err := dbpkg.InitMetricsTable(dbSuper); err != nil {
 		log.Printf("warning: failed to init metrics table: %v", err)
 		utils.ReportProcessError("metrics.collector", "metrics_schema_init", "No se pudo inicializar la tabla de metricas", err, utils.ErrorLevelError, nil)
@@ -1547,21 +1547,21 @@ func main() {
 	}
 
 	http.HandleFunc("/auth/google/login", handlers.HandleGoogleLogin(clientID, redirectURL))
-	// Pasar la conexión de la base `empresas` al callback para persistir usuarios y empresas
-	// Pasar tanto la conexión de empresas como la de superadministrador al callback
+	// Pasar la conexiÃ³n de la base `empresas` al callback para persistir usuarios y empresas
+	// Pasar tanto la conexiÃ³n de empresas como la de superadministrador al callback
 	http.HandleFunc("/auth/google/callback", handlers.HandleGoogleCallback(dbEmpresas, dbSuper, clientID, clientSecret, redirectURL))
 
-	// Endpoint que expone configuración pública simple en JS.
-	// Nota: reCAPTCHA eliminado; mantenemos la ruta para compatibilidad y exponemos valores vacíos.
+	// Endpoint que expone configuraciÃ³n pÃºblica simple en JS.
+	// Nota: reCAPTCHA eliminado; mantenemos la ruta para compatibilidad y exponemos valores vacÃ­os.
 	http.HandleFunc("/config.js", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/javascript")
 		fmt.Fprintf(w, "window.RECAPTCHA_SITE_KEY = %q; window.RECAPTCHA_DEV_BYPASS = %t;", "", false)
 	})
 
-	// Endpoint para procesar la aceptación del contrato desde la página /accept.html
+	// Endpoint para procesar la aceptaciÃ³n del contrato desde la pÃ¡gina /accept.html
 	http.HandleFunc("/accept/complete", handlers.AcceptCompleteHandler(dbSuper))
 
-	// Endpoints para administración y auditoría (listar administradores y sesiones)
+	// Endpoints para administraciÃ³n y auditorÃ­a (listar administradores y sesiones)
 	http.HandleFunc("/super/administradores", handlers.ListAdministradoresHandler(dbSuper))
 	http.HandleFunc("/super/sesiones", handlers.ListSesionesHandler(dbSuper))
 
@@ -1572,14 +1572,14 @@ func main() {
 	http.HandleFunc("/super/api/tipos_de_usuario", handlers.TiposDeUsuarioHandler(dbSuper))
 	// Endpoint CRUD para empresas (guardadas en empresas.db)
 	http.HandleFunc("/super/api/empresas", handlers.EmpresasHandler(dbEmpresas, dbSuper))
-	// Endpoints para gestión de vendedores (vendedor_de_licencia) y sus planes
+	// Endpoints para gestiÃ³n de vendedores (vendedor_de_licencia) y sus planes
 	http.HandleFunc("/super/api/asesores", handlers.AsesoresHandler(dbSuper))
 	http.HandleFunc("/super/api/vendedores", handlers.AsesoresHandler(dbSuper))
 	http.HandleFunc("/super/api/asesor_comercial", handlers.AsesorComercialHandler(dbSuper))
 	http.HandleFunc("/super/api/vendedor_de_licencia", handlers.AsesorComercialHandler(dbSuper))
 	http.HandleFunc("/super/api/vendedor_config", handlers.VendedorConfigHandler(dbSuper))
 	http.HandleFunc("/super/api/soporte_remoto", handlers.SuperSoporteRemotoHandler(dbEmpresas))
-	// Módulo de productos por empresa (empresas.db)
+	// MÃ³dulo de productos por empresa (empresas.db)
 	http.HandleFunc("/api/empresa/bodegas", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaBodegasHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/categorias_productos", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaCategoriasProductosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/productos", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaProductosHandler(dbEmpresas)))
@@ -1604,7 +1604,7 @@ func main() {
 	http.HandleFunc("/api/empresa/compras/plan_reposicion/emitir_orden", handlers.WithEmpresaComprasPermissions(dbEmpresas, dbSuper, handlers.EmpresaComprasPlanReposicionEmitirOrdenHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/compras/plan_reposicion/actualizar_estado", handlers.WithEmpresaComprasPermissions(dbEmpresas, dbSuper, handlers.EmpresaComprasPlanReposicionActualizarEstadoHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/compras/documentos", handlers.WithEmpresaComprasPermissions(dbEmpresas, dbSuper, handlers.EmpresaComprasDocumentosHandler(dbEmpresas)))
-	http.HandleFunc("/api/empresa/proveedores", handlers.WithEmpresaComprasPermissions(dbEmpresas, dbSuper, handlers.EmpresaProveedoresHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/proveedores", handlers.WithEmpresaComprasPermissions(dbEmpresas, dbSuper, handlers.EmpresaNewProveedoresHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/servicios", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaServiciosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/usuarios/login", handlers.WithEmpresaPublicScope(handlers.EmpresaUsuarioLoginHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/usuarios/establecer_password", handlers.WithEmpresaPublicScope(handlers.EmpresaUsuarioSetPasswordHandler(dbEmpresas, dbSuper)))
@@ -1662,23 +1662,23 @@ func main() {
 	http.HandleFunc("/api/empresa/auditoria/eventos", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaAuditoriaEventosHandler(dbEmpresas)))
 	handlers.RegisterEmpresaChatIARoutes(dbEmpresas, dbSuper)
 	handlers.RegisterEmpresaModulosFaltantesRoutes(dbEmpresas, dbSuper)
-	// Rutas del módulo sensor de puertas: configuración protegida y endpoint público para heartbeats
+	// Rutas del mÃ³dulo sensor de puertas: configuraciÃ³n protegida y endpoint pÃºblico para heartbeats
 	http.HandleFunc("/api/empresa/sensor_puertas", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaSensorConfigHandler(dbEmpresas)))
 	http.HandleFunc("/api/public/sensor_puertas", handlers.PublicSensorPuertasHandler(dbEmpresas))
 	http.HandleFunc("/api/empresa/sensor_puertas/messages", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaSensorMessagesHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/roles_de_usuario", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaRolesDeUsuarioHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/permisos_contexto", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaPermisosContextoHandler(dbSuper)))
-	// Endpoint para obtener admin actual desde la cookie de sesión
+	// Endpoint para obtener admin actual desde la cookie de sesiÃ³n
 	http.HandleFunc("/me", handlers.MeHandler(dbSuper))
 	// Endpoint para obtener perfil/cuenta enriquecida (admin + usuario de empresa)
 	http.HandleFunc("/api/account", handlers.AccountHandler(dbEmpresas, dbSuper))
-	// Endpoints para actualizar perfil y cambiar contraseña (usuario autenticado)
+	// Endpoints para actualizar perfil y cambiar contraseÃ±a (usuario autenticado)
 	http.HandleFunc("/api/account/update_profile", handlers.AccountUpdateProfileHandler(dbEmpresas, dbSuper))
 	http.HandleFunc("/api/account/change_password", handlers.AccountChangePasswordHandler(dbEmpresas, dbSuper))
 	http.HandleFunc("/api/account/set_google_password", handlers.AccountSetGooglePasswordHandler(dbEmpresas, dbSuper))
 	// Endpoint CRUD para administradores (API)
 	http.HandleFunc("/super/api/administradores", handlers.AdministradoresHandler(dbSuper))
-	// Endpoints adicionales para flujo de autenticación de administradores (registro, login, confirmación, recuperación)
+	// Endpoints adicionales para flujo de autenticaciÃ³n de administradores (registro, login, confirmaciÃ³n, recuperaciÃ³n)
 	http.HandleFunc("/super/api/administradores/register", handlers.AdminRegisterHandler(dbSuper))
 	http.HandleFunc("/super/api/administradores/login", handlers.AdminLoginHandler(dbSuper))
 	http.HandleFunc("/auth/confirmar_admin", handlers.ConfirmarAdminHandler(dbSuper))
@@ -1715,21 +1715,21 @@ func main() {
 	http.HandleFunc("/super/api/errores", handlers.SuperErroresSistemaHandler(dbSuper))
 	// Endpoint super para administrar tarjetas dinamicas de la pagina principal (index)
 	http.HandleFunc("/super/api/pagina_principal", handlers.SuperPaginaPrincipalHandler(dbSuper, webDir))
-	// Endpoints Wompi (Nequi): crear transacción y consultar estado
+	// Endpoints Wompi (Nequi): crear transacciÃ³n y consultar estado
 	http.HandleFunc("/wompi/terms", handlers.WompiTermsHandler(dbSuper))
 	http.HandleFunc("/wompi/create_transaction_nequi", handlers.WompiCreateNequiTransactionHandler(dbSuper))
 	http.HandleFunc("/wompi/transaction_status", handlers.WompiTransactionStatusHandler(dbSuper))
 	http.HandleFunc("/wompi/webhook", handlers.WompiWebhookHandler(dbSuper, dbEmpresas))
-	// Endpoints Epayco: crear transacción y consultar estado
+	// Endpoints Epayco: crear transacciÃ³n y consultar estado
 	http.HandleFunc("/epayco/create_transaction", handlers.EpaycoCreateTransactionHandler(dbSuper))
 	http.HandleFunc("/epayco/transaction_status", handlers.EpaycoTransactionStatusHandler(dbSuper))
 	http.HandleFunc("/epayco/webhook", handlers.EpaycoWebhookHandler(dbSuper, dbEmpresas))
-	// Activación manual de licencia sin pago (uso interno de avance/prototipo)
+	// ActivaciÃ³n manual de licencia sin pago (uso interno de avance/prototipo)
 	http.HandleFunc("/licencias/activar_sin_pago", handlers.ActivateLicenciaSinPagoHandler(dbSuper))
-	// Confirmación de correo para usuarios de empresa.
+	// ConfirmaciÃ³n de correo para usuarios de empresa.
 	http.HandleFunc("/auth/confirmar_correo", handlers.ConfirmarCorreoUsuarioHandler(dbEmpresas))
 
-	// Endpoints de métricas (actual y histórico)
+	// Endpoints de mÃ©tricas (actual y histÃ³rico)
 	http.HandleFunc("/super/api/metrics/current", handlers.MetricsCurrentHandler(dbSuper))
 	http.HandleFunc("/super/api/metrics/history", handlers.MetricsHistoryHandler(dbSuper))
 	http.HandleFunc("/super/api/reportes_globales", handlers.SuperReportesGlobalesHandler(dbEmpresas, dbSuper))
@@ -1745,7 +1745,7 @@ func main() {
 	http.HandleFunc("/super/api/security/vps/report", handlers.SecurityVPSReportHandler(dbSuper, vpsSecurityService))
 	http.HandleFunc("/super/api/security/vps/compare", handlers.SecurityVPSCompareHandler(dbSuper, vpsSecurityService))
 
-	// Logout handler: limpiar cookie de sesión (si existe) y redirigir a la página de login
+	// Logout handler: limpiar cookie de sesiÃ³n (si existe) y redirigir a la pÃ¡gina de login
 	http.HandleFunc("/auth/logout", func(w http.ResponseWriter, r *http.Request) {
 		token := ""
 		if c, err := r.Cookie("session_token"); err == nil {
@@ -1781,7 +1781,7 @@ func main() {
 	// Servir assets centralizados (CSS, JS)
 	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(webDir))))
 
-	// Servir páginas estáticas desde la carpeta `web` detectada
+	// Servir pÃ¡ginas estÃ¡ticas desde la carpeta `web` detectada
 	// Verificar existencia de index.html y loguear la ruta usada
 	indexPath := filepath.Join(webDir, "index.html")
 	if _, err := os.Stat(indexPath); os.IsNotExist(err) {
@@ -1840,7 +1840,7 @@ func main() {
 	// Wrap DefaultServeMux with authentication, JSON error normalization and logging middleware
 	handler := utils.LoggingMiddleware(utils.CanonicalPublicHostMiddleware(utils.JSONErrorMiddleware(utils.RecoveryMiddleware(utils.AuthMiddleware(dbSuper, http.DefaultServeMux)))))
 
-	// Respetar la variable de entorno PORT si está definida; por defecto usar 8080
+	// Respetar la variable de entorno PORT si estÃ¡ definida; por defecto usar 8080
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
@@ -1893,3 +1893,5 @@ func main() {
 		markServerStopped("apagado_controlado")
 	}
 }
+
+

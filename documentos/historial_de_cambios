@@ -1,3 +1,19 @@
+- 2026-04-19: Se eliminaron p√°ginas hu√©rfanas en frontend al no tener referencias activas.
+    - Archivos modificados:
+        - web/administrar_empresa/bodegas.html (eliminado)
+        - web/administrar_empresa/productos/bodegas.html (eliminado)
+        - web/administrar_empresa/sensor_puertas_mensajes.html (eliminado)
+        - web/administrar_empresa/ventas_simple.html (eliminado)
+        - web/super/activar_asesor.html (eliminado)
+        - web/super/asesor_comercial.html (eliminado)
+        - web/super/vendedor_config_avanzado.html (eliminado)
+        - web/ultimas_mejoras.html (eliminado)
+        - documentos/descripcion_de_archivos
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripci√≥n: Eliminaci√≥n de 8 p√°ginas HTML que ya no se utilizaban ni estaban referenciadas por ning√∫n m√≥dulo o enlace, reduciendo peso y redundancias en el codebase.
+    - Verificaci√≥n: Se valid√≥ mediante busquedas regex la inexistencia de referencias antes de su eliminaci√≥n.
+
 - 2026-04-19: Portal p√∫blico renueva la landing Explorar oferta y reutiliza las tarjetas del index
     - Archivos modificados:
         - web/descripcion_de_los_sistemas.ht
@@ -13018,3 +13034,12 @@ Archivos modificados:
 - web/menu.js
 - web/super/chat_con_ia_global.html
 - web/super/configuracion_avanzada.html
+\r\n- 2026-04-19 (agente_backend_db): Se agregaron los archivos \ackend/db/super_juegos.go\ y \ackend/handlers/super_juegos.go\, los cuales permiten interactuar con una tabla \super_juegos_records\ dentro de la BD del superadministrador. Se expusieron los endpoints p˙blicos \/api/public/juegos/records\ (GET/POST) permitiendo listar el top 10 y jugar como 'P˙blico' o desde una empresa. Se agregÛ el cargador de esquema en \main.go\.
+
+
+[2026-04-19] Agente Go: Se independizo el modulo de Compras en un menu principal (compras_menu.html). Se aÒadio subpagina Historial de Productos (historial_productos.html) para auditoria de precios en el men˙ de productos (administrar_productos_menu.html). El backend para compras, preveedores, bodegas e historial de producto ya estaba implementado en db/productos.go y db/compras.go.
+
+[2026-04-19] Agente Go: Se centraron los textos principales del header/hero en la p·gina web/index.html ('Plataforma SaaS POS Multiempresa' y subtitulo relacionado), y se corrigieron los caracteres especiales.
+
+[2026-04-19] Agente Go: Creacion y conexion del modelo de base de datos 'Compras y Proveedores' (erp_compras) en backend/db/compras_y_proveedores.go para soportar ordenes de compra e ingreso de proveedores en cumplimiento con estandar ERP multiempresa.
+[19/04/2026] Se agregaron los handlers de EmpresaNewProveedoresHandler para la gestiÛn de compras y adquisiciones (ERP). Archivos creados: backend/db/compras_y_proveedores.go, backend/handlers/erp_compras_proveedores.go, modificado backend/main.go

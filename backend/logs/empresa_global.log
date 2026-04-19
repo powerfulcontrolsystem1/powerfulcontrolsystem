@@ -5117,3 +5117,27 @@
 2026-04-19T01:54:08-05:00 [INFO] req_id=req-1776581648635979400-3f672d149527 event=request_start method=GET path=/super/api/empresas ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
 2026-04-19T01:54:19-05:00 [WARNING] req_id=req-1776581648635979400-3f672d149527 event=api_error method=GET path=/super/api/empresas status=401 error="unauthorized"
 2026-04-19T01:54:19-05:00 [WARNING] req_id=req-1776581648635979400-3f672d149527 event=request_end method=GET path=/super/api/empresas status=401 dur_ms=11039
+2026-04-19T15:14:19-05:00 [INFO] req_id=req-1776629659466236100-0ce6a4da4b36 event=request_start method=GET path=/ ip=::1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-19T15:14:19-05:00 [INFO] req_id=req-1776629659466236100-0ce6a4da4b36 event=request_end method=GET path=/ status=200 dur_ms=247
+2026-04-19T15:14:20-05:00 [INFO] req_id=req-1776629660915862000-cba58a53aefa event=request_start method=GET path=/ ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
+2026-04-19T15:14:20-05:00 [INFO] req_id=req-1776629660915862000-cba58a53aefa event=request_end method=GET path=/ status=200 dur_ms=2
+2026-04-19T15:14:22-05:00 [INFO] req_id=req-1776629662288759000-1fd927a526b8 event=request_start method=GET path=/estilos.css ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
+2026-04-19T15:14:22-05:00 [INFO] req_id=req-1776629662288759000-0d5959a93dc0 event=request_start method=GET path=/menu.js ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
+2026-04-19T15:14:22-05:00 [INFO] req_id=req-1776629662288759000-0d5959a93dc0 event=request_end method=GET path=/menu.js status=200 dur_ms=28
+2026-04-19T15:14:22-05:00 [INFO] req_id=req-1776629662319520400-49a42314be2b event=request_start method=GET path=/img/punto_venta.png ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
+2026-04-19T15:14:22-05:00 [INFO] req_id=req-1776629662319520400-49a42314be2b event=request_end method=GET path=/img/punto_venta.png status=304 dur_ms=1
+2026-04-19T15:14:22-05:00 [INFO] req_id=req-1776629662288759000-1fd927a526b8 event=request_end method=GET path=/estilos.css status=200 dur_ms=206
+2026-04-19T15:14:22-05:00 [INFO] req_id=req-1776629662599591400-b628a2d7978c event=request_start method=GET path=/api/public/pagina_principal ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
+2026-04-19T15:14:23-05:00 [INFO] req_id=req-1776629662599591400-b628a2d7978c event=request_end method=GET path=/api/public/pagina_principal status=200 dur_ms=401
+2026-04-19T15:14:23-05:00 [INFO] req_id=req-1776629663141462100-0399168bc69f event=request_start method=GET path=/img/motel.png ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
+2026-04-19T15:14:23-05:00 [INFO] req_id=req-1776629663153591900-c735faa1371f event=request_start method=GET path=/img/restaurante.png ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
+2026-04-19T15:14:23-05:00 [INFO] req_id=req-1776629663157802100-7547bdaa188b event=request_start method=GET path=/img/sensor.png ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
+2026-04-19T15:14:23-05:00 [INFO] req_id=req-1776629663157802100-ba53d21a5f27 event=request_start method=GET path=/img/bar.png ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
+2026-04-19T15:14:23-05:00 [INFO] req_id=req-1776629663158373900-1fa6a30d6403 event=request_start method=GET path=/img/Tecnico%20independien.png ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
+2026-04-19T15:14:23-05:00 [INFO] req_id=req-1776629663158987600-a6083e846ec3 event=request_start method=GET path=/img/red%20social.png ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
+2026-04-19T15:14:23-05:00 [INFO] req_id=req-1776629663141462100-0399168bc69f event=request_end method=GET path=/img/motel.png status=304 dur_ms=154
+2026-04-19T15:14:23-05:00 [INFO] req_id=req-1776629663153591900-c735faa1371f event=request_end method=GET path=/img/restaurante.png status=304 dur_ms=144
+2026-04-19T15:14:23-05:00 [INFO] req_id=req-1776629663157802100-7547bdaa188b event=request_end method=GET path=/img/sensor.png status=304 dur_ms=141
+2026-04-19T15:14:23-05:00 [INFO] req_id=req-1776629663157802100-ba53d21a5f27 event=request_end method=GET path=/img/bar.png status=304 dur_ms=141
+2026-04-19T15:14:23-05:00 [INFO] req_id=req-1776629663158373900-1fa6a30d6403 event=request_end method=GET path=/img/Tecnico%20independien.png status=304 dur_ms=141
+2026-04-19T15:14:23-05:00 [INFO] req_id=req-1776629663158987600-a6083e846ec3 event=request_end method=GET path=/img/red%20social.png status=304 dur_ms=142

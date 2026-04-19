@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Historial de Productos</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .historial-item {
+      display: grid;
+      grid-template-columns: 100px 1fr 150px 1fr;
+      gap: 1rem;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--border-color);
+      align-items: center;
+    }
+    .historial-item:last-child {
+      border-bottom: none;
+    }
+    .historial-date {
+      font-size: 0.85rem;
+      color: var(--secondary-text);
+      white-space: pre-wrap;
+    }
+    .historial-product-name {
+      font-weight: 600;
+      color: var(--text-color);
+      margin-bottom: 0.25rem;
+    }
+    .historial-reason {
+      font-size: 0.85rem;
+      background: var(--light-bg);
+      padding: 0.25rem 0.5rem;
+      border-radius: var(--border-radius);
+      display: inline-block;
+      color: var(--secondary-text);
+    }
+    .historial-changes {
+      font-family: monospace;
+      background: #f8f9fa;
+      padding: 0.5rem;
+      border-radius: var(--border-radius);
+      border: 1px solid var(--border-color);
+    }
+    .historial-changes div {
+      margin-bottom: 0.25rem;
+    }
+    .historial-changes div:last-child {
+      margin-bottom: 0;
+    }
+    .amount-old {
+      color: #721c24;
+      text-decoration: line-through;
+      margin-right: 0.5rem;
+    }
+    .amount-new {
+      color: #155724;
+      font-weight: bold;
+    }
+    .amount-label {
+      color: #6c757d;
+      display: inline-block;
+      width: 70px;
+    }
+    .user-info {
+        font-size: 0.8rem;
+        color: var(--secondary-text);
+    }
+  </style>
+</head>
+<body class="empresa-subpage">
+  <div class="container empresa-module">
+    <section class="card empresa-module-header">
+      <div>
+        <h1>Historial de Productos</h1>
+        <p>Registro completo de cambios de precios, costos, e impuestos de productos.</p>
+      </div>
+      <div>
+        <button type="button" class="btn" id="btnRefresh">Actualizar</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Registro de Cambios</h2>
+      <div id="historialList">
+        <p class="empty-state">Cargando historial...</p>
+      </div>
+    </section>
+  </div>
+
+  <script type="module">
+    import { reqBuilder } from '/js/administrar_empresa.js';
+
+    const state = { limit: 100, offset: 0 };
+    const listContainer = document.getElementById('historialList');
+
+    async function loadHistorial() {
+      try {
+        listContainer.innerHTML = '<p class="empty-state">Cargando...</p>';
+        const b = reqBuilder('/api/empresa/productos/precios_historial')
+          .qs('limit', state.limit)
+          .qs('offset', state.offset);
+        const res = await fetch(b.url, { headers: b.headers });
+        if (!res.ok) throw new Error(await res.text());
+        const data = await res.json();
+        renderHistorial(data || []);
+      } catch (err) {
+        listContainer.innerHTML = `<p class="error-msg">Error cargando historial: ${err.message}</p>`;
+      }
+    }
+
+    function renderHistorial(items) {
+      if (!items.length) {
+        listContainer.innerHTML = '<p class="empty-state">No hay registros en el historial de precios.</p>';
+        return;
+      }
+
+      listContainer.innerHTML = '';
+      items.forEach(h => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'historial-item';
+
+        const formatMoney = v => `$${Number(v).toFixed(2)}`;
+        let changesHTML = '';
+        
+        if (h.precio_anterior !== h.precio_nuevo) {
+          changesHTML += `<div><span class="amount-label">Precio:</span> <span class="amount-old">${formatMoney(h.precio_anterior)}</span> → <span class="amount-new">${formatMoney(h.precio_nuevo)}</span></div>`;
+        }
+        if (h.costo_anterior !== h.costo_nuevo) {
+            changesHTML += `<div><span class="amount-label">Costo:</span> <span class="amount-old">${formatMoney(h.costo_anterior)}</span> → <span class="amount-new">${formatMoney(h.costo_nuevo)}</span></div>`;
+        }
+        if (h.impuesto_anterior !== h.impuesto_nuevo) {
+            changesHTML += `<div><span class="amount-label">Impuesto:</span> <span class="amount-old">${h.impuesto_anterior}%</span> → <span class="amount-new">${h.impuesto_nuevo}%</span></div>`;
+        }
+        if (!changesHTML) {
+            changesHTML = `<div style="color:var(--secondary-text);font-style:italic">Registro inicial o sin cambios directos</div>`;
+        }
+
+        const dateStr = h.fecha_cambio ? new Date(h.fecha_cambio).toLocaleString() : 'Fecha desc.';
+
+        itemDiv.innerHTML = `
+          <div class="historial-date">${dateStr}</div>
+          <div>
+            <div class="historial-product-name">${h.producto_nombre || 'Producto ID: ' + h.producto_id}</div>
+            <div class="historial-reason">${h.motivo || 'Motivo desconocido'}</div>
+          </div>
+          <div class="historial-changes">${changesHTML}</div>
+          <div class="user-info">
+            <strong>Usuario:</strong> ${h.usuario_creador || 'Sistema'}<br>
+            <strong>Ref:</strong> ${h.referencia || 'N/A'}<br>
+            <strong>Estado:</strong> ${h.estado || 'activo'}
+          </div>
+        `;
+        listContainer.appendChild(itemDiv);
+      });
+    }
+
+    document.getElementById('btnRefresh').addEventListener('click', loadHistorial);
+    document.addEventListener('DOMContentLoaded', loadHistorial);
+  </script>
+</body>
+</html>

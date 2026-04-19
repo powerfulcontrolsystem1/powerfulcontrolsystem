@@ -1,0 +1,54 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 757 >>
+stream
+q
+BT
+/F1 12 Tf
+10 750 Td
+15 TL
+(----------------------------------------) Tj T*
+(             MOTEL CALISO               ) Tj T*
+(        NIT: 900.123.456-7              ) Tj T*
+(    Dir: Calle 1 # 2-3, La Ciudad       ) Tj T*
+(----------------------------------------) Tj T*
+(Fecha: 2026-04-19 14:18:29) Tj T*
+(Estacion: Habitacion 10) Tj T*
+(----------------------------------------) Tj T*
+(Habitacion           $ 45,000.00) Tj T*
+(Agua Mineral 500ml   $  3,000.00) Tj T*
+(Servicio Cuarto      $  5,000.00) Tj T*
+(----------------------------------------) Tj T*
+(TOTAL:               $ 53,000.00) Tj T*
+(----------------------------------------) Tj T*
+(   Gracias por su discreta visita!      ) Tj T*
+(----------------------------------------) Tj T*
+ET
+Q
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000001048 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1116
+%%EOF

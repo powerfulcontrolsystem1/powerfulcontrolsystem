@@ -22,6 +22,17 @@ Todas las tablas operativas usan como base los campos estandar:
 
 ## 1) Base: pcs_empresas
 
+
+### Compras Operativas y Proveedores
+- empresa_proveedores:
+  - id, empresa_id, nit, nombre_comercial, razon_social, direccion, telefono, email, cuenta_bancaria, plazo_dias_pago
+- empresa_ordenes_compra:
+  - id, empresa_id, proveedor_id, bodega_destino_id, numero_orden, referencia_externa, moneda, total, total_impuestos, estado_orden, estado_pago, fecha_emision, fecha_esperada
+- empresa_ordenes_compra_items:
+  - id, empresa_id, orden_compra_id, producto_id, descripcion, unidad_medida, cantidad, cantidad_recibida, precio_unitario, impuesto_porcentaje, subtotal, total
+- empresa_compras_recepciones:
+  - id, empresa_id, orden_compra_id, proveedor_id, bodega_id, numero_factura, total_recepcion, fecha_recepcion
+
 ### Tablas de control y core
 - schema_migrations:
   - id, scope, version, description, applied_at
@@ -1079,3 +1090,7 @@ Todas las tablas operativas usan como base los campos estandar:
 - 2026-04-02: se agrega `categorias_productos`, se incorpora `productos.categoria_id` y se documentan relaciones del catÃ¡logo de categorÃ­as por empresa.
 - 2026-04-02: se agregan tablas del modulo chat_y_tareas en empresas.db y se actualiza este documento.
 - 2026-04-02: se agregan `empresa_gps_dispositivos` y `empresa_gps_recorridos` para tracking de ubicacion GPS por empresa, con registro periodico de recorridos.
+\r\n### Tabla: super_juegos_records (superadministrador)\r\nAlmacena los top scores globales de los juegos (Buscaminas, Solitario, Pacman) para todas las empresas y el público.\r\n- **Columnas**: \id\ (INTEGER/SERIAL), \juego\ (TEXT), \
+ombre_jugador\ (TEXT), \empresa_id\ (TEXT, DEFAULT 'Publico'), \puntaje\ (INTEGER), \
+ivel\ (INTEGER), \echa_creacion\ (TEXT/TIMESTAMP), \echa_actualizacion\ (TEXT/TIMESTAMP), \usuario_creador\ (TEXT), \estado\ (TEXT), \observaciones\ (TEXT).\r\n- **Único**: ID autoincremental.\r\n- **Indice**: \idx_super_juegos_records_top\ en (juego, puntaje DESC, fecha_creacion ASC).
+

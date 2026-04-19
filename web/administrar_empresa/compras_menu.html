@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Módulo de Compras - Menú</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="admin-empresa-shell">
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <h2>Compras</h2>
+      <ul class="nav">
+        <li><a id="linkComprasDoc" href="/administrar_empresa/compras.html" target="comprasContentFrame"><img class="icon" src="/img/network-color.svg" alt="">Gestión de compras</a></li>
+        <li><a id="linkProveedores" href="/administrar_empresa/productos/administrar_proveedores.html" target="comprasContentFrame"><img class="icon" src="/img/network-color.svg" alt="">Proveedores</a></li>
+        <li class="admin-menu-visibility-item">
+          <button type="button" class="admin-menu-visibility-toggle" aria-controls="comprasSidebarNav" aria-expanded="true" data-show-label="Mostrar menú" data-hide-label="Ocultar menú">
+            <span class="admin-menu-visibility-icon" aria-hidden="true">☰</span>
+            <span class="admin-menu-visibility-label">Ocultar menú</span>
+          </button>
+        </li>
+      </ul>
+    </aside>
+
+    <main class="admin-content">
+      <iframe name="comprasContentFrame" id="comprasContentFrame" src="/administrar_empresa/compras.html" title="Contenido de compras" class="admin-empresa-frame"></iframe>
+    </main>
+  </div>
+    <script src="/js/administrar_empresa.js"></script>
+    <script src="/menu.js"></script>
+</body>
+</html>

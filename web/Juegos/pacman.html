@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pacman Clásico</title>
+    <link rel="stylesheet" href="../estilos.css">
+    <style>
+        body { margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; background: #222; color: #fff; font-family: sans-serif; }
+        #menu, #game-container { margin-top: 50px; text-align: center; }
+        .btn { padding: 15px 30px; margin: 10px; font-size: 18px; cursor: pointer; background: #3498db; color: white; border: none; border-radius: 5px; }
+        .btn:hover { background: #2980b9; }
+        canvas { background: #111; border: 4px solid #444; }
+        #instructions { display: none; margin: 20px; max-width: 600px; background: #333; padding: 20px; border-radius: 8px; text-align: left; }
+    </style>
+</head>
+<body>
+    <div id="menu">
+        <h1>Pacman Clásico</h1>
+        <button class="btn" id="btn-play">Jugar</button>
+        <button class="btn" id="btn-inst">Instrucciones</button>
+        <div id="instructions">
+            <p><strong>Instrucciones:</strong></p>
+            <ul>
+                <li>Usa las flechas del teclado para mover a Pacman.</li>
+                <li>Come todos los puntos amarillos para ganar puntos y avanzar de nivel.</li>
+                <li>Evita a los fantasmas rojos. Si te tocan, pierdes.</li>
+            </ul>
+        </div>
+    </div>
+    <div id="game-container" style="display:none;">
+        <h3>Pacman - Puntos: <span id="score">0</span> | Nivel: <span id="level">1</span></h3>
+        <canvas id="gameCanvas" width="400" height="400"></canvas>
+    </div>
+
+    <script src="../menu.js"></script>
+    <script>
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playBeep(freq, type, duration) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type; osc.frequency.value = freq;
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start();
+            gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        document.getElementById('btn-inst').addEventListener('click', () => {
+            const inst = document.getElementById('instructions');
+            inst.style.display = inst.style.display === 'block' ? 'none' : 'block';
+            playBeep(400, 'sine', 0.1);
+        });
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let score = 0, level = 1, gameOver = false, animationId;
+        const TILE = 20;
+        let pacman = { x: 10, y: 10, vx: 0, vy: 0 };
+        let ghosts = [];
+        let dots = [];
+
+        function initLevel() {
+            pacman = { x: 10, y: 10, vx: 0, vy: 0 };
+            dots = [];
+            ghosts = [];
+            for (let i = 1; i < 19; i++) {
+                for (let j = 1; j < 19; j++) {
+                    if(Math.random() > 0.3) {
+                        dots.push({x: i, y: j});
+                    }
+                }
+            }
+            let numGhosts = 2 + level;
+            for(let i=0; i<numGhosts; i++){
+                ghosts.push({ x: Math.floor(Math.random()*15+4), y: Math.floor(Math.random()*15+4) });
+            }
+        }
+
+        document.getElementById('btn-play').addEventListener('click', () => {
+            document.getElementById('menu').style.display = 'none';
+            document.getElementById('game-container').style.display = 'block';
+            playBeep(600, 'square', 0.2);
+            score = 0; level = 1; gameOver = false;
+            initLevel();
+            updateUI();
+            cancelAnimationFrame(animationId);
+            lastTime = performance.now();
+            gameLoop();
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if(gameOver) return;
+            if(e.key === 'ArrowUp') { pacman.vx = 0; pacman.vy = -1; e.preventDefault(); }
+            if(e.key === 'ArrowDown') { pacman.vx = 0; pacman.vy = 1; e.preventDefault(); }
+            if(e.key === 'ArrowLeft') { pacman.vx = -1; pacman.vy = 0; e.preventDefault(); }
+            if(e.key === 'ArrowRight') { pacman.vx = 1; pacman.vy = 0; e.preventDefault(); }
+        });
+
+        let moveTimer = 0;
+        const MOVE_SPEED = 150; // ms
+        let lastTime = 0;
+
+        function gameLoop() {
+            if(gameOver) return;
+            animationId = requestAnimationFrame(gameLoop);
+            let now = performance.now();
+            let dt = now - lastTime;
+            lastTime = now;
+            
+            moveTimer += dt;
+            // Aumenta velocidad con el nivel
+            let speed = Math.max(50, MOVE_SPEED - (level * 10));
+            
+            if(moveTimer > speed) {
+                moveTimer = 0;
+                
+                // Mover pacman
+                pacman.x += pacman.vx;
+                pacman.y += pacman.vy;
+                
+                // Limites
+                if(pacman.x < 0) pacman.x = 0;
+                if(pacman.x > 19) pacman.x = 19;
+                if(pacman.y < 0) pacman.y = 0;
+                if(pacman.y > 19) pacman.y = 19;
+                
+                // Comer dots
+                for(let i=dots.length-1; i>=0; i--){
+                    if(dots[i].x === pacman.x && dots[i].y === pacman.y){
+                        dots.splice(i, 1);
+                        score += 10;
+                        updateUI();
+                        playBeep(1000, 'sine', 0.05);
+                    }
+                }
+                
+                // Ganar nivel
+                if(dots.length === 0){
+                    level++;
+                    score += 1000;
+                    playBeep(1200, 'square', 0.3);
+                    initLevel();
+                    updateUI();
+                }
+
+                // Mover fantasmas despacio (se mueven 1 de cada 2 ticks)
+                if(Math.random() > 0.3) {
+                    ghosts.forEach(g => {
+                        if(pacman.x > g.x) g.x++;
+                        else if(pacman.x < g.x) g.x--;
+                        else if(pacman.y > g.y) g.y++;
+                        else if(pacman.y < g.y) g.y--;
+                    });
+                }
+                
+                // Choque con fantasmas
+                for(let g of ghosts) {
+                    if(g.x === pacman.x && g.y === pacman.y){
+                        gameOver = true;
+                        playBeep(100, 'sawtooth', 1);
+                        setTimeout(endGameProcess, 500);
+                    }
+                }
+            }
+            draw();
+        }
+
+        function updateUI() {
+            document.getElementById('score').innerText = score;
+            document.getElementById('level').innerText = level;
+        }
+
+        function draw() {
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            
+            // Dibujar dots
+            ctx.fillStyle = 'yellow';
+            dots.forEach(d => {
+                ctx.beginPath();
+                ctx.arc(d.x * TILE + TILE/2, d.y * TILE + TILE/2, 3, 0, Math.PI*2);
+                ctx.fill();
+            });
+
+            // Dibujar Pacman
+            ctx.fillStyle = 'yellow';
+            ctx.beginPath();
+            ctx.arc(pacman.x * TILE + TILE/2, pacman.y * TILE + TILE/2, TILE/2 - 2, 0.2*Math.PI, 1.8*Math.PI);
+            ctx.lineTo(pacman.x * TILE + TILE/2, pacman.y * TILE + TILE/2);
+            ctx.fill();
+
+            // Dibujar fantasmas
+            ctx.fillStyle = 'red';
+            ghosts.forEach(g => {
+                ctx.fillRect(g.x * TILE + 2, g.y * TILE + 2, TILE - 4, TILE - 4);
+            });
+        }
+
+        function endGameProcess() {
+            let name = prompt("Juego Terminado. Puntaje: " + score + "\nIngresa tu nombre:");
+            if(name){
+                fetch('/api/public/juegos/records', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ juego: "Pacman", nombre_jugador: name, puntaje: score, nivel: level })
+                }).catch(console.error);
+            }
+            document.getElementById('menu').style.display = 'block';
+            document.getElementById('game-container').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
