@@ -484,6 +484,125 @@
         .replace(/'/g, '&#39;');
     }
 
+    function buildStationsURL() {
+      const params = new URLSearchParams();
+      if (state.empresaID) {
+        params.set('empresa_id', String(state.empresaID));
+      }
+      const query = params.toString();
+      return '/administrar_empresa/estaciones.html' + (query ? ('?' + query) : '');
+    }
+
+    function normalizeInitialLoadErrorMessage(rawMessage) {
+      const raw = normalize(rawMessage);
+      const lower = raw.toLowerCase();
+
+      if (!raw) {
+        return {
+          title: state.stationMode ? 'No se pudo abrir esta estación.' : 'No se pudo cargar el carrito.',
+          message: state.stationMode
+            ? 'Hubo un problema cargando el carrito asociado. Intenta nuevamente en unos segundos.'
+            : 'Hubo un problema cargando la información del carrito. Intenta nuevamente en unos segundos.'
+        };
+      }
+
+      if (lower.includes('unauthenticated') || lower.includes('forbidden') || lower.includes('permiso') || lower.includes('licencia') || lower.includes('alcance')) {
+        return {
+          title: state.stationMode ? 'No se pudo abrir esta estación.' : 'No se pudo cargar el carrito.',
+          message: 'Tu sesión no tiene acceso a este carrito en este momento. Inicia sesión nuevamente o verifica los permisos de la empresa.'
+        };
+      }
+
+      if (lower.includes('empresa_id')) {
+        return {
+          title: 'No se pudo identificar la empresa.',
+          message: 'La vista del carrito se abrió sin el contexto completo de la empresa. Regresa al tablero de estaciones e inténtalo otra vez.'
+        };
+      }
+
+      if (lower.includes('no se pudieron listar los carritos')) {
+        return {
+          title: state.stationMode ? 'No se pudo abrir esta estación.' : 'No se pudo cargar el carrito.',
+          message: 'Hubo un problema cargando el carrito asociado. Puede ser un fallo temporal de conexión o de configuración.'
+        };
+      }
+
+      if (lower.includes('no se pudieron listar los items')) {
+        return {
+          title: 'El carrito se abrió incompleto.',
+          message: 'No fue posible cargar los items del carrito. Reintenta la carga para continuar.'
+        };
+      }
+
+      return {
+        title: state.stationMode ? 'No se pudo abrir esta estación.' : 'No se pudo cargar el carrito.',
+        message: state.stationMode
+          ? 'Hubo un problema cargando el carrito asociado. Intenta nuevamente. Si el error continúa, vuelve al tablero de estaciones.'
+          : 'Hubo un problema cargando la información del carrito. Intenta nuevamente.'
+      };
+    }
+
+    function setInitialLoadContentVisible(visible) {
+      const display = visible ? '' : 'none';
+      ['buscarProductosActions', 'scannerPanel', 'itemForm', 'productsSummaryCard'].forEach(function(id) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.style.display = display;
+      });
+
+      if (!visible) {
+        const stationPanel = document.getElementById('stationCheckoutPanel');
+        if (stationPanel) {
+          stationPanel.style.display = 'none';
+        }
+        const itemsList = document.getElementById('itemsList');
+        if (itemsList) {
+          itemsList.textContent = '';
+        }
+        const productosList = document.getElementById('productosCarritoList');
+        if (productosList) {
+          productosList.textContent = '';
+        }
+      }
+    }
+
+    function renderInitialLoadError(err) {
+      const box = document.getElementById('carritosList');
+      const normalized = normalizeInitialLoadErrorMessage(err && err.message);
+      const stationLabel = normalize(state.stationName) || (state.stationID > 0 ? ('Estación ' + state.stationID) : '');
+      const stationContext = state.stationMode && stationLabel
+        ? '<div class="form-help" style="margin-top:6px;">Contexto: ' + escapeHtml(stationLabel) + '</div>'
+        : '';
+
+      setInitialLoadContentVisible(false);
+      box.innerHTML = '' +
+        '<div class="card empresa-section" style="margin-top:0; border:1px solid rgba(239,83,80,.35);">' +
+          '<div class="empresa-section-header"><h3 style="margin:0; color:#ef9a9a;">' + escapeHtml(normalized.title) + '</h3></div>' +
+          '<p style="margin:0 0 10px 0;">' + escapeHtml(normalized.message) + '</p>' +
+          stationContext +
+          '<div class="form-actions" style="margin-top:14px;">' +
+            '<button type="button" id="retryInitialLoadBtn" class="btn">Reintentar carga</button>' +
+            (state.stationMode ? '<button type="button" id="backToStationsBtn" class="btn secondary">Volver a estaciones</button>' : '') +
+          '</div>' +
+        '</div>';
+
+      const retryBtn = document.getElementById('retryInitialLoadBtn');
+      if (retryBtn) {
+        retryBtn.addEventListener('click', function() {
+          window.location.reload();
+        });
+      }
+
+      const backBtn = document.getElementById('backToStationsBtn');
+      if (backBtn) {
+        backBtn.addEventListener('click', function() {
+          window.location.href = buildStationsURL();
+        });
+      }
+
+      setMessage('carritoMsg', normalized.message, true);
+    }
+
     function loadEmpresaGeneralConfig() {
       if (state.empresaGeneralConfig && typeof state.empresaGeneralConfig === 'object') {
         return state.empresaGeneralConfig;
@@ -2678,6 +2797,7 @@
     }
 
     async function loadCarritos() {
+      setInitialLoadContentVisible(true);
       const url = new URL('/api/empresa/carritos_compra', window.location.origin);
       url.searchParams.set('empresa_id', String(state.empresaID));
       url.searchParams.set('include_inactive', '1');
@@ -3109,8 +3229,7 @@
           await loadItems();
         }
       } catch (err) {
-        document.getElementById('carritosList').textContent = 'Error cargando carritos';
-        setMessage('carritoMsg', err.message || 'Error cargando carritos', true);
+        renderInitialLoadError(err);
       }
     })();
   </script>

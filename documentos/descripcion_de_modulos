@@ -1,3 +1,23 @@
+2026-04-19: Chat y tareas se endurece como home operativo principal del panel empresa
+- Modulos afectados: `administrar_empresa`, `chat_y_tareas`
+- Cambio funcional: `chat_y_tareas.html` agrega un tablero resumen con conversaciones abiertas, tareas activas, urgencias y citas del dia, acciones rapidas para crear conversacion/tarea/reunion y estados vacios mas claros por bloque. En backend, `chat_tareas` valida que `conversacion_id` y `tarea_id` realmente pertenezcan a la empresa antes de crear participantes, mensajes, tareas, citas o notas de voz, y limpia adjuntos del filesystem si falla la persistencia asociada.
+- Impacto operativo: la pagina principal de la empresa pasa a comportarse como un dashboard colaborativo mas estable, reduce errores por referencias invalidas y evita dejar archivos huerfanos cuando falla un guardado parcial.
+
+2026-04-19: Panel empresa prioriza Chat y tareas con calendario compartido visible al entrar
+- Modulos afectados: `administrar_empresa`, `chat_y_tareas`
+- Cambio funcional: al abrir `administrar_empresa.html`, el shell empresarial prioriza `chat_y_tareas.html` como pantalla inicial cuando el rol autenticado conserva visibilidad del modulo. Ademas, `Chat y tareas` pasa al primer lugar del menu lateral y la propia pantalla sube el calendario mensual al inicio con una presentacion mas grande y clara para registrar reuniones.
+- Impacto operativo: la administradora entra directo a la agenda compartida de la empresa y el resto de usuarios autorizados ve el mismo calendario desde su cuenta, reduciendo clicks para registrar y consultar reuniones internas.
+
+2026-04-19: Estaciones y carritos mejoran el mensaje visible cuando falla la apertura del carrito
+- Modulos afectados: `estaciones`, `carritos`
+- Cambio funcional: `carrito_de_compras.html` ya no deja al usuario solo con el texto `Error cargando carritos`. Cuando falla la carga inicial, la vista muestra un estado claro con contexto de la estación, traducción segura del error, botón para reintentar y botón para volver al tablero de estaciones.
+- Impacto operativo: reduce ambigüedad en soporte y operación, porque el usuario entiende si debe reintentar, volver al tablero o revisar sesión/permisos sin ver mensajes técnicos crudos del backend.
+
+2026-04-19: Estaciones y carritos corrigen el listado backend para PostgreSQL
+- Modulos afectados: `estaciones`, `carritos`
+- Cambio funcional: el backend de `carritos_compra` deja de construir el listado principal con una agregacion sensible al motor SQL y mueve el redondeo de totales/metricas al lado Go. Con esto, abrir una estacion vuelve a cargar el carrito unificado aunque la empresa opere sobre PostgreSQL con clientes e items asociados.
+- Impacto operativo: elimina el error visible `Error cargando carritos` causado por el `GET /api/empresa/carritos_compra` y estabiliza tambien el panel de totales por metodo de pago en la misma pantalla.
+
 2026-04-19: Estaciones y carritos reutilizan carritos legado al abrir una estación
 - Modulos afectados: `estaciones`, `carritos`
 - Cambio funcional: `carrito_de_compras.html` ya no falla si la empresa conserva un carrito legado de estación con nombre o `referencia_externa` válidos pero sin el código canónico esperado en la URL. El flujo primero resuelve el carrito existente y solo crea uno nuevo cuando no encuentra coincidencia por código, referencia o nombre.
@@ -126,8 +146,19 @@ Actualizacion 2026-04-18 (gobernanza tecnica: cierre de periodo y conciliacion b
 Actualizacion 2026-04-18 (estaciones: tarjeta especial YouTube con vista maximizable):
 - Se amplía el modulo `operacion por empresa / estaciones` con una estacion especial opcional tipo `YouTube`, activable desde la configuracion global de estaciones.
 - `web/administrar_empresa/configuracion_de_estaciones.html` agrega el toggle `youtube_enabled` dentro de `estaciones_config` y `web/administrar_empresa/estaciones.html` renderiza la tarjeta embebida con boton de ampliacion.
-- `web/administrar_empresa/youtube_station_browser.html` encapsula la vista navegable/embebida de YouTube para reutilizarla tanto en modo compacto dentro de la tarjeta como en la ventana ampliada de aproximadamente `500 x 500`.
+- `web/administrar_empresa/youtube_station_browser.html` encapsula la vista de reproducción embebida de YouTube para reutilizarla tanto en modo compacto dentro de la tarjeta como en la ventana ampliada de aproximadamente `500 x 500`.
 - Impacto de permisos: sin cambios; la mejora vive dentro de la misma vista autenticada de estaciones y no modifica wrappers ni roles.
+
+Actualizacion 2026-04-19 (estaciones: YouTube deja la búsqueda embebida y usa reproducción válida con fallback externo):
+- Se corrige el submodulo `estaciones` para que la tarjeta especial de YouTube ya no dependa de búsquedas incrustadas que el proveedor externo dejó de soportar.
+- `web/administrar_empresa/configuracion_de_estaciones.html` incorpora un campo explícito para guardar la URL o el ID de un video/playlist, `web/administrar_empresa/youtube_station_browser.html` resuelve solo referencias embebibles válidas y `web/administrar_empresa/estaciones.html` muestra la fuente configurada dentro de la tarjeta.
+- Si la referencia guardada es texto libre y no un video o playlist válido, la estación deja un estado visible dentro del iframe y usa `Abrir YouTube` como fallback externo en lugar de simular una reproducción rota.
+- Impacto de permisos: sin cambios en roles, wrappers ni alcance por `empresa_id`; el ajuste es exclusivamente funcional/visual dentro del modulo autenticado de estaciones.
+
+Actualizacion 2026-04-19 (estaciones: la misma tarjeta YouTube permite guardar la fuente y acepta Shorts):
+- Se refuerza el submodulo `estaciones` para que la operadora pegue y guarde desde la propia tarjeta la URL o el ID del contenido de YouTube, sin depender de entrar a la pantalla de configuración.
+- `web/administrar_empresa/estaciones.html` agrega un editor inline dentro de la tarjeta, guarda la referencia en `estaciones_config` y recarga la vista en el mismo bloque; `web/administrar_empresa/youtube_station_browser.html` ya interpreta también enlaces de `Shorts` como video válido.
+- Impacto de permisos: sin cambios en roles, wrappers ni alcance; la tarjeta usa la misma persistencia autenticada de `empresa_estacion_prefs` ya existente para la empresa activa.
 
 Actualizacion 2026-04-18 (gobernanza tecnica: soporte remoto y contingencia de reportes):
 - Se amplía el paquete transversal `gobernanza tecnica` con un contrato técnico del módulo de soporte remoto multiempresa y dos runbooks nuevos de contingencia operativa.
@@ -602,6 +633,11 @@ Actualizacion 2026-04-16 (autenticacion unificada: sin recordar usuario/cuenta):
 - `web/login.html`, `web/js/login.js`, `web/login_usuario.html` y `web/js/login_usuario.js` eliminan checkbox y lógica `remember*`, manteniendo solo autenticación directa por sesión/cookies.
 - `web/menu.js`, `web/js/super_administrador.js`, `web/js/seleccionar_empresa.js`, `web/super/licencias.html` y `web/super/tipos_empresas.html` retiran sincronizaciones/limpiezas de `remember*` y operan únicamente con estado de sesión visible.
 - Impacto de permisos: sin cambios en roles, CRUD/A ni wrappers; el ajuste es de estabilidad transversal del login entre local (`localhost:8080`) y VPS (`powerfulcontrolsystem.com`, `www.powerfulcontrolsystem.com`).
+
+Actualizacion 2026-04-19 (autenticacion administrativa: recordar usuario por correo bajo demanda):
+- Se ajusta el modulo `autenticacion y sesiones` para permitir que `login.html` recuerde solo el correo administrativo cuando el usuario marca la casilla `Recordar usuario`.
+- `web/login.html` vuelve a exponer el checkbox y `web/js/login.js` persiste el correo en `localStorage` bajo una clave dedicada, sin tocar la sesion real, el flujo Google ni el login de usuarios de empresa.
+- Impacto de permisos: sin cambios en roles, CRUD/A, wrappers ni alcance; el ajuste es exclusivamente de conveniencia en la UX del acceso administrativo por correo.
 
 Actualizacion 2026-04-16 (checkout de licencias: respuesta fija de Epayco):
 - El modulo `licencias y pasarelas de pago` incorpora una pagina publica estable en `/epayco/respuesta.html` para pegarla directamente en el panel de Epayco como URL de respuesta.

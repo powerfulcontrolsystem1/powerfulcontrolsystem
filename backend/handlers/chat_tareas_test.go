@@ -278,6 +278,64 @@ func TestEmpresaChatTareasConversacionesAddsOwnerAdminParticipant(t *testing.T) 
 	}
 }
 
+func TestEmpresaChatTareasConversacionesCreatesGrupoConUsuariosSeleccionados(t *testing.T) {
+	dbEmp := openTestSQLite(t, "chat_tareas_conversacion_grupo_multiusuario.db")
+	ensureChatTareasTestBase(t, dbEmp)
+
+	const empresaID int64 = 108
+	const ownerEmail = "propietario.grupo@empresa.com"
+	const adminEmail = "admin.grupo@empresa.com"
+	const userOneEmail = "usuario1@empresa.com"
+	const userTwoEmail = "usuario2@empresa.com"
+
+	seedPermsEmpresa(t, dbEmp, empresaID, ownerEmail)
+	seedChatTareasUser(t, dbEmp, empresaID, adminEmail, "Admin Grupo")
+	userOneID := seedChatTareasUser(t, dbEmp, empresaID, userOneEmail, "Usuario Uno")
+	userTwoID := seedChatTareasUser(t, dbEmp, empresaID, userTwoEmail, "Usuario Dos")
+
+	h := EmpresaChatTareasConversacionesHandler(dbEmp)
+	payload := `{"empresa_id":108,"titulo":"Grupo operativo","descripcion":"Chat de varios usuarios","participantes":[{"participante_tipo":"usuario","participante_ref_id":` + strconv.FormatInt(userOneID, 10) + `,"nombre":"Usuario Uno","email":"` + userOneEmail + `"},{"participante_tipo":"usuario","participante_ref_id":` + strconv.FormatInt(userTwoID, 10) + `,"nombre":"Usuario Dos","email":"` + userTwoEmail + `"}]}`
+	req := httptest.NewRequest(http.MethodPost, "/api/empresa/chat_tareas/conversaciones", strings.NewReader(payload))
+	req.Header.Set("Content-Type", "application/json")
+	req = req.WithContext(context.WithValue(req.Context(), "adminEmail", adminEmail))
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusCreated {
+		t.Fatalf("expected 201, got %d body=%s", rr.Code, rr.Body.String())
+	}
+
+	var body map[string]interface{}
+	if err := json.Unmarshal(rr.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode response: %v body=%s", err, rr.Body.String())
+	}
+	convID := int64(body["id"].(float64))
+
+	participants, err := dbpkg.GetChatParticipantes(dbEmp, empresaID, convID, true)
+	if err != nil {
+		t.Fatalf("get participantes: %v", err)
+	}
+	if len(participants) < 4 {
+		t.Fatalf("expected at least 4 participants (admin actor, owner admin, two selected users), got %d", len(participants))
+	}
+
+	foundUserOne := false
+	foundUserTwo := false
+	for _, participant := range participants {
+		if strings.EqualFold(strings.TrimSpace(participant.Email), userOneEmail) && participant.ParticipanteRefID == userOneID {
+			foundUserOne = true
+		}
+		if strings.EqualFold(strings.TrimSpace(participant.Email), userTwoEmail) && participant.ParticipanteRefID == userTwoID {
+			foundUserTwo = true
+		}
+	}
+
+	if !foundUserOne || !foundUserTwo {
+		t.Fatalf("expected both selected users in participants, got %+v", participants)
+	}
+}
+
 func TestEmpresaChatTareasCitasSharedByEmpresa(t *testing.T) {
 	dbEmp := openTestSQLite(t, "chat_tareas_citas_shared_empresa.db")
 	ensureChatTareasTestBase(t, dbEmp)
@@ -370,6 +428,100 @@ func TestEmpresaChatTareasCitasSharedByEmpresa(t *testing.T) {
 	}
 	if normalize := strings.ToLower(strings.TrimSpace(canceled[0].EstadoCita)); normalize != "cancelada" {
 		t.Fatalf("expected estado_cita cancelada, got %q", canceled[0].EstadoCita)
+	}
+}
+
+func TestEmpresaChatTareasMensajesHandlerRejectsInvalidConversacion(t *testing.T) {
+	dbEmp := openTestSQLite(t, "chat_tareas_mensajes_invalid_conversacion.db")
+	ensureChatTareasTestBase(t, dbEmp)
+
+	const empresaID int64 = 105
+	const ownerEmail = "admin.owner@empresa.com"
+	seedPermsEmpresa(t, dbEmp, empresaID, ownerEmail)
+	seedChatTareasUser(t, dbEmp, empresaID, "operador@empresa.com", "Operador")
+
+	h := EmpresaChatTareasMensajesHandler(dbEmp)
+	body := `{"empresa_id":105,"conversacion_id":9999,"contenido":"mensaje invalido"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/empresa/chat_tareas/mensajes", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req = req.WithContext(context.WithValue(req.Context(), "adminEmail", "operador@empresa.com"))
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d body=%s", rr.Code, rr.Body.String())
+	}
+	if !strings.Contains(strings.ToLower(rr.Body.String()), "conversacion") {
+		t.Fatalf("expected conversacion error, got %q", rr.Body.String())
+	}
+
+	msgs, err := dbpkg.GetChatMensajes(dbEmp, empresaID, 9999, true, 50, 0)
+	if err != nil {
+		t.Fatalf("get mensajes invalid conversacion: %v", err)
+	}
+	if len(msgs) != 0 {
+		t.Fatalf("expected 0 messages, got %d", len(msgs))
+	}
+}
+
+func TestEmpresaChatTareasTareasHandlerRejectsInvalidConversacion(t *testing.T) {
+	dbEmp := openTestSQLite(t, "chat_tareas_tareas_invalid_conversacion.db")
+	ensureChatTareasTestBase(t, dbEmp)
+
+	const empresaID int64 = 106
+	const ownerEmail = "admin.owner@empresa.com"
+	seedPermsEmpresa(t, dbEmp, empresaID, ownerEmail)
+
+	h := EmpresaChatTareasTareasHandler(dbEmp)
+	body := `{"empresa_id":106,"conversacion_id":9999,"titulo":"Tarea sin conversacion real"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/empresa/chat_tareas/tareas", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req = req.WithContext(context.WithValue(req.Context(), "adminEmail", ownerEmail))
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d body=%s", rr.Code, rr.Body.String())
+	}
+
+	tareas, err := dbpkg.GetChatTareas(dbEmp, empresaID, 0, true, "", "")
+	if err != nil {
+		t.Fatalf("get tareas: %v", err)
+	}
+	if len(tareas) != 0 {
+		t.Fatalf("expected 0 tareas, got %d", len(tareas))
+	}
+}
+
+func TestEmpresaChatTareasCitasHandlerRejectsInvalidConversacion(t *testing.T) {
+	dbEmp := openTestSQLite(t, "chat_tareas_citas_invalid_conversacion.db")
+	ensureChatTareasTestBase(t, dbEmp)
+
+	const empresaID int64 = 107
+	const ownerEmail = "admin.owner@empresa.com"
+	seedPermsEmpresa(t, dbEmp, empresaID, ownerEmail)
+
+	h := EmpresaChatTareasCitasHandler(dbEmp)
+	body := `{"empresa_id":107,"conversacion_id":9999,"titulo":"Reunion huérfana","fecha_inicio":"2026-04-21 09:00:00"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/empresa/chat_tareas/citas", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req = req.WithContext(context.WithValue(req.Context(), "adminEmail", ownerEmail))
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d body=%s", rr.Code, rr.Body.String())
+	}
+
+	citas, err := dbpkg.GetChatCitas(dbEmp, empresaID, "", "", true, "", "")
+	if err != nil {
+		t.Fatalf("get citas: %v", err)
+	}
+	if len(citas) != 0 {
+		t.Fatalf("expected 0 citas, got %d", len(citas))
 	}
 }
 

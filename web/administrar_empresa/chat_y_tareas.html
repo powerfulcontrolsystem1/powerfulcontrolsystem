@@ -8,148 +8,69 @@
 </head>
 <body class="super-page form-bg-dark">
   <div class="container chat-tareas-page">
-    <div class="page-header">
-      <h1 id="pageTitle">Chat y tareas</h1>
-      <button id="reloadBtn" class="btn secondary" type="button">Actualizar</button>
+    <div class="page-header chat-tareas-page-header">
+      <div class="chat-tareas-page-headcopy">
+        <h1 id="pageTitle">Chat y tareas</h1>
+        <p class="form-help chat-tareas-page-intro">La administradora puede registrar reuniones en este calendario y todos los usuarios de esta empresa las verán desde su propia cuenta.</p>
+      </div>
+      <button id="reloadBtn" class="btn secondary" type="button">Actualizar todo</button>
     </div>
 
-    <div class="chat-tareas-layout">
-      <section class="card chat-panel conversaciones-panel">
-        <div class="chat-panel-header">
-          <h2>Conversaciones</h2>
+    <section class="chat-dashboard-strip">
+      <div class="chat-dashboard-summary">
+        <article class="chat-dashboard-card">
+          <span>Conversaciones abiertas</span>
+          <strong id="summaryConvOpen">0</strong>
+          <small id="summaryConvHint">Sin actividad reciente</small>
+        </article>
+        <article class="chat-dashboard-card">
+          <span>Tareas activas</span>
+          <strong id="summaryTasksPending">0</strong>
+          <small id="summaryTaskHint">Nada pendiente</small>
+        </article>
+        <article class="chat-dashboard-card">
+          <span>Urgentes</span>
+          <strong id="summaryTasksUrgent">0</strong>
+          <small id="summaryUrgentHint">Sin bloqueos críticos</small>
+        </article>
+        <article class="chat-dashboard-card chat-dashboard-card-accent">
+          <span>Citas de hoy</span>
+          <strong id="summaryAppointmentsToday">0</strong>
+          <small id="summaryLastRefresh">Pendiente de sincronizar</small>
+        </article>
+      </div>
+      <div class="chat-dashboard-actions">
+        <button id="quickConversationBtn" class="btn secondary" type="button">Nueva conversación</button>
+        <button id="quickTaskBtn" class="btn secondary" type="button">Nueva tarea</button>
+        <button id="quickAppointmentBtn" class="btn secondary" type="button">Programar reunión</button>
+      </div>
+    </section>
+
+    <section class="card chat-calendar-card chat-calendar-card-primary">
+      <div class="chat-calendar-hero">
+        <div class="chat-calendar-hero-copy">
+          <span class="chat-calendar-eyebrow">Agenda compartida de la empresa</span>
+          <h2>Calendario visual de reuniones y citas</h2>
+          <p class="form-help chat-calendar-hero-text">Programa reuniones, seguimientos y llamadas en un solo tablero mensual. Cada cita queda asociada a esta empresa y puede consultarse desde las cuentas del equipo autorizado.</p>
         </div>
-
-        <form id="convForm" class="chat-mini-form">
-          <label class="form-label" for="convTitulo">Nueva conversación</label>
-          <input id="convTitulo" class="form-input" required placeholder="Ej: Gestión pedido cliente X">
-          <textarea id="convDescripcion" class="form-textarea" placeholder="Contexto o objetivo"></textarea>
-          <div class="form-row compact-row">
-            <div class="form-col">
-              <label class="form-label" for="convPrioridad">Prioridad</label>
-              <select id="convPrioridad" class="form-input">
-                <option value="media">Media</option>
-                <option value="alta">Alta</option>
-                <option value="urgente">Urgente</option>
-                <option value="baja">Baja</option>
-              </select>
-            </div>
-            <div class="form-col form-col-end">
-              <button id="createConvBtn" class="btn" type="submit">Crear</button>
-            </div>
-          </div>
-        </form>
-
-        <div class="chat-search-row">
-          <input id="convSearch" class="form-input" placeholder="Buscar conversación">
-          <button id="convSearchBtn" class="btn secondary" type="button">Buscar</button>
+        <div class="chat-calendar-hero-stats">
+          <article class="chat-calendar-stat">
+            <span class="chat-calendar-stat-label">Programadas</span>
+            <strong id="calendarStatProgramadas">0</strong>
+          </article>
+          <article class="chat-calendar-stat">
+            <span class="chat-calendar-stat-label">Próxima</span>
+            <strong id="calendarStatProxima">Sin citas</strong>
+          </article>
+          <article class="chat-calendar-stat">
+            <span class="chat-calendar-stat-label">Día seleccionado</span>
+            <strong id="calendarStatSeleccion">Hoy</strong>
+          </article>
         </div>
+      </div>
 
-        <div id="convList" class="chat-conv-list">Cargando...</div>
-        <div id="convMsg" class="form-help"></div>
-      </section>
-
-      <section class="card chat-panel mensajes-panel">
-        <div class="chat-panel-header">
-          <h2 id="activeConvTitle">Selecciona una conversación</h2>
-          <div id="activeConvMeta" class="form-help"></div>
-        </div>
-
-        <div class="chat-participants-box">
-          <div class="chat-participants-header">Participantes</div>
-          <div id="participantsList" class="chat-participants-list">Sin participantes cargados.</div>
-          <div class="chat-add-participant-row">
-            <select id="participantSelect" class="form-input"></select>
-            <button id="addParticipantBtn" class="btn secondary" type="button">Agregar</button>
-          </div>
-        </div>
-
-        <div id="messagesList" class="chat-messages-list">Selecciona una conversación para ver mensajes.</div>
-
-        <form id="messageForm" class="chat-message-form">
-          <label class="form-label" for="messageText">Mensaje</label>
-          <textarea id="messageText" class="form-textarea" placeholder="Escribe tu mensaje"></textarea>
-          <div class="chat-attach-row">
-            <input id="messageFile" class="form-input" type="file" accept="image/*,audio/*,.pdf,.txt,.csv,.json,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.rtf,.odt,.ods,.odp">
-            <button id="sendMessageBtn" class="btn" type="submit">Enviar</button>
-          </div>
-          <div class="chat-voice-row">
-            <button id="recordMessageVoiceBtn" class="btn secondary" type="button">Grabar voz</button>
-            <button id="stopMessageVoiceBtn" class="btn secondary" type="button" disabled>Detener</button>
-            <button id="clearMessageVoiceBtn" class="btn secondary" type="button" disabled>Limpiar voz</button>
-          </div>
-          <div id="messageVoiceStatus" class="form-help"></div>
-        </form>
-        <div id="messageMsg" class="form-help"></div>
-      </section>
-
-      <section class="card chat-panel tareas-panel">
-        <div class="chat-panel-header">
-          <h2>Tareas</h2>
-        </div>
-
-        <form id="taskForm" class="chat-mini-form">
-          <input id="taskId" type="hidden">
-          <label class="form-label" for="taskTitulo">Título</label>
-          <input id="taskTitulo" class="form-input" required placeholder="Ej: Enviar cotización">
-          <label class="form-label" for="taskDescripcion">Descripción</label>
-          <textarea id="taskDescripcion" class="form-textarea" placeholder="Detalle breve"></textarea>
-
-          <div class="form-row compact-row">
-            <div class="form-col">
-              <label class="form-label" for="taskPrioridad">Prioridad</label>
-              <select id="taskPrioridad" class="form-input">
-                <option value="media">Media</option>
-                <option value="alta">Alta</option>
-                <option value="urgente">Urgente</option>
-                <option value="baja">Baja</option>
-              </select>
-            </div>
-            <div class="form-col">
-              <label class="form-label" for="taskFechaLimite">Fecha límite</label>
-              <input id="taskFechaLimite" class="form-input" type="datetime-local">
-            </div>
-          </div>
-
-          <div class="form-row compact-row">
-            <div class="form-col">
-              <label class="form-label" for="taskAsignado">Asignar a</label>
-              <select id="taskAsignado" class="form-input"></select>
-            </div>
-            <div class="form-col form-col-end">
-              <button id="saveTaskBtn" class="btn" type="submit">Guardar</button>
-            </div>
-          </div>
-
-          <div class="chat-voice-row">
-            <button id="recordTaskVoiceBtn" class="btn secondary" type="button">Grabar voz tarea</button>
-            <button id="stopTaskVoiceBtn" class="btn secondary" type="button" disabled>Detener</button>
-            <button id="clearTaskVoiceBtn" class="btn secondary" type="button" disabled>Limpiar voz</button>
-          </div>
-          <audio id="taskVoicePreview" controls preload="none" style="display:none"></audio>
-          <div id="taskVoiceStatus" class="form-help"></div>
-        </form>
-
-        <div class="chat-search-row">
-          <select id="taskEstadoFilter" class="form-input">
-            <option value="">Todas</option>
-            <option value="pendiente">Pendientes</option>
-            <option value="en_progreso">En progreso</option>
-            <option value="bloqueada">Bloqueadas</option>
-            <option value="completada">Completadas</option>
-            <option value="cancelada">Canceladas</option>
-          </select>
-          <input id="taskSearch" class="form-input" placeholder="Buscar tarea">
-          <button id="taskSearchBtn" class="btn secondary" type="button">Filtrar</button>
-        </div>
-
-        <div id="taskList" class="chat-task-list">Cargando tareas...</div>
-        <div id="taskMsg" class="form-help"></div>
-      </section>
-    </div>
-
-    <section class="card chat-calendar-card">
       <div class="chat-panel-header chat-calendar-header">
-        <h2>Agente de citas y calendario</h2>
+        <h2>Calendario mensual grande</h2>
         <div class="chat-calendar-nav">
           <button id="calendarPrevBtn" class="btn secondary" type="button">Mes anterior</button>
           <div id="calendarMonthLabel" class="chat-calendar-month">-</div>
@@ -253,6 +174,159 @@
         </aside>
       </div>
     </section>
+
+    <div class="chat-tareas-layout">
+      <section class="card chat-panel conversaciones-panel">
+        <div class="chat-panel-header">
+          <h2>Conversaciones</h2>
+          <div id="convPanelMeta" class="chat-panel-meta">Cargando conversaciones...</div>
+        </div>
+
+        <form id="convForm" class="chat-mini-form">
+          <label class="form-label" for="convTitulo">Nueva conversación</label>
+          <input id="convTitulo" class="form-input" placeholder="Ej: Gestión pedido cliente X o dejar vacío para chat directo">
+          <textarea id="convDescripcion" class="form-textarea" placeholder="Contexto o objetivo"></textarea>
+          <div class="chat-selector-box">
+            <div class="chat-selector-head">
+              <strong>Enviar mensaje a usuarios de esta empresa</strong>
+              <span id="convRecipientsMeta" class="chat-selector-meta">Selecciona uno o varios usuarios</span>
+            </div>
+            <input id="convParticipantSearch" class="form-input" placeholder="Buscar usuario por nombre o correo">
+            <div id="convParticipantChecklist" class="chat-user-checklist">Cargando usuarios...</div>
+          </div>
+          <div class="form-row compact-row">
+            <div class="form-col">
+              <label class="form-label" for="convPrioridad">Prioridad</label>
+              <select id="convPrioridad" class="form-input">
+                <option value="media">Media</option>
+                <option value="alta">Alta</option>
+                <option value="urgente">Urgente</option>
+                <option value="baja">Baja</option>
+              </select>
+            </div>
+            <div class="form-col form-col-end">
+              <button id="createConvBtn" class="btn" type="submit">Crear</button>
+            </div>
+          </div>
+        </form>
+
+        <div class="chat-search-row">
+          <input id="convSearch" class="form-input" placeholder="Buscar conversación">
+          <button id="convSearchBtn" class="btn secondary" type="button">Buscar</button>
+        </div>
+
+        <div id="convList" class="chat-conv-list">Cargando...</div>
+        <div id="convMsg" class="form-help"></div>
+      </section>
+
+      <section class="card chat-panel mensajes-panel">
+        <div class="chat-panel-header">
+          <h2 id="activeConvTitle">Selecciona una conversación</h2>
+          <div id="activeConvMeta" class="form-help"></div>
+          <div id="messagePanelMeta" class="chat-panel-meta">Selecciona una conversación para iniciar.</div>
+        </div>
+
+        <div class="chat-participants-box">
+          <div class="chat-participants-header">Participantes</div>
+          <div id="participantsList" class="chat-participants-list">Sin participantes cargados.</div>
+          <div class="chat-selector-box chat-selector-box-compact">
+            <div class="chat-selector-head">
+              <strong>Agregar usuarios al chat</strong>
+              <span id="participantSelectionMeta" class="chat-selector-meta">Busca y marca uno o varios</span>
+            </div>
+            <div class="chat-add-participant-row">
+              <input id="participantSearch" class="form-input" placeholder="Buscar usuario para agregar">
+              <button id="addParticipantBtn" class="btn secondary" type="button">Agregar seleccionados</button>
+            </div>
+            <div id="participantChecklist" class="chat-user-checklist chat-user-checklist-compact">Selecciona una conversación para cargar usuarios.</div>
+          </div>
+        </div>
+
+        <div id="messagesList" class="chat-messages-list">Selecciona una conversación para ver mensajes.</div>
+
+        <form id="messageForm" class="chat-message-form">
+          <label class="form-label" for="messageText">Mensaje</label>
+          <textarea id="messageText" class="form-textarea" placeholder="Escribe tu mensaje"></textarea>
+          <div class="form-help">Puedes adjuntar fotos, audio o documentos para enviarlos al usuario o al grupo seleccionado.</div>
+          <div class="chat-attach-row">
+            <input id="messageFile" class="form-input" type="file" accept="image/*,audio/*,.pdf,.txt,.csv,.json,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.rtf,.odt,.ods,.odp">
+            <button id="sendMessageBtn" class="btn" type="submit">Enviar</button>
+          </div>
+          <div class="chat-voice-row">
+            <button id="recordMessageVoiceBtn" class="btn secondary" type="button">Grabar voz</button>
+            <button id="stopMessageVoiceBtn" class="btn secondary" type="button" disabled>Detener</button>
+            <button id="clearMessageVoiceBtn" class="btn secondary" type="button" disabled>Limpiar voz</button>
+          </div>
+          <div id="messageVoiceStatus" class="form-help"></div>
+        </form>
+        <div id="messageMsg" class="form-help"></div>
+      </section>
+
+      <section class="card chat-panel tareas-panel">
+        <div class="chat-panel-header">
+          <h2>Tareas</h2>
+          <div id="taskPanelMeta" class="chat-panel-meta">Cargando tareas...</div>
+        </div>
+
+        <form id="taskForm" class="chat-mini-form">
+          <input id="taskId" type="hidden">
+          <label class="form-label" for="taskTitulo">Título</label>
+          <input id="taskTitulo" class="form-input" required placeholder="Ej: Enviar cotización">
+          <label class="form-label" for="taskDescripcion">Descripción</label>
+          <textarea id="taskDescripcion" class="form-textarea" placeholder="Detalle breve"></textarea>
+
+          <div class="form-row compact-row">
+            <div class="form-col">
+              <label class="form-label" for="taskPrioridad">Prioridad</label>
+              <select id="taskPrioridad" class="form-input">
+                <option value="media">Media</option>
+                <option value="alta">Alta</option>
+                <option value="urgente">Urgente</option>
+                <option value="baja">Baja</option>
+              </select>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="taskFechaLimite">Fecha límite</label>
+              <input id="taskFechaLimite" class="form-input" type="datetime-local">
+            </div>
+          </div>
+
+          <div class="form-row compact-row">
+            <div class="form-col">
+              <label class="form-label" for="taskAsignado">Asignar a</label>
+              <select id="taskAsignado" class="form-input"></select>
+            </div>
+            <div class="form-col form-col-end">
+              <button id="saveTaskBtn" class="btn" type="submit">Guardar</button>
+            </div>
+          </div>
+
+          <div class="chat-voice-row">
+            <button id="recordTaskVoiceBtn" class="btn secondary" type="button">Grabar voz tarea</button>
+            <button id="stopTaskVoiceBtn" class="btn secondary" type="button" disabled>Detener</button>
+            <button id="clearTaskVoiceBtn" class="btn secondary" type="button" disabled>Limpiar voz</button>
+          </div>
+          <audio id="taskVoicePreview" controls preload="none" style="display:none"></audio>
+          <div id="taskVoiceStatus" class="form-help"></div>
+        </form>
+
+        <div class="chat-search-row">
+          <select id="taskEstadoFilter" class="form-input">
+            <option value="">Todas</option>
+            <option value="pendiente">Pendientes</option>
+            <option value="en_progreso">En progreso</option>
+            <option value="bloqueada">Bloqueadas</option>
+            <option value="completada">Completadas</option>
+            <option value="cancelada">Canceladas</option>
+          </select>
+          <input id="taskSearch" class="form-input" placeholder="Buscar tarea">
+          <button id="taskSearchBtn" class="btn secondary" type="button">Filtrar</button>
+        </div>
+
+        <div id="taskList" class="chat-task-list">Cargando tareas...</div>
+        <div id="taskMsg" class="form-help"></div>
+      </section>
+    </div>
   </div>
 
   <script>
@@ -272,6 +346,10 @@
       mensajes: [],
       tareas: [],
       convSearch: "",
+      convParticipantSearch: "",
+      convParticipantIDs: [],
+      participantSearch: "",
+      participantCandidateIDs: [],
       taskSearch: "",
 	  taskEstadoFilter: "",
     pendingMessageVoice: null,
@@ -282,7 +360,8 @@
     calendarYear: new Date().getFullYear(),
     calendarMonth: new Date().getMonth(),
     calendarSelectedDate: "",
-    reminderShownKeys: {}
+    reminderShownKeys: {},
+    lastRefreshAt: ""
     };
 
     const messageVoiceRuntime = { recorder: null, stream: null, chunks: [], startedAt: 0, timer: 0 };
@@ -527,6 +606,78 @@
       el.style.color = isError ? "#ef5350" : "";
     }
 
+    function scrollToAndFocus(targetId) {
+      const el = document.getElementById(targetId);
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      if (typeof el.focus === "function") {
+        window.setTimeout(function () { el.focus(); }, 180);
+      }
+    }
+
+    function buildStateCard(title, detail, actionLabel, targetId) {
+      let html = '<div class="chat-state-card">';
+      html += '<strong>' + escapeHtml(title || "Sin datos") + '</strong>';
+      if (detail) {
+        html += '<p>' + escapeHtml(detail) + '</p>';
+      }
+      if (actionLabel && targetId) {
+        html += '<button type="button" class="btn secondary chat-focus-action" data-focus-target="' + escapeHtml(targetId) + '">' + escapeHtml(actionLabel) + '</button>';
+      }
+      html += '</div>';
+      return html;
+    }
+
+    function bindFocusActions(root) {
+      const scope = root || document;
+      Array.from(scope.querySelectorAll(".chat-focus-action")).forEach(function (btn) {
+        btn.onclick = function () {
+          const targetId = normalize(btn.getAttribute("data-focus-target"));
+          if (targetId) {
+            scrollToAndFocus(targetId);
+          }
+        };
+      });
+    }
+
+    function setPanelMeta(id, text) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = text || "";
+    }
+
+    function markDashboardRefreshed() {
+      state.lastRefreshAt = new Date().toISOString();
+      renderDashboardSummary();
+    }
+
+    function renderDashboardSummary() {
+      const openConvs = state.conversaciones.filter(function (conv) {
+        return normalize(conv.estado || "activo").toLowerCase() === "activo" &&
+          normalize(conv.estado_conversacion || "abierta").toLowerCase() === "abierta";
+      });
+      const activeTasks = state.tareas.filter(function (task) {
+        const status = normalize(task.estado_tarea || "pendiente").toLowerCase();
+        return normalize(task.estado || "activo").toLowerCase() === "activo" && status !== "completada" && status !== "cancelada";
+      });
+      const urgentTasks = activeTasks.filter(function (task) {
+        return normalize(task.prioridad || "media").toLowerCase() === "urgente";
+      });
+      const todayKey = toDateKey(formatDateForDB(new Date()));
+      const todaysAppointments = state.citas.filter(function (cita) {
+        return normalize(cita.estado || "activo").toLowerCase() === "activo" && toDateKey(cita.fecha_inicio) === todayKey;
+      });
+
+      document.getElementById("summaryConvOpen").textContent = String(openConvs.length);
+      document.getElementById("summaryTasksPending").textContent = String(activeTasks.length);
+      document.getElementById("summaryTasksUrgent").textContent = String(urgentTasks.length);
+      document.getElementById("summaryAppointmentsToday").textContent = String(todaysAppointments.length);
+      document.getElementById("summaryConvHint").textContent = openConvs.length ? "Con seguimiento activo" : "Sin actividad reciente";
+      document.getElementById("summaryTaskHint").textContent = activeTasks.length ? "Pendientes por resolver" : "Nada pendiente";
+      document.getElementById("summaryUrgentHint").textContent = urgentTasks.length ? "Prioridad inmediata" : "Sin bloqueos críticos";
+      document.getElementById("summaryLastRefresh").textContent = state.lastRefreshAt ? ("Actualizado " + formatDate(state.lastRefreshAt)) : "Pendiente de sincronizar";
+    }
+
     async function ensureOk(resp) {
       if (resp.ok) return;
       const text = await resp.text();
@@ -670,6 +821,47 @@
       return actor;
     }
 
+    function getActiveUsers() {
+      return state.users.filter(function (u) {
+        return normalize(u.estado || "activo").toLowerCase() === "activo";
+      });
+    }
+
+    function buildUserOptionValue(user) {
+      const id = Number(user.id || 0);
+      const name = normalize(user.nombre || user.name || user.email || ("Usuario " + id));
+      const email = normalize(user.email || "");
+      return {
+        id: id,
+        name: name,
+        email: email,
+        value: "usuario|" + id + "|" + name + "|" + email
+      };
+    }
+
+    function matchesUserFilter(user, search) {
+      const needle = normalize(search).toLowerCase();
+      if (!needle) return true;
+      const haystack = [user.nombre, user.name, user.email].map(function (value) {
+        return normalize(value).toLowerCase();
+      }).join(" ");
+      return haystack.indexOf(needle) >= 0;
+    }
+
+    function getAvailableParticipantUsers() {
+      const taken = {};
+      state.participantes.forEach(function (participant) {
+        const refID = Number(participant.participante_ref_id || 0);
+        if (refID > 0 && normalize(participant.participante_tipo || "usuario").toLowerCase() === "usuario") {
+          taken[refID] = true;
+        }
+      });
+      return getActiveUsers().filter(function (user) {
+        const id = Number(user.id || 0);
+        return id > 0 && !taken[id];
+      });
+    }
+
     async function loadEmpresa() {
       const resp = await fetch("/super/api/empresas?id=" + encodeURIComponent(state.empresaID));
       if (!resp.ok) return;
@@ -702,6 +894,7 @@
       resolveCurrentActorContext();
       renderAssignOptions();
       renderParticipantOptions();
+      renderConversationRecipientOptions();
     }
 
     function renderAssignOptions() {
@@ -720,18 +913,85 @@
       select.innerHTML = html;
     }
 
-    function renderParticipantOptions() {
-      const select = document.getElementById("participantSelect");
-      if (!select) return;
-      let html = '<option value="">Selecciona usuario</option>';
-      state.users.forEach(function (u) {
-        if (normalize(u.estado || "activo").toLowerCase() !== "activo") return;
-        const id = Number(u.id || 0);
-        const name = normalize(u.nombre || u.name || u.email || ("Usuario " + id));
-        const email = normalize(u.email || "");
-        html += '<option value="' + id + '|' + escapeHtml(name) + '|' + escapeHtml(email) + '">' + escapeHtml(name) + (email ? " (" + escapeHtml(email) + ")" : "") + "</option>";
+    function renderConversationRecipientOptions() {
+      const box = document.getElementById("convParticipantChecklist");
+      const meta = document.getElementById("convRecipientsMeta");
+      if (!box || !meta) return;
+
+      const users = getActiveUsers().filter(function (user) {
+        return matchesUserFilter(user, state.convParticipantSearch);
       });
-      select.innerHTML = html;
+      const selectedMap = {};
+      state.convParticipantIDs.forEach(function (id) { selectedMap[Number(id)] = true; });
+
+      if (!users.length) {
+        box.innerHTML = '<div class="chat-empty">No hay usuarios que coincidan con la búsqueda.</div>';
+        meta.textContent = state.convParticipantIDs.length ? (state.convParticipantIDs.length + ' usuario(s) seleccionados') : 'Sin resultados';
+        return;
+      }
+
+      box.innerHTML = users.map(function (user) {
+        const option = buildUserOptionValue(user);
+        const checked = selectedMap[option.id] ? ' checked' : '';
+        return '<label class="chat-user-option">' +
+          '<input class="conv-user-check" type="checkbox" value="' + option.id + '"' + checked + '>' +
+          '<span><strong>' + escapeHtml(option.name) + '</strong><small>' + escapeHtml(option.email || 'Sin correo') + '</small></span>' +
+        '</label>';
+      }).join("");
+
+      meta.textContent = state.convParticipantIDs.length ? (state.convParticipantIDs.length + ' usuario(s) seleccionados') : 'Selecciona uno o varios usuarios';
+      Array.from(box.querySelectorAll('.conv-user-check')).forEach(function (checkbox) {
+        checkbox.onchange = function () {
+          const id = Number(checkbox.value || 0);
+          const next = state.convParticipantIDs.filter(function (item) { return Number(item) !== id; });
+          if (checkbox.checked && id > 0) next.push(id);
+          state.convParticipantIDs = next;
+          renderConversationRecipientOptions();
+        };
+      });
+    }
+
+    function renderParticipantOptions() {
+      const box = document.getElementById("participantChecklist");
+      const meta = document.getElementById("participantSelectionMeta");
+      if (!box || !meta) return;
+      if (!state.conversacionID) {
+        box.innerHTML = '<div class="chat-empty">Selecciona una conversación para agregar usuarios.</div>';
+        meta.textContent = 'Busca y marca uno o varios';
+        return;
+      }
+
+      const users = getAvailableParticipantUsers().filter(function (user) {
+        return matchesUserFilter(user, state.participantSearch);
+      });
+      const selectedMap = {};
+      state.participantCandidateIDs.forEach(function (id) { selectedMap[Number(id)] = true; });
+
+      if (!users.length) {
+        box.innerHTML = '<div class="chat-empty">No hay usuarios disponibles para agregar.</div>';
+        meta.textContent = state.participantCandidateIDs.length ? (state.participantCandidateIDs.length + ' usuario(s) marcados') : 'Todos los usuarios ya participan';
+        return;
+      }
+
+      box.innerHTML = users.map(function (user) {
+        const option = buildUserOptionValue(user);
+        const checked = selectedMap[option.id] ? ' checked' : '';
+        return '<label class="chat-user-option">' +
+          '<input class="participant-user-check" type="checkbox" value="' + option.id + '"' + checked + '>' +
+          '<span><strong>' + escapeHtml(option.name) + '</strong><small>' + escapeHtml(option.email || 'Sin correo') + '</small></span>' +
+        '</label>';
+      }).join("");
+
+      meta.textContent = state.participantCandidateIDs.length ? (state.participantCandidateIDs.length + ' usuario(s) marcados') : 'Busca y marca uno o varios';
+      Array.from(box.querySelectorAll('.participant-user-check')).forEach(function (checkbox) {
+        checkbox.onchange = function () {
+          const id = Number(checkbox.value || 0);
+          const next = state.participantCandidateIDs.filter(function (item) { return Number(item) !== id; });
+          if (checkbox.checked && id > 0) next.push(id);
+          state.participantCandidateIDs = next;
+          renderParticipantOptions();
+        };
+      });
     }
 
     function renderAppointmentConversationOptions() {
@@ -748,6 +1008,7 @@
     }
 
     async function loadConversaciones() {
+      setPanelMeta("convPanelMeta", "Actualizando conversaciones...");
       const url = new URL("/api/empresa/chat_tareas/conversaciones", window.location.origin);
       url.searchParams.set("empresa_id", String(state.empresaID));
       url.searchParams.set("include_inactive", "1");
@@ -765,15 +1026,20 @@
       }
       renderConversaciones();
       renderAppointmentConversationOptions();
+      renderDashboardSummary();
     }
 
     function renderConversaciones() {
       const box = document.getElementById("convList");
       if (!box) return;
       if (!state.conversaciones.length) {
-        box.innerHTML = "<div class=\"chat-empty\">No hay conversaciones registradas.</div>";
+        box.innerHTML = buildStateCard("No hay conversaciones registradas", "Crea la primera conversación para coordinar pedidos, soporte o seguimiento interno.", "Crear conversación", "convTitulo");
+        bindFocusActions(box);
+        setPanelMeta("convPanelMeta", "0 conversaciones visibles");
         return;
       }
+
+      setPanelMeta("convPanelMeta", state.conversaciones.length + " conversaciones en pantalla");
 
       let html = "";
       state.conversaciones.forEach(function (c) {
@@ -867,7 +1133,9 @@
       const box = document.getElementById("participantsList");
       if (!box) return;
       if (!state.participantes.length) {
-        box.innerHTML = "<span class=\"chat-empty\">Sin participantes.</span>";
+	      box.innerHTML = "<span class=\"chat-empty\">Sin participantes registrados todavía.</span>";
+	      state.participantCandidateIDs = [];
+	      renderParticipantOptions();
         return;
       }
       const html = state.participantes.map(function (p) {
@@ -877,6 +1145,10 @@
         return '<span class="participant-chip">' + escapeHtml(name) + ' <small>(' + escapeHtml(tipo) + ', ' + escapeHtml(estado) + ')</small></span>';
       }).join("");
       box.innerHTML = html;
+      state.participantCandidateIDs = state.participantCandidateIDs.filter(function (id) {
+        return getAvailableParticipantUsers().some(function (user) { return Number(user.id || 0) === Number(id); });
+      });
+      renderParticipantOptions();
     }
 
     async function loadMensajes() {
@@ -915,18 +1187,22 @@
       const box = document.getElementById("messagesList");
       if (!box) return;
       if (!state.conversacionID) {
-        box.innerHTML = "<div class=\"chat-empty\">Selecciona una conversación para ver mensajes.</div>";
+        box.innerHTML = buildStateCard("Selecciona una conversación", "Cuando elijas una conversación, aquí verás el hilo completo, adjuntos y notas de voz.", "Crear conversación", "convTitulo");
         document.getElementById("activeConvTitle").textContent = "Selecciona una conversación";
         document.getElementById("activeConvMeta").textContent = "";
+        setPanelMeta("messagePanelMeta", "Sin conversación seleccionada");
+        bindFocusActions(box);
         return;
       }
 
       const conv = state.conversaciones.find(function (c) { return Number(c.id) === Number(state.conversacionID); });
       document.getElementById("activeConvTitle").textContent = conv ? normalize(conv.titulo || "Conversación") : "Conversación";
       document.getElementById("activeConvMeta").textContent = conv ? ("Prioridad: " + normalize(conv.prioridad || "media") + " | Estado: " + normalize(conv.estado_conversacion || "abierta")) : "";
+      setPanelMeta("messagePanelMeta", state.mensajes.length + " mensajes en la conversación activa");
 
       if (!state.mensajes.length) {
-        box.innerHTML = "<div class=\"chat-empty\">No hay mensajes todavía.</div>";
+        box.innerHTML = buildStateCard("No hay mensajes todavía", "Publica el primer mensaje o adjunta un archivo para arrancar la conversación.", "Escribir mensaje", "messageText");
+        bindFocusActions(box);
         return;
       }
 
@@ -951,6 +1227,7 @@
     }
 
     async function loadTareas() {
+	    setPanelMeta("taskPanelMeta", "Actualizando tareas...");
       const url = new URL("/api/empresa/chat_tareas/tareas", window.location.origin);
       url.searchParams.set("empresa_id", String(state.empresaID));
       url.searchParams.set("include_inactive", "1");
@@ -962,6 +1239,7 @@
       const rows = await resp.json();
       state.tareas = Array.isArray(rows) ? rows : [];
       renderTareas();
+	    renderDashboardSummary();
     }
 
     function taskActionButtons(t) {
@@ -987,9 +1265,13 @@
       const box = document.getElementById("taskList");
       if (!box) return;
       if (!state.tareas.length) {
-        box.innerHTML = "<div class=\"chat-empty\">No hay tareas para el filtro actual.</div>";
+        box.innerHTML = buildStateCard("No hay tareas para este filtro", "Registra una tarea, asígnala y usa el estado para priorizar la operación del equipo.", "Crear tarea", "taskTitulo");
+        bindFocusActions(box);
+        setPanelMeta("taskPanelMeta", "0 tareas visibles");
         return;
       }
+
+      setPanelMeta("taskPanelMeta", state.tareas.length + " tareas visibles");
 
       let html = "";
       state.tareas.forEach(function (t) {
@@ -1062,6 +1344,51 @@
       return pad2(dt.getHours()) + ":" + pad2(dt.getMinutes());
     }
 
+    function formatCalendarSummaryDate(raw) {
+      const dt = parseDateValue(raw);
+      if (!dt) return "Sin citas";
+      return dt.toLocaleDateString("es-ES", { day: "2-digit", month: "short" }) + " · " + pad2(dt.getHours()) + ":" + pad2(dt.getMinutes());
+    }
+
+    function ensureCalendarSelectedDate() {
+      if (!state.calendarSelectedDate) {
+        state.calendarSelectedDate = toDateKey(formatDateForDB(new Date()));
+      }
+      return state.calendarSelectedDate;
+    }
+
+    function renderCalendarSummary() {
+      const totalEl = document.getElementById("calendarStatProgramadas");
+      const nextEl = document.getElementById("calendarStatProxima");
+      const selectedEl = document.getElementById("calendarStatSeleccion");
+      const selectedKey = ensureCalendarSelectedDate();
+      const activeProgramadas = state.citas.filter(function (cita) {
+        return normalize(cita.estado || "activo").toLowerCase() === "activo" &&
+          normalize(cita.estado_cita || "programada").toLowerCase() === "programada";
+      });
+      const nextAppointment = activeProgramadas
+        .filter(function (cita) {
+          const start = parseDateValue(cita.fecha_inicio);
+          return start && start.getTime() >= Date.now();
+        })
+        .sort(function (a, b) {
+          return normalize(a.fecha_inicio).localeCompare(normalize(b.fecha_inicio));
+        })[0] || null;
+      const selectedDate = parseDateValue(selectedKey + " 00:00:00");
+
+      if (totalEl) {
+        totalEl.textContent = String(activeProgramadas.length);
+      }
+      if (nextEl) {
+        nextEl.textContent = nextAppointment ? formatCalendarSummaryDate(nextAppointment.fecha_inicio) : "Sin citas";
+      }
+      if (selectedEl) {
+        selectedEl.textContent = selectedDate
+          ? selectedDate.toLocaleDateString("es-ES", { weekday: "short", day: "2-digit", month: "long" })
+          : "Hoy";
+      }
+    }
+
     function getCalendarRange() {
       const firstDay = new Date(state.calendarYear, state.calendarMonth, 1, 0, 0, 0, 0);
       const lastDay = new Date(state.calendarYear, state.calendarMonth + 1, 0, 23, 59, 59, 0);
@@ -1092,7 +1419,10 @@
       const label = document.getElementById("calendarMonthLabel");
       if (!grid || !label) return;
 
+      ensureCalendarSelectedDate();
+
       label.textContent = formatMonthLabel(state.calendarYear, state.calendarMonth);
+      renderCalendarSummary();
 
       const first = new Date(state.calendarYear, state.calendarMonth, 1);
       const startWeekDay = (first.getDay() + 6) % 7;
@@ -1186,7 +1516,8 @@
       const box = document.getElementById("appointmentList");
       if (!box) return;
       if (!state.citas.length) {
-        box.innerHTML = '<div class="chat-empty">No hay citas para el filtro actual.</div>';
+        box.innerHTML = buildStateCard("No hay citas para el filtro actual", "Programa una reunión o seguimiento para que todo el equipo vea la agenda compartida.", "Programar reunión", "appointmentTitle");
+        bindFocusActions(box);
         return;
       }
 
@@ -1355,6 +1686,7 @@
     }
 
     async function loadAppointments() {
+	    setHelp("appointmentMsg", "Sincronizando agenda compartida...", false);
       const url = new URL("/api/empresa/chat_tareas/citas", window.location.origin);
       url.searchParams.set("empresa_id", String(state.empresaID));
       url.searchParams.set("include_inactive", "1");
@@ -1370,39 +1702,76 @@
       state.citas = Array.isArray(rows) ? rows : [];
       renderCalendar();
       renderAppointments();
+	    renderDashboardSummary();
       await checkAppointmentReminders();
+	    setHelp("appointmentMsg", "Agenda sincronizada", false);
     }
 
     async function loadCurrentConversationData() {
-      await Promise.all([
+      const results = await Promise.allSettled([
         loadParticipantes(),
         loadMensajes(),
         loadTareas()
       ]);
+      const errors = ["messageMsg", "messageMsg", "taskMsg"];
+      results.forEach(function (result, index) {
+        if (result.status === "rejected") {
+          const reason = result.reason && result.reason.message ? result.reason.message : "No se pudo sincronizar una sección";
+          setHelp(errors[index], reason, true);
+        }
+      });
+      renderDashboardSummary();
     }
 
     document.getElementById("reloadBtn").onclick = async function () {
+      const btn = document.getElementById("reloadBtn");
+      btn.disabled = true;
       try {
         await loadConversaciones();
-        await loadCurrentConversationData();
-        await loadAppointments();
+        await Promise.allSettled([
+          loadCurrentConversationData(),
+          loadAppointments()
+        ]);
+        markDashboardRefreshed();
         setHelp("convMsg", "Datos actualizados", false);
       } catch (err) {
         setHelp("convMsg", err.message || "No se pudo actualizar", true);
+      } finally {
+        btn.disabled = false;
       }
     };
 
     document.getElementById("convForm").onsubmit = async function (e) {
       e.preventDefault();
+      const selectedUsers = getActiveUsers().filter(function (user) {
+        return state.convParticipantIDs.indexOf(Number(user.id || 0)) >= 0;
+      });
+      let titulo = normalize(document.getElementById("convTitulo").value);
+      if (!titulo && selectedUsers.length === 1) {
+        titulo = "Chat con " + normalize(selectedUsers[0].nombre || selectedUsers[0].name || selectedUsers[0].email || "usuario");
+      }
+      if (!titulo && selectedUsers.length > 1) {
+        const firstName = normalize(selectedUsers[0].nombre || selectedUsers[0].name || selectedUsers[0].email || "usuario");
+        titulo = "Grupo con " + firstName + " y " + (selectedUsers.length - 1) + " mas";
+      }
       const payload = {
         empresa_id: state.empresaID,
-        titulo: normalize(document.getElementById("convTitulo").value),
+        titulo: titulo,
         descripcion: normalize(document.getElementById("convDescripcion").value),
         prioridad: normalize(document.getElementById("convPrioridad").value) || "media",
-        estado_conversacion: "abierta"
+        estado_conversacion: "abierta",
+        participantes: selectedUsers.map(function (user) {
+          return {
+            participante_tipo: "usuario",
+            participante_ref_id: Number(user.id || 0),
+            nombre: normalize(user.nombre || user.name || user.email || ""),
+            email: normalize(user.email || ""),
+            estado: "activo"
+          };
+        })
       };
       if (!payload.titulo) {
-        setHelp("convMsg", "El título es obligatorio", true);
+        setHelp("convMsg", "Escribe un título o selecciona al menos un usuario para generar un chat directo", true);
         return;
       }
       try {
@@ -1414,6 +1783,9 @@
         await ensureOk(resp);
         const body = await resp.json();
         document.getElementById("convForm").reset();
+	      state.convParticipantIDs = [];
+	      state.convParticipantSearch = "";
+	      renderConversationRecipientOptions();
         state.conversacionID = Number(body.id || 0);
         await loadConversaciones();
         await loadCurrentConversationData();
@@ -1433,37 +1805,51 @@
       }
     };
 
+    document.getElementById("convParticipantSearch").addEventListener("input", function () {
+      state.convParticipantSearch = normalize(this.value);
+      renderConversationRecipientOptions();
+    });
+
+    document.getElementById("participantSearch").addEventListener("input", function () {
+      state.participantSearch = normalize(this.value);
+      renderParticipantOptions();
+    });
+
     document.getElementById("addParticipantBtn").onclick = async function () {
       if (!state.conversacionID) {
         setHelp("messageMsg", "Selecciona una conversación", true);
         return;
       }
-      const raw = normalize(document.getElementById("participantSelect").value);
-      if (!raw) {
-        setHelp("messageMsg", "Selecciona un usuario", true);
+      const usersToAdd = getAvailableParticipantUsers().filter(function (user) {
+        return state.participantCandidateIDs.indexOf(Number(user.id || 0)) >= 0;
+      });
+      if (!usersToAdd.length) {
+        setHelp("messageMsg", "Selecciona uno o varios usuarios para agregarlos", true);
         return;
       }
-      const parts = raw.split("|");
-      const id = Number(parts[0] || 0);
-      const nombre = normalize(parts[1]);
-      const email = normalize(parts[2]);
       try {
-        const resp = await fetch("/api/empresa/chat_tareas/participantes", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            empresa_id: state.empresaID,
-            conversacion_id: state.conversacionID,
-            participante_tipo: "usuario",
-            participante_ref_id: id,
-            nombre: nombre,
-            email: email,
-            estado: "activo"
-          })
-        });
-        await ensureOk(resp);
+        for (let index = 0; index < usersToAdd.length; index += 1) {
+          const user = usersToAdd[index];
+          const resp = await fetch("/api/empresa/chat_tareas/participantes", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              empresa_id: state.empresaID,
+              conversacion_id: state.conversacionID,
+              participante_tipo: "usuario",
+              participante_ref_id: Number(user.id || 0),
+              nombre: normalize(user.nombre || user.name || user.email || ""),
+              email: normalize(user.email || ""),
+              estado: "activo"
+            })
+          });
+          await ensureOk(resp);
+        }
+	      state.participantCandidateIDs = [];
+	      document.getElementById("participantSearch").value = "";
+	      state.participantSearch = "";
         await loadParticipantes();
-        setHelp("messageMsg", "Participante agregado", false);
+        setHelp("messageMsg", usersToAdd.length === 1 ? "Participante agregado" : (usersToAdd.length + " participantes agregados"), false);
       } catch (err) {
         setHelp("messageMsg", err.message || "No se pudo agregar participante", true);
       }
@@ -1658,6 +2044,18 @@
       setHelp("appointmentMsg", "Formulario de cita reiniciado", false);
     };
 
+    document.getElementById("quickConversationBtn").onclick = function () {
+      scrollToAndFocus("convTitulo");
+    };
+
+    document.getElementById("quickTaskBtn").onclick = function () {
+      scrollToAndFocus("taskTitulo");
+    };
+
+    document.getElementById("quickAppointmentBtn").onclick = function () {
+      scrollToAndFocus("appointmentTitle");
+    };
+
     document.getElementById("appointmentForm").onsubmit = async function (e) {
       e.preventDefault();
       const citaID = Number(document.getElementById("appointmentId").value || 0);
@@ -1755,17 +2153,25 @@
         updateTaskVoiceUI();
         await Promise.all([loadEmpresa(), loadMe(), loadUsers()]);
         await loadConversaciones();
+        state.calendarSelectedDate = toDateKey(formatDateForDB(new Date()));
         clearAppointmentForm();
-        await loadCurrentConversationData();
-        await loadAppointments();
+	      await Promise.allSettled([
+	        loadCurrentConversationData(),
+	        loadAppointments()
+	      ]);
+	      markDashboardRefreshed();
 
         window.setInterval(function () {
           checkAppointmentReminders();
         }, 60000);
 
         window.setInterval(async function () {
+	        if (document.hidden) return;
           try {
+	          await loadConversaciones();
+	          await loadCurrentConversationData();
             await loadAppointments();
+	          markDashboardRefreshed();
           } catch (_) {
             // El usuario puede continuar operando chat/tareas aunque falle sincronizacion de citas.
           }

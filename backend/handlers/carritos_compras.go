@@ -54,7 +54,7 @@ func EmpresaCarritosCompraHandler(dbEmp *sql.DB) http.HandlerFunc {
 					days = 7
 				}
 
-				query := `SELECT COALESCE(LOWER(TRIM(metodo_pago)),'efectivo') AS metodo_pago, ROUND(SUM(COALESCE(monto_pagado,0)),2) AS total_pagado
+				query := `SELECT COALESCE(LOWER(TRIM(metodo_pago)),'efectivo') AS metodo_pago, COALESCE(SUM(COALESCE(monto_pagado,0)),0) AS total_pagado
 					FROM empresa_ventas_estacion_metricas
 					WHERE empresa_id = ?
 						AND COALESCE(estado,'activo') = 'activo'
@@ -88,7 +88,7 @@ func EmpresaCarritosCompraHandler(dbEmp *sql.DB) http.HandlerFunc {
 						continue
 					}
 					metodo = strings.TrimSpace(strings.ToLower(metodo))
-					totals[metodo] = total
+					totals[metodo] = roundMoneyCarritoHandler(total)
 				}
 				if err := rows.Err(); err != nil {
 					log.Printf("[carritos] totales_pago rows error empresa_id=%d estacion_id=%d error: %v", empresaID, estacionID, err)

@@ -332,6 +332,97 @@ func TestPublicVentaPublicaHandlerEstadoPagoRequiereOrderCode(t *testing.T) {
 	}
 }
 
+func TestPublicVentaPublicaHandlerCatalogoWithLegacySchemaMissingColumns(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_venta_publica_public_legacy_schema.db")
+	if _, err := dbEmp.Exec(`CREATE TABLE empresas (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		nombre TEXT,
+		estado TEXT
+	)`); err != nil {
+		t.Fatalf("create empresas table: %v", err)
+	}
+	if _, err := dbEmp.Exec(`INSERT INTO empresas (id, nombre, estado) VALUES (404, 'Hotel Legacy', 'activo')`); err != nil {
+		t.Fatalf("insert empresa: %v", err)
+	}
+	if _, err := dbEmp.Exec(`CREATE TABLE empresa_venta_publica_configuracion (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		empresa_id INTEGER NOT NULL UNIQUE,
+		empresa_slug TEXT NOT NULL,
+		nombre_tienda TEXT,
+		moneda TEXT DEFAULT 'COP',
+		mostrar_stock INTEGER DEFAULT 1,
+		wompi_activo INTEGER DEFAULT 0,
+		wompi_mode TEXT DEFAULT 'sandbox',
+		estado TEXT DEFAULT 'activo'
+	)`); err != nil {
+		t.Fatalf("create legacy config table: %v", err)
+	}
+	if _, err := dbEmp.Exec(`CREATE TABLE empresa_venta_publica_items (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		empresa_id INTEGER NOT NULL,
+		codigo_publico TEXT NOT NULL,
+		nombre TEXT NOT NULL,
+		descripcion TEXT,
+		precio REAL DEFAULT 0,
+		moneda TEXT DEFAULT 'COP',
+		fecha_creacion TEXT DEFAULT (datetime('now','localtime'))
+	)`); err != nil {
+		t.Fatalf("create legacy items table: %v", err)
+	}
+	if _, err := dbEmp.Exec(`CREATE TABLE empresa_venta_publica_ordenes (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		empresa_id INTEGER NOT NULL,
+		codigo_orden TEXT NOT NULL,
+		total REAL DEFAULT 0,
+		metodo_pago TEXT DEFAULT 'wompi_nequi',
+		estado_pago TEXT DEFAULT 'pendiente',
+		fecha_creacion TEXT DEFAULT (datetime('now','localtime'))
+	)`); err != nil {
+		t.Fatalf("create legacy orders table: %v", err)
+	}
+	if _, err := dbEmp.Exec(`INSERT INTO empresa_venta_publica_configuracion (empresa_id, empresa_slug, nombre_tienda, moneda, mostrar_stock, wompi_activo, wompi_mode, estado)
+		VALUES (404, 'hotel-legacy', 'Hotel Legacy', 'COP', 1, 0, 'sandbox', 'activo')`); err != nil {
+		t.Fatalf("insert legacy config: %v", err)
+	}
+	if _, err := dbEmp.Exec(`INSERT INTO empresa_venta_publica_items (empresa_id, codigo_publico, nombre, descripcion, precio, moneda, fecha_creacion)
+		VALUES (404, 'LEG-1', 'Habitacion Legacy', 'Tarifa nocturna', 95000, 'COP', datetime('now','localtime'))`); err != nil {
+		t.Fatalf("insert legacy item: %v", err)
+	}
+
+	if err := dbpkg.EnsureEmpresaVentaPublicaSchema(dbEmp); err != nil {
+		t.Fatalf("EnsureEmpresaVentaPublicaSchema legacy repair: %v", err)
+	}
+
+	h := PublicVentaPublicaHandler(dbEmp)
+	req := httptest.NewRequest(http.MethodGet, "/api/public/venta_publica?action=catalogo&empresa_slug=hotel-legacy", nil)
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("catalog legacy status=%d body=%s", rr.Code, rr.Body.String())
+	}
+
+	var resp struct {
+		EmpresaID   int64                           `json:"empresa_id"`
+		EmpresaSlug string                          `json:"empresa_slug"`
+		Items       []dbpkg.EmpresaVentaPublicaItem `json:"items"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode legacy catalog response: %v", err)
+	}
+	if resp.EmpresaID != 404 {
+		t.Fatalf("expected empresa_id=404, got=%d", resp.EmpresaID)
+	}
+	if resp.EmpresaSlug != "hotel-legacy" {
+		t.Fatalf("expected empresa_slug=hotel-legacy, got=%q", resp.EmpresaSlug)
+	}
+	if len(resp.Items) != 1 {
+		t.Fatalf("expected one legacy item after schema repair, got=%d", len(resp.Items))
+	}
+	if resp.Items[0].Estado != "activo" {
+		t.Fatalf("expected repaired item estado activo, got=%q", resp.Items[0].Estado)
+	}
+}
+
 func TestResolveVentaPublicaSlugFromHost(t *testing.T) {
 	t.Setenv("VENTA_PUBLICA_BASE_DOMAINS", "powerfulcontrolsystem.com")
 

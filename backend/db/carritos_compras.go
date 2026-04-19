@@ -838,12 +838,22 @@ func GetCarritosCompraByEmpresa(dbConn *sql.DB, empresaID int64, includeInactive
 		item.EstadoVenta = resolveCarritoEstadoVenta(item.EstadoCarrito, item.Estado, item.PagadoEn)
 		out = append(out, item)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 	return out, nil
 }
 
 func buildCarritosCompraByEmpresaQuery(empresaID int64, includeInactive bool, q string, includeClientes bool) (string, []interface{}) {
 	clienteNombreExpr := `''`
 	joinClientes := ""
+	joinItemCounts := `
+	LEFT JOIN (
+		SELECT empresa_id, carrito_id, COUNT(id) AS item_count
+		FROM carrito_compra_items
+		WHERE COALESCE(estado, 'activo') = 'activo'
+		GROUP BY empresa_id, carrito_id
+	) ic ON ic.empresa_id = c.empresa_id AND ic.carrito_id = c.id`
 	searchClienteExpr := ""
 	if includeClientes {
 		clienteNombreExpr = `COALESCE(cl.nombre_razon_social, '')`
@@ -877,14 +887,13 @@ func buildCarritosCompraByEmpresaQuery(empresaID int64, includeInactive bool, q 
 		COALESCE(c.total_pagado, 0),
 		COALESCE(c.metodo_pago, 'efectivo'),
 		COALESCE(c.referencia_pago, ''),
-		COALESCE(COUNT(i.id), 0),
+		COALESCE(ic.item_count, 0),
 		COALESCE(c.fecha_creacion, ''),
 		COALESCE(c.fecha_actualizacion, ''),
 		COALESCE(c.usuario_creador, ''),
 		COALESCE(c.estado, 'activo'),
 		COALESCE(c.observaciones, '')
-	FROM carritos_compras c` + joinClientes + `
-	LEFT JOIN carrito_compra_items i ON i.empresa_id = c.empresa_id AND i.carrito_id = c.id AND COALESCE(i.estado, 'activo') = 'activo'
+	FROM carritos_compras c` + joinClientes + joinItemCounts + `
 	WHERE c.empresa_id = ?`
 	args := []interface{}{empresaID}
 
@@ -903,7 +912,7 @@ func buildCarritosCompraByEmpresaQuery(empresaID int64, includeInactive bool, q 
 			args = append(args, pat)
 		}
 	}
-	query += ` GROUP BY c.id ORDER BY c.id DESC`
+	query += ` ORDER BY c.id DESC`
 	return query, args
 }
 
@@ -1403,11 +1412,11 @@ func ListCarritoStationMetricSummary(dbConn *sql.DB, empresaID, estacionID int64
 		COALESCE(MAX(NULLIF(estacion_nombre, '')), '') AS estacion_nombre,
 		SUM(CASE WHEN evento_operacion = 'venta_pagada' THEN 1 ELSE 0 END) AS ventas_pagadas,
 		SUM(CASE WHEN evento_operacion = 'cierre_parcial_anulado' THEN 1 ELSE 0 END) AS correcciones,
-		ROUND(SUM(CASE WHEN evento_operacion = 'venta_pagada' THEN COALESCE(monto_total, 0) ELSE 0 END), 2) AS monto_vendido,
-		ROUND(SUM(CASE WHEN evento_operacion = 'venta_pagada' THEN COALESCE(monto_pagado, 0) ELSE 0 END), 2) AS monto_pagado,
-		ROUND(SUM(COALESCE(monto_anulado, 0)), 2) AS monto_anulado,
-		ROUND(SUM(COALESCE(devolucion_total, 0)), 2) AS devolucion_total,
-		ROUND(COALESCE(AVG(CASE WHEN evento_operacion = 'venta_pagada' AND COALESCE(duracion_segundos, 0) > 0 THEN duracion_segundos END), 0), 2) AS tiempo_promedio_segundos,
+		COALESCE(SUM(CASE WHEN evento_operacion = 'venta_pagada' THEN COALESCE(monto_total, 0) ELSE 0 END), 0) AS monto_vendido,
+		COALESCE(SUM(CASE WHEN evento_operacion = 'venta_pagada' THEN COALESCE(monto_pagado, 0) ELSE 0 END), 0) AS monto_pagado,
+		COALESCE(SUM(COALESCE(monto_anulado, 0)), 0) AS monto_anulado,
+		COALESCE(SUM(COALESCE(devolucion_total, 0)), 0) AS devolucion_total,
+		COALESCE(AVG(CASE WHEN evento_operacion = 'venta_pagada' AND COALESCE(duracion_segundos, 0) > 0 THEN duracion_segundos END), 0) AS tiempo_promedio_segundos,
 		COALESCE(MIN(CASE WHEN evento_operacion = 'venta_pagada' AND COALESCE(duracion_segundos, 0) > 0 THEN duracion_segundos END), 0) AS tiempo_min_segundos,
 		COALESCE(MAX(CASE WHEN evento_operacion = 'venta_pagada' AND COALESCE(duracion_segundos, 0) > 0 THEN duracion_segundos END), 0) AS tiempo_max_segundos,
 		COALESCE(MAX(COALESCE(fecha_evento, fecha_creacion, '')), '') AS ultima_operacion
@@ -1461,6 +1470,11 @@ func ListCarritoStationMetricSummary(dbConn *sql.DB, empresaID, estacionID int64
 				row.EstacionNombre = "Estacion"
 			}
 		}
+		row.MontoVendido = round2(row.MontoVendido)
+		row.MontoPagado = round2(row.MontoPagado)
+		row.MontoAnulado = round2(row.MontoAnulado)
+		row.DevolucionTotal = round2(row.DevolucionTotal)
+		row.TiempoPromedioSegundos = round2(row.TiempoPromedioSegundos)
 		out = append(out, row)
 	}
 	if err := rows.Err(); err != nil {

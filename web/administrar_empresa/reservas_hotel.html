@@ -101,7 +101,7 @@
       <div class="form-row" style="margin-bottom:0;">
         <div class="form-col">
           <label class="form-label">Buscar</label>
-          <input id="buscar" class="form-input" placeholder="Codigo, cliente, correo o estacion">
+          <input id="buscar" class="form-input" maxlength="160" placeholder="Codigo, cliente, correo o estacion">
         </div>
         <div class="form-col">
           <label class="form-label">Estado reserva</label>
@@ -175,8 +175,64 @@
       return params.get(name);
     }
 
+    function parsePositiveInt(raw) {
+      const n = Number(String(raw == null ? "" : raw).trim());
+      if (!Number.isFinite(n)) return 0;
+      const value = Math.trunc(n);
+      return value > 0 ? value : 0;
+    }
+
+    function resolveEmpresaIdContext() {
+      const own = parsePositiveInt(getQueryParam("empresa_id") || getQueryParam("id"));
+      if (own > 0) return own;
+      try {
+        if (window.parent && window.parent !== window) {
+          if (typeof window.parent.__resolveEmpresaIdContext === "function") {
+            const parentResolved = parsePositiveInt(window.parent.__resolveEmpresaIdContext());
+            if (parentResolved > 0) return parentResolved;
+          }
+          const parentParams = new URLSearchParams(window.parent.location.search || "");
+          const parentID = parsePositiveInt(parentParams.get("empresa_id") || parentParams.get("id"));
+          if (parentID > 0) return parentID;
+        }
+      } catch (_) {}
+      const keys = ["active_empresa_id", "empresa_id", "admin_empresa_id"];
+      const stores = [];
+      try { stores.push(window.sessionStorage); } catch (_) {}
+      try { stores.push(window.localStorage); } catch (_) {}
+      for (let s = 0; s < stores.length; s += 1) {
+        const store = stores[s];
+        if (!store) continue;
+        for (let i = 0; i < keys.length; i += 1) {
+          const found = parsePositiveInt(store.getItem(keys[i]) || "");
+          if (found > 0) return found;
+        }
+      }
+      return 0;
+    }
+
     function normalize(value) {
       return (value == null ? "" : String(value)).trim();
+    }
+
+    function normalizeQueryText(value, maxLen) {
+      const normalized = normalize(value).replace(/\s+/g, " ");
+      if (!maxLen || normalized.length <= maxLen) return normalized;
+      return normalized.slice(0, maxLen);
+    }
+
+    function buildReservasQuery(extra) {
+      const params = new URLSearchParams();
+      params.set("empresa_id", String(state.empresaID));
+      const source = extra || {};
+      Object.keys(source).forEach(function (key) {
+        const raw = source[key];
+        if (raw == null) return;
+        const value = typeof raw === "string" ? normalizeQueryText(raw, key === "search" ? 160 : 64) : String(raw);
+        if (!value) return;
+        params.set(key, value);
+      });
+      return params;
     }
 
     function esc(value) {
@@ -270,7 +326,7 @@
     }
 
     function applyFilters() {
-      state.q = normalize(document.getElementById("buscar").value);
+      state.q = normalizeQueryText(document.getElementById("buscar").value, 160);
       state.estadoReserva = normalize(document.getElementById("filtro_estado_reserva").value);
       state.estadoPago = normalize(document.getElementById("filtro_estado_pago").value);
       state.estacionID = Number(document.getElementById("filtro_estacion_id").value || 0);
@@ -280,15 +336,15 @@
 
     async function loadItems() {
       applyFilters();
-      const params = new URLSearchParams();
-      params.set("empresa_id", String(state.empresaID));
-      params.set("limit", "500");
-      if (state.q) params.set("search", state.q);
-      if (state.estadoReserva) params.set("estado_reserva", state.estadoReserva);
-      if (state.estadoPago) params.set("estado_pago", state.estadoPago);
-      if (state.estacionID > 0) params.set("estacion_id", String(state.estacionID));
-      if (state.fechaDesde) params.set("fecha_desde", state.fechaDesde);
-      if (state.fechaHasta) params.set("fecha_hasta", state.fechaHasta);
+      const params = buildReservasQuery({
+        limit: "500",
+        search: state.q,
+        estado_reserva: state.estadoReserva,
+        estado_pago: state.estadoPago,
+        estacion_id: state.estacionID > 0 ? String(state.estacionID) : "",
+        fecha_desde: state.fechaDesde,
+        fecha_hasta: state.fechaHasta
+      });
 
       const resp = await fetch("/api/empresa/reservas_hotel?" + params.toString(), { credentials: "same-origin" });
       await ensureOk(resp);
@@ -305,7 +361,6 @@
       }
 
       const rows = state.items.map(function (item) {
-        const rowData = esc(JSON.stringify(item));
         const id = Number(item.id || 0);
         const estadoRegistro = normalize(item.estado || "activo").toLowerCase();
         const nextAction = estadoRegistro === "activo" ? "desactivar" : "activar";
@@ -321,7 +376,7 @@
           "<td>" + esc(item.estado || "activo") + "</td>" +
           "<td>" + esc(item.monto_total || 0) + " " + esc(item.moneda || "COP") + "</td>" +
           "<td>" +
-            '<button class="btn secondary" type="button" data-action="edit" data-item="' + rowData + '">Editar</button> ' +
+            '<button class="btn secondary" type="button" data-action="edit" data-id="' + id + '">Editar</button> ' +
             '<button class="btn secondary" type="button" data-action="confirmar" data-id="' + id + '">Confirmar pago</button> ' +
             '<button class="btn secondary" type="button" data-action="reconvertir" data-id="' + id + '">Reconver. carrito</button> ' +
             '<button class="btn secondary" type="button" data-action="cancelar" data-id="' + id + '">Cancelar</button> ' +
@@ -449,9 +504,7 @@
     }
 
     async function aplicarPoliticasReserva() {
-      const params = new URLSearchParams();
-      params.set("empresa_id", String(state.empresaID));
-      params.set("action", "aplicar_politicas");
+      const params = buildReservasQuery({ action: "aplicar_politicas" });
       const resp = await fetch("/api/empresa/reservas_hotel?" + params.toString(), { credentials: "same-origin" });
       await ensureOk(resp);
       const result = await resp.json();
@@ -462,10 +515,7 @@
     }
 
     async function toggleEstado(id, nextAction) {
-      const params = new URLSearchParams();
-      params.set("empresa_id", String(state.empresaID));
-      params.set("id", String(id));
-      params.set("action", nextAction);
+      const params = buildReservasQuery({ id: String(id), action: nextAction });
       const resp = await fetch("/api/empresa/reservas_hotel?" + params.toString(), {
         method: "PUT",
         credentials: "same-origin"
@@ -476,9 +526,7 @@
 
     async function deleteReservation(id) {
       if (!window.confirm("Eliminar esta reserva?")) return;
-      const params = new URLSearchParams();
-      params.set("empresa_id", String(state.empresaID));
-      params.set("id", String(id));
+      const params = buildReservasQuery({ id: String(id) });
       const resp = await fetch("/api/empresa/reservas_hotel?" + params.toString(), {
         method: "DELETE",
         credentials: "same-origin"
@@ -498,11 +546,11 @@
         return;
       }
 
-      const params = new URLSearchParams();
-      params.set("empresa_id", String(state.empresaID));
-      params.set("action", "disponibilidad");
-      params.set("fecha_entrada", fechaEntrada);
-      params.set("fecha_salida", fechaSalida);
+      const params = buildReservasQuery({
+        action: "disponibilidad",
+        fecha_entrada: fechaEntrada,
+        fecha_salida: fechaSalida
+      });
 
       try {
         const resp = await fetch("/api/empresa/reservas_hotel?" + params.toString(), { credentials: "same-origin" });
@@ -541,10 +589,10 @@
         const action = btn.getAttribute("data-action");
         const id = Number(btn.getAttribute("data-id") || 0);
         if (action === "edit") {
-          const raw = btn.getAttribute("data-item") || "{}";
-          try {
-            fillForm(JSON.parse(raw));
-          } catch (_) {}
+          const item = state.items.find(function (entry) {
+            return Number(entry && entry.id || 0) === id;
+          });
+          if (item) fillForm(item);
           return;
         }
         if (!id) return;
@@ -613,7 +661,7 @@
     }
 
     async function init() {
-      state.empresaID = Number(getQueryParam("empresa_id") || 0);
+      state.empresaID = resolveEmpresaIdContext();
       if (!state.empresaID) {
         setMessage("empresa_id es obligatorio en la URL.", true);
         return;

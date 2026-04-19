@@ -382,9 +382,14 @@
     }
 
     function getYouTubeStationQuery(cfg) {
-      if (!cfg || typeof cfg !== 'object') return 'YouTube';
+      if (!cfg || typeof cfg !== 'object') return '';
       const raw = String(cfg.youtube_query || '').trim();
-      return raw || 'YouTube';
+      return raw;
+    }
+
+    function getYouTubeStationDisplayReference(cfg) {
+      const raw = getYouTubeStationQuery(cfg);
+      return raw || '';
     }
 
     function buildYouTubeStationBrowserURL(cfg, compact) {
@@ -411,17 +416,86 @@
 
     function generateYouTubeCardHtml(cfg) {
       const browserSrc = sanitize(buildYouTubeStationBrowserURL(cfg, true));
+      const configuredSource = sanitize(getYouTubeStationDisplayReference(cfg) || 'Sin video o playlist configurada');
       return '<article class="portal-card station-card-inactive youtube-station-card" id="youtubeStationCard" data-special-station="youtube" aria-label="Estación YouTube">' +
         '<button type="button" class="youtube-station-play" id="youtubeStationPlay" aria-label="Reproducir estación YouTube">▶</button>' +
         '<button type="button" class="youtube-station-expand" id="youtubeStationExpand" aria-label="Maximizar estación YouTube">[]</button>' +
         '<div class="youtube-station-head">' +
           '<h3>YouTube</h3>' +
-          '<p>Vista embebida adaptable para esta estación.</p>' +
+          '<p>Reproduce videos, playlists y enlaces de Shorts válidos de YouTube dentro de esta estación.</p>' +
+          '<p class="youtube-station-source">Fuente: ' + configuredSource + '</p>' +
         '</div>' +
         '<div class="youtube-station-browser-preview">' +
           '<iframe class="youtube-station-preview-frame" src="' + browserSrc + '" title="Vista previa YouTube" loading="lazy" tabindex="-1" allow="autoplay; encrypted-media; fullscreen"></iframe>' +
         '</div>' +
+        '<div class="youtube-station-editor">' +
+          '<label class="form-label youtube-station-editor-label" for="youtubeStationSourceInput">Video, playlist o Shorts</label>' +
+          '<input id="youtubeStationSourceInput" class="form-input youtube-station-editor-input" type="text" value="' + sanitize(getYouTubeStationDisplayReference(cfg)) + '" placeholder="Pega URL o ID de video, playlist o Shorts">' +
+          '<div class="youtube-station-editor-actions">' +
+            '<button type="button" class="btn secondary youtube-station-save" id="youtubeStationSaveBtn">Guardar y cargar</button>' +
+            '<a class="btn secondary youtube-station-open-link" id="youtubeStationOpenLinkBtn" href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer">Abrir en YouTube</a>' +
+          '</div>' +
+          '<p class="form-help youtube-station-editor-help">Puedes pegar una URL normal de YouTube, una playlist o un enlace de Shorts. Si escribes texto libre, la búsqueda se abrirá fuera del sistema.</p>' +
+          '<div id="youtubeStationInlineMessage" class="form-help youtube-station-inline-message"></div>' +
+        '</div>' +
       '</article>';
+    }
+
+    function setYouTubeInlineMessage(text, type) {
+      const box = document.getElementById('youtubeStationInlineMessage');
+      if (!box) return;
+      box.textContent = String(text || '').trim();
+      box.className = type === 'error'
+        ? 'error youtube-station-inline-message'
+        : (type === 'success' ? 'success youtube-station-inline-message' : 'form-help youtube-station-inline-message');
+    }
+
+    function syncYouTubeOpenLinkFromValue(value) {
+      const link = document.getElementById('youtubeStationOpenLinkBtn');
+      if (!link) return;
+      const clean = String(value || '').trim();
+      if (!clean) {
+        link.href = 'https://www.youtube.com/';
+        return;
+      }
+      const looksURL = /^https?:\/\//i.test(clean) || /^www\./i.test(clean) || /^youtu\.be\//i.test(clean) || /^youtube\.com\//i.test(clean);
+      if (looksURL) {
+        link.href = /^https?:\/\//i.test(clean) ? clean : ('https://' + clean.replace(/^\/+/, ''));
+        return;
+      }
+      link.href = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(clean);
+    }
+
+    async function saveYouTubeSourceFromCard() {
+      const input = document.getElementById('youtubeStationSourceInput');
+      const saveBtn = document.getElementById('youtubeStationSaveBtn');
+      const nextValue = input ? String(input.value || '').trim() : '';
+      if (!empresaId) {
+        setYouTubeInlineMessage('No se encontró empresa activa para guardar la fuente de YouTube.', 'error');
+        return;
+      }
+      if (saveBtn) {
+        saveBtn.disabled = true;
+      }
+      setYouTubeInlineMessage('', 'help');
+      try {
+        const current = await getConfigFromServer();
+        const nextConfig = current || normalizeConfig({ cantidad: 1, estaciones: [] });
+        nextConfig.youtube_enabled = true;
+        nextConfig.youtube_query = nextValue;
+        await saveConfigToServer(nextConfig);
+        stationConfig = normalizeConfig(nextConfig);
+        renderEstaciones(stationConfig);
+        setYouTubeInlineMessage('Fuente de YouTube guardada y cargada en la tarjeta.', 'success');
+      } catch (err) {
+        console.error('No se pudo guardar la fuente de YouTube desde la tarjeta', err);
+        setYouTubeInlineMessage('No se pudo guardar la fuente de YouTube desde la tarjeta.', 'error');
+      } finally {
+        const nextSaveBtn = document.getElementById('youtubeStationSaveBtn');
+        if (nextSaveBtn) {
+          nextSaveBtn.disabled = false;
+        }
+      }
     }
 
     async function loadCajaTotals(cfg) {
@@ -579,6 +653,40 @@
     }
 
     function wireSpecialStationCards(cfg) {
+      const sourceInput = document.getElementById('youtubeStationSourceInput');
+      if (sourceInput) {
+        syncYouTubeOpenLinkFromValue(sourceInput.value);
+        sourceInput.addEventListener('click', ev => {
+          ev.stopPropagation();
+        });
+        sourceInput.addEventListener('keydown', ev => {
+          ev.stopPropagation();
+          if (ev.key === 'Enter') {
+            ev.preventDefault();
+            saveYouTubeSourceFromCard();
+          }
+        });
+        sourceInput.addEventListener('input', ev => {
+          syncYouTubeOpenLinkFromValue(ev.target && ev.target.value);
+        });
+      }
+
+      const saveBtn = document.getElementById('youtubeStationSaveBtn');
+      if (saveBtn) {
+        saveBtn.addEventListener('click', ev => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          saveYouTubeSourceFromCard();
+        });
+      }
+
+      const openLinkBtn = document.getElementById('youtubeStationOpenLinkBtn');
+      if (openLinkBtn) {
+        openLinkBtn.addEventListener('click', ev => {
+          ev.stopPropagation();
+        });
+      }
+
       const expandBtn = document.getElementById('youtubeStationExpand');
       if (expandBtn) {
         expandBtn.addEventListener('click', ev => {
@@ -609,6 +717,12 @@
 
       const youtubeCard = document.getElementById('youtubeStationCard');
       if (youtubeCard) {
+        youtubeCard.addEventListener('click', ev => {
+          const interactive = ev.target && ev.target.closest ? ev.target.closest('button, a, input, textarea, select, label') : null;
+          if (interactive) {
+            ev.stopPropagation();
+          }
+        });
         youtubeCard.addEventListener('keydown', ev => {
           if (ev.key !== 'Enter' && ev.key !== ' ') return;
           ev.preventDefault();

@@ -519,8 +519,6 @@ func EnsureEmpresaVentaPublicaSchema(dbConn *sql.DB) error {
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
-		`CREATE UNIQUE INDEX IF NOT EXISTS ux_venta_publica_cfg_slug ON empresa_venta_publica_configuracion(empresa_slug);`,
-		`CREATE INDEX IF NOT EXISTS ix_venta_publica_cfg_empresa_estado ON empresa_venta_publica_configuracion(empresa_id, estado);`,
 		`CREATE TABLE IF NOT EXISTS empresa_venta_publica_items (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			empresa_id INTEGER NOT NULL,
@@ -541,7 +539,6 @@ func EnsureEmpresaVentaPublicaSchema(dbConn *sql.DB) error {
 			observaciones TEXT,
 			UNIQUE(empresa_id, codigo_publico)
 		);`,
-		`CREATE INDEX IF NOT EXISTS ix_venta_publica_items_empresa_estado ON empresa_venta_publica_items(empresa_id, estado, orden_visual, id);`,
 		`CREATE TABLE IF NOT EXISTS empresa_venta_publica_ordenes (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			empresa_id INTEGER NOT NULL,
@@ -568,8 +565,6 @@ func EnsureEmpresaVentaPublicaSchema(dbConn *sql.DB) error {
 			observaciones TEXT,
 			UNIQUE(empresa_id, codigo_orden)
 		);`,
-		`CREATE INDEX IF NOT EXISTS ix_venta_publica_ordenes_empresa_estado ON empresa_venta_publica_ordenes(empresa_id, estado_pago, fecha_creacion DESC);`,
-		`CREATE INDEX IF NOT EXISTS ix_venta_publica_ordenes_tx ON empresa_venta_publica_ordenes(transaction_id);`,
 	}
 
 	for _, stmt := range stmts {
@@ -579,6 +574,21 @@ func EnsureEmpresaVentaPublicaSchema(dbConn *sql.DB) error {
 	}
 
 	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "empresa_slug", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "nombre_tienda", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "descripcion_tienda", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "logo_url", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "banner_url", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "color_primario", "TEXT DEFAULT '#0f4c81'"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "wompi_mode", "TEXT DEFAULT 'sandbox'"); err != nil {
@@ -608,10 +618,103 @@ func EnsureEmpresaVentaPublicaSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "tema_visual", "TEXT DEFAULT 'default'"); err != nil {
 		return err
 	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "dominio_publico", "TEXT"); err != nil {
+		return err
+	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "epayco_private_key_ref", "TEXT"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "epayco_customer_id", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "fecha_creacion", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "fecha_actualizacion", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "usuario_creador", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "estado", "TEXT DEFAULT 'activo'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_configuracion", "observaciones", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_items", "producto_id", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_items", "imagen_url", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_items", "stock_publicado", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_items", "orden_visual", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_items", "destacado", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_items", "fecha_actualizacion", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_items", "usuario_creador", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_items", "estado", "TEXT DEFAULT 'activo'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_items", "observaciones", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_ordenes", "descuento_total", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_ordenes", "impuesto_total", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_ordenes", "referencia_externa", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_ordenes", "transaction_id", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_ordenes", "items_json", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_ordenes", "pasarela_payload_json", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_ordenes", "pagado_en", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_ordenes", "fecha_actualizacion", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_ordenes", "usuario_creador", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_ordenes", "estado", "TEXT DEFAULT 'activo'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_venta_publica_ordenes", "observaciones", "TEXT"); err != nil {
+		return err
+	}
+	if _, err := dbConn.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS ux_venta_publica_cfg_slug ON empresa_venta_publica_configuracion(empresa_slug)`); err != nil {
+		return err
+	}
+	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_venta_publica_cfg_empresa_estado ON empresa_venta_publica_configuracion(empresa_id, estado)`); err != nil {
+		return err
+	}
+	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_venta_publica_items_empresa_estado ON empresa_venta_publica_items(empresa_id, estado, orden_visual, id)`); err != nil {
+		return err
+	}
+	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_venta_publica_ordenes_empresa_estado ON empresa_venta_publica_ordenes(empresa_id, estado_pago, fecha_creacion DESC)`); err != nil {
+		return err
+	}
+	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_venta_publica_ordenes_tx ON empresa_venta_publica_ordenes(transaction_id)`); err != nil {
 		return err
 	}
 

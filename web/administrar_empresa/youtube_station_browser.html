@@ -11,12 +11,12 @@
     <header class="youtube-station-browser-toolbar">
       <div>
         <strong>YouTube</strong>
-        <span id="youtubeStationBrowserLabel" class="youtube-station-browser-label">Exploración embebida</span>
+        <span id="youtubeStationBrowserLabel" class="youtube-station-browser-label">Reproducción embebida</span>
       </div>
       <div class="youtube-station-browser-actions">
         <div id="youtubeSearchBar" class="youtube-station-search-bar">
-          <input id="youtubeSearchInput" class="form-input youtube-station-search-input" type="text" placeholder="Buscar en YouTube dentro de la estación">
-          <button id="youtubeSearchBtn" class="btn secondary" type="button">Buscar</button>
+          <input id="youtubeSearchInput" class="form-input youtube-station-search-input" type="text" placeholder="Pega URL o ID de video/playlist de YouTube">
+          <button id="youtubeSearchBtn" class="btn secondary" type="button">Cargar</button>
         </div>
         <button id="youtubeStationHomeBtn" class="btn secondary" type="button">Inicio</button>
         <a id="youtubeStationBrowserLink" class="btn secondary" href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer">Abrir YouTube</a>
@@ -24,6 +24,10 @@
     </header>
     <div class="youtube-station-browser-frame-wrap">
       <iframe id="youtubeStationFrame" style="width:100%;height:100%;border:0;" title="Explorador YouTube de la estación" loading="lazy" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+      <div id="youtubeStationFallback" class="youtube-station-browser-empty" hidden>
+        <strong id="youtubeStationFallbackTitle">Configura un video o playlist</strong>
+        <p id="youtubeStationFallbackText">Pega una URL o un ID válido de YouTube para poder reproducirlo dentro de la estación.</p>
+      </div>
     </div>
   </section>
 
@@ -42,53 +46,185 @@
     }
 
     function resolveQuery() {
-      var query = getParam('query');
-      return query || 'YouTube';
+      return getParam('query');
     }
 
-    function resolveHomeQuery() {
-      return 'YouTube oficial';
+    function normalizeYouTubeReference(value) {
+      var raw = sanitizeText(value);
+      var lowered = raw.toLowerCase();
+      if (!raw || lowered === 'youtube' || lowered === 'youtube oficial') {
+        return '';
+      }
+      return raw;
     }
 
-    function buildExternalURL(query) {
-      var clean = sanitizeText(query);
-      if (!clean) return 'https://www.youtube.com/';
-      return 'https://www.youtube.com/results?search_query=' + encodeURIComponent(clean);
+    function isLikelyVideoID(value) {
+      return /^[a-zA-Z0-9_-]{11}$/.test(String(value || ''));
     }
 
-    function buildEmbedURL(query, compact) {
-      var clean = sanitizeText(query) || resolveHomeQuery();
+    function isLikelyPlaylistID(value) {
+      var clean = String(value || '').trim();
+      return /^(PL|UU|LL|FL|RD|OLAK5uy_|UL)[a-zA-Z0-9_-]{8,}$/.test(clean);
+    }
+
+    function toURL(raw) {
+      var clean = sanitizeText(raw);
+      if (!clean) return null;
+      try {
+        return new URL(clean);
+      } catch (err) {
+        try {
+          return new URL('https://' + clean);
+        } catch (nestedErr) {
+          return null;
+        }
+      }
+    }
+
+    function describeYouTubeTarget(rawValue) {
+      var clean = normalizeYouTubeReference(rawValue);
+      if (!clean) {
+        return {
+          mode: 'empty',
+          externalURL: 'https://www.youtube.com/',
+          label: 'Sin video configurado',
+          title: 'Configura un video o playlist',
+          message: 'Pega una URL o un ID válido de YouTube para reproducirlo dentro de la estación.',
+          canEmbed: false
+        };
+      }
+
+      var parsedURL = toURL(clean);
+      if (parsedURL) {
+        var hostname = String(parsedURL.hostname || '').replace(/^www\./i, '').toLowerCase();
+        var pathname = String(parsedURL.pathname || '');
+        var segments = pathname.split('/').filter(Boolean);
+        var videoFromPath = '';
+        var videoFromQuery = sanitizeText(parsedURL.searchParams.get('v'));
+        var playlistFromQuery = sanitizeText(parsedURL.searchParams.get('list'));
+
+        if (hostname === 'youtu.be' && segments.length) {
+          videoFromPath = sanitizeText(segments[0]);
+        } else if (hostname === 'youtube.com' || hostname === 'm.youtube.com' || hostname === 'music.youtube.com' || hostname === 'youtube-nocookie.com') {
+          if (segments[0] === 'embed' && segments[1]) {
+            videoFromPath = sanitizeText(segments[1]);
+          } else if ((segments[0] === 'shorts' || segments[0] === 'live' || segments[0] === 'watch') && segments[1]) {
+            videoFromPath = sanitizeText(segments[1]);
+          }
+        }
+
+        var videoID = isLikelyVideoID(videoFromQuery) ? videoFromQuery : (isLikelyVideoID(videoFromPath) ? videoFromPath : '');
+        var playlistID = isLikelyPlaylistID(playlistFromQuery) ? playlistFromQuery : '';
+
+        if (videoID) {
+          return {
+            mode: 'video',
+            videoID: videoID,
+            embedURL: 'https://www.youtube-nocookie.com/embed/' + encodeURIComponent(videoID),
+            externalURL: 'https://www.youtube.com/watch?v=' + encodeURIComponent(videoID),
+            label: 'Video configurado',
+            title: 'Video listo para reproducir',
+            message: 'La estación puede reproducir este video directamente dentro del iframe.',
+            canEmbed: true
+          };
+        }
+
+        if (playlistID) {
+          return {
+            mode: 'playlist',
+            playlistID: playlistID,
+            embedURL: 'https://www.youtube-nocookie.com/embed?listType=playlist&list=' + encodeURIComponent(playlistID),
+            externalURL: 'https://www.youtube.com/playlist?list=' + encodeURIComponent(playlistID),
+            label: 'Playlist configurada',
+            title: 'Playlist lista para reproducir',
+            message: 'La estación puede recorrer esta playlist dentro del iframe.',
+            canEmbed: true
+          };
+        }
+      }
+
+      if (isLikelyVideoID(clean)) {
+        return {
+          mode: 'video',
+          videoID: clean,
+          embedURL: 'https://www.youtube-nocookie.com/embed/' + encodeURIComponent(clean),
+          externalURL: 'https://www.youtube.com/watch?v=' + encodeURIComponent(clean),
+          label: 'Video configurado',
+          title: 'Video listo para reproducir',
+          message: 'La estación puede reproducir este video directamente dentro del iframe.',
+          canEmbed: true
+        };
+      }
+
+      if (isLikelyPlaylistID(clean)) {
+        return {
+          mode: 'playlist',
+          playlistID: clean,
+          embedURL: 'https://www.youtube-nocookie.com/embed?listType=playlist&list=' + encodeURIComponent(clean),
+          externalURL: 'https://www.youtube.com/playlist?list=' + encodeURIComponent(clean),
+          label: 'Playlist configurada',
+          title: 'Playlist lista para reproducir',
+          message: 'La estación puede recorrer esta playlist dentro del iframe.',
+          canEmbed: true
+        };
+      }
+
+      return {
+        mode: 'search',
+        externalURL: 'https://www.youtube.com/results?search_query=' + encodeURIComponent(clean),
+        label: 'Búsqueda externa',
+        title: 'YouTube no permite incrustar búsquedas completas',
+        message: 'Usa una URL o un ID de video/playlist para reproducir dentro de la estación. Este valor se abrirá como búsqueda externa.',
+        canEmbed: false
+      };
+    }
+
+    function applyPlaybackParams(descriptor, options) {
+      if (!descriptor || !descriptor.canEmbed || !descriptor.embedURL) return '';
       var params = new URLSearchParams();
-      params.set('listType', 'search');
-      params.set('list', clean);
       params.set('rel', '0');
       params.set('modestbranding', '1');
       params.set('playsinline', '1');
-      params.set('autoplay', compact ? '1' : '0');
-      params.set('mute', compact ? '1' : '0');
-      return 'https://www.youtube-nocookie.com/embed?' + params.toString();
+      if (options && options.autoplay) params.set('autoplay', '1');
+      if (options && options.mute) params.set('mute', '1');
+      return descriptor.embedURL + (descriptor.embedURL.indexOf('?') === -1 ? '?' : '&') + params.toString();
     }
 
-    function updateBrowser(query, compact) {
-      var clean = sanitizeText(query) || resolveHomeQuery();
+    function updateBrowser(query, compact, options) {
+      var descriptor = describeYouTubeTarget(query);
       var frame = document.getElementById('youtubeStationFrame');
       var label = document.getElementById('youtubeStationBrowserLabel');
       var link = document.getElementById('youtubeStationBrowserLink');
-      if (frame) frame.src = buildEmbedURL(clean, compact);
-      if (label) label.textContent = compact ? 'Vista rápida embebida' : ('Resultados: ' + clean);
-      if (link) link.href = buildExternalURL(clean);
-      return clean;
+      var fallback = document.getElementById('youtubeStationFallback');
+      var fallbackTitle = document.getElementById('youtubeStationFallbackTitle');
+      var fallbackText = document.getElementById('youtubeStationFallbackText');
+
+      if (frame) {
+        if (descriptor.canEmbed) {
+          frame.hidden = false;
+          frame.src = applyPlaybackParams(descriptor, options || { autoplay: compact, mute: compact });
+        } else {
+          frame.hidden = true;
+          frame.src = 'about:blank';
+        }
+      }
+      if (fallback) fallback.hidden = !!descriptor.canEmbed;
+      if (fallbackTitle) fallbackTitle.textContent = descriptor.title;
+      if (fallbackText) fallbackText.textContent = descriptor.message;
+      if (label) {
+        label.textContent = compact && descriptor.canEmbed ? 'Vista rápida embebida' : descriptor.label;
+      }
+      if (link) link.href = descriptor.externalURL;
+      return descriptor;
     }
 
     window.__ytPlayWithSound = function () {
-      var frame = document.getElementById('youtubeStationFrame');
-      if (!frame) return;
-      var currentQuery = sanitizeText(getParam('query')) || resolveHomeQuery();
-      frame.src = buildEmbedURL(currentQuery, false);
+      var currentQuery = resolveQuery();
+      updateBrowser(currentQuery, false, { autoplay: true, mute: false });
     };
 
     window.__ytLoadSearch = function (q) {
-      updateBrowser(q, false);
+      updateBrowser(q, false, { autoplay: false, mute: false });
     };
 
     (function bootstrap() {
@@ -103,19 +239,18 @@
       var searchBtn = document.getElementById('youtubeSearchBtn');
 
       if (shell) shell.dataset.compact = compact ? '1' : '0';
-      if (label) label.textContent = compact ? 'Vista rápida embebida' : 'Portada de búsqueda de YouTube';
+      if (label) label.textContent = compact ? 'Vista rápida embebida' : 'Reproducción embebida';
       if (link) link.href = 'https://www.youtube.com/';
       if (searchBar) searchBar.style.display = compact ? 'none' : 'flex';
-      if (searchInput) searchInput.value = query === 'YouTube' ? '' : query;
+      if (searchInput) searchInput.value = normalizeYouTubeReference(query);
 
-      updateBrowser(query, compact);
+      updateBrowser(query, compact, { autoplay: compact, mute: compact });
 
       if (homeBtn) {
         homeBtn.addEventListener('click', function (ev) {
           ev.preventDefault();
-          var defaultQuery = resolveHomeQuery();
           if (searchInput) searchInput.value = '';
-          updateBrowser(defaultQuery, compact);
+          updateBrowser('', compact, { autoplay: false, mute: false });
         });
       }
 
@@ -123,7 +258,6 @@
         searchBtn.addEventListener('click', function (ev) {
           ev.preventDefault();
           var q = String((searchInput && searchInput.value) || '').trim();
-          if (!q) q = resolveHomeQuery();
           if (typeof window.__ytLoadSearch === 'function') {
             window.__ytLoadSearch(q);
           }
@@ -135,7 +269,6 @@
           if (ev.key !== 'Enter') return;
           ev.preventDefault();
           var q = String(searchInput.value || '').trim();
-          if (!q) q = resolveHomeQuery();
           if (typeof window.__ytLoadSearch === 'function') {
             window.__ytLoadSearch(q);
           }

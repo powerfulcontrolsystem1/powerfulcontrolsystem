@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	dbpkg "github.com/you/pos-backend/db"
 	"github.com/you/pos-backend/utils"
@@ -893,6 +894,64 @@ func TestEmpresaCarritosCompraMetricasEstacionIncluyeCorrecciones(t *testing.T) 
 	ventasResumen, ok := metricsResp.Resumen["ventas_pagadas"].(float64)
 	if !ok || ventasResumen < 1 {
 		t.Fatalf("expected resumen ventas_pagadas >= 1, got %v", metricsResp.Resumen["ventas_pagadas"])
+	}
+}
+
+func TestEmpresaCarritosCompraTotalesPagoAgrupaYRedondea(t *testing.T) {
+	dbEmp := openTestSQLite(t, "empresas_carritos_totales_pago.db")
+	ensureClientesSchema(t, dbEmp)
+	ensureCarritosVentasSchema(t, dbEmp)
+
+	if _, err := dbpkg.RecordCarritoStationMetric(dbEmp, dbpkg.CarritoStationMetricInput{
+		EmpresaID:       1,
+		CarritoID:       11,
+		EstacionID:      2,
+		EstacionCodigo:  "EST-1-2",
+		EstacionNombre:  "Estacion 2",
+		EventoOperacion: "venta_pagada",
+		MetodoPago:      "efectivo",
+		Moneda:          "COP",
+		MontoPagado:     1234.567,
+		FechaEvento:     time.Now().Format("2006-01-02 15:04:05"),
+		UsuarioCreador:  "test@empresa.com",
+	}); err != nil {
+		t.Fatalf("seed efectivo: %v", err)
+	}
+	if _, err := dbpkg.RecordCarritoStationMetric(dbEmp, dbpkg.CarritoStationMetricInput{
+		EmpresaID:       1,
+		CarritoID:       12,
+		EstacionID:      2,
+		EstacionCodigo:  "EST-1-2",
+		EstacionNombre:  "Estacion 2",
+		EventoOperacion: "venta_pagada",
+		MetodoPago:      "tarjeta_credito",
+		Moneda:          "COP",
+		MontoPagado:     2000.335,
+		FechaEvento:     time.Now().Format("2006-01-02 15:04:05"),
+		UsuarioCreador:  "test@empresa.com",
+	}); err != nil {
+		t.Fatalf("seed tarjeta_credito: %v", err)
+	}
+
+	carritosHandler := EmpresaCarritosCompraHandler(dbEmp)
+	req := httptest.NewRequest(http.MethodGet, "/api/empresa/carritos_compra?empresa_id=1&action=totales_pago&estacion_id=2&days=7", nil)
+	rr := httptest.NewRecorder()
+	carritosHandler.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected totales_pago status %d, got %d body=%s", http.StatusOK, rr.Code, rr.Body.String())
+	}
+
+	var resp struct {
+		Totales map[string]float64 `json:"totales"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode totales response: %v", err)
+	}
+	if got := resp.Totales["efectivo"]; got != 1234.57 {
+		t.Fatalf("expected efectivo=1234.57, got %.2f", got)
+	}
+	if got := resp.Totales["tarjeta_credito"]; got != 2000.34 {
+		t.Fatalf("expected tarjeta_credito=2000.34, got %.2f", got)
 	}
 }
 

@@ -1,8 +1,29 @@
 (function () {
   var googleBtn = document.querySelector(".google-btn");
+  var rememberedEmailStorageKey = 'pcs_admin_login_remembered_email';
 
   function normalizeEmail(value) {
     return String(value || "").trim();
+  }
+
+  function getStoredRememberedEmail() {
+    try {
+      return normalizeEmail(window.localStorage.getItem(rememberedEmailStorageKey));
+    } catch (error) {
+      return '';
+    }
+  }
+
+  function setStoredRememberedEmail(email) {
+    try {
+      window.localStorage.setItem(rememberedEmailStorageKey, normalizeEmail(email));
+    } catch (error) {}
+  }
+
+  function clearStoredRememberedEmail() {
+    try {
+      window.localStorage.removeItem(rememberedEmailStorageKey);
+    } catch (error) {}
   }
 
   if (googleBtn) {
@@ -18,6 +39,7 @@
   var resetPasswordForm = document.getElementById('resetPasswordForm');
   var emailInput = document.getElementById('adminEmail');
   var passInput = document.getElementById('adminPassword');
+  var rememberAdminEmailCheckbox = document.getElementById('rememberAdminEmailCheckbox');
   var forgotEmailInput = document.getElementById('forgotEmail');
   var resetEmailInput = document.getElementById('resetEmail');
   var resetTokenInput = document.getElementById('resetToken');
@@ -73,6 +95,26 @@
     if (resetEmailInput) {
       resetEmailInput.value = normalized;
     }
+  }
+
+  function syncRememberedEmailWithUI() {
+    var email = normalizeEmail(emailInput && emailInput.value);
+    if (rememberAdminEmailCheckbox && rememberAdminEmailCheckbox.checked && email) {
+      setStoredRememberedEmail(email);
+      return;
+    }
+    clearStoredRememberedEmail();
+  }
+
+  function hydrateRememberedEmail() {
+    var rememberedEmail = getStoredRememberedEmail();
+    if (!rememberedEmail) {
+      return;
+    }
+    if (rememberAdminEmailCheckbox) {
+      rememberAdminEmailCheckbox.checked = true;
+    }
+    prefillEmailFields(rememberedEmail);
   }
 
   function clearRecoveryQueryState() {
@@ -150,6 +192,20 @@
     showAuthView('forgot');
   }
 
+  if (rememberAdminEmailCheckbox) {
+    rememberAdminEmailCheckbox.addEventListener('change', function () {
+      syncRememberedEmailWithUI();
+    });
+  }
+
+  if (emailInput) {
+    emailInput.addEventListener('input', function () {
+      if (rememberAdminEmailCheckbox && rememberAdminEmailCheckbox.checked) {
+        syncRememberedEmailWithUI();
+      }
+    });
+  }
+
   if (emailLoginForm) {
     emailLoginForm.addEventListener('submit', async function (event) {
       event.preventDefault();
@@ -158,6 +214,12 @@
       if (!email || !password) {
         showMsg(loginMessageDiv, 'Debes ingresar correo y contraseña.', true);
         return;
+      }
+
+      if (rememberAdminEmailCheckbox && rememberAdminEmailCheckbox.checked) {
+        setStoredRememberedEmail(email);
+      } else {
+        clearStoredRememberedEmail();
       }
 
       setButtonBusy(loginBtn, 'Ingresando...', true);
@@ -281,6 +343,7 @@
 
   (function handleRecoveryFromQuery() {
     try {
+      hydrateRememberedEmail();
       var params = new URLSearchParams(window.location.search);
       var queryEmail = normalizeEmail(params.get('email'));
       var token = normalizeEmail(params.get('token_recuperacion') || params.get('token')).replace(/\s+/g, '');

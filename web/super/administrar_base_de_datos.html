@@ -114,6 +114,15 @@
     .muted { color: var(--muted); }
     .inline-status { color: var(--muted); font-size: 0.88rem; font-weight: 700; }
     @media (max-width: 720px) {
+      .db-shell { gap: 10px; }
+      .hero-meta,
+      .chart-grid,
+      .rec-item {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .table-wide { min-width: 640px; }
+      .table-small { min-width: 560px; }
+      .table td code { max-width: 240px; }
       .hero-card .toolbar { justify-content: stretch; }
       .hero-card .toolbar .btn { flex: 1 1 auto; justify-content: center; }
     }

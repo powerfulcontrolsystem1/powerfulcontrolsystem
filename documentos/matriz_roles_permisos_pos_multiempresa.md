@@ -1,3 +1,17 @@
+2026-04-19: Nota operativa de robustez para `administrar_empresa` y `chat_y_tareas`
+- El dashboard principal de `Chat y tareas` agrega tarjetas resumen, acciones rapidas y refresco parcial, pero conserva el mismo alcance por rol y por `empresa_id` del modulo colaborativo.
+- Las nuevas validaciones de `conversacion_id` y `tarea_id` solo bloquean referencias invalidas o cruzadas; no agregan permisos nuevos ni cambian wrappers de acceso para administradores o usuarios empresa autorizados.
+
+2026-04-19: Nota operativa para `administrar_empresa` y `chat_y_tareas`
+- El panel empresa ahora prioriza visualmente `Chat y tareas` como punto de entrada, pero solo cuando ese enlace sigue visible para el rol autenticado dentro del contexto real de permisos.
+- La agenda de reuniones continúa compartida por `empresa_id`; mover el módulo al inicio del shell y hacer protagonista el calendario no crea rutas nuevas ni amplía privilegios. Solo reduce fricción para los mismos usuarios autorizados a consultar o registrar citas de la empresa.
+
+2026-04-19: Nota operativa de UX para `estaciones` y `carritos`
+- La mejora del estado visible de error en `carrito_de_compras.html` no cambia roles, wrappers ni acciones permitidas. Solo traduce y presenta mejor los fallos iniciales del flujo de apertura para que el mismo usuario autorizado pueda reintentar o volver a `estaciones.html` con menor ambigüedad operativa.
+
+2026-04-19: Nota operativa para `estaciones` y `carritos` en PostgreSQL
+- La correccion del listado y de los totales de `carritos_compra` no altera wrappers, roles ni alcance por `empresa_id`. El ajuste solo cambia la forma de consultar y redondear datos para que `WithEmpresaVentasPermissions` siga permitiendo la misma operacion de estaciones/carritos cuando el runtime usa PostgreSQL.
+
 2026-04-19: Nota operativa para `estaciones` y `carritos`
 - La apertura de una estación debe seguir funcionando para los mismos roles que ya tienen acceso operativo al módulo, incluso si el carrito enlazado proviene de datos legado. La resolución del carrito por referencia o nombre no cambia permisos ni alcance por `empresa_id`; solo evita recreaciones fallidas del carrito base.
 
@@ -127,6 +141,8 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 
 - Actualizacion 2026-04-18 (estaciones: tarjeta especial YouTube):
 	- `web/administrar_empresa/configuracion_de_estaciones.html`, `web/administrar_empresa/estaciones.html`, `web/administrar_empresa/youtube_station_browser.html` y `web/estilos.css` agregan una estacion especial `YouTube` dentro del mismo modulo autenticado de estaciones.
+	- La estacion especial reproduce solo videos o playlists embebibles válidos; cuando la referencia configurada es texto libre, el fallback sigue siendo abrir YouTube fuera del sistema y no cambia permisos ni alcance del modulo.
+	- La operadora también puede pegar y guardar desde la propia tarjeta la URL o ID del video, playlist o `Shorts` sin salir de `estaciones.html`; el cambio sigue usando el mismo permiso autenticado del modulo y no abre capacidades nuevas por rol.
 	- Impacto de matriz: sin cambios en permisos, roles o wrappers; la nueva tarjeta reutiliza la misma autorizacion empresarial y no abre endpoints ni acciones administrativas adicionales.
 
 - Actualizacion 2026-04-18 (gobernanza tecnica documental: DIAN, alertas de reinicio y reportes):
@@ -364,6 +380,10 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 - Actualizacion 2026-04-17 (autenticacion administrativa: login en una sola tarjeta visual):
 	- `web/login.html` y `web/estilos.css` integran el formulario por correo dentro de la misma tarjeta del acceso con Google, retirando el recuadro secundario del flujo publico de administradores.
 	- Impacto de matriz: sin cambios en permisos, roles, wrappers o visibilidad; el login administrativo sigue siendo publico y el panel super sigue reservado a `super_administrador`.
+
+- Actualizacion 2026-04-19 (autenticacion administrativa: recordar usuario por correo):
+	- `web/login.html` agrega nuevamente la casilla `Recordar usuario` y `web/js/login.js` guarda solo el correo administrativo en persistencia local cuando el propio usuario lo solicita.
+	- Impacto de matriz: sin cambios en permisos, roles, wrappers ni visibilidad; el login administrativo sigue siendo publico y el panel super mantiene el mismo alcance exclusivo para `super_administrador`.
 
 - Actualizacion 2026-04-16 (reportes globales super por administrador creador):
 	- `backend/handlers/reportes_globales.go` expone `/super/api/reportes_globales` filtrando empresas por `usuario_creador = admin autenticado`.

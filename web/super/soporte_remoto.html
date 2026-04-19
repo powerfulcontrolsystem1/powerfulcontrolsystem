@@ -41,7 +41,13 @@
       .sr-grid, .sr-toolbar { grid-template-columns: 1fr 1fr; }
     }
     @media (max-width: 720px) {
+      .sr-shell { padding: 12px; }
+      .sr-hero, .sr-card { padding: 16px; }
       .sr-grid, .sr-toolbar { grid-template-columns: 1fr; }
+      .sr-company-list { max-height: none; }
+      .sr-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .sr-actions button, .sr-primary, .sr-secondary { width: 100%; }
+      .sr-viewer { min-height: 320px; }
     }
   </style>
 </head>

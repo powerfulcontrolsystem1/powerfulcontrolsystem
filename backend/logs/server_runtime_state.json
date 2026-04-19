@@ -1,11 +1,13 @@
 {
-  "status": "running",
+  "status": "stopped",
   "hostname": "NITRO",
   "process_id": 19392,
   "listen_addr": ":8080",
   "last_start_at": "2026-04-19 01:37:13",
   "last_start_reason": "inicio_normal",
   "last_start_reason_detail": "Inicio sin evidencia de reinicio inesperado previo. Ultimo indicio en server.err: 2026/04/19 01:36:07 metrics: stored cpu=22.46 mem=78.00% recv=10179170700 sent=5752657948",
+  "last_stop_at": "2026-04-19 02:32:20",
+  "last_stop_reason": "signal_terminated",
   "last_unexpected_restart": false,
   "last_known_server_err": "2026/04/19 01:36:07 metrics: stored cpu=22.46 mem=78.00% recv=10179170700 sent=5752657948",
   "last_event_id": 8680

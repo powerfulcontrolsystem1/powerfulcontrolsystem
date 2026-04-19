@@ -29,6 +29,65 @@ func safeAuthorName(name, fallback string) string {
 	return strings.TrimSpace(fallback)
 }
 
+func chatConversacionExists(dbEmp *sql.DB, empresaID, conversacionID int64) (bool, error) {
+	if dbEmp == nil || empresaID <= 0 || conversacionID <= 0 {
+		return false, nil
+	}
+	var id int64
+	err := dbEmp.QueryRow(`SELECT id FROM chat_tareas_conversaciones WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, conversacionID).Scan(&id)
+	if err == sql.ErrNoRows {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return id > 0, nil
+}
+
+func chatTareaExists(dbEmp *sql.DB, empresaID, tareaID int64) (bool, error) {
+	if dbEmp == nil || empresaID <= 0 || tareaID <= 0 {
+		return false, nil
+	}
+	var id int64
+	err := dbEmp.QueryRow(`SELECT id FROM chat_tareas WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, tareaID).Scan(&id)
+	if err == sql.ErrNoRows {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return id > 0, nil
+}
+
+func ensureChatConversacionExists(dbEmp *sql.DB, empresaID, conversacionID int64) error {
+	exists, err := chatConversacionExists(dbEmp, empresaID, conversacionID)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return fmt.Errorf("conversacion_id no corresponde a una conversacion valida de esta empresa")
+	}
+	return nil
+}
+
+func ensureChatTareaExists(dbEmp *sql.DB, empresaID, tareaID int64) error {
+	exists, err := chatTareaExists(dbEmp, empresaID, tareaID)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return fmt.Errorf("tarea_id no corresponde a una tarea valida de esta empresa")
+	}
+	return nil
+}
+
+func removeChatUploadFile(path string) {
+	if strings.TrimSpace(path) == "" {
+		return
+	}
+	_ = os.Remove(path)
+}
+
 func parseInt64FormOptional(r *http.Request, key string) (int64, error) {
 	raw := strings.TrimSpace(r.FormValue(key))
 	if raw == "" {
@@ -399,6 +458,10 @@ func EmpresaChatTareasParticipantesHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, "empresa_id y conversacion_id son obligatorios", http.StatusBadRequest)
 				return
 			}
+			if err := ensureChatConversacionExists(dbEmp, payload.EmpresaID, payload.ConversacionID); err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
 			if strings.TrimSpace(payload.Email) == "" && payload.ParticipanteRefID <= 0 {
 				http.Error(w, "email o participante_ref_id es obligatorio", http.StatusBadRequest)
 				return
@@ -520,6 +583,10 @@ func EmpresaChatTareasMensajesHandler(dbEmp *sql.DB) http.HandlerFunc {
 			}
 			if payload.EmpresaID <= 0 || payload.ConversacionID <= 0 {
 				http.Error(w, "empresa_id y conversacion_id son obligatorios", http.StatusBadRequest)
+				return
+			}
+			if err := ensureChatConversacionExists(dbEmp, payload.EmpresaID, payload.ConversacionID); err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
 			if strings.TrimSpace(payload.Contenido) == "" {
@@ -649,6 +716,10 @@ func EmpresaChatTareasAdjuntoUploadHandler(dbEmp *sql.DB) http.HandlerFunc {
 			http.Error(w, "conversacion_id required", http.StatusBadRequest)
 			return
 		}
+		if err := ensureChatConversacionExists(dbEmp, empresaID, conversacionID); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 
 		file, header, err := r.FormFile("archivo")
 		if err != nil {
@@ -690,13 +761,24 @@ func EmpresaChatTareasAdjuntoUploadHandler(dbEmp *sql.DB) http.HandlerFunc {
 			http.Error(w, "failed to create attachment file", http.StatusInternalServerError)
 			return
 		}
-		defer out.Close()
+		defer func() {
+			if out != nil {
+				_ = out.Close()
+			}
+		}()
 
 		size, err := io.Copy(out, file)
 		if err != nil {
 			http.Error(w, "failed to save attachment", http.StatusInternalServerError)
 			return
 		}
+		if err := out.Close(); err != nil {
+			out = nil
+			removeChatUploadFile(absPath)
+			http.Error(w, "failed to finalize attachment", http.StatusInternalServerError)
+			return
+		}
+		out = nil
 
 		actor := resolveChatActor(dbEmp, r, empresaID)
 		autorNombre := safeAuthorName("", actor.Nombre)
@@ -723,6 +805,7 @@ func EmpresaChatTareasAdjuntoUploadHandler(dbEmp *sql.DB) http.HandlerFunc {
 			Estado:         "activo",
 		})
 		if err != nil {
+			removeChatUploadFile(absPath)
 			http.Error(w, "failed to create message", http.StatusInternalServerError)
 			return
 		}
@@ -744,6 +827,8 @@ func EmpresaChatTareasAdjuntoUploadHandler(dbEmp *sql.DB) http.HandlerFunc {
 			Estado:           "activo",
 		})
 		if err != nil {
+			_ = dbpkg.DeleteChatMensaje(dbEmp, empresaID, conversacionID, msgID)
+			removeChatUploadFile(absPath)
 			http.Error(w, "failed to create attachment metadata", http.StatusInternalServerError)
 			return
 		}
@@ -782,6 +867,10 @@ func EmpresaChatTareasTareaNotaVozUploadHandler(dbEmp *sql.DB) http.HandlerFunc 
 		tareaID, err := parseInt64Form(r, "tarea_id")
 		if err != nil || tareaID <= 0 {
 			http.Error(w, "tarea_id required", http.StatusBadRequest)
+			return
+		}
+		if err := ensureChatTareaExists(dbEmp, empresaID, tareaID); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
@@ -887,6 +976,12 @@ func EmpresaChatTareasTareasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
 				return
 			}
+			if payload.ConversacionID > 0 {
+				if err := ensureChatConversacionExists(dbEmp, payload.EmpresaID, payload.ConversacionID); err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+			}
 			if strings.TrimSpace(payload.Titulo) == "" {
 				http.Error(w, "titulo es obligatorio", http.StatusBadRequest)
 				return
@@ -990,6 +1085,12 @@ func EmpresaChatTareasTareasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, "id y empresa_id son obligatorios", http.StatusBadRequest)
 				return
 			}
+			if payload.ConversacionID > 0 {
+				if err := ensureChatConversacionExists(dbEmp, payload.EmpresaID, payload.ConversacionID); err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+			}
 			if strings.TrimSpace(payload.Titulo) == "" {
 				http.Error(w, "titulo es obligatorio", http.StatusBadRequest)
 				return
@@ -1057,6 +1158,12 @@ func EmpresaChatTareasCitasHandler(dbEmp *sql.DB) http.HandlerFunc {
 			if payload.EmpresaID <= 0 {
 				http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
 				return
+			}
+			if payload.ConversacionID > 0 {
+				if err := ensureChatConversacionExists(dbEmp, payload.EmpresaID, payload.ConversacionID); err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
 			}
 			if strings.TrimSpace(payload.Titulo) == "" {
 				http.Error(w, "titulo es obligatorio", http.StatusBadRequest)

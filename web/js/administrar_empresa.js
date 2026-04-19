@@ -97,6 +97,8 @@ try {
   var empresaNameMenu = document.getElementById("empresaNameMenu");
   var title = titleMenu || document.getElementById("empresaTitle");
   var frame = document.getElementById("contentFrame") || document.querySelector("iframe.admin-empresa-frame");
+  var frameTargetName = frame ? String(frame.getAttribute("name") || frame.name || frame.id || "").trim() : "";
+  var initialFrameSrc = frame ? normalizeHref(frame.getAttribute("src") || frame.src || "") : "";
   var portalUsuariosLink = document.getElementById("linkPortalUsuarios");
   var permsEvidence = document.getElementById("menuPermsEvidence");
   var storage = null;
@@ -127,6 +129,7 @@ try {
     document.getElementById("linkChatTareas"),
     document.getElementById("linkClientes"),
   ];
+  var frameLinks = [];
 
   var permActionRead = "R";
   var permActionCreate = "C";
@@ -182,6 +185,24 @@ try {
     return "admin_empresa:last_page:" + String(empresaId || "global");
   }
 
+  function getFrameLinks() {
+    if (!frame) return [];
+    var navLinks = Array.prototype.slice.call(document.querySelectorAll(".admin-sidebar .nav a[target]"));
+    var filtered = navLinks.filter(function (link) {
+      if (!link) return false;
+      var target = String(link.getAttribute("target") || "").trim();
+      if (!target) return false;
+      if (!frameTargetName) return true;
+      return target === frameTargetName;
+    });
+    if (filtered.length > 0) {
+      return filtered;
+    }
+    return links.filter(function (link) {
+      return !!link;
+    });
+  }
+
   function normalizeHref(href) {
     var raw = String(href || "").trim();
     if (!raw) return "";
@@ -199,6 +220,18 @@ try {
   }
 
   function defaultFrameSrc(empresaId) {
+    if (initialFrameSrc && isAllowedFrameHref(initialFrameSrc)) {
+      return withEmpresaParam(initialFrameSrc, empresaId) || initialFrameSrc;
+    }
+    var activeLinks = frameLinks.length > 0 ? frameLinks : getFrameLinks();
+    for (var i = 0; i < activeLinks.length; i += 1) {
+      var link = activeLinks[i];
+      if (!link) continue;
+      var href = withEmpresaParam(link.getAttribute("href"), empresaId);
+      if (isAllowedFrameHref(href)) {
+        return href;
+      }
+    }
     var base = new URL("/administrar_empresa/administrar_productos_menu.html", window.location.origin);
     if (empresaId) {
       base.searchParams.set("empresa_id", empresaId);
@@ -300,7 +333,7 @@ try {
   }
 
   function clearActive() {
-    links.forEach(function (link) {
+    frameLinks.forEach(function (link) {
       if (!link) return;
       link.classList.remove("active");
     });
@@ -309,7 +342,7 @@ try {
   function setActiveByHref(href) {
     var current = normalizeHref(href).split("?")[0];
     clearActive();
-    links.forEach(function (link) {
+    frameLinks.forEach(function (link) {
       if (!link) return;
       var linkHref = normalizeHref(link.getAttribute("href")).split("?")[0];
       if (linkHref && linkHref === current) {
@@ -632,8 +665,8 @@ try {
   function isVisibleMenuHref(href) {
     var current = normalizeHref(href).split("?")[0];
     if (!current) return false;
-    for (var i = 0; i < links.length; i += 1) {
-      var link = links[i];
+    for (var i = 0; i < frameLinks.length; i += 1) {
+      var link = frameLinks[i];
       if (!isMenuLinkVisible(link)) continue;
       var linkHref = normalizeHref(link.getAttribute("href")).split("?")[0];
       if (linkHref && linkHref === current) {
@@ -644,8 +677,8 @@ try {
   }
 
   function firstVisibleFrameSrc(empresaId) {
-    for (var i = 0; i < links.length; i += 1) {
-      var link = links[i];
+    for (var i = 0; i < frameLinks.length; i += 1) {
+      var link = frameLinks[i];
       if (!isMenuLinkVisible(link)) continue;
       var href = withEmpresaParam(link.getAttribute("href"), empresaId);
       if (isAllowedFrameHref(href)) {
@@ -655,7 +688,22 @@ try {
     return defaultFrameSrc(empresaId);
   }
 
+  function preferredStartupFrameSrc(empresaId) {
+    var chatLink = document.getElementById("linkChatTareas");
+    var href = chatLink
+      ? withEmpresaParam(chatLink.getAttribute("href"), empresaId)
+      : withEmpresaParam("/administrar_empresa/chat_y_tareas.html", empresaId);
+    if (href && isAllowedFrameHref(href) && isVisibleMenuHref(href)) {
+      return href;
+    }
+    return "";
+  }
+
   function resolveInitialFrameSrc(empresaId) {
+    var preferred = preferredStartupFrameSrc(empresaId);
+    if (preferred) {
+      return preferred;
+    }
     var restored = getStoredFrameSrc(empresaId);
     if (restored && isVisibleMenuHref(restored)) {
       return restored;
@@ -682,7 +730,7 @@ try {
   }
 
   function setLinksWithEmpresa(empresaId) {
-    links.forEach(function (link) {
+    frameLinks.forEach(function (link) {
       if (!link) return;
       var href = link.getAttribute("href");
       if (!href) return;
@@ -756,6 +804,7 @@ try {
   }
 
   function initializeMenuAndFrame(empresaId) {
+    frameLinks = getFrameLinks();
     setLinksWithEmpresa(empresaId);
     if (!frame) return;
     var initialSrc = resolveInitialFrameSrc(empresaId);
@@ -845,7 +894,9 @@ try {
       }
       applyMenuPermissionsByRole(role);
       initializeMenuAndFrame("");
-      title.textContent = "Administrar Empresa";
+      if (title) {
+        title.textContent = "Administrar Empresa";
+      }
       return null;
     })
     .catch(function () {
@@ -858,6 +909,8 @@ try {
       }
       applyMenuPermissionsByRole("");
       initializeMenuAndFrame("");
-      title.textContent = "Administrar Empresa";
+      if (title) {
+        title.textContent = "Administrar Empresa";
+      }
     });
 })();

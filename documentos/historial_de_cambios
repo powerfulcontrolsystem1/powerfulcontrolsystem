@@ -1,3 +1,178 @@
+- 2026-04-19: Chat y tareas se fortalece como dashboard principal y valida referencias empresariales
+    - Archivos modificados:
+        - backend/handlers/chat_tareas.go
+        - backend/handlers/chat_tareas_test.go
+        - web/administrar_empresa/chat_y_tareas.html
+        - web/estilos.css
+        - documentos/descripcion_del_proyecto
+        - documentos/diagramas/estructura_del_codigo.md
+        - documentos/descripcion_de_modulos
+        - documentos/matriz_roles_permisos_pos_multiempresa.md
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripción: El módulo `chat_y_tareas` ahora funciona mejor como página principal del panel empresa: suma un dashboard resumen con accesos rápidos, mejora estados vacíos y refresco parcial, y en backend rechaza `conversacion_id` o `tarea_id` inválidos antes de persistir participantes, mensajes, tareas, citas o notas de voz. Además, si falla la persistencia de un adjunto, limpia el archivo guardado y evita dejar registros huérfanos.
+    - Verificación:
+        - `get_errors` sin errores en `backend/handlers/chat_tareas.go`, `backend/handlers/chat_tareas_test.go`, `web/administrar_empresa/chat_y_tareas.html` y `web/estilos.css`
+        - `go test ./handlers -run '^TestEmpresaChatTareas(MensajesHandlerDerivesUsuarioActor|AdjuntoUploadAllowsDocx|ConversacionesAddsOwnerAdminParticipant|CitasSharedByEmpresa|MensajesHandlerRejectsInvalidConversacion|TareasHandlerRejectsInvalidConversacion|CitasHandlerRejectsInvalidConversacion)$' -count=1`
+
+- 2026-04-19: Estaciones permite guardar YouTube desde la misma tarjeta y acepta Shorts
+    - Archivos modificados:
+        - web/administrar_empresa/estaciones.html
+        - web/estilos.css
+        - documentos/descripcion_de_modulos
+        - documentos/matriz_roles_permisos_pos_multiempresa.md
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripción: La tarjeta especial de YouTube en `estaciones.html` ahora incorpora un editor inline para pegar y guardar la URL o el ID del contenido sin salir del tablero. El mismo bloque actualiza el enlace externo y permite trabajar también con URLs de `Shorts`, manteniendo la persistencia en la configuración autenticada de la empresa actual.
+    - Verificación:
+        - `get_errors` sin errores en `web/administrar_empresa/estaciones.html` y `web/estilos.css`
+
+- 2026-04-19: Estaciones corrige la tarjeta YouTube para reproducir referencias válidas y dejar fallback externo
+    - Archivos modificados:
+        - web/administrar_empresa/youtube_station_browser.html
+        - web/administrar_empresa/estaciones.html
+        - web/administrar_empresa/configuracion_de_estaciones.html
+        - web/estilos.css
+        - documentos/descripcion_del_proyecto
+        - documentos/descripcion_de_modulos
+        - documentos/matriz_roles_permisos_pos_multiempresa.md
+        - documentos/diagramas/estructura_del_codigo.md
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripción: La estación especial de YouTube deja de usar búsquedas embebidas que ya no son compatibles con el proveedor externo. Ahora la configuración pide una URL o ID de video/playlist para reproducirlo en iframe y, cuando la referencia guardada no es embebible, el módulo muestra un estado visible con salida segura a `Abrir YouTube` fuera del sistema.
+    - Verificación:
+        - `get_errors` sin errores en `web/administrar_empresa/youtube_station_browser.html`, `web/administrar_empresa/estaciones.html`, `web/administrar_empresa/configuracion_de_estaciones.html` y `web/estilos.css`
+
+- 2026-04-19: Login administrativo recupera la opcion de recordar usuario por correo
+    - Archivos modificados:
+        - web/login.html
+        - web/js/login.js
+        - documentos/descripcion_del_proyecto
+        - documentos/descripcion_de_modulos
+        - documentos/matriz_roles_permisos_pos_multiempresa.md
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripción: El formulario por correo de `login.html` vuelve a mostrar la casilla `Recordar usuario` y guarda localmente solo el correo administrativo cuando el propio usuario lo solicita. Si la casilla no está activa, el dato recordado se elimina. No se modifica la sesión backend, el flujo de Google ni el login de usuarios de empresa.
+    - Verificación:
+        - `get_errors` sin errores en `web/login.html`, `web/js/login.js`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos` y `documentos/matriz_roles_permisos_pos_multiempresa.md`
+
+- 2026-04-19: Portal público refuerza CTA del home y unifica la leyenda de marca
+    - Archivos modificados:
+        - web/index.html
+        - web/estilos.css
+        - web/login.html
+        - web/registrar_nuevo_usuario_administrador.html
+        - web/ayuda/ayuda.html
+        - web/descripcion_de_los_sistemas.ht
+        - web/Informacion_de_contacto.html
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripción: El botón `Registrarse o iniciar sesión` del home ahora usa una apariencia más cercana a las tarjetas del portal, con fondo degradado, relieve y texto en negrita. El título principal `Sistema de Facturación Electrónica` queda destacado sobre una barra semitransparente y la leyenda visible de marca se normaliza a `@ 2026 - Powerful Control System - Sistema POS Multiempresa` en los pies públicos afectados. También se actualizan títulos HTML que aún mostraban `POS Multiempresa` como nombre principal.
+    - Verificación:
+        - `get_errors` sin errores en `web/index.html`, `web/estilos.css`, `web/login.html`, `web/registrar_nuevo_usuario_administrador.html`, `web/ayuda/ayuda.html`, `web/descripcion_de_los_sistemas.ht` y `web/Informacion_de_contacto.html`
+
+- 2026-04-19: Panel empresa abre por defecto chat y tareas y destaca el calendario compartido
+    - Archivos modificados:
+        - web/administrar_empresa.html
+        - web/js/administrar_empresa.js
+        - web/administrar_empresa/chat_y_tareas.html
+        - web/estilos.css
+        - documentos/diagramas/estructura_del_codigo.md
+        - documentos/descripcion_de_modulos
+        - documentos/matriz_roles_permisos_pos_multiempresa.md
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripción: El shell `administrar_empresa.html` ahora prioriza `Chat y tareas` como primer acceso del menú y como pantalla inicial preferida del iframe cuando el rol autenticado tiene visibilidad del módulo. La vista `chat_y_tareas.html` sube el calendario mensual al inicio, lo hace más visual y deja explícito que las reuniones creadas por la administradora quedan visibles para los usuarios autorizados de esa misma empresa.
+    - Verificación:
+        - `get_errors` sin errores en `web/administrar_empresa.html`, `web/js/administrar_empresa.js`, `web/administrar_empresa/chat_y_tareas.html` y `web/estilos.css`
+        - `go test ./handlers -run '^TestEmpresaChatTareasCitasSharedByEmpresa$' -count=1`
+
+- 2026-04-19: Venta pública corrige catálogo público y pagos sobre esquema legacy
+    - Archivos modificados:
+        - backend/db/venta_publica.go
+        - backend/handlers/venta_publica_test.go
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripcion: El módulo `venta_publica` ahora asegura columnas evolutivas faltantes en `empresa_venta_publica_configuracion`, `empresa_venta_publica_items` y `empresa_venta_publica_ordenes` antes de exponer el catálogo público. Esto evita errores internos al abrir `venta_publica.html` en instalaciones con esquema legado donde faltaban campos como `tema_visual`, `estado`, `destacado`, `stock_publicado` o metadatos de orden.
+    - Verificacion:
+        - `go test ./db -run '^TestEmpresaVentaPublicaConfigPersistsTemaVisual$' -count=1`
+        - `go test ./handlers -run '^Test(PublicVentaPublicaHandlerCatalogoWithLegacySchemaMissingColumns|PublicVentaPublicaHandlerCatalogoYPagoConWompiInactivo|EmpresaVentaPublicaHandlerConfigCatalogoYToggle)$' -count=1`
+        - `get_errors` sin errores en `backend/db/venta_publica.go` y `backend/handlers/venta_publica_test.go`
+
+- 2026-04-19: Reservas endurece el armado de URLs para evitar error 414 en el panel empresa
+    - Archivos modificados:
+        - web/administrar_empresa/reservas_hotel.html
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripcion: La página `reservas_hotel.html` ahora resuelve `empresa_id` desde el contexto activo del shell, limita el tamaño del filtro de búsqueda y centraliza el armado de query strings del módulo para no disparar URLs innecesariamente largas. También deja de serializar la reserva completa en `data-item` dentro de la tabla y usa el estado en memoria para cargar la edición.
+    - Verificacion:
+        - `get_errors` sin errores en `web/administrar_empresa/reservas_hotel.html`
+
+- 2026-04-19: Administrar productos deja de depender de proveedores para arrancar la vista principal
+    - Archivos modificados:
+        - web/administrar_empresa/administrar_productos.html
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripcion: El bootstrap de `administrar_productos.html` ya no consulta proveedores de forma obligatoria cuando la subvista activa es `productos`. La carga de proveedores pasa a ser perezosa al abrir el formulario del producto, evitando que una falla o restricción del submódulo compras/proveedores derribe toda la pantalla principal de inventario con el mensaje genérico de error interno.
+    - Verificacion:
+        - `get_errors` sin errores en `web/administrar_empresa/administrar_productos.html`
+
+- 2026-04-19: Panel empresa corrige submenú de productos duplicado por carga recursiva del shell
+    - Archivos modificados:
+        - web/js/administrar_empresa.js
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripcion: El script compartido del panel ahora detecta el conjunto de enlaces del shell actual y el iframe realmente asociado a ese menú. Con esto, `administrar_productos_menu.html` y otros submenús anidados dejan de usar por defecto la ruta del shell principal y ya no vuelven a incrustar su propia página dentro del iframe interno.
+    - Verificacion:
+        - `get_errors` sin errores en `web/js/administrar_empresa.js`
+        - validación estática en `http://127.0.0.1:8091/administrar_empresa/administrar_productos_menu.html?empresa_id=1` con el iframe resolviendo `administrar_productos.html?view=productos&empresa_id=1`
+
+- 2026-04-19: Carrito por estación muestra error inicial accionable y contextual
+    - Archivos modificados:
+        - web/administrar_empresa/carrito_de_compras.html
+        - documentos/diagramas/estructura_del_codigo.md
+        - documentos/descripcion_de_modulos
+        - documentos/matriz_roles_permisos_pos_multiempresa.md
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripción: La vista del carrito unificado ahora traduce el fallo inicial de apertura a un estado visible y accionable cuando se entra desde una estación. En lugar de dejar solo `Error cargando carritos`, muestra contexto de la estación, mensaje más claro, botón `Reintentar carga` y retorno explícito a `estaciones.html`, ocultando además textos técnicos crudos de autorización o backend.
+    - Verificación:
+        - `get_errors` sin errores en `web/administrar_empresa/carrito_de_compras.html`
+        - validación estática de apertura en `http://127.0.0.1:8080/administrar_empresa/carrito_de_compras.html?empresa_id=6&estacion_id=1&estacion_nombre=Estacion%201&carrito_codigo=EST-6-1`
+
+- 2026-04-19: Estaciones/carritos corrigen compatibilidad PostgreSQL en listado y totales
+    - Archivos modificados:
+        - backend/db/carritos_compras.go
+        - backend/handlers/carritos_compras.go
+        - backend/db/carritos_inventario_test.go
+        - backend/handlers/auth_users_carritos_test.go
+        - documentos/diagramas/estructura_del_codigo.md
+        - documentos/descripcion_de_modulos
+        - documentos/matriz_roles_permisos_pos_multiempresa.md
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripción: Se reemplaza la agregación frágil del listado de `/api/empresa/carritos_compra` por un conteo previo de items por carrito y se mueve el redondeo de `totales_pago` y `metricas_estacion` al código Go. Con esto, el flujo `estaciones -> carrito_de_compras` deja de fallar en PostgreSQL cuando hay clientes e items asociados y el panel vuelve a mostrar carritos y totales sin error 500.
+    - Verificación:
+        - `go test ./db -run 'Test(GetCarritosCompraByEmpresaFallbackWithoutClientesSchema|GetCarritosCompraByEmpresaCountsItemsAndClientName|SyncEmpresaEstacionCarritosCreatesAndUpdatesLinkedDefaults)$' -count=1`
+        - `go test ./handlers -run 'Test(EmpresaCarritosCompraMetricasEstacionIncluyeCorrecciones|EmpresaCarritosCompraTotalesPagoAgrupaYRedondea|EmpresaCarritosCompraRejectsActivarEstacionPagadaSinReset|EmpresaCarritosCompraRecuperarInterrumpidoConAuditoria|EmpresaEstacionPrefsHandler_UpsertAndIsolationByEmpresa|WithEmpresaVentasPermissionsDeniesOutOfScopeEmpresa|WithEmpresaVentasPermissionsBloqueaModuloNoHabilitadoPorLicencia)$' -count=1`
+
+- 2026-04-19: Frontend web endurece adaptación automática a celular sin tocar la estructura de menús
+    - Archivos modificados:
+        - web/estilos.css
+        - web/super/administrar_base_de_datos.html
+        - web/super/errores.html
+        - web/super/seguridad.html
+        - web/super/soporte_remoto.html
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripcion: Se agregan overrides móviles globales en la hoja compartida para apilar formularios, filtros y acciones, neutralizar anchos rígidos aplicados inline y mejorar tablas y bloques con overflow en celular. También se ajustan las vistas super con CSS interno que seguían forzando layouts poco usables en pantallas pequeñas, manteniendo intactos los menús.
+    - Verificacion:
+        - `get_errors` sin errores en `web/estilos.css`
+        - `get_errors` sin errores en `web/super/administrar_base_de_datos.html`
+        - `get_errors` sin errores en `web/super/errores.html`
+        - `get_errors` sin errores en `web/super/seguridad.html`
+        - `get_errors` sin errores en `web/super/soporte_remoto.html`
+
 - 2026-04-19: Estaciones reutilizan carritos legado al abrir una estación y evitan error por duplicado al cargar el carrito
     - Archivos modificados:
         - web/administrar_empresa/carrito_de_compras.html

@@ -2,6 +2,44 @@
 
 Fecha de actualizacion: 2026-04-18
 
+## Actualizacion 2026-04-19 (panel empresa: chat y tareas como arranque con calendario protagonista)
+
+- Frontend panel empresa:
+  - `web/administrar_empresa.html` mueve `Chat y tareas` al primer lugar del menu lateral para priorizar el modulo colaborativo dentro del shell empresarial.
+  - `web/js/administrar_empresa.js` deja `chat_y_tareas.html` como subpagina inicial preferida del iframe cuando el enlace sigue visible para el rol autenticado, sin romper el fallback por permisos para otros perfiles.
+- Frontend chat/tareas:
+  - `web/administrar_empresa/chat_y_tareas.html` reordena la vista para que el calendario compartido quede arriba del modulo, agrega una cabecera operativa con contexto de agenda compartida por empresa y mantiene el mismo CRUD real de citas.
+  - `web/estilos.css` amplifica el calendario mensual con un bloque visual prioritario, tarjetas resumen y celdas mas grandes para reforzar el uso de reuniones/citas desde la cuenta de administradora y del resto del equipo autorizado.
+- Flujo:
+  - `administrar_empresa.html?empresa_id=...` -> apertura del shell -> `chat_y_tareas.html?empresa_id=...` como inicio preferido -> calendario mensual visible en primer plano -> alta/consulta de reuniones compartidas por `empresa_id` sobre `/api/empresa/chat_tareas/citas`.
+
+## Actualizacion 2026-04-19 (chat y tareas: dashboard principal y validaciones anti-huerfanos)
+
+- Frontend chat/tareas:
+  - `web/administrar_empresa/chat_y_tareas.html` incorpora un dashboard superior con KPIs operativos, acciones rapidas y estados vacios guiados para que la pagina funcione como home colaborativo principal de la empresa.
+  - `web/estilos.css` agrega las tarjetas resumen, metadatos por panel y estados vacios enriquecidos del modulo sin alterar el wrapper general del shell.
+- Backend chat/tareas:
+  - `backend/handlers/chat_tareas.go` valida la existencia real de conversaciones y tareas antes de crear participantes, mensajes, tareas, citas o notas de voz, y elimina archivos subidos si la escritura en base falla despues de guardar el adjunto.
+  - `backend/handlers/chat_tareas_test.go` agrega regresiones para rechazar `conversacion_id` invalidos en mensajes, tareas y citas.
+- Flujo:
+  - `chat_y_tareas.html?empresa_id=...` -> tablero resumen y acciones rapidas -> creacion segura de mensajes/tareas/citas -> backend valida referencia de empresa antes de persistir -> si falla metadata de adjunto, el archivo temporal y el mensaje asociado se limpian.
+
+## Actualizacion 2026-04-19 (carritos/estaciones: listado y metricas compatibles con PostgreSQL real)
+
+- Backend carritos:
+  - `backend/db/carritos_compras.go` deja de contar items con `COUNT(...) + GROUP BY c.id` sobre el listado principal y pasa a unir un agregado previo por `carrito_id`, evitando fallos en PostgreSQL cuando la consulta trae tambien el nombre del cliente.
+  - `backend/db/carritos_compras.go` y `backend/handlers/carritos_compras.go` retiran `ROUND(..., 2)` del SQL de metricas/totales y hacen el redondeo en Go para mantener el mismo comportamiento entre SQLite y PostgreSQL.
+- Flujo:
+  - `estaciones.html` -> `carrito_de_compras.html` -> `GET /api/empresa/carritos_compra?include_inactive=1` vuelve a responder estable en instalaciones PostgreSQL con clientes e items y deja de disparar el mensaje visible `Error cargando carritos` por fallo del query.
+  - `carrito_de_compras.html` -> `GET /api/empresa/carritos_compra?action=totales_pago` y `action=metricas_estacion` mantienen el panel operativo sin depender de firmas SQL distintas por motor.
+
+## Actualizacion 2026-04-19 (carritos/estaciones: estado visible de error al abrir una estacion)
+
+- Frontend carritos:
+  - `web/administrar_empresa/carrito_de_compras.html` deja de mostrar solo el texto plano `Error cargando carritos` en el arranque y pasa a renderizar un estado de error contextual con traduccion segura del fallo, boton `Reintentar carga` y retorno explicito a `estaciones.html` cuando la vista se abre por estacion.
+- Flujo:
+  - `estaciones.html` -> `carrito_de_compras.html` -> fallo inicial de carga -> mensaje visible con contexto de la estacion + accion de reintento o regreso, sin exponer literales tecnicos como `unauthenticated` o `forbidden` al usuario final.
+
 ## Actualizacion 2026-04-19 (estaciones: reutilizacion de carritos legado al abrir una estacion)
 
 - Frontend estaciones/carrito:
@@ -190,6 +228,15 @@ Fecha de actualizacion: 2026-04-18
   - `web/estilos.css` incorpora el layout responsive de la tarjeta YouTube, el boton cuadrado `[]` y el overlay de ampliacion.
 - Flujo:
   - `configuracion_de_estaciones.html` -> `PUT /api/empresa/estacion_prefs?empresa_id=...` con `clave=estaciones_config` y `youtube_enabled=true` -> `estaciones.html` lee la misma preferencia -> renderiza la tarjeta embebida -> operador puede ampliar la vista en overlay sin cambiar de modulo.
+
+## Actualizacion 2026-04-19 (estaciones: YouTube con referencia reproducible y fallback externo)
+
+- Frontend estaciones:
+  - `web/administrar_empresa/configuracion_de_estaciones.html` agrega un campo explícito para guardar una URL o ID de video/playlist de YouTube dentro de `youtube_query`.
+  - `web/administrar_empresa/youtube_station_browser.html` deja de usar búsquedas embebidas y ahora solo carga videos o playlists válidos en `youtube-nocookie`; cuando la referencia no es embebible, muestra un estado interno y conserva el enlace externo a YouTube.
+  - `web/administrar_empresa/estaciones.html` enseña la referencia configurada en la tarjeta para que la operadora vea qué fuente intenta reproducir la estación.
+- Flujo:
+  - `configuracion_de_estaciones.html` -> guardar `youtube_query` como URL/ID válido -> `estaciones.html` construye la tarjeta -> `youtube_station_browser.html` resuelve video/playlist embebible -> reproducción en iframe o fallback externo si solo hay texto libre.
 
 ## Actualizacion 2026-04-18 (orquestacion interna de agentes del repositorio)
 

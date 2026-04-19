@@ -62,6 +62,16 @@
             </label>
           </div>
         </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="youtubeReferenceInput">Video o playlist de YouTube</label>
+            <input id="youtubeReferenceInput" class="form-input" placeholder="Pega una URL o ID de video/playlist de YouTube">
+            <p class="form-help">La estación reproduce solo videos o playlists embebibles válidos. Si escribes texto libre, la búsqueda se abrirá fuera del sistema en YouTube.</p>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button id="saveYoutubeReferenceBtn" class="btn secondary" type="button">Guardar referencia YouTube</button>
+        </div>
       </div>
     </section>
 
@@ -629,8 +639,7 @@
       var caja_enabled = toBool(cajaEnabledRaw);
       var youtubeEnabledRaw = (cfg && (cfg.youtube_enabled !== undefined ? cfg.youtube_enabled : cfg.youtubeEnabled)) || false;
       var youtube_enabled = toBool(youtubeEnabledRaw);
-      var youtubeQuery = String((cfg && (cfg.youtube_query !== undefined ? cfg.youtube_query : cfg.youtubeQuery)) || 'YouTube').trim();
-      if (!youtubeQuery) youtubeQuery = 'YouTube';
+      var youtubeQuery = String((cfg && (cfg.youtube_query !== undefined ? cfg.youtube_query : cfg.youtubeQuery)) || '').trim();
       return {
         cantidad: cantidad,
         estaciones: out,
@@ -1380,6 +1389,23 @@
         });
       }
 
+      var saveYoutubeReferenceBtn = document.getElementById('saveYoutubeReferenceBtn');
+      if (saveYoutubeReferenceBtn) {
+        saveYoutubeReferenceBtn.addEventListener('click', async function (ev) {
+          ev.preventDefault();
+          try {
+            var current = await getConfigFromServer();
+            if (!current) current = normalizeConfig({ cantidad: 1, estaciones: [] });
+            current.youtube_query = String((document.getElementById('youtubeReferenceInput').value || '')).trim();
+            await saveConfigToServer(current);
+            showMessage('Referencia de YouTube guardada.', 'success');
+          } catch (err) {
+            console.error('No se pudo guardar referencia de YouTube', err);
+            showMessage('No se pudo guardar la referencia de YouTube.', 'error');
+          }
+        });
+      }
+
       var btnGuardarApariencia = document.getElementById('btnGuardarApariencia');
       if (btnGuardarApariencia) {
         btnGuardarApariencia.addEventListener('click', async function (ev) {
@@ -1430,6 +1456,10 @@
       var youtubeToggleEl = document.getElementById('youtubeToggle');
       if (youtubeToggleEl) {
         try { youtubeToggleEl.checked = !!(cfg && cfg.youtube_enabled); } catch (e) { /* ignore */ }
+      }
+      var youtubeReferenceInput = document.getElementById('youtubeReferenceInput');
+      if (youtubeReferenceInput) {
+        try { youtubeReferenceInput.value = String((cfg && cfg.youtube_query) || '').trim(); } catch (e) { /* ignore */ }
       }
     }
 

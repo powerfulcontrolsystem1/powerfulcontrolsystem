@@ -47,6 +47,10 @@
     .error-banner { display:none; border:1px solid rgba(239,68,68,.42); background:rgba(91,31,31,.35); color:#ffd4d4; font-weight:700; }
     .error-banner.show { display:block; }
     @media (max-width: 720px) {
+      .error-table { min-width: 760px; }
+      .error-table .message-cell { min-width: 220px; }
+      .pagination { justify-content: stretch; }
+      .pagination .btn { flex: 1 1 calc(50% - 5px); justify-content: center; }
       .errors-toolbar .btn { flex:1 1 auto; justify-content:center; }
     }
   </style>

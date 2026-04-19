@@ -253,6 +253,71 @@ func TestGetCarritosCompraByEmpresaFallbackWithoutClientesSchema(t *testing.T) {
 	}
 }
 
+func TestGetCarritosCompraByEmpresaCountsItemsAndClientName(t *testing.T) {
+	dbConn := openCarritoInventarioTestDB(t)
+	if err := EnsureEmpresaCarritosSchema(dbConn); err != nil {
+		t.Fatalf("ensure carritos schema: %v", err)
+	}
+	if _, err := dbConn.Exec(`CREATE TABLE IF NOT EXISTS clientes (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		empresa_id INTEGER NOT NULL,
+		nombre_razon_social TEXT
+	)`); err != nil {
+		t.Fatalf("create clientes schema: %v", err)
+	}
+	if _, err := dbConn.Exec(`INSERT INTO clientes (empresa_id, nombre_razon_social) VALUES (?, ?)`, 44, "Cliente contado"); err != nil {
+		t.Fatalf("seed cliente: %v", err)
+	}
+
+	carritoID, err := CreateCarritoCompra(dbConn, CarritoCompra{
+		EmpresaID:      44,
+		Codigo:         "EST-44-1",
+		Nombre:         "Mesa 44",
+		CanalVenta:     "mostrador",
+		ClienteID:      1,
+		Moneda:         "COP",
+		UsuarioCreador: "test",
+		Estado:         "activo",
+	})
+	if err != nil {
+		t.Fatalf("create carrito: %v", err)
+	}
+	for idx := 1; idx <= 2; idx++ {
+		_, err := CreateCarritoCompraItem(dbConn, CarritoCompraItem{
+			EmpresaID:           44,
+			CarritoID:           carritoID,
+			TipoItem:            "otro",
+			CodigoItem:          fmt.Sprintf("ITEM-44-%d", idx),
+			Descripcion:         fmt.Sprintf("Item %d", idx),
+			UnidadMedida:        "unidad",
+			Cantidad:            1,
+			PrecioUnitario:      1000,
+			DescuentoPorcentaje: 0,
+			ImpuestoPorcentaje:  0,
+			ImpuestoCodigo:      "IVA",
+			UsuarioCreador:      "test",
+			Estado:              "activo",
+		})
+		if err != nil {
+			t.Fatalf("create carrito item %d: %v", idx, err)
+		}
+	}
+
+	rows, err := GetCarritosCompraByEmpresa(dbConn, 44, true, "Mesa")
+	if err != nil {
+		t.Fatalf("list carritos with item counts: %v", err)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("expected 1 carrito, got %d", len(rows))
+	}
+	if rows[0].ClienteNombre != "Cliente contado" {
+		t.Fatalf("expected cliente_nombre preserved, got %+v", rows[0])
+	}
+	if rows[0].ItemCount != 2 {
+		t.Fatalf("expected item_count=2, got %+v", rows[0])
+	}
+}
+
 func TestCarritoComboDescuentaIngredientesYRevierteAlEliminar(t *testing.T) {
 	dbConn := openCarritoInventarioTestDB(t)
 	if err := EnsureEmpresaProductosSchema(dbConn); err != nil {

@@ -1018,6 +1018,7 @@
       bodegas: [],
       productos: [],
       proveedores: [],
+      proveedoresLoaded: false,
       categoriasProductos: [],
       servicios: [],
       alertasInventario: [],
@@ -1218,10 +1219,31 @@
       await loadExistencias();
     }
 
-    async function loadProveedores() {
-      state.proveedores = await requestJSON('/api/empresa/proveedores?empresa_id=' + empresaId + '&include_inactive=1');
-      renderProveedores();
-      refreshProveedorSelector();
+    async function loadProveedores(options) {
+      const opts = options || {};
+      try {
+        state.proveedores = await requestJSON('/api/empresa/proveedores?empresa_id=' + empresaId + '&include_inactive=1');
+        state.proveedoresLoaded = true;
+        renderProveedores();
+        refreshProveedorSelector();
+        return state.proveedores;
+      } catch (err) {
+        state.proveedores = [];
+        state.proveedoresLoaded = false;
+        refreshProveedorSelector();
+        if (opts.optional) {
+          try { console.warn('No se pudieron cargar proveedores de forma opcional:', err); } catch (_) {}
+          return [];
+        }
+        throw err;
+      }
+    }
+
+    async function ensureProveedoresDisponibles() {
+      if (state.proveedoresLoaded || state.proveedores.length > 0) {
+        return state.proveedores;
+      }
+      return loadProveedores({ optional: true });
     }
 
     function renderProveedores() {
@@ -1661,6 +1683,7 @@
 
     async function accionProducto(action, id, activo) {
       if (action === 'edit-producto') {
+        await ensureProveedoresDisponibles();
         const p = state.productos.find(x => Number(x.id) === Number(id));
         fillProductoForm(p || null);
         setCRUDFormVisible('productoForm', true);
@@ -2763,7 +2786,8 @@
         }
       });
 
-      document.getElementById('btnNuevoProducto').addEventListener('click', () => {
+      document.getElementById('btnNuevoProducto').addEventListener('click', async () => {
+        await ensureProveedoresDisponibles();
         fillProductoForm(null);
         setCRUDFormVisible('productoForm', true);
       });
@@ -3028,7 +3052,6 @@
         await loadPreciosHistorial();
         return;
       }
-      await loadProveedores();
       await loadBodegas();
       await loadCategoriasProductos();
       if (viewMode === 'productos') {
