@@ -2,6 +2,11 @@
 
 ## 2026-04-19
 
+- Estaciones y carritos: se reutilizan carritos legado al abrir una estación y se evita el error de carga por duplicado.
+	- Archivos modificados: `web/administrar_empresa/carrito_de_compras.html`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: al entrar desde `estaciones.html`, el carrito unificado ya no asume que siempre existe un carrito con el código canónico `EST-empresa-estacion`. Ahora intenta reutilizar primero un carrito ya existente por código, `referencia_externa=ESTACION_<id>` o nombre de estación antes de crear uno nuevo, evitando conflictos con datos legado que antes terminaban en `Error cargando carritos`.
+	- Verificacion: `get_errors` sobre `web/administrar_empresa/carrito_de_compras.html` y validación dirigida del flujo de estación.
+
 - Estaciones: la estación especial de YouTube cambia a un visor embebido estable con búsqueda funcional.
 	- Archivos modificados: `web/administrar_empresa/youtube_station_browser.html`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
 	- Descripcion: se elimina la dependencia de la API del reproductor que no estaba resolviendo bien la carga en la tarjeta y se reemplaza por un visor embebido basado en `youtube-nocookie` que sí permite mostrar resultados y lanzar búsquedas desde la propia estación. Se agrega un botón `Inicio` para volver a una portada embebida útil y se conserva `Abrir YouTube` para abrir la página real completa en otra pestaña, porque el home oficial de YouTube no se puede incrustar de forma fiable dentro de un iframe normal.

@@ -1,3 +1,16 @@
+- 2026-04-19: Estaciones reutilizan carritos legado al abrir una estación y evitan error por duplicado al cargar el carrito
+    - Archivos modificados:
+        - web/administrar_empresa/carrito_de_compras.html
+        - documentos/diagramas/estructura_del_codigo.md
+        - documentos/descripcion_de_modulos
+        - documentos/matriz_roles_permisos_pos_multiempresa.md
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripción: El carrito unificado ahora busca primero un carrito existente de estación por código, `referencia_externa` o nombre antes de intentar crearlo. Con esto se evita que instalaciones con carritos legado choquen contra índices únicos de nombre o código y muestren `Error cargando carritos` al abrir una estación.
+    - Verificación:
+        - `get_errors` sobre `web/administrar_empresa/carrito_de_compras.html`
+        - validación dirigida del flujo `estaciones -> carrito_de_compras`
+
 - 2026-04-19: Estación YouTube cambia a visor embebido estable con búsqueda funcional
     - Archivos modificados:
         - web/administrar_empresa/youtube_station_browser.html

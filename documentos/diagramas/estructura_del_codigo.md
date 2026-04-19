@@ -2,6 +2,14 @@
 
 Fecha de actualizacion: 2026-04-18
 
+## Actualizacion 2026-04-19 (estaciones: reutilizacion de carritos legado al abrir una estacion)
+
+- Frontend estaciones/carrito:
+  - `web/administrar_empresa/carrito_de_compras.html` deja de asumir que el carrito de una estacion siempre existe con el codigo canonico `EST-empresa-estacion`.
+  - El bootstrap del carrito unificado ahora intenta resolver primero un carrito ya existente por codigo, `referencia_externa=ESTACION_<id>` o nombre visible de la estacion antes de crear uno nuevo.
+- Flujo:
+  - `estaciones.html` -> `carrito_de_compras.html?empresa_id=...&estacion_id=...&estacion_nombre=...&carrito_codigo=...` -> carga de carritos existentes -> reutilizacion de carrito legado si coincide por referencia o nombre -> activacion/recuperacion de sesion sin chocar con indices unicos por nombre/codigo.
+
 ## Actualizacion 2026-04-19 (super: plantillas de email configurables y guardado global)
 
 - Backend super:

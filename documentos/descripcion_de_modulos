@@ -1,3 +1,8 @@
+2026-04-19: Estaciones y carritos reutilizan carritos legado al abrir una estación
+- Modulos afectados: `estaciones`, `carritos`
+- Cambio funcional: `carrito_de_compras.html` ya no falla si la empresa conserva un carrito legado de estación con nombre o `referencia_externa` válidos pero sin el código canónico esperado en la URL. El flujo primero resuelve el carrito existente y solo crea uno nuevo cuando no encuentra coincidencia por código, referencia o nombre.
+- Impacto operativo: evita errores al hacer clic en una estación en instalaciones evolucionadas o con datos previos a la sincronización canónica de `estaciones_config`.
+
 Descripcion compacta de modulos (POS multiempresa)
 Actualizacion: 2026-04-17
 

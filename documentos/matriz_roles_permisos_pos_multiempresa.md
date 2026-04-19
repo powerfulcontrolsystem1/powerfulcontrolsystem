@@ -1,3 +1,6 @@
+2026-04-19: Nota operativa para `estaciones` y `carritos`
+- La apertura de una estación debe seguir funcionando para los mismos roles que ya tienen acceso operativo al módulo, incluso si el carrito enlazado proviene de datos legado. La resolución del carrito por referencia o nombre no cambia permisos ni alcance por `empresa_id`; solo evita recreaciones fallidas del carrito base.
+
 # Matriz base de roles y permisos POS multiempresa
 
 Fecha de actualizacion: 2026-04-17

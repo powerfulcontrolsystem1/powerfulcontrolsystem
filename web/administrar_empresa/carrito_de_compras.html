@@ -439,6 +439,42 @@
       return normalize(v).toUpperCase();
     }
 
+    function getStationReference() {
+      if (!(state.stationID > 0)) return '';
+      return 'ESTACION_' + state.stationID;
+    }
+
+    function findExistingStationCarrito() {
+      if (!state.stationMode || !Array.isArray(state.carritos) || !state.carritos.length) return null;
+
+      const targetCode = normalizedCode(state.selectedCarritoCode);
+      const targetReference = normalizedCode(getStationReference());
+      const targetName = normalize(state.stationName).toLowerCase();
+
+      if (targetCode) {
+        const byCode = state.carritos.find(function(item) {
+          return normalizedCode(item && item.codigo) === targetCode;
+        });
+        if (byCode) return byCode;
+      }
+
+      if (targetReference) {
+        const byReference = state.carritos.find(function(item) {
+          return normalizedCode(item && item.referencia_externa) === targetReference;
+        });
+        if (byReference) return byReference;
+      }
+
+      if (targetName) {
+        const byName = state.carritos.find(function(item) {
+          return normalize(item && item.nombre).toLowerCase() === targetName;
+        });
+        if (byName) return byName;
+      }
+
+      return null;
+    }
+
     function escapeHtml(v) {
       return String(v == null ? '' : v)
         .replace(/&/g, '&amp;')
@@ -2652,11 +2688,9 @@
       state.carritos = await res.json();
 
       if (!state.selectedCarritoID && state.selectedCarritoCode) {
-        const byCode = state.carritos.find(function(c) {
-          return normalizedCode(c.codigo) === state.selectedCarritoCode;
-        });
-        if (byCode) {
-          state.selectedCarritoID = Number(byCode.id || 0);
+        const existingStationCarrito = findExistingStationCarrito();
+        if (existingStationCarrito) {
+          state.selectedCarritoID = Number(existingStationCarrito.id || 0);
           state.selectedCarritoCode = '';
         }
       }
@@ -2689,6 +2723,15 @@
       if (!state.stationMode) return;
 
       let selected = getSelectedCarrito();
+      if (!selected) {
+        const existingStationCarrito = findExistingStationCarrito();
+        if (existingStationCarrito) {
+          state.selectedCarritoID = Number(existingStationCarrito.id || 0);
+          state.selectedCarritoCode = '';
+          selected = existingStationCarrito;
+        }
+      }
+
       if (!selected && state.selectedCarritoCode) {
         const createPayload = {
           empresa_id: Number(state.empresaID),
@@ -2696,7 +2739,7 @@
           nombre: state.stationName || ('Estación ' + state.stationID),
           canal_venta: 'mostrador',
           moneda: 'COP',
-          referencia_externa: state.stationID > 0 ? ('ESTACION_' + state.stationID) : '',
+          referencia_externa: getStationReference(),
           observaciones: 'Carrito automático de estación'
         };
         const createRes = await fetch('/api/empresa/carritos_compra', {
