@@ -13,11 +13,6 @@
         <h1 id="pageTitle">Chat IA Global</h1>
         <p class="form-help">Este chat responde con contexto consolidado de toda la base de datos operativa del sistema y solo está disponible para sesión activa de super administrador.</p>
       </div>
-      <div class="ai-gemini-toolbar">
-        <button id="reloadBtn" class="btn secondary" type="button">Actualizar</button>
-        <button id="loadHistoryBtn" class="btn secondary" type="button">Ver historial</button>
-        <button id="clearBtn" class="btn secondary" type="button">Limpiar chat</button>
-      </div>
     </header>
 
     <section class="card ai-gemini-context">
@@ -29,14 +24,6 @@
         <span class="ai-gemini-chip-label">Administrador</span>
         <strong id="chipAdmin">Cargando...</strong>
       </div>
-      <div class="ai-gemini-chip">
-        <span class="ai-gemini-chip-label">Modelo</span>
-        <strong id="chipModel">DeepSeek Chat</strong>
-      </div>
-      <div class="ai-gemini-chip">
-        <span class="ai-gemini-chip-label">Uso diario</span>
-        <strong id="chipUsage">-</strong>
-      </div>
     </section>
 
     <section class="card ai-chat-shell ai-gemini-shell">
@@ -44,32 +31,23 @@
       <div id="messagesList" class="ai-chat-messages ai-gemini-messages"></div>
 
       <form id="promptForm" class="ai-chat-form ai-gemini-form">
-        <label class="form-label" for="modelSelect">Modelo disponible para super administrador</label>
-        <select id="modelSelect" class="form-input ai-gemini-input"></select>
-
-        <div class="ai-gemini-suggestions">
-          <button class="ai-gemini-pill" type="button" data-prompt="Resume el estado global del sistema: empresas, ventas, clientes y finanzas.">Resumen global</button>
-          <button class="ai-gemini-pill" type="button" data-prompt="Identifica alertas operativas globales que debería revisar hoy.">Alertas operativas</button>
-          <button class="ai-gemini-pill" type="button" data-prompt="Dame un panorama consolidado de ingresos, egresos y actividad comercial.">Panorama financiero</button>
-        </div>
+        <select id="modelSelect" class="form-input ai-gemini-input" hidden aria-hidden="true" tabindex="-1"></select>
 
         <label class="form-label" for="promptInput">Pregunta global</label>
         <textarea id="promptInput" class="form-textarea ai-gemini-input" maxlength="2500" placeholder="Ejemplo: ¿Qué empresas muestran mayor actividad comercial y dónde hay señales de riesgo operativo?"></textarea>
 
         <div class="ai-chat-actions">
           <button id="sendBtn" class="btn" type="submit">Preguntar a la IA</button>
-          <a id="upgradeLink" class="btn dark" href="/super/licencias.html" hidden target="_top">Revisar licencias</a>
+          <button id="clearBtn" class="btn secondary" type="button">Limpiar chat</button>
         </div>
         <div id="chatMsg" class="form-help"></div>
-      </form>
-    </section>
 
-    <section class="card empresa-section">
-      <div class="empresa-section-header">
-        <h2>Consultas recientes</h2>
-      </div>
-      <div id="historyList" class="ai-history-list">Sin historial cargado.</div>
-      <div id="historyMsg" class="form-help"></div>
+        <div class="ai-gemini-suggestions">
+          <button class="ai-gemini-pill" type="button" data-prompt="Resume el estado global del sistema: empresas, ventas, clientes y finanzas.">Resumen global</button>
+          <button class="ai-gemini-pill" type="button" data-prompt="Identifica alertas operativas globales que debería revisar hoy.">Alertas operativas</button>
+          <button class="ai-gemini-pill" type="button" data-prompt="Dame un panorama consolidado de ingresos, egresos y actividad comercial.">Panorama financiero</button>
+        </div>
+      </form>
     </section>
   </div>
 
@@ -77,7 +55,7 @@
     const state = {
       models: [],
       modelID: "",
-      modelDisplay: "DeepSeek Chat",
+      modelDisplay: "Google Gemini 2.0 Flash",
       adminEmail: "",
       usage: null,
       loading: false,
@@ -108,6 +86,7 @@
     function setAIDisabledState(message) {
       state.aiDisabled = true;
       const banner = document.getElementById("aiDisabledBanner");
+      const modelSelect = document.getElementById("modelSelect");
       const text = normalize(message) || "La IA está desactivada desde configuración avanzada.";
       if (banner) {
         banner.hidden = false;
@@ -116,20 +95,21 @@
       }
       document.getElementById("promptInput").disabled = true;
       document.getElementById("sendBtn").disabled = true;
-      document.getElementById("modelSelect").disabled = true;
+      if (modelSelect) modelSelect.disabled = true;
       setMsg("chatMsg", text, true);
     }
 
     function clearAIDisabledState() {
       state.aiDisabled = false;
       const banner = document.getElementById("aiDisabledBanner");
+      const modelSelect = document.getElementById("modelSelect");
       if (banner) {
         banner.hidden = true;
         banner.textContent = "";
       }
       document.getElementById("promptInput").disabled = false;
       document.getElementById("sendBtn").disabled = false;
-      document.getElementById("modelSelect").disabled = false;
+      if (modelSelect) modelSelect.disabled = false;
     }
 
     async function apiFetch(url, options) {
@@ -156,15 +136,6 @@
 
     function renderContext() {
       document.getElementById("chipAdmin").textContent = state.adminEmail || "No detectado";
-      document.getElementById("chipModel").textContent = state.modelDisplay || "Modelo IA";
-      if (!state.usage) {
-        document.getElementById("chipUsage").textContent = "Sin consumo";
-        return;
-      }
-      const used = Number(state.usage.daily_used || 0);
-      const limit = Number(state.usage.daily_limit || 0);
-      const remaining = Number(state.usage.daily_remaining || 0);
-      document.getElementById("chipUsage").textContent = used + " / " + limit + " (restan " + remaining + ")";
     }
 
     function renderModelOptions() {
@@ -230,17 +201,9 @@
         });
     }
 
-    function clearUpgradeOption() {
-      const link = document.getElementById("upgradeLink");
-      link.hidden = true;
-      link.href = "/super/licencias.html";
-    }
+    function clearUpgradeOption() {}
 
-    function showUpgradeOption(url) {
-      const link = document.getElementById("upgradeLink");
-      link.href = normalize(url) || "/super/licencias.html";
-      link.hidden = false;
-    }
+    function showUpgradeOption() {}
 
     async function loadChatModel() {
       const data = await apiFetch("/super/api/chat_con_ia_global/modelos");
@@ -297,11 +260,12 @@
     }
 
     async function loadHistorial() {
+      const box = document.getElementById("historyList");
+      if (!box) return;
       try {
         const data = await apiFetch("/super/api/chat_con_ia_global/historial?limit=20");
         clearAIDisabledState();
         const items = Array.isArray(data.items) ? data.items : [];
-        const box = document.getElementById("historyList");
         if (!items.length) {
           box.innerHTML = '<div class="ai-chat-empty">No hay historial registrado.</div>';
           setMsg("historyMsg", "Historial actualizado: 0 registros.", false);
@@ -336,7 +300,6 @@
       ev.preventDefault();
       if (state.loading || state.aiDisabled) return;
 
-      clearUpgradeOption();
       const pregunta = normalize(document.getElementById("promptInput").value);
       if (!pregunta) {
         setMsg("chatMsg", "Debes escribir una pregunta.", true);
@@ -375,7 +338,6 @@
           appendMessage("system", normalize(payload.error || "La IA está desactivada desde configuración avanzada."));
           setAIDisabledState(payload.error);
         } else if (normalize(payload.code) === "free_tier_limit_reached") {
-          showUpgradeOption(payload.upgrade_url);
           appendMessage("system", normalize(payload.error || "Límite gratuito alcanzado."));
           setMsg("chatMsg", normalize(payload.upgrade_message || "Se alcanzó el límite del plan gratuito."), true);
         } else {
@@ -399,12 +361,6 @@
     }
 
     function bindEvents() {
-      document.getElementById("reloadBtn").addEventListener("click", function() {
-        initialize();
-      });
-      document.getElementById("loadHistoryBtn").addEventListener("click", function() {
-        loadHistorial();
-      });
       document.getElementById("clearBtn").addEventListener("click", function() {
         state.messages = [];
         renderMessages();
@@ -417,12 +373,9 @@
 
     async function initialize() {
       setMsg("chatMsg", "", false);
-      setMsg("historyMsg", "", false);
-      clearUpgradeOption();
       renderMessages();
       try {
         await loadChatModel();
-        await loadHistorial();
       } catch (err) {
         const payload = err && err.payload ? err.payload : {};
         if (normalize(payload.code) === "ai_disabled") {

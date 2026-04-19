@@ -110,15 +110,56 @@
       const cantidad = Math.max(1, Math.min(500, Number(cfg.cantidad || 1)));
       const estaciones = Array.isArray(cfg.estaciones) ? cfg.estaciones : [];
       const out = [];
+
+      function defaultUnifiedCartConfig() {
+        return {
+          mostrar_boton_buscar_productos: true,
+          mostrar_busqueda_catalogo: true,
+          mostrar_codigo_manual_item: true,
+          mostrar_observaciones_item: true,
+          mostrar_lector_codigo_barras: true,
+          mostrar_descuentos: true,
+          mostrar_propina: true,
+          mostrar_comision: true,
+          permitir_pago_mixto: true,
+          mostrar_resumen_productos: true
+        };
+      }
+
+      function normalizeUnifiedCartConfig(raw) {
+        const base = defaultUnifiedCartConfig();
+        const src = raw && typeof raw === 'object' ? raw : {};
+        return {
+          mostrar_boton_buscar_productos: src.mostrar_boton_buscar_productos === undefined ? base.mostrar_boton_buscar_productos : toBool(src.mostrar_boton_buscar_productos),
+          mostrar_busqueda_catalogo: src.mostrar_busqueda_catalogo === undefined ? base.mostrar_busqueda_catalogo : toBool(src.mostrar_busqueda_catalogo),
+          mostrar_codigo_manual_item: src.mostrar_codigo_manual_item === undefined ? base.mostrar_codigo_manual_item : toBool(src.mostrar_codigo_manual_item),
+          mostrar_observaciones_item: src.mostrar_observaciones_item === undefined ? base.mostrar_observaciones_item : toBool(src.mostrar_observaciones_item),
+          mostrar_lector_codigo_barras: src.mostrar_lector_codigo_barras === undefined ? base.mostrar_lector_codigo_barras : toBool(src.mostrar_lector_codigo_barras),
+          mostrar_descuentos: src.mostrar_descuentos === undefined ? base.mostrar_descuentos : toBool(src.mostrar_descuentos),
+          mostrar_propina: src.mostrar_propina === undefined ? base.mostrar_propina : toBool(src.mostrar_propina),
+          mostrar_comision: src.mostrar_comision === undefined ? base.mostrar_comision : toBool(src.mostrar_comision),
+          permitir_pago_mixto: src.permitir_pago_mixto === undefined ? base.permitir_pago_mixto : toBool(src.permitir_pago_mixto),
+          mostrar_resumen_productos: src.mostrar_resumen_productos === undefined ? base.mostrar_resumen_productos : toBool(src.mostrar_resumen_productos)
+        };
+      }
+
+      function normalizeStationCarritoConfig(raw) {
+        const src = raw && typeof raw === 'object' ? raw : {};
+        const nested = src.configuracion && typeof src.configuracion === 'object' ? src.configuracion : src;
+        return {
+          usar_configuracion_global: src.usar_configuracion_global === undefined ? true : toBool(src.usar_configuracion_global),
+          configuracion: normalizeUnifiedCartConfig(nested)
+        };
+      }
+
       for (let i = 0; i < cantidad; i++) {
         const current = estaciones[i] || {};
         const nombre = String(current.nombre || '').trim();
-        const ventaSimpleHabilitada = toBool(current.venta_simple_habilitada) || toBool(current.modo_venta_simple);
         out.push({
           id: i + 1,
           nombre: nombre || ('Estación ' + (i + 1)),
-          venta_simple_habilitada: ventaSimpleHabilitada,
-          mostrar_total: current.mostrar_total === undefined ? true : toBool(current.mostrar_total)
+          mostrar_total: current.mostrar_total === undefined ? true : toBool(current.mostrar_total),
+          carrito: normalizeStationCarritoConfig(current.carrito || current.carrito_ui)
         });
       }
       const validSizes = ['small', 'medium', 'large'];
@@ -130,7 +171,15 @@
       const youtube_enabled = toBool(youtubeEnabledRaw);
       let youtube_query = String((cfg && (cfg.youtube_query !== undefined ? cfg.youtube_query : cfg.youtubeQuery)) || 'YouTube').trim();
       if (!youtube_query) youtube_query = 'YouTube';
-      return { cantidad, estaciones: out, card_size, caja_enabled, youtube_enabled, youtube_query };
+      return {
+        cantidad,
+        estaciones: out,
+        card_size,
+        caja_enabled,
+        youtube_enabled,
+        youtube_query,
+        carrito_ui_global: normalizeUnifiedCartConfig(cfg && (cfg.carrito_ui_global || cfg.carrito || cfg.carrito_configuracion_global))
+      };
     }
 
     function parseStationConfigValue(raw) {
@@ -251,15 +300,13 @@
       return 'EST-' + empresaId + '-' + stationID;
     }
 
-    function openStationCarrito(stationID, stationName, useSimpleSales) {
+    function openStationCarrito(stationID, stationName) {
       if (!empresaId || stationID == null) return;
       const carritoCode = getCarritoCodeForStation(stationID);
-      const page = useSimpleSales ? '/administrar_empresa/ventas_simple.html' : '/administrar_empresa/carrito_de_compras.html';
-      const url = page + '?empresa_id=' + encodeURIComponent(empresaId) +
+      const url = '/administrar_empresa/carrito_de_compras.html?empresa_id=' + encodeURIComponent(empresaId) +
         '&estacion_id=' + encodeURIComponent(stationID) +
         '&estacion_nombre=' + encodeURIComponent(stationName || ('Estación ' + stationID)) +
-          '&carrito_codigo=' + encodeURIComponent(carritoCode) +
-          (useSimpleSales ? '&variant=compacto' : '');
+          '&carrito_codigo=' + encodeURIComponent(carritoCode);
       window.location.href = url;
     }
 
@@ -441,7 +488,6 @@
       }
       html += cfg.estaciones.map(est => {
         const stationID = Number(est.id || 0);
-        const useSimpleSales = !!est.venta_simple_habilitada;
         const useMostrarTotal = est.mostrar_total === undefined ? true : !!est.mostrar_total;
         const carritoCode = getCarritoCodeForStation(stationID);
         const info = state.carritosPorCodigo[normalizeCode(carritoCode)] || null;
@@ -473,7 +519,7 @@
           }
         }
 
-          return '<article class="portal-card station-launch-card ' + stationClass + '" style="--station-state-bg:' + sanitize(stationColor) + ';" data-estacion-id="' + stationID + '" data-estacion-nombre="' + sanitize(est.nombre) + '" data-venta-simple="' + (useSimpleSales ? '1' : '0') + '" data-mostrar-total="' + (useMostrarTotal ? '1' : '0') + '" tabindex="0" role="button" aria-label="Abrir estación ' + sanitize(est.nombre) + '">' +
+          return '<article class="portal-card station-launch-card ' + stationClass + '" style="--station-state-bg:' + sanitize(stationColor) + ';" data-estacion-id="' + stationID + '" data-estacion-nombre="' + sanitize(est.nombre) + '" data-mostrar-total="' + (useMostrarTotal ? '1' : '0') + '" tabindex="0" role="button" aria-label="Abrir estación ' + sanitize(est.nombre) + '">' +
             '<div class="station-sensor-indicator" style="background-color:' + sanitize(sensorColor) + '"></div>' +
             '<h3>' + sanitize(est.nombre) + '</h3>' +
             entradaHtml +
@@ -486,16 +532,14 @@
         card.addEventListener('click', ev => {
           const stationID = Number(card.getAttribute('data-estacion-id') || 0);
           const stationName = String(card.getAttribute('data-estacion-nombre') || '').trim();
-          const useSimpleSales = card.getAttribute('data-venta-simple') === '1';
-          openStationCarrito(stationID, stationName, useSimpleSales);
+          openStationCarrito(stationID, stationName);
         });
         card.addEventListener('keydown', ev => {
           if (ev.key !== 'Enter' && ev.key !== ' ') return;
           ev.preventDefault();
           const stationID = Number(card.getAttribute('data-estacion-id') || 0);
           const stationName = String(card.getAttribute('data-estacion-nombre') || '').trim();
-          const useSimpleSales = card.getAttribute('data-venta-simple') === '1';
-          openStationCarrito(stationID, stationName, useSimpleSales);
+          openStationCarrito(stationID, stationName);
         });
       });
 

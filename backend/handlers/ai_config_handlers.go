@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -42,9 +43,8 @@ func superAIServiceStatus(dbSuper *sql.DB) map[string]interface{} {
 		message = "IA global desactivada desde configuracion avanzada."
 	}
 	return map[string]interface{}{
-		"enabled":         enabled,
-		"message":         message,
-		"ollama_endpoint": resolveOllamaGenerateEndpoint(),
+		"enabled": enabled,
+		"message": message,
 	}
 }
 
@@ -58,27 +58,59 @@ func runSuperAITest(dbSuper *sql.DB) (int, map[string]interface{}) {
 		}
 	}
 
-	endpoint := strings.TrimSpace(resolveOllamaGenerateEndpoint())
-	if endpoint == "" {
+	defs := aiCredentialCatalogModels()
+	if len(defs) == 0 {
 		return http.StatusBadGateway, map[string]interface{}{
 			"ok":             false,
-			"code":           "ollama_endpoint_missing",
-			"error":          "No se pudo resolver el endpoint de Ollama.",
+			"code":           "gemini_catalog_missing",
+			"error":          "No hay modelo Gemini configurado en el catalogo.",
 			"service_status": superAIServiceStatus(dbSuper),
 		}
 	}
+	modelMap := empresaAIModelMap()
+	model, ok := modelMap[defs[0].ModelID]
+	if !ok {
+		return http.StatusBadGateway, map[string]interface{}{
+			"ok":             false,
+			"code":           "gemini_model_missing",
+			"error":          "No se pudo resolver el modelo Gemini de prueba.",
+			"service_status": superAIServiceStatus(dbSuper),
+		}
+	}
+	apiKey, err := (&EmpresaAIChatController{dbSuper: dbSuper, client: &http.Client{Timeout: 20 * time.Second}}).resolveModelAPIKey(model)
+	if err != nil {
+		return http.StatusBadRequest, map[string]interface{}{
+			"ok":             false,
+			"code":           "gemini_api_key_missing",
+			"error":          err.Error(),
+			"service_status": superAIServiceStatus(dbSuper),
+		}
+	}
+	endpoint := model.Endpoint
+	separator := "?"
+	if strings.Contains(endpoint, "?") {
+		separator = "&"
+	}
+	endpoint = endpoint + separator + "key=" + url.QueryEscape(apiKey)
 
 	payload, _ := json.Marshal(map[string]interface{}{
-		"model":  "codellama:7b",
-		"prompt": "Responde solo OK_PANEL_TEST",
-		"stream": false,
+		"contents": []map[string]interface{}{
+			{
+				"role":  "user",
+				"parts": []map[string]string{{"text": "Responde solo OK_PANEL_TEST"}},
+			},
+		},
+		"generationConfig": map[string]interface{}{
+			"temperature":     0,
+			"maxOutputTokens": 32,
+		},
 	})
 	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewReader(payload))
 	if err != nil {
 		return http.StatusBadGateway, map[string]interface{}{
 			"ok":             false,
-			"code":           "ollama_request_build_failed",
-			"error":          "No se pudo construir la solicitud de prueba a Ollama.",
+			"code":           "gemini_request_build_failed",
+			"error":          "No se pudo construir la solicitud de prueba a Gemini.",
 			"detail":         err.Error(),
 			"service_status": superAIServiceStatus(dbSuper),
 		}
@@ -90,8 +122,8 @@ func runSuperAITest(dbSuper *sql.DB) (int, map[string]interface{}) {
 	if err != nil {
 		return http.StatusBadGateway, map[string]interface{}{
 			"ok":             false,
-			"code":           "ollama_unreachable",
-			"error":          "No se pudo contactar Ollama en el endpoint configurado.",
+			"code":           "gemini_unreachable",
+			"error":          "No se pudo contactar Google Gemini con la API key configurada.",
 			"detail":         err.Error(),
 			"service_status": superAIServiceStatus(dbSuper),
 		}
@@ -102,8 +134,8 @@ func runSuperAITest(dbSuper *sql.DB) (int, map[string]interface{}) {
 	if resp.StatusCode >= 400 {
 		return http.StatusBadGateway, map[string]interface{}{
 			"ok":             false,
-			"code":           "ollama_error",
-			"error":          "Ollama respondió con error durante la prueba.",
+			"code":           "gemini_error",
+			"error":          "Google Gemini respondió con error durante la prueba.",
 			"status":         resp.StatusCode,
 			"raw":            truncateText(string(raw), 300),
 			"service_status": superAIServiceStatus(dbSuper),
@@ -111,27 +143,31 @@ func runSuperAITest(dbSuper *sql.DB) (int, map[string]interface{}) {
 	}
 
 	var parsed struct {
-		Response string `json:"response"`
-		Model    string `json:"model"`
-		Done     bool   `json:"done"`
+		Candidates []struct {
+			Content struct {
+				Parts []struct {
+					Text string `json:"text"`
+				} `json:"parts"`
+			} `json:"content"`
+		} `json:"candidates"`
 	}
 	if err := json.Unmarshal(raw, &parsed); err != nil {
 		return http.StatusBadGateway, map[string]interface{}{
 			"ok":             false,
-			"code":           "ollama_invalid_json",
-			"error":          "La respuesta de Ollama no fue JSON válido.",
+			"code":           "gemini_invalid_json",
+			"error":          "La respuesta de Gemini no fue JSON valido.",
 			"raw":            truncateText(string(raw), 300),
 			"service_status": superAIServiceStatus(dbSuper),
 		}
 	}
+	response := extractGeminiText(parsed.Candidates)
 
 	return http.StatusOK, map[string]interface{}{
 		"ok":             true,
-		"provider":       "ollama",
-		"model_id":       "ollama:ambis",
-		"upstream_model": parsed.Model,
-		"response":       strings.TrimSpace(parsed.Response),
-		"done":           parsed.Done,
+		"provider":       model.Provider,
+		"model_id":       model.ID,
+		"upstream_model": model.UpstreamModel,
+		"response":       strings.TrimSpace(response),
 		"service_status": superAIServiceStatus(dbSuper),
 	}
 }
@@ -326,7 +362,7 @@ func AIModelsConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 
 			if len(updated) == 0 && payload.Enabled == nil && len(payload.ProviderEnabled) == 0 {
-				http.Error(w, "debe enviar al menos una credencial valida", http.StatusBadRequest)
+				http.Error(w, "debe enviar al menos una credencial valida o un cambio de estado", http.StatusBadRequest)
 				return
 			}
 

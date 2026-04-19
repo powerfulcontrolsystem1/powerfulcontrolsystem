@@ -222,6 +222,37 @@ func TestCarritoProductoStockInsuficiente(t *testing.T) {
 	}
 }
 
+func TestGetCarritosCompraByEmpresaFallbackWithoutClientesSchema(t *testing.T) {
+	dbConn := openCarritoInventarioTestDB(t)
+	if err := EnsureEmpresaCarritosSchema(dbConn); err != nil {
+		t.Fatalf("ensure carritos schema: %v", err)
+	}
+
+	_, err := CreateCarritoCompra(dbConn, CarritoCompra{
+		EmpresaID:      91,
+		Codigo:         "EST-91-1",
+		Nombre:         "Mesa fallback",
+		CanalVenta:     "mostrador",
+		Moneda:         "COP",
+		UsuarioCreador: "test",
+		Estado:         "activo",
+	})
+	if err != nil {
+		t.Fatalf("create carrito fallback: %v", err)
+	}
+
+	rows, err := GetCarritosCompraByEmpresa(dbConn, 91, true, "Mesa")
+	if err != nil {
+		t.Fatalf("fallback list carritos without clientes schema: %v", err)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("expected 1 carrito from fallback query, got %d", len(rows))
+	}
+	if rows[0].ClienteNombre != "" {
+		t.Fatalf("expected empty cliente_nombre on fallback query, got %+v", rows[0])
+	}
+}
+
 func TestCarritoComboDescuentaIngredientesYRevierteAlEliminar(t *testing.T) {
 	dbConn := openCarritoInventarioTestDB(t)
 	if err := EnsureEmpresaProductosSchema(dbConn); err != nil {

@@ -25,7 +25,7 @@
         <a class="btn secondary" href="#menu-inventario">Inventario</a>
         <a class="btn secondary" href="#menu-carrito">Carrito y lector</a>
         <a class="btn secondary" href="#menu-propinas-comisiones">Propinas y comisiones</a>
-        <a class="btn secondary" href="#menu-erp-calculadora">ERP y calculadora</a>
+        <a class="btn secondary" href="#menu-erp-operativo">ERP extendido</a>
         <a class="btn secondary" href="#menu-configuracion">Configuración por empresa</a>
         <a class="btn secondary" href="#menu-dian">Configuración DIAN Colombia</a>
       </div>
@@ -47,7 +47,6 @@
         <li>Módulo de propinas: <a href="/administrar_empresa/propinas.html">/administrar_empresa/propinas.html</a></li>
         <li>Módulo de comisiones: <a href="/administrar_empresa/comisiones.html">/administrar_empresa/comisiones.html</a></li>
         <li>Módulo ERP extendido: <a href="/administrar_empresa/modulos_erp_extendido.html">/administrar_empresa/modulos_erp_extendido.html</a></li>
-        <li>Módulo calculadora: <a href="/administrar_empresa/calculadora.html">/administrar_empresa/calculadora.html</a></li>
         <li>Módulo de asistencia de empleados: <a href="/administrar_empresa/asistencia_empleados.html">/administrar_empresa/asistencia_empleados.html</a></li>
         <li>Módulo de créditos y cartera: <a href="/administrar_empresa/creditos.html">/administrar_empresa/creditos.html</a></li>
         <li>Módulo de reportes: <a href="/administrar_empresa/reportes.html">/administrar_empresa/reportes.html</a></li>
@@ -98,12 +97,12 @@
 
       <h3 style="margin:14px 0 8px 0;">Módulos del panel de empresa</h3>
 
-      <h4 style="margin:12px 0 6px 0;">5) Inicio de empresa</h4>
-      <p class="form-help" style="margin-top:0;">Ruta: <a href="/administrar_empresa/inicio.html">/administrar_empresa/inicio.html</a></p>
+      <h4 style="margin:12px 0 6px 0;">5) Productos</h4>
+      <p class="form-help" style="margin-top:0;">Ruta: <a href="/administrar_empresa/administrar_productos_menu.html">/administrar_empresa/administrar_productos_menu.html</a></p>
       <ol>
         <li>Confirma empresa activa y usuario autenticado.</li>
-        <li>Revisa accesos del menú habilitados por rol.</li>
-        <li>Usa este tablero como punto de entrada de operación diaria.</li>
+        <li>Ingresa al submenú de inventario para productos, bodegas, categorías, proveedores y precios.</li>
+        <li>Usa este módulo como punto de entrada del frente comercial e inventario.</li>
       </ol>
 
       <h4 style="margin:12px 0 6px 0;">6) Ventas</h4>
@@ -290,15 +289,7 @@
         <li>Para DIAN, usa utilidades de checklist, validar, CUFE demo y XML demo.</li>
       </ol>
 
-      <h4 style="margin:12px 0 6px 0;">29) Calculadora por empresa</h4>
-      <p class="form-help" style="margin-top:0;">Ruta: <a href="/administrar_empresa/calculadora.html">/administrar_empresa/calculadora.html</a></p>
-      <ol>
-        <li>Usa operaciones rápidas para apoyo comercial y financiero diario.</li>
-        <li>El historial y memoria se guardan por empresa_id para no mezclar empresas.</li>
-        <li>Exporta historial en JSON cuando necesites respaldo de cálculos operativos.</li>
-      </ol>
-
-      <h4 style="margin:12px 0 6px 0;">30) Créditos y cartera</h4>
+      <h4 style="margin:12px 0 6px 0;">29) Créditos y cartera</h4>
       <p class="form-help" style="margin-top:0;">Ruta: <a href="/administrar_empresa/creditos.html">/administrar_empresa/creditos.html</a></p>
       <ol>
         <li>Crea la línea de crédito seleccionando cliente, monto aprobado, plazo, tasa y tipo de crédito.</li>
@@ -306,7 +297,7 @@
         <li>Registra abonos (total o parcial), valida la aplicación a cuotas y confirma el estado de cuenta antes del cierre diario.</li>
       </ol>
 
-      <h4 style="margin:12px 0 6px 0;">31) Venta pública por empresa</h4>
+      <h4 style="margin:12px 0 6px 0;">30) Venta pública por empresa</h4>
       <p class="form-help" style="margin-top:0;">Rutas: <a href="/administrar_empresa/venta_publica.html">/administrar_empresa/venta_publica.html</a> y <a href="/venta_publica.html">/venta_publica.html</a></p>
       <ol>
         <li>Configura slug, branding y llaves Wompi por empresa en el módulo de administración.</li>
@@ -314,7 +305,7 @@
         <li>Ejecuta pago de prueba Nequi desde la tienda pública y confirma el estado de la orden.</li>
       </ol>
 
-      <h4 style="margin:12px 0 6px 0;">32) Ventas operativas (paso a paso)</h4>
+      <h4 style="margin:12px 0 6px 0;">31) Ventas operativas (paso a paso)</h4>
       <p class="form-help" style="margin-top:0;">Ruta: <a href="/administrar_empresa/carrito_de_compras.html">/administrar_empresa/carrito_de_compras.html</a></p>
       <ol>
         <li>Crea o activa carrito por estación/sesión y asigna cliente cuando aplique.</li>
@@ -322,7 +313,7 @@
         <li>Cierra el cobro con método permitido por rol y verifica que la venta quede en estado cerrado.</li>
       </ol>
 
-      <h4 style="margin:12px 0 6px 0;">33) Crear productos e impuestos</h4>
+      <h4 style="margin:12px 0 6px 0;">32) Crear productos e impuestos</h4>
       <p class="form-help" style="margin-top:0;">Ruta: <a href="/administrar_empresa/administrar_productos.html">/administrar_empresa/administrar_productos.html</a></p>
       <ol>
         <li>Crea categoría y producto con SKU/código de barras, costo, precio y bodega base.</li>
@@ -343,14 +334,13 @@
       </ul>
     </section>
 
-    <section id="menu-erp-calculadora" class="card empresa-section">
+    <section id="menu-erp-operativo" class="card empresa-section">
       <div class="empresa-section-header">
-        <h2 style="margin:0;">ERP extendido y calculadora</h2>
+        <h2 style="margin:0;">ERP extendido</h2>
       </div>
       <ul>
         <li>ERP extendido centraliza módulos avanzados por dominio sin cambiar contratos backend.</li>
         <li>Usa filtros, acciones de estado y trazabilidad por empresa_id en cada submódulo.</li>
-        <li>La calculadora es una utilidad transversal de apoyo con almacenamiento aislado por empresa.</li>
       </ul>
     </section>
 

@@ -2,6 +2,57 @@
 
 ## 2026-04-18
 
+- Carritos y estaciones: se limpia el legado de `ventas_simple` y se amplían los checks del carrito unificado.
+	- Archivos modificados: `web/administrar_empresa/carrito_de_compras.html`, `web/administrar_empresa/configuracion_de_estaciones.html`, `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`, `backend/handlers/empresa_configuracion_general.go`, `backend/handlers/empresa_configuracion_general_test.go`, `backend/handlers/empresa_estacion_prefs_test.go`, `backend/db/empresa_configuracion_general.go`, `backend/db/empresa_estacion_prefs_test.go`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Archivos eliminados: `web/js/ventas_simple.js`.
+	- Descripcion: el carrito unificado ahora permite configurar también la visibilidad del cliente, el bloque de descuento/impuestos por item, el resumen total del carrito y el desglose del cobro. Además, se retira del runtime el script antiguo de `ventas_simple` y se elimina el bloque muerto de carrito compacto en `configuracion_general`.
+	- Verificacion: pruebas dirigidas de handlers/db del modulo y validacion funcional del redirect de compatibilidad.
+
+- IA: el proyecto migra a Google Gemini como único proveedor y retira Ollama/DeepSeek del flujo operativo.
+	- Archivos modificados: `backend/handlers/ai_credentials_catalog.go`, `backend/handlers/ai_config_handlers.go`, `backend/handlers/chat_con_inteligencia_artificial_controller.go`, `backend/handlers/chat_con_ia_global_super_test.go`, `backend/handlers/chat_con_inteligencia_artificial_controller_test.go`, `backend/handlers/system_empresas_handlers_test.go`, `backend/db/chat_inteligencia_artificial_test.go`, `backend/tools/set_ai_provider_enabled.go`, `backend/.env.example`, `backend/.env.local`, `scripts/iniciar_servidor.ps1`, `web/super/configuracion_avanzada.html`, `web/super/chat_con_ia_global.html`, `web/administrar_empresa/chat_con_inteligencia_artificial.html`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_archivos`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Archivos eliminados: `backend/tools/check_deepseek_key/main.go`.
+	- Descripcion: se reemplaza la IA en VPS basada en Ollama por Google Gemini en el chat global super y el chat con IA por empresa. Configuración avanzada queda reducida a una sola API key cifrada, un interruptor global y un interruptor del proveedor `google`. El script de arranque ya no abre túnel a Ollama y el VPS queda sin `ollama.service` ni binario asociado.
+	- Verificacion: `go test ./handlers -run 'Test(SuperAIModelosHandlerReturnsCatalog|SuperAIModelosHandlerFiltersDisabledProvider|ModelosHandlerReturnsPreferredModelForGoogleAccount|ModeloPreferidoHandlerAcceptsGemini|ModelosHandlerFiltersDisabledProvider|AIModelsConfigHandlerSaveGeminiEncrypted|AIModelsConfigHandlerSavesProviderEnabledState|AIModelsConfigHandlerTogglesGlobalServiceState)$' -count=1`; `go test ./db -run 'Test(EmpresaAIModeloPreferidoUpsertAndGet|RegisterEmpresaAIConsultaAcumulaUsoDiario|SuperAIModeloPreferidoUpsertAndGet|RegisterSuperAIConsultaAcumulaUsoDiario|GetSuperAIModeloPreferidoRepairsMissingSchema|GetSuperAIUsoDiarioRepairsMissingSchema|RegisterSuperAIConsultaRepairsMissingSchema)$' -count=1`.
+
+- Carritos y estaciones: el sistema adopta un carrito unificado configurable por empresa y por estación.
+	- Archivos modificados: `web/administrar_empresa/carrito_de_compras.html`, `web/administrar_empresa/estaciones.html`, `web/administrar_empresa/ventas_simple.html`, `web/administrar_empresa/configuracion_de_estaciones.html`, `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`, `web/administrar_empresa/configuracion_menu.html`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: desaparece la bifurcación de UI entre carrito de compras, venta simple y carrito compacto. Las estaciones abren siempre `carrito_de_compras.html` y la pantalla muestra u oculta bloques según configuración global por empresa y configuración individual por estación almacenadas en `estaciones_config`.
+	- Verificacion: tarea `validar-permisos-selector-empresas-5`; `get_errors` sin errores en los archivos frontend modificados.
+
+
+- Chat con IA: interfaz simplificada en empresa y panel super.
+	- Archivos modificados: `web/administrar_empresa/chat_con_inteligencia_artificial.html`, `web/super/chat_con_ia_global.html`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: se retiran botones superiores, cuadros visibles de modelo/uso diario, selector visible de modelo, CTA de upgrade y panel de consultas recientes; las sugerencias rapidas pasan debajo del chat y `Limpiar chat` queda junto a `Preguntar a la IA`.
+	- Verificacion: `get_errors` sobre las vistas y documentos modificados.
+
+- Panel empresa: se retira la calculadora del menu lateral y del menu flotante.
+	- Archivos modificados: `web/administrar_empresa.html`, `web/js/administrar_empresa.js`, `web/menu.js`, `web/ayuda/ayuda.html`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Archivos eliminados: `web/administrar_empresa/calculadora.html`.
+	- Descripcion: se elimina el boton `Calculadora`, se retira el acceso rapido del menu flotante y se borra la pagina frontend asociada para que deje de existir como frente visible del panel empresa.
+	- Verificacion: `get_errors` y busqueda de referencias frontend activas a `calculadora.html`.
+
+- Inventario y productos: las compras preventivas y por proveedor pasan a la sección `Compras` del submódulo.
+	- Archivos modificados: `web/administrar_empresa/administrar_productos.html`, `web/administrar_empresa/productos/compras.html`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: la vista central del módulo ahora expone `view=compras` y concentra allí el plan de reposición por proveedor, el consolidado de compra y el borrador/ciclo de orden; la ruta `productos/compras.html` deja el placeholder y redirige a esa vista real.
+	- Verificacion: `get_errors` sobre los HTML y documentos modificados.
+
+- Panel empresa: se elimina la página `Inicio` y el shell arranca directo en Productos.
+	- Archivos eliminados: `web/administrar_empresa/inicio.html`.
+	- Archivos modificados: `web/administrar_empresa.html`, `web/administrar_empresa/administrar_productos_menu.html`, `web/js/administrar_empresa.js`, `web/ayuda/ayuda.html`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: se retira la portada intermedia del panel empresa, desaparece el botón `Inicio` del menú principal y del submódulo de productos, y la carga inicial del iframe pasa a `administrar_productos_menu.html`.
+	- Verificacion: `get_errors` sobre los archivos HTML, JS y documentos modificados.
+
+- Inventario y productos: `Proveedores` pasa a una subpágina dedicada y `Precios` muestra el historial real de cambios de precio.
+	- Archivos creados: `web/administrar_empresa/productos/administrar_proveedores.html`.
+	- Archivos modificados: `web/administrar_empresa/administrar_productos.html`, `web/administrar_empresa/administrar_productos_menu.html`, `web/administrar_empresa/productos/administrar_productos_menu.html`, `web/administrar_empresa/productos/precios.html`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: la vista principal del módulo ya no mezcla proveedores ni el historial de cambios de precio con el CRUD de productos; ambos salen a subvistas dedicadas reutilizando la misma página central y preservando `empresa_id` dentro del shell administrativo.
+	- Verificacion: `get_errors` sobre los HTML y documentos modificados.
+
+- Chat IA super y empresarial: se autorrepara el esquema legacy `super_ai_*` y `empresa_ai_*` y se amplía el timeout de Ambis Local sobre el túnel VPS.
+	- Archivos modificados: `backend/db/chat_inteligencia_artificial.go`, `backend/db/chat_inteligencia_artificial_test.go`, `backend/handlers/chat_con_inteligencia_artificial_controller.go`, `documentos/descripcion_de_modulos`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: el chat super ya no falla al consultar modelo preferido o uso diario sobre instalaciones PostgreSQL heredadas; la capa DB repara tablas/columnas faltantes al vuelo y el cliente de Ollama ahora soporta tiempos de respuesta más largos de `codellama:7b` cuando la consulta viaja por el túnel local al VPS.
+	- Verificacion: `go test ./db -run 'Test(SuperAIModeloPreferidoUpsertAndGet|RegisterSuperAIConsultaAcumulaUsoDiario|GetSuperAIModeloPreferidoRepairsMissingSchema|GetSuperAIUsoDiarioRepairsMissingSchema|RegisterSuperAIConsultaRepairsMissingSchema)$' -count=1`; `go test ./handlers -run '^$' -count=1`; `curl http://localhost:8080/super/api/chat_con_ia_global/modelos` -> `200 OK`; `curl http://localhost:8080/super/api/chat_con_ia_global/consultar` -> `200 OK`.
+
 - IA super y empresarial: se agregan switches por proveedor para desactivar DeepSeek sin afectar Ambis Local.
 	- Archivos modificados: `backend/handlers/ai_credentials_catalog.go`, `backend/handlers/ai_config_handlers.go`, `backend/handlers/chat_con_inteligencia_artificial_controller.go`, `backend/handlers/chat_con_ia_global_super.go`, `backend/handlers/system_empresas_handlers_test.go`, `backend/handlers/chat_con_inteligencia_artificial_controller_test.go`, `backend/handlers/chat_con_ia_global_super_test.go`, `web/super/configuracion_avanzada.html`, `documentos/descripcion_de_modulos`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
 	- Descripcion: configuración avanzada ahora puede habilitar o bloquear por separado `DeepSeek Chat` y `Ambis Local`; los chats empresarial y global super solo muestran proveedores activos y hacen fallback automático cuando el modelo preferido quedó apagado.

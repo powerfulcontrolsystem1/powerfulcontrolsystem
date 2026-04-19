@@ -94,7 +94,6 @@
         '<a class="fm-item" href="/index.html">Portal</a>' +
         '<a class="fm-item" href="/venta_digital.html">Venta digital</a>' +
         '<a class="fm-item" href="/Juegos/n64/index.html">Emulador N64</a>' +
-        '<a id="calculatorLink" class="fm-item" href="/administrar_empresa/calculadora.html">Calculadora</a>' +
         '<a class="fm-item" href="/configuracion_de_la_cuenta.html">Configuración</a>' +
         '<button id="themeToggle" class="fm-item" type="button" aria-label="Cambiar tema"></button>' +
         '<a id="sessionLink" class="fm-item" href="/login.html">Iniciar sesión</a>' +
@@ -212,18 +211,6 @@
         try { return localStorage.getItem('active_empresa_id') || ''; } catch(ee) { return ''; }
       }
     }
-    function updateCalculatorLink(){
-      var calcLink = wrapper.querySelector('#calculatorLink');
-      if (!calcLink) return;
-      var empresaId = resolveEmpresaId();
-      var url = new URL('/administrar_empresa/calculadora.html', window.location.origin);
-      if (empresaId) {
-        url.searchParams.set('empresa_id', empresaId);
-      }
-      calcLink.setAttribute('href', url.pathname + url.search);
-    }
-    updateCalculatorLink();
-    
     // El portal publico deja un unico acceso directo al emulador N64.
     // No se muestran accesos adicionales para experiencias retiradas.
     // Marcar inyección para evitar duplicados en futuras cargas dinámicas

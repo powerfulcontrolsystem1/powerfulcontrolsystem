@@ -143,6 +143,7 @@ func filterEmpresasByPrincipalScope(dbSuper *sql.DB, principalEmail string, empr
 }
 
 func ensureEmpresaInRequesterScope(dbEmp, dbSuper *sql.DB, r *http.Request, empresaID int64) (string, bool, error) {
+	requesterEmail := strings.ToLower(strings.TrimSpace(adminEmailFromRequest(r)))
 	_, principalEmail, err := resolveRequesterAdminScope(dbSuper, r)
 	if err != nil {
 		return "", false, err
@@ -150,7 +151,7 @@ func ensureEmpresaInRequesterScope(dbEmp, dbSuper *sql.DB, r *http.Request, empr
 	if principalEmail == "" || empresaID <= 0 {
 		return principalEmail, true, nil
 	}
-	ok, err := dbpkg.CanAdminAccessEmpresaIA(dbEmp, dbSuper, principalEmail, empresaID)
+	ok, err := dbpkg.CanAdminAccessEmpresaIA(dbEmp, dbSuper, requesterEmail, empresaID)
 	if err != nil {
 		return principalEmail, false, err
 	}

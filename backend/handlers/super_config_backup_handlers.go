@@ -16,11 +16,21 @@ import (
 
 const superConfigBackupVersion = "super-config-backup.v1"
 
+func superConfigLegacySensitiveSecretKeys() []string {
+	return []string{
+		"ai.model.deepseek.deepseek_chat.api_key",
+		"ai.provider.deepseek.api_key",
+	}
+}
+
 func superConfigSensitiveSecretKeys() map[string]struct{} {
 	keys := map[string]struct{}{
 		"wompi.private_key":       {},
 		"wompi.integrity_key":     {},
 		"gmail.smtp_app_password": {},
+	}
+	for _, key := range superConfigLegacySensitiveSecretKeys() {
+		keys[key] = struct{}{}
 	}
 	for _, def := range aiCredentialCatalogModels() {
 		if key := strings.TrimSpace(def.ConfigKey); key != "" {
@@ -112,6 +122,8 @@ func superConfigCriticalKeys() []string {
 		"usuarios.password_require_symbol",
 		"usuarios.password_rotation_days",
 	}
+
+	keys = append(keys, superConfigLegacySensitiveSecretKeys()...)
 
 	for _, def := range aiCredentialCatalogModels() {
 		if k := strings.TrimSpace(def.ConfigKey); k != "" {

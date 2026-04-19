@@ -4,24 +4,17 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Precios</title>
-  <link rel="stylesheet" href="/estilos.css">
 </head>
 <body>
-  <div class="page">
-    <header class="page-header">
-      <h1>Precios</h1>
-      <p class="lead">Administración de tarifas y precios por producto.</p>
-    </header>
-
-    <main class="container">
-      <section>
-        <p>Página de ejemplo para gestionar precios, listas de precios y reglas de tarifa.</p>
-      </section>
-    </main>
-
-    <footer class="site-footer">
-      <p>© 2026 PowerfulControlSystem</p>
-    </footer>
-  </div>
+  <script>
+    (function () {
+      const params = new URLSearchParams(window.location.search || '');
+      const empresaId = params.get('empresa_id') || '';
+      const target = new URL('/administrar_empresa/administrar_productos.html', window.location.origin);
+      target.searchParams.set('view', 'precios');
+      if (empresaId) target.searchParams.set('empresa_id', empresaId);
+      window.location.replace(target.toString());
+    })();
+  </script>
 </body>
 </html>

@@ -11,12 +11,7 @@
     <header class="page-header ai-gemini-header">
       <div>
         <h1 id="pageTitle">Chat IA Empresarial</h1>
-        <p class="form-help">Tus preguntas y respuestas se construyen con contexto de la base de datos de la empresa seleccionada y acceso restringido por empresa_id. Puedes elegir entre DeepSeek y Ambis Local segun la configuracion disponible.</p>
-      </div>
-      <div class="ai-gemini-toolbar">
-        <button id="reloadBtn" class="btn secondary" type="button">Actualizar</button>
-        <button id="loadHistoryBtn" class="btn secondary" type="button">Ver historial</button>
-        <button id="clearBtn" class="btn secondary" type="button">Limpiar chat</button>
+        <p class="form-help">Tus preguntas y respuestas se construyen con contexto de la base de datos de la empresa seleccionada y acceso restringido por empresa_id. El chat usa Google Gemini segun la configuracion disponible del panel super.</p>
       </div>
     </header>
 
@@ -28,14 +23,6 @@
       <div class="ai-gemini-chip">
         <span class="ai-gemini-chip-label">Cuenta Google</span>
         <strong id="chipGoogle">Cargando...</strong>
-      </div>
-      <div class="ai-gemini-chip">
-        <span class="ai-gemini-chip-label">Modelo</span>
-        <strong id="chipModel">DeepSeek Chat</strong>
-      </div>
-      <div class="ai-gemini-chip">
-        <span class="ai-gemini-chip-label">Uso diario</span>
-        <strong id="chipUsage">-</strong>
       </div>
     </section>
 
@@ -53,32 +40,23 @@
       <div id="messagesList" class="ai-chat-messages ai-gemini-messages"></div>
 
       <form id="promptForm" class="ai-chat-form ai-gemini-form">
-        <label class="form-label" for="modelSelect">Modelo disponible para esta empresa</label>
-        <select id="modelSelect" class="form-input ai-gemini-input"></select>
-
-        <div class="ai-gemini-suggestions">
-          <button class="ai-gemini-pill" type="button" data-prompt="Resume ventas, clientes y balance de hoy para mi empresa.">Resumen del día</button>
-          <button class="ai-gemini-pill" type="button" data-prompt="Muestra alertas de inventario bajo y productos con mayor rotación.">Alertas de inventario</button>
-          <button class="ai-gemini-pill" type="button" data-prompt="Dame 3 recomendaciones para mejorar flujo de caja esta semana.">Mejorar flujo de caja</button>
-        </div>
+        <select id="modelSelect" class="form-input ai-gemini-input" hidden aria-hidden="true" tabindex="-1"></select>
 
         <label class="form-label" for="promptInput">Pregunta empresarial</label>
         <textarea id="promptInput" class="form-textarea ai-gemini-input" maxlength="2500" placeholder="Ejemplo: ¿Qué productos se están vendiendo más y cuáles debo reabastecer primero?"></textarea>
 
         <div class="ai-chat-actions">
           <button id="sendBtn" class="btn" type="submit">Preguntar a la IA</button>
-          <a id="upgradeLink" class="btn dark" href="#" hidden target="_top">Adquirir plan</a>
+          <button id="clearBtn" class="btn secondary" type="button">Limpiar chat</button>
         </div>
         <div id="chatMsg" class="form-help"></div>
-      </form>
-    </section>
 
-    <section class="card empresa-section">
-      <div class="empresa-section-header">
-        <h2>Consultas recientes</h2>
-      </div>
-      <div id="historyList" class="ai-history-list">Sin historial cargado.</div>
-      <div id="historyMsg" class="form-help"></div>
+        <div class="ai-gemini-suggestions">
+          <button class="ai-gemini-pill" type="button" data-prompt="Resume ventas, clientes y balance de hoy para mi empresa.">Resumen del día</button>
+          <button class="ai-gemini-pill" type="button" data-prompt="Muestra alertas de inventario bajo y productos con mayor rotación.">Alertas de inventario</button>
+          <button class="ai-gemini-pill" type="button" data-prompt="Dame 3 recomendaciones para mejorar flujo de caja esta semana.">Mejorar flujo de caja</button>
+        </div>
+      </form>
     </section>
   </div>
 
@@ -88,7 +66,7 @@
       empresaNombre: "",
       models: [],
       modelID: "",
-      modelDisplay: "DeepSeek Chat",
+      modelDisplay: "Google Gemini 2.0 Flash",
       googleAccount: "",
       usage: null,
       loading: false,
@@ -142,6 +120,7 @@
     function setAIDisabledState(message) {
       state.aiDisabled = true;
       const banner = document.getElementById("aiDisabledBanner");
+      const modelSelect = document.getElementById("modelSelect");
       const text = normalize(message) || "La IA está desactivada desde configuración avanzada del panel super.";
       if (banner) {
         banner.hidden = false;
@@ -150,20 +129,21 @@
       }
       document.getElementById("promptInput").disabled = true;
       document.getElementById("sendBtn").disabled = true;
-      document.getElementById("modelSelect").disabled = true;
+      if (modelSelect) modelSelect.disabled = true;
       setMsg("chatMsg", text, true);
     }
 
     function clearAIDisabledState() {
       state.aiDisabled = false;
       const banner = document.getElementById("aiDisabledBanner");
+      const modelSelect = document.getElementById("modelSelect");
       if (banner) {
         banner.hidden = true;
         banner.textContent = "";
       }
       document.getElementById("promptInput").disabled = !!state.authRequired;
       document.getElementById("sendBtn").disabled = !!state.authRequired;
-      document.getElementById("modelSelect").disabled = false;
+      if (modelSelect) modelSelect.disabled = false;
     }
 
     async function apiFetch(url, options) {
@@ -192,17 +172,6 @@
       const empresaText = state.empresaNombre ? (state.empresaNombre + " (#" + state.empresaID + ")") : ("Empresa #" + state.empresaID);
       document.getElementById("chipEmpresa").textContent = empresaText;
       document.getElementById("chipGoogle").textContent = state.googleAccount || "No detectada";
-      document.getElementById("chipModel").textContent = state.modelDisplay || "Modelo IA";
-
-      if (!state.usage) {
-        document.getElementById("chipUsage").textContent = "Sin consumo";
-        return;
-      }
-
-      const used = Number(state.usage.daily_used || 0);
-      const limit = Number(state.usage.daily_limit || 0);
-      const remaining = Number(state.usage.daily_remaining || 0);
-      document.getElementById("chipUsage").textContent = used + " / " + limit + " (restan " + remaining + ")";
     }
 
     function renderModelOptions() {
@@ -254,17 +223,9 @@
       renderMessages();
     }
 
-    function clearUpgradeOption() {
-      const link = document.getElementById("upgradeLink");
-      link.hidden = true;
-      link.href = "#";
-    }
+    function clearUpgradeOption() {}
 
-    function showUpgradeOption(url) {
-      const link = document.getElementById("upgradeLink");
-      link.href = normalize(url) || ("/pagar_licencia.html?empresa_id=" + encodeURIComponent(state.empresaID));
-      link.hidden = false;
-    }
+    function showUpgradeOption() {}
 
     function buildHistoryPayload() {
       return state.messages
@@ -363,11 +324,12 @@
     }
 
     async function loadHistorial() {
+      const box = document.getElementById("historyList");
+      if (!box) return;
       try {
         const data = await apiFetch("/api/empresa/chat_con_inteligencia_artificial/historial?empresa_id=" + encodeURIComponent(state.empresaID) + "&limit=20");
         clearAIDisabledState();
         const items = Array.isArray(data.items) ? data.items : [];
-        const box = document.getElementById("historyList");
 
         if (!items.length) {
           box.innerHTML = '<div class="ai-chat-empty">No hay historial registrado.</div>';
@@ -407,7 +369,6 @@
       ev.preventDefault();
       if (state.loading || state.authRequired || state.aiDisabled) return;
 
-      clearUpgradeOption();
       const pregunta = normalize(document.getElementById("promptInput").value);
       if (!pregunta) {
         setMsg("chatMsg", "Debes escribir una pregunta.", true);
@@ -451,7 +412,6 @@
           appendMessage("system", normalize(payload.error || "La IA está desactivada desde configuración avanzada."));
           setAIDisabledState(payload.error);
         } else if (normalize(payload.code) === "free_tier_limit_reached") {
-          showUpgradeOption(payload.upgrade_url);
           appendMessage("system", normalize(payload.error || "Límite gratuito alcanzado."));
           setMsg("chatMsg", normalize(payload.upgrade_message || "Se alcanzó el límite del plan gratuito."), true);
         } else {
@@ -473,15 +433,8 @@
     }
 
     function bindEvents() {
-      document.getElementById("reloadBtn").addEventListener("click", async function() {
-        setMsg("chatMsg", "Actualizando contexto y estado...", false);
-  		await Promise.all([loadChatModel(), loadHistorial(), loadEmpresaNameBestEffort()]);
-      });
-
-      document.getElementById("loadHistoryBtn").addEventListener("click", loadHistorial);
       document.getElementById("clearBtn").addEventListener("click", function() {
         state.messages = [];
-        clearUpgradeOption();
         renderMessages();
         setMsg("chatMsg", "Conversación local limpiada.", false);
       });

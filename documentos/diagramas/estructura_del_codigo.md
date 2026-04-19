@@ -2,6 +2,70 @@
 
 Fecha de actualizacion: 2026-04-18
 
+## Actualizacion 2026-04-18 (carrito unificado configurable para estaciones y empresa)
+
+- Frontend:
+  - `web/administrar_empresa/carrito_de_compras.html` concentra la operacion de carrito general y de estacion, y resuelve la visibilidad de búsqueda, cliente, descuentos, impuestos, lector, propina, comisión, pago mixto, resumen total, desglose de cobro y resumen de productos a partir de `estaciones_config`.
+  - `web/administrar_empresa/configuracion_de_estaciones.html` administra la configuracion global y los overrides por estacion dentro del mismo documento `estaciones_config`, manteniendo la sincronizacion de carritos base.
+  - `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` edita la configuracion global del carrito unificado para toda la empresa.
+  - `web/administrar_empresa/estaciones.html` abre siempre `carrito_de_compras.html` para cada estacion y `web/administrar_empresa/ventas_simple.html` solo redirige a esa ruta para no romper accesos legacy.
+- Flujo:
+  - `configuracion_menu.html` -> `configuracion_carrito_de_compra_empresa.html` o `configuracion_de_estaciones.html` -> `GET/PUT /api/empresa/estacion_prefs?empresa_id=...` -> persistencia del JSON `estaciones_config` con `carrito_ui_global` y `carrito` por estacion.
+  - `estaciones.html` -> `carrito_de_compras.html?empresa_id=...&estacion_id=...&carrito_codigo=...` -> aplicacion de checks UI segun configuracion global/heredada de la estacion.
+
+
+## Actualizacion 2026-04-18 (chat con IA: interfaz reducida en empresa y super)
+
+- Frontend IA:
+  - `web/administrar_empresa/chat_con_inteligencia_artificial.html` elimina controles superiores de `Actualizar` y `Ver historial`, retira los cuadros visibles de modelo/uso diario y mueve las sugerencias rapidas debajo del bloque principal del chat.
+  - `web/super/chat_con_ia_global.html` adopta el mismo patron visual simplificado para el chat global del panel super.
+- Flujo:
+  - La consulta y el cambio de modelo siguen existiendo en la logica interna, pero el selector queda oculto y la operacion visible se concentra en `Preguntar a la IA` y `Limpiar chat`.
+  - Se elimina del render visible el bloque de `Consultas recientes` en ambas vistas sin cambiar endpoints backend.
+
+## Actualizacion 2026-04-19 (chat IA Gemini-only y retiro de Ollama)
+
+- Backend:
+  - `backend/handlers/ai_credentials_catalog.go` deja el catálogo IA reducido a `google:gemini-2.0-flash`.
+  - `backend/handlers/ai_config_handlers.go` usa la misma API de configuración avanzada para guardar la API key cifrada de Gemini, habilitar o deshabilitar el servicio y ejecutar una prueba real contra Google Gemini.
+  - `backend/handlers/chat_con_inteligencia_artificial_controller.go` y `backend/handlers/chat_con_ia_global_super.go` operan sobre un único proveedor y ya no contienen la ruta local a Ollama.
+- Frontend:
+  - `web/super/configuracion_avanzada.html` muestra una sola tarjeta IA para Google Gemini.
+  - `web/administrar_empresa/chat_con_inteligencia_artificial.html` y `web/super/chat_con_ia_global.html` fijan Gemini como modelo visible por defecto.
+- Runtime:
+  - `scripts/iniciar_servidor.ps1` mantiene solo el túnel PostgreSQL y deja de levantar o reescribir `OLLAMA_BASE_URL`.
+  - El VPS deja de alojar `ollama.service` y el binario local asociado.
+
+## Actualizacion 2026-04-18 (inventario/productos: compras pasa a una vista dedicada del modulo)
+
+- Frontend productos:
+  - `web/administrar_empresa/administrar_productos.html` agrega la subvista `compras` para mostrar compras preventivas y ciclo de orden por proveedor fuera de la vista principal de inventario.
+  - `web/administrar_empresa/productos/compras.html` redirige hacia esa vista central, preservando `empresa_id` dentro del iframe del panel empresa.
+- Flujo:
+  - `administrar_empresa.html` -> `administrar_productos_menu.html` -> `productosContentFrame` -> `administrar_productos.html?view=compras`.
+  - `compras` concentra plan de reposicion por proveedor, consolidado de compra y borrador/ciclo de orden, mientras `productos` conserva inventario y analitica operativa.
+
+## Actualizacion 2026-04-18 (inventario/productos: proveedores y precios salen de la vista principal)
+
+- Frontend productos:
+  - `web/administrar_empresa/administrar_productos.html` sigue siendo la fuente unica del modulo, pero ahora resuelve cinco subvistas: `productos`, `bodegas`, `categorias`, `proveedores` y `precios`.
+  - `web/administrar_empresa/productos/administrar_proveedores.html` y `web/administrar_empresa/productos/precios.html` redirigen hacia esa vista central, preservando `empresa_id` en el iframe del panel empresa.
+  - `web/administrar_empresa/administrar_productos_menu.html` agrega la entrada `Proveedores` y reutiliza `Precios` para mostrar el historial real de cambios de precio en lugar de una página placeholder.
+- Flujo:
+  - `administrar_empresa.html` -> `administrar_productos_menu.html` -> `productosContentFrame` -> `administrar_productos.html?view=productos|bodegas|categorias|proveedores|precios`.
+  - `productos` conserva CRUD de productos y servicios, `proveedores` concentra el CRUD de proveedores y `precios` concentra el historial de cambios de precio.
+
+## Actualizacion 2026-04-18 (chat IA: autoreparacion de esquema y timeout mayor para Ambis sobre VPS)
+
+- Backend:
+  - `backend/db/chat_inteligencia_artificial.go` deja de asumir que `super_ai_*` y `empresa_ai_*` ya existen completos en PostgreSQL; ahora repara tablas/columnas faltantes al consultar modelo preferido, uso diario, historial y auditoria de consultas.
+  - `backend/handlers/chat_con_inteligencia_artificial_controller.go` amplía el timeout de las llamadas a Ollama para tolerar tiempos de inferencia más altos de `codellama:7b` cuando el backend local consume `OLLAMA_BASE_URL` apuntando al túnel del VPS.
+- Testing/runtime:
+  - `backend/db/chat_inteligencia_artificial_test.go` agrega regresiones para schema faltante en `super_ai_modelo_preferido`, `super_ai_uso_diario` y `super_ai_consultas`.
+  - Validacion real: `GET /super/api/chat_con_ia_global/modelos` y `POST /super/api/chat_con_ia_global/consultar` vuelven a responder correctamente usando `ollama:ambis` por `http://localhost:8080`.
+- Flujo:
+  - `super/chat_con_ia_global.html` -> `GET /super/api/chat_con_ia_global/modelos` -> preferido recuperado aunque el esquema legacy venga incompleto -> `POST /super/api/chat_con_ia_global/consultar` -> contexto global consolidado -> llamada a Ambis con timeout mayor -> registro de consulta y uso diario.
+
 ## Actualizacion 2026-04-18 (portal publico: retiro del arcade y acceso unico N64)
 
 - Frontend publico:
@@ -1427,7 +1491,6 @@ flowchart TD
   - `web/administrar_empresa/configuracion.html`
   - `web/administrar_empresa/estaciones.html`
   - `web/administrar_empresa/configuracion_de_estaciones.html`
-  - `web/administrar_empresa/inicio.html`
   - `web/administrar_empresa/auditoria.html`
   - `web/administrar_empresa/administrar_productos.html`
   - `web/administrar_empresa/sensor_puertas_mensajes.html`
@@ -1646,8 +1709,8 @@ flowchart TD
     - integra upload de nota de voz de tarea y reproducción en lista de tareas.
   - `web/super/licencias.html`:
     - agrega configuración de módulos por licencia y bandera de super rol.
-  - `web/administrar_empresa/inicio.html`:
-    - agrega accesos directos dinámicos por permisos efectivos/licencia.
+  - `web/administrar_empresa/administrar_productos_menu.html`:
+    - queda como punto de entrada operativo por defecto del panel empresa tras retirar la antigua portada `inicio.html`.
   - `web/estilos.css`:
     - agrega estilos de notas de voz, configuración de licencia por módulos y accesos directos de inicio.
 
@@ -1945,6 +2008,16 @@ flowchart TD
     - agrega configuracion de integraciones, metadata de operacion (etiquetas/cliente/documento), referencias de carrito/cotizacion y filtros de historial/exportacion.
   - `web/estilos.css`:
     - agrega estilos `calc-config-row`, `calc-meta-grid` y `calc-filter-row` para el nuevo flujo de captura/consulta.
+
+## Actualizacion 2026-04-18 (retiro de calculadora del panel empresa)
+
+- Frontend empresa:
+  - `web/administrar_empresa.html` elimina el enlace lateral `Calculadora` del panel empresa.
+  - `web/js/administrar_empresa.js` retira `linkCalculadora` del catalogo de enlaces y de permisos del menu empresarial.
+  - `web/menu.js` deja de publicar acceso rapido a la calculadora en el menu flotante y elimina la propagacion de `empresa_id` hacia esa ruta.
+  - `web/ayuda/ayuda.html` retira la pagina de calculadora de la guia operativa y simplifica la seccion a `ERP extendido`.
+- Baja de archivo frontend:
+  - `web/administrar_empresa/calculadora.html` se elimina del repositorio para evitar accesos residuales a una pantalla retirada del panel.
 
 ## Actualizacion 2026-04-07 (cierre modulo 32: graficos y estadisticas)
 

@@ -223,30 +223,20 @@
     </section>
 
     <section class="card form mp-card" id="aiConfigCard">
-      <h2>Inteligencia Artificial — DeepSeek y Ambis</h2>
-      <p class="form-help">Este panel deja disponible DeepSeek por API key cifrada y Ambis Local sobre Ollama en el VPS. En empresa se puede elegir entre uno u otro manteniendo alcance por empresa_id.</p>
+      <h2>Inteligencia Artificial — Google Gemini</h2>
+      <p class="form-help">Este panel deja disponible Google Gemini por API key cifrada. El chat global super y el chat de cada empresa usan la misma configuración con alcance controlado.</p>
       <div id="aiLoggedAccount" class="form-help">Cuenta Google logueada: Cargando...</div>
 
       <div class="form-row">
         <div class="form-col">
-          <label class="form-label">DeepSeek Chat</label>
-          <label class="mode-switch-row" for="aiProviderDeepSeekEnabled">
+          <label class="form-label">Google Gemini 2.0 Flash</label>
+          <label class="mode-switch-row" for="aiProviderGeminiEnabled">
             <span class="mode-label">Disponible en chats</span>
-            <input id="aiProviderDeepSeekEnabled" type="checkbox" role="switch" aria-label="Activar DeepSeek en los chats">
+            <input id="aiProviderGeminiEnabled" type="checkbox" role="switch" aria-label="Activar Google Gemini en los chats">
           </label>
-          <input id="aiKeyDeepSeek" class="form-input" type="password" placeholder="API key para deepseek:deepseek-chat">
-          <div id="aiStatusDeepSeek" class="form-help">Cargando estado...</div>
-          <div class="form-help">Plan gratuito sujeto a límites y políticas del proveedor DeepSeek.</div>
-        </div>
-        <div class="form-col">
-          <label class="form-label">Ambis Local</label>
-          <label class="mode-switch-row" for="aiProviderAmbisEnabled">
-            <span class="mode-label">Disponible en chats</span>
-            <input id="aiProviderAmbisEnabled" type="checkbox" role="switch" aria-label="Activar Ambis Local en los chats">
-          </label>
-          <div id="aiStatusAmbisLocal" class="form-help">Cargando estado...</div>
-          <div class="form-help">Ambis usa Ollama dentro del VPS por loopback. No requiere API key en este panel.</div>
-          <div class="form-help">DeepSeek sí se guarda cifrada obligatoriamente en backend y nunca expone la llave en pantalla.</div>
+          <input id="aiKeyGemini" class="form-input" type="password" placeholder="API key para google:gemini-2.0-flash">
+          <div id="aiStatusGemini" class="form-help">Cargando estado...</div>
+          <div class="form-help">La API key se guarda cifrada obligatoriamente en backend y nunca se expone en pantalla.</div>
         </div>
       </div>
 
@@ -266,10 +256,10 @@
         <button id="saveAiConfigBtn" class="btn">Guardar configuración IA</button>
         <button id="editAiConfigBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Editar</button>
         <button id="cancelAiConfigBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Cancelar</button>
-        <button id="testAiBtn" type="button" class="btn secondary" style="margin-left:8px;">Probar IA contra VPS</button>
+        <button id="testAiBtn" type="button" class="btn secondary" style="margin-left:8px;">Probar Google Gemini</button>
       </div>
       <div id="aiConfigMsg" class="form-help"></div>
-      <div class="form-help">Usa Probar IA contra VPS para ejecutar una prueba real del servicio local de Ollama desde el backend.</div>
+      <div class="form-help">Usa la prueba para validar la API key de Google Gemini desde el backend.</div>
       <div id="aiTestResult" class="form-help"></div>
     </section>
 
@@ -297,7 +287,7 @@
   <script>
     (function(){
       const aiCredentialBindings = [
-		{ model_id: 'deepseek:deepseek-chat', inputId: 'aiKeyDeepSeek', statusId: 'aiStatusDeepSeek' }
+  		{ model_id: 'google:gemini-2.0-flash', inputId: 'aiKeyGemini', statusId: 'aiStatusGemini' }
       ];
 
       async function load(){
@@ -519,17 +509,14 @@
       async function loadAIConfig(){
         const msg = document.getElementById('aiConfigMsg');
         const accountEl = document.getElementById('aiLoggedAccount');
-        const ambisStatusEl = document.getElementById('aiStatusAmbisLocal');
         const enabledToggle = document.getElementById('aiEnabledToggle');
         const enabledStatusEl = document.getElementById('aiEnabledStatus');
-        const deepSeekEnabledEl = document.getElementById('aiProviderDeepSeekEnabled');
-        const ambisEnabledEl = document.getElementById('aiProviderAmbisEnabled');
+        const geminiEnabledEl = document.getElementById('aiProviderGeminiEnabled');
         try {
           const res = await fetch('/super/api/config/ai');
           if (!res.ok) {
             msg.innerText = 'Error al leer configuración IA.';
             accountEl.innerText = 'Cuenta Google logueada: no disponible';
-            if (ambisStatusEl) ambisStatusEl.innerText = 'Error al leer estado';
             aiCredentialBindings.forEach(function(binding){
               const statusEl = document.getElementById(binding.statusId);
               if (statusEl) statusEl.innerText = 'Error al leer estado';
@@ -552,19 +539,8 @@
           const byModel = {};
           (data.modelos || []).forEach(function(item){ byModel[item.model_id] = item; });
 
-          const ambisItem = byModel['ollama:ambis'] || null;
-          const deepseekItem = byModel['deepseek:deepseek-chat'] || null;
-          if (deepSeekEnabledEl) deepSeekEnabledEl.checked = !deepseekItem || !!deepseekItem.enabled;
-          if (ambisEnabledEl) ambisEnabledEl.checked = !ambisItem || !!ambisItem.enabled;
-          if (ambisStatusEl) {
-            if (ambisItem && ambisItem.enabled === false) {
-              ambisStatusEl.innerText = 'Desactivado por interruptor.';
-            } else if (ambisItem && ambisItem.configured) {
-              ambisStatusEl.innerText = 'Disponible como modelo local del VPS (' + (ambisItem.source || 'local') + ').';
-            } else {
-              ambisStatusEl.innerText = 'No disponible.';
-            }
-          }
+          const geminiItem = byModel['google:gemini-2.0-flash'] || null;
+          if (geminiEnabledEl) geminiEnabledEl.checked = !geminiItem || !!geminiItem.enabled;
 
           let hasAIConfig = false;
           aiCredentialBindings.forEach(function(binding){
@@ -587,8 +563,7 @@
             const inputEl = document.getElementById(binding.inputId);
             if (inputEl) inputEl.disabled = hasAIConfig;
           });
-          if (deepSeekEnabledEl) deepSeekEnabledEl.disabled = false;
-          if (ambisEnabledEl) ambisEnabledEl.disabled = false;
+          if (geminiEnabledEl) geminiEnabledEl.disabled = false;
           if (enabledToggle) enabledToggle.disabled = false;
 
           document.getElementById('saveAiConfigBtn').disabled = hasAIConfig;
@@ -596,13 +571,12 @@
           document.getElementById('cancelAiConfigBtn').style.display = 'none';
           if (!msg.innerText || msg.innerText.indexOf('Error') === -1) {
             msg.innerText = hasAIConfig
-			  ? 'DeepSeek y Ambis quedaron visibles para el chat empresarial. Usa Editar si necesitas actualizar la credencial de DeepSeek.'
-			  : 'Aún no hay credencial DeepSeek guardada. Ambis local se administra desde el VPS.';
+			  ? 'Google Gemini quedó disponible para el chat empresarial y el chat global super. Usa Editar si necesitas actualizar la API key.'
+			  : 'Aún no hay API key de Google Gemini guardada.';
           }
         } catch (err) {
           msg.innerText = 'Error cargando configuración IA: ' + (err.message || err);
           accountEl.innerText = 'Cuenta Google logueada: no disponible';
-          if (ambisStatusEl) ambisStatusEl.innerText = 'Error cargando estado.';
         }
       }
 
@@ -626,8 +600,7 @@
 		  credentials: credentials,
       enabled: !!document.getElementById('aiEnabledToggle').checked,
       provider_enabled: {
-      deepseek: !!document.getElementById('aiProviderDeepSeekEnabled').checked,
-      ollama: !!document.getElementById('aiProviderAmbisEnabled').checked
+		  google: !!document.getElementById('aiProviderGeminiEnabled').checked
       }
         };
 
@@ -642,17 +615,17 @@
           });
           const raw = await res.text();
           if (!res.ok) {
-			msg.innerText = 'Error guardando credencial DeepSeek: ' + raw;
+      msg.innerText = 'Error guardando credencial Gemini: ' + raw;
             return;
           }
 
-		  msg.innerText = 'Credencial DeepSeek guardada correctamente para la cuenta Google logueada.';
+      msg.innerText = 'API key de Google Gemini guardada correctamente para la cuenta Google logueada.';
           await loadAIConfig();
         } catch (err) {
-		  msg.innerText = 'Error guardando credencial DeepSeek: ' + (err.message || err);
+      msg.innerText = 'Error guardando credencial Gemini: ' + (err.message || err);
         } finally {
 		  btn.disabled = false;
-		  btn.innerText = 'Guardar credencial DeepSeek';
+      btn.innerText = 'Guardar configuración IA';
         }
       }
 
@@ -662,17 +635,16 @@
           if (inputEl) inputEl.disabled = false;
         });
         document.getElementById('aiEnabledToggle').disabled = false;
-        document.getElementById('aiProviderDeepSeekEnabled').disabled = false;
-        document.getElementById('aiProviderAmbisEnabled').disabled = false;
+		document.getElementById('aiProviderGeminiEnabled').disabled = false;
         document.getElementById('saveAiConfigBtn').disabled = false;
         document.getElementById('editAiConfigBtn').style.display = 'none';
         document.getElementById('cancelAiConfigBtn').style.display = '';
-		document.getElementById('aiConfigMsg').innerText = 'Modo edición activo: ajusta el interruptor global y/o ingresa la nueva credencial DeepSeek.';
+		document.getElementById('aiConfigMsg').innerText = 'Modo edición activo: ajusta el interruptor global y/o ingresa la nueva API key de Google Gemini.';
       }
 
       function cancelEditAIConfig(){
         loadAIConfig();
-  		document.getElementById('aiConfigMsg').innerText = 'Edición de credencial DeepSeek cancelada.';
+	  	document.getElementById('aiConfigMsg').innerText = 'Edición de Google Gemini cancelada.';
       }
 
       function refreshAIEnabledHint(){
@@ -680,7 +652,7 @@
 		const helpEl = document.getElementById('aiEnabledHelp');
 		if (!enabledEl || !helpEl) return;
 		helpEl.innerText = enabledEl.checked
-		  ? 'IA habilitada: el chat empresarial y el chat global super podrán consultar DeepSeek o Ambis cuando el proveedor esté disponible.'
+      ? 'IA habilitada: el chat empresarial y el chat global super podrán consultar Google Gemini cuando el proveedor esté disponible.'
 		  : 'IA desactivada: los chats empresariales y el chat global super quedarán bloqueados hasta volver a activarla, liberando carga del servidor.';
       }
 
@@ -1079,7 +1051,7 @@
           }
           const data = await res.json();
           if (!out) return;
-          out.innerText = 'OK: prueba real contra ' + (data.provider || 'ollama') + ' completada. Modelo: ' + (data.upstream_model || data.model_id || '--') + '. Respuesta: ' + (data.response || '--');
+          out.innerText = 'OK: prueba real contra ' + (data.provider || 'google') + ' completada. Modelo: ' + (data.upstream_model || data.model_id || '--') + '. Respuesta: ' + (data.response || '--');
         } catch (err) {
           if (out) out.innerText = 'Error: ' + (err.message || err);
         }
@@ -1120,10 +1092,7 @@
 		refreshAIEnabledHint();
 		document.getElementById('saveAiConfigBtn').disabled = false;
 	  });
-      document.getElementById('aiProviderDeepSeekEnabled').addEventListener('change', function(){
-    document.getElementById('saveAiConfigBtn').disabled = false;
-    });
-      document.getElementById('aiProviderAmbisEnabled').addEventListener('change', function(){
+      document.getElementById('aiProviderGeminiEnabled').addEventListener('change', function(){
     document.getElementById('saveAiConfigBtn').disabled = false;
     });
       document.getElementById('saveGmailBtn').addEventListener('click', saveGmail);

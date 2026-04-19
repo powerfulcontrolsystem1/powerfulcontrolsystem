@@ -1,6 +1,41 @@
 Descripcion compacta de modulos (POS multiempresa)
 Actualizacion: 2026-04-17
 
+Actualizacion 2026-04-18 (carritos/estaciones: carrito unificado configurable por empresa y estacion):
+- `web/administrar_empresa/carrito_de_compras.html` se consolida como unica superficie operativa para carritos generales y carritos de estacion; la vista lee `estaciones_config` desde `/api/empresa/estacion_prefs` y resuelve qué bloques mostrar en cada estacion, incluyendo cliente, impuestos, resumen total del carrito y desglose del cobro.
+- `web/administrar_empresa/configuracion_de_estaciones.html` deja de administrar `venta_simple_habilitada` y pasa a administrar herencia global y checks de visibilidad del carrito por estacion, manteniendo sincronizacion de carritos base por `empresa_id`.
+- `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` deja de manejar un switch de carrito compacto y ahora gobierna la configuracion global del carrito unificado para toda la empresa.
+- `web/administrar_empresa/estaciones.html` ya no elige entre `ventas_simple.html` y `carrito_de_compras.html`; siempre abre el carrito unificado por estacion. `web/administrar_empresa/ventas_simple.html` queda como compatibilidad de redireccion.
+- Impacto de permisos: sin cambios en wrappers ni roles; la operacion sigue bajo el mismo alcance autenticado por `empresa_id`.
+
+Actualizacion 2026-04-18 (chat con IA: simplificacion visual en empresa y super):
+- `web/administrar_empresa/chat_con_inteligencia_artificial.html` y `web/super/chat_con_ia_global.html` reducen la interfaz visible del chat: se retiran acciones superiores de recarga/historial, chips de modelo y uso diario, selector visible de modelo, CTA de upgrade y bloque de consultas recientes.
+- Las sugerencias rapidas pasan a mostrarse debajo del area principal del chat y el boton `Limpiar chat` queda junto a `Preguntar a la IA` para concentrar la operacion en un solo bloque.
+- El ajuste es solo de UX; no cambia endpoints, alcance por `empresa_id`, ni el flujo de consulta del backend.
+
+Actualizacion 2026-04-19 (chat IA super/empresa: Gemini-only sin Ollama ni DeepSeek):
+- `backend/handlers/ai_credentials_catalog.go`, `backend/handlers/ai_config_handlers.go` y `backend/handlers/chat_con_inteligencia_artificial_controller.go` dejan un unico proveedor soportado: `google:gemini-2.0-flash`.
+- `web/super/configuracion_avanzada.html` conserva el interruptor global y el interruptor del proveedor, pero ahora ambos aplican solo a Google Gemini y a una unica API key cifrada.
+- `scripts/iniciar_servidor.ps1` elimina el tunel operativo a Ollama y el runtime local deja de depender de `OLLAMA_BASE_URL`.
+- Impacto de permisos: sin cambios en wrappers ni roles; `super_administrador` sigue controlando la disponibilidad del servicio IA y `administrador` de empresa solo puede usar Gemini cuando ese servicio permanezca habilitado.
+
+Actualizacion 2026-04-18 (inventario/productos: compras preventivas y de proveedores pasan a la seccion Compras):
+- `web/administrar_empresa/administrar_productos.html` amplía la vista central a `view=productos|bodegas|categorias|proveedores|compras|precios`, separando las compras preventivas y el ciclo de orden por proveedor de la vista principal de inventario.
+- `web/administrar_empresa/productos/compras.html` deja de ser un placeholder y pasa a redirigir al modo `compras` de la vista central, preservando `empresa_id` sin duplicar la lógica de reposición y ordenes.
+- La seccion `Compras` del submodulo ahora concentra plan de reposicion por proveedor, consolidado de compra y borrador/ciclo de orden; la vista `Productos` conserva inventario, existencias, alertas y analitica operativa.
+- Impacto de permisos: sin cambios en roles, wrappers backend ni endpoints; el ajuste reorganiza frontend dentro del mismo modulo autenticado por `empresa_id`.
+
+Actualizacion 2026-04-18 (inventario/productos: proveedores y precios se separan en subpaginas dedicadas):
+- `web/administrar_empresa/administrar_productos.html` amplía la vista central a `view=productos|bodegas|categorias|proveedores|precios`, de modo que el CRUD de proveedores y el historial de cambios de precio ya no queden mezclados con la vista principal de productos.
+- `web/administrar_empresa/productos/administrar_proveedores.html` y `web/administrar_empresa/productos/precios.html` pasan a operar como wrappers de navegacion que preservan `empresa_id` y redirigen a la vista central sin duplicar formularios ni consultas.
+- `web/administrar_empresa/administrar_productos_menu.html` agrega la entrada dedicada `Proveedores`, mientras `Precios` deja de ser un placeholder y ahora muestra el historial real de cambios de precio del modulo.
+- Impacto de permisos: sin cambios en roles, wrappers backend ni endpoints; el ajuste es de navegacion y organizacion frontend dentro del mismo modulo autenticado por `empresa_id`.
+
+Actualizacion 2026-04-18 (chat IA super/empresa: autoreparacion PostgreSQL legacy y timeout mayor para Ambis):
+- `backend/db/chat_inteligencia_artificial.go` endurece el modulo para asegurar `empresa_ai_*` y `super_ai_*` al consultar modelo preferido, uso diario, historial y auditoria, evitando fallos cuando una instalacion PostgreSQL heredada llega con tablas o columnas incompletas.
+- `backend/handlers/chat_con_inteligencia_artificial_controller.go` amplía solo el timeout del proveedor `ollama:ambis`, manteniendo el resto de proveedores igual, para tolerar respuestas más lentas de `codellama:7b` cuando el backend local consume Ollama del VPS por túnel.
+- Impacto de permisos: sin cambios en roles, wrappers ni visibilidad; el ajuste corrige resiliencia runtime y persistencia del mismo modulo IA ya existente.
+
 Actualizacion 2026-04-18 (portal publico: retiro del arcade y permanencia exclusiva del emulador N64):
 - `web/Juegos/n64/index.html` se mantiene como unica experiencia publica bajo `/Juegos/*`, con pantalla arriba, controles tactiles abajo y acciones `Guardar/Cargar` orientadas a la memoria persistente del cartucho.
 - `web/Juegos/n64/n64-wrapper.js` monta `n64js` dentro de `iframe.srcdoc` mismo-origen, guarda la ultima ROM legal del usuario en IndexedDB y reenvia los controles tactiles como eventos de teclado compatibles con el core.
@@ -992,22 +1027,19 @@ Criterio de esta guia:
 33) Configuracion operativa de cobro
 - Politicas por rol/canal/turno, simulador y rollback por historial.
 
-34) Calculadora por empresa
-- Operaciones persistentes, etiquetas, asociaciones y exportacion multiformato.
-
-35) Creditos y cartera
+34) Creditos y cartera
 - Creditos, cuotas, abonos, workflow, limites por cliente y alertas de morosidad.
 
-36) Backups empresariales
+35) Backups empresariales
 - Snapshots por empresa, restauracion trazable, depuracion de informacion por fecha de corte (con backup previo opcional) y exportacion de evidencia.
 
-37) Venta publica y pagos Wompi por empresa
+36) Venta publica y pagos Wompi por empresa
 - Tienda online por empresa con slug publico, catalogo, imagenes y pago Nequi por Wompi.
 
-38) Descripcion de modulos (este documento)
+37) Descripcion de modulos (este documento)
 - Catalogo compacto de alcance funcional para consulta rapida tecnica/operativa.
 
-39) Impresoras operativas por empresa
+38) Impresoras operativas por empresa
 - Gestiona multiples impresoras, predeterminada, asignacion por funcionalidad/producto y resolucion de destino de impresion por contexto.
 
 40) Pagina principal dinamica (super)

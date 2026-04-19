@@ -107,7 +107,7 @@
       </div>
     </section>
 
-    <section class="card empresa-section" data-view-section="productos">
+    <section class="card empresa-section" data-view-section="proveedores">
       <div class="empresa-section-header">
         <h2>Proveedores</h2>
         <button id="btnNuevoProveedor" type="button" class="btn secondary">Nuevo</button>
@@ -617,7 +617,7 @@
     </section>
 
     <section class="empresa-grid-2" data-view-section="bodegas">
-      <section class="card empresa-section">
+      <section class="card empresa-section" data-view-section="productos">
         <h2>Traslado entre bodegas</h2>
         <form id="transferForm" class="form">
           <div class="form-row">
@@ -715,7 +715,7 @@
         </div>
       </section>
 
-      <section class="card empresa-section">
+      <section class="card empresa-section" data-view-section="productos">
         <div class="empresa-section-header">
           <h2>Movimientos recientes</h2>
           <div class="empresa-inline-actions">
@@ -819,85 +819,101 @@
         </div>
         <p id="inventarioProyeccionContexto" class="form-help">Proyección: cargando...</p>
 
-        <div class="empresa-section-header" style="margin-top:16px;">
-          <h3 style="margin:0;">Plan de reposición por proveedor (fase 8)</h3>
-          <div class="empresa-inline-actions">
-            <button id="btnLimpiarPlanProveedor" class="btn secondary" type="button">Ver todos</button>
-          </div>
-        </div>
-        <div class="table-wrap">
-          <table class="table" id="inventarioPlanReposicionTable">
-            <thead>
-              <tr>
-                <th>Proveedor</th>
-                <th>Producto</th>
-                <th>Bodega</th>
-                <th>Estado</th>
-                <th>Sugerido</th>
-                <th>Costo unitario</th>
-                <th>Costo estimado</th>
-                <th>Acción</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-        <p id="inventarioPlanReposicionContexto" class="form-help">Plan de reposición: cargando...</p>
-
-        <div class="empresa-section-header" style="margin-top:16px;">
-          <h3 style="margin:0;">Consolidado de compra por proveedor (fase 9)</h3>
-        </div>
-        <div class="table-wrap">
-          <table class="table" id="inventarioPlanReposicionResumenTable">
-            <thead>
-              <tr>
-                <th>Proveedor</th>
-                <th>Items</th>
-                <th>Productos</th>
-                <th>Cantidad</th>
-                <th>Costo total</th>
-                <th>Quiebre</th>
-                <th>Riesgo alto</th>
-                <th>Acción</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-        <p id="inventarioPlanReposicionResumenContexto" class="form-help">Consolidado de compra: cargando...</p>
-
-        <div class="empresa-section-header" style="margin-top:16px;">
-          <h3 style="margin:0;">Borrador y ciclo de orden por proveedor (fases 10-12)</h3>
-          <div class="empresa-inline-actions">
-            <button id="btnEmitirOrdenBorrador" class="btn" type="button">Emitir orden</button>
-            <button id="btnRecepcionarOrdenBorrador" class="btn secondary" type="button">Recepcionar orden</button>
-            <button id="btnContabilizarOrdenBorrador" class="btn secondary" type="button">Contabilizar orden</button>
-            <button id="btnLimpiarPlanBorrador" class="btn secondary" type="button">Limpiar borrador</button>
-          </div>
-        </div>
-        <div class="table-wrap">
-          <table class="table" id="inventarioPlanReposicionBorradorTable">
-            <thead>
-              <tr>
-                <th>Producto</th>
-                <th>Bodega</th>
-                <th>Estado</th>
-                <th>Cantidad</th>
-                <th>Costo unitario</th>
-                <th>Costo estimado</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td colspan="6">Selecciona un proveedor para generar el borrador.</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <p id="inventarioPlanReposicionBorradorContexto" class="form-help">Borrador de orden: pendiente.</p>
-        <p id="inventarioPlanReposicionOrdenContexto" class="form-help">Ciclo de orden: pendiente.</p>
       </section>
+
+    <section class="card empresa-section" data-view-section="compras">
+      <div class="empresa-section-header">
+        <h2>Compras a proveedores y reposición</h2>
+        <div class="empresa-inline-actions">
+          <select id="kardexBodegaFiltro" class="form-input">
+            <option value="">Todas las bodegas</option>
+          </select>
+          <input id="kardexDesdeFiltro" class="form-input" type="date" title="Desde">
+          <input id="kardexHastaFiltro" class="form-input" type="date" title="Hasta">
+          <button id="btnAplicarKardexFiltros" class="btn secondary" type="button">Filtrar</button>
+          <button id="btnLimpiarKardexFiltros" class="btn secondary" type="button">Limpiar</button>
+        </div>
+      </div>
+      <p id="inventarioResumenContexto" class="form-help">Compras preventivas: cargando resumen...</p>
+
+      <div class="empresa-section-header" style="margin-top:16px;">
+        <h3 style="margin:0;">Plan de reposición por proveedor (fase 8)</h3>
+        <div class="empresa-inline-actions">
+          <button id="btnLimpiarPlanProveedor" class="btn secondary" type="button">Ver todos</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="table" id="inventarioPlanReposicionTable">
+          <thead>
+            <tr>
+              <th>Proveedor</th>
+              <th>Producto</th>
+              <th>Bodega</th>
+              <th>Estado</th>
+              <th>Sugerido</th>
+              <th>Costo unitario</th>
+              <th>Costo estimado</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p id="inventarioPlanReposicionContexto" class="form-help">Plan de reposición: cargando...</p>
+
+      <div class="empresa-section-header" style="margin-top:16px;">
+        <h3 style="margin:0;">Consolidado de compra por proveedor (fase 9)</h3>
+      </div>
+      <div class="table-wrap">
+        <table class="table" id="inventarioPlanReposicionResumenTable">
+          <thead>
+            <tr>
+              <th>Proveedor</th>
+              <th>Items</th>
+              <th>Productos</th>
+              <th>Cantidad</th>
+              <th>Costo total</th>
+              <th>Quiebre</th>
+              <th>Riesgo alto</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p id="inventarioPlanReposicionResumenContexto" class="form-help">Consolidado de compra: cargando...</p>
+
+      <div class="empresa-section-header" style="margin-top:16px;">
+        <h3 style="margin:0;">Borrador y ciclo de orden por proveedor (fases 10-12)</h3>
+        <div class="empresa-inline-actions">
+          <button id="btnEmitirOrdenBorrador" class="btn" type="button">Emitir orden</button>
+          <button id="btnRecepcionarOrdenBorrador" class="btn secondary" type="button">Recepcionar orden</button>
+          <button id="btnContabilizarOrdenBorrador" class="btn secondary" type="button">Contabilizar orden</button>
+          <button id="btnLimpiarPlanBorrador" class="btn secondary" type="button">Limpiar borrador</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="table" id="inventarioPlanReposicionBorradorTable">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>Bodega</th>
+              <th>Estado</th>
+              <th>Cantidad</th>
+              <th>Costo unitario</th>
+              <th>Costo estimado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="6">Selecciona un proveedor para generar el borrador.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p id="inventarioPlanReposicionBorradorContexto" class="form-help">Borrador de orden: pendiente.</p>
+      <p id="inventarioPlanReposicionOrdenContexto" class="form-help">Ciclo de orden: pendiente.</p>
     </section>
 
-    <section class="card empresa-section" data-view-section="productos">
+    <section class="card empresa-section" data-view-section="precios">
       <div class="empresa-section-header">
         <h2>Historial de cambios de precio</h2>
         <div class="empresa-inline-actions">
@@ -925,12 +941,12 @@
   </div>
 
   <script>
-    // Modo de vista: permite mostrar solo 'productos', 'bodegas' o 'categorias' según ?view=
+    // Modo de vista: permite mostrar una subvista dedicada del modulo según ?view=
     function resolveViewMode() {
       try {
         const params = new URLSearchParams(window.location.search || '');
         const v = String(params.get('view') || '').trim().toLowerCase();
-        if (v === 'bodegas' || v === 'categorias' || v === 'productos') return v;
+        if (v === 'bodegas' || v === 'categorias' || v === 'productos' || v === 'proveedores' || v === 'precios' || v === 'compras') return v;
       } catch (_) {}
       return 'productos';
     }
@@ -940,6 +956,9 @@
     function resolveViewTitle() {
       if (viewMode === 'bodegas') return 'Bodegas';
       if (viewMode === 'categorias') return 'Categorías de productos';
+      if (viewMode === 'proveedores') return 'Administrar Proveedores';
+      if (viewMode === 'compras') return 'Compras';
+      if (viewMode === 'precios') return 'Precios';
       return 'Administrar Productos';
     }
 
@@ -2129,6 +2148,9 @@
         const costoUnit = Number(r.costo_unitario_ref || 0);
         const costoEst = Number(r.costo_estimado || 0);
         costoTotal += costoEst;
+        const accionCell = viewMode === 'compras'
+          ? ('<button type="button" class="btn secondary" data-action="borrador-proveedor-plan-item" data-proveedor-id="' + Number(r.proveedor_id || 0) + '">Borrador OC</button>')
+          : ('<button type="button" class="btn secondary" data-action="reponer-plan" data-producto-id="' + Number(r.producto_id || 0) + '" data-bodega-id="' + Number(r.bodega_id || 0) + '" data-sugerido="' + sugerido + '" data-producto-nombre="' + sanitize(r.producto_nombre || '') + '" data-bodega-nombre="' + sanitize(r.bodega_nombre || '') + '">Preparar</button>');
         return '<tr>' +
           '<td>' + sanitize(proveedor) + '</td>' +
           '<td>' + sanitize(r.producto_nombre || '') + '</td>' +
@@ -2137,7 +2159,7 @@
           '<td>' + sugerido.toFixed(2) + '</td>' +
           '<td>' + costoUnit.toFixed(2) + '</td>' +
           '<td>' + costoEst.toFixed(2) + '</td>' +
-          '<td><button type="button" class="btn secondary" data-action="reponer-plan" data-producto-id="' + Number(r.producto_id || 0) + '" data-bodega-id="' + Number(r.bodega_id || 0) + '" data-sugerido="' + sugerido + '" data-producto-nombre="' + sanitize(r.producto_nombre || '') + '" data-bodega-nombre="' + sanitize(r.bodega_nombre || '') + '">Preparar</button></td>' +
+          '<td>' + accionCell + '</td>' +
         '</tr>';
       }).join('');
 
@@ -2900,6 +2922,15 @@
       });
 
       document.getElementById('inventarioPlanReposicionTable').addEventListener('click', ev => {
+        const btnBorrador = ev.target.closest('button[data-action="borrador-proveedor-plan-item"]');
+        if (btnBorrador) {
+          loadInventarioPlanReposicionBorrador(Number(btnBorrador.dataset.proveedorId || 0)).then(() => {
+            showMessage('Borrador de orden generado para el proveedor seleccionado.', 'success');
+          }).catch(e => {
+            showMessage(e.message || 'No se pudo generar el borrador de orden.', 'error');
+          });
+          return;
+        }
         const btn = ev.target.closest('button[data-action="reponer-plan"]');
         if (!btn) return;
         prepararReposicionProyeccion(btn);
@@ -2982,13 +3013,27 @@
         await loadConteosCiclicos();
         return;
       }
+      if (viewMode === 'proveedores') {
+        await loadProveedores();
+        return;
+      }
+      if (viewMode === 'compras') {
+        await loadBodegas();
+        await loadInventarioPlanReposicion();
+        await loadInventarioPlanReposicionResumen();
+        return;
+      }
+      if (viewMode === 'precios') {
+        await loadProductos();
+        await loadPreciosHistorial();
+        return;
+      }
       await loadProveedores();
       await loadBodegas();
       await loadCategoriasProductos();
       if (viewMode === 'productos') {
         await loadProductos();
         await loadServicios();
-        await loadPreciosHistorial();
       }
     }
 

@@ -1,3 +1,71 @@
+Actualizacion 2026-04-18: estaciones y configuracion empresarial consolidan el carrito unificado y limpian el legado de venta simple
+ - Archivos creados:
+	 - web/administrar_empresa/configuracion_carrito_de_compra_empresa.html : Subpagina del submenu Configuracion para administrar la configuracion global del carrito unificado por empresa.
+ - Archivos eliminados:
+	 - web/js/ventas_simple.js : Script legacy del flujo antiguo `ventas_simple`; deja de usarse porque la ruta ahora redirige al carrito unificado.
+ - Archivos modificados:
+	 - web/administrar_empresa/carrito_de_compras.html
+	 - web/administrar_empresa/estaciones.html
+	 - web/administrar_empresa/ventas_simple.html
+	 - web/administrar_empresa/configuracion_de_estaciones.html
+	 - web/administrar_empresa/configuracion_carrito_de_compra_empresa.html
+	 - web/administrar_empresa/configuracion_menu.html
+	 - backend/handlers/empresa_configuracion_general.go
+	 - backend/handlers/empresa_configuracion_general_test.go
+	 - backend/handlers/empresa_estacion_prefs_test.go
+	 - backend/db/empresa_configuracion_general.go
+	 - backend/db/empresa_estacion_prefs_test.go
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_del_proyecto
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: El sistema deja de bifurcar entre carrito de compras, venta simple y carrito compacto. Las estaciones ahora abren siempre `carrito_de_compras.html`, mientras la visibilidad de bloques se gobierna con checks globales por empresa y overrides por estacion persistidos dentro de `estaciones_config`. Se amplian los checks a cliente, impuestos, resumen total y desglose de cobro, y se elimina del runtime el script legacy `ventas_simple.js`.
+
+Actualizacion 2026-04-18: se elimina la portada `inicio` del panel empresa
+ - Archivos eliminados:
+	 - web/administrar_empresa/inicio.html : Se retira la página de inicio del panel empresa para evitar una portada intermedia redundante.
+ - Archivos modificados:
+	 - web/administrar_empresa.html
+	 - web/administrar_empresa/administrar_productos_menu.html
+	 - web/js/administrar_empresa.js
+	 - web/ayuda/ayuda.html
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: El panel empresa deja de exponer la ruta `inicio.html`; el arranque del iframe principal ahora cae directamente en `administrar_productos_menu.html` y el submódulo de productos también pierde el botón `Inicio`.
+
+Actualizacion 2026-04-18: modulo productos mueve compras preventivas a la vista Compras
+ - Archivos modificados:
+	 - web/administrar_empresa/administrar_productos.html
+	 - web/administrar_empresa/productos/compras.html
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: La vista central del modulo productos agrega `view=compras` para concentrar plan de reposicion, consolidado por proveedor y borrador/ciclo de orden; el wrapper `productos/compras.html` ahora redirige a esa vista en lugar de mostrar un placeholder aislado.
+
+Actualizacion 2026-04-18: modulo productos separa proveedores y precios en subpaginas dedicadas
+ - Archivos creados:
+	 - web/administrar_empresa/productos/administrar_proveedores.html : Wrapper de navegacion que preserva `empresa_id` y redirige a la vista central del modulo productos con `view=proveedores`.
+ - Archivos modificados:
+	 - web/administrar_empresa/administrar_productos.html
+	 - web/administrar_empresa/administrar_productos_menu.html
+	 - web/administrar_empresa/productos/administrar_productos_menu.html
+	 - web/administrar_empresa/productos/precios.html
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: La vista central de productos separa el CRUD de proveedores y el historial de cambios de precio en sus propias subpaginas de navegacion sin duplicar frontend ni crear endpoints nuevos.
+
 Actualizacion 2026-04-18: retiro total del arcade publico y permanencia exclusiva del emulador N64
  - Archivos eliminados:
 	 - web/Juegos/ajedrez_3d_plus.html : Se elimina el juego 3D de ajedrez del portal publico.
@@ -50,8 +118,23 @@ Descripcion de archivos del proyecto
 Actualizacion 2026-04-18: helper CLI para configurar proveedores IA
  - Archivos creados:
 	 - backend/tools/set_ai_provider_enabled.go : Herramienta CLI para ajustar `ai.provider.<provider>.enabled` en la base de datos superadmin de forma segura (usa `DB_SUPERADMIN_DSN` o `-dsn`).
- - Descripcion: Permite desactivar/activar proveedores IA (p. ej. DeepSeek) desde la línea de comandos cuando no es posible usar la UI super. Registra `*.updated_by` en la configuración.
- - Verificacion: Ejecutar `go run backend/tools/set_ai_provider_enabled.go -provider deepseek -enabled 0` con `DB_SUPERADMIN_DSN` configurado.
+ - Descripcion: Permite desactivar/activar Google Gemini desde la línea de comandos cuando no es posible usar la UI super. Registra `*.updated_by` en la configuración.
+ - Verificacion: Ejecutar `go run backend/tools/set_ai_provider_enabled.go -provider google -enabled 0` con `DB_SUPERADMIN_DSN` configurado.
+
+Actualizacion 2026-04-19: migracion IA Gemini-only y retiro de Ollama/DeepSeek
+ - Archivos eliminados:
+	 - backend/tools/check_deepseek_key/main.go : Se elimina el verificador CLI legado de DeepSeek porque el proyecto deja de usar ese proveedor.
+ - Archivos modificados:
+	 - backend/handlers/ai_credentials_catalog.go : El catálogo de credenciales IA queda restringido a `google:gemini-2.0-flash`.
+	 - backend/handlers/ai_config_handlers.go : La configuración avanzada IA prueba y persiste solo Google Gemini, manteniendo switches global y por proveedor.
+	 - backend/handlers/chat_con_inteligencia_artificial_controller.go : El chat empresarial elimina ramas DeepSeek/Ollama y consulta solo Google Gemini.
+	 - backend/tools/set_ai_provider_enabled.go : El helper CLI se ajusta a proveedor `google` por defecto.
+	 - scripts/iniciar_servidor.ps1 : Se elimina el túnel local hacia Ollama y se deja visible solo el estado de `GEMINI_API_KEY`.
+	 - backend/.env.example : Se retiran variables `OLLAMA_*` y se documenta `GEMINI_API_KEY`.
+	 - web/super/configuracion_avanzada.html : El panel IA queda orientado a Google Gemini con una sola API key.
+	 - web/super/chat_con_ia_global.html : El chat global refleja Google Gemini como modelo único.
+	 - web/administrar_empresa/chat_con_inteligencia_artificial.html : El chat empresarial refleja Google Gemini como modelo único.
+ - Descripcion: El proyecto abandona la IA en VPS basada en Ollama y los rastros de DeepSeek. Los chats super y empresa quedan integrados con Google Gemini y se conserva la activación/desactivación desde configuración avanzada.
 
 Actualizacion 2026-04-18: Menú flotante - manifiesto de juegos
  - Archivos creados:
@@ -3127,6 +3210,38 @@ Actualizacion 2026-04-11: Regla agente_go — "Todo se construye como real"
 
 - `documentos/descripcion_del_proyecto`, `CHANGELOG.md` y `documentos/historial_de_cambios`:
 	- registran alcance del avance, archivos afectados y validaciones ejecutadas.
+
+Actualizacion 2026-04-18: simplificacion visual del chat con IA en empresa y super
+ - Archivos modificados:
+	 - web/administrar_empresa/chat_con_inteligencia_artificial.html
+	 - web/super/chat_con_ia_global.html
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: Se retiran del frontend los botones superiores de actualizar/historial, los cuadros visibles de modelo y uso diario, el selector visible de modelo, el CTA de upgrade y el panel de consultas recientes. Las sugerencias rapidas pasan debajo del chat y `Limpiar chat` queda junto a `Preguntar a la IA`.
+
+Actualizacion 2026-04-18: retiro de calculadora del panel empresa
+
+- `web/administrar_empresa.html`:
+	- elimina el boton lateral `Calculadora` del panel empresa.
+
+- `web/js/administrar_empresa.js`:
+	- retira `linkCalculadora` de la navegacion persistente por iframe y del catalogo de permisos del menu.
+
+- `web/menu.js`:
+	- elimina el acceso rapido `Calculadora` del menu flotante y la propagacion de `empresa_id` hacia esa ruta.
+
+- `web/ayuda/ayuda.html`:
+	- retira referencias a la pagina `calculadora.html` y deja la ayuda operativa centrada en ERP extendido.
+
+- `web/administrar_empresa/calculadora.html`:
+	- archivo eliminado para retirar del repositorio la pagina de calculadora del panel empresa.
+
+- `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios` y `CHANGELOG.md`:
+	- sincronizan la baja del frente de calculadora del panel empresa y del menu flotante.
 
 Actualizacion 2026-04-07: Cierre modulo 34 (Calculadora por empresa)
 

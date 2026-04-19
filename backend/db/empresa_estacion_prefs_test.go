@@ -20,7 +20,7 @@ func TestEmpresaEstacionPrefs_UpsertGetList(t *testing.T) {
 		EmpresaID:      1,
 		EstacionID:     0,
 		Clave:          "estaciones_config",
-		Valor:          `{"cantidad":2,"estaciones":[{"id":1,"nombre":"A","venta_simple_habilitada":true},{"id":2,"nombre":"B","venta_simple_habilitada":false}]}`,
+		Valor:          `{"cantidad":2,"estaciones":[{"id":1,"nombre":"A","mostrar_total":true,"carrito":{"usar_configuracion_global":true}},{"id":2,"nombre":"B","mostrar_total":false,"carrito":{"usar_configuracion_global":false,"configuracion":{"mostrar_descuentos":false}}}],"carrito_ui_global":{"mostrar_propina":true}}`,
 		UsuarioCreador: "test",
 		Estado:         "activo",
 	}
@@ -62,7 +62,7 @@ func TestEmpresaEstacionPrefs_UpsertGetList(t *testing.T) {
 	}
 
 	// Update valor
-	payload.Valor = `{"cantidad":2,"estaciones":[{"id":1,"nombre":"A","venta_simple_habilitada":false}]}`
+	payload.Valor = `{"cantidad":2,"estaciones":[{"id":1,"nombre":"A","mostrar_total":true,"carrito":{"usar_configuracion_global":false,"configuracion":{"mostrar_lector_codigo_barras":false}}}]}`
 	id2, err := UpsertEmpresaEstacionPref(dbConn, payload)
 	if err != nil {
 		t.Fatalf("upsert update error: %v", err)

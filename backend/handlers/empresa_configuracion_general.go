@@ -27,10 +27,10 @@ type empresaConfiguracionGeneralProductosPayload struct {
 }
 
 type empresaConfiguracionGeneralPayload struct {
-	EmpresaID     int64                                    `json:"empresa_id"`
-	Productos     empresaConfiguracionGeneralProductosPayload `json:"productos"`
-	Estado        string                                   `json:"estado,omitempty"`
-	Observaciones string                                   `json:"observaciones,omitempty"`
+	EmpresaID     int64                                        `json:"empresa_id"`
+	Productos     *empresaConfiguracionGeneralProductosPayload `json:"productos,omitempty"`
+	Estado        string                                       `json:"estado,omitempty"`
+	Observaciones string                                       `json:"observaciones,omitempty"`
 }
 
 func EmpresaConfiguracionGeneralHandler(dbEmp *sql.DB) http.HandlerFunc {
@@ -74,26 +74,34 @@ func EmpresaConfiguracionGeneralHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 
-			cfg := dbpkg.EmpresaConfiguracionGeneral{
-				EmpresaID:                    payload.EmpresaID,
-				ImprimirOrdenServicio:        payload.Productos.ImprimirOrdenServicio,
-				AreaDespacho:                 payload.Productos.AreaDespacho,
-				CopiasOrdenServicio:          payload.Productos.CopiasOrdenServicio,
-				NotaOrdenServicio:            payload.Productos.NotaOrdenServicio,
-				DescuentosHabilitados:        payload.Productos.DescuentosHabilitados,
-				PermitirDescuentoPorcentaje:  payload.Productos.PermitirDescuentoPorcentaje,
-				PermitirDescuentoCodigo:      payload.Productos.PermitirDescuentoCodigo,
-				PermitirDescuentoValor:       payload.Productos.PermitirDescuentoValor,
-				CodigosDescuento:             payload.Productos.CodigosDescuento,
-				LectorCodigoBarrasHabilitado: payload.Productos.LectorCodigoBarrasHabilitado,
-				LectorCodigoBarrasAutofoco:   payload.Productos.LectorCodigoBarrasAutofoco,
-				LectorCodigoBarrasAcumular:   payload.Productos.LectorCodigoBarrasAcumular,
-				Estado:                       strings.TrimSpace(payload.Estado),
-				Observaciones:                strings.TrimSpace(payload.Observaciones),
-				UsuarioCreador:               strings.TrimSpace(adminEmailFromRequest(r)),
+			cfg, err := dbpkg.GetEmpresaConfiguracionGeneral(dbEmp, payload.EmpresaID)
+			if err != nil {
+				log.Printf("[empresa_config_general] preload empresa_id=%d error: %v", payload.EmpresaID, err)
+				http.Error(w, "No se pudo cargar la configuracion actual", http.StatusInternalServerError)
+				return
 			}
-
-			id, err := dbpkg.UpsertEmpresaConfiguracionGeneral(dbEmp, cfg)
+			if cfg == nil {
+				cfg = &dbpkg.EmpresaConfiguracionGeneral{EmpresaID: payload.EmpresaID}
+			}
+			cfg.EmpresaID = payload.EmpresaID
+			cfg.Estado = strings.TrimSpace(payload.Estado)
+			cfg.Observaciones = strings.TrimSpace(payload.Observaciones)
+			cfg.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
+			if payload.Productos != nil {
+				cfg.ImprimirOrdenServicio = payload.Productos.ImprimirOrdenServicio
+				cfg.AreaDespacho = payload.Productos.AreaDespacho
+				cfg.CopiasOrdenServicio = payload.Productos.CopiasOrdenServicio
+				cfg.NotaOrdenServicio = payload.Productos.NotaOrdenServicio
+				cfg.DescuentosHabilitados = payload.Productos.DescuentosHabilitados
+				cfg.PermitirDescuentoPorcentaje = payload.Productos.PermitirDescuentoPorcentaje
+				cfg.PermitirDescuentoCodigo = payload.Productos.PermitirDescuentoCodigo
+				cfg.PermitirDescuentoValor = payload.Productos.PermitirDescuentoValor
+				cfg.CodigosDescuento = payload.Productos.CodigosDescuento
+				cfg.LectorCodigoBarrasHabilitado = payload.Productos.LectorCodigoBarrasHabilitado
+				cfg.LectorCodigoBarrasAutofoco = payload.Productos.LectorCodigoBarrasAutofoco
+				cfg.LectorCodigoBarrasAcumular = payload.Productos.LectorCodigoBarrasAcumular
+			}
+			id, err := dbpkg.UpsertEmpresaConfiguracionGeneral(dbEmp, *cfg)
 			if err != nil {
 				log.Printf("[empresa_config_general] upsert empresa_id=%d error: %v", payload.EmpresaID, err)
 				http.Error(w, "No se pudo guardar la configuracion general", http.StatusInternalServerError)

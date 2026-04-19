@@ -3,276 +3,34 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Ventas simples por estación</title>
+  <title>Redirigiendo al carrito unificado</title>
   <link rel="stylesheet" href="/estilos.css">
-  <style>
-    body.ventas-simple-compact-mode .ventas-simple-layout {
-      grid-template-columns: minmax(0, 1fr);
-      gap: 14px;
-    }
-
-    body.ventas-simple-compact-mode .ventas-simple-kpis {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    body.ventas-simple-compact-mode .ventas-simple-kpis-metrics,
-    body.ventas-simple-compact-mode #metricasInfo {
-      display: none;
-    }
-
-    .ventas-simple-quick-actions {
-      display: none;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: center;
-      padding: 12px;
-      margin-bottom: 14px;
-      border: 1px solid rgba(18, 71, 52, 0.12);
-      border-radius: 14px;
-      background: linear-gradient(135deg, rgba(255, 248, 236, 0.96), rgba(239, 251, 244, 0.96));
-    }
-
-    body.ventas-simple-compact-mode .ventas-simple-quick-actions {
-      display: flex;
-      position: sticky;
-      top: 10px;
-      z-index: 5;
-    }
-
-    .ventas-simple-quick-actions .btn {
-      min-width: 132px;
-    }
-
-    .ventas-simple-compact-total {
-      margin-left: auto;
-      padding: 8px 12px;
-      border-radius: 999px;
-      background: #124734;
-      color: #fff;
-      font-weight: 700;
-      white-space: nowrap;
-    }
-
-    .ventas-simple-compact-hint {
-      display: none;
-      margin-top: 8px;
-    }
-
-    body.ventas-simple-compact-mode .ventas-simple-compact-hint {
-      display: block;
-    }
-
-    @media (max-width: 768px) {
-      .ventas-simple-quick-actions .btn {
-        min-width: 0;
-        flex: 1 1 140px;
-      }
-
-      .ventas-simple-compact-total {
-        width: 100%;
-        margin-left: 0;
-        text-align: center;
-      }
-    }
-  </style>
 </head>
-<body class="empresa-subpage ventas-simple-page">
+<body class="empresa-subpage">
   <div class="container empresa-module">
     <section class="card empresa-section">
       <div class="empresa-section-header">
-        <div>
-          <h1 class="empresa-title" id="pageTitle">Venta simple por estación</h1>
-          <p id="empresaInfo">Empresa: cargando...</p>
-          <p class="form-help" id="stationInfo">Estación: cargando...</p>
-          <p class="form-help ventas-simple-compact-hint" id="compactModeHint">Modo compacto activo: el flujo conserva el mismo carrito por estación y prioriza búsqueda, carrito y cobro en un solo panel.</p>
-        </div>
-        <div class="form-actions">
-          <span class="ventas-simple-tag" id="variantTag">Supermercado</span>
-          <button id="btnBackToStations" class="btn secondary" type="button">Regresar a estaciones</button>
-          <button id="btnRecargar" class="btn secondary" type="button">Actualizar</button>
-        </div>
+        <h1 style="margin:0;">Carrito unificado</h1>
       </div>
-
-      <div class="ventas-simple-kpis">
-        <div class="ventas-simple-kpi">
-          <span class="ventas-simple-kpi-label">Ítems activos</span>
-          <strong id="kpiItems" class="ventas-simple-kpi-value">0</strong>
-        </div>
-        <div class="ventas-simple-kpi">
-          <span class="ventas-simple-kpi-label">Subtotal</span>
-          <strong id="kpiSubtotal" class="ventas-simple-kpi-value">$0</strong>
-        </div>
-        <div class="ventas-simple-kpi">
-          <span class="ventas-simple-kpi-label">Impuesto</span>
-          <strong id="kpiImpuesto" class="ventas-simple-kpi-value">$0</strong>
-        </div>
-        <div class="ventas-simple-kpi">
-          <span class="ventas-simple-kpi-label">Total</span>
-          <strong id="kpiTotal" class="ventas-simple-kpi-value">$0</strong>
-        </div>
-      </div>
-
-      <div id="mainMsg" class="form-help"></div>
-
-      <div class="ventas-simple-quick-actions" id="compactActionsBar">
-        <button id="btnCompactFocusSearch" class="btn secondary" type="button">Buscar producto</button>
-        <button id="btnCompactFocusCart" class="btn secondary" type="button">Ver carrito</button>
-        <button id="btnCompactFocusPay" class="btn secondary" type="button">Cobrar</button>
-        <button id="btnCompactSync" class="btn secondary" type="button">Sincronizar</button>
-        <button id="btnCompactNuevaVenta" class="btn secondary" type="button">Nueva venta</button>
-        <button id="btnCompactCorreccion" class="btn secondary" type="button">Corrección</button>
-        <span id="compactModeTotalPill" class="ventas-simple-compact-total">Total: $0</span>
-      </div>
-
-      <div class="ventas-simple-sync-bar" id="syncBar">
-        <span id="syncStatusTag" class="ventas-simple-sync-tag">En línea</span>
-        <span id="syncStatusText" class="form-help">Sin cambios pendientes.</span>
-        <button id="btnSyncNow" class="btn secondary ventas-simple-sync-btn" type="button">Sincronizar ahora</button>
-      </div>
-
-      <div class="ventas-simple-kpis ventas-simple-kpis-metrics" id="stationMetrics">
-        <div class="ventas-simple-kpi">
-          <span class="ventas-simple-kpi-label">Ventas 7 días</span>
-          <strong id="metricVentas7d" class="ventas-simple-kpi-value">0</strong>
-        </div>
-        <div class="ventas-simple-kpi">
-          <span class="ventas-simple-kpi-label">Correcciones 7 días</span>
-          <strong id="metricCorrecciones7d" class="ventas-simple-kpi-value">0</strong>
-        </div>
-        <div class="ventas-simple-kpi">
-          <span class="ventas-simple-kpi-label">Tiempo promedio</span>
-          <strong id="metricTiempoPromedio" class="ventas-simple-kpi-value">0 min</strong>
-        </div>
-        <div class="ventas-simple-kpi">
-          <span class="ventas-simple-kpi-label">Monto vendido 7 días</span>
-          <strong id="metricMonto7d" class="ventas-simple-kpi-value">$0</strong>
-        </div>
-      </div>
-      <p id="metricasInfo" class="form-help">Métricas por estación (últimos 7 días).</p>
+      <p id="redirectMsg" class="form-help">Redirigiendo al carrito unificado de la estación...</p>
     </section>
-
-    <div class="ventas-simple-layout">
-      <section class="card empresa-section" id="catalogSection">
-        <div class="empresa-section-header">
-          <h2>Catálogo rápido</h2>
-        </div>
-
-        <div class="ventas-simple-search-row">
-          <div>
-            <label class="form-label" for="productoSearch">Buscar producto</label>
-            <input id="productoSearch" class="form-input" placeholder="Nombre, SKU o código de barras">
-          </div>
-          <div>
-            <label class="form-label" for="productoCantidadRapida">Cantidad</label>
-            <input id="productoCantidadRapida" class="form-input" type="number" min="0.01" step="0.01" value="1">
-          </div>
-          <div class="form-actions">
-            <button id="btnBuscarProductos" class="btn secondary" type="button">Buscar</button>
-          </div>
-        </div>
-
-        <div id="catalogMsg" class="form-help"></div>
-
-        <div class="table-wrap ventas-simple-products" id="productosListWrap">
-          <table class="table" id="productosTable">
-            <thead>
-              <tr>
-                <th>Producto</th>
-                <th>Código</th>
-                <th>Precio</th>
-                <th>Stock</th>
-                <th>Acción</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td colspan="5">Cargando catálogo...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="card empresa-section" id="cartSection">
-        <div class="empresa-section-header">
-          <h2>Carrito de estación</h2>
-        </div>
-
-        <div id="itemsSummary" class="form-help">Cargando carrito...</div>
-        <div id="itemsMsg" class="form-help"></div>
-
-        <div class="table-wrap ventas-simple-items" id="itemsListWrap">
-          <table class="table" id="itemsTable">
-            <thead>
-              <tr>
-                <th>Descripción</th>
-                <th>Cantidad</th>
-                <th>Precio</th>
-                <th>Total línea</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td colspan="5">Cargando ítems...</td></tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="card empresa-section" id="paySection">
-          <div class="empresa-section-header">
-            <h3 class="ventas-simple-section-title">Cobro simple</h3>
-          </div>
-
-          <div class="ventas-simple-pay-grid">
-            <div>
-              <label class="form-label" for="payMethod">Método de pago</label>
-              <select id="payMethod" class="form-input">
-                <option value="efectivo">Efectivo</option>
-                <option value="tarjeta_credito">Tarjeta crédito</option>
-                <option value="tarjeta_debito">Tarjeta débito</option>
-                <option value="transferencia_bancaria">Transferencia bancaria</option>
-              </select>
-            </div>
-            <div id="payReferenceCol" class="ventas-simple-hidden">
-              <label class="form-label" for="payReference">Referencia</label>
-              <input id="payReference" class="form-input" placeholder="Mínimo 4 caracteres">
-            </div>
-            <div>
-              <label class="form-label" for="payAmount">Total pagado</label>
-              <input id="payAmount" class="form-input" type="number" min="0" step="0.01" value="0">
-            </div>
-          </div>
-
-          <p id="payTotalLabel" class="form-help">Total a cobrar: $0</p>
-
-          <div class="form-actions">
-            <button id="btnNuevaVenta" class="btn secondary" type="button">Iniciar nueva venta</button>
-            <button id="btnCobrar" class="btn" type="button">Cobrar y cerrar</button>
-          </div>
-          <div id="payMsg" class="form-help"></div>
-
-          <hr>
-
-          <div class="empresa-section-header">
-            <h3 class="ventas-simple-section-title">Corrección rápida post-cobro</h3>
-          </div>
-          <div class="ventas-simple-pay-grid">
-            <div>
-              <label class="form-label" for="correctionAmount">Monto a corregir</label>
-              <input id="correctionAmount" class="form-input" type="number" min="0.01" step="0.01" value="0">
-            </div>
-            <div>
-              <label class="form-label" for="correctionReason">Motivo</label>
-              <input id="correctionReason" class="form-input" placeholder="Error de cobro, ajuste rápido, etc.">
-            </div>
-            <div class="form-actions">
-              <button id="btnCorreccionRapida" class="btn secondary" type="button">Aplicar corrección</button>
-            </div>
-          </div>
-          <div id="correctionMsg" class="form-help"></div>
-        </div>
-      </section>
-    </div>
   </div>
 
-  <script src="/js/ventas_simple.js"></script>
+  <script>
+    (function() {
+      try {
+        var params = new URLSearchParams(window.location.search || '');
+        params.delete('variant');
+        params.delete('view');
+        window.location.replace('/administrar_empresa/carrito_de_compras.html?' + params.toString());
+      } catch (err) {
+        var box = document.getElementById('redirectMsg');
+        if (box) {
+          box.textContent = 'No se pudo redirigir automáticamente. Abre /administrar_empresa/carrito_de_compras.html con la misma estación.';
+          box.className = 'error';
+        }
+      }
+    })();
+  </script>
 </body>
 </html>

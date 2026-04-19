@@ -1,11 +1,11 @@
-# Contrato tecnico: estaciones, sensores y ventas simples por estacion
+# Contrato tecnico: estaciones, sensores y carrito unificado por estacion
 
 Fecha: 2026-04-18
 Estado: vigente
 
 ## Alcance
 
-Este contrato cubre la configuracion de estaciones por empresa, la asociacion de sensores de puertas a estaciones, la sincronizacion del carrito base por estacion y la operacion de venta simple sobre ese carrito enlazado.
+Este contrato cubre la configuracion de estaciones por empresa, la asociacion de sensores de puertas a estaciones, la sincronizacion del carrito base por estacion y la operacion del carrito unificado sobre ese carrito enlazado.
 
 ## Rutas implicadas
 
@@ -25,7 +25,7 @@ Este contrato cubre la configuracion de estaciones por empresa, la asociacion de
 - `PUT /api/empresa/carritos_compra/items`
 - `DELETE /api/empresa/carritos_compra/items`
 - `GET /api/empresa/productos`
-- frontend de apoyo: `web/administrar_empresa/configuracion_de_estaciones.html`, `web/administrar_empresa/estaciones.html`, `web/administrar_empresa/ventas_simple.html`, `web/js/ventas_simple.js`
+- frontend de apoyo: `web/administrar_empresa/configuracion_de_estaciones.html`, `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`, `web/administrar_empresa/estaciones.html`, `web/administrar_empresa/carrito_de_compras.html`, `web/administrar_empresa/ventas_simple.html`
 
 ## Entradas obligatorias
 
@@ -36,7 +36,7 @@ Este contrato cubre la configuracion de estaciones por empresa, la asociacion de
 - `clave=estaciones_config`: obligatoria cuando se persiste la definicion completa de estaciones.
 - `valor`: JSON serializado con `cantidad` y arreglo `estaciones`.
 
-### Operacion de venta simple
+### Operacion del carrito de estacion
 
 - `empresa_id`: obligatorio.
 - `id`: obligatorio en acciones sobre un carrito concreto.
@@ -85,13 +85,13 @@ Respuestas exitosas esperadas:
 3. Guardar `estaciones_config` debe ejecutar sincronizacion backend de carritos; no se permite depender de una sincronizacion exclusiva del frontend.
 4. Cada estacion configurada debe tener a lo sumo un carrito base canonico por empresa con identidad `codigo=EST-empresa-estacion` y `referencia_externa=ESTACION_<id>`.
 5. El carrito base enlazado debe quedar en estado base `inactivo/cerrado` hasta que una accion operativa lo active.
-6. El render de estaciones debe abrir la venta usando el carrito enlazado por identidad canonica, no por texto libre de la tarjeta.
+6. El render de estaciones debe abrir el carrito usando el carrito enlazado por identidad canonica, no por texto libre de la tarjeta.
 7. La vista de estaciones solo debe mostrar el indicador cuadrado superior derecho como evidencia visual del sensor.
 8. El estado del sensor debe resolverse por la lectura mas reciente de `last_seen`; lecturas antiguas no deben seguir pintando la estacion como activa.
 9. `pagar_estacion` solo puede cerrar una sesion operativa valida y debe respetar metodos de pago habilitados para la empresa y el rol efectivo.
 10. `pagar_estacion` debe registrar metrica operativa por estacion y generar automaticamente el documento de venta segun `modo_documento_venta`.
 11. `anular_cierre_parcial` y `recuperar_interrumpido` deben dejar trazabilidad operativa y tambien registrar metrica por estacion.
-12. El frontend de venta simple puede operar con cola local para items y activacion diferida, pero el cierre de cobro requiere conectividad y confirmacion backend.
+12. El frontend del carrito unificado debe respetar los checks de visibilidad persistidos en `estaciones_config` y seguir requiriendo conectividad/backend para el cierre de cobro por estacion.
 
 ## Side effects obligatorios
 
@@ -123,7 +123,7 @@ Respuestas exitosas esperadas:
 - pruebas de `empresa_estacion_prefs` para persistencia, aislamiento por `empresa_id` y sincronizacion de carritos base.
 - pruebas del handler de carritos para `pagar_estacion`, `anular_cierre_parcial`, `recuperar_interrumpido` y validacion de metodos permitidos.
 - diagnostico del editor limpio en documentos y vistas tocadas cuando se cambie el flujo.
-- validacion manual de que `estaciones.html` abre la estacion correcta y `ventas_simple.html` puede volver a `estaciones.html` manteniendo `empresa_id`.
+- validacion manual de que `estaciones.html` abre la estacion correcta, `carrito_de_compras.html` respeta la configuracion visible de la estacion y `ventas_simple.html` redirige a la ruta unificada manteniendo `empresa_id`.
 
 ## ADRs relacionados
 

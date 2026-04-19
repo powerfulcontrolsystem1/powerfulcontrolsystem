@@ -431,6 +431,22 @@ func isPostgresDialect() bool {
 	return currentSQLDialect() == "postgres"
 }
 
+func isSQLiteRuntimeConnection(dbConn *sql.DB) bool {
+	if dbConn == nil {
+		return false
+	}
+	var version string
+	err := dbConn.QueryRow(`SELECT sqlite_version()`).Scan(&version)
+	return err == nil && strings.TrimSpace(version) != ""
+}
+
+func shouldUsePostgresCompat(dbConn *sql.DB) bool {
+	if !isPostgresDialect() {
+		return false
+	}
+	return !isSQLiteRuntimeConnection(dbConn)
+}
+
 // IsPostgresDialect expone el dialecto actual para capas fuera del paquete db.
 func IsPostgresDialect() bool {
 	return isPostgresDialect()

@@ -3,6 +3,8 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"regexp"
+	"sort"
 	"strings"
 	"time"
 )
@@ -369,6 +371,10 @@ func EnsureSuperAIChatSchema(dbConn *sql.DB) error {
 	return nil
 }
 
+func shouldRepairAIChatSchema(err error) bool {
+	return isMissingTableError(err) || isMissingColumnError(err)
+}
+
 // GetEmpresaAIModeloPreferido obtiene el modelo IA vinculado a la cuenta Google del admin.
 func GetEmpresaAIModeloPreferido(dbConn *sql.DB, empresaID int64, adminEmail string) (string, error) {
 	if empresaID <= 0 {
@@ -379,18 +385,32 @@ func GetEmpresaAIModeloPreferido(dbConn *sql.DB, empresaID int64, adminEmail str
 		return "", fmt.Errorf("admin_email es obligatorio")
 	}
 
-	var modelID string
-	err := dbConn.QueryRow(`SELECT COALESCE(model_id, '')
+	scanModeloPreferido := func() (string, error) {
+		var modelID string
+		err := queryRowSQLCompat(dbConn, `SELECT COALESCE(model_id, '')
 	FROM empresa_ai_modelo_preferido
 	WHERE empresa_id = ? AND admin_email = ? AND COALESCE(estado, 'activo') <> 'inactivo'
 	LIMIT 1`, empresaID, adminEmail).Scan(&modelID)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return "", nil
+		if err != nil {
+			if err == sql.ErrNoRows {
+				return "", nil
+			}
+			return "", err
 		}
-		return "", err
+		return strings.TrimSpace(modelID), nil
 	}
-	return strings.TrimSpace(modelID), nil
+
+	modelID, err := scanModeloPreferido()
+	if err != nil {
+		if !shouldRepairAIChatSchema(err) {
+			return "", err
+		}
+		if schemaErr := EnsureEmpresaAIChatSchema(dbConn); schemaErr != nil {
+			return "", err
+		}
+		return scanModeloPreferido()
+	}
+	return modelID, nil
 }
 
 // GetSuperAIModeloPreferido obtiene el modelo IA preferido por administrador super.
@@ -400,18 +420,32 @@ func GetSuperAIModeloPreferido(dbConn *sql.DB, adminEmail string) (string, error
 		return "", fmt.Errorf("admin_email es obligatorio")
 	}
 
-	var modelID string
-	err := dbConn.QueryRow(`SELECT COALESCE(model_id, '')
+	scanModeloPreferido := func() (string, error) {
+		var modelID string
+		err := queryRowSQLCompat(dbConn, `SELECT COALESCE(model_id, '')
 	FROM super_ai_modelo_preferido
 	WHERE admin_email = ? AND COALESCE(estado, 'activo') <> 'inactivo'
 	LIMIT 1`, adminEmail).Scan(&modelID)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return "", nil
+		if err != nil {
+			if err == sql.ErrNoRows {
+				return "", nil
+			}
+			return "", err
 		}
-		return "", err
+		return strings.TrimSpace(modelID), nil
 	}
-	return strings.TrimSpace(modelID), nil
+
+	modelID, err := scanModeloPreferido()
+	if err != nil {
+		if !shouldRepairAIChatSchema(err) {
+			return "", err
+		}
+		if schemaErr := EnsureSuperAIChatSchema(dbConn); schemaErr != nil {
+			return "", err
+		}
+		return scanModeloPreferido()
+	}
+	return modelID, nil
 }
 
 // UpsertEmpresaAIModeloPreferido registra/actualiza el modelo preferido por empresa y cuenta Google.
@@ -432,7 +466,8 @@ func UpsertEmpresaAIModeloPreferido(dbConn *sql.DB, empresaID int64, adminEmail,
 		usuarioCreador = adminEmail
 	}
 
-	_, err := dbConn.Exec(`INSERT INTO empresa_ai_modelo_preferido (
+	nowExpr := sqlNowExpr()
+	query := `INSERT INTO empresa_ai_modelo_preferido (
 		empresa_id,
 		admin_email,
 		provider,
@@ -442,20 +477,36 @@ func UpsertEmpresaAIModeloPreferido(dbConn *sql.DB, empresaID int64, adminEmail,
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, 'activo', 'preferencia de modelo IA por cuenta Google', datetime('now','localtime'), datetime('now','localtime'))
+	) VALUES (?, ?, ?, ?, ?, 'activo', 'preferencia de modelo IA por cuenta Google', ` + nowExpr + `, ` + nowExpr + `)
 	ON CONFLICT(empresa_id, admin_email) DO UPDATE SET
 		provider = excluded.provider,
 		model_id = excluded.model_id,
 		usuario_creador = excluded.usuario_creador,
 		estado = 'activo',
 		observaciones = excluded.observaciones,
-		fecha_actualizacion = datetime('now','localtime')`,
+		fecha_actualizacion = ` + nowExpr
+	_, err := execSQLCompat(dbConn, query,
 		empresaID,
 		adminEmail,
 		provider,
 		modelID,
 		strings.TrimSpace(usuarioCreador),
 	)
+	if err != nil {
+		if !shouldRepairAIChatSchema(err) {
+			return err
+		}
+		if schemaErr := EnsureEmpresaAIChatSchema(dbConn); schemaErr != nil {
+			return err
+		}
+		_, err = execSQLCompat(dbConn, query,
+			empresaID,
+			adminEmail,
+			provider,
+			modelID,
+			strings.TrimSpace(usuarioCreador),
+		)
+	}
 	return err
 }
 
@@ -474,7 +525,8 @@ func UpsertSuperAIModeloPreferido(dbConn *sql.DB, adminEmail, modelID, usuarioCr
 		usuarioCreador = adminEmail
 	}
 
-	_, err := dbConn.Exec(`INSERT INTO super_ai_modelo_preferido (
+	nowExpr := sqlNowExpr()
+	query := `INSERT INTO super_ai_modelo_preferido (
 		admin_email,
 		provider,
 		model_id,
@@ -483,19 +535,34 @@ func UpsertSuperAIModeloPreferido(dbConn *sql.DB, adminEmail, modelID, usuarioCr
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, 'activo', 'preferencia de modelo IA global super', datetime('now','localtime'), datetime('now','localtime'))
+	) VALUES (?, ?, ?, ?, 'activo', 'preferencia de modelo IA global super', ` + nowExpr + `, ` + nowExpr + `)
 	ON CONFLICT(admin_email) DO UPDATE SET
 		provider = excluded.provider,
 		model_id = excluded.model_id,
 		usuario_creador = excluded.usuario_creador,
 		estado = 'activo',
 		observaciones = excluded.observaciones,
-		fecha_actualizacion = datetime('now','localtime')`,
+		fecha_actualizacion = ` + nowExpr
+	_, err := execSQLCompat(dbConn, query,
 		adminEmail,
 		provider,
 		modelID,
 		strings.TrimSpace(usuarioCreador),
 	)
+	if err != nil {
+		if !shouldRepairAIChatSchema(err) {
+			return err
+		}
+		if schemaErr := EnsureSuperAIChatSchema(dbConn); schemaErr != nil {
+			return err
+		}
+		_, err = execSQLCompat(dbConn, query,
+			adminEmail,
+			provider,
+			modelID,
+			strings.TrimSpace(usuarioCreador),
+		)
+	}
 	return err
 }
 
@@ -511,8 +578,9 @@ func CanAdminAccessEmpresaIA(dbEmp, dbSuper *sql.DB, adminEmail string, empresaI
 	}
 
 	if dbSuper != nil {
-		if adm, err := GetAdminByEmail(dbSuper, adminEmail); err == nil {
-			if strings.EqualFold(strings.TrimSpace(adm.Role), "super_administrador") {
+		if adm, err := GetAdminByEmailFull(dbSuper, adminEmail); err == nil {
+			creator := strings.TrimSpace(strings.ToLower(adm.UsuarioCreador))
+			if strings.EqualFold(strings.TrimSpace(adm.Role), "super_administrador") && (creator == "" || creator == adminEmail) {
 				return true, nil
 			}
 		}
@@ -565,7 +633,8 @@ func GetEmpresaAIUsoDiario(dbConn *sql.DB, empresaID int64, provider, modelID, f
 		fechaUso = time.Now().Format("2006-01-02")
 	}
 
-	row := dbConn.QueryRow(`SELECT
+	scanUsoDiario := func() (*EmpresaAIUsoDiario, error) {
+		row := queryRowSQLCompat(dbConn, `SELECT
 		id,
 		empresa_id,
 		COALESCE(provider, ''),
@@ -583,8 +652,8 @@ func GetEmpresaAIUsoDiario(dbConn *sql.DB, empresaID int64, provider, modelID, f
 	WHERE empresa_id = ? AND provider = ? AND model_id = ? AND fecha_uso = ?
 	LIMIT 1`, empresaID, provider, modelID, fechaUso)
 
-	var out EmpresaAIUsoDiario
-	err := row.Scan(
+		var out EmpresaAIUsoDiario
+		err := row.Scan(
 		&out.ID,
 		&out.EmpresaID,
 		&out.Provider,
@@ -598,21 +667,34 @@ func GetEmpresaAIUsoDiario(dbConn *sql.DB, empresaID int64, provider, modelID, f
 		&out.UsuarioCread,
 		&out.Estado,
 		&out.Observaciones,
-	)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return &EmpresaAIUsoDiario{
-				EmpresaID:  empresaID,
-				Provider:   provider,
-				ModelID:    modelID,
-				FechaUso:   fechaUso,
-				PlanActual: "free",
-				Estado:     "activo",
-			}, nil
+		)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				return &EmpresaAIUsoDiario{
+					EmpresaID:  empresaID,
+					Provider:   provider,
+					ModelID:    modelID,
+					FechaUso:   fechaUso,
+					PlanActual: "free",
+					Estado:     "activo",
+				}, nil
+			}
+			return nil, err
 		}
-		return nil, err
+		return &out, nil
 	}
-	return &out, nil
+
+	uso, err := scanUsoDiario()
+	if err != nil {
+		if !shouldRepairAIChatSchema(err) {
+			return nil, err
+		}
+		if schemaErr := EnsureEmpresaAIChatSchema(dbConn); schemaErr != nil {
+			return nil, err
+		}
+		return scanUsoDiario()
+	}
+	return uso, nil
 }
 
 // GetSuperAIUsoDiario obtiene el uso diario para un modelo en el alcance global super.
@@ -635,7 +717,8 @@ func GetSuperAIUsoDiario(dbConn *sql.DB, adminEmail, provider, modelID, fechaUso
 		FechaUso:   fechaUso,
 		PlanActual: "free",
 	}
-	err := dbConn.QueryRow(`SELECT
+	scanUsoDiario := func() (*SuperAIUsoDiario, error) {
+		err := queryRowSQLCompat(dbConn, `SELECT
 		id,
 		COALESCE(admin_email, ''),
 		COALESCE(provider, ''),
@@ -666,16 +749,29 @@ func GetSuperAIUsoDiario(dbConn *sql.DB, adminEmail, provider, modelID, fechaUso
 		&item.Estado,
 		&item.Observaciones,
 	)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return item, nil
+		if err != nil {
+			if err == sql.ErrNoRows {
+				return item, nil
+			}
+			return &SuperAIUsoDiario{}, err
 		}
-		return &SuperAIUsoDiario{}, err
+		if strings.TrimSpace(item.PlanActual) == "" {
+			item.PlanActual = "free"
+		}
+		return item, nil
 	}
-	if strings.TrimSpace(item.PlanActual) == "" {
-		item.PlanActual = "free"
+
+	uso, err := scanUsoDiario()
+	if err != nil {
+		if !shouldRepairAIChatSchema(err) {
+			return &SuperAIUsoDiario{}, err
+		}
+		if schemaErr := EnsureSuperAIChatSchema(dbConn); schemaErr != nil {
+			return &SuperAIUsoDiario{}, err
+		}
+		return scanUsoDiario()
 	}
-	return item, nil
+	return uso, nil
 }
 
 // RegisterEmpresaAIConsulta inserta la consulta IA y acumula el uso diario.
@@ -721,17 +817,17 @@ func RegisterEmpresaAIConsulta(dbConn *sql.DB, in EmpresaAIConsulta) (int64, err
 		fechaUso = time.Now().Format("2006-01-02")
 	}
 
-	tx, err := dbConn.Begin()
-	if err != nil {
-		return 0, err
-	}
-	defer func() {
+	nowExpr := sqlNowExpr()
+	runInsert := func() (int64, error) {
+		tx, err := dbConn.Begin()
 		if err != nil {
-			_ = tx.Rollback()
+			return 0, err
 		}
-	}()
+		defer func() {
+			_ = tx.Rollback()
+		}()
 
-	res, err := tx.Exec(`INSERT INTO empresa_ai_consultas (
+		consultaID, err := insertTxSQLCompat(tx, `INSERT INTO empresa_ai_consultas (
 		empresa_id,
 		provider,
 		model_id,
@@ -747,7 +843,7 @@ func RegisterEmpresaAIConsulta(dbConn *sql.DB, in EmpresaAIConsulta) (int64, err
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ` + nowExpr + `, ` + nowExpr + `)`,
 		in.EmpresaID,
 		in.Provider,
 		in.ModelID,
@@ -761,12 +857,12 @@ func RegisterEmpresaAIConsulta(dbConn *sql.DB, in EmpresaAIConsulta) (int64, err
 		in.UsuarioCreador,
 		in.Estado,
 		strings.TrimSpace(in.Observaciones),
-	)
-	if err != nil {
-		return 0, err
-	}
+		)
+		if err != nil {
+			return 0, err
+		}
 
-	_, err = tx.Exec(`INSERT INTO empresa_ai_uso_diario (
+		_, err = execTxSQLCompat(tx, `INSERT INTO empresa_ai_uso_diario (
 		empresa_id,
 		provider,
 		model_id,
@@ -779,14 +875,14 @@ func RegisterEmpresaAIConsulta(dbConn *sql.DB, in EmpresaAIConsulta) (int64, err
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, 1, ?, ?, ?, 'activo', ?, datetime('now','localtime'), datetime('now','localtime'))
+	) VALUES (?, ?, ?, ?, 1, ?, ?, ?, 'activo', ?, ` + nowExpr + `, ` + nowExpr + `)
 	ON CONFLICT(empresa_id, provider, model_id, fecha_uso) DO UPDATE SET
 		consultas_total = empresa_ai_uso_diario.consultas_total + 1,
 		tokens_total = empresa_ai_uso_diario.tokens_total + excluded.tokens_total,
 		plan_actual = excluded.plan_actual,
 		usuario_creador = excluded.usuario_creador,
 		observaciones = excluded.observaciones,
-		fecha_actualizacion = datetime('now','localtime')`,
+		fecha_actualizacion = ` + nowExpr,
 		in.EmpresaID,
 		in.Provider,
 		in.ModelID,
@@ -795,15 +891,27 @@ func RegisterEmpresaAIConsulta(dbConn *sql.DB, in EmpresaAIConsulta) (int64, err
 		in.PlanActual,
 		in.UsuarioCreador,
 		strings.TrimSpace(in.Observaciones),
-	)
-	if err != nil {
-		return 0, err
+		)
+		if err != nil {
+			return 0, err
+		}
+
+		if err := tx.Commit(); err != nil {
+			return 0, err
+		}
+		return consultaID, nil
 	}
 
-	if err = tx.Commit(); err != nil {
-		return 0, err
+	id, err := runInsert()
+	if err != nil {
+		if !shouldRepairAIChatSchema(err) {
+			return 0, err
+		}
+		if schemaErr := EnsureEmpresaAIChatSchema(dbConn); schemaErr != nil {
+			return 0, err
+		}
+		return runInsert()
 	}
-	id, _ := res.LastInsertId()
 	return id, nil
 }
 
@@ -836,7 +944,17 @@ func RegisterSuperAIConsulta(dbConn *sql.DB, input SuperAIConsulta) (int64, erro
 		input.FechaConsulta = time.Now().Format("2006-01-02 15:04:05")
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO super_ai_consultas (
+	nowExpr := sqlNowExpr()
+	runInsert := func() (int64, error) {
+		tx, err := dbConn.Begin()
+		if err != nil {
+			return 0, err
+		}
+		defer func() {
+			_ = tx.Rollback()
+		}()
+
+		consultaID, err := insertTxSQLCompat(tx, `INSERT INTO super_ai_consultas (
 		admin_email,
 		provider,
 		model_id,
@@ -852,7 +970,7 @@ func RegisterSuperAIConsulta(dbConn *sql.DB, input SuperAIConsulta) (int64, erro
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ` + nowExpr + `, ` + nowExpr + `, ?, ?, ?)`,
 		input.AdminEmail,
 		input.Provider,
 		input.ModelID,
@@ -866,20 +984,19 @@ func RegisterSuperAIConsulta(dbConn *sql.DB, input SuperAIConsulta) (int64, erro
 		strings.TrimSpace(input.UsuarioCreador),
 		strings.TrimSpace(input.Estado),
 		strings.TrimSpace(input.Observaciones),
-	)
-	if err != nil {
-		return 0, err
-	}
-	id, _ := res.LastInsertId()
+		)
+		if err != nil {
+			return 0, err
+		}
 
-	fechaUso := input.FechaConsulta
-	if len(fechaUso) >= 10 {
-		fechaUso = fechaUso[:10]
-	}
-	if fechaUso == "" {
-		fechaUso = time.Now().Format("2006-01-02")
-	}
-	_, err = dbConn.Exec(`INSERT INTO super_ai_uso_diario (
+		fechaUso := input.FechaConsulta
+		if len(fechaUso) >= 10 {
+			fechaUso = fechaUso[:10]
+		}
+		if fechaUso == "" {
+			fechaUso = time.Now().Format("2006-01-02")
+		}
+		_, err = execTxSQLCompat(tx, `INSERT INTO super_ai_uso_diario (
 		admin_email,
 		provider,
 		model_id,
@@ -892,12 +1009,12 @@ func RegisterSuperAIConsulta(dbConn *sql.DB, input SuperAIConsulta) (int64, erro
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, 1, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, 'activo', 'uso diario chat IA global super')
+	) VALUES (?, ?, ?, ?, 1, ?, ?, ` + nowExpr + `, ` + nowExpr + `, ?, 'activo', 'uso diario chat IA global super')
 	ON CONFLICT(admin_email, provider, model_id, fecha_uso) DO UPDATE SET
 		consultas_total = COALESCE(super_ai_uso_diario.consultas_total, 0) + 1,
 		tokens_total = COALESCE(super_ai_uso_diario.tokens_total, 0) + excluded.tokens_total,
 		plan_actual = excluded.plan_actual,
-		fecha_actualizacion = datetime('now','localtime'),
+		fecha_actualizacion = ` + nowExpr + `,
 		usuario_creador = excluded.usuario_creador,
 		estado = 'activo'`,
 		input.AdminEmail,
@@ -907,9 +1024,26 @@ func RegisterSuperAIConsulta(dbConn *sql.DB, input SuperAIConsulta) (int64, erro
 		input.TotalTokens,
 		input.PlanActual,
 		strings.TrimSpace(input.UsuarioCreador),
-	)
+		)
+		if err != nil {
+			return consultaID, err
+		}
+
+		if err := tx.Commit(); err != nil {
+			return 0, err
+		}
+		return consultaID, nil
+	}
+
+	id, err := runInsert()
 	if err != nil {
-		return id, err
+		if !shouldRepairAIChatSchema(err) {
+			return 0, err
+		}
+		if schemaErr := EnsureSuperAIChatSchema(dbConn); schemaErr != nil {
+			return 0, err
+		}
+		return runInsert()
 	}
 
 	return id, nil
@@ -927,7 +1061,8 @@ func ListEmpresaAIConsultasRecientes(dbConn *sql.DB, empresaID int64, limit int)
 		limit = 200
 	}
 
-	rows, err := dbConn.Query(`SELECT
+	queryRecentes := func() ([]EmpresaAIConsulta, error) {
+		rows, err := querySQLCompat(dbConn, `SELECT
 		id,
 		empresa_id,
 		COALESCE(provider, ''),
@@ -948,15 +1083,15 @@ func ListEmpresaAIConsultasRecientes(dbConn *sql.DB, empresaID int64, limit int)
 	WHERE empresa_id = ?
 	ORDER BY datetime(fecha_consulta) DESC, id DESC
 	LIMIT ?`, empresaID, limit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
 
-	out := make([]EmpresaAIConsulta, 0)
-	for rows.Next() {
-		var it EmpresaAIConsulta
-		if err := rows.Scan(
+		out := make([]EmpresaAIConsulta, 0)
+		for rows.Next() {
+			var it EmpresaAIConsulta
+			if err := rows.Scan(
 			&it.ID,
 			&it.EmpresaID,
 			&it.Provider,
@@ -973,12 +1108,25 @@ func ListEmpresaAIConsultasRecientes(dbConn *sql.DB, empresaID int64, limit int)
 			&it.UsuarioCreador,
 			&it.Estado,
 			&it.Observaciones,
-		); err != nil {
+			); err != nil {
+				return nil, err
+			}
+			out = append(out, it)
+		}
+		return out, rows.Err()
+	}
+
+	items, err := queryRecentes()
+	if err != nil {
+		if !shouldRepairAIChatSchema(err) {
 			return nil, err
 		}
-		out = append(out, it)
+		if schemaErr := EnsureEmpresaAIChatSchema(dbConn); schemaErr != nil {
+			return nil, err
+		}
+		return queryRecentes()
 	}
-	return out, rows.Err()
+	return items, nil
 }
 
 // ListSuperAIConsultasRecientes devuelve historial reciente por administrador super.
@@ -994,7 +1142,8 @@ func ListSuperAIConsultasRecientes(dbConn *sql.DB, adminEmail string, limit int)
 		limit = 100
 	}
 
-	rows, err := dbConn.Query(`SELECT
+	queryRecentes := func() ([]SuperAIConsulta, error) {
+		rows, err := querySQLCompat(dbConn, `SELECT
 		id,
 		COALESCE(admin_email, ''),
 		COALESCE(provider, ''),
@@ -1015,15 +1164,15 @@ func ListSuperAIConsultasRecientes(dbConn *sql.DB, adminEmail string, limit int)
 	WHERE admin_email = ? AND COALESCE(estado, 'activo') <> 'inactivo'
 	ORDER BY fecha_consulta DESC, id DESC
 	LIMIT ?`, adminEmail, limit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
 
-	items := make([]SuperAIConsulta, 0, limit)
-	for rows.Next() {
-		var item SuperAIConsulta
-		if err := rows.Scan(
+		items := make([]SuperAIConsulta, 0, limit)
+		for rows.Next() {
+			var item SuperAIConsulta
+			if err := rows.Scan(
 			&item.ID,
 			&item.AdminEmail,
 			&item.Provider,
@@ -1040,13 +1189,26 @@ func ListSuperAIConsultasRecientes(dbConn *sql.DB, adminEmail string, limit int)
 			&item.UsuarioCreador,
 			&item.Estado,
 			&item.Observaciones,
-		); err != nil {
+			); err != nil {
+				return nil, err
+			}
+			items = append(items, item)
+		}
+		if err := rows.Err(); err != nil {
 			return nil, err
 		}
-		items = append(items, item)
+		return items, nil
 	}
-	if err := rows.Err(); err != nil {
-		return nil, err
+
+	items, err := queryRecentes()
+	if err != nil {
+		if !shouldRepairAIChatSchema(err) {
+			return nil, err
+		}
+		if schemaErr := EnsureSuperAIChatSchema(dbConn); schemaErr != nil {
+			return nil, err
+		}
+		return queryRecentes()
 	}
 	return items, nil
 }
@@ -1058,11 +1220,23 @@ func BuildEmpresaAIContexto(dbConn *sql.DB, empresaID int64) (string, error) {
 	}
 
 	var nombre, nit string
-	err := dbConn.QueryRow(`SELECT COALESCE(nombre, ''), COALESCE(nit, '') FROM empresas WHERE id = ? LIMIT 1`, empresaID).Scan(&nombre, &nit)
+	err := queryRowSQLCompat(dbConn, `SELECT COALESCE(nombre, ''), COALESCE(nit, '') FROM empresas WHERE id = ? LIMIT 1`, empresaID).Scan(&nombre, &nit)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return "", fmt.Errorf("empresa no encontrada")
 		}
+		return "", err
+	}
+
+	availableTables, err := aiAvailableTables(dbConn, []string{
+		"clientes",
+		"productos",
+		"inventario_existencias",
+		"carritos_compras",
+		"carrito_compra_items",
+		"empresa_finanzas_movimientos",
+	})
+	if err != nil {
 		return "", err
 	}
 
@@ -1071,38 +1245,62 @@ func BuildEmpresaAIContexto(dbConn *sql.DB, empresaID int64) (string, error) {
 	b.WriteString(fmt.Sprintf("- empresa_id: %d\n", empresaID))
 	b.WriteString(fmt.Sprintf("- nombre: %s\n", strings.TrimSpace(nombre)))
 	b.WriteString(fmt.Sprintf("- nit: %s\n", strings.TrimSpace(nit)))
+	b.WriteString(fmt.Sprintf("- tablas_contexto_disponibles: %s\n", strings.Join(availableTables, ", ")))
 
-	if ok, err := tableExists(dbConn, "clientes"); err == nil && ok {
+	if slicesContain(availableTables, "clientes") {
 		var totalClientes int64
-		_ = dbConn.QueryRow(`SELECT COUNT(1) FROM clientes WHERE empresa_id = ? AND COALESCE(estado, 'activo') <> 'inactivo'`, empresaID).Scan(&totalClientes)
+		_ = queryRowSQLCompat(dbConn, `SELECT COUNT(1) FROM clientes WHERE empresa_id = ? AND COALESCE(estado, 'activo') <> 'inactivo'`, empresaID).Scan(&totalClientes)
 		b.WriteString(fmt.Sprintf("- clientes_activos: %d\n", totalClientes))
 	}
 
-	if ok, err := tableExists(dbConn, "productos"); err == nil && ok {
+	if slicesContain(availableTables, "productos") {
 		var totalProductos int64
-		_ = dbConn.QueryRow(`SELECT COUNT(1) FROM productos WHERE empresa_id = ? AND COALESCE(estado, 'activo') = 'activo'`, empresaID).Scan(&totalProductos)
+		_ = queryRowSQLCompat(dbConn, `SELECT COUNT(1) FROM productos WHERE empresa_id = ? AND COALESCE(estado, 'activo') = 'activo'`, empresaID).Scan(&totalProductos)
 		b.WriteString(fmt.Sprintf("- productos_activos: %d\n", totalProductos))
 	}
 
-	if ok, err := tableExists(dbConn, "carritos_compras"); err == nil && ok {
+	if slicesContain(availableTables, "carritos_compras") {
 		var ventasCerradas int64
 		var ventasTotal float64
-		_ = dbConn.QueryRow(`SELECT COUNT(1), COALESCE(SUM(total), 0) FROM carritos_compras WHERE empresa_id = ? AND LOWER(COALESCE(estado_carrito, '')) = 'cerrado'`, empresaID).Scan(&ventasCerradas, &ventasTotal)
+		_ = queryRowSQLCompat(dbConn, `SELECT COUNT(1), COALESCE(SUM(total), 0) FROM carritos_compras WHERE empresa_id = ? AND LOWER(COALESCE(estado_carrito, '')) IN ('cerrado', 'pagado', 'finalizado')`, empresaID).Scan(&ventasCerradas, &ventasTotal)
 		b.WriteString(fmt.Sprintf("- ventas_cerradas: %d\n", ventasCerradas))
 		b.WriteString(fmt.Sprintf("- ventas_total: %.2f\n", ventasTotal))
 	}
 
-	if ok, err := tableExists(dbConn, "empresa_finanzas_movimientos"); err == nil && ok {
+	if slicesContain(availableTables, "empresa_finanzas_movimientos") {
 		var ingresos float64
 		var egresos float64
-		_ = dbConn.QueryRow(`SELECT COALESCE(SUM(total), 0) FROM empresa_finanzas_movimientos WHERE empresa_id = ? AND LOWER(COALESCE(tipo_movimiento, '')) = 'ingreso' AND LOWER(COALESCE(estado, 'activo')) = 'activo'`, empresaID).Scan(&ingresos)
-		_ = dbConn.QueryRow(`SELECT COALESCE(SUM(total), 0) FROM empresa_finanzas_movimientos WHERE empresa_id = ? AND LOWER(COALESCE(tipo_movimiento, '')) = 'egreso' AND LOWER(COALESCE(estado, 'activo')) = 'activo'`, empresaID).Scan(&egresos)
+		_ = queryRowSQLCompat(dbConn, `SELECT COALESCE(SUM(COALESCE(NULLIF(total_neto, 0), NULLIF(total, 0), monto, 0)), 0) FROM empresa_finanzas_movimientos WHERE empresa_id = ? AND LOWER(COALESCE(tipo_movimiento, '')) = 'ingreso' AND LOWER(COALESCE(estado, 'activo')) = 'activo'`, empresaID).Scan(&ingresos)
+		_ = queryRowSQLCompat(dbConn, `SELECT COALESCE(SUM(COALESCE(NULLIF(total_neto, 0), NULLIF(total, 0), monto, 0)), 0) FROM empresa_finanzas_movimientos WHERE empresa_id = ? AND LOWER(COALESCE(tipo_movimiento, '')) = 'egreso' AND LOWER(COALESCE(estado, 'activo')) = 'activo'`, empresaID).Scan(&egresos)
 		b.WriteString(fmt.Sprintf("- finanzas_ingresos: %.2f\n", ingresos))
 		b.WriteString(fmt.Sprintf("- finanzas_egresos: %.2f\n", egresos))
 		b.WriteString(fmt.Sprintf("- finanzas_balance: %.2f\n", ingresos-egresos))
 	}
 
+	writeAIContextSection(&b, "TOP_PRODUCTOS_VENTA", empresaAITopProductos(dbConn, empresaID, availableTables, 5))
+	writeAIContextSection(&b, "TOP_CLIENTES", empresaAITopClientes(dbConn, empresaID, availableTables, 5))
+	writeAIContextSection(&b, "VENTAS_RECIENTES", empresaAIVentasRecientes(dbConn, empresaID, availableTables, 5))
+	writeAIContextSection(&b, "ALERTAS_INVENTARIO", empresaAIAlertasInventario(dbConn, empresaID, availableTables, 5))
+	writeAIContextSection(&b, "MOVIMIENTOS_FINANCIEROS_RECIENTES", empresaAIFinanzasRecientes(dbConn, empresaID, availableTables, 5))
+
 	return b.String(), nil
+}
+
+// BuildEmpresaAIContextoForQuestion amplía el contexto base con resultados de consultas seguras
+// resueltas por intención, sin permitir SQL libre generado por IA.
+func BuildEmpresaAIContextoForQuestion(dbConn *sql.DB, empresaID int64, pregunta string) (string, error) {
+	base, err := BuildEmpresaAIContexto(dbConn, empresaID)
+	if err != nil {
+		return "", err
+	}
+	safeContext, err := buildEmpresaAISafeIntentContext(dbConn, empresaID, pregunta)
+	if err != nil {
+		return "", err
+	}
+	if safeContext == "" {
+		return base, nil
+	}
+	return base + "\n" + safeContext, nil
 }
 
 // BuildSuperAIContexto resume contexto global consolidado del sistema para super administrador.
@@ -1112,20 +1310,32 @@ func BuildSuperAIContexto(dbEmp, dbSuper *sql.DB, adminEmail string) (string, er
 		return "", fmt.Errorf("admin_email es obligatorio")
 	}
 
+	availableTables, err := aiAvailableTables(dbEmp, []string{
+		"empresas",
+		"clientes",
+		"productos",
+		"inventario_existencias",
+		"carritos_compras",
+		"empresa_finanzas_movimientos",
+	})
+	if err != nil {
+		return "", err
+	}
+
 	var totalEmpresas, empresasActivas int64
-	if err := dbEmp.QueryRow(`SELECT COUNT(1), COALESCE(SUM(CASE WHEN LOWER(COALESCE(estado,'activo')) = 'activo' THEN 1 ELSE 0 END), 0) FROM empresas`).Scan(&totalEmpresas, &empresasActivas); err != nil {
+	if err := queryRowSQLCompat(dbEmp, `SELECT COUNT(1), COALESCE(SUM(CASE WHEN LOWER(COALESCE(estado,'activo')) = 'activo' THEN 1 ELSE 0 END), 0) FROM empresas`).Scan(&totalEmpresas, &empresasActivas); err != nil {
 		return "", err
 	}
 
 	var totalClientes int64
-	if err := dbEmp.QueryRow(`SELECT COUNT(1) FROM clientes`).Scan(&totalClientes); err != nil {
+	if err := queryRowSQLCompat(dbEmp, `SELECT COUNT(1) FROM clientes`).Scan(&totalClientes); err != nil {
 		if !isMissingTableError(err) {
 			return "", err
 		}
 	}
 
 	var totalProductos int64
-	if err := dbEmp.QueryRow(`SELECT COUNT(1) FROM productos`).Scan(&totalProductos); err != nil {
+	if err := queryRowSQLCompat(dbEmp, `SELECT COUNT(1) FROM productos`).Scan(&totalProductos); err != nil {
 		if !isMissingTableError(err) {
 			return "", err
 		}
@@ -1133,7 +1343,7 @@ func BuildSuperAIContexto(dbEmp, dbSuper *sql.DB, adminEmail string) (string, er
 
 	var totalCarritos, carritosPagados int64
 	var ventasTotal float64
-	if err := dbEmp.QueryRow(`SELECT COUNT(1), COALESCE(SUM(CASE WHEN LOWER(COALESCE(estado_carrito,'')) IN ('pagado','cerrado','finalizado') THEN 1 ELSE 0 END), 0), COALESCE(SUM(total), 0) FROM carritos_compras`).Scan(&totalCarritos, &carritosPagados, &ventasTotal); err != nil {
+	if err := queryRowSQLCompat(dbEmp, `SELECT COUNT(1), COALESCE(SUM(CASE WHEN LOWER(COALESCE(estado_carrito,'')) IN ('pagado','cerrado','finalizado') THEN 1 ELSE 0 END), 0), COALESCE(SUM(total), 0) FROM carritos_compras`).Scan(&totalCarritos, &carritosPagados, &ventasTotal); err != nil {
 		if !isMissingTableError(err) {
 			return "", err
 		}
@@ -1141,7 +1351,10 @@ func BuildSuperAIContexto(dbEmp, dbSuper *sql.DB, adminEmail string) (string, er
 
 	var movimientosFinancieros int64
 	var ingresosTotal, egresosTotal float64
-	if err := dbEmp.QueryRow(`SELECT COUNT(1), COALESCE(SUM(CASE WHEN LOWER(COALESCE(tipo,'')) IN ('ingreso','entrada') THEN valor ELSE 0 END), 0), COALESCE(SUM(CASE WHEN LOWER(COALESCE(tipo,'')) IN ('egreso','salida','gasto') THEN valor ELSE 0 END), 0) FROM empresa_finanzas_movimientos`).Scan(&movimientosFinancieros, &ingresosTotal, &egresosTotal); err != nil {
+	if err := queryRowSQLCompat(dbEmp, `SELECT COUNT(1),
+		COALESCE(SUM(CASE WHEN LOWER(COALESCE(tipo_movimiento,'')) = 'ingreso' THEN COALESCE(NULLIF(total_neto, 0), NULLIF(total, 0), monto, 0) ELSE 0 END), 0),
+		COALESCE(SUM(CASE WHEN LOWER(COALESCE(tipo_movimiento,'')) = 'egreso' THEN COALESCE(NULLIF(total_neto, 0), NULLIF(total, 0), monto, 0) ELSE 0 END), 0)
+		FROM empresa_finanzas_movimientos`).Scan(&movimientosFinancieros, &ingresosTotal, &egresosTotal); err != nil {
 		if !isMissingTableError(err) {
 			return "", err
 		}
@@ -1149,7 +1362,7 @@ func BuildSuperAIContexto(dbEmp, dbSuper *sql.DB, adminEmail string) (string, er
 
 	var totalAdministradores int64
 	if dbSuper != nil {
-		if err := dbSuper.QueryRow(`SELECT COUNT(1) FROM administradores`).Scan(&totalAdministradores); err != nil {
+		if err := queryRowSQLCompat(dbSuper, `SELECT COUNT(1) FROM administradores`).Scan(&totalAdministradores); err != nil {
 			if !isMissingTableError(err) {
 				return "", err
 			}
@@ -1169,11 +1382,927 @@ func BuildSuperAIContexto(dbEmp, dbSuper *sql.DB, adminEmail string) (string, er
 		fmt.Sprintf("ingresos_total=%.2f", ingresosTotal),
 		fmt.Sprintf("egresos_total=%.2f", egresosTotal),
 		fmt.Sprintf("administradores_total=%d", totalAdministradores),
+		fmt.Sprintf("tablas_contexto_disponibles=%s", strings.Join(availableTables, ",")),
 		"alcance=global_superadministrador",
 		"restriccion=no revelar secretos, tokens, hashes, credenciales ni datos sensibles no solicitados expresamente",
 	}
 
+	contexto = append(contexto, aiContextSectionLines("empresas_top_ventas", superAITopEmpresasVentas(dbEmp, availableTables, 5))...)
+	contexto = append(contexto, aiContextSectionLines("ventas_globales_recientes", superAIVentasRecientes(dbEmp, availableTables, 5))...)
+	contexto = append(contexto, aiContextSectionLines("alertas_globales_inventario", superAIAlertasInventario(dbEmp, availableTables, 5))...)
+
 	return strings.Join(contexto, "\n"), nil
+}
+
+// BuildSuperAIContextoForQuestion amplía el contexto global con consultas seguras resueltas
+// a partir de la intención de la pregunta.
+func BuildSuperAIContextoForQuestion(dbEmp, dbSuper *sql.DB, adminEmail, pregunta string) (string, error) {
+	base, err := BuildSuperAIContexto(dbEmp, dbSuper, adminEmail)
+	if err != nil {
+		return "", err
+	}
+	safeContext, err := buildSuperAISafeIntentContext(dbEmp, pregunta)
+	if err != nil {
+		return "", err
+	}
+	if safeContext == "" {
+		return base, nil
+	}
+	return base + "\n" + safeContext, nil
+}
+
+func aiAvailableTables(dbConn *sql.DB, candidates []string) ([]string, error) {
+	available := make([]string, 0, len(candidates))
+	for _, tableName := range candidates {
+		ok, err := tableExists(dbConn, tableName)
+		if err != nil {
+			return nil, err
+		}
+		if ok {
+			available = append(available, tableName)
+		}
+	}
+	sort.Strings(available)
+	return available, nil
+}
+
+func aiAvailableColumns(dbConn *sql.DB, tableName string, candidates []string) ([]string, error) {
+	if len(candidates) == 0 {
+		return nil, nil
+	}
+
+	available := make([]string, 0, len(candidates))
+	found := map[string]struct{}{}
+
+	if isPostgresDialect() {
+		rows, err := querySQLCompat(dbConn, `
+			SELECT column_name
+			FROM information_schema.columns
+			WHERE table_schema = ANY (current_schemas(false))
+			  AND table_name = ?
+		`, tableName)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var columnName string
+			if err := rows.Scan(&columnName); err != nil {
+				return nil, err
+			}
+			found[strings.ToLower(strings.TrimSpace(columnName))] = struct{}{}
+		}
+	} else {
+		rows, err := querySQLCompat(dbConn, fmt.Sprintf("PRAGMA table_info(%s)", tableName))
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var cid int
+			var name, ctype string
+			var notnull int
+			var dflt sql.NullString
+			var pk int
+			if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
+				return nil, err
+			}
+			found[strings.ToLower(strings.TrimSpace(name))] = struct{}{}
+		}
+	}
+
+	for _, candidate := range candidates {
+		if _, ok := found[strings.ToLower(candidate)]; ok {
+			available = append(available, candidate)
+		}
+	}
+	return available, nil
+}
+
+func slicesContain(values []string, expected string) bool {
+	for _, item := range values {
+		if item == expected {
+			return true
+		}
+	}
+	return false
+}
+
+func writeAIContextSection(b *strings.Builder, sectionName string, lines []string) {
+	if len(lines) == 0 {
+		return
+	}
+	b.WriteString(sectionName)
+	b.WriteString("\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		b.WriteString("- ")
+		b.WriteString(line)
+		b.WriteString("\n")
+	}
+}
+
+func aiContextSectionLines(sectionName string, lines []string) []string {
+	if len(lines) == 0 {
+		return nil
+	}
+	out := make([]string, 0, len(lines)+1)
+	out = append(out, sectionName)
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		out = append(out, "  - "+line)
+	}
+	return out
+}
+
+func empresaAITopProductos(dbConn *sql.DB, empresaID int64, availableTables []string, limit int) []string {
+	if !slicesContain(availableTables, "carritos_compras") || !slicesContain(availableTables, "carrito_compra_items") {
+		return nil
+	}
+	rows, err := querySQLCompat(dbConn, `SELECT
+		COALESCE(NULLIF(ci.descripcion, ''), NULLIF(ci.codigo_item, ''), 'item_sin_nombre') AS item_nombre,
+		COALESCE(SUM(ci.cantidad), 0) AS cantidad_total,
+		COALESCE(SUM(ci.total_linea), 0) AS total_vendido
+	FROM carrito_compra_items ci
+	JOIN carritos_compras c ON c.id = ci.carrito_id AND c.empresa_id = ci.empresa_id
+	WHERE ci.empresa_id = ?
+	  AND LOWER(COALESCE(c.estado_carrito, '')) IN ('cerrado', 'pagado', 'finalizado')
+	GROUP BY COALESCE(NULLIF(ci.descripcion, ''), NULLIF(ci.codigo_item, ''), 'item_sin_nombre')
+	ORDER BY cantidad_total DESC, total_vendido DESC
+	LIMIT ?`, empresaID, limit)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	out := make([]string, 0, limit)
+	for rows.Next() {
+		var nombre string
+		var cantidad, total float64
+		if err := rows.Scan(&nombre, &cantidad, &total); err != nil {
+			return nil
+		}
+		out = append(out, fmt.Sprintf("%s | cantidad=%.2f | total=%.2f", strings.TrimSpace(nombre), cantidad, total))
+	}
+	return out
+}
+
+func empresaAITopClientes(dbConn *sql.DB, empresaID int64, availableTables []string, limit int) []string {
+	if !slicesContain(availableTables, "clientes") || !slicesContain(availableTables, "carritos_compras") {
+		return nil
+	}
+	rows, err := querySQLCompat(dbConn, `SELECT
+		COALESCE(NULLIF(cl.nombre_razon_social, ''), NULLIF(cl.numero_documento, ''), 'cliente_sin_nombre') AS cliente_nombre,
+		COUNT(1) AS compras,
+		COALESCE(SUM(c.total), 0) AS total_comprado
+	FROM carritos_compras c
+	JOIN clientes cl ON cl.id = c.cliente_id AND cl.empresa_id = c.empresa_id
+	WHERE c.empresa_id = ?
+	  AND LOWER(COALESCE(c.estado_carrito, '')) IN ('cerrado', 'pagado', 'finalizado')
+	GROUP BY COALESCE(NULLIF(cl.nombre_razon_social, ''), NULLIF(cl.numero_documento, ''), 'cliente_sin_nombre')
+	ORDER BY total_comprado DESC, compras DESC
+	LIMIT ?`, empresaID, limit)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	out := make([]string, 0, limit)
+	for rows.Next() {
+		var nombre string
+		var compras int64
+		var total float64
+		if err := rows.Scan(&nombre, &compras, &total); err != nil {
+			return nil
+		}
+		out = append(out, fmt.Sprintf("%s | compras=%d | total=%.2f", strings.TrimSpace(nombre), compras, total))
+	}
+	return out
+}
+
+func empresaAIVentasRecientes(dbConn *sql.DB, empresaID int64, availableTables []string, limit int) []string {
+	if !slicesContain(availableTables, "carritos_compras") {
+		return nil
+	}
+	rows, err := querySQLCompat(dbConn, `SELECT
+		COALESCE(NULLIF(c.codigo, ''), printf('venta_%d', c.id)),
+		COALESCE(c.total, 0),
+		COALESCE(c.metodo_pago, ''),
+		COALESCE(c.pagado_en, c.fecha_actualizacion, c.fecha_creacion, '')
+	FROM carritos_compras c
+	WHERE c.empresa_id = ?
+	  AND LOWER(COALESCE(c.estado_carrito, '')) IN ('cerrado', 'pagado', 'finalizado')
+	ORDER BY COALESCE(c.pagado_en, c.fecha_actualizacion, c.fecha_creacion, '') DESC, c.id DESC
+	LIMIT ?`, empresaID, limit)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	out := make([]string, 0, limit)
+	for rows.Next() {
+		var codigo, metodo, fecha string
+		var total float64
+		if err := rows.Scan(&codigo, &total, &metodo, &fecha); err != nil {
+			return nil
+		}
+		out = append(out, fmt.Sprintf("%s | total=%.2f | metodo=%s | fecha=%s", strings.TrimSpace(codigo), total, safeAIValue(metodo), safeAIValue(fecha)))
+	}
+	return out
+}
+
+func empresaAIAlertasInventario(dbConn *sql.DB, empresaID int64, availableTables []string, limit int) []string {
+	if !slicesContain(availableTables, "productos") || !slicesContain(availableTables, "inventario_existencias") {
+		return nil
+	}
+	rows, err := querySQLCompat(dbConn, `SELECT
+		COALESCE(p.nombre, ''),
+		COALESCE(SUM(e.cantidad), 0) AS cantidad_actual,
+		COALESCE(p.stock_minimo, 0) AS stock_minimo
+	FROM productos p
+	LEFT JOIN inventario_existencias e
+	  ON e.producto_id = p.id
+	 AND e.empresa_id = p.empresa_id
+	WHERE p.empresa_id = ?
+	  AND LOWER(COALESCE(p.estado, 'activo')) = 'activo'
+	GROUP BY p.id, p.nombre, p.stock_minimo
+	HAVING COALESCE(SUM(e.cantidad), 0) <= 0
+	    OR (COALESCE(p.stock_minimo, 0) > 0 AND COALESCE(SUM(e.cantidad), 0) <= COALESCE(p.stock_minimo, 0))
+	ORDER BY (COALESCE(p.stock_minimo, 0) - COALESCE(SUM(e.cantidad), 0)) DESC, p.nombre ASC
+	LIMIT ?`, empresaID, limit)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	out := make([]string, 0, limit)
+	for rows.Next() {
+		var nombre string
+		var cantidad, minimo float64
+		if err := rows.Scan(&nombre, &cantidad, &minimo); err != nil {
+			return nil
+		}
+		out = append(out, fmt.Sprintf("%s | stock=%.2f | stock_minimo=%.2f", strings.TrimSpace(nombre), cantidad, minimo))
+	}
+	return out
+}
+
+func empresaAIFinanzasRecientes(dbConn *sql.DB, empresaID int64, availableTables []string, limit int) []string {
+	if !slicesContain(availableTables, "empresa_finanzas_movimientos") {
+		return nil
+	}
+	rows, err := querySQLCompat(dbConn, `SELECT
+		COALESCE(tipo_movimiento, ''),
+		COALESCE(NULLIF(concepto, ''), NULLIF(descripcion, ''), NULLIF(numero_comprobante, ''), 'movimiento'),
+		COALESCE(NULLIF(total_neto, 0), NULLIF(total, 0), monto, 0),
+		COALESCE(fecha_movimiento, fecha_actualizacion, fecha_creacion, '')
+	FROM empresa_finanzas_movimientos
+	WHERE empresa_id = ?
+	  AND LOWER(COALESCE(estado, 'activo')) = 'activo'
+	ORDER BY COALESCE(fecha_movimiento, fecha_actualizacion, fecha_creacion, '') DESC, id DESC
+	LIMIT ?`, empresaID, limit)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	out := make([]string, 0, limit)
+	for rows.Next() {
+		var tipo, concepto, fecha string
+		var total float64
+		if err := rows.Scan(&tipo, &concepto, &total, &fecha); err != nil {
+			return nil
+		}
+		out = append(out, fmt.Sprintf("%s | concepto=%s | total=%.2f | fecha=%s", safeAIValue(tipo), safeAIValue(concepto), total, safeAIValue(fecha)))
+	}
+	return out
+}
+
+func superAITopEmpresasVentas(dbConn *sql.DB, availableTables []string, limit int) []string {
+	if !slicesContain(availableTables, "empresas") || !slicesContain(availableTables, "carritos_compras") {
+		return nil
+	}
+	rows, err := querySQLCompat(dbConn, `SELECT
+		COALESCE(e.nombre, printf('empresa_%d', e.id)) AS empresa_nombre,
+		COUNT(c.id) AS ventas,
+		COALESCE(SUM(c.total), 0) AS total_vendido
+	FROM empresas e
+	LEFT JOIN carritos_compras c
+	  ON c.empresa_id = e.id
+	 AND LOWER(COALESCE(c.estado_carrito, '')) IN ('cerrado', 'pagado', 'finalizado')
+	GROUP BY e.id, e.nombre
+	ORDER BY total_vendido DESC, ventas DESC
+	LIMIT ?`, limit)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	out := make([]string, 0, limit)
+	for rows.Next() {
+		var nombre string
+		var ventas int64
+		var total float64
+		if err := rows.Scan(&nombre, &ventas, &total); err != nil {
+			return nil
+		}
+		out = append(out, fmt.Sprintf("%s | ventas=%d | total=%.2f", strings.TrimSpace(nombre), ventas, total))
+	}
+	return out
+}
+
+func superAIVentasRecientes(dbConn *sql.DB, availableTables []string, limit int) []string {
+	if !slicesContain(availableTables, "empresas") || !slicesContain(availableTables, "carritos_compras") {
+		return nil
+	}
+	rows, err := querySQLCompat(dbConn, `SELECT
+		COALESCE(e.nombre, printf('empresa_%d', e.id)) AS empresa_nombre,
+		COALESCE(NULLIF(c.codigo, ''), printf('venta_%d', c.id)),
+		COALESCE(c.total, 0),
+		COALESCE(c.pagado_en, c.fecha_actualizacion, c.fecha_creacion, '')
+	FROM carritos_compras c
+	JOIN empresas e ON e.id = c.empresa_id
+	WHERE LOWER(COALESCE(c.estado_carrito, '')) IN ('cerrado', 'pagado', 'finalizado')
+	ORDER BY COALESCE(c.pagado_en, c.fecha_actualizacion, c.fecha_creacion, '') DESC, c.id DESC
+	LIMIT ?`, limit)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	out := make([]string, 0, limit)
+	for rows.Next() {
+		var empresa, codigo, fecha string
+		var total float64
+		if err := rows.Scan(&empresa, &codigo, &total, &fecha); err != nil {
+			return nil
+		}
+		out = append(out, fmt.Sprintf("%s | %s | total=%.2f | fecha=%s", strings.TrimSpace(empresa), strings.TrimSpace(codigo), total, safeAIValue(fecha)))
+	}
+	return out
+}
+
+func superAIAlertasInventario(dbConn *sql.DB, availableTables []string, limit int) []string {
+	if !slicesContain(availableTables, "empresas") || !slicesContain(availableTables, "productos") || !slicesContain(availableTables, "inventario_existencias") {
+		return nil
+	}
+	rows, err := querySQLCompat(dbConn, `SELECT
+		empresa_nombre,
+		COUNT(1) AS productos_alerta
+	FROM (
+		SELECT
+			COALESCE(e.nombre, printf('empresa_%d', e.id)) AS empresa_nombre,
+			p.id AS producto_id,
+			COALESCE(SUM(ie.cantidad), 0) AS stock_actual,
+			COALESCE(p.stock_minimo, 0) AS stock_minimo
+		FROM productos p
+		JOIN empresas e ON e.id = p.empresa_id
+		LEFT JOIN inventario_existencias ie
+		  ON ie.producto_id = p.id
+		 AND ie.empresa_id = p.empresa_id
+		WHERE LOWER(COALESCE(p.estado, 'activo')) = 'activo'
+		GROUP BY e.id, e.nombre, p.id, p.stock_minimo
+	) resumen
+	WHERE stock_actual <= 0 OR (stock_minimo > 0 AND stock_actual <= stock_minimo)
+	GROUP BY empresa_nombre
+	ORDER BY productos_alerta DESC, empresa_nombre ASC
+	LIMIT ?`, limit)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	type item struct {
+		empresa string
+		count   int64
+	}
+	items := make([]item, 0)
+	for rows.Next() {
+		var empresa string
+		var count int64
+		if err := rows.Scan(&empresa, &count); err != nil {
+			return nil
+		}
+		if count > 0 {
+			items = append(items, item{empresa: strings.TrimSpace(empresa), count: count})
+		}
+	}
+	sort.Slice(items, func(i, j int) bool {
+		if items[i].count == items[j].count {
+			return items[i].empresa < items[j].empresa
+		}
+		return items[i].count > items[j].count
+	})
+	if len(items) > limit {
+		items = items[:limit]
+	}
+	out := make([]string, 0, len(items))
+	for _, item := range items {
+		out = append(out, fmt.Sprintf("%s | productos_con_alerta=%d", item.empresa, item.count))
+	}
+	return out
+}
+
+func safeAIValue(v string) string {
+	v = strings.TrimSpace(v)
+	if v == "" {
+		return "sin_dato"
+	}
+	return v
+}
+
+type empresaAISafeIntent struct {
+	Name  string
+	Lines []string
+}
+
+func buildEmpresaAISafeIntentContext(dbConn *sql.DB, empresaID int64, pregunta string) (string, error) {
+	folded := aiFoldText(pregunta)
+	if strings.TrimSpace(folded) == "" {
+		return "", nil
+	}
+
+	availableTables, err := aiAvailableTables(dbConn, []string{
+		"clientes",
+		"productos",
+		"inventario_existencias",
+		"carritos_compras",
+		"carrito_compra_items",
+		"empresa_finanzas_movimientos",
+	})
+	if err != nil {
+		return "", err
+	}
+
+	terms := aiExtractSearchTerms(pregunta)
+	intents := make([]empresaAISafeIntent, 0, 4)
+
+	if aiLooksLikeClientQuestion(folded) {
+		lines := empresaAISafeVentasPorCliente(dbConn, empresaID, availableTables, terms, 5)
+		if len(lines) == 0 {
+			lines = empresaAITopClientes(dbConn, empresaID, availableTables, 5)
+		}
+		if len(lines) > 0 {
+			intents = append(intents, empresaAISafeIntent{Name: "CONSULTA_SEGURA_CLIENTES", Lines: lines})
+		}
+	}
+
+	if aiLooksLikeProductQuestion(folded) {
+		lines := empresaAISafeProductoDetalle(dbConn, empresaID, availableTables, terms, 5)
+		if len(lines) == 0 {
+			lines = empresaAITopProductos(dbConn, empresaID, availableTables, 5)
+		}
+		if len(lines) > 0 {
+			intents = append(intents, empresaAISafeIntent{Name: "CONSULTA_SEGURA_PRODUCTOS", Lines: lines})
+		}
+	}
+
+	if aiLooksLikeNoRotationQuestion(folded) {
+		lines := empresaAISafeProductosSinRotacion(dbConn, empresaID, availableTables, 30, 5)
+		if len(lines) > 0 {
+			intents = append(intents, empresaAISafeIntent{Name: "CONSULTA_SEGURA_PRODUCTOS_SIN_ROTACION_30D", Lines: lines})
+		}
+	}
+
+	if aiLooksLikeInventoryQuestion(folded) {
+		lines := empresaAIAlertasInventario(dbConn, empresaID, availableTables, 5)
+		if len(lines) > 0 {
+			intents = append(intents, empresaAISafeIntent{Name: "CONSULTA_SEGURA_ALERTAS_INVENTARIO", Lines: lines})
+		}
+	}
+
+	if aiLooksLikeSalesQuestion(folded) {
+		lines := empresaAIVentasRecientes(dbConn, empresaID, availableTables, 5)
+		if len(lines) > 0 {
+			intents = append(intents, empresaAISafeIntent{Name: "CONSULTA_SEGURA_VENTAS_RECIENTES", Lines: lines})
+		}
+	}
+
+	if aiLooksLikeFinanceQuestion(folded) {
+		lines := empresaAISafeMovimientosFinancieros(dbConn, empresaID, availableTables, folded, 5)
+		if len(lines) == 0 {
+			lines = empresaAIFinanzasRecientes(dbConn, empresaID, availableTables, 5)
+		}
+		if len(lines) > 0 {
+			intents = append(intents, empresaAISafeIntent{Name: "CONSULTA_SEGURA_FINANZAS", Lines: lines})
+		}
+	}
+
+	if len(intents) == 0 {
+		return "", nil
+	}
+
+	var b strings.Builder
+	b.WriteString("CONSULTAS_SEGURAS_RESUELTAS\n")
+	for _, intent := range intents {
+		writeAIContextSection(&b, intent.Name, intent.Lines)
+	}
+	return b.String(), nil
+}
+
+func buildSuperAISafeIntentContext(dbConn *sql.DB, pregunta string) (string, error) {
+	folded := aiFoldText(pregunta)
+	if strings.TrimSpace(folded) == "" {
+		return "", nil
+	}
+	availableTables, err := aiAvailableTables(dbConn, []string{
+		"empresas",
+		"productos",
+		"inventario_existencias",
+		"carritos_compras",
+		"empresa_finanzas_movimientos",
+	})
+	if err != nil {
+		return "", err
+	}
+
+	intents := make([]empresaAISafeIntent, 0, 3)
+	if aiLooksLikeSalesQuestion(folded) {
+		if lines := superAIVentasRecientes(dbConn, availableTables, 5); len(lines) > 0 {
+			intents = append(intents, empresaAISafeIntent{Name: "CONSULTA_SEGURA_GLOBAL_VENTAS_RECIENTES", Lines: lines})
+		}
+		if lines := superAITopEmpresasVentas(dbConn, availableTables, 5); len(lines) > 0 {
+			intents = append(intents, empresaAISafeIntent{Name: "CONSULTA_SEGURA_GLOBAL_EMPRESAS_TOP_VENTAS", Lines: lines})
+		}
+	}
+	if aiLooksLikeInventoryQuestion(folded) || aiLooksLikeProductQuestion(folded) {
+		if lines := superAIAlertasInventario(dbConn, availableTables, 5); len(lines) > 0 {
+			intents = append(intents, empresaAISafeIntent{Name: "CONSULTA_SEGURA_GLOBAL_ALERTAS_INVENTARIO", Lines: lines})
+		}
+	}
+	if len(intents) == 0 {
+		return "", nil
+	}
+	var b strings.Builder
+	b.WriteString("CONSULTAS_SEGURAS_GLOBALES_RESUELTAS\n")
+	for _, intent := range intents {
+		writeAIContextSection(&b, intent.Name, intent.Lines)
+	}
+	return b.String(), nil
+}
+
+func aiLooksLikeClientQuestion(folded string) bool {
+	return strings.Contains(folded, "cliente") || strings.Contains(folded, "clientes")
+}
+
+func aiLooksLikeProductQuestion(folded string) bool {
+	return strings.Contains(folded, "producto") || strings.Contains(folded, "productos") || strings.Contains(folded, "articulo") || strings.Contains(folded, "item")
+}
+
+func aiLooksLikeInventoryQuestion(folded string) bool {
+	return strings.Contains(folded, "inventario") || strings.Contains(folded, "stock") || strings.Contains(folded, "existencia") || strings.Contains(folded, "reabaste")
+}
+
+func aiLooksLikeSalesQuestion(folded string) bool {
+	return strings.Contains(folded, "venta") || strings.Contains(folded, "ventas") || strings.Contains(folded, "vend")
+}
+
+func aiLooksLikeFinanceQuestion(folded string) bool {
+	return strings.Contains(folded, "finanza") || strings.Contains(folded, "flujo de caja") || strings.Contains(folded, "ingreso") || strings.Contains(folded, "egreso") || strings.Contains(folded, "gasto")
+}
+
+func aiLooksLikeNoRotationQuestion(folded string) bool {
+	return strings.Contains(folded, "sin rotacion") || strings.Contains(folded, "no se vende") || strings.Contains(folded, "no se vend") || strings.Contains(folded, "poca rotacion") || strings.Contains(folded, "sin movimiento")
+}
+
+func aiFoldText(v string) string {
+	v = strings.ToLower(strings.TrimSpace(v))
+	replacer := strings.NewReplacer(
+		"á", "a",
+		"é", "e",
+		"í", "i",
+		"ó", "o",
+		"ú", "u",
+		"ü", "u",
+		"ñ", "n",
+	)
+	v = replacer.Replace(v)
+	return strings.NewReplacer(
+		"á", "a",
+		"é", "e",
+		"í", "i",
+		"ó", "o",
+		"ú", "u",
+		"ü", "u",
+		"ñ", "n",
+	).Replace(v)
+}
+
+var aiQuotedTermRE = regexp.MustCompile(`["']([^"']{2,80})["']`)
+
+func aiExtractSearchTerms(pregunta string) []string {
+	matches := aiQuotedTermRE.FindAllStringSubmatch(pregunta, 4)
+	seen := map[string]struct{}{}
+	out := make([]string, 0, len(matches))
+	for _, match := range matches {
+		if len(match) < 2 {
+			continue
+		}
+		term := strings.TrimSpace(match[1])
+		if term == "" {
+			continue
+		}
+		folded := aiFoldText(term)
+		if len([]rune(folded)) < 2 {
+			continue
+		}
+		if _, ok := seen[folded]; ok {
+			continue
+		}
+		seen[folded] = struct{}{}
+		out = append(out, term)
+	}
+	return out
+}
+
+func aiLikePattern(term string) string {
+	term = strings.TrimSpace(term)
+	if term == "" {
+		return "%"
+	}
+	return "%" + aiFoldText(term) + "%"
+}
+
+func empresaAISafeVentasPorCliente(dbConn *sql.DB, empresaID int64, availableTables, terms []string, limit int) []string {
+	if !slicesContain(availableTables, "clientes") || !slicesContain(availableTables, "carritos_compras") {
+		return nil
+	}
+	query := `SELECT
+		COALESCE(NULLIF(cl.nombre_razon_social, ''), NULLIF(cl.numero_documento, ''), 'cliente_sin_nombre') AS cliente_nombre,
+		COUNT(c.id) AS ventas,
+		COALESCE(SUM(c.total), 0) AS total_vendido,
+		COALESCE(MAX(COALESCE(c.pagado_en, c.fecha_actualizacion, c.fecha_creacion, '')), '') AS ultima_venta
+	FROM clientes cl
+	LEFT JOIN carritos_compras c
+	  ON c.cliente_id = cl.id
+	 AND c.empresa_id = cl.empresa_id
+	 AND LOWER(COALESCE(c.estado_carrito, '')) IN ('cerrado', 'pagado', 'finalizado')
+	WHERE cl.empresa_id = ?`
+	args := []interface{}{empresaID}
+	if len(terms) > 0 {
+		query += ` AND (LOWER(COALESCE(cl.nombre_razon_social, '')) LIKE ? OR LOWER(COALESCE(cl.numero_documento, '')) LIKE ?)`
+		pattern := aiLikePattern(terms[0])
+		args = append(args, pattern, pattern)
+	}
+	query += ` GROUP BY COALESCE(NULLIF(cl.nombre_razon_social, ''), NULLIF(cl.numero_documento, ''), 'cliente_sin_nombre')
+	ORDER BY total_vendido DESC, ventas DESC
+	LIMIT ?`
+	args = append(args, limit)
+
+	rows, err := querySQLCompat(dbConn, query, args...)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+	out := make([]string, 0, limit)
+	for rows.Next() {
+		var nombre, fecha string
+		var ventas int64
+		var total float64
+		if err := rows.Scan(&nombre, &ventas, &total, &fecha); err != nil {
+			return nil
+		}
+		out = append(out, fmt.Sprintf("%s | ventas=%d | total=%.2f | ultima_venta=%s", strings.TrimSpace(nombre), ventas, total, safeAIValue(fecha)))
+	}
+	return out
+}
+
+func empresaAISafeProductoDetalle(dbConn *sql.DB, empresaID int64, availableTables, terms []string, limit int) []string {
+	if !slicesContain(availableTables, "productos") || len(terms) == 0 {
+		return nil
+	}
+	productColumns, err := aiAvailableColumns(dbConn, "productos", []string{"sku", "codigo_barras", "stock_minimo"})
+	if err != nil {
+		return nil
+	}
+	itemColumns := []string{}
+	if slicesContain(availableTables, "carrito_compra_items") {
+		itemColumns, err = aiAvailableColumns(dbConn, "carrito_compra_items", []string{"codigo_item", "descripcion", "cantidad", "total_linea"})
+		if err != nil {
+			return nil
+		}
+	}
+
+	hasSKU := slicesContain(productColumns, "sku")
+	hasCodigoBarras := slicesContain(productColumns, "codigo_barras")
+	hasStockMinimo := slicesContain(productColumns, "stock_minimo")
+	hasVentaItems := slicesContain(availableTables, "carrito_compra_items") &&
+		slicesContain(availableTables, "carritos_compras") &&
+		slicesContain(itemColumns, "descripcion")
+
+	skuSelect := `'sin_sku'`
+	if hasSKU {
+		skuSelect = `COALESCE(NULLIF(p.sku, ''), 'sin_sku')`
+	}
+	stockMinSelect := `0`
+	if hasStockMinimo {
+		stockMinSelect = `COALESCE(p.stock_minimo, 0)`
+	}
+
+	ventasJoin := `LEFT JOIN (
+		SELECT '' AS producto_nombre, '' AS producto_codigo, 0 AS cantidad_vendida, 0 AS total_vendido
+	) v ON 1=0`
+	args := []interface{}{}
+	if hasVentaItems {
+		codigoItemExpr := `''`
+		if slicesContain(itemColumns, "codigo_item") {
+			codigoItemExpr = `LOWER(TRIM(COALESCE(ci.codigo_item, '')))`
+		}
+		cantidadExpr := `0`
+		if slicesContain(itemColumns, "cantidad") {
+			cantidadExpr = `COALESCE(SUM(ci.cantidad), 0)`
+		}
+		totalExpr := `0`
+		if slicesContain(itemColumns, "total_linea") {
+			totalExpr = `COALESCE(SUM(ci.total_linea), 0)`
+		}
+		productMatchExtra := ""
+		if hasSKU {
+			productMatchExtra = ` OR (COALESCE(p.sku, '') <> '' AND v.producto_codigo = LOWER(TRIM(COALESCE(p.sku, ''))))`
+		}
+		ventasJoin = fmt.Sprintf(`LEFT JOIN (
+			SELECT
+				LOWER(TRIM(COALESCE(ci.descripcion, ''))) AS producto_nombre,
+				%s AS producto_codigo,
+				%s AS cantidad_vendida,
+				%s AS total_vendido
+			FROM carrito_compra_items ci
+			JOIN carritos_compras c ON c.id = ci.carrito_id AND c.empresa_id = ci.empresa_id
+			WHERE ci.empresa_id = ?
+			  AND LOWER(COALESCE(c.estado_carrito, '')) IN ('cerrado', 'pagado', 'finalizado')
+			GROUP BY LOWER(TRIM(COALESCE(ci.descripcion, ''))), %s
+		) v ON v.producto_nombre = LOWER(TRIM(COALESCE(p.nombre, '')))%s`,
+			codigoItemExpr, cantidadExpr, totalExpr, codigoItemExpr, productMatchExtra)
+		args = append(args, empresaID)
+	}
+
+	pattern := aiLikePattern(terms[0])
+	whereParts := []string{`LOWER(COALESCE(p.nombre, '')) LIKE ?`}
+	args = append(args, empresaID, pattern)
+	if hasSKU {
+		whereParts = append(whereParts, `LOWER(COALESCE(p.sku, '')) LIKE ?`)
+		args = append(args, pattern)
+	}
+	if hasCodigoBarras {
+		whereParts = append(whereParts, `LOWER(COALESCE(p.codigo_barras, '')) LIKE ?`)
+		args = append(args, pattern)
+	}
+	args = append(args, limit)
+
+	query := fmt.Sprintf(`SELECT
+		COALESCE(p.nombre, ''),
+		%s,
+		COALESCE(SUM(ie.cantidad), 0) AS stock_actual,
+		%s AS stock_minimo,
+		COALESCE(MAX(v.cantidad_vendida), 0),
+		COALESCE(MAX(v.total_vendido), 0)
+	FROM productos p
+	LEFT JOIN inventario_existencias ie
+	  ON ie.producto_id = p.id
+	 AND ie.empresa_id = p.empresa_id
+	%s
+	WHERE p.empresa_id = ?
+	  AND (%s)
+	GROUP BY p.id, p.nombre, %s, %s
+	ORDER BY COALESCE(MAX(v.total_vendido), 0) DESC, p.nombre ASC
+	LIMIT ?`, skuSelect, stockMinSelect, ventasJoin, strings.Join(whereParts, " OR "), skuSelect, stockMinSelect)
+
+	rows, err := querySQLCompat(dbConn, query, args...)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+	out := make([]string, 0, limit)
+	for rows.Next() {
+		var nombre, sku string
+		var stock, minimo, cantidadVendida, totalVendido float64
+		if err := rows.Scan(&nombre, &sku, &stock, &minimo, &cantidadVendida, &totalVendido); err != nil {
+			return nil
+		}
+		out = append(out, fmt.Sprintf("%s | sku=%s | stock=%.2f | stock_minimo=%.2f | vendido=%.2f | total_vendido=%.2f", strings.TrimSpace(nombre), safeAIValue(sku), stock, minimo, cantidadVendida, totalVendido))
+	}
+	return out
+}
+
+func empresaAISafeProductosSinRotacion(dbConn *sql.DB, empresaID int64, availableTables []string, days, limit int) []string {
+	if !slicesContain(availableTables, "productos") || !slicesContain(availableTables, "carrito_compra_items") || !slicesContain(availableTables, "carritos_compras") {
+		return nil
+	}
+	productColumns, err := aiAvailableColumns(dbConn, "productos", []string{"sku", "stock_minimo", "estado"})
+	if err != nil {
+		return nil
+	}
+	itemColumns, err := aiAvailableColumns(dbConn, "carrito_compra_items", []string{"codigo_item", "descripcion"})
+	if err != nil {
+		return nil
+	}
+	if days <= 0 {
+		days = 30
+	}
+	stockMinSelect := `0`
+	if slicesContain(productColumns, "stock_minimo") {
+		stockMinSelect = `COALESCE(p.stock_minimo, 0)`
+	}
+	estadoFilter := ""
+	if slicesContain(productColumns, "estado") {
+		estadoFilter = `AND LOWER(COALESCE(p.estado, 'activo')) = 'activo'`
+	}
+	productCodeMatch := ""
+	if slicesContain(productColumns, "sku") && slicesContain(itemColumns, "codigo_item") {
+		productCodeMatch = `OR (COALESCE(p.sku, '') <> '' AND LOWER(TRIM(COALESCE(ci.codigo_item, ''))) = LOWER(TRIM(COALESCE(p.sku, ''))))`
+	}
+	interval := fmt.Sprintf("-%d day", days)
+	rows, err := querySQLCompat(dbConn, fmt.Sprintf(`SELECT
+		COALESCE(p.nombre, ''),
+		COALESCE(SUM(ie.cantidad), 0) AS stock_actual,
+		%s AS stock_minimo
+	FROM productos p
+	LEFT JOIN inventario_existencias ie
+	  ON ie.producto_id = p.id
+	 AND ie.empresa_id = p.empresa_id
+	WHERE p.empresa_id = ?
+	  %s
+	  AND NOT EXISTS (
+		SELECT 1
+		FROM carrito_compra_items ci
+		JOIN carritos_compras c ON c.id = ci.carrito_id AND c.empresa_id = ci.empresa_id
+		WHERE ci.empresa_id = p.empresa_id
+		  AND LOWER(COALESCE(c.estado_carrito, '')) IN ('cerrado', 'pagado', 'finalizado')
+		  AND date(COALESCE(c.pagado_en, c.fecha_actualizacion, c.fecha_creacion, '')) >= date('now', ?)
+		  AND (
+			LOWER(TRIM(COALESCE(ci.descripcion, ''))) = LOWER(TRIM(COALESCE(p.nombre, '')))
+			%s
+		  )
+	  )
+	GROUP BY p.id, p.nombre, %s
+	ORDER BY stock_actual DESC, p.nombre ASC
+	LIMIT ?`, stockMinSelect, estadoFilter, productCodeMatch, stockMinSelect), empresaID, interval, limit)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+	out := make([]string, 0, limit)
+	for rows.Next() {
+		var nombre string
+		var stock, minimo float64
+		if err := rows.Scan(&nombre, &stock, &minimo); err != nil {
+			return nil
+		}
+		out = append(out, fmt.Sprintf("%s | stock=%.2f | stock_minimo=%.2f | sin_ventas_%dd=true", strings.TrimSpace(nombre), stock, minimo, days))
+	}
+	return out
+}
+
+func empresaAISafeMovimientosFinancieros(dbConn *sql.DB, empresaID int64, availableTables []string, folded string, limit int) []string {
+	if !slicesContain(availableTables, "empresa_finanzas_movimientos") {
+		return nil
+	}
+	tipo := ""
+	if strings.Contains(folded, "ingreso") {
+		tipo = "ingreso"
+	} else if strings.Contains(folded, "egreso") || strings.Contains(folded, "gasto") {
+		tipo = "egreso"
+	}
+
+	query := `SELECT
+		COALESCE(tipo_movimiento, ''),
+		COALESCE(NULLIF(concepto, ''), NULLIF(descripcion, ''), NULLIF(numero_comprobante, ''), 'movimiento'),
+		COALESCE(NULLIF(total_neto, 0), NULLIF(total, 0), monto, 0),
+		COALESCE(fecha_movimiento, fecha_actualizacion, fecha_creacion, '')
+	FROM empresa_finanzas_movimientos
+	WHERE empresa_id = ?
+	  AND LOWER(COALESCE(estado, 'activo')) = 'activo'`
+	args := []interface{}{empresaID}
+	if tipo != "" {
+		query += ` AND LOWER(COALESCE(tipo_movimiento, '')) = ?`
+		args = append(args, tipo)
+	}
+	query += ` ORDER BY COALESCE(fecha_movimiento, fecha_actualizacion, fecha_creacion, '') DESC, id DESC
+	LIMIT ?`
+	args = append(args, limit)
+	rows, err := querySQLCompat(dbConn, query, args...)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+	out := make([]string, 0, limit)
+	for rows.Next() {
+		var tipoMov, concepto, fecha string
+		var total float64
+		if err := rows.Scan(&tipoMov, &concepto, &total, &fecha); err != nil {
+			return nil
+		}
+		out = append(out, fmt.Sprintf("%s | concepto=%s | total=%.2f | fecha=%s", safeAIValue(tipoMov), safeAIValue(concepto), total, safeAIValue(fecha)))
+	}
+	return out
 }
 
 func aiNormalizeProvider(v string) string {

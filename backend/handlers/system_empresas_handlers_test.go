@@ -629,7 +629,7 @@ func TestSuperConfigBackupHandlerRestoreSensitivePlaintextRequiresEncryptionKey(
 	}
 }
 
-func TestAIModelsConfigHandlerSaveDeepSeekEncrypted(t *testing.T) {
+func TestAIModelsConfigHandlerSaveGeminiEncrypted(t *testing.T) {
 	rawKey := make([]byte, 32)
 	for i := range rawKey {
 		rawKey[i] = byte(77 + i)
@@ -640,7 +640,7 @@ func TestAIModelsConfigHandlerSaveDeepSeekEncrypted(t *testing.T) {
 	ensureSuperConfigSchemaForSuper(t, dbSuper)
 
 	h := AIModelsConfigHandler(dbSuper)
-	body := `{"credentials":[{"model_id":"deepseek:deepseek-chat","api_key":"sk_deepseek_prueba"}]}`
+	body := `{"credentials":[{"model_id":"google:gemini-2.0-flash","api_key":"gemini_test_key"}]}`
 	req := httptest.NewRequest(http.MethodPut, "/super/api/config/ai", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Admin-Email", "super@empresa.com")
@@ -651,35 +651,35 @@ func TestAIModelsConfigHandlerSaveDeepSeekEncrypted(t *testing.T) {
 		t.Fatalf("expected status %d on ai save, got %d body=%s", http.StatusOK, rr.Code, rr.Body.String())
 	}
 
-	stored, encrypted, err := dbpkg.GetConfigValue(dbSuper, "ai.model.deepseek.deepseek_chat.api_key")
+	stored, encrypted, err := dbpkg.GetConfigValue(dbSuper, "ai.model.google.gemini_2_0_flash.api_key")
 	if err != nil {
-		t.Fatalf("read ai.model.deepseek.deepseek_chat.api_key: %v", err)
+		t.Fatalf("read ai.model.google.gemini_2_0_flash.api_key: %v", err)
 	}
 	if !encrypted {
-		t.Fatal("expected DeepSeek model key to be encrypted")
+		t.Fatal("expected Gemini model key to be encrypted")
 	}
 
 	decrypted, decErr := utils.DecryptString(stored)
 	if decErr != nil {
-		t.Fatalf("decrypt DeepSeek model key: %v", decErr)
+		t.Fatalf("decrypt Gemini model key: %v", decErr)
 	}
-	if decrypted != "sk_deepseek_prueba" {
-		t.Fatalf("expected decrypted DeepSeek key %q, got %q", "sk_deepseek_prueba", decrypted)
+	if decrypted != "gemini_test_key" {
+		t.Fatalf("expected decrypted Gemini key %q, got %q", "gemini_test_key", decrypted)
 	}
 
-	providerStored, providerEncrypted, err := dbpkg.GetConfigValue(dbSuper, "ai.provider.deepseek.api_key")
+	providerStored, providerEncrypted, err := dbpkg.GetConfigValue(dbSuper, "ai.provider.google.api_key")
 	if err != nil {
-		t.Fatalf("read ai.provider.deepseek.api_key: %v", err)
+		t.Fatalf("read ai.provider.google.api_key: %v", err)
 	}
 	if !providerEncrypted {
-		t.Fatal("expected provider DeepSeek key to be encrypted")
+		t.Fatal("expected provider Gemini key to be encrypted")
 	}
 	providerDecrypted, providerDecErr := utils.DecryptString(providerStored)
 	if providerDecErr != nil {
-		t.Fatalf("decrypt provider DeepSeek key: %v", providerDecErr)
+		t.Fatalf("decrypt provider Gemini key: %v", providerDecErr)
 	}
-	if providerDecrypted != "sk_deepseek_prueba" {
-		t.Fatalf("expected decrypted provider DeepSeek key %q, got %q", "sk_deepseek_prueba", providerDecrypted)
+	if providerDecrypted != "gemini_test_key" {
+		t.Fatalf("expected decrypted provider Gemini key %q, got %q", "gemini_test_key", providerDecrypted)
 	}
 
 	getReq := httptest.NewRequest(http.MethodGet, "/super/api/config/ai", nil)
@@ -695,34 +695,25 @@ func TestAIModelsConfigHandlerSaveDeepSeekEncrypted(t *testing.T) {
 		t.Fatalf("decode ai get response: %v body=%s", err, getRR.Body.String())
 	}
 	modelos, ok := getBody["modelos"].([]interface{})
-	if !ok || len(modelos) < 2 {
+	if !ok || len(modelos) != 1 {
 		t.Fatalf("expected modelos in ai get response, got %T", getBody["modelos"])
 	}
-	seenDeepSeek := false
-	seenAmbis := false
+	seenGemini := false
 	for _, raw := range modelos {
 		item, ok := raw.(map[string]interface{})
 		if !ok {
 			continue
 		}
 		switch item["model_id"] {
-		case "deepseek:deepseek-chat":
-			seenDeepSeek = true
+		case "google:gemini-2.0-flash":
+			seenGemini = true
 			if masked, _ := item["masked"].(string); masked != "********" {
-				t.Fatalf("expected masked value ******** for deepseek, got %q", masked)
-			}
-		case "ollama:ambis":
-			seenAmbis = true
-			if configured, _ := item["configured"].(bool); !configured {
-				t.Fatal("expected ollama:ambis to appear configured in super AI catalog")
+				t.Fatalf("expected masked value ******** for gemini, got %q", masked)
 			}
 		}
 	}
-	if !seenDeepSeek {
-		t.Fatal("expected deepseek model in ai get response")
-	}
-	if !seenAmbis {
-		t.Fatal("expected ollama ambis model in ai get response")
+	if !seenGemini {
+		t.Fatal("expected gemini model in ai get response")
 	}
 }
 
@@ -731,7 +722,7 @@ func TestAIModelsConfigHandlerSavesProviderEnabledState(t *testing.T) {
 	ensureSuperConfigSchemaForSuper(t, dbSuper)
 
 	h := AIModelsConfigHandler(dbSuper)
-	body := `{"provider_enabled":{"deepseek":false,"ollama":true}}`
+	body := `{"provider_enabled":{"google":false}}`
 	req := httptest.NewRequest(http.MethodPut, "/super/api/config/ai", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Admin-Email", "super@empresa.com")
@@ -742,12 +733,12 @@ func TestAIModelsConfigHandlerSavesProviderEnabledState(t *testing.T) {
 		t.Fatalf("expected status %d on ai provider save, got %d body=%s", http.StatusOK, rr.Code, rr.Body.String())
 	}
 
-	deepseekEnabled, _, err := dbpkg.GetConfigValue(dbSuper, "ai.provider.deepseek.enabled")
+	deepseekEnabled, _, err := dbpkg.GetConfigValue(dbSuper, "ai.provider.google.enabled")
 	if err != nil {
-		t.Fatalf("read ai.provider.deepseek.enabled: %v", err)
+		t.Fatalf("read ai.provider.google.enabled: %v", err)
 	}
 	if strings.TrimSpace(deepseekEnabled) != "0" {
-		t.Fatalf("expected deepseek enabled flag 0, got %q", deepseekEnabled)
+		t.Fatalf("expected google enabled flag 0, got %q", deepseekEnabled)
 	}
 
 	getReq := httptest.NewRequest(http.MethodGet, "/super/api/config/ai", nil)
@@ -771,9 +762,9 @@ func TestAIModelsConfigHandlerSavesProviderEnabledState(t *testing.T) {
 		if !ok {
 			continue
 		}
-		if item["model_id"] == "deepseek:deepseek-chat" {
+		if item["model_id"] == "google:gemini-2.0-flash" {
 			if enabled, _ := item["enabled"].(bool); enabled {
-				t.Fatal("expected deepseek to appear disabled in ai catalog")
+				t.Fatal("expected gemini to appear disabled in ai catalog")
 			}
 		}
 	}

@@ -46,7 +46,7 @@
     <section class="card empresa-section">
       <h1>Configuración de estaciones</h1>
       <p id="empresaInfo">Empresa: cargando...</p>
-      <p class="form-help">Define cuántas estaciones deseas, su nombre y si usarán venta simple.</p>
+      <p class="form-help">Define cuántas estaciones deseas, su nombre y cómo se personaliza el carrito unificado en cada una.</p>
       <div class="form" style="margin-top:8px">
         <div class="form-row">
           <div class="form-col">
@@ -136,19 +136,148 @@
               <th>#</th>
               <th>Nombre de estación</th>
               <th>
-                Venta simple
+                Usa config global
                 <br>
-                <label><input id="masterVentaSimple" type="checkbox" title="Marcar/desmarcar venta simple para todas"></label>
+                <label><input id="masterCarritoGlobal" type="checkbox" title="Marcar/desmarcar uso de configuración global para todas"></label>
               </th>
               <th>
                 Mostrar total
                 <br>
                 <label><input id="masterMostrarTotal" type="checkbox" title="Marcar/desmarcar mostrar total para todas"></label>
               </th>
+              <th>Carrito unificado</th>
             </tr>
           </thead>
           <tbody></tbody>
         </table>
+      </div>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Configuración del carrito unificado</h2>
+        <div class="form-actions">
+          <button id="btnGuardarCarritoConfig" class="btn secondary" type="button">Guardar configuración seleccionada</button>
+          <button id="btnAplicarCarritoGlobal" class="btn secondary" type="button">Aplicar global a todas</button>
+        </div>
+      </div>
+      <p class="form-help">Todas las estaciones usarán la misma página de carrito. Desde aquí decides qué bloques se ven en todas o en una estación específica.</p>
+
+      <div class="form" style="margin-top:8px;">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="carritoConfigTarget">Configurar para</label>
+            <select id="carritoConfigTarget" class="form-input"></select>
+          </div>
+          <div class="form-col" id="carritoConfigUseGlobalCol">
+            <label class="form-label" for="carritoConfigUseGlobal">Herencia</label>
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoConfigUseGlobal" type="checkbox" checked>
+              Usar la configuración global de la empresa en esta estación
+            </label>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgBuscarProductos" type="checkbox" checked>
+              Mostrar botón de buscar productos
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgBusquedaCatalogo" type="checkbox" checked>
+              Mostrar búsqueda inteligente de catálogo
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgCodigoManual" type="checkbox" checked>
+              Mostrar código y referencia manual del item
+            </label>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgObservaciones" type="checkbox" checked>
+              Mostrar observaciones del item
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgCliente" type="checkbox" checked>
+              Mostrar selector de cliente del carrito
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgImpuestos" type="checkbox" checked>
+              Mostrar descuento e impuestos del item
+            </label>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgLector" type="checkbox" checked>
+              Mostrar lector de código de barras
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgResumenProductos" type="checkbox" checked>
+              Mostrar tabla resumen de productos y combos
+            </label>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgDescuentos" type="checkbox" checked>
+              Mostrar descuentos en el panel de cobro
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgPropina" type="checkbox" checked>
+              Mostrar propina en el panel de cobro
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgComision" type="checkbox" checked>
+              Mostrar comisión por servicio
+            </label>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgPagoMixto" type="checkbox" checked>
+              Permitir pago mixto
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgResumenTotales" type="checkbox" checked>
+              Mostrar resumen total del carrito
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgDesgloseCobro" type="checkbox" checked>
+              Mostrar desglose del cobro
+            </label>
+          </div>
+        </div>
+
+        <div id="carritoConfigMsg" class="form-help"></div>
       </div>
     </section>
   </div>
@@ -222,6 +351,62 @@
 
     function normalizeText(v) {
       return String(v == null ? '' : v).trim().toLowerCase();
+    }
+
+    function defaultUnifiedCartConfig() {
+      return {
+        mostrar_boton_buscar_productos: true,
+        mostrar_busqueda_catalogo: true,
+        mostrar_codigo_manual_item: true,
+        mostrar_observaciones_item: true,
+        mostrar_selector_cliente: true,
+        mostrar_impuestos_item: true,
+        mostrar_lector_codigo_barras: true,
+        mostrar_descuentos: true,
+        mostrar_propina: true,
+        mostrar_comision: true,
+        permitir_pago_mixto: true,
+        mostrar_resumen_totales_carrito: true,
+        mostrar_desglose_cobro: true,
+        mostrar_resumen_productos: true
+      };
+    }
+
+    function normalizeUnifiedCartConfig(raw) {
+      var base = defaultUnifiedCartConfig();
+      var src = raw && typeof raw === 'object' ? raw : {};
+      return {
+        mostrar_boton_buscar_productos: src.mostrar_boton_buscar_productos === undefined ? base.mostrar_boton_buscar_productos : toBool(src.mostrar_boton_buscar_productos),
+        mostrar_busqueda_catalogo: src.mostrar_busqueda_catalogo === undefined ? base.mostrar_busqueda_catalogo : toBool(src.mostrar_busqueda_catalogo),
+        mostrar_codigo_manual_item: src.mostrar_codigo_manual_item === undefined ? base.mostrar_codigo_manual_item : toBool(src.mostrar_codigo_manual_item),
+        mostrar_observaciones_item: src.mostrar_observaciones_item === undefined ? base.mostrar_observaciones_item : toBool(src.mostrar_observaciones_item),
+        mostrar_selector_cliente: src.mostrar_selector_cliente === undefined ? base.mostrar_selector_cliente : toBool(src.mostrar_selector_cliente),
+        mostrar_impuestos_item: src.mostrar_impuestos_item === undefined ? base.mostrar_impuestos_item : toBool(src.mostrar_impuestos_item),
+        mostrar_lector_codigo_barras: src.mostrar_lector_codigo_barras === undefined ? base.mostrar_lector_codigo_barras : toBool(src.mostrar_lector_codigo_barras),
+        mostrar_descuentos: src.mostrar_descuentos === undefined ? base.mostrar_descuentos : toBool(src.mostrar_descuentos),
+        mostrar_propina: src.mostrar_propina === undefined ? base.mostrar_propina : toBool(src.mostrar_propina),
+        mostrar_comision: src.mostrar_comision === undefined ? base.mostrar_comision : toBool(src.mostrar_comision),
+        permitir_pago_mixto: src.permitir_pago_mixto === undefined ? base.permitir_pago_mixto : toBool(src.permitir_pago_mixto),
+        mostrar_resumen_totales_carrito: src.mostrar_resumen_totales_carrito === undefined ? base.mostrar_resumen_totales_carrito : toBool(src.mostrar_resumen_totales_carrito),
+        mostrar_desglose_cobro: src.mostrar_desglose_cobro === undefined ? base.mostrar_desglose_cobro : toBool(src.mostrar_desglose_cobro),
+        mostrar_resumen_productos: src.mostrar_resumen_productos === undefined ? base.mostrar_resumen_productos : toBool(src.mostrar_resumen_productos)
+      };
+    }
+
+    function normalizeStationCarritoConfig(raw) {
+      var src = raw && typeof raw === 'object' ? raw : {};
+      var nested = src.configuracion && typeof src.configuracion === 'object' ? src.configuracion : src;
+      return {
+        usar_configuracion_global: src.usar_configuracion_global === undefined ? true : toBool(src.usar_configuracion_global),
+        configuracion: normalizeUnifiedCartConfig(nested)
+      };
+    }
+
+    function setCarritoConfigMessage(text, type) {
+      var box = document.getElementById('carritoConfigMsg');
+      if (!box) return;
+      box.textContent = text || '';
+      box.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'form-help');
     }
 
     function normalizeColorHex(v, fallback) {
@@ -432,8 +617,8 @@
         out.push({
           id: i + 1,
           nombre: nombre || ('Estación ' + (i + 1)),
-          venta_simple_habilitada: toBool(current.venta_simple_habilitada) || toBool(current.modo_venta_simple),
-          mostrar_total: current.mostrar_total === undefined ? true : toBool(current.mostrar_total)
+          mostrar_total: current.mostrar_total === undefined ? true : toBool(current.mostrar_total),
+          carrito: normalizeStationCarritoConfig(current.carrito || current.carrito_ui)
         });
       }
 
@@ -452,7 +637,8 @@
         card_size: cardSize,
         caja_enabled: caja_enabled,
         youtube_enabled: youtube_enabled,
-        youtube_query: youtubeQuery
+        youtube_query: youtubeQuery,
+        carrito_ui_global: normalizeUnifiedCartConfig(cfg && (cfg.carrito_ui_global || cfg.carrito || cfg.carrito_configuracion_global))
       };
     }
 
@@ -503,10 +689,133 @@
       });
     }
 
+    function getStationByID(cfg, stationID) {
+      if (!cfg || !Array.isArray(cfg.estaciones)) return null;
+      return cfg.estaciones.find(function(est) {
+        return Number(est && est.id) === Number(stationID);
+      }) || null;
+    }
+
+    function fillCarritoConfigTargetOptions(cfg) {
+      var select = document.getElementById('carritoConfigTarget');
+      if (!select) return;
+      var stations = cfg && Array.isArray(cfg.estaciones) ? cfg.estaciones : [];
+      select.innerHTML = '<option value="0">Configuración global para todas las estaciones</option>' + stations.map(function(est) {
+        return '<option value="' + Number(est.id || 0) + '">' + sanitize(est.nombre || ('Estación ' + est.id)) + '</option>';
+      }).join('');
+    }
+
+    function setCarritoConfigFieldsDisabled(disabled) {
+      [
+        'carritoCfgBuscarProductos',
+        'carritoCfgBusquedaCatalogo',
+        'carritoCfgCodigoManual',
+        'carritoCfgObservaciones',
+        'carritoCfgCliente',
+        'carritoCfgImpuestos',
+        'carritoCfgLector',
+        'carritoCfgResumenProductos',
+        'carritoCfgDescuentos',
+        'carritoCfgPropina',
+        'carritoCfgComision',
+        'carritoCfgPagoMixto',
+        'carritoCfgResumenTotales',
+        'carritoCfgDesgloseCobro'
+      ].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.disabled = !!disabled;
+      });
+    }
+
+    function setCarritoConfigForm(cfg, stationID) {
+      var targetID = Number(stationID || 0);
+      var globalCfg = normalizeUnifiedCartConfig(cfg && cfg.carrito_ui_global);
+      var station = getStationByID(cfg, targetID);
+      var stationCfg = station && station.carrito ? normalizeStationCarritoConfig(station.carrito) : normalizeStationCarritoConfig({});
+      var useGlobal = targetID > 0 ? !!stationCfg.usar_configuracion_global : false;
+      var resolved = targetID > 0 && !useGlobal ? stationCfg.configuracion : globalCfg;
+
+      document.getElementById('carritoConfigTarget').value = String(targetID);
+      document.getElementById('carritoConfigUseGlobal').checked = !!useGlobal;
+      document.getElementById('carritoConfigUseGlobalCol').style.display = targetID > 0 ? '' : 'none';
+      setCarritoConfigFieldsDisabled(targetID > 0 && useGlobal);
+
+      document.getElementById('carritoCfgBuscarProductos').checked = !!resolved.mostrar_boton_buscar_productos;
+      document.getElementById('carritoCfgBusquedaCatalogo').checked = !!resolved.mostrar_busqueda_catalogo;
+      document.getElementById('carritoCfgCodigoManual').checked = !!resolved.mostrar_codigo_manual_item;
+      document.getElementById('carritoCfgObservaciones').checked = !!resolved.mostrar_observaciones_item;
+      document.getElementById('carritoCfgCliente').checked = !!resolved.mostrar_selector_cliente;
+      document.getElementById('carritoCfgImpuestos').checked = !!resolved.mostrar_impuestos_item;
+      document.getElementById('carritoCfgLector').checked = !!resolved.mostrar_lector_codigo_barras;
+      document.getElementById('carritoCfgResumenProductos').checked = !!resolved.mostrar_resumen_productos;
+      document.getElementById('carritoCfgDescuentos').checked = !!resolved.mostrar_descuentos;
+      document.getElementById('carritoCfgPropina').checked = !!resolved.mostrar_propina;
+      document.getElementById('carritoCfgComision').checked = !!resolved.mostrar_comision;
+      document.getElementById('carritoCfgPagoMixto').checked = !!resolved.permitir_pago_mixto;
+      document.getElementById('carritoCfgResumenTotales').checked = !!resolved.mostrar_resumen_totales_carrito;
+      document.getElementById('carritoCfgDesgloseCobro').checked = !!resolved.mostrar_desglose_cobro;
+    }
+
+    function readCarritoConfigForm() {
+      return normalizeUnifiedCartConfig({
+        mostrar_boton_buscar_productos: document.getElementById('carritoCfgBuscarProductos').checked,
+        mostrar_busqueda_catalogo: document.getElementById('carritoCfgBusquedaCatalogo').checked,
+        mostrar_codigo_manual_item: document.getElementById('carritoCfgCodigoManual').checked,
+        mostrar_observaciones_item: document.getElementById('carritoCfgObservaciones').checked,
+        mostrar_selector_cliente: document.getElementById('carritoCfgCliente').checked,
+        mostrar_impuestos_item: document.getElementById('carritoCfgImpuestos').checked,
+        mostrar_lector_codigo_barras: document.getElementById('carritoCfgLector').checked,
+        mostrar_resumen_productos: document.getElementById('carritoCfgResumenProductos').checked,
+        mostrar_descuentos: document.getElementById('carritoCfgDescuentos').checked,
+        mostrar_propina: document.getElementById('carritoCfgPropina').checked,
+        mostrar_comision: document.getElementById('carritoCfgComision').checked,
+        permitir_pago_mixto: document.getElementById('carritoCfgPagoMixto').checked,
+        mostrar_resumen_totales_carrito: document.getElementById('carritoCfgResumenTotales').checked,
+        mostrar_desglose_cobro: document.getElementById('carritoCfgDesgloseCobro').checked
+      });
+    }
+
+    async function saveSelectedCarritoConfig() {
+      var current = await getConfigFromServer();
+      if (!current) current = normalizeConfig({ cantidad: 1, estaciones: [] });
+      var targetID = Number(document.getElementById('carritoConfigTarget').value || 0);
+      var nextConfig = readCarritoConfigForm();
+
+      if (targetID <= 0) {
+        current.carrito_ui_global = nextConfig;
+      } else {
+        var station = getStationByID(current, targetID);
+        if (!station) throw new Error('No se encontró la estación seleccionada para configurar el carrito.');
+        station.carrito = normalizeStationCarritoConfig({
+          usar_configuracion_global: document.getElementById('carritoConfigUseGlobal').checked,
+          configuracion: nextConfig
+        });
+      }
+
+      await saveConfigToServer(current);
+      fillCarritoConfigTargetOptions(current);
+      setCarritoConfigForm(current, targetID);
+      renderRows(current);
+      setCarritoConfigMessage('Configuración del carrito guardada correctamente.', 'success');
+    }
+
+    async function applyGlobalCarritoToAllStations() {
+      var current = await getConfigFromServer();
+      if (!current) current = normalizeConfig({ cantidad: 1, estaciones: [] });
+      current.estaciones.forEach(function(est) {
+        est.carrito = normalizeStationCarritoConfig({ usar_configuracion_global: true, configuracion: est.carrito && est.carrito.configuracion });
+      });
+      await saveConfigToServer(current);
+      fillCarritoConfigTargetOptions(current);
+      setCarritoConfigForm(current, 0);
+      renderRows(current);
+      setCarritoConfigMessage('Todas las estaciones heredarán la configuración global del carrito.', 'success');
+    }
+
     function updateMasterCheckboxes() {
-      var masterSimple = document.getElementById('masterVentaSimple');
+      var masterSimple = document.getElementById('masterCarritoGlobal');
       var masterMostrar = document.getElementById('masterMostrarTotal');
-      var simpleInputs = Array.prototype.slice.call(document.querySelectorAll('#estacionesTable tbody input[data-simple-idx]'));
+      var simpleInputs = Array.prototype.slice.call(document.querySelectorAll('#estacionesTable tbody input[data-global-idx]'));
       var totalInputs = Array.prototype.slice.call(document.querySelectorAll('#estacionesTable tbody input[data-mostrar-total-idx]'));
 
       if (masterSimple) {
@@ -539,7 +848,7 @@
     }
 
     function setAllVentaSimple(checked) {
-      var inputs = document.querySelectorAll('#estacionesTable tbody input[data-simple-idx]');
+      var inputs = document.querySelectorAll('#estacionesTable tbody input[data-global-idx]');
       for (var i = 0; i < inputs.length; i += 1) {
         inputs[i].checked = !!checked;
       }
@@ -563,24 +872,35 @@
       }
 
       tbody.innerHTML = cfg.estaciones.map(function (est, idx) {
+        var usaGlobal = !(est && est.carrito) || est.carrito.usar_configuracion_global !== false;
         return '<tr>' +
           '<td>' + (idx + 1) + '</td>' +
           '<td><input class="form-input" data-idx="' + idx + '" value="' + sanitize(est.nombre) + '"></td>' +
-          '<td><label><input type="checkbox" data-simple-idx="' + idx + '" ' + (est.venta_simple_habilitada ? 'checked' : '') + '> Activar ventas_simple</label></td>' +
+          '<td><label><input type="checkbox" data-global-idx="' + idx + '" ' + (usaGlobal ? 'checked' : '') + '> Heredar global</label></td>' +
           '<td><label><input type="checkbox" data-mostrar-total-idx="' + idx + '" ' + (est.mostrar_total !== false ? 'checked' : '') + '> Mostrar total</label></td>' +
+          '<td><button type="button" class="btn secondary" data-config-station="' + Number(est.id || 0) + '">Editar checks</button></td>' +
           '</tr>';
       }).join('');
 
-      var simple = tbody.querySelectorAll('input[data-simple-idx]');
+      var simple = tbody.querySelectorAll('input[data-global-idx]');
       var total = tbody.querySelectorAll('input[data-mostrar-total-idx]');
       for (var i = 0; i < simple.length; i += 1) simple[i].addEventListener('change', updateMasterCheckboxes);
       for (var j = 0; j < total.length; j += 1) total[j].addEventListener('change', updateMasterCheckboxes);
+      Array.prototype.forEach.call(tbody.querySelectorAll('button[data-config-station]'), function(btn) {
+        btn.addEventListener('click', function() {
+          var stationID = Number(btn.getAttribute('data-config-station') || 0);
+          document.getElementById('carritoConfigTarget').value = String(stationID);
+          setCarritoConfigForm(cfg, stationID);
+          setCarritoConfigMessage('Editando configuración del carrito para la estación seleccionada.', 'help');
+          document.getElementById('carritoConfigTarget').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+      });
       updateMasterCheckboxes();
     }
 
     function collectRowsConfig(current) {
       var inputs = document.querySelectorAll('#estacionesTable tbody input[data-idx]');
-      var simpleInputs = document.querySelectorAll('#estacionesTable tbody input[data-simple-idx]');
+      var simpleInputs = document.querySelectorAll('#estacionesTable tbody input[data-global-idx]');
       var totalInputs = document.querySelectorAll('#estacionesTable tbody input[data-mostrar-total-idx]');
 
       return current.estaciones.map(function (est, idx) {
@@ -591,22 +911,26 @@
         return {
           id: est.id,
           nombre: nombre || ('Estación ' + est.id),
-          venta_simple_habilitada: simpleInput ? !!simpleInput.checked : !!est.venta_simple_habilitada,
-          mostrar_total: totalInput ? !!totalInput.checked : (est.mostrar_total !== false)
+          mostrar_total: totalInput ? !!totalInput.checked : (est.mostrar_total !== false),
+          carrito: normalizeStationCarritoConfig({
+            usar_configuracion_global: simpleInput ? !!simpleInput.checked : !(est && est.carrito) || est.carrito.usar_configuracion_global !== false,
+            configuracion: est && est.carrito ? est.carrito.configuracion : null
+          })
         };
       });
     }
 
     async function applyCantidad(cantidad) {
       var current = await getConfigFromServer();
-      if (!current) current = { cantidad: 1, estaciones: [{ id: 1, nombre: 'Estación 1', venta_simple_habilitada: false, mostrar_total: true }] };
+      if (!current) current = { cantidad: 1, estaciones: [{ id: 1, nombre: 'Estación 1', mostrar_total: true }] };
       var cfg = normalizeConfig({
         cantidad: cantidad,
         estaciones: current.estaciones,
         card_size: current.card_size,
         caja_enabled: current.caja_enabled,
         youtube_enabled: current.youtube_enabled,
-        youtube_query: current.youtube_query
+        youtube_query: current.youtube_query,
+        carrito_ui_global: current.carrito_ui_global
       });
       await saveConfigToServer(cfg);
       document.getElementById('cantidadEstaciones').value = String(cfg.cantidad);
@@ -868,7 +1192,7 @@
     async function guardarNombres() {
       var current = await getConfigFromServer();
       if (!current) {
-        current = normalizeConfig({ cantidad: 1, estaciones: [{ id: 1, nombre: 'Estación 1', venta_simple_habilitada: false, mostrar_total: true }] });
+        current = normalizeConfig({ cantidad: 1, estaciones: [{ id: 1, nombre: 'Estación 1', mostrar_total: true }] });
       }
 
       var estaciones = collectRowsConfig(current);
@@ -970,7 +1294,7 @@
         });
       }
 
-      var masterSimple = document.getElementById('masterVentaSimple');
+      var masterSimple = document.getElementById('masterCarritoGlobal');
       if (masterSimple) {
         masterSimple.addEventListener('change', function () {
           setAllVentaSimple(this.checked);
@@ -981,6 +1305,44 @@
       if (masterMostrar) {
         masterMostrar.addEventListener('change', function () {
           setAllMostrarTotal(this.checked);
+        });
+      }
+
+      var carritoConfigTarget = document.getElementById('carritoConfigTarget');
+      if (carritoConfigTarget) {
+        carritoConfigTarget.addEventListener('change', function() {
+          getConfigFromServer().then(function(cfg) {
+            if (!cfg) cfg = normalizeConfig({ cantidad: 1, estaciones: [] });
+            setCarritoConfigForm(cfg, Number(carritoConfigTarget.value || 0));
+            setCarritoConfigMessage('', 'help');
+          }).catch(function(err) {
+            setCarritoConfigMessage(err.message || 'No se pudo cargar la configuración del carrito.', 'error');
+          });
+        });
+      }
+
+      var carritoConfigUseGlobal = document.getElementById('carritoConfigUseGlobal');
+      if (carritoConfigUseGlobal) {
+        carritoConfigUseGlobal.addEventListener('change', function() {
+          setCarritoConfigFieldsDisabled(!!carritoConfigUseGlobal.checked);
+        });
+      }
+
+      var btnGuardarCarritoConfig = document.getElementById('btnGuardarCarritoConfig');
+      if (btnGuardarCarritoConfig) {
+        btnGuardarCarritoConfig.addEventListener('click', function() {
+          saveSelectedCarritoConfig().catch(function(err) {
+            setCarritoConfigMessage(err.message || 'No se pudo guardar la configuración del carrito.', 'error');
+          });
+        });
+      }
+
+      var btnAplicarCarritoGlobal = document.getElementById('btnAplicarCarritoGlobal');
+      if (btnAplicarCarritoGlobal) {
+        btnAplicarCarritoGlobal.addEventListener('click', function() {
+          applyGlobalCarritoToAllStations().catch(function(err) {
+            setCarritoConfigMessage(err.message || 'No se pudo aplicar la configuración global a todas las estaciones.', 'error');
+          });
         });
       }
 
@@ -1059,6 +1421,8 @@
         document.getElementById('cardSizeSelect').value = cfg.card_size;
       }
       renderRows(cfg);
+      fillCarritoConfigTargetOptions(cfg);
+      setCarritoConfigForm(cfg, 0);
       var cajaToggleEl = document.getElementById('cajaToggle');
       if (cajaToggleEl) {
         try { cajaToggleEl.checked = !!(cfg && cfg.caja_enabled); } catch (e) { /* ignore */ }

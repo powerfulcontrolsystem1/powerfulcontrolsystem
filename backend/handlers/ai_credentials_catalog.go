@@ -59,20 +59,12 @@ type aiCredentialModelDef struct {
 func aiCredentialCatalogModels() []aiCredentialModelDef {
 	return []aiCredentialModelDef{
 		{
-			ModelID:      "deepseek:deepseek-chat",
-			Provider:     "deepseek",
-			DisplayName:  "DeepSeek Chat",
-			ApiKeyEnv:    "DEEPSEEK_API_KEY",
-			ConfigKey:    "ai.model.deepseek.deepseek_chat.api_key",
-			FreePlanNote: "DeepSeek: plan gratuito sujeto a limites y politicas de uso del proveedor.",
-		},
-		{
-			ModelID:      "ollama:ambis",
-			Provider:     "ollama",
-			DisplayName:  "Ambis Local",
-			ApiKeyEnv:    "",
-			ConfigKey:    "",
-			FreePlanNote: "Ambis Local: usa Ollama en el VPS por loopback, sin exponer credenciales ni acceso publico.",
+			ModelID:      "google:gemini-2.0-flash",
+			Provider:     "google",
+			DisplayName:  "Google Gemini 2.0 Flash",
+			ApiKeyEnv:    "GEMINI_API_KEY",
+			ConfigKey:    "ai.model.google.gemini_2_0_flash.api_key",
+			FreePlanNote: "Google Gemini: requiere API key del proyecto y se guarda cifrada en configuracion avanzada.",
 		},
 	}
 }
@@ -89,9 +81,6 @@ func aiCredentialByModelID() map[string]aiCredentialModelDef {
 func aiProviderConfigKey(provider string) string {
 	v := strings.ToLower(strings.TrimSpace(provider))
 	if v == "" {
-		return ""
-	}
-	if v == "ollama" {
 		return ""
 	}
 	return "ai.provider." + v + ".api_key"

@@ -109,39 +109,29 @@ func TestModelosHandlerReturnsPreferredModelForGoogleAccount(t *testing.T) {
 		t.Fatalf("expected modelo_preferido google:gemini-2.0-flash, got %#v", payload["modelo_preferido"])
 	}
 	modelos, ok := payload["modelos"].([]interface{})
-	if !ok || len(modelos) < 2 {
-		t.Fatalf("expected al menos 2 modelos, got %#v", payload["modelos"])
+	if !ok || len(modelos) != 1 {
+		t.Fatalf("expected 1 modelo, got %#v", payload["modelos"])
 	}
-	foundAmbis := false
-	for _, raw := range modelos {
-		item, ok := raw.(map[string]interface{})
-		if !ok {
-			continue
-		}
-		if item["id"] == "ollama:ambis" {
-			foundAmbis = true
-			break
-		}
-	}
-	if !foundAmbis {
-		t.Fatal("expected ollama:ambis in modelos response")
+	item, _ := modelos[0].(map[string]interface{})
+	if item["id"] != "google:gemini-2.0-flash" {
+		t.Fatalf("expected google:gemini-2.0-flash in modelos response, got %#v", item["id"])
 	}
 }
 
-func TestModeloPreferidoHandlerAcceptsAmbisLocal(t *testing.T) {
+func TestModeloPreferidoHandlerAcceptsGemini(t *testing.T) {
 	dbEmp := openChatIAHandlerTestDB(t)
 	if err := dbpkg.EnsureEmpresaAIChatSchema(dbEmp); err != nil {
 		t.Fatalf("ensure chat ia schema: %v", err)
 	}
 	ensureEmpresasTableForChatIATest(t, dbEmp)
 
-	_, err := dbEmp.Exec(`INSERT INTO empresas (id, nombre, nit, usuario_creador) VALUES (?, ?, ?, ?)`, 8, "Empresa Ambis", "900555", "admin@example.com")
+	_, err := dbEmp.Exec(`INSERT INTO empresas (id, nombre, nit, usuario_creador) VALUES (?, ?, ?, ?)`, 8, "Empresa Gemini", "900555", "admin@example.com")
 	if err != nil {
 		t.Fatalf("insert empresa: %v", err)
 	}
 
 	ctrl := NewEmpresaAIChatController(dbEmp, nil)
-	body := `{"empresa_id":8,"model_id":"ollama:ambis"}`
+	body := `{"empresa_id":8,"model_id":"google:gemini-2.0-flash"}`
 	req := httptest.NewRequest(http.MethodPut, "/api/empresa/chat_con_inteligencia_artificial/modelo_preferido", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req = req.WithContext(context.WithValue(req.Context(), "adminEmail", "admin@example.com"))
@@ -155,8 +145,8 @@ func TestModeloPreferidoHandlerAcceptsAmbisLocal(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get modelo preferido: %v", err)
 	}
-	if modelID != "ollama:ambis" {
-		t.Fatalf("expected ollama:ambis, got %q", modelID)
+	if modelID != "google:gemini-2.0-flash" {
+		t.Fatalf("expected google:gemini-2.0-flash, got %q", modelID)
 	}
 }
 
@@ -334,8 +324,8 @@ func TestModelosHandlerFiltersDisabledProvider(t *testing.T) {
 	if err != nil {
 		t.Fatalf("insert empresa: %v", err)
 	}
-	if err := dbpkg.SetConfigValue(dbSuper, "ai.provider.deepseek.enabled", "0", false); err != nil {
-		t.Fatalf("disable deepseek provider: %v", err)
+	if err := dbpkg.SetConfigValue(dbSuper, "ai.provider.google.enabled", "0", false); err != nil {
+		t.Fatalf("disable google provider: %v", err)
 	}
 
 	ctrl := NewEmpresaAIChatController(dbEmp, dbSuper)
@@ -344,23 +334,7 @@ func TestModelosHandlerFiltersDisabledProvider(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	ctrl.ModelosHandler(rr, req)
-	if rr.Code != http.StatusOK {
-		t.Fatalf("expected status 200, got %d body=%s", rr.Code, rr.Body.String())
-	}
-
-	var payload map[string]interface{}
-	if err := json.Unmarshal(rr.Body.Bytes(), &payload); err != nil {
-		t.Fatalf("decode json response: %v", err)
-	}
-	modelos, ok := payload["modelos"].([]interface{})
-	if !ok || len(modelos) != 1 {
-		t.Fatalf("expected 1 enabled model, got %#v", payload["modelos"])
-	}
-	item, _ := modelos[0].(map[string]interface{})
-	if item["id"] != "ollama:ambis" {
-		t.Fatalf("expected only ollama:ambis, got %#v", item["id"])
-	}
-	if payload["modelo_preferido"] != "ollama:ambis" {
-		t.Fatalf("expected fallback modelo_preferido ollama:ambis, got %#v", payload["modelo_preferido"])
+	if rr.Code != http.StatusServiceUnavailable {
+		t.Fatalf("expected status 503, got %d body=%s", rr.Code, rr.Body.String())
 	}
 }

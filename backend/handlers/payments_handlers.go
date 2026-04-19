@@ -1160,11 +1160,12 @@ func loadLicenciaPaymentMethodStatuses(dbSuper *sql.DB) ([]licenciaPaymentMethod
 	if err != nil {
 		return nil, err
 	}
-	epaycoConfigured := strings.TrimSpace(epaycoPublicKey) != "" && strings.TrimSpace(epaycoPrivateKey) != ""
+	epaycoConfigured := strings.TrimSpace(epaycoPublicKey) != ""
 	epaycoEnabled, err := resolveEnabledConfigValue(dbSuper, "epayco.enabled", false)
 	if err != nil {
 		return nil, err
 	}
+	_ = epaycoPrivateKey
 
 	wompiPublicKey, err := getConfigEntryTrimmed(dbSuper, "wompi.public_key")
 	if err != nil {

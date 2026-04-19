@@ -98,7 +98,7 @@
       </div>
       <div id="carritoResumen" class="form-help"></div>
 
-      <div class="form-actions" style="margin-top:10px;">
+      <div id="buscarProductosActions" class="form-actions" style="margin-top:10px;">
         <button type="button" id="buscarProductosBtn" class="btn secondary" disabled>Buscar productos</button>
       </div>
 
@@ -106,7 +106,7 @@
         <div class="empresa-section-header">
           <h3 style="margin:0;">Lector de código de barras</h3>
         </div>
-        <div class="form-row">
+        <div id="carritoClienteRow" class="form-row">
           <div class="form-col">
             <label class="form-label" for="scannerCodigo">Código de barras o SKU</label>
             <input id="scannerCodigo" class="form-input" autocomplete="off" placeholder="Escanea y presiona Enter">
@@ -253,7 +253,7 @@
       <form id="itemForm" style="margin-top:12px;">
         <input type="hidden" id="itemId">
 
-        <div class="form-row">
+        <div id="itemCatalogSearchRow" class="form-row">
           <div class="form-col">
             <label class="form-label">Buscar en catálogo inteligente</label>
             <input id="itemBuscarCatalogo" class="form-input" placeholder="Busca por nombre, SKU, código de barras o código del servicio">
@@ -264,7 +264,7 @@
           </div>
         </div>
 
-        <div class="form-row">
+        <div id="itemCatalogResultsRow" class="form-row">
           <div class="form-col">
             <label class="form-label">Resultados</label>
             <select id="itemBusquedaResultados" class="form-input" size="5" disabled></select>
@@ -275,7 +275,7 @@
           </div>
         </div>
 
-        <div class="form-row">
+        <div id="itemManualReferenceRow" class="form-row">
           <div class="form-col">
             <label class="form-label">Tipo de item</label>
             <select id="itemTipo" class="form-input">
@@ -295,7 +295,7 @@
           </div>
         </div>
 
-        <div class="form-row">
+        <div id="itemTaxRow" class="form-row">
           <div class="form-col">
             <label class="form-label">Descripción</label>
             <input id="itemDescripcion" class="form-input" required placeholder="Nombre del producto, combo o servicio">
@@ -332,7 +332,7 @@
           </div>
         </div>
 
-        <div class="form-row">
+        <div id="itemObservacionesRow" class="form-row">
           <div class="form-col">
             <label class="form-label">Observaciones</label>
             <textarea id="itemObservaciones" class="form-textarea" placeholder="Opcional"></textarea>
@@ -348,7 +348,7 @@
 
       <div id="itemsList" style="margin-top:14px;">Selecciona un carrito para gestionar sus items.</div>
 
-      <div class="card empresa-section" style="margin-top:12px;">
+      <div id="productsSummaryCard" class="card empresa-section" style="margin-top:12px;">
         <div class="empresa-section-header">
           <h3 style="margin:0;">Tabla de productos y combos del carrito</h3>
         </div>
@@ -363,6 +363,9 @@
       stationMode: false,
       stationID: 0,
       stationName: '',
+      empresaGeneralConfig: null,
+      stationConfig: null,
+      stationCartUI: null,
       qCarrito: '',
       carritos: [],
       clientes: [],
@@ -446,6 +449,9 @@
     }
 
     function loadEmpresaGeneralConfig() {
+      if (state.empresaGeneralConfig && typeof state.empresaGeneralConfig === 'object') {
+        return state.empresaGeneralConfig;
+      }
       try {
         const raw = localStorage.getItem('empresa_configuracion_general_' + state.empresaID);
         if (!raw) return {};
@@ -453,6 +459,208 @@
         return parsed && typeof parsed === 'object' ? parsed : {};
       } catch (_) {
         return {};
+      }
+    }
+
+    function defaultUnifiedCartUIConfig() {
+      return {
+        mostrar_boton_buscar_productos: true,
+        mostrar_busqueda_catalogo: true,
+        mostrar_codigo_manual_item: true,
+        mostrar_observaciones_item: true,
+        mostrar_selector_cliente: true,
+        mostrar_impuestos_item: true,
+        mostrar_lector_codigo_barras: true,
+        mostrar_descuentos: true,
+        mostrar_propina: true,
+        mostrar_comision: true,
+        permitir_pago_mixto: true,
+        mostrar_resumen_totales_carrito: true,
+        mostrar_desglose_cobro: true,
+        mostrar_resumen_productos: true
+      };
+    }
+
+    function normalizeUnifiedCartUIConfig(raw) {
+      const base = defaultUnifiedCartUIConfig();
+      const src = raw && typeof raw === 'object' ? raw : {};
+      return {
+        mostrar_boton_buscar_productos: src.mostrar_boton_buscar_productos === undefined ? base.mostrar_boton_buscar_productos : Boolean(src.mostrar_boton_buscar_productos),
+        mostrar_busqueda_catalogo: src.mostrar_busqueda_catalogo === undefined ? base.mostrar_busqueda_catalogo : Boolean(src.mostrar_busqueda_catalogo),
+        mostrar_codigo_manual_item: src.mostrar_codigo_manual_item === undefined ? base.mostrar_codigo_manual_item : Boolean(src.mostrar_codigo_manual_item),
+        mostrar_observaciones_item: src.mostrar_observaciones_item === undefined ? base.mostrar_observaciones_item : Boolean(src.mostrar_observaciones_item),
+        mostrar_selector_cliente: src.mostrar_selector_cliente === undefined ? base.mostrar_selector_cliente : Boolean(src.mostrar_selector_cliente),
+        mostrar_impuestos_item: src.mostrar_impuestos_item === undefined ? base.mostrar_impuestos_item : Boolean(src.mostrar_impuestos_item),
+        mostrar_lector_codigo_barras: src.mostrar_lector_codigo_barras === undefined ? base.mostrar_lector_codigo_barras : Boolean(src.mostrar_lector_codigo_barras),
+        mostrar_descuentos: src.mostrar_descuentos === undefined ? base.mostrar_descuentos : Boolean(src.mostrar_descuentos),
+        mostrar_propina: src.mostrar_propina === undefined ? base.mostrar_propina : Boolean(src.mostrar_propina),
+        mostrar_comision: src.mostrar_comision === undefined ? base.mostrar_comision : Boolean(src.mostrar_comision),
+        permitir_pago_mixto: src.permitir_pago_mixto === undefined ? base.permitir_pago_mixto : Boolean(src.permitir_pago_mixto),
+        mostrar_resumen_totales_carrito: src.mostrar_resumen_totales_carrito === undefined ? base.mostrar_resumen_totales_carrito : Boolean(src.mostrar_resumen_totales_carrito),
+        mostrar_desglose_cobro: src.mostrar_desglose_cobro === undefined ? base.mostrar_desglose_cobro : Boolean(src.mostrar_desglose_cobro),
+        mostrar_resumen_productos: src.mostrar_resumen_productos === undefined ? base.mostrar_resumen_productos : Boolean(src.mostrar_resumen_productos)
+      };
+    }
+
+    function normalizeStationCarritoConfig(raw) {
+      const src = raw && typeof raw === 'object' ? raw : {};
+      const nested = src.configuracion && typeof src.configuracion === 'object' ? src.configuracion : src;
+      return {
+        usar_configuracion_global: src.usar_configuracion_global === undefined ? true : Boolean(src.usar_configuracion_global),
+        configuracion: normalizeUnifiedCartUIConfig(nested)
+      };
+    }
+
+    function parseStationConfigValue(raw) {
+      let current = raw;
+      for (let i = 0; i < 3; i += 1) {
+        if (typeof current !== 'string') break;
+        const trimmed = current.trim();
+        if (!trimmed) return null;
+        try {
+          current = JSON.parse(trimmed);
+        } catch (_) {
+          return null;
+        }
+      }
+      return current && typeof current === 'object' ? current : null;
+    }
+
+    function normalizeStationConfig(raw) {
+      const src = raw && typeof raw === 'object' ? raw : {};
+      const estaciones = Array.isArray(src.estaciones) ? src.estaciones : [];
+      return {
+        cantidad: Math.max(1, Number(src.cantidad || estaciones.length || 1)),
+        estaciones: estaciones.map(function(current, idx) {
+          return {
+            id: Number((current && current.id) || (idx + 1)),
+            nombre: normalize(current && current.nombre) || ('Estación ' + (idx + 1)),
+            mostrar_total: current && current.mostrar_total === undefined ? true : Boolean(current && current.mostrar_total),
+            carrito: normalizeStationCarritoConfig(current && (current.carrito || current.carrito_ui))
+          };
+        }),
+        carrito_ui_global: normalizeUnifiedCartUIConfig(src.carrito_ui_global || src.carrito || src.carrito_configuracion_global)
+      };
+    }
+
+    async function loadEmpresaGeneralConfigFromServer() {
+      if (!state.empresaID) {
+        state.empresaGeneralConfig = {};
+        return state.empresaGeneralConfig;
+      }
+      try {
+        const res = await fetch('/api/empresa/configuracion_general?empresa_id=' + encodeURIComponent(state.empresaID), {
+          credentials: 'same-origin'
+        });
+        if (!res.ok) throw new Error('No se pudo cargar la configuración general.');
+        const payload = await res.json();
+        state.empresaGeneralConfig = payload && (payload.configuracion || payload) ? (payload.configuracion || payload) : {};
+      } catch (_) {
+        state.empresaGeneralConfig = loadEmpresaGeneralConfig();
+      }
+      return state.empresaGeneralConfig;
+    }
+
+    async function loadStationConfigFromServer() {
+      if (!state.empresaID) {
+        state.stationConfig = normalizeStationConfig({});
+        return state.stationConfig;
+      }
+      try {
+        const data = await fetch('/api/empresa/estacion_prefs?empresa_id=' + encodeURIComponent(state.empresaID), {
+          credentials: 'same-origin'
+        });
+        if (!data.ok) throw new Error('No se pudo cargar la configuración de estaciones.');
+        const payload = await data.json();
+        const prefs = payload && payload.prefs ? payload.prefs : [];
+        const pref = Array.isArray(prefs) ? prefs.find(function(item) {
+          return item && String(item.clave) === 'estaciones_config' && Number(item.estacion_id) === 0;
+        }) : null;
+        state.stationConfig = normalizeStationConfig(parseStationConfigValue(pref && pref.valor));
+      } catch (_) {
+        state.stationConfig = normalizeStationConfig({});
+      }
+      return state.stationConfig;
+    }
+
+    function getStationConfigRecord(empresaID, estacionID) {
+      if (!empresaID || !estacionID || !state.stationConfig || !Array.isArray(state.stationConfig.estaciones)) return null;
+      return state.stationConfig.estaciones.find(function(item) {
+        return Number(item && item.id) === Number(estacionID);
+      }) || null;
+    }
+
+    function getCurrentStationCartUIConfig() {
+      const globalCfg = normalizeUnifiedCartUIConfig(state.stationConfig && state.stationConfig.carrito_ui_global);
+      if (!state.stationMode) {
+        return globalCfg;
+      }
+      const station = getStationConfigRecord(state.empresaID, state.stationID);
+      if (station && station.carrito && station.carrito.usar_configuracion_global === false) {
+        return Object.assign({}, globalCfg, normalizeUnifiedCartUIConfig(station.carrito.configuracion));
+      }
+      return globalCfg;
+    }
+
+    function setFieldColumnVisibility(id, visible) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const container = el.closest('.form-col') || el;
+      container.style.display = visible ? '' : 'none';
+    }
+
+    function applyStationCartUIConfig() {
+      const ui = getCurrentStationCartUIConfig();
+      state.stationCartUI = ui;
+
+      const searchActions = document.getElementById('buscarProductosActions');
+      if (searchActions) {
+        searchActions.style.display = ui.mostrar_boton_buscar_productos ? '' : 'none';
+      }
+
+      const itemCatalogSearchRow = document.getElementById('itemCatalogSearchRow');
+      if (itemCatalogSearchRow) {
+        itemCatalogSearchRow.style.display = ui.mostrar_busqueda_catalogo ? '' : 'none';
+      }
+
+      const itemCatalogResultsRow = document.getElementById('itemCatalogResultsRow');
+      if (itemCatalogResultsRow) {
+        itemCatalogResultsRow.style.display = ui.mostrar_busqueda_catalogo ? '' : 'none';
+      }
+
+      const itemManualReferenceRow = document.getElementById('itemManualReferenceRow');
+      if (itemManualReferenceRow) {
+        itemManualReferenceRow.style.display = ui.mostrar_codigo_manual_item ? '' : 'none';
+      }
+
+      const itemObservacionesRow = document.getElementById('itemObservacionesRow');
+      if (itemObservacionesRow) {
+        itemObservacionesRow.style.display = ui.mostrar_observaciones_item ? '' : 'none';
+      }
+
+      const carritoClienteRow = document.getElementById('carritoClienteRow');
+      if (carritoClienteRow) {
+        carritoClienteRow.style.display = ui.mostrar_selector_cliente ? '' : 'none';
+      }
+
+      const itemTaxRow = document.getElementById('itemTaxRow');
+      if (itemTaxRow) {
+        itemTaxRow.style.display = ui.mostrar_impuestos_item ? '' : 'none';
+      }
+
+      const carritoResumen = document.getElementById('carritoResumen');
+      if (carritoResumen) {
+        carritoResumen.style.display = ui.mostrar_resumen_totales_carrito ? '' : 'none';
+      }
+
+      const stationPaymentBreakdown = document.getElementById('stationPaymentBreakdown');
+      if (stationPaymentBreakdown) {
+        stationPaymentBreakdown.style.display = ui.mostrar_desglose_cobro ? '' : 'none';
+      }
+
+      const productsSummaryCard = document.getElementById('productsSummaryCard');
+      if (productsSummaryCard) {
+        productsSummaryCard.style.display = ui.mostrar_resumen_productos ? '' : 'none';
       }
     }
 
@@ -476,10 +684,7 @@
     function getMostrarTotalForStation(empresaID, estacionID) {
       try {
         if (!empresaID || !estacionID) return true;
-        const cfg = readEstacionesConfig(empresaID);
-        if (!cfg) return true;
-        const estaciones = Array.isArray(cfg.estaciones) ? cfg.estaciones : [];
-        const found = estaciones.find(s => Number(s.id) === Number(estacionID));
+        const found = getStationConfigRecord(empresaID, estacionID);
         if (!found) return true;
         return found.mostrar_total === undefined ? true : Boolean(found.mostrar_total);
       } catch (_) {
@@ -565,12 +770,13 @@
     function isPaymentMethodAllowed(metodo) {
       const m = normalize(metodo).toLowerCase();
       const p = getOperativaPermisos();
+      const stationUI = state.stationMode ? getCurrentStationCartUIConfig() : defaultUnifiedCartUIConfig();
       if (m === 'efectivo') return p.metodo_pago_efectivo;
       if (m === 'tarjeta_credito') return p.metodo_pago_tarjeta_credito;
       if (m === 'tarjeta_debito') return p.metodo_pago_tarjeta_debito;
       if (m === 'transferencia_bancaria') return p.metodo_pago_transferencia_bancaria;
-      if (m === 'mixto') return p.metodo_pago_mixto;
-      if (m === 'codigo_descuento') return p.metodo_pago_codigo_descuento;
+      if (m === 'mixto') return stationUI.permitir_pago_mixto && p.metodo_pago_mixto;
+      if (m === 'codigo_descuento') return stationUI.mostrar_descuentos && p.metodo_pago_codigo_descuento;
       return false;
     }
 
@@ -1309,6 +1515,7 @@
       panel.style.display = '';
 
       const caps = getDiscountCapabilities();
+      const stationUI = getCurrentStationCartUIConfig();
       const selectedActive = isCarritoOperativoActivo(carrito);
 
       const block = document.getElementById('stationDiscountSettings');
@@ -1333,23 +1540,45 @@
       const devolucionEl = document.getElementById('devolucionMonto');
       const commissionWorkerEl = document.getElementById('commissionWorker');
       const operativa = getOperativaPermisos();
+
+      if (!stationUI.mostrar_descuentos) {
+        state.stationDiscount.type = 'none';
+        state.stationDiscount.value = 0;
+        state.stationDiscount.code = '';
+        discountTypeEl.value = 'none';
+        discountValueEl.value = '0';
+        discountCodeEl.value = '';
+      }
+      if (!stationUI.mostrar_propina) {
+        state.stationTip.aplicar = false;
+        if (applyTipEl) applyTipEl.checked = false;
+      }
+      if (!stationUI.mostrar_comision && commissionWorkerEl) {
+        commissionWorkerEl.value = '';
+      }
+
+      setFieldColumnVisibility('discountType', stationUI.mostrar_descuentos);
+      setFieldColumnVisibility('discountValue', stationUI.mostrar_descuentos);
+      setFieldColumnVisibility('discountCode', stationUI.mostrar_descuentos);
+      setFieldColumnVisibility('applyTipCheckbox', stationUI.mostrar_propina);
+      setFieldColumnVisibility('commissionWorker', stationUI.mostrar_comision);
       ensurePaymentMethodInputsFromOperativa();
       const hasAllowedPaymentMethods = getAllowedPaymentMethods().length > 0;
 
-      discountTypeEl.disabled = !selectedActive || !caps.enabled;
-      discountValueEl.disabled = !selectedActive || !caps.enabled;
-      discountCodeEl.disabled = !selectedActive || !caps.enabled;
+      discountTypeEl.disabled = !selectedActive || !caps.enabled || !stationUI.mostrar_descuentos;
+      discountValueEl.disabled = !selectedActive || !caps.enabled || !stationUI.mostrar_descuentos;
+      discountCodeEl.disabled = !selectedActive || !caps.enabled || !stationUI.mostrar_descuentos;
       paymentMethodEl.disabled = !selectedActive || !hasAllowedPaymentMethods;
       paymentReferenceEl.disabled = !selectedActive;
       devolucionEl.disabled = !selectedActive;
       if (commissionWorkerEl) {
-        commissionWorkerEl.disabled = !selectedActive || !operativa.habilitar_comisiones;
+        commissionWorkerEl.disabled = !selectedActive || !operativa.habilitar_comisiones || !stationUI.mostrar_comision;
       }
 
       renderTipConfigHint();
       renderCommissionConfigHint();
       if (applyTipEl) {
-        applyTipEl.disabled = applyTipEl.disabled || !selectedActive || !operativa.habilitar_propinas;
+        applyTipEl.disabled = applyTipEl.disabled || !selectedActive || !operativa.habilitar_propinas || !stationUI.mostrar_propina;
       }
 
       Array.from(discountTypeEl.options).forEach(function(opt) {
@@ -1371,10 +1600,10 @@
       const pay = getStationPaymentBreakdown(carrito);
       const isMixedMethod = pay.paymentMethod === 'mixto';
 
-      mixedBlockEl.style.display = selectedActive && isMixedMethod ? '' : 'none';
-      mixedBlock2El.style.display = selectedActive && isMixedMethod ? '' : 'none';
-      mixedBlock3El.style.display = selectedActive && isMixedMethod ? '' : 'none';
-      mixedHintEl.style.display = selectedActive && isMixedMethod ? '' : 'none';
+      mixedBlockEl.style.display = stationUI.permitir_pago_mixto && selectedActive && isMixedMethod ? '' : 'none';
+      mixedBlock2El.style.display = stationUI.permitir_pago_mixto && selectedActive && isMixedMethod ? '' : 'none';
+      mixedBlock3El.style.display = stationUI.permitir_pago_mixto && selectedActive && isMixedMethod ? '' : 'none';
+      mixedHintEl.style.display = stationUI.permitir_pago_mixto && selectedActive && isMixedMethod ? '' : 'none';
 
       ['mixedMethod1', 'mixedAmount1', 'mixedReference1', 'mixedMethod2', 'mixedAmount2', 'mixedReference2', 'mixedMethod3', 'mixedAmount3', 'mixedReference3'].forEach(function(id) {
         const el = document.getElementById(id);
@@ -1664,9 +1893,15 @@
       if (!panel) return;
 
       const caps = getBarcodeCapabilities();
+      const stationUI = getCurrentStationCartUIConfig();
       const selected = getSelectedCarrito();
       const canUseByStation = !state.stationMode || isCarritoOperativoActivo(selected);
       const canUse = !!selected && canUseByStation;
+
+      if (state.stationMode && !stationUI.mostrar_lector_codigo_barras) {
+        panel.style.display = 'none';
+        return;
+      }
 
       panel.style.display = caps.enabled ? '' : 'none';
 
@@ -2437,6 +2672,7 @@
       renderCarritos();
       renderResumen();
       renderItems();
+      applyStationCartUIConfig();
     }
 
     function applyStationModeUI() {
@@ -2445,7 +2681,8 @@
       document.getElementById('carritoForm').style.display = stationMode ? 'none' : document.getElementById('carritoForm').style.display;
       document.getElementById('carritoSearchBlock').style.display = stationMode ? 'none' : '';
       document.getElementById('moduleHelp').textContent =
-        'Este módulo permite manejar múltiples carritos por empresa y deja preparada la base operativa para facturación electrónica.';
+        'Este módulo usa un solo carrito operativo y configurable por empresa y por estación, manteniendo la base preparada para facturación electrónica.';
+      applyStationCartUIConfig();
     }
 
     async function ensureStationCarritoLifecycle() {
@@ -2809,6 +3046,9 @@
       document.getElementById('carritoForm').style.display = 'none';
       document.getElementById('cancelCarritoBtn').style.display = 'none';
       document.getElementById('cancelItemBtn').style.display = 'none';
+
+      await loadEmpresaGeneralConfigFromServer();
+      await loadStationConfigFromServer();
 
       await loadEmpresaTitle();
       await loadClientes();

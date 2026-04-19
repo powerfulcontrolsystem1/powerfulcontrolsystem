@@ -4,52 +4,17 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Compras</title>
-  <link rel="stylesheet" href="/estilos.css">
 </head>
-<body class="super-page form-bg-dark">
-  <div class="container">
-    <div class="page-header">
-      <h1 id="pageTitle">Compras</h1>
-      <button id="nuevaCompraBtn" class="btn add" type="button">Nueva compra</button>
-    </div>
-
-    <p class="form-help" style="margin:0 0 12px 0;">Registra facturas y notas de ingreso de productos a bodega.</p>
-
-    <div id="compraFormBlock" style="display:none;">
-      <form id="compraForm" class="form">
-        <div class="form-row">
-          <div class="form-col">
-            <label class="form-label">Proveedor</label>
-            <input id="compraProveedor" class="form-input" placeholder="Nombre o NIT">
-          </div>
-          <div class="form-col">
-            <label class="form-label">Fecha</label>
-            <input id="compraFecha" type="date" class="form-input">
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-col">
-            <label class="form-label">Numero documento</label>
-            <input id="compraNumero" class="form-input" placeholder="Factura, nota de ingreso">
-          </div>
-          <div class="form-col">
-            <label class="form-label">Total</label>
-            <input id="compraTotal" type="number" class="form-input" min="0" step="0.01" value="0">
-          </div>
-        </div>
-
-        <div style="margin-top:10px;">
-          <button type="submit" class="btn">Guardar compra</button>
-          <button type="button" id="cancelarCompraBtn" class="btn secondary">Cancelar</button>
-        </div>
-      </form>
-    </div>
-
-    <div id="comprasList" style="margin-top:12px;">Cargando compras...</div>
-  </div>
+<body>
   <script>
-    const empresaID = 0;
+    (function () {
+      const params = new URLSearchParams(window.location.search || '');
+      const empresaId = params.get('empresa_id') || '';
+      const target = new URL('/administrar_empresa/administrar_productos.html', window.location.origin);
+      target.searchParams.set('view', 'compras');
+      if (empresaId) target.searchParams.set('empresa_id', empresaId);
+      window.location.replace(target.toString());
+    })();
   </script>
 </body>
 </html>

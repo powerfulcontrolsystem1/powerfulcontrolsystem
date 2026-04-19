@@ -112,7 +112,7 @@ func TestSuperAIModelosHandlerReturnsCatalog(t *testing.T) {
 	}
 	ensureEmpresasCoreForSuperAI(t, dbEmp)
 	createSuperSession(t, dbSuper, "super@pcs.com", "super_administrador", "token-super-ai")
-	if err := dbpkg.UpsertSuperAIModeloPreferido(dbSuper, "super@pcs.com", "ollama:ambis", "super@pcs.com"); err != nil {
+	if err := dbpkg.UpsertSuperAIModeloPreferido(dbSuper, "super@pcs.com", "google:gemini-2.0-flash", "super@pcs.com"); err != nil {
 		t.Fatalf("upsert super model preferred: %v", err)
 	}
 
@@ -133,11 +133,11 @@ func TestSuperAIModelosHandlerReturnsCatalog(t *testing.T) {
 	if payload["admin_email"] != "super@pcs.com" {
 		t.Fatalf("expected admin_email super@pcs.com, got %#v", payload["admin_email"])
 	}
-	if payload["modelo_preferido"] != "ollama:ambis" {
-		t.Fatalf("expected modelo_preferido ollama:ambis, got %#v", payload["modelo_preferido"])
+	if payload["modelo_preferido"] != "google:gemini-2.0-flash" {
+		t.Fatalf("expected modelo_preferido google:gemini-2.0-flash, got %#v", payload["modelo_preferido"])
 	}
 	modelos, ok := payload["modelos"].([]interface{})
-	if !ok || len(modelos) < 2 {
+	if !ok || len(modelos) != 1 {
 		t.Fatalf("expected modelos catalog, got %#v", payload["modelos"])
 	}
 }
@@ -152,7 +152,7 @@ func TestSuperAIModeloPreferidoHandlerRejectsNonSuper(t *testing.T) {
 	createSuperSession(t, dbSuper, "admin@pcs.com", "administrador", "token-admin-ai")
 
 	ctrl := NewSuperAIChatController(dbEmp, dbSuper)
-	body := `{"model_id":"ollama:ambis"}`
+	body := `{"model_id":"google:gemini-2.0-flash"}`
 	req := httptest.NewRequest(http.MethodPut, "/super/api/chat_con_ia_global/modelo_preferido", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.AddCookie(&http.Cookie{Name: "session_token", Value: "token-admin-ai"})
@@ -197,11 +197,11 @@ func TestSuperAIModelosHandlerFiltersDisabledProvider(t *testing.T) {
 	ensureEmpresasCoreForSuperAI(t, dbEmp)
 	ensureConfigTableForSuperAITest(t, dbSuper)
 	createSuperSession(t, dbSuper, "super@pcs.com", "super_administrador", "token-super-filtered")
-	if err := dbpkg.UpsertSuperAIModeloPreferido(dbSuper, "super@pcs.com", "deepseek:deepseek-chat", "super@pcs.com"); err != nil {
+	if err := dbpkg.UpsertSuperAIModeloPreferido(dbSuper, "super@pcs.com", "google:gemini-2.0-flash", "super@pcs.com"); err != nil {
 		t.Fatalf("upsert super model preferred: %v", err)
 	}
-	if err := dbpkg.SetConfigValue(dbSuper, "ai.provider.deepseek.enabled", "0", false); err != nil {
-		t.Fatalf("disable deepseek provider: %v", err)
+	if err := dbpkg.SetConfigValue(dbSuper, "ai.provider.google.enabled", "0", false); err != nil {
+		t.Fatalf("disable google provider: %v", err)
 	}
 
 	ctrl := NewSuperAIChatController(dbEmp, dbSuper)
@@ -210,23 +210,7 @@ func TestSuperAIModelosHandlerFiltersDisabledProvider(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	ctrl.ModelosHandler(rr, req)
-	if rr.Code != http.StatusOK {
-		t.Fatalf("expected status 200, got %d body=%s", rr.Code, rr.Body.String())
-	}
-
-	var payload map[string]interface{}
-	if err := json.Unmarshal(rr.Body.Bytes(), &payload); err != nil {
-		t.Fatalf("decode json response: %v", err)
-	}
-	modelos, ok := payload["modelos"].([]interface{})
-	if !ok || len(modelos) != 1 {
-		t.Fatalf("expected 1 enabled model, got %#v", payload["modelos"])
-	}
-	item, _ := modelos[0].(map[string]interface{})
-	if item["id"] != "ollama:ambis" {
-		t.Fatalf("expected only ollama:ambis, got %#v", item["id"])
-	}
-	if payload["modelo_preferido"] != "ollama:ambis" {
-		t.Fatalf("expected fallback modelo_preferido ollama:ambis, got %#v", payload["modelo_preferido"])
+	if rr.Code != http.StatusServiceUnavailable {
+		t.Fatalf("expected status 503, got %d body=%s", rr.Code, rr.Body.String())
 	}
 }

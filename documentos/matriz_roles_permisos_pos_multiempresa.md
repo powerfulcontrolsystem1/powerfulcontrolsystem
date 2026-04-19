@@ -8,6 +8,36 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 - Cuando se cree un modulo nuevo o se modifique uno existente, esta matriz debe actualizarse en la misma iteracion para reflejar permisos por rol/modulo/accion y el impacto en paginas del panel.
 - Esta actualizacion debe quedar sincronizada con `documentos/descripcion_de_modulos`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios` y `CHANGELOG.md`.
 
+- Actualizacion 2026-04-18 (carritos/estaciones: carrito unificado configurable):
+	- `web/administrar_empresa/carrito_de_compras.html` pasa a ser la unica UI operativa del carrito para empresa y estaciones; los bloques visibles del formulario, cliente, impuestos, lector y cobro se controlan por configuracion persistida en `estaciones_config`.
+	- `web/administrar_empresa/configuracion_de_estaciones.html` y `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` administran la configuracion del carrito unificado por estacion y por empresa, sin introducir endpoints nuevos ni cambiar wrappers existentes.
+	- `web/administrar_empresa/estaciones.html` abre siempre `carrito_de_compras.html`; `ventas_simple.html` queda solo como compatibilidad de redireccion para URLs legacy.
+	- Impacto de matriz: sin cambios de roles ni wrappers; el ajuste es de operacion y UX dentro del mismo alcance autenticado del modulo critico `carritos`.
+
+- Actualizacion 2026-04-18 (chat con IA: simplificacion visual):
+	- `web/administrar_empresa/chat_con_inteligencia_artificial.html` y `web/super/chat_con_ia_global.html` retiran acciones visuales de recarga/historial, selector visible de modelo y paneles de historial/uso diario.
+	- Impacto de matriz: sin cambios de permisos, rutas protegidas ni wrappers; la simplificacion afecta solo presentacion del modulo IA para empresa y super.
+
+- Actualizacion 2026-04-19 (chat IA Gemini-only):
+	- `super_administrador` mantiene la facultad exclusiva de activar o desactivar el servicio IA y el proveedor `google` desde `Configuración avanzada`.
+	- `administrador` de empresa y `super_administrador` consumidor del chat ya no eligen entre proveedores; ambos usan exclusivamente `google:gemini-2.0-flash` cuando el servicio está habilitado.
+	- Impacto de matriz: sin cambios en wrappers o alcance por `empresa_id`; se reduce la superficie funcional del módulo IA al proveedor Gemini.
+
+- Actualizacion 2026-04-18 (inventario/productos: compras con vista dedicada dentro del submodulo):
+	- `web/administrar_empresa/administrar_productos.html` agrega `view=compras` para aislar compras preventivas, consolidado por proveedor y ciclo de orden del frente de inventario puro.
+	- `web/administrar_empresa/productos/compras.html` queda como wrapper de navegacion que preserva `empresa_id` y entra a la vista `Compras` sin abrir rutas backend nuevas ni duplicar logica UI.
+	- Impacto de matriz: sin cambios en permisos, roles o wrappers; la segmentacion es solo de UX dentro del mismo alcance autenticado del modulo inventario/productos.
+
+- Actualizacion 2026-04-18 (inventario/productos: proveedores y precios con vistas dedicadas):
+	- `web/administrar_empresa/administrar_productos.html` separa el CRUD de proveedores y el historial de cambios de precio de la vista principal de productos usando `view=proveedores` y `view=precios`.
+	- `web/administrar_empresa/productos/administrar_proveedores.html` y `web/administrar_empresa/productos/precios.html` quedan como wrappers de navegacion que preservan `empresa_id` sin crear rutas backend nuevas ni duplicar logica CRUD.
+	- Impacto de matriz: sin cambios en permisos, roles o wrappers; la segmentacion es solo de UX dentro del mismo alcance autenticado del modulo inventario/productos.
+
+- Actualizacion 2026-04-18 (chat IA super/empresa: resiliencia PostgreSQL legacy y timeout operativo de Ambis):
+	- `backend/db/chat_inteligencia_artificial.go` autorrepara el esquema `empresa_ai_*` y `super_ai_*` cuando una instalacion heredada llega con tablas o columnas faltantes, sin abrir endpoints nuevos ni alterar wrappers.
+	- `backend/handlers/chat_con_inteligencia_artificial_controller.go` amplía el timeout usado solo por `ollama:ambis` para soportar respuestas lentas del modelo local/VPS, sin cambiar permisos de acceso ni catálogo por rol.
+	- Impacto de matriz: sin cambios en roles, permisos, wrappers o visibilidad; el ajuste solo mejora estabilidad operativa del mismo modulo IA ya autorizado.
+
 - Actualizacion 2026-04-18 (portal publico: solo queda el emulador N64):
 	- `web/menu.js` cambia la entrada flotante de `Juegos` a `Emulador N64` apuntando directo a `/Juegos/n64/index.html`.
 	- `web/Juegos/menu_juegos.html` deja de listar juegos y queda como puerta de entrada secundaria con un unico CTA al emulador.

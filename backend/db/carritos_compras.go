@@ -193,17 +193,28 @@ func EnsureEmpresaCarritosSchema(dbConn *sql.DB) error {
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
-		`CREATE UNIQUE INDEX IF NOT EXISTS ux_carritos_empresa_codigo ON carritos_compras(empresa_id, codigo);`,
-		`CREATE UNIQUE INDEX IF NOT EXISTS ux_carritos_empresa_nombre ON carritos_compras(empresa_id, nombre);`,
-		`CREATE INDEX IF NOT EXISTS ix_carritos_empresa_estado ON carritos_compras(empresa_id, estado, estado_carrito);`,
-		`CREATE INDEX IF NOT EXISTS ix_carrito_items_empresa_carrito ON carrito_compra_items(empresa_id, carrito_id);`,
-		`CREATE INDEX IF NOT EXISTS ix_carrito_items_empresa_referencia ON carrito_compra_items(empresa_id, referencia_id);`,
-		`CREATE INDEX IF NOT EXISTS ix_ventas_estacion_metricas_empresa_estacion_fecha ON empresa_ventas_estacion_metricas(empresa_id, estacion_id, fecha_evento DESC);`,
-		`CREATE INDEX IF NOT EXISTS ix_ventas_estacion_metricas_empresa_evento ON empresa_ventas_estacion_metricas(empresa_id, evento_operacion, fecha_evento DESC);`,
-		`CREATE INDEX IF NOT EXISTS ix_ventas_estacion_metricas_carrito ON empresa_ventas_estacion_metricas(empresa_id, carrito_id, fecha_evento DESC);`,
 	}
 	for _, stmt := range stmts {
 		if _, err := dbConn.Exec(stmt); err != nil {
+			return err
+		}
+	}
+
+	indexStmts := []struct {
+		name  string
+		query string
+	}{
+		{name: "ux_carritos_empresa_codigo", query: `CREATE UNIQUE INDEX IF NOT EXISTS ux_carritos_empresa_codigo ON carritos_compras(empresa_id, codigo);`},
+		{name: "ux_carritos_empresa_nombre", query: `CREATE UNIQUE INDEX IF NOT EXISTS ux_carritos_empresa_nombre ON carritos_compras(empresa_id, nombre);`},
+		{name: "ix_carritos_empresa_estado", query: `CREATE INDEX IF NOT EXISTS ix_carritos_empresa_estado ON carritos_compras(empresa_id, estado, estado_carrito);`},
+		{name: "ix_carrito_items_empresa_carrito", query: `CREATE INDEX IF NOT EXISTS ix_carrito_items_empresa_carrito ON carrito_compra_items(empresa_id, carrito_id);`},
+		{name: "ix_carrito_items_empresa_referencia", query: `CREATE INDEX IF NOT EXISTS ix_carrito_items_empresa_referencia ON carrito_compra_items(empresa_id, referencia_id);`},
+		{name: "ix_ventas_estacion_metricas_empresa_estacion_fecha", query: `CREATE INDEX IF NOT EXISTS ix_ventas_estacion_metricas_empresa_estacion_fecha ON empresa_ventas_estacion_metricas(empresa_id, estacion_id, fecha_evento DESC);`},
+		{name: "ix_ventas_estacion_metricas_empresa_evento", query: `CREATE INDEX IF NOT EXISTS ix_ventas_estacion_metricas_empresa_evento ON empresa_ventas_estacion_metricas(empresa_id, evento_operacion, fecha_evento DESC);`},
+		{name: "ix_ventas_estacion_metricas_carrito", query: `CREATE INDEX IF NOT EXISTS ix_ventas_estacion_metricas_carrito ON empresa_ventas_estacion_metricas(empresa_id, carrito_id, fecha_evento DESC);`},
+	}
+	for _, idx := range indexStmts {
+		if err := ensureIndexIfMissing(dbConn, idx.name, idx.query); err != nil {
 			return err
 		}
 	}
@@ -277,7 +288,6 @@ func EnsureEmpresaCarritosSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "carritos_compras", "observaciones", "TEXT"); err != nil {
 		return err
 	}
-
 	if err := ensureColumnIfMissing(dbConn, "carrito_compra_items", "tipo_item", "TEXT DEFAULT 'producto'"); err != nil {
 		return err
 	}
@@ -401,6 +411,29 @@ func EnsureEmpresaCarritosSchema(dbConn *sql.DB) error {
 	}
 
 	return nil
+}
+
+func ensureIndexIfMissing(dbConn *sql.DB, indexName, createStmt string) error {
+	if dbConn == nil {
+		return fmt.Errorf("db connection is nil")
+	}
+	if shouldUsePostgresCompat(dbConn) {
+		_, err := execSQLCompat(dbConn, createStmt)
+		return err
+	}
+
+	var existingName string
+	err := queryRowSQLCompat(dbConn, `SELECT name FROM sqlite_master WHERE type = 'index' AND name = ? LIMIT 1`, indexName).Scan(&existingName)
+	if err == nil {
+		return nil
+	}
+	if err != sql.ErrNoRows {
+		return err
+	}
+
+	stmt := strings.Replace(createStmt, " IF NOT EXISTS", "", 1)
+	_, err = execSQLCompat(dbConn, stmt)
+	return err
 }
 
 func nextCarritoCodigo() string {
@@ -752,60 +785,17 @@ func CreateCarritoCompra(dbConn *sql.DB, payload CarritoCompra) (int64, error) {
 
 // GetCarritosCompraByEmpresa lista carritos por empresa.
 func GetCarritosCompraByEmpresa(dbConn *sql.DB, empresaID int64, includeInactive bool, q string) ([]CarritoCompra, error) {
-	query := `SELECT
-		c.id,
-		c.empresa_id,
-		COALESCE(c.codigo, ''),
-		COALESCE(c.nombre, ''),
-		COALESCE(c.canal_venta, 'mostrador'),
-		COALESCE(c.cliente_id, 0),
-		COALESCE(cl.nombre_razon_social, ''),
-		COALESCE(c.estado_carrito, 'abierto'),
-		COALESCE(c.moneda, 'COP'),
-		COALESCE(c.referencia_externa, ''),
-		COALESCE(c.subtotal, 0),
-		COALESCE(c.descuento_total, 0),
-		COALESCE(c.impuesto_total, 0),
-		COALESCE(c.total, 0),
-		COALESCE(c.activado_en, ''),
-		COALESCE(c.pagado_en, ''),
-		COALESCE(c.descuento_tipo, ''),
-		COALESCE(c.descuento_codigo, ''),
-		COALESCE(c.descuento_valor, 0),
-		COALESCE(c.devolucion_total, 0),
-		COALESCE(c.total_pagado, 0),
-		COALESCE(c.metodo_pago, 'efectivo'),
-		COALESCE(c.referencia_pago, ''),
-		COALESCE(COUNT(i.id), 0),
-		COALESCE(c.fecha_creacion, ''),
-		COALESCE(c.fecha_actualizacion, ''),
-		COALESCE(c.usuario_creador, ''),
-		COALESCE(c.estado, 'activo'),
-		COALESCE(c.observaciones, '')
-	FROM carritos_compras c
-	LEFT JOIN clientes cl ON cl.empresa_id = c.empresa_id AND cl.id = c.cliente_id
-	LEFT JOIN carrito_compra_items i ON i.empresa_id = c.empresa_id AND i.carrito_id = c.id AND COALESCE(i.estado, 'activo') = 'activo'
-	WHERE c.empresa_id = ?`
-	args := []interface{}{empresaID}
-
-	if !includeInactive {
-		query += ` AND COALESCE(c.estado, 'activo') = 'activo'`
-	}
-	q = strings.TrimSpace(q)
-	if q != "" {
-		pat := "%" + q + "%"
-		query += ` AND (
-			lower(COALESCE(c.nombre, '')) LIKE lower(?) OR
-			lower(COALESCE(c.codigo, '')) LIKE lower(?) OR
-			lower(COALESCE(cl.nombre_razon_social, '')) LIKE lower(?)
-		)`
-		args = append(args, pat, pat, pat)
-	}
-	query += ` GROUP BY c.id ORDER BY c.id DESC`
-
+	query, args := buildCarritosCompraByEmpresaQuery(empresaID, includeInactive, q, true)
 	rows, err := dbConn.Query(query, args...)
 	if err != nil {
-		return nil, err
+		if !shouldRetryCarritosCompraWithoutClientes(err) {
+			return nil, err
+		}
+		query, args = buildCarritosCompraByEmpresaQuery(empresaID, includeInactive, q, false)
+		rows, err = dbConn.Query(query, args...)
+		if err != nil {
+			return nil, err
+		}
 	}
 	defer rows.Close()
 
@@ -849,6 +839,84 @@ func GetCarritosCompraByEmpresa(dbConn *sql.DB, empresaID int64, includeInactive
 		out = append(out, item)
 	}
 	return out, nil
+}
+
+func buildCarritosCompraByEmpresaQuery(empresaID int64, includeInactive bool, q string, includeClientes bool) (string, []interface{}) {
+	clienteNombreExpr := `''`
+	joinClientes := ""
+	searchClienteExpr := ""
+	if includeClientes {
+		clienteNombreExpr = `COALESCE(cl.nombre_razon_social, '')`
+		joinClientes = `
+	LEFT JOIN clientes cl ON cl.empresa_id = c.empresa_id AND cl.id = c.cliente_id`
+		searchClienteExpr = ` OR
+			lower(COALESCE(cl.nombre_razon_social, '')) LIKE lower(?)`
+	}
+
+	query := `SELECT
+		c.id,
+		c.empresa_id,
+		COALESCE(c.codigo, ''),
+		COALESCE(c.nombre, ''),
+		COALESCE(c.canal_venta, 'mostrador'),
+		COALESCE(c.cliente_id, 0),
+		` + clienteNombreExpr + `,
+		COALESCE(c.estado_carrito, 'abierto'),
+		COALESCE(c.moneda, 'COP'),
+		COALESCE(c.referencia_externa, ''),
+		COALESCE(c.subtotal, 0),
+		COALESCE(c.descuento_total, 0),
+		COALESCE(c.impuesto_total, 0),
+		COALESCE(c.total, 0),
+		COALESCE(c.activado_en, ''),
+		COALESCE(c.pagado_en, ''),
+		COALESCE(c.descuento_tipo, ''),
+		COALESCE(c.descuento_codigo, ''),
+		COALESCE(c.descuento_valor, 0),
+		COALESCE(c.devolucion_total, 0),
+		COALESCE(c.total_pagado, 0),
+		COALESCE(c.metodo_pago, 'efectivo'),
+		COALESCE(c.referencia_pago, ''),
+		COALESCE(COUNT(i.id), 0),
+		COALESCE(c.fecha_creacion, ''),
+		COALESCE(c.fecha_actualizacion, ''),
+		COALESCE(c.usuario_creador, ''),
+		COALESCE(c.estado, 'activo'),
+		COALESCE(c.observaciones, '')
+	FROM carritos_compras c` + joinClientes + `
+	LEFT JOIN carrito_compra_items i ON i.empresa_id = c.empresa_id AND i.carrito_id = c.id AND COALESCE(i.estado, 'activo') = 'activo'
+	WHERE c.empresa_id = ?`
+	args := []interface{}{empresaID}
+
+	if !includeInactive {
+		query += ` AND COALESCE(c.estado, 'activo') = 'activo'`
+	}
+	q = strings.TrimSpace(q)
+	if q != "" {
+		pat := "%" + q + "%"
+		query += ` AND (
+			lower(COALESCE(c.nombre, '')) LIKE lower(?) OR
+			lower(COALESCE(c.codigo, '')) LIKE lower(?)` + searchClienteExpr + `
+		)`
+		args = append(args, pat, pat)
+		if includeClientes {
+			args = append(args, pat)
+		}
+	}
+	query += ` GROUP BY c.id ORDER BY c.id DESC`
+	return query, args
+}
+
+func shouldRetryCarritosCompraWithoutClientes(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(strings.TrimSpace(err.Error()))
+	if msg == "" {
+		return false
+	}
+	return (strings.Contains(msg, "clientes") || strings.Contains(msg, "nombre_razon_social")) &&
+		(strings.Contains(msg, "no such table") || strings.Contains(msg, "does not exist") || strings.Contains(msg, "no such column") || strings.Contains(msg, "unknown column"))
 }
 
 // GetCarritoCompraByID obtiene un carrito puntual por empresa.

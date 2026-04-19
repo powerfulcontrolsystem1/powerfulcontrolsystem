@@ -241,7 +241,7 @@ func (c *SuperAIChatController) ConsultarHandler(w http.ResponseWriter, r *http.
 		return
 	}
 
-	contexto, err := dbpkg.BuildSuperAIContexto(c.base.dbEmp, c.base.dbSuper, adminEmail)
+	contexto, err := dbpkg.BuildSuperAIContextoForQuestion(c.base.dbEmp, c.base.dbSuper, adminEmail, payload.Pregunta)
 	if err != nil {
 		http.Error(w, "No se pudo construir contexto global", http.StatusBadRequest)
 		return
@@ -371,6 +371,7 @@ func buildSuperAISystemPrompt(contexto string) string {
 	return "Eres un asistente global del sistema POS multiempresa para uso exclusivo de super administracion. " +
 		"Responde en espanol claro y accionable. Usa solo el contexto agregado validado del sistema completo. " +
 		"No reveles secretos, credenciales, hashes, tokens, llaves privadas ni datos sensibles. " +
+		"Si existe la seccion CONSULTAS_SEGURAS_GLOBALES_RESUELTAS, priorizala como fuente principal para responder la pregunta actual. " +
 		"Si faltan datos, dilo explicitamente y sugiere el siguiente reporte o consulta a revisar.\n\nCONTEXTO_GLOBAL_VALIDADO:\n" + contexto
 }
 

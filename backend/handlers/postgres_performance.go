@@ -137,6 +137,27 @@ func PostgresPerformanceHandler(dbEmpresas, dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
+
+		action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+		switch action {
+		case "", "performance":
+			// continua con la ruta actual
+		case "empresas_storage":
+			if dbEmpresas == nil {
+				writeJSON(w, http.StatusInternalServerError, map[string]interface{}{
+					"ok":    false,
+					"error": "conexion de base de datos no disponible",
+				})
+				return
+			}
+		default:
+			writeJSON(w, http.StatusBadRequest, map[string]interface{}{
+				"ok":    false,
+				"error": "accion no soportada para el panel PostgreSQL",
+			})
+			return
+		}
+
 		if dbEmpresas == nil || dbSuper == nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]interface{}{
 				"ok":    false,
@@ -151,8 +172,6 @@ func PostgresPerformanceHandler(dbEmpresas, dbSuper *sql.DB) http.HandlerFunc {
 			})
 			return
 		}
-
-		action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 		switch action {
 		case "", "performance":
 			// continua con la ruta actual

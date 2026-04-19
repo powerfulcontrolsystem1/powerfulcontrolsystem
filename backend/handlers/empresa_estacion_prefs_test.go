@@ -29,10 +29,16 @@ func TestEmpresaEstacionPrefsHandler_UpsertAndIsolationByEmpresa(t *testing.T) {
 		estaciones := make([]map[string]interface{}, 0, cantidad)
 		for i := 1; i <= cantidad; i++ {
 			estaciones = append(estaciones, map[string]interface{}{
-				"id":                      i,
-				"nombre":                  prefix + " " + string(rune('A'+i-1)),
-				"venta_simple_habilitada": i%2 == 0,
-				"mostrar_total":           true,
+				"id":            i,
+				"nombre":        prefix + " " + string(rune('A'+i-1)),
+				"mostrar_total": true,
+				"carrito": map[string]interface{}{
+					"usar_configuracion_global": i%2 != 0,
+					"configuracion": map[string]interface{}{
+						"mostrar_descuentos": i%2 == 0,
+						"mostrar_propina":   true,
+					},
+				},
 			})
 		}
 		cfg := map[string]interface{}{

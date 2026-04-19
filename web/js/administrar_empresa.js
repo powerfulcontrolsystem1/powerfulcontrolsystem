@@ -106,7 +106,6 @@ try {
     storage = null;
   }
   var links = [
-    document.getElementById("linkInicio"),
     document.getElementById("linkEstaciones"),
     document.getElementById("linkVentas"),
     document.getElementById("linkVentaPublica"),
@@ -127,7 +126,6 @@ try {
     document.getElementById("linkAuditoria"),
     document.getElementById("linkChatTareas"),
     document.getElementById("linkClientes"),
-    document.getElementById("linkCalculadora"),
   ];
 
   var permActionRead = "R";
@@ -144,7 +142,6 @@ try {
   var permModuleSeguridad = "seguridad";
 
   var menuPermissionCatalog = {
-    linkInicio: { alwaysVisible: true },
     linkVentas: { module: permModuleVentas, action: permActionRead },
     linkCarritoCompras: { module: permModuleVentas, action: permActionCreate },
     linkVentaPublica: { module: permModuleVentas, action: permActionCreate },
@@ -178,7 +175,6 @@ try {
     
     linkReservasHotel: { module: permModuleVentas, action: permActionCreate },
     linkReportes: { module: permModuleFinanzas, action: permActionRead },
-    linkCalculadora: { module: permModuleFinanzas, action: permActionRead },
     linkGraficosEstadisticas: { module: permModuleFinanzas, action: permActionRead },
   };
 
@@ -203,7 +199,7 @@ try {
   }
 
   function defaultFrameSrc(empresaId) {
-    var base = new URL("/administrar_empresa/inicio.html", window.location.origin);
+    var base = new URL("/administrar_empresa/administrar_productos_menu.html", window.location.origin);
     if (empresaId) {
       base.searchParams.set("empresa_id", empresaId);
     }

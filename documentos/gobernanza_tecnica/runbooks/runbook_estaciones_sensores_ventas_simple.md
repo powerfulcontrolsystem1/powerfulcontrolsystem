@@ -1,4 +1,4 @@
-# Runbook: estaciones, sensores y ventas simples por estacion
+# Runbook: estaciones, sensores y carrito unificado por estacion
 
 Fecha: 2026-04-18
 Estado: vigente
@@ -8,13 +8,13 @@ Estado: vigente
 - una estacion no aparece o desaparece despues de guardar configuracion.
 - una estacion abre el carrito incorrecto o no abre su carrito base.
 - el indicador del sensor no se pone verde aunque exista actividad fisica.
-- la venta simple no permite iniciar una nueva sesion o responde que la venta ya fue pagada.
+- el carrito unificado de estacion no permite iniciar una nueva sesion o responde que la venta ya fue pagada.
 - el cierre de `pagar_estacion` se completa pero no aparecen metricas o documento de venta.
 - la correccion rapida post-cobro no deja trazabilidad esperada.
 
 ## Alcance
 
-Aplica al flujo `configuracion_de_estaciones -> estaciones -> ventas_simple -> carritos_compra` y a la asociacion con sensores del modulo `sensor_puertas`.
+Aplica al flujo `configuracion_de_estaciones -> estaciones -> carrito_de_compras -> carritos_compra` y a la asociacion con sensores del modulo `sensor_puertas`. `ventas_simple.html` se considera solo una redireccion de compatibilidad hacia el carrito unificado.
 
 ## Fuentes de evidencia
 
@@ -24,7 +24,7 @@ Aplica al flujo `configuracion_de_estaciones -> estaciones -> ventas_simple -> c
 - `empresa_ventas_estacion_metricas`
 - `empresa_sensor_puertas_devices` y, si hace falta, `empresa_sensor_puertas_messages`
 - logs del backend para `/api/empresa/estacion_prefs`, `/api/empresa/sensor_puertas` y `/api/empresa/carritos_compra`
-- URL abierta en `estaciones.html` o `ventas_simple.html` con `empresa_id`, `estacion_id`, `carrito_codigo` y `carrito_id`
+- URL abierta en `estaciones.html`, `carrito_de_compras.html` o `ventas_simple.html` con `empresa_id`, `estacion_id`, `carrito_codigo` y `carrito_id`
 
 ## Verificaciones iniciales
 
@@ -51,7 +51,7 @@ Aplica al flujo `configuracion_de_estaciones -> estaciones -> ventas_simple -> c
 
 1. volver a leer y, si hace falta, regrabar `estaciones_config` usando el endpoint `PUT /api/empresa/estacion_prefs` con `estacion_id=0` y `clave=estaciones_config` para forzar `SyncEmpresaEstacionCarritos`.
 2. confirmar que el carrito base exista una sola vez por estacion y que conserve identidad canonica `EST-empresa-estacion` y `ESTACION_<id>`.
-3. si la estacion abre un carrito incorrecto, comparar la URL abierta en `ventas_simple.html` contra el `carrito_codigo` esperado y el carrito real resuelto en backend.
+3. si la estacion abre un carrito incorrecto, comparar la URL abierta en `carrito_de_compras.html` contra el `carrito_codigo` esperado y el carrito real resuelto en backend.
 4. si el carrito ya fue pagado, ejecutar `activar_estacion` con `reset_items=1` antes de intentar una nueva venta.
 5. si `pagar_estacion` falla, revisar primero metodo de pago, referencia minima y restricciones de configuracion operativa del rol.
 6. si el sensor no se refleja, validar que el dispositivo este ligado a la misma estacion, que `last_state` sea un estado activo reconocido y que `last_seen` no este desactualizado.
@@ -64,7 +64,7 @@ Aplica al flujo `configuracion_de_estaciones -> estaciones -> ventas_simple -> c
 - la estacion vuelve a ser visible y abre el carrito correcto de su empresa.
 - el carrito base queda unico por estacion y recupera su estado base `inactivo/cerrado` cuando corresponde.
 - el sensor solo se pinta verde cuando el dispositivo correcto reporta actividad reciente.
-- `ventas_simple.html` puede iniciar nueva venta, cobrar y volver a estaciones sin perder `empresa_id`.
+- `carrito_de_compras.html` puede iniciar nueva venta, cobrar y volver a estaciones sin perder `empresa_id`; `ventas_simple.html` debe redirigir sin perder contexto.
 - el cierre de venta deja documento de venta y fila de metrica coherentes con la estacion operada.
 - la correccion post-cobro queda registrada con trazabilidad y sin romper el historial operativo.
 

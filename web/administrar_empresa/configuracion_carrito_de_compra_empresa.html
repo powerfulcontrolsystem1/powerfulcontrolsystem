@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Configuración del carrito unificado</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="empresa-subpage">
+  <div class="container empresa-module">
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <div>
+          <h1 style="margin:0;">Carrito unificado por empresa</h1>
+          <p id="empresaInfo" class="form-help" style="margin:6px 0 0 0;">Empresa: cargando...</p>
+        </div>
+        <button id="btnGuardarConfigCarrito" type="button" class="btn">Guardar configuracion</button>
+      </div>
+
+      <div class="form" style="margin-top:12px;">
+        <p class="form-help" style="margin-top:0;">El sistema usará una sola página de carrito para todas las estaciones. Aquí defines qué bloques estarán activos por defecto para toda la empresa; luego puedes sobrescribirlos por estación desde Configuración de estaciones.</p>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgBuscarProductos" type="checkbox" checked>
+              Mostrar botón de buscar productos
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgBusquedaCatalogo" type="checkbox" checked>
+              Mostrar búsqueda inteligente de catálogo
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgCodigoManual" type="checkbox" checked>
+              Mostrar código y referencia manual del item
+            </label>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgObservaciones" type="checkbox" checked>
+              Mostrar observaciones del item
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgCliente" type="checkbox" checked>
+              Mostrar selector de cliente del carrito
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgImpuestos" type="checkbox" checked>
+              Mostrar descuento e impuestos del item
+            </label>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgLector" type="checkbox" checked>
+              Mostrar lector de código de barras
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgResumenProductos" type="checkbox" checked>
+              Mostrar tabla resumen de productos y combos
+            </label>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgDescuentos" type="checkbox" checked>
+              Mostrar descuentos en el panel de cobro
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgPropina" type="checkbox" checked>
+              Mostrar propina en el panel de cobro
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgComision" type="checkbox" checked>
+              Mostrar comisión por servicio
+            </label>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgPagoMixto" type="checkbox" checked>
+              Permitir pago mixto
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgResumenTotales" type="checkbox" checked>
+              Mostrar resumen total del carrito
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgDesgloseCobro" type="checkbox" checked>
+              Mostrar desglose del cobro
+            </label>
+          </div>
+        </div>
+
+        <p class="form-help">Las estaciones individuales pueden heredar esta configuración o sobrescribirla desde la pantalla de configuración de estaciones.</p>
+      </div>
+
+      <div id="configCarritoMsg" class="form-help"></div>
+    </section>
+  </div>
+
+  <script>
+    function parsePositiveInt(value) {
+      const num = Number(value || 0);
+      return Number.isFinite(num) && num > 0 ? Math.trunc(num) : 0;
+    }
+
+    function resolveEmpresaId() {
+      try {
+        const params = new URLSearchParams(window.location.search || '');
+        const direct = parsePositiveInt(params.get('empresa_id') || params.get('id'));
+        if (direct > 0) return direct;
+      } catch (_) {}
+
+      try {
+        const candidates = [
+          sessionStorage.getItem('active_empresa_id'),
+          sessionStorage.getItem('empresa_id'),
+          sessionStorage.getItem('admin_empresa_id'),
+          localStorage.getItem('active_empresa_id'),
+          localStorage.getItem('empresa_id'),
+          localStorage.getItem('admin_empresa_id')
+        ];
+        for (let i = 0; i < candidates.length; i += 1) {
+          const parsed = parsePositiveInt(candidates[i]);
+          if (parsed > 0) return parsed;
+        }
+      } catch (_) {}
+      return 0;
+    }
+
+    const empresaId = resolveEmpresaId();
+
+    function setMessage(text, type) {
+      const box = document.getElementById('configCarritoMsg');
+      box.textContent = text || '';
+      box.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'form-help');
+    }
+
+    function defaultUnifiedCartConfig() {
+      return {
+        mostrar_boton_buscar_productos: true,
+        mostrar_busqueda_catalogo: true,
+        mostrar_codigo_manual_item: true,
+        mostrar_observaciones_item: true,
+        mostrar_selector_cliente: true,
+        mostrar_impuestos_item: true,
+        mostrar_lector_codigo_barras: true,
+        mostrar_descuentos: true,
+        mostrar_propina: true,
+        mostrar_comision: true,
+        permitir_pago_mixto: true,
+        mostrar_resumen_totales_carrito: true,
+        mostrar_desglose_cobro: true,
+        mostrar_resumen_productos: true
+      };
+    }
+
+    function normalizeUnifiedCartConfig(raw) {
+      const base = defaultUnifiedCartConfig();
+      const src = raw && typeof raw === 'object' ? raw : {};
+      return {
+        mostrar_boton_buscar_productos: src.mostrar_boton_buscar_productos === undefined ? base.mostrar_boton_buscar_productos : !!src.mostrar_boton_buscar_productos,
+        mostrar_busqueda_catalogo: src.mostrar_busqueda_catalogo === undefined ? base.mostrar_busqueda_catalogo : !!src.mostrar_busqueda_catalogo,
+        mostrar_codigo_manual_item: src.mostrar_codigo_manual_item === undefined ? base.mostrar_codigo_manual_item : !!src.mostrar_codigo_manual_item,
+        mostrar_observaciones_item: src.mostrar_observaciones_item === undefined ? base.mostrar_observaciones_item : !!src.mostrar_observaciones_item,
+        mostrar_selector_cliente: src.mostrar_selector_cliente === undefined ? base.mostrar_selector_cliente : !!src.mostrar_selector_cliente,
+        mostrar_impuestos_item: src.mostrar_impuestos_item === undefined ? base.mostrar_impuestos_item : !!src.mostrar_impuestos_item,
+        mostrar_lector_codigo_barras: src.mostrar_lector_codigo_barras === undefined ? base.mostrar_lector_codigo_barras : !!src.mostrar_lector_codigo_barras,
+        mostrar_descuentos: src.mostrar_descuentos === undefined ? base.mostrar_descuentos : !!src.mostrar_descuentos,
+        mostrar_propina: src.mostrar_propina === undefined ? base.mostrar_propina : !!src.mostrar_propina,
+        mostrar_comision: src.mostrar_comision === undefined ? base.mostrar_comision : !!src.mostrar_comision,
+        permitir_pago_mixto: src.permitir_pago_mixto === undefined ? base.permitir_pago_mixto : !!src.permitir_pago_mixto,
+        mostrar_resumen_totales_carrito: src.mostrar_resumen_totales_carrito === undefined ? base.mostrar_resumen_totales_carrito : !!src.mostrar_resumen_totales_carrito,
+        mostrar_desglose_cobro: src.mostrar_desglose_cobro === undefined ? base.mostrar_desglose_cobro : !!src.mostrar_desglose_cobro,
+        mostrar_resumen_productos: src.mostrar_resumen_productos === undefined ? base.mostrar_resumen_productos : !!src.mostrar_resumen_productos
+      };
+    }
+
+    function parseStationConfigValue(raw) {
+      let current = raw;
+      for (let i = 0; i < 3; i += 1) {
+        if (typeof current !== 'string') break;
+        const trimmed = current.trim();
+        if (!trimmed) return null;
+        try {
+          current = JSON.parse(trimmed);
+        } catch (_) {
+          return null;
+        }
+      }
+      return current && typeof current === 'object' ? current : null;
+    }
+
+    function normalizeStationConfig(raw) {
+      const src = raw && typeof raw === 'object' ? raw : {};
+      const estaciones = Array.isArray(src.estaciones) ? src.estaciones : [];
+      return {
+        cantidad: Math.max(1, Number(src.cantidad || estaciones.length || 1)),
+        estaciones: estaciones,
+        card_size: String(src.card_size || 'medium').trim().toLowerCase() || 'medium',
+        caja_enabled: !!src.caja_enabled,
+        youtube_enabled: !!src.youtube_enabled,
+        youtube_query: String(src.youtube_query || 'YouTube').trim() || 'YouTube',
+        carrito_ui_global: normalizeUnifiedCartConfig(src.carrito_ui_global || src.carrito || src.carrito_configuracion_global)
+      };
+    }
+
+    async function loadConfig() {
+      if (!empresaId) return normalizeUnifiedCartConfig({});
+      const res = await fetch('/api/empresa/estacion_prefs?empresa_id=' + encodeURIComponent(empresaId), {
+        credentials: 'same-origin'
+      });
+      if (!res.ok) {
+        throw new Error(await res.text() || 'No se pudo cargar la configuracion de carrito.');
+      }
+      const data = await res.json();
+      const prefs = data && Array.isArray(data.prefs) ? data.prefs : [];
+      const pref = prefs.find(function(item) {
+        return item && String(item.clave) === 'estaciones_config' && Number(item.estacion_id) === 0;
+      });
+      if (!pref || !pref.valor) {
+        return normalizeUnifiedCartConfig({});
+      }
+      const parsed = parseStationConfigValue(pref.valor);
+      const normalized = normalizeStationConfig(parsed);
+      return normalizeUnifiedCartConfig(normalized.carrito_ui_global);
+    }
+
+    async function saveConfig(cfg) {
+      if (!empresaId) throw new Error('No se puede guardar sin empresa seleccionada.');
+      const currentRes = await fetch('/api/empresa/estacion_prefs?empresa_id=' + encodeURIComponent(empresaId), {
+        credentials: 'same-origin'
+      });
+      if (!currentRes.ok) {
+        throw new Error(await currentRes.text() || 'No se pudo cargar la configuración actual de estaciones.');
+      }
+      const currentData = await currentRes.json();
+      const prefs = currentData && Array.isArray(currentData.prefs) ? currentData.prefs : [];
+      const pref = prefs.find(function(item) {
+        return item && String(item.clave) === 'estaciones_config' && Number(item.estacion_id) === 0;
+      });
+      const parsed = normalizeStationConfig(parseStationConfigValue(pref && pref.valor));
+      parsed.carrito_ui_global = normalizeUnifiedCartConfig(cfg);
+
+      const res = await fetch('/api/empresa/estacion_prefs?empresa_id=' + encodeURIComponent(empresaId), {
+        method: 'PUT',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          estacion_id: 0,
+          clave: 'estaciones_config',
+          valor: JSON.stringify(parsed)
+        })
+      });
+      if (!res.ok) {
+        throw new Error(await res.text() || 'No se pudo guardar la configuracion de carrito.');
+      }
+      return normalizeUnifiedCartConfig(parsed.carrito_ui_global);
+    }
+
+    function applyConfig(cfg) {
+      const normalized = normalizeUnifiedCartConfig(cfg);
+      document.getElementById('carritoCfgBuscarProductos').checked = !!normalized.mostrar_boton_buscar_productos;
+      document.getElementById('carritoCfgBusquedaCatalogo').checked = !!normalized.mostrar_busqueda_catalogo;
+      document.getElementById('carritoCfgCodigoManual').checked = !!normalized.mostrar_codigo_manual_item;
+      document.getElementById('carritoCfgObservaciones').checked = !!normalized.mostrar_observaciones_item;
+      document.getElementById('carritoCfgCliente').checked = !!normalized.mostrar_selector_cliente;
+      document.getElementById('carritoCfgImpuestos').checked = !!normalized.mostrar_impuestos_item;
+      document.getElementById('carritoCfgLector').checked = !!normalized.mostrar_lector_codigo_barras;
+      document.getElementById('carritoCfgResumenProductos').checked = !!normalized.mostrar_resumen_productos;
+      document.getElementById('carritoCfgDescuentos').checked = !!normalized.mostrar_descuentos;
+      document.getElementById('carritoCfgPropina').checked = !!normalized.mostrar_propina;
+      document.getElementById('carritoCfgComision').checked = !!normalized.mostrar_comision;
+      document.getElementById('carritoCfgPagoMixto').checked = !!normalized.permitir_pago_mixto;
+      document.getElementById('carritoCfgResumenTotales').checked = !!normalized.mostrar_resumen_totales_carrito;
+      document.getElementById('carritoCfgDesgloseCobro').checked = !!normalized.mostrar_desglose_cobro;
+      return normalized;
+    }
+
+    async function bootstrap() {
+      document.getElementById('empresaInfo').textContent = empresaId > 0 ? ('Empresa #' + empresaId) : 'Empresa: no detectada';
+      if (!empresaId) {
+        setMessage('empresa_id es obligatorio para configurar el carrito de estaciones.', 'error');
+        document.getElementById('btnGuardarConfigCarrito').disabled = true;
+        [
+          'carritoCfgBuscarProductos',
+          'carritoCfgBusquedaCatalogo',
+          'carritoCfgCodigoManual',
+          'carritoCfgObservaciones',
+          'carritoCfgCliente',
+          'carritoCfgImpuestos',
+          'carritoCfgLector',
+          'carritoCfgResumenProductos',
+          'carritoCfgDescuentos',
+          'carritoCfgPropina',
+          'carritoCfgComision',
+          'carritoCfgPagoMixto',
+          'carritoCfgResumenTotales',
+          'carritoCfgDesgloseCobro'
+        ].forEach(function(id) {
+          var el = document.getElementById(id);
+          if (el) el.disabled = true;
+        });
+        return;
+      }
+      try {
+        const cfg = await loadConfig();
+        applyConfig(cfg);
+        setMessage('', '');
+      } catch (err) {
+        setMessage(err.message || 'No se pudo cargar la configuracion.', 'error');
+      }
+    }
+
+    document.getElementById('btnGuardarConfigCarrito').addEventListener('click', async function() {
+      try {
+        const cfg = normalizeUnifiedCartConfig({
+          mostrar_boton_buscar_productos: document.getElementById('carritoCfgBuscarProductos').checked,
+          mostrar_busqueda_catalogo: document.getElementById('carritoCfgBusquedaCatalogo').checked,
+          mostrar_codigo_manual_item: document.getElementById('carritoCfgCodigoManual').checked,
+          mostrar_observaciones_item: document.getElementById('carritoCfgObservaciones').checked,
+          mostrar_selector_cliente: document.getElementById('carritoCfgCliente').checked,
+          mostrar_impuestos_item: document.getElementById('carritoCfgImpuestos').checked,
+          mostrar_lector_codigo_barras: document.getElementById('carritoCfgLector').checked,
+          mostrar_resumen_productos: document.getElementById('carritoCfgResumenProductos').checked,
+          mostrar_descuentos: document.getElementById('carritoCfgDescuentos').checked,
+          mostrar_propina: document.getElementById('carritoCfgPropina').checked,
+          mostrar_comision: document.getElementById('carritoCfgComision').checked,
+          permitir_pago_mixto: document.getElementById('carritoCfgPagoMixto').checked,
+          mostrar_resumen_totales_carrito: document.getElementById('carritoCfgResumenTotales').checked,
+          mostrar_desglose_cobro: document.getElementById('carritoCfgDesgloseCobro').checked
+        });
+        const stored = await saveConfig(cfg);
+        applyConfig(stored);
+        setMessage('Configuracion de carrito guardada correctamente.', 'success');
+      } catch (err) {
+        setMessage(err.message || 'No se pudo guardar la configuracion.', 'error');
+      }
+    });
+
+    bootstrap();
+  </script>
+</body>
+</html>

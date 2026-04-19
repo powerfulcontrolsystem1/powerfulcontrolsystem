@@ -1128,7 +1128,7 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 
 func ensureColumnIfMissing(dbConn *sql.DB, table, column, columnDef string) error {
 	lowerColumn := strings.ToLower(column)
-	if isPostgresDialect() {
+	if shouldUsePostgresCompat(dbConn) {
 		columnDef = normalizeColumnDefForDialect(columnDef)
 		_, err := execSQLCompat(dbConn, fmt.Sprintf("ALTER TABLE %s ADD COLUMN IF NOT EXISTS %s", table, column+" "+columnDef))
 		return err

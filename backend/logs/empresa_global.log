@@ -4970,3 +4970,58 @@
 2026-04-18T19:50:22-05:00 [INFO] req_id=req-1776559822160540700-e2526a1f34a5 event=request_start method=POST path=/super/api/chat_con_ia_global/consultar ip=127.0.0.1 ua="curl/8.18.0"
 2026-04-18T19:50:29-05:00 [ERROR] req_id=req-1776559822160540700-e2526a1f34a5 event=api_error method=POST path=/super/api/chat_con_ia_global/consultar status=500 error="No se pudo consultar uso diario"
 2026-04-18T19:50:29-05:00 [ERROR] req_id=req-1776559822160540700-e2526a1f34a5 event=request_end method=POST path=/super/api/chat_con_ia_global/consultar status=500 dur_ms=7355
+2026-04-18T20:27:43-05:00 [INFO] req_id=req-1776562063205886200-44939c8479c2 event=request_start method=GET path=/ ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
+2026-04-18T20:27:43-05:00 [INFO] req_id=req-1776562063205886200-44939c8479c2 event=request_end method=GET path=/ status=304 dur_ms=149
+2026-04-18T20:27:43-05:00 [INFO] req_id=req-1776562063447376000-fbc90796f88e event=request_start method=GET path=/estilos.css ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
+2026-04-18T20:27:43-05:00 [INFO] req_id=req-1776562063447887600-f6175a333fc2 event=request_start method=GET path=/menu.js ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
+2026-04-18T20:27:43-05:00 [INFO] req_id=req-1776562063447376000-fbc90796f88e event=request_end method=GET path=/estilos.css status=304 dur_ms=1
+2026-04-18T20:27:43-05:00 [INFO] req_id=req-1776562063447887600-f6175a333fc2 event=request_end method=GET path=/menu.js status=304 dur_ms=1
+2026-04-18T20:27:43-05:00 [INFO] req_id=req-1776562063503651300-261861e49658 event=request_start method=GET path=/api/public/pagina_principal ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
+2026-04-18T20:27:44-05:00 [INFO] req_id=req-1776562063503651300-261861e49658 event=request_end method=GET path=/api/public/pagina_principal status=200 dur_ms=710
+2026-04-18T20:27:44-05:00 [INFO] req_id=req-1776562064240296600-f7044a187a24 event=request_start method=GET path=/img/red%20social.png ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
+2026-04-18T20:27:44-05:00 [INFO] req_id=req-1776562064240296600-f7044a187a24 event=request_end method=GET path=/img/red%20social.png status=304 dur_ms=1
+2026-04-18T20:44:19-05:00 [INFO] req_id=req-1776563058892139500-854675feb2e1 event=request_start method=GET path=/menu.js ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
+2026-04-18T20:44:19-05:00 [INFO] req_id=req-1776563058919138300-0254f8abc669 event=request_start method=GET path=/estilos.css ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
+2026-04-18T20:44:19-05:00 [INFO] req_id=req-1776563058919138300-0254f8abc669 event=request_end method=GET path=/estilos.css status=304 dur_ms=299
+2026-04-18T20:44:19-05:00 [INFO] req_id=req-1776563058892139500-854675feb2e1 event=request_end method=GET path=/menu.js status=304 dur_ms=324
+2026-04-18T20:44:19-05:00 [INFO] req_id=req-1776563059355662600-6f0437851fef event=request_start method=GET path=/api/public/pagina_principal ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
+2026-04-18T20:44:20-05:00 [INFO] req_id=req-1776563059355662600-6f0437851fef event=request_end method=GET path=/api/public/pagina_principal status=200 dur_ms=899
+2026-04-18T20:56:10-05:00 [INFO] req_id=req-1776563770505038300-e63fdf5556a9 event=request_start method=GET path=/super/api/chat_con_ia_global/modelos ip=127.0.0.1 ua="curl/8.18.0"
+2026-04-18T20:56:17-05:00 [INFO] req_id=req-1776563770505038300-e63fdf5556a9 event=request_end method=GET path=/super/api/chat_con_ia_global/modelos status=200 dur_ms=7202
+2026-04-18T20:56:23-05:00 [INFO] req_id=req-1776563783867573200-94fa3cfa62d5 event=request_start method=POST path=/super/api/chat_con_ia_global/consultar ip=127.0.0.1 ua="curl/8.18.0"
+2026-04-18T20:57:19-05:00 [ERROR] req_id=req-1776563783867573200-94fa3cfa62d5 event=api_error method=POST path=/super/api/chat_con_ia_global/consultar status=502 error="no se pudo contactar proveedor local: Post \"http://127.0.0.1:11435/api/generate\": context deadline exceeded (Client.Timeout exceeded while awaiting headers)"
+2026-04-18T20:57:19-05:00 [ERROR] req_id=req-1776563783867573200-94fa3cfa62d5 event=request_end method=POST path=/super/api/chat_con_ia_global/consultar status=502 dur_ms=55290
+2026-04-18T20:59:59-05:00 [INFO] req_id=req-1776563999229760900-d73e8eaa3499 event=request_start method=GET path=/super/api/chat_con_ia_global/modelos ip=::1 ua="curl/8.18.0"
+2026-04-18T21:00:00-05:00 [INFO] req_id=req-1776563999229760900-d73e8eaa3499 event=request_end method=GET path=/super/api/chat_con_ia_global/modelos status=200 dur_ms=1587
+2026-04-18T21:00:07-05:00 [INFO] req_id=req-1776564007378168600-b546ecb8ed80 event=request_start method=POST path=/super/api/chat_con_ia_global/consultar ip=::1 ua="curl/8.18.0"
+2026-04-18T21:01:07-05:00 [INFO] req_id=req-1776564007378168600-b546ecb8ed80 event=request_end method=POST path=/super/api/chat_con_ia_global/consultar status=200 dur_ms=60451
+2026-04-19T00:00:35-05:00 [INFO] req_id=req-1776574835381760500-104127b83e45 event=request_start method=GET path=/ ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-19T00:00:35-05:00 [INFO] req_id=req-1776574835381760500-104127b83e45 event=request_end method=GET path=/ status=200 dur_ms=382
+2026-04-19T00:19:26-05:00 [INFO] req_id=req-1776575966623743200-e359e7118c5c event=request_start method=GET path=/ ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-19T00:19:26-05:00 [INFO] req_id=req-1776575966623743200-e359e7118c5c event=request_end method=GET path=/ status=200 dur_ms=42
+2026-04-19T00:19:26-05:00 [INFO] req_id=req-1776575966767719800-0198e322ceda event=request_start method=GET path=/index.html ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-19T00:19:26-05:00 [INFO] req_id=req-1776575966767719800-0198e322ceda event=request_end method=GET path=/index.html status=301 dur_ms=1
+2026-04-19T00:19:26-05:00 [INFO] req_id=req-1776575966775060500-45d507900f93 event=request_start method=GET path=/ ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-19T00:19:26-05:00 [INFO] req_id=req-1776575966775060500-45d507900f93 event=request_end method=GET path=/ status=200 dur_ms=4
+2026-04-19T00:19:26-05:00 [INFO] req_id=req-1776575966781312200-d0a1b8116355 event=request_start method=GET path=/login.html ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-19T00:19:26-05:00 [INFO] req_id=req-1776575966781312200-d0a1b8116355 event=request_end method=GET path=/login.html status=200 dur_ms=2
+2026-04-19T00:19:26-05:00 [INFO] req_id=req-1776575966789401900-fec17a7f3382 event=request_start method=GET path=/seleccionar_empresa.html ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-19T00:19:26-05:00 [WARNING] req_id=req-1776575966789401900-fec17a7f3382 event=request_end method=GET path=/seleccionar_empresa.html status=401 dur_ms=4
+2026-04-19T00:19:26-05:00 [INFO] req_id=req-1776575966847312400-79177d5af5d6 event=request_start method=GET path=/api/public/pagina_principal ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-19T00:19:27-05:00 [INFO] req_id=req-1776575966847312400-79177d5af5d6 event=request_end method=GET path=/api/public/pagina_principal status=200 dur_ms=457
+2026-04-19T00:19:27-05:00 [INFO] req_id=req-1776575967309842500-f14a456c524c event=request_start method=GET path=/api/public/licencias/payment_methods ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-19T00:19:28-05:00 [INFO] req_id=req-1776575967309842500-f14a456c524c event=request_end method=GET path=/api/public/licencias/payment_methods status=200 dur_ms=1104
+2026-04-19T00:30:10-05:00 [INFO] req_id=req-1776576610930954000-b180ca9990a2 event=request_start method=GET path=/ ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-19T00:30:10-05:00 [INFO] req_id=req-1776576610930954000-b180ca9990a2 event=request_end method=GET path=/ status=200 dur_ms=1
+2026-04-19T00:30:10-05:00 [INFO] req_id=req-1776576610934525100-bd69752f455d event=request_start method=GET path=/index.html ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-19T00:30:10-05:00 [INFO] req_id=req-1776576610934525100-bd69752f455d event=request_end method=GET path=/index.html status=301 dur_ms=1
+2026-04-19T00:30:10-05:00 [INFO] req_id=req-1776576610936919900-07bdcf5020eb event=request_start method=GET path=/ ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-19T00:30:10-05:00 [INFO] req_id=req-1776576610936919900-07bdcf5020eb event=request_end method=GET path=/ status=200 dur_ms=1
+2026-04-19T00:30:10-05:00 [INFO] req_id=req-1776576610939582200-07157f31c2e2 event=request_start method=GET path=/login.html ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-19T00:30:10-05:00 [INFO] req_id=req-1776576610939582200-07157f31c2e2 event=request_end method=GET path=/login.html status=200 dur_ms=1
+2026-04-19T00:30:10-05:00 [INFO] req_id=req-1776576610943415000-e661af33d003 event=request_start method=GET path=/seleccionar_empresa.html ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-19T00:30:10-05:00 [WARNING] req_id=req-1776576610943415000-e661af33d003 event=request_end method=GET path=/seleccionar_empresa.html status=401 dur_ms=1
+2026-04-19T00:30:10-05:00 [INFO] req_id=req-1776576610947846800-ccb5dee8880b event=request_start method=GET path=/api/public/pagina_principal ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-19T00:30:11-05:00 [INFO] req_id=req-1776576610947846800-ccb5dee8880b event=request_end method=GET path=/api/public/pagina_principal status=200 dur_ms=379
+2026-04-19T00:30:11-05:00 [INFO] req_id=req-1776576611336534000-628221aa2b0e event=request_start method=GET path=/api/public/licencias/payment_methods ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-19T00:30:12-05:00 [INFO] req_id=req-1776576611336534000-628221aa2b0e event=request_end method=GET path=/api/public/licencias/payment_methods status=200 dur_ms=821

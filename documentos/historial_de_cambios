@@ -1,3 +1,197 @@
+- 2026-04-18: Limpieza del legado de venta simple y ampliación del carrito unificado
+    - Archivos eliminados:
+        - web/js/ventas_simple.js
+    - Archivos modificados:
+        - web/administrar_empresa/carrito_de_compras.html
+        - web/administrar_empresa/configuracion_de_estaciones.html
+        - web/administrar_empresa/configuracion_carrito_de_compra_empresa.html
+        - backend/handlers/empresa_configuracion_general.go
+        - backend/handlers/empresa_configuracion_general_test.go
+        - backend/handlers/empresa_estacion_prefs_test.go
+        - backend/db/empresa_configuracion_general.go
+        - backend/db/empresa_estacion_prefs_test.go
+        - documentos/descripcion_del_proyecto
+        - documentos/diagramas/estructura_del_codigo.md
+        - documentos/descripcion_de_modulos
+        - documentos/matriz_roles_permisos_pos_multiempresa.md
+        - documentos/descripcion_de_archivos
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripcion: Se retira del runtime el script legacy `ventas_simple.js`, se elimina el switch muerto de carrito compacto en `configuracion_general` y el carrito unificado gana nuevos checks configurables para cliente, impuestos, resumen total y desglose del cobro.
+    - Verificacion:
+        - pruebas dirigidas de handlers/db del modulo de configuracion general y preferencias de estacion
+        - validacion funcional del redirect `ventas_simple.html -> carrito_de_compras.html`
+
+- 2026-04-19: IA Gemini-only y retiro de Ollama en VPS
+    - Archivos modificados:
+        - backend/handlers/ai_credentials_catalog.go
+        - backend/handlers/ai_config_handlers.go
+        - backend/handlers/chat_con_inteligencia_artificial_controller.go
+        - backend/handlers/chat_con_ia_global_super_test.go
+        - backend/handlers/chat_con_inteligencia_artificial_controller_test.go
+        - backend/handlers/system_empresas_handlers_test.go
+        - backend/db/chat_inteligencia_artificial_test.go
+        - backend/tools/set_ai_provider_enabled.go
+        - backend/.env.example
+        - backend/.env.local
+        - scripts/iniciar_servidor.ps1
+        - web/super/configuracion_avanzada.html
+        - web/super/chat_con_ia_global.html
+        - web/administrar_empresa/chat_con_inteligencia_artificial.html
+        - documentos/descripcion_del_proyecto
+        - documentos/descripcion_de_archivos
+        - documentos/descripcion_de_modulos
+        - documentos/matriz_roles_permisos_pos_multiempresa.md
+        - documentos/diagramas/estructura_del_codigo.md
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Archivos eliminados:
+        - backend/tools/check_deepseek_key/main.go
+    - Descripcion: Se elimina la IA local del VPS basada en Ollama y se reemplaza la integración del proyecto por Google Gemini en chats super y empresariales. La configuración avanzada conserva activación global, activación del proveedor y guardado cifrado de la API key. También se retira `ollama.service` del VPS y se elimina el túnel local dedicado.
+    - Verificacion:
+        - `go test ./handlers -run 'Test(SuperAIModelosHandlerReturnsCatalog|SuperAIModelosHandlerFiltersDisabledProvider|ModelosHandlerReturnsPreferredModelForGoogleAccount|ModeloPreferidoHandlerAcceptsGemini|ModelosHandlerFiltersDisabledProvider|AIModelsConfigHandlerSaveGeminiEncrypted|AIModelsConfigHandlerSavesProviderEnabledState|AIModelsConfigHandlerTogglesGlobalServiceState)$' -count=1`
+        - `go test ./db -run 'Test(EmpresaAIModeloPreferidoUpsertAndGet|RegisterEmpresaAIConsultaAcumulaUsoDiario|SuperAIModeloPreferidoUpsertAndGet|RegisterSuperAIConsultaAcumulaUsoDiario|GetSuperAIModeloPreferidoRepairsMissingSchema|GetSuperAIUsoDiarioRepairsMissingSchema|RegisterSuperAIConsultaRepairsMissingSchema)$' -count=1`
+- 2026-04-18: Carrito unificado configurable por empresa y estación
+    - Archivos modificados:
+        - web/administrar_empresa/carrito_de_compras.html
+        - web/administrar_empresa/estaciones.html
+        - web/administrar_empresa/ventas_simple.html
+        - web/administrar_empresa/configuracion_de_estaciones.html
+        - web/administrar_empresa/configuracion_carrito_de_compra_empresa.html
+        - web/administrar_empresa/configuracion_menu.html
+        - documentos/diagramas/estructura_del_codigo.md
+        - documentos/descripcion_de_modulos
+        - documentos/matriz_roles_permisos_pos_multiempresa.md
+        - documentos/descripcion_de_archivos
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripcion: Se elimina la bifurcación visible entre carrito de compras, venta simple y carrito compacto. Las estaciones ahora abren una sola pantalla de carrito y su comportamiento visible se controla con configuración global por empresa y overrides por estación persistidos en `estaciones_config`. La ruta `ventas_simple.html` queda como redirección compatible.
+    - Verificacion:
+        - tarea `validar-permisos-selector-empresas-5`
+        - `get_errors` sin errores en los HTML modificados.
+
+- 2026-04-18: Estaciones abre carrito compacto por defecto configurable por empresa y endurece el flujo de carritos legacy
+    - Archivos creados:
+        - web/administrar_empresa/configuracion_carrito_de_compra_empresa.html
+    - Archivos modificados:
+        - backend/db/sql_compat.go
+        - backend/db/productos.go
+        - backend/db/carritos_compras.go
+        - backend/db/carritos_inventario_test.go
+        - backend/db/empresa_configuracion_general.go
+        - backend/handlers/empresa_configuracion_general.go
+        - backend/handlers/empresa_configuracion_general_test.go
+        - web/administrar_empresa/estaciones.html
+        - web/administrar_empresa/configuracion_menu.html
+        - documentos/diagramas/estructura_del_codigo.md
+        - documentos/descripcion_de_modulos
+        - documentos/matriz_roles_permisos_pos_multiempresa.md
+        - documentos/descripcion_de_archivos
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripcion: Se agrega una subpagina de Configuracion para definir si todas las estaciones de una empresa deben abrir el carrito compacto por defecto. La vista `estaciones.html` consume ese flag global y el backend corrige dos causas de fallo del flujo: el listado de carritos ya no depende de que exista la tabla `clientes` en esquemas minimos y las migraciones detectan la conexion SQLite real para no emitir DDL exclusivo de PostgreSQL durante pruebas o instalaciones mixtas.
+    - Verificacion:
+        - `go test ./db -run 'Test(GetCarritosCompraByEmpresaFallbackWithoutClientesSchema|SyncEmpresaEstacionCarritosCreatesAndUpdatesLinkedDefaults)$' -count=1`
+        - `go test ./handlers -run '^Test(EmpresaConfiguracionGeneralHandlerGetAndSave|EmpresaEstacionPrefsHandler_UpsertAndIsolationByEmpresa)$' -count=1`
+        - `get_errors` sin errores en los archivos Go y HTML modificados.
+
+- 2026-04-18: Se simplifica la interfaz del chat con IA en empresa y super
+    - Archivos modificados:
+        - web/administrar_empresa/chat_con_inteligencia_artificial.html
+        - web/super/chat_con_ia_global.html
+        - documentos/diagramas/estructura_del_codigo.md
+        - documentos/descripcion_de_modulos
+        - documentos/matriz_roles_permisos_pos_multiempresa.md
+        - documentos/descripcion_de_archivos
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripcion: Se elimina del render visible el selector de modelo, los botones superiores de actualizar/historial, los cuadros de modelo y uso diario, el bloque de consultas recientes y el CTA de upgrade. Las sugerencias rapidas se mueven debajo del chat y `Limpiar chat` pasa junto a `Preguntar a la IA`.
+    - Verificacion:
+        - `get_errors` sobre los HTML y documentos modificados.
+
+- 2026-04-18: Se retira la calculadora del panel empresa y del menu flotante
+    - Archivos modificados:
+        - web/administrar_empresa.html
+        - web/js/administrar_empresa.js
+        - web/menu.js
+        - web/ayuda/ayuda.html
+        - documentos/descripcion_del_proyecto
+        - documentos/descripcion_de_modulos
+        - documentos/diagramas/estructura_del_codigo.md
+        - documentos/descripcion_de_archivos
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Archivos eliminados:
+        - web/administrar_empresa/calculadora.html
+    - Descripcion: Se elimina el boton `Calculadora` del panel empresa, el acceso del menu flotante y la pagina frontend asociada. La ayuda operativa y la documentacion funcional se ajustan para que el modulo ya no figure como frente vigente.
+    - Verificacion:
+        - `get_errors` sobre los archivos modificados y verificacion por busqueda de referencias frontend `calculadora.html`.
+
+ - 2026-04-18: Inventario y productos mueve compras preventivas a la seccion Compras
+    - Archivos modificados:
+        - web/administrar_empresa/administrar_productos.html
+        - web/administrar_empresa/productos/compras.html
+        - documentos/diagramas/estructura_del_codigo.md
+        - documentos/descripcion_de_modulos
+        - documentos/matriz_roles_permisos_pos_multiempresa.md
+        - documentos/descripcion_de_archivos
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripcion: La vista central del modulo productos agrega `view=compras` y concentra allí el plan de reposición por proveedor, el consolidado de compra y el borrador/ciclo de orden. La ruta `productos/compras.html` ahora entra a esa vista real en lugar de un placeholder separado.
+    - Verificacion:
+        - `get_errors` sobre `web/administrar_empresa/administrar_productos.html` y `web/administrar_empresa/productos/compras.html`
+
+ - 2026-04-18: Se elimina la página Inicio del panel empresa y del submódulo de productos
+    - Archivos eliminados:
+        - web/administrar_empresa/inicio.html
+    - Archivos modificados:
+        - web/administrar_empresa.html
+        - web/administrar_empresa/administrar_productos_menu.html
+        - web/js/administrar_empresa.js
+        - web/ayuda/ayuda.html
+        - documentos/diagramas/estructura_del_codigo.md
+        - documentos/descripcion_de_archivos
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripcion: Se retira la portada `inicio.html` del panel empresa, se elimina el botón `Inicio` del menú principal y del submódulo de productos, y el iframe del panel arranca ahora directamente en `administrar_productos_menu.html` con `empresa_id` preservado.
+    - Verificacion:
+        - `get_errors` sobre `web/administrar_empresa.html`, `web/administrar_empresa/administrar_productos_menu.html`, `web/js/administrar_empresa.js` y `web/ayuda/ayuda.html`
+
+ - 2026-04-18: Inventario y productos separa proveedores y precios en vistas dedicadas del panel empresa
+    - Archivos creados:
+        - web/administrar_empresa/productos/administrar_proveedores.html
+    - Archivos modificados:
+        - web/administrar_empresa/administrar_productos.html
+        - web/administrar_empresa/administrar_productos_menu.html
+        - web/administrar_empresa/productos/administrar_productos_menu.html
+        - web/administrar_empresa/productos/precios.html
+        - documentos/diagramas/estructura_del_codigo.md
+        - documentos/descripcion_de_modulos
+        - documentos/matriz_roles_permisos_pos_multiempresa.md
+        - documentos/descripcion_de_archivos
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripcion: El modulo de productos mueve el CRUD de proveedores a una subpagina dedicada `administrar_proveedores` y deja `Precios` como vista real del historial de cambios de precio. La pagina central sigue siendo la unica fuente de verdad del modulo mediante `view=proveedores` y `view=precios`, preservando `empresa_id` y sin duplicar CRUD.
+    - Verificacion:
+        - `get_errors` sobre `web/administrar_empresa/administrar_productos.html`, `web/administrar_empresa/administrar_productos_menu.html`, `web/administrar_empresa/productos/administrar_productos_menu.html`, `web/administrar_empresa/productos/administrar_proveedores.html` y `web/administrar_empresa/productos/precios.html`
+
+ - 2026-04-18: Chat IA super y empresarial autorrepara esquema legacy y amplía timeout de Ambis sobre VPS
+    - Archivos modificados:
+        - backend/db/chat_inteligencia_artificial.go
+        - backend/db/chat_inteligencia_artificial_test.go
+        - backend/handlers/chat_con_inteligencia_artificial_controller.go
+        - documentos/descripcion_de_modulos
+        - documentos/diagramas/estructura_del_codigo.md
+        - documentos/matriz_roles_permisos_pos_multiempresa.md
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripcion: El chat IA deja de fallar en instalaciones PostgreSQL legacy cuando faltan tablas o columnas `super_ai_*` y `empresa_ai_*`; la capa DB ahora asegura el esquema al leer o escribir preferidos, uso diario e historial. Ademas, las llamadas a `ollama:ambis` usan un timeout mayor para tolerar respuestas lentas del modelo sobre el tunel VPS/local.
+    - Verificacion:
+        - `go test ./db -run 'Test(SuperAIModeloPreferidoUpsertAndGet|RegisterSuperAIConsultaAcumulaUsoDiario|GetSuperAIModeloPreferidoRepairsMissingSchema|GetSuperAIUsoDiarioRepairsMissingSchema|RegisterSuperAIConsultaRepairsMissingSchema)$' -count=1`
+        - `go test ./handlers -run '^$' -count=1`
+        - `curl http://localhost:8080/super/api/chat_con_ia_global/modelos` -> `200 OK`
+        - `curl http://localhost:8080/super/api/chat_con_ia_global/consultar` con `model_id=ollama:ambis` -> `200 OK`
+
  - 2026-04-18: helper CLI para configurar proveedores IA
     - Archivos creados:
         - backend/tools/set_ai_provider_enabled.go

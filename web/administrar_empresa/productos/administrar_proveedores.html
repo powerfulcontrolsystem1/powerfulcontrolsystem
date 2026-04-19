@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Administrar Proveedores</title>
+</head>
+<body>
+  <script>
+    (function () {
+      const params = new URLSearchParams(window.location.search || '');
+      const empresaId = params.get('empresa_id') || '';
+      const target = new URL('/administrar_empresa/administrar_productos.html', window.location.origin);
+      target.searchParams.set('view', 'proveedores');
+      if (empresaId) target.searchParams.set('empresa_id', empresaId);
+      window.location.replace(target.toString());
+    })();
+  </script>
+</body>
+</html>

@@ -278,14 +278,7 @@ function Load-PostgresEnvFromFiles {
             'DB_VPS_LOCAL_PORT',
             'DB_VPS_REMOTE_HOST',
             'DB_VPS_REMOTE_PORT',
-            'OLLAMA_BASE_URL',
-            'OLLAMA_VPS_TUNNEL_ENABLED',
-            'OLLAMA_VPS_SSH_HOST',
-            'OLLAMA_VPS_SSH_USER',
-            'OLLAMA_VPS_SSH_KEY_PATH',
-            'OLLAMA_VPS_LOCAL_PORT',
-            'OLLAMA_VPS_REMOTE_HOST',
-            'OLLAMA_VPS_REMOTE_PORT'
+            'GEMINI_API_KEY'
         )) {
             if (-not $vals.ContainsKey($key)) { continue }
             $candidate = [string]$vals[$key]
@@ -323,22 +316,6 @@ function Rewrite-PostgresDSNForTunnel {
     $rewritten = $Dsn
     $rewritten = $rewritten -replace '@127\.0\.0\.1:5432/', ("@127.0.0.1:{0}/" -f $LocalPort)
     $rewritten = $rewritten -replace '@localhost:5432/', ("@127.0.0.1:{0}/" -f $LocalPort)
-    return $rewritten
-}
-
-function Rewrite-OllamaBaseUrlForTunnel {
-    param(
-        [string]$BaseUrl,
-        [int]$LocalPort
-    )
-
-    if ([string]::IsNullOrWhiteSpace($BaseUrl)) {
-        return ("http://127.0.0.1:{0}" -f $LocalPort)
-    }
-
-    $rewritten = $BaseUrl.Trim()
-    $rewritten = $rewritten -replace 'http://127\.0\.0\.1:11434', ("http://127.0.0.1:{0}" -f $LocalPort)
-    $rewritten = $rewritten -replace 'http://localhost:11434', ("http://127.0.0.1:{0}" -f $LocalPort)
     return $rewritten
 }
 
@@ -519,53 +496,6 @@ if ($tunnelEnabled) {
     [Environment]::SetEnvironmentVariable('DB_SUPERADMIN_DSN', $env:DB_SUPERADMIN_DSN, 'Process')
 }
 
-$ollamaTunnelEnabled = Test-TruthyValue -Value ([Environment]::GetEnvironmentVariable('OLLAMA_VPS_TUNNEL_ENABLED', 'Process'))
-if ($ollamaTunnelEnabled) {
-    $ollamaSshHost = [Environment]::GetEnvironmentVariable('OLLAMA_VPS_SSH_HOST', 'Process')
-    if ([string]::IsNullOrWhiteSpace($ollamaSshHost)) {
-        $ollamaSshHost = [Environment]::GetEnvironmentVariable('DB_VPS_SSH_HOST', 'Process')
-    }
-
-    $ollamaSshUser = [Environment]::GetEnvironmentVariable('OLLAMA_VPS_SSH_USER', 'Process')
-    if ([string]::IsNullOrWhiteSpace($ollamaSshUser)) {
-        $ollamaSshUser = [Environment]::GetEnvironmentVariable('DB_VPS_SSH_USER', 'Process')
-    }
-
-    $ollamaSshKeyPath = [Environment]::GetEnvironmentVariable('OLLAMA_VPS_SSH_KEY_PATH', 'Process')
-    if ([string]::IsNullOrWhiteSpace($ollamaSshKeyPath)) {
-        $ollamaSshKeyPath = [Environment]::GetEnvironmentVariable('DB_VPS_SSH_KEY_PATH', 'Process')
-    }
-
-    $ollamaRemoteHost = [Environment]::GetEnvironmentVariable('OLLAMA_VPS_REMOTE_HOST', 'Process')
-    if ([string]::IsNullOrWhiteSpace($ollamaRemoteHost)) {
-        $ollamaRemoteHost = '127.0.0.1'
-    }
-
-    $ollamaLocalPort = 11435
-    $rawOllamaLocalPort = [Environment]::GetEnvironmentVariable('OLLAMA_VPS_LOCAL_PORT', 'Process')
-    if (-not [string]::IsNullOrWhiteSpace($rawOllamaLocalPort)) {
-        $parsedOllamaLocal = 0
-        if ([int]::TryParse($rawOllamaLocalPort, [ref]$parsedOllamaLocal) -and $parsedOllamaLocal -gt 0) {
-            $ollamaLocalPort = $parsedOllamaLocal
-        }
-    }
-
-    $ollamaRemotePort = 11434
-    $rawOllamaRemotePort = [Environment]::GetEnvironmentVariable('OLLAMA_VPS_REMOTE_PORT', 'Process')
-    if (-not [string]::IsNullOrWhiteSpace($rawOllamaRemotePort)) {
-        $parsedOllamaRemote = 0
-        if ([int]::TryParse($rawOllamaRemotePort, [ref]$parsedOllamaRemote) -and $parsedOllamaRemote -gt 0) {
-            $ollamaRemotePort = $parsedOllamaRemote
-        }
-    }
-
-    Ensure-VpsSshTunnel -BackendDir $backend -SshHost $ollamaSshHost -SshUser $ollamaSshUser -SshKeyPath $ollamaSshKeyPath -LocalPort $ollamaLocalPort -RemoteHost $ollamaRemoteHost -RemotePort $ollamaRemotePort -TunnelLabel 'OLLAMA'
-
-    $env:OLLAMA_BASE_URL = Rewrite-OllamaBaseUrlForTunnel -BaseUrl ([Environment]::GetEnvironmentVariable('OLLAMA_BASE_URL', 'Process')) -LocalPort $ollamaLocalPort
-    [Environment]::SetEnvironmentVariable('OLLAMA_BASE_URL', $env:OLLAMA_BASE_URL, 'Process')
-    Write-Info ("OLLAMA_BASE_URL configurado para backend local: {0}" -f $env:OLLAMA_BASE_URL)
-}
-
 if ($env:DB_DIALECT -ne 'postgres') {
     Write-Host "DB_DIALECT=$($env:DB_DIALECT) no es valido. Este proyecto opera solo con PostgreSQL." -ForegroundColor Red
     exit 1
@@ -580,7 +510,7 @@ Write-Ok "Configuracion PostgreSQL validada."
 Write-Info "DB_DIALECT=$env:DB_DIALECT"
 Write-Info "DB_EMPRESAS_DSN configurado: $([string]::IsNullOrWhiteSpace($env:DB_EMPRESAS_DSN) -eq $false)"
 Write-Info "DB_SUPERADMIN_DSN configurado: $([string]::IsNullOrWhiteSpace($env:DB_SUPERADMIN_DSN) -eq $false)"
-Write-Info "OLLAMA_BASE_URL configurado: $([string]::IsNullOrWhiteSpace($env:OLLAMA_BASE_URL) -eq $false)"
+Write-Info "GEMINI_API_KEY configurado: $([string]::IsNullOrWhiteSpace($env:GEMINI_API_KEY) -eq $false)"
 
 function Stop-ProcessesOnPort {
     param([int]$port)

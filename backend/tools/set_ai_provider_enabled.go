@@ -50,7 +50,7 @@ func main() {
     var actor string
 
     flag.StringVar(&dsnFlag, "dsn", "", "Postgres DSN for superadmin DB (overrides DB_SUPERADMIN_DSN env)")
-    flag.StringVar(&provider, "provider", "deepseek", "provider slug (deepseek|ollama)")
+    flag.StringVar(&provider, "provider", "google", "provider slug (google)")
     flag.StringVar(&enabled, "enabled", "0", "0 or 1")
     flag.StringVar(&actor, "actor", "cli-helper", "actor name to write in updated_by config")
     flag.Parse()
