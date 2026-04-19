@@ -1,6 +1,41 @@
 <div class="menu-section">
   <ul class="menu-list">
     <li><a id="linkAdministrarProductos" href="/administrar_empresa/productos/administrar_productos.html" target="app_iframe">Productos</a></li>
+    <aside class="admin-sidebar admin-sidebar-mobile-collapsible">
+      <nav class="admin-sidebar-nav">
+        <ul id="productosSidebarNav" class="nav nav-pills nav-stacked">
+          <li><a href="/administrar_empresa/productos/administrar_productos.html" target="app_iframe">Administrar productos</a></li>
+          <li><a href="/administrar_empresa/productos/categorias.html" target="app_iframe">Categorías</a></li>
+          <li><a href="/administrar_empresa/productos/proveedores.html" target="app_iframe">Proveedores</a></li>
+          <li class="admin-menu-visibility-item">
+            <button type="button" class="admin-menu-visibility-toggle" aria-controls="productosSidebarNav" aria-expanded="true" data-show-label="Mostrar menú" data-hide-label="Ocultar menú">
+              <span class="admin-menu-visibility-icon" aria-hidden="true">☰</span>
+              <span class="admin-menu-visibility-label">Ocultar menú</span>
+            </button>
+          </li>
+        </ul>
+      </nav>
+    </aside>
+      </ul>
+    </div>
+
+    <script>
+      // Si esta página se carga embebida dentro del menú principal de productos,
+      // ocultarla para evitar duplicados (el menú principal ya muestra la navegación).
+      (function(){
+        if (window.top !== window.self) {
+          try {
+            var parentDoc = window.parent && window.parent.document;
+            if (parentDoc && parentDoc.getElementById('productosContentFrame')) {
+              // No renderizamos el menú cuando estamos embebidos en el frame principal
+              document.documentElement.style.display = 'none';
+            }
+          } catch (e) {
+            // si cross-origin falla, no hacemos nada
+          }
+        }
+      })();
+    </script>
     <li><a id="linkBodegas" href="/administrar_empresa/bodega.html" target="app_iframe">Bodegas</a></li>
     <li><a id="linkCategorias" href="/administrar_empresa/productos/categorias.html" target="app_iframe">Categorias</a></li>
     <li><a id="linkProveedores" href="/administrar_empresa/productos/administrar_proveedores.html" target="app_iframe">Proveedores</a></li>

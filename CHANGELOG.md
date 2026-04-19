@@ -2,6 +2,11 @@
 
 ## 2026-04-19
 
+- Estaciones: la estación especial de YouTube cambia a un visor embebido estable con búsqueda funcional.
+	- Archivos modificados: `web/administrar_empresa/youtube_station_browser.html`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: se elimina la dependencia de la API del reproductor que no estaba resolviendo bien la carga en la tarjeta y se reemplaza por un visor embebido basado en `youtube-nocookie` que sí permite mostrar resultados y lanzar búsquedas desde la propia estación. Se agrega un botón `Inicio` para volver a una portada embebida útil y se conserva `Abrir YouTube` para abrir la página real completa en otra pestaña, porque el home oficial de YouTube no se puede incrustar de forma fiable dentro de un iframe normal.
+	- Verificacion: `get_errors` sin errores en `web/administrar_empresa/youtube_station_browser.html`.
+
 - Super administrador: se agrega un panel real para formatos de email y se unifica el guardado de configuración avanzada.
 	- Archivos creados: `backend/handlers/super_email_templates.go`, `web/super/formato_para_emviar_email.html`.
 	- Archivos modificados: `backend/main.go`, `backend/handlers/auth_admin_handlers.go`, `backend/handlers/usuarios_empresa.go`, `backend/handlers/payments_handlers.go`, `backend/handlers/server_runtime_notifications.go`, `backend/handlers/system_empresas_handlers_test.go`, `web/super/configuracion_avanzada.html`, `web/super_administrador.html`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.

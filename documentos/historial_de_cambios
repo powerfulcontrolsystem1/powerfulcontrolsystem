@@ -1,3 +1,24 @@
+- 2026-04-19: Estación YouTube cambia a visor embebido estable con búsqueda funcional
+    - Archivos modificados:
+        - web/administrar_empresa/youtube_station_browser.html
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripción: La estación especial de YouTube deja de depender de la API del reproductor, que estaba fallando en la tarjeta, y pasa a usar un visor embebido más estable basado en `youtube-nocookie` con búsqueda dentro de la propia estación. Se agrega un botón `Inicio` para volver a una portada embebida útil y se conserva `Abrir YouTube` para abrir la página principal real en una pestaña aparte, ya que YouTube no permite incrustar su home estándar en iframes normales.
+    - Verificación:
+        - `get_errors` sin errores en `web/administrar_empresa/youtube_station_browser.html`
+
+- 2026-04-19: Finalización: commit/push, backend arrancado, sondas HTTP y pruebas E2E
+    - Archivos modificados:
+        - web/descripcion_de_los_sistemas.ht
+        - web/js/seleccionar_empresa.js
+        - backend/handlers/e2e_login_acceptance_test.go
+        - CHANGELOG.md
+    - Descripción: Commit y push de los cambios en la rama `fix/sanitize-trial-selector-perms`; servidor local arrancado; sondeos HTTP verificados; ejecución de pruebas unitarias y E2E de aceptación pasó.
+    - Verificación:
+        - Branch: `fix/sanitize-trial-selector-perms` empujada a origen
+        - `go test ./handlers -run '^TestE2E_AcceptContractCreatesSession$'` → PASS
+        - Sondeos HTTP: `/descripcion_de_los_sistemas.ht` 200 (contiene "Probar Gratis"), `/seleccionar_empresa.html` 401 sin sesión
+
 - 2026-04-19: Panel super incorpora plantillas reales de email y guardado unificado en configuración avanzada
     - Archivos creados:
         - backend/handlers/super_email_templates.go

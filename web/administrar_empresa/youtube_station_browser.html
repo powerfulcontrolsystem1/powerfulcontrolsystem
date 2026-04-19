@@ -15,14 +15,15 @@
       </div>
       <div class="youtube-station-browser-actions">
         <div id="youtubeSearchBar" class="youtube-station-search-bar">
-          <input id="youtubeSearchInput" class="form-input youtube-station-search-input" type="text" placeholder="Buscar video o playlist">
+          <input id="youtubeSearchInput" class="form-input youtube-station-search-input" type="text" placeholder="Buscar en YouTube dentro de la estación">
           <button id="youtubeSearchBtn" class="btn secondary" type="button">Buscar</button>
         </div>
-        <a id="youtubeStationBrowserLink" class="btn secondary" href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer">Abrir aparte</a>
+        <button id="youtubeStationHomeBtn" class="btn secondary" type="button">Inicio</button>
+        <a id="youtubeStationBrowserLink" class="btn secondary" href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer">Abrir YouTube</a>
       </div>
     </header>
     <div class="youtube-station-browser-frame-wrap">
-      <div id="youtubePlayer" style="width:100%;height:100%;"></div>
+      <iframe id="youtubeStationFrame" style="width:100%;height:100%;border:0;" title="Explorador YouTube de la estación" loading="lazy" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin"></iframe>
     </div>
   </section>
 
@@ -40,115 +41,55 @@
       }
     }
 
-    // Mejoras: usar la IFrame API de YouTube para controlar reproducción (autoplay muted en vista compacta)
-    // y exponer funciones para que la tarjeta padre pueda pedir reproducción con sonido.
-
     function resolveQuery() {
       var query = getParam('query');
       return query || 'YouTube';
     }
 
+    function resolveHomeQuery() {
+      return 'YouTube oficial';
+    }
+
     function buildExternalURL(query) {
-      return 'https://www.youtube.com/results?search_query=' + encodeURIComponent(query || 'YouTube');
+      var clean = sanitizeText(query);
+      if (!clean) return 'https://www.youtube.com/';
+      return 'https://www.youtube.com/results?search_query=' + encodeURIComponent(clean);
     }
 
-    // Parse simple prefixes: 'playlist:PLAYLIST_ID' or plain search text.
-    function parseQueryForPlayer(q) {
-      var raw = String(q || '').trim();
-      if (!raw) return { type: 'search', value: 'YouTube' };
-      if (raw.indexOf('playlist:') === 0) {
-        return { type: 'playlist', value: raw.substring('playlist:'.length) };
-      }
-      // Heurística: si parece un id (sin espacios), tratar como playlist id
-      if (/^[A-Za-z0-9_-]{10,}$/.test(raw) && raw.indexOf(' ') === -1) {
-        return { type: 'playlist', value: raw };
-      }
-      return { type: 'search', value: raw };
+    function buildEmbedURL(query, compact) {
+      var clean = sanitizeText(query) || resolveHomeQuery();
+      var params = new URLSearchParams();
+      params.set('listType', 'search');
+      params.set('list', clean);
+      params.set('rel', '0');
+      params.set('modestbranding', '1');
+      params.set('playsinline', '1');
+      params.set('autoplay', compact ? '1' : '0');
+      params.set('mute', compact ? '1' : '0');
+      return 'https://www.youtube-nocookie.com/embed?' + params.toString();
     }
 
-    function buildPlayerVars(parsed, compact) {
-      var pv = { autoplay: (compact ? 1 : 0), controls: (compact ? 0 : 1), rel: 0, modestbranding: 1, playsinline: 1 };
-      if (parsed.type === 'playlist') {
-        pv.listType = 'playlist';
-        pv.list = parsed.value;
-      } else {
-        pv.listType = 'search';
-        pv.list = parsed.value;
-      }
-      return pv;
+    function updateBrowser(query, compact) {
+      var clean = sanitizeText(query) || resolveHomeQuery();
+      var frame = document.getElementById('youtubeStationFrame');
+      var label = document.getElementById('youtubeStationBrowserLabel');
+      var link = document.getElementById('youtubeStationBrowserLink');
+      if (frame) frame.src = buildEmbedURL(clean, compact);
+      if (label) label.textContent = compact ? 'Vista rápida embebida' : ('Resultados: ' + clean);
+      if (link) link.href = buildExternalURL(clean);
+      return clean;
     }
 
-    // YouTube player wiring
-    var ytPlayer = null;
-    var initialParsed = null;
-    var initialCompact = false;
-
-    function onYouTubeIframeAPIReady() {
-      try {
-        var opts = {
-          height: '100%',
-          width: '100%',
-          playerVars: buildPlayerVars(initialParsed, initialCompact),
-          events: {
-            onReady: function (e) {
-              try {
-                if (initialCompact) {
-                  try { e.target.mute(); } catch (x) {}
-                  try { e.target.playVideo(); } catch (x) {}
-                }
-              } catch (err) {}
-            }
-          }
-        };
-        ytPlayer = new YT.Player('youtubePlayer', opts);
-      } catch (err) {
-        console.warn('YouTube API init error', err);
-      }
-    }
-
-    // Expose simple control API for parent frame
     window.__ytPlayWithSound = function () {
-      try {
-        if (!ytPlayer) return;
-        try { ytPlayer.unMute(); } catch (e) {}
-        try { ytPlayer.playVideo(); } catch (e) {}
-      } catch (err) {}
+      var frame = document.getElementById('youtubeStationFrame');
+      if (!frame) return;
+      var currentQuery = sanitizeText(getParam('query')) || resolveHomeQuery();
+      frame.src = buildEmbedURL(currentQuery, false);
     };
 
     window.__ytLoadSearch = function (q) {
-      try {
-        var parsed = parseQueryForPlayer(q);
-        if (!ytPlayer) return;
-        if (parsed.type === 'playlist') {
-          ytPlayer.loadPlaylist({ listType: 'playlist', list: parsed.value, index: 0 });
-        } else {
-          ytPlayer.loadPlaylist({ listType: 'search', list: parsed.value, index: 0 });
-        }
-        var label = document.getElementById('youtubeStationBrowserLabel');
-        if (label) label.textContent = 'Búsqueda: ' + parsed.value;
-        var link = document.getElementById('youtubeStationBrowserLink');
-        if (link) link.href = buildExternalURL(parsed.value);
-      } catch (err) {
-        console.warn('loadSearch error', err);
-      }
+      updateBrowser(q, false);
     };
-
-    window.__ytLoadPlaylist = function (id) {
-      try {
-        if (!ytPlayer) return;
-        ytPlayer.loadPlaylist({ listType: 'playlist', list: String(id || ''), index: 0 });
-      } catch (err) {
-        console.warn('loadPlaylist error', err);
-      }
-    };
-
-    // Load YouTube IFrame API async
-    (function injectYouTubeApi(){
-      var s = document.createElement('script');
-      s.src = 'https://www.youtube.com/iframe_api';
-      s.async = true;
-      document.head.appendChild(s);
-    })();
 
     (function bootstrap() {
       var query = resolveQuery();
@@ -156,24 +97,33 @@
       var shell = document.querySelector('.youtube-station-browser-shell');
       var label = document.getElementById('youtubeStationBrowserLabel');
       var link = document.getElementById('youtubeStationBrowserLink');
+      var homeBtn = document.getElementById('youtubeStationHomeBtn');
       var searchBar = document.getElementById('youtubeSearchBar');
       var searchInput = document.getElementById('youtubeSearchInput');
       var searchBtn = document.getElementById('youtubeSearchBtn');
 
       if (shell) shell.dataset.compact = compact ? '1' : '0';
-      if (label) label.textContent = compact ? 'Vista rápida' : ('Búsqueda inicial: ' + query);
-      if (link) link.href = buildExternalURL(query);
+      if (label) label.textContent = compact ? 'Vista rápida embebida' : 'Portada de búsqueda de YouTube';
+      if (link) link.href = 'https://www.youtube.com/';
       if (searchBar) searchBar.style.display = compact ? 'none' : 'flex';
-      if (searchInput) searchInput.value = query;
+      if (searchInput) searchInput.value = query === 'YouTube' ? '' : query;
 
-      initialParsed = parseQueryForPlayer(query);
-      initialCompact = compact;
+      updateBrowser(query, compact);
+
+      if (homeBtn) {
+        homeBtn.addEventListener('click', function (ev) {
+          ev.preventDefault();
+          var defaultQuery = resolveHomeQuery();
+          if (searchInput) searchInput.value = '';
+          updateBrowser(defaultQuery, compact);
+        });
+      }
 
       if (searchBtn) {
         searchBtn.addEventListener('click', function (ev) {
           ev.preventDefault();
           var q = String((searchInput && searchInput.value) || '').trim();
-          if (!q) return;
+          if (!q) q = resolveHomeQuery();
           if (typeof window.__ytLoadSearch === 'function') {
             window.__ytLoadSearch(q);
           }
@@ -185,7 +135,7 @@
           if (ev.key !== 'Enter') return;
           ev.preventDefault();
           var q = String(searchInput.value || '').trim();
-          if (!q) return;
+          if (!q) q = resolveHomeQuery();
           if (typeof window.__ytLoadSearch === 'function') {
             window.__ytLoadSearch(q);
           }

@@ -18,6 +18,12 @@
         <li><a id="linkPrecios" href="/administrar_empresa/productos/precios.html" target="productosContentFrame"><img class="icon" src="/img/price-tag-color.svg" alt="">Precios</a></li>
         <li><a id="linkCombosProductos" href="/administrar_empresa/productos/combos_productos.html" target="productosContentFrame"><img class="icon" src="/img/shield-license-color.svg" alt="">Combos de productos</a></li>
         <li><a id="linkCompras" href="/administrar_empresa/productos/compras.html" target="productosContentFrame"><img class="icon" src="/img/network-color.svg" alt="">Compras</a></li>
+        <li class="admin-menu-visibility-item">
+          <button type="button" class="admin-menu-visibility-toggle" aria-controls="productosSidebarNav" aria-expanded="true" data-show-label="Mostrar menú" data-hide-label="Ocultar menú">
+            <span class="admin-menu-visibility-icon" aria-hidden="true">☰</span>
+            <span class="admin-menu-visibility-label">Ocultar menú</span>
+          </button>
+        </li>
       </ul>
     </aside>
 
@@ -25,6 +31,7 @@
       <iframe name="productosContentFrame" id="productosContentFrame" src="/administrar_empresa/administrar_productos.html?view=productos" title="Contenido de productos" class="admin-empresa-frame"></iframe>
     </main>
   </div>
-  <script src="/js/administrar_empresa.js"></script>
+    <script src="/js/administrar_empresa.js"></script>
+    <script src="/menu.js"></script>
 </body>
 </html>
