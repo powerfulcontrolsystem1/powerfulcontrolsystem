@@ -10,31 +10,37 @@
   <div class="container">
     <div class="page-header">
       <h1>Configuración avanzada</h1>
-      <p class="form-help">Ajustes avanzados del sistema. Administra la disponibilidad de Epayco y Wompi para el portal público de licencias.</p>
+      <p class="form-help">Ajustes avanzados del sistema. Administra la disponibilidad de Epayco, Wompi, Gmail y capacidades IA para los portales de clientes.</p>
     </div>
 
-    <div class="form-actions" style="justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px;">
-      <div id="globalConfigMsgTop" class="form-help">Usa este botón para guardar toda la configuración editada en esta página.</div>
-      <button id="saveAllConfigTopBtn" type="button" class="btn">Guardar cambios</button>
+    <div class="global-save-bar">
+      <p id="globalConfigMsgTop">Usa este botón para guardar toda la configuración editada independientemente del bloque.</p>
+      <button id="saveAllConfigTopBtn" type="button" class="btn" style="background: linear-gradient(180deg, #1f5080, #153759); color: white; border: 1px solid rgba(152, 197, 234, 0.4);">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:text-bottom; margin-right:6px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>Guardar cambios rápidos
+      </button>
     </div>
 
-    <section class="card form mp-card" id="ventaDigitalConfigShortcut">
-      <h2>Configuración de venta digital</h2>
-      <p class="form-help">Administra catálogo de licencias/software, carga archivos de instalación e inspecciona órdenes de compra.</p>
-      <div class="form-actions">
-        <a class="btn" href="/super/venta_digital.html">Abrir panel de venta digital</a>
+    <section class="card form advanced-card" data-brand="store" id="ventaDigitalConfigShortcut">
+      <h2>
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+        Configuración de venta digital
+      </h2>
+      <p class="form-help">Administra catálogo de licencias/software, visualiza órdenes de compra y ajusta formatos de email.</p>
+      <div class="form-actions" style="margin-top: 10px; padding-top: 10px; border-top: none;">
+        <a class="btn" href="/super/venta_digital.html">Abrir panel de venta</a>
         <a class="btn secondary" href="/venta_digital.html" target="_top">Ver tienda pública</a>
-        <a class="btn secondary" href="/super/formato_para_emviar_email.html">Editar formatos de email</a>
+        <a class="btn secondary" href="/super/formato_para_emviar_email.html">Editar email templates</a>
+        <button id="testVentaDigitalBtn" class="btn secondary" type="button">Probar salud del panel</button>
       </div>
-      <div class="form-actions">
-        <button id="testVentaDigitalBtn" class="btn secondary" type="button" style="margin-left:8px;">Probar panel</button>
-      </div>
-      <div id="ventaDigitalTestMsg" class="form-help"></div>
+      <div id="ventaDigitalTestMsg" class="form-help" style="margin-top: 12px; margin-bottom: 0;"></div>
     </section>
 
-    <section class="card form mp-card" id="epaycoConfig">
-      <h2>Epayco — Credenciales y activación</h2>
-      <p class="form-help">Configura credenciales de Epayco y activa la pasarela para aceptar tarjetas/PSE.</p>
+    <section class="card form advanced-card" data-brand="epayco" id="epaycoConfig">
+      <h2>
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2" ry="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
+        Epayco — Credenciales y activación
+      </h2>
+      <p class="form-help">Integra operaciones de recaudo digital usando el proveedor de pagos Epayco (Tarjetas, PSE).</p>
 
       <div class="form-row">
         <div class="form-col">
@@ -85,9 +91,12 @@
 
     <!-- Sección de parámetros avanzados eliminada por ahora -->
 
-    <section class="card form nequi-card" id="wompiConfig">
-      <h2>Nequi (Wompi) — Modo y credenciales</h2>
-      <p class="form-help">Activa primero el modo <strong>sandbox</strong> para pruebas (ejemplo: <strong>3991111111</strong>) y usa modo <strong>real</strong> solo en producción.</p>
+    <section class="card form advanced-card" data-brand="wompi" id="wompiConfig">
+      <h2>
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+        Nequi (Wompi) — Credenciales
+      </h2>
+      <p class="form-help">Integra operaciones de recaudo digital usando el proveedor de pagos Wompi (Nequi).</p>
 
       <div class="form-row">
         <div class="form-col">
@@ -154,9 +163,12 @@
       <div id="wompiTestResult" class="form-help"></div>
     </section>
 
-    <section class="card form mp-card" id="gmailConfig">
-      <h2>Correo Gmail — Confirmación de usuarios</h2>
-      <p class="form-help">Configura SMTP de Gmail para enviar el correo de confirmación a los usuarios creados desde cada empresa y administrar alertas automáticas cuando el servidor inicie o detecte reinicio inesperado.</p>
+    <section class="card form advanced-card" data-brand="gmail" id="gmailConfig">
+      <h2>
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+        Correo SMTP (Gmail)
+      </h2>
+      <p class="form-help">Configura la notificación automatizada y envíos críticos (usuarios nuevos, alertas de servidor).</p>
 
       <div class="form-row">
         <div class="form-col">
@@ -228,9 +240,12 @@
       <div id="gmailTestResult" class="form-help"></div>
     </section>
 
-    <section class="card form mp-card" id="aiConfigCard">
-      <h2>Inteligencia Artificial — Google Gemini</h2>
-      <p class="form-help">Este panel deja disponible Google Gemini por API key cifrada. El chat global super y el chat de cada empresa usan la misma configuración con alcance controlado.</p>
+    <section class="card form advanced-card" data-brand="ai" id="aiConfigCard">
+      <h2>
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"></path><path d="M12 8v8M8 12h8"></path></svg>
+        Inteligencia Artificial — Google Gemini
+      </h2>
+      <p class="form-help" style="margin-bottom:8px">Conecta servicios de GenAI (100% integrados y unificados) para la asistente del portal corporativo y super-admin.</p>
       <div id="aiLoggedAccount" class="form-help">Cuenta Google logueada: Cargando...</div>
 
       <div class="form-row">
@@ -269,9 +284,12 @@
       <div id="aiTestResult" class="form-help"></div>
     </section>
 
-    <section class="card form mp-card" id="backupConfigCard">
-      <h2>Respaldo y restauración de configuración crítica</h2>
-      <p class="form-help">Genera o restaura un respaldo operativo JSON de configuración super (Wompi, Gmail e IA).</p>
+    <section class="card form advanced-card" data-brand="system" id="backupConfigCard">
+      <h2>
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" y2="3"></line></svg>
+        Respaldo y restauración de configuración
+      </h2>
+      <p class="form-help">Genera o restaura toda la configuración de pasarelas y tokens con encriptado nativo.</p>
       <div class="form-row">
         <div class="form-col">
           <button id="downloadConfigBackupBtn" class="btn" type="button">Descargar respaldo JSON</button>
@@ -289,9 +307,11 @@
       <div id="backupTestResult" class="form-help"></div>
     </section>
 
-    <div class="form-actions" style="justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:18px;">
-      <div id="globalConfigMsgBottom" class="form-help">El mismo botón inferior guarda todos los cambios pendientes de la página.</div>
-      <button id="saveAllConfigBottomBtn" type="button" class="btn">Guardar cambios</button>
+    <div class="global-save-bar bottom">
+      <p id="globalConfigMsgBottom">Guarda todos los ajustes pendientes.</p>
+      <button id="saveAllConfigBottomBtn" type="button" class="btn" style="background: linear-gradient(180deg, #1f5080, #153759); color: white; border: 1px solid rgba(152, 197, 234, 0.4);">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:text-bottom; margin-right:6px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>Guardar cambios
+      </button>
     </div>
   </div>
 

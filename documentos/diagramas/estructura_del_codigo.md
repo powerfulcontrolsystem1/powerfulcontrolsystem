@@ -2,6 +2,17 @@
 
 Fecha de actualizacion: 2026-04-18
 
+## Actualizacion 2026-04-19 (chat y tareas: selector multiusuario y validacion estricta por empresa)
+
+- Frontend chat/tareas:
+  - `web/administrar_empresa/chat_y_tareas.html` agrega buscadores con checklist para seleccionar uno o varios usuarios activos de la empresa al crear una conversacion y para sumar varios participantes a una conversacion existente desde la misma vista.
+  - `web/estilos.css` incorpora el bloque visual del selector de usuarios y deja explicito en el formulario de mensajes que se pueden adjuntar fotos, audio y documentos.
+- Backend chat/tareas:
+  - `backend/handlers/chat_tareas.go` normaliza participantes tipo `usuario` contra la tabla `users` de la misma `empresa_id` antes de crear conversaciones grupales o agregar participantes, bloqueando cruces entre empresas y evitando persistencia parcial por payload invalido.
+  - `backend/handlers/chat_tareas_test.go` agrega regresiones para conversaciones grupales, adjuntos de imagen y rechazo de usuarios pertenecientes a otra empresa.
+- Flujo:
+  - `chat_y_tareas.html?empresa_id=...` -> buscar usuarios por nombre/correo -> marcar uno o varios -> crear chat directo o grupal -> backend valida pertenencia real de cada participante a la empresa -> mensajes con fotos y documentos compartidos solo dentro del mismo contexto empresarial.
+
 ## Actualizacion 2026-04-19 (panel empresa: chat y tareas como arranque con calendario protagonista)
 
 - Frontend panel empresa:

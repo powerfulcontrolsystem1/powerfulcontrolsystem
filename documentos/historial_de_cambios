@@ -1,3 +1,32 @@
+- 2026-04-19: Portal público renueva la landing Explorar oferta y reutiliza las tarjetas del index
+    - Archivos modificados:
+        - web/descripcion_de_los_sistemas.ht
+        - web/estilos.css
+        - documentos/descripcion_de_modulos
+        - documentos/matriz_roles_permisos_pos_multiempresa.md
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripción: La página `descripcion_de_los_sistemas.ht` cambia su tratamiento visual general y las tarjetas descriptivas ahora reutilizan el mismo lenguaje `home-offer-card` del index. Con esto, `Explorar oferta` se ve como una prolongación del home en lugar de una página oscura separada, manteniendo intactos los enlaces seguros hacia `Probar Gratis`.
+    - Verificación:
+        - `get_errors` sin errores en `web/descripcion_de_los_sistemas.ht`, `web/estilos.css`, `documentos/descripcion_de_modulos` y `documentos/matriz_roles_permisos_pos_multiempresa.md`
+
+- 2026-04-19: Chat y tareas habilita seleccion multiple de usuarios y valida pertenencia real por empresa.
+    - Archivos modificados:
+        - backend/handlers/chat_tareas.go
+        - backend/handlers/chat_tareas_test.go
+        - web/administrar_empresa/chat_y_tareas.html
+        - web/estilos.css
+        - documentos/descripcion_del_proyecto
+        - documentos/diagramas/estructura_del_codigo.md
+        - documentos/descripcion_de_modulos
+        - documentos/matriz_roles_permisos_pos_multiempresa.md
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripción: El módulo `chat_y_tareas` ahora permite que la administradora busque y marque uno o varios usuarios activos de la misma empresa para abrir conversaciones directas o grupales y agregar varios participantes a un chat existente. El formulario de mensajes refuerza el envío de fotos, audio y documentos. En backend, los participantes tipo `usuario` se normalizan contra la tabla `users` del mismo `empresa_id`, por lo que se rechazan usuarios de otras empresas antes de persistir la conversación o el participante.
+    - Verificación:
+        - `get_errors` sin errores en `backend/handlers/chat_tareas.go`, `backend/handlers/chat_tareas_test.go`, `web/administrar_empresa/chat_y_tareas.html` y `web/estilos.css`
+        - `go test ./handlers -run '^TestEmpresaChatTareas(AdjuntoUploadAllowsImage|AdjuntoUploadAllowsDocx|ConversacionesAddsOwnerAdminParticipant|ConversacionesCreatesGrupoConUsuariosSeleccionados|ConversacionesRejectsUsuarioDeOtraEmpresa|ParticipantesRejectsUsuarioDeOtraEmpresa|CitasSharedByEmpresa|MensajesHandlerDerivesUsuarioActor|MensajesHandlerRejectsInvalidConversacion|TareasHandlerRejectsInvalidConversacion|CitasHandlerRejectsInvalidConversacion)$' -count=1`
+
 - 2026-04-19: Chat y tareas se fortalece como dashboard principal y valida referencias empresariales
     - Archivos modificados:
         - backend/handlers/chat_tareas.go

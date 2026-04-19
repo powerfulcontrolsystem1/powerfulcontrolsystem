@@ -95,7 +95,19 @@
         '<a class="fm-item" href="/venta_digital.html">Venta digital</a>' +
         '<a class="fm-item" href="/Juegos/n64/index.html">Emulador N64</a>' +
         '<a class="fm-item" href="/configuracion_de_la_cuenta.html">Configuración</a>' +
-        '<button id="themeToggle" class="fm-item" type="button" aria-label="Cambiar tema"></button>' +
+        '<div class="theme-selector-item" id="themeToggleWrapper" style="position:relative;">' +
+          '<button id="themeToggle" class="fm-item theme-toggle-btn" type="button" aria-expanded="false" aria-haspopup="true" aria-label="Cambiar apariencia">Apariencia</button>' +
+          '<div id="themeSelectorPopup" class="theme-selector-popup" aria-hidden="true" role="menu">' +
+            '<div class="theme-opt-group">Oscuros</div>' +
+            '<button class="theme-option" data-theme-value="dark">Azul Elegante</button>' +
+            '<button class="theme-option" data-theme-value="dark-violet">Morado Midnight</button>' +
+            '<button class="theme-option" data-theme-value="dark-emerald">Negro Esmeralda</button>' +
+            '<div class="theme-opt-group mt-1">Claros</div>' +
+            '<button class="theme-option" data-theme-value="light">Blanco Corporativo</button>' +
+            '<button class="theme-option" data-theme-value="light-rose">Rosa Pastel</button>' +
+            '<button class="theme-option" data-theme-value="light-gold">Blanco Dorado</button>' +
+          '</div>' +
+        '</div>' +
         '<a id="sessionLink" class="fm-item" href="/login.html">Iniciar sesión</a>' +
         '<a class="fm-item" href="/ayuda/ayuda.html">Ayuda</a>' +
       '</div>';
@@ -171,30 +183,86 @@
       }
       setSessionLinkAuthenticated(hasBrowserSessionCookie());
 
-    // Theme toggle (iconos sol / luna)
+    // Theme toggle Logic
+    const themeToggleWrapper = wrapper.querySelector('#themeToggleWrapper');
     const themeToggle = wrapper.querySelector('#themeToggle');
+    const themeSelectorPopup = wrapper.querySelector('#themeSelectorPopup');
+    
     var currentTheme = (function(){ try{ return localStorage.getItem('theme') || 'dark' }catch(e){ return 'dark' } })();
-    function applyTheme(t){ if (t === 'light') document.documentElement.classList.add('theme-light'); else document.documentElement.classList.remove('theme-light'); }
-    function updateThemeBtn(){
-      if (!themeToggle) return;
-      var isLight = document.documentElement.classList.contains('theme-light');
-      if (isLight) {
-        // si estamos en tema claro, mostrar ícono luna (acción: activar modo oscuro)
-        themeToggle.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill="currentColor"/></svg>';
-        themeToggle.setAttribute('aria-label','Activar modo oscuro');
+    
+    function applyTheme(t){
+      // Apply theme attribute
+      if (t === 'dark') {
+          // If 'dark' is default we can just set it empty or explicitly to 'dark' for css to match html[data-theme="dark"]
+          document.documentElement.setAttribute('data-theme', t);
       } else {
-        // si estamos en tema oscuro, mostrar ícono sol (acción: activar modo claro)
-        themeToggle.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6.76 4.84l-1.8-1.79L3.17 4.84l1.79 1.79L6.76 4.84zM1 13h3v-2H1v2zm10 9h2v-3h-2v3zm7-1.76l1.79 1.79 1.79-1.79-1.79-1.79-1.79 1.79zM17.24 4.84l1.79-1.79L17.24 1.26 15.45 3.05 17.24 4.84zM12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10z" fill="currentColor"/></svg>';
-        themeToggle.setAttribute('aria-label','Activar modo claro');
+          document.documentElement.setAttribute('data-theme', t);
+      }
+      
+      // Update label
+      if (themeToggle) {
+          themeToggle.innerHTML = 'Apariencia';
+      }
+      
+      // Update active state in popup
+      if (themeSelectorPopup) {
+         themeSelectorPopup.querySelectorAll('.theme-option').forEach(opt => {
+            if (opt.getAttribute('data-theme-value') === t) {
+               opt.classList.add('active');
+            } else {
+               opt.classList.remove('active');
+            }
+         });
       }
     }
-    applyTheme(currentTheme); updateThemeBtn();
-    if (themeToggle) themeToggle.addEventListener('click', function(){
-      currentTheme = document.documentElement.classList.contains('theme-light') ? 'dark' : 'light';
-      try{ localStorage.setItem('theme', currentTheme) }catch(e){}
-      applyTheme(currentTheme);
-      updateThemeBtn();
-    });
+    
+    applyTheme(currentTheme); 
+    
+    if (themeToggleWrapper && themeToggle && themeSelectorPopup) {
+        themeToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const isExpanded = themeToggle.getAttribute('aria-expanded') === 'true';
+            
+            // Toggle visibility
+            themeToggle.setAttribute('aria-expanded', !isExpanded);
+            themeSelectorPopup.setAttribute('aria-hidden', isExpanded);
+            if (!isExpanded) {
+                themeSelectorPopup.classList.add('show');
+            } else {
+                themeSelectorPopup.classList.remove('show');
+            }
+        });
+        
+        themeSelectorPopup.querySelectorAll('.theme-option').forEach(opt => {
+            opt.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const selectedTheme = this.getAttribute('data-theme-value');
+                currentTheme = selectedTheme;
+                try{ localStorage.setItem('theme', selectedTheme) }catch(e){}
+                applyTheme(selectedTheme);
+                
+                // Close popup
+                themeToggle.setAttribute('aria-expanded', 'false');
+                themeSelectorPopup.setAttribute('aria-hidden', 'true');
+                themeSelectorPopup.classList.remove('show');
+                
+                // Optional: completely close menu immediately after picking theme? 
+                // Or leave menu open? Usually better to leave it open so they see result.
+            });
+        });
+        
+        // click outside popup to close it (handled by panel event listener mostly, but let's ensure it doesn't leave the popup stranding if menu closes)
+        document.addEventListener('click', function() {
+            themeToggle.setAttribute('aria-expanded', 'false');
+            themeSelectorPopup.setAttribute('aria-hidden', 'true');
+            themeSelectorPopup.classList.remove('show');
+        });
+        
+        // stop propagation inside popup so clicking it doesn't close the parent panel
+        themeSelectorPopup.addEventListener('click', function(e) {
+           e.stopPropagation(); 
+        });
+    }
 
     // (Modo ventana eliminado por petición)
 

@@ -81,6 +81,56 @@ func ensureChatTareaExists(dbEmp *sql.DB, empresaID, tareaID int64) error {
 	return nil
 }
 
+func normalizeChatParticipanteForEmpresa(dbEmp *sql.DB, empresaID int64, participant dbpkg.ChatParticipante) (dbpkg.ChatParticipante, error) {
+	participant.EmpresaID = empresaID
+	participant.ParticipanteTipo = strings.ToLower(strings.TrimSpace(participant.ParticipanteTipo))
+	participant.Email = normalizeChatActorEmail(participant.Email)
+	participant.Nombre = strings.TrimSpace(participant.Nombre)
+	if participant.ParticipanteTipo == "" {
+		if participant.ParticipanteRefID > 0 {
+			participant.ParticipanteTipo = "usuario"
+		} else {
+			participant.ParticipanteTipo = "admin"
+		}
+	}
+	if participant.ParticipanteTipo != "usuario" {
+		return participant, nil
+	}
+
+	var scopedUser *dbpkg.EmpresaUsuario
+	if participant.ParticipanteRefID > 0 {
+		userByID, err := dbpkg.GetEmpresaUsuarioByID(dbEmp, empresaID, participant.ParticipanteRefID)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				return participant, fmt.Errorf("el participante seleccionado no pertenece a esta empresa")
+			}
+			return participant, err
+		}
+		scopedUser = userByID
+	}
+	if participant.Email != "" {
+		userByEmail, err := dbpkg.GetEmpresaUsuarioByEmailScoped(dbEmp, participant.Email, empresaID)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				return participant, fmt.Errorf("el participante seleccionado no pertenece a esta empresa")
+			}
+			return participant, err
+		}
+		if scopedUser != nil && userByEmail.ID != scopedUser.ID {
+			return participant, fmt.Errorf("email y participante_ref_id no corresponden al mismo usuario de la empresa")
+		}
+		scopedUser = userByEmail
+	}
+	if scopedUser == nil {
+		return participant, fmt.Errorf("el participante seleccionado no pertenece a esta empresa")
+	}
+
+	participant.ParticipanteRefID = scopedUser.ID
+	participant.Email = normalizeChatActorEmail(scopedUser.Email)
+	participant.Nombre = safeAuthorName(scopedUser.Nombre, participant.Email)
+	return participant, nil
+}
+
 func removeChatUploadFile(path string) {
 	if strings.TrimSpace(path) == "" {
 		return
@@ -289,6 +339,16 @@ func EmpresaChatTareasConversacionesHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 
+			normalizedParticipants := make([]dbpkg.ChatParticipante, 0, len(payload.Participantes))
+			for _, participant := range payload.Participantes {
+				normalizedParticipant, err := normalizeChatParticipanteForEmpresa(dbEmp, payload.EmpresaID, participant)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				normalizedParticipants = append(normalizedParticipants, normalizedParticipant)
+			}
+
 			actor := resolveChatActor(dbEmp, r, payload.EmpresaID)
 			payload.UsuarioCreador = actor.UsuarioCreador
 			if strings.TrimSpace(payload.EstadoConversacion) == "" {
@@ -317,7 +377,7 @@ func EmpresaChatTareasConversacionesHandler(dbEmp *sql.DB) http.HandlerFunc {
 				})
 			}
 
-			for _, p := range payload.Participantes {
+			for _, p := range normalizedParticipants {
 				p.EmpresaID = payload.EmpresaID
 				p.ConversacionID = newID
 				p.UsuarioCreador = actor.UsuarioCreador
@@ -466,6 +526,12 @@ func EmpresaChatTareasParticipantesHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, "email o participante_ref_id es obligatorio", http.StatusBadRequest)
 				return
 			}
+			normalizedParticipant, err := normalizeChatParticipanteForEmpresa(dbEmp, payload.EmpresaID, payload)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			payload = normalizedParticipant
 			payload.UsuarioCreador = resolveChatActor(dbEmp, r, payload.EmpresaID).UsuarioCreador
 			id, err := dbpkg.CreateChatParticipante(dbEmp, payload)
 			if err != nil {

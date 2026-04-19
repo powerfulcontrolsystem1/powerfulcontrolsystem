@@ -1,3 +1,7 @@
+2026-04-19: Nota operativa para mensajeria multiusuario en `administrar_empresa` y `chat_y_tareas`
+- La administradora puede buscar y marcar varios usuarios activos de su misma empresa para crear o ampliar conversaciones, pero el cambio no amplía roles ni wrappers: la operación sigue limitada al contexto autenticado y al `empresa_id` ya permitido.
+- El backend ahora rechaza participantes tipo `usuario` cuyo `participante_ref_id` o correo pertenezcan a otra empresa, cerrando un cruce de datos sin conceder privilegios nuevos a administradores o usuarios empresa.
+
 2026-04-19: Nota operativa de robustez para `administrar_empresa` y `chat_y_tareas`
 - El dashboard principal de `Chat y tareas` agrega tarjetas resumen, acciones rapidas y refresco parcial, pero conserva el mismo alcance por rol y por `empresa_id` del modulo colaborativo.
 - Las nuevas validaciones de `conversacion_id` y `tarea_id` solo bloquean referencias invalidas o cruzadas; no agregan permisos nuevos ni cambian wrappers de acceso para administradores o usuarios empresa autorizados.
@@ -143,6 +147,7 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 	- `web/administrar_empresa/configuracion_de_estaciones.html`, `web/administrar_empresa/estaciones.html`, `web/administrar_empresa/youtube_station_browser.html` y `web/estilos.css` agregan una estacion especial `YouTube` dentro del mismo modulo autenticado de estaciones.
 	- La estacion especial reproduce solo videos o playlists embebibles válidos; cuando la referencia configurada es texto libre, el fallback sigue siendo abrir YouTube fuera del sistema y no cambia permisos ni alcance del modulo.
 	- La operadora también puede pegar y guardar desde la propia tarjeta la URL o ID del video, playlist o `Shorts` sin salir de `estaciones.html`; el cambio sigue usando el mismo permiso autenticado del modulo y no abre capacidades nuevas por rol.
+	- `web/descripcion_de_los_sistemas.ht` adopta el mismo lenguaje visual de las tarjetas del index, pero el modulo sigue siendo publico y sin cambios en permisos, CRUD/A ni wrappers.
 	- Impacto de matriz: sin cambios en permisos, roles o wrappers; la nueva tarjeta reutiliza la misma autorizacion empresarial y no abre endpoints ni acciones administrativas adicionales.
 
 - Actualizacion 2026-04-18 (gobernanza tecnica documental: DIAN, alertas de reinicio y reportes):

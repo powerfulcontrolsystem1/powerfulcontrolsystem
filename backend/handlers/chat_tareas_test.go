@@ -218,6 +218,82 @@ func TestEmpresaChatTareasAdjuntoUploadAllowsDocx(t *testing.T) {
 	}
 }
 
+func TestEmpresaChatTareasAdjuntoUploadAllowsImage(t *testing.T) {
+	dbEmp := openTestSQLite(t, "chat_tareas_adjunto_imagen.db")
+	ensureChatTareasTestBase(t, dbEmp)
+
+	const empresaID int64 = 112
+	const ownerEmail = "admin.owner@empresa.com"
+	const userEmail = "operador.imagen@empresa.com"
+	cleanupChatTareasUploadArtifacts(t, empresaID)
+
+	seedPermsEmpresa(t, dbEmp, empresaID, ownerEmail)
+	seedChatTareasUser(t, dbEmp, empresaID, userEmail, "Operador Imagen")
+
+	convID, err := dbpkg.CreateChatConversacion(dbEmp, dbpkg.ChatConversacion{
+		EmpresaID:          empresaID,
+		Titulo:             "Conversacion fotos",
+		Descripcion:        "Validar imagen",
+		Prioridad:          "media",
+		EstadoConversacion: "abierta",
+		UsuarioCreador:     ownerEmail,
+		Estado:             "activo",
+	})
+	if err != nil {
+		t.Fatalf("create conversacion: %v", err)
+	}
+
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	if err := writer.WriteField("empresa_id", strconv.FormatInt(empresaID, 10)); err != nil {
+		t.Fatalf("write empresa_id field: %v", err)
+	}
+	if err := writer.WriteField("conversacion_id", strconv.FormatInt(convID, 10)); err != nil {
+		t.Fatalf("write conversacion_id field: %v", err)
+	}
+	if err := writer.WriteField("contenido", "Foto del producto"); err != nil {
+		t.Fatalf("write contenido field: %v", err)
+	}
+	part, err := writer.CreateFormFile("archivo", "foto.png")
+	if err != nil {
+		t.Fatalf("create multipart file: %v", err)
+	}
+	if _, err := part.Write([]byte("png simulado")); err != nil {
+		t.Fatalf("write multipart file: %v", err)
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatalf("close multipart: %v", err)
+	}
+
+	h := EmpresaChatTareasAdjuntoUploadHandler(dbEmp)
+	req := httptest.NewRequest(http.MethodPost, "/api/empresa/chat_tareas/mensajes/adjunto", &body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req = req.WithContext(context.WithValue(req.Context(), "adminEmail", userEmail))
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusCreated {
+		t.Fatalf("expected 201, got %d body=%s", rr.Code, rr.Body.String())
+	}
+
+	msgs, err := dbpkg.GetChatMensajes(dbEmp, empresaID, convID, true, 50, 0)
+	if err != nil {
+		t.Fatalf("get chat mensajes: %v", err)
+	}
+	if len(msgs) != 1 || len(msgs[0].Adjuntos) != 1 {
+		t.Fatalf("expected 1 message and 1 image attachment, got msgs=%d adj=%d", len(msgs), func() int {
+			if len(msgs) == 0 {
+				return 0
+			}
+			return len(msgs[0].Adjuntos)
+		}())
+	}
+	if got := strings.ToLower(strings.TrimSpace(msgs[0].Adjuntos[0].TipoArchivo)); got != "imagen" {
+		t.Fatalf("expected tipo_archivo imagen, got %q", got)
+	}
+}
+
 func TestEmpresaChatTareasConversacionesAddsOwnerAdminParticipant(t *testing.T) {
 	dbEmp := openTestSQLite(t, "chat_tareas_conversacion_owner_participant.db")
 	ensureChatTareasTestBase(t, dbEmp)
@@ -333,6 +409,95 @@ func TestEmpresaChatTareasConversacionesCreatesGrupoConUsuariosSeleccionados(t *
 
 	if !foundUserOne || !foundUserTwo {
 		t.Fatalf("expected both selected users in participants, got %+v", participants)
+	}
+}
+
+func TestEmpresaChatTareasConversacionesRejectsUsuarioDeOtraEmpresa(t *testing.T) {
+	dbEmp := openTestSQLite(t, "chat_tareas_conversacion_grupo_otra_empresa.db")
+	ensureChatTareasTestBase(t, dbEmp)
+
+	const empresaID int64 = 118
+	const otraEmpresaID int64 = 119
+	const ownerEmail = "owner.grupo@empresa.com"
+	const adminEmail = "admin.grupo@empresa.com"
+
+	seedPermsEmpresa(t, dbEmp, empresaID, ownerEmail)
+	seedPermsEmpresa(t, dbEmp, otraEmpresaID, "owner.otra@empresa.com")
+	seedChatTareasUser(t, dbEmp, empresaID, adminEmail, "Admin Grupo")
+	foreignUserID := seedChatTareasUser(t, dbEmp, otraEmpresaID, "ajeno@empresa.com", "Usuario Ajeno")
+
+	h := EmpresaChatTareasConversacionesHandler(dbEmp)
+	payload := `{"empresa_id":118,"titulo":"Grupo invalido","participantes":[{"participante_tipo":"usuario","participante_ref_id":` + strconv.FormatInt(foreignUserID, 10) + `,"email":"ajeno@empresa.com"}]}`
+	req := httptest.NewRequest(http.MethodPost, "/api/empresa/chat_tareas/conversaciones", strings.NewReader(payload))
+	req.Header.Set("Content-Type", "application/json")
+	req = req.WithContext(context.WithValue(req.Context(), "adminEmail", adminEmail))
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d body=%s", rr.Code, rr.Body.String())
+	}
+	if !strings.Contains(strings.ToLower(rr.Body.String()), "no pertenece a esta empresa") {
+		t.Fatalf("expected cross-company validation error, got %s", rr.Body.String())
+	}
+
+	conversations, err := dbpkg.GetChatConversaciones(dbEmp, empresaID, true, "")
+	if err != nil {
+		t.Fatalf("get conversaciones: %v", err)
+	}
+	if len(conversations) != 0 {
+		t.Fatalf("expected no conversation created, got %d", len(conversations))
+	}
+}
+
+func TestEmpresaChatTareasParticipantesRejectsUsuarioDeOtraEmpresa(t *testing.T) {
+	dbEmp := openTestSQLite(t, "chat_tareas_participante_otra_empresa.db")
+	ensureChatTareasTestBase(t, dbEmp)
+
+	const empresaID int64 = 120
+	const otraEmpresaID int64 = 121
+	const ownerEmail = "owner.participantes@empresa.com"
+	const adminEmail = "admin.participantes@empresa.com"
+
+	seedPermsEmpresa(t, dbEmp, empresaID, ownerEmail)
+	seedPermsEmpresa(t, dbEmp, otraEmpresaID, "owner.otra.participantes@empresa.com")
+	seedChatTareasUser(t, dbEmp, empresaID, adminEmail, "Admin Participantes")
+	foreignUserID := seedChatTareasUser(t, dbEmp, otraEmpresaID, "foraneo@empresa.com", "Usuario Foraneo")
+
+	convID, err := dbpkg.CreateChatConversacion(dbEmp, dbpkg.ChatConversacion{
+		EmpresaID:          empresaID,
+		Titulo:             "Conversacion valida",
+		EstadoConversacion: "abierta",
+		UsuarioCreador:     adminEmail,
+		Estado:             "activo",
+	})
+	if err != nil {
+		t.Fatalf("create conversacion: %v", err)
+	}
+
+	h := EmpresaChatTareasParticipantesHandler(dbEmp)
+	payload := `{"empresa_id":120,"conversacion_id":` + strconv.FormatInt(convID, 10) + `,"participante_tipo":"usuario","participante_ref_id":` + strconv.FormatInt(foreignUserID, 10) + `,"email":"foraneo@empresa.com"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/empresa/chat_tareas/participantes", strings.NewReader(payload))
+	req.Header.Set("Content-Type", "application/json")
+	req = req.WithContext(context.WithValue(req.Context(), "adminEmail", adminEmail))
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d body=%s", rr.Code, rr.Body.String())
+	}
+	if !strings.Contains(strings.ToLower(rr.Body.String()), "no pertenece a esta empresa") {
+		t.Fatalf("expected cross-company validation error, got %s", rr.Body.String())
+	}
+
+	participants, err := dbpkg.GetChatParticipantes(dbEmp, empresaID, convID, true)
+	if err != nil {
+		t.Fatalf("get participantes: %v", err)
+	}
+	if len(participants) != 0 {
+		t.Fatalf("expected no participant inserted, got %d", len(participants))
 	}
 }
 

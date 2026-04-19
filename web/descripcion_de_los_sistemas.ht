@@ -259,7 +259,7 @@
           }).join('');
 
           return '' +
-            '<article id="' + escapeHTML(card.detalle_id) + '" class="system-detail-card" tabindex="-1">' +
+            '<article id="' + escapeHTML(card.detalle_id) + '" class="system-detail-card home-offer-card" tabindex="-1">' +
             '  <div class="system-detail-media">' +
             '    <span class="system-detail-tag">' + escapeHTML(card.detalle_etiqueta) + '</span>' +
             '    <img src="' + escapeHTML(card.imagen_url) + '" alt="Icono ' + escapeHTML(card.titulo) + '">' +
@@ -278,7 +278,7 @@
             '      <ul class="system-detail-points">' + pointsHTML + '</ul>' +
             '    </div>' +
             '    <div class="system-detail-actions">' +
-              '      <a class="system-trial-btn" href="' + escapeHTML(card.trial_link || '/registrar_nuevo_usuario_administrador.html') + '">Probar Gratis</a>' +
+              '      <a class="home-offer-btn system-trial-btn" href="' + escapeHTML(card.trial_link || '/registrar_nuevo_usuario_administrador.html') + '">Probar Gratis</a>' +
             '    </div>' +
             '  </div>' +
             '</article>';

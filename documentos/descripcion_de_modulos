@@ -1,3 +1,8 @@
+2026-04-19: Chat y tareas agrega mensajeria multiusuario buscable y fotos dentro de la empresa
+- Modulos afectados: `administrar_empresa`, `chat_y_tareas`
+- Cambio funcional: `chat_y_tareas.html` ahora muestra una lista filtrable con checks para que la administradora cree conversaciones directas o grupales seleccionando usuarios activos de su misma empresa, y otro selector similar para agregar varios participantes a un chat existente. El formulario de mensajes deja explicito el envio de fotos, audio y documentos. En backend, `chat_tareas` valida que cada participante tipo `usuario` pertenezca realmente a la empresa antes de persistirlo.
+- Impacto operativo: se habilita el flujo pedido de escribir a un usuario o a varios sin salir del modulo, manteniendo el aislamiento real por `empresa_id` y evitando mezclar usuarios de otras empresas por error o payload manipulado.
+
 2026-04-19: Chat y tareas se endurece como home operativo principal del panel empresa
 - Modulos afectados: `administrar_empresa`, `chat_y_tareas`
 - Cambio funcional: `chat_y_tareas.html` agrega un tablero resumen con conversaciones abiertas, tareas activas, urgencias y citas del dia, acciones rapidas para crear conversacion/tarea/reunion y estados vacios mas claros por bloque. En backend, `chat_tareas` valida que `conversacion_id` y `tarea_id` realmente pertenezcan a la empresa antes de crear participantes, mensajes, tareas, citas o notas de voz, y limpia adjuntos del filesystem si falla la persistencia asociada.
@@ -159,6 +164,11 @@ Actualizacion 2026-04-19 (estaciones: la misma tarjeta YouTube permite guardar l
 - Se refuerza el submodulo `estaciones` para que la operadora pegue y guarde desde la propia tarjeta la URL o el ID del contenido de YouTube, sin depender de entrar a la pantalla de configuración.
 - `web/administrar_empresa/estaciones.html` agrega un editor inline dentro de la tarjeta, guarda la referencia en `estaciones_config` y recarga la vista en el mismo bloque; `web/administrar_empresa/youtube_station_browser.html` ya interpreta también enlaces de `Shorts` como video válido.
 - Impacto de permisos: sin cambios en roles, wrappers ni alcance; la tarjeta usa la misma persistencia autenticada de `empresa_estacion_prefs` ya existente para la empresa activa.
+
+Actualizacion 2026-04-19 (portal publico: explorar oferta adopta tarjetas del home y una landing visual propia):
+- Se ajusta el submodulo `pagina principal publica` para que la landing `descripcion_de_los_sistemas.ht` deje de usar el bloque visual oscuro anterior y pase a una composicion mas comercial y consistente con el index.
+- `web/descripcion_de_los_sistemas.ht` reutiliza la clase `home-offer-card` en cada tarjeta descriptiva y `web/estilos.css` redefine la pagina de ofertas con hero, navegacion rapida y tarjetas ampliadas que conservan el mismo lenguaje visual del home.
+- Impacto de permisos: sin cambios en roles, wrappers ni rutas protegidas; el ajuste es completamente visual dentro del portal publico.
 
 Actualizacion 2026-04-18 (gobernanza tecnica: soporte remoto y contingencia de reportes):
 - Se amplía el paquete transversal `gobernanza tecnica` con un contrato técnico del módulo de soporte remoto multiempresa y dos runbooks nuevos de contingencia operativa.
