@@ -96,8 +96,22 @@ func RegisterServerStartupEvent(dbSuper *sql.DB, opts ServerStartupRegistration)
 		alertaReinicioReadErr = "db super no disponible"
 	}
 
-	asunto := fmt.Sprintf("[PCS] Inicio de servidor detectado (%s)", hostname)
-	cuerpo := buildServerStartupEmailBody(nowText, hostname, listenAddr, motivo, motivoDetalle, reinicioInesperado, prevState)
+	asunto, cuerpo, _, templateErr := applySuperEmailTemplate(dbSuper, superEmailTemplateKeyServerRestartAlert, map[string]string{
+		"hostname":                   hostname,
+		"event_date":                 nowText,
+		"listen_addr_line":           templateLine("Direccion escucha: ", listenAddr),
+		"reason":                     motivo,
+		"unexpected_restart":         fmt.Sprintf("%t", reinicioInesperado),
+		"detail_line":                templateLine("Detalle: ", strings.TrimSpace(motivoDetalle)),
+		"previous_status_block":      templateLine("Estado previo: ", strings.TrimSpace(prevState.Status)),
+		"previous_start_block":       templateLine("Inicio previo: ", strings.TrimSpace(prevState.LastStartAt)),
+		"previous_stop_block":        templateLine("Fin previo: ", strings.TrimSpace(prevState.LastStopAt)),
+		"previous_stop_reason_block": templateLine("Motivo cierre previo: ", strings.TrimSpace(prevState.LastStopReason)),
+	})
+	if templateErr != nil {
+		asunto = fmt.Sprintf("[PCS] Inicio de servidor detectado (%s)", hostname)
+		cuerpo = buildServerStartupEmailBody(nowText, hostname, listenAddr, motivo, motivoDetalle, reinicioInesperado, prevState)
+	}
 
 	correoEnviado := false
 	correoError := ""

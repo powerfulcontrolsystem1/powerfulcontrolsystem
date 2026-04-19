@@ -1,3 +1,25 @@
+Actualizacion 2026-04-19: panel super administra plantillas reales de email y centraliza el guardado de configuración avanzada
+ - Archivos creados:
+	 - backend/handlers/super_email_templates.go : Registro central de plantillas de correo del panel super, con endpoint `GET/PUT /super/api/config/email_templates`, defaults y render por variables.
+	 - web/super/formato_para_emviar_email.html : Subpágina del panel super para editar plantillas de confirmación, licencias, recuperación de contraseña y alertas operativas con botones de guardado arriba y abajo.
+ - Archivos modificados:
+	 - backend/main.go : Registra la nueva ruta super `/super/api/config/email_templates`.
+	 - backend/handlers/auth_admin_handlers.go : Reemplaza textos fijos de confirmación y recuperación administrativa por plantillas configurables.
+	 - backend/handlers/usuarios_empresa.go : Reemplaza textos fijos de confirmación y recuperación de usuarios empresa por plantillas configurables.
+	 - backend/handlers/payments_handlers.go : Reemplaza el correo fijo de activación de licencia por la plantilla configurable super.
+	 - backend/handlers/server_runtime_notifications.go : Intenta construir la alerta de inicio/reinicio con plantilla configurable y mantiene fallback legacy si falla la carga.
+	 - backend/handlers/system_empresas_handlers_test.go : Agrega pruebas del endpoint de plantillas y del render configurado con fallback de HTML opcional.
+	 - web/super/configuracion_avanzada.html : Oculta botones de guardado por tarjeta y centraliza el persistido en dos botones globales de `Guardar cambios`.
+	 - web/super_administrador.html : Agrega el acceso lateral `Formatos de email` dentro del shell super.
+	 - documentos/descripcion_del_proyecto
+	 - documentos/diagramas/estructura_del_codigo.md
+	 - documentos/descripcion_de_modulos
+	 - documentos/matriz_roles_permisos_pos_multiempresa.md
+	 - documentos/descripcion_de_archivos
+	 - documentos/historial_de_cambios
+	 - CHANGELOG.md
+ - Descripcion: El panel super deja de depender de textos hardcodeados para correos transaccionales y operativos. La configuración avanzada también deja de guardar por bloques aislados y adopta un flujo de guardado global consistente.
+
 Actualizacion 2026-04-18: estaciones y configuracion empresarial consolidan el carrito unificado y limpian el legado de venta simple
  - Archivos creados:
 	 - web/administrar_empresa/configuracion_carrito_de_compra_empresa.html : Subpagina del submenu Configuracion para administrar la configuracion global del carrito unificado por empresa.

@@ -980,6 +980,90 @@ func TestGmailConfigHandlerTestActionCapturesNotification(t *testing.T) {
 	}
 }
 
+func TestSuperEmailTemplatesHandlerSaveAndGet(t *testing.T) {
+	dbSuper := openTestSQLite(t, "super_email_templates_handler.db")
+	ensureSuperConfigSchemaForSuper(t, dbSuper)
+
+	h := SuperEmailTemplatesHandler(dbSuper)
+	body := `{"templates":[{"key":"empresa_user_confirmation","subject":"Bienvenido {{name}}","body_text":"Confirma aquí: {{confirm_url}}","body_html":"<p>Confirma aquí <a href=\"{{confirm_url}}\">ingresando</a></p>"},{"key":"licencia_activation_payment","subject":"Licencia activa para {{company_name}}","body_text":"Empresa: {{company_name}}","body_html":""}]}`
+	req := httptest.NewRequest(http.MethodPut, "/super/api/config/email_templates", strings.NewReader(body))
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, rr.Code, rr.Body.String())
+	}
+
+	getReq := httptest.NewRequest(http.MethodGet, "/super/api/config/email_templates", nil)
+	getRR := httptest.NewRecorder()
+	h.ServeHTTP(getRR, getReq)
+
+	if getRR.Code != http.StatusOK {
+		t.Fatalf("expected status %d on get, got %d body=%s", http.StatusOK, getRR.Code, getRR.Body.String())
+	}
+
+	var payload struct {
+		Templates []superEmailTemplateItem `json:"templates"`
+	}
+	if err := json.Unmarshal(getRR.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode email templates response: %v body=%s", err, getRR.Body.String())
+	}
+	if len(payload.Templates) == 0 {
+		t.Fatalf("expected templates in response, got %s", getRR.Body.String())
+	}
+	var foundEmpresa bool
+	var foundLicencia bool
+	for _, item := range payload.Templates {
+		switch item.Key {
+		case superEmailTemplateKeyEmpresaConfirmation:
+			foundEmpresa = true
+			if item.Subject != "Bienvenido {{name}}" {
+				t.Fatalf("expected custom empresa subject, got %q", item.Subject)
+			}
+		case superEmailTemplateKeyLicenciaActivation:
+			foundLicencia = true
+			if item.Subject != "Licencia activa para {{company_name}}" {
+				t.Fatalf("expected custom licencia subject, got %q", item.Subject)
+			}
+		}
+	}
+	if !foundEmpresa || !foundLicencia {
+		t.Fatalf("expected saved templates in response, got %+v", payload.Templates)
+	}
+}
+
+func TestApplySuperEmailTemplateUsesConfiguredValues(t *testing.T) {
+	dbSuper := openTestSQLite(t, "super_email_template_render.db")
+	ensureSuperConfigSchemaForSuper(t, dbSuper)
+
+	if err := dbpkg.SetConfigValue(dbSuper, superEmailTemplateConfigKey(superEmailTemplateKeyLicenciaActivation, "subject"), "Licencia activa para {{company_name}}", false); err != nil {
+		t.Fatalf("save custom subject: %v", err)
+	}
+	if err := dbpkg.SetConfigValue(dbSuper, superEmailTemplateConfigKey(superEmailTemplateKeyLicenciaActivation, "body_text"), "Empresa {{company_name}} con ref {{reference}}", false); err != nil {
+		t.Fatalf("save custom body_text: %v", err)
+	}
+	if err := dbpkg.SetConfigValue(dbSuper, superEmailTemplateConfigKey(superEmailTemplateKeyLicenciaActivation, "body_html"), "", false); err != nil {
+		t.Fatalf("save empty body_html: %v", err)
+	}
+
+	subject, bodyText, bodyHTML, err := applySuperEmailTemplate(dbSuper, superEmailTemplateKeyLicenciaActivation, map[string]string{
+		"company_name": "Hotel Demo",
+		"reference":    "REF-123",
+	})
+	if err != nil {
+		t.Fatalf("apply template: %v", err)
+	}
+	if subject != "Licencia activa para Hotel Demo" {
+		t.Fatalf("expected rendered subject, got %q", subject)
+	}
+	if bodyText != "Empresa Hotel Demo con ref REF-123" {
+		t.Fatalf("expected rendered body_text, got %q", bodyText)
+	}
+	if !strings.Contains(bodyHTML, "Empresa Hotel Demo con ref REF-123") {
+		t.Fatalf("expected generated html body to include rendered text, got %q", bodyHTML)
+	}
+}
+
 func TestPublicLicenciasPaymentMethodsHandlerOrdersAndAvailability(t *testing.T) {
 	rawKey := make([]byte, 32)
 	for i := range rawKey {

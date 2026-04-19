@@ -2,6 +2,45 @@
 
 Fecha de actualizacion: 2026-04-18
 
+## Actualizacion 2026-04-19 (super: plantillas de email configurables y guardado global)
+
+- Backend super:
+  - `backend/handlers/super_email_templates.go` agrega el registro de plantillas de correo, sus valores por defecto, helpers de render y el endpoint `GET/PUT /super/api/config/email_templates`.
+  - `backend/main.go` registra la nueva ruta super de plantillas.
+  - `backend/handlers/auth_admin_handlers.go`, `backend/handlers/usuarios_empresa.go`, `backend/handlers/payments_handlers.go` y `backend/handlers/server_runtime_notifications.go` dejan de construir correos críticos con texto fijo y pasan a usar el render centralizado configurable desde super.
+- Frontend super:
+  - `web/super/formato_para_emviar_email.html` agrega la nueva subpágina del panel para editar correos de confirmación, licencias y formatos recomendados.
+  - `web/super_administrador.html` incorpora el acceso lateral `Formatos de email`.
+  - `web/super/configuracion_avanzada.html` oculta los botones de guardado por tarjeta y concentra el persistido en un botón global arriba y otro abajo.
+- Flujo:
+  - `super_administrador.html` -> `formato_para_emviar_email.html` -> `GET/PUT /super/api/config/email_templates` -> persistencia en configuración super -> envío de correos reales con plantillas editadas.
+  - `configuracion_avanzada.html` -> `Guardar cambios` -> persistencia secuencial de Wompi, Epayco, Gmail e IA en el mismo ciclo de guardado.
+
+## Actualizacion 2026-04-19 (portal publico y selector: CTA seguros y menú filtrado por perfil)
+
+- Frontend portal:
+  - `web/descripcion_de_los_sistemas.ht` mantiene los enlaces internos de detalle por tarjeta, pero resuelve el CTA `Probar Gratis` con una sanitización explícita que redirige al registro público cuando el enlace configurado corresponde a una ruta protegida del panel.
+- Frontend selector:
+  - `web/js/seleccionar_empresa.js` consulta `/me` para cargar el perfil real del administrador y decidir la visibilidad del menú lateral.
+  - `Licencias` sigue como acceso de alcance propio, mientras `Administradores` y `Reportes globales` quedan ocultos para administradores normales o super delegados; el menú sensible se oculta antes de la respuesta de `/me` para evitar exposición visual transitoria.
+- Flujo:
+  - `index.html` -> `descripcion_de_los_sistemas.ht#detalle` -> `Probar Gratis` -> registro público si el destino original era privado.
+  - `seleccionar_empresa.html` -> carga inicial con menú sensible oculto -> `GET /me` -> reapertura selectiva de enlaces según `role` y `usuario_creador` del admin autenticado.
+
+## Actualizacion 2026-04-19 (super/licencias: alcance delegado, backup legacy y validaciones públicas)
+
+- Backend super:
+  - `backend/handlers/system_empresas_handlers.go` valida empresas consultadas con el correo autenticado real y no con el principal resuelto como si fuera el actor, evitando que administradores delegados salten el aislamiento por portafolio.
+  - `backend/db/chat_inteligencia_artificial.go` solo concede acceso global inmediato a administradores principales reales; los delegados siguen pasando por resolución de alcance por empresa.
+  - `backend/handlers/postgres_performance.go` valida `action` antes del guard de motor para devolver errores de contrato estables en el panel de diagnóstico.
+- Backend licencias/configuración:
+  - `backend/handlers/super_config_backup_handlers.go` vuelve a admitir claves sensibles legacy de IA en exporte/restauración del backup super para mantener compatibilidad con respaldos previos.
+  - `backend/handlers/payments_handlers.go` separa la visibilidad pública de Epayco del requisito de credenciales privadas usado por el flujo real de cobro.
+- Flujo:
+  - `super_administrador delegado` -> `GET /api/empresas/{id}` -> verificación por administrador autenticado + cadena principal/delegado -> `403` si la empresa no pertenece al portafolio permitido.
+  - `panel super backup` -> exporte/restauración -> aceptación de claves sensibles actuales y legacy -> persistencia cifrada cuando aplica.
+  - `portal público` -> `GET /api/public/licencias/payment_methods` -> publicación de `epayco` si existe `public_key` -> checkout interno conserva validaciones adicionales al cobrar.
+
 ## Actualizacion 2026-04-18 (carrito unificado configurable para estaciones y empresa)
 
 - Frontend:

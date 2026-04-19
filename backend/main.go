@@ -1696,6 +1696,8 @@ func main() {
 	http.HandleFunc("/super/api/config/epayco", handlers.EpaycoConfigHandler(dbSuper))
 	// Endpoint para gestionar SMTP Gmail (GET/PUT)
 	http.HandleFunc("/super/api/config/gmail", handlers.GmailConfigHandler(dbSuper))
+	// Endpoint para administrar plantillas de correo del panel super
+	http.HandleFunc("/super/api/config/email_templates", handlers.SuperEmailTemplatesHandler(dbSuper))
 	// Endpoint super para administrar venta digital global
 	http.HandleFunc("/super/api/venta_digital", handlers.SuperVentaDigitalHandler(dbSuper))
 	// Endpoint para gestionar credenciales IA de modelos populares (GET/PUT)

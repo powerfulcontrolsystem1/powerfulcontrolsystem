@@ -1766,35 +1766,19 @@ func sendEmpresaUsuarioConfirmationEmail(r *http.Request, dbEmp, dbSuper *sql.DB
 
 	adminEmail := adminEmailFromRequest(r)
 
-	subject := "Confirma tu correo - Powerful Control System"
-
-	// plain text body
-	bodyPlain := "Hola " + safeName + ",\r\n\r\n"
-	bodyPlain += "El administrador de la empresa " + empresaNombre + " te ha invitado a registrarte al sistema de motel Powerful Control System.\r\n\r\n"
-	if strings.TrimSpace(adminMessage) != "" {
-		bodyPlain += "Mensaje del administrador:\r\n" + strings.TrimSpace(adminMessage) + "\r\n\r\n"
+	adminMessage = strings.TrimSpace(adminMessage)
+	subject, bodyPlain, bodyHTML, err := applySuperEmailTemplate(dbSuper, superEmailTemplateKeyEmpresaConfirmation, map[string]string{
+		"name":                     safeName,
+		"company_name":             empresaNombre,
+		"confirm_url":              confirmURL,
+		"login_url":                loginURL,
+		"admin_message":            adminMessage,
+		"admin_message_block_text": templateParagraphText("Mensaje del administrador:", adminMessage),
+		"admin_message_block_html": templateParagraphHTML("Mensaje del administrador:", adminMessage),
+	})
+	if err != nil {
+		return "", err
 	}
-	bodyPlain += "Tu cuenta fue creada y necesita confirmar el correo para quedar habilitada.\r\n"
-	bodyPlain += "Haz clic en este enlace:\r\n" + confirmURL + "\r\n\r\n"
-	bodyPlain += "Después de confirmar, inicia sesión aquí:\r\n" + loginURL + "\r\n\r\n"
-	bodyPlain += "Si no solicitaste esta cuenta, ignora este mensaje.\r\n"
-
-	// html body
-	safeAdminMessageHTML := html.EscapeString(strings.TrimSpace(adminMessage))
-	if safeAdminMessageHTML != "" {
-		safeAdminMessageHTML = strings.ReplaceAll(safeAdminMessageHTML, "\n", "<br/>")
-	}
-	safeNameHTML := html.EscapeString(safeName)
-	empresaNombreHTML := html.EscapeString(empresaNombre)
-	bodyHTML := "<html><body><p>Hola " + safeNameHTML + ",</p>"
-	bodyHTML += "<p>El administrador de la empresa <strong>" + empresaNombreHTML + "</strong> te ha invitado a registrarte al sistema de motel <strong>Powerful Control System</strong>.</p>"
-	if safeAdminMessageHTML != "" {
-		bodyHTML += "<p><strong>Mensaje del administrador:</strong><br/>" + safeAdminMessageHTML + "</p>"
-	}
-	bodyHTML += "<p>Tu cuenta fue creada y necesita confirmar el correo para quedar habilitada.</p>"
-	bodyHTML += "<p><a href=\"" + html.EscapeString(confirmURL) + "\">Confirmar correo</a></p>"
-	bodyHTML += "<p>Después de confirmar, inicia sesión <a href=\"" + html.EscapeString(loginURL) + "\">aquí</a>.</p>"
-	bodyHTML += "<p>Si no solicitaste esta cuenta, ignora este mensaje.</p></body></html>"
 
 	if isEmpresaUsuarioMailTestMode(dbSuper) {
 		metadataJSON := fmt.Sprintf(`{"confirm_url":%q,"login_url":%q,"mail_mode":"test","admin_message":%q,"admin_email":%q}`, confirmURL, loginURL, adminMessage, adminEmail)
@@ -1919,14 +1903,14 @@ func sendEmpresaUsuarioPasswordRecoveryEmail(r *http.Request, dbEmp, dbSuper *sq
 		safeName = "usuario"
 	}
 
-	subject := "Recuperacion de contraseña - Powerful Control System"
-	body := "Hola " + safeName + ",\r\n\r\n" +
-		"Recibimos una solicitud para restablecer tu contraseña.\r\n" +
-		"Token de recuperación (vigencia limitada):\r\n" +
-		token + "\r\n\r\n" +
-		"Abre el login de usuario y usa el token para completar el restablecimiento:\r\n" +
-		resetHintURL + "\r\n\r\n" +
-		"Si no solicitaste este cambio, ignora este mensaje.\r\n"
+	subject, body, _, err := applySuperEmailTemplate(dbSuper, superEmailTemplateKeyEmpresaPasswordRecovery, map[string]string{
+		"name":      safeName,
+		"token":     token,
+		"reset_url": resetHintURL,
+	})
+	if err != nil {
+		return "", err
+	}
 
 	if isEmpresaUsuarioMailTestMode(dbSuper) {
 		metadataJSON := fmt.Sprintf(`{"reset_hint_url":%q,"mail_mode":"test"}`, resetHintURL)

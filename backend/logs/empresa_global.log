@@ -5025,3 +5025,28 @@
 2026-04-19T00:30:11-05:00 [INFO] req_id=req-1776576610947846800-ccb5dee8880b event=request_end method=GET path=/api/public/pagina_principal status=200 dur_ms=379
 2026-04-19T00:30:11-05:00 [INFO] req_id=req-1776576611336534000-628221aa2b0e event=request_start method=GET path=/api/public/licencias/payment_methods ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
 2026-04-19T00:30:12-05:00 [INFO] req_id=req-1776576611336534000-628221aa2b0e event=request_end method=GET path=/api/public/licencias/payment_methods status=200 dur_ms=821
+2026-04-19T00:43:12-05:00 [INFO] req_id=req-1776577392523297100-231a3681b572 event=request_start method=GET path=/ ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-19T00:43:12-05:00 [INFO] req_id=req-1776577392523297100-231a3681b572 event=request_end method=GET path=/ status=200 dur_ms=46
+2026-04-19T00:43:12-05:00 [INFO] req_id=req-1776577392581117900-cd0e08af9733 event=request_start method=GET path=/index.html ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-19T00:43:12-05:00 [INFO] req_id=req-1776577392581117900-cd0e08af9733 event=request_end method=GET path=/index.html status=301 dur_ms=1
+2026-04-19T00:43:12-05:00 [INFO] req_id=req-1776577392584052600-b06bd3b575b4 event=request_start method=GET path=/ ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-19T00:43:12-05:00 [INFO] req_id=req-1776577392584052600-b06bd3b575b4 event=request_end method=GET path=/ status=200 dur_ms=1
+2026-04-19T00:43:12-05:00 [INFO] req_id=req-1776577392597456000-9fda80307cbf event=request_start method=GET path=/login.html ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-19T00:43:12-05:00 [INFO] req_id=req-1776577392597456000-9fda80307cbf event=request_end method=GET path=/login.html status=200 dur_ms=2
+2026-04-19T00:43:12-05:00 [INFO] req_id=req-1776577392602476100-3c07ce60d6fb event=request_start method=GET path=/seleccionar_empresa.html ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-19T00:43:12-05:00 [WARNING] req_id=req-1776577392602476100-3c07ce60d6fb event=request_end method=GET path=/seleccionar_empresa.html status=401 dur_ms=1
+2026-04-19T00:43:12-05:00 [INFO] req_id=req-1776577392653508300-c547891122be event=request_start method=GET path=/api/public/pagina_principal ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-19T00:43:13-05:00 [INFO] req_id=req-1776577392653508300-c547891122be event=request_end method=GET path=/api/public/pagina_principal status=200 dur_ms=390
+2026-04-19T00:43:13-05:00 [INFO] req_id=req-1776577393047632900-56dacf548941 event=request_start method=GET path=/api/public/licencias/payment_methods ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-19T00:43:13-05:00 [INFO] req_id=req-1776577393047632900-56dacf548941 event=request_end method=GET path=/api/public/licencias/payment_methods status=200 dur_ms=834
+2026-04-19T00:43:13-05:00 [INFO] req_id=req-1776577393884938500-bc81a4302f76 event=request_start method=GET path=/super/api/config/wompi ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-19T00:43:20-05:00 [WARNING] req_id=req-1776577393884938500-bc81a4302f76 event=api_error method=GET path=/super/api/config/wompi status=401 error="unauthorized"
+2026-04-19T00:43:20-05:00 [WARNING] req_id=req-1776577393884938500-bc81a4302f76 event=request_end method=GET path=/super/api/config/wompi status=401 dur_ms=7078
+2026-04-19T00:43:39-05:00 [INFO] req_id=req-1776577419523185200-308b7a71c300 event=request_start method=GET path=/api/public/licencias/payment_methods ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-19T00:43:40-05:00 [INFO] req_id=req-1776577419523185200-308b7a71c300 event=request_end method=GET path=/api/public/licencias/payment_methods status=200 dur_ms=1007
+2026-04-19T00:54:34-05:00 [INFO] req_id=req-1776578074096796000-8a5e9c366358 event=request_start method=GET path=/descripcion_de_los_sistemas.ht ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-19T00:54:34-05:00 [INFO] req_id=req-1776578074096796000-8a5e9c366358 event=request_end method=GET path=/descripcion_de_los_sistemas.ht status=200 dur_ms=78
+2026-04-19T00:54:34-05:00 [INFO] req_id=req-1776578074192452700-b13fa5696a40 event=request_start method=GET path=/seleccionar_empresa.html ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-19T00:54:34-05:00 [WARNING] req_id=req-1776578074192452700-b13fa5696a40 event=request_end method=GET path=/seleccionar_empresa.html status=401 dur_ms=0
+2026-04-19T00:54:34-05:00 [INFO] req_id=req-1776578074203941800-60f362791336 event=request_start method=GET path=/registrar_nuevo_usuario_administrador.html ip=127.0.0.1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-19T00:54:34-05:00 [INFO] req_id=req-1776578074203941800-60f362791336 event=request_end method=GET path=/registrar_nuevo_usuario_administrador.html status=200 dur_ms=1

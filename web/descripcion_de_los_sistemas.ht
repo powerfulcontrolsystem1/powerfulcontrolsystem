@@ -166,6 +166,24 @@
         return '/' + value.replace(/^\/+/, '');
       }
 
+      function resolvePublicTrialLink(raw) {
+        var normalized = normalizeLink(raw);
+        var lower = String(normalized || '').toLowerCase();
+        if (!lower) {
+          return '/login.html';
+        }
+        if (
+          lower.indexOf('/administrar_empresa') === 0 ||
+          lower.indexOf('/super/') === 0 ||
+          lower === '/super_administrador.html' ||
+          lower === '/seleccionar_empresa.html' ||
+          lower === '/editar_empresa.html'
+        ) {
+          return '/registrar_nuevo_usuario_administrador.html';
+        }
+        return normalized;
+      }
+
       function normalizeImage(raw) {
         var value = String(raw || '').trim();
         if (!value || value.indexOf('/img/') !== 0 || value.indexOf('..') >= 0) {
@@ -208,12 +226,14 @@
           var descripcion = String((card && card.descripcion) || '').trim() || fallback.descripcion;
           var imagen = normalizeImage((card && card.imagen_url) || fallback.imagen_url);
           var enlace = normalizeLink((card && card.enlace) || fallback.enlace);
+          var trialLink = resolvePublicTrialLink((card && card.enlace) || fallback.enlace);
           var detalleId = slugifyTitle(titulo, idx);
           return {
             titulo: titulo,
             descripcion: descripcion,
             imagen_url: imagen,
             enlace: enlace,
+            trial_link: trialLink,
             detalle_id: detalleId,
             detalle_etiqueta: String((card && card.detalle_etiqueta) || fallback.detalle_etiqueta || '').trim(),
             detalle_titular: String((card && card.detalle_titular) || fallback.detalle_titular || '').trim(),
@@ -258,7 +278,7 @@
             '      <ul class="system-detail-points">' + pointsHTML + '</ul>' +
             '    </div>' +
             '    <div class="system-detail-actions">' +
-              '      <a class="system-trial-btn" href="' + escapeHTML((card.detalle_id === 'punto-de-venta-detalle-1') ? '/login.html' : card.enlace) + '">Probar Gratis</a>' +
+              '      <a class="system-trial-btn" href="' + escapeHTML(card.trial_link || '/registrar_nuevo_usuario_administrador.html') + '">Probar Gratis</a>' +
             '    </div>' +
             '  </div>' +
             '</article>';

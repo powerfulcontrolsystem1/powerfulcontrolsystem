@@ -469,13 +469,14 @@ func sendAdminConfirmationEmail(r *http.Request, dbSuper *sql.DB, toEmail, toNam
 		safeName = "administrador"
 	}
 
-	subject := "Confirma tu correo - Powerful Control System"
-	body := "Hola " + safeName + ",\r\n\r\n" +
-		"Para activar tu cuenta, haz clic en el siguiente enlace:\r\n" +
-		confirmURL + "\r\n\r\n" +
-		"Después de confirmar, inicia sesión aquí:\r\n" +
-		loginURL + "\r\n\r\n" +
-		"Si no solicitaste esta cuenta, ignora este mensaje.\r\n"
+	subject, body, _, err := applySuperEmailTemplate(dbSuper, superEmailTemplateKeyAdminConfirmation, map[string]string{
+		"name":        safeName,
+		"confirm_url": confirmURL,
+		"login_url":   loginURL,
+	})
+	if err != nil {
+		return "", err
+	}
 
 	if isEmpresaUsuarioMailTestMode(dbSuper) {
 		metadataJSON := fmt.Sprintf(`{"confirm_url":%q,"login_url":%q,"mail_mode":"test"}`, confirmURL, loginURL)
@@ -549,11 +550,14 @@ func sendAdminPasswordRecoveryEmail(r *http.Request, dbSuper *sql.DB, toEmail, t
 	if safeName == "" {
 		safeName = "administrador"
 	}
-	subject := "Recuperacion de contraseña - Powerful Control System"
-	body := "Hola " + safeName + ",\r\n\r\n" +
-		"Recibimos una solicitud para restablecer tu contraseña. Token de recuperación:\r\n" + token + "\r\n\r\n" +
-		"Abre el login y usa el token para completar el restablecimiento:\r\n" + resetHintURL + "\r\n\r\n" +
-		"Si no solicitaste este cambio, ignora este mensaje.\r\n"
+	subject, body, _, err := applySuperEmailTemplate(dbSuper, superEmailTemplateKeyAdminPasswordRecovery, map[string]string{
+		"name":      safeName,
+		"token":     token,
+		"reset_url": resetHintURL,
+	})
+	if err != nil {
+		return "", err
+	}
 	if isEmpresaUsuarioMailTestMode(dbSuper) {
 		metadataJSON := fmt.Sprintf(`{"reset_hint_url":%q,"mail_mode":"test"}`, resetHintURL)
 		if err := captureEmpresaUsuarioMailNotification(dbSuper, "recuperacion_password_admin", 0, toEmail, subject, body, token, metadataJSON, adminEmailFromRequest(r)); err != nil {

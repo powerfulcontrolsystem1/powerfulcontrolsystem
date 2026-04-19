@@ -1,6 +1,26 @@
 Descripcion compacta de modulos (POS multiempresa)
 Actualizacion: 2026-04-17
 
+Actualizacion 2026-04-19 (super: plantillas de email configurables y guardado global de configuracion avanzada):
+- `backend/handlers/super_email_templates.go` crea la fuente de verdad del modulo super para plantillas de correo y expone `/super/api/config/email_templates` con plantillas configurables para confirmación administrativa, confirmación de usuario empresa, activación de licencias, recuperación de contraseña y alerta de reinicio del servidor.
+- `backend/handlers/auth_admin_handlers.go`, `backend/handlers/usuarios_empresa.go`, `backend/handlers/payments_handlers.go` y `backend/handlers/server_runtime_notifications.go` consumen ese render centralizado para que el panel super pueda cambiar correos reales sin tocar código.
+- `web/super/formato_para_emviar_email.html` agrega la subpágina pedida dentro de `super_administrador.html`, organizada en pestañas de confirmación, licencias y formatos recomendados.
+- `web/super/configuracion_avanzada.html` centraliza el guardado de Wompi, Epayco, Gmail e IA mediante un único botón `Guardar cambios` al inicio y otro al final de la vista.
+- Impacto de permisos: no se crean roles nuevos ni se amplían privilegios; la edición de plantillas y el guardado global siguen reservados al mismo frente autenticado de `super_administrador`.
+
+Actualizacion 2026-04-19 (portal publico y selector: CTA seguros y navegacion acorde al alcance):
+- `web/descripcion_de_los_sistemas.ht` conserva la descripcion ampliada de cada solucion, pero el CTA `Probar Gratis` deja de reutilizar destinos privados del panel; cuando la tarjeta de origen apunta a una ruta protegida, el flujo público deriva al registro de administrador para mantener coherencia entre descubrimiento público y acceso autenticado.
+- `web/js/seleccionar_empresa.js` consulta `/me` para distinguir cuentas super principales de delegadas y administradores normales, y ajusta la visibilidad del menú lateral en consecuencia.
+- `web/seleccionar_empresa.html` mantiene `Licencias` como acceso operativo de alcance propio, pero `Administradores` y `Reportes globales` solo quedan visibles para super principales; por defecto permanecen ocultos hasta resolver la sesión.
+- Impacto de permisos: no se crean roles nuevos; se reduce exposición visual de opciones fuera de alcance y se evita que el portal público sugiera rutas que requieren autenticación o privilegios superiores.
+
+Actualizacion 2026-04-19 (super/licencias: endurecimiento de alcance delegado y compatibilidad operativa):
+- `backend/handlers/system_empresas_handlers.go` y `backend/db/chat_inteligencia_artificial.go` dejan de tratar a un administrador delegado como super global solo por su rol; el alcance efectivo sigue anclado al administrador principal que lo creó y a las empresas de ese portafolio.
+- `backend/handlers/super_config_backup_handlers.go` preserva compatibilidad de exportación/restauración para claves sensibles legacy de IA usadas por respaldos históricos, aun cuando el catálogo operativo actual ya no las exponga en la UI.
+- `backend/handlers/payments_handlers.go` separa la publicación pública de métodos de pago de los requisitos internos del checkout: Epayco puede anunciarse con `public_key`, mientras las credenciales privadas siguen siendo exigibles en pasos posteriores del cobro real.
+- `backend/handlers/postgres_performance.go` responde error de acción inválida antes de exigir entorno PostgreSQL para mantener coherencia del panel de diagnóstico.
+- Impacto de permisos: el módulo crítico `administrar_empresa` y el frente super de empresas mantienen aislamiento por `empresa_id` y por cadena principal/delegado; no se amplían privilegios, se cierran fugas de alcance.
+
 Actualizacion 2026-04-18 (carritos/estaciones: carrito unificado configurable por empresa y estacion):
 - `web/administrar_empresa/carrito_de_compras.html` se consolida como unica superficie operativa para carritos generales y carritos de estacion; la vista lee `estaciones_config` desde `/api/empresa/estacion_prefs` y resuelve qué bloques mostrar en cada estacion, incluyendo cliente, impuestos, resumen total del carrito y desglose del cobro.
 - `web/administrar_empresa/configuracion_de_estaciones.html` deja de administrar `venta_simple_habilitada` y pasa a administrar herencia global y checks de visibilidad del carrito por estacion, manteniendo sincronizacion de carritos base por `empresa_id`.

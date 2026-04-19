@@ -13,12 +13,18 @@
       <p class="form-help">Ajustes avanzados del sistema. Administra la disponibilidad de Epayco y Wompi para el portal público de licencias.</p>
     </div>
 
+    <div class="form-actions" style="justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px;">
+      <div id="globalConfigMsgTop" class="form-help">Usa este botón para guardar toda la configuración editada en esta página.</div>
+      <button id="saveAllConfigTopBtn" type="button" class="btn">Guardar cambios</button>
+    </div>
+
     <section class="card form mp-card" id="ventaDigitalConfigShortcut">
       <h2>Configuración de venta digital</h2>
       <p class="form-help">Administra catálogo de licencias/software, carga archivos de instalación e inspecciona órdenes de compra.</p>
       <div class="form-actions">
         <a class="btn" href="/super/venta_digital.html">Abrir panel de venta digital</a>
         <a class="btn secondary" href="/venta_digital.html" target="_top">Ver tienda pública</a>
+        <a class="btn secondary" href="/super/formato_para_emviar_email.html">Editar formatos de email</a>
       </div>
       <div class="form-actions">
         <button id="testVentaDigitalBtn" class="btn secondary" type="button" style="margin-left:8px;">Probar panel</button>
@@ -68,7 +74,7 @@
       </div>
 
       <div class="form-actions">
-        <button id="saveEpaycoBtn" class="btn">Guardar Epayco</button>
+        <button id="saveEpaycoBtn" class="btn" style="display:none;">Guardar Epayco</button>
         <button id="editEpaycoBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Editar</button>
         <button id="cancelEpaycoBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Cancelar</button>
         <button id="testEpaycoBtn" type="button" class="btn secondary" style="margin-left:8px;">Probar Epayco</button>
@@ -139,7 +145,7 @@
       </div>
 
       <div class="form-actions">
-        <button id="saveWompiBtn" class="btn">Guardar Wompi</button>
+        <button id="saveWompiBtn" class="btn" style="display:none;">Guardar Wompi</button>
         <button id="editWompiBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Editar</button>
         <button id="cancelWompiBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Cancelar</button>
         <button id="testWompiBtn" type="button" class="btn secondary" style="margin-left:8px;">Probar Nequi</button>
@@ -213,7 +219,7 @@
       </div>
 
       <div class="form-actions">
-        <button id="saveGmailBtn" class="btn">Guardar Gmail SMTP</button>
+        <button id="saveGmailBtn" class="btn" style="display:none;">Guardar Gmail SMTP</button>
         <button id="editGmailBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Editar</button>
         <button id="cancelGmailBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Cancelar</button>
         <button id="testGmailBtn" type="button" class="btn secondary" style="margin-left:8px;">Probar Gmail</button>
@@ -253,7 +259,7 @@
       </div>
 
       <div class="form-actions">
-        <button id="saveAiConfigBtn" class="btn">Guardar configuración IA</button>
+        <button id="saveAiConfigBtn" class="btn" style="display:none;">Guardar configuración IA</button>
         <button id="editAiConfigBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Editar</button>
         <button id="cancelAiConfigBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Cancelar</button>
         <button id="testAiBtn" type="button" class="btn secondary" style="margin-left:8px;">Probar Google Gemini</button>
@@ -282,6 +288,11 @@
       <div id="backupConfigMsg" class="form-help"></div>
       <div id="backupTestResult" class="form-help"></div>
     </section>
+
+    <div class="form-actions" style="justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:18px;">
+      <div id="globalConfigMsgBottom" class="form-help">El mismo botón inferior guarda todos los cambios pendientes de la página.</div>
+      <button id="saveAllConfigBottomBtn" type="button" class="btn">Guardar cambios</button>
+    </div>
   </div>
 
   <script>
@@ -289,6 +300,24 @@
       const aiCredentialBindings = [
   		{ model_id: 'google:gemini-2.0-flash', inputId: 'aiKeyGemini', statusId: 'aiStatusGemini' }
       ];
+      const globalSaveButtons = [document.getElementById('saveAllConfigTopBtn'), document.getElementById('saveAllConfigBottomBtn')];
+
+      function setGlobalSaveMessage(message, type){
+        ['globalConfigMsgTop', 'globalConfigMsgBottom'].forEach(function(id){
+          const node = document.getElementById(id);
+          if (!node) return;
+          node.innerText = message || '';
+          node.className = 'form-help' + (type === 'error' ? ' error-text' : type === 'success' ? ' success-text' : '');
+        });
+      }
+
+      function setGlobalSaveState(isSaving){
+        globalSaveButtons.forEach(function(btn){
+          if (!btn) return;
+          btn.disabled = !!isSaving;
+          btn.innerText = isSaving ? 'Guardando cambios...' : 'Guardar cambios';
+        });
+      }
 
       async function load(){
         // cargar estado Wompi
@@ -626,6 +655,107 @@
         } finally {
 		  btn.disabled = false;
       btn.innerText = 'Guardar configuración IA';
+        }
+      }
+
+      async function persistWompiConfig(){
+        const pub = document.getElementById('wompiPublicKey').value.trim();
+        const prv = document.getElementById('wompiPrivateKey').value.trim();
+        const integrity = document.getElementById('wompiIntegrityKey').value.trim();
+        const mode = document.getElementById('wompiModeToggle').checked ? 'production' : 'sandbox';
+        const enabled = !!document.getElementById('wompiEnabledToggle').checked;
+        const payload = { encrypt: true, mode: mode, enabled: enabled };
+        if (pub) payload.public_key = pub;
+        if (prv) payload.private_key = prv;
+        if (integrity) payload.integrity_key = integrity;
+        const res = await fetch('/super/api/config/wompi', { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+        const raw = await res.text();
+        if (!res.ok) throw new Error('Wompi: ' + (raw || res.status));
+        document.getElementById('wompiPublicKey').value = '';
+        document.getElementById('wompiPrivateKey').value = '';
+        document.getElementById('wompiIntegrityKey').value = '';
+      }
+
+      async function persistEpaycoConfig(){
+        const payload = { encrypt: true, enabled: !!document.getElementById('epaycoEnabledToggle').checked };
+        const publicKey = (document.getElementById('epaycoPublicKey').value || '').trim();
+        const customerId = (document.getElementById('epaycoCustomerId').value || '').trim();
+        const privateKey = (document.getElementById('epaycoPrivateKey').value || '').trim();
+        if (publicKey) payload.public_key = publicKey;
+        if (customerId) payload.customer_id = customerId;
+        if (privateKey) payload.private_key = privateKey;
+        const res = await fetch('/super/api/config/epayco', { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+        const raw = await res.text();
+        if (!res.ok) throw new Error('Epayco: ' + (raw || res.status));
+        document.getElementById('epaycoPrivateKey').value = '';
+        document.getElementById('epaycoPublicKey').value = '';
+        document.getElementById('epaycoCustomerId').value = '';
+      }
+
+      async function persistGmailConfig(){
+        const payload = {
+          smtp_email: document.getElementById('gmailSMTPEmail').value.trim(),
+          smtp_app_password: document.getElementById('gmailSMTPAppPass').value.trim(),
+          smtp_from_name: document.getElementById('gmailFromName').value.trim(),
+          smtp_host: document.getElementById('gmailHost').value.trim(),
+          smtp_port: document.getElementById('gmailPort').value.trim(),
+          confirm_base_url: document.getElementById('gmailBaseURL').value.trim(),
+          restart_alert_to: document.getElementById('gmailRestartAlertTo').value.trim(),
+          restart_alert_enabled: !!document.getElementById('gmailRestartAlertEnabled').checked,
+          encrypt: true
+        };
+        const res = await fetch('/super/api/config/gmail', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const raw = await res.text();
+        if (!res.ok) throw new Error('Gmail SMTP: ' + (raw || res.status));
+        document.getElementById('gmailSMTPAppPass').value = '';
+      }
+
+      async function persistAIConfig(){
+        const credentials = [];
+        aiCredentialBindings.forEach(function(binding){
+          const inputEl = document.getElementById(binding.inputId);
+          const value = (inputEl && inputEl.value || '').trim();
+          if (value) credentials.push({ model_id: binding.model_id, api_key: value });
+        });
+        const payload = {
+          encrypt: true,
+          credentials: credentials,
+          enabled: !!document.getElementById('aiEnabledToggle').checked,
+          provider_enabled: {
+            google: !!document.getElementById('aiProviderGeminiEnabled').checked
+          }
+        };
+        const res = await fetch('/super/api/config/ai', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const raw = await res.text();
+        if (!res.ok) throw new Error('IA: ' + (raw || res.status));
+        aiCredentialBindings.forEach(function(binding){
+          const inputEl = document.getElementById(binding.inputId);
+          if (inputEl) inputEl.value = '';
+        });
+      }
+
+      async function saveAllConfigurations(){
+        setGlobalSaveState(true);
+        setGlobalSaveMessage('Guardando toda la configuración editada...', '');
+        try {
+          await persistWompiConfig();
+          await persistEpaycoConfig();
+          await persistGmailConfig();
+          await persistAIConfig();
+          await load();
+          setGlobalSaveMessage('Toda la configuración se guardó correctamente.', 'success');
+        } catch (err) {
+          setGlobalSaveMessage(err.message || 'No se pudo guardar toda la configuración.', 'error');
+        } finally {
+          setGlobalSaveState(false);
         }
       }
 
@@ -1109,6 +1239,9 @@
       document.getElementById('testBackupBtn').addEventListener('click', testBackup);
       document.getElementById('downloadConfigBackupBtn').addEventListener('click', downloadConfigBackup);
       document.getElementById('restoreConfigBtn').addEventListener('click', restoreConfigBackup);
+      globalSaveButtons.forEach(function(btn){
+        if (btn) btn.addEventListener('click', saveAllConfigurations);
+      });
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', load); else load();
     })();
   </script>

@@ -5,6 +5,7 @@
   var storage = null;
   var viewKey = "seleccionar_empresa:view";
   var currentEmpresas = [];
+  var currentAccount = null;
 
   try {
     storage = window.sessionStorage;
@@ -95,6 +96,71 @@
       return Number(currentEmpresas[0].id || 0);
     }
     return 0;
+  }
+
+  function normalizeEmail(value) {
+    return String(value || "").trim().toLowerCase();
+  }
+
+  function isPrincipalSuperAccount(account) {
+    if (!account || !account.admin) {
+      return false;
+    }
+    var email = normalizeEmail(account.email || (account.admin && account.admin.email));
+    var creator = normalizeEmail(account.admin.usuario_creador);
+    var role = normalizeEmail(account.role || (account.admin && account.admin.role));
+    if (role !== "super_administrador") {
+      return false;
+    }
+    return !creator || creator === email;
+  }
+
+  function canManageScopedLicencias(account) {
+    if (!account) {
+      return false;
+    }
+    var role = normalizeEmail(account.role || (account.admin && account.admin.role));
+    return role === "super_administrador" || role === "administrador";
+  }
+
+  function setElementVisible(element, visible) {
+    if (!element) return;
+    var listItem = element.closest ? element.closest("li") : null;
+    if (listItem) {
+      listItem.style.display = visible ? "" : "none";
+    } else {
+      element.style.display = visible ? "" : "none";
+    }
+  }
+
+  function applySidebarPermissions(account) {
+    var linkLicencias = document.getElementById("linkLicencias");
+    var linkAdministradores = document.getElementById("linkAdministradores");
+    var linkReportes = document.getElementById("linkReportesGlobales");
+    var principalSuper = isPrincipalSuperAccount(account);
+    setElementVisible(linkLicencias, canManageScopedLicencias(account));
+    setElementVisible(linkAdministradores, principalSuper);
+    setElementVisible(linkReportes, principalSuper);
+  }
+
+  function fetchCurrentAccount() {
+    return fetch("/me", { credentials: "same-origin" })
+      .then(function (res) {
+        if (!res.ok) {
+          throw new Error("No se pudo obtener la cuenta actual");
+        }
+        return res.json();
+      })
+      .then(function (data) {
+        currentAccount = data || null;
+        applySidebarPermissions(currentAccount);
+        return currentAccount;
+      })
+      .catch(function () {
+        currentAccount = null;
+        applySidebarPermissions(null);
+        return null;
+      });
   }
 
   function setActiveNav(activeLink) {
@@ -620,7 +686,9 @@
   }
 
   document.addEventListener("DOMContentLoaded", function () {
+    applySidebarPermissions(null);
     wireSidebarFrameLinks();
+    fetchCurrentAccount();
     restoreLastView();
 
     var form = document.getElementById("form");

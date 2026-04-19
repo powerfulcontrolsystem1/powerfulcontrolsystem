@@ -1,3 +1,64 @@
+- 2026-04-19: Panel super incorpora plantillas reales de email y guardado unificado en configuración avanzada
+    - Archivos creados:
+        - backend/handlers/super_email_templates.go
+        - web/super/formato_para_emviar_email.html
+    - Archivos modificados:
+        - backend/main.go
+        - backend/handlers/auth_admin_handlers.go
+        - backend/handlers/usuarios_empresa.go
+        - backend/handlers/payments_handlers.go
+        - backend/handlers/server_runtime_notifications.go
+        - backend/handlers/system_empresas_handlers_test.go
+        - web/super/configuracion_avanzada.html
+        - web/super_administrador.html
+        - documentos/descripcion_del_proyecto
+        - documentos/diagramas/estructura_del_codigo.md
+        - documentos/descripcion_de_modulos
+        - documentos/matriz_roles_permisos_pos_multiempresa.md
+        - documentos/descripcion_de_archivos
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripcion: Se crea un endpoint super para guardar y consultar plantillas de correo, junto con una subpágina nueva del panel super donde pueden editarse correos de confirmación, activación de licencias, recuperación de contraseña y alertas de reinicio. El backend deja de depender de textos fijos en varios flujos de correo y `configuracion_avanzada.html` pasa a usar un único botón de guardado global arriba y abajo para persistir toda la configuración editada en la página.
+    - Verificacion:
+        - `go test ./handlers -run 'Test(SuperEmailTemplatesHandlerSaveAndGet|ApplySuperEmailTemplateUsesConfiguredValues|GmailConfigHandlerTestActionCapturesNotification)$' -count=1`
+        - tarea `validar-permisos-selector-empresas-5`
+        - `get_errors` sin errores en `backend/handlers/super_email_templates.go`, `web/super/formato_para_emviar_email.html` y `web/super/configuracion_avanzada.html`
+
+- 2026-04-19: Portal público y selector corrigen destinos públicos y navegación fuera de alcance
+    - Archivos modificados:
+        - web/descripcion_de_los_sistemas.ht
+        - web/js/seleccionar_empresa.js
+        - documentos/diagramas/estructura_del_codigo.md
+        - documentos/descripcion_de_modulos
+        - documentos/matriz_roles_permisos_pos_multiempresa.md
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripcion: Se evita que `Probar Gratis` envíe usuarios públicos a rutas administrativas protegidas y el selector deja de mostrar navegación global a cuentas que no son `super_administrador` principal. El menú sensible queda oculto hasta cargar `/me` y solo reaparece si el perfil real lo permite.
+    - Verificacion:
+        - `get_errors` sin errores en `web/descripcion_de_los_sistemas.ht`, `web/js/seleccionar_empresa.js` y `web/seleccionar_empresa.html`
+        - sondeo local HTTP con `200` en `/descripcion_de_los_sistemas.ht` y `/registrar_nuevo_usuario_administrador.html`
+        - sondeo local HTTP con `401` en `/seleccionar_empresa.html` sin sesión
+        - `go test ./ ./auth ./db ./handlers ./metrics ./utils -count=1`
+
+- 2026-04-19: Endurecimiento de alcance delegado en super y compatibilidad operativa de licencias/backup
+    - Archivos modificados:
+        - backend/db/chat_inteligencia_artificial.go
+        - backend/handlers/system_empresas_handlers.go
+        - backend/handlers/postgres_performance.go
+        - backend/handlers/super_config_backup_handlers.go
+        - backend/handlers/payments_handlers.go
+        - documentos/diagramas/estructura_del_codigo.md
+        - documentos/descripcion_de_modulos
+        - documentos/matriz_roles_permisos_pos_multiempresa.md
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripcion: Se restringe el acceso de administradores delegados al universo de empresas del administrador principal aunque conserven rol `super_administrador`, se recupera la restauración de claves sensibles legacy de IA en el backup super, se permite publicar Epayco en métodos de pago cuando existe `public_key` y el panel PostgreSQL responde `accion no soportada` antes del guard por motor.
+    - Verificacion:
+        - `go test ./handlers -run 'Test(PostgresPerformanceHandlerUnknownAction|EmpresasHandlerFiltraEmpresasPorAdministradorPrincipal|SuperConfigBackupHandlerRestoreEncryptsSensitivePlaintext|PublicLicenciasPaymentMethodsHandlerAllowsEpaycoWithPublicKeyOnly|SuperConfigBackupHandlerExportYRestore|PublicLicenciasPaymentMethodsHandlerOrdersAndAvailability)$' -count=1`
+        - tarea `validar-permisos-selector-empresas-5`
+        - `go test ./ ./auth ./db ./handlers ./metrics ./utils -count=1`
+        - sondeo local HTTP `200/401` sobre rutas públicas y protegidas principales
+
 - 2026-04-18: Limpieza del legado de venta simple y ampliación del carrito unificado
     - Archivos eliminados:
         - web/js/ventas_simple.js

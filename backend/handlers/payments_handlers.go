@@ -481,50 +481,6 @@ func trySendLicenciaActivationEmail(r *http.Request, dbSuper *sql.DB, empresaID 
 	return nil
 }
 
-func buildLicenciaActivationMailBody(empresaNombre string, lic *dbpkg.Licencia, fechaInicio, fechaFin, provider, reference string) string {
-	safeEmpresa := strings.TrimSpace(empresaNombre)
-	if safeEmpresa == "" {
-		safeEmpresa = "tu empresa"
-	}
-	safeProvider := strings.Title(strings.ToLower(strings.TrimSpace(provider)))
-	if safeProvider == "" {
-		safeProvider = "la pasarela de pago"
-	}
-	var builder strings.Builder
-	builder.WriteString("Hola,\n\n")
-	builder.WriteString("Tu pago fue confirmado correctamente y la licencia ya quedó activa en Powerful Control System.\n\n")
-	builder.WriteString("Empresa: ")
-	builder.WriteString(safeEmpresa)
-	builder.WriteString("\n")
-	if lic != nil {
-		builder.WriteString("Licencia: ")
-		builder.WriteString(strings.TrimSpace(lic.Nombre))
-		builder.WriteString("\n")
-	}
-	if fechaInicio != "" {
-		builder.WriteString("Fecha de inicio: ")
-		builder.WriteString(fechaInicio)
-		builder.WriteString("\n")
-	}
-	if fechaFin != "" {
-		builder.WriteString("Fecha de vencimiento: ")
-		builder.WriteString(fechaFin)
-		builder.WriteString("\n")
-	}
-	if reference != "" {
-		builder.WriteString("Referencia del pago: ")
-		builder.WriteString(reference)
-		builder.WriteString("\n")
-	}
-	builder.WriteString("Pasarela: ")
-	builder.WriteString(safeProvider)
-	builder.WriteString("\n\n")
-	builder.WriteString("Ya puedes ingresar al sistema y continuar con la operación normal de tu empresa.\n\n")
-	builder.WriteString("Si no reconoces este movimiento o necesitas ayuda, responde este correo.\n\n")
-	builder.WriteString("Powerful Control System\n")
-	return builder.String()
-}
-
 func sendLicenciaActivationEmail(r *http.Request, dbSuper *sql.DB, empresaID int64, lic *dbpkg.Licencia, payRec *dbpkg.EpaycoPaymentRecord, provider, reference string) error {
 	if dbSuper == nil || lic == nil || payRec == nil || !payRec.RawPayload.Valid {
 		return nil
@@ -541,8 +497,27 @@ func sendLicenciaActivationEmail(r *http.Request, dbSuper *sql.DB, empresaID int
 			empresaNombre = strings.TrimSpace(empresa.Nombre)
 		}
 	}
-	asunto := "Tu licencia ya quedó activa"
-	cuerpo := buildLicenciaActivationMailBody(empresaNombre, lic, strings.TrimSpace(lic.FechaInicio), strings.TrimSpace(lic.FechaFin), provider, reference)
+	safeEmpresa := strings.TrimSpace(empresaNombre)
+	if safeEmpresa == "" {
+		safeEmpresa = "tu empresa"
+	}
+	safeProvider := strings.Title(strings.ToLower(strings.TrimSpace(provider)))
+	if safeProvider == "" {
+		safeProvider = "la pasarela de pago"
+	}
+	asunto, cuerpo, _, err := applySuperEmailTemplate(dbSuper, superEmailTemplateKeyLicenciaActivation, map[string]string{
+		"company_name":      safeEmpresa,
+		"license_name":      strings.TrimSpace(lic.Nombre),
+		"provider":          safeProvider,
+		"reference":         strings.TrimSpace(reference),
+		"license_name_line": templateLine("Licencia: ", strings.TrimSpace(lic.Nombre)),
+		"start_date_line":   templateLine("Fecha de inicio: ", strings.TrimSpace(lic.FechaInicio)),
+		"end_date_line":     templateLine("Fecha de vencimiento: ", strings.TrimSpace(lic.FechaFin)),
+		"reference_line":    templateLine("Referencia del pago: ", strings.TrimSpace(reference)),
+	})
+	if err != nil {
+		return err
+	}
 	metadataJSON := fmt.Sprintf(`{"provider":%q,"licencia_id":%d,"empresa_id":%d,"reference":%q}`, provider, lic.ID, empresaID, reference)
 
 	if isEmpresaUsuarioMailTestMode(dbSuper) {

@@ -3,6 +3,24 @@
 Fecha de actualizacion: 2026-04-17
 Alcance: punto 3 del plan maestro (permisos y seguridad)
 
+- Actualizacion 2026-04-19 (super: plantillas de email y guardado unificado de configuracion avanzada):
+	- `super_administrador` agrega la capacidad operativa de editar plantillas reales desde `/super/formato_para_emviar_email.html` y persistirlas por `GET/PUT /super/api/config/email_templates`.
+	- Las plantillas controlan correos administrativos, usuarios de empresa, pagos de licencia, recuperación de contraseña y alertas de reinicio, pero no cambian el modelo de permisos ni abren acceso a otros roles.
+	- `web/super/configuracion_avanzada.html` deja de guardar por tarjetas separadas y usa un botón global arriba y abajo de la vista para persistir Wompi, Epayco, Gmail e IA dentro del mismo módulo ya protegido.
+	- Impacto de matriz: sin rutas abiertas al público ni nuevos wrappers; se fortalece la operabilidad del panel `super` bajo el mismo rol exclusivo existente.
+
+- Actualizacion 2026-04-19 (portal publico y selector: visibilidad por alcance real):
+	- El CTA `Probar Gratis` de la landing descriptiva ya no debe conducir a pantallas administrativas como `administrar_empresa`, `super_administrador` o `seleccionar_empresa`; cuando la tarjeta original apunta a un flujo protegido, el destino público correcto pasa a ser el registro de administrador.
+	- En `seleccionar_empresa`, `Licencias` puede seguir visible para cuentas con gestión propia de empresas/licencias, pero `Administradores` y `Reportes globales` quedan reservados a `super_administrador` principal.
+	- Los administradores delegados dejan de ver navegación global aunque mantengan rol heredado `super_administrador`, alineando la UI con el alcance efectivo ya impuesto por backend.
+	- Impacto de matriz: no cambian endpoints ni wrappers; se endurece la visibilidad operativa del panel y la coherencia del portal público.
+
+- Actualizacion 2026-04-19 (super/licencias: cierre de alcance delegado y publicación pública de Epayco):
+	- `super_administrador` delegado ya no obtiene acceso global implícito por el nombre del rol; si fue creado por otro administrador, su alcance efectivo queda limitado al conjunto de empresas del administrador principal resuelto por cadena de creación.
+	- `super_administrador` principal conserva visibilidad global, mientras el delegado solo administra empresas dentro de su portafolio autorizado y recibe `403` al consultar empresas externas.
+	- `GET /api/public/licencias/payment_methods` puede anunciar `epayco` cuando existe `public_key`, sin convertir ese anuncio en permiso para ejecutar cobros sin credenciales privadas en los pasos internos del checkout.
+	- Impacto de matriz: no se abren rutas ni roles nuevos; se endurece el control real del módulo crítico de empresas y se aclara la diferencia entre visibilidad pública de método y autorización de cobro.
+
 ## Regla de mantenimiento por modulo
 
 - Cuando se cree un modulo nuevo o se modifique uno existente, esta matriz debe actualizarse en la misma iteracion para reflejar permisos por rol/modulo/accion y el impacto en paginas del panel.
