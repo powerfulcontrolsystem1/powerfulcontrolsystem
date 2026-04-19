@@ -277,7 +277,15 @@ function Load-PostgresEnvFromFiles {
             'DB_VPS_SSH_KEY_PATH',
             'DB_VPS_LOCAL_PORT',
             'DB_VPS_REMOTE_HOST',
-            'DB_VPS_REMOTE_PORT'
+            'DB_VPS_REMOTE_PORT',
+            'OLLAMA_BASE_URL',
+            'OLLAMA_VPS_TUNNEL_ENABLED',
+            'OLLAMA_VPS_SSH_HOST',
+            'OLLAMA_VPS_SSH_USER',
+            'OLLAMA_VPS_SSH_KEY_PATH',
+            'OLLAMA_VPS_LOCAL_PORT',
+            'OLLAMA_VPS_REMOTE_HOST',
+            'OLLAMA_VPS_REMOTE_PORT'
         )) {
             if (-not $vals.ContainsKey($key)) { continue }
             $candidate = [string]$vals[$key]
@@ -318,7 +326,23 @@ function Rewrite-PostgresDSNForTunnel {
     return $rewritten
 }
 
-function Ensure-VpsPostgresTunnel {
+function Rewrite-OllamaBaseUrlForTunnel {
+    param(
+        [string]$BaseUrl,
+        [int]$LocalPort
+    )
+
+    if ([string]::IsNullOrWhiteSpace($BaseUrl)) {
+        return ("http://127.0.0.1:{0}" -f $LocalPort)
+    }
+
+    $rewritten = $BaseUrl.Trim()
+    $rewritten = $rewritten -replace 'http://127\.0\.0\.1:11434', ("http://127.0.0.1:{0}" -f $LocalPort)
+    $rewritten = $rewritten -replace 'http://localhost:11434', ("http://127.0.0.1:{0}" -f $LocalPort)
+    return $rewritten
+}
+
+function Ensure-VpsSshTunnel {
     param(
         [string]$BackendDir,
         [string]$SshHost,
@@ -326,15 +350,20 @@ function Ensure-VpsPostgresTunnel {
         [string]$SshKeyPath,
         [int]$LocalPort,
         [string]$RemoteHost,
-        [int]$RemotePort
+        [int]$RemotePort,
+        [string]$TunnelLabel
     )
 
+    if ([string]::IsNullOrWhiteSpace($TunnelLabel)) {
+        $TunnelLabel = 'servicio'
+    }
+
     if ([string]::IsNullOrWhiteSpace($SshHost)) {
-        throw 'DB_VPS_SSH_HOST es obligatorio cuando DB_VPS_TUNNEL_ENABLED=1.'
+        throw ("{0}: SSH host es obligatorio cuando el tunel está habilitado." -f $TunnelLabel)
     }
 
     if ([string]::IsNullOrWhiteSpace($SshUser)) {
-        throw 'DB_VPS_SSH_USER es obligatorio cuando DB_VPS_TUNNEL_ENABLED=1.'
+        throw ("{0}: SSH user es obligatorio cuando el tunel está habilitado." -f $TunnelLabel)
     }
 
     if ([string]::IsNullOrWhiteSpace($SshKeyPath)) {
@@ -349,17 +378,17 @@ function Ensure-VpsPostgresTunnel {
 
     $resolvedKeyPath = [System.IO.Path]::GetFullPath($resolvedKeyPath)
     if (-not (Test-Path $resolvedKeyPath)) {
-        throw ("No se encontro la llave SSH para tunel DB: {0}" -f $resolvedKeyPath)
+        throw ("{0}: no se encontro la llave SSH: {1}" -f $TunnelLabel, $resolvedKeyPath)
     }
 
     $plink = Get-Command plink.exe -ErrorAction SilentlyContinue
     if ($null -eq $plink) {
-        throw 'No se encontro plink.exe. Instala PuTTY para habilitar tunel DB hacia VPS.'
+        throw ("{0}: no se encontro plink.exe. Instala PuTTY para habilitar el tunel." -f $TunnelLabel)
     }
 
     $listening = Get-NetTCPConnection -LocalPort $LocalPort -State Listen -ErrorAction SilentlyContinue
     if ($listening) {
-        Write-Info ("Tunel DB detectado en localhost:{0}. Se reutiliza." -f $LocalPort)
+        Write-Info ("Tunel {0} detectado en localhost:{1}. Se reutiliza." -f $TunnelLabel, $LocalPort)
         return
     }
 
@@ -377,14 +406,15 @@ function Ensure-VpsPostgresTunnel {
         New-Item -ItemType Directory -Path $tmpDir -Force | Out-Null
     }
 
-    $plinkStdOut = Join-Path $tmpDir ("plink_tunnel_{0}.out.log" -f $LocalPort)
-    $plinkStdErr = Join-Path $tmpDir ("plink_tunnel_{0}.err.log" -f $LocalPort)
+    $safeLabel = ($TunnelLabel -replace '[^a-zA-Z0-9_-]', '_').ToLowerInvariant()
+    $plinkStdOut = Join-Path $tmpDir ("plink_tunnel_{0}_{1}.out.log" -f $safeLabel, $LocalPort)
+    $plinkStdErr = Join-Path $tmpDir ("plink_tunnel_{0}_{1}.err.log" -f $safeLabel, $LocalPort)
     Remove-Item -Path $plinkStdOut -Force -ErrorAction SilentlyContinue
     Remove-Item -Path $plinkStdErr -Force -ErrorAction SilentlyContinue
 
     $proc = Start-Process -FilePath $plink.Source -ArgumentList $plinkArgs -WindowStyle Hidden -RedirectStandardOutput $plinkStdOut -RedirectStandardError $plinkStdErr -PassThru
     if ($null -eq $proc -or $proc.HasExited) {
-        throw ("No se pudo iniciar tunel SSH DB a {0} ({1})." -f $target, $forwardSpec)
+        throw ("{0}: no se pudo iniciar tunel SSH a {1} ({2})." -f $TunnelLabel, $target, $forwardSpec)
     }
 
     $listenerReady = $false
@@ -409,25 +439,39 @@ function Ensure-VpsPostgresTunnel {
         $stderrTail = @(Get-Content -Path $plinkStdErr -Tail 10 -ErrorAction SilentlyContinue)
     }
     if ($stderrTail.Count -gt 0) {
-        $diagnosticDetail = " stderr=" + (($stderrTail -join ' | ').Trim())
+        $diagnosticDetail = ' stderr=' + (($stderrTail -join ' | ').Trim())
     } else {
         $stdoutTail = @()
         if (Test-Path $plinkStdOut) {
             $stdoutTail = @(Get-Content -Path $plinkStdOut -Tail 10 -ErrorAction SilentlyContinue)
         }
         if ($stdoutTail.Count -gt 0) {
-            $diagnosticDetail = " stdout=" + (($stdoutTail -join ' | ').Trim())
+            $diagnosticDetail = ' stdout=' + (($stdoutTail -join ' | ').Trim())
         }
     }
 
     if (-not $listenerReady) {
         if ($proc.HasExited) {
-            throw ("El tunel SSH DB se cerro al iniciar (PID={0}, ExitCode={1}) para {2} ({3}).{4}" -f $proc.Id, $proc.ExitCode, $target, $forwardSpec, $diagnosticDetail)
+            throw ("{0}: el tunel SSH se cerro al iniciar (PID={1}, ExitCode={2}) para {3} ({4}).{5}" -f $TunnelLabel, $proc.Id, $proc.ExitCode, $target, $forwardSpec, $diagnosticDetail)
         }
-        throw ("No se detecto listener en localhost:{0} tras iniciar tunel DB (PID={1}) hacia {2} ({3}).{4}" -f $LocalPort, $proc.Id, $target, $forwardSpec, $diagnosticDetail)
+        throw ("{0}: no se detecto listener en localhost:{1} tras iniciar tunel SSH (PID={2}) hacia {3} ({4}).{5}" -f $TunnelLabel, $LocalPort, $proc.Id, $target, $forwardSpec, $diagnosticDetail)
     }
 
-    Write-Info ("Tunel DB iniciado: localhost:{0} -> {1}:{2} (PID={3})" -f $LocalPort, $RemoteHost, $RemotePort, $proc.Id)
+    Write-Info ("Tunel {0} iniciado: localhost:{1} -> {2}:{3} (PID={4})" -f $TunnelLabel, $LocalPort, $RemoteHost, $RemotePort, $proc.Id)
+}
+
+function Ensure-VpsPostgresTunnel {
+    param(
+        [string]$BackendDir,
+        [string]$SshHost,
+        [string]$SshUser,
+        [string]$SshKeyPath,
+        [int]$LocalPort,
+        [string]$RemoteHost,
+        [int]$RemotePort
+    )
+
+    Ensure-VpsSshTunnel -BackendDir $BackendDir -SshHost $SshHost -SshUser $SshUser -SshKeyPath $SshKeyPath -LocalPort $LocalPort -RemoteHost $RemoteHost -RemotePort $RemotePort -TunnelLabel 'DB'
 }
 
 Load-PostgresEnvFromFiles -BackendDir $backend
@@ -475,6 +519,53 @@ if ($tunnelEnabled) {
     [Environment]::SetEnvironmentVariable('DB_SUPERADMIN_DSN', $env:DB_SUPERADMIN_DSN, 'Process')
 }
 
+$ollamaTunnelEnabled = Test-TruthyValue -Value ([Environment]::GetEnvironmentVariable('OLLAMA_VPS_TUNNEL_ENABLED', 'Process'))
+if ($ollamaTunnelEnabled) {
+    $ollamaSshHost = [Environment]::GetEnvironmentVariable('OLLAMA_VPS_SSH_HOST', 'Process')
+    if ([string]::IsNullOrWhiteSpace($ollamaSshHost)) {
+        $ollamaSshHost = [Environment]::GetEnvironmentVariable('DB_VPS_SSH_HOST', 'Process')
+    }
+
+    $ollamaSshUser = [Environment]::GetEnvironmentVariable('OLLAMA_VPS_SSH_USER', 'Process')
+    if ([string]::IsNullOrWhiteSpace($ollamaSshUser)) {
+        $ollamaSshUser = [Environment]::GetEnvironmentVariable('DB_VPS_SSH_USER', 'Process')
+    }
+
+    $ollamaSshKeyPath = [Environment]::GetEnvironmentVariable('OLLAMA_VPS_SSH_KEY_PATH', 'Process')
+    if ([string]::IsNullOrWhiteSpace($ollamaSshKeyPath)) {
+        $ollamaSshKeyPath = [Environment]::GetEnvironmentVariable('DB_VPS_SSH_KEY_PATH', 'Process')
+    }
+
+    $ollamaRemoteHost = [Environment]::GetEnvironmentVariable('OLLAMA_VPS_REMOTE_HOST', 'Process')
+    if ([string]::IsNullOrWhiteSpace($ollamaRemoteHost)) {
+        $ollamaRemoteHost = '127.0.0.1'
+    }
+
+    $ollamaLocalPort = 11435
+    $rawOllamaLocalPort = [Environment]::GetEnvironmentVariable('OLLAMA_VPS_LOCAL_PORT', 'Process')
+    if (-not [string]::IsNullOrWhiteSpace($rawOllamaLocalPort)) {
+        $parsedOllamaLocal = 0
+        if ([int]::TryParse($rawOllamaLocalPort, [ref]$parsedOllamaLocal) -and $parsedOllamaLocal -gt 0) {
+            $ollamaLocalPort = $parsedOllamaLocal
+        }
+    }
+
+    $ollamaRemotePort = 11434
+    $rawOllamaRemotePort = [Environment]::GetEnvironmentVariable('OLLAMA_VPS_REMOTE_PORT', 'Process')
+    if (-not [string]::IsNullOrWhiteSpace($rawOllamaRemotePort)) {
+        $parsedOllamaRemote = 0
+        if ([int]::TryParse($rawOllamaRemotePort, [ref]$parsedOllamaRemote) -and $parsedOllamaRemote -gt 0) {
+            $ollamaRemotePort = $parsedOllamaRemote
+        }
+    }
+
+    Ensure-VpsSshTunnel -BackendDir $backend -SshHost $ollamaSshHost -SshUser $ollamaSshUser -SshKeyPath $ollamaSshKeyPath -LocalPort $ollamaLocalPort -RemoteHost $ollamaRemoteHost -RemotePort $ollamaRemotePort -TunnelLabel 'OLLAMA'
+
+    $env:OLLAMA_BASE_URL = Rewrite-OllamaBaseUrlForTunnel -BaseUrl ([Environment]::GetEnvironmentVariable('OLLAMA_BASE_URL', 'Process')) -LocalPort $ollamaLocalPort
+    [Environment]::SetEnvironmentVariable('OLLAMA_BASE_URL', $env:OLLAMA_BASE_URL, 'Process')
+    Write-Info ("OLLAMA_BASE_URL configurado para backend local: {0}" -f $env:OLLAMA_BASE_URL)
+}
+
 if ($env:DB_DIALECT -ne 'postgres') {
     Write-Host "DB_DIALECT=$($env:DB_DIALECT) no es valido. Este proyecto opera solo con PostgreSQL." -ForegroundColor Red
     exit 1
@@ -489,6 +580,7 @@ Write-Ok "Configuracion PostgreSQL validada."
 Write-Info "DB_DIALECT=$env:DB_DIALECT"
 Write-Info "DB_EMPRESAS_DSN configurado: $([string]::IsNullOrWhiteSpace($env:DB_EMPRESAS_DSN) -eq $false)"
 Write-Info "DB_SUPERADMIN_DSN configurado: $([string]::IsNullOrWhiteSpace($env:DB_SUPERADMIN_DSN) -eq $false)"
+Write-Info "OLLAMA_BASE_URL configurado: $([string]::IsNullOrWhiteSpace($env:OLLAMA_BASE_URL) -eq $false)"
 
 function Stop-ProcessesOnPort {
     param([int]$port)
