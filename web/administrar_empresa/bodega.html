@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Administrar Bodegas</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="empresa-subpage">
+  <div class="container empresa-module">
+    <section class="card empresa-module-header">
+      <div>
+        <h1>Administrar Bodegas</h1>
+        <p id="empresaInfo">Empresa: cargando...</p>
+      </div>
+      <div class="empresa-module-kpis">
+        <div class="kpi-box">
+          <span class="kpi-label">Bodegas</span>
+          <strong id="kpiBodegas">0</strong>
+        </div>
+      </div>
+    </section>
+
+    <div id="messageBox" class="form-help"></div>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Bodegas</h2>
+        <button id="btnNuevaBodega" type="button" class="btn secondary">Nueva</button>
+      </div>
+
+      <form id="bodegaForm" class="form" style="display:none;">
+        <input type="hidden" id="bodegaId">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="bodegaCodigo">Código</label>
+            <input id="bodegaCodigo" class="form-input" placeholder="BOD-001">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="bodegaNombre">Nombre</label>
+            <input id="bodegaNombre" class="form-input" required placeholder="Bodega principal">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="bodegaUbicacion">Ubicación</label>
+            <input id="bodegaUbicacion" class="form-input" placeholder="Piso 1 - pasillo A">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="bodegaResponsable">Responsable</label>
+            <input id="bodegaResponsable" class="form-input" placeholder="Nombre del responsable">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="bodegaObservaciones">Observaciones</label>
+            <textarea id="bodegaObservaciones" class="form-textarea"></textarea>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn" type="submit">Guardar bodega</button>
+          <button class="btn secondary" type="button" id="btnCancelarBodega">Cancelar</button>
+        </div>
+      </form>
+
+      <div class="table-wrap">
+        <table class="table" id="bodegasTable">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Código</th>
+              <th>Nombre</th>
+              <th>Ubicación</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    function parsePositiveInt(raw) {
+      const n = Number(String(raw || '').trim());
+      if (!Number.isFinite(n)) return 0;
+      const v = Math.trunc(n);
+      return v > 0 ? v : 0;
+    }
+
+    function resolveEmpresaId() {
+      try {
+        const params = new URLSearchParams(window.location.search || '');
+        const own = parsePositiveInt(params.get('empresa_id') || params.get('id'));
+        if (own > 0) return own;
+      } catch (_) {}
+      try {
+        if (window.parent && window.parent !== window) {
+          if (typeof window.parent.__resolveEmpresaIdContext === 'function') {
+            const parentResolved = parsePositiveInt(window.parent.__resolveEmpresaIdContext());
+            if (parentResolved > 0) return parentResolved;
+          }
+          const parentParams = new URLSearchParams(window.parent.location.search || '');
+          const fromParent = parsePositiveInt(parentParams.get('empresa_id') || parentParams.get('id'));
+          if (fromParent > 0) return fromParent;
+        }
+      } catch (_) {}
+      try {
+        const candidates = [
+          sessionStorage.getItem('active_empresa_id'),
+          sessionStorage.getItem('empresa_id'),
+          localStorage.getItem('active_empresa_id'),
+          localStorage.getItem('empresa_id')
+        ];
+        for (let i = 0; i < candidates.length; i++) {
+          const parsed = parsePositiveInt(candidates[i]);
+          if (parsed > 0) return parsed;
+        }
+      } catch (_) {}
+      return 0;
+    }
+
+    const empresaId = resolveEmpresaId();
+    const state = { bodegas: [] };
+
+    function showMessage(text, type) {
+      const messageBox = document.getElementById('messageBox');
+      if (!messageBox) return;
+      messageBox.textContent = text || '';
+      messageBox.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'form-help');
+    }
+
+    async function requestJSON(url, options) {
+      const resp = await fetch(url, Object.assign({ credentials: 'same-origin' }, options || {}));
+      const contentType = resp.headers.get('content-type') || '';
+      let data = null;
+      if (contentType.includes('application/json')) {
+        data = await resp.json();
+      } else {
+        data = await resp.text();
+      }
+      if (!resp.ok) {
+        const msg = typeof data === 'string' ? data : (data && data.error ? data.error : 'error de servidor');
+        throw new Error(msg || ('HTTP ' + resp.status));
+      }
+      return data;
+    }
+
+    function sanitize(v) {
+      return String(v == null ? '' : v)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function setCRUDFormVisible(formId, visible) {
+      const form = document.getElementById(formId);
+      if (!form) return;
+      form.style.display = visible ? '' : 'none';
+    }
+
+    function fillBodegaForm(b) {
+      document.getElementById('bodegaId').value = b ? Number(b.id) : '';
+      document.getElementById('bodegaCodigo').value = b ? (b.codigo || '') : '';
+      document.getElementById('bodegaNombre').value = b ? (b.nombre || '') : '';
+      document.getElementById('bodegaUbicacion').value = b ? (b.ubicacion || '') : '';
+      document.getElementById('bodegaResponsable').value = b ? (b.responsable || '') : '';
+      document.getElementById('bodegaObservaciones').value = b ? (b.observaciones || '') : '';
+    }
+
+    function renderBodegas() {
+      const tbody = document.querySelector('#bodegasTable tbody');
+      if (!state.bodegas.length) {
+        tbody.innerHTML = '<tr><td colspan="6">No hay bodegas registradas.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = state.bodegas.map(b => {
+        const estado = sanitize(b.estado || 'activo');
+        const activar = estado === 'activo' ? 'Desactivar' : 'Activar';
+        const activo = estado === 'activo' ? '0' : '1';
+        return '<tr>' +
+          '<td>' + Number(b.id) + '</td>' +
+          '<td>' + sanitize(b.codigo || '') + '</td>' +
+          '<td>' + sanitize(b.nombre || '') + '</td>' +
+          '<td>' + sanitize(b.ubicacion || '') + '</td>' +
+          '<td>' + estado + '</td>' +
+          '<td class="actions">' +
+            '<button type="button" class="btn secondary" data-action="edit-bodega" data-id="' + Number(b.id) + '">Editar</button>' +
+            '<button type="button" class="btn secondary" data-action="toggle-bodega" data-id="' + Number(b.id) + '" data-activo="' + activo + '">' + activar + '</button>' +
+            '<button type="button" class="btn danger" data-action="delete-bodega" data-id="' + Number(b.id) + '">Eliminar</button>' +
+          '</td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    async function loadEmpresaInfo() {
+      if (!empresaId) {
+        showMessage('empresa_id no definido en la URL.', 'error');
+        document.getElementById('empresaInfo').textContent = 'Empresa: no definida';
+        return;
+      }
+      try {
+        const empresa = await requestJSON('/super/api/empresas?id=' + empresaId);
+        document.getElementById('empresaInfo').textContent = 'Empresa: ' + (empresa.nombre || 'Sin nombre');
+      } catch (e) {
+        document.getElementById('empresaInfo').textContent = 'Empresa no disponible';
+      }
+    }
+
+    async function loadBodegas() {
+      try {
+        state.bodegas = await requestJSON('/api/empresa/bodegas?empresa_id=' + empresaId + '&include_inactive=1');
+        document.getElementById('kpiBodegas').textContent = String(state.bodegas.length);
+        renderBodegas();
+      } catch (e) {
+        showMessage('Error cargando bodegas: ' + e.message, 'error');
+      }
+    }
+
+    async function saveBodega(ev) {
+      ev.preventDefault();
+      const id = Number(document.getElementById('bodegaId').value || 0);
+      const payload = {
+        id,
+        empresa_id: empresaId,
+        codigo: document.getElementById('bodegaCodigo').value.trim(),
+        nombre: document.getElementById('bodegaNombre').value.trim(),
+        ubicacion: document.getElementById('bodegaUbicacion').value.trim(),
+        responsable: document.getElementById('bodegaResponsable').value.trim(),
+        observaciones: document.getElementById('bodegaObservaciones').value.trim()
+      };
+      if (!payload.nombre) {
+        showMessage('El nombre de bodega es obligatorio.', 'error');
+        return;
+      }
+      try {
+        if (id > 0) {
+          await requestJSON('/api/empresa/bodegas', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          showMessage('Bodega actualizada correctamente.', 'success');
+        } else {
+          await requestJSON('/api/empresa/bodegas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          showMessage('Bodega creada correctamente.', 'success');
+        }
+        fillBodegaForm(null);
+        setCRUDFormVisible('bodegaForm', false);
+        await loadBodegas();
+      } catch (e) {
+        showMessage('Error guardando bodega: ' + e.message, 'error');
+      }
+    }
+
+    async function accionBodega(action, id, activo) {
+      try {
+        if (action === 'edit-bodega') {
+          const b = state.bodegas.find(x => Number(x.id) === Number(id));
+          fillBodegaForm(b || null);
+          setCRUDFormVisible('bodegaForm', true);
+          return;
+        }
+        if (action === 'delete-bodega') {
+          if (!confirm('¿Eliminar esta bodega?')) return;
+          await requestJSON('/api/empresa/bodegas?empresa_id=' + empresaId + '&id=' + id, { method: 'DELETE' });
+          showMessage('Bodega eliminada.', 'success');
+        }
+        if (action === 'toggle-bodega') {
+          await requestJSON('/api/empresa/bodegas?empresa_id=' + empresaId + '&id=' + id + '&action=activar&activo=' + activo, { method: 'PUT' });
+          showMessage('Estado de bodega actualizado.', 'success');
+        }
+        await loadBodegas();
+      } catch (e) {
+        showMessage('Error en acción de bodega: ' + e.message, 'error');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      if (!empresaId) {
+        showMessage('empresa_id no encontrado en la URL o contexto.', 'error');
+        return;
+      }
+
+      document.getElementById('btnNuevaBodega').addEventListener('click', function() {
+        fillBodegaForm(null);
+        setCRUDFormVisible('bodegaForm', true);
+      });
+
+      document.getElementById('btnCancelarBodega').addEventListener('click', function() {
+        fillBodegaForm(null);
+        setCRUDFormVisible('bodegaForm', false);
+      });
+
+      document.getElementById('bodegaForm').addEventListener('submit', saveBodega);
+
+      document.querySelector('#bodegasTable').addEventListener('click', function(ev) {
+        const btn = ev.target.closest('button');
+        if (!btn) return;
+        const action = btn.getAttribute('data-action');
+        const id = btn.getAttribute('data-id');
+        const activo = btn.getAttribute('data-activo');
+        accionBodega(action, id, activo);
+      });
+
+      loadEmpresaInfo();
+      loadBodegas();
+    });
+  </script>
+</body>
+</html>

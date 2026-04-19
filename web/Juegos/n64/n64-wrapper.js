@@ -2,7 +2,7 @@
   var REMOTE_INDEX_URL = 'https://hulkholden.github.io/n64js/index.html';
   var REMOTE_BASE_URL = 'https://hulkholden.github.io/n64js/';
   var BRIDGE_CHANNEL = 'pcs-n64-bridge';
-  var DB_NAME = 'pcs_arcade_n64';
+  var DB_NAME = 'pcs_n64_emulator';
   var DB_VERSION = 1;
   var ROM_STORE = 'roms';
   var LAST_ROM_KEY = 'last-rom';

@@ -365,13 +365,14 @@
     function generateYouTubeCardHtml(cfg) {
       const browserSrc = sanitize(buildYouTubeStationBrowserURL(cfg, true));
       return '<article class="portal-card station-card-inactive youtube-station-card" id="youtubeStationCard" data-special-station="youtube" aria-label="Estación YouTube">' +
+        '<button type="button" class="youtube-station-play" id="youtubeStationPlay" aria-label="Reproducir estación YouTube">▶</button>' +
         '<button type="button" class="youtube-station-expand" id="youtubeStationExpand" aria-label="Maximizar estación YouTube">[]</button>' +
         '<div class="youtube-station-head">' +
           '<h3>YouTube</h3>' +
           '<p>Vista embebida adaptable para esta estación.</p>' +
         '</div>' +
         '<div class="youtube-station-browser-preview">' +
-          '<iframe class="youtube-station-preview-frame" src="' + browserSrc + '" title="Vista previa YouTube" loading="lazy" tabindex="-1"></iframe>' +
+          '<iframe class="youtube-station-preview-frame" src="' + browserSrc + '" title="Vista previa YouTube" loading="lazy" tabindex="-1" allow="autoplay; encrypted-media; fullscreen"></iframe>' +
         '</div>' +
       '</article>';
     }
@@ -543,6 +544,25 @@
         });
       }
 
+      const playBtn = document.getElementById('youtubeStationPlay');
+      if (playBtn) {
+        playBtn.addEventListener('click', ev => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          const youtubeCard = document.getElementById('youtubeStationCard');
+          const iframe = youtubeCard ? youtubeCard.querySelector('iframe.youtube-station-preview-frame') : null;
+          try {
+            if (iframe && iframe.contentWindow && typeof iframe.contentWindow.__ytPlayWithSound === 'function') {
+              iframe.contentWindow.__ytPlayWithSound();
+              return;
+            }
+          } catch (e) {
+            // fallback to opening overlay
+          }
+          openYouTubeStationOverlay(cfg);
+        });
+      }
+
       const youtubeCard = document.getElementById('youtubeStationCard');
       if (youtubeCard) {
         youtubeCard.addEventListener('keydown', ev => {
@@ -566,11 +586,14 @@
           '<div class="youtube-station-overlay-head">' +
             '<div>' +
               '<strong id="youtubeStationOverlayTitle">Estación YouTube</strong>' +
-              '<span>Ventana ampliada 500 x 500</span>' +
+              '<span>Vista ampliada con búsqueda y reproducción</span>' +
             '</div>' +
-            '<button type="button" class="youtube-station-overlay-close btn secondary">Cerrar</button>' +
+            '<div class="youtube-station-overlay-actions">' +
+              '<button type="button" class="youtube-station-overlay-minimize btn secondary">Minimizar</button>' +
+              '<button type="button" class="youtube-station-overlay-close btn secondary">Cerrar</button>' +
+            '</div>' +
           '</div>' +
-          '<iframe class="youtube-station-overlay-frame" title="Estación YouTube ampliada" loading="lazy"></iframe>' +
+          '<iframe class="youtube-station-overlay-frame" title="Estación YouTube ampliada" loading="lazy" allow="autoplay; encrypted-media; fullscreen"></iframe>' +
         '</div>';
       document.body.appendChild(overlay);
 
@@ -583,6 +606,14 @@
       const closeBtn = overlay.querySelector('.youtube-station-overlay-close');
       if (closeBtn) {
         closeBtn.addEventListener('click', ev => {
+          ev.preventDefault();
+          closeYouTubeStationOverlay();
+        });
+      }
+
+      const minimizeBtn = overlay.querySelector('.youtube-station-overlay-minimize');
+      if (minimizeBtn) {
+        minimizeBtn.addEventListener('click', ev => {
           ev.preventDefault();
           closeYouTubeStationOverlay();
         });

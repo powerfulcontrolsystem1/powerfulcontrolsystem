@@ -1,3 +1,93 @@
+ - 2026-04-18: helper CLI para configurar proveedores IA
+    - Archivos creados:
+        - backend/tools/set_ai_provider_enabled.go
+    - Descripcion: Herramienta CLI para ajustar `ai.provider.<provider>.enabled` en la base de datos superadmin. Ejecutar con `DB_SUPERADMIN_DSN` en entorno o usando `-dsn`.
+
+ - 2026-04-18: IA super y empresarial agrega interruptores por proveedor y deja DeepSeek desactivable sin afectar Ambis
+    - Archivos modificados:
+        - backend/handlers/ai_credentials_catalog.go
+        - backend/handlers/ai_config_handlers.go
+        - backend/handlers/chat_con_inteligencia_artificial_controller.go
+        - backend/handlers/chat_con_ia_global_super.go
+        - backend/handlers/system_empresas_handlers_test.go
+        - backend/handlers/chat_con_inteligencia_artificial_controller_test.go
+        - backend/handlers/chat_con_ia_global_super_test.go
+        - web/super/configuracion_avanzada.html
+        - documentos/descripcion_de_modulos
+        - documentos/diagramas/estructura_del_codigo.md
+        - documentos/matriz_roles_permisos_pos_multiempresa.md
+        - documentos/historial_de_cambios
+        - CHANGELOG.md
+    - Descripcion: Se agregan switches reales por proveedor para `DeepSeek Chat` y `Ambis Local`, además del switch global. Los chats de empresa y de super filtran el catálogo según esos switches y hacen fallback al primer modelo disponible cuando el preferido quedó apagado. Esto permite desactivar DeepSeek sin romper la IA VPS basada en Ollama.
+    - Verificacion:
+        - `go test ./handlers -run 'Test(AIModelsConfigHandlerSaveDeepSeekEncrypted|AIModelsConfigHandlerSavesProviderEnabledState|ModelosHandlerFiltersDisabledProvider|ModelosHandlerRejectsWhenAIDisabled|SuperAIModelosHandlerFiltersDisabledProvider|SuperAIModelosHandlerRejectsWhenAIDisabled)$' -count=1`
+ - 2026-04-18: Se elimina el arcade del portal y solo queda el emulador N64 movil
+     - Archivos eliminados:
+         - web/Juegos/ajedrez_3d_plus.html
+         - web/Juegos/ajedrez_vs_ia_plus.html
+         - web/Juegos/arcade_shared.js
+         - web/Juegos/arcade_window.css
+         - web/Juegos/brigada_burbujas_3d_plus.html
+         - web/Juegos/carton_fire_plus.html
+         - web/Juegos/memoria_estelar.html
+         - web/Juegos/memoria_estelar_plus.html
+         - web/Juegos/pacman_plus.html
+         - web/Juegos/patito_volando.html
+         - web/Juegos/patito_volando_plus.html
+         - web/Juegos/rebote_bloques.html
+         - web/Juegos/rebote_bloques_plus.html
+         - web/Juegos/serpiente_pixel.html
+         - web/Juegos/serpiente_pixel_plus.html
+         - web/Juegos/tetris_plus.html
+         - web/Juegos/nes/README.md
+         - web/Juegos/nes/index.html
+         - web/Juegos/nes/nes-wrapper.js
+         - web/Juegos/nes/styles.css
+         - web/img/juegos/ajedrez_3d.svg
+         - web/img/juegos/ajedrez_vs_ia.svg
+         - web/img/juegos/brigada_burbujas_3d.svg
+         - web/img/juegos/carton_fire.svg
+         - web/img/juegos/memoria_estelar.svg
+         - web/img/juegos/pacman.svg
+         - web/img/juegos/patito_volando.svg
+         - web/img/juegos/rebote_bloques.svg
+         - web/img/juegos/serpiente_pixel.svg
+         - web/img/juegos/tetris.svg
+     - Archivos modificados:
+         - web/Juegos/menu_juegos.html
+         - web/Juegos/n64/index.html
+         - web/Juegos/n64/n64-wrapper.js
+         - web/menu.js
+         - backend/handlers/auth_users_carritos_test.go
+         - documentos/descripcion_del_proyecto
+         - documentos/descripcion_de_modulos
+         - documentos/matriz_roles_permisos_pos_multiempresa.md
+         - documentos/diagramas/estructura_del_codigo.md
+         - documentos/descripcion_de_archivos
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se retiran todos los juegos publicados y el emulador NES. El portal deja como unica experiencia bajo `/Juegos/*` el emulador N64 adaptado para movil y celular.
+     - Verificacion tecnica:
+         - Busqueda global en `web/**` y `backend/**` sin referencias funcionales a los juegos eliminados.
+
+ - 2026-04-18: Selector de empresas alinea tarjetas a la izquierda y unifica su tamaño visual
+     - Archivos modificados:
+         - web/estilos.css
+         - documentos/historial_de_cambios
+         - CHANGELOG.md
+     - Descripcion: Se ajusta la grilla de `seleccionar_empresa.html` para quitar el centrado del bloque, alinear las tarjetas desde la izquierda y mantener un tamaño visual uniforme mediante una relación fija de aspecto en las tarjetas de empresa.
+     - Verificacion tecnica:
+         - `get_errors` sin errores en `web/estilos.css`.
+
+ - 2026-04-18: Menú flotante deja de usar accesos rápidos de juegos
+     - Archivos eliminados:
+         - web/Juegos/games.json
+     - Archivos modificados:
+         - web/menu.js
+     - Descripcion: Se elimina el manifiesto `web/Juegos/games.json` y el menú flotante deja de renderizar accesos rápidos del arcade. El acceso a juegos queda concentrado en `/Juegos/menu_juegos.html`.
+     - Verificacion tecnica:
+         - Búsqueda global sin referencias activas a `games.json` en `web/**`.
+
  - Historial de cambios
 
  - 2026-04-18: Menú flotante muestra accesos rápidos a juegos

@@ -187,3 +187,46 @@ func TestSuperAIModelosHandlerRejectsWhenAIDisabled(t *testing.T) {
 		t.Fatalf("expected status 503, got %d body=%s", rr.Code, rr.Body.String())
 	}
 }
+
+func TestSuperAIModelosHandlerFiltersDisabledProvider(t *testing.T) {
+	dbEmp := openSuperAIHandlerTestDB(t, "empresas.db")
+	dbSuper := openSuperAIHandlerTestDB(t, "super.db")
+	if err := dbpkg.EnsureSuperAIChatSchema(dbSuper); err != nil {
+		t.Fatalf("ensure super ai schema: %v", err)
+	}
+	ensureEmpresasCoreForSuperAI(t, dbEmp)
+	ensureConfigTableForSuperAITest(t, dbSuper)
+	createSuperSession(t, dbSuper, "super@pcs.com", "super_administrador", "token-super-filtered")
+	if err := dbpkg.UpsertSuperAIModeloPreferido(dbSuper, "super@pcs.com", "deepseek:deepseek-chat", "super@pcs.com"); err != nil {
+		t.Fatalf("upsert super model preferred: %v", err)
+	}
+	if err := dbpkg.SetConfigValue(dbSuper, "ai.provider.deepseek.enabled", "0", false); err != nil {
+		t.Fatalf("disable deepseek provider: %v", err)
+	}
+
+	ctrl := NewSuperAIChatController(dbEmp, dbSuper)
+	req := httptest.NewRequest(http.MethodGet, "/super/api/chat_con_ia_global/modelos", nil)
+	req.AddCookie(&http.Cookie{Name: "session_token", Value: "token-super-filtered"})
+	rr := httptest.NewRecorder()
+
+	ctrl.ModelosHandler(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d body=%s", rr.Code, rr.Body.String())
+	}
+
+	var payload map[string]interface{}
+	if err := json.Unmarshal(rr.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode json response: %v", err)
+	}
+	modelos, ok := payload["modelos"].([]interface{})
+	if !ok || len(modelos) != 1 {
+		t.Fatalf("expected 1 enabled model, got %#v", payload["modelos"])
+	}
+	item, _ := modelos[0].(map[string]interface{})
+	if item["id"] != "ollama:ambis" {
+		t.Fatalf("expected only ollama:ambis, got %#v", item["id"])
+	}
+	if payload["modelo_preferido"] != "ollama:ambis" {
+		t.Fatalf("expected fallback modelo_preferido ollama:ambis, got %#v", payload["modelo_preferido"])
+	}
+}

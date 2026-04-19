@@ -726,6 +726,59 @@ func TestAIModelsConfigHandlerSaveDeepSeekEncrypted(t *testing.T) {
 	}
 }
 
+func TestAIModelsConfigHandlerSavesProviderEnabledState(t *testing.T) {
+	dbSuper := openTestSQLite(t, "super_ai_provider_enabled.db")
+	ensureSuperConfigSchemaForSuper(t, dbSuper)
+
+	h := AIModelsConfigHandler(dbSuper)
+	body := `{"provider_enabled":{"deepseek":false,"ollama":true}}`
+	req := httptest.NewRequest(http.MethodPut, "/super/api/config/ai", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Admin-Email", "super@empresa.com")
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status %d on ai provider save, got %d body=%s", http.StatusOK, rr.Code, rr.Body.String())
+	}
+
+	deepseekEnabled, _, err := dbpkg.GetConfigValue(dbSuper, "ai.provider.deepseek.enabled")
+	if err != nil {
+		t.Fatalf("read ai.provider.deepseek.enabled: %v", err)
+	}
+	if strings.TrimSpace(deepseekEnabled) != "0" {
+		t.Fatalf("expected deepseek enabled flag 0, got %q", deepseekEnabled)
+	}
+
+	getReq := httptest.NewRequest(http.MethodGet, "/super/api/config/ai", nil)
+	getReq.Header.Set("X-Admin-Email", "super@empresa.com")
+	getRR := httptest.NewRecorder()
+	h.ServeHTTP(getRR, getReq)
+	if getRR.Code != http.StatusOK {
+		t.Fatalf("expected status %d on ai get, got %d body=%s", http.StatusOK, getRR.Code, getRR.Body.String())
+	}
+
+	var getBody map[string]interface{}
+	if err := json.Unmarshal(getRR.Body.Bytes(), &getBody); err != nil {
+		t.Fatalf("decode ai get response: %v body=%s", err, getRR.Body.String())
+	}
+	modelos, ok := getBody["modelos"].([]interface{})
+	if !ok {
+		t.Fatalf("expected modelos in ai get response, got %T", getBody["modelos"])
+	}
+	for _, raw := range modelos {
+		item, ok := raw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if item["model_id"] == "deepseek:deepseek-chat" {
+			if enabled, _ := item["enabled"].(bool); enabled {
+				t.Fatal("expected deepseek to appear disabled in ai catalog")
+			}
+		}
+	}
+}
+
 func TestAIModelsConfigHandlerTogglesGlobalServiceState(t *testing.T) {
 	dbSuper := openTestSQLite(t, "super_ai_toggle_handler.db")
 	ensureSuperConfigSchemaForSuper(t, dbSuper)

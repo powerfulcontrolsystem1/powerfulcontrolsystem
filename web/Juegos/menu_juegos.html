@@ -3,812 +3,186 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Menu de juegos</title>
+  <title>Emulador N64 móvil</title>
   <link rel="stylesheet" href="/estilos.css">
   <link rel="icon" type="image/png" href="/img/punto_venta.png">
   <script src="/menu.js"></script>
   <style>
-    :root {
-      --arcade-bg-top: #ecf8f2;
-      --arcade-bg-bottom: #7fd5ff;
-      --arcade-ink: #133047;
-      --arcade-card: rgba(255, 250, 244, 0.9);
-      --arcade-border: rgba(19, 48, 71, 0.12);
-      --arcade-accent: #ff9342;
-      --arcade-accent-dark: #d85e18;
-      --arcade-shadow: rgba(19, 48, 71, 0.18);
-    }
-
-    body.arcade-menu-page {
+    body.n64-entry-page {
       min-height: 100vh;
       margin: 0;
-      color: var(--arcade-ink);
+      color: #183247;
       background:
-        radial-gradient(circle at top left, rgba(255, 217, 122, 0.72), transparent 30%),
-        radial-gradient(circle at top right, rgba(255, 255, 255, 0.9), transparent 26%),
-        linear-gradient(180deg, var(--arcade-bg-top), var(--arcade-bg-bottom));
+        radial-gradient(circle at top left, rgba(255, 205, 124, 0.7), transparent 30%),
+        radial-gradient(circle at top right, rgba(255, 255, 255, 0.92), transparent 24%),
+        linear-gradient(180deg, #eef8f1, #87d9ff);
     }
 
-    .arcade-shell {
-      width: min(1240px, calc(100vw - 32px));
+    .n64-entry-shell {
+      width: min(980px, calc(100vw - 32px));
       margin: 0 auto;
       padding: 88px 0 32px;
       display: grid;
-      gap: 20px;
+      gap: 22px;
     }
 
-    .arcade-hero {
-      position: relative;
-      overflow: hidden;
+    .n64-entry-hero,
+    .n64-entry-card {
+      border-radius: 28px;
+      border: 1px solid rgba(24, 50, 71, 0.1);
+      background: rgba(255, 252, 247, 0.9);
+      box-shadow: 0 22px 54px rgba(24, 50, 71, 0.15);
+    }
+
+    .n64-entry-hero {
       padding: 30px;
-      border-radius: 30px;
       background:
-        linear-gradient(145deg, rgba(255, 255, 255, 0.94), rgba(246, 255, 250, 0.82)),
-        linear-gradient(180deg, rgba(255, 201, 121, 0.16), rgba(255, 255, 255, 0));
-      border: 1px solid rgba(19, 48, 71, 0.1);
-      box-shadow: 0 28px 64px var(--arcade-shadow);
+        linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(241, 252, 246, 0.86)),
+        linear-gradient(180deg, rgba(255, 190, 102, 0.15), rgba(255, 255, 255, 0));
     }
 
-    .arcade-hero::after {
-      content: "";
-      position: absolute;
-      right: -100px;
-      bottom: -90px;
-      width: 280px;
-      height: 280px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(255, 147, 66, 0.24), transparent 70%);
-      pointer-events: none;
-    }
-
-    .arcade-kicker {
+    .n64-entry-kicker {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      margin: 0 0 12px;
+      min-height: 34px;
       padding: 8px 12px;
       border-radius: 999px;
-      background: rgba(19, 48, 71, 0.08);
+      background: rgba(24, 50, 71, 0.08);
       font-size: 0.82rem;
       font-weight: 800;
-      text-transform: uppercase;
       letter-spacing: 0.05em;
+      text-transform: uppercase;
     }
 
-    .arcade-hero h1 {
+    .n64-entry-hero h1 {
+      margin: 14px 0 12px;
+      font-size: clamp(2.2rem, 5vw, 4rem);
+      line-height: 0.95;
+    }
+
+    .n64-entry-hero p {
       margin: 0;
-      font-size: clamp(2.6rem, 5vw, 4.5rem);
-      line-height: 0.94;
-    }
-
-    .arcade-hero-copy {
       max-width: 760px;
-      margin: 16px 0 0;
-      font-size: 1.06rem;
       line-height: 1.7;
-      color: rgba(19, 48, 71, 0.84);
+      color: rgba(24, 50, 71, 0.82);
     }
 
-    .arcade-chip-row {
+    .n64-entry-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.8fr);
+      gap: 18px;
+    }
+
+    .n64-entry-card {
+      padding: 22px;
+    }
+
+    .n64-entry-card h2 {
+      margin: 0 0 10px;
+      font-size: 1.15rem;
+    }
+
+    .n64-entry-card p,
+    .n64-entry-card li {
+      line-height: 1.6;
+      color: rgba(24, 50, 71, 0.8);
+    }
+
+    .n64-entry-card ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .n64-entry-actions {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 12px;
       margin-top: 18px;
     }
 
-    .arcade-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      min-height: 42px;
-      padding: 10px 14px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.84);
-      border: 1px solid rgba(19, 48, 71, 0.09);
-      font-weight: 700;
-    }
-
-    .arcade-toolbar {
-      display: grid;
-      grid-template-columns: minmax(280px, 1.1fr) minmax(220px, 0.8fr) auto;
-      gap: 16px;
-      align-items: stretch;
-    }
-
-    .arcade-panel {
-      padding: 18px;
-      border-radius: 24px;
-      background: var(--arcade-card);
-      border: 1px solid var(--arcade-border);
-      box-shadow: 0 20px 48px rgba(19, 48, 71, 0.12);
-    }
-
-    .arcade-panel h2,
-    .arcade-panel h3 {
-      margin: 0;
-      font-size: 1.1rem;
-    }
-
-    .arcade-panel p {
-      margin: 8px 0 0;
-      line-height: 1.55;
-      color: rgba(19, 48, 71, 0.76);
-    }
-
-    .arcade-player-form {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 10px;
-      margin-top: 14px;
-    }
-
-    .arcade-player-form input {
-      min-height: 50px;
-      padding: 0 14px;
-      border-radius: 16px;
-      border: 1px solid rgba(19, 48, 71, 0.14);
-      font: inherit;
-      color: var(--arcade-ink);
-      background: rgba(255, 255, 255, 0.9);
-    }
-
-    .arcade-btn {
+    .n64-entry-button {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       min-height: 50px;
       padding: 12px 18px;
+      border-radius: 16px;
       border: none;
-      border-radius: 16px;
-      cursor: pointer;
-      font: inherit;
-      font-weight: 900;
-      color: #fffdf9;
-      background: linear-gradient(135deg, var(--arcade-accent), var(--arcade-accent-dark));
-      box-shadow: 0 18px 34px rgba(216, 94, 24, 0.24);
-    }
-
-    .arcade-btn.secondary {
-      color: var(--arcade-ink);
-      background: rgba(19, 48, 71, 0.08);
-      box-shadow: none;
-    }
-
-    .arcade-summary-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-      margin-top: 14px;
-    }
-
-    .arcade-summary-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 12px 14px;
-      border-radius: 16px;
-      background: rgba(19, 48, 71, 0.05);
-      border: 1px solid rgba(19, 48, 71, 0.08);
-      font-weight: 700;
-    }
-
-    .arcade-summary-item strong {
-      font-size: 1.05rem;
-    }
-
-    .arcade-sound-panel {
-      display: grid;
-      gap: 12px;
-      align-content: stretch;
-    }
-
-    .arcade-sound-note {
-      margin: 0;
-      font-size: 0.94rem;
-      line-height: 1.55;
-      color: rgba(19, 48, 71, 0.72);
-    }
-
-    .arcade-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 18px;
-    }
-
-    /* Mobile simplified list for games: stacked items (botones uno debajo del otro) */
-    @media (max-width:720px) {
-      .arcade-grid { grid-template-columns: 1fr; }
-      .arcade-list-item { display:block; }
-      .arcade-list-item .arcade-list-link{ display:flex; align-items:center; gap:12px; text-decoration:none; padding:10px; border-radius:12px; background:var(--arcade-card); border:1px solid var(--arcade-border); color:var(--arcade-ink); }
-      .arcade-list-item .list-cover{ width:64px; height:64px; object-fit:contain; border-radius:8px; flex:0 0 64px }
-      .arcade-list-item .list-title{ font-weight:800; flex:1; text-align:left }
-      .arcade-list-item .list-btn{ min-width:96px; padding:8px 12px; border-radius:10px; background:linear-gradient(135deg,var(--arcade-accent),var(--arcade-accent-dark)); color:#fff; font-weight:900; text-align:center }
-      .game-card { aspect-ratio: auto; padding:10px; border-radius:12px }
-      .game-card-cover{ display:none }
-      .game-card-content{ padding:0 }
-    }
-
-    .game-card {
-      position: relative;
-      aspect-ratio: 1 / 1;
-      overflow: hidden;
-      border-radius: 28px;
-      border: 1px solid rgba(19, 48, 71, 0.12);
-      box-shadow: 0 26px 58px rgba(19, 48, 71, 0.18);
-      background: #10243b;
-    }
-
-    .game-card-cover {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transform: scale(1.02);
-    }
-
-    .game-card-shade {
-      position: absolute;
-      inset: 0;
-      background:
-        linear-gradient(180deg, rgba(7, 14, 24, 0.08) 0%, rgba(7, 14, 24, 0.18) 34%, rgba(7, 14, 24, 0.76) 76%, rgba(7, 14, 24, 0.92) 100%),
-        radial-gradient(circle at top right, rgba(255, 255, 255, 0.2), transparent 28%);
-    }
-
-    .game-card-content {
-      position: relative;
-      z-index: 1;
-      display: grid;
-      grid-template-rows: auto 1fr;
-      height: 100%;
-      padding: 18px;
-      color: #fff9f2;
-    }
-
-    .game-card-topline {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      justify-content: space-between;
-      align-items: flex-start;
-    }
-
-    .game-card-badge,
-    .game-card-mode {
-      display: inline-flex;
-      align-items: center;
-      min-height: 34px;
-      padding: 8px 11px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.14);
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      font-size: 0.78rem;
+      text-decoration: none;
       font-weight: 800;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-    }
-
-    .game-card-body {
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-      gap: 10px;
-      min-height: 0;
-    }
-
-    .game-card-kicker {
-      margin: 0;
-      font-size: 0.8rem;
-      font-weight: 800;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      color: rgba(255, 249, 242, 0.78);
-    }
-
-    .game-card-title {
-      margin: 0;
-      font-size: 1.55rem;
-      line-height: 1;
-    }
-
-    .game-card-copy {
-      margin: 0;
-      line-height: 1.45;
-      color: rgba(255, 249, 242, 0.88);
-      display: -webkit-box;
-      -webkit-line-clamp: 3;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-
-    .game-card-stats {
-      display: grid;
-      gap: 6px;
-      font-size: 0.9rem;
-      color: rgba(255, 249, 242, 0.86);
-    }
-
-    .game-card-leaderboard {
-      display: grid;
-      gap: 6px;
-    }
-
-    .game-card-rank {
-      display: block;
-      padding: 8px 10px;
-      border-radius: 14px;
-      background: rgba(255, 255, 255, 0.12);
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      font-size: 0.84rem;
-      font-weight: 700;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .game-card-actions {
-      display: flex;
-      gap: 10px;
-      margin-top: 2px;
-    }
-
-    .game-card-btn {
-      width: 100%;
-      min-height: 48px;
-      border: none;
-      border-radius: 16px;
       cursor: pointer;
-      font: inherit;
-      font-weight: 900;
-      color: #fffdf9;
-      background: linear-gradient(135deg, var(--arcade-accent), var(--arcade-accent-dark));
-      box-shadow: 0 16px 30px rgba(216, 94, 24, 0.26);
     }
 
-    @media (max-width: 960px) {
-      .arcade-toolbar {
-        grid-template-columns: 1fr;
-      }
+    .n64-entry-button.primary {
+      color: #fffdf8;
+      background: linear-gradient(135deg, #ff9342, #d85e18);
+      box-shadow: 0 18px 32px rgba(216, 94, 24, 0.26);
     }
 
-    @media (max-width: 720px) {
-      .arcade-shell {
-        width: min(100vw - 20px, 1240px);
+    .n64-entry-button.secondary {
+      color: #183247;
+      background: rgba(24, 50, 71, 0.08);
+    }
+
+    .n64-entry-note {
+      margin: 0;
+      font-size: 0.95rem;
+      color: rgba(24, 50, 71, 0.72);
+    }
+
+    @media (max-width: 768px) {
+      .n64-entry-shell {
+        width: min(100vw - 20px, 980px);
         padding-top: 78px;
       }
 
-      .arcade-hero,
-      .arcade-panel,
-      .game-card {
-        border-radius: 24px;
-      }
-
-      .arcade-player-form {
+      .n64-entry-grid {
         grid-template-columns: 1fr;
       }
 
-      .arcade-summary-grid {
-        grid-template-columns: 1fr;
+      .n64-entry-hero,
+      .n64-entry-card {
+        border-radius: 22px;
       }
-    }
 
-    .arcade-list-meta {
-      display: grid;
-      gap: 3px;
-      min-width: 0;
-      flex: 1;
-    }
+      .n64-entry-actions {
+        flex-direction: column;
+      }
 
-    .arcade-list-subtitle,
-    .arcade-list-record {
-      font-size: 0.8rem;
-      color: rgba(19, 48, 71, 0.72);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .game-card-progress {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .game-card-progress span {
-      display: inline-flex;
-      align-items: center;
-      min-height: 32px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.14);
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      font-size: 0.8rem;
-      font-weight: 800;
+      .n64-entry-button {
+        width: 100%;
+      }
     }
   </style>
 </head>
-<body class="arcade-menu-page">
-  <main class="arcade-shell">
-    <section class="arcade-hero">
-      <p class="arcade-kicker">Zona de juegos</p>
-      <h1>Arcade del portal</h1>
-      <p class="arcade-hero-copy">El arcade activo ahora concentra diez juegos compactos pensados para móvil, en vertical, con nombre compartido, progreso local, cronómetro de partida y sonido arcade sincronizado.</p>
-      <div class="arcade-chip-row">
-        <span class="arcade-chip">Diez juegos activos</span>
-        <span class="arcade-chip">Marcadores guardados por navegador</span>
-        <span class="arcade-chip">Sonido con control global</span>
-        <span class="arcade-chip">Premios y poderes compartidos</span>
+<body class="n64-entry-page">
+  <main class="n64-entry-shell">
+    <section class="n64-entry-hero">
+      <span class="n64-entry-kicker">Portal público</span>
+      <h1>Emulador N64 adaptado para móvil</h1>
+      <p>El portal ya no publica arcade ni juegos adicionales. Desde aquí solo queda disponible el emulador Nintendo 64, optimizado para celular con pantalla arriba, controles táctiles abajo y respaldo local de la memoria del cartucho.</p>
+      <div class="n64-entry-actions">
+        <a class="n64-entry-button primary" href="/Juegos/n64/index.html">Abrir emulador N64</a>
+        <a class="n64-entry-button secondary" href="/index.html">Volver al portal</a>
       </div>
     </section>
 
-    <section class="arcade-toolbar">
-      <article class="arcade-panel">
-        <h2>Jugador actual</h2>
-        <p>El nombre que guardes aqui se reutiliza en todos los juegos activos del arcade y firma automaticamente los records locales.</p>
-        <div class="arcade-player-form">
-          <input id="playerNameInput" type="text" maxlength="28" placeholder="Escribe el nombre del jugador">
-          <button id="savePlayerBtn" class="arcade-btn" type="button">Guardar jugador</button>
-        </div>
+    <section class="n64-entry-grid">
+      <article class="n64-entry-card">
+        <h2>Qué se mantiene</h2>
+        <ul>
+          <li>Carga de ROM propia y legal del usuario.</li>
+          <li>Diseño vertical y táctil para celular.</li>
+          <li>Botones Guardar y Cargar para respaldo local del cartucho.</li>
+          <li>Compatibilidad con Chrome y Edge modernos.</li>
+        </ul>
       </article>
-
-      <article class="arcade-panel">
-        <h3>Resumen del arcade</h3>
-        <div class="arcade-summary-grid">
-          <div class="arcade-summary-item"><span>Juegos con record</span><strong id="summaryGames">0</strong></div>
-          <div class="arcade-summary-item"><span>Partidas guardadas</span><strong id="summaryEntries">0</strong></div>
-          <div class="arcade-summary-item"><span>Juegos tuyos</span><strong id="summaryPlayerGames">0</strong></div>
-          <div class="arcade-summary-item"><span>Tu mejor juego</span><strong id="summaryBest">Sin datos</strong></div>
-        </div>
+      <article class="n64-entry-card">
+        <h2>Uso recomendado</h2>
+        <p>Sube una ROM N64 válida, juega en vertical para acceso rápido o gira el equipo si quieres más precisión. El navegador recuerda la última ROM cargada en este dispositivo.</p>
+        <p class="n64-entry-note">No se distribuyen ROMs comerciales dentro del proyecto.</p>
       </article>
-
-      <article class="arcade-panel arcade-sound-panel">
-        <h3>Sonido</h3>
-        <p class="arcade-sound-note">Los efectos se activan en todo el arcade con el mismo interruptor, incluyendo los nuevos juegos de puzzle, accion y estrategia.</p>
-        <button id="soundToggleBtn" class="arcade-btn secondary" type="button" aria-pressed="true">Sonido: activado</button>
-      </article>
-    </section>
-
-    <section>
-      <div id="gamesGrid" class="arcade-grid" aria-live="polite"></div>
     </section>
   </main>
-
-  <script src="/Juegos/arcade_shared.js"></script>
-  <script>
-    (function () {
-      var arcade = window.PCSArcade || null;
-      var games = [
-        {
-          slug: 'patito_volando',
-          title: 'Patito volando plus',
-          status: 'Activo',
-          theme: 'Vuelo arcade',
-          summary: 'Cruza columnas, sube niveles y recoge poderes de escudo, tiempo y vida extra.',
-          mode: 'Toque sostenido',
-          coverUrl: '/img/juegos/patito_volando.svg',
-          windowUrl: '/Juegos/patito_volando_plus.html',
-          windowWidth: 700,
-          windowHeight: 700
-        },
-        {
-          slug: 'serpiente_pixel',
-          title: 'Serpiente pixel plus',
-          status: 'Activo',
-          theme: 'Retro grid',
-          summary: 'La serpiente ahora crece con vidas, frutas especiales y ritmo escalable por nivel.',
-          mode: 'Cruceta táctil',
-          coverUrl: '/img/juegos/serpiente_pixel.svg',
-          windowUrl: '/Juegos/serpiente_pixel_plus.html',
-          windowWidth: 700,
-          windowHeight: 700
-        },
-        {
-          slug: 'memoria_estelar',
-          title: 'Memoria estelar plus',
-          status: 'Activo',
-          theme: 'Pares y poderes',
-          summary: 'Encuentra parejas, administra el reloj y gasta ayudas tacticas para superar tableros crecientes.',
-          mode: 'Toques rapidos',
-          coverUrl: '/img/juegos/memoria_estelar.svg',
-          windowUrl: '/Juegos/memoria_estelar_plus.html',
-          windowWidth: 700,
-          windowHeight: 700
-        },
-        {
-          slug: 'rebote_bloques',
-          title: 'Rebote bloques plus',
-          status: 'Activo',
-          theme: 'Breakout moderno',
-          summary: 'Rompe filas, activa multibola y recoge poderes mientras sobrevives varias vidas.',
-          mode: 'Botones táctiles',
-          coverUrl: '/img/juegos/rebote_bloques.svg',
-          windowUrl: '/Juegos/rebote_bloques_plus.html',
-          windowWidth: 700,
-          windowHeight: 700
-        },
-        {
-          slug: 'pacman',
-          title: 'Pacman plus',
-          status: 'Nuevo',
-          theme: 'Maze chase',
-          summary: 'Come pellets, esquiva fantasmas con IA y usa frutas de poder en laberintos cada vez más duros.',
-          mode: 'Cruceta táctil',
-          coverUrl: '/img/juegos/pacman.svg',
-          windowUrl: '/Juegos/pacman_plus.html',
-          windowWidth: 700,
-          windowHeight: 700
-        },
-        {
-          slug: 'tetris',
-          title: 'Tetris plus',
-          status: 'Nuevo',
-          theme: 'Piezas y reflejos',
-          summary: 'Apila, limpia lineas y usa bombazos o tiempo lento para controlar el tablero.',
-          mode: 'Botones táctiles',
-          coverUrl: '/img/juegos/tetris.svg',
-          windowUrl: '/Juegos/tetris_plus.html',
-          windowWidth: 700,
-          windowHeight: 700
-        },
-        {
-          slug: 'carton_fire',
-          title: 'Carton Fire plus',
-          status: 'Nuevo',
-          theme: 'Arena shooter',
-          summary: 'Defiende tu carton contra oleadas de drones, disparos y poderes de combate.',
-          mode: 'Mover y disparar',
-          coverUrl: '/img/juegos/carton_fire.svg',
-          windowUrl: '/Juegos/carton_fire_plus.html',
-          windowWidth: 700,
-          windowHeight: 700
-        },
-        {
-          slug: 'ajedrez_vs_ia',
-          title: 'Ajedrez vs IA plus',
-          status: 'Nuevo',
-          theme: 'Tablero tactico',
-          summary: 'Duelo contra computadora con varios niveles, sugerencias, deshacer y congelacion del turno rival.',
-          mode: 'Toque por casillas',
-          coverUrl: '/img/juegos/ajedrez_vs_ia.svg',
-          windowUrl: '/Juegos/ajedrez_vs_ia_plus.html',
-          windowWidth: 700,
-          windowHeight: 700
-        },
-        {
-          slug: 'ajedrez_3d',
-          title: 'Ajedrez 3D plus',
-          status: 'Nuevo',
-          theme: 'Holograma estrategico',
-          summary: 'Nuevo tablero en perspectiva 3D con cinco niveles de dificultad, cronometro arcade y ayudas tacticas.',
-          mode: 'Toque por casillas',
-          coverUrl: '/img/juegos/ajedrez_3d.svg',
-          windowUrl: '/Juegos/ajedrez_3d_plus.html',
-          windowWidth: 700,
-          windowHeight: 700
-        },
-        {
-          slug: 'brigada_burbujas_3d',
-          title: 'Brigada burbujas 3D plus',
-          status: 'Nuevo',
-          theme: 'Shooter caricatura 3D',
-          summary: 'Explora cinco niveles, activa tres transformaciones increibles y derrota una pasarela rival de villanas caricaturescas con IA agresiva.',
-          mode: 'Mover y disparar',
-          coverUrl: '/img/juegos/brigada_burbujas_3d.svg',
-          windowUrl: '/Juegos/brigada_burbujas_3d_plus.html',
-          windowWidth: 760,
-          windowHeight: 720
-        },
-        {
-          slug: 'n64_mobile',
-          title: 'N64 vertical mobile',
-          status: 'Nuevo',
-          theme: 'Mario 64 táctil',
-          summary: 'Carga tu ROM legal de Super Mario 64, juega en vertical desde el celular y respalda la memoria del cartucho con botones Guardar y Cargar.',
-          mode: 'Stick táctil + botones',
-          coverUrl: '/img/juegos/ajedrez_3d.svg',
-          windowUrl: '/Juegos/n64/index.html',
-          windowWidth: 430,
-          windowHeight: 920
-        }
-      ];
-
-      var gridEl = document.getElementById('gamesGrid');
-      var playerNameInput = document.getElementById('playerNameInput');
-      var savePlayerBtn = document.getElementById('savePlayerBtn');
-      var soundToggleBtn = document.getElementById('soundToggleBtn');
-      var summaryGames = document.getElementById('summaryGames');
-      var summaryEntries = document.getElementById('summaryEntries');
-      var summaryPlayerGames = document.getElementById('summaryPlayerGames');
-      var summaryBest = document.getElementById('summaryBest');
-
-      function escapeHTML(value) {
-        return String(value == null ? '' : value)
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/\"/g, '&quot;')
-          .replace(/'/g, '&#39;');
-      }
-
-      function isTouchDevice() {
-        var coarse = false;
-        try {
-          coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
-        } catch (_) {
-          coarse = false;
-        }
-        return coarse || /android|iphone|ipad|ipod/i.test(navigator.userAgent || '');
-      }
-
-      function getPlayerBest(gameSlug, playerName) {
-        if (!arcade || !playerName) return null;
-        var entries = arcade.getGameScores(gameSlug).entries;
-        return entries.find(function (entry) {
-          return String(entry.playerName || '').toLowerCase() === String(playerName || '').toLowerCase();
-        }) || null;
-      }
-
-      function getPlayerRank(gameSlug, playerName) {
-        if (!arcade || !playerName) return null;
-        var entries = arcade.getGameScores(gameSlug).entries;
-        for (var index = 0; index < entries.length; index += 1) {
-          if (String(entries[index].playerName || '').toLowerCase() === String(playerName || '').toLowerCase()) {
-            return index + 1;
-          }
-        }
-        return null;
-      }
-
-      function openGameWindow(url, slug, width, height) {
-        window.location.href = url;
-      }
-
-      function syncPlayerInput() {
-        if (!arcade) return;
-        playerNameInput.value = arcade.getProfile().playerName || '';
-      }
-
-      function persistPlayerInput() {
-        if (!arcade) return;
-        var value = String(playerNameInput.value || '').trim();
-        if (value) {
-          arcade.setPlayerName(value);
-        } else {
-          arcade.ensurePlayerName('Escribe el nombre del jugador para guardar los marcadores');
-          syncPlayerInput();
-        }
-      }
-
-      function renderSummary() {
-        if (!arcade) return;
-        var summary = arcade.getGlobalSummary();
-        var playerName = arcade.getProfile().playerName || '';
-        var personal = games.map(function (game) {
-          var best = getPlayerBest(game.slug, playerName);
-          return best ? { slug: game.slug, title: game.title, best: best } : null;
-        }).filter(Boolean).sort(function (left, right) {
-          return Number(right.best.score || 0) - Number(left.best.score || 0);
-        });
-        summaryGames.textContent = String(summary.totalGamesWithScores);
-        summaryEntries.textContent = String(summary.totalEntries);
-        summaryPlayerGames.textContent = String(personal.length);
-        summaryBest.textContent = personal.length
-          ? personal[0].title + ' · ' + personal[0].best.score
-          : 'Sin datos';
-        soundToggleBtn.textContent = arcade.isSoundEnabled() ? 'Sonido: activado' : 'Sonido: apagado';
-        soundToggleBtn.setAttribute('aria-pressed', arcade.isSoundEnabled() ? 'true' : 'false');
-      }
-
-      function renderGames() {
-        var playerName = arcade ? arcade.getProfile().playerName : '';
-        var isMobileList = isTouchDevice() || (window.matchMedia && window.matchMedia('(max-width:720px)').matches);
-        if (isMobileList) {
-          gridEl.innerHTML = games.map(function(game){
-            var gameScores = arcade ? arcade.getGameScores(game.slug) : { entries: [], best: null };
-            var ownBest = getPlayerBest(game.slug, playerName);
-            return '' +
-              '<div class="arcade-list-item">' +
-                '<a class="arcade-list-link" href="' + escapeHTML(game.windowUrl) + '">' +
-                  '<img class="list-cover" src="' + escapeHTML(game.coverUrl) + '" alt="' + escapeHTML(game.title) + '">' +
-                  '<span class="arcade-list-meta">' +
-                    '<span class="list-title">' + escapeHTML(game.title) + '</span>' +
-                    '<span class="arcade-list-subtitle">' + escapeHTML(game.theme) + ' · ' + escapeHTML(game.mode) + '</span>' +
-                    '<span class="arcade-list-record">Tu record: ' + escapeHTML(ownBest ? String(ownBest.score) : 'Sin partida') + ' · Top: ' + escapeHTML(gameScores.best ? String(gameScores.best.score) : 'Sin marcas') + '</span>' +
-                  '</span>' +
-                  '<span class="list-btn">Jugar</span>' +
-                '</a>' +
-              '</div>';
-          }).join('');
-          return;
-        }
-
-        gridEl.innerHTML = games.map(function (game) {
-            var gameScores = arcade ? arcade.getGameScores(game.slug) : { entries: [], best: null };
-            var playerBest = getPlayerBest(game.slug, playerName);
-            var playerRank = getPlayerRank(game.slug, playerName);
-            var topText = gameScores.best
-              ? gameScores.best.playerName + ' · ' + gameScores.best.score
-              : 'Sin marcas aun';
-            var ownText = playerBest ? String(playerBest.score) : 'Sin partida';
-            var ranking = gameScores.entries.length
-              ? gameScores.entries.slice(0, 2).map(function (entry, index) {
-                  var label = '#' + (index + 1) + ' ' + entry.playerName + ' · ' + entry.score;
-                  if (entry.detail) label += ' · ' + entry.detail;
-                  return '<span class="game-card-rank">' + escapeHTML(label) + '</span>';
-                }).join('')
-              : '<span class="game-card-rank">Todavia no hay marcadores guardados.</span>';
-
-            return '' +
-              '<article class="game-card">' +
-                '<img class="game-card-cover" src="' + escapeHTML(game.coverUrl) + '" alt="Portada de ' + escapeHTML(game.title) + '">' +
-                '<div class="game-card-shade"></div>' +
-                '<div class="game-card-content">' +
-                  '<div class="game-card-topline">' +
-                    '<span class="game-card-badge">' + escapeHTML(game.status) + '</span>' +
-                    '<span class="game-card-mode">' + escapeHTML(game.mode) + '</span>' +
-                  '</div>' +
-                  '<div class="game-card-body">' +
-                    '<p class="game-card-kicker">' + escapeHTML(game.theme) + '</p>' +
-                    '<h2 class="game-card-title">' + escapeHTML(game.title) + '</h2>' +
-                    '<p class="game-card-copy">' + escapeHTML(game.summary) + '</p>' +
-                    '<div class="game-card-progress">' +
-                      '<span>' + escapeHTML(game.mode) + '</span>' +
-                      '<span>' + (playerRank ? ('Tu puesto #' + escapeHTML(String(playerRank))) : 'Sin ranking') + '</span>' +
-                    '</div>' +
-                    '<div class="game-card-stats">' +
-                      '<span>Tu mejor: ' + escapeHTML(ownText) + '</span>' +
-                      '<span>Top general: ' + escapeHTML(topText) + '</span>' +
-                    '</div>' +
-                    '<div class="game-card-leaderboard">' + ranking + '</div>' +
-                    '<div class="game-card-actions">' +
-                      '<button class="game-card-btn" type="button" data-url="' + escapeHTML(game.windowUrl) + '" data-slug="' + escapeHTML(game.slug) + '" data-width="' + escapeHTML(game.windowWidth) + '" data-height="' + escapeHTML(game.windowHeight) + '">Jugar</button>' +
-                    '</div>' +
-                  '</div>' +
-                '</div>' +
-              '</article>';
-          }).join('');
-      }
-
-      function rerender() {
-        syncPlayerInput();
-        renderSummary();
-        renderGames();
-      }
-
-      savePlayerBtn.addEventListener('click', function () {
-        persistPlayerInput();
-        rerender();
-      });
-
-      playerNameInput.addEventListener('keydown', function (event) {
-        if (event.key !== 'Enter') return;
-        persistPlayerInput();
-        rerender();
-      });
-
-      soundToggleBtn.addEventListener('click', function () {
-        if (!arcade) return;
-        arcade.toggleSoundEnabled();
-        rerender();
-      });
-
-      gridEl.addEventListener('click', function (event) {
-        var button = event.target.closest('button[data-url]');
-        if (!button) return;
-        persistPlayerInput();
-        rerender();
-        openGameWindow(
-          button.getAttribute('data-url'),
-          button.getAttribute('data-slug'),
-          button.getAttribute('data-width'),
-          button.getAttribute('data-height')
-        );
-      });
-
-      window.addEventListener('pcs-arcade-store-changed', rerender);
-      rerender();
-    })();
-  </script>
 </body>
 </html>

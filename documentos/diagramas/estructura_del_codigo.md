@@ -2,6 +2,17 @@
 
 Fecha de actualizacion: 2026-04-18
 
+## Actualizacion 2026-04-18 (portal publico: retiro del arcade y acceso unico N64)
+
+- Frontend publico:
+  - `web/menu.js` reemplaza el acceso `Juegos` por `Emulador N64` y enlaza directo a `/Juegos/n64/index.html`.
+  - `web/Juegos/menu_juegos.html` deja de ser un lobby multi-juego y pasa a funcionar como pagina intermedia con un solo CTA hacia el emulador.
+  - `web/Juegos/n64/index.html` y `web/Juegos/n64/n64-wrapper.js` conservan la experiencia movil del emulador, pero ya no se presentan como parte de un arcade mayor.
+- Backend/testing:
+  - `backend/handlers/auth_users_carritos_test.go` valida acceso publico para `/Juegos/n64/index.html` y elimina la dependencia de rutas de juegos retirados.
+- Flujo:
+  - `menu flotante` -> `Emulador N64` -> `/Juegos/n64/index.html` -> carga de ROM legal -> controles tactiles -> respaldo local del cartucho.
+
 ## Actualizacion 2026-04-18 (gobernanza documental: checklist operativa para QA y soporte)
 
 - Documentacion general:
@@ -21,6 +32,17 @@ Fecha de actualizacion: 2026-04-18
   - `super/configuracion_avanzada.html` -> `GET /super/api/config/ai` -> muestra estado `ai.global.enabled`.
   - `super/configuracion_avanzada.html` -> `PUT /super/api/config/ai` -> persiste encendido/apagado global.
   - `super/configuracion_avanzada.html` -> `GET /super/api/config/ai?action=test` -> backend ejecuta prueba real contra `OLLAMA_BASE_URL` o `http://127.0.0.1:11434/api/generate`.
+
+## Actualizacion 2026-04-18 (chat IA: interruptores por proveedor)
+
+- Backend:
+  - `backend/handlers/ai_config_handlers.go` lee y escribe `ai.provider.deepseek.enabled` y `ai.provider.ollama.enabled` desde `/super/api/config/ai`.
+  - `backend/handlers/chat_con_inteligencia_artificial_controller.go` y `backend/handlers/chat_con_ia_global_super.go` filtran el catálogo visible según esos switches y hacen fallback automático al primer modelo habilitado cuando el preferido quedó apagado.
+- Frontend:
+  - `web/super/configuracion_avanzada.html` agrega dos switches reales por proveedor: `DeepSeek Chat` y `Ambis Local`, además del switch global de servicio.
+- Flujo:
+  - `super/configuracion_avanzada.html` -> `PUT /super/api/config/ai` con `provider_enabled` -> persistencia de `deepseek`/`ollama`.
+  - `administrar_empresa/chat_con_inteligencia_artificial.html` y `super/chat_con_ia_global.html` -> `GET .../modelos` -> reciben solo proveedores habilitados.
 
 ## Actualizacion 2026-04-18 (chat IA global para super administrador)
 

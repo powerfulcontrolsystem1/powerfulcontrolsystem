@@ -158,6 +158,7 @@ func AIModelsConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				configured := false
 				masked := ""
 				source := "local-service"
+				providerEnabled := isAIProviderEnabled(dbSuper, def.Provider)
 
 				if strings.TrimSpace(def.ConfigKey) == "" {
 					configured = true
@@ -180,6 +181,7 @@ func AIModelsConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				items = append(items, map[string]interface{}{
 					"model_id":         def.ModelID,
 					"provider":         def.Provider,
+					"enabled":          providerEnabled,
 					"display_name":     def.DisplayName,
 					"config_key":       def.ConfigKey,
 					"api_key_env":      def.ApiKeyEnv,
@@ -209,7 +211,8 @@ func AIModelsConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 					ModelID string `json:"model_id"`
 					APIKey  string `json:"api_key"`
 				} `json:"credentials"`
-				Enabled *bool `json:"enabled"`
+				Enabled         *bool           `json:"enabled"`
+				ProviderEnabled map[string]bool `json:"provider_enabled"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "invalid payload: "+err.Error(), http.StatusBadRequest)
@@ -239,6 +242,40 @@ func AIModelsConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				}
 				if err := dbpkg.SetConfigValue(dbSuper, superAIEnabledConfigKey+".updated_by", adminEmail, false); err != nil {
 					http.Error(w, "failed to save updated_by for "+superAIEnabledConfigKey+": "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
+
+			for provider, enabled := range payload.ProviderEnabled {
+				provider = strings.ToLower(strings.TrimSpace(provider))
+				if provider == "" {
+					continue
+				}
+				known := false
+				for _, item := range uniqueAIProviders() {
+					if item == provider {
+						known = true
+						break
+					}
+				}
+				if !known {
+					http.Error(w, "provider no soportado: "+provider, http.StatusBadRequest)
+					return
+				}
+				providerValue := "0"
+				if enabled {
+					providerValue = "1"
+				}
+				providerEnabledKey := aiProviderEnabledConfigKey(provider)
+				if providerEnabledKey == "" {
+					continue
+				}
+				if err := dbpkg.SetConfigValue(dbSuper, providerEnabledKey, providerValue, false); err != nil {
+					http.Error(w, "failed to save "+providerEnabledKey+": "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				if err := dbpkg.SetConfigValue(dbSuper, providerEnabledKey+".updated_by", adminEmail, false); err != nil {
+					http.Error(w, "failed to save updated_by for "+providerEnabledKey+": "+err.Error(), http.StatusInternalServerError)
 					return
 				}
 			}
@@ -288,7 +325,7 @@ func AIModelsConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				updated = append(updated, modelID)
 			}
 
-			if len(updated) == 0 && payload.Enabled == nil {
+			if len(updated) == 0 && payload.Enabled == nil && len(payload.ProviderEnabled) == 0 {
 				http.Error(w, "debe enviar al menos una credencial valida", http.StatusBadRequest)
 				return
 			}

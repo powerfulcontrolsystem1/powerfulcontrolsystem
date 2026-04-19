@@ -2,6 +2,28 @@
 
 ## 2026-04-18
 
+- IA super y empresarial: se agregan switches por proveedor para desactivar DeepSeek sin afectar Ambis Local.
+	- Archivos modificados: `backend/handlers/ai_credentials_catalog.go`, `backend/handlers/ai_config_handlers.go`, `backend/handlers/chat_con_inteligencia_artificial_controller.go`, `backend/handlers/chat_con_ia_global_super.go`, `backend/handlers/system_empresas_handlers_test.go`, `backend/handlers/chat_con_inteligencia_artificial_controller_test.go`, `backend/handlers/chat_con_ia_global_super_test.go`, `web/super/configuracion_avanzada.html`, `documentos/descripcion_de_modulos`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: configuración avanzada ahora puede habilitar o bloquear por separado `DeepSeek Chat` y `Ambis Local`; los chats empresarial y global super solo muestran proveedores activos y hacen fallback automático cuando el modelo preferido quedó apagado.
+	- Verificacion: `go test ./handlers -run 'Test(AIModelsConfigHandlerSaveDeepSeekEncrypted|AIModelsConfigHandlerSavesProviderEnabledState|ModelosHandlerFiltersDisabledProvider|ModelosHandlerRejectsWhenAIDisabled|SuperAIModelosHandlerFiltersDisabledProvider|SuperAIModelosHandlerRejectsWhenAIDisabled)$' -count=1`.
+
+- Portal público: se elimina el arcade y solo queda el emulador N64 adaptado para móvil.
+	- Archivos eliminados: `web/Juegos/ajedrez_3d_plus.html`, `web/Juegos/ajedrez_vs_ia_plus.html`, `web/Juegos/arcade_shared.js`, `web/Juegos/arcade_window.css`, `web/Juegos/brigada_burbujas_3d_plus.html`, `web/Juegos/carton_fire_plus.html`, `web/Juegos/memoria_estelar.html`, `web/Juegos/memoria_estelar_plus.html`, `web/Juegos/pacman_plus.html`, `web/Juegos/patito_volando.html`, `web/Juegos/patito_volando_plus.html`, `web/Juegos/rebote_bloques.html`, `web/Juegos/rebote_bloques_plus.html`, `web/Juegos/serpiente_pixel.html`, `web/Juegos/serpiente_pixel_plus.html`, `web/Juegos/tetris_plus.html`, `web/Juegos/nes/README.md`, `web/Juegos/nes/index.html`, `web/Juegos/nes/nes-wrapper.js`, `web/Juegos/nes/styles.css`, `web/img/juegos/ajedrez_3d.svg`, `web/img/juegos/ajedrez_vs_ia.svg`, `web/img/juegos/brigada_burbujas_3d.svg`, `web/img/juegos/carton_fire.svg`, `web/img/juegos/memoria_estelar.svg`, `web/img/juegos/pacman.svg`, `web/img/juegos/patito_volando.svg`, `web/img/juegos/rebote_bloques.svg`, `web/img/juegos/serpiente_pixel.svg`, `web/img/juegos/tetris.svg`.
+	- Archivos modificados: `web/Juegos/menu_juegos.html`, `web/Juegos/n64/index.html`, `web/Juegos/n64/n64-wrapper.js`, `web/menu.js`, `backend/handlers/auth_users_carritos_test.go`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: el proyecto retira todas las experiencias de juego y el emulador NES. El portal conserva solo el emulador N64 con acceso público y diseño móvil, y el menú global enlaza de forma directa a esa única experiencia.
+	- Verificacion: búsqueda global en `web/**` y `backend/**` sin referencias funcionales a los juegos eliminados.
+
+- Selector de empresas: las tarjetas quedan alineadas a la izquierda y conservan un tamaño visual uniforme.
+	- Archivos modificados: `web/estilos.css`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: se elimina el centrado del grid en `seleccionar_empresa.html` y se fija una relación de aspecto común para que todas las tarjetas se vean del mismo tamaño dentro del selector.
+	- Verificacion: `get_errors` sin errores en `web/estilos.css`.
+
+- Portal público: el menú flotante deja de mostrar accesos rápidos de juegos y centraliza la navegación en la página del arcade.
+	- Archivos eliminados: `web/Juegos/games.json`.
+	- Archivos modificados: `web/menu.js`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Descripcion: se retira el manifiesto JSON que alimentaba el menú flotante y se deja un único enlace a `/Juegos/menu_juegos.html`, evitando duplicar la lista de juegos fuera del lobby principal.
+	- Verificacion: búsqueda global sin referencias activas a `games.json` en `web/**`.
+
 - Arcade público: se agrega `N64 vertical mobile` para jugar desde celular con ROM legal del usuario.
 	- Archivos creados: `web/Juegos/n64/index.html`, `web/Juegos/n64/styles.css`, `web/Juegos/n64/n64-wrapper.js`.
 	- Archivos modificados: `web/Juegos/menu_juegos.html`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.

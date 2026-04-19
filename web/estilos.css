@@ -1030,8 +1030,26 @@ ul{padding-left:18px}
 .portal-card h3 { font-weight:800; font-size:1.12rem }
 
 /* Seleccionar Empresa: tarjetas compactas y centradas */
-.empresas-grid{gap:12px;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));max-width:1200px;margin:0 auto}
-.empresas-grid .portal-card{padding:12px;border-radius:10px;min-height:unset;box-shadow:0 10px 22px rgba(6,14,28,0.36);font-size:1.04rem;align-items:center;text-align:center;justify-content:center}
+.empresas-grid{
+  gap:12px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  max-width: none;
+  margin: 0;
+  justify-items: start;
+  justify-content: start;
+}
+.empresas-grid .portal-card{
+  padding:12px;
+  border-radius:10px;
+  min-height:unset;
+  box-shadow:0 10px 22px rgba(6,14,28,0.36);
+  font-size:1.04rem;
+  align-items:center;
+  text-align:center;
+  justify-content:center;
+  aspect-ratio: 4 / 3;
+  width:100%;
+}
 .empresas-grid .portal-card h3{font-size:1.28rem;font-weight:900;margin-bottom:0.35em}
 .empresas-grid .portal-card .card-desc{margin-bottom:0.6em;font-size:1rem}
 .empresas-grid .portal-card .card-actions{display:flex;justify-content:center;gap:8px;margin-top:8px}
@@ -1521,7 +1539,7 @@ body.has-floating-menu .header .form-actions{
 .empresas-grid .portal-card.warm{width:100%;height:100%;}
 .empresas-grid .portal-card.empresa-card{
   justify-content:flex-start;
-  min-height:280px;
+  min-height:unset;
 }
 .empresas-grid .card-body{
   position:relative;
@@ -1854,7 +1872,7 @@ body.has-floating-menu .header .form-actions{
   display: flex;
   flex-direction: column;
   gap: 0.2em;
-  padding-right: 2.4em;
+  padding-right: 4.8em;
 }
 
 .youtube-station-browser-preview{
@@ -1890,7 +1908,25 @@ body.has-floating-menu .header .form-actions{
   box-shadow: 0 8px 14px rgba(110, 29, 29, 0.12);
 }
 
+.youtube-station-play{
+  position: absolute;
+  top: 0.6em;
+  right: 2.9em;
+  width: 1.9em;
+  height: 1.9em;
+  border-radius: 0.4em;
+  border: 1px solid rgba(122, 37, 37, 0.24);
+  background: rgba(255,255,255,0.92);
+  color: #7b1f1f;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 8px 14px rgba(110, 29, 29, 0.12);
+}
+
+.youtube-station-play:hover,
 .youtube-station-expand:hover,
+.youtube-station-play:focus-visible,
 .youtube-station-expand:focus-visible{
   background: #ffffff;
   box-shadow: 0 10px 18px rgba(110, 29, 29, 0.18);
@@ -1912,8 +1948,8 @@ body.has-floating-menu .header .form-actions{
 }
 
 .youtube-station-overlay-card{
-  width: min(500px, calc(100vw - 32px));
-  height: min(500px, calc(100vh - 32px));
+  width: min(1080px, calc(100vw - 24px));
+  height: min(820px, calc(100vh - 24px));
   border-radius: 20px;
   border: 1px solid rgba(207, 82, 82, 0.24);
   background: linear-gradient(180deg, rgba(255,247,247,0.98), rgba(250,235,235,0.98));
@@ -1929,6 +1965,12 @@ body.has-floating-menu .header .form-actions{
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+}
+
+.youtube-station-overlay-actions{
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
 .youtube-station-overlay-head strong{
@@ -1983,6 +2025,24 @@ body.has-floating-menu .header .form-actions{
   border: 1px solid rgba(179, 58, 58, 0.18);
 }
 
+.youtube-station-browser-actions{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.youtube-station-search-bar{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: min(420px, 52vw);
+}
+
+.youtube-station-search-input{
+  min-width: 0;
+}
+
 .youtube-station-browser-toolbar strong{
   display: block;
   color: #7b1f1f;
@@ -2028,6 +2088,43 @@ body.has-floating-menu .header .form-actions{
   #estacionesGrid .youtube-station-card{
     height: auto;
     min-height: 14em;
+  }
+
+  .youtube-station-browser-toolbar{
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .youtube-station-browser-actions{
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .youtube-station-search-bar{
+    width: 100%;
+    min-width: 0;
+  }
+
+  .youtube-station-overlay{
+    padding: 8px;
+  }
+
+  .youtube-station-overlay-card{
+    width: calc(100vw - 16px);
+    height: calc(100vh - 16px);
+    border-radius: 14px;
+    padding: 10px;
+  }
+
+  .youtube-station-overlay-head{
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .youtube-station-overlay-actions{
+    width: 100%;
+    justify-content: flex-end;
   }
 }
 
@@ -4120,6 +4217,55 @@ body.has-floating-menu .header .form-actions{
   border-color:rgba(78,205,153,0.24);
 }
 
+/* ===== Overrides responsive para estaciones / tarjeta YouTube (no tocar menús) ===== */
+/* Objetivo: asegurar que la vista compacta no rompa el layout en móvil y que el preview use aspect-ratio */
+#estacionesGrid{grid-auto-rows:auto}
+#estacionesGrid .youtube-station-card{height:auto;min-height:10.5em}
+.youtube-station-browser-preview{max-height:220px;height:auto}
+.youtube-station-browser-frame iframe,
+.youtube-station-browser-frame video,
+.youtube-station-preview-frame iframe{
+  width:100%;
+  height:100%;
+  aspect-ratio:16/9;
+  object-fit:cover;
+  max-height:220px;
+  display:block;
+}
+.youtube-station-play,.youtube-station-expand{touch-action:manipulation}
+
+@media (max-width:640px){
+  #estacionesGrid{grid-template-columns:repeat(auto-fit,minmax(9.5em,1fr));gap:8px}
+  #estacionesGrid .youtube-station-card{height:auto;min-height:12.5em;padding:0.6em}
+  .youtube-station-browser-preview{max-height:180px}
+  .youtube-station-browser-frame{height:auto}
+  .youtube-station-overlay{padding:8px}
+  .youtube-station-overlay-card{width:calc(100vw - 16px);height:calc(100vh - 16px);border-radius:14px;padding:10px}
+}
+
+/* Estado minimizado del overlay (JS debe alternar la clase .minimized) */
+.youtube-station-overlay-card.minimized{
+  position:fixed;
+  width:min(420px, calc(100vw - 24px));
+  height:320px;
+  bottom:16px;
+  right:16px;
+  border-radius:12px;
+  padding:8px;
+  z-index:10030;
+  overflow:hidden;
+}
+
+/* Ajustes de espacio para botones dentro de la tarjeta */
+.youtube-station-head{padding-right:3.4em}
+@media (max-width:420px){
+  .youtube-station-head{padding-right:0.6em}
+  .youtube-station-play,.youtube-station-expand{top:0.4em;right:0.6em;width:2.2em;height:2.2em}
+  .youtube-station-play{right:2.8em}
+}
+
+/* Fin overrides estaciones/YouTube */
+
 .lic-history-card--expiring{
   border-color:rgba(243,189,87,0.34);
 }
@@ -4424,12 +4570,26 @@ body.has-floating-menu .header .form-actions{
   padding:8px;
 }
 
-/* Custom: Seleccionar Empresa — tarjetas cuadradas, márgenes estrechos y tipografías profesionales */
-.empresas-grid{gap:12px;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));}
-.empresas-grid a.card-link{display:block;color:inherit;text-decoration:none}
+/* Custom: Seleccionar Empresa — tarjetas uniformes y alineadas a la izquierda */
+.empresas-grid{
+  gap:12px;
+  /* columnas de ancho fijo para garantizar mismo tamaño visual */
+  grid-template-columns: repeat(auto-fill, 260px);
+  grid-auto-rows: 1fr;
+  justify-content: start; /* alinea las celdas a la izquierda */
+  max-width: none;
+  margin: 0;
+}
+.empresas-grid a.card-link{
+  display:block;
+  width:260px; /* fuerza ancho uniforme por tarjeta */
+  color:inherit;
+  text-decoration:none;
+}
 .empresas-grid .portal-card{
-  /* Altura reducida: 60% de la altura original (recorte 40%) */
-  aspect-ratio: 5/3; /* width / height => height = 3/5 = 60% of width */
+  width:100%;
+  height:220px; /* altura fija para uniformidad */
+  aspect-ratio: auto;
   padding:14px;
   border-radius:10px;
   display:flex;
@@ -4440,6 +4600,7 @@ body.has-floating-menu .header .form-actions{
   transition:transform .12s ease,box-shadow .12s ease;
   overflow:hidden;
   min-height:0;
+  box-sizing:border-box;
 }
 .empresa-groups{gap:14px}
 

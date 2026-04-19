@@ -320,3 +320,47 @@ func TestModelosHandlerRejectsWhenAIDisabled(t *testing.T) {
 		t.Fatalf("expected status 503, got %d body=%s", rr.Code, rr.Body.String())
 	}
 }
+
+func TestModelosHandlerFiltersDisabledProvider(t *testing.T) {
+	dbEmp := openChatIAHandlerTestDB(t)
+	dbSuper := openChatIAHandlerTestDB(t)
+	if err := dbpkg.EnsureEmpresaAIChatSchema(dbEmp); err != nil {
+		t.Fatalf("ensure chat ia schema: %v", err)
+	}
+	ensureEmpresasTableForChatIATest(t, dbEmp)
+	ensureConfigTableForChatIATest(t, dbSuper)
+	ensureSuperSchema(t, dbSuper)
+	_, err := dbEmp.Exec(`INSERT INTO empresas (id, nombre, nit, usuario_creador) VALUES (?, ?, ?, ?)`, 42, "Empresa IA Providers", "900556", "admin@example.com")
+	if err != nil {
+		t.Fatalf("insert empresa: %v", err)
+	}
+	if err := dbpkg.SetConfigValue(dbSuper, "ai.provider.deepseek.enabled", "0", false); err != nil {
+		t.Fatalf("disable deepseek provider: %v", err)
+	}
+
+	ctrl := NewEmpresaAIChatController(dbEmp, dbSuper)
+	req := httptest.NewRequest(http.MethodGet, "/api/empresa/chat_con_inteligencia_artificial/modelos?empresa_id=42", nil)
+	req = req.WithContext(context.WithValue(req.Context(), "adminEmail", "admin@example.com"))
+	rr := httptest.NewRecorder()
+
+	ctrl.ModelosHandler(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d body=%s", rr.Code, rr.Body.String())
+	}
+
+	var payload map[string]interface{}
+	if err := json.Unmarshal(rr.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode json response: %v", err)
+	}
+	modelos, ok := payload["modelos"].([]interface{})
+	if !ok || len(modelos) != 1 {
+		t.Fatalf("expected 1 enabled model, got %#v", payload["modelos"])
+	}
+	item, _ := modelos[0].(map[string]interface{})
+	if item["id"] != "ollama:ambis" {
+		t.Fatalf("expected only ollama:ambis, got %#v", item["id"])
+	}
+	if payload["modelo_preferido"] != "ollama:ambis" {
+		t.Fatalf("expected fallback modelo_preferido ollama:ambis, got %#v", payload["modelo_preferido"])
+	}
+}

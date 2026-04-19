@@ -4,17 +4,17 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Bodegas</title>
-</head>
-<body>
   <script>
     (function () {
       const params = new URLSearchParams(window.location.search || '');
       const empresaId = params.get('empresa_id') || '';
-      const target = new URL('/administrar_empresa/administrar_productos.html', window.location.origin);
-      target.searchParams.set('view', 'bodegas');
+      const target = new URL('/administrar_empresa/bodega.html', window.location.origin);
       if (empresaId) target.searchParams.set('empresa_id', empresaId);
       window.location.replace(target.toString());
     })();
   </script>
+</head>
+<body>
+  <noscript>Si no es redirigido, <a href="/administrar_empresa/bodega.html">haga clic aquí</a>.</noscript>
 </body>
 </html>

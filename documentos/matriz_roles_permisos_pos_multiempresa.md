@@ -8,6 +8,12 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 - Cuando se cree un modulo nuevo o se modifique uno existente, esta matriz debe actualizarse en la misma iteracion para reflejar permisos por rol/modulo/accion y el impacto en paginas del panel.
 - Esta actualizacion debe quedar sincronizada con `documentos/descripcion_de_modulos`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios` y `CHANGELOG.md`.
 
+- Actualizacion 2026-04-18 (portal publico: solo queda el emulador N64):
+	- `web/menu.js` cambia la entrada flotante de `Juegos` a `Emulador N64` apuntando directo a `/Juegos/n64/index.html`.
+	- `web/Juegos/menu_juegos.html` deja de listar juegos y queda como puerta de entrada secundaria con un unico CTA al emulador.
+	- `backend/handlers/auth_users_carritos_test.go` actualiza la verificacion publica para `/Juegos/n64/index.html` en lugar de rutas de juegos retirados.
+	- Impacto de matriz: sin cambios en roles ni wrappers; la superficie publica `/Juegos/*` queda reducida al emulador N64.
+
 - Actualizacion 2026-04-18 (inventario/productos: vistas separadas para bodegas y categorias):
 	- `web/administrar_empresa/administrar_productos.html` concentra la experiencia del modulo y expone tres vistas por query string: `productos`, `bodegas` y `categorias`.
 	- `web/administrar_empresa/productos/administrar_productos.html`, `web/administrar_empresa/productos/bodegas.html` y `web/administrar_empresa/productos/categorias.html` quedan como wrappers de navegacion que preservan `empresa_id` sin crear rutas nuevas ni duplicar logica CRUD.
@@ -22,6 +28,11 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 - Actualizacion 2026-04-18 (chat IA super/empresa: interruptor global de servicio):
 	- `web/super/configuracion_avanzada.html` y `backend/handlers/ai_config_handlers.go` agregan el interruptor global `ai.global.enabled` sin abrir rutas nuevas ni ampliar privilegios.
 	- `/api/empresa/chat_con_inteligencia_artificial/*` y `/super/api/chat_con_ia_global/*` conservan los mismos wrappers y controles de acceso, pero ahora rechazan el uso cuando la IA global está desactivada desde super.
+
+- Actualizacion 2026-04-18 (chat IA super/empresa: control por proveedor):
+	- `super_administrador` puede habilitar o deshabilitar por separado `DeepSeek Chat` y `Ambis Local` desde `Configuración avanzada`.
+	- `administrador` de empresa solo puede usar los proveedores que el panel super mantenga habilitados; no puede reactivar proveedores desde empresa.
+	- Impacto de matriz: sin rutas nuevas ni ampliación de roles; se endurece el control operativo del catálogo IA desde super.
 	- Impacto de matriz: sin cambios en roles, wrappers ni visibilidad base; solo se añade una compuerta operativa global administrada por `super_administrador`.
 
 - Actualizacion 2026-04-18 (chat IA super/empresa: aviso visual y prueba operativa):
@@ -504,7 +515,7 @@ Leyenda:
 | Administracion DB PostgreSQL (super) | R | - | - | - | - | - | - | - |
 | Reportes globales (super) | R | - | - | - | - | - | - | - |
 | Pagina principal (tarjetas index) | CRUA | - | - | - | - | - | - | - |
-| Portal publico - Juegos | R | R | R | R | R | R | R | R |
+| Portal publico - Emulador N64 | R | R | R | R | R | R | R | R |
 | Contrato administrativo (super) | CRUA | - | - | - | - | - | - | - |
 | Monitor de errores del sistema (super) | R | - | - | - | - | - | - | - |
 | Pasarelas de licencias (Wompi/Epayco) | CRUA | - | - | - | - | - | - | - |

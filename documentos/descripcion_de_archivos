@@ -1,4 +1,57 @@
+Actualizacion 2026-04-18: retiro total del arcade publico y permanencia exclusiva del emulador N64
+ - Archivos eliminados:
+	 - web/Juegos/ajedrez_3d_plus.html : Se elimina el juego 3D de ajedrez del portal publico.
+	 - web/Juegos/ajedrez_vs_ia_plus.html : Se elimina el juego de ajedrez contra IA del portal publico.
+	 - web/Juegos/arcade_shared.js : Se retira la capa compartida del antiguo arcade publico.
+	 - web/Juegos/arcade_window.css : Se elimina la shell visual comun de juegos retirados.
+	 - web/Juegos/brigada_burbujas_3d_plus.html : Se elimina el shooter 3D del portal publico.
+	 - web/Juegos/carton_fire_plus.html : Se elimina el juego `Carton Fire` del portal publico.
+	 - web/Juegos/memoria_estelar.html : Se elimina la variante legacy de `Memoria estelar`.
+	 - web/Juegos/memoria_estelar_plus.html : Se elimina la variante activa de `Memoria estelar`.
+	 - web/Juegos/pacman_plus.html : Se elimina `Pacman plus` del portal publico.
+	 - web/Juegos/patito_volando.html : Se elimina la variante legacy de `Patito volando`.
+	 - web/Juegos/patito_volando_plus.html : Se elimina la variante activa de `Patito volando`.
+	 - web/Juegos/rebote_bloques.html : Se elimina la variante legacy de `Rebote bloques`.
+	 - web/Juegos/rebote_bloques_plus.html : Se elimina la variante activa de `Rebote bloques`.
+	 - web/Juegos/serpiente_pixel.html : Se elimina la variante legacy de `Serpiente pixel`.
+	 - web/Juegos/serpiente_pixel_plus.html : Se elimina la variante activa de `Serpiente pixel`.
+	 - web/Juegos/tetris_plus.html : Se elimina `Tetris plus` del portal publico.
+	 - web/Juegos/nes/README.md : Se retira la documentacion del emulador NES eliminado.
+	 - web/Juegos/nes/index.html : Se elimina el emulador NES del proyecto.
+	 - web/Juegos/nes/nes-wrapper.js : Se elimina el wrapper del emulador NES.
+	 - web/Juegos/nes/styles.css : Se elimina la hoja de estilos del emulador NES.
+	 - web/img/juegos/ajedrez_3d.svg : Se elimina la portada SVG del juego retirado.
+	 - web/img/juegos/ajedrez_vs_ia.svg : Se elimina la portada SVG del juego retirado.
+	 - web/img/juegos/brigada_burbujas_3d.svg : Se elimina la portada SVG del juego retirado.
+	 - web/img/juegos/carton_fire.svg : Se elimina la portada SVG del juego retirado.
+	 - web/img/juegos/memoria_estelar.svg : Se elimina la portada SVG del juego retirado.
+	 - web/img/juegos/pacman.svg : Se elimina la portada SVG del juego retirado.
+	 - web/img/juegos/patito_volando.svg : Se elimina la portada SVG del juego retirado.
+	 - web/img/juegos/rebote_bloques.svg : Se elimina la portada SVG del juego retirado.
+	 - web/img/juegos/serpiente_pixel.svg : Se elimina la portada SVG del juego retirado.
+	 - web/img/juegos/tetris.svg : Se elimina la portada SVG del juego retirado.
+ - Archivos modificados:
+	 - web/Juegos/menu_juegos.html : Deja de ser lobby multi-juego y queda como acceso complementario al emulador N64.
+	 - web/Juegos/n64/index.html : Ajusta titulo y mensajes para presentarse como emulador N64, no como arcade.
+	 - web/Juegos/n64/n64-wrapper.js : Renombra el almacenamiento local a `pcs_n64_emulator`.
+	 - web/menu.js : Cambia la entrada pública a `Emulador N64` con enlace directo a `/Juegos/n64/index.html`.
+	 - backend/handlers/auth_users_carritos_test.go : Actualiza la ruta pública validada hacia `/Juegos/n64/index.html`.
+ - Descripcion: El portal deja de incluir cualquier juego o emulador distinto de N64. Solo permanece la experiencia movil del emulador Nintendo 64 y se eliminan los recursos del arcade y del emulador NES.
+
+Actualizacion 2026-04-18: Menú flotante sin manifiesto JSON de juegos
+ - Archivos eliminados:
+	 - web/Juegos/games.json : Se elimina el manifiesto JSON de juegos porque el menú flotante ya no renderiza accesos rápidos del arcade.
+ - Archivos modificados:
+	 - web/menu.js : Se elimina la sección de accesos rápidos de juegos y se deja un único enlace hacia `web/Juegos/menu_juegos.html`.
+ - Descripcion: Los juegos ya no se listan dentro del menú flotante; el acceso queda centralizado en `web/Juegos/menu_juegos.html`, por lo que `games.json` deja de ser necesario.
+
 Descripcion de archivos del proyecto
+
+Actualizacion 2026-04-18: helper CLI para configurar proveedores IA
+ - Archivos creados:
+	 - backend/tools/set_ai_provider_enabled.go : Herramienta CLI para ajustar `ai.provider.<provider>.enabled` en la base de datos superadmin de forma segura (usa `DB_SUPERADMIN_DSN` o `-dsn`).
+ - Descripcion: Permite desactivar/activar proveedores IA (p. ej. DeepSeek) desde la línea de comandos cuando no es posible usar la UI super. Registra `*.updated_by` en la configuración.
+ - Verificacion: Ejecutar `go run backend/tools/set_ai_provider_enabled.go -provider deepseek -enabled 0` con `DB_SUPERADMIN_DSN` configurado.
 
 Actualizacion 2026-04-18: Menú flotante - manifiesto de juegos
  - Archivos creados:

@@ -1,11 +1,11 @@
 Descripcion compacta de modulos (POS multiempresa)
 Actualizacion: 2026-04-17
 
-Actualizacion 2026-04-18 (arcade publico: N64 vertical mobile con ROM legal y guardado local):
-- `web/Juegos/n64/index.html` incorpora una vista publica específica para celular con pantalla arriba, controles abajo y acciones `Guardar/Cargar` orientadas a la memoria persistente del cartucho.
-- `web/Juegos/n64/n64-wrapper.js` monta `n64js` dentro de `iframe.srcdoc` mismo-origen, guarda la última ROM legal del usuario en IndexedDB y reenvía los controles táctiles como eventos de teclado compatibles con el core.
-- `web/Juegos/menu_juegos.html` publica la nueva entrada `N64 vertical mobile` dentro del lobby del arcade, manteniendo el mismo esquema de apertura pública bajo `/Juegos/*`.
-- Impacto de permisos: sin cambios en roles, wrappers ni autenticación; `Juegos` sigue siendo una superficie pública del portal.
+Actualizacion 2026-04-18 (portal publico: retiro del arcade y permanencia exclusiva del emulador N64):
+- `web/Juegos/n64/index.html` se mantiene como unica experiencia publica bajo `/Juegos/*`, con pantalla arriba, controles tactiles abajo y acciones `Guardar/Cargar` orientadas a la memoria persistente del cartucho.
+- `web/Juegos/n64/n64-wrapper.js` monta `n64js` dentro de `iframe.srcdoc` mismo-origen, guarda la ultima ROM legal del usuario en IndexedDB y reenvia los controles tactiles como eventos de teclado compatibles con el core.
+- `web/Juegos/menu_juegos.html` deja de funcionar como lobby de arcade y pasa a ser una entrada informativa con un unico CTA hacia el emulador N64.
+- Impacto de permisos: sin cambios en roles, wrappers ni autenticacion; `/Juegos/*` se conserva publico solo para el emulador N64.
 
 Actualizacion 2026-04-18 (inventario/productos: subpaginas separadas para bodegas y categorias):
 - `web/administrar_empresa/administrar_productos.html` se mantiene como fuente unica del modulo y ahora admite `?view=productos`, `?view=bodegas` y `?view=categorias` para mostrar solo el bloque operativo correspondiente.
@@ -16,6 +16,12 @@ Actualizacion 2026-04-18 (chat IA super/empresa: interruptor global de servicio)
 - La configuracion avanzada super agrega un interruptor global para activar o desactivar la IA desde `web/super/configuracion_avanzada.html`.
 - Cuando el servicio queda desactivado, tanto `/api/empresa/chat_con_inteligencia_artificial/*` como `/super/api/chat_con_ia_global/*` responden estado de servicio no disponible y dejan de generar consultas hacia DeepSeek u Ollama.
 - Impacto de permisos: sin cambios de rol; la operacion sigue restringida a configuracion super para el control global y a los permisos ya existentes de los chats para lectura y uso.
+
+Actualizacion 2026-04-18 (chat IA super/empresa: interruptores por proveedor):
+- `web/super/configuracion_avanzada.html` agrega interruptores separados para `DeepSeek Chat` y `Ambis Local`, además del interruptor global.
+- `backend/handlers/ai_config_handlers.go` persiste `ai.provider.deepseek.enabled` y `ai.provider.ollama.enabled` para decidir qué proveedores quedan visibles en los chats.
+- Cuando un proveedor queda desactivado, desaparece del catálogo disponible de `/api/empresa/chat_con_inteligencia_artificial/*` y `/super/api/chat_con_ia_global/*`, y el sistema hace fallback al primer modelo habilitado.
+- Impacto de permisos: sin cambios de rol; solo `super_administrador` puede apagar o encender proveedores desde configuración avanzada.
 
 Actualizacion 2026-04-18 (chat IA super/empresa: estado visual de servicio desactivado):
 - `web/administrar_empresa/chat_con_inteligencia_artificial.html` y `web/super/chat_con_ia_global.html` ahora muestran un mensaje visible cuando la IA global está desactivada y bloquean el formulario localmente.

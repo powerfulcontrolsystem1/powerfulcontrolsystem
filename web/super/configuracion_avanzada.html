@@ -230,12 +230,20 @@
       <div class="form-row">
         <div class="form-col">
           <label class="form-label">DeepSeek Chat</label>
+          <label class="mode-switch-row" for="aiProviderDeepSeekEnabled">
+            <span class="mode-label">Disponible en chats</span>
+            <input id="aiProviderDeepSeekEnabled" type="checkbox" role="switch" aria-label="Activar DeepSeek en los chats">
+          </label>
           <input id="aiKeyDeepSeek" class="form-input" type="password" placeholder="API key para deepseek:deepseek-chat">
           <div id="aiStatusDeepSeek" class="form-help">Cargando estado...</div>
           <div class="form-help">Plan gratuito sujeto a límites y políticas del proveedor DeepSeek.</div>
         </div>
         <div class="form-col">
           <label class="form-label">Ambis Local</label>
+          <label class="mode-switch-row" for="aiProviderAmbisEnabled">
+            <span class="mode-label">Disponible en chats</span>
+            <input id="aiProviderAmbisEnabled" type="checkbox" role="switch" aria-label="Activar Ambis Local en los chats">
+          </label>
           <div id="aiStatusAmbisLocal" class="form-help">Cargando estado...</div>
           <div class="form-help">Ambis usa Ollama dentro del VPS por loopback. No requiere API key en este panel.</div>
           <div class="form-help">DeepSeek sí se guarda cifrada obligatoriamente en backend y nunca expone la llave en pantalla.</div>
@@ -514,6 +522,8 @@
         const ambisStatusEl = document.getElementById('aiStatusAmbisLocal');
         const enabledToggle = document.getElementById('aiEnabledToggle');
         const enabledStatusEl = document.getElementById('aiEnabledStatus');
+        const deepSeekEnabledEl = document.getElementById('aiProviderDeepSeekEnabled');
+        const ambisEnabledEl = document.getElementById('aiProviderAmbisEnabled');
         try {
           const res = await fetch('/super/api/config/ai');
           if (!res.ok) {
@@ -543,8 +553,13 @@
           (data.modelos || []).forEach(function(item){ byModel[item.model_id] = item; });
 
           const ambisItem = byModel['ollama:ambis'] || null;
+          const deepseekItem = byModel['deepseek:deepseek-chat'] || null;
+          if (deepSeekEnabledEl) deepSeekEnabledEl.checked = !deepseekItem || !!deepseekItem.enabled;
+          if (ambisEnabledEl) ambisEnabledEl.checked = !ambisItem || !!ambisItem.enabled;
           if (ambisStatusEl) {
-            if (ambisItem && ambisItem.configured) {
+            if (ambisItem && ambisItem.enabled === false) {
+              ambisStatusEl.innerText = 'Desactivado por interruptor.';
+            } else if (ambisItem && ambisItem.configured) {
               ambisStatusEl.innerText = 'Disponible como modelo local del VPS (' + (ambisItem.source || 'local') + ').';
             } else {
               ambisStatusEl.innerText = 'No disponible.';
@@ -556,7 +571,9 @@
             const inputEl = document.getElementById(binding.inputId);
             const statusEl = document.getElementById(binding.statusId);
             const item = byModel[binding.model_id] || {};
-            if (item.configured) {
+            if (item.enabled === false) {
+              statusEl.innerText = 'Desactivado por interruptor.';
+            } else if (item.configured) {
               hasAIConfig = true;
               const ts = item.updated_at ? (' — Última actualización: ' + item.updated_at) : '';
               statusEl.innerText = 'Credencial configurada' + ts;
@@ -570,6 +587,8 @@
             const inputEl = document.getElementById(binding.inputId);
             if (inputEl) inputEl.disabled = hasAIConfig;
           });
+          if (deepSeekEnabledEl) deepSeekEnabledEl.disabled = false;
+          if (ambisEnabledEl) ambisEnabledEl.disabled = false;
           if (enabledToggle) enabledToggle.disabled = false;
 
           document.getElementById('saveAiConfigBtn').disabled = hasAIConfig;
@@ -605,7 +624,11 @@
         const payload = {
           encrypt: true,
 		  credentials: credentials,
-		  enabled: !!document.getElementById('aiEnabledToggle').checked
+      enabled: !!document.getElementById('aiEnabledToggle').checked,
+      provider_enabled: {
+      deepseek: !!document.getElementById('aiProviderDeepSeekEnabled').checked,
+      ollama: !!document.getElementById('aiProviderAmbisEnabled').checked
+      }
         };
 
         btn.disabled = true;
@@ -639,6 +662,8 @@
           if (inputEl) inputEl.disabled = false;
         });
         document.getElementById('aiEnabledToggle').disabled = false;
+        document.getElementById('aiProviderDeepSeekEnabled').disabled = false;
+        document.getElementById('aiProviderAmbisEnabled').disabled = false;
         document.getElementById('saveAiConfigBtn').disabled = false;
         document.getElementById('editAiConfigBtn').style.display = 'none';
         document.getElementById('cancelAiConfigBtn').style.display = '';
@@ -1095,6 +1120,12 @@
 		refreshAIEnabledHint();
 		document.getElementById('saveAiConfigBtn').disabled = false;
 	  });
+      document.getElementById('aiProviderDeepSeekEnabled').addEventListener('change', function(){
+    document.getElementById('saveAiConfigBtn').disabled = false;
+    });
+      document.getElementById('aiProviderAmbisEnabled').addEventListener('change', function(){
+    document.getElementById('saveAiConfigBtn').disabled = false;
+    });
       document.getElementById('saveGmailBtn').addEventListener('click', saveGmail);
       document.getElementById('editGmailBtn').addEventListener('click', enableEditGmail);
       document.getElementById('cancelGmailBtn').addEventListener('click', cancelEditGmail);

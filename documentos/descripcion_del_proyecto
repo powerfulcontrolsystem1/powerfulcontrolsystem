@@ -103,7 +103,7 @@ Sistema POS multiempresa con backend en Go y persistencia PostgreSQL, orientado 
 - El portal publico incorpora contacto comercial visible en `index.html` mediante un acceso dedicado a `/Informacion_de_contacto.html` ubicado debajo del bloque de tarjetas y un CTA flotante `Contactenos` que redirige a WhatsApp (`+573043306506`). En escritorio ese CTA se mantiene arriba a la derecha; en movil colapsa a un boton circular en la esquina inferior derecha para no tapar los accesos superiores. Los accesos `Registrarse o iniciar sesión` e `Informacion de contacto` reutilizan el mismo estilo visual del CTA `Explorar oferta` de las tarjetas para mantener consistencia comercial en la portada. La pagina `/Informacion_de_contacto.html` resume el sistema y centraliza correo y WhatsApp de contacto. `AuthMiddleware` mantiene libres sin sesion `index.html`, `/descripcion_de_los_sistemas.ht` y `/Informacion_de_contacto.html` como paginas publicas del portal.
 - En la cabecera del `index.html`, el boton `Registrarse o iniciar sesión` se mantiene compacto y centrado en móvil; el acceso `Informacion de contacto` queda reubicado debajo de todas las tarjetas del home, centrado y con el mismo lenguaje visual comercial.
 - El menu flotante publico (`web/menu.js`) cierra su panel al seleccionar una opcion, especialmente en movil, para descubrir de inmediato la pagina destino y evitar que el overlay tape el contenido mientras navega. En pantallas tactiles, el cierre de cada enlace se ejecuta sobre `click` y no sobre `touchstart`, evitando que la navegacion se cancele antes de tiempo.
-- El portal publico incorpora una entrada `Juegos` en el menu flotante hacia `/Juegos/menu_juegos.html`, ahora operada como un arcade activo de once experiencias compactas con records locales por navegador, nombre de jugador compartido y control global de sonido. `web/Juegos/arcade_shared.js` centraliza perfil, top local por juego y efectos, mientras `web/Juegos/arcade_window.css` unifica la shell visual de los juegos nuevos sin depender de `menu.js`. Los juegos visibles hoy son `Patito volando plus`, `Serpiente pixel plus`, `Memoria estelar plus`, `Rebote bloques plus`, `Pacman plus`, `Tetris plus`, `Carton Fire plus`, `Ajedrez vs IA plus`, `Ajedrez 3D plus`, `Brigada burbujas 3D plus` y `N64 vertical mobile`; todos incluyen pausa real o controles táctiles adaptados según la mecánica. La nueva vista `N64 vertical mobile` usa `n64js` dentro de `iframe.srcdoc` mismo-origen para permitir cargar una ROM legal del usuario, jugar en vertical desde celular y respaldar la memoria persistente del cartucho con botones `Guardar/Cargar`. `Ajedrez 3D plus` agrega tablero en perspectiva simulada y cinco niveles de dificultad, mientras `Brigada burbujas 3D plus` ahora se acerca a un Doom caricaturesco: campaña de cinco niveles con sectores cerrados, abiertos e hibridos, arsenal de tres armas, pickups, pseudo-3D reforzado por perspectiva de suelo, tres transformaciones especiales y una IA enemiga que patrulla, busca, flanquea, dispara y convoca refuerzos; en movil suma joystick tactil, fullscreen guiado, auto-disparo activo por defecto, ajustes persistentes, feedback graduable y una ayuda suave de mira configurable para que se juegue facil desde el primer arranque. `AuthMiddleware` deja publico `/Juegos/*` para no exigir sesion en esta experiencia recreativa del portal.
+- El portal publico conserva una unica entrada visible al emulador N64, enlazada desde el menu flotante hacia `/Juegos/n64/index.html`. La pagina `web/Juegos/menu_juegos.html` queda solo como acceso complementario y ya no funciona como lobby de arcade. La vista `N64` mantiene carga de ROM legal del usuario, diseno vertical optimizado para celular y respaldo local de la memoria del cartucho con botones `Guardar/Cargar`. `AuthMiddleware` deja publico `/Juegos/*` para no exigir sesion en este acceso puntual del portal.
 
 3) Operacion por empresa
 - Usuarios de empresa (alta, confirmacion, estado, primer ingreso).
@@ -186,18 +186,8 @@ Regla general de tablas:
 - Contrato publico: `/contrato.html`.
 - Landing descriptiva del portal: `/descripcion_de_los_sistemas.ht`.
 - Informacion de contacto publica: `/Informacion_de_contacto.html`.
-- Menu publico de juegos: `/Juegos/menu_juegos.html`.
-- Juego publico `Patito volando plus`: `/Juegos/patito_volando_plus.html`.
-- Juego publico `Serpiente pixel plus`: `/Juegos/serpiente_pixel_plus.html`.
-- Juego publico `Memoria estelar plus`: `/Juegos/memoria_estelar_plus.html`.
-- Juego publico `Rebote bloques plus`: `/Juegos/rebote_bloques_plus.html`.
-- Juego publico `Pacman plus`: `/Juegos/pacman_plus.html`.
-- Juego publico `Tetris plus`: `/Juegos/tetris_plus.html`.
-- Juego publico `Carton Fire plus`: `/Juegos/carton_fire_plus.html`.
-- Juego publico `Ajedrez vs IA plus`: `/Juegos/ajedrez_vs_ia_plus.html`.
-- Juego publico `Ajedrez 3D plus`: `/Juegos/ajedrez_3d_plus.html`.
-- Juego publico `Brigada burbujas 3D plus`: `/Juegos/brigada_burbujas_3d_plus.html`.
-- Juego publico `N64 vertical mobile`: `/Juegos/n64/index.html`.
+- Entrada publica del emulador N64: `/Juegos/menu_juegos.html`.
+- Emulador publico `N64 mobile`: `/Juegos/n64/index.html`.
 - Login admin: `/login.html`.
 - Registro admin: `/registrar_nuevo_usuario_administrador.html`.
 - Registro de contraseña para cuenta Google: `/registrar_contrasena_usuario_de_google.html`.
@@ -226,7 +216,7 @@ Regla general de tablas:
 - API checkout licencias (publica): `/wompi/*`, `/epayco/*`.
 - Respuesta publica fija de Epayco para panel externo: `/epayco/respuesta.html`.
 - Pantalla publica de cierre exitoso para Epayco: `/epayco/pago_exitoso.html`.
-- `AuthMiddleware` mantiene tambien publicas las paginas y activos de `/Juegos/*` para que el menu flotante del portal pueda abrir el lobby del arcade, los diez juegos activos (`Patito volando plus`, `Serpiente pixel plus`, `Memoria estelar plus`, `Rebote bloques plus`, `Pacman plus`, `Tetris plus`, `Carton Fire plus`, `Ajedrez vs IA plus`, `Ajedrez 3D plus`, `Brigada burbujas 3D plus`), `arcade_shared.js` y `arcade_window.css` sin autenticacion.
+- `AuthMiddleware` mantiene tambien publicas las paginas y activos de `/Juegos/*` para que el portal pueda abrir el acceso del emulador N64 sin autenticacion.
 - `AuthMiddleware` mantiene publicas sin sesion las rutas de disponibilidad y checkout de licencias (`/api/public/licencias/payment_methods`, `/wompi/*`, `/epayco/*`) para que el portal pueda consultar estado y reanudar pagos al volver desde la pasarela.
 - API de impresoras por empresa: `/api/empresa/impresoras`.
 - API de resolucion de impresora: `/api/empresa/impresoras/resolver`.

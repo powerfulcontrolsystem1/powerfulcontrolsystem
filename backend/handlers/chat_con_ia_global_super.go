@@ -55,7 +55,20 @@ func (c *SuperAIChatController) ModelosHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	catalog := empresaAIModelCatalog()
+	catalog := availableEmpresaAIModelCatalog(c.base.dbSuper)
+	if len(catalog) == 0 {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]interface{}{
+			"ok":             false,
+			"code":           "ai_models_unavailable",
+			"error":          "No hay proveedores IA habilitados para super administrador.",
+			"service_status": superAIServiceStatus(c.base.dbSuper),
+		})
+		return
+	}
+	availableMap := availableEmpresaAIModelMap(c.base.dbSuper)
+	if _, ok := availableMap[modeloPreferido]; !ok {
+		modeloPreferido = firstAvailableEmpresaAIModelID(c.base.dbSuper)
+	}
 	items := make([]map[string]interface{}, 0, len(catalog))
 	for _, it := range catalog {
 		items = append(items, map[string]interface{}{
@@ -122,12 +135,21 @@ func (c *SuperAIChatController) ModeloPreferidoHandler(w http.ResponseWriter, r 
 		}
 		payload.ModelID = strings.TrimSpace(payload.ModelID)
 		if payload.ModelID == "" {
-			payload.ModelID = empresaAIModelCatalog()[0].ID
+			payload.ModelID = firstAvailableEmpresaAIModelID(c.base.dbSuper)
 		}
 
-		catalog := empresaAIModelMap()
+		catalog := availableEmpresaAIModelMap(c.base.dbSuper)
+		if len(catalog) == 0 {
+			writeJSON(w, http.StatusServiceUnavailable, map[string]interface{}{
+				"ok":             false,
+				"code":           "ai_models_unavailable",
+				"error":          "No hay proveedores IA habilitados para super administrador.",
+				"service_status": superAIServiceStatus(c.base.dbSuper),
+			})
+			return
+		}
 		if _, found := catalog[payload.ModelID]; !found {
-			http.Error(w, "model_id no soportado", http.StatusBadRequest)
+			http.Error(w, "model_id no soportado o desactivado", http.StatusBadRequest)
 			return
 		}
 
@@ -176,12 +198,21 @@ func (c *SuperAIChatController) ConsultarHandler(w http.ResponseWriter, r *http.
 
 	payload.ModelID = strings.TrimSpace(payload.ModelID)
 	if payload.ModelID == "" {
-		payload.ModelID = empresaAIModelCatalog()[0].ID
+		payload.ModelID = firstAvailableEmpresaAIModelID(c.base.dbSuper)
 	}
-	catalog := empresaAIModelMap()
+	catalog := availableEmpresaAIModelMap(c.base.dbSuper)
+	if len(catalog) == 0 {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]interface{}{
+			"ok":             false,
+			"code":           "ai_models_unavailable",
+			"error":          "No hay proveedores IA habilitados para super administrador.",
+			"service_status": superAIServiceStatus(c.base.dbSuper),
+		})
+		return
+	}
 	model, found := catalog[payload.ModelID]
 	if !found {
-		http.Error(w, "model_id no soportado", http.StatusBadRequest)
+		http.Error(w, "model_id no soportado o desactivado", http.StatusBadRequest)
 		return
 	}
 

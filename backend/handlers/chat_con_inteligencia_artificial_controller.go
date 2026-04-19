@@ -88,6 +88,18 @@ func empresaAIModelCatalog() []empresaAIModelDef {
 	}
 }
 
+func availableEmpresaAIModelCatalog(dbSuper *sql.DB) []empresaAIModelDef {
+	catalog := empresaAIModelCatalog()
+	available := make([]empresaAIModelDef, 0, len(catalog))
+	for _, item := range catalog {
+		if !isAIProviderEnabled(dbSuper, item.Provider) {
+			continue
+		}
+		available = append(available, item)
+	}
+	return available
+}
+
 func empresaAIModelMap() map[string]empresaAIModelDef {
 	catalog := empresaAIModelCatalog()
 	m := make(map[string]empresaAIModelDef, len(catalog))
@@ -96,6 +108,24 @@ func empresaAIModelMap() map[string]empresaAIModelDef {
 		m[it.ID] = it
 	}
 	return m
+}
+
+func availableEmpresaAIModelMap(dbSuper *sql.DB) map[string]empresaAIModelDef {
+	catalog := availableEmpresaAIModelCatalog(dbSuper)
+	m := make(map[string]empresaAIModelDef, len(catalog))
+	for _, it := range catalog {
+		it.PlanURL = "/pagar_licencia.html"
+		m[it.ID] = it
+	}
+	return m
+}
+
+func firstAvailableEmpresaAIModelID(dbSuper *sql.DB) string {
+	catalog := availableEmpresaAIModelCatalog(dbSuper)
+	if len(catalog) == 0 {
+		return ""
+	}
+	return catalog[0].ID
 }
 
 func (c *EmpresaAIChatController) ModelosHandler(w http.ResponseWriter, r *http.Request) {
@@ -135,7 +165,20 @@ func (c *EmpresaAIChatController) ModelosHandler(w http.ResponseWriter, r *http.
 		return
 	}
 
-	catalog := empresaAIModelCatalog()
+	catalog := availableEmpresaAIModelCatalog(c.dbSuper)
+	if len(catalog) == 0 {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]interface{}{
+			"ok":             false,
+			"code":           "ai_models_unavailable",
+			"error":          "No hay proveedores IA habilitados para esta empresa.",
+			"service_status": superAIServiceStatus(c.dbSuper),
+		})
+		return
+	}
+	availableMap := availableEmpresaAIModelMap(c.dbSuper)
+	if _, ok := availableMap[modeloPreferido]; !ok {
+		modeloPreferido = firstAvailableEmpresaAIModelID(c.dbSuper)
+	}
 
 	items := make([]map[string]interface{}, 0, len(catalog))
 	for _, it := range catalog {
@@ -220,7 +263,7 @@ func (c *EmpresaAIChatController) ModeloPreferidoHandler(w http.ResponseWriter, 
 
 		payload.ModelID = strings.TrimSpace(payload.ModelID)
 		if payload.ModelID == "" {
-			payload.ModelID = empresaAIModelCatalog()[0].ID
+			payload.ModelID = firstAvailableEmpresaAIModelID(c.dbSuper)
 		}
 
 		googleAccount := googleAccountFromRequest(r)
@@ -233,9 +276,18 @@ func (c *EmpresaAIChatController) ModeloPreferidoHandler(w http.ResponseWriter, 
 			return
 		}
 
-		catalog := empresaAIModelMap()
+		catalog := availableEmpresaAIModelMap(c.dbSuper)
+		if len(catalog) == 0 {
+			writeJSON(w, http.StatusServiceUnavailable, map[string]interface{}{
+				"ok":             false,
+				"code":           "ai_models_unavailable",
+				"error":          "No hay proveedores IA habilitados para esta empresa.",
+				"service_status": superAIServiceStatus(c.dbSuper),
+			})
+			return
+		}
 		if _, ok := catalog[payload.ModelID]; !ok {
-			http.Error(w, "model_id no soportado", http.StatusBadRequest)
+			http.Error(w, "model_id no soportado o desactivado", http.StatusBadRequest)
 			return
 		}
 
@@ -298,12 +350,21 @@ func (c *EmpresaAIChatController) ConsultarHandler(w http.ResponseWriter, r *htt
 
 	payload.ModelID = strings.TrimSpace(payload.ModelID)
 	if payload.ModelID == "" {
-		payload.ModelID = empresaAIModelCatalog()[0].ID
+		payload.ModelID = firstAvailableEmpresaAIModelID(c.dbSuper)
 	}
-	catalog := empresaAIModelMap()
+	catalog := availableEmpresaAIModelMap(c.dbSuper)
+	if len(catalog) == 0 {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]interface{}{
+			"ok":             false,
+			"code":           "ai_models_unavailable",
+			"error":          "No hay proveedores IA habilitados para esta empresa.",
+			"service_status": superAIServiceStatus(c.dbSuper),
+		})
+		return
+	}
 	model, ok := catalog[payload.ModelID]
 	if !ok {
-		http.Error(w, "model_id no soportado", http.StatusBadRequest)
+		http.Error(w, "model_id no soportado o desactivado", http.StatusBadRequest)
 		return
 	}
 

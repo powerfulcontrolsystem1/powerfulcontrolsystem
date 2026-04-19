@@ -1,6 +1,51 @@
 package handlers
 
-import "strings"
+import (
+	"database/sql"
+	"strings"
+)
+
+func aiProviderEnabledConfigKey(provider string) string {
+	v := strings.ToLower(strings.TrimSpace(provider))
+	if v == "" {
+		return ""
+	}
+	return "ai.provider." + v + ".enabled"
+}
+
+func isAIProviderEnabled(dbSuper *sql.DB, provider string) bool {
+	key := aiProviderEnabledConfigKey(provider)
+	if key == "" || dbSuper == nil {
+		return true
+	}
+	value, err := getDecryptedConfigValue(dbSuper, key)
+	if err != nil {
+		return true
+	}
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "0", "false", "off", "inactivo", "disabled":
+		return false
+	default:
+		return true
+	}
+}
+
+func uniqueAIProviders() []string {
+	seen := map[string]struct{}{}
+	providers := make([]string, 0)
+	for _, def := range aiCredentialCatalogModels() {
+		provider := strings.ToLower(strings.TrimSpace(def.Provider))
+		if provider == "" {
+			continue
+		}
+		if _, ok := seen[provider]; ok {
+			continue
+		}
+		seen[provider] = struct{}{}
+		providers = append(providers, provider)
+	}
+	return providers
+}
 
 type aiCredentialModelDef struct {
 	ModelID      string
