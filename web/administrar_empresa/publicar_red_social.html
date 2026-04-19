@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Publicar en Red Social Comercial</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    body { font-family: sans-serif; background: var(--bg-color, #f4f4f4); color: var(--text-color, #333); padding: 20px; }
+    .panel { background: var(--panel-bg, #fff); padding: 20px; border-radius: 8px; max-width: 600px; margin: 0 auto; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .grupo { margin-bottom: 15px; }
+    .grupo label { display: block; font-weight: bold; margin-bottom: 5px; }
+    .grupo input[type="text"], .grupo textarea { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+    .btn { padding: 10px 15px; background: #007bff; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+    .btn:hover { background: #0056b3; }
+    .listado { margin-top: 30px; }
+    .pub-item { background: #fafafa; border: 1px solid #eee; padding: 10px; margin-bottom: 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; }
+  </style>
+</head>
+<body>
+  <div class="panel">
+    <h2>Publicar en red social comercial</h2>
+    <p>Crea una publicaci&oacute;n visible para el p&uacute;blico en la red social comercial.</p>
+    <div class="grupo">
+      <label>Nombre del producto o servicio</label>
+      <input type="text" id="pubNombre" placeholder="Ej. Promoci&oacute;n de Llantas">
+    </div>
+    <div class="grupo">
+      <label>Descripci&oacute;n</label>
+      <textarea id="pubDesc" rows="4" placeholder="Escribe los detalles de la publicaci&oacute;n..."></textarea>
+    </div>
+    <div class="grupo">
+      <label>Foto (URL)</label>
+      <input type="text" id="pubFoto" placeholder="https://ejemplo.com/foto.jpg">
+    </div>
+    <button class="btn" onclick="crearPublicacion()">Publicar</button>
+
+    <div class="listado">
+      <h3>Mis publicaciones</h3>
+      <div id="misPublicaciones">Cargando...</div>
+    </div>
+  </div>
+
+  <script>
+    async function cargarPublicaciones() {
+      try {
+        const res = await fetch('/api/empresa/publicaciones', { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('session_token') }});
+        if (!res.ok) throw new Error('Error al cargar');
+        const pubs = await res.json();
+        const div = document.getElementById('misPublicaciones');
+        div.innerHTML = '';
+        if (pubs.length === 0) {
+          div.innerHTML = '<p>No tienes publicaciones activas.</p>';
+          return;
+        }
+        pubs.forEach(p => {
+          div.innerHTML += `
+            <div class="pub-item">
+              <div>
+                <strong>${p.nombre}</strong><br>
+                <small>${p.descripcion}</small>
+              </div>
+              <button onclick="eliminarPublicacion(${p.id})" style="background: red; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">Eliminar</button>
+            </div>
+          `;
+        });
+      } catch (e) {
+        console.error(e);
+        document.getElementById('misPublicaciones').innerHTML = 'Error cargando publicaciones.';
+      }
+    }
+
+    async function crearPublicacion() {
+      const nombre = document.getElementById('pubNombre').value;
+      const desc = document.getElementById('pubDesc').value;
+      const foto = document.getElementById('pubFoto').value;
+      
+      if (!nombre || !desc) {
+        alert('Nombre y descripciÃ³n son obligatorios');
+        return;
+      }
+      
+      try {
+        const res = await fetch('/api/empresa/publicaciones', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + localStorage.getItem('session_token')
+          },
+          body: JSON.stringify({ nombre: nombre, descripcion: desc, foto_url: foto, estado: 'activo' })
+        });
+        
+        if (res.ok) {
+          document.getElementById('pubNombre').value = '';
+          document.getElementById('pubDesc').value = '';
+          document.getElementById('pubFoto').value = '';
+          alert('Publicado con Ã©xito!');
+          cargarPublicaciones();
+        } else {
+          alert('Error al publicar');
+        }
+      } catch (e) {
+        console.error(e);
+        alert('Error de conexiÃ³n');
+      }
+    }
+
+    async function eliminarPublicacion(id) {
+      if (!confirm('Â¿Seguro que deseas eliminar esta publicaciÃ³n?')) return;
+      try {
+        const res = await fetch('/api/empresa/publicaciones/' + id, {
+          method: 'DELETE',
+          headers: { 'Authorization': 'Bearer ' + localStorage.getItem('session_token') }
+        });
+        if (res.ok) {
+          cargarPublicaciones();
+        } else {
+          alert('Error al eliminar');
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    cargarPublicaciones();
+  </script>
+</body>
+</html>

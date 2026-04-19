@@ -136,7 +136,7 @@ func resolveEmpresaUsuarioLoginURL(r *http.Request, dbEmp, dbSuper *sql.DB, empr
 	baseURL := resolveBaseURLForConfirmation(r, dbSuper)
 	if dbEmp != nil && empresaID > 0 {
 		if cfg, err := dbpkg.GetEmpresaVentaPublicaConfig(dbEmp, empresaID); err == nil {
-			return resolveEmpresaUsuarioLoginURLFromBase(baseURL, cfg.EmpresaSlug, cfg.DominioPublico, empresaID)
+			return resolveEmpresaUsuarioLoginURLFromBase(baseURL, cfg.EmpresaSlug, cfg.EmpresaSlug, empresaID)
 		}
 	}
 	return resolveEmpresaUsuarioLoginURLFromBase(baseURL, "", "", empresaID)
@@ -2067,3 +2067,5 @@ func parseEmpresaUsuarioDateTime(raw string) (time.Time, bool) {
 	}
 	return time.Time{}, false
 }
+
+

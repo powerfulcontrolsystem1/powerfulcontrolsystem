@@ -92,10 +92,8 @@
     wrapper.innerHTML = '<button class="fm-toggle" aria-label="Abrir menú">☰</button>' +
       '<div class="fm-panel" role="menu">' +
         '<a class="fm-item" href="/index.html">Portal</a>' +
-        '<a class="fm-item" href="/venta_digital.html">Venta digital</a>' +
-        '<a class="fm-item" href="/Juegos/n64/index.html">Emulador N64</a>' +
-        '<a class="fm-item" href="/menu_juegos.html">Menú Juegos</a>' +
-        '<a class="fm-item" href="/configuracion_de_la_cuenta.html">Configuración</a>' +
+        '<a class="fm-item" href="/red_social_comercial.html">Red social comercial</a>' +
+        '<a class="fm-item" href="/configuracion_de_la_cuenta.html">ConfiguraciÃ³n de la cuenta</a>' +
         '<div class="theme-selector-item" id="themeToggleWrapper" style="position:relative;">' +
           '<button id="themeToggle" class="fm-item theme-toggle-btn" type="button" aria-expanded="false" aria-haspopup="true" aria-label="Cambiar apariencia">Apariencia</button>' +
           '<div id="themeSelectorPopup" class="theme-selector-popup" aria-hidden="true" role="menu">' +

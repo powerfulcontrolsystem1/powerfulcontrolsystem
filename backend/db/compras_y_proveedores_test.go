@@ -1,13 +1,18 @@
 package db
 
 import (
+	"database/sql"
 	"testing"
+	_ "modernc.org/sqlite"
 )
 
 // TestEnsureEmpresasComprasSchema verifica que el esquema del módulo interdependiente
 // de compras y proveedores de ERP se instancie y actualice correctamente sin romper.
 func TestEnsureEmpresasComprasSchema(t *testing.T) {
-	dbConn := openTestDB(t, "test_empresas_compras.db")
+	dbConn, err := sql.Open("sqlite", t.TempDir()+"/test_empresas_compras.db")
+	if err != nil {
+		t.Fatalf("no se pudo abrir bd: %v", err)
+	}
 
 	if err := EnsureEmpresasComprasSchema(dbConn); err != nil {
 		t.Fatalf("Esperaba éxito asegurando esquema de compras, obtuve: %v", err)
@@ -19,7 +24,7 @@ func TestEnsureEmpresasComprasSchema(t *testing.T) {
 	}
 
 	// Inserciones rápidas verificando la estructura.
-	_, err := dbConn.Exec(`INSERT INTO empresa_proveedores (empresa_id, nombre_comercial, razon_social) VALUES (1, 'Distribuidor Test', 'DIST SAS')`)
+	_, err = dbConn.Exec(`INSERT INTO empresa_proveedores (empresa_id, nombre_comercial, razon_social) VALUES (1, 'Distribuidor Test', 'DIST SAS')`)
 	if err != nil {
 		t.Fatalf("No se pudo insertar proveedor de prueba: %v", err)
 	}

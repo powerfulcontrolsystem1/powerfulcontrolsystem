@@ -3,6 +3,7 @@ module github.com/you/pos-backend
 go 1.20
 
 require (
+	github.com/gorilla/websocket v1.5.3
 	github.com/jackc/pgx/v5 v5.5.5
 	github.com/shirou/gopsutil/v3 v3.24.5
 	modernc.org/sqlite v1.11.0

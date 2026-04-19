@@ -730,6 +730,9 @@ func main() {
 		if err := dbpkg.EnsureEmpresaProductosSchema(dbEmpresas); err != nil {
 			log.Fatalf("failed to ensure productos schema in empresas db: %v", err)
 		}
+		if err := dbpkg.EnsureEmpresaPublicacionesRedSocialSchema(dbEmpresas); err != nil {
+			log.Fatalf("failed to ensure publicaciones red social schema in empresas db: %v", err)
+		}
 		if err := dbpkg.EnsureEmpresaClientesSchema(dbEmpresas); err != nil {
 			log.Fatalf("failed to ensure clientes schema in empresas db: %v", err)
 		}
@@ -1615,6 +1618,8 @@ func main() {
 	http.HandleFunc("/api/empresa/asistencia_empleados", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaAsistenciaEmpleadosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/nomina", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaNominaSueldosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/vehiculos_registro", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaVehiculosRegistroHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/publicaciones", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaPublicacionesRedSocialHandler(dbEmpresas))) // Protegido
+	http.HandleFunc("/api/public/publicaciones", handlers.PublicacionesRedSocialHandler(dbEmpresas)) // Publico
 	http.HandleFunc("/api/empresa/clientes", handlers.WithEmpresaClientesPermissions(dbEmpresas, dbSuper, handlers.EmpresaClientesHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/carritos_compra", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCarritosCompraHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/carritos_compra/items", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCarritoItemsHandler(dbEmpresas)))
@@ -1805,6 +1810,11 @@ func main() {
 		}
 		w.WriteHeader(http.StatusNoContent)
 	})
+	http.HandleFunc("/pantalla", func(w http.ResponseWriter, r *http.Request) {
+		path := filepath.Join(backendDir, "..", "web", "pantalla_publica.html")
+		http.ServeFile(w, r, path)
+	})
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		path := strings.TrimSpace(r.URL.Path)
 		if (path == "/" || path == "") && handlers.IsEmpresaUsuarioLoginSubdomainRequest(r) {

@@ -5141,3 +5141,29 @@
 2026-04-19T15:14:23-05:00 [INFO] req_id=req-1776629663157802100-ba53d21a5f27 event=request_end method=GET path=/img/bar.png status=304 dur_ms=141
 2026-04-19T15:14:23-05:00 [INFO] req_id=req-1776629663158373900-1fa6a30d6403 event=request_end method=GET path=/img/Tecnico%20independien.png status=304 dur_ms=141
 2026-04-19T15:14:23-05:00 [INFO] req_id=req-1776629663158987600-a6083e846ec3 event=request_end method=GET path=/img/red%20social.png status=304 dur_ms=142
+2026-04-19T17:34:30-05:00 [INFO] req_id=req-1776638070657750900-7858d1f2f6c9 event=request_start method=GET path=/ ip=::1 ua="Mozilla/5.0 (Windows NT; Windows NT 10.0; es-CO) WindowsPowerShell/5.1.26100.8115"
+2026-04-19T17:34:30-05:00 [INFO] req_id=req-1776638070657750900-7858d1f2f6c9 event=request_end method=GET path=/ status=200 dur_ms=303
+2026-04-19T17:34:31-05:00 [INFO] req_id=req-1776638071397532600-725b03cb7854 event=request_start method=GET path=/ ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
+2026-04-19T17:34:31-05:00 [INFO] req_id=req-1776638071397532600-725b03cb7854 event=request_end method=GET path=/ status=200 dur_ms=2
+2026-04-19T17:34:31-05:00 [INFO] req_id=req-1776638071506649900-213dd54ad2cb event=request_start method=GET path=/menu.js ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
+2026-04-19T17:34:31-05:00 [INFO] req_id=req-1776638071509851600-024f263c2818 event=request_start method=GET path=/estilos.css ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
+2026-04-19T17:34:31-05:00 [INFO] req_id=req-1776638071509851600-024f263c2818 event=request_end method=GET path=/estilos.css status=304 dur_ms=3
+2026-04-19T17:34:31-05:00 [INFO] req_id=req-1776638071506649900-213dd54ad2cb event=request_end method=GET path=/menu.js status=200 dur_ms=83
+2026-04-19T17:34:31-05:00 [INFO] req_id=req-1776638071618068800-7c3cf85d1b54 event=request_start method=GET path=/api/public/pagina_principal ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
+2026-04-19T17:34:32-05:00 [INFO] req_id=req-1776638071618068800-7c3cf85d1b54 event=request_end method=GET path=/api/public/pagina_principal status=200 dur_ms=409
+2026-04-19T17:34:35-05:00 [INFO] req_id=req-1776638075550000000-7ae3e42a2191 event=request_start method=GET path=/ ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
+2026-04-19T17:34:35-05:00 [INFO] req_id=req-1776638075550000000-7ae3e42a2191 event=request_end method=GET path=/ status=200 dur_ms=1
+2026-04-19T17:34:35-05:00 [INFO] req_id=req-1776638075592089600-0ddf71ec15ea event=request_start method=GET path=/estilos.css ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
+2026-04-19T17:34:35-05:00 [INFO] req_id=req-1776638075594011400-29b28395f55a event=request_start method=GET path=/menu.js ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
+2026-04-19T17:34:35-05:00 [INFO] req_id=req-1776638075594011400-29b28395f55a event=request_end method=GET path=/menu.js status=200 dur_ms=1
+2026-04-19T17:34:35-05:00 [INFO] req_id=req-1776638075592089600-0ddf71ec15ea event=request_end method=GET path=/estilos.css status=200 dur_ms=83
+2026-04-19T17:34:35-05:00 [INFO] req_id=req-1776638075681027800-8f0b1cbfe112 event=request_start method=GET path=/img/punto_venta.png ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
+2026-04-19T17:34:35-05:00 [INFO] req_id=req-1776638075681027800-8f0b1cbfe112 event=request_end method=GET path=/img/punto_venta.png status=200 dur_ms=11
+2026-04-19T17:34:36-05:00 [INFO] req_id=req-1776638076089160800-89ecfd43992b event=request_start method=GET path=/api/public/pagina_principal ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
+2026-04-19T17:34:36-05:00 [INFO] req_id=req-1776638076452698700-627eb6e1cd31 event=request_start method=GET path=/img/punto_venta.png ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
+2026-04-19T17:34:36-05:00 [INFO] req_id=req-1776638076452698700-627eb6e1cd31 event=request_end method=GET path=/img/punto_venta.png status=200 dur_ms=2
+2026-04-19T17:34:36-05:00 [INFO] req_id=req-1776638076089160800-89ecfd43992b event=request_end method=GET path=/api/public/pagina_principal status=200 dur_ms=798
+2026-04-19T17:35:49-05:00 [INFO] req_id=req-1776638149323868600-8066ea1d09ed event=request_start method=GET path=/ ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
+2026-04-19T17:35:49-05:00 [INFO] req_id=req-1776638149323868600-8066ea1d09ed event=request_end method=GET path=/ status=304 dur_ms=101
+2026-04-19T17:35:49-05:00 [INFO] req_id=req-1776638149498885300-6c9bf9703aa6 event=request_start method=GET path=/api/public/pagina_principal ip=::1 ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0"
+2026-04-19T17:35:49-05:00 [INFO] req_id=req-1776638149498885300-6c9bf9703aa6 event=request_end method=GET path=/api/public/pagina_principal status=200 dur_ms=433

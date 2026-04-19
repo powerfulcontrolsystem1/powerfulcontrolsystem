@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Red Social Comercial</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+  <style>
+    body { font-family: sans-serif; background: #f4f4f4; margin: 0; padding: 20px; text-align: center; }
+    .feed { max-width: 800px; margin: 2rem auto; text-align: left; }
+    .card { background: #fff; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin-bottom: 2rem; overflow: hidden; display: flex; flex-direction: column; }
+    .card-img { width: 100%; height: 300px; background-color: #ddd; background-size: cover; background-position: center; }
+    .card-body { padding: 20px; }
+    .card-title { font-size: 1.5rem; margin: 0 0 10px 0; color: #333; }
+    .card-desc { color: #666; line-height: 1.5; margin-bottom: 15px; }
+    .card-actions { display: flex; justify-content: flex-end; }
+    .btn-contact { background-color: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; text-decoration: none; font-weight: bold; }
+    .btn-contact:hover { background-color: #0056b3; }
+  </style>
+</head>
+<body>
+  <div style="margin-top: 60px;">
+    <h1>Red Social Comercial</h1>
+    <p>Descubre productos y ofertas exclusivas de nuestras empresas asociadas.</p>
+  </div>
+  
+  <div class="feed" id="feedContenedor">
+    <p style="text-align: center;">Cargando publicaciones...</p>
+  </div>
+
+  <script>
+    async function cargarPublico() {
+      try {
+        const res = await fetch('/api/public/publicaciones');
+        if (!res.ok) throw new Error('Error de red');
+        const data = await res.json();
+        const feed = document.getElementById('feedContenedor');
+        feed.innerHTML = '';
+        
+        if (data.length === 0) {
+          feed.innerHTML = '<p style="text-align: center;">AÃºn no hay publicaciones disponibles.</p>';
+          return;
+        }
+
+        data.forEach(p => {
+          const imgStyle = p.foto_url 
+            ? `style="background-image: url('${p.foto_url}');"`
+            : `style="background-color: #ddd; display: flex; align-items:center; justify-content:center; color: #777;"`;
+          
+          const fallBackText = p.foto_url ? '' : '<span>Sin imagen</span>';
+
+          feed.innerHTML += `
+            <div class="card">
+              <div class="card-img" ${imgStyle}>${fallBackText}</div>
+              <div class="card-body">
+                <h2 class="card-title">${p.nombre}</h2>
+                <p class="card-desc">${p.descripcion}</p>
+                <div class="card-actions">
+                  <a href="https://api.whatsapp.com/send?text=Me%20interesa%20${encodeURIComponent(p.nombre)}" target="_blank" class="btn-contact">Contactar</a>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+      } catch (err) {
+        console.error(err);
+        document.getElementById('feedContenedor').innerHTML = '<p style="text-align: center; color: red;">Error al cargar las publicaciones</p>';
+      }
+    }
+    cargarPublico();
+  </script>
+</body>
+</html>
